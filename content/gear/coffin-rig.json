@@ -1,0 +1,10 @@
+{
+  "id": "coffin-rig",
+  "name": "Coffin Rig",
+  "slot": "armor",
+  "statBonus": {
+    "stat": "forge",
+    "amount": 1
+  },
+  "flavor": "A slab-bound harness of cold braces and grave bolts built to hold through crush and sparks."
+}

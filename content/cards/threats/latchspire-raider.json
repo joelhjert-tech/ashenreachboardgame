@@ -1,0 +1,20 @@
+{
+  "id": "latchspire-raider",
+  "type": "threat",
+  "cardType": "enemy",
+  "title": "Latchspire Raider",
+  "enemyName": "Latchspire Raider",
+  "text": "A scavenger duelist swings down on a tether line, trying to pin your path with a barbed spar.",
+  "flavor": "Its mask is made from elevator teeth and old prayer plates.",
+  "severity": 2,
+  "stat": "guile",
+  "difficulty": 6,
+  "defeatReward": {
+    "type": "lose_heat",
+    "amount": 1
+  },
+  "woundOnLoss": {
+    "type": "take_wound",
+    "amount": 1
+  }
+}

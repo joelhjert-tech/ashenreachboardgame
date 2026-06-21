@@ -1,0 +1,74 @@
+{
+  "nodes": [
+    {
+      "id": "ashwake-crossing",
+      "name": "Ashwake Crossing",
+      "regionTier": "borderlight",
+      "neighbors": ["glassmere-spindle", "mirecoil-beacon"],
+      "danger": 2,
+      "encounterDecks": {
+        "threat": ["smoke-leech-clutch", "cinder-veil-stalker"],
+        "anomaly": [],
+        "contract": [],
+        "artifact": [],
+        "escalation": []
+      }
+    },
+    {
+      "id": "glassmere-spindle",
+      "name": "Glassmere Spindle",
+      "regionTier": "borderlight",
+      "neighbors": ["ashwake-crossing", "hollow-veil-yard"],
+      "danger": 3,
+      "encounterDecks": {
+        "threat": ["glass-chime-swarm", "latchspire-raider"],
+        "anomaly": ["anomaly-glassmere"],
+        "contract": [],
+        "artifact": [],
+        "escalation": []
+      }
+    },
+    {
+      "id": "mirecoil-beacon",
+      "name": "Mirecoil Beacon",
+      "regionTier": "borderlight",
+      "neighbors": ["ashwake-crossing", "hollow-veil-yard", "emberwatch-step"],
+      "danger": 4,
+      "encounterDecks": {
+        "threat": ["relay-husk", "slag-drone", "cinder-veil-stalker"],
+        "anomaly": [],
+        "contract": ["contract-beacon"],
+        "artifact": [],
+        "escalation": []
+      }
+    },
+    {
+      "id": "hollow-veil-yard",
+      "name": "Hollow Veil Yard",
+      "regionTier": "borderlight",
+      "neighbors": ["glassmere-spindle", "mirecoil-beacon", "emberwatch-step"],
+      "danger": 3,
+      "encounterDecks": {
+        "threat": ["grave-silt-press"],
+        "anomaly": [],
+        "contract": [],
+        "artifact": ["artifact-yard"],
+        "escalation": []
+      }
+    },
+    {
+      "id": "emberwatch-step",
+      "name": "Emberwatch Step",
+      "regionTier": "borderlight",
+      "neighbors": ["mirecoil-beacon", "hollow-veil-yard"],
+      "danger": 5,
+      "encounterDecks": {
+        "threat": [],
+        "anomaly": [],
+        "contract": [],
+        "artifact": [],
+        "escalation": ["escalation-emberwatch"]
+      }
+    }
+  ]
+}

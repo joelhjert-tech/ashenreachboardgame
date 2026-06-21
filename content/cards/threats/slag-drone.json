@@ -1,0 +1,19 @@
+{
+  "id": "slag-drone",
+  "type": "threat",
+  "cardType": "hazard",
+  "title": "Slag Drone",
+  "text": "A limping salvage automaton swings a furnace arm in broad, clumsy arcs.",
+  "flavor": "Its cracked core still believes this yard belongs to it.",
+  "severity": 2,
+  "stat": "forge",
+  "difficulty": 7,
+  "successEffect": {
+    "type": "gainGear",
+    "gearId": "coffin-rig"
+  },
+  "failEffect": {
+    "type": "take_wound",
+    "amount": 1
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "id": "umbral-bloom-reaping-right",
+  "name": "Reaping Right",
+  "factionGiver": "Umbral Bloom",
+  "text": "The Bloom promises passage credit for three predator carcasses left intact enough for harvest.",
+  "objective": {
+    "type": "defeatCount",
+    "target": 3
+  },
+  "reward": {
+    "type": "gainGear",
+    "gearId": "coffin-rig"
+  }
+}

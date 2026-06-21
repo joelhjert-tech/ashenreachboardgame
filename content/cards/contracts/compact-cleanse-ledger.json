@@ -1,0 +1,14 @@
+{
+  "id": "compact-cleanse-ledger",
+  "name": "Cleanse Ledger",
+  "factionGiver": "Meridian Compact",
+  "text": "The Compact wants two hostile disruptions erased from a freight lane before the next audit sweep arrives.",
+  "objective": {
+    "type": "defeatCount",
+    "target": 2
+  },
+  "reward": {
+    "type": "gainGear",
+    "gearId": "marshal-seal"
+  }
+}

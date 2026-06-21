@@ -1,0 +1,574 @@
+import { useEffect, useMemo, useState, type ReactElement } from "react";
+import { getBoardSpace } from "../../game/data/boardSpaces.js";
+import { RIFTFALL_BOARD_NODE_INDEX } from "../../data/riftfallBoardNodes.js";
+import { createSession, fetchCharacters, startSession } from "../shared/network.js";
+import { DebugPanel } from "../shared/DebugPanel.js";
+import { RollOutcomePanel } from "../shared/RollOutcomePanel.js";
+import { useRoomSubscription } from "../shared/useRoomSubscription.js";
+import { getCharacterPortraitPath } from "../shared/assetPaths.js";
+import type {
+  CharacterCatalogEntry,
+  PublicPatchPayload,
+  PublicPlayer,
+  PublicSeat,
+  StatePatch,
+  Stat
+} from "../shared/types.js";
+import { HostPlayerCard } from "./HostPlayerCard.js";
+import { JoinQrCard } from "./JoinQrCard.js";
+import { TacticalMapBoard } from "./TacticalMapBoard.js";
+
+const hostTokenStorageKey = "ashen-reach-tv-host-token";
+
+const statLabelById: Record<Stat, string> = {
+  command: "Cmd",
+  grit: "Grit",
+  signal: "Signal",
+  guile: "Guile",
+  forge: "Forge"
+};
+
+function toTitleCase(value: string): string {
+  return value
+    .replace(/[_-]+/g, " ")
+    .replace(/\b\w/g, (letter) => letter.toUpperCase());
+}
+
+function getGearSummary(player: PublicPlayer | null): string {
+  const gear = Object.values(player?.character.equippedGear ?? {}).filter(Boolean);
+  return gear.length > 0 ? gear.join(", ") : "No gear equipped";
+}
+
+function getSeatStatus(seat: PublicSeat | null, player: PublicPlayer | null, isActive: boolean): string {
+  if (seat?.kicked) {
+    return "Removed";
+  }
+
+  if (!seat?.displayName) {
+    return "Open Seat";
+  }
+
+  if (!seat.connected) {
+    return "Offline";
+  }
+
+  if (player?.character.status === "recalled") {
+    return "Recalled";
+  }
+
+  if (isActive) {
+    return "Active Turn";
+  }
+
+  return "Ready";
+}
+
+function getCurrentStepCopy(publicPatch: StatePatch<PublicPatchPayload> | null, activeSeatId: string | null): string {
+  if (!publicPatch) {
+    return "Create a room to bring the command dashboard online.";
+  }
+
+  if (publicPatch.payload.encounter) {
+    return `${publicPatch.payload.encounter.title} is in play for ${activeSeatId ?? "the active seat"} using ${toTitleCase(
+      publicPatch.payload.encounter.stat
+    )}.`;
+  }
+
+  if (publicPatch.payload.pendingEnemyRoll) {
+    return `Enemy roll assigned to ${publicPatch.payload.pendingEnemyRoll.assignedRollerSeatId}. Awaiting combat response.`;
+  }
+
+  if (publicPatch.payload.status === "ended") {
+    return "The campaign has ended. Review the winner and restart when ready.";
+  }
+
+  return `Phase ${toTitleCase(publicPatch.phase)} is live${activeSeatId ? ` for ${activeSeatId}` : ""}.`;
+}
+
+function getSpecialAbilitySummary(player: PublicPlayer | null, characterCatalog: CharacterCatalogEntry[]): string {
+  if (!player) {
+    return "No ability active";
+  }
+
+  const character = characterCatalog.find((entry) => entry.id === player.character.id);
+  const firstAbility = character?.abilities[0];
+
+  if (!firstAbility) {
+    return "No ability active";
+  }
+
+  return `${firstAbility.name}: ${firstAbility.text}`;
+}
+
+function getContractSummary(player: PublicPlayer | null, patch: StatePatch<PublicPatchPayload> | null): string {
+  if (!player?.character.activeContract || !patch) {
+    return "No active contract";
+  }
+
+  const contract = patch.payload.availableContracts.find((entry) => entry.id === player.character.activeContract?.contractId);
+
+  if (!contract) {
+    return "No active contract";
+  }
+
+  return `${contract.name} (${player.character.activeContract.progress}/${contract.objective.target})`;
+}
+
+function getActiveSectorLabel(patch: StatePatch<PublicPatchPayload> | null, activePlayer: PublicPlayer | null): string {
+  if (!patch || !activePlayer) {
+    return "Awaiting deployment";
+  }
+
+  return patch.payload.sectors.find((sector) => sector.id === activePlayer.sectorId)?.name ?? "Awaiting deployment";
+}
+
+function getActiveRoomName(patch: StatePatch<PublicPatchPayload> | null, activePlayer: PublicPlayer | null): string {
+  if (!patch || !activePlayer) {
+    return "No active room";
+  }
+
+  return RIFTFALL_BOARD_NODE_INDEX.get(activePlayer.sectorId)?.label ?? getActiveSectorLabel(patch, activePlayer);
+}
+
+function getSectorBrief(patch: StatePatch<PublicPatchPayload> | null, activePlayer: PublicPlayer | null) {
+  if (!patch || !activePlayer) {
+    return {
+      title: "Awaiting deployment",
+      ring: "outer",
+      text: "Create a session to load the tactical board and live sector telemetry.",
+      threat: 0,
+      occupants: 0
+    };
+  }
+
+  const boardNode = RIFTFALL_BOARD_NODE_INDEX.get(activePlayer.sectorId);
+  const boardSpace = getBoardSpace(activePlayer.sectorId);
+  const sector = patch.payload.sectors.find((entry) => entry.id === activePlayer.sectorId) ?? null;
+  const occupants = patch.payload.players.filter((entry) => entry.sectorId === activePlayer.sectorId).length;
+
+  return {
+    title: boardNode?.label ?? sector?.name ?? "Unknown sector",
+    ring: boardNode?.ring ?? sector?.regionTier ?? "outer",
+    text: boardSpace?.textBox.text ?? "Sector telemetry is awaiting a richer command note.",
+    threat: boardSpace?.threatIcons.length ?? sector?.danger ?? 0,
+    occupants
+  };
+}
+
+interface TopHeaderProps {
+  roomCode: string | null;
+  roomName: string;
+  phase: string;
+  activeSeatId: string | null;
+}
+
+function TopHeader({ roomCode, roomName, phase, activeSeatId }: TopHeaderProps): ReactElement {
+  return (
+    <header className="tv-command-header tv-card">
+      <div className="tv-command-brand">
+        <div className="tv-command-brand-mark" aria-hidden="true">
+          ARC
+        </div>
+        <div>
+          <h1>Ashen Reach TV</h1>
+          <p>Host dashboard</p>
+        </div>
+      </div>
+
+      <div className="tv-command-header-grid">
+        <div className="tv-command-header-chip">
+          <span>Room Code</span>
+          <strong>{roomCode ?? "Awaiting room"}</strong>
+        </div>
+        <div className="tv-command-header-chip">
+          <span>Room Name</span>
+          <strong>{roomName}</strong>
+        </div>
+        <div className="tv-command-header-chip">
+          <span>Phase</span>
+          <strong>{toTitleCase(phase)}</strong>
+        </div>
+        <div className="tv-command-header-chip">
+          <span>Active Seat</span>
+          <strong>{activeSeatId ?? "Standby"}</strong>
+        </div>
+      </div>
+    </header>
+  );
+}
+
+interface ActiveOperativeOverlayProps {
+  patch: StatePatch<PublicPatchPayload> | null;
+  activeSeat: PublicSeat | null;
+  activePlayer: PublicPlayer | null;
+  characterCatalog: CharacterCatalogEntry[];
+}
+
+function ActiveOperativeOverlay({
+  patch,
+  activeSeat,
+  activePlayer,
+  characterCatalog
+}: ActiveOperativeOverlayProps): ReactElement {
+  const seatStatus = getSeatStatus(activeSeat, activePlayer, true);
+
+  if (!activeSeat) {
+    return (
+      <section className="tv-active-operative-overlay tv-active-operative-empty tv-card">
+        <h2>Active operative</h2>
+        <p>No active seat yet. Create a room and start the session to bring the command board online.</p>
+      </section>
+    );
+  }
+
+  return (
+    <section className="tv-active-operative-overlay">
+      <HostPlayerCard
+        className="host-player-card-overlay"
+        seatId={activeSeat.seatId}
+        isOpen={!activeSeat.displayName || activeSeat.kicked}
+        isConnected={activeSeat.connected}
+        characterName={activePlayer?.character.name ?? activeSeat.displayName}
+        characterTitle={activePlayer?.character.archetype ?? null}
+        portraitUrl={
+          activePlayer && activeSeat.displayName && !activeSeat.kicked
+            ? getCharacterPortraitPath(activePlayer.character.id)
+            : null
+        }
+        locationName={getActiveSectorLabel(patch, activePlayer)}
+        fieldStatus={activePlayer?.character.status === "recalled" ? "Field status recalled" : "Field status stable"}
+        heat={activePlayer?.character.heat ?? null}
+        wounds={activePlayer?.character.wounds ?? null}
+        scars={activePlayer?.character.scars.length ?? null}
+        attributes={{
+          cmd: activePlayer?.character.stats.command ?? null,
+          grit: activePlayer?.character.stats.grit ?? null,
+          signal: activePlayer?.character.stats.signal ?? null,
+          guile: activePlayer?.character.stats.guile ?? null,
+          forge: activePlayer?.character.stats.forge ?? null
+        }}
+        gearSummary={getGearSummary(activePlayer)}
+        contractSummary={getContractSummary(activePlayer, patch)}
+        specialAbilitySummary={getSpecialAbilitySummary(activePlayer, characterCatalog)}
+        isActiveTurn
+        isReady={seatStatus === "Ready"}
+      />
+    </section>
+  );
+}
+
+interface SessionReadoutProps {
+  publicPatch: StatePatch<PublicPatchPayload> | null;
+  joinedCount: number;
+  activeSeatId: string | null;
+  status: string;
+  roomCode: string | null;
+  onCreateSession: () => Promise<void>;
+  onRestartSession: () => void;
+  onStartSession: () => Promise<void>;
+  canStartSession: boolean;
+  showCreate: boolean;
+  showRestart: boolean;
+  showStart: boolean;
+  debugOpen: boolean;
+  onToggleDebug: () => void;
+}
+
+function SessionReadout({
+  publicPatch,
+  joinedCount,
+  activeSeatId,
+  status,
+  roomCode,
+  onCreateSession,
+  onRestartSession,
+  onStartSession,
+  canStartSession,
+  showCreate,
+  showRestart,
+  showStart,
+  debugOpen,
+  onToggleDebug
+}: SessionReadoutProps): ReactElement {
+  return (
+    <section className="tv-card tv-panel-card tv-session-panel">
+      <div className="tv-card-header">
+        <div>
+          <h2>Session Readout</h2>
+          <p>Room telemetry</p>
+        </div>
+      </div>
+
+      <div className="tv-session-grid">
+        <div className="tv-session-stat">
+          <span>Players</span>
+          <strong>{joinedCount}</strong>
+        </div>
+        <div className="tv-session-stat">
+          <span>Status</span>
+          <strong>{toTitleCase(publicPatch?.payload.status ?? "lobby")}</strong>
+        </div>
+        <div className="tv-session-stat">
+          <span>Phase</span>
+          <strong>{toTitleCase(publicPatch?.phase ?? "start")}</strong>
+        </div>
+        <div className="tv-session-stat">
+          <span>Active Seat</span>
+          <strong>{activeSeatId ?? "Standby"}</strong>
+        </div>
+        <div className="tv-session-stat">
+          <span>Escalation</span>
+          <strong>{publicPatch?.payload.escalationLevel ?? 0}</strong>
+        </div>
+        <div className="tv-session-stat">
+          <span>Socket</span>
+          <strong>{status}</strong>
+        </div>
+      </div>
+
+      <div className="tv-session-actions">
+        <button type="button" className="tv-button tv-button-quiet" onClick={onToggleDebug}>
+          {debugOpen ? "Hide debug" : "Show debug"}
+        </button>
+        {showCreate && (
+          <button type="button" onClick={() => void onCreateSession()}>
+            Create session
+          </button>
+        )}
+        {showRestart && (
+          <button type="button" onClick={onRestartSession}>
+            Restart
+          </button>
+        )}
+        {showStart && (
+          <button type="button" disabled={!canStartSession || !roomCode} onClick={() => void onStartSession()}>
+            Start session
+          </button>
+        )}
+      </div>
+    </section>
+  );
+}
+
+interface RightSidebarProps {
+  roomCode: string | null;
+  sectorBrief: ReturnType<typeof getSectorBrief>;
+  publicPatch: StatePatch<PublicPatchPayload> | null;
+  joinedCount: number;
+  activeSeatId: string | null;
+  status: string;
+  debugOpen: boolean;
+  onToggleDebug: () => void;
+  onCreateSession: () => Promise<void>;
+  onRestartSession: () => void;
+  onStartSession: () => Promise<void>;
+  canStartSession: boolean;
+}
+
+function RightSidebar({
+  roomCode,
+  sectorBrief,
+  publicPatch,
+  joinedCount,
+  activeSeatId,
+  status,
+  debugOpen,
+  onToggleDebug,
+  onCreateSession,
+  onRestartSession,
+  onStartSession,
+  canStartSession
+}: RightSidebarProps): ReactElement {
+  return (
+    <aside className="tv-command-sidebar">
+      {roomCode && (
+        <section className="tv-card tv-panel-card tv-join-panel tv-sidebar-card">
+          <JoinQrCard roomCode={roomCode} />
+        </section>
+      )}
+
+      <section className="tv-card tv-panel-card tv-sidebar-card">
+        <div className="tv-card-header">
+          <div>
+            <h2>Sector Brief</h2>
+          </div>
+          <span className="board-sidebar-ring">{sectorBrief.ring}</span>
+        </div>
+        <p className="board-sidebar-title">{sectorBrief.title}</p>
+        <p className="tv-empty-copy">{sectorBrief.text}</p>
+        <div className="board-sidebar-meta">
+          <span>Threat {sectorBrief.threat}</span>
+          <span>Occupants {sectorBrief.occupants}</span>
+        </div>
+      </section>
+
+      <SessionReadout
+        publicPatch={publicPatch}
+        joinedCount={joinedCount}
+        activeSeatId={activeSeatId}
+        status={status}
+        roomCode={roomCode}
+        onCreateSession={onCreateSession}
+        onRestartSession={onRestartSession}
+        onStartSession={onStartSession}
+        canStartSession={canStartSession}
+        showCreate={!roomCode}
+        showRestart={Boolean(publicPatch)}
+        showStart={publicPatch?.phase === "start"}
+        debugOpen={debugOpen}
+        onToggleDebug={onToggleDebug}
+      />
+    </aside>
+  );
+}
+
+interface TacticalMapPanelProps {
+  patch: StatePatch<PublicPatchPayload> | null;
+  activeSeat: PublicSeat | null;
+  activePlayer: PublicPlayer | null;
+  characterCatalog: CharacterCatalogEntry[];
+}
+
+function TacticalMapPanel({ patch, activeSeat, activePlayer, characterCatalog }: TacticalMapPanelProps): ReactElement {
+  return (
+    <section className="tv-command-stage">
+      <div className="tv-command-map-shell">
+        <TacticalMapBoard patch={patch?.payload ?? null} phase={patch?.phase ?? "start"} />
+      </div>
+      <ActiveOperativeOverlay patch={patch} activeSeat={activeSeat} activePlayer={activePlayer} characterCatalog={characterCatalog} />
+    </section>
+  );
+}
+
+export function TvApp(): ReactElement {
+  const [characterCatalog, setCharacterCatalog] = useState<CharacterCatalogEntry[]>([]);
+  const [roomCode, setRoomCode] = useState<string | null>(null);
+  const [hostToken, setHostToken] = useState<string | null>(() =>
+    typeof window === "undefined" ? null : window.localStorage.getItem(hostTokenStorageKey)
+  );
+  const [requestError, setRequestError] = useState<string | null>(null);
+  const [debugOpen, setDebugOpen] = useState(() => new URLSearchParams(window.location.search).has("debug"));
+  const { patch, error, status, debugEvents, clearDebugEvents, sendIntent } = useRoomSubscription({
+    view: "tv",
+    enabled: Boolean(roomCode),
+    hostToken
+  });
+
+  useEffect(() => {
+    fetchCharacters()
+      .then((characters) => setCharacterCatalog(characters))
+      .catch(() => setCharacterCatalog([]));
+  }, []);
+
+  const publicPatch = patch as StatePatch<PublicPatchPayload> | null;
+  const joinedSeats = publicPatch?.payload.seats.filter((seat) => seat.displayName && !seat.kicked) ?? [];
+  const activeSeatId = publicPatch?.payload.turnOrder[publicPatch.payload.activeSeatIndex] ?? null;
+  const activeSeat = publicPatch?.payload.seats.find((seat) => seat.seatId === activeSeatId) ?? null;
+  const activePlayer = publicPatch?.payload.players.find((entry) => entry.seatId === activeSeatId) ?? null;
+  const roomName = getActiveRoomName(publicPatch, activePlayer);
+  const sectorBrief = useMemo(() => getSectorBrief(publicPatch, activePlayer), [publicPatch, activePlayer]);
+
+  const createHostSession = async () => {
+    setRequestError(null);
+
+    try {
+      const session = await createSession();
+      setRoomCode(session.roomCode);
+      setHostToken(session.hostToken);
+      window.localStorage.setItem(hostTokenStorageKey, session.hostToken);
+    } catch (createFailure) {
+      setRequestError(createFailure instanceof Error ? createFailure.message : "Could not create a room");
+    }
+  };
+
+  const startHostSession = async () => {
+    if (!roomCode) {
+      return;
+    }
+
+    setRequestError(null);
+
+    try {
+      await startSession(roomCode);
+    } catch (startFailure) {
+      setRequestError(startFailure instanceof Error ? startFailure.message : "Could not start");
+    }
+  };
+
+  const latestOutcome = publicPatch?.payload.outcomeSummary ?? null;
+  const currentStepCopy = getCurrentStepCopy(publicPatch, activeSeatId);
+
+  return (
+    <main className="tv-dashboard tv-command-dashboard">
+      <TopHeader roomCode={roomCode} roomName={roomName} phase={publicPatch?.phase ?? "start"} activeSeatId={activeSeatId} />
+
+      {(requestError || error) && <div className="tv-banner tv-banner-error">{requestError ?? error}</div>}
+
+      <section className="tv-command-main">
+        <TacticalMapPanel patch={publicPatch} activeSeat={activeSeat} activePlayer={activePlayer} characterCatalog={characterCatalog} />
+
+        <RightSidebar
+          roomCode={roomCode}
+          sectorBrief={sectorBrief}
+          publicPatch={publicPatch}
+          joinedCount={joinedSeats.length}
+          activeSeatId={activeSeatId}
+          status={status}
+          debugOpen={debugOpen}
+          onToggleDebug={() => setDebugOpen((current) => !current)}
+          onCreateSession={createHostSession}
+          onRestartSession={() => {
+            setRequestError(null);
+            sendIntent({ type: "RESTART_SESSION" });
+          }}
+          onStartSession={startHostSession}
+          canStartSession={joinedSeats.length >= 1}
+        />
+      </section>
+
+      <section className="tv-command-footer">
+        <section className="tv-card tv-bottom-card">
+          <div className="tv-card-header">
+            <div>
+              <h2>Current Step</h2>
+              <p>Live command update</p>
+            </div>
+          </div>
+          <p className="tv-bottom-copy">{currentStepCopy}</p>
+          {publicPatch?.payload.encounter && (
+            <div className="tv-inline-summary">
+              <span className="tv-inline-summary-label">{publicPatch.payload.encounter.cardType}</span>
+              <strong>
+                {publicPatch.payload.encounter.title} | {statLabelById[publicPatch.payload.encounter.stat]} {publicPatch.payload.encounter.difficulty}
+              </strong>
+            </div>
+          )}
+        </section>
+
+        <section className="tv-card tv-bottom-card">
+          <div className="tv-card-header">
+            <div>
+              <h2>Latest Outcome</h2>
+              <p>Last resolved result</p>
+            </div>
+          </div>
+          {latestOutcome ? (
+            latestOutcome.die1 !== null && latestOutcome.die2 !== null ? (
+              <RollOutcomePanel summary={latestOutcome} animate title="Live roll" />
+            ) : (
+              <p className="tv-bottom-copy">{latestOutcome.summary}</p>
+            )
+          ) : (
+            <p className="tv-empty-copy">No outcomes resolved yet.</p>
+          )}
+        </section>
+      </section>
+
+      {debugOpen && (
+        <section className="tv-debug-drawer">
+          <DebugPanel events={debugEvents} onClear={clearDebugEvents} title="TV debug" />
+        </section>
+      )}
+    </main>
+  );
+}

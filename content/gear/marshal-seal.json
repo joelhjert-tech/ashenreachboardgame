@@ -1,0 +1,10 @@
+{
+  "id": "marshal-seal",
+  "name": "Marshal Seal",
+  "slot": "utility",
+  "statBonus": {
+    "stat": "command",
+    "amount": 1
+  },
+  "flavor": "A stamped relay sigil that carries enough authority to still a crowded platform."
+}

@@ -1,0 +1,19 @@
+{
+  "id": "grave-silt-press",
+  "type": "threat",
+  "cardType": "hazard",
+  "title": "Grave-Silt Press",
+  "text": "The floor buckles into a grinding plate of wet ash and buried iron teeth.",
+  "flavor": "The yard wants to close around your ankles and keep you there.",
+  "severity": 1,
+  "stat": "command",
+  "difficulty": 5,
+  "successEffect": {
+    "type": "gain_note",
+    "text": "You forced a path through the sink line and marked it for later."
+  },
+  "failEffect": {
+    "type": "gain_heat",
+    "amount": 1
+  }
+}

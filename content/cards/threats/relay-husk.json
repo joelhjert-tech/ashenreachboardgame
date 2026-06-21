@@ -1,0 +1,19 @@
+{
+  "id": "relay-husk",
+  "type": "threat",
+  "cardType": "hazard",
+  "title": "Relay Husk",
+  "text": "A dead communications frame twitches awake and projects false instructions into the fog.",
+  "flavor": "Its voice is all static courtesy and buried malice.",
+  "severity": 2,
+  "stat": "guile",
+  "difficulty": 6,
+  "successEffect": {
+    "type": "gainGear",
+    "gearId": "marshal-seal"
+  },
+  "failEffect": {
+    "type": "gain_heat",
+    "amount": 1
+  }
+}

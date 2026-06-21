@@ -1,0 +1,14 @@
+{
+  "id": "choir-hush-census",
+  "name": "Hush Census",
+  "factionGiver": "Glass Choir",
+  "text": "The Choir demands two clean removals so a listening chamber can return to its proper silence.",
+  "objective": {
+    "type": "defeatCount",
+    "target": 2
+  },
+  "reward": {
+    "type": "reduceHeat",
+    "amount": 1
+  }
+}

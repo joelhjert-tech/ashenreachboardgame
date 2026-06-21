@@ -1,0 +1,10 @@
+{
+  "id": "veil-hook",
+  "name": "Veil Hook",
+  "slot": "weapon",
+  "statBonus": {
+    "stat": "grit",
+    "amount": 1
+  },
+  "flavor": "A hooked furnace blade balanced for close pursuit in ash-choked lanes."
+}

@@ -1,0 +1,10 @@
+{
+  "id": "tuning-spines",
+  "name": "Tuning Spines",
+  "slot": "utility",
+  "statBonus": {
+    "stat": "signal",
+    "amount": 1
+  },
+  "flavor": "A fan of resonant needles that sharpen weak transmissions into usable patterns."
+}

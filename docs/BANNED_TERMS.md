@@ -1,0 +1,19 @@
+# Banned Terms
+
+- Relic
+- Talisman
+- Warhammer
+- Warhammer 40,000
+- Games Workshop
+- Fantasy Flight
+- Imperium
+- Inquisition
+- Space Marine
+- Chaos
+- Adeptus
+- Psyker
+- Ork
+- Eldar
+- Tyranid
+- Necron
+- Crown of Command

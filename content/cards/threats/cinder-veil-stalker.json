@@ -1,0 +1,29 @@
+{
+  "id": "cinder-veil-stalker",
+  "type": "threat",
+  "cardType": "enemy",
+  "title": "Cinder-Veil Stalker",
+  "enemyName": "Cinder-Veil Stalker",
+  "text": "A heat-shimmer shape slips between pylons, then breaks cover with a hooked furnace blade.",
+  "flavor": "You spot it only when the ash around it begins to boil.",
+  "severity": 2,
+  "stat": "grit",
+  "difficulty": 6,
+  "defeatReward": {
+    "type": "gainGear",
+    "gearId": "tuning-spines"
+  },
+  "woundOnLoss": {
+    "type": "sequence",
+    "effects": [
+      {
+        "type": "take_wound",
+        "amount": 1
+      },
+      {
+        "type": "gain_heat",
+        "amount": 1
+      }
+    ]
+  }
+}

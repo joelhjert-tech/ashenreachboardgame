@@ -1,0 +1,25 @@
+{
+  "id": "fleet-elder",
+  "name": "Orenna Tash",
+  "archetype": "Fleet Elder",
+  "currentSpaceId": "emberwatch-step",
+  "status": "active",
+  "stats": {
+    "command": 3,
+    "grit": 1,
+    "signal": 2,
+    "guile": 1,
+    "forge": 2
+  },
+  "heat": 0,
+  "wounds": 0,
+  "scars": [],
+  "activeContract": null,
+  "heldGear": [],
+  "equippedGear": {
+    "weapon": null,
+    "armor": null,
+    "utility": null
+  },
+  "abilities": []
+}

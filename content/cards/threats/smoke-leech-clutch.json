@@ -1,0 +1,19 @@
+{
+  "id": "smoke-leech-clutch",
+  "type": "threat",
+  "cardType": "hazard",
+  "title": "Smoke-Leech Clutch",
+  "text": "A clutch of soot-fed leeches spills from a vent seam and lunges for exposed seals.",
+  "flavor": "They move like spilled ink with teeth.",
+  "severity": 1,
+  "stat": "grit",
+  "difficulty": 5,
+  "successEffect": {
+    "type": "gain_note",
+    "text": "You stamped out the clutch before it marked your trail."
+  },
+  "failEffect": {
+    "type": "take_wound",
+    "amount": 1
+  }
+}
