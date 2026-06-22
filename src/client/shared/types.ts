@@ -2,6 +2,7 @@ export type Stat = "command" | "grit" | "signal" | "guile" | "forge";
 export type GearSlot = "weapon" | "armor" | "utility";
 export type Phase = "start" | "navigation" | "sector" | "action" | "resolution" | "broadcast";
 export type SessionStatus = "lobby" | "active" | "ended";
+export type SessionMode = "multiplayer" | "single-player";
 
 export interface PublicSeat {
   seatId: string;
@@ -125,15 +126,35 @@ export interface OutcomeSummary {
   summary: string;
 }
 
+export interface ActiveScenarioSummary {
+  id: string;
+  name: string;
+  confrontationTitle: string;
+  progressLabel: string;
+  progress: number;
+  threshold: number;
+}
+
+export interface ScenarioTelemetryItem {
+  label: string;
+  value: string;
+}
+
 export interface PublicPatchPayload {
   status: SessionStatus;
+  sessionMode: SessionMode;
   winnerSeatId: string | null;
+  activeScenario: ActiveScenarioSummary | null;
+  scenarioTelemetry: ScenarioTelemetryItem[];
+  scenarioProgress: Record<string, number>;
   seats: PublicSeat[];
   sectors: SectorNode[];
   players: PublicPlayer[];
   activeSeatIndex: number;
   turnOrder: string[];
   escalationLevel: number;
+  escalationThreshold: number;
+  escalationModifier: number;
   availableContracts: ContractCard[];
   encounter: EncounterCard | null;
   pendingEnemyRoll: PendingEnemyRoll | null;
@@ -237,6 +258,10 @@ export type ClientIntent =
       type: "COMPLETE_CONTRACT";
       seatId: string;
       contractId: string;
+    }
+  | {
+      type: "SCENARIO_CONFRONTATION_REQUESTED";
+      seatId: string;
     };
 
 export type HostCommand =

@@ -11,15 +11,15 @@ const tileTextEffectMap: Record<string, TileTextResolution> = {
     effectKey: "outer_emberSanctumRest",
     summary: "Recovered 1 wound at Ember Sanctum.",
     effect: {
-      type: "take_wound",
-      amount: 0
+      type: "heal_wound",
+      amount: 1
     }
   },
   outer_hollowVeilSweep: {
     effectKey: "outer_hollowVeilSweep",
     summary: "Recovered one salvage-grade gear cache from Hollow Veil Yard.",
     effect: {
-      type: "gainGear",
+      type: "gain_gear",
       gearId: "coffin-rig"
     }
   },

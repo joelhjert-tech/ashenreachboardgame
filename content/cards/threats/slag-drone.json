@@ -9,7 +9,7 @@
   "stat": "forge",
   "difficulty": 7,
   "successEffect": {
-    "type": "gainGear",
+    "type": "gain_gear",
     "gearId": "coffin-rig"
   },
   "failEffect": {

@@ -272,7 +272,20 @@ export function PhoneActionPanel({ characters, onIntent, patch }: PhoneActionPan
       });
     }
 
-    if (!patch.encounter) {
+    const isAtCinderGate = self.sectorId === "center_cinder_gate";
+
+    if (isAtCinderGate && patch.activeScenario && !patch.encounter) {
+      actions.push({
+        key: "resolve-scenario",
+        label: `Resolve ${patch.activeScenario.confrontationTitle}`,
+        tone: "primary",
+        onClick: () =>
+          onIntent({
+            type: "SCENARIO_CONFRONTATION_REQUESTED",
+            seatId: self.seatId
+          })
+      });
+    } else if (!patch.encounter) {
       actions.push({
         key: "end-turn",
         label: "End Turn",
@@ -290,6 +303,8 @@ export function PhoneActionPanel({ characters, onIntent, patch }: PhoneActionPan
   const copy =
     patch.phase === "navigation"
       ? "Choose a neighboring sector."
+      : patch.phase === "action" && self.sectorId === "center_cinder_gate"
+        ? "The Cinder Gate is open. Resolve the active scenario confrontation."
       : patch.phase === "action"
         ? "Resolve your current action, gear, or contract."
         : "Waiting for the server to resolve the current step.";

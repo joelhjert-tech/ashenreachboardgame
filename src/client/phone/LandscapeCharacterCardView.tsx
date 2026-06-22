@@ -55,6 +55,11 @@ export function LandscapeCharacterCardView({
       sessionStatus={sessionStatus}
       phase={phase}
       activeSeatId={activeSeatId}
+      activeScenario={patch?.activeScenario ?? null}
+      scenarioTelemetry={patch?.scenarioTelemetry ?? []}
+      escalationLevel={patch?.escalationLevel ?? 0}
+      escalationThreshold={patch?.escalationThreshold ?? 6}
+      escalationModifier={patch?.escalationModifier ?? 0}
       encounter={encounter}
       outcomeSummary={outcomeSummary}
       onLeave={onLeave}

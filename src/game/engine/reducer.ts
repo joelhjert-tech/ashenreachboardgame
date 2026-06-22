@@ -3,6 +3,7 @@ import type {
   CheckRequestedAction,
   CombatRequestedAction,
   CompleteContractAction,
+  EscalationAdvancedAction,
   EncounterDrawnAction,
   EnemyRollAssignedAction,
   EquipGearAction,
@@ -12,6 +13,12 @@ import type {
   MoveRequestedAction,
   RecruitReplacementAction,
   ResolutionAppliedAction,
+  RoundCompletedAction,
+  SectorCollapsedAction,
+  ScenarioProgressAdvancedAction,
+  ScenarioConfrontationRequestedAction,
+  ScenarioVictoryAchievedAction,
+  WoundThresholdReachedAction,
   UnequipGearAction
 } from "./actions.js";
 import { getHeldGearItem } from "./gear.js";
@@ -115,18 +122,22 @@ function summarizeEffect(effect: EncounterEffect, success: boolean | null): stri
   switch (effect.type) {
     case "gain_heat":
       return `${prefix} gain ${effect.amount} Heat.`;
-    case "reduceHeat":
-      return `${prefix} reduce Heat by ${effect.amount}.`;
     case "lose_heat":
       return `${prefix} lose ${effect.amount} Heat.`;
     case "take_wound":
       return `${prefix} take ${effect.amount} wound${effect.amount === 1 ? "" : "s"}.`;
-    case "gainGear":
+    case "heal_wound":
+      return `${prefix} heal ${effect.amount} wound${effect.amount === 1 ? "" : "s"}.`;
+    case "gain_scar":
+      return `${prefix} gain scar ${effect.scarId}.`;
+    case "gain_gear":
       return `${prefix} gain gear ${effect.gearId}.`;
     case "gain_note":
       return `${prefix} note added: ${effect.text}`;
+    case "advance_scenario":
+      return `${prefix} advance scenario progress ${effect.progressKey} by ${effect.amount}.`;
     case "sequence":
-      return effect.effects.map((entry) => summarizeEffect(entry, success)).join(" ");
+      return effect.effects.map((entry: EncounterEffect) => summarizeEffect(entry, success)).join(" ");
     default: {
       const exhaustiveCheck: never = effect;
       return exhaustiveCheck;
@@ -142,14 +153,6 @@ function applyEffectToPlayer(player: PlayerState, effect: EncounterEffect): Play
         character: {
           ...player.character,
           heat: player.character.heat + effect.amount
-        }
-      };
-    case "reduceHeat":
-      return {
-        ...player,
-        character: {
-          ...player.character,
-          heat: Math.max(0, player.character.heat - effect.amount)
         }
       };
     case "lose_heat":
@@ -168,7 +171,23 @@ function applyEffectToPlayer(player: PlayerState, effect: EncounterEffect): Play
           wounds: player.character.wounds + effect.amount
         }
       };
-    case "gainGear":
+    case "heal_wound":
+      return {
+        ...player,
+        character: {
+          ...player.character,
+          wounds: Math.max(0, player.character.wounds - effect.amount)
+        }
+      };
+    case "gain_scar":
+      return {
+        ...player,
+        character: {
+          ...player.character,
+          scars: [...player.character.scars, effect.scarId]
+        }
+      };
+    case "gain_gear":
       return addHeldGearToPlayer(player, effect);
     case "gain_note":
       return {
@@ -178,8 +197,13 @@ function applyEffectToPlayer(player: PlayerState, effect: EncounterEffect): Play
           notes: [...player.private.notes, effect.text]
         }
       };
+    case "advance_scenario":
+      return player;
     case "sequence":
-      return effect.effects.reduce((nextPlayer, entry) => applyEffectToPlayer(nextPlayer, entry), player);
+      return effect.effects.reduce(
+        (nextPlayer: PlayerState, entry: EncounterEffect) => applyEffectToPlayer(nextPlayer, entry),
+        player
+      );
     default: {
       const exhaustiveCheck: never = effect;
       return exhaustiveCheck;
@@ -197,7 +221,7 @@ function updateActivePlayer(
 
 function addHeldGearToPlayer(
   player: PlayerState,
-  effect: Extract<EncounterEffect, { type: "gainGear" }>
+  effect: Extract<EncounterEffect, { type: "gain_gear" }>
 ): PlayerState {
   if (!effect.gear) {
     return player;
@@ -218,6 +242,65 @@ function addHeldGearToPlayer(
   };
 }
 
+function applyEffectToState(state: GameState, seatId: string, effect: EncounterEffect): GameState {
+  if (effect.type === "sequence") {
+    return effect.effects.reduce(
+      (nextState: GameState, entry: EncounterEffect) => applyEffectToState(nextState, seatId, entry),
+      state
+    );
+  }
+
+  if (effect.type === "advance_scenario") {
+    return {
+      ...state,
+      scenarioProgress: {
+        ...state.scenarioProgress,
+        [effect.progressKey]: (state.scenarioProgress[effect.progressKey] ?? 0) + effect.amount
+      },
+      lastOutcomeSummary: state.lastOutcomeSummary
+        ? {
+            ...state.lastOutcomeSummary,
+            summary: `${state.lastOutcomeSummary.summary} ${summarizeEffect(effect, null)}`
+          }
+        : state.lastOutcomeSummary
+    };
+  }
+
+  if (effect.type === "gain_gear" && state.activeScenarioId === "scenario_dying_star") {
+    return {
+      ...state,
+      players: updateActivePlayer(state, seatId, (player) => applyEffectToPlayer(player, effect)),
+      scenarioProgress: {
+        ...state.scenarioProgress,
+        starTokens: (state.scenarioProgress.starTokens ?? 10) + 2
+      }
+    };
+  }
+
+  if (effect.type === "gain_gear" && state.activeScenarioId === "scenario_mirror_of_false_heroes") {
+    const gainedGearState = {
+      ...state,
+      players: updateActivePlayer(state, seatId, (player) => applyEffectToPlayer(player, effect))
+    };
+
+    return {
+      ...gainedGearState,
+      players: updateActivePlayer(gainedGearState, seatId, (player) => ({
+        ...player,
+        character: {
+          ...player.character,
+          heat: player.character.heat + 1
+        }
+      }))
+    };
+  }
+
+  return {
+    ...state,
+    players: updateActivePlayer(state, seatId, (player) => applyEffectToPlayer(player, effect))
+  };
+}
+
 function canManageGear(state: GameState, seatId: string): void {
   ensureSeatTurn(state, seatId);
   ensureSeatCanTakeNormalTurnAction(state, seatId);
@@ -232,6 +315,29 @@ function requireActiveContractCard(state: GameState, seatId: string): ContractCa
   const contractId = player.character.activeContract?.contractId;
 
   return contractId ? state.availableContracts.find((entry) => entry.id === contractId) ?? null : null;
+}
+
+function canResolveScenarioConfrontation(state: GameState, seatId: string): void {
+  ensureSeatTurn(state, seatId);
+  ensureSeatCanTakeNormalTurnAction(state, seatId);
+
+  if (state.phase !== "action") {
+    throw new Error(`Cannot resolve a scenario confrontation during phase ${state.phase}`);
+  }
+
+  if (state.currentEncounter) {
+    throw new Error("Cannot resolve a scenario confrontation while an encounter is active");
+  }
+
+  if (state.pendingEnemyRoll) {
+    throw new Error("Cannot resolve a scenario confrontation while an enemy roll is pending");
+  }
+
+  const player = requirePlayer(state, seatId);
+
+  if (player.character.currentSpaceId !== "center_cinder_gate") {
+    throw new Error("Scenario confrontations may only be resolved at the Cinder Gate");
+  }
 }
 
 export function reduceGameState(state: GameState, action: GameAction): ReducerResult {
@@ -656,14 +762,11 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
       }
 
       return succeed({
-        ...state,
+        ...applyEffectToState(state, resolutionAction.seatId, state.pendingEffect as EncounterEffect),
         sequence: state.sequence + 1,
         phase: "resolution",
         resolutionSource: state.resolutionSource,
         pendingEffect: null,
-        players: updateActivePlayer(state, resolutionAction.seatId, (player) =>
-          applyEffectToPlayer(player, state.pendingEffect as EncounterEffect)
-        ),
         eventLog: [...state.eventLog, action]
       });
     }
@@ -689,6 +792,36 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
           ? {
               ...state.lastOutcomeSummary,
               summary: `${state.lastOutcomeSummary.summary} Heat threshold reached. Operative recalled.`
+            }
+          : null,
+        eventLog: [...state.eventLog, action]
+      });
+    }
+    case "WOUND_THRESHOLD_REACHED": {
+      const woundAction = action as WoundThresholdReachedAction;
+
+      try {
+        ensureSeatTurn(state, woundAction.seatId);
+      } catch (error) {
+        return reject(state, action, error instanceof Error ? error.message : "Seat cannot act");
+      }
+
+      return succeed({
+        ...state,
+        sequence: state.sequence + 1,
+        resolutionSource: state.resolutionSource,
+        players: updateActivePlayer(state, action.seatId, (player) => ({
+          ...player,
+          character: {
+            ...player.character,
+            status: "recalled",
+            scars: [...player.character.scars, woundAction.scar]
+          }
+        })),
+        lastOutcomeSummary: state.lastOutcomeSummary
+          ? {
+              ...state.lastOutcomeSummary,
+              summary: `${state.lastOutcomeSummary.summary} Wound threshold reached. Operative recalled and scarred.`
             }
           : null,
         eventLog: [...state.eventLog, action]
@@ -737,6 +870,8 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
             status: "active",
             heldGear: [...recruitAction.replacementCharacter!.heldGear],
             equippedGear: { ...recruitAction.replacementCharacter!.equippedGear }
+            ,
+            scars: [...entry.character.scars, ...recruitAction.replacementCharacter!.scars]
           }
         })),
         lastOutcomeSummary: {
@@ -924,6 +1059,208 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
           enemyTotal: null,
           success: true,
           summary: `Completed contract ${contract.name}. ${summarizeEffect(contract.reward, true)}`
+        },
+        eventLog: [...state.eventLog, action]
+      });
+    }
+    case "SCENARIO_CONFRONTATION_REQUESTED": {
+      const scenarioAction = action as ScenarioConfrontationRequestedAction;
+
+      try {
+        canResolveScenarioConfrontation(state, scenarioAction.seatId);
+      } catch (error) {
+        return reject(state, action, error instanceof Error ? error.message : "Scenario confrontation is not available");
+      }
+
+      return succeed({
+        ...state,
+        sequence: state.sequence + 1,
+        eventLog: [...state.eventLog, action]
+      });
+    }
+    case "SCENARIO_PROGRESS_ADVANCED": {
+      const scenarioAction = action as ScenarioProgressAdvancedAction;
+
+      try {
+        canResolveScenarioConfrontation(state, scenarioAction.seatId);
+      } catch (error) {
+        return reject(state, action, error instanceof Error ? error.message : "Scenario progress cannot advance");
+      }
+
+      const nextState = scenarioAction.effect
+        ? applyEffectToState(state, scenarioAction.seatId, scenarioAction.effect)
+        : state;
+
+      return succeed({
+        ...nextState,
+        sequence: state.sequence + 1,
+        phase: "broadcast",
+        resolutionSource: null,
+        currentEncounter: null,
+        pendingEnemyRoll: null,
+        pendingEffect: null,
+        scenarioProgress: {
+          ...nextState.scenarioProgress,
+          [scenarioAction.progressKey]:
+            Math.max(0, nextState.scenarioProgress[scenarioAction.progressKey] ?? 0) + Math.max(0, scenarioAction.amount)
+        },
+        lastOutcomeSummary: {
+          seatId: scenarioAction.seatId,
+          movedToSectorId: "center_cinder_gate",
+          encounterCardId: null,
+          encounterTitle: "The Cinder Gate",
+          encounterCardType: null,
+          checkStat: null,
+          die1: null,
+          die2: null,
+          statBonus: null,
+          checkTotal: null,
+          difficulty: null,
+          enemyRollerSeatId: null,
+          enemyDie1: null,
+          enemyDie2: null,
+          enemyBonus: null,
+          enemyTotal: null,
+          success: scenarioAction.amount > 0,
+          summary: scenarioAction.summary
+        },
+        eventLog: [...nextState.eventLog, action]
+      });
+    }
+    case "SCENARIO_VICTORY_ACHIEVED": {
+      const scenarioAction = action as ScenarioVictoryAchievedAction;
+
+      try {
+        ensureSeatTurn(state, scenarioAction.seatId);
+        ensureSeatCanTakeNormalTurnAction(state, scenarioAction.seatId);
+      } catch (error) {
+        return reject(state, action, error instanceof Error ? error.message : "Seat cannot claim scenario victory");
+      }
+
+      if (state.status !== "active") {
+        return reject(state, action, "Scenario victory can only be claimed during an active session");
+      }
+
+      return succeed({
+        ...state,
+        status: "ended",
+        winnerSeatId: scenarioAction.seatId,
+        phase: "broadcast",
+        sequence: state.sequence + 1,
+        resolutionSource: null,
+        currentEncounter: null,
+        pendingEnemyRoll: null,
+        pendingEffect: null,
+        lastOutcomeSummary: state.lastOutcomeSummary
+          ? {
+              ...state.lastOutcomeSummary,
+              seatId: scenarioAction.seatId,
+              movedToSectorId: "center_cinder_gate",
+              success: true,
+              summary: scenarioAction.summary
+            }
+          : {
+              seatId: scenarioAction.seatId,
+              movedToSectorId: "center_cinder_gate",
+              encounterCardId: null,
+              encounterTitle: "The Cinder Gate",
+              encounterCardType: null,
+              checkStat: null,
+              die1: null,
+              die2: null,
+              statBonus: null,
+              checkTotal: null,
+              difficulty: null,
+              enemyRollerSeatId: null,
+              enemyDie1: null,
+              enemyDie2: null,
+              enemyBonus: null,
+              enemyTotal: null,
+              success: true,
+              summary: scenarioAction.summary
+            },
+        eventLog: [...state.eventLog, action]
+      });
+    }
+    case "ROUND_COMPLETED": {
+      const roundAction = action as RoundCompletedAction;
+
+      if (state.status !== "active") {
+        return reject(state, action, "Only active sessions can complete a round");
+      }
+
+      return succeed({
+        ...state,
+        sequence: state.sequence + 1,
+        eventLog: [...state.eventLog, action]
+      });
+    }
+    case "ESCALATION_ADVANCED": {
+      const escalationAction = action as EscalationAdvancedAction;
+
+      if (state.status !== "active") {
+        return reject(state, action, "Escalation can only advance during an active session");
+      }
+
+      return succeed({
+        ...state,
+        escalationLevel: escalationAction.newLevel,
+        sequence: state.sequence + 1,
+        lastOutcomeSummary: {
+          seatId: escalationAction.seatId,
+          movedToSectorId: requirePlayer(state, escalationAction.seatId).sectorId,
+          encounterCardId: null,
+          encounterTitle: "Escalation",
+          encounterCardType: null,
+          checkStat: null,
+          die1: null,
+          die2: null,
+          statBonus: null,
+          checkTotal: null,
+          difficulty: null,
+          enemyRollerSeatId: null,
+          enemyDie1: null,
+          enemyDie2: null,
+          enemyBonus: null,
+          enemyTotal: null,
+          success: null,
+          summary: `Round completed. Escalation is now ${escalationAction.newLevel}. Difficulty modifier +${escalationAction.modifier}.`
+        },
+        eventLog: [...state.eventLog, action]
+      });
+    }
+    case "SECTOR_COLLAPSED": {
+      const collapseAction = action as SectorCollapsedAction;
+
+      return succeed({
+        ...state,
+        status: "ended",
+        winnerSeatId: null,
+        phase: "broadcast",
+        sequence: state.sequence + 1,
+        resolutionSource: null,
+        currentEncounter: null,
+        pendingEnemyRoll: null,
+        pendingEffect: null,
+        lastOutcomeSummary: {
+          seatId: collapseAction.seatId,
+          movedToSectorId: requirePlayer(state, collapseAction.seatId).sectorId,
+          encounterCardId: null,
+          encounterTitle: "Sector Collapse",
+          encounterCardType: null,
+          checkStat: null,
+          die1: null,
+          die2: null,
+          statBonus: null,
+          checkTotal: null,
+          difficulty: null,
+          enemyRollerSeatId: null,
+          enemyDie1: null,
+          enemyDie2: null,
+          enemyBonus: null,
+          enemyTotal: null,
+          success: false,
+          summary: collapseAction.summary
         },
         eventLog: [...state.eventLog, action]
       });

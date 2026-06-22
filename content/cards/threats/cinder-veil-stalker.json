@@ -10,7 +10,7 @@
   "stat": "grit",
   "difficulty": 6,
   "defeatReward": {
-    "type": "gainGear",
+    "type": "gain_gear",
     "gearId": "tuning-spines"
   },
   "woundOnLoss": {

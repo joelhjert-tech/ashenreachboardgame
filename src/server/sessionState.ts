@@ -1,14 +1,22 @@
-import { readFileSync } from "node:fs";
-import { join } from "node:path";
 import { loadCharacters } from "../game/content/characters.js";
 import { loadContracts } from "../game/content/contracts.js";
-import { sectorGraphSchema } from "../game/schema/sector.schema.js";
+import { createCanonicalSectorGraph, validateCanonicalSectorGraph } from "../game/data/canonicalSectorGraph.js";
+import { SCENARIOS } from "../game/data/scenarios.js";
+import { createInitialScenarioProgress } from "../game/rules/scenarioAmbient.js";
 import type { Character } from "../game/schema/character.schema.js";
-import type { GameState, PlayerState } from "../game/schema/session.schema.js";
+import type { GameState, PlayerState, SessionMode } from "../game/schema/session.schema.js";
 import { createJoinToken } from "./auth.js";
 
-const seatIds = ["seat-1", "seat-2", "seat-3"] as const;
-const defaultCharacterIds = ["void-marshal", "signal-witch", "grave-engineer"] as const;
+const sessionSeatLayouts = {
+  "single-player": [
+    { seatId: "seat-1", characterId: "void-marshal" }
+  ],
+  multiplayer: [
+    { seatId: "seat-1", characterId: "void-marshal" },
+    { seatId: "seat-2", characterId: "signal-witch" },
+    { seatId: "seat-3", characterId: "grave-engineer" }
+  ]
+} as const;
 
 function cloneCharacter(character: Character, currentSpaceId: string): Character {
   return {
@@ -20,14 +28,6 @@ function cloneCharacter(character: Character, currentSpaceId: string): Character
     abilities: [...character.abilities],
     scars: [...character.scars]
   };
-}
-
-function loadBorderlightSectors() {
-  const parsed = JSON.parse(
-    readFileSync(join(process.cwd(), "content", "sectors", "borderlight.json"), "utf8")
-  );
-
-  return sectorGraphSchema.parse(parsed).nodes;
 }
 
 function createPlayerState(
@@ -46,12 +46,16 @@ function createPlayerState(
   };
 }
 
-export function createInitialSessionState(sessionId: string): GameState {
+export function createInitialSessionState(
+  sessionId: string,
+  sessionMode: SessionMode = "multiplayer"
+): GameState {
   const characters = loadCharacters();
-  const sectors = loadBorderlightSectors();
+  const sectors = createCanonicalSectorGraph();
   const availableContracts = [...loadContracts().values()];
-  const startingSectors = sectors.slice(0, seatIds.length).map((sector) => sector.id);
-  const selectedCharacters = defaultCharacterIds.map((characterId) => {
+  const defaultScenario = SCENARIOS[0];
+  const configuredSeats = sessionSeatLayouts[sessionMode];
+  const selectedCharacters = configuredSeats.map(({ characterId }) => {
     const character = characters.get(characterId);
 
     if (!character) {
@@ -61,31 +65,37 @@ export function createInitialSessionState(sessionId: string): GameState {
     return character;
   });
 
+  validateCanonicalSectorGraph(sectors);
+
   return {
     sessionId,
     status: "lobby",
+    sessionMode,
     winnerSeatId: null,
+    activeScenarioId: defaultScenario?.id ?? "scenario_broken_seal",
+    scenarioProgress: createInitialScenarioProgress(defaultScenario?.id ?? "scenario_broken_seal"),
     phase: "start",
     resolutionSource: null,
     activeSeatIndex: 0,
-    turnOrder: [...seatIds],
+    turnOrder: configuredSeats.map(({ seatId }) => seatId),
     heatThreshold: 6,
+    woundThreshold: 3,
     sequence: 0,
     escalationLevel: 0,
     sectors,
-    seats: seatIds.map((seatId, index) => ({
+    seats: configuredSeats.map(({ seatId, characterId }) => ({
       seatId,
-      characterId: defaultCharacterIds[index],
+      characterId,
       displayName: null,
       connected: false,
       kicked: false,
       joinToken: createJoinToken({ sessionId, seatId })
     })),
-    players: seatIds.map((seatId, index) =>
+    players: configuredSeats.map(({ seatId }, index) =>
       createPlayerState(
         seatId,
         selectedCharacters[index]!,
-        startingSectors[index] ?? sectors[0]?.id ?? "ashwake-crossing"
+        selectedCharacters[index]?.currentSpaceId ?? sectors[0]?.id ?? "ashwake-crossing"
       )
     ),
     availableContracts,

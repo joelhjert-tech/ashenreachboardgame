@@ -171,7 +171,7 @@ function createThreats(): Map<string, ThreatCard> {
         stat: "grit",
         difficulty: 6,
         defeatReward: {
-          type: "gainGear",
+          type: "gain_gear",
           gearId: "veil-hook"
         },
         woundOnLoss: {
@@ -216,7 +216,7 @@ function createContracts(): Map<string, ContractCard> {
         factionGiver: "Glass Choir",
         text: "The Choir will scrub one mark from your trail if you silence a single hunter on their listening road.",
         objective: { type: "defeatCount", target: 1 },
-        reward: { type: "reduceHeat", amount: 1 }
+        reward: { type: "lose_heat", amount: 1 }
       }
     ]
   ]);
@@ -237,15 +237,19 @@ function createState(overrides: Partial<GameState> = {}): GameState {
 
   const neighbors = sectorIds;
 
-  return {
+  const baseState: GameState = {
     sessionId: "session-alpha",
     status: "active",
+    sessionMode: "multiplayer",
     winnerSeatId: null,
+    activeScenarioId: "scenario_broken_seal",
+    scenarioProgress: {},
     phase: "navigation",
     resolutionSource: null,
     activeSeatIndex: 0,
     turnOrder: ["seat-1", "seat-2", "seat-3"],
     heatThreshold: 2,
+    woundThreshold: 3,
     sequence: 0,
     escalationLevel: 0,
     sectors: [
@@ -367,8 +371,13 @@ function createState(overrides: Partial<GameState> = {}): GameState {
     currentEncounter: null,
     pendingEnemyRoll: null,
     pendingEffect: null,
-    lastOutcomeSummary: null,
-    ...overrides
+    lastOutcomeSummary: null
+  };
+
+  return {
+    ...baseState,
+    ...overrides,
+    sessionMode: overrides.sessionMode ?? baseState.sessionMode
   };
 }
 
@@ -709,9 +718,10 @@ describe("roomServer websocket integration", () => {
   });
 
   it("starts a single-player session with one joined seat", async () => {
-    harness = await startHarness([0, 0, 0, 0], createInitialSessionState("session-alpha"));
+    harness = await startHarness([0, 0, 0, 0], createInitialSessionState("session-alpha", "single-player"));
 
     const joinResult = harness.roomServer.joinSeat("Solo", "signal-witch");
+    expect(() => harness.roomServer.joinSeat("Second", "grave-engineer")).toThrow("No open seats remain");
     const phone = await connectClient(`ws://127.0.0.1:${harness.port}/?view=phone&token=${joinResult.seatToken}`);
     probes.push(phone);
 
@@ -729,8 +739,10 @@ describe("roomServer websocket integration", () => {
 
     expect(startedSnapshot.phase).toBe("navigation");
     expect(startedSnapshot.payload.status).toBe("active");
+    expect(startedSnapshot.payload.sessionMode).toBe("single-player");
     expect(startedSnapshot.payload.turnOrder).toEqual(["seat-1"]);
     expect(Number(startedSnapshot.payload.activeSeatIndex)).toBe(0);
+    expect(startedSnapshot.payload.players).toHaveLength(1);
   });
 
   it("drives a full multi-seat session through real socket intents and public/private patches", async () => {

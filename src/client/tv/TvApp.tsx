@@ -11,6 +11,8 @@ import type {
   PublicPatchPayload,
   PublicPlayer,
   PublicSeat,
+  SessionMode,
+  ScenarioTelemetryItem,
   StatePatch,
   Stat
 } from "../shared/types.js";
@@ -32,6 +34,10 @@ function toTitleCase(value: string): string {
   return value
     .replace(/[_-]+/g, " ")
     .replace(/\b\w/g, (letter) => letter.toUpperCase());
+}
+
+function getSessionModeLabel(sessionMode: SessionMode): string {
+  return sessionMode === "single-player" ? "Single Player" : "Multiplayer";
 }
 
 function getGearSummary(player: PublicPlayer | null): string {
@@ -82,7 +88,7 @@ function getCurrentStepCopy(publicPatch: StatePatch<PublicPatchPayload> | null, 
     return "The campaign has ended. Review the winner and restart when ready.";
   }
 
-  return `Phase ${toTitleCase(publicPatch.phase)} is live${activeSeatId ? ` for ${activeSeatId}` : ""}.`;
+  return `Phase ${toTitleCase(publicPatch.phase)} is live${activeSeatId ? ` for ${activeSeatId}` : ""}. Escalation ${publicPatch.payload.escalationLevel}/${publicPatch.payload.escalationThreshold} with modifier +${publicPatch.payload.escalationModifier}.`;
 }
 
 function getSpecialAbilitySummary(player: PublicPlayer | null, characterCatalog: CharacterCatalogEntry[]): string {
@@ -155,14 +161,35 @@ function getSectorBrief(patch: StatePatch<PublicPatchPayload> | null, activePlay
   };
 }
 
+function getScenarioStatus(patch: StatePatch<PublicPatchPayload> | null) {
+  const scenario = patch?.payload.activeScenario;
+
+  if (!scenario) {
+    return {
+      name: "No active scenario",
+      confrontationTitle: "Awaiting directive",
+      progress: "0/0",
+      telemetry: [] as ScenarioTelemetryItem[]
+    };
+  }
+
+  return {
+    name: scenario.name,
+    confrontationTitle: scenario.confrontationTitle,
+    progress: `${scenario.progress}/${scenario.threshold}`,
+    telemetry: patch?.payload.scenarioTelemetry ?? []
+  };
+}
+
 interface TopHeaderProps {
   roomCode: string | null;
   roomName: string;
   phase: string;
   activeSeatId: string | null;
+  sessionMode: SessionMode;
 }
 
-function TopHeader({ roomCode, roomName, phase, activeSeatId }: TopHeaderProps): ReactElement {
+function TopHeader({ roomCode, roomName, phase, activeSeatId, sessionMode }: TopHeaderProps): ReactElement {
   return (
     <header className="tv-command-header tv-card">
       <div className="tv-command-brand">
@@ -191,6 +218,10 @@ function TopHeader({ roomCode, roomName, phase, activeSeatId }: TopHeaderProps):
         <div className="tv-command-header-chip">
           <span>Active Seat</span>
           <strong>{activeSeatId ?? "Standby"}</strong>
+        </div>
+        <div className="tv-command-header-chip">
+          <span>Mode</span>
+          <strong>{getSessionModeLabel(sessionMode)}</strong>
         </div>
       </div>
     </header>
@@ -259,11 +290,13 @@ function ActiveOperativeOverlay({
 
 interface SessionReadoutProps {
   publicPatch: StatePatch<PublicPatchPayload> | null;
+  sessionMode: SessionMode;
   joinedCount: number;
+  seatCapacity: number;
   activeSeatId: string | null;
   status: string;
   roomCode: string | null;
-  onCreateSession: () => Promise<void>;
+  onCreateSession: (sessionMode?: SessionMode) => Promise<void>;
   onRestartSession: () => void;
   onStartSession: () => Promise<void>;
   canStartSession: boolean;
@@ -276,7 +309,9 @@ interface SessionReadoutProps {
 
 function SessionReadout({
   publicPatch,
+  sessionMode,
   joinedCount,
+  seatCapacity,
   activeSeatId,
   status,
   roomCode,
@@ -302,7 +337,13 @@ function SessionReadout({
       <div className="tv-session-grid">
         <div className="tv-session-stat">
           <span>Players</span>
-          <strong>{joinedCount}</strong>
+          <strong>
+            {joinedCount}/{seatCapacity}
+          </strong>
+        </div>
+        <div className="tv-session-stat">
+          <span>Mode</span>
+          <strong>{getSessionModeLabel(sessionMode)}</strong>
         </div>
         <div className="tv-session-stat">
           <span>Status</span>
@@ -318,7 +359,9 @@ function SessionReadout({
         </div>
         <div className="tv-session-stat">
           <span>Escalation</span>
-          <strong>{publicPatch?.payload.escalationLevel ?? 0}</strong>
+          <strong>
+            {(publicPatch?.payload.escalationLevel ?? 0)}/{publicPatch?.payload.escalationThreshold ?? 6} | +{publicPatch?.payload.escalationModifier ?? 0}
+          </strong>
         </div>
         <div className="tv-session-stat">
           <span>Socket</span>
@@ -331,9 +374,14 @@ function SessionReadout({
           {debugOpen ? "Hide debug" : "Show debug"}
         </button>
         {showCreate && (
-          <button type="button" onClick={() => void onCreateSession()}>
-            Create session
-          </button>
+          <>
+            <button type="button" onClick={() => void onCreateSession()}>
+              Create multiplayer
+            </button>
+            <button type="button" className="tv-button tv-button-quiet" onClick={() => void onCreateSession("single-player")}>
+              Create single-player
+            </button>
+          </>
         )}
         {showRestart && (
           <button type="button" onClick={onRestartSession}>
@@ -353,13 +401,16 @@ function SessionReadout({
 interface RightSidebarProps {
   roomCode: string | null;
   sectorBrief: ReturnType<typeof getSectorBrief>;
+  scenarioStatus: ReturnType<typeof getScenarioStatus>;
   publicPatch: StatePatch<PublicPatchPayload> | null;
+  sessionMode: SessionMode;
   joinedCount: number;
+  seatCapacity: number;
   activeSeatId: string | null;
   status: string;
   debugOpen: boolean;
   onToggleDebug: () => void;
-  onCreateSession: () => Promise<void>;
+  onCreateSession: (sessionMode?: SessionMode) => Promise<void>;
   onRestartSession: () => void;
   onStartSession: () => Promise<void>;
   canStartSession: boolean;
@@ -368,8 +419,11 @@ interface RightSidebarProps {
 function RightSidebar({
   roomCode,
   sectorBrief,
+  scenarioStatus,
   publicPatch,
+  sessionMode,
   joinedCount,
+  seatCapacity,
   activeSeatId,
   status,
   debugOpen,
@@ -402,9 +456,34 @@ function RightSidebar({
         </div>
       </section>
 
+      <section className="tv-card tv-panel-card tv-sidebar-card">
+        <div className="tv-card-header">
+          <div>
+            <h2>Scenario</h2>
+          </div>
+        </div>
+        <p className="board-sidebar-title">{scenarioStatus.name}</p>
+        <p className="tv-empty-copy">{scenarioStatus.confrontationTitle}</p>
+        <div className="board-sidebar-meta">
+          <span>Progress {scenarioStatus.progress}</span>
+        </div>
+        {scenarioStatus.telemetry.length > 0 && (
+          <div className="tv-scenario-telemetry">
+            {scenarioStatus.telemetry.map((entry) => (
+              <div key={entry.label} className="tv-scenario-telemetry-row">
+                <span>{entry.label}</span>
+                <strong>{entry.value}</strong>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
+
       <SessionReadout
         publicPatch={publicPatch}
+        sessionMode={sessionMode}
         joinedCount={joinedCount}
+        seatCapacity={seatCapacity}
         activeSeatId={activeSeatId}
         status={status}
         roomCode={roomCode}
@@ -443,6 +522,7 @@ function TacticalMapPanel({ patch, activeSeat, activePlayer, characterCatalog }:
 export function TvApp(): ReactElement {
   const [characterCatalog, setCharacterCatalog] = useState<CharacterCatalogEntry[]>([]);
   const [roomCode, setRoomCode] = useState<string | null>(null);
+  const [sessionMode, setSessionMode] = useState<SessionMode>("multiplayer");
   const [hostToken, setHostToken] = useState<string | null>(() =>
     typeof window === "undefined" ? null : window.localStorage.getItem(hostTokenStorageKey)
   );
@@ -465,15 +545,18 @@ export function TvApp(): ReactElement {
   const activeSeatId = publicPatch?.payload.turnOrder[publicPatch.payload.activeSeatIndex] ?? null;
   const activeSeat = publicPatch?.payload.seats.find((seat) => seat.seatId === activeSeatId) ?? null;
   const activePlayer = publicPatch?.payload.players.find((entry) => entry.seatId === activeSeatId) ?? null;
+  const liveSessionMode = publicPatch?.payload.sessionMode ?? sessionMode;
   const roomName = getActiveRoomName(publicPatch, activePlayer);
   const sectorBrief = useMemo(() => getSectorBrief(publicPatch, activePlayer), [publicPatch, activePlayer]);
+  const scenarioStatus = useMemo(() => getScenarioStatus(publicPatch), [publicPatch]);
 
-  const createHostSession = async () => {
+  const createHostSession = async (nextSessionMode: SessionMode = "multiplayer") => {
     setRequestError(null);
 
     try {
-      const session = await createSession();
+      const session = await createSession(nextSessionMode);
       setRoomCode(session.roomCode);
+      setSessionMode(session.sessionMode);
       setHostToken(session.hostToken);
       window.localStorage.setItem(hostTokenStorageKey, session.hostToken);
     } catch (createFailure) {
@@ -499,8 +582,14 @@ export function TvApp(): ReactElement {
   const currentStepCopy = getCurrentStepCopy(publicPatch, activeSeatId);
 
   return (
-    <main className="tv-dashboard tv-command-dashboard">
-      <TopHeader roomCode={roomCode} roomName={roomName} phase={publicPatch?.phase ?? "start"} activeSeatId={activeSeatId} />
+      <main className="tv-dashboard tv-command-dashboard">
+      <TopHeader
+        roomCode={roomCode}
+        roomName={roomName}
+        phase={publicPatch?.phase ?? "start"}
+        activeSeatId={activeSeatId}
+        sessionMode={liveSessionMode}
+      />
 
       {(requestError || error) && <div className="tv-banner tv-banner-error">{requestError ?? error}</div>}
 
@@ -510,8 +599,11 @@ export function TvApp(): ReactElement {
         <RightSidebar
           roomCode={roomCode}
           sectorBrief={sectorBrief}
+          scenarioStatus={scenarioStatus}
           publicPatch={publicPatch}
+          sessionMode={liveSessionMode}
           joinedCount={joinedSeats.length}
+          seatCapacity={publicPatch?.payload.seats.length ?? (liveSessionMode === "single-player" ? 1 : 3)}
           activeSeatId={activeSeatId}
           status={status}
           debugOpen={debugOpen}

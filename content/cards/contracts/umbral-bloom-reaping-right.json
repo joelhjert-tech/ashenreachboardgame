@@ -8,7 +8,7 @@
     "target": 3
   },
   "reward": {
-    "type": "gainGear",
+    "type": "gain_gear",
     "gearId": "coffin-rig"
   }
 }

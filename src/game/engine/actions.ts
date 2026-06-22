@@ -111,6 +111,13 @@ export interface HeatThresholdReachedAction extends BaseAction {
   newHeatTotal: number;
 }
 
+export interface WoundThresholdReachedAction extends BaseAction {
+  type: "WOUND_THRESHOLD_REACHED";
+  threshold: number;
+  newWoundTotal: number;
+  scar: string;
+}
+
 export interface RecruitReplacementAction extends BaseAction {
   type: "RECRUIT_REPLACEMENT";
   replacementCharacterId: string;
@@ -140,6 +147,43 @@ export interface CompleteContractAction extends BaseAction {
   contract?: ContractCard;
 }
 
+export interface ScenarioConfrontationRequestedAction extends BaseAction {
+  type: "SCENARIO_CONFRONTATION_REQUESTED";
+}
+
+export interface ScenarioProgressAdvancedAction extends BaseAction {
+  type: "SCENARIO_PROGRESS_ADVANCED";
+  scenarioId: string;
+  progressKey: string;
+  amount: number;
+  summary: string;
+  effect?: EncounterEffect | null;
+}
+
+export interface ScenarioVictoryAchievedAction extends BaseAction {
+  type: "SCENARIO_VICTORY_ACHIEVED";
+  scenarioId: string;
+  summary: string;
+}
+
+export interface RoundCompletedAction extends BaseAction {
+  type: "ROUND_COMPLETED";
+}
+
+export interface EscalationAdvancedAction extends BaseAction {
+  type: "ESCALATION_ADVANCED";
+  amount: number;
+  newLevel: number;
+  modifier: number;
+}
+
+export interface SectorCollapsedAction extends BaseAction {
+  type: "SECTOR_COLLAPSED";
+  threshold: number;
+  modifier: number;
+  summary: string;
+}
+
 export interface TurnCompletedAction extends BaseAction {
   type: "TURN_COMPLETED";
 }
@@ -163,11 +207,18 @@ export type GameAction =
   | CombatResolvedAction
   | ResolutionAppliedAction
   | HeatThresholdReachedAction
+  | WoundThresholdReachedAction
   | RecruitReplacementAction
   | EquipGearAction
   | UnequipGearAction
   | AcceptContractAction
   | CompleteContractAction
+  | ScenarioConfrontationRequestedAction
+  | ScenarioProgressAdvancedAction
+  | ScenarioVictoryAchievedAction
+  | RoundCompletedAction
+  | EscalationAdvancedAction
+  | SectorCollapsedAction
   | TurnCompletedAction
   | PhaseAdvancedAction;
 
@@ -221,4 +272,8 @@ export type ClientIntent =
       type: "COMPLETE_CONTRACT";
       seatId: string;
       contractId: string;
+    }
+  | {
+      type: "SCENARIO_CONFRONTATION_REQUESTED";
+      seatId: string;
     };

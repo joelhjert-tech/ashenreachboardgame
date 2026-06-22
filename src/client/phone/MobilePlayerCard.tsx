@@ -1,6 +1,16 @@
 import type { ReactElement, ReactNode } from "react";
 import { getCharacterPortraitPath, getPhoneSheetFramePath } from "../shared/assetPaths.js";
-import type { ContractCard, EncounterCard, OutcomeSummary, PhoneSelfState, SessionStatus, Stat } from "../shared/types.js";
+import type {
+  ActiveScenarioSummary,
+  ContractCard,
+  EncounterCard,
+  OutcomeSummary,
+  PhoneSelfState,
+  ScenarioTelemetryItem,
+  SessionStatus,
+  Stat
+} from "../shared/types.js";
+import { formatEscalation } from "./formatEscalation.js";
 
 interface MobilePlayerCardProps {
   self: PhoneSelfState;
@@ -11,6 +21,11 @@ interface MobilePlayerCardProps {
   sessionStatus: SessionStatus | null;
   phase: string;
   activeSeatId: string | null;
+  activeScenario: ActiveScenarioSummary | null;
+  scenarioTelemetry?: ScenarioTelemetryItem[];
+  escalationLevel?: number;
+  escalationThreshold?: number;
+  escalationModifier?: number;
   encounter: EncounterCard | null;
   outcomeSummary: OutcomeSummary | null;
   onLeave: () => void;
@@ -47,6 +62,11 @@ export function MobilePlayerCard({
   sessionStatus,
   phase,
   activeSeatId,
+  activeScenario,
+  scenarioTelemetry = [],
+  escalationLevel = 0,
+  escalationThreshold = 6,
+  escalationModifier = 0,
   encounter,
   outcomeSummary,
   onLeave,
@@ -64,6 +84,14 @@ export function MobilePlayerCard({
   const encounterCopy = encounter
     ? `${encounter.title} | ${toTitleCase(encounter.cardType)} | ${toTitleCase(encounter.stat)} ${encounter.difficulty}`
     : `Phase ${toTitleCase(phase)}`;
+  const scenarioCopy = activeScenario
+    ? `${activeScenario.name} | ${activeScenario.confrontationTitle} | ${activeScenario.progress}/${activeScenario.threshold}`
+    : "Scenario telemetry pending";
+  const scenarioTelemetryCopy =
+    scenarioTelemetry.length > 0
+      ? scenarioTelemetry.map((entry) => `${entry.label}: ${entry.value}`).join(" | ")
+      : "Awaiting ambient scenario telemetry";
+  const escalationCopy = formatEscalation({ escalationLevel, escalationThreshold, escalationModifier });
 
   return (
     <section
@@ -169,6 +197,18 @@ export function MobilePlayerCard({
           <div className="phone-sheet-vital-strip">
             <span>{encounterCopy}</span>
             {latestOutcome && <strong>{latestOutcome}</strong>}
+          </div>
+
+          <div className="phone-sheet-vital-strip">
+            <span>{scenarioCopy}</span>
+          </div>
+
+          <div className="phone-sheet-vital-strip phone-sheet-vital-strip-ambient">
+            <span>{scenarioTelemetryCopy}</span>
+          </div>
+
+          <div className="phone-sheet-vital-strip">
+            <span>{escalationCopy}</span>
           </div>
 
           <div className="phone-sheet-section">

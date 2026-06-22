@@ -14,7 +14,21 @@ afterEach(() => {
 function createPatch(): PublicPatchPayload {
   return {
     status: "active",
+    sessionMode: "multiplayer",
     winnerSeatId: null,
+    activeScenario: {
+      id: "scenario_broken_seal",
+      name: "The Broken Seal",
+      confrontationTitle: "Reseal the Prison",
+      progressLabel: "sealRestorationMarks",
+      progress: 0,
+      threshold: 2
+    },
+    scenarioTelemetry: [
+      { label: "Seal Tokens", value: "6" },
+      { label: "Pressure Roll", value: "1-2 weaken | 3-4 heat surge" }
+    ],
+    scenarioProgress: {},
     seats: [
       { seatId: "seat-1", characterId: "void-marshal", displayName: "Lane Mercer", connected: true, kicked: false },
       { seatId: "seat-2", characterId: "signal-witch", displayName: "Mira Quill", connected: true, kicked: false }
@@ -100,6 +114,8 @@ function createPatch(): PublicPatchPayload {
     activeSeatIndex: 0,
     turnOrder: ["seat-1", "seat-2"],
     escalationLevel: 0,
+    escalationThreshold: 6,
+    escalationModifier: 0,
     availableContracts: [],
     encounter: null,
     pendingEnemyRoll: null,
@@ -173,5 +189,38 @@ describe("BoardMap", () => {
     rerender(<BoardMap patch={movedPatch} phase="action" />);
 
     expect(screen.getByTestId("token-seat-1")).toHaveAttribute("data-sector-id", "glassmere-spindle");
+  });
+
+  it("renders a scenario marker on the board for roaming scenario pressure", () => {
+    const patch: PublicPatchPayload = {
+      ...createPatch(),
+      activeScenario: {
+        id: "scenario_devourer_beneath",
+        name: "The Devourer Beneath",
+        confrontationTitle: "Enter the Maw",
+        progressLabel: "mawStrikes",
+        progress: 0,
+        threshold: 1
+      },
+      scenarioTelemetry: [
+        { label: "Doom Tokens", value: "2" },
+        { label: "Devourer", value: "Glassmere Spindle" }
+      ],
+      scenarioProgress: {
+        doomTokens: 2,
+        devourerIndex: 1
+      }
+    };
+
+    render(<BoardMap patch={patch} phase="action" />);
+
+    expect(screen.getByTestId("scenario-marker-devourer-orbit")).toHaveAttribute("data-sector-id", "glassmere-spindle");
+    expect(screen.getByTestId("scenario-route-devourer-route-preview")).toBeInTheDocument();
+  });
+
+  it("renders a core aura for Broken Seal pressure at the Cinder Gate", () => {
+    render(<BoardMap patch={createPatch()} phase="action" />);
+
+    expect(screen.getByTestId("scenario-aura-broken-seal-aura")).toHaveAttribute("data-sector-id", "center_cinder_gate");
   });
 });

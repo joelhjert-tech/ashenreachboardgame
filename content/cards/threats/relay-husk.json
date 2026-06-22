@@ -9,7 +9,7 @@
   "stat": "guile",
   "difficulty": 6,
   "successEffect": {
-    "type": "gainGear",
+    "type": "gain_gear",
     "gearId": "marshal-seal"
   },
   "failEffect": {

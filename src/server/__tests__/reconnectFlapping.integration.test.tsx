@@ -56,12 +56,16 @@ function createState(): GameState {
   return {
     sessionId,
     status: "active",
+    sessionMode: "single-player",
     winnerSeatId: null,
+    activeScenarioId: "scenario_broken_seal",
+    scenarioProgress: {},
     phase: "navigation",
     resolutionSource: null,
     activeSeatIndex: 0,
     turnOrder: [seatId],
     heatThreshold: 6,
+    woundThreshold: 3,
     sequence: 0,
     escalationLevel: 0,
     sectors: [

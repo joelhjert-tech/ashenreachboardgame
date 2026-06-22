@@ -7,6 +7,7 @@ import { findAvailablePort, createPortAvailabilityCheck } from "./ports.js";
 import { GameRoomServer } from "./roomServer.js";
 import { createInitialSessionState } from "./sessionState.js";
 import { createHostToken } from "./auth.js";
+import type { SessionMode } from "../game/schema/session.schema.js";
 
 const DEFAULT_SERVER_PORT = 8080;
 const DEFAULT_CLIENT_PORT = 5173;
@@ -98,6 +99,7 @@ function createHttpServer(): HttpServer {
       if (request.method === "GET" && url.pathname === "/api/session") {
         sendJson(response, 200, {
           roomCode: roomServer.getState().sessionId,
+          sessionMode: roomServer.getState().sessionMode,
           status: roomServer.getState().status,
           phase: roomServer.getState().phase,
           seats: roomServer.getState().seats
@@ -113,12 +115,15 @@ function createHttpServer(): HttpServer {
       }
 
       if (request.method === "POST" && url.pathname === "/api/session/create") {
+        const body = (await readJsonBody(request)) as { sessionMode?: SessionMode };
+        const sessionMode = body.sessionMode === "single-player" ? "single-player" : "multiplayer";
         roomCode = createRoomCode();
         hostToken = createRoomCode();
-        roomServer.resetSession(createInitialSessionState(roomCode));
+        roomServer.resetSession(createInitialSessionState(roomCode, sessionMode));
         roomServer.setHostToken(createHostToken({ sessionId: roomCode, secret: hostToken }));
         sendJson(response, 200, {
           roomCode,
+          sessionMode,
           hostToken: createHostToken({ sessionId: roomCode, secret: hostToken })
         });
         return;

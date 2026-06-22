@@ -25,10 +25,24 @@ const characters: CharacterCatalogEntry[] = [
 ];
 
 function createPatch(overrides: Partial<PhonePatchPayload> = {}): PhonePatchPayload {
-  return {
+  const patch: PhonePatchPayload = {
     phase: "action",
     status: "active",
+    sessionMode: "multiplayer",
     winnerSeatId: null,
+    activeScenario: {
+      id: "scenario_broken_seal",
+      name: "The Broken Seal",
+      confrontationTitle: "Reseal the Prison",
+      progressLabel: "sealRestorationMarks",
+      progress: 0,
+      threshold: 2
+    },
+    scenarioTelemetry: [
+      { label: "Seal Tokens", value: "6" },
+      { label: "Pressure Roll", value: "1-2 weaken | 3-4 heat surge" }
+    ],
+    scenarioProgress: {},
     activeSeatIndex: 0,
     seats: [
       { seatId: "seat-1", characterId: "void-marshal", displayName: "Lane", connected: true, kicked: false },
@@ -65,6 +79,8 @@ function createPatch(overrides: Partial<PhonePatchPayload> = {}): PhonePatchPayl
       }
     ],
     escalationLevel: 0,
+    escalationThreshold: 6,
+    escalationModifier: 0,
     availableContracts: [],
     encounter: {
       id: "glass-chime-swarm",
@@ -96,8 +112,14 @@ function createPatch(overrides: Partial<PhonePatchPayload> = {}): PhonePatchPayl
         equippedGear: { weapon: null, armor: null, utility: null },
         abilities: []
       }
-    },
-    ...overrides
+    }
+  };
+
+  return {
+    ...patch,
+    ...overrides,
+    activeScenario: overrides.activeScenario ?? patch.activeScenario,
+    scenarioProgress: overrides.scenarioProgress ?? patch.scenarioProgress
   };
 }
 
@@ -163,6 +185,29 @@ describe("PhoneActionPanel", () => {
 
     expect(screen.getByRole("button", { name: /enter combat with cinder-veil stalker/i })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /attempt grit check/i })).not.toBeInTheDocument();
+  });
+
+  it("shows the Cinder Gate confrontation action instead of a generic end turn", () => {
+    render(
+      <PhoneActionPanel
+        characters={characters}
+        onIntent={vi.fn()}
+        patch={createPatch({
+          encounter: null,
+          self: {
+            ...createPatch().self!,
+            sectorId: "center_cinder_gate",
+            character: {
+              ...createPatch().self!.character,
+              currentSpaceId: "center_cinder_gate"
+            }
+          }
+        })}
+      />
+    );
+
+    expect(screen.getByRole("button", { name: /resolve reseal the prison/i })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /end turn/i })).not.toBeInTheDocument();
   });
 
   it("shows game over state and hides action buttons when the session has ended", () => {

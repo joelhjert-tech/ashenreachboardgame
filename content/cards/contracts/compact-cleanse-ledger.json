@@ -8,7 +8,7 @@
     "target": 2
   },
   "reward": {
-    "type": "gainGear",
+    "type": "gain_gear",
     "gearId": "marshal-seal"
   }
 }

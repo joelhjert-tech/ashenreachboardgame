@@ -219,3 +219,9 @@ export const SCENARIOS: ScenarioDefinition[] = [
       "Collapsing blue-white star trapped in a black shrine reactor, bronze vanes cracking under heat bloom and ash, operatives racing across a command platform, printable scenario sheet illustration, no text."
   }
 ];
+
+export const SCENARIO_INDEX = new Map(SCENARIOS.map((scenario) => [scenario.id, scenario] as const));
+
+export function getScenarioDefinition(scenarioId: string): ScenarioDefinition | null {
+  return SCENARIO_INDEX.get(scenarioId) ?? null;
+}

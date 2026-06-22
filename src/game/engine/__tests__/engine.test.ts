@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { createCharacters } from "./testData.js";
 import { createSequenceRandomSource } from "../dice.js";
 import { GameRoomServer, createPhoneProjection, createTvProjection, type ConnectedClient } from "../../../server/roomServer.js";
@@ -51,7 +51,7 @@ function createContracts(): Map<string, ContractCard> {
         factionGiver: "Glass Choir",
         text: "The Choir demands two clean removals so a listening chamber can return to its proper silence.",
         objective: { type: "defeatCount", target: 2 },
-        reward: { type: "reduceHeat", amount: 1 }
+        reward: { type: "lose_heat", amount: 1 }
       }
     ],
     [
@@ -62,7 +62,7 @@ function createContracts(): Map<string, ContractCard> {
         factionGiver: "Meridian Compact",
         text: "The Compact wants two hostile disruptions erased from a freight lane before the next audit sweep arrives.",
         objective: { type: "defeatCount", target: 2 },
-        reward: { type: "gainGear", gearId: "veil-hook" }
+        reward: { type: "gain_gear", gearId: "veil-hook" }
       }
     ]
   ]);
@@ -84,7 +84,7 @@ function createThreats(): Map<string, ThreatCard> {
         stat: "grit",
         difficulty: 6,
         defeatReward: {
-          type: "gainGear",
+          type: "gain_gear",
           gearId: "tuning-spines"
         },
         woundOnLoss: {
@@ -107,7 +107,7 @@ function createThreats(): Map<string, ThreatCard> {
         stat: "grit",
         difficulty: 6,
         defeatReward: {
-          type: "gainGear",
+          type: "gain_gear",
           gearId: "veil-hook"
         },
         woundOnLoss: {
@@ -181,16 +181,19 @@ function cloneCharacter(character: Character | undefined): Character {
 function createState(overrides: Partial<GameState> = {}): GameState {
   const characters = createCharacters();
   const contracts = [...createContracts().values()];
-
-  return {
+  const baseState: GameState = {
     sessionId: "session-alpha",
     status: "active",
+    sessionMode: "multiplayer",
     winnerSeatId: null,
+    activeScenarioId: "scenario_broken_seal",
+    scenarioProgress: {},
     phase: "action",
     resolutionSource: null,
     activeSeatIndex: 0,
     turnOrder: ["seat-1", "seat-2", "seat-3"],
     heatThreshold: 6,
+    woundThreshold: 3,
     sequence: 0,
     sectors: [
       {
@@ -261,8 +264,13 @@ function createState(overrides: Partial<GameState> = {}): GameState {
     currentEncounter: null,
     pendingEnemyRoll: null,
     pendingEffect: null,
-    lastOutcomeSummary: null,
-    ...overrides
+    lastOutcomeSummary: null
+  };
+
+  return {
+    ...baseState,
+    ...overrides,
+    sessionMode: overrides.sessionMode ?? baseState.sessionMode
   };
 }
 
@@ -420,6 +428,322 @@ describe("movement rolls", () => {
     expect(server.getState().activeSeatIndex).toBe(1);
     expect(server.getState().phase).toBe("navigation");
     expect(server.getState().currentEncounter).toBeNull();
+  });
+});
+
+describe("wound recall flow", () => {
+  it("does not recall a seat while wounds stay below threshold", () => {
+    const enemy = createThreats().get("cinder-veil-stalker");
+
+    const server = new GameRoomServer(
+      withOnlyConnectedSeat(
+        createState({
+          currentEncounter: enemy ?? null,
+          players: createState().players.map((entry) =>
+            entry.seatId === "seat-1"
+              ? {
+                  ...entry,
+                  character: {
+                    ...entry.character,
+                    wounds: 1
+                  }
+                }
+              : entry
+          )
+        }),
+        "seat-1"
+      ),
+      [],
+      createSequenceRandomSource([0, 0, 5, 5]),
+      createThreats(),
+      createCharacters(),
+      createGear(),
+      createContracts()
+    );
+
+    runIntent(server, {
+      type: "COMBAT_REQUESTED",
+      seatId: "seat-1",
+      stat: "grit"
+    });
+
+    const player = server.getState().players.find((entry) => entry.seatId === "seat-1");
+    expect(player?.character.wounds).toBe(2);
+    expect(player?.character.status).toBe("active");
+    expect(player?.character.scars).toEqual([]);
+  });
+
+  it("recalls and scars a seat when wounds reach threshold", () => {
+    const enemy = createThreats().get("cinder-veil-stalker");
+
+    const server = new GameRoomServer(
+      withOnlyConnectedSeat(
+        createState({
+          woundThreshold: 2,
+          currentEncounter: enemy ?? null,
+          players: createState().players.map((entry) =>
+            entry.seatId === "seat-1"
+              ? {
+                  ...entry,
+                  character: {
+                    ...entry.character,
+                    wounds: 1
+                  }
+                }
+              : entry
+          )
+        }),
+        "seat-1"
+      ),
+      [],
+      createSequenceRandomSource([0, 0, 5, 5]),
+      createThreats(),
+      createCharacters(),
+      createGear(),
+      createContracts()
+    );
+
+    runIntent(server, {
+      type: "COMBAT_REQUESTED",
+      seatId: "seat-1",
+      stat: "grit"
+    });
+
+    const player = server.getState().players.find((entry) => entry.seatId === "seat-1");
+    expect(player?.character.wounds).toBe(2);
+    expect(player?.character.status).toBe("recalled");
+    expect(player?.character.scars).toContain("scar-wound-1");
+  });
+
+  it("blocks move, check, and combat until a recalled seat recruits a replacement", () => {
+    const enemy = createThreats().get("cinder-veil-stalker");
+    const client = {
+      seatId: "seat-1",
+      view: "phone" as const,
+      socket: {
+        send: vi.fn(),
+        close: vi.fn()
+      }
+    };
+    const server = new GameRoomServer(
+      createState({
+        phase: "action",
+        currentEncounter: enemy ?? null,
+        players: createState().players.map((entry) =>
+          entry.seatId === "seat-1"
+            ? {
+                ...entry,
+                character: {
+                  ...entry.character,
+                  status: "recalled"
+                }
+              }
+            : entry
+        )
+      }),
+      [],
+      createSequenceRandomSource([0, 0]),
+      createThreats(),
+      createCharacters(),
+      createGear(),
+      createContracts()
+    );
+
+    server.handleIntent(client as never, { type: "MOVE_REQUESTED", seatId: "seat-1", toSectorId: "sector-b" });
+    server.handleIntent(client as never, { type: "CHECK_REQUESTED", seatId: "seat-1", stat: "signal" });
+    server.handleIntent(client as never, { type: "COMBAT_REQUESTED", seatId: "seat-1", stat: "grit" });
+
+    const payloads = client.socket.send.mock.calls.map((call) => String(call[0]));
+    expect(payloads).toHaveLength(3);
+    expect(payloads.every((payload) => payload.includes("INTENT_REJECTED"))).toBe(true);
+    expect(payloads.every((payload) => payload.includes("must recruit a replacement before acting"))).toBe(true);
+  });
+
+  it("recruits a replacement with heat and wounds reset while keeping earned scars", () => {
+    const server = new GameRoomServer(
+      createState({
+        phase: "action",
+        players: createState().players.map((entry) =>
+          entry.seatId === "seat-1"
+            ? {
+                ...entry,
+                character: {
+                  ...entry.character,
+                  heat: 2,
+                  wounds: 3,
+                  status: "recalled",
+                  scars: ["scar-wound-1"]
+                }
+              }
+            : entry
+        )
+      }),
+      [],
+      createSequenceRandomSource([0]),
+      createThreats(),
+      createCharacters(),
+      createGear(),
+      createContracts()
+    );
+
+    runIntent(server, {
+      type: "RECRUIT_REPLACEMENT",
+      seatId: "seat-1",
+      replacementCharacterId: "signal-witch"
+    });
+
+    const player = server.getState().players.find((entry) => entry.seatId === "seat-1");
+    expect(player?.character.status).toBe("active");
+    expect(player?.character.heat).toBe(0);
+    expect(player?.character.wounds).toBe(0);
+    expect(player?.character.scars).toContain("scar-wound-1");
+    expect(player?.character.id).toBe("signal-witch");
+  });
+});
+
+describe("escalation flow", () => {
+  it("does not advance escalation until the turn order wraps", () => {
+    const server = new GameRoomServer(
+      createState({
+        phase: "action",
+        currentEncounter: null
+      }),
+      [],
+      createSequenceRandomSource([0]),
+      createThreats(),
+      createCharacters(),
+      createGear(),
+      createContracts()
+    );
+
+    runIntent(server, {
+      type: "PHASE_ADVANCED",
+      seatId: "seat-1",
+      toPhase: "resolution"
+    });
+
+    expect(server.getState().activeSeatIndex).toBe(1);
+    expect(server.getState().escalationLevel).toBe(0);
+  });
+
+  it("advances escalation when the turn order wraps back to the first seat", () => {
+    const server = new GameRoomServer(
+      withOnlyConnectedSeat(
+        createState({
+          phase: "action",
+          currentEncounter: null,
+          turnOrder: ["seat-1"],
+          seats: createState().seats.slice(0, 1),
+          players: createState().players.slice(0, 1)
+        }),
+        "seat-1"
+      ),
+      [],
+      createSequenceRandomSource([0]),
+      createThreats(),
+      createCharacters(),
+      createGear(),
+      createContracts()
+    );
+
+    runIntent(server, { type: "PHASE_ADVANCED", seatId: "seat-1", toPhase: "resolution" });
+
+    expect(server.getState().escalationLevel).toBe(1);
+  });
+
+  it("applies the escalation modifier to movement and encounter difficulty", () => {
+    const moveServer = new GameRoomServer(
+      createState({
+        phase: "navigation",
+        escalationLevel: 2,
+        sectors: createState({ phase: "navigation" }).sectors.map((sector) =>
+          sector.id === "sector-b"
+            ? {
+                ...sector,
+                danger: 2,
+                encounterDecks: { ...sector.encounterDecks, threat: [] }
+              }
+            : sector
+        )
+      }),
+      [],
+      createSequenceRandomSource([0, 0]),
+      createThreats(),
+      createCharacters(),
+      createGear(),
+      createContracts()
+    );
+
+    runIntent(moveServer, {
+      type: "MOVE_REQUESTED",
+      seatId: "seat-1",
+      toSectorId: "sector-b"
+    });
+
+    expect(moveServer.getState().lastOutcomeSummary?.difficulty).toBe(3);
+
+    const checkServer = new GameRoomServer(
+      withOnlyConnectedSeat(
+        createState({
+          escalationLevel: 2,
+          currentEncounter: createThreats().get("signal-static") ?? null
+        }),
+        "seat-1"
+      ),
+      [],
+      createSequenceRandomSource([0, 0]),
+      createThreats(),
+      createCharacters(),
+      createGear(),
+      createContracts()
+    );
+
+    runIntent(checkServer, {
+      type: "CHECK_REQUESTED",
+      seatId: "seat-1",
+      stat: "signal"
+    });
+
+    const checkRolledEvent = [...checkServer.getState().eventLog]
+      .reverse()
+      .find((entry): entry is { type: "CHECK_ROLLED"; difficulty: number } => {
+        return Boolean(entry && typeof entry === "object" && "type" in entry && (entry as { type?: string }).type === "CHECK_ROLLED");
+      });
+
+    expect(checkRolledEvent?.difficulty).toBe(8);
+  });
+
+  it("ends the game with no winner when escalation reaches collapse", () => {
+    const server = new GameRoomServer(
+      withOnlyConnectedSeat(
+        createState({
+          phase: "action",
+          escalationLevel: 5,
+          currentEncounter: null,
+          turnOrder: ["seat-1"],
+          seats: createState().seats.slice(0, 1),
+          players: createState().players.slice(0, 1)
+        }),
+        "seat-1"
+      ),
+      [],
+      createSequenceRandomSource([0]),
+      createThreats(),
+      createCharacters(),
+      createGear(),
+      createContracts()
+    );
+
+    runIntent(server, {
+      type: "PHASE_ADVANCED",
+      seatId: "seat-1",
+      toPhase: "resolution"
+    });
+
+    expect(server.getState().status).toBe("ended");
+    expect(server.getState().winnerSeatId).toBeNull();
+    expect(server.getState().phase).toBe("broadcast");
+    expect(server.getState().escalationLevel).toBe(6);
   });
 });
 

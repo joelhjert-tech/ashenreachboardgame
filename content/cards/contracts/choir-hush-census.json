@@ -8,7 +8,7 @@
     "target": 2
   },
   "reward": {
-    "type": "reduceHeat",
+    "type": "lose_heat",
     "amount": 1
   }
 }

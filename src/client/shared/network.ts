@@ -1,4 +1,4 @@
-import type { CharacterCatalogEntry, PhoneSessionAuth } from "./types.js";
+import type { CharacterCatalogEntry, PhoneSessionAuth, SessionMode } from "./types.js";
 
 const browserHost = typeof window !== "undefined" ? window.location.hostname : "localhost";
 const browserProtocol = typeof window !== "undefined" ? window.location.protocol : "http:";
@@ -18,12 +18,15 @@ export function getWebSocketOrigin(): string {
   return wsOrigin;
 }
 
-export async function createSession(): Promise<{ roomCode: string; hostToken: string }> {
+export async function createSession(
+  sessionMode: SessionMode = "multiplayer"
+): Promise<{ roomCode: string; hostToken: string; sessionMode: SessionMode }> {
   const response = await fetch(`${apiOrigin}/api/session/create`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json"
-    }
+    },
+    body: JSON.stringify({ sessionMode })
   });
 
   return await response.json();

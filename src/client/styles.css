@@ -927,6 +927,11 @@ select {
   align-content: center;
 }
 
+.phone-portrait-panel-limited {
+  grid-template-rows: auto auto minmax(0, 1fr);
+  align-content: start;
+}
+
 .phone-portrait-topline {
   display: flex;
   justify-content: space-between;
@@ -1070,6 +1075,7 @@ select {
   color: #8fb7da;
   font-size: 0.76rem;
   text-align: center;
+  align-self: end;
 }
 
 .rotate-overlay {
@@ -1838,6 +1844,15 @@ select {
   text-align: right;
 }
 
+.phone-sheet-vital-strip-ambient {
+  min-height: 2.9rem;
+  align-items: flex-start;
+}
+
+.phone-sheet-vital-strip-ambient span {
+  line-height: 1.35;
+}
+
 .phone-sheet-gear-grid {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
@@ -2108,6 +2123,10 @@ select {
 
 .phone-sheet-card-landscape .phone-sheet-vital-strip strong {
   font-size: clamp(0.46rem, 0.66vw, 0.58rem);
+}
+
+.phone-sheet-card-landscape .phone-sheet-vital-strip-ambient {
+  min-height: 2.15rem;
 }
 
 .phone-sheet-card-landscape .phone-sheet-gear-grid {
@@ -3582,6 +3601,35 @@ body {
   font-size: 0.74rem;
 }
 
+.tv-scenario-telemetry {
+  margin-top: 0.7rem;
+  display: grid;
+  gap: 0.42rem;
+}
+
+.tv-scenario-telemetry-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.34rem 0.46rem;
+  border: 1px solid rgba(130, 150, 163, 0.18);
+  background: rgba(10, 14, 19, 0.36);
+  font-size: 0.78rem;
+}
+
+.tv-scenario-telemetry-row span {
+  color: rgba(211, 214, 218, 0.82);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.66rem;
+}
+
+.tv-scenario-telemetry-row strong {
+  color: #f0debd;
+  text-align: right;
+}
+
 .board-sidebar-list {
   margin: 0.75rem 0 0;
   padding-left: 1rem;
@@ -3657,6 +3705,26 @@ body {
 .board-route-inner,
 .board-route-center {
   stroke: rgba(235, 180, 97, 0.68);
+}
+
+.board-route-scenario {
+  stroke-width: 6;
+  stroke-linecap: round;
+  stroke-dasharray: 10 8;
+  opacity: 0.9;
+  animation: board-route-pulse 1.8s ease-in-out infinite;
+}
+
+.board-route-scenario-warning {
+  stroke: rgba(225, 169, 92, 0.88);
+}
+
+.board-route-scenario-critical {
+  stroke: rgba(222, 98, 82, 0.92);
+}
+
+.board-route-scenario-info {
+  stroke: rgba(116, 182, 232, 0.92);
 }
 
 .board-node-marker {
@@ -3778,6 +3846,163 @@ body {
   font-weight: 800;
   letter-spacing: 0.03em;
   box-shadow: 0 0.9rem 1.6rem rgba(0, 0, 0, 0.32);
+}
+
+.board-scenario-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.board-scenario-aura {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  width: 4.8rem;
+  height: 4.8rem;
+  border-radius: 999px;
+  opacity: 0.78;
+  filter: blur(0.2rem);
+}
+
+.board-scenario-aura::before,
+.board-scenario-aura::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+}
+
+.board-scenario-aura::before {
+  border: 2px solid currentColor;
+  opacity: 0.65;
+  animation: board-aura-breathe 2.2s ease-in-out infinite;
+}
+
+.board-scenario-aura::after {
+  inset: 0.55rem;
+  border: 1px solid currentColor;
+  opacity: 0.34;
+}
+
+.board-scenario-aura-warning {
+  color: rgba(225, 169, 92, 0.84);
+}
+
+.board-scenario-aura-critical {
+  color: rgba(222, 98, 82, 0.92);
+}
+
+.board-scenario-aura-info {
+  color: rgba(116, 182, 232, 0.86);
+}
+
+.board-scenario-aura-seal {
+  background: radial-gradient(circle, rgba(121, 168, 201, 0.12) 0%, rgba(225, 169, 92, 0.1) 42%, transparent 72%);
+}
+
+.board-scenario-aura-star {
+  background: radial-gradient(circle, rgba(242, 222, 189, 0.2) 0%, rgba(222, 98, 82, 0.12) 38%, transparent 74%);
+}
+
+.board-scenario-aura-engine-command {
+  background: radial-gradient(circle, rgba(116, 182, 232, 0.22) 0%, rgba(116, 182, 232, 0.08) 48%, transparent 76%);
+}
+
+.board-scenario-aura-engine-signal {
+  background: radial-gradient(circle, rgba(124, 200, 188, 0.22) 0%, rgba(124, 200, 188, 0.08) 48%, transparent 76%);
+}
+
+.board-scenario-aura-engine-guile {
+  background: radial-gradient(circle, rgba(210, 155, 215, 0.22) 0%, rgba(210, 155, 215, 0.08) 48%, transparent 76%);
+}
+
+.board-scenario-aura-throne {
+  background: radial-gradient(circle, rgba(240, 222, 189, 0.2) 0%, rgba(225, 169, 92, 0.08) 48%, transparent 76%);
+}
+
+.board-scenario-aura-mirror {
+  background: radial-gradient(circle, rgba(160, 190, 226, 0.18) 0%, rgba(139, 162, 200, 0.08) 46%, transparent 76%);
+}
+
+.board-scenario-marker {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  display: grid;
+  gap: 0.08rem;
+  min-width: 3.5rem;
+  padding: 0.28rem 0.42rem;
+  border: 1px solid rgba(240, 222, 189, 0.34);
+  background: rgba(8, 12, 17, 0.88);
+  box-shadow:
+    0 0 0 1px rgba(10, 14, 19, 0.92),
+    0 0.55rem 1rem rgba(0, 0, 0, 0.32);
+  text-align: center;
+}
+
+.board-scenario-marker span {
+  color: rgba(214, 218, 222, 0.82);
+  font-size: 0.5rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.board-scenario-marker strong {
+  color: #f0debd;
+  font-size: 0.72rem;
+  line-height: 1;
+}
+
+.board-scenario-marker-orbit {
+  margin-top: -2.15rem;
+}
+
+.board-scenario-marker-core {
+  margin-top: 2.2rem;
+}
+
+.board-scenario-marker-info {
+  border-color: rgba(116, 182, 232, 0.42);
+  box-shadow:
+    0 0 0 1px rgba(10, 14, 19, 0.92),
+    0 0.7rem 1.15rem rgba(25, 85, 127, 0.22);
+}
+
+.board-scenario-marker-warning {
+  border-color: rgba(225, 169, 92, 0.46);
+  box-shadow:
+    0 0 0 1px rgba(10, 14, 19, 0.92),
+    0 0.7rem 1.15rem rgba(121, 75, 16, 0.24);
+}
+
+.board-scenario-marker-critical {
+  border-color: rgba(222, 98, 82, 0.56);
+  box-shadow:
+    0 0 0 1px rgba(10, 14, 19, 0.92),
+    0 0.7rem 1.15rem rgba(134, 31, 31, 0.28);
+}
+
+@keyframes board-route-pulse {
+  0%,
+  100% {
+    opacity: 0.58;
+    stroke-dashoffset: 0;
+  }
+  50% {
+    opacity: 1;
+    stroke-dashoffset: -6;
+  }
+}
+
+@keyframes board-aura-breathe {
+  0%,
+  100% {
+    transform: scale(0.94);
+    opacity: 0.45;
+  }
+  50% {
+    transform: scale(1.08);
+    opacity: 0.85;
+  }
 }
 
 .board-debug-point {

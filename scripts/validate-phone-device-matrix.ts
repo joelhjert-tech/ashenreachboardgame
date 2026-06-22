@@ -22,7 +22,15 @@ type LayoutMetrics = {
   layoutRect: RectLike | null;
   bottomRect: RectLike | null;
   debugRect: RectLike | null;
+  portraitPanelRect: RectLike | null;
+  portraitChipRowRect: RectLike | null;
+  portraitRotateHintRect: RectLike | null;
   hasLandscapeCard: boolean;
+  hasPortraitController: boolean;
+  hasPortraitStats: boolean;
+  hasPortraitActions: boolean;
+  hasPortraitLeaveButton: boolean;
+  hasPortraitRotateHint: boolean;
   horizontalOverflow: boolean;
   verticalOverflow: boolean;
 };
@@ -103,7 +111,10 @@ async function collectMetrics(page: import("playwright").Page, viewport: Viewpor
       topbar: ".phone-sheet-topbar",
       layout: ".phone-sheet-layout",
       bottom: ".phone-sheet-bottom",
-      debug: ".phone-debug-anchor"
+      debug: ".phone-debug-anchor",
+      portraitPanel: ".phone-portrait-panel",
+      portraitChipRow: ".phone-portrait-chip-row",
+      portraitRotateHint: ".phone-portrait-rotate-hint"
     }
   });
 
@@ -122,11 +133,21 @@ async function collectMetrics(page: import("playwright").Page, viewport: Viewpor
       const layoutRect = getRect(selectors.layout);
       const bottomRect = getRect(selectors.bottom);
       const debugRect = getRect(selectors.debug);
+      const portraitPanelRect = getRect(selectors.portraitPanel);
+      const portraitChipRowRect = getRect(selectors.portraitChipRow);
+      const portraitRotateHintRect = getRect(selectors.portraitRotateHint);
       const documentScrollWidth = document.documentElement.scrollWidth;
       const documentScrollHeight = document.documentElement.scrollHeight;
       const windowInnerWidth = window.innerWidth;
       const windowInnerHeight = window.innerHeight;
       const hasLandscapeCard = Boolean(document.querySelector(".phone-sheet-card-landscape"));
+      const hasPortraitController = Boolean(document.querySelector(".phone-portrait-controller"));
+      const hasPortraitStats = Boolean(
+        document.querySelector(".phone-portrait-body, .phone-portrait-stats, .phone-portrait-attributes, .phone-portrait-summary")
+      );
+      const hasPortraitActions = Boolean(document.querySelector(".phone-portrait-actions, .phone-sheet-actions"));
+      const hasPortraitLeaveButton = Boolean(document.querySelector(".phone-portrait-topline button, .phone-sheet-leave-button"));
+      const hasPortraitRotateHint = Boolean(document.querySelector(".phone-portrait-rotate-hint"));
 
       return {
         viewport: { width: viewportWidth, height: viewportHeight },
@@ -139,7 +160,15 @@ async function collectMetrics(page: import("playwright").Page, viewport: Viewpor
         layoutRect,
         bottomRect,
         debugRect,
+        portraitPanelRect,
+        portraitChipRowRect,
+        portraitRotateHintRect,
         hasLandscapeCard,
+        hasPortraitController,
+        hasPortraitStats,
+        hasPortraitActions,
+        hasPortraitLeaveButton,
+        hasPortraitRotateHint,
         horizontalOverflow: documentScrollWidth > windowInnerWidth + 1,
         verticalOverflow: documentScrollHeight > windowInnerHeight + 1
       };
@@ -147,7 +176,7 @@ async function collectMetrics(page: import("playwright").Page, viewport: Viewpor
   `);
 }
 
-function validateMetrics(metrics: LayoutMetrics, requireLandscapeCard: boolean): string[] {
+function validateMetrics(metrics: LayoutMetrics, mode: "portrait" | "landscape"): string[] {
   const failures: string[] = [];
 
   if (metrics.horizontalOverflow) {
@@ -158,7 +187,39 @@ function validateMetrics(metrics: LayoutMetrics, requireLandscapeCard: boolean):
     failures.push("vertical overflow");
   }
 
-  if (requireLandscapeCard && !metrics.hasLandscapeCard) {
+  if (mode === "portrait") {
+    if (!metrics.hasPortraitController || !metrics.portraitPanelRect) {
+      failures.push("missing limited portrait panel");
+    }
+
+    if (!metrics.portraitChipRowRect) {
+      failures.push("missing portrait chip row");
+    }
+
+    if (!metrics.hasPortraitRotateHint || !metrics.portraitRotateHintRect) {
+      failures.push("missing rotate hint");
+    }
+
+    if (metrics.hasLandscapeCard) {
+      failures.push("landscape card rendered in portrait");
+    }
+
+    if (metrics.hasPortraitStats) {
+      failures.push("portrait still renders stats/details");
+    }
+
+    if (metrics.hasPortraitActions) {
+      failures.push("portrait still renders quick actions");
+    }
+
+    if (metrics.hasPortraitLeaveButton) {
+      failures.push("portrait still renders leave button");
+    }
+
+    return failures;
+  }
+
+  if (!metrics.hasLandscapeCard) {
     failures.push("missing landscape player card");
   }
 
@@ -233,8 +294,8 @@ async function main(): Promise<void> {
 
             const landscapeMetrics = await collectMetrics(page, profile.landscape);
             const failures = [
-              ...validateMetrics(portraitMetrics, false).map((failure) => `portrait: ${failure}`),
-              ...validateMetrics(landscapeMetrics, true).map((failure) => `landscape: ${failure}`)
+              ...validateMetrics(portraitMetrics, "portrait").map((failure) => `portrait: ${failure}`),
+              ...validateMetrics(landscapeMetrics, "landscape").map((failure) => `landscape: ${failure}`)
             ];
 
             results.push({
