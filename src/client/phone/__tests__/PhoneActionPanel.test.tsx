@@ -113,7 +113,8 @@ function createPatch(overrides: Partial<PhonePatchPayload> = {}): PhonePatchPayl
         equippedGear: { weapon: null, armor: null, utility: null },
         abilities: []
       }
-    }
+    },
+    nemesis: null
   };
 
   return {

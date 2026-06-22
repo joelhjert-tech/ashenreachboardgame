@@ -2,6 +2,7 @@ import type { ReactElement, ReactNode } from "react";
 import { getCharacterPortraitPath, getPhoneSheetFramePath } from "../shared/assetPaths.js";
 import type { AbilityChangeItem } from "../shared/abilityTelemetry.js";
 import type {
+  ActiveNemesisSummary,
   ActiveScenarioSummary,
   ContractCard,
   EncounterCard,
@@ -23,6 +24,7 @@ interface MobilePlayerCardProps {
   sessionStatus: SessionStatus | null;
   phase: string;
   activeSeatId: string | null;
+  activeNemesis: ActiveNemesisSummary | null;
   activeScenario: ActiveScenarioSummary | null;
   scenarioTelemetry?: ScenarioTelemetryItem[];
   escalationLevel?: number;
@@ -67,6 +69,7 @@ export function MobilePlayerCard({
   sessionStatus,
   phase,
   activeSeatId,
+  activeNemesis,
   activeScenario,
   scenarioTelemetry = [],
   escalationLevel = 0,
@@ -99,6 +102,8 @@ export function MobilePlayerCard({
       ? scenarioTelemetry.map((entry) => `${entry.label}: ${entry.value}`).join(" | ")
       : "Awaiting ambient scenario telemetry";
   const escalationCopy = formatEscalation({ escalationLevel, escalationThreshold, escalationModifier });
+  const nemesisRemaining = activeNemesis ? Math.max(0, activeNemesis.life - activeNemesis.damageDealt) : 0;
+  const nemesisProgressPercent = activeNemesis ? Math.min(100, (activeNemesis.damageDealt / Math.max(activeNemesis.life, 1)) * 100) : 0;
 
   return (
     <section
@@ -227,6 +232,35 @@ export function MobilePlayerCard({
           <div className="phone-sheet-vital-strip">
             <span>{scenarioCopy}</span>
           </div>
+
+          {activeNemesis && (
+            <div className="phone-sheet-nemesis-panel">
+              <div className="phone-sheet-nemesis-header">
+                <div>
+                  <span>Nemesis at the Gate</span>
+                  <strong>
+                    {activeNemesis.name} | {activeNemesis.title}
+                  </strong>
+                </div>
+                <div className="phone-sheet-nemesis-life">
+                  <span>
+                    Damage {activeNemesis.damageDealt}/{activeNemesis.life}
+                  </span>
+                  <strong>{nemesisRemaining} left</strong>
+                </div>
+              </div>
+              <div className="phone-sheet-nemesis-bar" aria-hidden="true">
+                <span style={{ width: `${nemesisProgressPercent}%` }} />
+              </div>
+              <div className="phone-sheet-nemesis-abilities">
+                {activeNemesis.abilities.slice(0, 2).map((ability) => (
+                  <p key={`${ability.timing}-${ability.text}`}>
+                    <strong>{toTitleCase(ability.timing)}</strong> {ability.text}
+                  </p>
+                ))}
+              </div>
+            </div>
+          )}
 
           <div className="phone-sheet-vital-strip phone-sheet-vital-strip-ambient">
             <span>{scenarioTelemetryCopy}</span>

@@ -324,9 +324,10 @@ export function PhoneActionPanel({ characters, onIntent, patch }: PhoneActionPan
     const isAtCinderGate = self.sectorId === "center_cinder_gate";
 
     if (isAtCinderGate && patch.activeScenario && !patch.encounter) {
+      const confrontationTarget = patch.nemesis ? `${patch.activeScenario.confrontationTitle} | ${patch.nemesis.name}` : patch.activeScenario.confrontationTitle;
       actions.push({
         key: "resolve-scenario",
-        label: `Resolve ${patch.activeScenario.confrontationTitle}`,
+        label: `Resolve ${confrontationTarget}`,
         tone: "primary",
         onClick: () =>
           onIntent({

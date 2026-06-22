@@ -309,6 +309,7 @@ export function PhoneApp(): ReactElement {
             sessionStatus={phonePatch?.payload.status ?? null}
             phase={phonePatch?.phase ?? "start"}
             activeSeatId={activeSeatId}
+            activeNemesis={phonePatch?.payload.nemesis ?? null}
             encounter={phonePatch?.payload.encounter ?? null}
             outcomeSummary={phonePatch?.payload.outcomeSummary ?? null}
             latestAbilityTriggerSummary={abilityTelemetry.latestTrigger?.summary ?? null}

@@ -134,7 +134,8 @@ function createPatch(): PublicPatchPayload {
       difficulty: 6,
       success: true,
       summary: "Lane Mercer tuned through the swarm and held the path."
-    }
+    },
+    nemesis: null
   };
 }
 

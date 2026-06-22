@@ -133,6 +133,21 @@ export interface AbilityTriggerSummary {
   createdAt: string;
 }
 
+export interface ActiveNemesisAbilitySummary {
+  timing: string;
+  text: string;
+}
+
+export interface ActiveNemesisSummary {
+  id: string;
+  name: string;
+  title: string;
+  faction: string;
+  life: number;
+  damageDealt: number;
+  abilities: ActiveNemesisAbilitySummary[];
+}
+
 export interface ActiveScenarioSummary {
   id: string;
   name: string;
@@ -167,6 +182,7 @@ export interface PublicPatchPayload {
   pendingEnemyRoll: PendingEnemyRoll | null;
   outcomeSummary: OutcomeSummary | null;
   recentAbilityTriggers: AbilityTriggerSummary[];
+  nemesis: ActiveNemesisSummary | null;
 }
 
 export interface PhonePatchPayload extends PublicPatchPayload {

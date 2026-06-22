@@ -6,10 +6,10 @@ import { loadArtifactCards } from "../game/content/artifacts.js";
 import { loadEscalationCards } from "../game/content/escalations.js";
 import { loadGear } from "../game/content/gear.js";
 import { loadThreatCards } from "../game/content/threats.js";
+import { nemeses, type NemesisDefinition } from "../game/data/nemeses.js";
 import { getScenarioDefinition } from "../game/data/scenarios.js";
 import { getEscalationCollapseLevel, getEscalationModifier } from "../game/engine/escalation.js";
 import { createInitialScenarioProgress } from "../game/rules/scenarioAmbient.js";
-import { hasScenarioVictory } from "../game/rules/scenarioResolver.js";
 import { resolveSpaceText } from "../game/rules/tileTextResolver.js";
 import type {
   AcceptContractAction,
@@ -51,6 +51,26 @@ export const ESCALATION_FEEDERS = {
   woundTaken: 1,
   trophyDiscarded: 1
 } as const;
+
+const NEMESIS_OPPOSITION = {
+  strength: { attackStat: "grit", label: "Overpower" },
+  willpower: { attackStat: "signal", label: "Outlast" },
+  cunning: { attackStat: "guile", label: "Outwit" }
+} as const;
+
+const CONFRONTATION_BASE_DIFFICULTY = 6;
+
+const nemesisByScenarioId = new Map<string, NemesisDefinition>(
+  nemeses.filter((nemesis) => nemesis.scenarioId).map((nemesis) => [nemesis.scenarioId!, nemesis])
+);
+
+function getLinkedNemesis(scenarioId: string | null | undefined): NemesisDefinition | null {
+  return scenarioId ? nemesisByScenarioId.get(scenarioId) ?? null : null;
+}
+
+function getScenarioProgressThreshold(scenarioId: string | null | undefined, defaultThreshold: number): number {
+  return getLinkedNemesis(scenarioId)?.stats.life ?? defaultThreshold;
+}
 
 export interface ConnectedClient {
   socket: WebSocket;
@@ -2462,6 +2482,10 @@ export class GameRoomServer {
     return Object.values(player.character.equippedGear).filter(Boolean).length;
   }
 
+  private getActiveNemesis(): NemesisDefinition | null {
+    return getLinkedNemesis(this.state.activeScenarioId);
+  }
+
   private maybeApplyScenarioThresholds(seatId: string): void {
     const player = this.state.players.find((entry) => entry.seatId === seatId);
 
@@ -2509,6 +2533,28 @@ export class GameRoomServer {
       { stat: "signal", difficulty: 12, label: "Anchor the starfire relays" },
       { stat: "guile", difficulty: 12, label: "Walk the shifting engine path" }
     ];
+    const nemesis = this.getActiveNemesis();
+
+    if (nemesis) {
+      const checks: ScenarioCheck[] = (["strength", "willpower", "cunning"] as const)
+        .filter((statKey) => nemesis.stats[statKey] != null)
+        .map((statKey) => {
+          const opposition = NEMESIS_OPPOSITION[statKey];
+
+          return {
+            stat: opposition.attackStat,
+            difficulty: CONFRONTATION_BASE_DIFFICULTY + (nemesis.stats[statKey] ?? 0),
+            label: `${opposition.label} ${nemesis.name}`
+          };
+        });
+
+      return {
+        checks,
+        markLabel: "wound on the nemesis",
+        effect: null,
+        victorySummary: `${nemesis.name}, ${nemesis.title}, was brought down at the Cinder Gate.`
+      };
+    }
 
     switch (this.state.activeScenarioId) {
       case "scenario_broken_seal":
@@ -2745,6 +2791,7 @@ export class GameRoomServer {
     this.maybeTriggerAbilityOnScenarioConfrontationRequested(intent.seatId);
 
     const plan = this.buildScenarioPlan(player);
+    const nemesis = this.getActiveNemesis();
     const confrontationModifier = getEscalationModifier(this.state.escalationLevel);
 
     const results = plan.checks.map((check) => {
@@ -2767,13 +2814,18 @@ export class GameRoomServer {
     const progressKey = scenario.winConditionKey;
     const currentProgress = this.state.scenarioProgress[progressKey] ?? 0;
     const nextProgress = currentProgress + marksEarned;
+    const effectiveThreshold = nemesis?.stats.life ?? scenario.victoryThreshold;
     const effectParts: EncounterEffect[] = [];
 
     if (plan.effect) {
       effectParts.push(plan.effect);
     }
 
-    switch (scenario.id) {
+    if (nemesis && failedChecks > 0) {
+      effectParts.push({ type: "take_wound", amount: failedChecks });
+    }
+
+    switch (nemesis ? null : scenario.id) {
       case "scenario_broken_seal":
         if (failedChecks > 0) {
           effectParts.push({ type: "take_wound", amount: failedChecks });
@@ -2817,7 +2869,7 @@ export class GameRoomServer {
         `${result.label} via ${result.stat} ${result.total}/${result.difficulty} ${result.success ? "passed" : "failed"}`
       ),
       failedChecks > 0 ? `Backlash ${failedChecks}.` : "No backlash.",
-      `Progress ${nextProgress}/${scenario.victoryThreshold}.`
+      `Progress ${nextProgress}/${effectiveThreshold}.`
     ].join(" ");
 
     this.applyAction({
@@ -2841,7 +2893,7 @@ export class GameRoomServer {
       return;
     }
 
-    if (hasScenarioVictory(this.state.scenarioProgress, scenario)) {
+    if (nextProgress >= effectiveThreshold) {
       this.applyAction({
         type: "SCENARIO_VICTORY_ACHIEVED",
         seatId: intent.seatId,
@@ -3266,6 +3318,8 @@ export function createTvProjection(state: GameState): Record<string, unknown> {
   const escalationThreshold = getEscalationCollapseLevel(state.sessionMode);
   const activeScenario = getScenarioDefinition(state.activeScenarioId);
   const activeScenarioProgress = activeScenario ? (state.scenarioProgress[activeScenario.winConditionKey] ?? 0) : 0;
+  const activeNemesis = getLinkedNemesis(state.activeScenarioId);
+  const activeScenarioThreshold = getScenarioProgressThreshold(state.activeScenarioId, activeScenario?.victoryThreshold ?? 0);
   const escalationModifier = getEscalationModifier(state.escalationLevel);
   const outerRing = state.sectors.filter((sector) => sector.regionTier === "borderlight");
   const devourerIndex = state.scenarioProgress.devourerIndex ?? 0;
@@ -3281,11 +3335,11 @@ export function createTvProjection(state: GameState): Record<string, unknown> {
       : activeScenario?.id === "scenario_throne_of_ash"
         ? [
             { label: "Crown Claims", value: String(state.scenarioProgress.crownClaims ?? 0) },
-            { label: "Throne Gate", value: `${activeScenarioProgress}/${activeScenario.victoryThreshold}` }
+            { label: "Throne Gate", value: `${activeScenarioProgress}/${activeScenarioThreshold}` }
           ]
         : activeScenario?.id === "scenario_mirror_of_false_heroes"
           ? [
-              { label: "Mirror Breaks", value: `${activeScenarioProgress}/${activeScenario.victoryThreshold}` },
+              { label: "Mirror Breaks", value: `${activeScenarioProgress}/${activeScenarioThreshold}` },
               { label: "Corruption Proxy", value: "Heat-driven backlash" }
             ]
           : activeScenario?.id === "scenario_devourer_beneath"
@@ -3296,12 +3350,12 @@ export function createTvProjection(state: GameState): Record<string, unknown> {
             : activeScenario?.id === "scenario_labyrinth_engine"
               ? [
                   { label: "Engine Mode", value: engineModes[engineModeIndex % engineModes.length] ?? "Command" },
-                  { label: "Shutdown", value: `${activeScenarioProgress}/${activeScenario.victoryThreshold}` }
+                  { label: "Shutdown", value: `${activeScenarioProgress}/${activeScenarioThreshold}` }
                 ]
               : activeScenario?.id === "scenario_dying_star"
                 ? [
-                    { label: "Star Tokens", value: String(state.scenarioProgress.starTokens ?? 0) },
-                    { label: "Ignition", value: `${activeScenarioProgress}/${activeScenario.victoryThreshold}` }
+                  { label: "Star Tokens", value: String(state.scenarioProgress.starTokens ?? 0) },
+                    { label: "Ignition", value: `${activeScenarioProgress}/${activeScenarioThreshold}` }
                   ]
                 : [];
 
@@ -3331,6 +3385,20 @@ export function createTvProjection(state: GameState): Record<string, unknown> {
     )
     .slice(-8)
     .reverse();
+  const nemesisSummary = activeNemesis
+    ? {
+        id: activeNemesis.id,
+        name: activeNemesis.name,
+        title: activeNemesis.title,
+        faction: activeNemesis.faction,
+        life: activeNemesis.stats.life,
+        damageDealt: activeScenarioProgress,
+        abilities: activeNemesis.abilities.map((ability) => ({
+          timing: ability.timing,
+          text: ability.text
+        }))
+      }
+    : null;
 
   return {
     status: state.status,
@@ -3343,7 +3411,7 @@ export function createTvProjection(state: GameState): Record<string, unknown> {
           confrontationTitle: activeScenario.confrontationTitle,
           progressLabel: activeScenario.winConditionKey,
           progress: activeScenarioProgress,
-          threshold: activeScenario.victoryThreshold
+          threshold: activeScenarioThreshold
         }
       : null,
     scenarioTelemetry,
@@ -3392,7 +3460,8 @@ export function createTvProjection(state: GameState): Record<string, unknown> {
       : null,
     pendingEnemyRoll: state.pendingEnemyRoll,
     outcomeSummary: state.lastOutcomeSummary,
-    recentAbilityTriggers
+    recentAbilityTriggers,
+    nemesis: nemesisSummary
   };
 }
 
@@ -3421,6 +3490,7 @@ export function createPhoneProjection(state: GameState, seatId: string, forcePri
     pendingEnemyRoll: state.pendingEnemyRoll,
     outcomeSummary: state.lastOutcomeSummary,
     recentAbilityTriggers: publicProjection.recentAbilityTriggers,
+    nemesis: publicProjection.nemesis,
     self: player ? sanitizePlayerForPhone(player) : null
   };
 }

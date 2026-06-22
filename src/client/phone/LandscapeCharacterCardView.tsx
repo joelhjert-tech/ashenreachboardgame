@@ -1,6 +1,15 @@
 import type { ReactElement } from "react";
 import type { AbilityChangeItem } from "../shared/abilityTelemetry.js";
-import type { CharacterCatalogEntry, ContractCard, EncounterCard, OutcomeSummary, PhonePatchPayload, PhoneSelfState, SessionStatus } from "../shared/types.js";
+import type {
+  ActiveNemesisSummary,
+  CharacterCatalogEntry,
+  ContractCard,
+  EncounterCard,
+  OutcomeSummary,
+  PhonePatchPayload,
+  PhoneSelfState,
+  SessionStatus
+} from "../shared/types.js";
 import { MobilePlayerCard } from "./MobilePlayerCard.js";
 import { PhoneActionPanel } from "./PhoneActionPanel.js";
 
@@ -13,6 +22,7 @@ interface LandscapeCharacterCardViewProps {
   sessionStatus: SessionStatus | null;
   phase: string;
   activeSeatId: string | null;
+  activeNemesis: ActiveNemesisSummary | null;
   encounter: EncounterCard | null;
   outcomeSummary: OutcomeSummary | null;
   latestAbilityTriggerSummary: string | null;
@@ -53,6 +63,7 @@ export function LandscapeCharacterCardView({
   sessionStatus,
   phase,
   activeSeatId,
+  activeNemesis,
   encounter,
   outcomeSummary,
   latestAbilityTriggerSummary,
@@ -82,6 +93,7 @@ export function LandscapeCharacterCardView({
       sessionStatus={sessionStatus}
       phase={phase}
       activeSeatId={activeSeatId}
+      activeNemesis={activeNemesis}
       activeScenario={patch?.activeScenario ?? null}
       scenarioTelemetry={patch?.scenarioTelemetry ?? []}
       escalationLevel={patch?.escalationLevel ?? 0}

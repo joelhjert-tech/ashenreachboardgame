@@ -8,6 +8,7 @@ import { RollOutcomePanel } from "../shared/RollOutcomePanel.js";
 import { useRoomSubscription } from "../shared/useRoomSubscription.js";
 import { getCharacterPortraitPath } from "../shared/assetPaths.js";
 import type {
+  ActiveNemesisSummary,
   CharacterCatalogEntry,
   PublicPatchPayload,
   PublicPlayer,
@@ -171,13 +172,15 @@ function getSectorBrief(patch: StatePatch<PublicPatchPayload> | null, activePlay
 
 function getScenarioStatus(patch: StatePatch<PublicPatchPayload> | null) {
   const scenario = patch?.payload.activeScenario;
+  const nemesis = patch?.payload.nemesis ?? null;
 
   if (!scenario) {
     return {
       name: "No active scenario",
       confrontationTitle: "Awaiting directive",
       progress: "0/0",
-      telemetry: [] as ScenarioTelemetryItem[]
+      telemetry: [] as ScenarioTelemetryItem[],
+      nemesis: null as ActiveNemesisSummary | null
     };
   }
 
@@ -185,7 +188,8 @@ function getScenarioStatus(patch: StatePatch<PublicPatchPayload> | null) {
     name: scenario.name,
     confrontationTitle: scenario.confrontationTitle,
     progress: `${scenario.progress}/${scenario.threshold}`,
-    telemetry: patch?.payload.scenarioTelemetry ?? []
+    telemetry: patch?.payload.scenarioTelemetry ?? [],
+    nemesis
   };
 }
 
@@ -487,6 +491,29 @@ function RightSidebar({
         <div className="board-sidebar-meta">
           <span>Progress {scenarioStatus.progress}</span>
         </div>
+        {scenarioStatus.nemesis && (
+          <div className="tv-scenario-nemesis">
+            <div className="tv-scenario-nemesis-header">
+              <span>Nemesis</span>
+              <strong>{scenarioStatus.nemesis.faction}</strong>
+            </div>
+            <p className="board-sidebar-title">
+              {scenarioStatus.nemesis.name} | {scenarioStatus.nemesis.title}
+            </p>
+            <div className="board-sidebar-meta">
+              <span>
+                Damage {scenarioStatus.nemesis.damageDealt}/{scenarioStatus.nemesis.life}
+              </span>
+            </div>
+            <div className="tv-scenario-nemesis-abilities">
+              {scenarioStatus.nemesis.abilities.map((ability) => (
+                <p key={`${ability.timing}-${ability.text}`}>
+                  <strong>{toTitleCase(ability.timing)}</strong> {ability.text}
+                </p>
+              ))}
+            </div>
+          </div>
+        )}
         {scenarioStatus.telemetry.length > 0 && (
           <div className="tv-scenario-telemetry">
             {scenarioStatus.telemetry.map((entry) => (
@@ -529,12 +556,45 @@ interface TacticalMapPanelProps {
   characterCatalog: CharacterCatalogEntry[];
 }
 
+function NemesisBanner({ nemesis }: { nemesis: ActiveNemesisSummary | null }): ReactElement | null {
+  if (!nemesis) {
+    return null;
+  }
+
+  const remainingLife = Math.max(0, nemesis.life - nemesis.damageDealt);
+  const progressPercent = Math.min(100, (nemesis.damageDealt / Math.max(nemesis.life, 1)) * 100);
+
+  return (
+    <section className="tv-nemesis-banner tv-card" aria-label="Active nemesis">
+      <div className="tv-nemesis-banner-header">
+        <div>
+          <span>Nemesis at the Cinder Gate</span>
+          <strong>
+            {nemesis.name} | {nemesis.title}
+          </strong>
+          <p>{nemesis.faction}</p>
+        </div>
+        <div className="tv-nemesis-banner-life">
+          <span>
+            Damage {nemesis.damageDealt}/{nemesis.life}
+          </span>
+          <strong>{remainingLife} life left</strong>
+        </div>
+      </div>
+      <div className="tv-nemesis-banner-bar" aria-hidden="true">
+        <span style={{ width: `${progressPercent}%` }} />
+      </div>
+    </section>
+  );
+}
+
 function TacticalMapPanel({ patch, previousPatch, activeSeat, activePlayer, characterCatalog }: TacticalMapPanelProps): ReactElement {
   return (
     <section className="tv-command-stage">
       <div className="tv-command-map-shell">
         <TacticalMapBoard patch={patch?.payload ?? null} phase={patch?.phase ?? "start"} />
       </div>
+      <NemesisBanner nemesis={patch?.payload.nemesis ?? null} />
       <ActiveOperativeOverlay
         patch={patch}
         previousPatch={previousPatch}

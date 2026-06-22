@@ -155,6 +155,9 @@ describe("scenario confrontation flow", () => {
     const roomServer = new GameRoomServer(
       createScenarioState({
         activeScenarioId: "scenario_throne_of_ash",
+        scenarioProgress: {
+          throneClaims: 4
+        },
         players: createScenarioState().players.map((player) =>
           player.seatId === "seat-1"
             ? {
@@ -162,9 +165,9 @@ describe("scenario confrontation flow", () => {
                 character: {
                   ...player.character,
                   stats: {
-                    command: 20,
-                    grit: 20,
-                    signal: player.character.stats.signal,
+                    command: player.character.stats.command,
+                    grit: player.character.stats.grit,
+                    signal: 20,
                     guile: 20,
                     forge: player.character.stats.forge
                   }
@@ -184,10 +187,37 @@ describe("scenario confrontation flow", () => {
 
     expect(roomServer.getState().status).toBe("ended");
     expect(roomServer.getState().winnerSeatId).toBe("seat-1");
-    expect(roomServer.getState().scenarioProgress.throneClaims).toBe(3);
+    expect(roomServer.getState().scenarioProgress.throneClaims).toBe(6);
   });
 
-  it("applies mirror backlash as heat when the Mirror of False Heroes is failed", () => {
+  it("builds linked nemesis confrontation checks from the nemesis stat block", () => {
+    const roomServer = new GameRoomServer(
+      createScenarioState({
+        activeScenarioId: "scenario_mirror_of_false_heroes"
+      }),
+      [],
+      createSequenceRandomSource([0, 0])
+    );
+
+    const player = roomServer.getState().players.find((entry) => entry.seatId === "seat-1");
+    const plan = (roomServer as any).buildScenarioPlan(player!);
+
+    expect(plan.checks).toEqual([{ stat: "signal", difficulty: 12, label: "Outlast The Glass Prophet" }]);
+  });
+
+  it("keeps the Broken Seal on the legacy confrontation plan when no nemesis is linked", () => {
+    const roomServer = new GameRoomServer(createScenarioState(), [], createSequenceRandomSource([0, 0, 0, 0, 0, 0]));
+    const player = roomServer.getState().players.find((entry) => entry.seatId === "seat-1");
+    const plan = (roomServer as any).buildScenarioPlan(player!);
+
+    expect(plan.checks).toEqual([
+      { stat: "grit", difficulty: 10, label: "Hold the breached ward shut" },
+      { stat: "signal", difficulty: 10, label: "Realign the split sigils" },
+      { stat: "guile", difficulty: 12, label: "Resist the mind behind the breach" }
+    ]);
+  });
+
+  it("applies the linked nemesis bite as wounds and feeds escalation on a failed confrontation check", () => {
     const roomServer = new GameRoomServer(
       createScenarioState({
         activeScenarioId: "scenario_mirror_of_false_heroes",
@@ -221,25 +251,28 @@ describe("scenario confrontation flow", () => {
 
     expect(roomServer.getState().status).toBe("active");
     expect(roomServer.getState().scenarioProgress.mirrorBreaks).toBe(0);
-    expect(roomServer.getState().players.find((entry) => entry.seatId === "seat-1")?.character.heat).toBe(5);
+    expect(roomServer.getState().players.find((entry) => entry.seatId === "seat-1")?.character.wounds).toBe(1);
+    expect(roomServer.getState().escalationLevel).toBe(1);
   });
 
-  it("lets the Devourer Beneath use salvaged gear to close the final maw strike", () => {
+  it("lets the Devourer Beneath win once accumulated nemesis damage reaches life", () => {
     const roomServer = new GameRoomServer(
       createScenarioState({
         activeScenarioId: "scenario_devourer_beneath",
+        scenarioProgress: {
+          mawStrikes: 4
+        },
         players: createScenarioState().players.map((player) =>
           player.seatId === "seat-1"
             ? {
                 ...player,
                 character: {
                   ...player.character,
-                  heldGear: [...player.character.heldGear, { id: "test-gear", name: "Test Gear", slot: "weapon", statBonus: { stat: "grit", amount: 1 } }],
                   stats: {
                     command: player.character.stats.command,
-                    grit: 12,
+                    grit: player.character.stats.grit,
                     signal: player.character.stats.signal,
-                    guile: player.character.stats.guile,
+                    guile: 20,
                     forge: player.character.stats.forge
                   }
                 }
@@ -257,61 +290,28 @@ describe("scenario confrontation flow", () => {
     } satisfies ClientIntent);
 
     expect(roomServer.getState().status).toBe("ended");
-    expect(roomServer.getState().scenarioProgress.mawStrikes).toBe(1);
+    expect(roomServer.getState().scenarioProgress.mawStrikes).toBe(5);
   });
 
-  it("rotates through Labyrinth Engine checks and wins with two successful shutdown marks", () => {
+  it("lets the linked Iron Saint confrontation close once enough damage is accumulated", () => {
     const roomServer = new GameRoomServer(
       createScenarioState({
         activeScenarioId: "scenario_labyrinth_engine",
-        escalationLevel: 1,
+        scenarioProgress: {
+          shutdownMarks: 3,
+          engineModeIndex: 1
+        },
         players: createScenarioState().players.map((player) =>
           player.seatId === "seat-1"
             ? {
                 ...player,
                 character: {
                   ...player.character,
-                  stats: {
-                    command: 20,
-                    grit: player.character.stats.grit,
-                    signal: 20,
-                    guile: 20,
-                    forge: player.character.stats.forge
-                  }
-                }
-              }
-            : player
-        )
-      }),
-      [],
-      createSequenceRandomSource([0, 0, 0, 0, 0, 0])
-    );
-
-    roomServer.handleIntent(createPhoneClient("seat-1") as never, {
-      type: "SCENARIO_CONFRONTATION_REQUESTED",
-      seatId: "seat-1"
-    } satisfies ClientIntent);
-
-    expect(roomServer.getState().status).toBe("ended");
-    expect(roomServer.getState().scenarioProgress.shutdownMarks).toBe(3);
-  });
-
-  it("charges the Dying Star opening cost before awarding ignition victory", () => {
-    const roomServer = new GameRoomServer(
-      createScenarioState({
-        activeScenarioId: "scenario_dying_star",
-        players: createScenarioState().players.map((player) =>
-          player.seatId === "seat-1"
-            ? {
-                ...player,
-                character: {
-                  ...player.character,
-                  heldGear: [],
                   stats: {
                     command: player.character.stats.command,
                     grit: 20,
                     signal: 20,
-                    guile: 20,
+                    guile: player.character.stats.guile,
                     forge: player.character.stats.forge
                   }
                 }
@@ -329,8 +329,45 @@ describe("scenario confrontation flow", () => {
     } satisfies ClientIntent);
 
     expect(roomServer.getState().status).toBe("ended");
-    expect(roomServer.getState().scenarioProgress.ignitionMarks).toBe(3);
-    expect(roomServer.getState().players.find((entry) => entry.seatId === "seat-1")?.character.wounds).toBe(2);
+    expect(roomServer.getState().scenarioProgress.shutdownMarks).toBe(5);
+  });
+
+  it("lets the linked Dying Star nemesis fall once the final damage is dealt", () => {
+    const roomServer = new GameRoomServer(
+      createScenarioState({
+        activeScenarioId: "scenario_dying_star",
+        scenarioProgress: {
+          ignitionMarks: 3
+        },
+        players: createScenarioState().players.map((player) =>
+          player.seatId === "seat-1"
+            ? {
+                ...player,
+                character: {
+                  ...player.character,
+                  stats: {
+                    command: player.character.stats.command,
+                    grit: 20,
+                    signal: player.character.stats.signal,
+                    guile: player.character.stats.guile,
+                    forge: player.character.stats.forge
+                  }
+                }
+              }
+            : player
+        )
+      }),
+      [],
+      createSequenceRandomSource([0, 0, 0, 0, 0, 0])
+    );
+
+    roomServer.handleIntent(createPhoneClient("seat-1") as never, {
+      type: "SCENARIO_CONFRONTATION_REQUESTED",
+      seatId: "seat-1"
+    } satisfies ClientIntent);
+
+    expect(roomServer.getState().status).toBe("ended");
+    expect(roomServer.getState().scenarioProgress.ignitionMarks).toBe(4);
   });
 
   it("weakens the Broken Seal at turn start from its ambient roll", () => {

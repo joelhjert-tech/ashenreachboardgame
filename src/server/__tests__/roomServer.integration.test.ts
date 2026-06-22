@@ -745,14 +745,13 @@ describe("roomServer websocket integration", () => {
     expect(startedSnapshot.payload.players).toHaveLength(1);
   });
 
-  it("fires a real scenario victory over the live phone socket path", async () => {
+  it("fires a real linked-nemesis scenario victory over the live phone socket path", async () => {
     const soloBase = createState({
       status: "active",
       phase: "action",
-      activeScenarioId: "scenario_broken_seal",
+      activeScenarioId: "scenario_throne_of_ash",
       scenarioProgress: {
-        sealRestorationMarks: 1,
-        sealTokens: 6
+        throneClaims: 4
       },
       currentEncounter: null,
       pendingEnemyRoll: null,
@@ -771,8 +770,8 @@ describe("roomServer websocket integration", () => {
           ...player.character,
           currentSpaceId: "center_cinder_gate",
           stats: {
-            command: 12,
-            grit: 12,
+            command: player.character.stats.command,
+            grit: player.character.stats.grit,
             signal: 12,
             guile: 12,
             forge: 12
@@ -802,7 +801,8 @@ describe("roomServer websocket integration", () => {
 
     expect(endedSnapshot.phase).toBe("broadcast");
     expect(endedSnapshot.payload.winnerSeatId).toBe("seat-1");
-    expect((endedSnapshot.payload.activeScenario as { progress?: number } | null)?.progress).toBe(4);
+    expect((endedSnapshot.payload.activeScenario as { progress?: number; threshold?: number } | null)?.progress).toBe(6);
+    expect((endedSnapshot.payload.activeScenario as { progress?: number; threshold?: number } | null)?.threshold).toBe(6);
   });
 
   it("fires a real escalation loss over the live phone socket path when wounds feed the breach", async () => {
@@ -816,7 +816,7 @@ describe("roomServer websocket integration", () => {
       currentEncounter: null,
       pendingEnemyRoll: null,
       pendingEffect: null,
-      escalationLevel: 5,
+      escalationLevel: 7,
       turnOrder: ["seat-1"],
       activeSeatIndex: 0
     });
@@ -858,11 +858,11 @@ describe("roomServer websocket integration", () => {
         isStatePatch(message) &&
         message.payload.status === "ended" &&
         message.payload.winnerSeatId === null &&
-        Number(message.payload.escalationLevel) >= 6
+        Number(message.payload.escalationLevel) >= 8
     )) as Extract<ServerEnvelope, { type: "STATE_PATCH" }>;
 
     expect(collapseSnapshot.phase).toBe("broadcast");
-    expect(Number(collapseSnapshot.payload.escalationLevel)).toBeGreaterThanOrEqual(6);
+    expect(Number(collapseSnapshot.payload.escalationLevel)).toBeGreaterThanOrEqual(8);
     expect(collapseSnapshot.payload.winnerSeatId).toBeNull();
   });
 

@@ -1918,6 +1918,80 @@ select {
   color: #f1b2a7;
 }
 
+.phone-sheet-nemesis-panel {
+  display: grid;
+  gap: 0.4rem;
+  padding: 0.58rem 0.74rem;
+  border: 1px solid rgba(160, 123, 73, 0.32);
+  background:
+    linear-gradient(180deg, rgba(16, 14, 19, 0.94), rgba(11, 10, 16, 0.92)),
+    rgba(9, 8, 12, 0.94);
+  box-shadow:
+    inset 0 0 0 1px rgba(233, 219, 189, 0.04),
+    0 0 18px rgba(38, 63, 102, 0.14);
+}
+
+.phone-sheet-nemesis-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.55rem;
+}
+
+.phone-sheet-nemesis-header span,
+.phone-sheet-nemesis-life span {
+  color: rgba(216, 170, 95, 0.92);
+  font-size: 0.58rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.phone-sheet-nemesis-header strong,
+.phone-sheet-nemesis-life strong {
+  display: block;
+  color: #e2e9ef;
+  font-size: clamp(0.64rem, 0.96vw, 0.8rem);
+  line-height: 1.2;
+}
+
+.phone-sheet-nemesis-life {
+  text-align: right;
+}
+
+.phone-sheet-nemesis-bar {
+  position: relative;
+  height: 0.34rem;
+  overflow: hidden;
+  border: 1px solid rgba(93, 106, 120, 0.34);
+  background: rgba(10, 12, 18, 0.92);
+}
+
+.phone-sheet-nemesis-bar span {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, #6fb8ff, #e1b160);
+  box-shadow: 0 0 12px rgba(88, 154, 255, 0.32);
+}
+
+.phone-sheet-nemesis-abilities {
+  display: grid;
+  gap: 0.24rem;
+}
+
+.phone-sheet-nemesis-abilities p {
+  margin: 0;
+  color: #c9d3db;
+  font-size: clamp(0.58rem, 0.86vw, 0.72rem);
+  line-height: 1.28;
+}
+
+.phone-sheet-nemesis-abilities strong {
+  color: #f0debd;
+  font-size: 0.58rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
 .phone-sheet-gear-grid {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
@@ -2192,6 +2266,20 @@ select {
 
 .phone-sheet-card-landscape .phone-sheet-vital-strip-ambient {
   min-height: 2.15rem;
+}
+
+.phone-sheet-card-landscape .phone-sheet-nemesis-panel {
+  gap: 0.3rem;
+  padding: 0.42rem 0.5rem;
+}
+
+.phone-sheet-card-landscape .phone-sheet-nemesis-header strong,
+.phone-sheet-card-landscape .phone-sheet-nemesis-life strong {
+  font-size: clamp(0.52rem, 0.8vw, 0.68rem);
+}
+
+.phone-sheet-card-landscape .phone-sheet-nemesis-abilities p {
+  font-size: clamp(0.46rem, 0.68vw, 0.58rem);
 }
 
 .phone-sheet-card-landscape .phone-sheet-gear-grid {
@@ -2791,6 +2879,75 @@ body {
   width: min(42rem, 48%);
   z-index: 3;
   pointer-events: none;
+}
+
+.tv-nemesis-banner {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  width: min(24rem, 34%);
+  z-index: 3;
+  padding: 0.75rem 0.86rem;
+  pointer-events: none;
+  background:
+    linear-gradient(180deg, rgba(17, 15, 22, 0.94), rgba(8, 10, 16, 0.96)),
+    rgba(8, 10, 15, 0.95);
+}
+
+.tv-nemesis-banner-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.7rem;
+}
+
+.tv-nemesis-banner-header span,
+.tv-nemesis-banner-life span,
+.tv-scenario-nemesis-header span {
+  color: #d8a95c;
+  font-size: 0.7rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.tv-nemesis-banner-header strong,
+.tv-nemesis-banner-life strong {
+  display: block;
+  color: #e5edf4;
+}
+
+.tv-nemesis-banner-header strong {
+  font-size: 1.08rem;
+  line-height: 1.08;
+}
+
+.tv-nemesis-banner-header p {
+  margin: 0.2rem 0 0;
+  color: #aeb8c2;
+  font-size: 0.8rem;
+}
+
+.tv-nemesis-banner-life {
+  text-align: right;
+}
+
+.tv-nemesis-banner-life strong {
+  font-size: 0.96rem;
+}
+
+.tv-nemesis-banner-bar {
+  margin-top: 0.62rem;
+  height: 0.46rem;
+  overflow: hidden;
+  border: 1px solid rgba(96, 109, 124, 0.36);
+  background: rgba(10, 13, 19, 0.94);
+}
+
+.tv-nemesis-banner-bar span {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, #71b6ff, #e0ad63);
+  box-shadow: 0 0 14px rgba(93, 168, 255, 0.28);
 }
 
 .tv-active-operative-empty {
@@ -3726,6 +3883,45 @@ body {
   margin-top: 0.7rem;
   display: grid;
   gap: 0.42rem;
+}
+
+.tv-scenario-nemesis {
+  display: grid;
+  gap: 0.36rem;
+  margin-top: 0.68rem;
+  padding-top: 0.66rem;
+  border-top: 1px solid rgba(103, 116, 129, 0.22);
+}
+
+.tv-scenario-nemesis-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.tv-scenario-nemesis-header strong {
+  color: #dbe6ef;
+  font-size: 0.84rem;
+}
+
+.tv-scenario-nemesis-abilities {
+  display: grid;
+  gap: 0.34rem;
+}
+
+.tv-scenario-nemesis-abilities p {
+  margin: 0;
+  color: #c8d1d8;
+  font-size: 0.77rem;
+  line-height: 1.3;
+}
+
+.tv-scenario-nemesis-abilities strong {
+  color: #f0debd;
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
 .tv-scenario-telemetry-row {

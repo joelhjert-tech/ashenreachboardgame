@@ -58,10 +58,12 @@ describe("canonical sector graph", () => {
     const tvProjection = createTvProjection(state) as {
       activeScenario: { id: string; name: string; progress: number; threshold: number } | null;
       scenarioProgress: Record<string, number>;
+      nemesis: { id: string } | null;
     };
     const phoneProjection = createPhoneProjection(state, "seat-1") as {
       activeScenario: { confrontationTitle: string } | null;
       scenarioProgress: Record<string, number>;
+      nemesis: { id: string } | null;
     };
 
     expect(tvProjection.activeScenario?.id).toBe("scenario_broken_seal");
@@ -70,6 +72,34 @@ describe("canonical sector graph", () => {
     expect(phoneProjection.activeScenario?.confrontationTitle).toBe("Reseal the Prison");
     expect(tvProjection.scenarioProgress).toEqual({ sealTokens: 6 });
     expect(phoneProjection.scenarioProgress).toEqual({ sealTokens: 6 });
+    expect(tvProjection.nemesis).toBeNull();
+    expect(phoneProjection.nemesis).toBeNull();
+  });
+
+  it("includes the linked nemesis block in TV and phone projections", () => {
+    const state = createInitialSessionState("session-alpha");
+    state.activeScenarioId = "scenario_throne_of_ash";
+    state.scenarioProgress = { throneClaims: 2 };
+
+    const tvProjection = createTvProjection(state) as {
+      activeScenario: { threshold: number } | null;
+      nemesis: { id: string; life: number; damageDealt: number } | null;
+    };
+    const phoneProjection = createPhoneProjection(state, "seat-1") as {
+      nemesis: { id: string; life: number; damageDealt: number } | null;
+    };
+
+    expect(tvProjection.activeScenario?.threshold).toBe(6);
+    expect(tvProjection.nemesis).toMatchObject({
+      id: "nemesis_hollow_regent",
+      life: 6,
+      damageDealt: 2
+    });
+    expect(phoneProjection.nemesis).toMatchObject({
+      id: "nemesis_hollow_regent",
+      life: 6,
+      damageDealt: 2
+    });
   });
 
   it("only allows movement into authored neighboring sectors from the initial session state", () => {
