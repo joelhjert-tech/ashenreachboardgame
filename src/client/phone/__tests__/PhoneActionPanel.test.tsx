@@ -210,6 +210,21 @@ describe("PhoneActionPanel", () => {
     expect(screen.queryByRole("button", { name: /end turn/i })).not.toBeInTheDocument();
   });
 
+  it("offers stabilize when escalation is live and no encounter is blocking the action", () => {
+    render(
+      <PhoneActionPanel
+        characters={characters}
+        onIntent={vi.fn()}
+        patch={createPatch({
+          encounter: null,
+          escalationLevel: 2
+        })}
+      />
+    );
+
+    expect(screen.getByRole("button", { name: /stabilize the breach/i })).toBeInTheDocument();
+  });
+
   it("shows game over state and hides action buttons when the session has ended", () => {
     const { queryByRole } = render(
       <PhoneActionPanel

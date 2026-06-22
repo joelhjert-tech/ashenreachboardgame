@@ -28,6 +28,7 @@ import type {
   ScenarioConfrontationRequestedAction,
   ScenarioProgressAdvancedAction,
   ScenarioVictoryAchievedAction,
+  StabilizeResolvedAction,
   UnequipGearAction
 } from "../game/engine/actions.js";
 import { getEquippedGearBonus } from "../game/engine/gear.js";
@@ -39,6 +40,11 @@ import { rollDice, type RandomSource, defaultRandomSource } from "../game/engine
 import { reduceGameState } from "../game/engine/reducer.js";
 import type { GameState, PlayerState } from "../game/schema/session.schema.js";
 import { validateHostToken, validateJoinToken } from "./auth.js";
+
+export const ESCALATION_FEEDERS = {
+  woundTaken: 1,
+  trophyDiscarded: 1
+} as const;
 
 export interface ConnectedClient {
   socket: WebSocket;
@@ -221,6 +227,20 @@ export class GameRoomServer {
 
       if (intent.seatId !== client.seatId) {
         throw new IntentRejectedError(intent.type, "Seat mismatch between token and submitted intent");
+      }
+
+      if (intent.type === "STABILIZE_REQUESTED") {
+        this.resolveStabilizeIntent(intent);
+        const shouldCompleteTurn = this.state.status === "active" && this.state.phase === "broadcast";
+        const completingSeatId = this.state.turnOrder[this.state.activeSeatIndex] ?? client.seatId;
+
+        this.broadcastPatch();
+
+        if (shouldCompleteTurn && completingSeatId) {
+          this.completeBroadcastTurn(completingSeatId);
+        }
+
+        return;
       }
 
       const action = this.intentToAction(intent);
@@ -518,6 +538,8 @@ export class GameRoomServer {
           seatId: intent.seatId,
           createdAt
         } satisfies ScenarioConfrontationRequestedAction;
+      case "STABILIZE_REQUESTED":
+        throw new Error("Stabilize requests are resolved directly");
       default: {
         const exhaustiveCheck: never = intent;
         return exhaustiveCheck;
@@ -526,6 +548,8 @@ export class GameRoomServer {
   }
 
   private applyAction(action: GameAction): void {
+    const previousState = this.state;
+    const previousTotalWounds = this.getTotalWounds(previousState);
     const result = reduceGameState(this.state, action);
 
     if (!result.ok) {
@@ -534,6 +558,16 @@ export class GameRoomServer {
 
     this.state = result.state;
     this.events.push(action, ...result.emitted);
+
+    const woundDelta = this.getTotalWounds(this.state) - previousTotalWounds;
+
+    if (previousState.status === "active" && woundDelta > 0) {
+      this.feedEscalation(
+        action.seatId,
+        woundDelta * ESCALATION_FEEDERS.woundTaken,
+        "wounds taken"
+      );
+    }
   }
 
   private getRemainingSeatIds(): string[] {
@@ -583,6 +617,40 @@ export class GameRoomServer {
 
   private getOuterRingSectorIds(): string[] {
     return this.state.sectors.filter((sector) => sector.regionTier === "borderlight").map((sector) => sector.id);
+  }
+
+  private getTotalWounds(state: GameState): number {
+    return state.players.reduce((total, player) => total + player.character.wounds, 0);
+  }
+
+  private feedEscalation(seatId: string, delta: number, reason: string): void {
+    if (this.state.status !== "active" || delta === 0) {
+      return;
+    }
+
+    const nextLevel = Math.max(0, this.state.escalationLevel + delta);
+    const modifier = getEscalationModifier(nextLevel);
+
+    this.applyAction({
+      type: "ESCALATION_ADVANCED",
+      seatId,
+      amount: delta,
+      newLevel: nextLevel,
+      modifier,
+      reason,
+      createdAt: new Date().toISOString()
+    } satisfies EscalationAdvancedAction);
+
+    if (nextLevel >= ESCALATION_COLLAPSE_LEVEL) {
+      this.applyAction({
+        type: "SECTOR_COLLAPSED",
+        seatId,
+        threshold: ESCALATION_COLLAPSE_LEVEL,
+        modifier,
+        summary: `Escalation reached ${nextLevel}/${ESCALATION_COLLAPSE_LEVEL}. The breach overtook the operatives (${reason}).`,
+        createdAt: new Date().toISOString()
+      } satisfies SectorCollapsedAction);
+    }
   }
 
   private applyAmbientScenarioMutation(
@@ -1152,29 +1220,7 @@ export class GameRoomServer {
       seatId,
       createdAt: new Date().toISOString()
     } satisfies RoundCompletedAction);
-
-    const nextLevel = this.state.escalationLevel + 1;
-    const modifier = getEscalationModifier(nextLevel);
-
-    this.applyAction({
-      type: "ESCALATION_ADVANCED",
-      seatId,
-      amount: 1,
-      newLevel: nextLevel,
-      modifier,
-      createdAt: new Date().toISOString()
-    } satisfies EscalationAdvancedAction);
-
-    if (nextLevel >= ESCALATION_COLLAPSE_LEVEL) {
-      this.applyAction({
-        type: "SECTOR_COLLAPSED",
-        seatId,
-        threshold: ESCALATION_COLLAPSE_LEVEL,
-        modifier,
-        summary: `Escalation reached ${nextLevel}/${ESCALATION_COLLAPSE_LEVEL}. The sector collapsed before the operatives could stabilize the breach.`,
-        createdAt: new Date().toISOString()
-      } satisfies SectorCollapsedAction);
-    }
+    this.feedEscalation(seatId, 1, "round pressure");
   }
 
   private createEncounterDrawnAction(seatId: string): EncounterDrawnAction {
@@ -1472,18 +1518,21 @@ export class GameRoomServer {
     }
 
     const plan = this.buildScenarioPlan(player);
+    const confrontationModifier = getEscalationModifier(this.state.escalationLevel);
 
     const results = plan.checks.map((check) => {
       const roll = rollDice(2, 6, this.randomSource);
       const statBonus = player.character.stats[check.stat] + getEquippedGearBonus(player.character, check.stat);
+      const difficulty = check.difficulty + confrontationModifier;
       const total = roll.total + statBonus;
 
       return {
         ...check,
+        difficulty,
         roll,
         statBonus,
         total,
-        success: total >= check.difficulty
+        success: total >= difficulty
       };
     });
     const marksEarned = results.filter((result) => result.success).length;
@@ -1555,7 +1604,15 @@ export class GameRoomServer {
       createdAt: new Date().toISOString()
     } satisfies ScenarioProgressAdvancedAction);
 
+    if (this.state.status !== "active") {
+      return;
+    }
+
     this.maybeApplyScenarioThresholds(intent.seatId);
+
+    if (this.state.status !== "active") {
+      return;
+    }
 
     if (hasScenarioVictory(this.state.scenarioProgress, scenario)) {
       this.applyAction({
@@ -1567,6 +1624,56 @@ export class GameRoomServer {
       } satisfies ScenarioVictoryAchievedAction);
       return;
     }
+  }
+
+  resolveStabilizeIntent(intent: Extract<ClientIntent, { type: "STABILIZE_REQUESTED" }>): void {
+    const player = this.state.players.find((entry) => entry.seatId === intent.seatId);
+
+    if (!player) {
+      throw new Error(`Missing player for seat ${intent.seatId}`);
+    }
+
+    if (this.state.status !== "active" || this.state.phase !== "action") {
+      throw new Error("Stabilize is only available during an active action phase");
+    }
+
+    if (this.state.turnOrder[this.state.activeSeatIndex] !== intent.seatId) {
+      throw new Error("Only the active seat can stabilize the breach");
+    }
+
+    if (player.character.status !== "active") {
+      throw new Error("Recalled operatives cannot stabilize the breach");
+    }
+
+    if (this.state.pendingEnemyRoll || this.state.currentEncounter || this.state.pendingEffect) {
+      throw new Error("Resolve the current threat before stabilizing the breach");
+    }
+
+    if (this.state.escalationLevel <= 0) {
+      throw new Error("Escalation is already stable");
+    }
+
+    this.applyAction({
+      type: "STABILIZE_RESOLVED",
+      seatId: intent.seatId,
+      cost: { kind: "action", amount: 1 },
+      createdAt: new Date().toISOString()
+    } satisfies StabilizeResolvedAction);
+
+    this.feedEscalation(intent.seatId, -1, "stabilized");
+
+    if (this.state.status !== "active") {
+      return;
+    }
+
+    this.applyAction({
+      type: "PHASE_ADVANCED",
+      seatId: intent.seatId,
+      toPhase: "resolution",
+      createdAt: new Date().toISOString()
+    });
+
+    this.runAutomaticPhases(intent.seatId);
   }
 
   resolveCombatIntent(intent: Extract<ClientIntent, { type: "COMBAT_REQUESTED" }>): void {
@@ -1958,6 +2065,9 @@ export function createPhoneProjection(state: GameState, seatId: string, forcePri
     turnOrder: publicProjection.turnOrder,
     sectors: state.sectors,
     players: publicProjection.players,
+    escalationLevel: publicProjection.escalationLevel,
+    escalationThreshold: publicProjection.escalationThreshold,
+    escalationModifier: publicProjection.escalationModifier,
     availableContracts: state.availableContracts,
     encounter: state.currentEncounter,
     pendingEnemyRoll: state.pendingEnemyRoll,

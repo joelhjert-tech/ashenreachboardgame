@@ -6,7 +6,7 @@ import type { Character } from "../../schema/character.schema.js";
 import type { ContractCard } from "../../schema/contract.schema.js";
 import type { GearItem } from "../../schema/gear.schema.js";
 import type { ThreatCard } from "../../schema/card.schema.js";
-import type { ClientIntent } from "../actions.js";
+import type { ClientIntent, GameAction } from "../actions.js";
 import type { GameState } from "../../schema/session.schema.js";
 
 function createGear(): Map<string, GearItem> {
@@ -222,9 +222,9 @@ function createState(overrides: Partial<GameState> = {}): GameState {
       }
     ],
     seats: [
-      { seatId: "seat-1", characterId: "void-marshal", connected: true, kicked: false, joinToken: "seat:session-alpha:seat-1" },
-      { seatId: "seat-2", characterId: "signal-witch", connected: true, kicked: false, joinToken: "seat:session-alpha:seat-2" },
-      { seatId: "seat-3", characterId: "grave-engineer", connected: true, kicked: false, joinToken: "seat:session-alpha:seat-3" }
+      { seatId: "seat-1", characterId: "void-marshal", displayName: "Seat One", connected: true, kicked: false, joinToken: "seat:session-alpha:seat-1" },
+      { seatId: "seat-2", characterId: "signal-witch", displayName: "Seat Two", connected: true, kicked: false, joinToken: "seat:session-alpha:seat-2" },
+      { seatId: "seat-3", characterId: "grave-engineer", displayName: "Seat Three", connected: true, kicked: false, joinToken: "seat:session-alpha:seat-3" }
     ],
     players: [
       {
@@ -744,6 +744,134 @@ describe("escalation flow", () => {
     expect(server.getState().winnerSeatId).toBeNull();
     expect(server.getState().phase).toBe("broadcast");
     expect(server.getState().escalationLevel).toBe(6);
+  });
+
+  it("feeds escalation from wounds taken during resolution effects", () => {
+    const baseState = createState({
+      phase: "action",
+      currentEncounter: null,
+      pendingEnemyRoll: null,
+      pendingEffect: null,
+      turnOrder: ["seat-1"],
+      activeSeatIndex: 0
+    });
+    const server = new GameRoomServer(
+      withOnlyConnectedSeat(
+        {
+          ...baseState,
+          seats: baseState.seats.slice(0, 1),
+          players: baseState.players.slice(0, 1).map((player) => ({
+            ...player,
+            sectorId: "center_cinder_gate",
+            character: {
+              ...player.character,
+              currentSpaceId: "center_cinder_gate"
+            }
+          }))
+        },
+        "seat-1"
+      ),
+      [],
+      createSequenceRandomSource([0]),
+      createThreats(),
+      createCharacters(),
+      createGear(),
+      createContracts()
+    );
+
+    (server as unknown as { applyAction: (action: GameAction) => void }).applyAction({
+      type: "SCENARIO_PROGRESS_ADVANCED",
+      seatId: "seat-1",
+      scenarioId: "scenario_broken_seal",
+      progressKey: "sealRestorationMarks",
+      amount: 0,
+      effect: { type: "take_wound", amount: 2 },
+      summary: "The breach lashes back.",
+      createdAt: new Date().toISOString()
+    });
+
+    expect(server.getState().players[0]?.character.wounds).toBe(2);
+    expect(server.getState().escalationLevel).toBe(2);
+  });
+
+  it("collapses the session when a wound feeder pushes escalation to threshold", () => {
+    const baseState = createState({
+      phase: "action",
+      escalationLevel: 5,
+      currentEncounter: null,
+      pendingEnemyRoll: null,
+      pendingEffect: null,
+      turnOrder: ["seat-1"],
+      activeSeatIndex: 0
+    });
+    const server = new GameRoomServer(
+      withOnlyConnectedSeat(
+        {
+          ...baseState,
+          seats: baseState.seats.slice(0, 1),
+          players: baseState.players.slice(0, 1).map((player) => ({
+            ...player,
+            sectorId: "center_cinder_gate",
+            character: {
+              ...player.character,
+              currentSpaceId: "center_cinder_gate"
+            }
+          }))
+        },
+        "seat-1"
+      ),
+      [],
+      createSequenceRandomSource([0]),
+      createThreats(),
+      createCharacters(),
+      createGear(),
+      createContracts()
+    );
+
+    (server as unknown as { applyAction: (action: GameAction) => void }).applyAction({
+      type: "SCENARIO_PROGRESS_ADVANCED",
+      seatId: "seat-1",
+      scenarioId: "scenario_broken_seal",
+      progressKey: "sealRestorationMarks",
+      amount: 0,
+      effect: { type: "take_wound", amount: 1 },
+      summary: "The breach breaks through.",
+      createdAt: new Date().toISOString()
+    });
+
+    expect(server.getState().escalationLevel).toBe(6);
+    expect(server.getState().status).toBe("ended");
+    expect(server.getState().winnerSeatId).toBeNull();
+  });
+
+  it("lets the active seat stabilize the breach and clamps escalation at zero", () => {
+    const baseState = createState({
+      phase: "action",
+      currentEncounter: null,
+      pendingEnemyRoll: null,
+      pendingEffect: null,
+      escalationLevel: 1
+    });
+    const server = new GameRoomServer(
+      {
+        ...baseState,
+        activeSeatIndex: 0
+      },
+      [],
+      createSequenceRandomSource([0]),
+      createThreats(),
+      createCharacters(),
+      createGear(),
+      createContracts()
+    );
+
+    runIntent(server, {
+      type: "STABILIZE_REQUESTED",
+      seatId: "seat-1"
+    });
+
+    expect(server.getState().escalationLevel).toBe(0);
+    expect(server.getState().activeSeatIndex).toBe(1);
   });
 });
 

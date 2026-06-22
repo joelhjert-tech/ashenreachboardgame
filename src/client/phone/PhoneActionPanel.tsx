@@ -203,6 +203,19 @@ export function PhoneActionPanel({ characters, onIntent, patch }: PhoneActionPan
   }
 
   if (patch.phase === "action") {
+    if (!patch.encounter && patch.escalationLevel > 0) {
+      actions.push({
+        key: "stabilize",
+        label: "Stabilize the Breach",
+        tone: "secondary",
+        onClick: () =>
+          onIntent({
+            type: "STABILIZE_REQUESTED",
+            seatId: self.seatId
+          })
+      });
+    }
+
     self.character.heldGear.forEach((item) => {
       if (equippedIds.has(item.id)) {
         return;

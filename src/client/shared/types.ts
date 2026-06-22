@@ -262,6 +262,10 @@ export type ClientIntent =
   | {
       type: "SCENARIO_CONFRONTATION_REQUESTED";
       seatId: string;
+    }
+  | {
+      type: "STABILIZE_REQUESTED";
+      seatId: string;
     };
 
 export type HostCommand =

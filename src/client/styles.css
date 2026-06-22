@@ -3960,6 +3960,16 @@ body {
   margin-top: 2.2rem;
 }
 
+.board-scenario-marker-spine {
+  margin-top: -0.5rem;
+  transition:
+    left 220ms ease,
+    top 220ms ease,
+    border-color 180ms ease,
+    box-shadow 180ms ease;
+  z-index: 4;
+}
+
 .board-scenario-marker-info {
   border-color: rgba(116, 182, 232, 0.42);
   box-shadow:

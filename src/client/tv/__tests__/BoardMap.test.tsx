@@ -223,4 +223,19 @@ describe("BoardMap", () => {
 
     expect(screen.getByTestId("scenario-aura-broken-seal-aura")).toHaveAttribute("data-sector-id", "center_cinder_gate");
   });
+
+  it("renders the escalation spine marker for the live breach track", () => {
+    render(
+      <BoardMap
+        patch={{
+          ...createPatch(),
+          escalationLevel: 4,
+          escalationThreshold: 6
+        }}
+        phase="action"
+      />
+    );
+
+    expect(screen.getByTestId("scenario-marker-escalation-spine")).toHaveTextContent("4/6");
+  });
 });

@@ -166,6 +166,11 @@ export interface ScenarioVictoryAchievedAction extends BaseAction {
   summary: string;
 }
 
+export interface StabilizeResolvedAction extends BaseAction {
+  type: "STABILIZE_RESOLVED";
+  cost: { kind: "heat" | "trophy" | "action"; amount: number };
+}
+
 export interface RoundCompletedAction extends BaseAction {
   type: "ROUND_COMPLETED";
 }
@@ -175,6 +180,7 @@ export interface EscalationAdvancedAction extends BaseAction {
   amount: number;
   newLevel: number;
   modifier: number;
+  reason?: string;
 }
 
 export interface SectorCollapsedAction extends BaseAction {
@@ -216,6 +222,7 @@ export type GameAction =
   | ScenarioConfrontationRequestedAction
   | ScenarioProgressAdvancedAction
   | ScenarioVictoryAchievedAction
+  | StabilizeResolvedAction
   | RoundCompletedAction
   | EscalationAdvancedAction
   | SectorCollapsedAction
@@ -275,5 +282,9 @@ export type ClientIntent =
     }
   | {
       type: "SCENARIO_CONFRONTATION_REQUESTED";
+      seatId: string;
+    }
+  | {
+      type: "STABILIZE_REQUESTED";
       seatId: string;
     };

@@ -30,11 +30,13 @@ interface CalibrationPoint {
 
 interface ScenarioMarker {
   id: string;
-  nodeId: string;
+  nodeId?: string;
   label: string;
   value: string;
   tone: "warning" | "info" | "critical";
-  kind: "orbit" | "core";
+  kind: "orbit" | "core" | "spine";
+  x?: number;
+  y?: number;
 }
 
 interface ScenarioAuraEffect {
@@ -245,6 +247,39 @@ function buildScenarioMarkers(patch: PublicPatchPayload): ScenarioMarker[] {
   }
 }
 
+function buildEscalationMarker(patch: PublicPatchPayload): ScenarioMarker {
+  const threshold = Math.max(1, patch.escalationThreshold);
+  const progress = Math.max(0, Math.min(1, patch.escalationLevel / threshold));
+  const anchors = [
+    RIFTFALL_BOARD_NODE_INDEX.get("outer_ember_sanctum"),
+    RIFTFALL_BOARD_NODE_INDEX.get("middle_guardian_span"),
+    RIFTFALL_BOARD_NODE_INDEX.get("inner_veil_rift"),
+    RIFTFALL_BOARD_NODE_INDEX.get("center_cinder_gate")
+  ].filter((node): node is BoardNode => Boolean(node));
+  const segmentProgress = progress * Math.max(anchors.length - 1, 1);
+  const segmentIndex = Math.min(Math.floor(segmentProgress), Math.max(anchors.length - 2, 0));
+  const localProgress = Math.min(1, Math.max(0, segmentProgress - segmentIndex));
+  const from = anchors[segmentIndex] ?? anchors[0];
+  const to = anchors[segmentIndex + 1] ?? anchors[anchors.length - 1] ?? from;
+  const tone =
+    patch.escalationLevel >= threshold
+      ? "critical"
+      : patch.escalationLevel >= Math.ceil(threshold * 0.67)
+        ? "warning"
+        : "info";
+
+  return {
+    id: "escalation-spine",
+    nodeId: to?.id ?? from?.id,
+    label: "Breach",
+    value: `${patch.escalationLevel}/${threshold}`,
+    tone,
+    kind: "spine",
+    x: (from?.x ?? 0.5) + ((to?.x ?? from?.x ?? 0.5) - (from?.x ?? 0.5)) * localProgress,
+    y: (from?.y ?? 0.5) + ((to?.y ?? from?.y ?? 0.5) - (from?.y ?? 0.5)) * localProgress
+  };
+}
+
 function buildScenarioAuras(patch: PublicPatchPayload): ScenarioAuraEffect[] {
   const scenarioId = patch.activeScenario?.id;
 
@@ -365,6 +400,7 @@ export function BoardMap({ patch, phase, showHeader = true, showSidebar = true }
   const selectedOccupants = selectedNode ? patch.players.filter((player) => player.sectorId === selectedNode.id) : [];
   const staticEdges = uniqueEdges(RIFTFALL_BOARD_NODES);
   const scenarioMarkers = buildScenarioMarkers(patch);
+  const escalationMarker = buildEscalationMarker(patch);
   const scenarioAuras = buildScenarioAuras(patch);
   const scenarioRoutes = buildScenarioRoutes(patch);
 
@@ -550,15 +586,10 @@ export function BoardMap({ patch, phase, showHeader = true, showSidebar = true }
                     );
                   })}
 
-                  {scenarioMarkers.map((marker) => {
-                    const node = RIFTFALL_BOARD_NODE_INDEX.get(marker.nodeId);
-
-                    if (!node) {
-                      return null;
-                    }
-
-                    const left = imageRect.left + node.x * imageRect.width;
-                    const top = imageRect.top + node.y * imageRect.height;
+                  {[...scenarioMarkers, escalationMarker].map((marker) => {
+                    const node = marker.nodeId ? RIFTFALL_BOARD_NODE_INDEX.get(marker.nodeId) : null;
+                    const left = imageRect.left + (marker.x ?? node?.x ?? 0.5) * imageRect.width;
+                    const top = imageRect.top + (marker.y ?? node?.y ?? 0.5) * imageRect.height;
 
                     return (
                       <div

@@ -18,6 +18,7 @@ import type {
   ScenarioProgressAdvancedAction,
   ScenarioConfrontationRequestedAction,
   ScenarioVictoryAchievedAction,
+  StabilizeResolvedAction,
   WoundThresholdReachedAction,
   UnequipGearAction
 } from "./actions.js";
@@ -1182,6 +1183,45 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
         eventLog: [...state.eventLog, action]
       });
     }
+    case "STABILIZE_RESOLVED": {
+      const stabilizeAction = action as StabilizeResolvedAction;
+
+      try {
+        ensureSeatTurn(state, stabilizeAction.seatId);
+      } catch (error) {
+        return reject(state, action, error instanceof Error ? error.message : "Seat cannot stabilize");
+      }
+
+      if (state.status !== "active" || state.phase !== "action") {
+        return reject(state, action, "Stabilize is only available during an active action phase");
+      }
+
+      return succeed({
+        ...state,
+        sequence: state.sequence + 1,
+        lastOutcomeSummary: {
+          seatId: stabilizeAction.seatId,
+          movedToSectorId: requirePlayer(state, stabilizeAction.seatId).sectorId,
+          encounterCardId: null,
+          encounterTitle: "Stabilize",
+          encounterCardType: null,
+          checkStat: null,
+          die1: null,
+          die2: null,
+          statBonus: null,
+          checkTotal: null,
+          difficulty: null,
+          enemyRollerSeatId: null,
+          enemyDie1: null,
+          enemyDie2: null,
+          enemyBonus: null,
+          enemyTotal: null,
+          success: true,
+          summary: `Stabilized the breach using ${stabilizeAction.cost.kind}.`
+        },
+        eventLog: [...state.eventLog, action]
+      });
+    }
     case "ROUND_COMPLETED": {
       const roundAction = action as RoundCompletedAction;
 
@@ -1224,7 +1264,7 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
           enemyBonus: null,
           enemyTotal: null,
           success: null,
-          summary: `Round completed. Escalation is now ${escalationAction.newLevel}. Difficulty modifier +${escalationAction.modifier}.`
+          summary: `Escalation ${escalationAction.amount >= 0 ? "+" : ""}${escalationAction.amount} (${escalationAction.reason ?? "pressure"}). Now ${escalationAction.newLevel}. Difficulty modifier +${escalationAction.modifier}.`
         },
         eventLog: [...state.eventLog, action]
       });
