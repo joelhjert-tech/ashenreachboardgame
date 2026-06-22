@@ -14,7 +14,10 @@ const sessionSeatLayouts = {
   multiplayer: [
     { seatId: "seat-1", characterId: "void-marshal" },
     { seatId: "seat-2", characterId: "signal-witch" },
-    { seatId: "seat-3", characterId: "grave-engineer" }
+    { seatId: "seat-3", characterId: "grave-engineer" },
+    { seatId: "seat-4", characterId: "black-ledger-agent" },
+    { seatId: "seat-5", characterId: "cinder-monk" },
+    { seatId: "seat-6", characterId: "salvage-warden" }
   ]
 } as const;
 

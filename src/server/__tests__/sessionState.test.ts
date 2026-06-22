@@ -21,6 +21,9 @@ describe("canonical sector graph", () => {
     const liveSectorIds = new Set(state.sectors.map((sector) => sector.id));
 
     expect(state.sectors).toHaveLength(BOARD_SPACES.length);
+    expect(state.seats).toHaveLength(6);
+    expect(state.players).toHaveLength(6);
+    expect(state.turnOrder).toEqual(["seat-1", "seat-2", "seat-3", "seat-4", "seat-5", "seat-6"]);
     expect(state.activeScenarioId).toBe("scenario_broken_seal");
     expect(state.scenarioProgress).toEqual({ sealTokens: 6 });
     expect(state.woundThreshold).toBe(3);
