@@ -129,6 +129,7 @@ export const hazardThreatCardSchema = threatBaseSchema.extend({
 export const enemyThreatCardSchema = threatBaseSchema.extend({
   cardType: z.literal("enemy"),
   enemyName: z.string().min(1),
+  trophyValue: z.number().int().min(0),
   defeatReward: effectSchema,
   woundOnLoss: effectSchema
 });

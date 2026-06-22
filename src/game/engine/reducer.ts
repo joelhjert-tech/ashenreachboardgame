@@ -20,6 +20,7 @@ import type {
   ScenarioConfrontationRequestedAction,
   ScenarioVictoryAchievedAction,
   StabilizeResolvedAction,
+  StatRaisedAction,
   WoundThresholdReachedAction,
   UnequipGearAction
 } from "./actions.js";
@@ -359,6 +360,19 @@ function canManageGear(state: GameState, seatId: string): void {
 
   if (state.phase !== "action") {
     throw new Error(`Cannot manage gear during phase ${state.phase}`);
+  }
+}
+
+function canRaiseStat(state: GameState, seatId: string): void {
+  ensureSeatTurn(state, seatId);
+  ensureSeatCanTakeNormalTurnAction(state, seatId);
+
+  if (state.phase !== "action") {
+    throw new Error(`Cannot raise a stat during phase ${state.phase}`);
+  }
+
+  if (state.currentEncounter || state.pendingEnemyRoll || state.pendingEffect) {
+    throw new Error("Resolve the current threat before raising a stat");
   }
 }
 
@@ -751,6 +765,7 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
         const contract = activeContract
           ? state.availableContracts.find((entry) => entry.id === activeContract.contractId) ?? null
           : null;
+        const trophyAward = action.success ? state.currentEncounter.trophyValue : 0;
         const nextProgress =
           action.success && contract?.objective.type === "defeatCount" && activeContract
             ? Math.min(activeContract.progress + 1, contract.objective.target)
@@ -767,6 +782,7 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
           ...entry,
           character: {
             ...entry.character,
+            trophies: entry.character.trophies + trophyAward,
             activeContract:
               entry.character.activeContract && nextProgress !== null
                 ? {
@@ -791,7 +807,9 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
               enemyBonus: action.enemyBonus,
               enemyTotal: action.enemyTotal,
               success: action.success,
-              summary: `${state.lastOutcomeSummary.summary} ${summarizeEffect(action.effect, action.success)}`
+              summary: `${state.lastOutcomeSummary.summary} ${summarizeEffect(action.effect, action.success)}${
+                trophyAward > 0 ? ` +${trophyAward} trophies.` : ""
+              }`
             }
           : null,
         eventLog: [...state.eventLog, action]
@@ -918,6 +936,7 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
           character: {
             ...recruitAction.replacementCharacter!,
             currentSpaceId: entry.sectorId,
+            trophies: 0,
             heat: 0,
             wounds: 0,
             status: "active",
@@ -947,6 +966,52 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
           success: null,
           replacementCharacterId: recruitAction.replacementCharacterId,
           summary: `${recruitAction.replacementCharacter.name} enters the field as a fresh replacement.`
+        },
+        eventLog: [...state.eventLog, action]
+      });
+    }
+    case "STAT_RAISED": {
+      const statRaisedAction = action as StatRaisedAction;
+
+      try {
+        canRaiseStat(state, statRaisedAction.seatId);
+      } catch (error) {
+        return reject(state, action, error instanceof Error ? error.message : "Seat cannot raise a stat");
+      }
+
+      return succeed({
+        ...state,
+        sequence: state.sequence + 1,
+        players: updateActivePlayer(state, statRaisedAction.seatId, (player) => ({
+          ...player,
+          character: {
+            ...player.character,
+            trophies: Math.max(0, player.character.trophies - statRaisedAction.cost),
+            stats: {
+              ...player.character.stats,
+              [statRaisedAction.stat]: player.character.stats[statRaisedAction.stat] + 1
+            }
+          }
+        })),
+        lastOutcomeSummary: {
+          seatId: statRaisedAction.seatId,
+          movedToSectorId: requirePlayer(state, statRaisedAction.seatId).sectorId,
+          encounterCardId: null,
+          encounterTitle: "Field Promotion",
+          encounterCardType: null,
+          checkStat: statRaisedAction.stat,
+          die1: null,
+          die2: null,
+          statBonus: null,
+          checkTotal: null,
+          difficulty: null,
+          enemyRollerSeatId: null,
+          enemyDie1: null,
+          enemyDie2: null,
+          enemyBonus: null,
+          enemyTotal: null,
+          success: true,
+          summary: `${statRaisedAction.stat} increased by 1 for ${statRaisedAction.cost} trophies.`
         },
         eventLog: [...state.eventLog, action]
       });

@@ -254,6 +254,7 @@ function createThreats(): Map<string, ThreatCard> {
         severity: 2,
         stat: "grit",
         difficulty: 6,
+        trophyValue: 6,
         defeatReward: {
           type: "gain_gear",
           gearId: "tuning-spines"
@@ -277,6 +278,7 @@ function createThreats(): Map<string, ThreatCard> {
         severity: 2,
         stat: "grit",
         difficulty: 6,
+        trophyValue: 6,
         defeatReward: {
           type: "gain_gear",
           gearId: "veil-hook"
@@ -359,6 +361,7 @@ function createAbilityCharacters(): Map<string, Character> {
     currentSpaceId: "sector-a",
     status: "active",
     stats: { command: 1, grit: 1, signal: 2, guile: 3, forge: 2 },
+    trophies: 0,
     heat: 0,
     wounds: 0,
     scars: [],
@@ -380,6 +383,7 @@ function createAbilityCharacters(): Map<string, Character> {
     currentSpaceId: "sector-a",
     status: "active",
     stats: { command: 1, grit: 3, signal: 2, guile: 1, forge: 2 },
+    trophies: 0,
     heat: 0,
     wounds: 0,
     scars: [],
@@ -401,6 +405,7 @@ function createAbilityCharacters(): Map<string, Character> {
     currentSpaceId: "sector-c",
     status: "active",
     stats: { command: 3, grit: 1, signal: 2, guile: 1, forge: 2 },
+    trophies: 0,
     heat: 0,
     wounds: 0,
     scars: [],
@@ -422,6 +427,7 @@ function createAbilityCharacters(): Map<string, Character> {
     currentSpaceId: "sector-b",
     status: "active",
     stats: { command: 2, grit: 1, signal: 1, guile: 3, forge: 2 },
+    trophies: 0,
     heat: 0,
     wounds: 0,
     scars: [],
@@ -443,6 +449,7 @@ function createAbilityCharacters(): Map<string, Character> {
     currentSpaceId: "sector-a",
     status: "active",
     stats: { command: 1, grit: 1, signal: 2, guile: 3, forge: 2 },
+    trophies: 0,
     heat: 0,
     wounds: 0,
     scars: [],
@@ -464,6 +471,7 @@ function createAbilityCharacters(): Map<string, Character> {
     currentSpaceId: "sector-a",
     status: "active",
     stats: { command: 2, grit: 3, signal: 1, guile: 1, forge: 2 },
+    trophies: 0,
     heat: 0,
     wounds: 0,
     scars: [],
@@ -485,6 +493,7 @@ function createAbilityCharacters(): Map<string, Character> {
     currentSpaceId: "sector-c",
     status: "active",
     stats: { command: 1, grit: 2, signal: 1, guile: 2, forge: 3 },
+    trophies: 0,
     heat: 0,
     wounds: 0,
     scars: [],
@@ -506,6 +515,7 @@ function createAbilityCharacters(): Map<string, Character> {
     currentSpaceId: "sector-c",
     status: "active",
     stats: { command: 1, grit: 2, signal: 1, guile: 2, forge: 3 },
+    trophies: 0,
     heat: 0,
     wounds: 0,
     scars: [],
@@ -625,6 +635,19 @@ function createClient(seatId: string): ConnectedClient {
     view: "phone",
     socket: {
       send() {},
+      close() {}
+    } as unknown as ConnectedClient["socket"]
+  };
+}
+
+function createCapturingClient(seatId: string, sent: Array<Record<string, unknown>>): ConnectedClient {
+  return {
+    seatId,
+    view: "phone",
+    socket: {
+      send(payload: string) {
+        sent.push(JSON.parse(payload) as Record<string, unknown>);
+      },
       close() {}
     } as unknown as ConnectedClient["socket"]
   };
@@ -2154,6 +2177,357 @@ describe("escalation flow", () => {
     });
 
     expect(server.getState().players[0]?.character.currentSpaceId).toBe("center_cinder_gate");
+  });
+});
+
+describe("trophy progression", () => {
+  it("awards trophies from defeated enemies", () => {
+    const server = new GameRoomServer(
+      withOnlyConnectedSeat(
+        createState({
+          sessionMode: "single-player",
+          phase: "action",
+          turnOrder: ["seat-1"],
+          seats: [{ ...createState().seats[0]!, characterId: "void-marshal" }],
+        players: [
+          {
+            ...createState().players[0]!,
+            character: {
+              ...createState().players[0]!.character,
+              currentSpaceId: "sector-b",
+              stats: {
+                ...createState().players[0]!.character.stats,
+                grit: 12
+              },
+              trophies: 0
+            },
+            sectorId: "sector-b"
+          }
+        ],
+          currentEncounter: {
+            ...(createThreats().get("cinder-veil-stalker") ?? null)!,
+            difficulty: 0
+          }
+        }),
+        "seat-1"
+      ),
+      [],
+      createSequenceRandomSource([5, 5, 0, 0]),
+      createThreats(),
+      createCharacters(),
+      createGear(),
+      createContracts()
+    );
+
+    runIntent(server, {
+      type: "COMBAT_REQUESTED",
+      seatId: "seat-1",
+      stat: "grit"
+    });
+
+    expect(server.getState().players[0]?.character.trophies).toBe(6);
+  });
+
+  it("spends trophies to raise a stat, feeds escalation, and consumes the turn", () => {
+    const server = new GameRoomServer(
+      createState({
+        phase: "action",
+        currentEncounter: null,
+        pendingEnemyRoll: null,
+        pendingEffect: null,
+        escalationLevel: 0,
+        players: createState().players.map((entry) =>
+          entry.seatId === "seat-1"
+            ? {
+                ...entry,
+                character: {
+                  ...entry.character,
+                  trophies: 4
+                }
+              }
+            : entry
+        )
+      }),
+      [],
+      createSequenceRandomSource([0]),
+      createThreats(),
+      createCharacters(),
+      createGear(),
+      createContracts()
+    );
+
+    runIntent(server, {
+      type: "RAISE_STAT_REQUESTED",
+      seatId: "seat-1",
+      stat: "command"
+    });
+
+    const player = server.getState().players.find((entry) => entry.seatId === "seat-1");
+    expect(player?.character.stats.command).toBe(4);
+    expect(player?.character.trophies).toBe(0);
+    expect(server.getState().escalationLevel).toBe(1);
+    expect(server.getState().activeSeatIndex).toBe(1);
+  });
+
+  it("rejects raise-stat requests when underfunded or already at the cap", () => {
+    const underfundedServer = new GameRoomServer(
+      createState({
+        phase: "action",
+        currentEncounter: null,
+        pendingEnemyRoll: null,
+        pendingEffect: null,
+        players: createState().players.map((entry) =>
+          entry.seatId === "seat-1"
+            ? {
+                ...entry,
+                character: {
+                  ...entry.character,
+                  trophies: 3
+                }
+              }
+            : entry
+        )
+      }),
+      [],
+      createSequenceRandomSource([0]),
+      createThreats(),
+      createCharacters(),
+      createGear(),
+      createContracts()
+    );
+
+    const underfundedResponses: Array<Record<string, unknown>> = [];
+    underfundedServer.handleIntent(
+      createCapturingClient("seat-1", underfundedResponses),
+      {
+        type: "RAISE_STAT_REQUESTED",
+        seatId: "seat-1",
+        stat: "command"
+      }
+    );
+
+    expect(
+      underfundedResponses.some(
+        (message) => message.type === "INTENT_REJECTED" && String(message.reason).includes("Not enough trophies")
+      )
+    ).toBe(true);
+
+    const cappedServer = new GameRoomServer(
+      createState({
+        phase: "action",
+        currentEncounter: null,
+        pendingEnemyRoll: null,
+        pendingEffect: null,
+        players: createState().players.map((entry) =>
+          entry.seatId === "seat-1"
+            ? {
+                ...entry,
+                character: {
+                  ...entry.character,
+                  trophies: 4,
+                  stats: {
+                    ...entry.character.stats,
+                    command: 9
+                  }
+                }
+              }
+            : entry
+        )
+      }),
+      [],
+      createSequenceRandomSource([0]),
+      createThreats(),
+      createCharacters(),
+      createGear(),
+      createContracts()
+    );
+
+    const cappedResponses: Array<Record<string, unknown>> = [];
+    cappedServer.handleIntent(
+      createCapturingClient("seat-1", cappedResponses),
+      {
+        type: "RAISE_STAT_REQUESTED",
+        seatId: "seat-1",
+        stat: "command"
+      }
+    );
+
+    expect(
+      cappedResponses.some(
+        (message) => message.type === "INTENT_REJECTED" && String(message.reason).includes("already at the maximum")
+      )
+    ).toBe(true);
+  });
+
+  it("resets trophies when a recalled operative recruits a replacement", () => {
+    const server = new GameRoomServer(
+      createState({
+        phase: "action",
+        players: createState().players.map((entry) =>
+          entry.seatId === "seat-1"
+            ? {
+                ...entry,
+                character: {
+                  ...entry.character,
+                  status: "recalled",
+                  trophies: 9,
+                  scars: ["scar-ember"]
+                }
+              }
+            : entry
+        )
+      }),
+      [],
+      createSequenceRandomSource([0]),
+      createThreats(),
+      createCharacters(),
+      createGear(),
+      createContracts()
+    );
+
+    runIntent(server, {
+      type: "RECRUIT_REPLACEMENT",
+      seatId: "seat-1",
+      replacementCharacterId: "signal-witch"
+    });
+
+    const player = server.getState().players.find((entry) => entry.seatId === "seat-1");
+    expect(player?.character.id).toBe("signal-witch");
+    expect(player?.character.trophies).toBe(0);
+    expect(player?.character.scars).toEqual(["scar-ember"]);
+  });
+
+  it("uses a raised stat on a later check outcome", () => {
+    const boostedThreats = new Map(createThreats());
+    boostedThreats.set("tight-band", {
+      id: "tight-band",
+      type: "threat",
+      cardType: "hazard",
+      title: "Command Lock",
+      text: "Only a precise command cipher keeps the route from collapsing shut.",
+      flavor: "You either seize the lock or lose the lane.",
+      severity: 2,
+      stat: "command",
+      difficulty: 17,
+      successEffect: { type: "gain_note", text: "You locked the command cipher in place." },
+      failEffect: { type: "gain_heat", amount: 1 }
+    });
+
+    const createCommandState = (withBoost: boolean, phase: GameState["phase"]): GameState =>
+      ({
+        ...createState({
+          phase,
+          currentEncounter: null,
+          pendingEnemyRoll: null,
+          pendingEffect: null,
+          sectors: [
+            {
+              id: "sector-a",
+              name: "Ashwake Crossing",
+              regionTier: "borderlight",
+              neighbors: ["sector-b"],
+              danger: 2,
+              encounterDecks: { threat: [], anomaly: [], contract: [], artifact: [], escalation: [] }
+            },
+            {
+              id: "sector-b",
+              name: "Glassmere Spindle",
+              regionTier: "borderlight",
+              neighbors: ["sector-a"],
+              danger: 3,
+              encounterDecks: { threat: ["tight-band"], anomaly: [], contract: [], artifact: [], escalation: [] }
+            }
+          ],
+          seats: createState().seats.slice(0, 2).map((seat, index) => ({
+            ...seat,
+            characterId: index === 0 ? "void-marshal" : seat.characterId
+          })),
+          turnOrder: ["seat-1", "seat-2"],
+          players: createState().players.slice(0, 2).map((entry, index) =>
+            index === 0
+              ? {
+                  ...entry,
+                  sectorId: "sector-a",
+                  character: {
+                    ...cloneCharacter(createCharacters().get("void-marshal")),
+                    currentSpaceId: "sector-a",
+                    trophies: withBoost ? 4 : 0
+                  }
+                }
+              : {
+                  ...entry,
+                  sectorId: "sector-a",
+                  character: {
+                    ...entry.character,
+                    currentSpaceId: "sector-a"
+                  }
+                }
+          )
+        }),
+        sessionMode: "multiplayer"
+      }) as GameState;
+
+    const baselineServer = new GameRoomServer(
+      createCommandState(false, "navigation"),
+      [],
+      createSequenceRandomSource([5, 5]),
+      boostedThreats,
+      createCharacters(),
+      createGear(),
+      createContracts()
+    );
+
+    runIntent(baselineServer, {
+      type: "MOVE_REQUESTED",
+      seatId: "seat-1",
+      toSectorId: "sector-b"
+    });
+    runIntent(baselineServer, {
+      type: "CHECK_REQUESTED",
+      seatId: "seat-1",
+      stat: "command"
+    });
+
+    expect(baselineServer.getState().players.find((entry) => entry.seatId === "seat-1")?.character.heat).toBe(1);
+
+    const boostedServer = new GameRoomServer(
+      createCommandState(true, "action"),
+      [],
+      createSequenceRandomSource([0, 0, 5, 5]),
+      boostedThreats,
+      createCharacters(),
+      createGear(),
+      createContracts()
+    );
+
+    runIntent(boostedServer, {
+      type: "RAISE_STAT_REQUESTED",
+      seatId: "seat-1",
+      stat: "command"
+    });
+    runIntent(boostedServer, {
+      type: "MOVE_REQUESTED",
+      seatId: "seat-2",
+      toSectorId: "sector-b"
+    });
+    runIntent(boostedServer, {
+      type: "PHASE_ADVANCED",
+      seatId: "seat-2",
+      toPhase: "resolution"
+    });
+    runIntent(boostedServer, {
+      type: "MOVE_REQUESTED",
+      seatId: "seat-1",
+      toSectorId: "sector-b"
+    });
+    runIntent(boostedServer, {
+      type: "CHECK_REQUESTED",
+      seatId: "seat-1",
+      stat: "command"
+    });
+
+    expect(boostedServer.getState().players.find((entry) => entry.seatId === "seat-1")?.character.stats.command).toBe(4);
+    expect(boostedServer.getState().players.find((entry) => entry.seatId === "seat-1")?.character.heat).toBe(0);
   });
 });
 

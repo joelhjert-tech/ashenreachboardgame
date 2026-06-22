@@ -95,7 +95,7 @@ export function MobilePlayerCard({
     ? `${encounter.title} | ${toTitleCase(encounter.cardType)} | ${toTitleCase(encounter.stat)} ${encounter.difficulty}`
     : `Phase ${toTitleCase(phase)}`;
   const scenarioCopy = activeScenario
-    ? `${activeScenario.name} | ${activeScenario.confrontationTitle} | ${activeScenario.progress}/${activeScenario.threshold}`
+    ? `${activeScenario.name} | ${activeScenario.progress}/${activeScenario.threshold} | ${activeScenario.pressureSummary}`
     : "Scenario telemetry pending";
   const scenarioTelemetryCopy =
     scenarioTelemetry.length > 0
@@ -232,6 +232,25 @@ export function MobilePlayerCard({
           <div className="phone-sheet-vital-strip">
             <span>{scenarioCopy}</span>
           </div>
+
+          {activeScenario && (
+            <div className="phone-sheet-scenario-panel">
+              <div className="phone-sheet-section-heading">Scenario Rules</div>
+              <p className="phone-sheet-scenario-theme">{activeScenario.theme}</p>
+              <p className="phone-sheet-scenario-rule">{activeScenario.pressureSummary}</p>
+              {activeScenario.specialRules.slice(0, 2).map((rule) => (
+                <p key={rule} className="phone-sheet-scenario-rule">
+                  {rule}
+                </p>
+              ))}
+              {activeScenario.confrontationSteps.slice(0, 2).map((step) => (
+                <p key={step} className="phone-sheet-scenario-rule">
+                  {step}
+                </p>
+              ))}
+              <p className="phone-sheet-scenario-rule">{activeScenario.victoryText}</p>
+            </div>
+          )}
 
           {activeNemesis && (
             <div className="phone-sheet-nemesis-panel">

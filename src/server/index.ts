@@ -8,6 +8,7 @@ import { GameRoomServer } from "./roomServer.js";
 import { createInitialSessionState } from "./sessionState.js";
 import { createHostToken } from "./auth.js";
 import type { SessionMode } from "../game/schema/session.schema.js";
+import { SCENARIOS, getScenarioDefinition } from "../game/data/scenarios.js";
 
 const DEFAULT_SERVER_PORT = 8080;
 const DEFAULT_CLIENT_PORT = 5173;
@@ -114,16 +115,35 @@ function createHttpServer(): HttpServer {
         return;
       }
 
+      if (request.method === "GET" && url.pathname === "/api/scenarios") {
+        sendJson(response, 200, {
+          scenarios: SCENARIOS.map((scenario) => ({
+            id: scenario.id,
+            name: scenario.name,
+            theme: scenario.theme,
+            difficulty: scenario.difficulty,
+            setup: scenario.setup,
+            specialRules: scenario.specialRules,
+            confrontationTitle: scenario.confrontationTitle,
+            confrontationSteps: scenario.confrontationSteps,
+            victoryText: scenario.victoryText
+          }))
+        });
+        return;
+      }
+
       if (request.method === "POST" && url.pathname === "/api/session/create") {
-        const body = (await readJsonBody(request)) as { sessionMode?: SessionMode };
+        const body = (await readJsonBody(request)) as { sessionMode?: SessionMode; scenarioId?: string };
         const sessionMode = body.sessionMode === "single-player" ? "single-player" : "multiplayer";
+        const scenarioId = body.scenarioId && getScenarioDefinition(body.scenarioId) ? body.scenarioId : SCENARIOS[0]!.id;
         roomCode = createRoomCode();
         hostToken = createRoomCode();
-        roomServer.resetSession(createInitialSessionState(roomCode, sessionMode));
+        roomServer.resetSession(createInitialSessionState(roomCode, sessionMode, scenarioId));
         roomServer.setHostToken(createHostToken({ sessionId: roomCode, secret: hostToken }));
         sendJson(response, 200, {
           roomCode,
           sessionMode,
+          scenarioId,
           hostToken: createHostToken({ sessionId: roomCode, secret: hostToken })
         });
         return;

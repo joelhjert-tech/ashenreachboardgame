@@ -24,6 +24,7 @@ const characters: CharacterCatalogEntry[] = [
   currentSpaceId: "ashwake-crossing",
   status: "active",
   stats,
+  trophies: 0,
   heat: 0,
   wounds: 0,
   scars: [],

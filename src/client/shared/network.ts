@@ -1,4 +1,4 @@
-import type { CharacterCatalogEntry, PhoneSessionAuth, SessionMode } from "./types.js";
+import type { CharacterCatalogEntry, PhoneSessionAuth, ScenarioCatalogEntry, SessionMode } from "./types.js";
 
 const browserHost = typeof window !== "undefined" ? window.location.hostname : "localhost";
 const browserProtocol = typeof window !== "undefined" ? window.location.protocol : "http:";
@@ -19,17 +19,24 @@ export function getWebSocketOrigin(): string {
 }
 
 export async function createSession(
-  sessionMode: SessionMode = "multiplayer"
-): Promise<{ roomCode: string; hostToken: string; sessionMode: SessionMode }> {
+  sessionMode: SessionMode = "multiplayer",
+  scenarioId?: string
+): Promise<{ roomCode: string; hostToken: string; sessionMode: SessionMode; scenarioId: string }> {
   const response = await fetch(`${apiOrigin}/api/session/create`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json"
     },
-    body: JSON.stringify({ sessionMode })
+    body: JSON.stringify({ sessionMode, scenarioId })
   });
 
   return await response.json();
+}
+
+export async function fetchScenarios(): Promise<ScenarioCatalogEntry[]> {
+  const response = await fetch(`${apiOrigin}/api/scenarios`);
+  const payload = (await response.json()) as { scenarios: ScenarioCatalogEntry[] };
+  return payload.scenarios;
 }
 
 export async function fetchCharacters(): Promise<CharacterCatalogEntry[]> {

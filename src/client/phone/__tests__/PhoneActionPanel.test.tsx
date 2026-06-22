@@ -14,6 +14,7 @@ const characters: CharacterCatalogEntry[] = [
     currentSpaceId: "ashwake-crossing",
     status: "active",
     stats: { command: 3, grit: 2, signal: 1, guile: 2, forge: 1 },
+    trophies: 0,
     heat: 0,
     wounds: 0,
     scars: [],
@@ -33,10 +34,17 @@ function createPatch(overrides: Partial<PhonePatchPayload> = {}): PhonePatchPayl
     activeScenario: {
       id: "scenario_broken_seal",
       name: "The Broken Seal",
+      theme: "The last ward around the Cinder Gate is splitting.",
+      difficulty: "easy-medium",
+      pressureSummary: "6 seals remain. Each turn start, 1-2 weakens the ward and 3-4 heats the active operative.",
       confrontationTitle: "Reseal the Prison",
       progressLabel: "sealRestorationMarks",
       progress: 0,
-      threshold: 2
+      threshold: 2,
+      setup: ["Place 6 Seal tokens on the scenario sheet."],
+      specialRules: ["At the start of each operative turn, roll 1 die."],
+      confrontationSteps: ["Test Grit 10 to hold the breached ward shut."],
+      victoryText: "Pass at least 2 of the 3 confrontation tests to win."
     },
     scenarioTelemetry: [
       { label: "Seal Tokens", value: "6" },
@@ -70,6 +78,7 @@ function createPatch(overrides: Partial<PhonePatchPayload> = {}): PhonePatchPayl
           status: "active",
           activeContract: null,
           stats: { command: 3, grit: 2, signal: 1, guile: 2, forge: 1 },
+          trophies: 0,
           heat: 0,
           wounds: 0,
           scars: [],
@@ -105,6 +114,7 @@ function createPatch(overrides: Partial<PhonePatchPayload> = {}): PhonePatchPayl
         currentSpaceId: "ashwake-crossing",
         status: "active",
         stats: { command: 3, grit: 2, signal: 1, guile: 2, forge: 1 },
+        trophies: 0,
         heat: 0,
         wounds: 0,
         scars: [],

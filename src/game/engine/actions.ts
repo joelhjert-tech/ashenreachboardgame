@@ -186,6 +186,12 @@ export interface StabilizeResolvedAction extends BaseAction {
   cost: { kind: "heat" | "trophy" | "action"; amount: number };
 }
 
+export interface StatRaisedAction extends BaseAction {
+  type: "STAT_RAISED";
+  stat: Stat;
+  cost: number;
+}
+
 export interface RoundCompletedAction extends BaseAction {
   type: "ROUND_COMPLETED";
 }
@@ -239,6 +245,7 @@ export type GameAction =
   | ScenarioProgressAdvancedAction
   | ScenarioVictoryAchievedAction
   | StabilizeResolvedAction
+  | StatRaisedAction
   | RoundCompletedAction
   | EscalationAdvancedAction
   | SectorCollapsedAction
@@ -307,4 +314,9 @@ export type ClientIntent =
   | {
       type: "STABILIZE_REQUESTED";
       seatId: string;
+    }
+  | {
+      type: "RAISE_STAT_REQUESTED";
+      seatId: string;
+      stat: Stat;
     };

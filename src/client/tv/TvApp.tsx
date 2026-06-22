@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type ReactElement } from "react";
 import { getBoardSpace } from "../../game/data/boardSpaces.js";
 import { RIFTFALL_BOARD_NODE_INDEX } from "../../data/riftfallBoardNodes.js";
-import { createSession, fetchCharacters, startSession } from "../shared/network.js";
+import { createSession, fetchCharacters, fetchScenarios, startSession } from "../shared/network.js";
 import { getSeatAbilityTelemetry } from "../shared/abilityTelemetry.js";
 import { DebugPanel } from "../shared/DebugPanel.js";
 import { RollOutcomePanel } from "../shared/RollOutcomePanel.js";
@@ -13,6 +13,7 @@ import type {
   PublicPatchPayload,
   PublicPlayer,
   PublicSeat,
+  ScenarioCatalogEntry,
   SessionMode,
   ScenarioTelemetryItem,
   StatePatch,
@@ -177,8 +178,15 @@ function getScenarioStatus(patch: StatePatch<PublicPatchPayload> | null) {
   if (!scenario) {
     return {
       name: "No active scenario",
+      theme: "Awaiting directive",
+      difficulty: "medium" as const,
+      pressureSummary: "Create a room to load scenario pressure.",
       confrontationTitle: "Awaiting directive",
       progress: "0/0",
+      setup: [] as string[],
+      specialRules: [] as string[],
+      confrontationSteps: [] as string[],
+      victoryText: "Create a room to load the active scenario.",
       telemetry: [] as ScenarioTelemetryItem[],
       nemesis: null as ActiveNemesisSummary | null
     };
@@ -186,8 +194,15 @@ function getScenarioStatus(patch: StatePatch<PublicPatchPayload> | null) {
 
   return {
     name: scenario.name,
+    theme: scenario.theme,
+    difficulty: scenario.difficulty,
+    pressureSummary: scenario.pressureSummary,
     confrontationTitle: scenario.confrontationTitle,
     progress: `${scenario.progress}/${scenario.threshold}`,
+    setup: scenario.setup,
+    specialRules: scenario.specialRules,
+    confrontationSteps: scenario.confrontationSteps,
+    victoryText: scenario.victoryText,
     telemetry: patch?.payload.scenarioTelemetry ?? [],
     nemesis
   };
@@ -313,6 +328,9 @@ interface SessionReadoutProps {
   activeSeatId: string | null;
   status: string;
   roomCode: string | null;
+  selectedScenario: ScenarioCatalogEntry | null;
+  scenarioCatalog: ScenarioCatalogEntry[];
+  onScenarioSelected: (scenarioId: string) => void;
   onCreateSession: (sessionMode?: SessionMode) => Promise<void>;
   onRestartSession: () => void;
   onStartSession: () => Promise<void>;
@@ -332,6 +350,9 @@ function SessionReadout({
   activeSeatId,
   status,
   roomCode,
+  selectedScenario,
+  scenarioCatalog,
+  onScenarioSelected,
   onCreateSession,
   onRestartSession,
   onStartSession,
@@ -387,6 +408,21 @@ function SessionReadout({
       </div>
 
       <div className="tv-session-actions">
+        {!roomCode && scenarioCatalog.length > 0 && (
+          <label className="tv-session-scenario-picker">
+            <span>Scenario</span>
+            <select
+              value={selectedScenario?.id ?? scenarioCatalog[0]?.id ?? ""}
+              onChange={(event) => onScenarioSelected(event.target.value)}
+            >
+              {scenarioCatalog.map((scenario) => (
+                <option key={scenario.id} value={scenario.id}>
+                  {scenario.name} | {toTitleCase(scenario.difficulty)}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
         <button type="button" className="tv-button tv-button-quiet" onClick={onToggleDebug}>
           {debugOpen ? "Hide debug" : "Show debug"}
         </button>
@@ -427,6 +463,9 @@ interface RightSidebarProps {
   status: string;
   debugOpen: boolean;
   onToggleDebug: () => void;
+  selectedScenario: ScenarioCatalogEntry | null;
+  scenarioCatalog: ScenarioCatalogEntry[];
+  onScenarioSelected: (scenarioId: string) => void;
   onCreateSession: (sessionMode?: SessionMode) => Promise<void>;
   onRestartSession: () => void;
   onStartSession: () => Promise<void>;
@@ -445,6 +484,9 @@ function RightSidebar({
   status,
   debugOpen,
   onToggleDebug,
+  selectedScenario,
+  scenarioCatalog,
+  onScenarioSelected,
   onCreateSession,
   onRestartSession,
   onStartSession,
@@ -487,10 +529,38 @@ function RightSidebar({
           </div>
         </div>
         <p className="board-sidebar-title">{scenarioStatus.name}</p>
-        <p className="tv-empty-copy">{scenarioStatus.confrontationTitle}</p>
+        <p className="tv-empty-copy">{scenarioStatus.theme}</p>
+        <p className="tv-empty-copy">{scenarioStatus.pressureSummary}</p>
         <div className="board-sidebar-meta">
+          <span>{toTitleCase(scenarioStatus.difficulty)}</span>
+          <span>{scenarioStatus.confrontationTitle}</span>
           <span>Progress {scenarioStatus.progress}</span>
         </div>
+        {scenarioStatus.setup.length > 0 && (
+          <div className="tv-scenario-rules-block">
+            <strong>Setup</strong>
+            {scenarioStatus.setup.slice(0, 2).map((item) => (
+              <p key={item}>{item}</p>
+            ))}
+          </div>
+        )}
+        {scenarioStatus.specialRules.length > 0 && (
+          <div className="tv-scenario-rules-block">
+            <strong>Pressure Rules</strong>
+            {scenarioStatus.specialRules.slice(0, 2).map((item) => (
+              <p key={item}>{item}</p>
+            ))}
+          </div>
+        )}
+        {scenarioStatus.confrontationSteps.length > 0 && (
+          <div className="tv-scenario-rules-block">
+            <strong>Confrontation</strong>
+            {scenarioStatus.confrontationSteps.slice(0, 2).map((item) => (
+              <p key={item}>{item}</p>
+            ))}
+            <p>{scenarioStatus.victoryText}</p>
+          </div>
+        )}
         {scenarioStatus.nemesis && (
           <div className="tv-scenario-nemesis">
             <div className="tv-scenario-nemesis-header">
@@ -526,17 +596,20 @@ function RightSidebar({
         )}
       </section>
 
-      <SessionReadout
-        publicPatch={publicPatch}
-        sessionMode={sessionMode}
-        joinedCount={joinedCount}
-        seatCapacity={seatCapacity}
-        activeSeatId={activeSeatId}
-        status={status}
-        roomCode={roomCode}
-        onCreateSession={onCreateSession}
-        onRestartSession={onRestartSession}
-        onStartSession={onStartSession}
+        <SessionReadout
+          publicPatch={publicPatch}
+          sessionMode={sessionMode}
+          joinedCount={joinedCount}
+          seatCapacity={seatCapacity}
+          activeSeatId={activeSeatId}
+          status={status}
+          roomCode={roomCode}
+          selectedScenario={selectedScenario}
+          scenarioCatalog={scenarioCatalog}
+          onScenarioSelected={onScenarioSelected}
+          onCreateSession={onCreateSession}
+          onRestartSession={onRestartSession}
+          onStartSession={onStartSession}
         canStartSession={canStartSession}
         showCreate={!roomCode}
         showRestart={Boolean(publicPatch)}
@@ -608,8 +681,10 @@ function TacticalMapPanel({ patch, previousPatch, activeSeat, activePlayer, char
 
 export function TvApp(): ReactElement {
   const [characterCatalog, setCharacterCatalog] = useState<CharacterCatalogEntry[]>([]);
+  const [scenarioCatalog, setScenarioCatalog] = useState<ScenarioCatalogEntry[]>([]);
   const [roomCode, setRoomCode] = useState<string | null>(null);
   const [sessionMode, setSessionMode] = useState<SessionMode>("multiplayer");
+  const [selectedScenarioId, setSelectedScenarioId] = useState<string | null>(null);
   const [hostToken, setHostToken] = useState<string | null>(() =>
     typeof window === "undefined" ? null : window.localStorage.getItem(hostTokenStorageKey)
   );
@@ -626,6 +701,13 @@ export function TvApp(): ReactElement {
     fetchCharacters()
       .then((characters) => setCharacterCatalog(characters))
       .catch(() => setCharacterCatalog([]));
+
+    fetchScenarios()
+      .then((scenarios) => {
+        setScenarioCatalog(scenarios);
+        setSelectedScenarioId((current) => current ?? scenarios[0]?.id ?? null);
+      })
+      .catch(() => setScenarioCatalog([]));
   }, []);
 
   const publicPatch = patch as StatePatch<PublicPatchPayload> | null;
@@ -634,6 +716,10 @@ export function TvApp(): ReactElement {
   const activeSeat = publicPatch?.payload.seats.find((seat) => seat.seatId === activeSeatId) ?? null;
   const activePlayer = publicPatch?.payload.players.find((entry) => entry.seatId === activeSeatId) ?? null;
   const liveSessionMode = publicPatch?.payload.sessionMode ?? sessionMode;
+  const selectedScenario =
+    (publicPatch?.payload.activeScenario
+      ? scenarioCatalog.find((scenario) => scenario.id === publicPatch.payload.activeScenario?.id) ?? null
+      : scenarioCatalog.find((scenario) => scenario.id === selectedScenarioId) ?? null) ?? null;
   const roomName = getActiveRoomName(publicPatch, activePlayer);
   const sectorBrief = useMemo(() => getSectorBrief(publicPatch, activePlayer), [publicPatch, activePlayer]);
   const scenarioStatus = useMemo(() => getScenarioStatus(publicPatch), [publicPatch]);
@@ -648,9 +734,11 @@ export function TvApp(): ReactElement {
     setRequestError(null);
 
     try {
-      const session = await createSession(nextSessionMode);
+      const scenarioId = selectedScenarioId ?? scenarioCatalog[0]?.id;
+      const session = await createSession(nextSessionMode, scenarioId);
       setRoomCode(session.roomCode);
       setSessionMode(session.sessionMode);
+      setSelectedScenarioId(session.scenarioId);
       setHostToken(session.hostToken);
       window.localStorage.setItem(hostTokenStorageKey, session.hostToken);
     } catch (createFailure) {
@@ -702,15 +790,18 @@ export function TvApp(): ReactElement {
           scenarioStatus={scenarioStatus}
           publicPatch={publicPatch}
           sessionMode={liveSessionMode}
-          joinedCount={joinedSeats.length}
-          seatCapacity={publicPatch?.payload.seats.length ?? (liveSessionMode === "single-player" ? 1 : 3)}
-          activeSeatId={activeSeatId}
-          status={status}
-          debugOpen={debugOpen}
-          onToggleDebug={() => setDebugOpen((current) => !current)}
-          onCreateSession={createHostSession}
-          onRestartSession={() => {
-            setRequestError(null);
+        joinedCount={joinedSeats.length}
+        seatCapacity={publicPatch?.payload.seats.length ?? (liveSessionMode === "single-player" ? 1 : 3)}
+        activeSeatId={activeSeatId}
+        status={status}
+        debugOpen={debugOpen}
+        onToggleDebug={() => setDebugOpen((current) => !current)}
+        selectedScenario={selectedScenario}
+        scenarioCatalog={scenarioCatalog}
+        onScenarioSelected={setSelectedScenarioId}
+        onCreateSession={createHostSession}
+        onRestartSession={() => {
+          setRequestError(null);
             sendIntent({ type: "RESTART_SESSION" });
           }}
           onStartSession={startHostSession}

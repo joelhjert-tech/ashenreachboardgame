@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { RIFTFALL_BOARD_NODES } from "../../data/riftfallBoardNodes.js";
 import { createCanonicalSectorGraph, validateCanonicalSectorGraph } from "../../game/data/canonicalSectorGraph.js";
 import { BOARD_SPACES } from "../../game/data/boardSpaces.js";
+import { SCENARIOS } from "../../game/data/scenarios.js";
 import { reduceGameState } from "../../game/engine/reducer.js";
 import { createPhoneProjection, createTvProjection } from "../roomServer.js";
 import { createInitialSessionState } from "../sessionState.js";
@@ -53,23 +54,61 @@ describe("canonical sector graph", () => {
     expect(tvProjection.players).toHaveLength(0);
   });
 
+  it("seeds the requested scenario instead of always defaulting to Broken Seal", () => {
+    const state = createInitialSessionState("session-devourer", "multiplayer", "scenario_devourer_beneath");
+
+    expect(state.activeScenarioId).toBe("scenario_devourer_beneath");
+    expect(state.scenarioProgress).toEqual({ doomTokens: 0, devourerIndex: 0 });
+  });
+
+  it("can initialize every authored scenario id without falling back or breaking progress seeding", () => {
+    for (const scenario of SCENARIOS) {
+      const state = createInitialSessionState(`session-${scenario.id}`, "multiplayer", scenario.id);
+
+      expect(state.activeScenarioId).toBe(scenario.id);
+      expect(state.scenarioProgress).toBeDefined();
+      expect(typeof state.scenarioProgress).toBe("object");
+    }
+  });
+
   it("includes the active scenario in both TV and phone projections", () => {
     const state = createInitialSessionState("session-alpha");
     const tvProjection = createTvProjection(state) as {
-      activeScenario: { id: string; name: string; progress: number; threshold: number } | null;
+      activeScenario: {
+        id: string;
+        name: string;
+        theme: string;
+        difficulty: string;
+        pressureSummary: string;
+        progress: number;
+        threshold: number;
+        setup: string[];
+        specialRules: string[];
+        confrontationSteps: string[];
+        victoryText: string;
+      } | null;
       scenarioProgress: Record<string, number>;
       nemesis: { id: string } | null;
     };
     const phoneProjection = createPhoneProjection(state, "seat-1") as {
-      activeScenario: { confrontationTitle: string } | null;
+      activeScenario: { confrontationTitle: string; specialRules: string[]; victoryText: string } | null;
       scenarioProgress: Record<string, number>;
       nemesis: { id: string } | null;
     };
 
     expect(tvProjection.activeScenario?.id).toBe("scenario_broken_seal");
+    expect(tvProjection.activeScenario?.theme).toContain("Cinder Gate");
+    expect(tvProjection.activeScenario?.difficulty).toBe("easy-medium");
+    expect(tvProjection.activeScenario?.pressureSummary).toContain("6 seals remain");
     expect(tvProjection.activeScenario?.progress).toBe(0);
     expect(tvProjection.activeScenario?.threshold).toBe(2);
+    expect(tvProjection.activeScenario?.setup.length).toBeGreaterThan(0);
+    expect(tvProjection.activeScenario?.specialRules.length).toBeGreaterThan(0);
+    expect(tvProjection.activeScenario?.confrontationSteps.length).toBeGreaterThan(0);
+    expect(tvProjection.activeScenario?.victoryText).toContain("win");
     expect(phoneProjection.activeScenario?.confrontationTitle).toBe("Reseal the Prison");
+    expect(phoneProjection.activeScenario?.specialRules.length).toBeGreaterThan(0);
+    expect(phoneProjection.activeScenario?.victoryText).toContain("win");
     expect(tvProjection.scenarioProgress).toEqual({ sealTokens: 6 });
     expect(phoneProjection.scenarioProgress).toEqual({ sealTokens: 6 });
     expect(tvProjection.nemesis).toBeNull();

@@ -54,6 +54,7 @@ function createThreats(): Map<string, ThreatCard> {
         severity: 2,
         stat: "grit",
         difficulty: 6,
+        trophyValue: 6,
         defeatReward: {
           type: "gain_gear",
           gearId: "tuning-spines"

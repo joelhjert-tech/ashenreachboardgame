@@ -170,6 +170,7 @@ function createThreats(): Map<string, ThreatCard> {
         severity: 2,
         stat: "grit",
         difficulty: 6,
+        trophyValue: 6,
         defeatReward: {
           type: "gain_gear",
           gearId: "veil-hook"
@@ -193,6 +194,7 @@ function createThreats(): Map<string, ThreatCard> {
         severity: 2,
         stat: "grit",
         difficulty: 6,
+        trophyValue: 6,
         defeatReward: {
           type: "gain_note",
           text: "You charted the beast's burrow vents for the next pass."
@@ -751,7 +753,9 @@ describe("roomServer websocket integration", () => {
       phase: "action",
       activeScenarioId: "scenario_throne_of_ash",
       scenarioProgress: {
-        throneClaims: 4
+        throneClaims: 4,
+        crownClaims: 2,
+        "crownClaim:seat-1": 2
       },
       currentEncounter: null,
       pendingEnemyRoll: null,
@@ -770,10 +774,10 @@ describe("roomServer websocket integration", () => {
           ...player.character,
           currentSpaceId: "center_cinder_gate",
           stats: {
-            command: player.character.stats.command,
-            grit: player.character.stats.grit,
+            command: 20,
+            grit: 20,
             signal: 12,
-            guile: 12,
+            guile: 20,
             forge: 12
           }
         }

@@ -37,6 +37,7 @@ export const characterSchema = z.object({
   currentSpaceId: z.string().min(1),
   status: characterStatusSchema,
   stats: statBlockSchema,
+  trophies: z.number().int().min(0),
   heat: z.number().int().min(0),
   wounds: z.number().int().min(0),
   scars: z.array(z.string()),

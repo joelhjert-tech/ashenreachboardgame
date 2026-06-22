@@ -19,6 +19,7 @@ export interface PublicPlayerCharacter {
   status: "active" | "recalled";
   activeContract: { contractId: string; progress: number } | null;
   stats: Record<Stat, number>;
+  trophies: number;
   heat: number;
   wounds: number;
   scars: string[];
@@ -46,6 +47,7 @@ export interface PrivateCharacter {
   currentSpaceId: string;
   status: "active" | "recalled";
   stats: Record<Stat, number>;
+  trophies: number;
   heat: number;
   wounds: number;
   scars: string[];
@@ -151,10 +153,29 @@ export interface ActiveNemesisSummary {
 export interface ActiveScenarioSummary {
   id: string;
   name: string;
+  theme: string;
+  difficulty: "easy" | "easy-medium" | "medium" | "medium-hard" | "hard";
+  pressureSummary: string;
   confrontationTitle: string;
   progressLabel: string;
   progress: number;
   threshold: number;
+  setup: string[];
+  specialRules: string[];
+  confrontationSteps: string[];
+  victoryText: string;
+}
+
+export interface ScenarioCatalogEntry {
+  id: string;
+  name: string;
+  theme: string;
+  difficulty: "easy" | "easy-medium" | "medium" | "medium-hard" | "hard";
+  setup: string[];
+  specialRules: string[];
+  confrontationTitle: string;
+  confrontationSteps: string[];
+  victoryText: string;
 }
 
 export interface ScenarioTelemetryItem {
@@ -294,6 +315,11 @@ export type ClientIntent =
   | {
       type: "STABILIZE_REQUESTED";
       seatId: string;
+    }
+  | {
+      type: "RAISE_STAT_REQUESTED";
+      seatId: string;
+      stat: Stat;
     };
 
 export type HostCommand =

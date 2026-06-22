@@ -1,7 +1,7 @@
 import { loadCharacters } from "../game/content/characters.js";
 import { loadContracts } from "../game/content/contracts.js";
 import { createCanonicalSectorGraph, validateCanonicalSectorGraph } from "../game/data/canonicalSectorGraph.js";
-import { SCENARIOS } from "../game/data/scenarios.js";
+import { getScenarioDefinition, SCENARIOS } from "../game/data/scenarios.js";
 import { createInitialScenarioProgress } from "../game/rules/scenarioAmbient.js";
 import type { Character } from "../game/schema/character.schema.js";
 import type { GameState, PlayerState, SessionMode } from "../game/schema/session.schema.js";
@@ -29,7 +29,8 @@ function cloneCharacter(character: Character, currentSpaceId: string): Character
     heldGear: [...character.heldGear],
     equippedGear: { ...character.equippedGear },
     abilities: [...character.abilities],
-    scars: [...character.scars]
+    scars: [...character.scars],
+    trophies: character.trophies
   };
 }
 
@@ -51,12 +52,13 @@ function createPlayerState(
 
 export function createInitialSessionState(
   sessionId: string,
-  sessionMode: SessionMode = "multiplayer"
+  sessionMode: SessionMode = "multiplayer",
+  scenarioId?: string
 ): GameState {
   const characters = loadCharacters();
   const sectors = createCanonicalSectorGraph();
   const availableContracts = [...loadContracts().values()];
-  const defaultScenario = SCENARIOS[0];
+  const defaultScenario = scenarioId ? getScenarioDefinition(scenarioId) ?? SCENARIOS[0] : SCENARIOS[0];
   const configuredSeats = sessionSeatLayouts[sessionMode];
   const selectedCharacters = configuredSeats.map(({ characterId }) => {
     const character = characters.get(characterId);

@@ -22,6 +22,7 @@ const samplePlayer = {
     currentSpaceId: "ashwake-crossing",
     status: "active" as const,
     stats: { command: 3, grit: 2, signal: 1, guile: 2, forge: 1 },
+    trophies: 0,
     heat: 0,
     wounds: 0,
     scars: [],

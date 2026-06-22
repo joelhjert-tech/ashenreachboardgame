@@ -19,10 +19,17 @@ function createPatch(): PublicPatchPayload {
     activeScenario: {
       id: "scenario_broken_seal",
       name: "The Broken Seal",
+      theme: "The last ward around the Cinder Gate is splitting.",
+      difficulty: "easy-medium",
+      pressureSummary: "6 seals remain. Each turn start, 1-2 weakens the ward and 3-4 heats the active operative.",
       confrontationTitle: "Reseal the Prison",
       progressLabel: "sealRestorationMarks",
       progress: 0,
-      threshold: 2
+      threshold: 2,
+      setup: ["Place 6 Seal tokens on the scenario sheet."],
+      specialRules: ["At the start of each operative turn, roll 1 die."],
+      confrontationSteps: ["Test Grit 10 to hold the breached ward shut."],
+      victoryText: "Pass at least 2 of the 3 confrontation tests to win."
     },
     scenarioTelemetry: [
       { label: "Seal Tokens", value: "6" },
@@ -86,6 +93,7 @@ function createPatch(): PublicPatchPayload {
           status: "active",
           activeContract: null,
           stats: { command: 3, grit: 2, signal: 1, guile: 2, forge: 1 },
+          trophies: 0,
           heat: 0,
           wounds: 0,
           scars: [],
@@ -103,6 +111,7 @@ function createPatch(): PublicPatchPayload {
           status: "active",
           activeContract: null,
           stats: { command: 1, grit: 1, signal: 3, guile: 2, forge: 1 },
+          trophies: 0,
           heat: 1,
           wounds: 0,
           scars: [],
@@ -199,10 +208,17 @@ describe("BoardMap", () => {
       activeScenario: {
         id: "scenario_devourer_beneath",
         name: "The Devourer Beneath",
+        theme: "A world-burrowing maw moves clockwise through the outer ring.",
+        difficulty: "medium-hard",
+        pressureSummary: "Doom stands at 2/8. The Devourer circles Glassmere Spindle and eats local threats as it moves.",
         confrontationTitle: "Enter the Maw",
         progressLabel: "mawStrikes",
         progress: 0,
-        threshold: 1
+        threshold: 1,
+        setup: ["Place 1 Devourer token on the outer tier."],
+        specialRules: ["At the end of each player turn, move the Devourer token 1 outer space clockwise."],
+        confrontationSteps: ["Fight the Final Devourer in a Strength battle 14."],
+        victoryText: "If you defeat the Final Devourer, you win the game."
       },
       scenarioTelemetry: [
         { label: "Doom Tokens", value: "2" },

@@ -9,7 +9,15 @@ import { loadThreatCards } from "../game/content/threats.js";
 import { nemeses, type NemesisDefinition } from "../game/data/nemeses.js";
 import { getScenarioDefinition } from "../game/data/scenarios.js";
 import { getEscalationCollapseLevel, getEscalationModifier } from "../game/engine/escalation.js";
-import { createInitialScenarioProgress } from "../game/rules/scenarioAmbient.js";
+import {
+  createInitialScenarioProgress,
+  describeScenarioPressure,
+  resolveScenarioContractCompleted,
+  resolveScenarioEnemyDefeat,
+  resolveScenarioTurnEnd,
+  resolveScenarioTurnStart,
+  type ScenarioAmbientResolution
+} from "../game/rules/scenarioAmbient.js";
 import { resolveSpaceText } from "../game/rules/tileTextResolver.js";
 import type {
   AcceptContractAction,
@@ -34,6 +42,7 @@ import type {
   ScenarioProgressAdvancedAction,
   ScenarioVictoryAchievedAction,
   StabilizeResolvedAction,
+  StatRaisedAction,
   UnequipGearAction
 } from "../game/engine/actions.js";
 import { getEquippedGearBonus } from "../game/engine/gear.js";
@@ -51,6 +60,11 @@ export const ESCALATION_FEEDERS = {
   woundTaken: 1,
   trophyDiscarded: 1
 } as const;
+
+const TROPHY_COST_PER_RANK = 4;
+const MAX_STAT_RANK = 9;
+const RAISE_STAT_FEEDS_ESCALATION = true;
+const RAISE_STAT_ESCALATION_REASON = "forged in fire";
 
 const NEMESIS_OPPOSITION = {
   strength: { attackStat: "grit", label: "Overpower" },
@@ -70,6 +84,10 @@ function getLinkedNemesis(scenarioId: string | null | undefined): NemesisDefinit
 
 function getScenarioProgressThreshold(scenarioId: string | null | undefined, defaultThreshold: number): number {
   return getLinkedNemesis(scenarioId)?.stats.life ?? defaultThreshold;
+}
+
+function getScenarioSeatCounterKey(prefix: string, seatId: string): string {
+  return `${prefix}:${seatId}`;
 }
 
 export interface ConnectedClient {
@@ -279,6 +297,20 @@ export class GameRoomServer {
 
       if (intent.type === "STABILIZE_REQUESTED") {
         this.resolveStabilizeIntent(intent);
+        const shouldCompleteTurn = this.state.status === "active" && this.state.phase === "broadcast";
+        const completingSeatId = this.state.turnOrder[this.state.activeSeatIndex] ?? client.seatId;
+
+        this.broadcastPatch();
+
+        if (shouldCompleteTurn && completingSeatId) {
+          this.completeBroadcastTurn(completingSeatId);
+        }
+
+        return;
+      }
+
+      if (intent.type === "RAISE_STAT_REQUESTED") {
+        this.resolveRaiseStatIntent(intent);
         const shouldCompleteTurn = this.state.status === "active" && this.state.phase === "broadcast";
         const completingSeatId = this.state.turnOrder[this.state.activeSeatIndex] ?? client.seatId;
 
@@ -613,6 +645,8 @@ export class GameRoomServer {
         throw new Error("Space text resolution is handled directly");
       case "STABILIZE_REQUESTED":
         throw new Error("Stabilize requests are resolved directly");
+      case "RAISE_STAT_REQUESTED":
+        throw new Error("Stat raise requests are resolved directly");
       default: {
         const exhaustiveCheck: never = intent;
         return exhaustiveCheck;
@@ -640,7 +674,96 @@ export class GameRoomServer {
         woundDelta * ESCALATION_FEEDERS.woundTaken,
         "wounds taken"
       );
+      this.maybeReleaseThroneCrowns(previousState, action.seatId, woundDelta);
+      this.applyDyingStarWoundPressure(action.seatId, woundDelta);
     }
+  }
+
+  private maybeReleaseThroneCrowns(previousState: GameState, seatId: string, woundDelta: number): void {
+    if (this.state.status !== "active" || previousState.activeScenarioId !== "scenario_throne_of_ash" || woundDelta <= 0) {
+      return;
+    }
+
+    const previousCrowns = this.getThroneCrownCount(seatId, previousState);
+
+    if (previousCrowns <= 0) {
+      return;
+    }
+
+    const crownsReturned = Math.min(previousCrowns, woundDelta);
+    const crownSeatKey = getScenarioSeatCounterKey("crownClaim", seatId);
+    const nextSeatCrowns = Math.max(0, previousCrowns - crownsReturned);
+    const nextTotalCrowns = Math.max(0, this.getTotalThroneCrownClaims() - crownsReturned);
+
+    this.state = {
+      ...this.state,
+      sequence: this.state.sequence + 1,
+      scenarioProgress: {
+        ...this.state.scenarioProgress,
+        crownClaims: nextTotalCrowns,
+        [crownSeatKey]: nextSeatCrowns
+      },
+      lastOutcomeSummary: this.state.lastOutcomeSummary
+        ? {
+            ...this.state.lastOutcomeSummary,
+            summary: `${this.state.lastOutcomeSummary.summary} ${seatId} returns ${crownsReturned} Crown token${crownsReturned === 1 ? "" : "s"} to the Throne of Ash.`
+          }
+        : this.state.lastOutcomeSummary,
+      eventLog: [
+        ...this.state.eventLog,
+        {
+          type: "SCENARIO_AMBIENT_APPLIED",
+          seatId,
+          summary: `${seatId} returned ${crownsReturned} Crown token${crownsReturned === 1 ? "" : "s"} after taking wounds.`,
+          createdAt: new Date().toISOString()
+        }
+      ]
+    };
+  }
+
+  private applyDyingStarWoundPressure(seatId: string, woundDelta: number): void {
+    if (this.state.status !== "active" || this.state.activeScenarioId !== "scenario_dying_star" || woundDelta <= 0) {
+      return;
+    }
+
+    const currentStars = this.state.scenarioProgress.starTokens ?? 10;
+    const nextStars = Math.max(0, currentStars - woundDelta);
+    const erupted = nextStars === 0;
+
+    this.state = {
+      ...this.state,
+      sequence: this.state.sequence + 1,
+      scenarioProgress: {
+        ...this.state.scenarioProgress,
+        starTokens: erupted ? 5 : nextStars
+      },
+      players: erupted
+        ? this.state.players.map((player) => ({
+            ...player,
+            character: {
+              ...player.character,
+              wounds: player.character.wounds + 1
+            }
+          }))
+        : this.state.players,
+      lastOutcomeSummary: this.state.lastOutcomeSummary
+        ? {
+            ...this.state.lastOutcomeSummary,
+            summary: `${this.state.lastOutcomeSummary.summary} The Dying Star sheds ${woundDelta} additional token${woundDelta === 1 ? "" : "s"} from the fresh harm${erupted ? " and erupts back to 5." : "."}`
+          }
+        : this.state.lastOutcomeSummary,
+      eventLog: [
+        ...this.state.eventLog,
+        {
+          type: "SCENARIO_AMBIENT_APPLIED",
+          seatId,
+          summary: erupted
+            ? "Fresh wounds drive the Dying Star to eruption. The track resets to 5 and every operative takes 1 wound."
+            : `Fresh wounds strip ${woundDelta} additional star token${woundDelta === 1 ? "" : "s"}.`,
+          createdAt: new Date().toISOString()
+        }
+      ]
+    };
   }
 
   private getRemainingSeatIds(): string[] {
@@ -673,6 +796,7 @@ export class GameRoomServer {
     return {
       ...template,
       currentSpaceId,
+      trophies: 0,
       heat: 0,
       wounds: 0,
       status: "active",
@@ -692,8 +816,48 @@ export class GameRoomServer {
     return this.state.sectors.filter((sector) => sector.regionTier === "borderlight").map((sector) => sector.id);
   }
 
+  private getActiveDevourerSectorId(state: GameState = this.state): string | null {
+    if (state.activeScenarioId !== "scenario_devourer_beneath") {
+      return null;
+    }
+
+    const outerRing = state.sectors.filter((sector) => sector.regionTier === "borderlight");
+
+    if (outerRing.length === 0) {
+      return null;
+    }
+
+    const devourerIndex = state.scenarioProgress.devourerIndex ?? 0;
+
+    return outerRing[devourerIndex % outerRing.length]?.id ?? null;
+  }
+
   private getTotalWounds(state: GameState): number {
     return state.players.reduce((total, player) => total + player.character.wounds, 0);
+  }
+
+  private getThroneCrownCount(seatId: string, state: GameState = this.state): number {
+    return state.scenarioProgress[getScenarioSeatCounterKey("crownClaim", seatId)] ?? 0;
+  }
+
+  private getTotalThroneCrownClaims(state: GameState = this.state): number {
+    return state.scenarioProgress.crownClaims ?? 0;
+  }
+
+  private getScenarioSkillModifier(seatId: string, state: GameState = this.state): number {
+    if (state.activeScenarioId === "scenario_throne_of_ash" && this.getThroneCrownCount(seatId, state) > 0) {
+      return -1;
+    }
+
+    return 0;
+  }
+
+  private getScenarioBattleModifier(seatId: string, state: GameState = this.state): number {
+    if (state.activeScenarioId === "scenario_throne_of_ash" && this.getThroneCrownCount(seatId, state) > 0) {
+      return 1;
+    }
+
+    return 0;
   }
 
   private hasAbilityTriggeredThisRound(seatId: string, abilityId: string): boolean {
@@ -1883,264 +2047,197 @@ export class GameRoomServer {
     };
   }
 
-  private applyStartOfTurnScenarioEffects(seatId: string): void {
-    if (this.state.status !== "active") {
+  private applyScenarioAmbientResolution(seatId: string, resolution: ScenarioAmbientResolution | null): void {
+    if (!resolution) {
       return;
     }
 
-    switch (this.state.activeScenarioId) {
-      case "scenario_broken_seal": {
-        if (!Object.hasOwn(this.state.scenarioProgress, "sealTokens")) {
-          return;
-        }
-        const roll = this.randomSource.nextInt(6) + 1;
-        if (roll <= 2) {
-          const nextSealTokens = Math.max(0, this.getScenarioCounter("sealTokens", 6) - 1);
-          this.applyAmbientScenarioMutation(
-            seatId,
-            (state) => ({
-              ...state,
-              scenarioProgress: {
-                ...state.scenarioProgress,
-                sealTokens: nextSealTokens
-              },
-              players:
-                nextSealTokens === 0
-                  ? state.players.map((player) => ({
-                      ...player,
-                      character: {
-                        ...player.character,
-                        heat: player.character.heat + 1
-                      }
-                    }))
-                  : state.players
-            }),
-            nextSealTokens === 0
-              ? "The last seal broke. Every operative gained 1 Heat."
-              : `The Broken Seal weakens. ${nextSealTokens} seal tokens remain.`
-          );
-        } else if (roll <= 4) {
-          this.applyAmbientScenarioMutation(
-            seatId,
-            (state) => ({
-              ...state,
-              players: state.players.map((player) =>
-                player.seatId === seatId
-                  ? {
-                      ...player,
-                      character: {
-                        ...player.character,
-                        heat: player.character.heat + 1
-                      }
-                    }
-                  : player
-              )
-            }),
-            "Breach static surges across the turn start. The active operative gains 1 Heat."
-          );
-        }
-        break;
-      }
-      case "scenario_labyrinth_engine": {
-        if (!Object.hasOwn(this.state.scenarioProgress, "engineModeIndex")) {
-          return;
-        }
-        const nextMode = (this.getScenarioCounter("engineModeIndex", 0) + 1) % 3;
-        this.applyAmbientScenarioMutation(
-          seatId,
-          (state) => ({
-            ...state,
-            scenarioProgress: {
-              ...state.scenarioProgress,
-              engineModeIndex: nextMode
-            }
-          }),
-          `The Labyrinth Engine shifts to mode ${nextMode}.`
-        );
-        break;
-      }
-      default:
-        break;
+    this.applyAmbientScenarioMutation(seatId, resolution.updater, resolution.summary);
+
+    if (resolution.followUp?.type === "draw_sector_threat") {
+      this.applyAmbientSectorThreatDraw(seatId, resolution.summary);
     }
+  }
+
+  private applyAmbientSectorThreatDraw(seatId: string, reasonSummary: string): void {
+    const player = this.state.players.find((entry) => entry.seatId === seatId);
+
+    if (!player || this.state.status !== "active") {
+      return;
+    }
+
+    const sector = this.state.sectors.find((entry) => entry.id === player.character.currentSpaceId);
+
+    if (!sector) {
+      return;
+    }
+
+    const threatDeck = sector.encounterDecks.threat;
+    const drawnThreatId = threatDeck.length > 0 ? threatDeck[this.randomSource.nextInt(threatDeck.length)] ?? null : null;
+    const drawnThreat = drawnThreatId ? this.threats.get(drawnThreatId) ?? null : null;
+
+    this.state = {
+      ...this.state,
+      sequence: this.state.sequence + 1,
+      phase: "action",
+      resolutionSource: null,
+      currentEncounter: drawnThreat,
+      pendingEnemyRoll: null,
+      pendingEffect: null,
+      sectors: this.state.sectors.map((entry) =>
+        entry.id === sector.id && drawnThreat
+          ? {
+              ...entry,
+              encounterDecks: {
+                ...entry.encounterDecks,
+                threat: entry.encounterDecks.threat.filter((cardId) => cardId !== drawnThreat.id)
+              }
+            }
+          : entry
+      ),
+      lastOutcomeSummary: {
+        seatId,
+        movedToSectorId: sector.id,
+        encounterCardId: drawnThreat?.id ?? null,
+        encounterTitle: drawnThreat?.title ?? sector.name,
+        encounterCardType: drawnThreat?.cardType ?? null,
+        checkStat: null,
+        die1: null,
+        die2: null,
+        statBonus: null,
+        checkTotal: null,
+        difficulty: null,
+        enemyRollerSeatId: null,
+        enemyDie1: null,
+        enemyDie2: null,
+        enemyBonus: null,
+        enemyTotal: null,
+        success: drawnThreat ? false : null,
+        summary: drawnThreat
+          ? `${reasonSummary} ${drawnThreat.title} stirs in ${sector.name}.`
+          : `${reasonSummary} ${sector.name} holds, but no threat answers the surge.`
+      },
+      eventLog: [
+        ...this.state.eventLog,
+        {
+          type: "SCENARIO_AMBIENT_APPLIED",
+          seatId,
+          summary: drawnThreat
+            ? `Ambient threat draw: ${drawnThreat.title} rises in ${sector.name}.`
+            : `Ambient threat draw: ${sector.name} had no local threat to reveal.`,
+          createdAt: new Date().toISOString()
+        }
+      ]
+    };
+  }
+
+  private applyStartOfTurnScenarioEffects(seatId: string): void {
+    this.applyScenarioAmbientResolution(
+      seatId,
+      resolveScenarioTurnStart({
+        state: this.state,
+        seatId,
+        rollDie: () => this.randomSource.nextInt(6) + 1,
+        getCounter: (key, fallback = 0) => this.getScenarioCounter(key, fallback),
+        getOuterRingSectorIds: () => this.getOuterRingSectorIds()
+      })
+    );
   }
 
   private applyEndOfTurnScenarioEffects(seatId: string): void {
-    if (this.state.status !== "active") {
-      return;
-    }
-
-    switch (this.state.activeScenarioId) {
-      case "scenario_devourer_beneath": {
-        if (!Object.hasOwn(this.state.scenarioProgress, "devourerIndex")) {
-          return;
-        }
-        const outerRing = this.getOuterRingSectorIds();
-        if (outerRing.length === 0) {
-          return;
-        }
-
-        const nextIndex = (this.getScenarioCounter("devourerIndex", 0) + 1) % outerRing.length;
-        const nextSectorId = outerRing[nextIndex]!;
-        const sector = this.state.sectors.find((entry) => entry.id === nextSectorId);
-        const consumedThreats = sector?.encounterDecks.threat.length ?? 0;
-        const nextDoom = this.getScenarioCounter("doomTokens", 0) + (consumedThreats > 0 ? 1 : 0);
-        const erupted = nextDoom >= 8;
-
-        this.applyAmbientScenarioMutation(
-          seatId,
-          (state) => ({
-            ...state,
-            scenarioProgress: {
-              ...state.scenarioProgress,
-              devourerIndex: nextIndex,
-              doomTokens: erupted ? Math.max(0, nextDoom - 4) : nextDoom
-            },
-            sectors: state.sectors.map((entry) =>
-              entry.id === nextSectorId
-                ? {
-                    ...entry,
-                    encounterDecks: {
-                      ...entry.encounterDecks,
-                      threat: []
-                    }
-                  }
-                : entry
-            ),
-            players: erupted
-              ? state.players.map((player) => ({
-                  ...player,
-                  character: {
-                    ...player.character,
-                    heat: player.character.heat + 1
-                  }
-                }))
-              : state.players
-          }),
-          erupted
-            ? `The Devourer reached ${nextDoom} doom. The table suffers 1 Heat each and doom falls back to ${Math.max(0, nextDoom - 4)}.`
-            : `The Devourer moves to ${nextSectorId}${consumedThreats > 0 ? " and consumes local threats, raising doom." : "."}`
-        );
-        break;
-      }
-      case "scenario_dying_star": {
-        if (!Object.hasOwn(this.state.scenarioProgress, "starTokens")) {
-          return;
-        }
-        const nextStars = Math.max(0, this.getScenarioCounter("starTokens", 10) - 1);
-        const erupted = nextStars === 0;
-        this.applyAmbientScenarioMutation(
-          seatId,
-          (state) => ({
-            ...state,
-            scenarioProgress: {
-              ...state.scenarioProgress,
-              starTokens: erupted ? 5 : nextStars
-            },
-            players: erupted
-              ? state.players.map((player) => ({
-                  ...player,
-                  character: {
-                    ...player.character,
-                    wounds: player.character.wounds + 1
-                  }
-                }))
-              : state.players
-          }),
-          erupted
-            ? "The Dying Star erupts. Every operative takes 1 wound and the star track resets to 5."
-            : `The Dying Star dims to ${nextStars} remaining star tokens.`
-        );
-        break;
-      }
-      default:
-        break;
-    }
+    this.applyScenarioAmbientResolution(
+      seatId,
+      resolveScenarioTurnEnd({
+        state: this.state,
+        seatId,
+        rollDie: () => this.randomSource.nextInt(6) + 1,
+        getCounter: (key, fallback = 0) => this.getScenarioCounter(key, fallback),
+        getOuterRingSectorIds: () => this.getOuterRingSectorIds()
+      })
+    );
   }
 
   private applyScenarioOnEnemyDefeat(seatId: string): void {
-    if (this.state.status !== "active") {
-      return;
-    }
-
-    if (this.state.activeScenarioId === "scenario_broken_seal") {
-      if (!Object.hasOwn(this.state.scenarioProgress, "sealTokens")) {
-        return;
-      }
-      const nextSealTokens = Math.min(6, this.getScenarioCounter("sealTokens", 6) + 1);
-      this.applyAmbientScenarioMutation(
+    this.applyScenarioAmbientResolution(
+      seatId,
+      resolveScenarioEnemyDefeat({
+        state: this.state,
         seatId,
-        (state) => ({
-          ...state,
-          scenarioProgress: {
-            ...state.scenarioProgress,
-            sealTokens: nextSealTokens
-          }
-        }),
-        `The enemy defeat strengthens the ward. ${nextSealTokens} seal tokens now stand.`
-      );
-    }
-
-    if (this.state.activeScenarioId === "scenario_throne_of_ash") {
-      if (!Object.hasOwn(this.state.scenarioProgress, "crownClaims")) {
-        return;
-      }
-      const nextClaims = Math.min(3, this.getScenarioCounter("crownClaims", 0) + 1);
-      this.applyAmbientScenarioMutation(
-        seatId,
-        (state) => ({
-          ...state,
-          scenarioProgress: {
-            ...state.scenarioProgress,
-            crownClaims: nextClaims
-          }
-        }),
-        `A Crown claim is secured. ${nextClaims}/3 claims are now held.`
-      );
-    }
+        rollDie: () => this.randomSource.nextInt(6) + 1,
+        getCounter: (key, fallback = 0) => this.getScenarioCounter(key, fallback),
+        getOuterRingSectorIds: () => this.getOuterRingSectorIds()
+      })
+    );
   }
 
   private applyScenarioOnContractCompleted(seatId: string): void {
-    if (this.state.status !== "active") {
+    this.applyScenarioAmbientResolution(
+      seatId,
+      resolveScenarioContractCompleted({
+        state: this.state,
+        seatId,
+        rollDie: () => this.randomSource.nextInt(6) + 1,
+        getCounter: (key, fallback = 0) => this.getScenarioCounter(key, fallback),
+        getOuterRingSectorIds: () => this.getOuterRingSectorIds()
+      })
+    );
+  }
+
+  private applyScenarioOnSectorEntered(seatId: string, sectorId: string): void {
+    if (this.state.status !== "active" || this.state.activeScenarioId !== "scenario_devourer_beneath") {
       return;
     }
 
-    if (this.state.activeScenarioId === "scenario_throne_of_ash") {
-      if (!Object.hasOwn(this.state.scenarioProgress, "crownClaims")) {
-        return;
-      }
-      const nextClaims = Math.min(3, this.getScenarioCounter("crownClaims", 0) + 1);
-      this.applyAmbientScenarioMutation(
-        seatId,
-        (state) => ({
-          ...state,
-          scenarioProgress: {
-            ...state.scenarioProgress,
-            crownClaims: nextClaims
-          }
-        }),
-        `A Crown claim is secured through a completed contract. ${nextClaims}/3 claims are now held.`
-      );
+    const devourerSectorId = this.getActiveDevourerSectorId();
+
+    if (!devourerSectorId || devourerSectorId !== sectorId) {
+      return;
     }
 
-    if (this.state.activeScenarioId === "scenario_mirror_of_false_heroes") {
-      this.applyAmbientScenarioMutation(
-        seatId,
-        (state) => ({
-          ...state,
-          players: state.players.map((player) =>
-            player.seatId === seatId
-              ? {
-                  ...player,
-                  character: {
-                    ...player.character,
-                    heat: player.character.heat + 1
-                  }
+    const player = this.state.players.find((entry) => entry.seatId === seatId);
+
+    if (!player) {
+      return;
+    }
+
+    const playerRoll = rollDice(2, 6, this.randomSource);
+    const escalationModifier = getEscalationModifier(this.state.escalationLevel);
+    const statBonus = player.character.stats.grit + getEquippedGearBonus(player.character, "grit");
+    const difficulty = 8 + escalationModifier;
+    const total = playerRoll.total + statBonus;
+    const success = total >= difficulty;
+    const nextDoom = success
+      ? Math.max(0, (this.state.scenarioProgress.doomTokens ?? 0) - 1)
+      : (this.state.scenarioProgress.doomTokens ?? 0) + 1;
+
+    this.applyAmbientScenarioMutation(
+      seatId,
+      (state) => ({
+        ...state,
+        scenarioProgress: {
+          ...state.scenarioProgress,
+          doomTokens: nextDoom
+        },
+        players: state.players.map((entry) =>
+          entry.seatId === seatId && !success
+            ? {
+                ...entry,
+                character: {
+                  ...entry.character,
+                  wounds: entry.character.wounds + 1
                 }
-              : player
-          )
-        }),
-        "The mirror feeds on praise. The active operative gains 1 Heat."
-      );
+              }
+            : entry
+        )
+      }),
+      success
+        ? `The Devourer lashes out in ${sectorId}, but the operative holds with ${total} against ${difficulty}. Doom falls to ${nextDoom}.`
+        : `The Devourer catches the operative in ${sectorId}. ${total} fails against ${difficulty}; take 1 wound and doom rises to ${nextDoom}.`
+    );
+
+    if (!success) {
+      this.feedEscalation(seatId, ESCALATION_FEEDERS.woundTaken, "devourer clash");
+      this.maybeApplyScenarioThresholds(seatId);
     }
   }
 
@@ -2525,7 +2622,7 @@ export class GameRoomServer {
     const heldGearCount = player.character.heldGear.length;
     const equippedGearCount = this.countEquippedGear(player);
     const salvageLeverage = Math.min(3, heldGearCount + equippedGearCount);
-    const crownProxy = Math.min(3, this.getScenarioCounter("crownClaims", 0));
+    const crownProxy = Math.min(3, this.getThroneCrownCount(player.seatId));
     const mirrorPressure = player.character.heat;
     const engineModeIndex = this.getScenarioCounter("engineModeIndex", 0) % 3;
     const engineRotation: ScenarioCheck[] = [
@@ -2672,7 +2769,10 @@ export class GameRoomServer {
 
     const escalationModifier = getEscalationModifier(this.state.escalationLevel);
     const roll = rollDice(2, 6, this.randomSource);
-    const statBonus = player.character.stats[intent.stat] + getEquippedGearBonus(player.character, intent.stat);
+    const statBonus =
+      player.character.stats[intent.stat] +
+      getEquippedGearBonus(player.character, intent.stat) +
+      this.getScenarioSkillModifier(intent.seatId);
     const difficulty = encounter.difficulty + escalationModifier;
     const total = roll.total + statBonus;
     const success = total >= difficulty;
@@ -2709,7 +2809,10 @@ export class GameRoomServer {
 
     const escalationModifier = getEscalationModifier(this.state.escalationLevel);
     const roll = rollDice(2, 6, this.randomSource);
-    const statBonus = player.character.stats.guile + getEquippedGearBonus(player.character, "guile");
+    const statBonus =
+      player.character.stats.guile +
+      getEquippedGearBonus(player.character, "guile") +
+      this.getScenarioSkillModifier(intent.seatId);
     const total = roll.total + statBonus;
     const difficulty = targetSector.danger + escalationModifier;
     const success = total >= difficulty;
@@ -2729,6 +2832,9 @@ export class GameRoomServer {
       createdAt: new Date().toISOString()
     } satisfies MovementResolvedAction);
     this.maybeTriggerAbilityOnMovementResolved(intent.seatId, intent.toSectorId, success);
+    if (success) {
+      this.applyScenarioOnSectorEntered(intent.seatId, intent.toSectorId);
+    }
     this.runAutomaticPhases(intent.seatId);
   }
 
@@ -2796,7 +2902,10 @@ export class GameRoomServer {
 
     const results = plan.checks.map((check) => {
       const roll = rollDice(2, 6, this.randomSource);
-      const statBonus = player.character.stats[check.stat] + getEquippedGearBonus(player.character, check.stat);
+      const statBonus =
+        player.character.stats[check.stat] +
+        getEquippedGearBonus(player.character, check.stat) +
+        this.getScenarioSkillModifier(intent.seatId);
       const difficulty = check.difficulty + confrontationModifier;
       const total = roll.total + statBonus;
 
@@ -2975,6 +3084,69 @@ export class GameRoomServer {
     this.runAutomaticPhases(intent.seatId);
   }
 
+  private getRaiseStatCost(): number {
+    return TROPHY_COST_PER_RANK;
+  }
+
+  resolveRaiseStatIntent(intent: Extract<ClientIntent, { type: "RAISE_STAT_REQUESTED" }>): void {
+    const player = this.state.players.find((entry) => entry.seatId === intent.seatId);
+
+    if (!player) {
+      throw new Error(`Missing player for seat ${intent.seatId}`);
+    }
+
+    if (this.state.status !== "active" || this.state.phase !== "action") {
+      throw new Error("Stat raises are only available during an active action phase");
+    }
+
+    if (this.state.turnOrder[this.state.activeSeatIndex] !== intent.seatId) {
+      throw new Error("Only the active seat can raise a stat");
+    }
+
+    if (player.character.status !== "active") {
+      throw new Error("Recalled operatives cannot raise stats");
+    }
+
+    if (this.state.pendingEnemyRoll || this.state.currentEncounter || this.state.pendingEffect) {
+      throw new Error("Resolve the current threat before raising a stat");
+    }
+
+    if (player.character.stats[intent.stat] >= MAX_STAT_RANK) {
+      throw new Error(`${intent.stat} is already at the maximum rank`);
+    }
+
+    const cost = this.getRaiseStatCost();
+
+    if (player.character.trophies < cost) {
+      throw new Error(`Not enough trophies to raise ${intent.stat}`);
+    }
+
+    this.applyAction({
+      type: "STAT_RAISED",
+      seatId: intent.seatId,
+      stat: intent.stat,
+      cost,
+      createdAt: new Date().toISOString()
+    } satisfies StatRaisedAction);
+
+    if (RAISE_STAT_FEEDS_ESCALATION) {
+      this.feedEscalation(intent.seatId, ESCALATION_FEEDERS.trophyDiscarded, RAISE_STAT_ESCALATION_REASON);
+
+      if (this.state.status !== "active") {
+        return;
+      }
+    }
+
+    this.applyAction({
+      type: "PHASE_ADVANCED",
+      seatId: intent.seatId,
+      toPhase: "resolution",
+      createdAt: new Date().toISOString()
+    });
+
+    this.runAutomaticPhases(intent.seatId);
+  }
+
   resolveCombatIntent(intent: Extract<ClientIntent, { type: "COMBAT_REQUESTED" }>): void {
     const player = this.state.players.find((entry) => entry.seatId === intent.seatId);
 
@@ -3067,7 +3239,10 @@ export class GameRoomServer {
     const playerRoll = rollDice(2, 6, this.randomSource);
     const enemyRoll = rollDice(2, 6, this.randomSource);
     const escalationModifier = getEscalationModifier(this.state.escalationLevel);
-    const statBonus = player.character.stats[stat] + getEquippedGearBonus(player.character, stat);
+    const statBonus =
+      player.character.stats[stat] +
+      getEquippedGearBonus(player.character, stat) +
+      this.getScenarioBattleModifier(fighterSeatId);
     const enemyBonus = encounter.difficulty + escalationModifier;
     const total = playerRoll.total + statBonus;
     const enemyTotal = enemyRoll.total + enemyBonus;
@@ -3340,6 +3515,7 @@ export function createTvProjection(state: GameState): Record<string, unknown> {
   const activeNemesis = getLinkedNemesis(state.activeScenarioId);
   const activeScenarioThreshold = getScenarioProgressThreshold(state.activeScenarioId, activeScenario?.victoryThreshold ?? 0);
   const escalationModifier = getEscalationModifier(state.escalationLevel);
+  const scenarioPressureSummary = describeScenarioPressure(state) ?? "Scenario pressure will appear once the room is active.";
   const outerRing = state.sectors.filter((sector) => sector.regionTier === "borderlight");
   const devourerIndex = state.scenarioProgress.devourerIndex ?? 0;
   const devourerSector = outerRing.length > 0 ? outerRing[devourerIndex % outerRing.length] ?? null : null;
@@ -3354,6 +3530,10 @@ export function createTvProjection(state: GameState): Record<string, unknown> {
       : activeScenario?.id === "scenario_throne_of_ash"
         ? [
             { label: "Crown Claims", value: String(state.scenarioProgress.crownClaims ?? 0) },
+            {
+              label: "Active Crowns",
+              value: String(state.turnOrder[state.activeSeatIndex] ? state.scenarioProgress[getScenarioSeatCounterKey("crownClaim", state.turnOrder[state.activeSeatIndex]!)] ?? 0 : 0)
+            },
             { label: "Throne Gate", value: `${activeScenarioProgress}/${activeScenarioThreshold}` }
           ]
         : activeScenario?.id === "scenario_mirror_of_false_heroes"
@@ -3427,10 +3607,17 @@ export function createTvProjection(state: GameState): Record<string, unknown> {
       ? {
           id: activeScenario.id,
           name: activeScenario.name,
+          theme: activeScenario.theme,
+          difficulty: activeScenario.difficulty,
+          pressureSummary: scenarioPressureSummary,
           confrontationTitle: activeScenario.confrontationTitle,
           progressLabel: activeScenario.winConditionKey,
           progress: activeScenarioProgress,
-          threshold: activeScenarioThreshold
+          threshold: activeScenarioThreshold,
+          setup: activeScenario.setup,
+          specialRules: activeScenario.specialRules,
+          confrontationSteps: activeScenario.confrontationSteps,
+          victoryText: activeScenario.victoryText
         }
       : null,
     scenarioTelemetry,
@@ -3452,6 +3639,7 @@ export function createTvProjection(state: GameState): Record<string, unknown> {
         status: player.character.status,
         activeContract: player.character.activeContract,
         stats: player.character.stats,
+        trophies: player.character.trophies,
         heat: player.character.heat,
         wounds: player.character.wounds,
         scars: player.character.scars,

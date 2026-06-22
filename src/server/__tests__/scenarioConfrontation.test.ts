@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { createSequenceRandomSource } from "../../game/engine/dice.js";
 import type { ClientIntent } from "../../game/engine/actions.js";
 import type { GameState } from "../../game/schema/session.schema.js";
+import type { EncounterEffect } from "../../game/schema/card.schema.js";
 import { GameRoomServer } from "../roomServer.js";
 import { createInitialSessionState } from "../sessionState.js";
 
@@ -156,7 +157,9 @@ describe("scenario confrontation flow", () => {
       createScenarioState({
         activeScenarioId: "scenario_throne_of_ash",
         scenarioProgress: {
-          throneClaims: 4
+          throneClaims: 4,
+          crownClaims: 2,
+          "crownClaim:seat-1": 2
         },
         players: createScenarioState().players.map((player) =>
           player.seatId === "seat-1"
@@ -165,8 +168,8 @@ describe("scenario confrontation flow", () => {
                 character: {
                   ...player.character,
                   stats: {
-                    command: player.character.stats.command,
-                    grit: player.character.stats.grit,
+                    command: 20,
+                    grit: 20,
                     signal: 20,
                     guile: 20,
                     forge: player.character.stats.forge
@@ -196,7 +199,9 @@ describe("scenario confrontation flow", () => {
         activeScenarioId: "scenario_throne_of_ash",
         escalationLevel: 5,
         scenarioProgress: {
-          throneClaims: 5
+          throneClaims: 5,
+          crownClaims: 3,
+          "crownClaim:seat-1": 3
         },
         players: createScenarioState().players.map((player) =>
           player.seatId === "seat-1"
@@ -205,8 +210,8 @@ describe("scenario confrontation flow", () => {
                 character: {
                   ...player.character,
                   stats: {
-                    command: player.character.stats.command,
-                    grit: player.character.stats.grit,
+                    command: 20,
+                    grit: 20,
                     signal: 20,
                     guile: 0,
                     forge: player.character.stats.forge
@@ -422,6 +427,48 @@ describe("scenario confrontation flow", () => {
     expect(roomServer.getState().scenarioProgress.sealTokens).toBe(5);
   });
 
+  it("returns a Throne crown when a crowned operative takes a wound", () => {
+    const roomServer = new GameRoomServer(
+      createSoloAmbientState({
+        activeScenarioId: "scenario_throne_of_ash",
+        phase: "resolution",
+        resolutionSource: "encounter",
+        scenarioProgress: {
+          crownClaims: 2,
+          "crownClaim:seat-1": 2
+        },
+        pendingEffect: { type: "take_wound", amount: 1 } as EncounterEffect
+      }),
+      [],
+      createSequenceRandomSource([0])
+    );
+
+    (roomServer as any).applyAction({
+      type: "RESOLUTION_APPLIED",
+      seatId: "seat-1",
+      effect: { type: "take_wound", amount: 1 },
+      sourceCardId: null,
+      success: false,
+      createdAt: new Date().toISOString()
+    });
+
+    expect(roomServer.getState().players[0]?.character.wounds).toBe(1);
+    expect(roomServer.getState().scenarioProgress.crownClaims).toBe(1);
+    expect(roomServer.getState().scenarioProgress["crownClaim:seat-1"]).toBe(1);
+  });
+
+  it("reveals a local threat on a Broken Seal 3-4 turn-start roll", () => {
+    const state = createInitialSessionState("session-alpha");
+    const roomServer = new GameRoomServer(state, [], createSequenceRandomSource([2, 0]));
+
+    roomServer.joinSeat("Solo", "signal-witch");
+    roomServer.startSession();
+
+    expect(roomServer.getState().phase).toBe("action");
+    expect(roomServer.getState().currentEncounter).not.toBeNull();
+    expect(roomServer.getState().lastOutcomeSummary?.summary).toContain("rouses a local threat");
+  });
+
   it("moves the Devourer and raises doom when it consumes a threatened outer sector", () => {
     const roomServer = new GameRoomServer(
       createSoloAmbientState({
@@ -484,5 +531,117 @@ describe("scenario confrontation flow", () => {
     roomServer.startSession();
 
     expect(roomServer.getState().scenarioProgress.engineModeIndex).toBe(1);
+  });
+
+  it("resolves a Devourer clash when an operative moves onto the roaming sector and can reduce doom", () => {
+    const roomServer = new GameRoomServer(
+      createSoloAmbientState({
+        activeScenarioId: "scenario_devourer_beneath",
+        scenarioProgress: {
+          doomTokens: 2,
+          devourerIndex: 2
+        },
+        phase: "navigation",
+        players: createScenarioState().players
+          .slice(0, 1)
+          .map((player) => ({
+            ...player,
+            sectorId: "ashwake-crossing",
+            character: {
+              ...player.character,
+              currentSpaceId: "ashwake-crossing",
+              stats: {
+                ...player.character.stats,
+                guile: 20,
+                grit: 20
+              }
+            }
+          })),
+        seats: createScenarioState().seats.slice(0, 1)
+      }),
+      [],
+      createSequenceRandomSource([5, 5, 5, 5])
+    );
+
+    roomServer.handleIntent(createPhoneClient("seat-1") as never, {
+      type: "MOVE_REQUESTED",
+      seatId: "seat-1",
+      toSectorId: "glassmere-spindle"
+    } satisfies ClientIntent);
+
+    expect(roomServer.getState().scenarioProgress.doomTokens).toBe(1);
+    expect(roomServer.getState().players[0]?.character.wounds).toBe(0);
+    expect(roomServer.getState().currentEncounter?.cardType).toBe("enemy");
+  });
+
+  it("applies the Devourer clash wound and doom pressure on a failed arrival roll", () => {
+    const roomServer = new GameRoomServer(
+      createSoloAmbientState({
+        activeScenarioId: "scenario_devourer_beneath",
+        scenarioProgress: {
+          doomTokens: 0,
+          devourerIndex: 2
+        },
+        phase: "navigation",
+        players: createScenarioState().players
+          .slice(0, 1)
+          .map((player) => ({
+            ...player,
+            sectorId: "ashwake-crossing",
+            character: {
+              ...player.character,
+              currentSpaceId: "ashwake-crossing",
+              stats: {
+                ...player.character.stats,
+                guile: 20,
+                grit: 0
+              }
+            }
+          })),
+        seats: createScenarioState().seats.slice(0, 1)
+      }),
+      [],
+      createSequenceRandomSource([5, 5, 0, 0])
+    );
+
+    roomServer.handleIntent(createPhoneClient("seat-1") as never, {
+      type: "MOVE_REQUESTED",
+      seatId: "seat-1",
+      toSectorId: "glassmere-spindle"
+    } satisfies ClientIntent);
+
+    expect(roomServer.getState().scenarioProgress.doomTokens).toBe(1);
+    expect(roomServer.getState().players[0]?.character.wounds).toBe(1);
+    expect(roomServer.getState().escalationLevel).toBe(1);
+    expect(roomServer.getState().currentEncounter).not.toBeNull();
+  });
+
+  it("burns extra Dying Star tokens when wounds are taken through normal effect resolution", () => {
+    const roomServer = new GameRoomServer(
+      createSoloAmbientState({
+        activeScenarioId: "scenario_dying_star",
+        scenarioProgress: {
+          starTokens: 2
+        },
+        phase: "resolution",
+        pendingEffect: { type: "take_wound", amount: 1 } as EncounterEffect,
+        resolutionSource: "encounter"
+      }),
+      [],
+      createSequenceRandomSource([0])
+    );
+
+    (roomServer as any).applyAction({
+      type: "RESOLUTION_APPLIED",
+      seatId: "seat-1",
+      effect: { type: "take_wound", amount: 1 },
+      sourceCardId: null,
+      success: false,
+      createdAt: new Date().toISOString()
+    });
+
+    expect(roomServer.getState().players[0]?.character.wounds).toBe(1);
+    expect(roomServer.getState().scenarioProgress.starTokens).toBe(1);
+    expect(roomServer.getState().lastOutcomeSummary?.summary ?? "").toContain("Dying Star sheds 1 additional token");
   });
 });

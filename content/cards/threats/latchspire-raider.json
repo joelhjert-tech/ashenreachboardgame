@@ -9,6 +9,7 @@
   "severity": 2,
   "stat": "guile",
   "difficulty": 6,
+  "trophyValue": 6,
   "defeatReward": {
     "type": "lose_heat",
     "amount": 1

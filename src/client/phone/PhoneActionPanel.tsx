@@ -18,8 +18,12 @@ interface ActionButtonDefinition {
   key: string;
   label: string;
   tone: "primary" | "secondary";
+  disabled?: boolean;
   onClick: () => void;
 }
+
+const TROPHY_COST_PER_RANK = 4;
+const MAX_STAT_RANK = 9;
 
 function getSector(sectors: SectorNode[], sectorId: string): SectorNode | null {
   return sectors.find((sector) => sector.id === sectorId) ?? null;
@@ -61,6 +65,7 @@ function ActionButtons({ actions }: { actions: ActionButtonDefinition[] }): Reac
           key={action.key}
           className={`phone-button phone-sheet-action-button phone-button-${action.tone}`}
           type="button"
+          disabled={action.disabled}
           onClick={action.onClick}
         >
           {action.label}
@@ -77,6 +82,7 @@ export function PhoneActionPanel({ characters, onIntent, patch }: PhoneActionPan
     return (
       <section className="phone-sheet-actions" aria-label="Quick actions">
         <div className="phone-sheet-section-heading">Quick Actions</div>
+        <p className="phone-sheet-action-copy">Trophies: 0</p>
         <p className="phone-sheet-action-copy">No seat is attached.</p>
       </section>
     );
@@ -99,11 +105,17 @@ export function PhoneActionPanel({ characters, onIntent, patch }: PhoneActionPan
     pendingEnemyRoll?.fighterSeatId ??
     "the active seat";
   const sectorOpportunityCopy = getSectorOpportunityCopy(sector);
+  const canRaiseStat =
+    patch.phase === "action" &&
+    !patch.encounter &&
+    !patch.pendingEnemyRoll &&
+    self.character.status === "active";
 
   if (patch.status === "ended") {
     return (
       <section className="phone-sheet-actions" aria-label="Quick actions">
         <div className="phone-sheet-section-heading">Quick Actions</div>
+        <p className="phone-sheet-action-copy">Trophies: {self.character.trophies}</p>
         <p className="phone-sheet-action-copy">Game over - winner: {winnerName}</p>
       </section>
     );
@@ -114,6 +126,7 @@ export function PhoneActionPanel({ characters, onIntent, patch }: PhoneActionPan
       return (
         <section className="phone-sheet-actions" aria-label="Quick actions">
           <div className="phone-sheet-section-heading">Quick Actions</div>
+          <p className="phone-sheet-action-copy">Trophies: {self.character.trophies}</p>
           <p className="phone-sheet-action-copy">{pendingFighterName} is engaged. Trigger the enemy roll when the table is ready.</p>
           <ActionButtons
             actions={[
@@ -136,6 +149,7 @@ export function PhoneActionPanel({ characters, onIntent, patch }: PhoneActionPan
     return (
       <section className="phone-sheet-actions" aria-label="Quick actions">
         <div className="phone-sheet-section-heading">Quick Actions</div>
+        <p className="phone-sheet-action-copy">Trophies: {self.character.trophies}</p>
         <p className="phone-sheet-action-copy">Waiting on {pendingRollerName} to roll for the enemy.</p>
       </section>
     );
@@ -145,6 +159,7 @@ export function PhoneActionPanel({ characters, onIntent, patch }: PhoneActionPan
     return (
       <section className="phone-sheet-actions" aria-label="Quick actions">
         <div className="phone-sheet-section-heading">Quick Actions</div>
+        <p className="phone-sheet-action-copy">Trophies: {self.character.trophies}</p>
         <p className="phone-sheet-action-copy">Waiting for another seat to finish its turn.</p>
       </section>
     );
@@ -154,6 +169,7 @@ export function PhoneActionPanel({ characters, onIntent, patch }: PhoneActionPan
     return (
       <section className="phone-sheet-actions" aria-label="Quick actions">
         <div className="phone-sheet-section-heading">Quick Actions</div>
+        <p className="phone-sheet-action-copy">Trophies: {self.character.trophies}</p>
         <p className="phone-sheet-action-copy">Your operative has been recalled. Recruit a replacement to continue.</p>
         <ActionButtons
           actions={characters.map((character) => ({
@@ -317,10 +333,30 @@ export function PhoneActionPanel({ characters, onIntent, patch }: PhoneActionPan
             type: "COMPLETE_CONTRACT",
             seatId: self.seatId,
             contractId: activeContract.id
-          })
+            })
+        });
+      }
+
+    if (canRaiseStat) {
+      (Object.entries(self.character.stats) as Array<[keyof typeof self.character.stats, number]>).forEach(([stat, value]) => {
+        const atCap = value >= MAX_STAT_RANK;
+        const canAfford = self.character.trophies >= TROPHY_COST_PER_RANK;
+
+        actions.push({
+          key: `raise-${stat}`,
+          label: `Raise ${stat} (${TROPHY_COST_PER_RANK})`,
+          tone: "secondary",
+          disabled: atCap || !canAfford,
+          onClick: () =>
+            onIntent({
+              type: "RAISE_STAT_REQUESTED",
+              seatId: self.seatId,
+              stat
+            })
+        });
       });
     }
-
+  
     const isAtCinderGate = self.sectorId === "center_cinder_gate";
 
     if (isAtCinderGate && patch.activeScenario && !patch.encounter) {
@@ -364,6 +400,7 @@ export function PhoneActionPanel({ characters, onIntent, patch }: PhoneActionPan
   return (
     <section className="phone-sheet-actions" aria-label="Quick actions">
       <div className="phone-sheet-section-heading">Quick Actions</div>
+      <p className="phone-sheet-action-copy">Trophies: {self.character.trophies}</p>
       <p className="phone-sheet-action-copy">{copy}</p>
       <ActionButtons actions={patch.phase === "navigation" || patch.phase === "action" ? actions : []} />
     </section>
