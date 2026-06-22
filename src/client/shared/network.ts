@@ -33,6 +33,27 @@ export async function createSession(
   return await response.json();
 }
 
+export async function fetchSessionSummary(): Promise<{
+  roomCode: string;
+  sessionMode: SessionMode;
+  status: string;
+  phase: string;
+}> {
+  const response = await fetch(`${apiOrigin}/api/session`);
+  const payload = await response.json();
+
+  if (!response.ok) {
+    throw new Error(payload.error ?? "Could not load session");
+  }
+
+  return payload as {
+    roomCode: string;
+    sessionMode: SessionMode;
+    status: string;
+    phase: string;
+  };
+}
+
 export async function fetchScenarios(): Promise<ScenarioCatalogEntry[]> {
   const response = await fetch(`${apiOrigin}/api/scenarios`);
   const payload = (await response.json()) as { scenarios: ScenarioCatalogEntry[] };

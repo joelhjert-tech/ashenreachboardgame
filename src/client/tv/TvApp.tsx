@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type ReactElement } from "react";
 import { getBoardSpace } from "../../game/data/boardSpaces.js";
 import { RIFTFALL_BOARD_NODE_INDEX } from "../../data/riftfallBoardNodes.js";
-import { createSession, fetchCharacters, fetchScenarios, startSession } from "../shared/network.js";
+import { createSession, fetchCharacters, fetchScenarios, fetchSessionSummary, startSession } from "../shared/network.js";
 import { getSeatAbilityTelemetry } from "../shared/abilityTelemetry.js";
 import { DebugPanel } from "../shared/DebugPanel.js";
 import { RollOutcomePanel } from "../shared/RollOutcomePanel.js";
@@ -24,6 +24,8 @@ import { JoinQrCard } from "./JoinQrCard.js";
 import { TacticalMapBoard } from "./TacticalMapBoard.js";
 
 const hostTokenStorageKey = "ashen-reach-tv-host-token";
+const roomCodeStorageKey = "ashen-reach-tv-room-code";
+const previousSessionEndedNotice = "Previous session ended. Create a new room to continue.";
 
 const statLabelById: Record<Stat, string> = {
   command: "Cmd",
@@ -682,14 +684,18 @@ function TacticalMapPanel({ patch, previousPatch, activeSeat, activePlayer, char
 export function TvApp(): ReactElement {
   const [characterCatalog, setCharacterCatalog] = useState<CharacterCatalogEntry[]>([]);
   const [scenarioCatalog, setScenarioCatalog] = useState<ScenarioCatalogEntry[]>([]);
-  const [roomCode, setRoomCode] = useState<string | null>(null);
+  const [roomCode, setRoomCode] = useState<string | null>(() =>
+    typeof window === "undefined" ? null : window.localStorage.getItem(roomCodeStorageKey)
+  );
   const [sessionMode, setSessionMode] = useState<SessionMode>("multiplayer");
   const [selectedScenarioId, setSelectedScenarioId] = useState<string | null>(null);
   const [hostToken, setHostToken] = useState<string | null>(() =>
     typeof window === "undefined" ? null : window.localStorage.getItem(hostTokenStorageKey)
   );
   const [requestError, setRequestError] = useState<string | null>(null);
+  const [sessionNotice, setSessionNotice] = useState<string | null>(null);
   const [debugOpen, setDebugOpen] = useState(() => new URLSearchParams(window.location.search).has("debug"));
+  const restoreValidatedRef = useRef(false);
   const { patch, error, status, debugEvents, clearDebugEvents, sendIntent } = useRoomSubscription({
     view: "tv",
     enabled: Boolean(roomCode),
@@ -730,8 +736,71 @@ export function TvApp(): ReactElement {
     }
   }, [publicPatch]);
 
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    if (roomCode && hostToken) {
+      window.localStorage.setItem(roomCodeStorageKey, roomCode);
+      window.localStorage.setItem(hostTokenStorageKey, hostToken);
+      return;
+    }
+
+    window.localStorage.removeItem(roomCodeStorageKey);
+    window.localStorage.removeItem(hostTokenStorageKey);
+  }, [hostToken, roomCode]);
+
+  useEffect(() => {
+    if (!roomCode || !hostToken) {
+      restoreValidatedRef.current = true;
+      return;
+    }
+
+    if (restoreValidatedRef.current) {
+      return;
+    }
+
+    let cancelled = false;
+
+    void fetchSessionSummary()
+      .then((summary) => {
+        if (cancelled) {
+          return;
+        }
+
+        if (summary.roomCode !== roomCode) {
+          setRoomCode(null);
+          setHostToken(null);
+          setSessionNotice(previousSessionEndedNotice);
+          return;
+        }
+
+        setSessionMode(summary.sessionMode);
+      })
+      .catch(() => {
+        if (cancelled) {
+          return;
+        }
+
+        setRoomCode(null);
+        setHostToken(null);
+        setSessionNotice(previousSessionEndedNotice);
+      })
+      .finally(() => {
+        if (!cancelled) {
+          restoreValidatedRef.current = true;
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [hostToken, roomCode]);
+
   const createHostSession = async (nextSessionMode: SessionMode = "multiplayer") => {
     setRequestError(null);
+    setSessionNotice(null);
 
     try {
       const scenarioId = selectedScenarioId ?? scenarioCatalog[0]?.id;
@@ -740,7 +809,7 @@ export function TvApp(): ReactElement {
       setSessionMode(session.sessionMode);
       setSelectedScenarioId(session.scenarioId);
       setHostToken(session.hostToken);
-      window.localStorage.setItem(hostTokenStorageKey, session.hostToken);
+      restoreValidatedRef.current = true;
     } catch (createFailure) {
       setRequestError(createFailure instanceof Error ? createFailure.message : "Could not create a room");
     }
@@ -774,6 +843,7 @@ export function TvApp(): ReactElement {
       />
 
       {(requestError || error) && <div className="tv-banner tv-banner-error">{requestError ?? error}</div>}
+      {sessionNotice && <div className="tv-banner">{sessionNotice}</div>}
 
       <section className="tv-command-main">
         <TacticalMapPanel
