@@ -1,12 +1,16 @@
 import { WebSocketServer, type WebSocket } from "ws";
 import { loadCharacters } from "../game/content/characters.js";
 import { loadContracts } from "../game/content/contracts.js";
+import { loadAnomalyCards } from "../game/content/anomalies.js";
+import { loadArtifactCards } from "../game/content/artifacts.js";
+import { loadEscalationCards } from "../game/content/escalations.js";
 import { loadGear } from "../game/content/gear.js";
 import { loadThreatCards } from "../game/content/threats.js";
 import { getScenarioDefinition } from "../game/data/scenarios.js";
-import { ESCALATION_COLLAPSE_LEVEL, getEscalationModifier } from "../game/engine/escalation.js";
+import { getEscalationCollapseLevel, getEscalationModifier } from "../game/engine/escalation.js";
 import { createInitialScenarioProgress } from "../game/rules/scenarioAmbient.js";
 import { hasScenarioVictory } from "../game/rules/scenarioResolver.js";
+import { resolveSpaceText } from "../game/rules/tileTextResolver.js";
 import type {
   AcceptContractAction,
   CheckRequestedAction,
@@ -25,6 +29,7 @@ import type {
   PhaseAdvancedAction,
   RoundCompletedAction,
   SectorCollapsedAction,
+  SpaceTextResolvedAction,
   ScenarioConfrontationRequestedAction,
   ScenarioProgressAdvancedAction,
   ScenarioVictoryAchievedAction,
@@ -32,7 +37,7 @@ import type {
   UnequipGearAction
 } from "../game/engine/actions.js";
 import { getEquippedGearBonus } from "../game/engine/gear.js";
-import type { EncounterEffect, ThreatCard } from "../game/schema/card.schema.js";
+import type { AnomalyCard, ArtifactCard, EncounterEffect, EscalationCard, ThreatCard } from "../game/schema/card.schema.js";
 import type { Character } from "../game/schema/character.schema.js";
 import type { ContractCard } from "../game/schema/contract.schema.js";
 import type { GearItem } from "../game/schema/gear.schema.js";
@@ -40,6 +45,7 @@ import { rollDice, type RandomSource, defaultRandomSource } from "../game/engine
 import { reduceGameState } from "../game/engine/reducer.js";
 import type { GameState, PlayerState } from "../game/schema/session.schema.js";
 import { validateHostToken, validateJoinToken } from "./auth.js";
+import { getBoardSpace } from "../game/data/boardSpaces.js";
 
 export const ESCALATION_FEEDERS = {
   woundTaken: 1,
@@ -119,6 +125,19 @@ type ScenarioPlan = {
   victorySummary: string;
 };
 
+type SectorCardResolution = {
+  summary: string;
+  effect: EncounterEffect | null;
+  discoveredContracts?: ContractCard[];
+  escalationDelta?: number;
+  consumedDeckCards?: {
+    anomaly?: string[];
+    artifact?: string[];
+    contract?: string[];
+    escalation?: string[];
+  };
+};
+
 class IntentRejectedError extends Error {
   public constructor(
     public readonly actionType: string,
@@ -135,6 +154,9 @@ export class GameRoomServer {
   private readonly contracts: Map<string, ContractCard>;
   private readonly gear: Map<string, GearItem>;
   private readonly threats: Map<string, ThreatCard>;
+  private readonly anomalies: Map<string, AnomalyCard>;
+  private readonly artifacts: Map<string, ArtifactCard>;
+  private readonly escalations: Map<string, EscalationCard>;
   private hostToken: string | null = null;
 
   public constructor(
@@ -144,12 +166,18 @@ export class GameRoomServer {
     threats?: Map<string, ThreatCard>,
     characters?: Map<string, Character>,
     gear?: Map<string, GearItem>,
-    contracts?: Map<string, ContractCard>
+    contracts?: Map<string, ContractCard>,
+    anomalies?: Map<string, AnomalyCard>,
+    artifacts?: Map<string, ArtifactCard>,
+    escalations?: Map<string, EscalationCard>
   ) {
     this.threats = threats ?? loadThreatCards();
     this.characters = characters ?? loadCharacters();
     this.gear = gear ?? loadGear();
     this.contracts = contracts ?? loadContracts();
+    this.anomalies = anomalies ?? loadAnomalyCards();
+    this.artifacts = artifacts ?? loadArtifactCards();
+    this.escalations = escalations ?? loadEscalationCards();
   }
 
   attach(server: WebSocketServer): void {
@@ -243,6 +271,20 @@ export class GameRoomServer {
         return;
       }
 
+      if (intent.type === "RESOLVE_SPACE_TEXT") {
+        this.resolveSpaceTextIntent(intent);
+        const shouldCompleteTurn = this.state.status === "active" && this.state.phase === "broadcast";
+        const completingSeatId = this.state.turnOrder[this.state.activeSeatIndex] ?? client.seatId;
+
+        this.broadcastPatch();
+
+        if (shouldCompleteTurn && completingSeatId) {
+          this.completeBroadcastTurn(completingSeatId);
+        }
+
+        return;
+      }
+
       const action = this.intentToAction(intent);
       this.applyAction(action);
 
@@ -262,6 +304,14 @@ export class GameRoomServer {
 
       if (intent.type === "COMPLETE_CONTRACT") {
         this.applyScenarioOnContractCompleted(client.seatId);
+      }
+
+      if (intent.type === "ACCEPT_CONTRACT") {
+        this.maybeTriggerAbilityOnContractAccepted(client.seatId);
+      }
+
+      if (intent.type === "COMPLETE_CONTRACT") {
+        this.maybeTriggerAbilityOnContractCompleted(client.seatId);
       }
 
       const shouldCompleteTurn = this.state.status === "active" && this.state.phase === "broadcast";
@@ -395,6 +445,7 @@ export class GameRoomServer {
     });
     if (this.state.status === "active") {
       this.applyStartOfTurnScenarioEffects(this.state.turnOrder[this.state.activeSeatIndex] ?? activeSeatId);
+      this.maybeTriggerAbilityOnTurnStarted(this.state.turnOrder[this.state.activeSeatIndex] ?? activeSeatId);
     }
     this.broadcastPatch();
   }
@@ -538,6 +589,8 @@ export class GameRoomServer {
           seatId: intent.seatId,
           createdAt
         } satisfies ScenarioConfrontationRequestedAction;
+      case "RESOLVE_SPACE_TEXT":
+        throw new Error("Space text resolution is handled directly");
       case "STABILIZE_REQUESTED":
         throw new Error("Stabilize requests are resolved directly");
       default: {
@@ -623,11 +676,1131 @@ export class GameRoomServer {
     return state.players.reduce((total, player) => total + player.character.wounds, 0);
   }
 
+  private hasAbilityTriggeredThisRound(seatId: string, abilityId: string): boolean {
+    for (let index = this.state.eventLog.length - 1; index >= 0; index -= 1) {
+      const event = this.state.eventLog[index] as
+        | { type?: string; seatId?: string; abilityId?: string }
+        | undefined;
+
+      if (event?.type === "ROUND_COMPLETED") {
+        break;
+      }
+
+      if (event?.type === "ABILITY_TRIGGERED" && event.seatId === seatId && event.abilityId === abilityId) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  private hasAbilityTriggeredThisSession(seatId: string, abilityId: string): boolean {
+    return this.state.eventLog.some((entry) => {
+      const event = entry as { type?: string; seatId?: string; abilityId?: string } | undefined;
+      return event?.type === "ABILITY_TRIGGERED" && event.seatId === seatId && event.abilityId === abilityId;
+    });
+  }
+
+  private applyAbilityMutation(
+    seatId: string,
+    abilityId: string,
+    summary: string,
+    updater: (player: PlayerState) => PlayerState
+  ): void {
+    let changed = false;
+
+    const players = this.state.players.map((player) => {
+      if (player.seatId !== seatId) {
+        return player;
+      }
+
+      const updated = updater(player);
+      changed = changed || updated !== player;
+      return updated;
+    });
+
+    if (!changed) {
+      return;
+    }
+
+    const currentSectorId = this.state.players.find((player) => player.seatId === seatId)?.sectorId ?? "unknown";
+
+    this.state = {
+      ...this.state,
+      sequence: this.state.sequence + 1,
+      players,
+      lastOutcomeSummary: this.state.lastOutcomeSummary
+        ? {
+            ...this.state.lastOutcomeSummary,
+            seatId,
+            movedToSectorId: currentSectorId,
+            summary: `${this.state.lastOutcomeSummary.summary} ${summary}`
+          }
+        : {
+            seatId,
+            movedToSectorId: currentSectorId,
+            encounterCardId: null,
+            encounterTitle: "Ability Triggered",
+            encounterCardType: null,
+            checkStat: null,
+            die1: null,
+            die2: null,
+            statBonus: null,
+            checkTotal: null,
+            difficulty: null,
+            enemyRollerSeatId: null,
+            enemyDie1: null,
+            enemyDie2: null,
+            enemyBonus: null,
+            enemyTotal: null,
+            success: true,
+            summary
+          },
+      eventLog: [
+        ...this.state.eventLog,
+        {
+          type: "ABILITY_TRIGGERED",
+          seatId,
+          abilityId,
+          summary,
+          createdAt: new Date().toISOString()
+        }
+      ]
+    };
+  }
+
+  private maybeTriggerAbilityOnContractAccepted(seatId: string): void {
+    const player = this.state.players.find((entry) => entry.seatId === seatId);
+
+    if (!player) {
+      return;
+    }
+
+    if (player.character.id === "black-ledger-agent") {
+      if (this.hasAbilityTriggeredThisSession(seatId, "ledger-broker")) {
+        return;
+      }
+
+      this.applyAbilityMutation(
+        seatId,
+        "ledger-broker",
+        "Ledger Broker banked hidden leverage into the newly accepted contract.",
+        (entry) =>
+          entry.character.activeContract
+            ? {
+                ...entry,
+                character: {
+                  ...entry.character,
+                  activeContract: {
+                    ...entry.character.activeContract,
+                    progress: Math.max(1, entry.character.activeContract.progress)
+                  }
+                }
+              }
+            : entry
+      );
+    }
+
+    if (player.character.id === "fleet-elder" && !this.hasAbilityTriggeredThisRound(seatId, "old-oaths")) {
+      this.applyAbilityMutation(
+        seatId,
+        "old-oaths",
+        "Old Oaths turned the fresh job into immediate convoy discipline.",
+        (entry) => ({
+          ...entry,
+          private: {
+            ...entry.private,
+            notes: [...entry.private.notes, "Old Oaths made the frightened route crews fall into line at once."]
+          },
+          character: {
+            ...entry.character,
+            heat: Math.max(0, entry.character.heat - 1)
+          }
+        })
+      );
+    }
+
+    if (player.character.id === "rift-cartographer" && !this.hasAbilityTriggeredThisRound(seatId, "surveyor-cut")) {
+      const contract = this.state.availableContracts.find((entry) => entry.id === player.character.activeContract?.contractId) ?? null;
+
+      this.applyAbilityMutation(
+        seatId,
+        "surveyor-cut",
+        "Surveyor's Cut banked the fresh route lead as future leverage.",
+        (entry) =>
+          entry.character.activeContract && contract
+            ? {
+                ...entry,
+                private: {
+                  ...entry.private,
+                  notes: [...entry.private.notes, "Surveyor's Cut stored the mapped lead before the breach could distort it."]
+                },
+                character: {
+                  ...entry.character,
+                  activeContract: {
+                    ...entry.character.activeContract,
+                    progress: Math.min(contract.objective.target, Math.max(1, entry.character.activeContract.progress))
+                  }
+                }
+              }
+            : entry
+      );
+    }
+  }
+
+  private maybeTriggerAbilityOnContractCompleted(seatId: string): void {
+    const player = this.state.players.find((entry) => entry.seatId === seatId);
+
+    if (!player) {
+      return;
+    }
+
+    if (player.character.id === "void-marshal" && !this.hasAbilityTriggeredThisRound(seatId, "marshal-presence")) {
+      this.applyAbilityMutation(
+        seatId,
+        "marshal-presence",
+        "Marshal's Presence steadied the line and bled off 1 Heat.",
+        (entry) => ({
+          ...entry,
+          private: {
+            ...entry.private,
+            notes: [...entry.private.notes, "Void Marshal command presence stabilized the objective push."]
+          },
+          character: {
+            ...entry.character,
+            heat: Math.max(0, entry.character.heat - 1)
+          }
+        })
+      );
+    }
+
+    if (player.character.id === "black-ledger-agent" && !this.hasAbilityTriggeredThisRound(seatId, "black-file")) {
+      this.applyAbilityMutation(
+        seatId,
+        "black-file",
+        "Black File converted the completed job into leverage.",
+        (entry) => ({
+          ...entry,
+          private: {
+            ...entry.private,
+            notes: [...entry.private.notes, "Black file leverage extracted from the finished contract."]
+          },
+          character: {
+            ...entry.character,
+            heat: Math.max(0, entry.character.heat - 1)
+          }
+        })
+      );
+
+      if (this.state.escalationLevel > 0) {
+        this.feedEscalation(seatId, -1, "Black File");
+      }
+    }
+
+    if (player.character.id === "oathbroken-prince" && !this.hasAbilityTriggeredThisRound(seatId, "ash-tithe")) {
+      this.applyAbilityMutation(
+        seatId,
+        "ash-tithe",
+        "Ash Tithe collected a little of the world's debt back into the Prince's hands.",
+        (entry) => ({
+          ...entry,
+          private: {
+            ...entry.private,
+            notes: [...entry.private.notes, "Ash Tithe skimmed tribute off the quiet victory before the lane could cool."]
+          },
+          character: {
+            ...entry.character,
+            heat: Math.max(0, entry.character.heat - 1)
+          }
+        })
+      );
+    }
+
+    if (player.character.id === "siege-medic" && !this.hasAbilityTriggeredThisRound(seatId, "scar-ledger")) {
+      this.applyAbilityMutation(
+        seatId,
+        "scar-ledger",
+        "Scar Ledger turned the completed job into a cleaner recovery ledger.",
+        (entry) => ({
+          ...entry,
+          private: {
+            ...entry.private,
+            notes: [...entry.private.notes, "Scar Ledger filed the surviving harm into something the crew could carry."]
+          },
+          character: {
+            ...entry.character,
+            heat: Math.max(0, entry.character.heat - 1)
+          }
+        })
+      );
+    }
+  }
+
+  private maybeTriggerAbilityOnTurnStarted(seatId: string): void {
+    const player = this.state.players.find((entry) => entry.seatId === seatId);
+    const sector = player ? this.state.sectors.find((entry) => entry.id === player.character.currentSpaceId) ?? null : null;
+
+    if (!player || !sector) {
+      return;
+    }
+
+    if (
+      player.character.id === "void-marshal" &&
+      sector.encounterDecks.threat.length === 0 &&
+      !this.hasAbilityTriggeredThisRound(seatId, "ashwake-step")
+    ) {
+      this.applyAbilityMutation(
+        seatId,
+        "ashwake-step",
+        "Ashwake Step let the Marshal treat the lane as already scouted.",
+        (entry) => ({
+          ...entry,
+          private: {
+            ...entry.private,
+            notes: [...entry.private.notes, "Ashwake Step marked the opening lane before anyone else had to test it."]
+          },
+          character: {
+            ...entry.character,
+            heat: Math.max(0, entry.character.heat - 1)
+          }
+        })
+      );
+    }
+
+    if (
+      player.character.id === "fleet-elder" &&
+      this.state.escalationLevel > 0 &&
+      !this.hasAbilityTriggeredThisRound(seatId, "fleet-memory")
+    ) {
+      this.applyAbilityMutation(
+        seatId,
+        "fleet-memory",
+        "Fleet Memory read the convoy pressure early and calmed the operative.",
+        (entry) => ({
+          ...entry,
+          private: {
+            ...entry.private,
+            notes: [...entry.private.notes, "Fleet Memory read the pressure pattern before the convoy line could panic."]
+          },
+          character: {
+            ...entry.character,
+            heat: Math.max(0, entry.character.heat - 1)
+          }
+        })
+      );
+    }
+
+    if (
+      player.character.id === "cinder-monk" &&
+      (sector.danger >= 3 || this.state.escalationLevel > 0) &&
+      !this.hasAbilityTriggeredThisRound(seatId, "ember-vigil")
+    ) {
+      this.applyAbilityMutation(
+        seatId,
+        "ember-vigil",
+        "Ember Vigil steadied the Monk before the dangerous lane could set the pace.",
+        (entry) => ({
+          ...entry,
+          private: {
+            ...entry.private,
+            notes: [...entry.private.notes, "Ember Vigil kept the dangerous sector from dictating the tempo."]
+          },
+          character: {
+            ...entry.character,
+            heat: Math.max(0, entry.character.heat - 1)
+          }
+        })
+      );
+    }
+
+    if (
+      player.character.id === "siege-medic" &&
+      (this.state.escalationLevel > 0 || player.character.wounds > 0) &&
+      !this.hasAbilityTriggeredThisRound(seatId, "siege-discipline")
+    ) {
+      this.applyAbilityMutation(
+        seatId,
+        "siege-discipline",
+        "Siege Discipline flattened the pressure curve before the turn even opened.",
+        (entry) => ({
+          ...entry,
+          private: {
+            ...entry.private,
+            notes: [...entry.private.notes, "Siege Discipline turned long pressure into a steady working rhythm."]
+          },
+          character: {
+            ...entry.character,
+            heat: Math.max(0, entry.character.heat - 1)
+          }
+        })
+      );
+    }
+  }
+
+  private maybeTriggerAbilityOnMovementResolved(seatId: string, toSectorId: string, success: boolean): void {
+    const player = this.state.players.find((entry) => entry.seatId === seatId);
+    const sector = this.state.sectors.find((entry) => entry.id === toSectorId) ?? null;
+
+    if (!player || !sector || !success) {
+      return;
+    }
+
+    if (
+      player.character.id === "oathbroken-prince" &&
+      sector.danger >= 2 &&
+      !this.hasAbilityTriggeredThisRound(seatId, "ruin-courtesy")
+    ) {
+      this.applyAbilityMutation(
+        seatId,
+        "ruin-courtesy",
+        "Ruin Courtesy turned the broken ground into something like inherited territory.",
+        (entry) => ({
+          ...entry,
+          private: {
+            ...entry.private,
+            notes: [...entry.private.notes, "Ruin Courtesy made the shattered approach feel like a hall already claimed."]
+          },
+          character: {
+            ...entry.character,
+            heat: Math.max(0, entry.character.heat - 1)
+          }
+        })
+      );
+    }
+
+    if (
+      player.character.id === "rift-cartographer" &&
+      sector.danger >= 2 &&
+      !this.hasAbilityTriggeredThisRound(seatId, "ghost-mile")
+    ) {
+      this.applyAbilityMutation(
+        seatId,
+        "ghost-mile",
+        "Ghost Mile let the Cartographer dismiss the false route before it bit down.",
+        (entry) => ({
+          ...entry,
+          private: {
+            ...entry.private,
+            notes: [...entry.private.notes, "Ghost Mile stripped the false path out of the approach before it could set in."]
+          },
+          character: {
+            ...entry.character,
+            heat: Math.max(0, entry.character.heat - 1)
+          }
+        })
+      );
+    }
+  }
+
+  private maybeTriggerAbilityOnCheckResolved(seatId: string, stat: string, success: boolean): void {
+    const player = this.state.players.find((entry) => entry.seatId === seatId);
+
+    if (!player || !success) {
+      return;
+    }
+
+    if (player.character.id === "signal-witch" && stat === "signal") {
+      if (this.hasAbilityTriggeredThisRound(seatId, "witchglass-choir")) {
+        return;
+      }
+
+      this.applyAbilityMutation(
+        seatId,
+        "witchglass-choir",
+        "Witchglass Choir turned the signal surge into a calmer route reading.",
+        (entry) => ({
+          ...entry,
+          private: {
+            ...entry.private,
+            notes: [...entry.private.notes, "Witchglass choir mapped the live signal into a stable route note."]
+          },
+          character: {
+            ...entry.character,
+            heat: Math.max(0, entry.character.heat - 1)
+          }
+        })
+      );
+    }
+
+    if (player.character.id === "grave-engineer" && stat === "forge" && !this.hasAbilityTriggeredThisRound(seatId, "grave-spark")) {
+      this.applyAbilityMutation(
+        seatId,
+        "grave-spark",
+        "Grave Spark treated the dead infrastructure like familiar craftwork.",
+        (entry) => ({
+          ...entry,
+          private: {
+            ...entry.private,
+            notes: [...entry.private.notes, "Grave Spark turned the dead system into one more workable machine."]
+          },
+          character: {
+            ...entry.character,
+            heat: Math.max(0, entry.character.heat - 1)
+          }
+        })
+      );
+    }
+
+    if (
+      player.character.id === "rift-cartographer" &&
+      (stat === "signal" || stat === "guile") &&
+      !this.hasAbilityTriggeredThisRound(seatId, "rift-script")
+    ) {
+      this.applyAbilityMutation(
+        seatId,
+        "rift-script",
+        "Rift Script translated the clean read into notes fast enough for the team to reuse.",
+        (entry) => ({
+          ...entry,
+          private: {
+            ...entry.private,
+            notes: [...entry.private.notes, "Rift Script annotated the hostile ground before the path could blur again."]
+          }
+        })
+      );
+    }
+
+    if (
+      player.character.id === "siege-medic" &&
+      stat === "grit" &&
+      !this.hasAbilityTriggeredThisRound(seatId, "amber-draught")
+    ) {
+      this.applyAbilityMutation(
+        seatId,
+        "amber-draught",
+        "Amber Draught turned the clean push into measured field relief.",
+        (entry) => ({
+          ...entry,
+          private: {
+            ...entry.private,
+            notes: [...entry.private.notes, "Amber Draught steadied the body before the next hit could land."]
+          },
+          character: {
+            ...entry.character,
+            wounds: Math.max(0, entry.character.wounds - 1)
+          }
+        })
+      );
+    }
+
+    if (player.character.id === "salvage-warden" && stat === "forge" && !this.hasAbilityTriggeredThisRound(seatId, "scrap-bastion")) {
+      this.applyAbilityMutation(
+        seatId,
+        "scrap-bastion",
+        "Scrap Bastion turned the rough forge work into a controlled field hold.",
+        (entry) => ({
+          ...entry,
+          private: {
+            ...entry.private,
+            notes: [...entry.private.notes, "Scrap Bastion converted damaged cover into a workable defensive shell."]
+          },
+          character: {
+            ...entry.character,
+            heat: Math.max(0, entry.character.heat - 1)
+          }
+        })
+      );
+    }
+  }
+
+  private maybeTriggerAbilityOnSpaceTextResolved(seatId: string, effectKey: string): void {
+    const player = this.state.players.find((entry) => entry.seatId === seatId);
+
+    if (!player) {
+      return;
+    }
+
+    if (player.character.id === "void-marshal" && !this.hasAbilityTriggeredThisRound(seatId, "void-command")) {
+      this.applyAbilityMutation(
+        seatId,
+        "void-command",
+        "Void Command marked the sector and steadied the route.",
+        (entry) => ({
+          ...entry,
+          private: {
+            ...entry.private,
+            notes: [...entry.private.notes, "Void Command marked the cleared lane for allied movement."]
+          },
+          character: {
+            ...entry.character,
+            heat: Math.max(0, entry.character.heat - 1)
+          }
+        })
+      );
+    }
+
+    if (
+      player.character.id === "signal-witch" &&
+      effectKey === "outer_glassmereChorus" &&
+      !this.hasAbilityTriggeredThisRound(seatId, "hush-static")
+    ) {
+      this.applyAbilityMutation(
+        seatId,
+        "hush-static",
+        "Hush Static smothered the anomaly's edge and cooled the relay line.",
+        (entry) => ({
+          ...entry,
+          private: {
+            ...entry.private,
+            notes: [...entry.private.notes, "Hush Static drowned the local anomaly in controlled noise."]
+          },
+          character: {
+            ...entry.character,
+            heat: Math.max(0, entry.character.heat - 1)
+          }
+        })
+      );
+    }
+
+    if (
+      player.character.id === "signal-witch" &&
+      (effectKey === "outer_ashwakeClearLane" || effectKey === "middle_webglassFracture") &&
+      !this.hasAbilityTriggeredThisRound(seatId, "route-burn")
+    ) {
+      this.applyAbilityMutation(
+        seatId,
+        "route-burn",
+        "Route Burn left a safer signal trace in the lane behind you.",
+        (entry) => ({
+          ...entry,
+          private: {
+            ...entry.private,
+            notes: [...entry.private.notes, "Route Burn marked a safer allied approach through the live lane."]
+          }
+        })
+      );
+    }
+
+    if (
+      player.character.id === "fleet-elder" &&
+      effectKey === "outer_mirecoilTraffic" &&
+      !this.hasAbilityTriggeredThisRound(seatId, "convoy-law")
+    ) {
+      this.applyAbilityMutation(
+        seatId,
+        "convoy-law",
+        "Convoy Law steadied the wider route network around the fresh contract lead.",
+        (entry) => ({
+          ...entry,
+          private: {
+            ...entry.private,
+            notes: [...entry.private.notes, "Convoy Law secured the lead and calmed the convoy spine."]
+          }
+        })
+      );
+
+      if (this.state.escalationLevel > 0) {
+        this.feedEscalation(seatId, -1, "Convoy Law");
+      }
+    }
+
+    if (
+      player.character.id === "fleet-elder" &&
+      (effectKey === "outer_ashwakeClearLane" ||
+        effectKey === "outer_mirecoilTraffic" ||
+        effectKey === "outer_emberwatchBrace") &&
+      !this.hasAbilityTriggeredThisRound(seatId, "chain-signal")
+    ) {
+      this.applyAbilityMutation(
+        seatId,
+        "chain-signal",
+        "Chain Signal locked the cleared transport lane into a live convoy sequence.",
+        (entry) => ({
+          ...entry,
+          private: {
+            ...entry.private,
+            notes: [...entry.private.notes, "Chain Signal fixed the route into a convoy-safe sequence for the next push."]
+          },
+          character: {
+            ...entry.character,
+            heat: Math.max(0, entry.character.heat - 1)
+          }
+        })
+      );
+    }
+
+    if (
+      player.character.id === "rift-cartographer" &&
+      (effectKey === "outer_ashwakeClearLane" ||
+        effectKey === "middle_webglassFracture" ||
+        effectKey === "middle_guardianSpanThreshold") &&
+      !this.hasAbilityTriggeredThisRound(seatId, "breach-atlas")
+    ) {
+      this.applyAbilityMutation(
+        seatId,
+        "breach-atlas",
+        "Breach Atlas locked the route into a safer working map.",
+        (entry) => ({
+          ...entry,
+          private: {
+            ...entry.private,
+            notes: [...entry.private.notes, "Breach Atlas logged a safer approach through the mapped lane."]
+          },
+          character: {
+            ...entry.character,
+            heat: Math.max(0, entry.character.heat - 1)
+          }
+        })
+      );
+    }
+
+    if (
+      player.character.id === "oathbroken-prince" &&
+      (effectKey === "outer_mirecoilTraffic" ||
+        effectKey === "outer_hollowVeilSweep" ||
+        effectKey === "outer_glassmereChorus") &&
+      !this.hasAbilityTriggeredThisRound(seatId, "broken-claim")
+    ) {
+      this.applyAbilityMutation(
+        seatId,
+        "broken-claim",
+        "Broken Claim turned the cleared lane into progress on the Prince's active objective.",
+        (entry) =>
+          entry.character.activeContract
+            ? {
+                ...entry,
+                private: {
+                  ...entry.private,
+                  notes: [...entry.private.notes, "Broken Claim converted local leverage into objective progress."]
+                },
+                character: {
+                  ...entry.character,
+                  activeContract: {
+                    ...entry.character.activeContract,
+                    progress: entry.character.activeContract.progress + 1
+                  }
+                }
+              }
+            : entry
+      );
+    }
+
+    if (
+      player.character.id === "black-ledger-agent" &&
+      (effectKey === "outer_ashwakeClearLane" ||
+        effectKey === "outer_glassmereChorus" ||
+        effectKey === "outer_mirecoilTraffic" ||
+        effectKey === "middle_shardSprawlBargain") &&
+      !this.hasAbilityTriggeredThisRound(seatId, "silent-audit")
+    ) {
+      this.applyAbilityMutation(
+        seatId,
+        "silent-audit",
+        "Silent Audit pulled cleaner intelligence out of the cleared sector.",
+        (entry) => ({
+          ...entry,
+          private: {
+            ...entry.private,
+            notes: [...entry.private.notes, "Silent Audit extracted sharper route intelligence from the cleared sector."]
+          },
+          character: {
+            ...entry.character,
+            heat: Math.max(0, entry.character.heat - 1)
+          }
+        })
+      );
+    }
+
+    if (
+      player.character.id === "cinder-monk" &&
+      (effectKey === "outer_emberwatchBrace" || effectKey === "outer_emberSanctumRest") &&
+      !this.hasAbilityTriggeredThisRound(seatId, "ash-psalm")
+    ) {
+      this.applyAbilityMutation(
+        seatId,
+        "ash-psalm",
+        "Ash Psalm turned the clear moment into discipline instead of drift.",
+        (entry) => ({
+          ...entry,
+          private: {
+            ...entry.private,
+            notes: [...entry.private.notes, "Ash Psalm hardened the cleared line into a disciplined hold."]
+          },
+          character: {
+            ...entry.character,
+            heat: Math.max(0, entry.character.heat - 1)
+          }
+        })
+      );
+    }
+
+    if (effectKey === "outer_hollowVeilSweep" && player.character.id === "grave-engineer") {
+      this.applyAbilityMutation(
+        seatId,
+        "coffin-rigging",
+        "Coffin Rigging locked the salvage reward straight into field-ready armor.",
+        (entry) => ({
+          ...entry,
+          private: {
+            ...entry.private,
+            notes: [...entry.private.notes, "Coffin Rigging converted Hollow Veil salvage into ready armor."]
+          },
+          character: {
+            ...entry.character,
+            equippedGear: {
+              ...entry.character.equippedGear,
+              armor: entry.character.heldGear.some((item) => item.id === "coffin-rig")
+                ? entry.character.equippedGear.armor ?? "coffin-rig"
+                : entry.character.equippedGear.armor
+            }
+          }
+        })
+      );
+    }
+
+    if (effectKey === "outer_hollowVeilSweep" && player.character.id === "salvage-warden") {
+      this.applyAbilityMutation(
+        seatId,
+        "salvage-right",
+        "Salvage Right squeezed extra field value out of the recovered gear.",
+        (entry) => ({
+          ...entry,
+          private: {
+            ...entry.private,
+            notes: [...entry.private.notes, "Salvage Right extracted a stronger haul from Hollow Veil."]
+          },
+          character: {
+            ...entry.character,
+            heat: Math.max(0, entry.character.heat - 1),
+            equippedGear: {
+              ...entry.character.equippedGear,
+              armor: entry.character.heldGear.some((item) => item.id === "coffin-rig")
+                ? entry.character.equippedGear.armor ?? "coffin-rig"
+                : entry.character.equippedGear.armor
+            }
+          }
+        })
+      );
+    }
+
+    if (
+      effectKey === "outer_hollowVeilSweep" &&
+      player.character.id === "salvage-warden" &&
+      !this.hasAbilityTriggeredThisRound(seatId, "yard-warden")
+    ) {
+      this.applyAbilityMutation(
+        seatId,
+        "yard-warden",
+        "Yard Warden locked the salvage site down for a cleaner haul.",
+        (entry) => ({
+          ...entry,
+          private: {
+            ...entry.private,
+            notes: [...entry.private.notes, "Yard Warden secured the salvage site for a second pass and cleaner extraction."]
+          }
+        })
+      );
+    }
+
+    if (
+      effectKey === "outer_emberSanctumRest" &&
+      player.character.id === "siege-medic" &&
+      !this.hasAbilityTriggeredThisRound(seatId, "field-triage")
+    ) {
+      this.applyAbilityMutation(
+        seatId,
+        "field-triage",
+        "Field Triage cleared a wound while the sanctuary still held.",
+        (entry) => ({
+          ...entry,
+          private: {
+            ...entry.private,
+            notes: [...entry.private.notes, "Field Triage converted the sanctuary pause into hard recovery."]
+          },
+          character: {
+            ...entry.character,
+            wounds: Math.max(0, entry.character.wounds - 1)
+          }
+        })
+      );
+    }
+  }
+
+  private maybeTriggerAbilityOnStabilizeResolved(seatId: string): void {
+    const player = this.state.players.find((entry) => entry.seatId === seatId);
+
+    if (!player) {
+      return;
+    }
+
+    if (player.character.id === "siege-medic" && !this.hasAbilityTriggeredThisRound(seatId, "field-triage")) {
+      this.applyAbilityMutation(
+        seatId,
+        "field-triage",
+        "Field Triage used the stabilization window to clear 1 wound.",
+        (entry) => ({
+          ...entry,
+          private: {
+            ...entry.private,
+            notes: [...entry.private.notes, "Field Triage turned the breach hold into practical recovery."]
+          },
+          character: {
+            ...entry.character,
+            wounds: Math.max(0, entry.character.wounds - 1)
+          }
+        })
+      );
+    }
+
+    if (
+      player.character.id === "salvage-warden" &&
+      !this.hasAbilityTriggeredThisRound(seatId, "last-haul")
+    ) {
+      const veilHook = this.gear.get("veil-hook");
+
+      this.applyAbilityMutation(
+        seatId,
+        "last-haul",
+        "Last Haul turned the failing line into one more useful recovery.",
+        (entry) => ({
+          ...entry,
+          private: {
+            ...entry.private,
+            notes: [...entry.private.notes, "Last Haul pried one more useful recovery out of the breaking route."]
+          },
+          character: {
+            ...entry.character,
+            heldGear:
+              veilHook && !entry.character.heldGear.some((item) => item.id === veilHook.id)
+                ? [...entry.character.heldGear, veilHook]
+                : entry.character.heldGear
+          }
+        })
+      );
+    }
+
+    if (player.character.id === "grave-engineer" && !this.hasAbilityTriggeredThisRound(seatId, "mortuary-triage")) {
+      this.applyAbilityMutation(
+        seatId,
+        "mortuary-triage",
+        "Mortuary Triage converted the stabilization window into procedural calm.",
+        (entry) => ({
+          ...entry,
+          private: {
+            ...entry.private,
+            notes: [...entry.private.notes, "Mortuary Triage turned panic into a field procedure the line could trust."]
+          }
+        })
+      );
+
+      if (this.state.escalationLevel > 0) {
+        this.feedEscalation(seatId, -1, "Mortuary Triage");
+      }
+    }
+  }
+
+  private maybeTriggerAbilityOnCombatVictory(seatId: string): void {
+    const player = this.state.players.find((entry) => entry.seatId === seatId);
+
+    if (!player) {
+      return;
+    }
+
+    if (
+      player.character.id === "black-ledger-agent" &&
+      player.character.activeContract &&
+      !this.hasAbilityTriggeredThisRound(seatId, "debt-knife")
+    ) {
+      const contract = this.state.availableContracts.find((entry) => entry.id === player.character.activeContract?.contractId) ?? null;
+
+      this.applyAbilityMutation(
+        seatId,
+        "debt-knife",
+        "Debt Knife pushed the marked target into sharper contract progress.",
+        (entry) =>
+          entry.character.activeContract && contract
+            ? {
+                ...entry,
+                private: {
+                  ...entry.private,
+                  notes: [...entry.private.notes, "Debt Knife carved extra leverage out of the marked kill."]
+                },
+                character: {
+                  ...entry.character,
+                  activeContract: {
+                    ...entry.character.activeContract,
+                    progress: Math.min(contract.objective.target, entry.character.activeContract.progress + 1)
+                  }
+                }
+              }
+            : entry
+      );
+    }
+
+    if (
+      player.character.id === "void-marshal" &&
+      this.state.players.filter((entry) => entry.seatId !== seatId && entry.sectorId === player.sectorId).length > 0 &&
+      !this.hasAbilityTriggeredThisRound(seatId, "signal-relay")
+    ) {
+      this.applyAbilityMutation(
+        seatId,
+        "signal-relay",
+        "Signal Relay turned nearby allied pressure into a steadier field presence.",
+        (entry) => ({
+          ...entry,
+          private: {
+            ...entry.private,
+            notes: [...entry.private.notes, "Signal Relay amplified allied pressure in the Marshal's sector."]
+          },
+          character: {
+            ...entry.character,
+            heat: Math.max(0, entry.character.heat - 1)
+          }
+        })
+      );
+    }
+
+    if (
+      player.character.id === "oathbroken-prince" &&
+      player.character.activeContract &&
+      !this.hasAbilityTriggeredThisRound(seatId, "crown-debt")
+    ) {
+      this.applyAbilityMutation(
+        seatId,
+        "crown-debt",
+        "Crown Debt made the marked kill feel like repayment instead of luck.",
+        (entry) => ({
+          ...entry,
+          private: {
+            ...entry.private,
+            notes: [...entry.private.notes, "Crown Debt pressed the kill into service as collected obligation."]
+          },
+          character: {
+            ...entry.character,
+            heat: Math.max(0, entry.character.heat - 1)
+          }
+        })
+      );
+    }
+  }
+
+  private maybeTriggerAbilityOnScenarioConfrontationRequested(seatId: string): void {
+    const player = this.state.players.find((entry) => entry.seatId === seatId);
+
+    if (!player) {
+      return;
+    }
+
+    if (player.character.id === "cinder-monk" && !this.hasAbilityTriggeredThisRound(seatId, "cinder-oath")) {
+      this.applyAbilityMutation(
+        seatId,
+        "cinder-oath",
+        "Cinder Oath hardened the Monk before the core-ward trial broke open.",
+        (entry) => ({
+          ...entry,
+          private: {
+            ...entry.private,
+            notes: [...entry.private.notes, "Cinder Oath made the confrontation feel survivable before the first test landed."]
+          },
+          character: {
+            ...entry.character,
+            heat: Math.max(0, entry.character.heat - 1)
+          }
+        })
+      );
+    }
+  }
+
+  private maybeTriggerEscalationAbility(seatId: string, delta: number, reason: string): void {
+    const player = this.state.players.find((entry) => entry.seatId === seatId);
+
+    if (
+      delta > 0 &&
+      player?.character.id === "signal-witch" &&
+      this.state.turnOrder[this.state.activeSeatIndex] === seatId &&
+      !this.hasAbilityTriggeredThisRound(seatId, "choir-lash")
+    ) {
+      this.applyAbilityMutation(
+        seatId,
+        "choir-lash",
+        "Choir Lash answered the breach surge with a cooling signal spike.",
+        (entry) => ({
+          ...entry,
+          private: {
+            ...entry.private,
+            notes: [...entry.private.notes, "Choir Lash bled the breach spike into a controlled pulse."]
+          },
+          character: {
+            ...entry.character,
+            heat: Math.max(0, entry.character.heat - 1)
+          }
+        })
+      );
+    }
+
+    if (
+      delta > 0 &&
+      player?.character.id === "grave-engineer" &&
+      /wound/i.test(reason) &&
+      !this.hasAbilityTriggeredThisRound(seatId, "cold-brace")
+    ) {
+      this.state = {
+        ...this.state,
+        sequence: this.state.sequence + 1,
+        eventLog: [
+          ...this.state.eventLog,
+          {
+            type: "ABILITY_TRIGGERED",
+            seatId,
+            abilityId: "cold-brace",
+            summary: "Cold Brace absorbed part of the wound-driven escalation spike.",
+            createdAt: new Date().toISOString()
+          }
+        ],
+        lastOutcomeSummary: this.state.lastOutcomeSummary
+          ? {
+              ...this.state.lastOutcomeSummary,
+              summary: `${this.state.lastOutcomeSummary.summary} Cold Brace absorbed part of the spike.`
+            }
+          : this.state.lastOutcomeSummary
+      };
+
+      this.feedEscalation(seatId, -1, "Cold Brace");
+      return;
+    }
+
+    if (delta <= 0 || this.state.turnOrder[this.state.activeSeatIndex] !== seatId) {
+      return;
+    }
+
+    if (!player || player.character.id !== "cinder-monk") {
+      return;
+    }
+
+    if (this.hasAbilityTriggeredThisRound(seatId, "bone-bell")) {
+      return;
+    }
+
+    this.state = {
+      ...this.state,
+      sequence: this.state.sequence + 1,
+      eventLog: [
+        ...this.state.eventLog,
+        {
+          type: "ABILITY_TRIGGERED",
+          seatId,
+          abilityId: "bone-bell",
+          summary: "Bone Bell answered the first escalation spike this round.",
+          createdAt: new Date().toISOString()
+        }
+      ],
+      lastOutcomeSummary: this.state.lastOutcomeSummary
+        ? {
+            ...this.state.lastOutcomeSummary,
+            summary: `${this.state.lastOutcomeSummary.summary} Bone Bell answered the spike.`
+          }
+        : this.state.lastOutcomeSummary
+    };
+
+    this.feedEscalation(seatId, -1, "Bone Bell");
+  }
+
   private feedEscalation(seatId: string, delta: number, reason: string): void {
     if (this.state.status !== "active" || delta === 0) {
       return;
     }
 
+    const collapseLevel = getEscalationCollapseLevel(this.state.sessionMode);
     const nextLevel = Math.max(0, this.state.escalationLevel + delta);
     const modifier = getEscalationModifier(nextLevel);
 
@@ -641,13 +1814,18 @@ export class GameRoomServer {
       createdAt: new Date().toISOString()
     } satisfies EscalationAdvancedAction);
 
-    if (nextLevel >= ESCALATION_COLLAPSE_LEVEL) {
+    this.maybeTriggerEscalationAbility(seatId, delta, reason);
+
+    const currentLevel = this.state.escalationLevel;
+    const currentModifier = getEscalationModifier(currentLevel);
+
+    if (currentLevel >= collapseLevel) {
       this.applyAction({
         type: "SECTOR_COLLAPSED",
         seatId,
-        threshold: ESCALATION_COLLAPSE_LEVEL,
-        modifier,
-        summary: `Escalation reached ${nextLevel}/${ESCALATION_COLLAPSE_LEVEL}. The breach overtook the operatives (${reason}).`,
+        threshold: collapseLevel,
+        modifier: currentModifier,
+        summary: `Escalation reached ${currentLevel}/${collapseLevel}. The breach overtook the operatives (${reason}).`,
         createdAt: new Date().toISOString()
       } satisfies SectorCollapsedAction);
     }
@@ -1204,6 +2382,7 @@ export class GameRoomServer {
       const nextSeatId = this.state.turnOrder[this.state.activeSeatIndex] ?? null;
       if (nextSeatId) {
         this.applyStartOfTurnScenarioEffects(nextSeatId);
+        this.maybeTriggerAbilityOnTurnStarted(nextSeatId);
       }
     }
 
@@ -1465,6 +2644,7 @@ export class GameRoomServer {
       cardId: encounter.id,
       createdAt: new Date().toISOString()
     });
+    this.maybeTriggerAbilityOnCheckResolved(intent.seatId, intent.stat, success);
     this.runAutomaticPhases(intent.seatId);
   }
 
@@ -1502,7 +2682,52 @@ export class GameRoomServer {
       effect: success ? null : this.resolveEffect({ type: "gain_heat", amount: 1 }),
       createdAt: new Date().toISOString()
     } satisfies MovementResolvedAction);
+    this.maybeTriggerAbilityOnMovementResolved(intent.seatId, intent.toSectorId, success);
     this.runAutomaticPhases(intent.seatId);
+  }
+
+  resolveSpaceTextIntent(intent: Extract<ClientIntent, { type: "RESOLVE_SPACE_TEXT" }>): void {
+    const player = this.state.players.find((entry) => entry.seatId === intent.seatId);
+
+    if (!player) {
+      throw new Error(`Missing player for seat ${intent.seatId}`);
+    }
+
+    const boardSpace = getBoardSpace(player.character.currentSpaceId);
+
+    if (!boardSpace) {
+      throw new Error(`No board text is registered for ${player.character.currentSpaceId}`);
+    }
+
+    const resolution = resolveSpaceText(boardSpace.textBox.effectKey);
+    const sectorCardResolution = this.resolveSectorCardResolution(intent.seatId, resolution.effectKey);
+    const combinedSummary = [resolution.summary, sectorCardResolution?.summary].filter(Boolean).join(" ");
+    const combinedEffect = this.combineEffects(
+      [resolution.effect, sectorCardResolution?.effect].filter((effect): effect is EncounterEffect => Boolean(effect)).map((effect) =>
+        this.resolveEffect(effect)
+      )
+    );
+
+    if (sectorCardResolution?.escalationDelta) {
+      this.feedEscalation(intent.seatId, sectorCardResolution.escalationDelta, "sector stabilization");
+
+      if (this.state.status !== "active") {
+        return;
+      }
+    }
+
+    this.applyAction({
+      type: "SPACE_TEXT_RESOLVED",
+      seatId: intent.seatId,
+      effectKey: resolution.effectKey,
+      summary: combinedSummary,
+      effect: combinedEffect,
+      sectorId: player.sectorId,
+      discoveredContracts: sectorCardResolution?.discoveredContracts,
+      consumedDeckCards: sectorCardResolution?.consumedDeckCards,
+      createdAt: new Date().toISOString()
+    } satisfies SpaceTextResolvedAction);
+    this.maybeTriggerAbilityOnSpaceTextResolved(intent.seatId, resolution.effectKey);
   }
 
   resolveScenarioConfrontationIntent(intent: Extract<ClientIntent, { type: "SCENARIO_CONFRONTATION_REQUESTED" }>): void {
@@ -1516,6 +2741,8 @@ export class GameRoomServer {
     if (!scenario) {
       throw new Error(`Unknown active scenario ${this.state.activeScenarioId}`);
     }
+
+    this.maybeTriggerAbilityOnScenarioConfrontationRequested(intent.seatId);
 
     const plan = this.buildScenarioPlan(player);
     const confrontationModifier = getEscalationModifier(this.state.escalationLevel);
@@ -1659,6 +2886,7 @@ export class GameRoomServer {
       cost: { kind: "action", amount: 1 },
       createdAt: new Date().toISOString()
     } satisfies StabilizeResolvedAction);
+    this.maybeTriggerAbilityOnStabilizeResolved(intent.seatId);
 
     this.feedEscalation(intent.seatId, -1, "stabilized");
 
@@ -1792,6 +3020,7 @@ export class GameRoomServer {
       createdAt: new Date().toISOString()
     } satisfies CombatResolvedAction);
     if (success) {
+      this.maybeTriggerAbilityOnCombatVictory(fighterSeatId);
       this.applyScenarioOnEnemyDefeat(fighterSeatId);
     }
     this.runAutomaticPhases(fighterSeatId);
@@ -1813,6 +3042,101 @@ export class GameRoomServer {
     }
 
     return effect;
+  }
+
+  private combineEffects(effects: EncounterEffect[]): EncounterEffect | null {
+    if (effects.length === 0) {
+      return null;
+    }
+
+    if (effects.length === 1) {
+      return effects[0] ?? null;
+    }
+
+    return {
+      type: "sequence",
+      effects
+    };
+  }
+
+  private resolveSectorCardResolution(seatId: string, effectKey: string): SectorCardResolution | null {
+    const player = this.state.players.find((entry) => entry.seatId === seatId);
+
+    if (!player) {
+      return null;
+    }
+
+    const sector = this.state.sectors.find((entry) => entry.id === player.character.currentSpaceId);
+
+    if (!sector) {
+      return null;
+    }
+
+    switch (effectKey) {
+      case "outer_glassmereChorus": {
+        const anomalyId = this.drawSectorCardId(sector.encounterDecks.anomaly);
+        const anomaly = anomalyId ? this.anomalies.get(anomalyId) : null;
+
+        return anomaly
+          ? {
+              summary: anomaly.resolutionSummary,
+              effect: anomaly.resolveEffect,
+              consumedDeckCards: { anomaly: [anomaly.id] }
+            }
+          : null;
+      }
+      case "outer_hollowVeilSweep": {
+        const artifactId = this.drawSectorCardId(sector.encounterDecks.artifact);
+        const artifact = artifactId ? this.artifacts.get(artifactId) : null;
+
+        return artifact
+          ? {
+              summary: artifact.resolutionSummary,
+              effect: artifact.resolveEffect,
+              consumedDeckCards: { artifact: [artifact.id] }
+            }
+          : null;
+      }
+      case "outer_mirecoilTraffic": {
+        const contractId = this.drawSectorCardId(sector.encounterDecks.contract);
+        const contract = contractId ? this.resolveContract(this.contracts.get(contractId)) ?? null : null;
+
+        return contract
+          ? {
+              summary: `Intercepted ${contract.name} from Mirecoil Beacon traffic.`,
+              effect: {
+                type: "gain_note",
+                text: `Mirecoil traffic exposed contract ${contract.name}.`
+              },
+              discoveredContracts: [contract],
+              consumedDeckCards: { contract: [contract.id] }
+            }
+          : null;
+      }
+      case "outer_emberwatchBrace": {
+        const escalationId = this.drawSectorCardId(sector.encounterDecks.escalation);
+        const escalation = escalationId ? this.escalations.get(escalationId) : null;
+
+        return escalation
+          ? {
+              summary: escalation.resolutionSummary,
+              effect: escalation.resolveEffect ?? null,
+              escalationDelta: escalation.escalationDelta,
+              consumedDeckCards: { escalation: [escalation.id] }
+            }
+          : null;
+      }
+      default:
+        return null;
+    }
+  }
+
+  private drawSectorCardId(deck: string[]): string | null {
+    if (deck.length === 0) {
+      return null;
+    }
+
+    return deck[this.randomSource.nextInt(deck.length)] ?? null;
   }
 
   private resolveContract(contract: ContractCard | undefined): ContractCard | undefined {
@@ -1939,6 +3263,7 @@ export class GameRoomServer {
 }
 
 export function createTvProjection(state: GameState): Record<string, unknown> {
+  const escalationThreshold = getEscalationCollapseLevel(state.sessionMode);
   const activeScenario = getScenarioDefinition(state.activeScenarioId);
   const activeScenarioProgress = activeScenario ? (state.scenarioProgress[activeScenario.winConditionKey] ?? 0) : 0;
   const escalationModifier = getEscalationModifier(state.escalationLevel);
@@ -1984,6 +3309,28 @@ export function createTvProjection(state: GameState): Record<string, unknown> {
     state.seats.filter((seat) => !seat.kicked && seat.displayName).map((seat) => seat.seatId)
   );
   const visiblePlayers = state.players.filter((player) => visibleSeatIds.has(player.seatId));
+  const recentAbilityTriggers = state.eventLog
+    .filter(
+      (
+        entry
+      ): entry is {
+        type: "ABILITY_TRIGGERED";
+        seatId: string;
+        abilityId: string;
+        summary: string;
+        createdAt: string;
+      } =>
+        typeof entry === "object" &&
+        entry !== null &&
+        "type" in entry &&
+        (entry as { type?: string }).type === "ABILITY_TRIGGERED" &&
+        "seatId" in entry &&
+        "abilityId" in entry &&
+        "summary" in entry &&
+        "createdAt" in entry
+    )
+    .slice(-8)
+    .reverse();
 
   return {
     status: state.status,
@@ -2029,7 +3376,7 @@ export function createTvProjection(state: GameState): Record<string, unknown> {
     activeSeatIndex: state.activeSeatIndex,
     turnOrder: state.turnOrder,
     escalationLevel: state.escalationLevel,
-    escalationThreshold: ESCALATION_COLLAPSE_LEVEL,
+    escalationThreshold,
     escalationModifier,
     availableContracts: state.availableContracts,
     encounter: state.currentEncounter
@@ -2044,7 +3391,8 @@ export function createTvProjection(state: GameState): Record<string, unknown> {
         }
       : null,
     pendingEnemyRoll: state.pendingEnemyRoll,
-    outcomeSummary: state.lastOutcomeSummary
+    outcomeSummary: state.lastOutcomeSummary,
+    recentAbilityTriggers
   };
 }
 
@@ -2072,6 +3420,7 @@ export function createPhoneProjection(state: GameState, seatId: string, forcePri
     encounter: state.currentEncounter,
     pendingEnemyRoll: state.pendingEnemyRoll,
     outcomeSummary: state.lastOutcomeSummary,
+    recentAbilityTriggers: publicProjection.recentAbilityTriggers,
     self: player ? sanitizePlayerForPhone(player) : null
   };
 }

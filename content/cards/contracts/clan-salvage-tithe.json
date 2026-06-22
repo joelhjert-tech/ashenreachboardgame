@@ -1,0 +1,23 @@
+{
+  "id": "clan-salvage-tithe",
+  "name": "Salvage Tithe",
+  "factionGiver": "Veyr Clans",
+  "text": "Break three hostile scavenger nests and the clans will release a sealed haul from their red ledger vaults.",
+  "objective": {
+    "type": "defeatCount",
+    "target": 3
+  },
+  "reward": {
+    "type": "sequence",
+    "effects": [
+      {
+        "type": "gain_gear",
+        "gearId": "coffin-rig"
+      },
+      {
+        "type": "gain_note",
+        "text": "Clan tithe paid in salvage iron and route favors."
+      }
+    ]
+  }
+}

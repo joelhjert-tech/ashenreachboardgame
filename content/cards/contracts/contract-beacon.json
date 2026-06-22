@@ -1,0 +1,23 @@
+{
+  "id": "contract-beacon",
+  "name": "Beacon Quieting",
+  "factionGiver": "Glass Choir",
+  "text": "Silence the hostile signal growth around Mirecoil Beacon before it spills into the convoy lattice.",
+  "objective": {
+    "type": "defeatCount",
+    "target": 1
+  },
+  "reward": {
+    "type": "sequence",
+    "effects": [
+      {
+        "type": "lose_heat",
+        "amount": 1
+      },
+      {
+        "type": "gain_note",
+        "text": "The beacon routes were stabilized for one clean cycle."
+      }
+    ]
+  }
+}

@@ -21,5 +21,26 @@
     "armor": null,
     "utility": null
   },
-  "abilities": []
+  "abilities": [
+    {
+      "id": "void-command",
+      "name": "Void Command",
+      "text": "Once per round, when you complete a contract or clear a sector, record a command note and steady the line."
+    },
+    {
+      "id": "ashwake-step",
+      "name": "Ashwake Step",
+      "text": "When you start a turn in a clear sector, you may treat the first route decision as if the lane was already scouted."
+    },
+    {
+      "id": "signal-relay",
+      "name": "Signal Relay",
+      "text": "When another operative fights in your sector, your command presence counts as live field support."
+    },
+    {
+      "id": "marshal-presence",
+      "name": "Marshal's Presence",
+      "text": "Once per round, reduce local Heat pressure by 1 after a successful objective push."
+    }
+  ]
 }

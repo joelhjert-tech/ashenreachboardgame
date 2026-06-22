@@ -140,12 +140,16 @@ export const threatCardSchema = z.union([
 
 export const anomalyCardSchema = cardBaseSchema.extend({
   type: z.literal("anomaly"),
-  instability: z.number().int().min(1).max(5)
+  instability: z.number().int().min(1).max(5),
+  resolutionSummary: z.string().min(1),
+  resolveEffect: effectSchema
 });
 
 export const artifactCardSchema = cardBaseSchema.extend({
   type: z.literal("artifact"),
-  charge: z.number().int().min(0)
+  charge: z.number().int().min(0),
+  resolutionSummary: z.string().min(1),
+  resolveEffect: effectSchema
 });
 
 export const scarCardSchema = cardBaseSchema.extend({
@@ -155,7 +159,10 @@ export const scarCardSchema = cardBaseSchema.extend({
 
 export const escalationCardSchema = cardBaseSchema.extend({
   type: z.literal("escalation"),
-  step: z.number().int().min(1)
+  step: z.number().int().min(1),
+  resolutionSummary: z.string().min(1),
+  resolveEffect: effectSchema.optional(),
+  escalationDelta: z.number().int()
 });
 
 export const cardSchema = z.union([

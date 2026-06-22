@@ -21,5 +21,26 @@
     "armor": null,
     "utility": null
   },
-  "abilities": []
+  "abilities": [
+    {
+      "id": "coffin-rigging",
+      "name": "Coffin Rigging",
+      "text": "Salvage and repair actions in broken sectors produce sturdier field gear under your hands."
+    },
+    {
+      "id": "mortuary-triage",
+      "name": "Mortuary Triage",
+      "text": "When a wound is stabilized nearby, you can convert panic into procedure and hold the line together."
+    },
+    {
+      "id": "grave-spark",
+      "name": "Grave Spark",
+      "text": "Forge-led tests through dead infrastructure count as familiar ground to you."
+    },
+    {
+      "id": "cold-brace",
+      "name": "Cold Brace",
+      "text": "When escalation climbs from direct damage, your field braces keep the collapse from feeling immediate."
+    }
+  ]
 }

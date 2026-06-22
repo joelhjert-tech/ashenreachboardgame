@@ -21,5 +21,26 @@
     "armor": null,
     "utility": null
   },
-  "abilities": []
+  "abilities": [
+    {
+      "id": "witchglass-choir",
+      "name": "Witchglass Choir",
+      "text": "Signal tests in tuned sectors draw on your private relay chorus and read cleaner than they should."
+    },
+    {
+      "id": "route-burn",
+      "name": "Route Burn",
+      "text": "After you map a lane, leave behind a note that other operatives can use as a safer approach."
+    },
+    {
+      "id": "hush-static",
+      "name": "Hush Static",
+      "text": "The first anomaly you confront each round loses some of its edge as you drown it in controlled noise."
+    },
+    {
+      "id": "choir-lash",
+      "name": "Choir Lash",
+      "text": "When the breach surges, you can answer with a signal spike that keeps the lane from breaking all at once."
+    }
+  ]
 }

@@ -21,5 +21,26 @@
     "armor": null,
     "utility": null
   },
-  "abilities": []
+  "abilities": [
+    {
+      "id": "convoy-law",
+      "name": "Convoy Law",
+      "text": "Once per round, when you secure a contract lead from a live lane, you can steady the whole convoy spine and bleed pressure off the breach."
+    },
+    {
+      "id": "old-oaths",
+      "name": "Old Oaths",
+      "text": "Your authority still means something when frightened crews need a route called fast."
+    },
+    {
+      "id": "chain-signal",
+      "name": "Chain Signal",
+      "text": "A cleared transport lane stays useful longer when you are the one who locked its sequence in place."
+    },
+    {
+      "id": "fleet-memory",
+      "name": "Fleet Memory",
+      "text": "You read convoy pressure like weather and treat panic as something that can still be ordered."
+    }
+  ]
 }

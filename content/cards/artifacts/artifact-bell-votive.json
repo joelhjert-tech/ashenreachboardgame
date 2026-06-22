@@ -1,0 +1,22 @@
+{
+  "id": "artifact-bell-votive",
+  "type": "artifact",
+  "title": "Bell Votive Casket",
+  "text": "A sealed reliquary from the yard's watch chapel, still packed with route tabs and a hooked breach-knife.",
+  "flavor": "The dead packed for this crossing like they knew no one else would return for them.",
+  "charge": 2,
+  "resolutionSummary": "Cracked open the Bell Votive Casket and recovered a Veil Hook from the watch cache.",
+  "resolveEffect": {
+    "type": "sequence",
+    "effects": [
+      {
+        "type": "gain_gear",
+        "gearId": "veil-hook"
+      },
+      {
+        "type": "gain_note",
+        "text": "Bell votive cache opened. The yard watch left breach paths in the lining."
+      }
+    ]
+  }
+}

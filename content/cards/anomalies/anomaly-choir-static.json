@@ -1,0 +1,22 @@
+{
+  "id": "anomaly-choir-static",
+  "type": "anomaly",
+  "title": "Choir Static Bloom",
+  "text": "A dead choral burst keeps replaying through the spindle until every clean line starts singing back.",
+  "flavor": "The safest frequency is the one that sounds almost human.",
+  "instability": 3,
+  "resolutionSummary": "Bled the Choir Static Bloom into a tuning spine bundle and marked a safer relay band.",
+  "resolveEffect": {
+    "type": "sequence",
+    "effects": [
+      {
+        "type": "gain_gear",
+        "gearId": "tuning-spines"
+      },
+      {
+        "type": "gain_note",
+        "text": "Choir static redirected into a safer relay band."
+      }
+    ]
+  }
+}

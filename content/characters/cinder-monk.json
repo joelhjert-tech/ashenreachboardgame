@@ -21,5 +21,26 @@
     "armor": null,
     "utility": null
   },
-  "abilities": []
+  "abilities": [
+    {
+      "id": "ember-vigil",
+      "name": "Ember Vigil",
+      "text": "You hold steady in dangerous sectors where other operatives would let the pressure own the pace."
+    },
+    {
+      "id": "ash-psalm",
+      "name": "Ash Psalm",
+      "text": "When the line is clear, your rites turn the moment into discipline instead of relief."
+    },
+    {
+      "id": "bone-bell",
+      "name": "Bone Bell",
+      "text": "The first time escalation spikes on your turn, answer it with a prayer that keeps the breach honest."
+    },
+    {
+      "id": "cinder-oath",
+      "name": "Cinder Oath",
+      "text": "Core-ward confrontations never feel routine, but your vows make them survivable."
+    }
+  ]
 }

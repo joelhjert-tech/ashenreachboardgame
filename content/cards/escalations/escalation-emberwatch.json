@@ -1,0 +1,14 @@
+{
+  "id": "escalation-emberwatch",
+  "type": "escalation",
+  "title": "Emberwatch Breakline",
+  "text": "The watch-step vents collapse and the outer lane buckles under live breach pressure.",
+  "flavor": "The warning bells ring only after the floor is already gone.",
+  "step": 1,
+  "resolutionSummary": "Braced through the Emberwatch Breakline and pulled one live breach mark off the spine.",
+  "resolveEffect": {
+    "type": "gain_note",
+    "text": "Emberwatch breakline locked down before the ridge sheared away."
+  },
+  "escalationDelta": -1
+}

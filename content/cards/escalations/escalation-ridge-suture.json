@@ -1,0 +1,23 @@
+{
+  "id": "escalation-ridge-suture",
+  "type": "escalation",
+  "title": "Ridge Suture Litany",
+  "text": "The ridge starts to peel apart, but the old bolting line can still be stitched if someone reaches it in time.",
+  "flavor": "Every prayer on the suture posts was written by a worker who expected not to come back down.",
+  "step": 1,
+  "resolutionSummary": "Walked the Ridge Suture Litany, sealed the worst fracture, and cooled the operative under pressure.",
+  "resolveEffect": {
+    "type": "sequence",
+    "effects": [
+      {
+        "type": "lose_heat",
+        "amount": 1
+      },
+      {
+        "type": "gain_note",
+        "text": "Ridge suture anchored. The watch posts can still hold for one more convoy."
+      }
+    ]
+  },
+  "escalationDelta": -1
+}

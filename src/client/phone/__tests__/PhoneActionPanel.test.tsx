@@ -82,6 +82,7 @@ function createPatch(overrides: Partial<PhonePatchPayload> = {}): PhonePatchPayl
     escalationThreshold: 6,
     escalationModifier: 0,
     availableContracts: [],
+    recentAbilityTriggers: [],
     encounter: {
       id: "glass-chime-swarm",
       title: "Glass Chime Swarm",
@@ -223,6 +224,20 @@ describe("PhoneActionPanel", () => {
     );
 
     expect(screen.getByRole("button", { name: /stabilize the breach/i })).toBeInTheDocument();
+  });
+
+  it("offers sector text resolution when the local board space is clear", () => {
+    render(
+      <PhoneActionPanel
+        characters={characters}
+        onIntent={vi.fn()}
+        patch={createPatch({
+          encounter: null
+        })}
+      />
+    );
+
+    expect(screen.getByRole("button", { name: /resolve clear lane/i })).toBeInTheDocument();
   });
 
   it("shows game over state and hides action buttons when the session has ended", () => {

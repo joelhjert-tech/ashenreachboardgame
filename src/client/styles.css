@@ -1853,6 +1853,71 @@ select {
   line-height: 1.35;
 }
 
+.phone-sheet-trigger-panel {
+  display: grid;
+  gap: 0.45rem;
+  padding: 0.62rem 0.78rem;
+  border: 1px solid rgba(124, 152, 178, 0.22);
+  background:
+    linear-gradient(180deg, rgba(14, 19, 28, 0.94), rgba(8, 11, 18, 0.92)),
+    rgba(6, 9, 14, 0.92);
+  box-shadow:
+    inset 0 0 0 1px rgba(207, 164, 98, 0.08),
+    0 0 18px rgba(25, 56, 95, 0.14);
+}
+
+.phone-sheet-trigger-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.55rem;
+}
+
+.phone-sheet-trigger-header span {
+  color: rgba(233, 218, 186, 0.94);
+  font-size: 0.62rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+}
+
+.phone-sheet-trigger-copy {
+  color: #d9e4ec;
+  font-size: clamp(0.68rem, 0.98vw, 0.82rem);
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.phone-sheet-trigger-changes {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.32rem;
+}
+
+.phone-sheet-trigger-chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 1.3rem;
+  padding: 0.1rem 0.42rem;
+  border: 1px solid rgba(125, 139, 152, 0.28);
+  background: rgba(15, 22, 34, 0.88);
+  color: #d8dee5;
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.phone-sheet-trigger-chip-good {
+  border-color: rgba(108, 179, 124, 0.4);
+  color: #bce2b9;
+}
+
+.phone-sheet-trigger-chip-warn {
+  border-color: rgba(205, 109, 92, 0.42);
+  color: #f1b2a7;
+}
+
 .phone-sheet-gear-grid {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
@@ -3212,6 +3277,62 @@ body {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.host-player-card-trigger-band {
+  display: grid;
+  gap: 0.24rem;
+  padding: 0.58rem 0.72rem;
+  border: 1px solid rgba(104, 126, 145, 0.24);
+  background:
+    linear-gradient(180deg, rgba(16, 23, 34, 0.95), rgba(8, 12, 20, 0.92)),
+    rgba(9, 13, 19, 0.92);
+  box-shadow:
+    inset 0 0 0 1px rgba(201, 157, 91, 0.08),
+    0 0 22px rgba(22, 55, 95, 0.12);
+}
+
+.host-player-card-trigger-band strong {
+  color: #d2ad73;
+  font-size: 0.72rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.host-player-card-trigger-band span {
+  color: #dde8f0;
+  font-size: 0.82rem;
+  line-height: 1.3;
+}
+
+.host-player-card-change-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.44rem;
+}
+
+.host-player-card-change-chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 1.55rem;
+  padding: 0.14rem 0.52rem;
+  border: 1px solid rgba(112, 126, 139, 0.28);
+  background: rgba(12, 18, 28, 0.9);
+  color: #d8e0e7;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.host-player-card-change-chip-good {
+  border-color: rgba(110, 183, 131, 0.42);
+  color: #bfe6bf;
+}
+
+.host-player-card-change-chip-warn {
+  border-color: rgba(204, 108, 91, 0.42);
+  color: #f2b9aa;
 }
 
 .host-player-card-sidepanel {

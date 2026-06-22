@@ -5,7 +5,7 @@ import { GameRoomServer, createPhoneProjection, createTvProjection, type Connect
 import type { Character } from "../../schema/character.schema.js";
 import type { ContractCard } from "../../schema/contract.schema.js";
 import type { GearItem } from "../../schema/gear.schema.js";
-import type { ThreatCard } from "../../schema/card.schema.js";
+import type { AnomalyCard, ArtifactCard, EscalationCard, ThreatCard } from "../../schema/card.schema.js";
 import type { ClientIntent, GameAction } from "../actions.js";
 import type { GameState } from "../../schema/session.schema.js";
 
@@ -37,6 +37,143 @@ function createGear(): Map<string, GearItem> {
         slot: "armor",
         statBonus: { stat: "forge", amount: 1 }
       }
+    ],
+    [
+      "marshal-seal",
+      {
+        id: "marshal-seal",
+        name: "Marshal Seal",
+        slot: "utility",
+        statBonus: { stat: "command", amount: 1 }
+      }
+    ]
+  ]);
+}
+
+function createAnomalies(): Map<string, AnomalyCard> {
+  return new Map<string, AnomalyCard>([
+    [
+      "anomaly-glassmere",
+      {
+        id: "anomaly-glassmere",
+        type: "anomaly",
+        title: "Glassmere Echo Bloom",
+        text: "Mirrored afterimages tear at every clean route.",
+        flavor: "Every reflection is a route that almost happened.",
+        instability: 2,
+        resolutionSummary: "Contained the Glassmere Echo Bloom and harvested a usable signal pattern.",
+        resolveEffect: {
+          type: "sequence",
+          effects: [
+            { type: "lose_heat", amount: 1 },
+            { type: "gain_note", text: "Glassmere anomaly contained. The spindle now answers the relay choir cleanly." }
+          ]
+        }
+      }
+    ],
+    [
+      "anomaly-choir-static",
+      {
+        id: "anomaly-choir-static",
+        type: "anomaly",
+        title: "Choir Static Bloom",
+        text: "Dead choir static keeps replaying through the spindle.",
+        flavor: "The safest frequency is the one that sounds almost human.",
+        instability: 3,
+        resolutionSummary: "Bled the Choir Static Bloom into a tuning spine bundle and marked a safer relay band.",
+        resolveEffect: {
+          type: "sequence",
+          effects: [
+            { type: "gain_gear", gearId: "tuning-spines" },
+            { type: "gain_note", text: "Choir static redirected into a safer relay band." }
+          ]
+        }
+      }
+    ]
+  ]);
+}
+
+function createArtifacts(): Map<string, ArtifactCard> {
+  return new Map<string, ArtifactCard>([
+    [
+      "artifact-yard",
+      {
+        id: "artifact-yard",
+        type: "artifact",
+        title: "Yard Bellframe Core",
+        text: "A choir-grade salvage heart still hums with route memory.",
+        flavor: "It remembers every convoy that died under its watch.",
+        charge: 1,
+        resolutionSummary: "Recovered the Yard Bellframe Core and pulled a Marshal Seal out of its locked relay housing.",
+        resolveEffect: {
+          type: "sequence",
+          effects: [
+            { type: "gain_gear", gearId: "marshal-seal" },
+            { type: "gain_note", text: "The Yard Bellframe Core still carries convoy route memory." }
+          ]
+        }
+      }
+    ],
+    [
+      "artifact-bell-votive",
+      {
+        id: "artifact-bell-votive",
+        type: "artifact",
+        title: "Bell Votive Casket",
+        text: "A sealed reliquary from the yard's watch chapel.",
+        flavor: "The dead packed for this crossing like they knew no one else would return.",
+        charge: 2,
+        resolutionSummary: "Cracked open the Bell Votive Casket and recovered a Veil Hook from the watch cache.",
+        resolveEffect: {
+          type: "sequence",
+          effects: [
+            { type: "gain_gear", gearId: "veil-hook" },
+            { type: "gain_note", text: "Bell votive cache opened. The yard watch left breach paths in the lining." }
+          ]
+        }
+      }
+    ]
+  ]);
+}
+
+function createEscalations(): Map<string, EscalationCard> {
+  return new Map<string, EscalationCard>([
+    [
+      "escalation-emberwatch",
+      {
+        id: "escalation-emberwatch",
+        type: "escalation",
+        title: "Emberwatch Breakline",
+        text: "The watch-step vents collapse and the outer lane buckles under live breach pressure.",
+        flavor: "The warning bells ring only after the floor is already gone.",
+        step: 1,
+        resolutionSummary: "Braced through the Emberwatch Breakline and pulled one live breach mark off the spine.",
+        resolveEffect: {
+          type: "gain_note",
+          text: "Emberwatch breakline locked down before the ridge sheared away."
+        },
+        escalationDelta: -1
+      }
+    ],
+    [
+      "escalation-ridge-suture",
+      {
+        id: "escalation-ridge-suture",
+        type: "escalation",
+        title: "Ridge Suture Litany",
+        text: "The ridge can still be stitched if someone reaches it in time.",
+        flavor: "Every prayer on the suture posts was written by a worker who expected not to come back.",
+        step: 1,
+        resolutionSummary: "Walked the Ridge Suture Litany, sealed the worst fracture, and cooled the operative under pressure.",
+        resolveEffect: {
+          type: "sequence",
+          effects: [
+            { type: "lose_heat", amount: 1 },
+            { type: "gain_note", text: "Ridge suture anchored. The watch posts can still hold for one more convoy." }
+          ]
+        },
+        escalationDelta: -1
+      }
     ]
   ]);
 }
@@ -63,6 +200,40 @@ function createContracts(): Map<string, ContractCard> {
         text: "The Compact wants two hostile disruptions erased from a freight lane before the next audit sweep arrives.",
         objective: { type: "defeatCount", target: 2 },
         reward: { type: "gain_gear", gearId: "veil-hook" }
+      }
+    ],
+    [
+      "contract-beacon",
+      {
+        id: "contract-beacon",
+        name: "Beacon Quieting",
+        factionGiver: "Glass Choir",
+        text: "Silence the hostile signal growth around Mirecoil Beacon before it spills into the convoy lattice.",
+        objective: { type: "defeatCount", target: 1 },
+        reward: {
+          type: "sequence",
+          effects: [
+            { type: "lose_heat", amount: 1 },
+            { type: "gain_note", text: "The beacon routes were stabilized for one clean cycle." }
+          ]
+        }
+      }
+    ],
+    [
+      "contract-lantern-run",
+      {
+        id: "contract-lantern-run",
+        name: "Lantern Run",
+        factionGiver: "Pale Cartels",
+        text: "Thread a black-lantern courier lane and clear two hostile interruptions before the smugglers burn the route.",
+        objective: { type: "defeatCount", target: 2 },
+        reward: {
+          type: "sequence",
+          effects: [
+            { type: "gain_gear", gearId: "veil-hook" },
+            { type: "gain_note", text: "The Lantern Run paid out in contraband route access." }
+          ]
+        }
       }
     ]
   ]);
@@ -176,6 +347,180 @@ function cloneCharacter(character: Character | undefined): Character {
     abilities: [...character.abilities],
     scars: [...character.scars]
   };
+}
+
+function createAbilityCharacters(): Map<string, Character> {
+  const characters = createCharacters();
+
+  characters.set("black-ledger-agent", {
+    id: "black-ledger-agent",
+    name: "Joss Var",
+    archetype: "Black Ledger Agent",
+    currentSpaceId: "sector-a",
+    status: "active",
+    stats: { command: 1, grit: 1, signal: 2, guile: 3, forge: 2 },
+    heat: 0,
+    wounds: 0,
+    scars: [],
+    activeContract: null,
+    heldGear: [],
+    equippedGear: { weapon: null, armor: null, utility: null },
+    abilities: [
+      { id: "ledger-broker", name: "Ledger Broker", text: "First contract starts with leverage." },
+      { id: "silent-audit", name: "Silent Audit", text: "Cleared sectors yield sharper intelligence." },
+      { id: "debt-knife", name: "Debt Knife", text: "Marked kills push contract pressure harder." },
+      { id: "black-file", name: "Black File", text: "Finished jobs can be turned into leverage instead of drift." }
+    ]
+  });
+
+  characters.set("cinder-monk", {
+    id: "cinder-monk",
+    name: "Mira",
+    archetype: "Cinder Monk",
+    currentSpaceId: "sector-a",
+    status: "active",
+    stats: { command: 1, grit: 3, signal: 2, guile: 1, forge: 2 },
+    heat: 0,
+    wounds: 0,
+    scars: [],
+    activeContract: null,
+    heldGear: [],
+    equippedGear: { weapon: null, armor: null, utility: null },
+    abilities: [
+      { id: "ember-vigil", name: "Ember Vigil", text: "Hold steady in dangerous sectors." },
+      { id: "ash-psalm", name: "Ash Psalm", text: "Clear moments become discipline." },
+      { id: "bone-bell", name: "Bone Bell", text: "Reduce the first escalation spike each round." },
+      { id: "cinder-oath", name: "Cinder Oath", text: "Core-ward confrontations become survivable vows." }
+    ]
+  });
+
+  characters.set("fleet-elder", {
+    id: "fleet-elder",
+    name: "Orenna Tash",
+    archetype: "Fleet Elder",
+    currentSpaceId: "sector-c",
+    status: "active",
+    stats: { command: 3, grit: 1, signal: 2, guile: 1, forge: 2 },
+    heat: 0,
+    wounds: 0,
+    scars: [],
+    activeContract: null,
+    heldGear: [],
+    equippedGear: { weapon: null, armor: null, utility: null },
+    abilities: [
+      { id: "convoy-law", name: "Convoy Law", text: "Steady escalation when a contract lead is secured." },
+      { id: "old-oaths", name: "Old Oaths", text: "Frightened route crews still answer your call." },
+      { id: "chain-signal", name: "Chain Signal", text: "Cleared transport lanes stay useful longer." },
+      { id: "fleet-memory", name: "Fleet Memory", text: "You read convoy pressure before panic spreads." }
+    ]
+  });
+
+  characters.set("oathbroken-prince", {
+    id: "oathbroken-prince",
+    name: "Reskin Hale",
+    archetype: "Oathbroken Prince",
+    currentSpaceId: "sector-b",
+    status: "active",
+    stats: { command: 2, grit: 1, signal: 1, guile: 3, forge: 2 },
+    heat: 0,
+    wounds: 0,
+    scars: [],
+    activeContract: null,
+    heldGear: [],
+    equippedGear: { weapon: null, armor: null, utility: null },
+    abilities: [
+      { id: "broken-claim", name: "Broken Claim", text: "Turn cleared leverage into contract progress." },
+      { id: "ash-tithe", name: "Ash Tithe", text: "Quiet victories still pay a due." },
+      { id: "crown-debt", name: "Crown Debt", text: "Marked kills feel like collected obligation." },
+      { id: "ruin-courtesy", name: "Ruin Courtesy", text: "Broken grandeur still belongs to you." }
+    ]
+  });
+
+  characters.set("rift-cartographer", {
+    id: "rift-cartographer",
+    name: "Senna Pell",
+    archetype: "Rift Cartographer",
+    currentSpaceId: "sector-a",
+    status: "active",
+    stats: { command: 1, grit: 1, signal: 2, guile: 3, forge: 2 },
+    heat: 0,
+    wounds: 0,
+    scars: [],
+    activeContract: null,
+    heldGear: [],
+    equippedGear: { weapon: null, armor: null, utility: null },
+    abilities: [
+      { id: "breach-atlas", name: "Breach Atlas", text: "Map a lane into a safer route note." },
+      { id: "ghost-mile", name: "Ghost Mile", text: "False routes stand out before they can bite." },
+      { id: "surveyor-cut", name: "Surveyor's Cut", text: "Clean paths become stored leverage." },
+      { id: "rift-script", name: "Rift Script", text: "Hostile ground is annotated before it fades." }
+    ]
+  });
+
+  characters.set("siege-medic", {
+    id: "siege-medic",
+    name: "Dr. Yuna Castell",
+    archetype: "Siege Medic",
+    currentSpaceId: "sector-a",
+    status: "active",
+    stats: { command: 2, grit: 3, signal: 1, guile: 1, forge: 2 },
+    heat: 0,
+    wounds: 0,
+    scars: [],
+    activeContract: null,
+    heldGear: [],
+    equippedGear: { weapon: null, armor: null, utility: null },
+    abilities: [
+      { id: "field-triage", name: "Field Triage", text: "Heal during stabilize windows and sanctuaries." },
+      { id: "scar-ledger", name: "Scar Ledger", text: "Completed jobs become survivable recovery records." },
+      { id: "siege-discipline", name: "Siege Discipline", text: "Pressure sharpens your pace." },
+      { id: "amber-draught", name: "Amber Draught", text: "Relief arrives in precise doses." }
+    ]
+  });
+
+  characters.set("salvage-warden", {
+    id: "salvage-warden",
+    name: "Brask Ode",
+    archetype: "Salvage Warden",
+    currentSpaceId: "sector-c",
+    status: "active",
+    stats: { command: 1, grit: 2, signal: 1, guile: 2, forge: 3 },
+    heat: 0,
+    wounds: 0,
+    scars: [],
+    activeContract: null,
+    heldGear: [],
+    equippedGear: { weapon: null, armor: null, utility: null },
+    abilities: [
+      { id: "salvage-right", name: "Salvage Right", text: "Gear hauls count harder when you secure the site." },
+      { id: "scrap-bastion", name: "Scrap Bastion", text: "Forge-heavy checks treat wreckage like useful cover." },
+      { id: "yard-warden", name: "Yard Warden", text: "Cleared salvage sites stay useful longer." },
+      { id: "last-haul", name: "Last Haul", text: "Recover one more useful item while the run is failing." }
+    ]
+  });
+
+  characters.set("grave-engineer", {
+    id: "grave-engineer",
+    name: "Dessa Korr",
+    archetype: "Grave Engineer",
+    currentSpaceId: "sector-c",
+    status: "active",
+    stats: { command: 1, grit: 2, signal: 1, guile: 2, forge: 3 },
+    heat: 0,
+    wounds: 0,
+    scars: [],
+    activeContract: null,
+    heldGear: [],
+    equippedGear: { weapon: null, armor: null, utility: null },
+    abilities: [
+      { id: "coffin-rigging", name: "Coffin Rigging", text: "Salvage yields sturdier field gear." },
+      { id: "mortuary-triage", name: "Mortuary Triage", text: "Stabilization becomes procedural calm." },
+      { id: "grave-spark", name: "Grave Spark", text: "Dead infrastructure counts as familiar work." },
+      { id: "cold-brace", name: "Cold Brace", text: "Wound-driven spikes land softer." }
+    ]
+  });
+
+  return characters;
 }
 
 function createState(overrides: Partial<GameState> = {}): GameState {
@@ -746,6 +1091,219 @@ describe("escalation flow", () => {
     expect(server.getState().escalationLevel).toBe(6);
   });
 
+  it("gives single-player sessions a higher escalation collapse threshold", () => {
+    const soloBase = createState({
+      sessionMode: "single-player",
+      phase: "action",
+      escalationLevel: 6,
+      currentEncounter: null,
+      turnOrder: ["seat-1"],
+      seats: createState().seats.slice(0, 1),
+      players: createState().players.slice(0, 1)
+    });
+    const server = new GameRoomServer(
+      withOnlyConnectedSeat(soloBase, "seat-1"),
+      [],
+      createSequenceRandomSource([0]),
+      createThreats(),
+      createCharacters(),
+      createGear(),
+      createContracts()
+    );
+
+    runIntent(server, {
+      type: "PHASE_ADVANCED",
+      seatId: "seat-1",
+      toPhase: "resolution"
+    });
+
+    expect(server.getState().status).toBe("active");
+    expect(server.getState().escalationLevel).toBe(7);
+  });
+
+  it("lets the Cinder Monk blunt the first escalation spike on their turn", () => {
+    const characters = createAbilityCharacters();
+    const server = new GameRoomServer(
+      withOnlyConnectedSeat(
+        createState({
+          sessionMode: "single-player",
+          phase: "action",
+          currentEncounter: null,
+          turnOrder: ["seat-1"],
+          seats: [{ ...createState().seats[0]!, characterId: "cinder-monk" }],
+          players: [
+            {
+              ...createState().players[0]!,
+              character: {
+                ...cloneCharacter(characters.get("cinder-monk")),
+                currentSpaceId: "sector-a"
+              }
+            }
+          ]
+        }),
+        "seat-1"
+      ),
+      [],
+      createSequenceRandomSource([0]),
+      createThreats(),
+      characters,
+      createGear(),
+      createContracts()
+    );
+
+    runIntent(server, {
+      type: "PHASE_ADVANCED",
+      seatId: "seat-1",
+      toPhase: "resolution"
+    });
+
+    expect(server.getState().escalationLevel).toBe(0);
+  });
+
+  it("lets the Cinder Monk turn a cleared Emberwatch line into an Ash Psalm reset", () => {
+    const characters = createAbilityCharacters();
+    const server = new GameRoomServer(
+      createState({
+        currentEncounter: null,
+        phase: "action",
+        players: createState().players.map((entry) =>
+          entry.seatId === "seat-1"
+            ? {
+                ...entry,
+                sectorId: "emberwatch-step",
+                character: {
+                  ...cloneCharacter(characters.get("cinder-monk")),
+                  currentSpaceId: "emberwatch-step",
+                  heat: 1
+                }
+              }
+            : entry
+        ),
+        seats: createState().seats.map((seat) =>
+          seat.seatId === "seat-1" ? { ...seat, characterId: "cinder-monk" } : seat
+        ),
+        sectors: createState().sectors.map((sector) =>
+          sector.id === "sector-c"
+            ? {
+                ...sector,
+                id: "emberwatch-step",
+                name: "Emberwatch Step",
+                encounterDecks: { ...sector.encounterDecks, threat: [] }
+              }
+            : sector
+        )
+      }),
+      [],
+      createSequenceRandomSource([0]),
+      createThreats(),
+      characters,
+      createGear(),
+      createContracts(),
+      createAnomalies(),
+      createArtifacts(),
+      createEscalations()
+    );
+
+    runIntent(server, {
+      type: "RESOLVE_SPACE_TEXT",
+      seatId: "seat-1"
+    });
+
+    expect(server.getState().players.find((entry) => entry.seatId === "seat-1")?.character.heat).toBe(0);
+    expect(server.getState().players.find((entry) => entry.seatId === "seat-1")?.private.notes).toContain(
+      "Ash Psalm hardened the cleared line into a disciplined hold."
+    );
+  });
+
+  it("lets Ember Vigil steady the Cinder Monk at the start of a dangerous turn", () => {
+    const characters = createAbilityCharacters();
+    const server = new GameRoomServer(
+      withOnlyConnectedSeat(
+        createState({
+          sessionMode: "single-player",
+          phase: "action",
+          escalationLevel: 1,
+          currentEncounter: null,
+          turnOrder: ["seat-1"],
+          seats: [{ ...createState().seats[0]!, characterId: "cinder-monk" }],
+          players: [
+            {
+              ...createState().players[0]!,
+              sectorId: "sector-c",
+              character: {
+                ...cloneCharacter(characters.get("cinder-monk")),
+                currentSpaceId: "sector-c",
+                heat: 1
+              }
+            }
+          ]
+        }),
+        "seat-1"
+      ),
+      [],
+      createSequenceRandomSource([0]),
+      createThreats(),
+      characters,
+      createGear(),
+      createContracts()
+    );
+
+    runIntent(server, {
+      type: "PHASE_ADVANCED",
+      seatId: "seat-1",
+      toPhase: "resolution"
+    });
+
+    expect(server.getState().players[0]?.character.heat).toBe(0);
+    expect(server.getState().players[0]?.private.notes).toContain(
+      "Ember Vigil kept the dangerous sector from dictating the tempo."
+    );
+  });
+
+  it("lets Choir Lash cool the Signal Witch when escalation spikes on their turn", () => {
+    const characters = createCharacters();
+    const server = new GameRoomServer(
+      withOnlyConnectedSeat(
+        createState({
+          sessionMode: "single-player",
+          phase: "action",
+          currentEncounter: null,
+          turnOrder: ["seat-1"],
+          seats: [{ ...createState().seats[0]!, characterId: "signal-witch" }],
+          players: [
+            {
+              ...createState().players[0]!,
+              character: {
+                ...cloneCharacter(characters.get("signal-witch")),
+                currentSpaceId: "sector-a",
+                heat: 1
+              }
+            }
+          ]
+        }),
+        "seat-1"
+      ),
+      [],
+      createSequenceRandomSource([0]),
+      createThreats(),
+      characters,
+      createGear(),
+      createContracts()
+    );
+
+    runIntent(server, {
+      type: "PHASE_ADVANCED",
+      seatId: "seat-1",
+      toPhase: "resolution"
+    });
+
+    expect(server.getState().escalationLevel).toBe(1);
+    expect(server.getState().players.find((entry) => entry.seatId === "seat-1")?.character.heat).toBe(0);
+    expect(server.getState().players.find((entry) => entry.seatId === "seat-1")?.private.notes).toContain(
+      "Choir Lash bled the breach spike into a controlled pulse."
+    );
+  });
+
   it("feeds escalation from wounds taken during resolution effects", () => {
     const baseState = createState({
       phase: "action",
@@ -792,6 +1350,67 @@ describe("escalation flow", () => {
 
     expect(server.getState().players[0]?.character.wounds).toBe(2);
     expect(server.getState().escalationLevel).toBe(2);
+  });
+
+  it("lets Cold Brace shave a wound-driven escalation spike for the Grave Engineer", () => {
+    const characters = createCharacters();
+    const baseState = createState({
+      phase: "action",
+      currentEncounter: null,
+      pendingEnemyRoll: null,
+      pendingEffect: null,
+      turnOrder: ["seat-1"],
+      activeSeatIndex: 0,
+      seats: [{ ...createState().seats[0]!, characterId: "grave-engineer" }],
+      players: [
+        {
+          ...createState().players[0]!,
+          sectorId: "center_cinder_gate",
+          character: {
+            ...cloneCharacter(characters.get("grave-engineer")),
+            currentSpaceId: "center_cinder_gate"
+          }
+        }
+      ]
+    });
+    const server = new GameRoomServer(
+      withOnlyConnectedSeat(baseState, "seat-1"),
+      [],
+      createSequenceRandomSource([0]),
+      createThreats(),
+      characters,
+      createGear(),
+      createContracts()
+    );
+
+    (server as unknown as { applyAction: (action: GameAction) => void }).applyAction({
+      type: "SCENARIO_PROGRESS_ADVANCED",
+      seatId: "seat-1",
+      scenarioId: "scenario_broken_seal",
+      progressKey: "sealRestorationMarks",
+      amount: 0,
+      effect: { type: "take_wound", amount: 2 },
+      summary: "The breach lashes back.",
+      createdAt: new Date().toISOString()
+    });
+
+    expect(server.getState().players[0]?.character.wounds).toBe(2);
+    expect(server.getState().escalationLevel).toBe(1);
+    expect(server.getState().players[0]?.private.notes).not.toContain("Cold Brace absorbed part of the spike.");
+    expect(
+      server
+        .getState()
+        .eventLog.some(
+          (entry) =>
+            Boolean(
+              entry &&
+                typeof entry === "object" &&
+                "type" in entry &&
+                (entry as { type?: string; abilityId?: string }).type === "ABILITY_TRIGGERED" &&
+                (entry as { abilityId?: string }).abilityId === "cold-brace"
+            )
+        )
+    ).toBe(true);
   });
 
   it("collapses the session when a wound feeder pushes escalation to threshold", () => {
@@ -873,9 +1492,712 @@ describe("escalation flow", () => {
     expect(server.getState().escalationLevel).toBe(0);
     expect(server.getState().activeSeatIndex).toBe(1);
   });
+
+  it("resolves clear sector text from the action phase and records the granted note", () => {
+    const server = new GameRoomServer(
+      createState({
+        currentEncounter: null,
+        phase: "action",
+        sectors: createState().sectors.map((sector) =>
+          sector.id === "sector-a"
+            ? {
+                ...sector,
+                id: "ashwake-crossing",
+                name: "Ashwake Crossing",
+                encounterDecks: { ...sector.encounterDecks, threat: [] }
+              }
+            : sector
+        ).map((sector) =>
+          sector.id === "sector-b"
+            ? {
+                ...sector,
+                neighbors: ["ashwake-crossing", "sector-c"]
+              }
+            : sector
+        )
+        ,
+        players: createState().players.map((player) =>
+          player.seatId === "seat-1"
+            ? {
+                ...player,
+                sectorId: "ashwake-crossing",
+                character: {
+                  ...player.character,
+                  currentSpaceId: "ashwake-crossing"
+                }
+              }
+            : player
+        )
+      }),
+      [],
+      createSequenceRandomSource([0]),
+      createThreats(),
+      createCharacters(),
+      createGear(),
+      createContracts()
+    );
+
+    runIntent(server, {
+      type: "RESOLVE_SPACE_TEXT",
+      seatId: "seat-1"
+    });
+
+    expect(server.getState().players[0]?.private.notes).toContain("Ashwake crossing cleared. The convoy lane is charted.");
+    expect(server.getState().phase).toBe("navigation");
+  });
+
+  it("discovers a local Mirecoil contract through sector text and adds it to the live contract pool", () => {
+    const server = new GameRoomServer(
+      createState({
+        currentEncounter: null,
+        phase: "action",
+        availableContracts: [],
+        players: createState().players.map((player) =>
+          player.seatId === "seat-1"
+            ? {
+                ...player,
+                sectorId: "mirecoil-beacon",
+                character: {
+                  ...player.character,
+                  currentSpaceId: "mirecoil-beacon"
+                }
+              }
+            : player
+        ),
+        sectors: createState().sectors.map((sector) =>
+          sector.id === "sector-c"
+            ? {
+                ...sector,
+                id: "mirecoil-beacon",
+                name: "Mirecoil Beacon",
+                encounterDecks: { ...sector.encounterDecks, threat: [], contract: ["contract-beacon", "contract-lantern-run"] }
+              }
+            : sector
+        )
+      }),
+      [],
+      createSequenceRandomSource([0]),
+      createThreats(),
+      createCharacters(),
+      createGear(),
+      createContracts(),
+      createAnomalies(),
+      createArtifacts(),
+      createEscalations()
+    );
+
+    runIntent(server, {
+      type: "RESOLVE_SPACE_TEXT",
+      seatId: "seat-1"
+    });
+
+    expect(server.getState().availableContracts.map((entry) => entry.id)).toContain("contract-beacon");
+    expect(server.getState().players[0]?.private.notes).toContain("Mirecoil traffic exposed contract Beacon Quieting.");
+    expect(server.getState().sectors.find((sector) => sector.id === "mirecoil-beacon")?.encounterDecks.contract).toEqual([
+      "contract-lantern-run"
+    ]);
+  });
+
+  it("can discover the alternate Mirecoil contract from the local beacon deck", () => {
+    const server = new GameRoomServer(
+      createState({
+        currentEncounter: null,
+        phase: "action",
+        availableContracts: [],
+        players: createState().players.map((player) =>
+          player.seatId === "seat-1"
+            ? {
+                ...player,
+                sectorId: "mirecoil-beacon",
+                character: {
+                  ...player.character,
+                  currentSpaceId: "mirecoil-beacon"
+                }
+              }
+            : player
+        ),
+        sectors: createState().sectors.map((sector) =>
+          sector.id === "sector-c"
+            ? {
+                ...sector,
+                id: "mirecoil-beacon",
+                name: "Mirecoil Beacon",
+                encounterDecks: { ...sector.encounterDecks, threat: [], contract: ["contract-beacon", "contract-lantern-run"] }
+              }
+            : sector
+        )
+      }),
+      [],
+      createSequenceRandomSource([1]),
+      createThreats(),
+      createCharacters(),
+      createGear(),
+      createContracts(),
+      createAnomalies(),
+      createArtifacts(),
+      createEscalations()
+    );
+
+    runIntent(server, {
+      type: "RESOLVE_SPACE_TEXT",
+      seatId: "seat-1"
+    });
+
+    expect(server.getState().availableContracts.map((entry) => entry.id)).toContain("contract-lantern-run");
+    expect(server.getState().players[0]?.private.notes).toContain("Mirecoil traffic exposed contract Lantern Run.");
+    expect(server.getState().sectors.find((sector) => sector.id === "mirecoil-beacon")?.encounterDecks.contract).toEqual([
+      "contract-beacon"
+    ]);
+  });
+
+  it("resolves the Glassmere anomaly through sector text and consumes the local anomaly card", () => {
+    const server = new GameRoomServer(
+      createState({
+        currentEncounter: null,
+        phase: "action",
+        players: createState().players.map((player) =>
+          player.seatId === "seat-1"
+            ? {
+                ...player,
+                sectorId: "glassmere-spindle",
+                character: {
+                  ...player.character,
+                  heat: 2,
+                  currentSpaceId: "glassmere-spindle"
+                }
+              }
+            : player
+        ),
+        sectors: createState().sectors.map((sector) =>
+          sector.id === "sector-b"
+            ? {
+                ...sector,
+                id: "glassmere-spindle",
+                name: "Glassmere Spindle",
+                encounterDecks: { ...sector.encounterDecks, threat: [], anomaly: ["anomaly-glassmere", "anomaly-choir-static"] }
+              }
+            : sector
+        )
+      }),
+      [],
+      createSequenceRandomSource([0]),
+      createThreats(),
+      createCharacters(),
+      createGear(),
+      createContracts(),
+      createAnomalies(),
+      createArtifacts(),
+      createEscalations()
+    );
+
+    runIntent(server, {
+      type: "RESOLVE_SPACE_TEXT",
+      seatId: "seat-1"
+    });
+
+    expect(server.getState().players[0]?.character.heat).toBe(0);
+    expect(server.getState().players[0]?.private.notes).toContain(
+      "Glassmere anomaly contained. The spindle now answers the relay choir cleanly."
+    );
+    expect(server.getState().sectors.find((sector) => sector.id === "glassmere-spindle")?.encounterDecks.anomaly).toEqual([
+      "anomaly-choir-static"
+    ]);
+  });
+
+  it("can draw the alternate Glassmere anomaly from the local sector deck", () => {
+    const server = new GameRoomServer(
+      createState({
+        currentEncounter: null,
+        phase: "action",
+        players: createState().players.map((player) =>
+          player.seatId === "seat-1"
+            ? {
+                ...player,
+                sectorId: "glassmere-spindle",
+                character: {
+                  ...player.character,
+                  currentSpaceId: "glassmere-spindle"
+                }
+              }
+            : player
+        ),
+        sectors: createState().sectors.map((sector) =>
+          sector.id === "sector-b"
+            ? {
+                ...sector,
+                id: "glassmere-spindle",
+                name: "Glassmere Spindle",
+                encounterDecks: { ...sector.encounterDecks, threat: [], anomaly: ["anomaly-glassmere", "anomaly-choir-static"] }
+              }
+            : sector
+        )
+      }),
+      [],
+      createSequenceRandomSource([1]),
+      createThreats(),
+      createCharacters(),
+      createGear(),
+      createContracts(),
+      createAnomalies(),
+      createArtifacts(),
+      createEscalations()
+    );
+
+    runIntent(server, {
+      type: "RESOLVE_SPACE_TEXT",
+      seatId: "seat-1"
+    });
+
+    expect(server.getState().players[0]?.character.heldGear.map((item) => item.id)).toContain("tuning-spines");
+    expect(server.getState().players[0]?.private.notes).toContain("Choir static redirected into a safer relay band.");
+    expect(server.getState().sectors.find((sector) => sector.id === "glassmere-spindle")?.encounterDecks.anomaly).toEqual([
+      "anomaly-glassmere"
+    ]);
+  });
+
+  it("lets the Grave Engineer auto-rig Hollow Veil salvage into equipped armor", () => {
+    const server = new GameRoomServer(
+      createState({
+        currentEncounter: null,
+        phase: "action",
+        players: createState().players.map((player) =>
+          player.seatId === "seat-1"
+            ? {
+                ...player,
+                sectorId: "hollow-veil-yard",
+                character: {
+                  ...cloneCharacter(createCharacters().get("grave-engineer")),
+                  currentSpaceId: "hollow-veil-yard",
+                  heldGear: [],
+                  equippedGear: { weapon: null, armor: null, utility: null }
+                }
+              }
+            : player
+        ),
+        seats: createState().seats.map((seat) =>
+          seat.seatId === "seat-1" ? { ...seat, characterId: "grave-engineer" } : seat
+        ),
+        sectors: createState().sectors.map((sector) =>
+          sector.id === "sector-a"
+            ? {
+                ...sector,
+                id: "hollow-veil-yard",
+                name: "Hollow Veil Yard",
+                encounterDecks: { ...sector.encounterDecks, threat: [] }
+              }
+            : sector
+        )
+      }),
+      [],
+      createSequenceRandomSource([0]),
+      createThreats(),
+      createCharacters(),
+      createGear(),
+      createContracts(),
+      createAnomalies(),
+      createArtifacts(),
+      createEscalations()
+    );
+
+    runIntent(server, {
+      type: "RESOLVE_SPACE_TEXT",
+      seatId: "seat-1"
+    });
+
+    expect(server.getState().players[0]?.character.heldGear.some((item) => item.id === "coffin-rig")).toBe(true);
+    expect(server.getState().players[0]?.character.equippedGear.armor).toBe("coffin-rig");
+  });
+
+  it("recovers the Hollow Veil artifact through sector text and clears the local artifact deck", () => {
+    const server = new GameRoomServer(
+      createState({
+        currentEncounter: null,
+        phase: "action",
+        players: createState().players.map((player) =>
+          player.seatId === "seat-1"
+            ? {
+                ...player,
+                sectorId: "hollow-veil-yard",
+                character: {
+                  ...player.character,
+                  currentSpaceId: "hollow-veil-yard"
+                }
+              }
+            : player
+        ),
+        sectors: createState().sectors.map((sector) =>
+          sector.id === "sector-a"
+            ? {
+                ...sector,
+                id: "hollow-veil-yard",
+                name: "Hollow Veil Yard",
+                encounterDecks: { ...sector.encounterDecks, threat: [], artifact: ["artifact-yard", "artifact-bell-votive"] }
+              }
+            : sector
+        )
+      }),
+      [],
+      createSequenceRandomSource([0]),
+      createThreats(),
+      createCharacters(),
+      createGear(),
+      createContracts(),
+      createAnomalies(),
+      createArtifacts(),
+      createEscalations()
+    );
+
+    runIntent(server, {
+      type: "RESOLVE_SPACE_TEXT",
+      seatId: "seat-1"
+    });
+
+    const heldGear = server.getState().players[0]?.character.heldGear.map((item) => item.id) ?? [];
+    expect(heldGear).toContain("coffin-rig");
+    expect(heldGear).toContain("marshal-seal");
+    expect(server.getState().players[0]?.private.notes).toContain("The Yard Bellframe Core still carries convoy route memory.");
+    expect(server.getState().sectors.find((sector) => sector.id === "hollow-veil-yard")?.encounterDecks.artifact).toEqual([
+      "artifact-bell-votive"
+    ]);
+  });
+
+  it("can draw the alternate Hollow Veil artifact from the local sector deck", () => {
+    const server = new GameRoomServer(
+      createState({
+        currentEncounter: null,
+        phase: "action",
+        players: createState().players.map((player) =>
+          player.seatId === "seat-1"
+            ? {
+                ...player,
+                sectorId: "hollow-veil-yard",
+                character: {
+                  ...player.character,
+                  currentSpaceId: "hollow-veil-yard"
+                }
+              }
+            : player
+        ),
+        sectors: createState().sectors.map((sector) =>
+          sector.id === "sector-a"
+            ? {
+                ...sector,
+                id: "hollow-veil-yard",
+                name: "Hollow Veil Yard",
+                encounterDecks: { ...sector.encounterDecks, threat: [], artifact: ["artifact-yard", "artifact-bell-votive"] }
+              }
+            : sector
+        )
+      }),
+      [],
+      createSequenceRandomSource([1]),
+      createThreats(),
+      createCharacters(),
+      createGear(),
+      createContracts(),
+      createAnomalies(),
+      createArtifacts(),
+      createEscalations()
+    );
+
+    runIntent(server, {
+      type: "RESOLVE_SPACE_TEXT",
+      seatId: "seat-1"
+    });
+
+    const heldGear = server.getState().players[0]?.character.heldGear.map((item) => item.id) ?? [];
+    expect(heldGear).toContain("coffin-rig");
+    expect(heldGear).toContain("veil-hook");
+    expect(server.getState().players[0]?.private.notes).toContain(
+      "Bell votive cache opened. The yard watch left breach paths in the lining."
+    );
+    expect(server.getState().sectors.find((sector) => sector.id === "hollow-veil-yard")?.encounterDecks.artifact).toEqual([
+      "artifact-yard"
+    ]);
+  });
+
+  it("uses Emberwatch sector text to reduce escalation and consume the local escalation card", () => {
+    const server = new GameRoomServer(
+      createState({
+        currentEncounter: null,
+        phase: "action",
+        escalationLevel: 2,
+        players: createState().players.map((player) =>
+          player.seatId === "seat-1"
+            ? {
+                ...player,
+                sectorId: "emberwatch-step",
+                character: {
+                  ...player.character,
+                  currentSpaceId: "emberwatch-step"
+                }
+              }
+            : player
+        ),
+        sectors: createState().sectors.map((sector) =>
+          sector.id === "sector-c"
+            ? {
+                ...sector,
+                id: "emberwatch-step",
+                name: "Emberwatch Step",
+                encounterDecks: { ...sector.encounterDecks, threat: [], escalation: ["escalation-emberwatch", "escalation-ridge-suture"] }
+              }
+            : sector
+        )
+      }),
+      [],
+      createSequenceRandomSource([0]),
+      createThreats(),
+      createCharacters(),
+      createGear(),
+      createContracts(),
+      createAnomalies(),
+      createArtifacts(),
+      createEscalations()
+    );
+
+    runIntent(server, {
+      type: "RESOLVE_SPACE_TEXT",
+      seatId: "seat-1"
+    });
+
+    expect(server.getState().escalationLevel).toBe(1);
+    expect(server.getState().players[0]?.private.notes).toContain(
+      "Emberwatch breakline locked down before the ridge sheared away."
+    );
+    expect(server.getState().sectors.find((sector) => sector.id === "emberwatch-step")?.encounterDecks.escalation).toEqual([
+      "escalation-ridge-suture"
+    ]);
+  });
+
+  it("can draw the alternate Emberwatch stabilization event from the local sector deck", () => {
+    const server = new GameRoomServer(
+      createState({
+        currentEncounter: null,
+        phase: "action",
+        escalationLevel: 2,
+        players: createState().players.map((player) =>
+          player.seatId === "seat-1"
+            ? {
+                ...player,
+                sectorId: "emberwatch-step",
+                character: {
+                  ...player.character,
+                  heat: 2,
+                  currentSpaceId: "emberwatch-step"
+                }
+              }
+            : player
+        ),
+        sectors: createState().sectors.map((sector) =>
+          sector.id === "sector-c"
+            ? {
+                ...sector,
+                id: "emberwatch-step",
+                name: "Emberwatch Step",
+                encounterDecks: { ...sector.encounterDecks, threat: [], escalation: ["escalation-emberwatch", "escalation-ridge-suture"] }
+              }
+            : sector
+        )
+      }),
+      [],
+      createSequenceRandomSource([1]),
+      createThreats(),
+      createCharacters(),
+      createGear(),
+      createContracts(),
+      createAnomalies(),
+      createArtifacts(),
+      createEscalations()
+    );
+
+    runIntent(server, {
+      type: "RESOLVE_SPACE_TEXT",
+      seatId: "seat-1"
+    });
+
+    expect(server.getState().escalationLevel).toBe(1);
+    expect(server.getState().players[0]?.character.heat).toBe(0);
+    expect(server.getState().players[0]?.private.notes).toContain(
+      "Ridge suture anchored. The watch posts can still hold for one more convoy."
+    );
+    expect(server.getState().sectors.find((sector) => sector.id === "emberwatch-step")?.encounterDecks.escalation).toEqual([
+      "escalation-emberwatch"
+    ]);
+  });
+
+  it("blocks entry into the core chamber until the Gate of Cinders text has been resolved", () => {
+    const base = createState({
+      phase: "navigation",
+      turnOrder: ["seat-1"],
+      seats: createState().seats.slice(0, 1),
+      players: createState().players.slice(0, 1).map((player) => ({
+        ...player,
+        sectorId: "inner_gate_of_cinders",
+        private: { ...player.private, notes: ["guardian-span-clearance"] },
+        character: {
+          ...player.character,
+          currentSpaceId: "inner_gate_of_cinders"
+        }
+      })),
+      sectors: [
+        {
+          id: "middle_guardian_span",
+          name: "Guardian Span",
+          regionTier: "red_march",
+          neighbors: ["inner_veil_rift"],
+          danger: 6,
+          encounterDecks: { threat: [], anomaly: [], contract: [], artifact: [], escalation: [] }
+        },
+        {
+          id: "inner_veil_rift",
+          name: "Veil Rift",
+          regionTier: "crownfall",
+          neighbors: ["middle_guardian_span", "inner_gate_of_cinders"],
+          danger: 7,
+          encounterDecks: { threat: [], anomaly: [], contract: [], artifact: [], escalation: [] }
+        },
+        {
+          id: "inner_gate_of_cinders",
+          name: "Gate of Cinders",
+          regionTier: "crownfall",
+          neighbors: ["inner_veil_rift", "center_cinder_gate"],
+          danger: 8,
+          encounterDecks: { threat: [], anomaly: [], contract: [], artifact: [], escalation: [] }
+        },
+        {
+          id: "center_cinder_gate",
+          name: "The Cinder Gate",
+          regionTier: "cinder_gate",
+          neighbors: ["inner_gate_of_cinders"],
+          danger: 10,
+          encounterDecks: { threat: [], anomaly: [], contract: [], artifact: [], escalation: [] }
+        }
+      ]
+    });
+    const client = {
+      seatId: "seat-1",
+      view: "phone" as const,
+      socket: {
+        send: vi.fn(),
+        close: vi.fn()
+      }
+    };
+    const server = new GameRoomServer(
+      withOnlyConnectedSeat(base, "seat-1"),
+      [],
+      createSequenceRandomSource([0, 0]),
+      createThreats(),
+      createCharacters(),
+      createGear(),
+      createContracts()
+    );
+
+    server.handleIntent(client as never, {
+      type: "MOVE_REQUESTED",
+      seatId: "seat-1",
+      toSectorId: "center_cinder_gate"
+    });
+
+    expect(String(client.socket.send.mock.calls[0]?.[0] ?? "")).toContain("Resolve the Gate of Cinders");
+  });
+
+  it("allows entry into the core chamber after the Gate of Cinders note is recorded", () => {
+    const server = new GameRoomServer(
+      withOnlyConnectedSeat(
+        createState({
+          phase: "navigation",
+          turnOrder: ["seat-1"],
+          seats: createState().seats.slice(0, 1),
+          players: createState().players.slice(0, 1).map((player) => ({
+            ...player,
+            sectorId: "inner_gate_of_cinders",
+            private: { ...player.private, notes: ["guardian-span-clearance", "gate-of-cinders-breached"] },
+            character: {
+              ...player.character,
+              currentSpaceId: "inner_gate_of_cinders"
+            }
+          })),
+          sectors: [
+            {
+              id: "inner_gate_of_cinders",
+              name: "Gate of Cinders",
+              regionTier: "crownfall",
+              neighbors: ["center_cinder_gate"],
+              danger: 8,
+              encounterDecks: { threat: [], anomaly: [], contract: [], artifact: [], escalation: [] }
+            },
+            {
+              id: "center_cinder_gate",
+              name: "The Cinder Gate",
+              regionTier: "cinder_gate",
+              neighbors: ["inner_gate_of_cinders"],
+              danger: 10,
+              encounterDecks: { threat: [], anomaly: [], contract: [], artifact: [], escalation: [] }
+            }
+          ]
+        }),
+        "seat-1"
+      ),
+      [],
+      createSequenceRandomSource([5, 5]),
+      createThreats(),
+      createCharacters(),
+      createGear(),
+      createContracts()
+    );
+
+    runIntent(server, {
+      type: "MOVE_REQUESTED",
+      seatId: "seat-1",
+      toSectorId: "center_cinder_gate"
+    });
+
+    expect(server.getState().players[0]?.character.currentSpaceId).toBe("center_cinder_gate");
+  });
 });
 
 describe("contracts", () => {
+  it("lets the Black Ledger Agent start the first contract with leverage progress", () => {
+    const characters = createAbilityCharacters();
+    const contracts = createContracts();
+    const server = new GameRoomServer(
+      createState({
+        players: createState().players.map((player) =>
+          player.seatId === "seat-1"
+            ? {
+                ...player,
+                character: {
+                  ...cloneCharacter(characters.get("black-ledger-agent")),
+                  currentSpaceId: "sector-a"
+                }
+              }
+            : player
+        ),
+        seats: createState().seats.map((seat) =>
+          seat.seatId === "seat-1" ? { ...seat, characterId: "black-ledger-agent" } : seat
+        )
+      }),
+      [],
+      createSequenceRandomSource([0]),
+      createThreats(),
+      characters,
+      createGear(),
+      contracts
+    );
+
+    runIntent(server, {
+      type: "ACCEPT_CONTRACT",
+      seatId: "seat-1",
+      contractId: "choir-hush-census"
+    });
+
+    expect(server.getState().players.find((entry) => entry.seatId === "seat-1")?.character.activeContract).toEqual({
+      contractId: "choir-hush-census",
+      progress: 1
+    });
+  });
+
   it("accepts a contract when none is active and rejects a second acceptance", () => {
     const contracts = createContracts();
     const server = new GameRoomServer(
@@ -993,6 +2315,1514 @@ describe("contracts", () => {
     expect(hazardServer.getState().players.find((entry) => entry.seatId === "seat-1")?.character.activeContract?.progress).toBe(0);
   });
 
+  it("lets the Signal Witch turn a successful signal check into calmer route control", () => {
+    const characters = createCharacters();
+    const server = new GameRoomServer(
+      createState({
+        currentEncounter: createThreats().get("signal-static") ?? null,
+        players: createState().players.map((entry) =>
+          entry.seatId === "seat-1"
+            ? {
+                ...entry,
+                character: {
+                  ...cloneCharacter(characters.get("signal-witch")),
+                  currentSpaceId: "sector-a",
+                  heat: 1
+                }
+              }
+            : entry
+        ),
+        seats: createState().seats.map((seat) =>
+          seat.seatId === "seat-1" ? { ...seat, characterId: "signal-witch" } : seat
+        )
+      }),
+      [],
+      createSequenceRandomSource([5, 5]),
+      createThreats(),
+      characters,
+      createGear(),
+      createContracts()
+    );
+
+    runIntent(server, {
+      type: "CHECK_REQUESTED",
+      seatId: "seat-1",
+      stat: "signal"
+    });
+
+    expect(server.getState().players.find((entry) => entry.seatId === "seat-1")?.character.heat).toBe(0);
+    expect(server.getState().players.find((entry) => entry.seatId === "seat-1")?.private.notes).toContain(
+      "Witchglass choir mapped the live signal into a stable route note."
+    );
+  });
+
+  it("lets the Signal Witch smother a Glassmere anomaly when resolving the spindle", () => {
+    const characters = createCharacters();
+    const server = new GameRoomServer(
+      createState({
+        currentEncounter: null,
+        phase: "action",
+        players: createState().players.map((entry) =>
+          entry.seatId === "seat-1"
+            ? {
+                ...entry,
+                sectorId: "glassmere-spindle",
+                character: {
+                  ...cloneCharacter(characters.get("signal-witch")),
+                  currentSpaceId: "glassmere-spindle",
+                  heat: 3
+                }
+              }
+            : entry
+        ),
+        seats: createState().seats.map((seat) =>
+          seat.seatId === "seat-1" ? { ...seat, characterId: "signal-witch" } : seat
+        ),
+        sectors: createState().sectors.map((sector) =>
+          sector.id === "sector-b"
+            ? {
+                ...sector,
+                id: "glassmere-spindle",
+                name: "Glassmere Spindle",
+                encounterDecks: { ...sector.encounterDecks, threat: [], anomaly: ["anomaly-glassmere"] }
+              }
+            : sector
+        )
+      }),
+      [],
+      createSequenceRandomSource([0]),
+      createThreats(),
+      characters,
+      createGear(),
+      createContracts(),
+      createAnomalies(),
+      createArtifacts(),
+      createEscalations()
+    );
+
+    runIntent(server, {
+      type: "RESOLVE_SPACE_TEXT",
+      seatId: "seat-1"
+    });
+
+    expect(server.getState().players.find((entry) => entry.seatId === "seat-1")?.character.heat).toBe(0);
+    expect(server.getState().players.find((entry) => entry.seatId === "seat-1")?.private.notes).toContain(
+      "Hush Static drowned the local anomaly in controlled noise."
+    );
+  });
+
+  it("lets Route Burn leave an allied lane note after the Signal Witch clears a route", () => {
+    const characters = createCharacters();
+    const server = new GameRoomServer(
+      createState({
+        currentEncounter: null,
+        phase: "action",
+        players: createState().players.map((entry) =>
+          entry.seatId === "seat-1"
+            ? {
+                ...entry,
+                sectorId: "ashwake-crossing",
+                character: {
+                  ...cloneCharacter(characters.get("signal-witch")),
+                  currentSpaceId: "ashwake-crossing"
+                }
+              }
+            : entry
+        ),
+        seats: createState().seats.map((seat) =>
+          seat.seatId === "seat-1" ? { ...seat, characterId: "signal-witch" } : seat
+        ),
+        sectors: createState().sectors.map((sector) =>
+          sector.id === "sector-a"
+            ? {
+                ...sector,
+                id: "ashwake-crossing",
+                name: "Ashwake Crossing",
+                encounterDecks: { ...sector.encounterDecks, threat: [] }
+              }
+            : sector
+        )
+      }),
+      [],
+      createSequenceRandomSource([0]),
+      createThreats(),
+      characters,
+      createGear(),
+      createContracts(),
+      createAnomalies(),
+      createArtifacts(),
+      createEscalations()
+    );
+
+    runIntent(server, {
+      type: "RESOLVE_SPACE_TEXT",
+      seatId: "seat-1"
+    });
+
+    expect(server.getState().players.find((entry) => entry.seatId === "seat-1")?.private.notes).toContain(
+      "Route Burn marked a safer allied approach through the live lane."
+    );
+  });
+
+  it("lets Fleet Elder steady escalation when securing a Mirecoil contract lead", () => {
+    const characters = createAbilityCharacters();
+    const server = new GameRoomServer(
+      createState({
+        currentEncounter: null,
+        phase: "action",
+        escalationLevel: 1,
+        availableContracts: [],
+        players: createState().players.map((entry) =>
+          entry.seatId === "seat-1"
+            ? {
+                ...entry,
+                sectorId: "mirecoil-beacon",
+                character: {
+                  ...cloneCharacter(characters.get("fleet-elder")),
+                  currentSpaceId: "mirecoil-beacon"
+                }
+              }
+            : entry
+        ),
+        seats: createState().seats.map((seat) =>
+          seat.seatId === "seat-1" ? { ...seat, characterId: "fleet-elder" } : seat
+        ),
+        sectors: createState().sectors.map((sector) =>
+          sector.id === "sector-c"
+            ? {
+                ...sector,
+                id: "mirecoil-beacon",
+                name: "Mirecoil Beacon",
+                encounterDecks: { ...sector.encounterDecks, threat: [], contract: ["contract-beacon"] }
+              }
+            : sector
+        )
+      }),
+      [],
+      createSequenceRandomSource([0]),
+      createThreats(),
+      characters,
+      createGear(),
+      createContracts(),
+      createAnomalies(),
+      createArtifacts(),
+      createEscalations()
+    );
+
+    runIntent(server, {
+      type: "RESOLVE_SPACE_TEXT",
+      seatId: "seat-1"
+    });
+
+    expect(server.getState().escalationLevel).toBe(0);
+    expect(server.getState().players.find((entry) => entry.seatId === "seat-1")?.private.notes).toContain(
+      "Convoy Law secured the lead and calmed the convoy spine."
+    );
+  });
+
+  it("lets the Oathbroken Prince turn a cleared lucrative lane into contract progress", () => {
+    const characters = createAbilityCharacters();
+    const server = new GameRoomServer(
+      createState({
+        currentEncounter: null,
+        phase: "action",
+        players: createState().players.map((entry) =>
+          entry.seatId === "seat-1"
+            ? {
+                ...entry,
+                sectorId: "mirecoil-beacon",
+                character: {
+                  ...cloneCharacter(characters.get("oathbroken-prince")),
+                  currentSpaceId: "mirecoil-beacon",
+                  activeContract: {
+                    contractId: "choir-hush-census",
+                    progress: 0
+                  }
+                }
+              }
+            : entry
+        ),
+        seats: createState().seats.map((seat) =>
+          seat.seatId === "seat-1" ? { ...seat, characterId: "oathbroken-prince" } : seat
+        ),
+        sectors: createState().sectors.map((sector) =>
+          sector.id === "sector-c"
+            ? {
+                ...sector,
+                id: "mirecoil-beacon",
+                name: "Mirecoil Beacon",
+                encounterDecks: { ...sector.encounterDecks, threat: [], contract: ["contract-beacon"] }
+              }
+            : sector
+        )
+      }),
+      [],
+      createSequenceRandomSource([0]),
+      createThreats(),
+      characters,
+      createGear(),
+      createContracts(),
+      createAnomalies(),
+      createArtifacts(),
+      createEscalations()
+    );
+
+    runIntent(server, {
+      type: "RESOLVE_SPACE_TEXT",
+      seatId: "seat-1"
+    });
+
+    expect(server.getState().players.find((entry) => entry.seatId === "seat-1")?.character.activeContract?.progress).toBe(1);
+    expect(server.getState().players.find((entry) => entry.seatId === "seat-1")?.private.notes).toContain(
+      "Broken Claim converted local leverage into objective progress."
+    );
+  });
+
+  it("lets the Rift Cartographer map a cleared lane into lower Heat and a route note", () => {
+    const characters = createAbilityCharacters();
+    const server = new GameRoomServer(
+      createState({
+        currentEncounter: null,
+        phase: "action",
+        players: createState().players.map((entry) =>
+          entry.seatId === "seat-1"
+            ? {
+                ...entry,
+                sectorId: "ashwake-crossing",
+                character: {
+                  ...cloneCharacter(characters.get("rift-cartographer")),
+                  currentSpaceId: "ashwake-crossing",
+                  heat: 1
+                }
+              }
+            : entry
+        ),
+        seats: createState().seats.map((seat) =>
+          seat.seatId === "seat-1" ? { ...seat, characterId: "rift-cartographer" } : seat
+        ),
+        sectors: createState().sectors.map((sector) =>
+          sector.id === "sector-a"
+            ? {
+                ...sector,
+                id: "ashwake-crossing",
+                name: "Ashwake Crossing",
+                encounterDecks: { ...sector.encounterDecks, threat: [] }
+              }
+            : sector
+        )
+      }),
+      [],
+      createSequenceRandomSource([0]),
+      createThreats(),
+      characters,
+      createGear(),
+      createContracts(),
+      createAnomalies(),
+      createArtifacts(),
+      createEscalations()
+    );
+
+    runIntent(server, {
+      type: "RESOLVE_SPACE_TEXT",
+      seatId: "seat-1"
+    });
+
+    expect(server.getState().players.find((entry) => entry.seatId === "seat-1")?.character.heat).toBe(0);
+    expect(server.getState().players.find((entry) => entry.seatId === "seat-1")?.private.notes).toContain(
+      "Breach Atlas logged a safer approach through the mapped lane."
+    );
+  });
+
+  it("lets the Siege Medic clear a wound while stabilizing the breach", () => {
+    const characters = createAbilityCharacters();
+    const server = new GameRoomServer(
+      createState({
+        phase: "action",
+        currentEncounter: null,
+        pendingEnemyRoll: null,
+        pendingEffect: null,
+        escalationLevel: 1,
+        players: createState().players.map((entry) =>
+          entry.seatId === "seat-1"
+            ? {
+                ...entry,
+                character: {
+                  ...cloneCharacter(characters.get("siege-medic")),
+                  currentSpaceId: "sector-a",
+                  wounds: 1
+                }
+              }
+            : entry
+        ),
+        seats: createState().seats.map((seat) =>
+          seat.seatId === "seat-1" ? { ...seat, characterId: "siege-medic" } : seat
+        )
+      }),
+      [],
+      createSequenceRandomSource([0]),
+      createThreats(),
+      characters,
+      createGear(),
+      createContracts()
+    );
+
+    runIntent(server, {
+      type: "STABILIZE_REQUESTED",
+      seatId: "seat-1"
+    });
+
+    expect(server.getState().players.find((entry) => entry.seatId === "seat-1")?.character.wounds).toBe(0);
+    expect(server.getState().players.find((entry) => entry.seatId === "seat-1")?.private.notes).toContain(
+      "Field Triage turned the breach hold into practical recovery."
+    );
+  });
+
+  it("lets Fleet Memory calm the Fleet Elder at the start of a pressured turn", () => {
+    const characters = createAbilityCharacters();
+    const server = new GameRoomServer(
+      withOnlyConnectedSeat(
+        createState({
+          sessionMode: "single-player",
+          phase: "action",
+          escalationLevel: 1,
+          currentEncounter: null,
+          turnOrder: ["seat-1"],
+          seats: [{ ...createState().seats[0]!, characterId: "fleet-elder" }],
+          players: [
+            {
+              ...createState().players[0]!,
+              character: {
+                ...cloneCharacter(characters.get("fleet-elder")),
+                currentSpaceId: "sector-c",
+                heat: 1
+              }
+            }
+          ]
+        }),
+        "seat-1"
+      ),
+      [],
+      createSequenceRandomSource([0]),
+      createThreats(),
+      characters,
+      createGear(),
+      createContracts()
+    );
+
+    runIntent(server, {
+      type: "PHASE_ADVANCED",
+      seatId: "seat-1",
+      toPhase: "resolution"
+    });
+
+    expect(server.getState().players.find((entry) => entry.seatId === "seat-1")?.character.heat).toBe(0);
+    expect(server.getState().players.find((entry) => entry.seatId === "seat-1")?.private.notes).toContain(
+      "Fleet Memory read the pressure pattern before the convoy line could panic."
+    );
+  });
+
+  it("lets Old Oaths calm the Fleet Elder when a new route job is accepted", () => {
+    const characters = createAbilityCharacters();
+    const server = new GameRoomServer(
+      createState({
+        phase: "action",
+        seats: createState().seats.map((seat) =>
+          seat.seatId === "seat-1" ? { ...seat, characterId: "fleet-elder" } : seat
+        ),
+        players: createState().players.map((entry) =>
+          entry.seatId === "seat-1"
+            ? {
+                ...entry,
+                character: {
+                  ...cloneCharacter(characters.get("fleet-elder")),
+                  currentSpaceId: "sector-c",
+                  heat: 1
+                }
+              }
+            : entry
+        )
+      }),
+      [],
+      createSequenceRandomSource([0]),
+      createThreats(),
+      characters,
+      createGear(),
+      createContracts()
+    );
+
+    runIntent(server, {
+      type: "ACCEPT_CONTRACT",
+      seatId: "seat-1",
+      contractId: "choir-hush-census"
+    });
+
+    expect(server.getState().players[0]?.character.heat).toBe(0);
+    expect(server.getState().players[0]?.private.notes).toContain(
+      "Old Oaths made the frightened route crews fall into line at once."
+    );
+  });
+
+  it("lets Chain Signal preserve a cleared convoy lane for the Fleet Elder", () => {
+    const characters = createAbilityCharacters();
+    const server = new GameRoomServer(
+      createState({
+        currentEncounter: null,
+        phase: "action",
+        players: createState().players.map((entry) =>
+          entry.seatId === "seat-1"
+            ? {
+                ...entry,
+                sectorId: "ashwake-crossing",
+                character: {
+                  ...cloneCharacter(characters.get("fleet-elder")),
+                  currentSpaceId: "ashwake-crossing",
+                  heat: 1
+                }
+              }
+            : entry
+        ),
+        seats: createState().seats.map((seat) =>
+          seat.seatId === "seat-1" ? { ...seat, characterId: "fleet-elder" } : seat
+        ),
+        sectors: createState().sectors.map((sector) =>
+          sector.id === "sector-a"
+            ? {
+                ...sector,
+                id: "ashwake-crossing",
+                name: "Ashwake Crossing",
+                encounterDecks: { ...sector.encounterDecks, threat: [] }
+              }
+            : sector
+        )
+      }),
+      [],
+      createSequenceRandomSource([0]),
+      createThreats(),
+      characters,
+      createGear(),
+      createContracts()
+    );
+
+    runIntent(server, {
+      type: "RESOLVE_SPACE_TEXT",
+      seatId: "seat-1"
+    });
+
+    expect(server.getState().players.find((entry) => entry.seatId === "seat-1")?.character.heat).toBe(0);
+    expect(server.getState().players.find((entry) => entry.seatId === "seat-1")?.private.notes).toContain(
+      "Chain Signal fixed the route into a convoy-safe sequence for the next push."
+    );
+  });
+
+  it("lets Ashwake Step scout the opening lane for the Void Marshal at turn start", () => {
+    const characters = createCharacters();
+    const server = new GameRoomServer(
+      withOnlyConnectedSeat(
+        createState({
+          sessionMode: "single-player",
+          phase: "action",
+          currentEncounter: null,
+          turnOrder: ["seat-1"],
+          sectors: createState().sectors.map((sector) =>
+            sector.id === "sector-a"
+              ? {
+                  ...sector,
+                  encounterDecks: { ...sector.encounterDecks, threat: [] }
+                }
+              : sector
+          ),
+          players: [
+            {
+              ...createState().players[0]!,
+              character: {
+                ...cloneCharacter(characters.get("void-marshal")),
+                currentSpaceId: "sector-a",
+                heat: 1
+              }
+            }
+          ]
+        }),
+        "seat-1"
+      ),
+      [],
+      createSequenceRandomSource([0]),
+      createThreats(),
+      characters,
+      createGear(),
+      createContracts()
+    );
+
+    runIntent(server, {
+      type: "PHASE_ADVANCED",
+      seatId: "seat-1",
+      toPhase: "resolution"
+    });
+
+    expect(server.getState().players[0]?.character.heat).toBe(0);
+    expect(server.getState().players[0]?.private.notes).toContain(
+      "Ashwake Step marked the opening lane before anyone else had to test it."
+    );
+  });
+
+  it("lets Void Command cool the Void Marshal after clearing a live lane", () => {
+    const characters = createCharacters();
+    const server = new GameRoomServer(
+      createState({
+        currentEncounter: null,
+        phase: "action",
+        players: createState().players.map((entry) =>
+          entry.seatId === "seat-1"
+            ? {
+                ...entry,
+                sectorId: "ashwake-crossing",
+                character: {
+                  ...cloneCharacter(characters.get("void-marshal")),
+                  currentSpaceId: "ashwake-crossing",
+                  heat: 1
+                }
+              }
+            : entry
+        ),
+        sectors: createState().sectors.map((sector) =>
+          sector.id === "sector-a"
+            ? {
+                ...sector,
+                id: "ashwake-crossing",
+                name: "Ashwake Crossing",
+                encounterDecks: { ...sector.encounterDecks, threat: [] }
+              }
+            : sector
+        )
+      }),
+      [],
+      createSequenceRandomSource([0]),
+      createThreats(),
+      characters,
+      createGear(),
+      createContracts()
+    );
+
+    runIntent(server, {
+      type: "RESOLVE_SPACE_TEXT",
+      seatId: "seat-1"
+    });
+
+    expect(server.getState().players[0]?.character.heat).toBe(0);
+    expect(server.getState().players[0]?.private.notes).toContain(
+      "Void Command marked the cleared lane for allied movement."
+    );
+  });
+
+  it("lets Signal Relay reward a Void Marshal combat win when another operative shares the sector", () => {
+    const characters = createCharacters();
+    const server = new GameRoomServer(
+      withOnlyConnectedSeat(
+        createState({
+          currentEncounter: createThreats().get("cinder-veil-stalker") ?? null,
+          players: createState().players.map((entry) =>
+            entry.seatId === "seat-1"
+              ? {
+                  ...entry,
+                  sectorId: "sector-b",
+                  character: {
+                    ...cloneCharacter(characters.get("void-marshal")),
+                    currentSpaceId: "sector-b",
+                    heat: 1
+                  }
+                }
+              : entry.seatId === "seat-2"
+                ? {
+                    ...entry,
+                    sectorId: "sector-b",
+                    character: {
+                      ...entry.character,
+                      currentSpaceId: "sector-b"
+                    }
+                  }
+                : entry
+          )
+        }),
+        "seat-1"
+      ),
+      [],
+      createSequenceRandomSource([5, 5, 0, 0]),
+      createThreats(),
+      characters,
+      createGear(),
+      createContracts()
+    );
+
+    runIntent(server, {
+      type: "COMBAT_REQUESTED",
+      seatId: "seat-1",
+      stat: "grit"
+    });
+
+    expect(server.getState().players[0]?.character.heat).toBe(0);
+    expect(server.getState().players[0]?.private.notes).toContain(
+      "Signal Relay amplified allied pressure in the Marshal's sector."
+    );
+  });
+
+  it("lets Silent Audit cool the Black Ledger Agent after a cleared-sector read", () => {
+    const characters = createAbilityCharacters();
+    const server = new GameRoomServer(
+      createState({
+        currentEncounter: null,
+        phase: "action",
+        players: createState().players.map((entry) =>
+          entry.seatId === "seat-1"
+            ? {
+                ...entry,
+                sectorId: "ashwake-crossing",
+                character: {
+                  ...cloneCharacter(characters.get("black-ledger-agent")),
+                  currentSpaceId: "ashwake-crossing",
+                  heat: 1
+                }
+              }
+            : entry
+        ),
+        seats: createState().seats.map((seat) =>
+          seat.seatId === "seat-1" ? { ...seat, characterId: "black-ledger-agent" } : seat
+        ),
+        sectors: createState().sectors.map((sector) =>
+          sector.id === "sector-a"
+            ? {
+                ...sector,
+                id: "ashwake-crossing",
+                name: "Ashwake Crossing",
+                encounterDecks: { ...sector.encounterDecks, threat: [] }
+              }
+            : sector
+        )
+      }),
+      [],
+      createSequenceRandomSource([0]),
+      createThreats(),
+      characters,
+      createGear(),
+      createContracts()
+    );
+
+    runIntent(server, {
+      type: "RESOLVE_SPACE_TEXT",
+      seatId: "seat-1"
+    });
+
+    expect(server.getState().players[0]?.character.heat).toBe(0);
+    expect(server.getState().players[0]?.private.notes).toContain(
+      "Silent Audit extracted sharper route intelligence from the cleared sector."
+    );
+  });
+
+  it("lets Debt Knife add extra contract pressure on a marked kill", () => {
+    const characters = createAbilityCharacters();
+    const server = new GameRoomServer(
+      withOnlyConnectedSeat(
+        createState({
+          currentEncounter: createThreats().get("cinder-veil-stalker") ?? null,
+          seats: [{ ...createState().seats[0]!, characterId: "black-ledger-agent" }],
+          players: [
+            {
+              ...createState().players[0]!,
+              character: {
+                ...cloneCharacter(characters.get("black-ledger-agent")),
+                currentSpaceId: "sector-a",
+                activeContract: {
+                  contractId: "compact-cleanse-ledger",
+                  progress: 0
+                }
+              }
+            }
+          ]
+        }),
+        "seat-1"
+      ),
+      [],
+      createSequenceRandomSource([5, 5, 0, 0]),
+      createThreats(),
+      characters,
+      createGear(),
+      createContracts()
+    );
+
+    runIntent(server, {
+      type: "COMBAT_REQUESTED",
+      seatId: "seat-1",
+      stat: "grit"
+    });
+
+    expect(server.getState().players[0]?.character.activeContract?.progress).toBe(2);
+    expect(server.getState().players[0]?.private.notes).toContain(
+      "Debt Knife carved extra leverage out of the marked kill."
+    );
+  });
+
+  it("lets Black File bleed pressure off a completed job", () => {
+    const characters = createAbilityCharacters();
+    const server = new GameRoomServer(
+      createState({
+        phase: "action",
+        escalationLevel: 1,
+        seats: createState().seats.map((seat) =>
+          seat.seatId === "seat-1" ? { ...seat, characterId: "black-ledger-agent" } : seat
+        ),
+        players: createState().players.map((entry) =>
+          entry.seatId === "seat-1"
+            ? {
+                ...entry,
+                character: {
+                  ...cloneCharacter(characters.get("black-ledger-agent")),
+                  currentSpaceId: "sector-a",
+                  heat: 1,
+                  activeContract: {
+                    contractId: "choir-hush-census",
+                    progress: 2
+                  }
+                }
+              }
+            : entry
+        )
+      }),
+      [],
+      createSequenceRandomSource([0]),
+      createThreats(),
+      characters,
+      createGear(),
+      createContracts()
+    );
+
+    runIntent(server, {
+      type: "COMPLETE_CONTRACT",
+      seatId: "seat-1",
+      contractId: "choir-hush-census"
+    });
+
+    expect(server.getState().players[0]?.character.heat).toBe(0);
+    expect(server.getState().escalationLevel).toBe(0);
+    expect(server.getState().players[0]?.private.notes).toContain(
+      "Black file leverage extracted from the finished contract."
+    );
+  });
+
+  it("lets Yard Warden keep a Hollow Veil salvage site useful for the Salvage Warden", () => {
+    const characters = createAbilityCharacters();
+    const server = new GameRoomServer(
+      createState({
+        currentEncounter: null,
+        phase: "action",
+        players: createState().players.map((entry) =>
+          entry.seatId === "seat-1"
+            ? {
+                ...entry,
+                sectorId: "hollow-veil-yard",
+                character: {
+                  ...cloneCharacter(characters.get("salvage-warden")),
+                  currentSpaceId: "hollow-veil-yard"
+                }
+              }
+            : entry
+        ),
+        seats: createState().seats.map((seat) =>
+          seat.seatId === "seat-1" ? { ...seat, characterId: "salvage-warden" } : seat
+        ),
+        sectors: createState().sectors.map((sector) =>
+          sector.id === "sector-a"
+            ? {
+                ...sector,
+                id: "hollow-veil-yard",
+                name: "Hollow Veil Yard",
+                encounterDecks: { ...sector.encounterDecks, threat: [], artifact: ["artifact-yard"] }
+              }
+            : sector
+        )
+      }),
+      [],
+      createSequenceRandomSource([0]),
+      createThreats(),
+      characters,
+      createGear(),
+      createContracts(),
+      createAnomalies(),
+      createArtifacts(),
+      createEscalations()
+    );
+
+    runIntent(server, {
+      type: "RESOLVE_SPACE_TEXT",
+      seatId: "seat-1"
+    });
+
+    expect(server.getState().players[0]?.private.notes).toContain(
+      "Yard Warden secured the salvage site for a second pass and cleaner extraction."
+    );
+  });
+
+  it("lets Last Haul pull one more useful tool during a stabilize window", () => {
+    const characters = createAbilityCharacters();
+    const server = new GameRoomServer(
+      createState({
+        phase: "action",
+        currentEncounter: null,
+        pendingEnemyRoll: null,
+        pendingEffect: null,
+        escalationLevel: 1,
+        seats: createState().seats.map((seat) =>
+          seat.seatId === "seat-1" ? { ...seat, characterId: "salvage-warden" } : seat
+        ),
+        players: createState().players.map((entry) =>
+          entry.seatId === "seat-1"
+            ? {
+                ...entry,
+                character: {
+                  ...cloneCharacter(characters.get("salvage-warden")),
+                  currentSpaceId: "sector-a"
+                }
+              }
+            : entry
+        )
+      }),
+      [],
+      createSequenceRandomSource([0]),
+      createThreats(),
+      characters,
+      createGear(),
+      createContracts()
+    );
+
+    runIntent(server, {
+      type: "STABILIZE_REQUESTED",
+      seatId: "seat-1"
+    });
+
+    expect(server.getState().players[0]?.character.heldGear.map((item) => item.id)).toContain("veil-hook");
+    expect(server.getState().players[0]?.private.notes).toContain(
+      "Last Haul pried one more useful recovery out of the breaking route."
+    );
+  });
+
+  it("lets Grave Spark cool the Grave Engineer after a successful forge check", () => {
+    const characters = createAbilityCharacters();
+    const server = new GameRoomServer(
+      createState({
+        phase: "action",
+        currentEncounter: {
+          id: "dead-grid",
+          type: "threat",
+          cardType: "hazard",
+          title: "Dead Grid",
+          text: "A collapsed utility spine still carries enough charge to bite.",
+          flavor: "It feels dead only until you touch it.",
+          severity: 1,
+          stat: "forge",
+          difficulty: 4,
+          successEffect: { type: "gain_note", text: "You made the dead grid answer." },
+          failEffect: { type: "gain_heat", amount: 1 }
+        },
+        seats: createState().seats.map((seat) =>
+          seat.seatId === "seat-1" ? { ...seat, characterId: "grave-engineer" } : seat
+        ),
+        players: createState().players.map((entry) =>
+          entry.seatId === "seat-1"
+            ? {
+                ...entry,
+                character: {
+                  ...cloneCharacter(characters.get("grave-engineer")),
+                  currentSpaceId: "sector-c",
+                  heat: 1
+                }
+              }
+            : entry
+        )
+      }),
+      [],
+      createSequenceRandomSource([5, 5]),
+      createThreats(),
+      characters,
+      createGear(),
+      createContracts()
+    );
+
+    runIntent(server, {
+      type: "CHECK_REQUESTED",
+      seatId: "seat-1",
+      stat: "forge"
+    });
+
+    expect(server.getState().players[0]?.character.heat).toBe(0);
+    expect(server.getState().players[0]?.private.notes).toContain(
+      "Grave Spark turned the dead system into one more workable machine."
+    );
+  });
+
+  it("lets Mortuary Triage shave escalation during a stabilize window", () => {
+    const characters = createAbilityCharacters();
+    const server = new GameRoomServer(
+      createState({
+        phase: "action",
+        escalationLevel: 1,
+        currentEncounter: null,
+        pendingEnemyRoll: null,
+        pendingEffect: null,
+        seats: createState().seats.map((seat) =>
+          seat.seatId === "seat-1" ? { ...seat, characterId: "grave-engineer" } : seat
+        ),
+        players: createState().players.map((entry) =>
+          entry.seatId === "seat-1"
+            ? {
+                ...entry,
+                character: {
+                  ...cloneCharacter(characters.get("grave-engineer")),
+                  currentSpaceId: "sector-c"
+                }
+              }
+            : entry
+        )
+      }),
+      [],
+      createSequenceRandomSource([0]),
+      createThreats(),
+      characters,
+      createGear(),
+      createContracts()
+    );
+
+    runIntent(server, {
+      type: "STABILIZE_REQUESTED",
+      seatId: "seat-1"
+    });
+
+    expect(server.getState().escalationLevel).toBe(0);
+    expect(server.getState().players[0]?.private.notes).toContain(
+      "Mortuary Triage turned panic into a field procedure the line could trust."
+    );
+  });
+
+  it("lets Cinder Oath steady the Cinder Monk before a scenario confrontation", () => {
+    const characters = createAbilityCharacters();
+    const server = new GameRoomServer(
+      withOnlyConnectedSeat(
+        createState({
+          sessionMode: "single-player",
+          phase: "action",
+          turnOrder: ["seat-1"],
+          seats: [{ ...createState().seats[0]!, characterId: "cinder-monk" }],
+          players: [
+            {
+              ...createState().players[0]!,
+              sectorId: "center_cinder_gate",
+              character: {
+                ...cloneCharacter(characters.get("cinder-monk")),
+                currentSpaceId: "center_cinder_gate",
+                heat: 1
+              }
+            }
+          ],
+          sectors: [
+            ...createState().sectors,
+            {
+              id: "center_cinder_gate",
+              name: "The Cinder Gate",
+              regionTier: "cinder_gate",
+              neighbors: ["sector-c"],
+              danger: 5,
+              encounterDecks: { threat: [], anomaly: [], contract: [], artifact: [], escalation: [] }
+            }
+          ]
+        }),
+        "seat-1"
+      ),
+      [],
+      createSequenceRandomSource([5, 5, 5, 5, 5, 5]),
+      createThreats(),
+      characters,
+      createGear(),
+      createContracts(),
+      createAnomalies(),
+      createArtifacts(),
+      createEscalations()
+    );
+
+    runIntent(server, {
+      type: "SCENARIO_CONFRONTATION_REQUESTED",
+      seatId: "seat-1"
+    });
+
+    expect(server.getState().players[0]?.character.heat).toBe(0);
+    expect(server.getState().players[0]?.private.notes).toContain(
+      "Cinder Oath made the confrontation feel survivable before the first test landed."
+    );
+  });
+
+  it("lets Ash Tithe cool the Oathbroken Prince when a contract pays out", () => {
+    const characters = createAbilityCharacters();
+    const server = new GameRoomServer(
+      createState({
+        phase: "action",
+        seats: createState().seats.map((seat) =>
+          seat.seatId === "seat-1" ? { ...seat, characterId: "oathbroken-prince" } : seat
+        ),
+        players: createState().players.map((entry) =>
+          entry.seatId === "seat-1"
+            ? {
+                ...entry,
+                character: {
+                  ...cloneCharacter(characters.get("oathbroken-prince")),
+                  currentSpaceId: "sector-b",
+                  heat: 1,
+                  activeContract: {
+                    contractId: "choir-hush-census",
+                    progress: 2
+                  }
+                }
+              }
+            : entry
+        )
+      }),
+      [],
+      createSequenceRandomSource([0]),
+      createThreats(),
+      characters,
+      createGear(),
+      createContracts()
+    );
+
+    runIntent(server, {
+      type: "COMPLETE_CONTRACT",
+      seatId: "seat-1",
+      contractId: "choir-hush-census"
+    });
+
+    expect(server.getState().players[0]?.character.heat).toBe(0);
+    expect(server.getState().players[0]?.private.notes).toContain(
+      "Ash Tithe skimmed tribute off the quiet victory before the lane could cool."
+    );
+  });
+
+  it("lets Crown Debt cool the Oathbroken Prince after a marked kill", () => {
+    const characters = createAbilityCharacters();
+    const server = new GameRoomServer(
+      withOnlyConnectedSeat(
+        createState({
+          currentEncounter: createThreats().get("cinder-veil-stalker") ?? null,
+          seats: [{ ...createState().seats[0]!, characterId: "oathbroken-prince" }],
+          players: [
+            {
+              ...createState().players[0]!,
+              character: {
+                ...cloneCharacter(characters.get("oathbroken-prince")),
+                currentSpaceId: "sector-b",
+                heat: 1,
+                activeContract: {
+                  contractId: "compact-cleanse-ledger",
+                  progress: 0
+                }
+              }
+            }
+          ]
+        }),
+        "seat-1"
+      ),
+      [],
+      createSequenceRandomSource([5, 5, 0, 0]),
+      createThreats(),
+      characters,
+      createGear(),
+      createContracts()
+    );
+
+    runIntent(server, {
+      type: "COMBAT_REQUESTED",
+      seatId: "seat-1",
+      stat: "grit"
+    });
+
+    expect(server.getState().players[0]?.character.heat).toBe(0);
+    expect(server.getState().players[0]?.private.notes).toContain(
+      "Crown Debt pressed the kill into service as collected obligation."
+    );
+  });
+
+  it("lets Ruin Courtesy cool the Oathbroken Prince on a clean movement through broken ground", () => {
+    const characters = createAbilityCharacters();
+    const server = new GameRoomServer(
+      createState({
+        phase: "navigation",
+        currentEncounter: null,
+        seats: createState().seats.map((seat) =>
+          seat.seatId === "seat-1" ? { ...seat, characterId: "oathbroken-prince" } : seat
+        ),
+        players: createState().players.map((entry) =>
+          entry.seatId === "seat-1"
+            ? {
+                ...entry,
+                character: {
+                  ...cloneCharacter(characters.get("oathbroken-prince")),
+                  currentSpaceId: "sector-a",
+                  heat: 1
+                }
+              }
+            : entry
+        )
+      }),
+      [],
+      createSequenceRandomSource([5, 5]),
+      createThreats(),
+      characters,
+      createGear(),
+      createContracts()
+    );
+
+    runIntent(server, {
+      type: "MOVE_REQUESTED",
+      seatId: "seat-1",
+      toSectorId: "sector-b"
+    });
+
+    expect(server.getState().players[0]?.character.heat).toBe(0);
+    expect(server.getState().players[0]?.private.notes).toContain(
+      "Ruin Courtesy made the shattered approach feel like a hall already claimed."
+    );
+  });
+
+  it("lets Surveyor's Cut seed the Rift Cartographer's new contract with route leverage", () => {
+    const characters = createAbilityCharacters();
+    const server = new GameRoomServer(
+      createState({
+        phase: "action",
+        seats: createState().seats.map((seat) =>
+          seat.seatId === "seat-1" ? { ...seat, characterId: "rift-cartographer" } : seat
+        ),
+        players: createState().players.map((entry) =>
+          entry.seatId === "seat-1"
+            ? {
+                ...entry,
+                character: {
+                  ...cloneCharacter(characters.get("rift-cartographer")),
+                  currentSpaceId: "sector-c"
+                }
+              }
+            : entry
+        )
+      }),
+      [],
+      createSequenceRandomSource([0]),
+      createThreats(),
+      characters,
+      createGear(),
+      createContracts()
+    );
+
+    runIntent(server, {
+      type: "ACCEPT_CONTRACT",
+      seatId: "seat-1",
+      contractId: "choir-hush-census"
+    });
+
+    expect(server.getState().players[0]?.character.activeContract?.progress).toBe(1);
+    expect(server.getState().players[0]?.private.notes).toContain(
+      "Surveyor's Cut stored the mapped lead before the breach could distort it."
+    );
+  });
+
+  it("lets Ghost Mile cool the Rift Cartographer on a clean movement through a false lane", () => {
+    const characters = createAbilityCharacters();
+    const server = new GameRoomServer(
+      createState({
+        phase: "navigation",
+        currentEncounter: null,
+        seats: createState().seats.map((seat) =>
+          seat.seatId === "seat-1" ? { ...seat, characterId: "rift-cartographer" } : seat
+        ),
+        players: createState().players.map((entry) =>
+          entry.seatId === "seat-1"
+            ? {
+                ...entry,
+                character: {
+                  ...cloneCharacter(characters.get("rift-cartographer")),
+                  currentSpaceId: "sector-a",
+                  heat: 1
+                }
+              }
+            : entry
+        )
+      }),
+      [],
+      createSequenceRandomSource([5, 5]),
+      createThreats(),
+      characters,
+      createGear(),
+      createContracts()
+    );
+
+    runIntent(server, {
+      type: "MOVE_REQUESTED",
+      seatId: "seat-1",
+      toSectorId: "sector-b"
+    });
+
+    expect(server.getState().players[0]?.character.heat).toBe(0);
+    expect(server.getState().players[0]?.private.notes).toContain(
+      "Ghost Mile stripped the false path out of the approach before it could set in."
+    );
+  });
+
+  it("lets Rift Script record a clean hostile-ground annotation after a successful guile check", () => {
+    const characters = createAbilityCharacters();
+    const server = new GameRoomServer(
+      createState({
+        phase: "action",
+        currentEncounter: {
+          id: "rift-pressure",
+          type: "threat",
+          cardType: "hazard",
+          title: "Rift Pressure",
+          text: "The path shifts unless someone reads it before it moves.",
+          flavor: "The wrong step writes over the map.",
+          severity: 1,
+          stat: "guile",
+          difficulty: 4,
+          successEffect: { type: "gain_note", text: "You annotated the moving lane." },
+          failEffect: { type: "gain_heat", amount: 1 }
+        },
+        seats: createState().seats.map((seat) =>
+          seat.seatId === "seat-1" ? { ...seat, characterId: "rift-cartographer" } : seat
+        ),
+        players: createState().players.map((entry) =>
+          entry.seatId === "seat-1"
+            ? {
+                ...entry,
+                character: {
+                  ...cloneCharacter(characters.get("rift-cartographer")),
+                  currentSpaceId: "sector-b"
+                }
+              }
+            : entry
+        )
+      }),
+      [],
+      createSequenceRandomSource([5, 5]),
+      createThreats(),
+      characters,
+      createGear(),
+      createContracts()
+    );
+
+    runIntent(server, {
+      type: "CHECK_REQUESTED",
+      seatId: "seat-1",
+      stat: "guile"
+    });
+
+    expect(server.getState().players[0]?.private.notes).toContain(
+      "Rift Script annotated the hostile ground before the path could blur again."
+    );
+  });
+
+  it("lets Siege Discipline calm the Siege Medic at the start of a pressured turn", () => {
+    const characters = createAbilityCharacters();
+    const server = new GameRoomServer(
+      withOnlyConnectedSeat(
+        createState({
+          sessionMode: "single-player",
+          phase: "action",
+          escalationLevel: 1,
+          currentEncounter: null,
+          turnOrder: ["seat-1"],
+          seats: [{ ...createState().seats[0]!, characterId: "siege-medic" }],
+          players: [
+            {
+              ...createState().players[0]!,
+              character: {
+                ...cloneCharacter(characters.get("siege-medic")),
+                currentSpaceId: "sector-a",
+                heat: 1
+              }
+            }
+          ]
+        }),
+        "seat-1"
+      ),
+      [],
+      createSequenceRandomSource([0]),
+      createThreats(),
+      characters,
+      createGear(),
+      createContracts()
+    );
+
+    runIntent(server, {
+      type: "PHASE_ADVANCED",
+      seatId: "seat-1",
+      toPhase: "resolution"
+    });
+
+    expect(server.getState().players[0]?.character.heat).toBe(0);
+    expect(server.getState().players[0]?.private.notes).toContain(
+      "Siege Discipline turned long pressure into a steady working rhythm."
+    );
+  });
+
+  it("lets Amber Draught clear a wound after a successful grit check", () => {
+    const characters = createAbilityCharacters();
+    const server = new GameRoomServer(
+      createState({
+        phase: "action",
+        currentEncounter: {
+          id: "surgical-push",
+          type: "threat",
+          cardType: "hazard",
+          title: "Surgical Push",
+          text: "The line only holds if someone keeps moving through the pain.",
+          flavor: "Precision is all that keeps this from turning ugly.",
+          severity: 1,
+          stat: "grit",
+          difficulty: 4,
+          successEffect: { type: "gain_note", text: "You held the line." },
+          failEffect: { type: "take_wound", amount: 1 }
+        },
+        seats: createState().seats.map((seat) =>
+          seat.seatId === "seat-1" ? { ...seat, characterId: "siege-medic" } : seat
+        ),
+        players: createState().players.map((entry) =>
+          entry.seatId === "seat-1"
+            ? {
+                ...entry,
+                character: {
+                  ...cloneCharacter(characters.get("siege-medic")),
+                  currentSpaceId: "sector-a",
+                  wounds: 1
+                }
+              }
+            : entry
+        )
+      }),
+      [],
+      createSequenceRandomSource([5, 5]),
+      createThreats(),
+      characters,
+      createGear(),
+      createContracts()
+    );
+
+    runIntent(server, {
+      type: "CHECK_REQUESTED",
+      seatId: "seat-1",
+      stat: "grit"
+    });
+
+    expect(server.getState().players[0]?.character.wounds).toBe(0);
+    expect(server.getState().players[0]?.private.notes).toContain(
+      "Amber Draught steadied the body before the next hit could land."
+    );
+  });
+
+  it("lets Scar Ledger cool the Siege Medic when a contract closes cleanly", () => {
+    const characters = createAbilityCharacters();
+    const server = new GameRoomServer(
+      createState({
+        phase: "action",
+        seats: createState().seats.map((seat) =>
+          seat.seatId === "seat-1" ? { ...seat, characterId: "siege-medic" } : seat
+        ),
+        players: createState().players.map((entry) =>
+          entry.seatId === "seat-1"
+            ? {
+                ...entry,
+                character: {
+                  ...cloneCharacter(characters.get("siege-medic")),
+                  currentSpaceId: "sector-a",
+                  heat: 1,
+                  activeContract: {
+                    contractId: "choir-hush-census",
+                    progress: 2
+                  }
+                }
+              }
+            : entry
+        )
+      }),
+      [],
+      createSequenceRandomSource([0]),
+      createThreats(),
+      characters,
+      createGear(),
+      createContracts()
+    );
+
+    runIntent(server, {
+      type: "COMPLETE_CONTRACT",
+      seatId: "seat-1",
+      contractId: "choir-hush-census"
+    });
+
+    expect(server.getState().players[0]?.character.heat).toBe(0);
+    expect(server.getState().players[0]?.private.notes).toContain(
+      "Scar Ledger filed the surviving harm into something the crew could carry."
+    );
+  });
+
+  it("lets Scrap Bastion cool the Salvage Warden after a successful forge check", () => {
+    const characters = createAbilityCharacters();
+    const server = new GameRoomServer(
+      createState({
+        phase: "action",
+        currentEncounter: {
+          id: "forge-surge",
+          type: "threat",
+          cardType: "hazard",
+          title: "Forge Surge",
+          text: "Heat blows through the wreck frame while the line buckles.",
+          flavor: "Only practical hands keep it from turning into shrapnel.",
+          severity: 1,
+          stat: "forge",
+          difficulty: 4,
+          successEffect: {
+            type: "gain_note",
+            text: "The salvage frame held."
+          },
+          failEffect: {
+            type: "gain_heat",
+            amount: 1
+          }
+        },
+        seats: createState().seats.map((seat) =>
+          seat.seatId === "seat-1" ? { ...seat, characterId: "salvage-warden" } : seat
+        ),
+        players: createState().players.map((entry) =>
+          entry.seatId === "seat-1"
+            ? {
+                ...entry,
+                character: {
+                  ...cloneCharacter(characters.get("salvage-warden")),
+                  currentSpaceId: "sector-c",
+                  heat: 1
+                }
+              }
+            : entry
+        )
+      }),
+      [],
+      createSequenceRandomSource([5, 5]),
+      createThreats(),
+      characters,
+      createGear(),
+      createContracts()
+    );
+
+    runIntent(server, {
+      type: "CHECK_REQUESTED",
+      seatId: "seat-1",
+      stat: "forge"
+    });
+
+    expect(server.getState().players[0]?.character.heat).toBe(0);
+    expect(server.getState().players[0]?.private.notes).toContain(
+      "Scrap Bastion converted damaged cover into a workable defensive shell."
+    );
+  });
+
   it("rejects contract completion below target and completes it at target with reward", () => {
     const contracts = createContracts();
     const server = new GameRoomServer(
@@ -1059,7 +3889,7 @@ describe("contracts", () => {
 
     const player = readyServer.getState().players.find((entry) => entry.seatId === "seat-1");
     expect(player?.character.activeContract).toBeNull();
-    expect(player?.character.heat).toBe(1);
+    expect(player?.character.heat).toBe(0);
   });
 
   it("accepts a contract, wins two combats across turns, completes it, and receives the reward", () => {

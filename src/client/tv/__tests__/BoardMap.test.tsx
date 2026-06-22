@@ -117,6 +117,7 @@ function createPatch(): PublicPatchPayload {
     escalationThreshold: 6,
     escalationModifier: 0,
     availableContracts: [],
+    recentAbilityTriggers: [],
     encounter: null,
     pendingEnemyRoll: null,
     outcomeSummary: {

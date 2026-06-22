@@ -1,5 +1,6 @@
-import { useEffect, useState, type ChangeEvent, type FormEvent, type ReactElement } from "react";
+import { useEffect, useRef, useState, type ChangeEvent, type FormEvent, type ReactElement } from "react";
 import { fetchCharacters, joinSession } from "../shared/network.js";
+import { getPhoneAbilityTelemetry } from "../shared/abilityTelemetry.js";
 import type { CharacterCatalogEntry, PhonePatchPayload, PhoneSessionAuth, StatePatch } from "../shared/types.js";
 import { useRoomSubscription } from "../shared/useRoomSubscription.js";
 import {
@@ -167,6 +168,13 @@ export function PhoneApp(): ReactElement {
 
   const phonePatch =
     patch && "self" in patch.payload ? (patch as StatePatch<PhonePatchPayload>) : null;
+  const previousPhonePatchRef = useRef<PhonePatchPayload | null>(null);
+
+  useEffect(() => {
+    if (phonePatch?.payload) {
+      previousPhonePatchRef.current = phonePatch.payload;
+    }
+  }, [phonePatch]);
 
   const handleJoin = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -286,6 +294,7 @@ export function PhoneApp(): ReactElement {
   const activeContractCard =
     self?.character.activeContract &&
     phonePatch?.payload.availableContracts.find((contract) => contract.id === self.character.activeContract?.contractId);
+  const abilityTelemetry = getPhoneAbilityTelemetry(phonePatch?.payload ?? null, previousPhonePatchRef.current);
 
   return (
     <main className="phone-page phone-page-controller">
@@ -302,6 +311,8 @@ export function PhoneApp(): ReactElement {
             activeSeatId={activeSeatId}
             encounter={phonePatch?.payload.encounter ?? null}
             outcomeSummary={phonePatch?.payload.outcomeSummary ?? null}
+            latestAbilityTriggerSummary={abilityTelemetry.latestTrigger?.summary ?? null}
+            abilityChangeItems={abilityTelemetry.changes}
             characters={characters}
             patch={phonePatch?.payload ?? null}
             onIntent={phonePatch ? sendIntent : null}

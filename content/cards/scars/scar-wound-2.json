@@ -1,0 +1,8 @@
+{
+  "id": "scar-wound-2",
+  "type": "scar",
+  "title": "Static Burn",
+  "text": "A neural scar from signal lash and broken ward feedback.",
+  "flavor": "Old route prayers come back as noise when you try to sleep.",
+  "penalty": "The first anomaly you face each session gains +1 instability."
+}

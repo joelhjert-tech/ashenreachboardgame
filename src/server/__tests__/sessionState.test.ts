@@ -38,6 +38,7 @@ describe("canonical sector graph", () => {
     const state = createInitialSessionState("session-solo", "single-player");
     const tvProjection = createTvProjection(state) as {
       sessionMode: string;
+      escalationThreshold: number;
       seats: Array<{ seatId: string }>;
       players: Array<{ seatId: string }>;
     };
@@ -47,6 +48,7 @@ describe("canonical sector graph", () => {
     expect(state.players.map((player) => player.seatId)).toEqual(["seat-1"]);
     expect(state.turnOrder).toEqual(["seat-1"]);
     expect(tvProjection.sessionMode).toBe("single-player");
+    expect(tvProjection.escalationThreshold).toBe(8);
     expect(tvProjection.seats).toHaveLength(1);
     expect(tvProjection.players).toHaveLength(0);
   });

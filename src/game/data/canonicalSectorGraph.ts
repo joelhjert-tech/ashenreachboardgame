@@ -43,7 +43,7 @@ const encounterDecksBySpaceId: Partial<Record<string, EncounterDecks>> = {
   },
   "glassmere-spindle": {
     threat: ["glass-chime-swarm", "latchspire-raider"],
-    anomaly: ["anomaly-glassmere"],
+    anomaly: ["anomaly-glassmere", "anomaly-choir-static"],
     contract: [],
     artifact: [],
     escalation: []
@@ -51,7 +51,7 @@ const encounterDecksBySpaceId: Partial<Record<string, EncounterDecks>> = {
   "mirecoil-beacon": {
     threat: ["relay-husk", "slag-drone", "cinder-veil-stalker"],
     anomaly: [],
-    contract: ["contract-beacon"],
+    contract: ["contract-beacon", "contract-lantern-run"],
     artifact: [],
     escalation: []
   },
@@ -59,7 +59,7 @@ const encounterDecksBySpaceId: Partial<Record<string, EncounterDecks>> = {
     threat: ["grave-silt-press"],
     anomaly: [],
     contract: [],
-    artifact: ["artifact-yard"],
+    artifact: ["artifact-yard", "artifact-bell-votive"],
     escalation: []
   },
   "emberwatch-step": {
@@ -67,7 +67,7 @@ const encounterDecksBySpaceId: Partial<Record<string, EncounterDecks>> = {
     anomaly: [],
     contract: [],
     artifact: [],
-    escalation: ["escalation-emberwatch"]
+    escalation: ["escalation-emberwatch", "escalation-ridge-suture"]
   }
 };
 

@@ -1,0 +1,23 @@
+{
+  "id": "contract-lantern-run",
+  "name": "Lantern Run",
+  "factionGiver": "Pale Cartels",
+  "text": "Thread a black-lantern courier lane and clear two hostile interruptions before the smugglers burn the route.",
+  "objective": {
+    "type": "defeatCount",
+    "target": 2
+  },
+  "reward": {
+    "type": "sequence",
+    "effects": [
+      {
+        "type": "gain_gear",
+        "gearId": "veil-hook"
+      },
+      {
+        "type": "gain_note",
+        "text": "The Lantern Run paid out in contraband route access."
+      }
+    ]
+  }
+}

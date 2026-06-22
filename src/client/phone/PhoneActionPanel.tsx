@@ -6,6 +6,7 @@ import type {
   PhonePatchPayload,
   SectorNode
 } from "../shared/types.js";
+import { getBoardSpace } from "../../game/data/boardSpaces.js";
 
 interface PhoneActionPanelProps {
   characters: CharacterCatalogEntry[];
@@ -31,6 +32,21 @@ function getActiveSeatId(patch: PhonePatchPayload): string | null {
 function getActiveContractCard(patch: PhonePatchPayload): ContractCard | null {
   const contractId = patch.self?.character.activeContract?.contractId;
   return contractId ? patch.availableContracts.find((contract) => contract.id === contractId) ?? null : null;
+}
+
+function getSectorOpportunityCopy(sector: SectorNode | null): string | null {
+  if (!sector) {
+    return null;
+  }
+
+  const parts = [
+    sector.encounterDecks.anomaly.length ? `${sector.encounterDecks.anomaly.length} anomaly signal${sector.encounterDecks.anomaly.length === 1 ? "" : "s"}` : null,
+    sector.encounterDecks.artifact.length ? `${sector.encounterDecks.artifact.length} salvage cache${sector.encounterDecks.artifact.length === 1 ? "" : "s"}` : null,
+    sector.encounterDecks.contract.length ? `${sector.encounterDecks.contract.length} contract lead${sector.encounterDecks.contract.length === 1 ? "" : "s"}` : null,
+    sector.encounterDecks.escalation.length ? `${sector.encounterDecks.escalation.length} stabilization window${sector.encounterDecks.escalation.length === 1 ? "" : "s"}` : null
+  ].filter((entry): entry is string => Boolean(entry));
+
+  return parts.length > 0 ? parts.join(" | ") : null;
 }
 
 function ActionButtons({ actions }: { actions: ActionButtonDefinition[] }): ReactElement {
@@ -68,6 +84,7 @@ export function PhoneActionPanel({ characters, onIntent, patch }: PhoneActionPan
 
   const isActiveSeat = getActiveSeatId(patch) === self.seatId;
   const sector = getSector(patch.sectors, self.sectorId);
+  const boardSpace = getBoardSpace(self.sectorId);
   const activeContract = getActiveContractCard(patch);
   const equippedIds = new Set(Object.values(self.character.equippedGear).filter((value): value is string => Boolean(value)));
   const winnerName = patch.seats.find((seat) => seat.seatId === patch.winnerSeatId)?.displayName ?? patch.winnerSeatId ?? "unknown";
@@ -81,6 +98,7 @@ export function PhoneActionPanel({ characters, onIntent, patch }: PhoneActionPan
     patch.seats.find((seat) => seat.seatId === pendingEnemyRoll?.fighterSeatId)?.displayName ??
     pendingEnemyRoll?.fighterSeatId ??
     "the active seat";
+  const sectorOpportunityCopy = getSectorOpportunityCopy(sector);
 
   if (patch.status === "ended") {
     return (
@@ -203,6 +221,24 @@ export function PhoneActionPanel({ characters, onIntent, patch }: PhoneActionPan
   }
 
   if (patch.phase === "action") {
+    const canResolveSpaceText =
+      !patch.encounter &&
+      !!boardSpace &&
+      (boardSpace.tier === "inner" || boardSpace.tier === "center" || (sector?.encounterDecks.threat.length ?? 0) === 0);
+
+    if (canResolveSpaceText && self.sectorId !== "center_cinder_gate") {
+      actions.push({
+        key: "resolve-space-text",
+        label: boardSpace?.textBox.title ? `Resolve ${boardSpace.textBox.title}` : "Resolve Sector Text",
+        tone: "secondary",
+        onClick: () =>
+          onIntent({
+            type: "RESOLVE_SPACE_TEXT",
+            seatId: self.seatId
+          })
+      });
+    }
+
     if (!patch.encounter && patch.escalationLevel > 0) {
       actions.push({
         key: "stabilize",
@@ -318,6 +354,8 @@ export function PhoneActionPanel({ characters, onIntent, patch }: PhoneActionPan
       ? "Choose a neighboring sector."
       : patch.phase === "action" && self.sectorId === "center_cinder_gate"
         ? "The Cinder Gate is open. Resolve the active scenario confrontation."
+      : patch.phase === "action" && boardSpace
+        ? `Resolve ${boardSpace.textBox.title}, gear, contracts, or the current threat.${sectorOpportunityCopy ? ` Local reads: ${sectorOpportunityCopy}.` : ""}`
       : patch.phase === "action"
         ? "Resolve your current action, gear, or contract."
         : "Waiting for the server to resolve the current step.";

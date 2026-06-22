@@ -15,6 +15,7 @@ import type {
   ResolutionAppliedAction,
   RoundCompletedAction,
   SectorCollapsedAction,
+  SpaceTextResolvedAction,
   ScenarioProgressAdvancedAction,
   ScenarioConfrontationRequestedAction,
   ScenarioVictoryAchievedAction,
@@ -28,6 +29,7 @@ import type { EncounterEffect } from "../schema/card.schema.js";
 import type { ContractCard } from "../schema/contract.schema.js";
 import type { GameState, PlayerState } from "../schema/session.schema.js";
 import type { GearSlot } from "../schema/gear.schema.js";
+import { getBoardSpace } from "../data/boardSpaces.js";
 
 export interface ReducerRejection {
   reason: string;
@@ -95,6 +97,55 @@ function ensureNeighbor(state: GameState, fromSectorId: string, toSectorId: stri
 
   if (!sector.neighbors.includes(toSectorId)) {
     throw new Error(`Sector ${toSectorId} is not reachable from ${fromSectorId}`);
+  }
+}
+
+function ensureGateProgression(state: GameState, seatId: string, fromSectorId: string, toSectorId: string): void {
+  const player = requirePlayer(state, seatId);
+  const notes = new Set(player.private.notes);
+
+  if (toSectorId === "inner_veil_rift" && fromSectorId === "middle_guardian_span" && !notes.has("guardian-span-clearance")) {
+    throw new Error("Resolve Guardian Span before entering the inner breach");
+  }
+
+  if (toSectorId === "center_cinder_gate") {
+    if (fromSectorId !== "inner_gate_of_cinders") {
+      throw new Error("Only the Gate of Cinders opens the final route into the core chamber");
+    }
+
+    if (!notes.has("gate-of-cinders-breached")) {
+      throw new Error("Resolve the Gate of Cinders before entering the Cinder Gate");
+    }
+  }
+}
+
+function canResolveSpaceText(state: GameState, seatId: string): void {
+  ensureSeatTurn(state, seatId);
+  ensureSeatCanTakeNormalTurnAction(state, seatId);
+
+  if (state.phase !== "action") {
+    throw new Error(`Cannot resolve space text during phase ${state.phase}`);
+  }
+
+  if (state.currentEncounter || state.pendingEnemyRoll || state.pendingEffect) {
+    throw new Error("Resolve the current threat before using the sector text");
+  }
+
+  const player = requirePlayer(state, seatId);
+  const boardSpace = getBoardSpace(player.character.currentSpaceId);
+
+  if (!boardSpace) {
+    throw new Error(`No board text is registered for ${player.character.currentSpaceId}`);
+  }
+
+  const sector = state.sectors.find((entry) => entry.id === player.character.currentSpaceId);
+
+  if (!sector) {
+    throw new Error(`Unknown sector ${player.character.currentSpaceId}`);
+  }
+
+  if ((boardSpace.tier === "outer" || boardSpace.tier === "middle") && sector.encounterDecks.threat.length > 0) {
+    throw new Error("Clear the local threat deck before resolving this sector text");
   }
 }
 
@@ -371,6 +422,7 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
 
       try {
         ensureNeighbor(state, player.character.currentSpaceId, moveAction.toSectorId);
+        ensureGateProgression(state, moveAction.seatId, player.character.currentSpaceId, moveAction.toSectorId);
       } catch (error) {
         return reject(state, action, error instanceof Error ? error.message : "Sector is not reachable");
       }
@@ -1077,6 +1129,91 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
         ...state,
         sequence: state.sequence + 1,
         eventLog: [...state.eventLog, action]
+      });
+    }
+    case "SPACE_TEXT_RESOLVED": {
+      const spaceTextAction = action as SpaceTextResolvedAction;
+
+      try {
+        canResolveSpaceText(state, spaceTextAction.seatId);
+      } catch (error) {
+        return reject(state, action, error instanceof Error ? error.message : "Space text is not available");
+      }
+
+      const nextState = spaceTextAction.effect
+        ? applyEffectToState(state, spaceTextAction.seatId, spaceTextAction.effect)
+        : state;
+      const sectorAdjustedState =
+        spaceTextAction.sectorId && spaceTextAction.consumedDeckCards
+          ? {
+              ...nextState,
+              sectors: nextState.sectors.map((sector) =>
+                sector.id !== spaceTextAction.sectorId
+                  ? sector
+                  : {
+                      ...sector,
+                      encounterDecks: {
+                        ...sector.encounterDecks,
+                        anomaly: sector.encounterDecks.anomaly.filter(
+                          (cardId) => !spaceTextAction.consumedDeckCards?.anomaly?.includes(cardId)
+                        ),
+                        artifact: sector.encounterDecks.artifact.filter(
+                          (cardId) => !spaceTextAction.consumedDeckCards?.artifact?.includes(cardId)
+                        ),
+                        contract: sector.encounterDecks.contract.filter(
+                          (cardId) => !spaceTextAction.consumedDeckCards?.contract?.includes(cardId)
+                        ),
+                        escalation: sector.encounterDecks.escalation.filter(
+                          (cardId) => !spaceTextAction.consumedDeckCards?.escalation?.includes(cardId)
+                        )
+                      }
+                    }
+              )
+            }
+          : nextState;
+      const withDiscoveredContracts =
+        spaceTextAction.discoveredContracts && spaceTextAction.discoveredContracts.length > 0
+          ? {
+              ...sectorAdjustedState,
+              availableContracts: [
+                ...sectorAdjustedState.availableContracts,
+                ...spaceTextAction.discoveredContracts.filter(
+                  (contract) => !sectorAdjustedState.availableContracts.some((entry) => entry.id === contract.id)
+                )
+              ]
+            }
+          : sectorAdjustedState;
+      const player = requirePlayer(withDiscoveredContracts, spaceTextAction.seatId);
+
+      return succeed({
+        ...withDiscoveredContracts,
+        sequence: state.sequence + 1,
+        phase: "broadcast",
+        resolutionSource: null,
+        currentEncounter: null,
+        pendingEnemyRoll: null,
+        pendingEffect: null,
+        lastOutcomeSummary: {
+          seatId: spaceTextAction.seatId,
+          movedToSectorId: player.sectorId,
+          encounterCardId: null,
+          encounterTitle: getBoardSpace(player.character.currentSpaceId)?.name ?? player.character.currentSpaceId,
+          encounterCardType: null,
+          checkStat: null,
+          die1: null,
+          die2: null,
+          statBonus: null,
+          checkTotal: null,
+          difficulty: null,
+          enemyRollerSeatId: null,
+          enemyDie1: null,
+          enemyDie2: null,
+          enemyBonus: null,
+          enemyTotal: null,
+          success: true,
+          summary: spaceTextAction.summary
+        },
+        eventLog: [...withDiscoveredContracts.eventLog, action]
       });
     }
     case "SCENARIO_PROGRESS_ADVANCED": {

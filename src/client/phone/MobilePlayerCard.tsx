@@ -1,5 +1,6 @@
 import type { ReactElement, ReactNode } from "react";
 import { getCharacterPortraitPath, getPhoneSheetFramePath } from "../shared/assetPaths.js";
+import type { AbilityChangeItem } from "../shared/abilityTelemetry.js";
 import type {
   ActiveScenarioSummary,
   ContractCard,
@@ -15,6 +16,7 @@ import { formatEscalation } from "./formatEscalation.js";
 interface MobilePlayerCardProps {
   self: PhoneSelfState;
   activeContractCard: ContractCard | null;
+  localOpportunityCopy?: string | null;
   roomCode: string;
   displayName: string;
   connectionStatus: string;
@@ -28,6 +30,8 @@ interface MobilePlayerCardProps {
   escalationModifier?: number;
   encounter: EncounterCard | null;
   outcomeSummary: OutcomeSummary | null;
+  latestAbilityTriggerSummary?: string | null;
+  abilityChangeItems?: AbilityChangeItem[];
   onLeave: () => void;
   children?: ReactNode;
   className?: string;
@@ -56,6 +60,7 @@ function buildTrack(count: number): boolean[] {
 export function MobilePlayerCard({
   self,
   activeContractCard,
+  localOpportunityCopy = null,
   roomCode,
   displayName,
   connectionStatus,
@@ -69,6 +74,8 @@ export function MobilePlayerCard({
   escalationModifier = 0,
   encounter,
   outcomeSummary,
+  latestAbilityTriggerSummary = null,
+  abilityChangeItems = [],
   onLeave,
   children,
   className
@@ -199,6 +206,24 @@ export function MobilePlayerCard({
             {latestOutcome && <strong>{latestOutcome}</strong>}
           </div>
 
+          {(latestAbilityTriggerSummary || abilityChangeItems.length > 0) && (
+            <div className="phone-sheet-trigger-panel">
+              <div className="phone-sheet-trigger-header">
+                <span>Triggered ability</span>
+                {abilityChangeItems.length > 0 && (
+                  <div className="phone-sheet-trigger-changes">
+                    {abilityChangeItems.map((item) => (
+                      <span key={`${item.label}-${item.value}`} className={`phone-sheet-trigger-chip phone-sheet-trigger-chip-${item.tone}`}>
+                        {item.label} {item.value}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+              {latestAbilityTriggerSummary && <strong className="phone-sheet-trigger-copy">{latestAbilityTriggerSummary}</strong>}
+            </div>
+          )}
+
           <div className="phone-sheet-vital-strip">
             <span>{scenarioCopy}</span>
           </div>
@@ -210,6 +235,12 @@ export function MobilePlayerCard({
           <div className="phone-sheet-vital-strip">
             <span>{escalationCopy}</span>
           </div>
+
+          {localOpportunityCopy && (
+            <div className="phone-sheet-vital-strip phone-sheet-vital-strip-ambient">
+              <span>{localOpportunityCopy}</span>
+            </div>
+          )}
 
           <div className="phone-sheet-section">
             <div className="phone-sheet-section-heading">Equipped Gear</div>

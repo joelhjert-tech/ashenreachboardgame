@@ -21,5 +21,26 @@
     "armor": null,
     "utility": null
   },
-  "abilities": []
+  "abilities": [
+    {
+      "id": "salvage-right",
+      "name": "Salvage Right",
+      "text": "When a yard, cache, or broken lane pays out gear, you know how to make the haul count."
+    },
+    {
+      "id": "scrap-bastion",
+      "name": "Scrap Bastion",
+      "text": "Forge-heavy route checks through damaged ground count as practical work instead of desperate improvisation."
+    },
+    {
+      "id": "yard-warden",
+      "name": "Yard Warden",
+      "text": "A cleared salvage site stays useful longer when you are the one who locked it down."
+    },
+    {
+      "id": "last-haul",
+      "name": "Last Haul",
+      "text": "When the run is nearly breaking, you can still turn one more ruined sector into something worth carrying out."
+    }
+  ]
 }

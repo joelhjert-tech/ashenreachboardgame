@@ -21,5 +21,26 @@
     "armor": null,
     "utility": null
   },
-  "abilities": []
+  "abilities": [
+    {
+      "id": "ledger-broker",
+      "name": "Ledger Broker",
+      "text": "The first contract you accept each session comes with hidden leverage already worked into the terms."
+    },
+    {
+      "id": "silent-audit",
+      "name": "Silent Audit",
+      "text": "Clear sectors yield sharper intelligence when you are the one left standing in them."
+    },
+    {
+      "id": "debt-knife",
+      "name": "Debt Knife",
+      "text": "Enemies tied to a route objective feel the weight of your mark before the strike lands."
+    },
+    {
+      "id": "black-file",
+      "name": "Black File",
+      "text": "Once per round, a finished job can be turned into leverage instead of mere survival."
+    }
+  ]
 }

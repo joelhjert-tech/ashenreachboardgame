@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useState, type ReactElement } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactElement } from "react";
 import { getBoardSpace } from "../../game/data/boardSpaces.js";
 import { RIFTFALL_BOARD_NODE_INDEX } from "../../data/riftfallBoardNodes.js";
 import { createSession, fetchCharacters, startSession } from "../shared/network.js";
+import { getSeatAbilityTelemetry } from "../shared/abilityTelemetry.js";
 import { DebugPanel } from "../shared/DebugPanel.js";
 import { RollOutcomePanel } from "../shared/RollOutcomePanel.js";
 import { useRoomSubscription } from "../shared/useRoomSubscription.js";
@@ -143,7 +144,8 @@ function getSectorBrief(patch: StatePatch<PublicPatchPayload> | null, activePlay
       ring: "outer",
       text: "Create a session to load the tactical board and live sector telemetry.",
       threat: 0,
-      occupants: 0
+      occupants: 0,
+      opportunities: [] as string[]
     };
   }
 
@@ -157,7 +159,13 @@ function getSectorBrief(patch: StatePatch<PublicPatchPayload> | null, activePlay
     ring: boardNode?.ring ?? sector?.regionTier ?? "outer",
     text: boardSpace?.textBox.text ?? "Sector telemetry is awaiting a richer command note.",
     threat: boardSpace?.threatIcons.length ?? sector?.danger ?? 0,
-    occupants
+    occupants,
+    opportunities: [
+      sector?.encounterDecks.anomaly.length ? `${sector.encounterDecks.anomaly.length} anomaly` : null,
+      sector?.encounterDecks.artifact.length ? `${sector.encounterDecks.artifact.length} artifact` : null,
+      sector?.encounterDecks.contract.length ? `${sector.encounterDecks.contract.length} contract lead` : null,
+      sector?.encounterDecks.escalation.length ? `${sector.encounterDecks.escalation.length} stabilization window` : null
+    ].filter((entry): entry is string => Boolean(entry))
   };
 }
 
@@ -230,6 +238,7 @@ function TopHeader({ roomCode, roomName, phase, activeSeatId, sessionMode }: Top
 
 interface ActiveOperativeOverlayProps {
   patch: StatePatch<PublicPatchPayload> | null;
+  previousPatch: StatePatch<PublicPatchPayload> | null;
   activeSeat: PublicSeat | null;
   activePlayer: PublicPlayer | null;
   characterCatalog: CharacterCatalogEntry[];
@@ -237,11 +246,13 @@ interface ActiveOperativeOverlayProps {
 
 function ActiveOperativeOverlay({
   patch,
+  previousPatch,
   activeSeat,
   activePlayer,
   characterCatalog
 }: ActiveOperativeOverlayProps): ReactElement {
   const seatStatus = getSeatStatus(activeSeat, activePlayer, true);
+  const abilityTelemetry = getSeatAbilityTelemetry(patch?.payload ?? null, previousPatch?.payload ?? null, activeSeat?.seatId ?? null);
 
   if (!activeSeat) {
     return (
@@ -281,6 +292,8 @@ function ActiveOperativeOverlay({
         gearSummary={getGearSummary(activePlayer)}
         contractSummary={getContractSummary(activePlayer, patch)}
         specialAbilitySummary={getSpecialAbilitySummary(activePlayer, characterCatalog)}
+        latestAbilityTriggerSummary={abilityTelemetry.latestTrigger?.summary ?? null}
+        abilityChangeItems={abilityTelemetry.changes}
         isActiveTurn
         isReady={seatStatus === "Ready"}
       />
@@ -454,6 +467,13 @@ function RightSidebar({
           <span>Threat {sectorBrief.threat}</span>
           <span>Occupants {sectorBrief.occupants}</span>
         </div>
+        {sectorBrief.opportunities.length > 0 && (
+          <div className="board-sidebar-meta">
+            {sectorBrief.opportunities.map((entry) => (
+              <span key={entry}>{entry}</span>
+            ))}
+          </div>
+        )}
       </section>
 
       <section className="tv-card tv-panel-card tv-sidebar-card">
@@ -503,18 +523,25 @@ function RightSidebar({
 
 interface TacticalMapPanelProps {
   patch: StatePatch<PublicPatchPayload> | null;
+  previousPatch: StatePatch<PublicPatchPayload> | null;
   activeSeat: PublicSeat | null;
   activePlayer: PublicPlayer | null;
   characterCatalog: CharacterCatalogEntry[];
 }
 
-function TacticalMapPanel({ patch, activeSeat, activePlayer, characterCatalog }: TacticalMapPanelProps): ReactElement {
+function TacticalMapPanel({ patch, previousPatch, activeSeat, activePlayer, characterCatalog }: TacticalMapPanelProps): ReactElement {
   return (
     <section className="tv-command-stage">
       <div className="tv-command-map-shell">
         <TacticalMapBoard patch={patch?.payload ?? null} phase={patch?.phase ?? "start"} />
       </div>
-      <ActiveOperativeOverlay patch={patch} activeSeat={activeSeat} activePlayer={activePlayer} characterCatalog={characterCatalog} />
+      <ActiveOperativeOverlay
+        patch={patch}
+        previousPatch={previousPatch}
+        activeSeat={activeSeat}
+        activePlayer={activePlayer}
+        characterCatalog={characterCatalog}
+      />
     </section>
   );
 }
@@ -533,6 +560,7 @@ export function TvApp(): ReactElement {
     enabled: Boolean(roomCode),
     hostToken
   });
+  const previousPatchRef = useRef<StatePatch<PublicPatchPayload> | null>(null);
 
   useEffect(() => {
     fetchCharacters()
@@ -549,6 +577,12 @@ export function TvApp(): ReactElement {
   const roomName = getActiveRoomName(publicPatch, activePlayer);
   const sectorBrief = useMemo(() => getSectorBrief(publicPatch, activePlayer), [publicPatch, activePlayer]);
   const scenarioStatus = useMemo(() => getScenarioStatus(publicPatch), [publicPatch]);
+
+  useEffect(() => {
+    if (publicPatch) {
+      previousPatchRef.current = publicPatch;
+    }
+  }, [publicPatch]);
 
   const createHostSession = async (nextSessionMode: SessionMode = "multiplayer") => {
     setRequestError(null);
@@ -594,7 +628,13 @@ export function TvApp(): ReactElement {
       {(requestError || error) && <div className="tv-banner tv-banner-error">{requestError ?? error}</div>}
 
       <section className="tv-command-main">
-        <TacticalMapPanel patch={publicPatch} activeSeat={activeSeat} activePlayer={activePlayer} characterCatalog={characterCatalog} />
+        <TacticalMapPanel
+          patch={publicPatch}
+          previousPatch={previousPatchRef.current}
+          activeSeat={activeSeat}
+          activePlayer={activePlayer}
+          characterCatalog={characterCatalog}
+        />
 
         <RightSidebar
           roomCode={roomCode}

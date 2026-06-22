@@ -21,5 +21,26 @@
     "armor": null,
     "utility": null
   },
-  "abilities": []
+  "abilities": [
+    {
+      "id": "field-triage",
+      "name": "Field Triage",
+      "text": "Once per round, when you stabilize the breach or recover in a sanctuary, you can clear 1 wound and turn panic into procedure."
+    },
+    {
+      "id": "scar-ledger",
+      "name": "Scar Ledger",
+      "text": "You keep a practical account of harm and treat every survivor like a problem that can still be solved."
+    },
+    {
+      "id": "siege-discipline",
+      "name": "Siege Discipline",
+      "text": "Long pressure does not break your pace; it sharpens it."
+    },
+    {
+      "id": "amber-draught",
+      "name": "Amber Draught",
+      "text": "Relief arrives from your kit in precise doses, never by miracle."
+    }
+  ]
 }

@@ -22,7 +22,7 @@
       "danger": 3,
       "encounterDecks": {
         "threat": ["glass-chime-swarm", "latchspire-raider"],
-        "anomaly": ["anomaly-glassmere"],
+        "anomaly": ["anomaly-glassmere", "anomaly-choir-static"],
         "contract": [],
         "artifact": [],
         "escalation": []
@@ -37,7 +37,7 @@
       "encounterDecks": {
         "threat": ["relay-husk", "slag-drone", "cinder-veil-stalker"],
         "anomaly": [],
-        "contract": ["contract-beacon"],
+        "contract": ["contract-beacon", "contract-lantern-run"],
         "artifact": [],
         "escalation": []
       }
@@ -52,7 +52,7 @@
         "threat": ["grave-silt-press"],
         "anomaly": [],
         "contract": [],
-        "artifact": ["artifact-yard"],
+        "artifact": ["artifact-yard", "artifact-bell-votive"],
         "escalation": []
       }
     },
@@ -67,7 +67,7 @@
         "anomaly": [],
         "contract": [],
         "artifact": [],
-        "escalation": ["escalation-emberwatch"]
+        "escalation": ["escalation-emberwatch", "escalation-ridge-suture"]
       }
     }
   ]

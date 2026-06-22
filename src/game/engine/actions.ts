@@ -151,6 +151,21 @@ export interface ScenarioConfrontationRequestedAction extends BaseAction {
   type: "SCENARIO_CONFRONTATION_REQUESTED";
 }
 
+export interface SpaceTextResolvedAction extends BaseAction {
+  type: "SPACE_TEXT_RESOLVED";
+  effectKey: string;
+  summary: string;
+  effect?: EncounterEffect | null;
+  sectorId?: string;
+  discoveredContracts?: ContractCard[];
+  consumedDeckCards?: {
+    anomaly?: string[];
+    artifact?: string[];
+    contract?: string[];
+    escalation?: string[];
+  };
+}
+
 export interface ScenarioProgressAdvancedAction extends BaseAction {
   type: "SCENARIO_PROGRESS_ADVANCED";
   scenarioId: string;
@@ -220,6 +235,7 @@ export type GameAction =
   | AcceptContractAction
   | CompleteContractAction
   | ScenarioConfrontationRequestedAction
+  | SpaceTextResolvedAction
   | ScenarioProgressAdvancedAction
   | ScenarioVictoryAchievedAction
   | StabilizeResolvedAction
@@ -282,6 +298,10 @@ export type ClientIntent =
     }
   | {
       type: "SCENARIO_CONFRONTATION_REQUESTED";
+      seatId: string;
+    }
+  | {
+      type: "RESOLVE_SPACE_TEXT";
       seatId: string;
     }
   | {

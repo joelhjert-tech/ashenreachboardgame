@@ -1,0 +1,8 @@
+{
+  "id": "scar-wound-1",
+  "type": "scar",
+  "title": "Ash-Lanced",
+  "text": "A furnace-raked wound that never fully seals.",
+  "flavor": "The skin shines like coal glass under hard light.",
+  "penalty": "Your first failed grit test each session adds 1 Heat."
+}

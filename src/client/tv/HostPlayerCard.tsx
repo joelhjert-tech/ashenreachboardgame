@@ -1,4 +1,5 @@
 import type { ReactElement } from "react";
+import type { AbilityChangeItem } from "../shared/abilityTelemetry.js";
 
 interface HostPlayerCardAttributes {
   cmd: number | null;
@@ -24,6 +25,8 @@ export interface HostPlayerCardProps {
   gearSummary: string;
   contractSummary: string;
   specialAbilitySummary: string;
+  latestAbilityTriggerSummary?: string | null;
+  abilityChangeItems?: AbilityChangeItem[];
   isActiveTurn: boolean;
   isReady: boolean;
   className?: string;
@@ -57,6 +60,8 @@ export function HostPlayerCard({
   gearSummary,
   contractSummary,
   specialAbilitySummary,
+  latestAbilityTriggerSummary = null,
+  abilityChangeItems = [],
   isActiveTurn,
   isReady,
   className
@@ -139,6 +144,26 @@ export function HostPlayerCard({
             <span>{specialAbilitySummary}</span>
           </p>
         </div>
+
+        {latestAbilityTriggerSummary && (
+          <div className="host-player-card-trigger-band">
+            <strong>Triggered</strong>
+            <span>{latestAbilityTriggerSummary}</span>
+          </div>
+        )}
+
+        {abilityChangeItems.length > 0 && (
+          <div className="host-player-card-change-row" aria-label="Recent operative changes">
+            {abilityChangeItems.map((item) => (
+              <span
+                key={`${item.label}-${item.value}`}
+                className={`host-player-card-change-chip host-player-card-change-chip-${item.tone}`}
+              >
+                {item.label} {item.value}
+              </span>
+            ))}
+          </div>
+        )}
       </div>
 
       <div className="host-player-card-sidepanel">

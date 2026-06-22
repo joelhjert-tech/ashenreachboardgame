@@ -1,0 +1,8 @@
+{
+  "id": "scar-wound-3",
+  "type": "scar",
+  "title": "Broken Harness",
+  "text": "Your body learned the wrong way to absorb a crushing hit.",
+  "flavor": "Every brace and buckle now fits around remembered pain.",
+  "penalty": "The first wound you take from an enemy each session also adds 1 Heat."
+}

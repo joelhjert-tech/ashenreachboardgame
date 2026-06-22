@@ -21,5 +21,26 @@
     "armor": null,
     "utility": null
   },
-  "abilities": []
+  "abilities": [
+    {
+      "id": "broken-claim",
+      "name": "Broken Claim",
+      "text": "Once per round, when you clear a lucrative lane or recover live salvage, you can twist the moment into progress on your active objective."
+    },
+    {
+      "id": "ash-tithe",
+      "name": "Ash Tithe",
+      "text": "Every quiet victory still feels like something the world owes you back."
+    },
+    {
+      "id": "crown-debt",
+      "name": "Crown Debt",
+      "text": "People who owe you fear your patience more than your temper."
+    },
+    {
+      "id": "ruin-courtesy",
+      "name": "Ruin Courtesy",
+      "text": "You move through broken grandeur like it still belongs to you."
+    }
+  ]
 }

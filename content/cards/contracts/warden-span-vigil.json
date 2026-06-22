@@ -1,0 +1,23 @@
+{
+  "id": "warden-span-vigil",
+  "name": "Span Vigil",
+  "factionGiver": "Kaldr Dominion",
+  "text": "Hold the Guardian Span against two active hostiles so the inner threshold can be measured without interruption.",
+  "objective": {
+    "type": "defeatCount",
+    "target": 2
+  },
+  "reward": {
+    "type": "sequence",
+    "effects": [
+      {
+        "type": "lose_heat",
+        "amount": 1
+      },
+      {
+        "type": "gain_note",
+        "text": "Guardian Span watch codes recorded."
+      }
+    ]
+  }
+}

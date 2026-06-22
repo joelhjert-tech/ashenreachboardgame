@@ -1,0 +1,14 @@
+{
+  "id": "cartel-quiet-route",
+  "name": "Quiet Route",
+  "factionGiver": "Pale Cartels",
+  "text": "Clear two disruptions from the convoy lanes and the Cartels will reveal a route they have not yet sold twice.",
+  "objective": {
+    "type": "defeatCount",
+    "target": 2
+  },
+  "reward": {
+    "type": "gain_gear",
+    "gearId": "veil-hook"
+  }
+}

@@ -126,6 +126,13 @@ export interface OutcomeSummary {
   summary: string;
 }
 
+export interface AbilityTriggerSummary {
+  seatId: string;
+  abilityId: string;
+  summary: string;
+  createdAt: string;
+}
+
 export interface ActiveScenarioSummary {
   id: string;
   name: string;
@@ -159,6 +166,7 @@ export interface PublicPatchPayload {
   encounter: EncounterCard | null;
   pendingEnemyRoll: PendingEnemyRoll | null;
   outcomeSummary: OutcomeSummary | null;
+  recentAbilityTriggers: AbilityTriggerSummary[];
 }
 
 export interface PhonePatchPayload extends PublicPatchPayload {
@@ -261,6 +269,10 @@ export type ClientIntent =
     }
   | {
       type: "SCENARIO_CONFRONTATION_REQUESTED";
+      seatId: string;
+    }
+  | {
+      type: "RESOLVE_SPACE_TEXT";
       seatId: string;
     }
   | {

@@ -1,0 +1,22 @@
+{
+  "id": "anomaly-glassmere",
+  "type": "anomaly",
+  "title": "Glassmere Echo Bloom",
+  "text": "The spindle erupts in mirrored afterimages that answer movement with impossible delay.",
+  "flavor": "Every reflection is a route that almost happened.",
+  "instability": 2,
+  "resolutionSummary": "Contained the Glassmere Echo Bloom and harvested a usable signal pattern.",
+  "resolveEffect": {
+    "type": "sequence",
+    "effects": [
+      {
+        "type": "lose_heat",
+        "amount": 1
+      },
+      {
+        "type": "gain_note",
+        "text": "Glassmere anomaly contained. The spindle now answers the relay choir cleanly."
+      }
+    ]
+  }
+}

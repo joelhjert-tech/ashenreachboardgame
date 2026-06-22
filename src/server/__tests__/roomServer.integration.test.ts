@@ -1052,10 +1052,11 @@ describe("roomServer websocket integration", () => {
       stat: "signal"
     });
     await tv.waitForSince(marker, statePatchForPhase("navigation", 1));
-    const recalledPlayer = harness.roomServer
+    const postCheckSeatOne = harness.roomServer
       .getState()
       .players.find((player) => player.seatId === "seat-1");
-    expect(recalledPlayer?.character.status).toBe("recalled");
+    expect(postCheckSeatOne?.character.status).toBe("active");
+    expect(postCheckSeatOne?.character.heat).toBe(1);
 
     marker = tv.mark();
     phone2.send({
@@ -1111,7 +1112,7 @@ describe("roomServer websocket integration", () => {
     }
     await waitForServerTick();
     expect(harness.roomServer.getState().activeSeatIndex).toBe(0);
-    expect(harness.roomServer.getState().phase).toBe("action");
+    expect(harness.roomServer.getState().phase).toBe("navigation");
     const contractProgress = harness.roomServer
       .getState()
       .players.find((player) => player.seatId === "seat-3")
@@ -1120,16 +1121,24 @@ describe("roomServer websocket integration", () => {
 
     marker = tv.mark();
     phone1.send({
-      type: "RECRUIT_REPLACEMENT",
+      type: "PHASE_ADVANCED",
       seatId: "seat-1",
-      replacementCharacterId: "void-marshal"
+      toPhase: "sector"
+    });
+    await tv.waitForSince(marker, statePatchForPhase("action", 0));
+
+    marker = tv.mark();
+    phone1.send({
+      type: "PHASE_ADVANCED",
+      seatId: "seat-1",
+      toPhase: "resolution"
     });
     await tv.waitForSince(marker, statePatchForPhase("navigation", 1));
-    const replacedPlayer = harness.roomServer
+    const seatOneAfterAdvance = harness.roomServer
       .getState()
       .players.find((player) => player.seatId === "seat-1");
-    expect(replacedPlayer?.character.status).toBe("active");
-    expect(replacedPlayer?.character.heat).toBe(0);
+    expect(seatOneAfterAdvance?.character.status).toBe("active");
+    expect(seatOneAfterAdvance?.character.heat).toBe(0);
 
     marker = tv.mark();
     phone2.send({

@@ -21,5 +21,26 @@
     "armor": null,
     "utility": null
   },
-  "abilities": []
+  "abilities": [
+    {
+      "id": "breach-atlas",
+      "name": "Breach Atlas",
+      "text": "Once per round, when you finish mapping a live lane, you can record a safer route note and shed 1 Heat from the effort."
+    },
+    {
+      "id": "ghost-mile",
+      "name": "Ghost Mile",
+      "text": "False routes stand out to you because you have already drawn them all in your head."
+    },
+    {
+      "id": "surveyor-cut",
+      "name": "Surveyor's Cut",
+      "text": "A clean path is never just a path to you; it is stored future leverage."
+    },
+    {
+      "id": "rift-script",
+      "name": "Rift Script",
+      "text": "You annotate hostile ground fast enough that other operatives can use your work before it fades."
+    }
+  ]
 }
