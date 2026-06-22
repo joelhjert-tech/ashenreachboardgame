@@ -2815,6 +2815,7 @@ export class GameRoomServer {
     const currentProgress = this.state.scenarioProgress[progressKey] ?? 0;
     const nextProgress = currentProgress + marksEarned;
     const effectiveThreshold = nemesis?.stats.life ?? scenario.victoryThreshold;
+    const willWin = nextProgress >= effectiveThreshold;
     const effectParts: EncounterEffect[] = [];
 
     if (plan.effect) {
@@ -2862,13 +2863,20 @@ export class GameRoomServer {
         : effectParts.length === 1
           ? effectParts[0]!
           : ({ type: "sequence", effects: effectParts } satisfies EncounterEffect);
+    const appliedEffect = nemesis && willWin ? plan.effect : combinedEffect;
+    const backlashSummary =
+      nemesis && willWin && failedChecks > 0
+        ? `Backlash ${failedChecks} denied by the killing blow.`
+        : failedChecks > 0
+          ? `Backlash ${failedChecks}.`
+          : "No backlash.";
 
     const summary = [
       `${scenario.confrontationTitle}: ${marksEarned} ${plan.markLabel}${marksEarned === 1 ? "" : "s"} earned.`,
       ...results.map((result) =>
         `${result.label} via ${result.stat} ${result.total}/${result.difficulty} ${result.success ? "passed" : "failed"}`
       ),
-      failedChecks > 0 ? `Backlash ${failedChecks}.` : "No backlash.",
+      backlashSummary,
       `Progress ${nextProgress}/${effectiveThreshold}.`
     ].join(" ");
 
@@ -2878,10 +2886,21 @@ export class GameRoomServer {
       scenarioId: scenario.id,
       progressKey,
       amount: marksEarned,
-      effect: combinedEffect,
+      effect: appliedEffect,
       summary,
       createdAt: new Date().toISOString()
     } satisfies ScenarioProgressAdvancedAction);
+
+    if (willWin && this.state.status === "active") {
+      this.applyAction({
+        type: "SCENARIO_VICTORY_ACHIEVED",
+        seatId: intent.seatId,
+        scenarioId: scenario.id,
+        summary: `${scenario.name} completed. ${plan.victorySummary}`,
+        createdAt: new Date().toISOString()
+      } satisfies ScenarioVictoryAchievedAction);
+      return;
+    }
 
     if (this.state.status !== "active") {
       return;

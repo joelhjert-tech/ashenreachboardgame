@@ -190,6 +190,48 @@ describe("scenario confrontation flow", () => {
     expect(roomServer.getState().scenarioProgress.throneClaims).toBe(6);
   });
 
+  it("awards nemesis victory before a killing-blow backlash can collapse the sector", () => {
+    const roomServer = new GameRoomServer(
+      createScenarioState({
+        activeScenarioId: "scenario_throne_of_ash",
+        escalationLevel: 5,
+        scenarioProgress: {
+          throneClaims: 5
+        },
+        players: createScenarioState().players.map((player) =>
+          player.seatId === "seat-1"
+            ? {
+                ...player,
+                character: {
+                  ...player.character,
+                  stats: {
+                    command: player.character.stats.command,
+                    grit: player.character.stats.grit,
+                    signal: 20,
+                    guile: 0,
+                    forge: player.character.stats.forge
+                  }
+                }
+              }
+            : player
+        )
+      }),
+      [],
+      createSequenceRandomSource([0, 0, 0, 0])
+    );
+
+    roomServer.handleIntent(createPhoneClient("seat-1") as never, {
+      type: "SCENARIO_CONFRONTATION_REQUESTED",
+      seatId: "seat-1"
+    } satisfies ClientIntent);
+
+    expect(roomServer.getState().status).toBe("ended");
+    expect(roomServer.getState().winnerSeatId).toBe("seat-1");
+    expect(roomServer.getState().scenarioProgress.throneClaims).toBe(6);
+    expect(roomServer.getState().escalationLevel).toBe(5);
+    expect(roomServer.getState().players.find((entry) => entry.seatId === "seat-1")?.character.wounds).toBe(0);
+  });
+
   it("builds linked nemesis confrontation checks from the nemesis stat block", () => {
     const roomServer = new GameRoomServer(
       createScenarioState({
