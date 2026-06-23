@@ -3,6 +3,7 @@ import { formatContractProgress } from "../../game/contracts/objectives.js";
 import { getCharacterPortraitPath, getPhoneSheetFramePath } from "../shared/assetPaths.js";
 import type { AbilityChangeItem } from "../shared/abilityTelemetry.js";
 import {
+  buildScenarioOutcomeSummary,
   buildScenarioRuleDigest,
   formatScenarioSummaryCopy,
   formatScenarioTelemetryInline
@@ -28,6 +29,7 @@ interface MobilePlayerCardProps {
   displayName: string;
   connectionStatus: string;
   sessionStatus: SessionStatus | null;
+  winnerSeatId?: string | null;
   phase: string;
   activeSeatId: string | null;
   activeNemesis: ActiveNemesisSummary | null;
@@ -73,6 +75,7 @@ export function MobilePlayerCard({
   displayName,
   connectionStatus,
   sessionStatus,
+  winnerSeatId = null,
   phase,
   activeSeatId,
   activeNemesis,
@@ -98,6 +101,13 @@ export function MobilePlayerCard({
     telemetry: 4,
     specialRules: 2,
     confrontationSteps: 2
+  });
+  const scenarioOutcome = buildScenarioOutcomeSummary({
+    status: sessionStatus,
+    winnerSeatId,
+    activeSeatId,
+    activeScenario,
+    seatLabelById: { [self.seatId]: displayName || self.character.name }
   });
   const contractCopy = activeContractCard
     ? `${activeContractCard.name} (${formatContractProgress(activeContractCard, self.character.activeContract?.progress ?? 0)})`
@@ -238,6 +248,15 @@ export function MobilePlayerCard({
           <div className="phone-sheet-vital-strip">
             <span>{scenarioCopy}</span>
           </div>
+
+          {scenarioOutcome && (
+            <div className={`phone-sheet-trigger-panel phone-sheet-trigger-panel-${scenarioOutcome.tone}`}>
+              <div className="phone-sheet-trigger-header">
+                <span>{scenarioOutcome.title}</span>
+              </div>
+              <strong className="phone-sheet-trigger-copy">{scenarioOutcome.detail}</strong>
+            </div>
+          )}
 
           {activeScenario && (
             <div className="phone-sheet-scenario-panel">

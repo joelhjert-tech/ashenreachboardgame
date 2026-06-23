@@ -312,4 +312,25 @@ describe("TvApp", () => {
       expect(mockCreateSession).toHaveBeenCalledWith("single-player", "scenario_dying_star");
     });
   });
+
+  it("surfaces scenario victory copy when the session has ended with a winner", async () => {
+    window.localStorage.setItem("ashen-reach-tv-room-code", "RT7P4");
+    window.localStorage.setItem("ashen-reach-tv-host-token", "host:RT7P4:secret");
+    const endedPatch = createPatch();
+    endedPatch.payload.status = "ended";
+    endedPatch.payload.winnerSeatId = "seat-1";
+    mockUseRoomSubscription.mockReturnValue({
+      patch: endedPatch,
+      error: null,
+      sendIntent: vi.fn(),
+      status: "open",
+      debugEvents: [],
+      clearDebugEvents: vi.fn()
+    });
+
+    render(<TvApp />);
+
+    expect(await screen.findByText(/the broken seal secured/i)).toBeInTheDocument();
+    expect(screen.getByText(/joel won the confrontation and secured the broken seal/i)).toBeInTheDocument();
+  });
 });

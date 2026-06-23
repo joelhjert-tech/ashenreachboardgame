@@ -6,7 +6,7 @@ import { createSession, fetchCharacters, fetchScenarios, fetchSessionSummary, st
 import { getSeatAbilityTelemetry } from "../shared/abilityTelemetry.js";
 import { DebugPanel } from "../shared/DebugPanel.js";
 import { RollOutcomePanel } from "../shared/RollOutcomePanel.js";
-import { buildScenarioRuleDigest } from "../shared/scenarioPresentation.js";
+import { buildScenarioOutcomeSummary, buildScenarioRuleDigest } from "../shared/scenarioPresentation.js";
 import { useRoomSubscription } from "../shared/useRoomSubscription.js";
 import { getCharacterPortraitPath } from "../shared/assetPaths.js";
 import type {
@@ -529,6 +529,13 @@ function RightSidebar({
     publicPatch?.payload.scenarioTelemetry ?? [],
     { telemetry: 4, specialRules: 2, confrontationSteps: 2 }
   );
+  const scenarioOutcome = buildScenarioOutcomeSummary({
+    status: publicPatch?.payload.status ?? null,
+    winnerSeatId: publicPatch?.payload.winnerSeatId ?? null,
+    activeSeatId,
+    activeScenario: publicPatch?.payload.activeScenario ?? null,
+    seatLabelById: Object.fromEntries((publicPatch?.payload.seats ?? []).map((seat) => [seat.seatId, seat.displayName ?? seat.seatId]))
+  });
 
   return (
     <aside className="tv-command-sidebar">
@@ -577,6 +584,12 @@ function RightSidebar({
             <h2>Scenario</h2>
           </div>
         </div>
+        {scenarioOutcome && (
+          <div className={`tv-scenario-outcome tv-scenario-outcome-${scenarioOutcome.tone}`}>
+            <strong>{scenarioOutcome.title}</strong>
+            <p>{scenarioOutcome.detail}</p>
+          </div>
+        )}
         <p className="board-sidebar-title">{scenarioStatus.name}</p>
         <p className="tv-empty-copy">{scenarioStatus.theme}</p>
         <p className="tv-empty-copy">{scenarioRuleDigest?.pressureSummary ?? scenarioStatus.pressureSummary}</p>

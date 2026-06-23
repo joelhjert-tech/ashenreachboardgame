@@ -91,6 +91,7 @@ export function LandscapeCharacterCardView({
       displayName={displayName}
       connectionStatus={connectionStatus}
       sessionStatus={sessionStatus}
+      winnerSeatId={patch?.winnerSeatId ?? null}
       phase={phase}
       activeSeatId={activeSeatId}
       activeNemesis={activeNemesis}
