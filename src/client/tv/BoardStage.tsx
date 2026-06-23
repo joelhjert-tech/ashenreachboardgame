@@ -8,6 +8,7 @@ interface BoardStageRenderContext {
 interface BoardStageProps {
   imageAlt: string;
   imageSrc: string;
+  imageMode?: "visible" | "geometry-only";
   onPointerDown?: (event: React.PointerEvent<HTMLDivElement>, imageRect: BoardRect) => void;
   children: (context: BoardStageRenderContext) => ReactNode;
 }
@@ -19,7 +20,7 @@ interface StageGeometry {
   imageNaturalHeight: number;
 }
 
-export function BoardStage({ imageAlt, imageSrc, onPointerDown, children }: BoardStageProps): ReactElement {
+export function BoardStage({ imageAlt, imageSrc, imageMode = "visible", onPointerDown, children }: BoardStageProps): ReactElement {
   const stageRef = useRef<HTMLDivElement | null>(null);
   const imageRef = useRef<HTMLImageElement | null>(null);
   const [geometry, setGeometry] = useState<StageGeometry>({
@@ -39,8 +40,8 @@ export function BoardStage({ imageAlt, imageSrc, onPointerDown, children }: Boar
 
     const containerWidth = stage.clientWidth;
     const containerHeight = stage.clientHeight;
-    const imageNaturalWidth = image.naturalWidth;
-    const imageNaturalHeight = image.naturalHeight;
+    const imageNaturalWidth = image.naturalWidth || (imageMode === "geometry-only" ? 1600 : 0);
+    const imageNaturalHeight = image.naturalHeight || (imageMode === "geometry-only" ? 900 : 0);
 
     if (containerWidth === 0 || containerHeight === 0 || imageNaturalWidth === 0 || imageNaturalHeight === 0) {
       return;
@@ -69,7 +70,7 @@ export function BoardStage({ imageAlt, imageSrc, onPointerDown, children }: Boar
         imageNaturalHeight
       };
     });
-  }, []);
+  }, [imageMode]);
 
   useEffect(() => {
     const stage = stageRef.current;
@@ -113,7 +114,13 @@ export function BoardStage({ imageAlt, imageSrc, onPointerDown, children }: Boar
         onPointerDown?.(event, imageRect);
       }}
     >
-      <img ref={imageRef} className="board-image" src={imageSrc} alt={imageAlt} onLoad={updateGeometry} />
+      <img
+        ref={imageRef}
+        className={`board-image board-image-${imageMode}`}
+        src={imageSrc}
+        alt={imageAlt}
+        onLoad={updateGeometry}
+      />
       <div className="board-overlay">{children({ imageRect })}</div>
     </div>
   );

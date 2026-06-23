@@ -14,6 +14,7 @@ import {
 } from "../shared/scenarioBoardVisuals.js";
 import { BoardStage } from "./BoardStage.js";
 import { pointerToBoardCoordinate, type BoardRect } from "./boardGeometry.js";
+import { TalismanBoardSurface } from "./TalismanBoardSurface.js";
 
 interface BoardMapProps {
   patch: PublicPatchPayload;
@@ -228,6 +229,7 @@ export function BoardMap({ patch, phase, showHeader = true, showSidebar = true }
         <BoardStage
           imageAlt="Tactical campaign board"
           imageSrc={boardAssetPath}
+          imageMode="geometry-only"
           onPointerDown={(event, imageRect) => {
             if (!boardDebugEnabled) {
               return;
@@ -248,6 +250,7 @@ export function BoardMap({ patch, phase, showHeader = true, showSidebar = true }
 
             return (
               <>
+                <TalismanBoardSurface imageRect={imageRect} />
                 <svg className="board-route-overlay" aria-hidden="true">
                   {scenarioRoutes.map((effect) => {
                     const from = RIFTFALL_BOARD_NODE_INDEX.get(effect.fromNodeId);

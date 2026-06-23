@@ -4,6 +4,7 @@ import { RIFTFALL_BOARD_NODE_INDEX, RIFTFALL_BOARD_NODES, type BoardNode } from 
 import type { PublicPatchPayload } from "../shared/types.js";
 import { BoardMap } from "./BoardMap.js";
 import { BoardStage } from "./BoardStage.js";
+import { TalismanBoardSurface } from "./TalismanBoardSurface.js";
 
 interface TacticalMapBoardProps {
   patch: PublicPatchPayload | null;
@@ -37,12 +38,13 @@ function StaticTacticalBoard(): ReactElement {
   return (
     <section className="tv-board-panel tv-board-panel-static" aria-label="Tactical campaign board">
       <div className="tv-board-shell">
-        <BoardStage imageAlt="Tactical campaign board" imageSrc={boardAssetPath}>
+        <BoardStage imageAlt="Tactical campaign board" imageSrc={boardAssetPath} imageMode="geometry-only">
           {({ imageRect }) => {
             const markerSize = Math.max(26, Math.min(44, imageRect.width * 0.028));
 
             return (
               <>
+                <TalismanBoardSurface imageRect={imageRect} />
                 <svg className="board-route-overlay" aria-hidden="true">
                   {staticEdges.map((edge) => {
                     const from = RIFTFALL_BOARD_NODE_INDEX.get(edge.from);
