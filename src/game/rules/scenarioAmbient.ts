@@ -1,11 +1,20 @@
 import type { GameState } from "../schema/session.schema.js";
+import { getEquippedGearBonus } from "../engine/gear.js";
+import { getEscalationModifier } from "../engine/escalation.js";
 
 export type ScenarioAmbientResolution = {
   updater: (state: GameState) => GameState;
   summary: string;
+  escalationDelta?: number;
+  escalationReason?: string;
   followUp?: {
     type: "draw_sector_threat";
   };
+};
+
+export type ScenarioTelemetryView = {
+  label: string;
+  value: string;
 };
 
 function getSeatCounterKey(prefix: string, seatId: string): string {
@@ -20,17 +29,72 @@ type ScenarioAmbientContext = {
   getOuterRingSectorIds: () => string[];
 };
 
+type ScenarioWoundAmbientContext = ScenarioAmbientContext & {
+  woundDelta: number;
+};
+
+type ScenarioGearAmbientContext = ScenarioAmbientContext & {
+  gainedGearCount: number;
+};
+
+type ScenarioSkillAmbientContext = ScenarioAmbientContext & {
+  stat: string;
+  success: boolean;
+};
+
+type ScenarioSectorAmbientContext = ScenarioAmbientContext & {
+  sectorId: string;
+};
+
 type ScenarioAmbientRule = {
   initialProgress: Record<string, number>;
+  describePressure?: (state: GameState) => string | null;
+  buildTelemetry?: (state: GameState) => ScenarioTelemetryView[];
   onTurnStart?: (context: ScenarioAmbientContext) => ScenarioAmbientResolution | null;
   onTurnEnd?: (context: ScenarioAmbientContext) => ScenarioAmbientResolution | null;
   onEnemyDefeat?: (context: ScenarioAmbientContext) => ScenarioAmbientResolution | null;
   onContractCompleted?: (context: ScenarioAmbientContext) => ScenarioAmbientResolution | null;
+  onWoundsTaken?: (context: ScenarioWoundAmbientContext) => ScenarioAmbientResolution | null;
+  onGearGained?: (context: ScenarioGearAmbientContext) => ScenarioAmbientResolution | null;
+  onSkillResolved?: (context: ScenarioSkillAmbientContext) => ScenarioAmbientResolution | null;
+  onSectorEntered?: (context: ScenarioSectorAmbientContext) => ScenarioAmbientResolution | null;
 };
+
+function getActiveSeatId(state: GameState): string | null {
+  return state.turnOrder[state.activeSeatIndex] ?? null;
+}
+
+function getOuterRingSectors(state: GameState) {
+  return state.sectors.filter((sector) => sector.regionTier === "borderlight");
+}
+
+function getEngineModeLabel(modeIndex: number): string {
+  return ["Command", "Signal", "Guile"][modeIndex % 3] ?? "Command";
+}
+
+function getCrownHolderSummary(state: GameState): string {
+  return state.turnOrder
+    .map((seatId) => ({
+      seatId,
+      crowns: state.scenarioProgress[getSeatCounterKey("crownClaim", seatId)] ?? 0
+    }))
+    .filter((entry) => entry.crowns > 0)
+    .map((entry) => `${entry.seatId} x${entry.crowns}`)
+    .join(", ");
+}
 
 const SCENARIO_AMBIENT_RULES: Record<string, ScenarioAmbientRule> = {
   scenario_broken_seal: {
     initialProgress: { sealTokens: 6 },
+    describePressure: (state) => {
+      const seals = state.scenarioProgress.sealTokens ?? 0;
+      return `${seals} seals remain. Turn start rolls now remove seals on 1-2, reveal a local threat on 3-4, and hold on 5-6.`;
+    },
+    buildTelemetry: (state) => [
+      { label: "Seal Tokens", value: String(state.scenarioProgress.sealTokens ?? 0) },
+      { label: "Turn Pressure", value: "1-2 weaken | 3-4 threat | 5-6 hold" },
+      { label: "Restoration", value: `${state.scenarioProgress.sealRestorationMarks ?? 0}/2` }
+    ],
     onTurnStart: ({ state, rollDie, getCounter, seatId }) => {
       if (!Object.hasOwn(state.scenarioProgress, "sealTokens")) {
         return null;
@@ -99,6 +163,24 @@ const SCENARIO_AMBIENT_RULES: Record<string, ScenarioAmbientRule> = {
   },
   scenario_throne_of_ash: {
     initialProgress: { crownClaims: 0 },
+    describePressure: (state) => {
+      const claims = state.scenarioProgress.crownClaims ?? 0;
+      const claimedSeats = getCrownHolderSummary(state);
+      return `${claims}/3 crown claims secured.${claimedSeats ? ` Held by ${claimedSeats}.` : ""} Crowned operatives press harder in battle but crack under skill pressure.`;
+    },
+    buildTelemetry: (state) => {
+      const activeSeatId = getActiveSeatId(state);
+      const crownHolders = getCrownHolderSummary(state);
+
+      return [
+        { label: "Crown Claims", value: String(state.scenarioProgress.crownClaims ?? 0) },
+        { label: "Crown Holders", value: crownHolders || "Unclaimed" },
+        {
+          label: "Active Crowns",
+          value: activeSeatId ? String(state.scenarioProgress[getSeatCounterKey("crownClaim", activeSeatId)] ?? 0) : "0"
+        }
+      ];
+    },
     onEnemyDefeat: ({ state, getCounter, seatId }) => {
       if (!Object.hasOwn(state.scenarioProgress, "crownClaims")) {
         return null;
@@ -152,10 +234,49 @@ const SCENARIO_AMBIENT_RULES: Record<string, ScenarioAmbientRule> = {
         }),
         summary: `A Crown claim is secured through a completed contract. ${nextClaims}/3 claims are now held, and ${seatId} now carries ${nextSeatClaims}.`
       };
+    },
+    onWoundsTaken: ({ state, getCounter, seatId, woundDelta }) => {
+      const crownSeatKey = getSeatCounterKey("crownClaim", seatId);
+      const currentSeatClaims = getCounter(crownSeatKey, 0);
+
+      if (currentSeatClaims <= 0 || woundDelta <= 0) {
+        return null;
+      }
+
+      const crownsReturned = Math.min(currentSeatClaims, woundDelta);
+      const nextSeatClaims = Math.max(0, currentSeatClaims - crownsReturned);
+      const nextClaims = Math.max(0, getCounter("crownClaims", 0) - crownsReturned);
+
+      return {
+        updater: (currentState) => ({
+          ...currentState,
+          scenarioProgress: {
+            ...currentState.scenarioProgress,
+            crownClaims: nextClaims,
+            [crownSeatKey]: nextSeatClaims
+          }
+        }),
+        summary: `${seatId} returns ${crownsReturned} Crown token${crownsReturned === 1 ? "" : "s"} to the Throne of Ash after taking wounds.`
+      };
     }
   },
   scenario_mirror_of_false_heroes: {
     initialProgress: {},
+    describePressure: () =>
+      "Heat is acting as mirror pressure. Contracts and relic gains now feed the reflection before the final duel.",
+    buildTelemetry: (state) => {
+      const activeSeatId = getActiveSeatId(state);
+      const activeHeat =
+        activeSeatId
+          ? state.players.find((player) => player.seatId === activeSeatId)?.character.heat ?? 0
+          : 0;
+
+      return [
+        { label: "Mirror Breaks", value: `${state.scenarioProgress.mirrorBreaks ?? 0}/2` },
+        { label: "Heat Proxy", value: `${activeHeat} on active operative` },
+        { label: "Reflection Feed", value: "Contracts and relic gains" }
+      ];
+    },
     onContractCompleted: ({ seatId }) => ({
       updater: (state) => ({
         ...state,
@@ -172,10 +293,45 @@ const SCENARIO_AMBIENT_RULES: Record<string, ScenarioAmbientRule> = {
         )
       }),
       summary: "The mirror feeds on praise. The active operative gains 1 Heat."
+    }),
+    onGearGained: ({ seatId, gainedGearCount }) => ({
+      updater: (state) => ({
+        ...state,
+        players: state.players.map((player) =>
+          player.seatId === seatId
+            ? {
+                ...player,
+                character: {
+                  ...player.character,
+                  heat: player.character.heat + gainedGearCount
+                }
+              }
+            : player
+        )
+      }),
+      summary: `The mirror strains around fresh relic power. ${seatId} gains ${gainedGearCount} Heat.`
     })
   },
   scenario_devourer_beneath: {
     initialProgress: { doomTokens: 0, devourerIndex: 0 },
+    describePressure: (state) => {
+      const outerRing = getOuterRingSectors(state);
+      const index = state.scenarioProgress.devourerIndex ?? 0;
+      const sector = outerRing.length > 0 ? outerRing[index % outerRing.length] ?? null : null;
+      const doom = state.scenarioProgress.doomTokens ?? 0;
+      return `Doom stands at ${doom}/8. The Devourer circles ${sector?.name ?? "the outer ring"} and devours local threats as it moves.`;
+    },
+    buildTelemetry: (state) => {
+      const outerRing = getOuterRingSectors(state);
+      const devourerIndex = state.scenarioProgress.devourerIndex ?? 0;
+      const devourerSector = outerRing.length > 0 ? outerRing[devourerIndex % outerRing.length] ?? null : null;
+
+      return [
+        { label: "Doom Tokens", value: String(state.scenarioProgress.doomTokens ?? 0) },
+        { label: "Devourer", value: devourerSector?.name ?? "Outer ring" },
+        { label: "Collapse Pulse", value: "At 8 doom, then reset by 4" }
+      ];
+    },
     onTurnEnd: ({ state, getCounter, getOuterRingSectorIds }) => {
       if (!Object.hasOwn(state.scenarioProgress, "devourerIndex")) {
         return null;
@@ -218,19 +374,84 @@ const SCENARIO_AMBIENT_RULES: Record<string, ScenarioAmbientRule> = {
                 ...player,
                 character: {
                   ...player.character,
-                  heat: player.character.heat + 1
+                  wounds: player.character.wounds + 1
                 }
               }))
             : currentState.players
         }),
         summary: erupted
-          ? `The Devourer reached ${nextDoom} doom. The table suffers 1 Heat each and doom falls back to ${Math.max(0, nextDoom - 4)}.`
+          ? `The Devourer reached ${nextDoom} doom. Every operative takes 1 wound and doom falls back to ${Math.max(0, nextDoom - 4)}.`
           : `The Devourer moves to ${nextSectorId}${consumedThreats > 0 ? " and consumes local threats, raising doom." : "."}`
+      };
+    },
+    onSectorEntered: ({ state, seatId, sectorId, getCounter, getOuterRingSectorIds, rollDie }) => {
+      const outerRing = getOuterRingSectorIds();
+
+      if (outerRing.length === 0) {
+        return null;
+      }
+
+      const devourerSectorId = outerRing[getCounter("devourerIndex", 0) % outerRing.length] ?? null;
+
+      if (!devourerSectorId || devourerSectorId !== sectorId) {
+        return null;
+      }
+
+      const player = state.players.find((entry) => entry.seatId === seatId);
+
+      if (!player) {
+        return null;
+      }
+
+      const rollTotal = rollDie() + rollDie();
+      const escalationModifier = getEscalationModifier(state.escalationLevel);
+      const statBonus = player.character.stats.grit + getEquippedGearBonus(player.character, "grit");
+      const difficulty = 8 + escalationModifier;
+      const total = rollTotal + statBonus;
+      const success = total >= difficulty;
+      const nextDoom = success ? Math.max(0, getCounter("doomTokens", 0) - 1) : getCounter("doomTokens", 0) + 1;
+
+      return {
+        updater: (currentState) => ({
+          ...currentState,
+          scenarioProgress: {
+            ...currentState.scenarioProgress,
+            doomTokens: nextDoom
+          },
+          players: currentState.players.map((entry) =>
+            entry.seatId === seatId && !success
+              ? {
+                  ...entry,
+                  character: {
+                    ...entry.character,
+                    wounds: entry.character.wounds + 1
+                  }
+                }
+              : entry
+          )
+        }),
+        summary: success
+          ? `The Devourer lashes out in ${sectorId}, but the operative holds with ${total} against ${difficulty}. Doom falls to ${nextDoom}.`
+          : `The Devourer catches the operative in ${sectorId}. ${total} fails against ${difficulty}; take 1 wound and doom rises to ${nextDoom}.`,
+        escalationDelta: success ? 0 : 1,
+        escalationReason: success ? undefined : "devourer clash"
       };
     }
   },
   scenario_labyrinth_engine: {
     initialProgress: { engineModeIndex: 0 },
+    describePressure: (state) => {
+      const modeIndex = state.scenarioProgress.engineModeIndex ?? 0;
+      return `Engine mode is ${getEngineModeLabel(modeIndex)}. The mode rotates every turn start and sets the confrontation cadence at the Cinder Gate.`;
+    },
+    buildTelemetry: (state) => {
+      const modeIndex = state.scenarioProgress.engineModeIndex ?? 0;
+      return [
+        { label: "Engine Mode", value: getEngineModeLabel(modeIndex) },
+        { label: "Rotation", value: "Turn start" },
+        { label: "Shutdown", value: `${state.scenarioProgress.shutdownMarks ?? 0}/2` }
+      ];
+    },
     onTurnStart: ({ state, getCounter }) => {
       if (!Object.hasOwn(state.scenarioProgress, "engineModeIndex")) {
         return null;
@@ -248,16 +469,125 @@ const SCENARIO_AMBIENT_RULES: Record<string, ScenarioAmbientRule> = {
         }),
         summary: `The Labyrinth Engine shifts to mode ${nextMode}.`
       };
+    },
+    onSkillResolved: ({ getCounter, seatId, stat, success }) => {
+      const modes = ["command", "signal", "guile"] as const;
+      const mode = modes[getCounter("engineModeIndex", 0) % modes.length] ?? "command";
+
+      if (stat !== mode) {
+        return null;
+      }
+
+      return success
+        ? {
+            updater: (state) => ({
+              ...state,
+              players: state.players.map((player) =>
+                player.seatId === seatId
+                  ? {
+                      ...player,
+                      character: {
+                        ...player.character,
+                        heat: Math.max(0, player.character.heat - 1)
+                      }
+                    }
+                  : player
+              )
+            }),
+            summary: `The ${mode} mode aligns with ${seatId}. The Labyrinth Engine bleeds off 1 Heat after the successful test.`
+          }
+        : {
+            updater: (state) => ({
+              ...state,
+              players: state.players.map((player) =>
+                player.seatId === seatId
+                  ? {
+                      ...player,
+                      character: {
+                        ...player.character,
+                        heat: player.character.heat + 1
+                      }
+                    }
+                  : player
+              )
+            }),
+            summary: `The ${mode} mode punishes ${seatId}. The Labyrinth Engine adds 1 Heat after the failed test.`
+          };
     }
   },
   scenario_dying_star: {
     initialProgress: { starTokens: 10 },
-    onTurnEnd: ({ state, getCounter }) => {
+    describePressure: (state) => {
+      const stars = state.scenarioProgress.starTokens ?? 0;
+      return `${stars} star tokens remain. The star burns down each turn, sheds extra tokens from wounds, and resets to five after an eruption.`;
+    },
+    buildTelemetry: (state) => [
+      { label: "Star Tokens", value: String(state.scenarioProgress.starTokens ?? 0) },
+      { label: "Wound Burn", value: "Fresh wounds strip extra stars" },
+      { label: "Ignition", value: `${state.scenarioProgress.ignitionMarks ?? 0}/3` }
+    ],
+    onTurnEnd: ({ state, getCounter, rollDie }) => {
       if (!Object.hasOwn(state.scenarioProgress, "starTokens")) {
         return null;
       }
 
       const nextStars = Math.max(0, getCounter("starTokens", 10) - 1);
+      const erupted = nextStars === 0;
+      const eruptionOutcomes = erupted
+        ? state.players.map((player) => {
+            const rollTotal = rollDie() + rollDie();
+            const signalTotal =
+              rollTotal +
+              player.character.stats.signal +
+              getEquippedGearBonus(player.character, "signal");
+            const passed = signalTotal >= 12;
+
+            return {
+              seatId: player.seatId,
+              passed,
+              wounds: passed ? 1 : 2,
+              heat: passed ? 0 : 1
+            };
+          })
+        : [];
+      const failedSeats = eruptionOutcomes.filter((entry) => !entry.passed).map((entry) => entry.seatId);
+
+      return {
+        updater: (state) => ({
+          ...state,
+          scenarioProgress: {
+            ...state.scenarioProgress,
+            starTokens: erupted ? 5 : nextStars
+          },
+          players: erupted
+            ? state.players.map((player) => {
+                const outcome = eruptionOutcomes.find((entry) => entry.seatId === player.seatId);
+
+                return outcome
+                  ? {
+                      ...player,
+                      character: {
+                        ...player.character,
+                        wounds: player.character.wounds + outcome.wounds,
+                        heat: player.character.heat + outcome.heat
+                      }
+                    }
+                  : player;
+              })
+            : state.players
+        }),
+        summary: erupted
+          ? `The Dying Star erupts. Signal tests fail for ${failedSeats.join(", ") || "no one"}; failed operatives take 2 wounds and 1 Heat, passes still take 1 wound, and the star track resets to 5.`
+          : `The Dying Star dims to ${nextStars} remaining star tokens.`
+      };
+    },
+    onWoundsTaken: ({ getCounter, woundDelta }) => {
+      if (woundDelta <= 0) {
+        return null;
+      }
+
+      const currentStars = getCounter("starTokens", 10);
+      const nextStars = Math.max(0, currentStars - woundDelta);
       const erupted = nextStars === 0;
 
       return {
@@ -278,8 +608,26 @@ const SCENARIO_AMBIENT_RULES: Record<string, ScenarioAmbientRule> = {
             : state.players
         }),
         summary: erupted
-          ? "The Dying Star erupts. Every operative takes 1 wound and the star track resets to 5."
-          : `The Dying Star dims to ${nextStars} remaining star tokens.`
+          ? `Fresh wounds tear away the final star tokens. The Dying Star erupts, every operative takes 1 wound, and the track resets to 5.`
+          : `Fresh wounds strip ${woundDelta} additional star token${woundDelta === 1 ? "" : "s"} from the Dying Star.`
+      };
+    },
+    onGearGained: ({ getCounter, gainedGearCount }) => {
+      if (gainedGearCount <= 0) {
+        return null;
+      }
+
+      const nextStars = getCounter("starTokens", 10) + gainedGearCount * 2;
+
+      return {
+        updater: (state) => ({
+          ...state,
+          scenarioProgress: {
+            ...state.scenarioProgress,
+            starTokens: nextStars
+          }
+        }),
+        summary: `Recovered relic output steadies the star. ${gainedGearCount * 2} star token${gainedGearCount === 1 ? "" : "s"} return to the track.`
       };
     }
   }
@@ -304,6 +652,38 @@ function resolveScenarioAmbient(
   return handler(context);
 }
 
+function resolveScenarioWoundAmbient(
+  scenarioId: string,
+  context: ScenarioWoundAmbientContext
+): ScenarioAmbientResolution | null {
+  const rule = getScenarioRule(scenarioId);
+  return rule?.onWoundsTaken?.(context) ?? null;
+}
+
+function resolveScenarioGearAmbient(
+  scenarioId: string,
+  context: ScenarioGearAmbientContext
+): ScenarioAmbientResolution | null {
+  const rule = getScenarioRule(scenarioId);
+  return rule?.onGearGained?.(context) ?? null;
+}
+
+function resolveScenarioSkillAmbient(
+  scenarioId: string,
+  context: ScenarioSkillAmbientContext
+): ScenarioAmbientResolution | null {
+  const rule = getScenarioRule(scenarioId);
+  return rule?.onSkillResolved?.(context) ?? null;
+}
+
+function resolveScenarioSectorAmbient(
+  scenarioId: string,
+  context: ScenarioSectorAmbientContext
+): ScenarioAmbientResolution | null {
+  const rule = getScenarioRule(scenarioId);
+  return rule?.onSectorEntered?.(context) ?? null;
+}
+
 export function createInitialScenarioProgress(scenarioId: string): Record<string, number> {
   return { ...(getScenarioRule(scenarioId)?.initialProgress ?? {}) };
 }
@@ -324,43 +704,26 @@ export function resolveScenarioContractCompleted(context: ScenarioAmbientContext
   return resolveScenarioAmbient(context.state.activeScenarioId, context, "onContractCompleted");
 }
 
+export function resolveScenarioWoundsTaken(context: ScenarioWoundAmbientContext): ScenarioAmbientResolution | null {
+  return resolveScenarioWoundAmbient(context.state.activeScenarioId, context);
+}
+
+export function resolveScenarioGearGained(context: ScenarioGearAmbientContext): ScenarioAmbientResolution | null {
+  return resolveScenarioGearAmbient(context.state.activeScenarioId, context);
+}
+
+export function resolveScenarioSkillResolved(context: ScenarioSkillAmbientContext): ScenarioAmbientResolution | null {
+  return resolveScenarioSkillAmbient(context.state.activeScenarioId, context);
+}
+
+export function resolveScenarioSectorEntered(context: ScenarioSectorAmbientContext): ScenarioAmbientResolution | null {
+  return resolveScenarioSectorAmbient(context.state.activeScenarioId, context);
+}
+
 export function describeScenarioPressure(state: GameState): string | null {
-  switch (state.activeScenarioId) {
-    case "scenario_broken_seal": {
-      const seals = state.scenarioProgress.sealTokens ?? 0;
-      return `${seals} seals remain. Each turn start, 1-2 weakens the ward and 3-4 reveals a local threat.`;
-    }
-    case "scenario_throne_of_ash": {
-      const claims = state.scenarioProgress.crownClaims ?? 0;
-      const claimedSeats = state.turnOrder
-        .map((seatId) => ({
-          seatId,
-          claims: state.scenarioProgress[getSeatCounterKey("crownClaim", seatId)] ?? 0
-        }))
-        .filter((entry) => entry.claims > 0)
-        .map((entry) => `${entry.seatId} x${entry.claims}`)
-        .join(", ");
-      return `${claims}/3 crown claims secured.${claimedSeats ? ` Held by ${claimedSeats}.` : ""} Defeated enemies and completed contracts push the throne race forward.`;
-    }
-    case "scenario_mirror_of_false_heroes":
-      return "Heat is acting as mirror pressure. Completed contracts feed the reflection before the final duel.";
-    case "scenario_devourer_beneath": {
-      const outerRing = state.sectors.filter((sector) => sector.regionTier === "borderlight");
-      const index = state.scenarioProgress.devourerIndex ?? 0;
-      const sector = outerRing.length > 0 ? outerRing[index % outerRing.length] ?? null : null;
-      const doom = state.scenarioProgress.doomTokens ?? 0;
-      return `Doom stands at ${doom}/8. The Devourer circles ${sector?.name ?? "the outer ring"} and eats local threats as it moves.`;
-    }
-    case "scenario_labyrinth_engine": {
-      const modeIndex = state.scenarioProgress.engineModeIndex ?? 0;
-      const mode = ["Command", "Signal", "Guile"][modeIndex % 3] ?? "Command";
-      return `Engine mode is ${mode}. The mode rotates every turn start and sets the confrontation cadence.`;
-    }
-    case "scenario_dying_star": {
-      const stars = state.scenarioProgress.starTokens ?? 0;
-      return `${stars} star tokens remain. The star burns down each turn, erupts at zero, then resets to five.`;
-    }
-    default:
-      return null;
-  }
+  return getScenarioRule(state.activeScenarioId)?.describePressure?.(state) ?? null;
+}
+
+export function buildScenarioTelemetry(state: GameState): ScenarioTelemetryView[] {
+  return getScenarioRule(state.activeScenarioId)?.buildTelemetry?.(state) ?? [];
 }

@@ -1,3 +1,29 @@
+import type { EncounterEffect } from "../schema/card.schema.js";
+
+export type ScenarioConfrontationStat = "command" | "grit" | "signal" | "guile" | "forge";
+
+export interface ScenarioConfrontationCheck {
+  stat: ScenarioConfrontationStat;
+  difficulty: number;
+  label: string;
+}
+
+export interface ScenarioConfrontationPlan {
+  checks: ScenarioConfrontationCheck[];
+  markLabel: string;
+  effect: EncounterEffect | null;
+  victorySummary: string;
+}
+
+export interface ScenarioConfrontationContext {
+  playerName: string;
+  crownClaims: number;
+  mirrorPressure: number;
+  salvageLeverage: number;
+  engineModeIndex: number;
+  heldGearCount: number;
+}
+
 export interface ScenarioDefinition {
   id: string;
   name: string;
@@ -14,6 +40,7 @@ export interface ScenarioDefinition {
   winConditionKey: string;
   victoryThreshold: number;
   failureEffectKey?: string;
+  buildConfrontationPlan: (context: ScenarioConfrontationContext) => ScenarioConfrontationPlan;
   sheetArtAssetId: string;
   sheetArtPrompt: string;
 }
@@ -48,6 +75,16 @@ export const SCENARIOS: ScenarioDefinition[] = [
     winConditionKey: "sealRestorationMarks",
     victoryThreshold: 2,
     failureEffectKey: "scenario_gainCorruption",
+    buildConfrontationPlan: (context) => ({
+      checks: [
+        { stat: "grit", difficulty: 10, label: "Hold the breached ward shut" },
+        { stat: "signal", difficulty: 10, label: "Realign the split sigils" },
+        { stat: "guile", difficulty: 12, label: "Resist the mind behind the breach" }
+      ],
+      markLabel: "restoration mark",
+      effect: null,
+      victorySummary: `${context.playerName} sealed the Cinder Gate and won the campaign.`
+    }),
     sheetArtAssetId: "scenario_sheet_broken_seal",
     sheetArtPrompt:
       "Cracked black-stone prison seal around the Cinder Gate, blue-white ward light leaking through bronze runes, operatives bracing against a rising breach, top-down printable scenario sheet illustration, no text."
@@ -82,6 +119,30 @@ export const SCENARIOS: ScenarioDefinition[] = [
       "At the throne, the number of Crowns you hold sets how many command, grit, and guile tests you must clear. Survive the required sequence once to win.",
     winConditionKey: "throneClaims",
     victoryThreshold: 1,
+    buildConfrontationPlan: (context) => ({
+      checks:
+        context.crownClaims >= 3
+          ? [{ stat: "command", difficulty: 12, label: "Speak the throne's final command" }]
+          : context.crownClaims === 2
+            ? [
+                { stat: "command", difficulty: 12, label: "Command the ash-crowns" },
+                { stat: "guile", difficulty: 12, label: "Outlast the throne's claimant-shade" }
+              ]
+            : context.crownClaims === 1
+              ? [
+                  { stat: "command", difficulty: 12, label: "Command the throne's fireline" },
+                  { stat: "grit", difficulty: 12, label: "Endure the ash pressure" },
+                  { stat: "guile", difficulty: 12, label: "Outmaneuver the relic judges" }
+                ]
+              : [
+                  { stat: "command", difficulty: 14, label: "Command the empty throne" },
+                  { stat: "grit", difficulty: 14, label: "Endure the ash pressure" },
+                  { stat: "guile", difficulty: 14, label: "Outmaneuver the relic judges" }
+                ],
+      markLabel: "throne claim",
+      effect: null,
+      victorySummary: `${context.playerName} claimed the Throne of Ash with ${context.crownClaims} crown claim${context.crownClaims === 1 ? "" : "s"}.`
+    }),
     sheetArtAssetId: "scenario_sheet_throne_of_ash",
     sheetArtPrompt:
       "Empty relic throne in a soot-choked core chamber, bronze crowns suspended above ash drifts, blue breach glow cutting through black lacquer metal, printable scenario sheet illustration, no text."
@@ -111,6 +172,16 @@ export const SCENARIOS: ScenarioDefinition[] = [
     winConditionKey: "mirrorBreaks",
     victoryThreshold: 2,
     failureEffectKey: "scenario_gainCorruption",
+    buildConfrontationPlan: (context) => ({
+      checks: [
+        { stat: "guile", difficulty: 10 + context.mirrorPressure, label: "Outwit your mirrored self" },
+        { stat: "signal", difficulty: 10 + context.mirrorPressure, label: "Steady your fractured signal" },
+        { stat: "grit", difficulty: 10 + context.mirrorPressure, label: "Break the final reflection" }
+      ],
+      markLabel: "mirror break",
+      effect: context.mirrorPressure >= 6 ? { type: "gain_heat", amount: 1 } : null,
+      victorySummary: `${context.playerName} shattered the false hero and walked free of the mirror.`
+    }),
     sheetArtAssetId: "scenario_sheet_mirror_of_false_heroes",
     sheetArtPrompt:
       "Shattered obsidian mirror reflecting a distorted operative with blue rift scars and ceremonial gold filigree, dark chamber floor, printable scenario sheet illustration, no text."
@@ -144,6 +215,18 @@ export const SCENARIOS: ScenarioDefinition[] = [
     winConditionKey: "mawStrikes",
     victoryThreshold: 1,
     failureEffectKey: "scenario_coreWound",
+    buildConfrontationPlan: (context) => ({
+      checks: [
+        {
+          stat: "grit",
+          difficulty: Math.max(8, 14 - context.salvageLeverage),
+          label: "Drive into the Devourer's true maw"
+        }
+      ],
+      markLabel: "maw strike",
+      effect: null,
+      victorySummary: `${context.playerName} pierced the Devourer Beneath and silenced the maw.`
+    }),
     sheetArtAssetId: "scenario_sheet_devourer_beneath",
     sheetArtPrompt:
       "Colossal underground maw splitting ring-metal and shrine stone from below, outer tier lanes collapsing into a red-black abyss with cold blue sparks, printable scenario sheet illustration, no text."
@@ -179,6 +262,23 @@ export const SCENARIOS: ScenarioDefinition[] = [
       "At the core engine, resolve three rotating tests beginning with the engine's active mode. Each passed test records one shutdown mark. At two shutdown marks, you win if your space is clear.",
     winConditionKey: "shutdownMarks",
     victoryThreshold: 2,
+    buildConfrontationPlan: (context) => {
+      const engineRotation: ScenarioConfrontationCheck[] = [
+        { stat: "command", difficulty: 12, label: "Stabilize the command lattice" },
+        { stat: "signal", difficulty: 12, label: "Anchor the starfire relays" },
+        { stat: "guile", difficulty: 12, label: "Walk the shifting engine path" }
+      ];
+      return {
+        checks: [
+          engineRotation[context.engineModeIndex % engineRotation.length]!,
+          engineRotation[(context.engineModeIndex + 1) % engineRotation.length]!,
+          engineRotation[(context.engineModeIndex + 2) % engineRotation.length]!
+        ],
+        markLabel: "shutdown mark",
+        effect: null,
+        victorySummary: `${context.playerName} shut down the Labyrinth Engine before reality folded again.`
+      };
+    },
     sheetArtAssetId: "scenario_sheet_labyrinth_engine",
     sheetArtPrompt:
       "Ancient rotating command engine made of black iron, bronze rings, and blue-white starfire, shifting corridors and impossible geometry around it, printable scenario sheet illustration, no text."
@@ -214,6 +314,16 @@ export const SCENARIOS: ScenarioDefinition[] = [
     winConditionKey: "ignitionMarks",
     victoryThreshold: 3,
     failureEffectKey: "scenario_coreWound",
+    buildConfrontationPlan: (context) => ({
+      checks: [
+        { stat: "guile", difficulty: 12, label: "Repair the ignition geometry" },
+        { stat: "grit", difficulty: 12, label: "Brace the unstable reactor" },
+        { stat: "signal", difficulty: 12, label: "Survive the restart pulse" }
+      ],
+      markLabel: "ignition mark",
+      effect: context.heldGearCount === 0 ? { type: "take_wound", amount: 2 } : null,
+      victorySummary: `${context.playerName} reignited the dying star and restored the sector light.`
+    }),
     sheetArtAssetId: "scenario_sheet_dying_star",
     sheetArtPrompt:
       "Collapsing blue-white star trapped in a black shrine reactor, bronze vanes cracking under heat bloom and ash, operatives racing across a command platform, printable scenario sheet illustration, no text."

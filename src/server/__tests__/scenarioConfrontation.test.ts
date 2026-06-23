@@ -302,6 +302,45 @@ describe("scenario confrontation flow", () => {
     expect(roomServer.getState().escalationLevel).toBe(1);
   });
 
+  it("lets Mirror of False Heroes close on a successful final nemesis hit", () => {
+    const roomServer = new GameRoomServer(
+      createScenarioState({
+        activeScenarioId: "scenario_mirror_of_false_heroes",
+        scenarioProgress: {
+          mirrorBreaks: 3
+        },
+        players: createScenarioState().players.map((player) =>
+          player.seatId === "seat-1"
+            ? {
+                ...player,
+                character: {
+                  ...player.character,
+                  stats: {
+                    command: player.character.stats.command,
+                    grit: player.character.stats.grit,
+                    signal: 20,
+                    guile: player.character.stats.guile,
+                    forge: player.character.stats.forge
+                  }
+                }
+              }
+            : player
+        )
+      }),
+      [],
+      createSequenceRandomSource([0, 0])
+    );
+
+    roomServer.handleIntent(createPhoneClient("seat-1") as never, {
+      type: "SCENARIO_CONFRONTATION_REQUESTED",
+      seatId: "seat-1"
+    } satisfies ClientIntent);
+
+    expect(roomServer.getState().status).toBe("ended");
+    expect(roomServer.getState().winnerSeatId).toBe("seat-1");
+    expect(roomServer.getState().scenarioProgress.mirrorBreaks).toBe(4);
+  });
+
   it("lets the Devourer Beneath win once accumulated nemesis damage reaches life", () => {
     const roomServer = new GameRoomServer(
       createScenarioState({
@@ -417,6 +456,37 @@ describe("scenario confrontation flow", () => {
     expect(roomServer.getState().scenarioProgress.ignitionMarks).toBe(4);
   });
 
+  it("ends a Mirror confrontation attempt immediately when reflection pressure is already at threshold", () => {
+    const roomServer = new GameRoomServer(
+      createScenarioState({
+        activeScenarioId: "scenario_mirror_of_false_heroes",
+        heatThreshold: 3,
+        players: createScenarioState().players.map((player) =>
+          player.seatId === "seat-1"
+            ? {
+                ...player,
+                character: {
+                  ...player.character,
+                  heat: 3
+                }
+              }
+            : player
+        )
+      }),
+      [],
+      createSequenceRandomSource([0, 0, 0, 0])
+    );
+
+    (roomServer as any).resolveScenarioConfrontationIntent({
+      type: "SCENARIO_CONFRONTATION_REQUESTED",
+      seatId: "seat-1"
+    });
+
+    expect(roomServer.getState().phase).toBe("broadcast");
+    expect(roomServer.getState().scenarioProgress.mirrorBreaks).toBeUndefined();
+    expect(roomServer.getState().lastOutcomeSummary?.summary ?? "").toContain("cannot face the mirror");
+  });
+
   it("weakens the Broken Seal at turn start from its ambient roll", () => {
     const state = createInitialSessionState("session-alpha");
     const roomServer = new GameRoomServer(state, [], createSequenceRandomSource([0]));
@@ -425,6 +495,19 @@ describe("scenario confrontation flow", () => {
     roomServer.startSession();
 
     expect(roomServer.getState().scenarioProgress.sealTokens).toBe(5);
+  });
+
+  it("heats every operative when the Broken Seal loses its final token at turn start", () => {
+    const state = createInitialSessionState("session-alpha");
+    state.scenarioProgress = { sealTokens: 1 };
+    const roomServer = new GameRoomServer(state, [], createSequenceRandomSource([0]));
+
+    roomServer.joinSeat("Solo", "signal-witch");
+    roomServer.startSession();
+
+    expect(roomServer.getState().scenarioProgress.sealTokens).toBe(0);
+    expect(roomServer.getState().players.every((player) => player.character.heat === 1)).toBe(true);
+    expect(roomServer.getState().lastOutcomeSummary?.summary ?? "").toContain("last seal broke");
   });
 
   it("returns a Throne crown when a crowned operative takes a wound", () => {
@@ -518,7 +601,8 @@ describe("scenario confrontation flow", () => {
     } satisfies ClientIntent);
 
     expect(roomServer.getState().scenarioProgress.starTokens).toBe(5);
-    expect(roomServer.getState().players[0]?.character.wounds).toBe(1);
+    expect(roomServer.getState().players[0]?.character.wounds).toBe(2);
+    expect(roomServer.getState().players[0]?.character.heat).toBe(0);
   });
 
   it("rotates the Labyrinth Engine mode at turn start", () => {
@@ -531,6 +615,110 @@ describe("scenario confrontation flow", () => {
     roomServer.startSession();
 
     expect(roomServer.getState().scenarioProgress.engineModeIndex).toBe(1);
+  });
+
+  it("makes enemies hit harder during Labyrinth Engine command mode", () => {
+    const roomServer = new GameRoomServer(
+      createSoloAmbientState({
+        activeScenarioId: "scenario_labyrinth_engine",
+        scenarioProgress: {
+          engineModeIndex: 0
+        },
+        currentEncounter: {
+          id: "command-mode-enemy",
+          type: "threat",
+          cardType: "enemy",
+          title: "Command Mode Enemy",
+          text: "A test enemy for command mode.",
+          flavor: "The engine hardens the hostile line.",
+          severity: 1,
+          stat: "grit",
+          difficulty: 0,
+          enemyName: "Test Enemy",
+          trophyValue: 0,
+          defeatReward: { type: "gain_note", text: "Victory" },
+          woundOnLoss: { type: "gain_heat", amount: 1 }
+        },
+        phase: "action"
+        ,
+        players: createScenarioState().players
+          .slice(0, 1)
+          .map((player) => ({
+            ...player,
+            character: {
+              ...player.character,
+              id: "test-combatant",
+              name: "Test Combatant",
+              archetype: "Test Combatant",
+              abilities: [],
+              stats: {
+                ...player.character.stats,
+                grit: 0
+              }
+            }
+          })),
+        seats: createScenarioState().seats.slice(0, 1)
+      }),
+      [],
+      createSequenceRandomSource([5, 5, 5, 5])
+    );
+
+    roomServer.handleIntent(createPhoneClient("seat-1") as never, {
+      type: "COMBAT_REQUESTED",
+      seatId: "seat-1",
+      stat: "grit"
+    } satisfies ClientIntent);
+
+    expect(roomServer.getState().players[0]?.character.heat).toBe(1);
+  });
+
+  it("lets Labyrinth Engine signal mode cool heat on a successful matching check", () => {
+    const roomServer = new GameRoomServer(
+      createSoloAmbientState({
+        activeScenarioId: "scenario_labyrinth_engine",
+        scenarioProgress: {
+          engineModeIndex: 1
+        },
+        currentEncounter: {
+          id: "signal-mode-hazard",
+          type: "threat",
+          cardType: "hazard",
+          title: "Signal Mode Hazard",
+          text: "A test hazard for signal mode.",
+          flavor: "The engine hums in phase with the operative.",
+          severity: 1,
+          stat: "signal",
+          difficulty: 2,
+          successEffect: { type: "gain_note", text: "Signal mode passed." },
+          failEffect: { type: "gain_heat", amount: 1 }
+        },
+        phase: "action",
+        players: createScenarioState().players
+          .slice(0, 1)
+          .map((player) => ({
+            ...player,
+            character: {
+              ...player.character,
+              heat: 1,
+              stats: {
+                ...player.character.stats,
+                signal: 2
+              }
+            }
+          })),
+        seats: createScenarioState().seats.slice(0, 1)
+      }),
+      [],
+      createSequenceRandomSource([5, 5])
+    );
+
+    roomServer.handleIntent(createPhoneClient("seat-1") as never, {
+      type: "CHECK_REQUESTED",
+      seatId: "seat-1",
+      stat: "signal"
+    } satisfies ClientIntent);
+
+    expect(roomServer.getState().players[0]?.character.heat).toBe(0);
   });
 
   it("resolves a Devourer clash when an operative moves onto the roaming sector and can reduce doom", () => {
@@ -642,6 +830,6 @@ describe("scenario confrontation flow", () => {
 
     expect(roomServer.getState().players[0]?.character.wounds).toBe(1);
     expect(roomServer.getState().scenarioProgress.starTokens).toBe(1);
-    expect(roomServer.getState().lastOutcomeSummary?.summary ?? "").toContain("Dying Star sheds 1 additional token");
+    expect(roomServer.getState().lastOutcomeSummary?.summary ?? "").toContain("Fresh wounds strip 1 additional star token");
   });
 });

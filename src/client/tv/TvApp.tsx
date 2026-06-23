@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type ReactElement } from "react";
-import { getBoardSpace } from "../../game/data/boardSpaces.js";
+import { getBoardSpace, isScenarioConfrontationSpace } from "../../game/data/boardSpaces.js";
 import { RIFTFALL_BOARD_NODE_INDEX } from "../../data/riftfallBoardNodes.js";
 import { createSession, fetchCharacters, fetchScenarios, fetchSessionSummary, startSession } from "../shared/network.js";
 import { getSeatAbilityTelemetry } from "../shared/abilityTelemetry.js";
@@ -74,10 +74,16 @@ function getSeatStatus(seat: PublicSeat | null, player: PublicPlayer | null, isA
   return "Ready";
 }
 
-function getCurrentStepCopy(publicPatch: StatePatch<PublicPatchPayload> | null, activeSeatId: string | null): string {
+function getCurrentStepCopy(
+  publicPatch: StatePatch<PublicPatchPayload> | null,
+  activeSeatId: string | null,
+  activePlayer: PublicPlayer | null
+): string {
   if (!publicPatch) {
     return "Create a room to bring the command dashboard online.";
   }
+
+  const boardSpace = activePlayer ? getBoardSpace(activePlayer.sectorId) : null;
 
   if (publicPatch.payload.encounter) {
     return `${publicPatch.payload.encounter.title} is in play for ${activeSeatId ?? "the active seat"} using ${toTitleCase(
@@ -91,6 +97,10 @@ function getCurrentStepCopy(publicPatch: StatePatch<PublicPatchPayload> | null, 
 
   if (publicPatch.payload.status === "ended") {
     return "The campaign has ended. Review the winner and restart when ready.";
+  }
+
+  if (publicPatch.phase === "action" && activePlayer && boardSpace?.textBox.intent === "scenario-confrontation") {
+    return `${boardSpace.name} is the active confrontation chamber for ${activeSeatId ?? "the active seat"}. Resolve ${publicPatch.payload.activeScenario?.confrontationTitle ?? "the active scenario confrontation"}.`;
   }
 
   return `Phase ${toTitleCase(publicPatch.phase)} is live${activeSeatId ? ` for ${activeSeatId}` : ""}. Escalation ${publicPatch.payload.escalationLevel}/${publicPatch.payload.escalationThreshold} with modifier +${publicPatch.payload.escalationModifier}.`;
@@ -149,7 +159,9 @@ function getSectorBrief(patch: StatePatch<PublicPatchPayload> | null, activePlay
       text: "Create a session to load the tactical board and live sector telemetry.",
       threat: 0,
       occupants: 0,
-      opportunities: [] as string[]
+      opportunities: [] as string[],
+      gateRules: [] as string[],
+      actionFocus: "Awaiting deployment"
     };
   }
 
@@ -157,6 +169,20 @@ function getSectorBrief(patch: StatePatch<PublicPatchPayload> | null, activePlay
   const boardSpace = getBoardSpace(activePlayer.sectorId);
   const sector = patch.payload.sectors.find((entry) => entry.id === activePlayer.sectorId) ?? null;
   const occupants = patch.payload.players.filter((entry) => entry.sectorId === activePlayer.sectorId).length;
+  const gateRules =
+    boardSpace?.movementRequirements?.map((requirement) => {
+      const parts = [
+        requirement.allowedFrom?.length ? `From ${requirement.allowedFrom.map((entry) => getBoardSpace(entry)?.name ?? entry).join(" or ")}` : null,
+        requirement.requiredNotes?.length ? `Needs ${requirement.requiredNotes.join(", ")}` : null
+      ].filter((entry): entry is string => Boolean(entry));
+
+      return parts.length > 0 ? `${parts.join(" | ")}.` : requirement.errorMessage;
+    }) ?? [];
+  const actionFocus = isScenarioConfrontationSpace(activePlayer.sectorId)
+    ? `Scenario confrontation space | ${patch.payload.activeScenario?.confrontationTitle ?? "Core breach"}`
+    : boardSpace?.textBox.choices?.length
+      ? `Choice-driven sector text | ${boardSpace.textBox.choices.map((choice) => choice.label).join(" | ")}`
+      : boardSpace?.textBox.title ?? "Sector telemetry";
 
   return {
     title: boardNode?.label ?? sector?.name ?? "Unknown sector",
@@ -164,6 +190,8 @@ function getSectorBrief(patch: StatePatch<PublicPatchPayload> | null, activePlay
     text: boardSpace?.textBox.text ?? "Sector telemetry is awaiting a richer command note.",
     threat: boardSpace?.threatIcons.length ?? sector?.danger ?? 0,
     occupants,
+    gateRules,
+    actionFocus,
     opportunities: [
       sector?.encounterDecks.anomaly.length ? `${sector.encounterDecks.anomaly.length} anomaly` : null,
       sector?.encounterDecks.artifact.length ? `${sector.encounterDecks.artifact.length} artifact` : null,
@@ -515,10 +543,21 @@ function RightSidebar({
           <span>Threat {sectorBrief.threat}</span>
           <span>Occupants {sectorBrief.occupants}</span>
         </div>
+        <div className="board-sidebar-meta">
+          <span>{sectorBrief.actionFocus}</span>
+        </div>
         {sectorBrief.opportunities.length > 0 && (
           <div className="board-sidebar-meta">
             {sectorBrief.opportunities.map((entry) => (
               <span key={entry}>{entry}</span>
+            ))}
+          </div>
+        )}
+        {sectorBrief.gateRules.length > 0 && (
+          <div className="tv-scenario-rules-block">
+            <strong>Entry Rules</strong>
+            {sectorBrief.gateRules.map((entry) => (
+              <p key={entry}>{entry}</p>
             ))}
           </div>
         )}
@@ -830,7 +869,7 @@ export function TvApp(): ReactElement {
   };
 
   const latestOutcome = publicPatch?.payload.outcomeSummary ?? null;
-  const currentStepCopy = getCurrentStepCopy(publicPatch, activeSeatId);
+  const currentStepCopy = getCurrentStepCopy(publicPatch, activeSeatId, activePlayer);
 
   return (
       <main className="tv-dashboard tv-command-dashboard">

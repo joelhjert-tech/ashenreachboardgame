@@ -251,6 +251,409 @@ describe("PhoneActionPanel", () => {
     expect(screen.getByRole("button", { name: /resolve clear lane/i })).toBeInTheDocument();
   });
 
+  it("renders separate sector-text actions for authored board-text choices", () => {
+    render(
+      <PhoneActionPanel
+        characters={characters}
+        onIntent={vi.fn()}
+        patch={createPatch({
+          encounter: null,
+          sectors: [
+            {
+              id: "middle_shard_sprawl",
+              name: "Shard Sprawl",
+              regionTier: "midreach",
+              neighbors: ["ashwake-crossing"],
+              danger: 3,
+              encounterDecks: { threat: [], anomaly: [], contract: [], artifact: [], escalation: [] }
+            }
+          ],
+          players: [
+            {
+              seatId: "seat-1",
+              sectorId: "middle_shard_sprawl",
+              character: {
+                id: "void-marshal",
+                name: "Sable Vey",
+                archetype: "Void Marshal",
+                status: "active",
+                activeContract: null,
+                stats: { command: 3, grit: 2, signal: 1, guile: 2, forge: 1 },
+                trophies: 0,
+                heat: 0,
+                wounds: 0,
+                scars: [],
+                heldGearCount: 0,
+                equippedGear: { weapon: null, armor: null, utility: null }
+              }
+            }
+          ],
+          self: {
+            seatId: "seat-1",
+            sectorId: "middle_shard_sprawl",
+            hand: [],
+            notes: [],
+            character: {
+              id: "void-marshal",
+              name: "Sable Vey",
+              archetype: "Void Marshal",
+              currentSpaceId: "middle_shard_sprawl",
+              status: "active",
+              stats: { command: 3, grit: 2, signal: 1, guile: 2, forge: 1 },
+              trophies: 0,
+              heat: 0,
+              wounds: 0,
+              scars: [],
+              activeContract: null,
+              heldGear: [],
+              equippedGear: { weapon: null, armor: null, utility: null },
+              abilities: []
+            }
+          }
+        })}
+      />
+    );
+
+    expect(screen.getByRole("button", { name: /hard bargain: take passage stock/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /hard bargain: press for gossip/i })).toBeInTheDocument();
+  });
+
+  it("renders separate sector-text actions for Webglass authored route choices", () => {
+    render(
+      <PhoneActionPanel
+        characters={characters}
+        onIntent={vi.fn()}
+        patch={createPatch({
+          encounter: null,
+          sectors: [
+            {
+              id: "middle_webglass_breach",
+              name: "Webglass Breach",
+              regionTier: "midreach",
+              neighbors: ["ashwake-crossing"],
+              danger: 3,
+              encounterDecks: { threat: [], anomaly: [], contract: [], artifact: [], escalation: [] }
+            }
+          ],
+          players: [
+            {
+              seatId: "seat-1",
+              sectorId: "middle_webglass_breach",
+              character: {
+                id: "void-marshal",
+                name: "Sable Vey",
+                archetype: "Void Marshal",
+                status: "active",
+                activeContract: null,
+                stats: { command: 3, grit: 2, signal: 1, guile: 2, forge: 1 },
+                trophies: 0,
+                heat: 0,
+                wounds: 0,
+                scars: [],
+                heldGearCount: 0,
+                equippedGear: { weapon: null, armor: null, utility: null }
+              }
+            }
+          ],
+          self: {
+            seatId: "seat-1",
+            sectorId: "middle_webglass_breach",
+            hand: [],
+            notes: [],
+            character: {
+              id: "void-marshal",
+              name: "Sable Vey",
+              archetype: "Void Marshal",
+              currentSpaceId: "middle_webglass_breach",
+              status: "active",
+              stats: { command: 3, grit: 2, signal: 1, guile: 2, forge: 1 },
+              trophies: 0,
+              heat: 0,
+              wounds: 0,
+              scars: [],
+              activeContract: null,
+              heldGear: [],
+              equippedGear: { weapon: null, armor: null, utility: null },
+              abilities: []
+            }
+          }
+        })}
+      />
+    );
+
+    expect(screen.getByRole("button", { name: /fracture path: slip the hidden lane/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /fracture path: splice the relay seam/i })).toBeInTheDocument();
+  });
+
+  it("renders separate sector-text actions for Guardian Span breach-entry choices", () => {
+    render(
+      <PhoneActionPanel
+        characters={characters}
+        onIntent={vi.fn()}
+        patch={createPatch({
+          encounter: null,
+          sectors: [
+            {
+              id: "middle_guardian_span",
+              name: "Guardian Span",
+              regionTier: "midreach",
+              neighbors: ["inner_veil_rift"],
+              danger: 4,
+              encounterDecks: { threat: [], anomaly: [], contract: [], artifact: [], escalation: [] }
+            }
+          ],
+          players: [
+            {
+              seatId: "seat-1",
+              sectorId: "middle_guardian_span",
+              character: {
+                id: "void-marshal",
+                name: "Sable Vey",
+                archetype: "Void Marshal",
+                status: "active",
+                activeContract: null,
+                stats: { command: 3, grit: 2, signal: 1, guile: 2, forge: 1 },
+                trophies: 0,
+                heat: 0,
+                wounds: 0,
+                scars: [],
+                heldGearCount: 0,
+                equippedGear: { weapon: null, armor: null, utility: null }
+              }
+            }
+          ],
+          self: {
+            seatId: "seat-1",
+            sectorId: "middle_guardian_span",
+            hand: [],
+            notes: [],
+            character: {
+              id: "void-marshal",
+              name: "Sable Vey",
+              archetype: "Void Marshal",
+              currentSpaceId: "middle_guardian_span",
+              status: "active",
+              stats: { command: 3, grit: 2, signal: 1, guile: 2, forge: 1 },
+              trophies: 0,
+              heat: 0,
+              wounds: 0,
+              scars: [],
+              activeContract: null,
+              heldGear: [],
+              equippedGear: { weapon: null, armor: null, utility: null },
+              abilities: []
+            }
+          }
+        })}
+      />
+    );
+
+    expect(screen.getByRole("button", { name: /threshold check: align the threshold seals/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /threshold check: ghost a route marker/i })).toBeInTheDocument();
+  });
+
+  it("renders separate sector-text actions for Gate of Cinders final-breach choices", () => {
+    render(
+      <PhoneActionPanel
+        characters={characters}
+        onIntent={vi.fn()}
+        patch={createPatch({
+          encounter: null,
+          sectors: [
+            {
+              id: "inner_gate_of_cinders",
+              name: "Gate of Cinders",
+              regionTier: "crownfall",
+              neighbors: ["center_cinder_gate"],
+              danger: 8,
+              encounterDecks: { threat: [], anomaly: [], contract: [], artifact: [], escalation: [] }
+            }
+          ],
+          players: [
+            {
+              seatId: "seat-1",
+              sectorId: "inner_gate_of_cinders",
+              character: {
+                id: "void-marshal",
+                name: "Sable Vey",
+                archetype: "Void Marshal",
+                status: "active",
+                activeContract: null,
+                stats: { command: 3, grit: 2, signal: 1, guile: 2, forge: 1 },
+                trophies: 0,
+                heat: 0,
+                wounds: 0,
+                scars: [],
+                heldGearCount: 0,
+                equippedGear: { weapon: null, armor: null, utility: null }
+              }
+            }
+          ],
+          self: {
+            seatId: "seat-1",
+            sectorId: "inner_gate_of_cinders",
+            hand: [],
+            notes: [],
+            character: {
+              id: "void-marshal",
+              name: "Sable Vey",
+              archetype: "Void Marshal",
+              currentSpaceId: "inner_gate_of_cinders",
+              status: "active",
+              stats: { command: 3, grit: 2, signal: 1, guile: 2, forge: 1 },
+              trophies: 0,
+              heat: 0,
+              wounds: 0,
+              scars: [],
+              activeContract: null,
+              heldGear: [],
+              equippedGear: { weapon: null, armor: null, utility: null },
+              abilities: []
+            }
+          }
+        })}
+      />
+    );
+
+    expect(screen.getByRole("button", { name: /final gate: brace the cinder locks/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /final gate: time the relay pulse/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /final gate: ghost the last breach path/i })).toBeInTheDocument();
+  });
+
+  it("renders separate sector-text actions for Veil Rift breach-entry choices", () => {
+    render(
+      <PhoneActionPanel
+        characters={characters}
+        onIntent={vi.fn()}
+        patch={createPatch({
+          encounter: null,
+          sectors: [
+            {
+              id: "inner_veil_rift",
+              name: "Veil Rift",
+              regionTier: "crownfall",
+              neighbors: ["inner_cinder_lattice"],
+              danger: 7,
+              encounterDecks: { threat: [], anomaly: [], contract: [], artifact: [], escalation: [] }
+            }
+          ],
+          players: [
+            {
+              seatId: "seat-1",
+              sectorId: "inner_veil_rift",
+              character: {
+                id: "void-marshal",
+                name: "Sable Vey",
+                archetype: "Void Marshal",
+                status: "active",
+                activeContract: null,
+                stats: { command: 3, grit: 2, signal: 1, guile: 2, forge: 1 },
+                trophies: 0,
+                heat: 0,
+                wounds: 0,
+                scars: [],
+                heldGearCount: 0,
+                equippedGear: { weapon: null, armor: null, utility: null }
+              }
+            }
+          ],
+          self: {
+            seatId: "seat-1",
+            sectorId: "inner_veil_rift",
+            hand: [],
+            notes: [],
+            character: {
+              id: "void-marshal",
+              name: "Sable Vey",
+              archetype: "Void Marshal",
+              currentSpaceId: "inner_veil_rift",
+              status: "active",
+              stats: { command: 3, grit: 2, signal: 1, guile: 2, forge: 1 },
+              trophies: 0,
+              heat: 0,
+              wounds: 0,
+              scars: [],
+              activeContract: null,
+              heldGear: [],
+              equippedGear: { weapon: null, armor: null, utility: null },
+              abilities: []
+            }
+          }
+        })}
+      />
+    );
+
+    expect(screen.getByRole("button", { name: /breach entry: anchor the surge/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /breach entry: slip the fold/i })).toBeInTheDocument();
+  });
+
+  it("renders separate sector-text actions for Cinder Lattice trial choices", () => {
+    render(
+      <PhoneActionPanel
+        characters={characters}
+        onIntent={vi.fn()}
+        patch={createPatch({
+          encounter: null,
+          sectors: [
+            {
+              id: "inner_cinder_lattice",
+              name: "Cinder Lattice",
+              regionTier: "crownfall",
+              neighbors: ["inner_gate_of_cinders"],
+              danger: 8,
+              encounterDecks: { threat: [], anomaly: [], contract: [], artifact: [], escalation: [] }
+            }
+          ],
+          players: [
+            {
+              seatId: "seat-1",
+              sectorId: "inner_cinder_lattice",
+              character: {
+                id: "void-marshal",
+                name: "Sable Vey",
+                archetype: "Void Marshal",
+                status: "active",
+                activeContract: null,
+                stats: { command: 3, grit: 2, signal: 1, guile: 2, forge: 1 },
+                trophies: 0,
+                heat: 0,
+                wounds: 0,
+                scars: [],
+                heldGearCount: 0,
+                equippedGear: { weapon: null, armor: null, utility: null }
+              }
+            }
+          ],
+          self: {
+            seatId: "seat-1",
+            sectorId: "inner_cinder_lattice",
+            hand: [],
+            notes: [],
+            character: {
+              id: "void-marshal",
+              name: "Sable Vey",
+              archetype: "Void Marshal",
+              currentSpaceId: "inner_cinder_lattice",
+              status: "active",
+              stats: { command: 3, grit: 2, signal: 1, guile: 2, forge: 1 },
+              trophies: 0,
+              heat: 0,
+              wounds: 0,
+              scars: [],
+              activeContract: null,
+              heldGear: [],
+              equippedGear: { weapon: null, armor: null, utility: null },
+              abilities: []
+            }
+          }
+        })}
+      />
+    );
+
+    expect(screen.getByRole("button", { name: /lattice trial: trace the ember pulses/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /lattice trial: read the ghost angles/i })).toBeInTheDocument();
+  });
+
   it("shows game over state and hides action buttons when the session has ended", () => {
     const { queryByRole } = render(
       <PhoneActionPanel

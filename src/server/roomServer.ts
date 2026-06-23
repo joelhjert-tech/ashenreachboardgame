@@ -6,16 +6,22 @@ import { loadArtifactCards } from "../game/content/artifacts.js";
 import { loadEscalationCards } from "../game/content/escalations.js";
 import { loadGear } from "../game/content/gear.js";
 import { loadThreatCards } from "../game/content/threats.js";
+import { resolveBoardTextChoice, resolveBoardTextEffect, type BoardTextDeckKind } from "../game/data/boardTextEffects.js";
 import { nemeses, type NemesisDefinition } from "../game/data/nemeses.js";
 import { getScenarioDefinition } from "../game/data/scenarios.js";
 import { getEscalationCollapseLevel, getEscalationModifier } from "../game/engine/escalation.js";
 import {
+  buildScenarioTelemetry,
   createInitialScenarioProgress,
   describeScenarioPressure,
   resolveScenarioContractCompleted,
   resolveScenarioEnemyDefeat,
+  resolveScenarioGearGained,
+  resolveScenarioSectorEntered,
+  resolveScenarioSkillResolved,
   resolveScenarioTurnEnd,
   resolveScenarioTurnStart,
+  resolveScenarioWoundsTaken,
   type ScenarioAmbientResolution
 } from "../game/rules/scenarioAmbient.js";
 import { resolveSpaceText } from "../game/rules/tileTextResolver.js";
@@ -48,6 +54,7 @@ import type {
 import { getEquippedGearBonus } from "../game/engine/gear.js";
 import type { AnomalyCard, ArtifactCard, EncounterEffect, EscalationCard, ThreatCard } from "../game/schema/card.schema.js";
 import type { Character } from "../game/schema/character.schema.js";
+import type { Stat } from "../game/schema/character.schema.js";
 import type { ContractCard } from "../game/schema/contract.schema.js";
 import type { GearItem } from "../game/schema/gear.schema.js";
 import { rollDice, type RandomSource, defaultRandomSource } from "../game/engine/dice.js";
@@ -657,6 +664,7 @@ export class GameRoomServer {
   private applyAction(action: GameAction): void {
     const previousState = this.state;
     const previousTotalWounds = this.getTotalWounds(previousState);
+    const previousHeldGearCount = this.getHeldGearCount(action.seatId, previousState);
     const result = reduceGameState(this.state, action);
 
     if (!result.ok) {
@@ -667,6 +675,7 @@ export class GameRoomServer {
     this.events.push(action, ...result.emitted);
 
     const woundDelta = this.getTotalWounds(this.state) - previousTotalWounds;
+    const gainedGearCount = this.getHeldGearCount(action.seatId, this.state) - previousHeldGearCount;
 
     if (previousState.status === "active" && woundDelta > 0) {
       this.feedEscalation(
@@ -674,96 +683,12 @@ export class GameRoomServer {
         woundDelta * ESCALATION_FEEDERS.woundTaken,
         "wounds taken"
       );
-      this.maybeReleaseThroneCrowns(previousState, action.seatId, woundDelta);
-      this.applyDyingStarWoundPressure(action.seatId, woundDelta);
-    }
-  }
-
-  private maybeReleaseThroneCrowns(previousState: GameState, seatId: string, woundDelta: number): void {
-    if (this.state.status !== "active" || previousState.activeScenarioId !== "scenario_throne_of_ash" || woundDelta <= 0) {
-      return;
+      this.applyScenarioOnWoundsTaken(action.seatId, woundDelta);
     }
 
-    const previousCrowns = this.getThroneCrownCount(seatId, previousState);
-
-    if (previousCrowns <= 0) {
-      return;
+    if (previousState.status === "active" && gainedGearCount > 0) {
+      this.applyScenarioOnGearGained(action.seatId, gainedGearCount);
     }
-
-    const crownsReturned = Math.min(previousCrowns, woundDelta);
-    const crownSeatKey = getScenarioSeatCounterKey("crownClaim", seatId);
-    const nextSeatCrowns = Math.max(0, previousCrowns - crownsReturned);
-    const nextTotalCrowns = Math.max(0, this.getTotalThroneCrownClaims() - crownsReturned);
-
-    this.state = {
-      ...this.state,
-      sequence: this.state.sequence + 1,
-      scenarioProgress: {
-        ...this.state.scenarioProgress,
-        crownClaims: nextTotalCrowns,
-        [crownSeatKey]: nextSeatCrowns
-      },
-      lastOutcomeSummary: this.state.lastOutcomeSummary
-        ? {
-            ...this.state.lastOutcomeSummary,
-            summary: `${this.state.lastOutcomeSummary.summary} ${seatId} returns ${crownsReturned} Crown token${crownsReturned === 1 ? "" : "s"} to the Throne of Ash.`
-          }
-        : this.state.lastOutcomeSummary,
-      eventLog: [
-        ...this.state.eventLog,
-        {
-          type: "SCENARIO_AMBIENT_APPLIED",
-          seatId,
-          summary: `${seatId} returned ${crownsReturned} Crown token${crownsReturned === 1 ? "" : "s"} after taking wounds.`,
-          createdAt: new Date().toISOString()
-        }
-      ]
-    };
-  }
-
-  private applyDyingStarWoundPressure(seatId: string, woundDelta: number): void {
-    if (this.state.status !== "active" || this.state.activeScenarioId !== "scenario_dying_star" || woundDelta <= 0) {
-      return;
-    }
-
-    const currentStars = this.state.scenarioProgress.starTokens ?? 10;
-    const nextStars = Math.max(0, currentStars - woundDelta);
-    const erupted = nextStars === 0;
-
-    this.state = {
-      ...this.state,
-      sequence: this.state.sequence + 1,
-      scenarioProgress: {
-        ...this.state.scenarioProgress,
-        starTokens: erupted ? 5 : nextStars
-      },
-      players: erupted
-        ? this.state.players.map((player) => ({
-            ...player,
-            character: {
-              ...player.character,
-              wounds: player.character.wounds + 1
-            }
-          }))
-        : this.state.players,
-      lastOutcomeSummary: this.state.lastOutcomeSummary
-        ? {
-            ...this.state.lastOutcomeSummary,
-            summary: `${this.state.lastOutcomeSummary.summary} The Dying Star sheds ${woundDelta} additional token${woundDelta === 1 ? "" : "s"} from the fresh harm${erupted ? " and erupts back to 5." : "."}`
-          }
-        : this.state.lastOutcomeSummary,
-      eventLog: [
-        ...this.state.eventLog,
-        {
-          type: "SCENARIO_AMBIENT_APPLIED",
-          seatId,
-          summary: erupted
-            ? "Fresh wounds drive the Dying Star to eruption. The track resets to 5 and every operative takes 1 wound."
-            : `Fresh wounds strip ${woundDelta} additional star token${woundDelta === 1 ? "" : "s"}.`,
-          createdAt: new Date().toISOString()
-        }
-      ]
-    };
   }
 
   private getRemainingSeatIds(): string[] {
@@ -816,24 +741,12 @@ export class GameRoomServer {
     return this.state.sectors.filter((sector) => sector.regionTier === "borderlight").map((sector) => sector.id);
   }
 
-  private getActiveDevourerSectorId(state: GameState = this.state): string | null {
-    if (state.activeScenarioId !== "scenario_devourer_beneath") {
-      return null;
-    }
-
-    const outerRing = state.sectors.filter((sector) => sector.regionTier === "borderlight");
-
-    if (outerRing.length === 0) {
-      return null;
-    }
-
-    const devourerIndex = state.scenarioProgress.devourerIndex ?? 0;
-
-    return outerRing[devourerIndex % outerRing.length]?.id ?? null;
-  }
-
   private getTotalWounds(state: GameState): number {
     return state.players.reduce((total, player) => total + player.character.wounds, 0);
+  }
+
+  private getHeldGearCount(seatId: string, state: GameState = this.state): number {
+    return state.players.find((player) => player.seatId === seatId)?.character.heldGear.length ?? 0;
   }
 
   private getThroneCrownCount(seatId: string, state: GameState = this.state): number {
@@ -858,6 +771,14 @@ export class GameRoomServer {
     }
 
     return 0;
+  }
+
+  private getScenarioEnemyBattleModifier(state: GameState = this.state): number {
+    if (state.activeScenarioId !== "scenario_labyrinth_engine") {
+      return 0;
+    }
+
+    return (state.scenarioProgress.engineModeIndex ?? 0) % 3 === 0 ? 1 : 0;
   }
 
   private hasAbilityTriggeredThisRound(seatId: string, abilityId: string): boolean {
@@ -2054,6 +1975,10 @@ export class GameRoomServer {
 
     this.applyAmbientScenarioMutation(seatId, resolution.updater, resolution.summary);
 
+    if (resolution.escalationDelta) {
+      this.feedEscalation(seatId, resolution.escalationDelta, resolution.escalationReason ?? "scenario pressure");
+    }
+
     if (resolution.followUp?.type === "draw_sector_threat") {
       this.applyAmbientSectorThreatDraw(seatId, resolution.summary);
     }
@@ -2183,62 +2108,61 @@ export class GameRoomServer {
     );
   }
 
-  private applyScenarioOnSectorEntered(seatId: string, sectorId: string): void {
-    if (this.state.status !== "active" || this.state.activeScenarioId !== "scenario_devourer_beneath") {
-      return;
-    }
-
-    const devourerSectorId = this.getActiveDevourerSectorId();
-
-    if (!devourerSectorId || devourerSectorId !== sectorId) {
-      return;
-    }
-
-    const player = this.state.players.find((entry) => entry.seatId === seatId);
-
-    if (!player) {
-      return;
-    }
-
-    const playerRoll = rollDice(2, 6, this.randomSource);
-    const escalationModifier = getEscalationModifier(this.state.escalationLevel);
-    const statBonus = player.character.stats.grit + getEquippedGearBonus(player.character, "grit");
-    const difficulty = 8 + escalationModifier;
-    const total = playerRoll.total + statBonus;
-    const success = total >= difficulty;
-    const nextDoom = success
-      ? Math.max(0, (this.state.scenarioProgress.doomTokens ?? 0) - 1)
-      : (this.state.scenarioProgress.doomTokens ?? 0) + 1;
-
-    this.applyAmbientScenarioMutation(
+  private applyScenarioOnWoundsTaken(seatId: string, woundDelta: number): void {
+    this.applyScenarioAmbientResolution(
       seatId,
-      (state) => ({
-        ...state,
-        scenarioProgress: {
-          ...state.scenarioProgress,
-          doomTokens: nextDoom
-        },
-        players: state.players.map((entry) =>
-          entry.seatId === seatId && !success
-            ? {
-                ...entry,
-                character: {
-                  ...entry.character,
-                  wounds: entry.character.wounds + 1
-                }
-              }
-            : entry
-        )
-      }),
-      success
-        ? `The Devourer lashes out in ${sectorId}, but the operative holds with ${total} against ${difficulty}. Doom falls to ${nextDoom}.`
-        : `The Devourer catches the operative in ${sectorId}. ${total} fails against ${difficulty}; take 1 wound and doom rises to ${nextDoom}.`
+      resolveScenarioWoundsTaken({
+        state: this.state,
+        seatId,
+        woundDelta,
+        rollDie: () => this.randomSource.nextInt(6) + 1,
+        getCounter: (key, fallback = 0) => this.getScenarioCounter(key, fallback),
+        getOuterRingSectorIds: () => this.getOuterRingSectorIds()
+      })
     );
+  }
 
-    if (!success) {
-      this.feedEscalation(seatId, ESCALATION_FEEDERS.woundTaken, "devourer clash");
-      this.maybeApplyScenarioThresholds(seatId);
-    }
+  private applyScenarioOnGearGained(seatId: string, gainedGearCount: number): void {
+    this.applyScenarioAmbientResolution(
+      seatId,
+      resolveScenarioGearGained({
+        state: this.state,
+        seatId,
+        gainedGearCount,
+        rollDie: () => this.randomSource.nextInt(6) + 1,
+        getCounter: (key, fallback = 0) => this.getScenarioCounter(key, fallback),
+        getOuterRingSectorIds: () => this.getOuterRingSectorIds()
+      })
+    );
+  }
+
+  private applyScenarioOnSkillResolved(seatId: string, stat: Stat, success: boolean): void {
+    this.applyScenarioAmbientResolution(
+      seatId,
+      resolveScenarioSkillResolved({
+        state: this.state,
+        seatId,
+        stat,
+        success,
+        rollDie: () => this.randomSource.nextInt(6) + 1,
+        getCounter: (key, fallback = 0) => this.getScenarioCounter(key, fallback),
+        getOuterRingSectorIds: () => this.getOuterRingSectorIds()
+      })
+    );
+  }
+
+  private applyScenarioOnSectorEntered(seatId: string, sectorId: string): void {
+    this.applyScenarioAmbientResolution(
+      seatId,
+      resolveScenarioSectorEntered({
+        state: this.state,
+        seatId,
+        sectorId,
+        rollDie: () => this.randomSource.nextInt(6) + 1,
+        getCounter: (key, fallback = 0) => this.getScenarioCounter(key, fallback),
+        getOuterRingSectorIds: () => this.getOuterRingSectorIds()
+      })
+    );
   }
 
   private kickSeat(targetSeatId: string): void {
@@ -2625,11 +2549,7 @@ export class GameRoomServer {
     const crownProxy = Math.min(3, this.getThroneCrownCount(player.seatId));
     const mirrorPressure = player.character.heat;
     const engineModeIndex = this.getScenarioCounter("engineModeIndex", 0) % 3;
-    const engineRotation: ScenarioCheck[] = [
-      { stat: "command", difficulty: 12, label: "Stabilize the command lattice" },
-      { stat: "signal", difficulty: 12, label: "Anchor the starfire relays" },
-      { stat: "guile", difficulty: 12, label: "Walk the shifting engine path" }
-    ];
+    const scenario = getScenarioDefinition(this.state.activeScenarioId);
     const nemesis = this.getActiveNemesis();
 
     if (nemesis) {
@@ -2653,101 +2573,18 @@ export class GameRoomServer {
       };
     }
 
-    switch (this.state.activeScenarioId) {
-      case "scenario_broken_seal":
-        return {
-          checks: [
-            { stat: "grit", difficulty: 10, label: "Hold the breached ward shut" },
-            { stat: "signal", difficulty: 10, label: "Realign the split sigils" },
-            { stat: "guile", difficulty: 12, label: "Resist the mind behind the breach" }
-          ],
-          markLabel: "restoration mark",
-          effect: null,
-          victorySummary: `${player.character.name} sealed the Cinder Gate and won the campaign.`
-        };
-      case "scenario_throne_of_ash": {
-        const checks: ScenarioCheck[] =
-          crownProxy >= 3
-            ? [{ stat: "command", difficulty: 12, label: "Speak the throne's final command" }]
-            : crownProxy === 2
-              ? [
-                  { stat: "command", difficulty: 12, label: "Command the ash-crowns" },
-                  { stat: "guile", difficulty: 12, label: "Outlast the throne's claimant-shade" }
-                ]
-              : crownProxy === 1
-                ? [
-                    { stat: "command", difficulty: 12, label: "Command the throne's fireline" },
-                    { stat: "grit", difficulty: 12, label: "Endure the ash pressure" },
-                    { stat: "guile", difficulty: 12, label: "Outmaneuver the relic judges" }
-                  ]
-                : [
-                    { stat: "command", difficulty: 14, label: "Command the empty throne" },
-                    { stat: "grit", difficulty: 14, label: "Endure the ash pressure" },
-                    { stat: "guile", difficulty: 14, label: "Outmaneuver the relic judges" }
-              ];
-
-        return {
-          checks,
-          markLabel: "throne claim",
-          effect: null,
-          victorySummary: `${player.character.name} claimed the Throne of Ash with ${crownProxy} crown claim${crownProxy === 1 ? "" : "s"}.`
-        };
-      }
-      case "scenario_mirror_of_false_heroes":
-        return {
-          checks: [
-            { stat: "guile", difficulty: 10 + mirrorPressure, label: "Outwit your mirrored self" },
-            { stat: "signal", difficulty: 10 + mirrorPressure, label: "Steady your fractured signal" },
-            { stat: "grit", difficulty: 10 + mirrorPressure, label: "Break the final reflection" }
-          ],
-          markLabel: "mirror break",
-          effect:
-            mirrorPressure >= 6
-              ? { type: "gain_heat", amount: 1 }
-              : null,
-          victorySummary: `${player.character.name} shattered the false hero and walked free of the mirror.`
-        };
-      case "scenario_devourer_beneath":
-        return {
-          checks: [
-            {
-              stat: "grit",
-              difficulty: Math.max(8, 14 - salvageLeverage),
-              label: "Drive into the Devourer's true maw"
-            }
-          ],
-          markLabel: "maw strike",
-          effect: null,
-          victorySummary: `${player.character.name} pierced the Devourer Beneath and silenced the maw.`
-        };
-      case "scenario_labyrinth_engine": {
-        const checks = [
-          engineRotation[engineModeIndex]!,
-          engineRotation[(engineModeIndex + 1) % engineRotation.length]!,
-          engineRotation[(engineModeIndex + 2) % engineRotation.length]!
-        ];
-
-        return {
-          checks,
-          markLabel: "shutdown mark",
-          effect: null,
-          victorySummary: `${player.character.name} shut down the Labyrinth Engine before reality folded again.`
-        };
-      }
-      case "scenario_dying_star":
-        return {
-          checks: [
-            { stat: "guile", difficulty: 12, label: "Repair the ignition geometry" },
-            { stat: "grit", difficulty: 12, label: "Brace the unstable reactor" },
-            { stat: "signal", difficulty: 12, label: "Survive the restart pulse" }
-          ],
-          markLabel: "ignition mark",
-          effect: heldGearCount === 0 ? { type: "take_wound", amount: 2 } : null,
-          victorySummary: `${player.character.name} reignited the dying star and restored the sector light.`
-        };
-      default:
-        throw new Error(`Scenario confrontation rules are not implemented for ${this.state.activeScenarioId}`);
+    if (!scenario) {
+      throw new Error(`Scenario confrontation rules are not implemented for ${this.state.activeScenarioId}`);
     }
+
+    return scenario.buildConfrontationPlan({
+      playerName: player.character.name,
+      crownClaims: crownProxy,
+      mirrorPressure,
+      salvageLeverage,
+      engineModeIndex,
+      heldGearCount
+    });
   }
 
   resolveCheckIntent(intent: Extract<ClientIntent, { type: "CHECK_REQUESTED" }>): void {
@@ -2790,6 +2627,7 @@ export class GameRoomServer {
       cardId: encounter.id,
       createdAt: new Date().toISOString()
     });
+    this.applyScenarioOnSkillResolved(intent.seatId, intent.stat, success);
     this.maybeTriggerAbilityOnCheckResolved(intent.seatId, intent.stat, success);
     this.runAutomaticPhases(intent.seatId);
   }
@@ -2831,6 +2669,7 @@ export class GameRoomServer {
       effect: success ? null : this.resolveEffect({ type: "gain_heat", amount: 1 }),
       createdAt: new Date().toISOString()
     } satisfies MovementResolvedAction);
+    this.applyScenarioOnSkillResolved(intent.seatId, "guile", success);
     this.maybeTriggerAbilityOnMovementResolved(intent.seatId, intent.toSectorId, success);
     if (success) {
       this.applyScenarioOnSectorEntered(intent.seatId, intent.toSectorId);
@@ -2851,11 +2690,64 @@ export class GameRoomServer {
       throw new Error(`No board text is registered for ${player.character.currentSpaceId}`);
     }
 
-    const resolution = resolveSpaceText(boardSpace.textBox.effectKey);
-    const sectorCardResolution = this.resolveSectorCardResolution(intent.seatId, resolution.effectKey);
-    const combinedSummary = [resolution.summary, sectorCardResolution?.summary].filter(Boolean).join(" ");
+    const boardTextEffect = resolveBoardTextEffect(boardSpace.textBox.effectKey);
+    if (boardTextEffect?.choices?.length) {
+      if (!intent.choiceId) {
+        throw new Error(`Choose how to resolve ${boardSpace.textBox.title} before continuing`);
+      }
+
+      if (!resolveBoardTextChoice(boardSpace.textBox.effectKey, intent.choiceId)) {
+        throw new Error(`Unknown board-text choice ${intent.choiceId} for ${boardSpace.textBox.title}`);
+      }
+    }
+
+    const resolution = resolveSpaceText(boardSpace.textBox.effectKey, intent.choiceId);
+    const sectorCardResolution = this.resolveSectorCardResolution(intent.seatId, boardTextEffect?.sectorDeck?.kind ?? null);
+    const chosenBoardTextChoice =
+      intent.choiceId && boardTextEffect?.choices?.length
+        ? boardTextEffect.choices.find((choice) => choice.id === intent.choiceId) ?? null
+        : null;
+    let checkPayload:
+      | {
+          checkStat: Stat;
+          difficulty: number;
+          roll: ReturnType<typeof rollDice>;
+          statBonus: number;
+          total: number;
+          success: boolean;
+        }
+      | null = null;
+    let baseSummary = resolution.summary;
+    let baseEffect = resolution.effect;
+
+    if (chosenBoardTextChoice?.stat) {
+      const roll = rollDice(2, 6, this.randomSource);
+      const escalationModifier = getEscalationModifier(this.state.escalationLevel);
+      const statBonus =
+        player.character.stats[chosenBoardTextChoice.stat] +
+        getEquippedGearBonus(player.character, chosenBoardTextChoice.stat) +
+        this.getScenarioSkillModifier(intent.seatId);
+      const difficulty = (chosenBoardTextChoice.difficulty ?? boardSpace.textBox.test?.difficulty ?? 0) + escalationModifier;
+      const total = roll.total + statBonus;
+      const success = total >= difficulty;
+
+      checkPayload = {
+        checkStat: chosenBoardTextChoice.stat,
+        difficulty,
+        roll,
+        statBonus,
+        total,
+        success
+      };
+      baseSummary = `${success ? chosenBoardTextChoice.summary : chosenBoardTextChoice.failureSummary ?? chosenBoardTextChoice.summary} ${chosenBoardTextChoice.stat} ${total}/${difficulty}.`;
+      baseEffect = success
+        ? chosenBoardTextChoice.effect
+        : chosenBoardTextChoice.failureEffect ?? null;
+    }
+
+    const combinedSummary = [baseSummary, sectorCardResolution?.summary].filter(Boolean).join(" ");
     const combinedEffect = this.combineEffects(
-      [resolution.effect, sectorCardResolution?.effect].filter((effect): effect is EncounterEffect => Boolean(effect)).map((effect) =>
+      [baseEffect, sectorCardResolution?.effect].filter((effect): effect is EncounterEffect => Boolean(effect)).map((effect) =>
         this.resolveEffect(effect)
       )
     );
@@ -2874,11 +2766,21 @@ export class GameRoomServer {
       effectKey: resolution.effectKey,
       summary: combinedSummary,
       effect: combinedEffect,
+      checkStat: checkPayload?.checkStat ?? null,
+      difficulty: checkPayload?.difficulty ?? null,
+      roll: checkPayload?.roll ?? null,
+      statBonus: checkPayload?.statBonus ?? null,
+      total: checkPayload?.total ?? null,
+      success: checkPayload?.success ?? null,
       sectorId: player.sectorId,
       discoveredContracts: sectorCardResolution?.discoveredContracts,
       consumedDeckCards: sectorCardResolution?.consumedDeckCards,
       createdAt: new Date().toISOString()
     } satisfies SpaceTextResolvedAction);
+    if (checkPayload) {
+      this.applyScenarioOnSkillResolved(intent.seatId, checkPayload.checkStat, checkPayload.success);
+      this.maybeTriggerAbilityOnCheckResolved(intent.seatId, checkPayload.checkStat, checkPayload.success);
+    }
     this.maybeTriggerAbilityOnSpaceTextResolved(intent.seatId, resolution.effectKey);
   }
 
@@ -2892,6 +2794,22 @@ export class GameRoomServer {
 
     if (!scenario) {
       throw new Error(`Unknown active scenario ${this.state.activeScenarioId}`);
+    }
+
+    if (scenario.id === "scenario_mirror_of_false_heroes" && player.character.heat >= this.state.heatThreshold) {
+      this.applyAmbientScenarioMutation(
+        intent.seatId,
+        (state) => state,
+        `${player.character.name} cannot face the mirror while reflection pressure sits at ${player.character.heat}/${this.state.heatThreshold}. The confrontation ends immediately.`
+      );
+      this.applyAction({
+        type: "PHASE_ADVANCED",
+        seatId: intent.seatId,
+        toPhase: "resolution",
+        createdAt: new Date().toISOString()
+      });
+      this.runAutomaticPhases(intent.seatId);
+      return;
     }
 
     this.maybeTriggerAbilityOnScenarioConfrontationRequested(intent.seatId);
@@ -3244,8 +3162,9 @@ export class GameRoomServer {
       getEquippedGearBonus(player.character, stat) +
       this.getScenarioBattleModifier(fighterSeatId);
     const enemyBonus = encounter.difficulty + escalationModifier;
+    const scenarioEnemyBonus = this.getScenarioEnemyBattleModifier();
     const total = playerRoll.total + statBonus;
-    const enemyTotal = enemyRoll.total + enemyBonus;
+    const enemyTotal = enemyRoll.total + enemyBonus + scenarioEnemyBonus;
     const success = total >= enemyTotal;
 
     this.applyAction({
@@ -3256,7 +3175,7 @@ export class GameRoomServer {
       roll: playerRoll,
       enemyRoll,
       statBonus,
-      enemyBonus,
+      enemyBonus: enemyBonus + scenarioEnemyBonus,
       total,
       enemyTotal,
       success,
@@ -3305,7 +3224,7 @@ export class GameRoomServer {
     };
   }
 
-  private resolveSectorCardResolution(seatId: string, effectKey: string): SectorCardResolution | null {
+  private resolveSectorCardResolution(seatId: string, deckKind: BoardTextDeckKind | null): SectorCardResolution | null {
     const player = this.state.players.find((entry) => entry.seatId === seatId);
 
     if (!player) {
@@ -3318,8 +3237,8 @@ export class GameRoomServer {
       return null;
     }
 
-    switch (effectKey) {
-      case "outer_glassmereChorus": {
+    switch (deckKind) {
+      case "anomaly": {
         const anomalyId = this.drawSectorCardId(sector.encounterDecks.anomaly);
         const anomaly = anomalyId ? this.anomalies.get(anomalyId) : null;
 
@@ -3331,7 +3250,7 @@ export class GameRoomServer {
             }
           : null;
       }
-      case "outer_hollowVeilSweep": {
+      case "artifact": {
         const artifactId = this.drawSectorCardId(sector.encounterDecks.artifact);
         const artifact = artifactId ? this.artifacts.get(artifactId) : null;
 
@@ -3343,7 +3262,7 @@ export class GameRoomServer {
             }
           : null;
       }
-      case "outer_mirecoilTraffic": {
+      case "contract": {
         const contractId = this.drawSectorCardId(sector.encounterDecks.contract);
         const contract = contractId ? this.resolveContract(this.contracts.get(contractId)) ?? null : null;
 
@@ -3359,7 +3278,7 @@ export class GameRoomServer {
             }
           : null;
       }
-      case "outer_emberwatchBrace": {
+      case "escalation": {
         const escalationId = this.drawSectorCardId(sector.encounterDecks.escalation);
         const escalation = escalationId ? this.escalations.get(escalationId) : null;
 
@@ -3516,47 +3435,7 @@ export function createTvProjection(state: GameState): Record<string, unknown> {
   const activeScenarioThreshold = getScenarioProgressThreshold(state.activeScenarioId, activeScenario?.victoryThreshold ?? 0);
   const escalationModifier = getEscalationModifier(state.escalationLevel);
   const scenarioPressureSummary = describeScenarioPressure(state) ?? "Scenario pressure will appear once the room is active.";
-  const outerRing = state.sectors.filter((sector) => sector.regionTier === "borderlight");
-  const devourerIndex = state.scenarioProgress.devourerIndex ?? 0;
-  const devourerSector = outerRing.length > 0 ? outerRing[devourerIndex % outerRing.length] ?? null : null;
-  const engineModeIndex = state.scenarioProgress.engineModeIndex ?? 0;
-  const engineModes = ["Command", "Signal", "Guile"];
-  const scenarioTelemetry =
-    activeScenario?.id === "scenario_broken_seal"
-      ? [
-          { label: "Seal Tokens", value: String(state.scenarioProgress.sealTokens ?? 0) },
-          { label: "Pressure Roll", value: "1-2 weaken | 3-4 heat surge" }
-        ]
-      : activeScenario?.id === "scenario_throne_of_ash"
-        ? [
-            { label: "Crown Claims", value: String(state.scenarioProgress.crownClaims ?? 0) },
-            {
-              label: "Active Crowns",
-              value: String(state.turnOrder[state.activeSeatIndex] ? state.scenarioProgress[getScenarioSeatCounterKey("crownClaim", state.turnOrder[state.activeSeatIndex]!)] ?? 0 : 0)
-            },
-            { label: "Throne Gate", value: `${activeScenarioProgress}/${activeScenarioThreshold}` }
-          ]
-        : activeScenario?.id === "scenario_mirror_of_false_heroes"
-          ? [
-              { label: "Mirror Breaks", value: `${activeScenarioProgress}/${activeScenarioThreshold}` },
-              { label: "Corruption Proxy", value: "Heat-driven backlash" }
-            ]
-          : activeScenario?.id === "scenario_devourer_beneath"
-            ? [
-                { label: "Doom Tokens", value: String(state.scenarioProgress.doomTokens ?? 0) },
-                { label: "Devourer", value: devourerSector?.name ?? "Outer ring" }
-              ]
-            : activeScenario?.id === "scenario_labyrinth_engine"
-              ? [
-                  { label: "Engine Mode", value: engineModes[engineModeIndex % engineModes.length] ?? "Command" },
-                  { label: "Shutdown", value: `${activeScenarioProgress}/${activeScenarioThreshold}` }
-                ]
-              : activeScenario?.id === "scenario_dying_star"
-                ? [
-                  { label: "Star Tokens", value: String(state.scenarioProgress.starTokens ?? 0) },
-                    { label: "Ignition", value: `${activeScenarioProgress}/${activeScenarioThreshold}` }
-                  ]
-                : [];
+  const scenarioTelemetry = buildScenarioTelemetry(state);
 
   const visibleSeatIds = new Set(
     state.seats.filter((seat) => !seat.kicked && seat.displayName).map((seat) => seat.seatId)

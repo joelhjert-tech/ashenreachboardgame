@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { SCENARIOS } from "../../game/data/scenarios.js";
+import { createInitialScenarioProgress } from "../../game/rules/scenarioAmbient.js";
 import { startAshenReachServer, type StartedAshenReachServer } from "../index.js";
 
 async function postJson<TResponse>(
@@ -143,5 +144,30 @@ describe("server API scenario flow", () => {
     expect(started.payload.status).toBe("active");
     expect(harness.roomServer.getState().activeScenarioId).toBe("scenario_labyrinth_engine");
     expect(harness.roomServer.getState().scenarioProgress.engineModeIndex).toBe(1);
+  });
+
+  it("can create every authored scenario through the API with matching seeded progress", async () => {
+    for (const scenario of SCENARIOS) {
+      harness = await startAshenReachServer({ port: createTestPort(), logUrls: false });
+      const baseUrl = `http://127.0.0.1:${harness.port}`;
+
+      const response = await postJson<{
+        roomCode: string;
+        sessionMode: "single-player" | "multiplayer";
+        scenarioId: string;
+        hostToken: string;
+      }>(baseUrl, "/api/session/create", {
+        sessionMode: "multiplayer",
+        scenarioId: scenario.id
+      });
+
+      expect(response.status).toBe(200);
+      expect(response.payload.scenarioId).toBe(scenario.id);
+      expect(harness.roomServer.getState().activeScenarioId).toBe(scenario.id);
+      expect(harness.roomServer.getState().scenarioProgress).toEqual(createInitialScenarioProgress(scenario.id));
+
+      await harness.close();
+      harness = null;
+    }
   });
 });

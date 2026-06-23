@@ -6,7 +6,7 @@ import type {
   PhonePatchPayload,
   SectorNode
 } from "../shared/types.js";
-import { getBoardSpace } from "../../game/data/boardSpaces.js";
+import { getBoardSpace, isScenarioConfrontationSpace } from "../../game/data/boardSpaces.js";
 
 interface PhoneActionPanelProps {
   characters: CharacterCatalogEntry[];
@@ -105,6 +105,7 @@ export function PhoneActionPanel({ characters, onIntent, patch }: PhoneActionPan
     pendingEnemyRoll?.fighterSeatId ??
     "the active seat";
   const sectorOpportunityCopy = getSectorOpportunityCopy(sector);
+  const isScenarioConfrontation = isScenarioConfrontationSpace(self.sectorId);
   const canRaiseStat =
     patch.phase === "action" &&
     !patch.encounter &&
@@ -242,17 +243,33 @@ export function PhoneActionPanel({ characters, onIntent, patch }: PhoneActionPan
       !!boardSpace &&
       (boardSpace.tier === "inner" || boardSpace.tier === "center" || (sector?.encounterDecks.threat.length ?? 0) === 0);
 
-    if (canResolveSpaceText && self.sectorId !== "center_cinder_gate") {
-      actions.push({
-        key: "resolve-space-text",
-        label: boardSpace?.textBox.title ? `Resolve ${boardSpace.textBox.title}` : "Resolve Sector Text",
-        tone: "secondary",
-        onClick: () =>
-          onIntent({
-            type: "RESOLVE_SPACE_TEXT",
-            seatId: self.seatId
-          })
-      });
+    if (canResolveSpaceText && !isScenarioConfrontation) {
+      if (boardSpace?.textBox.choices && boardSpace.textBox.choices.length > 0) {
+        boardSpace.textBox.choices.forEach((choice) => {
+          actions.push({
+            key: `resolve-space-text-${choice.id}`,
+            label: `${boardSpace.textBox.title}: ${choice.label}`,
+            tone: "secondary",
+            onClick: () =>
+              onIntent({
+                type: "RESOLVE_SPACE_TEXT",
+                seatId: self.seatId,
+                choiceId: choice.id
+              })
+          });
+        });
+      } else {
+        actions.push({
+          key: "resolve-space-text",
+          label: boardSpace?.textBox.title ? `Resolve ${boardSpace.textBox.title}` : "Resolve Sector Text",
+          tone: "secondary",
+          onClick: () =>
+            onIntent({
+              type: "RESOLVE_SPACE_TEXT",
+              seatId: self.seatId
+            })
+        });
+      }
     }
 
     if (!patch.encounter && patch.escalationLevel > 0) {
@@ -357,9 +374,7 @@ export function PhoneActionPanel({ characters, onIntent, patch }: PhoneActionPan
       });
     }
   
-    const isAtCinderGate = self.sectorId === "center_cinder_gate";
-
-    if (isAtCinderGate && patch.activeScenario && !patch.encounter) {
+    if (isScenarioConfrontation && patch.activeScenario && !patch.encounter) {
       const confrontationTarget = patch.nemesis ? `${patch.activeScenario.confrontationTitle} | ${patch.nemesis.name}` : patch.activeScenario.confrontationTitle;
       actions.push({
         key: "resolve-scenario",
@@ -389,7 +404,7 @@ export function PhoneActionPanel({ characters, onIntent, patch }: PhoneActionPan
   const copy =
     patch.phase === "navigation"
       ? "Choose a neighboring sector."
-      : patch.phase === "action" && self.sectorId === "center_cinder_gate"
+      : patch.phase === "action" && isScenarioConfrontation
         ? "The Cinder Gate is open. Resolve the active scenario confrontation."
       : patch.phase === "action" && boardSpace
         ? `Resolve ${boardSpace.textBox.title}, gear, contracts, or the current threat.${sectorOpportunityCopy ? ` Local reads: ${sectorOpportunityCopy}.` : ""}`

@@ -311,6 +311,7 @@ export type ClientIntent =
   | {
       type: "RESOLVE_SPACE_TEXT";
       seatId: string;
+      choiceId?: string;
     }
   | {
       type: "STABILIZE_REQUESTED";

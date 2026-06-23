@@ -72,6 +72,17 @@ const scenarios: ScenarioCatalogEntry[] = [
     confrontationTitle: "Reseal the Prison",
     confrontationSteps: ["Test Strength 10."],
     victoryText: "Pass at least two tests to win."
+  },
+  {
+    id: "scenario_dying_star",
+    name: "The Dying Star",
+    theme: "The system's sun is collapsing.",
+    difficulty: "hard",
+    setup: ["Place 10 Star tokens on this scenario sheet."],
+    specialRules: ["At the end of each player's turn, remove 1 Star token."],
+    confrontationTitle: "Ignite the Core",
+    confrontationSteps: ["Test Cunning 12."],
+    victoryText: "Pass all ignition steps to win."
   }
 ];
 
@@ -262,5 +273,43 @@ describe("TvApp", () => {
       expect(window.localStorage.getItem("ashen-reach-tv-room-code")).toBe("RT7P4");
     });
     expect(window.localStorage.getItem("ashen-reach-tv-host-token")).toBe("host:RT7P4:secret");
+  });
+
+  it("sends the selected scenario id when the host creates a room", async () => {
+    mockCreateSession.mockResolvedValue({
+      roomCode: "STAR1",
+      hostToken: "host:STAR1:secret",
+      sessionMode: "multiplayer",
+      scenarioId: "scenario_dying_star"
+    });
+
+    render(<TvApp />);
+
+    const scenarioSelect = await screen.findByRole("combobox");
+    fireEvent.change(scenarioSelect, { target: { value: "scenario_dying_star" } });
+    fireEvent.click(screen.getAllByRole("button", { name: /create multiplayer/i })[0]!);
+
+    await waitFor(() => {
+      expect(mockCreateSession).toHaveBeenCalledWith("multiplayer", "scenario_dying_star");
+    });
+  });
+
+  it("uses the selected scenario for single-player creation too", async () => {
+    mockCreateSession.mockResolvedValue({
+      roomCode: "STAR2",
+      hostToken: "host:STAR2:secret",
+      sessionMode: "single-player",
+      scenarioId: "scenario_dying_star"
+    });
+
+    render(<TvApp />);
+
+    const scenarioSelect = await screen.findByRole("combobox");
+    fireEvent.change(scenarioSelect, { target: { value: "scenario_dying_star" } });
+    fireEvent.click(screen.getByRole("button", { name: /create single-player/i }));
+
+    await waitFor(() => {
+      expect(mockCreateSession).toHaveBeenCalledWith("single-player", "scenario_dying_star");
+    });
   });
 });

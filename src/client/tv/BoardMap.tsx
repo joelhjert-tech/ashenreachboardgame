@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type ReactElement } from "react";
 import { getAssetPath } from "../../game/assets/design/assetManifest.js";
-import { BOARD_SPACES, getBoardSpace } from "../../game/data/boardSpaces.js";
+import { BOARD_SPACES, getBoardSpace, isScenarioConfrontationSpace } from "../../game/data/boardSpaces.js";
 import { RIFTFALL_BOARD_NODE_INDEX, RIFTFALL_BOARD_NODES, type BoardNode } from "../../data/riftfallBoardNodes.js";
 import type { OutcomeSummary, PublicPatchPayload } from "../shared/types.js";
 import { BoardStage } from "./BoardStage.js";
@@ -398,6 +398,24 @@ export function BoardMap({ patch, phase, showHeader = true, showSidebar = true }
   const selectedBoardSpace = selectedNode ? getBoardSpace(selectedNode.id) : null;
   const selectedSector = selectedNode ? sectorsById.get(selectedNode.id) ?? null : null;
   const selectedOccupants = selectedNode ? patch.players.filter((player) => player.sectorId === selectedNode.id) : [];
+  const selectedGateRules =
+    selectedBoardSpace?.movementRequirements?.map((requirement) => {
+      const parts = [
+        requirement.allowedFrom?.length
+          ? `From ${requirement.allowedFrom.map((entry) => getBoardSpace(entry)?.name ?? entry).join(" or ")}`
+          : null,
+        requirement.requiredNotes?.length ? `Needs ${requirement.requiredNotes.join(", ")}` : null
+      ].filter((entry): entry is string => Boolean(entry));
+
+      return parts.length > 0 ? parts.join(" | ") : requirement.errorMessage;
+    }) ?? [];
+  const selectedActionFocus = selectedNode
+    ? isScenarioConfrontationSpace(selectedNode.id)
+      ? `Scenario confrontation space | ${patch.activeScenario?.confrontationTitle ?? "Core breach"}`
+      : selectedBoardSpace?.textBox.choices?.length
+        ? `Choice-driven sector text | ${selectedBoardSpace.textBox.choices.map((choice) => choice.label).join(" | ")}`
+        : selectedBoardSpace?.textBox.title ?? "Sector telemetry"
+    : "Sector telemetry";
   const staticEdges = uniqueEdges(RIFTFALL_BOARD_NODES);
   const scenarioMarkers = buildScenarioMarkers(patch);
   const escalationMarker = buildEscalationMarker(patch);
@@ -639,6 +657,24 @@ export function BoardMap({ patch, phase, showHeader = true, showSidebar = true }
                 <span>Occupants {selectedOccupants.length}</span>
                 {selectedSector && <span>Region {selectedSector.regionTier}</span>}
               </div>
+              <div className="board-sidebar-meta">
+                <span>{selectedActionFocus}</span>
+              </div>
+              {selectedBoardSpace?.textBox.choices && selectedBoardSpace.textBox.choices.length > 0 && (
+                <div className="board-sidebar-meta">
+                  {selectedBoardSpace.textBox.choices.map((choice) => (
+                    <span key={choice.id}>{choice.label}</span>
+                  ))}
+                </div>
+              )}
+              {selectedGateRules.length > 0 && (
+                <div className="tv-scenario-rules-block">
+                  <strong>Entry Rules</strong>
+                  {selectedGateRules.map((entry) => (
+                    <p key={entry}>{entry}</p>
+                  ))}
+                </div>
+              )}
               {selectedBoardSpace?.movementBox && <p className="board-sidebar-note">{selectedBoardSpace.movementBox.title}</p>}
               {patch.outcomeSummary?.movedToSectorId === selectedNode?.id && (
                 <p className="board-sidebar-note">{outcomeText(patch.outcomeSummary)}</p>

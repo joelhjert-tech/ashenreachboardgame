@@ -256,4 +256,32 @@ describe("BoardMap", () => {
 
     expect(screen.getByTestId("scenario-marker-escalation-spine")).toHaveTextContent("4/6");
   });
+
+  it("surfaces confrontation intent and entry rules from board-space data in the sidebar", () => {
+    const patch = createPatch();
+    patch.players[0] = {
+      ...patch.players[0]!,
+      sectorId: "center_cinder_gate"
+    };
+    patch.activeSeatIndex = 0;
+    patch.seats = [{ ...patch.seats[0]! }];
+    patch.turnOrder = ["seat-1"];
+    patch.sectors = [
+      {
+        id: "center_cinder_gate",
+        name: "The Cinder Gate",
+        regionTier: "cinder_gate",
+        neighbors: ["inner_gate_of_cinders"],
+        danger: 10,
+        encounterDecks: { threat: [], anomaly: [], contract: [], artifact: [], escalation: [] }
+      }
+    ];
+
+    render(<BoardMap patch={patch} phase="action" />);
+
+    expect(screen.getByText(/scenario confrontation space/i)).toBeInTheDocument();
+    expect(screen.getByText(/reseal the prison/i)).toBeInTheDocument();
+    expect(screen.getByText(/from gate of cinders/i)).toBeInTheDocument();
+    expect(screen.getByText(/needs gate-of-cinders-breached/i)).toBeInTheDocument();
+  });
 });

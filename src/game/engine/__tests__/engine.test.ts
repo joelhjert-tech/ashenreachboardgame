@@ -1127,7 +1127,7 @@ describe("escalation flow", () => {
     const server = new GameRoomServer(
       withOnlyConnectedSeat(soloBase, "seat-1"),
       [],
-      createSequenceRandomSource([0]),
+      createSequenceRandomSource([5, 5]),
       createThreats(),
       createCharacters(),
       createGear(),
@@ -1167,7 +1167,7 @@ describe("escalation flow", () => {
         "seat-1"
       ),
       [],
-      createSequenceRandomSource([0]),
+      createSequenceRandomSource([5, 5]),
       createThreats(),
       characters,
       createGear(),
@@ -1217,7 +1217,7 @@ describe("escalation flow", () => {
         )
       }),
       [],
-      createSequenceRandomSource([0]),
+      createSequenceRandomSource([5, 5]),
       createThreats(),
       characters,
       createGear(),
@@ -1567,6 +1567,103 @@ describe("escalation flow", () => {
 
     expect(server.getState().players[0]?.private.notes).toContain("Ashwake crossing cleared. The convoy lane is charted.");
     expect(server.getState().phase).toBe("navigation");
+  });
+
+  it("requires an authored choice before resolving Shard Sprawl sector text", () => {
+    const server = new GameRoomServer(
+      createState({
+        currentEncounter: null,
+        phase: "action",
+        sectors: createState().sectors.map((sector) =>
+          sector.id === "sector-a"
+            ? {
+                ...sector,
+                id: "middle_shard_sprawl",
+                name: "Shard Sprawl",
+                encounterDecks: { ...sector.encounterDecks, threat: [] }
+              }
+            : sector
+        ),
+        players: createState().players.map((player) =>
+          player.seatId === "seat-1"
+            ? {
+                ...player,
+                sectorId: "middle_shard_sprawl",
+                character: {
+                  ...player.character,
+                  currentSpaceId: "middle_shard_sprawl"
+                }
+              }
+            : player
+        )
+      }),
+      [],
+      createSequenceRandomSource([0]),
+      createThreats(),
+      createCharacters(),
+      createGear(),
+      createContracts()
+    );
+
+    runIntent(server, {
+      type: "RESOLVE_SPACE_TEXT",
+      seatId: "seat-1"
+    });
+
+    expect(server.getState().phase).toBe("action");
+    expect(server.getState().players[0]?.private.notes).not.toContain(
+      "Shard Sprawl passage stock secured for the next route push."
+    );
+  });
+
+  it("resolves the selected Shard Sprawl sector-text choice and applies its authored effect", () => {
+    const server = new GameRoomServer(
+      createState({
+        currentEncounter: null,
+        phase: "action",
+        players: createState().players.map((player) =>
+          player.seatId === "seat-1"
+            ? {
+                ...player,
+                sectorId: "middle_shard_sprawl",
+                character: {
+                  ...player.character,
+                  heat: 2,
+                  currentSpaceId: "middle_shard_sprawl"
+                }
+              }
+            : player
+        ),
+        sectors: createState().sectors.map((sector) =>
+          sector.id === "sector-a"
+            ? {
+                ...sector,
+                id: "middle_shard_sprawl",
+                name: "Shard Sprawl",
+                encounterDecks: { ...sector.encounterDecks, threat: [] }
+              }
+            : sector
+        )
+      }),
+      [],
+      createSequenceRandomSource([5, 5]),
+      createThreats(),
+      createCharacters(),
+      createGear(),
+      createContracts()
+    );
+
+    runIntent(server, {
+      type: "RESOLVE_SPACE_TEXT",
+      seatId: "seat-1",
+      choiceId: "stock"
+    });
+
+    expect(server.getState().players[0]?.character.heat).toBe(0);
+    expect(server.getState().players[0]?.private.notes).toContain(
+      "Shard Sprawl passage stock secured for the next route push."
+    );
+    expect(server.getState().players[0]?.private.notes).toContain("Void Command marked the cleared lane for allied movement.");
   });
 
   it("discovers a local Mirecoil contract through sector text and adds it to the live contract pool", () => {
@@ -2125,17 +2222,79 @@ describe("escalation flow", () => {
     expect(String(client.socket.send.mock.calls[0]?.[0] ?? "")).toContain("Resolve the Gate of Cinders");
   });
 
-  it("allows entry into the core chamber after the Gate of Cinders note is recorded", () => {
+  it("lets Guardian Span board text earn the clearance note and then opens the inner breach move", () => {
+    const state = createState({
+      phase: "action",
+      turnOrder: ["seat-1"],
+      seats: createState().seats.slice(0, 1),
+      players: createState().players.slice(0, 1).map((player) => ({
+        ...player,
+        sectorId: "middle_guardian_span",
+        character: {
+          ...player.character,
+          currentSpaceId: "middle_guardian_span"
+        }
+      })),
+      sectors: [
+        {
+          id: "middle_guardian_span",
+          name: "Guardian Span",
+          regionTier: "red_march",
+          neighbors: ["inner_veil_rift"],
+          danger: 6,
+          encounterDecks: { threat: [], anomaly: [], contract: [], artifact: [], escalation: [] }
+        },
+        {
+          id: "inner_veil_rift",
+          name: "Veil Rift",
+          regionTier: "crownfall",
+          neighbors: ["middle_guardian_span", "inner_gate_of_cinders"],
+          danger: 7,
+          encounterDecks: { threat: [], anomaly: [], contract: [], artifact: [], escalation: [] }
+        }
+      ]
+    });
+    const server = new GameRoomServer(
+      withOnlyConnectedSeat(state, "seat-1"),
+      [],
+      createSequenceRandomSource([5, 5, 5, 5]),
+      createThreats(),
+      createCharacters(),
+      createGear(),
+      createContracts()
+    );
+
+    runIntent(server, {
+      type: "RESOLVE_SPACE_TEXT",
+      seatId: "seat-1",
+      choiceId: "seal-alignment"
+    });
+
+    expect(server.getState().players[0]?.private.notes).toContain("guardian-span-clearance");
+    expect(server.getState().players[0]?.private.notes).toContain(
+      "Guardian Span threshold aligned for breach entry."
+    );
+
+    runIntent(server, {
+      type: "MOVE_REQUESTED",
+      seatId: "seat-1",
+      toSectorId: "inner_veil_rift"
+    });
+
+    expect(server.getState().players[0]?.sectorId).toBe("inner_veil_rift");
+  });
+
+  it("allows entry into the core chamber after Gate of Cinders board text earns the breach note", () => {
     const server = new GameRoomServer(
       withOnlyConnectedSeat(
         createState({
-          phase: "navigation",
+          phase: "action",
           turnOrder: ["seat-1"],
           seats: createState().seats.slice(0, 1),
           players: createState().players.slice(0, 1).map((player) => ({
             ...player,
             sectorId: "inner_gate_of_cinders",
-            private: { ...player.private, notes: ["guardian-span-clearance", "gate-of-cinders-breached"] },
+            private: { ...player.private, notes: ["guardian-span-clearance"] },
             character: {
               ...player.character,
               currentSpaceId: "inner_gate_of_cinders"
@@ -2163,11 +2322,22 @@ describe("escalation flow", () => {
         "seat-1"
       ),
       [],
-      createSequenceRandomSource([5, 5]),
+      createSequenceRandomSource([5, 5, 5, 5]),
       createThreats(),
       createCharacters(),
       createGear(),
       createContracts()
+    );
+
+    runIntent(server, {
+      type: "RESOLVE_SPACE_TEXT",
+      seatId: "seat-1",
+      choiceId: "time-relays"
+    });
+
+    expect(server.getState().players[0]?.private.notes).toContain("gate-of-cinders-breached");
+    expect(server.getState().players[0]?.private.notes).toContain(
+      "Gate of Cinders relay pulse timed cleanly for the core breach."
     );
 
     runIntent(server, {
@@ -2177,6 +2347,147 @@ describe("escalation flow", () => {
     });
 
     expect(server.getState().players[0]?.character.currentSpaceId).toBe("center_cinder_gate");
+  });
+
+  it("resolves the selected Veil Rift sector-text choice and applies its authored effect", () => {
+    const server = new GameRoomServer(
+      createState({
+        currentEncounter: null,
+        phase: "action",
+        players: createState().players.map((player) =>
+          player.seatId === "seat-1"
+            ? {
+                ...player,
+                sectorId: "inner_veil_rift",
+                character: {
+                  ...player.character,
+                  heat: 2,
+                  currentSpaceId: "inner_veil_rift"
+                }
+              }
+            : player
+        ),
+        sectors: createState().sectors.map((sector) =>
+          sector.id === "sector-a"
+            ? {
+                ...sector,
+                id: "inner_veil_rift",
+                name: "Veil Rift",
+                encounterDecks: { ...sector.encounterDecks, threat: [] }
+              }
+            : sector
+        )
+      }),
+      [],
+      createSequenceRandomSource([5, 5]),
+      createThreats(),
+      createCharacters(),
+      createGear(),
+      createContracts()
+    );
+
+    runIntent(server, {
+      type: "RESOLVE_SPACE_TEXT",
+      seatId: "seat-1",
+      choiceId: "anchor-surge"
+    });
+
+    expect(server.getState().players[0]?.character.heat).toBe(0);
+    expect(server.getState().players[0]?.private.notes).toContain(
+      "Veil Rift surge anchored for deeper breach timing."
+    );
+  });
+
+  it("resolves the selected Cinder Lattice sector-text choice and applies its authored effect", () => {
+    const server = new GameRoomServer(
+      createState({
+        currentEncounter: null,
+        phase: "action",
+        players: createState().players.map((player) =>
+          player.seatId === "seat-1"
+            ? {
+                ...player,
+                sectorId: "inner_cinder_lattice",
+                character: {
+                  ...player.character,
+                  currentSpaceId: "inner_cinder_lattice"
+                }
+              }
+            : player
+        ),
+        sectors: createState().sectors.map((sector) =>
+          sector.id === "sector-a"
+            ? {
+                ...sector,
+                id: "inner_cinder_lattice",
+                name: "Cinder Lattice",
+                encounterDecks: { ...sector.encounterDecks, threat: [] }
+              }
+            : sector
+        )
+      }),
+      [],
+      createSequenceRandomSource([5, 5]),
+      createThreats(),
+      createCharacters(),
+      createGear(),
+      createContracts()
+    );
+
+    runIntent(server, {
+      type: "RESOLVE_SPACE_TEXT",
+      seatId: "seat-1",
+      choiceId: "trace-embers"
+    });
+
+    expect(server.getState().players[0]?.private.notes).toContain(
+      "Cinder lattice ember pulse traced into a stable core approach."
+    );
+  });
+
+  it("rejects generic sector-text resolution at the core chamber and requires the confrontation flow instead", () => {
+    const server = new GameRoomServer(
+      createState({
+        currentEncounter: null,
+        phase: "action",
+        players: createState().players.map((player) =>
+          player.seatId === "seat-1"
+            ? {
+                ...player,
+                sectorId: "center_cinder_gate",
+                character: {
+                  ...player.character,
+                  currentSpaceId: "center_cinder_gate"
+                }
+              }
+            : player
+        ),
+        sectors: createState().sectors.map((sector) =>
+          sector.id === "sector-a"
+            ? {
+                ...sector,
+                id: "center_cinder_gate",
+                name: "The Cinder Gate",
+                encounterDecks: { ...sector.encounterDecks, threat: [] }
+              }
+            : sector
+        )
+      }),
+      [],
+      createSequenceRandomSource([5, 5]),
+      createThreats(),
+      createCharacters(),
+      createGear(),
+      createContracts()
+    );
+
+    runIntent(server, {
+      type: "RESOLVE_SPACE_TEXT",
+      seatId: "seat-1"
+    });
+
+    expect(server.getState().phase).toBe("action");
+    expect(server.getState().sequence).toBe(0);
   });
 });
 
@@ -3991,6 +4302,62 @@ describe("contracts", () => {
 
     expect(server.getState().players[0]?.private.notes).toContain(
       "Rift Script annotated the hostile ground before the path could blur again."
+    );
+  });
+
+  it("lets the Rift Cartographer turn a successful Webglass route choice into a cooler mapped lane", () => {
+    const characters = createAbilityCharacters();
+    const server = new GameRoomServer(
+      createState({
+        phase: "action",
+        currentEncounter: null,
+        seats: createState().seats.map((seat) =>
+          seat.seatId === "seat-1" ? { ...seat, characterId: "rift-cartographer" } : seat
+        ),
+        players: createState().players.map((entry) =>
+          entry.seatId === "seat-1"
+            ? {
+                ...entry,
+                sectorId: "middle_webglass_breach",
+                character: {
+                  ...cloneCharacter(characters.get("rift-cartographer")),
+                  currentSpaceId: "middle_webglass_breach",
+                  heat: 1
+                }
+              }
+            : entry
+        ),
+        sectors: createState().sectors.map((sector) =>
+          sector.id === "sector-b"
+            ? {
+                ...sector,
+                id: "middle_webglass_breach",
+                name: "Webglass Breach",
+                encounterDecks: { ...sector.encounterDecks, threat: [] }
+              }
+            : sector
+        )
+      }),
+      [],
+      createSequenceRandomSource([5, 5]),
+      createThreats(),
+      characters,
+      createGear(),
+      createContracts()
+    );
+
+    runIntent(server, {
+      type: "RESOLVE_SPACE_TEXT",
+      seatId: "seat-1",
+      choiceId: "hidden-lane"
+    });
+
+    expect(server.getState().players[0]?.character.heat).toBe(0);
+    expect(server.getState().players[0]?.private.notes).toContain(
+      "Webglass hidden lane mapped through shifting lanes."
+    );
+    expect(server.getState().players[0]?.private.notes).toContain(
+      "Breach Atlas logged a safer approach through the mapped lane."
     );
   });
 

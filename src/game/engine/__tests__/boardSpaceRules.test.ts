@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { BOARD_SPACES, getBoardSpace } from "../../data/boardSpaces.js";
+import { BOARD_SPACES, getBoardSpace, isScenarioConfrontationSpace } from "../../data/boardSpaces.js";
+import { resolveBoardTextEffect, validateBoardTextEffectCoverage } from "../../data/boardTextEffects.js";
 import { MOVEMENT_BOXES } from "../../data/movementBoxes.js";
 import { SCENARIOS } from "../../data/scenarios.js";
 import { resolveBoardSpaceEvent } from "../../tileResolver.js";
@@ -54,6 +55,51 @@ describe("board space data", () => {
     expect(SCENARIOS.map((entry) => entry.id)).toContain("scenario_broken_seal");
     expect(SCENARIOS.every((entry) => entry.setup.length > 0)).toBe(true);
     expect(SCENARIOS.every((entry) => entry.specialRules.length > 0)).toBe(true);
+  });
+
+  it("keeps every board-space text effect mapped through data definitions", () => {
+    expect(validateBoardTextEffectCoverage()).toEqual({
+      missingEffectKeys: [],
+      unusedEffectKeys: [],
+      mismatchedChoiceKeys: []
+    });
+  });
+
+  it("marks deck-linked board text through data instead of effect-key switches", () => {
+    expect(resolveBoardTextEffect("outer_glassmereChorus")?.sectorDeck?.kind).toBe("anomaly");
+    expect(resolveBoardTextEffect("outer_hollowVeilSweep")?.sectorDeck?.kind).toBe("artifact");
+    expect(resolveBoardTextEffect("outer_mirecoilTraffic")?.sectorDeck?.kind).toBe("contract");
+    expect(resolveBoardTextEffect("outer_emberwatchBrace")?.sectorDeck?.kind).toBe("escalation");
+    expect(resolveBoardTextEffect("middle_guardianSpanThreshold")?.sectorDeck).toBeUndefined();
+  });
+
+  it("keeps inner-tier entry gates declared in board-space data", () => {
+    const veilRift = getBoardSpace("inner_veil_rift");
+    const cinderGate = getBoardSpace("center_cinder_gate");
+
+    expect(veilRift?.movementRequirements).toEqual([
+      {
+        allowedFrom: ["middle_guardian_span"],
+        requiredNotes: ["guardian-span-clearance"],
+        errorMessage: "Resolve Guardian Span before entering the inner breach"
+      }
+    ]);
+    expect(cinderGate?.movementRequirements).toEqual([
+      {
+        allowedFrom: ["inner_gate_of_cinders"],
+        errorMessage: "Only the Gate of Cinders opens the final route into the core chamber"
+      },
+      {
+        requiredNotes: ["gate-of-cinders-breached"],
+        errorMessage: "Resolve the Gate of Cinders before entering the Cinder Gate"
+      }
+    ]);
+  });
+
+  it("marks the core chamber as a scenario-confrontation space in board data", () => {
+    expect(isScenarioConfrontationSpace("center_cinder_gate")).toBe(true);
+    expect(isScenarioConfrontationSpace("ashwake-crossing")).toBe(false);
+    expect(getBoardSpace("center_cinder_gate")?.textBox.intent).toBe("scenario-confrontation");
   });
 });
 

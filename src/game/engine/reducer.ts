@@ -30,7 +30,7 @@ import type { EncounterEffect } from "../schema/card.schema.js";
 import type { ContractCard } from "../schema/contract.schema.js";
 import type { GameState, PlayerState } from "../schema/session.schema.js";
 import type { GearSlot } from "../schema/gear.schema.js";
-import { getBoardSpace } from "../data/boardSpaces.js";
+import { getBoardSpace, isScenarioConfrontationSpace } from "../data/boardSpaces.js";
 
 export interface ReducerRejection {
   reason: string;
@@ -104,18 +104,15 @@ function ensureNeighbor(state: GameState, fromSectorId: string, toSectorId: stri
 function ensureGateProgression(state: GameState, seatId: string, fromSectorId: string, toSectorId: string): void {
   const player = requirePlayer(state, seatId);
   const notes = new Set(player.private.notes);
+  const targetSpace = getBoardSpace(toSectorId);
 
-  if (toSectorId === "inner_veil_rift" && fromSectorId === "middle_guardian_span" && !notes.has("guardian-span-clearance")) {
-    throw new Error("Resolve Guardian Span before entering the inner breach");
-  }
-
-  if (toSectorId === "center_cinder_gate") {
-    if (fromSectorId !== "inner_gate_of_cinders") {
-      throw new Error("Only the Gate of Cinders opens the final route into the core chamber");
+  for (const requirement of targetSpace?.movementRequirements ?? []) {
+    if (requirement.allowedFrom && !requirement.allowedFrom.includes(fromSectorId)) {
+      throw new Error(requirement.errorMessage);
     }
 
-    if (!notes.has("gate-of-cinders-breached")) {
-      throw new Error("Resolve the Gate of Cinders before entering the Cinder Gate");
+    if (requirement.requiredNotes && !requirement.requiredNotes.every((note) => notes.has(note))) {
+      throw new Error(requirement.errorMessage);
     }
   }
 }
@@ -137,6 +134,10 @@ function canResolveSpaceText(state: GameState, seatId: string): void {
 
   if (!boardSpace) {
     throw new Error(`No board text is registered for ${player.character.currentSpaceId}`);
+  }
+
+  if (boardSpace.textBox.intent === "scenario-confrontation") {
+    throw new Error("Resolve the scenario confrontation from this core chamber instead of sector text");
   }
 
   const sector = state.sectors.find((entry) => entry.id === player.character.currentSpaceId);
@@ -319,35 +320,6 @@ function applyEffectToState(state: GameState, seatId: string, effect: EncounterE
     };
   }
 
-  if (effect.type === "gain_gear" && state.activeScenarioId === "scenario_dying_star") {
-    return {
-      ...state,
-      players: updateActivePlayer(state, seatId, (player) => applyEffectToPlayer(player, effect)),
-      scenarioProgress: {
-        ...state.scenarioProgress,
-        starTokens: (state.scenarioProgress.starTokens ?? 10) + 2
-      }
-    };
-  }
-
-  if (effect.type === "gain_gear" && state.activeScenarioId === "scenario_mirror_of_false_heroes") {
-    const gainedGearState = {
-      ...state,
-      players: updateActivePlayer(state, seatId, (player) => applyEffectToPlayer(player, effect))
-    };
-
-    return {
-      ...gainedGearState,
-      players: updateActivePlayer(gainedGearState, seatId, (player) => ({
-        ...player,
-        character: {
-          ...player.character,
-          heat: player.character.heat + 1
-        }
-      }))
-    };
-  }
-
   return {
     ...state,
     players: updateActivePlayer(state, seatId, (player) => applyEffectToPlayer(player, effect))
@@ -401,7 +373,7 @@ function canResolveScenarioConfrontation(state: GameState, seatId: string): void
 
   const player = requirePlayer(state, seatId);
 
-  if (player.character.currentSpaceId !== "center_cinder_gate") {
+  if (!isScenarioConfrontationSpace(player.character.currentSpaceId)) {
     throw new Error("Scenario confrontations may only be resolved at the Cinder Gate");
   }
 }
@@ -1264,18 +1236,18 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
           encounterCardId: null,
           encounterTitle: getBoardSpace(player.character.currentSpaceId)?.name ?? player.character.currentSpaceId,
           encounterCardType: null,
-          checkStat: null,
-          die1: null,
-          die2: null,
-          statBonus: null,
-          checkTotal: null,
-          difficulty: null,
+          checkStat: spaceTextAction.checkStat ?? null,
+          die1: spaceTextAction.roll?.faces[0] ?? null,
+          die2: spaceTextAction.roll?.faces[1] ?? null,
+          statBonus: spaceTextAction.statBonus ?? null,
+          checkTotal: spaceTextAction.total ?? null,
+          difficulty: spaceTextAction.difficulty ?? null,
           enemyRollerSeatId: null,
           enemyDie1: null,
           enemyDie2: null,
           enemyBonus: null,
           enemyTotal: null,
-          success: true,
+          success: spaceTextAction.success ?? true,
           summary: spaceTextAction.summary
         },
         eventLog: [...withDiscoveredContracts.eventLog, action]

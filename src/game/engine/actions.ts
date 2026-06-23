@@ -156,6 +156,12 @@ export interface SpaceTextResolvedAction extends BaseAction {
   effectKey: string;
   summary: string;
   effect?: EncounterEffect | null;
+  checkStat?: CheckStat | null;
+  difficulty?: number | null;
+  roll?: DiceRollResult | null;
+  statBonus?: number | null;
+  total?: number | null;
+  success?: boolean | null;
   sectorId?: string;
   discoveredContracts?: ContractCard[];
   consumedDeckCards?: {
@@ -310,6 +316,7 @@ export type ClientIntent =
   | {
       type: "RESOLVE_SPACE_TEXT";
       seatId: string;
+      choiceId?: string;
     }
   | {
       type: "STABILIZE_REQUESTED";

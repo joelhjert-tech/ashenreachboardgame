@@ -141,6 +141,35 @@ describe("canonical sector graph", () => {
     });
   });
 
+  it("builds scenario telemetry for all six authored scenarios with live, scenario-specific readouts", () => {
+    const expectations: Record<string, string[]> = {
+      scenario_broken_seal: ["Seal Tokens", "Turn Pressure", "Restoration"],
+      scenario_throne_of_ash: ["Crown Claims", "Crown Holders", "Active Crowns"],
+      scenario_mirror_of_false_heroes: ["Mirror Breaks", "Heat Proxy", "Reflection Feed"],
+      scenario_devourer_beneath: ["Doom Tokens", "Devourer", "Collapse Pulse"],
+      scenario_labyrinth_engine: ["Engine Mode", "Rotation", "Shutdown"],
+      scenario_dying_star: ["Star Tokens", "Wound Burn", "Ignition"]
+    };
+
+    for (const scenario of SCENARIOS) {
+      const state = createInitialSessionState(`telemetry-${scenario.id}`, "multiplayer", scenario.id);
+      state.seats[0] = { ...state.seats[0]!, displayName: "Joel", connected: true };
+      const tvProjection = createTvProjection(state) as {
+        scenarioTelemetry: Array<{ label: string; value: string }>;
+        activeScenario: { pressureSummary: string } | null;
+      };
+      const phoneProjection = createPhoneProjection(state, "seat-1") as {
+        scenarioTelemetry: Array<{ label: string; value: string }>;
+      };
+
+      expect(tvProjection.activeScenario?.pressureSummary).toBeTruthy();
+      expect(tvProjection.scenarioTelemetry.map((entry) => entry.label)).toEqual(expectations[scenario.id]);
+      expect(phoneProjection.scenarioTelemetry.map((entry) => entry.label)).toEqual(expectations[scenario.id]);
+      expect(tvProjection.scenarioTelemetry.every((entry) => entry.value.length > 0)).toBe(true);
+      expect(phoneProjection.scenarioTelemetry.every((entry) => entry.value.length > 0)).toBe(true);
+    }
+  });
+
   it("only allows movement into authored neighboring sectors from the initial session state", () => {
     const initialState = createInitialSessionState("session-alpha");
     const started = reduceGameState(initialState, {

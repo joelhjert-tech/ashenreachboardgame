@@ -9,6 +9,12 @@ export interface MovementBoxDefinition {
   effectKey: string;
 }
 
+export interface MovementRequirementDefinition {
+  allowedFrom?: string[];
+  requiredNotes?: string[];
+  errorMessage: string;
+}
+
 export interface TextBoxChoice {
   id: string;
   label: string;
@@ -18,6 +24,7 @@ export interface TextBoxDefinition {
   title: string;
   text: string;
   effectKey: string;
+  intent?: "resolve-space-text" | "scenario-confrontation";
   choices?: TextBoxChoice[];
   test?: {
     stats: Stat[];
@@ -32,6 +39,7 @@ export interface BoardSpaceDefinition {
   index: number;
   threatIcons: ThreatIcon[];
   movementBox?: MovementBoxDefinition;
+  movementRequirements?: MovementRequirementDefinition[];
   textBox: TextBoxDefinition;
   notes?: string;
 }
@@ -143,8 +151,18 @@ export const BOARD_SPACES: BoardSpaceDefinition[] = [
     threatIcons: ["red", "yellow"],
     textBox: {
       title: "Hard Bargain",
-      text: "If no hostiles remain, press the locals for passage stock or field gossip.",
+      text: "If no hostiles remain, choose whether to press the locals for passage stock or for field gossip.",
       effectKey: "middle_shardSprawlBargain",
+      choices: [
+        {
+          id: "stock",
+          label: "Take passage stock"
+        },
+        {
+          id: "gossip",
+          label: "Press for gossip"
+        }
+      ],
       test: {
         stats: ["command", "guile"],
         difficulty: 8
@@ -159,8 +177,18 @@ export const BOARD_SPACES: BoardSpaceDefinition[] = [
     threatIcons: ["red", "blue", "yellow"],
     textBox: {
       title: "Threshold Check",
-      text: "This is the only legal staging point into the inner breach. If you hold a key artifact, you may line up entry.",
-      effectKey: "middle_guardianSpanThreshold"
+      text: "This is the only legal staging point into the inner breach. Choose whether to align the threshold seals directly or ghost a route marker through the span.",
+      effectKey: "middle_guardianSpanThreshold",
+      choices: [
+        {
+          id: "seal-alignment",
+          label: "Align the threshold seals"
+        },
+        {
+          id: "ghost-marker",
+          label: "Ghost a route marker"
+        }
+      ]
     },
     movementBox: {
       title: "Threshold Hold",
@@ -177,8 +205,18 @@ export const BOARD_SPACES: BoardSpaceDefinition[] = [
     threatIcons: ["yellow", "blue"],
     textBox: {
       title: "Fracture Path",
-      text: "If the breach is clear, reroute through a hidden lane or draw unwanted attention.",
+      text: "If the breach is clear, choose whether to slip through a hidden lane or splice the relay seam into a mapped route.",
       effectKey: "middle_webglassFracture",
+      choices: [
+        {
+          id: "hidden-lane",
+          label: "Slip the hidden lane"
+        },
+        {
+          id: "relay-splice",
+          label: "Splice the relay seam"
+        }
+      ],
       test: {
         stats: ["guile", "signal"],
         difficulty: 9
@@ -191,10 +229,31 @@ export const BOARD_SPACES: BoardSpaceDefinition[] = [
     tier: "inner",
     index: 0,
     threatIcons: [],
+    movementRequirements: [
+      {
+        allowedFrom: ["middle_guardian_span"],
+        requiredNotes: ["guardian-span-clearance"],
+        errorMessage: "Resolve Guardian Span before entering the inner breach"
+      }
+    ],
     textBox: {
       title: "Breach Entry",
-      text: "Movement stops here on entry. During engagement, press deeper based on the breach surge and your committed resources.",
-      effectKey: "inner_veilRiftEntry"
+      text: "Choose whether to anchor the surge through the rift or slip the fold for a quieter breach line.",
+      effectKey: "inner_veilRiftEntry",
+      choices: [
+        {
+          id: "anchor-surge",
+          label: "Anchor the surge"
+        },
+        {
+          id: "slip-fold",
+          label: "Slip the fold"
+        }
+      ],
+      test: {
+        stats: ["signal", "guile"],
+        difficulty: 10
+      }
     },
     notes: "Original Ashen Reach equivalent of the first inner-tier breach space."
   },
@@ -206,8 +265,18 @@ export const BOARD_SPACES: BoardSpaceDefinition[] = [
     threatIcons: [],
     textBox: {
       title: "Lattice Trial",
-      text: "The lattice always resolves as printed text in the inner tier.",
+      text: "Choose whether to trace the ember pulses or read the ghost angles to line up the final approach.",
       effectKey: "inner_cinderLatticeTrial",
+      choices: [
+        {
+          id: "trace-embers",
+          label: "Trace the ember pulses"
+        },
+        {
+          id: "ghost-angles",
+          label: "Read the ghost angles"
+        }
+      ],
       test: {
         stats: ["guile", "signal"],
         difficulty: 10
@@ -222,8 +291,22 @@ export const BOARD_SPACES: BoardSpaceDefinition[] = [
     threatIcons: [],
     textBox: {
       title: "Final Gate",
-      text: "Choose your best approach and force entry into the core chamber.",
+      text: "Choose whether to force the cinder locks by endurance, relay timing, or a ghost-path through the last breach.",
       effectKey: "inner_gateOfCindersTrial",
+      choices: [
+        {
+          id: "brace-locks",
+          label: "Brace the cinder locks"
+        },
+        {
+          id: "time-relays",
+          label: "Time the relay pulse"
+        },
+        {
+          id: "ghost-path",
+          label: "Ghost the last breach path"
+        }
+      ],
       test: {
         stats: ["grit", "signal", "guile"],
         difficulty: 12
@@ -236,10 +319,21 @@ export const BOARD_SPACES: BoardSpaceDefinition[] = [
     tier: "center",
     index: 0,
     threatIcons: [],
+    movementRequirements: [
+      {
+        allowedFrom: ["inner_gate_of_cinders"],
+        errorMessage: "Only the Gate of Cinders opens the final route into the core chamber"
+      },
+      {
+        requiredNotes: ["gate-of-cinders-breached"],
+        errorMessage: "Resolve the Gate of Cinders before entering the Cinder Gate"
+      }
+    ],
     textBox: {
       title: "Confrontation",
       text: "Resolve the active scenario confrontation at the core chamber.",
-      effectKey: "center_resolveScenarioConfrontation"
+      effectKey: "center_resolveScenarioConfrontation",
+      intent: "scenario-confrontation"
     },
     notes: "Center endgame space controlled by scenario data."
   }
@@ -249,4 +343,8 @@ const boardSpaceIndex = new Map(BOARD_SPACES.map((space) => [space.id, space] as
 
 export function getBoardSpace(spaceId: string): BoardSpaceDefinition | null {
   return boardSpaceIndex.get(spaceId) ?? null;
+}
+
+export function isScenarioConfrontationSpace(spaceId: string): boolean {
+  return getBoardSpace(spaceId)?.textBox.intent === "scenario-confrontation";
 }
