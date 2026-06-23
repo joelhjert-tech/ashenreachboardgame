@@ -49,6 +49,10 @@ const tileLabelByRing: Record<BoardNode["ring"], string> = {
 
 interface TalismanBoardSurfaceProps {
   imageRect: BoardRect;
+  activeNodeId?: string | null;
+  selectedNodeId?: string | null;
+  legalTargetIds?: Set<string>;
+  debugEnabled?: boolean;
 }
 
 function getTileTone(node: BoardNode): string {
@@ -78,7 +82,13 @@ function getTileTone(node: BoardNode): string {
   return "neutral";
 }
 
-export function TalismanBoardSurface({ imageRect }: TalismanBoardSurfaceProps): ReactElement {
+export function TalismanBoardSurface({
+  imageRect,
+  activeNodeId = null,
+  selectedNodeId = null,
+  legalTargetIds,
+  debugEnabled = false
+}: TalismanBoardSurfaceProps): ReactElement {
   return (
     <div
       className="talisman-board-surface"
@@ -105,11 +115,25 @@ export function TalismanBoardSurface({ imageRect }: TalismanBoardSurfaceProps): 
         const top = node.y * imageRect.height;
         const art = tileArtByNodeId[node.id];
         const tone = getTileTone(node);
+        const isActive = activeNodeId === node.id;
+        const isSelected = selectedNodeId === node.id;
+        const isLegal = legalTargetIds?.has(node.id) ?? false;
 
         return (
           <div
             key={node.id}
-            className={`talisman-board-tile talisman-board-tile-${node.ring} talisman-board-tile-${tone}`}
+            className={[
+              "talisman-board-tile",
+              `talisman-board-tile-${node.ring}`,
+              `talisman-board-tile-${tone}`,
+              isActive ? "talisman-board-tile-active" : "",
+              isActive ? "talisman-board-tile-current" : "",
+              isSelected ? "talisman-board-tile-selected" : "",
+              isLegal ? "talisman-board-tile-legal" : "",
+              debugEnabled ? "talisman-board-tile-debug" : ""
+            ]
+              .filter(Boolean)
+              .join(" ")}
             style={{
               left: `${left}px`,
               top: `${top}px`,
@@ -119,7 +143,7 @@ export function TalismanBoardSurface({ imageRect }: TalismanBoardSurfaceProps): 
             }}
           >
             <div className="talisman-board-tile-scrim" />
-            <span>{node.ring === "center" ? "Cinder Gate" : node.label}</span>
+            <span className="talisman-board-tile-label">{node.ring === "center" ? "Cinder Gate" : node.label}</span>
             <small>{node.ring === "center" ? "Final" : tileLabelByRing[node.ring]}</small>
           </div>
         );

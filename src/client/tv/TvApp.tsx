@@ -999,6 +999,14 @@ function CardRevealPanel({ patch }: { patch: StatePatch<PublicPatchPayload> | nu
   const cardType = encounter?.cardType ?? (pendingEnemyRoll ? "enemy tactic" : "Deck standing by");
   const artPath = encounter ? getEncounterArtPath(encounter.id) : "/assets/riftfall/cards/threat-red/card_back_threat_red.png";
   const difficulty = encounter?.difficulty ?? 0;
+  const flavorText = encounter?.flavor ?? "The deck is quiet. The next draw will take the room's attention.";
+  const ruleLabel = encounter ? "Check" : pendingEnemyRoll ? "Enemy roller" : "Status";
+  const ruleText = encounter
+    ? `${statLabelById[encounter.stat]} ${encounter.difficulty}`
+    : pendingEnemyRoll
+      ? pendingEnemyRoll.assignedRollerSeatId
+      : "No active card";
+  const revealSummary = `${cardTitle}. ${toTitleCase(cardType)}. ${flavorText} ${ruleLabel}: ${ruleText}.`;
 
   return (
     <section className={`tv-card tv-bottom-card tv-reveal-card tv-reveal-card-${encounter?.cardType ?? "idle"}`} aria-label="Card reveal">
@@ -1011,28 +1019,18 @@ function CardRevealPanel({ patch }: { patch: StatePatch<PublicPatchPayload> | nu
         <div className="tv-reveal-art">
           <img src={artPath} alt="" aria-hidden="true" />
         </div>
-        <div className="tv-reveal-parchment">
-          <span>{toTitleCase(cardType)}</span>
-          <h3>{cardTitle}</h3>
-          <p>{encounter?.flavor ?? "The deck is quiet. The next draw will take the room's attention."}</p>
-          {encounter ? (
-            <div className="tv-reveal-rule">
-              <strong>Check</strong>
-              <span>
-                {statLabelById[encounter.stat]} {encounter.difficulty}
-              </span>
-            </div>
-          ) : pendingEnemyRoll ? (
-            <div className="tv-reveal-rule">
-              <strong>Enemy roller</strong>
-              <span>{pendingEnemyRoll.assignedRollerSeatId}</span>
-            </div>
-          ) : (
-            <div className="tv-reveal-rule">
-              <strong>Status</strong>
-              <span>No active card</span>
-            </div>
-          )}
+        <div className="tv-reveal-parchment" aria-label={revealSummary}>
+          <span className="tv-card-reveal-type">{toTitleCase(cardType)}</span>
+          <h3 className="tv-card-reveal-title" title={cardTitle}>
+            {cardTitle}
+          </h3>
+          <p className="tv-card-reveal-flavor" title={flavorText}>
+            {flavorText}
+          </p>
+          <div className="tv-reveal-rule tv-card-reveal-rules" tabIndex={0} aria-label={`${ruleLabel}: ${ruleText}`}>
+            <strong>{ruleLabel}</strong>
+            <span>{ruleText}</span>
+          </div>
           <div className="tv-reveal-difficulty" aria-label={`Difficulty ${difficulty}`}>
             {Array.from({ length: Math.max(1, Math.min(5, difficulty || 1)) }, (_, index) => (
               <span key={index} className={index < difficulty ? "tv-reveal-pip-active" : ""} />

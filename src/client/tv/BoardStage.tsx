@@ -110,15 +110,20 @@ export function BoardStage({ imageAlt, imageSrc, imageMode = "visible", onPointe
       ref={stageRef}
       className="board-stage"
       data-testid="sector-map"
-      onPointerDown={(event) => {
-        onPointerDown?.(event, imageRect);
-      }}
+      onPointerDown={
+        onPointerDown
+          ? (event) => {
+              onPointerDown(event, imageRect);
+            }
+          : undefined
+      }
     >
       <img
         ref={imageRef}
         className={`board-image board-image-${imageMode}`}
         src={imageSrc}
-        alt={imageAlt}
+        alt={imageMode === "geometry-only" ? "" : imageAlt}
+        aria-hidden={imageMode === "geometry-only" ? "true" : undefined}
         onLoad={updateGeometry}
       />
       <div className="board-overlay">{children({ imageRect })}</div>
