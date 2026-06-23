@@ -10,10 +10,22 @@ export const factionGiverSchema = z.enum([
   "Umbral Bloom"
 ]);
 
-export const contractObjectiveSchema = z.object({
+const defeatCountObjectiveSchema = z.object({
   type: z.literal("defeatCount"),
   target: z.number().int().min(1)
 });
+
+const spaceTextResolvedObjectiveSchema = z.object({
+  type: z.literal("spaceTextResolved"),
+  effectKey: z.string().min(1),
+  label: z.string().min(1),
+  target: z.number().int().min(1)
+});
+
+export const contractObjectiveSchema = z.discriminatedUnion("type", [
+  defeatCountObjectiveSchema,
+  spaceTextResolvedObjectiveSchema
+]);
 
 export const contractCardSchema = z.object({
   id: z.string().min(1),
