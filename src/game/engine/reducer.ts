@@ -193,6 +193,8 @@ function summarizeEffect(effect: EncounterEffect, success: boolean | null): stri
       return `${prefix} gain scar ${effect.scarId}.`;
     case "gain_gear":
       return `${prefix} gain gear ${effect.gearId}.`;
+    case "gain_follower":
+      return `${prefix} gain follower ${effect.follower?.name ?? effect.followerId}.`;
     case "gain_note":
       return `${prefix} note added: ${effect.text}`;
     case "advance_scenario":
@@ -250,6 +252,8 @@ function applyEffectToPlayer(player: PlayerState, effect: EncounterEffect): Play
       };
     case "gain_gear":
       return addHeldGearToPlayer(player, effect);
+    case "gain_follower":
+      return addFollowerToPlayer(player, effect);
     case "gain_note":
       return {
         ...player,
@@ -330,6 +334,29 @@ function applyEffectToState(state: GameState, seatId: string, effect: EncounterE
   return {
     ...state,
     players: updateActivePlayer(state, seatId, (player) => applyEffectToPlayer(player, effect))
+  };
+}
+
+function addFollowerToPlayer(
+  player: PlayerState,
+  effect: Extract<EncounterEffect, { type: "gain_follower" }>
+): PlayerState {
+  if (!effect.follower) {
+    return player;
+  }
+
+  const alreadyFollowing = (player.character.followers ?? []).some((follower) => follower.id === effect.follower?.id);
+
+  if (alreadyFollowing) {
+    return player;
+  }
+
+  return {
+    ...player,
+    character: {
+      ...player.character,
+      followers: [...(player.character.followers ?? []), effect.follower]
+    }
   };
 }
 

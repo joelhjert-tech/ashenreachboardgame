@@ -1,0 +1,28 @@
+{
+  "id": "saint-of-ashes-echo",
+  "type": "threat",
+  "cardType": "hazard",
+  "title": "Saint of Ashes Echo",
+  "text": "An echo of a dead saint asks for proof that you deserve the next step inward.",
+  "flavor": "Mercy is not refusal. Mercy is a harder test.",
+  "severity": 4,
+  "stat": "signal",
+  "difficulty": 10,
+  "successEffect": {
+    "type": "gain_note",
+    "text": "The saint echo granted a cinder blessing for the final road."
+  },
+  "failEffect": {
+    "type": "sequence",
+    "effects": [
+      {
+        "type": "gain_heat",
+        "amount": 2
+      },
+      {
+        "type": "gain_scar",
+        "scarId": "scar-wound-1"
+      }
+    ]
+  }
+}

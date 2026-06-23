@@ -1,0 +1,19 @@
+{
+  "id": "lantern-moth-swarm",
+  "type": "threat",
+  "cardType": "hazard",
+  "title": "Lantern-Moth Swarm",
+  "text": "Soft gold insects gather around every warm surface until their wings begin to spark.",
+  "flavor": "They are beautiful right up until the air catches fire.",
+  "severity": 1,
+  "stat": "signal",
+  "difficulty": 5,
+  "successEffect": {
+    "type": "lose_heat",
+    "amount": 1
+  },
+  "failEffect": {
+    "type": "gain_heat",
+    "amount": 1
+  }
+}

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { RIFTFALL_BOARD_NODES } from "../../data/riftfallBoardNodes.js";
+import { loadThreatCards } from "../../game/content/threats.js";
 import { createCanonicalSectorGraph, validateCanonicalSectorGraph } from "../../game/data/canonicalSectorGraph.js";
 import { BOARD_SPACES } from "../../game/data/boardSpaces.js";
 import { SCENARIOS } from "../../game/data/scenarios.js";
@@ -15,6 +16,18 @@ describe("canonical sector graph", () => {
 
     expect(sectors).toHaveLength(BOARD_SPACES.length);
     expect(sectors.map((sector) => sector.id).sort()).toEqual(RIFTFALL_BOARD_NODES.map((node) => node.id).sort());
+  });
+
+  it("keeps the live threat deck broad and every canonical threat reference resolvable", () => {
+    const sectors = createCanonicalSectorGraph();
+    const threats = loadThreatCards();
+    const referencedThreatIds = new Set(sectors.flatMap((sector) => sector.encounterDecks.threat));
+    const severities = new Set([...threats.values()].map((threat) => threat.severity));
+
+    expect(threats.size).toBeGreaterThanOrEqual(40);
+    expect(referencedThreatIds.size).toBe(threats.size);
+    expect([...referencedThreatIds].filter((threatId) => !threats.has(threatId))).toEqual([]);
+    expect([...severities].sort()).toEqual([1, 2, 3, 4, 5]);
   });
 
   it("starts the session on the canonical board using each character's authored starting space", () => {

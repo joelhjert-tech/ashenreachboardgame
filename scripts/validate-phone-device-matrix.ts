@@ -189,31 +189,27 @@ function validateMetrics(metrics: LayoutMetrics, mode: "portrait" | "landscape")
 
   if (mode === "portrait") {
     if (!metrics.hasPortraitController || !metrics.portraitPanelRect) {
-      failures.push("missing limited portrait panel");
+      failures.push("missing portrait controller panel");
     }
 
     if (!metrics.portraitChipRowRect) {
       failures.push("missing portrait chip row");
     }
 
-    if (!metrics.hasPortraitRotateHint || !metrics.portraitRotateHintRect) {
-      failures.push("missing rotate hint");
-    }
-
     if (metrics.hasLandscapeCard) {
       failures.push("landscape card rendered in portrait");
     }
 
-    if (metrics.hasPortraitStats) {
-      failures.push("portrait still renders stats/details");
+    if (!metrics.hasPortraitStats) {
+      failures.push("portrait missing stats/details");
     }
 
-    if (metrics.hasPortraitActions) {
-      failures.push("portrait still renders quick actions");
+    if (!metrics.hasPortraitActions) {
+      failures.push("portrait missing quick actions");
     }
 
-    if (metrics.hasPortraitLeaveButton) {
-      failures.push("portrait still renders leave button");
+    if (!metrics.hasPortraitLeaveButton) {
+      failures.push("portrait missing leave button");
     }
 
     return failures;
@@ -282,9 +278,12 @@ async function main(): Promise<void> {
             await page.goto(`${getBaseUrl()}/`, { waitUntil: "domcontentloaded" });
             await page.getByRole("textbox", { name: "Room code" }).fill(roomCode);
             await page.getByRole("textbox", { name: "Display name" }).fill("QA");
-            await page.getByRole("combobox", { name: "Character" }).selectOption("signal-witch");
+            await page
+              .locator("label.phone-character-option")
+              .filter({ has: page.locator('input[name="characterId"][value="signal-witch"]') })
+              .click();
             await page.getByRole("button", { name: "Join room" }).click();
-            await page.getByRole("heading", { name: "Lane" }).waitFor({ state: "visible", timeout: 10000 });
+            await page.locator(".phone-controller-layout").waitFor({ state: "visible", timeout: 10000 });
             await page.waitForTimeout(350);
 
             const portraitMetrics = await collectMetrics(page, profile.portrait);

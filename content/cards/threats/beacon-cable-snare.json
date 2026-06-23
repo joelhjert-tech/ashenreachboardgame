@@ -1,0 +1,19 @@
+{
+  "id": "beacon-cable-snare",
+  "type": "threat",
+  "cardType": "hazard",
+  "title": "Beacon Cable Snare",
+  "text": "Live beacon cable lashes out of the mire and knots itself around your boots and pack frame.",
+  "flavor": "It wants to complete a circuit through bone.",
+  "severity": 2,
+  "stat": "forge",
+  "difficulty": 6,
+  "successEffect": {
+    "type": "gain_note",
+    "text": "You grounded the cable and left a safe crossing mark."
+  },
+  "failEffect": {
+    "type": "take_wound",
+    "amount": 1
+  }
+}

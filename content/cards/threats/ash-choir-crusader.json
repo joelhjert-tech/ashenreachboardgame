@@ -1,0 +1,30 @@
+{
+  "id": "ash-choir-crusader",
+  "type": "threat",
+  "cardType": "enemy",
+  "title": "Ash Choir Crusader",
+  "enemyName": "Ash Choir Crusader",
+  "text": "A crusader of the Ash Choir mistakes your pulse for heresy and advances behind a bell shield.",
+  "flavor": "Each bell note lands before the blow.",
+  "severity": 4,
+  "stat": "signal",
+  "difficulty": 8,
+  "trophyValue": 8,
+  "defeatReward": {
+    "type": "gain_note",
+    "text": "You cracked a bell shield and learned its counter-phrase."
+  },
+  "woundOnLoss": {
+    "type": "sequence",
+    "effects": [
+      {
+        "type": "take_wound",
+        "amount": 1
+      },
+      {
+        "type": "gain_scar",
+        "scarId": "scar-wound-1"
+      }
+    ]
+  }
+}

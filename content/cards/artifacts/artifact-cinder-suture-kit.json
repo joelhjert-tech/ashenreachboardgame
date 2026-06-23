@@ -1,0 +1,14 @@
+{
+  "id": "artifact-cinder-suture-kit",
+  "type": "artifact",
+  "artifactKind": "consumableSalvage",
+  "title": "Cinder Suture Kit",
+  "text": "A field surgery kit packed with heat-clean needles and warning labels nobody obeys.",
+  "flavor": "The pain is brief. The smell is not.",
+  "charge": 1,
+  "resolutionSummary": "Secured a Cinder Suture Kit for emergency wound treatment.",
+  "resolveEffect": {
+    "type": "gain_gear",
+    "gearId": "cinder-suture-kit"
+  }
+}

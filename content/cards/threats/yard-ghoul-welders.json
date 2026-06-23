@@ -1,0 +1,21 @@
+{
+  "id": "yard-ghoul-welders",
+  "type": "threat",
+  "cardType": "enemy",
+  "title": "Yard Ghoul Welders",
+  "enemyName": "Yard Ghoul Welders",
+  "text": "Yard ghouls in cracked welding masks crawl from the hull stacks with hot rivet guns.",
+  "flavor": "The dead are excellent mechanics when nobody asks what they are building.",
+  "severity": 2,
+  "stat": "forge",
+  "difficulty": 6,
+  "trophyValue": 5,
+  "defeatReward": {
+    "type": "gain_gear",
+    "gearId": "coffin-rig"
+  },
+  "woundOnLoss": {
+    "type": "take_wound",
+    "amount": 1
+  }
+}

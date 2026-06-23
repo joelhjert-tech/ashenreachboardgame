@@ -1,0 +1,16 @@
+{
+  "id": "cinder-surgeon",
+  "name": "Cinder Surgeon",
+  "role": "medic",
+  "text": "Heal 1 wound, then gain 1 Heat. The surgeon may leave if the table chooses a harsher bargain.",
+  "activeEffect": {
+    "type": "sequence",
+    "effects": [
+      { "type": "heal_wound", "amount": 1 },
+      { "type": "gain_heat", "amount": 1 }
+    ]
+  },
+  "useLimit": "discard",
+  "loyalty": 2,
+  "lossCondition": "choice"
+}

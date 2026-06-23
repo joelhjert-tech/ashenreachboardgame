@@ -35,6 +35,14 @@ const encounterArtById: Record<string, string> = {
   "smoke-leech-clutch": "/assets/riftfall/cards/threat-red/red_enemy_cinder_hounds.png"
 };
 
+const nemesisPortraitById: Record<string, string> = {
+  nemesis_glass_prophet: "/assets/riftfall/nemeses/nemesis_glass_prophet.png",
+  nemesis_hollow_regent: "/assets/riftfall/nemeses/nemesis_hollow_regent.png",
+  nemesis_iron_saint_malrec: "/assets/riftfall/nemeses/nemesis_iron_saint_malrec.png",
+  nemesis_kharvox_red_maw: "/assets/riftfall/nemeses/nemesis_kharvox_red_maw.png",
+  nemesis_specimen_null_x: "/assets/riftfall/nemeses/nemesis_specimen_null_x.png"
+};
+
 const statFrameByStat: Record<Stat, string> = {
   command: "/assets/riftfall/ui/ui_card_frame_red.png",
   grit: "/assets/riftfall/ui/ui_card_frame_red.png",
@@ -69,6 +77,10 @@ export function getContractArtPath(contractId: string): string {
 
 export function getEncounterArtPath(encounterId: string): string {
   return encounterArtById[encounterId] ?? "/assets/riftfall/cards/threat-red/red_event_trench_blast.png";
+}
+
+export function getNemesisPortraitPath(nemesisId: string): string {
+  return nemesisPortraitById[nemesisId] ?? "/assets/riftfall/nemeses/nemesis_hollow_regent.png";
 }
 
 export function getEncounterFramePath(stat: Stat): string {

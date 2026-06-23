@@ -1,0 +1,21 @@
+{
+  "id": "red-march-cannoneer",
+  "type": "threat",
+  "cardType": "enemy",
+  "title": "Red March Cannoneer",
+  "enemyName": "Red March Cannoneer",
+  "text": "A lone cannoneer has turned a broken shrine gun into a toll booth with artillery range.",
+  "flavor": "The warning shot is aimed at your shadow.",
+  "severity": 3,
+  "stat": "grit",
+  "difficulty": 8,
+  "trophyValue": 7,
+  "defeatReward": {
+    "type": "gain_note",
+    "text": "You silenced a shrine gun and claimed its firing angles."
+  },
+  "woundOnLoss": {
+    "type": "take_wound",
+    "amount": 2
+  }
+}

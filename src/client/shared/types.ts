@@ -1,8 +1,17 @@
 export type Stat = "command" | "grit" | "signal" | "guile" | "forge";
 export type GearSlot = "weapon" | "armor" | "utility";
+export type GearCategory =
+  | "passive"
+  | "active"
+  | "consumable"
+  | "chargedRelic"
+  | "dangerous"
+  | "contractObject"
+  | "followerLinked";
 export type Phase = "start" | "navigation" | "sector" | "action" | "resolution" | "broadcast";
 export type SessionStatus = "lobby" | "active" | "ended";
 export type SessionMode = "multiplayer" | "single-player";
+export type InteractionMode = "co-op" | "rivalry" | "ruthless";
 
 export interface PublicSeat {
   seatId: string;
@@ -24,6 +33,7 @@ export interface PublicPlayerCharacter {
   wounds: number;
   scars: string[];
   heldGearCount: number;
+  followerCount?: number;
   equippedGear: Record<GearSlot, string | null>;
 }
 
@@ -38,6 +48,24 @@ export interface GearItem {
   name: string;
   slot: GearSlot;
   statBonus: { stat: Stat; amount: number };
+  category?: GearCategory;
+  activeText?: string;
+  useLimit?: "oncePerTurn" | "oncePerRound" | "discard" | "charge";
+  charges?: number;
+  heatCost?: number;
+  linkedFollowerRole?: FollowerRole;
+}
+
+export type FollowerRole = "scout" | "medic" | "gunner" | "ritualist" | "porter" | "guide" | "informant";
+
+export interface Follower {
+  id: string;
+  name: string;
+  role: FollowerRole;
+  text: string;
+  useLimit?: "oncePerTurn" | "oncePerRound" | "discard";
+  loyalty?: number;
+  lossCondition?: "wound" | "heat" | "combatLoss" | "choice";
 }
 
 export interface PrivateCharacter {
@@ -54,6 +82,7 @@ export interface PrivateCharacter {
   activeContract: { contractId: string; progress: number } | null;
   heldGear: GearItem[];
   equippedGear: Record<GearSlot, string | null>;
+  followers?: Follower[];
   abilities: Array<{ id: string; name: string; text: string }>;
 }
 
@@ -195,6 +224,7 @@ export interface ScenarioTelemetryItem {
 export interface PublicPatchPayload {
   status: SessionStatus;
   sessionMode: SessionMode;
+  interactionMode?: InteractionMode;
   winnerSeatId: string | null;
   activeScenario: ActiveScenarioSummary | null;
   scenarioTelemetry: ScenarioTelemetryItem[];

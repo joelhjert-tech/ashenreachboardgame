@@ -1,0 +1,30 @@
+{
+  "id": "veil-rift-judicator",
+  "type": "threat",
+  "cardType": "enemy",
+  "title": "Veil-Rift Judicator",
+  "enemyName": "Veil-Rift Judicator",
+  "text": "A hovering judge-engine descends from the veil with a sentence already burning in its throat.",
+  "flavor": "It asks questions only to measure how loudly you lie.",
+  "severity": 4,
+  "stat": "signal",
+  "difficulty": 9,
+  "trophyValue": 8,
+  "defeatReward": {
+    "type": "gain_note",
+    "text": "You stole a clause from the judge-engine sentence."
+  },
+  "woundOnLoss": {
+    "type": "sequence",
+    "effects": [
+      {
+        "type": "take_wound",
+        "amount": 1
+      },
+      {
+        "type": "gain_scar",
+        "scarId": "scar-wound-2"
+      }
+    ]
+  }
+}

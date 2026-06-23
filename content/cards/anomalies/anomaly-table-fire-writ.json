@@ -1,0 +1,23 @@
+{
+  "id": "anomaly-table-fire-writ",
+  "type": "anomaly",
+  "regionHint": "global",
+  "title": "Table-Fire Writ",
+  "text": "A floating writ offers the table a shared crisis: one operative takes heat, another takes advantage.",
+  "flavor": "Every bargain wants an audience.",
+  "instability": 5,
+  "resolutionSummary": "Bound the Table-Fire Writ as a rivalry pressure point.",
+  "resolveEffect": {
+    "type": "sequence",
+    "effects": [
+      {
+        "type": "gain_heat",
+        "amount": 1
+      },
+      {
+        "type": "gain_note",
+        "text": "Table-Fire Writ: another player may bargain, aid, or choose who carries pressure in rivalry mode."
+      }
+    ]
+  }
+}

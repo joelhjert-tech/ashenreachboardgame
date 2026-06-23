@@ -1,0 +1,19 @@
+{
+  "id": "roadside-bone-oracle",
+  "type": "threat",
+  "cardType": "hazard",
+  "title": "Roadside Bone Oracle",
+  "text": "A roadside shrine speaks through wired jawbones and demands that you answer in the correct order.",
+  "flavor": "Every wrong word clicks another tooth shut.",
+  "severity": 1,
+  "stat": "signal",
+  "difficulty": 5,
+  "successEffect": {
+    "type": "gain_note",
+    "text": "The oracle traded a clean route omen for your patience."
+  },
+  "failEffect": {
+    "type": "gain_heat",
+    "amount": 1
+  }
+}

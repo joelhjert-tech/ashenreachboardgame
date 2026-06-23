@@ -58,15 +58,15 @@ describe("PhoneApp", () => {
   it("renders ten selectable character options in the join flow", async () => {
     render(<PhoneApp />);
 
-    const select = await screen.findByRole("combobox", { name: /character/i });
+    const picker = await screen.findByRole("radiogroup", { name: /character/i });
 
     await waitFor(() => {
-      expect(screen.getAllByRole("option")).toHaveLength(10);
+      expect(screen.getAllByRole("radio")).toHaveLength(10);
     });
 
-    expect(select).toBeInTheDocument();
-    expect(screen.getByRole("option", { name: /void marshal - tarek voss/i })).toBeInTheDocument();
-    expect(screen.getByRole("option", { name: /cinder monk - mira/i })).toBeInTheDocument();
-    expect(screen.getByRole("option", { name: /fleet elder - orenna tash/i })).toBeInTheDocument();
+    expect(picker).toBeInTheDocument();
+    expect(screen.getByRole("radio", { name: /tarek voss.*void marshal/i })).toBeInTheDocument();
+    expect(screen.getByRole("radio", { name: /mira.*cinder monk/i })).toBeInTheDocument();
+    expect(screen.getByRole("radio", { name: /orenna tash.*fleet elder/i })).toBeInTheDocument();
   });
 });

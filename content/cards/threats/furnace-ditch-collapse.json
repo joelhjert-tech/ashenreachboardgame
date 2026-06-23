@@ -1,0 +1,19 @@
+{
+  "id": "furnace-ditch-collapse",
+  "type": "threat",
+  "cardType": "hazard",
+  "title": "Furnace-Ditch Collapse",
+  "text": "The road skin slumps into a buried furnace ditch, spilling hot slag into the crossing.",
+  "flavor": "The ground remembers every war it swallowed.",
+  "severity": 2,
+  "stat": "grit",
+  "difficulty": 6,
+  "successEffect": {
+    "type": "gain_note",
+    "text": "You crossed the ditch and flagged the weak ground behind you."
+  },
+  "failEffect": {
+    "type": "take_wound",
+    "amount": 1
+  }
+}

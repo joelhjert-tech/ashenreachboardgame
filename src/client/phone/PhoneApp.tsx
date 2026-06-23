@@ -1,9 +1,10 @@
-import { useEffect, useRef, useState, type ChangeEvent, type FormEvent, type ReactElement } from "react";
+import { useEffect, useRef, useState, type FormEvent, type ReactElement } from "react";
 import { fetchCharacters, joinSession } from "../shared/network.js";
 import { getPhoneAbilityTelemetry } from "../shared/abilityTelemetry.js";
 import type { CharacterCatalogEntry, PhonePatchPayload, PhoneSessionAuth, StatePatch } from "../shared/types.js";
 import { useRoomSubscription } from "../shared/useRoomSubscription.js";
 import {
+  getCharacterPortraitPath,
   getPhoneBackgroundPath
 } from "../shared/assetPaths.js";
 import { MobileDebugDrawer } from "./MobileDebugDrawer.js";
@@ -129,26 +130,6 @@ export function PhoneApp(): ReactElement {
   }, []);
 
   useEffect(() => {
-    if (typeof window === "undefined" || !auth) {
-      return;
-    }
-
-    const tryLockLandscape = () => {
-      const orientation = window.screen.orientation as ScreenOrientation & {
-        lock?: (orientation: string) => Promise<void>;
-      };
-      orientation.lock?.("landscape").catch(() => undefined);
-    };
-
-    tryLockLandscape();
-    window.addEventListener("pointerdown", tryLockLandscape, { once: true });
-
-    return () => {
-      window.removeEventListener("pointerdown", tryLockLandscape);
-    };
-  }, [auth]);
-
-  useEffect(() => {
     if (!auth || !error) {
       return;
     }
@@ -203,7 +184,7 @@ export function PhoneApp(): ReactElement {
   const portraitPlayerName = auth?.displayName || selectedCharacter?.name || "Ashen Reach Controller";
   const portraitRoomCode = auth?.roomCode || formState.roomCode || "Awaiting room";
   const portraitPhaseStatus = phonePatch
-    ? `${toTitleCase(phonePatch.phase)} | ${toTitleCase(phonePatch.payload.status)}`
+    ? `${toTitleCase(phonePatch.phase)} - ${toTitleCase(phonePatch.payload.status)}`
     : auth
       ? "Rejoining session"
       : "Join screen";
@@ -215,17 +196,21 @@ export function PhoneApp(): ReactElement {
           <section className="phone-join-hero phone-panel">
             <p className="phone-panel-kicker">Ashen Reach Controller</p>
             <h1>Claim your seat</h1>
-            <p className="phone-muted-copy">Landscape mode gives players a clean command card and action rail during play.</p>
+            <p className="phone-muted-copy">Pick an operative, join the room, and play from the controller view that fits your hand.</p>
             {selectedCharacter && (
               <div className="phone-character-preview">
-                <h2>{selectedCharacter.name}</h2>
-                <p>{selectedCharacter.archetype}</p>
-                <p>
-                  Command {selectedCharacter.stats.command} | Grit {selectedCharacter.stats.grit} | Signal {selectedCharacter.stats.signal}
-                </p>
-                <p>
-                  Guile {selectedCharacter.stats.guile} | Forge {selectedCharacter.stats.forge}
-                </p>
+                <img src={getCharacterPortraitPath(selectedCharacter.id)} alt="" />
+                <div>
+                  <h2>{selectedCharacter.name}</h2>
+                  <p>{selectedCharacter.archetype}</p>
+                  <div className="phone-character-stat-row" aria-label="Selected character stats">
+                    <span>Command {selectedCharacter.stats.command}</span>
+                    <span>Grit {selectedCharacter.stats.grit}</span>
+                    <span>Signal {selectedCharacter.stats.signal}</span>
+                    <span>Guile {selectedCharacter.stats.guile}</span>
+                    <span>Forge {selectedCharacter.stats.forge}</span>
+                  </div>
+                </div>
               </div>
             )}
           </section>
@@ -260,21 +245,30 @@ export function PhoneApp(): ReactElement {
                   required
                 />
               </label>
-              <label className="field">
-                <span>Character</span>
-                <select
-                  value={formState.characterId}
-                  onChange={(event: ChangeEvent<HTMLSelectElement>) =>
-                    setFormState((current) => ({ ...current, characterId: event.target.value }))
-                  }
-                >
+              <fieldset className="phone-character-picker">
+                <legend>Character</legend>
+                <div className="phone-character-grid" role="radiogroup" aria-label="Character">
                   {characters.map((character) => (
-                    <option key={character.id} value={character.id}>
-                      {character.archetype} - {character.name}
-                    </option>
+                    <label
+                      key={character.id}
+                      className={`phone-character-option${formState.characterId === character.id ? " phone-character-option-selected" : ""}`}
+                    >
+                      <input
+                        type="radio"
+                        name="characterId"
+                        value={character.id}
+                        checked={formState.characterId === character.id}
+                        onChange={() => setFormState((current) => ({ ...current, characterId: character.id }))}
+                      />
+                      <img src={getCharacterPortraitPath(character.id)} alt="" />
+                      <span>
+                        <strong>{character.name}</strong>
+                        <small>{character.archetype}</small>
+                      </span>
+                    </label>
                   ))}
-                </select>
-              </label>
+                </div>
+              </fieldset>
               {(joinError || error) && <p className="error">{joinError ?? error}</p>}
               <div className="phone-join-actions">
                 <button className="phone-button phone-button-primary" type="submit">

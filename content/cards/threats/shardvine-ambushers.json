@@ -1,0 +1,30 @@
+{
+  "id": "shardvine-ambushers",
+  "type": "threat",
+  "cardType": "enemy",
+  "title": "Shardvine Ambushers",
+  "enemyName": "Shardvine Ambushers",
+  "text": "Shardvine scouts drop from the gantries with glass knives and bright route masks.",
+  "flavor": "They cut the map first, then the traveler.",
+  "severity": 3,
+  "stat": "guile",
+  "difficulty": 7,
+  "trophyValue": 6,
+  "defeatReward": {
+    "type": "gain_gear",
+    "gearId": "veil-hook"
+  },
+  "woundOnLoss": {
+    "type": "sequence",
+    "effects": [
+      {
+        "type": "take_wound",
+        "amount": 1
+      },
+      {
+        "type": "gain_heat",
+        "amount": 1
+      }
+    ]
+  }
+}

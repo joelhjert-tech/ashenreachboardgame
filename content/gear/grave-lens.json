@@ -1,0 +1,14 @@
+{
+  "id": "grave-lens",
+  "name": "Grave Lens",
+  "slot": "utility",
+  "category": "followerLinked",
+  "statBonus": {
+    "stat": "signal",
+    "amount": 1
+  },
+  "activeText": "If you have a scribe or ritualist follower, exhaust to record a route note after resolving a hazard.",
+  "useLimit": "oncePerRound",
+  "linkedFollowerRole": "ritualist",
+  "flavor": "The glass makes old roads look freshly buried."
+}

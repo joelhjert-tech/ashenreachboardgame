@@ -315,12 +315,12 @@ describe("TvApp", () => {
 
     render(<TvApp />);
 
-    const scenarioSelect = await screen.findByRole("combobox");
+    const scenarioSelect = (await screen.findAllByRole("combobox"))[0]!;
     fireEvent.change(scenarioSelect, { target: { value: "scenario_dying_star" } });
     fireEvent.click(screen.getAllByRole("button", { name: /create multiplayer/i })[0]!);
 
     await waitFor(() => {
-      expect(mockCreateSession).toHaveBeenCalledWith("multiplayer", "scenario_dying_star");
+      expect(mockCreateSession).toHaveBeenCalledWith("multiplayer", "scenario_dying_star", "rivalry");
     });
   });
 
@@ -334,12 +334,12 @@ describe("TvApp", () => {
 
     render(<TvApp />);
 
-    const scenarioSelect = await screen.findByRole("combobox");
+    const scenarioSelect = (await screen.findAllByRole("combobox"))[0]!;
     fireEvent.change(scenarioSelect, { target: { value: "scenario_dying_star" } });
     fireEvent.click(screen.getByRole("button", { name: /create single-player/i }));
 
     await waitFor(() => {
-      expect(mockCreateSession).toHaveBeenCalledWith("single-player", "scenario_dying_star");
+      expect(mockCreateSession).toHaveBeenCalledWith("single-player", "scenario_dying_star", "co-op");
     });
   });
 
@@ -350,7 +350,7 @@ describe("TvApp", () => {
     expect(screen.getByText(/seal pressure degrades at the start of each turn/i)).toBeInTheDocument();
     expect(screen.getByText(/no linked nemesis/i)).toBeInTheDocument();
 
-    const scenarioSelect = screen.getByRole("combobox");
+    const scenarioSelect = screen.getAllByRole("combobox")[0]!;
     fireEvent.change(scenarioSelect, { target: { value: "scenario_dying_star" } });
 
     expect(screen.getByText(/the system's sun is collapsing/i)).toBeInTheDocument();
@@ -376,8 +376,8 @@ describe("TvApp", () => {
 
     render(<TvApp />);
 
-    expect(await screen.findByText(/the broken seal secured/i)).toBeInTheDocument();
-    expect(screen.getByText(/joel won the confrontation and secured the broken seal/i)).toBeInTheDocument();
+    expect((await screen.findAllByText(/the broken seal secured/i)).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/joel won the confrontation and secured the broken seal/i).length).toBeGreaterThan(0);
   });
 
   it("shows authored contract objective labels on the host operative card", async () => {

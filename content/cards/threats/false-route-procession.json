@@ -1,0 +1,19 @@
+{
+  "id": "false-route-procession",
+  "type": "threat",
+  "cardType": "hazard",
+  "title": "False-Route Procession",
+  "text": "A procession of route ghosts walks the exact shortcut you wanted to believe was real.",
+  "flavor": "They wave for you to follow with hands turned backward.",
+  "severity": 3,
+  "stat": "command",
+  "difficulty": 7,
+  "successEffect": {
+    "type": "gain_note",
+    "text": "You named the false road aloud and broke the procession."
+  },
+  "failEffect": {
+    "type": "gain_heat",
+    "amount": 2
+  }
+}

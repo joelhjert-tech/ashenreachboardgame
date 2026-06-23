@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { gearItemSchema } from "./gear.schema.js";
+import { followerSchema } from "./follower.schema.js";
 
 export const statSchema = z.enum(["command", "grit", "signal", "guile", "forge"]);
 
@@ -44,6 +45,7 @@ export const characterSchema = z.object({
   activeContract: activeContractSchema,
   heldGear: z.array(gearItemSchema),
   equippedGear: equippedGearSchema,
+  followers: z.array(followerSchema).optional(),
   abilities: z.array(abilitySchema)
 });
 

@@ -1,0 +1,23 @@
+{
+  "id": "artifact-ashen-route-compass",
+  "type": "artifact",
+  "artifactKind": "chargedRelic",
+  "title": "Ashen Route Compass",
+  "text": "A cracked surveyor compass that points toward survivable routes instead of north.",
+  "flavor": "It prefers roads that still remember names.",
+  "charge": 2,
+  "resolutionSummary": "Recovered the Ashen Route Compass as an active navigation relic.",
+  "resolveEffect": {
+    "type": "sequence",
+    "effects": [
+      {
+        "type": "gain_gear",
+        "gearId": "ashen-route-compass"
+      },
+      {
+        "type": "gain_note",
+        "text": "Compass charge: spend to soften movement or anomaly failures."
+      }
+    ]
+  }
+}

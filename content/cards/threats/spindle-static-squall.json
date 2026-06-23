@@ -1,0 +1,19 @@
+{
+  "id": "spindle-static-squall",
+  "type": "threat",
+  "cardType": "hazard",
+  "title": "Spindle Static Squall",
+  "text": "Glassmere static lashes over the road, turning compass needles and teeth toward the tower.",
+  "flavor": "Even the silence points north.",
+  "severity": 2,
+  "stat": "signal",
+  "difficulty": 6,
+  "successEffect": {
+    "type": "gain_note",
+    "text": "You tuned the squall into a stable bearing."
+  },
+  "failEffect": {
+    "type": "gain_heat",
+    "amount": 1
+  }
+}

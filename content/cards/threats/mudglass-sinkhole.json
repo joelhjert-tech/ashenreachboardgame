@@ -1,0 +1,19 @@
+{
+  "id": "mudglass-sinkhole",
+  "type": "threat",
+  "cardType": "hazard",
+  "title": "Mudglass Sinkhole",
+  "text": "What looked like dry mud becomes black glass beneath your weight and starts drinking your boots.",
+  "flavor": "The surface reflects a sky that is not above you.",
+  "severity": 2,
+  "stat": "grit",
+  "difficulty": 6,
+  "successEffect": {
+    "type": "gain_note",
+    "text": "You mapped the sinkhole lip before it sealed again."
+  },
+  "failEffect": {
+    "type": "take_wound",
+    "amount": 1
+  }
+}

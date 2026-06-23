@@ -3,6 +3,17 @@ import { statSchema } from "./character.schema.js";
 import { gearItemSchema } from "./gear.schema.js";
 import type { GearItem } from "./gear.schema.js";
 
+const followerGrantSchema = z.object({
+  id: z.string().min(1),
+  name: z.string().min(1),
+  role: z.enum(["scout", "medic", "gunner", "ritualist", "porter", "guide", "informant"]),
+  text: z.string().min(1),
+  loyalty: z.number().int().min(0).max(5).optional(),
+  lossCondition: z.enum(["wound", "heat", "combatLoss", "choice"]).optional()
+});
+
+type FollowerGrant = z.infer<typeof followerGrantSchema>;
+
 const cardBaseSchema = z.object({
   id: z.string().min(1),
   title: z.string().min(1),
@@ -41,6 +52,12 @@ type GainGearEffect = {
   gear?: GearItem;
 };
 
+type GainFollowerEffect = {
+  type: "gain_follower";
+  followerId: string;
+  follower?: FollowerGrant;
+};
+
 type GainNoteEffect = {
   type: "gain_note";
   text: string;
@@ -60,6 +77,7 @@ type SimpleEncounterEffect =
   | HealWoundEffect
   | GainScarEffect
   | GainGearEffect
+  | GainFollowerEffect
   | GainNoteEffect
   | AdvanceScenarioEffect;
 
@@ -90,6 +108,11 @@ const simpleEffectSchema: z.ZodType<SimpleEncounterEffect> = z.union([
     type: z.literal("gain_gear"),
     gearId: z.string().min(1),
     gear: gearItemSchema.optional()
+  }),
+  z.object({
+    type: z.literal("gain_follower"),
+    followerId: z.string().min(1),
+    follower: followerGrantSchema.optional()
   }),
   z.object({
     type: z.literal("gain_note"),
@@ -142,12 +165,23 @@ export const threatCardSchema = z.union([
 export const anomalyCardSchema = cardBaseSchema.extend({
   type: z.literal("anomaly"),
   instability: z.number().int().min(1).max(5),
+  regionHint: z.enum(["outer", "middle", "inner", "global"]).optional(),
   resolutionSummary: z.string().min(1),
   resolveEffect: effectSchema
 });
 
+export const artifactKindSchema = z.enum([
+  "chargedRelic",
+  "gateRelic",
+  "cursedRelic",
+  "factionRelic",
+  "consumableSalvage",
+  "burdenRelic"
+]);
+
 export const artifactCardSchema = cardBaseSchema.extend({
   type: z.literal("artifact"),
+  artifactKind: artifactKindSchema.optional(),
   charge: z.number().int().min(0),
   resolutionSummary: z.string().min(1),
   resolveEffect: effectSchema

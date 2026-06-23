@@ -1,0 +1,28 @@
+{
+  "id": "webglass-echo-trap",
+  "type": "threat",
+  "cardType": "hazard",
+  "title": "Webglass Echo Trap",
+  "text": "A webglass arch repeats your last decision until the wrong version of you steps out.",
+  "flavor": "It knows what you almost did.",
+  "severity": 3,
+  "stat": "signal",
+  "difficulty": 8,
+  "successEffect": {
+    "type": "gain_note",
+    "text": "You collapsed the echo before it learned your name."
+  },
+  "failEffect": {
+    "type": "sequence",
+    "effects": [
+      {
+        "type": "gain_heat",
+        "amount": 1
+      },
+      {
+        "type": "take_wound",
+        "amount": 1
+      }
+    ]
+  }
+}

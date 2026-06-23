@@ -1,0 +1,21 @@
+{
+  "id": "iron-synod-hunter",
+  "type": "threat",
+  "cardType": "enemy",
+  "title": "Iron Synod Hunter",
+  "enemyName": "Iron Synod Hunter",
+  "text": "The Synod hunter names your equipment illegal and begins confiscation by force.",
+  "flavor": "Its warrant is stamped into the muzzle.",
+  "severity": 3,
+  "stat": "forge",
+  "difficulty": 8,
+  "trophyValue": 7,
+  "defeatReward": {
+    "type": "gain_gear",
+    "gearId": "marshal-seal"
+  },
+  "woundOnLoss": {
+    "type": "take_wound",
+    "amount": 2
+  }
+}

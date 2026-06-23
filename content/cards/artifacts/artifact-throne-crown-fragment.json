@@ -1,0 +1,29 @@
+{
+  "id": "artifact-throne-crown-fragment",
+  "type": "artifact",
+  "artifactKind": "burdenRelic",
+  "title": "Throne-Crown Fragment",
+  "text": "A radiant Crownfall burden worth leverage, progress, and a terrible amount of attention.",
+  "flavor": "The shard is light until it notices you carrying it.",
+  "charge": 0,
+  "resolutionSummary": "Claimed a Throne-Crown Fragment and marked progress at the cost of heat.",
+  "resolveEffect": {
+    "type": "sequence",
+    "effects": [
+      {
+        "type": "advance_scenario",
+        "progressKey": "sealRestorationMarks",
+        "amount": 1,
+        "summary": "A Crownfall relic advances the Broken Seal."
+      },
+      {
+        "type": "gain_heat",
+        "amount": 1
+      },
+      {
+        "type": "gain_note",
+        "text": "Throne-Crown burden: valuable, visible, and hard to move quietly."
+      }
+    ]
+  }
+}

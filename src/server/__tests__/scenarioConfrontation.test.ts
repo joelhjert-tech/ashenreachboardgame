@@ -727,7 +727,7 @@ describe("scenario confrontation flow", () => {
         activeScenarioId: "scenario_devourer_beneath",
         scenarioProgress: {
           doomTokens: 2,
-          devourerIndex: 2
+          devourerIndex: 3
         },
         phase: "navigation",
         players: createScenarioState().players
@@ -768,7 +768,7 @@ describe("scenario confrontation flow", () => {
         activeScenarioId: "scenario_devourer_beneath",
         scenarioProgress: {
           doomTokens: 0,
-          devourerIndex: 2
+          devourerIndex: 3
         },
         phase: "navigation",
         players: createScenarioState().players

@@ -15,6 +15,7 @@ export const phaseSchema = z.enum([
 
 export const sessionStatusSchema = z.enum(["lobby", "active", "ended"]);
 export const sessionModeSchema = z.enum(["multiplayer", "single-player"]);
+export const interactionModeSchema = z.enum(["co-op", "rivalry", "ruthless"]);
 
 export const seatSchema = z.object({
   seatId: z.string().min(1),
@@ -41,6 +42,7 @@ export const gameStateSchema = z.object({
   sessionId: z.string().min(1),
   status: sessionStatusSchema,
   sessionMode: sessionModeSchema,
+  interactionMode: interactionModeSchema.optional(),
   winnerSeatId: z.string().min(1).nullable(),
   activeScenarioId: z.string().min(1),
   scenarioProgress: z.record(z.string(), z.number().int().min(0)),
@@ -102,6 +104,7 @@ export const sessionSnapshotSchema = z.object({
 export type Phase = z.infer<typeof phaseSchema>;
 export type SessionStatus = z.infer<typeof sessionStatusSchema>;
 export type SessionMode = z.infer<typeof sessionModeSchema>;
+export type InteractionMode = z.infer<typeof interactionModeSchema>;
 export type Seat = z.infer<typeof seatSchema>;
 export type PlayerPrivateState = z.infer<typeof playerPrivateStateSchema>;
 export type PlayerState = z.infer<typeof playerStateSchema>;

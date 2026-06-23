@@ -1,0 +1,9 @@
+{
+  "id": "red-march-guide",
+  "name": "Red March Guide",
+  "role": "guide",
+  "text": "Once per round, ignore one failed movement check or route penalty in a middle space.",
+  "useLimit": "oncePerRound",
+  "loyalty": 2,
+  "lossCondition": "combatLoss"
+}

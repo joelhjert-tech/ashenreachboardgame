@@ -1,0 +1,14 @@
+{
+  "id": "anomaly-cinder-mirage-lane",
+  "type": "anomaly",
+  "regionHint": "outer",
+  "title": "Cinder Mirage Lane",
+  "text": "A false safe road overlays the real path, offering speed for anyone willing to trust heat haze.",
+  "flavor": "It is easiest to follow when you are already lost.",
+  "instability": 2,
+  "resolutionSummary": "Mapped the mirage lane and marked a risky shortcut.",
+  "resolveEffect": {
+    "type": "gain_note",
+    "text": "Cinder Mirage Lane mapped: a high-risk shortcut is available to bargain with."
+  }
+}

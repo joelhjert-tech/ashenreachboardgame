@@ -5,10 +5,11 @@ import { loadArtifactCards } from "../src/game/content/artifacts.js";
 import { loadCharacters } from "../src/game/content/characters.js";
 import { loadContracts } from "../src/game/content/contracts.js";
 import { loadEscalationCards } from "../src/game/content/escalations.js";
+import { loadFollowers } from "../src/game/content/followers.js";
 import { loadGear } from "../src/game/content/gear.js";
 import { loadScarCards } from "../src/game/content/scars.js";
 import { loadThreatCards } from "../src/game/content/threats.js";
-import type { EncounterEffect } from "../src/game/schema/card.schema.js";
+import { effectSchema, type EncounterEffect } from "../src/game/schema/card.schema.js";
 import { sectorGraphSchema, type SectorNode } from "../src/game/schema/sector.schema.js";
 
 const sectorsRoot = join(process.cwd(), "content", "sectors");
@@ -20,6 +21,7 @@ const threats = loadThreatCards();
 const contracts = loadContracts();
 const anomalies = loadAnomalyCards();
 const artifacts = loadArtifactCards();
+const followers = loadFollowers();
 const scars = loadScarCards();
 const escalations = loadEscalationCards();
 
@@ -56,6 +58,16 @@ for (const artifact of artifacts.values()) {
   validateEffect(artifact.resolveEffect, `${artifact.id} resolution`);
 }
 
+for (const follower of followers.values()) {
+  if (follower.passiveEffect) {
+    validateUnknownEffect(follower.passiveEffect, `${follower.id} passive effect`);
+  }
+
+  if (follower.activeEffect) {
+    validateUnknownEffect(follower.activeEffect, `${follower.id} active effect`);
+  }
+}
+
 for (const escalation of escalations.values()) {
   if (escalation.resolveEffect) {
     validateEffect(escalation.resolveEffect, `${escalation.id} resolution`);
@@ -77,6 +89,7 @@ reportDuplicateIds("threats", threats.keys());
 reportDuplicateIds("contracts", contracts.keys());
 reportDuplicateIds("anomalies", anomalies.keys());
 reportDuplicateIds("artifacts", artifacts.keys());
+reportDuplicateIds("followers", followers.keys());
 reportDuplicateIds("scars", scars.keys());
 reportDuplicateIds("escalations", escalations.keys());
 
@@ -89,7 +102,7 @@ if (errors.length > 0) {
 }
 
 console.log(
-  `Content validation passed (${characters.size} characters, ${gear.size} gear, ${threats.size} threats, ${contracts.size} contracts, ${anomalies.size} anomalies, ${artifacts.size} artifacts, ${scars.size} scars, ${escalations.size} escalations)`
+  `Content validation passed (${characters.size} characters, ${gear.size} gear, ${threats.size} threats, ${contracts.size} contracts, ${anomalies.size} anomalies, ${artifacts.size} artifacts, ${followers.size} followers, ${scars.size} scars, ${escalations.size} escalations)`
 );
 
 function validateSectorDeckRefs(file: string, sector: SectorNode): void {
@@ -135,11 +148,27 @@ function validateEffect(effect: EncounterEffect, context: string): void {
     return;
   }
 
+  if (effect.type === "gain_follower" && !followers.has(effect.followerId)) {
+    errors.push(`${context} references missing follower ${effect.followerId}`);
+    return;
+  }
+
   if (effect.type === "sequence") {
     for (const nestedEffect of effect.effects) {
       validateEffect(nestedEffect, context);
     }
   }
+}
+
+function validateUnknownEffect(effect: unknown, context: string): void {
+  const parsed = effectSchema.safeParse(effect);
+
+  if (!parsed.success) {
+    errors.push(`${context} has invalid effect shape`);
+    return;
+  }
+
+  validateEffect(parsed.data, context);
 }
 
 function reportDuplicateIds(group: string, ids: Iterable<string>): void {

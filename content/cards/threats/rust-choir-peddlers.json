@@ -1,0 +1,21 @@
+{
+  "id": "rust-choir-peddlers",
+  "type": "threat",
+  "cardType": "enemy",
+  "title": "Rust Choir Peddlers",
+  "enemyName": "Rust Choir Peddlers",
+  "text": "Singing peddlers offer blessed scrap, then draw knives when you hear the missing harmony.",
+  "flavor": "Their hymn has a hook hidden in the chorus.",
+  "severity": 2,
+  "stat": "guile",
+  "difficulty": 5,
+  "trophyValue": 4,
+  "defeatReward": {
+    "type": "gain_note",
+    "text": "You kept the peddlers talking long enough to steal the real price list."
+  },
+  "woundOnLoss": {
+    "type": "gain_heat",
+    "amount": 1
+  }
+}

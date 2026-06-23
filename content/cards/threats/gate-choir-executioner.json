@@ -1,0 +1,30 @@
+{
+  "id": "gate-choir-executioner",
+  "type": "threat",
+  "cardType": "enemy",
+  "title": "Gate Choir Executioner",
+  "enemyName": "Gate Choir Executioner",
+  "text": "The Gate Choir sends an executioner whose axe hums with a verdict meant for someone else.",
+  "flavor": "Mistaken identity is still fatal at the Gate.",
+  "severity": 5,
+  "stat": "command",
+  "difficulty": 10,
+  "trophyValue": 9,
+  "defeatReward": {
+    "type": "gain_gear",
+    "gearId": "veil-hook"
+  },
+  "woundOnLoss": {
+    "type": "sequence",
+    "effects": [
+      {
+        "type": "take_wound",
+        "amount": 2
+      },
+      {
+        "type": "gain_heat",
+        "amount": 1
+      }
+    ]
+  }
+}

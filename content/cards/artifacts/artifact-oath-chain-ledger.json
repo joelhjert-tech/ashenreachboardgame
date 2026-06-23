@@ -1,0 +1,14 @@
+{
+  "id": "artifact-oath-chain-ledger",
+  "type": "artifact",
+  "artifactKind": "factionRelic",
+  "title": "Oath-Chain Ledger",
+  "text": "A Pale Cartel contract object with enough signatures to hire half a route crew.",
+  "flavor": "Debts survive fire better than people do.",
+  "charge": 0,
+  "resolutionSummary": "Claimed the Oath-Chain Ledger as a bargaining object.",
+  "resolveEffect": {
+    "type": "gain_gear",
+    "gearId": "oath-chain-ledger"
+  }
+}

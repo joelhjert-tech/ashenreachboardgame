@@ -4,6 +4,7 @@ import { loadContracts } from "../game/content/contracts.js";
 import { loadAnomalyCards } from "../game/content/anomalies.js";
 import { loadArtifactCards } from "../game/content/artifacts.js";
 import { loadEscalationCards } from "../game/content/escalations.js";
+import { loadFollowers } from "../game/content/followers.js";
 import { loadGear } from "../game/content/gear.js";
 import { loadThreatCards } from "../game/content/threats.js";
 import { resolveBoardTextChoice, resolveBoardTextEffect, type BoardTextDeckKind } from "../game/data/boardTextEffects.js";
@@ -63,6 +64,7 @@ import type { AnomalyCard, ArtifactCard, EncounterEffect, EscalationCard, Threat
 import type { Character } from "../game/schema/character.schema.js";
 import type { Stat } from "../game/schema/character.schema.js";
 import type { ContractCard } from "../game/schema/contract.schema.js";
+import type { Follower } from "../game/schema/follower.schema.js";
 import type { GearItem } from "../game/schema/gear.schema.js";
 import { rollDice, type RandomSource, defaultRandomSource } from "../game/engine/dice.js";
 import { reduceGameState } from "../game/engine/reducer.js";
@@ -204,6 +206,7 @@ export class GameRoomServer {
   private readonly clients = new Set<ConnectedClient>();
   private readonly characters: Map<string, Character>;
   private readonly contracts: Map<string, ContractCard>;
+  private readonly followers: Map<string, Follower>;
   private readonly gear: Map<string, GearItem>;
   private readonly threats: Map<string, ThreatCard>;
   private readonly anomalies: Map<string, AnomalyCard>;
@@ -221,12 +224,14 @@ export class GameRoomServer {
     contracts?: Map<string, ContractCard>,
     anomalies?: Map<string, AnomalyCard>,
     artifacts?: Map<string, ArtifactCard>,
-    escalations?: Map<string, EscalationCard>
+    escalations?: Map<string, EscalationCard>,
+    followers?: Map<string, Follower>
   ) {
     this.threats = threats ?? loadThreatCards();
     this.characters = characters ?? loadCharacters();
     this.gear = gear ?? loadGear();
     this.contracts = contracts ?? loadContracts();
+    this.followers = followers ?? loadFollowers();
     this.anomalies = anomalies ?? loadAnomalyCards();
     this.artifacts = artifacts ?? loadArtifactCards();
     this.escalations = escalations ?? loadEscalationCards();
@@ -3279,6 +3284,13 @@ export class GameRoomServer {
       };
     }
 
+    if (effect.type === "gain_follower") {
+      return {
+        ...effect,
+        follower: this.followers.get(effect.followerId)
+      };
+    }
+
     if (effect.type === "sequence") {
       return {
         ...effect,
@@ -3561,6 +3573,7 @@ export function createTvProjection(state: GameState): Record<string, unknown> {
   return {
     status: state.status,
     sessionMode: state.sessionMode,
+    interactionMode: state.interactionMode ?? (state.sessionMode === "single-player" ? "co-op" : "rivalry"),
     winnerSeatId: state.winnerSeatId,
     activeScenario: activeScenario
       ? {
@@ -3603,6 +3616,7 @@ export function createTvProjection(state: GameState): Record<string, unknown> {
         wounds: player.character.wounds,
         scars: player.character.scars,
         heldGearCount: player.character.heldGear.length,
+        followerCount: player.character.followers?.length ?? 0,
         equippedGear: player.character.equippedGear
       },
       sectorId: player.character.currentSpaceId
@@ -3639,6 +3653,7 @@ export function createPhoneProjection(state: GameState, seatId: string, forcePri
     phase: state.phase,
     status: state.status,
     sessionMode: state.sessionMode,
+    interactionMode: state.interactionMode ?? (state.sessionMode === "single-player" ? "co-op" : "rivalry"),
     winnerSeatId: state.winnerSeatId,
     activeScenario: publicProjection.activeScenario,
     scenarioTelemetry: publicProjection.scenarioTelemetry,

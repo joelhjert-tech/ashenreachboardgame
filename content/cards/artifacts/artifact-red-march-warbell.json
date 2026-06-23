@@ -1,0 +1,23 @@
+{
+  "id": "artifact-red-march-warbell",
+  "type": "artifact",
+  "artifactKind": "cursedRelic",
+  "title": "Red March Warbell",
+  "text": "A battle bell from a buried convoy command post, still eager to call witnesses.",
+  "flavor": "It makes courage sound expensive.",
+  "charge": 1,
+  "resolutionSummary": "Took the Red March Warbell and accepted its heat signature.",
+  "resolveEffect": {
+    "type": "sequence",
+    "effects": [
+      {
+        "type": "gain_gear",
+        "gearId": "red-march-warbell"
+      },
+      {
+        "type": "gain_heat",
+        "amount": 1
+      }
+    ]
+  }
+}
