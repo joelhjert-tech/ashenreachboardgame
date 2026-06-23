@@ -147,7 +147,7 @@ const encounterDecksBySpaceId: Partial<Record<string, EncounterDecks>> = {
     anomaly: ["anomaly-red-suture-field"],
     contract: [],
     artifact: [],
-    escalation: ["escalation-emberwatch", "escalation-ridge-suture"]
+    escalation: ["escalation-emberwatch", "escalation-ridge-suture", "escalation-ashfall-curfew"]
   },
   outer_oathpost: {
     threat: ["pale-cartel-shakedown", "gate-tax-collectors", "furnace-ditch-collapse"],
@@ -161,7 +161,7 @@ const encounterDecksBySpaceId: Partial<Record<string, EncounterDecks>> = {
     anomaly: [],
     contract: [],
     artifact: [],
-    escalation: ["escalation-ridge-suture"]
+    escalation: ["escalation-ridge-suture", "escalation-bellglass-riot"]
   },
   middle_shard_sprawl: {
     threat: [
@@ -195,7 +195,7 @@ const encounterDecksBySpaceId: Partial<Record<string, EncounterDecks>> = {
     anomaly: ["anomaly-marrow-clock-drift"],
     contract: [],
     artifact: ["artifact-cinder-suture-kit"],
-    escalation: ["escalation-emberwatch"]
+    escalation: ["escalation-emberwatch", "escalation-red-march-levy"]
   },
   middle_guardian_span: {
     threat: [
@@ -208,21 +208,21 @@ const encounterDecksBySpaceId: Partial<Record<string, EncounterDecks>> = {
     anomaly: ["anomaly-red-suture-field", "anomaly-table-fire-writ"],
     contract: [],
     artifact: [],
-    escalation: []
+    escalation: ["escalation-red-march-levy"]
   },
   middle_rivalry_pit: {
     threat: ["shardvine-ambushers", "guardian-bridge-duelist", "iron-synod-hunter", "false-route-procession"],
     anomaly: ["anomaly-red-suture-field"],
     contract: ["cartel-quiet-route", "compact-cleanse-ledger"],
     artifact: ["artifact-red-march-warbell"],
-    escalation: []
+    escalation: ["escalation-bellglass-riot"]
   },
   middle_red_march_outpost: {
     threat: ["red-march-cannoneer", "iron-synod-hunter", "ash-choir-crusader", "suture-storm"],
     anomaly: ["anomaly-red-suture-field", "anomaly-marrow-clock-drift"],
     contract: ["warden-span-vigil", "clan-salvage-tithe"],
     artifact: [],
-    escalation: []
+    escalation: ["escalation-ashfall-curfew", "escalation-webglass-afterimage"]
   },
   middle_webglass_breach: {
     threat: [
@@ -235,7 +235,7 @@ const encounterDecksBySpaceId: Partial<Record<string, EncounterDecks>> = {
     anomaly: [],
     contract: [],
     artifact: [],
-    escalation: []
+    escalation: ["escalation-webglass-afterimage"]
   },
   middle_anomaly_well: {
     threat: ["webglass-echo-trap", "breach-lens-overload", "false-route-procession", "veil-rift-judicator"],
@@ -248,42 +248,42 @@ const encounterDecksBySpaceId: Partial<Record<string, EncounterDecks>> = {
     ],
     contract: [],
     artifact: ["artifact-bell-votive", "artifact-choir-static-censer", "artifact-gate-saint-key"],
-    escalation: []
+    escalation: ["escalation-webglass-afterimage", "escalation-crownfall-writ"]
   },
   inner_veil_rift: {
     threat: ["veil-rift-judicator", "saint-of-ashes-echo", "starless-taxation", "specimen-null-arrives"],
     anomaly: ["anomaly-crownfall-echo-court", "anomaly-saint-static-aperture"],
     contract: [],
     artifact: ["artifact-gate-saint-key", "artifact-throne-crown-fragment"],
-    escalation: []
+    escalation: ["escalation-webglass-afterimage", "escalation-crownfall-writ"]
   },
   inner_tomb_gate: {
     threat: ["tomb-gate-colossus", "cinder-lattice-maw", "saint-of-ashes-echo", "starless-taxation"],
     anomaly: ["anomaly-crownfall-echo-court"],
     contract: [],
     artifact: ["artifact-gate-saint-key"],
-    escalation: []
+    escalation: ["escalation-crownfall-writ"]
   },
   inner_cinder_lattice: {
     threat: ["cinder-lattice-maw", "gate-choir-executioner", "tomb-gate-colossus", "specimen-null-arrives"],
     anomaly: ["anomaly-saint-static-aperture"],
     contract: [],
     artifact: ["artifact-throne-crown-fragment"],
-    escalation: []
+    escalation: ["escalation-gate-saint-wake"]
   },
   inner_blackstar_shortcut: {
     threat: ["specimen-null-arrives", "gate-choir-executioner", "cinder-lattice-maw", "starless-taxation"],
     anomaly: [],
     contract: [],
     artifact: ["artifact-bell-votive", "artifact-blackstar-ampoule", "artifact-throne-crown-fragment"],
-    escalation: ["escalation-ridge-suture"]
+    escalation: ["escalation-ridge-suture", "escalation-crownfall-writ", "escalation-gate-saint-wake"]
   },
   inner_choir_shrine: {
     threat: ["veil-rift-judicator", "saint-of-ashes-echo", "gate-choir-executioner", "specimen-null-arrives"],
     anomaly: ["anomaly-choir-static", "anomaly-crownfall-echo-court", "anomaly-saint-static-aperture"],
     contract: [],
     artifact: ["artifact-bell-votive", "artifact-choir-static-censer", "artifact-gate-saint-key"],
-    escalation: []
+    escalation: ["escalation-gate-saint-wake"]
   },
   inner_gate_of_cinders: {
     threat: [
@@ -296,7 +296,7 @@ const encounterDecksBySpaceId: Partial<Record<string, EncounterDecks>> = {
     anomaly: ["anomaly-table-fire-writ"],
     contract: [],
     artifact: ["artifact-gate-saint-key", "artifact-throne-crown-fragment"],
-    escalation: []
+    escalation: ["escalation-crownfall-writ", "escalation-gate-saint-wake"]
   }
 };
 

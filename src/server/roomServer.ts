@@ -57,7 +57,10 @@ import type {
   ScenarioVictoryAchievedAction,
   StabilizeResolvedAction,
   StatRaisedAction,
-  UnequipGearAction
+  TableInteractionAction,
+  UnequipGearAction,
+  UseFollowerAction,
+  UseGearAction
 } from "../game/engine/actions.js";
 import { getEquippedGearBonus } from "../game/engine/gear.js";
 import type { AnomalyCard, ArtifactCard, EncounterEffect, EscalationCard, ThreatCard } from "../game/schema/card.schema.js";
@@ -577,6 +580,162 @@ export class GameRoomServer {
     this.restartActiveSession();
   }
 
+  private createGearUseAction(
+    seatId: string,
+    gearId: string,
+    createdAt: string
+  ): UseGearAction {
+    const player = this.state.players.find((entry) => entry.seatId === seatId);
+    const item = player?.character.heldGear.find((entry) => entry.id === gearId) ?? this.gear.get(gearId);
+    const itemName = item?.name ?? gearId;
+    const discard = item?.useLimit === "discard";
+    const effect = this.resolveEffect(this.getGearUseEffect(gearId));
+
+    return {
+      type: "USE_GEAR",
+      seatId,
+      gearId,
+      effect,
+      discard,
+      summary: `${itemName} used. ${item?.activeText ?? "Its effect was recorded for the table."}`,
+      createdAt
+    } satisfies UseGearAction;
+  }
+
+  private getGearUseEffect(gearId: string): EncounterEffect {
+    switch (gearId) {
+      case "blackstar-ampoule":
+        return { type: "gain_note", text: "Blackstar Ampoule spent: one failed movement or hazard penalty may be ignored." };
+      case "choir-static-censer":
+        return { type: "lose_heat", amount: 1 };
+      case "cinder-suture-kit":
+        return {
+          type: "sequence",
+          effects: [
+            { type: "heal_wound", amount: 1 },
+            { type: "gain_heat", amount: 1 }
+          ]
+        };
+      case "grave-lens":
+        return { type: "gain_note", text: "Grave Lens reading: a follower-linked route note was recorded." };
+      case "red-march-warbell":
+        return {
+          type: "sequence",
+          effects: [
+            { type: "gain_heat", amount: 1 },
+            { type: "gain_note", text: "Red March Warbell sounded: +2 combat pressure is banked for this fight." }
+          ]
+        };
+      case "ashen-route-compass":
+        return { type: "gain_note", text: "Ashen Route Compass fixed a reroll route for a failed movement or anomaly check." };
+      default:
+        return { type: "gain_note", text: `${gearId} was used and its table effect was recorded.` };
+    }
+  }
+
+  private createFollowerUseAction(
+    seatId: string,
+    followerId: string,
+    createdAt: string
+  ): UseFollowerAction {
+    const player = this.state.players.find((entry) => entry.seatId === seatId);
+    const follower = (player?.character.followers ?? []).find((entry) => entry.id === followerId) ?? this.followers.get(followerId);
+    const effect = this.resolveEffect((follower?.activeEffect as EncounterEffect | undefined) ?? this.getFollowerRoleEffect(follower));
+
+    return {
+      type: "USE_FOLLOWER",
+      seatId,
+      followerId,
+      effect,
+      discard: follower?.useLimit === "discard",
+      summary: `${follower?.name ?? followerId} used. ${follower?.text ?? "Their table effect was recorded."}`,
+      createdAt
+    } satisfies UseFollowerAction;
+  }
+
+  private getFollowerRoleEffect(follower: Follower | undefined): EncounterEffect {
+    switch (follower?.role) {
+      case "medic":
+        return {
+          type: "sequence",
+          effects: [
+            { type: "heal_wound", amount: 1 },
+            { type: "gain_heat", amount: 1 }
+          ]
+        };
+      case "ritualist":
+      case "informant":
+        return { type: "lose_heat", amount: 1 };
+      case "gunner":
+        return { type: "gain_note", text: `${follower.name} is covering the next combat exchange.` };
+      case "guide":
+      case "scout":
+      case "porter":
+      default:
+        return { type: "gain_note", text: `${follower?.name ?? "Follower"} support recorded for this route.` };
+    }
+  }
+
+  private createTableInteractionAction(
+    intent: Extract<ClientIntent, { type: "TABLE_INTERACTION" }>,
+    createdAt: string
+  ): TableInteractionAction {
+    const actorName = this.getSeatDisplayName(intent.seatId);
+    const targetName = this.getSeatDisplayName(intent.targetSeatId);
+
+    switch (intent.interactionKind) {
+      case "aid":
+        return {
+          type: "TABLE_INTERACTION",
+          seatId: intent.seatId,
+          targetSeatId: intent.targetSeatId,
+          interactionKind: intent.interactionKind,
+          effect: { type: "gain_note", text: `${actorName} aided ${targetName}.` },
+          targetEffect: { type: "lose_heat", amount: 1 },
+          summary: `${actorName} aided ${targetName}; the target loses 1 Heat.`,
+          createdAt
+        } satisfies TableInteractionAction;
+      case "duel":
+        return {
+          type: "TABLE_INTERACTION",
+          seatId: intent.seatId,
+          targetSeatId: intent.targetSeatId,
+          interactionKind: intent.interactionKind,
+          effect: { type: "gain_note", text: `${actorName} challenged ${targetName} to a bounded duel.` },
+          targetEffect: { type: "gain_heat", amount: 1 },
+          summary: `${actorName} challenged ${targetName}; bounded rivalry marks the target with 1 Heat.`,
+          createdAt
+        } satisfies TableInteractionAction;
+      case "interfere":
+        return {
+          type: "TABLE_INTERACTION",
+          seatId: intent.seatId,
+          targetSeatId: intent.targetSeatId,
+          interactionKind: intent.interactionKind,
+          effect: { type: "gain_heat", amount: 1 },
+          targetEffect: { type: "gain_heat", amount: 1 },
+          summary: `${actorName} interfered with ${targetName}; both operatives gain 1 Heat.`,
+          createdAt
+        } satisfies TableInteractionAction;
+      case "trade":
+      default:
+        return {
+          type: "TABLE_INTERACTION",
+          seatId: intent.seatId,
+          targetSeatId: intent.targetSeatId,
+          interactionKind: intent.interactionKind,
+          effect: { type: "gain_note", text: `${actorName} traded with ${targetName}.` },
+          targetEffect: { type: "gain_note", text: `${targetName} traded with ${actorName}.` },
+          summary: `${actorName} traded with ${targetName}; both operatives record the exchange.`,
+          createdAt
+        } satisfies TableInteractionAction;
+    }
+  }
+
+  private getSeatDisplayName(seatId: string): string {
+    return this.state.seats.find((seat) => seat.seatId === seatId)?.displayName ?? seatId;
+  }
+
   private intentToAction(intent: ClientIntent): GameAction {
     const createdAt = new Date().toISOString();
 
@@ -638,6 +797,12 @@ export class GameRoomServer {
           slot: intent.slot,
           createdAt
         } satisfies UnequipGearAction;
+      case "USE_GEAR":
+        return this.createGearUseAction(intent.seatId, intent.gearId, createdAt);
+      case "USE_FOLLOWER":
+        return this.createFollowerUseAction(intent.seatId, intent.followerId, createdAt);
+      case "TABLE_INTERACTION":
+        return this.createTableInteractionAction(intent, createdAt);
       case "ACCEPT_CONTRACT":
         return {
           type: "ACCEPT_CONTRACT",

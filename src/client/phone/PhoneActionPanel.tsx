@@ -306,6 +306,9 @@ export function PhoneActionPanel({ characters, onIntent, patch }: PhoneActionPan
   const threatActions: ActionButtonDefinition[] = [];
   const resolveActions: ActionButtonDefinition[] = [];
   const gearActions: ActionButtonDefinition[] = [];
+  const objectActions: ActionButtonDefinition[] = [];
+  const followerActions: ActionButtonDefinition[] = [];
+  const tableActions: ActionButtonDefinition[] = [];
   const contractActions: ActionButtonDefinition[] = [];
   const advanceActions: ActionButtonDefinition[] = [];
   const statRaiseActions: ActionButtonDefinition[] = [];
@@ -411,6 +414,21 @@ export function PhoneActionPanel({ characters, onIntent, patch }: PhoneActionPan
 
     self.character.heldGear.forEach((item) => {
       if (equippedIds.has(item.id)) {
+        if (item.activeText || item.useLimit) {
+          objectActions.push({
+            key: `use-${item.id}`,
+            label: `Use ${item.name}`,
+            detail: item.activeText ?? toTitleCase(item.category ?? "active"),
+            tone: item.useLimit === "discard" ? "primary" : "secondary",
+            onClick: () =>
+              onIntent({
+                type: "USE_GEAR",
+                seatId: self.seatId,
+                gearId: item.id
+              })
+          });
+        }
+
         return;
       }
 
@@ -427,6 +445,21 @@ export function PhoneActionPanel({ characters, onIntent, patch }: PhoneActionPan
             slot: item.slot
           })
       });
+
+      if (item.activeText || item.useLimit) {
+        objectActions.push({
+          key: `use-${item.id}`,
+          label: `Use ${item.name}`,
+          detail: item.activeText ?? toTitleCase(item.category ?? "active"),
+          tone: item.useLimit === "discard" ? "primary" : "secondary",
+          onClick: () =>
+            onIntent({
+              type: "USE_GEAR",
+              seatId: self.seatId,
+              gearId: item.id
+            })
+        });
+      }
     });
 
     (Object.entries(self.character.equippedGear) as Array<[keyof typeof self.character.equippedGear, string | null]>).forEach(
@@ -449,6 +482,47 @@ export function PhoneActionPanel({ characters, onIntent, patch }: PhoneActionPan
         });
       }
     );
+
+    (self.character.followers ?? []).forEach((follower) => {
+      followerActions.push({
+        key: `use-follower-${follower.id}`,
+        label: `Use ${follower.name}`,
+        detail: `${toTitleCase(follower.role)}${follower.useLimit ? ` | ${toTitleCase(follower.useLimit)}` : ""}`,
+        tone: follower.useLimit === "discard" ? "primary" : "secondary",
+        onClick: () =>
+          onIntent({
+            type: "USE_FOLLOWER",
+            seatId: self.seatId,
+            followerId: follower.id
+          })
+      });
+    });
+
+    if (patch.sessionMode !== "single-player") {
+      const tableTargets = patch.seats.filter((seat) => seat.seatId !== self.seatId && seat.displayName && !seat.kicked);
+      const baseInteractions = patch.interactionMode === "co-op" ? ["trade", "aid"] : ["trade", "aid", "duel", "interfere"];
+
+      tableTargets.forEach((seat) => {
+        baseInteractions.forEach((interactionKind) => {
+          tableActions.push({
+            key: `${interactionKind}-${seat.seatId}`,
+            label: `${toTitleCase(interactionKind)} ${seat.displayName}`,
+            detail:
+              interactionKind === "interfere" && patch.interactionMode !== "ruthless"
+                ? "Bounded rivalry"
+                : toTitleCase(patch.interactionMode ?? "rivalry"),
+            tone: interactionKind === "aid" || interactionKind === "trade" ? "secondary" : "primary",
+            onClick: () =>
+              onIntent({
+                type: "TABLE_INTERACTION",
+                seatId: self.seatId,
+                targetSeatId: seat.seatId,
+                interactionKind: interactionKind as "trade" | "aid" | "duel" | "interfere"
+              })
+          });
+        });
+      });
+    }
 
     if (!self.character.activeContract) {
       patch.availableContracts.forEach((contract) => {
@@ -557,6 +631,9 @@ export function PhoneActionPanel({ characters, onIntent, patch }: PhoneActionPan
           { key: "threat", title: "Threat", detail: patch.encounter?.title, actions: threatActions, defaultOpen: true },
           { key: "resolve", title: "Resolve", detail: boardSpace?.textBox.title, actions: resolveActions, defaultOpen: true },
           { key: "gear", title: "Gear", detail: `${gearActions.length} available`, actions: gearActions },
+          { key: "objects", title: "Objects", detail: `${objectActions.length} usable`, actions: objectActions },
+          { key: "followers", title: "Followers", detail: `${followerActions.length} ready`, actions: followerActions },
+          { key: "table", title: "Table", detail: patch.interactionMode ?? "rivalry", actions: tableActions },
           { key: "contracts", title: "Contracts", detail: `${contractActions.length} available`, actions: contractActions },
           { key: "advance", title: "Advance", detail: "Finish or confront", actions: advanceActions, defaultOpen: true }
         ]}

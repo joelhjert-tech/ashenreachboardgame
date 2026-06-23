@@ -4,6 +4,7 @@ import { createSequenceRandomSource } from "../dice.js";
 import { GameRoomServer, createPhoneProjection, createTvProjection, type ConnectedClient } from "../../../server/roomServer.js";
 import type { Character } from "../../schema/character.schema.js";
 import type { ContractCard } from "../../schema/contract.schema.js";
+import type { Follower } from "../../schema/follower.schema.js";
 import type { GearItem } from "../../schema/gear.schema.js";
 import type { AnomalyCard, ArtifactCard, EscalationCard, ThreatCard } from "../../schema/card.schema.js";
 import type { ClientIntent, GameAction } from "../actions.js";
@@ -688,6 +689,119 @@ function withOnlyConnectedSeat(state: GameState, connectedSeatId: string): GameS
     }))
   };
 }
+
+describe("active objects and table interaction", () => {
+  it("uses and discards a consumable gear object from the phone", () => {
+    const state = createState({
+      players: createState().players.map((player) =>
+        player.seatId === "seat-1"
+          ? {
+              ...player,
+              character: {
+                ...player.character,
+                wounds: 1,
+                heat: 0,
+                heldGear: [
+                  {
+                    id: "cinder-suture-kit",
+                    name: "Cinder Suture Kit",
+                    slot: "utility",
+                    category: "consumable",
+                    statBonus: { stat: "forge", amount: 1 },
+                    activeText: "Discard to heal 1 wound, then gain 1 heat.",
+                    useLimit: "discard"
+                  }
+                ],
+                equippedGear: { weapon: null, armor: null, utility: null }
+              }
+            }
+          : player
+      )
+    });
+    const server = new GameRoomServer(state, [], createSequenceRandomSource([0]), createThreats(), createCharacters(), createGear(), createContracts());
+
+    runIntent(server, {
+      type: "USE_GEAR",
+      seatId: "seat-1",
+      gearId: "cinder-suture-kit"
+    });
+
+    const player = server.getState().players.find((entry) => entry.seatId === "seat-1");
+    expect(player?.character.wounds).toBe(0);
+    expect(player?.character.heat).toBe(1);
+    expect(player?.character.heldGear).toHaveLength(0);
+    expect(server.getState().lastOutcomeSummary?.summary).toContain("Cinder Suture Kit used");
+  });
+
+  it("uses a follower active effect from the phone", () => {
+    const follower: Follower = {
+      id: "crownless-advocate",
+      name: "Crownless Advocate",
+      role: "informant",
+      text: "Soften a faction demand.",
+      activeEffect: { type: "lose_heat", amount: 1 },
+      useLimit: "oncePerRound",
+      loyalty: 3,
+      lossCondition: "choice"
+    };
+    const state = createState({
+      players: createState().players.map((player) =>
+        player.seatId === "seat-1"
+          ? {
+              ...player,
+              character: {
+                ...player.character,
+                heat: 2,
+                followers: [follower]
+              }
+            }
+          : player
+      )
+    });
+    const server = new GameRoomServer(state, [], createSequenceRandomSource([0]), createThreats(), createCharacters(), createGear(), createContracts());
+
+    runIntent(server, {
+      type: "USE_FOLLOWER",
+      seatId: "seat-1",
+      followerId: "crownless-advocate"
+    });
+
+    const player = server.getState().players.find((entry) => entry.seatId === "seat-1");
+    expect(player?.character.heat).toBe(1);
+    expect(player?.character.followers).toHaveLength(1);
+    expect(server.getState().lastOutcomeSummary?.summary).toContain("Crownless Advocate used");
+  });
+
+  it("rejects repeated harmful rivalry pressure against the same target in one round", () => {
+    const sent: Array<Record<string, unknown>> = [];
+    const state = createState({
+      interactionMode: "rivalry",
+      eventLog: [
+        {
+          type: "TABLE_INTERACTION",
+          seatId: "seat-3",
+          targetSeatId: "seat-2",
+          interactionKind: "duel",
+          effect: null,
+          targetEffect: { type: "gain_heat", amount: 1 },
+          summary: "Prior bounded duel.",
+          createdAt: new Date().toISOString()
+        }
+      ]
+    });
+    const server = new GameRoomServer(state, [], createSequenceRandomSource([0]), createThreats(), createCharacters(), createGear(), createContracts());
+
+    server.handleIntent(createCapturingClient("seat-1", sent), {
+      type: "TABLE_INTERACTION",
+      seatId: "seat-1",
+      targetSeatId: "seat-2",
+      interactionKind: "interfere"
+    });
+
+    expect(server.getState().players.find((entry) => entry.seatId === "seat-2")?.character.heat).toBe(0);
+    expect(sent.some((message) => message.type === "INTENT_REJECTED")).toBe(true);
+  });
+});
 
 describe("movement rolls", () => {
   it("succeeds against a low-danger node without changing Heat", () => {

@@ -1,0 +1,13 @@
+{
+  "id": "glassmere-mapper",
+  "name": "Glassmere Mapper",
+  "role": "scout",
+  "text": "Once per turn, record a route note after resolving an anomaly or crossing an outer lane.",
+  "activeEffect": {
+    "type": "gain_note",
+    "text": "Glassmere mapper: a clean route angle is recorded."
+  },
+  "useLimit": "oncePerTurn",
+  "loyalty": 3,
+  "lossCondition": "wound"
+}

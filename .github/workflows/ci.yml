@@ -29,8 +29,14 @@ jobs:
       - name: Validate content
         run: npm run validate:content
 
+      - name: Audit assets
+        run: npm run audit:assets
+
       - name: Client tests
         run: npm run test:client
+
+      - name: Phone device matrix
+        run: npm run test:phone-matrix
 
       - name: Engine tests
         run: npm run test:engine

@@ -21,8 +21,11 @@ import type {
   ScenarioVictoryAchievedAction,
   StabilizeResolvedAction,
   StatRaisedAction,
+  TableInteractionAction,
   WoundThresholdReachedAction,
-  UnequipGearAction
+  UnequipGearAction,
+  UseFollowerAction,
+  UseGearAction
 } from "./actions.js";
 import { getHeldGearItem } from "./gear.js";
 import { canAdvancePhase, canResolveMovement } from "./phases.js";
@@ -367,6 +370,58 @@ function canManageGear(state: GameState, seatId: string): void {
   if (state.phase !== "action") {
     throw new Error(`Cannot manage gear during phase ${state.phase}`);
   }
+}
+
+function discardHeldGear(state: GameState, seatId: string, gearId: string): GameState {
+  return {
+    ...state,
+    players: updateActivePlayer(state, seatId, (entry) => ({
+      ...entry,
+      character: {
+        ...entry.character,
+        heldGear: entry.character.heldGear.filter((item) => item.id !== gearId),
+        equippedGear: Object.fromEntries(
+          Object.entries(entry.character.equippedGear).map(([slot, equippedId]) => [
+            slot,
+            equippedId === gearId ? null : equippedId
+          ])
+        ) as PlayerState["character"]["equippedGear"]
+      }
+    }))
+  };
+}
+
+function discardFollower(state: GameState, seatId: string, followerId: string): GameState {
+  return {
+    ...state,
+    players: updateActivePlayer(state, seatId, (entry) => ({
+      ...entry,
+      character: {
+        ...entry.character,
+        followers: (entry.character.followers ?? []).filter((follower) => follower.id !== followerId)
+      }
+    }))
+  };
+}
+
+function hasHarmfulInteractionThisRound(state: GameState, targetSeatId: string): boolean {
+  for (let index = state.eventLog.length - 1; index >= 0; index -= 1) {
+    const entry = state.eventLog[index] as { type?: string; targetSeatId?: string; interactionKind?: string } | undefined;
+
+    if (entry?.type === "ROUND_COMPLETED") {
+      return false;
+    }
+
+    if (
+      entry?.type === "TABLE_INTERACTION" &&
+      entry.targetSeatId === targetSeatId &&
+      (entry.interactionKind === "duel" || entry.interactionKind === "interfere")
+    ) {
+      return true;
+    }
+  }
+
+  return false;
 }
 
 function canRaiseStat(state: GameState, seatId: string): void {
@@ -1089,6 +1144,175 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
           }
         })),
         eventLog: [...state.eventLog, action]
+      });
+    }
+    case "USE_GEAR": {
+      const useGearAction = action as UseGearAction;
+
+      try {
+        canManageGear(state, useGearAction.seatId);
+      } catch (error) {
+        return reject(state, action, error instanceof Error ? error.message : "Seat cannot use gear");
+      }
+
+      const player = requirePlayer(state, useGearAction.seatId);
+      const item = getHeldGearItem(player.character, useGearAction.gearId);
+
+      if (!item) {
+        return reject(state, action, `Gear ${useGearAction.gearId} is not held by this character`);
+      }
+
+      const effectedState = useGearAction.effect
+        ? applyEffectToState(state, useGearAction.seatId, useGearAction.effect)
+        : state;
+      const finalState = useGearAction.discard
+        ? discardHeldGear(effectedState, useGearAction.seatId, useGearAction.gearId)
+        : effectedState;
+      const updatedPlayer = requirePlayer(finalState, useGearAction.seatId);
+
+      return succeed({
+        ...finalState,
+        sequence: state.sequence + 1,
+        lastOutcomeSummary: {
+          seatId: useGearAction.seatId,
+          movedToSectorId: updatedPlayer.sectorId,
+          encounterCardId: null,
+          encounterTitle: item.name,
+          encounterCardType: null,
+          checkStat: null,
+          die1: null,
+          die2: null,
+          statBonus: null,
+          checkTotal: null,
+          difficulty: null,
+          enemyRollerSeatId: null,
+          enemyDie1: null,
+          enemyDie2: null,
+          enemyBonus: null,
+          enemyTotal: null,
+          success: true,
+          summary: useGearAction.summary
+        },
+        eventLog: [...finalState.eventLog, action]
+      });
+    }
+    case "USE_FOLLOWER": {
+      const useFollowerAction = action as UseFollowerAction;
+
+      try {
+        canManageGear(state, useFollowerAction.seatId);
+      } catch (error) {
+        return reject(state, action, error instanceof Error ? error.message : "Seat cannot use a follower");
+      }
+
+      const player = requirePlayer(state, useFollowerAction.seatId);
+      const follower = (player.character.followers ?? []).find((entry) => entry.id === useFollowerAction.followerId);
+
+      if (!follower) {
+        return reject(state, action, `Follower ${useFollowerAction.followerId} is not attached to this character`);
+      }
+
+      const effectedState = useFollowerAction.effect
+        ? applyEffectToState(state, useFollowerAction.seatId, useFollowerAction.effect)
+        : state;
+      const finalState = useFollowerAction.discard
+        ? discardFollower(effectedState, useFollowerAction.seatId, useFollowerAction.followerId)
+        : effectedState;
+      const updatedPlayer = requirePlayer(finalState, useFollowerAction.seatId);
+
+      return succeed({
+        ...finalState,
+        sequence: state.sequence + 1,
+        lastOutcomeSummary: {
+          seatId: useFollowerAction.seatId,
+          movedToSectorId: updatedPlayer.sectorId,
+          encounterCardId: null,
+          encounterTitle: follower.name,
+          encounterCardType: null,
+          checkStat: null,
+          die1: null,
+          die2: null,
+          statBonus: null,
+          checkTotal: null,
+          difficulty: null,
+          enemyRollerSeatId: null,
+          enemyDie1: null,
+          enemyDie2: null,
+          enemyBonus: null,
+          enemyTotal: null,
+          success: true,
+          summary: useFollowerAction.summary
+        },
+        eventLog: [...finalState.eventLog, action]
+      });
+    }
+    case "TABLE_INTERACTION": {
+      const tableAction = action as TableInteractionAction;
+
+      try {
+        canManageGear(state, tableAction.seatId);
+      } catch (error) {
+        return reject(state, action, error instanceof Error ? error.message : "Seat cannot use table interaction");
+      }
+
+      if (state.sessionMode === "single-player") {
+        return reject(state, action, "Table interactions require more than one operative");
+      }
+
+      if (tableAction.targetSeatId === tableAction.seatId) {
+        return reject(state, action, "Choose another operative for table interaction");
+      }
+
+      const target = state.players.find((entry) => entry.seatId === tableAction.targetSeatId);
+
+      if (!target) {
+        return reject(state, action, `Unknown target seat ${tableAction.targetSeatId}`);
+      }
+
+      const interactionMode = state.interactionMode ?? "rivalry";
+
+      if (interactionMode === "co-op" && (tableAction.interactionKind === "duel" || tableAction.interactionKind === "interfere")) {
+        return reject(state, action, "Co-op mode only allows trade and aid");
+      }
+
+      if (
+        interactionMode !== "ruthless" &&
+        (tableAction.interactionKind === "duel" || tableAction.interactionKind === "interfere") &&
+        hasHarmfulInteractionThisRound(state, tableAction.targetSeatId)
+      ) {
+        return reject(state, action, "Bounded rivalry guardrail: that operative has already been pressured this round");
+      }
+
+      const actorEffectedState = tableAction.effect ? applyEffectToState(state, tableAction.seatId, tableAction.effect) : state;
+      const finalState = tableAction.targetEffect
+        ? applyEffectToState(actorEffectedState, tableAction.targetSeatId, tableAction.targetEffect)
+        : actorEffectedState;
+      const actor = requirePlayer(finalState, tableAction.seatId);
+
+      return succeed({
+        ...finalState,
+        sequence: state.sequence + 1,
+        lastOutcomeSummary: {
+          seatId: tableAction.seatId,
+          movedToSectorId: actor.sectorId,
+          encounterCardId: null,
+          encounterTitle: "Table Interaction",
+          encounterCardType: null,
+          checkStat: null,
+          die1: null,
+          die2: null,
+          statBonus: null,
+          checkTotal: null,
+          difficulty: null,
+          enemyRollerSeatId: null,
+          enemyDie1: null,
+          enemyDie2: null,
+          enemyBonus: null,
+          enemyTotal: null,
+          success: true,
+          summary: tableAction.summary
+        },
+        eventLog: [...finalState.eventLog, action]
       });
     }
     case "ACCEPT_CONTRACT": {

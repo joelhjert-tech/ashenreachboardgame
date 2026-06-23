@@ -1,0 +1,13 @@
+{
+  "id": "webglass-runner",
+  "name": "Webglass Runner",
+  "role": "guide",
+  "text": "Once per turn, mark a shortcut through a Webglass or Blackstar route after you clear the local threat.",
+  "activeEffect": {
+    "type": "gain_note",
+    "text": "Webglass runner: a shortcut through unstable ground is marked."
+  },
+  "useLimit": "oncePerTurn",
+  "loyalty": 2,
+  "lossCondition": "combatLoss"
+}

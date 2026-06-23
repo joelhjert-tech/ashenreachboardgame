@@ -334,6 +334,22 @@ export type ClientIntent =
       slot: GearSlot;
     }
   | {
+      type: "USE_GEAR";
+      seatId: string;
+      gearId: string;
+    }
+  | {
+      type: "USE_FOLLOWER";
+      seatId: string;
+      followerId: string;
+    }
+  | {
+      type: "TABLE_INTERACTION";
+      seatId: string;
+      targetSeatId: string;
+      interactionKind: "trade" | "aid" | "duel" | "interfere";
+    }
+  | {
       type: "ACCEPT_CONTRACT";
       seatId: string;
       contractId: string;
