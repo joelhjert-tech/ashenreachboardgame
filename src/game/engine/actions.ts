@@ -45,6 +45,7 @@ export interface EncounterDrawnAction extends BaseAction {
   type: "ENCOUNTER_DRAWN";
   sectorId: string;
   card: ThreatCard | null;
+  revealEffect?: EncounterEffect | null;
 }
 
 export interface CheckRequestedAction extends BaseAction {

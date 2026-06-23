@@ -186,12 +186,16 @@ function summarizeEffect(effect: EncounterEffect, success: boolean | null): stri
   switch (effect.type) {
     case "gain_heat":
       return `${prefix} gain ${effect.amount} Heat.`;
+    case "gain_heat_all":
+      return `${prefix} all operatives gain ${effect.amount} Heat.`;
     case "lose_heat":
       return `${prefix} lose ${effect.amount} Heat.`;
     case "take_wound":
       return `${prefix} take ${effect.amount} wound${effect.amount === 1 ? "" : "s"}.`;
     case "heal_wound":
       return `${prefix} heal ${effect.amount} wound${effect.amount === 1 ? "" : "s"}.`;
+    case "gain_trophy":
+      return `${prefix} gain ${effect.amount} Troph${effect.amount === 1 ? "y" : "ies"}.`;
     case "gain_scar":
       return `${prefix} gain scar ${effect.scarId}.`;
     case "gain_gear":
@@ -202,6 +206,8 @@ function summarizeEffect(effect: EncounterEffect, success: boolean | null): stri
       return `${prefix} note added: ${effect.text}`;
     case "advance_scenario":
       return `${prefix} advance scenario progress ${effect.progressKey} by ${effect.amount}.`;
+    case "advance_escalation":
+      return `${prefix} advance escalation by ${effect.amount}.`;
     case "sequence":
       return effect.effects.map((entry: EncounterEffect) => summarizeEffect(entry, success)).join(" ");
     default: {
@@ -245,6 +251,14 @@ function applyEffectToPlayer(player: PlayerState, effect: EncounterEffect): Play
           wounds: Math.max(0, player.character.wounds - effect.amount)
         }
       };
+    case "gain_trophy":
+      return {
+        ...player,
+        character: {
+          ...player.character,
+          trophies: player.character.trophies + effect.amount
+        }
+      };
     case "gain_scar":
       return {
         ...player,
@@ -265,6 +279,8 @@ function applyEffectToPlayer(player: PlayerState, effect: EncounterEffect): Play
           notes: [...player.private.notes, effect.text]
         }
       };
+    case "gain_heat_all":
+    case "advance_escalation":
     case "advance_scenario":
       return player;
     case "sequence":
@@ -331,6 +347,26 @@ function applyEffectToState(state: GameState, seatId: string, effect: EncounterE
             summary: `${state.lastOutcomeSummary.summary} ${summarizeEffect(effect, null)}`
           }
         : state.lastOutcomeSummary
+    };
+  }
+
+  if (effect.type === "advance_escalation") {
+    return {
+      ...state,
+      escalationLevel: Math.max(0, state.escalationLevel + effect.amount),
+      lastOutcomeSummary: state.lastOutcomeSummary
+        ? {
+            ...state.lastOutcomeSummary,
+            summary: `${state.lastOutcomeSummary.summary} ${summarizeEffect(effect, null)}`
+          }
+        : state.lastOutcomeSummary
+    };
+  }
+
+  if (effect.type === "gain_heat_all") {
+    return {
+      ...state,
+      players: state.players.map((player) => applyEffectToPlayer(player, { type: "gain_heat", amount: effect.amount }))
     };
   }
 
@@ -590,13 +626,17 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
         return reject(state, action, `Cannot draw encounter during phase ${state.phase}`);
       }
 
+      const revealedState = drawnAction.revealEffect
+        ? applyEffectToState(state, drawnAction.seatId, drawnAction.revealEffect)
+        : state;
+
       return succeed({
-        ...state,
+        ...revealedState,
         sequence: state.sequence + 1,
         phase: "action",
         resolutionSource: null,
         currentEncounter: drawnAction.card,
-        sectors: state.sectors.map((sector) =>
+        sectors: revealedState.sectors.map((sector) =>
           sector.id === drawnAction.sectorId && drawnAction.card
             ? {
                 ...sector,
@@ -614,11 +654,13 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
               encounterTitle: drawnAction.card?.title ?? null,
               encounterCardType: drawnAction.card?.cardType ?? null,
               summary: drawnAction.card
-                ? `Moved into ${drawnAction.sectorId} and revealed ${drawnAction.card.title}.`
+                ? `Moved into ${drawnAction.sectorId} and revealed ${drawnAction.card.title}.${
+                    drawnAction.revealEffect ? ` ${summarizeEffect(drawnAction.revealEffect, null)}` : ""
+                  }`
                 : `Moved into ${drawnAction.sectorId}, but the local threat deck was empty.`
             }
           : state.lastOutcomeSummary,
-        eventLog: [...state.eventLog, action]
+        eventLog: [...revealedState.eventLog, action]
       });
     }
     case "CHECK_REQUESTED": {

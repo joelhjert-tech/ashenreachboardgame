@@ -26,6 +26,11 @@ type GainHeatEffect = {
   amount: number;
 };
 
+type GainHeatAllEffect = {
+  type: "gain_heat_all";
+  amount: number;
+};
+
 type LoseHeatEffect = {
   type: "lose_heat";
   amount: number;
@@ -38,6 +43,11 @@ type TakeWoundEffect = {
 
 type HealWoundEffect = {
   type: "heal_wound";
+  amount: number;
+};
+
+type GainTrophyEffect = {
+  type: "gain_trophy";
   amount: number;
 };
 
@@ -70,22 +80,34 @@ type AdvanceScenarioEffect = {
   summary?: string;
 };
 
+type AdvanceEscalationEffect = {
+  type: "advance_escalation";
+  amount: number;
+};
+
 type SimpleEncounterEffect =
   | GainHeatEffect
+  | GainHeatAllEffect
   | LoseHeatEffect
   | TakeWoundEffect
   | HealWoundEffect
+  | GainTrophyEffect
   | GainScarEffect
   | GainGearEffect
   | GainFollowerEffect
   | GainNoteEffect
-  | AdvanceScenarioEffect;
+  | AdvanceScenarioEffect
+  | AdvanceEscalationEffect;
 
 export type EncounterEffect = SimpleEncounterEffect | { type: "sequence"; effects: EncounterEffect[] };
 
 const simpleEffectSchema: z.ZodType<SimpleEncounterEffect> = z.union([
   z.object({
     type: z.literal("gain_heat"),
+    amount: z.number().int().positive()
+  }),
+  z.object({
+    type: z.literal("gain_heat_all"),
     amount: z.number().int().positive()
   }),
   z.object({
@@ -98,6 +120,10 @@ const simpleEffectSchema: z.ZodType<SimpleEncounterEffect> = z.union([
   }),
   z.object({
     type: z.literal("heal_wound"),
+    amount: z.number().int().positive()
+  }),
+  z.object({
+    type: z.literal("gain_trophy"),
     amount: z.number().int().positive()
   }),
   z.object({
@@ -123,6 +149,10 @@ const simpleEffectSchema: z.ZodType<SimpleEncounterEffect> = z.union([
     progressKey: z.string().min(1),
     amount: z.number().int().positive(),
     summary: z.string().min(1).optional()
+  }),
+  z.object({
+    type: z.literal("advance_escalation"),
+    amount: z.number().int()
   })
 ]);
 
@@ -139,8 +169,15 @@ export const effectSchema: z.ZodType<EncounterEffect> = z.lazy(() =>
 const threatBaseSchema = cardBaseSchema.extend({
   type: z.literal("threat"),
   severity: z.number().int().min(1).max(5),
+  region: z.enum(["outer", "middle", "inner", "center", "global"]).optional(),
   stat: statSchema,
-  difficulty: z.number().int().min(2).max(12)
+  difficulty: z.number().int().min(2).max(12),
+  effectKey: z.string().min(1).optional(),
+  revealEffectKey: z.string().min(1).optional(),
+  combatEffectKeys: z.array(z.string().min(1)).optional(),
+  successEffectKey: z.string().min(1).optional(),
+  defeatEffectKey: z.string().min(1).optional(),
+  failEffectKey: z.string().min(1).optional()
 });
 
 export const hazardThreatCardSchema = threatBaseSchema.extend({

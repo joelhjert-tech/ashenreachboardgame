@@ -9,10 +9,11 @@ import { loadFollowers } from "../src/game/content/followers.js";
 import { loadGear } from "../src/game/content/gear.js";
 import { loadScarCards } from "../src/game/content/scars.js";
 import { loadThreatCards } from "../src/game/content/threats.js";
+import { getThreatEffectTiming, isThreatEffectKey } from "../src/game/cards/threatEffects.js";
 import { BOARD_SPACES } from "../src/game/data/boardSpaces.js";
 import { validateBoardTextEffectCoverage } from "../src/game/data/boardTextEffects.js";
 import { createCanonicalSectorGraph, validateCanonicalSectorGraph } from "../src/game/data/canonicalSectorGraph.js";
-import { effectSchema, type EncounterEffect } from "../src/game/schema/card.schema.js";
+import { effectSchema, type EncounterEffect, type ThreatCard } from "../src/game/schema/card.schema.js";
 import { sectorGraphSchema, type SectorNode } from "../src/game/schema/sector.schema.js";
 
 const sectorsRoot = join(process.cwd(), "content", "sectors");
@@ -52,6 +53,7 @@ for (const character of characters.values()) {
 for (const card of threats.values()) {
   validateEffect(card.cardType === "enemy" ? card.defeatReward : card.successEffect, `${card.id} reward`);
   validateEffect(card.cardType === "enemy" ? card.woundOnLoss : card.failEffect, `${card.id} failure`);
+  validateThreatEffectKeys(card);
 }
 
 for (const contract of contracts.values()) {
@@ -240,6 +242,34 @@ function validateSectorDeckRefs(file: string, sector: SectorNode): void {
     if (!escalations.has(id)) {
       errors.push(`${file}:${sector.id} references missing escalation ${id}`);
     }
+  }
+}
+
+function validateThreatEffectKeys(card: ThreatCard): void {
+  validateThreatKey(card.effectKey, "onReveal", `${card.id} effectKey`);
+  validateThreatKey(card.revealEffectKey, "onReveal", `${card.id} revealEffectKey`);
+  validateThreatKey(card.successEffectKey, "onSuccess", `${card.id} successEffectKey`);
+  validateThreatKey(card.defeatEffectKey, "onDefeat", `${card.id} defeatEffectKey`);
+  validateThreatKey(card.failEffectKey, "onFailure", `${card.id} failEffectKey`);
+
+  for (const [index, key] of (card.combatEffectKeys ?? []).entries()) {
+    validateThreatKey(key, "beforeCombat", `${card.id} combatEffectKeys[${index}]`);
+  }
+}
+
+function validateThreatKey(key: string | undefined, expectedTiming: ReturnType<typeof getThreatEffectTiming>, context: string): void {
+  if (!key) {
+    return;
+  }
+
+  if (!isThreatEffectKey(key)) {
+    errors.push(`${context} references missing threat effect key ${key}`);
+    return;
+  }
+
+  const actualTiming = getThreatEffectTiming(key);
+  if (actualTiming !== expectedTiming) {
+    errors.push(`${context} uses ${key} at ${expectedTiming}, but it is registered for ${actualTiming}`);
   }
 }
 

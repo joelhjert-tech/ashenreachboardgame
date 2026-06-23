@@ -7,6 +7,13 @@ import { loadEscalationCards } from "../game/content/escalations.js";
 import { loadFollowers } from "../game/content/followers.js";
 import { loadGear } from "../game/content/gear.js";
 import { loadThreatCards } from "../game/content/threats.js";
+import {
+  getThreatEffectTiming,
+  isThreatEffectKey,
+  resolveThreatEffect,
+  type ThreatEffectResult,
+  type ThreatEffectTiming
+} from "../game/cards/threatEffects.js";
 import { resolveBoardTextChoice, resolveBoardTextEffect, type BoardTextDeckKind } from "../game/data/boardTextEffects.js";
 import { nemeses, type NemesisDefinition } from "../game/data/nemeses.js";
 import { getScenarioDefinition } from "../game/data/scenarios.js";
@@ -2571,6 +2578,112 @@ export class GameRoomServer {
     return seat?.displayName ?? seatId;
   }
 
+  private getThreatEffectContext(seatId: string, card: ThreatCard) {
+    const player = this.state.players.find((entry) => entry.seatId === seatId);
+
+    if (!player) {
+      throw new Error(`Missing player for seat ${seatId}`);
+    }
+
+    const sector = this.state.sectors.find((entry) => entry.id === player.character.currentSpaceId);
+
+    return {
+      state: this.state,
+      seatId,
+      card,
+      player,
+      spaceId: player.character.currentSpaceId,
+      region: card.region ?? this.getThreatRegionFromSector(sector?.regionTier),
+      escalationLevel: this.state.escalationLevel
+    };
+  }
+
+  private getThreatRegionFromSector(regionTier: string | undefined): "outer" | "middle" | "inner" | "center" | undefined {
+    if (regionTier === "borderlight") {
+      return "outer";
+    }
+
+    if (regionTier === "red_march") {
+      return "middle";
+    }
+
+    if (regionTier === "crownfall") {
+      return "inner";
+    }
+
+    if (regionTier === "cinder_gate") {
+      return "center";
+    }
+
+    return undefined;
+  }
+
+  private resolveThreatEffectKey(
+    seatId: string,
+    card: ThreatCard,
+    key: string | undefined,
+    timing: ThreatEffectTiming
+  ): ThreatEffectResult | null {
+    if (!key) {
+      return null;
+    }
+
+    if (!isThreatEffectKey(key)) {
+      throw new Error(`Unknown threat effect key ${key}`);
+    }
+
+    if (getThreatEffectTiming(key) !== timing) {
+      throw new Error(`Threat effect key ${key} cannot run during ${timing}`);
+    }
+
+    const result = resolveThreatEffect(key, this.getThreatEffectContext(seatId, card));
+    return result;
+  }
+
+  private resolveThreatEffectKeys(
+    seatId: string,
+    card: ThreatCard,
+    keys: string[] | undefined,
+    timing: ThreatEffectTiming
+  ): ThreatEffectResult {
+    const initial: ThreatEffectResult = {
+      effect: null,
+      difficultyModifier: 0,
+      playerBonusModifier: 0,
+      enemyBonusModifier: 0
+    };
+
+    return (keys ?? []).reduce<ThreatEffectResult>(
+      (combined, key) => {
+        const result = this.resolveThreatEffectKey(seatId, card, key, timing);
+
+        if (!result) {
+          return combined;
+        }
+
+        return {
+          effect: this.combineEffects([combined.effect, result.effect].filter((effect): effect is EncounterEffect => Boolean(effect))),
+          difficultyModifier: (combined.difficultyModifier ?? 0) + (result.difficultyModifier ?? 0),
+          playerBonusModifier: (combined.playerBonusModifier ?? 0) + (result.playerBonusModifier ?? 0),
+          enemyBonusModifier: (combined.enemyBonusModifier ?? 0) + (result.enemyBonusModifier ?? 0),
+          summary: [combined.summary, result.summary].filter(Boolean).join(" ")
+        } satisfies ThreatEffectResult;
+      },
+      initial
+    );
+  }
+
+  private resolveThreatOutcomeEffect(
+    seatId: string,
+    card: ThreatCard,
+    baseEffect: EncounterEffect,
+    effectKey: string | undefined,
+    timing: "onSuccess" | "onFailure" | "onDefeat"
+  ): EncounterEffect {
+    const keyedEffect = this.resolveThreatEffectKey(seatId, card, effectKey, timing)?.effect ?? null;
+    return this.resolveEffect(this.combineEffects([baseEffect, keyedEffect].filter((effect): effect is EncounterEffect => Boolean(effect))) ?? baseEffect);
+  }
+
   private runAutomaticPhases(seatId: string): void {
     let progressMade = true;
 
@@ -2702,12 +2815,15 @@ export class GameRoomServer {
 
     const deck = sector.encounterDecks.threat;
     const card = deck.length > 0 ? this.threats.get(deck[this.randomSource.nextInt(deck.length)] ?? "") ?? null : null;
+    const revealEffectKey = card?.revealEffectKey ?? card?.effectKey;
+    const revealEffect = card ? this.resolveThreatEffectKey(seatId, card, revealEffectKey, "onReveal")?.effect ?? null : null;
 
     return {
       type: "ENCOUNTER_DRAWN",
       seatId,
       sectorId: sector.id,
       card,
+      revealEffect: revealEffect ? this.resolveEffect(revealEffect) : null,
       createdAt: new Date().toISOString()
     };
   }
@@ -2849,14 +2965,23 @@ export class GameRoomServer {
     }
 
     const escalationModifier = getEscalationModifier(this.state.escalationLevel);
+    const keyedModifiers = this.resolveThreatEffectKeys(intent.seatId, encounter, encounter.combatEffectKeys, "beforeCombat");
     const roll = rollDice(2, 6, this.randomSource);
     const statBonus =
       player.character.stats[intent.stat] +
       getEquippedGearBonus(player.character, intent.stat) +
-      this.getScenarioSkillModifier(intent.seatId);
-    const difficulty = encounter.difficulty + escalationModifier;
+      this.getScenarioSkillModifier(intent.seatId) +
+      (keyedModifiers.playerBonusModifier ?? 0);
+    const difficulty = encounter.difficulty + escalationModifier + (keyedModifiers.difficultyModifier ?? 0);
     const total = roll.total + statBonus;
     const success = total >= difficulty;
+    const outcomeEffect = this.resolveThreatOutcomeEffect(
+      intent.seatId,
+      encounter,
+      success ? encounter.successEffect : encounter.failEffect,
+      success ? encounter.successEffectKey : encounter.failEffectKey,
+      success ? "onSuccess" : "onFailure"
+    );
 
     this.applyAction({
       type: "CHECK_ROLLED",
@@ -2867,7 +2992,7 @@ export class GameRoomServer {
       statBonus,
       total,
       success,
-      effect: this.resolveEffect(success ? encounter.successEffect : encounter.failEffect),
+      effect: outcomeEffect,
       cardId: encounter.id,
       createdAt: new Date().toISOString()
     });
@@ -3407,29 +3532,39 @@ export class GameRoomServer {
     const playerRoll = rollDice(2, 6, this.randomSource);
     const enemyRoll = rollDice(2, 6, this.randomSource);
     const escalationModifier = getEscalationModifier(this.state.escalationLevel);
+    const keyedModifiers = this.resolveThreatEffectKeys(fighterSeatId, encounter, encounter.combatEffectKeys, "beforeCombat");
     const statBonus =
       player.character.stats[stat] +
       getEquippedGearBonus(player.character, stat) +
-      this.getScenarioBattleModifier(fighterSeatId);
-    const enemyBonus = encounter.difficulty + escalationModifier;
+      this.getScenarioBattleModifier(fighterSeatId) +
+      (keyedModifiers.playerBonusModifier ?? 0);
+    const enemyBonus = encounter.difficulty + escalationModifier + (keyedModifiers.difficultyModifier ?? 0);
     const scenarioEnemyBonus = this.getScenarioEnemyBattleModifier();
+    const keyedEnemyBonus = keyedModifiers.enemyBonusModifier ?? 0;
     const total = playerRoll.total + statBonus;
-    const enemyTotal = enemyRoll.total + enemyBonus + scenarioEnemyBonus;
+    const enemyTotal = enemyRoll.total + enemyBonus + scenarioEnemyBonus + keyedEnemyBonus;
     const success = total >= enemyTotal;
+    const outcomeEffect = this.resolveThreatOutcomeEffect(
+      fighterSeatId,
+      encounter,
+      success ? encounter.defeatReward : encounter.woundOnLoss,
+      success ? encounter.defeatEffectKey : encounter.failEffectKey,
+      success ? "onDefeat" : "onFailure"
+    );
 
     this.applyAction({
       type: "COMBAT_RESOLVED",
       seatId: fighterSeatId,
       stat,
-      difficulty: encounter.difficulty + escalationModifier,
+      difficulty: encounter.difficulty + escalationModifier + (keyedModifiers.difficultyModifier ?? 0),
       roll: playerRoll,
       enemyRoll,
       statBonus,
-      enemyBonus: enemyBonus + scenarioEnemyBonus,
+      enemyBonus: enemyBonus + scenarioEnemyBonus + keyedEnemyBonus,
       total,
       enemyTotal,
       success,
-      effect: this.resolveEffect(success ? encounter.defeatReward : encounter.woundOnLoss),
+      effect: outcomeEffect,
       cardId: encounter.id,
       enemyRollerSeatId,
       createdAt: new Date().toISOString()

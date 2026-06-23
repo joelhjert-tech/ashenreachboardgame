@@ -803,6 +803,212 @@ describe("active objects and table interaction", () => {
   });
 });
 
+describe("threat effect keys", () => {
+  it("applies a reveal effect key when a threat is drawn", () => {
+    const threats = createThreats();
+    threats.set("keyed-rats", {
+      id: "keyed-rats",
+      type: "threat",
+      cardType: "hazard",
+      title: "Keyed Rats",
+      text: "A keyed reveal test threat.",
+      flavor: "The rats know the route.",
+      severity: 1,
+      effectKey: "threat_heat_on_reveal",
+      stat: "grit",
+      difficulty: 4,
+      successEffect: { type: "gain_note", text: "Safe." },
+      failEffect: { type: "gain_heat", amount: 1 }
+    });
+    const state = createState({
+      phase: "sector",
+      sectors: createState().sectors.map((sector) =>
+        sector.id === "sector-a"
+          ? {
+              ...sector,
+              encounterDecks: { ...sector.encounterDecks, threat: ["keyed-rats"] }
+            }
+          : sector
+      ),
+      lastOutcomeSummary: {
+        seatId: "seat-1",
+        movedToSectorId: "sector-a",
+        encounterCardId: null,
+        encounterTitle: null,
+        encounterCardType: null,
+        checkStat: null,
+        die1: null,
+        die2: null,
+        statBonus: null,
+        checkTotal: null,
+        difficulty: null,
+        enemyRollerSeatId: null,
+        enemyDie1: null,
+        enemyDie2: null,
+        enemyBonus: null,
+        enemyTotal: null,
+        success: null,
+        summary: "Moved into sector-a."
+      }
+    });
+    const server = new GameRoomServer(state, [], createSequenceRandomSource([0]), threats, createCharacters(), createGear(), createContracts());
+
+    (server as any).runAutomaticPhases("seat-1");
+
+    expect(server.getState().currentEncounter?.id).toBe("keyed-rats");
+    expect(server.getState().players.find((entry) => entry.seatId === "seat-1")?.character.heat).toBe(1);
+    expect(server.getState().lastOutcomeSummary?.summary).toContain("gain 1 Heat");
+  });
+
+  it("applies table-wide and escalation reveal effect keys", () => {
+    const heatedThreats = createThreats();
+    heatedThreats.set("keyed-broadcast", {
+      id: "keyed-broadcast",
+      type: "threat",
+      cardType: "hazard",
+      title: "Keyed Broadcast",
+      text: "A keyed table-wide reveal test threat.",
+      flavor: "The signal names everyone at once.",
+      severity: 3,
+      revealEffectKey: "threat_all_heat_on_reveal",
+      stat: "signal",
+      difficulty: 6,
+      successEffect: { type: "gain_note", text: "Safe." },
+      failEffect: { type: "gain_heat", amount: 1 }
+    });
+    const heatedState = createState({
+      phase: "sector",
+      sectors: createState().sectors.map((sector) =>
+        sector.id === "sector-a"
+          ? {
+              ...sector,
+              encounterDecks: { ...sector.encounterDecks, threat: ["keyed-broadcast"] }
+            }
+          : sector
+      ),
+      lastOutcomeSummary: {
+        seatId: "seat-1",
+        movedToSectorId: "sector-a",
+        encounterCardId: null,
+        encounterTitle: null,
+        encounterCardType: null,
+        checkStat: null,
+        die1: null,
+        die2: null,
+        statBonus: null,
+        checkTotal: null,
+        difficulty: null,
+        enemyRollerSeatId: null,
+        enemyDie1: null,
+        enemyDie2: null,
+        enemyBonus: null,
+        enemyTotal: null,
+        success: null,
+        summary: "Moved into sector-a."
+      }
+    });
+    const heatedServer = new GameRoomServer(
+      heatedState,
+      [],
+      createSequenceRandomSource([0]),
+      heatedThreats,
+      createCharacters(),
+      createGear(),
+      createContracts()
+    );
+
+    (heatedServer as any).runAutomaticPhases("seat-1");
+
+    expect(heatedServer.getState().players.every((entry) => entry.character.heat === 1)).toBe(true);
+    expect(heatedServer.getState().lastOutcomeSummary?.summary).toContain("all operatives gain 1 Heat");
+
+    const escalatedThreats = createThreats();
+    escalatedThreats.set("keyed-bell", {
+      id: "keyed-bell",
+      type: "threat",
+      cardType: "hazard",
+      title: "Keyed Bell",
+      text: "A keyed escalation reveal test threat.",
+      flavor: "The bell rings downward.",
+      severity: 4,
+      revealEffectKey: "threat_escalate_on_reveal",
+      stat: "signal",
+      difficulty: 7,
+      successEffect: { type: "gain_note", text: "Safe." },
+      failEffect: { type: "gain_heat", amount: 1 }
+    });
+    const escalatedState = createState({
+      phase: "sector",
+      sectors: createState().sectors.map((sector) =>
+        sector.id === "sector-a"
+          ? {
+              ...sector,
+              encounterDecks: { ...sector.encounterDecks, threat: ["keyed-bell"] }
+            }
+          : sector
+      ),
+      lastOutcomeSummary: heatedState.lastOutcomeSummary
+    });
+    const escalatedServer = new GameRoomServer(
+      escalatedState,
+      [],
+      createSequenceRandomSource([0]),
+      escalatedThreats,
+      createCharacters(),
+      createGear(),
+      createContracts()
+    );
+
+    (escalatedServer as any).runAutomaticPhases("seat-1");
+
+    expect(escalatedServer.getState().escalationLevel).toBe(1);
+    expect(escalatedServer.getState().lastOutcomeSummary?.summary).toContain("advance escalation by 1");
+  });
+
+  it("combines direct failure effects with a keyed failure effect", () => {
+    const threats = createThreats();
+    threats.set("keyed-snare", {
+      id: "keyed-snare",
+      type: "threat",
+      cardType: "hazard",
+      title: "Keyed Snare",
+      text: "A keyed failure test threat.",
+      flavor: "The snare is very sure of itself.",
+      severity: 2,
+      stat: "grit",
+      difficulty: 12,
+      successEffect: { type: "gain_note", text: "Safe." },
+      failEffectKey: "threat_fail_take_wound",
+      failEffect: { type: "gain_heat", amount: 1 }
+    });
+    const state = createState({
+      currentEncounter: threats.get("keyed-snare") ?? null,
+      players: createState().players.map((player) =>
+        player.seatId === "seat-1"
+          ? {
+              ...player,
+              character: {
+                ...player.character,
+                stats: { ...player.character.stats, grit: 0 }
+              }
+            }
+          : player
+      )
+    });
+    const server = new GameRoomServer(state, [], createSequenceRandomSource([0, 0]), threats, createCharacters(), createGear(), createContracts());
+
+    runIntent(server, {
+      type: "CHECK_REQUESTED",
+      seatId: "seat-1",
+      stat: "grit"
+    });
+
+    const player = server.getState().players.find((entry) => entry.seatId === "seat-1");
+    expect(player?.character.heat).toBe(1);
+    expect(player?.character.wounds).toBe(1);
+  });
+});
+
 describe("movement rolls", () => {
   it("succeeds against a low-danger node without changing Heat", () => {
     const baseState = createState({ phase: "navigation" });
