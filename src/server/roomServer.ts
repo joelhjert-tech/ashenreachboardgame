@@ -9,6 +9,10 @@ import { loadThreatCards } from "../game/content/threats.js";
 import { resolveBoardTextChoice, resolveBoardTextEffect, type BoardTextDeckKind } from "../game/data/boardTextEffects.js";
 import { nemeses, type NemesisDefinition } from "../game/data/nemeses.js";
 import { getScenarioDefinition } from "../game/data/scenarios.js";
+import {
+  advanceContractObjectiveProgress,
+  setContractProgressFloor
+} from "../game/contracts/objectives.js";
 import { getEscalationCollapseLevel, getEscalationModifier } from "../game/engine/escalation.js";
 import {
   buildScenarioTelemetry,
@@ -886,19 +890,21 @@ export class GameRoomServer {
         return;
       }
 
+      const contract = this.state.availableContracts.find((entry) => entry.id === player.character.activeContract?.contractId) ?? null;
+
       this.applyAbilityMutation(
         seatId,
         "ledger-broker",
         "Ledger Broker banked hidden leverage into the newly accepted contract.",
         (entry) =>
-          entry.character.activeContract
+          entry.character.activeContract && contract
             ? {
                 ...entry,
                 character: {
                   ...entry.character,
                   activeContract: {
                     ...entry.character.activeContract,
-                    progress: Math.max(1, entry.character.activeContract.progress)
+                    progress: setContractProgressFloor(contract, entry.character.activeContract.progress, 1)
                   }
                 }
               }
@@ -944,7 +950,7 @@ export class GameRoomServer {
                   ...entry.character,
                   activeContract: {
                     ...entry.character.activeContract,
-                    progress: Math.min(contract.objective.target, Math.max(1, entry.character.activeContract.progress))
+                    progress: setContractProgressFloor(contract, entry.character.activeContract.progress, 1)
                   }
                 }
               }
@@ -1451,17 +1457,20 @@ export class GameRoomServer {
 
     if (
       player.character.id === "oathbroken-prince" &&
+      player.character.activeContract &&
       (effectKey === "outer_mirecoilTraffic" ||
         effectKey === "outer_hollowVeilSweep" ||
         effectKey === "outer_glassmereChorus") &&
       !this.hasAbilityTriggeredThisRound(seatId, "broken-claim")
     ) {
+      const contract = this.state.availableContracts.find((entry) => entry.id === player.character.activeContract?.contractId) ?? null;
+
       this.applyAbilityMutation(
         seatId,
         "broken-claim",
         "Broken Claim turned the cleared lane into progress on the Prince's active objective.",
         (entry) =>
-          entry.character.activeContract
+          entry.character.activeContract && contract
             ? {
                 ...entry,
                 private: {
@@ -1472,7 +1481,9 @@ export class GameRoomServer {
                   ...entry.character,
                   activeContract: {
                     ...entry.character.activeContract,
-                    progress: entry.character.activeContract.progress + 1
+                    progress: advanceContractObjectiveProgress(contract, entry.character.activeContract.progress, {
+                      type: "enemy-defeated"
+                    })
                   }
                 }
               }
@@ -1724,7 +1735,9 @@ export class GameRoomServer {
                   ...entry.character,
                   activeContract: {
                     ...entry.character.activeContract,
-                    progress: Math.min(contract.objective.target, entry.character.activeContract.progress + 1)
+                    progress: advanceContractObjectiveProgress(contract, entry.character.activeContract.progress, {
+                      type: "enemy-defeated"
+                    })
                   }
                 }
               }

@@ -31,6 +31,10 @@ import type { ContractCard } from "../schema/contract.schema.js";
 import type { GameState, PlayerState } from "../schema/session.schema.js";
 import type { GearSlot } from "../schema/gear.schema.js";
 import { getBoardSpace, isScenarioConfrontationSpace } from "../data/boardSpaces.js";
+import {
+  advanceContractObjectiveProgress,
+  isContractObjectiveComplete
+} from "../contracts/objectives.js";
 
 export interface ReducerRejection {
   reason: string;
@@ -739,8 +743,10 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
           : null;
         const trophyAward = action.success ? state.currentEncounter.trophyValue : 0;
         const nextProgress =
-          action.success && contract?.objective.type === "defeatCount" && activeContract
-            ? Math.min(activeContract.progress + 1, contract.objective.target)
+          action.success && contract && activeContract
+            ? advanceContractObjectiveProgress(contract, activeContract.progress, {
+                type: "enemy-defeated"
+              })
             : activeContract?.progress ?? null;
 
       return succeed({
@@ -1112,7 +1118,7 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
         return reject(state, action, `Unknown contract ${completeAction.contractId}`);
       }
 
-      if (activeContract.progress < contract.objective.target) {
+      if (!isContractObjectiveComplete(contract, activeContract.progress)) {
         return reject(state, action, "Contract objective is not complete yet");
       }
 

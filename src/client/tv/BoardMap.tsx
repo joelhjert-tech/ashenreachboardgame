@@ -3,6 +3,15 @@ import { getAssetPath } from "../../game/assets/design/assetManifest.js";
 import { BOARD_SPACES, getBoardSpace, isScenarioConfrontationSpace } from "../../game/data/boardSpaces.js";
 import { RIFTFALL_BOARD_NODE_INDEX, RIFTFALL_BOARD_NODES, type BoardNode } from "../../data/riftfallBoardNodes.js";
 import type { OutcomeSummary, PublicPatchPayload } from "../shared/types.js";
+import {
+  buildEscalationMarker,
+  buildScenarioAuras,
+  buildScenarioMarkers,
+  buildScenarioRoutes,
+  type ScenarioAuraEffect,
+  type ScenarioMarker,
+  type ScenarioRouteEffect
+} from "../shared/scenarioBoardVisuals.js";
 import { BoardStage } from "./BoardStage.js";
 import { pointerToBoardCoordinate, type BoardRect } from "./boardGeometry.js";
 
@@ -26,31 +35,6 @@ interface BoardToken {
 interface CalibrationPoint {
   x: number;
   y: number;
-}
-
-interface ScenarioMarker {
-  id: string;
-  nodeId?: string;
-  label: string;
-  value: string;
-  tone: "warning" | "info" | "critical";
-  kind: "orbit" | "core" | "spine";
-  x?: number;
-  y?: number;
-}
-
-interface ScenarioAuraEffect {
-  id: string;
-  nodeId: string;
-  tone: "warning" | "info" | "critical";
-  variant: "seal" | "star" | "engine-command" | "engine-signal" | "engine-guile" | "throne" | "mirror";
-}
-
-interface ScenarioRouteEffect {
-  id: string;
-  fromNodeId: string;
-  toNodeId: string;
-  tone: "warning" | "info" | "critical";
 }
 
 const tokenOffsets = [
@@ -157,217 +141,6 @@ function buildBoardTokens(patch: PublicPatchPayload, imageRect: BoardRect): Boar
   });
 
   return tokens;
-}
-
-function buildScenarioMarkers(patch: PublicPatchPayload): ScenarioMarker[] {
-  const scenarioId = patch.activeScenario?.id;
-
-  if (!scenarioId) {
-    return [];
-  }
-
-  switch (scenarioId) {
-    case "scenario_broken_seal":
-      return [
-        {
-          id: "broken-seal-core",
-          nodeId: "center_cinder_gate",
-          label: "Seal",
-          value: String(patch.scenarioProgress.sealTokens ?? 0),
-          tone: (patch.scenarioProgress.sealTokens ?? 0) <= 2 ? "critical" : "warning",
-          kind: "core"
-        }
-      ];
-    case "scenario_devourer_beneath": {
-      const outerRing = patch.sectors.filter((sector) => sector.regionTier === "borderlight");
-      const devourerIndex = patch.scenarioProgress.devourerIndex ?? 0;
-      const targetSectorId = outerRing.length > 0 ? outerRing[devourerIndex % outerRing.length]?.id : null;
-
-      return [
-        {
-          id: "devourer-orbit",
-          nodeId: targetSectorId ?? "ashwake-crossing",
-          label: "Devourer",
-          value: `Doom ${patch.scenarioProgress.doomTokens ?? 0}`,
-          tone: (patch.scenarioProgress.doomTokens ?? 0) >= 6 ? "critical" : "warning",
-          kind: "orbit"
-        }
-      ];
-    }
-    case "scenario_labyrinth_engine": {
-      const modes = ["Command", "Signal", "Guile"];
-      const mode = modes[(patch.scenarioProgress.engineModeIndex ?? 0) % modes.length] ?? "Command";
-
-      return [
-        {
-          id: "labyrinth-core",
-          nodeId: "center_cinder_gate",
-          label: "Engine",
-          value: mode,
-          tone: "info",
-          kind: "core"
-        }
-      ];
-    }
-    case "scenario_dying_star":
-      return [
-        {
-          id: "dying-star-core",
-          nodeId: "center_cinder_gate",
-          label: "Star",
-          value: String(patch.scenarioProgress.starTokens ?? 0),
-          tone: (patch.scenarioProgress.starTokens ?? 0) <= 3 ? "critical" : "warning",
-          kind: "core"
-        }
-      ];
-    case "scenario_throne_of_ash":
-      return [
-        {
-          id: "throne-core",
-          nodeId: "center_cinder_gate",
-          label: "Crowns",
-          value: String(patch.scenarioProgress.crownClaims ?? 0),
-          tone: "info",
-          kind: "core"
-        }
-      ];
-    case "scenario_mirror_of_false_heroes":
-      return [
-        {
-          id: "mirror-core",
-          nodeId: "center_cinder_gate",
-          label: "Mirror",
-          value: `${patch.activeScenario?.progress ?? 0}/${patch.activeScenario?.threshold ?? 0}`,
-          tone: "info",
-          kind: "core"
-        }
-      ];
-    default:
-      return [];
-  }
-}
-
-function buildEscalationMarker(patch: PublicPatchPayload): ScenarioMarker {
-  const threshold = Math.max(1, patch.escalationThreshold);
-  const progress = Math.max(0, Math.min(1, patch.escalationLevel / threshold));
-  const anchors = [
-    RIFTFALL_BOARD_NODE_INDEX.get("outer_ember_sanctum"),
-    RIFTFALL_BOARD_NODE_INDEX.get("middle_guardian_span"),
-    RIFTFALL_BOARD_NODE_INDEX.get("inner_veil_rift"),
-    RIFTFALL_BOARD_NODE_INDEX.get("center_cinder_gate")
-  ].filter((node): node is BoardNode => Boolean(node));
-  const segmentProgress = progress * Math.max(anchors.length - 1, 1);
-  const segmentIndex = Math.min(Math.floor(segmentProgress), Math.max(anchors.length - 2, 0));
-  const localProgress = Math.min(1, Math.max(0, segmentProgress - segmentIndex));
-  const from = anchors[segmentIndex] ?? anchors[0];
-  const to = anchors[segmentIndex + 1] ?? anchors[anchors.length - 1] ?? from;
-  const tone =
-    patch.escalationLevel >= threshold
-      ? "critical"
-      : patch.escalationLevel >= Math.ceil(threshold * 0.67)
-        ? "warning"
-        : "info";
-
-  return {
-    id: "escalation-spine",
-    nodeId: to?.id ?? from?.id,
-    label: "Breach",
-    value: `${patch.escalationLevel}/${threshold}`,
-    tone,
-    kind: "spine",
-    x: (from?.x ?? 0.5) + ((to?.x ?? from?.x ?? 0.5) - (from?.x ?? 0.5)) * localProgress,
-    y: (from?.y ?? 0.5) + ((to?.y ?? from?.y ?? 0.5) - (from?.y ?? 0.5)) * localProgress
-  };
-}
-
-function buildScenarioAuras(patch: PublicPatchPayload): ScenarioAuraEffect[] {
-  const scenarioId = patch.activeScenario?.id;
-
-  if (!scenarioId) {
-    return [];
-  }
-
-  switch (scenarioId) {
-    case "scenario_broken_seal":
-      return [
-        {
-          id: "broken-seal-aura",
-          nodeId: "center_cinder_gate",
-          tone: (patch.scenarioProgress.sealTokens ?? 0) <= 2 ? "critical" : "warning",
-          variant: "seal"
-        }
-      ];
-    case "scenario_labyrinth_engine": {
-      const modes = ["engine-command", "engine-signal", "engine-guile"] as const;
-      return [
-        {
-          id: "labyrinth-engine-aura",
-          nodeId: "center_cinder_gate",
-          tone: "info",
-          variant: modes[(patch.scenarioProgress.engineModeIndex ?? 0) % modes.length] ?? "engine-command"
-        }
-      ];
-    }
-    case "scenario_dying_star":
-      return [
-        {
-          id: "dying-star-aura",
-          nodeId: "center_cinder_gate",
-          tone: (patch.scenarioProgress.starTokens ?? 0) <= 3 ? "critical" : "warning",
-          variant: "star"
-        }
-      ];
-    case "scenario_throne_of_ash":
-      return [
-        {
-          id: "throne-aura",
-          nodeId: "center_cinder_gate",
-          tone: "info",
-          variant: "throne"
-        }
-      ];
-    case "scenario_mirror_of_false_heroes":
-      return [
-        {
-          id: "mirror-aura",
-          nodeId: "center_cinder_gate",
-          tone: "info",
-          variant: "mirror"
-        }
-      ];
-    default:
-      return [];
-  }
-}
-
-function buildScenarioRoutes(patch: PublicPatchPayload): ScenarioRouteEffect[] {
-  if (patch.activeScenario?.id !== "scenario_devourer_beneath") {
-    return [];
-  }
-
-  const outerRing = patch.sectors.filter((sector) => sector.regionTier === "borderlight");
-
-  if (outerRing.length < 2) {
-    return [];
-  }
-
-  const currentIndex = (patch.scenarioProgress.devourerIndex ?? 0) % outerRing.length;
-  const nextIndex = (currentIndex + 1) % outerRing.length;
-  const currentSector = outerRing[currentIndex];
-  const nextSector = outerRing[nextIndex];
-
-  if (!currentSector || !nextSector) {
-    return [];
-  }
-
-  return [
-    {
-      id: "devourer-route-preview",
-      fromNodeId: currentSector.id,
-      toNodeId: nextSector.id,
-      tone: (patch.scenarioProgress.doomTokens ?? 0) >= 6 ? "critical" : "warning"
-    }
-  ];
 }
 
 export function BoardMap({ patch, phase, showHeader = true, showSidebar = true }: BoardMapProps): ReactElement {

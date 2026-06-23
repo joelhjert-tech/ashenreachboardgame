@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useRef, useState, type ReactElement } from "react";
 import { getBoardSpace, isScenarioConfrontationSpace } from "../../game/data/boardSpaces.js";
+import { formatContractProgress } from "../../game/contracts/objectives.js";
 import { RIFTFALL_BOARD_NODE_INDEX } from "../../data/riftfallBoardNodes.js";
 import { createSession, fetchCharacters, fetchScenarios, fetchSessionSummary, startSession } from "../shared/network.js";
 import { getSeatAbilityTelemetry } from "../shared/abilityTelemetry.js";
 import { DebugPanel } from "../shared/DebugPanel.js";
 import { RollOutcomePanel } from "../shared/RollOutcomePanel.js";
+import { buildScenarioRuleDigest } from "../shared/scenarioPresentation.js";
 import { useRoomSubscription } from "../shared/useRoomSubscription.js";
 import { getCharacterPortraitPath } from "../shared/assetPaths.js";
 import type {
@@ -132,7 +134,7 @@ function getContractSummary(player: PublicPlayer | null, patch: StatePatch<Publi
     return "No active contract";
   }
 
-  return `${contract.name} (${player.character.activeContract.progress}/${contract.objective.target})`;
+  return `${contract.name} (${formatContractProgress(contract, player.character.activeContract.progress)})`;
 }
 
 function getActiveSectorLabel(patch: StatePatch<PublicPatchPayload> | null, activePlayer: PublicPlayer | null): string {
@@ -522,6 +524,12 @@ function RightSidebar({
   onStartSession,
   canStartSession
 }: RightSidebarProps): ReactElement {
+  const scenarioRuleDigest = buildScenarioRuleDigest(
+    publicPatch?.payload.activeScenario ?? null,
+    publicPatch?.payload.scenarioTelemetry ?? [],
+    { telemetry: 4, specialRules: 2, confrontationSteps: 2 }
+  );
+
   return (
     <aside className="tv-command-sidebar">
       {roomCode && (
@@ -571,7 +579,7 @@ function RightSidebar({
         </div>
         <p className="board-sidebar-title">{scenarioStatus.name}</p>
         <p className="tv-empty-copy">{scenarioStatus.theme}</p>
-        <p className="tv-empty-copy">{scenarioStatus.pressureSummary}</p>
+        <p className="tv-empty-copy">{scenarioRuleDigest?.pressureSummary ?? scenarioStatus.pressureSummary}</p>
         <div className="board-sidebar-meta">
           <span>{toTitleCase(scenarioStatus.difficulty)}</span>
           <span>{scenarioStatus.confrontationTitle}</span>
@@ -588,7 +596,7 @@ function RightSidebar({
         {scenarioStatus.specialRules.length > 0 && (
           <div className="tv-scenario-rules-block">
             <strong>Pressure Rules</strong>
-            {scenarioStatus.specialRules.slice(0, 2).map((item) => (
+            {(scenarioRuleDigest?.specialRules ?? scenarioStatus.specialRules.slice(0, 2)).map((item) => (
               <p key={item}>{item}</p>
             ))}
           </div>
@@ -596,10 +604,10 @@ function RightSidebar({
         {scenarioStatus.confrontationSteps.length > 0 && (
           <div className="tv-scenario-rules-block">
             <strong>Confrontation</strong>
-            {scenarioStatus.confrontationSteps.slice(0, 2).map((item) => (
+            {(scenarioRuleDigest?.confrontationSteps ?? scenarioStatus.confrontationSteps.slice(0, 2)).map((item) => (
               <p key={item}>{item}</p>
             ))}
-            <p>{scenarioStatus.victoryText}</p>
+            <p>{scenarioRuleDigest?.victoryText ?? scenarioStatus.victoryText}</p>
           </div>
         )}
         {scenarioStatus.nemesis && (
@@ -627,7 +635,13 @@ function RightSidebar({
         )}
         {scenarioStatus.telemetry.length > 0 && (
           <div className="tv-scenario-telemetry">
-            {scenarioStatus.telemetry.map((entry) => (
+            {(scenarioRuleDigest?.telemetry.length
+              ? scenarioRuleDigest.telemetry.map((entry) => {
+                  const [label, ...valueParts] = entry.split(": ");
+                  return { label, value: valueParts.join(": ") };
+                })
+              : scenarioStatus.telemetry
+            ).map((entry) => (
               <div key={entry.label} className="tv-scenario-telemetry-row">
                 <span>{entry.label}</span>
                 <strong>{entry.value}</strong>

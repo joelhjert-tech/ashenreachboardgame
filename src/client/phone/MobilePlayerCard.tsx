@@ -1,6 +1,12 @@
 import type { ReactElement, ReactNode } from "react";
+import { formatContractProgress } from "../../game/contracts/objectives.js";
 import { getCharacterPortraitPath, getPhoneSheetFramePath } from "../shared/assetPaths.js";
 import type { AbilityChangeItem } from "../shared/abilityTelemetry.js";
+import {
+  buildScenarioRuleDigest,
+  formatScenarioSummaryCopy,
+  formatScenarioTelemetryInline
+} from "../shared/scenarioPresentation.js";
 import type {
   ActiveNemesisSummary,
   ActiveScenarioSummary,
@@ -88,19 +94,19 @@ export function MobilePlayerCard({
   const heatTrack = buildTrack(self.character.heat);
   const woundTrack = buildTrack(self.character.wounds);
   const latestOutcome = outcomeSummary?.seatId === self.seatId ? outcomeSummary.summary : null;
+  const scenarioRuleDigest = buildScenarioRuleDigest(activeScenario, scenarioTelemetry, {
+    telemetry: 4,
+    specialRules: 2,
+    confrontationSteps: 2
+  });
   const contractCopy = activeContractCard
-    ? `${activeContractCard.name} (${self.character.activeContract?.progress ?? 0}/${activeContractCard.objective.target})`
+    ? `${activeContractCard.name} (${formatContractProgress(activeContractCard, self.character.activeContract?.progress ?? 0)})`
     : "No active contract";
   const encounterCopy = encounter
     ? `${encounter.title} | ${toTitleCase(encounter.cardType)} | ${toTitleCase(encounter.stat)} ${encounter.difficulty}`
     : `Phase ${toTitleCase(phase)}`;
-  const scenarioCopy = activeScenario
-    ? `${activeScenario.name} | ${activeScenario.progress}/${activeScenario.threshold} | ${activeScenario.pressureSummary}`
-    : "Scenario telemetry pending";
-  const scenarioTelemetryCopy =
-    scenarioTelemetry.length > 0
-      ? scenarioTelemetry.map((entry) => `${entry.label}: ${entry.value}`).join(" | ")
-      : "Awaiting ambient scenario telemetry";
+  const scenarioCopy = formatScenarioSummaryCopy(activeScenario);
+  const scenarioTelemetryCopy = formatScenarioTelemetryInline(scenarioTelemetry);
   const escalationCopy = formatEscalation({ escalationLevel, escalationThreshold, escalationModifier });
   const nemesisRemaining = activeNemesis ? Math.max(0, activeNemesis.life - activeNemesis.damageDealt) : 0;
   const nemesisProgressPercent = activeNemesis ? Math.min(100, (activeNemesis.damageDealt / Math.max(activeNemesis.life, 1)) * 100) : 0;
@@ -237,18 +243,23 @@ export function MobilePlayerCard({
             <div className="phone-sheet-scenario-panel">
               <div className="phone-sheet-section-heading">Scenario Rules</div>
               <p className="phone-sheet-scenario-theme">{activeScenario.theme}</p>
-              <p className="phone-sheet-scenario-rule">{activeScenario.pressureSummary}</p>
-              {activeScenario.specialRules.slice(0, 2).map((rule) => (
+              <p className="phone-sheet-scenario-rule">{scenarioRuleDigest?.pressureSummary ?? activeScenario.pressureSummary}</p>
+              {(scenarioRuleDigest?.telemetry ?? []).map((entry) => (
+                <p key={entry} className="phone-sheet-scenario-rule">
+                  {entry}
+                </p>
+              ))}
+              {(scenarioRuleDigest?.specialRules ?? activeScenario.specialRules.slice(0, 2)).map((rule) => (
                 <p key={rule} className="phone-sheet-scenario-rule">
                   {rule}
                 </p>
               ))}
-              {activeScenario.confrontationSteps.slice(0, 2).map((step) => (
+              {(scenarioRuleDigest?.confrontationSteps ?? activeScenario.confrontationSteps.slice(0, 2)).map((step) => (
                 <p key={step} className="phone-sheet-scenario-rule">
                   {step}
                 </p>
               ))}
-              <p className="phone-sheet-scenario-rule">{activeScenario.victoryText}</p>
+              <p className="phone-sheet-scenario-rule">{scenarioRuleDigest?.victoryText ?? activeScenario.victoryText}</p>
             </div>
           )}
 

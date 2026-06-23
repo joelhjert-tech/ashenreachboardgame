@@ -1,7 +1,85 @@
+import { once } from "node:events";
+import WebSocket from "ws";
 import { afterEach, describe, expect, it } from "vitest";
 import { SCENARIOS } from "../../game/data/scenarios.js";
 import { createInitialScenarioProgress } from "../../game/rules/scenarioAmbient.js";
 import { startAshenReachServer, type StartedAshenReachServer } from "../index.js";
+
+type StatePatchEnvelope = {
+  type: "STATE_PATCH";
+  sessionId: string;
+  phase: string;
+  payload: {
+    status?: string;
+    self?: {
+      seatId: string;
+      sectorId: string;
+      character: {
+        currentSpaceId: string;
+      };
+    };
+    activeScenario?: {
+      id: string;
+    };
+    scenarioTelemetry?: Array<{
+      label: string;
+      value: string;
+    }>;
+  };
+};
+
+type SocketProbe = {
+  socket: WebSocket;
+  messages: StatePatchEnvelope[];
+};
+
+async function connectSocket(url: string): Promise<SocketProbe> {
+  const socket = new WebSocket(url);
+  const messages: StatePatchEnvelope[] = [];
+
+  socket.on("message", (raw) => {
+    messages.push(JSON.parse(String(raw)) as StatePatchEnvelope);
+  });
+
+  await once(socket, "open");
+  return {
+    socket,
+    messages
+  };
+}
+
+async function waitForStatePatch(
+  probe: SocketProbe,
+  predicate: (message: StatePatchEnvelope) => boolean,
+  timeoutMs = 4000
+): Promise<StatePatchEnvelope> {
+  const existing = probe.messages.find((message) => message.type === "STATE_PATCH" && predicate(message));
+
+  if (existing) {
+    return existing;
+  }
+
+  return await new Promise<StatePatchEnvelope>((resolve, reject) => {
+    const timer = setTimeout(() => {
+      probe.socket.off("message", onMessage);
+      reject(new Error("Timed out waiting for state patch"));
+    }, timeoutMs);
+
+    const onMessage = (raw: WebSocket.RawData) => {
+      const message = JSON.parse(String(raw)) as StatePatchEnvelope;
+
+      if (message.type !== "STATE_PATCH" || !predicate(message)) {
+        return;
+      }
+
+      clearTimeout(timer);
+      probe.socket.off("message", onMessage);
+      resolve(message);
+    };
+
+    probe.socket.on("message", onMessage);
+  });
+}
 
 async function postJson<TResponse>(
   baseUrl: string,
@@ -168,6 +246,85 @@ describe("server API scenario flow", () => {
 
       await harness.close();
       harness = null;
+    }
+  });
+
+  it("runs a live room create, join, start, and move flow while preserving scenario telemetry", async () => {
+    harness = await startAshenReachServer({ port: createTestPort(), logUrls: false });
+    const baseUrl = `http://127.0.0.1:${harness.port}`;
+
+    const created = await postJson<{
+      roomCode: string;
+      sessionMode: "single-player" | "multiplayer";
+      scenarioId: string;
+      hostToken: string;
+    }>(baseUrl, "/api/session/create", {
+      sessionMode: "single-player",
+      scenarioId: "scenario_dying_star"
+    });
+
+    const joined = await postJson<{
+      roomCode: string;
+      seatId: string;
+      seatToken: string;
+    }>(baseUrl, "/api/session/join", {
+      roomCode: created.payload.roomCode,
+      displayName: "Joel",
+      characterId: "signal-witch"
+    });
+
+    const phone = await connectSocket(`ws://127.0.0.1:${harness.port}/?view=phone&token=${joined.payload.seatToken}`);
+
+    try {
+      await waitForStatePatch(phone, (message) => message.payload.self?.seatId === joined.payload.seatId);
+
+      const started = await postJson<{
+        roomCode: string;
+        status: string;
+        phase: string;
+      }>(baseUrl, "/api/session/start", {
+        roomCode: created.payload.roomCode,
+        hostToken: created.payload.hostToken
+      });
+
+      expect(started.status).toBe(200);
+
+      const startedPatch = await waitForStatePatch(
+        phone,
+        (message) =>
+          message.phase === "navigation" &&
+          message.payload.status === "active" &&
+          message.payload.activeScenario?.id === "scenario_dying_star"
+      );
+
+      expect(startedPatch.payload.scenarioTelemetry?.some((entry) => entry.label === "Star Tokens")).toBe(true);
+
+      const state = harness.roomServer.getState();
+      const activePlayer = state.players.find((player) => player.seatId === joined.payload.seatId);
+      const currentSector = state.sectors.find((sector) => sector.id === activePlayer?.character.currentSpaceId);
+      const neighborSectorId = currentSector?.neighbors[0];
+
+      expect(neighborSectorId).toBeTruthy();
+
+      phone.socket.send(
+        JSON.stringify({
+          type: "MOVE_REQUESTED",
+          seatId: joined.payload.seatId,
+          toSectorId: neighborSectorId
+        })
+      );
+
+      const movedPatch = await waitForStatePatch(
+        phone,
+        (message) =>
+          message.phase === "action" &&
+          message.payload.self?.sectorId === neighborSectorId &&
+          message.payload.activeScenario?.id === "scenario_dying_star"
+      );
+
+      expect(movedPatch.payload.scenarioTelemetry?.some((entry) => entry.label === "Star Tokens")).toBe(true);
+    } finally {
+      phone.socket.close();
     }
   });
 });
