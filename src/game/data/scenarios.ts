@@ -28,6 +28,8 @@ export interface ScenarioDefinition {
   id: string;
   name: string;
   theme: string;
+  pressureRule: string;
+  expectedDuration: string;
   setup: string[];
   specialRules: string[];
   confrontationTitle: string;
@@ -50,6 +52,8 @@ export const SCENARIOS: ScenarioDefinition[] = [
     id: "scenario_broken_seal",
     name: "The Broken Seal",
     theme: "The last ward around the Cinder Gate is splitting and something below it is waking.",
+    pressureRule: "At the start of each operative turn, the seal track can degrade or spawn fresh threat pressure.",
+    expectedDuration: "45-60 min",
     setup: [
       "Place 6 Seal tokens on the scenario sheet.",
       "Use mission progress tokens, coins, or spare counters as Seal tokens."
@@ -93,6 +97,8 @@ export const SCENARIOS: ScenarioDefinition[] = [
     id: "scenario_throne_of_ash",
     name: "The Throne of Ash",
     theme: "An empty command throne promises dominion, but every crown claimed changes the final trial.",
+    pressureRule: "Crowns amplify combat power while making skill tests harsher, so the table reshapes the endgame race.",
+    expectedDuration: "60-75 min",
     setup: [
       "Place 3 Crown tokens on the scenario sheet.",
       "Any player who defeats an enemy or completes a Mission may claim 1 available Crown token."
@@ -151,6 +157,8 @@ export const SCENARIOS: ScenarioDefinition[] = [
     id: "scenario_mirror_of_false_heroes",
     name: "The Mirror of False Heroes",
     theme: "The breach answers ambition with a reflection that grows stronger with every stain you carry.",
+    pressureRule: "Mission glory and relic grabs build corruption pressure that strengthens the final mirror.",
+    expectedDuration: "60-75 min",
     setup: ["No extra setup is required."],
     specialRules: [
       "Whenever a player completes a Mission, choose one: accept the praise to gain 1 Influence and 1 Corruption card, or reject the praise to lose 1 Influence and draw 1 Power card.",
@@ -190,6 +198,8 @@ export const SCENARIOS: ScenarioDefinition[] = [
     id: "scenario_devourer_beneath",
     name: "The Devourer Beneath",
     theme: "A world-burrowing maw moves clockwise through the outer ring, consuming threats and building doom.",
+    pressureRule: "The Devourer keeps moving at end of turn, eating threats and converting them into shared doom.",
+    expectedDuration: "60-80 min",
     setup: [
       "Place 1 Devourer token on the outer tier.",
       "Place 0 Doom tokens on the scenario sheet."
@@ -235,6 +245,8 @@ export const SCENARIOS: ScenarioDefinition[] = [
     id: "scenario_labyrinth_engine",
     name: "The Labyrinth Engine",
     theme: "A reality-writing engine rotates through modes, changing how every turn feels until someone stops it.",
+    pressureRule: "The Engine rotates every turn and changes the active global penalty and test rewards.",
+    expectedDuration: "70-90 min",
     setup: [
       "Place 1 Engine token on the scenario sheet and set it to Command mode.",
       "The Engine cycles through Command, Signal, and Guile modes."
@@ -287,6 +299,8 @@ export const SCENARIOS: ScenarioDefinition[] = [
     id: "scenario_dying_star",
     name: "The Dying Star",
     theme: "The system sun is collapsing and every turn burns away the time left to repair it.",
+    pressureRule: "The star timer burns down at end of turn, with extra loss whenever the table takes damage.",
+    expectedDuration: "50-70 min",
     setup: [
       "Place 10 Star tokens on the scenario sheet.",
       "Use Influence coins, relic counters, or any spare markers as Star tokens."

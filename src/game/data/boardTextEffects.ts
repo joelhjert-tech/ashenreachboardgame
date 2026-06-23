@@ -8,6 +8,10 @@ export interface BoardTextEffectDefinition {
   effectKey: string;
   summary: string;
   effect: EncounterEffect | null;
+  stat?: Stat;
+  difficulty?: number;
+  failureSummary?: string;
+  failureEffect?: EncounterEffect | null;
   choices?: Array<{
     id: string;
     stat?: Stat;
@@ -26,6 +30,8 @@ export interface BoardTextValidationResult {
   missingEffectKeys: string[];
   unusedEffectKeys: string[];
   mismatchedChoiceKeys: string[];
+  invalidCheckKeys: string[];
+  legacyBoardTestKeys: string[];
 }
 
 export const BOARD_TEXT_EFFECTS: Record<string, BoardTextEffectDefinition> = {
@@ -43,20 +49,34 @@ export const BOARD_TEXT_EFFECTS: Record<string, BoardTextEffectDefinition> = {
   outer_ashwakeClearLane: {
     effectKey: "outer_ashwakeClearLane",
     summary: "Marked a clean lane through Ashwake Crossing.",
+    stat: "guile",
+    difficulty: 6,
     effect: {
       type: "gain_note",
       text: "Ashwake crossing cleared. The convoy lane is charted."
+    },
+    failureSummary: "The Ashwake lane looked clear until the crossing ghosts forced you back under pressure.",
+    failureEffect: {
+      type: "gain_heat",
+      amount: 1
     }
   },
   outer_glassmereChorus: {
     effectKey: "outer_glassmereChorus",
     summary: "Tuned the Glassmere spindle and secured a stable relay note.",
+    stat: "signal",
+    difficulty: 7,
     effect: {
       type: "sequence",
       effects: [
         { type: "lose_heat", amount: 1 },
         { type: "gain_note", text: "Glassmere spindle tuned. Relay chorus remains stable." }
       ]
+    },
+    failureSummary: "The Glassmere chorus slipped sharp and left the relay line humming too hot to trust.",
+    failureEffect: {
+      type: "gain_heat",
+      amount: 1
     },
     sectorDeck: {
       kind: "anomaly"
@@ -65,9 +85,16 @@ export const BOARD_TEXT_EFFECTS: Record<string, BoardTextEffectDefinition> = {
   outer_mirecoilTraffic: {
     effectKey: "outer_mirecoilTraffic",
     summary: "Pulled a fresh contract lead from Mirecoil Beacon traffic.",
+    stat: "signal",
+    difficulty: 8,
     effect: {
       type: "gain_note",
       text: "Mirecoil contract lead secured from mast traffic."
+    },
+    failureSummary: "The Mirecoil traffic lanes broke into static and the contract lead dissolved into noise.",
+    failureEffect: {
+      type: "gain_heat",
+      amount: 1
     },
     sectorDeck: {
       kind: "contract"
@@ -76,9 +103,16 @@ export const BOARD_TEXT_EFFECTS: Record<string, BoardTextEffectDefinition> = {
   outer_hollowVeilSweep: {
     effectKey: "outer_hollowVeilSweep",
     summary: "Recovered one salvage-grade gear cache from Hollow Veil Yard.",
+    stat: "forge",
+    difficulty: 7,
     effect: {
       type: "gain_gear",
       gearId: "coffin-rig"
+    },
+    failureSummary: "The Hollow Veil stacks shifted mid-sweep and forced you to abandon the cleaner salvage pass.",
+    failureEffect: {
+      type: "gain_heat",
+      amount: 1
     },
     sectorDeck: {
       kind: "artifact"
@@ -87,9 +121,16 @@ export const BOARD_TEXT_EFFECTS: Record<string, BoardTextEffectDefinition> = {
   outer_emberwatchBrace: {
     effectKey: "outer_emberwatchBrace",
     summary: "Braced the Emberwatch ridge and logged the route.",
+    stat: "grit",
+    difficulty: 8,
     effect: {
       type: "gain_note",
       text: "Emberwatch ridge braced. Safe route marker set."
+    },
+    failureSummary: "The Emberwatch ridge kicked back hard and the line only held long enough to scorch your position.",
+    failureEffect: {
+      type: "gain_heat",
+      amount: 1
     },
     sectorDeck: {
       kind: "escalation"
@@ -388,10 +429,30 @@ export function validateBoardTextEffectCoverage(): BoardTextValidationResult {
 
     return matches ? [] : [space.textBox.effectKey];
   }).sort();
+  const invalidCheckKeys = Object.values(BOARD_TEXT_EFFECTS)
+    .flatMap((definition) => {
+      const issues: string[] = [];
+
+      if (definition.stat && typeof definition.difficulty !== "number") {
+        issues.push(definition.effectKey);
+      }
+
+      const invalidChoice = definition.choices?.some((choice) => choice.stat && typeof choice.difficulty !== "number") ?? false;
+
+      if (invalidChoice) {
+        issues.push(`${definition.effectKey}:choices`);
+      }
+
+      return issues;
+    })
+    .sort();
+  const legacyBoardTestKeys = BOARD_SPACES.filter((space) => space.textBox.test).map((space) => space.textBox.effectKey).sort();
 
   return {
     missingEffectKeys,
     unusedEffectKeys,
-    mismatchedChoiceKeys
+    mismatchedChoiceKeys,
+    invalidCheckKeys,
+    legacyBoardTestKeys
   };
 }

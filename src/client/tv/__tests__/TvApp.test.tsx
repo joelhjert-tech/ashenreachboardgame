@@ -35,7 +35,11 @@ vi.mock("../TacticalMapBoard.js", () => ({
 }));
 
 vi.mock("../HostPlayerCard.js", () => ({
-  HostPlayerCard: (props: { characterName?: string | null }) => <div>Host card {props.characterName ?? "empty"}</div>
+  HostPlayerCard: (props: { characterName?: string | null; contractSummary?: string | null }) => (
+    <div>
+      Host card {props.characterName ?? "empty"} {props.contractSummary ?? ""}
+    </div>
+  )
 }));
 
 vi.mock("../JoinQrCard.js", () => ({
@@ -67,6 +71,9 @@ const scenarios: ScenarioCatalogEntry[] = [
     name: "The Broken Seal",
     theme: "An ancient prison has cracked open.",
     difficulty: "easy-medium",
+    pressureRule: "Seal pressure degrades at the start of each turn.",
+    expectedDuration: "45-60 min",
+    nemesis: null,
     setup: ["Place 6 Seal tokens on this scenario sheet."],
     specialRules: ["At the start of each player's turn, roll 1 die."],
     confrontationTitle: "Reseal the Prison",
@@ -78,6 +85,13 @@ const scenarios: ScenarioCatalogEntry[] = [
     name: "The Dying Star",
     theme: "The system's sun is collapsing.",
     difficulty: "hard",
+    pressureRule: "Star tokens burn down at the end of each turn.",
+    expectedDuration: "50-70 min",
+    nemesis: {
+      name: "Kharvox",
+      title: "The Red Maw",
+      faction: "Red Maw Raiders"
+    },
     setup: ["Place 10 Star tokens on this scenario sheet."],
     specialRules: ["At the end of each player's turn, remove 1 Star token."],
     confrontationTitle: "Ignite the Core",
@@ -147,7 +161,10 @@ function createPatch(roomCode = "RT7P4"): StatePatch<PublicPatchPayload> {
             name: "Tarek Voss",
             archetype: "Void Marshal",
             status: "active",
-            activeContract: null,
+            activeContract: {
+              contractId: "cartel-crossing-thread",
+              progress: 1
+            },
             stats: { command: 3, grit: 2, signal: 1, guile: 1, forge: 2 },
             trophies: 0,
             heat: 0,
@@ -163,7 +180,20 @@ function createPatch(roomCode = "RT7P4"): StatePatch<PublicPatchPayload> {
       escalationLevel: 0,
       escalationThreshold: 6,
       escalationModifier: 0,
-      availableContracts: [],
+      availableContracts: [
+        {
+          id: "cartel-crossing-thread",
+          name: "Crossing Thread",
+          factionGiver: "Pale Cartels",
+          text: "The Cartels want one convoy lane at Ashwake Crossing charted cleanly before they commit a lantern courier to the route.",
+          objective: {
+            type: "spaceTextResolved",
+            effectKey: "outer_ashwakeClearLane",
+            label: "Clear the Ashwake convoy lane",
+            target: 1
+          }
+        }
+      ],
       encounter: null,
       pendingEnemyRoll: null,
       outcomeSummary: null,
@@ -313,6 +343,22 @@ describe("TvApp", () => {
     });
   });
 
+  it("shows a scenario briefing preview and updates it when the host changes the picker", async () => {
+    render(<TvApp />);
+
+    expect(await screen.findByText(/scenario briefing/i)).toBeInTheDocument();
+    expect(screen.getByText(/seal pressure degrades at the start of each turn/i)).toBeInTheDocument();
+    expect(screen.getByText(/no linked nemesis/i)).toBeInTheDocument();
+
+    const scenarioSelect = screen.getByRole("combobox");
+    fireEvent.change(scenarioSelect, { target: { value: "scenario_dying_star" } });
+
+    expect(screen.getByText(/the system's sun is collapsing/i)).toBeInTheDocument();
+    expect(screen.getByText(/star tokens burn down at the end of each turn/i)).toBeInTheDocument();
+    expect(screen.getByText(/kharvox \| the red maw/i)).toBeInTheDocument();
+    expect(screen.getByText(/50-70 min/i)).toBeInTheDocument();
+  });
+
   it("surfaces scenario victory copy when the session has ended with a winner", async () => {
     window.localStorage.setItem("ashen-reach-tv-room-code", "RT7P4");
     window.localStorage.setItem("ashen-reach-tv-host-token", "host:RT7P4:secret");
@@ -332,5 +378,22 @@ describe("TvApp", () => {
 
     expect(await screen.findByText(/the broken seal secured/i)).toBeInTheDocument();
     expect(screen.getByText(/joel won the confrontation and secured the broken seal/i)).toBeInTheDocument();
+  });
+
+  it("shows authored contract objective labels on the host operative card", async () => {
+    window.localStorage.setItem("ashen-reach-tv-room-code", "RT7P4");
+    window.localStorage.setItem("ashen-reach-tv-host-token", "host:RT7P4:secret");
+    mockUseRoomSubscription.mockReturnValue({
+      patch: createPatch(),
+      error: null,
+      sendIntent: vi.fn(),
+      status: "open",
+      debugEvents: [],
+      clearDebugEvents: vi.fn()
+    });
+
+    render(<TvApp />);
+
+    expect(await screen.findByText(/host card tarek voss crossing thread \| clear the ashwake convoy lane \(1\/1 clears\)/i)).toBeInTheDocument();
   });
 });

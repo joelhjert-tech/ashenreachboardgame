@@ -7,6 +7,7 @@ import type {
   SectorNode
 } from "../shared/types.js";
 import { getBoardSpace, isScenarioConfrontationSpace } from "../../game/data/boardSpaces.js";
+import { describeContractObjective, formatContractObjectiveStatus } from "../../game/contracts/objectives.js";
 
 interface PhoneActionPanelProps {
   characters: CharacterCatalogEntry[];
@@ -328,7 +329,7 @@ export function PhoneActionPanel({ characters, onIntent, patch }: PhoneActionPan
       patch.availableContracts.forEach((contract) => {
         actions.push({
           key: `contract-${contract.id}`,
-          label: `Accept ${contract.name}`,
+          label: `Accept ${contract.name} | ${describeContractObjective(contract)}`,
           tone: "secondary",
           onClick: () =>
             onIntent({
@@ -343,7 +344,10 @@ export function PhoneActionPanel({ characters, onIntent, patch }: PhoneActionPan
     if (self.character.activeContract && activeContract && self.character.activeContract.progress >= activeContract.objective.target) {
       actions.push({
         key: `complete-${activeContract.id}`,
-        label: `Complete ${activeContract.name}`,
+        label: `Complete ${activeContract.name} | ${formatContractObjectiveStatus(
+          activeContract,
+          self.character.activeContract.progress
+        )}`,
         tone: "primary",
         onClick: () =>
           onIntent({

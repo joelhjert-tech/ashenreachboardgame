@@ -61,7 +61,9 @@ describe("board space data", () => {
     expect(validateBoardTextEffectCoverage()).toEqual({
       missingEffectKeys: [],
       unusedEffectKeys: [],
-      mismatchedChoiceKeys: []
+      mismatchedChoiceKeys: [],
+      invalidCheckKeys: [],
+      legacyBoardTestKeys: []
     });
   });
 

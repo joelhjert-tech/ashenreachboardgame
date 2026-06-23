@@ -383,6 +383,44 @@ function createState(overrides: Partial<GameState> = {}): GameState {
   };
 }
 
+function createSoloScenarioLiveState(options: {
+  scenarioId: GameState["activeScenarioId"];
+  scenarioProgress: Record<string, number>;
+  escalationLevel?: number;
+  stats?: Partial<GameState["players"][number]["character"]["stats"]>;
+}): GameState {
+  const base = createState({
+    status: "active",
+    phase: "action",
+    activeScenarioId: options.scenarioId,
+    scenarioProgress: options.scenarioProgress,
+    currentEncounter: null,
+    pendingEnemyRoll: null,
+    pendingEffect: null,
+    turnOrder: ["seat-1"],
+    activeSeatIndex: 0,
+    escalationLevel: options.escalationLevel ?? 0
+  });
+
+  return {
+    ...base,
+    sessionMode: "single-player",
+    seats: base.seats.slice(0, 1),
+    players: base.players.slice(0, 1).map((player) => ({
+      ...player,
+      sectorId: "center_cinder_gate",
+      character: {
+        ...player.character,
+        currentSpaceId: "center_cinder_gate",
+        stats: {
+          ...player.character.stats,
+          ...options.stats
+        }
+      }
+    }))
+  };
+}
+
 class SocketProbe {
   public readonly messages: ServerEnvelope[] = [];
   private readonly waiters = new Set<{
@@ -868,6 +906,171 @@ describe("roomServer websocket integration", () => {
     expect(collapseSnapshot.phase).toBe("broadcast");
     expect(Number(collapseSnapshot.payload.escalationLevel)).toBeGreaterThanOrEqual(8);
     expect(collapseSnapshot.payload.winnerSeatId).toBeNull();
+  });
+
+  it.each([
+    {
+      label: "Broken Seal",
+      scenarioId: "scenario_broken_seal" as const,
+      scenarioProgress: { sealRestorationMarks: 1 } as Record<string, number>,
+      expectedProgress: 4,
+      expectedThreshold: 2
+    },
+    {
+      label: "Throne of Ash",
+      scenarioId: "scenario_throne_of_ash" as const,
+      scenarioProgress: {
+        throneClaims: 5,
+        crownClaims: 2,
+        "crownClaim:seat-1": 2
+      } as Record<string, number>,
+      expectedProgress: 7,
+      expectedThreshold: 6
+    },
+    {
+      label: "Mirror of False Heroes",
+      scenarioId: "scenario_mirror_of_false_heroes" as const,
+      scenarioProgress: { mirrorBreaks: 3 } as Record<string, number>,
+      expectedProgress: 4,
+      expectedThreshold: 4
+    },
+    {
+      label: "Devourer Beneath",
+      scenarioId: "scenario_devourer_beneath" as const,
+      scenarioProgress: { mawStrikes: 4 } as Record<string, number>,
+      expectedProgress: 5,
+      expectedThreshold: 5
+    },
+    {
+      label: "Labyrinth Engine",
+      scenarioId: "scenario_labyrinth_engine" as const,
+      scenarioProgress: { shutdownMarks: 4, engineModeIndex: 1 } as Record<string, number>,
+      expectedProgress: 6,
+      expectedThreshold: 5
+    },
+    {
+      label: "Dying Star",
+      scenarioId: "scenario_dying_star" as const,
+      scenarioProgress: { ignitionMarks: 3 } as Record<string, number>,
+      expectedProgress: 4,
+      expectedThreshold: 4
+    }
+  ])("closes a live $label victory path over the phone socket", async ({ scenarioId, scenarioProgress, expectedProgress, expectedThreshold }) => {
+    const state = createSoloScenarioLiveState({
+      scenarioId,
+      scenarioProgress,
+      stats: {
+        command: 20,
+        grit: 20,
+        signal: 20,
+        guile: 20,
+        forge: 20
+      }
+    });
+
+    const activeHarness = (harness = await startHarness([5, 5, 5, 5, 5, 5, 5, 5], state));
+
+    const phone = await connectClient(`ws://127.0.0.1:${activeHarness.port}/?view=phone&token=${state.seats[0]?.joinToken}`);
+    probes.push(phone);
+
+    await phone.waitFor((message) => isStatePatch(message) && Object.hasOwn(message.payload, "self"));
+
+    phone.send({
+      type: "SCENARIO_CONFRONTATION_REQUESTED",
+      seatId: "seat-1"
+    });
+
+    const endedSnapshot = (await phone.waitFor(
+      (message) =>
+        isStatePatch(message) &&
+        message.payload.status === "ended" &&
+        message.payload.winnerSeatId === "seat-1"
+    )) as Extract<ServerEnvelope, { type: "STATE_PATCH" }>;
+
+    expect(endedSnapshot.phase).toBe("broadcast");
+    expect(endedSnapshot.payload.winnerSeatId).toBe("seat-1");
+    expect((endedSnapshot.payload.activeScenario as { progress?: number; threshold?: number } | null)?.progress).toBe(expectedProgress);
+    expect((endedSnapshot.payload.activeScenario as { progress?: number; threshold?: number } | null)?.threshold).toBe(expectedThreshold);
+  });
+
+  it.each([
+    {
+      label: "Broken Seal",
+      scenarioId: "scenario_broken_seal" as const,
+      scenarioProgress: {} as Record<string, number>
+    },
+    {
+      label: "Throne of Ash",
+      scenarioId: "scenario_throne_of_ash" as const,
+      scenarioProgress: {
+        crownClaims: 0,
+        throneClaims: 0
+      } as Record<string, number>
+    },
+    {
+      label: "Mirror of False Heroes",
+      scenarioId: "scenario_mirror_of_false_heroes" as const,
+      scenarioProgress: {} as Record<string, number>
+    },
+    {
+      label: "Devourer Beneath",
+      scenarioId: "scenario_devourer_beneath" as const,
+      scenarioProgress: {
+        doomTokens: 0,
+        devourerIndex: 0
+      } as Record<string, number>
+    },
+    {
+      label: "Labyrinth Engine",
+      scenarioId: "scenario_labyrinth_engine" as const,
+      scenarioProgress: {
+        engineModeIndex: 1
+      } as Record<string, number>
+    },
+    {
+      label: "Dying Star",
+      scenarioId: "scenario_dying_star" as const,
+      scenarioProgress: {
+        starTokens: 5
+      } as Record<string, number>
+    }
+  ])("collapses a live $label failure path over the phone socket when confrontation wounds feed escalation", async ({ scenarioId, scenarioProgress }) => {
+    const state = createSoloScenarioLiveState({
+      scenarioId,
+      scenarioProgress,
+      escalationLevel: 7,
+      stats: {
+        command: 0,
+        grit: 0,
+        signal: 0,
+        guile: 0,
+        forge: 0
+      }
+    });
+
+    const activeHarness = (harness = await startHarness([0, 0, 0, 0, 0, 0, 0, 0], state));
+
+    const phone = await connectClient(`ws://127.0.0.1:${activeHarness.port}/?view=phone&token=${state.seats[0]?.joinToken}`);
+    probes.push(phone);
+
+    await phone.waitFor((message) => isStatePatch(message) && Object.hasOwn(message.payload, "self"));
+
+    phone.send({
+      type: "SCENARIO_CONFRONTATION_REQUESTED",
+      seatId: "seat-1"
+    });
+
+    const collapseSnapshot = (await phone.waitFor(
+      (message) =>
+        isStatePatch(message) &&
+        message.payload.status === "ended" &&
+        message.payload.winnerSeatId === null &&
+        Number(message.payload.escalationLevel) >= 8
+    )) as Extract<ServerEnvelope, { type: "STATE_PATCH" }>;
+
+    expect(collapseSnapshot.phase).toBe("broadcast");
+    expect(collapseSnapshot.payload.winnerSeatId).toBeNull();
+    expect(Number(collapseSnapshot.payload.escalationLevel)).toBeGreaterThanOrEqual(8);
   });
 
   it("drives a full multi-seat session through real socket intents and public/private patches", async () => {

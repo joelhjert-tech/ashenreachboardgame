@@ -33,6 +33,9 @@ import type { GearSlot } from "../schema/gear.schema.js";
 import { getBoardSpace, isScenarioConfrontationSpace } from "../data/boardSpaces.js";
 import {
   advanceContractObjectiveProgress,
+  getContractObjectiveTarget,
+  formatContractObjectiveStatus,
+  describeContractObjective,
   isContractObjectiveComplete
 } from "../contracts/objectives.js";
 
@@ -1093,6 +1096,26 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
             }
           }
         })),
+        lastOutcomeSummary: {
+          seatId: acceptAction.seatId,
+          movedToSectorId: player.sectorId,
+          encounterCardId: null,
+          encounterTitle: acceptAction.contract.name,
+          encounterCardType: null,
+          checkStat: null,
+          die1: null,
+          die2: null,
+          statBonus: null,
+          checkTotal: null,
+          difficulty: null,
+          enemyRollerSeatId: null,
+          enemyDie1: null,
+          enemyDie2: null,
+          enemyBonus: null,
+          enemyTotal: null,
+          success: true,
+          summary: `Accepted contract ${acceptAction.contract.name}. ${describeContractObjective(acceptAction.contract)}.`
+        },
         eventLog: [...state.eventLog, action]
       });
     }
@@ -1154,7 +1177,7 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
           enemyBonus: null,
           enemyTotal: null,
           success: true,
-          summary: `Completed contract ${contract.name}. ${summarizeEffect(contract.reward, true)}`
+          summary: `Completed contract ${contract.name}. ${formatContractObjectiveStatus(contract, getContractObjectiveTarget(contract))}. ${summarizeEffect(contract.reward, true)}`
         },
         eventLog: [...state.eventLog, action]
       });

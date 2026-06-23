@@ -117,4 +117,52 @@ describe("MobilePlayerCard", () => {
     expect(screen.getByText(/the dying star lost/i)).toBeInTheDocument();
     expect(screen.getByText(/the breach collapsed the run before the dying star could be secured/i)).toBeInTheDocument();
   });
+
+  it("shows authored contract objective labels and progress on the player card", () => {
+    render(
+      <MobilePlayerCard
+        self={{
+          ...self,
+          character: {
+            ...self.character,
+            activeContract: {
+              contractId: "cartel-crossing-thread",
+              progress: 1
+            }
+          }
+        }}
+        activeContractCard={{
+          id: "cartel-crossing-thread",
+          name: "Crossing Thread",
+          factionGiver: "Pale Cartels",
+          text: "The Cartels want one convoy lane at Ashwake Crossing charted cleanly before they commit a lantern courier to the route.",
+          objective: {
+            type: "spaceTextResolved",
+            effectKey: "outer_ashwakeClearLane",
+            label: "Clear the Ashwake convoy lane",
+            target: 1
+          }
+        }}
+        roomCode="RT7P4"
+        displayName="Joel"
+        connectionStatus="open"
+        sessionStatus="active"
+        winnerSeatId={null}
+        phase="action"
+        activeSeatId="seat-1"
+        activeNemesis={null}
+        activeScenario={null}
+        scenarioTelemetry={[]}
+        escalationLevel={0}
+        escalationThreshold={6}
+        escalationModifier={0}
+        encounter={null}
+        outcomeSummary={null}
+        onLeave={() => {}}
+      />
+    );
+
+    expect(screen.getByText(/crossing thread \| clear the ashwake convoy lane \(1\/1 clears\)/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/clear the ashwake convoy lane/i).length).toBeGreaterThan(0);
+  });
 });

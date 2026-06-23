@@ -14,6 +14,15 @@ const contract = {
   }
 };
 
+const routeContract = {
+  objective: {
+    type: "spaceTextResolved" as const,
+    effectKey: "outer_ashwakeClearLane",
+    label: "Clear the Ashwake convoy lane",
+    target: 1
+  }
+};
+
 describe("contract objectives", () => {
   it("advances defeat-count objectives from enemy defeats and clamps at target", () => {
     expect(
@@ -40,5 +49,25 @@ describe("contract objectives", () => {
     expect(formatContractProgress(contract, 1)).toBe("1/2 defeats");
     expect(isContractObjectiveComplete(contract, 1)).toBe(false);
     expect(isContractObjectiveComplete(contract, 2)).toBe(true);
+  });
+
+  it("supports board-text-driven contract objectives from authored effect keys", () => {
+    expect(
+      advanceContractObjectiveProgress(routeContract, 0, {
+        type: "space-text-resolved",
+        effectKey: "outer_ashwakeClearLane"
+      })
+    ).toBe(1);
+
+    expect(
+      advanceContractObjectiveProgress(routeContract, 0, {
+        type: "space-text-resolved",
+        effectKey: "outer_glassmereChorus"
+      })
+    ).toBe(0);
+
+    expect(describeContractObjective(routeContract)).toBe("Clear the Ashwake convoy lane");
+    expect(formatContractProgress(routeContract, 1)).toBe("1/1 clears");
+    expect(isContractObjectiveComplete(routeContract, 1)).toBe(true);
   });
 });

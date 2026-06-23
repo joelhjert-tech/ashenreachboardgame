@@ -1,5 +1,5 @@
 import type { ReactElement, ReactNode } from "react";
-import { formatContractProgress } from "../../game/contracts/objectives.js";
+import { describeContractObjective, formatContractObjectiveStatus } from "../../game/contracts/objectives.js";
 import { getCharacterPortraitPath, getPhoneSheetFramePath } from "../shared/assetPaths.js";
 import type { AbilityChangeItem } from "../shared/abilityTelemetry.js";
 import {
@@ -110,8 +110,11 @@ export function MobilePlayerCard({
     seatLabelById: { [self.seatId]: displayName || self.character.name }
   });
   const contractCopy = activeContractCard
-    ? `${activeContractCard.name} (${formatContractProgress(activeContractCard, self.character.activeContract?.progress ?? 0)})`
+    ? `${activeContractCard.name} | ${formatContractObjectiveStatus(activeContractCard, self.character.activeContract?.progress ?? 0)}`
     : "No active contract";
+  const contractObjectiveCopy = activeContractCard
+    ? describeContractObjective(activeContractCard)
+    : null;
   const encounterCopy = encounter
     ? `${encounter.title} | ${toTitleCase(encounter.cardType)} | ${toTitleCase(encounter.stat)} ${encounter.difficulty}`
     : `Phase ${toTitleCase(phase)}`;
@@ -378,6 +381,7 @@ export function MobilePlayerCard({
             <div className="phone-sheet-section-heading">Active Contract</div>
             <div className="phone-sheet-contract-card">
               <p>{contractCopy}</p>
+              {contractObjectiveCopy && <strong>{contractObjectiveCopy}</strong>}
               {activeContractCard && <span>{activeContractCard.text}</span>}
             </div>
           </div>

@@ -11,6 +11,9 @@ import { nemeses, type NemesisDefinition } from "../game/data/nemeses.js";
 import { getScenarioDefinition } from "../game/data/scenarios.js";
 import {
   advanceContractObjectiveProgress,
+  describeContractObjective,
+  formatContractObjectiveStatus,
+  formatContractProgress,
   setContractProgressFloor
 } from "../game/contracts/objectives.js";
 import { getEscalationCollapseLevel, getEscalationModifier } from "../game/engine/escalation.js";
@@ -871,6 +874,64 @@ export class GameRoomServer {
           type: "ABILITY_TRIGGERED",
           seatId,
           abilityId,
+          summary,
+          createdAt: new Date().toISOString()
+        }
+      ]
+    };
+  }
+
+  private maybeAdvanceContractObjective(seatId: string, trigger: Parameters<typeof advanceContractObjectiveProgress>[2], summary: string): void {
+    const player = this.state.players.find((entry) => entry.seatId === seatId);
+
+    if (!player?.character.activeContract) {
+      return;
+    }
+
+    const contract = this.state.availableContracts.find((entry) => entry.id === player.character.activeContract?.contractId) ?? null;
+
+    if (!contract) {
+      return;
+    }
+
+    const nextProgress = advanceContractObjectiveProgress(contract, player.character.activeContract.progress, trigger);
+
+    if (nextProgress === player.character.activeContract.progress) {
+      return;
+    }
+
+    this.state = {
+      ...this.state,
+      sequence: this.state.sequence + 1,
+      players: this.state.players.map((entry) =>
+        entry.seatId === seatId && entry.character.activeContract
+          ? {
+              ...entry,
+              character: {
+                ...entry.character,
+                activeContract: {
+                  ...entry.character.activeContract,
+                  progress: nextProgress
+                }
+              }
+            }
+          : entry
+      ),
+      lastOutcomeSummary: this.state.lastOutcomeSummary
+            ? {
+                ...this.state.lastOutcomeSummary,
+                seatId,
+                movedToSectorId: player.sectorId,
+                summary: `${this.state.lastOutcomeSummary.summary} ${summary} ${contract.name} is now ${formatContractObjectiveStatus(contract, nextProgress)}.`
+              }
+        : this.state.lastOutcomeSummary,
+      eventLog: [
+        ...this.state.eventLog,
+        {
+          type: "CONTRACT_PROGRESS_UPDATED",
+          seatId,
+          contractId: contract.id,
+          progress: nextProgress,
           summary,
           createdAt: new Date().toISOString()
         }
@@ -2716,10 +2777,6 @@ export class GameRoomServer {
 
     const resolution = resolveSpaceText(boardSpace.textBox.effectKey, intent.choiceId);
     const sectorCardResolution = this.resolveSectorCardResolution(intent.seatId, boardTextEffect?.sectorDeck?.kind ?? null);
-    const chosenBoardTextChoice =
-      intent.choiceId && boardTextEffect?.choices?.length
-        ? boardTextEffect.choices.find((choice) => choice.id === intent.choiceId) ?? null
-        : null;
     let checkPayload:
       | {
           checkStat: Stat;
@@ -2733,29 +2790,29 @@ export class GameRoomServer {
     let baseSummary = resolution.summary;
     let baseEffect = resolution.effect;
 
-    if (chosenBoardTextChoice?.stat) {
+    if (resolution.check?.stat) {
       const roll = rollDice(2, 6, this.randomSource);
       const escalationModifier = getEscalationModifier(this.state.escalationLevel);
       const statBonus =
-        player.character.stats[chosenBoardTextChoice.stat] +
-        getEquippedGearBonus(player.character, chosenBoardTextChoice.stat) +
+        player.character.stats[resolution.check.stat] +
+        getEquippedGearBonus(player.character, resolution.check.stat) +
         this.getScenarioSkillModifier(intent.seatId);
-      const difficulty = (chosenBoardTextChoice.difficulty ?? boardSpace.textBox.test?.difficulty ?? 0) + escalationModifier;
+      const difficulty = resolution.check.difficulty + escalationModifier;
       const total = roll.total + statBonus;
       const success = total >= difficulty;
 
       checkPayload = {
-        checkStat: chosenBoardTextChoice.stat,
+        checkStat: resolution.check.stat,
         difficulty,
         roll,
         statBonus,
         total,
         success
       };
-      baseSummary = `${success ? chosenBoardTextChoice.summary : chosenBoardTextChoice.failureSummary ?? chosenBoardTextChoice.summary} ${chosenBoardTextChoice.stat} ${total}/${difficulty}.`;
+      baseSummary = `${success ? resolution.summary : resolution.check.failureSummary ?? resolution.summary} ${resolution.check.stat} ${total}/${difficulty}.`;
       baseEffect = success
-        ? chosenBoardTextChoice.effect
-        : chosenBoardTextChoice.failureEffect ?? null;
+        ? resolution.effect
+        : resolution.check.failureEffect ?? null;
     }
 
     const combinedSummary = [baseSummary, sectorCardResolution?.summary].filter(Boolean).join(" ");
@@ -2793,6 +2850,16 @@ export class GameRoomServer {
     if (checkPayload) {
       this.applyScenarioOnSkillResolved(intent.seatId, checkPayload.checkStat, checkPayload.success);
       this.maybeTriggerAbilityOnCheckResolved(intent.seatId, checkPayload.checkStat, checkPayload.success);
+    }
+    if (!checkPayload || checkPayload.success) {
+      this.maybeAdvanceContractObjective(
+        intent.seatId,
+        {
+          type: "space-text-resolved",
+          effectKey: resolution.effectKey
+        },
+        "The local board-text objective advanced."
+      );
     }
     this.maybeTriggerAbilityOnSpaceTextResolved(intent.seatId, resolution.effectKey);
   }
@@ -3281,7 +3348,7 @@ export class GameRoomServer {
 
         return contract
           ? {
-              summary: `Intercepted ${contract.name} from Mirecoil Beacon traffic.`,
+              summary: `Intercepted ${contract.name} from Mirecoil Beacon traffic. ${describeContractObjective(contract)}.`,
               effect: {
                 type: "gain_note",
                 text: `Mirecoil traffic exposed contract ${contract.name}.`

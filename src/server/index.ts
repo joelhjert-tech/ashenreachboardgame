@@ -9,6 +9,7 @@ import { createInitialSessionState } from "./sessionState.js";
 import { createHostToken } from "./auth.js";
 import type { SessionMode } from "../game/schema/session.schema.js";
 import { SCENARIOS, getScenarioDefinition } from "../game/data/scenarios.js";
+import { nemeses } from "../game/data/nemeses.js";
 
 const DEFAULT_SERVER_PORT = 8080;
 const DEFAULT_CLIENT_PORT = 5173;
@@ -38,6 +39,9 @@ let roomCode = createRoomCode();
 let hostToken = createRoomCode();
 const roomServer = new GameRoomServer(createInitialSessionState(roomCode));
 roomServer.setHostToken(createHostToken({ sessionId: roomCode, secret: hostToken }));
+const nemesisByScenarioId = new Map(
+  nemeses.filter((nemesis) => nemesis.scenarioId).map((nemesis) => [nemesis.scenarioId!, nemesis] as const)
+);
 
 function createRoomCode(): string {
   return Math.random().toString(36).slice(2, 7).toUpperCase();
@@ -122,6 +126,21 @@ function createHttpServer(): HttpServer {
             name: scenario.name,
             theme: scenario.theme,
             difficulty: scenario.difficulty,
+            pressureRule: scenario.pressureRule,
+            expectedDuration: scenario.expectedDuration,
+            nemesis: (() => {
+              const nemesis = nemesisByScenarioId.get(scenario.id) ?? null;
+
+              if (!nemesis) {
+                return null;
+              }
+
+              return {
+                name: nemesis.name,
+                title: nemesis.title,
+                faction: nemesis.faction
+              };
+            })(),
             setup: scenario.setup,
             specialRules: scenario.specialRules,
             confrontationTitle: scenario.confrontationTitle,

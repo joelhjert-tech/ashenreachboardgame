@@ -1,6 +1,8 @@
 export interface ContractObjectiveLike {
-  type: "defeatCount";
+  type: "defeatCount" | "spaceTextResolved";
   target: number;
+  effectKey?: string;
+  label?: string;
 }
 
 export interface ContractCardLike {
@@ -15,12 +17,18 @@ export type ContractObjectiveTrigger =
   | {
       type: "enemy-defeated";
       amount?: number;
+    }
+  | {
+      type: "space-text-resolved";
+      effectKey: string;
     };
 
 function getProgressDelta(trigger: ContractObjectiveTrigger): number {
   switch (trigger.type) {
     case "enemy-defeated":
       return Math.max(1, trigger.amount ?? 1);
+    case "space-text-resolved":
+      return 1;
   }
 }
 
@@ -32,6 +40,8 @@ export function describeContractObjective(contract: ContractCardLike): string {
   switch (contract.objective.type) {
     case "defeatCount":
       return `Defeat ${contract.objective.target} ${contract.objective.target === 1 ? "enemy" : "enemies"}`;
+    case "spaceTextResolved":
+      return contract.objective.label ?? "Resolve the assigned sector operation";
   }
 }
 
@@ -39,6 +49,8 @@ export function canAdvanceContractObjective(contract: ContractCardLike, trigger:
   switch (contract.objective.type) {
     case "defeatCount":
       return trigger.type === "enemy-defeated";
+    case "spaceTextResolved":
+      return trigger.type === "space-text-resolved" && trigger.effectKey === contract.objective.effectKey;
   }
 }
 
@@ -81,5 +93,11 @@ export function formatContractProgress(contract: ContractCardLike, progress: num
   switch (contract.objective.type) {
     case "defeatCount":
       return `${clampedProgress}/${target} defeats`;
+    case "spaceTextResolved":
+      return `${clampedProgress}/${target} clears`;
   }
+}
+
+export function formatContractObjectiveStatus(contract: ContractCardLike, progress: number): string {
+  return `${describeContractObjective(contract)} (${formatContractProgress(contract, progress)})`;
 }

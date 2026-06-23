@@ -235,6 +235,28 @@ function createContracts(): Map<string, ContractCard> {
           ]
         }
       }
+    ],
+    [
+      "cartel-crossing-thread",
+      {
+        id: "cartel-crossing-thread",
+        name: "Crossing Thread",
+        factionGiver: "Pale Cartels",
+        text: "The Cartels want one convoy lane at Ashwake Crossing charted cleanly before they commit a lantern courier to the route.",
+        objective: {
+          type: "spaceTextResolved",
+          effectKey: "outer_ashwakeClearLane",
+          label: "Clear the Ashwake convoy lane",
+          target: 1
+        },
+        reward: {
+          type: "sequence",
+          effects: [
+            { type: "lose_heat", amount: 1 },
+            { type: "gain_note", text: "The Cartels opened a clean crossing thread for one black-lantern run." }
+          ]
+        }
+      }
     ]
   ]);
 }
@@ -1264,7 +1286,7 @@ describe("escalation flow", () => {
         "seat-1"
       ),
       [],
-      createSequenceRandomSource([0]),
+      createSequenceRandomSource([5, 5, 0]),
       createThreats(),
       characters,
       createGear(),
@@ -1307,7 +1329,7 @@ describe("escalation flow", () => {
         "seat-1"
       ),
       [],
-      createSequenceRandomSource([0]),
+      createSequenceRandomSource([5, 5]),
       createThreats(),
       characters,
       createGear(),
@@ -1353,7 +1375,7 @@ describe("escalation flow", () => {
         "seat-1"
       ),
       [],
-      createSequenceRandomSource([0]),
+      createSequenceRandomSource([5, 5]),
       createThreats(),
       createCharacters(),
       createGear(),
@@ -1399,7 +1421,7 @@ describe("escalation flow", () => {
     const server = new GameRoomServer(
       withOnlyConnectedSeat(baseState, "seat-1"),
       [],
-      createSequenceRandomSource([0]),
+      createSequenceRandomSource([5, 5]),
       createThreats(),
       characters,
       createGear(),
@@ -1463,7 +1485,7 @@ describe("escalation flow", () => {
         "seat-1"
       ),
       [],
-      createSequenceRandomSource([0]),
+      createSequenceRandomSource([5, 5]),
       createThreats(),
       createCharacters(),
       createGear(),
@@ -1500,7 +1522,7 @@ describe("escalation flow", () => {
         activeSeatIndex: 0
       },
       [],
-      createSequenceRandomSource([0]),
+      createSequenceRandomSource([5, 5]),
       createThreats(),
       createCharacters(),
       createGear(),
@@ -1516,7 +1538,7 @@ describe("escalation flow", () => {
     expect(server.getState().activeSeatIndex).toBe(1);
   });
 
-  it("resolves clear sector text from the action phase and records the granted note", () => {
+  it("resolves clear sector text from the action phase with its authored skill check", () => {
     const server = new GameRoomServer(
       createState({
         currentEncounter: null,
@@ -1553,7 +1575,7 @@ describe("escalation flow", () => {
         )
       }),
       [],
-      createSequenceRandomSource([0]),
+      createSequenceRandomSource([5, 5]),
       createThreats(),
       createCharacters(),
       createGear(),
@@ -1567,6 +1589,52 @@ describe("escalation flow", () => {
 
     expect(server.getState().players[0]?.private.notes).toContain("Ashwake crossing cleared. The convoy lane is charted.");
     expect(server.getState().phase).toBe("navigation");
+  });
+
+  it("applies the authored failure branch when clear sector text fails its board check", () => {
+    const server = new GameRoomServer(
+      createState({
+        currentEncounter: null,
+        phase: "action",
+        sectors: createState().sectors.map((sector) =>
+          sector.id === "sector-a"
+            ? {
+                ...sector,
+                id: "ashwake-crossing",
+                name: "Ashwake Crossing",
+                encounterDecks: { ...sector.encounterDecks, threat: [] }
+              }
+            : sector
+        ),
+        players: createState().players.map((player) =>
+          player.seatId === "seat-1"
+            ? {
+                ...player,
+                sectorId: "ashwake-crossing",
+                character: {
+                  ...player.character,
+                  currentSpaceId: "ashwake-crossing"
+                }
+              }
+            : player
+        )
+      }),
+      [],
+      createSequenceRandomSource([0, 0]),
+      createThreats(),
+      createCharacters(),
+      createGear(),
+      createContracts()
+    );
+
+    runIntent(server, {
+      type: "RESOLVE_SPACE_TEXT",
+      seatId: "seat-1"
+    });
+
+    expect(server.getState().players[0]?.private.notes).not.toContain("Ashwake crossing cleared. The convoy lane is charted.");
+    expect(server.getState().players[0]?.character.heat).toBe(0);
+    expect(server.getState().players[0]?.private.notes).toContain("Void Command marked the cleared lane for allied movement.");
   });
 
   it("requires an authored choice before resolving Shard Sprawl sector text", () => {
@@ -1598,7 +1666,7 @@ describe("escalation flow", () => {
         )
       }),
       [],
-      createSequenceRandomSource([0]),
+      createSequenceRandomSource([5, 5]),
       createThreats(),
       createCharacters(),
       createGear(),
@@ -1696,7 +1764,7 @@ describe("escalation flow", () => {
         )
       }),
       [],
-      createSequenceRandomSource([0]),
+      createSequenceRandomSource([0, 5, 5, 0]),
       createThreats(),
       createCharacters(),
       createGear(),
@@ -1711,7 +1779,16 @@ describe("escalation flow", () => {
       seatId: "seat-1"
     });
 
+    const discoveredContractSummary =
+      (
+        server.getState().eventLog.find((entry) => {
+          const event = entry as { type?: string; summary?: string };
+          return event.type === "SPACE_TEXT_RESOLVED";
+        }) as { summary?: string } | undefined
+      )?.summary ?? "";
+
     expect(server.getState().availableContracts.map((entry) => entry.id)).toContain("contract-beacon");
+    expect(discoveredContractSummary).toContain("Defeat 1 enemy.");
     expect(server.getState().players[0]?.private.notes).toContain("Mirecoil traffic exposed contract Beacon Quieting.");
     expect(server.getState().sectors.find((sector) => sector.id === "mirecoil-beacon")?.encounterDecks.contract).toEqual([
       "contract-lantern-run"
@@ -1748,7 +1825,7 @@ describe("escalation flow", () => {
         )
       }),
       [],
-      createSequenceRandomSource([1]),
+      createSequenceRandomSource([1, 5, 5]),
       createThreats(),
       createCharacters(),
       createGear(),
@@ -1800,7 +1877,7 @@ describe("escalation flow", () => {
         )
       }),
       [],
-      createSequenceRandomSource([0]),
+      createSequenceRandomSource([0, 5, 5]),
       createThreats(),
       createCharacters(),
       createGear(),
@@ -1853,7 +1930,7 @@ describe("escalation flow", () => {
         )
       }),
       [],
-      createSequenceRandomSource([1]),
+      createSequenceRandomSource([1, 5, 5]),
       createThreats(),
       createCharacters(),
       createGear(),
@@ -1909,7 +1986,7 @@ describe("escalation flow", () => {
         )
       }),
       [],
-      createSequenceRandomSource([0]),
+      createSequenceRandomSource([5, 5]),
       createThreats(),
       createCharacters(),
       createGear(),
@@ -1957,7 +2034,7 @@ describe("escalation flow", () => {
         )
       }),
       [],
-      createSequenceRandomSource([0]),
+      createSequenceRandomSource([0, 5, 5, 0]),
       createThreats(),
       createCharacters(),
       createGear(),
@@ -2010,7 +2087,7 @@ describe("escalation flow", () => {
         )
       }),
       [],
-      createSequenceRandomSource([1]),
+      createSequenceRandomSource([1, 5, 5]),
       createThreats(),
       createCharacters(),
       createGear(),
@@ -2066,7 +2143,7 @@ describe("escalation flow", () => {
         )
       }),
       [],
-      createSequenceRandomSource([0]),
+      createSequenceRandomSource([0, 5, 5]),
       createThreats(),
       createCharacters(),
       createGear(),
@@ -2121,7 +2198,7 @@ describe("escalation flow", () => {
         )
       }),
       [],
-      createSequenceRandomSource([1]),
+      createSequenceRandomSource([1, 5, 5]),
       createThreats(),
       createCharacters(),
       createGear(),
@@ -2560,7 +2637,7 @@ describe("trophy progression", () => {
         )
       }),
       [],
-      createSequenceRandomSource([0]),
+      createSequenceRandomSource([5, 5]),
       createThreats(),
       createCharacters(),
       createGear(),
@@ -2600,7 +2677,7 @@ describe("trophy progression", () => {
         )
       }),
       [],
-      createSequenceRandomSource([0]),
+      createSequenceRandomSource([5, 5]),
       createThreats(),
       createCharacters(),
       createGear(),
@@ -2646,7 +2723,7 @@ describe("trophy progression", () => {
         )
       }),
       [],
-      createSequenceRandomSource([0]),
+      createSequenceRandomSource([5, 5]),
       createThreats(),
       createCharacters(),
       createGear(),
@@ -2689,7 +2766,7 @@ describe("trophy progression", () => {
         )
       }),
       [],
-      createSequenceRandomSource([0]),
+      createSequenceRandomSource([5, 5]),
       createThreats(),
       createCharacters(),
       createGear(),
@@ -2864,7 +2941,7 @@ describe("contracts", () => {
         )
       }),
       [],
-      createSequenceRandomSource([0]),
+      createSequenceRandomSource([5, 5]),
       createThreats(),
       characters,
       createGear(),
@@ -2918,6 +2995,7 @@ describe("contracts", () => {
       progress: 0
     });
     expect(otherPhone.availableContracts.map((entry) => entry.id)).toContain("choir-hush-census");
+    expect(server.getState().lastOutcomeSummary?.summary).toContain("Defeat 2 enemies.");
 
     runIntent(server, {
       type: "ACCEPT_CONTRACT",
@@ -2928,6 +3006,75 @@ describe("contracts", () => {
       contractId: "choir-hush-census",
       progress: 0
     });
+  });
+
+  it("advances and completes a board-text-driven contract from authored sector text", () => {
+    const contracts = createContracts();
+    const server = new GameRoomServer(
+      withOnlyConnectedSeat(
+        createState({
+          sessionMode: "single-player",
+          turnOrder: ["seat-1"],
+          currentEncounter: null,
+          phase: "action",
+          seats: createState().seats.slice(0, 1),
+          players: createState().players.slice(0, 1).map((entry) => ({
+            ...entry,
+            sectorId: "ashwake-crossing",
+            character: {
+              ...entry.character,
+              currentSpaceId: "ashwake-crossing"
+            }
+          })),
+          sectors: createState().sectors.map((sector) =>
+            sector.id === "sector-a"
+              ? {
+                  ...sector,
+                  id: "ashwake-crossing",
+                  name: "Ashwake Crossing",
+                  encounterDecks: { ...sector.encounterDecks, threat: [] }
+                }
+              : sector
+          )
+        }),
+        "seat-1"
+      ),
+      [],
+      createSequenceRandomSource([5, 5]),
+      createThreats(),
+      createCharacters(),
+      createGear(),
+      contracts
+    );
+
+    runIntent(server, {
+      type: "ACCEPT_CONTRACT",
+      seatId: "seat-1",
+      contractId: "cartel-crossing-thread"
+    });
+
+    runIntent(server, {
+      type: "RESOLVE_SPACE_TEXT",
+      seatId: "seat-1"
+    });
+
+    expect(server.getState().players[0]?.character.activeContract?.progress).toBe(1);
+
+    runIntent(server, { type: "PHASE_ADVANCED", seatId: "seat-1", toPhase: "start" });
+    runIntent(server, { type: "PHASE_ADVANCED", seatId: "seat-1", toPhase: "navigation" });
+    runIntent(server, { type: "PHASE_ADVANCED", seatId: "seat-1", toPhase: "sector" });
+    runIntent(server, { type: "PHASE_ADVANCED", seatId: "seat-1", toPhase: "action" });
+
+    runIntent(server, {
+      type: "COMPLETE_CONTRACT",
+      seatId: "seat-1",
+      contractId: "cartel-crossing-thread"
+    });
+
+    expect(server.getState().players[0]?.character.activeContract).toBeNull();
+    expect(server.getState().players[0]?.private.notes).toContain(
+      "The Cartels opened a clean crossing thread for one black-lantern run."
+    );
   });
 
   it("increments defeatCount progress only on combat wins, not on hazard wins", () => {
@@ -3075,7 +3222,7 @@ describe("contracts", () => {
         )
       }),
       [],
-      createSequenceRandomSource([0]),
+      createSequenceRandomSource([5, 5]),
       createThreats(),
       characters,
       createGear(),
@@ -3129,7 +3276,7 @@ describe("contracts", () => {
         )
       }),
       [],
-      createSequenceRandomSource([0]),
+      createSequenceRandomSource([5, 5]),
       createThreats(),
       characters,
       createGear(),
@@ -3184,7 +3331,7 @@ describe("contracts", () => {
         )
       }),
       [],
-      createSequenceRandomSource([0]),
+      createSequenceRandomSource([5, 5]),
       createThreats(),
       characters,
       createGear(),
@@ -3242,7 +3389,7 @@ describe("contracts", () => {
         )
       }),
       [],
-      createSequenceRandomSource([0]),
+      createSequenceRandomSource([5, 5]),
       createThreats(),
       characters,
       createGear(),
@@ -3297,7 +3444,7 @@ describe("contracts", () => {
         )
       }),
       [],
-      createSequenceRandomSource([0]),
+      createSequenceRandomSource([5, 5]),
       createThreats(),
       characters,
       createGear(),
@@ -3344,7 +3491,7 @@ describe("contracts", () => {
         )
       }),
       [],
-      createSequenceRandomSource([0]),
+      createSequenceRandomSource([5, 5]),
       createThreats(),
       characters,
       createGear(),
@@ -3387,7 +3534,7 @@ describe("contracts", () => {
         "seat-1"
       ),
       [],
-      createSequenceRandomSource([0]),
+      createSequenceRandomSource([5, 5]),
       createThreats(),
       characters,
       createGear(),
@@ -3428,7 +3575,7 @@ describe("contracts", () => {
         )
       }),
       [],
-      createSequenceRandomSource([0]),
+      createSequenceRandomSource([5, 5]),
       createThreats(),
       characters,
       createGear(),
@@ -3481,7 +3628,7 @@ describe("contracts", () => {
         )
       }),
       [],
-      createSequenceRandomSource([0]),
+      createSequenceRandomSource([5, 5]),
       createThreats(),
       characters,
       createGear(),
@@ -3530,7 +3677,7 @@ describe("contracts", () => {
         "seat-1"
       ),
       [],
-      createSequenceRandomSource([0]),
+      createSequenceRandomSource([5, 5]),
       createThreats(),
       characters,
       createGear(),
@@ -3580,7 +3727,7 @@ describe("contracts", () => {
         )
       }),
       [],
-      createSequenceRandomSource([0]),
+      createSequenceRandomSource([5, 5]),
       createThreats(),
       characters,
       createGear(),
@@ -3683,7 +3830,7 @@ describe("contracts", () => {
         )
       }),
       [],
-      createSequenceRandomSource([0]),
+      createSequenceRandomSource([5, 5]),
       createThreats(),
       characters,
       createGear(),

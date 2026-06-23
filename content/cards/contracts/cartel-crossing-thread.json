@@ -1,0 +1,25 @@
+{
+  "id": "cartel-crossing-thread",
+  "name": "Crossing Thread",
+  "factionGiver": "Pale Cartels",
+  "text": "The Cartels want one convoy lane at Ashwake Crossing charted cleanly before they commit a lantern courier to the route.",
+  "objective": {
+    "type": "spaceTextResolved",
+    "effectKey": "outer_ashwakeClearLane",
+    "label": "Clear the Ashwake convoy lane",
+    "target": 1
+  },
+  "reward": {
+    "type": "sequence",
+    "effects": [
+      {
+        "type": "lose_heat",
+        "amount": 1
+      },
+      {
+        "type": "gain_note",
+        "text": "The Cartels opened a clean crossing thread for one black-lantern run."
+      }
+    ]
+  }
+}

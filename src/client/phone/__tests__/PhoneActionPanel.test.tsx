@@ -222,6 +222,74 @@ describe("PhoneActionPanel", () => {
     expect(screen.queryByRole("button", { name: /end turn/i })).not.toBeInTheDocument();
   });
 
+  it("surfaces authored contract objective labels on accept and complete actions", () => {
+    render(
+      <PhoneActionPanel
+        characters={characters}
+        onIntent={vi.fn()}
+        patch={createPatch({
+          encounter: null,
+          availableContracts: [
+            {
+              id: "cartel-crossing-thread",
+              name: "Crossing Thread",
+              factionGiver: "Pale Cartels",
+              text: "The Cartels want one convoy lane at Ashwake Crossing charted cleanly before they commit a lantern courier to the route.",
+              objective: {
+                type: "spaceTextResolved",
+                effectKey: "outer_ashwakeClearLane",
+                label: "Clear the Ashwake convoy lane",
+                target: 1
+              }
+            }
+          ]
+        })}
+      />
+    );
+
+    expect(screen.getByRole("button", { name: /accept crossing thread \| clear the ashwake convoy lane/i })).toBeInTheDocument();
+
+    cleanup();
+
+    render(
+      <PhoneActionPanel
+        characters={characters}
+        onIntent={vi.fn()}
+        patch={createPatch({
+          encounter: null,
+          availableContracts: [
+            {
+              id: "cartel-crossing-thread",
+              name: "Crossing Thread",
+              factionGiver: "Pale Cartels",
+              text: "The Cartels want one convoy lane at Ashwake Crossing charted cleanly before they commit a lantern courier to the route.",
+              objective: {
+                type: "spaceTextResolved",
+                effectKey: "outer_ashwakeClearLane",
+                label: "Clear the Ashwake convoy lane",
+                target: 1
+              }
+            }
+          ],
+          self: {
+            ...createPatch().self!,
+            character: {
+              ...createPatch().self!.character,
+              activeContract: {
+                contractId: "cartel-crossing-thread",
+                progress: 1
+              }
+            }
+          }
+        })}
+      />
+    );
+
+    expect(
+      screen.getByRole("button", { name: /complete crossing thread \| clear the ashwake convoy lane \(1\/1 clears\)/i })
+    ).toBeInTheDocument();
+  });
+
   it("offers stabilize when escalation is live and no encounter is blocking the action", () => {
     render(
       <PhoneActionPanel

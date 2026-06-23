@@ -95,7 +95,9 @@ export interface ContractCard {
   name: string;
   factionGiver: string;
   text: string;
-  objective: { type: "defeatCount"; target: number };
+  objective:
+    | { type: "defeatCount"; target: number }
+    | { type: "spaceTextResolved"; effectKey: string; label: string; target: number };
 }
 
 export interface PendingEnemyRoll {
@@ -171,6 +173,13 @@ export interface ScenarioCatalogEntry {
   name: string;
   theme: string;
   difficulty: "easy" | "easy-medium" | "medium" | "medium-hard" | "hard";
+  pressureRule: string;
+  expectedDuration: string;
+  nemesis: {
+    name: string;
+    title: string;
+    faction: string;
+  } | null;
   setup: string[];
   specialRules: string[];
   confrontationTitle: string;

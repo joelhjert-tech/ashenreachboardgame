@@ -67,11 +67,7 @@ export const BOARD_SPACES: BoardSpaceDefinition[] = [
     textBox: {
       title: "Clear Lane",
       text: "If the crossing is clear, mark your route and gain a scouting note.",
-      effectKey: "outer_ashwakeClearLane",
-      test: {
-        stats: ["guile"],
-        difficulty: 6
-      }
+      effectKey: "outer_ashwakeClearLane"
     }
   },
   {
@@ -83,11 +79,7 @@ export const BOARD_SPACES: BoardSpaceDefinition[] = [
     textBox: {
       title: "Spindle Chorus",
       text: "If no local threats remain, tune the spindle and gain a stable relay note.",
-      effectKey: "outer_glassmereChorus",
-      test: {
-        stats: ["signal"],
-        difficulty: 7
-      }
+      effectKey: "outer_glassmereChorus"
     }
   },
   {
@@ -99,11 +91,7 @@ export const BOARD_SPACES: BoardSpaceDefinition[] = [
     textBox: {
       title: "Beacon Traffic",
       text: "If the beacon lane is secure, collect one new contract lead from the mast traffic.",
-      effectKey: "outer_mirecoilTraffic",
-      test: {
-        stats: ["signal", "forge"],
-        difficulty: 8
-      }
+      effectKey: "outer_mirecoilTraffic"
     },
     movementBox: {
       title: "Beacon Route",
@@ -120,11 +108,7 @@ export const BOARD_SPACES: BoardSpaceDefinition[] = [
     textBox: {
       title: "Salvage Sweep",
       text: "If the yard is quiet, salvage one workable gear piece from the stripped stacks.",
-      effectKey: "outer_hollowVeilSweep",
-      test: {
-        stats: ["forge", "guile"],
-        difficulty: 7
-      }
+      effectKey: "outer_hollowVeilSweep"
     }
   },
   {
@@ -136,11 +120,7 @@ export const BOARD_SPACES: BoardSpaceDefinition[] = [
     textBox: {
       title: "Watch the Ridge",
       text: "If the line is clear, brace through the ridge and take one route note.",
-      effectKey: "outer_emberwatchBrace",
-      test: {
-        stats: ["grit"],
-        difficulty: 8
-      }
+      effectKey: "outer_emberwatchBrace"
     }
   },
   {
@@ -162,11 +142,7 @@ export const BOARD_SPACES: BoardSpaceDefinition[] = [
           id: "gossip",
           label: "Press for gossip"
         }
-      ],
-      test: {
-        stats: ["command", "guile"],
-        difficulty: 8
-      }
+      ]
     }
   },
   {
@@ -216,11 +192,7 @@ export const BOARD_SPACES: BoardSpaceDefinition[] = [
           id: "relay-splice",
           label: "Splice the relay seam"
         }
-      ],
-      test: {
-        stats: ["guile", "signal"],
-        difficulty: 9
-      }
+      ]
     }
   },
   {
@@ -249,11 +221,7 @@ export const BOARD_SPACES: BoardSpaceDefinition[] = [
           id: "slip-fold",
           label: "Slip the fold"
         }
-      ],
-      test: {
-        stats: ["signal", "guile"],
-        difficulty: 10
-      }
+      ]
     },
     notes: "Original Ashen Reach equivalent of the first inner-tier breach space."
   },
@@ -276,11 +244,7 @@ export const BOARD_SPACES: BoardSpaceDefinition[] = [
           id: "ghost-angles",
           label: "Read the ghost angles"
         }
-      ],
-      test: {
-        stats: ["guile", "signal"],
-        difficulty: 10
-      }
+      ]
     }
   },
   {
@@ -306,11 +270,7 @@ export const BOARD_SPACES: BoardSpaceDefinition[] = [
           id: "ghost-path",
           label: "Ghost the last breach path"
         }
-      ],
-      test: {
-        stats: ["grit", "signal", "guile"],
-        difficulty: 12
-      }
+      ]
     }
   },
   {

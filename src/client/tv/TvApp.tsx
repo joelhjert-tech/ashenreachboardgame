@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type ReactElement } from "react";
 import { getBoardSpace, isScenarioConfrontationSpace } from "../../game/data/boardSpaces.js";
-import { formatContractProgress } from "../../game/contracts/objectives.js";
+import { formatContractObjectiveStatus } from "../../game/contracts/objectives.js";
 import { RIFTFALL_BOARD_NODE_INDEX } from "../../data/riftfallBoardNodes.js";
 import { createSession, fetchCharacters, fetchScenarios, fetchSessionSummary, startSession } from "../shared/network.js";
 import { getSeatAbilityTelemetry } from "../shared/abilityTelemetry.js";
@@ -45,6 +45,14 @@ function toTitleCase(value: string): string {
 
 function getSessionModeLabel(sessionMode: SessionMode): string {
   return sessionMode === "single-player" ? "Single Player" : "Multiplayer";
+}
+
+function getScenarioNemesisLabel(scenario: ScenarioCatalogEntry | null): string {
+  if (!scenario?.nemesis) {
+    return "No linked nemesis";
+  }
+
+  return `${scenario.nemesis.name} | ${scenario.nemesis.title}`;
 }
 
 function getGearSummary(player: PublicPlayer | null): string {
@@ -134,7 +142,7 @@ function getContractSummary(player: PublicPlayer | null, patch: StatePatch<Publi
     return "No active contract";
   }
 
-  return `${contract.name} (${formatContractProgress(contract, player.character.activeContract.progress)})`;
+  return `${contract.name} | ${formatContractObjectiveStatus(contract, player.character.activeContract.progress)}`;
 }
 
 function getActiveSectorLabel(patch: StatePatch<PublicPatchPayload> | null, activePlayer: PublicPlayer | null): string {
@@ -374,6 +382,46 @@ interface SessionReadoutProps {
   onToggleDebug: () => void;
 }
 
+function ScenarioSelectionPreview({ scenario }: { scenario: ScenarioCatalogEntry | null }): ReactElement | null {
+  if (!scenario) {
+    return null;
+  }
+
+  return (
+    <section className="tv-session-scenario-preview" aria-label="Scenario preview">
+      <div className="tv-session-scenario-preview-header">
+        <div>
+          <span>Scenario Briefing</span>
+          <strong>{scenario.name}</strong>
+        </div>
+        <div className="tv-session-scenario-preview-tags">
+          <span>{toTitleCase(scenario.difficulty)}</span>
+          <span>{scenario.expectedDuration}</span>
+        </div>
+      </div>
+      <p className="tv-session-scenario-preview-theme">{scenario.theme}</p>
+      <div className="tv-session-scenario-preview-grid">
+        <div>
+          <span>Pressure Rule</span>
+          <strong>{scenario.pressureRule}</strong>
+        </div>
+        <div>
+          <span>Nemesis</span>
+          <strong>{getScenarioNemesisLabel(scenario)}</strong>
+        </div>
+        <div>
+          <span>Confrontation</span>
+          <strong>{scenario.confrontationTitle}</strong>
+        </div>
+        <div>
+          <span>Victory</span>
+          <strong>{scenario.victoryText}</strong>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function SessionReadout({
   publicPatch,
   sessionMode,
@@ -441,19 +489,22 @@ function SessionReadout({
 
       <div className="tv-session-actions">
         {!roomCode && scenarioCatalog.length > 0 && (
-          <label className="tv-session-scenario-picker">
-            <span>Scenario</span>
-            <select
-              value={selectedScenario?.id ?? scenarioCatalog[0]?.id ?? ""}
-              onChange={(event) => onScenarioSelected(event.target.value)}
-            >
-              {scenarioCatalog.map((scenario) => (
-                <option key={scenario.id} value={scenario.id}>
-                  {scenario.name} | {toTitleCase(scenario.difficulty)}
-                </option>
-              ))}
-            </select>
-          </label>
+          <>
+            <label className="tv-session-scenario-picker">
+              <span>Scenario</span>
+              <select
+                value={selectedScenario?.id ?? scenarioCatalog[0]?.id ?? ""}
+                onChange={(event) => onScenarioSelected(event.target.value)}
+              >
+                {scenarioCatalog.map((scenario) => (
+                  <option key={scenario.id} value={scenario.id}>
+                    {scenario.name} | {toTitleCase(scenario.difficulty)}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <ScenarioSelectionPreview scenario={selectedScenario} />
+          </>
         )}
         <button type="button" className="tv-button tv-button-quiet" onClick={onToggleDebug}>
           {debugOpen ? "Hide debug" : "Show debug"}
