@@ -15,5 +15,6 @@
   "failEffect": {
     "type": "take_wound",
     "amount": 1
-  }
+  },
+  "enemyFamily": "vermin"
 }

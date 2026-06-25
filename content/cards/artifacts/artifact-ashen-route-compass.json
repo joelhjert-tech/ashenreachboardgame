@@ -6,7 +6,7 @@
   "text": "A cracked surveyor compass that points toward survivable routes instead of north.",
   "flavor": "It prefers roads that still remember names.",
   "charge": 2,
-  "resolutionSummary": "Recovered the Ashen Route Compass as an active navigation relic.",
+  "resolutionSummary": "Recovered the Ashen Route Compass as an active navigation artifact.",
   "resolveEffect": {
     "type": "sequence",
     "effects": [

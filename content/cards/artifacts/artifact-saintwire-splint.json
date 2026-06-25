@@ -1,0 +1,14 @@
+{
+  "id": "artifact-saintwire-splint",
+  "type": "artifact",
+  "artifactKind": "consumableSalvage",
+  "title": "Saintwire Splint",
+  "text": "A sainted emergency brace for a body already past sensible limits.",
+  "flavor": "The wire is kind in the way a locked door is kind during a fire.",
+  "charge": 1,
+  "resolutionSummary": "Recovered a Saintwire Splint for a last-second rescue.",
+  "resolveEffect": {
+    "type": "gain_gear",
+    "gearId": "saintwire-splint"
+  }
+}

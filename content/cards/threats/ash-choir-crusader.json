@@ -4,7 +4,7 @@
   "cardType": "enemy",
   "title": "Ash Choir Crusader",
   "enemyName": "Ash Choir Crusader",
-  "text": "A crusader of the Ash Choir mistakes your pulse for heresy and advances behind a bell shield.",
+  "text": "A crusader of the Ash Choir mistakes your pulse for a forbidden cadence and advances behind a bell shield.",
   "flavor": "Each bell note lands before the blow.",
   "severity": 4,
   "stat": "signal",
@@ -26,5 +26,6 @@
         "scarId": "scar-wound-1"
       }
     ]
-  }
+  },
+  "enemyFamily": "choir"
 }

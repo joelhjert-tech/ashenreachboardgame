@@ -2275,12 +2275,28 @@ select {
   min-height: 4.2rem;
   padding: 0.55rem 0.7rem;
   display: grid;
-  gap: 0.25rem;
-  align-content: center;
+  grid-template-columns: 3.2rem minmax(0, 1fr);
+  gap: 0.55rem;
+  align-items: start;
 }
 
 .phone-sheet-contract-card em {
   font-style: normal;
+}
+
+.phone-sheet-contract-art {
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  object-fit: cover;
+  border: 1px solid rgba(157, 132, 98, 0.28);
+  background: rgba(6, 9, 14, 0.88);
+}
+
+.phone-sheet-contract-copy {
+  min-width: 0;
+  display: grid;
+  gap: 0.25rem;
+  align-content: start;
 }
 
 .phone-sheet-side-empty {
@@ -2656,6 +2672,8 @@ select {
 
 .phone-sheet-card-landscape .phone-sheet-contract-card {
   min-height: 3rem;
+  grid-template-columns: 2.35rem minmax(0, 1fr);
+  gap: 0.34rem;
   padding: 0.32rem 0.4rem;
 }
 
@@ -2876,9 +2894,10 @@ select {
   }
 
   .phone-sheet-card-landscape .phone-sheet-contract-card {
-    min-height: 2rem;
-    padding: 0.2rem 0.28rem;
-  }
+      min-height: 2rem;
+      grid-template-columns: 1.9rem minmax(0, 1fr);
+      padding: 0.2rem 0.28rem;
+    }
 
   .phone-sheet-card-landscape .phone-sheet-contract-card p {
     font-size: 0.52rem;
@@ -6248,11 +6267,40 @@ body {
   grid-template-rows: auto minmax(0, 1fr);
 }
 
+.tv-reveal-card {
+  perspective: 900px;
+}
+
 .tv-reveal-card-layout {
   min-height: 0;
   display: grid;
   grid-template-columns: minmax(10rem, 43%) minmax(0, 1fr);
   gap: 0.7rem;
+  transform-origin: center center;
+}
+
+.tv-reveal-card-live .tv-reveal-card-layout {
+  animation: tv-card-flip-reveal 520ms cubic-bezier(0.16, 0.9, 0.2, 1) both;
+}
+
+@keyframes tv-card-flip-reveal {
+  0% {
+    opacity: 0;
+    transform: rotateY(-72deg) translateY(0.35rem) scale(0.96);
+    filter: brightness(0.65) saturate(0.85);
+  }
+
+  58% {
+    opacity: 1;
+    transform: rotateY(8deg) translateY(0) scale(1.012);
+    filter: brightness(1.14) saturate(1.08);
+  }
+
+  100% {
+    opacity: 1;
+    transform: rotateY(0deg) translateY(0) scale(1);
+    filter: brightness(1) saturate(1);
+  }
 }
 
 .tv-reveal-art {

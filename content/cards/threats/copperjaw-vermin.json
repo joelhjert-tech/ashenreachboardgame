@@ -1,0 +1,23 @@
+{
+  "id": "copperjaw-vermin",
+  "type": "threat",
+  "cardType": "enemy",
+  "title": "Copperjaw Vermin",
+  "enemyName": "Copperjaw Vermin",
+  "text": "Metal-toothed carrion things gnaw through the dead machinery under the path.",
+  "flavor": "The jaws are copper. The appetite is older.",
+  "severity": 2,
+  "region": "outer",
+  "stat": "forge",
+  "difficulty": 7,
+  "trophyValue": 1,
+  "defeatReward": {
+    "type": "gain_trophy",
+    "amount": 1
+  },
+  "woundOnLoss": {
+    "type": "take_wound",
+    "amount": 1
+  },
+  "enemyFamily": "vermin"
+}

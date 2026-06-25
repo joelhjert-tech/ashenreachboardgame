@@ -1,0 +1,15 @@
+{
+  "id": "scar-wound-5",
+  "type": "scar",
+  "title": "Glasslung",
+  "text": "Your breath rasps through crystal dust and old ward smoke.",
+  "flavor": "Cold air leaves a violet frost on your teeth.",
+  "trigger": "When you enter an inner space or a space with anomaly text.",
+  "penalty": "Gain 1 Heat from the bad air.",
+  "effect": {
+    "type": "gain_heat",
+    "amount": 1
+  },
+  "relief": "Discard a consumable salvage item to treat the breath and ignore this trigger once.",
+  "upside": "After resolving the space, you may lose 1 Heat if you did not fail a check there."
+}

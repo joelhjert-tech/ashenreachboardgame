@@ -1,0 +1,15 @@
+{
+  "id": "scar-wound-12",
+  "type": "scar",
+  "title": "Relay Ghost",
+  "text": "A dead station keeps routing distress calls through your bones.",
+  "flavor": "Every message arrives addressed to a name you almost remember.",
+  "trigger": "At the start of your turn while you have 3 or more Heat.",
+  "penalty": "Gain a relay note, then advance escalation by 1 if you ignore it this round.",
+  "effect": {
+    "type": "gain_note",
+    "text": "Relay Ghost calling: answer a route signal this round or advance escalation by 1."
+  },
+  "relief": "Pass a signal check at any relay, shrine, or anomaly space to quiet the ghost for the session.",
+  "upside": "If you answer the call, gain 1 trophy from recovered coordinates."
+}

@@ -1,0 +1,16 @@
+{
+  "id": "clan-salt-burial",
+  "name": "Salt Burial",
+  "factionGiver": "Veyr Clans",
+  "text": "Cross the void-salt flats and bury a clan marker where the wind cannot steal it.",
+  "objective": {
+    "type": "spaceTextResolved",
+    "effectKey": "outer_saltCrossing",
+    "label": "Salt crossing secured",
+    "target": 1
+  },
+  "reward": {
+    "type": "lose_heat",
+    "amount": 1
+  }
+}

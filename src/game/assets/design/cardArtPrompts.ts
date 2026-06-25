@@ -13,82 +13,82 @@ const specialCardArtSeeds: Array<{
   assetType:
     | "powerCardArt"
     | "corruptionCardArt"
-    | "relicCardArt"
+    | "artifactCardArt"
     | "wargearCardArt";
   prompt: string;
   usage: string;
 }> = [
   {
-    id: "power_card_rift_focus",
-    fileName: "power_card_rift_focus.png",
-    outputPath: "/assets/riftfall/cards/power/power_card_rift_focus.png",
+    id: "route_note_rift_focus",
+    fileName: "route_note_rift_focus.png",
+    outputPath: "/assets/riftfall/cards/route-notes/route_note_rift_focus.png",
     assetType: "powerCardArt",
     prompt: "glowing blue-white star held inside a brass focusing device, energy arcs, decisive concentration",
-    usage: "Power card art sample."
+    usage: "Route-note card art sample."
   },
   {
-    id: "power_card_command_burst",
-    fileName: "power_card_command_burst.png",
-    outputPath: "/assets/riftfall/cards/power/power_card_command_burst.png",
+    id: "route_note_command_burst",
+    fileName: "route_note_command_burst.png",
+    outputPath: "/assets/riftfall/cards/route-notes/route_note_command_burst.png",
     assetType: "powerCardArt",
     prompt: "tactical command display flaring with white-blue symbols, officer hand over controls, decisive moment",
-    usage: "Power card art sample."
+    usage: "Route-note card art sample."
   },
   {
-    id: "power_card_last_second",
-    fileName: "power_card_last_second.png",
-    outputPath: "/assets/riftfall/cards/power/power_card_last_second.png",
+    id: "route_note_last_second",
+    fileName: "route_note_last_second.png",
+    outputPath: "/assets/riftfall/cards/route-notes/route_note_last_second.png",
     assetType: "powerCardArt",
     prompt: "soldier dodging a blast at the final second, time-fracture glow, cinematic action",
-    usage: "Power card art sample."
+    usage: "Route-note card art sample."
   },
   {
-    id: "corruption_card_rift_scar",
-    fileName: "corruption_card_rift_scar.png",
-    outputPath: "/assets/riftfall/cards/corruption/corruption_card_rift_scar.png",
+    id: "heat_card_rift_scar",
+    fileName: "heat_card_rift_scar.png",
+    outputPath: "/assets/riftfall/cards/heat/heat_card_rift_scar.png",
     assetType: "corruptionCardArt",
     prompt: "violet-blue scar spreading across skin and armor, dark organic metal veins, ominous close-up",
-    usage: "Corruption card art sample."
+    usage: "Heat card art sample."
   },
   {
-    id: "corruption_card_hollow_voice",
-    fileName: "corruption_card_hollow_voice.png",
-    outputPath: "/assets/riftfall/cards/corruption/corruption_card_hollow_voice.png",
+    id: "heat_card_hollow_voice",
+    fileName: "heat_card_hollow_voice.png",
+    outputPath: "/assets/riftfall/cards/heat/heat_card_hollow_voice.png",
     assetType: "corruptionCardArt",
     prompt: "shadow figure whispering through a cracked visor, blue ghost mouth, psychological horror",
-    usage: "Corruption card art sample."
+    usage: "Heat card art sample."
   },
   {
-    id: "corruption_card_black_mirror",
-    fileName: "corruption_card_black_mirror.png",
-    outputPath: "/assets/riftfall/cards/corruption/corruption_card_black_mirror.png",
+    id: "heat_card_black_mirror",
+    fileName: "heat_card_black_mirror.png",
+    outputPath: "/assets/riftfall/cards/heat/heat_card_black_mirror.png",
     assetType: "corruptionCardArt",
     prompt: "black mirror showing a distorted reflection with violet rift cracks and cold candlelight",
-    usage: "Corruption card art sample."
+    usage: "Heat card art sample."
   },
   {
-    id: "relic_saint_antias_star",
-    fileName: "relic_saint_antias_star.png",
-    outputPath: "/assets/riftfall/cards/relics/relic_saint_antias_star.png",
-    assetType: "relicCardArt",
-    prompt: "golden saint-star relic floating above a cracked altar, blue-white sacred light",
-    usage: "Relic card art sample."
+    id: "artifact_route_star",
+    fileName: "artifact_route_star.png",
+    outputPath: "/assets/riftfall/cards/artifacts/artifact_route_star.png",
+    assetType: "artifactCardArt",
+    prompt: "golden route-star artifact floating above a cracked altar, blue-white sacred light",
+    usage: "Artifact card art sample."
   },
   {
-    id: "relic_void_key",
-    fileName: "relic_void_key.png",
-    outputPath: "/assets/riftfall/cards/relics/relic_void_key.png",
-    assetType: "relicCardArt",
+    id: "artifact_void_key",
+    fileName: "artifact_void_key.png",
+    outputPath: "/assets/riftfall/cards/artifacts/artifact_void_key.png",
+    assetType: "artifactCardArt",
     prompt: "ancient void key of gold and black glass, floating map rings, final gate artifact",
-    usage: "Relic card art sample."
+    usage: "Artifact card art sample."
   },
   {
-    id: "relic_choir_lantern",
-    fileName: "relic_choir_lantern.png",
-    outputPath: "/assets/riftfall/cards/relics/relic_choir_lantern.png",
-    assetType: "relicCardArt",
+    id: "artifact_choir_lantern",
+    fileName: "artifact_choir_lantern.png",
+    outputPath: "/assets/riftfall/cards/artifacts/artifact_choir_lantern.png",
+    assetType: "artifactCardArt",
     prompt: "brass lantern containing blue ghost flame, saint scrolls tied around the handle, holy protection artifact",
-    usage: "Relic card art sample."
+    usage: "Artifact card art sample."
   },
   {
     id: "wargear_riftblade",
@@ -117,14 +117,14 @@ const specialCardArtSeeds: Array<{
 ];
 
 const missionCardArtPrompts = missions.map((mission) => ({
-  id: `mission_art_${mission.id}`,
+  id: `contract_art_${mission.id}`,
   fileName: `${mission.id}.png`,
-  outputPath: `/assets/riftfall/cards/missions/${mission.id}.png`,
+  outputPath: `/assets/riftfall/cards/contracts/${mission.id}.png`,
   assetType: "missionCardArt" as const,
   size: "card" as const,
   prompt: `${style}; ${mission.imagePrompt}, no text`,
   negativePrompt: sharedNegativePrompt,
-  usage: `${mission.name} mission card art.`
+  usage: `${mission.name} contract card art.`
 }));
 
 const threatCardArtPrompts = allThreatCards.map((card) => ({

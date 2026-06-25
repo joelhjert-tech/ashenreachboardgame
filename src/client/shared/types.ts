@@ -68,6 +68,16 @@ export interface Follower {
   lossCondition?: "wound" | "heat" | "combatLoss" | "choice";
 }
 
+export interface ScarSummary {
+  id: string;
+  title: string;
+  text: string;
+  trigger: string;
+  penalty: string;
+  relief: string;
+  upside?: string;
+}
+
 export interface PrivateCharacter {
   id: string;
   name: string;
@@ -83,6 +93,7 @@ export interface PrivateCharacter {
   heldGear: GearItem[];
   equippedGear: Record<GearSlot, string | null>;
   followers?: Follower[];
+  scarCards?: ScarSummary[];
   abilities: Array<{ id: string; name: string; text: string }>;
 }
 

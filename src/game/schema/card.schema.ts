@@ -166,9 +166,23 @@ export const effectSchema: z.ZodType<EncounterEffect> = z.lazy(() =>
   ])
 );
 
+export const threatFamilySchema = z.enum([
+  "human",
+  "choir",
+  "cartel",
+  "machine",
+  "beast",
+  "vermin",
+  "breachborn",
+  "revenant",
+  "bureaucracy",
+  "hazard"
+]);
+
 const threatBaseSchema = cardBaseSchema.extend({
   type: z.literal("threat"),
   severity: z.number().int().min(1).max(5),
+  enemyFamily: threatFamilySchema.optional(),
   region: z.enum(["outer", "middle", "inner", "center", "global"]).optional(),
   stat: statSchema,
   difficulty: z.number().int().min(2).max(12),
@@ -226,7 +240,11 @@ export const artifactCardSchema = cardBaseSchema.extend({
 
 export const scarCardSchema = cardBaseSchema.extend({
   type: z.literal("scar"),
-  penalty: z.string().min(1)
+  trigger: z.string().min(1),
+  penalty: z.string().min(1),
+  effect: effectSchema,
+  relief: z.string().min(1),
+  upside: z.string().min(1).optional()
 });
 
 export const escalationCardSchema = cardBaseSchema.extend({
@@ -246,6 +264,7 @@ export const cardSchema = z.union([
 ]);
 
 export type ThreatCard = z.infer<typeof threatCardSchema>;
+export type ThreatFamily = z.infer<typeof threatFamilySchema>;
 export type HazardThreatCard = z.infer<typeof hazardThreatCardSchema>;
 export type EnemyThreatCard = z.infer<typeof enemyThreatCardSchema>;
 export type AnomalyCard = z.infer<typeof anomalyCardSchema>;

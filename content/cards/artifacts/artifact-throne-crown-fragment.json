@@ -14,7 +14,7 @@
         "type": "advance_scenario",
         "progressKey": "sealRestorationMarks",
         "amount": 1,
-        "summary": "A Crownfall relic advances the Broken Seal."
+        "summary": "A Crownfall artifact advances the Broken Seal."
       },
       {
         "type": "gain_heat",

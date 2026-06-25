@@ -1,0 +1,21 @@
+{
+  "id": "cinder-gate-backlash",
+  "type": "threat",
+  "cardType": "hazard",
+  "title": "Cinder Gate Backlash",
+  "text": "The final gate rejects the approach and throws a red pulse back through every carried artifact.",
+  "flavor": "The gate does not close. It answers.",
+  "severity": 5,
+  "region": "inner",
+  "stat": "signal",
+  "difficulty": 12,
+  "successEffect": {
+    "type": "lose_heat",
+    "amount": 2
+  },
+  "failEffect": {
+    "type": "take_wound",
+    "amount": 2
+  },
+  "enemyFamily": "hazard"
+}

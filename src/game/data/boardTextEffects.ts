@@ -263,12 +263,12 @@ export const BOARD_TEXT_EFFECTS: Record<string, BoardTextEffectDefinition> = {
   },
   middle_relicCache: {
     effectKey: "middle_relicCache",
-    summary: "Cracked the Red March relic cache.",
+    summary: "Cracked the Red March artifact cache.",
     stat: "guile",
     difficulty: 8,
     effect: {
       type: "gain_note",
-      text: "Relic cache cracked. One artifact has a claim tag in your name."
+      text: "Artifact cache cracked. One artifact has a claim tag in your name."
     },
     failureSummary: "The cache lock punished the wrong pressure point and woke its reliquary alarms.",
     failureEffect: {
@@ -409,7 +409,7 @@ export const BOARD_TEXT_EFFECTS: Record<string, BoardTextEffectDefinition> = {
       type: "sequence",
       effects: [
         { type: "gain_follower", followerId: "choir-defector" },
-        { type: "gain_note", text: "Choir shrine omen: a gate relic may answer, but the blessing is not clean." }
+        { type: "gain_note", text: "Choir shrine omen: a gate artifact may answer, but the blessing is not clean." }
       ]
     },
     failureSummary: "The shrine blessed the wrong part of you.",

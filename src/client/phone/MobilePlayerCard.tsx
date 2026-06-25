@@ -1,5 +1,6 @@
 import type { ReactElement, ReactNode } from "react";
 import { describeContractObjective, formatContractObjectiveStatus } from "../../game/contracts/objectives.js";
+import { CardArtImage } from "../shared/CardArtImage.js";
 import { getCharacterPortraitPath, getPhoneSheetFramePath } from "../shared/assetPaths.js";
 import type { AbilityChangeItem } from "../shared/abilityTelemetry.js";
 import {
@@ -126,6 +127,8 @@ export function MobilePlayerCard({
   const escalationCopy = formatEscalation({ escalationLevel, escalationThreshold, escalationModifier });
   const nemesisRemaining = activeNemesis ? Math.max(0, activeNemesis.life - activeNemesis.damageDealt) : 0;
   const nemesisProgressPercent = activeNemesis ? Math.min(100, (activeNemesis.damageDealt / Math.max(activeNemesis.life, 1)) * 100) : 0;
+  const scarCards = self.character.scarCards ?? [];
+  const scarEffectSummary = scarCards.map((scar) => scar.title).join(", ") || self.character.scars.join(", ");
 
   return (
     <section
@@ -345,10 +348,31 @@ export function MobilePlayerCard({
               </article>
               <article className="phone-sheet-gear-slot">
                 <span>Effects</span>
-                <strong>{self.character.scars.join(", ") || self.notes.join(", ") || "Stable"}</strong>
+                <strong>{scarEffectSummary || self.notes.join(", ") || "Stable"}</strong>
               </article>
             </div>
           </div>
+
+          {scarCards.length > 0 && (
+            <div className="phone-sheet-section">
+              <div className="phone-sheet-section-heading">Scars</div>
+              <div className="phone-sheet-ability-list">
+                {scarCards.map((scar) => (
+                  <article key={scar.id} className="phone-sheet-ability-card">
+                    <div className="phone-sheet-ability-icon">Scar</div>
+                    <div className="phone-sheet-ability-copy">
+                      <h3>{scar.title}</h3>
+                      <p>
+                        <strong>{scar.trigger}</strong> {scar.penalty}
+                      </p>
+                      <p>{scar.relief}</p>
+                      {scar.upside && <p>{scar.upside}</p>}
+                    </div>
+                  </article>
+                ))}
+              </div>
+            </div>
+          )}
 
           {(self.character.followers?.length ?? 0) > 0 && (
             <div className="phone-sheet-section">
@@ -399,10 +423,19 @@ export function MobilePlayerCard({
           <div className="phone-sheet-section phone-sheet-contract-section">
             <div className="phone-sheet-section-heading">Active Contract</div>
             <div className="phone-sheet-contract-card">
-              <p>{contractCopy}</p>
-              {contractStatusCopy && <em>{contractStatusCopy}</em>}
-              {contractObjectiveCopy && <strong>{contractObjectiveCopy}</strong>}
-              {activeContractCard && <span>{activeContractCard.text}</span>}
+              <CardArtImage
+                cardType="contract"
+                cardId={activeContractCard?.id}
+                alt=""
+                aria-hidden="true"
+                className="phone-sheet-contract-art"
+              />
+              <div className="phone-sheet-contract-copy">
+                <p>{contractCopy}</p>
+                {contractStatusCopy && <em>{contractStatusCopy}</em>}
+                {contractObjectiveCopy && <strong>{contractObjectiveCopy}</strong>}
+                {activeContractCard && <span>{activeContractCard.text}</span>}
+              </div>
             </div>
           </div>
         </aside>

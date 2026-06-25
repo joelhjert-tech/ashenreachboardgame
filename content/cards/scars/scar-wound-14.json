@@ -1,0 +1,15 @@
+{
+  "id": "scar-wound-14",
+  "type": "scar",
+  "title": "Gate Mark",
+  "text": "A customs sigil under your skin declares you taxable cargo.",
+  "flavor": "Every locked door recognizes the stamp before it recognizes you.",
+  "trigger": "When you cross into a center or inner space.",
+  "penalty": "Pay 1 trophy or gain 1 Heat.",
+  "effect": {
+    "type": "gain_heat",
+    "amount": 1
+  },
+  "relief": "Complete a dominion contract to mark the toll paid for the rest of the session.",
+  "upside": "If you pay the trophy, gain a route note about the gate's next demand."
+}

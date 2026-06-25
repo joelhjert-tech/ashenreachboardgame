@@ -427,6 +427,21 @@ function discardHeldGear(state: GameState, seatId: string, gearId: string): Game
   };
 }
 
+function spendHeldGearCharge(state: GameState, seatId: string, gearId: string): GameState {
+  return {
+    ...state,
+    players: updateActivePlayer(state, seatId, (entry) => ({
+      ...entry,
+      character: {
+        ...entry.character,
+        heldGear: entry.character.heldGear.map((item) =>
+          item.id === gearId ? { ...item, charges: Math.max((item.charges ?? 0) - 1, 0) } : item
+        )
+      }
+    }))
+  };
+}
+
 function discardFollower(state: GameState, seatId: string, followerId: string): GameState {
   return {
     ...state,
@@ -458,6 +473,45 @@ function hasHarmfulInteractionThisRound(state: GameState, targetSeatId: string):
   }
 
   return false;
+}
+
+function hasUsedObjectSinceBoundary(
+  state: GameState,
+  seatId: string,
+  objectId: string,
+  idField: "gearId" | "followerId",
+  boundaryType: "TURN_COMPLETED" | "ROUND_COMPLETED"
+): boolean {
+  for (let index = state.eventLog.length - 1; index >= 0; index -= 1) {
+    const entry = state.eventLog[index] as Record<string, unknown> | undefined;
+
+    if (entry?.type === boundaryType) {
+      return false;
+    }
+
+    if (entry?.seatId === seatId && entry[idField] === objectId && (entry.type === "USE_GEAR" || entry.type === "USE_FOLLOWER")) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+function ensureUseLimitAvailable(
+  state: GameState,
+  seatId: string,
+  objectId: string,
+  objectName: string,
+  idField: "gearId" | "followerId",
+  useLimit: "oncePerTurn" | "oncePerRound" | "discard" | "charge" | undefined
+): void {
+  if (useLimit === "oncePerTurn" && hasUsedObjectSinceBoundary(state, seatId, objectId, idField, "TURN_COMPLETED")) {
+    throw new Error(`${objectName} has already been used this turn`);
+  }
+
+  if (useLimit === "oncePerRound" && hasUsedObjectSinceBoundary(state, seatId, objectId, idField, "ROUND_COMPLETED")) {
+    throw new Error(`${objectName} has already been used this round`);
+  }
 }
 
 function canRaiseStat(state: GameState, seatId: string): void {
@@ -558,14 +612,35 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
         return reject(state, action, `Cannot resolve movement during phase ${state.phase}`);
       }
 
+      const player = requirePlayer(state, movementAction.seatId);
+      const currentSectorId = player.character.currentSpaceId;
+
+      if (movementAction.fromSectorId !== currentSectorId) {
+        return reject(
+          state,
+          action,
+          `Movement origin ${movementAction.fromSectorId} does not match current sector ${currentSectorId}`
+        );
+      }
+
+      try {
+        ensureNeighbor(state, movementAction.fromSectorId, movementAction.toSectorId);
+        ensureGateProgression(state, movementAction.seatId, movementAction.fromSectorId, movementAction.toSectorId);
+      } catch (error) {
+        return reject(state, action, error instanceof Error ? error.message : "Sector is not reachable");
+      }
+
       const targetSector = state.sectors.find((entry) => entry.id === movementAction.toSectorId);
-      const movedEvent: GameAction = {
-        type: "MOVED",
-        seatId: movementAction.seatId,
-        fromSectorId: movementAction.fromSectorId,
-        toSectorId: movementAction.toSectorId,
-        createdAt: movementAction.createdAt
-      };
+      const destinationSectorId = movementAction.success ? movementAction.toSectorId : movementAction.fromSectorId;
+      const movedEvent: GameAction | null = movementAction.success
+        ? {
+            type: "MOVED",
+            seatId: movementAction.seatId,
+            fromSectorId: movementAction.fromSectorId,
+            toSectorId: movementAction.toSectorId,
+            createdAt: movementAction.createdAt
+          }
+        : null;
 
       return succeed(
         {
@@ -576,15 +651,15 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
           pendingEffect: movementAction.effect,
           players: updateActivePlayer(state, movementAction.seatId, (entry) => ({
             ...entry,
-            sectorId: movementAction.toSectorId,
+            sectorId: destinationSectorId,
             character: {
               ...entry.character,
-              currentSpaceId: movementAction.toSectorId
+              currentSpaceId: destinationSectorId
             }
           })),
           lastOutcomeSummary: {
             seatId: movementAction.seatId,
-            movedToSectorId: movementAction.toSectorId,
+            movedToSectorId: destinationSectorId,
             encounterCardId: null,
             encounterTitle: targetSector?.name ?? movementAction.toSectorId,
             encounterCardType: null,
@@ -602,14 +677,14 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
             success: movementAction.success,
             summary: movementAction.success
               ? `Moved into ${targetSector?.name ?? movementAction.toSectorId}. Success: the approach held.`
-              : `Moved into ${targetSector?.name ?? movementAction.toSectorId}. ${summarizeEffect(
+              : `Failed to enter ${targetSector?.name ?? movementAction.toSectorId}. ${summarizeEffect(
                   movementAction.effect!,
                   false
                 )}`
           },
-          eventLog: [...state.eventLog, action, movedEvent]
+          eventLog: movedEvent ? [...state.eventLog, action, movedEvent] : [...state.eventLog, action]
         },
-        [movedEvent]
+        movedEvent ? [movedEvent] : []
       );
     }
     case "ENCOUNTER_DRAWN": {
@@ -1204,12 +1279,25 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
         return reject(state, action, `Gear ${useGearAction.gearId} is not held by this character`);
       }
 
+      try {
+        ensureUseLimitAvailable(state, useGearAction.seatId, item.id, item.name, "gearId", item.useLimit);
+      } catch (error) {
+        return reject(state, action, error instanceof Error ? error.message : "Gear use limit reached");
+      }
+
+      if (item.useLimit === "charge" && (item.charges ?? 0) <= 0) {
+        return reject(state, action, `${item.name} has no charges remaining`);
+      }
+
       const effectedState = useGearAction.effect
         ? applyEffectToState(state, useGearAction.seatId, useGearAction.effect)
         : state;
-      const finalState = useGearAction.discard
-        ? discardHeldGear(effectedState, useGearAction.seatId, useGearAction.gearId)
+      const chargedState = item.useLimit === "charge"
+        ? spendHeldGearCharge(effectedState, useGearAction.seatId, useGearAction.gearId)
         : effectedState;
+      const finalState = useGearAction.discard
+        ? discardHeldGear(chargedState, useGearAction.seatId, useGearAction.gearId)
+        : chargedState;
       const updatedPlayer = requirePlayer(finalState, useGearAction.seatId);
 
       return succeed({
@@ -1252,6 +1340,19 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
 
       if (!follower) {
         return reject(state, action, `Follower ${useFollowerAction.followerId} is not attached to this character`);
+      }
+
+      try {
+        ensureUseLimitAvailable(
+          state,
+          useFollowerAction.seatId,
+          follower.id,
+          follower.name,
+          "followerId",
+          follower.useLimit
+        );
+      } catch (error) {
+        return reject(state, action, error instanceof Error ? error.message : "Follower use limit reached");
       }
 
       const effectedState = useFollowerAction.effect

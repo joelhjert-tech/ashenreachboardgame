@@ -1,0 +1,23 @@
+{
+  "id": "anomaly-webglass-stutter",
+  "type": "anomaly",
+  "title": "Webglass Stutter",
+  "text": "The breach redraws itself in half-second skips, each frame a different route.",
+  "flavor": "Walk between the frames or be edited out.",
+  "instability": 4,
+  "regionHint": "middle",
+  "resolutionSummary": "Held the stutter long enough to splice a temporary passage.",
+  "resolveEffect": {
+    "type": "sequence",
+    "effects": [
+      {
+        "type": "gain_follower",
+        "followerId": "red-march-guide"
+      },
+      {
+        "type": "gain_heat",
+        "amount": 1
+      }
+    ]
+  }
+}

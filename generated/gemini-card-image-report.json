@@ -1,0 +1,19 @@
+{
+  "generatedAt": "2026-06-24T03:59:59.355Z",
+  "model": "gemini-3.1-flash-image",
+  "aspectRatio": "3:4",
+  "imageSize": "1K",
+  "totalPrompts": 135,
+  "queued": 1,
+  "generated": 0,
+  "failed": 1,
+  "results": [
+    {
+      "assetId": "threat_art_ash-choir-crusader",
+      "title": "Ash Choir Crusader",
+      "outputPath": "/assets/cards/threats/ash-choir-crusader.png",
+      "status": "failed",
+      "message": "Gemini request failed (400): {\"message\":\"The value 'image/png' is not supported for 'response_format.mime_type'. Supported values: 'image/jpeg'.\",\"code\":\"invalid_request\"}"
+    }
+  ]
+}

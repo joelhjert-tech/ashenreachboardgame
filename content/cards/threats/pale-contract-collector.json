@@ -1,0 +1,23 @@
+{
+  "id": "pale-contract-collector",
+  "type": "threat",
+  "cardType": "enemy",
+  "title": "Pale Contract Collector",
+  "enemyName": "Pale Contract Collector",
+  "text": "A debt enforcer mistakes your crew for the names written in a burning ledger.",
+  "flavor": "The Pale Cartels never waste a case of mistaken identity.",
+  "severity": 3,
+  "region": "outer",
+  "stat": "command",
+  "difficulty": 8,
+  "trophyValue": 2,
+  "defeatReward": {
+    "type": "gain_trophy",
+    "amount": 2
+  },
+  "woundOnLoss": {
+    "type": "gain_heat",
+    "amount": 2
+  },
+  "enemyFamily": "cartel"
+}

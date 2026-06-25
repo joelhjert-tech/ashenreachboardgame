@@ -1,0 +1,23 @@
+{
+  "id": "anomaly-gutter-star-orbit",
+  "type": "anomaly",
+  "title": "Gutter-Star Orbit",
+  "text": "A collapsed star no wider than a coin drags loose metal into a slow halo.",
+  "flavor": "Small heavens are still hungry.",
+  "instability": 3,
+  "regionHint": "middle",
+  "resolutionSummary": "Bled the gutter-star into a sealed ampoule before it ate the route.",
+  "resolveEffect": {
+    "type": "sequence",
+    "effects": [
+      {
+        "type": "gain_gear",
+        "gearId": "blackstar-ampoule"
+      },
+      {
+        "type": "take_wound",
+        "amount": 1
+      }
+    ]
+  }
+}

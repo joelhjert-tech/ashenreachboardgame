@@ -1,0 +1,30 @@
+{
+  "id": "webglass-snarefield",
+  "type": "threat",
+  "cardType": "hazard",
+  "title": "Webglass Snarefield",
+  "text": "Invisible threads map every step, tightening whenever the route is remembered wrong.",
+  "flavor": "The trap does not catch bodies. It catches decisions.",
+  "severity": 3,
+  "region": "middle",
+  "stat": "guile",
+  "difficulty": 9,
+  "successEffect": {
+    "type": "lose_heat",
+    "amount": 1
+  },
+  "failEffect": {
+    "type": "sequence",
+    "effects": [
+      {
+        "type": "gain_heat",
+        "amount": 1
+      },
+      {
+        "type": "take_wound",
+        "amount": 1
+      }
+    ]
+  },
+  "enemyFamily": "hazard"
+}

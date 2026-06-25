@@ -17,5 +17,6 @@
   "woundOnLoss": {
     "type": "take_wound",
     "amount": 2
-  }
+  },
+  "enemyFamily": "human"
 }

@@ -1,0 +1,14 @@
+{
+  "id": "escalation-throne-shadow",
+  "type": "escalation",
+  "title": "Throne Shadow",
+  "text": "A crown-shaped absence falls across the inner ring and makes ambition heavier.",
+  "flavor": "The throne does not need a ruler to cast judgment.",
+  "step": 5,
+  "resolutionSummary": "The throne shadow deepened the final approach and fed collapse pressure.",
+  "resolveEffect": {
+    "type": "advance_escalation",
+    "amount": 1
+  },
+  "escalationDelta": 1
+}

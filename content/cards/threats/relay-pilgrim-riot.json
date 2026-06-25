@@ -17,5 +17,6 @@
   "woundOnLoss": {
     "type": "gain_heat",
     "amount": 1
-  }
+  },
+  "enemyFamily": "human"
 }

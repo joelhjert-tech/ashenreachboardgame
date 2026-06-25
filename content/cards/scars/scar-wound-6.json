@@ -1,0 +1,15 @@
+{
+  "id": "scar-wound-6",
+  "type": "scar",
+  "title": "Oath-Chain Drag",
+  "text": "A legal brand tugs at every promise you break.",
+  "flavor": "The chain is invisible until someone says your name in court.",
+  "trigger": "When you abandon or fail a contract objective.",
+  "penalty": "Advance escalation by 1 as the debt is witnessed.",
+  "effect": {
+    "type": "advance_escalation",
+    "amount": 1
+  },
+  "relief": "Complete any contract to suppress this scar until your next recall.",
+  "upside": "When you complete a contract while carrying this scar, gain 1 extra trophy."
+}

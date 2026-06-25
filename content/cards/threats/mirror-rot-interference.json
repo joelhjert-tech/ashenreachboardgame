@@ -1,0 +1,30 @@
+{
+  "id": "mirror-rot-interference",
+  "type": "threat",
+  "cardType": "hazard",
+  "title": "Mirror-Rot Interference",
+  "text": "Your reflection acts one second late, then tries to make the delay your fault.",
+  "flavor": "A bad mirror is just a rival with better timing.",
+  "severity": 4,
+  "region": "middle",
+  "stat": "guile",
+  "difficulty": 11,
+  "successEffect": {
+    "type": "lose_heat",
+    "amount": 1
+  },
+  "failEffect": {
+    "type": "sequence",
+    "effects": [
+      {
+        "type": "gain_heat",
+        "amount": 2
+      },
+      {
+        "type": "take_wound",
+        "amount": 1
+      }
+    ]
+  },
+  "enemyFamily": "breachborn"
+}

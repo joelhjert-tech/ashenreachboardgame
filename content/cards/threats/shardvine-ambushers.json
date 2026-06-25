@@ -26,5 +26,6 @@
         "amount": 1
       }
     ]
-  }
+  },
+  "enemyFamily": "human"
 }

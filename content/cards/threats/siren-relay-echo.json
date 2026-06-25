@@ -1,0 +1,21 @@
+{
+  "id": "siren-relay-echo",
+  "type": "threat",
+  "cardType": "hazard",
+  "title": "Siren Relay Echo",
+  "text": "A dead command channel issues perfect orders in a voice your crew almost trusts.",
+  "flavor": "The route lies most beautifully when it uses your own call signs.",
+  "severity": 2,
+  "region": "outer",
+  "stat": "command",
+  "difficulty": 6,
+  "successEffect": {
+    "type": "lose_heat",
+    "amount": 1
+  },
+  "failEffect": {
+    "type": "gain_heat",
+    "amount": 2
+  },
+  "enemyFamily": "machine"
+}

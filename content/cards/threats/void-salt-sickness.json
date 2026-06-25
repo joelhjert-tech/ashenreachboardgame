@@ -15,5 +15,6 @@
   "failEffect": {
     "type": "gain_heat",
     "amount": 1
-  }
+  },
+  "enemyFamily": "hazard"
 }

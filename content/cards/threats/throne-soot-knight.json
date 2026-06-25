@@ -1,0 +1,23 @@
+{
+  "id": "throne-soot-knight",
+  "type": "threat",
+  "cardType": "enemy",
+  "title": "Throne-Soot Knight",
+  "enemyName": "Throne-Soot Knight",
+  "text": "An armored remnant of a dead claimant kneels, rises, and draws a blade still warm from coronation.",
+  "flavor": "Some oaths survive the monarch by centuries.",
+  "severity": 4,
+  "region": "inner",
+  "stat": "command",
+  "difficulty": 10,
+  "trophyValue": 3,
+  "defeatReward": {
+    "type": "gain_trophy",
+    "amount": 3
+  },
+  "woundOnLoss": {
+    "type": "take_wound",
+    "amount": 2
+  },
+  "enemyFamily": "revenant"
+}

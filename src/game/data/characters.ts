@@ -1,6 +1,6 @@
 import { baseNegativePrompt } from "../assets/design/negativePrompt.js";
 
-export type AntiasAttribute = "strength" | "willpower" | "cunning";
+export type AshenReachAttribute = "strength" | "willpower" | "cunning";
 export type CharacterTiming =
   | "instead_of_movement"
   | "start_of_engagement"
@@ -45,7 +45,7 @@ export interface CharacterDefinition {
   gameplayRole: string;
   linkedMechanic: string;
   startingSpaceId: string;
-  startingStats: Record<AntiasAttribute | "life", number>;
+  startingStats: Record<AshenReachAttribute | "life", number>;
   assetLimit: number;
   startingInfluence: number;
   startingPowerLimit: number;
@@ -63,16 +63,16 @@ const standardLevelTrack: LevelReward[] = [
   { level: 4, rewardType: "cunning", amount: 1 }
 ];
 
-export const antiasCharacters: CharacterDefinition[] = [
+export const ashenReachCharacters: CharacterDefinition[] = [
   {
     id: "char_void_marshal_kael_dorn",
     name: "Kael Dorn",
     title: "Void Marshal",
-    affiliation: "Antias Accord",
+    affiliation: "Ashen Reach Accord",
     loreRole: "Frontier fleet commander rallying broken lanes under a collapsing seal network.",
-    gameplayRole: "Military commander and influence control specialist.",
+    gameplayRole: "Military commander and trophy-control specialist.",
     linkedMechanic: "Mobility reroute and ally conversion.",
-    startingSpaceId: "outer_hive_city",
+    startingSpaceId: "outer_ashstack_city",
     startingStats: { strength: 3, willpower: 4, cunning: 2, life: 4 },
     assetLimit: 6,
     startingInfluence: 3,
@@ -89,11 +89,11 @@ export const antiasCharacters: CharacterDefinition[] = [
       },
       {
         timing: "after_roll",
-        text: "After you roll for movement, battle, or a skill test, you may discard one Ally to treat the die result as a 6. If it is a battle or skill roll, it explodes normally."
+        text: "After you roll for movement, battle, or a stat check, you may discard one Ally to treat the die result as a 6. If it is a battle or check roll, it explodes normally."
       }
     ],
     imagePrompt:
-      "Original dark sci-fi military commander standing on a voidship command deck, black coat, red command sash, bronze seals, stern expression, glowing tactical display behind him, cinematic board-game portrait.",
+      "Original dark sci-fi military commander standing on a route-barge command deck, black coat, red command sash, bronze seals, stern expression, glowing tactical display behind him, cinematic board-game portrait.",
     negativePrompt: baseNegativePrompt,
     uiNotes: "Use strong red command accents and a disciplined portrait frame."
   },
@@ -132,8 +132,8 @@ export const antiasCharacters: CharacterDefinition[] = [
     title: "Rift Seer",
     affiliation: "Ashen Choir",
     loreRole: "A breach-reader who hears transit hymns in the static between dead relays.",
-    gameplayRole: "Power-card engine and willpower specialist.",
-    linkedMechanic: "Power draw and card-to-influence conversion.",
+    gameplayRole: "Route-note engine and signal specialist.",
+    linkedMechanic: "Route-note draw and note-to-trophy conversion.",
     startingSpaceId: "outer_spaceport",
     startingStats: { strength: 1, willpower: 6, cunning: 1, life: 4 },
     assetLimit: 3,
@@ -143,19 +143,19 @@ export const antiasCharacters: CharacterDefinition[] = [
     abilities: [
       {
         timing: "start_of_experience",
-        text: "You may draw 1 Power Card."
+        text: "You may record 1 route note."
       },
       {
         timing: "movement_roll",
-        text: "You cannot substitute your movement roll with a Power Number."
+        text: "You cannot substitute your movement roll with a route-note value."
       },
       {
         timing: "during_experience",
-        text: "You may discard any number of Power Cards to gain 1 Influence for each card discarded."
+        text: "You may discard any number of route notes to gain 1 trophy for each note discarded."
       }
     ],
     imagePrompt:
-      "Original psychic navigator priest with cracked brass halo, glowing blue eyes, staff with floating star-map lens, layered robes, standing before a rift window on a ship.",
+      "Original signal navigator-priest with cracked brass halo, glowing blue eyes, staff with floating star-map lens, layered robes, standing before a rift window on a ship.",
     negativePrompt: baseNegativePrompt,
     uiNotes: "Use cool blue halo light and long vertical composition."
   },
@@ -165,8 +165,8 @@ export const antiasCharacters: CharacterDefinition[] = [
     title: "Rift Warden",
     affiliation: "Wardens of the Last Seal",
     loreRole: "An oathbound breach knight stationed where the inner gate begins to scream.",
-    gameplayRole: "Anti-corruption heavy fighter.",
-    linkedMechanic: "Corruption suppression and hostile-jump movement.",
+    gameplayRole: "Heat-resistant heavy fighter.",
+    linkedMechanic: "Heat suppression and hostile-jump movement.",
     startingSpaceId: "middle_guardian_span",
     startingStats: { strength: 4, willpower: 3, cunning: 2, life: 5 },
     assetLimit: 7,
@@ -176,15 +176,15 @@ export const antiasCharacters: CharacterDefinition[] = [
     abilities: [
       {
         timing: "passive",
-        text: "Your inactive Corruption Cards never activate."
+        text: "Your inactive Heat marks never trigger scar pressure."
       },
       {
         timing: "instead_of_movement",
-        text: "Instead of moving normally, you may move to any space in your tier that contains a Riftspawn Enemy."
+        text: "Instead of moving normally, you may move to any space in your tier that contains a breachborn enemy."
       },
       {
         timing: "battle_prepare",
-        text: "For each Riftspawn in a battle, you may play 1 Power Card to add its Power Number to your battle score."
+        text: "For each breachborn in a fight, you may spend 1 route note to add its value to your combat total."
       }
     ],
     imagePrompt:
@@ -196,10 +196,10 @@ export const antiasCharacters: CharacterDefinition[] = [
     id: "char_mother_elira_vane",
     name: "Elira Vane",
     title: "Saint-Bound Preacher",
-    affiliation: "Sanctuary of St. Antias",
+    affiliation: "Sanctuary of the Last Saint",
     loreRole: "A survivor-priest who keeps the sanctuary lit while the sector tears itself open.",
-    gameplayRole: "Corruption control and mission progress support.",
-    linkedMechanic: "Corruption cleansing and mission completion support.",
+    gameplayRole: "Heat control and contract progress support.",
+    linkedMechanic: "Heat cleansing and contract completion support.",
     startingSpaceId: "outer_ember_sanctum",
     startingStats: { strength: 2, willpower: 4, cunning: 2, life: 4 },
     assetLimit: 8,
@@ -209,15 +209,15 @@ export const antiasCharacters: CharacterDefinition[] = [
     abilities: [
       {
         timing: "passive",
-        text: "Your inactive Corruption Cards never activate."
+        text: "Your inactive Heat marks never trigger scar pressure."
       },
       {
         timing: "acquire_asset",
-        text: "When you draw a cursed asset, you may discard it to gain 1 Influence. If it was a saint relic, draw another relic."
+        text: "When you draw a cursed asset, you may discard it to gain 1 trophy. If it was a gate-saint artifact, draw another artifact."
       },
       {
         timing: "experience_phase",
-        text: "You may discard 1 Corruption Card from another character in your space. If you do, gain 1 completed Mission progress."
+        text: "You may clear 1 Heat from another character in your space. If you do, gain 1 completed contract mark."
       }
     ],
     imagePrompt:
@@ -242,7 +242,7 @@ export const antiasCharacters: CharacterDefinition[] = [
     abilities: [
       {
         timing: "after_resolving_space_text",
-        text: "If you resolved a ruins, mine, crash site, caverns, or forge space, draw 1 Gear card. You may buy it for 1 less Influence."
+        text: "If you resolved a ruins, mine, crash site, caverns, or forge space, draw 1 gear card. You may buy it for 1 less trophy."
       },
       {
         timing: "enforce_limits",

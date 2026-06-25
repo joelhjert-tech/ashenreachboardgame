@@ -24,5 +24,6 @@
         "scarId": "scar-wound-1"
       }
     ]
-  }
+  },
+  "enemyFamily": "revenant"
 }

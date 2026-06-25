@@ -2,6 +2,7 @@ node_modules/
 dist/
 coverage/
 .tmp-playtest/
+.codex-run/
 .codex-dev.*.log
 tmp-*.log
 tmp-*.out.log

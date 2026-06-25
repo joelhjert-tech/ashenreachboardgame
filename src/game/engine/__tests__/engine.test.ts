@@ -9,6 +9,7 @@ import type { GearItem } from "../../schema/gear.schema.js";
 import type { AnomalyCard, ArtifactCard, EscalationCard, ThreatCard } from "../../schema/card.schema.js";
 import type { ClientIntent, GameAction } from "../actions.js";
 import type { GameState } from "../../schema/session.schema.js";
+import { reduceGameState } from "../reducer.js";
 
 function createGear(): Map<string, GearItem> {
   return new Map<string, GearItem>([
@@ -733,6 +734,101 @@ describe("active objects and table interaction", () => {
     expect(server.getState().lastOutcomeSummary?.summary).toContain("Cinder Suture Kit used");
   });
 
+  it("rejects using once-per-turn gear twice before turn completion", () => {
+    const sent: Array<Record<string, unknown>> = [];
+    const state = createState({
+      players: createState().players.map((player) =>
+        player.seatId === "seat-1"
+          ? {
+              ...player,
+              character: {
+                ...player.character,
+                heat: 0,
+                heldGear: [
+                  {
+                    id: "red-march-warbell",
+                    name: "Red March Warbell",
+                    slot: "utility",
+                    category: "active",
+                    statBonus: { stat: "command", amount: 1 },
+                    activeText: "Gain 1 heat to bank combat pressure.",
+                    useLimit: "oncePerTurn"
+                  }
+                ],
+                equippedGear: { weapon: null, armor: null, utility: null }
+              }
+            }
+          : player
+      )
+    });
+    const server = new GameRoomServer(state, [], createSequenceRandomSource([0]), createThreats(), createCharacters(), createGear(), createContracts());
+    const client = createCapturingClient("seat-1", sent);
+
+    server.handleIntent(client, {
+      type: "USE_GEAR",
+      seatId: "seat-1",
+      gearId: "red-march-warbell"
+    });
+    server.handleIntent(client, {
+      type: "USE_GEAR",
+      seatId: "seat-1",
+      gearId: "red-march-warbell"
+    });
+
+    const player = server.getState().players.find((entry) => entry.seatId === "seat-1");
+    expect(player?.character.heat).toBe(1);
+    expect(sent.some((message) => message.type === "INTENT_REJECTED" && String(message.reason).includes("already been used this turn"))).toBe(true);
+  });
+
+  it("decrements gear charges and rejects use at zero charges", () => {
+    const sent: Array<Record<string, unknown>> = [];
+    const state = createState({
+      players: createState().players.map((player) =>
+        player.seatId === "seat-1"
+          ? {
+              ...player,
+              character: {
+                ...player.character,
+                heat: 2,
+                heldGear: [
+                  {
+                    id: "choir-static-censer",
+                    name: "Choir Static Censer",
+                    slot: "utility",
+                    category: "chargedRelic",
+                    statBonus: { stat: "signal", amount: 1 },
+                    activeText: "Spend 1 charge to lose 1 heat.",
+                    useLimit: "charge",
+                    charges: 1
+                  }
+                ],
+                equippedGear: { weapon: null, armor: null, utility: null }
+              }
+            }
+          : player
+      )
+    });
+    const server = new GameRoomServer(state, [], createSequenceRandomSource([0]), createThreats(), createCharacters(), createGear(), createContracts());
+    const client = createCapturingClient("seat-1", sent);
+
+    server.handleIntent(client, {
+      type: "USE_GEAR",
+      seatId: "seat-1",
+      gearId: "choir-static-censer"
+    });
+    server.handleIntent(client, {
+      type: "USE_GEAR",
+      seatId: "seat-1",
+      gearId: "choir-static-censer"
+    });
+
+    const player = server.getState().players.find((entry) => entry.seatId === "seat-1");
+    const censer = player?.character.heldGear.find((item) => item.id === "choir-static-censer");
+    expect(player?.character.heat).toBe(1);
+    expect(censer?.charges).toBe(0);
+    expect(sent.some((message) => message.type === "INTENT_REJECTED" && String(message.reason).includes("no charges"))).toBe(true);
+  });
+
   it("uses a follower active effect from the phone", () => {
     const follower: Follower = {
       id: "crownless-advocate",
@@ -1051,7 +1147,7 @@ describe("movement rolls", () => {
     expect(summary?.die2).toBe(1);
   });
 
-  it("still completes the move on a failed roll and applies Heat", () => {
+  it("leaves the operative in place on a failed roll and applies Heat", () => {
     const baseState = createState({ phase: "navigation" });
     const server = new GameRoomServer(
       createState({
@@ -1083,10 +1179,57 @@ describe("movement rolls", () => {
     const player = server.getState().players.find((entry) => entry.seatId === "seat-1");
     const summary = server.getState().lastOutcomeSummary;
 
-    expect(player?.character.currentSpaceId).toBe("sector-b");
+    expect(player?.character.currentSpaceId).toBe("sector-a");
+    expect(player?.sectorId).toBe("sector-a");
     expect(player?.character.heat).toBe(1);
+    expect(summary?.movedToSectorId).toBe("sector-a");
     expect(summary?.success).toBe(false);
     expect(summary?.difficulty).toBe(8);
+    expect(summary?.summary).toContain("Failed to enter");
+  });
+
+  it("rejects forged movement resolution with a mismatched origin", () => {
+    const state = createState({ phase: "navigation" });
+    const result = reduceGameState(state, {
+      type: "MOVEMENT_RESOLVED",
+      seatId: "seat-1",
+      fromSectorId: "sector-b",
+      toSectorId: "sector-c",
+      stat: "guile",
+      difficulty: 1,
+      roll: { faces: [6, 6], total: 12 },
+      statBonus: 0,
+      total: 12,
+      success: true,
+      effect: null,
+      createdAt: new Date().toISOString()
+    });
+
+    expect(result.ok).toBe(false);
+    expect(result.ok ? null : result.rejection.reason).toContain("does not match current sector");
+    expect(result.state.players.find((player) => player.seatId === "seat-1")?.character.currentSpaceId).toBe("sector-a");
+  });
+
+  it("rejects forged movement resolution to a non-neighbor", () => {
+    const state = createState({ phase: "navigation" });
+    const result = reduceGameState(state, {
+      type: "MOVEMENT_RESOLVED",
+      seatId: "seat-1",
+      fromSectorId: "sector-a",
+      toSectorId: "sector-c",
+      stat: "guile",
+      difficulty: 1,
+      roll: { faces: [6, 6], total: 12 },
+      statBonus: 0,
+      total: 12,
+      success: true,
+      effect: null,
+      createdAt: new Date().toISOString()
+    });
+
+    expect(result.ok).toBe(false);
+    expect(result.ok ? null : result.rejection.reason).toContain("not reachable");
+    expect(result.state.players.find((player) => player.seatId === "seat-1")?.character.currentSpaceId).toBe("sector-a");
   });
 
   it("triggers the recall flow when failed movement Heat reaches the threshold", () => {
@@ -1132,7 +1275,7 @@ describe("movement rolls", () => {
 
     const seat1 = server.getState().players.find((entry) => entry.seatId === "seat-1");
 
-    expect(seat1?.character.currentSpaceId).toBe("sector-b");
+    expect(seat1?.character.currentSpaceId).toBe("sector-a");
     expect(seat1?.character.heat).toBe(2);
     expect(seat1?.character.status).toBe("recalled");
     expect(server.getState().activeSeatIndex).toBe(1);

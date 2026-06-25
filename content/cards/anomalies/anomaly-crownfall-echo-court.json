@@ -3,7 +3,7 @@
   "type": "anomaly",
   "regionHint": "inner",
   "title": "Crownfall Echo Court",
-  "text": "A ruined court repeats judgment on anyone carrying relics, contracts, or unfinished names.",
+  "text": "A ruined court repeats judgment on anyone carrying artifacts, contracts, or unfinished names.",
   "flavor": "The verdict arrives before the trial.",
   "instability": 4,
   "resolutionSummary": "Answered the Echo Court and carried away a gate-relevant precedent.",

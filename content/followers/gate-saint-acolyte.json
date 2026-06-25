@@ -2,7 +2,7 @@
   "id": "gate-saint-acolyte",
   "name": "Gate-Saint Acolyte",
   "role": "ritualist",
-  "text": "Once per round, reduce final-gate pressure or turn a cursed relic omen into a usable route note.",
+  "text": "Once per round, reduce final-gate pressure or turn a cursed artifact omen into a usable route note.",
   "activeEffect": {
     "type": "gain_note",
     "text": "Gate-Saint acolyte omen: final-gate pressure can be answered with a prepared rite."

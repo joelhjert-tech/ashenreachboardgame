@@ -1,0 +1,25 @@
+{
+  "id": "anomaly-cinder-gate-echo",
+  "type": "anomaly",
+  "title": "Cinder Gate Echo",
+  "text": "The final gate answers before anyone asks, repeating the cost in every operative's voice.",
+  "flavor": "It is not prophecy if the machine already owns the ending.",
+  "instability": 5,
+  "regionHint": "global",
+  "resolutionSummary": "Pinned the gate echo under a brass ward and carried its answer forward.",
+  "resolveEffect": {
+    "type": "sequence",
+    "effects": [
+      {
+        "type": "advance_scenario",
+        "progressKey": "gateEchoesPinned",
+        "amount": 1,
+        "summary": "A Cinder Gate echo was pinned for the final confrontation."
+      },
+      {
+        "type": "gain_heat_all",
+        "amount": 1
+      }
+    ]
+  }
+}

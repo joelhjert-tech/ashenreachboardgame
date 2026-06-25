@@ -1,0 +1,14 @@
+{
+  "id": "heat-sink-prayer",
+  "name": "Heat-Sink Prayer",
+  "slot": "utility",
+  "category": "chargedRelic",
+  "statBonus": {
+    "stat": "signal",
+    "amount": 1
+  },
+  "activeText": "Spend 1 charge to lose 2 Heat after resolving a space or scar trigger.",
+  "useLimit": "charge",
+  "charges": 2,
+  "flavor": "A prayer wheel packed with ash-cold teeth and stolen ventilation rites."
+}

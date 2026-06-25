@@ -3,11 +3,12 @@ import { getBoardSpace, isScenarioConfrontationSpace } from "../../game/data/boa
 import { formatContractObjectiveStatus } from "../../game/contracts/objectives.js";
 import { createSession, fetchCharacters, fetchScenarios, fetchSessionSummary, startSession } from "../shared/network.js";
 import { getSeatAbilityTelemetry } from "../shared/abilityTelemetry.js";
+import { CardArtImage } from "../shared/CardArtImage.js";
 import { DebugPanel } from "../shared/DebugPanel.js";
 import { RollOutcomePanel } from "../shared/RollOutcomePanel.js";
 import { buildScenarioOutcomeSummary, buildScenarioRuleDigest } from "../shared/scenarioPresentation.js";
 import { useRoomSubscription } from "../shared/useRoomSubscription.js";
-import { getCharacterPortraitPath, getContractArtPath, getEncounterArtPath, getNemesisPortraitPath } from "../shared/assetPaths.js";
+import { getCharacterPortraitPath, getNemesisPortraitPath } from "../shared/assetPaths.js";
 import type {
   ActiveNemesisSummary,
   CharacterCatalogEntry,
@@ -820,10 +821,10 @@ function ContractsPanel({ patch }: { patch: StatePatch<PublicPatchPayload> | nul
           contracts.map((contract) => {
             const activeProgress =
               patch?.payload.players.find((player) => player.character.activeContract?.contractId === contract.id)?.character.activeContract
-                ?.progress ?? 0;
+              ?.progress ?? 0;
             return (
               <article key={contract.id} className="tv-contract-card-mini">
-                <img src={getContractArtPath(contract.id)} alt="" aria-hidden="true" />
+                <CardArtImage cardType="contract" cardId={contract.id} alt="" aria-hidden="true" />
                 <div>
                   <h3>{contract.name}</h3>
                   <p>{contract.objective.type === "defeatCount" ? contract.text : contract.objective.label}</p>
@@ -997,7 +998,6 @@ function CardRevealPanel({ patch }: { patch: StatePatch<PublicPatchPayload> | nu
   const pendingEnemyRoll = patch?.payload.pendingEnemyRoll ?? null;
   const cardTitle = encounter?.title ?? pendingEnemyRoll?.encounterTitle ?? "Awaiting reveal";
   const cardType = encounter?.cardType ?? (pendingEnemyRoll ? "enemy tactic" : "Deck standing by");
-  const artPath = encounter ? getEncounterArtPath(encounter.id) : "/assets/riftfall/cards/threat-red/card_back_threat_red.png";
   const difficulty = encounter?.difficulty ?? 0;
   const flavorText = encounter?.flavor ?? "The deck is quiet. The next draw will take the room's attention.";
   const ruleLabel = encounter ? "Check" : pendingEnemyRoll ? "Enemy roller" : "Status";
@@ -1009,7 +1009,13 @@ function CardRevealPanel({ patch }: { patch: StatePatch<PublicPatchPayload> | nu
   const revealSummary = `${cardTitle}. ${toTitleCase(cardType)}. ${flavorText} ${ruleLabel}: ${ruleText}.`;
 
   return (
-    <section className={`tv-card tv-bottom-card tv-reveal-card tv-reveal-card-${encounter?.cardType ?? "idle"}`} aria-label="Card reveal">
+    <section
+      key={encounter?.id ?? pendingEnemyRoll?.encounterTitle ?? "idle"}
+      className={`tv-card tv-bottom-card tv-reveal-card tv-reveal-card-${encounter?.cardType ?? "idle"} ${
+        encounter || pendingEnemyRoll ? "tv-reveal-card-live" : ""
+      }`}
+      aria-label="Card reveal"
+    >
       <div className="tv-panel-title tv-panel-title-small">
         <span />
         <h2>Card Reveal</h2>
@@ -1017,7 +1023,7 @@ function CardRevealPanel({ patch }: { patch: StatePatch<PublicPatchPayload> | nu
       </div>
       <div className="tv-reveal-card-layout">
         <div className="tv-reveal-art">
-          <img src={artPath} alt="" aria-hidden="true" />
+          <CardArtImage cardType="threat" cardId={encounter?.id} alt="" aria-hidden="true" />
         </div>
         <div className="tv-reveal-parchment" aria-label={revealSummary}>
           <span className="tv-card-reveal-type">{toTitleCase(cardType)}</span>

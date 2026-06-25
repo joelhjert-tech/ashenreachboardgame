@@ -24,5 +24,6 @@
         "amount": 2
       }
     ]
-  }
+  },
+  "enemyFamily": "hazard"
 }

@@ -230,7 +230,7 @@ export const BOARD_SPACES: BoardSpaceDefinition[] = [
   },
   {
     id: "middle_relic_cache",
-    name: "Relic Cache",
+    name: "Artifact Cache",
     tier: "middle",
     index: 1,
     threatIcons: ["yellow"],
@@ -239,7 +239,7 @@ export const BOARD_SPACES: BoardSpaceDefinition[] = [
       text: "If the cache is secure, pull an artifact or salvage burden from the sealed reliquary.",
       effectKey: "middle_relicCache"
     },
-    notes: "Relic cache with artifact pressure."
+    notes: "Artifact cache with salvage pressure."
   },
   {
     id: "middle_scar_surgery",
@@ -429,10 +429,10 @@ export const BOARD_SPACES: BoardSpaceDefinition[] = [
     threatIcons: [],
     textBox: {
       title: "Corrupted Shrine",
-      text: "Petition the corrupted shrine for a blessing, a curse, or a gate relic omen.",
+      text: "Petition the corrupted shrine for a blessing, a curse, or a gate artifact omen.",
       effectKey: "inner_choirShrine"
     },
-    notes: "Corrupted shrine and cursed relic source."
+    notes: "Corrupted shrine and cursed artifact source."
   },
   {
     id: "inner_gate_of_cinders",

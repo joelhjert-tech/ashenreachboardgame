@@ -13,11 +13,87 @@ import { getThreatEffectTiming, isThreatEffectKey } from "../src/game/cards/thre
 import { BOARD_SPACES } from "../src/game/data/boardSpaces.js";
 import { validateBoardTextEffectCoverage } from "../src/game/data/boardTextEffects.js";
 import { createCanonicalSectorGraph, validateCanonicalSectorGraph } from "../src/game/data/canonicalSectorGraph.js";
-import { effectSchema, type EncounterEffect, type ThreatCard } from "../src/game/schema/card.schema.js";
+import { ashenReachCharacters } from "../src/game/data/characters.js";
+import { missions } from "../src/game/data/missions.js";
+import { nemeses } from "../src/game/data/nemeses.js";
+import { SCENARIOS } from "../src/game/data/scenarios.js";
+import { allThreatCards } from "../src/game/data/threatDecks.js";
+import { effectSchema, threatFamilySchema, type EncounterEffect, type ThreatCard } from "../src/game/schema/card.schema.js";
 import { sectorGraphSchema, type SectorNode } from "../src/game/schema/sector.schema.js";
 
 const sectorsRoot = join(process.cwd(), "content", "sectors");
+const contentRoot = join(process.cwd(), "content");
 const errors: string[] = [];
+const loreRestrictedTerms = [
+  "Relic",
+  "Talisman",
+  "Warhammer",
+  "Warhammer 40,000",
+  "Games Workshop",
+  "Fantasy Flight",
+  "Imperium",
+  "Inquisition",
+  "Space Marine",
+  "Chaos",
+  "Adeptus",
+  "Psyker",
+  "Psychic",
+  "Ork",
+  "Eldar",
+  "Tyranid",
+  "Necron",
+  "Crown of Command",
+  "Heresy",
+  "Medicae",
+  "Hive",
+  "Antias",
+  "Mission",
+  "Power",
+  "Influence",
+  "Corruption",
+  "Strength",
+  "Willpower",
+  "Cunning",
+  "Riftspawn"
+] as const;
+const loreRestrictedPatterns = loreRestrictedTerms.map((term) => ({
+  term,
+  pattern: new RegExp(`\\b${escapeRegExp(term)}\\b`, "i")
+}));
+const visibleLoreKeys = new Set([
+  "activeText",
+  "affiliation",
+  "bounty",
+  "confrontationText",
+  "confrontationTitle",
+  "designFeel",
+  "failureSummary",
+  "flavor",
+  "gameplayRole",
+  "imagePrompt",
+  "label",
+  "linkedMechanic",
+  "loreRole",
+  "name",
+  "objectiveText",
+  "penalty",
+  "pressureRule",
+  "relief",
+  "resolutionSummary",
+  "rewardText",
+  "setup",
+  "sheetArtPrompt",
+  "specialRules",
+  "summary",
+  "text",
+  "theme",
+  "title",
+  "trigger",
+  "uiNotes",
+  "upside",
+  "usage",
+  "victoryText"
+]);
 
 const characters = loadCharacters();
 const gear = loadGear();
@@ -33,6 +109,7 @@ const canonicalSectors = createCanonicalSectorGraph();
 validateContentFloors();
 validateBoardCoverage();
 validateCanonicalDecks();
+validateLoreLanguage();
 
 const sectorFiles = readdirSync(sectorsRoot).filter((entry) => entry.endsWith(".json"));
 
@@ -53,6 +130,7 @@ for (const character of characters.values()) {
 for (const card of threats.values()) {
   validateEffect(card.cardType === "enemy" ? card.defeatReward : card.successEffect, `${card.id} reward`);
   validateEffect(card.cardType === "enemy" ? card.woundOnLoss : card.failEffect, `${card.id} failure`);
+  validateThreatFamily(card);
   validateThreatEffectKeys(card);
 }
 
@@ -66,6 +144,10 @@ for (const anomaly of anomalies.values()) {
 
 for (const artifact of artifacts.values()) {
   validateEffect(artifact.resolveEffect, `${artifact.id} resolution`);
+}
+
+for (const scar of scars.values()) {
+  validateEffect(scar.effect, `${scar.id} scar effect`);
 }
 
 for (const follower of followers.values()) {
@@ -120,18 +202,19 @@ console.log(
 );
 
 function validateContentFloors(): void {
-  const floors = [
-    ["threats", threats.size, 30],
-    ["anomalies", anomalies.size, 10],
-    ["artifacts", artifacts.size, 8],
-    ["escalations", escalations.size, 8],
-    ["contracts", contracts.size, 8],
-    ["followers", followers.size, 15]
+  const contentTargets = [
+    ["threats", threats.size, 40, 60],
+    ["anomalies", anomalies.size, 20, 30],
+    ["artifacts", artifacts.size, 12, 20],
+    ["escalations", escalations.size, 15, 25],
+    ["contracts", contracts.size, 20, 30],
+    ["followers", followers.size, 15, 25],
+    ["scars", scars.size, 12, 18]
   ] as const;
 
-  for (const [label, actual, minimum] of floors) {
-    if (actual < minimum) {
-      errors.push(`${label} content floor not met: ${actual}/${minimum}`);
+  for (const [label, actual, minimum, maximum] of contentTargets) {
+    if (actual < minimum || actual > maximum) {
+      errors.push(`${label} content target not met: ${actual}/${minimum}-${maximum}`);
     }
   }
 
@@ -150,6 +233,36 @@ function validateContentFloors(): void {
   const severeThreats = (severityCounts.get(5) ?? 0) / Math.max(threats.size, 1);
   if (severeThreats > 0.2) {
     errors.push(`Severity 5 threats should remain rare; found ${severityCounts.get(5)} of ${threats.size}`);
+  }
+}
+
+function validateLoreLanguage(): void {
+  for (const file of collectJsonFiles(contentRoot)) {
+    validateLoreObject(JSON.parse(readFileSync(file, "utf8")), relativeContentPath(file));
+  }
+
+  for (const space of BOARD_SPACES) {
+    validateLoreObject(space, `board:${space.id}`);
+  }
+
+  for (const scenario of SCENARIOS) {
+    validateLoreObject(scenario, `scenario:${scenario.id}`);
+  }
+
+  for (const character of ashenReachCharacters) {
+    validateLoreObject(character, `character:${character.id}`);
+  }
+
+  for (const mission of missions) {
+    validateLoreObject(mission, `mission:${mission.id}`);
+  }
+
+  for (const threat of allThreatCards) {
+    validateLoreObject(threat, `legacy-threat:${threat.id}`);
+  }
+
+  for (const nemesis of nemeses) {
+    validateLoreObject(nemesis, `nemesis:${nemesis.id}`);
   }
 }
 
@@ -181,6 +294,54 @@ function validateBoardCoverage(): void {
   for (const key of textCoverage.legacyBoardTestKeys) {
     errors.push(`Board space ${key} still uses legacy inline textBox.test data`);
   }
+}
+
+function validateLoreObject(value: unknown, context: string, key = ""): void {
+  if (typeof value === "string") {
+    if (visibleLoreKeys.has(key)) {
+      validateLoreString(value, context);
+    }
+    return;
+  }
+
+  if (Array.isArray(value)) {
+    for (const entry of value) {
+      validateLoreObject(entry, context, key);
+    }
+    return;
+  }
+
+  if (!value || typeof value !== "object") {
+    return;
+  }
+
+  for (const [nestedKey, nestedValue] of Object.entries(value)) {
+    validateLoreObject(nestedValue, `${context}.${nestedKey}`, nestedKey);
+  }
+}
+
+function validateLoreString(value: string, context: string): void {
+  for (const { term, pattern } of loreRestrictedPatterns) {
+    if (pattern.test(value)) {
+      errors.push(`${context} uses restricted lore term "${term}"`);
+    }
+  }
+}
+
+function collectJsonFiles(root: string): string[] {
+  return readdirSync(root, { withFileTypes: true }).flatMap((entry) => {
+    const entryPath = join(root, entry.name);
+
+    if (entry.isDirectory()) {
+      return collectJsonFiles(entryPath);
+    }
+
+    return entry.name.endsWith(".json") ? [entryPath] : [];
+  });
+}
+
+function relativeContentPath(file: string): string {
+  return file.replace(`${process.cwd()}\\`, "").replaceAll("\\", "/");
 }
 
 function validateCanonicalDecks(): void {
@@ -254,6 +415,21 @@ function validateThreatEffectKeys(card: ThreatCard): void {
 
   for (const [index, key] of (card.combatEffectKeys ?? []).entries()) {
     validateThreatKey(key, "beforeCombat", `${card.id} combatEffectKeys[${index}]`);
+  }
+}
+
+function validateThreatFamily(card: ThreatCard): void {
+  if (!card.enemyFamily) {
+    errors.push(`${card.id} is missing enemyFamily`);
+    return;
+  }
+
+  if (!threatFamilySchema.safeParse(card.enemyFamily).success) {
+    errors.push(`${card.id} has invalid enemyFamily ${card.enemyFamily}`);
+  }
+
+  if (card.cardType === "enemy" && card.enemyFamily === "hazard") {
+    errors.push(`${card.id} is an enemy and cannot use enemyFamily hazard`);
   }
 }
 
@@ -335,6 +511,10 @@ function countBy<T>(items: T[], getKey: (item: T) => string): Map<string, number
   }
 
   return counts;
+}
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
 function groupSectorsByTier(sectors: SectorNode[]): Map<string, SectorNode[]> {

@@ -3,6 +3,7 @@ import type {
   CharacterCatalogEntry,
   ClientIntent,
   ContractCard,
+  GearItem,
   PhonePatchPayload,
   SectorNode,
   Stat
@@ -78,6 +79,16 @@ function getSectorOpportunityItems(sector: SectorNode | null): SectorOpportunity
 
 function toTitleCase(value: string): string {
   return value.replace(/[_-]+/g, " ").replace(/\b\w/g, (character) => character.toUpperCase());
+}
+
+function getGearActionDetail(item: GearItem): string {
+  const baseDetail = item.activeText ?? toTitleCase(item.category ?? "active");
+
+  if (item.useLimit !== "charge") {
+    return baseDetail;
+  }
+
+  return `${baseDetail} | ${item.charges ?? 0} charge${item.charges === 1 ? "" : "s"} left`;
 }
 
 function ActionButtons({ actions }: { actions: ActionButtonDefinition[] }): ReactElement {
@@ -418,8 +429,9 @@ export function PhoneActionPanel({ characters, onIntent, patch }: PhoneActionPan
           objectActions.push({
             key: `use-${item.id}`,
             label: `Use ${item.name}`,
-            detail: item.activeText ?? toTitleCase(item.category ?? "active"),
+            detail: getGearActionDetail(item),
             tone: item.useLimit === "discard" ? "primary" : "secondary",
+            disabled: item.useLimit === "charge" && (item.charges ?? 0) <= 0,
             onClick: () =>
               onIntent({
                 type: "USE_GEAR",
@@ -450,8 +462,9 @@ export function PhoneActionPanel({ characters, onIntent, patch }: PhoneActionPan
         objectActions.push({
           key: `use-${item.id}`,
           label: `Use ${item.name}`,
-          detail: item.activeText ?? toTitleCase(item.category ?? "active"),
+          detail: getGearActionDetail(item),
           tone: item.useLimit === "discard" ? "primary" : "secondary",
+          disabled: item.useLimit === "charge" && (item.charges ?? 0) <= 0,
           onClick: () =>
             onIntent({
               type: "USE_GEAR",

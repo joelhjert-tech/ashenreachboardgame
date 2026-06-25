@@ -1,0 +1,23 @@
+{
+  "id": "cartel-ledger-skim",
+  "name": "Ledger Skim",
+  "factionGiver": "Pale Cartels",
+  "text": "Finish two fights and redirect the bounty through a quieter book.",
+  "objective": {
+    "type": "defeatCount",
+    "target": 2
+  },
+  "reward": {
+    "type": "sequence",
+    "effects": [
+      {
+        "type": "gain_trophy",
+        "amount": 1
+      },
+      {
+        "type": "lose_heat",
+        "amount": 1
+      }
+    ]
+  }
+}
