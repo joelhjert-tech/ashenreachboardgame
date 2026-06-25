@@ -1,0 +1,20 @@
+{
+  "id": "escalation-ashfall-curfew",
+  "type": "escalation",
+  "title": "Ashfall Curfew",
+  "text": "Faction horns close the lanes and every exposed operative is counted twice.",
+  "flavor": "The curfew is not for safety. It is for inventory.",
+  "step": 2,
+  "resolutionSummary": "Bought a narrow curfew exception and cooled the patrol net before it locked down.",
+  "resolveEffect": {
+    "type": "sequence",
+    "effects": [
+      { "type": "lose_heat", "amount": 1 },
+      {
+        "type": "gain_note",
+        "text": "Ashfall curfew exception: one patrol lane will look away."
+      }
+    ]
+  },
+  "escalationDelta": -1
+}

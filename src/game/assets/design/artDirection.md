@@ -2,8 +2,8 @@
 
 ## Purpose
 
-This folder defines the original visual and content language for the Antias
-Sector board-game mode. The Google Drive reference dump is used only for
+This folder defines the original visual and content language for the Ashen
+Reach board-game mode. The Google Drive reference dump is used only for
 component hierarchy, readability, and tabletop layout study.
 
 Do not copy:
@@ -31,19 +31,20 @@ Do not copy:
 ## Attribute Language
 
 The live engine still uses Ashen Reach's existing stat schema. This design
-layer can describe a future Antias board-game mode with:
+layer should describe player-facing systems with:
 
-- `strength` for red pressure
-- `willpower` for blue pressure
-- `cunning` for yellow pressure
-- `life` for vitality
-- `influence` as a resource, not a test stat
+- `grit` for red physical pressure
+- `signal` for blue focus and weird-tech pressure
+- `guile` for yellow stealth and leverage pressure
+- `wounds` for harm
+- `trophies` as table-visible rewards
+- `Heat` as accumulating attention and bad resonance
 
 ## Layout Guidance
 
 - Character sheet: progression band at top, portrait left-center, ability panel
   right, stat row bottom.
-- Mission card: title, flavor line, objective, reward, tier marker.
+- Contract card: title, flavor line, objective, reward, tier marker.
 - Threat card: color frame, art window, type line, rules text, trophy value if
   hostile.
 - Board tile: strong title, compact icon row, legible rules text, unique
@@ -51,7 +52,7 @@ layer can describe a future Antias board-game mode with:
 
 ## Original Lore Tone
 
-Antias is a collapsing frontier around a reality breach. Its factions should
+Ashen Reach is a collapsing frontier around a reality breach. Its factions should
 feel oathbound, desperate, ritualized, and industrial rather than militarily
 bureaucratic. Core motifs:
 

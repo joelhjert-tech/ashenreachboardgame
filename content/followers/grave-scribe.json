@@ -1,0 +1,9 @@
+{
+  "id": "grave-scribe",
+  "name": "Grave Scribe",
+  "role": "scout",
+  "text": "After resolving a hazard, record a route note that can support later movement or contracts.",
+  "useLimit": "oncePerTurn",
+  "loyalty": 3,
+  "lossCondition": "wound"
+}

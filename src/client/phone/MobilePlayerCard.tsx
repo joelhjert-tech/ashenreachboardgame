@@ -1,5 +1,6 @@
 import type { ReactElement, ReactNode } from "react";
 import { describeContractObjective, formatContractObjectiveStatus } from "../../game/contracts/objectives.js";
+import { CardArtImage } from "../shared/CardArtImage.js";
 import { getCharacterPortraitPath, getPhoneSheetFramePath } from "../shared/assetPaths.js";
 import type { AbilityChangeItem } from "../shared/abilityTelemetry.js";
 import {
@@ -110,19 +111,24 @@ export function MobilePlayerCard({
     seatLabelById: { [self.seatId]: displayName || self.character.name }
   });
   const contractCopy = activeContractCard
-    ? `${activeContractCard.name} | ${formatContractObjectiveStatus(activeContractCard, self.character.activeContract?.progress ?? 0)}`
+    ? activeContractCard.name
     : "No active contract";
+  const contractStatusCopy = activeContractCard
+    ? formatContractObjectiveStatus(activeContractCard, self.character.activeContract?.progress ?? 0)
+    : null;
   const contractObjectiveCopy = activeContractCard
     ? describeContractObjective(activeContractCard)
     : null;
   const encounterCopy = encounter
-    ? `${encounter.title} | ${toTitleCase(encounter.cardType)} | ${toTitleCase(encounter.stat)} ${encounter.difficulty}`
+    ? `${encounter.title} - ${toTitleCase(encounter.cardType)}, ${toTitleCase(encounter.stat)} ${encounter.difficulty}`
     : `Phase ${toTitleCase(phase)}`;
   const scenarioCopy = formatScenarioSummaryCopy(activeScenario);
   const scenarioTelemetryCopy = formatScenarioTelemetryInline(scenarioTelemetry);
   const escalationCopy = formatEscalation({ escalationLevel, escalationThreshold, escalationModifier });
   const nemesisRemaining = activeNemesis ? Math.max(0, activeNemesis.life - activeNemesis.damageDealt) : 0;
   const nemesisProgressPercent = activeNemesis ? Math.min(100, (activeNemesis.damageDealt / Math.max(activeNemesis.life, 1)) * 100) : 0;
+  const scarCards = self.character.scarCards ?? [];
+  const scarEffectSummary = scarCards.map((scar) => scar.title).join(", ") || self.character.scars.join(", ");
 
   return (
     <section
@@ -290,9 +296,8 @@ export function MobilePlayerCard({
               <div className="phone-sheet-nemesis-header">
                 <div>
                   <span>Nemesis at the Gate</span>
-                  <strong>
-                    {activeNemesis.name} | {activeNemesis.title}
-                  </strong>
+                  <strong>{activeNemesis.name}</strong>
+                  <small>{activeNemesis.title}</small>
                 </div>
                 <div className="phone-sheet-nemesis-life">
                   <span>
@@ -343,10 +348,48 @@ export function MobilePlayerCard({
               </article>
               <article className="phone-sheet-gear-slot">
                 <span>Effects</span>
-                <strong>{self.character.scars.join(", ") || self.notes.join(", ") || "Stable"}</strong>
+                <strong>{scarEffectSummary || self.notes.join(", ") || "Stable"}</strong>
               </article>
             </div>
           </div>
+
+          {scarCards.length > 0 && (
+            <div className="phone-sheet-section">
+              <div className="phone-sheet-section-heading">Scars</div>
+              <div className="phone-sheet-ability-list">
+                {scarCards.map((scar) => (
+                  <article key={scar.id} className="phone-sheet-ability-card">
+                    <div className="phone-sheet-ability-icon">Scar</div>
+                    <div className="phone-sheet-ability-copy">
+                      <h3>{scar.title}</h3>
+                      <p>
+                        <strong>{scar.trigger}</strong> {scar.penalty}
+                      </p>
+                      <p>{scar.relief}</p>
+                      {scar.upside && <p>{scar.upside}</p>}
+                    </div>
+                  </article>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {(self.character.followers?.length ?? 0) > 0 && (
+            <div className="phone-sheet-section">
+              <div className="phone-sheet-section-heading">Followers</div>
+              <div className="phone-sheet-ability-list phone-sheet-follower-list">
+                {(self.character.followers ?? []).map((follower) => (
+                  <article key={follower.id} className="phone-sheet-ability-card phone-sheet-follower-card">
+                    <div className="phone-sheet-ability-icon">{toTitleCase(follower.role).slice(0, 3)}</div>
+                    <div className="phone-sheet-ability-copy">
+                      <h3>{follower.name}</h3>
+                      <p>{follower.text}</p>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            </div>
+          )}
         </section>
 
         <aside className="phone-sheet-right">
@@ -380,9 +423,19 @@ export function MobilePlayerCard({
           <div className="phone-sheet-section phone-sheet-contract-section">
             <div className="phone-sheet-section-heading">Active Contract</div>
             <div className="phone-sheet-contract-card">
-              <p>{contractCopy}</p>
-              {contractObjectiveCopy && <strong>{contractObjectiveCopy}</strong>}
-              {activeContractCard && <span>{activeContractCard.text}</span>}
+              <CardArtImage
+                cardType="contract"
+                cardId={activeContractCard?.id}
+                alt=""
+                aria-hidden="true"
+                className="phone-sheet-contract-art"
+              />
+              <div className="phone-sheet-contract-copy">
+                <p>{contractCopy}</p>
+                {contractStatusCopy && <em>{contractStatusCopy}</em>}
+                {contractObjectiveCopy && <strong>{contractObjectiveCopy}</strong>}
+                {activeContractCard && <span>{activeContractCard.text}</span>}
+              </div>
             </div>
           </div>
         </aside>

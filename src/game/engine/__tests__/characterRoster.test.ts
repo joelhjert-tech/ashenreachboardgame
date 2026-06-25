@@ -2,10 +2,10 @@ import { describe, expect, it } from "vitest";
 import { loadCharacters } from "../../content/characters.js";
 
 describe("character roster content", () => {
-  it("loads ten playable characters with the expected stat budget", () => {
+  it("loads twelve playable characters with the expected stat budget", () => {
     const characters = [...loadCharacters().values()];
 
-    expect(characters).toHaveLength(10);
+    expect(characters).toHaveLength(12);
 
     for (const character of characters) {
       const totalStats = Object.values(character.stats).reduce((total, value) => total + value, 0);

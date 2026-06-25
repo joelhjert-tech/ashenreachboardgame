@@ -1,0 +1,13 @@
+{
+  "id": "saltflat-bone-reader",
+  "name": "Saltflat Bone-Reader",
+  "role": "ritualist",
+  "text": "Once per round, turn a scar, omen, or void-salt bargain into a cooled Heat mark.",
+  "activeEffect": {
+    "type": "lose_heat",
+    "amount": 1
+  },
+  "useLimit": "oncePerRound",
+  "loyalty": 2,
+  "lossCondition": "heat"
+}

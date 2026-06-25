@@ -1,0 +1,22 @@
+{
+  "id": "tomb-gate-colossus",
+  "type": "threat",
+  "cardType": "enemy",
+  "title": "Tomb-Gate Colossus",
+  "enemyName": "Tomb-Gate Colossus",
+  "text": "A tomb-gate colossus wakes with grave soil falling from its shoulders and a keyhole for a heart.",
+  "flavor": "It was built to open only after enough people failed.",
+  "severity": 5,
+  "stat": "grit",
+  "difficulty": 10,
+  "trophyValue": 10,
+  "defeatReward": {
+    "type": "gain_gear",
+    "gearId": "coffin-rig"
+  },
+  "woundOnLoss": {
+    "type": "take_wound",
+    "amount": 2
+  },
+  "enemyFamily": "machine"
+}

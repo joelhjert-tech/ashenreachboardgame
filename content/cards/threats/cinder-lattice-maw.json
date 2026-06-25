@@ -1,0 +1,20 @@
+{
+  "id": "cinder-lattice-maw",
+  "type": "threat",
+  "cardType": "hazard",
+  "title": "Cinder Lattice Maw",
+  "text": "The lattice opens like a mouth beneath the path, each tooth a hot mathematical line.",
+  "flavor": "It bites in angles.",
+  "severity": 4,
+  "stat": "forge",
+  "difficulty": 9,
+  "successEffect": {
+    "type": "gain_note",
+    "text": "You braced the lattice mouth and marked the load-bearing teeth."
+  },
+  "failEffect": {
+    "type": "take_wound",
+    "amount": 2
+  },
+  "enemyFamily": "breachborn"
+}

@@ -1,0 +1,14 @@
+{
+  "id": "artifact-blackstar-ampoule",
+  "type": "artifact",
+  "artifactKind": "consumableSalvage",
+  "title": "Blackstar Ampoule",
+  "text": "A sealed vial of starless residue that can swallow one terrible consequence.",
+  "flavor": "The glass is empty until you need it not to be.",
+  "charge": 1,
+  "resolutionSummary": "Claimed a Blackstar Ampoule for a one-time route escape.",
+  "resolveEffect": {
+    "type": "gain_gear",
+    "gearId": "blackstar-ampoule"
+  }
+}

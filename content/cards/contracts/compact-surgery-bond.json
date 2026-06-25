@@ -1,0 +1,16 @@
+{
+  "id": "compact-surgery-bond",
+  "name": "Surgery Bond",
+  "factionGiver": "Meridian Compact",
+  "text": "Document a field surgery and prove the patient remained useful afterward.",
+  "objective": {
+    "type": "spaceTextResolved",
+    "effectKey": "middle_scarSurgery",
+    "label": "Scar surgery resolved",
+    "target": 1
+  },
+  "reward": {
+    "type": "heal_wound",
+    "amount": 1
+  }
+}

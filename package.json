@@ -9,10 +9,13 @@
     "dev:client": "vite --host 0.0.0.0",
     "test:client": "vitest run src/client",
     "test:phone-matrix": "tsx scripts/validate-phone-device-matrix.ts",
+    "test:e2e:scenarios": "tsx scripts/validate-six-scenario-e2e.ts",
     "test:engine": "vitest run src/game/engine/__tests__",
     "test:integration": "vitest run src/server/__tests__",
     "validate:content": "tsx scripts/validate-content.ts",
     "audit:assets": "tsx scripts/audit-assets.ts",
+    "generate:card-images:gemini": "tsx scripts/generate-card-images-gemini.ts",
+    "generate:card-images:openai": "tsx scripts/generate-card-images-openai.ts",
     "export:image-prompts": "tsx scripts/export-image-prompts.ts"
   },
   "dependencies": {

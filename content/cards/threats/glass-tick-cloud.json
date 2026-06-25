@@ -1,0 +1,21 @@
+{
+  "id": "glass-tick-cloud",
+  "type": "threat",
+  "cardType": "hazard",
+  "title": "Glass Tick Cloud",
+  "text": "Razor-small insects pour from a cracked relay casing and chew at gear seams.",
+  "flavor": "They sound like rain until the straps begin to part.",
+  "severity": 2,
+  "region": "outer",
+  "stat": "forge",
+  "difficulty": 6,
+  "successEffect": {
+    "type": "gain_note",
+    "text": "You sealed the glass tick vent and marked the casing as a salvage warning."
+  },
+  "failEffect": {
+    "type": "take_wound",
+    "amount": 1
+  },
+  "enemyFamily": "vermin"
+}

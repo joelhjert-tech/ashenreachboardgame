@@ -1,0 +1,25 @@
+{
+  "id": "anomaly-saint-static-aperture",
+  "type": "anomaly",
+  "regionHint": "inner",
+  "title": "Saint Static Aperture",
+  "text": "A saint-shaped signal tear opens over the route and asks for a name to carry inward.",
+  "flavor": "It remembers saints by the holes they leave.",
+  "instability": 5,
+  "resolutionSummary": "Crossed the aperture and marked the seal, but the signal noticed.",
+  "resolveEffect": {
+    "type": "sequence",
+    "effects": [
+      {
+        "type": "advance_scenario",
+        "progressKey": "sealRestorationMarks",
+        "amount": 1,
+        "summary": "The aperture stains the Broken Seal with usable signal."
+      },
+      {
+        "type": "gain_heat",
+        "amount": 1
+      }
+    ]
+  }
+}

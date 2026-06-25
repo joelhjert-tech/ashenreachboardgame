@@ -46,7 +46,7 @@ describe("board space data", () => {
 
   it("surfaces movement boxes through the dedicated data file", () => {
     expect(MOVEMENT_BOXES.map((entry) => entry.spaceId).sort()).toEqual(
-      ["mirecoil-beacon", "middle_guardian_span"].sort()
+      ["mirecoil-beacon", "middle_guardian_span", "outer_broken_causeway"].sort()
     );
   });
 

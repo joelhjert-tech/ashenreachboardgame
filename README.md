@@ -1,6 +1,6 @@
 # Ashen Reach
 
-Ashen Reach is a local-first co-op / competitive relic-crawl prototype with a TV host screen, phone controllers, live WebSocket play, and a dark gothic sci-fi presentation layer.
+Ashen Reach is a local-first co-op / competitive artifact-crawl prototype with a TV host screen, phone controllers, live WebSocket play, and a dark gothic sci-fi presentation layer.
 
 This repository currently targets an MVP loop:
 
@@ -49,6 +49,26 @@ Useful scripts:
 - `npm run test:engine` runs engine and room-server logic tests
 - `npm run test:integration` runs WebSocket and end-to-end server integration tests
 - `npm run audit:assets` checks asset coverage
+- `npm run generate:card-images:gemini` generates missing card art from `generated/card-image-prompts.json`
+- `npm run generate:card-images:openai` generates missing card art with ChatGPT Image 2.0 / `gpt-image-2`
+
+Generate missing card images with ChatGPT Image 2.0:
+
+```powershell
+$env:OPENAI_API_KEY="your_key_here"
+npm run generate:card-images:openai
+```
+
+For a small smoke test, run `npm run generate:card-images:openai -- --limit 1`.
+
+Generate missing card images with Gemini:
+
+```powershell
+$env:GEMINI_API_KEY="your_key_here"
+npm run generate:card-images:gemini
+```
+
+For a small smoke test, run `npm run generate:card-images:gemini -- --limit 1`.
 
 ## Rules and Design Docs
 
@@ -65,7 +85,7 @@ Useful scripts:
 - `content/cards/contracts` contract objectives
 - `content/cards/anomalies` anomaly encounters
 - `content/cards/artifacts` artifact rewards
-- `content/cards/scars` persistent wound / corruption scars
+- `content/cards/scars` persistent wound / Heat scars
 - `content/cards/escalations` breach pressure events
 - `content/sectors` authored sector deck references
 

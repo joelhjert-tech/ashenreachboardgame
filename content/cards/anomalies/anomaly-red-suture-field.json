@@ -1,0 +1,23 @@
+{
+  "id": "anomaly-red-suture-field",
+  "type": "anomaly",
+  "regionHint": "middle",
+  "title": "Red Suture Field",
+  "text": "The ground stitches itself shut behind each step, closing retreats and opening worse ones.",
+  "flavor": "The March heals badly.",
+  "instability": 3,
+  "resolutionSummary": "Cut the suture field open and kept the route from sealing.",
+  "resolveEffect": {
+    "type": "sequence",
+    "effects": [
+      {
+        "type": "gain_note",
+        "text": "Red Suture Field opened: route crews can pass once."
+      },
+      {
+        "type": "gain_heat",
+        "amount": 1
+      }
+    ]
+  }
+}

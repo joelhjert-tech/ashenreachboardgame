@@ -1,0 +1,20 @@
+{
+  "id": "escalation-gate-saint-wake",
+  "type": "escalation",
+  "title": "Gate-Saint Wake",
+  "text": "A saint-machine opens one eye beneath the gate and the board remembers every trespass.",
+  "flavor": "The miracle was never dead. It was listening.",
+  "step": 4,
+  "resolutionSummary": "Sang the Gate-Saint back into half-sleep and stole one breath from the collapse.",
+  "resolveEffect": {
+    "type": "sequence",
+    "effects": [
+      { "type": "take_wound", "amount": 1 },
+      {
+        "type": "gain_note",
+        "text": "Gate-Saint half-sleep: final breach pressure delayed at a cost."
+      }
+    ]
+  },
+  "escalationDelta": -2
+}

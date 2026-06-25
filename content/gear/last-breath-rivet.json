@@ -1,0 +1,13 @@
+{
+  "id": "last-breath-rivet",
+  "name": "Last-Breath Rivet",
+  "slot": "armor",
+  "category": "consumable",
+  "statBonus": {
+    "stat": "grit",
+    "amount": 1
+  },
+  "activeText": "Break to save yourself: discard to heal 1 wound and record that the next wound was braced.",
+  "useLimit": "discard",
+  "flavor": "A single coffin nail hammered into living armor."
+}

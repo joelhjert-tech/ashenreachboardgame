@@ -1,0 +1,21 @@
+{
+  "id": "broken-mast-collapse",
+  "type": "threat",
+  "cardType": "hazard",
+  "title": "Broken Mast Collapse",
+  "text": "A relay mast shears loose and falls across the lane in a storm of hot rivets.",
+  "flavor": "The old network still knows how to reach down.",
+  "severity": 3,
+  "region": "outer",
+  "stat": "grit",
+  "difficulty": 8,
+  "successEffect": {
+    "type": "gain_note",
+    "text": "You marked the fallen mast as a dangerous but usable route break."
+  },
+  "failEffect": {
+    "type": "take_wound",
+    "amount": 2
+  },
+  "enemyFamily": "hazard"
+}

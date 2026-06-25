@@ -1,0 +1,29 @@
+{
+  "id": "suture-storm",
+  "type": "threat",
+  "cardType": "hazard",
+  "title": "Suture Storm",
+  "text": "Red lightning stitches the battlefield to the sky and tries to sew you into the pattern.",
+  "flavor": "The clouds have thread. The ground has needles.",
+  "severity": 4,
+  "stat": "grit",
+  "difficulty": 8,
+  "successEffect": {
+    "type": "gain_note",
+    "text": "You crossed the storm on the beat between stitches."
+  },
+  "failEffect": {
+    "type": "sequence",
+    "effects": [
+      {
+        "type": "take_wound",
+        "amount": 1
+      },
+      {
+        "type": "gain_heat",
+        "amount": 2
+      }
+    ]
+  },
+  "enemyFamily": "hazard"
+}

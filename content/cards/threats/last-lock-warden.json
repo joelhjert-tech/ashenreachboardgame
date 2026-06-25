@@ -1,0 +1,25 @@
+{
+  "id": "last-lock-warden",
+  "type": "threat",
+  "cardType": "enemy",
+  "title": "Last Lock Warden",
+  "enemyName": "Last Lock Warden",
+  "text": "A mechanical guardian fused into the final lock turns its key-blade toward the living.",
+  "flavor": "It has one duty left, and every step you take is an argument.",
+  "severity": 5,
+  "region": "inner",
+  "stat": "forge",
+  "difficulty": 12,
+  "trophyValue": 4,
+  "defeatReward": {
+    "type": "advance_scenario",
+    "progressKey": "lastLocksBroken",
+    "amount": 2,
+    "summary": "The Last Lock Warden fell and the final lock weakened."
+  },
+  "woundOnLoss": {
+    "type": "take_wound",
+    "amount": 2
+  },
+  "enemyFamily": "machine"
+}

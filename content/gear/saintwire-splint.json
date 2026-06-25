@@ -1,0 +1,13 @@
+{
+  "id": "saintwire-splint",
+  "name": "Saintwire Splint",
+  "slot": "armor",
+  "category": "consumable",
+  "statBonus": {
+    "stat": "forge",
+    "amount": 1
+  },
+  "activeText": "Discard before recall to heal 1 wound and lose 1 Heat.",
+  "useLimit": "discard",
+  "flavor": "Blessed wire remembers the shape of a body before it broke."
+}

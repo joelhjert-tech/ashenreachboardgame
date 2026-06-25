@@ -1,0 +1,16 @@
+{
+  "id": "choir-well-canticle",
+  "name": "Well Canticle",
+  "factionGiver": "Glass Choir",
+  "text": "Bottle a clean anomaly reading from the Red March well and return it humming.",
+  "objective": {
+    "type": "spaceTextResolved",
+    "effectKey": "middle_anomalyWell",
+    "label": "Anomaly well read",
+    "target": 1
+  },
+  "reward": {
+    "type": "lose_heat",
+    "amount": 1
+  }
+}

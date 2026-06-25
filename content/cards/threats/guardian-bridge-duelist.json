@@ -1,0 +1,22 @@
+{
+  "id": "guardian-bridge-duelist",
+  "type": "threat",
+  "cardType": "enemy",
+  "title": "Guardian Bridge Duelist",
+  "enemyName": "Guardian Bridge Duelist",
+  "text": "A bridge guardian lowers a ritual blade and permits passage only through formal challenge.",
+  "flavor": "The old rules survived because the old blades did.",
+  "severity": 3,
+  "stat": "command",
+  "difficulty": 7,
+  "trophyValue": 6,
+  "defeatReward": {
+    "type": "gain_note",
+    "text": "You won bridge-right and the guardian marked your passage."
+  },
+  "woundOnLoss": {
+    "type": "take_wound",
+    "amount": 1
+  },
+  "enemyFamily": "human"
+}

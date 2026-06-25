@@ -7,7 +7,15 @@
       "neighbors": ["glassmere-spindle", "mirecoil-beacon"],
       "danger": 2,
       "encounterDecks": {
-        "threat": ["smoke-leech-clutch", "cinder-veil-stalker"],
+        "threat": [
+          "smoke-leech-clutch",
+          "ash-rat-skitter",
+          "scrap-toll-gangers",
+          "furnace-ditch-collapse",
+          "gate-tax-collectors",
+          "cinder-veil-stalker",
+          "starless-taxation"
+        ],
         "anomaly": [],
         "contract": [],
         "artifact": [],
@@ -21,7 +29,15 @@
       "neighbors": ["ashwake-crossing", "hollow-veil-yard"],
       "danger": 3,
       "encounterDecks": {
-        "threat": ["glass-chime-swarm", "latchspire-raider"],
+        "threat": [
+          "glass-chime-swarm",
+          "latchspire-raider",
+          "lantern-moth-swarm",
+          "roadside-bone-oracle",
+          "spindle-static-squall",
+          "mirror-mite-bloom",
+          "starless-taxation"
+        ],
         "anomaly": ["anomaly-glassmere", "anomaly-choir-static"],
         "contract": [],
         "artifact": [],
@@ -35,7 +51,16 @@
       "neighbors": ["ashwake-crossing", "hollow-veil-yard", "emberwatch-step"],
       "danger": 4,
       "encounterDecks": {
-        "threat": ["relay-husk", "slag-drone", "cinder-veil-stalker"],
+        "threat": [
+          "relay-husk",
+          "slag-drone",
+          "cinder-veil-stalker",
+          "beacon-cable-snare",
+          "relay-pilgrim-riot",
+          "void-salt-sickness",
+          "pale-cartel-shakedown",
+          "specimen-null-arrives"
+        ],
         "anomaly": [],
         "contract": ["contract-beacon", "contract-lantern-run"],
         "artifact": [],
@@ -49,7 +74,13 @@
       "neighbors": ["glassmere-spindle", "mirecoil-beacon", "emberwatch-step"],
       "danger": 3,
       "encounterDecks": {
-        "threat": ["grave-silt-press"],
+        "threat": [
+          "grave-silt-press",
+          "mudglass-sinkhole",
+          "yard-ghoul-welders",
+          "rust-choir-peddlers",
+          "pale-cartel-shakedown"
+        ],
         "anomaly": [],
         "contract": [],
         "artifact": ["artifact-yard", "artifact-bell-votive"],
@@ -63,7 +94,7 @@
       "neighbors": ["mirecoil-beacon", "hollow-veil-yard"],
       "danger": 5,
       "encounterDecks": {
-        "threat": [],
+        "threat": ["emberwatch-sparkfall", "suture-storm", "red-march-cannoneer", "starless-taxation"],
         "anomaly": [],
         "contract": [],
         "artifact": [],

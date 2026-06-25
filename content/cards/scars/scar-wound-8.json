@@ -1,0 +1,15 @@
+{
+  "id": "scar-wound-8",
+  "type": "scar",
+  "title": "Webglass Afterimage",
+  "text": "Your reflection lags half a heartbeat behind and sometimes chooses first.",
+  "flavor": "Mirrors remember your hands in the wrong order.",
+  "trigger": "Your first guile check each session.",
+  "penalty": "Resolve a Heat pulse before applying the check result.",
+  "effect": {
+    "type": "gain_heat",
+    "amount": 1
+  },
+  "relief": "A scout follower may exhaust to name the real path and cancel this trigger.",
+  "upside": "On success, gain a note about a hidden route or false witness."
+}

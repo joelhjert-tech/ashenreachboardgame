@@ -1,0 +1,23 @@
+{
+  "id": "anomaly-saltglass-fata-morgana",
+  "type": "anomaly",
+  "title": "Saltglass Fata Morgana",
+  "text": "The flats reflect a false market, stocked with tools that vanish when named.",
+  "flavor": "A bargain is still a bargain if only the debt is real.",
+  "instability": 2,
+  "regionHint": "outer",
+  "resolutionSummary": "Named the false stalls and kept one usable shard of salvage.",
+  "resolveEffect": {
+    "type": "sequence",
+    "effects": [
+      {
+        "type": "gain_gear",
+        "gearId": "blackstar-ampoule"
+      },
+      {
+        "type": "gain_heat",
+        "amount": 1
+      }
+    ]
+  }
+}

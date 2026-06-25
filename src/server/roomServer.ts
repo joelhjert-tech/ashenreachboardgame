@@ -4,8 +4,17 @@ import { loadContracts } from "../game/content/contracts.js";
 import { loadAnomalyCards } from "../game/content/anomalies.js";
 import { loadArtifactCards } from "../game/content/artifacts.js";
 import { loadEscalationCards } from "../game/content/escalations.js";
+import { loadFollowers } from "../game/content/followers.js";
 import { loadGear } from "../game/content/gear.js";
+import { loadScarCards } from "../game/content/scars.js";
 import { loadThreatCards } from "../game/content/threats.js";
+import {
+  getThreatEffectTiming,
+  isThreatEffectKey,
+  resolveThreatEffect,
+  type ThreatEffectResult,
+  type ThreatEffectTiming
+} from "../game/cards/threatEffects.js";
 import { resolveBoardTextChoice, resolveBoardTextEffect, type BoardTextDeckKind } from "../game/data/boardTextEffects.js";
 import { nemeses, type NemesisDefinition } from "../game/data/nemeses.js";
 import { getScenarioDefinition } from "../game/data/scenarios.js";
@@ -56,13 +65,17 @@ import type {
   ScenarioVictoryAchievedAction,
   StabilizeResolvedAction,
   StatRaisedAction,
-  UnequipGearAction
+  TableInteractionAction,
+  UnequipGearAction,
+  UseFollowerAction,
+  UseGearAction
 } from "../game/engine/actions.js";
 import { getEquippedGearBonus } from "../game/engine/gear.js";
-import type { AnomalyCard, ArtifactCard, EncounterEffect, EscalationCard, ThreatCard } from "../game/schema/card.schema.js";
+import type { AnomalyCard, ArtifactCard, EncounterEffect, EscalationCard, ScarCard, ThreatCard } from "../game/schema/card.schema.js";
 import type { Character } from "../game/schema/character.schema.js";
 import type { Stat } from "../game/schema/character.schema.js";
 import type { ContractCard } from "../game/schema/contract.schema.js";
+import type { Follower } from "../game/schema/follower.schema.js";
 import type { GearItem } from "../game/schema/gear.schema.js";
 import { rollDice, type RandomSource, defaultRandomSource } from "../game/engine/dice.js";
 import { reduceGameState } from "../game/engine/reducer.js";
@@ -79,6 +92,7 @@ const TROPHY_COST_PER_RANK = 4;
 const MAX_STAT_RANK = 9;
 const RAISE_STAT_FEEDS_ESCALATION = true;
 const RAISE_STAT_ESCALATION_REASON = "forged in fire";
+const ENEMY_ROLL_TIMEOUT_MS = 30_000;
 
 const NEMESIS_OPPOSITION = {
   strength: { attackStat: "grit", label: "Overpower" },
@@ -87,6 +101,7 @@ const NEMESIS_OPPOSITION = {
 } as const;
 
 const CONFRONTATION_BASE_DIFFICULTY = 6;
+const SCAR_CARDS = loadScarCards();
 
 const nemesisByScenarioId = new Map<string, NemesisDefinition>(
   nemeses.filter((nemesis) => nemesis.scenarioId).map((nemesis) => [nemesis.scenarioId!, nemesis])
@@ -158,6 +173,31 @@ interface RestartSessionMessage {
 type HostCommandMessage = KickSeatMessage | RestartSessionMessage;
 type ClientMessage = ClientIntent | RejoinMessage | HostCommandMessage;
 
+const CLIENT_INTENT_TYPES = new Set<string>([
+  "MOVE_REQUESTED",
+  "PHASE_ADVANCED",
+  "CHECK_REQUESTED",
+  "COMBAT_REQUESTED",
+  "ENEMY_ROLL_REQUESTED",
+  "RECRUIT_REPLACEMENT",
+  "EQUIP_GEAR",
+  "UNEQUIP_GEAR",
+  "USE_GEAR",
+  "USE_FOLLOWER",
+  "TABLE_INTERACTION",
+  "ACCEPT_CONTRACT",
+  "COMPLETE_CONTRACT",
+  "SCENARIO_CONFRONTATION_REQUESTED",
+  "RESOLVE_SPACE_TEXT",
+  "STABILIZE_REQUESTED",
+  "RAISE_STAT_REQUESTED"
+] as const);
+
+const PHASE_VALUES = new Set(["start", "navigation", "sector", "action", "resolution", "broadcast"]);
+const STAT_VALUES = new Set(["command", "grit", "signal", "guile", "forge"]);
+const GEAR_SLOT_VALUES = new Set(["weapon", "armor", "utility"]);
+const TABLE_INTERACTION_VALUES = new Set(["trade", "aid", "duel", "interfere"]);
+
 interface JoinSeatResult {
   roomCode: string;
   seatId: string;
@@ -200,16 +240,55 @@ class IntentRejectedError extends Error {
   }
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+}
+
+function getMessageType(message: unknown): string {
+  if (!isRecord(message) || typeof message.type !== "string") {
+    throw new IntentRejectedError("UNKNOWN", "Malformed intent");
+  }
+
+  return message.type;
+}
+
+function requireStringField(message: Record<string, unknown>, field: string, actionType: string): string {
+  const value = message[field];
+
+  if (typeof value !== "string" || value.length === 0) {
+    throw new IntentRejectedError(actionType, `Malformed intent: ${field} must be a non-empty string`);
+  }
+
+  return value;
+}
+
+function requireEnumField(
+  message: Record<string, unknown>,
+  field: string,
+  allowed: Set<string>,
+  actionType: string
+): string {
+  const value = requireStringField(message, field, actionType);
+
+  if (!allowed.has(value)) {
+    throw new IntentRejectedError(actionType, `Malformed intent: ${field} is not allowed`);
+  }
+
+  return value;
+}
+
 export class GameRoomServer {
   private readonly clients = new Set<ConnectedClient>();
   private readonly characters: Map<string, Character>;
   private readonly contracts: Map<string, ContractCard>;
+  private readonly followers: Map<string, Follower>;
   private readonly gear: Map<string, GearItem>;
   private readonly threats: Map<string, ThreatCard>;
   private readonly anomalies: Map<string, AnomalyCard>;
   private readonly artifacts: Map<string, ArtifactCard>;
   private readonly escalations: Map<string, EscalationCard>;
   private hostToken: string | null = null;
+  private enemyRollTimeout: ReturnType<typeof setTimeout> | null = null;
 
   public constructor(
     private state: GameState,
@@ -221,12 +300,14 @@ export class GameRoomServer {
     contracts?: Map<string, ContractCard>,
     anomalies?: Map<string, AnomalyCard>,
     artifacts?: Map<string, ArtifactCard>,
-    escalations?: Map<string, EscalationCard>
+    escalations?: Map<string, EscalationCard>,
+    followers?: Map<string, Follower>
   ) {
     this.threats = threats ?? loadThreatCards();
     this.characters = characters ?? loadCharacters();
     this.gear = gear ?? loadGear();
     this.contracts = contracts ?? loadContracts();
+    this.followers = followers ?? loadFollowers();
     this.anomalies = anomalies ?? loadAnomalyCards();
     this.artifacts = artifacts ?? loadArtifactCards();
     this.escalations = escalations ?? loadEscalationCards();
@@ -266,16 +347,20 @@ export class GameRoomServer {
 
       socket.on("message", (raw) => {
         try {
-          const message = JSON.parse(String(raw)) as ClientMessage;
+          const message = JSON.parse(String(raw)) as unknown;
 
           if (this.isRejoinMessage(message)) {
             this.handleRejoin(client, message);
             return;
           }
 
-          this.handleIntent(client, message);
+          this.handleIntent(client, this.parseClientMessage(message));
         } catch (error) {
-          this.sendIntentRejected(client, "UNKNOWN", error instanceof Error ? error.message : "Malformed intent");
+          this.sendIntentRejected(
+            client,
+            error instanceof IntentRejectedError ? error.actionType : "UNKNOWN",
+            error instanceof Error ? error.message : "Malformed intent"
+          );
         }
       });
 
@@ -414,6 +499,8 @@ export class GameRoomServer {
   }
 
   resetSession(state: GameState): void {
+    this.clearEnemyRollTimeout();
+
     for (const client of [...this.clients]) {
       client.superseded = true;
       client.socket.close(4004, "Session reset");
@@ -516,12 +603,88 @@ export class GameRoomServer {
     this.broadcastPatch();
   }
 
-  private isRejoinMessage(message: ClientMessage): message is RejoinMessage {
-    return message.type === "REJOIN";
+  private isRejoinMessage(message: unknown): message is RejoinMessage {
+    if (!isRecord(message) || message.type !== "REJOIN") {
+      return false;
+    }
+
+    requireStringField(message, "sessionId", "REJOIN");
+    requireStringField(message, "seatToken", "REJOIN");
+    return true;
   }
 
-  private isHostCommand(message: ClientMessage): message is HostCommandMessage {
-    return message.type === "KICK_SEAT" || message.type === "RESTART_SESSION";
+  private isHostCommand(message: unknown): message is HostCommandMessage {
+    return isRecord(message) && (message.type === "KICK_SEAT" || message.type === "RESTART_SESSION");
+  }
+
+  private parseClientMessage(message: unknown): ClientIntent | HostCommandMessage {
+    if (!isRecord(message)) {
+      throw new IntentRejectedError("UNKNOWN", "Malformed intent");
+    }
+
+    const type = getMessageType(message);
+
+    if (type === "KICK_SEAT") {
+      requireStringField(message, "targetSeatId", type);
+      return message as unknown as KickSeatMessage;
+    }
+
+    if (type === "RESTART_SESSION") {
+      return message as unknown as RestartSessionMessage;
+    }
+
+    if (!CLIENT_INTENT_TYPES.has(type)) {
+      throw new IntentRejectedError(type, `Client cannot submit server action ${type}`);
+    }
+
+    requireStringField(message, "seatId", type);
+
+    switch (type) {
+      case "MOVE_REQUESTED":
+        requireStringField(message, "toSectorId", type);
+        break;
+      case "PHASE_ADVANCED":
+        requireEnumField(message, "toPhase", PHASE_VALUES, type);
+        break;
+      case "CHECK_REQUESTED":
+      case "COMBAT_REQUESTED":
+      case "RAISE_STAT_REQUESTED":
+        requireEnumField(message, "stat", STAT_VALUES, type);
+        break;
+      case "RECRUIT_REPLACEMENT":
+        requireStringField(message, "replacementCharacterId", type);
+        break;
+      case "EQUIP_GEAR":
+        requireStringField(message, "gearId", type);
+        requireEnumField(message, "slot", GEAR_SLOT_VALUES, type);
+        break;
+      case "UNEQUIP_GEAR":
+        requireEnumField(message, "slot", GEAR_SLOT_VALUES, type);
+        break;
+      case "USE_GEAR":
+        requireStringField(message, "gearId", type);
+        break;
+      case "USE_FOLLOWER":
+        requireStringField(message, "followerId", type);
+        break;
+      case "TABLE_INTERACTION":
+        requireStringField(message, "targetSeatId", type);
+        requireEnumField(message, "interactionKind", TABLE_INTERACTION_VALUES, type);
+        break;
+      case "ACCEPT_CONTRACT":
+      case "COMPLETE_CONTRACT":
+        requireStringField(message, "contractId", type);
+        break;
+      case "RESOLVE_SPACE_TEXT":
+        if (message.choiceId !== undefined && typeof message.choiceId !== "string") {
+          throw new IntentRejectedError(type, "Malformed intent: choiceId must be a string");
+        }
+        break;
+      default:
+        break;
+    }
+
+    return message as unknown as ClientIntent;
   }
 
   private isValidHostToken(token: string): boolean {
@@ -570,6 +733,196 @@ export class GameRoomServer {
     }
 
     this.restartActiveSession();
+  }
+
+  private createGearUseAction(
+    seatId: string,
+    gearId: string,
+    createdAt: string
+  ): UseGearAction {
+    const player = this.state.players.find((entry) => entry.seatId === seatId);
+    const item = player?.character.heldGear.find((entry) => entry.id === gearId) ?? this.gear.get(gearId);
+    const itemName = item?.name ?? gearId;
+    const discard = item?.useLimit === "discard";
+    const effect = this.resolveEffect(this.getGearUseEffect(gearId));
+
+    return {
+      type: "USE_GEAR",
+      seatId,
+      gearId,
+      effect,
+      discard,
+      summary: `${itemName} used. ${item?.activeText ?? "Its effect was recorded for the table."}`,
+      createdAt
+    } satisfies UseGearAction;
+  }
+
+  private getGearUseEffect(gearId: string): EncounterEffect {
+    switch (gearId) {
+      case "blackstar-ampoule":
+        return { type: "gain_note", text: "Blackstar Ampoule spent: one failed movement or hazard penalty may be ignored." };
+      case "choir-static-censer":
+        return { type: "lose_heat", amount: 1 };
+      case "heat-sink-prayer":
+        return { type: "lose_heat", amount: 2 };
+      case "cinder-suture-kit":
+        return {
+          type: "sequence",
+          effects: [
+            { type: "heal_wound", amount: 1 },
+            { type: "gain_heat", amount: 1 }
+          ]
+        };
+      case "last-breath-rivet":
+        return {
+          type: "sequence",
+          effects: [
+            { type: "heal_wound", amount: 1 },
+            { type: "gain_note", text: "Last-Breath Rivet broke clean: the next wound was braced and the armor is gone." }
+          ]
+        };
+      case "saintwire-splint":
+        return {
+          type: "sequence",
+          effects: [
+            { type: "heal_wound", amount: 1 },
+            { type: "lose_heat", amount: 1 }
+          ]
+        };
+      case "mirror-reroll-token":
+        return {
+          type: "sequence",
+          effects: [
+            { type: "gain_heat", amount: 1 },
+            { type: "gain_note", text: "Mirror Reroll Token spent: reroll a failed guile or signal check and keep the new fate." }
+          ]
+        };
+      case "black-route-fuse":
+        return {
+          type: "sequence",
+          effects: [
+            { type: "advance_escalation", amount: 1 },
+            { type: "gain_note", text: "Black Route Fuse broken: +3 combat pressure is banked for this fight." }
+          ]
+        };
+      case "grave-lens":
+        return { type: "gain_note", text: "Grave Lens reading: a follower-linked route note was recorded." };
+      case "red-march-warbell":
+        return {
+          type: "sequence",
+          effects: [
+            { type: "gain_heat", amount: 1 },
+            { type: "gain_note", text: "Red March Warbell sounded: +2 combat pressure is banked for this fight." }
+          ]
+        };
+      case "ashen-route-compass":
+        return { type: "gain_note", text: "Ashen Route Compass fixed a reroll route for a failed movement or anomaly check." };
+      default:
+        return { type: "gain_note", text: `${gearId} was used and its table effect was recorded.` };
+    }
+  }
+
+  private createFollowerUseAction(
+    seatId: string,
+    followerId: string,
+    createdAt: string
+  ): UseFollowerAction {
+    const player = this.state.players.find((entry) => entry.seatId === seatId);
+    const follower = (player?.character.followers ?? []).find((entry) => entry.id === followerId) ?? this.followers.get(followerId);
+    const effect = this.resolveEffect((follower?.activeEffect as EncounterEffect | undefined) ?? this.getFollowerRoleEffect(follower));
+
+    return {
+      type: "USE_FOLLOWER",
+      seatId,
+      followerId,
+      effect,
+      discard: follower?.useLimit === "discard",
+      summary: `${follower?.name ?? followerId} used. ${follower?.text ?? "Their table effect was recorded."}`,
+      createdAt
+    } satisfies UseFollowerAction;
+  }
+
+  private getFollowerRoleEffect(follower: Follower | undefined): EncounterEffect {
+    switch (follower?.role) {
+      case "medic":
+        return {
+          type: "sequence",
+          effects: [
+            { type: "heal_wound", amount: 1 },
+            { type: "gain_heat", amount: 1 }
+          ]
+        };
+      case "ritualist":
+      case "informant":
+        return { type: "lose_heat", amount: 1 };
+      case "gunner":
+        return { type: "gain_note", text: `${follower.name} is covering the next combat exchange.` };
+      case "guide":
+      case "scout":
+      case "porter":
+      default:
+        return { type: "gain_note", text: `${follower?.name ?? "Follower"} support recorded for this route.` };
+    }
+  }
+
+  private createTableInteractionAction(
+    intent: Extract<ClientIntent, { type: "TABLE_INTERACTION" }>,
+    createdAt: string
+  ): TableInteractionAction {
+    const actorName = this.getSeatDisplayName(intent.seatId);
+    const targetName = this.getSeatDisplayName(intent.targetSeatId);
+
+    switch (intent.interactionKind) {
+      case "aid":
+        return {
+          type: "TABLE_INTERACTION",
+          seatId: intent.seatId,
+          targetSeatId: intent.targetSeatId,
+          interactionKind: intent.interactionKind,
+          effect: { type: "gain_note", text: `${actorName} aided ${targetName}.` },
+          targetEffect: { type: "lose_heat", amount: 1 },
+          summary: `${actorName} aided ${targetName}; the target loses 1 Heat.`,
+          createdAt
+        } satisfies TableInteractionAction;
+      case "duel":
+        return {
+          type: "TABLE_INTERACTION",
+          seatId: intent.seatId,
+          targetSeatId: intent.targetSeatId,
+          interactionKind: intent.interactionKind,
+          effect: { type: "gain_note", text: `${actorName} challenged ${targetName} to a bounded duel.` },
+          targetEffect: { type: "gain_heat", amount: 1 },
+          summary: `${actorName} challenged ${targetName}; bounded rivalry marks the target with 1 Heat.`,
+          createdAt
+        } satisfies TableInteractionAction;
+      case "interfere":
+        return {
+          type: "TABLE_INTERACTION",
+          seatId: intent.seatId,
+          targetSeatId: intent.targetSeatId,
+          interactionKind: intent.interactionKind,
+          effect: { type: "gain_heat", amount: 1 },
+          targetEffect: { type: "gain_heat", amount: 1 },
+          summary: `${actorName} interfered with ${targetName}; both operatives gain 1 Heat.`,
+          createdAt
+        } satisfies TableInteractionAction;
+      case "trade":
+      default:
+        return {
+          type: "TABLE_INTERACTION",
+          seatId: intent.seatId,
+          targetSeatId: intent.targetSeatId,
+          interactionKind: intent.interactionKind,
+          effect: { type: "gain_note", text: `${actorName} traded with ${targetName}.` },
+          targetEffect: { type: "gain_note", text: `${targetName} traded with ${actorName}.` },
+          summary: `${actorName} traded with ${targetName}; both operatives record the exchange.`,
+          createdAt
+        } satisfies TableInteractionAction;
+    }
+  }
+
+  private getSeatDisplayName(seatId: string): string {
+    return this.state.seats.find((seat) => seat.seatId === seatId)?.displayName ?? seatId;
   }
 
   private intentToAction(intent: ClientIntent): GameAction {
@@ -633,6 +986,12 @@ export class GameRoomServer {
           slot: intent.slot,
           createdAt
         } satisfies UnequipGearAction;
+      case "USE_GEAR":
+        return this.createGearUseAction(intent.seatId, intent.gearId, createdAt);
+      case "USE_FOLLOWER":
+        return this.createFollowerUseAction(intent.seatId, intent.followerId, createdAt);
+      case "TABLE_INTERACTION":
+        return this.createTableInteractionAction(intent, createdAt);
       case "ACCEPT_CONTRACT":
         return {
           type: "ACCEPT_CONTRACT",
@@ -662,8 +1021,9 @@ export class GameRoomServer {
       case "RAISE_STAT_REQUESTED":
         throw new Error("Stat raise requests are resolved directly");
       default: {
-        const exhaustiveCheck: never = intent;
-        return exhaustiveCheck;
+        const runtimeIntent = intent as { type?: unknown };
+        const actionType = typeof runtimeIntent.type === "string" ? runtimeIntent.type : "UNKNOWN";
+        throw new IntentRejectedError(actionType, "Unknown client intent");
       }
     }
   }
@@ -2353,6 +2713,10 @@ export class GameRoomServer {
       ),
       eventLog: [...this.state.eventLog, { type: "KICK_SEAT", targetSeatId, createdAt: new Date().toISOString() }]
     };
+
+    if (!targetWasActive && remainingAfterKick.length > 1) {
+      this.recoverPendingEnemyRollForLeavingSeat(targetSeatId);
+    }
   }
 
   private restartActiveSession(): void {
@@ -2399,6 +2763,112 @@ export class GameRoomServer {
   private getSeatLabel(seatId: string): string {
     const seat = this.state.seats.find((entry) => entry.seatId === seatId);
     return seat?.displayName ?? seatId;
+  }
+
+  private getThreatEffectContext(seatId: string, card: ThreatCard) {
+    const player = this.state.players.find((entry) => entry.seatId === seatId);
+
+    if (!player) {
+      throw new Error(`Missing player for seat ${seatId}`);
+    }
+
+    const sector = this.state.sectors.find((entry) => entry.id === player.character.currentSpaceId);
+
+    return {
+      state: this.state,
+      seatId,
+      card,
+      player,
+      spaceId: player.character.currentSpaceId,
+      region: card.region ?? this.getThreatRegionFromSector(sector?.regionTier),
+      escalationLevel: this.state.escalationLevel
+    };
+  }
+
+  private getThreatRegionFromSector(regionTier: string | undefined): "outer" | "middle" | "inner" | "center" | undefined {
+    if (regionTier === "borderlight") {
+      return "outer";
+    }
+
+    if (regionTier === "red_march") {
+      return "middle";
+    }
+
+    if (regionTier === "crownfall") {
+      return "inner";
+    }
+
+    if (regionTier === "cinder_gate") {
+      return "center";
+    }
+
+    return undefined;
+  }
+
+  private resolveThreatEffectKey(
+    seatId: string,
+    card: ThreatCard,
+    key: string | undefined,
+    timing: ThreatEffectTiming
+  ): ThreatEffectResult | null {
+    if (!key) {
+      return null;
+    }
+
+    if (!isThreatEffectKey(key)) {
+      throw new Error(`Unknown threat effect key ${key}`);
+    }
+
+    if (getThreatEffectTiming(key) !== timing) {
+      throw new Error(`Threat effect key ${key} cannot run during ${timing}`);
+    }
+
+    const result = resolveThreatEffect(key, this.getThreatEffectContext(seatId, card));
+    return result;
+  }
+
+  private resolveThreatEffectKeys(
+    seatId: string,
+    card: ThreatCard,
+    keys: string[] | undefined,
+    timing: ThreatEffectTiming
+  ): ThreatEffectResult {
+    const initial: ThreatEffectResult = {
+      effect: null,
+      difficultyModifier: 0,
+      playerBonusModifier: 0,
+      enemyBonusModifier: 0
+    };
+
+    return (keys ?? []).reduce<ThreatEffectResult>(
+      (combined, key) => {
+        const result = this.resolveThreatEffectKey(seatId, card, key, timing);
+
+        if (!result) {
+          return combined;
+        }
+
+        return {
+          effect: this.combineEffects([combined.effect, result.effect].filter((effect): effect is EncounterEffect => Boolean(effect))),
+          difficultyModifier: (combined.difficultyModifier ?? 0) + (result.difficultyModifier ?? 0),
+          playerBonusModifier: (combined.playerBonusModifier ?? 0) + (result.playerBonusModifier ?? 0),
+          enemyBonusModifier: (combined.enemyBonusModifier ?? 0) + (result.enemyBonusModifier ?? 0),
+          summary: [combined.summary, result.summary].filter(Boolean).join(" ")
+        } satisfies ThreatEffectResult;
+      },
+      initial
+    );
+  }
+
+  private resolveThreatOutcomeEffect(
+    seatId: string,
+    card: ThreatCard,
+    baseEffect: EncounterEffect,
+    effectKey: string | undefined,
+    timing: "onSuccess" | "onFailure" | "onDefeat"
+  ): EncounterEffect {
+    const keyedEffect = this.resolveThreatEffectKey(seatId, card, effectKey, timing)?.effect ?? null;
+    return this.resolveEffect(this.combineEffects([baseEffect, keyedEffect].filter((effect): effect is EncounterEffect => Boolean(effect))) ?? baseEffect);
   }
 
   private runAutomaticPhases(seatId: string): void {
@@ -2532,12 +3002,15 @@ export class GameRoomServer {
 
     const deck = sector.encounterDecks.threat;
     const card = deck.length > 0 ? this.threats.get(deck[this.randomSource.nextInt(deck.length)] ?? "") ?? null : null;
+    const revealEffectKey = card?.revealEffectKey ?? card?.effectKey;
+    const revealEffect = card ? this.resolveThreatEffectKey(seatId, card, revealEffectKey, "onReveal")?.effect ?? null : null;
 
     return {
       type: "ENCOUNTER_DRAWN",
       seatId,
       sectorId: sector.id,
       card,
+      revealEffect: revealEffect ? this.resolveEffect(revealEffect) : null,
       createdAt: new Date().toISOString()
     };
   }
@@ -2569,8 +3042,9 @@ export class GameRoomServer {
   private createWoundScar(seatId: string): string {
     const player = this.state.players.find((entry) => entry.seatId === seatId);
     const scarCount = (player?.character.scars.length ?? 0) + 1;
+    const scarIndex = Math.min(scarCount, SCAR_CARDS.size);
 
-    return `scar-wound-${scarCount}`;
+    return `scar-wound-${scarIndex}`;
   }
 
   private countEquippedGear(player: PlayerState): number {
@@ -2679,14 +3153,23 @@ export class GameRoomServer {
     }
 
     const escalationModifier = getEscalationModifier(this.state.escalationLevel);
+    const keyedModifiers = this.resolveThreatEffectKeys(intent.seatId, encounter, encounter.combatEffectKeys, "beforeCombat");
     const roll = rollDice(2, 6, this.randomSource);
     const statBonus =
       player.character.stats[intent.stat] +
       getEquippedGearBonus(player.character, intent.stat) +
-      this.getScenarioSkillModifier(intent.seatId);
-    const difficulty = encounter.difficulty + escalationModifier;
+      this.getScenarioSkillModifier(intent.seatId) +
+      (keyedModifiers.playerBonusModifier ?? 0);
+    const difficulty = encounter.difficulty + escalationModifier + (keyedModifiers.difficultyModifier ?? 0);
     const total = roll.total + statBonus;
     const success = total >= difficulty;
+    const outcomeEffect = this.resolveThreatOutcomeEffect(
+      intent.seatId,
+      encounter,
+      success ? encounter.successEffect : encounter.failEffect,
+      success ? encounter.successEffectKey : encounter.failEffectKey,
+      success ? "onSuccess" : "onFailure"
+    );
 
     this.applyAction({
       type: "CHECK_ROLLED",
@@ -2697,7 +3180,7 @@ export class GameRoomServer {
       statBonus,
       total,
       success,
-      effect: this.resolveEffect(success ? encounter.successEffect : encounter.failEffect),
+      effect: outcomeEffect,
       cardId: encounter.id,
       createdAt: new Date().toISOString()
     });
@@ -2707,17 +3190,7 @@ export class GameRoomServer {
   }
 
   resolveMoveIntent(intent: Extract<ClientIntent, { type: "MOVE_REQUESTED" }>): void {
-    const player = this.state.players.find((entry) => entry.seatId === intent.seatId);
-
-    if (!player) {
-      throw new Error(`Missing player for seat ${intent.seatId}`);
-    }
-
-    const targetSector = this.state.sectors.find((entry) => entry.id === intent.toSectorId);
-
-    if (!targetSector) {
-      throw new Error(`Unknown sector ${intent.toSectorId}`);
-    }
+    const { player, fromSectorId, targetSector } = this.assertLegalMove(intent.seatId, intent.toSectorId);
 
     const escalationModifier = getEscalationModifier(this.state.escalationLevel);
     const roll = rollDice(2, 6, this.randomSource);
@@ -2732,7 +3205,7 @@ export class GameRoomServer {
     this.applyAction({
       type: "MOVEMENT_RESOLVED",
       seatId: intent.seatId,
-      fromSectorId: player.character.currentSpaceId,
+      fromSectorId,
       toSectorId: intent.toSectorId,
       stat: "guile",
       difficulty,
@@ -2749,6 +3222,48 @@ export class GameRoomServer {
       this.applyScenarioOnSectorEntered(intent.seatId, intent.toSectorId);
     }
     this.runAutomaticPhases(intent.seatId);
+  }
+
+  private assertLegalMove(
+    seatId: string,
+    toSectorId: string
+  ): { player: PlayerState; fromSectorId: string; targetSector: GameState["sectors"][number] } {
+    const player = this.state.players.find((entry) => entry.seatId === seatId);
+
+    if (!player) {
+      throw new Error(`Missing player for seat ${seatId}`);
+    }
+
+    const fromSectorId = player.character.currentSpaceId;
+    const currentSector = this.state.sectors.find((entry) => entry.id === fromSectorId);
+    const targetSector = this.state.sectors.find((entry) => entry.id === toSectorId);
+
+    if (!currentSector) {
+      throw new Error(`Unknown current sector ${fromSectorId}`);
+    }
+
+    if (!targetSector) {
+      throw new Error(`Unknown sector ${toSectorId}`);
+    }
+
+    if (!currentSector.neighbors.includes(toSectorId)) {
+      throw new Error(`${targetSector.name} is not adjacent to ${currentSector.name}`);
+    }
+
+    const targetSpace = getBoardSpace(toSectorId);
+    const notes = new Set(player.private.notes);
+
+    for (const requirement of targetSpace?.movementRequirements ?? []) {
+      if (requirement.allowedFrom && !requirement.allowedFrom.includes(fromSectorId)) {
+        throw new Error(requirement.errorMessage);
+      }
+
+      if (requirement.requiredNotes && !requirement.requiredNotes.every((note) => notes.has(note))) {
+        throw new Error(requirement.errorMessage);
+      }
+    }
+
+    return { player, fromSectorId, targetSector };
   }
 
   resolveSpaceTextIntent(intent: Extract<ClientIntent, { type: "RESOLVE_SPACE_TEXT" }>): void {
@@ -3183,6 +3698,7 @@ export class GameRoomServer {
       encounterTitle: encounter.title,
       createdAt: new Date().toISOString()
     } satisfies EnemyRollAssignedAction);
+    this.scheduleEnemyRollTimeout();
   }
 
   resolveEnemyRollIntent(intent: Extract<ClientIntent, { type: "ENEMY_ROLL_REQUESTED" }>): void {
@@ -3222,12 +3738,126 @@ export class GameRoomServer {
     return eligibleSeats[this.randomSource.nextInt(eligibleSeats.length)]?.seatId ?? null;
   }
 
+  private recoverPendingEnemyRollForLeavingSeat(leavingSeatId: string): void {
+    const pending = this.state.pendingEnemyRoll;
+
+    if (!pending || pending.assignedRollerSeatId !== leavingSeatId || this.state.status !== "active") {
+      return;
+    }
+
+    const replacementSeatId = this.chooseEnemyRollerSeatId(pending.fighterSeatId);
+
+    if (replacementSeatId) {
+      this.state = {
+        ...this.state,
+        sequence: this.state.sequence + 1,
+        pendingEnemyRoll: {
+          ...pending,
+          assignedRollerSeatId: replacementSeatId
+        },
+        lastOutcomeSummary: this.state.lastOutcomeSummary
+          ? {
+              ...this.state.lastOutcomeSummary,
+              enemyRollerSeatId: replacementSeatId,
+              summary: `${this.state.lastOutcomeSummary.summary} Enemy roll reassigned from ${this.getSeatLabel(
+                leavingSeatId
+              )} to ${this.getSeatLabel(replacementSeatId)}.`
+            }
+          : this.state.lastOutcomeSummary,
+        eventLog: [
+          ...this.state.eventLog,
+          {
+            type: "ENEMY_ROLL_REASSIGNED",
+            fromSeatId: leavingSeatId,
+            toSeatId: replacementSeatId,
+            createdAt: new Date().toISOString()
+          }
+        ]
+      };
+      this.scheduleEnemyRollTimeout();
+      return;
+    }
+
+    const encounter = this.state.currentEncounter;
+
+    if (!encounter || encounter.cardType !== "enemy" || encounter.id !== pending.encounterCardId) {
+      this.state = {
+        ...this.state,
+        sequence: this.state.sequence + 1,
+        pendingEnemyRoll: null,
+        lastOutcomeSummary: this.state.lastOutcomeSummary
+          ? {
+              ...this.state.lastOutcomeSummary,
+              summary: `${this.state.lastOutcomeSummary.summary} Enemy roll cleared after ${this.getSeatLabel(
+                leavingSeatId
+              )} left.`
+            }
+          : this.state.lastOutcomeSummary
+      };
+      return;
+    }
+
+    this.resolveOpposedCombat(pending.fighterSeatId, pending.stat, encounter, null);
+  }
+
+  private clearEnemyRollTimeout(): void {
+    if (!this.enemyRollTimeout) {
+      return;
+    }
+
+    clearTimeout(this.enemyRollTimeout);
+    this.enemyRollTimeout = null;
+  }
+
+  private scheduleEnemyRollTimeout(): void {
+    this.clearEnemyRollTimeout();
+
+    const pending = this.state.pendingEnemyRoll;
+
+    if (!pending) {
+      return;
+    }
+
+    const expectedEncounterId = pending.encounterCardId;
+    const expectedAssignedRollerSeatId = pending.assignedRollerSeatId;
+
+    this.enemyRollTimeout = setTimeout(() => {
+      const current = this.state.pendingEnemyRoll;
+
+      if (
+        !current ||
+        current.encounterCardId !== expectedEncounterId ||
+        current.assignedRollerSeatId !== expectedAssignedRollerSeatId
+      ) {
+        return;
+      }
+
+      const encounter = this.state.currentEncounter;
+
+      if (!encounter || encounter.cardType !== "enemy" || encounter.id !== current.encounterCardId) {
+        this.state = {
+          ...this.state,
+          sequence: this.state.sequence + 1,
+          pendingEnemyRoll: null
+        };
+        this.broadcastPatch();
+        return;
+      }
+
+      this.resolveOpposedCombat(current.fighterSeatId, current.stat, encounter, null);
+      this.broadcastPatch();
+    }, ENEMY_ROLL_TIMEOUT_MS);
+    this.enemyRollTimeout.unref?.();
+  }
+
   private resolveOpposedCombat(
     fighterSeatId: string,
     stat: CombatRequestedAction["stat"],
     encounter: Extract<ThreatCard, { cardType: "enemy" }>,
     enemyRollerSeatId: string | null
   ): void {
+    this.clearEnemyRollTimeout();
+
     const player = this.state.players.find((entry) => entry.seatId === fighterSeatId);
 
     if (!player) {
@@ -3237,29 +3867,39 @@ export class GameRoomServer {
     const playerRoll = rollDice(2, 6, this.randomSource);
     const enemyRoll = rollDice(2, 6, this.randomSource);
     const escalationModifier = getEscalationModifier(this.state.escalationLevel);
+    const keyedModifiers = this.resolveThreatEffectKeys(fighterSeatId, encounter, encounter.combatEffectKeys, "beforeCombat");
     const statBonus =
       player.character.stats[stat] +
       getEquippedGearBonus(player.character, stat) +
-      this.getScenarioBattleModifier(fighterSeatId);
-    const enemyBonus = encounter.difficulty + escalationModifier;
+      this.getScenarioBattleModifier(fighterSeatId) +
+      (keyedModifiers.playerBonusModifier ?? 0);
+    const enemyBonus = encounter.difficulty + escalationModifier + (keyedModifiers.difficultyModifier ?? 0);
     const scenarioEnemyBonus = this.getScenarioEnemyBattleModifier();
+    const keyedEnemyBonus = keyedModifiers.enemyBonusModifier ?? 0;
     const total = playerRoll.total + statBonus;
-    const enemyTotal = enemyRoll.total + enemyBonus + scenarioEnemyBonus;
+    const enemyTotal = enemyRoll.total + enemyBonus + scenarioEnemyBonus + keyedEnemyBonus;
     const success = total >= enemyTotal;
+    const outcomeEffect = this.resolveThreatOutcomeEffect(
+      fighterSeatId,
+      encounter,
+      success ? encounter.defeatReward : encounter.woundOnLoss,
+      success ? encounter.defeatEffectKey : encounter.failEffectKey,
+      success ? "onDefeat" : "onFailure"
+    );
 
     this.applyAction({
       type: "COMBAT_RESOLVED",
       seatId: fighterSeatId,
       stat,
-      difficulty: encounter.difficulty + escalationModifier,
+      difficulty: encounter.difficulty + escalationModifier + (keyedModifiers.difficultyModifier ?? 0),
       roll: playerRoll,
       enemyRoll,
       statBonus,
-      enemyBonus: enemyBonus + scenarioEnemyBonus,
+      enemyBonus: enemyBonus + scenarioEnemyBonus + keyedEnemyBonus,
       total,
       enemyTotal,
       success,
-      effect: this.resolveEffect(success ? encounter.defeatReward : encounter.woundOnLoss),
+      effect: outcomeEffect,
       cardId: encounter.id,
       enemyRollerSeatId,
       createdAt: new Date().toISOString()
@@ -3276,6 +3916,13 @@ export class GameRoomServer {
       return {
         ...effect,
         gear: this.gear.get(effect.gearId)
+      };
+    }
+
+    if (effect.type === "gain_follower") {
+      return {
+        ...effect,
+        follower: this.followers.get(effect.followerId)
       };
     }
 
@@ -3431,6 +4078,7 @@ export class GameRoomServer {
     }
 
     this.setSeatConnected(seatId, false);
+    this.recoverPendingEnemyRollForLeavingSeat(seatId);
     this.broadcastPatch();
   }
 
@@ -3561,6 +4209,7 @@ export function createTvProjection(state: GameState): Record<string, unknown> {
   return {
     status: state.status,
     sessionMode: state.sessionMode,
+    interactionMode: state.interactionMode ?? (state.sessionMode === "single-player" ? "co-op" : "rivalry"),
     winnerSeatId: state.winnerSeatId,
     activeScenario: activeScenario
       ? {
@@ -3603,6 +4252,7 @@ export function createTvProjection(state: GameState): Record<string, unknown> {
         wounds: player.character.wounds,
         scars: player.character.scars,
         heldGearCount: player.character.heldGear.length,
+        followerCount: player.character.followers?.length ?? 0,
         equippedGear: player.character.equippedGear
       },
       sectorId: player.character.currentSpaceId
@@ -3639,6 +4289,7 @@ export function createPhoneProjection(state: GameState, seatId: string, forcePri
     phase: state.phase,
     status: state.status,
     sessionMode: state.sessionMode,
+    interactionMode: state.interactionMode ?? (state.sessionMode === "single-player" ? "co-op" : "rivalry"),
     winnerSeatId: state.winnerSeatId,
     activeScenario: publicProjection.activeScenario,
     scenarioTelemetry: publicProjection.scenarioTelemetry,
@@ -3664,9 +4315,37 @@ export function createPhoneProjection(state: GameState, seatId: string, forcePri
 function sanitizePlayerForPhone(player: PlayerState): Record<string, unknown> {
   return {
     seatId: player.seatId,
-    character: player.character,
+    character: {
+      ...player.character,
+      scarCards: summarizeScars(player.character.scars)
+    },
     sectorId: player.character.currentSpaceId,
     hand: player.private.hand,
     notes: player.private.notes
   };
+}
+
+function summarizeScars(scarIds: string[]): Array<Pick<ScarCard, "id" | "title" | "text" | "trigger" | "penalty" | "relief" | "upside">> {
+  return scarIds.map((scarId) => {
+    const scar = SCAR_CARDS.get(scarId);
+
+    return scar
+      ? {
+          id: scar.id,
+          title: scar.title,
+          text: scar.text,
+          trigger: scar.trigger,
+          penalty: scar.penalty,
+          relief: scar.relief,
+          upside: scar.upside
+        }
+      : {
+          id: scarId,
+          title: scarId,
+          text: "Unknown scar record.",
+          trigger: "When this scar is referenced.",
+          penalty: "Ask the table to resolve the recorded scar effect.",
+          relief: "Confirm the scar catalog contains this id."
+        };
+  });
 }

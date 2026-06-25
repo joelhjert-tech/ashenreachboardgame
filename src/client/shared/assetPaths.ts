@@ -1,3 +1,8 @@
+import {
+  CARD_IMAGE_FALLBACK_PATHS,
+  type CardImageType
+} from "../../game/assets/design/cardImageCatalog.js";
+import { generatedCardImagePrompts } from "../../game/assets/design/generatedCardImagePrompts.js";
 import type { ContractCard, EncounterCard, PrivateCharacter, PublicPlayerCharacter, Stat } from "./types.js";
 
 const characterPortraitById: Record<string, string> = {
@@ -7,6 +12,8 @@ const characterPortraitById: Record<string, string> = {
   "char_ser_juno_vale": "/assets/riftfall/characters/char_ser_juno_vale.png",
   "char_mother_elira_vane": "/assets/riftfall/characters/char_mother_elira_vane.png",
   "char_talen_korr": "/assets/riftfall/characters/char_talen_korr.png",
+  "char_ker_von_ker": "/assets/riftfall/characters/char_ker_von_ker.png",
+  "char_kira_dog": "/assets/riftfall/characters/char_kira_dog.png",
   "void-marshal": "/assets/riftfall/characters/char_void_marshal_kael_dorn.png",
   "signal-witch": "/assets/riftfall/characters/char_oran_voss.png",
   "grave-engineer": "/assets/riftfall/characters/char_talen_korr.png",
@@ -19,20 +26,13 @@ const characterPortraitById: Record<string, string> = {
   "fleet-elder": "/assets/riftfall/characters/char_void_marshal_kael_dorn.png"
 };
 
-const contractArtById: Record<string, string> = {
-  "choir-hush-census": "/assets/riftfall/cards/missions/mission_choir_quietus.png",
-  "compact-cleanse-ledger": "/assets/riftfall/cards/missions/mission_restart_void_relay.png",
-  "umbral-bloom-reaping-right": "/assets/riftfall/cards/missions/mission_hunt_riftspawn.png"
-};
-
-const encounterArtById: Record<string, string> = {
-  "cinder-veil-stalker": "/assets/riftfall/cards/threat-red/red_enemy_red_maw_raiders.png",
-  "glass-chime-swarm": "/assets/riftfall/cards/threat-blue/blue_event_rift_whispers.png",
-  "grave-silt-press": "/assets/riftfall/cards/threat-red/red_encounter_shattered_barricade.png",
-  "latchspire-raider": "/assets/riftfall/cards/threat-yellow/yellow_enemy_shiv_market_crew.png",
-  "relay-husk": "/assets/riftfall/cards/threat-yellow/yellow_event_route_splice.png",
-  "slag-drone": "/assets/riftfall/cards/threat-yellow/yellow_enemy_null_drone.png",
-  "smoke-leech-clutch": "/assets/riftfall/cards/threat-red/red_enemy_cinder_hounds.png"
+const nemesisPortraitById: Record<string, string> = {
+  nemesis_fary_lord: "/assets/riftfall/nemeses/nemesis_fary_lord.png",
+  nemesis_glass_prophet: "/assets/riftfall/nemeses/nemesis_glass_prophet.png",
+  nemesis_hollow_regent: "/assets/riftfall/nemeses/nemesis_hollow_regent.png",
+  nemesis_iron_saint_malrec: "/assets/riftfall/nemeses/nemesis_iron_saint_malrec.png",
+  nemesis_kharvox_red_maw: "/assets/riftfall/nemeses/nemesis_kharvox_red_maw.png",
+  nemesis_specimen_null_x: "/assets/riftfall/nemeses/nemesis_specimen_null_x.png"
 };
 
 const statFrameByStat: Record<Stat, string> = {
@@ -42,6 +42,21 @@ const statFrameByStat: Record<Stat, string> = {
   guile: "/assets/riftfall/ui/ui_card_frame_yellow.png",
   forge: "/assets/riftfall/ui/ui_card_frame_yellow.png"
 };
+
+const cardArtByType = generatedCardImagePrompts.reduce<Record<CardImageType, Record<string, string>>>(
+  (summary, prompt) => {
+    summary[prompt.cardType][prompt.cardId] = prompt.outputPath;
+    return summary;
+  },
+  {
+    threat: {},
+    contract: {},
+    anomaly: {},
+    artifact: {},
+    scar: {},
+    escalation: {}
+  }
+);
 
 export function getPhoneBackgroundPath(): string {
   return "/assets/riftfall/ui/ui_phone_controller_background.png";
@@ -63,12 +78,24 @@ export function getCharacterPortraitPath(characterId: string): string {
   return characterPortraitById[characterId] ?? "/assets/riftfall/characters/char_void_marshal_kael_dorn.png";
 }
 
+export function getCardFallbackArtPath(cardType: CardImageType): string {
+  return CARD_IMAGE_FALLBACK_PATHS[cardType];
+}
+
+export function getCardArtPath(cardType: CardImageType, cardId: string): string {
+  return cardArtByType[cardType][cardId] ?? getCardFallbackArtPath(cardType);
+}
+
 export function getContractArtPath(contractId: string): string {
-  return contractArtById[contractId] ?? "/assets/riftfall/cards/missions/mission_restart_void_relay.png";
+  return getCardArtPath("contract", contractId);
 }
 
 export function getEncounterArtPath(encounterId: string): string {
-  return encounterArtById[encounterId] ?? "/assets/riftfall/cards/threat-red/red_event_trench_blast.png";
+  return getCardArtPath("threat", encounterId);
+}
+
+export function getNemesisPortraitPath(nemesisId: string): string {
+  return nemesisPortraitById[nemesisId] ?? "/assets/riftfall/nemeses/nemesis_hollow_regent.png";
 }
 
 export function getEncounterFramePath(stat: Stat): string {

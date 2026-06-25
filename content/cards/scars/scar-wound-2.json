@@ -4,5 +4,12 @@
   "title": "Static Burn",
   "text": "A neural scar from signal lash and broken ward feedback.",
   "flavor": "Old route prayers come back as noise when you try to sleep.",
-  "penalty": "The first anomaly you face each session gains +1 instability."
+  "trigger": "The first anomaly or signal check you face each session.",
+  "penalty": "Gain 1 Heat as the scar starts broadcasting through you.",
+  "effect": {
+    "type": "gain_heat",
+    "amount": 1
+  },
+  "relief": "Spend a charged artifact charge before the check to ignore this scar for that encounter.",
+  "upside": "If the check succeeds anyway, gain 1 trophy from the clean reading."
 }

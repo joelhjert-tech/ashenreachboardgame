@@ -1,0 +1,14 @@
+{
+  "id": "artifact-choir-static-censer",
+  "type": "artifact",
+  "artifactKind": "chargedRelic",
+  "title": "Choir Static Censer",
+  "text": "A censored shrine tool with two stable burns left in its wired brass lung.",
+  "flavor": "It hums answers just before the question becomes dangerous.",
+  "charge": 2,
+  "resolutionSummary": "Recovered the Choir Static Censer and bound its remaining charges.",
+  "resolveEffect": {
+    "type": "gain_gear",
+    "gearId": "choir-static-censer"
+  }
+}

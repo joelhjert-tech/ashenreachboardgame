@@ -1,0 +1,25 @@
+{
+  "id": "artifact-marrow-route-key",
+  "type": "artifact",
+  "title": "Marrow Route Key",
+  "text": "A bone-white key cut for a door that only exists after a failed movement check.",
+  "flavor": "The key does not open locks. It forgives wrong turns.",
+  "artifactKind": "gateRelic",
+  "charge": 1,
+  "resolutionSummary": "Claimed the Marrow Route Key and marked it as leverage for the final gate.",
+  "resolveEffect": {
+    "type": "sequence",
+    "effects": [
+      {
+        "type": "gain_note",
+        "text": "Marrow Route Key: helpful for gate bargaining and failed-route recovery."
+      },
+      {
+        "type": "advance_scenario",
+        "progressKey": "gateRelicsHeld",
+        "amount": 1,
+        "summary": "A gate artifact was secured."
+      }
+    ]
+  }
+}

@@ -14,6 +14,7 @@ import {
 } from "../shared/scenarioBoardVisuals.js";
 import { BoardStage } from "./BoardStage.js";
 import { pointerToBoardCoordinate, type BoardRect } from "./boardGeometry.js";
+import { TalismanBoardSurface } from "./TalismanBoardSurface.js";
 
 interface BoardMapProps {
   patch: PublicPatchPayload;
@@ -228,19 +229,20 @@ export function BoardMap({ patch, phase, showHeader = true, showSidebar = true }
         <BoardStage
           imageAlt="Tactical campaign board"
           imageSrc={boardAssetPath}
-          onPointerDown={(event, imageRect) => {
-            if (!boardDebugEnabled) {
-              return;
-            }
+          imageMode="geometry-only"
+          onPointerDown={
+            boardDebugEnabled
+              ? (event, imageRect) => {
+                  const coordinate = pointerToBoardCoordinate(event.nativeEvent.offsetX, event.nativeEvent.offsetY, imageRect);
 
-            const coordinate = pointerToBoardCoordinate(event.nativeEvent.offsetX, event.nativeEvent.offsetY, imageRect);
+                  if (!coordinate) {
+                    return;
+                  }
 
-            if (!coordinate) {
-              return;
-            }
-
-            setCalibrationPoint(coordinate);
-          }}
+                  setCalibrationPoint(coordinate);
+                }
+              : undefined
+          }
         >
           {({ imageRect }) => {
             const tokens = buildBoardTokens(patch, imageRect);
@@ -248,6 +250,13 @@ export function BoardMap({ patch, phase, showHeader = true, showSidebar = true }
 
             return (
               <>
+                <TalismanBoardSurface
+                  imageRect={imageRect}
+                  activeNodeId={activeSectorId}
+                  selectedNodeId={selectedNodeId}
+                  legalTargetIds={legalTargetIds}
+                  debugEnabled={boardDebugEnabled}
+                />
                 <svg className="board-route-overlay" aria-hidden="true">
                   {scenarioRoutes.map((effect) => {
                     const from = RIFTFALL_BOARD_NODE_INDEX.get(effect.fromNodeId);
@@ -298,8 +307,19 @@ export function BoardMap({ patch, phase, showHeader = true, showSidebar = true }
                   const isSelected = selectedNodeId === node.id;
                   const isActive = activeSectorId === node.id;
                   const isLegalTarget = legalTargetIds.has(node.id);
+                  const isGated = Boolean(boardSpace?.movementRequirements?.length);
                   const left = imageRect.left + node.x * imageRect.width;
                   const top = imageRect.top + node.y * imageRect.height;
+                  const boardSpaceLabel = [
+                    node.label,
+                    `${node.ring} space`,
+                    isActive ? "current location" : null,
+                    isLegalTarget ? "legal move" : null,
+                    isSelected ? "selected" : null,
+                    isGated ? "gated entry" : null
+                  ]
+                    .filter(Boolean)
+                    .join(", ");
 
                   return (
                     <button
@@ -323,11 +343,18 @@ export function BoardMap({ patch, phase, showHeader = true, showSidebar = true }
                         width: `${markerSize}px`,
                         height: `${markerSize}px`
                       }}
+                      aria-label={boardSpaceLabel}
+                      aria-current={isActive ? "location" : undefined}
+                      aria-pressed={isSelected}
                       onClick={() => setSelectedNodeId(node.id)}
                     >
                       <span className="board-node-core" />
-                      <span className="board-node-label">{node.label}</span>
-                      <span className="board-node-threat">{boardSpace?.threatIcons.length ?? liveSector?.danger ?? 0}</span>
+                      <span className="board-node-label" aria-hidden="true">
+                        {node.label}
+                      </span>
+                      <span className="board-node-threat" aria-hidden="true">
+                        {boardSpace?.threatIcons.length ?? liveSector?.danger ?? 0}
+                      </span>
                       {occupantCount > 0 && <span className="board-node-occupants">{occupantCount}</span>}
                     </button>
                   );
@@ -403,6 +430,7 @@ export function BoardMap({ patch, phase, showHeader = true, showSidebar = true }
                 {boardDebugEnabled && calibrationPoint && (
                   <div
                     className="board-debug-point"
+                    aria-hidden="true"
                     style={{
                       left: `${imageRect.left + calibrationPoint.x * imageRect.width}px`,
                       top: `${imageRect.top + calibrationPoint.y * imageRect.height}px`

@@ -4,5 +4,12 @@
   "title": "Broken Harness",
   "text": "Your body learned the wrong way to absorb a crushing hit.",
   "flavor": "Every brace and buckle now fits around remembered pain.",
-  "penalty": "The first wound you take from an enemy each session also adds 1 Heat."
+  "trigger": "The first wound you take from an enemy each session.",
+  "penalty": "Gain 1 Heat as the harness locks and vents wrong.",
+  "effect": {
+    "type": "gain_heat",
+    "amount": 1
+  },
+  "relief": "Break or discard armor to cancel this scar's effect for the wound that triggered it.",
+  "upside": "If the enemy is defeated later in the same turn, gain 1 trophy."
 }

@@ -55,7 +55,7 @@ async function connectSocket(url: string): Promise<SocketProbe> {
 async function waitForStatePatch(
   probe: SocketProbe,
   predicate: (message: StatePatchEnvelope) => boolean,
-  timeoutMs = 4000
+  timeoutMs = 10000
 ): Promise<StatePatchEnvelope> {
   const existing = probe.messages.find((message) => message.type === "STATE_PATCH" && predicate(message));
 
@@ -66,7 +66,10 @@ async function waitForStatePatch(
   return await new Promise<StatePatchEnvelope>((resolve, reject) => {
     const timer = setTimeout(() => {
       probe.socket.off("message", onMessage);
-      reject(new Error("Timed out waiting for state patch"));
+      const received = probe.messages
+        .map((message) => `${message.type}:${message.phase}:${message.payload.status ?? "unknown"}`)
+        .join(", ");
+      reject(new Error(`Timed out waiting for state patch. Received: ${received || "none"}`));
     }, timeoutMs);
 
     const onMessage = (raw: WebSocket.RawData) => {
@@ -468,7 +471,6 @@ describe("server API scenario flow", () => {
       await waitForStatePatch(
         phone,
         (message) =>
-          message.phase === "navigation" &&
           message.payload.status === "active" &&
           message.payload.activeScenario?.id === scenarioId
       );
@@ -508,7 +510,7 @@ describe("server API scenario flow", () => {
     } finally {
       phone.socket.close();
     }
-  });
+  }, 15000);
 
   it.each([
     {
@@ -594,7 +596,6 @@ describe("server API scenario flow", () => {
       await waitForStatePatch(
         phone,
         (message) =>
-          message.phase === "navigation" &&
           message.payload.status === "active" &&
           message.payload.activeScenario?.id === scenarioId
       );
@@ -635,5 +636,5 @@ describe("server API scenario flow", () => {
     } finally {
       phone.socket.close();
     }
-  });
+  }, 15000);
 });

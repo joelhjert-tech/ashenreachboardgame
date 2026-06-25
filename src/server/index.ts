@@ -7,7 +7,7 @@ import { findAvailablePort, createPortAvailabilityCheck } from "./ports.js";
 import { GameRoomServer } from "./roomServer.js";
 import { createInitialSessionState } from "./sessionState.js";
 import { createHostToken } from "./auth.js";
-import type { SessionMode } from "../game/schema/session.schema.js";
+import type { InteractionMode, SessionMode } from "../game/schema/session.schema.js";
 import { SCENARIOS, getScenarioDefinition } from "../game/data/scenarios.js";
 import { nemeses } from "../game/data/nemeses.js";
 
@@ -105,6 +105,9 @@ function createHttpServer(): HttpServer {
         sendJson(response, 200, {
           roomCode: roomServer.getState().sessionId,
           sessionMode: roomServer.getState().sessionMode,
+          interactionMode:
+            roomServer.getState().interactionMode ??
+            (roomServer.getState().sessionMode === "single-player" ? "co-op" : "rivalry"),
           status: roomServer.getState().status,
           phase: roomServer.getState().phase,
           seats: roomServer.getState().seats
@@ -152,16 +155,30 @@ function createHttpServer(): HttpServer {
       }
 
       if (request.method === "POST" && url.pathname === "/api/session/create") {
-        const body = (await readJsonBody(request)) as { sessionMode?: SessionMode; scenarioId?: string };
+        const body = (await readJsonBody(request)) as {
+          sessionMode?: SessionMode;
+          scenarioId?: string;
+          interactionMode?: InteractionMode;
+        };
         const sessionMode = body.sessionMode === "single-player" ? "single-player" : "multiplayer";
+        const requestedInteractionMode = body.interactionMode;
+        const interactionMode =
+          requestedInteractionMode === "co-op" ||
+          requestedInteractionMode === "rivalry" ||
+          requestedInteractionMode === "ruthless"
+            ? requestedInteractionMode
+            : sessionMode === "single-player"
+              ? "co-op"
+              : "rivalry";
         const scenarioId = body.scenarioId && getScenarioDefinition(body.scenarioId) ? body.scenarioId : SCENARIOS[0]!.id;
         roomCode = createRoomCode();
         hostToken = createRoomCode();
-        roomServer.resetSession(createInitialSessionState(roomCode, sessionMode, scenarioId));
+        roomServer.resetSession(createInitialSessionState(roomCode, sessionMode, scenarioId, interactionMode));
         roomServer.setHostToken(createHostToken({ sessionId: roomCode, secret: hostToken }));
         sendJson(response, 200, {
           roomCode,
           sessionMode,
+          interactionMode,
           scenarioId,
           hostToken: createHostToken({ sessionId: roomCode, secret: hostToken })
         });

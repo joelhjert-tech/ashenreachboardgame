@@ -1,0 +1,13 @@
+{
+  "id": "crownless-advocate",
+  "name": "Crownless Advocate",
+  "role": "informant",
+  "text": "Once per round, soften a faction demand or cancel one Heat gained from a rivalry bargain.",
+  "activeEffect": {
+    "type": "lose_heat",
+    "amount": 1
+  },
+  "useLimit": "oncePerRound",
+  "loyalty": 3,
+  "lossCondition": "choice"
+}

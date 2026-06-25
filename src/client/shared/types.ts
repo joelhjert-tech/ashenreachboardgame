@@ -1,8 +1,17 @@
 export type Stat = "command" | "grit" | "signal" | "guile" | "forge";
 export type GearSlot = "weapon" | "armor" | "utility";
+export type GearCategory =
+  | "passive"
+  | "active"
+  | "consumable"
+  | "chargedRelic"
+  | "dangerous"
+  | "contractObject"
+  | "followerLinked";
 export type Phase = "start" | "navigation" | "sector" | "action" | "resolution" | "broadcast";
 export type SessionStatus = "lobby" | "active" | "ended";
 export type SessionMode = "multiplayer" | "single-player";
+export type InteractionMode = "co-op" | "rivalry" | "ruthless";
 
 export interface PublicSeat {
   seatId: string;
@@ -24,6 +33,7 @@ export interface PublicPlayerCharacter {
   wounds: number;
   scars: string[];
   heldGearCount: number;
+  followerCount?: number;
   equippedGear: Record<GearSlot, string | null>;
 }
 
@@ -38,6 +48,34 @@ export interface GearItem {
   name: string;
   slot: GearSlot;
   statBonus: { stat: Stat; amount: number };
+  category?: GearCategory;
+  activeText?: string;
+  useLimit?: "oncePerTurn" | "oncePerRound" | "discard" | "charge";
+  charges?: number;
+  heatCost?: number;
+  linkedFollowerRole?: FollowerRole;
+}
+
+export type FollowerRole = "scout" | "medic" | "gunner" | "ritualist" | "porter" | "guide" | "informant";
+
+export interface Follower {
+  id: string;
+  name: string;
+  role: FollowerRole;
+  text: string;
+  useLimit?: "oncePerTurn" | "oncePerRound" | "discard";
+  loyalty?: number;
+  lossCondition?: "wound" | "heat" | "combatLoss" | "choice";
+}
+
+export interface ScarSummary {
+  id: string;
+  title: string;
+  text: string;
+  trigger: string;
+  penalty: string;
+  relief: string;
+  upside?: string;
 }
 
 export interface PrivateCharacter {
@@ -54,6 +92,8 @@ export interface PrivateCharacter {
   activeContract: { contractId: string; progress: number } | null;
   heldGear: GearItem[];
   equippedGear: Record<GearSlot, string | null>;
+  followers?: Follower[];
+  scarCards?: ScarSummary[];
   abilities: Array<{ id: string; name: string; text: string }>;
 }
 
@@ -195,6 +235,7 @@ export interface ScenarioTelemetryItem {
 export interface PublicPatchPayload {
   status: SessionStatus;
   sessionMode: SessionMode;
+  interactionMode?: InteractionMode;
   winnerSeatId: string | null;
   activeScenario: ActiveScenarioSummary | null;
   scenarioTelemetry: ScenarioTelemetryItem[];
@@ -302,6 +343,22 @@ export type ClientIntent =
       type: "UNEQUIP_GEAR";
       seatId: string;
       slot: GearSlot;
+    }
+  | {
+      type: "USE_GEAR";
+      seatId: string;
+      gearId: string;
+    }
+  | {
+      type: "USE_FOLLOWER";
+      seatId: string;
+      followerId: string;
+    }
+  | {
+      type: "TABLE_INTERACTION";
+      seatId: string;
+      targetSeatId: string;
+      interactionKind: "trade" | "aid" | "duel" | "interfere";
     }
   | {
       type: "ACCEPT_CONTRACT";

@@ -1,0 +1,13 @@
+{
+  "id": "ashen-route-compass",
+  "name": "Ashen Route Compass",
+  "slot": "utility",
+  "category": "active",
+  "statBonus": {
+    "stat": "signal",
+    "amount": 1
+  },
+  "activeText": "Exhaust to reroll a failed movement or anomaly check.",
+  "useLimit": "oncePerRound",
+  "flavor": "The needle points toward the route that hurts least."
+}

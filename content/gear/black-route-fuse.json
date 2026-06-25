@@ -1,0 +1,14 @@
+{
+  "id": "black-route-fuse",
+  "name": "Black Route Fuse",
+  "slot": "weapon",
+  "category": "dangerous",
+  "statBonus": {
+    "stat": "grit",
+    "amount": 1
+  },
+  "activeText": "Break for +3 combat pressure, then advance escalation by 1.",
+  "useLimit": "discard",
+  "heatCost": 1,
+  "flavor": "A length of dead-route cord that burns toward the nearest argument."
+}

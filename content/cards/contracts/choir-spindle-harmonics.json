@@ -1,0 +1,16 @@
+{
+  "id": "choir-spindle-harmonics",
+  "name": "Spindle Harmonics",
+  "factionGiver": "Glass Choir",
+  "text": "Tune two relay anomalies into something the Choir can archive without screaming.",
+  "objective": {
+    "type": "spaceTextResolved",
+    "effectKey": "outer_glassmereChorus",
+    "label": "Glassmere chorus tuned",
+    "target": 1
+  },
+  "reward": {
+    "type": "gain_gear",
+    "gearId": "choir-static-censer"
+  }
+}

@@ -51,7 +51,7 @@ function getLocalOpportunityCopy(patch: PhonePatchPayload | null, sectorId: stri
     sector.encounterDecks.escalation.length ? `${sector.encounterDecks.escalation.length} stabilization window${sector.encounterDecks.escalation.length === 1 ? "" : "s"}` : null
   ].filter((entry): entry is string => Boolean(entry));
 
-  return parts.length > 0 ? `Local opportunities | ${parts.join(" | ")}` : null;
+  return parts.length > 0 ? `Local opportunities: ${parts.join(", ")}` : null;
 }
 
 export function LandscapeCharacterCardView({

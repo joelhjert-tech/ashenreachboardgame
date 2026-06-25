@@ -1,0 +1,13 @@
+{
+  "id": "burnt-road-quartermaster",
+  "name": "Burnt-Road Quartermaster",
+  "role": "porter",
+  "text": "Discard to prevent one consumable or contract object from being lost, or to log a salvage route note.",
+  "activeEffect": {
+    "type": "gain_note",
+    "text": "Quartermaster cache marked: one object loss can be argued down."
+  },
+  "useLimit": "discard",
+  "loyalty": 2,
+  "lossCondition": "choice"
+}

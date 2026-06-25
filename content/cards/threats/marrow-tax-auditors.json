@@ -1,0 +1,20 @@
+{
+  "id": "marrow-tax-auditors",
+  "type": "threat",
+  "cardType": "hazard",
+  "title": "Marrow-Tax Auditors",
+  "text": "Ink-faced auditors unfold from a dead checkpoint and calculate what your bones owe the road.",
+  "flavor": "Their abacus clicks with knuckles.",
+  "severity": 3,
+  "stat": "guile",
+  "difficulty": 7,
+  "successEffect": {
+    "type": "gain_note",
+    "text": "You found a loophole in a dead empire tariff."
+  },
+  "failEffect": {
+    "type": "gain_heat",
+    "amount": 2
+  },
+  "enemyFamily": "bureaucracy"
+}

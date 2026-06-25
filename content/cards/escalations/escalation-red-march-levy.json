@@ -1,0 +1,14 @@
+{
+  "id": "escalation-red-march-levy",
+  "type": "escalation",
+  "title": "Red March Levy",
+  "text": "The March calls in every unpaid favor and turns the roads into a checkpoint chain.",
+  "flavor": "War taxes are simplest when the tax collector carries artillery.",
+  "step": 2,
+  "resolutionSummary": "Paid the levy in hard salvage and won a temporary pass through the checkpoint chain.",
+  "resolveEffect": {
+    "type": "gain_note",
+    "text": "Red March levy pass: checkpoint crews will honor it once."
+  },
+  "escalationDelta": -1
+}

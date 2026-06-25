@@ -4,10 +4,12 @@ import { createSequenceRandomSource } from "../dice.js";
 import { GameRoomServer, createPhoneProjection, createTvProjection, type ConnectedClient } from "../../../server/roomServer.js";
 import type { Character } from "../../schema/character.schema.js";
 import type { ContractCard } from "../../schema/contract.schema.js";
+import type { Follower } from "../../schema/follower.schema.js";
 import type { GearItem } from "../../schema/gear.schema.js";
 import type { AnomalyCard, ArtifactCard, EscalationCard, ThreatCard } from "../../schema/card.schema.js";
 import type { ClientIntent, GameAction } from "../actions.js";
 import type { GameState } from "../../schema/session.schema.js";
+import { reduceGameState } from "../reducer.js";
 
 function createGear(): Map<string, GearItem> {
   return new Map<string, GearItem>([
@@ -689,6 +691,420 @@ function withOnlyConnectedSeat(state: GameState, connectedSeatId: string): GameS
   };
 }
 
+describe("active objects and table interaction", () => {
+  it("uses and discards a consumable gear object from the phone", () => {
+    const state = createState({
+      players: createState().players.map((player) =>
+        player.seatId === "seat-1"
+          ? {
+              ...player,
+              character: {
+                ...player.character,
+                wounds: 1,
+                heat: 0,
+                heldGear: [
+                  {
+                    id: "cinder-suture-kit",
+                    name: "Cinder Suture Kit",
+                    slot: "utility",
+                    category: "consumable",
+                    statBonus: { stat: "forge", amount: 1 },
+                    activeText: "Discard to heal 1 wound, then gain 1 heat.",
+                    useLimit: "discard"
+                  }
+                ],
+                equippedGear: { weapon: null, armor: null, utility: null }
+              }
+            }
+          : player
+      )
+    });
+    const server = new GameRoomServer(state, [], createSequenceRandomSource([0]), createThreats(), createCharacters(), createGear(), createContracts());
+
+    runIntent(server, {
+      type: "USE_GEAR",
+      seatId: "seat-1",
+      gearId: "cinder-suture-kit"
+    });
+
+    const player = server.getState().players.find((entry) => entry.seatId === "seat-1");
+    expect(player?.character.wounds).toBe(0);
+    expect(player?.character.heat).toBe(1);
+    expect(player?.character.heldGear).toHaveLength(0);
+    expect(server.getState().lastOutcomeSummary?.summary).toContain("Cinder Suture Kit used");
+  });
+
+  it("rejects using once-per-turn gear twice before turn completion", () => {
+    const sent: Array<Record<string, unknown>> = [];
+    const state = createState({
+      players: createState().players.map((player) =>
+        player.seatId === "seat-1"
+          ? {
+              ...player,
+              character: {
+                ...player.character,
+                heat: 0,
+                heldGear: [
+                  {
+                    id: "red-march-warbell",
+                    name: "Red March Warbell",
+                    slot: "utility",
+                    category: "active",
+                    statBonus: { stat: "command", amount: 1 },
+                    activeText: "Gain 1 heat to bank combat pressure.",
+                    useLimit: "oncePerTurn"
+                  }
+                ],
+                equippedGear: { weapon: null, armor: null, utility: null }
+              }
+            }
+          : player
+      )
+    });
+    const server = new GameRoomServer(state, [], createSequenceRandomSource([0]), createThreats(), createCharacters(), createGear(), createContracts());
+    const client = createCapturingClient("seat-1", sent);
+
+    server.handleIntent(client, {
+      type: "USE_GEAR",
+      seatId: "seat-1",
+      gearId: "red-march-warbell"
+    });
+    server.handleIntent(client, {
+      type: "USE_GEAR",
+      seatId: "seat-1",
+      gearId: "red-march-warbell"
+    });
+
+    const player = server.getState().players.find((entry) => entry.seatId === "seat-1");
+    expect(player?.character.heat).toBe(1);
+    expect(sent.some((message) => message.type === "INTENT_REJECTED" && String(message.reason).includes("already been used this turn"))).toBe(true);
+  });
+
+  it("decrements gear charges and rejects use at zero charges", () => {
+    const sent: Array<Record<string, unknown>> = [];
+    const state = createState({
+      players: createState().players.map((player) =>
+        player.seatId === "seat-1"
+          ? {
+              ...player,
+              character: {
+                ...player.character,
+                heat: 2,
+                heldGear: [
+                  {
+                    id: "choir-static-censer",
+                    name: "Choir Static Censer",
+                    slot: "utility",
+                    category: "chargedRelic",
+                    statBonus: { stat: "signal", amount: 1 },
+                    activeText: "Spend 1 charge to lose 1 heat.",
+                    useLimit: "charge",
+                    charges: 1
+                  }
+                ],
+                equippedGear: { weapon: null, armor: null, utility: null }
+              }
+            }
+          : player
+      )
+    });
+    const server = new GameRoomServer(state, [], createSequenceRandomSource([0]), createThreats(), createCharacters(), createGear(), createContracts());
+    const client = createCapturingClient("seat-1", sent);
+
+    server.handleIntent(client, {
+      type: "USE_GEAR",
+      seatId: "seat-1",
+      gearId: "choir-static-censer"
+    });
+    server.handleIntent(client, {
+      type: "USE_GEAR",
+      seatId: "seat-1",
+      gearId: "choir-static-censer"
+    });
+
+    const player = server.getState().players.find((entry) => entry.seatId === "seat-1");
+    const censer = player?.character.heldGear.find((item) => item.id === "choir-static-censer");
+    expect(player?.character.heat).toBe(1);
+    expect(censer?.charges).toBe(0);
+    expect(sent.some((message) => message.type === "INTENT_REJECTED" && String(message.reason).includes("no charges"))).toBe(true);
+  });
+
+  it("uses a follower active effect from the phone", () => {
+    const follower: Follower = {
+      id: "crownless-advocate",
+      name: "Crownless Advocate",
+      role: "informant",
+      text: "Soften a faction demand.",
+      activeEffect: { type: "lose_heat", amount: 1 },
+      useLimit: "oncePerRound",
+      loyalty: 3,
+      lossCondition: "choice"
+    };
+    const state = createState({
+      players: createState().players.map((player) =>
+        player.seatId === "seat-1"
+          ? {
+              ...player,
+              character: {
+                ...player.character,
+                heat: 2,
+                followers: [follower]
+              }
+            }
+          : player
+      )
+    });
+    const server = new GameRoomServer(state, [], createSequenceRandomSource([0]), createThreats(), createCharacters(), createGear(), createContracts());
+
+    runIntent(server, {
+      type: "USE_FOLLOWER",
+      seatId: "seat-1",
+      followerId: "crownless-advocate"
+    });
+
+    const player = server.getState().players.find((entry) => entry.seatId === "seat-1");
+    expect(player?.character.heat).toBe(1);
+    expect(player?.character.followers).toHaveLength(1);
+    expect(server.getState().lastOutcomeSummary?.summary).toContain("Crownless Advocate used");
+  });
+
+  it("rejects repeated harmful rivalry pressure against the same target in one round", () => {
+    const sent: Array<Record<string, unknown>> = [];
+    const state = createState({
+      interactionMode: "rivalry",
+      eventLog: [
+        {
+          type: "TABLE_INTERACTION",
+          seatId: "seat-3",
+          targetSeatId: "seat-2",
+          interactionKind: "duel",
+          effect: null,
+          targetEffect: { type: "gain_heat", amount: 1 },
+          summary: "Prior bounded duel.",
+          createdAt: new Date().toISOString()
+        }
+      ]
+    });
+    const server = new GameRoomServer(state, [], createSequenceRandomSource([0]), createThreats(), createCharacters(), createGear(), createContracts());
+
+    server.handleIntent(createCapturingClient("seat-1", sent), {
+      type: "TABLE_INTERACTION",
+      seatId: "seat-1",
+      targetSeatId: "seat-2",
+      interactionKind: "interfere"
+    });
+
+    expect(server.getState().players.find((entry) => entry.seatId === "seat-2")?.character.heat).toBe(0);
+    expect(sent.some((message) => message.type === "INTENT_REJECTED")).toBe(true);
+  });
+});
+
+describe("threat effect keys", () => {
+  it("applies a reveal effect key when a threat is drawn", () => {
+    const threats = createThreats();
+    threats.set("keyed-rats", {
+      id: "keyed-rats",
+      type: "threat",
+      cardType: "hazard",
+      title: "Keyed Rats",
+      text: "A keyed reveal test threat.",
+      flavor: "The rats know the route.",
+      severity: 1,
+      effectKey: "threat_heat_on_reveal",
+      stat: "grit",
+      difficulty: 4,
+      successEffect: { type: "gain_note", text: "Safe." },
+      failEffect: { type: "gain_heat", amount: 1 }
+    });
+    const state = createState({
+      phase: "sector",
+      sectors: createState().sectors.map((sector) =>
+        sector.id === "sector-a"
+          ? {
+              ...sector,
+              encounterDecks: { ...sector.encounterDecks, threat: ["keyed-rats"] }
+            }
+          : sector
+      ),
+      lastOutcomeSummary: {
+        seatId: "seat-1",
+        movedToSectorId: "sector-a",
+        encounterCardId: null,
+        encounterTitle: null,
+        encounterCardType: null,
+        checkStat: null,
+        die1: null,
+        die2: null,
+        statBonus: null,
+        checkTotal: null,
+        difficulty: null,
+        enemyRollerSeatId: null,
+        enemyDie1: null,
+        enemyDie2: null,
+        enemyBonus: null,
+        enemyTotal: null,
+        success: null,
+        summary: "Moved into sector-a."
+      }
+    });
+    const server = new GameRoomServer(state, [], createSequenceRandomSource([0]), threats, createCharacters(), createGear(), createContracts());
+
+    (server as any).runAutomaticPhases("seat-1");
+
+    expect(server.getState().currentEncounter?.id).toBe("keyed-rats");
+    expect(server.getState().players.find((entry) => entry.seatId === "seat-1")?.character.heat).toBe(1);
+    expect(server.getState().lastOutcomeSummary?.summary).toContain("gain 1 Heat");
+  });
+
+  it("applies table-wide and escalation reveal effect keys", () => {
+    const heatedThreats = createThreats();
+    heatedThreats.set("keyed-broadcast", {
+      id: "keyed-broadcast",
+      type: "threat",
+      cardType: "hazard",
+      title: "Keyed Broadcast",
+      text: "A keyed table-wide reveal test threat.",
+      flavor: "The signal names everyone at once.",
+      severity: 3,
+      revealEffectKey: "threat_all_heat_on_reveal",
+      stat: "signal",
+      difficulty: 6,
+      successEffect: { type: "gain_note", text: "Safe." },
+      failEffect: { type: "gain_heat", amount: 1 }
+    });
+    const heatedState = createState({
+      phase: "sector",
+      sectors: createState().sectors.map((sector) =>
+        sector.id === "sector-a"
+          ? {
+              ...sector,
+              encounterDecks: { ...sector.encounterDecks, threat: ["keyed-broadcast"] }
+            }
+          : sector
+      ),
+      lastOutcomeSummary: {
+        seatId: "seat-1",
+        movedToSectorId: "sector-a",
+        encounterCardId: null,
+        encounterTitle: null,
+        encounterCardType: null,
+        checkStat: null,
+        die1: null,
+        die2: null,
+        statBonus: null,
+        checkTotal: null,
+        difficulty: null,
+        enemyRollerSeatId: null,
+        enemyDie1: null,
+        enemyDie2: null,
+        enemyBonus: null,
+        enemyTotal: null,
+        success: null,
+        summary: "Moved into sector-a."
+      }
+    });
+    const heatedServer = new GameRoomServer(
+      heatedState,
+      [],
+      createSequenceRandomSource([0]),
+      heatedThreats,
+      createCharacters(),
+      createGear(),
+      createContracts()
+    );
+
+    (heatedServer as any).runAutomaticPhases("seat-1");
+
+    expect(heatedServer.getState().players.every((entry) => entry.character.heat === 1)).toBe(true);
+    expect(heatedServer.getState().lastOutcomeSummary?.summary).toContain("all operatives gain 1 Heat");
+
+    const escalatedThreats = createThreats();
+    escalatedThreats.set("keyed-bell", {
+      id: "keyed-bell",
+      type: "threat",
+      cardType: "hazard",
+      title: "Keyed Bell",
+      text: "A keyed escalation reveal test threat.",
+      flavor: "The bell rings downward.",
+      severity: 4,
+      revealEffectKey: "threat_escalate_on_reveal",
+      stat: "signal",
+      difficulty: 7,
+      successEffect: { type: "gain_note", text: "Safe." },
+      failEffect: { type: "gain_heat", amount: 1 }
+    });
+    const escalatedState = createState({
+      phase: "sector",
+      sectors: createState().sectors.map((sector) =>
+        sector.id === "sector-a"
+          ? {
+              ...sector,
+              encounterDecks: { ...sector.encounterDecks, threat: ["keyed-bell"] }
+            }
+          : sector
+      ),
+      lastOutcomeSummary: heatedState.lastOutcomeSummary
+    });
+    const escalatedServer = new GameRoomServer(
+      escalatedState,
+      [],
+      createSequenceRandomSource([0]),
+      escalatedThreats,
+      createCharacters(),
+      createGear(),
+      createContracts()
+    );
+
+    (escalatedServer as any).runAutomaticPhases("seat-1");
+
+    expect(escalatedServer.getState().escalationLevel).toBe(1);
+    expect(escalatedServer.getState().lastOutcomeSummary?.summary).toContain("advance escalation by 1");
+  });
+
+  it("combines direct failure effects with a keyed failure effect", () => {
+    const threats = createThreats();
+    threats.set("keyed-snare", {
+      id: "keyed-snare",
+      type: "threat",
+      cardType: "hazard",
+      title: "Keyed Snare",
+      text: "A keyed failure test threat.",
+      flavor: "The snare is very sure of itself.",
+      severity: 2,
+      stat: "grit",
+      difficulty: 12,
+      successEffect: { type: "gain_note", text: "Safe." },
+      failEffectKey: "threat_fail_take_wound",
+      failEffect: { type: "gain_heat", amount: 1 }
+    });
+    const state = createState({
+      currentEncounter: threats.get("keyed-snare") ?? null,
+      players: createState().players.map((player) =>
+        player.seatId === "seat-1"
+          ? {
+              ...player,
+              character: {
+                ...player.character,
+                stats: { ...player.character.stats, grit: 0 }
+              }
+            }
+          : player
+      )
+    });
+    const server = new GameRoomServer(state, [], createSequenceRandomSource([0, 0]), threats, createCharacters(), createGear(), createContracts());
+
+    runIntent(server, {
+      type: "CHECK_REQUESTED",
+      seatId: "seat-1",
+      stat: "grit"
+    });
+
+    const player = server.getState().players.find((entry) => entry.seatId === "seat-1");
+    expect(player?.character.heat).toBe(1);
+    expect(player?.character.wounds).toBe(1);
+  });
+});
+
 describe("movement rolls", () => {
   it("succeeds against a low-danger node without changing Heat", () => {
     const baseState = createState({ phase: "navigation" });
@@ -731,7 +1147,7 @@ describe("movement rolls", () => {
     expect(summary?.die2).toBe(1);
   });
 
-  it("still completes the move on a failed roll and applies Heat", () => {
+  it("leaves the operative in place on a failed roll and applies Heat", () => {
     const baseState = createState({ phase: "navigation" });
     const server = new GameRoomServer(
       createState({
@@ -763,10 +1179,57 @@ describe("movement rolls", () => {
     const player = server.getState().players.find((entry) => entry.seatId === "seat-1");
     const summary = server.getState().lastOutcomeSummary;
 
-    expect(player?.character.currentSpaceId).toBe("sector-b");
+    expect(player?.character.currentSpaceId).toBe("sector-a");
+    expect(player?.sectorId).toBe("sector-a");
     expect(player?.character.heat).toBe(1);
+    expect(summary?.movedToSectorId).toBe("sector-a");
     expect(summary?.success).toBe(false);
     expect(summary?.difficulty).toBe(8);
+    expect(summary?.summary).toContain("Failed to enter");
+  });
+
+  it("rejects forged movement resolution with a mismatched origin", () => {
+    const state = createState({ phase: "navigation" });
+    const result = reduceGameState(state, {
+      type: "MOVEMENT_RESOLVED",
+      seatId: "seat-1",
+      fromSectorId: "sector-b",
+      toSectorId: "sector-c",
+      stat: "guile",
+      difficulty: 1,
+      roll: { faces: [6, 6], total: 12 },
+      statBonus: 0,
+      total: 12,
+      success: true,
+      effect: null,
+      createdAt: new Date().toISOString()
+    });
+
+    expect(result.ok).toBe(false);
+    expect(result.ok ? null : result.rejection.reason).toContain("does not match current sector");
+    expect(result.state.players.find((player) => player.seatId === "seat-1")?.character.currentSpaceId).toBe("sector-a");
+  });
+
+  it("rejects forged movement resolution to a non-neighbor", () => {
+    const state = createState({ phase: "navigation" });
+    const result = reduceGameState(state, {
+      type: "MOVEMENT_RESOLVED",
+      seatId: "seat-1",
+      fromSectorId: "sector-a",
+      toSectorId: "sector-c",
+      stat: "guile",
+      difficulty: 1,
+      roll: { faces: [6, 6], total: 12 },
+      statBonus: 0,
+      total: 12,
+      success: true,
+      effect: null,
+      createdAt: new Date().toISOString()
+    });
+
+    expect(result.ok).toBe(false);
+    expect(result.ok ? null : result.rejection.reason).toContain("not reachable");
+    expect(result.state.players.find((player) => player.seatId === "seat-1")?.character.currentSpaceId).toBe("sector-a");
   });
 
   it("triggers the recall flow when failed movement Heat reaches the threshold", () => {
@@ -812,7 +1275,7 @@ describe("movement rolls", () => {
 
     const seat1 = server.getState().players.find((entry) => entry.seatId === "seat-1");
 
-    expect(seat1?.character.currentSpaceId).toBe("sector-b");
+    expect(seat1?.character.currentSpaceId).toBe("sector-a");
     expect(seat1?.character.heat).toBe(2);
     expect(seat1?.character.status).toBe("recalled");
     expect(server.getState().activeSeatIndex).toBe(1);

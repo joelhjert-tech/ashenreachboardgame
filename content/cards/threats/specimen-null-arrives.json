@@ -1,0 +1,31 @@
+{
+  "id": "specimen-null-arrives",
+  "type": "threat",
+  "cardType": "enemy",
+  "title": "Specimen Null Arrives",
+  "enemyName": "Specimen Null Arrives",
+  "text": "A containment siren bends into a roar as Specimen Null steps through the wrong wall.",
+  "flavor": "The room becomes smaller because it has arrived.",
+  "severity": 5,
+  "stat": "grit",
+  "difficulty": 11,
+  "trophyValue": 10,
+  "defeatReward": {
+    "type": "gain_gear",
+    "gearId": "tuning-spines"
+  },
+  "woundOnLoss": {
+    "type": "sequence",
+    "effects": [
+      {
+        "type": "take_wound",
+        "amount": 2
+      },
+      {
+        "type": "gain_scar",
+        "scarId": "scar-wound-2"
+      }
+    ]
+  },
+  "enemyFamily": "breachborn"
+}

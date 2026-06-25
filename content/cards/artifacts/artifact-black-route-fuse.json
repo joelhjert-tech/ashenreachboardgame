@@ -1,0 +1,14 @@
+{
+  "id": "artifact-black-route-fuse",
+  "type": "artifact",
+  "artifactKind": "cursedRelic",
+  "title": "Black Route Fuse",
+  "text": "A dead-road explosive cord that can turn a losing fight into a louder problem.",
+  "flavor": "The fuse burns black because it is already remembering the smoke.",
+  "charge": 1,
+  "resolutionSummary": "Recovered a Black Route Fuse for one desperate combat break.",
+  "resolveEffect": {
+    "type": "gain_gear",
+    "gearId": "black-route-fuse"
+  }
+}

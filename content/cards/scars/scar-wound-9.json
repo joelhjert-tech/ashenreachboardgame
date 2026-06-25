@@ -1,0 +1,15 @@
+{
+  "id": "scar-wound-9",
+  "type": "scar",
+  "title": "Red March Tremor",
+  "text": "Your weapon hand shakes whenever old artillery wakes below the route.",
+  "flavor": "The tremor stops only after the shot is fired.",
+  "trigger": "Before your first combat roll each session.",
+  "penalty": "Take 1 wound unless you gain 1 Heat to lock the tremor down.",
+  "effect": {
+    "type": "take_wound",
+    "amount": 1
+  },
+  "relief": "A gunner follower or weapon gear use may cancel this wound.",
+  "upside": "If you take the wound and still win the combat, gain 2 trophies instead of 1."
+}

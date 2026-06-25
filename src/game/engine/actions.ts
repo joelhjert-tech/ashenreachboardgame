@@ -45,6 +45,7 @@ export interface EncounterDrawnAction extends BaseAction {
   type: "ENCOUNTER_DRAWN";
   sectorId: string;
   card: ThreatCard | null;
+  revealEffect?: EncounterEffect | null;
 }
 
 export interface CheckRequestedAction extends BaseAction {
@@ -133,6 +134,31 @@ export interface EquipGearAction extends BaseAction {
 export interface UnequipGearAction extends BaseAction {
   type: "UNEQUIP_GEAR";
   slot: GearSlot;
+}
+
+export interface UseGearAction extends BaseAction {
+  type: "USE_GEAR";
+  gearId: string;
+  effect: EncounterEffect | null;
+  summary: string;
+  discard?: boolean;
+}
+
+export interface UseFollowerAction extends BaseAction {
+  type: "USE_FOLLOWER";
+  followerId: string;
+  effect: EncounterEffect | null;
+  summary: string;
+  discard?: boolean;
+}
+
+export interface TableInteractionAction extends BaseAction {
+  type: "TABLE_INTERACTION";
+  interactionKind: "trade" | "aid" | "duel" | "interfere";
+  targetSeatId: string;
+  effect: EncounterEffect | null;
+  targetEffect?: EncounterEffect | null;
+  summary: string;
 }
 
 export interface AcceptContractAction extends BaseAction {
@@ -244,6 +270,9 @@ export type GameAction =
   | RecruitReplacementAction
   | EquipGearAction
   | UnequipGearAction
+  | UseGearAction
+  | UseFollowerAction
+  | TableInteractionAction
   | AcceptContractAction
   | CompleteContractAction
   | ScenarioConfrontationRequestedAction
@@ -298,6 +327,22 @@ export type ClientIntent =
       type: "UNEQUIP_GEAR";
       seatId: string;
       slot: GearSlot;
+    }
+  | {
+      type: "USE_GEAR";
+      seatId: string;
+      gearId: string;
+    }
+  | {
+      type: "USE_FOLLOWER";
+      seatId: string;
+      followerId: string;
+    }
+  | {
+      type: "TABLE_INTERACTION";
+      seatId: string;
+      targetSeatId: string;
+      interactionKind: "trade" | "aid" | "duel" | "interfere";
     }
   | {
       type: "ACCEPT_CONTRACT";

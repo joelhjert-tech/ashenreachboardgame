@@ -1,0 +1,32 @@
+{
+  "id": "mourning-engine-pup",
+  "type": "threat",
+  "cardType": "enemy",
+  "title": "Mourning Engine Pup",
+  "enemyName": "Mourning Engine Pup",
+  "text": "A small war-machine prowls the road, still searching for the dead master it was built to guard.",
+  "flavor": "It whines through a furnace grille.",
+  "severity": 3,
+  "region": "middle",
+  "stat": "forge",
+  "difficulty": 9,
+  "trophyValue": 1,
+  "defeatReward": {
+    "type": "sequence",
+    "effects": [
+      {
+        "type": "gain_trophy",
+        "amount": 1
+      },
+      {
+        "type": "gain_note",
+        "text": "The mourning engine's route imprint was worth salvaging."
+      }
+    ]
+  },
+  "woundOnLoss": {
+    "type": "take_wound",
+    "amount": 1
+  },
+  "enemyFamily": "machine"
+}

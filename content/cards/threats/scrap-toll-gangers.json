@@ -1,0 +1,22 @@
+{
+  "id": "scrap-toll-gangers",
+  "type": "threat",
+  "cardType": "enemy",
+  "title": "Scrap-Toll Gangers",
+  "enemyName": "Scrap-Toll Gangers",
+  "text": "Three masked toll-takers drag a chain across the road and ask for payment in bullets or blood.",
+  "flavor": "Their ledger is a saw blade with names etched into the teeth.",
+  "severity": 2,
+  "stat": "guile",
+  "difficulty": 5,
+  "trophyValue": 4,
+  "defeatReward": {
+    "type": "gain_note",
+    "text": "You broke a toll chain and gained a whispered road marker."
+  },
+  "woundOnLoss": {
+    "type": "take_wound",
+    "amount": 1
+  },
+  "enemyFamily": "human"
+}

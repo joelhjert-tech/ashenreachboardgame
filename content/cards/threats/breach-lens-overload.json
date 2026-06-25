@@ -1,0 +1,29 @@
+{
+  "id": "breach-lens-overload",
+  "type": "threat",
+  "cardType": "hazard",
+  "title": "Breach-Lens Overload",
+  "text": "A cracked survey lens catches the breach and pours the image straight through your tools.",
+  "flavor": "The machine sees too much and makes you share.",
+  "severity": 4,
+  "stat": "forge",
+  "difficulty": 8,
+  "successEffect": {
+    "type": "gain_gear",
+    "gearId": "tuning-spines"
+  },
+  "failEffect": {
+    "type": "sequence",
+    "effects": [
+      {
+        "type": "gain_heat",
+        "amount": 2
+      },
+      {
+        "type": "take_wound",
+        "amount": 1
+      }
+    ]
+  },
+  "enemyFamily": "machine"
+}

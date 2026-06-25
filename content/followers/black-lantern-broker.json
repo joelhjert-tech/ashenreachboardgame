@@ -1,0 +1,13 @@
+{
+  "id": "black-lantern-broker",
+  "name": "Black Lantern Broker",
+  "role": "informant",
+  "text": "Once per round, expose a hidden contract lead or turn a rivalry mark into a safer bargain.",
+  "activeEffect": {
+    "type": "gain_note",
+    "text": "Black Lantern broker: a contract lead or rivalry bargain is banked."
+  },
+  "useLimit": "oncePerRound",
+  "loyalty": 2,
+  "lossCondition": "heat"
+}
