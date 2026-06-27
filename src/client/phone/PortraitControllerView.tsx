@@ -50,13 +50,14 @@ export function PortraitControllerView({
 
   const activeScenario = patch?.activeScenario ?? null;
   const ownSeat = patch?.seats.find((seat) => seat.seatId === self.seatId) ?? null;
+  const isLobbyWaiting = patch?.status === "lobby" || (!patch && Boolean(onLobbyBack));
   const activeContractProgress = activeContractCard && self.character.activeContract
     ? `${self.character.activeContract.progress}`
     : null;
   const notes = self.notes ?? [];
   const latestOutcome = patch?.outcomeSummary ?? null;
 
-  if (patch?.status === "lobby") {
+  if (isLobbyWaiting) {
     const isReady = ownSeat?.ready ?? false;
     const abilityText = self.character.abilities.map((ability) => `${ability.name}: ${ability.text}`);
     const startingGear = self.character.heldGear;
@@ -115,13 +116,23 @@ export function PortraitControllerView({
 
               <p className="phone-lobby-ready-state">Waiting for host to start the game</p>
 
-              {onLobbyBack ? (
-                <button type="button" className="phone-button phone-button-secondary phone-lobby-ready-button" onClick={onLobbyBack}>
-                  Back
+              <div className="phone-character-waiting-actions">
+                <button
+                  type="button"
+                  className="phone-button phone-button-primary phone-lobby-ready-button"
+                  disabled={isReady || !onIntent}
+                  onClick={() => onIntent?.({ type: "SET_READY", seatId: self.seatId, ready: true })}
+                >
+                  Ready
                 </button>
-              ) : null}
+                {onLobbyBack ? (
+                  <button type="button" className="phone-button phone-button-secondary phone-lobby-ready-button" onClick={onLobbyBack}>
+                    Back
+                  </button>
+                ) : null}
+              </div>
               {onIntent ? (
-                <span className="phone-character-waiting-status">{isReady ? "Seat reserved" : "Reservation syncing"}</span>
+                <span className="phone-character-waiting-status">{isReady ? "Ready for host" : "Character reserved. Press Ready when set."}</span>
               ) : (
                 <span className="phone-character-waiting-status">Waiting for room sync</span>
               )}

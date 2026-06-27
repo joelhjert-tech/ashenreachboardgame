@@ -1,6 +1,6 @@
 import { useEffect, useState, type FormEvent, type ReactElement } from "react";
 import { fetchCharacters, joinSession, leaveSession } from "../shared/network.js";
-import type { CharacterCatalogEntry, PhonePatchPayload, PhoneSessionAuth, StatePatch } from "../shared/types.js";
+import type { CharacterCatalogEntry, PhonePatchPayload, PhoneSelfState, PhoneSessionAuth, StatePatch } from "../shared/types.js";
 import { useRoomSubscription } from "../shared/useRoomSubscription.js";
 import {
   getCharacterPortraitPath,
@@ -212,116 +212,135 @@ export function PhoneApp(): ReactElement {
   if (!auth) {
     return (
       <main className="phone-page" style={{ backgroundImage: `url(${getPhoneBackgroundPath()})` }}>
-        <div className="phone-landscape-ui phone-join-layout">
-          <section className="phone-join-hero phone-panel">
-            <p className="phone-panel-kicker">Ashen Reach Controller</p>
-            <h1>{joinStep === "nameEntry" ? "Join room" : "Select character"}</h1>
-            <p className="phone-muted-copy">
-              {joinStep === "nameEntry"
-                ? "Enter the room code and your player name before choosing a character."
-                : "Pick one operative. After selection, the character is locked until you press Back."}
-            </p>
-            {selectedCharacter && (
-              <div className="phone-character-preview">
-                <img src={getCharacterPortraitPath(selectedCharacter.id)} alt="" />
-                <div>
-                  <h2>{selectedCharacter.name}</h2>
-                  <p>{selectedCharacter.archetype}</p>
-                  <div className="phone-character-stat-row" aria-label="Selected character stats">
-                    <span>Command {selectedCharacter.stats.command}</span>
-                    <span>Grit {selectedCharacter.stats.grit}</span>
-                    <span>Signal {selectedCharacter.stats.signal}</span>
-                    <span>Guile {selectedCharacter.stats.guile}</span>
-                    <span>Forge {selectedCharacter.stats.forge}</span>
-                  </div>
-                </div>
-              </div>
-            )}
-          </section>
-
-          <section className="phone-panel phone-join-panel">
-            <div className="phone-panel-header">
-              <div>
-                <h2>{joinStep === "nameEntry" ? "Join Room" : "Choose Character"}</h2>
-                <p className="phone-muted-copy">
-                  {joinStep === "nameEntry"
-                    ? "Step 1: enter room code and player name."
-                    : "Step 2: select an available character to reserve it."}
-                </p>
-              </div>
+        {isLandscape ? (
+          <section className="phone-rotate-warning" aria-live="polite">
+            <div>
+              <span>Portrait required</span>
+              <h1>Rotate your phone to portrait mode.</h1>
             </div>
-            {joinStep === "nameEntry" ? (
-              <form className="phone-join-form" onSubmit={handleNameSubmit}>
-                <section className="phone-join-step" aria-label="Step 1 enter room code and name">
-                  <span className="phone-join-step-kicker">Step 1</span>
-                  <label className="field">
-                    <span>Room code</span>
-                    <input
-                      value={formState.roomCode}
-                      onChange={(event) =>
-                        setFormState((current) => ({ ...current, roomCode: event.target.value.toUpperCase() }))
-                      }
-                      placeholder="ABCDE"
-                      required
-                    />
-                  </label>
-                  <label className="field">
-                    <span>Player name</span>
-                    <input
-                      value={formState.displayName}
-                      onChange={(event) =>
-                        setFormState((current) => ({ ...current, displayName: event.target.value }))
-                      }
-                      placeholder="Seat name"
-                      required
-                    />
-                  </label>
-                </section>
-                {(joinError || error) && <p className="error">{joinError ?? error}</p>}
-                <div className="phone-join-actions">
-                  <button className="phone-button phone-button-primary" type="submit">
-                    Continue
-                  </button>
-                  {debugOpen && <MobileDebugDrawer events={debugEvents} onClear={clearDebugEvents} />}
-                </div>
-              </form>
-            ) : (
-              <div className="phone-join-form">
-                <div className="phone-join-step" aria-label="Step 2 select character">
-                  <span className="phone-join-step-kicker">Step 2</span>
-                  <div className="phone-character-grid" role="list" aria-label="Character">
-                    {characters.map((character) => (
-                      <button
-                        key={character.id}
-                        type="button"
-                        className={`phone-character-option${formState.characterId === character.id ? " phone-character-option-selected" : ""}`}
-                        onClick={() => void handleCharacterSelected(character.id)}
-                      >
-                        <img src={getCharacterPortraitPath(character.id)} alt="" />
-                        <span>
-                          <strong>{character.name}</strong>
-                          <small>{character.archetype}</small>
-                        </span>
-                      </button>
-                    ))}
+          </section>
+        ) : (
+          <div className="phone-join-layout">
+            <section className="phone-join-hero phone-panel">
+              <p className="phone-panel-kicker">Ashen Reach Controller</p>
+              <h1>{joinStep === "nameEntry" ? "Join room" : "Select character"}</h1>
+              <p className="phone-muted-copy">
+                {joinStep === "nameEntry"
+                  ? "Enter the room code and your player name before choosing a character."
+                  : "Pick one operative. After selection, the character is locked until you press Back."}
+              </p>
+              {selectedCharacter && (
+                <div className="phone-character-preview">
+                  <img src={getCharacterPortraitPath(selectedCharacter.id)} alt="" />
+                  <div>
+                    <h2>{selectedCharacter.name}</h2>
+                    <p>{selectedCharacter.archetype}</p>
+                    <div className="phone-character-stat-row" aria-label="Selected character stats">
+                      <span>Command {selectedCharacter.stats.command}</span>
+                      <span>Grit {selectedCharacter.stats.grit}</span>
+                      <span>Signal {selectedCharacter.stats.signal}</span>
+                      <span>Guile {selectedCharacter.stats.guile}</span>
+                      <span>Forge {selectedCharacter.stats.forge}</span>
+                    </div>
                   </div>
                 </div>
-                {(joinError || error) && <p className="error">{joinError ?? error}</p>}
-                <div className="phone-join-actions">
-                  <button className="phone-button phone-button-secondary" type="button" onClick={() => setJoinStep("nameEntry")}>
-                    Back
-                  </button>
-                  {debugOpen && <MobileDebugDrawer events={debugEvents} onClear={clearDebugEvents} />}
+              )}
+            </section>
+
+            <section className="phone-panel phone-join-panel">
+              <div className="phone-panel-header">
+                <div>
+                  <h2>{joinStep === "nameEntry" ? "Join Room" : "Choose Character"}</h2>
+                  <p className="phone-muted-copy">
+                    {joinStep === "nameEntry"
+                      ? "Step 1: enter room code and player name."
+                      : "Step 2: select an available character to reserve it."}
+                  </p>
                 </div>
               </div>
-            )}
-          </section>
-        </div>
+              {joinStep === "nameEntry" ? (
+                <form className="phone-join-form" onSubmit={handleNameSubmit}>
+                  <section className="phone-join-step" aria-label="Step 1 enter room code and name">
+                    <span className="phone-join-step-kicker">Step 1</span>
+                    <label className="field">
+                      <span>Room code</span>
+                      <input
+                        value={formState.roomCode}
+                        onChange={(event) =>
+                          setFormState((current) => ({ ...current, roomCode: event.target.value.toUpperCase() }))
+                        }
+                        placeholder="ABCDE"
+                        required
+                      />
+                    </label>
+                    <label className="field">
+                      <span>Player name</span>
+                      <input
+                        value={formState.displayName}
+                        onChange={(event) =>
+                          setFormState((current) => ({ ...current, displayName: event.target.value }))
+                        }
+                        placeholder="Seat name"
+                        required
+                      />
+                    </label>
+                  </section>
+                  {(joinError || error) && <p className="error">{joinError ?? error}</p>}
+                  <div className="phone-join-actions">
+                    <button className="phone-button phone-button-primary" type="submit">
+                      Continue
+                    </button>
+                    {debugOpen && <MobileDebugDrawer events={debugEvents} onClear={clearDebugEvents} />}
+                  </div>
+                </form>
+              ) : (
+                <div className="phone-join-form">
+                  <div className="phone-join-step" aria-label="Step 2 select character">
+                    <span className="phone-join-step-kicker">Step 2</span>
+                    <div className="phone-character-grid" role="list" aria-label="Character">
+                      {characters.map((character) => (
+                        <button
+                          key={character.id}
+                          type="button"
+                          className={`phone-character-option${formState.characterId === character.id ? " phone-character-option-selected" : ""}`}
+                          onClick={() => void handleCharacterSelected(character.id)}
+                        >
+                          <img src={getCharacterPortraitPath(character.id)} alt="" />
+                          <span>
+                            <strong>{character.name}</strong>
+                            <small>{character.archetype}</small>
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  {(joinError || error) && <p className="error">{joinError ?? error}</p>}
+                  <div className="phone-join-actions">
+                    <button className="phone-button phone-button-secondary" type="button" onClick={() => setJoinStep("nameEntry")}>
+                      Back
+                    </button>
+                    {debugOpen && <MobileDebugDrawer events={debugEvents} onClear={clearDebugEvents} />}
+                  </div>
+                </div>
+              )}
+            </section>
+          </div>
+        )}
       </main>
     );
   }
 
-  const self = phonePatch?.payload.self ?? null;
+  const fallbackLobbySelf: PhoneSelfState | null =
+    selectedCharacter && (!phonePatch || phonePatch.payload.status === "lobby")
+      ? {
+          seatId: auth.seatId,
+          sectorId: selectedCharacter.currentSpaceId,
+          hand: [],
+          notes: [],
+          character: selectedCharacter
+        }
+      : null;
+  const self = phonePatch?.payload.self ?? fallbackLobbySelf;
   const activeSeatId = phonePatch?.payload.turnOrder[phonePatch.payload.activeSeatIndex] ?? null;
   const activeContractCard =
     self?.character.activeContract &&

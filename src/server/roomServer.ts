@@ -574,7 +574,7 @@ export class GameRoomServer {
               ...entry,
               characterId,
               displayName,
-              ready: true
+              ready: false
             }
           : entry
       ),

@@ -235,10 +235,11 @@ describe("PhoneInventoryPanel", () => {
 
   it("shows a locked pre-game character screen with Back instead of bottom navigation", () => {
     const onLobbyBack = vi.fn();
+    const onIntent = vi.fn();
     const lobbyPatch = createPatch({
       phase: "start",
       status: "lobby",
-      seats: [{ seatId: "seat-1", characterId: "void-marshal", displayName: "Lane", connected: true, ready: true, kicked: false }]
+      seats: [{ seatId: "seat-1", characterId: "void-marshal", displayName: "Lane", connected: true, ready: false, kicked: false }]
     });
 
     render(
@@ -251,7 +252,7 @@ describe("PhoneInventoryPanel", () => {
         activeContractCard={null}
         patch={lobbyPatch}
         characters={characters}
-        onIntent={vi.fn()}
+        onIntent={onIntent}
         onLeave={vi.fn()}
         onLobbyBack={onLobbyBack}
       />
@@ -261,7 +262,10 @@ describe("PhoneInventoryPanel", () => {
     expect(screen.getByText(/waiting for host to start the game/i)).toBeInTheDocument();
     expect(screen.getByText(/lane/i)).toBeInTheDocument();
     expect(screen.queryByRole("tab", { name: /inventory/i })).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /^ready$/i })).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /^ready$/i }));
+
+    expect(onIntent).toHaveBeenCalledWith({ type: "SET_READY", seatId: "seat-1", ready: true });
 
     fireEvent.click(screen.getByRole("button", { name: /^back$/i }));
 

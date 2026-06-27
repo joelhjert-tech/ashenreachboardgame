@@ -138,9 +138,9 @@ function buildBattleModel(
   };
 }
 
-function DiceReadout({ label, dice }: { label: string; dice: number[] }): ReactElement {
+function DiceReadout({ label, dice, side }: { label: string; dice: number[]; side: "player" | "enemy" }): ReactElement {
   return (
-    <div className="host-battle-dice-column">
+    <div className={`host-battle-dice-column host-battle-dice-column-${side}`}>
       <span>{label}</span>
       <div className="host-battle-dice-row">
         {dice.length > 0 ? dice.map((die, index) => <strong key={`${die}-${index}`}>{die}</strong>) : <strong>-</strong>}
@@ -187,12 +187,18 @@ export function HostBattleOverlay({
             <p>{model.playerTitle}</p>
           </div>
           <div className="host-battle-stat-grid">
-            <span>{model.playerStatLabel}</span>
-            <strong>{formatNumber(model.playerBattleValue)}</strong>
-            <span>Wounds</span>
-            <strong>{formatNumber(model.playerWounds)}</strong>
-            <span>Heat</span>
-            <strong>{formatNumber(model.playerHeat)}</strong>
+            <div>
+              <span>{model.playerStatLabel}</span>
+              <strong>{formatNumber(model.playerBattleValue)}</strong>
+            </div>
+            <div>
+              <span>Wounds</span>
+              <strong>{formatNumber(model.playerWounds)}</strong>
+            </div>
+            <div>
+              <span>Heat</span>
+              <strong>{formatNumber(model.playerHeat)}</strong>
+            </div>
           </div>
         </article>
 
@@ -214,8 +220,10 @@ export function HostBattleOverlay({
             <p>{model.enemyRulesText ?? "Enemy rules will appear here once the threat is revealed."}</p>
           </div>
           <div className="host-battle-stat-grid">
-            <span>Battle value</span>
-            <strong>{formatNumber(model.enemyBattleValue)}</strong>
+            <div>
+              <span>Battle value</span>
+              <strong>{formatNumber(model.enemyBattleValue)}</strong>
+            </div>
           </div>
         </article>
 
@@ -230,12 +238,12 @@ export function HostBattleOverlay({
               compact
             />
           </div>
-          <DiceReadout label="Player roll" dice={model.playerDice} />
+          <DiceReadout label="Player roll" dice={model.playerDice} side="player" />
           <div className="host-battle-modifiers">
             <span>Player battle value {formatNumber(model.playerModifier)}</span>
             <span>Enemy battle value {formatNumber(model.enemyModifier)}</span>
           </div>
-          <DiceReadout label="Enemy roll" dice={model.enemyDice} />
+          <DiceReadout label="Enemy roll" dice={model.enemyDice} side="enemy" />
           <div className="host-battle-total host-battle-total-player">
             <span>Final player total</span>
             <strong>{formatNumber(model.playerTotal)}</strong>

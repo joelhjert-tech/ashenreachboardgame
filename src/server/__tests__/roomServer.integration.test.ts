@@ -751,6 +751,7 @@ function getSeatFromPatch(message: Extract<ServerEnvelope, { type: "STATE_PATCH"
         characterId: string;
         displayName: string | null;
         connected: boolean;
+        ready: boolean;
       }
     | undefined;
 }
@@ -802,7 +803,7 @@ describe("roomServer websocket integration", () => {
 
     expect(joinedSeat?.characterId).toBe("signal-witch");
     expect(joinedSeat?.displayName).toBe("Joel");
-    expect(joinedSeat?.ready).toBe(true);
+    expect(joinedSeat?.ready).toBe(false);
     expect(joinedPlayer?.character.id).toBe("signal-witch");
 
     const phone = await connectClient(`ws://127.0.0.1:${harness.port}/?view=phone&token=${joinResult.seatToken}`);
@@ -817,6 +818,7 @@ describe("roomServer websocket integration", () => {
 
     expect(snapshotSeat?.characterId).toBe("signal-witch");
     expect(snapshotSeat?.displayName).toBe("Joel");
+    expect(snapshotSeat?.ready).toBe(false);
     expect(snapshotSelf?.id).toBe("signal-witch");
   });
 
@@ -869,8 +871,10 @@ describe("roomServer websocket integration", () => {
   it("starts multiplayer with enough ready occupied seats while ignoring empty seats", async () => {
     const activeHarness = (harness = await startHarness([0, 0, 0, 0], createInitialSessionState("session-alpha", "multiplayer")));
 
-    activeHarness.roomServer.joinSeat("One", "void-marshal");
-    activeHarness.roomServer.joinSeat("Two", "signal-witch");
+    const firstJoin = activeHarness.roomServer.joinSeat("One", "void-marshal");
+    const secondJoin = activeHarness.roomServer.joinSeat("Two", "signal-witch");
+    activeHarness.roomServer.setSeatReady(firstJoin.seatId, true);
+    activeHarness.roomServer.setSeatReady(secondJoin.seatId, true);
     activeHarness.roomServer.startSession();
 
     expect(activeHarness.roomServer.getState().status).toBe("active");

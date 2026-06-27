@@ -56,6 +56,24 @@ vi.mock("../../shared/useRoomSubscription.js", () => ({
   }))
 }));
 
+function setViewport(width: number, height: number): void {
+  Object.defineProperty(window, "innerWidth", { configurable: true, value: width });
+  Object.defineProperty(window, "innerHeight", { configurable: true, value: height });
+  Object.defineProperty(window, "matchMedia", {
+    configurable: true,
+    value: vi.fn((query: string) => ({
+      matches: query.includes("orientation: landscape") ? width > height : false,
+      media: query,
+      onchange: null,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      dispatchEvent: vi.fn()
+    }))
+  });
+}
+
 describe("PhoneApp", () => {
   afterEach(() => {
     cleanup();
@@ -64,6 +82,7 @@ describe("PhoneApp", () => {
   beforeEach(() => {
     window.localStorage.clear();
     vi.clearAllMocks();
+    setViewport(390, 844);
   });
 
   it("moves from room/name entry to character selection before joining", async () => {
@@ -111,5 +130,41 @@ describe("PhoneApp", () => {
         characterId: "cinder-monk"
       });
     });
+  });
+
+  it("shows the locked character waiting screen immediately after selection", async () => {
+    networkMocks.joinSession.mockResolvedValue({
+      roomCode: "RT7P4",
+      seatId: "seat-1",
+      seatToken: "seat:RT7P4:seat-1",
+      displayName: "Joel"
+    });
+
+    render(<PhoneApp />);
+
+    await screen.findByRole("button", { name: /continue/i });
+    fireEvent.change(screen.getAllByLabelText(/room code/i)[0]!, { target: { value: "RT7P4" } });
+    fireEvent.change(screen.getAllByLabelText(/player name/i)[0]!, { target: { value: "Joel" } });
+    fireEvent.click(screen.getByRole("button", { name: /continue/i }));
+    fireEvent.click(await screen.findByRole("button", { name: /mira.*cinder monk/i }));
+
+    expect(await screen.findByText(/character locked/i)).toBeInTheDocument();
+    expect(screen.getByText("Mira")).toBeInTheDocument();
+    expect(screen.getByText("Cinder Monk")).toBeInTheDocument();
+    expect(screen.getByText("RT7P4")).toBeInTheDocument();
+    expect(screen.getByText("Joel")).toBeInTheDocument();
+    expect(screen.getByText(/waiting for host to start the game/i)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /^ready$/i })).toBeDisabled();
+    expect(screen.queryByRole("list", { name: /character/i })).not.toBeInTheDocument();
+  });
+
+  it("shows only the portrait warning when the phone is landscape", async () => {
+    setViewport(844, 390);
+
+    render(<PhoneApp />);
+
+    expect(await screen.findByText(/rotate your phone to portrait mode/i)).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /continue/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("list", { name: /character/i })).not.toBeInTheDocument();
   });
 });
