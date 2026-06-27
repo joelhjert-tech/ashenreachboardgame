@@ -2936,7 +2936,7 @@ select {
   height: 100%;
   padding: 0.45rem 0.55rem;
   display: grid;
-  grid-template-rows: auto auto auto minmax(0, 1fr) auto;
+  grid-template-rows: auto auto auto minmax(0, 1fr) auto auto;
   gap: 0.28rem;
   overflow: hidden;
 }
@@ -2959,6 +2959,111 @@ select {
 .phone-sheet-action-status span:first-child {
   color: var(--accent-strong);
   white-space: nowrap;
+}
+
+.phone-trophy-pile {
+  min-height: 0;
+  display: grid;
+  gap: 0.3rem;
+  padding: 0.48rem;
+  border: 1px solid rgba(216, 170, 95, 0.3);
+  border-radius: 8px;
+  background:
+    linear-gradient(135deg, rgba(197, 120, 46, 0.16), transparent 42%),
+    rgba(7, 10, 15, 0.72);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.035);
+}
+
+.phone-trophy-pile-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.phone-trophy-pile-header div {
+  display: grid;
+  gap: 0.08rem;
+  min-width: 0;
+}
+
+.phone-trophy-pile-header span,
+.phone-trophy-pile-card span {
+  color: #d6a85e;
+  font-size: clamp(0.52rem, 0.76vw, 0.66rem);
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.phone-trophy-pile-header strong {
+  color: #f0debd;
+  font-size: clamp(0.78rem, 1vw, 0.96rem);
+}
+
+.phone-trophy-pile-header small {
+  color: var(--text-secondary);
+  font-size: clamp(0.54rem, 0.78vw, 0.68rem);
+  text-align: right;
+}
+
+.phone-trophy-pile-list {
+  min-height: 0;
+  max-height: 6.4rem;
+  display: grid;
+  gap: 0.24rem;
+  overflow-y: auto;
+  padding-right: 0.1rem;
+}
+
+.phone-trophy-pile-list p,
+.phone-trophy-pile-raise {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: clamp(0.58rem, 0.86vw, 0.74rem);
+  line-height: 1.28;
+}
+
+.phone-trophy-pile-card {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.32rem 0.4rem;
+  border: 1px solid rgba(216, 170, 95, 0.18);
+  background: rgba(4, 7, 12, 0.62);
+}
+
+.phone-trophy-pile-card div {
+  min-width: 0;
+  display: grid;
+  gap: 0.08rem;
+}
+
+.phone-trophy-pile-card strong {
+  min-width: 0;
+  color: #f0debd;
+  font-size: clamp(0.62rem, 0.92vw, 0.78rem);
+  overflow-wrap: anywhere;
+}
+
+.phone-trophy-pile-card em {
+  width: 1.7rem;
+  height: 1.7rem;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(216, 170, 95, 0.36);
+  border-radius: 999px;
+  background: rgba(32, 23, 12, 0.78);
+  color: #f4d59d;
+  font-size: 0.72rem;
+  font-style: normal;
+  font-weight: 900;
+}
+
+.phone-trophy-pile-raise {
+  color: #e4d4b6;
 }
 
 .phone-resolution-card {

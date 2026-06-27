@@ -34,6 +34,7 @@ import type { EncounterEffect, ThreatCard } from "../schema/card.schema.js";
 import type { ContractCard } from "../schema/contract.schema.js";
 import type { ActiveResolution, GameState, PlayerState } from "../schema/session.schema.js";
 import type { GearSlot } from "../schema/gear.schema.js";
+import type { TrophyPileEntry } from "../schema/character.schema.js";
 import { getBoardSpace, isScenarioConfrontationSpace } from "../data/boardSpaces.js";
 import {
   advanceContractObjectiveProgress,
@@ -435,6 +436,52 @@ function applyEffectToState(state: GameState, seatId: string, effect: EncounterE
     ...state,
     players: updateActivePlayer(state, seatId, (player) => applyEffectToPlayer(player, effect))
   };
+}
+
+function createTrophyPileEntry(card: ThreatCard): TrophyPileEntry {
+  return {
+    cardId: card.id,
+    name: card.cardType === "enemy" ? card.enemyName ?? card.title : card.title,
+    trophyValue: card.cardType === "enemy" ? card.trophyValue : 0,
+    spentValue: 0,
+    stat: card.stat,
+    cardType: card.cardType
+  };
+}
+
+function getTrophyPileEntryAvailableValue(entry: TrophyPileEntry): number {
+  return Math.max(0, entry.trophyValue - (entry.spentValue ?? 0));
+}
+
+function spendTrophyPileValue(trophyPile: TrophyPileEntry[] | undefined, cost: number): TrophyPileEntry[] {
+  let remainingCost = cost;
+  const nextPile: TrophyPileEntry[] = [];
+
+  for (const entry of trophyPile ?? []) {
+    if (remainingCost <= 0) {
+      nextPile.push(entry);
+      continue;
+    }
+
+    const availableValue = getTrophyPileEntryAvailableValue(entry);
+
+    if (availableValue <= 0) {
+      continue;
+    }
+
+    const spentValue = Math.min(availableValue, remainingCost);
+    remainingCost -= spentValue;
+    const nextEntry = {
+      ...entry,
+      spentValue: (entry.spentValue ?? 0) + spentValue
+    };
+
+    if (getTrophyPileEntryAvailableValue(nextEntry) > 0) {
+      nextPile.push(nextEntry);
+    }
+  }
+
+  return nextPile;
 }
 
 function summarizeEffects(effect: EncounterEffect | null, success: boolean | null): string[] {
@@ -1270,6 +1317,8 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
           ? state.availableContracts.find((entry) => entry.id === activeContract.contractId) ?? null
           : null;
         const trophyAward = action.success ? state.currentEncounter.trophyValue : 0;
+        const defeatedTrophy = action.success ? createTrophyPileEntry(state.currentEncounter) : null;
+        const trophyPileSummary = defeatedTrophy ? `${defeatedTrophy.name} added to Trophy Pile.` : "";
         const nextProgress =
           action.success && contract && activeContract
             ? advanceContractObjectiveProgress(contract, activeContract.progress, {
@@ -1301,14 +1350,15 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
           target: action.enemyTotal,
           success: action.success,
           title: action.success ? "Combat victory" : "Combat loss",
-          text: summarizeEffect(action.effect, action.success),
-          effects: summarizeEffects(action.effect, action.success)
+          text: `${summarizeEffect(action.effect, action.success)}${trophyPileSummary ? ` ${trophyPileSummary}` : ""}`,
+          effects: [...summarizeEffects(action.effect, action.success), ...(trophyPileSummary ? [trophyPileSummary] : [])]
         }),
         players: updateActivePlayer(state, action.seatId, (entry) => ({
           ...entry,
           character: {
             ...entry.character,
             trophies: entry.character.trophies + trophyAward,
+            trophyPile: defeatedTrophy ? [...(entry.character.trophyPile ?? []), defeatedTrophy] : entry.character.trophyPile,
             activeContract:
               entry.character.activeContract && nextProgress !== null
                 ? {
@@ -1335,7 +1385,7 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
               success: action.success,
               summary: `${state.lastOutcomeSummary.summary} ${summarizeEffect(action.effect, action.success)}${
                 trophyAward > 0 ? ` +${trophyAward} trophies.` : ""
-              }`
+              }${trophyPileSummary ? ` ${trophyPileSummary}` : ""}`
             }
           : null,
         eventLog: [...state.eventLog, action]
@@ -1474,6 +1524,7 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
             ...recruitAction.replacementCharacter!,
             currentSpaceId: entry.sectorId,
             trophies: 0,
+            trophyPile: [],
             heat: 0,
             wounds: 0,
             status: "active",
@@ -1524,6 +1575,7 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
           character: {
             ...player.character,
             trophies: Math.max(0, player.character.trophies - statRaisedAction.cost),
+            trophyPile: spendTrophyPileValue(player.character.trophyPile, statRaisedAction.cost),
             stats: {
               ...player.character.stats,
               [statRaisedAction.stat]: player.character.stats[statRaisedAction.stat] + 1

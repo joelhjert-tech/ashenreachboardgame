@@ -988,6 +988,41 @@ describe("PhoneActionPanel", () => {
     expect(screen.queryByRole("button", { name: /open combat cards/i })).not.toBeInTheDocument();
   });
 
+  it("shows defeated enemy trophy pile and stat raises available from trophies", () => {
+    render(
+      <PhoneActionPanel
+        characters={characters}
+        onIntent={vi.fn()}
+        patch={createPatch({
+          encounter: null,
+          self: {
+            ...createPatch().self!,
+            character: {
+              ...createPatch().self!.character,
+              trophies: 6,
+              trophyPile: [
+                {
+                  cardId: "cinder-veil-stalker",
+                  name: "Cinder-Veil Stalker",
+                  trophyValue: 6,
+                  spentValue: 0,
+                  stat: "grit",
+                  cardType: "enemy"
+                }
+              ]
+            }
+          }
+        })}
+      />
+    );
+
+    expect(screen.getByTestId("phone-trophy-pile")).toHaveTextContent(/6 available/i);
+    expect(screen.getByTestId("phone-trophy-pile")).toHaveTextContent(/cinder-veil stalker/i);
+    expect(screen.getByTestId("phone-trophy-pile")).toHaveTextContent(/trophy 6\/6/i);
+    expect(screen.getByTestId("phone-trophy-pile")).toHaveTextContent(/can raise: command, grit, signal, guile, forge/i);
+    expect(screen.getByText(/6 held, 4 per rank/i)).toBeInTheDocument();
+  });
+
   it("renders scenario and space outcome summaries from activeResolution", () => {
     render(
       <PhoneActionPanel

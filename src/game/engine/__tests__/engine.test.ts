@@ -3405,7 +3405,18 @@ describe("trophy progression", () => {
       stat: "grit"
     });
 
-    expect(server.getState().players[0]?.character.trophies).toBe(6);
+    const character = server.getState().players[0]?.character;
+    expect(character?.trophies).toBe(6);
+    expect(character?.trophyPile).toEqual([
+      {
+        cardId: "cinder-veil-stalker",
+        name: "Cinder-Veil Stalker",
+        trophyValue: 6,
+        spentValue: 0,
+        stat: "grit",
+        cardType: "enemy"
+      }
+    ]);
   });
 
   it("spends trophies to raise a stat, feeds escalation, and consumes the turn", () => {
@@ -3422,7 +3433,25 @@ describe("trophy progression", () => {
                 ...entry,
                 character: {
                   ...entry.character,
-                  trophies: 4
+                  trophies: 4,
+                  trophyPile: [
+                    {
+                      cardId: "ash-court-duelist",
+                      name: "Ash Court Duelist",
+                      trophyValue: 2,
+                      spentValue: 0,
+                      stat: "guile",
+                      cardType: "enemy"
+                    },
+                    {
+                      cardId: "pale-contract-collector",
+                      name: "Pale Contract Collector",
+                      trophyValue: 2,
+                      spentValue: 0,
+                      stat: "command",
+                      cardType: "enemy"
+                    }
+                  ]
                 }
               }
             : entry
@@ -3445,6 +3474,7 @@ describe("trophy progression", () => {
     const player = server.getState().players.find((entry) => entry.seatId === "seat-1");
     expect(player?.character.stats.command).toBe(4);
     expect(player?.character.trophies).toBe(0);
+    expect(player?.character.trophyPile).toEqual([]);
     expect(server.getState().escalationLevel).toBe(1);
     expect(server.getState().activeSeatIndex).toBe(1);
   });
@@ -3551,6 +3581,16 @@ describe("trophy progression", () => {
                   ...entry.character,
                   status: "recalled",
                   trophies: 9,
+                  trophyPile: [
+                    {
+                      cardId: "cinder-veil-stalker",
+                      name: "Cinder-Veil Stalker",
+                      trophyValue: 6,
+                      spentValue: 0,
+                      stat: "grit",
+                      cardType: "enemy"
+                    }
+                  ],
                   scars: ["scar-ember"]
                 }
               }
@@ -3574,6 +3614,7 @@ describe("trophy progression", () => {
     const player = server.getState().players.find((entry) => entry.seatId === "seat-1");
     expect(player?.character.id).toBe("signal-witch");
     expect(player?.character.trophies).toBe(0);
+    expect(player?.character.trophyPile).toEqual([]);
     expect(player?.character.scars).toEqual(["scar-ember"]);
   });
 

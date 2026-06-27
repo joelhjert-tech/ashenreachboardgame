@@ -30,12 +30,22 @@ export interface PublicPlayerCharacter {
   activeContract: { contractId: string; progress: number } | null;
   stats: Record<Stat, number>;
   trophies: number;
+  trophyPile?: TrophyPileEntry[];
   heat: number;
   wounds: number;
   scars: string[];
   heldGearCount: number;
   followerCount?: number;
   equippedGear: Record<GearSlot, string | null>;
+}
+
+export interface TrophyPileEntry {
+  cardId: string;
+  name: string;
+  trophyValue: number;
+  spentValue?: number;
+  stat?: Stat;
+  cardType?: string;
 }
 
 export interface PublicPlayer {
@@ -87,6 +97,7 @@ export interface PrivateCharacter {
   status: "active" | "recalled";
   stats: Record<Stat, number>;
   trophies: number;
+  trophyPile?: TrophyPileEntry[];
   heat: number;
   wounds: number;
   scars: string[];

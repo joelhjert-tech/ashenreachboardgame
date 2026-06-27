@@ -7,7 +7,8 @@ import type {
   GearItem,
   PhonePatchPayload,
   SectorNode,
-  Stat
+  Stat,
+  TrophyPileEntry
 } from "../shared/types.js";
 import { getBoardSpace, isScenarioConfrontationSpace } from "../../game/data/boardSpaces.js";
 import { describeContractObjective, formatContractObjectiveStatus } from "../../game/contracts/objectives.js";
@@ -333,6 +334,65 @@ function TrophyAdvanceDisclosure({
       </summary>
       <ActionButtons actions={actions} />
     </details>
+  );
+}
+
+function getTrophyPileEntryAvailableValue(entry: TrophyPileEntry): number {
+  return Math.max(0, entry.trophyValue - (entry.spentValue ?? 0));
+}
+
+function TrophyPileSection({
+  actions,
+  trophies,
+  trophyPile
+}: {
+  actions: ActionButtonDefinition[];
+  trophies: number;
+  trophyPile: TrophyPileEntry[] | undefined;
+}): ReactElement {
+  const availableStats = actions.filter((action) => !action.disabled).map((action) => action.label);
+  const pile = trophyPile ?? [];
+  const pileAvailableValue = pile.reduce((total, entry) => total + getTrophyPileEntryAvailableValue(entry), 0);
+
+  return (
+    <section className="phone-trophy-pile" aria-label="Trophy pile" data-testid="phone-trophy-pile">
+      <div className="phone-trophy-pile-header">
+        <div>
+          <span>Trophy Pile</span>
+          <strong>{trophies} available</strong>
+        </div>
+        <small>{pileAvailableValue} from defeated enemies</small>
+      </div>
+      <div className="phone-trophy-pile-list">
+        {pile.length > 0 ? (
+          pile.slice(0, 4).map((entry) => {
+            const availableValue = getTrophyPileEntryAvailableValue(entry);
+
+            return (
+              <article key={`${entry.cardId}-${entry.spentValue ?? 0}`} className="phone-trophy-pile-card">
+                <div>
+                  <strong>{entry.name}</strong>
+                  <span>
+                    {entry.stat ? `${statLabelById[entry.stat]} | ` : ""}
+                    Trophy {availableValue}/{entry.trophyValue}
+                  </span>
+                </div>
+                <em>{availableValue}</em>
+              </article>
+            );
+          })
+        ) : (
+          <p>No defeated enemies saved yet.</p>
+        )}
+      </div>
+      <p className="phone-trophy-pile-raise">
+        {availableStats.length > 0
+          ? `Can raise: ${availableStats.join(", ")}`
+          : trophies >= TROPHY_COST_PER_RANK
+            ? "No eligible stat raise right now."
+            : `Need ${TROPHY_COST_PER_RANK - trophies} more trophy value to raise a stat.`}
+      </p>
+    </section>
   );
 }
 
@@ -843,6 +903,7 @@ export function PhoneActionPanel({ characters, onIntent, patch }: PhoneActionPan
           { key: "advance", title: "Advance", detail: "Finish or confront", actions: advanceActions, defaultOpen: true }
         ]}
       />
+      <TrophyPileSection actions={statRaiseActions} trophies={self.character.trophies} trophyPile={self.character.trophyPile} />
       <TrophyAdvanceDisclosure actions={statRaiseActions} trophies={self.character.trophies} />
     </section>
   );

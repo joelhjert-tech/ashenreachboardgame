@@ -654,8 +654,8 @@ describe("TvApp", () => {
       },
       outcome: {
         title: "Combat victory",
-        text: "Success: the stalker breaks.",
-        effects: ["Gain 1 trophy."]
+        text: "Success: the stalker breaks. Cinder-Veil Stalker added to Trophy Pile.",
+        effects: ["Gain 1 trophy.", "Cinder-Veil Stalker added to Trophy Pile."]
       }
     };
     patch.payload.outcomeSummary = {
@@ -676,7 +676,7 @@ describe("TvApp", () => {
       enemyBonus: 5,
       enemyTotal: 8,
       success: true,
-      summary: "Tarek Voss wins the battle."
+      summary: "Tarek Voss wins the battle. Cinder-Veil Stalker added to Trophy Pile."
     };
     mockUseRoomSubscription.mockReturnValue({
       patch,
@@ -698,6 +698,7 @@ describe("TvApp", () => {
     expect(screen.getByTestId("host-battle-rolls")).toHaveTextContent(/final player total/i);
     expect(screen.getByTestId("host-battle-rolls")).toHaveTextContent("11");
     expect(screen.getByTestId("host-battle-rolls")).toHaveTextContent(/final enemy total/i);
+    expect(overlay).toHaveTextContent(/cinder-veil stalker added to trophy pile/i);
     expect(screen.getByTestId("host-battle-rolls")).toHaveTextContent("8");
     expect(screen.getByTestId("host-battle-rolls")).toHaveTextContent("A 11 / D 8 / +6");
     expect(screen.getByTestId("host-battle-log")).toHaveTextContent(/tarek voss engages cinder-veil stalker/i);

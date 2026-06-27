@@ -32,7 +32,8 @@ function cloneCharacter(character: Character, currentSpaceId: string): Character
     followers: [...(character.followers ?? [])],
     abilities: [...character.abilities],
     scars: [...character.scars],
-    trophies: character.trophies
+    trophies: character.trophies,
+    trophyPile: [...(character.trophyPile ?? [])]
   };
 }
 
