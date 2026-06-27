@@ -44,6 +44,32 @@ const tileScaleByRing: Record<BoardNode["ring"], number> = {
   center: 0.15
 };
 
+const tileSizeByRingAndSide: Record<
+  BoardNode["ring"],
+  Record<"horizontal" | "vertical" | "center", { width: number; height: number }>
+> = {
+  outer: {
+    horizontal: { width: 0.172, height: 0.108 },
+    vertical: { width: 0.108, height: 0.172 },
+    center: { width: 0.172, height: 0.108 }
+  },
+  middle: {
+    horizontal: { width: 0.15, height: 0.094 },
+    vertical: { width: 0.094, height: 0.15 },
+    center: { width: 0.15, height: 0.094 }
+  },
+  inner: {
+    horizontal: { width: 0.118, height: 0.08 },
+    vertical: { width: 0.08, height: 0.118 },
+    center: { width: 0.118, height: 0.08 }
+  },
+  center: {
+    horizontal: { width: 0.2, height: 0.15 },
+    vertical: { width: 0.2, height: 0.15 },
+    center: { width: 0.2, height: 0.15 }
+  }
+};
+
 const tileLabelByRing: Record<BoardNode["ring"], string> = {
   outer: "Borderlight",
   middle: "Red March",
@@ -86,6 +112,14 @@ function getTileTone(node: BoardNode): string {
   return "neutral";
 }
 
+function getTileSide(node: BoardNode): "horizontal" | "vertical" | "center" {
+  if (node.ring === "center") {
+    return "center";
+  }
+
+  return Math.abs(node.y - 0.5) > Math.abs(node.x - 0.5) ? "horizontal" : "vertical";
+}
+
 export function TalismanBoardSurface({
   imageRect,
   activeNodeId = null,
@@ -114,7 +148,11 @@ export function TalismanBoardSurface({
       <div className="talisman-board-spoke talisman-board-spoke-west" />
 
       {RIFTFALL_BOARD_NODES.map((node) => {
-        const tileSize = tileScaleByRing[node.ring] * imageRect.width;
+        const side = getTileSide(node);
+        const fallbackTileSize = tileScaleByRing[node.ring] * imageRect.width;
+        const tileSize = tileSizeByRingAndSide[node.ring][side];
+        const tileWidth = tileSize ? tileSize.width * imageRect.width : fallbackTileSize;
+        const tileHeight = tileSize ? tileSize.height * imageRect.height : fallbackTileSize;
         const left = node.x * imageRect.width;
         const top = node.y * imageRect.height;
         const art = tileArtByNodeId[node.id];
@@ -129,6 +167,7 @@ export function TalismanBoardSurface({
             className={[
               "talisman-board-tile",
               `talisman-board-tile-${node.ring}`,
+              `talisman-board-tile-${side}`,
               `talisman-board-tile-${tone}`,
               isActive ? "talisman-board-tile-active" : "",
               isActive ? "talisman-board-tile-current" : "",
@@ -141,8 +180,8 @@ export function TalismanBoardSurface({
             style={{
               left: `${left}px`,
               top: `${top}px`,
-              width: `${tileSize}px`,
-              height: `${tileSize}px`,
+              width: `${tileWidth}px`,
+              height: `${tileHeight}px`,
               backgroundImage: `url("${art}")`
             }}
           >

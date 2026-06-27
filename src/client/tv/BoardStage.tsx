@@ -9,6 +9,7 @@ interface BoardStageProps {
   imageAlt: string;
   imageSrc: string;
   imageMode?: "visible" | "geometry-only";
+  geometryAspectRatio?: number;
   onPointerDown?: (event: React.PointerEvent<HTMLDivElement>, imageRect: BoardRect) => void;
   children: (context: BoardStageRenderContext) => ReactNode;
 }
@@ -20,7 +21,14 @@ interface StageGeometry {
   imageNaturalHeight: number;
 }
 
-export function BoardStage({ imageAlt, imageSrc, imageMode = "visible", onPointerDown, children }: BoardStageProps): ReactElement {
+export function BoardStage({
+  imageAlt,
+  imageSrc,
+  imageMode = "visible",
+  geometryAspectRatio,
+  onPointerDown,
+  children
+}: BoardStageProps): ReactElement {
   const stageRef = useRef<HTMLDivElement | null>(null);
   const imageRef = useRef<HTMLImageElement | null>(null);
   const [geometry, setGeometry] = useState<StageGeometry>({
@@ -40,8 +48,10 @@ export function BoardStage({ imageAlt, imageSrc, imageMode = "visible", onPointe
 
     const containerWidth = stage.clientWidth;
     const containerHeight = stage.clientHeight;
-    const imageNaturalWidth = image.naturalWidth || (imageMode === "geometry-only" ? 1600 : 0);
-    const imageNaturalHeight = image.naturalHeight || (imageMode === "geometry-only" ? 900 : 0);
+    const imageNaturalWidth = geometryAspectRatio
+      ? Math.max(1, geometryAspectRatio) * 1000
+      : image.naturalWidth || (imageMode === "geometry-only" ? 1600 : 0);
+    const imageNaturalHeight = geometryAspectRatio ? 1000 : image.naturalHeight || (imageMode === "geometry-only" ? 900 : 0);
 
     if (containerWidth === 0 || containerHeight === 0 || imageNaturalWidth === 0 || imageNaturalHeight === 0) {
       return;
@@ -70,7 +80,7 @@ export function BoardStage({ imageAlt, imageSrc, imageMode = "visible", onPointe
         imageNaturalHeight
       };
     });
-  }, [imageMode]);
+  }, [geometryAspectRatio, imageMode]);
 
   useEffect(() => {
     const stage = stageRef.current;

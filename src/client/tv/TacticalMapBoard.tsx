@@ -38,7 +38,7 @@ function StaticTacticalBoard(): ReactElement {
   return (
     <section className="tv-board-panel tv-board-panel-static" aria-label="Tactical campaign board">
       <div className="tv-board-shell">
-        <BoardStage imageAlt="Tactical campaign board" imageSrc={boardAssetPath} imageMode="geometry-only">
+        <BoardStage imageAlt="Tactical campaign board" imageSrc={boardAssetPath} imageMode="geometry-only" geometryAspectRatio={1}>
           {({ imageRect }) => {
             const markerSize = Math.max(26, Math.min(44, imageRect.width * 0.028));
 

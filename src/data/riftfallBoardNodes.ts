@@ -12,96 +12,96 @@ export const RIFTFALL_BOARD_NODES: BoardNode[] = [
     id: "outer_ember_sanctum",
     label: "Ember Sanctum",
     ring: "outer",
-    x: 0.5,
-    y: 0.1,
+    x: 0.4,
+    y: 0.08,
     connections: ["ashwake-crossing", "outer_broken_causeway", "middle_guardian_span"]
   },
   {
     id: "ashwake-crossing",
     label: "Ashwake Crossing",
     ring: "outer",
-    x: 0.68,
-    y: 0.1,
+    x: 0.6,
+    y: 0.08,
     connections: ["outer_ember_sanctum", "outer_waymarket", "glassmere-spindle"]
   },
   {
     id: "outer_waymarket",
     label: "Waymarket",
     ring: "outer",
-    x: 0.84,
-    y: 0.22,
+    x: 0.8,
+    y: 0.08,
     connections: ["ashwake-crossing", "glassmere-spindle", "middle_red_march_outpost"]
   },
   {
     id: "glassmere-spindle",
     label: "Glassmere Spindle",
     ring: "outer",
-    x: 0.84,
-    y: 0.42,
+    x: 0.92,
+    y: 0.3,
     connections: ["ashwake-crossing", "outer_waymarket", "outer_relay_camp"]
   },
   {
     id: "outer_relay_camp",
     label: "Relay Camp",
     ring: "outer",
-    x: 0.84,
-    y: 0.62,
+    x: 0.92,
+    y: 0.5,
     connections: ["glassmere-spindle", "mirecoil-beacon", "middle_anomaly_well"]
   },
   {
     id: "mirecoil-beacon",
     label: "Mirecoil Beacon",
     ring: "outer",
-    x: 0.68,
-    y: 0.82,
+    x: 0.92,
+    y: 0.7,
     connections: ["outer_relay_camp", "outer_salt_flats"]
   },
   {
     id: "outer_salt_flats",
     label: "Void-Salt Flats",
     ring: "outer",
-    x: 0.5,
-    y: 0.82,
+    x: 0.7,
+    y: 0.92,
     connections: ["mirecoil-beacon", "hollow-veil-yard", "middle_relic_cache"]
   },
   {
     id: "hollow-veil-yard",
     label: "Hollow Veil Yard",
     ring: "outer",
-    x: 0.32,
-    y: 0.82,
+    x: 0.5,
+    y: 0.92,
     connections: ["outer_salt_flats", "outer_surgery_tent"]
   },
   {
     id: "outer_surgery_tent",
     label: "Cinder Surgery",
     ring: "outer",
-    x: 0.16,
-    y: 0.62,
+    x: 0.3,
+    y: 0.92,
     connections: ["hollow-veil-yard", "emberwatch-step", "middle_scar_surgery"]
   },
   {
     id: "emberwatch-step",
     label: "Emberwatch Step",
     ring: "outer",
-    x: 0.16,
-    y: 0.46,
+    x: 0.08,
+    y: 0.62,
     connections: ["outer_surgery_tent", "outer_oathpost"]
   },
   {
     id: "outer_oathpost",
     label: "Oathpost",
     ring: "outer",
-    x: 0.16,
-    y: 0.3,
+    x: 0.08,
+    y: 0.38,
     connections: ["emberwatch-step", "outer_broken_causeway", "middle_rivalry_pit"]
   },
   {
     id: "outer_broken_causeway",
     label: "Broken Causeway",
     ring: "outer",
-    x: 0.32,
-    y: 0.1,
+    x: 0.2,
+    y: 0.08,
     connections: ["outer_oathpost", "outer_ember_sanctum"]
   },
   {
@@ -109,22 +109,22 @@ export const RIFTFALL_BOARD_NODES: BoardNode[] = [
     label: "Guardian Span",
     ring: "middle",
     x: 0.5,
-    y: 0.255,
+    y: 0.25,
     connections: ["outer_ember_sanctum", "middle_red_march_outpost", "middle_rivalry_pit", "inner_veil_rift"]
   },
   {
     id: "middle_red_march_outpost",
     label: "Red March Outpost",
     ring: "middle",
-    x: 0.64,
-    y: 0.325,
+    x: 0.69,
+    y: 0.25,
     connections: ["outer_waymarket", "middle_guardian_span", "middle_anomaly_well"]
   },
   {
     id: "middle_anomaly_well",
     label: "Anomaly Well",
     ring: "middle",
-    x: 0.7,
+    x: 0.75,
     y: 0.5,
     connections: ["outer_relay_camp", "middle_red_march_outpost", "middle_webglass_breach", "inner_choir_shrine"]
   },
@@ -132,8 +132,8 @@ export const RIFTFALL_BOARD_NODES: BoardNode[] = [
     id: "middle_webglass_breach",
     label: "Webglass Breach",
     ring: "middle",
-    x: 0.64,
-    y: 0.675,
+    x: 0.69,
+    y: 0.75,
     connections: ["middle_anomaly_well", "middle_relic_cache"]
   },
   {
@@ -141,22 +141,22 @@ export const RIFTFALL_BOARD_NODES: BoardNode[] = [
     label: "Relic Cache",
     ring: "middle",
     x: 0.5,
-    y: 0.745,
+    y: 0.75,
     connections: ["outer_salt_flats", "middle_webglass_breach", "middle_shard_sprawl", "inner_blackstar_shortcut"]
   },
   {
     id: "middle_shard_sprawl",
     label: "Shard Sprawl",
     ring: "middle",
-    x: 0.36,
-    y: 0.675,
+    x: 0.31,
+    y: 0.75,
     connections: ["middle_relic_cache", "middle_scar_surgery"]
   },
   {
     id: "middle_scar_surgery",
     label: "Scar Surgery",
     ring: "middle",
-    x: 0.3,
+    x: 0.25,
     y: 0.5,
     connections: ["outer_surgery_tent", "middle_shard_sprawl", "middle_rivalry_pit", "inner_cinder_lattice"]
   },
@@ -164,8 +164,8 @@ export const RIFTFALL_BOARD_NODES: BoardNode[] = [
     id: "middle_rivalry_pit",
     label: "Rivalry Pit",
     ring: "middle",
-    x: 0.36,
-    y: 0.325,
+    x: 0.31,
+    y: 0.25,
     connections: ["outer_oathpost", "middle_scar_surgery", "middle_guardian_span"]
   },
   {
@@ -173,14 +173,14 @@ export const RIFTFALL_BOARD_NODES: BoardNode[] = [
     label: "Veil Rift",
     ring: "inner",
     x: 0.5,
-    y: 0.33,
+    y: 0.36,
     connections: ["middle_guardian_span", "inner_choir_shrine", "inner_tomb_gate", "center_cinder_gate"]
   },
   {
     id: "inner_choir_shrine",
     label: "Choir Shrine",
     ring: "inner",
-    x: 0.64,
+    x: 0.63,
     y: 0.42,
     connections: ["middle_anomaly_well", "inner_veil_rift", "inner_gate_of_cinders"]
   },
@@ -188,7 +188,7 @@ export const RIFTFALL_BOARD_NODES: BoardNode[] = [
     id: "inner_gate_of_cinders",
     label: "Gate of Cinders",
     ring: "inner",
-    x: 0.64,
+    x: 0.63,
     y: 0.58,
     connections: ["inner_choir_shrine", "inner_blackstar_shortcut", "center_cinder_gate"]
   },
@@ -197,14 +197,14 @@ export const RIFTFALL_BOARD_NODES: BoardNode[] = [
     label: "Blackstar Cut",
     ring: "inner",
     x: 0.5,
-    y: 0.67,
+    y: 0.64,
     connections: ["middle_relic_cache", "inner_gate_of_cinders", "inner_cinder_lattice"]
   },
   {
     id: "inner_cinder_lattice",
     label: "Cinder Lattice",
     ring: "inner",
-    x: 0.36,
+    x: 0.37,
     y: 0.58,
     connections: ["middle_scar_surgery", "inner_blackstar_shortcut", "inner_tomb_gate", "center_cinder_gate"]
   },
@@ -212,7 +212,7 @@ export const RIFTFALL_BOARD_NODES: BoardNode[] = [
     id: "inner_tomb_gate",
     label: "Tomb Gate",
     ring: "inner",
-    x: 0.36,
+    x: 0.37,
     y: 0.42,
     connections: ["inner_cinder_lattice", "inner_veil_rift"]
   },

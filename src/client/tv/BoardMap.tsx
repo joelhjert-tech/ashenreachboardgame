@@ -230,6 +230,7 @@ export function BoardMap({ patch, phase, showHeader = true, showSidebar = true }
           imageAlt="Tactical campaign board"
           imageSrc={boardAssetPath}
           imageMode="geometry-only"
+          geometryAspectRatio={1}
           onPointerDown={
             boardDebugEnabled
               ? (event, imageRect) => {
