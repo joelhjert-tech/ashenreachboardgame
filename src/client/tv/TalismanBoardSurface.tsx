@@ -4,7 +4,7 @@ import { getBoardSpace } from "../../game/data/boardSpaces.js";
 import type { BoardRect } from "./boardGeometry.js";
 
 const tileArtByNodeId: Record<string, string> = {
-  outer_ember_sanctum: "/assets/riftfall/board/tiles/outer/outer_st_antias_sanctuary.png",
+  outer_ember_sanctum: "/assets/riftfall/board/tiles/outer/outer_saint_sanctuary.png",
   "ashwake-crossing": "/assets/riftfall/board/tiles/outer/outer_shrine_road.png",
   outer_waymarket: "/assets/riftfall/board/tiles/outer/outer_black_market.png",
   "glassmere-spindle": "/assets/riftfall/board/tiles/outer/outer_portal_ruins.png",
@@ -21,9 +21,9 @@ const tileArtByNodeId: Record<string, string> = {
   middle_anomaly_well: "/assets/riftfall/board/tiles/middle/middle_relay_spire.png",
   middle_webglass_breach: "/assets/riftfall/board/tiles/middle/middle_webglass_breach.png",
   middle_relic_cache: "/assets/riftfall/board/tiles/middle/middle_ancient_machine_ruins.png",
-  middle_shard_sprawl: "/assets/riftfall/board/tiles/middle/middle_hive_sprawl.png",
+  middle_shard_sprawl: "/assets/riftfall/board/tiles/middle/middle_ashstack_sprawl.png",
   middle_scar_surgery: "/assets/riftfall/board/tiles/middle/middle_monastery.png",
-  middle_rivalry_pit: "/assets/riftfall/board/tiles/middle/middle_riftspawn_pit.png",
+  middle_rivalry_pit: "/assets/riftfall/board/tiles/middle/middle_breachspawn_pit.png",
   inner_veil_rift: "/assets/riftfall/board/tiles/inner/inner_veil_rift.png",
   inner_choir_shrine: "/assets/riftfall/board/tiles/inner/inner_mortuary_domain.png",
   inner_gate_of_cinders: "/assets/riftfall/board/tiles/inner/inner_rift_gate.png",

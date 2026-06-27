@@ -57,6 +57,7 @@ import type {
   MovementResolvedAction,
   MoveRequestedAction,
   PhaseAdvancedAction,
+  ResolutionContinuedAction,
   RoundCompletedAction,
   SectorCollapsedAction,
   SpaceTextResolvedAction,
@@ -79,7 +80,7 @@ import type { Follower } from "../game/schema/follower.schema.js";
 import type { GearItem } from "../game/schema/gear.schema.js";
 import { rollDice, type RandomSource, defaultRandomSource } from "../game/engine/dice.js";
 import { reduceGameState } from "../game/engine/reducer.js";
-import type { GameState, PlayerState } from "../game/schema/session.schema.js";
+import type { ActiveResolution, GameState, PlayerState } from "../game/schema/session.schema.js";
 import { validateHostToken, validateJoinToken } from "./auth.js";
 import { getBoardSpace } from "../game/data/boardSpaces.js";
 
@@ -93,6 +94,7 @@ const MAX_STAT_RANK = 9;
 const RAISE_STAT_FEEDS_ESCALATION = true;
 const RAISE_STAT_ESCALATION_REASON = "forged in fire";
 const ENEMY_ROLL_TIMEOUT_MS = 30_000;
+const RESOLUTION_AUTO_CONTINUE_MS = process.env.VITEST ? 1 : 3000;
 
 const NEMESIS_OPPOSITION = {
   strength: { attackStat: "grit", label: "Overpower" },
@@ -179,6 +181,7 @@ const CLIENT_INTENT_TYPES = new Set<string>([
   "CHECK_REQUESTED",
   "COMBAT_REQUESTED",
   "ENEMY_ROLL_REQUESTED",
+  "CONTINUE_RESOLUTION",
   "RECRUIT_REPLACEMENT",
   "EQUIP_GEAR",
   "UNEQUIP_GEAR",
@@ -289,6 +292,7 @@ export class GameRoomServer {
   private readonly escalations: Map<string, EscalationCard>;
   private hostToken: string | null = null;
   private enemyRollTimeout: ReturnType<typeof setTimeout> | null = null;
+  private resolutionAutoContinueTimeout: ReturnType<typeof setTimeout> | null = null;
 
   public constructor(
     private state: GameState,
@@ -394,9 +398,15 @@ export class GameRoomServer {
         throw new IntentRejectedError(intent.type, "Seat mismatch between token and submitted intent");
       }
 
+      if (intent.type === "CONTINUE_RESOLUTION") {
+        this.resolveContinueResolutionIntent(intent);
+        return;
+      }
+
       if (intent.type === "STABILIZE_REQUESTED") {
         this.resolveStabilizeIntent(intent);
-        const shouldCompleteTurn = this.state.status === "active" && this.state.phase === "broadcast";
+        const shouldCompleteTurn =
+          this.state.status === "active" && this.state.phase === "broadcast" && !this.state.activeResolution;
         const completingSeatId = this.state.turnOrder[this.state.activeSeatIndex] ?? client.seatId;
 
         this.broadcastPatch();
@@ -410,7 +420,8 @@ export class GameRoomServer {
 
       if (intent.type === "RAISE_STAT_REQUESTED") {
         this.resolveRaiseStatIntent(intent);
-        const shouldCompleteTurn = this.state.status === "active" && this.state.phase === "broadcast";
+        const shouldCompleteTurn =
+          this.state.status === "active" && this.state.phase === "broadcast" && !this.state.activeResolution;
         const completingSeatId = this.state.turnOrder[this.state.activeSeatIndex] ?? client.seatId;
 
         this.broadcastPatch();
@@ -424,7 +435,8 @@ export class GameRoomServer {
 
       if (intent.type === "RESOLVE_SPACE_TEXT") {
         this.resolveSpaceTextIntent(intent);
-        const shouldCompleteTurn = this.state.status === "active" && this.state.phase === "broadcast";
+        const shouldCompleteTurn =
+          this.state.status === "active" && this.state.phase === "broadcast" && !this.state.activeResolution;
         const completingSeatId = this.state.turnOrder[this.state.activeSeatIndex] ?? client.seatId;
 
         this.broadcastPatch();
@@ -465,7 +477,8 @@ export class GameRoomServer {
         this.maybeTriggerAbilityOnContractCompleted(client.seatId);
       }
 
-      const shouldCompleteTurn = this.state.status === "active" && this.state.phase === "broadcast";
+      const shouldCompleteTurn =
+        this.state.status === "active" && this.state.phase === "broadcast" && !this.state.activeResolution;
       const completingSeatId = this.state.turnOrder[this.state.activeSeatIndex] ?? client.seatId;
 
       this.broadcastPatch();
@@ -963,6 +976,12 @@ export class GameRoomServer {
           seatId: intent.seatId,
           createdAt
         } satisfies EnemyRollRequestedAction;
+      case "CONTINUE_RESOLUTION":
+        return {
+          type: "CONTINUE_RESOLUTION",
+          seatId: intent.seatId,
+          createdAt
+        } satisfies ResolutionContinuedAction;
       case "RECRUIT_REPLACEMENT":
         return {
           type: "RECRUIT_REPLACEMENT",
@@ -2375,12 +2394,44 @@ export class GameRoomServer {
     updater: (state: GameState) => GameState,
     summary: string
   ): void {
+    const createdAt = new Date().toISOString();
+    const updatedState = updater(this.state);
+    const player = updatedState.players.find((entry) => entry.seatId === seatId);
+    const existingResolution = updatedState.activeResolution ?? this.state.activeResolution ?? null;
+    const activeResolution: ActiveResolution = existingResolution
+      ? {
+          ...existingResolution,
+          outcome: {
+            title: existingResolution.outcome?.title ?? "Scenario pressure",
+            text: [existingResolution.outcome?.text, summary].filter(Boolean).join(" "),
+            effects: [...(existingResolution.outcome?.effects ?? []), summary]
+          }
+        }
+      : {
+          id: `${seatId}:scenario:ambient:${createdAt}`,
+          playerId: seatId,
+          source: "scenario",
+          stage: "outcome_summary",
+          card: {
+            id: this.state.activeScenarioId,
+            title: "Scenario Pressure",
+            type: "scenario",
+            flavor: summary
+          },
+          outcome: {
+            title: "Scenario pressure",
+            text: summary,
+            effects: [summary]
+          }
+        };
+
     this.state = {
-      ...updater(this.state),
-      sequence: this.state.sequence + 1,
+      ...updatedState,
+      sequence: updatedState.sequence + 1,
+      activeResolution,
       lastOutcomeSummary: {
         seatId,
-        movedToSectorId: this.state.players.find((player) => player.seatId === seatId)?.sectorId ?? "unknown",
+        movedToSectorId: player?.sectorId ?? "unknown",
         encounterCardId: null,
         encounterTitle: "Scenario Pressure",
         encounterCardType: null,
@@ -2398,7 +2449,7 @@ export class GameRoomServer {
         success: null,
         summary
       },
-      eventLog: [...this.state.eventLog, { type: "SCENARIO_AMBIENT_APPLIED", seatId, summary, createdAt: new Date().toISOString() }]
+      eventLog: [...updatedState.eventLog, { type: "SCENARIO_AMBIENT_APPLIED", seatId, summary, createdAt }]
     };
   }
 
@@ -2443,6 +2494,32 @@ export class GameRoomServer {
       currentEncounter: drawnThreat,
       pendingEnemyRoll: null,
       pendingEffect: null,
+      activeResolution: drawnThreat
+        ? {
+            id: `${seatId}:threat:${drawnThreat.id}:${Date.now()}`,
+            playerId: seatId,
+            source: "threat",
+            stage: "card_reveal",
+            card: {
+              id: drawnThreat.id,
+              title: drawnThreat.title,
+              type: drawnThreat.cardType,
+              flavor: drawnThreat.flavor,
+              artType: "threat"
+            },
+            battle: {
+              enemyName: drawnThreat.cardType === "enemy" ? drawnThreat.enemyName : drawnThreat.title,
+              stat: drawnThreat.stat,
+              difficulty: drawnThreat.difficulty,
+              modifiers: []
+            },
+            outcome: {
+              title: "Card revealed",
+              text: `${reasonSummary} ${drawnThreat.title} stirs in ${sector.name}.`,
+              effects: []
+            }
+          }
+        : this.state.activeResolution ?? null,
       sectors: this.state.sectors.map((entry) =>
         entry.id === sector.id && drawnThreat
           ? {
@@ -2877,6 +2954,13 @@ export class GameRoomServer {
     while (progressMade) {
       progressMade = false;
 
+      if (
+        this.state.activeResolution &&
+        ["card_reveal", "battle_setup", "dice_roll", "roll_result"].includes(this.state.activeResolution.stage)
+      ) {
+        return;
+      }
+
       if (this.state.phase === "sector") {
         this.applyAction(this.createEncounterDrawnAction(seatId));
         progressMade = true;
@@ -3187,6 +3271,25 @@ export class GameRoomServer {
     this.applyScenarioOnSkillResolved(intent.seatId, intent.stat, success);
     this.maybeTriggerAbilityOnCheckResolved(intent.seatId, intent.stat, success);
     this.runAutomaticPhases(intent.seatId);
+  }
+
+  resolveContinueResolutionIntent(intent: Extract<ClientIntent, { type: "CONTINUE_RESOLUTION" }>): void {
+    this.clearResolutionAutoContinueTimeout();
+    const previousStage = this.state.activeResolution?.stage ?? null;
+    const activeSeatId = this.state.turnOrder[this.state.activeSeatIndex] ?? intent.seatId;
+
+    this.applyAction(this.intentToAction(intent));
+
+    if (previousStage === "roll_result" || previousStage === "outcome_summary") {
+      this.runAutomaticPhases(intent.seatId);
+    }
+
+    if (this.state.status === "active" && this.state.phase === "broadcast" && !this.state.activeResolution) {
+      this.completeBroadcastTurn(activeSeatId);
+      return;
+    }
+
+    this.broadcastPatch();
   }
 
   resolveMoveIntent(intent: Extract<ClientIntent, { type: "MOVE_REQUESTED" }>): void {
@@ -3809,6 +3912,59 @@ export class GameRoomServer {
     this.enemyRollTimeout = null;
   }
 
+  private clearResolutionAutoContinueTimeout(): void {
+    if (!this.resolutionAutoContinueTimeout) {
+      return;
+    }
+
+    clearTimeout(this.resolutionAutoContinueTimeout);
+    this.resolutionAutoContinueTimeout = null;
+  }
+
+  private shouldAutoContinueResolution(): boolean {
+    return Boolean(
+      this.state.activeResolution &&
+        ["roll_result", "outcome_summary", "awaiting_continue"].includes(this.state.activeResolution.stage)
+    );
+  }
+
+  private scheduleResolutionAutoContinue(): void {
+    if (this.resolutionAutoContinueTimeout || !this.shouldAutoContinueResolution()) {
+      return;
+    }
+
+    this.resolutionAutoContinueTimeout = setTimeout(() => {
+      this.resolutionAutoContinueTimeout = null;
+
+      const activeResolution = this.state.activeResolution;
+
+      if (!activeResolution || !this.shouldAutoContinueResolution()) {
+        return;
+      }
+
+      const previousStage = activeResolution.stage;
+      const continuingSeatId = this.state.turnOrder[this.state.activeSeatIndex] ?? activeResolution.playerId;
+
+      this.applyAction({
+        type: "CONTINUE_RESOLUTION",
+        seatId: continuingSeatId,
+        createdAt: new Date().toISOString()
+      });
+
+      if (previousStage === "roll_result" || previousStage === "outcome_summary") {
+        this.runAutomaticPhases(continuingSeatId);
+      }
+
+      if (this.state.status === "active" && this.state.phase === "broadcast" && !this.state.activeResolution) {
+        this.completeBroadcastTurn(continuingSeatId);
+        return;
+      }
+
+      this.broadcastPatch();
+    }, RESOLUTION_AUTO_CONTINUE_MS);
+    this.resolutionAutoContinueTimeout.unref?.();
+  }
+
   private scheduleEnemyRollTimeout(): void {
     this.clearEnemyRollTimeout();
 
@@ -4045,6 +4201,8 @@ export class GameRoomServer {
       const envelope = this.createPatchEnvelope(client);
       client.socket.send(JSON.stringify(envelope));
     }
+
+    this.scheduleResolutionAutoContinue();
   }
 
   private adoptPhoneClient(client: ConnectedClient, sendPrivateSnapshot: boolean): void {
@@ -4276,6 +4434,7 @@ export function createTvProjection(state: GameState): Record<string, unknown> {
       : null,
     pendingEnemyRoll: state.pendingEnemyRoll,
     outcomeSummary: state.lastOutcomeSummary,
+    activeResolution: state.activeResolution ?? null,
     recentAbilityTriggers,
     nemesis: nemesisSummary
   };
@@ -4306,6 +4465,7 @@ export function createPhoneProjection(state: GameState, seatId: string, forcePri
     encounter: state.currentEncounter,
     pendingEnemyRoll: state.pendingEnemyRoll,
     outcomeSummary: state.lastOutcomeSummary,
+    activeResolution: state.activeResolution ?? null,
     recentAbilityTriggers: publicProjection.recentAbilityTriggers,
     nemesis: publicProjection.nemesis,
     self: player ? sanitizePlayerForPhone(player) : null

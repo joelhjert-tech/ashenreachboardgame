@@ -111,6 +111,7 @@ export function createInitialSessionState(
     currentEncounter: null,
     pendingEnemyRoll: null,
     pendingEffect: null,
+    activeResolution: null,
     lastOutcomeSummary: null
   };
 }

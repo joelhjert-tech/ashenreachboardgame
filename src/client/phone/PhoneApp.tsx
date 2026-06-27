@@ -1,6 +1,5 @@
-import { useEffect, useRef, useState, type FormEvent, type ReactElement } from "react";
+import { useEffect, useState, type FormEvent, type ReactElement } from "react";
 import { fetchCharacters, joinSession } from "../shared/network.js";
-import { getPhoneAbilityTelemetry } from "../shared/abilityTelemetry.js";
 import type { CharacterCatalogEntry, PhonePatchPayload, PhoneSessionAuth, StatePatch } from "../shared/types.js";
 import { useRoomSubscription } from "../shared/useRoomSubscription.js";
 import {
@@ -8,7 +7,6 @@ import {
   getPhoneBackgroundPath
 } from "../shared/assetPaths.js";
 import { MobileDebugDrawer } from "./MobileDebugDrawer.js";
-import { LandscapeCharacterCardView } from "./LandscapeCharacterCardView.js";
 import { PortraitControllerView } from "./PortraitControllerView.js";
 
 const storageKey = "ashen-reach-phone-auth";
@@ -149,13 +147,6 @@ export function PhoneApp(): ReactElement {
 
   const phonePatch =
     patch && "self" in patch.payload ? (patch as StatePatch<PhonePatchPayload>) : null;
-  const previousPhonePatchRef = useRef<PhonePatchPayload | null>(null);
-
-  useEffect(() => {
-    if (phonePatch?.payload) {
-      previousPhonePatchRef.current = phonePatch.payload;
-    }
-  }, [phonePatch]);
 
   const handleJoin = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -288,31 +279,17 @@ export function PhoneApp(): ReactElement {
   const activeContractCard =
     self?.character.activeContract &&
     phonePatch?.payload.availableContracts.find((contract) => contract.id === self.character.activeContract?.contractId);
-  const abilityTelemetry = getPhoneAbilityTelemetry(phonePatch?.payload ?? null, previousPhonePatchRef.current);
 
   return (
     <main className="phone-page phone-page-controller">
       <div className={`phone-controller-layout${isLandscape ? " phone-controller-layout-landscape" : ""}`}>
         {isLandscape ? (
-          <LandscapeCharacterCardView
-            self={self}
-            activeContractCard={activeContractCard ?? null}
-            roomCode={auth.roomCode}
-            displayName={auth.displayName}
-            connectionStatus={status}
-            sessionStatus={phonePatch?.payload.status ?? null}
-            phase={phonePatch?.phase ?? "start"}
-            activeSeatId={activeSeatId}
-            activeNemesis={phonePatch?.payload.nemesis ?? null}
-            encounter={phonePatch?.payload.encounter ?? null}
-            outcomeSummary={phonePatch?.payload.outcomeSummary ?? null}
-            latestAbilityTriggerSummary={abilityTelemetry.latestTrigger?.summary ?? null}
-            abilityChangeItems={abilityTelemetry.changes}
-            characters={characters}
-            patch={phonePatch?.payload ?? null}
-            onIntent={phonePatch ? sendIntent : null}
-            onLeave={clearSession}
-          />
+          <section className="phone-rotate-warning" aria-live="polite">
+            <div>
+              <span>Portrait required</span>
+              <h1>Rotate your phone to portrait mode.</h1>
+            </div>
+          </section>
         ) : (
           <PortraitControllerView
             self={self}
@@ -328,9 +305,11 @@ export function PhoneApp(): ReactElement {
           />
         )}
 
-        <div className="phone-debug-anchor">
-          <MobileDebugDrawer events={debugEvents} onClear={clearDebugEvents} defaultOpen={debugOpen} />
-        </div>
+        {debugOpen && (
+          <div className="phone-debug-anchor">
+            <MobileDebugDrawer events={debugEvents} onClear={clearDebugEvents} defaultOpen={debugOpen} />
+          </div>
+        )}
       </div>
     </main>
   );

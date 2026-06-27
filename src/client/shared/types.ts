@@ -170,6 +170,48 @@ export interface OutcomeSummary {
   summary: string;
 }
 
+export type ResolutionStage =
+  | "idle"
+  | "card_reveal"
+  | "battle_setup"
+  | "dice_roll"
+  | "roll_result"
+  | "outcome_summary"
+  | "awaiting_continue";
+
+export interface ActiveResolution {
+  id: string;
+  playerId: string;
+  source: "movement" | "threat" | "contract" | "anomaly" | "artifact" | "scenario";
+  stage: ResolutionStage;
+  card?: {
+    id: string;
+    title: string;
+    type: string;
+    flavor?: string | null;
+    artType?: string;
+  };
+  battle?: {
+    enemyName?: string;
+    stat: Stat;
+    difficulty: number;
+    modifiers: Array<{ label: string; value: number }>;
+  };
+  roll?: {
+    dice: number[];
+    baseTotal: number;
+    modifierTotal: number;
+    finalTotal: number;
+    target: number;
+    success: boolean;
+  };
+  outcome?: {
+    title: string;
+    text: string;
+    effects: string[];
+  };
+}
+
 export interface AbilityTriggerSummary {
   seatId: string;
   abilityId: string;
@@ -252,6 +294,7 @@ export interface PublicPatchPayload {
   encounter: EncounterCard | null;
   pendingEnemyRoll: PendingEnemyRoll | null;
   outcomeSummary: OutcomeSummary | null;
+  activeResolution?: ActiveResolution | null;
   recentAbilityTriggers: AbilityTriggerSummary[];
   nemesis: ActiveNemesisSummary | null;
 }
@@ -326,6 +369,10 @@ export type ClientIntent =
     }
   | {
       type: "ENEMY_ROLL_REQUESTED";
+      seatId: string;
+    }
+  | {
+      type: "CONTINUE_RESOLUTION";
       seatId: string;
     }
   | {

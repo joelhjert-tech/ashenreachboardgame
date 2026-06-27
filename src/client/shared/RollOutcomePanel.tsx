@@ -30,7 +30,7 @@ function DieFace({ value }: { value: number }): ReactElement {
   const activePips = new Set(pipLayout[value] ?? []);
 
   return (
-    <div className="roll-die" data-face={value}>
+    <div className="roll-die" data-face={value} data-testid="roll-die">
       <div className="roll-die-grid">
         {Array.from({ length: 9 }, (_, index) => (
           <span

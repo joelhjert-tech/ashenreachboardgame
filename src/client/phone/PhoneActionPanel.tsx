@@ -1,5 +1,6 @@
 import { useState, type ReactElement } from "react";
 import type {
+  ActiveResolution,
   CharacterCatalogEntry,
   ClientIntent,
   ContractCard,
@@ -10,6 +11,13 @@ import type {
 } from "../shared/types.js";
 import { getBoardSpace, isScenarioConfrontationSpace } from "../../game/data/boardSpaces.js";
 import { describeContractObjective, formatContractObjectiveStatus } from "../../game/contracts/objectives.js";
+import {
+  describeActiveResolutionRoll,
+  formatResolutionModifiers,
+  resolutionStageLabel
+} from "../shared/resolutionPresentation.js";
+import { PhoneInventoryPanel } from "./PhoneInventoryPanel.js";
+import { formatTimingWindow, getBattleAssistViewModel, statLabelById as inventoryStatLabelById } from "./inventoryPresentation.js";
 
 interface PhoneActionPanelProps {
   characters: CharacterCatalogEntry[];
@@ -89,6 +97,141 @@ function getGearActionDetail(item: GearItem): string {
   }
 
   return `${baseDetail} | ${item.charges ?? 0} charge${item.charges === 1 ? "" : "s"} left`;
+}
+
+function ActiveResolutionCard({
+  resolution,
+  canContinue,
+  onContinue
+}: {
+  resolution: ActiveResolution | null | undefined;
+  canContinue: boolean;
+  onContinue: () => void;
+}): ReactElement | null {
+  if (!resolution) {
+    return null;
+  }
+
+  const rollText = describeActiveResolutionRoll(resolution);
+  const battle = resolution.battle;
+  const outcome = resolution.outcome;
+
+  return (
+    <div className="phone-resolution-card" data-testid="phone-resolution-card">
+      <div className="phone-resolution-heading">
+        <span>{resolutionStageLabel[resolution.stage]}</span>
+        <strong>{resolution.card?.title ?? outcome?.title ?? "Resolution"}</strong>
+      </div>
+      {battle && (
+        <div className="phone-resolution-grid" data-testid="phone-battle-panel">
+          <span>{battle.enemyName ?? "Check"}</span>
+          <span>
+            {statLabelById[battle.stat]} vs {battle.difficulty}
+          </span>
+          <span>Modifiers</span>
+          <span>{formatResolutionModifiers(battle.modifiers)}</span>
+        </div>
+      )}
+      {rollText && resolution.roll && (
+        <div className="phone-resolution-roll" data-testid="phone-roll-result">
+          <p>{rollText}</p>
+          <p>Target: {resolution.roll.target}</p>
+          <strong>{resolution.roll.success ? "Success" : "Failure"}</strong>
+        </div>
+      )}
+      {outcome && (
+        <div className="phone-resolution-outcome">
+          <p>{outcome.text}</p>
+          {outcome.effects.length > 0 && (
+            <ul>
+              {outcome.effects.map((effect) => (
+                <li key={effect}>{effect}</li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
+      {canContinue && (
+        <button
+          className="phone-button phone-button-primary phone-resolution-continue"
+          data-testid="phone-resolution-continue"
+          type="button"
+          onClick={onContinue}
+        >
+          Continue
+        </button>
+      )}
+    </div>
+  );
+}
+
+function BattleAssistCard({
+  patch,
+  onIntent
+}: {
+  patch: PhonePatchPayload;
+  onIntent: (intent: ClientIntent) => void;
+}): ReactElement | null {
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const battleAssist = getBattleAssistViewModel(patch);
+
+  if (!battleAssist) {
+    return null;
+  }
+
+  const usableCount = battleAssist.usableCards.length;
+
+  return (
+    <div className="phone-battle-assist" data-testid="phone-battle-assist">
+      <div className="phone-battle-assist-header">
+        <div>
+          <span>Battle Assist</span>
+          <strong>{battleAssist.enemyName}</strong>
+        </div>
+        <em>{battleAssist.phaseLabel}</em>
+      </div>
+      <div className="phone-battle-assist-grid">
+        <span>Enemy</span>
+        <strong>
+          {battleAssist.enemyType} {battleAssist.enemyBattleValue}
+        </strong>
+        <span>Player</span>
+        <strong>
+          {inventoryStatLabelById[battleAssist.playerBattleStat]} {battleAssist.playerBattleValue}
+        </strong>
+        <span>Health</span>
+        <strong>{patch.self?.character.wounds ?? 0} wounds</strong>
+        <span>Timing</span>
+        <strong>{formatTimingWindow(battleAssist.currentTimingWindow)}</strong>
+      </div>
+      {usableCount > 0 ? (
+        <div className="phone-battle-assist-alert">
+          <p>You have {usableCount} card{usableCount === 1 ? "" : "s"} that can help.</p>
+          <button
+            type="button"
+            className="phone-button phone-button-primary"
+            onClick={() => setDrawerOpen((current) => !current)}
+          >
+            Open Combat Cards
+          </button>
+        </div>
+      ) : (
+        <p className="phone-battle-assist-muted">No combat cards are usable in this timing window.</p>
+      )}
+      {drawerOpen && (
+        <div className="phone-combat-card-drawer" data-testid="phone-combat-card-drawer">
+          <PhoneInventoryPanel patch={patch} onIntent={onIntent} compact onlyUsable onUse={() => setDrawerOpen(false)} />
+          <button
+            type="button"
+            className="phone-button phone-button-secondary phone-combat-card-skip"
+            onClick={() => setDrawerOpen(false)}
+          >
+            Skip
+          </button>
+        </div>
+      )}
+    </div>
+  );
 }
 
 function ActionButtons({ actions }: { actions: ActionButtonDefinition[] }): ReactElement {
@@ -197,6 +340,24 @@ export function PhoneActionPanel({ characters, onIntent, patch }: PhoneActionPan
   }
 
   const isActiveSeat = getActiveSeatId(patch) === self.seatId;
+  const activeResolution = patch.activeResolution ?? null;
+  const canContinueResolution =
+    isActiveSeat &&
+    !!activeResolution &&
+    ["roll_result", "outcome_summary", "awaiting_continue"].includes(activeResolution.stage);
+  const resolutionPanel = (
+    <ActiveResolutionCard
+      resolution={activeResolution}
+      canContinue={canContinueResolution}
+      onContinue={() =>
+        onIntent({
+          type: "CONTINUE_RESOLUTION",
+          seatId: self.seatId
+        })
+      }
+    />
+  );
+  const battleAssistPanel = <BattleAssistCard patch={patch} onIntent={onIntent} />;
   const sector = getSector(patch.sectors, self.sectorId);
   const boardSpace = getBoardSpace(self.sectorId);
   const activeContract = getActiveContractCard(patch);
@@ -224,6 +385,7 @@ export function PhoneActionPanel({ characters, onIntent, patch }: PhoneActionPan
     return (
       <section className="phone-sheet-actions" aria-label="Quick actions">
         <div className="phone-sheet-section-heading">Quick Actions</div>
+        {resolutionPanel}
         <p className="phone-sheet-action-copy">Trophies: {self.character.trophies}</p>
         <p className="phone-sheet-action-copy">Game over: {winnerName} wins.</p>
       </section>
@@ -235,6 +397,8 @@ export function PhoneActionPanel({ characters, onIntent, patch }: PhoneActionPan
       return (
         <section className="phone-sheet-actions" aria-label="Quick actions">
           <div className="phone-sheet-section-heading">Quick Actions</div>
+          {resolutionPanel}
+          {battleAssistPanel}
           <p className="phone-sheet-action-copy">Trophies: {self.character.trophies}</p>
           <p className="phone-sheet-action-copy">{pendingFighterName} is engaged. Trigger the enemy roll when the table is ready.</p>
           <ActionSections
@@ -266,6 +430,8 @@ export function PhoneActionPanel({ characters, onIntent, patch }: PhoneActionPan
     return (
       <section className="phone-sheet-actions" aria-label="Quick actions">
         <div className="phone-sheet-section-heading">Quick Actions</div>
+        {resolutionPanel}
+        {battleAssistPanel}
         <p className="phone-sheet-action-copy">Trophies: {self.character.trophies}</p>
         <p className="phone-sheet-action-copy">Waiting on {pendingRollerName} to roll for the enemy.</p>
       </section>
@@ -276,6 +442,8 @@ export function PhoneActionPanel({ characters, onIntent, patch }: PhoneActionPan
     return (
       <section className="phone-sheet-actions" aria-label="Quick actions">
         <div className="phone-sheet-section-heading">Quick Actions</div>
+        {resolutionPanel}
+        {battleAssistPanel}
         <p className="phone-sheet-action-copy">Trophies: {self.character.trophies}</p>
         <p className="phone-sheet-action-copy">Waiting for another seat to finish its turn.</p>
       </section>
@@ -286,6 +454,8 @@ export function PhoneActionPanel({ characters, onIntent, patch }: PhoneActionPan
     return (
       <section className="phone-sheet-actions" aria-label="Quick actions">
         <div className="phone-sheet-section-heading">Quick Actions</div>
+        {resolutionPanel}
+        {battleAssistPanel}
         <p className="phone-sheet-action-copy">Trophies: {self.character.trophies}</p>
         <p className="phone-sheet-action-copy">Your operative has been recalled. Recruit a replacement to continue.</p>
         <ActionSections
@@ -633,6 +803,8 @@ export function PhoneActionPanel({ characters, onIntent, patch }: PhoneActionPan
   return (
     <section className="phone-sheet-actions" aria-label="Quick actions">
       <div className="phone-sheet-section-heading">Quick Actions</div>
+      {resolutionPanel}
+      {battleAssistPanel}
       <div className="phone-sheet-action-status">
         <span>Trophies: {self.character.trophies}</span>
         <span>{copy}</span>

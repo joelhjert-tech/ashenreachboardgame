@@ -106,6 +106,10 @@ export interface ResolutionAppliedAction extends BaseAction {
   success: boolean | null;
 }
 
+export interface ResolutionContinuedAction extends BaseAction {
+  type: "CONTINUE_RESOLUTION";
+}
+
 export interface HeatThresholdReachedAction extends BaseAction {
   type: "HEAT_THRESHOLD_REACHED";
   threshold: number;
@@ -265,6 +269,7 @@ export type GameAction =
   | CheckRolledAction
   | CombatResolvedAction
   | ResolutionAppliedAction
+  | ResolutionContinuedAction
   | HeatThresholdReachedAction
   | WoundThresholdReachedAction
   | RecruitReplacementAction
@@ -310,6 +315,10 @@ export type ClientIntent =
     }
   | {
       type: "ENEMY_ROLL_REQUESTED";
+      seatId: string;
+    }
+  | {
+      type: "CONTINUE_RESOLUTION";
       seatId: string;
     }
   | {

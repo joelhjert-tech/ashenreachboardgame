@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import "@testing-library/jest-dom/vitest";
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { PhoneActionPanel } from "../PhoneActionPanel.js";
 import type { CharacterCatalogEntry, PhonePatchPayload } from "../../shared/types.js";
@@ -788,5 +788,233 @@ describe("PhoneActionPanel", () => {
 
     expect(screen.getByText(/waiting on pax to roll for the enemy/i)).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /roll for the enemy/i })).not.toBeInTheDocument();
+  });
+
+  it("renders active roll result and sends continue intent", () => {
+    const onIntent = vi.fn();
+
+    render(
+      <PhoneActionPanel
+        characters={characters}
+        onIntent={onIntent}
+        patch={createPatch({
+          phase: "resolution",
+          encounter: null,
+          activeResolution: {
+            id: "seat-1:threat:signal-static:test",
+            playerId: "seat-1",
+            source: "threat",
+            stage: "roll_result",
+            card: {
+              id: "signal-static",
+              title: "Signal Static",
+              type: "hazard",
+              artType: "threat"
+            },
+            battle: {
+              stat: "signal",
+              difficulty: 7,
+              modifiers: [{ label: "Signal", value: 1 }]
+            },
+            roll: {
+              dice: [2, 5],
+              baseTotal: 7,
+              modifierTotal: 1,
+              finalTotal: 8,
+              target: 7,
+              success: true
+            },
+            outcome: {
+              title: "Check passed",
+              text: "Success: the signal holds.",
+              effects: ["Success: gain a note."]
+            }
+          }
+        })}
+      />
+    );
+
+    expect(screen.getByTestId("phone-roll-result")).toHaveTextContent(/roll: 2 \+ 5 \+ 1 = 8/i);
+    expect(screen.getByTestId("phone-roll-result")).toHaveTextContent(/target: 7/i);
+    expect(screen.getByTestId("phone-roll-result")).toHaveTextContent(/success/i);
+    expect(screen.getByTestId("phone-resolution-continue")).toBeVisible();
+
+    fireEvent.click(screen.getByRole("button", { name: /continue/i }));
+
+    expect(onIntent).toHaveBeenCalledWith({
+      type: "CONTINUE_RESOLUTION",
+      seatId: "seat-1"
+    });
+  });
+
+  it("renders battle setup details from activeResolution", () => {
+    render(
+      <PhoneActionPanel
+        characters={characters}
+        onIntent={vi.fn()}
+        patch={createPatch({
+          activeResolution: {
+            id: "seat-1:threat:cinder-veil-stalker:test",
+            playerId: "seat-1",
+            source: "threat",
+            stage: "battle_setup",
+            card: {
+              id: "cinder-veil-stalker",
+              title: "Cinder-Veil Stalker",
+              type: "enemy",
+              artType: "threat"
+            },
+            battle: {
+              enemyName: "Cinder-Veil Stalker",
+              stat: "grit",
+              difficulty: 8,
+              modifiers: [
+                { label: "Grit", value: 2 },
+                { label: "Enemy", value: 6 }
+              ]
+            }
+          }
+        })}
+      />
+    );
+
+    expect(screen.getByTestId("phone-resolution-card")).toHaveTextContent(/battle setup/i);
+    expect(screen.getByTestId("phone-battle-panel")).toHaveTextContent(/cinder-veil stalker/i);
+    expect(screen.getByTestId("phone-battle-panel")).toHaveTextContent(/grit vs 8/i);
+    expect(screen.getByTestId("phone-battle-panel")).toHaveTextContent(/grit \+2/i);
+  });
+
+  it("shows battle assist and opens usable combat cards during an enemy encounter", () => {
+    const onIntent = vi.fn();
+    const heldGear = [
+      {
+        id: "black-route-fuse",
+        name: "Black Route Fuse",
+        slot: "weapon" as const,
+        category: "dangerous" as const,
+        statBonus: { stat: "grit" as const, amount: 1 },
+        activeText: "Break for +3 combat pressure, then advance escalation by 1.",
+        useLimit: "discard" as const,
+        heatCost: 1
+      },
+      {
+        id: "coffin-rig",
+        name: "Coffin Rig",
+        slot: "armor" as const,
+        category: "passive" as const,
+        statBonus: { stat: "forge" as const, amount: 1 }
+      }
+    ];
+
+    render(
+      <PhoneActionPanel
+        characters={characters}
+        onIntent={onIntent}
+        patch={createPatch({
+          encounter: {
+            id: "cinder-veil-stalker",
+            title: "Cinder-Veil Stalker",
+            cardType: "enemy",
+            enemyName: "Cinder-Veil Stalker",
+            flavor: "The ash around it boils before the strike.",
+            difficulty: 6,
+            stat: "grit"
+          },
+          self: {
+            ...createPatch().self!,
+            character: {
+              ...createPatch().self!.character,
+              heat: 1,
+              heldGear
+            }
+          }
+        })}
+      />
+    );
+
+    expect(screen.getByTestId("phone-battle-assist")).toHaveTextContent(/cinder-veil stalker/i);
+    expect(screen.getByTestId("phone-battle-assist")).toHaveTextContent(/you have 1 card that can help/i);
+
+    fireEvent.click(screen.getByRole("button", { name: /open combat cards/i }));
+
+    expect(screen.getByTestId("phone-combat-card-drawer")).toHaveTextContent(/black route fuse/i);
+    expect(screen.getByTestId("phone-combat-card-drawer")).not.toHaveTextContent(/coffin rig/i);
+
+    fireEvent.click(within(screen.getByTestId("phone-combat-card-drawer")).getByRole("button", { name: /use black route fuse/i }));
+
+    expect(onIntent).toHaveBeenCalledWith({
+      type: "USE_GEAR",
+      seatId: "seat-1",
+      gearId: "black-route-fuse"
+    });
+  });
+
+  it("does not interrupt battle flow when no combat cards are usable", () => {
+    render(
+      <PhoneActionPanel
+        characters={characters}
+        onIntent={vi.fn()}
+        patch={createPatch({
+          encounter: {
+            id: "cinder-veil-stalker",
+            title: "Cinder-Veil Stalker",
+            cardType: "enemy",
+            enemyName: "Cinder-Veil Stalker",
+            flavor: "The ash around it boils before the strike.",
+            difficulty: 6,
+            stat: "grit"
+          },
+          self: {
+            ...createPatch().self!,
+            character: {
+              ...createPatch().self!.character,
+              heldGear: [
+                {
+                  id: "coffin-rig",
+                  name: "Coffin Rig",
+                  slot: "armor" as const,
+                  category: "passive" as const,
+                  statBonus: { stat: "forge" as const, amount: 1 }
+                }
+              ]
+            }
+          }
+        })}
+      />
+    );
+
+    expect(screen.getByTestId("phone-battle-assist")).toHaveTextContent(/no combat cards are usable/i);
+    expect(screen.queryByRole("button", { name: /open combat cards/i })).not.toBeInTheDocument();
+  });
+
+  it("renders scenario and space outcome summaries from activeResolution", () => {
+    render(
+      <PhoneActionPanel
+        characters={characters}
+        onIntent={vi.fn()}
+        patch={createPatch({
+          activeResolution: {
+            id: "seat-1:scenario:ambient:test",
+            playerId: "seat-1",
+            source: "scenario",
+            stage: "outcome_summary",
+            card: {
+              id: "scenario_broken_seal",
+              title: "Scenario Pressure",
+              type: "scenario"
+            },
+            outcome: {
+              title: "Scenario pressure",
+              text: "The seal flares before the table can move on.",
+              effects: ["Doom rises by 1."]
+            }
+          }
+        })}
+      />
+    );
+
+    expect(screen.getByTestId("phone-resolution-card")).toHaveTextContent(/outcome/i);
+    expect(screen.getByTestId("phone-resolution-card")).toHaveTextContent(/scenario pressure/i);
+    expect(screen.getByTestId("phone-resolution-card")).toHaveTextContent(/doom rises by 1/i);
   });
 });

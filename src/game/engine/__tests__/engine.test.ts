@@ -643,6 +643,7 @@ function createState(overrides: Partial<GameState> = {}): GameState {
     currentEncounter: null,
     pendingEnemyRoll: null,
     pendingEffect: null,
+    activeResolution: null,
     lastOutcomeSummary: null
   };
 
@@ -679,6 +680,24 @@ function createCapturingClient(seatId: string, sent: Array<Record<string, unknow
 
 function runIntent(server: GameRoomServer, intent: ClientIntent): void {
   server.handleIntent(createClient(intent.seatId), intent);
+
+  for (let index = 0; index < 4; index += 1) {
+    const activeResolution = server.getState().activeResolution;
+
+    if (
+      !activeResolution ||
+      !["roll_result", "outcome_summary", "awaiting_continue"].includes(activeResolution.stage)
+    ) {
+      return;
+    }
+
+    const continuingSeatId = server.getState().turnOrder[server.getState().activeSeatIndex] ?? intent.seatId;
+
+    server.handleIntent(createClient(continuingSeatId), {
+      type: "CONTINUE_RESOLUTION",
+      seatId: continuingSeatId
+    });
+  }
 }
 
 function withOnlyConnectedSeat(state: GameState, connectedSeatId: string): GameState {
@@ -690,6 +709,232 @@ function withOnlyConnectedSeat(state: GameState, connectedSeatId: string): GameS
     }))
   };
 }
+
+describe("active resolution visibility state", () => {
+  it("creates a card reveal stage when a threat is drawn", () => {
+    const card = createThreats().get("signal-static")!;
+    const state = createState({ phase: "sector" });
+    const result = reduceGameState(state, {
+      type: "ENCOUNTER_DRAWN",
+      seatId: "seat-1",
+      sectorId: "sector-a",
+      card,
+      createdAt: "2026-06-26T00:00:00.000Z"
+    });
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) {
+      return;
+    }
+    expect(result.state.activeResolution?.stage).toBe("card_reveal");
+    expect(result.state.activeResolution?.card?.title).toBe("Signal Static");
+  });
+
+  it("advances a check through battle setup and visible roll result", () => {
+    const card = createThreats().get("signal-static")!;
+    const revealed = reduceGameState(createState({ phase: "sector" }), {
+      type: "ENCOUNTER_DRAWN",
+      seatId: "seat-1",
+      sectorId: "sector-a",
+      card,
+      createdAt: "2026-06-26T00:00:00.000Z"
+    });
+    expect(revealed.ok).toBe(true);
+    if (!revealed.ok) {
+      return;
+    }
+
+    const setup = reduceGameState(revealed.state, {
+      type: "CHECK_REQUESTED",
+      seatId: "seat-1",
+      stat: "signal",
+      createdAt: "2026-06-26T00:00:01.000Z"
+    });
+    expect(setup.ok).toBe(true);
+    if (!setup.ok) {
+      return;
+    }
+    expect(setup.state.activeResolution?.stage).toBe("battle_setup");
+    expect(setup.state.activeResolution?.battle?.difficulty).toBe(7);
+
+    const rolled = reduceGameState(setup.state, {
+      type: "CHECK_ROLLED",
+      seatId: "seat-1",
+      stat: "signal",
+      difficulty: 7,
+      roll: { faces: [2, 3], total: 5 },
+      statBonus: 1,
+      total: 6,
+      success: false,
+      effect: { type: "gain_heat", amount: 1 },
+      cardId: card.id,
+      createdAt: "2026-06-26T00:00:02.000Z"
+    });
+    expect(rolled.ok).toBe(true);
+    if (!rolled.ok) {
+      return;
+    }
+    expect(rolled.state.activeResolution?.stage).toBe("roll_result");
+    expect(rolled.state.activeResolution?.roll).toMatchObject({
+      dice: [2, 3],
+      finalTotal: 6,
+      target: 7,
+      success: false
+    });
+    expect(rolled.state.players[0]?.character.heat).toBe(0);
+    expect(rolled.state.pendingEffect).toEqual({ type: "gain_heat", amount: 1 });
+  });
+
+  it("keeps resolution visible until continue reaches an outcome stage", () => {
+    const state = createState({
+      activeResolution: {
+        id: "seat-1:threat:signal-static:test",
+        playerId: "seat-1",
+        source: "threat",
+        stage: "roll_result",
+        roll: {
+          dice: [4, 4],
+          baseTotal: 8,
+          modifierTotal: 1,
+          finalTotal: 9,
+          target: 7,
+          success: true
+        },
+        outcome: {
+          title: "Check passed",
+          text: "Success: note added.",
+          effects: ["Success: note added."]
+        }
+      }
+    });
+
+    const firstContinue = reduceGameState(state, {
+      type: "CONTINUE_RESOLUTION",
+      seatId: "seat-1",
+      createdAt: "2026-06-26T00:00:03.000Z"
+    });
+    expect(firstContinue.ok).toBe(true);
+    if (!firstContinue.ok) {
+      return;
+    }
+    expect(firstContinue.state.activeResolution?.stage).toBe("outcome_summary");
+
+    const secondContinue = reduceGameState(firstContinue.state, {
+      type: "CONTINUE_RESOLUTION",
+      seatId: "seat-1",
+      createdAt: "2026-06-26T00:00:04.000Z"
+    });
+    expect(secondContinue.ok).toBe(true);
+    if (!secondContinue.ok) {
+      return;
+    }
+    expect(secondContinue.state.activeResolution).toBeNull();
+  });
+
+  it("renders space-text check rolls through activeResolution", () => {
+    const state = createState({
+      phase: "action",
+      players: createState().players.map((player) =>
+        player.seatId === "seat-1"
+          ? {
+              ...player,
+              sectorId: "middle_shard_sprawl",
+              character: {
+                ...player.character,
+                currentSpaceId: "middle_shard_sprawl"
+              }
+            }
+          : player
+      ),
+      sectors: createState().sectors.map((sector) =>
+        sector.id === "sector-a"
+          ? {
+              ...sector,
+              id: "middle_shard_sprawl",
+              name: "Shard Sprawl",
+              encounterDecks: { ...sector.encounterDecks, threat: [] }
+            }
+          : sector
+      )
+    });
+
+    const result = reduceGameState(state, {
+      type: "SPACE_TEXT_RESOLVED",
+      seatId: "seat-1",
+      effectKey: "shard-sprawl-stock",
+      summary: "The crossing answers the signal test.",
+      effect: { type: "gain_note", text: "Ashwake route stabilized." },
+      checkStat: "signal",
+      difficulty: 8,
+      roll: { faces: [4, 2], total: 6 },
+      statBonus: 2,
+      total: 8,
+      success: true,
+      sectorId: "sector-a",
+      createdAt: "2026-06-26T00:00:05.000Z"
+    });
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) {
+      return;
+    }
+    expect(result.state.activeResolution).toMatchObject({
+      source: "scenario",
+      stage: "roll_result",
+      roll: {
+        dice: [4, 2],
+        finalTotal: 8,
+        target: 8,
+        success: true
+      },
+      battle: {
+        stat: "signal",
+        difficulty: 8
+      }
+    });
+  });
+
+  it("renders scenario progress through activeResolution", () => {
+    const baseState = createState({
+      phase: "action",
+      players: createState().players.map((player) =>
+        player.seatId === "seat-1"
+          ? {
+              ...player,
+              sectorId: "center_cinder_gate",
+              character: {
+                ...player.character,
+                currentSpaceId: "center_cinder_gate"
+              }
+            }
+          : player
+      )
+    });
+
+    const result = reduceGameState(baseState, {
+      type: "SCENARIO_PROGRESS_ADVANCED",
+      seatId: "seat-1",
+      scenarioId: "scenario_broken_seal",
+      progressKey: "sealTokens",
+      amount: 1,
+      summary: "The seal accepts the offering.",
+      createdAt: "2026-06-26T00:00:06.000Z"
+    });
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) {
+      return;
+    }
+    expect(result.state.activeResolution).toMatchObject({
+      source: "scenario",
+      stage: "outcome_summary",
+      outcome: {
+        title: "Scenario progress",
+        text: "The seal accepts the offering."
+      }
+    });
+  });
+});
 
 describe("active objects and table interaction", () => {
   it("uses and discards a consumable gear object from the phone", () => {

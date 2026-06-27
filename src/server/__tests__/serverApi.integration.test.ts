@@ -29,6 +29,9 @@ type StatePatchEnvelope = {
       label: string;
       value: string;
     }>;
+    activeResolution?: {
+      stage: string;
+    } | null;
   };
 };
 
@@ -358,6 +361,18 @@ describe("server API scenario flow", () => {
           type: "MOVE_REQUESTED",
           seatId: joined.payload.seatId,
           toSectorId: neighborSectorId
+        })
+      );
+
+      await waitForStatePatch(
+        phone,
+        (message) => message.payload.activeResolution?.stage === "roll_result"
+      );
+
+      phone.socket.send(
+        JSON.stringify({
+          type: "CONTINUE_RESOLUTION",
+          seatId: joined.payload.seatId
         })
       );
 
