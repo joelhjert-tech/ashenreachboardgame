@@ -1192,6 +1192,10 @@ select {
   align-content: center;
 }
 
+.phone-portrait-lobby-panel {
+  grid-template-rows: minmax(0, 1fr);
+}
+
 .phone-portrait-header {
   position: relative;
   z-index: 3;
@@ -1938,11 +1942,15 @@ select {
 }
 
 .phone-lobby-waiting-scroll {
+  min-height: 0;
+  height: 100%;
   padding-bottom: max(1rem, env(safe-area-inset-bottom));
 }
 
 .phone-character-waiting-panel {
   gap: 1rem;
+  align-content: start;
+  min-height: min-content;
 }
 
 .phone-character-waiting-topline {
@@ -1971,6 +1979,7 @@ select {
 
 .phone-character-waiting-hero img {
   width: 100%;
+  max-height: min(44svh, 18rem);
   aspect-ratio: 3 / 4;
   object-fit: cover;
   object-position: center top;

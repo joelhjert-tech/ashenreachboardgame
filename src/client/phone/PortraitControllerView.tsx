@@ -63,7 +63,7 @@ export function PortraitControllerView({
 
     return (
       <section className="phone-portrait-controller" style={{ backgroundImage: `url(${getPhoneBackgroundPath()})` }}>
-        <div className="phone-portrait-panel">
+        <div className="phone-portrait-panel phone-portrait-lobby-panel">
           <main className="phone-portrait-scroll phone-lobby-waiting-scroll" aria-label="Character waiting">
             <section className="phone-lobby-ready-panel phone-character-waiting-panel">
               <div className="phone-character-waiting-topline">

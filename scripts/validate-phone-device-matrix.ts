@@ -23,6 +23,7 @@ type LayoutMetrics = {
   bottomRect: RectLike | null;
   debugRect: RectLike | null;
   portraitPanelRect: RectLike | null;
+  lobbyWaitingScrollRect: RectLike | null;
   portraitChipRowRect: RectLike | null;
   portraitRotateHintRect: RectLike | null;
   characterWaitingRect: RectLike | null;
@@ -118,6 +119,7 @@ async function collectMetrics(page: import("playwright").Page, viewport: Viewpor
       bottom: ".phone-sheet-bottom",
       debug: ".phone-debug-anchor",
       portraitPanel: ".phone-portrait-panel",
+      lobbyWaitingScroll: ".phone-lobby-waiting-scroll",
       portraitChipRow: ".phone-portrait-chip-row",
       portraitRotateHint: ".phone-portrait-rotate-hint",
       characterWaiting: ".phone-character-waiting-panel",
@@ -141,6 +143,7 @@ async function collectMetrics(page: import("playwright").Page, viewport: Viewpor
       const bottomRect = getRect(selectors.bottom);
       const debugRect = getRect(selectors.debug);
       const portraitPanelRect = getRect(selectors.portraitPanel);
+      const lobbyWaitingScrollRect = getRect(selectors.lobbyWaitingScroll);
       const portraitChipRowRect = getRect(selectors.portraitChipRow);
       const portraitRotateHintRect = getRect(selectors.portraitRotateHint);
       const characterWaitingRect = getRect(selectors.characterWaiting);
@@ -175,6 +178,7 @@ async function collectMetrics(page: import("playwright").Page, viewport: Viewpor
         bottomRect,
         debugRect,
         portraitPanelRect,
+        lobbyWaitingScrollRect,
         portraitChipRowRect,
         portraitRotateHintRect,
         characterWaitingRect,
@@ -236,6 +240,13 @@ function validateMetrics(metrics: LayoutMetrics, mode: "portrait" | "landscape")
 
     if (metrics.hasCharacterWaiting && !metrics.hasWaitingMessage) {
       failures.push("waiting screen missing host waiting message");
+    }
+
+    if (
+      metrics.hasCharacterWaiting &&
+      (!metrics.lobbyWaitingScrollRect || metrics.lobbyWaitingScrollRect.height < metrics.windowInnerHeight * 0.65)
+    ) {
+      failures.push("waiting screen scroll viewport collapsed");
     }
 
     return failures;
