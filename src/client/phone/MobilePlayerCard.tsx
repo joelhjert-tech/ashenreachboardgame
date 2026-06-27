@@ -20,6 +20,13 @@ import type {
   SessionStatus,
   Stat
 } from "../shared/types.js";
+import {
+  formatSeatLabel,
+  gearSlotLabelById,
+  statAbbreviationById,
+  statLabelById,
+  statOrder
+} from "../shared/statLabels.js";
 import { formatEscalation } from "./formatEscalation.js";
 
 interface MobilePlayerCardProps {
@@ -48,17 +55,8 @@ interface MobilePlayerCardProps {
   className?: string;
 }
 
-const statOrder = ["command", "grit", "signal", "guile", "forge"] as const;
 const gearOrder = ["weapon", "armor", "utility"] as const;
 const resourceTrackSlots = 5;
-
-const statIconById: Record<Stat, string> = {
-  command: "Cmd",
-  grit: "Grit",
-  signal: "Sig",
-  guile: "Gui",
-  forge: "Forg"
-};
 
 function toTitleCase(value: string): string {
   return value.replace(/[_-]+/g, " ").replace(/\b\w/g, (character) => character.toUpperCase());
@@ -129,6 +127,7 @@ export function MobilePlayerCard({
   const nemesisProgressPercent = activeNemesis ? Math.min(100, (activeNemesis.damageDealt / Math.max(activeNemesis.life, 1)) * 100) : 0;
   const scarCards = self.character.scarCards ?? [];
   const scarEffectSummary = scarCards.map((scar) => scar.title).join(", ") || self.character.scars.join(", ");
+  const gearNameById = new Map(self.character.heldGear.map((item) => [item.id, item.name] as const));
 
   return (
     <section
@@ -146,11 +145,11 @@ export function MobilePlayerCard({
         <div className="phone-sheet-medallion-row">
           <div className="phone-sheet-medallion">
             <span>Seat</span>
-            <strong>{self.seatId}</strong>
+            <strong>{formatSeatLabel(self.seatId)}</strong>
           </div>
           <div className="phone-sheet-medallion">
             <span>Active</span>
-            <strong>{activeSeatId ?? "Standby"}</strong>
+            <strong>{activeSeatId ? formatSeatLabel(activeSeatId) : "Standby"}</strong>
           </div>
           <div className="phone-sheet-medallion">
             <span>Phase</span>
@@ -223,9 +222,9 @@ export function MobilePlayerCard({
             <div className="mobile-player-card-stats phone-sheet-stat-grid">
               {statOrder.map((stat) => (
                 <div key={stat} className="mobile-player-stat phone-sheet-stat-card">
-                  <span>{statIconById[stat]}</span>
+                  <span>{statAbbreviationById[stat]}</span>
                   <strong>{self.character.stats[stat]}</strong>
-                  <p>{toTitleCase(stat)}</p>
+                  <p>{statLabelById[stat]}</p>
                 </div>
               ))}
             </div>
@@ -338,8 +337,12 @@ export function MobilePlayerCard({
             <div className="phone-sheet-gear-grid">
               {gearOrder.map((slot) => (
                 <article key={slot} className="phone-sheet-gear-slot">
-                  <span>{toTitleCase(slot)}</span>
-                  <strong>{self.character.equippedGear[slot] ?? "Empty"}</strong>
+                  <span>{gearSlotLabelById[slot]}</span>
+                  <strong>
+                    {self.character.equippedGear[slot]
+                      ? gearNameById.get(self.character.equippedGear[slot]!) ?? "Equipped gear"
+                      : "Empty"}
+                  </strong>
                 </article>
               ))}
               <article className="phone-sheet-gear-slot">

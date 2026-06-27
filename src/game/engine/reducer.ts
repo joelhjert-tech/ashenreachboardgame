@@ -3,6 +3,7 @@ import type {
   CheckRequestedAction,
   CombatRequestedAction,
   CompleteContractAction,
+  DiceRollStartedAction,
   EscalationAdvancedAction,
   EncounterDrawnAction,
   EnemyRollAssignedAction,
@@ -1226,6 +1227,45 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
       return succeed({
         ...state,
         sequence: state.sequence + 1,
+        eventLog: [...state.eventLog, action]
+      });
+    }
+    case "DICE_ROLL_STARTED": {
+      const diceRollAction = action as DiceRollStartedAction;
+
+      try {
+        ensureSeatTurn(state, diceRollAction.seatId);
+        ensureSeatCanTakeNormalTurnAction(state, diceRollAction.seatId);
+      } catch (error) {
+        return reject(state, action, error instanceof Error ? error.message : "Seat cannot act");
+      }
+
+      if (state.phase !== "action") {
+        return reject(state, action, `Cannot start dice roll during phase ${state.phase}`);
+      }
+
+      if (!state.currentEncounter || state.currentEncounter.id !== diceRollAction.cardId) {
+        return reject(state, action, "No matching encounter is waiting for a dice roll");
+      }
+
+      return succeed({
+        ...state,
+        sequence: state.sequence + 1,
+        activeResolution: {
+          ...(state.activeResolution ?? {
+            id: createResolutionId(diceRollAction.seatId, "threat", diceRollAction.createdAt, state.currentEncounter.id),
+            playerId: diceRollAction.seatId,
+            source: "threat" as const
+          }),
+          stage: "dice_roll",
+          card: summarizeThreatCard(state.currentEncounter),
+          battle: summarizeThreatBattle(state.currentEncounter),
+          outcome: {
+            title: "Dice rolling",
+            text: `${state.currentEncounter.title} dice are rolling.`,
+            effects: []
+          }
+        },
         eventLog: [...state.eventLog, action]
       });
     }

@@ -195,6 +195,8 @@ export function RollOutcomePanel({
         attackValue={total}
         defenseValue={isOpposed ? enemyTotal : difficulty}
         modifierValue={statBonus}
+        attackDieFace={finalDie1}
+        defenseDieFace={isOpposed ? finalEnemyDie1 : finalDie2}
         attackSuccess={success === true}
         defenseSuccess={success === false}
         hasModifier={statBonus !== 0}

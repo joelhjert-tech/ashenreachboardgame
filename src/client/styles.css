@@ -3921,11 +3921,12 @@ body {
 
 .host-battle-overlay {
   position: absolute;
-  inset: clamp(0.55rem, 1vw, 1.1rem);
+  inset: clamp(0.35rem, 0.72vw, 0.82rem);
   z-index: 8;
   display: grid;
   place-items: center;
   pointer-events: none;
+  overflow: hidden;
 }
 
 .host-battle-panel {
@@ -3938,10 +3939,10 @@ body {
   grid-template-columns: minmax(18rem, 1fr) minmax(8rem, 0.34fr) minmax(18rem, 1fr);
   grid-template-rows:
     minmax(0, 1fr)
-    minmax(2.2rem, auto)
-    clamp(2.15rem, 5.8svh, 4.2rem);
-  gap: clamp(0.44rem, 0.74vw, 0.9rem);
-  padding: clamp(0.22rem, 0.46vw, 0.56rem);
+    clamp(2.7rem, 8svh, 4.65rem)
+    clamp(5rem, 16svh, 8.6rem);
+  gap: clamp(0.28rem, 0.48vw, 0.56rem);
+  padding: clamp(0.18rem, 0.36vw, 0.44rem);
   border: 0;
   background:
     radial-gradient(circle at 50% 49%, rgba(239, 184, 112, 0.16), transparent 18rem),
@@ -4026,15 +4027,17 @@ body {
   justify-self: stretch;
   z-index: 2;
   display: grid;
-  gap: clamp(0.16rem, 0.28vw, 0.34rem);
+  gap: clamp(0.1rem, 0.2vw, 0.24rem);
   min-width: 0;
-  margin: clamp(0.7rem, 1vw, 1rem);
-  padding: clamp(0.56rem, 0.78vw, 0.86rem) clamp(0.68rem, 1vw, 1rem);
+  max-height: 27%;
+  margin: clamp(0.52rem, 0.78vw, 0.82rem);
+  padding: clamp(0.38rem, 0.58vw, 0.66rem) clamp(0.56rem, 0.82vw, 0.88rem);
   border: 1px solid rgba(231, 210, 176, 0.18);
-  background: rgba(5, 8, 12, 0.46);
+  background: rgba(5, 8, 12, 0.38);
   -webkit-backdrop-filter: blur(0.42rem);
   backdrop-filter: blur(0.42rem);
   box-shadow: 0 0.7rem 1.4rem rgba(0, 0, 0, 0.2);
+  overflow: hidden;
 }
 
 .host-battle-copy span,
@@ -4051,10 +4054,14 @@ body {
   margin: 0;
   color: #f2e3c9;
   font-family: Georgia, "Times New Roman", serif;
-  font-size: clamp(1.28rem, 2.12vw, 3rem);
-  line-height: 0.95;
+  display: -webkit-box;
+  overflow: hidden;
+  font-size: clamp(1.25rem, 1.9vw, 2.9rem);
+  line-height: 0.94;
   text-transform: uppercase;
   overflow-wrap: anywhere;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
 }
 
 .host-battle-copy p {
@@ -4062,10 +4069,10 @@ body {
   color: #d3c7b5;
   display: -webkit-box;
   overflow: hidden;
-  font-size: clamp(0.72rem, 0.92vw, 1.1rem);
+  font-size: clamp(0.66rem, 0.76vw, 0.92rem);
   line-height: 1.25;
   -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
+  -webkit-line-clamp: 1;
 }
 
 .host-battle-stat-grid {
@@ -4112,7 +4119,7 @@ body {
 .host-battle-vs strong {
   color: #f5d49c;
   font-family: Georgia, "Times New Roman", serif;
-  font-size: clamp(2.55rem, 4.65vw, 6rem);
+  font-size: clamp(2rem, 3.4vw, 4.65rem);
   line-height: 0.85;
   text-shadow:
     0 0 1rem rgba(230, 78, 45, 0.5),
@@ -4121,8 +4128,8 @@ body {
 
 .host-battle-crossed-icon {
   position: relative;
-  width: clamp(2.05rem, 3.1vw, 3.85rem);
-  height: clamp(2.05rem, 3.1vw, 3.85rem);
+  width: clamp(1.65rem, 2.3vw, 3rem);
+  height: clamp(1.65rem, 2.3vw, 3rem);
 }
 
 .host-battle-crossed-icon span {
@@ -4153,14 +4160,14 @@ body {
   display: grid;
   grid-template-columns:
     minmax(0, 1fr)
-    minmax(8rem, 0.34fr)
+    minmax(7rem, 0.38fr)
     minmax(0, 1fr);
-  grid-template-rows: minmax(0, 43%) minmax(4rem, 24%) minmax(6rem, 33%);
-  align-items: stretch;
-  gap: clamp(0.34rem, 0.58vw, 0.72rem);
+  grid-template-rows: minmax(0, 1fr);
+  align-items: center;
+  gap: clamp(0.24rem, 0.44vw, 0.56rem);
   min-height: 0;
   margin: 0;
-  padding: clamp(0.7rem, 1vw, 1rem);
+  padding: clamp(0.48rem, 0.74vw, 0.78rem);
   border: 0;
   background: transparent;
   box-shadow: none;
@@ -4170,25 +4177,131 @@ body {
 
 .host-battle-dice-animation {
   grid-column: 2;
-  grid-row: 2;
+  grid-row: 1;
   display: grid;
   justify-items: center;
-  align-self: start;
+  align-self: center;
   justify-self: center;
   min-width: 0;
   overflow: visible;
 }
 
+.host-battle-formula,
+.host-battle-battle-line {
+  min-width: 0;
+  border: 1px solid rgba(231, 210, 176, 0.16);
+  background: rgba(5, 8, 12, 0.3);
+  -webkit-backdrop-filter: blur(0.44rem);
+  backdrop-filter: blur(0.44rem);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.03),
+    0 0.65rem 1.6rem rgba(0, 0, 0, 0.24);
+}
+
+.host-battle-formula {
+  display: grid;
+  gap: 0.2rem;
+  width: min(19rem, 46%);
+  min-height: clamp(4.1rem, 8.6svh, 6.2rem);
+  padding: clamp(0.42rem, 0.68vw, 0.74rem) clamp(0.58rem, 0.9vw, 0.96rem);
+  align-content: center;
+}
+
+.host-battle-formula-player {
+  grid-column: 1;
+  grid-row: 1;
+  justify-self: center;
+  margin-top: clamp(8.4rem, 20svh, 15rem);
+  border-color: rgba(105, 192, 248, 0.48);
+}
+
+.host-battle-formula-enemy {
+  grid-column: 3;
+  grid-row: 1;
+  justify-self: center;
+  margin-top: clamp(8.4rem, 20svh, 15rem);
+  border-color: rgba(237, 72, 50, 0.5);
+}
+
+.host-battle-formula span,
+.host-battle-battle-line span {
+  color: #baa37e;
+  font-size: clamp(0.62rem, 0.74vw, 0.86rem);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.host-battle-formula strong {
+  color: #f7ead1;
+  font-size: clamp(1.36rem, 2.08vw, 2.7rem);
+  line-height: 0.94;
+}
+
+.host-battle-formula p {
+  margin: 0;
+  color: #e9dac0;
+  font-size: clamp(0.72rem, 0.95vw, 1.16rem);
+  line-height: 1.16;
+  overflow-wrap: anywhere;
+}
+
+.host-battle-battle-line {
+  grid-column: 2;
+  grid-row: 1;
+  justify-self: center;
+  align-self: end;
+  width: min(15rem, 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.36rem;
+  padding: 0.28rem 0.48rem;
+  color: #f2e3c9;
+}
+
+.host-battle-battle-line strong {
+  color: #f5d49c;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(0.82rem, 1.1vw, 1.24rem);
+  line-height: 1;
+  text-transform: uppercase;
+}
+
 .host-battle-dice-animation .combat-dice-animation {
-  --combat-die-size: clamp(1.46rem, 2.02vw, 2.28rem);
-  gap: 0.16rem;
+  --combat-die-size: clamp(1.02rem, 1.42vw, 1.72rem);
+  gap: 0.1rem;
   margin-top: 0;
+}
+
+.host-battle-dice-animation .three-battle-dice {
+  width: clamp(7rem, 10.4vw, 13.2rem);
+  gap: 0.08rem;
+}
+
+.three-battle-dice-canvas-wrap {
+  width: 100%;
+  height: clamp(2.35rem, 4.2vw, 4.9rem);
+  min-height: 0;
+  border: 1px solid rgba(232, 221, 198, 0.18);
+  background:
+    radial-gradient(circle at 50% 40%, rgba(116, 183, 217, 0.14), transparent 58%),
+    rgba(5, 8, 12, 0.2);
+  -webkit-backdrop-filter: blur(0.32rem);
+  backdrop-filter: blur(0.32rem);
+  box-shadow: 0 0.45rem 1.1rem rgba(0, 0, 0, 0.3);
+  overflow: hidden;
+}
+
+.three-battle-dice-canvas-wrap canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
 }
 
 .host-battle-dice-animation .combat-dice-stage {
   min-height: calc(var(--combat-die-size) * 1);
-  padding: 0.14rem 0.24rem;
-  gap: 0.22rem;
+  padding: 0.08rem 0.14rem;
+  gap: 0.14rem;
   border-color: rgba(232, 221, 198, 0.18);
   background: rgba(5, 8, 12, 0.24);
   -webkit-backdrop-filter: blur(0.36rem);
@@ -4196,9 +4309,9 @@ body {
 }
 
 .host-battle-dice-animation .combat-result-token {
-  width: min(100%, 8.6rem);
-  min-height: 1.38rem;
-  padding: 0.14rem 0.34rem;
+  width: min(100%, 6.8rem);
+  min-height: 1.08rem;
+  padding: 0.1rem 0.28rem;
   animation: none;
   transform: none;
   background: rgba(5, 8, 12, 0.38);
@@ -4207,12 +4320,12 @@ body {
 }
 
 .host-battle-dice-animation .combat-result-token span {
-  width: 1rem;
-  height: 1rem;
+  width: 0.78rem;
+  height: 0.78rem;
 }
 
 .host-battle-dice-animation .combat-result-token strong {
-  font-size: clamp(0.56rem, 0.66vw, 0.76rem);
+  font-size: clamp(0.48rem, 0.56vw, 0.66rem);
 }
 
 .host-battle-dice-column,
@@ -4234,8 +4347,8 @@ body {
 .host-battle-dice-column-player {
   grid-column: 1;
   grid-row: 3;
-  width: min(15rem, 38%);
-  min-height: clamp(4.25rem, 10svh, 7rem);
+  width: min(13.4rem, 36%);
+  min-height: clamp(3.3rem, 7.4svh, 5rem);
   align-self: start;
   justify-self: start;
   margin-left: clamp(2.4rem, 5vw, 6rem);
@@ -4248,8 +4361,8 @@ body {
 .host-battle-dice-column-enemy {
   grid-column: 3;
   grid-row: 3;
-  width: min(15rem, 38%);
-  min-height: clamp(4.25rem, 10svh, 7rem);
+  width: min(13.4rem, 36%);
+  min-height: clamp(3.3rem, 7.4svh, 5rem);
   align-self: start;
   justify-self: start;
   margin-left: clamp(1rem, 2vw, 3rem);
@@ -4266,14 +4379,14 @@ body {
 }
 
 .host-battle-dice-row strong {
-  min-width: clamp(1.55rem, 2vw, 2.35rem);
-  min-height: clamp(1.55rem, 2vw, 2.35rem);
+  min-width: clamp(1.24rem, 1.62vw, 1.92rem);
+  min-height: clamp(1.24rem, 1.62vw, 1.92rem);
   display: grid;
   place-items: center;
   border: 1px solid rgba(225, 238, 244, 0.72);
   background: linear-gradient(180deg, rgba(237, 244, 247, 0.92), rgba(183, 203, 213, 0.9));
   color: #111b23;
-  font-size: clamp(0.95rem, 1.32vw, 1.68rem);
+  font-size: clamp(0.82rem, 1.08vw, 1.34rem);
   font-weight: 900;
 }
 
@@ -4282,23 +4395,23 @@ body {
   grid-row: 3;
   align-self: start;
   justify-self: center;
-  width: min(18.4rem, 100%);
+  width: min(13.4rem, 100%);
   justify-items: center;
   color: #f2e3c9;
   text-align: center;
-  font-size: clamp(0.76rem, 0.95vw, 1.08rem);
-  padding: clamp(0.48rem, 0.7vw, 0.72rem) clamp(0.6rem, 0.86vw, 0.9rem);
+  font-size: clamp(0.62rem, 0.72vw, 0.86rem);
+  padding: clamp(0.34rem, 0.52vw, 0.58rem) clamp(0.46rem, 0.66vw, 0.72rem);
 }
 
 .host-battle-total {
-  min-height: clamp(4.25rem, 10svh, 7rem);
-  padding: clamp(0.46rem, 0.72vw, 0.82rem) clamp(0.58rem, 0.9vw, 1rem);
+  min-height: clamp(3.3rem, 7.4svh, 5rem);
+  padding: clamp(0.36rem, 0.58vw, 0.66rem) clamp(0.5rem, 0.74vw, 0.82rem);
 }
 
 .host-battle-total-player {
   grid-column: 1;
   grid-row: 3;
-  width: min(15.4rem, 36%);
+  width: min(13.2rem, 34%);
   align-self: start;
   justify-self: center;
   margin-left: clamp(10rem, 17vw, 18rem);
@@ -4308,7 +4421,7 @@ body {
 .host-battle-total-enemy {
   grid-column: 3;
   grid-row: 3;
-  width: min(15.4rem, 36%);
+  width: min(13.2rem, 34%);
   align-self: start;
   justify-self: end;
   margin-right: clamp(1.5rem, 2.6vw, 3.5rem);
@@ -4317,7 +4430,7 @@ body {
 
 .host-battle-total strong {
   color: #f7ead1;
-  font-size: clamp(1.44rem, 2.1vw, 2.65rem);
+  font-size: clamp(1.15rem, 1.72vw, 2.1rem);
   line-height: 1;
 }
 
@@ -4327,18 +4440,22 @@ body {
   position: relative;
   z-index: 7;
   display: flex;
+  align-items: center;
   justify-content: center;
   gap: 0.5rem;
   min-height: 0;
 }
 
-.host-battle-actions button {
+.host-battle-status-chip {
   min-width: clamp(14rem, 27vw, 28rem);
-  min-height: clamp(2rem, 4.5svh, 3.4rem);
-  padding: 0.34rem clamp(1rem, 2vw, 2rem);
+  min-height: clamp(1.85rem, 4svh, 2.8rem);
+  display: grid;
+  place-items: center;
+  padding: 0.22rem clamp(0.9rem, 1.7vw, 1.6rem);
   border: 1px solid rgba(242, 204, 148, 0.58);
+  background: linear-gradient(180deg, rgba(122, 44, 34, 0.78), rgba(38, 16, 14, 0.76));
   color: #f6e5c9;
-  font-size: clamp(1rem, 1.55vw, 1.85rem);
+  font-size: clamp(0.92rem, 1.32vw, 1.5rem);
   font-weight: 800;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -4348,16 +4465,9 @@ body {
     0 0 1.1rem rgba(232, 133, 73, 0.18);
 }
 
-.host-battle-primary {
-  background: linear-gradient(180deg, rgba(122, 44, 34, 0.88), rgba(38, 16, 14, 0.86));
-}
-
-.host-battle-secondary {
-  background: linear-gradient(180deg, rgba(32, 54, 74, 0.88), rgba(12, 21, 29, 0.86));
-}
-
-.host-battle-actions button:disabled {
-  opacity: 0.7;
+.host-battle-status-chip-secondary {
+  min-width: clamp(10rem, 18vw, 18rem);
+  background: linear-gradient(180deg, rgba(32, 54, 74, 0.78), rgba(12, 21, 29, 0.76));
 }
 
 .host-battle-log {
@@ -4368,14 +4478,17 @@ body {
   min-height: 0;
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-auto-rows: minmax(0, 1fr);
   align-items: stretch;
+  align-content: stretch;
   gap: clamp(0.38rem, 0.62vw, 0.7rem);
   overflow: hidden;
 }
 
 .host-battle-log p {
   margin: 0;
-  padding: clamp(0.28rem, 0.52vw, 0.58rem) clamp(0.54rem, 0.82vw, 0.9rem);
+  min-height: 0;
+  padding: clamp(0.28rem, 0.48vw, 0.54rem) clamp(0.54rem, 0.78vw, 0.84rem);
   border: 1px solid rgba(231, 210, 176, 0.13);
   background: rgba(5, 8, 12, 0.3);
   -webkit-backdrop-filter: blur(0.3rem);
@@ -4383,10 +4496,10 @@ body {
   color: #e5d2b8;
   display: -webkit-box;
   overflow: hidden;
-  font-size: clamp(0.74rem, 0.94vw, 1.1rem);
+  font-size: clamp(0.64rem, 0.82vw, 0.96rem);
   line-height: 1.15;
   -webkit-box-orient: vertical;
-  -webkit-line-clamp: 1;
+  -webkit-line-clamp: 2;
 }
 
 .tv-command-map-shell {
@@ -7443,6 +7556,11 @@ body {
   min-height: 0;
   grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.05fr);
   gap: 0.55rem;
+}
+
+.tv-command-footer-cardReveal,
+.tv-command-footer-outcome {
+  grid-template-columns: minmax(0, 1fr);
 }
 
 .tv-bottom-card {

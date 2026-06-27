@@ -493,7 +493,7 @@ describe("TvApp", () => {
     expect(await screen.findByText(/host card tarek voss crossing thread \| clear the ashwake convoy lane \(1\/1 clears\)/i)).toBeInTheDocument();
   });
 
-  it("renders active card reveal and battle details from activeResolution", async () => {
+  it("renders battle setup through the host battle overlay without a duplicate card tray", async () => {
     window.localStorage.setItem("ashen-reach-tv-room-code", "RT7P4");
     window.localStorage.setItem("ashen-reach-tv-host-token", "host:RT7P4:secret");
     const patch = createPatch();
@@ -529,12 +529,13 @@ describe("TvApp", () => {
 
     render(<TvApp />);
 
-    const reveal = await screen.findByTestId("tv-card-reveal");
-    expect(reveal).toHaveTextContent(/battle setup/i);
-    expect(reveal).toHaveTextContent(/cinder-veil stalker/i);
-    expect(reveal).toHaveClass("tv-reveal-card-live");
-    expect(screen.getByTestId("tv-battle-panel")).toHaveTextContent(/grit \+2/i);
-    expect(screen.getByTestId("tv-battle-panel")).toBeVisible();
+    const overlay = await screen.findByTestId("host-battle-overlay");
+    expect(overlay).toHaveTextContent(/tarek voss/i);
+    expect(overlay).toHaveTextContent(/cinder-veil stalker/i);
+    expect(overlay).toHaveTextContent(/grit\s*2/i);
+    expect(overlay).toHaveTextContent(/battle\s*8/i);
+    expect(screen.queryByTestId("tv-card-reveal")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("tv-resolution-footer")).not.toBeInTheDocument();
   });
 
   it("renders active dice faces and roll totals from activeResolution", async () => {
@@ -695,13 +696,20 @@ describe("TvApp", () => {
     expect(overlay).toHaveTextContent(/tarek voss/i);
     expect(overlay).toHaveTextContent(/cinder-veil stalker/i);
     expect(overlay.querySelector("[data-testid='combat-dice-animation']")).toHaveClass("combat-dice-animation-compact");
-    expect(screen.getByTestId("host-battle-rolls")).toHaveTextContent(/final player total/i);
+    expect(overlay.querySelector("[data-testid='combat-die-attack']")).toHaveTextContent("4");
+    expect(overlay.querySelector("[data-testid='combat-die-defense']")).toHaveTextContent("3");
+    expect(screen.getByTestId("host-battle-rolls")).toHaveTextContent(/player total/i);
     expect(screen.getByTestId("host-battle-rolls")).toHaveTextContent("11");
-    expect(screen.getByTestId("host-battle-rolls")).toHaveTextContent(/final enemy total/i);
+    expect(screen.getByTestId("host-battle-rolls")).toHaveTextContent(/4 \+ 1 \+ grit 6 = 11/i);
+    expect(screen.getByTestId("host-battle-rolls")).toHaveTextContent(/enemy total/i);
     expect(overlay).toHaveTextContent(/cinder-veil stalker added to trophy pile/i);
     expect(screen.getByTestId("host-battle-rolls")).toHaveTextContent("8");
-    expect(screen.getByTestId("host-battle-rolls")).toHaveTextContent("A 11 / D 8 / +6");
+    expect(screen.getByTestId("host-battle-rolls")).toHaveTextContent(/3 \+ battle 5 = 8/i);
     expect(screen.getByTestId("host-battle-log")).toHaveTextContent(/tarek voss engages cinder-veil stalker/i);
+    expect(screen.queryByTestId("roll-outcome-panel")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("tv-card-reveal")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("tv-resolution-footer")).not.toBeInTheDocument();
+    expect(screen.queryByText(/battle display active/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/pax/i)).not.toBeInTheDocument();
   });
 
@@ -811,9 +819,10 @@ describe("TvApp", () => {
     expect(overlay).toHaveTextContent(/cinder-veil stalker/i);
     expect(screen.getByTestId("host-battle-rolls")).toHaveTextContent("11");
     expect(screen.getByTestId("host-battle-rolls")).toHaveTextContent("8");
-    expect(screen.getByTestId("tv-card-reveal")).toHaveTextContent(/cinder-veil stalker/i);
-    expect(screen.getByTestId("roll-outcome-panel")).toHaveTextContent(/vs enemy/i);
-    expect(screen.getByTestId("roll-outcome-panel")).toHaveTextContent("8");
+    expect(screen.queryByTestId("tv-card-reveal")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("roll-outcome-panel")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("tv-resolution-footer")).not.toBeInTheDocument();
+    expect(screen.queryByText(/battle display active/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/host card lane/i)).not.toBeInTheDocument();
   });
 });

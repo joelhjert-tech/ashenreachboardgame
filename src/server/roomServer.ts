@@ -47,6 +47,7 @@ import type {
   CheckRequestedAction,
   CombatRequestedAction,
   CompleteContractAction,
+  DiceRollStartedAction,
   EscalationAdvancedAction,
   ClientIntent,
   CombatResolvedAction,
@@ -96,6 +97,7 @@ const RAISE_STAT_FEEDS_ESCALATION = true;
 const RAISE_STAT_ESCALATION_REASON = "forged in fire";
 const ENEMY_ROLL_TIMEOUT_MS = 30_000;
 const RESOLUTION_AUTO_CONTINUE_MS = process.env.VITEST ? 1 : 10000;
+const VISIBLE_DICE_ROLL_MS = process.env.VITEST ? 0 : 650;
 
 const NEMESIS_OPPOSITION = {
   strength: { attackStat: "grit", label: "Overpower" },
@@ -465,11 +467,13 @@ export class GameRoomServer {
 
       if (intent.type === "CHECK_REQUESTED") {
         if (shouldResolveVisibleCheckOrCombat) {
-          this.resolveCheckIntent(intent);
+          this.startVisibleDiceRollIntent(client, intent, () => this.resolveCheckIntent(intent));
+          return;
         }
       } else if (intent.type === "COMBAT_REQUESTED") {
         if (shouldResolveVisibleCheckOrCombat) {
-          this.resolveCombatIntent(intent);
+          this.startVisibleDiceRollIntent(client, intent, () => this.resolveCombatIntent(intent));
+          return;
         }
       } else if (intent.type === "ENEMY_ROLL_REQUESTED") {
         this.resolveEnemyRollIntent(intent);
@@ -3080,7 +3084,9 @@ export class GameRoomServer {
 
       if (
         this.state.activeResolution &&
-        ["card_reveal", "battle_setup", "dice_roll", "roll_result"].includes(this.state.activeResolution.stage)
+        ["card_reveal", "battle_setup", "dice_roll", "roll_result", "outcome_summary", "awaiting_continue"].includes(
+          this.state.activeResolution.stage
+        )
       ) {
         return;
       }
@@ -3407,6 +3413,19 @@ export class GameRoomServer {
     const previousStage = this.state.activeResolution?.stage ?? null;
     const activeSeatId = this.state.turnOrder[this.state.activeSeatIndex] ?? intent.seatId;
 
+    if (!this.state.activeResolution && this.state.status === "active" && this.state.phase === "resolution") {
+      this.runAutomaticPhases(intent.seatId);
+      const phaseAfterRecovery = this.state.phase as GameState["phase"];
+
+      if (this.state.status === "active" && phaseAfterRecovery === "broadcast" && !this.state.activeResolution) {
+        this.completeBroadcastTurn(activeSeatId);
+        return;
+      }
+
+      this.broadcastPatch();
+      return;
+    }
+
     this.applyAction(this.intentToAction(intent));
 
     if (previousStage === "roll_result" || previousStage === "outcome_summary") {
@@ -3419,6 +3438,53 @@ export class GameRoomServer {
     }
 
     this.broadcastPatch();
+  }
+
+  private startVisibleDiceRollIntent(
+    client: ConnectedClient,
+    intent: Extract<ClientIntent, { type: "CHECK_REQUESTED" | "COMBAT_REQUESTED" }>,
+    resolveRoll: () => void
+  ): void {
+    const encounter = this.state.currentEncounter;
+
+    if (!encounter) {
+      throw new IntentRejectedError(intent.type, "No encounter is available to roll");
+    }
+
+    this.applyAction({
+      type: "DICE_ROLL_STARTED",
+      seatId: intent.seatId,
+      stat: intent.stat,
+      cardId: encounter.id,
+      createdAt: new Date().toISOString()
+    } satisfies DiceRollStartedAction);
+    this.broadcastPatch();
+
+    const completeRoll = () => {
+      try {
+        resolveRoll();
+
+        const shouldCompleteTurn =
+          this.state.status === "active" && this.state.phase === "broadcast" && !this.state.activeResolution;
+        const completingSeatId = this.state.turnOrder[this.state.activeSeatIndex] ?? client.seatId;
+
+        this.broadcastPatch();
+
+        if (shouldCompleteTurn && completingSeatId) {
+          this.completeBroadcastTurn(completingSeatId);
+        }
+      } catch (error) {
+        const reason = error instanceof Error ? error.message : "Intent rejected";
+        this.sendIntentRejected(client, intent.type, reason);
+      }
+    };
+
+    if (VISIBLE_DICE_ROLL_MS <= 0) {
+      completeRoll();
+      return;
+    }
+
+    setTimeout(completeRoll, VISIBLE_DICE_ROLL_MS).unref?.();
   }
 
   resolveMoveIntent(intent: Extract<ClientIntent, { type: "MOVE_REQUESTED" }>): void {

@@ -71,6 +71,12 @@ export interface EnemyRollRequestedAction extends BaseAction {
   type: "ENEMY_ROLL_REQUESTED";
 }
 
+export interface DiceRollStartedAction extends BaseAction {
+  type: "DICE_ROLL_STARTED";
+  stat: CheckStat;
+  cardId: string;
+}
+
 export interface CheckRolledAction extends BaseAction {
   type: "CHECK_ROLLED";
   stat: CheckStat;
@@ -266,6 +272,7 @@ export type GameAction =
   | CombatRequestedAction
   | EnemyRollAssignedAction
   | EnemyRollRequestedAction
+  | DiceRollStartedAction
   | CheckRolledAction
   | CombatResolvedAction
   | ResolutionAppliedAction

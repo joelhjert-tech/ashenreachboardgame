@@ -1,16 +1,10 @@
 import type { ReactElement } from "react";
 import { CardArtImage } from "../shared/CardArtImage.js";
-import { CombatDiceAnimation } from "../shared/CombatDiceAnimation.js";
 import { getCharacterPortraitPath } from "../shared/assetPaths.js";
-import type { ActiveResolution, PublicPatchPayload, PublicPlayer, StatePatch, Stat } from "../shared/types.js";
-
-const statLabelById: Record<Stat, string> = {
-  command: "Command",
-  grit: "Strength",
-  signal: "Craft",
-  guile: "Guile",
-  forge: "Forge"
-};
+import { statLabelById } from "../shared/statLabels.js";
+import type { ActiveResolution, PublicPatchPayload, PublicPlayer, StatePatch } from "../shared/types.js";
+import { isHostBattleActive } from "./hostBattleState.js";
+import { ThreeBattleDiceAnimation } from "./ThreeBattleDiceAnimation.js";
 
 interface HostBattleDisplayModel {
   playerName: string;
@@ -31,31 +25,12 @@ interface HostBattleDisplayModel {
   enemyModifier: number | null;
   playerTotal: number | null;
   enemyTotal: number | null;
+  playerFormula: string;
+  enemyFormula: string;
   outcomeLabel: string | null;
+  cardMovementText: string | null;
   logEntries: string[];
   autoResolveAvailable: boolean;
-}
-
-function isEnemyBattleResolution(resolution: ActiveResolution | null | undefined): boolean {
-  return Boolean(
-    resolution?.battle &&
-      (resolution.card?.type === "enemy" || resolution.battle.enemyName || resolution.source === "threat")
-  );
-}
-
-export function isHostBattleActive(
-  patch: StatePatch<PublicPatchPayload> | null,
-  activePlayer: PublicPlayer | null
-): boolean {
-  if (!patch || !activePlayer) {
-    return false;
-  }
-
-  return Boolean(
-    isEnemyBattleResolution(patch.payload.activeResolution) ||
-      patch.payload.encounter?.cardType === "enemy" ||
-      patch.payload.pendingEnemyRoll
-  );
 }
 
 function getEnemyBattleValue(resolution: ActiveResolution | null, patch: StatePatch<PublicPatchPayload>): number | null {
@@ -75,6 +50,56 @@ function getPlayerBattleValue(resolution: ActiveResolution | null, activePlayer:
 
   const stat = resolution?.battle?.stat;
   return stat && activePlayer ? activePlayer.character.stats[stat] : null;
+}
+
+function formatDiceExpression(dice: number[]): string {
+  return dice.length > 0 ? dice.join(" + ") : "-";
+}
+
+function formatBattleFormula({
+  dice,
+  modifier,
+  modifierLabel,
+  total,
+  fallbackLabel
+}: {
+  dice: number[];
+  modifier: number | null;
+  modifierLabel: string;
+  total: number | null;
+  fallbackLabel: string;
+}): string {
+  if (total === null) {
+    return fallbackLabel;
+  }
+
+  const diceExpression = formatDiceExpression(dice);
+
+  if (modifier === null) {
+    return `${diceExpression} = ${total}`;
+  }
+
+  return `${diceExpression} + ${modifierLabel} ${modifier} = ${total}`;
+}
+
+function getCardMovementText(enemyName: string, outcomeText: string | null | undefined): string | null {
+  if (!outcomeText) {
+    return null;
+  }
+
+  if (/trophy pile/i.test(outcomeText)) {
+    return `${enemyName} added to Trophy Pile`;
+  }
+
+  if (/discard/i.test(outcomeText)) {
+    return `${enemyName} moved to discard`;
+  }
+
+  if (/current space|this space|place this enemy/i.test(outcomeText)) {
+    return `${enemyName} remains on this space`;
+  }
+
+  return null;
 }
 
 function buildBattleModel(
@@ -100,16 +125,19 @@ function buildBattleModel(
   const enemyTotal = outcome?.enemyTotal ?? (resolution?.roll?.target && resolution.card?.type === "enemy" ? resolution.roll.target : null);
   const playerBattleValue = getPlayerBattleValue(resolution, activePlayer);
   const enemyBattleValue = getEnemyBattleValue(resolution, patch);
+  const outcomeText = resolution?.outcome?.text ?? outcome?.summary ?? null;
   const outcomeLabel =
     resolution?.roll?.success === true || outcome?.success === true
       ? `${activePlayer.character.name} wins the battle`
       : resolution?.roll?.success === false || outcome?.success === false
         ? `${activePlayer.character.name} is driven back`
         : null;
+  const cardMovementText = getCardMovementText(enemyName, outcomeText);
   const logEntries = [
     `${activePlayer.character.name} engages ${enemyName}`,
     playerDice.length > 0 || enemyDice.length > 0 ? "Battle dice rolled" : null,
-    resolution?.outcome?.text ?? outcome?.summary ?? null,
+    cardMovementText,
+    outcomeText,
     outcomeLabel
   ].filter((entry): entry is string => Boolean(entry));
 
@@ -132,21 +160,25 @@ function buildBattleModel(
     enemyModifier: enemyBattleValue,
     playerTotal,
     enemyTotal,
+    playerFormula: formatBattleFormula({
+      dice: playerDice,
+      modifier: playerBattleValue,
+      modifierLabel: statLabelById[stat],
+      total: playerTotal,
+      fallbackLabel: `${statLabelById[stat]} ${playerBattleValue ?? "-"}`
+    }),
+    enemyFormula: formatBattleFormula({
+      dice: enemyDice,
+      modifier: enemyBattleValue,
+      modifierLabel: "Battle",
+      total: enemyTotal,
+      fallbackLabel: `Battle ${enemyBattleValue ?? "-"}`
+    }),
     outcomeLabel,
+    cardMovementText,
     logEntries,
     autoResolveAvailable: Boolean(pendingEnemyRoll)
   };
-}
-
-function DiceReadout({ label, dice, side }: { label: string; dice: number[]; side: "player" | "enemy" }): ReactElement {
-  return (
-    <div className={`host-battle-dice-column host-battle-dice-column-${side}`}>
-      <span>{label}</span>
-      <div className="host-battle-dice-row">
-        {dice.length > 0 ? dice.map((die, index) => <strong key={`${die}-${index}`}>{die}</strong>) : <strong>-</strong>}
-      </div>
-    </div>
-  );
 }
 
 function formatNumber(value: number | null): string {
@@ -228,45 +260,53 @@ export function HostBattleOverlay({
         </article>
 
         <div className="host-battle-rolls" data-testid="host-battle-rolls">
+          <div className="host-battle-formula host-battle-formula-player">
+            <span>Player total</span>
+            <strong>{formatNumber(model.playerTotal)}</strong>
+            <p>{model.playerFormula}</p>
+          </div>
           <div className="host-battle-dice-animation">
-            <CombatDiceAnimation
+            <ThreeBattleDiceAnimation
               attackValue={model.playerTotal}
               defenseValue={model.enemyTotal}
               modifierValue={model.playerModifier}
+              attackDieFace={model.playerDice[0] ?? null}
+              defenseDieFace={model.enemyDice[0] ?? model.playerDice[1] ?? null}
+              modifierDieFace={model.playerDice[1] ?? null}
               attackSuccess={model.outcomeLabel?.includes("wins") ?? false}
               defenseSuccess={model.outcomeLabel?.includes("driven back") ?? false}
-              compact
             />
           </div>
-          <DiceReadout label="Player roll" dice={model.playerDice} side="player" />
-          <div className="host-battle-modifiers">
-            <span>Player battle value {formatNumber(model.playerModifier)}</span>
-            <span>Enemy battle value {formatNumber(model.enemyModifier)}</span>
-          </div>
-          <DiceReadout label="Enemy roll" dice={model.enemyDice} side="enemy" />
-          <div className="host-battle-total host-battle-total-player">
-            <span>Final player total</span>
-            <strong>{formatNumber(model.playerTotal)}</strong>
-          </div>
-          <div className="host-battle-total host-battle-total-enemy">
-            <span>Final enemy total</span>
+          <div className="host-battle-formula host-battle-formula-enemy">
+            <span>Enemy total</span>
             <strong>{formatNumber(model.enemyTotal)}</strong>
+            <p>{model.enemyFormula}</p>
+          </div>
+          <div className="host-battle-battle-line">
+            <span>{model.playerStatLabel} {formatNumber(model.playerModifier)}</span>
+            <strong>vs</strong>
+            <span>Battle {formatNumber(model.enemyModifier)}</span>
           </div>
         </div>
 
         <div className="host-battle-actions">
-          <button className="host-battle-primary" type="button" disabled>
-            Resolve Battle
-          </button>
+          <div className="host-battle-status-chip" role="status">
+            {model.outcomeLabel ? "Awaiting player continue" : "Battle resolving"}
+          </div>
+          {model.cardMovementText && (
+            <div className="host-battle-status-chip host-battle-status-chip-secondary" role="status">
+              {model.cardMovementText}
+            </div>
+          )}
           {model.autoResolveAvailable && (
-            <button className="host-battle-secondary" type="button" disabled>
-              Auto Resolve
-            </button>
+            <div className="host-battle-status-chip host-battle-status-chip-secondary" role="status">
+              Enemy roller pending
+            </div>
           )}
         </div>
 
         <div className="host-battle-log" data-testid="host-battle-log">
-          {model.logEntries.slice(0, 4).map((entry) => (
+          {model.logEntries.slice(0, 2).map((entry) => (
             <p key={entry}>{entry}</p>
           ))}
         </div>

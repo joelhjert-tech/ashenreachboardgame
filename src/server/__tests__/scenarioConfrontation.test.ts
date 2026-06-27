@@ -518,9 +518,14 @@ describe("scenario confrontation flow", () => {
       seatId: "seat-1"
     });
 
-    expect(roomServer.getState().phase).toBe("broadcast");
-    expect(roomServer.getState().scenarioProgress.mirrorBreaks).toBeUndefined();
+    expect(roomServer.getState().phase).toBe("resolution");
+    expect(roomServer.getState().activeResolution?.stage).toBe("outcome_summary");
     expect(roomServer.getState().lastOutcomeSummary?.summary ?? "").toContain("cannot face the mirror");
+    continueVisibleResolution(roomServer);
+
+    expect(roomServer.getState().phase).toBe("navigation");
+    expect(roomServer.getState().activeResolution).toBeNull();
+    expect(roomServer.getState().scenarioProgress.mirrorBreaks).toBeUndefined();
   });
 
   it("weakens the Broken Seal at turn start from its ambient roll", () => {

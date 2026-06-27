@@ -1,4 +1,5 @@
 import type { ActiveResolution, Follower, GearItem, GearSlot, PhonePatchPayload, PhoneSelfState, Stat } from "../shared/types.js";
+import { gearSlotLabelById, statLabelById } from "../shared/statLabels.js";
 
 export type InventoryTimingWindow =
   | "beforeBattleRoll"
@@ -59,14 +60,6 @@ const inventoryGroupOrder: InventoryGroupLabel[] = [
   "Followers",
   "Quest Items"
 ];
-
-const statLabelById: Record<Stat, string> = {
-  command: "Command",
-  grit: "Grit",
-  signal: "Signal",
-  guile: "Guile",
-  forge: "Forge"
-};
 
 function toTitleCase(value: string): string {
   return value.replace(/[_-]+/g, " ").replace(/\b\w/g, (character) => character.toUpperCase());
@@ -467,7 +460,7 @@ export function getBattleAssistViewModel(patch: PhonePatchPayload): BattleAssist
 }
 
 export function getSlotLabel(slot: GearSlot): string {
-  return toTitleCase(slot);
+  return gearSlotLabelById[slot];
 }
 
 export { statLabelById };

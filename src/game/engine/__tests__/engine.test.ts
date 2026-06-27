@@ -841,7 +841,21 @@ describe("active resolution visibility state", () => {
     expect(setup.state.activeResolution?.stage).toBe("battle_setup");
     expect(setup.state.activeResolution?.battle?.difficulty).toBe(7);
 
-    const rolled = reduceGameState(setup.state, {
+    const diceRolling = reduceGameState(setup.state, {
+      type: "DICE_ROLL_STARTED",
+      seatId: "seat-1",
+      stat: "signal",
+      cardId: card.id,
+      createdAt: "2026-06-26T00:00:01.500Z"
+    });
+    expect(diceRolling.ok).toBe(true);
+    if (!diceRolling.ok) {
+      return;
+    }
+    expect(diceRolling.state.activeResolution?.stage).toBe("dice_roll");
+    expect(diceRolling.state.activeResolution?.roll).toBeUndefined();
+
+    const rolled = reduceGameState(diceRolling.state, {
       type: "CHECK_ROLLED",
       seatId: "seat-1",
       stat: "signal",
@@ -913,6 +927,113 @@ describe("active resolution visibility state", () => {
       return;
     }
     expect(secondContinue.state.activeResolution).toBeNull();
+  });
+
+  it("does not apply pending movement failure effects while the outcome summary is visible", () => {
+    const server = new GameRoomServer(
+      createState({
+        phase: "resolution",
+        resolutionSource: "movement",
+        activeResolution: {
+          id: "seat-1:movement:sector-b:test",
+          playerId: "seat-1",
+          source: "movement",
+          stage: "outcome_summary",
+          roll: {
+            dice: [3, 2],
+            baseTotal: 5,
+            modifierTotal: 1,
+            finalTotal: 6,
+            target: 7,
+            success: false
+          },
+          outcome: {
+            title: "Movement failed",
+            text: "Failed to enter Glassmere Spindle. Failure: gain 1 Heat.",
+            effects: ["Failure: gain 1 Heat."]
+          }
+        },
+        pendingEffect: { type: "gain_heat", amount: 1 },
+        lastOutcomeSummary: {
+          seatId: "seat-1",
+          movedToSectorId: "sector-b",
+          encounterCardId: null,
+          encounterTitle: "Glassmere Spindle",
+          encounterCardType: null,
+          checkStat: "guile",
+          die1: 3,
+          die2: 2,
+          statBonus: 1,
+          checkTotal: 6,
+          difficulty: 7,
+          enemyRollerSeatId: null,
+          enemyDie1: null,
+          enemyDie2: null,
+          enemyBonus: null,
+          enemyTotal: null,
+          success: false,
+          summary: "Failed to enter Glassmere Spindle. Failure: gain 1 Heat."
+        }
+      }),
+      [],
+      createSequenceRandomSource([]),
+      createThreats(),
+      createCharacters(),
+      createGear(),
+      createContracts()
+    );
+
+    (server as any).runAutomaticPhases("seat-1");
+
+    expect(server.getState().phase).toBe("resolution");
+    expect(server.getState().activeResolution?.stage).toBe("outcome_summary");
+    expect(server.getState().pendingEffect).toEqual({ type: "gain_heat", amount: 1 });
+    expect(server.getState().players.find((entry) => entry.seatId === "seat-1")?.character.heat).toBe(0);
+  });
+
+  it("recovers an orphaned resolution state when the player continues", () => {
+    const server = new GameRoomServer(
+      createState({
+        phase: "resolution",
+        resolutionSource: "encounter",
+        activeResolution: null,
+        pendingEffect: null,
+        lastOutcomeSummary: {
+          seatId: "seat-1",
+          movedToSectorId: "sector-b",
+          encounterCardId: null,
+          encounterTitle: "Glassmere Spindle",
+          encounterCardType: null,
+          checkStat: "guile",
+          die1: 3,
+          die2: 2,
+          statBonus: 1,
+          checkTotal: 6,
+          difficulty: 7,
+          enemyRollerSeatId: null,
+          enemyDie1: null,
+          enemyDie2: null,
+          enemyBonus: null,
+          enemyTotal: null,
+          success: false,
+          summary: "Failed to enter Glassmere Spindle. Failure: gain 1 Heat."
+        }
+      }),
+      [],
+      createSequenceRandomSource([]),
+      createThreats(),
+      createCharacters(),
+      createGear(),
+      createContracts()
+    );
+
+    server.handleIntent(createClient("seat-1"), {
+      type: "CONTINUE_RESOLUTION",
+      seatId: "seat-1"
+    });
+
+    expect(server.getState().phase).not.toBe("resolution");
+    expect(server.getState().activeResolution).toBeNull();
   });
 
   it("renders space-text check rolls through activeResolution", () => {

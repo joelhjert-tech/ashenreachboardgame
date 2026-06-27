@@ -835,10 +835,60 @@ describe("PhoneActionPanel", () => {
     );
 
     expect(screen.getByTestId("phone-roll-result")).toHaveTextContent(/roll: 2 \+ 5 \+ 1 = 8/i);
+    expect(within(screen.getByTestId("phone-roll-result")).getByTestId("combat-die-attack")).toHaveTextContent("2");
+    expect(within(screen.getByTestId("phone-roll-result")).getByTestId("combat-die-defense")).toHaveTextContent("5");
     expect(screen.getByTestId("phone-roll-result")).toHaveTextContent(/target: 7/i);
     expect(screen.getByTestId("phone-roll-result")).toHaveTextContent(/success/i);
     expect(screen.getByTestId("phone-roll-result")).toHaveTextContent("A 8 / D 7 / +1");
     expect(screen.getByTestId("phone-resolution-continue")).toBeVisible();
+
+    fireEvent.click(screen.getByRole("button", { name: /continue/i }));
+
+    expect(onIntent).toHaveBeenCalledWith({
+      type: "CONTINUE_RESOLUTION",
+      seatId: "seat-1"
+    });
+  });
+
+  it("renders a recovery continue button for orphaned movement roll summaries", () => {
+    const onIntent = vi.fn();
+
+    render(
+      <PhoneActionPanel
+        characters={characters}
+        onIntent={onIntent}
+        patch={createPatch({
+          phase: "resolution",
+          encounter: null,
+          activeResolution: null,
+          outcomeSummary: {
+            seatId: "seat-1",
+            movedToSectorId: "ashwake-crossing",
+            encounterCardId: null,
+            encounterTitle: "Red March Outpost",
+            encounterCardType: null,
+            checkStat: "guile",
+            die1: 3,
+            die2: 2,
+            statBonus: 1,
+            checkTotal: 6,
+            difficulty: 7,
+            enemyRollerSeatId: null,
+            enemyDie1: null,
+            enemyDie2: null,
+            enemyBonus: null,
+            enemyTotal: null,
+            success: false,
+            summary: "Failed to enter Red March Outpost. Failure: gain 1 Heat."
+          }
+        })}
+      />
+    );
+
+    expect(screen.getByTestId("phone-roll-result")).toHaveTextContent(/roll: 3 \+ 2 \+ 1 = 6/i);
+    expect(screen.getByTestId("phone-roll-result")).toHaveTextContent(/target: 7/i);
+    expect(screen.getByTestId("phone-roll-result")).toHaveTextContent(/failure/i);
+    expect(screen.getByText(/failed to enter red march outpost/i)).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: /continue/i }));
 

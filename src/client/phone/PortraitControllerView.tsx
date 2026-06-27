@@ -1,5 +1,6 @@
 import { useState, type ReactElement } from "react";
 import { getCharacterPortraitPath, getPhoneBackgroundPath } from "../shared/assetPaths.js";
+import { formatSeatLabel, statLabelById, statOrder } from "../shared/statLabels.js";
 import type { CharacterCatalogEntry, ClientIntent, ContractCard, PhonePatchPayload, PhoneSelfState } from "../shared/types.js";
 import { PhoneInventoryPanel } from "./PhoneInventoryPanel.js";
 import { PhoneActionPanel } from "./PhoneActionPanel.js";
@@ -84,10 +85,10 @@ export function PortraitControllerView({
               </div>
 
               <div className="phone-portrait-attributes" aria-label="Character stats">
-                {Object.entries(self.character.stats).map(([stat, value]) => (
+                {statOrder.map((stat) => (
                   <div key={stat}>
-                    <span>{stat}</span>
-                    <strong>{value}</strong>
+                    <span>{statLabelById[stat]}</span>
+                    <strong>{self.character.stats[stat]}</strong>
                   </div>
                 ))}
               </div>
@@ -151,7 +152,7 @@ export function PortraitControllerView({
             <img src={getCharacterPortraitPath(self.character.id)} alt="" />
           </div>
           <div className="phone-portrait-header-copy">
-            <span>Seat {self.seatId}</span>
+            <span>{formatSeatLabel(self.seatId)}</span>
             <h1>{self.character.name}</h1>
             <p>{self.character.archetype}</p>
           </div>
@@ -188,12 +189,12 @@ export function PortraitControllerView({
               <section className="phone-portrait-section">
                 <div className="phone-sheet-section-heading">Stats</div>
                 <div className="phone-portrait-attributes" aria-label="Character stats">
-              {Object.entries(self.character.stats).map(([stat, value]) => (
-                <div key={stat}>
-                  <span>{stat}</span>
-                  <strong>{value}</strong>
-                </div>
-              ))}
+                  {statOrder.map((stat) => (
+                    <div key={stat}>
+                      <span>{statLabelById[stat]}</span>
+                      <strong>{self.character.stats[stat]}</strong>
+                    </div>
+                  ))}
                 </div>
               </section>
 

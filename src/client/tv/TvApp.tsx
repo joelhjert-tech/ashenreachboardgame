@@ -13,6 +13,7 @@ import {
   resolutionStageLabel
 } from "../shared/resolutionPresentation.js";
 import { buildScenarioOutcomeSummary, buildScenarioRuleDigest } from "../shared/scenarioPresentation.js";
+import { formatSeatLabel, statShortLabelById } from "../shared/statLabels.js";
 import { useRoomSubscription } from "../shared/useRoomSubscription.js";
 import { getCharacterPortraitPath, getNemesisPortraitPath } from "../shared/assetPaths.js";
 import type {
@@ -30,7 +31,8 @@ import type {
   Stat
 } from "../shared/types.js";
 import { HostPlayerCard } from "./HostPlayerCard.js";
-import { HostBattleOverlay, isHostBattleActive } from "./HostBattleOverlay.js";
+import { HostBattleOverlay } from "./HostBattleOverlay.js";
+import { isHostBattleActive } from "./hostBattleState.js";
 import { JoinQrCard } from "./JoinQrCard.js";
 import { TacticalMapBoard } from "./TacticalMapBoard.js";
 
@@ -38,13 +40,8 @@ const hostTokenStorageKey = "ashen-reach-tv-host-token";
 const roomCodeStorageKey = "ashen-reach-tv-room-code";
 const previousSessionEndedNotice = "Previous session ended. Create a new room to continue.";
 
-const statLabelById: Record<Stat, string> = {
-  command: "Cmd",
-  grit: "Grit",
-  signal: "Signal",
-  guile: "Guile",
-  forge: "Forge"
-};
+const statLabelById = statShortLabelById;
+type TvResolutionDisplayMode = "idle" | "cardReveal" | "battle" | "outcome";
 
 function toTitleCase(value: string): string {
   return value
@@ -69,8 +66,7 @@ function getInteractionModeLabel(interactionMode: InteractionMode): string {
 }
 
 function getSeatNumber(seatId: string): string {
-  const numeric = seatId.match(/\d+/)?.[0];
-  return numeric ?? seatId.replace(/^seat-/i, "").toUpperCase();
+  return formatSeatLabel(seatId).replace(/^Seat\s+/i, "");
 }
 
 function getProgressPercent(current: number, total: number): number {
@@ -89,6 +85,39 @@ function getRoundLabel(patch: StatePatch<PublicPatchPayload> | null): string {
 
 function getResolutionPlayerId(patch: StatePatch<PublicPatchPayload> | null): string | null {
   return patch?.payload.activeResolution?.playerId ?? patch?.payload.pendingEnemyRoll?.fighterSeatId ?? null;
+}
+
+function getTvResolutionDisplayMode(
+  patch: StatePatch<PublicPatchPayload> | null,
+  battlePlayer: PublicPlayer | null
+): TvResolutionDisplayMode {
+  if (!patch) {
+    return "idle";
+  }
+
+  if (isHostBattleActive(patch, battlePlayer)) {
+    return "battle";
+  }
+
+  const activeResolution = patch.payload.activeResolution ?? null;
+
+  if (activeResolution) {
+    if (activeResolution.stage === "card_reveal" || activeResolution.stage === "battle_setup") {
+      return "cardReveal";
+    }
+
+    return "outcome";
+  }
+
+  if (patch.payload.encounter || patch.payload.pendingEnemyRoll) {
+    return "cardReveal";
+  }
+
+  if (patch.payload.outcomeSummary) {
+    return "outcome";
+  }
+
+  return "idle";
 }
 
 function getScenarioNemesisLabel(scenario: ScenarioCatalogEntry | null): string {
@@ -1118,11 +1147,13 @@ function CardRevealPanel({ patch }: { patch: StatePatch<PublicPatchPayload> | nu
 function RecentOutcomePanel({
   patch,
   currentStepCopy,
-  debugEvents
+  debugEvents,
+  suppressRollPanel = false
 }: {
   patch: StatePatch<PublicPatchPayload> | null;
   currentStepCopy: string;
   debugEvents: DebugEvent[];
+  suppressRollPanel?: boolean;
 }): ReactElement {
   const activeResolution = patch?.payload.activeResolution ?? null;
   const resolutionOutcome = activeResolution ? activeResolutionToOutcomeSummary(activeResolution) : null;
@@ -1155,12 +1186,12 @@ function RecentOutcomePanel({
       </div>
       <div className="tv-recent-layout">
         <div className="tv-recent-roll">
-          {latestOutcome && latestOutcome.die1 !== null && latestOutcome.die2 !== null ? (
+          {!suppressRollPanel && latestOutcome && latestOutcome.die1 !== null && latestOutcome.die2 !== null ? (
             <RollOutcomePanel summary={latestOutcome} animate title="Live roll" />
           ) : (
             <div className="tv-recent-roll-placeholder">
-              <strong>No roll yet</strong>
-              <span>Dice results appear here after checks.</span>
+              <strong>{suppressRollPanel ? "Battle display active" : "No roll yet"}</strong>
+              <span>{suppressRollPanel ? "Roll details are shown in the battle overlay." : "Dice results appear here after checks."}</span>
             </div>
           )}
         </div>
@@ -1292,6 +1323,7 @@ export function TvApp(): ReactElement {
       : scenarioCatalog.find((scenario) => scenario.id === selectedScenarioId) ?? null) ?? null;
   const scenarioStatus = useMemo(() => getScenarioStatus(publicPatch), [publicPatch]);
   const battleMode = isHostBattleActive(publicPatch, battlePlayer);
+  const resolutionDisplayMode = getTvResolutionDisplayMode(publicPatch, battlePlayer);
 
   useEffect(() => {
     if (publicPatch) {
@@ -1461,10 +1493,31 @@ export function TvApp(): ReactElement {
           />
         </section>
 
-        <section className="tv-command-footer">
-          <CardRevealPanel patch={publicPatch} />
-          <RecentOutcomePanel patch={publicPatch} currentStepCopy={currentStepCopy} debugEvents={debugEvents} />
-        </section>
+        {resolutionDisplayMode !== "battle" && (
+          <section
+            className={`tv-command-footer tv-command-footer-${resolutionDisplayMode}`}
+            data-testid="tv-resolution-footer"
+          >
+            {resolutionDisplayMode === "cardReveal" ? (
+              <CardRevealPanel patch={publicPatch} />
+            ) : resolutionDisplayMode === "outcome" ? (
+              <RecentOutcomePanel
+                patch={publicPatch}
+                currentStepCopy={currentStepCopy}
+                debugEvents={debugEvents}
+              />
+            ) : (
+              <>
+                <CardRevealPanel patch={publicPatch} />
+                <RecentOutcomePanel
+                  patch={publicPatch}
+                  currentStepCopy={currentStepCopy}
+                  debugEvents={debugEvents}
+                />
+              </>
+            )}
+          </section>
+        )}
 
         {debugOpen && (
           <section className="tv-debug-drawer">

@@ -5,6 +5,7 @@ import type {
   ClientIntent,
   ContractCard,
   GearItem,
+  OutcomeSummary,
   PhonePatchPayload,
   SectorNode,
   Stat,
@@ -18,6 +19,7 @@ import {
   resolutionStageLabel
 } from "../shared/resolutionPresentation.js";
 import { CombatDiceAnimation } from "../shared/CombatDiceAnimation.js";
+import { statLabelById } from "../shared/statLabels.js";
 import { PhoneInventoryPanel } from "./PhoneInventoryPanel.js";
 import { formatTimingWindow, getBattleAssistViewModel, statLabelById as inventoryStatLabelById } from "./inventoryPresentation.js";
 
@@ -52,14 +54,6 @@ interface SectorOpportunityItem {
 
 const TROPHY_COST_PER_RANK = 4;
 const MAX_STAT_RANK = 9;
-
-const statLabelById: Record<Stat, string> = {
-  command: "Command",
-  grit: "Grit",
-  signal: "Signal",
-  guile: "Guile",
-  forge: "Forge"
-};
 
 function getSector(sectors: SectorNode[], sectorId: string): SectorNode | null {
   return sectors.find((sector) => sector.id === sectorId) ?? null;
@@ -140,6 +134,8 @@ function ActiveResolutionCard({
             attackValue={resolution.roll.finalTotal}
             defenseValue={resolution.roll.target}
             modifierValue={resolution.roll.modifierTotal}
+            attackDieFace={resolution.roll.dice[0] ?? null}
+            defenseDieFace={resolution.roll.dice[1] ?? null}
             attackSuccess={resolution.roll.success}
             defenseSuccess={!resolution.roll.success}
             hasModifier={resolution.roll.modifierTotal !== 0}
@@ -172,6 +168,66 @@ function ActiveResolutionCard({
           Continue
         </button>
       )}
+    </div>
+  );
+}
+
+function OrphanResolutionRecoveryCard({
+  outcome,
+  onContinue
+}: {
+  outcome: OutcomeSummary;
+  onContinue: () => void;
+}): ReactElement {
+  const dice = [outcome.die1, outcome.die2].filter((face): face is number => typeof face === "number");
+  const modifier = outcome.statBonus ?? 0;
+  const total = outcome.checkTotal ?? (dice.length > 0 ? dice.reduce((sum, face) => sum + face, modifier) : null);
+  const target = outcome.enemyTotal ?? outcome.difficulty ?? null;
+  const statLabel =
+    outcome.checkStat && outcome.checkStat in statLabelById ? statLabelById[outcome.checkStat as Stat] : "Check";
+
+  return (
+    <div className="phone-resolution-card phone-resolution-card-recovery" data-testid="phone-resolution-card">
+      <div className="phone-resolution-heading">
+        <span>Resolution</span>
+        <strong>{outcome.encounterTitle ?? "Roll result"}</strong>
+      </div>
+      <div className="phone-resolution-roll" data-testid="phone-roll-result">
+        {dice.length > 0 && total !== null && target !== null && (
+          <CombatDiceAnimation
+            attackValue={total}
+            defenseValue={target}
+            modifierValue={modifier}
+            attackDieFace={dice[0] ?? null}
+            defenseDieFace={dice[1] ?? null}
+            attackSuccess={outcome.success === true}
+            defenseSuccess={outcome.success === false}
+            hasModifier={modifier !== 0}
+            compact
+          />
+        )}
+        {dice.length > 0 && total !== null ? (
+          <p>
+            Roll: {dice.join(" + ")}
+            {modifier !== 0 ? ` ${modifier > 0 ? "+" : "-"} ${Math.abs(modifier)}` : ""} = {total}
+          </p>
+        ) : (
+          <p>{outcome.summary}</p>
+        )}
+        {target !== null && <p>Target: {target}</p>}
+        <strong>{outcome.success === null ? statLabel : outcome.success ? "Success" : "Failure"}</strong>
+      </div>
+      <div className="phone-resolution-outcome">
+        <p>{outcome.summary}</p>
+      </div>
+      <button
+        className="phone-button phone-button-primary phone-resolution-continue"
+        data-testid="phone-resolution-continue"
+        type="button"
+        onClick={onContinue}
+      >
+        Continue
+      </button>
     </div>
   );
 }
@@ -411,20 +467,29 @@ export function PhoneActionPanel({ characters, onIntent, patch }: PhoneActionPan
 
   const isActiveSeat = getActiveSeatId(patch) === self.seatId;
   const activeResolution = patch.activeResolution ?? null;
+  const orphanResolutionOutcome =
+    isActiveSeat &&
+    !activeResolution &&
+    patch.phase === "resolution" &&
+    patch.outcomeSummary?.seatId === self.seatId
+      ? patch.outcomeSummary
+      : null;
   const canContinueResolution =
     isActiveSeat &&
     !!activeResolution &&
     ["roll_result", "outcome_summary", "awaiting_continue"].includes(activeResolution.stage);
-  const resolutionPanel = (
+  const continueResolution = () =>
+    onIntent({
+      type: "CONTINUE_RESOLUTION",
+      seatId: self.seatId
+    });
+  const resolutionPanel = orphanResolutionOutcome ? (
+    <OrphanResolutionRecoveryCard outcome={orphanResolutionOutcome} onContinue={continueResolution} />
+  ) : (
     <ActiveResolutionCard
       resolution={activeResolution}
       canContinue={canContinueResolution}
-      onContinue={() =>
-        onIntent({
-          type: "CONTINUE_RESOLUTION",
-          seatId: self.seatId
-        })
-      }
+      onContinue={continueResolution}
     />
   );
   const battleAssistPanel = <BattleAssistCard patch={patch} onIntent={onIntent} />;
