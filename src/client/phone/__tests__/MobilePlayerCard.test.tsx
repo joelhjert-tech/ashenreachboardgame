@@ -162,7 +162,8 @@ describe("MobilePlayerCard", () => {
       />
     );
 
-    expect(screen.getByText(/crossing thread \| clear the ashwake convoy lane \(1\/1 clears\)/i)).toBeInTheDocument();
+    expect(screen.getByText(/crossing thread/i)).toBeInTheDocument();
+    expect(screen.getByText(/clear the ashwake convoy lane \(1\/1 clears\)/i)).toBeInTheDocument();
     expect(screen.getAllByText(/clear the ashwake convoy lane/i).length).toBeGreaterThan(0);
   });
 });

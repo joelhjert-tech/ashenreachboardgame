@@ -1,0 +1,31 @@
+{
+  "id": "pale-cartel-shakedown",
+  "type": "threat",
+  "cardType": "enemy",
+  "title": "Pale Cartel Shakedown",
+  "enemyName": "Pale Cartel Shakedown",
+  "text": "Cartel collectors step from the smoke with polite smiles and loaded sleeve pistols.",
+  "flavor": "Courtesy is cheaper than ammunition, but they brought both.",
+  "severity": 2,
+  "stat": "guile",
+  "difficulty": 6,
+  "trophyValue": 5,
+  "defeatReward": {
+    "type": "gain_gear",
+    "gearId": "marshal-seal"
+  },
+  "woundOnLoss": {
+    "type": "sequence",
+    "effects": [
+      {
+        "type": "gain_heat",
+        "amount": 1
+      },
+      {
+        "type": "take_wound",
+        "amount": 1
+      }
+    ]
+  },
+  "enemyFamily": "cartel"
+}

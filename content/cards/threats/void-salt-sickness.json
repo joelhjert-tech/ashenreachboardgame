@@ -1,0 +1,20 @@
+{
+  "id": "void-salt-sickness",
+  "type": "threat",
+  "cardType": "hazard",
+  "title": "Void-Salt Sickness",
+  "text": "White salt blooms across your gloves and starts pulling warmth from the blood beneath.",
+  "flavor": "It tastes like a memory you never had.",
+  "severity": 1,
+  "stat": "forge",
+  "difficulty": 5,
+  "successEffect": {
+    "type": "lose_heat",
+    "amount": 1
+  },
+  "failEffect": {
+    "type": "gain_heat",
+    "amount": 1
+  },
+  "enemyFamily": "hazard"
+}

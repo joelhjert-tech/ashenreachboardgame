@@ -76,84 +76,84 @@ export const uiPrompts: ImagePromptSpec[] = [
     usage: "Scenario sheet frame."
   },
   {
-    id: "icon_strength",
-    fileName: "icon_strength.svg",
-    outputPath: "/assets/riftfall/icons/icon_strength.svg",
+    id: "icon_grit",
+    fileName: "icon_grit.svg",
+    outputPath: "/assets/riftfall/icons/icon_grit.svg",
     assetType: "icon",
     size: "icon",
     prompt: "Simple original game icon, cracked blade symbol, red, readable at small size, transparent background, no text.",
     negativePrompt: sharedNegativePrompt,
-    usage: "Strength icon."
+    usage: "Grit icon."
   },
   {
-    id: "icon_willpower",
-    fileName: "icon_willpower.svg",
-    outputPath: "/assets/riftfall/icons/icon_willpower.svg",
+    id: "icon_signal",
+    fileName: "icon_signal.svg",
+    outputPath: "/assets/riftfall/icons/icon_signal.svg",
     assetType: "icon",
     size: "icon",
     prompt: "Simple original game icon, burning eye symbol, blue, readable at small size, transparent background, no text.",
     negativePrompt: sharedNegativePrompt,
-    usage: "Willpower icon."
+    usage: "Signal icon."
   },
   {
-    id: "icon_cunning",
-    fileName: "icon_cunning.svg",
-    outputPath: "/assets/riftfall/icons/icon_cunning.svg",
+    id: "icon_guile",
+    fileName: "icon_guile.svg",
+    outputPath: "/assets/riftfall/icons/icon_guile.svg",
     assetType: "icon",
     size: "icon",
     prompt: "Simple original game icon, broken key symbol, yellow, readable at small size, transparent background, no text.",
     negativePrompt: sharedNegativePrompt,
-    usage: "Cunning icon."
+    usage: "Guile icon."
   },
   {
-    id: "icon_life",
-    fileName: "icon_life.svg",
-    outputPath: "/assets/riftfall/icons/icon_life.svg",
+    id: "icon_wounds",
+    fileName: "icon_wounds.svg",
+    outputPath: "/assets/riftfall/icons/icon_wounds.svg",
     assetType: "icon",
     size: "icon",
     prompt: "Simple original game icon, vital spark symbol, green, readable at small size, transparent background, no text.",
     negativePrompt: sharedNegativePrompt,
-    usage: "Life icon."
+    usage: "Wounds icon."
   },
   {
-    id: "icon_influence",
-    fileName: "icon_influence.svg",
-    outputPath: "/assets/riftfall/icons/icon_influence.svg",
+    id: "icon_trophy",
+    fileName: "icon_trophy.svg",
+    outputPath: "/assets/riftfall/icons/icon_trophy.svg",
     assetType: "icon",
     size: "icon",
     prompt: "Simple original game icon, command seal coin symbol, bronze, readable at small size, transparent background, no text.",
     negativePrompt: sharedNegativePrompt,
-    usage: "Influence icon."
+    usage: "Trophy icon."
   },
   {
-    id: "icon_corruption",
-    fileName: "icon_corruption.svg",
-    outputPath: "/assets/riftfall/icons/icon_corruption.svg",
+    id: "icon_heat",
+    fileName: "icon_heat.svg",
+    outputPath: "/assets/riftfall/icons/icon_heat.svg",
     assetType: "icon",
     size: "icon",
     prompt: "Simple original game icon, rift scar symbol, violet, readable at small size, transparent background, no text.",
     negativePrompt: sharedNegativePrompt,
-    usage: "Corruption icon."
+    usage: "Heat icon."
   },
   {
-    id: "icon_relic",
-    fileName: "icon_relic.svg",
-    outputPath: "/assets/riftfall/icons/icon_relic.svg",
+    id: "icon_artifact",
+    fileName: "icon_artifact.svg",
+    outputPath: "/assets/riftfall/icons/icon_artifact.svg",
     assetType: "icon",
     size: "icon",
     prompt: "Simple original game icon, saint star symbol, gold, readable at small size, transparent background, no text.",
     negativePrompt: sharedNegativePrompt,
-    usage: "Relic icon."
+    usage: "Artifact icon."
   },
   {
-    id: "icon_power",
-    fileName: "icon_power.svg",
-    outputPath: "/assets/riftfall/icons/icon_power.svg",
+    id: "icon_route_note",
+    fileName: "icon_route_note.svg",
+    outputPath: "/assets/riftfall/icons/icon_route_note.svg",
     assetType: "icon",
     size: "icon",
     prompt: "Simple original game icon, charged star symbol, white-blue, readable at small size, transparent background, no text.",
     negativePrompt: sharedNegativePrompt,
-    usage: "Power icon."
+    usage: "Route note icon."
   },
   {
     id: "token_shield",
@@ -176,23 +176,23 @@ export const uiPrompts: ImagePromptSpec[] = [
     usage: "Path token."
   },
   {
-    id: "token_influence",
-    fileName: "token_influence.png",
-    outputPath: "/assets/riftfall/tokens/token_influence.png",
+    id: "token_trophy",
+    fileName: "token_trophy.png",
+    outputPath: "/assets/riftfall/tokens/token_trophy.png",
     assetType: "token",
     size: "icon",
-    prompt: "Round bronze influence coin token, command seal symbol, aged worn metal, transparent background, no text.",
+    prompt: "Round bronze trophy coin token, command seal symbol, aged worn metal, transparent background, no text.",
     negativePrompt: sharedNegativePrompt,
-    usage: "Influence token."
+    usage: "Trophy token."
   },
   {
-    id: "token_mission_progress",
-    fileName: "token_mission_progress.png",
-    outputPath: "/assets/riftfall/tokens/token_mission_progress.png",
+    id: "token_contract_progress",
+    fileName: "token_contract_progress.png",
+    outputPath: "/assets/riftfall/tokens/token_contract_progress.png",
     assetType: "token",
     size: "icon",
-    prompt: "Round mission progress token, parchment and star-map symbol, bronze rim, transparent background, no text.",
+    prompt: "Round contract progress token, parchment and star-map symbol, bronze rim, transparent background, no text.",
     negativePrompt: sharedNegativePrompt,
-    usage: "Mission progress token."
+    usage: "Contract progress token."
   }
 ];

@@ -1,0 +1,13 @@
+{
+  "id": "blackstar-ampoule",
+  "name": "Blackstar Ampoule",
+  "slot": "utility",
+  "category": "consumable",
+  "statBonus": {
+    "stat": "guile",
+    "amount": 1
+  },
+  "activeText": "Discard to ignore one failed movement penalty or dodge a hazard failure.",
+  "useLimit": "discard",
+  "flavor": "A thumb-sized vial of night that refuses to reflect you."
+}

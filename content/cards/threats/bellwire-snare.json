@@ -1,0 +1,30 @@
+{
+  "id": "bellwire-snare",
+  "type": "threat",
+  "cardType": "hazard",
+  "title": "Bellwire Snare",
+  "text": "A nearly invisible wire trembles underfoot, ringing a dead shrine bell somewhere ahead.",
+  "flavor": "In Ashen Reach, even traps know how to pray.",
+  "severity": 2,
+  "region": "outer",
+  "stat": "guile",
+  "difficulty": 7,
+  "successEffect": {
+    "type": "gain_note",
+    "text": "You mapped the bellwire before it called anything worse."
+  },
+  "failEffect": {
+    "type": "sequence",
+    "effects": [
+      {
+        "type": "gain_heat",
+        "amount": 1
+      },
+      {
+        "type": "take_wound",
+        "amount": 1
+      }
+    ]
+  },
+  "enemyFamily": "hazard"
+}

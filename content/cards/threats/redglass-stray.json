@@ -1,0 +1,23 @@
+{
+  "id": "redglass-stray",
+  "type": "threat",
+  "cardType": "enemy",
+  "title": "Redglass Stray",
+  "enemyName": "Redglass Stray",
+  "text": "A warped hunting beast noses through the ash with antlers grown from red glass.",
+  "flavor": "It tracks warmth, fear, and the sound of old blood.",
+  "severity": 2,
+  "region": "outer",
+  "stat": "grit",
+  "difficulty": 7,
+  "trophyValue": 1,
+  "defeatReward": {
+    "type": "gain_trophy",
+    "amount": 1
+  },
+  "woundOnLoss": {
+    "type": "take_wound",
+    "amount": 1
+  },
+  "enemyFamily": "beast"
+}

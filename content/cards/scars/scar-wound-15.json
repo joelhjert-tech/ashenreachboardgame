@@ -1,0 +1,15 @@
+{
+  "id": "scar-wound-15",
+  "type": "scar",
+  "title": "Choir Static",
+  "text": "A chorus of wrong prayers answers whenever the table goes quiet.",
+  "flavor": "The voices know harmonies no living throat should hold.",
+  "trigger": "When escalation advances during your turn.",
+  "penalty": "All players gain 1 Heat unless you take 1 wound to ground the chorus.",
+  "effect": {
+    "type": "gain_heat_all",
+    "amount": 1
+  },
+  "relief": "Spend 1 charge from a charged artifact to ground the chorus without a wound.",
+  "upside": "If you take the wound, gain 1 trophy for protecting the crew."
+}

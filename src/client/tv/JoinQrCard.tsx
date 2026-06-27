@@ -3,6 +3,7 @@ import QRCode from "qrcode";
 
 interface JoinQrCardProps {
   roomCode: string;
+  variant?: "full" | "compact";
 }
 
 function buildJoinUrl(roomCode: string): string {
@@ -16,7 +17,7 @@ function buildJoinUrl(roomCode: string): string {
   return url.toString();
 }
 
-export function JoinQrCard({ roomCode }: JoinQrCardProps): ReactElement {
+export function JoinQrCard({ roomCode, variant = "full" }: JoinQrCardProps): ReactElement {
   const [qrMarkup, setQrMarkup] = useState<string>("");
   const joinUrl = buildJoinUrl(roomCode);
   const hostname = typeof window === "undefined" ? "" : window.location.hostname;
@@ -50,8 +51,22 @@ export function JoinQrCard({ roomCode }: JoinQrCardProps): ReactElement {
     };
   }, [joinUrl]);
 
+  if (variant === "compact") {
+    return (
+      <section className="join-qr-card join-qr-card-compact">
+        <div>
+          <h2>Scan to Join</h2>
+          <p>Players 1-6</p>
+        </div>
+        <div className="join-qr-frame" aria-label={`QR code to join room ${roomCode}`}>
+          {qrMarkup ? <div dangerouslySetInnerHTML={{ __html: qrMarkup }} /> : <p>Generating code...</p>}
+        </div>
+      </section>
+    );
+  }
+
   return (
-    <section className="join-qr-card">
+    <section className="join-qr-card join-qr-card-full">
       <div>
         <h2>Join On Phone</h2>
         <p>Scan to open the controller and prefill room code {roomCode}.</p>

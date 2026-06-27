@@ -1,14 +1,24 @@
 export type Stat = "command" | "grit" | "signal" | "guile" | "forge";
 export type GearSlot = "weapon" | "armor" | "utility";
+export type GearCategory =
+  | "passive"
+  | "active"
+  | "consumable"
+  | "chargedRelic"
+  | "dangerous"
+  | "contractObject"
+  | "followerLinked";
 export type Phase = "start" | "navigation" | "sector" | "action" | "resolution" | "broadcast";
 export type SessionStatus = "lobby" | "active" | "ended";
 export type SessionMode = "multiplayer" | "single-player";
+export type InteractionMode = "co-op" | "rivalry" | "ruthless";
 
 export interface PublicSeat {
   seatId: string;
   characterId: string;
   displayName: string | null;
   connected: boolean;
+  ready: boolean;
   kicked: boolean;
 }
 
@@ -20,11 +30,22 @@ export interface PublicPlayerCharacter {
   activeContract: { contractId: string; progress: number } | null;
   stats: Record<Stat, number>;
   trophies: number;
+  trophyPile?: TrophyPileEntry[];
   heat: number;
   wounds: number;
   scars: string[];
   heldGearCount: number;
+  followerCount?: number;
   equippedGear: Record<GearSlot, string | null>;
+}
+
+export interface TrophyPileEntry {
+  cardId: string;
+  name: string;
+  trophyValue: number;
+  spentValue?: number;
+  stat?: Stat;
+  cardType?: string;
 }
 
 export interface PublicPlayer {
@@ -38,6 +59,34 @@ export interface GearItem {
   name: string;
   slot: GearSlot;
   statBonus: { stat: Stat; amount: number };
+  category?: GearCategory;
+  activeText?: string;
+  useLimit?: "oncePerTurn" | "oncePerRound" | "discard" | "charge";
+  charges?: number;
+  heatCost?: number;
+  linkedFollowerRole?: FollowerRole;
+}
+
+export type FollowerRole = "scout" | "medic" | "gunner" | "ritualist" | "porter" | "guide" | "informant";
+
+export interface Follower {
+  id: string;
+  name: string;
+  role: FollowerRole;
+  text: string;
+  useLimit?: "oncePerTurn" | "oncePerRound" | "discard";
+  loyalty?: number;
+  lossCondition?: "wound" | "heat" | "combatLoss" | "choice";
+}
+
+export interface ScarSummary {
+  id: string;
+  title: string;
+  text: string;
+  trigger: string;
+  penalty: string;
+  relief: string;
+  upside?: string;
 }
 
 export interface PrivateCharacter {
@@ -48,12 +97,15 @@ export interface PrivateCharacter {
   status: "active" | "recalled";
   stats: Record<Stat, number>;
   trophies: number;
+  trophyPile?: TrophyPileEntry[];
   heat: number;
   wounds: number;
   scars: string[];
   activeContract: { contractId: string; progress: number } | null;
   heldGear: GearItem[];
   equippedGear: Record<GearSlot, string | null>;
+  followers?: Follower[];
+  scarCards?: ScarSummary[];
   abilities: Array<{ id: string; name: string; text: string }>;
 }
 
@@ -130,6 +182,48 @@ export interface OutcomeSummary {
   summary: string;
 }
 
+export type ResolutionStage =
+  | "idle"
+  | "card_reveal"
+  | "battle_setup"
+  | "dice_roll"
+  | "roll_result"
+  | "outcome_summary"
+  | "awaiting_continue";
+
+export interface ActiveResolution {
+  id: string;
+  playerId: string;
+  source: "movement" | "threat" | "contract" | "anomaly" | "artifact" | "scenario";
+  stage: ResolutionStage;
+  card?: {
+    id: string;
+    title: string;
+    type: string;
+    flavor?: string | null;
+    artType?: string;
+  };
+  battle?: {
+    enemyName?: string;
+    stat: Stat;
+    difficulty: number;
+    modifiers: Array<{ label: string; value: number }>;
+  };
+  roll?: {
+    dice: number[];
+    baseTotal: number;
+    modifierTotal: number;
+    finalTotal: number;
+    target: number;
+    success: boolean;
+  };
+  outcome?: {
+    title: string;
+    text: string;
+    effects: string[];
+  };
+}
+
 export interface AbilityTriggerSummary {
   seatId: string;
   abilityId: string;
@@ -195,6 +289,7 @@ export interface ScenarioTelemetryItem {
 export interface PublicPatchPayload {
   status: SessionStatus;
   sessionMode: SessionMode;
+  interactionMode?: InteractionMode;
   winnerSeatId: string | null;
   activeScenario: ActiveScenarioSummary | null;
   scenarioTelemetry: ScenarioTelemetryItem[];
@@ -211,6 +306,7 @@ export interface PublicPatchPayload {
   encounter: EncounterCard | null;
   pendingEnemyRoll: PendingEnemyRoll | null;
   outcomeSummary: OutcomeSummary | null;
+  activeResolution?: ActiveResolution | null;
   recentAbilityTriggers: AbilityTriggerSummary[];
   nemesis: ActiveNemesisSummary | null;
 }
@@ -288,6 +384,15 @@ export type ClientIntent =
       seatId: string;
     }
   | {
+      type: "CONTINUE_RESOLUTION";
+      seatId: string;
+    }
+  | {
+      type: "SET_READY";
+      seatId: string;
+      ready: boolean;
+    }
+  | {
       type: "RECRUIT_REPLACEMENT";
       seatId: string;
       replacementCharacterId: string;
@@ -302,6 +407,22 @@ export type ClientIntent =
       type: "UNEQUIP_GEAR";
       seatId: string;
       slot: GearSlot;
+    }
+  | {
+      type: "USE_GEAR";
+      seatId: string;
+      gearId: string;
+    }
+  | {
+      type: "USE_FOLLOWER";
+      seatId: string;
+      followerId: string;
+    }
+  | {
+      type: "TABLE_INTERACTION";
+      seatId: string;
+      targetSeatId: string;
+      interactionKind: "trade" | "aid" | "duel" | "interfere";
     }
   | {
       type: "ACCEPT_CONTRACT";

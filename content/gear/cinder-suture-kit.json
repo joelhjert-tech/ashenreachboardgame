@@ -1,0 +1,13 @@
+{
+  "id": "cinder-suture-kit",
+  "name": "Cinder Suture Kit",
+  "slot": "utility",
+  "category": "consumable",
+  "statBonus": {
+    "stat": "forge",
+    "amount": 1
+  },
+  "activeText": "Discard to heal 1 wound, then gain 1 heat.",
+  "useLimit": "discard",
+  "flavor": "A useful medical error in a sealed brass case."
+}

@@ -1,0 +1,138 @@
+{
+  "generatedAt": "2026-06-26T04:25:57.272Z",
+  "requestedType": "anomalyCardArt",
+  "generated": 16,
+  "byType": {
+    "anomalyCardArt": 16
+  },
+  "results": [
+    {
+      "id": "anomaly_art_anomaly-ashfall-murmur",
+      "assetType": "anomalyCardArt",
+      "outputPath": "/assets/cards/anomalies/anomaly-ashfall-murmur.png",
+      "width": 1024,
+      "height": 1536,
+      "bytes": 340407
+    },
+    {
+      "id": "anomaly_art_anomaly-bellrain-inversion",
+      "assetType": "anomalyCardArt",
+      "outputPath": "/assets/cards/anomalies/anomaly-bellrain-inversion.png",
+      "width": 1024,
+      "height": 1536,
+      "bytes": 329717
+    },
+    {
+      "id": "anomaly_art_anomaly-blackstar-breath",
+      "assetType": "anomalyCardArt",
+      "outputPath": "/assets/cards/anomalies/anomaly-blackstar-breath.png",
+      "width": 1024,
+      "height": 1536,
+      "bytes": 314903
+    },
+    {
+      "id": "anomaly_art_anomaly-choir-static",
+      "assetType": "anomalyCardArt",
+      "outputPath": "/assets/cards/anomalies/anomaly-choir-static.png",
+      "width": 1024,
+      "height": 1536,
+      "bytes": 314032
+    },
+    {
+      "id": "anomaly_art_anomaly-cinder-mirage-lane",
+      "assetType": "anomalyCardArt",
+      "outputPath": "/assets/cards/anomalies/anomaly-cinder-mirage-lane.png",
+      "width": 1024,
+      "height": 1536,
+      "bytes": 340589
+    },
+    {
+      "id": "anomaly_art_anomaly-crownfall-echo-court",
+      "assetType": "anomalyCardArt",
+      "outputPath": "/assets/cards/anomalies/anomaly-crownfall-echo-court.png",
+      "width": 1024,
+      "height": 1536,
+      "bytes": 351389
+    },
+    {
+      "id": "anomaly_art_anomaly-gutter-star-orbit",
+      "assetType": "anomalyCardArt",
+      "outputPath": "/assets/cards/anomalies/anomaly-gutter-star-orbit.png",
+      "width": 1024,
+      "height": 1536,
+      "bytes": 306472
+    },
+    {
+      "id": "anomaly_art_anomaly-marrow-clock-drift",
+      "assetType": "anomalyCardArt",
+      "outputPath": "/assets/cards/anomalies/anomaly-marrow-clock-drift.png",
+      "width": 1024,
+      "height": 1536,
+      "bytes": 293637
+    },
+    {
+      "id": "anomaly_art_anomaly-red-suture-field",
+      "assetType": "anomalyCardArt",
+      "outputPath": "/assets/cards/anomalies/anomaly-red-suture-field.png",
+      "width": 1024,
+      "height": 1536,
+      "bytes": 313115
+    },
+    {
+      "id": "anomaly_art_anomaly-relay-ghost-loop",
+      "assetType": "anomalyCardArt",
+      "outputPath": "/assets/cards/anomalies/anomaly-relay-ghost-loop.png",
+      "width": 1024,
+      "height": 1536,
+      "bytes": 311084
+    },
+    {
+      "id": "anomaly_art_anomaly-saint-static-aperture",
+      "assetType": "anomalyCardArt",
+      "outputPath": "/assets/cards/anomalies/anomaly-saint-static-aperture.png",
+      "width": 1024,
+      "height": 1536,
+      "bytes": 306148
+    },
+    {
+      "id": "anomaly_art_anomaly-saltglass-fata-morgana",
+      "assetType": "anomalyCardArt",
+      "outputPath": "/assets/cards/anomalies/anomaly-saltglass-fata-morgana.png",
+      "width": 1024,
+      "height": 1536,
+      "bytes": 330296
+    },
+    {
+      "id": "anomaly_art_anomaly-scar-tide-lattice",
+      "assetType": "anomalyCardArt",
+      "outputPath": "/assets/cards/anomalies/anomaly-scar-tide-lattice.png",
+      "width": 1024,
+      "height": 1536,
+      "bytes": 331049
+    },
+    {
+      "id": "anomaly_art_anomaly-table-fire-writ",
+      "assetType": "anomalyCardArt",
+      "outputPath": "/assets/cards/anomalies/anomaly-table-fire-writ.png",
+      "width": 1024,
+      "height": 1536,
+      "bytes": 329202
+    },
+    {
+      "id": "anomaly_art_anomaly-void-salt-tide",
+      "assetType": "anomalyCardArt",
+      "outputPath": "/assets/cards/anomalies/anomaly-void-salt-tide.png",
+      "width": 1024,
+      "height": 1536,
+      "bytes": 293649
+    },
+    {
+      "id": "anomaly_art_anomaly-warbell-parallax",
+      "assetType": "anomalyCardArt",
+      "outputPath": "/assets/cards/anomalies/anomaly-warbell-parallax.png",
+      "width": 1024,
+      "height": 1536,
+      "bytes": 322647
+    }
+  ]
+}

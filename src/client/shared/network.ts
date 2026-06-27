@@ -1,4 +1,4 @@
-import type { CharacterCatalogEntry, PhoneSessionAuth, ScenarioCatalogEntry, SessionMode } from "./types.js";
+import type { CharacterCatalogEntry, InteractionMode, PhoneSessionAuth, ScenarioCatalogEntry, SessionMode } from "./types.js";
 
 const browserHost = typeof window !== "undefined" ? window.location.hostname : "localhost";
 const browserProtocol = typeof window !== "undefined" ? window.location.protocol : "http:";
@@ -20,14 +20,21 @@ export function getWebSocketOrigin(): string {
 
 export async function createSession(
   sessionMode: SessionMode = "multiplayer",
-  scenarioId?: string
-): Promise<{ roomCode: string; hostToken: string; sessionMode: SessionMode; scenarioId: string }> {
+  scenarioId?: string,
+  interactionMode?: InteractionMode
+): Promise<{
+  roomCode: string;
+  hostToken: string;
+  sessionMode: SessionMode;
+  interactionMode: InteractionMode;
+  scenarioId: string;
+}> {
   const response = await fetch(`${apiOrigin}/api/session/create`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json"
     },
-    body: JSON.stringify({ sessionMode, scenarioId })
+    body: JSON.stringify({ sessionMode, scenarioId, interactionMode })
   });
 
   return await response.json();
@@ -36,6 +43,7 @@ export async function createSession(
 export async function fetchSessionSummary(): Promise<{
   roomCode: string;
   sessionMode: SessionMode;
+  interactionMode: InteractionMode;
   status: string;
   phase: string;
 }> {
@@ -49,6 +57,7 @@ export async function fetchSessionSummary(): Promise<{
   return payload as {
     roomCode: string;
     sessionMode: SessionMode;
+    interactionMode: InteractionMode;
     status: string;
     phase: string;
   };
@@ -90,6 +99,24 @@ export async function joinSession(input: {
     seatToken: payload.seatToken,
     displayName: input.displayName
   };
+}
+
+export async function leaveSession(auth: PhoneSessionAuth): Promise<void> {
+  const response = await fetch(`${apiOrigin}/api/session/leave`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      roomCode: auth.roomCode,
+      seatToken: auth.seatToken
+    })
+  });
+  const payload = await response.json();
+
+  if (!response.ok) {
+    throw new Error(payload.error ?? "Could not leave lobby");
+  }
 }
 
 export async function startSession(roomCode: string): Promise<void> {

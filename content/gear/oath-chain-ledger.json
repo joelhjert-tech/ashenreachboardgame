@@ -1,0 +1,12 @@
+{
+  "id": "oath-chain-ledger",
+  "name": "Oath-Chain Ledger",
+  "slot": "utility",
+  "category": "contractObject",
+  "statBonus": {
+    "stat": "command",
+    "amount": 1
+  },
+  "activeText": "Protect this object to convert a completed contract reward into gear or heat reduction.",
+  "flavor": "Every blank line already knows whose name belongs there."
+}

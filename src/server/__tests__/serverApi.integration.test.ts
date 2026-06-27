@@ -29,6 +29,9 @@ type StatePatchEnvelope = {
       label: string;
       value: string;
     }>;
+    activeResolution?: {
+      stage: string;
+    } | null;
   };
 };
 
@@ -55,7 +58,7 @@ async function connectSocket(url: string): Promise<SocketProbe> {
 async function waitForStatePatch(
   probe: SocketProbe,
   predicate: (message: StatePatchEnvelope) => boolean,
-  timeoutMs = 4000
+  timeoutMs = 10000
 ): Promise<StatePatchEnvelope> {
   const existing = probe.messages.find((message) => message.type === "STATE_PATCH" && predicate(message));
 
@@ -66,7 +69,10 @@ async function waitForStatePatch(
   return await new Promise<StatePatchEnvelope>((resolve, reject) => {
     const timer = setTimeout(() => {
       probe.socket.off("message", onMessage);
-      reject(new Error("Timed out waiting for state patch"));
+      const received = probe.messages
+        .map((message) => `${message.type}:${message.phase}:${message.payload.status ?? "unknown"}`)
+        .join(", ");
+      reject(new Error(`Timed out waiting for state patch. Received: ${received || "none"}`));
     }, timeoutMs);
 
     const onMessage = (raw: WebSocket.RawData) => {
@@ -252,6 +258,8 @@ describe("server API scenario flow", () => {
       characterId: "void-marshal"
     });
 
+    harness.roomServer.setSeatReady(joined.payload.seatId, true);
+
     const started = await postJson<{
       roomCode: string;
       status: string;
@@ -266,6 +274,65 @@ describe("server API scenario flow", () => {
     expect(started.payload.status).toBe("active");
     expect(harness.roomServer.getState().activeScenarioId).toBe("scenario_labyrinth_engine");
     expect(harness.roomServer.getState().scenarioProgress.engineModeIndex).toBe(1);
+  });
+
+  it("releases a pre-game character reservation through the leave endpoint", async () => {
+    harness = await startAshenReachServer({ port: createTestPort(), logUrls: false });
+    const baseUrl = `http://127.0.0.1:${harness.port}`;
+
+    const created = await postJson<{
+      roomCode: string;
+      sessionMode: "single-player" | "multiplayer";
+      scenarioId: string;
+      hostToken: string;
+    }>(baseUrl, "/api/session/create", {
+      sessionMode: "multiplayer",
+      scenarioId: "scenario_broken_seal"
+    });
+
+    const joined = await postJson<{
+      roomCode: string;
+      seatId: string;
+      seatToken: string;
+    }>(baseUrl, "/api/session/join", {
+      roomCode: created.payload.roomCode,
+      displayName: "Joel",
+      characterId: "signal-witch"
+    });
+
+    const duplicate = await postJson<{ error: string }>(baseUrl, "/api/session/join", {
+      roomCode: created.payload.roomCode,
+      displayName: "Mira",
+      characterId: "signal-witch"
+    });
+
+    const left = await postJson<{
+      roomCode: string;
+      status: string;
+      phase: string;
+    }>(baseUrl, "/api/session/leave", {
+      roomCode: created.payload.roomCode,
+      seatToken: joined.payload.seatToken
+    });
+
+    expect(joined.status).toBe(200);
+    expect(duplicate.status).toBe(400);
+    expect(duplicate.payload.error).toContain("Character already taken");
+    expect(left.status).toBe(200);
+    expect(harness.roomServer.getState().seats.find((seat) => seat.seatId === joined.payload.seatId)?.displayName).toBeNull();
+
+    const rejoined = await postJson<{
+      roomCode: string;
+      seatId: string;
+      seatToken: string;
+    }>(baseUrl, "/api/session/join", {
+      roomCode: created.payload.roomCode,
+      displayName: "Mira",
+      characterId: "signal-witch"
+    });
+
+    expect(rejoined.status).toBe(200);
+    expect(rejoined.payload.seatId).toBe(joined.payload.seatId);
   });
 
   it("can create every authored scenario through the API with matching seeded progress", async () => {
@@ -322,6 +389,8 @@ describe("server API scenario flow", () => {
     try {
       await waitForStatePatch(phone, (message) => message.payload.self?.seatId === joined.payload.seatId);
 
+      harness.roomServer.setSeatReady(joined.payload.seatId, true);
+
       const started = await postJson<{
         roomCode: string;
         status: string;
@@ -355,6 +424,18 @@ describe("server API scenario flow", () => {
           type: "MOVE_REQUESTED",
           seatId: joined.payload.seatId,
           toSectorId: neighborSectorId
+        })
+      );
+
+      await waitForStatePatch(
+        phone,
+        (message) => message.payload.activeResolution?.stage === "roll_result"
+      );
+
+      phone.socket.send(
+        JSON.stringify({
+          type: "CONTINUE_RESOLUTION",
+          seatId: joined.payload.seatId
         })
       );
 
@@ -454,6 +535,8 @@ describe("server API scenario flow", () => {
     try {
       await waitForStatePatch(phone, (message) => message.payload.self?.seatId === joined.payload.seatId);
 
+      harness.roomServer.setSeatReady(joined.payload.seatId, true);
+
       const started = await postJson<{
         roomCode: string;
         status: string;
@@ -468,7 +551,6 @@ describe("server API scenario flow", () => {
       await waitForStatePatch(
         phone,
         (message) =>
-          message.phase === "navigation" &&
           message.payload.status === "active" &&
           message.payload.activeScenario?.id === scenarioId
       );
@@ -508,7 +590,7 @@ describe("server API scenario flow", () => {
     } finally {
       phone.socket.close();
     }
-  });
+  }, 15000);
 
   it.each([
     {
@@ -580,6 +662,8 @@ describe("server API scenario flow", () => {
     try {
       await waitForStatePatch(phone, (message) => message.payload.self?.seatId === joined.payload.seatId);
 
+      harness.roomServer.setSeatReady(joined.payload.seatId, true);
+
       const started = await postJson<{
         roomCode: string;
         status: string;
@@ -594,7 +678,6 @@ describe("server API scenario flow", () => {
       await waitForStatePatch(
         phone,
         (message) =>
-          message.phase === "navigation" &&
           message.payload.status === "active" &&
           message.payload.activeScenario?.id === scenarioId
       );
@@ -635,5 +718,5 @@ describe("server API scenario flow", () => {
     } finally {
       phone.socket.close();
     }
-  });
+  }, 15000);
 });

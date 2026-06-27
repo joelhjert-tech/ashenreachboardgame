@@ -1,0 +1,23 @@
+{
+  "id": "gateblind-pulse",
+  "type": "threat",
+  "cardType": "hazard",
+  "title": "Gateblind Pulse",
+  "text": "The inner gate flashes black and every instrument forgets which direction is forward.",
+  "flavor": "Blindness is a command when the gate gives it.",
+  "severity": 4,
+  "region": "inner",
+  "stat": "signal",
+  "difficulty": 10,
+  "successEffect": {
+    "type": "advance_scenario",
+    "progressKey": "gateblindPulsesRead",
+    "amount": 1,
+    "summary": "Gateblind pulse translated into final-route leverage."
+  },
+  "failEffect": {
+    "type": "gain_heat",
+    "amount": 2
+  },
+  "enemyFamily": "hazard"
+}

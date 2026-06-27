@@ -22,7 +22,7 @@ export const cardTemplates: CardTemplateDefinition[] = [
   },
   {
     id: "mission-card",
-    title: "Mission Card",
+    title: "Contract Card",
     sections: ["title", "flavor-line", "objective", "reward", "tier-corner-mark"],
     uiNotes: "Keep reward block visually distinct from objective to avoid mid-turn misreads."
   },
@@ -34,7 +34,7 @@ export const cardTemplates: CardTemplateDefinition[] = [
   },
   {
     id: "corruption-card",
-    title: "Corruption Card",
+    title: "Heat Card",
     sections: ["title", "activation-number", "active-state", "rules-text"],
     uiNotes: "Activation number needs oversized corner treatment for fast scanning."
   }

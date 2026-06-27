@@ -1,8 +1,8 @@
 // @vitest-environment jsdom
 
 import "@testing-library/jest-dom/vitest";
-import { render, screen, waitFor } from "@testing-library/react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { PhoneApp } from "../PhoneApp.js";
 import type { CharacterCatalogEntry } from "../../shared/types.js";
 
@@ -34,9 +34,15 @@ const characters: CharacterCatalogEntry[] = [
   abilities: []
 })) as CharacterCatalogEntry[];
 
+const networkMocks = vi.hoisted(() => ({
+  joinSession: vi.fn(),
+  leaveSession: vi.fn()
+}));
+
 vi.mock("../../shared/network.js", () => ({
   fetchCharacters: vi.fn(async () => characters),
-  joinSession: vi.fn()
+  joinSession: networkMocks.joinSession,
+  leaveSession: networkMocks.leaveSession
 }));
 
 vi.mock("../../shared/useRoomSubscription.js", () => ({
@@ -51,22 +57,59 @@ vi.mock("../../shared/useRoomSubscription.js", () => ({
 }));
 
 describe("PhoneApp", () => {
-  beforeEach(() => {
-    window.localStorage.clear();
+  afterEach(() => {
+    cleanup();
   });
 
-  it("renders ten selectable character options in the join flow", async () => {
+  beforeEach(() => {
+    window.localStorage.clear();
+    vi.clearAllMocks();
+  });
+
+  it("moves from room/name entry to character selection before joining", async () => {
     render(<PhoneApp />);
 
-    const select = await screen.findByRole("combobox", { name: /character/i });
+    expect(await screen.findByRole("button", { name: /continue/i })).toBeInTheDocument();
+    expect(screen.queryByRole("list", { name: /character/i })).not.toBeInTheDocument();
+
+    fireEvent.change(screen.getAllByLabelText(/room code/i)[0]!, { target: { value: "RT7P4" } });
+    fireEvent.change(screen.getAllByLabelText(/player name/i)[0]!, { target: { value: "Joel" } });
+    fireEvent.click(screen.getByRole("button", { name: /continue/i }));
+
+    const picker = await screen.findByRole("list", { name: /character/i });
 
     await waitFor(() => {
-      expect(screen.getAllByRole("option")).toHaveLength(10);
+      expect(screen.getAllByRole("button", { name: /void marshal|rift cartographer|signal witch|siege medic|oathbroken prince|grave engineer|black ledger agent|cinder monk|salvage warden|fleet elder/i })).toHaveLength(10);
     });
 
-    expect(select).toBeInTheDocument();
-    expect(screen.getByRole("option", { name: /void marshal - tarek voss/i })).toBeInTheDocument();
-    expect(screen.getByRole("option", { name: /cinder monk - mira/i })).toBeInTheDocument();
-    expect(screen.getByRole("option", { name: /fleet elder - orenna tash/i })).toBeInTheDocument();
+    expect(picker).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /tarek voss.*void marshal/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /mira.*cinder monk/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /orenna tash.*fleet elder/i })).toBeInTheDocument();
+  });
+
+  it("reserves the chosen character when selected", async () => {
+    networkMocks.joinSession.mockResolvedValue({
+      roomCode: "RT7P4",
+      seatId: "seat-1",
+      seatToken: "seat:RT7P4:seat-1",
+      displayName: "Joel"
+    });
+
+    render(<PhoneApp />);
+
+    await screen.findByRole("button", { name: /continue/i });
+    fireEvent.change(screen.getAllByLabelText(/room code/i)[0]!, { target: { value: "RT7P4" } });
+    fireEvent.change(screen.getAllByLabelText(/player name/i)[0]!, { target: { value: "Joel" } });
+    fireEvent.click(screen.getByRole("button", { name: /continue/i }));
+    fireEvent.click(await screen.findByRole("button", { name: /mira.*cinder monk/i }));
+
+    await waitFor(() => {
+      expect(networkMocks.joinSession).toHaveBeenCalledWith({
+        roomCode: "RT7P4",
+        displayName: "Joel",
+        characterId: "cinder-monk"
+      });
+    });
   });
 });

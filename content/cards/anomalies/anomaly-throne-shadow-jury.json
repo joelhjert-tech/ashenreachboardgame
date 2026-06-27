@@ -1,0 +1,25 @@
+{
+  "id": "anomaly-throne-shadow-jury",
+  "type": "anomaly",
+  "title": "Throne-Shadow Jury",
+  "text": "Hollow silhouettes convene around the operative and vote on whether the run deserves a ruler.",
+  "flavor": "Every crown casts a court.",
+  "instability": 4,
+  "regionHint": "inner",
+  "resolutionSummary": "Survived the shadow jury and stole one verdict for the final confrontation.",
+  "resolveEffect": {
+    "type": "sequence",
+    "effects": [
+      {
+        "type": "advance_scenario",
+        "progressKey": "throneVerdicts",
+        "amount": 1,
+        "summary": "A throne-shadow verdict was banked for the endgame."
+      },
+      {
+        "type": "gain_heat",
+        "amount": 1
+      }
+    ]
+  }
+}

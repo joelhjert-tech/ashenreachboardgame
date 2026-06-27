@@ -1,0 +1,22 @@
+{
+  "id": "mirror-mite-bloom",
+  "type": "threat",
+  "cardType": "enemy",
+  "title": "Mirror-Mite Bloom",
+  "enemyName": "Mirror-Mite Bloom",
+  "text": "A cloud of reflective mites rises from a broken shrine and copies your outline in glittering hunger.",
+  "flavor": "Each one carries a tiny version of your panic.",
+  "severity": 2,
+  "stat": "signal",
+  "difficulty": 5,
+  "trophyValue": 4,
+  "defeatReward": {
+    "type": "gain_note",
+    "text": "You bottled enough mirror-mites to sell as omen glass."
+  },
+  "woundOnLoss": {
+    "type": "gain_heat",
+    "amount": 1
+  },
+  "enemyFamily": "vermin"
+}

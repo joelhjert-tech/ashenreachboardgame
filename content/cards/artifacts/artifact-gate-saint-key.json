@@ -1,0 +1,14 @@
+{
+  "id": "artifact-gate-saint-key",
+  "type": "artifact",
+  "artifactKind": "gateRelic",
+  "title": "Gate-Saint Key",
+  "text": "A final-approach artifact that understands Crownfall locks better than living hands do.",
+  "flavor": "Every tooth is shaped like a promise someone broke.",
+  "charge": 1,
+  "resolutionSummary": "Recovered a Gate-Saint Key that may answer during the final confrontation.",
+  "resolveEffect": {
+    "type": "gain_note",
+    "text": "Gate-Saint Key: final confrontation bargaining artifact."
+  }
+}

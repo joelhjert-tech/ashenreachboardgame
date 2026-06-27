@@ -84,6 +84,7 @@ function createState(): GameState {
         characterId: "void-marshal",
         displayName: "Seat One",
         connected: false,
+        ready: false,
         kicked: false,
         joinToken: createJoinToken({ sessionId, seatId })
       }

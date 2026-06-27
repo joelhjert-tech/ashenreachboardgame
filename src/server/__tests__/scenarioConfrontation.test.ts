@@ -50,6 +50,37 @@ function createPhoneClient(seatId: string) {
   };
 }
 
+function continueVisibleResolution(roomServer: GameRoomServer, seatId = "seat-1"): void {
+  for (let index = 0; index < 4; index += 1) {
+    const activeResolution = roomServer.getState().activeResolution;
+
+    if (
+      !activeResolution ||
+      !["roll_result", "outcome_summary", "awaiting_continue"].includes(activeResolution.stage)
+    ) {
+      return;
+    }
+
+    const continuingSeatId = roomServer.getState().turnOrder[roomServer.getState().activeSeatIndex] ?? seatId;
+    roomServer.handleIntent(createPhoneClient(continuingSeatId) as never, {
+      type: "CONTINUE_RESOLUTION",
+      seatId: continuingSeatId
+    } satisfies ClientIntent);
+  }
+}
+
+function runVisibleIntent(roomServer: GameRoomServer, intent: ClientIntent): void {
+  roomServer.handleIntent(createPhoneClient(intent.seatId) as never, intent);
+
+  if (intent.type === "CHECK_REQUESTED" || intent.type === "COMBAT_REQUESTED") {
+    const activeResolution = roomServer.getState().activeResolution;
+
+    if (activeResolution?.stage === "battle_setup" && activeResolution.playerId === intent.seatId) {
+      roomServer.handleIntent(createPhoneClient(intent.seatId) as never, intent);
+    }
+  }
+}
+
 function createSoloAmbientState(overrides: Partial<GameState> = {}): GameState {
   return createScenarioState({
     turnOrder: ["seat-1"],
@@ -78,6 +109,11 @@ describe("scenario confrontation flow", () => {
     expect(roomServer.getState().winnerSeatId).toBeNull();
     expect(roomServer.getState().scenarioProgress.sealRestorationMarks).toBe(1);
     expect(roomServer.getState().players.find((entry) => entry.seatId === "seat-1")?.character.wounds).toBe(2);
+    expect(roomServer.getState().activeResolution).toMatchObject({
+      source: "scenario",
+      stage: "outcome_summary"
+    });
+    continueVisibleResolution(roomServer);
     expect(roomServer.getState().activeSeatIndex).toBe(1);
   });
 
@@ -488,21 +524,23 @@ describe("scenario confrontation flow", () => {
   });
 
   it("weakens the Broken Seal at turn start from its ambient roll", () => {
-    const state = createInitialSessionState("session-alpha");
+    const state = createInitialSessionState("session-alpha", "single-player");
     const roomServer = new GameRoomServer(state, [], createSequenceRandomSource([0]));
 
     roomServer.joinSeat("Solo", "signal-witch");
+    roomServer.setSeatReady("seat-1", true);
     roomServer.startSession();
 
     expect(roomServer.getState().scenarioProgress.sealTokens).toBe(5);
   });
 
   it("heats every operative when the Broken Seal loses its final token at turn start", () => {
-    const state = createInitialSessionState("session-alpha");
+    const state = createInitialSessionState("session-alpha", "single-player");
     state.scenarioProgress = { sealTokens: 1 };
     const roomServer = new GameRoomServer(state, [], createSequenceRandomSource([0]));
 
     roomServer.joinSeat("Solo", "signal-witch");
+    roomServer.setSeatReady("seat-1", true);
     roomServer.startSession();
 
     expect(roomServer.getState().scenarioProgress.sealTokens).toBe(0);
@@ -541,10 +579,11 @@ describe("scenario confrontation flow", () => {
   });
 
   it("reveals a local threat on a Broken Seal 3-4 turn-start roll", () => {
-    const state = createInitialSessionState("session-alpha");
+    const state = createInitialSessionState("session-alpha", "single-player");
     const roomServer = new GameRoomServer(state, [], createSequenceRandomSource([2, 0]));
 
     roomServer.joinSeat("Solo", "signal-witch");
+    roomServer.setSeatReady("seat-1", true);
     roomServer.startSession();
 
     expect(roomServer.getState().phase).toBe("action");
@@ -606,12 +645,13 @@ describe("scenario confrontation flow", () => {
   });
 
   it("rotates the Labyrinth Engine mode at turn start", () => {
-    const state = createInitialSessionState("session-alpha");
+    const state = createInitialSessionState("session-alpha", "single-player");
     state.activeScenarioId = "scenario_labyrinth_engine";
     state.scenarioProgress = { engineModeIndex: 0 };
     const roomServer = new GameRoomServer(state, [], createSequenceRandomSource([0]));
 
     roomServer.joinSeat("Solo", "signal-witch");
+    roomServer.setSeatReady("seat-1", true);
     roomServer.startSession();
 
     expect(roomServer.getState().scenarioProgress.engineModeIndex).toBe(1);
@@ -663,11 +703,12 @@ describe("scenario confrontation flow", () => {
       createSequenceRandomSource([5, 5, 5, 5])
     );
 
-    roomServer.handleIntent(createPhoneClient("seat-1") as never, {
+    runVisibleIntent(roomServer, {
       type: "COMBAT_REQUESTED",
       seatId: "seat-1",
       stat: "grit"
     } satisfies ClientIntent);
+    continueVisibleResolution(roomServer);
 
     expect(roomServer.getState().players[0]?.character.heat).toBe(1);
   });
@@ -712,7 +753,7 @@ describe("scenario confrontation flow", () => {
       createSequenceRandomSource([5, 5])
     );
 
-    roomServer.handleIntent(createPhoneClient("seat-1") as never, {
+    runVisibleIntent(roomServer, {
       type: "CHECK_REQUESTED",
       seatId: "seat-1",
       stat: "signal"
@@ -727,7 +768,7 @@ describe("scenario confrontation flow", () => {
         activeScenarioId: "scenario_devourer_beneath",
         scenarioProgress: {
           doomTokens: 2,
-          devourerIndex: 2
+          devourerIndex: 3
         },
         phase: "navigation",
         players: createScenarioState().players
@@ -756,6 +797,7 @@ describe("scenario confrontation flow", () => {
       seatId: "seat-1",
       toSectorId: "glassmere-spindle"
     } satisfies ClientIntent);
+    continueVisibleResolution(roomServer);
 
     expect(roomServer.getState().scenarioProgress.doomTokens).toBe(1);
     expect(roomServer.getState().players[0]?.character.wounds).toBe(0);
@@ -768,7 +810,7 @@ describe("scenario confrontation flow", () => {
         activeScenarioId: "scenario_devourer_beneath",
         scenarioProgress: {
           doomTokens: 0,
-          devourerIndex: 2
+          devourerIndex: 3
         },
         phase: "navigation",
         players: createScenarioState().players
@@ -797,6 +839,7 @@ describe("scenario confrontation flow", () => {
       seatId: "seat-1",
       toSectorId: "glassmere-spindle"
     } satisfies ClientIntent);
+    continueVisibleResolution(roomServer);
 
     expect(roomServer.getState().scenarioProgress.doomTokens).toBe(1);
     expect(roomServer.getState().players[0]?.character.wounds).toBe(1);

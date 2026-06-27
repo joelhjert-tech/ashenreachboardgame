@@ -37,8 +37,8 @@ function createPatch(): PublicPatchPayload {
     ],
     scenarioProgress: {},
     seats: [
-      { seatId: "seat-1", characterId: "void-marshal", displayName: "Lane Mercer", connected: true, kicked: false },
-      { seatId: "seat-2", characterId: "signal-witch", displayName: "Mira Quill", connected: true, kicked: false }
+      { seatId: "seat-1", characterId: "void-marshal", displayName: "Lane Mercer", connected: true, ready: true, kicked: false },
+      { seatId: "seat-2", characterId: "signal-witch", displayName: "Mira Quill", connected: true, ready: true, kicked: false }
     ],
     sectors: [
       {

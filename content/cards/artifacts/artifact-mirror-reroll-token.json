@@ -1,0 +1,14 @@
+{
+  "id": "artifact-mirror-reroll-token",
+  "type": "artifact",
+  "artifactKind": "factionRelic",
+  "title": "Mirror Reroll Token",
+  "text": "A double-faced route coin that remembers a better failure.",
+  "flavor": "It lands on edge when the road is lying.",
+  "charge": 1,
+  "resolutionSummary": "Claimed the Mirror Reroll Token for a dangerous second chance.",
+  "resolveEffect": {
+    "type": "gain_gear",
+    "gearId": "mirror-reroll-token"
+  }
+}

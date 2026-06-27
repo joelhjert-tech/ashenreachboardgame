@@ -1,0 +1,27 @@
+{
+  "id": "anomaly-scar-tide-lattice",
+  "type": "anomaly",
+  "title": "Scar-Tide Lattice",
+  "text": "Old wounds glow in sequence, drawing a lattice across living skin.",
+  "flavor": "The body is a map if the Reach is cruel enough.",
+  "instability": 3,
+  "regionHint": "middle",
+  "resolutionSummary": "Read the scar-tide without letting it write a permanent route through you.",
+  "resolveEffect": {
+    "type": "sequence",
+    "effects": [
+      {
+        "type": "heal_wound",
+        "amount": 1
+      },
+      {
+        "type": "gain_heat",
+        "amount": 1
+      },
+      {
+        "type": "gain_note",
+        "text": "Scar-tide lattice translated into a living route mark."
+      }
+    ]
+  }
+}

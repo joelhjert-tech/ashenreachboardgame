@@ -2,6 +2,7 @@ import { boardTilePrompts } from "./boardTilePrompts.js";
 import { cardArtPrompts } from "./cardArtPrompts.js";
 import { cardTemplatePrompts } from "./cardTemplatePrompts.js";
 import { characterPortraitPrompts } from "./characterPortraitPrompts.js";
+import { generatedCardImagePrompts } from "./generatedCardImagePrompts.js";
 import { baseNegativePrompt } from "./negativePrompt.js";
 import { scenarioSheetPrompts } from "./scenarioSheetPrompts.js";
 import { uiPrompts } from "./uiPrompts.js";
@@ -17,6 +18,11 @@ export type ImagePromptSpec = {
     | "nemesisPortrait"
     | "missionCardArt"
     | "threatCardArt"
+    | "contractCardArt"
+    | "anomalyCardArt"
+    | "artifactCardArt"
+    | "scarCardArt"
+    | "escalationCardArt"
     | "powerCardArt"
     | "corruptionCardArt"
     | "relicCardArt"
@@ -39,11 +45,11 @@ export const requiredImageGenerationChecklist = [
   "18 middle tier tile images",
   "8 inner/center tile images",
   "6 character portraits",
-  "5 nemesis portraits",
+  "6 nemesis portraits",
   "8 card backs",
-  "12 mission card art images",
+  "12 contract card art images",
   "15 threat card art images",
-  "12 power/corruption/relic/wargear sample card images",
+  "12 route-note/Heat/artifact/wargear sample card images",
   "8 icons",
   "4 tokens",
   "7 UI frames/backgrounds",
@@ -55,6 +61,16 @@ export const imagePrompts: ImagePromptSpec[] = [
   ...characterPortraitPrompts,
   ...cardTemplatePrompts,
   ...cardArtPrompts,
+  ...generatedCardImagePrompts.map((prompt) => ({
+    id: prompt.assetId,
+    fileName: prompt.fileName,
+    outputPath: prompt.outputPath,
+    assetType: prompt.assetType,
+    size: "card" as const,
+    prompt: prompt.prompt,
+    negativePrompt: prompt.negativePrompt,
+    usage: prompt.usage
+  })),
   ...scenarioSheetPrompts,
   ...uiPrompts
 ];

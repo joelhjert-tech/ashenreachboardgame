@@ -1,6 +1,7 @@
 export interface JoinTokenPayload {
   sessionId: string;
   seatId: string;
+  secret?: string;
 }
 
 export interface HostTokenPayload {
@@ -8,18 +9,18 @@ export interface HostTokenPayload {
   secret: string;
 }
 
-export function createJoinToken({ sessionId, seatId }: JoinTokenPayload): string {
-  return `seat:${sessionId}:${seatId}`;
+export function createJoinToken({ sessionId, seatId, secret }: JoinTokenPayload): string {
+  return ["seat", sessionId, seatId, secret].filter(Boolean).join(":");
 }
 
 export function validateJoinToken(token: string, expectedSessionId: string): JoinTokenPayload | null {
-  const [prefix, sessionId, seatId] = token.split(":");
+  const [prefix, sessionId, seatId, secret] = token.split(":");
 
   if (prefix !== "seat" || !sessionId || !seatId || sessionId !== expectedSessionId) {
     return null;
   }
 
-  return { sessionId, seatId };
+  return { sessionId, seatId, secret };
 }
 
 export function createHostToken({ sessionId, secret }: HostTokenPayload): string {

@@ -1,13 +1,12 @@
-import { useEffect, useRef, useState, type ChangeEvent, type FormEvent, type ReactElement } from "react";
-import { fetchCharacters, joinSession } from "../shared/network.js";
-import { getPhoneAbilityTelemetry } from "../shared/abilityTelemetry.js";
+import { useEffect, useState, type FormEvent, type ReactElement } from "react";
+import { fetchCharacters, joinSession, leaveSession } from "../shared/network.js";
 import type { CharacterCatalogEntry, PhonePatchPayload, PhoneSessionAuth, StatePatch } from "../shared/types.js";
 import { useRoomSubscription } from "../shared/useRoomSubscription.js";
 import {
+  getCharacterPortraitPath,
   getPhoneBackgroundPath
 } from "../shared/assetPaths.js";
 import { MobileDebugDrawer } from "./MobileDebugDrawer.js";
-import { LandscapeCharacterCardView } from "./LandscapeCharacterCardView.js";
 import { PortraitControllerView } from "./PortraitControllerView.js";
 
 const storageKey = "ashen-reach-phone-auth";
@@ -102,6 +101,7 @@ function useLandscapeMode(): boolean {
 export function PhoneApp(): ReactElement {
   const [characters, setCharacters] = useState<CharacterCatalogEntry[]>([]);
   const [debugOpen, setDebugOpen] = useState(() => new URLSearchParams(window.location.search).has("debug"));
+  const [joinStep, setJoinStep] = useState<"nameEntry" | "characterSelect">("nameEntry");
   const [formState, setFormState] = useState(() => ({
     roomCode: readInitialRoomCode(),
     displayName: "",
@@ -129,26 +129,6 @@ export function PhoneApp(): ReactElement {
   }, []);
 
   useEffect(() => {
-    if (typeof window === "undefined" || !auth) {
-      return;
-    }
-
-    const tryLockLandscape = () => {
-      const orientation = window.screen.orientation as ScreenOrientation & {
-        lock?: (orientation: string) => Promise<void>;
-      };
-      orientation.lock?.("landscape").catch(() => undefined);
-    };
-
-    tryLockLandscape();
-    window.addEventListener("pointerdown", tryLockLandscape, { once: true });
-
-    return () => {
-      window.removeEventListener("pointerdown", tryLockLandscape);
-    };
-  }, [auth]);
-
-  useEffect(() => {
     if (!auth || !error) {
       return;
     }
@@ -168,25 +148,28 @@ export function PhoneApp(): ReactElement {
 
   const phonePatch =
     patch && "self" in patch.payload ? (patch as StatePatch<PhonePatchPayload>) : null;
-  const previousPhonePatchRef = useRef<PhonePatchPayload | null>(null);
 
-  useEffect(() => {
-    if (phonePatch?.payload) {
-      previousPhonePatchRef.current = phonePatch.payload;
-    }
-  }, [phonePatch]);
-
-  const handleJoin = async (event: FormEvent<HTMLFormElement>) => {
+  const handleNameSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    setJoinError(null);
+    setJoinStep("characterSelect");
+  };
+
+  const handleCharacterSelected = async (characterId: string) => {
     setJoinError(null);
 
     try {
       const nextAuth = await joinSession({
         roomCode: formState.roomCode.trim().toUpperCase(),
         displayName: formState.displayName.trim(),
-        characterId: formState.characterId
+        characterId
       });
 
+      setFormState((current) => ({
+        ...current,
+        characterId,
+        roomCode: nextAuth.roomCode
+      }));
       setAuth(nextAuth);
       writeStoredAuth(nextAuth);
     } catch (joinFailure) {
@@ -199,11 +182,29 @@ export function PhoneApp(): ReactElement {
     writeStoredAuth(null);
   };
 
+  const backToCharacterSelect = async () => {
+    if (!auth) {
+      setJoinStep("characterSelect");
+      return;
+    }
+
+    setJoinError(null);
+
+    try {
+      await leaveSession(auth);
+      setAuth(null);
+      writeStoredAuth(null);
+      setJoinStep("characterSelect");
+    } catch (leaveFailure) {
+      setJoinError(leaveFailure instanceof Error ? leaveFailure.message : "Could not release character");
+    }
+  };
+
   const selectedCharacter = characters.find((character) => character.id === formState.characterId);
   const portraitPlayerName = auth?.displayName || selectedCharacter?.name || "Ashen Reach Controller";
   const portraitRoomCode = auth?.roomCode || formState.roomCode || "Awaiting room";
   const portraitPhaseStatus = phonePatch
-    ? `${toTitleCase(phonePatch.phase)} | ${toTitleCase(phonePatch.payload.status)}`
+    ? `${toTitleCase(phonePatch.phase)} - ${toTitleCase(phonePatch.payload.status)}`
     : auth
       ? "Rejoining session"
       : "Join screen";
@@ -214,18 +215,26 @@ export function PhoneApp(): ReactElement {
         <div className="phone-landscape-ui phone-join-layout">
           <section className="phone-join-hero phone-panel">
             <p className="phone-panel-kicker">Ashen Reach Controller</p>
-            <h1>Claim your seat</h1>
-            <p className="phone-muted-copy">Landscape mode gives players a clean command card and action rail during play.</p>
+            <h1>{joinStep === "nameEntry" ? "Join room" : "Select character"}</h1>
+            <p className="phone-muted-copy">
+              {joinStep === "nameEntry"
+                ? "Enter the room code and your player name before choosing a character."
+                : "Pick one operative. After selection, the character is locked until you press Back."}
+            </p>
             {selectedCharacter && (
               <div className="phone-character-preview">
-                <h2>{selectedCharacter.name}</h2>
-                <p>{selectedCharacter.archetype}</p>
-                <p>
-                  Command {selectedCharacter.stats.command} | Grit {selectedCharacter.stats.grit} | Signal {selectedCharacter.stats.signal}
-                </p>
-                <p>
-                  Guile {selectedCharacter.stats.guile} | Forge {selectedCharacter.stats.forge}
-                </p>
+                <img src={getCharacterPortraitPath(selectedCharacter.id)} alt="" />
+                <div>
+                  <h2>{selectedCharacter.name}</h2>
+                  <p>{selectedCharacter.archetype}</p>
+                  <div className="phone-character-stat-row" aria-label="Selected character stats">
+                    <span>Command {selectedCharacter.stats.command}</span>
+                    <span>Grit {selectedCharacter.stats.grit}</span>
+                    <span>Signal {selectedCharacter.stats.signal}</span>
+                    <span>Guile {selectedCharacter.stats.guile}</span>
+                    <span>Forge {selectedCharacter.stats.forge}</span>
+                  </div>
+                </div>
               </div>
             )}
           </section>
@@ -233,56 +242,79 @@ export function PhoneApp(): ReactElement {
           <section className="phone-panel phone-join-panel">
             <div className="phone-panel-header">
               <div>
-                <h2>Join Room</h2>
-                <p className="phone-muted-copy">Enter the room code, choose a callsign, and select a character.</p>
+                <h2>{joinStep === "nameEntry" ? "Join Room" : "Choose Character"}</h2>
+                <p className="phone-muted-copy">
+                  {joinStep === "nameEntry"
+                    ? "Step 1: enter room code and player name."
+                    : "Step 2: select an available character to reserve it."}
+                </p>
               </div>
             </div>
-            <form className="phone-join-form" onSubmit={handleJoin}>
-              <label className="field">
-                <span>Room code</span>
-                <input
-                  value={formState.roomCode}
-                  onChange={(event) =>
-                    setFormState((current) => ({ ...current, roomCode: event.target.value.toUpperCase() }))
-                  }
-                  placeholder="ABCDE"
-                  required
-                />
-              </label>
-              <label className="field">
-                <span>Display name</span>
-                <input
-                  value={formState.displayName}
-                  onChange={(event) =>
-                    setFormState((current) => ({ ...current, displayName: event.target.value }))
-                  }
-                  placeholder="Seat name"
-                  required
-                />
-              </label>
-              <label className="field">
-                <span>Character</span>
-                <select
-                  value={formState.characterId}
-                  onChange={(event: ChangeEvent<HTMLSelectElement>) =>
-                    setFormState((current) => ({ ...current, characterId: event.target.value }))
-                  }
-                >
-                  {characters.map((character) => (
-                    <option key={character.id} value={character.id}>
-                      {character.archetype} - {character.name}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              {(joinError || error) && <p className="error">{joinError ?? error}</p>}
-              <div className="phone-join-actions">
-                <button className="phone-button phone-button-primary" type="submit">
-                  Join room
-                </button>
-                {debugOpen && <MobileDebugDrawer events={debugEvents} onClear={clearDebugEvents} />}
+            {joinStep === "nameEntry" ? (
+              <form className="phone-join-form" onSubmit={handleNameSubmit}>
+                <section className="phone-join-step" aria-label="Step 1 enter room code and name">
+                  <span className="phone-join-step-kicker">Step 1</span>
+                  <label className="field">
+                    <span>Room code</span>
+                    <input
+                      value={formState.roomCode}
+                      onChange={(event) =>
+                        setFormState((current) => ({ ...current, roomCode: event.target.value.toUpperCase() }))
+                      }
+                      placeholder="ABCDE"
+                      required
+                    />
+                  </label>
+                  <label className="field">
+                    <span>Player name</span>
+                    <input
+                      value={formState.displayName}
+                      onChange={(event) =>
+                        setFormState((current) => ({ ...current, displayName: event.target.value }))
+                      }
+                      placeholder="Seat name"
+                      required
+                    />
+                  </label>
+                </section>
+                {(joinError || error) && <p className="error">{joinError ?? error}</p>}
+                <div className="phone-join-actions">
+                  <button className="phone-button phone-button-primary" type="submit">
+                    Continue
+                  </button>
+                  {debugOpen && <MobileDebugDrawer events={debugEvents} onClear={clearDebugEvents} />}
+                </div>
+              </form>
+            ) : (
+              <div className="phone-join-form">
+                <div className="phone-join-step" aria-label="Step 2 select character">
+                  <span className="phone-join-step-kicker">Step 2</span>
+                  <div className="phone-character-grid" role="list" aria-label="Character">
+                    {characters.map((character) => (
+                      <button
+                        key={character.id}
+                        type="button"
+                        className={`phone-character-option${formState.characterId === character.id ? " phone-character-option-selected" : ""}`}
+                        onClick={() => void handleCharacterSelected(character.id)}
+                      >
+                        <img src={getCharacterPortraitPath(character.id)} alt="" />
+                        <span>
+                          <strong>{character.name}</strong>
+                          <small>{character.archetype}</small>
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                {(joinError || error) && <p className="error">{joinError ?? error}</p>}
+                <div className="phone-join-actions">
+                  <button className="phone-button phone-button-secondary" type="button" onClick={() => setJoinStep("nameEntry")}>
+                    Back
+                  </button>
+                  {debugOpen && <MobileDebugDrawer events={debugEvents} onClear={clearDebugEvents} />}
+                </div>
               </div>
-            </form>
+            )}
           </section>
         </div>
       </main>
@@ -294,31 +326,17 @@ export function PhoneApp(): ReactElement {
   const activeContractCard =
     self?.character.activeContract &&
     phonePatch?.payload.availableContracts.find((contract) => contract.id === self.character.activeContract?.contractId);
-  const abilityTelemetry = getPhoneAbilityTelemetry(phonePatch?.payload ?? null, previousPhonePatchRef.current);
 
   return (
     <main className="phone-page phone-page-controller">
       <div className={`phone-controller-layout${isLandscape ? " phone-controller-layout-landscape" : ""}`}>
         {isLandscape ? (
-          <LandscapeCharacterCardView
-            self={self}
-            activeContractCard={activeContractCard ?? null}
-            roomCode={auth.roomCode}
-            displayName={auth.displayName}
-            connectionStatus={status}
-            sessionStatus={phonePatch?.payload.status ?? null}
-            phase={phonePatch?.phase ?? "start"}
-            activeSeatId={activeSeatId}
-            activeNemesis={phonePatch?.payload.nemesis ?? null}
-            encounter={phonePatch?.payload.encounter ?? null}
-            outcomeSummary={phonePatch?.payload.outcomeSummary ?? null}
-            latestAbilityTriggerSummary={abilityTelemetry.latestTrigger?.summary ?? null}
-            abilityChangeItems={abilityTelemetry.changes}
-            characters={characters}
-            patch={phonePatch?.payload ?? null}
-            onIntent={phonePatch ? sendIntent : null}
-            onLeave={clearSession}
-          />
+          <section className="phone-rotate-warning" aria-live="polite">
+            <div>
+              <span>Portrait required</span>
+              <h1>Rotate your phone to portrait mode.</h1>
+            </div>
+          </section>
         ) : (
           <PortraitControllerView
             self={self}
@@ -331,12 +349,15 @@ export function PhoneApp(): ReactElement {
             characters={characters}
             onIntent={phonePatch ? sendIntent : null}
             onLeave={clearSession}
+            onLobbyBack={() => void backToCharacterSelect()}
           />
         )}
 
-        <div className="phone-debug-anchor">
-          <MobileDebugDrawer events={debugEvents} onClear={clearDebugEvents} defaultOpen={debugOpen} />
-        </div>
+        {debugOpen && (
+          <div className="phone-debug-anchor">
+            <MobileDebugDrawer events={debugEvents} onClear={clearDebugEvents} defaultOpen={debugOpen} />
+          </div>
+        )}
       </div>
     </main>
   );

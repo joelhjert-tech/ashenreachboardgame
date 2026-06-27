@@ -1,0 +1,23 @@
+{
+  "id": "anomaly-void-salt-tide",
+  "type": "anomaly",
+  "regionHint": "middle",
+  "title": "Void-Salt Tide",
+  "text": "A black salt tide pours across dry ground and eats heat signatures as readily as skin.",
+  "flavor": "Useful things are rarely kind.",
+  "instability": 4,
+  "resolutionSummary": "Bottle the tide and leave colder than you arrived.",
+  "resolveEffect": {
+    "type": "sequence",
+    "effects": [
+      {
+        "type": "lose_heat",
+        "amount": 2
+      },
+      {
+        "type": "take_wound",
+        "amount": 1
+      }
+    ]
+  }
+}

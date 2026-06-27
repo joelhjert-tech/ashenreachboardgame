@@ -1,0 +1,16 @@
+{
+  "id": "cartel-exposed-object",
+  "name": "Exposed Object",
+  "factionGiver": "Pale Cartels",
+  "text": "Tag a rival's visible asset, then make the table admit it was never fully theirs.",
+  "objective": {
+    "type": "spaceTextResolved",
+    "effectKey": "middle_rivalryClaim",
+    "label": "Rivalry claim marked",
+    "target": 1
+  },
+  "reward": {
+    "type": "gain_follower",
+    "followerId": "pale-cartel-fixer"
+  }
+}

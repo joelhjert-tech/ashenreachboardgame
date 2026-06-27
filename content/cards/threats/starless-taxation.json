@@ -1,0 +1,29 @@
+{
+  "id": "starless-taxation",
+  "type": "threat",
+  "cardType": "hazard",
+  "title": "Starless Taxation",
+  "text": "A rare office of the old void bureaucracy opens above the table and invoices your future.",
+  "flavor": "The stamp falls before the hand appears.",
+  "severity": 5,
+  "stat": "guile",
+  "difficulty": 9,
+  "successEffect": {
+    "type": "gain_note",
+    "text": "You forged a receipt from a law older than the stars."
+  },
+  "failEffect": {
+    "type": "sequence",
+    "effects": [
+      {
+        "type": "gain_heat",
+        "amount": 2
+      },
+      {
+        "type": "gain_scar",
+        "scarId": "scar-wound-3"
+      }
+    ]
+  },
+  "enemyFamily": "bureaucracy"
+}

@@ -13,6 +13,7 @@ import type {
   MoveRequestedAction,
   RecruitReplacementAction,
   ResolutionAppliedAction,
+  ResolutionContinuedAction,
   RoundCompletedAction,
   SectorCollapsedAction,
   SpaceTextResolvedAction,
@@ -21,15 +22,19 @@ import type {
   ScenarioVictoryAchievedAction,
   StabilizeResolvedAction,
   StatRaisedAction,
+  TableInteractionAction,
   WoundThresholdReachedAction,
-  UnequipGearAction
+  UnequipGearAction,
+  UseFollowerAction,
+  UseGearAction
 } from "./actions.js";
 import { getHeldGearItem } from "./gear.js";
 import { canAdvancePhase, canResolveMovement } from "./phases.js";
-import type { EncounterEffect } from "../schema/card.schema.js";
+import type { EncounterEffect, ThreatCard } from "../schema/card.schema.js";
 import type { ContractCard } from "../schema/contract.schema.js";
-import type { GameState, PlayerState } from "../schema/session.schema.js";
+import type { ActiveResolution, GameState, PlayerState } from "../schema/session.schema.js";
 import type { GearSlot } from "../schema/gear.schema.js";
+import type { TrophyPileEntry } from "../schema/character.schema.js";
 import { getBoardSpace, isScenarioConfrontationSpace } from "../data/boardSpaces.js";
 import {
   advanceContractObjectiveProgress,
@@ -59,13 +64,13 @@ export interface ReducerFailure {
 export type ReducerResult = ReducerSuccess | ReducerFailure;
 
 function getActiveSeatId(state: GameState): string {
-  const activeSeat = state.seats[state.activeSeatIndex];
+  const activeSeatId = state.turnOrder[state.activeSeatIndex];
 
-  if (!activeSeat) {
-    throw new Error("Active seat index is out of bounds");
+  if (!activeSeatId) {
+    throw new Error("Active turn-order index is out of bounds");
   }
 
-  return activeSeat.seatId;
+  return activeSeatId;
 }
 
 function requirePlayer(state: GameState, seatId: string): PlayerState {
@@ -183,20 +188,36 @@ function summarizeEffect(effect: EncounterEffect, success: boolean | null): stri
   switch (effect.type) {
     case "gain_heat":
       return `${prefix} gain ${effect.amount} Heat.`;
+    case "gain_heat_all":
+      return `${prefix} all operatives gain ${effect.amount} Heat.`;
     case "lose_heat":
       return `${prefix} lose ${effect.amount} Heat.`;
     case "take_wound":
       return `${prefix} take ${effect.amount} wound${effect.amount === 1 ? "" : "s"}.`;
     case "heal_wound":
       return `${prefix} heal ${effect.amount} wound${effect.amount === 1 ? "" : "s"}.`;
+    case "gain_trophy":
+      return `${prefix} gain ${effect.amount} Troph${effect.amount === 1 ? "y" : "ies"}.`;
     case "gain_scar":
       return `${prefix} gain scar ${effect.scarId}.`;
     case "gain_gear":
       return `${prefix} gain gear ${effect.gearId}.`;
+    case "draw_artifact":
+      return `${prefix} draw 1 local artifact.`;
+    case "consume_artifact":
+      return `${prefix} artifact ${effect.artifactId} leaves ${effect.sourceSectorId ?? "this space"}.`;
+    case "gain_follower":
+      return `${prefix} gain follower ${effect.follower?.name ?? effect.followerId}.`;
     case "gain_note":
       return `${prefix} note added: ${effect.text}`;
     case "advance_scenario":
       return `${prefix} advance scenario progress ${effect.progressKey} by ${effect.amount}.`;
+    case "advance_escalation":
+      return `${prefix} advance escalation by ${effect.amount}.`;
+    case "return_threat_to_space":
+      return effect.threatId
+        ? `${prefix} ${effect.threatId} remains on ${effect.sourceSectorId ?? "this space"}.`
+        : `${prefix} the threat remains on this space.`;
     case "sequence":
       return effect.effects.map((entry: EncounterEffect) => summarizeEffect(entry, success)).join(" ");
     default: {
@@ -240,6 +261,14 @@ function applyEffectToPlayer(player: PlayerState, effect: EncounterEffect): Play
           wounds: Math.max(0, player.character.wounds - effect.amount)
         }
       };
+    case "gain_trophy":
+      return {
+        ...player,
+        character: {
+          ...player.character,
+          trophies: player.character.trophies + effect.amount
+        }
+      };
     case "gain_scar":
       return {
         ...player,
@@ -250,6 +279,11 @@ function applyEffectToPlayer(player: PlayerState, effect: EncounterEffect): Play
       };
     case "gain_gear":
       return addHeldGearToPlayer(player, effect);
+    case "draw_artifact":
+    case "consume_artifact":
+      return player;
+    case "gain_follower":
+      return addFollowerToPlayer(player, effect);
     case "gain_note":
       return {
         ...player,
@@ -258,7 +292,10 @@ function applyEffectToPlayer(player: PlayerState, effect: EncounterEffect): Play
           notes: [...player.private.notes, effect.text]
         }
       };
+    case "gain_heat_all":
+    case "advance_escalation":
     case "advance_scenario":
+    case "return_threat_to_space":
       return player;
     case "sequence":
       return effect.effects.reduce(
@@ -327,9 +364,286 @@ function applyEffectToState(state: GameState, seatId: string, effect: EncounterE
     };
   }
 
+  if (effect.type === "advance_escalation") {
+    return {
+      ...state,
+      escalationLevel: Math.max(0, state.escalationLevel + effect.amount),
+      lastOutcomeSummary: state.lastOutcomeSummary
+        ? {
+            ...state.lastOutcomeSummary,
+            summary: `${state.lastOutcomeSummary.summary} ${summarizeEffect(effect, null)}`
+          }
+        : state.lastOutcomeSummary
+    };
+  }
+
+  if (effect.type === "gain_heat_all") {
+    return {
+      ...state,
+      players: state.players.map((player) => applyEffectToPlayer(player, { type: "gain_heat", amount: effect.amount }))
+    };
+  }
+
+  if (effect.type === "return_threat_to_space") {
+    if (!effect.threatId || !effect.sourceSectorId) {
+      return state;
+    }
+
+    const threatId = effect.threatId;
+    const sourceSectorId = effect.sourceSectorId;
+
+    return {
+      ...state,
+      sectors: state.sectors.map((sector) =>
+        sector.id === sourceSectorId && !sector.encounterDecks.threat.includes(threatId)
+          ? {
+              ...sector,
+              encounterDecks: {
+                ...sector.encounterDecks,
+                threat: [threatId, ...sector.encounterDecks.threat]
+              }
+            }
+          : sector
+      )
+    };
+  }
+
+  if (effect.type === "draw_artifact") {
+    return state;
+  }
+
+  if (effect.type === "consume_artifact") {
+    return {
+      ...state,
+      sectors:
+        effect.sourceSectorId
+          ? state.sectors.map((sector) =>
+              sector.id === effect.sourceSectorId
+                ? {
+                    ...sector,
+                    encounterDecks: {
+                      ...sector.encounterDecks,
+                      artifact: sector.encounterDecks.artifact.filter((artifactId) => artifactId !== effect.artifactId)
+                    }
+                  }
+                : sector
+            )
+          : state.sectors
+    };
+  }
+
   return {
     ...state,
     players: updateActivePlayer(state, seatId, (player) => applyEffectToPlayer(player, effect))
+  };
+}
+
+function createTrophyPileEntry(card: ThreatCard): TrophyPileEntry {
+  return {
+    cardId: card.id,
+    name: card.cardType === "enemy" ? card.enemyName ?? card.title : card.title,
+    trophyValue: card.cardType === "enemy" ? card.trophyValue : 0,
+    spentValue: 0,
+    stat: card.stat,
+    cardType: card.cardType
+  };
+}
+
+function getTrophyPileEntryAvailableValue(entry: TrophyPileEntry): number {
+  return Math.max(0, entry.trophyValue - (entry.spentValue ?? 0));
+}
+
+function spendTrophyPileValue(trophyPile: TrophyPileEntry[] | undefined, cost: number): TrophyPileEntry[] {
+  let remainingCost = cost;
+  const nextPile: TrophyPileEntry[] = [];
+
+  for (const entry of trophyPile ?? []) {
+    if (remainingCost <= 0) {
+      nextPile.push(entry);
+      continue;
+    }
+
+    const availableValue = getTrophyPileEntryAvailableValue(entry);
+
+    if (availableValue <= 0) {
+      continue;
+    }
+
+    const spentValue = Math.min(availableValue, remainingCost);
+    remainingCost -= spentValue;
+    const nextEntry = {
+      ...entry,
+      spentValue: (entry.spentValue ?? 0) + spentValue
+    };
+
+    if (getTrophyPileEntryAvailableValue(nextEntry) > 0) {
+      nextPile.push(nextEntry);
+    }
+  }
+
+  return nextPile;
+}
+
+function summarizeEffects(effect: EncounterEffect | null, success: boolean | null): string[] {
+  if (!effect) {
+    return [];
+  }
+
+  if (effect.type === "sequence") {
+    return effect.effects.flatMap((entry: EncounterEffect) => summarizeEffects(entry, success));
+  }
+
+  return [summarizeEffect(effect, success)];
+}
+
+function createResolutionId(seatId: string, source: ActiveResolution["source"], createdAt: string, suffix: string): string {
+  return `${seatId}:${source}:${suffix}:${createdAt}`;
+}
+
+function summarizeThreatCard(card: ThreatCard): NonNullable<ActiveResolution["card"]> {
+  return {
+    id: card.id,
+    title: card.title,
+    type: card.cardType,
+    flavor: card.flavor,
+    artType: "threat"
+  };
+}
+
+function summarizeThreatBattle(
+  card: ThreatCard,
+  difficulty: number = card.difficulty,
+  modifiers: NonNullable<ActiveResolution["battle"]>["modifiers"] = []
+): NonNullable<ActiveResolution["battle"]> {
+  return {
+    enemyName: card.cardType === "enemy" ? card.enemyName : card.title,
+    stat: card.stat,
+    difficulty,
+    modifiers
+  };
+}
+
+function buildRollResolution(params: {
+  seatId: string;
+  source: ActiveResolution["source"];
+  createdAt: string;
+  suffix: string;
+  card?: ActiveResolution["card"];
+  battle?: ActiveResolution["battle"];
+  dice: number[];
+  baseTotal: number;
+  modifierTotal: number;
+  finalTotal: number;
+  target: number;
+  success: boolean;
+  title: string;
+  text: string;
+  effects: string[];
+}): ActiveResolution {
+  return {
+    id: createResolutionId(params.seatId, params.source, params.createdAt, params.suffix),
+    playerId: params.seatId,
+    source: params.source,
+    stage: "roll_result",
+    card: params.card,
+    battle: params.battle,
+    roll: {
+      dice: params.dice,
+      baseTotal: params.baseTotal,
+      modifierTotal: params.modifierTotal,
+      finalTotal: params.finalTotal,
+      target: params.target,
+      success: params.success
+    },
+    outcome: {
+      title: params.title,
+      text: params.text,
+      effects: params.effects
+    }
+  };
+}
+
+function buildOutcomeResolution(params: {
+  seatId: string;
+  source: ActiveResolution["source"];
+  createdAt: string;
+  suffix: string;
+  card?: ActiveResolution["card"];
+  title: string;
+  text: string;
+  effects: string[];
+}): ActiveResolution {
+  return {
+    id: createResolutionId(params.seatId, params.source, params.createdAt, params.suffix),
+    playerId: params.seatId,
+    source: params.source,
+    stage: "outcome_summary",
+    card: params.card,
+    outcome: {
+      title: params.title,
+      text: params.text,
+      effects: params.effects
+    }
+  };
+}
+
+function inferSpaceTextResolutionSource(action: SpaceTextResolvedAction): ActiveResolution["source"] {
+  if (action.consumedDeckCards?.contract?.length || action.discoveredContracts?.length) {
+    return "contract";
+  }
+
+  if (action.consumedDeckCards?.anomaly?.length) {
+    return "anomaly";
+  }
+
+  if (action.consumedDeckCards?.artifact?.length) {
+    return "artifact";
+  }
+
+  return "scenario";
+}
+
+function advanceResolutionForContinue(state: GameState): ActiveResolution | null {
+  const activeResolution = state.activeResolution;
+
+  if (!activeResolution) {
+    return null;
+  }
+
+  if (activeResolution.stage === "roll_result") {
+    return {
+      ...activeResolution,
+      stage: "outcome_summary"
+    };
+  }
+
+  if (activeResolution.stage === "outcome_summary" || activeResolution.stage === "awaiting_continue") {
+    return null;
+  }
+
+  return activeResolution;
+}
+
+function addFollowerToPlayer(
+  player: PlayerState,
+  effect: Extract<EncounterEffect, { type: "gain_follower" }>
+): PlayerState {
+  if (!effect.follower) {
+    return player;
+  }
+
+  const alreadyFollowing = (player.character.followers ?? []).some((follower) => follower.id === effect.follower?.id);
+
+  if (alreadyFollowing) {
+    return player;
+  }
+
+  return {
+    ...player,
+    character: {
+      ...player.character,
+      followers: [...(player.character.followers ?? []), effect.follower]
+    }
   };
 }
 
@@ -339,6 +653,112 @@ function canManageGear(state: GameState, seatId: string): void {
 
   if (state.phase !== "action") {
     throw new Error(`Cannot manage gear during phase ${state.phase}`);
+  }
+}
+
+function discardHeldGear(state: GameState, seatId: string, gearId: string): GameState {
+  return {
+    ...state,
+    players: updateActivePlayer(state, seatId, (entry) => ({
+      ...entry,
+      character: {
+        ...entry.character,
+        heldGear: entry.character.heldGear.filter((item) => item.id !== gearId),
+        equippedGear: Object.fromEntries(
+          Object.entries(entry.character.equippedGear).map(([slot, equippedId]) => [
+            slot,
+            equippedId === gearId ? null : equippedId
+          ])
+        ) as PlayerState["character"]["equippedGear"]
+      }
+    }))
+  };
+}
+
+function spendHeldGearCharge(state: GameState, seatId: string, gearId: string): GameState {
+  return {
+    ...state,
+    players: updateActivePlayer(state, seatId, (entry) => ({
+      ...entry,
+      character: {
+        ...entry.character,
+        heldGear: entry.character.heldGear.map((item) =>
+          item.id === gearId ? { ...item, charges: Math.max((item.charges ?? 0) - 1, 0) } : item
+        )
+      }
+    }))
+  };
+}
+
+function discardFollower(state: GameState, seatId: string, followerId: string): GameState {
+  return {
+    ...state,
+    players: updateActivePlayer(state, seatId, (entry) => ({
+      ...entry,
+      character: {
+        ...entry.character,
+        followers: (entry.character.followers ?? []).filter((follower) => follower.id !== followerId)
+      }
+    }))
+  };
+}
+
+function hasHarmfulInteractionThisRound(state: GameState, targetSeatId: string): boolean {
+  for (let index = state.eventLog.length - 1; index >= 0; index -= 1) {
+    const entry = state.eventLog[index] as { type?: string; targetSeatId?: string; interactionKind?: string } | undefined;
+
+    if (entry?.type === "ROUND_COMPLETED") {
+      return false;
+    }
+
+    if (
+      entry?.type === "TABLE_INTERACTION" &&
+      entry.targetSeatId === targetSeatId &&
+      (entry.interactionKind === "duel" || entry.interactionKind === "interfere")
+    ) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+function hasUsedObjectSinceBoundary(
+  state: GameState,
+  seatId: string,
+  objectId: string,
+  idField: "gearId" | "followerId",
+  boundaryType: "TURN_COMPLETED" | "ROUND_COMPLETED"
+): boolean {
+  for (let index = state.eventLog.length - 1; index >= 0; index -= 1) {
+    const entry = state.eventLog[index] as Record<string, unknown> | undefined;
+
+    if (entry?.type === boundaryType) {
+      return false;
+    }
+
+    if (entry?.seatId === seatId && entry[idField] === objectId && (entry.type === "USE_GEAR" || entry.type === "USE_FOLLOWER")) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+function ensureUseLimitAvailable(
+  state: GameState,
+  seatId: string,
+  objectId: string,
+  objectName: string,
+  idField: "gearId" | "followerId",
+  useLimit: "oncePerTurn" | "oncePerRound" | "discard" | "charge" | undefined
+): void {
+  if (useLimit === "oncePerTurn" && hasUsedObjectSinceBoundary(state, seatId, objectId, idField, "TURN_COMPLETED")) {
+    throw new Error(`${objectName} has already been used this turn`);
+  }
+
+  if (useLimit === "oncePerRound" && hasUsedObjectSinceBoundary(state, seatId, objectId, idField, "ROUND_COMPLETED")) {
+    throw new Error(`${objectName} has already been used this round`);
   }
 }
 
@@ -440,14 +860,35 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
         return reject(state, action, `Cannot resolve movement during phase ${state.phase}`);
       }
 
+      const player = requirePlayer(state, movementAction.seatId);
+      const currentSectorId = player.character.currentSpaceId;
+
+      if (movementAction.fromSectorId !== currentSectorId) {
+        return reject(
+          state,
+          action,
+          `Movement origin ${movementAction.fromSectorId} does not match current sector ${currentSectorId}`
+        );
+      }
+
+      try {
+        ensureNeighbor(state, movementAction.fromSectorId, movementAction.toSectorId);
+        ensureGateProgression(state, movementAction.seatId, movementAction.fromSectorId, movementAction.toSectorId);
+      } catch (error) {
+        return reject(state, action, error instanceof Error ? error.message : "Sector is not reachable");
+      }
+
       const targetSector = state.sectors.find((entry) => entry.id === movementAction.toSectorId);
-      const movedEvent: GameAction = {
-        type: "MOVED",
-        seatId: movementAction.seatId,
-        fromSectorId: movementAction.fromSectorId,
-        toSectorId: movementAction.toSectorId,
-        createdAt: movementAction.createdAt
-      };
+      const destinationSectorId = movementAction.success ? movementAction.toSectorId : movementAction.fromSectorId;
+      const movedEvent: GameAction | null = movementAction.success
+        ? {
+            type: "MOVED",
+            seatId: movementAction.seatId,
+            fromSectorId: movementAction.fromSectorId,
+            toSectorId: movementAction.toSectorId,
+            createdAt: movementAction.createdAt
+          }
+        : null;
 
       return succeed(
         {
@@ -458,15 +899,15 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
           pendingEffect: movementAction.effect,
           players: updateActivePlayer(state, movementAction.seatId, (entry) => ({
             ...entry,
-            sectorId: movementAction.toSectorId,
+            sectorId: destinationSectorId,
             character: {
               ...entry.character,
-              currentSpaceId: movementAction.toSectorId
+              currentSpaceId: destinationSectorId
             }
           })),
           lastOutcomeSummary: {
             seatId: movementAction.seatId,
-            movedToSectorId: movementAction.toSectorId,
+            movedToSectorId: destinationSectorId,
             encounterCardId: null,
             encounterTitle: targetSector?.name ?? movementAction.toSectorId,
             encounterCardType: null,
@@ -484,14 +925,42 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
             success: movementAction.success,
             summary: movementAction.success
               ? `Moved into ${targetSector?.name ?? movementAction.toSectorId}. Success: the approach held.`
-              : `Moved into ${targetSector?.name ?? movementAction.toSectorId}. ${summarizeEffect(
+              : `Failed to enter ${targetSector?.name ?? movementAction.toSectorId}. ${summarizeEffect(
                   movementAction.effect!,
                   false
                 )}`
           },
-          eventLog: [...state.eventLog, action, movedEvent]
+          activeResolution: buildRollResolution({
+            seatId: movementAction.seatId,
+            source: "movement",
+            createdAt: movementAction.createdAt,
+            suffix: movementAction.toSectorId,
+            card: {
+              id: movementAction.toSectorId,
+              title: targetSector?.name ?? movementAction.toSectorId,
+              type: "movement",
+              flavor: "Approach check"
+            },
+            battle: {
+              stat: movementAction.stat,
+              difficulty: movementAction.difficulty,
+              modifiers: [{ label: "Guile", value: movementAction.statBonus }]
+            },
+            dice: movementAction.roll.faces,
+            baseTotal: movementAction.roll.total,
+            modifierTotal: movementAction.statBonus,
+            finalTotal: movementAction.total,
+            target: movementAction.difficulty,
+            success: movementAction.success,
+            title: movementAction.success ? "Movement success" : "Movement setback",
+            text: movementAction.success
+              ? `Moved into ${targetSector?.name ?? movementAction.toSectorId}.`
+              : `Failed to enter ${targetSector?.name ?? movementAction.toSectorId}.`,
+            effects: summarizeEffects(movementAction.effect, movementAction.success)
+          }),
+          eventLog: movedEvent ? [...state.eventLog, action, movedEvent] : [...state.eventLog, action]
         },
-        [movedEvent]
+        movedEvent ? [movedEvent] : []
       );
     }
     case "ENCOUNTER_DRAWN": {
@@ -508,13 +977,44 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
         return reject(state, action, `Cannot draw encounter during phase ${state.phase}`);
       }
 
+      const revealedState = drawnAction.revealEffect
+        ? applyEffectToState(state, drawnAction.seatId, drawnAction.revealEffect)
+        : state;
+
       return succeed({
-        ...state,
+        ...revealedState,
         sequence: state.sequence + 1,
         phase: "action",
         resolutionSource: null,
         currentEncounter: drawnAction.card,
-        sectors: state.sectors.map((sector) =>
+        activeResolution: drawnAction.card
+          ? {
+              id: createResolutionId(drawnAction.seatId, "threat", drawnAction.createdAt, drawnAction.card.id),
+              playerId: drawnAction.seatId,
+              source: "threat",
+              stage: "card_reveal",
+              card: summarizeThreatCard(drawnAction.card),
+              battle: summarizeThreatBattle(drawnAction.card),
+              outcome: {
+                title: "Card revealed",
+                text: drawnAction.revealEffect
+                  ? `${drawnAction.card.title} is revealed. ${summarizeEffect(drawnAction.revealEffect, null)}`
+                  : `${drawnAction.card.title} is revealed.`,
+                effects: summarizeEffects(drawnAction.revealEffect ?? null, null)
+              }
+            }
+          : {
+              id: createResolutionId(drawnAction.seatId, "threat", drawnAction.createdAt, drawnAction.sectorId),
+              playerId: drawnAction.seatId,
+              source: "threat",
+              stage: "outcome_summary",
+              outcome: {
+                title: "No threat drawn",
+                text: `Moved into ${drawnAction.sectorId}, but the local threat deck was empty.`,
+                effects: []
+              }
+            },
+        sectors: revealedState.sectors.map((sector) =>
           sector.id === drawnAction.sectorId && drawnAction.card
             ? {
                 ...sector,
@@ -532,11 +1032,13 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
               encounterTitle: drawnAction.card?.title ?? null,
               encounterCardType: drawnAction.card?.cardType ?? null,
               summary: drawnAction.card
-                ? `Moved into ${drawnAction.sectorId} and revealed ${drawnAction.card.title}.`
+                ? `Moved into ${drawnAction.sectorId} and revealed ${drawnAction.card.title}.${
+                    drawnAction.revealEffect ? ` ${summarizeEffect(drawnAction.revealEffect, null)}` : ""
+                  }`
                 : `Moved into ${drawnAction.sectorId}, but the local threat deck was empty.`
             }
           : state.lastOutcomeSummary,
-        eventLog: [...state.eventLog, action]
+        eventLog: [...revealedState.eventLog, action]
       });
     }
     case "CHECK_REQUESTED": {
@@ -573,6 +1075,21 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
         ...state,
         sequence: state.sequence + 1,
         resolutionSource: state.resolutionSource,
+        activeResolution: {
+          ...(state.activeResolution ?? {
+            id: createResolutionId(checkRequest.seatId, "threat", checkRequest.createdAt, state.currentEncounter.id),
+            playerId: checkRequest.seatId,
+            source: "threat" as const
+          }),
+          stage: "battle_setup",
+          card: summarizeThreatCard(state.currentEncounter),
+          battle: summarizeThreatBattle(state.currentEncounter),
+          outcome: {
+            title: "Check ready",
+            text: `${state.currentEncounter.title} requires ${state.currentEncounter.stat} ${state.currentEncounter.difficulty}.`,
+            effects: []
+          }
+        },
         eventLog: [...state.eventLog, action]
       });
     }
@@ -610,6 +1127,21 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
         ...state,
         sequence: state.sequence + 1,
         resolutionSource: state.resolutionSource,
+        activeResolution: {
+          ...(state.activeResolution ?? {
+            id: createResolutionId(combatRequest.seatId, "threat", combatRequest.createdAt, state.currentEncounter.id),
+            playerId: combatRequest.seatId,
+            source: "threat" as const
+          }),
+          stage: "battle_setup",
+          card: summarizeThreatCard(state.currentEncounter),
+          battle: summarizeThreatBattle(state.currentEncounter),
+          outcome: {
+            title: "Battle ready",
+            text: `${state.currentEncounter.enemyName ?? state.currentEncounter.title} opposes ${state.currentEncounter.stat}.`,
+            effects: []
+          }
+        },
         eventLog: [...state.eventLog, action]
       });
     }
@@ -641,6 +1173,23 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
           encounterTitle: enemyRollAssignment.encounterTitle,
           stat: enemyRollAssignment.stat
         },
+        activeResolution: state.currentEncounter
+          ? {
+              id: state.activeResolution?.id ?? createResolutionId(enemyRollAssignment.seatId, "threat", enemyRollAssignment.createdAt, enemyRollAssignment.cardId),
+              playerId: enemyRollAssignment.fighterSeatId,
+              source: "threat",
+              stage: "dice_roll",
+              card: summarizeThreatCard(state.currentEncounter),
+              battle: summarizeThreatBattle(state.currentEncounter, state.currentEncounter.difficulty, [
+                { label: "Enemy roller assigned", value: 0 }
+              ]),
+              outcome: {
+                title: "Enemy roll ready",
+                text: `${enemyRollAssignment.encounterTitle} is resisting. Awaiting the assigned enemy roller.`,
+                effects: []
+              }
+            }
+          : state.activeResolution,
         lastOutcomeSummary: state.lastOutcomeSummary
           ? {
               ...state.lastOutcomeSummary,
@@ -692,6 +1241,10 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
         return reject(state, action, `Cannot resolve a check during phase ${state.phase}`);
       }
 
+      if (!state.currentEncounter) {
+        return reject(state, action, "No encounter is waiting for a check roll");
+      }
+
       return succeed({
         ...state,
         sequence: state.sequence + 1,
@@ -699,6 +1252,25 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
         resolutionSource: "encounter",
         pendingEnemyRoll: null,
         pendingEffect: action.effect,
+        activeResolution: buildRollResolution({
+          seatId: action.seatId,
+          source: "threat",
+          createdAt: action.createdAt,
+          suffix: action.cardId,
+          card: summarizeThreatCard(state.currentEncounter),
+          battle: summarizeThreatBattle(state.currentEncounter, action.difficulty, [
+            { label: action.stat, value: action.statBonus }
+          ]),
+          dice: action.roll.faces,
+          baseTotal: action.roll.total,
+          modifierTotal: action.statBonus,
+          finalTotal: action.total,
+          target: action.difficulty,
+          success: action.success,
+          title: action.success ? "Check passed" : "Check failed",
+          text: summarizeEffect(action.effect, action.success),
+          effects: summarizeEffects(action.effect, action.success)
+        }),
         lastOutcomeSummary: state.lastOutcomeSummary
           ? {
               ...state.lastOutcomeSummary,
@@ -745,6 +1317,8 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
           ? state.availableContracts.find((entry) => entry.id === activeContract.contractId) ?? null
           : null;
         const trophyAward = action.success ? state.currentEncounter.trophyValue : 0;
+        const defeatedTrophy = action.success ? createTrophyPileEntry(state.currentEncounter) : null;
+        const trophyPileSummary = defeatedTrophy ? `${defeatedTrophy.name} added to Trophy Pile.` : "";
         const nextProgress =
           action.success && contract && activeContract
             ? advanceContractObjectiveProgress(contract, activeContract.progress, {
@@ -759,11 +1333,32 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
         resolutionSource: "encounter",
         pendingEnemyRoll: null,
         pendingEffect: action.effect,
+        activeResolution: buildRollResolution({
+          seatId: action.seatId,
+          source: "threat",
+          createdAt: action.createdAt,
+          suffix: action.cardId,
+          card: summarizeThreatCard(state.currentEncounter),
+          battle: summarizeThreatBattle(state.currentEncounter, action.difficulty, [
+            { label: action.stat, value: action.statBonus },
+            { label: "Enemy", value: action.enemyBonus }
+          ]),
+          dice: action.roll.faces,
+          baseTotal: action.roll.total,
+          modifierTotal: action.statBonus,
+          finalTotal: action.total,
+          target: action.enemyTotal,
+          success: action.success,
+          title: action.success ? "Combat victory" : "Combat loss",
+          text: `${summarizeEffect(action.effect, action.success)}${trophyPileSummary ? ` ${trophyPileSummary}` : ""}`,
+          effects: [...summarizeEffects(action.effect, action.success), ...(trophyPileSummary ? [trophyPileSummary] : [])]
+        }),
         players: updateActivePlayer(state, action.seatId, (entry) => ({
           ...entry,
           character: {
             ...entry.character,
             trophies: entry.character.trophies + trophyAward,
+            trophyPile: defeatedTrophy ? [...(entry.character.trophyPile ?? []), defeatedTrophy] : entry.character.trophyPile,
             activeContract:
               entry.character.activeContract && nextProgress !== null
                 ? {
@@ -790,7 +1385,7 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
               success: action.success,
               summary: `${state.lastOutcomeSummary.summary} ${summarizeEffect(action.effect, action.success)}${
                 trophyAward > 0 ? ` +${trophyAward} trophies.` : ""
-              }`
+              }${trophyPileSummary ? ` ${trophyPileSummary}` : ""}`
             }
           : null,
         eventLog: [...state.eventLog, action]
@@ -819,6 +1414,17 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
         phase: "resolution",
         resolutionSource: state.resolutionSource,
         pendingEffect: null,
+        activeResolution: state.activeResolution
+          ? {
+              ...state.activeResolution,
+              stage: "outcome_summary",
+              outcome: {
+                title: resolutionAction.success === false ? "Failure applied" : "Outcome applied",
+                text: state.lastOutcomeSummary?.summary ?? summarizeEffect(state.pendingEffect as EncounterEffect, resolutionAction.success),
+                effects: summarizeEffects(state.pendingEffect as EncounterEffect, resolutionAction.success)
+              }
+            }
+          : state.activeResolution,
         eventLog: [...state.eventLog, action]
       });
     }
@@ -918,6 +1524,7 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
             ...recruitAction.replacementCharacter!,
             currentSpaceId: entry.sectorId,
             trophies: 0,
+            trophyPile: [],
             heat: 0,
             wounds: 0,
             status: "active",
@@ -968,6 +1575,7 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
           character: {
             ...player.character,
             trophies: Math.max(0, player.character.trophies - statRaisedAction.cost),
+            trophyPile: spendTrophyPileValue(player.character.trophyPile, statRaisedAction.cost),
             stats: {
               ...player.character.stats,
               [statRaisedAction.stat]: player.character.stats[statRaisedAction.stat] + 1
@@ -1062,6 +1670,201 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
           }
         })),
         eventLog: [...state.eventLog, action]
+      });
+    }
+    case "USE_GEAR": {
+      const useGearAction = action as UseGearAction;
+
+      try {
+        canManageGear(state, useGearAction.seatId);
+      } catch (error) {
+        return reject(state, action, error instanceof Error ? error.message : "Seat cannot use gear");
+      }
+
+      const player = requirePlayer(state, useGearAction.seatId);
+      const item = getHeldGearItem(player.character, useGearAction.gearId);
+
+      if (!item) {
+        return reject(state, action, `Gear ${useGearAction.gearId} is not held by this character`);
+      }
+
+      try {
+        ensureUseLimitAvailable(state, useGearAction.seatId, item.id, item.name, "gearId", item.useLimit);
+      } catch (error) {
+        return reject(state, action, error instanceof Error ? error.message : "Gear use limit reached");
+      }
+
+      if (item.useLimit === "charge" && (item.charges ?? 0) <= 0) {
+        return reject(state, action, `${item.name} has no charges remaining`);
+      }
+
+      const effectedState = useGearAction.effect
+        ? applyEffectToState(state, useGearAction.seatId, useGearAction.effect)
+        : state;
+      const chargedState = item.useLimit === "charge"
+        ? spendHeldGearCharge(effectedState, useGearAction.seatId, useGearAction.gearId)
+        : effectedState;
+      const finalState = useGearAction.discard
+        ? discardHeldGear(chargedState, useGearAction.seatId, useGearAction.gearId)
+        : chargedState;
+      const updatedPlayer = requirePlayer(finalState, useGearAction.seatId);
+
+      return succeed({
+        ...finalState,
+        sequence: state.sequence + 1,
+        lastOutcomeSummary: {
+          seatId: useGearAction.seatId,
+          movedToSectorId: updatedPlayer.sectorId,
+          encounterCardId: null,
+          encounterTitle: item.name,
+          encounterCardType: null,
+          checkStat: null,
+          die1: null,
+          die2: null,
+          statBonus: null,
+          checkTotal: null,
+          difficulty: null,
+          enemyRollerSeatId: null,
+          enemyDie1: null,
+          enemyDie2: null,
+          enemyBonus: null,
+          enemyTotal: null,
+          success: true,
+          summary: useGearAction.summary
+        },
+        eventLog: [...finalState.eventLog, action]
+      });
+    }
+    case "USE_FOLLOWER": {
+      const useFollowerAction = action as UseFollowerAction;
+
+      try {
+        canManageGear(state, useFollowerAction.seatId);
+      } catch (error) {
+        return reject(state, action, error instanceof Error ? error.message : "Seat cannot use a follower");
+      }
+
+      const player = requirePlayer(state, useFollowerAction.seatId);
+      const follower = (player.character.followers ?? []).find((entry) => entry.id === useFollowerAction.followerId);
+
+      if (!follower) {
+        return reject(state, action, `Follower ${useFollowerAction.followerId} is not attached to this character`);
+      }
+
+      try {
+        ensureUseLimitAvailable(
+          state,
+          useFollowerAction.seatId,
+          follower.id,
+          follower.name,
+          "followerId",
+          follower.useLimit
+        );
+      } catch (error) {
+        return reject(state, action, error instanceof Error ? error.message : "Follower use limit reached");
+      }
+
+      const effectedState = useFollowerAction.effect
+        ? applyEffectToState(state, useFollowerAction.seatId, useFollowerAction.effect)
+        : state;
+      const finalState = useFollowerAction.discard
+        ? discardFollower(effectedState, useFollowerAction.seatId, useFollowerAction.followerId)
+        : effectedState;
+      const updatedPlayer = requirePlayer(finalState, useFollowerAction.seatId);
+
+      return succeed({
+        ...finalState,
+        sequence: state.sequence + 1,
+        lastOutcomeSummary: {
+          seatId: useFollowerAction.seatId,
+          movedToSectorId: updatedPlayer.sectorId,
+          encounterCardId: null,
+          encounterTitle: follower.name,
+          encounterCardType: null,
+          checkStat: null,
+          die1: null,
+          die2: null,
+          statBonus: null,
+          checkTotal: null,
+          difficulty: null,
+          enemyRollerSeatId: null,
+          enemyDie1: null,
+          enemyDie2: null,
+          enemyBonus: null,
+          enemyTotal: null,
+          success: true,
+          summary: useFollowerAction.summary
+        },
+        eventLog: [...finalState.eventLog, action]
+      });
+    }
+    case "TABLE_INTERACTION": {
+      const tableAction = action as TableInteractionAction;
+
+      try {
+        canManageGear(state, tableAction.seatId);
+      } catch (error) {
+        return reject(state, action, error instanceof Error ? error.message : "Seat cannot use table interaction");
+      }
+
+      if (state.sessionMode === "single-player") {
+        return reject(state, action, "Table interactions require more than one operative");
+      }
+
+      if (tableAction.targetSeatId === tableAction.seatId) {
+        return reject(state, action, "Choose another operative for table interaction");
+      }
+
+      const target = state.players.find((entry) => entry.seatId === tableAction.targetSeatId);
+
+      if (!target) {
+        return reject(state, action, `Unknown target seat ${tableAction.targetSeatId}`);
+      }
+
+      const interactionMode = state.interactionMode ?? "rivalry";
+
+      if (interactionMode === "co-op" && (tableAction.interactionKind === "duel" || tableAction.interactionKind === "interfere")) {
+        return reject(state, action, "Co-op mode only allows trade and aid");
+      }
+
+      if (
+        interactionMode !== "ruthless" &&
+        (tableAction.interactionKind === "duel" || tableAction.interactionKind === "interfere") &&
+        hasHarmfulInteractionThisRound(state, tableAction.targetSeatId)
+      ) {
+        return reject(state, action, "Bounded rivalry guardrail: that operative has already been pressured this round");
+      }
+
+      const actorEffectedState = tableAction.effect ? applyEffectToState(state, tableAction.seatId, tableAction.effect) : state;
+      const finalState = tableAction.targetEffect
+        ? applyEffectToState(actorEffectedState, tableAction.targetSeatId, tableAction.targetEffect)
+        : actorEffectedState;
+      const actor = requirePlayer(finalState, tableAction.seatId);
+
+      return succeed({
+        ...finalState,
+        sequence: state.sequence + 1,
+        lastOutcomeSummary: {
+          seatId: tableAction.seatId,
+          movedToSectorId: actor.sectorId,
+          encounterCardId: null,
+          encounterTitle: "Table Interaction",
+          encounterCardType: null,
+          checkStat: null,
+          die1: null,
+          die2: null,
+          statBonus: null,
+          checkTotal: null,
+          difficulty: null,
+          enemyRollerSeatId: null,
+          enemyDie1: null,
+          enemyDie2: null,
+          enemyBonus: null,
+          enemyTotal: null,
+          success: true,
+          summary: tableAction.summary
+        },
+        eventLog: [...finalState.eventLog, action]
       });
     }
     case "ACCEPT_CONTRACT": {
@@ -1179,6 +1982,22 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
           success: true,
           summary: `Completed contract ${contract.name}. ${formatContractObjectiveStatus(contract, getContractObjectiveTarget(contract))}. ${summarizeEffect(contract.reward, true)}`
         },
+        activeResolution: buildOutcomeResolution({
+          seatId: completeAction.seatId,
+          source: "contract",
+          createdAt: completeAction.createdAt,
+          suffix: completeAction.contractId,
+          card: {
+            id: contract.id,
+            title: contract.name,
+            type: "contract",
+            flavor: contract.text,
+            artType: "contract"
+          },
+          title: "Contract completed",
+          text: `Completed ${contract.name}. ${formatContractObjectiveStatus(contract, getContractObjectiveTarget(contract))}.`,
+          effects: summarizeEffects(contract.reward, true)
+        }),
         eventLog: [...state.eventLog, action]
       });
     }
@@ -1250,6 +2069,48 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
             }
           : sectorAdjustedState;
       const player = requirePlayer(withDiscoveredContracts, spaceTextAction.seatId);
+      const spaceTitle = getBoardSpace(player.character.currentSpaceId)?.name ?? player.character.currentSpaceId;
+      const resolutionSource = inferSpaceTextResolutionSource(spaceTextAction);
+      const resolutionCard = {
+        id: spaceTextAction.discoveredContracts?.[0]?.id ?? spaceTextAction.effectKey,
+        title: spaceTextAction.discoveredContracts?.[0]?.name ?? spaceTitle,
+        type: resolutionSource === "scenario" ? "space" : resolutionSource,
+        flavor: spaceTextAction.discoveredContracts?.[0]?.text ?? spaceTextAction.summary,
+        artType: resolutionSource === "scenario" ? undefined : resolutionSource
+      };
+      const activeResolution =
+        spaceTextAction.roll && spaceTextAction.checkStat && spaceTextAction.difficulty !== null && spaceTextAction.difficulty !== undefined
+          ? buildRollResolution({
+              seatId: spaceTextAction.seatId,
+              source: resolutionSource,
+              createdAt: spaceTextAction.createdAt,
+              suffix: spaceTextAction.effectKey,
+              card: resolutionCard,
+              battle: {
+                stat: spaceTextAction.checkStat,
+                difficulty: spaceTextAction.difficulty,
+                modifiers: [{ label: "Stat, gear, scenario", value: spaceTextAction.statBonus ?? 0 }]
+              },
+              dice: spaceTextAction.roll.faces,
+              baseTotal: spaceTextAction.roll.total,
+              modifierTotal: spaceTextAction.statBonus ?? 0,
+              finalTotal: spaceTextAction.total ?? spaceTextAction.roll.total + (spaceTextAction.statBonus ?? 0),
+              target: spaceTextAction.difficulty,
+              success: spaceTextAction.success ?? false,
+              title: spaceTextAction.success === false ? "Space check failed" : "Space check passed",
+              text: spaceTextAction.summary,
+              effects: summarizeEffects(spaceTextAction.effect ?? null, spaceTextAction.success ?? null)
+            })
+          : buildOutcomeResolution({
+              seatId: spaceTextAction.seatId,
+              source: resolutionSource,
+              createdAt: spaceTextAction.createdAt,
+              suffix: spaceTextAction.effectKey,
+              card: resolutionCard,
+              title: resolutionSource === "contract" ? "Contract revealed" : "Space resolved",
+              text: spaceTextAction.summary,
+              effects: summarizeEffects(spaceTextAction.effect ?? null, spaceTextAction.success ?? null)
+            });
 
       return succeed({
         ...withDiscoveredContracts,
@@ -1263,7 +2124,7 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
           seatId: spaceTextAction.seatId,
           movedToSectorId: player.sectorId,
           encounterCardId: null,
-          encounterTitle: getBoardSpace(player.character.currentSpaceId)?.name ?? player.character.currentSpaceId,
+          encounterTitle: spaceTitle,
           encounterCardType: null,
           checkStat: spaceTextAction.checkStat ?? null,
           die1: spaceTextAction.roll?.faces[0] ?? null,
@@ -1279,6 +2140,7 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
           success: spaceTextAction.success ?? true,
           summary: spaceTextAction.summary
         },
+        activeResolution,
         eventLog: [...withDiscoveredContracts.eventLog, action]
       });
     }
@@ -1328,6 +2190,21 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
           success: scenarioAction.amount > 0,
           summary: scenarioAction.summary
         },
+        activeResolution: buildOutcomeResolution({
+          seatId: scenarioAction.seatId,
+          source: "scenario",
+          createdAt: scenarioAction.createdAt,
+          suffix: scenarioAction.progressKey,
+          card: {
+            id: scenarioAction.scenarioId,
+            title: "The Cinder Gate",
+            type: "scenario",
+            flavor: scenarioAction.summary
+          },
+          title: scenarioAction.amount > 0 ? "Scenario progress" : "Scenario setback",
+          text: scenarioAction.summary,
+          effects: scenarioAction.effect ? summarizeEffects(scenarioAction.effect, scenarioAction.amount > 0) : []
+        }),
         eventLog: [...nextState.eventLog, action]
       });
     }
@@ -1383,6 +2260,21 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
               success: true,
               summary: scenarioAction.summary
             },
+        activeResolution: buildOutcomeResolution({
+          seatId: scenarioAction.seatId,
+          source: "scenario",
+          createdAt: scenarioAction.createdAt,
+          suffix: "victory",
+          card: {
+            id: state.activeScenarioId,
+            title: "Scenario Victory",
+            type: "scenario",
+            flavor: scenarioAction.summary
+          },
+          title: "Scenario victory",
+          text: scenarioAction.summary,
+          effects: [scenarioAction.summary]
+        }),
         eventLog: [...state.eventLog, action]
       });
     }
@@ -1531,10 +2423,31 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
         currentEncounter: null,
         pendingEnemyRoll: null,
         pendingEffect: null,
+        activeResolution: null,
         resolutionSource: null,
         lastOutcomeSummary: null,
         eventLog: [...state.eventLog, action]
       });
+    case "CONTINUE_RESOLUTION": {
+      const continueAction = action as ResolutionContinuedAction;
+
+      try {
+        ensureSeatTurn(state, continueAction.seatId);
+      } catch (error) {
+        return reject(state, action, error instanceof Error ? error.message : "Seat cannot act");
+      }
+
+      if (!state.activeResolution) {
+        return reject(state, action, "No active resolution is waiting to continue");
+      }
+
+      return succeed({
+        ...state,
+        activeResolution: advanceResolutionForContinue(state),
+        sequence: state.sequence + 1,
+        eventLog: [...state.eventLog, action]
+      });
+    }
     case "PHASE_ADVANCED":
       try {
         ensureSeatTurn(state, action.seatId);
@@ -1551,9 +2464,16 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
         phase: action.toPhase,
         sequence: state.sequence + 1,
         resolutionSource: action.toPhase === "resolution" ? state.resolutionSource : null,
+        activeResolution:
+          action.toPhase === "broadcast" && state.activeResolution
+            ? {
+                ...state.activeResolution,
+                stage: "awaiting_continue"
+              }
+            : state.activeResolution,
         activeSeatIndex:
           action.toPhase === "start"
-            ? (state.activeSeatIndex + 1) % Math.max(state.seats.length, 1)
+            ? getNextActiveSeatIndex(state)
             : state.activeSeatIndex,
         eventLog: [...state.eventLog, action]
       });

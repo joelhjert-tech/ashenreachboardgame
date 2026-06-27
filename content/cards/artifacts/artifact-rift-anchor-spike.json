@@ -1,0 +1,23 @@
+{
+  "id": "artifact-rift-anchor-spike",
+  "type": "artifact",
+  "title": "Rift Anchor Spike",
+  "text": "A scorched brass spike that pins one impossible route to the board for a few breaths.",
+  "flavor": "Hammer it in and the world has to admit you were there.",
+  "artifactKind": "chargedRelic",
+  "charge": 2,
+  "resolutionSummary": "Recovered the Rift Anchor Spike and its two surviving charges.",
+  "resolveEffect": {
+    "type": "sequence",
+    "effects": [
+      {
+        "type": "gain_gear",
+        "gearId": "veil-hook"
+      },
+      {
+        "type": "gain_note",
+        "text": "Rift Anchor Spike can steady a shortcut or pin a breach route."
+      }
+    ]
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "id": "dominion-gate-tithe",
+  "name": "Gate Tithe",
+  "factionGiver": "Kaldr Dominion",
+  "text": "Win a passage claim near the Gate of Cinders and carry the tithe seal back intact.",
+  "objective": {
+    "type": "spaceTextResolved",
+    "effectKey": "inner_gateOfCindersTrial",
+    "label": "Gate of Cinders trial resolved",
+    "target": 1
+  },
+  "reward": {
+    "type": "gain_trophy",
+    "amount": 1
+  }
+}

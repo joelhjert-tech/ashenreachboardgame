@@ -1,0 +1,20 @@
+{
+  "id": "escalation-webglass-afterimage",
+  "type": "escalation",
+  "title": "Webglass Afterimage",
+  "text": "Your last route repeats behind you with too many shadows and one of them knows the way forward.",
+  "flavor": "Never trust a footprint that arrives before you do.",
+  "step": 3,
+  "resolutionSummary": "Pinned the afterimage to a false route and cut the real signal free.",
+  "resolveEffect": {
+    "type": "sequence",
+    "effects": [
+      { "type": "lose_heat", "amount": 1 },
+      {
+        "type": "gain_note",
+        "text": "Webglass afterimage pinned to a false route."
+      }
+    ]
+  },
+  "escalationDelta": -1
+}

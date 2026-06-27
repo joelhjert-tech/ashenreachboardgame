@@ -1,0 +1,15 @@
+{
+  "id": "scar-wound-4",
+  "type": "scar",
+  "title": "Bell-Deafened",
+  "text": "Warbell pressure punched a permanent silence through one side of your skull.",
+  "flavor": "You hear bells best when no one else can.",
+  "trigger": "Your first command check against a threat each session.",
+  "penalty": "Gain 1 Heat before rolling unless another player spends a note to steady you.",
+  "effect": {
+    "type": "gain_heat",
+    "amount": 1
+  },
+  "relief": "A follower with the guide or informant role may exhaust to cancel this trigger.",
+  "upside": "If the command check succeeds, gain a note naming the threat's tell."
+}

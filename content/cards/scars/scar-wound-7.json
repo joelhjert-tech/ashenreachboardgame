@@ -1,0 +1,15 @@
+{
+  "id": "scar-wound-7",
+  "type": "scar",
+  "title": "Void-Salt Craving",
+  "text": "You can taste safe routes in the ash, but the taste asks to be fed.",
+  "flavor": "The salt gathers under your fingernails after every dream.",
+  "trigger": "Before you reroll or alter a movement result.",
+  "penalty": "Gain 1 Heat or take 1 wound to keep the reroll.",
+  "effect": {
+    "type": "gain_heat",
+    "amount": 1
+  },
+  "relief": "Spend 1 trophy before rolling movement to ignore this scar for the turn.",
+  "upside": "If the reroll reaches a safer tier or avoids a threat, gain 1 note."
+}

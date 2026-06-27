@@ -1,0 +1,114 @@
+{
+  "generatedAt": "2026-06-26T04:26:14.359Z",
+  "requestedType": "scarCardArt",
+  "generated": 13,
+  "byType": {
+    "scarCardArt": 13
+  },
+  "results": [
+    {
+      "id": "scar_art_scar-wound-10",
+      "assetType": "scarCardArt",
+      "outputPath": "/assets/cards/scars/scar-wound-10.png",
+      "width": 1024,
+      "height": 1536,
+      "bytes": 177694
+    },
+    {
+      "id": "scar_art_scar-wound-11",
+      "assetType": "scarCardArt",
+      "outputPath": "/assets/cards/scars/scar-wound-11.png",
+      "width": 1024,
+      "height": 1536,
+      "bytes": 206271
+    },
+    {
+      "id": "scar_art_scar-wound-12",
+      "assetType": "scarCardArt",
+      "outputPath": "/assets/cards/scars/scar-wound-12.png",
+      "width": 1024,
+      "height": 1536,
+      "bytes": 157742
+    },
+    {
+      "id": "scar_art_scar-wound-13",
+      "assetType": "scarCardArt",
+      "outputPath": "/assets/cards/scars/scar-wound-13.png",
+      "width": 1024,
+      "height": 1536,
+      "bytes": 179185
+    },
+    {
+      "id": "scar_art_scar-wound-14",
+      "assetType": "scarCardArt",
+      "outputPath": "/assets/cards/scars/scar-wound-14.png",
+      "width": 1024,
+      "height": 1536,
+      "bytes": 188016
+    },
+    {
+      "id": "scar_art_scar-wound-15",
+      "assetType": "scarCardArt",
+      "outputPath": "/assets/cards/scars/scar-wound-15.png",
+      "width": 1024,
+      "height": 1536,
+      "bytes": 176984
+    },
+    {
+      "id": "scar_art_scar-wound-2",
+      "assetType": "scarCardArt",
+      "outputPath": "/assets/cards/scars/scar-wound-2.png",
+      "width": 1024,
+      "height": 1536,
+      "bytes": 183880
+    },
+    {
+      "id": "scar_art_scar-wound-4",
+      "assetType": "scarCardArt",
+      "outputPath": "/assets/cards/scars/scar-wound-4.png",
+      "width": 1024,
+      "height": 1536,
+      "bytes": 192291
+    },
+    {
+      "id": "scar_art_scar-wound-5",
+      "assetType": "scarCardArt",
+      "outputPath": "/assets/cards/scars/scar-wound-5.png",
+      "width": 1024,
+      "height": 1536,
+      "bytes": 184675
+    },
+    {
+      "id": "scar_art_scar-wound-6",
+      "assetType": "scarCardArt",
+      "outputPath": "/assets/cards/scars/scar-wound-6.png",
+      "width": 1024,
+      "height": 1536,
+      "bytes": 164530
+    },
+    {
+      "id": "scar_art_scar-wound-7",
+      "assetType": "scarCardArt",
+      "outputPath": "/assets/cards/scars/scar-wound-7.png",
+      "width": 1024,
+      "height": 1536,
+      "bytes": 180797
+    },
+    {
+      "id": "scar_art_scar-wound-8",
+      "assetType": "scarCardArt",
+      "outputPath": "/assets/cards/scars/scar-wound-8.png",
+      "width": 1024,
+      "height": 1536,
+      "bytes": 195713
+    },
+    {
+      "id": "scar_art_scar-wound-9",
+      "assetType": "scarCardArt",
+      "outputPath": "/assets/cards/scars/scar-wound-9.png",
+      "width": 1024,
+      "height": 1536,
+      "bytes": 166855
+    }
+  ]
+}

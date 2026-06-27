@@ -1,0 +1,23 @@
+{
+  "id": "ashen-doppelganger",
+  "type": "threat",
+  "cardType": "enemy",
+  "title": "Ashen Doppelganger",
+  "enemyName": "Ashen Doppelganger",
+  "text": "A false version of the active operative steps from the ash and smiles with borrowed scars.",
+  "flavor": "It knows your stance because it stole your failures first.",
+  "severity": 4,
+  "region": "inner",
+  "stat": "guile",
+  "difficulty": 11,
+  "trophyValue": 3,
+  "defeatReward": {
+    "type": "gain_trophy",
+    "amount": 3
+  },
+  "woundOnLoss": {
+    "type": "gain_heat",
+    "amount": 2
+  },
+  "enemyFamily": "breachborn"
+}

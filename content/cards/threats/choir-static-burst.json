@@ -1,0 +1,23 @@
+{
+  "id": "choir-static-burst",
+  "type": "threat",
+  "cardType": "hazard",
+  "title": "Choir-Static Burst",
+  "text": "Signal feedback from broken singers crashes through the route channel.",
+  "flavor": "A choir can scream even after the throats are gone.",
+  "severity": 3,
+  "region": "middle",
+  "stat": "signal",
+  "difficulty": 9,
+  "successEffect": {
+    "type": "advance_scenario",
+    "progressKey": "choirStaticContained",
+    "amount": 1,
+    "summary": "Choir-static was contained and converted into scenario leverage."
+  },
+  "failEffect": {
+    "type": "gain_heat",
+    "amount": 2
+  },
+  "enemyFamily": "choir"
+}

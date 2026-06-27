@@ -1,0 +1,23 @@
+{
+  "id": "artifact-pale-ledger-token",
+  "type": "artifact",
+  "title": "Pale Ledger Token",
+  "text": "A cartel debt marker stamped with a saint's broken accounting seal.",
+  "flavor": "Some doors open faster when they know you owe someone worse.",
+  "artifactKind": "factionRelic",
+  "charge": 1,
+  "resolutionSummary": "Cashed the Pale Ledger Token for a fixer and a contract whisper.",
+  "resolveEffect": {
+    "type": "sequence",
+    "effects": [
+      {
+        "type": "gain_follower",
+        "followerId": "pale-cartel-fixer"
+      },
+      {
+        "type": "gain_note",
+        "text": "Pale Ledger Token can sweeten a contract or rivalry bargain."
+      }
+    ]
+  }
+}

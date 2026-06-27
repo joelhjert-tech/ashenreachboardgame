@@ -1,0 +1,22 @@
+{
+  "id": "relay-pilgrim-riot",
+  "type": "threat",
+  "cardType": "enemy",
+  "title": "Relay Pilgrim Riot",
+  "enemyName": "Relay Pilgrim Riot",
+  "text": "Fevered pilgrims surge toward the beacon, convinced your gear carries the answer they need.",
+  "flavor": "Faith becomes a crowd before it becomes a weapon.",
+  "severity": 2,
+  "stat": "command",
+  "difficulty": 6,
+  "trophyValue": 5,
+  "defeatReward": {
+    "type": "gain_note",
+    "text": "You dispersed the pilgrims without turning the road into a grave."
+  },
+  "woundOnLoss": {
+    "type": "gain_heat",
+    "amount": 1
+  },
+  "enemyFamily": "human"
+}

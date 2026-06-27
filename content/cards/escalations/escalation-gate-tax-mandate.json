@@ -1,0 +1,14 @@
+{
+  "id": "escalation-gate-tax-mandate",
+  "type": "escalation",
+  "title": "Gate-Tax Mandate",
+  "text": "Pale Cartel writs bloom across every route toll and demand proof of passage.",
+  "flavor": "Even apocalypse has paperwork.",
+  "step": 2,
+  "resolutionSummary": "The mandate raised heat on every exposed route claim.",
+  "resolveEffect": {
+    "type": "gain_note",
+    "text": "Gate-tax mandate active: trades and route favors are under cartel scrutiny."
+  },
+  "escalationDelta": 1
+}

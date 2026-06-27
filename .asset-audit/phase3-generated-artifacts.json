@@ -1,0 +1,138 @@
+{
+  "generatedAt": "2026-06-26T04:26:05.757Z",
+  "requestedType": "artifactCardArt",
+  "generated": 16,
+  "byType": {
+    "artifactCardArt": 16
+  },
+  "results": [
+    {
+      "id": "artifact_art_artifact-ashen-route-compass",
+      "assetType": "artifactCardArt",
+      "outputPath": "/assets/cards/artifacts/artifact-ashen-route-compass.png",
+      "width": 1024,
+      "height": 1536,
+      "bytes": 212184
+    },
+    {
+      "id": "artifact_art_artifact-bell-votive",
+      "assetType": "artifactCardArt",
+      "outputPath": "/assets/cards/artifacts/artifact-bell-votive.png",
+      "width": 1024,
+      "height": 1536,
+      "bytes": 204662
+    },
+    {
+      "id": "artifact_art_artifact-black-route-fuse",
+      "assetType": "artifactCardArt",
+      "outputPath": "/assets/cards/artifacts/artifact-black-route-fuse.png",
+      "width": 1024,
+      "height": 1536,
+      "bytes": 213777
+    },
+    {
+      "id": "artifact_art_artifact-blackstar-ampoule",
+      "assetType": "artifactCardArt",
+      "outputPath": "/assets/cards/artifacts/artifact-blackstar-ampoule.png",
+      "width": 1024,
+      "height": 1536,
+      "bytes": 204913
+    },
+    {
+      "id": "artifact_art_artifact-choir-static-censer",
+      "assetType": "artifactCardArt",
+      "outputPath": "/assets/cards/artifacts/artifact-choir-static-censer.png",
+      "width": 1024,
+      "height": 1536,
+      "bytes": 212169
+    },
+    {
+      "id": "artifact_art_artifact-cinder-suture-kit",
+      "assetType": "artifactCardArt",
+      "outputPath": "/assets/cards/artifacts/artifact-cinder-suture-kit.png",
+      "width": 1024,
+      "height": 1536,
+      "bytes": 233715
+    },
+    {
+      "id": "artifact_art_artifact-ember-burden-idol",
+      "assetType": "artifactCardArt",
+      "outputPath": "/assets/cards/artifacts/artifact-ember-burden-idol.png",
+      "width": 1024,
+      "height": 1536,
+      "bytes": 229018
+    },
+    {
+      "id": "artifact_art_artifact-heat-sink-prayer",
+      "assetType": "artifactCardArt",
+      "outputPath": "/assets/cards/artifacts/artifact-heat-sink-prayer.png",
+      "width": 1024,
+      "height": 1536,
+      "bytes": 208268
+    },
+    {
+      "id": "artifact_art_artifact-last-breath-rivet",
+      "assetType": "artifactCardArt",
+      "outputPath": "/assets/cards/artifacts/artifact-last-breath-rivet.png",
+      "width": 1024,
+      "height": 1536,
+      "bytes": 205426
+    },
+    {
+      "id": "artifact_art_artifact-marrow-route-key",
+      "assetType": "artifactCardArt",
+      "outputPath": "/assets/cards/artifacts/artifact-marrow-route-key.png",
+      "width": 1024,
+      "height": 1536,
+      "bytes": 224970
+    },
+    {
+      "id": "artifact_art_artifact-mirror-reroll-token",
+      "assetType": "artifactCardArt",
+      "outputPath": "/assets/cards/artifacts/artifact-mirror-reroll-token.png",
+      "width": 1024,
+      "height": 1536,
+      "bytes": 239618
+    },
+    {
+      "id": "artifact_art_artifact-oath-chain-ledger",
+      "assetType": "artifactCardArt",
+      "outputPath": "/assets/cards/artifacts/artifact-oath-chain-ledger.png",
+      "width": 1024,
+      "height": 1536,
+      "bytes": 232570
+    },
+    {
+      "id": "artifact_art_artifact-pale-ledger-token",
+      "assetType": "artifactCardArt",
+      "outputPath": "/assets/cards/artifacts/artifact-pale-ledger-token.png",
+      "width": 1024,
+      "height": 1536,
+      "bytes": 229668
+    },
+    {
+      "id": "artifact_art_artifact-rift-anchor-spike",
+      "assetType": "artifactCardArt",
+      "outputPath": "/assets/cards/artifacts/artifact-rift-anchor-spike.png",
+      "width": 1024,
+      "height": 1536,
+      "bytes": 251200
+    },
+    {
+      "id": "artifact_art_artifact-saintwire-splint",
+      "assetType": "artifactCardArt",
+      "outputPath": "/assets/cards/artifacts/artifact-saintwire-splint.png",
+      "width": 1024,
+      "height": 1536,
+      "bytes": 206280
+    },
+    {
+      "id": "artifact_art_artifact-void-salt-poultice",
+      "assetType": "artifactCardArt",
+      "outputPath": "/assets/cards/artifacts/artifact-void-salt-poultice.png",
+      "width": 1024,
+      "height": 1536,
+      "bytes": 225755
+    }
+  ]
+}

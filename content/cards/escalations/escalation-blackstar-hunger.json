@@ -1,0 +1,14 @@
+{
+  "id": "escalation-blackstar-hunger",
+  "type": "escalation",
+  "title": "Blackstar Hunger",
+  "text": "The dark star under the route network pulls heat, metal, and courage into its gravity.",
+  "flavor": "Every shortcut has a mouth.",
+  "step": 4,
+  "resolutionSummary": "The blackstar tugged the board one mark closer to collapse.",
+  "resolveEffect": {
+    "type": "gain_heat_all",
+    "amount": 1
+  },
+  "escalationDelta": 1
+}

@@ -133,6 +133,7 @@ function createPatch(roomCode = "RT7P4"): StatePatch<PublicPatchPayload> {
           characterId: "void-marshal",
           displayName: "Joel",
           connected: true,
+          ready: true,
           kicked: false
         }
       ],
@@ -261,6 +262,101 @@ describe("TvApp", () => {
     );
   });
 
+  it("blocks host start until joined players are ready", async () => {
+    window.localStorage.setItem("ashen-reach-tv-room-code", "RT7P4");
+    window.localStorage.setItem("ashen-reach-tv-host-token", "host:RT7P4:secret");
+    const patch = createPatch();
+    patch.payload.seats[0] = { ...patch.payload.seats[0]!, ready: false };
+    patch.payload.seats.push({
+      seatId: "seat-2",
+      characterId: "signal-witch",
+      displayName: "Mira",
+      connected: true,
+      ready: true,
+      kicked: false
+    });
+    mockUseRoomSubscription.mockReturnValue({
+      patch,
+      error: null,
+      sendIntent: vi.fn(),
+      status: "open",
+      debugEvents: [],
+      clearDebugEvents: vi.fn()
+    });
+
+    render(<TvApp />);
+
+    expect(await screen.findByRole("button", { name: /start session/i })).toBeDisabled();
+    expect(screen.getByText(/waiting for player to press ready/i)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /start session/i }));
+
+    expect(mockStartSession).not.toHaveBeenCalled();
+  });
+
+  it("enables single-player start with one occupied ready character", async () => {
+    window.localStorage.setItem("ashen-reach-tv-room-code", "RT7P4");
+    window.localStorage.setItem("ashen-reach-tv-host-token", "host:RT7P4:secret");
+    const patch = createPatch();
+    patch.payload.sessionMode = "single-player";
+    mockUseRoomSubscription.mockReturnValue({
+      patch,
+      error: null,
+      sendIntent: vi.fn(),
+      status: "open",
+      debugEvents: [],
+      clearDebugEvents: vi.fn()
+    });
+
+    render(<TvApp />);
+
+    expect(await screen.findByText(/single-player ready/i)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /start session/i }));
+
+    await waitFor(() => {
+      expect(mockStartSession).toHaveBeenCalledWith("RT7P4");
+    });
+  });
+
+  it("keeps multiplayer start blocked below the minimum occupied player count", async () => {
+    window.localStorage.setItem("ashen-reach-tv-room-code", "RT7P4");
+    window.localStorage.setItem("ashen-reach-tv-host-token", "host:RT7P4:secret");
+    mockUseRoomSubscription.mockReturnValue({
+      patch: createPatch(),
+      error: null,
+      sendIntent: vi.fn(),
+      status: "open",
+      debugEvents: [],
+      clearDebugEvents: vi.fn()
+    });
+
+    render(<TvApp />);
+
+    expect(await screen.findByRole("button", { name: /start session/i })).toBeDisabled();
+    expect(screen.getByText(/need at least 2 players/i)).toBeInTheDocument();
+  });
+
+  it("tells the host when an occupied seat still needs a character", async () => {
+    window.localStorage.setItem("ashen-reach-tv-room-code", "RT7P4");
+    window.localStorage.setItem("ashen-reach-tv-host-token", "host:RT7P4:secret");
+    const patch = createPatch();
+    patch.payload.sessionMode = "single-player";
+    patch.payload.seats[0] = { ...patch.payload.seats[0]!, characterId: "", ready: true };
+    mockUseRoomSubscription.mockReturnValue({
+      patch,
+      error: null,
+      sendIntent: vi.fn(),
+      status: "open",
+      debugEvents: [],
+      clearDebugEvents: vi.fn()
+    });
+
+    render(<TvApp />);
+
+    expect(await screen.findByRole("button", { name: /start session/i })).toBeDisabled();
+    expect(screen.getByText(/waiting for player to choose character/i)).toBeInTheDocument();
+  });
+
   it("renders the create flow when nothing is stored", async () => {
     render(<TvApp />);
 
@@ -315,12 +411,12 @@ describe("TvApp", () => {
 
     render(<TvApp />);
 
-    const scenarioSelect = await screen.findByRole("combobox");
+    const scenarioSelect = (await screen.findAllByRole("combobox"))[0]!;
     fireEvent.change(scenarioSelect, { target: { value: "scenario_dying_star" } });
     fireEvent.click(screen.getAllByRole("button", { name: /create multiplayer/i })[0]!);
 
     await waitFor(() => {
-      expect(mockCreateSession).toHaveBeenCalledWith("multiplayer", "scenario_dying_star");
+      expect(mockCreateSession).toHaveBeenCalledWith("multiplayer", "scenario_dying_star", "rivalry");
     });
   });
 
@@ -334,12 +430,12 @@ describe("TvApp", () => {
 
     render(<TvApp />);
 
-    const scenarioSelect = await screen.findByRole("combobox");
+    const scenarioSelect = (await screen.findAllByRole("combobox"))[0]!;
     fireEvent.change(scenarioSelect, { target: { value: "scenario_dying_star" } });
     fireEvent.click(screen.getByRole("button", { name: /create single-player/i }));
 
     await waitFor(() => {
-      expect(mockCreateSession).toHaveBeenCalledWith("single-player", "scenario_dying_star");
+      expect(mockCreateSession).toHaveBeenCalledWith("single-player", "scenario_dying_star", "co-op");
     });
   });
 
@@ -350,7 +446,7 @@ describe("TvApp", () => {
     expect(screen.getByText(/seal pressure degrades at the start of each turn/i)).toBeInTheDocument();
     expect(screen.getByText(/no linked nemesis/i)).toBeInTheDocument();
 
-    const scenarioSelect = screen.getByRole("combobox");
+    const scenarioSelect = screen.getAllByRole("combobox")[0]!;
     fireEvent.change(scenarioSelect, { target: { value: "scenario_dying_star" } });
 
     expect(screen.getByText(/the system's sun is collapsing/i)).toBeInTheDocument();
@@ -376,8 +472,8 @@ describe("TvApp", () => {
 
     render(<TvApp />);
 
-    expect(await screen.findByText(/the broken seal secured/i)).toBeInTheDocument();
-    expect(screen.getByText(/joel won the confrontation and secured the broken seal/i)).toBeInTheDocument();
+    expect((await screen.findAllByText(/the broken seal secured/i)).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/joel won the confrontation and secured the broken seal/i).length).toBeGreaterThan(0);
   });
 
   it("shows authored contract objective labels on the host operative card", async () => {
@@ -395,5 +491,329 @@ describe("TvApp", () => {
     render(<TvApp />);
 
     expect(await screen.findByText(/host card tarek voss crossing thread \| clear the ashwake convoy lane \(1\/1 clears\)/i)).toBeInTheDocument();
+  });
+
+  it("renders active card reveal and battle details from activeResolution", async () => {
+    window.localStorage.setItem("ashen-reach-tv-room-code", "RT7P4");
+    window.localStorage.setItem("ashen-reach-tv-host-token", "host:RT7P4:secret");
+    const patch = createPatch();
+    patch.phase = "action";
+    patch.payload.status = "active";
+    patch.payload.activeResolution = {
+      id: "seat-1:threat:cinder-veil-stalker:test",
+      playerId: "seat-1",
+      source: "threat",
+      stage: "battle_setup",
+      card: {
+        id: "cinder-veil-stalker",
+        title: "Cinder-Veil Stalker",
+        type: "enemy",
+        flavor: "The ash around it begins to boil.",
+        artType: "threat"
+      },
+      battle: {
+        enemyName: "Cinder-Veil Stalker",
+        stat: "grit",
+        difficulty: 8,
+        modifiers: [{ label: "Grit", value: 2 }]
+      }
+    };
+    mockUseRoomSubscription.mockReturnValue({
+      patch,
+      error: null,
+      sendIntent: vi.fn(),
+      status: "open",
+      debugEvents: [],
+      clearDebugEvents: vi.fn()
+    });
+
+    render(<TvApp />);
+
+    const reveal = await screen.findByTestId("tv-card-reveal");
+    expect(reveal).toHaveTextContent(/battle setup/i);
+    expect(reveal).toHaveTextContent(/cinder-veil stalker/i);
+    expect(reveal).toHaveClass("tv-reveal-card-live");
+    expect(screen.getByTestId("tv-battle-panel")).toHaveTextContent(/grit \+2/i);
+    expect(screen.getByTestId("tv-battle-panel")).toBeVisible();
+  });
+
+  it("renders active dice faces and roll totals from activeResolution", async () => {
+    window.localStorage.setItem("ashen-reach-tv-room-code", "RT7P4");
+    window.localStorage.setItem("ashen-reach-tv-host-token", "host:RT7P4:secret");
+    const patch = createPatch();
+    patch.phase = "resolution";
+    patch.payload.status = "active";
+    patch.payload.activeResolution = {
+      id: "seat-1:threat:signal-static:test",
+      playerId: "seat-1",
+      source: "threat",
+      stage: "roll_result",
+      card: {
+        id: "signal-static",
+        title: "Signal Static",
+        type: "hazard",
+        artType: "threat"
+      },
+      battle: {
+        stat: "signal",
+        difficulty: 7,
+        modifiers: [{ label: "Signal", value: 1 }]
+      },
+      roll: {
+        dice: [2, 5],
+        baseTotal: 7,
+        modifierTotal: 1,
+        finalTotal: 8,
+        target: 7,
+        success: true
+      },
+      outcome: {
+        title: "Check passed",
+        text: "Success: the signal holds.",
+        effects: ["Success: the signal holds."]
+      }
+    };
+    mockUseRoomSubscription.mockReturnValue({
+      patch,
+      error: null,
+      sendIntent: vi.fn(),
+      status: "open",
+      debugEvents: [],
+      clearDebugEvents: vi.fn()
+    });
+
+    render(<TvApp />);
+
+    expect(await screen.findByTestId("roll-outcome-panel")).toHaveTextContent(/success: the signal holds/i);
+    expect(screen.getByTestId("roll-state")).toHaveTextContent(/success/i);
+    expect(screen.getAllByTestId("roll-die")).toHaveLength(2);
+    expect(screen.getByTestId("roll-total")).toHaveTextContent("8");
+    expect(screen.getByTestId("roll-difficulty")).toHaveTextContent("7");
+  });
+
+  it("renders the cinematic host battle overlay and hides inactive operative cards", async () => {
+    window.localStorage.setItem("ashen-reach-tv-room-code", "RT7P4");
+    window.localStorage.setItem("ashen-reach-tv-host-token", "host:RT7P4:secret");
+    const patch = createPatch();
+    patch.phase = "resolution";
+    patch.payload.status = "active";
+    patch.payload.seats.push({
+      seatId: "seat-2",
+      characterId: "signal-witch",
+      displayName: "Pax",
+      connected: true,
+      ready: true,
+      kicked: false
+    });
+    patch.payload.players.push({
+      seatId: "seat-2",
+      sectorId: "ashwake-crossing",
+      character: {
+        id: "signal-witch",
+        name: "Lane",
+        archetype: "Signal Witch",
+        status: "active",
+        activeContract: null,
+        stats: { command: 1, grit: 1, signal: 4, guile: 2, forge: 1 },
+        trophies: 0,
+        heat: 0,
+        wounds: 0,
+        scars: [],
+        heldGearCount: 0,
+        equippedGear: { weapon: null, armor: null, utility: null }
+      }
+    });
+    patch.payload.activeResolution = {
+      id: "seat-1:threat:cinder-veil-stalker:test",
+      playerId: "seat-1",
+      source: "threat",
+      stage: "roll_result",
+      card: {
+        id: "cinder-veil-stalker",
+        title: "Cinder-Veil Stalker",
+        type: "enemy",
+        flavor: "The ash around it begins to boil.",
+        artType: "threat"
+      },
+      battle: {
+        enemyName: "Cinder-Veil Stalker",
+        stat: "grit",
+        difficulty: 5,
+        modifiers: [
+          { label: "grit", value: 6 },
+          { label: "Enemy", value: 5 }
+        ]
+      },
+      roll: {
+        dice: [4, 1],
+        baseTotal: 5,
+        modifierTotal: 6,
+        finalTotal: 11,
+        target: 8,
+        success: true
+      },
+      outcome: {
+        title: "Combat victory",
+        text: "Success: the stalker breaks. Cinder-Veil Stalker added to Trophy Pile.",
+        effects: ["Gain 1 trophy.", "Cinder-Veil Stalker added to Trophy Pile."]
+      }
+    };
+    patch.payload.outcomeSummary = {
+      seatId: "seat-1",
+      movedToSectorId: "ashwake-crossing",
+      encounterCardId: "cinder-veil-stalker",
+      encounterTitle: "Cinder-Veil Stalker",
+      encounterCardType: "enemy",
+      checkStat: "grit",
+      die1: 4,
+      die2: 1,
+      statBonus: 6,
+      checkTotal: 11,
+      difficulty: 5,
+      enemyRollerSeatId: "seat-2",
+      enemyDie1: 3,
+      enemyDie2: null,
+      enemyBonus: 5,
+      enemyTotal: 8,
+      success: true,
+      summary: "Tarek Voss wins the battle. Cinder-Veil Stalker added to Trophy Pile."
+    };
+    mockUseRoomSubscription.mockReturnValue({
+      patch,
+      error: null,
+      sendIntent: vi.fn(),
+      status: "open",
+      debugEvents: [],
+      clearDebugEvents: vi.fn()
+    });
+
+    render(<TvApp />);
+
+    expect(await screen.findByText("Tactical map")).toBeInTheDocument();
+    const overlay = screen.getByTestId("host-battle-overlay");
+
+    expect(overlay).toHaveTextContent(/tarek voss/i);
+    expect(overlay).toHaveTextContent(/cinder-veil stalker/i);
+    expect(overlay.querySelector("[data-testid='combat-dice-animation']")).toHaveClass("combat-dice-animation-compact");
+    expect(screen.getByTestId("host-battle-rolls")).toHaveTextContent(/final player total/i);
+    expect(screen.getByTestId("host-battle-rolls")).toHaveTextContent("11");
+    expect(screen.getByTestId("host-battle-rolls")).toHaveTextContent(/final enemy total/i);
+    expect(overlay).toHaveTextContent(/cinder-veil stalker added to trophy pile/i);
+    expect(screen.getByTestId("host-battle-rolls")).toHaveTextContent("8");
+    expect(screen.getByTestId("host-battle-rolls")).toHaveTextContent("A 11 / D 8 / +6");
+    expect(screen.getByTestId("host-battle-log")).toHaveTextContent(/tarek voss engages cinder-veil stalker/i);
+    expect(screen.queryByText(/pax/i)).not.toBeInTheDocument();
+  });
+
+  it("keeps the visible battle bound to activeResolution.playerId when turn order has advanced", async () => {
+    window.localStorage.setItem("ashen-reach-tv-room-code", "RT7P4");
+    window.localStorage.setItem("ashen-reach-tv-host-token", "host:RT7P4:secret");
+    const patch = createPatch();
+    patch.phase = "resolution";
+    patch.payload.status = "active";
+    patch.payload.activeSeatIndex = 1;
+    patch.payload.turnOrder = ["seat-1", "seat-2"];
+    patch.payload.seats.push({
+      seatId: "seat-2",
+      characterId: "signal-witch",
+      displayName: "Pax",
+      connected: true,
+      ready: true,
+      kicked: false
+    });
+    patch.payload.players.push({
+      seatId: "seat-2",
+      sectorId: "ashwake-crossing",
+      character: {
+        id: "signal-witch",
+        name: "Lane",
+        archetype: "Signal Witch",
+        status: "active",
+        activeContract: null,
+        stats: { command: 1, grit: 1, signal: 4, guile: 2, forge: 1 },
+        trophies: 0,
+        heat: 0,
+        wounds: 0,
+        scars: [],
+        heldGearCount: 0,
+        equippedGear: { weapon: null, armor: null, utility: null }
+      }
+    });
+    patch.payload.activeResolution = {
+      id: "seat-1:threat:cinder-veil-stalker:advanced-turn",
+      playerId: "seat-1",
+      source: "threat",
+      stage: "roll_result",
+      card: {
+        id: "cinder-veil-stalker",
+        title: "Cinder-Veil Stalker",
+        type: "enemy",
+        flavor: "The ash around it begins to boil.",
+        artType: "threat"
+      },
+      battle: {
+        enemyName: "Cinder-Veil Stalker",
+        stat: "grit",
+        difficulty: 5,
+        modifiers: [
+          { label: "Grit", value: 6 },
+          { label: "Enemy", value: 5 }
+        ]
+      },
+      roll: {
+        dice: [4, 1],
+        baseTotal: 5,
+        modifierTotal: 6,
+        finalTotal: 11,
+        target: 8,
+        success: true
+      },
+      outcome: {
+        title: "Combat victory",
+        text: "Success: the stalker breaks.",
+        effects: ["Gain 1 trophy."]
+      }
+    };
+    patch.payload.outcomeSummary = {
+      seatId: "seat-1",
+      movedToSectorId: "ashwake-crossing",
+      encounterCardId: "cinder-veil-stalker",
+      encounterTitle: "Cinder-Veil Stalker",
+      encounterCardType: "enemy",
+      checkStat: "grit",
+      die1: 4,
+      die2: 1,
+      statBonus: 6,
+      checkTotal: 11,
+      difficulty: 5,
+      enemyRollerSeatId: "seat-2",
+      enemyDie1: 3,
+      enemyDie2: 5,
+      enemyBonus: 0,
+      enemyTotal: 8,
+      success: true,
+      summary: "Tarek Voss wins the battle."
+    };
+    mockUseRoomSubscription.mockReturnValue({
+      patch,
+      error: null,
+      sendIntent: vi.fn(),
+      status: "open",
+      debugEvents: [],
+      clearDebugEvents: vi.fn()
+    });
+
+    render(<TvApp />);
+
+    const overlay = await screen.findByTestId("host-battle-overlay");
+
+    expect(overlay).toHaveTextContent(/tarek voss/i);
+    expect(overlay).toHaveTextContent(/cinder-veil stalker/i);
+    expect(screen.getByTestId("host-battle-rolls")).toHaveTextContent("11");
+    expect(screen.getByTestId("host-battle-rolls")).toHaveTextContent("8");
+    expect(screen.getByTestId("tv-card-reveal")).toHaveTextContent(/cinder-veil stalker/i);
+    expect(screen.getByTestId("roll-outcome-panel")).toHaveTextContent(/vs enemy/i);
+    expect(screen.getByTestId("roll-outcome-panel")).toHaveTextContent("8");
+    expect(screen.queryByText(/host card lane/i)).not.toBeInTheDocument();
   });
 });

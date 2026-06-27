@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import "@testing-library/jest-dom/vitest";
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { PhoneActionPanel } from "../PhoneActionPanel.js";
 import type { CharacterCatalogEntry, PhonePatchPayload } from "../../shared/types.js";
@@ -53,8 +53,8 @@ function createPatch(overrides: Partial<PhonePatchPayload> = {}): PhonePatchPayl
     scenarioProgress: {},
     activeSeatIndex: 0,
     seats: [
-      { seatId: "seat-1", characterId: "void-marshal", displayName: "Lane", connected: true, kicked: false },
-      { seatId: "seat-2", characterId: "signal-witch", displayName: "Mira", connected: true, kicked: false }
+      { seatId: "seat-1", characterId: "void-marshal", displayName: "Lane", connected: true, ready: true, kicked: false },
+      { seatId: "seat-2", characterId: "signal-witch", displayName: "Mira", connected: true, ready: true, kicked: false }
     ],
     turnOrder: ["seat-1", "seat-2"],
     sectors: [
@@ -195,7 +195,7 @@ describe("PhoneActionPanel", () => {
       />
     );
 
-    expect(screen.getByRole("button", { name: /enter combat with cinder-veil stalker/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /enter combat.*cinder-veil stalker/i })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /attempt grit check/i })).not.toBeInTheDocument();
   });
 
@@ -247,7 +247,8 @@ describe("PhoneActionPanel", () => {
       />
     );
 
-    expect(screen.getByRole("button", { name: /accept crossing thread \| clear the ashwake convoy lane/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /accept crossing thread/i })).toBeInTheDocument();
+    expect(screen.getByText(/clear the ashwake convoy lane/i)).toBeInTheDocument();
 
     cleanup();
 
@@ -286,8 +287,9 @@ describe("PhoneActionPanel", () => {
     );
 
     expect(
-      screen.getByRole("button", { name: /complete crossing thread \| clear the ashwake convoy lane \(1\/1 clears\)/i })
+      screen.getByRole("button", { name: /complete crossing thread/i })
     ).toBeInTheDocument();
+    expect(screen.getByText(/clear the ashwake convoy lane \(1\/1 clears\)/i)).toBeInTheDocument();
   });
 
   it("offers stabilize when escalation is live and no encounter is blocking the action", () => {
@@ -302,7 +304,7 @@ describe("PhoneActionPanel", () => {
       />
     );
 
-    expect(screen.getByRole("button", { name: /stabilize the breach/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /stabilize breach/i })).toBeInTheDocument();
   });
 
   it("offers sector text resolution when the local board space is clear", () => {
@@ -382,8 +384,8 @@ describe("PhoneActionPanel", () => {
       />
     );
 
-    expect(screen.getByRole("button", { name: /hard bargain: take passage stock/i })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /hard bargain: press for gossip/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /take passage stock.*hard bargain/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /press for gossip.*hard bargain/i })).toBeInTheDocument();
   });
 
   it("renders separate sector-text actions for Webglass authored route choices", () => {
@@ -449,8 +451,8 @@ describe("PhoneActionPanel", () => {
       />
     );
 
-    expect(screen.getByRole("button", { name: /fracture path: slip the hidden lane/i })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /fracture path: splice the relay seam/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /slip the hidden lane.*fracture path/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /splice the relay seam.*fracture path/i })).toBeInTheDocument();
   });
 
   it("renders separate sector-text actions for Guardian Span breach-entry choices", () => {
@@ -516,8 +518,8 @@ describe("PhoneActionPanel", () => {
       />
     );
 
-    expect(screen.getByRole("button", { name: /threshold check: align the threshold seals/i })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /threshold check: ghost a route marker/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /align the threshold seals.*threshold check/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /ghost a route marker.*threshold check/i })).toBeInTheDocument();
   });
 
   it("renders separate sector-text actions for Gate of Cinders final-breach choices", () => {
@@ -583,9 +585,9 @@ describe("PhoneActionPanel", () => {
       />
     );
 
-    expect(screen.getByRole("button", { name: /final gate: brace the cinder locks/i })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /final gate: time the relay pulse/i })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /final gate: ghost the last breach path/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /brace the cinder locks.*final gate/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /time the relay pulse.*final gate/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /ghost the last breach path.*final gate/i })).toBeInTheDocument();
   });
 
   it("renders separate sector-text actions for Veil Rift breach-entry choices", () => {
@@ -651,8 +653,8 @@ describe("PhoneActionPanel", () => {
       />
     );
 
-    expect(screen.getByRole("button", { name: /breach entry: anchor the surge/i })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /breach entry: slip the fold/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /anchor the surge.*breach entry/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /slip the fold.*breach entry/i })).toBeInTheDocument();
   });
 
   it("renders separate sector-text actions for Cinder Lattice trial choices", () => {
@@ -718,8 +720,8 @@ describe("PhoneActionPanel", () => {
       />
     );
 
-    expect(screen.getByRole("button", { name: /lattice trial: trace the ember pulses/i })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /lattice trial: read the ghost angles/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /trace the ember pulses.*lattice trial/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /read the ghost angles.*lattice trial/i })).toBeInTheDocument();
   });
 
   it("shows game over state and hides action buttons when the session has ended", () => {
@@ -734,7 +736,7 @@ describe("PhoneActionPanel", () => {
       />
     );
 
-    expect(screen.getByText(/game over - winner: mira/i)).toBeInTheDocument();
+    expect(screen.getByText(/game over: mira wins/i)).toBeInTheDocument();
     expect(queryByRole("button", { name: /attempt signal check/i })).not.toBeInTheDocument();
   });
 
@@ -768,9 +770,9 @@ describe("PhoneActionPanel", () => {
         patch={createPatch({
           activeSeatIndex: 1,
           seats: [
-            { seatId: "seat-1", characterId: "void-marshal", displayName: "Lane", connected: true, kicked: false },
-            { seatId: "seat-2", characterId: "signal-witch", displayName: "Mira", connected: true, kicked: false },
-            { seatId: "seat-3", characterId: "grave-engineer", displayName: "Pax", connected: true, kicked: false }
+            { seatId: "seat-1", characterId: "void-marshal", displayName: "Lane", connected: true, ready: true, kicked: false },
+            { seatId: "seat-2", characterId: "signal-witch", displayName: "Mira", connected: true, ready: true, kicked: false },
+            { seatId: "seat-3", characterId: "grave-engineer", displayName: "Pax", connected: true, ready: true, kicked: false }
           ],
           turnOrder: ["seat-2", "seat-3", "seat-1"],
           pendingEnemyRoll: {
@@ -786,5 +788,269 @@ describe("PhoneActionPanel", () => {
 
     expect(screen.getByText(/waiting on pax to roll for the enemy/i)).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /roll for the enemy/i })).not.toBeInTheDocument();
+  });
+
+  it("renders active roll result and sends continue intent", () => {
+    const onIntent = vi.fn();
+
+    render(
+      <PhoneActionPanel
+        characters={characters}
+        onIntent={onIntent}
+        patch={createPatch({
+          phase: "resolution",
+          encounter: null,
+          activeResolution: {
+            id: "seat-1:threat:signal-static:test",
+            playerId: "seat-1",
+            source: "threat",
+            stage: "roll_result",
+            card: {
+              id: "signal-static",
+              title: "Signal Static",
+              type: "hazard",
+              artType: "threat"
+            },
+            battle: {
+              stat: "signal",
+              difficulty: 7,
+              modifiers: [{ label: "Signal", value: 1 }]
+            },
+            roll: {
+              dice: [2, 5],
+              baseTotal: 7,
+              modifierTotal: 1,
+              finalTotal: 8,
+              target: 7,
+              success: true
+            },
+            outcome: {
+              title: "Check passed",
+              text: "Success: the signal holds.",
+              effects: ["Success: gain a note."]
+            }
+          }
+        })}
+      />
+    );
+
+    expect(screen.getByTestId("phone-roll-result")).toHaveTextContent(/roll: 2 \+ 5 \+ 1 = 8/i);
+    expect(screen.getByTestId("phone-roll-result")).toHaveTextContent(/target: 7/i);
+    expect(screen.getByTestId("phone-roll-result")).toHaveTextContent(/success/i);
+    expect(screen.getByTestId("phone-roll-result")).toHaveTextContent("A 8 / D 7 / +1");
+    expect(screen.getByTestId("phone-resolution-continue")).toBeVisible();
+
+    fireEvent.click(screen.getByRole("button", { name: /continue/i }));
+
+    expect(onIntent).toHaveBeenCalledWith({
+      type: "CONTINUE_RESOLUTION",
+      seatId: "seat-1"
+    });
+  });
+
+  it("renders battle setup details from activeResolution", () => {
+    render(
+      <PhoneActionPanel
+        characters={characters}
+        onIntent={vi.fn()}
+        patch={createPatch({
+          activeResolution: {
+            id: "seat-1:threat:cinder-veil-stalker:test",
+            playerId: "seat-1",
+            source: "threat",
+            stage: "battle_setup",
+            card: {
+              id: "cinder-veil-stalker",
+              title: "Cinder-Veil Stalker",
+              type: "enemy",
+              artType: "threat"
+            },
+            battle: {
+              enemyName: "Cinder-Veil Stalker",
+              stat: "grit",
+              difficulty: 8,
+              modifiers: [
+                { label: "Grit", value: 2 },
+                { label: "Enemy", value: 6 }
+              ]
+            }
+          }
+        })}
+      />
+    );
+
+    expect(screen.getByTestId("phone-resolution-card")).toHaveTextContent(/battle setup/i);
+    expect(screen.getByTestId("phone-battle-panel")).toHaveTextContent(/cinder-veil stalker/i);
+    expect(screen.getByTestId("phone-battle-panel")).toHaveTextContent(/grit vs 8/i);
+    expect(screen.getByTestId("phone-battle-panel")).toHaveTextContent(/grit \+2/i);
+  });
+
+  it("shows battle assist and opens usable combat cards during an enemy encounter", () => {
+    const onIntent = vi.fn();
+    const heldGear = [
+      {
+        id: "black-route-fuse",
+        name: "Black Route Fuse",
+        slot: "weapon" as const,
+        category: "dangerous" as const,
+        statBonus: { stat: "grit" as const, amount: 1 },
+        activeText: "Break for +3 combat pressure, then advance escalation by 1.",
+        useLimit: "discard" as const,
+        heatCost: 1
+      },
+      {
+        id: "coffin-rig",
+        name: "Coffin Rig",
+        slot: "armor" as const,
+        category: "passive" as const,
+        statBonus: { stat: "forge" as const, amount: 1 }
+      }
+    ];
+
+    render(
+      <PhoneActionPanel
+        characters={characters}
+        onIntent={onIntent}
+        patch={createPatch({
+          encounter: {
+            id: "cinder-veil-stalker",
+            title: "Cinder-Veil Stalker",
+            cardType: "enemy",
+            enemyName: "Cinder-Veil Stalker",
+            flavor: "The ash around it boils before the strike.",
+            difficulty: 6,
+            stat: "grit"
+          },
+          self: {
+            ...createPatch().self!,
+            character: {
+              ...createPatch().self!.character,
+              heat: 1,
+              heldGear
+            }
+          }
+        })}
+      />
+    );
+
+    expect(screen.getByTestId("phone-battle-assist")).toHaveTextContent(/cinder-veil stalker/i);
+    expect(screen.getByTestId("phone-battle-assist")).toHaveTextContent(/you have 1 card that can help/i);
+
+    fireEvent.click(screen.getByRole("button", { name: /open combat cards/i }));
+
+    expect(screen.getByTestId("phone-combat-card-drawer")).toHaveTextContent(/black route fuse/i);
+    expect(screen.getByTestId("phone-combat-card-drawer")).not.toHaveTextContent(/coffin rig/i);
+
+    fireEvent.click(within(screen.getByTestId("phone-combat-card-drawer")).getByRole("button", { name: /use black route fuse/i }));
+
+    expect(onIntent).toHaveBeenCalledWith({
+      type: "USE_GEAR",
+      seatId: "seat-1",
+      gearId: "black-route-fuse"
+    });
+  });
+
+  it("does not interrupt battle flow when no combat cards are usable", () => {
+    render(
+      <PhoneActionPanel
+        characters={characters}
+        onIntent={vi.fn()}
+        patch={createPatch({
+          encounter: {
+            id: "cinder-veil-stalker",
+            title: "Cinder-Veil Stalker",
+            cardType: "enemy",
+            enemyName: "Cinder-Veil Stalker",
+            flavor: "The ash around it boils before the strike.",
+            difficulty: 6,
+            stat: "grit"
+          },
+          self: {
+            ...createPatch().self!,
+            character: {
+              ...createPatch().self!.character,
+              heldGear: [
+                {
+                  id: "coffin-rig",
+                  name: "Coffin Rig",
+                  slot: "armor" as const,
+                  category: "passive" as const,
+                  statBonus: { stat: "forge" as const, amount: 1 }
+                }
+              ]
+            }
+          }
+        })}
+      />
+    );
+
+    expect(screen.getByTestId("phone-battle-assist")).toHaveTextContent(/no combat cards are usable/i);
+    expect(screen.queryByRole("button", { name: /open combat cards/i })).not.toBeInTheDocument();
+  });
+
+  it("shows defeated enemy trophy pile and stat raises available from trophies", () => {
+    render(
+      <PhoneActionPanel
+        characters={characters}
+        onIntent={vi.fn()}
+        patch={createPatch({
+          encounter: null,
+          self: {
+            ...createPatch().self!,
+            character: {
+              ...createPatch().self!.character,
+              trophies: 6,
+              trophyPile: [
+                {
+                  cardId: "cinder-veil-stalker",
+                  name: "Cinder-Veil Stalker",
+                  trophyValue: 6,
+                  spentValue: 0,
+                  stat: "grit",
+                  cardType: "enemy"
+                }
+              ]
+            }
+          }
+        })}
+      />
+    );
+
+    expect(screen.getByTestId("phone-trophy-pile")).toHaveTextContent(/6 available/i);
+    expect(screen.getByTestId("phone-trophy-pile")).toHaveTextContent(/cinder-veil stalker/i);
+    expect(screen.getByTestId("phone-trophy-pile")).toHaveTextContent(/trophy 6\/6/i);
+    expect(screen.getByTestId("phone-trophy-pile")).toHaveTextContent(/can raise: command, grit, signal, guile, forge/i);
+    expect(screen.getByText(/6 held, 4 per rank/i)).toBeInTheDocument();
+  });
+
+  it("renders scenario and space outcome summaries from activeResolution", () => {
+    render(
+      <PhoneActionPanel
+        characters={characters}
+        onIntent={vi.fn()}
+        patch={createPatch({
+          activeResolution: {
+            id: "seat-1:scenario:ambient:test",
+            playerId: "seat-1",
+            source: "scenario",
+            stage: "outcome_summary",
+            card: {
+              id: "scenario_broken_seal",
+              title: "Scenario Pressure",
+              type: "scenario"
+            },
+            outcome: {
+              title: "Scenario pressure",
+              text: "The seal flares before the table can move on.",
+              effects: ["Doom rises by 1."]
+            }
+          }
+        })}
+      />
+    );
+
+    expect(screen.getByTestId("phone-resolution-card")).toHaveTextContent(/outcome/i);
+    expect(screen.getByTestId("phone-resolution-card")).toHaveTextContent(/scenario pressure/i);
+    expect(screen.getByTestId("phone-resolution-card")).toHaveTextContent(/doom rises by 1/i);
   });
 });

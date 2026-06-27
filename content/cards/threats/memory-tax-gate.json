@@ -1,0 +1,21 @@
+{
+  "id": "memory-tax-gate",
+  "type": "threat",
+  "cardType": "hazard",
+  "title": "Memory Tax Gate",
+  "text": "A toll gate opens only after demanding a name the operative would rather keep buried.",
+  "flavor": "Some prices are paid in autobiography.",
+  "severity": 3,
+  "region": "middle",
+  "stat": "command",
+  "difficulty": 8,
+  "successEffect": {
+    "type": "gain_note",
+    "text": "You paid the gate with a harmless memory and kept the real name hidden."
+  },
+  "failEffect": {
+    "type": "gain_heat",
+    "amount": 2
+  },
+  "enemyFamily": "bureaucracy"
+}

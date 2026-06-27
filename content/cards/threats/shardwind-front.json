@@ -1,0 +1,30 @@
+{
+  "id": "shardwind-front",
+  "type": "threat",
+  "cardType": "hazard",
+  "title": "Shardwind Front",
+  "text": "A glass storm cuts sideways across the Red March and turns every breath into a wager.",
+  "flavor": "The wind has edges here.",
+  "severity": 3,
+  "region": "middle",
+  "stat": "grit",
+  "difficulty": 8,
+  "successEffect": {
+    "type": "gain_note",
+    "text": "You charted the shardwind break and found the quiet second behind it."
+  },
+  "failEffect": {
+    "type": "sequence",
+    "effects": [
+      {
+        "type": "take_wound",
+        "amount": 1
+      },
+      {
+        "type": "gain_heat",
+        "amount": 1
+      }
+    ]
+  },
+  "enemyFamily": "hazard"
+}

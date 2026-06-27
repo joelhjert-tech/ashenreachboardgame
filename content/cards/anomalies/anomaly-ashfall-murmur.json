@@ -1,0 +1,23 @@
+{
+  "id": "anomaly-ashfall-murmur",
+  "type": "anomaly",
+  "title": "Ashfall Murmur",
+  "text": "Soft ash whispers the next route before the stones actually move.",
+  "flavor": "The ash remembers footprints that have not happened yet.",
+  "instability": 1,
+  "regionHint": "outer",
+  "resolutionSummary": "Listened long enough to catch a safe outer route before the murmur broke apart.",
+  "resolveEffect": {
+    "type": "sequence",
+    "effects": [
+      {
+        "type": "lose_heat",
+        "amount": 1
+      },
+      {
+        "type": "gain_note",
+        "text": "Ashfall murmur mapped a cool outer route."
+      }
+    ]
+  }
+}

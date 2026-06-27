@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 768 1024">
+  <defs>
+    <linearGradient id="bg" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0%" stop-color="#160d0d"/>
+      <stop offset="100%" stop-color="#050507"/>
+    </linearGradient>
+    <radialGradient id="breach" cx="50%" cy="32%" r="46%">
+      <stop offset="0%" stop-color="#ffb26a"/>
+      <stop offset="35%" stop-color="#ff5b41" stop-opacity="0.9"/>
+      <stop offset="100%" stop-color="#ff5b41" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="768" height="1024" fill="url(#bg)"/>
+  <rect x="26" y="26" width="716" height="972" rx="18" fill="none" stroke="#9c6943" stroke-width="8"/>
+  <ellipse cx="384" cy="334" rx="196" ry="134" fill="url(#breach)"/>
+  <path d="M198 650 C260 602 324 566 384 558 C454 548 522 570 584 620" fill="none" stroke="#ff855e" stroke-width="18" stroke-linecap="round"/>
+  <path d="M286 742 C336 688 366 638 384 560 C402 638 432 688 482 742" fill="none" stroke="#d7b089" stroke-width="12" stroke-linecap="round"/>
+  <path d="M384 170 L418 278 L532 278 L440 346 L474 454 L384 388 L294 454 L328 346 L236 278 L350 278 Z" fill="none" stroke="#f2d1ad" stroke-width="10"/>
+</svg>

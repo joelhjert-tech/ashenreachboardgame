@@ -29,14 +29,43 @@ export interface NemesisDefinition {
 
 export const nemeses: NemesisDefinition[] = [
   {
+    id: "nemesis_fary_lord",
+    name: "The Fary Lord",
+    title: "Monarch of the Violet Thorn",
+    faction: "Violet Court",
+    bounty: "Draw 1 artifact and clear 1 Heat from the victorious operative.",
+    loreRole: "A beautiful breach-court monarch whose impossible bargains turn ruined roads into hunting gardens.",
+    gameplayRole: "Guile and signal pressure boss.",
+    linkedMechanic: "False bargains, court illusions, and route denial.",
+    stats: { willpower: 4, cunning: 6, life: 5 },
+    abilities: [
+      {
+        timing: "start_of_confrontation",
+        text: "The Fary Lord offers a perfect shortcut. The price is never named until after the first step."
+      },
+      {
+        timing: "after_character_fail",
+        text: "A failed answer becomes a violet thorn-mark that follows the route home."
+      },
+      {
+        timing: "passive",
+        text: "While the Fary Lord remains active, every clear path looks slightly too beautiful to trust."
+      }
+    ],
+    imagePrompt:
+      "Original dark gothic sci-fantasy breach monarch in black-violet court robes, scorched brass regalia, butterfly-like shard wings, violet thorn magic, ruined machine-court background, elegant and dangerous.",
+    negativePrompt: baseNegativePrompt,
+    uiNotes: "Use violet court glamour, shard-wing silhouettes, and unsettling beauty without drifting into bright fairy-tale softness."
+  },
+  {
     id: "nemesis_kharvox_red_maw",
     name: "Kharvox",
     title: "The Red Maw",
     faction: "Red Maw Raiders",
     scenarioId: "scenario_dying_star",
-    bounty: "Gain 2 Influence.",
+    bounty: "Gain 2 trophies.",
     loreRole: "A war-chief who turns boarded freight lanes into moving kill arenas.",
-    gameplayRole: "Strength-based snowball bruiser.",
+    gameplayRole: "Grit-based snowball bruiser.",
     linkedMechanic: "Infamy-fueled battle escalation.",
     stats: { strength: 5, life: 4 },
     abilities: [
@@ -54,14 +83,14 @@ export const nemeses: NemesisDefinition[] = [
     title: "The Brood Memory",
     faction: "Shardborn Brood",
     scenarioId: "scenario_devourer_beneath",
-    bounty: "Clear one active Corruption Card and draw 1 Mission.",
+    bounty: "Clear one active Heat mark and draw 1 contract.",
     loreRole: "A laboratory escape turned colony intelligence nesting through broken decks.",
     gameplayRole: "Board infestation scaler.",
     linkedMechanic: "Threat multiplication and brood spread.",
     stats: { cunning: 5, life: 5 },
     abilities: [
       { timing: "start_of_round", text: "Place 1 Brood mark on the lowest-pressure occupied outer space." },
-      { timing: "during_battle", text: "Gain +1 Strength for each Brood mark in your space." },
+      { timing: "during_battle", text: "Gain +1 Grit for each Brood mark in your space." },
       { timing: "after_loss", text: "If Null-X survives, it scuttles to the next outer space clockwise." }
     ],
     imagePrompt: "Original void-bred specimen with segmented limbs, glassy shard growths, and cold surgical lighting.",
@@ -74,15 +103,15 @@ export const nemeses: NemesisDefinition[] = [
     title: "Voice of the Split Choir",
     faction: "Ashen Choir",
     scenarioId: "scenario_mirror_of_false_heroes",
-    bounty: "Draw 2 Power Cards. Keep both.",
+    bounty: "Record 2 route notes. Keep both.",
     loreRole: "A breakaway oracle who weaponizes prophecy and relay harmonics.",
-    gameplayRole: "Corruption and Power-card manipulator.",
-    linkedMechanic: "Power denial and false revelation.",
+    gameplayRole: "Heat and route-note manipulator.",
+    linkedMechanic: "Route-note denial and false revelation.",
     stats: { willpower: 6, life: 4 },
     abilities: [
-      { timing: "start_of_engagement", text: "Each character here reveals one Power Card. The Prophet may force one revealed card to be discarded." },
-      { timing: "after_skill_test_fail", text: "That character draws 1 Corruption Card." },
-      { timing: "battle_roll", text: "On a natural 6, cancel one opposing Power-card substitution." }
+      { timing: "start_of_engagement", text: "Each character here reveals one route note. The Prophet may force one revealed note to be discarded." },
+      { timing: "after_skill_test_fail", text: "That character gains 1 Heat." },
+      { timing: "battle_roll", text: "On a natural 6, cancel one opposing route-note substitution." }
     ],
     imagePrompt: "Original prophet in cracked glass vestments, mirrored halo fragments, and blue relay glare.",
     negativePrompt: baseNegativePrompt,
@@ -101,12 +130,12 @@ export const nemeses: NemesisDefinition[] = [
     stats: { strength: 4, willpower: 4, life: 5 },
     abilities: [
       { timing: "start_of_battle", text: "Attach 1 Charge token to each machine ally in this scenario zone." },
-      { timing: "after_character_uses_asset", text: "That asset loses 1 Charge unless its owner pays 1 Influence." },
-      { timing: "passive", text: "Machine enemies in Malrec's space gain +1 Life." }
+      { timing: "after_character_uses_asset", text: "That asset loses 1 charge unless its owner pays 1 trophy." },
+      { timing: "passive", text: "Machine enemies in Malrec's space gain +1 wound threshold." }
     ],
     imagePrompt: "Original machine-saint in riveted shrine armor, furnace spine, bronze censer smoke, and weld-lit chapel gloom.",
     negativePrompt: baseNegativePrompt,
-    uiNotes: "He should feel canonical to Antias without resembling a stock machine cult."
+    uiNotes: "He should feel canonical to Ashen Reach without resembling a stock machine cult."
   },
   {
     id: "nemesis_hollow_regent",
@@ -120,9 +149,9 @@ export const nemeses: NemesisDefinition[] = [
     linkedMechanic: "Scenario lock and confrontation pressure.",
     stats: { willpower: 5, cunning: 5, life: 6 },
     abilities: [
-      { timing: "start_of_confrontation", text: "Choose one: force a Willpower test, tax 1 Power Card, or place 1 Court mark." },
-      { timing: "after_character_fail", text: "That character gains 1 Corruption Card." },
-      { timing: "passive", text: "While the Regent remains active, no character may win by ordinary mission rewards." }
+      { timing: "start_of_confrontation", text: "Choose one: force a Signal test, tax 1 route note, or place 1 Court mark." },
+      { timing: "after_character_fail", text: "That character gains 1 Heat." },
+      { timing: "passive", text: "While the Regent remains active, no character may win by ordinary contract rewards." }
     ],
     imagePrompt: "Original regal void sovereign in a broken court of blue-black glass and funeral steel, seated before the breach core.",
     negativePrompt: baseNegativePrompt,

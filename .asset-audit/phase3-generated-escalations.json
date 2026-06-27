@@ -1,0 +1,106 @@
+{
+  "generatedAt": "2026-06-26T04:26:23.034Z",
+  "requestedType": "escalationCardArt",
+  "generated": 12,
+  "byType": {
+    "escalationCardArt": 12
+  },
+  "results": [
+    {
+      "id": "escalation_art_escalation-artifact-wake",
+      "assetType": "escalationCardArt",
+      "outputPath": "/assets/cards/escalations/escalation-artifact-wake.png",
+      "width": 1024,
+      "height": 1536,
+      "bytes": 248357
+    },
+    {
+      "id": "escalation_art_escalation-ashfall-curfew",
+      "assetType": "escalationCardArt",
+      "outputPath": "/assets/cards/escalations/escalation-ashfall-curfew.png",
+      "width": 1024,
+      "height": 1536,
+      "bytes": 237427
+    },
+    {
+      "id": "escalation_art_escalation-bellglass-riot",
+      "assetType": "escalationCardArt",
+      "outputPath": "/assets/cards/escalations/escalation-bellglass-riot.png",
+      "width": 1024,
+      "height": 1536,
+      "bytes": 265402
+    },
+    {
+      "id": "escalation_art_escalation-blackstar-hunger",
+      "assetType": "escalationCardArt",
+      "outputPath": "/assets/cards/escalations/escalation-blackstar-hunger.png",
+      "width": 1024,
+      "height": 1536,
+      "bytes": 279298
+    },
+    {
+      "id": "escalation_art_escalation-crownfall-writ",
+      "assetType": "escalationCardArt",
+      "outputPath": "/assets/cards/escalations/escalation-crownfall-writ.png",
+      "width": 1024,
+      "height": 1536,
+      "bytes": 270958
+    },
+    {
+      "id": "escalation_art_escalation-gate-tax-mandate",
+      "assetType": "escalationCardArt",
+      "outputPath": "/assets/cards/escalations/escalation-gate-tax-mandate.png",
+      "width": 1024,
+      "height": 1536,
+      "bytes": 288060
+    },
+    {
+      "id": "escalation_art_escalation-marrow-surgery-debt",
+      "assetType": "escalationCardArt",
+      "outputPath": "/assets/cards/escalations/escalation-marrow-surgery-debt.png",
+      "width": 1024,
+      "height": 1536,
+      "bytes": 297123
+    },
+    {
+      "id": "escalation_art_escalation-pit-blood-claim",
+      "assetType": "escalationCardArt",
+      "outputPath": "/assets/cards/escalations/escalation-pit-blood-claim.png",
+      "width": 1024,
+      "height": 1536,
+      "bytes": 275656
+    },
+    {
+      "id": "escalation_art_escalation-red-march-levy",
+      "assetType": "escalationCardArt",
+      "outputPath": "/assets/cards/escalations/escalation-red-march-levy.png",
+      "width": 1024,
+      "height": 1536,
+      "bytes": 264375
+    },
+    {
+      "id": "escalation_art_escalation-ridge-suture",
+      "assetType": "escalationCardArt",
+      "outputPath": "/assets/cards/escalations/escalation-ridge-suture.png",
+      "width": 1024,
+      "height": 1536,
+      "bytes": 266798
+    },
+    {
+      "id": "escalation_art_escalation-saltwind-lockdown",
+      "assetType": "escalationCardArt",
+      "outputPath": "/assets/cards/escalations/escalation-saltwind-lockdown.png",
+      "width": 1024,
+      "height": 1536,
+      "bytes": 293019
+    },
+    {
+      "id": "escalation_art_escalation-webglass-afterimage",
+      "assetType": "escalationCardArt",
+      "outputPath": "/assets/cards/escalations/escalation-webglass-afterimage.png",
+      "width": 1024,
+      "height": 1536,
+      "bytes": 296009
+    }
+  ]
+}

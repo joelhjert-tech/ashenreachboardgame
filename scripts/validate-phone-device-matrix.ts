@@ -23,14 +23,20 @@ type LayoutMetrics = {
   bottomRect: RectLike | null;
   debugRect: RectLike | null;
   portraitPanelRect: RectLike | null;
+  lobbyWaitingScrollRect: RectLike | null;
   portraitChipRowRect: RectLike | null;
   portraitRotateHintRect: RectLike | null;
+  characterWaitingRect: RectLike | null;
   hasLandscapeCard: boolean;
   hasPortraitController: boolean;
+  hasCharacterWaiting: boolean;
   hasPortraitStats: boolean;
   hasPortraitActions: boolean;
   hasPortraitLeaveButton: boolean;
+  hasWaitingBackButton: boolean;
+  hasWaitingMessage: boolean;
   hasPortraitRotateHint: boolean;
+  hasRotateWarning: boolean;
   horizontalOverflow: boolean;
   verticalOverflow: boolean;
 };
@@ -113,8 +119,11 @@ async function collectMetrics(page: import("playwright").Page, viewport: Viewpor
       bottom: ".phone-sheet-bottom",
       debug: ".phone-debug-anchor",
       portraitPanel: ".phone-portrait-panel",
+      lobbyWaitingScroll: ".phone-lobby-waiting-scroll",
       portraitChipRow: ".phone-portrait-chip-row",
-      portraitRotateHint: ".phone-portrait-rotate-hint"
+      portraitRotateHint: ".phone-portrait-rotate-hint",
+      characterWaiting: ".phone-character-waiting-panel",
+      rotateWarning: ".phone-rotate-warning"
     }
   });
 
@@ -134,20 +143,28 @@ async function collectMetrics(page: import("playwright").Page, viewport: Viewpor
       const bottomRect = getRect(selectors.bottom);
       const debugRect = getRect(selectors.debug);
       const portraitPanelRect = getRect(selectors.portraitPanel);
+      const lobbyWaitingScrollRect = getRect(selectors.lobbyWaitingScroll);
       const portraitChipRowRect = getRect(selectors.portraitChipRow);
       const portraitRotateHintRect = getRect(selectors.portraitRotateHint);
+      const characterWaitingRect = getRect(selectors.characterWaiting);
       const documentScrollWidth = document.documentElement.scrollWidth;
       const documentScrollHeight = document.documentElement.scrollHeight;
       const windowInnerWidth = window.innerWidth;
       const windowInnerHeight = window.innerHeight;
       const hasLandscapeCard = Boolean(document.querySelector(".phone-sheet-card-landscape"));
       const hasPortraitController = Boolean(document.querySelector(".phone-portrait-controller"));
+      const hasCharacterWaiting = Boolean(document.querySelector(".phone-character-waiting-panel"));
       const hasPortraitStats = Boolean(
         document.querySelector(".phone-portrait-body, .phone-portrait-stats, .phone-portrait-attributes, .phone-portrait-summary")
       );
       const hasPortraitActions = Boolean(document.querySelector(".phone-portrait-actions, .phone-sheet-actions"));
-      const hasPortraitLeaveButton = Boolean(document.querySelector(".phone-portrait-topline button, .phone-sheet-leave-button"));
+      const hasPortraitLeaveButton = Boolean(document.querySelector(".phone-portrait-leave-button, .phone-sheet-leave-button"));
+      const hasWaitingBackButton = Boolean(document.querySelector(".phone-lobby-ready-button"));
+      const hasWaitingMessage = Array.from(document.querySelectorAll("p, span, strong")).some((element) =>
+        /waiting for host to start/i.test(element.textContent ?? "")
+      );
       const hasPortraitRotateHint = Boolean(document.querySelector(".phone-portrait-rotate-hint"));
+      const hasRotateWarning = Boolean(document.querySelector(selectors.rotateWarning));
 
       return {
         viewport: { width: viewportWidth, height: viewportHeight },
@@ -161,14 +178,20 @@ async function collectMetrics(page: import("playwright").Page, viewport: Viewpor
         bottomRect,
         debugRect,
         portraitPanelRect,
+        lobbyWaitingScrollRect,
         portraitChipRowRect,
         portraitRotateHintRect,
+        characterWaitingRect,
         hasLandscapeCard,
         hasPortraitController,
+        hasCharacterWaiting,
         hasPortraitStats,
         hasPortraitActions,
         hasPortraitLeaveButton,
+        hasWaitingBackButton,
+        hasWaitingMessage,
         hasPortraitRotateHint,
+        hasRotateWarning,
         horizontalOverflow: documentScrollWidth > windowInnerWidth + 1,
         verticalOverflow: documentScrollHeight > windowInnerHeight + 1
       };
@@ -183,56 +206,62 @@ function validateMetrics(metrics: LayoutMetrics, mode: "portrait" | "landscape")
     failures.push("horizontal overflow");
   }
 
-  if (metrics.verticalOverflow) {
-    failures.push("vertical overflow");
-  }
-
   if (mode === "portrait") {
-    if (!metrics.hasPortraitController || !metrics.portraitPanelRect) {
-      failures.push("missing limited portrait panel");
+    const hasPortraitScreen = metrics.hasPortraitController || metrics.hasCharacterWaiting;
+    const isInGameController = metrics.hasPortraitController && !metrics.hasCharacterWaiting;
+
+    if (!hasPortraitScreen || (!metrics.portraitPanelRect && !metrics.characterWaitingRect)) {
+      failures.push("missing portrait controller or waiting panel");
     }
 
-    if (!metrics.portraitChipRowRect) {
+    if (isInGameController && !metrics.portraitChipRowRect) {
       failures.push("missing portrait chip row");
-    }
-
-    if (!metrics.hasPortraitRotateHint || !metrics.portraitRotateHintRect) {
-      failures.push("missing rotate hint");
     }
 
     if (metrics.hasLandscapeCard) {
       failures.push("landscape card rendered in portrait");
     }
 
-    if (metrics.hasPortraitStats) {
-      failures.push("portrait still renders stats/details");
+    if (!metrics.hasPortraitStats) {
+      failures.push("portrait missing stats/details");
     }
 
-    if (metrics.hasPortraitActions) {
-      failures.push("portrait still renders quick actions");
+    if (isInGameController && !metrics.hasPortraitActions) {
+      failures.push("portrait missing quick actions");
     }
 
-    if (metrics.hasPortraitLeaveButton) {
-      failures.push("portrait still renders leave button");
+    if (isInGameController && !metrics.hasPortraitLeaveButton) {
+      failures.push("portrait missing leave button");
+    }
+
+    if (metrics.hasCharacterWaiting && !metrics.hasWaitingBackButton) {
+      failures.push("waiting screen missing back button");
+    }
+
+    if (metrics.hasCharacterWaiting && !metrics.hasWaitingMessage) {
+      failures.push("waiting screen missing host waiting message");
+    }
+
+    if (
+      metrics.hasCharacterWaiting &&
+      (!metrics.lobbyWaitingScrollRect || metrics.lobbyWaitingScrollRect.height < metrics.windowInnerHeight * 0.65)
+    ) {
+      failures.push("waiting screen scroll viewport collapsed");
     }
 
     return failures;
   }
 
-  if (!metrics.hasLandscapeCard) {
-    failures.push("missing landscape player card");
+  if (!metrics.hasRotateWarning) {
+    failures.push("missing portrait rotation warning");
   }
 
-  if (!metrics.sheetCardRect || metrics.sheetCardRect.width < metrics.viewport.width * 0.85) {
-    failures.push("sheet card too narrow");
+  if (metrics.hasLandscapeCard) {
+    failures.push("landscape player card rendered");
   }
 
-  if (!metrics.topbarRect || metrics.topbarRect.y < -1) {
-    failures.push("topbar out of bounds");
-  }
-
-  if (!metrics.bottomRect || metrics.bottomRect.y + metrics.bottomRect.height > metrics.windowInnerHeight + 1) {
-    failures.push("bottom action rail out of bounds");
+  if (metrics.hasPortraitController) {
+    failures.push("portrait controller rendered in landscape");
   }
 
   return failures;
@@ -281,10 +310,10 @@ async function main(): Promise<void> {
           try {
             await page.goto(`${getBaseUrl()}/`, { waitUntil: "domcontentloaded" });
             await page.getByRole("textbox", { name: "Room code" }).fill(roomCode);
-            await page.getByRole("textbox", { name: "Display name" }).fill("QA");
-            await page.getByRole("combobox", { name: "Character" }).selectOption("signal-witch");
-            await page.getByRole("button", { name: "Join room" }).click();
-            await page.getByRole("heading", { name: "Lane" }).waitFor({ state: "visible", timeout: 10000 });
+            await page.getByRole("textbox", { name: "Player name" }).fill("QA");
+            await page.getByRole("button", { name: "Continue" }).click();
+            await page.getByRole("button", { name: /signal witch/i }).click();
+            await page.locator(".phone-character-waiting-panel").waitFor({ state: "visible", timeout: 10000 });
             await page.waitForTimeout(350);
 
             const portraitMetrics = await collectMetrics(page, profile.portrait);

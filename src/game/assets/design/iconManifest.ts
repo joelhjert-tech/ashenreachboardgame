@@ -32,7 +32,7 @@ export const iconManifest: Record<string, IconDefinition> = {
     id: "life",
     color: "green",
     symbol: "vital spark",
-    use: "Life track and recovery effects",
+    use: "Wound track and recovery effects",
     uiNotes: "Should read clearly even at dial size."
   },
   influence: {
@@ -46,11 +46,11 @@ export const iconManifest: Record<string, IconDefinition> = {
     id: "corruption",
     color: "violet",
     symbol: "rift scar",
-    use: "Corruption cards, activation state, breach taint",
+    use: "Heat marks, activation state, breach taint",
     uiNotes: "Keep it asymmetric and organic, not demonic rune language."
   },
-  relic: {
-    id: "relic",
+  artifact: {
+    id: "artifact",
     color: "gold",
     symbol: "saint star",
     use: "Rare key items and inner-tier access",
@@ -60,7 +60,7 @@ export const iconManifest: Record<string, IconDefinition> = {
     id: "power",
     color: "ice-blue",
     symbol: "charged star",
-    use: "Power cards and roll substitution",
+    use: "Route notes and roll substitution",
     uiNotes: "Should feel volatile and luminous rather than magical."
   }
 };

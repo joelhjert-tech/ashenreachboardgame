@@ -1,10 +1,11 @@
+import { randomUUID } from "node:crypto";
 import { loadCharacters } from "../game/content/characters.js";
 import { loadContracts } from "../game/content/contracts.js";
 import { createCanonicalSectorGraph, validateCanonicalSectorGraph } from "../game/data/canonicalSectorGraph.js";
 import { getScenarioDefinition, SCENARIOS } from "../game/data/scenarios.js";
 import { createInitialScenarioProgress } from "../game/rules/scenarioAmbient.js";
 import type { Character } from "../game/schema/character.schema.js";
-import type { GameState, PlayerState, SessionMode } from "../game/schema/session.schema.js";
+import type { GameState, InteractionMode, PlayerState, SessionMode } from "../game/schema/session.schema.js";
 import { createJoinToken } from "./auth.js";
 
 const sessionSeatLayouts = {
@@ -28,9 +29,11 @@ function cloneCharacter(character: Character, currentSpaceId: string): Character
     activeContract: character.activeContract ? { ...character.activeContract } : null,
     heldGear: [...character.heldGear],
     equippedGear: { ...character.equippedGear },
+    followers: [...(character.followers ?? [])],
     abilities: [...character.abilities],
     scars: [...character.scars],
-    trophies: character.trophies
+    trophies: character.trophies,
+    trophyPile: [...(character.trophyPile ?? [])]
   };
 }
 
@@ -53,7 +56,8 @@ function createPlayerState(
 export function createInitialSessionState(
   sessionId: string,
   sessionMode: SessionMode = "multiplayer",
-  scenarioId?: string
+  scenarioId?: string,
+  interactionMode?: InteractionMode
 ): GameState {
   const characters = loadCharacters();
   const sectors = createCanonicalSectorGraph();
@@ -76,6 +80,7 @@ export function createInitialSessionState(
     sessionId,
     status: "lobby",
     sessionMode,
+    interactionMode: interactionMode ?? (sessionMode === "single-player" ? "co-op" : "rivalry"),
     winnerSeatId: null,
     activeScenarioId: defaultScenario?.id ?? "scenario_broken_seal",
     scenarioProgress: createInitialScenarioProgress(defaultScenario?.id ?? "scenario_broken_seal"),
@@ -93,8 +98,9 @@ export function createInitialSessionState(
       characterId,
       displayName: null,
       connected: false,
+      ready: false,
       kicked: false,
-      joinToken: createJoinToken({ sessionId, seatId })
+      joinToken: createJoinToken({ sessionId, seatId, secret: randomUUID() })
     })),
     players: configuredSeats.map(({ seatId }, index) =>
       createPlayerState(
@@ -108,6 +114,7 @@ export function createInitialSessionState(
     currentEncounter: null,
     pendingEnemyRoll: null,
     pendingEffect: null,
+    activeResolution: null,
     lastOutcomeSummary: null
   };
 }

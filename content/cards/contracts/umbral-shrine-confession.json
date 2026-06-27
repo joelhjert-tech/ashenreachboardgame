@@ -1,0 +1,16 @@
+{
+  "id": "umbral-shrine-confession",
+  "name": "Shrine Confession",
+  "factionGiver": "Umbral Bloom",
+  "text": "Force the corrupted shrine to confess one truth before the gate starts listening.",
+  "objective": {
+    "type": "spaceTextResolved",
+    "effectKey": "inner_choirShrine",
+    "label": "Choir shrine petitioned",
+    "target": 1
+  },
+  "reward": {
+    "type": "gain_gear",
+    "gearId": "grave-lens"
+  }
+}

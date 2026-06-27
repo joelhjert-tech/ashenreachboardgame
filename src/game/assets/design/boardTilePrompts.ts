@@ -18,27 +18,27 @@ type InnerCenterSeed = [string, string, string, string];
 
 const fullBoardPrompt: ImagePromptSpec = {
   id: "full_board_main",
-  fileName: "riftfall_board_main.png",
-  outputPath: "/assets/riftfall/board/full-board/riftfall_board_main.png",
+  fileName: "ashen_reach_board_main.png",
+  outputPath: "/assets/riftfall/board/full-board/ashen_reach_board_main.png",
   assetType: "fullBoard",
   size: "wide",
-  prompt: `${style}; top-down premium tabletop board game map for Riftfall: The Antias Sector, rectangular board with ornate aged black metal frame, worn brass corners, original saint-star symbols, large outer ring, smaller middle ring, one-way inner gauntlet into a central scenario chamber, readable path layout, no tiny text, dramatic but usable board presentation`,
+  prompt: `${style}; top-down premium tabletop board game map for Ashen Reach, rectangular board with ornate aged black metal frame, worn brass corners, original route-sigil symbols, large outer ring, smaller middle ring, one-way inner gauntlet into a central scenario chamber, readable path layout, no tiny text, dramatic but usable board presentation`,
   negativePrompt: negative,
   usage: "Primary TV board background replacing placeholder map art."
 };
 
 const outerTileSeeds: TilePromptSeed[] = [
   {
-    id: "tile_outer_st_antias_sanctuary",
-    fileName: "outer_st_antias_sanctuary.png",
-    outputPath: "/assets/riftfall/board/tiles/outer/outer_st_antias_sanctuary.png",
-    prompt: "top-down board tile art, ruined sanctuary refuge, cracked saint statue, blue-white light through broken dome, candles, medicae shrine, safe recovery atmosphere, no text"
+    id: "tile_outer_saint_sanctuary",
+    fileName: "outer_saint_sanctuary.png",
+    outputPath: "/assets/riftfall/board/tiles/outer/outer_saint_sanctuary.png",
+    prompt: "top-down board tile art, ruined sanctuary refuge, cracked saint statue, blue-white light through broken dome, candles, field-surgery shrine, safe recovery atmosphere, no text"
   },
   {
-    id: "tile_outer_hive_city",
-    fileName: "outer_hive_city.png",
-    outputPath: "/assets/riftfall/board/tiles/outer/outer_hive_city.png",
-    prompt: "top-down board tile art, towering hive district, stacked black towers, bronze bridges, neon smog, crowded alleys, original frontier city, no text"
+    id: "tile_outer_ashstack_city",
+    fileName: "outer_ashstack_city.png",
+    outputPath: "/assets/riftfall/board/tiles/outer/outer_ashstack_city.png",
+    prompt: "top-down board tile art, towering ashstack district, stacked black towers, bronze bridges, neon smog, crowded alleys, original frontier city, no text"
   },
   {
     id: "tile_outer_agri_fields",
@@ -128,7 +128,7 @@ const outerTileSeeds: TilePromptSeed[] = [
     id: "tile_outer_crash_site",
     fileName: "outer_crash_site.png",
     outputPath: "/assets/riftfall/board/tiles/outer/outer_crash_site.png",
-    prompt: "top-down board tile art, crashed voidship hull split in crater, sparks, smoke, salvage crates, emergency lights, no text"
+    prompt: "top-down board tile art, crashed route-barge hull split in crater, sparks, smoke, salvage crates, emergency lights, no text"
   },
   {
     id: "tile_outer_shardvine_verge",
@@ -140,7 +140,7 @@ const outerTileSeeds: TilePromptSeed[] = [
     id: "tile_outer_temple",
     fileName: "outer_temple.png",
     outputPath: "/assets/riftfall/board/tiles/outer/outer_temple.png",
-    prompt: "top-down board tile art, ancient void temple, bronze doors, blue flame braziers, broken saint-star mosaic, no text"
+    prompt: "top-down board tile art, ancient void temple, bronze doors, blue flame braziers, broken route-sigil mosaic, no text"
   },
   {
     id: "tile_outer_desert",
@@ -182,7 +182,7 @@ const outerTileSeeds: TilePromptSeed[] = [
     id: "tile_outer_ruins",
     fileName: "outer_ruins.png",
     outputPath: "/assets/riftfall/board/tiles/outer/outer_ruins.png",
-    prompt: "top-down board tile art, ancient black-stone ruins, collapsed arches, hidden trap plates, relic glow, no text"
+    prompt: "top-down board tile art, ancient black-stone ruins, collapsed arches, hidden trap plates, artifact glow, no text"
   },
   {
     id: "tile_outer_rift_touched_woods",
@@ -199,7 +199,7 @@ const outerTileSeeds: TilePromptSeed[] = [
 ];
 
 const middleTileSeeds: MiddleTileSeed[] = [
-  ["hive_sprawl", "dense violent hive sprawl, burning alleys, gang barricades, high towers blocking the sky, red and yellow danger lighting"],
+  ["ashstack_sprawl", "dense violent ashstack sprawl, burning alleys, gang barricades, high towers blocking the sky, red and yellow danger lighting"],
   ["tomb_gate", "sealed tomb gate, black stone doors, blue glyph light, trap corridors, ancient dust"],
   ["ancient_machine_ruins", "ancient machine ruins, sleeping metal guardians, broken crystal circuits, cold green-blue light"],
   ["hidden_valley", "hidden valley inside a crater, lush growth, crashed satellites, suspicious calm surrounded by danger"],
@@ -207,10 +207,10 @@ const middleTileSeeds: MiddleTileSeed[] = [
   ["relay_spire", "broken relay spire with floating blue signal rings, cracked consoles, storm clouds, mind-pressure atmosphere"],
   ["breach_conduit", "colossal power conduit, blue-white energy column, broken stairs, brass pylons, unstable light"],
   ["guardian_span", "final gate before the inner tier, giant silent guardian statue, three colored sigils, violent rift behind sealed doors"],
-  ["riftspawn_pit", "writhing organic-metal pit, red-black chasm, blue corruption cracks, monstrous original shadows"],
+  ["breachspawn_pit", "writhing organic-metal pit, red-black chasm, blue Heat cracks, monstrous original shadows"],
   ["cinder_wastes", "rift-scarred wastes, broken ground floating upward, violet scars, dead machines, blue-black storm"],
   ["burning_battlefield", "burning battlefield, trenches, wrecked vehicles, red flare smoke, scattered weapons"],
-  ["monastery", "fortified void monastery, black stone walls, blue candles, medicae chapel, shielded sanctuary"],
+  ["monastery", "fortified void monastery, black stone walls, blue candles, field-surgery chapel, shielded sanctuary"],
   ["mortuary_reach", "spectral battlefield of tombs and broken starship ribs, pale blue ghosts, black fog"],
   ["mirror_crypt", "ancient mirror crypt with reflective shards, teal channels, half-buried archive machinery"],
   ["webglass_breach", "fractured transit corridor of glass-like paths over black void, unstable teal routes, broken bridge geometry"],

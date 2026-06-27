@@ -1,0 +1,14 @@
+{
+  "id": "escalation-bellglass-riot",
+  "type": "escalation",
+  "title": "Bellglass Riot",
+  "text": "Panic rings through the glass wards and the crowd moves like a cracked instrument.",
+  "flavor": "A bell is only a weapon if enough people believe it.",
+  "step": 2,
+  "resolutionSummary": "Drove the riot away from the breach lane and turned its noise into cover.",
+  "resolveEffect": {
+    "type": "gain_note",
+    "text": "Bellglass riot dispersed. The crowd noise can mask one careful exchange."
+  },
+  "escalationDelta": -1
+}
