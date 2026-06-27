@@ -31,6 +31,7 @@ type LayoutMetrics = {
   hasPortraitActions: boolean;
   hasPortraitLeaveButton: boolean;
   hasPortraitRotateHint: boolean;
+  hasRotateWarning: boolean;
   horizontalOverflow: boolean;
   verticalOverflow: boolean;
 };
@@ -114,7 +115,8 @@ async function collectMetrics(page: import("playwright").Page, viewport: Viewpor
       debug: ".phone-debug-anchor",
       portraitPanel: ".phone-portrait-panel",
       portraitChipRow: ".phone-portrait-chip-row",
-      portraitRotateHint: ".phone-portrait-rotate-hint"
+      portraitRotateHint: ".phone-portrait-rotate-hint",
+      rotateWarning: ".phone-rotate-warning"
     }
   });
 
@@ -146,8 +148,9 @@ async function collectMetrics(page: import("playwright").Page, viewport: Viewpor
         document.querySelector(".phone-portrait-body, .phone-portrait-stats, .phone-portrait-attributes, .phone-portrait-summary")
       );
       const hasPortraitActions = Boolean(document.querySelector(".phone-portrait-actions, .phone-sheet-actions"));
-      const hasPortraitLeaveButton = Boolean(document.querySelector(".phone-portrait-topline button, .phone-sheet-leave-button"));
+      const hasPortraitLeaveButton = Boolean(document.querySelector(".phone-portrait-leave-button, .phone-sheet-leave-button"));
       const hasPortraitRotateHint = Boolean(document.querySelector(".phone-portrait-rotate-hint"));
+      const hasRotateWarning = Boolean(document.querySelector(selectors.rotateWarning));
 
       return {
         viewport: { width: viewportWidth, height: viewportHeight },
@@ -169,6 +172,7 @@ async function collectMetrics(page: import("playwright").Page, viewport: Viewpor
         hasPortraitActions,
         hasPortraitLeaveButton,
         hasPortraitRotateHint,
+        hasRotateWarning,
         horizontalOverflow: documentScrollWidth > windowInnerWidth + 1,
         verticalOverflow: documentScrollHeight > windowInnerHeight + 1
       };
@@ -215,20 +219,16 @@ function validateMetrics(metrics: LayoutMetrics, mode: "portrait" | "landscape")
     return failures;
   }
 
-  if (!metrics.hasLandscapeCard) {
-    failures.push("missing landscape player card");
+  if (!metrics.hasRotateWarning) {
+    failures.push("missing portrait rotation warning");
   }
 
-  if (!metrics.sheetCardRect || metrics.sheetCardRect.width < metrics.viewport.width * 0.85) {
-    failures.push("sheet card too narrow");
+  if (metrics.hasLandscapeCard) {
+    failures.push("landscape player card rendered");
   }
 
-  if (!metrics.topbarRect || metrics.topbarRect.y < -1) {
-    failures.push("topbar out of bounds");
-  }
-
-  if (!metrics.bottomRect || metrics.bottomRect.y + metrics.bottomRect.height > metrics.windowInnerHeight + 1) {
-    failures.push("bottom action rail out of bounds");
+  if (metrics.hasPortraitController) {
+    failures.push("portrait controller rendered in landscape");
   }
 
   return failures;

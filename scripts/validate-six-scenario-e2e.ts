@@ -123,6 +123,7 @@ async function inspectTv(browser: Browser, scenario: ScenarioCatalogEntry, sessi
     const surface = document.querySelector(".talisman-board-surface");
     const boardRect = board?.getBoundingClientRect();
     const tileCount = document.querySelectorAll(".talisman-board-tile").length;
+    const cardReveal = document.querySelector('[data-testid="tv-card-reveal"], [aria-label="Card reveal"]');
     const labeledTiles = Array.from(document.querySelectorAll(".talisman-board-tile")).filter((tile) =>
       (tile.textContent || tile.getAttribute("aria-label") || "").trim().length > 0
     ).length;
@@ -137,7 +138,7 @@ async function inspectTv(browser: Browser, scenario: ScenarioCatalogEntry, sessi
       surfacePresent: Boolean(surface),
       tileCount,
       labeledTiles,
-      cardRevealPresent: /card reveal/i.test(bodyText),
+      cardRevealPresent: Boolean(cardReveal),
       rightRailPresent: /scenario/i.test(bodyText) && /escalation/i.test(bodyText) && /contracts/i.test(bodyText),
       insideSafeArea:
         !boardRect ||
