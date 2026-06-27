@@ -1,4 +1,4 @@
-import type { SessionMode } from "../schema/session.schema.js";
+import type { GameMode, SessionMode } from "../schema/session.schema.js";
 
 export const MULTIPLAYER_MIN_READY_PLAYERS = 2;
 
@@ -22,6 +22,7 @@ export interface SessionStartReadiness {
 
 export function getSessionStartReadiness(input: {
   sessionMode: SessionMode;
+  gameMode?: GameMode;
   seats: readonly SessionStartSeat[];
 }): SessionStartReadiness {
   const occupiedSeats = input.seats.filter((seat) => Boolean(seat.displayName) && !seat.kicked);
@@ -56,6 +57,14 @@ export function getSessionStartReadiness(input: {
       ...base,
       canStart: false,
       reason: `Need at least ${MULTIPLAYER_MIN_READY_PLAYERS} players`
+    };
+  }
+
+  if (input.gameMode === "nemesis_relay" && occupiedSeats.length > 4) {
+    return {
+      ...base,
+      canStart: false,
+      reason: "Nemesis Relay supports up to 4 players"
     };
   }
 

@@ -12,6 +12,11 @@ import type {
   GameAction,
   MovementResolvedAction,
   MoveRequestedAction,
+  NemesisCombatResolvedAction,
+  NemesisDefeatedAction,
+  NemesisMovedAction,
+  NemesisNexusCountdownStartedAction,
+  NemesisSpawnedAction,
   RecruitReplacementAction,
   ResolutionAppliedAction,
   ResolutionContinuedAction,
@@ -452,6 +457,10 @@ function createTrophyPileEntry(card: ThreatCard): TrophyPileEntry {
 
 function getTrophyPileEntryAvailableValue(entry: TrophyPileEntry): number {
   return Math.max(0, entry.trophyValue - (entry.spentValue ?? 0));
+}
+
+function getCrownKeyProgressKey(seatId: string): string {
+  return `crownKey:${seatId}`;
 }
 
 function spendTrophyPileValue(trophyPile: TrophyPileEntry[] | undefined, cost: number): TrophyPileEntry[] {
@@ -2353,6 +2362,273 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
           enemyTotal: null,
           success: true,
           summary: `Stabilized the breach using ${stabilizeAction.cost.kind}.`
+        },
+        eventLog: [...state.eventLog, action]
+      });
+    }
+    case "NEMESIS_SPAWNED": {
+      const nemesisAction = action as NemesisSpawnedAction;
+
+      if (state.gameMode !== "nemesis_relay") {
+        return reject(state, action, "Nemesis champions can only spawn in Nemesis Relay mode");
+      }
+
+      return succeed({
+        ...state,
+        nemesisChampions: nemesisAction.champions,
+        nemesisNexusCountdowns: [],
+        sequence: state.sequence + 1,
+        eventLog: [...state.eventLog, action]
+      });
+    }
+    case "NEMESIS_MOVED": {
+      const nemesisAction = action as NemesisMovedAction;
+
+      if (state.gameMode !== "nemesis_relay") {
+        return reject(state, action, "Nemesis movement is only available in Nemesis Relay mode");
+      }
+
+      const nemesis = state.nemesisChampions.find((champion) => champion.id === nemesisAction.nemesisId);
+
+      if (!nemesis || nemesis.defeated) {
+        return reject(state, action, "Nemesis is not active");
+      }
+
+      if (nemesis.sectorId !== nemesisAction.fromSectorId) {
+        return reject(state, action, "Nemesis movement source is stale");
+      }
+
+      return succeed({
+        ...state,
+        nemesisChampions: state.nemesisChampions.map((champion) =>
+          champion.id === nemesisAction.nemesisId ? { ...champion, sectorId: nemesisAction.toSectorId } : champion
+        ),
+        sequence: state.sequence + 1,
+        lastOutcomeSummary: {
+          seatId: nemesisAction.seatId,
+          movedToSectorId: nemesisAction.toSectorId,
+          encounterCardId: null,
+          encounterTitle: "Nemesis Relay",
+          encounterCardType: null,
+          checkStat: null,
+          die1: null,
+          die2: null,
+          statBonus: null,
+          checkTotal: null,
+          difficulty: null,
+          enemyRollerSeatId: null,
+          enemyDie1: null,
+          enemyDie2: null,
+          enemyBonus: null,
+          enemyTotal: null,
+          success: null,
+          summary: `${nemesis.name} advanced ${nemesisAction.path.length} step${nemesisAction.path.length === 1 ? "" : "s"} toward the Ashen Crown Nexus.`
+        },
+        eventLog: [...state.eventLog, action]
+      });
+    }
+    case "NEMESIS_COMBAT_RESOLVED": {
+      const nemesisAction = action as NemesisCombatResolvedAction;
+      const nemesis = state.nemesisChampions.find((champion) => champion.id === nemesisAction.nemesisId);
+
+      if (!nemesis || nemesis.defeated) {
+        return reject(state, action, "Nemesis is not active");
+      }
+
+      const nextHealth = nemesisAction.success ? Math.max(0, nemesis.health - Math.max(0, nemesisAction.damage)) : nemesis.health;
+
+      return succeed({
+        ...state,
+        nemesisChampions: state.nemesisChampions.map((champion) =>
+          champion.id === nemesisAction.nemesisId ? { ...champion, health: nextHealth } : champion
+        ),
+        phase: "broadcast",
+        sequence: state.sequence + 1,
+        lastOutcomeSummary: {
+          seatId: nemesisAction.attackerSeatId,
+          movedToSectorId: nemesis.sectorId,
+          encounterCardId: nemesis.id,
+          encounterTitle: nemesis.name,
+          encounterCardType: "enemy",
+          checkStat: nemesisAction.stat,
+          die1: nemesisAction.roll.faces[0] ?? null,
+          die2: nemesisAction.roll.faces[1] ?? null,
+          statBonus: nemesisAction.attackerTotal - nemesisAction.roll.total,
+          checkTotal: nemesisAction.attackerTotal,
+          difficulty: nemesisAction.nemesisTotal,
+          enemyRollerSeatId: null,
+          enemyDie1: nemesisAction.nemesisRoll.faces[0] ?? null,
+          enemyDie2: nemesisAction.nemesisRoll.faces[1] ?? null,
+          enemyBonus: nemesisAction.nemesisTotal - nemesisAction.nemesisRoll.total,
+          enemyTotal: nemesisAction.nemesisTotal,
+          success: nemesisAction.success,
+          summary: nemesisAction.summary
+        },
+        activeResolution: buildRollResolution({
+          seatId: nemesisAction.attackerSeatId,
+          source: "threat",
+          createdAt: nemesisAction.createdAt,
+          suffix: nemesis.id,
+          card: {
+            id: nemesis.id,
+            title: nemesis.name,
+            type: "nemesis",
+            flavor: nemesis.type
+          },
+          battle: {
+            enemyName: nemesis.name,
+            stat: nemesisAction.stat,
+            difficulty: nemesisAction.nemesisTotal,
+            modifiers: [{ label: "Stat, gear, assist", value: nemesisAction.attackerTotal - nemesisAction.roll.total }]
+          },
+          dice: nemesisAction.roll.faces,
+          baseTotal: nemesisAction.roll.total,
+          modifierTotal: nemesisAction.attackerTotal - nemesisAction.roll.total,
+          finalTotal: nemesisAction.attackerTotal,
+          target: nemesisAction.nemesisTotal,
+          success: nemesisAction.success,
+          title: nemesisAction.success ? "Nemesis hit" : "Nemesis counterstrike",
+          text: nemesisAction.summary,
+          effects: [nemesisAction.summary]
+        }),
+        eventLog: [...state.eventLog, action]
+      });
+    }
+    case "NEMESIS_ENCOUNTER_RESOLVED":
+    case "NEMESIS_COMBAT_STARTED":
+    case "NEXUS_TEST_STARTED":
+    case "NEXUS_TEST_RESOLVED":
+      return succeed({
+        ...state,
+        sequence: state.sequence + 1,
+        eventLog: [...state.eventLog, action]
+      });
+    case "NEMESIS_DEFEATED": {
+      const nemesisAction = action as NemesisDefeatedAction;
+
+      return succeed({
+        ...state,
+        nemesisChampions: state.nemesisChampions.map((champion) =>
+          champion.id === nemesisAction.nemesisId ? { ...champion, health: 0, defeated: true } : champion
+        ),
+        nemesisNexusCountdowns: state.nemesisNexusCountdowns.filter((entry) => entry.nemesisId !== nemesisAction.nemesisId),
+        sequence: state.sequence + 1,
+        lastOutcomeSummary: state.lastOutcomeSummary
+          ? {
+              ...state.lastOutcomeSummary,
+              success: true,
+              summary: `${state.lastOutcomeSummary.summary} ${nemesisAction.summary}`
+            }
+          : {
+              seatId: nemesisAction.attackerSeatId,
+              movedToSectorId: "center_cinder_gate",
+              encounterCardId: nemesisAction.nemesisId,
+              encounterTitle: "Nemesis defeated",
+              encounterCardType: "enemy",
+              checkStat: null,
+              die1: null,
+              die2: null,
+              statBonus: null,
+              checkTotal: null,
+              difficulty: null,
+              enemyRollerSeatId: null,
+              enemyDie1: null,
+              enemyDie2: null,
+              enemyBonus: null,
+              enemyTotal: null,
+              success: true,
+              summary: nemesisAction.summary
+            },
+        eventLog: [...state.eventLog, action]
+      });
+    }
+    case "CROWN_KEY_FRAGMENT_GAINED": {
+      const keyAction = action as Extract<GameAction, { type: "CROWN_KEY_FRAGMENT_GAINED" }>;
+      const progressKey = getCrownKeyProgressKey(keyAction.targetSeatId);
+
+      return succeed({
+        ...state,
+        scenarioProgress: {
+          ...state.scenarioProgress,
+          [progressKey]: Math.max(1, state.scenarioProgress[progressKey] ?? 0)
+        },
+        sequence: state.sequence + 1,
+        eventLog: [...state.eventLog, action]
+      });
+    }
+    case "NEMESIS_NEXUS_COUNTDOWN_STARTED": {
+      const countdownAction = action as NemesisNexusCountdownStartedAction;
+
+      return succeed({
+        ...state,
+        nemesisNexusCountdowns: [
+          ...state.nemesisNexusCountdowns.filter((entry) => entry.nemesisId !== countdownAction.nemesisId),
+          { nemesisId: countdownAction.nemesisId, remainingTurns: countdownAction.remainingTurns }
+        ],
+        sequence: state.sequence + 1,
+        eventLog: [...state.eventLog, action]
+      });
+    }
+    case "COOP_VICTORY_TRIGGERED": {
+      const victoryAction = action as Extract<GameAction, { type: "COOP_VICTORY_TRIGGERED" }>;
+
+      return succeed({
+        ...state,
+        status: "ended",
+        winnerSeatId: victoryAction.seatId,
+        phase: "broadcast",
+        sequence: state.sequence + 1,
+        lastOutcomeSummary: {
+          seatId: victoryAction.seatId,
+          movedToSectorId: "center_cinder_gate",
+          encounterCardId: null,
+          encounterTitle: "Co-op Victory",
+          encounterCardType: null,
+          checkStat: null,
+          die1: null,
+          die2: null,
+          statBonus: null,
+          checkTotal: null,
+          difficulty: null,
+          enemyRollerSeatId: null,
+          enemyDie1: null,
+          enemyDie2: null,
+          enemyBonus: null,
+          enemyTotal: null,
+          success: true,
+          summary: victoryAction.summary
+        },
+        eventLog: [...state.eventLog, action]
+      });
+    }
+    case "COOP_DEFEAT_TRIGGERED": {
+      const defeatAction = action as Extract<GameAction, { type: "COOP_DEFEAT_TRIGGERED" }>;
+
+      return succeed({
+        ...state,
+        status: "ended",
+        winnerSeatId: null,
+        phase: "broadcast",
+        sequence: state.sequence + 1,
+        lastOutcomeSummary: {
+          seatId: defeatAction.seatId,
+          movedToSectorId: "center_cinder_gate",
+          encounterCardId: null,
+          encounterTitle: "Co-op Defeat",
+          encounterCardType: null,
+          checkStat: null,
+          die1: null,
+          die2: null,
+          statBonus: null,
+          checkTotal: null,
+          difficulty: null,
+          enemyRollerSeatId: null,
+          enemyDie1: null,
+          enemyDie2: null,
+          enemyBonus: null,
+          enemyTotal: null,
+          success: false,
+          summary: defeatAction.summary
         },
         eventLog: [...state.eventLog, action]
       });

@@ -20,7 +20,9 @@ import type {
   ActiveNemesisSummary,
   CharacterCatalogEntry,
   DebugEvent,
+  GameMode,
   InteractionMode,
+  NemesisChampionSummary,
   PublicPatchPayload,
   PublicPlayer,
   PublicSeat,
@@ -63,6 +65,10 @@ function getInteractionModeLabel(interactionMode: InteractionMode): string {
   }
 
   return "Rivalry";
+}
+
+function getGameModeLabel(gameMode: GameMode | undefined): string {
+  return gameMode === "nemesis_relay" ? "Nemesis Relay" : "Standard";
 }
 
 function getSeatNumber(seatId: string): string {
@@ -279,6 +285,7 @@ interface TopHeaderProps {
   roomCode: string | null;
   phase: string;
   sessionMode: SessionMode;
+  gameMode: GameMode;
   interactionMode: InteractionMode;
   roundLabel: string;
   joinedCount: number;
@@ -290,6 +297,7 @@ function TopHeader({
   roomCode,
   phase,
   sessionMode,
+  gameMode,
   interactionMode,
   roundLabel,
   joinedCount,
@@ -316,7 +324,7 @@ function TopHeader({
         <div className="tv-command-header-chip">
           <span>Mode</span>
           <strong>
-            {sessionMode === "single-player" ? "Solo" : getInteractionModeLabel(interactionMode)}
+            {gameMode === "nemesis_relay" ? "Relay" : sessionMode === "single-player" ? "Solo" : getInteractionModeLabel(interactionMode)}
           </strong>
         </div>
         <div className="tv-command-header-chip">
@@ -501,6 +509,7 @@ function OperativesRail({ patch, characterCatalog, activeSeatId, sessionMode, ba
 interface SessionReadoutProps {
   publicPatch: StatePatch<PublicPatchPayload> | null;
   sessionMode: SessionMode;
+  gameMode: GameMode;
   interactionMode: InteractionMode;
   joinedCount: number;
   readyCount: number;
@@ -511,6 +520,7 @@ interface SessionReadoutProps {
   selectedScenario: ScenarioCatalogEntry | null;
   scenarioCatalog: ScenarioCatalogEntry[];
   onScenarioSelected: (scenarioId: string) => void;
+  onGameModeSelected: (gameMode: GameMode) => void;
   onInteractionModeSelected: (interactionMode: InteractionMode) => void;
   onCreateSession: (sessionMode?: SessionMode) => Promise<void>;
   onRestartSession: () => void;
@@ -592,6 +602,7 @@ function FirstGamePanel({ interactionMode }: { interactionMode: InteractionMode 
 function SessionReadout({
   publicPatch,
   sessionMode,
+  gameMode,
   interactionMode,
   joinedCount,
   readyCount,
@@ -602,6 +613,7 @@ function SessionReadout({
   selectedScenario,
   scenarioCatalog,
   onScenarioSelected,
+  onGameModeSelected,
   onInteractionModeSelected,
   onCreateSession,
   onRestartSession,
@@ -635,6 +647,10 @@ function SessionReadout({
         <div className="tv-session-stat">
           <span>Mode</span>
           <strong>{getSessionModeLabel(sessionMode)}</strong>
+        </div>
+        <div className="tv-session-stat">
+          <span>Game</span>
+          <strong>{getGameModeLabel(publicPatch?.payload.gameMode ?? gameMode)}</strong>
         </div>
         <div className="tv-session-stat">
           <span>Table Feel</span>
@@ -682,6 +698,16 @@ function SessionReadout({
                 </select>
               </label>
               <ScenarioSelectionPreview scenario={selectedScenario} />
+              <label className="tv-session-scenario-picker">
+                <span>Game Mode</span>
+                <select
+                  value={gameMode}
+                  onChange={(event) => onGameModeSelected(event.target.value as GameMode)}
+                >
+                  <option value="standard">Standard | scenario race</option>
+                  <option value="nemesis_relay">Nemesis Relay | co-op champion pressure</option>
+                </select>
+              </label>
               <label className="tv-session-scenario-picker">
                 <span>Table Feel</span>
                 <select
@@ -735,6 +761,7 @@ interface RightSidebarProps {
   scenarioStatus: ReturnType<typeof getScenarioStatus>;
   publicPatch: StatePatch<PublicPatchPayload> | null;
   sessionMode: SessionMode;
+  gameMode: GameMode;
   interactionMode: InteractionMode;
   joinedCount: number;
   readyCount: number;
@@ -746,6 +773,7 @@ interface RightSidebarProps {
   selectedScenario: ScenarioCatalogEntry | null;
   scenarioCatalog: ScenarioCatalogEntry[];
   onScenarioSelected: (scenarioId: string) => void;
+  onGameModeSelected: (gameMode: GameMode) => void;
   onInteractionModeSelected: (interactionMode: InteractionMode) => void;
   onCreateSession: (sessionMode?: SessionMode) => Promise<void>;
   onRestartSession: () => void;
@@ -843,6 +871,58 @@ function NemesisStatusCard({
   );
 }
 
+function NemesisRelayTrack({ patch }: { patch: StatePatch<PublicPatchPayload> | null }): ReactElement | null {
+  const champions = patch?.payload.nemesisChampions ?? [];
+
+  if ((patch?.payload.gameMode ?? "standard") !== "nemesis_relay") {
+    return null;
+  }
+
+  const seatLabels = getSeatLabelMap(patch);
+  const countdowns = new Map((patch?.payload.nemesisNexusCountdowns ?? []).map((entry) => [entry.nemesisId, entry.remainingTurns]));
+
+  return (
+    <section className="tv-card tv-sidebar-card tv-relay-card" aria-label="Nemesis Relay">
+      <div className="tv-panel-title tv-panel-title-small">
+        <span />
+        <h2>Nemesis Relay</h2>
+        <span />
+      </div>
+      <div className="tv-relay-list">
+        {champions.length > 0 ? (
+          champions.map((champion: NemesisChampionSummary) => {
+            const healthPercent = getProgressPercent(champion.health, champion.maxHealth);
+            const countdown = countdowns.get(champion.id);
+
+            return (
+              <article
+                key={champion.id}
+                className={`tv-relay-champion${champion.warning ? " tv-relay-champion-warning" : ""}${champion.defeated ? " tv-relay-champion-defeated" : ""}`}
+              >
+                <div className="tv-relay-champion-top">
+                  <strong>{champion.name}</strong>
+                  <span>{champion.defeated ? "Defeated" : countdown ? `${countdown} turns` : `${champion.distanceToNexus} to Nexus`}</span>
+                </div>
+                <p>{champion.type} bound to {seatLabels[champion.boundPlayerId] ?? champion.boundPlayerId}</p>
+                <div className="tv-relay-health" aria-label={`${champion.name} health ${champion.health}/${champion.maxHealth}`}>
+                  <span style={{ width: `${healthPercent}%` }} />
+                </div>
+                <div className="tv-relay-meta">
+                  <span>{champion.sectorName}</span>
+                  <span>Str {champion.strength}</span>
+                  <span>{toTitleCase(champion.combatProfile)}</span>
+                </div>
+              </article>
+            );
+          })
+        ) : (
+          <p className="tv-empty-copy">Nemesis Champions spawn when the host starts the room.</p>
+        )}
+      </div>
+    </section>
+  );
+}
+
 function EscalationMeter({ patch }: { patch: StatePatch<PublicPatchPayload> | null }): ReactElement {
   const level = patch?.payload.escalationLevel ?? 0;
   const threshold = patch?.payload.escalationThreshold ?? 6;
@@ -910,6 +990,7 @@ function RightSidebar({
   scenarioStatus,
   publicPatch,
   sessionMode,
+  gameMode,
   interactionMode,
   joinedCount,
   readyCount,
@@ -921,6 +1002,7 @@ function RightSidebar({
   selectedScenario,
   scenarioCatalog,
   onScenarioSelected,
+  onGameModeSelected,
   onInteractionModeSelected,
   onCreateSession,
   onRestartSession,
@@ -949,12 +1031,14 @@ function RightSidebar({
         scenarioRuleDigest={scenarioRuleDigest}
       />
       <NemesisStatusCard nemesis={publicPatch?.payload.nemesis ?? null} selectedScenario={selectedScenario} />
+      <NemesisRelayTrack patch={publicPatch} />
       <EscalationMeter patch={publicPatch} />
       <ContractsPanel patch={publicPatch} />
 
       <SessionReadout
         publicPatch={publicPatch}
         sessionMode={sessionMode}
+        gameMode={gameMode}
         interactionMode={interactionMode}
         joinedCount={joinedCount}
         readyCount={readyCount}
@@ -965,6 +1049,7 @@ function RightSidebar({
         selectedScenario={selectedScenario}
         scenarioCatalog={scenarioCatalog}
         onScenarioSelected={onScenarioSelected}
+        onGameModeSelected={onGameModeSelected}
         onInteractionModeSelected={onInteractionModeSelected}
         onCreateSession={onCreateSession}
         onRestartSession={onRestartSession}
@@ -1273,6 +1358,7 @@ export function TvApp(): ReactElement {
     typeof window === "undefined" ? null : window.localStorage.getItem(roomCodeStorageKey)
   );
   const [sessionMode, setSessionMode] = useState<SessionMode>("multiplayer");
+  const [gameMode, setGameMode] = useState<GameMode>("standard");
   const [interactionMode, setInteractionMode] = useState<InteractionMode>("rivalry");
   const [selectedScenarioId, setSelectedScenarioId] = useState<string | null>(null);
   const [hostToken, setHostToken] = useState<string | null>(() =>
@@ -1307,6 +1393,7 @@ export function TvApp(): ReactElement {
   const readySeats = joinedSeats.filter((seat) => seat.ready);
   const startReadiness = getSessionStartReadiness({
     sessionMode: publicPatch?.payload.sessionMode ?? sessionMode,
+    gameMode: publicPatch?.payload.gameMode ?? gameMode,
     seats: publicPatch?.payload.seats ?? []
   });
   const activeSeatId = publicPatch?.payload.turnOrder[publicPatch.payload.activeSeatIndex] ?? null;
@@ -1316,6 +1403,7 @@ export function TvApp(): ReactElement {
   const activePlayer = publicPatch?.payload.players.find((entry) => entry.seatId === activeSeatId) ?? null;
   const battlePlayer = publicPatch?.payload.players.find((entry) => entry.seatId === combatSeatId) ?? activePlayer;
   const liveSessionMode = publicPatch?.payload.sessionMode ?? sessionMode;
+  const liveGameMode = publicPatch?.payload.gameMode ?? gameMode;
   const liveInteractionMode = publicPatch?.payload.interactionMode ?? interactionMode;
   const selectedScenario =
     (publicPatch?.payload.activeScenario
@@ -1372,6 +1460,7 @@ export function TvApp(): ReactElement {
         }
 
         setSessionMode(summary.sessionMode);
+        setGameMode(summary.gameMode ?? "standard");
         setInteractionMode(summary.interactionMode);
       })
       .catch(() => {
@@ -1401,9 +1490,10 @@ export function TvApp(): ReactElement {
     try {
       const scenarioId = selectedScenarioId ?? scenarioCatalog[0]?.id;
       const selectedInteractionMode = nextSessionMode === "single-player" ? "co-op" : interactionMode;
-      const session = await createSession(nextSessionMode, scenarioId, selectedInteractionMode);
+      const session = await createSession(nextSessionMode, scenarioId, selectedInteractionMode, gameMode);
       setRoomCode(session.roomCode);
       setSessionMode(session.sessionMode);
+      setGameMode(session.gameMode ?? "standard");
       setInteractionMode(session.interactionMode);
       setSelectedScenarioId(session.scenarioId);
       setHostToken(session.hostToken);
@@ -1436,6 +1526,7 @@ export function TvApp(): ReactElement {
           roomCode={roomCode}
           phase={publicPatch?.phase ?? "start"}
           sessionMode={liveSessionMode}
+          gameMode={liveGameMode}
           interactionMode={liveInteractionMode}
           roundLabel={getRoundLabel(publicPatch)}
           joinedCount={joinedSeats.length}
@@ -1470,6 +1561,7 @@ export function TvApp(): ReactElement {
             scenarioStatus={scenarioStatus}
             publicPatch={publicPatch}
             sessionMode={liveSessionMode}
+            gameMode={liveGameMode}
             interactionMode={liveInteractionMode}
             joinedCount={joinedSeats.length}
             readyCount={readySeats.length}
@@ -1481,6 +1573,7 @@ export function TvApp(): ReactElement {
             selectedScenario={selectedScenario}
             scenarioCatalog={scenarioCatalog}
             onScenarioSelected={setSelectedScenarioId}
+            onGameModeSelected={setGameMode}
             onInteractionModeSelected={setInteractionMode}
             onCreateSession={createHostSession}
             onRestartSession={() => {

@@ -14,6 +14,7 @@ const characterPortraitById: Record<string, string> = {
   "char_talen_korr": "/assets/riftfall/characters/char_talen_korr.png",
   "char_ker_von_ker": "/assets/riftfall/characters/char_ker_von_ker.png",
   "char_kira_dog": "/assets/riftfall/characters/char_kira_dog.png",
+  "char_popelord": "/assets/riftfall/characters/char_popelord.png",
   "void-marshal": "/assets/riftfall/characters/char_void_marshal_kael_dorn.png",
   "signal-witch": "/assets/riftfall/characters/char_oran_voss.png",
   "grave-engineer": "/assets/riftfall/characters/char_talen_korr.png",

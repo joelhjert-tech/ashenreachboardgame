@@ -142,6 +142,7 @@ function createMatrixState(playerCount: number, overrides: Partial<GameState> = 
     sessionId: `matrix-${playerCount}`,
     status: "active",
     sessionMode: playerCount === 1 ? "single-player" : "multiplayer",
+    gameMode: overrides.gameMode ?? "standard",
     winnerSeatId: null,
     activeScenarioId: "scenario_broken_seal",
     scenarioProgress: {
@@ -160,6 +161,8 @@ function createMatrixState(playerCount: number, overrides: Partial<GameState> = 
     seats,
     players,
     availableContracts: contracts,
+    nemesisChampions: overrides.nemesisChampions ?? [],
+    nemesisNexusCountdowns: overrides.nemesisNexusCountdowns ?? [],
     eventLog: [],
     currentEncounter: null,
     pendingEnemyRoll: null,

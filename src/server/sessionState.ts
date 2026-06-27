@@ -4,8 +4,9 @@ import { loadContracts } from "../game/content/contracts.js";
 import { createCanonicalSectorGraph, validateCanonicalSectorGraph } from "../game/data/canonicalSectorGraph.js";
 import { getScenarioDefinition, SCENARIOS } from "../game/data/scenarios.js";
 import { createInitialScenarioProgress } from "../game/rules/scenarioAmbient.js";
+import { getHeatThresholdForMode, getWoundThresholdForMode } from "../game/rules/soloTuning.js";
 import type { Character } from "../game/schema/character.schema.js";
-import type { GameState, InteractionMode, PlayerState, SessionMode } from "../game/schema/session.schema.js";
+import type { GameMode, GameState, InteractionMode, PlayerState, SessionMode } from "../game/schema/session.schema.js";
 import { createJoinToken } from "./auth.js";
 
 const sessionSeatLayouts = {
@@ -57,7 +58,8 @@ export function createInitialSessionState(
   sessionId: string,
   sessionMode: SessionMode = "multiplayer",
   scenarioId?: string,
-  interactionMode?: InteractionMode
+  interactionMode?: InteractionMode,
+  gameMode: GameMode = "standard"
 ): GameState {
   const characters = loadCharacters();
   const sectors = createCanonicalSectorGraph();
@@ -80,16 +82,17 @@ export function createInitialSessionState(
     sessionId,
     status: "lobby",
     sessionMode,
+    gameMode,
     interactionMode: interactionMode ?? (sessionMode === "single-player" ? "co-op" : "rivalry"),
     winnerSeatId: null,
     activeScenarioId: defaultScenario?.id ?? "scenario_broken_seal",
-    scenarioProgress: createInitialScenarioProgress(defaultScenario?.id ?? "scenario_broken_seal"),
+    scenarioProgress: createInitialScenarioProgress(defaultScenario?.id ?? "scenario_broken_seal", sessionMode),
     phase: "start",
     resolutionSource: null,
     activeSeatIndex: 0,
     turnOrder: configuredSeats.map(({ seatId }) => seatId),
-    heatThreshold: 6,
-    woundThreshold: 3,
+    heatThreshold: getHeatThresholdForMode(sessionMode),
+    woundThreshold: getWoundThresholdForMode(sessionMode),
     sequence: 0,
     escalationLevel: 0,
     sectors,
@@ -110,6 +113,8 @@ export function createInitialSessionState(
       )
     ),
     availableContracts,
+    nemesisChampions: [],
+    nemesisNexusCountdowns: [],
     eventLog: [],
     currentEncounter: null,
     pendingEnemyRoll: null,

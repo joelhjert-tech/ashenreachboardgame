@@ -11,6 +11,7 @@ export type GearCategory =
 export type Phase = "start" | "navigation" | "sector" | "action" | "resolution" | "broadcast";
 export type SessionStatus = "lobby" | "active" | "ended";
 export type SessionMode = "multiplayer" | "single-player";
+export type GameMode = "standard" | "nemesis_relay";
 export type InteractionMode = "co-op" | "rivalry" | "ruthless";
 
 export interface PublicSeat {
@@ -246,6 +247,33 @@ export interface ActiveNemesisSummary {
   abilities: ActiveNemesisAbilitySummary[];
 }
 
+export interface NemesisChampionSummary {
+  id: string;
+  name: string;
+  type: string;
+  boundPlayerId: string;
+  sectorId: string;
+  sectorName: string;
+  strength: number;
+  craft?: number;
+  tech?: number;
+  will?: number;
+  health: number;
+  maxHealth: number;
+  trophies: number;
+  movementProfile: "center_path" | "hunt_wounded" | "slow_brute" | "anomaly_shortcut";
+  combatProfile: "strength" | "craft" | "tech" | "will" | "choice";
+  specialRuleId: string;
+  defeated: boolean;
+  distanceToNexus: number;
+  warning: boolean;
+}
+
+export interface NemesisNexusCountdownSummary {
+  nemesisId: string;
+  remainingTurns: number;
+}
+
 export interface ActiveScenarioSummary {
   id: string;
   name: string;
@@ -289,11 +317,14 @@ export interface ScenarioTelemetryItem {
 export interface PublicPatchPayload {
   status: SessionStatus;
   sessionMode: SessionMode;
+  gameMode?: GameMode;
   interactionMode?: InteractionMode;
   winnerSeatId: string | null;
   activeScenario: ActiveScenarioSummary | null;
   scenarioTelemetry: ScenarioTelemetryItem[];
   scenarioProgress: Record<string, number>;
+  nemesisChampions?: NemesisChampionSummary[];
+  nemesisNexusCountdowns?: NemesisNexusCountdownSummary[];
   seats: PublicSeat[];
   sectors: SectorNode[];
   players: PublicPlayer[];
@@ -314,6 +345,9 @@ export interface PublicPatchPayload {
 export interface PhonePatchPayload extends PublicPatchPayload {
   phase: Phase;
   self: PhoneSelfState | null;
+  boundNemesis?: NemesisChampionSummary | null;
+  crownKeyFragments?: number;
+  eligibleNemesisAssistSeatIds?: string[];
 }
 
 export interface StatePatch<TPayload = PublicPatchPayload> {
@@ -451,6 +485,13 @@ export type ClientIntent =
       type: "RAISE_STAT_REQUESTED";
       seatId: string;
       stat: Stat;
+    }
+  | {
+      type: "NEMESIS_COMBAT_REQUESTED";
+      seatId: string;
+      nemesisId: string;
+      stat?: Stat;
+      assistSeatIds?: string[];
     };
 
 export type HostCommand =

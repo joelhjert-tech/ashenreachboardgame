@@ -416,7 +416,7 @@ describe("TvApp", () => {
     fireEvent.click(screen.getAllByRole("button", { name: /create multiplayer/i })[0]!);
 
     await waitFor(() => {
-      expect(mockCreateSession).toHaveBeenCalledWith("multiplayer", "scenario_dying_star", "rivalry");
+      expect(mockCreateSession).toHaveBeenCalledWith("multiplayer", "scenario_dying_star", "rivalry", "standard");
     });
   });
 
@@ -435,7 +435,27 @@ describe("TvApp", () => {
     fireEvent.click(screen.getByRole("button", { name: /create single-player/i }));
 
     await waitFor(() => {
-      expect(mockCreateSession).toHaveBeenCalledWith("single-player", "scenario_dying_star", "co-op");
+      expect(mockCreateSession).toHaveBeenCalledWith("single-player", "scenario_dying_star", "co-op", "standard");
+    });
+  });
+
+  it("sends Nemesis Relay as the selected game mode when creating a room", async () => {
+    mockCreateSession.mockResolvedValue({
+      roomCode: "RELAY",
+      hostToken: "host:RELAY:secret",
+      sessionMode: "multiplayer",
+      gameMode: "nemesis_relay",
+      scenarioId: "scenario_broken_seal"
+    });
+
+    render(<TvApp />);
+
+    const gameModeSelect = (await screen.findAllByRole("combobox"))[1]!;
+    fireEvent.change(gameModeSelect, { target: { value: "nemesis_relay" } });
+    fireEvent.click(screen.getAllByRole("button", { name: /create multiplayer/i })[0]!);
+
+    await waitFor(() => {
+      expect(mockCreateSession).toHaveBeenCalledWith("multiplayer", "scenario_broken_seal", "rivalry", "nemesis_relay");
     });
   });
 

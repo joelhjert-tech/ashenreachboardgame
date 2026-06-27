@@ -70,6 +70,9 @@ describe("canonical sector graph", () => {
     expect(state.seats.map((seat) => seat.seatId)).toEqual(["seat-1"]);
     expect(state.players.map((player) => player.seatId)).toEqual(["seat-1"]);
     expect(state.turnOrder).toEqual(["seat-1"]);
+    expect(state.heatThreshold).toBe(8);
+    expect(state.woundThreshold).toBe(4);
+    expect(state.scenarioProgress).toEqual({ sealTokens: 8 });
     expect(tvProjection.sessionMode).toBe("single-player");
     expect(tvProjection.escalationThreshold).toBe(8);
     expect(tvProjection.seats).toHaveLength(1);

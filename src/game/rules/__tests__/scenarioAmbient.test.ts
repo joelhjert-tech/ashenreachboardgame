@@ -56,6 +56,7 @@ function createContext(
 describe("scenario ambient rules", () => {
   it("seeds initial progress for each authored scenario", () => {
     expect(createInitialScenarioProgress("scenario_broken_seal")).toEqual({ sealTokens: 6 });
+    expect(createInitialScenarioProgress("scenario_broken_seal", "single-player")).toEqual({ sealTokens: 8 });
     expect(createInitialScenarioProgress("scenario_throne_of_ash")).toEqual({ crownClaims: 0 });
     expect(createInitialScenarioProgress("scenario_mirror_of_false_heroes")).toEqual({});
     expect(createInitialScenarioProgress("scenario_devourer_beneath")).toEqual({ doomTokens: 0, devourerIndex: 0 });
@@ -84,6 +85,29 @@ describe("scenario ambient rules", () => {
     expect(restored?.summary).toContain("6 seal tokens now stand");
     const restoredState = restored?.updater(weakenedState) ?? weakenedState;
     expect(restoredState.scenarioProgress.sealTokens).toBe(6);
+  });
+
+  it("softens Broken Seal turn-start pressure and restoration cap in single-player", () => {
+    const state = createScenarioState({
+      sessionMode: "single-player",
+      activeScenarioId: "scenario_broken_seal",
+      scenarioProgress: { sealTokens: 8 }
+    });
+
+    const weakening = resolveScenarioTurnStart(createContext(state, { roll: 1 }));
+    expect(weakening?.summary).toContain("7 seal tokens remain");
+    const weakenedState = weakening?.updater(state) ?? state;
+    expect(weakenedState.scenarioProgress.sealTokens).toBe(7);
+
+    const surge = resolveScenarioTurnStart(createContext(state, { roll: 2 }));
+    expect(surge?.summary).toContain("rouses a local threat");
+    expect(surge?.followUp?.type).toBe("draw_sector_threat");
+
+    expect(resolveScenarioTurnStart(createContext(state, { roll: 4 }))).toBeNull();
+
+    const restored = resolveScenarioEnemyDefeat(createContext(state));
+    const restoredState = restored?.updater(state) ?? state;
+    expect(restoredState.scenarioProgress.sealTokens).toBe(8);
   });
 
   it("spikes every operative heat when the Broken Seal loses its final ward token", () => {

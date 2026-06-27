@@ -57,6 +57,7 @@ function createState(): GameState {
     sessionId,
     status: "active",
     sessionMode: "single-player",
+    gameMode: "standard",
     winnerSeatId: null,
     activeScenarioId: "scenario_broken_seal",
     scenarioProgress: {},
@@ -101,6 +102,8 @@ function createState(): GameState {
       }
     ],
     availableContracts: [],
+    nemesisChampions: [],
+    nemesisNexusCountdowns: [],
     eventLog: [],
     currentEncounter: null,
     pendingEnemyRoll: null,

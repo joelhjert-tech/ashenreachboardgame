@@ -1,4 +1,5 @@
 import type { EncounterEffect } from "../schema/card.schema.js";
+import { easeBrokenSealConfrontationDifficulty } from "../rules/soloTuning.js";
 
 export type ScenarioConfrontationStat = "command" | "grit" | "signal" | "guile" | "forge";
 
@@ -17,6 +18,7 @@ export interface ScenarioConfrontationPlan {
 
 export interface ScenarioConfrontationContext {
   playerName: string;
+  sessionMode: "multiplayer" | "single-player";
   crownClaims: number;
   mirrorPressure: number;
   salvageLeverage: number;
@@ -81,9 +83,21 @@ export const SCENARIOS: ScenarioDefinition[] = [
     failureEffectKey: "scenario_gainCorruption",
     buildConfrontationPlan: (context) => ({
       checks: [
-        { stat: "grit", difficulty: 10, label: "Hold the breached ward shut" },
-        { stat: "signal", difficulty: 10, label: "Realign the split sigils" },
-        { stat: "guile", difficulty: 12, label: "Resist the mind behind the breach" }
+        {
+          stat: "grit",
+          difficulty: easeBrokenSealConfrontationDifficulty(context.sessionMode, 10),
+          label: "Hold the breached ward shut"
+        },
+        {
+          stat: "signal",
+          difficulty: easeBrokenSealConfrontationDifficulty(context.sessionMode, 10),
+          label: "Realign the split sigils"
+        },
+        {
+          stat: "guile",
+          difficulty: easeBrokenSealConfrontationDifficulty(context.sessionMode, 12),
+          label: "Resist the mind behind the breach"
+        }
       ],
       markLabel: "restoration mark",
       effect: null,

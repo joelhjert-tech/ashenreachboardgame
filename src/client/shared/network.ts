@@ -1,4 +1,4 @@
-import type { CharacterCatalogEntry, InteractionMode, PhoneSessionAuth, ScenarioCatalogEntry, SessionMode } from "./types.js";
+import type { CharacterCatalogEntry, GameMode, InteractionMode, PhoneSessionAuth, ScenarioCatalogEntry, SessionMode } from "./types.js";
 
 const browserHost = typeof window !== "undefined" ? window.location.hostname : "localhost";
 const browserProtocol = typeof window !== "undefined" ? window.location.protocol : "http:";
@@ -21,11 +21,13 @@ export function getWebSocketOrigin(): string {
 export async function createSession(
   sessionMode: SessionMode = "multiplayer",
   scenarioId?: string,
-  interactionMode?: InteractionMode
+  interactionMode?: InteractionMode,
+  gameMode: GameMode = "standard"
 ): Promise<{
   roomCode: string;
   hostToken: string;
   sessionMode: SessionMode;
+  gameMode: GameMode;
   interactionMode: InteractionMode;
   scenarioId: string;
 }> {
@@ -34,7 +36,7 @@ export async function createSession(
     headers: {
       "Content-Type": "application/json"
     },
-    body: JSON.stringify({ sessionMode, scenarioId, interactionMode })
+    body: JSON.stringify({ sessionMode, scenarioId, interactionMode, gameMode })
   });
 
   return await response.json();
@@ -43,6 +45,7 @@ export async function createSession(
 export async function fetchSessionSummary(): Promise<{
   roomCode: string;
   sessionMode: SessionMode;
+  gameMode: GameMode;
   interactionMode: InteractionMode;
   status: string;
   phase: string;
@@ -57,6 +60,7 @@ export async function fetchSessionSummary(): Promise<{
   return payload as {
     roomCode: string;
     sessionMode: SessionMode;
+    gameMode: GameMode;
     interactionMode: InteractionMode;
     status: string;
     phase: string;

@@ -1,6 +1,7 @@
-import type { GameState } from "../schema/session.schema.js";
+import type { GameState, SessionMode } from "../schema/session.schema.js";
 import { getEquippedGearBonus } from "../engine/gear.js";
 import { getEscalationModifier } from "../engine/escalation.js";
+import { getBrokenSealTokenLimit, isSinglePlayerMode } from "./soloTuning.js";
 
 export type ScenarioAmbientResolution = {
   updater: (state: GameState) => GameState;
@@ -88,11 +89,16 @@ const SCENARIO_AMBIENT_RULES: Record<string, ScenarioAmbientRule> = {
     initialProgress: { sealTokens: 6 },
     describePressure: (state) => {
       const seals = state.scenarioProgress.sealTokens ?? 0;
-      return `${seals} seals remain. Turn start rolls now remove seals on 1-2, reveal a local threat on 3-4, and hold on 5-6.`;
+      return isSinglePlayerMode(state.sessionMode)
+        ? `${seals} seals remain. Solo turn start rolls now remove a seal on 1, reveal a local threat on 2-3, and hold on 4-6.`
+        : `${seals} seals remain. Turn start rolls now remove seals on 1-2, reveal a local threat on 3-4, and hold on 5-6.`;
     },
     buildTelemetry: (state) => [
       { label: "Seal Tokens", value: String(state.scenarioProgress.sealTokens ?? 0) },
-      { label: "Turn Pressure", value: "1-2 weaken | 3-4 threat | 5-6 hold" },
+      {
+        label: "Turn Pressure",
+        value: isSinglePlayerMode(state.sessionMode) ? "1 weaken | 2-3 threat | 4-6 hold" : "1-2 weaken | 3-4 threat | 5-6 hold"
+      },
       { label: "Restoration", value: `${state.scenarioProgress.sealRestorationMarks ?? 0}/2` }
     ],
     onTurnStart: ({ state, rollDie, getCounter, seatId }) => {
@@ -101,9 +107,12 @@ const SCENARIO_AMBIENT_RULES: Record<string, ScenarioAmbientRule> = {
       }
 
       const roll = rollDie();
+      const weakenRoll = isSinglePlayerMode(state.sessionMode) ? 1 : 2;
+      const threatRoll = isSinglePlayerMode(state.sessionMode) ? 3 : 4;
+      const sealTokenLimit = getBrokenSealTokenLimit(state.sessionMode);
 
-      if (roll <= 2) {
-        const nextSealTokens = Math.max(0, getCounter("sealTokens", 6) - 1);
+      if (roll <= weakenRoll) {
+        const nextSealTokens = Math.max(0, getCounter("sealTokens", sealTokenLimit) - 1);
 
         return {
           updater: (state) => ({
@@ -130,7 +139,7 @@ const SCENARIO_AMBIENT_RULES: Record<string, ScenarioAmbientRule> = {
         };
       }
 
-      if (roll <= 4) {
+      if (roll <= threatRoll) {
         return {
           updater: (state) => state,
           summary: "Breach static surges across the turn start and rouses a local threat.",
@@ -147,7 +156,8 @@ const SCENARIO_AMBIENT_RULES: Record<string, ScenarioAmbientRule> = {
         return null;
       }
 
-      const nextSealTokens = Math.min(6, getCounter("sealTokens", 6) + 1);
+      const sealTokenLimit = getBrokenSealTokenLimit(state.sessionMode);
+      const nextSealTokens = Math.min(sealTokenLimit, getCounter("sealTokens", sealTokenLimit) + 1);
 
       return {
         updater: (state) => ({
@@ -684,8 +694,17 @@ function resolveScenarioSectorAmbient(
   return rule?.onSectorEntered?.(context) ?? null;
 }
 
-export function createInitialScenarioProgress(scenarioId: string): Record<string, number> {
-  return { ...(getScenarioRule(scenarioId)?.initialProgress ?? {}) };
+export function createInitialScenarioProgress(
+  scenarioId: string,
+  sessionMode: SessionMode = "multiplayer"
+): Record<string, number> {
+  const progress = { ...(getScenarioRule(scenarioId)?.initialProgress ?? {}) };
+
+  if (scenarioId === "scenario_broken_seal") {
+    progress.sealTokens = getBrokenSealTokenLimit(sessionMode);
+  }
+
+  return progress;
 }
 
 export function resolveScenarioTurnStart(context: ScenarioAmbientContext): ScenarioAmbientResolution | null {

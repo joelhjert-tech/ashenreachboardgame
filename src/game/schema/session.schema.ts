@@ -15,6 +15,7 @@ export const phaseSchema = z.enum([
 
 export const sessionStatusSchema = z.enum(["lobby", "active", "ended"]);
 export const sessionModeSchema = z.enum(["multiplayer", "single-player"]);
+export const gameModeSchema = z.enum(["standard", "nemesis_relay"]);
 export const interactionModeSchema = z.enum(["co-op", "rivalry", "ruthless"]);
 
 export const resolutionStageSchema = z.enum([
@@ -95,10 +96,36 @@ export const playerStateSchema = z.object({
   private: playerPrivateStateSchema
 });
 
+export const nemesisChampionSchema = z.object({
+  id: z.string().min(1),
+  name: z.string().min(1),
+  type: z.string().min(1),
+  boundPlayerId: z.string().min(1),
+  sectorId: z.string().min(1),
+  strength: z.number().int().min(0),
+  craft: z.number().int().min(0).optional(),
+  tech: z.number().int().min(0).optional(),
+  will: z.number().int().min(0).optional(),
+  health: z.number().int().min(0),
+  maxHealth: z.number().int().min(1),
+  trophies: z.number().int().min(0),
+  movementProfile: z.enum(["center_path", "hunt_wounded", "slow_brute", "anomaly_shortcut"]),
+  combatProfile: z.enum(["strength", "craft", "tech", "will", "choice"]),
+  specialRuleId: z.string().min(1),
+  defeated: z.boolean(),
+  shield: z.number().int().min(0).optional()
+});
+
+export const nemesisNexusCountdownSchema = z.object({
+  nemesisId: z.string().min(1),
+  remainingTurns: z.number().int().min(0)
+});
+
 export const gameStateSchema = z.object({
   sessionId: z.string().min(1),
   status: sessionStatusSchema,
   sessionMode: sessionModeSchema,
+  gameMode: gameModeSchema.default("standard"),
   interactionMode: interactionModeSchema.optional(),
   winnerSeatId: z.string().min(1).nullable(),
   activeScenarioId: z.string().min(1),
@@ -114,6 +141,8 @@ export const gameStateSchema = z.object({
   seats: z.array(seatSchema),
   players: z.array(playerStateSchema),
   availableContracts: z.array(contractCardSchema),
+  nemesisChampions: z.array(nemesisChampionSchema).default([]),
+  nemesisNexusCountdowns: z.array(nemesisNexusCountdownSchema).default([]),
   eventLog: z.array(z.unknown()),
   escalationLevel: z.number().int().min(0),
   currentEncounter: threatCardSchema.nullable(),
@@ -162,11 +191,14 @@ export const sessionSnapshotSchema = z.object({
 export type Phase = z.infer<typeof phaseSchema>;
 export type SessionStatus = z.infer<typeof sessionStatusSchema>;
 export type SessionMode = z.infer<typeof sessionModeSchema>;
+export type GameMode = z.infer<typeof gameModeSchema>;
 export type InteractionMode = z.infer<typeof interactionModeSchema>;
 export type ResolutionStage = z.infer<typeof resolutionStageSchema>;
 export type ActiveResolution = z.infer<typeof activeResolutionSchema>;
 export type Seat = z.infer<typeof seatSchema>;
 export type PlayerPrivateState = z.infer<typeof playerPrivateStateSchema>;
 export type PlayerState = z.infer<typeof playerStateSchema>;
+export type NemesisChampion = z.infer<typeof nemesisChampionSchema>;
+export type NemesisNexusCountdown = z.infer<typeof nemesisNexusCountdownSchema>;
 export type GameState = z.infer<typeof gameStateSchema>;
 export type SessionSnapshot = z.infer<typeof sessionSnapshotSchema>;

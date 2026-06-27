@@ -300,6 +300,34 @@ describe("scenario confrontation flow", () => {
     ]);
   });
 
+  it("eases the Broken Seal confrontation checks in single-player mode", () => {
+    const roomServer = new GameRoomServer(
+      createScenarioState({
+        sessionMode: "single-player",
+        turnOrder: ["seat-1"],
+        seats: createScenarioState().seats.slice(0, 1),
+        players: createScenarioState().players.slice(0, 1).map((player) => ({
+          ...player,
+          sectorId: "center_cinder_gate",
+          character: {
+            ...player.character,
+            currentSpaceId: "center_cinder_gate"
+          }
+        }))
+      }),
+      [],
+      createSequenceRandomSource([0, 0, 0, 0, 0, 0])
+    );
+    const player = roomServer.getState().players.find((entry) => entry.seatId === "seat-1");
+    const plan = (roomServer as any).buildScenarioPlan(player!);
+
+    expect(plan.checks).toEqual([
+      { stat: "grit", difficulty: 8, label: "Hold the breached ward shut" },
+      { stat: "signal", difficulty: 8, label: "Realign the split sigils" },
+      { stat: "guile", difficulty: 10, label: "Resist the mind behind the breach" }
+    ]);
+  });
+
   it("applies the linked nemesis bite as wounds and feeds escalation on a failed confrontation check", () => {
     const roomServer = new GameRoomServer(
       createScenarioState({
@@ -536,7 +564,7 @@ describe("scenario confrontation flow", () => {
     roomServer.setSeatReady("seat-1", true);
     roomServer.startSession();
 
-    expect(roomServer.getState().scenarioProgress.sealTokens).toBe(5);
+    expect(roomServer.getState().scenarioProgress.sealTokens).toBe(7);
   });
 
   it("heats every operative when the Broken Seal loses its final token at turn start", () => {
@@ -594,6 +622,43 @@ describe("scenario confrontation flow", () => {
     expect(roomServer.getState().phase).toBe("action");
     expect(roomServer.getState().currentEncounter).not.toBeNull();
     expect(roomServer.getState().lastOutcomeSummary?.summary).toContain("rouses a local threat");
+  });
+
+  it("eases single-player movement checks before heat is assigned", () => {
+    const state = createInitialSessionState("session-alpha", "single-player");
+    const player = state.players[0]!;
+    const currentSector = state.sectors.find((sector) => sector.id === player.character.currentSpaceId)!;
+    const targetSectorId = currentSector.neighbors[0]!;
+    const targetDanger = 5;
+    const roomServer = new GameRoomServer(
+      {
+        ...state,
+        status: "active",
+        phase: "navigation",
+        sectors: state.sectors.map((sector) =>
+          sector.id === targetSectorId
+            ? {
+                ...sector,
+                danger: targetDanger,
+                encounterDecks: {
+                  ...sector.encounterDecks,
+                  threat: []
+                }
+              }
+            : sector
+        )
+      },
+      [],
+      createSequenceRandomSource([0, 0])
+    );
+
+    (roomServer as any).resolveMoveIntent({
+      type: "MOVE_REQUESTED",
+      seatId: "seat-1",
+      toSectorId: targetSectorId
+    } satisfies ClientIntent);
+
+    expect(roomServer.getState().lastOutcomeSummary?.difficulty).toBe(targetDanger - 1);
   });
 
   it("moves the Devourer and raises doom when it consumes a threatened outer sector", () => {

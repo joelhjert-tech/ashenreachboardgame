@@ -41,6 +41,21 @@ import {
   type ScenarioAmbientResolution
 } from "../game/rules/scenarioAmbient.js";
 import { getSessionStartReadiness } from "../game/rules/sessionStart.js";
+import { getSoloMovementDifficultyEase } from "../game/rules/soloTuning.js";
+import {
+  ASHEN_CROWN_NEXUS_SECTOR_ID,
+  buildNemesisMovementPath,
+  createNemesisChampionsForSeats,
+  getAssistBonus,
+  getCrownKeyFragmentCount,
+  getDistanceToNexus,
+  getEligibleAssistSeatIds,
+  getGlobalHeatLevel,
+  getNemesisCombatStat,
+  getNemesisCombatValue,
+  getNemesisMovementStepCount,
+  hasCrownKeyFragment
+} from "../game/rules/nemesisRelay.js";
 import { resolveSpaceText } from "../game/rules/tileTextResolver.js";
 import type {
   AcceptContractAction,
@@ -58,6 +73,11 @@ import type {
   GameAction,
   MovementResolvedAction,
   MoveRequestedAction,
+  NemesisCombatResolvedAction,
+  NemesisDefeatedAction,
+  NemesisMovedAction,
+  NemesisNexusCountdownStartedAction,
+  NemesisSpawnedAction,
   PhaseAdvancedAction,
   ResolutionContinuedAction,
   RoundCompletedAction,
@@ -82,7 +102,7 @@ import type { Follower } from "../game/schema/follower.schema.js";
 import type { GearItem } from "../game/schema/gear.schema.js";
 import { rollDice, type RandomSource, defaultRandomSource } from "../game/engine/dice.js";
 import { reduceGameState } from "../game/engine/reducer.js";
-import type { ActiveResolution, GameState, PlayerState } from "../game/schema/session.schema.js";
+import type { ActiveResolution, GameState, NemesisChampion, PlayerState } from "../game/schema/session.schema.js";
 import { validateHostToken, validateJoinToken } from "./auth.js";
 import { getBoardSpace } from "../game/data/boardSpaces.js";
 
@@ -197,7 +217,8 @@ const CLIENT_INTENT_TYPES = new Set<string>([
   "SCENARIO_CONFRONTATION_REQUESTED",
   "RESOLVE_SPACE_TEXT",
   "STABILIZE_REQUESTED",
-  "RAISE_STAT_REQUESTED"
+  "RAISE_STAT_REQUESTED",
+  "NEMESIS_COMBAT_REQUESTED"
 ] as const);
 
 const PHASE_VALUES = new Set(["start", "navigation", "sector", "action", "resolution", "broadcast"]);
@@ -458,6 +479,21 @@ export class GameRoomServer {
         return;
       }
 
+      if (intent.type === "NEMESIS_COMBAT_REQUESTED") {
+        this.resolveNemesisCombatIntent(intent);
+        const shouldCompleteTurn =
+          this.state.status === "active" && this.state.phase === "broadcast" && !this.state.activeResolution;
+        const completingSeatId = this.state.turnOrder[this.state.activeSeatIndex] ?? client.seatId;
+
+        this.broadcastPatch();
+
+        if (shouldCompleteTurn && completingSeatId) {
+          this.completeBroadcastTurn(completingSeatId);
+        }
+
+        return;
+      }
+
       const shouldResolveVisibleCheckOrCombat =
         (intent.type === "CHECK_REQUESTED" || intent.type === "COMBAT_REQUESTED") &&
         this.state.activeResolution?.stage === "battle_setup" &&
@@ -694,6 +730,7 @@ export class GameRoomServer {
 
     const startReadiness = getSessionStartReadiness({
       sessionMode: this.state.sessionMode,
+      gameMode: this.state.gameMode,
       seats: this.state.seats
     });
 
@@ -716,6 +753,16 @@ export class GameRoomServer {
       seatId: activeSeatId,
       createdAt: new Date().toISOString()
     });
+
+    if (this.state.gameMode === "nemesis_relay") {
+      this.applyAction({
+        type: "NEMESIS_SPAWNED",
+        seatId: activeSeatId,
+        champions: createNemesisChampionsForSeats(this.state, this.state.turnOrder),
+        createdAt: new Date().toISOString()
+      } satisfies NemesisSpawnedAction);
+    }
+
     if (this.state.status === "active") {
       this.applyStartOfTurnScenarioEffects(this.state.turnOrder[this.state.activeSeatIndex] ?? activeSeatId);
       this.maybeTriggerAbilityOnTurnStarted(this.state.turnOrder[this.state.activeSeatIndex] ?? activeSeatId);
@@ -770,6 +817,12 @@ export class GameRoomServer {
       case "COMBAT_REQUESTED":
       case "RAISE_STAT_REQUESTED":
         requireEnumField(message, "stat", STAT_VALUES, type);
+        break;
+      case "NEMESIS_COMBAT_REQUESTED":
+        requireStringField(message, "nemesisId", type);
+        if ("stat" in message) {
+          requireEnumField(message, "stat", STAT_VALUES, type);
+        }
         break;
       case "RECRUIT_REPLACEMENT":
         requireStringField(message, "replacementCharacterId", type);
@@ -2923,7 +2976,9 @@ export class GameRoomServer {
       resolutionSource: null,
       activeSeatIndex: 0,
       turnOrder: connectedTurnOrder,
-      scenarioProgress: createInitialScenarioProgress(this.state.activeScenarioId),
+      scenarioProgress: createInitialScenarioProgress(this.state.activeScenarioId, this.state.sessionMode),
+      nemesisChampions: [],
+      nemesisNexusCountdowns: [],
       sequence: this.state.sequence + 1,
       escalationLevel: 0,
       currentEncounter: null,
@@ -3165,6 +3220,27 @@ export class GameRoomServer {
       return;
     }
 
+    this.advanceNemesisNexusCountdowns(seatId);
+
+    if (this.state.status !== "active") {
+      this.broadcastPatch();
+      return;
+    }
+
+    this.activateBoundNemesis(seatId);
+
+    if (this.state.status !== "active") {
+      this.broadcastPatch();
+      return;
+    }
+
+    this.checkCoopOperativeDefeat(seatId);
+
+    if (this.state.status !== "active") {
+      this.broadcastPatch();
+      return;
+    }
+
     const previousActiveSeatIndex = this.state.activeSeatIndex;
 
     this.applyAction({
@@ -3199,6 +3275,21 @@ export class GameRoomServer {
       createdAt: new Date().toISOString()
     } satisfies RoundCompletedAction);
     this.feedEscalation(seatId, 1, "round pressure");
+  }
+
+  private checkCoopOperativeDefeat(seatId: string): void {
+    if (this.state.gameMode !== "nemesis_relay" || this.state.status !== "active") {
+      return;
+    }
+
+    if (this.state.players.length > 0 && this.state.players.every((player) => player.character.status === "recalled")) {
+      this.applyAction({
+        type: "COOP_DEFEAT_TRIGGERED",
+        seatId,
+        summary: "All operatives were recalled before the Nemesis Relay was stopped.",
+        createdAt: new Date().toISOString()
+      });
+    }
   }
 
   private createEncounterDrawnAction(seatId: string): EncounterDrawnAction {
@@ -3341,6 +3432,7 @@ export class GameRoomServer {
 
     return scenario.buildConfrontationPlan({
       playerName: player.character.name,
+      sessionMode: this.state.sessionMode,
       crownClaims: crownProxy,
       mirrorPressure,
       salvageLeverage,
@@ -3440,6 +3532,87 @@ export class GameRoomServer {
     this.broadcastPatch();
   }
 
+  private advanceNemesisNexusCountdowns(seatId: string): void {
+    if (this.state.gameMode !== "nemesis_relay" || this.state.nemesisNexusCountdowns.length === 0) {
+      return;
+    }
+
+    const nextCountdowns = this.state.nemesisNexusCountdowns.map((entry) => ({
+      ...entry,
+      remainingTurns: Math.max(0, entry.remainingTurns - 1)
+    }));
+    const expired = nextCountdowns.find((entry) => {
+      const nemesis = this.state.nemesisChampions.find((champion) => champion.id === entry.nemesisId);
+      return entry.remainingTurns <= 0 && nemesis && !nemesis.defeated && nemesis.sectorId === ASHEN_CROWN_NEXUS_SECTOR_ID;
+    });
+
+    this.state = {
+      ...this.state,
+      nemesisNexusCountdowns: nextCountdowns,
+      sequence: this.state.sequence + 1
+    };
+
+    if (expired) {
+      const nemesis = this.state.nemesisChampions.find((champion) => champion.id === expired.nemesisId);
+      this.applyAction({
+        type: "COOP_DEFEAT_TRIGGERED",
+        seatId,
+        summary: `${nemesis?.name ?? "A Nemesis Champion"} activated the Ashen Crown Nexus.`,
+        createdAt: new Date().toISOString()
+      });
+    }
+  }
+
+  private activateBoundNemesis(seatId: string): void {
+    if (this.state.gameMode !== "nemesis_relay" || this.state.status !== "active") {
+      return;
+    }
+
+    const nemesis = this.state.nemesisChampions.find((champion) => champion.boundPlayerId === seatId && !champion.defeated);
+
+    if (!nemesis || nemesis.sectorId === ASHEN_CROWN_NEXUS_SECTOR_ID) {
+      return;
+    }
+
+    const stepCount = getNemesisMovementStepCount(this.state, this.randomSource);
+    const movement = buildNemesisMovementPath(this.state, nemesis, stepCount);
+
+    if (movement.toSectorId === movement.fromSectorId) {
+      return;
+    }
+
+    this.applyAction({
+      type: "NEMESIS_MOVED",
+      seatId,
+      nemesisId: nemesis.id,
+      fromSectorId: movement.fromSectorId,
+      toSectorId: movement.toSectorId,
+      path: movement.path,
+      distanceToNexus: movement.distanceToNexus,
+      createdAt: new Date().toISOString()
+    } satisfies NemesisMovedAction);
+
+    const movedNemesis = this.state.nemesisChampions.find((champion) => champion.id === nemesis.id);
+
+    if (movedNemesis?.sectorId === ASHEN_CROWN_NEXUS_SECTOR_ID) {
+      this.startNemesisNexusCountdown(seatId, movedNemesis);
+    }
+  }
+
+  private startNemesisNexusCountdown(seatId: string, nemesis: NemesisChampion): void {
+    if (this.state.nemesisNexusCountdowns.some((entry) => entry.nemesisId === nemesis.id)) {
+      return;
+    }
+
+    this.applyAction({
+      type: "NEMESIS_NEXUS_COUNTDOWN_STARTED",
+      seatId,
+      nemesisId: nemesis.id,
+      remainingTurns: Math.max(1, this.state.turnOrder.length),
+      createdAt: new Date().toISOString()
+    } satisfies NemesisNexusCountdownStartedAction);
+  }
+
   private startVisibleDiceRollIntent(
     client: ConnectedClient,
     intent: Extract<ClientIntent, { type: "CHECK_REQUESTED" | "COMBAT_REQUESTED" }>,
@@ -3497,7 +3670,7 @@ export class GameRoomServer {
       getEquippedGearBonus(player.character, "guile") +
       this.getScenarioSkillModifier(intent.seatId);
     const total = roll.total + statBonus;
-    const difficulty = targetSector.danger + escalationModifier;
+    const difficulty = Math.max(0, targetSector.danger + escalationModifier - getSoloMovementDifficultyEase(this.state.sessionMode));
     const success = total >= difficulty;
 
     this.applyAction({
@@ -3550,6 +3723,15 @@ export class GameRoomServer {
 
     const targetSpace = getBoardSpace(toSectorId);
     const notes = new Set(player.private.notes);
+
+    if (
+      this.state.gameMode === "nemesis_relay" &&
+      targetSpace &&
+      (targetSpace.tier === "inner" || targetSpace.tier === "center") &&
+      !hasCrownKeyFragment(this.state, seatId)
+    ) {
+      throw new Error("A Crown-Key Fragment is required to enter the Inner Region during Nemesis Relay");
+    }
 
     for (const requirement of targetSpace?.movementRequirements ?? []) {
       if (requirement.allowedFrom && !requirement.allowedFrom.includes(fromSectorId)) {
@@ -3997,6 +4179,172 @@ export class GameRoomServer {
       createdAt: new Date().toISOString()
     } satisfies EnemyRollAssignedAction);
     this.scheduleEnemyRollTimeout();
+  }
+
+  resolveNemesisCombatIntent(intent: Extract<ClientIntent, { type: "NEMESIS_COMBAT_REQUESTED" }>): void {
+    if (this.state.gameMode !== "nemesis_relay") {
+      throw new Error("Nemesis combat is only available in Nemesis Relay mode");
+    }
+
+    const player = this.state.players.find((entry) => entry.seatId === intent.seatId);
+    const nemesis = this.state.nemesisChampions.find((champion) => champion.id === intent.nemesisId);
+
+    if (!player) {
+      throw new Error(`Missing player for seat ${intent.seatId}`);
+    }
+
+    if (!nemesis || nemesis.defeated) {
+      throw new Error("Nemesis is not active");
+    }
+
+    if (player.character.status !== "active") {
+      throw new Error("Recalled operatives cannot fight a Nemesis");
+    }
+
+    if (player.character.currentSpaceId !== nemesis.sectorId) {
+      throw new Error(`${player.character.name} must be on ${nemesis.name}'s space to fight it`);
+    }
+
+    const requestedAssistSeatIds = Array.from(new Set(intent.assistSeatIds ?? []));
+    const eligibleAssistSeatIds = new Set(getEligibleAssistSeatIds(this.state, intent.seatId, nemesis));
+    const invalidAssist = requestedAssistSeatIds.find((seatId) => !eligibleAssistSeatIds.has(seatId));
+
+    if (invalidAssist) {
+      throw new Error(`${invalidAssist} cannot assist this Nemesis combat`);
+    }
+
+    const stat = getNemesisCombatStat(nemesis, intent.stat);
+    const roll = rollDice(2, 6, this.randomSource);
+    const nemesisRoll = rollDice(2, 6, this.randomSource);
+    const assistBonus = getAssistBonus(this.state, intent.seatId, nemesis, requestedAssistSeatIds);
+    const statBonus =
+      player.character.stats[stat] +
+      getEquippedGearBonus(player.character, stat) +
+      this.getScenarioBattleModifier(intent.seatId) +
+      assistBonus;
+    const nemesisBonus = getNemesisCombatValue(nemesis, stat);
+    const attackerTotal = roll.total + statBonus;
+    const nemesisTotal = nemesisRoll.total + nemesisBonus;
+    const success = attackerTotal >= nemesisTotal;
+    const damage = success ? 1 : 0;
+    const summary = success
+      ? `${player.character.name} struck ${nemesis.name} for ${damage} damage.`
+      : `${nemesis.name} beat ${player.character.name}; the lead operative suffers 1 wound.`;
+
+    this.applyAction({
+      type: "NEMESIS_COMBAT_RESOLVED",
+      seatId: intent.seatId,
+      nemesisId: nemesis.id,
+      attackerSeatId: intent.seatId,
+      assistSeatIds: requestedAssistSeatIds,
+      stat,
+      roll,
+      nemesisRoll,
+      attackerTotal,
+      nemesisTotal,
+      success,
+      damage,
+      summary,
+      createdAt: new Date().toISOString()
+    } satisfies NemesisCombatResolvedAction);
+
+    if (!success) {
+      this.applyNemesisCombatFailure(intent.seatId, nemesis, requestedAssistSeatIds);
+    }
+
+    const updatedNemesis = this.state.nemesisChampions.find((champion) => champion.id === nemesis.id);
+
+    if (updatedNemesis && !updatedNemesis.defeated && updatedNemesis.health <= 0) {
+      this.defeatNemesis(intent.seatId, updatedNemesis);
+    }
+
+    if (this.state.status === "active" && this.state.nemesisChampions.length > 0 && this.state.nemesisChampions.every((champion) => champion.defeated)) {
+      this.applyAction({
+        type: "COOP_VICTORY_TRIGGERED",
+        seatId: intent.seatId,
+        summary: "All Nemesis Champions were destroyed before the Ashen Crown Nexus fell.",
+        createdAt: new Date().toISOString()
+      });
+    }
+  }
+
+  private applyNemesisCombatFailure(leadSeatId: string, nemesis: NemesisChampion, assistSeatIds: string[]): void {
+    const woundedSeatIds = nemesis.specialRuleId === "cleave" ? [leadSeatId, ...assistSeatIds] : [leadSeatId];
+    const previousTotalWounds = this.getTotalWounds(this.state);
+
+    this.state = {
+      ...this.state,
+      players: this.state.players.map((player) =>
+        woundedSeatIds.includes(player.seatId)
+          ? {
+              ...player,
+              character: {
+                ...player.character,
+                wounds: player.character.wounds + 1
+              }
+            }
+          : player
+      ),
+      sequence: this.state.sequence + 1,
+      eventLog: [
+        ...this.state.eventLog,
+        {
+          type: "NEMESIS_DAMAGE_APPLIED",
+          seatId: leadSeatId,
+          nemesisId: nemesis.id,
+          woundedSeatIds,
+          createdAt: new Date().toISOString()
+        }
+      ]
+    };
+
+    const woundDelta = this.getTotalWounds(this.state) - previousTotalWounds;
+
+    if (woundDelta > 0) {
+      this.feedEscalation(leadSeatId, woundDelta * ESCALATION_FEEDERS.woundTaken, "nemesis wounds");
+      this.applyScenarioOnWoundsTaken(leadSeatId, woundDelta);
+    }
+  }
+
+  private defeatNemesis(attackerSeatId: string, nemesis: NemesisChampion): void {
+    const boundSeatId = nemesis.boundPlayerId;
+
+    this.applyAction({
+      type: "NEMESIS_DEFEATED",
+      seatId: attackerSeatId,
+      nemesisId: nemesis.id,
+      attackerSeatId,
+      boundSeatId,
+      summary: `${nemesis.name} was destroyed. ${boundSeatId} gains a Crown-Key Fragment.`,
+      createdAt: new Date().toISOString()
+    } satisfies NemesisDefeatedAction);
+
+    this.applyAction({
+      type: "CROWN_KEY_FRAGMENT_GAINED",
+      seatId: attackerSeatId,
+      targetSeatId: boundSeatId,
+      sourceNemesisId: nemesis.id,
+      createdAt: new Date().toISOString()
+    });
+
+    if (attackerSeatId !== boundSeatId) {
+      this.state = {
+        ...this.state,
+        players: this.state.players.map((player) =>
+          player.seatId === attackerSeatId
+            ? {
+                ...player,
+                character: {
+                  ...player.character,
+                  trophies: player.character.trophies + 2,
+                  heat: Math.max(0, player.character.heat - 1)
+                }
+              }
+            : player
+        ),
+        sequence: this.state.sequence + 1
+      };
+    }
   }
 
   resolveEnemyRollIntent(intent: Extract<ClientIntent, { type: "ENEMY_ROLL_REQUESTED" }>): void {
@@ -4602,6 +4950,7 @@ export function createTvProjection(state: GameState): Record<string, unknown> {
   return {
     status: state.status,
     sessionMode: state.sessionMode,
+    gameMode: state.gameMode,
     interactionMode: state.interactionMode ?? (state.sessionMode === "single-player" ? "co-op" : "rivalry"),
     winnerSeatId: state.winnerSeatId,
     activeScenario: activeScenario
@@ -4623,6 +4972,33 @@ export function createTvProjection(state: GameState): Record<string, unknown> {
       : null,
     scenarioTelemetry,
     scenarioProgress: state.scenarioProgress,
+    nemesisChampions: state.nemesisChampions.map((champion) => {
+      const sector = state.sectors.find((entry) => entry.id === champion.sectorId);
+      const distanceToNexus = getDistanceToNexus(state, champion.sectorId);
+
+      return {
+        id: champion.id,
+        name: champion.name,
+        type: champion.type,
+        boundPlayerId: champion.boundPlayerId,
+        sectorId: champion.sectorId,
+        sectorName: sector?.name ?? champion.sectorId,
+        strength: champion.strength,
+        craft: champion.craft,
+        tech: champion.tech,
+        will: champion.will,
+        health: champion.health,
+        maxHealth: champion.maxHealth,
+        trophies: champion.trophies,
+        movementProfile: champion.movementProfile,
+        combatProfile: champion.combatProfile,
+        specialRuleId: champion.specialRuleId,
+        defeated: champion.defeated,
+        distanceToNexus,
+        warning: !champion.defeated && distanceToNexus <= 3
+      };
+    }),
+    nemesisNexusCountdowns: state.nemesisNexusCountdowns,
     seats: state.seats.map((seat) => ({
       seatId: seat.seatId,
       characterId: seat.characterId,
@@ -4685,11 +5061,14 @@ export function createPhoneProjection(state: GameState, seatId: string, forcePri
     phase: state.phase,
     status: state.status,
     sessionMode: state.sessionMode,
+    gameMode: state.gameMode,
     interactionMode: state.interactionMode ?? (state.sessionMode === "single-player" ? "co-op" : "rivalry"),
     winnerSeatId: state.winnerSeatId,
     activeScenario: publicProjection.activeScenario,
     scenarioTelemetry: publicProjection.scenarioTelemetry,
     scenarioProgress: publicProjection.scenarioProgress,
+    nemesisChampions: publicProjection.nemesisChampions,
+    nemesisNexusCountdowns: publicProjection.nemesisNexusCountdowns,
     activeSeatIndex: state.activeSeatIndex,
     seats: publicProjection.seats,
     turnOrder: publicProjection.turnOrder,
@@ -4705,6 +5084,13 @@ export function createPhoneProjection(state: GameState, seatId: string, forcePri
     activeResolution: state.activeResolution ?? null,
     recentAbilityTriggers: publicProjection.recentAbilityTriggers,
     nemesis: publicProjection.nemesis,
+    boundNemesis: (publicProjection.nemesisChampions as Array<{ boundPlayerId: string }>).find(
+      (champion) => champion.boundPlayerId === seatId
+    ) ?? null,
+    crownKeyFragments: getCrownKeyFragmentCount(state, seatId),
+    eligibleNemesisAssistSeatIds: state.nemesisChampions.flatMap((champion) =>
+      champion.defeated ? [] : getEligibleAssistSeatIds(state, seatId, champion)
+    ),
     self: player ? sanitizePlayerForPhone(player) : null
   };
 }

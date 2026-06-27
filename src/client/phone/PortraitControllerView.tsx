@@ -1,7 +1,7 @@
 import { useState, type ReactElement } from "react";
 import { getCharacterPortraitPath, getPhoneBackgroundPath } from "../shared/assetPaths.js";
 import { formatSeatLabel, statLabelById, statOrder } from "../shared/statLabels.js";
-import type { CharacterCatalogEntry, ClientIntent, ContractCard, PhonePatchPayload, PhoneSelfState } from "../shared/types.js";
+import type { CharacterCatalogEntry, ClientIntent, ContractCard, NemesisChampionSummary, PhonePatchPayload, PhoneSelfState } from "../shared/types.js";
 import { PhoneInventoryPanel } from "./PhoneInventoryPanel.js";
 import { PhoneActionPanel } from "./PhoneActionPanel.js";
 
@@ -17,6 +17,71 @@ interface PortraitControllerViewProps {
   onIntent: ((intent: ClientIntent) => void) | null;
   onLeave: () => void;
   onLobbyBack?: () => void;
+}
+
+function BoundNemesisPanel({
+  heading = "Bound Nemesis",
+  nemesis,
+  self,
+  crownKeyFragments,
+  assistSeatIds,
+  onIntent
+}: {
+  heading?: string;
+  nemesis: NemesisChampionSummary | null | undefined;
+  self: PhoneSelfState;
+  crownKeyFragments: number;
+  assistSeatIds: string[];
+  onIntent: ((intent: ClientIntent) => void) | null;
+}): ReactElement | null {
+  if (!nemesis) {
+    return null;
+  }
+
+  const sameSpace = self.character.currentSpaceId === nemesis.sectorId;
+  const healthLabel = nemesis.defeated ? "Defeated" : `${nemesis.health}/${nemesis.maxHealth} health`;
+  const keyLabel =
+    nemesis.boundPlayerId === self.seatId && crownKeyFragments > 0 ? "Crown-Key held" : `${nemesis.distanceToNexus} to Nexus`;
+
+  return (
+    <section className="phone-portrait-section phone-bound-nemesis-panel" aria-label="Bound Nemesis">
+      <div className="phone-sheet-section-heading">{heading}</div>
+      <article className={`phone-portrait-info-card phone-bound-nemesis-card${nemesis.warning ? " phone-bound-nemesis-warning" : ""}`}>
+        <div className="phone-bound-nemesis-top">
+          <div>
+            <strong>{nemesis.name}</strong>
+            <span>{nemesis.type} | {healthLabel}</span>
+          </div>
+          <span>{keyLabel}</span>
+        </div>
+        <p>{nemesis.sectorName}</p>
+        <div className="phone-portrait-chip-row">
+          <span>Str {nemesis.strength}</span>
+          {nemesis.tech ? <span>Tech {nemesis.tech}</span> : null}
+          {nemesis.will ? <span>Will {nemesis.will}</span> : null}
+          {nemesis.boundPlayerId !== self.seatId ? <span>Bound to {formatSeatLabel(nemesis.boundPlayerId)}</span> : null}
+          <span>{nemesis.defeated ? "Key claimed" : sameSpace ? "Engage now" : "Pursue"}</span>
+        </div>
+        {sameSpace && !nemesis.defeated && onIntent ? (
+          <button
+            type="button"
+            className="phone-button phone-button-primary"
+            onClick={() =>
+              onIntent({
+                type: "NEMESIS_COMBAT_REQUESTED",
+                seatId: self.seatId,
+                nemesisId: nemesis.id,
+                stat: nemesis.combatProfile === "tech" ? "forge" : nemesis.combatProfile === "will" ? "signal" : "grit",
+                assistSeatIds
+              })
+            }
+          >
+            Fight Nemesis
+          </button>
+        ) : null}
+      </article>
+    </section>
+  );
 }
 
 export function PortraitControllerView({
@@ -57,6 +122,9 @@ export function PortraitControllerView({
     : null;
   const notes = self.notes ?? [];
   const latestOutcome = patch?.outcomeSummary ?? null;
+  const localUnboundNemeses = (patch?.nemesisChampions ?? []).filter(
+    (nemesis) => nemesis.boundPlayerId !== self.seatId && nemesis.sectorId === self.character.currentSpaceId && !nemesis.defeated
+  );
 
   if (isLobbyWaiting) {
     const isReady = ownSeat?.ready ?? false;
@@ -207,6 +275,29 @@ export function PortraitControllerView({
                   <span>Gear {self.character.heldGear.length}</span>
                 </div>
               </section>
+
+              {patch?.gameMode === "nemesis_relay" && (
+                <>
+                  <BoundNemesisPanel
+                    nemesis={patch.boundNemesis}
+                    self={self}
+                    crownKeyFragments={patch.crownKeyFragments ?? 0}
+                    assistSeatIds={patch.eligibleNemesisAssistSeatIds ?? []}
+                    onIntent={onIntent}
+                  />
+                  {localUnboundNemeses.map((nemesis) => (
+                    <BoundNemesisPanel
+                      key={nemesis.id}
+                      heading="Nemesis on your space"
+                      nemesis={nemesis}
+                      self={self}
+                      crownKeyFragments={patch.crownKeyFragments ?? 0}
+                      assistSeatIds={patch.eligibleNemesisAssistSeatIds ?? []}
+                      onIntent={onIntent}
+                    />
+                  ))}
+                </>
+              )}
 
               {patch && onIntent && (
                 <PhoneActionPanel characters={characters} onIntent={onIntent} patch={patch} />

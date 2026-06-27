@@ -2,7 +2,7 @@ import type { Character, Stat } from "../schema/character.schema.js";
 import type { ThreatCard, EncounterEffect } from "../schema/card.schema.js";
 import type { ContractCard } from "../schema/contract.schema.js";
 import type { GearSlot } from "../schema/gear.schema.js";
-import type { Phase } from "../schema/session.schema.js";
+import type { NemesisChampion, Phase } from "../schema/session.schema.js";
 import type { DiceRollResult } from "./dice.js";
 
 export type CheckStat = Stat;
@@ -262,6 +262,89 @@ export interface PhaseAdvancedAction extends BaseAction {
   toPhase: Phase;
 }
 
+export interface NemesisSpawnedAction extends BaseAction {
+  type: "NEMESIS_SPAWNED";
+  champions: NemesisChampion[];
+}
+
+export interface NemesisMovedAction extends BaseAction {
+  type: "NEMESIS_MOVED";
+  nemesisId: string;
+  fromSectorId: string;
+  toSectorId: string;
+  path: string[];
+  distanceToNexus: number;
+}
+
+export interface NemesisEncounterResolvedAction extends BaseAction {
+  type: "NEMESIS_ENCOUNTER_RESOLVED";
+  nemesisId: string;
+  summary: string;
+}
+
+export interface NemesisCombatStartedAction extends BaseAction {
+  type: "NEMESIS_COMBAT_STARTED";
+  nemesisId: string;
+}
+
+export interface NemesisCombatResolvedAction extends BaseAction {
+  type: "NEMESIS_COMBAT_RESOLVED";
+  nemesisId: string;
+  attackerSeatId: string;
+  assistSeatIds: string[];
+  stat: CheckStat;
+  roll: DiceRollResult;
+  nemesisRoll: DiceRollResult;
+  attackerTotal: number;
+  nemesisTotal: number;
+  success: boolean;
+  damage: number;
+  summary: string;
+}
+
+export interface NemesisDefeatedAction extends BaseAction {
+  type: "NEMESIS_DEFEATED";
+  nemesisId: string;
+  attackerSeatId: string;
+  boundSeatId: string;
+  summary: string;
+}
+
+export interface CrownKeyFragmentGainedAction extends BaseAction {
+  type: "CROWN_KEY_FRAGMENT_GAINED";
+  targetSeatId: string;
+  sourceNemesisId: string;
+}
+
+export interface NexusTestStartedAction extends BaseAction {
+  type: "NEXUS_TEST_STARTED";
+}
+
+export interface NexusTestResolvedAction extends BaseAction {
+  type: "NEXUS_TEST_RESOLVED";
+  stat: CheckStat;
+  difficulty: number;
+  roll: DiceRollResult;
+  total: number;
+  success: boolean;
+}
+
+export interface NemesisNexusCountdownStartedAction extends BaseAction {
+  type: "NEMESIS_NEXUS_COUNTDOWN_STARTED";
+  nemesisId: string;
+  remainingTurns: number;
+}
+
+export interface CoopVictoryTriggeredAction extends BaseAction {
+  type: "COOP_VICTORY_TRIGGERED";
+  summary: string;
+}
+
+export interface CoopDefeatTriggeredAction extends BaseAction {
+  type: "COOP_DEFEAT_TRIGGERED";
+  summary: string;
+}
+
 export type GameAction =
   | SessionStartedAction
   | MoveRequestedAction
@@ -297,7 +380,19 @@ export type GameAction =
   | EscalationAdvancedAction
   | SectorCollapsedAction
   | TurnCompletedAction
-  | PhaseAdvancedAction;
+  | PhaseAdvancedAction
+  | NemesisSpawnedAction
+  | NemesisMovedAction
+  | NemesisEncounterResolvedAction
+  | NemesisCombatStartedAction
+  | NemesisCombatResolvedAction
+  | NemesisDefeatedAction
+  | CrownKeyFragmentGainedAction
+  | NexusTestStartedAction
+  | NexusTestResolvedAction
+  | NemesisNexusCountdownStartedAction
+  | CoopVictoryTriggeredAction
+  | CoopDefeatTriggeredAction;
 
 export type ClientIntent =
   | {
@@ -392,4 +487,11 @@ export type ClientIntent =
       type: "RAISE_STAT_REQUESTED";
       seatId: string;
       stat: Stat;
+    }
+  | {
+      type: "NEMESIS_COMBAT_REQUESTED";
+      seatId: string;
+      nemesisId: string;
+      stat?: CheckStat;
+      assistSeatIds?: string[];
     };

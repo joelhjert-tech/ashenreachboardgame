@@ -564,6 +564,7 @@ function createState(overrides: Partial<GameState> = {}): GameState {
     sessionId: "session-alpha",
     status: "active",
     sessionMode: "multiplayer",
+    gameMode: "standard",
     winnerSeatId: null,
     activeScenarioId: "scenario_broken_seal",
     scenarioProgress: {},
@@ -638,6 +639,8 @@ function createState(overrides: Partial<GameState> = {}): GameState {
       }
     ],
     availableContracts: contracts,
+    nemesisChampions: [],
+    nemesisNexusCountdowns: [],
     eventLog: [],
     escalationLevel: 0,
     currentEncounter: null,
