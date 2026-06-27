@@ -690,8 +690,11 @@ describe("TvApp", () => {
     render(<TvApp />);
 
     expect(await screen.findByText("Tactical map")).toBeInTheDocument();
-    expect(screen.getByTestId("host-battle-overlay")).toHaveTextContent(/tarek voss/i);
-    expect(screen.getByTestId("host-battle-overlay")).toHaveTextContent(/cinder-veil stalker/i);
+    const overlay = screen.getByTestId("host-battle-overlay");
+
+    expect(overlay).toHaveTextContent(/tarek voss/i);
+    expect(overlay).toHaveTextContent(/cinder-veil stalker/i);
+    expect(overlay.querySelector("[data-testid='combat-dice-animation']")).toHaveClass("combat-dice-animation-compact");
     expect(screen.getByTestId("host-battle-rolls")).toHaveTextContent(/final player total/i);
     expect(screen.getByTestId("host-battle-rolls")).toHaveTextContent("11");
     expect(screen.getByTestId("host-battle-rolls")).toHaveTextContent(/final enemy total/i);

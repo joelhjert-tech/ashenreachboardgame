@@ -227,6 +227,7 @@ export function HostBattleOverlay({
               modifierValue={model.playerModifier}
               attackSuccess={model.outcomeLabel?.includes("wins") ?? false}
               defenseSuccess={model.outcomeLabel?.includes("driven back") ?? false}
+              compact
             />
           </div>
           <DiceReadout label="Player roll" dice={model.playerDice} />

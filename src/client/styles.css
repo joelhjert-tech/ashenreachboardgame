@@ -3548,7 +3548,7 @@ body {
     radial-gradient(circle at 50% -10%, rgba(121, 172, 208, 0.18), transparent 30%),
     radial-gradient(circle at 50% 42%, rgba(148, 78, 52, 0.12), transparent 26%),
     linear-gradient(180deg, #0a0e13 0%, #100f12 45%, #17110f 100%);
-  overflow: auto;
+  overflow: hidden;
   overscroll-behavior: contain;
 }
 
@@ -3566,7 +3566,7 @@ body {
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
-  overflow: visible;
+  overflow: hidden;
 }
 
 .tv-topbar,
@@ -3766,7 +3766,7 @@ body {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(18rem, 19vw);
   gap: 0.8rem;
-  overflow: visible;
+  overflow: hidden;
 }
 
 .tv-command-stage {
@@ -3813,13 +3813,14 @@ body {
 
 .host-battle-panel {
   pointer-events: auto;
-  width: min(78rem, 96%);
-  max-height: 100%;
+  width: min(74rem, 96%);
+  height: 100%;
+  min-height: 0;
   display: grid;
   grid-template-columns: minmax(15rem, 1fr) minmax(7rem, 0.38fr) minmax(15rem, 1fr);
-  grid-template-rows: minmax(0, 1fr) auto auto auto;
-  gap: clamp(0.65rem, 0.9vw, 1rem);
-  padding: clamp(0.7rem, 1vw, 1.05rem);
+  grid-template-rows: minmax(0, 1fr) minmax(0, auto) auto minmax(0, 3.2rem);
+  gap: clamp(0.45rem, 0.68vw, 0.82rem);
+  padding: clamp(0.55rem, 0.78vw, 0.9rem);
   border: 1px solid rgba(215, 164, 93, 0.64);
   background:
     linear-gradient(90deg, rgba(11, 26, 39, 0.92), rgba(11, 11, 13, 0.97) 47%, rgba(48, 14, 12, 0.92)),
@@ -3828,17 +3829,19 @@ body {
     inset 0 0 0 1px rgba(244, 214, 172, 0.06),
     0 1.6rem 4rem rgba(0, 0, 0, 0.64),
     0 0 3rem rgba(190, 46, 31, 0.2);
+  overflow: hidden;
 }
 
 .host-battle-combatant {
   min-width: 0;
   min-height: 0;
   display: grid;
-  grid-template-rows: minmax(12rem, 1fr) auto auto;
-  gap: 0.62rem;
-  padding: 0.62rem;
+  grid-template-rows: minmax(7.8rem, 1fr) auto auto;
+  gap: 0.45rem;
+  padding: 0.48rem;
   border: 1px solid;
   background: rgba(3, 5, 8, 0.78);
+  overflow: hidden;
 }
 
 .host-battle-player {
@@ -3879,6 +3882,7 @@ body {
 .host-battle-copy {
   display: grid;
   gap: 0.14rem;
+  min-width: 0;
 }
 
 .host-battle-copy span,
@@ -3895,16 +3899,21 @@ body {
   margin: 0;
   color: #f2e3c9;
   font-family: Georgia, "Times New Roman", serif;
-  font-size: clamp(1.5rem, 2vw, 2.65rem);
+  font-size: clamp(1.15rem, 1.65vw, 2.15rem);
   line-height: 0.95;
   text-transform: uppercase;
+  overflow-wrap: anywhere;
 }
 
 .host-battle-copy p {
   margin: 0;
   color: #d3c7b5;
-  font-size: clamp(0.82rem, 0.9vw, 1rem);
+  display: -webkit-box;
+  overflow: hidden;
+  font-size: clamp(0.72rem, 0.78vw, 0.92rem);
   line-height: 1.25;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
 }
 
 .host-battle-stat-grid {
@@ -3937,7 +3946,7 @@ body {
 .host-battle-vs strong {
   color: #f5d49c;
   font-family: Georgia, "Times New Roman", serif;
-  font-size: clamp(3rem, 5vw, 6rem);
+  font-size: clamp(2.4rem, 4.2vw, 5rem);
   line-height: 0.85;
   text-shadow:
     0 0 1rem rgba(230, 78, 45, 0.5),
@@ -3973,10 +3982,12 @@ body {
   grid-column: 1 / -1;
   display: grid;
   grid-template-columns: minmax(10rem, 1fr) minmax(13rem, 0.85fr) minmax(10rem, 1fr);
-  gap: 0.65rem;
-  padding: 0.62rem;
+  gap: 0.45rem;
+  min-height: 0;
+  padding: 0.48rem;
   border: 1px solid rgba(231, 210, 176, 0.2);
   background: rgba(0, 0, 0, 0.45);
+  overflow: hidden;
 }
 
 .host-battle-dice-animation {
@@ -3986,7 +3997,7 @@ body {
 }
 
 .host-battle-dice-animation .combat-dice-animation {
-  --combat-die-size: clamp(4.3rem, 5.6vw, 7rem);
+  --combat-die-size: clamp(2.55rem, 4vw, 4rem);
   margin-top: 0;
 }
 
@@ -4004,14 +4015,14 @@ body {
 }
 
 .host-battle-dice-row strong {
-  min-width: clamp(3.2rem, 4.2vw, 5rem);
-  min-height: clamp(3.2rem, 4.2vw, 5rem);
+  min-width: clamp(2.35rem, 3.2vw, 3.8rem);
+  min-height: clamp(2.35rem, 3.2vw, 3.8rem);
   display: grid;
   place-items: center;
   border: 1px solid rgba(225, 238, 244, 0.72);
   background: linear-gradient(180deg, #edf4f7, #b7cbd5);
   color: #111b23;
-  font-size: clamp(1.7rem, 2.5vw, 3.4rem);
+  font-size: clamp(1.35rem, 2.05vw, 2.7rem);
   font-weight: 900;
 }
 
@@ -4039,7 +4050,7 @@ body {
 
 .host-battle-total strong {
   color: #f7ead1;
-  font-size: clamp(1.6rem, 2.5vw, 3.3rem);
+  font-size: clamp(1.3rem, 2vw, 2.7rem);
   line-height: 1;
 }
 
@@ -4052,7 +4063,7 @@ body {
 
 .host-battle-actions button {
   min-width: 12rem;
-  min-height: 3rem;
+  min-height: 2.55rem;
   border: 1px solid rgba(242, 204, 148, 0.42);
   color: #f6e5c9;
   font-size: clamp(0.9rem, 1vw, 1.1rem);
@@ -4075,20 +4086,25 @@ body {
 
 .host-battle-log {
   grid-column: 1 / -1;
-  min-height: 3.1rem;
+  min-height: 0;
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 0.45rem;
+  overflow: hidden;
 }
 
 .host-battle-log p {
   margin: 0;
-  padding: 0.45rem 0.58rem;
+  padding: 0.38rem 0.5rem;
   border: 1px solid rgba(231, 210, 176, 0.14);
   background: rgba(255, 255, 255, 0.045);
   color: #e5d2b8;
-  font-size: clamp(0.72rem, 0.86vw, 1rem);
-  line-height: 1.22;
+  display: -webkit-box;
+  overflow: hidden;
+  font-size: clamp(0.64rem, 0.76vw, 0.9rem);
+  line-height: 1.18;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
 }
 
 .tv-command-map-shell {
@@ -7294,8 +7310,94 @@ body {
   min-height: 0;
 }
 
-.tv-recent-roll .roll-outcome-panel {
+.tv-recent-roll .roll-panel {
   height: 100%;
+  min-height: 0;
+  margin-top: 0;
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr);
+  gap: 0.16rem;
+  padding: 0.2rem;
+  overflow: hidden;
+}
+
+.tv-recent-roll .row-between {
+  gap: 0.4rem;
+}
+
+.tv-recent-roll .row-between h2,
+.tv-recent-roll .row-between p {
+  margin: 0;
+}
+
+.tv-recent-roll .row-between h2 {
+  font-size: clamp(0.82rem, 0.9vw, 1.04rem);
+}
+
+.tv-recent-roll .row-between p,
+.tv-recent-roll .roll-breakdown p {
+  display: -webkit-box;
+  overflow: hidden;
+  font-size: clamp(0.62rem, 0.7vw, 0.8rem);
+  line-height: 1.12;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.tv-recent-roll .roll-state {
+  padding: 0.18rem 0.32rem;
+  font-size: clamp(0.64rem, 0.72vw, 0.82rem);
+}
+
+.tv-recent-roll .combat-dice-animation {
+  --combat-die-size: clamp(1.75rem, 2.65vw, 2.8rem);
+  display: none;
+}
+
+.tv-recent-roll .roll-display {
+  min-height: 0;
+  grid-template-columns: minmax(0, auto) minmax(0, 1fr);
+  gap: 0.24rem;
+  align-items: center;
+  margin-top: 0;
+  overflow: hidden;
+}
+
+.tv-recent-roll .roll-display-opposed {
+  grid-template-columns: minmax(0, auto) minmax(0, auto) minmax(0, 1fr);
+}
+
+.tv-recent-roll .roll-side {
+  gap: 0.12rem;
+}
+
+.tv-recent-roll .roll-side-label {
+  font-size: clamp(0.54rem, 0.62vw, 0.7rem);
+}
+
+.tv-recent-roll .roll-dice-pair {
+  gap: 0.18rem;
+}
+
+.tv-recent-roll .roll-die {
+  width: clamp(2.2rem, 3.15vw, 3.35rem);
+  height: clamp(2.2rem, 3.15vw, 3.35rem);
+  padding: 0.26rem;
+}
+
+.tv-recent-roll .roll-die-grid {
+  gap: 0.12rem;
+}
+
+.tv-recent-roll .roll-die-pip {
+  width: 0.32rem;
+  height: 0.32rem;
+}
+
+.tv-recent-roll .roll-breakdown {
+  min-height: 0;
+  gap: 0.1rem;
+  overflow: hidden;
 }
 
 .tv-recent-roll-placeholder {
