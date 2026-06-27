@@ -18,6 +18,7 @@ export interface PublicSeat {
   characterId: string;
   displayName: string | null;
   connected: boolean;
+  ready: boolean;
   kicked: boolean;
 }
 
@@ -374,6 +375,11 @@ export type ClientIntent =
   | {
       type: "CONTINUE_RESOLUTION";
       seatId: string;
+    }
+  | {
+      type: "SET_READY";
+      seatId: string;
+      ready: boolean;
     }
   | {
       type: "RECRUIT_REPLACEMENT";

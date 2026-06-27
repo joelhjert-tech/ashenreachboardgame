@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type ReactElement } from "react";
 import { getBoardSpace, isScenarioConfrontationSpace } from "../../game/data/boardSpaces.js";
 import { formatContractObjectiveStatus } from "../../game/contracts/objectives.js";
+import { getSessionStartReadiness } from "../../game/rules/sessionStart.js";
 import { createSession, fetchCharacters, fetchScenarios, fetchSessionSummary, startSession } from "../shared/network.js";
 import { getSeatAbilityTelemetry } from "../shared/abilityTelemetry.js";
 import { CardArtImage } from "../shared/CardArtImage.js";
@@ -126,7 +127,7 @@ function getSeatStatus(seat: PublicSeat | null, player: PublicPlayer | null, isA
     return "Active Turn";
   }
 
-  return "Ready";
+  return seat.ready ? "Ready" : "Not Ready";
 }
 
 function getCurrentStepCopy(
@@ -252,6 +253,7 @@ interface TopHeaderProps {
   interactionMode: InteractionMode;
   roundLabel: string;
   joinedCount: number;
+  readyCount: number;
   seatCapacity: number;
 }
 
@@ -262,6 +264,7 @@ function TopHeader({
   interactionMode,
   roundLabel,
   joinedCount,
+  readyCount,
   seatCapacity
 }: TopHeaderProps): ReactElement {
   return (
@@ -304,7 +307,7 @@ function TopHeader({
           <div className="join-qr-card join-qr-card-compact join-qr-card-empty">
             <div>
               <h2>Scan to Join</h2>
-              <p>Players {joinedCount}/{seatCapacity}</p>
+              <p>Players {joinedCount}/{seatCapacity} | Ready {readyCount}/{Math.max(joinedCount, 1)}</p>
             </div>
             <div className="join-qr-frame" aria-label="QR code placeholder">
               <p>Create</p>
@@ -398,6 +401,7 @@ function OperativesRail({ patch, characterCatalog, activeSeatId, sessionMode, ba
       characterId: characterCatalog[index]?.id ?? "void-marshal",
       displayName: null,
       connected: false,
+      ready: false,
       kicked: false
     }));
   const seats = battleMode && activeSeatId ? allSeats.filter((seat) => seat.seatId === activeSeatId) : allSeats;
@@ -418,7 +422,15 @@ function OperativesRail({ patch, characterCatalog, activeSeatId, sessionMode, ba
           const characterTitle = player?.character.archetype ?? catalogCharacter?.archetype ?? "Awaiting operative";
           const isOpen = !seat.displayName || seat.kicked;
           const isActive = seat.seatId === activeSeatId;
-          const statusLabel = seat.kicked ? "Removed" : !seat.displayName ? "Open" : seat.connected ? "Linked" : "Offline";
+          const statusLabel = seat.kicked
+            ? "Removed"
+            : !seat.displayName
+              ? "Open"
+              : seat.ready
+                ? "Ready"
+                : seat.connected
+                  ? "Joined"
+                  : "Offline";
           const portraitUrl = !isOpen ? getCharacterPortraitPath(player?.character.id ?? seat.characterId) : null;
 
           return (
@@ -462,6 +474,7 @@ interface SessionReadoutProps {
   sessionMode: SessionMode;
   interactionMode: InteractionMode;
   joinedCount: number;
+  readyCount: number;
   seatCapacity: number;
   activeSeatId: string | null;
   status: string;
@@ -474,6 +487,7 @@ interface SessionReadoutProps {
   onRestartSession: () => void;
   onStartSession: () => Promise<void>;
   canStartSession: boolean;
+  startSessionReason: string;
   showCreate: boolean;
   showRestart: boolean;
   showStart: boolean;
@@ -551,6 +565,7 @@ function SessionReadout({
   sessionMode,
   interactionMode,
   joinedCount,
+  readyCount,
   seatCapacity,
   activeSeatId,
   status,
@@ -563,6 +578,7 @@ function SessionReadout({
   onRestartSession,
   onStartSession,
   canStartSession,
+  startSessionReason,
   showCreate,
   showRestart,
   showStart,
@@ -581,9 +597,11 @@ function SessionReadout({
       <div className="tv-session-grid">
         <div className="tv-session-stat">
           <span>Players</span>
-          <strong>
-            {joinedCount}/{seatCapacity}
-          </strong>
+          <strong>{joinedCount}/{seatCapacity}</strong>
+        </div>
+        <div className="tv-session-stat">
+          <span>Ready</span>
+          <strong>{readyCount}/{Math.max(joinedCount, 1)}</strong>
         </div>
         <div className="tv-session-stat">
           <span>Mode</span>
@@ -675,6 +693,9 @@ function SessionReadout({
             </button>
           )}
         </div>
+        {showStart && (
+          <p className="tv-session-ready-note">{startSessionReason}</p>
+        )}
       </div>
     </section>
   );
@@ -687,6 +708,7 @@ interface RightSidebarProps {
   sessionMode: SessionMode;
   interactionMode: InteractionMode;
   joinedCount: number;
+  readyCount: number;
   seatCapacity: number;
   activeSeatId: string | null;
   status: string;
@@ -700,6 +722,7 @@ interface RightSidebarProps {
   onRestartSession: () => void;
   onStartSession: () => Promise<void>;
   canStartSession: boolean;
+  startSessionReason: string;
 }
 
 function ScenarioStatusCard({
@@ -860,6 +883,7 @@ function RightSidebar({
   sessionMode,
   interactionMode,
   joinedCount,
+  readyCount,
   seatCapacity,
   activeSeatId,
   status,
@@ -872,7 +896,8 @@ function RightSidebar({
   onCreateSession,
   onRestartSession,
   onStartSession,
-  canStartSession
+  canStartSession,
+  startSessionReason
 }: RightSidebarProps): ReactElement {
   const scenarioRuleDigest = buildScenarioRuleDigest(
     publicPatch?.payload.activeScenario ?? null,
@@ -903,6 +928,7 @@ function RightSidebar({
         sessionMode={sessionMode}
         interactionMode={interactionMode}
         joinedCount={joinedCount}
+        readyCount={readyCount}
         seatCapacity={seatCapacity}
         activeSeatId={activeSeatId}
         status={status}
@@ -915,6 +941,7 @@ function RightSidebar({
         onRestartSession={onRestartSession}
         onStartSession={onStartSession}
         canStartSession={canStartSession}
+        startSessionReason={startSessionReason}
         showCreate={!roomCode}
         showRestart={Boolean(publicPatch)}
         showStart={publicPatch?.phase === "start"}
@@ -1246,6 +1273,11 @@ export function TvApp(): ReactElement {
 
   const publicPatch = patch as StatePatch<PublicPatchPayload> | null;
   const joinedSeats = publicPatch?.payload.seats.filter((seat) => seat.displayName && !seat.kicked) ?? [];
+  const readySeats = joinedSeats.filter((seat) => seat.ready);
+  const startReadiness = getSessionStartReadiness({
+    sessionMode: publicPatch?.payload.sessionMode ?? sessionMode,
+    seats: publicPatch?.payload.seats ?? []
+  });
   const activeSeatId = publicPatch?.payload.turnOrder[publicPatch.payload.activeSeatIndex] ?? null;
   const resolutionPlayerId = getResolutionPlayerId(publicPatch);
   const combatSeatId = resolutionPlayerId ?? activeSeatId;
@@ -1375,6 +1407,7 @@ export function TvApp(): ReactElement {
           interactionMode={liveInteractionMode}
           roundLabel={getRoundLabel(publicPatch)}
           joinedCount={joinedSeats.length}
+          readyCount={readySeats.length}
           seatCapacity={publicPatch?.payload.seats.length ?? (liveSessionMode === "single-player" ? 1 : 6)}
         />
 
@@ -1407,6 +1440,7 @@ export function TvApp(): ReactElement {
             sessionMode={liveSessionMode}
             interactionMode={liveInteractionMode}
             joinedCount={joinedSeats.length}
+            readyCount={readySeats.length}
             seatCapacity={publicPatch?.payload.seats.length ?? (liveSessionMode === "single-player" ? 1 : 3)}
             activeSeatId={activeSeatId}
             status={status}
@@ -1422,7 +1456,8 @@ export function TvApp(): ReactElement {
               sendIntent({ type: "RESTART_SESSION" });
             }}
             onStartSession={startHostSession}
-            canStartSession={joinedSeats.length >= 1}
+            canStartSession={startReadiness.canStart}
+            startSessionReason={startReadiness.reason}
           />
         </section>
 

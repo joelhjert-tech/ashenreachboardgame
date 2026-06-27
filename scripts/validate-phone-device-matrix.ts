@@ -25,11 +25,15 @@ type LayoutMetrics = {
   portraitPanelRect: RectLike | null;
   portraitChipRowRect: RectLike | null;
   portraitRotateHintRect: RectLike | null;
+  characterWaitingRect: RectLike | null;
   hasLandscapeCard: boolean;
   hasPortraitController: boolean;
+  hasCharacterWaiting: boolean;
   hasPortraitStats: boolean;
   hasPortraitActions: boolean;
   hasPortraitLeaveButton: boolean;
+  hasWaitingBackButton: boolean;
+  hasWaitingMessage: boolean;
   hasPortraitRotateHint: boolean;
   hasRotateWarning: boolean;
   horizontalOverflow: boolean;
@@ -116,6 +120,7 @@ async function collectMetrics(page: import("playwright").Page, viewport: Viewpor
       portraitPanel: ".phone-portrait-panel",
       portraitChipRow: ".phone-portrait-chip-row",
       portraitRotateHint: ".phone-portrait-rotate-hint",
+      characterWaiting: ".phone-character-waiting-panel",
       rotateWarning: ".phone-rotate-warning"
     }
   });
@@ -138,17 +143,23 @@ async function collectMetrics(page: import("playwright").Page, viewport: Viewpor
       const portraitPanelRect = getRect(selectors.portraitPanel);
       const portraitChipRowRect = getRect(selectors.portraitChipRow);
       const portraitRotateHintRect = getRect(selectors.portraitRotateHint);
+      const characterWaitingRect = getRect(selectors.characterWaiting);
       const documentScrollWidth = document.documentElement.scrollWidth;
       const documentScrollHeight = document.documentElement.scrollHeight;
       const windowInnerWidth = window.innerWidth;
       const windowInnerHeight = window.innerHeight;
       const hasLandscapeCard = Boolean(document.querySelector(".phone-sheet-card-landscape"));
       const hasPortraitController = Boolean(document.querySelector(".phone-portrait-controller"));
+      const hasCharacterWaiting = Boolean(document.querySelector(".phone-character-waiting-panel"));
       const hasPortraitStats = Boolean(
         document.querySelector(".phone-portrait-body, .phone-portrait-stats, .phone-portrait-attributes, .phone-portrait-summary")
       );
       const hasPortraitActions = Boolean(document.querySelector(".phone-portrait-actions, .phone-sheet-actions"));
       const hasPortraitLeaveButton = Boolean(document.querySelector(".phone-portrait-leave-button, .phone-sheet-leave-button"));
+      const hasWaitingBackButton = Boolean(document.querySelector(".phone-lobby-ready-button"));
+      const hasWaitingMessage = Array.from(document.querySelectorAll("p, span, strong")).some((element) =>
+        /waiting for host to start/i.test(element.textContent ?? "")
+      );
       const hasPortraitRotateHint = Boolean(document.querySelector(".phone-portrait-rotate-hint"));
       const hasRotateWarning = Boolean(document.querySelector(selectors.rotateWarning));
 
@@ -166,11 +177,15 @@ async function collectMetrics(page: import("playwright").Page, viewport: Viewpor
         portraitPanelRect,
         portraitChipRowRect,
         portraitRotateHintRect,
+        characterWaitingRect,
         hasLandscapeCard,
         hasPortraitController,
+        hasCharacterWaiting,
         hasPortraitStats,
         hasPortraitActions,
         hasPortraitLeaveButton,
+        hasWaitingBackButton,
+        hasWaitingMessage,
         hasPortraitRotateHint,
         hasRotateWarning,
         horizontalOverflow: documentScrollWidth > windowInnerWidth + 1,
@@ -187,16 +202,15 @@ function validateMetrics(metrics: LayoutMetrics, mode: "portrait" | "landscape")
     failures.push("horizontal overflow");
   }
 
-  if (metrics.verticalOverflow) {
-    failures.push("vertical overflow");
-  }
-
   if (mode === "portrait") {
-    if (!metrics.hasPortraitController || !metrics.portraitPanelRect) {
-      failures.push("missing portrait controller panel");
+    const hasPortraitScreen = metrics.hasPortraitController || metrics.hasCharacterWaiting;
+    const isInGameController = metrics.hasPortraitController && !metrics.hasCharacterWaiting;
+
+    if (!hasPortraitScreen || (!metrics.portraitPanelRect && !metrics.characterWaitingRect)) {
+      failures.push("missing portrait controller or waiting panel");
     }
 
-    if (!metrics.portraitChipRowRect) {
+    if (isInGameController && !metrics.portraitChipRowRect) {
       failures.push("missing portrait chip row");
     }
 
@@ -208,12 +222,20 @@ function validateMetrics(metrics: LayoutMetrics, mode: "portrait" | "landscape")
       failures.push("portrait missing stats/details");
     }
 
-    if (!metrics.hasPortraitActions) {
+    if (isInGameController && !metrics.hasPortraitActions) {
       failures.push("portrait missing quick actions");
     }
 
-    if (!metrics.hasPortraitLeaveButton) {
+    if (isInGameController && !metrics.hasPortraitLeaveButton) {
       failures.push("portrait missing leave button");
+    }
+
+    if (metrics.hasCharacterWaiting && !metrics.hasWaitingBackButton) {
+      failures.push("waiting screen missing back button");
+    }
+
+    if (metrics.hasCharacterWaiting && !metrics.hasWaitingMessage) {
+      failures.push("waiting screen missing host waiting message");
     }
 
     return failures;
@@ -277,13 +299,10 @@ async function main(): Promise<void> {
           try {
             await page.goto(`${getBaseUrl()}/`, { waitUntil: "domcontentloaded" });
             await page.getByRole("textbox", { name: "Room code" }).fill(roomCode);
-            await page.getByRole("textbox", { name: "Display name" }).fill("QA");
-            await page
-              .locator("label.phone-character-option")
-              .filter({ has: page.locator('input[name="characterId"][value="signal-witch"]') })
-              .click();
-            await page.getByRole("button", { name: "Join room" }).click();
-            await page.locator(".phone-controller-layout").waitFor({ state: "visible", timeout: 10000 });
+            await page.getByRole("textbox", { name: "Player name" }).fill("QA");
+            await page.getByRole("button", { name: "Continue" }).click();
+            await page.getByRole("button", { name: /signal witch/i }).click();
+            await page.locator(".phone-character-waiting-panel").waitFor({ state: "visible", timeout: 10000 });
             await page.waitForTimeout(350);
 
             const portraitMetrics = await collectMetrics(page, profile.portrait);

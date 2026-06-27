@@ -203,7 +203,7 @@ console.log(
 
 function validateContentFloors(): void {
   const contentTargets = [
-    ["threats", threats.size, 40, 60],
+    ["threats", threats.size, 40, 70],
     ["anomalies", anomalies.size, 20, 30],
     ["artifacts", artifacts.size, 12, 20],
     ["escalations", escalations.size, 15, 25],

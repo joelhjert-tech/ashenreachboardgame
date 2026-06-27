@@ -122,6 +122,7 @@ function createMatrixState(playerCount: number, overrides: Partial<GameState> = 
       characterId: roster[index % roster.length],
       displayName: `Seat ${seatNumber}`,
       connected: true,
+      ready: true,
       kicked: false,
       joinToken: `seat:matrix:${seatNumber}`
     };

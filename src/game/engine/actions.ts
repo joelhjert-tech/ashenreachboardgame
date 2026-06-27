@@ -322,6 +322,11 @@ export type ClientIntent =
       seatId: string;
     }
   | {
+      type: "SET_READY";
+      seatId: string;
+      ready: boolean;
+    }
+  | {
       type: "RECRUIT_REPLACEMENT";
       seatId: string;
       replacementCharacterId: string;

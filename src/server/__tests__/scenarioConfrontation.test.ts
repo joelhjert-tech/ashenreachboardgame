@@ -69,6 +69,18 @@ function continueVisibleResolution(roomServer: GameRoomServer, seatId = "seat-1"
   }
 }
 
+function runVisibleIntent(roomServer: GameRoomServer, intent: ClientIntent): void {
+  roomServer.handleIntent(createPhoneClient(intent.seatId) as never, intent);
+
+  if (intent.type === "CHECK_REQUESTED" || intent.type === "COMBAT_REQUESTED") {
+    const activeResolution = roomServer.getState().activeResolution;
+
+    if (activeResolution?.stage === "battle_setup" && activeResolution.playerId === intent.seatId) {
+      roomServer.handleIntent(createPhoneClient(intent.seatId) as never, intent);
+    }
+  }
+}
+
 function createSoloAmbientState(overrides: Partial<GameState> = {}): GameState {
   return createScenarioState({
     turnOrder: ["seat-1"],
@@ -512,21 +524,23 @@ describe("scenario confrontation flow", () => {
   });
 
   it("weakens the Broken Seal at turn start from its ambient roll", () => {
-    const state = createInitialSessionState("session-alpha");
+    const state = createInitialSessionState("session-alpha", "single-player");
     const roomServer = new GameRoomServer(state, [], createSequenceRandomSource([0]));
 
     roomServer.joinSeat("Solo", "signal-witch");
+    roomServer.setSeatReady("seat-1", true);
     roomServer.startSession();
 
     expect(roomServer.getState().scenarioProgress.sealTokens).toBe(5);
   });
 
   it("heats every operative when the Broken Seal loses its final token at turn start", () => {
-    const state = createInitialSessionState("session-alpha");
+    const state = createInitialSessionState("session-alpha", "single-player");
     state.scenarioProgress = { sealTokens: 1 };
     const roomServer = new GameRoomServer(state, [], createSequenceRandomSource([0]));
 
     roomServer.joinSeat("Solo", "signal-witch");
+    roomServer.setSeatReady("seat-1", true);
     roomServer.startSession();
 
     expect(roomServer.getState().scenarioProgress.sealTokens).toBe(0);
@@ -565,10 +579,11 @@ describe("scenario confrontation flow", () => {
   });
 
   it("reveals a local threat on a Broken Seal 3-4 turn-start roll", () => {
-    const state = createInitialSessionState("session-alpha");
+    const state = createInitialSessionState("session-alpha", "single-player");
     const roomServer = new GameRoomServer(state, [], createSequenceRandomSource([2, 0]));
 
     roomServer.joinSeat("Solo", "signal-witch");
+    roomServer.setSeatReady("seat-1", true);
     roomServer.startSession();
 
     expect(roomServer.getState().phase).toBe("action");
@@ -630,12 +645,13 @@ describe("scenario confrontation flow", () => {
   });
 
   it("rotates the Labyrinth Engine mode at turn start", () => {
-    const state = createInitialSessionState("session-alpha");
+    const state = createInitialSessionState("session-alpha", "single-player");
     state.activeScenarioId = "scenario_labyrinth_engine";
     state.scenarioProgress = { engineModeIndex: 0 };
     const roomServer = new GameRoomServer(state, [], createSequenceRandomSource([0]));
 
     roomServer.joinSeat("Solo", "signal-witch");
+    roomServer.setSeatReady("seat-1", true);
     roomServer.startSession();
 
     expect(roomServer.getState().scenarioProgress.engineModeIndex).toBe(1);
@@ -687,7 +703,7 @@ describe("scenario confrontation flow", () => {
       createSequenceRandomSource([5, 5, 5, 5])
     );
 
-    roomServer.handleIntent(createPhoneClient("seat-1") as never, {
+    runVisibleIntent(roomServer, {
       type: "COMBAT_REQUESTED",
       seatId: "seat-1",
       stat: "grit"
@@ -737,7 +753,7 @@ describe("scenario confrontation flow", () => {
       createSequenceRandomSource([5, 5])
     );
 
-    roomServer.handleIntent(createPhoneClient("seat-1") as never, {
+    runVisibleIntent(roomServer, {
       type: "CHECK_REQUESTED",
       seatId: "seat-1",
       stat: "signal"

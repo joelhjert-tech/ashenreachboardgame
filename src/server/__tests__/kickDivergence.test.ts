@@ -10,6 +10,9 @@ describe("kick turn-order regression", () => {
     server.joinSeat("A", "void-marshal");
     server.joinSeat("B", "signal-witch");
     server.joinSeat("C", "grave-engineer");
+    server.setSeatReady("seat-1", true);
+    server.setSeatReady("seat-2", true);
+    server.setSeatReady("seat-3", true);
     server.startSession();
 
     (server as unknown as { kickSeat(targetSeatId: string): void }).kickSeat("seat-1");

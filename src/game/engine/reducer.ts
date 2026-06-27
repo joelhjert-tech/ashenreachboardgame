@@ -201,6 +201,10 @@ function summarizeEffect(effect: EncounterEffect, success: boolean | null): stri
       return `${prefix} gain scar ${effect.scarId}.`;
     case "gain_gear":
       return `${prefix} gain gear ${effect.gearId}.`;
+    case "draw_artifact":
+      return `${prefix} draw 1 local artifact.`;
+    case "consume_artifact":
+      return `${prefix} artifact ${effect.artifactId} leaves ${effect.sourceSectorId ?? "this space"}.`;
     case "gain_follower":
       return `${prefix} gain follower ${effect.follower?.name ?? effect.followerId}.`;
     case "gain_note":
@@ -209,6 +213,10 @@ function summarizeEffect(effect: EncounterEffect, success: boolean | null): stri
       return `${prefix} advance scenario progress ${effect.progressKey} by ${effect.amount}.`;
     case "advance_escalation":
       return `${prefix} advance escalation by ${effect.amount}.`;
+    case "return_threat_to_space":
+      return effect.threatId
+        ? `${prefix} ${effect.threatId} remains on ${effect.sourceSectorId ?? "this space"}.`
+        : `${prefix} the threat remains on this space.`;
     case "sequence":
       return effect.effects.map((entry: EncounterEffect) => summarizeEffect(entry, success)).join(" ");
     default: {
@@ -270,6 +278,9 @@ function applyEffectToPlayer(player: PlayerState, effect: EncounterEffect): Play
       };
     case "gain_gear":
       return addHeldGearToPlayer(player, effect);
+    case "draw_artifact":
+    case "consume_artifact":
+      return player;
     case "gain_follower":
       return addFollowerToPlayer(player, effect);
     case "gain_note":
@@ -283,6 +294,7 @@ function applyEffectToPlayer(player: PlayerState, effect: EncounterEffect): Play
     case "gain_heat_all":
     case "advance_escalation":
     case "advance_scenario":
+    case "return_threat_to_space":
       return player;
     case "sequence":
       return effect.effects.reduce(
@@ -368,6 +380,54 @@ function applyEffectToState(state: GameState, seatId: string, effect: EncounterE
     return {
       ...state,
       players: state.players.map((player) => applyEffectToPlayer(player, { type: "gain_heat", amount: effect.amount }))
+    };
+  }
+
+  if (effect.type === "return_threat_to_space") {
+    if (!effect.threatId || !effect.sourceSectorId) {
+      return state;
+    }
+
+    const threatId = effect.threatId;
+    const sourceSectorId = effect.sourceSectorId;
+
+    return {
+      ...state,
+      sectors: state.sectors.map((sector) =>
+        sector.id === sourceSectorId && !sector.encounterDecks.threat.includes(threatId)
+          ? {
+              ...sector,
+              encounterDecks: {
+                ...sector.encounterDecks,
+                threat: [threatId, ...sector.encounterDecks.threat]
+              }
+            }
+          : sector
+      )
+    };
+  }
+
+  if (effect.type === "draw_artifact") {
+    return state;
+  }
+
+  if (effect.type === "consume_artifact") {
+    return {
+      ...state,
+      sectors:
+        effect.sourceSectorId
+          ? state.sectors.map((sector) =>
+              sector.id === effect.sourceSectorId
+                ? {
+                    ...sector,
+                    encounterDecks: {
+                      ...sector.encounterDecks,
+                      artifact: sector.encounterDecks.artifact.filter((artifactId) => artifactId !== effect.artifactId)
+                    }
+                  }
+                : sector
+            )
+          : state.sectors
     };
   }
 

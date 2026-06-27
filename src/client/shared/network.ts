@@ -101,6 +101,24 @@ export async function joinSession(input: {
   };
 }
 
+export async function leaveSession(auth: PhoneSessionAuth): Promise<void> {
+  const response = await fetch(`${apiOrigin}/api/session/leave`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      roomCode: auth.roomCode,
+      seatToken: auth.seatToken
+    })
+  });
+  const payload = await response.json();
+
+  if (!response.ok) {
+    throw new Error(payload.error ?? "Could not leave lobby");
+  }
+}
+
 export async function startSession(roomCode: string): Promise<void> {
   const response = await fetch(`${apiOrigin}/api/session/start`, {
     method: "POST",

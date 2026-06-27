@@ -62,6 +62,16 @@ type GainGearEffect = {
   gear?: GearItem;
 };
 
+type DrawArtifactEffect = {
+  type: "draw_artifact";
+};
+
+type ConsumeArtifactEffect = {
+  type: "consume_artifact";
+  artifactId: string;
+  sourceSectorId?: string;
+};
+
 type GainFollowerEffect = {
   type: "gain_follower";
   followerId: string;
@@ -85,6 +95,12 @@ type AdvanceEscalationEffect = {
   amount: number;
 };
 
+type ReturnThreatToSpaceEffect = {
+  type: "return_threat_to_space";
+  threatId?: string;
+  sourceSectorId?: string;
+};
+
 type SimpleEncounterEffect =
   | GainHeatEffect
   | GainHeatAllEffect
@@ -94,10 +110,13 @@ type SimpleEncounterEffect =
   | GainTrophyEffect
   | GainScarEffect
   | GainGearEffect
+  | DrawArtifactEffect
+  | ConsumeArtifactEffect
   | GainFollowerEffect
   | GainNoteEffect
   | AdvanceScenarioEffect
-  | AdvanceEscalationEffect;
+  | AdvanceEscalationEffect
+  | ReturnThreatToSpaceEffect;
 
 export type EncounterEffect = SimpleEncounterEffect | { type: "sequence"; effects: EncounterEffect[] };
 
@@ -136,6 +155,14 @@ const simpleEffectSchema: z.ZodType<SimpleEncounterEffect> = z.union([
     gear: gearItemSchema.optional()
   }),
   z.object({
+    type: z.literal("draw_artifact")
+  }),
+  z.object({
+    type: z.literal("consume_artifact"),
+    artifactId: z.string().min(1),
+    sourceSectorId: z.string().min(1).optional()
+  }),
+  z.object({
     type: z.literal("gain_follower"),
     followerId: z.string().min(1),
     follower: followerGrantSchema.optional()
@@ -153,6 +180,11 @@ const simpleEffectSchema: z.ZodType<SimpleEncounterEffect> = z.union([
   z.object({
     type: z.literal("advance_escalation"),
     amount: z.number().int()
+  }),
+  z.object({
+    type: z.literal("return_threat_to_space"),
+    threatId: z.string().min(1).optional(),
+    sourceSectorId: z.string().min(1).optional()
   })
 ]);
 

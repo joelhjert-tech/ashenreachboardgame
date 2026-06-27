@@ -753,6 +753,234 @@ select {
   transform: rotate(-4deg) scale(1.03);
 }
 
+.combat-dice-animation {
+  --combat-die-size: clamp(4.9rem, 7vw, 8.6rem);
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: 0.6rem;
+  margin: 0.9rem auto 0;
+  max-width: min(100%, 34rem);
+  min-width: 0;
+}
+
+.combat-dice-stage {
+  position: relative;
+  width: min(100%, calc(var(--combat-die-size) * 3.2));
+  min-height: calc(var(--combat-die-size) * 1.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(0.45rem, 1.3vw, 1.1rem);
+  padding: 0.45rem 0.8rem;
+  border: 1px solid rgba(199, 225, 239, 0.18);
+  background:
+    radial-gradient(circle at 50% 40%, rgba(116, 183, 217, 0.15), transparent 52%),
+    linear-gradient(180deg, rgba(6, 11, 15, 0.86), rgba(20, 12, 10, 0.72));
+  overflow: hidden;
+}
+
+.combat-die-layer {
+  position: relative;
+  width: var(--combat-die-size);
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+  border: 2px solid rgba(28, 39, 47, 0.8);
+  border-radius: 12px;
+  background:
+    radial-gradient(circle at 35% 26%, rgba(255, 255, 255, 0.95), transparent 20%),
+    linear-gradient(145deg, #f7fbfb 0%, #d8e3e6 48%, #aab9bf 100%);
+  color: #111b21;
+  box-shadow:
+    inset 0 -0.35rem 0.7rem rgba(15, 23, 29, 0.18),
+    0 0.75rem 1.4rem rgba(0, 0, 0, 0.28);
+  animation: combat-die-tumble 2s cubic-bezier(0.2, 0.72, 0.14, 1) both;
+}
+
+.combat-die-layer strong {
+  font-size: clamp(2rem, 4vw, 4.8rem);
+  line-height: 1;
+  font-weight: 950;
+}
+
+.combat-die-label {
+  position: absolute;
+  inset: auto 0.35rem 0.32rem;
+  color: rgba(17, 27, 33, 0.62);
+  font-size: clamp(0.52rem, 0.85vw, 0.72rem);
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.combat-die-attack {
+  border-color: rgba(210, 79, 48, 0.62);
+  animation-delay: 0ms;
+}
+
+.combat-die-defense {
+  border-color: rgba(87, 156, 220, 0.62);
+  animation-delay: 35ms;
+}
+
+.combat-die-modifier {
+  border-color: rgba(104, 205, 126, 0.62);
+  animation-delay: 70ms;
+}
+
+.combat-die-attack.combat-die-success {
+  animation-name: combat-die-tumble, combat-attack-glow;
+}
+
+.combat-die-defense.combat-die-success {
+  animation-name: combat-die-tumble, combat-defense-glow;
+}
+
+.combat-die-modifier.combat-die-success {
+  animation-name: combat-die-tumble, combat-modifier-glow;
+}
+
+.combat-result-token {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  width: min(100%, 10rem);
+  min-height: 3rem;
+  padding: 0.45rem 0.7rem;
+  border: 1px solid rgba(232, 221, 198, 0.32);
+  border-radius: 999px;
+  color: #f7ead1;
+  background: rgba(14, 17, 18, 0.88);
+  box-shadow: 0 0.6rem 1.5rem rgba(0, 0, 0, 0.28);
+  animation: combat-token-launch 2s ease both;
+}
+
+.combat-result-token span {
+  width: 1.5rem;
+  height: 1.5rem;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  color: #101417;
+  font-weight: 950;
+}
+
+.combat-result-token strong {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-size: clamp(0.8rem, 1vw, 0.98rem);
+  line-height: 1.1;
+}
+
+.combat-result-token-attack span {
+  background: #f26f3c;
+}
+
+.combat-result-token-defense span {
+  background: #79c6ff;
+}
+
+.combat-result-token-mod span {
+  background: #73df8c;
+}
+
+.combat-dice-animation-compact {
+  --combat-die-size: clamp(3.2rem, 18vw, 4.4rem);
+  gap: 0.45rem;
+  margin-top: 0;
+  max-width: 100%;
+}
+
+.combat-dice-animation-compact .combat-dice-stage {
+  width: 100%;
+  min-height: calc(var(--combat-die-size) * 1.08);
+  padding: 0.35rem;
+  gap: 0.35rem;
+}
+
+.combat-dice-animation-compact .combat-result-token {
+  width: 100%;
+  min-height: 2.55rem;
+}
+
+@keyframes combat-die-tumble {
+  0% {
+    opacity: 0;
+    transform: scale(0.95) rotateX(0deg) rotateY(0deg) rotateZ(0deg);
+  }
+
+  15% {
+    opacity: 1;
+    transform: scale(1) rotateX(0deg) rotateY(0deg) rotateZ(0deg);
+  }
+
+  70% {
+    transform: scale(1.04) rotateX(300deg) rotateY(-240deg) rotateZ(32deg);
+  }
+
+  85% {
+    transform: scale(0.97) rotateX(360deg) rotateY(-360deg) rotateZ(-4deg);
+  }
+
+  100% {
+    opacity: 1;
+    transform: scale(1) rotateX(360deg) rotateY(-360deg) rotateZ(0deg);
+  }
+}
+
+@keyframes combat-attack-glow {
+  0%, 84% {
+    box-shadow: inset 0 -0.35rem 0.7rem rgba(15, 23, 29, 0.18), 0 0.75rem 1.4rem rgba(0, 0, 0, 0.28);
+  }
+
+  90%, 100% {
+    box-shadow: inset 0 -0.35rem 0.7rem rgba(15, 23, 29, 0.18), 0 0 1.7rem rgba(242, 111, 60, 0.86);
+  }
+}
+
+@keyframes combat-defense-glow {
+  0%, 84% {
+    box-shadow: inset 0 -0.35rem 0.7rem rgba(15, 23, 29, 0.18), 0 0.75rem 1.4rem rgba(0, 0, 0, 0.28);
+  }
+
+  90%, 100% {
+    box-shadow: inset 0 -0.35rem 0.7rem rgba(15, 23, 29, 0.18), 0 0 1.7rem rgba(121, 198, 255, 0.86);
+  }
+}
+
+@keyframes combat-modifier-glow {
+  0%, 84% {
+    box-shadow: inset 0 -0.35rem 0.7rem rgba(15, 23, 29, 0.18), 0 0.75rem 1.4rem rgba(0, 0, 0, 0.28);
+  }
+
+  90%, 100% {
+    box-shadow: inset 0 -0.35rem 0.7rem rgba(15, 23, 29, 0.18), 0 0 1.4rem rgba(115, 223, 140, 0.82);
+  }
+}
+
+@keyframes combat-token-launch {
+  0%, 84% {
+    opacity: 0;
+    transform: translate3d(0, 0, 0) scale(0.92);
+    filter: blur(0);
+  }
+
+  90% {
+    opacity: 1;
+    transform: translate3d(0, -0.2rem, 0) scale(1);
+    filter: blur(0);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translate3d(4rem, -1.2rem, 0) scale(0.96);
+    filter: blur(0.5px);
+  }
+}
+
 .roll-die {
   width: 9.35rem;
   height: 9.35rem;
@@ -1542,6 +1770,21 @@ select {
   gap: 0.8rem;
 }
 
+.phone-join-step {
+  display: grid;
+  gap: 0.65rem;
+  min-width: 0;
+}
+
+.phone-join-step-kicker {
+  display: inline-block;
+  margin-bottom: 0.35rem;
+  color: #9fc7e4;
+  font-size: 0.7rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
 .phone-character-picker {
   min-width: 0;
   margin: 0;
@@ -1569,8 +1812,12 @@ select {
   min-height: 8.4rem;
   display: grid;
   align-items: end;
+  width: 100%;
+  padding: 0;
   border: 1px solid rgba(118, 145, 161, 0.28);
   background: rgba(8, 12, 18, 0.52);
+  color: inherit;
+  text-align: left;
   overflow: hidden;
   cursor: pointer;
 }
@@ -1630,6 +1877,154 @@ select {
 .phone-character-option-selected img {
   opacity: 1;
   transform: scale(1.03);
+}
+
+.phone-lobby-ready-panel {
+  display: grid;
+  gap: 0.9rem;
+  min-width: 0;
+  padding: 0.95rem;
+  border: 1px solid rgba(116, 157, 188, 0.36);
+  background:
+    linear-gradient(180deg, rgba(21, 28, 35, 0.92), rgba(10, 13, 18, 0.96)),
+    rgba(10, 13, 18, 0.92);
+}
+
+.phone-lobby-ready-panel h2,
+.phone-lobby-ready-panel p {
+  margin: 0;
+}
+
+.phone-lobby-character-confirm {
+  display: grid;
+  grid-template-columns: 5rem minmax(0, 1fr);
+  gap: 0.85rem;
+  align-items: center;
+  min-width: 0;
+  padding: 0.7rem;
+  border: 1px solid rgba(135, 165, 188, 0.24);
+  background: rgba(7, 11, 16, 0.48);
+}
+
+.phone-lobby-character-confirm img {
+  width: 5rem;
+  height: 5rem;
+  object-fit: cover;
+  object-position: center top;
+}
+
+.phone-lobby-character-confirm div {
+  display: grid;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.phone-lobby-character-confirm strong,
+.phone-lobby-character-confirm span,
+.phone-lobby-character-confirm small {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.phone-lobby-character-confirm span,
+.phone-lobby-character-confirm small,
+.phone-lobby-ready-state {
+  color: var(--text-secondary);
+}
+
+.phone-lobby-ready-button {
+  min-height: 3.15rem;
+  font-size: 1rem;
+}
+
+.phone-lobby-waiting-scroll {
+  padding-bottom: max(1rem, env(safe-area-inset-bottom));
+}
+
+.phone-character-waiting-panel {
+  gap: 1rem;
+}
+
+.phone-character-waiting-topline {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.phone-character-waiting-topline span,
+.phone-character-waiting-status,
+.phone-character-waiting-gear span {
+  padding: 0.32rem 0.5rem;
+  border: 1px solid rgba(143, 183, 218, 0.22);
+  background: rgba(7, 12, 17, 0.56);
+  color: var(--text-secondary);
+  font-size: 0.74rem;
+}
+
+.phone-character-waiting-hero {
+  display: grid;
+  grid-template-columns: minmax(7.5rem, 38%) minmax(0, 1fr);
+  gap: 0.9rem;
+  align-items: end;
+  min-width: 0;
+}
+
+.phone-character-waiting-hero img {
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  object-fit: cover;
+  object-position: center top;
+  border: 1px solid rgba(143, 183, 218, 0.28);
+}
+
+.phone-character-waiting-hero div,
+.phone-character-waiting-section,
+.phone-character-waiting-gear {
+  display: grid;
+  min-width: 0;
+}
+
+.phone-character-waiting-hero div {
+  gap: 0.25rem;
+}
+
+.phone-character-waiting-hero strong {
+  font-size: clamp(1.45rem, 7vw, 2.35rem);
+  line-height: 1.05;
+}
+
+.phone-character-waiting-hero span,
+.phone-character-waiting-hero small {
+  color: var(--text-secondary);
+  overflow-wrap: anywhere;
+}
+
+.phone-character-waiting-section {
+  gap: 0.45rem;
+  padding: 0.75rem;
+  border: 1px solid rgba(135, 165, 188, 0.22);
+  background: rgba(6, 10, 14, 0.42);
+}
+
+.phone-character-waiting-section h3,
+.phone-character-waiting-section p {
+  margin: 0;
+}
+
+.phone-character-waiting-section h3 {
+  color: #dce9f1;
+  font-size: 0.9rem;
+}
+
+.phone-character-waiting-section p {
+  color: var(--text-secondary);
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.phone-character-waiting-gear {
+  grid-template-columns: repeat(auto-fit, minmax(7rem, 1fr));
+  gap: 0.45rem;
 }
 
 .phone-status-header {
@@ -2608,6 +3003,10 @@ select {
   background: rgba(255, 255, 255, 0.06);
 }
 
+.phone-resolution-roll .combat-dice-animation {
+  margin-bottom: 0.35rem;
+}
+
 .phone-resolution-roll p,
 .phone-resolution-outcome p,
 .phone-resolution-outcome ul {
@@ -3571,6 +3970,17 @@ body {
   background: rgba(0, 0, 0, 0.45);
 }
 
+.host-battle-dice-animation {
+  grid-column: 1 / -1;
+  display: grid;
+  justify-items: center;
+}
+
+.host-battle-dice-animation .combat-dice-animation {
+  --combat-die-size: clamp(4.3rem, 5.6vw, 7rem);
+  margin-top: 0;
+}
+
 .host-battle-dice-column,
 .host-battle-modifiers,
 .host-battle-total {
@@ -3937,6 +4347,13 @@ body {
   background:
     linear-gradient(180deg, rgba(8, 12, 17, 0), rgba(8, 12, 17, 0.96) 28%),
     rgba(8, 12, 17, 0.9);
+}
+
+.tv-session-ready-note {
+  margin: 0;
+  color: #cfe0ec;
+  font-size: 0.75rem;
+  line-height: 1.35;
 }
 
 .tv-session-scenario-picker {

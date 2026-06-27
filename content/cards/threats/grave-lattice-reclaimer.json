@@ -1,0 +1,35 @@
+{
+  "id": "grave-lattice-reclaimer",
+  "type": "threat",
+  "cardType": "enemy",
+  "title": "Grave-Lattice Reclaimer",
+  "enemyName": "Grave-Lattice Reclaimer",
+  "text": "The Grave-Lattice Reclaimer appears when the dead refuse to stay useful. Battle 10. Before rolling, lose 1 Heat or add +2 to this enemy's difficulty. If you lose, it remains on your space for the next operative.",
+  "flavor": "Nothing is wasted in Ashen Reach. Not steel. Not bone. Not failure.",
+  "severity": 5,
+  "region": "inner",
+  "stat": "forge",
+  "difficulty": 10,
+  "trophyValue": 2,
+  "combatEffectKeys": ["threat_pay_heat_or_enemy_plus_two"],
+  "defeatReward": {
+    "type": "draw_artifact"
+  },
+  "woundOnLoss": {
+    "type": "sequence",
+    "effects": [
+      {
+        "type": "take_wound",
+        "amount": 1
+      },
+      {
+        "type": "gain_scar",
+        "scarId": "scar-wound-1"
+      },
+      {
+        "type": "return_threat_to_space"
+      }
+    ]
+  },
+  "enemyFamily": "machine"
+}

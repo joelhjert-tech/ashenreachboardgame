@@ -196,6 +196,22 @@ Generated from authored card content. Prompts are deterministic and grouped by c
 - prompt: Ashen Reach original card art, dark gothic sci-fantasy artifact-crawl, 3:4 portrait composition, centered subject with safe margins for card framing, black basalt, charcoal iron, scorched brass, ember red glow, cold blue-white signal light, toxic green salvage light, purple anomaly light, ash, smoke, ritual circuitry, damaged artifact machinery, high contrast, readable silhouette, cinematic but grounded, no text, central subject is Guardian Bridge Duelist, a living hostile with a clear full-body silhouette, serious enemy or major hazard, memorable silhouette, threat family human faction fighter, threat difficulty 7 driven by command, works across the Ashen Reach frontier, A bridge guardian lowers a ritual blade and permits passage only through formal challenge, The old rules survived because the old blades did, no gore closeup, hostile intent, broken artifact weaponry or predatory anatomy
 - negative prompt: readable text, logo, watermark, UI, dice, card frame, board game brand, Talisman, copied fantasy board game art, copyrighted character, modern city, clean spaceship, cartoon, anime, low detail, blurry, cropped subject, overexposed, cluttered composition, illegible silhouette
 
+### Grave-Lattice Reclaimer
+- card ID: `grave-lattice-reclaimer`
+- card type: `threat`
+- output path: `/assets/cards/threats/grave-lattice-reclaimer.png`
+- fallback path: `/assets/cards/fallbacks/threat.svg`
+- prompt: Ashen Reach original card art, dark gothic sci-fantasy artifact-crawl, 3:4 portrait composition, centered subject with safe margins for card framing, black basalt, charcoal iron, scorched brass, ancient bronze, ember red glow, toxic green rift light, cold crimson eyes, ash, smoke, ritual circuitry, damaged artifact machinery, high contrast, readable silhouette, cinematic but grounded, no text, central subject is Grave-Lattice Reclaimer, a towering skeletal machine-priest with broken mechanical funeral-halo wings, torn ritual robes, bronze armor, execution staff that is half spear and half harvest blade, crawling salvage drones at its feet, elite high-threat machine enemy, threat difficulty 10 driven by forge, regional hint middle or inner, collects broken bodies, lost relics, and unfinished souls for the Grave-Lattice, no gore closeup, hostile intent, dead route-symbols as abstract non-readable marks only
+- negative prompt: readable text, logo, watermark, UI, dice, card frame, board game brand, Talisman, copied fantasy board game art, copyrighted character, modern city, clean spaceship, cartoon, anime, low detail, blurry, cropped subject, overexposed, cluttered composition, illegible silhouette
+
+### Iron Synod Chirurgeon
+- card ID: `iron-synod-chirurgeon`
+- card type: `threat`
+- output path: `/assets/cards/threats/iron-synod-chirurgeon.png`
+- fallback path: `/assets/cards/fallbacks/threat.svg`
+- prompt: Ashen Reach original card art, dark gothic sci-fantasy artifact-crawl, 3:4 portrait composition, centered subject with safe margins for card framing, black basalt, charcoal iron, scorched brass, ember red glow, cold blue-white signal light, toxic green salvage light, purple anomaly light, ash, smoke, ritual circuitry, damaged artifact machinery, high contrast, readable silhouette, cinematic but grounded, no text, central subject is Iron Synod Chirurgeon, a living hostile with a clear full-body silhouette, elite horror or war-machine, dominant and oppressive, threat family machine, automaton, or judge-engine, threat difficulty 10 driven by forge, regional hint middle, A butcher-priest opens its arms in benediction while the operating table begins to sing, The Synod calls every wound an unfinished doorway, no gore closeup, hostile intent, broken artifact weaponry or predatory anatomy
+- negative prompt: readable text, logo, watermark, UI, dice, card frame, board game brand, Talisman, copied fantasy board game art, copyrighted character, modern city, clean spaceship, cartoon, anime, low detail, blurry, cropped subject, overexposed, cluttered composition, illegible silhouette
+
 ### Iron Synod Hunter
 - card ID: `iron-synod-hunter`
 - card type: `threat`

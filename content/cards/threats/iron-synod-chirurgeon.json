@@ -1,0 +1,42 @@
+{
+  "id": "iron-synod-chirurgeon",
+  "type": "threat",
+  "cardType": "enemy",
+  "title": "Iron Synod Chirurgeon",
+  "enemyName": "Iron Synod Chirurgeon",
+  "text": "A butcher-priest opens its arms in benediction while the operating table begins to sing.",
+  "flavor": "The Synod calls every wound an unfinished doorway.",
+  "severity": 4,
+  "region": "middle",
+  "stat": "forge",
+  "difficulty": 10,
+  "trophyValue": 3,
+  "combatEffectKeys": ["threat_disable_armor_bonus"],
+  "defeatReward": {
+    "type": "sequence",
+    "effects": [
+      {
+        "type": "gain_trophy",
+        "amount": 3
+      },
+      {
+        "type": "gain_gear",
+        "gearId": "cinder-suture-kit"
+      }
+    ]
+  },
+  "woundOnLoss": {
+    "type": "sequence",
+    "effects": [
+      {
+        "type": "take_wound",
+        "amount": 2
+      },
+      {
+        "type": "gain_heat",
+        "amount": 1
+      }
+    ]
+  },
+  "enemyFamily": "machine"
+}

@@ -207,6 +207,31 @@ function createHttpServer(): HttpServer {
         return;
       }
 
+      if (request.method === "POST" && url.pathname === "/api/session/leave") {
+        const body = (await readJsonBody(request)) as {
+          roomCode?: string;
+          seatToken?: string;
+        };
+
+        if (body.roomCode !== roomServer.getState().sessionId) {
+          sendJson(response, 404, { error: "Unknown room code" });
+          return;
+        }
+
+        if (!body.seatToken) {
+          sendJson(response, 400, { error: "Seat token is required" });
+          return;
+        }
+
+        roomServer.releaseSeatByToken(body.seatToken);
+        sendJson(response, 200, {
+          roomCode: roomServer.getState().sessionId,
+          status: roomServer.getState().status,
+          phase: roomServer.getState().phase
+        });
+        return;
+      }
+
       if (request.method === "POST" && url.pathname === "/api/session/start") {
         const body = (await readJsonBody(request)) as { roomCode?: string; hostToken?: string };
 

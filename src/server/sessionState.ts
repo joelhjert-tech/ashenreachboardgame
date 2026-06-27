@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { loadCharacters } from "../game/content/characters.js";
 import { loadContracts } from "../game/content/contracts.js";
 import { createCanonicalSectorGraph, validateCanonicalSectorGraph } from "../game/data/canonicalSectorGraph.js";
@@ -96,8 +97,9 @@ export function createInitialSessionState(
       characterId,
       displayName: null,
       connected: false,
+      ready: false,
       kicked: false,
-      joinToken: createJoinToken({ sessionId, seatId })
+      joinToken: createJoinToken({ sessionId, seatId, secret: randomUUID() })
     })),
     players: configuredSeats.map(({ seatId }, index) =>
       createPlayerState(

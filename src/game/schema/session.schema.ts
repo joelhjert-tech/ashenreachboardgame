@@ -78,6 +78,7 @@ export const seatSchema = z.object({
   characterId: z.string().min(1),
   displayName: z.string().min(1).nullable().optional(),
   connected: z.boolean(),
+  ready: z.boolean(),
   kicked: z.boolean(),
   joinToken: z.string().min(1)
 });

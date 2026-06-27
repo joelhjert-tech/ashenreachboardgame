@@ -40,6 +40,7 @@ import {
   resolveScenarioWoundsTaken,
   type ScenarioAmbientResolution
 } from "../game/rules/scenarioAmbient.js";
+import { getSessionStartReadiness } from "../game/rules/sessionStart.js";
 import { resolveSpaceText } from "../game/rules/tileTextResolver.js";
 import type {
   AcceptContractAction,
@@ -94,7 +95,7 @@ const MAX_STAT_RANK = 9;
 const RAISE_STAT_FEEDS_ESCALATION = true;
 const RAISE_STAT_ESCALATION_REASON = "forged in fire";
 const ENEMY_ROLL_TIMEOUT_MS = 30_000;
-const RESOLUTION_AUTO_CONTINUE_MS = process.env.VITEST ? 1 : 3000;
+const RESOLUTION_AUTO_CONTINUE_MS = process.env.VITEST ? 1 : 10000;
 
 const NEMESIS_OPPOSITION = {
   strength: { attackStat: "grit", label: "Overpower" },
@@ -182,6 +183,7 @@ const CLIENT_INTENT_TYPES = new Set<string>([
   "COMBAT_REQUESTED",
   "ENEMY_ROLL_REQUESTED",
   "CONTINUE_RESOLUTION",
+  "SET_READY",
   "RECRUIT_REPLACEMENT",
   "EQUIP_GEAR",
   "UNEQUIP_GEAR",
@@ -403,6 +405,12 @@ export class GameRoomServer {
         return;
       }
 
+      if (intent.type === "SET_READY") {
+        this.setSeatReady(intent.seatId, intent.ready);
+        this.broadcastPatch();
+        return;
+      }
+
       if (intent.type === "STABILIZE_REQUESTED") {
         this.resolveStabilizeIntent(intent);
         const shouldCompleteTurn =
@@ -448,13 +456,21 @@ export class GameRoomServer {
         return;
       }
 
+      const shouldResolveVisibleCheckOrCombat =
+        (intent.type === "CHECK_REQUESTED" || intent.type === "COMBAT_REQUESTED") &&
+        this.state.activeResolution?.stage === "battle_setup" &&
+        this.state.activeResolution.playerId === intent.seatId;
       const action = this.intentToAction(intent);
       this.applyAction(action);
 
       if (intent.type === "CHECK_REQUESTED") {
-        this.resolveCheckIntent(intent);
+        if (shouldResolveVisibleCheckOrCombat) {
+          this.resolveCheckIntent(intent);
+        }
       } else if (intent.type === "COMBAT_REQUESTED") {
-        this.resolveCombatIntent(intent);
+        if (shouldResolveVisibleCheckOrCombat) {
+          this.resolveCombatIntent(intent);
+        }
       } else if (intent.type === "ENEMY_ROLL_REQUESTED") {
         this.resolveEnemyRollIntent(intent);
       } else if (intent.type === "MOVE_REQUESTED") {
@@ -541,6 +557,14 @@ export class GameRoomServer {
       throw new Error(`Unknown character ${characterId}`);
     }
 
+    const characterTaken = this.state.seats.some(
+      (entry) => entry.displayName && !entry.kicked && entry.characterId === characterId
+    );
+
+    if (characterTaken) {
+      throw new Error("Character already taken");
+    }
+
     this.state = {
       ...this.state,
       sequence: this.state.sequence + 1,
@@ -549,7 +573,8 @@ export class GameRoomServer {
           ? {
               ...entry,
               characterId,
-              displayName
+              displayName,
+              ready: true
             }
           : entry
       ),
@@ -582,16 +607,93 @@ export class GameRoomServer {
     };
   }
 
+  setSeatReady(seatId: string, ready: boolean): void {
+    if (this.state.status !== "lobby" || this.state.phase !== "start") {
+      throw new Error("Ready state can only be changed before the session starts");
+    }
+
+    const seat = this.state.seats.find((entry) => entry.seatId === seatId);
+
+    if (!seat || seat.kicked) {
+      throw new Error(`Unknown seat ${seatId}`);
+    }
+
+    if (!seat.displayName) {
+      throw new Error("Seat must be joined before it can be readied");
+    }
+
+    if (seat.ready === ready) {
+      return;
+    }
+
+    this.state = {
+      ...this.state,
+      sequence: this.state.sequence + 1,
+      seats: this.state.seats.map((entry) =>
+        entry.seatId === seatId
+          ? {
+              ...entry,
+              ready
+            }
+          : entry
+      )
+    };
+  }
+
+  releaseSeat(seatId: string): void {
+    if (this.state.status !== "lobby" || this.state.phase !== "start") {
+      throw new Error("Seats can only be released before the session starts");
+    }
+
+    const seat = this.state.seats.find((entry) => entry.seatId === seatId);
+
+    if (!seat || seat.kicked) {
+      throw new Error(`Unknown seat ${seatId}`);
+    }
+
+    if (!seat.displayName && !seat.ready && !seat.connected) {
+      return;
+    }
+
+    this.state = {
+      ...this.state,
+      sequence: this.state.sequence + 1,
+      seats: this.state.seats.map((entry) =>
+        entry.seatId === seatId
+          ? {
+              ...entry,
+              displayName: null,
+              connected: false,
+              ready: false
+            }
+          : entry
+      )
+    };
+  }
+
+  releaseSeatByToken(seatToken: string): void {
+    const seat = this.resolveSeatFromToken(seatToken);
+
+    if (!seat) {
+      throw new Error("Invalid seat token");
+    }
+
+    this.releaseSeat(seat.seatId);
+    this.broadcastPatch();
+  }
+
   startSession(): void {
     if (this.state.status !== "lobby" || this.state.phase !== "start") {
       throw new Error("Session already started");
     }
 
-    const joinedSeatIds = this.state.seats.filter((seat) => seat.displayName && !seat.kicked).map((seat) => seat.seatId);
-    const joinedSeatCount = joinedSeatIds.length;
+    const startReadiness = getSessionStartReadiness({
+      sessionMode: this.state.sessionMode,
+      seats: this.state.seats
+    });
 
-    if (joinedSeatCount < 1) {
-      throw new Error("At least one seat must join before starting");
+    if (!startReadiness.canStart) {
+      throw new Error(startReadiness.reason);
     }
 
     this.state = {
@@ -599,10 +701,10 @@ export class GameRoomServer {
       status: "active",
       winnerSeatId: null,
       activeSeatIndex: 0,
-      turnOrder: joinedSeatIds
+      turnOrder: startReadiness.occupiedSeatIds
     };
 
-    const activeSeatId = this.state.seats[0]?.seatId ?? this.state.turnOrder[0];
+    const activeSeatId = this.state.turnOrder[0] ?? this.state.seats[0]?.seatId;
 
     this.applyAction({
       type: "SESSION_STARTED",
@@ -693,6 +795,11 @@ export class GameRoomServer {
           throw new IntentRejectedError(type, "Malformed intent: choiceId must be a string");
         }
         break;
+      case "SET_READY":
+        if (typeof message.ready !== "boolean") {
+          throw new IntentRejectedError(type, "Malformed intent: ready must be a boolean");
+        }
+        break;
       default:
         break;
     }
@@ -757,7 +864,7 @@ export class GameRoomServer {
     const item = player?.character.heldGear.find((entry) => entry.id === gearId) ?? this.gear.get(gearId);
     const itemName = item?.name ?? gearId;
     const discard = item?.useLimit === "discard";
-    const effect = this.resolveEffect(this.getGearUseEffect(gearId));
+    const effect = this.resolveEffect(this.getGearUseEffect(gearId), seatId);
 
     return {
       type: "USE_GEAR",
@@ -842,7 +949,7 @@ export class GameRoomServer {
   ): UseFollowerAction {
     const player = this.state.players.find((entry) => entry.seatId === seatId);
     const follower = (player?.character.followers ?? []).find((entry) => entry.id === followerId) ?? this.followers.get(followerId);
-    const effect = this.resolveEffect((follower?.activeEffect as EncounterEffect | undefined) ?? this.getFollowerRoleEffect(follower));
+    const effect = this.resolveEffect((follower?.activeEffect as EncounterEffect | undefined) ?? this.getFollowerRoleEffect(follower), seatId);
 
     return {
       type: "USE_FOLLOWER",
@@ -982,6 +1089,8 @@ export class GameRoomServer {
           seatId: intent.seatId,
           createdAt
         } satisfies ResolutionContinuedAction;
+      case "SET_READY":
+        throw new Error("Ready state is handled directly");
       case "RECRUIT_REPLACEMENT":
         return {
           type: "RECRUIT_REPLACEMENT",
@@ -2784,6 +2893,7 @@ export class GameRoomServer {
           ? {
               ...entry,
               connected: false,
+              ready: false,
               kicked: true
             }
           : entry
@@ -2814,6 +2924,14 @@ export class GameRoomServer {
       pendingEnemyRoll: null,
       pendingEffect: null,
       lastOutcomeSummary: null,
+      seats: this.state.seats.map((seat) =>
+        seat.kicked
+          ? seat
+          : {
+              ...seat,
+              ready: false
+            }
+      ),
       players: this.state.players.map((player) => {
         const seat = this.state.seats.find((entry) => entry.seatId === player.seatId);
 
@@ -2945,7 +3063,11 @@ export class GameRoomServer {
     timing: "onSuccess" | "onFailure" | "onDefeat"
   ): EncounterEffect {
     const keyedEffect = this.resolveThreatEffectKey(seatId, card, effectKey, timing)?.effect ?? null;
-    return this.resolveEffect(this.combineEffects([baseEffect, keyedEffect].filter((effect): effect is EncounterEffect => Boolean(effect))) ?? baseEffect);
+    return this.resolveEffect(
+      this.combineEffects([baseEffect, keyedEffect].filter((effect): effect is EncounterEffect => Boolean(effect))) ?? baseEffect,
+      seatId,
+      card.id
+    );
   }
 
   private runAutomaticPhases(seatId: string): void {
@@ -3094,7 +3216,7 @@ export class GameRoomServer {
       seatId,
       sectorId: sector.id,
       card,
-      revealEffect: revealEffect ? this.resolveEffect(revealEffect) : null,
+      revealEffect: revealEffect ? this.resolveEffect(revealEffect, seatId, card?.id) : null,
       createdAt: new Date().toISOString()
     };
   }
@@ -3247,10 +3369,15 @@ export class GameRoomServer {
     const difficulty = encounter.difficulty + escalationModifier + (keyedModifiers.difficultyModifier ?? 0);
     const total = roll.total + statBonus;
     const success = total >= difficulty;
+    const baseOutcomeEffect = this.combineEffects(
+      [keyedModifiers.effect, success ? encounter.successEffect : encounter.failEffect].filter(
+        (effect): effect is EncounterEffect => Boolean(effect)
+      )
+    ) ?? (success ? encounter.successEffect : encounter.failEffect);
     const outcomeEffect = this.resolveThreatOutcomeEffect(
       intent.seatId,
       encounter,
-      success ? encounter.successEffect : encounter.failEffect,
+      baseOutcomeEffect,
       success ? encounter.successEffectKey : encounter.failEffectKey,
       success ? "onSuccess" : "onFailure"
     );
@@ -3316,7 +3443,7 @@ export class GameRoomServer {
       statBonus,
       total,
       success,
-      effect: success ? null : this.resolveEffect({ type: "gain_heat", amount: 1 }),
+      effect: success ? null : this.resolveEffect({ type: "gain_heat", amount: 1 }, intent.seatId),
       createdAt: new Date().toISOString()
     } satisfies MovementResolvedAction);
     this.applyScenarioOnSkillResolved(intent.seatId, "guile", success);
@@ -3436,7 +3563,7 @@ export class GameRoomServer {
     const combinedSummary = [baseSummary, sectorCardResolution?.summary].filter(Boolean).join(" ");
     const combinedEffect = this.combineEffects(
       [baseEffect, sectorCardResolution?.effect].filter((effect): effect is EncounterEffect => Boolean(effect)).map((effect) =>
-        this.resolveEffect(effect)
+        this.resolveEffect(effect, intent.seatId)
       )
     );
 
@@ -4035,10 +4162,15 @@ export class GameRoomServer {
     const total = playerRoll.total + statBonus;
     const enemyTotal = enemyRoll.total + enemyBonus + scenarioEnemyBonus + keyedEnemyBonus;
     const success = total >= enemyTotal;
+    const baseOutcomeEffect = this.combineEffects(
+      [keyedModifiers.effect, success ? encounter.defeatReward : encounter.woundOnLoss].filter(
+        (effect): effect is EncounterEffect => Boolean(effect)
+      )
+    ) ?? (success ? encounter.defeatReward : encounter.woundOnLoss);
     const outcomeEffect = this.resolveThreatOutcomeEffect(
       fighterSeatId,
       encounter,
-      success ? encounter.defeatReward : encounter.woundOnLoss,
+      baseOutcomeEffect,
       success ? encounter.defeatEffectKey : encounter.failEffectKey,
       success ? "onDefeat" : "onFailure"
     );
@@ -4067,11 +4199,42 @@ export class GameRoomServer {
     this.runAutomaticPhases(fighterSeatId);
   }
 
-  private resolveEffect(effect: EncounterEffect): EncounterEffect {
+  private resolveEffect(effect: EncounterEffect, seatId?: string, sourceCardId?: string): EncounterEffect {
     if (effect.type === "gain_gear") {
       return {
         ...effect,
         gear: this.gear.get(effect.gearId)
+      };
+    }
+
+    if (effect.type === "draw_artifact") {
+      const player = seatId ? this.state.players.find((entry) => entry.seatId === seatId) : null;
+      const sourceSectorId = player?.sectorId;
+      const sector = sourceSectorId ? this.state.sectors.find((entry) => entry.id === sourceSectorId) : null;
+      const artifactId = sector?.encounterDecks.artifact[0] ?? undefined;
+      const artifact = artifactId ? this.artifacts.get(artifactId) : null;
+
+      if (!sourceSectorId || !artifactId || !artifact) {
+        return { type: "gain_note", text: "No local artifact was available to reclaim." };
+      }
+
+      return this.resolveEffect(
+        this.combineEffects([
+          artifact.resolveEffect,
+          { type: "consume_artifact", artifactId, sourceSectorId }
+        ]) ?? { type: "consume_artifact", artifactId, sourceSectorId },
+        seatId,
+        sourceCardId
+      );
+    }
+
+    if (effect.type === "return_threat_to_space") {
+      const player = seatId ? this.state.players.find((entry) => entry.seatId === seatId) : null;
+
+      return {
+        ...effect,
+        threatId: effect.threatId ?? sourceCardId,
+        sourceSectorId: effect.sourceSectorId ?? player?.sectorId
       };
     }
 
@@ -4085,7 +4248,7 @@ export class GameRoomServer {
     if (effect.type === "sequence") {
       return {
         ...effect,
-        effects: effect.effects.map((entry: EncounterEffect) => this.resolveEffect(entry)) as typeof effect.effects
+        effects: effect.effects.map((entry: EncounterEffect) => this.resolveEffect(entry, seatId, sourceCardId)) as typeof effect.effects
       };
     }
 
@@ -4259,12 +4422,16 @@ export class GameRoomServer {
       seat.seatId === seatId
         ? {
             ...seat,
-            connected
+            connected,
+            ready: connected || this.state.status !== "lobby" ? seat.ready : false
           }
         : seat
     );
 
-    const changed = nextSeats.some((seat, index) => seat.connected !== this.state.seats[index]?.connected);
+    const changed = nextSeats.some((seat, index) => {
+      const previous = this.state.seats[index];
+      return seat.connected !== previous?.connected || seat.ready !== previous?.ready;
+    });
 
     if (!changed) {
       return;
@@ -4393,6 +4560,7 @@ export function createTvProjection(state: GameState): Record<string, unknown> {
       characterId: seat.characterId,
       displayName: seat.displayName ?? null,
       connected: seat.connected,
+      ready: seat.ready,
       kicked: seat.kicked
     })),
     sectors: state.sectors,

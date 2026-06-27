@@ -108,6 +108,13 @@ export const THREAT_CARD_EFFECTS = {
     timing: "beforeCombat",
     resolve: (ctx) => ({ playerBonusModifier: -slotBonus(ctx, "armor"), disabledSlots: ["armor"] })
   },
+  threat_pay_heat_or_enemy_plus_two: {
+    timing: "beforeCombat",
+    resolve: (ctx) =>
+      ctx.player.character.heat > 0
+        ? { effect: { type: "lose_heat", amount: 1 }, summary: "Paid 1 Heat to disrupt the enemy's reclaiming rite." }
+        : { enemyBonusModifier: 2, summary: "No Heat was available to pay; enemy difficulty increased by 2." }
+  },
   threat_force_enemy_roll_advantage: {
     timing: "beforeCombat",
     resolve: () => ({ enemyBonusModifier: 1, summary: "Enemy roll advantage represented as +1 enemy bonus." })

@@ -43,6 +43,18 @@ const statFrameByStat: Record<Stat, string> = {
   forge: "/assets/riftfall/ui/ui_card_frame_yellow.png"
 };
 
+const uiAssetPaths = [
+  "/assets/riftfall/ui/ui_phone_controller_background.png",
+  "/assets/riftfall/ui/ui_character_sheet_frame.png",
+  "/assets/riftfall/ui/ui_scenario_frame.png",
+  "/assets/riftfall/ui/ui_card_frame_red.png",
+  "/assets/riftfall/ui/ui_card_frame_blue.png",
+  "/assets/riftfall/ui/ui_card_frame_yellow.png",
+  "/assets/riftfall/ui/ui_tv_board_background.png",
+  "/assets/riftfall/ui/dice_roll_combat@2s.gif",
+  "/assets/riftfall/ui/dice_roll_combat@2s.lottie.json"
+];
+
 const cardArtByType = generatedCardImagePrompts.reduce<Record<CardImageType, Record<string, string>>>(
   (summary, prompt) => {
     summary[prompt.cardType][prompt.cardId] = prompt.outputPath;
@@ -100,6 +112,15 @@ export function getNemesisPortraitPath(nemesisId: string): string {
 
 export function getEncounterFramePath(stat: Stat): string {
   return statFrameByStat[stat];
+}
+
+export function getRuntimeAssetPaths(): string[] {
+  return [
+    ...Object.values(characterPortraitById),
+    ...Object.values(nemesisPortraitById),
+    ...Object.values(statFrameByStat),
+    ...uiAssetPaths
+  ].filter((value, index, paths) => paths.indexOf(value) === index);
 }
 
 export function getCharacterPortraitStyle(character: Pick<PrivateCharacter | PublicPlayerCharacter, "id">): string {

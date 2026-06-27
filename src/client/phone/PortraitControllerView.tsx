@@ -15,6 +15,7 @@ interface PortraitControllerViewProps {
   characters: CharacterCatalogEntry[];
   onIntent: ((intent: ClientIntent) => void) | null;
   onLeave: () => void;
+  onLobbyBack?: () => void;
 }
 
 export function PortraitControllerView({
@@ -27,7 +28,8 @@ export function PortraitControllerView({
   patch,
   characters,
   onIntent,
-  onLeave
+  onLeave,
+  onLobbyBack
 }: PortraitControllerViewProps): ReactElement {
   const [activeTab, setActiveTab] = useState<"player" | "inventory" | "quests" | "log">("player");
 
@@ -47,11 +49,88 @@ export function PortraitControllerView({
   }
 
   const activeScenario = patch?.activeScenario ?? null;
+  const ownSeat = patch?.seats.find((seat) => seat.seatId === self.seatId) ?? null;
   const activeContractProgress = activeContractCard && self.character.activeContract
     ? `${self.character.activeContract.progress}`
     : null;
   const notes = self.notes ?? [];
   const latestOutcome = patch?.outcomeSummary ?? null;
+
+  if (patch?.status === "lobby") {
+    const isReady = ownSeat?.ready ?? false;
+    const abilityText = self.character.abilities.map((ability) => `${ability.name}: ${ability.text}`);
+    const startingGear = self.character.heldGear;
+
+    return (
+      <section className="phone-portrait-controller" style={{ backgroundImage: `url(${getPhoneBackgroundPath()})` }}>
+        <div className="phone-portrait-panel">
+          <main className="phone-portrait-scroll phone-lobby-waiting-scroll" aria-label="Character waiting">
+            <section className="phone-lobby-ready-panel phone-character-waiting-panel">
+              <div className="phone-character-waiting-topline">
+                <span>{roomCode}</span>
+                <span>{displayName}</span>
+                <span>{connectionStatus}</span>
+              </div>
+
+              <div className="phone-character-waiting-hero">
+                <img src={getCharacterPortraitPath(self.character.id)} alt="" />
+                <div>
+                  <p className="phone-panel-kicker">Character locked</p>
+                  <strong>{self.character.name}</strong>
+                  <span>{self.character.archetype}</span>
+                  <small>{isReady ? "Ready for host start" : "Character selected"}</small>
+                </div>
+              </div>
+
+              <div className="phone-portrait-attributes" aria-label="Character stats">
+                {Object.entries(self.character.stats).map(([stat, value]) => (
+                  <div key={stat}>
+                    <span>{stat}</span>
+                    <strong>{value}</strong>
+                  </div>
+                ))}
+              </div>
+
+              <section className="phone-character-waiting-section">
+                <h3>Special Abilities</h3>
+                {abilityText.length > 0 ? (
+                  abilityText.map((ability) => <p key={ability}>{ability}</p>)
+                ) : (
+                  <p>No special ability text is recorded for this character.</p>
+                )}
+              </section>
+
+              <section className="phone-character-waiting-section">
+                <h3>Starting Equipment</h3>
+                {startingGear.length > 0 ? (
+                  <div className="phone-character-waiting-gear">
+                    {startingGear.map((item) => (
+                      <span key={item.id}>{item.name}</span>
+                    ))}
+                  </div>
+                ) : (
+                  <p>No starting equipment.</p>
+                )}
+              </section>
+
+              <p className="phone-lobby-ready-state">Waiting for host to start the game</p>
+
+              {onLobbyBack ? (
+                <button type="button" className="phone-button phone-button-secondary phone-lobby-ready-button" onClick={onLobbyBack}>
+                  Back
+                </button>
+              ) : null}
+              {onIntent ? (
+                <span className="phone-character-waiting-status">{isReady ? "Seat reserved" : "Reservation syncing"}</span>
+              ) : (
+                <span className="phone-character-waiting-status">Waiting for room sync</span>
+              )}
+            </section>
+          </main>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section className="phone-portrait-controller" style={{ backgroundImage: `url(${getPhoneBackgroundPath()})` }}>

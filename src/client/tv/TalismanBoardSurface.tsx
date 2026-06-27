@@ -33,6 +33,10 @@ const tileArtByNodeId: Record<string, string> = {
   center_cinder_gate: "/assets/riftfall/board/center/center_scenario_space.png"
 };
 
+export function getBoardTileAssetPaths(): string[] {
+  return Object.values(tileArtByNodeId).filter((value, index, paths) => paths.indexOf(value) === index);
+}
+
 const tileScaleByRing: Record<BoardNode["ring"], number> = {
   outer: 0.112,
   middle: 0.096,

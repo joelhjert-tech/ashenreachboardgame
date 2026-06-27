@@ -1,5 +1,6 @@
 import type { ReactElement } from "react";
 import { CardArtImage } from "../shared/CardArtImage.js";
+import { CombatDiceAnimation } from "../shared/CombatDiceAnimation.js";
 import { getCharacterPortraitPath } from "../shared/assetPaths.js";
 import type { ActiveResolution, PublicPatchPayload, PublicPlayer, StatePatch, Stat } from "../shared/types.js";
 
@@ -219,6 +220,15 @@ export function HostBattleOverlay({
         </article>
 
         <div className="host-battle-rolls" data-testid="host-battle-rolls">
+          <div className="host-battle-dice-animation">
+            <CombatDiceAnimation
+              attackValue={model.playerTotal}
+              defenseValue={model.enemyTotal}
+              modifierValue={model.playerModifier}
+              attackSuccess={model.outcomeLabel?.includes("wins") ?? false}
+              defenseSuccess={model.outcomeLabel?.includes("driven back") ?? false}
+            />
+          </div>
           <DiceReadout label="Player roll" dice={model.playerDice} />
           <div className="host-battle-modifiers">
             <span>Player battle value {formatNumber(model.playerModifier)}</span>

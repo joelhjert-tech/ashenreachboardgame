@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, type ReactElement } from "react";
+import { CombatDiceAnimation } from "./CombatDiceAnimation.js";
 import type { OutcomeSummary } from "./types.js";
 
 interface RollOutcomePanelProps {
@@ -190,6 +191,14 @@ export function RollOutcomePanel({
           <span>{state.label}</span>
         </div>
       </div>
+      <CombatDiceAnimation
+        attackValue={total}
+        defenseValue={isOpposed ? enemyTotal : difficulty}
+        modifierValue={statBonus}
+        attackSuccess={success === true}
+        defenseSuccess={success === false}
+        hasModifier={statBonus !== 0}
+      />
       <div className={`roll-display ${isOpposed ? "roll-display-opposed" : ""}`}>
         <DicePair label={isOpposed ? "Player" : "Roll"} faces={displayFaces} animating={isAnimating} />
         {isOpposed && <DicePair label="Enemy" faces={displayEnemyFaces} animating={isAnimating} />}

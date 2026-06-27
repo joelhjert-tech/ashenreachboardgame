@@ -312,6 +312,32 @@
     "usage": "Guardian Bridge Duelist threat card art."
   },
   {
+    "assetId": "threat_art_grave-lattice-reclaimer",
+    "assetType": "threatCardArt",
+    "cardId": "grave-lattice-reclaimer",
+    "cardType": "threat",
+    "title": "Grave-Lattice Reclaimer",
+    "fileName": "grave-lattice-reclaimer.png",
+    "outputPath": "/assets/cards/threats/grave-lattice-reclaimer.png",
+    "fallbackPath": "/assets/cards/fallbacks/threat.svg",
+    "prompt": "Ashen Reach original card art, dark gothic sci-fantasy artifact-crawl, 3:4 portrait composition, centered subject with safe margins for card framing, black basalt, charcoal iron, scorched brass, ancient bronze, ember red glow, toxic green rift light, cold crimson eyes, ash, smoke, ritual circuitry, damaged artifact machinery, high contrast, readable silhouette, cinematic but grounded, no text, central subject is Grave-Lattice Reclaimer, a towering skeletal machine-priest with broken mechanical funeral-halo wings, torn ritual robes, bronze armor, execution staff that is half spear and half harvest blade, crawling salvage drones at its feet, elite high-threat machine enemy, threat difficulty 10 driven by forge, regional hint middle or inner, collects broken bodies, lost relics, and unfinished souls for the Grave-Lattice, no gore closeup, hostile intent, dead route-symbols as abstract non-readable marks only",
+    "negativePrompt": "readable text, logo, watermark, UI, dice, card frame, board game brand, Talisman, copied fantasy board game art, copyrighted character, modern city, clean spaceship, cartoon, anime, low detail, blurry, cropped subject, overexposed, cluttered composition, illegible silhouette",
+    "usage": "Grave-Lattice Reclaimer threat card art."
+  },
+  {
+    "assetId": "threat_art_iron-synod-chirurgeon",
+    "assetType": "threatCardArt",
+    "cardId": "iron-synod-chirurgeon",
+    "cardType": "threat",
+    "title": "Iron Synod Chirurgeon",
+    "fileName": "iron-synod-chirurgeon.png",
+    "outputPath": "/assets/cards/threats/iron-synod-chirurgeon.png",
+    "fallbackPath": "/assets/cards/fallbacks/threat.svg",
+    "prompt": "Ashen Reach original card art, dark gothic sci-fantasy artifact-crawl, 3:4 portrait composition, centered subject with safe margins for card framing, black basalt, charcoal iron, scorched brass, ember red glow, cold blue-white signal light, toxic green salvage light, purple anomaly light, ash, smoke, ritual circuitry, damaged artifact machinery, high contrast, readable silhouette, cinematic but grounded, no text, central subject is Iron Synod Chirurgeon, a living hostile with a clear full-body silhouette, elite horror or war-machine, dominant and oppressive, threat family machine, automaton, or judge-engine, threat difficulty 10 driven by forge, regional hint middle, A butcher-priest opens its arms in benediction while the operating table begins to sing, The Synod calls every wound an unfinished doorway, no gore closeup, hostile intent, broken artifact weaponry or predatory anatomy",
+    "negativePrompt": "readable text, logo, watermark, UI, dice, card frame, board game brand, Talisman, copied fantasy board game art, copyrighted character, modern city, clean spaceship, cartoon, anime, low detail, blurry, cropped subject, overexposed, cluttered composition, illegible silhouette",
+    "usage": "Iron Synod Chirurgeon threat card art."
+  },
+  {
     "assetId": "threat_art_iron-synod-hunter",
     "assetType": "threatCardArt",
     "cardId": "iron-synod-hunter",

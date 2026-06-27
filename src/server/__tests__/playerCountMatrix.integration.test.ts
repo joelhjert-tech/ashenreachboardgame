@@ -297,6 +297,10 @@ describe("player count integration matrix", () => {
 
       await Promise.all(phones.map((phone) => phone.waitFor((message) => isStatePatch(message) && Object.hasOwn(message.payload, "self"))));
 
+      for (const joinResult of joinResults) {
+        harness.roomServer.setSeatReady(joinResult.seatId, true);
+      }
+
       harness.roomServer.startSession();
 
       const startedPatch = (await phones[0]!.waitFor(statePatchForActiveTurnLength(playerCount))) as Extract<
@@ -387,6 +391,10 @@ describe("player count integration matrix", () => {
 
       await Promise.all(phones.map((phone) => phone.waitFor(isPhonePatch)));
 
+      for (const joinResult of joinResults) {
+        harness.roomServer.setSeatReady(joinResult.seatId, true);
+      }
+
       harness.roomServer.startSession();
       await phones[0]!.waitFor(statePatchForActiveTurnLength(playerCount));
 
@@ -475,7 +483,30 @@ describe("player count integration matrix", () => {
             Boolean(payload.activeResolution.roll))
         );
       });
-      const combatPayload = getPhonePayload(combatPatch);
+      let combatPayload = getPhonePayload(combatPatch);
+
+      if (combatPayload.activeResolution?.stage === "battle_setup" && !combatPayload.activeResolution.roll) {
+        phones[0]!.socket.send(
+          JSON.stringify({
+            type: "COMBAT_REQUESTED",
+            seatId: "seat-1",
+            stat: matrixBattleThreat.stat
+          })
+        );
+
+        const rollStartedPatch = await phones[0]!.waitFor((message) => {
+          if (!isPhonePatch(message)) {
+            return false;
+          }
+
+          const payload = getPhonePayload(message);
+          return (
+            payload.activeResolution?.battle?.enemyName === matrixBattleThreat.enemyName &&
+            (Boolean(payload.pendingEnemyRoll) || Boolean(payload.activeResolution.roll))
+          );
+        });
+        combatPayload = getPhonePayload(rollStartedPatch);
+      }
 
       expect(getBattleAssistViewModel(combatPayload)?.enemyName).toBe(matrixBattleThreat.enemyName);
 

@@ -167,7 +167,7 @@ const encounterDecksBySpaceId: Partial<Record<string, EncounterDecks>> = {
     escalation: []
   },
   outer_surgery_tent: {
-    threat: ["yard-ghoul-welders", "grave-silt-press", "smoke-leech-clutch", "copperjaw-vermin", "glass-tick-cloud"],
+    threat: ["yard-ghoul-welders", "grave-silt-press", "smoke-leech-clutch", "copperjaw-vermin", "glass-tick-cloud", "iron-synod-chirurgeon"],
     anomaly: [],
     contract: ["compact-surgery-bond"],
     artifact: ["artifact-yard", "artifact-cinder-suture-kit", "artifact-void-salt-poultice", "artifact-last-breath-rivet", "artifact-saintwire-splint"],
@@ -211,7 +211,16 @@ const encounterDecksBySpaceId: Partial<Record<string, EncounterDecks>> = {
     escalation: []
   },
   middle_relic_cache: {
-    threat: ["marrow-tax-auditors", "breach-lens-overload", "memory-tax-gate", "mourning-engine-pup", "iron-synod-hunter", "starless-taxation"],
+    threat: [
+      "marrow-tax-auditors",
+      "breach-lens-overload",
+      "memory-tax-gate",
+      "mourning-engine-pup",
+      "iron-synod-hunter",
+      "iron-synod-chirurgeon",
+      "grave-lattice-reclaimer",
+      "starless-taxation"
+    ],
     anomaly: [],
     contract: [],
     artifact: [
@@ -230,7 +239,15 @@ const encounterDecksBySpaceId: Partial<Record<string, EncounterDecks>> = {
     escalation: ["escalation-artifact-wake"]
   },
   middle_scar_surgery: {
-    threat: ["ash-choir-crusader", "suture-storm", "marrow-tax-auditors", "bone-rivet-brute", "red-march-cannoneer"],
+    threat: [
+      "ash-choir-crusader",
+      "suture-storm",
+      "marrow-tax-auditors",
+      "bone-rivet-brute",
+      "iron-synod-chirurgeon",
+      "grave-lattice-reclaimer",
+      "red-march-cannoneer"
+    ],
     anomaly: ["anomaly-marrow-clock-drift", "anomaly-scar-tide-lattice"],
     contract: ["compact-surgery-bond"],
     artifact: ["artifact-cinder-suture-kit", "artifact-void-salt-poultice"],
@@ -260,7 +277,7 @@ const encounterDecksBySpaceId: Partial<Record<string, EncounterDecks>> = {
     escalation: ["escalation-bellglass-riot", "escalation-pit-blood-claim"]
   },
   middle_red_march_outpost: {
-    threat: ["red-march-cannoneer", "iron-synod-hunter", "mourning-engine-pup", "bone-rivet-brute", "ash-choir-crusader", "suture-storm"],
+    threat: ["red-march-cannoneer", "iron-synod-hunter", "iron-synod-chirurgeon", "mourning-engine-pup", "bone-rivet-brute", "ash-choir-crusader", "suture-storm"],
     anomaly: ["anomaly-red-suture-field", "anomaly-marrow-clock-drift", "anomaly-warbell-parallax"],
     contract: ["warden-span-vigil", "clan-salvage-tithe", "dominion-warbell-recovery", "clan-bone-road-guide"],
     artifact: ["artifact-red-march-warbell"],
@@ -314,14 +331,30 @@ const encounterDecksBySpaceId: Partial<Record<string, EncounterDecks>> = {
     escalation: ["escalation-webglass-afterimage", "escalation-crownfall-writ", "escalation-blackstar-hunger", "escalation-throne-shadow"]
   },
   inner_tomb_gate: {
-    threat: ["tomb-gate-colossus", "throne-soot-knight", "last-lock-warden", "cinder-lattice-maw", "saint-of-ashes-echo", "starless-taxation"],
+    threat: [
+      "tomb-gate-colossus",
+      "grave-lattice-reclaimer",
+      "throne-soot-knight",
+      "last-lock-warden",
+      "cinder-lattice-maw",
+      "saint-of-ashes-echo",
+      "starless-taxation"
+    ],
     anomaly: ["anomaly-crownfall-echo-court", "anomaly-throne-shadow-jury", "anomaly-blackstar-breath"],
     contract: [],
     artifact: ["artifact-gate-saint-key", "artifact-marrow-route-key", "artifact-ember-burden-idol"],
     escalation: ["escalation-crownfall-writ", "escalation-throne-shadow"]
   },
   inner_cinder_lattice: {
-    threat: ["cinder-lattice-maw", "cinder-gate-backlash", "last-lock-warden", "gate-choir-executioner", "tomb-gate-colossus", "specimen-null-arrives"],
+    threat: [
+      "cinder-lattice-maw",
+      "grave-lattice-reclaimer",
+      "cinder-gate-backlash",
+      "last-lock-warden",
+      "gate-choir-executioner",
+      "tomb-gate-colossus",
+      "specimen-null-arrives"
+    ],
     anomaly: ["anomaly-saint-static-aperture", "anomaly-cinder-gate-echo", "anomaly-throne-shadow-jury"],
     contract: [],
     artifact: ["artifact-throne-crown-fragment", "artifact-rift-anchor-spike"],

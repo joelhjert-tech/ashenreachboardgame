@@ -133,6 +133,7 @@ function createPatch(roomCode = "RT7P4"): StatePatch<PublicPatchPayload> {
           characterId: "void-marshal",
           displayName: "Joel",
           connected: true,
+          ready: true,
           kicked: false
         }
       ],
@@ -259,6 +260,101 @@ describe("TvApp", () => {
         hostToken: "host:RT7P4:secret"
       })
     );
+  });
+
+  it("blocks host start until joined players are ready", async () => {
+    window.localStorage.setItem("ashen-reach-tv-room-code", "RT7P4");
+    window.localStorage.setItem("ashen-reach-tv-host-token", "host:RT7P4:secret");
+    const patch = createPatch();
+    patch.payload.seats[0] = { ...patch.payload.seats[0]!, ready: false };
+    patch.payload.seats.push({
+      seatId: "seat-2",
+      characterId: "signal-witch",
+      displayName: "Mira",
+      connected: true,
+      ready: true,
+      kicked: false
+    });
+    mockUseRoomSubscription.mockReturnValue({
+      patch,
+      error: null,
+      sendIntent: vi.fn(),
+      status: "open",
+      debugEvents: [],
+      clearDebugEvents: vi.fn()
+    });
+
+    render(<TvApp />);
+
+    expect(await screen.findByRole("button", { name: /start session/i })).toBeDisabled();
+    expect(screen.getByText(/waiting for player to press ready/i)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /start session/i }));
+
+    expect(mockStartSession).not.toHaveBeenCalled();
+  });
+
+  it("enables single-player start with one occupied ready character", async () => {
+    window.localStorage.setItem("ashen-reach-tv-room-code", "RT7P4");
+    window.localStorage.setItem("ashen-reach-tv-host-token", "host:RT7P4:secret");
+    const patch = createPatch();
+    patch.payload.sessionMode = "single-player";
+    mockUseRoomSubscription.mockReturnValue({
+      patch,
+      error: null,
+      sendIntent: vi.fn(),
+      status: "open",
+      debugEvents: [],
+      clearDebugEvents: vi.fn()
+    });
+
+    render(<TvApp />);
+
+    expect(await screen.findByText(/single-player ready/i)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /start session/i }));
+
+    await waitFor(() => {
+      expect(mockStartSession).toHaveBeenCalledWith("RT7P4");
+    });
+  });
+
+  it("keeps multiplayer start blocked below the minimum occupied player count", async () => {
+    window.localStorage.setItem("ashen-reach-tv-room-code", "RT7P4");
+    window.localStorage.setItem("ashen-reach-tv-host-token", "host:RT7P4:secret");
+    mockUseRoomSubscription.mockReturnValue({
+      patch: createPatch(),
+      error: null,
+      sendIntent: vi.fn(),
+      status: "open",
+      debugEvents: [],
+      clearDebugEvents: vi.fn()
+    });
+
+    render(<TvApp />);
+
+    expect(await screen.findByRole("button", { name: /start session/i })).toBeDisabled();
+    expect(screen.getByText(/need at least 2 players/i)).toBeInTheDocument();
+  });
+
+  it("tells the host when an occupied seat still needs a character", async () => {
+    window.localStorage.setItem("ashen-reach-tv-room-code", "RT7P4");
+    window.localStorage.setItem("ashen-reach-tv-host-token", "host:RT7P4:secret");
+    const patch = createPatch();
+    patch.payload.sessionMode = "single-player";
+    patch.payload.seats[0] = { ...patch.payload.seats[0]!, characterId: "", ready: true };
+    mockUseRoomSubscription.mockReturnValue({
+      patch,
+      error: null,
+      sendIntent: vi.fn(),
+      status: "open",
+      debugEvents: [],
+      clearDebugEvents: vi.fn()
+    });
+
+    render(<TvApp />);
+
+    expect(await screen.findByRole("button", { name: /start session/i })).toBeDisabled();
+    expect(screen.getByText(/waiting for player to choose character/i)).toBeInTheDocument();
   });
 
   it("renders the create flow when nothing is stored", async () => {
@@ -506,6 +602,7 @@ describe("TvApp", () => {
       characterId: "signal-witch",
       displayName: "Pax",
       connected: true,
+      ready: true,
       kicked: false
     });
     patch.payload.players.push({
@@ -599,6 +696,7 @@ describe("TvApp", () => {
     expect(screen.getByTestId("host-battle-rolls")).toHaveTextContent("11");
     expect(screen.getByTestId("host-battle-rolls")).toHaveTextContent(/final enemy total/i);
     expect(screen.getByTestId("host-battle-rolls")).toHaveTextContent("8");
+    expect(screen.getByTestId("host-battle-rolls")).toHaveTextContent("A 11 / D 8 / +6");
     expect(screen.getByTestId("host-battle-log")).toHaveTextContent(/tarek voss engages cinder-veil stalker/i);
     expect(screen.queryByText(/pax/i)).not.toBeInTheDocument();
   });
@@ -616,6 +714,7 @@ describe("TvApp", () => {
       characterId: "signal-witch",
       displayName: "Pax",
       connected: true,
+      ready: true,
       kicked: false
     });
     patch.payload.players.push({

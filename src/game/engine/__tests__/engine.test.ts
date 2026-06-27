@@ -601,9 +601,9 @@ function createState(overrides: Partial<GameState> = {}): GameState {
       }
     ],
     seats: [
-      { seatId: "seat-1", characterId: "void-marshal", displayName: "Seat One", connected: true, kicked: false, joinToken: "seat:session-alpha:seat-1" },
-      { seatId: "seat-2", characterId: "signal-witch", displayName: "Seat Two", connected: true, kicked: false, joinToken: "seat:session-alpha:seat-2" },
-      { seatId: "seat-3", characterId: "grave-engineer", displayName: "Seat Three", connected: true, kicked: false, joinToken: "seat:session-alpha:seat-3" }
+      { seatId: "seat-1", characterId: "void-marshal", displayName: "Seat One", connected: true, ready: true, kicked: false, joinToken: "seat:session-alpha:seat-1" },
+      { seatId: "seat-2", characterId: "signal-witch", displayName: "Seat Two", connected: true, ready: true, kicked: false, joinToken: "seat:session-alpha:seat-2" },
+      { seatId: "seat-3", characterId: "grave-engineer", displayName: "Seat Three", connected: true, ready: true, kicked: false, joinToken: "seat:session-alpha:seat-3" }
     ],
     players: [
       {
@@ -681,6 +681,14 @@ function createCapturingClient(seatId: string, sent: Array<Record<string, unknow
 function runIntent(server: GameRoomServer, intent: ClientIntent): void {
   server.handleIntent(createClient(intent.seatId), intent);
 
+  if (intent.type === "CHECK_REQUESTED" || intent.type === "COMBAT_REQUESTED") {
+    const activeResolution = server.getState().activeResolution;
+
+    if (activeResolution?.stage === "battle_setup" && activeResolution.playerId === intent.seatId) {
+      server.handleIntent(createClient(intent.seatId), intent);
+    }
+  }
+
   for (let index = 0; index < 4; index += 1) {
     const activeResolution = server.getState().activeResolution;
 
@@ -709,6 +717,82 @@ function withOnlyConnectedSeat(state: GameState, connectedSeatId: string): GameS
     }))
   };
 }
+
+describe("encounter state effects", () => {
+  it("draws a local artifact card reward and consumes it from the space deck", () => {
+    const state = createState({
+      phase: "resolution",
+      sectors: createState().sectors.map((sector) =>
+        sector.id === "sector-a"
+          ? {
+              ...sector,
+              encounterDecks: { ...sector.encounterDecks, artifact: ["artifact-bell-votive"] }
+            }
+          : sector
+      )
+    });
+    const server = new GameRoomServer(
+      state,
+      [],
+      createSequenceRandomSource([0]),
+      createThreats(),
+      createCharacters(),
+      createGear(),
+      createContracts(),
+      createAnomalies(),
+      createArtifacts()
+    );
+    const effect = (server as any).resolveEffect({ type: "draw_artifact" }, "seat-1");
+    const result = reduceGameState({ ...state, pendingEffect: effect }, {
+      type: "RESOLUTION_APPLIED",
+      seatId: "seat-1",
+      effect,
+      sourceCardId: "grave-lattice-reclaimer",
+      success: true,
+      createdAt: "2026-06-27T00:00:00.000Z"
+    });
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) {
+      return;
+    }
+    expect(result.state.players.find((player) => player.seatId === "seat-1")?.character.heldGear.some((item) => item.id === "veil-hook")).toBe(true);
+    expect(result.state.sectors.find((sector) => sector.id === "sector-a")?.encounterDecks.artifact).toEqual([]);
+  });
+
+  it("returns a persistent threat to the current space after a failed fight", () => {
+    const state = createState({
+      phase: "resolution",
+      sectors: createState().sectors.map((sector) =>
+        sector.id === "sector-a"
+          ? {
+              ...sector,
+              encounterDecks: { ...sector.encounterDecks, threat: [] }
+            }
+          : sector
+      ),
+      pendingEffect: {
+        type: "return_threat_to_space",
+        threatId: "grave-lattice-reclaimer",
+        sourceSectorId: "sector-a"
+      }
+    });
+    const result = reduceGameState(state, {
+      type: "RESOLUTION_APPLIED",
+      seatId: "seat-1",
+      effect: state.pendingEffect!,
+      sourceCardId: "grave-lattice-reclaimer",
+      success: false,
+      createdAt: "2026-06-27T00:00:00.000Z"
+    });
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) {
+      return;
+    }
+    expect(result.state.sectors.find((sector) => sector.id === "sector-a")?.encounterDecks.threat).toEqual(["grave-lattice-reclaimer"]);
+  });
+});
 
 describe("active resolution visibility state", () => {
   it("creates a card reveal stage when a threat is drawn", () => {

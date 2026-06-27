@@ -48,6 +48,15 @@ describe("canonical sector graph", () => {
     }
   });
 
+  it("creates non-forgeable per-seat join tokens for new sessions", () => {
+    const first = createInitialSessionState("session-alpha", "single-player");
+    const second = createInitialSessionState("session-alpha", "single-player");
+
+    expect(first.seats[0]?.joinToken).toMatch(/^seat:session-alpha:seat-1:/);
+    expect(first.seats[0]?.joinToken).not.toBe("seat:session-alpha:seat-1");
+    expect(first.seats[0]?.joinToken).not.toBe(second.seats[0]?.joinToken);
+  });
+
   it("creates a true single-player session when requested", () => {
     const state = createInitialSessionState("session-solo", "single-player");
     const tvProjection = createTvProjection(state) as {

@@ -67,7 +67,7 @@ function createPatch(overrides: Partial<PhonePatchPayload> = {}): PhonePatchPayl
     scenarioTelemetry: [],
     scenarioProgress: {},
     activeSeatIndex: 0,
-    seats: [{ seatId: "seat-1", characterId: "void-marshal", displayName: "Lane", connected: true, kicked: false }],
+    seats: [{ seatId: "seat-1", characterId: "void-marshal", displayName: "Lane", connected: true, ready: true, kicked: false }],
     turnOrder: ["seat-1"],
     sectors: [
       {
@@ -231,6 +231,41 @@ describe("PhoneInventoryPanel", () => {
     fireEvent.click(screen.getByRole("tab", { name: /player card/i }));
 
     expect(screen.getByTestId("phone-battle-assist")).toBeInTheDocument();
+  });
+
+  it("shows a locked pre-game character screen with Back instead of bottom navigation", () => {
+    const onLobbyBack = vi.fn();
+    const lobbyPatch = createPatch({
+      phase: "start",
+      status: "lobby",
+      seats: [{ seatId: "seat-1", characterId: "void-marshal", displayName: "Lane", connected: true, ready: true, kicked: false }]
+    });
+
+    render(
+      <PortraitControllerView
+        self={lobbyPatch.self}
+        roomCode="RT7P4"
+        displayName="Lane"
+        connectionStatus="open"
+        activeSeatId={null}
+        activeContractCard={null}
+        patch={lobbyPatch}
+        characters={characters}
+        onIntent={vi.fn()}
+        onLeave={vi.fn()}
+        onLobbyBack={onLobbyBack}
+      />
+    );
+
+    expect(screen.getByText(/character locked/i)).toBeInTheDocument();
+    expect(screen.getByText(/waiting for host to start the game/i)).toBeInTheDocument();
+    expect(screen.getByText(/lane/i)).toBeInTheDocument();
+    expect(screen.queryByRole("tab", { name: /inventory/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /^ready$/i })).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /^back$/i }));
+
+    expect(onLobbyBack).toHaveBeenCalledOnce();
   });
 
   it("keeps the combat-card drawer filtered to usable timing-window cards", () => {

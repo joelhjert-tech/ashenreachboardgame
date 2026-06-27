@@ -53,8 +53,8 @@ function createPatch(overrides: Partial<PhonePatchPayload> = {}): PhonePatchPayl
     scenarioProgress: {},
     activeSeatIndex: 0,
     seats: [
-      { seatId: "seat-1", characterId: "void-marshal", displayName: "Lane", connected: true, kicked: false },
-      { seatId: "seat-2", characterId: "signal-witch", displayName: "Mira", connected: true, kicked: false }
+      { seatId: "seat-1", characterId: "void-marshal", displayName: "Lane", connected: true, ready: true, kicked: false },
+      { seatId: "seat-2", characterId: "signal-witch", displayName: "Mira", connected: true, ready: true, kicked: false }
     ],
     turnOrder: ["seat-1", "seat-2"],
     sectors: [
@@ -770,9 +770,9 @@ describe("PhoneActionPanel", () => {
         patch={createPatch({
           activeSeatIndex: 1,
           seats: [
-            { seatId: "seat-1", characterId: "void-marshal", displayName: "Lane", connected: true, kicked: false },
-            { seatId: "seat-2", characterId: "signal-witch", displayName: "Mira", connected: true, kicked: false },
-            { seatId: "seat-3", characterId: "grave-engineer", displayName: "Pax", connected: true, kicked: false }
+            { seatId: "seat-1", characterId: "void-marshal", displayName: "Lane", connected: true, ready: true, kicked: false },
+            { seatId: "seat-2", characterId: "signal-witch", displayName: "Mira", connected: true, ready: true, kicked: false },
+            { seatId: "seat-3", characterId: "grave-engineer", displayName: "Pax", connected: true, ready: true, kicked: false }
           ],
           turnOrder: ["seat-2", "seat-3", "seat-1"],
           pendingEnemyRoll: {
@@ -837,6 +837,7 @@ describe("PhoneActionPanel", () => {
     expect(screen.getByTestId("phone-roll-result")).toHaveTextContent(/roll: 2 \+ 5 \+ 1 = 8/i);
     expect(screen.getByTestId("phone-roll-result")).toHaveTextContent(/target: 7/i);
     expect(screen.getByTestId("phone-roll-result")).toHaveTextContent(/success/i);
+    expect(screen.getByTestId("phone-roll-result")).toHaveTextContent("A 8 / D 7 / +1");
     expect(screen.getByTestId("phone-resolution-continue")).toBeVisible();
 
     fireEvent.click(screen.getByRole("button", { name: /continue/i }));

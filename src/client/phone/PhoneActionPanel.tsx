@@ -16,6 +16,7 @@ import {
   formatResolutionModifiers,
   resolutionStageLabel
 } from "../shared/resolutionPresentation.js";
+import { CombatDiceAnimation } from "../shared/CombatDiceAnimation.js";
 import { PhoneInventoryPanel } from "./PhoneInventoryPanel.js";
 import { formatTimingWindow, getBattleAssistViewModel, statLabelById as inventoryStatLabelById } from "./inventoryPresentation.js";
 
@@ -134,6 +135,15 @@ function ActiveResolutionCard({
       )}
       {rollText && resolution.roll && (
         <div className="phone-resolution-roll" data-testid="phone-roll-result">
+          <CombatDiceAnimation
+            attackValue={resolution.roll.finalTotal}
+            defenseValue={resolution.roll.target}
+            modifierValue={resolution.roll.modifierTotal}
+            attackSuccess={resolution.roll.success}
+            defenseSuccess={!resolution.roll.success}
+            hasModifier={resolution.roll.modifierTotal !== 0}
+            compact
+          />
           <p>{rollText}</p>
           <p>Target: {resolution.roll.target}</p>
           <strong>{resolution.roll.success ? "Success" : "Failure"}</strong>
@@ -514,9 +524,14 @@ export function PhoneActionPanel({ characters, onIntent, patch }: PhoneActionPan
   }
 
   if (patch.phase === "action" && patch.encounter?.cardType === "hazard") {
+    const checkIsStaged =
+      activeResolution?.stage === "battle_setup" &&
+      activeResolution.playerId === self.seatId &&
+      activeResolution.card?.id === patch.encounter.id;
+
     threatActions.push({
       key: "hazard-check",
-      label: `Attempt ${statLabelById[patch.encounter.stat]} check`,
+      label: checkIsStaged ? "Roll check dice" : `Attempt ${statLabelById[patch.encounter.stat]} check`,
       detail: patch.encounter.title,
       tone: "primary",
       onClick: () =>
@@ -529,9 +544,14 @@ export function PhoneActionPanel({ characters, onIntent, patch }: PhoneActionPan
   }
 
   if (patch.phase === "action" && patch.encounter?.cardType === "enemy") {
+    const combatIsStaged =
+      activeResolution?.stage === "battle_setup" &&
+      activeResolution.playerId === self.seatId &&
+      activeResolution.card?.id === patch.encounter.id;
+
     threatActions.push({
       key: "enemy-combat",
-      label: "Enter combat",
+      label: combatIsStaged ? "Roll combat dice" : "Enter combat",
       detail: patch.encounter.enemyName ?? patch.encounter.title,
       tone: "primary",
       onClick: () =>
