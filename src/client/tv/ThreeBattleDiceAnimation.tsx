@@ -1,5 +1,6 @@
 import type { ReactElement } from "react";
 import { DiceRollScene } from "./DiceRollScene.js";
+import type { Stat } from "../shared/types.js";
 
 interface ThreeBattleDiceAnimationProps {
   attackValue: number | null;
@@ -10,6 +11,7 @@ interface ThreeBattleDiceAnimationProps {
   modifierDieFace?: number | null;
   attackSuccess?: boolean;
   defenseSuccess?: boolean;
+  challengeStat?: Stat;
 }
 
 export function ThreeBattleDiceAnimation({
@@ -20,7 +22,8 @@ export function ThreeBattleDiceAnimation({
   defenseDieFace,
   modifierDieFace,
   attackSuccess = false,
-  defenseSuccess = false
+  defenseSuccess = false,
+  challengeStat = "grit"
 }: ThreeBattleDiceAnimationProps): ReactElement {
   return (
     <DiceRollScene
@@ -32,6 +35,7 @@ export function ThreeBattleDiceAnimation({
       modifierDieFace={modifierDieFace}
       attackSuccess={attackSuccess}
       defenseSuccess={defenseSuccess}
+      challengeStat={challengeStat}
       compact
       className="three-battle-dice"
       testId="three-battle-dice"

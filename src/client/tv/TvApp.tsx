@@ -5,6 +5,7 @@ import { getSessionStartReadiness } from "../../game/rules/sessionStart.js";
 import { createSession, fetchCharacters, fetchScenarios, fetchSessionSummary, startSession } from "../shared/network.js";
 import { getSeatAbilityTelemetry } from "../shared/abilityTelemetry.js";
 import { CardArtImage } from "../shared/CardArtImage.js";
+import { ChallengeBadge, ThreatIconBadge } from "../shared/ChallengeBadge.js";
 import { DebugPanel } from "../shared/DebugPanel.js";
 import { RollOutcomePanel } from "../shared/RollOutcomePanel.js";
 import {
@@ -13,7 +14,7 @@ import {
   resolutionStageLabel
 } from "../shared/resolutionPresentation.js";
 import { buildScenarioOutcomeSummary, buildScenarioRuleDigest } from "../shared/scenarioPresentation.js";
-import { formatSeatLabel, statShortLabelById } from "../shared/statLabels.js";
+import { formatSeatLabel, statOrder, statShortLabelById } from "../shared/statLabels.js";
 import { useRoomSubscription } from "../shared/useRoomSubscription.js";
 import { getCharacterPortraitPath, getNemesisPortraitPath } from "../shared/assetPaths.js";
 import type {
@@ -501,6 +502,13 @@ function OperativesRail({ patch, characterCatalog, activeSeatId, sessionMode, ba
                   <span>Heat {player?.character.heat ?? 0}</span>
                   <span>Trophies {player?.character.trophies ?? 0}</span>
                 </div>
+                {player && (
+                  <div className="tv-operative-challenge-stats" aria-label={`${characterName} challenge stats`}>
+                    {statOrder.map((stat) => (
+                      <ChallengeBadge key={stat} stat={stat} value={player.character.stats[stat]} label={statShortLabelById[stat]} size="compact" />
+                    ))}
+                  </div>
+                )}
               </div>
             </article>
           );
@@ -1136,18 +1144,18 @@ function NemesisBanner({ nemesis }: { nemesis: ActiveNemesisSummary | null }): R
 
 function BoardLegend(): ReactElement {
   const items = [
-    { label: "Salvage Cache", tone: "salvage" },
-    { label: "Anomaly Signal", tone: "anomaly" },
-    { label: "Shrine", tone: "shrine" },
-    { label: "Hazard", tone: "hazard" },
-    { label: "Crossroads", tone: "crossroads" }
+    { label: "Red Grit threat", tone: "hazard", icon: "red" as const },
+    { label: "Blue Signal anomaly", tone: "anomaly", icon: "blue" as const },
+    { label: "Yellow Guile risk", tone: "salvage", icon: "yellow" as const },
+    { label: "Shop / Shrine", tone: "shrine", icon: "gold" as const },
+    { label: "Crossroads", tone: "crossroads", icon: "white" as const }
   ];
 
   return (
     <div className="tv-board-legend" aria-label="Board legend">
       {items.map((item) => (
         <span key={item.label} className={`tv-board-legend-item tv-board-legend-${item.tone}`}>
-          <i aria-hidden="true" />
+          <ThreatIconBadge icon={item.icon} />
           {item.label}
         </span>
       ))}
@@ -1197,6 +1205,7 @@ function CardRevealPanel({ patch }: { patch: StatePatch<PublicPatchPayload> | nu
   const cardTitle = resolutionCard?.title ?? encounter?.title ?? pendingEnemyRoll?.encounterTitle ?? "Awaiting reveal";
   const cardType = resolutionCard?.type ?? encounter?.cardType ?? (pendingEnemyRoll ? "enemy tactic" : "Deck standing by");
   const difficulty = resolutionBattle?.difficulty ?? encounter?.difficulty ?? 0;
+  const challengeStat = resolutionBattle?.stat ?? encounter?.stat ?? pendingEnemyRoll?.stat ?? null;
   const flavorText =
     resolutionCard?.flavor ?? encounter?.flavor ?? "The deck is quiet. The next draw will take the room's attention.";
   const ruleLabel = resolutionBattle ? "Battle" : encounter ? "Check" : pendingEnemyRoll ? "Enemy roller" : "Status";
@@ -1237,9 +1246,15 @@ function CardRevealPanel({ patch }: { patch: StatePatch<PublicPatchPayload> | nu
           <p className="tv-card-reveal-flavor" title={flavorText}>
             {flavorText}
           </p>
-          <div className="tv-reveal-rule tv-card-reveal-rules" tabIndex={0} aria-label={`${ruleLabel}: ${ruleText}`}>
+          <div
+            className={`tv-reveal-rule tv-card-reveal-rules${challengeStat ? ` tv-reveal-rule-${challengeStat}` : ""}`}
+            tabIndex={0}
+            aria-label={`${ruleLabel}: ${ruleText}`}
+          >
             <strong>{ruleLabel}</strong>
-            <span>{ruleText}</span>
+            <span>
+              {challengeStat ? <ChallengeBadge stat={challengeStat} value={difficulty || undefined} size="compact" /> : ruleText}
+            </span>
           </div>
           {resolutionBattle && (
             <div className="tv-reveal-rule tv-card-reveal-rules" data-testid="tv-battle-panel">
@@ -1310,6 +1325,7 @@ function RecentOutcomePanel({
                 defenseDieFace={latestOutcome.enemyDie1 ?? latestOutcome.die2}
                 attackSuccess={latestOutcome.success === true}
                 defenseSuccess={latestOutcome.success === false}
+                challengeStat={latestOutcome.checkStat && latestOutcome.checkStat in statLabelById ? latestOutcome.checkStat as Stat : "grit"}
                 compact
                 className="tv-recent-dice-scene"
               />

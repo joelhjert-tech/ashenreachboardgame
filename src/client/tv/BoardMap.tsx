@@ -3,6 +3,7 @@ import { getAssetPath } from "../../game/assets/design/assetManifest.js";
 import { BOARD_SPACES, getBoardSpace, isScenarioConfrontationSpace } from "../../game/data/boardSpaces.js";
 import { RIFTFALL_BOARD_NODE_INDEX, RIFTFALL_BOARD_NODES, type BoardNode } from "../../data/riftfallBoardNodes.js";
 import type { OutcomeSummary, PublicPatchPayload, SectorNode, ThreatIcon } from "../shared/types.js";
+import { ThreatIconBadge } from "../shared/ChallengeBadge.js";
 import {
   buildEscalationMarker,
   buildScenarioAuras,
@@ -588,6 +589,13 @@ export function BoardMap({ patch, previousPatch = null, phase, showHeader = true
                 <span>Occupants {selectedOccupants.length}</span>
                 {selectedSector && <span>Region {selectedSector.regionTier}</span>}
               </div>
+              {selectedBoardSpace?.threatIcons && selectedBoardSpace.threatIcons.length > 0 && (
+                <div className="board-sidebar-challenge-icons" aria-label="Printed challenge icons">
+                  {selectedBoardSpace.threatIcons.map((icon, index) => (
+                    <ThreatIconBadge key={`${icon}-${index}`} icon={icon} />
+                  ))}
+                </div>
+              )}
               <div className="board-sidebar-meta">
                 <span>{selectedActionFocus}</span>
               </div>

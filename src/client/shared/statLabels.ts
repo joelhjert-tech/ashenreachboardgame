@@ -1,12 +1,7 @@
 import type { GearSlot, Stat } from "./types.js";
+import { CHALLENGE_LABELS } from "../../game/ui/challengeTheme.js";
 
-export const statLabelById: Record<Stat, string> = {
-  command: "Command",
-  grit: "Grit",
-  signal: "Signal",
-  guile: "Guile",
-  forge: "Forge"
-};
+export const statLabelById: Record<Stat, string> = CHALLENGE_LABELS;
 
 export const statShortLabelById: Record<Stat, string> = {
   command: "Cmd",

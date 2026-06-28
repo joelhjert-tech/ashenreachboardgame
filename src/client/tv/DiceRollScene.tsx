@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type ReactElement } from "react";
 import { CombatDiceAnimation } from "../shared/CombatDiceAnimation.js";
+import { getChallengeTheme } from "../../game/ui/challengeTheme.js";
+import type { Stat } from "../shared/types.js";
 
 type ThreeModule = typeof import("three");
 
@@ -15,6 +17,7 @@ export interface DiceRollSceneProps {
   compact?: boolean;
   className?: string;
   testId?: string;
+  challengeStat?: Stat;
 }
 
 declare global {
@@ -138,8 +141,10 @@ export function DiceRollScene({
   defenseSuccess = false,
   compact = false,
   className = "",
-  testId = "host-dice-roll-scene"
+  testId = "host-dice-roll-scene",
+  challengeStat = "grit"
 }: DiceRollSceneProps): ReactElement {
+  const challengeTheme = getChallengeTheme(challengeStat);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [fallbackReason, setFallbackReason] = useState<string | null>(() => {
@@ -152,13 +157,13 @@ export function DiceRollScene({
   const dice = useMemo(
     () =>
       [
-        { key: "attack", value: normalizeDieValue(attackDieFace ?? attackValue), accent: "#e45d3d", x: -1.45 },
+        { key: "attack", value: normalizeDieValue(attackDieFace ?? attackValue), accent: challengeTheme.color, x: -1.45 },
         { key: "defense", value: normalizeDieValue(defenseDieFace ?? defenseValue), accent: "#6bbcff", x: 0 },
         modifierDieFace !== undefined || modifierValue
           ? { key: "modifier", value: normalizeDieValue(modifierDieFace ?? modifierValue), accent: "#78e08a", x: 1.45 }
           : null
       ].filter((die): die is { key: string; value: number; accent: string; x: number } => Boolean(die)),
-    [attackDieFace, attackValue, defenseDieFace, defenseValue, modifierDieFace, modifierValue]
+    [attackDieFace, attackValue, challengeTheme.color, defenseDieFace, defenseValue, modifierDieFace, modifierValue]
   );
 
   useEffect(() => {
@@ -321,6 +326,7 @@ export function DiceRollScene({
       : "combat-result-token-mod";
   const rootClass = [
     "dice-roll-scene",
+    `dice-roll-scene-${challengeStat}`,
     compact ? "dice-roll-scene-compact" : "",
     fallbackReason ? "dice-roll-scene-fallback" : "",
     className
@@ -342,6 +348,7 @@ export function DiceRollScene({
           defenseSuccess={defenseSuccess}
           hasModifier={Boolean(modifierValue)}
           compact={compact}
+          challengeStat={challengeStat}
         />
       ) : (
         <>

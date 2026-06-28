@@ -1,5 +1,7 @@
 import type { ReactElement } from "react";
 import type { AbilityChangeItem } from "../shared/abilityTelemetry.js";
+import { ChallengeBadge } from "../shared/ChallengeBadge.js";
+import type { Stat } from "../shared/types.js";
 
 interface HostPlayerCardAttributes {
   cmd: number | null;
@@ -32,12 +34,12 @@ export interface HostPlayerCardProps {
   className?: string;
 }
 
-const attributeOrder: Array<{ key: keyof HostPlayerCardAttributes; label: string }> = [
-  { key: "cmd", label: "CMD" },
-  { key: "grit", label: "GRIT" },
-  { key: "signal", label: "SIGNAL" },
-  { key: "guile", label: "GUILE" },
-  { key: "forge", label: "FORGE" }
+const attributeOrder: Array<{ key: keyof HostPlayerCardAttributes; stat: Stat; label: string }> = [
+  { key: "cmd", stat: "command", label: "CMD" },
+  { key: "grit", stat: "grit", label: "GRIT" },
+  { key: "signal", stat: "signal", label: "SIGNAL" },
+  { key: "guile", stat: "guile", label: "GUILE" },
+  { key: "forge", stat: "forge", label: "FORGE" }
 ];
 
 function renderValue(value: number | null): string {
@@ -122,9 +124,8 @@ export function HostPlayerCard({
 
           <div className="host-player-card-attributes">
             {attributeOrder.map((attribute) => (
-              <div key={attribute.key} className="host-player-card-attribute">
-                <span>{attribute.label}</span>
-                <strong>{renderValue(attributes[attribute.key])}</strong>
+              <div key={attribute.key} className={`host-player-card-attribute host-player-card-attribute-${attribute.stat}`}>
+                <ChallengeBadge stat={attribute.stat} value={renderValue(attributes[attribute.key])} label={attribute.label} size="compact" />
               </div>
             ))}
           </div>

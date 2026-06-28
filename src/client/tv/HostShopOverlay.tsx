@@ -1,7 +1,9 @@
 import type { ReactElement } from "react";
 import { getBoardSpace } from "../../game/data/boardSpaces.js";
+import { getChallengeThemeStyle } from "../../game/ui/challengeTheme.js";
+import { ChallengeBadge } from "../shared/ChallengeBadge.js";
 import { getCharacterPortraitPath } from "../shared/assetPaths.js";
-import type { PublicPatchPayload, PublicPlayer, PublicShopCost, PublicShopEncounterState, StatePatch } from "../shared/types.js";
+import type { PublicPatchPayload, PublicPlayer, PublicShopCost, PublicShopEncounterState, StatePatch, Stat } from "../shared/types.js";
 import { HostCinematicFxLayer } from "./HostCinematicFxLayer.js";
 import { isHostShopActive } from "./hostShopState.js";
 
@@ -40,7 +42,7 @@ interface HostShopDisplayModel {
   shopRuleText: string;
   status: ShopStatus;
   threatLockCount: number;
-  blockingLanes: string[];
+  blockingLanes: Array<{ name: string; stat?: Stat; value?: number }>;
   services: ShopServiceDisplay[];
   stock: ShopStockDisplay[];
   stockRevealed: boolean;
@@ -122,10 +124,11 @@ function buildFromPayload(
     shopRuleText: boardSpace?.ruleText ?? "Choose a public service on the player phone.",
     status: shopEncounter.status.toUpperCase() as ShopStatus,
     threatLockCount: shopEncounter.blockingThreats.length,
-    blockingLanes: shopEncounter.blockingThreats.map((threat) => {
-      const challenge = threat.challenge ? ` ${threat.challenge.stat.toUpperCase()} ${threat.challenge.value}` : "";
-      return `${threat.name}${challenge}`;
-    }),
+    blockingLanes: shopEncounter.blockingThreats.map((threat) => ({
+      name: threat.name,
+      stat: threat.challenge?.stat,
+      value: threat.challenge?.value
+    })),
     services: shopEncounter.status === "locked"
       ? []
       : shopEncounter.services.map((service) => ({
@@ -225,7 +228,10 @@ export function HostShopOverlay({
 
   return (
     <section className="host-shop-overlay" aria-label="Host shop encounter" data-testid="host-shop-overlay">
-      <div className={`host-shop-panel${model.riskActive ? " host-shop-panel-risk" : ""}${model.transactionComplete ? " host-shop-panel-burst" : ""}`}>
+      <div
+        className={`host-shop-panel${model.riskActive ? " host-shop-panel-risk" : ""}${model.transactionComplete ? " host-shop-panel-burst" : ""}`}
+        style={getChallengeThemeStyle("guile")}
+      >
         <HostCinematicFxLayer
           variant="shop"
           tone={model.transactionComplete ? "reward" : model.riskActive ? "danger" : "neutral"}
@@ -264,6 +270,7 @@ export function HostShopOverlay({
         <div className="host-shop-center" aria-hidden="true">
           <span>Shop Encounter</span>
           <strong>VS</strong>
+          <ChallengeBadge stat="guile" label="Trade risk" size="compact" />
           <p>{model.status === "LOCKED" ? "Clear threats before trade" : "Choose service on phone"}</p>
         </div>
 
@@ -324,7 +331,17 @@ export function HostShopOverlay({
               <strong>Shop Locked</strong>
               <p>{model.shopName} is under threat. Resolve blocking pressure before trade.</p>
               <div>
-                {model.blockingLanes.length > 0 ? model.blockingLanes.map((lane) => <span key={lane}>{lane}</span>) : <span>Local threat</span>}
+                {model.blockingLanes.length > 0 ? (
+                  model.blockingLanes.map((lane) => (
+                    <span key={`${lane.name}-${lane.stat ?? "none"}`}>
+                      {lane.name}
+                      {lane.stat && <ChallengeBadge stat={lane.stat} value={lane.value} size="compact" />}
+                      {lane.stat && <span className="sr-only">{lane.name} {lane.stat} {lane.value}</span>}
+                    </span>
+                  ))
+                ) : (
+                  <span>Local threat</span>
+                )}
               </div>
             </div>
           ) : model.stockRevealed ? (

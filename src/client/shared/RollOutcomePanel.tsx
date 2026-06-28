@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState, type ReactElement } from "react";
 import { CombatDiceAnimation } from "./CombatDiceAnimation.js";
+import { ChallengeBadge, isStat } from "./ChallengeBadge.js";
 import type { OutcomeSummary } from "./types.js";
 
 interface RollOutcomePanelProps {
@@ -89,6 +90,7 @@ export function RollOutcomePanel({
   ]);
   const [isAnimating, setIsAnimating] = useState(false);
   const animationKey = `${summary.seatId}:${summary.encounterCardId ?? "none"}:${summary.die1 ?? "x"}:${summary.die2 ?? "x"}:${summary.checkTotal ?? "x"}:${summary.success ?? "x"}:${summary.enemyDie1 ?? "x"}:${summary.enemyDie2 ?? "x"}:${summary.enemyTotal ?? "x"}`;
+  const challengeStat = isStat(summary.checkStat) ? summary.checkStat : "grit";
 
   useEffect(() => {
     if (finalDie1 === null || finalDie2 === null || total === null || difficulty === null || statBonus === null || success === null) {
@@ -181,10 +183,11 @@ export function RollOutcomePanel({
   }
 
   return (
-    <section className="panel nested-panel roll-panel" data-testid="roll-outcome-panel">
+    <section className={`panel nested-panel roll-panel roll-panel-${challengeStat}`} data-testid="roll-outcome-panel">
       <div className="row-between">
         <div>
           <h2>{title}</h2>
+          <ChallengeBadge stat={challengeStat} label={`${summary.checkStat ? "" : "Challenge "}${isOpposed ? "Battle" : "Check"}`} value={difficulty} />
           <p>{summary.summary}</p>
         </div>
         <div className={`roll-state ${state.className}`} data-testid="roll-state">
@@ -200,6 +203,7 @@ export function RollOutcomePanel({
         attackSuccess={success === true}
         defenseSuccess={success === false}
         hasModifier={statBonus !== 0}
+        challengeStat={challengeStat}
       />
       <div className={`roll-display ${isOpposed ? "roll-display-opposed" : ""}`}>
         <DicePair label={isOpposed ? "Player" : "Roll"} faces={displayFaces} animating={isAnimating} />
@@ -227,13 +231,13 @@ export function RollOutcomePanel({
                 <strong>{enemyBonus}</strong>
               </p>
               <p>
-                Using <strong>{summary.checkStat ?? "n/a"}</strong> against{" "}
-                <strong>{summary.encounterTitle ?? "the current encounter"}</strong>. Ties hold for the player.
+              Using <ChallengeBadge stat={challengeStat} size="compact" /> against{" "}
+              <strong>{summary.encounterTitle ?? "the current encounter"}</strong>. Ties hold for the player.
               </p>
             </>
           ) : (
             <p>
-              Using <strong>{summary.checkStat ?? "n/a"}</strong> against{" "}
+              Using <ChallengeBadge stat={challengeStat} size="compact" /> against{" "}
               <strong>{summary.encounterTitle ?? "the current encounter"}</strong>
             </p>
           )}

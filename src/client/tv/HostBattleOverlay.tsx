@@ -1,8 +1,10 @@
 import type { ReactElement } from "react";
 import { CardArtImage } from "../shared/CardArtImage.js";
 import { getCharacterPortraitPath } from "../shared/assetPaths.js";
+import { ChallengeBadge } from "../shared/ChallengeBadge.js";
+import { getChallengeThemeStyle } from "../../game/ui/challengeTheme.js";
 import { statLabelById } from "../shared/statLabels.js";
-import type { ActiveResolution, PublicPatchPayload, PublicPlayer, StatePatch } from "../shared/types.js";
+import type { ActiveResolution, PublicPatchPayload, PublicPlayer, StatePatch, Stat } from "../shared/types.js";
 import { HostCinematicFxLayer } from "./HostCinematicFxLayer.js";
 import { isHostBattleActive } from "./hostBattleState.js";
 import { ThreeBattleDiceAnimation } from "./ThreeBattleDiceAnimation.js";
@@ -11,6 +13,7 @@ interface HostBattleDisplayModel {
   playerName: string;
   playerTitle: string;
   playerPortraitUrl: string | null;
+  challengeStat: Stat;
   playerStatLabel: string;
   playerBattleValue: number | null;
   playerWounds: number | null;
@@ -153,6 +156,7 @@ function buildBattleModel(
     playerName: activePlayer.character.name,
     playerTitle: activePlayer.character.archetype,
     playerPortraitUrl: getCharacterPortraitPath(activePlayer.character.id),
+    challengeStat: stat,
     playerStatLabel: statLabelById[stat],
     playerBattleValue,
     playerWounds: activePlayer.character.wounds,
@@ -213,7 +217,10 @@ export function HostBattleOverlay({
 
   return (
     <section className="host-battle-overlay" aria-label="Host battle overlay" data-testid="host-battle-overlay">
-      <div className={`host-battle-panel host-battle-panel-${model.resultTone}`}>
+      <div
+        className={`host-battle-panel host-battle-panel-${model.resultTone} host-battle-panel-${model.challengeStat}`}
+        style={getChallengeThemeStyle(model.challengeStat)}
+      >
         <HostCinematicFxLayer
           variant="battle"
           tone={model.resultTone}
@@ -235,8 +242,7 @@ export function HostBattleOverlay({
           </div>
           <div className="host-battle-stat-grid">
             <div>
-              <span>{model.playerStatLabel}</span>
-              <strong>{formatNumber(model.playerBattleValue)}</strong>
+              <ChallengeBadge stat={model.challengeStat} value={formatNumber(model.playerBattleValue)} active />
             </div>
             <div>
               <span>Wounds</span>
@@ -268,8 +274,7 @@ export function HostBattleOverlay({
           </div>
           <div className="host-battle-stat-grid">
             <div>
-              <span>Battle value</span>
-              <strong>{formatNumber(model.enemyBattleValue)}</strong>
+              <ChallengeBadge stat={model.challengeStat} value={formatNumber(model.enemyBattleValue)} label="Battle" active />
             </div>
           </div>
         </article>
@@ -290,6 +295,7 @@ export function HostBattleOverlay({
               modifierDieFace={model.playerDice[1] ?? null}
               attackSuccess={model.outcomeLabel?.includes("wins") ?? false}
               defenseSuccess={model.outcomeLabel?.includes("driven back") ?? false}
+              challengeStat={model.challengeStat}
             />
           </div>
           <div className="host-battle-formula host-battle-formula-enemy">
@@ -298,9 +304,9 @@ export function HostBattleOverlay({
             <p>{model.enemyFormula}</p>
           </div>
           <div className="host-battle-battle-line">
-            <span>{model.playerStatLabel} {formatNumber(model.playerModifier)}</span>
+            <span><ChallengeBadge stat={model.challengeStat} value={formatNumber(model.playerModifier)} size="compact" /></span>
             <strong>vs</strong>
-            <span>Battle {formatNumber(model.enemyModifier)}</span>
+            <span><ChallengeBadge stat={model.challengeStat} value={formatNumber(model.enemyModifier)} label="Battle" size="compact" /></span>
           </div>
         </div>
 

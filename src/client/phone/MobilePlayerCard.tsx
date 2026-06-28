@@ -1,6 +1,7 @@
 import type { ReactElement, ReactNode } from "react";
 import { describeContractObjective, formatContractObjectiveStatus } from "../../game/contracts/objectives.js";
 import { CardArtImage } from "../shared/CardArtImage.js";
+import { ChallengeBadge } from "../shared/ChallengeBadge.js";
 import { getCharacterPortraitPath, getPhoneSheetFramePath } from "../shared/assetPaths.js";
 import type { AbilityChangeItem } from "../shared/abilityTelemetry.js";
 import {
@@ -221,9 +222,8 @@ export function MobilePlayerCard({
             <div className="phone-sheet-section-heading">Attributes</div>
             <div className="mobile-player-card-stats phone-sheet-stat-grid">
               {statOrder.map((stat) => (
-                <div key={stat} className="mobile-player-stat phone-sheet-stat-card">
-                  <span>{statAbbreviationById[stat]}</span>
-                  <strong>{self.character.stats[stat]}</strong>
+                <div key={stat} className={`mobile-player-stat phone-sheet-stat-card phone-sheet-stat-card-${stat}`}>
+                  <ChallengeBadge stat={stat} value={self.character.stats[stat]} label={statAbbreviationById[stat]} active={encounter?.stat === stat} />
                   <p>{statLabelById[stat]}</p>
                 </div>
               ))}

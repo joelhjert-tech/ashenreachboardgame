@@ -21,6 +21,7 @@ import {
   formatResolutionModifiers,
   resolutionStageLabel
 } from "../shared/resolutionPresentation.js";
+import { ChallengeBadge, ThreatIconBadge, getThreatIconStat, isStat } from "../shared/ChallengeBadge.js";
 import { CombatDiceAnimation } from "../shared/CombatDiceAnimation.js";
 import { statLabelById } from "../shared/statLabels.js";
 import { PhoneInventoryPanel } from "./PhoneInventoryPanel.js";
@@ -114,6 +115,7 @@ function ActiveResolutionCard({
   const rollText = describeActiveResolutionRoll(resolution);
   const battle = resolution.battle;
   const outcome = resolution.outcome;
+  const challengeStat = battle?.stat ?? "grit";
 
   return (
     <div className="phone-resolution-card" data-testid="phone-resolution-card">
@@ -125,7 +127,8 @@ function ActiveResolutionCard({
         <div className="phone-resolution-grid" data-testid="phone-battle-panel">
           <span>{battle.enemyName ?? "Check"}</span>
           <span>
-            {statLabelById[battle.stat]} vs {battle.difficulty}
+            <ChallengeBadge stat={battle.stat} value={battle.difficulty} size="compact" />
+            <span className="sr-only">{statLabelById[battle.stat]} vs {battle.difficulty}</span>
           </span>
           <span>Modifiers</span>
           <span>{formatResolutionModifiers(battle.modifiers)}</span>
@@ -142,6 +145,7 @@ function ActiveResolutionCard({
             attackSuccess={resolution.roll.success}
             defenseSuccess={!resolution.roll.success}
             hasModifier={resolution.roll.modifierTotal !== 0}
+            challengeStat={challengeStat}
             compact
           />
           <p>{rollText}</p>
@@ -188,6 +192,7 @@ function OrphanResolutionRecoveryCard({
   const target = outcome.enemyTotal ?? outcome.difficulty ?? null;
   const statLabel =
     outcome.checkStat && outcome.checkStat in statLabelById ? statLabelById[outcome.checkStat as Stat] : "Check";
+  const challengeStat = isStat(outcome.checkStat) ? outcome.checkStat : "grit";
 
   return (
     <div className="phone-resolution-card phone-resolution-card-recovery" data-testid="phone-resolution-card">
@@ -206,6 +211,7 @@ function OrphanResolutionRecoveryCard({
             attackSuccess={outcome.success === true}
             defenseSuccess={outcome.success === false}
             hasModifier={modifier !== 0}
+            challengeStat={challengeStat}
             compact
           />
         )}
@@ -217,7 +223,12 @@ function OrphanResolutionRecoveryCard({
         ) : (
           <p>{outcome.summary}</p>
         )}
-        {target !== null && <p>Target: {target}</p>}
+        {target !== null && (
+          <p>
+            Target: <ChallengeBadge stat={challengeStat} value={target} size="compact" />
+            <span className="sr-only">Target: {target}</span>
+          </p>
+        )}
         <strong>{outcome.success === null ? statLabel : outcome.success ? "Success" : "Failure"}</strong>
       </div>
       <div className="phone-resolution-outcome">
@@ -250,6 +261,7 @@ function BattleAssistCard({
   }
 
   const usableCount = battleAssist.usableCards.length;
+  const battleStat = battleAssist.playerBattleStat;
 
   return (
     <div className="phone-battle-assist" data-testid="phone-battle-assist">
@@ -267,7 +279,7 @@ function BattleAssistCard({
         </strong>
         <span>Player</span>
         <strong>
-          {inventoryStatLabelById[battleAssist.playerBattleStat]} {battleAssist.playerBattleValue}
+          <ChallengeBadge stat={battleStat} value={battleAssist.playerBattleValue} label={inventoryStatLabelById[battleStat]} size="compact" />
         </strong>
         <span>Health</span>
         <strong>{patch.self?.character.wounds ?? 0} wounds</strong>
@@ -387,6 +399,10 @@ function formatThreatIcon(icon: string): string {
   return icon.charAt(0).toUpperCase() + icon.slice(1);
 }
 
+function formatThreatIconWithStat(icon: PublicMoveDestination["threatIcons"][number]): string {
+  return `${formatThreatIcon(icon)} ${statLabelById[getThreatIconStat(icon)]}`;
+}
+
 function buildDestinationSummary(destination: PublicMoveDestination): string {
   if (destination.disabledReason) {
     return destination.disabledReason;
@@ -401,7 +417,7 @@ function buildDestinationSummary(destination: PublicMoveDestination): string {
   }
 
   if (destination.threatIcons.length > 0) {
-    return `${destination.threatIcons.map(formatThreatIcon).join(", ")} threat icon${destination.threatIcons.length === 1 ? "" : "s"} printed here.`;
+    return `${destination.threatIcons.map(formatThreatIconWithStat).join(", ")} threat icon${destination.threatIcons.length === 1 ? "" : "s"} printed here.`;
   }
 
   return "No public blockers are visible.";
@@ -486,6 +502,13 @@ function MovementPlanner({
                 <small>
                   {destination.ring} ring | {destination.tags.slice(0, 3).join(" / ") || "sector"}
                 </small>
+                {destination.threatIcons.length > 0 && (
+                  <span className="phone-movement-card-icons">
+                    {destination.threatIcons.map((icon, index) => (
+                      <ThreatIconBadge key={`${icon}-${index}`} icon={icon} />
+                    ))}
+                  </span>
+                )}
                 <span>Distance: {destination.distance}</span>
                 <span>{buildDestinationSummary(destination)}</span>
               </button>
@@ -510,7 +533,16 @@ function MovementPlanner({
             <span>Route</span>
             <strong>{(selected.routeNames ?? selected.route).join(" -> ")}</strong>
             <span>Icons</span>
-            <strong>{selected.threatIcons.length > 0 ? selected.threatIcons.map(formatThreatIcon).join(", ") : "None"}</strong>
+            <strong className="phone-movement-inline-icons">
+              {selected.threatIcons.length > 0
+                ? selected.threatIcons.map((icon, index) => (
+                    <span key={`${icon}-${index}`} className="phone-movement-inline-icon-wrap">
+                      <span className="sr-only">{formatThreatIcon(icon)}</span>
+                      <ThreatIconBadge icon={icon} />
+                    </span>
+                  ))
+                : "None"}
+            </strong>
             <span>Status</span>
             <strong>{selected.disabledReason ? "Locked" : selected.faceUpThreats.length > 0 ? "Blocked" : "Open"}</strong>
           </div>
@@ -530,7 +562,12 @@ function MovementPlanner({
                   <small>
                     {threat.deck ? `${formatThreatIcon(threat.deck)} ` : ""}
                     {threat.type}
-                    {threat.challenge ? ` | ${statLabelById[threat.challenge.stat]} ${threat.challenge.value}` : ""}
+                    {threat.challenge ? (
+                      <>
+                        {" | "}
+                        <ChallengeBadge stat={threat.challenge.stat} value={threat.challenge.value} size="compact" />
+                      </>
+                    ) : ""}
                   </small>
                 </div>
               ))
@@ -565,7 +602,11 @@ function MovementPlanner({
             </div>
           ) : null}
 
-          <p className="phone-movement-warning">{buildStrategicWarning(selected)}</p>
+          <div className="phone-movement-warning">
+            <span>{movementTagLabel[getPrimaryMovementTag(selected)]}</span>
+            {selected.threatIcons[0] && <ThreatIconBadge icon={selected.threatIcons[0]} />}
+            <p>{buildStrategicWarning(selected)}</p>
+          </div>
 
           <button
             type="button"

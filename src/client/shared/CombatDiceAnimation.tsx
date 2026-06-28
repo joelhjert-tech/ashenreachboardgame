@@ -1,4 +1,6 @@
 import type { ReactElement } from "react";
+import { getChallengeThemeStyle } from "../../game/ui/challengeTheme.js";
+import type { Stat } from "./types.js";
 
 interface CombatDiceAnimationProps {
   attackValue: number | null;
@@ -11,6 +13,7 @@ interface CombatDiceAnimationProps {
   defenseSuccess?: boolean;
   hasModifier?: boolean;
   compact?: boolean;
+  challengeStat?: Stat;
 }
 
 function normalizeDieValue(value: number | null | undefined): number {
@@ -60,7 +63,8 @@ export function CombatDiceAnimation({
   attackSuccess = false,
   defenseSuccess = false,
   hasModifier,
-  compact = false
+  compact = false,
+  challengeStat = "grit"
 }: CombatDiceAnimationProps): ReactElement {
   const attackDie = resolveDieFace(attackDieFace, attackValue);
   const defenseDie = resolveDieFace(defenseDieFace, defenseValue);
@@ -70,9 +74,10 @@ export function CombatDiceAnimation({
 
   return (
     <div
-      className={`combat-dice-animation${compact ? " combat-dice-animation-compact" : ""}`}
+      className={`combat-dice-animation combat-dice-animation-${challengeStat}${compact ? " combat-dice-animation-compact" : ""}`}
+      style={getChallengeThemeStyle(challengeStat)}
       data-testid="combat-dice-animation"
-      aria-label="Combat dice animation"
+      aria-label={`${challengeStat} dice animation`}
     >
       <div className="combat-dice-stage">
         <AnimatedDie layer="attack" value={attackDie} success={attackSuccess} />
