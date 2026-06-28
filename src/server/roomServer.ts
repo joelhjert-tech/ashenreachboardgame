@@ -118,6 +118,7 @@ const RAISE_STAT_ESCALATION_REASON = "forged in fire";
 const ENEMY_ROLL_TIMEOUT_MS = 30_000;
 const RESOLUTION_AUTO_CONTINUE_MS = process.env.VITEST ? 1 : 10000;
 const VISIBLE_DICE_ROLL_MS = process.env.VITEST ? 0 : 650;
+const FANDIABLOS_ID = "fandiablos";
 const RECENT_ENCOUNTER_LIMIT = 12;
 
 const NEMESIS_OPPOSITION = {
@@ -518,6 +519,13 @@ export class GameRoomServer {
         this.resolveMoveIntent(intent);
       } else if (intent.type === "SCENARIO_CONFRONTATION_REQUESTED") {
         this.resolveScenarioConfrontationIntent(intent);
+      } else if (
+        intent.type === "USE_FOLLOWER" &&
+        intent.followerId === FANDIABLOS_ID &&
+        this.state.phase === "action" &&
+        Boolean(this.state.currentEncounter)
+      ) {
+        // Fandiablos battle/check support is a committed modifier for the next roll, not the end of the action window.
       } else {
         this.runAutomaticPhases(client.seatId);
       }
@@ -914,6 +922,193 @@ export class GameRoomServer {
     this.restartActiveSession();
   }
 
+  private hasFollower(player: PlayerState | undefined, followerId: string): boolean {
+    return Boolean(player?.character.followers?.some((follower) => follower.id === followerId));
+  }
+
+  private makeEffectSequence(effects: EncounterEffect[]): EncounterEffect {
+    const compact = effects.filter((effect): effect is EncounterEffect => Boolean(effect));
+    return compact.length === 1 ? compact[0]! : { type: "sequence", effects: compact };
+  }
+
+  private effectContainsNote(effect: EncounterEffect | null | undefined, needle: string): boolean {
+    if (!effect) {
+      return false;
+    }
+
+    if (effect.type === "gain_note") {
+      return effect.text.includes(needle);
+    }
+
+    if (effect.type === "sequence") {
+      return effect.effects.some((entry) => this.effectContainsNote(entry, needle));
+    }
+
+    return false;
+  }
+
+  private effectContainsWound(effect: EncounterEffect): boolean {
+    if (effect.type === "take_wound") {
+      return effect.amount > 0;
+    }
+
+    if (effect.type === "sequence") {
+      return effect.effects.some((entry) => this.effectContainsWound(entry));
+    }
+
+    return false;
+  }
+
+  private reduceFirstWound(effect: EncounterEffect): EncounterEffect | null {
+    if (effect.type === "take_wound") {
+      const nextAmount = effect.amount - 1;
+      return nextAmount > 0 ? { ...effect, amount: nextAmount } : null;
+    }
+
+    if (effect.type !== "sequence") {
+      return effect;
+    }
+
+    let prevented = false;
+    const nextEffects = effect.effects
+      .map((entry) => {
+        if (prevented || !this.effectContainsWound(entry)) {
+          return entry;
+        }
+
+        prevented = true;
+        return this.reduceFirstWound(entry);
+      })
+      .filter((entry): entry is EncounterEffect => Boolean(entry));
+
+    return nextEffects.length > 0 ? { ...effect, effects: nextEffects } : null;
+  }
+
+  private hasFandiablosPreventedWoundThisRound(seatId: string): boolean {
+    for (let index = this.state.eventLog.length - 1; index >= 0; index -= 1) {
+      const entry = this.state.eventLog[index] as { type?: string; seatId?: string; effect?: EncounterEffect } | undefined;
+
+      if (entry?.type === "ROUND_COMPLETED") {
+        return false;
+      }
+
+      if (entry?.seatId === seatId && this.effectContainsNote(entry.effect, "Fandiablos Unreasonable Courage")) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  private maybeApplyFandiablosWoundPrevention(seatId: string, effect: EncounterEffect): EncounterEffect {
+    const player = this.state.players.find((entry) => entry.seatId === seatId);
+
+    if (!this.hasFollower(player, FANDIABLOS_ID) || !this.effectContainsWound(effect) || this.hasFandiablosPreventedWoundThisRound(seatId)) {
+      return effect;
+    }
+
+    const courageRoll = this.randomSource.nextInt(6) + 1;
+
+    if (courageRoll < 4) {
+      return this.makeEffectSequence([
+        effect,
+        { type: "gain_note", text: `Fandiablos Unreasonable Courage rolled ${courageRoll}; the wound lands.` }
+      ]);
+    }
+
+    return this.makeEffectSequence([
+      this.reduceFirstWound(effect) ?? { type: "gain_note", text: "Fandiablos absorbed the whole wound event." },
+      { type: "gain_note", text: `Fandiablos Unreasonable Courage rolled ${courageRoll}; one wound was prevented.` }
+    ]);
+  }
+
+  private hasPendingFandiablosUse(seatId: string): boolean {
+    for (let index = this.state.eventLog.length - 1; index >= 0; index -= 1) {
+      const entry = this.state.eventLog[index] as { type?: string; seatId?: string; followerId?: string } | undefined;
+
+      if (entry?.type === "TURN_COMPLETED") {
+        return false;
+      }
+
+      if (entry?.seatId === seatId && (entry.type === "COMBAT_RESOLVED" || entry.type === "CHECK_ROLLED")) {
+        return false;
+      }
+
+      if (entry?.type === "USE_FOLLOWER" && entry.seatId === seatId && entry.followerId === FANDIABLOS_ID) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  private getFandiablosSupportBonus(seatId: string, stat: Stat, mode: "battle" | "check"): number {
+    if (!this.hasPendingFandiablosUse(seatId)) {
+      return 0;
+    }
+
+    if (mode === "battle" && stat === "grit") {
+      return 3;
+    }
+
+    if (mode === "check" && (stat === "forge" || stat === "guile")) {
+      return 2;
+    }
+
+    return 0;
+  }
+
+  private createFandiablosWarningEffect(seatId: string): EncounterEffect {
+    const player = this.state.players.find((entry) => entry.seatId === seatId);
+    const sector = player ? this.state.sectors.find((entry) => entry.id === player.character.currentSpaceId) : null;
+    const topThreatId = sector?.encounterDecks.threat[0] ?? null;
+    const topThreat = topThreatId ? this.threats.get(topThreatId) : null;
+
+    if (!topThreatId) {
+      return { type: "gain_note", text: "Fandiablos Warning Barks found no local threat to sniff out." };
+    }
+
+    return {
+      type: "gain_note",
+      text: `Fandiablos Warning Barks revealed one local threat: ${topThreat?.title ?? topThreatId}. The rest of the deck order remains hidden.`
+    };
+  }
+
+  private createFandiablosUseEffect(seatId: string): { effect: EncounterEffect; summary: string } {
+    const effects: EncounterEffect[] = [];
+    const encounter = this.state.currentEncounter;
+    let summary = "Fandiablos used.";
+
+    if (this.state.phase === "sector") {
+      effects.push(this.createFandiablosWarningEffect(seatId));
+      summary = "Fandiablos Warning Barks scouted one local threat before the draw.";
+    } else if (encounter?.cardType === "enemy") {
+      effects.push({ type: "gain_note", text: "Fandiablos Swarm of Tiny Teeth is committed: +3 Grit for this battle." });
+      summary = "Fandiablos Swarm of Tiny Teeth is ready: +3 Grit for this battle.";
+    } else if (encounter?.cardType === "hazard" && (encounter.stat === "forge" || encounter.stat === "guile")) {
+      effects.push({ type: "gain_note", text: "Fandiablos Cable Biters are committed: +2 to this Forge or Guile machine/trap/salvage test." });
+      summary = "Fandiablos Cable Biters are ready: +2 to this Forge or Guile test.";
+    } else {
+      effects.push({ type: "gain_note", text: "Fandiablos is circling the operative and barking at everything that looks expensive." });
+      summary = "Fandiablos is on alert for the current action window.";
+    }
+
+    const chaosRoll = this.randomSource.nextInt(6) + 1;
+
+    if (chaosRoll === 1) {
+      effects.push({ type: "gain_heat", amount: 1 });
+      effects.push({ type: "gain_note", text: "Too Many Dogs: chaos roll 1. The flock triggered a Heat spike instead of a softlock." });
+      summary = `${summary} Too Many Dogs triggered: gain 1 Heat.`;
+    } else {
+      effects.push({ type: "gain_note", text: `Too Many Dogs: chaos roll ${chaosRoll}. The flock behaved, mostly.` });
+    }
+
+    return {
+      effect: this.makeEffectSequence(effects),
+      summary
+    };
+  }
+
   private createGearUseAction(
     seatId: string,
     gearId: string,
@@ -1008,15 +1203,18 @@ export class GameRoomServer {
   ): UseFollowerAction {
     const player = this.state.players.find((entry) => entry.seatId === seatId);
     const follower = (player?.character.followers ?? []).find((entry) => entry.id === followerId) ?? this.followers.get(followerId);
+    const fandiablosUse = follower?.id === FANDIABLOS_ID ? this.createFandiablosUseEffect(seatId) : null;
     const effect = this.resolveEffect((follower?.activeEffect as EncounterEffect | undefined) ?? this.getFollowerRoleEffect(follower), seatId);
 
     return {
       type: "USE_FOLLOWER",
       seatId,
       followerId,
-      effect,
+      effect: fandiablosUse ? this.resolveEffect(fandiablosUse.effect, seatId) : effect,
       discard: follower?.useLimit === "discard",
-      summary: `${follower?.name ?? followerId} used. ${follower?.text ?? "Their table effect was recorded."}`,
+      summary: (fandiablosUse ?? follower)
+        ? `${follower?.name ?? followerId} used. ${fandiablosUse?.summary ?? follower?.text ?? "Their table effect was recorded."}`
+        : `${followerId} used. Their table effect was recorded.`,
       createdAt
     } satisfies UseFollowerAction;
   }
@@ -3278,11 +3476,7 @@ export class GameRoomServer {
       }
 
       if (this.state.phase === "resolution" && !this.state.pendingEffect) {
-        const player = this.state.players.find((entry) => entry.seatId === seatId);
-        const nextPhase =
-          this.state.resolutionSource === "movement" && player?.character.status === "active"
-            ? "sector"
-            : "broadcast";
+        const nextPhase = this.getPhaseAfterResolution(seatId);
 
         this.applyAction({
           type: "PHASE_ADVANCED",
@@ -3293,6 +3487,42 @@ export class GameRoomServer {
         progressMade = true;
       }
     }
+  }
+
+  private getPhaseAfterResolution(seatId: string): GameState["phase"] {
+    const player = this.state.players.find((entry) => entry.seatId === seatId);
+
+    if (this.state.resolutionSource === "movement" && player?.character.status === "active") {
+      return "sector";
+    }
+
+    if (this.shouldContinueClearedEncounterSector(seatId)) {
+      const sector = player ? this.state.sectors.find((entry) => entry.id === player.character.currentSpaceId) : null;
+
+      return sector && sector.encounterDecks.threat.length > 0 ? "sector" : "action";
+    }
+
+    return "broadcast";
+  }
+
+  private shouldContinueClearedEncounterSector(seatId: string): boolean {
+    if (this.state.resolutionSource !== "encounter" || this.state.lastOutcomeSummary?.success !== true) {
+      return false;
+    }
+
+    const player = this.state.players.find((entry) => entry.seatId === seatId);
+
+    if (!player || player.character.status !== "active") {
+      return false;
+    }
+
+    const boardSpace = getBoardSpace(player.character.currentSpaceId);
+
+    if (!boardSpace || boardSpace.textBox.intent === "scenario-confrontation") {
+      return false;
+    }
+
+    return true;
   }
 
   private completeBroadcastTurn(seatId: string): void {
@@ -3544,12 +3774,14 @@ export class GameRoomServer {
 
     const escalationModifier = getEscalationModifier(this.state.escalationLevel);
     const keyedModifiers = this.resolveThreatEffectKeys(intent.seatId, encounter, encounter.combatEffectKeys, "beforeCombat");
+    const fandiablosBonus = this.getFandiablosSupportBonus(intent.seatId, intent.stat, "check");
     const roll = rollDice(2, 6, this.randomSource);
     const statBonus =
       player.character.stats[intent.stat] +
       getEquippedGearBonus(player.character, intent.stat) +
       this.getScenarioSkillModifier(intent.seatId) +
-      (keyedModifiers.playerBonusModifier ?? 0);
+      (keyedModifiers.playerBonusModifier ?? 0) +
+      fandiablosBonus;
     const difficulty = encounter.difficulty + escalationModifier + (keyedModifiers.difficultyModifier ?? 0);
     const total = roll.total + statBonus;
     const success = total >= difficulty;
@@ -3558,13 +3790,14 @@ export class GameRoomServer {
         (effect): effect is EncounterEffect => Boolean(effect)
       )
     ) ?? (success ? encounter.successEffect : encounter.failEffect);
-    const outcomeEffect = this.resolveThreatOutcomeEffect(
+    const resolvedOutcomeEffect = this.resolveThreatOutcomeEffect(
       intent.seatId,
       encounter,
       baseOutcomeEffect,
       success ? encounter.successEffectKey : encounter.failEffectKey,
       success ? "onSuccess" : "onFailure"
     );
+    const outcomeEffect = this.maybeApplyFandiablosWoundPrevention(intent.seatId, resolvedOutcomeEffect);
 
     this.applyAction({
       type: "CHECK_ROLLED",
@@ -4673,11 +4906,13 @@ export class GameRoomServer {
     const enemyRoll = rollDice(2, 6, this.randomSource);
     const escalationModifier = getEscalationModifier(this.state.escalationLevel);
     const keyedModifiers = this.resolveThreatEffectKeys(fighterSeatId, encounter, encounter.combatEffectKeys, "beforeCombat");
+    const fandiablosBonus = this.getFandiablosSupportBonus(fighterSeatId, stat, "battle");
     const statBonus =
       player.character.stats[stat] +
       getEquippedGearBonus(player.character, stat) +
       this.getScenarioBattleModifier(fighterSeatId) +
-      (keyedModifiers.playerBonusModifier ?? 0);
+      (keyedModifiers.playerBonusModifier ?? 0) +
+      fandiablosBonus;
     const enemyBonus = encounter.difficulty + escalationModifier + (keyedModifiers.difficultyModifier ?? 0);
     const scenarioEnemyBonus = this.getScenarioEnemyBattleModifier();
     const keyedEnemyBonus = keyedModifiers.enemyBonusModifier ?? 0;
@@ -4689,13 +4924,14 @@ export class GameRoomServer {
         (effect): effect is EncounterEffect => Boolean(effect)
       )
     ) ?? (success ? encounter.defeatReward : encounter.woundOnLoss);
-    const outcomeEffect = this.resolveThreatOutcomeEffect(
+    const resolvedOutcomeEffect = this.resolveThreatOutcomeEffect(
       fighterSeatId,
       encounter,
       baseOutcomeEffect,
       success ? encounter.defeatEffectKey : encounter.failEffectKey,
       success ? "onDefeat" : "onFailure"
     );
+    const outcomeEffect = this.maybeApplyFandiablosWoundPrevention(fighterSeatId, resolvedOutcomeEffect);
 
     this.applyAction({
       type: "COMBAT_RESOLVED",
@@ -5669,6 +5905,15 @@ export function createTvProjection(state: GameState): Record<string, unknown> {
         scars: player.character.scars,
         heldGearCount: player.character.heldGear.length,
         followerCount: player.character.followers?.length ?? 0,
+        companionBadges: (player.character.followers ?? [])
+          .filter((follower) => follower.ultimateCompanion || follower.role === "companion")
+          .map((follower) => ({
+            id: follower.id,
+            name: follower.name,
+            tier: follower.tier,
+            ultimateCompanion: follower.ultimateCompanion,
+            exhausted: follower.exhausted
+          })),
         equippedGear: player.character.equippedGear
       },
       sectorId: player.character.currentSpaceId

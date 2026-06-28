@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState, type ReactElement } from "react";
-import { getAssetPath } from "../../game/assets/design/assetManifest.js";
 import { BOARD_SPACES, getBoardSpace, isScenarioConfrontationSpace } from "../../game/data/boardSpaces.js";
-import { RIFTFALL_BOARD_NODE_INDEX, RIFTFALL_BOARD_NODES, type BoardNode } from "../../data/riftfallBoardNodes.js";
+import { RIFTFALL_BOARD_NODE_INDEX, RIFTFALL_BOARD_NODES } from "../../data/riftfallBoardNodes.js";
 import type { OutcomeSummary, PublicPatchPayload, SectorNode, ThreatIcon } from "../shared/types.js";
 import { ThreatIconBadge } from "../shared/ChallengeBadge.js";
 import {
@@ -16,6 +15,7 @@ import {
 import { BoardStage } from "./BoardStage.js";
 import { pointerToBoardCoordinate, type BoardRect } from "./boardGeometry.js";
 import { HostCinematicFxLayer, type MapFxPoint, type MapFxTrail } from "./HostCinematicFxLayer.js";
+import { getMapBoardBaseAssetPath } from "./mapAssetRegistry.js";
 import { TalismanBoardSurface } from "./TalismanBoardSurface.js";
 
 interface BoardMapProps {
@@ -62,26 +62,6 @@ function getInitials(label: string): string {
 function getSeatColor(index: number): string {
   const palette = ["#7fb2d8", "#d9a35d", "#d86f6f", "#7cc3a6", "#dfd8c5", "#a98fd1"];
   return palette[index % palette.length];
-}
-
-function uniqueEdges(nodes: BoardNode[]): Array<{ from: string; to: string }> {
-  const seen = new Set<string>();
-  const edges: Array<{ from: string; to: string }> = [];
-
-  nodes.forEach((node) => {
-    node.connections.forEach((target) => {
-      const key = [node.id, target].sort().join("::");
-
-      if (seen.has(key) || !RIFTFALL_BOARD_NODE_INDEX.has(target)) {
-        return;
-      }
-
-      seen.add(key);
-      edges.push({ from: node.id, to: target });
-    });
-  });
-
-  return edges;
 }
 
 function outcomeText(outcome: OutcomeSummary | null): string | null {
@@ -245,7 +225,7 @@ function buildNemesisTrails(patch: PublicPatchPayload, previousPatch: PublicPatc
 }
 
 export function BoardMap({ patch, previousPatch = null, phase, showHeader = true, showSidebar = true }: BoardMapProps): ReactElement {
-  const boardAssetPath = getAssetPath("full_board_main");
+  const boardAssetPath = getMapBoardBaseAssetPath();
   const [selectedNodeId, setSelectedNodeId] = useState<string>(() => RIFTFALL_BOARD_NODES[0]?.id ?? "");
   const [calibrationPoint, setCalibrationPoint] = useState<CalibrationPoint | null>(null);
   const [calibrationNodeId, setCalibrationNodeId] = useState<string>(() => RIFTFALL_BOARD_NODES[0]?.id ?? "");
@@ -290,13 +270,25 @@ export function BoardMap({ patch, previousPatch = null, phase, showHeader = true
         ? `Choice-driven sector text | ${selectedBoardSpace.textBox.choices.map((choice) => choice.label).join(" | ")}`
         : selectedBoardSpace?.textBox.title ?? "Sector telemetry"
     : "Sector telemetry";
-  const staticEdges = uniqueEdges(RIFTFALL_BOARD_NODES);
   const scenarioMarkers = buildScenarioMarkers(patch);
   const escalationMarker = buildEscalationMarker(patch);
   const scenarioAuras = buildScenarioAuras(patch);
   const scenarioRoutes = buildScenarioRoutes(patch);
   const mapFxPoints = useMemo(() => buildMapFxPoints(patch, activeSectorId), [activeSectorId, patch]);
   const mapFxTrails = useMemo(() => buildNemesisTrails(patch, previousPatch), [patch, previousPatch]);
+  const occupantCountsByNodeId = useMemo(() => {
+    const counts = new Map<string, number>();
+
+    patch.players.forEach((player) => {
+      counts.set(player.sectorId, (counts.get(player.sectorId) ?? 0) + 1);
+    });
+
+    return counts;
+  }, [patch.players]);
+  const nemesisSectorIds = useMemo(
+    () => new Set((patch.nemesisChampions ?? []).filter((champion) => !champion.defeated).map((champion) => champion.sectorId)),
+    [patch.nemesisChampions]
+  );
 
   const calibrationExport = useMemo(
     () =>
@@ -349,7 +341,6 @@ export function BoardMap({ patch, previousPatch = null, phase, showHeader = true
         >
           {({ imageRect }) => {
             const tokens = buildBoardTokens(patch, imageRect);
-            const markerSize = Math.max(20, Math.min(34, imageRect.width * 0.018));
 
             return (
               <>
@@ -358,6 +349,10 @@ export function BoardMap({ patch, previousPatch = null, phase, showHeader = true
                   activeNodeId={activeSectorId}
                   selectedNodeId={selectedNodeId}
                   legalTargetIds={legalTargetIds}
+                  sectorsById={sectorsById}
+                  occupantCountsByNodeId={occupantCountsByNodeId}
+                  nemesisSectorIds={nemesisSectorIds}
+                  onSelectNode={setSelectedNodeId}
                   debugEnabled={boardDebugEnabled}
                 />
                 <HostCinematicFxLayer
@@ -395,87 +390,7 @@ export function BoardMap({ patch, previousPatch = null, phase, showHeader = true
                       />
                     );
                   })}
-                  {staticEdges.map((edge) => {
-                    const from = RIFTFALL_BOARD_NODE_INDEX.get(edge.from);
-                    const to = RIFTFALL_BOARD_NODE_INDEX.get(edge.to);
-
-                    if (!from || !to) {
-                      return null;
-                    }
-
-                    return (
-                      <line
-                        key={`${edge.from}-${edge.to}`}
-                        data-testid="sector-connector"
-                        className={`board-route board-route-${from.ring}`}
-                        x1={imageRect.left + from.x * imageRect.width}
-                        y1={imageRect.top + from.y * imageRect.height}
-                        x2={imageRect.left + to.x * imageRect.width}
-                        y2={imageRect.top + to.y * imageRect.height}
-                      />
-                    );
-                  })}
                 </svg>
-
-                {RIFTFALL_BOARD_NODES.map((node) => {
-                  const boardSpace = getBoardSpace(node.id);
-                  const liveSector = sectorsById.get(node.id) ?? null;
-                  const occupantCount = patch.players.filter((player) => player.sectorId === node.id).length;
-                  const isSelected = selectedNodeId === node.id;
-                  const isActive = activeSectorId === node.id;
-                  const isLegalTarget = legalTargetIds.has(node.id);
-                  const isGated = Boolean(boardSpace?.movementRequirements?.length);
-                  const left = imageRect.left + node.x * imageRect.width;
-                  const top = imageRect.top + node.y * imageRect.height;
-                  const boardSpaceLabel = [
-                    node.label,
-                    `${node.ring} space`,
-                    isActive ? "current location" : null,
-                    isLegalTarget ? "legal move" : null,
-                    isSelected ? "selected" : null,
-                    isGated ? "gated entry" : null
-                  ]
-                    .filter(Boolean)
-                    .join(", ");
-
-                  return (
-                    <button
-                      key={node.id}
-                      type="button"
-                      data-testid={`sector-node-${node.id}`}
-                      data-sector-id={node.id}
-                      data-legal-target={isLegalTarget ? "true" : "false"}
-                      className={[
-                        "board-node-marker",
-                        `board-node-marker-${node.ring}`,
-                        isSelected ? "board-node-selected" : "",
-                        isActive ? "board-node-active" : "",
-                        isLegalTarget ? "board-node-legal-target" : ""
-                      ]
-                        .filter(Boolean)
-                        .join(" ")}
-                      style={{
-                        left: `${left}px`,
-                        top: `${top}px`,
-                        width: `${markerSize}px`,
-                        height: `${markerSize}px`
-                      }}
-                      aria-label={boardSpaceLabel}
-                      aria-current={isActive ? "location" : undefined}
-                      aria-pressed={isSelected}
-                      onClick={() => setSelectedNodeId(node.id)}
-                    >
-                      <span className="board-node-core" />
-                      <span className="board-node-label" aria-hidden="true">
-                        {node.label}
-                      </span>
-                      <span className="board-node-threat" aria-hidden="true">
-                        {boardSpace?.threatIcons.length ?? liveSector?.danger ?? 0}
-                      </span>
-                      {occupantCount > 0 && <span className="board-node-occupants">{occupantCount}</span>}
-                    </button>
-                  );
-                })}
 
                 <div className="board-token-layer" aria-label="Seat markers">
                   {tokens.map((token) => (

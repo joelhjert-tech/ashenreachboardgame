@@ -2,11 +2,13 @@ import type { ActiveResolution, Follower, GearItem, GearSlot, PhonePatchPayload,
 import { gearSlotLabelById, statLabelById } from "../shared/statLabels.js";
 
 export type InventoryTimingWindow =
+  | "beforeThreatDraw"
   | "beforeBattleRoll"
   | "afterBattleRoll"
   | "beforeTakingDamage"
   | "startOfTurn"
   | "movement"
+  | "shop"
   | "anyTime";
 
 export type InventoryGroupLabel = "Weapons" | "Armor" | "Relics" | "Consumables" | "Followers" | "Quest Items";
@@ -67,6 +69,8 @@ function toTitleCase(value: string): string {
 
 export function formatTimingWindow(window: InventoryTimingWindow): string {
   switch (window) {
+    case "beforeThreatDraw":
+      return "Before threat draw";
     case "beforeBattleRoll":
       return "Before battle roll";
     case "afterBattleRoll":
@@ -77,6 +81,8 @@ export function formatTimingWindow(window: InventoryTimingWindow): string {
       return "Start of turn";
     case "movement":
       return "Movement";
+    case "shop":
+      return "Shop";
     case "anyTime":
       return "Any time";
   }
@@ -146,6 +152,10 @@ export function getCurrentTimingWindow(patch: PhonePatchPayload): InventoryTimin
     return "movement";
   }
 
+  if (patch.phase === "sector") {
+    return "beforeThreatDraw";
+  }
+
   if (patch.phase === "start") {
     return "startOfTurn";
   }
@@ -154,7 +164,7 @@ export function getCurrentTimingWindow(patch: PhonePatchPayload): InventoryTimin
 }
 
 function serverAcceptsCardUse(patch: PhonePatchPayload): boolean {
-  return patch.phase === "action";
+  return patch.phase === "action" || patch.phase === "sector";
 }
 
 function hasAny(text: string, words: string[]): boolean {
@@ -205,6 +215,10 @@ function inferGearTimingWindows(item: GearItem): InventoryTimingWindow[] {
 }
 
 function inferFollowerTimingWindows(follower: Follower): InventoryTimingWindow[] {
+  if (follower.timingWindows?.length) {
+    return uniqueWindows(follower.timingWindows);
+  }
+
   if (!follower.useLimit) {
     return [];
   }
@@ -226,6 +240,10 @@ function inferFollowerTimingWindows(follower: Follower): InventoryTimingWindow[]
 
   if (hasAny(text, ["movement", "move", "route"]) || follower.role === "scout" || follower.role === "guide") {
     windows.push("movement");
+  }
+
+  if (hasAny(text, ["threat draw", "drawing threats", "warning barks", "reveal one local threat"])) {
+    windows.push("beforeThreatDraw");
   }
 
   if (windows.length === 0) {
@@ -383,7 +401,7 @@ function buildFollowerCard(follower: Follower, patch: PhonePatchPayload): Invent
     useIntent: status.canUseNow ? { type: "USE_FOLLOWER", followerId: follower.id } : null,
     useLimit: follower.useLimit,
     charges: null,
-    artCardId: null,
+    artCardId: follower.artCardId ?? null,
     fallbackLabel: getFallbackLabel(follower.name)
   };
 }

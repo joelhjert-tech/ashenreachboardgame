@@ -1,4 +1,4 @@
-[
+﻿[
   {
     "assetId": "threat_art_ash-choir-crusader",
     "assetType": "threatCardArt",
@@ -2260,5 +2260,18 @@
     "prompt": "Ashen Reach original card art, dark gothic sci-fantasy artifact-crawl, 3:4 portrait composition, centered subject with safe margins for card framing, black basalt, charcoal iron, scorched brass, ember red glow, cold blue-white signal light, toxic green salvage light, purple anomaly light, ash, smoke, ritual circuitry, damaged artifact machinery, high contrast, readable silhouette, cinematic but grounded, no text, global disaster event, breach widening, collapsing routes, corrupted signal storm, burning shrine, sector-wide panic, escalation step 3, pressure shift -1, Your last route repeats behind you with too many shadows and one of them knows the way forward, Never trust a footprint that arrives before you do, Pinned the afterimage to a false route and cut the real signal free, wider, high-drama composition that still works in portrait framing",
     "negativePrompt": "readable text, logo, watermark, UI, dice, card frame, board game brand, Talisman, copied fantasy board game art, copyrighted character, modern city, clean spaceship, cartoon, anime, low detail, blurry, cropped subject, overexposed, cluttered composition, illegible silhouette",
     "usage": "Webglass Afterimage escalation card art."
+  },
+  {
+    "assetId": "artifact_art_artifact-fandiablos",
+    "assetType": "artifactCardArt",
+    "cardId": "artifact-fandiablos",
+    "cardType": "artifact",
+    "title": "Fandiablos",
+    "fileName": "artifact-fandiablos.png",
+    "outputPath": "/assets/cards/artifacts/artifact-fandiablos.png",
+    "fallbackPath": "/assets/cards/fallbacks/artifact.svg",
+    "prompt": "Ashen Reach original card art, dark gothic sci-fantasy artifact-crawl, 3:4 portrait composition, centered subject with safe margins for card framing, black basalt, charcoal iron, scorched brass, ember red glow, cold blue-white signal light, toxic green salvage light, purple anomaly light, ash, smoke, ritual circuitry, damaged artifact machinery, high contrast, readable silhouette, cinematic but grounded, no text, a heroic operative surrounded by a unruly sacred flock of tiny armored Chihuahuas, miniature ward collars, goggles, scraps of black-gold armor, tiny glowing sigils, cute but fierce war-dogs barking into smoke and sparks inside a ruined gothic-industrial battlefield",
+    "negativePrompt": "readable text, logo, watermark, UI, dice, card frame, board game brand, Talisman, copied fantasy board game art, copyrighted character, modern city, clean spaceship, cartoon, anime, low detail, blurry, cropped subject, overexposed, cluttered composition, illegible silhouette",
+    "usage": "Fandiablos ultimate companion artifact card art."
   }
 ]

@@ -4,6 +4,7 @@ export type ThreatIcon = "red" | "blue" | "yellow";
 export type PublicMovementThreatIcon = ThreatIcon | "green" | "gold" | "white";
 export type GearTier = "starter" | "standard" | "advanced" | "artifact";
 export type GearTimingWindow =
+  | "beforeThreatDraw"
   | "beforeBattleRoll"
   | "afterBattleRoll"
   | "beforeTakingDamage"
@@ -52,6 +53,13 @@ export interface PublicPlayerCharacter {
   scars: string[];
   heldGearCount: number;
   followerCount?: number;
+  companionBadges?: Array<{
+    id: string;
+    name: string;
+    tier?: "standard" | "legendary" | "ultimate";
+    ultimateCompanion?: boolean;
+    exhausted?: boolean;
+  }>;
   equippedGear: Record<GearSlot, string | null>;
 }
 
@@ -87,13 +95,25 @@ export interface GearItem {
   linkedFollowerRole?: FollowerRole;
 }
 
-export type FollowerRole = "scout" | "medic" | "gunner" | "ritualist" | "porter" | "guide" | "informant";
+export type FollowerRole = "scout" | "medic" | "gunner" | "ritualist" | "porter" | "guide" | "informant" | "companion";
+export type FollowerTimingWindow = GearTimingWindow;
 
 export interface Follower {
   id: string;
   name: string;
   role: FollowerRole;
   text: string;
+  tier?: "standard" | "legendary" | "ultimate";
+  tags?: string[];
+  unique?: boolean;
+  artifactTier?: boolean;
+  ultimateCompanion?: boolean;
+  timingWindows?: FollowerTimingWindow[];
+  exhausted?: boolean;
+  artCardId?: string;
+  acquisition?: string[];
+  flavor?: string;
+  imagePrompt?: string;
   useLimit?: "oncePerTurn" | "oncePerRound" | "discard";
   loyalty?: number;
   lossCondition?: "wound" | "heat" | "combatLoss" | "choice";

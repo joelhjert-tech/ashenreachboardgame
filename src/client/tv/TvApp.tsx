@@ -5,7 +5,7 @@ import { getSessionStartReadiness } from "../../game/rules/sessionStart.js";
 import { createSession, fetchCharacters, fetchScenarios, fetchSessionSummary, startSession } from "../shared/network.js";
 import { getSeatAbilityTelemetry } from "../shared/abilityTelemetry.js";
 import { CardArtImage } from "../shared/CardArtImage.js";
-import { ChallengeBadge, ThreatIconBadge } from "../shared/ChallengeBadge.js";
+import { ChallengeBadge } from "../shared/ChallengeBadge.js";
 import { DebugPanel } from "../shared/DebugPanel.js";
 import { RollOutcomePanel } from "../shared/RollOutcomePanel.js";
 import {
@@ -422,6 +422,7 @@ function ActiveOperativeOverlay({
         gearSummary={getGearSummary(activePlayer)}
         contractSummary={getContractSummary(activePlayer, patch)}
         specialAbilitySummary={getSpecialAbilitySummary(activePlayer, characterCatalog)}
+        companionBadges={activePlayer?.character.companionBadges ?? []}
         latestAbilityTriggerSummary={abilityTelemetry.latestTrigger?.summary ?? null}
         abilityChangeItems={abilityTelemetry.changes}
         isActiveTurn
@@ -1144,21 +1145,24 @@ function NemesisBanner({ nemesis }: { nemesis: ActiveNemesisSummary | null }): R
 
 function BoardLegend(): ReactElement {
   const items = [
-    { label: "Red Grit threat", tone: "hazard", icon: "red" as const },
-    { label: "Blue Signal anomaly", tone: "anomaly", icon: "blue" as const },
-    { label: "Yellow Guile risk", tone: "salvage", icon: "yellow" as const },
-    { label: "Shop / Shrine", tone: "shrine", icon: "gold" as const },
-    { label: "Crossroads", tone: "crossroads", icon: "white" as const }
+    { label: "Red Grit", stat: "grit" as const },
+    { label: "Blue Signal", stat: "signal" as const },
+    { label: "Yellow Guile", stat: "guile" as const },
+    { label: "Orange Forge", stat: "forge" as const },
+    { label: "Purple Command", stat: "command" as const }
   ];
 
   return (
     <div className="tv-board-legend" aria-label="Board legend">
       {items.map((item) => (
-        <span key={item.label} className={`tv-board-legend-item tv-board-legend-${item.tone}`}>
-          <ThreatIconBadge icon={item.icon} />
-          {item.label}
+        <span key={item.label} className={`tv-board-legend-item tv-board-legend-${item.stat}`}>
+          <ChallengeBadge stat={item.stat} label={item.label} size="compact" />
         </span>
       ))}
+      <span className="tv-board-legend-item tv-board-legend-crossroads">
+        <span className="tv-board-legend-crossroads-icon" aria-hidden="true">+</span>
+        White Crossroads
+      </span>
     </div>
   );
 }

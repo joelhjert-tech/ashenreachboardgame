@@ -208,6 +208,53 @@ describe("PhoneInventoryPanel", () => {
     });
   });
 
+  it("shows Fandiablos as an ultimate companion with art and before-threat timing", () => {
+    const onIntent = vi.fn();
+    const basePatch = createPatch();
+    const patch = {
+      ...basePatch,
+      phase: "sector" as const,
+      encounter: null,
+      self: basePatch.self
+        ? {
+            ...basePatch.self,
+            character: {
+              ...basePatch.self.character,
+              followers: [
+                ...(basePatch.self.character.followers ?? []),
+                {
+                  id: "fandiablos",
+                  name: "Fandiablos",
+                  role: "companion" as const,
+                  text: "Warning Barks before drawing threats. Swarm of Tiny Teeth. Cable Biters. Too Many Dogs.",
+                  tier: "ultimate" as const,
+                  unique: true,
+                  ultimateCompanion: true,
+                  artCardId: "artifact-fandiablos",
+                  timingWindows: ["beforeThreatDraw", "beforeBattleRoll", "beforeTakingDamage", "anyTime"] as const,
+                  useLimit: "oncePerTurn" as const
+                }
+              ]
+            }
+          }
+        : null
+    } satisfies PhonePatchPayload;
+
+    render(<PhoneInventoryPanel patch={patch} onIntent={onIntent} />);
+
+    expect(screen.getByText("Fandiablos")).toBeInTheDocument();
+    expect(screen.getByText(/before threat draw/i)).toBeInTheDocument();
+    expect(document.querySelector('img[src="/assets/cards/artifacts/artifact-fandiablos.png"]')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /use fandiablos/i }));
+
+    expect(onIntent).toHaveBeenCalledWith({
+      type: "USE_FOLLOWER",
+      seatId: "seat-1",
+      followerId: "fandiablos"
+    });
+  });
+
   it("exposes the portrait Inventory tab without replacing quick actions permanently", () => {
     render(
       <PortraitControllerView

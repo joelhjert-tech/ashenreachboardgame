@@ -429,6 +429,16 @@ function applyEffectToState(state: GameState, seatId: string, effect: EncounterE
     return state;
   }
 
+  if (effect.type === "gain_follower" && effect.follower?.unique) {
+    const alreadyInPlay = state.players.some((player) =>
+      (player.character.followers ?? []).some((follower) => follower.id === effect.follower?.id)
+    );
+
+    if (alreadyInPlay) {
+      return state;
+    }
+  }
+
   if (effect.type === "consume_artifact") {
     return {
       ...state,
@@ -1798,15 +1808,19 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
     }
     case "USE_FOLLOWER": {
       const useFollowerAction = action as UseFollowerAction;
+      const player = requirePlayer(state, useFollowerAction.seatId);
+      const follower = (player.character.followers ?? []).find((entry) => entry.id === useFollowerAction.followerId);
 
       try {
-        canManageGear(state, useFollowerAction.seatId);
+        if (follower?.id === "fandiablos" && state.phase === "sector") {
+          ensureSeatTurn(state, useFollowerAction.seatId);
+          ensureSeatCanTakeNormalTurnAction(state, useFollowerAction.seatId);
+        } else {
+          canManageGear(state, useFollowerAction.seatId);
+        }
       } catch (error) {
         return reject(state, action, error instanceof Error ? error.message : "Seat cannot use a follower");
       }
-
-      const player = requirePlayer(state, useFollowerAction.seatId);
-      const follower = (player.character.followers ?? []).find((entry) => entry.id === useFollowerAction.followerId);
 
       if (!follower) {
         return reject(state, action, `Follower ${useFollowerAction.followerId} is not attached to this character`);
@@ -2787,11 +2801,16 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
         return reject(state, action, `Illegal phase transition ${state.phase} -> ${action.toPhase}`);
       }
 
+      const leavingResolution = state.phase === "resolution" && action.toPhase !== "resolution";
+
       return succeed({
         ...state,
         phase: action.toPhase,
         sequence: state.sequence + 1,
         resolutionSource: action.toPhase === "resolution" ? state.resolutionSource : null,
+        currentEncounter: leavingResolution ? null : state.currentEncounter,
+        pendingEnemyRoll: leavingResolution ? null : state.pendingEnemyRoll,
+        pendingEffect: leavingResolution ? null : state.pendingEffect,
         activeResolution:
           action.toPhase === "broadcast" && state.activeResolution
             ? {

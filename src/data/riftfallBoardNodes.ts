@@ -69,6 +69,36 @@ function ringPosition(index: number, count: number, radiusX: number, radiusY: nu
   };
 }
 
+interface RectangularTrackLayout {
+  left: number;
+  right: number;
+  top: number;
+  bottom: number;
+  topCount: number;
+  rightCount: number;
+  bottomCount: number;
+  leftCount: number;
+}
+
+function spreadPositions(count: number, start: number, end: number): number[] {
+  if (count <= 0) {
+    return [];
+  }
+
+  const step = (end - start) / count;
+
+  return Array.from({ length: count }, (_, index) => Number((start + step * (index + 0.5)).toFixed(4)));
+}
+
+function rectangularTrackPositions(layout: RectangularTrackLayout): Array<{ x: number; y: number }> {
+  const top = spreadPositions(layout.topCount, layout.left, layout.right).map((x) => ({ x, y: layout.top }));
+  const right = spreadPositions(layout.rightCount, layout.top, layout.bottom).map((y) => ({ x: layout.right, y }));
+  const bottom = spreadPositions(layout.bottomCount, layout.right, layout.left).map((x) => ({ x, y: layout.bottom }));
+  const left = spreadPositions(layout.leftCount, layout.bottom, layout.top).map((y) => ({ x: layout.left, y }));
+
+  return [...top, ...right, ...bottom, ...left];
+}
+
 function addConnection(connectionsById: Map<string, Set<string>>, from: string, to: string): void {
   if (!connectionsById.has(from) || !connectionsById.has(to)) {
     throw new Error(`Board route references unknown sector ${from} -> ${to}`);
@@ -89,20 +119,50 @@ function connectRing(connectionsById: Map<string, Set<string>>, seeds: RingNodeS
 }
 
 function buildBoardNodes(): BoardNode[] {
+  const outerPositions = rectangularTrackPositions({
+    left: 0.075,
+    right: 0.925,
+    top: 0.12,
+    bottom: 0.86,
+    topCount: 4,
+    rightCount: 3,
+    bottomCount: 4,
+    leftCount: 3
+  });
+  const middlePositions = rectangularTrackPositions({
+    left: 0.19,
+    right: 0.81,
+    top: 0.31,
+    bottom: 0.69,
+    topCount: 4,
+    rightCount: 2,
+    bottomCount: 4,
+    leftCount: 2
+  });
+  const innerPositions = rectangularTrackPositions({
+    left: 0.34,
+    right: 0.66,
+    top: 0.43,
+    bottom: 0.57,
+    topCount: 2,
+    rightCount: 2,
+    bottomCount: 2,
+    leftCount: 2
+  });
   const positionedSeeds: BoardNode[] = [
     ...outerSeeds.map((seed, index) => ({
       ...seed,
-      ...ringPosition(index, outerSeeds.length, 0.46, 0.38, 90),
+      ...(outerPositions[index] ?? ringPosition(index, outerSeeds.length, 0.46, 0.38, 90)),
       connections: []
     })),
     ...middleSeeds.map((seed, index) => ({
       ...seed,
-      ...ringPosition(index, middleSeeds.length, 0.32, 0.26, 90),
+      ...(middlePositions[index] ?? ringPosition(index, middleSeeds.length, 0.32, 0.26, 90)),
       connections: []
     })),
     ...innerSeeds.map((seed, index) => ({
       ...seed,
-      ...ringPosition(index, innerSeeds.length, 0.18, 0.15, 90),
+      ...(innerPositions[index] ?? ringPosition(index, innerSeeds.length, 0.18, 0.15, 90)),
       connections: []
     })),
     { ...centerSeed, x: 0.5, y: 0.5, connections: [] }

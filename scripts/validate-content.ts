@@ -236,7 +236,7 @@ function validateContentFloors(): void {
   const contentTargets = [
     ["threats", threats.size, 40, 82],
     ["anomalies", anomalies.size, 20, 30],
-    ["artifacts", artifacts.size, 12, 20],
+    ["artifacts", artifacts.size, 12, 24],
     ["escalations", escalations.size, 15, 25],
     ["contracts", contracts.size, 20, 30],
     ["followers", followers.size, 15, 25],

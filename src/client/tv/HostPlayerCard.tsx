@@ -27,6 +27,13 @@ export interface HostPlayerCardProps {
   gearSummary: string;
   contractSummary: string;
   specialAbilitySummary: string;
+  companionBadges?: Array<{
+    id: string;
+    name: string;
+    tier?: string;
+    ultimateCompanion?: boolean;
+    exhausted?: boolean;
+  }>;
   latestAbilityTriggerSummary?: string | null;
   abilityChangeItems?: AbilityChangeItem[];
   isActiveTurn: boolean;
@@ -62,6 +69,7 @@ export function HostPlayerCard({
   gearSummary,
   contractSummary,
   specialAbilitySummary,
+  companionBadges = [],
   latestAbilityTriggerSummary = null,
   abilityChangeItems = [],
   isActiveTurn,
@@ -145,6 +153,20 @@ export function HostPlayerCard({
             <span>{specialAbilitySummary}</span>
           </p>
         </div>
+
+        {companionBadges.length > 0 && (
+          <div className="host-player-card-companion-row" aria-label="Ultimate companions">
+            {companionBadges.map((companion) => (
+              <span
+                key={companion.id}
+                className={`host-player-card-companion-badge${companion.ultimateCompanion ? " host-player-card-companion-badge-ultimate" : ""}`}
+              >
+                <strong>{companion.name}</strong>
+                <small>{companion.exhausted ? "Exhausted" : companion.tier ?? "Companion"}</small>
+              </span>
+            ))}
+          </div>
+        )}
 
         {latestAbilityTriggerSummary && (
           <div className="host-player-card-trigger-band">

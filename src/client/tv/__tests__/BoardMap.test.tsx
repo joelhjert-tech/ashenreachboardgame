@@ -159,7 +159,7 @@ describe("BoardMap", () => {
     expect(screen.getByTestId("sector-node-emberwatch-step")).toHaveAttribute("data-legal-target", "false");
   });
 
-  it("renders nodes for the shared board-space layout and keeps live sector ids for active content", () => {
+  it("renders rectangular board tiles for the shared board-space layout and keeps live sector ids for active content", () => {
     const { container } = render(<BoardMap patch={createPatch()} phase="action" />);
     const renderedSectorIds = Array.from(container.querySelectorAll("[data-testid^='sector-node-']")).map((element) =>
       element.getAttribute("data-sector-id")
@@ -172,11 +172,11 @@ describe("BoardMap", () => {
     expect(uniqueRenderedSectorIds).toEqual(expect.arrayContaining(createPatch().sectors.map((sector) => sector.id)));
   });
 
-  it("renders one node per board space and connectors for the board routes", () => {
+  it("renders one clickable tile per board space without the old connector graph", () => {
     const { container } = render(<BoardMap patch={createPatch()} phase="action" />);
 
     expect(container.querySelectorAll("[data-testid^='sector-node-']")).toHaveLength(BOARD_SPACES.length);
-    expect(container.querySelectorAll("[data-testid='sector-connector']").length).toBeGreaterThanOrEqual(6);
+    expect(container.querySelectorAll("[data-testid='sector-connector']")).toHaveLength(0);
     expect(screen.getByTestId("host-map-fx-layer")).toBeInTheDocument();
   });
 

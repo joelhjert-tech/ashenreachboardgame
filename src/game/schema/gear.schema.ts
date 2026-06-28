@@ -4,6 +4,7 @@ export const gearSlotSchema = z.enum(["weapon", "armor", "utility"]);
 export const gearBonusStatSchema = z.enum(["command", "grit", "signal", "guile", "forge"]);
 export const gearTierSchema = z.enum(["starter", "standard", "advanced", "artifact"]);
 export const gearTimingWindowSchema = z.enum([
+  "beforeThreatDraw",
   "beforeBattleRoll",
   "afterBattleRoll",
   "beforeTakingDamage",

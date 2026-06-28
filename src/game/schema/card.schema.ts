@@ -6,8 +6,32 @@ import type { GearItem } from "./gear.schema.js";
 const followerGrantSchema = z.object({
   id: z.string().min(1),
   name: z.string().min(1),
-  role: z.enum(["scout", "medic", "gunner", "ritualist", "porter", "guide", "informant"]),
+  role: z.enum(["scout", "medic", "gunner", "ritualist", "porter", "guide", "informant", "companion"]),
   text: z.string().min(1),
+  tier: z.enum(["standard", "legendary", "ultimate"]).optional(),
+  tags: z.array(z.string().min(1)).optional(),
+  unique: z.boolean().optional(),
+  artifactTier: z.boolean().optional(),
+  ultimateCompanion: z.boolean().optional(),
+  timingWindows: z
+    .array(
+      z.enum([
+        "beforeThreatDraw",
+        "beforeBattleRoll",
+        "afterBattleRoll",
+        "beforeTakingDamage",
+        "startOfTurn",
+        "movement",
+        "shop",
+        "anyTime"
+      ])
+    )
+    .optional(),
+  exhausted: z.boolean().optional(),
+  artCardId: z.string().min(1).optional(),
+  acquisition: z.array(z.string().min(1)).optional(),
+  flavor: z.string().min(1).optional(),
+  imagePrompt: z.string().min(1).optional(),
   loyalty: z.number().int().min(0).max(5).optional(),
   lossCondition: z.enum(["wound", "heat", "combatLoss", "choice"]).optional()
 });

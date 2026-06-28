@@ -52,6 +52,25 @@ function createGear(): Map<string, GearItem> {
   ]);
 }
 
+function createFandiablos(): Follower {
+  return {
+    id: "fandiablos",
+    name: "Fandiablos",
+    role: "companion",
+    text: "Ultimate companion. Warning Barks, Swarm of Tiny Teeth, Unreasonable Courage, Cable Biters, Too Many Dogs.",
+    tier: "ultimate",
+    tags: ["companion", "beast-flock", "relic-touched", "chaos", "support"],
+    unique: true,
+    artifactTier: true,
+    ultimateCompanion: true,
+    timingWindows: ["beforeThreatDraw", "beforeBattleRoll", "beforeTakingDamage", "anyTime"],
+    artCardId: "artifact-fandiablos",
+    useLimit: "oncePerTurn",
+    loyalty: 5,
+    lossCondition: "choice"
+  };
+}
+
 function createAnomalies(): Map<string, AnomalyCard> {
   return new Map<string, AnomalyCard>([
     [
@@ -1039,6 +1058,105 @@ describe("active resolution visibility state", () => {
     expect(server.getState().activeResolution).toBeNull();
   });
 
+  it("reopens a cleared shop sector after a successful encounter instead of ending a single-player turn", () => {
+    const baseState = createState({ sessionMode: "single-player" });
+    const encounter = createThreats().get("cinder-veil-stalker");
+
+    if (!encounter) {
+      throw new Error("Missing cinder-veil-stalker fixture");
+    }
+
+    const server = new GameRoomServer(
+      createState({
+        sessionMode: "single-player",
+        turnOrder: ["seat-1"],
+        phase: "resolution",
+        resolutionSource: "encounter",
+        currentEncounter: encounter,
+        pendingEffect: null,
+        activeResolution: null,
+        sectors: [
+          {
+            id: "outer_waymarket",
+            name: "Anchor Market",
+            regionTier: "borderlight",
+            neighbors: [],
+            danger: 0,
+            encounterDecks: { threat: [], anomaly: [], contract: [], artifact: [], escalation: [] }
+          }
+        ],
+        seats: baseState.seats.map((seat) =>
+          seat.seatId === "seat-1"
+            ? {
+                ...seat,
+                characterId: "void-marshal",
+                displayName: "Solo",
+                connected: true
+              }
+            : seat
+        ),
+        players: baseState.players
+          .filter((player) => player.seatId === "seat-1")
+          .map((player) => ({
+            ...player,
+            sectorId: "outer_waymarket",
+            character: {
+              ...player.character,
+              currentSpaceId: "outer_waymarket",
+              salvage: 6,
+              status: "active" as const
+            }
+          })),
+        lastOutcomeSummary: {
+          seatId: "seat-1",
+          movedToSectorId: "outer_waymarket",
+          encounterCardId: encounter.id,
+          encounterTitle: encounter.title,
+          encounterCardType: encounter.cardType,
+          checkStat: encounter.stat,
+          die1: 6,
+          die2: 6,
+          statBonus: 3,
+          checkTotal: 15,
+          difficulty: encounter.difficulty,
+          enemyRollerSeatId: null,
+          enemyDie1: 1,
+          enemyDie2: 1,
+          enemyBonus: encounter.difficulty,
+          enemyTotal: 8,
+          success: true,
+          summary: "Cinder-Veil Stalker defeated. Anchor Market is clear."
+        }
+      }),
+      [],
+      createSequenceRandomSource([]),
+      createThreats(),
+      createCharacters(),
+      createGear(),
+      createContracts()
+    );
+
+    (server as unknown as { runAutomaticPhases: (seatId: string) => void }).runAutomaticPhases("seat-1");
+
+    expect(server.getState().phase).toBe("action");
+    expect(server.getState().currentEncounter).toBeNull();
+    expect(server.getState().activeSeatIndex).toBe(0);
+
+    const tvProjection = createTvProjection(server.getState()) as {
+      shopEncounter: {
+        shopName: string;
+        status: string;
+        services: Array<{ id: string; enabled: boolean }>;
+      } | null;
+    };
+
+    expect(tvProjection.shopEncounter).toMatchObject({
+      shopName: "Anchor Market",
+      status: "open"
+    });
+    expect(tvProjection.shopEncounter?.services.some((service) => service.id === "buy-gear")).toBe(true);
+  });
+
   it("renders space-text check rolls through activeResolution", () => {
     const state = createState({
       phase: "action",
@@ -1319,6 +1437,261 @@ describe("active objects and table interaction", () => {
     expect(player?.character.heat).toBe(1);
     expect(player?.character.followers).toHaveLength(1);
     expect(server.getState().lastOutcomeSummary?.summary).toContain("Crownless Advocate used");
+  });
+
+  it("keeps Fandiablos unique across the whole game", () => {
+    const fandiablos = createFandiablos();
+    const state = createState({
+      phase: "action",
+      activeSeatIndex: 1,
+      sectors: [
+        {
+          id: "ashwake-crossing",
+          name: "Ashwake Crossing",
+          regionTier: "borderlight",
+          neighbors: [],
+          danger: 1,
+          encounterDecks: { threat: [], anomaly: [], contract: [], artifact: [], escalation: [] }
+        }
+      ],
+      players: createState().players.map((player) => ({
+        ...player,
+        sectorId: "ashwake-crossing",
+        character: {
+          ...player.character,
+          currentSpaceId: "ashwake-crossing",
+          followers: player.seatId === "seat-1" ? [fandiablos] : []
+        }
+      }))
+    });
+
+    const result = reduceGameState(state, {
+      type: "SPACE_TEXT_RESOLVED",
+      seatId: "seat-2",
+      effectKey: "test_gain_fandiablos",
+      summary: "A second flock tries to answer the whistle.",
+      effect: {
+        type: "gain_follower",
+        followerId: "fandiablos",
+        follower: fandiablos
+      },
+      createdAt: new Date().toISOString()
+    });
+
+    expect(result.ok).toBe(true);
+    expect(result.state.players.find((player) => player.seatId === "seat-1")?.character.followers).toHaveLength(1);
+    expect(result.state.players.find((player) => player.seatId === "seat-2")?.character.followers).toHaveLength(0);
+  });
+
+  it("uses Warning Barks to reveal one local threat without leaking the deck order", () => {
+    const fandiablos = createFandiablos();
+    const state = createState({
+      phase: "sector",
+      sectors: createState().sectors.map((sector) =>
+        sector.id === "sector-a"
+          ? {
+              ...sector,
+              encounterDecks: { ...sector.encounterDecks, threat: ["cinder-veil-stalker", "signal-static", "relay-whisper"] }
+            }
+          : sector
+      ),
+      players: createState().players.map((player) =>
+        player.seatId === "seat-1"
+          ? {
+              ...player,
+              character: {
+                ...player.character,
+                followers: [fandiablos]
+              }
+            }
+          : player
+      )
+    });
+    const server = new GameRoomServer(state, [], createSequenceRandomSource([5, 0]), createThreats(), createCharacters(), createGear(), createContracts());
+
+    runIntent(server, {
+      type: "USE_FOLLOWER",
+      seatId: "seat-1",
+      followerId: "fandiablos"
+    });
+
+    const notes = server.getState().players.find((player) => player.seatId === "seat-1")?.private.notes ?? [];
+    expect(notes.join(" ")).toContain("Cinder-Veil Stalker");
+    expect(notes.join(" ")).not.toContain("Relay Whisper");
+    expect(server.getState().currentEncounter?.id).toBe("cinder-veil-stalker");
+    expect(server.getState().sectors.find((sector) => sector.id === "sector-a")?.encounterDecks.threat).toEqual([
+      "signal-static",
+      "relay-whisper"
+    ]);
+  });
+
+  it("adds Swarm of Tiny Teeth to the real Grit battle total", () => {
+    const fandiablos = createFandiablos();
+    const state = createState({
+      currentEncounter: createThreats().get("cinder-veil-stalker") ?? null,
+      players: createState().players.map((player) =>
+        player.seatId === "seat-1"
+          ? {
+              ...player,
+              character: {
+                ...player.character,
+                followers: [fandiablos]
+              }
+            }
+          : player
+      )
+    });
+    const server = new GameRoomServer(
+      withOnlyConnectedSeat(state, "seat-1"),
+      [],
+      createSequenceRandomSource([5, 0, 0, 0, 0]),
+      createThreats(),
+      createCharacters(),
+      createGear(),
+      createContracts()
+    );
+
+    runIntent(server, {
+      type: "USE_FOLLOWER",
+      seatId: "seat-1",
+      followerId: "fandiablos"
+    });
+    runIntent(server, {
+      type: "COMBAT_REQUESTED",
+      seatId: "seat-1",
+      stat: "grit"
+    });
+
+    const resolvedCombat = [...server.getState().eventLog].reverse().find((entry) => {
+      return (entry as { type?: string }).type === "COMBAT_RESOLVED";
+    }) as { statBonus?: number; success?: boolean } | undefined;
+
+    expect(resolvedCombat?.statBonus).toBe(5);
+    expect(resolvedCombat?.success).toBe(false);
+  });
+
+  it("adds Cable Biters only to Forge or Guile machine/trap/salvage checks", () => {
+    const fandiablos = createFandiablos();
+    const threats = createThreats();
+    threats.set("machine-lock", {
+      id: "machine-lock",
+      type: "threat",
+      cardType: "hazard",
+      title: "Machine Lock",
+      text: "A chewing-grade lock blocks the salvage hatch.",
+      flavor: "It was not built with tiny teeth in mind.",
+      severity: 2,
+      stat: "forge",
+      difficulty: 4,
+      successEffect: { type: "gain_note", text: "Machine lock opened." },
+      failEffect: { type: "gain_heat", amount: 1 }
+    });
+    const state = createState({
+      currentEncounter: threats.get("machine-lock") ?? null,
+      players: createState().players.map((player) =>
+        player.seatId === "seat-1"
+          ? {
+              ...player,
+              character: {
+                ...player.character,
+                followers: [fandiablos]
+              }
+            }
+          : player
+      )
+    });
+    const server = new GameRoomServer(
+      withOnlyConnectedSeat(state, "seat-1"),
+      [],
+      createSequenceRandomSource([5, 0, 0]),
+      threats,
+      createCharacters(),
+      createGear(),
+      createContracts()
+    );
+
+    runIntent(server, {
+      type: "USE_FOLLOWER",
+      seatId: "seat-1",
+      followerId: "fandiablos"
+    });
+    runIntent(server, {
+      type: "CHECK_REQUESTED",
+      seatId: "seat-1",
+      stat: "forge"
+    });
+
+    const resolvedCheck = [...server.getState().eventLog].reverse().find((entry) => {
+      return (entry as { type?: string }).type === "CHECK_ROLLED";
+    }) as { statBonus?: number; success?: boolean } | undefined;
+
+    expect(resolvedCheck?.statBonus).toBe(3);
+    expect(resolvedCheck?.success).toBe(true);
+  });
+
+  it("can prevent the first wound loss in a round with Unreasonable Courage", () => {
+    const fandiablos = createFandiablos();
+    const state = createState({
+      currentEncounter: createThreats().get("cinder-veil-stalker") ?? null,
+      players: createState().players.map((player) =>
+        player.seatId === "seat-1"
+          ? {
+              ...player,
+              character: {
+                ...player.character,
+                followers: [fandiablos]
+              }
+            }
+          : player
+      )
+    });
+    const server = new GameRoomServer(
+      withOnlyConnectedSeat(state, "seat-1"),
+      [],
+      createSequenceRandomSource([0, 0, 5, 5, 3]),
+      createThreats(),
+      createCharacters(),
+      createGear(),
+      createContracts()
+    );
+
+    runIntent(server, {
+      type: "COMBAT_REQUESTED",
+      seatId: "seat-1",
+      stat: "grit"
+    });
+
+    const player = server.getState().players.find((entry) => entry.seatId === "seat-1");
+    expect(player?.character.wounds).toBe(0);
+    expect(player?.private.notes.join(" ")).toContain("Fandiablos Unreasonable Courage rolled 4");
+  });
+
+  it("triggers Too Many Dogs safely as Heat on a chaos roll of 1", () => {
+    const fandiablos = createFandiablos();
+    const state = createState({
+      players: createState().players.map((player) =>
+        player.seatId === "seat-1"
+          ? {
+              ...player,
+              character: {
+                ...player.character,
+                followers: [fandiablos]
+              }
+            }
+          : player
+      )
+    });
+    const server = new GameRoomServer(state, [], createSequenceRandomSource([0]), createThreats(), createCharacters(), createGear(), createContracts());
+
+    runIntent(server, {
+      type: "USE_FOLLOWER",
+      seatId: "seat-1",
+      followerId: "fandiablos"
+    });
+
+    const player = server.getState().players.find((entry) => entry.seatId === "seat-1");
+    expect(player?.character.heat).toBe(1);
+    expect(server.getState().lastOutcomeSummary?.summary).toContain("Too Many Dogs");
   });
 
   it("rejects repeated harmful rivalry pressure against the same target in one round", () => {

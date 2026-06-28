@@ -24,5 +24,9 @@ export function canResolveMovement(phase: Phase): boolean {
 }
 
 export function canAdvancePhase(from: Phase, to: Phase): boolean {
+  if (from === "resolution" && to === "action") {
+    return true;
+  }
+
   return nextPhase(from) === to;
 }

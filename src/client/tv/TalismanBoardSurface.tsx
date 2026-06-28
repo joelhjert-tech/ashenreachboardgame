@@ -1,48 +1,18 @@
 import type { ReactElement } from "react";
 import { RIFTFALL_BOARD_NODES, type BoardNode } from "../../data/riftfallBoardNodes.js";
 import { getBoardSpace } from "../../game/data/boardSpaces.js";
+import { ThreatIconBadge } from "../shared/ChallengeBadge.js";
+import type { SectorNode } from "../shared/types.js";
 import type { BoardRect } from "./boardGeometry.js";
-
-const tileArtByNodeId: Record<string, string> = {
-  outer_ember_sanctum: "/assets/riftfall/board/tiles/outer/outer_saint_sanctuary.png",
-  "ashwake-crossing": "/assets/riftfall/board/tiles/outer/outer_shrine_road.png",
-  outer_waymarket: "/assets/riftfall/board/tiles/outer/outer_black_market.png",
-  "glassmere-spindle": "/assets/riftfall/board/tiles/outer/outer_portal_ruins.png",
-  outer_relay_camp: "/assets/riftfall/board/tiles/outer/outer_spaceport.png",
-  "mirecoil-beacon": "/assets/riftfall/board/tiles/outer/outer_iron_synod_workshop.png",
-  outer_salt_flats: "/assets/riftfall/board/tiles/outer/outer_toxic_wastes.png",
-  "hollow-veil-yard": "/assets/riftfall/board/tiles/outer/outer_crash_site.png",
-  outer_surgery_tent: "/assets/riftfall/board/tiles/outer/outer_tavern.png",
-  "emberwatch-step": "/assets/riftfall/board/tiles/outer/outer_forge_dock.png",
-  outer_oathpost: "/assets/riftfall/board/tiles/outer/outer_city.png",
-  outer_broken_causeway: "/assets/riftfall/board/tiles/outer/outer_ruins.png",
-  "votive-engine-room": "/assets/riftfall/board/tiles/outer/outer_iron_synod_workshop.png",
-  "kettleward-foundry": "/assets/riftfall/board/tiles/outer/outer_forge_dock.png",
-  middle_guardian_span: "/assets/riftfall/board/tiles/middle/middle_guardian_span.png",
-  middle_red_march_outpost: "/assets/riftfall/board/tiles/middle/middle_burning_battlefield.png",
-  middle_anomaly_well: "/assets/riftfall/board/tiles/middle/middle_relay_spire.png",
-  middle_webglass_breach: "/assets/riftfall/board/tiles/middle/middle_webglass_breach.png",
-  middle_relic_cache: "/assets/riftfall/board/tiles/middle/middle_ancient_machine_ruins.png",
-  middle_shard_sprawl: "/assets/riftfall/board/tiles/middle/middle_ashstack_sprawl.png",
-  middle_scar_surgery: "/assets/riftfall/board/tiles/middle/middle_monastery.png",
-  middle_rivalry_pit: "/assets/riftfall/board/tiles/middle/middle_breachspawn_pit.png",
-  "black-relay-spire": "/assets/riftfall/board/tiles/middle/middle_relay_spire.png",
-  "the-salt-archive": "/assets/riftfall/board/tiles/middle/middle_ancient_machine_ruins.png",
-  "red-lantern-trenches": "/assets/riftfall/board/tiles/middle/middle_burning_battlefield.png",
-  "weeping-ammunition-shrine": "/assets/riftfall/board/tiles/middle/middle_guardian_span.png",
-  inner_veil_rift: "/assets/riftfall/board/tiles/inner/inner_veil_rift.png",
-  inner_choir_shrine: "/assets/riftfall/board/tiles/inner/inner_mortuary_domain.png",
-  inner_gate_of_cinders: "/assets/riftfall/board/tiles/inner/inner_rift_gate.png",
-  inner_blackstar_shortcut: "/assets/riftfall/board/tiles/inner/inner_gilded_stair.png",
-  inner_cinder_lattice: "/assets/riftfall/board/tiles/inner/inner_lattice_maze.png",
-  inner_tomb_gate: "/assets/riftfall/board/tiles/inner/inner_tomb_complex.png",
-  "the-bone-meridian": "/assets/riftfall/board/tiles/inner/inner_tomb_complex.png",
-  "choir-execution-court": "/assets/riftfall/board/tiles/inner/inner_mortuary_domain.png",
-  center_cinder_gate: "/assets/riftfall/board/center/center_scenario_space.png"
-};
+import {
+  getBoardMapRuntimeAssetPaths,
+  getMapCornerTileAssetPath,
+  getMapRegionLayerAssetPath,
+  getMapTileBackgroundImage
+} from "./mapAssetRegistry.js";
 
 export function getBoardTileAssetPaths(): string[] {
-  return Object.values(tileArtByNodeId).filter((value, index, paths) => paths.indexOf(value) === index);
+  return getBoardMapRuntimeAssetPaths();
 }
 
 const tileScaleByRing: Record<BoardNode["ring"], number> = {
@@ -58,23 +28,23 @@ const tileSizeByRingAndSide: Record<
 > = {
   outer: {
     horizontal: { width: 0.118, height: 0.112 },
-    vertical: { width: 0.078, height: 0.162 },
+    vertical: { width: 0.09, height: 0.162 },
     center: { width: 0.118, height: 0.112 }
   },
   middle: {
     horizontal: { width: 0.106, height: 0.09 },
-    vertical: { width: 0.07, height: 0.128 },
+    vertical: { width: 0.086, height: 0.128 },
     center: { width: 0.106, height: 0.09 }
   },
   inner: {
-    horizontal: { width: 0.092, height: 0.074 },
-    vertical: { width: 0.064, height: 0.104 },
-    center: { width: 0.092, height: 0.074 }
+    horizontal: { width: 0.108, height: 0.074 },
+    vertical: { width: 0.078, height: 0.104 },
+    center: { width: 0.108, height: 0.074 }
   },
   center: {
-    horizontal: { width: 0.2, height: 0.15 },
-    vertical: { width: 0.2, height: 0.15 },
-    center: { width: 0.2, height: 0.15 }
+    horizontal: { width: 0.24, height: 0.18 },
+    vertical: { width: 0.24, height: 0.18 },
+    center: { width: 0.24, height: 0.18 }
   }
 };
 
@@ -85,11 +55,17 @@ const tileLabelByRing: Record<BoardNode["ring"], string> = {
   center: "Core"
 };
 
+const boardCorners = ["northwest", "northeast", "southeast", "southwest"] as const;
+
 interface TalismanBoardSurfaceProps {
   imageRect: BoardRect;
   activeNodeId?: string | null;
   selectedNodeId?: string | null;
   legalTargetIds?: Set<string>;
+  sectorsById?: Map<string, SectorNode>;
+  occupantCountsByNodeId?: Map<string, number>;
+  nemesisSectorIds?: Set<string>;
+  onSelectNode?: (nodeId: string) => void;
   debugEnabled?: boolean;
 }
 
@@ -133,12 +109,16 @@ export function TalismanBoardSurface({
   activeNodeId = null,
   selectedNodeId = null,
   legalTargetIds,
+  sectorsById,
+  occupantCountsByNodeId,
+  nemesisSectorIds,
+  onSelectNode,
   debugEnabled = false
 }: TalismanBoardSurfaceProps): ReactElement {
   return (
     <div
       className="talisman-board-surface"
-      aria-hidden="true"
+      aria-label="Ashen Reach rectangular tactical board"
       style={{
         left: `${imageRect.left}px`,
         top: `${imageRect.top}px`,
@@ -147,9 +127,30 @@ export function TalismanBoardSurface({
       }}
     >
       <div className="talisman-board-backdrop" />
-      <div className="talisman-board-ring talisman-board-ring-outer" />
-      <div className="talisman-board-ring talisman-board-ring-middle" />
-      <div className="talisman-board-ring talisman-board-ring-inner" />
+      <div
+        className="talisman-board-ring talisman-board-ring-outer"
+        style={{ backgroundImage: `url("${getMapRegionLayerAssetPath("outer")}")` }}
+      />
+      <div
+        className="talisman-board-ring talisman-board-ring-middle"
+        style={{ backgroundImage: `url("${getMapRegionLayerAssetPath("middle")}")` }}
+      />
+      <div
+        className="talisman-board-ring talisman-board-ring-inner"
+        style={{ backgroundImage: `url("${getMapRegionLayerAssetPath("inner")}")` }}
+      />
+      <div
+        className="talisman-board-ring talisman-board-ring-core"
+        style={{ backgroundImage: `url("${getMapRegionLayerAssetPath("center")}")` }}
+      />
+      {boardCorners.map((corner) => (
+        <div
+          key={corner}
+          className={`talisman-board-corner talisman-board-corner-${corner}`}
+          style={{ backgroundImage: `url("${getMapCornerTileAssetPath(corner)}")` }}
+          aria-hidden="true"
+        />
+      ))}
       <div className="talisman-board-spoke talisman-board-spoke-north" />
       <div className="talisman-board-spoke talisman-board-spoke-east" />
       <div className="talisman-board-spoke talisman-board-spoke-south" />
@@ -163,17 +164,37 @@ export function TalismanBoardSurface({
         const tileHeight = tileSize ? tileSize.height * imageRect.height : fallbackTileSize;
         const left = node.x * imageRect.width;
         const top = node.y * imageRect.height;
-        const art = tileArtByNodeId[node.id] ?? tileArtByNodeId.center_cinder_gate;
         const tone = getTileTone(node);
         const isActive = activeNodeId === node.id;
         const isSelected = selectedNodeId === node.id;
         const isLegal = legalTargetIds?.has(node.id) ?? false;
+        const boardSpace = getBoardSpace(node.id);
+        const liveSector = sectorsById?.get(node.id) ?? null;
+        const threatIcons = liveSector?.threatIcons?.length ? liveSector.threatIcons : boardSpace?.threatIcons ?? [];
+        const localThreatDeckCount = liveSector?.encounterDecks.threat.length ?? 0;
+        const occupantCount = occupantCountsByNodeId?.get(node.id) ?? 0;
+        const isShop = boardSpace?.tags.includes("shop") || boardSpace?.tags.includes("risk-shop");
+        const isLockedShop = Boolean(isShop && localThreatDeckCount > 0);
+        const hasNemesis = nemesisSectorIds?.has(node.id) ?? false;
+        const tileStatus = [
+          isActive ? "current location" : null,
+          isLegal ? "legal destination" : null,
+          isLockedShop ? "shop locked" : null,
+          hasNemesis ? "nemesis present" : null
+        ]
+          .filter(Boolean)
+          .join(", ");
 
         return (
-          <div
+          <button
             key={node.id}
+            type="button"
+            data-testid={`sector-node-${node.id}`}
+            data-sector-id={node.id}
+            data-legal-target={isLegal ? "true" : "false"}
             className={[
               "talisman-board-tile",
+              "talisman-board-tile-button",
               `talisman-board-tile-${node.ring}`,
               `talisman-board-tile-${side}`,
               `talisman-board-tile-${tone}`,
@@ -181,6 +202,8 @@ export function TalismanBoardSurface({
               isActive ? "talisman-board-tile-current" : "",
               isSelected ? "talisman-board-tile-selected" : "",
               isLegal ? "talisman-board-tile-legal" : "",
+              isLockedShop ? "talisman-board-tile-locked" : "",
+              hasNemesis ? "talisman-board-tile-nemesis" : "",
               debugEnabled ? "talisman-board-tile-debug" : ""
             ]
               .filter(Boolean)
@@ -190,13 +213,29 @@ export function TalismanBoardSurface({
               top: `${top}px`,
               width: `${tileWidth}px`,
               height: `${tileHeight}px`,
-              backgroundImage: `url("${art}")`
+              backgroundImage: getMapTileBackgroundImage(node.id, tone)
             }}
+            aria-label={`${node.label}, ${node.ring} region${tileStatus ? `, ${tileStatus}` : ""}`}
+            aria-current={isActive ? "location" : undefined}
+            aria-pressed={isSelected}
+            onClick={() => onSelectNode?.(node.id)}
           >
             <div className="talisman-board-tile-scrim" />
+            <span className="talisman-board-tile-region">{node.ring === "center" ? "Final" : tileLabelByRing[node.ring]}</span>
             <span className="talisman-board-tile-label">{node.label}</span>
-            <small>{node.ring === "center" ? "Final" : tileLabelByRing[node.ring]}</small>
-          </div>
+            {threatIcons.length > 0 && (
+              <span className="talisman-board-tile-icons" aria-hidden="true">
+                {threatIcons.slice(0, 3).map((icon, index) => (
+                  <ThreatIconBadge key={`${node.id}-${icon}-${index}`} icon={icon} />
+                ))}
+              </span>
+            )}
+            <span className="talisman-board-tile-status" aria-hidden="true">
+              {isLockedShop && <span className="talisman-board-lock">!</span>}
+              {occupantCount > 0 && <span className="talisman-board-player-count">{occupantCount}</span>}
+              {hasNemesis && <span className="talisman-board-nemesis">Nemesis</span>}
+            </span>
+          </button>
         );
       })}
     </div>
