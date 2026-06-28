@@ -19,5 +19,12 @@
     "type": "take_wound",
     "amount": 1
   },
-  "enemyFamily": "beast"
+  "enemyFamily": "beast",
+  "threatLane": "red",
+  "rarity": "common",
+  "tempo": "push",
+  "resourceTags": [
+    "trophy",
+    "wound"
+  ]
 }

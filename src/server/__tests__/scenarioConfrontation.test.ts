@@ -339,6 +339,17 @@ describe("scenario confrontation flow", () => {
                 character: {
                   ...player.character,
                   heat: 2,
+                  heldGear: [
+                    {
+                      id: "choir-static-censer",
+                      name: "Choir Static Censer",
+                      slot: "utility",
+                      category: "chargedRelic",
+                      tier: "artifact",
+                      progressionWeight: 2.5,
+                      statBonus: { stat: "signal", amount: 1 }
+                    }
+                  ],
                   stats: {
                     command: player.character.stats.command,
                     grit: 0,
@@ -873,7 +884,7 @@ describe("scenario confrontation flow", () => {
 
     expect(roomServer.getState().scenarioProgress.doomTokens).toBe(1);
     expect(roomServer.getState().players[0]?.character.wounds).toBe(0);
-    expect(roomServer.getState().currentEncounter?.cardType).toBe("enemy");
+    expect(roomServer.getState().currentEncounter).not.toBeNull();
   });
 
   it("applies the Devourer clash wound and doom pressure on a failed arrival roll", () => {

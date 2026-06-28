@@ -27,5 +27,15 @@
       }
     ]
   },
-  "enemyFamily": "choir"
+  "enemyFamily": "choir",
+  "threatLane": "blue",
+  "region": "middle",
+  "rarity": "uncommon",
+  "tempo": "push",
+  "resourceTags": [
+    "loot",
+    "scar",
+    "trophy",
+    "wound"
+  ]
 }

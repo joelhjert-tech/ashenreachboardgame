@@ -27,5 +27,15 @@
       }
     ]
   },
-  "enemyFamily": "breachborn"
+  "enemyFamily": "breachborn",
+  "threatLane": "red",
+  "region": "inner",
+  "rarity": "rare",
+  "tempo": "push",
+  "resourceTags": [
+    "gear",
+    "scar",
+    "trophy",
+    "wound"
+  ]
 }

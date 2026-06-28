@@ -11,7 +11,9 @@
   "stat": "forge",
   "difficulty": 10,
   "trophyValue": 2,
-  "combatEffectKeys": ["threat_pay_heat_or_enemy_plus_two"],
+  "combatEffectKeys": [
+    "threat_pay_heat_or_enemy_plus_two"
+  ],
   "defeatReward": {
     "type": "draw_artifact"
   },
@@ -31,5 +33,16 @@
       }
     ]
   },
-  "enemyFamily": "machine"
+  "enemyFamily": "machine",
+  "threatLane": "yellow",
+  "rarity": "rare",
+  "tempo": "stall",
+  "resourceTags": [
+    "artifact",
+    "heat",
+    "movement",
+    "scar",
+    "trophy",
+    "wound"
+  ]
 }

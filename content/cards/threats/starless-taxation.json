@@ -25,5 +25,14 @@
       }
     ]
   },
-  "enemyFamily": "bureaucracy"
+  "enemyFamily": "bureaucracy",
+  "threatLane": "yellow",
+  "region": "inner",
+  "rarity": "rare",
+  "tempo": "push",
+  "resourceTags": [
+    "heat",
+    "loot",
+    "scar"
+  ]
 }

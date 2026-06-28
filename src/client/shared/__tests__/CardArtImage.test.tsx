@@ -23,6 +23,7 @@ describe("card art paths", () => {
 
   it("returns custom character and Relay nemesis portrait paths", () => {
     expect(getCharacterPortraitPath("signal-witch")).toBe("/assets/riftfall/characters/signal-witch.png");
+    expect(getCharacterPortraitPath("char_deepdale")).toBe("/assets/riftfall/characters/char_deepdale.svg");
     expect(getNemesisPortraitPath("nemesis_iron_vicar_orm_seat-1")).toBe(
       "/assets/riftfall/nemeses/nemesis_iron_vicar_orm.png"
     );

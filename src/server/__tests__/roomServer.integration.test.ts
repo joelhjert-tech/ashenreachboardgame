@@ -418,6 +418,17 @@ function createSoloScenarioLiveState(options: {
       character: {
         ...player.character,
         currentSpaceId: "center_cinder_gate",
+        heldGear: [
+          {
+            id: "choir-static-censer",
+            name: "Choir Static Censer",
+            slot: "utility",
+            category: "chargedRelic",
+            tier: "artifact",
+            progressionWeight: 2.5,
+            statBonus: { stat: "signal", amount: 1 }
+          }
+        ],
         stats: {
           ...player.character.stats,
           ...options.stats
@@ -734,6 +745,7 @@ function getSelfCharacterFromPatch(message: Extract<ServerEnvelope, { type: "STA
 
   return self.character as {
     id: string;
+    name: string;
     heat: number;
     activeContract: { contractId: string; progress: number } | null;
     heldGear: Array<{ id: string }>;
@@ -800,14 +812,16 @@ describe("roomServer websocket integration", () => {
   it("keeps the chosen character aligned between seat state, player state, and phone snapshots after joining", async () => {
     harness = await startHarness([0, 0, 0, 0], createInitialSessionState("session-alpha"));
 
-    const joinResult = harness.roomServer.joinSeat("Joel", "signal-witch");
+    const joinResult = harness.roomServer.joinSeat("Deepdale", "char_deepdale");
     const joinedSeat = harness.roomServer.getState().seats.find((seat) => seat.seatId === joinResult.seatId);
     const joinedPlayer = harness.roomServer.getState().players.find((player) => player.seatId === joinResult.seatId);
 
-    expect(joinedSeat?.characterId).toBe("signal-witch");
-    expect(joinedSeat?.displayName).toBe("Joel");
+    expect(joinedSeat?.characterId).toBe("char_deepdale");
+    expect(joinedSeat?.displayName).toBe("Deepdale");
     expect(joinedSeat?.ready).toBe(false);
-    expect(joinedPlayer?.character.id).toBe("signal-witch");
+    expect(joinedPlayer?.character.id).toBe("char_deepdale");
+    expect(joinedPlayer?.character.name).toBe("Deepdale");
+    expect(joinedPlayer?.character.archetype).toBe("Deep Route Delver");
 
     const phone = await connectClient(`ws://127.0.0.1:${harness.port}/?view=phone&token=${joinResult.seatToken}`);
     probes.push(phone);
@@ -819,10 +833,11 @@ describe("roomServer websocket integration", () => {
     const snapshotSeat = getSeatFromPatch(snapshot, joinResult.seatId);
     const snapshotSelf = getSelfCharacterFromPatch(snapshot);
 
-    expect(snapshotSeat?.characterId).toBe("signal-witch");
-    expect(snapshotSeat?.displayName).toBe("Joel");
+    expect(snapshotSeat?.characterId).toBe("char_deepdale");
+    expect(snapshotSeat?.displayName).toBe("Deepdale");
     expect(snapshotSeat?.ready).toBe(false);
-    expect(snapshotSelf?.id).toBe("signal-witch");
+    expect(snapshotSelf?.id).toBe("char_deepdale");
+    expect(snapshotSelf?.name).toBe("Deepdale");
   });
 
   it("rejects duplicate character reservations and releases a seat before start", async () => {
@@ -1014,7 +1029,17 @@ describe("roomServer websocket integration", () => {
             signal: 0,
             guile: 0
           },
-          heldGear: []
+          heldGear: [
+            {
+              id: "choir-static-censer",
+              name: "Choir Static Censer",
+              slot: "utility",
+              category: "chargedRelic",
+              tier: "artifact",
+              progressionWeight: 2.5,
+              statBonus: { stat: "signal", amount: 1 }
+            }
+          ]
         }
       }))
     };
@@ -1139,7 +1164,8 @@ describe("roomServer websocket integration", () => {
       label: "Throne of Ash",
       scenarioId: "scenario_throne_of_ash" as const,
       scenarioProgress: {
-        crownClaims: 0,
+        crownClaims: 1,
+        "crownClaim:seat-1": 1,
         throneClaims: 0
       } as Record<string, number>
     },

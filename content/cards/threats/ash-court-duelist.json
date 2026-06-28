@@ -19,5 +19,12 @@
     "type": "take_wound",
     "amount": 1
   },
-  "enemyFamily": "human"
+  "enemyFamily": "human",
+  "threatLane": "yellow",
+  "rarity": "uncommon",
+  "tempo": "push",
+  "resourceTags": [
+    "trophy",
+    "wound"
+  ]
 }

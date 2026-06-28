@@ -25,5 +25,14 @@
       }
     ]
   },
-  "enemyFamily": "revenant"
+  "enemyFamily": "revenant",
+  "threatLane": "blue",
+  "region": "middle",
+  "rarity": "uncommon",
+  "tempo": "push",
+  "resourceTags": [
+    "heat",
+    "loot",
+    "scar"
+  ]
 }

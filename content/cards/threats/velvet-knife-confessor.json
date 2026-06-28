@@ -6,12 +6,14 @@
   "enemyName": "Velvet Knife Confessor",
   "text": "A Hollow Court interrogator bows with a soft blade in each sleeve. This duel is decided by lies, not muscle.",
   "flavor": "It forgives nothing it can weaponize.",
-  "severity": 3,
+  "severity": 2,
   "region": "middle",
   "stat": "guile",
   "difficulty": 7,
   "trophyValue": 4,
-  "combatEffectKeys": ["threat_block_rerolls"],
+  "combatEffectKeys": [
+    "threat_block_rerolls"
+  ],
   "defeatReward": {
     "type": "gain_note",
     "text": "You took the confession knife and left the question unanswered."
@@ -29,5 +31,14 @@
       }
     ]
   },
-  "enemyFamily": "human"
+  "enemyFamily": "human",
+  "threatLane": "yellow",
+  "rarity": "common",
+  "tempo": "push",
+  "resourceTags": [
+    "loot",
+    "scar",
+    "trophy",
+    "wound"
+  ]
 }

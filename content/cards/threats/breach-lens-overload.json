@@ -25,5 +25,14 @@
       }
     ]
   },
-  "enemyFamily": "machine"
+  "enemyFamily": "machine",
+  "threatLane": "yellow",
+  "region": "middle",
+  "rarity": "uncommon",
+  "tempo": "push",
+  "resourceTags": [
+    "gear",
+    "heat",
+    "wound"
+  ]
 }

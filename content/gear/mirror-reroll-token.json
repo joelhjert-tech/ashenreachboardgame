@@ -9,5 +9,7 @@
   },
   "activeText": "Exhaust to reroll a failed guile or signal check, then gain 1 Heat.",
   "useLimit": "oncePerTurn",
-  "flavor": "One side shows your face. The other shows the version that got away."
+  "flavor": "One side shows your face. The other shows the version that got away.",
+  "tier": "standard",
+  "progressionWeight": 1.25
 }

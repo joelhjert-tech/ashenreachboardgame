@@ -9,5 +9,7 @@
   },
   "activeText": "Discard to heal 1 wound, then gain 1 heat.",
   "useLimit": "discard",
-  "flavor": "A useful medical error in a sealed brass case."
+  "flavor": "A useful medical error in a sealed brass case.",
+  "tier": "starter",
+  "progressionWeight": 0.5
 }

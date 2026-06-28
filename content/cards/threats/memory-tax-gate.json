@@ -17,5 +17,12 @@
     "type": "gain_heat",
     "amount": 2
   },
-  "enemyFamily": "bureaucracy"
+  "enemyFamily": "bureaucracy",
+  "threatLane": "yellow",
+  "rarity": "uncommon",
+  "tempo": "push",
+  "resourceTags": [
+    "heat",
+    "loot"
+  ]
 }

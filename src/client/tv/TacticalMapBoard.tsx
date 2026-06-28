@@ -8,6 +8,7 @@ import { TalismanBoardSurface } from "./TalismanBoardSurface.js";
 
 interface TacticalMapBoardProps {
   patch: PublicPatchPayload | null;
+  previousPatch?: PublicPatchPayload | null;
   phase: string;
 }
 
@@ -96,10 +97,10 @@ function StaticTacticalBoard(): ReactElement {
   );
 }
 
-export function TacticalMapBoard({ patch, phase }: TacticalMapBoardProps): ReactElement {
+export function TacticalMapBoard({ patch, previousPatch = null, phase }: TacticalMapBoardProps): ReactElement {
   if (!patch) {
     return <StaticTacticalBoard />;
   }
 
-  return <BoardMap patch={patch} phase={phase} showHeader={false} showSidebar={false} />;
+  return <BoardMap patch={patch} previousPatch={previousPatch} phase={phase} showHeader={false} showSidebar={false} />;
 }

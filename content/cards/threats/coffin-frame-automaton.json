@@ -11,7 +11,9 @@
   "stat": "forge",
   "difficulty": 8,
   "trophyValue": 5,
-  "combatEffectKeys": ["threat_ignore_first_success"],
+  "combatEffectKeys": [
+    "threat_ignore_first_success"
+  ],
   "defeatEffectKey": "threat_defeat_gain_salvage",
   "defeatReward": {
     "type": "gain_note",
@@ -21,5 +23,13 @@
     "type": "take_wound",
     "amount": 1
   },
-  "enemyFamily": "machine"
+  "enemyFamily": "machine",
+  "threatLane": "yellow",
+  "rarity": "uncommon",
+  "tempo": "push",
+  "resourceTags": [
+    "loot",
+    "trophy",
+    "wound"
+  ]
 }

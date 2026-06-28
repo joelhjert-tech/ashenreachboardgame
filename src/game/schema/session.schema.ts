@@ -144,6 +144,7 @@ export const gameStateSchema = z.object({
   nemesisChampions: z.array(nemesisChampionSchema).default([]),
   nemesisNexusCountdowns: z.array(nemesisNexusCountdownSchema).default([]),
   eventLog: z.array(z.unknown()),
+  recentEncounterCardIds: z.array(z.string().min(1)).optional(),
   escalationLevel: z.number().int().min(0),
   currentEncounter: threatCardSchema.nullable(),
   pendingEnemyRoll: z

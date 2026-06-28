@@ -3365,6 +3365,7 @@ describe("escalation flow", () => {
       withOnlyConnectedSeat(
         createState({
           phase: "action",
+          scenarioProgress: { sealTokens: 4 },
           turnOrder: ["seat-1"],
           seats: createState().seats.slice(0, 1),
           players: createState().players.slice(0, 1).map((player) => ({
@@ -3574,6 +3575,7 @@ describe("trophy progression", () => {
         createState({
           sessionMode: "single-player",
           phase: "action",
+          scenarioProgress: { sealTokens: 4 },
           turnOrder: ["seat-1"],
           seats: [{ ...createState().seats[0]!, characterId: "void-marshal" }],
         players: [
@@ -5178,6 +5180,7 @@ describe("contracts", () => {
         createState({
           sessionMode: "single-player",
           phase: "action",
+          scenarioProgress: { sealTokens: 4 },
           turnOrder: ["seat-1"],
           seats: [{ ...createState().seats[0]!, characterId: "cinder-monk" }],
           players: [

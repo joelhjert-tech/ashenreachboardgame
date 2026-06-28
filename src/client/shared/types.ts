@@ -45,6 +45,7 @@ export interface PublicPlayerCharacter {
   stats: Record<Stat, number>;
   trophies: number;
   trophyPile?: TrophyPileEntry[];
+  salvage?: number;
   heat: number;
   wounds: number;
   scars: string[];
@@ -116,6 +117,7 @@ export interface PrivateCharacter {
   stats: Record<Stat, number>;
   trophies: number;
   trophyPile?: TrophyPileEntry[];
+  salvage?: number;
   heat: number;
   wounds: number;
   scars: string[];
@@ -241,6 +243,82 @@ export interface ActiveResolution {
     text: string;
     effects: string[];
   };
+}
+
+export type PublicShopStatus = "open" | "locked" | "exhausted" | "dangerous";
+
+export interface PublicShopCost {
+  salvage?: number;
+  heat?: number;
+  wounds?: number;
+  trophies?: number;
+  completedContracts?: number;
+  scars?: number;
+}
+
+export interface PublicShopEncounterState {
+  sectorId: string;
+  sectorName: string;
+  shopId: string;
+  shopName: string;
+  status: PublicShopStatus;
+  activePlayer: {
+    playerId: string;
+    name: string;
+    characterName: string;
+    salvage: number;
+    heat: number;
+    wounds: {
+      current: number;
+      max: number;
+    };
+    trophies?: number;
+    completedContracts?: number;
+  };
+  blockingThreats: Array<{
+    cardId: string;
+    name: string;
+    type: "enemy" | "event" | "encounter" | "anomaly" | "hazard";
+    deck?: "red" | "blue" | "yellow";
+    challenge?: {
+      stat: Stat;
+      value: number;
+    };
+  }>;
+  services: Array<{
+    id: string;
+    label: string;
+    cost: PublicShopCost;
+    risk?: string;
+    enabled: boolean;
+    disabledReason?: string;
+  }>;
+  revealedStock?: Array<{
+    cardId: string;
+    name: string;
+    type: "gear" | "tactic" | "ability" | "boon" | "implant" | "artifact";
+    cost: {
+      salvage?: number;
+      heat?: number;
+      completedContracts?: number;
+    };
+    summary: string;
+    affordable: boolean;
+    disabledReason?: string;
+  }>;
+  recentOutcome?: {
+    operativeName: string;
+    shopName: string;
+    action: string;
+    gained?: string;
+    costPaid?: PublicShopCost;
+    remainingSalvage?: number;
+    heatDelta?: number;
+    woundDelta?: number;
+    scarDelta?: number;
+    discarded?: string[];
+    summary: string;
+  } | null;
 }
 
 export interface AbilityTriggerSummary {
@@ -393,6 +471,7 @@ export interface PublicPatchPayload {
   pendingEnemyRoll: PendingEnemyRoll | null;
   outcomeSummary: OutcomeSummary | null;
   activeResolution?: ActiveResolution | null;
+  shopEncounter?: PublicShopEncounterState | null;
   recentAbilityTriggers: AbilityTriggerSummary[];
   nemesis: ActiveNemesisSummary | null;
 }

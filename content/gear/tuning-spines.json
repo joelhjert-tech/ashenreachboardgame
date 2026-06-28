@@ -6,5 +6,7 @@
     "stat": "signal",
     "amount": 1
   },
-  "flavor": "A fan of resonant needles that sharpen weak transmissions into usable patterns."
+  "flavor": "A fan of resonant needles that sharpen weak transmissions into usable patterns.",
+  "tier": "starter",
+  "progressionWeight": 0.75
 }

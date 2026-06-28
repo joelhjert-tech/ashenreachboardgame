@@ -19,5 +19,12 @@
     "type": "take_wound",
     "amount": 1
   },
-  "enemyFamily": "vermin"
+  "enemyFamily": "vermin",
+  "threatLane": "yellow",
+  "rarity": "common",
+  "tempo": "push",
+  "resourceTags": [
+    "trophy",
+    "wound"
+  ]
 }

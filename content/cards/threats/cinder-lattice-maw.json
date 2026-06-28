@@ -16,5 +16,13 @@
     "type": "take_wound",
     "amount": 2
   },
-  "enemyFamily": "breachborn"
+  "enemyFamily": "breachborn",
+  "threatLane": "blue",
+  "region": "middle",
+  "rarity": "uncommon",
+  "tempo": "push",
+  "resourceTags": [
+    "loot",
+    "wound"
+  ]
 }

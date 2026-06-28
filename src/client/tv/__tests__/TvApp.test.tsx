@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import "@testing-library/jest-dom/vitest";
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type {
   CharacterCatalogEntry,
@@ -198,6 +198,7 @@ function createPatch(roomCode = "RT7P4"): StatePatch<PublicPatchPayload> {
       encounter: null,
       pendingEnemyRoll: null,
       outcomeSummary: null,
+      shopEncounter: null,
       recentAbilityTriggers: [],
       nemesis: null
     }
@@ -554,6 +555,7 @@ describe("TvApp", () => {
     expect(overlay).toHaveTextContent(/cinder-veil stalker/i);
     expect(overlay).toHaveTextContent(/grit\s*2/i);
     expect(overlay).toHaveTextContent(/battle\s*8/i);
+    expect(within(overlay).getByTestId("host-battle-fx-layer")).toBeInTheDocument();
     expect(screen.queryByTestId("tv-card-reveal")).not.toBeInTheDocument();
     expect(screen.queryByTestId("tv-resolution-footer")).not.toBeInTheDocument();
   });
@@ -606,10 +608,205 @@ describe("TvApp", () => {
     render(<TvApp />);
 
     expect(await screen.findByTestId("roll-outcome-panel")).toHaveTextContent(/success: the signal holds/i);
+    expect(screen.getByTestId("host-dice-roll-scene")).toHaveTextContent("A 8 / D 7 / +1");
     expect(screen.getByTestId("roll-state")).toHaveTextContent(/success/i);
     expect(screen.getAllByTestId("roll-die")).toHaveLength(2);
     expect(screen.getByTestId("roll-total")).toHaveTextContent("8");
     expect(screen.getByTestId("roll-difficulty")).toHaveTextContent("7");
+  });
+
+  it("renders a shop encounter overlay when the active operative reaches a shop sector", async () => {
+    window.localStorage.setItem("ashen-reach-tv-room-code", "RT7P4");
+    window.localStorage.setItem("ashen-reach-tv-host-token", "host:RT7P4:secret");
+    const patch = createPatch();
+    patch.phase = "action";
+    patch.payload.status = "active";
+    patch.payload.sectors = [
+      {
+        id: "outer_waymarket",
+        name: "Anchor Market",
+        regionTier: "outer",
+        neighbors: [],
+        danger: 1,
+        threatIcons: ["yellow"],
+        encounterDecks: {
+          threat: [],
+          anomaly: [],
+          contract: [],
+          artifact: [],
+          escalation: []
+        }
+      }
+    ];
+    patch.payload.players[0] = {
+      ...patch.payload.players[0],
+      sectorId: "outer_waymarket",
+      character: {
+        ...patch.payload.players[0].character,
+        salvage: 6,
+        trophies: 3,
+        heat: 1,
+        wounds: 2,
+        heldGearCount: 1
+      }
+    };
+    patch.payload.shopEncounter = {
+      sectorId: "outer_waymarket",
+      sectorName: "Anchor Market",
+      shopId: "outer_waymarket",
+      shopName: "Anchor Market",
+      status: "open",
+      activePlayer: {
+        playerId: "seat-1",
+        name: "Tarek Voss",
+        characterName: "Tarek Voss",
+        salvage: 6,
+        heat: 1,
+        wounds: { current: 2, max: 6 },
+        trophies: 3,
+        completedContracts: 1
+      },
+      blockingThreats: [],
+      services: [
+        {
+          id: "buy-gear",
+          label: "Buy Gear",
+          cost: { salvage: 3 },
+          enabled: true
+        },
+        {
+          id: "risk-action",
+          label: "Risk Action",
+          cost: { heat: 1 },
+          risk: "+1 Heat",
+          enabled: true
+        }
+      ]
+    };
+    mockUseRoomSubscription.mockReturnValue({
+      patch,
+      error: null,
+      sendIntent: vi.fn(),
+      status: "open",
+      debugEvents: [],
+      clearDebugEvents: vi.fn()
+    });
+
+    render(<TvApp />);
+
+    const overlay = await screen.findByTestId("host-shop-overlay");
+    expect(overlay).toHaveTextContent(/shop encounter/i);
+    expect(overlay).toHaveTextContent(/tarek voss/i);
+    expect(overlay).toHaveTextContent(/anchor market/i);
+    expect(overlay).toHaveTextContent(/salvage/i);
+    expect(overlay).toHaveTextContent("6");
+    expect(overlay).toHaveTextContent(/buy gear/i);
+    expect(overlay).toHaveTextContent(/shop stock - anchor market/i);
+    expect(overlay).toHaveTextContent(/no stock revealed/i);
+    expect(overlay).toHaveTextContent(/choose service on phone/i);
+    expect(within(overlay).getByTestId("host-shop-fx-layer")).toBeInTheDocument();
+    expect(screen.queryByTestId("host-battle-overlay")).not.toBeInTheDocument();
+  });
+
+  it("renders named blocking threats from authoritative shop payload", async () => {
+    window.localStorage.setItem("ashen-reach-tv-room-code", "RT7P4");
+    window.localStorage.setItem("ashen-reach-tv-host-token", "host:RT7P4:secret");
+    const patch = createPatch();
+    patch.phase = "action";
+    patch.payload.status = "active";
+    patch.payload.players[0] = {
+      ...patch.payload.players[0],
+      sectorId: "outer_waymarket",
+      character: {
+        ...patch.payload.players[0].character,
+        salvage: 6
+      }
+    };
+    patch.payload.shopEncounter = {
+      sectorId: "outer_waymarket",
+      sectorName: "Anchor Market",
+      shopId: "outer_waymarket",
+      shopName: "Anchor Market",
+      status: "locked",
+      activePlayer: {
+        playerId: "seat-1",
+        name: "Tarek Voss",
+        characterName: "Tarek Voss",
+        salvage: 6,
+        heat: 0,
+        wounds: { current: 0, max: 6 }
+      },
+      blockingThreats: [
+        {
+          cardId: "gate-tax-collectors",
+          name: "Gate-Tax Collectors",
+          type: "enemy",
+          deck: "yellow",
+          challenge: { stat: "command", value: 5 }
+        }
+      ],
+      services: []
+    };
+    mockUseRoomSubscription.mockReturnValue({
+      patch,
+      error: null,
+      sendIntent: vi.fn(),
+      status: "open",
+      debugEvents: [],
+      clearDebugEvents: vi.fn()
+    });
+
+    render(<TvApp />);
+
+    const overlay = await screen.findByTestId("host-shop-overlay");
+    expect(overlay).toHaveTextContent(/shop locked/i);
+    expect(overlay).toHaveTextContent(/gate-tax collectors command 5/i);
+    expect(overlay).toHaveTextContent(/clear threats before trade/i);
+    expect(within(screen.getByLabelText("Shop services")).queryByText(/buy gear/i)).not.toBeInTheDocument();
+  });
+
+  it("keeps the shop encounter hidden while battle resolution is active on a shop sector", async () => {
+    window.localStorage.setItem("ashen-reach-tv-room-code", "RT7P4");
+    window.localStorage.setItem("ashen-reach-tv-host-token", "host:RT7P4:secret");
+    const patch = createPatch();
+    patch.phase = "resolution";
+    patch.payload.status = "active";
+    patch.payload.players[0] = {
+      ...patch.payload.players[0],
+      sectorId: "outer_waymarket"
+    };
+    patch.payload.activeResolution = {
+      id: "seat-1:threat:cinder-veil-stalker:test",
+      playerId: "seat-1",
+      source: "threat",
+      stage: "battle_setup",
+      card: {
+        id: "cinder-veil-stalker",
+        title: "Cinder-Veil Stalker",
+        type: "enemy",
+        flavor: "The ash around it begins to boil.",
+        artType: "threat"
+      },
+      battle: {
+        enemyName: "Cinder-Veil Stalker",
+        stat: "grit",
+        difficulty: 8,
+        modifiers: [{ label: "Grit", value: 2 }]
+      }
+    };
+    mockUseRoomSubscription.mockReturnValue({
+      patch,
+      error: null,
+      sendIntent: vi.fn(),
+      status: "open",
+      debugEvents: [],
+      clearDebugEvents: vi.fn()
+    });
+
+    render(<TvApp />);
+
+    expect(await screen.findByTestId("host-battle-overlay")).toBeInTheDocument();
+    expect(screen.queryByTestId("host-shop-overlay")).not.toBeInTheDocument();
   });
 
   it("renders the cinematic host battle overlay and hides inactive operative cards", async () => {

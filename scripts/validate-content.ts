@@ -18,7 +18,17 @@ import { missions } from "../src/game/data/missions.js";
 import { nemeses } from "../src/game/data/nemeses.js";
 import { SCENARIOS } from "../src/game/data/scenarios.js";
 import { allThreatCards } from "../src/game/data/threatDecks.js";
-import { effectSchema, threatFamilySchema, type EncounterEffect, type ThreatCard } from "../src/game/schema/card.schema.js";
+import {
+  cardRaritySchema,
+  cardResourceTagSchema,
+  cardTempoSchema,
+  effectSchema,
+  threatFamilySchema,
+  threatLaneSchema,
+  type EncounterEffect,
+  type ThreatCard
+} from "../src/game/schema/card.schema.js";
+import type { GearItem } from "../src/game/schema/gear.schema.js";
 import { sectorGraphSchema, type SectorNode } from "../src/game/schema/sector.schema.js";
 
 const sectorsRoot = join(process.cwd(), "content", "sectors");
@@ -145,7 +155,14 @@ for (const card of threats.values()) {
   validateEffect(card.cardType === "enemy" ? card.defeatReward : card.successEffect, `${card.id} reward`);
   validateEffect(card.cardType === "enemy" ? card.woundOnLoss : card.failEffect, `${card.id} failure`);
   validateThreatFamily(card);
+  validateThreatMetadata(card);
   validateThreatEffectKeys(card);
+}
+
+validateThreatRarityCurve();
+
+for (const item of gear.values()) {
+  validateGearProgression(item);
 }
 
 for (const contract of contracts.values()) {
@@ -490,6 +507,68 @@ function validateThreatFamily(card: ThreatCard): void {
 
   if (card.cardType === "enemy" && card.enemyFamily === "hazard") {
     errors.push(`${card.id} is an enemy and cannot use enemyFamily hazard`);
+  }
+}
+
+function validateThreatMetadata(card: ThreatCard): void {
+  if (!card.threatLane || !threatLaneSchema.safeParse(card.threatLane).success) {
+    errors.push(`${card.id} is missing a valid threatLane`);
+  }
+
+  if (!card.region) {
+    errors.push(`${card.id} is missing region`);
+  }
+
+  if (!card.rarity || !cardRaritySchema.safeParse(card.rarity).success) {
+    errors.push(`${card.id} is missing a valid rarity`);
+  }
+
+  if (!card.tempo || !cardTempoSchema.safeParse(card.tempo).success) {
+    errors.push(`${card.id} is missing a valid tempo`);
+  }
+
+  if (!card.resourceTags || card.resourceTags.length === 0) {
+    errors.push(`${card.id} must define at least one resourceTag`);
+    return;
+  }
+
+  for (const tag of card.resourceTags) {
+    if (!cardResourceTagSchema.safeParse(tag).success) {
+      errors.push(`${card.id} has invalid resourceTag ${tag}`);
+    }
+  }
+}
+
+function validateThreatRarityCurve(): void {
+  const threatList = [...threats.values()];
+  const total = threatList.length;
+  const commonCount = threatList.filter((card) => card.rarity === "common").length;
+  const uncommonCount = threatList.filter((card) => card.rarity === "uncommon").length;
+  const rareCount = threatList.filter((card) => card.rarity === "rare").length;
+  const commonRatio = total === 0 ? 0 : commonCount / total;
+  const uncommonRatio = total === 0 ? 0 : uncommonCount / total;
+  const rareRatio = total === 0 ? 0 : rareCount / total;
+
+  if (commonRatio < 0.5 || commonRatio > 0.7) {
+    errors.push(`Threat rarity curve common ratio is ${(commonRatio * 100).toFixed(1)}%; target is around 60%`);
+  }
+
+  if (uncommonRatio < 0.2 || uncommonRatio > 0.4) {
+    errors.push(`Threat rarity curve uncommon ratio is ${(uncommonRatio * 100).toFixed(1)}%; target is around 30%`);
+  }
+
+  if (rareRatio < 0.05 || rareRatio > 0.15) {
+    errors.push(`Threat rarity curve rare ratio is ${(rareRatio * 100).toFixed(1)}%; target is around 10%`);
+  }
+}
+
+function validateGearProgression(item: GearItem): void {
+  if (!item.tier) {
+    errors.push(`${item.id} is missing tier`);
+  }
+
+  if (typeof item.progressionWeight !== "number" || item.progressionWeight <= 0) {
+    errors.push(`${item.id} must define a positive progressionWeight`);
   }
 }
 

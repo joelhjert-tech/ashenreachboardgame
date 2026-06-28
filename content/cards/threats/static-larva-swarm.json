@@ -29,5 +29,15 @@
       }
     ]
   },
-  "enemyFamily": "vermin"
+  "enemyFamily": "vermin",
+  "threatLane": "yellow",
+  "rarity": "common",
+  "tempo": "push",
+  "resourceTags": [
+    "loot",
+    "scar",
+    "scenario",
+    "trophy",
+    "wound"
+  ]
 }

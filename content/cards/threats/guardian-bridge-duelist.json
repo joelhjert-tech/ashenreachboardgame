@@ -6,7 +6,7 @@
   "enemyName": "Guardian Bridge Duelist",
   "text": "A bridge guardian lowers a ritual blade and permits passage only through formal challenge.",
   "flavor": "The old rules survived because the old blades did.",
-  "severity": 3,
+  "severity": 2,
   "stat": "command",
   "difficulty": 7,
   "trophyValue": 6,
@@ -18,5 +18,14 @@
     "type": "take_wound",
     "amount": 1
   },
-  "enemyFamily": "human"
+  "enemyFamily": "human",
+  "threatLane": "yellow",
+  "region": "outer",
+  "rarity": "common",
+  "tempo": "push",
+  "resourceTags": [
+    "loot",
+    "trophy",
+    "wound"
+  ]
 }

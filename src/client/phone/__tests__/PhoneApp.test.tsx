@@ -16,7 +16,8 @@ const characters: CharacterCatalogEntry[] = [
   ["black-ledger-agent", "Joss Var", "Black Ledger Agent", { command: 1, grit: 1, signal: 2, guile: 3, forge: 2 }],
   ["cinder-monk", "Mira", "Cinder Monk", { command: 1, grit: 3, signal: 2, guile: 1, forge: 2 }],
   ["salvage-warden", "Brask Ode", "Salvage Warden", { command: 1, grit: 2, signal: 1, guile: 2, forge: 3 }],
-  ["fleet-elder", "Orenna Tash", "Fleet Elder", { command: 3, grit: 1, signal: 2, guile: 1, forge: 2 }]
+  ["fleet-elder", "Orenna Tash", "Fleet Elder", { command: 3, grit: 1, signal: 2, guile: 1, forge: 2 }],
+  ["char_deepdale", "Deepdale", "Deep Route Delver", { command: 1, grit: 2, signal: 2, guile: 1, forge: 3 }]
 ].map(([id, name, archetype, stats]) => ({
   id,
   name,
@@ -98,16 +99,17 @@ describe("PhoneApp", () => {
     const picker = await screen.findByRole("list", { name: /character/i });
 
     await waitFor(() => {
-      expect(screen.getAllByRole("button", { name: /void marshal|rift cartographer|signal witch|siege medic|oathbroken prince|grave engineer|black ledger agent|cinder monk|salvage warden|fleet elder/i })).toHaveLength(10);
+      expect(screen.getAllByRole("button", { name: /void marshal|rift cartographer|signal witch|siege medic|oathbroken prince|grave engineer|black ledger agent|cinder monk|salvage warden|fleet elder|deep route delver/i })).toHaveLength(11);
     });
 
     expect(picker).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /tarek voss.*void marshal/i })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /mira.*cinder monk/i })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /orenna tash.*fleet elder/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /deepdale.*deep route delver/i })).toBeInTheDocument();
   });
 
-  it("reserves the chosen character when selected", async () => {
+  it("reserves the chosen Deepdale character when selected", async () => {
     networkMocks.joinSession.mockResolvedValue({
       roomCode: "RT7P4",
       seatId: "seat-1",
@@ -121,13 +123,13 @@ describe("PhoneApp", () => {
     fireEvent.change(screen.getAllByLabelText(/room code/i)[0]!, { target: { value: "RT7P4" } });
     fireEvent.change(screen.getAllByLabelText(/player name/i)[0]!, { target: { value: "Joel" } });
     fireEvent.click(screen.getByRole("button", { name: /continue/i }));
-    fireEvent.click(await screen.findByRole("button", { name: /mira.*cinder monk/i }));
+    fireEvent.click(await screen.findByRole("button", { name: /deepdale.*deep route delver/i }));
 
     await waitFor(() => {
       expect(networkMocks.joinSession).toHaveBeenCalledWith({
         roomCode: "RT7P4",
         displayName: "Joel",
-        characterId: "cinder-monk"
+        characterId: "char_deepdale"
       });
     });
   });

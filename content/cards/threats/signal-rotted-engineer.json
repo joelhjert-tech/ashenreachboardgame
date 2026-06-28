@@ -11,7 +11,9 @@
   "stat": "forge",
   "difficulty": 4,
   "trophyValue": 2,
-  "combatEffectKeys": ["threat_disable_weapon_bonus"],
+  "combatEffectKeys": [
+    "threat_disable_weapon_bonus"
+  ],
   "failEffectKey": "threat_fail_drop_gear",
   "defeatReward": {
     "type": "gain_note",
@@ -21,5 +23,14 @@
     "type": "gain_heat",
     "amount": 1
   },
-  "enemyFamily": "machine"
+  "enemyFamily": "machine",
+  "threatLane": "yellow",
+  "rarity": "common",
+  "tempo": "push",
+  "resourceTags": [
+    "heat",
+    "loot",
+    "scenario",
+    "trophy"
+  ]
 }

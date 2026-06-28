@@ -26,5 +26,13 @@
       }
     ]
   },
-  "enemyFamily": "hazard"
+  "enemyFamily": "hazard",
+  "threatLane": "blue",
+  "rarity": "common",
+  "tempo": "push",
+  "resourceTags": [
+    "heat",
+    "loot",
+    "wound"
+  ]
 }

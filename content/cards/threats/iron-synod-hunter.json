@@ -6,7 +6,7 @@
   "enemyName": "Iron Synod Hunter",
   "text": "The Synod hunter names your equipment illegal and begins confiscation by force.",
   "flavor": "Its warrant is stamped into the muzzle.",
-  "severity": 3,
+  "severity": 2,
   "stat": "forge",
   "difficulty": 8,
   "trophyValue": 7,
@@ -18,5 +18,14 @@
     "type": "take_wound",
     "amount": 2
   },
-  "enemyFamily": "machine"
+  "enemyFamily": "machine",
+  "threatLane": "yellow",
+  "region": "outer",
+  "rarity": "common",
+  "tempo": "push",
+  "resourceTags": [
+    "gear",
+    "trophy",
+    "wound"
+  ]
 }

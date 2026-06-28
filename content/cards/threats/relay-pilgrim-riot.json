@@ -18,5 +18,15 @@
     "type": "gain_heat",
     "amount": 1
   },
-  "enemyFamily": "human"
+  "enemyFamily": "human",
+  "threatLane": "yellow",
+  "region": "outer",
+  "rarity": "common",
+  "tempo": "push",
+  "resourceTags": [
+    "gear",
+    "heat",
+    "loot",
+    "trophy"
+  ]
 }

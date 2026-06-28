@@ -9,5 +9,7 @@
   },
   "activeText": "Break to save yourself: discard to heal 1 wound and record that the next wound was braced.",
   "useLimit": "discard",
-  "flavor": "A single coffin nail hammered into living armor."
+  "flavor": "A single coffin nail hammered into living armor.",
+  "tier": "starter",
+  "progressionWeight": 0.5
 }

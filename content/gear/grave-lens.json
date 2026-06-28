@@ -10,5 +10,7 @@
   "activeText": "If you have a scribe or ritualist follower, exhaust to record a route note after resolving a hazard.",
   "useLimit": "oncePerRound",
   "linkedFollowerRole": "ritualist",
-  "flavor": "The glass makes old roads look freshly buried."
+  "flavor": "The glass makes old roads look freshly buried.",
+  "tier": "standard",
+  "progressionWeight": 1.25
 }

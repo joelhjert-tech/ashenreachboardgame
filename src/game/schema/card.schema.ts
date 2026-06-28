@@ -213,6 +213,23 @@ export const threatFamilySchema = z.enum([
 
 export const threatLaneSchema = z.enum(["red", "blue", "yellow"]);
 export const threatResolutionTypeSchema = z.enum(["event", "enemy", "encounter", "asset", "nemesis"]);
+export const cardRaritySchema = z.enum(["common", "uncommon", "rare"]);
+export const cardTempoSchema = z.enum(["stall", "neutral", "push"]);
+export const cardResourceTagSchema = z.enum([
+  "loot",
+  "wound",
+  "heat",
+  "scar",
+  "salvage",
+  "gear",
+  "artifact",
+  "contract",
+  "trophy",
+  "movement",
+  "boon",
+  "follower",
+  "scenario"
+]);
 
 const threatBaseSchema = cardBaseSchema.extend({
   type: z.literal("threat"),
@@ -220,6 +237,9 @@ const threatBaseSchema = cardBaseSchema.extend({
   enemyFamily: threatFamilySchema.optional(),
   threatLane: threatLaneSchema.optional(),
   resolutionType: threatResolutionTypeSchema.optional(),
+  rarity: cardRaritySchema.optional(),
+  tempo: cardTempoSchema.optional(),
+  resourceTags: z.array(cardResourceTagSchema).optional(),
   region: z.enum(["outer", "middle", "inner", "center", "global"]).optional(),
   stat: statSchema,
   difficulty: z.number().int().min(2).max(12),
@@ -304,6 +324,9 @@ export type ThreatCard = z.infer<typeof threatCardSchema>;
 export type ThreatFamily = z.infer<typeof threatFamilySchema>;
 export type ThreatLane = z.infer<typeof threatLaneSchema>;
 export type ThreatResolutionType = z.infer<typeof threatResolutionTypeSchema>;
+export type CardRarity = z.infer<typeof cardRaritySchema>;
+export type CardTempo = z.infer<typeof cardTempoSchema>;
+export type CardResourceTag = z.infer<typeof cardResourceTagSchema>;
 export type HazardThreatCard = z.infer<typeof hazardThreatCardSchema>;
 export type EnemyThreatCard = z.infer<typeof enemyThreatCardSchema>;
 export type AnomalyCard = z.infer<typeof anomalyCardSchema>;

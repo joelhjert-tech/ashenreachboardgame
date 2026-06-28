@@ -17,5 +17,11 @@
     "type": "gain_heat",
     "amount": 2
   },
-  "enemyFamily": "machine"
+  "enemyFamily": "machine",
+  "threatLane": "yellow",
+  "rarity": "common",
+  "tempo": "stall",
+  "resourceTags": [
+    "heat"
+  ]
 }

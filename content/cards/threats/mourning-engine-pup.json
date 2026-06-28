@@ -28,5 +28,14 @@
     "type": "take_wound",
     "amount": 1
   },
-  "enemyFamily": "machine"
+  "enemyFamily": "machine",
+  "threatLane": "yellow",
+  "rarity": "uncommon",
+  "tempo": "push",
+  "resourceTags": [
+    "loot",
+    "scenario",
+    "trophy",
+    "wound"
+  ]
 }

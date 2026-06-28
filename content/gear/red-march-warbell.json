@@ -10,5 +10,7 @@
   "activeText": "Exhaust to add +2 to combat, then gain 1 heat.",
   "useLimit": "oncePerTurn",
   "heatCost": 1,
-  "flavor": "It wins arguments by making the whole district listen."
+  "flavor": "It wins arguments by making the whole district listen.",
+  "tier": "advanced",
+  "progressionWeight": 2.25
 }

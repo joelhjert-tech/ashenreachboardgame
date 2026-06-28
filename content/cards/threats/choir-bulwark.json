@@ -11,7 +11,9 @@
   "stat": "command",
   "difficulty": 5,
   "trophyValue": 2,
-  "combatEffectKeys": ["threat_ignore_first_success"],
+  "combatEffectKeys": [
+    "threat_ignore_first_success"
+  ],
   "defeatReward": {
     "type": "gain_note",
     "text": "You cracked a Choir shield and marked the formation's weak angle."
@@ -20,5 +22,13 @@
     "type": "take_wound",
     "amount": 1
   },
-  "enemyFamily": "choir"
+  "enemyFamily": "choir",
+  "threatLane": "yellow",
+  "rarity": "common",
+  "tempo": "push",
+  "resourceTags": [
+    "loot",
+    "trophy",
+    "wound"
+  ]
 }

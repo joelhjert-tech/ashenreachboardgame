@@ -1,0 +1,30 @@
+{
+  "id": "pale-toll-enforcer",
+  "type": "threat",
+  "cardType": "enemy",
+  "title": "Pale Toll Enforcer",
+  "enemyName": "Pale Toll Enforcer",
+  "text": "A ledger-armored collector bars the route with a brass cudgel and a writ signed by no living office.",
+  "flavor": "The stamp falls. The debt wakes.",
+  "severity": 2,
+  "region": "outer",
+  "stat": "command",
+  "difficulty": 6,
+  "trophyValue": 1,
+  "defeatReward": {
+    "type": "gain_note",
+    "text": "You tore the false writ from the enforcer's ledger harness."
+  },
+  "woundOnLoss": {
+    "type": "gain_heat",
+    "amount": 1
+  },
+  "enemyFamily": "bureaucracy",
+  "threatLane": "yellow",
+  "rarity": "common",
+  "tempo": "stall",
+  "resourceTags": [
+    "heat",
+    "trophy"
+  ]
+}

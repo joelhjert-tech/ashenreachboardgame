@@ -29,5 +29,14 @@
       }
     ]
   },
-  "enemyFamily": "breachborn"
+  "enemyFamily": "breachborn",
+  "threatLane": "red",
+  "rarity": "common",
+  "tempo": "stall",
+  "resourceTags": [
+    "loot",
+    "movement",
+    "trophy",
+    "wound"
+  ]
 }

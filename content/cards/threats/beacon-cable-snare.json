@@ -16,5 +16,13 @@
     "type": "take_wound",
     "amount": 1
   },
-  "enemyFamily": "hazard"
+  "enemyFamily": "hazard",
+  "threatLane": "blue",
+  "region": "outer",
+  "rarity": "common",
+  "tempo": "push",
+  "resourceTags": [
+    "loot",
+    "wound"
+  ]
 }

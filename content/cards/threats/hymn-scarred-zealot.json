@@ -28,5 +28,14 @@
     "type": "gain_heat",
     "amount": 1
   },
-  "enemyFamily": "choir"
+  "enemyFamily": "choir",
+  "threatLane": "red",
+  "rarity": "common",
+  "tempo": "push",
+  "resourceTags": [
+    "heat",
+    "loot",
+    "scar",
+    "trophy"
+  ]
 }

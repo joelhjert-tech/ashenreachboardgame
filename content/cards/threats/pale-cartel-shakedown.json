@@ -27,5 +27,15 @@
       }
     ]
   },
-  "enemyFamily": "cartel"
+  "enemyFamily": "cartel",
+  "threatLane": "yellow",
+  "region": "outer",
+  "rarity": "common",
+  "tempo": "push",
+  "resourceTags": [
+    "gear",
+    "heat",
+    "trophy",
+    "wound"
+  ]
 }

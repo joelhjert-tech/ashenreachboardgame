@@ -177,6 +177,7 @@ describe("BoardMap", () => {
 
     expect(container.querySelectorAll("[data-testid^='sector-node-']")).toHaveLength(BOARD_SPACES.length);
     expect(container.querySelectorAll("[data-testid='sector-connector']").length).toBeGreaterThanOrEqual(6);
+    expect(screen.getByTestId("host-map-fx-layer")).toBeInTheDocument();
   });
 
   it("updates token placement when a character moves to a different sector", () => {

@@ -19,5 +19,12 @@
     "type": "gain_heat",
     "amount": 2
   },
-  "enemyFamily": "choir"
+  "enemyFamily": "choir",
+  "threatLane": "blue",
+  "rarity": "uncommon",
+  "tempo": "stall",
+  "resourceTags": [
+    "heat",
+    "scenario"
+  ]
 }

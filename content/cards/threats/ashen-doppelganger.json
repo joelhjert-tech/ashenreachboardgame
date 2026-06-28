@@ -19,5 +19,13 @@
     "type": "gain_heat",
     "amount": 2
   },
-  "enemyFamily": "breachborn"
+  "enemyFamily": "breachborn",
+  "threatLane": "blue",
+  "rarity": "uncommon",
+  "tempo": "push",
+  "resourceTags": [
+    "heat",
+    "scar",
+    "trophy"
+  ]
 }

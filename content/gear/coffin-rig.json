@@ -6,5 +6,7 @@
     "stat": "forge",
     "amount": 1
   },
-  "flavor": "A slab-bound harness of cold braces and grave bolts built to hold through crush and sparks."
+  "flavor": "A slab-bound harness of cold braces and grave bolts built to hold through crush and sparks.",
+  "tier": "starter",
+  "progressionWeight": 0.75
 }

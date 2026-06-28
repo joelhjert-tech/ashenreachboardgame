@@ -11,7 +11,10 @@
   "stat": "command",
   "difficulty": 10,
   "trophyValue": 6,
-  "combatEffectKeys": ["threat_combat_plus_one_if_player_has_heat", "threat_player_roll_disadvantage"],
+  "combatEffectKeys": [
+    "threat_combat_plus_one_if_player_has_heat",
+    "threat_player_roll_disadvantage"
+  ],
   "defeatReward": {
     "type": "gain_note",
     "text": "You broke the envoy's mirror etiquette and kept the shard that lied last."
@@ -29,5 +32,14 @@
       }
     ]
   },
-  "enemyFamily": "breachborn"
+  "enemyFamily": "breachborn",
+  "threatLane": "blue",
+  "rarity": "uncommon",
+  "tempo": "push",
+  "resourceTags": [
+    "heat",
+    "loot",
+    "trophy",
+    "wound"
+  ]
 }

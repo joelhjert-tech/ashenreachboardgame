@@ -5,7 +5,7 @@
   "title": "Emberwatch Sparkfall",
   "text": "The watch ridge sheds a rain of white sparks that hunts movement and exposed metal.",
   "flavor": "Every spark lands like a verdict.",
-  "severity": 3,
+  "severity": 2,
   "stat": "signal",
   "difficulty": 7,
   "successEffect": {
@@ -25,5 +25,14 @@
       }
     ]
   },
-  "enemyFamily": "hazard"
+  "enemyFamily": "hazard",
+  "threatLane": "blue",
+  "region": "outer",
+  "rarity": "common",
+  "tempo": "push",
+  "resourceTags": [
+    "heat",
+    "loot",
+    "wound"
+  ]
 }

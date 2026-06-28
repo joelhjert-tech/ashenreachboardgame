@@ -17,7 +17,7 @@ import {
 } from "../game/cards/threatEffects.js";
 import { resolveBoardTextChoice, resolveBoardTextEffect, type BoardTextDeckKind } from "../game/data/boardTextEffects.js";
 import { nemeses, type NemesisDefinition } from "../game/data/nemeses.js";
-import { getScenarioDefinition } from "../game/data/scenarios.js";
+import { getScenarioDefinition, type ScenarioDefinition } from "../game/data/scenarios.js";
 import {
   advanceContractObjectiveProgress,
   describeContractObjective,
@@ -118,6 +118,7 @@ const RAISE_STAT_ESCALATION_REASON = "forged in fire";
 const ENEMY_ROLL_TIMEOUT_MS = 30_000;
 const RESOLUTION_AUTO_CONTINUE_MS = process.env.VITEST ? 1 : 10000;
 const VISIBLE_DICE_ROLL_MS = process.env.VITEST ? 0 : 650;
+const RECENT_ENCOUNTER_LIMIT = 12;
 
 const NEMESIS_OPPOSITION = {
   strength: { attackStat: "grit", label: "Overpower" },
@@ -1291,6 +1292,27 @@ export class GameRoomServer {
     return this.state.scenarioProgress[key] ?? fallback;
   }
 
+  private drawThreatIdWithSoftExile(deck: string[]): string | null {
+    if (deck.length === 0) {
+      return null;
+    }
+
+    const recentIds = new Set(this.state.recentEncounterCardIds ?? []);
+    const cooledPool = deck.filter((cardId) => !recentIds.has(cardId));
+    const pool = cooledPool.length > 0 ? cooledPool : deck;
+
+    return pool[this.randomSource.nextInt(pool.length)] ?? null;
+  }
+
+  private getRecentEncounterCardIdsAfterDraw(cardId: string | null | undefined): string[] | undefined {
+    if (!cardId) {
+      return this.state.recentEncounterCardIds;
+    }
+
+    const existing = this.state.recentEncounterCardIds ?? [];
+    return [...existing.filter((entry) => entry !== cardId), cardId].slice(-RECENT_ENCOUNTER_LIMIT);
+  }
+
   private getOuterRingSectorIds(): string[] {
     return this.state.sectors.filter((sector) => sector.regionTier === "borderlight").map((sector) => sector.id);
   }
@@ -1333,6 +1355,65 @@ export class GameRoomServer {
     }
 
     return (state.scenarioProgress.engineModeIndex ?? 0) % 5 === 1 ? 1 : 0;
+  }
+
+  private getCompletedContractCount(seatId: string, state: GameState = this.state): number {
+    return state.eventLog.filter((entry) => {
+      const event = entry as { type?: string; seatId?: string } | undefined;
+      return event?.type === "COMPLETE_CONTRACT" && event.seatId === seatId;
+    }).length;
+  }
+
+  private hasScenarioArtifact(player: PlayerState): boolean {
+    return player.character.heldGear.some(
+      (item) => item.tier === "artifact" || item.category === "chargedRelic" || item.id.startsWith("artifact-")
+    );
+  }
+
+  private hasScenarioGear(player: PlayerState, needle: string): boolean {
+    const normalizedNeedle = needle.toLowerCase();
+    return player.character.heldGear.some(
+      (item) => item.id.toLowerCase().includes(normalizedNeedle) || item.name.toLowerCase().includes(normalizedNeedle)
+    );
+  }
+
+  private getScenarioGateBlockReason(player: PlayerState, scenario: ScenarioDefinition): string | null {
+    const completedContracts = this.getCompletedContractCount(player.seatId);
+    const hasArtifact = this.hasScenarioArtifact(player);
+    const progress = this.state.scenarioProgress;
+
+    if ((progress[scenario.winConditionKey] ?? 0) > 0) {
+      return null;
+    }
+
+    switch (scenario.id) {
+      case "scenario_broken_seal":
+        return (progress.sealTokens ?? 0) >= 4 || hasArtifact || completedContracts >= 3
+          ? null
+          : "Final gate locked: restore 4+ Seal Integrity, hold an Artifact, or complete 3 Contracts.";
+      case "scenario_throne_of_ash":
+        return this.getThroneCrownCount(player.seatId) >= 1 || completedContracts >= 2
+          ? null
+          : "Final gate locked: hold 1 Crown or complete 2 Contracts.";
+      case "scenario_mirror_of_false_heroes":
+        return hasArtifact || completedContracts >= 2 || player.character.heat === 0
+          ? null
+          : "Final gate locked: hold an Artifact, complete 2 Contracts, or clear Heat to 0.";
+      case "scenario_devourer_beneath":
+        return player.character.trophies >= 8 || hasArtifact || this.hasScenarioGear(player, "maw-spike")
+          ? null
+          : "Final gate locked: spend 8 Trophy value, hold an Artifact charge, or carry a Maw Spike.";
+      case "scenario_labyrinth_engine":
+        return (progress.engineKeys ?? 0) >= 3 || (progress.shutdownMarks ?? 0) >= 3 || hasArtifact
+          ? null
+          : "Final gate locked: assemble 3 Engine Keys or hold an Artifact.";
+      case "scenario_dying_star":
+        return (progress.starTokens ?? 0) >= 5 && (hasArtifact || completedContracts >= 3)
+          ? null
+          : "Final gate locked: keep 5+ Starfire and hold an Artifact or complete 3 Contracts.";
+      default:
+        return null;
+    }
   }
 
   private hasAbilityTriggeredThisRound(seatId: string, abilityId: string): boolean {
@@ -2651,7 +2732,7 @@ export class GameRoomServer {
     }
 
     const threatDeck = sector.encounterDecks.threat;
-    const drawnThreatId = threatDeck.length > 0 ? threatDeck[this.randomSource.nextInt(threatDeck.length)] ?? null : null;
+    const drawnThreatId = this.drawThreatIdWithSoftExile(threatDeck);
     const drawnThreat = drawnThreatId ? this.threats.get(drawnThreatId) ?? null : null;
 
     this.state = {
@@ -2660,6 +2741,7 @@ export class GameRoomServer {
       phase: "action",
       resolutionSource: null,
       currentEncounter: drawnThreat,
+      recentEncounterCardIds: this.getRecentEncounterCardIdsAfterDraw(drawnThreat?.id),
       pendingEnemyRoll: null,
       pendingEffect: null,
       activeResolution: drawnThreat
@@ -2982,6 +3064,7 @@ export class GameRoomServer {
       sequence: this.state.sequence + 1,
       escalationLevel: 0,
       currentEncounter: null,
+      recentEncounterCardIds: [],
       pendingEnemyRoll: null,
       pendingEffect: null,
       lastOutcomeSummary: null,
@@ -3306,7 +3389,8 @@ export class GameRoomServer {
     }
 
     const deck = sector.encounterDecks.threat;
-    const card = deck.length > 0 ? this.threats.get(deck[this.randomSource.nextInt(deck.length)] ?? "") ?? null : null;
+    const drawnThreatId = this.drawThreatIdWithSoftExile(deck);
+    const card = drawnThreatId ? this.threats.get(drawnThreatId) ?? null : null;
     const revealEffectKey = card?.revealEffectKey ?? card?.effectKey;
     const revealEffect = card ? this.resolveThreatEffectKey(seatId, card, revealEffectKey, "onReveal")?.effect ?? null : null;
 
@@ -3902,6 +3986,11 @@ export class GameRoomServer {
       });
       this.runAutomaticPhases(intent.seatId);
       return;
+    }
+
+    const gateBlockReason = this.getScenarioGateBlockReason(player, scenario);
+    if (gateBlockReason) {
+      throw new IntentRejectedError(intent.type, gateBlockReason);
     }
 
     this.maybeTriggerAbilityOnScenarioConfrontationRequested(intent.seatId);
@@ -4913,6 +5002,258 @@ export class GameRoomServer {
   }
 }
 
+type PublicShopService = {
+  id: string;
+  label: string;
+  cost: {
+    salvage?: number;
+    heat?: number;
+    wounds?: number;
+    trophies?: number;
+    completedContracts?: number;
+    scars?: number;
+  };
+  risk?: string;
+  enabled: boolean;
+  disabledReason?: string;
+};
+
+function getPublicSalvage(player: PlayerState): number {
+  return Math.max(0, player.character.salvage ?? 0);
+}
+
+function getCompletedContractCountForProjection(state: GameState, seatId: string): number {
+  return state.eventLog.filter((entry) => {
+    if (typeof entry !== "object" || entry === null || !("type" in entry) || !("seatId" in entry)) {
+      return false;
+    }
+
+    return (entry as { type?: string; seatId?: string }).type === "COMPLETE_CONTRACT" && (entry as { seatId?: string }).seatId === seatId;
+  }).length;
+}
+
+function getPublicShopStatus(state: GameState, player: PlayerState): "open" | "locked" | "exhausted" | "dangerous" {
+  if (state.currentEncounter) {
+    return "locked";
+  }
+
+  const boardSpace = getBoardSpace(player.character.currentSpaceId);
+
+  if (boardSpace?.tags.includes("risk-shop")) {
+    return "dangerous";
+  }
+
+  return "open";
+}
+
+function buildPublicBlockingThreats(state: GameState): Array<{
+  cardId: string;
+  name: string;
+  type: "enemy" | "event" | "encounter" | "anomaly" | "hazard";
+  deck?: "red" | "blue" | "yellow";
+  challenge?: {
+    stat: Stat;
+    value: number;
+  };
+}> {
+  const encounter = state.currentEncounter;
+
+  if (!encounter) {
+    return [];
+  }
+
+  return [
+    {
+      cardId: encounter.id,
+      name: encounter.cardType === "enemy" ? encounter.enemyName : encounter.title,
+      type: encounter.cardType === "enemy" ? "enemy" : "hazard",
+      deck: encounter.threatLane,
+      challenge: {
+        stat: encounter.stat,
+        value: encounter.difficulty
+      }
+    }
+  ];
+}
+
+function canPayShopCost(
+  player: PlayerState,
+  state: GameState,
+  cost: PublicShopService["cost"]
+): { enabled: boolean; disabledReason?: string } {
+  const salvage = getPublicSalvage(player);
+  const completedContracts = getCompletedContractCountForProjection(state, player.seatId);
+
+  if (cost.salvage !== undefined && salvage < cost.salvage) {
+    return { enabled: false, disabledReason: "Not enough Salvage" };
+  }
+
+  if (cost.trophies !== undefined && player.character.trophies < cost.trophies) {
+    return { enabled: false, disabledReason: "Not enough Trophies" };
+  }
+
+  if (cost.completedContracts !== undefined && completedContracts < cost.completedContracts) {
+    return { enabled: false, disabledReason: "Need completed Contracts" };
+  }
+
+  if (cost.scars !== undefined && player.character.scars.length < cost.scars) {
+    return { enabled: false, disabledReason: "Condition not met" };
+  }
+
+  return { enabled: true };
+}
+
+function createShopService(
+  player: PlayerState,
+  state: GameState,
+  service: Omit<PublicShopService, "enabled" | "disabledReason"> & { enabled?: boolean; disabledReason?: string }
+): PublicShopService {
+  if (service.enabled === false) {
+    return {
+      ...service,
+      enabled: false,
+      disabledReason: service.disabledReason
+    };
+  }
+
+  const payment = canPayShopCost(player, state, service.cost);
+
+  return {
+    ...service,
+    ...payment
+  };
+}
+
+function buildPublicShopServices(state: GameState, player: PlayerState): PublicShopService[] {
+  const boardSpace = getBoardSpace(player.character.currentSpaceId);
+
+  if (!boardSpace || state.currentEncounter) {
+    return [];
+  }
+
+  const services: PublicShopService[] = [];
+
+  if (boardSpace.tags.includes("shop")) {
+    services.push(
+      createShopService(player, state, {
+        id: "buy-gear",
+        label: "Buy Gear",
+        cost: { salvage: 3 }
+      }),
+      createShopService(player, state, {
+        id: "sell-gear",
+        label: "Sell Gear",
+        cost: {},
+        risk: player.character.heldGear.length === 0 ? undefined : "Trade one carried item",
+        enabled: player.character.heldGear.length > 0,
+        disabledReason: player.character.heldGear.length > 0 ? undefined : "No Gear to sell"
+      })
+    );
+  }
+
+  if (boardSpace.tags.includes("salvage") || boardSpace.id.includes("foundry")) {
+    services.push(
+      createShopService(player, state, {
+        id: "repair-gear",
+        label: "Repair Gear",
+        cost: { salvage: 2 }
+      }),
+      createShopService(player, state, {
+        id: "buy-supplies",
+        label: "Buy Supplies",
+        cost: { salvage: 1 }
+      })
+    );
+  }
+
+  if (boardSpace.tags.includes("recovery")) {
+    services.push(
+      createShopService(player, state, {
+        id: "buy-treatment",
+        label: "Buy Treatment",
+        cost: { salvage: 2 }
+      })
+    );
+  }
+
+  if (boardSpace.tags.includes("shrine")) {
+    services.push(
+      createShopService(player, state, {
+        id: "buy-boon",
+        label: "Buy Boon",
+        cost: { salvage: 2 }
+      })
+    );
+  }
+
+  if (boardSpace.tags.includes("risk-shop")) {
+    services.push(
+      createShopService(player, state, {
+        id: "risk-action",
+        label: "Risk Action",
+        cost: { heat: 1 },
+        risk: "+1 Heat"
+      })
+    );
+  }
+
+  return services.slice(0, 6);
+}
+
+function buildPublicShopEncounter(state: GameState, visiblePlayers: PlayerState[]): Record<string, unknown> | null {
+  if (state.status !== "active" || state.phase !== "action" || state.activeResolution || state.pendingEnemyRoll) {
+    return null;
+  }
+
+  const activeSeatId = state.turnOrder[state.activeSeatIndex] ?? null;
+  const activePlayer = activeSeatId ? visiblePlayers.find((player) => player.seatId === activeSeatId) ?? null : null;
+  const boardSpace = activePlayer ? getBoardSpace(activePlayer.character.currentSpaceId) : null;
+  const sector = state.sectors.find((entry) => entry.id === activePlayer?.character.currentSpaceId) ?? null;
+
+  if (!activePlayer || !boardSpace || !sector || !boardSpace.tags.some((tag) => tag === "shop" || tag === "risk-shop")) {
+    return null;
+  }
+
+  const salvage = getPublicSalvage(activePlayer);
+  const completedContracts = getCompletedContractCountForProjection(state, activePlayer.seatId);
+  const blockingThreats = buildPublicBlockingThreats(state);
+  const services = buildPublicShopServices(state, activePlayer);
+  const latest = state.lastOutcomeSummary?.seatId === activePlayer.seatId ? state.lastOutcomeSummary : null;
+
+  return {
+    sectorId: sector.id,
+    sectorName: sector.name,
+    shopId: boardSpace.id,
+    shopName: boardSpace.name,
+    status: blockingThreats.length > 0 ? "locked" : getPublicShopStatus(state, activePlayer),
+    activePlayer: {
+      playerId: activePlayer.seatId,
+      name: activePlayer.character.name,
+      characterName: activePlayer.character.name,
+      salvage,
+      heat: activePlayer.character.heat,
+      wounds: {
+        current: activePlayer.character.wounds,
+        max: state.woundThreshold
+      },
+      trophies: activePlayer.character.trophies,
+      completedContracts
+    },
+    blockingThreats,
+    services,
+    revealedStock: undefined,
+    recentOutcome: latest
+      ? {
+          operativeName: activePlayer.character.name,
+          shopName: boardSpace.name,
+          action: "Recent outcome",
+          remainingSalvage: salvage,
+          summary: latest.summary
+        }
+      : null
+  };
+}
+
 export function createTvProjection(state: GameState): Record<string, unknown> {
   const escalationThreshold = getEscalationCollapseLevel(state.sessionMode);
   const activeScenario = getScenarioDefinition(state.activeScenarioId);
@@ -4927,6 +5268,7 @@ export function createTvProjection(state: GameState): Record<string, unknown> {
     state.seats.filter((seat) => !seat.kicked && seat.displayName).map((seat) => seat.seatId)
   );
   const visiblePlayers = state.players.filter((player) => visibleSeatIds.has(player.seatId));
+  const shopEncounter = buildPublicShopEncounter(state, visiblePlayers);
   const recentAbilityTriggers = state.eventLog
     .filter(
       (
@@ -5046,6 +5388,7 @@ export function createTvProjection(state: GameState): Record<string, unknown> {
         stats: player.character.stats,
         trophies: player.character.trophies,
         trophyPile: player.character.trophyPile ?? [],
+        salvage: player.character.salvage ?? 0,
         heat: player.character.heat,
         wounds: player.character.wounds,
         scars: player.character.scars,
@@ -5075,6 +5418,7 @@ export function createTvProjection(state: GameState): Record<string, unknown> {
     pendingEnemyRoll: state.pendingEnemyRoll,
     outcomeSummary: state.lastOutcomeSummary,
     activeResolution: state.activeResolution ?? null,
+    shopEncounter,
     recentAbilityTriggers,
     nemesis: nemesisSummary
   };
@@ -5109,6 +5453,7 @@ export function createPhoneProjection(state: GameState, seatId: string, forcePri
     pendingEnemyRoll: state.pendingEnemyRoll,
     outcomeSummary: state.lastOutcomeSummary,
     activeResolution: state.activeResolution ?? null,
+    shopEncounter: publicProjection.shopEncounter,
     recentAbilityTriggers: publicProjection.recentAbilityTriggers,
     nemesis: publicProjection.nemesis,
     boundNemesis: (publicProjection.nemesisChampions as Array<{ boundPlayerId: string }>).find(

@@ -6,5 +6,7 @@
     "stat": "command",
     "amount": 1
   },
-  "flavor": "A stamped relay sigil that carries enough authority to still a crowded platform."
+  "flavor": "A stamped relay sigil that carries enough authority to still a crowded platform.",
+  "tier": "starter",
+  "progressionWeight": 0.75
 }

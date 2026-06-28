@@ -70,6 +70,7 @@ const encounterDecksBySpaceId: Partial<Record<string, EncounterDecks>> = {
       "hymn-scarred-zealot",
       "bellwire-snare",
       "scrap-toll-gangers",
+      "ash-lane-cutters",
       "chain-maul-salvager",
       "furnace-ditch-collapse",
       "choir-bulwark",
@@ -87,6 +88,7 @@ const encounterDecksBySpaceId: Partial<Record<string, EncounterDecks>> = {
     threat: [
       "scrap-toll-gangers",
       "gate-tax-collectors",
+      "pale-toll-enforcer",
       "rust-choir-peddlers",
       "pale-cartel-shakedown",
       "pale-contract-collector"
@@ -101,6 +103,7 @@ const encounterDecksBySpaceId: Partial<Record<string, EncounterDecks>> = {
       "glass-chime-swarm",
       "latchspire-raider",
       "lantern-moth-swarm",
+      "bell-mask-pilgrim",
       "roadside-bone-oracle",
       "spindle-static-squall",
       "mirror-mite-bloom",
@@ -142,6 +145,7 @@ const encounterDecksBySpaceId: Partial<Record<string, EncounterDecks>> = {
       "cinder-veil-stalker",
       "beacon-cable-snare",
       "broken-mast-collapse",
+      "cinder-bone-marauder",
       "siren-relay-echo",
       "relay-pilgrim-riot",
       "void-salt-sickness",
@@ -166,6 +170,7 @@ const encounterDecksBySpaceId: Partial<Record<string, EncounterDecks>> = {
       "copperjaw-vermin",
       "mudglass-sinkhole",
       "yard-ghoul-welders",
+      "yard-rivet-brute",
       "chain-maul-salvager",
       "rust-choir-peddlers",
       "pale-cartel-shakedown"
@@ -227,6 +232,7 @@ const encounterDecksBySpaceId: Partial<Record<string, EncounterDecks>> = {
       "ash-court-duelist",
       "velvet-knife-confessor",
       "false-route-procession",
+      "glass-mire-stalker",
       "bone-rivet-brute",
       "red-march-cannoneer"
     ],
@@ -242,6 +248,7 @@ const encounterDecksBySpaceId: Partial<Record<string, EncounterDecks>> = {
       "memory-tax-gate",
       "mourning-engine-pup",
       "coffin-frame-automaton",
+      "rust-plate-strider",
       "iron-synod-hunter",
       "iron-synod-chirurgeon",
       "grave-lattice-reclaimer",
@@ -352,6 +359,7 @@ const encounterDecksBySpaceId: Partial<Record<string, EncounterDecks>> = {
       "breach-lens-overload",
       "memory-tax-gate",
       "choir-static-burst",
+      "static-censer-acolyte",
       "moth-carrier-husk",
       "webglass-snarefield",
       "false-route-procession",

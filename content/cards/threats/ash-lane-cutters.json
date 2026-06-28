@@ -1,0 +1,30 @@
+{
+  "id": "ash-lane-cutters",
+  "type": "threat",
+  "cardType": "enemy",
+  "title": "Ash-Lane Cutters",
+  "enemyName": "Ash-Lane Cutters",
+  "text": "Road knives wait in the soot where the lane narrows. They strike fast, then vanish into toll smoke.",
+  "flavor": "Every road in the Reach has a price. Some collect in blood.",
+  "severity": 1,
+  "region": "outer",
+  "stat": "grit",
+  "difficulty": 4,
+  "trophyValue": 1,
+  "defeatReward": {
+    "type": "gain_note",
+    "text": "You scattered the cutters and claimed their toll marks."
+  },
+  "woundOnLoss": {
+    "type": "take_wound",
+    "amount": 1
+  },
+  "enemyFamily": "human",
+  "threatLane": "red",
+  "rarity": "common",
+  "tempo": "push",
+  "resourceTags": [
+    "trophy",
+    "wound"
+  ]
+}

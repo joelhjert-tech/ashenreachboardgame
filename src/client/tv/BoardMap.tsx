@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState, type ReactElement } from "react";
 import { getAssetPath } from "../../game/assets/design/assetManifest.js";
 import { BOARD_SPACES, getBoardSpace, isScenarioConfrontationSpace } from "../../game/data/boardSpaces.js";
 import { RIFTFALL_BOARD_NODE_INDEX, RIFTFALL_BOARD_NODES, type BoardNode } from "../../data/riftfallBoardNodes.js";
-import type { OutcomeSummary, PublicPatchPayload } from "../shared/types.js";
+import type { OutcomeSummary, PublicPatchPayload, SectorNode, ThreatIcon } from "../shared/types.js";
 import {
   buildEscalationMarker,
   buildScenarioAuras,
@@ -14,10 +14,12 @@ import {
 } from "../shared/scenarioBoardVisuals.js";
 import { BoardStage } from "./BoardStage.js";
 import { pointerToBoardCoordinate, type BoardRect } from "./boardGeometry.js";
+import { HostCinematicFxLayer, type MapFxPoint, type MapFxTrail } from "./HostCinematicFxLayer.js";
 import { TalismanBoardSurface } from "./TalismanBoardSurface.js";
 
 interface BoardMapProps {
   patch: PublicPatchPayload;
+  previousPatch?: PublicPatchPayload | null;
   phase: string;
   showHeader?: boolean;
   showSidebar?: boolean;
@@ -144,7 +146,104 @@ function buildBoardTokens(patch: PublicPatchPayload, imageRect: BoardRect): Boar
   return tokens;
 }
 
-export function BoardMap({ patch, phase, showHeader = true, showSidebar = true }: BoardMapProps): ReactElement {
+function threatIconTone(icon: ThreatIcon): MapFxPoint["tone"] {
+  if (icon === "blue") {
+    return "anomaly";
+  }
+
+  return icon;
+}
+
+function getThreatIconsForNode(nodeId: string, liveSector: SectorNode | null): ThreatIcon[] {
+  if (liveSector?.threatIcons?.length) {
+    return liveSector.threatIcons;
+  }
+
+  return getBoardSpace(nodeId)?.threatIcons ?? [];
+}
+
+function buildMapFxPoints(patch: PublicPatchPayload, activeSectorId: string | null): MapFxPoint[] {
+  const liveSectors = new Map(patch.sectors.map((sector) => [sector.id, sector] as const));
+  const points: MapFxPoint[] = [];
+
+  RIFTFALL_BOARD_NODES.forEach((node) => {
+    const boardSpace = getBoardSpace(node.id);
+    const liveSector = liveSectors.get(node.id) ?? null;
+    const threatIcons = getThreatIconsForNode(node.id, liveSector);
+
+    threatIcons.forEach((icon, index) => {
+      const offset = (index - (threatIcons.length - 1) / 2) * 0.008;
+      points.push({
+        id: `${node.id}-${icon}-${index}`,
+        x: Math.min(0.98, Math.max(0.02, node.x + offset)),
+        y: Math.min(0.98, Math.max(0.02, node.y + offset * 0.6)),
+        tone: threatIconTone(icon),
+        intensity: 0.72 + Math.min(1, (liveSector?.danger ?? boardSpace?.threatIcons.length ?? 1) / 6)
+      });
+    });
+
+    if (boardSpace?.tags.includes("shop") || boardSpace?.tags.includes("risk-shop") || boardSpace?.tags.includes("shrine")) {
+      points.push({
+        id: `${node.id}-gold-service`,
+        x: node.x,
+        y: node.y,
+        tone: "gold",
+        intensity: boardSpace.tags.includes("risk-shop") ? 1.15 : 0.84
+      });
+    }
+  });
+
+  if (activeSectorId) {
+    const activeNode = RIFTFALL_BOARD_NODE_INDEX.get(activeSectorId);
+
+    if (activeNode) {
+      points.push({
+        id: `${activeSectorId}-active`,
+        x: activeNode.x,
+        y: activeNode.y,
+        tone: "active",
+        intensity: 1.35
+      });
+    }
+  }
+
+  return points;
+}
+
+function buildNemesisTrails(patch: PublicPatchPayload, previousPatch: PublicPatchPayload | null | undefined): MapFxTrail[] {
+  if (!patch.nemesisChampions?.length || !previousPatch?.nemesisChampions?.length) {
+    return [];
+  }
+
+  const previousById = new Map(previousPatch.nemesisChampions.map((champion) => [champion.id, champion] as const));
+
+  return patch.nemesisChampions
+    .map((champion): MapFxTrail | null => {
+      const previous = previousById.get(champion.id);
+
+      if (!previous || previous.sectorId === champion.sectorId) {
+        return null;
+      }
+
+      const from = RIFTFALL_BOARD_NODE_INDEX.get(previous.sectorId);
+      const to = RIFTFALL_BOARD_NODE_INDEX.get(champion.sectorId);
+
+      if (!from || !to) {
+        return null;
+      }
+
+      return {
+        id: `${champion.id}-${previous.sectorId}-${champion.sectorId}`,
+        fromX: from.x,
+        fromY: from.y,
+        toX: to.x,
+        toY: to.y
+      };
+    })
+    .filter((trail): trail is MapFxTrail => Boolean(trail));
+}
+
+export function BoardMap({ patch, previousPatch = null, phase, showHeader = true, showSidebar = true }: BoardMapProps): ReactElement {
   const boardAssetPath = getAssetPath("full_board_main");
   const [selectedNodeId, setSelectedNodeId] = useState<string>(() => RIFTFALL_BOARD_NODES[0]?.id ?? "");
   const [calibrationPoint, setCalibrationPoint] = useState<CalibrationPoint | null>(null);
@@ -195,6 +294,8 @@ export function BoardMap({ patch, phase, showHeader = true, showSidebar = true }
   const escalationMarker = buildEscalationMarker(patch);
   const scenarioAuras = buildScenarioAuras(patch);
   const scenarioRoutes = buildScenarioRoutes(patch);
+  const mapFxPoints = useMemo(() => buildMapFxPoints(patch, activeSectorId), [activeSectorId, patch]);
+  const mapFxTrails = useMemo(() => buildNemesisTrails(patch, previousPatch), [patch, previousPatch]);
 
   const calibrationExport = useMemo(
     () =>
@@ -257,6 +358,20 @@ export function BoardMap({ patch, phase, showHeader = true, showSidebar = true }
                   selectedNodeId={selectedNodeId}
                   legalTargetIds={legalTargetIds}
                   debugEnabled={boardDebugEnabled}
+                />
+                <HostCinematicFxLayer
+                  variant="map"
+                  points={mapFxPoints}
+                  trails={mapFxTrails}
+                  scanlineKey={`${patch.escalationLevel}-${patch.escalationThreshold}`}
+                  className="host-map-fx-layer"
+                  testId="host-map-fx-layer"
+                  style={{
+                    left: `${imageRect.left}px`,
+                    top: `${imageRect.top}px`,
+                    width: `${imageRect.width}px`,
+                    height: `${imageRect.height}px`
+                  }}
                 />
                 <svg className="board-route-overlay" aria-hidden="true">
                   {scenarioRoutes.map((effect) => {

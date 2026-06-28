@@ -140,6 +140,17 @@ function primeLiveScenarioState(
           character: {
             ...player.character,
             currentSpaceId: "center_cinder_gate",
+            heldGear: [
+              {
+                id: "choir-static-censer",
+                name: "Choir Static Censer",
+                slot: "utility",
+                category: "chargedRelic",
+                tier: "artifact",
+                progressionWeight: 2.5,
+                statBonus: { stat: "signal", amount: 1 }
+              }
+            ],
             stats: {
               ...player.character.stats,
               ...options.stats
@@ -602,7 +613,8 @@ describe("server API scenario flow", () => {
       label: "Throne of Ash",
       scenarioId: "scenario_throne_of_ash",
       scenarioProgress: {
-        crownClaims: 0,
+        crownClaims: 1,
+        "crownClaim:seat-1": 1,
         throneClaims: 0
       } as Record<string, number>
     },

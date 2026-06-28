@@ -69,6 +69,17 @@ export interface ReducerFailure {
 
 export type ReducerResult = ReducerSuccess | ReducerFailure;
 
+const RECENT_ENCOUNTER_LIMIT = 12;
+
+function recordRecentEncounterCardId(state: GameState, cardId: string | null | undefined): string[] | undefined {
+  if (!cardId) {
+    return state.recentEncounterCardIds;
+  }
+
+  const existing = state.recentEncounterCardIds ?? [];
+  return [...existing.filter((entry) => entry !== cardId), cardId].slice(-RECENT_ENCOUNTER_LIMIT);
+}
+
 function getActiveSeatId(state: GameState): string {
   const activeSeatId = state.turnOrder[state.activeSeatIndex];
 
@@ -997,6 +1008,7 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
         phase: "action",
         resolutionSource: null,
         currentEncounter: drawnAction.card,
+        recentEncounterCardIds: recordRecentEncounterCardId(revealedState, drawnAction.card?.id),
         activeResolution: drawnAction.card
           ? {
               id: createResolutionId(drawnAction.seatId, "threat", drawnAction.createdAt, drawnAction.card.id),

@@ -10,5 +10,7 @@
   "activeText": "Spend 1 charge to reduce anomaly instability by 1 or lose 1 heat after a signal check.",
   "useLimit": "charge",
   "charges": 2,
-  "flavor": "It sings only when the air is already wrong."
+  "flavor": "It sings only when the air is already wrong.",
+  "tier": "artifact",
+  "progressionWeight": 2.5
 }

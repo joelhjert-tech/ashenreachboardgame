@@ -27,5 +27,15 @@
       }
     ]
   },
-  "enemyFamily": "choir"
+  "enemyFamily": "choir",
+  "threatLane": "yellow",
+  "region": "inner",
+  "rarity": "rare",
+  "tempo": "push",
+  "resourceTags": [
+    "gear",
+    "heat",
+    "trophy",
+    "wound"
+  ]
 }

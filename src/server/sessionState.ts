@@ -116,6 +116,7 @@ export function createInitialSessionState(
     nemesisChampions: [],
     nemesisNexusCountdowns: [],
     eventLog: [],
+    recentEncounterCardIds: [],
     currentEncounter: null,
     pendingEnemyRoll: null,
     pendingEffect: null,

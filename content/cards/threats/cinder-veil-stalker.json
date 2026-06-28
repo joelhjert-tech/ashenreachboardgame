@@ -27,5 +27,15 @@
       }
     ]
   },
-  "enemyFamily": "breachborn"
+  "enemyFamily": "breachborn",
+  "threatLane": "red",
+  "region": "outer",
+  "rarity": "common",
+  "tempo": "push",
+  "resourceTags": [
+    "gear",
+    "heat",
+    "trophy",
+    "wound"
+  ]
 }

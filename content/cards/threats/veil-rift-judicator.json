@@ -27,5 +27,16 @@
       }
     ]
   },
-  "enemyFamily": "machine"
+  "enemyFamily": "machine",
+  "threatLane": "blue",
+  "region": "middle",
+  "rarity": "uncommon",
+  "tempo": "push",
+  "resourceTags": [
+    "loot",
+    "scar",
+    "scenario",
+    "trophy",
+    "wound"
+  ]
 }

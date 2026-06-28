@@ -6,7 +6,7 @@
   "enemyName": "Shardvine Ambushers",
   "text": "Shardvine scouts drop from the gantries with glass knives and bright route masks.",
   "flavor": "They cut the map first, then the traveler.",
-  "severity": 3,
+  "severity": 2,
   "stat": "guile",
   "difficulty": 7,
   "trophyValue": 6,
@@ -27,5 +27,15 @@
       }
     ]
   },
-  "enemyFamily": "human"
+  "enemyFamily": "human",
+  "threatLane": "yellow",
+  "region": "outer",
+  "rarity": "common",
+  "tempo": "push",
+  "resourceTags": [
+    "gear",
+    "heat",
+    "trophy",
+    "wound"
+  ]
 }

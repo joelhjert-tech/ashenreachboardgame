@@ -1,0 +1,40 @@
+{
+  "id": "glass-mire-stalker",
+  "type": "threat",
+  "cardType": "enemy",
+  "title": "Glass-Mire Stalker",
+  "enemyName": "Glass-Mire Stalker",
+  "text": "Something tall and translucent waits where mirror slag has become a marsh, bending your route-light toward its mouth.",
+  "flavor": "You see the wound before you feel the bite.",
+  "severity": 3,
+  "region": "middle",
+  "stat": "guile",
+  "difficulty": 8,
+  "trophyValue": 2,
+  "defeatReward": {
+    "type": "gain_note",
+    "text": "You cracked the stalker's mirror-bone and marked a safer route through the mire."
+  },
+  "woundOnLoss": {
+    "type": "sequence",
+    "effects": [
+      {
+        "type": "take_wound",
+        "amount": 1
+      },
+      {
+        "type": "gain_heat",
+        "amount": 1
+      }
+    ]
+  },
+  "enemyFamily": "breachborn",
+  "threatLane": "blue",
+  "rarity": "uncommon",
+  "tempo": "push",
+  "resourceTags": [
+    "heat",
+    "trophy",
+    "wound"
+  ]
+}

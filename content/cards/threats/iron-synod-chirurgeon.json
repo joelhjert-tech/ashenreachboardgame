@@ -11,7 +11,9 @@
   "stat": "forge",
   "difficulty": 10,
   "trophyValue": 3,
-  "combatEffectKeys": ["threat_disable_armor_bonus"],
+  "combatEffectKeys": [
+    "threat_disable_armor_bonus"
+  ],
   "defeatReward": {
     "type": "sequence",
     "effects": [
@@ -38,5 +40,14 @@
       }
     ]
   },
-  "enemyFamily": "machine"
+  "enemyFamily": "machine",
+  "threatLane": "yellow",
+  "rarity": "uncommon",
+  "tempo": "push",
+  "resourceTags": [
+    "gear",
+    "heat",
+    "trophy",
+    "wound"
+  ]
 }

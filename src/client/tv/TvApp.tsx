@@ -35,6 +35,9 @@ import type {
 import { HostPlayerCard } from "./HostPlayerCard.js";
 import { HostBattleOverlay } from "./HostBattleOverlay.js";
 import { isHostBattleActive } from "./hostBattleState.js";
+import { HostShopOverlay } from "./HostShopOverlay.js";
+import { isHostShopActive } from "./hostShopState.js";
+import { DiceRollScene } from "./DiceRollScene.js";
 import { JoinQrCard } from "./JoinQrCard.js";
 import { TacticalMapBoard } from "./TacticalMapBoard.js";
 
@@ -1161,15 +1164,16 @@ function TacticalMapPanel({
   characterCatalog
 }: TacticalMapPanelProps): ReactElement {
   const battleMode = isHostBattleActive(patch, battlePlayer);
+  const shopMode = isHostShopActive(patch, activePlayer);
 
   return (
-    <section className={`tv-command-stage${battleMode ? " tv-command-stage-battle-mode" : ""}`}>
+    <section className={`tv-command-stage${battleMode ? " tv-command-stage-battle-mode" : ""}${shopMode ? " tv-command-stage-shop-mode" : ""}`}>
       <div className="tv-command-map-shell">
-        <TacticalMapBoard patch={patch?.payload ?? null} phase={patch?.phase ?? "start"} />
+        <TacticalMapBoard patch={patch?.payload ?? null} previousPatch={previousPatch?.payload ?? null} phase={patch?.phase ?? "start"} />
         <BoardLegend />
       </div>
       <NemesisBanner nemesis={patch?.payload.nemesis ?? null} />
-      {!battleMode && (
+      {!battleMode && !shopMode && (
         <ActiveOperativeOverlay
           patch={patch}
           previousPatch={previousPatch}
@@ -1179,6 +1183,7 @@ function TacticalMapPanel({
         />
       )}
       <HostBattleOverlay patch={patch} activePlayer={battlePlayer} />
+      <HostShopOverlay patch={patch} activePlayer={activePlayer} />
     </section>
   );
 }
@@ -1296,7 +1301,20 @@ function RecentOutcomePanel({
       <div className="tv-recent-layout">
         <div className="tv-recent-roll">
           {!suppressRollPanel && latestOutcome && latestOutcome.die1 !== null && latestOutcome.die2 !== null ? (
-            <RollOutcomePanel summary={latestOutcome} animate title="Live roll" />
+            <div className="tv-recent-roll-with-scene">
+              <DiceRollScene
+                attackValue={latestOutcome.checkTotal}
+                defenseValue={latestOutcome.enemyTotal ?? latestOutcome.difficulty}
+                modifierValue={latestOutcome.statBonus}
+                attackDieFace={latestOutcome.die1}
+                defenseDieFace={latestOutcome.enemyDie1 ?? latestOutcome.die2}
+                attackSuccess={latestOutcome.success === true}
+                defenseSuccess={latestOutcome.success === false}
+                compact
+                className="tv-recent-dice-scene"
+              />
+              <RollOutcomePanel summary={latestOutcome} animate title="Live roll" />
+            </div>
           ) : (
             <div className="tv-recent-roll-placeholder">
               <strong>{suppressRollPanel ? "Battle display active" : "No roll yet"}</strong>

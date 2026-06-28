@@ -9,5 +9,7 @@
   },
   "activeText": "Discard to ignore one failed movement penalty or dodge a hazard failure.",
   "useLimit": "discard",
-  "flavor": "A thumb-sized vial of night that refuses to reflect you."
+  "flavor": "A thumb-sized vial of night that refuses to reflect you.",
+  "tier": "standard",
+  "progressionWeight": 1
 }

@@ -26,5 +26,12 @@
       }
     ]
   },
-  "enemyFamily": "breachborn"
+  "enemyFamily": "breachborn",
+  "threatLane": "blue",
+  "rarity": "uncommon",
+  "tempo": "stall",
+  "resourceTags": [
+    "heat",
+    "wound"
+  ]
 }

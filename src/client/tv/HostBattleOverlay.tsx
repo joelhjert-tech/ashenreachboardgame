@@ -3,6 +3,7 @@ import { CardArtImage } from "../shared/CardArtImage.js";
 import { getCharacterPortraitPath } from "../shared/assetPaths.js";
 import { statLabelById } from "../shared/statLabels.js";
 import type { ActiveResolution, PublicPatchPayload, PublicPlayer, StatePatch } from "../shared/types.js";
+import { HostCinematicFxLayer } from "./HostCinematicFxLayer.js";
 import { isHostBattleActive } from "./hostBattleState.js";
 import { ThreeBattleDiceAnimation } from "./ThreeBattleDiceAnimation.js";
 
@@ -28,6 +29,7 @@ interface HostBattleDisplayModel {
   playerFormula: string;
   enemyFormula: string;
   outcomeLabel: string | null;
+  resultTone: "victory" | "failure" | "neutral";
   cardMovementText: string | null;
   logEntries: string[];
   autoResolveAvailable: boolean;
@@ -131,7 +133,13 @@ function buildBattleModel(
       ? `${activePlayer.character.name} wins the battle`
       : resolution?.roll?.success === false || outcome?.success === false
         ? `${activePlayer.character.name} is driven back`
-        : null;
+      : null;
+  const resultTone =
+    resolution?.roll?.success === true || outcome?.success === true
+      ? "victory"
+      : resolution?.roll?.success === false || outcome?.success === false
+        ? "failure"
+        : "neutral";
   const cardMovementText = getCardMovementText(enemyName, outcomeText);
   const logEntries = [
     `${activePlayer.character.name} engages ${enemyName}`,
@@ -175,6 +183,7 @@ function buildBattleModel(
       fallbackLabel: `Battle ${enemyBattleValue ?? "-"}`
     }),
     outcomeLabel,
+    resultTone,
     cardMovementText,
     logEntries,
     autoResolveAvailable: Boolean(pendingEnemyRoll)
@@ -204,8 +213,14 @@ export function HostBattleOverlay({
 
   return (
     <section className="host-battle-overlay" aria-label="Host battle overlay" data-testid="host-battle-overlay">
-      <div className="host-battle-panel">
-        <article className="host-battle-combatant host-battle-player" data-testid="host-battle-player">
+      <div className={`host-battle-panel host-battle-panel-${model.resultTone}`}>
+        <HostCinematicFxLayer
+          variant="battle"
+          tone={model.resultTone}
+          burstActive={model.resultTone !== "neutral"}
+          testId="host-battle-fx-layer"
+        />
+        <article className="host-battle-combatant host-battle-player host-battle-parallax-card" data-testid="host-battle-player">
           <div className="host-battle-portrait">
             {model.playerPortraitUrl ? (
               <img src={model.playerPortraitUrl} alt={model.playerName} />
@@ -242,7 +257,7 @@ export function HostBattleOverlay({
           <strong>VS</strong>
         </div>
 
-        <article className="host-battle-combatant host-battle-enemy" data-testid="host-battle-enemy">
+        <article className="host-battle-combatant host-battle-enemy host-battle-parallax-card" data-testid="host-battle-enemy">
           <div className="host-battle-portrait host-battle-card-art">
             <CardArtImage cardType="threat" cardId={model.enemyCardId} alt={model.enemyName} />
           </div>
