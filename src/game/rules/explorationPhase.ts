@@ -2,7 +2,7 @@ import type { BoardSpaceDefinition, ThreatIcon } from "../data/boardSpaces.js";
 
 export interface BoardThreatCard {
   id: string;
-  category: "event" | "enemy" | "encounter" | "asset";
+  category: "event" | "enemy" | "nemesis" | "encounter" | "asset";
   icons: ThreatIcon[];
 }
 

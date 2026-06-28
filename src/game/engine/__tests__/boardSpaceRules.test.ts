@@ -133,15 +133,16 @@ describe("exploration and engagement rules", () => {
     });
   });
 
-  it("orders engagement resolution event, enemy, encounter, asset", () => {
+  it("orders engagement resolution event, enemy, nemesis, encounter, asset", () => {
     const queue = buildEngagementQueue([
       { id: "asset-a", category: "asset", icons: [] },
       { id: "enemy-a", category: "enemy", icons: ["red"] },
+      { id: "nemesis-a", category: "nemesis", icons: ["red", "blue"] },
       { id: "event-a", category: "event", icons: ["blue"] },
       { id: "encounter-a", category: "encounter", icons: ["yellow"] }
     ]);
 
-    expect(queue.map((entry) => entry.category)).toEqual(["event", "enemy", "encounter", "asset"]);
+    expect(queue.map((entry) => entry.category)).toEqual(["event", "enemy", "nemesis", "encounter", "asset"]);
   });
 
   it("only resolves space text in outer and middle tiers when no threat cards remain", () => {
@@ -169,6 +170,7 @@ describe("board space resolver", () => {
     const event = resolveBoardSpaceEvent(samplePlayer, space, []);
 
     expect(event.spaceId).toBe("mirecoil-beacon");
+    expect(event.printedThreatIcons).toEqual(["yellow", "blue"]);
     expect(event.exploration.skipped).toBe(false);
     expect(event.engagement.shouldResolveTextBox).toBe(true);
     expect(event.textBox.effectKey).toBe("outer_mirecoilTraffic");

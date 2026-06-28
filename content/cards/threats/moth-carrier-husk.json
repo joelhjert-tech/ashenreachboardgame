@@ -1,0 +1,33 @@
+{
+  "id": "moth-carrier-husk",
+  "type": "threat",
+  "cardType": "enemy",
+  "title": "Moth-Carrier Husk",
+  "enemyName": "Moth-Carrier Husk",
+  "text": "A hollow body walks under a lantern-cloud of black signal moths. If it survives the encounter, the swarm calls more trouble.",
+  "flavor": "Its ribs are a nest and a transmitter.",
+  "severity": 2,
+  "region": "outer",
+  "stat": "grit",
+  "difficulty": 4,
+  "trophyValue": 2,
+  "failEffectKey": "threat_fail_escalate",
+  "defeatReward": {
+    "type": "gain_note",
+    "text": "You burned the carrier before the moths found a second host."
+  },
+  "woundOnLoss": {
+    "type": "sequence",
+    "effects": [
+      {
+        "type": "take_wound",
+        "amount": 1
+      },
+      {
+        "type": "advance_escalation",
+        "amount": 1
+      }
+    ]
+  },
+  "enemyFamily": "breachborn"
+}

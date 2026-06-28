@@ -1,0 +1,32 @@
+{
+  "id": "hymn-scarred-zealot",
+  "type": "threat",
+  "cardType": "enemy",
+  "title": "Hymn-Scarred Zealot",
+  "enemyName": "Hymn-Scarred Zealot",
+  "text": "A burned Choir footsoldier drags a warbell through the dust. Defeating it breaks the body but broadcasts the hymn.",
+  "flavor": "The smallest bell still knows the alarm.",
+  "severity": 1,
+  "region": "outer",
+  "stat": "grit",
+  "difficulty": 3,
+  "trophyValue": 1,
+  "defeatReward": {
+    "type": "sequence",
+    "effects": [
+      {
+        "type": "gain_note",
+        "text": "You silenced the zealot before the full formation answered."
+      },
+      {
+        "type": "gain_heat",
+        "amount": 1
+      }
+    ]
+  },
+  "woundOnLoss": {
+    "type": "gain_heat",
+    "amount": 1
+  },
+  "enemyFamily": "choir"
+}

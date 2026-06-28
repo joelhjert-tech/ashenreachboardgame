@@ -59,9 +59,12 @@ const encounterDecksBySpaceId: Partial<Record<string, EncounterDecks>> = {
     threat: [
       "smoke-leech-clutch",
       "ash-rat-skitter",
+      "hymn-scarred-zealot",
       "bellwire-snare",
       "scrap-toll-gangers",
+      "chain-maul-salvager",
       "furnace-ditch-collapse",
+      "choir-bulwark",
       "gate-tax-collectors",
       "redglass-stray",
       "cinder-veil-stalker",
@@ -111,9 +114,11 @@ const encounterDecksBySpaceId: Partial<Record<string, EncounterDecks>> = {
   outer_relay_camp: {
     threat: [
       "lantern-moth-swarm",
+      "static-larva-swarm",
       "relay-pilgrim-riot",
       "siren-relay-echo",
       "roadside-bone-oracle",
+      "moth-carrier-husk",
       "spindle-static-squall"
     ],
     anomaly: ["anomaly-choir-static", "anomaly-bellrain-inversion", "anomaly-relay-ghost-loop"],
@@ -125,6 +130,7 @@ const encounterDecksBySpaceId: Partial<Record<string, EncounterDecks>> = {
     threat: [
       "relay-husk",
       "slag-drone",
+      "signal-rotted-engineer",
       "cinder-veil-stalker",
       "beacon-cable-snare",
       "broken-mast-collapse",
@@ -152,6 +158,7 @@ const encounterDecksBySpaceId: Partial<Record<string, EncounterDecks>> = {
       "copperjaw-vermin",
       "mudglass-sinkhole",
       "yard-ghoul-welders",
+      "chain-maul-salvager",
       "rust-choir-peddlers",
       "pale-cartel-shakedown"
     ],
@@ -167,14 +174,23 @@ const encounterDecksBySpaceId: Partial<Record<string, EncounterDecks>> = {
     escalation: []
   },
   outer_surgery_tent: {
-    threat: ["yard-ghoul-welders", "grave-silt-press", "smoke-leech-clutch", "copperjaw-vermin", "glass-tick-cloud", "iron-synod-chirurgeon"],
+    threat: [
+      "yard-ghoul-welders",
+      "grave-silt-press",
+      "smoke-leech-clutch",
+      "copperjaw-vermin",
+      "static-larva-swarm",
+      "glass-tick-cloud",
+      "signal-rotted-engineer",
+      "iron-synod-chirurgeon"
+    ],
     anomaly: [],
     contract: ["compact-surgery-bond"],
     artifact: ["artifact-yard", "artifact-cinder-suture-kit", "artifact-void-salt-poultice", "artifact-last-breath-rivet", "artifact-saintwire-splint"],
     escalation: []
   },
   "emberwatch-step": {
-    threat: ["emberwatch-sparkfall", "suture-storm", "red-march-cannoneer", "starless-taxation"],
+    threat: ["emberwatch-sparkfall", "suture-storm", "iron-lung-grenadier", "red-march-cannoneer", "starless-taxation"],
     anomaly: ["anomaly-red-suture-field"],
     contract: [],
     artifact: [],
@@ -201,6 +217,7 @@ const encounterDecksBySpaceId: Partial<Record<string, EncounterDecks>> = {
       "marrow-tax-auditors",
       "guardian-bridge-duelist",
       "ash-court-duelist",
+      "velvet-knife-confessor",
       "false-route-procession",
       "bone-rivet-brute",
       "red-march-cannoneer"
@@ -216,6 +233,7 @@ const encounterDecksBySpaceId: Partial<Record<string, EncounterDecks>> = {
       "breach-lens-overload",
       "memory-tax-gate",
       "mourning-engine-pup",
+      "coffin-frame-automaton",
       "iron-synod-hunter",
       "iron-synod-chirurgeon",
       "grave-lattice-reclaimer",
@@ -241,6 +259,7 @@ const encounterDecksBySpaceId: Partial<Record<string, EncounterDecks>> = {
   middle_scar_surgery: {
     threat: [
       "ash-choir-crusader",
+      "reliquary-judge",
       "suture-storm",
       "marrow-tax-auditors",
       "bone-rivet-brute",
@@ -260,6 +279,7 @@ const encounterDecksBySpaceId: Partial<Record<string, EncounterDecks>> = {
       "iron-synod-hunter",
       "bone-rivet-brute",
       "red-march-cannoneer",
+      "iron-lung-grenadier",
       "suture-storm",
       "mirror-rot-interference",
       "specimen-null-arrives"
@@ -270,14 +290,32 @@ const encounterDecksBySpaceId: Partial<Record<string, EncounterDecks>> = {
     escalation: ["escalation-red-march-levy", "escalation-gate-tax-mandate"]
   },
   middle_rivalry_pit: {
-    threat: ["shardvine-ambushers", "guardian-bridge-duelist", "webglass-snarefield", "ash-court-duelist", "iron-synod-hunter", "false-route-procession"],
+    threat: [
+      "shardvine-ambushers",
+      "guardian-bridge-duelist",
+      "webglass-snarefield",
+      "ash-court-duelist",
+      "velvet-knife-confessor",
+      "iron-synod-hunter",
+      "false-route-procession"
+    ],
     anomaly: ["anomaly-red-suture-field"],
     contract: ["cartel-quiet-route", "compact-cleanse-ledger", "cartel-exposed-object", "cartel-ledger-skim"],
     artifact: ["artifact-red-march-warbell", "artifact-pale-ledger-token", "artifact-black-route-fuse"],
     escalation: ["escalation-bellglass-riot", "escalation-pit-blood-claim"]
   },
   middle_red_march_outpost: {
-    threat: ["red-march-cannoneer", "iron-synod-hunter", "iron-synod-chirurgeon", "mourning-engine-pup", "bone-rivet-brute", "ash-choir-crusader", "suture-storm"],
+    threat: [
+      "red-march-cannoneer",
+      "iron-lung-grenadier",
+      "iron-synod-hunter",
+      "iron-synod-chirurgeon",
+      "mourning-engine-pup",
+      "coffin-frame-automaton",
+      "bone-rivet-brute",
+      "ash-choir-crusader",
+      "suture-storm"
+    ],
     anomaly: ["anomaly-red-suture-field", "anomaly-marrow-clock-drift", "anomaly-warbell-parallax"],
     contract: ["warden-span-vigil", "clan-salvage-tithe", "dominion-warbell-recovery", "clan-bone-road-guide"],
     artifact: ["artifact-red-march-warbell"],
@@ -290,6 +328,7 @@ const encounterDecksBySpaceId: Partial<Record<string, EncounterDecks>> = {
       "breach-lens-overload",
       "ash-choir-crusader",
       "choir-static-burst",
+      "reliquary-judge",
       "false-route-procession",
       "mirror-rot-interference",
       "specimen-null-arrives"
@@ -305,6 +344,7 @@ const encounterDecksBySpaceId: Partial<Record<string, EncounterDecks>> = {
       "breach-lens-overload",
       "memory-tax-gate",
       "choir-static-burst",
+      "moth-carrier-husk",
       "webglass-snarefield",
       "false-route-procession",
       "veil-rift-judicator"
@@ -324,7 +364,15 @@ const encounterDecksBySpaceId: Partial<Record<string, EncounterDecks>> = {
     escalation: ["escalation-webglass-afterimage", "escalation-crownfall-writ", "escalation-blackstar-hunger"]
   },
   inner_veil_rift: {
-    threat: ["veil-rift-judicator", "gateblind-pulse", "ashen-doppelganger", "saint-of-ashes-echo", "starless-taxation", "specimen-null-arrives"],
+    threat: [
+      "veil-rift-judicator",
+      "gateblind-pulse",
+      "ashen-doppelganger",
+      "mirror-lord-envoy",
+      "saint-of-ashes-echo",
+      "starless-taxation",
+      "specimen-null-arrives"
+    ],
     anomaly: ["anomaly-crownfall-echo-court", "anomaly-saint-static-aperture", "anomaly-blackstar-breath", "anomaly-cinder-gate-echo"],
     contract: [],
     artifact: ["artifact-gate-saint-key", "artifact-throne-crown-fragment", "artifact-marrow-route-key", "artifact-rift-anchor-spike"],
@@ -336,6 +384,7 @@ const encounterDecksBySpaceId: Partial<Record<string, EncounterDecks>> = {
       "grave-lattice-reclaimer",
       "throne-soot-knight",
       "last-lock-warden",
+      "pale-marshal",
       "cinder-lattice-maw",
       "saint-of-ashes-echo",
       "starless-taxation"
@@ -361,7 +410,15 @@ const encounterDecksBySpaceId: Partial<Record<string, EncounterDecks>> = {
     escalation: ["escalation-gate-saint-wake", "escalation-artifact-wake", "escalation-throne-shadow"]
   },
   inner_blackstar_shortcut: {
-    threat: ["specimen-null-arrives", "ashen-doppelganger", "cinder-gate-backlash", "gate-choir-executioner", "cinder-lattice-maw", "starless-taxation"],
+    threat: [
+      "specimen-null-arrives",
+      "ashen-doppelganger",
+      "mirror-lord-envoy",
+      "cinder-gate-backlash",
+      "gate-choir-executioner",
+      "cinder-lattice-maw",
+      "starless-taxation"
+    ],
     anomaly: ["anomaly-blackstar-breath", "anomaly-gutter-star-orbit"],
     contract: ["umbral-blackstar-sample"],
     artifact: [
@@ -377,7 +434,15 @@ const encounterDecksBySpaceId: Partial<Record<string, EncounterDecks>> = {
     escalation: ["escalation-ridge-suture", "escalation-crownfall-writ", "escalation-gate-saint-wake", "escalation-blackstar-hunger"]
   },
   inner_choir_shrine: {
-    threat: ["veil-rift-judicator", "gateblind-pulse", "throne-soot-knight", "saint-of-ashes-echo", "gate-choir-executioner", "specimen-null-arrives"],
+    threat: [
+      "veil-rift-judicator",
+      "gateblind-pulse",
+      "throne-soot-knight",
+      "reliquary-judge",
+      "saint-of-ashes-echo",
+      "gate-choir-executioner",
+      "specimen-null-arrives"
+    ],
     anomaly: ["anomaly-choir-static", "anomaly-crownfall-echo-court", "anomaly-saint-static-aperture", "anomaly-cinder-gate-echo"],
     contract: ["umbral-shrine-confession"],
     artifact: ["artifact-bell-votive", "artifact-choir-static-censer", "artifact-gate-saint-key", "artifact-pale-ledger-token", "artifact-marrow-route-key"],
@@ -390,6 +455,7 @@ const encounterDecksBySpaceId: Partial<Record<string, EncounterDecks>> = {
       "cinder-gate-backlash",
       "tomb-gate-colossus",
       "last-lock-warden",
+      "pale-marshal",
       "saint-of-ashes-echo",
       "cinder-lattice-maw",
       "ashen-doppelganger",
@@ -428,6 +494,7 @@ export function createCanonicalSectorGraph(): SectorNode[] {
       regionTier: regionTierByBoardTier[space.tier],
       neighbors: [...node.connections],
       danger: dangerBySpaceId[space.id] ?? Math.min(10, Math.max(1, node.connections.length + space.threatIcons.length)),
+      threatIcons: [...space.threatIcons],
       encounterDecks: cloneEncounterDecks(encounterDecksBySpaceId[space.id])
     };
   });

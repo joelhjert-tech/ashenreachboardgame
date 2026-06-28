@@ -4,7 +4,12 @@ import "@testing-library/jest-dom/vitest";
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { CardArtImage } from "../CardArtImage.js";
-import { getCardArtPath, getCardFallbackArtPath } from "../assetPaths.js";
+import {
+  getCardArtPath,
+  getCardFallbackArtPath,
+  getCharacterPortraitPath,
+  getNemesisPortraitPath
+} from "../assetPaths.js";
 
 describe("card art paths", () => {
   it("returns generated card output paths for known cards", () => {
@@ -14,6 +19,13 @@ describe("card art paths", () => {
 
   it("returns type fallbacks for unknown cards", () => {
     expect(getCardArtPath("anomaly", "missing-card")).toBe(getCardFallbackArtPath("anomaly"));
+  });
+
+  it("returns custom character and Relay nemesis portrait paths", () => {
+    expect(getCharacterPortraitPath("signal-witch")).toBe("/assets/riftfall/characters/signal-witch.png");
+    expect(getNemesisPortraitPath("nemesis_iron_vicar_orm_seat-1")).toBe(
+      "/assets/riftfall/nemeses/nemesis_iron_vicar_orm.png"
+    );
   });
 });
 

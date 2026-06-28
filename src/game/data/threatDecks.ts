@@ -1,8 +1,33 @@
 import { baseNegativePrompt } from "../assets/design/negativePrompt.js";
 
 export type ThreatDeckColor = "red" | "blue" | "yellow";
-export type ThreatCardType = "event" | "enemy" | "encounter" | "asset";
-export type ThreatAttribute = "strength" | "willpower" | "cunning";
+export type ThreatCardType = "event" | "enemy" | "nemesis" | "encounter" | "asset";
+export type ThreatAttribute = "command" | "grit" | "signal" | "guile" | "forge";
+
+export const threatLaneProfiles: Record<
+  ThreatDeckColor,
+  {
+    name: string;
+    primaryStats: ThreatAttribute[];
+    purpose: string;
+  }
+> = {
+  red: {
+    name: "Hostile Contact",
+    primaryStats: ["grit", "forge"],
+    purpose: "Combat enemies, brutes, shield units, and direct battle hazards."
+  },
+  blue: {
+    name: "Void Anomaly",
+    primaryStats: ["signal", "command"],
+    purpose: "Anomalies, signal ghosts, reactor curses, and resolve pressure."
+  },
+  yellow: {
+    name: "Rogue Salvage",
+    primaryStats: ["guile", "forge"],
+    purpose: "Traps, ambushes, bargains, theft, and unstable loot."
+  }
+};
 
 export interface ThreatCardDefinition {
   id: string;
@@ -34,7 +59,7 @@ export const threatDecks: Record<ThreatDeckColor, ThreatCardDefinition[]> = {
       loreRole: "Scrap-lane killers using furnace steel and fear.",
       gameplayRole: "Straight combat pressure.",
       linkedMechanic: "Additional trophy loss on defeat.",
-      enemy: { attribute: "strength", value: 5, trophyValue: 5, traits: ["raider", "mortal"] },
+      enemy: { attribute: "grit", value: 5, trophyValue: 5, traits: ["raider", "mortal"] },
       text: "If you lose this fight, lose 1 additional trophy.",
       imagePrompt: "Threat card art of ash-raiders charging from furnace smoke with hooked scrap weapons.",
       negativePrompt: baseNegativePrompt,
@@ -48,7 +73,7 @@ export const threatDecks: Record<ThreatDeckColor, ThreatCardDefinition[]> = {
       loreRole: "Pack hunters bred to track heat and blood.",
       gameplayRole: "Efficient early combat hazard.",
       linkedMechanic: "Movement punishment on loss.",
-      enemy: { attribute: "strength", value: 4, trophyValue: 4, traits: ["beast", "riftscarred"] },
+      enemy: { attribute: "grit", value: 4, trophyValue: 4, traits: ["beast", "riftscarred"] },
       text: "If you lose this battle, miss your next optional movement bonus.",
       imagePrompt: "Ash-coated attack beasts running low through trench light and sparks.",
       negativePrompt: baseNegativePrompt,
@@ -116,7 +141,7 @@ export const threatDecks: Record<ThreatDeckColor, ThreatCardDefinition[]> = {
       loreRole: "A relay ghost wrapped in broken liturgy.",
       gameplayRole: "Signal fight threat.",
       linkedMechanic: "Heat on loss.",
-      enemy: { attribute: "willpower", value: 5, trophyValue: 5, traits: ["wraith", "breachborn"] },
+      enemy: { attribute: "signal", value: 5, trophyValue: 5, traits: ["wraith", "breachborn"] },
       text: "If you lose this fight, gain 1 Heat.",
       imagePrompt: "Translucent choir wraith with glass hymn shards and blue-white spectral drift.",
       negativePrompt: baseNegativePrompt,
@@ -130,7 +155,7 @@ export const threatDecks: Record<ThreatDeckColor, ThreatCardDefinition[]> = {
       loreRole: "An ancient adjudicator machine that judges thought as treason.",
       gameplayRole: "Mid-tier resolve gatekeeper.",
       linkedMechanic: "Route-note denial.",
-      enemy: { attribute: "willpower", value: 6, trophyValue: 6, traits: ["machine", "warden"] },
+      enemy: { attribute: "signal", value: 6, trophyValue: 6, traits: ["machine", "warden"] },
       text: "You may not spend route notes as abilities in this fight.",
       imagePrompt: "Floating judicial machine with censor lamps and cold blue scanning beams.",
       negativePrompt: baseNegativePrompt,
@@ -185,7 +210,7 @@ export const threatDecks: Record<ThreatDeckColor, ThreatCardDefinition[]> = {
       loreRole: "A sabotaged repair drone turned hunter.",
       gameplayRole: "Guile-based machine skirmisher.",
       linkedMechanic: "Asset disruption on loss.",
-      enemy: { attribute: "cunning", value: 4, trophyValue: 4, traits: ["machine", "sabotage"] },
+      enemy: { attribute: "guile", value: 4, trophyValue: 4, traits: ["machine", "sabotage"] },
       text: "If you lose this battle, choose 1 Asset. Its ability cannot be used next turn.",
       imagePrompt: "A spidery repair drone with bright yellow work lights and cutting limbs.",
       negativePrompt: baseNegativePrompt,
@@ -199,7 +224,7 @@ export const threatDecks: Record<ThreatDeckColor, ThreatCardDefinition[]> = {
       loreRole: "A market-ring theft crew that turns every blind corner into a robbery.",
       gameplayRole: "Early yellow battle pressure.",
       linkedMechanic: "Trophy theft.",
-      enemy: { attribute: "cunning", value: 5, trophyValue: 5, traits: ["raider", "cutpurse"] },
+      enemy: { attribute: "guile", value: 5, trophyValue: 5, traits: ["raider", "cutpurse"] },
       text: "If you lose this fight, lose 1 trophy and 1 route note if able.",
       imagePrompt: "Masked thieves in layered market leathers under sodium lamps and steam haze.",
       negativePrompt: baseNegativePrompt,

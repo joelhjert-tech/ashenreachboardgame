@@ -1,0 +1,34 @@
+{
+  "id": "iron-lung-grenadier",
+  "type": "threat",
+  "cardType": "enemy",
+  "title": "Iron Lung Grenadier",
+  "enemyName": "Iron Lung Grenadier",
+  "text": "A pressure-armored grenadier exhales furnace gas before closing. The first breath is the real attack.",
+  "flavor": "The canister coughs. The trench answers.",
+  "severity": 3,
+  "region": "middle",
+  "stat": "forge",
+  "difficulty": 6,
+  "trophyValue": 4,
+  "revealEffectKey": "threat_force_choose_heat_or_wound",
+  "combatEffectKeys": ["threat_force_enemy_roll_advantage"],
+  "defeatReward": {
+    "type": "gain_note",
+    "text": "You vented the iron lung and kept the pressure gauge."
+  },
+  "woundOnLoss": {
+    "type": "sequence",
+    "effects": [
+      {
+        "type": "take_wound",
+        "amount": 1
+      },
+      {
+        "type": "gain_heat",
+        "amount": 1
+      }
+    ]
+  },
+  "enemyFamily": "human"
+}

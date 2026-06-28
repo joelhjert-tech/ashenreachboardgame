@@ -1,0 +1,25 @@
+{
+  "id": "coffin-frame-automaton",
+  "type": "threat",
+  "cardType": "enemy",
+  "title": "Coffin-Frame Automaton",
+  "enemyName": "Coffin-Frame Automaton",
+  "text": "A funeral-grade automaton unfolds from its own transport coffin. Armor Break: only an overcommitted strike puts it down cleanly.",
+  "flavor": "The dead paid for good hinges.",
+  "severity": 3,
+  "region": "middle",
+  "stat": "forge",
+  "difficulty": 8,
+  "trophyValue": 5,
+  "combatEffectKeys": ["threat_ignore_first_success"],
+  "defeatEffectKey": "threat_defeat_gain_salvage",
+  "defeatReward": {
+    "type": "gain_note",
+    "text": "You split the coffin frame and recovered clean salvage from the hinge core."
+  },
+  "woundOnLoss": {
+    "type": "take_wound",
+    "amount": 1
+  },
+  "enemyFamily": "machine"
+}

@@ -10,8 +10,11 @@
         "threat": [
           "smoke-leech-clutch",
           "ash-rat-skitter",
+          "hymn-scarred-zealot",
+          "chain-maul-salvager",
           "scrap-toll-gangers",
           "furnace-ditch-collapse",
+          "choir-bulwark",
           "gate-tax-collectors",
           "cinder-veil-stalker",
           "starless-taxation"
@@ -32,9 +35,11 @@
         "threat": [
           "glass-chime-swarm",
           "latchspire-raider",
+          "static-larva-swarm",
           "lantern-moth-swarm",
           "roadside-bone-oracle",
           "spindle-static-squall",
+          "moth-carrier-husk",
           "mirror-mite-bloom",
           "starless-taxation"
         ],
@@ -54,6 +59,7 @@
         "threat": [
           "relay-husk",
           "slag-drone",
+          "signal-rotted-engineer",
           "cinder-veil-stalker",
           "beacon-cable-snare",
           "relay-pilgrim-riot",
@@ -78,7 +84,9 @@
           "grave-silt-press",
           "mudglass-sinkhole",
           "yard-ghoul-welders",
+          "coffin-frame-automaton",
           "rust-choir-peddlers",
+          "velvet-knife-confessor",
           "pale-cartel-shakedown"
         ],
         "anomaly": [],
@@ -94,7 +102,16 @@
       "neighbors": ["mirecoil-beacon", "hollow-veil-yard"],
       "danger": 5,
       "encounterDecks": {
-        "threat": ["emberwatch-sparkfall", "suture-storm", "red-march-cannoneer", "starless-taxation"],
+        "threat": [
+          "emberwatch-sparkfall",
+          "suture-storm",
+          "iron-lung-grenadier",
+          "red-march-cannoneer",
+          "reliquary-judge",
+          "mirror-lord-envoy",
+          "pale-marshal",
+          "starless-taxation"
+        ],
         "anomaly": [],
         "contract": [],
         "artifact": [],

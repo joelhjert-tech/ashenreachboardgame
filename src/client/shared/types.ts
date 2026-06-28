@@ -1,5 +1,15 @@
 export type Stat = "command" | "grit" | "signal" | "guile" | "forge";
 export type GearSlot = "weapon" | "armor" | "utility";
+export type ThreatIcon = "red" | "blue" | "yellow";
+export type GearTier = "starter" | "standard" | "advanced" | "artifact";
+export type GearTimingWindow =
+  | "beforeBattleRoll"
+  | "afterBattleRoll"
+  | "beforeTakingDamage"
+  | "startOfTurn"
+  | "movement"
+  | "shop"
+  | "anyTime";
 export type GearCategory =
   | "passive"
   | "active"
@@ -61,6 +71,10 @@ export interface GearItem {
   slot: GearSlot;
   statBonus: { stat: Stat; amount: number };
   category?: GearCategory;
+  cost?: number;
+  tier?: GearTier;
+  timingWindows?: GearTimingWindow[];
+  exhausted?: boolean;
   activeText?: string;
   useLimit?: "oncePerTurn" | "oncePerRound" | "discard" | "charge";
   charges?: number;
@@ -124,6 +138,7 @@ export interface SectorNode {
   regionTier: string;
   neighbors: string[];
   danger: number;
+  threatIcons?: ThreatIcon[];
   encounterDecks: {
     threat: string[];
     anomaly: string[];

@@ -1,0 +1,33 @@
+{
+  "id": "pale-marshal",
+  "type": "threat",
+  "cardType": "enemy",
+  "title": "The Pale Marshal",
+  "enemyName": "The Pale Marshal",
+  "text": "A named Hollow Court commander steps through the route smoke. If you lose, it marks the sector and remains in play.",
+  "flavor": "Some officers do not need armies. They are the line.",
+  "severity": 5,
+  "region": "inner",
+  "stat": "signal",
+  "difficulty": 12,
+  "trophyValue": 8,
+  "revealEffectKey": "threat_lock_space_until_defeated",
+  "combatEffectKeys": ["threat_combat_plus_two_if_inner_region", "threat_block_rerolls"],
+  "defeatEffectKey": "threat_defeat_reduce_heat",
+  "defeatReward": {
+    "type": "draw_artifact"
+  },
+  "woundOnLoss": {
+    "type": "sequence",
+    "effects": [
+      {
+        "type": "take_wound",
+        "amount": 1
+      },
+      {
+        "type": "return_threat_to_space"
+      }
+    ]
+  },
+  "enemyFamily": "revenant"
+}

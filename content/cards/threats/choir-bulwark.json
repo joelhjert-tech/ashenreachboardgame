@@ -1,0 +1,24 @@
+{
+  "id": "choir-bulwark",
+  "type": "threat",
+  "cardType": "enemy",
+  "title": "Choir Bulwark",
+  "enemyName": "Choir Bulwark",
+  "text": "An oath-bound shield bearer advances in lockstep, bell-iron tower shield first. Armored: its first clean defeat is harder to force.",
+  "flavor": "It does not charge. It permits the distance to close.",
+  "severity": 2,
+  "region": "outer",
+  "stat": "command",
+  "difficulty": 5,
+  "trophyValue": 2,
+  "combatEffectKeys": ["threat_ignore_first_success"],
+  "defeatReward": {
+    "type": "gain_note",
+    "text": "You cracked a Choir shield and marked the formation's weak angle."
+  },
+  "woundOnLoss": {
+    "type": "take_wound",
+    "amount": 1
+  },
+  "enemyFamily": "choir"
+}
