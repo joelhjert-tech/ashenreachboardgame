@@ -9540,3 +9540,229 @@ body {
   margin: 0;
   color: rgba(235, 226, 205, 0.76);
 }
+
+.phone-movement-planner {
+  display: grid;
+  gap: 0.8rem;
+  padding: 0.85rem;
+  border: 1px solid rgba(118, 169, 205, 0.34);
+  border-radius: 0.75rem;
+  background:
+    linear-gradient(180deg, rgba(7, 15, 22, 0.9), rgba(5, 7, 10, 0.86)),
+    radial-gradient(circle at 20% 0%, rgba(60, 140, 190, 0.15), transparent 45%);
+  box-shadow: inset 0 0 24px rgba(48, 132, 180, 0.12);
+  min-width: 0;
+}
+
+.phone-movement-planner-header {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.phone-movement-planner-header div {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.phone-movement-planner-header span,
+.phone-movement-intel-heading span,
+.phone-movement-rule span,
+.phone-movement-threats > span,
+.phone-movement-shop > span,
+.phone-movement-occupants > span,
+.phone-movement-markers > span {
+  color: rgba(174, 205, 228, 0.82);
+  font-size: clamp(0.68rem, 2.6vw, 0.78rem);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.phone-movement-planner-header strong {
+  color: #f2dec0;
+  font-size: clamp(1.15rem, 5vw, 1.45rem);
+}
+
+.phone-movement-planner-header p,
+.phone-movement-rule p,
+.phone-movement-threats p,
+.phone-movement-shop p,
+.phone-movement-occupants p,
+.phone-movement-markers p,
+.phone-movement-lore,
+.phone-movement-warning {
+  margin: 0;
+  color: rgba(236, 228, 210, 0.78);
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.phone-movement-destination-list {
+  display: grid;
+  gap: 0.65rem;
+  max-height: min(42svh, 24rem);
+  overflow-y: auto;
+  padding-right: 0.1rem;
+}
+
+.phone-movement-card {
+  min-width: 0;
+}
+
+.phone-movement-card-button {
+  width: 100%;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.28rem 0.65rem;
+  align-items: center;
+  padding: 0.78rem;
+  border: 1px solid rgba(197, 181, 143, 0.2);
+  border-radius: 0.65rem;
+  background: rgba(6, 9, 13, 0.72);
+  color: inherit;
+  text-align: left;
+}
+
+.phone-movement-card-button strong,
+.phone-movement-card-button small,
+.phone-movement-card-button span:not(.phone-movement-badge) {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.phone-movement-card-button strong {
+  color: #f4e2c0;
+  font-size: clamp(0.98rem, 4vw, 1.12rem);
+}
+
+.phone-movement-card-button small,
+.phone-movement-card-button span:not(.phone-movement-badge) {
+  color: rgba(236, 228, 210, 0.7);
+  font-size: clamp(0.78rem, 3.2vw, 0.92rem);
+}
+
+.phone-movement-card-selected .phone-movement-card-button {
+  border-color: rgba(104, 184, 232, 0.62);
+  box-shadow: 0 0 0 1px rgba(104, 184, 232, 0.22), inset 0 0 18px rgba(55, 139, 190, 0.14);
+}
+
+.phone-movement-badge {
+  grid-row: span 2;
+  align-self: start;
+  padding: 0.26rem 0.42rem;
+  border-radius: 999px;
+  background: rgba(72, 88, 98, 0.72);
+  color: #f6ead0;
+  font-size: 0.66rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.phone-movement-badge-shop,
+.phone-movement-badge-reward {
+  background: rgba(174, 122, 48, 0.72);
+}
+
+.phone-movement-badge-locked,
+.phone-movement-badge-gate,
+.phone-movement-badge-danger {
+  background: rgba(157, 55, 44, 0.82);
+}
+
+.phone-movement-badge-nemesis {
+  background: rgba(122, 72, 180, 0.82);
+}
+
+.phone-movement-badge-safe {
+  background: rgba(49, 126, 104, 0.78);
+}
+
+.phone-movement-intel {
+  display: grid;
+  gap: 0.75rem;
+  max-height: min(58svh, 34rem);
+  overflow-y: auto;
+  padding: 0.8rem;
+  border: 1px solid rgba(197, 181, 143, 0.22);
+  border-radius: 0.7rem;
+  background: rgba(3, 5, 8, 0.74);
+  min-width: 0;
+}
+
+.phone-movement-intel-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.65rem;
+}
+
+.phone-movement-intel-heading strong {
+  display: block;
+  color: #f4e2c0;
+  font-size: clamp(1.08rem, 4.6vw, 1.35rem);
+  line-height: 1.05;
+}
+
+.phone-movement-intel-grid {
+  display: grid;
+  grid-template-columns: minmax(5rem, auto) minmax(0, 1fr);
+  gap: 0.42rem 0.75rem;
+  padding: 0.62rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 0.55rem;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.phone-movement-intel-grid span {
+  color: rgba(174, 205, 228, 0.78);
+}
+
+.phone-movement-intel-grid strong {
+  min-width: 0;
+  color: rgba(247, 235, 212, 0.92);
+  overflow-wrap: anywhere;
+}
+
+.phone-movement-rule,
+.phone-movement-threats,
+.phone-movement-shop,
+.phone-movement-occupants,
+.phone-movement-markers {
+  display: grid;
+  gap: 0.36rem;
+  min-width: 0;
+}
+
+.phone-movement-threat-row {
+  display: grid;
+  gap: 0.12rem;
+  padding: 0.55rem;
+  border: 1px solid rgba(192, 76, 58, 0.32);
+  border-radius: 0.55rem;
+  background: rgba(74, 21, 18, 0.32);
+}
+
+.phone-movement-threat-row strong,
+.phone-movement-shop strong {
+  color: #f4e2c0;
+}
+
+.phone-movement-threat-row small {
+  color: rgba(236, 228, 210, 0.7);
+}
+
+.phone-movement-warning {
+  padding: 0.6rem 0.7rem;
+  border-left: 3px solid rgba(104, 184, 232, 0.76);
+  background: rgba(104, 184, 232, 0.08);
+}
+
+.phone-movement-confirm {
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
+  width: 100%;
+}

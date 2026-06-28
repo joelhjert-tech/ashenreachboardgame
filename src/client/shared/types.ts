@@ -1,6 +1,7 @@
 export type Stat = "command" | "grit" | "signal" | "guile" | "forge";
 export type GearSlot = "weapon" | "armor" | "utility";
 export type ThreatIcon = "red" | "blue" | "yellow";
+export type PublicMovementThreatIcon = ThreatIcon | "green" | "gold" | "white";
 export type GearTier = "starter" | "standard" | "advanced" | "artifact";
 export type GearTimingWindow =
   | "beforeBattleRoll"
@@ -321,6 +322,57 @@ export interface PublicShopEncounterState {
   } | null;
 }
 
+export type PublicMoveStrategicTag = "safe" | "shop" | "locked" | "danger" | "reward" | "nemesis" | "gate";
+
+export interface PublicMoveDestination {
+  sectorId: string;
+  name: string;
+  ring: "outer" | "middle" | "inner" | "core";
+  distance: number;
+  route: string[];
+  routeNames?: string[];
+  tags: string[];
+  threatIcons: PublicMovementThreatIcon[];
+  ruleText: string;
+  loreText?: string;
+  shop?: {
+    shopId: string;
+    shopName: string;
+    status: PublicShopStatus;
+    servicesPreview: string[];
+  };
+  faceUpThreats: Array<{
+    instanceId: string;
+    cardId: string;
+    name: string;
+    type: string;
+    deck?: "red" | "blue" | "yellow" | "scenario";
+    challenge?: {
+      stat: Stat;
+      value: number;
+    };
+    blocksShop: boolean;
+    blocksSectorText: boolean;
+  }>;
+  occupants: Array<{
+    playerId: string;
+    name: string;
+    characterName: string;
+  }>;
+  nemesisPresent?: boolean;
+  scenarioMarkers?: string[];
+  strategicTags: PublicMoveStrategicTag[];
+  disabledReason?: string;
+}
+
+export interface PublicMovementPlannerState {
+  active: boolean;
+  movementValue: number;
+  currentSectorId: string;
+  currentSectorName: string;
+  destinations: PublicMoveDestination[];
+}
+
 export interface AbilityTriggerSummary {
   seatId: string;
   abilityId: string;
@@ -479,6 +531,7 @@ export interface PublicPatchPayload {
 export interface PhonePatchPayload extends PublicPatchPayload {
   phase: Phase;
   self: PhoneSelfState | null;
+  movementPlanner?: PublicMovementPlannerState | null;
   boundNemesis?: NemesisChampionSummary | null;
   crownKeyFragments?: number;
   eligibleNemesisAssistSeatIds?: string[];

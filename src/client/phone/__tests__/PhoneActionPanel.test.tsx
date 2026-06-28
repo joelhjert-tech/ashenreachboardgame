@@ -4,7 +4,7 @@ import "@testing-library/jest-dom/vitest";
 import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { PhoneActionPanel } from "../PhoneActionPanel.js";
-import type { CharacterCatalogEntry, PhonePatchPayload } from "../../shared/types.js";
+import type { CharacterCatalogEntry, ClientIntent, PhonePatchPayload } from "../../shared/types.js";
 
 const characters: CharacterCatalogEntry[] = [
   {
@@ -220,6 +220,159 @@ describe("PhoneActionPanel", () => {
 
     expect(screen.getByRole("button", { name: /resolve reseal the prison/i })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /end turn/i })).not.toBeInTheDocument();
+  });
+
+  it("renders movement planner destination intel without leaking hidden deck card names", () => {
+    render(
+      <PhoneActionPanel
+        characters={characters}
+        onIntent={vi.fn()}
+        patch={createPatch({
+          phase: "navigation",
+          encounter: null,
+          movementPlanner: {
+            active: true,
+            movementValue: 1,
+            currentSectorId: "outer_ember_sanctum",
+            currentSectorName: "Pilgrim Lock",
+            destinations: [
+              {
+                sectorId: "outer_waymarket",
+                name: "Anchor Market",
+                ring: "outer",
+                distance: 1,
+                route: ["outer_ember_sanctum", "outer_waymarket"],
+                routeNames: ["Pilgrim Lock", "Anchor Market"],
+                tags: ["shop", "crossroads"],
+                threatIcons: ["yellow"],
+                ruleText: "If clear, buy Gear, Supplies, or use Black Market Refresh.",
+                loreText: "A market of sealed crates and oath-brokers.",
+                shop: {
+                  shopId: "outer_waymarketExchange",
+                  shopName: "Anchor Market",
+                  status: "open",
+                  servicesPreview: ["Buy Gear", "Sell Gear", "Black Market Refresh"]
+                },
+                faceUpThreats: [],
+                occupants: [],
+                strategicTags: ["shop", "reward", "danger"]
+              }
+            ]
+          }
+        })}
+      />
+    );
+
+    expect(screen.getByTestId("movement-planner")).toBeInTheDocument();
+    expect(screen.getByText(/move 1/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/anchor market/i).length).toBeGreaterThan(0);
+    expect(screen.getByText("Icons")).toBeInTheDocument();
+    expect(screen.getByText("Yellow")).toBeInTheDocument();
+    expect(screen.getByText(/buy gear \/ sell gear/i)).toBeInTheDocument();
+    expect(screen.queryByText(/choir bulwark/i)).not.toBeInTheDocument();
+  });
+
+  it("lets the player inspect a route without committing movement, then confirm", () => {
+    const onIntent = vi.fn<(intent: ClientIntent) => void>();
+
+    render(
+      <PhoneActionPanel
+        characters={characters}
+        onIntent={onIntent}
+        patch={createPatch({
+          phase: "navigation",
+          encounter: null,
+          movementPlanner: {
+            active: true,
+            movementValue: 1,
+            currentSectorId: "outer_ember_sanctum",
+            currentSectorName: "Pilgrim Lock",
+            destinations: [
+              {
+                sectorId: "ashwake-crossing",
+                name: "Ashwalk Bridge",
+                ring: "outer",
+                distance: 1,
+                route: ["outer_ember_sanctum", "ashwake-crossing"],
+                routeNames: ["Pilgrim Lock", "Ashwalk Bridge"],
+                tags: ["hazard", "crossroads"],
+                threatIcons: ["yellow"],
+                ruleText: "If clear, mark your route and gain a scouting note.",
+                faceUpThreats: [
+                  {
+                    instanceId: "ashwake-crossing:chain-maul-salvager",
+                    cardId: "chain-maul-salvager",
+                    name: "Chain-Maul Salvager",
+                    type: "enemy",
+                    deck: "red",
+                    challenge: { stat: "grit", value: 7 },
+                    blocksShop: true,
+                    blocksSectorText: true
+                  }
+                ],
+                occupants: [{ playerId: "seat-2", name: "Mira", characterName: "Signal Witch" }],
+                strategicTags: ["locked", "danger"]
+              }
+            ]
+          }
+        })}
+      />
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: /locked.*ashwalk bridge/i }));
+    expect(onIntent).not.toHaveBeenCalled();
+    expect(screen.getByText(/chain-maul salvager/i)).toBeInTheDocument();
+    expect(screen.getByText(/mira: signal witch/i)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /confirm move/i }));
+    expect(onIntent).toHaveBeenCalledWith({
+      type: "MOVE_REQUESTED",
+      seatId: "seat-1",
+      toSectorId: "ashwake-crossing"
+    });
+  });
+
+  it("shows disabled gated destinations and prevents confirming them", () => {
+    const onIntent = vi.fn<(intent: ClientIntent) => void>();
+
+    render(
+      <PhoneActionPanel
+        characters={characters}
+        onIntent={onIntent}
+        patch={createPatch({
+          phase: "navigation",
+          encounter: null,
+          movementPlanner: {
+            active: true,
+            movementValue: 1,
+            currentSectorId: "middle_guardian_span",
+            currentSectorName: "Guardian Span",
+            destinations: [
+              {
+                sectorId: "inner_veil_rift",
+                name: "Gate of Three Ashes",
+                ring: "inner",
+                distance: 1,
+                route: ["middle_guardian_span", "inner_veil_rift"],
+                routeNames: ["Guardian Span", "Gate of Three Ashes"],
+                tags: ["movement"],
+                threatIcons: [],
+                ruleText: "Choose whether to anchor the surge or slip the fold.",
+                faceUpThreats: [],
+                occupants: [],
+                strategicTags: ["gate"],
+                disabledReason: "Resolve Guardian Span before entering the inner breach"
+              }
+            ]
+          }
+        })}
+      />
+    );
+
+    expect(screen.getAllByText(/resolve guardian span before entering the inner breach/i).length).toBeGreaterThan(0);
+    expect(screen.getByRole("button", { name: /confirm move/i })).toBeDisabled();
+    fireEvent.click(screen.getByRole("button", { name: /confirm move/i }));
+    expect(onIntent).not.toHaveBeenCalled();
   });
 
   it("surfaces authored contract objective labels on accept and complete actions", () => {

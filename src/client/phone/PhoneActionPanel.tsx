@@ -7,6 +7,9 @@ import type {
   GearItem,
   OutcomeSummary,
   PhonePatchPayload,
+  PublicMoveDestination,
+  PublicMovementPlannerState,
+  PublicMoveStrategicTag,
   SectorNode,
   Stat,
   TrophyPileEntry
@@ -363,6 +366,229 @@ function SectorOpportunityChips({ items }: { items: SectorOpportunityItem[] }): 
   );
 }
 
+const movementTagLabel: Record<PublicMoveStrategicTag, string> = {
+  safe: "SAFE",
+  shop: "SHOP",
+  locked: "LOCKED",
+  danger: "DANGER",
+  reward: "REWARD",
+  nemesis: "NEMESIS",
+  gate: "GATE"
+};
+
+function getPrimaryMovementTag(destination: PublicMoveDestination): PublicMoveStrategicTag {
+  return (
+    destination.strategicTags.find((tag) => ["locked", "nemesis", "gate", "shop", "reward", "danger", "safe"].includes(tag)) ??
+    "safe"
+  );
+}
+
+function formatThreatIcon(icon: string): string {
+  return icon.charAt(0).toUpperCase() + icon.slice(1);
+}
+
+function buildDestinationSummary(destination: PublicMoveDestination): string {
+  if (destination.disabledReason) {
+    return destination.disabledReason;
+  }
+
+  if (destination.faceUpThreats.length > 0) {
+    return `${destination.faceUpThreats.length} face-up blocker${destination.faceUpThreats.length === 1 ? "" : "s"} must be cleared.`;
+  }
+
+  if (destination.shop) {
+    return destination.shop.status === "dangerous" ? "Risk shop. Services may add Heat." : "Shop services available if the sector stays clear.";
+  }
+
+  if (destination.threatIcons.length > 0) {
+    return `${destination.threatIcons.map(formatThreatIcon).join(", ")} threat icon${destination.threatIcons.length === 1 ? "" : "s"} printed here.`;
+  }
+
+  return "No public blockers are visible.";
+}
+
+function buildStrategicWarning(destination: PublicMoveDestination): string {
+  if (destination.disabledReason) {
+    return destination.disabledReason;
+  }
+
+  if (destination.nemesisPresent) {
+    return "Nemesis present. Enter only if you are ready for pressure.";
+  }
+
+  if (destination.faceUpThreats.length > 0) {
+    return destination.shop
+      ? "Shop unavailable until blockers are cleared."
+      : "Known blockers remain on this sector.";
+  }
+
+  if (destination.strategicTags.includes("shop")) {
+    return destination.shop?.status === "dangerous"
+      ? "Useful services, but risky actions can raise Heat."
+      : "Good service tile if you need gear, repairs, or supplies.";
+  }
+
+  if (destination.strategicTags.includes("danger")) {
+    return "Printed threat icons suggest danger, but the exact draw is hidden.";
+  }
+
+  if (destination.strategicTags.includes("reward")) {
+    return "Reward-oriented tile with public upside if you can keep it clear.";
+  }
+
+  return "Low public pressure from visible board information.";
+}
+
+function MovementPlanner({
+  planner,
+  seatId,
+  onIntent
+}: {
+  planner: PublicMovementPlannerState | null | undefined;
+  seatId: string;
+  onIntent: (intent: ClientIntent) => void;
+}): ReactElement | null {
+  const [selectedSectorId, setSelectedSectorId] = useState<string | null>(planner?.destinations[0]?.sectorId ?? null);
+
+  if (!planner?.active) {
+    return null;
+  }
+
+  const selected =
+    planner.destinations.find((destination) => destination.sectorId === selectedSectorId) ?? planner.destinations[0] ?? null;
+
+  return (
+    <section className="phone-movement-planner" aria-label="Movement planner" data-testid="movement-planner">
+      <div className="phone-movement-planner-header">
+        <div>
+          <span>Movement Planner</span>
+          <strong>Move {planner.movementValue}</strong>
+        </div>
+        <p>
+          Current: {planner.currentSectorName}. Legal destinations: {planner.destinations.length}.
+        </p>
+      </div>
+
+      <div className="phone-movement-destination-list" role="list" aria-label="Legal destinations">
+        {planner.destinations.map((destination) => {
+          const primaryTag = getPrimaryMovementTag(destination);
+          const selected = selectedSectorId === destination.sectorId;
+
+          return (
+            <article
+              key={destination.sectorId}
+              className={`phone-movement-card${selected ? " phone-movement-card-selected" : ""}`}
+              role="listitem"
+            >
+              <button type="button" className="phone-movement-card-button" onClick={() => setSelectedSectorId(destination.sectorId)}>
+                <span className={`phone-movement-badge phone-movement-badge-${primaryTag}`}>{movementTagLabel[primaryTag]}</span>
+                <strong>{destination.name}</strong>
+                <small>
+                  {destination.ring} ring | {destination.tags.slice(0, 3).join(" / ") || "sector"}
+                </small>
+                <span>Distance: {destination.distance}</span>
+                <span>{buildDestinationSummary(destination)}</span>
+              </button>
+            </article>
+          );
+        })}
+      </div>
+
+      {selected ? (
+        <article className="phone-movement-intel" aria-label={`${selected.name} full intel`}>
+          <div className="phone-movement-intel-heading">
+            <div>
+              <span>Full Intel</span>
+              <strong>{selected.name}</strong>
+            </div>
+            <button type="button" className="phone-button phone-button-secondary" onClick={() => setSelectedSectorId(null)}>
+              Back
+            </button>
+          </div>
+
+          <div className="phone-movement-intel-grid">
+            <span>Route</span>
+            <strong>{(selected.routeNames ?? selected.route).join(" -> ")}</strong>
+            <span>Icons</span>
+            <strong>{selected.threatIcons.length > 0 ? selected.threatIcons.map(formatThreatIcon).join(", ") : "None"}</strong>
+            <span>Status</span>
+            <strong>{selected.disabledReason ? "Locked" : selected.faceUpThreats.length > 0 ? "Blocked" : "Open"}</strong>
+          </div>
+
+          {selected.loreText ? <p className="phone-movement-lore">{selected.loreText}</p> : null}
+          <div className="phone-movement-rule">
+            <span>Printed effect</span>
+            <p>{selected.ruleText}</p>
+          </div>
+
+          <div className="phone-movement-threats">
+            <span>Current blockers</span>
+            {selected.faceUpThreats.length > 0 ? (
+              selected.faceUpThreats.map((threat) => (
+                <div key={threat.instanceId} className="phone-movement-threat-row">
+                  <strong>{threat.name}</strong>
+                  <small>
+                    {threat.deck ? `${formatThreatIcon(threat.deck)} ` : ""}
+                    {threat.type}
+                    {threat.challenge ? ` | ${statLabelById[threat.challenge.stat]} ${threat.challenge.value}` : ""}
+                  </small>
+                </div>
+              ))
+            ) : (
+              <p>No face-up blockers. Hidden deck cards remain unknown.</p>
+            )}
+          </div>
+
+          {selected.shop ? (
+            <div className="phone-movement-shop">
+              <span>{selected.shop.shopName}</span>
+              <strong>{selected.shop.status.toUpperCase()}</strong>
+              <p>{selected.shop.servicesPreview.join(" / ")}</p>
+            </div>
+          ) : null}
+
+          {selected.occupants.length > 0 ? (
+            <div className="phone-movement-occupants">
+              <span>Occupants</span>
+              {selected.occupants.map((occupant) => (
+                <p key={occupant.playerId}>
+                  {occupant.name}: {occupant.characterName}
+                </p>
+              ))}
+            </div>
+          ) : null}
+
+          {selected.scenarioMarkers && selected.scenarioMarkers.length > 0 ? (
+            <div className="phone-movement-markers">
+              <span>Scenario markers</span>
+              <p>{selected.scenarioMarkers.join(", ")}</p>
+            </div>
+          ) : null}
+
+          <p className="phone-movement-warning">{buildStrategicWarning(selected)}</p>
+
+          <button
+            type="button"
+            className="phone-button phone-button-primary phone-movement-confirm"
+            disabled={Boolean(selected.disabledReason)}
+            onClick={() =>
+              onIntent({
+                type: "MOVE_REQUESTED",
+                seatId,
+                toSectorId: selected.sectorId
+              })
+            }
+          >
+            Confirm Move
+          </button>
+        </article>
+      ) : (
+        <p className="phone-sheet-action-copy">Tap a tile to inspect. Confirm destination when ready.</p>
+      )}
+    </section>
+  );
+}
+
 function TrophyAdvanceDisclosure({
   actions,
   trophies
@@ -510,6 +736,7 @@ export function PhoneActionPanel({ characters, onIntent, patch }: PhoneActionPan
     "the active seat";
   const sectorOpportunityItems = getSectorOpportunityItems(sector);
   const isScenarioConfrontation = isScenarioConfrontationSpace(self.sectorId);
+  const movementPlanner = patch.movementPlanner ?? null;
   const canRaiseStat =
     patch.phase === "action" &&
     !patch.encounter &&
@@ -629,7 +856,7 @@ export function PhoneActionPanel({ characters, onIntent, patch }: PhoneActionPan
   const advanceActions: ActionButtonDefinition[] = [];
   const statRaiseActions: ActionButtonDefinition[] = [];
 
-  if (patch.phase === "navigation") {
+  if (patch.phase === "navigation" && !movementPlanner?.active) {
     (sector?.neighbors ?? []).forEach((neighborId) => {
       const neighbor = getSector(patch.sectors, neighborId);
 
@@ -936,7 +1163,7 @@ export function PhoneActionPanel({ characters, onIntent, patch }: PhoneActionPan
 
   const copy =
     patch.phase === "navigation"
-      ? "Choose a neighboring sector."
+      ? "Inspect public route intel before confirming movement."
       : patch.phase === "action" && isScenarioConfrontation
         ? "The Cinder Gate is open. Resolve the active scenario confrontation."
       : patch.phase === "action" && boardSpace
@@ -954,6 +1181,7 @@ export function PhoneActionPanel({ characters, onIntent, patch }: PhoneActionPan
         <span>Trophies: {self.character.trophies}</span>
         <span>{copy}</span>
       </div>
+      <MovementPlanner planner={movementPlanner} seatId={self.seatId} onIntent={onIntent} />
       <SectorOpportunityChips items={sectorOpportunityItems} />
       <ActionSections
         sections={[

@@ -104,7 +104,7 @@ import { rollDice, type RandomSource, defaultRandomSource } from "../game/engine
 import { reduceGameState } from "../game/engine/reducer.js";
 import type { ActiveResolution, GameState, NemesisChampion, PlayerState } from "../game/schema/session.schema.js";
 import { validateHostToken, validateJoinToken } from "./auth.js";
-import { getBoardSpace } from "../game/data/boardSpaces.js";
+import { getBoardSpace, type BoardTier } from "../game/data/boardSpaces.js";
 
 export const ESCALATION_FEEDERS = {
   woundTaken: 1,
@@ -5018,6 +5018,55 @@ type PublicShopService = {
   disabledReason?: string;
 };
 
+type PublicMoveDestination = {
+  sectorId: string;
+  name: string;
+  ring: "outer" | "middle" | "inner" | "core";
+  distance: number;
+  route: string[];
+  routeNames: string[];
+  tags: string[];
+  threatIcons: Array<"red" | "blue" | "yellow" | "green" | "gold" | "white">;
+  ruleText: string;
+  loreText?: string;
+  shop?: {
+    shopId: string;
+    shopName: string;
+    status: "open" | "locked" | "exhausted" | "dangerous";
+    servicesPreview: string[];
+  };
+  faceUpThreats: Array<{
+    instanceId: string;
+    cardId: string;
+    name: string;
+    type: string;
+    deck?: "red" | "blue" | "yellow" | "scenario";
+    challenge?: {
+      stat: Stat;
+      value: number;
+    };
+    blocksShop: boolean;
+    blocksSectorText: boolean;
+  }>;
+  occupants: Array<{
+    playerId: string;
+    name: string;
+    characterName: string;
+  }>;
+  nemesisPresent?: boolean;
+  scenarioMarkers?: string[];
+  strategicTags: Array<"safe" | "shop" | "locked" | "danger" | "reward" | "nemesis" | "gate">;
+  disabledReason?: string;
+};
+
+type PublicMovementPlannerState = {
+  active: boolean;
+  movementValue: number;
+  currentSectorId: string;
+  currentSectorName: string;
+  destinations: PublicMoveDestination[];
+};
+
 function getPublicSalvage(player: PlayerState): number {
   return Math.max(0, player.character.salvage ?? 0);
 }
@@ -5044,6 +5093,232 @@ function getPublicShopStatus(state: GameState, player: PlayerState): "open" | "l
   }
 
   return "open";
+}
+
+function getPublicRing(tier: BoardTier): "outer" | "middle" | "inner" | "core" {
+  return tier === "center" ? "core" : tier === "inner" ? "inner" : tier === "middle" ? "middle" : "outer";
+}
+
+function getDestinationDisabledReason(state: GameState, player: PlayerState, toSectorId: string): string | undefined {
+  const fromSectorId = player.character.currentSpaceId;
+  const currentSector = state.sectors.find((sector) => sector.id === fromSectorId);
+  const targetSpace = getBoardSpace(toSectorId);
+  const notes = new Set(player.private.notes);
+
+  if (!currentSector?.neighbors.includes(toSectorId)) {
+    return "Route is not adjacent from your current sector.";
+  }
+
+  if (
+    state.gameMode === "nemesis_relay" &&
+    targetSpace &&
+    (targetSpace.tier === "inner" || targetSpace.tier === "center") &&
+    !hasCrownKeyFragment(state, player.seatId)
+  ) {
+    return "Requires a Crown-Key Fragment in Nemesis Relay.";
+  }
+
+  for (const requirement of targetSpace?.movementRequirements ?? []) {
+    if (requirement.allowedFrom && !requirement.allowedFrom.includes(fromSectorId)) {
+      return requirement.errorMessage;
+    }
+
+    if (requirement.requiredNotes && !requirement.requiredNotes.every((note) => notes.has(note))) {
+      return requirement.errorMessage;
+    }
+  }
+
+  return undefined;
+}
+
+function getFaceUpThreatsForSector(state: GameState, sectorId: string): PublicMoveDestination["faceUpThreats"] {
+  const activeSeatId = state.turnOrder[state.activeSeatIndex] ?? null;
+  const activePlayer = activeSeatId ? state.players.find((player) => player.seatId === activeSeatId) : null;
+  const encounter = state.currentEncounter;
+  const encounterSectorId = state.lastOutcomeSummary?.movedToSectorId ?? activePlayer?.character.currentSpaceId;
+
+  if (!encounter || encounterSectorId !== sectorId) {
+    return [];
+  }
+
+  return [
+    {
+      instanceId: `${sectorId}:${encounter.id}`,
+      cardId: encounter.id,
+      name: encounter.cardType === "enemy" ? encounter.enemyName : encounter.title,
+      type: encounter.cardType,
+      deck: encounter.threatLane,
+      challenge: {
+        stat: encounter.stat,
+        value: encounter.difficulty
+      },
+      blocksShop: true,
+      blocksSectorText: true
+    }
+  ];
+}
+
+function getShopServicesPreview(boardTags: string[]): string[] {
+  const services = ["Buy Gear", "Sell Gear", "Buy Supplies"];
+
+  if (boardTags.includes("salvage")) {
+    services.push("Repair Gear");
+  }
+
+  if (boardTags.includes("risk-shop")) {
+    services.push("Black Market Refresh");
+  }
+
+  return services;
+}
+
+function getScenarioMarkersForSector(state: GameState, sectorId: string): string[] {
+  const markers: string[] = [];
+
+  if (state.nemesisChampions.some((champion) => !champion.defeated && champion.sectorId === sectorId)) {
+    markers.push("Nemesis");
+  }
+
+  if (
+    state.nemesisNexusCountdowns.some((countdown) => {
+      const nemesis = state.nemesisChampions.find((champion) => champion.id === countdown.nemesisId);
+      return nemesis && !nemesis.defeated && nemesis.sectorId === sectorId;
+    })
+  ) {
+    markers.push("Nexus countdown");
+  }
+
+  return markers;
+}
+
+function buildStrategicTags(args: {
+  boardTags: string[];
+  threatIcons: string[];
+  faceUpThreatCount: number;
+  disabledReason?: string;
+  nemesisPresent: boolean;
+}): PublicMoveDestination["strategicTags"] {
+  const tags = new Set<PublicMoveDestination["strategicTags"][number]>();
+  const hasShop = args.boardTags.includes("shop") || args.boardTags.includes("risk-shop");
+  const hasReward = args.boardTags.some((tag) => ["salvage", "artifact", "contract", "shrine", "recovery", "shop", "risk-shop"].includes(tag));
+  const hasDanger =
+    args.faceUpThreatCount > 0 ||
+    args.threatIcons.some((icon) => icon === "red" || icon === "blue" || icon === "yellow") ||
+    args.boardTags.some((tag) => ["hazard", "enemy", "anomaly"].includes(tag));
+
+  if (hasShop) {
+    tags.add("shop");
+  }
+
+  if (args.faceUpThreatCount > 0) {
+    tags.add("locked");
+  }
+
+  if (hasDanger) {
+    tags.add("danger");
+  }
+
+  if (hasReward) {
+    tags.add("reward");
+  }
+
+  if (args.nemesisPresent) {
+    tags.add("nemesis");
+  }
+
+  if (args.disabledReason) {
+    tags.add("gate");
+  }
+
+  if (tags.size === 0) {
+    tags.add("safe");
+  }
+
+  return [...tags];
+}
+
+function buildPublicMovementPlanner(state: GameState, seatId: string): PublicMovementPlannerState | null {
+  const player = state.players.find((entry) => entry.seatId === seatId);
+  const activeSeatId = state.turnOrder[state.activeSeatIndex] ?? null;
+
+  if (!player || state.status !== "active" || state.phase !== "navigation" || activeSeatId !== seatId) {
+    return null;
+  }
+
+  const currentSector = state.sectors.find((sector) => sector.id === player.character.currentSpaceId);
+
+  if (!currentSector) {
+    return null;
+  }
+
+  const destinations = currentSector.neighbors.flatMap<PublicMoveDestination>((neighborId) => {
+    const sector = state.sectors.find((entry) => entry.id === neighborId);
+    const boardSpace = getBoardSpace(neighborId);
+
+    if (!sector || !boardSpace) {
+      return [];
+    }
+
+    const faceUpThreats = getFaceUpThreatsForSector(state, neighborId);
+    const disabledReason = getDestinationDisabledReason(state, player, neighborId);
+    const occupants = state.players
+      .filter((entry) => entry.character.currentSpaceId === neighborId)
+      .map((entry) => {
+        const seat = state.seats.find((candidate) => candidate.seatId === entry.seatId);
+        return {
+          playerId: entry.seatId,
+          name: seat?.displayName ?? entry.seatId,
+          characterName: entry.character.name
+        };
+      });
+    const nemesisPresent = state.nemesisChampions.some((champion) => !champion.defeated && champion.sectorId === neighborId);
+    const shopStatus =
+      faceUpThreats.length > 0 ? "locked" : boardSpace.tags.includes("risk-shop") ? "dangerous" : "open";
+
+    return [
+      {
+        sectorId: sector.id,
+        name: sector.name,
+        ring: getPublicRing(boardSpace.tier),
+        distance: 1,
+        route: [currentSector.id, sector.id],
+        routeNames: [currentSector.name, sector.name],
+        tags: [...boardSpace.tags],
+        threatIcons: [...(boardSpace.threatIcons ?? sector.threatIcons ?? [])],
+        ruleText: boardSpace.textBox.text || boardSpace.ruleText,
+        loreText: boardSpace.loreText,
+        shop:
+          boardSpace.tags.includes("shop") || boardSpace.tags.includes("risk-shop")
+            ? {
+                shopId: boardSpace.textBox.effectKey,
+                shopName: boardSpace.name,
+                status: shopStatus,
+                servicesPreview: getShopServicesPreview(boardSpace.tags)
+              }
+            : undefined,
+        faceUpThreats,
+        occupants,
+        nemesisPresent,
+        scenarioMarkers: getScenarioMarkersForSector(state, neighborId),
+        strategicTags: buildStrategicTags({
+          boardTags: boardSpace.tags,
+          threatIcons: boardSpace.threatIcons,
+          faceUpThreatCount: faceUpThreats.length,
+          disabledReason,
+          nemesisPresent
+        }),
+        disabledReason
+      }
+    ];
+  });
+
+  return {
+    active: true,
+    movementValue: 1,
+    currentSectorId: currentSector.id,
+    currentSectorName: currentSector.name,
+    destinations
+  };
 }
 
 function buildPublicBlockingThreats(state: GameState): Array<{
@@ -5456,6 +5731,7 @@ export function createPhoneProjection(state: GameState, seatId: string, forcePri
     shopEncounter: publicProjection.shopEncounter,
     recentAbilityTriggers: publicProjection.recentAbilityTriggers,
     nemesis: publicProjection.nemesis,
+    movementPlanner: buildPublicMovementPlanner(state, seatId),
     boundNemesis: (publicProjection.nemesisChampions as Array<{ boundPlayerId: string }>).find(
       (champion) => champion.boundPlayerId === seatId
     ) ?? null,

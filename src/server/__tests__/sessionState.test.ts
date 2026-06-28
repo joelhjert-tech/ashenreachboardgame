@@ -144,6 +144,90 @@ describe("canonical sector graph", () => {
     expect(phoneProjection.nemesis).toBeNull();
   });
 
+  it("builds public movement planner intel from adjacent sectors without leaking hidden deck cards", () => {
+    const state = createInitialSessionState("session-alpha");
+    state.status = "active";
+    state.phase = "navigation";
+    state.turnOrder = ["seat-1"];
+    state.activeSeatIndex = 0;
+    state.seats[0] = { ...state.seats[0]!, connected: true, displayName: "Lane", characterId: "void-marshal" };
+    state.players[0] = {
+      ...state.players[0]!,
+      sectorId: "outer_ember_sanctum",
+      character: {
+        ...state.players[0]!.character,
+        currentSpaceId: "outer_ember_sanctum"
+      }
+    };
+
+    const phoneProjection = createPhoneProjection(state, "seat-1") as {
+      movementPlanner: {
+        movementValue: number;
+        currentSectorName: string;
+        destinations: Array<{
+          sectorId: string;
+          name: string;
+          ring: string;
+          route: string[];
+          threatIcons: string[];
+          tags: string[];
+          shop?: { status: string; servicesPreview: string[] };
+          strategicTags: string[];
+          faceUpThreats: Array<{ name: string }>;
+        }>;
+      } | null;
+    };
+
+    expect(phoneProjection.movementPlanner?.movementValue).toBe(1);
+    expect(phoneProjection.movementPlanner?.currentSectorName).toBe("Pilgrim Lock");
+
+    const anchorMarket = phoneProjection.movementPlanner?.destinations.find((destination) => destination.sectorId === "outer_waymarket");
+    const bridge = phoneProjection.movementPlanner?.destinations.find((destination) => destination.sectorId === "ashwake-crossing");
+
+    expect(anchorMarket).toMatchObject({
+      name: "Anchor Market",
+      ring: "outer",
+      route: ["outer_ember_sanctum", "outer_waymarket"],
+      shop: { status: "open" }
+    });
+    expect(anchorMarket?.shop?.servicesPreview).toContain("Buy Gear");
+    expect(anchorMarket?.strategicTags).toContain("shop");
+    expect(bridge?.threatIcons).toEqual(["yellow"]);
+    expect(bridge?.faceUpThreats).toEqual([]);
+    expect(JSON.stringify(phoneProjection.movementPlanner)).not.toContain("scrap-toll-gangers");
+  });
+
+  it("marks gated movement destinations with disabled reasons", () => {
+    const state = createInitialSessionState("session-alpha");
+    state.status = "active";
+    state.phase = "navigation";
+    state.turnOrder = ["seat-1"];
+    state.activeSeatIndex = 0;
+    state.seats[0] = { ...state.seats[0]!, connected: true, displayName: "Lane", characterId: "void-marshal" };
+    state.players[0] = {
+      ...state.players[0]!,
+      sectorId: "middle_guardian_span",
+      private: {
+        ...state.players[0]!.private,
+        notes: []
+      },
+      character: {
+        ...state.players[0]!.character,
+        currentSpaceId: "middle_guardian_span"
+      }
+    };
+
+    const phoneProjection = createPhoneProjection(state, "seat-1") as {
+      movementPlanner: {
+        destinations: Array<{ sectorId: string; disabledReason?: string; strategicTags: string[] }>;
+      } | null;
+    };
+    const innerGate = phoneProjection.movementPlanner?.destinations.find((destination) => destination.sectorId === "inner_veil_rift");
+
+    expect(innerGate?.disabledReason).toBe("Resolve Guardian Span before entering the inner breach");
+    expect(innerGate?.strategicTags).toContain("gate");
+  });
+
   it("includes the linked nemesis block in TV and phone projections", () => {
     const state = createInitialSessionState("session-alpha");
     state.activeScenarioId = "scenario_throne_of_ash";
