@@ -107,6 +107,8 @@ describe("canonical sector graph", () => {
         pressureSummary: string;
         progress: number;
         threshold: number;
+        finalGateRequirement?: string;
+        scenarioRewards?: Array<{ id: string }>;
         setup: string[];
         specialRules: string[];
         confrontationSteps: string[];
@@ -122,9 +124,11 @@ describe("canonical sector graph", () => {
     };
 
     expect(tvProjection.activeScenario?.id).toBe("scenario_broken_seal");
-    expect(tvProjection.activeScenario?.theme).toContain("Cinder Gate");
+    expect(tvProjection.activeScenario?.theme).toContain("Ashen Reach Core");
     expect(tvProjection.activeScenario?.difficulty).toBe("easy-medium");
     expect(tvProjection.activeScenario?.pressureSummary).toContain("6 seals remain");
+    expect(tvProjection.activeScenario?.finalGateRequirement).toContain("4+ Seal");
+    expect(tvProjection.activeScenario?.scenarioRewards?.length).toBeGreaterThanOrEqual(4);
     expect(tvProjection.activeScenario?.progress).toBe(0);
     expect(tvProjection.activeScenario?.threshold).toBe(2);
     expect(tvProjection.activeScenario?.setup.length).toBeGreaterThan(0);
@@ -168,12 +172,12 @@ describe("canonical sector graph", () => {
 
   it("builds scenario telemetry for all six authored scenarios with live, scenario-specific readouts", () => {
     const expectations: Record<string, string[]> = {
-      scenario_broken_seal: ["Seal Tokens", "Turn Pressure", "Restoration"],
+      scenario_broken_seal: ["Seal Tokens", "Turn Pressure", "Collapses", "Restoration"],
       scenario_throne_of_ash: ["Crown Claims", "Crown Holders", "Active Crowns"],
       scenario_mirror_of_false_heroes: ["Mirror Breaks", "Heat Proxy", "Reflection Feed"],
       scenario_devourer_beneath: ["Doom Tokens", "Devourer", "Collapse Pulse"],
       scenario_labyrinth_engine: ["Engine Mode", "Rotation", "Shutdown"],
-      scenario_dying_star: ["Star Tokens", "Wound Burn", "Ignition"]
+      scenario_dying_star: ["Starfire", "Wound Burn", "Ignition"]
     };
 
     for (const scenario of SCENARIOS) {

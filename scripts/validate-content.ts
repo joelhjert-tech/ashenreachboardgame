@@ -66,8 +66,10 @@ const visibleLoreKeys = new Set([
   "bounty",
   "confrontationText",
   "confrontationTitle",
+  "collapseRule",
   "designFeel",
   "failureSummary",
+  "finalGateRequirement",
   "flavor",
   "gameplayRole",
   "imagePrompt",
@@ -76,17 +78,28 @@ const visibleLoreKeys = new Set([
   "loreRole",
   "name",
   "objectiveText",
+  "redThreat",
+  "blueThreat",
+  "yellowThreat",
+  "shop",
+  "shrine",
+  "salvage",
+  "anomaly",
   "penalty",
   "pressureRule",
+  "progressSources",
   "relief",
   "resolutionSummary",
   "rewardText",
+  "shopInteractions",
   "setup",
   "sheetArtPrompt",
   "specialRules",
   "summary",
   "text",
   "theme",
+  "tickTiming",
+  "tileEventHooks",
   "title",
   "trigger",
   "uiNotes",
@@ -108,6 +121,7 @@ const canonicalSectors = createCanonicalSectorGraph();
 
 validateContentFloors();
 validateBoardCoverage();
+validateScenarioCoverage();
 validateCanonicalDecks();
 validateLoreLanguage();
 
@@ -268,15 +282,29 @@ function validateLoreLanguage(): void {
 
 function validateBoardCoverage(): void {
   const boardCount = BOARD_SPACES.length;
-  if (boardCount < 25 || boardCount > 30) {
-    errors.push(`Board space target not met: ${boardCount}/25-30`);
+  if (boardCount !== 35) {
+    errors.push(`Board space target not met: ${boardCount}/35`);
   }
 
   const tierCounts = countBy(BOARD_SPACES, (space) => space.tier);
-  validateRange("outer board spaces", tierCounts.get("outer") ?? 0, 10, 12);
-  validateRange("middle board spaces", tierCounts.get("middle") ?? 0, 7, 9);
-  validateRange("inner board spaces", tierCounts.get("inner") ?? 0, 5, 7);
-  validateRange("center board spaces", tierCounts.get("center") ?? 0, 1, 2);
+  validateRange("outer board spaces", tierCounts.get("outer") ?? 0, 14, 14);
+  validateRange("middle board spaces", tierCounts.get("middle") ?? 0, 12, 12);
+  validateRange("inner board spaces", tierCounts.get("inner") ?? 0, 8, 8);
+  validateRange("center board spaces", tierCounts.get("center") ?? 0, 1, 1);
+
+  for (const space of BOARD_SPACES) {
+    if (space.tags.length === 0) {
+      errors.push(`Board space ${space.id} has no presentation tags`);
+    }
+
+    if (!space.ruleText.trim()) {
+      errors.push(`Board space ${space.id} has no ruleText`);
+    }
+
+    if (!space.loreText.trim()) {
+      errors.push(`Board space ${space.id} has no loreText`);
+    }
+  }
 
   const textCoverage = validateBoardTextEffectCoverage();
   for (const key of textCoverage.missingEffectKeys) {
@@ -293,6 +321,38 @@ function validateBoardCoverage(): void {
   }
   for (const key of textCoverage.legacyBoardTestKeys) {
     errors.push(`Board space ${key} still uses legacy inline textBox.test data`);
+  }
+}
+
+function validateScenarioCoverage(): void {
+  for (const scenario of SCENARIOS) {
+    if (!scenario.mode) {
+      errors.push(`Scenario ${scenario.id} has no mode`);
+    }
+
+    if (!scenario.pressureTrack?.name || scenario.pressureTrack.max <= 0 || scenario.pressureTrack.start < 0) {
+      errors.push(`Scenario ${scenario.id} has invalid pressureTrack`);
+    }
+
+    if (!scenario.finalGateRequirement?.trim()) {
+      errors.push(`Scenario ${scenario.id} has no finalGateRequirement`);
+    }
+
+    if (scenario.progressSources.length === 0) {
+      errors.push(`Scenario ${scenario.id} has no progressSources`);
+    }
+
+    if (scenario.scenarioRewards.length < 4) {
+      errors.push(`Scenario ${scenario.id} must define at least 4 scenarioRewards`);
+    }
+
+    if (scenario.shopInteractions.length === 0) {
+      errors.push(`Scenario ${scenario.id} has no shopInteractions`);
+    }
+
+    if (scenario.tileEventHooks.length === 0) {
+      errors.push(`Scenario ${scenario.id} has no tileEventHooks`);
+    }
   }
 }
 

@@ -1332,7 +1332,7 @@ export class GameRoomServer {
       return 0;
     }
 
-    return (state.scenarioProgress.engineModeIndex ?? 0) % 3 === 0 ? 1 : 0;
+    return (state.scenarioProgress.engineModeIndex ?? 0) % 5 === 1 ? 1 : 0;
   }
 
   private hasAbilityTriggeredThisRound(seatId: string, abilityId: string): boolean {
@@ -3670,7 +3670,11 @@ export class GameRoomServer {
       getEquippedGearBonus(player.character, "guile") +
       this.getScenarioSkillModifier(intent.seatId);
     const total = roll.total + statBonus;
-    const difficulty = Math.max(0, targetSector.danger + escalationModifier - getSoloMovementDifficultyEase(this.state.sessionMode));
+    const routeDifficulty = Math.max(
+      0,
+      targetSector.danger + escalationModifier - getSoloMovementDifficultyEase(this.state.sessionMode)
+    );
+    const difficulty = this.shouldPreventMovementFailure() ? Math.min(routeDifficulty, total) : routeDifficulty;
     const success = total >= difficulty;
 
     this.applyAction({
@@ -3693,6 +3697,19 @@ export class GameRoomServer {
       this.applyScenarioOnSectorEntered(intent.seatId, intent.toSectorId);
     }
     this.runAutomaticPhases(intent.seatId);
+  }
+
+  private shouldPreventMovementFailure(): boolean {
+    if (this.state.sessionMode === "single-player") {
+      return true;
+    }
+
+    const occupiedSeatIds = new Set(
+      this.state.seats.filter((seat) => seat.characterId && !seat.kicked).map((seat) => seat.seatId)
+    );
+    const occupiedPlayerCount = this.state.players.filter((player) => occupiedSeatIds.has(player.seatId)).length;
+
+    return occupiedPlayerCount <= 1;
   }
 
   private assertLegalMove(
@@ -4959,7 +4976,17 @@ export function createTvProjection(state: GameState): Record<string, unknown> {
           name: activeScenario.name,
           theme: activeScenario.theme,
           difficulty: activeScenario.difficulty,
+          mode: activeScenario.mode,
           pressureSummary: scenarioPressureSummary,
+          pressureTrack: activeScenario.pressureTrack,
+          boardHooks: activeScenario.boardHooks,
+          progressSources: activeScenario.progressSources,
+          finalGateRequirement: activeScenario.finalGateRequirement,
+          scenarioRewards: activeScenario.scenarioRewards,
+          nemesisName: activeScenario.nemesis,
+          shopInteractions: activeScenario.shopInteractions,
+          tileEventHooks: activeScenario.tileEventHooks,
+          modeScaling: activeScenario.modeScaling,
           confrontationTitle: activeScenario.confrontationTitle,
           progressLabel: activeScenario.winConditionKey,
           progress: activeScenarioProgress,

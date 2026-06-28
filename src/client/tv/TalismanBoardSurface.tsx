@@ -16,6 +16,8 @@ const tileArtByNodeId: Record<string, string> = {
   "emberwatch-step": "/assets/riftfall/board/tiles/outer/outer_forge_dock.png",
   outer_oathpost: "/assets/riftfall/board/tiles/outer/outer_city.png",
   outer_broken_causeway: "/assets/riftfall/board/tiles/outer/outer_ruins.png",
+  "votive-engine-room": "/assets/riftfall/board/tiles/outer/outer_iron_synod_workshop.png",
+  "kettleward-foundry": "/assets/riftfall/board/tiles/outer/outer_forge_dock.png",
   middle_guardian_span: "/assets/riftfall/board/tiles/middle/middle_guardian_span.png",
   middle_red_march_outpost: "/assets/riftfall/board/tiles/middle/middle_burning_battlefield.png",
   middle_anomaly_well: "/assets/riftfall/board/tiles/middle/middle_relay_spire.png",
@@ -24,12 +26,18 @@ const tileArtByNodeId: Record<string, string> = {
   middle_shard_sprawl: "/assets/riftfall/board/tiles/middle/middle_ashstack_sprawl.png",
   middle_scar_surgery: "/assets/riftfall/board/tiles/middle/middle_monastery.png",
   middle_rivalry_pit: "/assets/riftfall/board/tiles/middle/middle_breachspawn_pit.png",
+  "black-relay-spire": "/assets/riftfall/board/tiles/middle/middle_relay_spire.png",
+  "the-salt-archive": "/assets/riftfall/board/tiles/middle/middle_ancient_machine_ruins.png",
+  "red-lantern-trenches": "/assets/riftfall/board/tiles/middle/middle_burning_battlefield.png",
+  "weeping-ammunition-shrine": "/assets/riftfall/board/tiles/middle/middle_guardian_span.png",
   inner_veil_rift: "/assets/riftfall/board/tiles/inner/inner_veil_rift.png",
   inner_choir_shrine: "/assets/riftfall/board/tiles/inner/inner_mortuary_domain.png",
   inner_gate_of_cinders: "/assets/riftfall/board/tiles/inner/inner_rift_gate.png",
   inner_blackstar_shortcut: "/assets/riftfall/board/tiles/inner/inner_gilded_stair.png",
   inner_cinder_lattice: "/assets/riftfall/board/tiles/inner/inner_lattice_maze.png",
   inner_tomb_gate: "/assets/riftfall/board/tiles/inner/inner_tomb_complex.png",
+  "the-bone-meridian": "/assets/riftfall/board/tiles/inner/inner_tomb_complex.png",
+  "choir-execution-court": "/assets/riftfall/board/tiles/inner/inner_mortuary_domain.png",
   center_cinder_gate: "/assets/riftfall/board/center/center_scenario_space.png"
 };
 
@@ -49,19 +57,19 @@ const tileSizeByRingAndSide: Record<
   Record<"horizontal" | "vertical" | "center", { width: number; height: number }>
 > = {
   outer: {
-    horizontal: { width: 0.172, height: 0.108 },
-    vertical: { width: 0.108, height: 0.172 },
-    center: { width: 0.172, height: 0.108 }
+    horizontal: { width: 0.118, height: 0.112 },
+    vertical: { width: 0.078, height: 0.162 },
+    center: { width: 0.118, height: 0.112 }
   },
   middle: {
-    horizontal: { width: 0.15, height: 0.094 },
-    vertical: { width: 0.094, height: 0.15 },
-    center: { width: 0.15, height: 0.094 }
+    horizontal: { width: 0.106, height: 0.09 },
+    vertical: { width: 0.07, height: 0.128 },
+    center: { width: 0.106, height: 0.09 }
   },
   inner: {
-    horizontal: { width: 0.118, height: 0.08 },
-    vertical: { width: 0.08, height: 0.118 },
-    center: { width: 0.118, height: 0.08 }
+    horizontal: { width: 0.092, height: 0.074 },
+    vertical: { width: 0.064, height: 0.104 },
+    center: { width: 0.092, height: 0.074 }
   },
   center: {
     horizontal: { width: 0.2, height: 0.15 },
@@ -74,7 +82,7 @@ const tileLabelByRing: Record<BoardNode["ring"], string> = {
   outer: "Borderlight",
   middle: "Red March",
   inner: "Crownfall",
-  center: "Cinder Gate"
+  center: "Core"
 };
 
 interface TalismanBoardSurfaceProps {
@@ -155,7 +163,7 @@ export function TalismanBoardSurface({
         const tileHeight = tileSize ? tileSize.height * imageRect.height : fallbackTileSize;
         const left = node.x * imageRect.width;
         const top = node.y * imageRect.height;
-        const art = tileArtByNodeId[node.id];
+        const art = tileArtByNodeId[node.id] ?? tileArtByNodeId.center_cinder_gate;
         const tone = getTileTone(node);
         const isActive = activeNodeId === node.id;
         const isSelected = selectedNodeId === node.id;
@@ -186,7 +194,7 @@ export function TalismanBoardSurface({
             }}
           >
             <div className="talisman-board-tile-scrim" />
-            <span className="talisman-board-tile-label">{node.ring === "center" ? "Cinder Gate" : node.label}</span>
+            <span className="talisman-board-tile-label">{node.label}</span>
             <small>{node.ring === "center" ? "Final" : tileLabelByRing[node.ring]}</small>
           </div>
         );

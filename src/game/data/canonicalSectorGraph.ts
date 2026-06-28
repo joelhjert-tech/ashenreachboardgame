@@ -30,6 +30,8 @@ const dangerBySpaceId: Partial<Record<string, number>> = {
   "emberwatch-step": 5,
   outer_oathpost: 3,
   outer_broken_causeway: 4,
+  "votive-engine-room": 3,
+  "kettleward-foundry": 2,
   middle_shard_sprawl: 5,
   middle_relic_cache: 5,
   middle_scar_surgery: 5,
@@ -38,12 +40,18 @@ const dangerBySpaceId: Partial<Record<string, number>> = {
   middle_red_march_outpost: 6,
   middle_webglass_breach: 6,
   middle_anomaly_well: 6,
+  "black-relay-spire": 7,
+  "the-salt-archive": 5,
+  "red-lantern-trenches": 7,
+  "weeping-ammunition-shrine": 6,
   inner_veil_rift: 7,
   inner_tomb_gate: 7,
   inner_cinder_lattice: 8,
   inner_blackstar_shortcut: 9,
   inner_choir_shrine: 8,
   inner_gate_of_cinders: 8,
+  "the-bone-meridian": 9,
+  "choir-execution-court": 10,
   center_cinder_gate: 10
 };
 
@@ -363,6 +371,34 @@ const encounterDecksBySpaceId: Partial<Record<string, EncounterDecks>> = {
     artifact: ["artifact-bell-votive", "artifact-choir-static-censer", "artifact-gate-saint-key", "artifact-marrow-route-key", "artifact-rift-anchor-spike"],
     escalation: ["escalation-webglass-afterimage", "escalation-crownfall-writ", "escalation-blackstar-hunger"]
   },
+  "black-relay-spire": {
+    threat: ["choir-static-burst", "moth-carrier-husk", "spindle-static-squall", "siren-relay-echo", "specimen-null-arrives"],
+    anomaly: ["anomaly-choir-static", "anomaly-relay-ghost-loop", "anomaly-webglass-stutter"],
+    contract: ["choir-spindle-harmonics", "choir-well-canticle"],
+    artifact: ["artifact-choir-static-censer", "artifact-rift-anchor-spike"],
+    escalation: ["escalation-choir-feedback", "escalation-webglass-afterimage"]
+  },
+  "the-salt-archive": {
+    threat: ["marrow-tax-auditors", "memory-tax-gate", "false-route-procession", "starless-taxation"],
+    anomaly: ["anomaly-saltglass-fata-morgana", "anomaly-table-fire-writ"],
+    contract: ["cartel-ledger-skim", "choir-hush-census", "dominion-gate-tithe"],
+    artifact: ["artifact-oath-chain-ledger", "artifact-pale-ledger-token"],
+    escalation: ["escalation-gate-tax-mandate", "escalation-crownfall-writ"]
+  },
+  "red-lantern-trenches": {
+    threat: ["red-march-cannoneer", "iron-lung-grenadier", "bone-rivet-brute", "ash-choir-crusader", "shardvine-ambushers"],
+    anomaly: ["anomaly-red-suture-field", "anomaly-warbell-parallax"],
+    contract: ["warden-span-vigil", "dominion-warbell-recovery"],
+    artifact: ["artifact-red-march-warbell"],
+    escalation: ["escalation-red-march-levy", "escalation-ashfall-curfew"]
+  },
+  "weeping-ammunition-shrine": {
+    threat: ["iron-lung-grenadier", "suture-storm", "red-march-cannoneer", "gate-tax-collectors"],
+    anomaly: ["anomaly-table-fire-writ", "anomaly-red-suture-field"],
+    contract: ["dominion-warbell-recovery", "compact-ember-courier"],
+    artifact: ["artifact-red-march-warbell", "artifact-heat-sink-prayer"],
+    escalation: ["escalation-emberwatch", "escalation-red-march-levy"]
+  },
   inner_veil_rift: {
     threat: [
       "veil-rift-judicator",
@@ -465,6 +501,20 @@ const encounterDecksBySpaceId: Partial<Record<string, EncounterDecks>> = {
     contract: ["dominion-gate-tithe"],
     artifact: ["artifact-gate-saint-key", "artifact-throne-crown-fragment", "artifact-marrow-route-key", "artifact-rift-anchor-spike", "artifact-pale-ledger-token"],
     escalation: ["escalation-crownfall-writ", "escalation-gate-saint-wake", "escalation-throne-shadow"]
+  },
+  "the-bone-meridian": {
+    threat: ["tomb-gate-colossus", "grave-lattice-reclaimer", "throne-soot-knight", "last-lock-warden", "pale-marshal"],
+    anomaly: ["anomaly-throne-shadow-jury", "anomaly-blackstar-breath"],
+    contract: [],
+    artifact: ["artifact-marrow-route-key", "artifact-ember-burden-idol"],
+    escalation: ["escalation-crownfall-writ", "escalation-throne-shadow"]
+  },
+  "choir-execution-court": {
+    threat: ["gate-choir-executioner", "reliquary-judge", "saint-of-ashes-echo", "veil-rift-judicator", "grave-lattice-reclaimer"],
+    anomaly: ["anomaly-saint-static-aperture", "anomaly-cinder-gate-echo"],
+    contract: ["umbral-shrine-confession"],
+    artifact: ["artifact-gate-saint-key", "artifact-choir-static-censer"],
+    escalation: ["escalation-gate-saint-wake", "escalation-choir-feedback"]
   }
 };
 

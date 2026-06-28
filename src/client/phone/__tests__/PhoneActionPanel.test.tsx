@@ -318,7 +318,7 @@ describe("PhoneActionPanel", () => {
       />
     );
 
-    expect(screen.getByRole("button", { name: /resolve clear lane/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /resolve hold the bridge/i })).toBeInTheDocument();
   });
 
   it("renders separate sector-text actions for authored board-text choices", () => {
@@ -384,8 +384,8 @@ describe("PhoneActionPanel", () => {
       />
     );
 
-    expect(screen.getByRole("button", { name: /take passage stock.*hard bargain/i })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /press for gossip.*hard bargain/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /take passage stock.*yard bargain/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /press for gossip.*yard bargain/i })).toBeInTheDocument();
   });
 
   it("renders separate sector-text actions for Webglass authored route choices", () => {
@@ -451,8 +451,8 @@ describe("PhoneActionPanel", () => {
       />
     );
 
-    expect(screen.getByRole("button", { name: /slip the hidden lane.*fracture path/i })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /splice the relay seam.*fracture path/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /slip the hidden lane.*rail fracture/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /splice the relay seam.*rail fracture/i })).toBeInTheDocument();
   });
 
   it("renders separate sector-text actions for Guardian Span breach-entry choices", () => {
@@ -518,8 +518,8 @@ describe("PhoneActionPanel", () => {
       />
     );
 
-    expect(screen.getByRole("button", { name: /align the threshold seals.*threshold check/i })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /ghost a route marker.*threshold check/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /align the threshold seals.*customs threshold/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /ghost a route marker.*customs threshold/i })).toBeInTheDocument();
   });
 
   it("renders separate sector-text actions for Gate of Cinders final-breach choices", () => {
@@ -585,9 +585,9 @@ describe("PhoneActionPanel", () => {
       />
     );
 
-    expect(screen.getByRole("button", { name: /brace the cinder locks.*final gate/i })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /time the relay pulse.*final gate/i })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /ghost the last breach path.*final gate/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /brace the cinder locks.*last signal/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /time the relay pulse.*last signal/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /ghost the last breach path.*last signal/i })).toBeInTheDocument();
   });
 
   it("renders separate sector-text actions for Veil Rift breach-entry choices", () => {
@@ -653,8 +653,8 @@ describe("PhoneActionPanel", () => {
       />
     );
 
-    expect(screen.getByRole("button", { name: /anchor the surge.*breach entry/i })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /slip the fold.*breach entry/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /anchor the surge.*three-ash entry/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /slip the fold.*three-ash entry/i })).toBeInTheDocument();
   });
 
   it("renders separate sector-text actions for Cinder Lattice trial choices", () => {
@@ -720,8 +720,8 @@ describe("PhoneActionPanel", () => {
       />
     );
 
-    expect(screen.getByRole("button", { name: /trace the ember pulses.*lattice trial/i })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /read the ghost angles.*lattice trial/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /trace the ember pulses.*observatory trial/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /read the ghost angles.*observatory trial/i })).toBeInTheDocument();
   });
 
   it("shows game over state and hides action buttons when the session has ended", () => {

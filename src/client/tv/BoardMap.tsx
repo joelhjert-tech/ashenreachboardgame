@@ -230,7 +230,7 @@ export function BoardMap({ patch, phase, showHeader = true, showSidebar = true }
           imageAlt="Tactical campaign board"
           imageSrc={boardAssetPath}
           imageMode="geometry-only"
-          geometryAspectRatio={1}
+          geometryAspectRatio={16 / 9}
           onPointerDown={
             boardDebugEnabled
               ? (event, imageRect) => {
@@ -247,7 +247,7 @@ export function BoardMap({ patch, phase, showHeader = true, showSidebar = true }
         >
           {({ imageRect }) => {
             const tokens = buildBoardTokens(patch, imageRect);
-            const markerSize = Math.max(26, Math.min(46, imageRect.width * 0.028));
+            const markerSize = Math.max(20, Math.min(34, imageRect.width * 0.018));
 
             return (
               <>
@@ -451,9 +451,23 @@ export function BoardMap({ patch, phase, showHeader = true, showSidebar = true }
                 <span className="board-sidebar-ring">{selectedNode?.ring ?? "outer"}</span>
               </div>
               <p className="board-sidebar-title">{selectedNode?.label ?? "Unknown node"}</p>
+              {selectedBoardSpace?.tags && selectedBoardSpace.tags.length > 0 && (
+                <div className="board-sidebar-tags" aria-label="Sector tags">
+                  {selectedBoardSpace.tags.map((tag) => (
+                    <span key={tag}>{tag.replace("-", " ")}</span>
+                  ))}
+                </div>
+              )}
               <p className="tv-empty-copy">
                 {selectedBoardSpace?.textBox.text ?? "No board-space text available for this marker yet."}
               </p>
+              {selectedBoardSpace?.ruleText && (
+                <div className="tv-scenario-rules-block">
+                  <strong>Sector Rule</strong>
+                  <p>{selectedBoardSpace.ruleText}</p>
+                </div>
+              )}
+              {selectedBoardSpace?.loreText && <p className="board-sidebar-lore">{selectedBoardSpace.loreText}</p>}
               <div className="board-sidebar-meta">
                 <span>Threat {selectedBoardSpace?.threatIcons.length ?? selectedSector?.danger ?? 0}</span>
                 <span>Occupants {selectedOccupants.length}</span>

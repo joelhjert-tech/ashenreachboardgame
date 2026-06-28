@@ -119,7 +119,8 @@ describe("scenario ambient rules", () => {
     const weakening = resolveScenarioTurnStart(createContext(state, { roll: 1 }));
     expect(weakening?.summary).toContain("Every operative gained 1 Heat");
     const weakenedState = weakening?.updater(state) ?? state;
-    expect(weakenedState.scenarioProgress.sealTokens).toBe(0);
+    expect(weakenedState.scenarioProgress.sealTokens).toBe(3);
+    expect(weakenedState.scenarioProgress.sealCollapses).toBe(1);
     expect(weakenedState.players[0]?.character.heat).toBe(1);
   });
 
@@ -158,7 +159,7 @@ describe("scenario ambient rules", () => {
     });
 
     const resolution = resolveScenarioContractCompleted(createContext(state));
-    expect(resolution?.summary).toContain("mirror feeds on praise");
+    expect(resolution?.summary).toContain("mirror feeds on selfish praise");
     const nextState = resolution?.updater(state) ?? state;
     expect(nextState.players[0]?.character.heat).toBe(1);
 
@@ -166,7 +167,7 @@ describe("scenario ambient rules", () => {
       ...createContext(nextState),
       gainedGearCount: 1
     });
-    expect(gearResolution?.summary).toContain("fresh relic power");
+    expect(gearResolution?.summary).toContain("fresh artifact power");
     const gearState = gearResolution?.updater(nextState) ?? nextState;
     expect(gearState.players[0]?.character.heat).toBe(2);
   });
@@ -276,7 +277,7 @@ describe("scenario ambient rules", () => {
       scenarioProgress: { engineModeIndex: 0 }
     });
     const engineResolution = resolveScenarioTurnStart(createContext(engineState));
-    expect(engineResolution?.summary).toContain("mode 1");
+    expect(engineResolution?.summary).toContain("Grit mode");
     const afterEngine = engineResolution?.updater(engineState) ?? engineState;
     expect(afterEngine.scenarioProgress.engineModeIndex).toBe(1);
 
@@ -291,7 +292,7 @@ describe("scenario ambient rules", () => {
           }
         }))
       }),
-      stat: "signal",
+      stat: "grit",
       success: true
     });
     expect(skillSuccess?.summary).toContain("bleeds off 1 Heat");
@@ -309,7 +310,7 @@ describe("scenario ambient rules", () => {
 
     const skillFailure = resolveScenarioSkillResolved({
       ...createContext(afterEngine),
-      stat: "signal",
+      stat: "grit",
       success: false
     });
     expect(skillFailure?.summary).toContain("adds 1 Heat");
@@ -331,7 +332,7 @@ describe("scenario ambient rules", () => {
       ...createContext(afterStar),
       woundDelta: 2
     });
-    expect(woundResolution?.summary).toContain("strip 2 additional star tokens");
+    expect(woundResolution?.summary).toContain("strip 2 additional Starfire tokens");
     const afterWounds = woundResolution?.updater(afterStar) ?? afterStar;
     expect(afterWounds.scenarioProgress.starTokens).toBe(3);
 

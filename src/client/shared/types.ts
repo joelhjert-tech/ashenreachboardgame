@@ -23,6 +23,9 @@ export type SessionStatus = "lobby" | "active" | "ended";
 export type SessionMode = "multiplayer" | "single-player";
 export type GameMode = "standard" | "nemesis_relay";
 export type InteractionMode = "co-op" | "rivalry" | "ruthless";
+export type ScenarioDifficulty = "easy" | "easy-medium" | "medium" | "medium-hard" | "hard" | "brutal";
+export type ScenarioMode = "coop" | "rivalry" | "hybrid";
+export type ScenarioRewardType = "boon" | "gear" | "ability" | "tile-event" | "tactic" | "artifact";
 
 export interface PublicSeat {
   seatId: string;
@@ -293,8 +296,41 @@ export interface ActiveScenarioSummary {
   id: string;
   name: string;
   theme: string;
-  difficulty: "easy" | "easy-medium" | "medium" | "medium-hard" | "hard";
+  difficulty: ScenarioDifficulty;
+  mode?: ScenarioMode;
   pressureSummary: string;
+  pressureTrack?: {
+    name: string;
+    start: number;
+    max: number;
+    tickTiming: string;
+    collapseRule: string;
+  };
+  boardHooks?: {
+    redThreat?: string;
+    blueThreat?: string;
+    yellowThreat?: string;
+    shop?: string;
+    shrine?: string;
+    salvage?: string;
+    anomaly?: string;
+  };
+  progressSources?: string[];
+  finalGateRequirement?: string;
+  scenarioRewards?: Array<{
+    id: string;
+    name: string;
+    type: ScenarioRewardType;
+    text: string;
+    timing?: string;
+  }>;
+  nemesisName?: string;
+  shopInteractions?: string[];
+  tileEventHooks?: string[];
+  modeScaling?: {
+    singlePlayer?: string;
+    multiplayer?: string;
+  };
   confrontationTitle: string;
   progressLabel: string;
   progress: number;
@@ -309,9 +345,13 @@ export interface ScenarioCatalogEntry {
   id: string;
   name: string;
   theme: string;
-  difficulty: "easy" | "easy-medium" | "medium" | "medium-hard" | "hard";
+  difficulty: ScenarioDifficulty;
+  mode?: ScenarioMode;
   pressureRule: string;
   expectedDuration: string;
+  pressureTrack?: ActiveScenarioSummary["pressureTrack"];
+  finalGateRequirement?: string;
+  scenarioRewards?: ActiveScenarioSummary["scenarioRewards"];
   nemesis: {
     name: string;
     title: string;

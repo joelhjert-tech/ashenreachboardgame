@@ -1,4 +1,5 @@
 import type { GameState, SessionMode } from "../schema/session.schema.js";
+import { ENGINE_MODE_ROTATION, getEngineModeName } from "../data/scenarios.js";
 import { getEquippedGearBonus } from "../engine/gear.js";
 import { getEscalationModifier } from "../engine/escalation.js";
 import { getBrokenSealTokenLimit, isSinglePlayerMode } from "./soloTuning.js";
@@ -70,7 +71,7 @@ function getOuterRingSectors(state: GameState) {
 }
 
 function getEngineModeLabel(modeIndex: number): string {
-  return ["Command", "Signal", "Guile"][modeIndex % 3] ?? "Command";
+  return getEngineModeName(modeIndex);
 }
 
 function getCrownHolderSummary(state: GameState): string {
@@ -89,9 +90,10 @@ const SCENARIO_AMBIENT_RULES: Record<string, ScenarioAmbientRule> = {
     initialProgress: { sealTokens: 6 },
     describePressure: (state) => {
       const seals = state.scenarioProgress.sealTokens ?? 0;
+      const collapses = state.scenarioProgress.sealCollapses ?? 0;
       return isSinglePlayerMode(state.sessionMode)
-        ? `${seals} seals remain. Solo turn start rolls now remove a seal on 1, reveal a local threat on 2-3, and hold on 4-6.`
-        : `${seals} seals remain. Turn start rolls now remove seals on 1-2, reveal a local threat on 3-4, and hold on 5-6.`;
+        ? `${seals} seals remain. Solo pressure removes a seal on 1, reveals local Blue pressure on 2-3, and holds on 4-6. Collapses: ${collapses}.`
+        : `${seals} seals remain. Pressure removes seals on 1-2, reveals local Blue pressure on 3-4, and holds on 5-6. Collapses: ${collapses}.`;
     },
     buildTelemetry: (state) => [
       { label: "Seal Tokens", value: String(state.scenarioProgress.sealTokens ?? 0) },
@@ -99,6 +101,7 @@ const SCENARIO_AMBIENT_RULES: Record<string, ScenarioAmbientRule> = {
         label: "Turn Pressure",
         value: isSinglePlayerMode(state.sessionMode) ? "1 weaken | 2-3 threat | 4-6 hold" : "1-2 weaken | 3-4 threat | 5-6 hold"
       },
+      { label: "Collapses", value: String(state.scenarioProgress.sealCollapses ?? 0) },
       { label: "Restoration", value: `${state.scenarioProgress.sealRestorationMarks ?? 0}/2` }
     ],
     onTurnStart: ({ state, rollDie, getCounter, seatId }) => {
@@ -113,29 +116,36 @@ const SCENARIO_AMBIENT_RULES: Record<string, ScenarioAmbientRule> = {
 
       if (roll <= weakenRoll) {
         const nextSealTokens = Math.max(0, getCounter("sealTokens", sealTokenLimit) - 1);
+        const collapsed = nextSealTokens === 0;
+        const nextCollapses = collapsed ? getCounter("sealCollapses", 0) + 1 : getCounter("sealCollapses", 0);
+        const resetSealTokens = collapsed ? Math.min(3, sealTokenLimit) : nextSealTokens;
 
         return {
           updater: (state) => ({
             ...state,
             scenarioProgress: {
               ...state.scenarioProgress,
-              sealTokens: nextSealTokens
+              sealTokens: resetSealTokens,
+              ...(collapsed ? { sealCollapses: nextCollapses } : {})
             },
             players:
-              nextSealTokens === 0
+              collapsed
                 ? state.players.map((player) => ({
                     ...player,
                     character: {
                       ...player.character,
-                      heat: player.character.heat + 1
+                      heat: player.character.heat + 1,
+                      scars: nextCollapses >= 2 ? [...player.character.scars, "scar-wound-1"] : player.character.scars
                     }
                   }))
                 : state.players
           }),
           summary:
-            nextSealTokens === 0
-              ? "The last seal broke. Every operative gained 1 Heat."
-              : `The Broken Seal weakens. ${nextSealTokens} seal tokens remain.`
+            collapsed && nextCollapses >= 2
+              ? "The Broken Seal collapsed again. Every operative gained 1 Heat and 1 Scar, then the ward reset to 3 seals."
+              : collapsed
+                ? "The last seal broke. Every operative gained 1 Heat, then the ward reset to 3 seals."
+                : `The Broken Seal weakens. ${nextSealTokens} seal tokens remain.`
         };
       }
 
@@ -273,7 +283,7 @@ const SCENARIO_AMBIENT_RULES: Record<string, ScenarioAmbientRule> = {
   scenario_mirror_of_false_heroes: {
     initialProgress: {},
     describePressure: () =>
-      "Heat is acting as mirror pressure. Contracts and relic gains now feed the reflection before the final duel.",
+      "Heat is acting as mirror pressure until per-player Reflection is fully surfaced. Contracts, artifacts, and greedy upgrades feed the final reflection.",
     buildTelemetry: (state) => {
       const activeSeatId = getActiveSeatId(state);
       const activeHeat =
@@ -284,7 +294,7 @@ const SCENARIO_AMBIENT_RULES: Record<string, ScenarioAmbientRule> = {
       return [
         { label: "Mirror Breaks", value: `${state.scenarioProgress.mirrorBreaks ?? 0}/2` },
         { label: "Heat Proxy", value: `${activeHeat} on active operative` },
-        { label: "Reflection Feed", value: "Contracts and relic gains" }
+        { label: "Reflection Feed", value: "Contracts, artifacts, Heat" }
       ];
     },
     onContractCompleted: ({ seatId }) => ({
@@ -302,7 +312,7 @@ const SCENARIO_AMBIENT_RULES: Record<string, ScenarioAmbientRule> = {
             : player
         )
       }),
-      summary: "The mirror feeds on praise. The active operative gains 1 Heat."
+      summary: "The mirror feeds on selfish praise. The active operative gains 1 Heat."
     }),
     onGearGained: ({ seatId, gainedGearCount }) => ({
       updater: (state) => ({
@@ -319,7 +329,7 @@ const SCENARIO_AMBIENT_RULES: Record<string, ScenarioAmbientRule> = {
             : player
         )
       }),
-      summary: `The mirror strains around fresh relic power. ${seatId} gains ${gainedGearCount} Heat.`
+      summary: `The mirror strains around fresh artifact power. ${seatId} gains ${gainedGearCount} Heat.`
     })
   },
   scenario_devourer_beneath: {
@@ -353,11 +363,13 @@ const SCENARIO_AMBIENT_RULES: Record<string, ScenarioAmbientRule> = {
         return null;
       }
 
-      const nextIndex = (getCounter("devourerIndex", 0) + 1) % outerRing.length;
+      const currentDoom = getCounter("doomTokens", 0);
+      const movement = currentDoom >= 4 ? 2 : 1;
+      const nextIndex = (getCounter("devourerIndex", 0) + movement) % outerRing.length;
       const nextSectorId = outerRing[nextIndex]!;
       const sector = state.sectors.find((entry) => entry.id === nextSectorId);
       const consumedThreats = sector?.encounterDecks.threat.length ?? 0;
-      const nextDoom = getCounter("doomTokens", 0) + (consumedThreats > 0 ? 1 : 0);
+      const nextDoom = currentDoom + (consumedThreats > 0 ? 1 : 0);
       const erupted = nextDoom >= 8;
 
       return {
@@ -391,7 +403,7 @@ const SCENARIO_AMBIENT_RULES: Record<string, ScenarioAmbientRule> = {
         }),
         summary: erupted
           ? `The Devourer reached ${nextDoom} doom. Every operative takes 1 wound and doom falls back to ${Math.max(0, nextDoom - 4)}.`
-          : `The Devourer moves to ${nextSectorId}${consumedThreats > 0 ? " and consumes local threats, raising doom." : "."}`
+          : `The Devourer moves ${movement} sector${movement === 1 ? "" : "s"} to ${nextSectorId}${consumedThreats > 0 ? " and consumes local threats, raising doom." : "."}`
       };
     },
     onSectorEntered: ({ state, seatId, sectorId, getCounter, getOuterRingSectorIds, rollDie }) => {
@@ -452,7 +464,7 @@ const SCENARIO_AMBIENT_RULES: Record<string, ScenarioAmbientRule> = {
     initialProgress: { engineModeIndex: 0 },
     describePressure: (state) => {
       const modeIndex = state.scenarioProgress.engineModeIndex ?? 0;
-      return `Engine mode is ${getEngineModeLabel(modeIndex)}. The mode rotates every turn start and sets the confrontation cadence at the Cinder Gate.`;
+      return `Engine mode is ${getEngineModeLabel(modeIndex)}. The mode rotates every turn start and sets the confrontation cadence at the Ashen Reach Core.`;
     },
     buildTelemetry: (state) => {
       const modeIndex = state.scenarioProgress.engineModeIndex ?? 0;
@@ -467,7 +479,7 @@ const SCENARIO_AMBIENT_RULES: Record<string, ScenarioAmbientRule> = {
         return null;
       }
 
-      const nextMode = (getCounter("engineModeIndex", 0) + 1) % 3;
+      const nextMode = (getCounter("engineModeIndex", 0) + 1) % ENGINE_MODE_ROTATION.length;
 
       return {
         updater: (state) => ({
@@ -477,12 +489,11 @@ const SCENARIO_AMBIENT_RULES: Record<string, ScenarioAmbientRule> = {
             engineModeIndex: nextMode
           }
         }),
-        summary: `The Labyrinth Engine shifts to mode ${nextMode}.`
+        summary: `The Labyrinth Engine shifts to ${getEngineModeLabel(nextMode)} mode.`
       };
     },
     onSkillResolved: ({ getCounter, seatId, stat, success }) => {
-      const modes = ["command", "signal", "guile"] as const;
-      const mode = modes[getCounter("engineModeIndex", 0) % modes.length] ?? "command";
+      const mode = ENGINE_MODE_ROTATION[getCounter("engineModeIndex", 0) % ENGINE_MODE_ROTATION.length] ?? "command";
 
       if (stat !== mode) {
         return null;
@@ -529,10 +540,10 @@ const SCENARIO_AMBIENT_RULES: Record<string, ScenarioAmbientRule> = {
     initialProgress: { starTokens: 10 },
     describePressure: (state) => {
       const stars = state.scenarioProgress.starTokens ?? 0;
-      return `${stars} star tokens remain. The star burns down each turn, sheds extra tokens from wounds, and resets to five after an eruption.`;
+      return `${stars} Starfire tokens remain. The star burns down each turn, sheds extra tokens from wounds, and resets to five after an eruption.`;
     },
     buildTelemetry: (state) => [
-      { label: "Star Tokens", value: String(state.scenarioProgress.starTokens ?? 0) },
+      { label: "Starfire", value: String(state.scenarioProgress.starTokens ?? 0) },
       { label: "Wound Burn", value: "Fresh wounds strip extra stars" },
       { label: "Ignition", value: `${state.scenarioProgress.ignitionMarks ?? 0}/3` }
     ],
@@ -587,8 +598,8 @@ const SCENARIO_AMBIENT_RULES: Record<string, ScenarioAmbientRule> = {
             : state.players
         }),
         summary: erupted
-          ? `The Dying Star erupts. Signal tests fail for ${failedSeats.join(", ") || "no one"}; failed operatives take 2 wounds and 1 Heat, passes still take 1 wound, and the star track resets to 5.`
-          : `The Dying Star dims to ${nextStars} remaining star tokens.`
+          ? `The Dying Star erupts. Signal tests fail for ${failedSeats.join(", ") || "no one"}; failed operatives take 2 wounds and 1 Heat, passes still take 1 wound, and Starfire resets to 5.`
+          : `The Dying Star dims to ${nextStars} remaining Starfire tokens.`
       };
     },
     onWoundsTaken: ({ getCounter, woundDelta }) => {
@@ -618,8 +629,8 @@ const SCENARIO_AMBIENT_RULES: Record<string, ScenarioAmbientRule> = {
             : state.players
         }),
         summary: erupted
-          ? `Fresh wounds tear away the final star tokens. The Dying Star erupts, every operative takes 1 wound, and the track resets to 5.`
-          : `Fresh wounds strip ${woundDelta} additional star token${woundDelta === 1 ? "" : "s"} from the Dying Star.`
+          ? `Fresh wounds tear away the final Starfire tokens. The Dying Star erupts, every operative takes 1 wound, and the track resets to 5.`
+          : `Fresh wounds strip ${woundDelta} additional Starfire token${woundDelta === 1 ? "" : "s"} from the Dying Star.`
       };
     },
     onGearGained: ({ getCounter, gainedGearCount }) => {
@@ -627,7 +638,7 @@ const SCENARIO_AMBIENT_RULES: Record<string, ScenarioAmbientRule> = {
         return null;
       }
 
-      const nextStars = getCounter("starTokens", 10) + gainedGearCount * 2;
+      const nextStars = Math.min(12, getCounter("starTokens", 10) + gainedGearCount * 2);
 
       return {
         updater: (state) => ({
@@ -637,7 +648,7 @@ const SCENARIO_AMBIENT_RULES: Record<string, ScenarioAmbientRule> = {
             starTokens: nextStars
           }
         }),
-        summary: `Recovered relic output steadies the star. ${gainedGearCount * 2} star token${gainedGearCount === 1 ? "" : "s"} return to the track.`
+        summary: `Recovered artifact output steadies the star. ${gainedGearCount * 2} Starfire token${gainedGearCount === 1 ? "" : "s"} return to the track.`
       };
     }
   }

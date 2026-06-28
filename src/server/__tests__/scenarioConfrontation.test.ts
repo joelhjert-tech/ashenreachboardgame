@@ -288,14 +288,14 @@ describe("scenario confrontation flow", () => {
     expect(plan.checks).toEqual([{ stat: "signal", difficulty: 12, label: "Outlast The Glass Prophet" }]);
   });
 
-  it("keeps the Broken Seal on the legacy confrontation plan when no nemesis is linked", () => {
+  it("keeps the Broken Seal on the tutorial confrontation plan when no nemesis is linked", () => {
     const roomServer = new GameRoomServer(createScenarioState(), [], createSequenceRandomSource([0, 0, 0, 0, 0, 0]));
     const player = roomServer.getState().players.find((entry) => entry.seatId === "seat-1");
     const plan = (roomServer as any).buildScenarioPlan(player!);
 
     expect(plan.checks).toEqual([
       { stat: "grit", difficulty: 10, label: "Hold the breached ward shut" },
-      { stat: "signal", difficulty: 10, label: "Realign the split sigils" },
+      { stat: "signal", difficulty: 10, label: "Realign the broken sigils" },
       { stat: "guile", difficulty: 12, label: "Resist the mind behind the breach" }
     ]);
   });
@@ -323,7 +323,7 @@ describe("scenario confrontation flow", () => {
 
     expect(plan.checks).toEqual([
       { stat: "grit", difficulty: 8, label: "Hold the breached ward shut" },
-      { stat: "signal", difficulty: 8, label: "Realign the split sigils" },
+      { stat: "signal", difficulty: 8, label: "Realign the broken sigils" },
       { stat: "guile", difficulty: 10, label: "Resist the mind behind the breach" }
     ]);
   });
@@ -576,7 +576,8 @@ describe("scenario confrontation flow", () => {
     roomServer.setSeatReady("seat-1", true);
     roomServer.startSession();
 
-    expect(roomServer.getState().scenarioProgress.sealTokens).toBe(0);
+    expect(roomServer.getState().scenarioProgress.sealTokens).toBe(3);
+    expect(roomServer.getState().scenarioProgress.sealCollapses).toBe(1);
     expect(roomServer.getState().players.every((player) => player.character.heat === 1)).toBe(true);
     expect(roomServer.getState().lastOutcomeSummary?.summary ?? "").toContain("last seal broke");
   });
@@ -658,7 +659,8 @@ describe("scenario confrontation flow", () => {
       toSectorId: targetSectorId
     } satisfies ClientIntent);
 
-    expect(roomServer.getState().lastOutcomeSummary?.difficulty).toBe(targetDanger - 1);
+    expect(roomServer.getState().lastOutcomeSummary?.difficulty).toBeLessThanOrEqual(targetDanger - 1);
+    expect(roomServer.getState().lastOutcomeSummary?.success).toBe(true);
   });
 
   it("moves the Devourer and raises doom when it consumes a threatened outer sector", () => {
@@ -727,19 +729,19 @@ describe("scenario confrontation flow", () => {
     expect(roomServer.getState().scenarioProgress.engineModeIndex).toBe(1);
   });
 
-  it("makes enemies hit harder during Labyrinth Engine command mode", () => {
+  it("makes enemies hit harder during Labyrinth Engine grit mode", () => {
     const roomServer = new GameRoomServer(
       createSoloAmbientState({
         activeScenarioId: "scenario_labyrinth_engine",
         scenarioProgress: {
-          engineModeIndex: 0
+          engineModeIndex: 1
         },
         currentEncounter: {
-          id: "command-mode-enemy",
+          id: "grit-mode-enemy",
           type: "threat",
           cardType: "enemy",
-          title: "Command Mode Enemy",
-          text: "A test enemy for command mode.",
+          title: "Grit Mode Enemy",
+          text: "A test enemy for grit mode.",
           flavor: "The engine hardens the hostile line.",
           severity: 1,
           stat: "grit",
@@ -788,7 +790,7 @@ describe("scenario confrontation flow", () => {
       createSoloAmbientState({
         activeScenarioId: "scenario_labyrinth_engine",
         scenarioProgress: {
-          engineModeIndex: 1
+          engineModeIndex: 2
         },
         currentEncounter: {
           id: "signal-mode-hazard",
@@ -943,6 +945,6 @@ describe("scenario confrontation flow", () => {
 
     expect(roomServer.getState().players[0]?.character.wounds).toBe(1);
     expect(roomServer.getState().scenarioProgress.starTokens).toBe(1);
-    expect(roomServer.getState().lastOutcomeSummary?.summary ?? "").toContain("Fresh wounds strip 1 additional star token");
+    expect(roomServer.getState().lastOutcomeSummary?.summary ?? "").toContain("Fresh wounds strip 1 additional Starfire token");
   });
 });

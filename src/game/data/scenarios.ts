@@ -2,6 +2,9 @@ import type { EncounterEffect } from "../schema/card.schema.js";
 import { easeBrokenSealConfrontationDifficulty } from "../rules/soloTuning.js";
 
 export type ScenarioConfrontationStat = "command" | "grit" | "signal" | "guile" | "forge";
+export type ScenarioDifficulty = "easy" | "easy-medium" | "medium" | "medium-hard" | "hard" | "brutal";
+export type ScenarioMode = "coop" | "rivalry" | "hybrid";
+export type ScenarioRewardType = "boon" | "gear" | "ability" | "tile-event" | "tactic" | "artifact";
 
 export interface ScenarioConfrontationCheck {
   stat: ScenarioConfrontationStat;
@@ -26,19 +29,58 @@ export interface ScenarioConfrontationContext {
   heldGearCount: number;
 }
 
+export interface ScenarioPressureTrack {
+  name: string;
+  start: number;
+  max: number;
+  tickTiming: string;
+  collapseRule: string;
+}
+
+export interface ScenarioBoardHooks {
+  redThreat?: string;
+  blueThreat?: string;
+  yellowThreat?: string;
+  shop?: string;
+  shrine?: string;
+  salvage?: string;
+  anomaly?: string;
+}
+
+export interface ScenarioRewardDefinition {
+  id: string;
+  name: string;
+  type: ScenarioRewardType;
+  text: string;
+  timing?: string;
+}
+
 export interface ScenarioDefinition {
   id: string;
   name: string;
   theme: string;
   pressureRule: string;
   expectedDuration: string;
+  mode: ScenarioMode;
+  pressureTrack: ScenarioPressureTrack;
+  boardHooks: ScenarioBoardHooks;
+  progressSources: string[];
+  finalGateRequirement: string;
+  scenarioRewards: ScenarioRewardDefinition[];
+  nemesis?: string;
+  shopInteractions: string[];
+  tileEventHooks: string[];
+  modeScaling?: {
+    singlePlayer?: string;
+    multiplayer?: string;
+  };
   setup: string[];
   specialRules: string[];
   confrontationTitle: string;
   confrontationSteps: string[];
   victoryText: string;
   designFeel: string;
-  difficulty: "easy" | "easy-medium" | "medium" | "medium-hard" | "hard";
+  difficulty: ScenarioDifficulty;
   recommendedRolloutOrder: number;
   confrontationText: string;
   winConditionKey: string;
@@ -49,35 +91,109 @@ export interface ScenarioDefinition {
   sheetArtPrompt: string;
 }
 
+export const ENGINE_MODE_ROTATION = ["command", "grit", "signal", "guile", "forge"] as const satisfies readonly ScenarioConfrontationStat[];
+
+export function getEngineModeName(modeIndex: number): string {
+  const mode = ENGINE_MODE_ROTATION[modeIndex % ENGINE_MODE_ROTATION.length] ?? "command";
+  return mode.charAt(0).toUpperCase() + mode.slice(1);
+}
+
 export const SCENARIOS: ScenarioDefinition[] = [
   {
     id: "scenario_broken_seal",
     name: "The Broken Seal",
-    theme: "The last ward around the Cinder Gate is splitting and something below it is waking.",
-    pressureRule: "At the start of each operative turn, the seal track can degrade or spawn fresh threat pressure.",
+    theme: "The last ward around the Ashen Reach Core is splitting, and the table must stabilize it before the breach learns their names.",
+    pressureRule:
+      "Seal Integrity ticks at round pressure and through breach surges. Blue threats, shrines, contracts, and artifact charges can restore the ward.",
     expectedDuration: "45-60 min",
+    mode: "coop",
+    pressureTrack: {
+      name: "Seal Integrity",
+      start: 6,
+      max: 8,
+      tickTiming: "End of each round, with solo pressure slowed by mode tuning.",
+      collapseRule: "At 0 Seal Integrity, all operatives gain 1 Heat. On the second collapse, each operative also gains 1 Scar."
+    },
+    boardHooks: {
+      blueThreat: "Blue threats represent breach leaks. Clearing one restores 1 Seal Integrity.",
+      shrine: "Pilgrim Lock and shrine spaces can restore the ward for Salvage or a clean shrine action.",
+      shop: "Chapel-style shops can convert Salvage into Seal Integrity.",
+      anomaly: "Anomaly sectors draw fresh breach pressure when the ward surges."
+    },
+    progressSources: [
+      "Clear a Blue threat to restore 1 Seal Integrity.",
+      "Complete a Contract to restore 1 Seal Integrity.",
+      "Use Pilgrim Lock or a shrine boon to restore 1 Seal Integrity.",
+      "Spend an Artifact charge to restore 2 Seal Integrity."
+    ],
+    finalGateRequirement: "Attempt the Core only with 4+ Seal Integrity, 1 Artifact, or 3 completed Contracts.",
+    scenarioRewards: [
+      {
+        id: "sealwrights-mark",
+        name: "Sealwright's Mark",
+        type: "boon",
+        text: "Once per game, after clearing a Blue threat, restore 1 Seal Integrity."
+      },
+      {
+        id: "ward-bound-instinct",
+        name: "Ward-Bound Instinct",
+        type: "ability",
+        timing: "scenario confrontation",
+        text: "Exhaust to gain +2 Signal during a scenario confrontation."
+      },
+      {
+        id: "cinder-gate-key",
+        name: "Cinder Gate Key",
+        type: "artifact",
+        text: "Spend 1 charge to cancel 1 Heat gained from scenario pressure."
+      },
+      {
+        id: "seal-crack-surge",
+        name: "Seal Crack Surge",
+        type: "tile-event",
+        text: "When the ward drops to 2 or less, place a Blue threat on the nearest anomaly sector."
+      }
+    ],
+    shopInteractions: [
+      "Pilgrim Lock may heal 1 wound or restore 1 Seal Integrity if the sector is clear.",
+      "A shop can convert 2 Salvage into 1 Seal Integrity once per round.",
+      "Artifact recharge spaces may spend a Gear charge to restore 2 Seal Integrity."
+    ],
+    tileEventHooks: [
+      "The Last Signal Well begins with a Blue threat marker.",
+      "Pilgrim Lock or Static Chapel may hold the first shrine boon token.",
+      "Anomaly sectors receive new Blue pressure when the Seal track rolls 3-4."
+    ],
+    modeScaling: {
+      singlePlayer: "Solo starts with the tuned Seal limit and softer turn-start pressure.",
+      multiplayer: "Only occupied operatives pressure the Seal clock; empty seats do not tick it."
+    },
     setup: [
       "Place 6 Seal tokens on the scenario sheet.",
-      "Use contract progress tokens, coins, or spare counters as Seal tokens."
+      "Place 1 Blue threat icon on The Last Signal Well.",
+      "Place 1 shrine boon token on Pilgrim Lock or Static Chapel."
     ],
     specialRules: [
-      "At the start of each operative turn, roll 1 die. On 1-2 remove 1 Seal token, on 3-4 draw 1 Threat card in your sector, on 5-6 nothing happens.",
-      "Whenever a player defeats an enemy, they may return 1 Seal token to the sheet instead of claiming that enemy as a trophy.",
-      "If there are ever 0 Seal tokens on the sheet, every player immediately gains 1 Heat."
+      "At the end of each round, roll 1 die. On 1-2 remove 1 Seal token, on 3-4 place 1 Blue threat on the nearest anomaly sector, on 5-6 the ward holds.",
+      "Whenever a player clears a Blue threat or completes a Contract, restore 1 Seal token.",
+      "A player may pay 2 Salvage at a clear shrine to restore 1 Seal token.",
+      "A player may spend an Artifact charge to restore 2 Seal tokens.",
+      "At 0 Seal tokens, every player gains 1 Heat and the track resets to 3. The second collapse also gives each player 1 Scar."
     ],
     confrontationTitle: "Reseal the Prison",
     confrontationSteps: [
+      "Final gate: 4+ Seal tokens, 1 Artifact, or 3 completed Contracts.",
       "Test Grit 10 to hold the breached ward shut.",
-      "Test Signal 10 to realign the split sigils.",
+      "Test Signal 10 to realign the broken sigils.",
       "Test Guile 12 to resist the mind behind the breach.",
-      "For each failed test, take 1 wound."
+      "For each failed test, take 1 wound. If you failed by 3 or more, gain 1 Scar."
     ],
-    victoryText: "If you pass at least 2 of the 3 confrontation tests during a single engagement, you win the game.",
-    designFeel: "Balanced default scenario with one shared track, clear pressure, and a clean final test chain.",
+    victoryText: "If you pass at least 2 of the 3 confrontation stat checks during one engagement, you win the game.",
+    designFeel: "Default tutorial scenario: shared pressure, clear board hooks, and a final gate that teaches contracts, artifacts, and shrine choices.",
     difficulty: "easy-medium",
     recommendedRolloutOrder: 1,
     confrontationText:
-      "At the start of engagement in the core chamber, test grit 10, signal 10, and guile 12 in order. Each passed test records one restoration mark. At two restoration marks in one confrontation, you win.",
+      "At the Ashen Reach Core, test grit 10, signal 10, and guile 12 in order. Each passed test records one restoration mark. At two restoration marks in one confrontation, you win.",
     winConditionKey: "sealRestorationMarks",
     victoryThreshold: 2,
     failureEffectKey: "scenario_gainCorruption",
@@ -91,7 +207,7 @@ export const SCENARIOS: ScenarioDefinition[] = [
         {
           stat: "signal",
           difficulty: easeBrokenSealConfrontationDifficulty(context.sessionMode, 10),
-          label: "Realign the split sigils"
+          label: "Realign the broken sigils"
         },
         {
           stat: "guile",
@@ -101,42 +217,109 @@ export const SCENARIOS: ScenarioDefinition[] = [
       ],
       markLabel: "restoration mark",
       effect: null,
-      victorySummary: `${context.playerName} sealed the Cinder Gate and won the campaign.`
+      victorySummary: `${context.playerName} sealed the Ashen Reach Core and won the campaign.`
     }),
     sheetArtAssetId: "scenario_sheet_broken_seal",
     sheetArtPrompt:
-      "Cracked black-stone prison seal around the Cinder Gate, blue-white ward light leaking through bronze runes, operatives bracing against a rising breach, top-down printable scenario sheet illustration, no text."
+      "Cracked black-stone prison seal around the Ashen Reach Core, blue-white ward light leaking through bronze runes, operatives bracing against a rising breach, top-down printable scenario sheet illustration, no text."
   },
   {
     id: "scenario_throne_of_ash",
     name: "The Throne of Ash",
-    theme: "An empty command throne promises dominion, but every crown claimed changes the final trial.",
-    pressureRule: "Crowns amplify combat pressure while making stat checks harsher, so the table reshapes the endgame race.",
+    theme: "An empty command throne promises dominion, but every Crown claimed makes the claimant louder, stronger, and easier for the board to find.",
+    pressureRule:
+      "Crowns are earned through elite victories, contracts, Crown sectors, and risky shops. If all Crowns are held, Crown Hunger wakes the Ash Regent.",
     expectedDuration: "60-75 min",
+    mode: "hybrid",
+    pressureTrack: {
+      name: "Crown Hunger",
+      start: 0,
+      max: 6,
+      tickTiming: "End of each round while all Crowns are held.",
+      collapseRule: "At Crown Hunger 6, spawn the Ash Regent nemesis and make Crowned victories generate Heat."
+    },
+    boardHooks: {
+      redThreat: "Elite Red enemies can award Crown tokens.",
+      yellowThreat: "Yellow political traps can make Crowned players drop tokens.",
+      shop: "Contract Spire and Black Vault style shops can sell Crown claims for Salvage plus Heat.",
+      salvage: "Salvage can buy authority, but every shortcut stains the claimant."
+    },
+    progressSources: [
+      "Defeat an Elite enemy.",
+      "Complete a Contract.",
+      "Clear Choir Bastion, The Hollow Customs Gate, or Choir Execution Court.",
+      "Pay 4 Salvage at a Crown shop and gain 1 Heat."
+    ],
+    finalGateRequirement: "Attempt the Throne only while holding 1+ Crown or by spending 2 completed Contracts.",
+    scenarioRewards: [
+      {
+        id: "ash-crowned-authority",
+        name: "Ash-Crowned Authority",
+        type: "ability",
+        text: "While you hold a Crown, shop actions cost 1 less Salvage."
+      },
+      {
+        id: "regents-challenge",
+        name: "Regent's Challenge",
+        type: "tactic",
+        timing: "after a Crowned combat roll",
+        text: "Force a Crowned rival or Crown nemesis to reroll one die."
+      },
+      {
+        id: "black-throne-oath",
+        name: "Black Throne Oath",
+        type: "boon",
+        text: "Gain +2 Command in confrontations. Whenever you fail, gain 1 Heat."
+      },
+      {
+        id: "crown-sector-toll",
+        name: "Crown Sector Toll",
+        type: "tile-event",
+        text: "When a Crowned player enters a Crown sector, they must clear the local threat or drop 1 Crown."
+      }
+    ],
+    nemesis: "Ash Regent",
+    shopInteractions: [
+      "Contract Spire may sell 1 Crown for 4 Salvage and 1 Heat if a Crown remains unclaimed.",
+      "Black Vault may sell Crown abilities only to Crowned players.",
+      "A Crowned player may discount one shop action by 1 Salvage through Ash-Crowned Authority."
+    ],
+    tileEventHooks: [
+      "Choir Bastion, The Hollow Customs Gate, and Choir Execution Court are Crown sectors.",
+      "A Crowned player who takes wounds from an Elite enemy or nemesis drops 1 Crown on that sector.",
+      "At Crown Hunger 6, the Ash Regent becomes active pressure."
+    ],
+    modeScaling: {
+      singlePlayer: "Solo may secure Crowns from Contracts and Crown sectors without needing player rivalry.",
+      multiplayer: "Rivalry pressure is active, but the final objective remains scenario driven."
+    },
     setup: [
       "Place 3 Crown tokens on the scenario sheet.",
-      "Any player who defeats an enemy or completes a contract may claim 1 available Crown token."
+      "Mark Choir Bastion, The Hollow Customs Gate, and Choir Execution Court as Crown sectors."
     ],
     specialRules: [
-      "A player with at least 1 Crown token gains +1 to battles.",
-      "A player with at least 1 Crown token suffers -1 to all stat checks.",
-      "Whenever a crowned player takes 1 wound, they must return 1 Crown token to the sheet if able.",
-      "If all 3 Crowns are claimed, each uncrowned player gains 1 trophy at the start of their turn."
+      "A player may claim 1 Crown after defeating an Elite enemy, completing a Contract, clearing a Crown sector, or paying 4 Salvage plus 1 Heat at Contract Spire.",
+      "Each Crown gives +1 Grit during battles.",
+      "Each Crown gives -1 Guile and -1 Signal during stat checks.",
+      "At the end of each round, if all Crowns are held, increase Crown Hunger by 1.",
+      "At Crown Hunger 3+, Crowned players gain 1 Heat when they defeat enemies. At Crown Hunger 6, spawn the Ash Regent nemesis.",
+      "If a Crowned player is wounded by a player, nemesis, or Elite enemy, they drop 1 Crown on their sector."
     ],
     confrontationTitle: "Claim the Throne",
     confrontationSteps: [
-      "If you have 0 Crowns, test Command 14, Grit 14, and Guile 14.",
-      "If you have 1 Crown, test Command 12, Grit 12, and Guile 12.",
-      "If you have 2 Crowns, test any two of those attributes at 12.",
-      "If you have 3 Crowns, test any one of those attributes at 12.",
-      "For each failed test, take 1 wound and discard 1 route note or 1 trophy."
+      "Final gate: hold at least 1 Crown or spend 2 completed Contracts.",
+      "0 Crowns: test Command 14, Grit 14, and Guile 14.",
+      "1 Crown: test Command 12, Grit 12, and Guile 12.",
+      "2 Crowns: choose 2 of those checks at difficulty 12.",
+      "3 Crowns: choose 1 of those checks at difficulty 12.",
+      "For each failed check, take 1 wound and drop 1 Crown if able."
     ],
-    victoryText: "If you pass all required confrontation tests, you win the game.",
-    designFeel: "Political rivalry scenario that rewards bold tempo and changes the final gate based on table control.",
+    victoryText: "If you pass all required confrontation stat checks, you win the game.",
+    designFeel: "Rivalry/hybrid scenario where table politics, Crown sectors, and shop bargains shape the final gate.",
     difficulty: "medium",
-    recommendedRolloutOrder: 2,
+    recommendedRolloutOrder: 4,
     confrontationText:
-      "At the throne, the number of Crowns you hold sets how many command, grit, and guile tests you must clear. Survive the required sequence once to win.",
+      "At the throne, the number of Crowns you hold sets how many command, grit, and guile checks you must clear. Survive the required sequence once to win.",
     winConditionKey: "throneClaims",
     victoryThreshold: 1,
     buildConfrontationPlan: (context) => ({
@@ -170,27 +353,96 @@ export const SCENARIOS: ScenarioDefinition[] = [
   {
     id: "scenario_mirror_of_false_heroes",
     name: "The Mirror of False Heroes",
-    theme: "The breach answers ambition with a reflection that grows stronger with every stain you carry.",
-    pressureRule: "Contract glory and artifact grabs build Heat pressure that strengthens the final mirror.",
+    theme: "The breach answers ambition with a reflection that grows stronger every time an operative chooses speed, glory, or forbidden leverage.",
+    pressureRule:
+      "Reflection rises from voluntary Heat, forbidden abilities, Artifact charges, selfish Contract rewards, and Scars. High pressure wakes the False Hero.",
     expectedDuration: "60-75 min",
-    setup: ["No extra setup is required."],
+    mode: "coop",
+    pressureTrack: {
+      name: "Mirror Pressure",
+      start: 0,
+      max: 8,
+      tickTiming: "End of each round if any player has 3+ Reflection.",
+      collapseRule: "At Mirror Pressure 8, spawn the False Hero nemesis and make Blue threats harder."
+    },
+    boardHooks: {
+      blueThreat: "Blue threats gain difficulty at high Mirror Pressure.",
+      yellowThreat: "Yellow traps tempt selfish rewards.",
+      anomaly: "Mirror sectors convert Heat and Scars into confrontation difficulty.",
+      shop: "Forbidden upgrades are stronger but feed Reflection."
+    },
+    progressSources: [
+      "Refuse a selfish Contract reward to lower Heat pressure.",
+      "Complete 2 Contracts to qualify for the final gate.",
+      "Carry 1 Artifact or keep Heat at 0 to face the Mirror early.",
+      "Clear Mirror Barracks or Static Chapel to remove 1 Reflection."
+    ],
+    finalGateRequirement: "Face the Mirror with 1 Artifact, 2 completed Contracts, or 0 Heat.",
+    scenarioRewards: [
+      {
+        id: "shattered-reflection",
+        name: "Shattered Reflection",
+        type: "boon",
+        timing: "after failing a Guile check",
+        text: "Discard to treat the failure as a success, then gain 1 Heat."
+      },
+      {
+        id: "honest-wound",
+        name: "Honest Wound",
+        type: "ability",
+        text: "Once per round, when you refuse a selfish reward, remove 1 Heat."
+      },
+      {
+        id: "mirror-knife-technique",
+        name: "Mirror-Knife Technique",
+        type: "ability",
+        timing: "once per round in battle",
+        text: "Use Guile instead of Grit for one battle."
+      },
+      {
+        id: "reflection-bargain",
+        name: "Reflection Bargain",
+        type: "tile-event",
+        text: "At Mirror Barracks, choose humble reward or gain 2 Salvage and 1 Reflection."
+      }
+    ],
+    nemesis: "False Hero",
+    shopInteractions: [
+      "Forbidden abilities cost 1 less Salvage while Mirror Pressure is 4+, then add 1 Reflection.",
+      "Black Vault may sell a Mirror-Knife technique once per player.",
+      "A selfish Contract payout grants +2 Salvage or 1 Tactic, then adds 1 Reflection."
+    ],
+    tileEventHooks: [
+      "Mirror Barracks offers humble or selfish Contract rewards.",
+      "Static Chapel can bottle a reflection clue if no Blue threat remains.",
+      "At Mirror Pressure 5+, all Blue threats gain +1 difficulty."
+    ],
+    modeScaling: {
+      singlePlayer: "Solo treats Heat as the main Reflection proxy until per-player Reflection is surfaced.",
+      multiplayer: "Each operative tracks Reflection separately; the highest Reflection drives pressure."
+    },
+    setup: ["Each player begins with 0 Reflection."],
     specialRules: [
-      "Whenever a player completes a contract, choose one: accept the praise to gain 1 trophy and 1 Heat, or reject the praise to lose 1 trophy and record a route note.",
-      "Whenever a player gains an artifact, they must test Signal 10. On a failure, they gain 1 Heat."
+      "Gain 1 Reflection when you voluntarily gain Heat, buy a forbidden ability, use an Artifact charge, take a selfish Contract reward, or gain a Scar.",
+      "When completing a Contract, choose humble reward for the normal payout or mirror reward for +2 Salvage or 1 Tactic and 1 Reflection.",
+      "At the end of each round, if any player has 3+ Reflection, increase Mirror Pressure by 1.",
+      "At Mirror Pressure 5+, all Blue threats gain +1 difficulty.",
+      "At Mirror Pressure 8, spawn the False Hero nemesis."
     ],
     confrontationTitle: "Face Yourself",
     confrontationSteps: [
-      "Your mirrored self uses your printed stats, amplified by your Heat total.",
-      "Fight the mirror in three confrontations, in this order: Guile, Signal, then Grit.",
-      "You do not take wounds for losing these mirror confrontations. Instead, gain 1 Heat for each confrontation you lose.",
-      "If you ever have 6 or more Heat during this confrontation, your turn ends immediately and you may try again next turn."
+      "Final gate: 1 Artifact, 2 completed Contracts, or 0 Heat.",
+      "Test Guile 10 plus your Reflection.",
+      "Test Signal 10 plus your Heat.",
+      "Test Grit 10 plus your Scars.",
+      "If your Reflection is 4+ when you fail, gain 1 Scar instead of Heat."
     ],
-    victoryText: "If you win at least 2 of the 3 mirror confrontations, you win the game.",
-    designFeel: "Temptation scenario that punishes Heat-heavy lines while still rewarding efficient builds.",
+    victoryText: "If you pass at least 2 of the 3 mirror stat checks, you win the game.",
+    designFeel: "Temptation scenario that lets players move fast, but makes every shortcut visible on the final mirror.",
     difficulty: "medium",
-    recommendedRolloutOrder: 3,
+    recommendedRolloutOrder: 5,
     confrontationText:
-      "At the breach mirror, resolve guile, signal, and grit confrontations in order. Each win records one mirror break. At two mirror breaks, you win.",
+      "At the breach mirror, resolve guile, signal, and grit checks in order. Each win records one mirror break. At two mirror breaks, you win.",
     winConditionKey: "mirrorBreaks",
     victoryThreshold: 2,
     failureEffectKey: "scenario_gainCorruption",
@@ -211,31 +463,99 @@ export const SCENARIOS: ScenarioDefinition[] = [
   {
     id: "scenario_devourer_beneath",
     name: "The Devourer Beneath",
-    theme: "A world-burrowing maw moves clockwise through the outer ring, consuming threats and building doom.",
-    pressureRule: "The Devourer keeps moving at end of turn, eating threats and converting them into shared doom.",
+    theme: "A world-burrowing maw circles the ring, eating unresolved threats, locking shops, and turning delay into Doom.",
+    pressureRule:
+      "The Devourer moves at end of turn, consumes unresolved threats for Doom, and becomes faster as the track rises.",
     expectedDuration: "60-80 min",
+    mode: "coop",
+    pressureTrack: {
+      name: "Doom",
+      start: 0,
+      max: 8,
+      tickTiming: "End of each player turn, after the operative resolves their sector.",
+      collapseRule: "At Doom 8, every player takes 1 wound, Doom falls to 4, and Red threats lock shop sectors."
+    },
+    boardHooks: {
+      redThreat: "Red threats are food for the Devourer and lock shop sectors after collapse.",
+      shop: "A shop the Devourer passes through is locked until players clear a Red threat there.",
+      salvage: "Kettleward Foundry can craft a Maw Spike from Salvage.",
+      yellowThreat: "Route complications can drag players toward the Devourer's lane."
+    },
+    progressSources: [
+      "Fight the Devourer on its sector to remove 1 Doom.",
+      "Spend 8 Trophy value to weaken the final maw.",
+      "Craft a Maw Spike at Kettleward Foundry.",
+      "Clear Red threats from locked shops."
+    ],
+    finalGateRequirement: "Enter the Maw by spending 8 Trophy value, 1 Artifact charge, or 3 Salvage at Kettleward Foundry to craft a Maw Spike.",
+    scenarioRewards: [
+      {
+        id: "maw-spike",
+        name: "Maw Spike",
+        type: "gear",
+        timing: "final confrontation",
+        text: "Reduce Devourer difficulty by 2 during Enter the Maw."
+      },
+      {
+        id: "breach-harpoon",
+        name: "Breach Harpoon",
+        type: "gear",
+        text: "+2 Grit against Nemesis enemies."
+      },
+      {
+        id: "grave-rail-lure",
+        name: "Grave-Rail Lure",
+        type: "boon",
+        text: "Once per game, move the Devourer 1 sector away from a shop."
+      },
+      {
+        id: "shop-lock-collapse",
+        name: "Shop Lock Collapse",
+        type: "tile-event",
+        text: "When Doom erupts, place a Red threat marker on each shop sector."
+      }
+    ],
+    nemesis: "The Devourer token",
+    shopInteractions: [
+      "Kettleward Foundry can craft Maw Spike for 3 Salvage.",
+      "Locked shops cannot sell Gear until the local Red threat is cleared.",
+      "Anchor Market may sell Grave-Rail Lure after Doom reaches 4."
+    ],
+    tileEventHooks: [
+      "The Devourer token starts on an Outer Ring sector.",
+      "At Doom 4+, the Devourer moves 2 sectors.",
+      "At Doom 6+, the Devourer may enter Middle Ring sectors through gates."
+    ],
+    modeScaling: {
+      singlePlayer: "Solo may cancel one Devourer move once per game.",
+      multiplayer: "The Devourer moves after each player turn and therefore pressures larger tables faster."
+    },
     setup: [
-      "Place 1 Devourer token on the outer tier.",
+      "Place 1 Devourer token on an Outer Ring sector.",
       "Place 0 Doom tokens on the scenario sheet."
     ],
     specialRules: [
-      "At the end of each player turn, move the Devourer token 1 outer space clockwise.",
-      "When the Devourer enters a space with any Threat cards, discard those Threat cards and place 1 Doom token on the sheet.",
-      "Whenever a player lands on the Devourer's space, they must immediately test Grit 8.",
-      "If the player fails, they take 1 wound and place 1 Doom token on the sheet. If they pass, remove 1 Doom token from the sheet, if any.",
-      "If the sheet ever reaches 8 Doom tokens, every player immediately takes 1 wound, then discard 4 Doom tokens."
+      "At the end of each player turn, move the Devourer 1 sector clockwise on its current ring.",
+      "At Doom 4+, the Devourer moves 2 sectors. At Doom 6+, it may enter Middle Ring sectors through gates.",
+      "When the Devourer enters a sector, discard unresolved threats there and add 1 Doom if any were discarded.",
+      "If the Devourer enters a shop, that shop is locked until a player clears a Red threat there.",
+      "If a player lands on the Devourer, fight Grit 8 plus the Doom modifier. Win to remove 1 Doom and gain 1 Trophy. Lose to take 1 wound and add 1 Doom.",
+      "At 8 Doom, every player takes 1 wound. Then reduce Doom to 4 and place a Red threat on each shop sector."
     ],
     confrontationTitle: "Enter the Maw",
     confrontationSteps: [
+      "Final gate: spend 8 Trophy value, 1 Artifact charge, or craft Maw Spike at Kettleward Foundry.",
       "Face the Final Devourer with a Grit 14 confrontation.",
-      "Before the confrontation, you may discard trophies to reduce its difficulty by 1 for every 3 trophy points discarded."
+      "Reduce difficulty by 1 for every 3 Trophy value spent.",
+      "Reduce difficulty by 2 if carrying Maw Spike.",
+      "On failure, take 2 wounds or gain 1 Scar."
     ],
     victoryText: "If you defeat the Final Devourer, you win the game.",
-    designFeel: "Combat-first scenario for tables that want roaming pressure and a trophy-fueled final boss race.",
+    designFeel: "Roaming predator scenario where unresolved board clutter becomes the enemy clock.",
     difficulty: "medium-hard",
-    recommendedRolloutOrder: 4,
+    recommendedRolloutOrder: 2,
     confrontationText:
-      "At the maw, fight the Devourer's true form at Grit 14. One completed maw strike wins the scenario, and trophies can reduce the target value before the fight.",
+      "At the maw, fight the Devourer's true form at Grit 14. One completed maw strike wins the scenario, and trophy value or Maw Spike can reduce the target value before the fight.",
     winConditionKey: "mawStrikes",
     victoryThreshold: 1,
     failureEffectKey: "scenario_coreWound",
@@ -258,48 +578,122 @@ export const SCENARIOS: ScenarioDefinition[] = [
   {
     id: "scenario_labyrinth_engine",
     name: "The Labyrinth Engine",
-    theme: "A reality-writing engine rotates through modes, changing how every turn feels until someone stops it.",
-    pressureRule: "The Engine rotates every turn and changes the active global penalty and test rewards.",
+    theme: "A reality-writing engine rotates through command, grit, signal, guile, and forge modes until the table turns its rules against it.",
+    pressureRule:
+      "The Engine rotates every turn. Each mode changes threats, shops, Gear, rewards, and the final confrontation sequence.",
     expectedDuration: "70-90 min",
+    mode: "coop",
+    pressureTrack: {
+      name: "Engine Instability",
+      start: 0,
+      max: 6,
+      tickTiming: "At the start of each player turn, rotate the Engine to the next mode.",
+      collapseRule: "At high instability, failed matching checks exhaust Gear or add Heat."
+    },
+    boardHooks: {
+      redThreat: "Grit mode makes Red enemies harder.",
+      blueThreat: "Signal mode makes Blue threats harder and risky Tactic draws noisier.",
+      yellowThreat: "Guile mode changes Yellow draws into draw-extra, keep-one decisions.",
+      shop: "Command mode taxes shops unless the player has a Contract.",
+      salvage: "Forge mode discounts repairs while punishing failed Forge tests."
+    },
+    progressSources: [
+      "Pass a stat check matching the active Engine mode.",
+      "Buy an Engine Key at Black Vault for 4 Salvage and 1 Heat.",
+      "Complete a Contract in a sector matching the active mode.",
+      "Use a Modebreaker Implant to count your stat as matching the Engine."
+    ],
+    finalGateRequirement: "Stop the Engine with 3 Engine Keys or 1 Artifact.",
+    scenarioRewards: [
+      {
+        id: "engine-key",
+        name: "Engine Key",
+        type: "boon",
+        timing: "before a confrontation check",
+        text: "Spend to reduce one Engine confrontation check by 2."
+      },
+      {
+        id: "modebreaker-implant",
+        name: "Modebreaker Implant",
+        type: "gear",
+        text: "Exhaust to treat your stat as matching the active Engine mode."
+      },
+      {
+        id: "rotating-map",
+        name: "Rotating Map",
+        type: "boon",
+        text: "When the Engine rotates, you may move 1 sector if your current sector is clear."
+      },
+      {
+        id: "mode-shear",
+        name: "Mode Shear",
+        type: "tile-event",
+        text: "When a matching-mode check fails, draw 1 threat matching the failed mode."
+      }
+    ],
+    nemesis: "Iron Saint",
+    shopInteractions: [
+      "Command mode makes shop actions cost +1 Salvage unless the player has a Contract.",
+      "Forge mode makes Gear repairs and upgrades cost 1 less Salvage.",
+      "Black Vault can sell Engine Keys for 4 Salvage and 1 Heat."
+    ],
+    tileEventHooks: [
+      "Engine modes rotate command to grit to signal to guile to forge.",
+      "Matching-mode checks can grant Salvage or Tactics.",
+      "Failed matching-mode checks add Heat or exhaust Gear."
+    ],
+    modeScaling: {
+      singlePlayer: "Solo Engine Keys may be earned through any matching-mode check once per round.",
+      multiplayer: "The table can divide sectors by active mode to prepare the final sequence."
+    },
     setup: [
       "Place 1 Engine token on the scenario sheet and set it to Command mode.",
-      "The Engine cycles through Command, Signal, and Guile modes."
+      "The Engine cycles through Command, Grit, Signal, Guile, and Forge modes."
     ],
     specialRules: [
-      "At the start of each player turn, rotate the Engine token to the next mode.",
-      "Command mode: all enemies gain +1 battle score.",
-      "Signal mode: whenever a player records a route note, they must either keep it and lose 1 trophy, or discard it.",
-      "Guile mode: whenever a player draws Threat cards, draw 1 additional Threat card, then discard 1 Threat card of your choice.",
-      "Whenever a player passes a stat check matching the Engine's current mode, they gain 1 trophy.",
-      "Whenever a player fails a stat check matching the Engine's current mode, they lose 1 trophy or take 1 wound."
+      "At the start of each player turn, rotate the Engine to the next mode: Command, Grit, Signal, Guile, then Forge.",
+      "Command mode: shop actions cost +1 Salvage unless you have a Contract.",
+      "Grit mode: all Red enemies gain +1.",
+      "Signal mode: all Blue threats gain +1 and drawing Tactics may add Heat.",
+      "Guile mode: when drawing Yellow threats, draw +1, then discard one.",
+      "Forge mode: Gear repairs and upgrades cost -1 Salvage, but failed Forge checks exhaust one Gear.",
+      "When you pass a stat check matching the Engine mode, gain 1 Salvage or 1 Tactic. When you fail one, gain 1 Heat or exhaust Gear."
     ],
     confrontationTitle: "Stop the Engine",
     confrontationSteps: [
-      "Your first confrontation test must match the Engine's current mode.",
-      "Then rotate the Engine after each test and resolve the next required attribute.",
-      "Use the sequence Command, Signal, and Guile as the engine turns.",
-      "For each failed test, draw 1 Threat card and resolve it immediately. Any enemy drawn this way must be fought."
+      "Final gate: 3 Engine Keys or 1 Artifact.",
+      "Your first confrontation check matches the Engine's current mode.",
+      "Then rotate the Engine after each check and resolve the next required stat.",
+      "Resolve 3 checks at difficulty 12.",
+      "For each failed check, draw 1 threat matching the failed mode."
     ],
-    victoryText: "If you pass at least 2 of the 3 Engine tests and no enemies remain in your space afterward, you win the game.",
-    designFeel: "Most tactical scenario. Timing your final approach matters as much as raw route leverage.",
+    victoryText: "If you pass at least 2 of the 3 Engine checks and no enemies remain in your space afterward, you win the game.",
+    designFeel: "Most tactical scenario: the board is a rotating rule machine, and timing the final approach matters as much as raw stats.",
     difficulty: "hard",
-    recommendedRolloutOrder: 5,
+    recommendedRolloutOrder: 6,
     confrontationText:
-      "At the core engine, resolve three rotating tests beginning with the engine's active mode. Each passed test records one shutdown mark. At two shutdown marks, you win if your space is clear.",
+      "At the core engine, resolve three rotating checks beginning with the engine's active mode. Each passed check records one shutdown mark. At two shutdown marks, you win if your space is clear.",
     winConditionKey: "shutdownMarks",
     victoryThreshold: 2,
     buildConfrontationPlan: (context) => {
-      const engineRotation: ScenarioConfrontationCheck[] = [
-        { stat: "command", difficulty: 12, label: "Stabilize the command lattice" },
-        { stat: "signal", difficulty: 12, label: "Anchor the starfire relays" },
-        { stat: "guile", difficulty: 12, label: "Walk the shifting engine path" }
-      ];
+      const labels: Record<ScenarioConfrontationStat, string> = {
+        command: "Stabilize the command lattice",
+        grit: "Hold the iron rotation",
+        signal: "Anchor the starfire relays",
+        guile: "Walk the shifting engine path",
+        forge: "Rebuild the ignition cage"
+      };
+      const checks = [0, 1, 2].map((offset) => {
+        const stat = ENGINE_MODE_ROTATION[(context.engineModeIndex + offset) % ENGINE_MODE_ROTATION.length] ?? "command";
+        return {
+          stat,
+          difficulty: 12,
+          label: labels[stat]
+        };
+      });
+
       return {
-        checks: [
-          engineRotation[context.engineModeIndex % engineRotation.length]!,
-          engineRotation[(context.engineModeIndex + 1) % engineRotation.length]!,
-          engineRotation[(context.engineModeIndex + 2) % engineRotation.length]!
-        ],
+        checks,
         markLabel: "shutdown mark",
         effect: null,
         victorySummary: `${context.playerName} shut down the Labyrinth Engine before reality folded again.`
@@ -312,39 +706,107 @@ export const SCENARIOS: ScenarioDefinition[] = [
   {
     id: "scenario_dying_star",
     name: "The Dying Star",
-    theme: "The system sun is collapsing and every turn burns away the time left to repair it.",
-    pressureRule: "The star timer burns down at end of turn, with extra loss whenever the table takes damage.",
+    theme: "The system sun is collapsing, and every wound, greedy Heat choice, and delayed repair burns away the light left to restart it.",
+    pressureRule:
+      "Starfire burns down at end of turn, from wounds, and from voluntary Heat. Artifacts, Forge work, Star sectors, and contracts can restore it.",
     expectedDuration: "50-70 min",
+    mode: "coop",
+    pressureTrack: {
+      name: "Starfire",
+      start: 10,
+      max: 12,
+      tickTiming: "End of each player turn, plus wound and voluntary Heat triggers.",
+      collapseRule: "At 0 Starfire, all players test Signal 12, suffer wounds and possible Heat, then Starfire resets to 5."
+    },
+    boardHooks: {
+      blueThreat: "Blue threats interfere with restart pulses.",
+      shop: "Kettleward Foundry and Votive Engine Room become repair anchors.",
+      salvage: "Forge spaces convert Salvage and stat checks into Starfire.",
+      anomaly: "Dead Star Reliquary and Saint Engine Crypt restore Starfire through risky artifact work."
+    },
+    progressSources: [
+      "Gain an Artifact to restore 2 Starfire.",
+      "Spend an Artifact charge to restore 2 Starfire.",
+      "Pass Forge 8 at Kettleward Foundry to restore 1 Starfire.",
+      "Clear a Star sector to restore 1 Starfire.",
+      "Complete a Contract to restore 1 Starfire."
+    ],
+    finalGateRequirement: "Attempt the Star Core with 5+ Starfire and either 1 Artifact or 3 completed Contracts.",
+    scenarioRewards: [
+      {
+        id: "sun-cage-blueprint",
+        name: "Sun-Cage Blueprint",
+        type: "boon",
+        text: "At a Star sector, gain +2 Forge."
+      },
+      {
+        id: "ignition-coil",
+        name: "Ignition Coil",
+        type: "gear",
+        timing: "Dying Star confrontation",
+        text: "Spend to reroll the Forge check."
+      },
+      {
+        id: "solar-martyr-oath",
+        name: "Solar Martyr Oath",
+        type: "boon",
+        text: "Take 1 wound to restore 2 Starfire."
+      },
+      {
+        id: "starfire-eruption",
+        name: "Starfire Eruption",
+        type: "tile-event",
+        text: "At 0 Starfire, each player tests Signal 12, then the track resets to 5."
+      }
+    ],
+    nemesis: "Dying Star Core",
+    shopInteractions: [
+      "Kettleward Foundry may test Forge 8 to restore 1 Starfire.",
+      "Votive Engine Room may spend a Gear charge to restore 2 Starfire.",
+      "Star sectors can sell emergency repairs through Salvage or wounds."
+    ],
+    tileEventHooks: [
+      "Mark Kettleward Foundry, Votive Engine Room, Dead Star Reliquary, and Saint Engine Crypt as Star sectors.",
+      "Whenever a player takes a wound, remove 1 additional Starfire.",
+      "Whenever a player voluntarily gains Heat, remove 1 Starfire."
+    ],
+    modeScaling: {
+      singlePlayer: "Solo can use one extra Artifact slot and Starfire loss remains one token per player turn.",
+      multiplayer: "Larger tables burn Starfire faster because each player turn advances the clock."
+    },
     setup: [
-      "Place 10 Star tokens on the scenario sheet.",
-      "Use trophy coins, artifact counters, or any spare markers as Star tokens."
+      "Place 10 Starfire tokens on the scenario sheet.",
+      "Mark Kettleward Foundry, Votive Engine Room, Dead Star Reliquary, and Saint Engine Crypt as Star sectors."
     ],
     specialRules: [
-      "At the end of each player turn, remove 1 Star token from the sheet.",
-      "Whenever a player gains an artifact, place 2 Star tokens back on the sheet.",
-      "Whenever a player takes 1 wound, remove 1 additional Star token.",
-      "If the sheet ever reaches 0 Star tokens, the Dying Star erupts: each player tests Signal 12. On a success take 1 wound. On a failure take 2 wounds and gain 1 Heat. Then place 5 Star tokens back on the sheet."
+      "At the end of each player turn, remove 1 Starfire token.",
+      "Whenever a player takes a wound, remove 1 additional Starfire token.",
+      "Whenever a player voluntarily gains Heat, remove 1 Starfire token.",
+      "Gain an Artifact or spend an Artifact charge to restore 2 Starfire tokens.",
+      "Pass Forge 8 at Kettleward Foundry, clear a Star sector, or complete a Contract to restore 1 Starfire token.",
+      "At 0 Starfire, each player tests Signal 12. Success takes 1 wound. Failure takes 2 wounds and gains 1 Heat. Then restore Starfire to 5."
     ],
     confrontationTitle: "Ignite the Core",
     confrontationSteps: [
-      "Discard 1 artifact or take 2 wounds.",
-      "Test Guile 12 to repair the ignition geometry.",
-      "Test Grit 12 to brace the unstable reactor.",
+      "Final gate: 5+ Starfire and 1 Artifact or 3 completed Contracts.",
+      "Opening cost: spend 1 Artifact charge or take 2 wounds.",
+      "Test Forge 12 to rebuild the ignition cage.",
+      "Test Grit 12 to hold the reactor frame.",
       "Test Signal 12 to survive the restart pulse.",
-      "If you fail any confrontation test, your turn ends and you may try again next turn."
+      "If you fail any confrontation check, your turn ends and 2 Starfire tokens are removed."
     ],
-    victoryText: "If you pass all 3 confrontation tests after paying the opening cost, you win the game.",
-    designFeel: "Harsh race-against-time scenario with global table pressure and very little dead air.",
+    victoryText: "If you pass all 3 confrontation stat checks after paying the opening cost, you win the game.",
+    designFeel: "Hard timer scenario where Forge, shops, artifacts, and Star sectors become survival infrastructure.",
     difficulty: "hard",
-    recommendedRolloutOrder: 6,
+    recommendedRolloutOrder: 3,
     confrontationText:
-      "At the star core, pay the opening cost and then clear guile 12, grit 12, and signal 12. Each passed test records one ignition mark. At three ignition marks, you win.",
+      "At the star core, pay the opening cost and then clear forge 12, grit 12, and signal 12. Each passed check records one ignition mark. At three ignition marks, you win.",
     winConditionKey: "ignitionMarks",
     victoryThreshold: 3,
     failureEffectKey: "scenario_coreWound",
     buildConfrontationPlan: (context) => ({
       checks: [
-        { stat: "guile", difficulty: 12, label: "Repair the ignition geometry" },
+        { stat: "forge", difficulty: 12, label: "Rebuild the ignition cage" },
         { stat: "grit", difficulty: 12, label: "Brace the unstable reactor" },
         { stat: "signal", difficulty: 12, label: "Survive the restart pulse" }
       ],

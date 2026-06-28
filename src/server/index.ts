@@ -130,8 +130,12 @@ function createHttpServer(): HttpServer {
             name: scenario.name,
             theme: scenario.theme,
             difficulty: scenario.difficulty,
+            mode: scenario.mode,
             pressureRule: scenario.pressureRule,
             expectedDuration: scenario.expectedDuration,
+            pressureTrack: scenario.pressureTrack,
+            finalGateRequirement: scenario.finalGateRequirement,
+            scenarioRewards: scenario.scenarioRewards,
             nemesis: (() => {
               const nemesis = nemesisByScenarioId.get(scenario.id) ?? null;
 

@@ -271,9 +271,18 @@ export function MobilePlayerCard({
               <div className="phone-sheet-section-heading">Scenario Rules</div>
               <p className="phone-sheet-scenario-theme">{activeScenario.theme}</p>
               <p className="phone-sheet-scenario-rule">{scenarioRuleDigest?.pressureSummary ?? activeScenario.pressureSummary}</p>
+              {scenarioRuleDigest?.pressureTrack && <p className="phone-sheet-scenario-rule">{scenarioRuleDigest.pressureTrack}</p>}
+              {scenarioRuleDigest?.finalGateRequirement && (
+                <p className="phone-sheet-scenario-rule">Final gate: {scenarioRuleDigest.finalGateRequirement}</p>
+              )}
               {(scenarioRuleDigest?.telemetry ?? []).map((entry) => (
                 <p key={entry} className="phone-sheet-scenario-rule">
                   {entry}
+                </p>
+              ))}
+              {(scenarioRuleDigest?.boardHooks ?? []).map((hook) => (
+                <p key={hook} className="phone-sheet-scenario-rule">
+                  {hook}
                 </p>
               ))}
               {(scenarioRuleDigest?.specialRules ?? activeScenario.specialRules.slice(0, 2)).map((rule) => (
@@ -284,6 +293,11 @@ export function MobilePlayerCard({
               {(scenarioRuleDigest?.confrontationSteps ?? activeScenario.confrontationSteps.slice(0, 2)).map((step) => (
                 <p key={step} className="phone-sheet-scenario-rule">
                   {step}
+                </p>
+              ))}
+              {(scenarioRuleDigest?.rewards ?? []).map((reward) => (
+                <p key={reward} className="phone-sheet-scenario-rule">
+                  Reward: {reward}
                 </p>
               ))}
               <p className="phone-sheet-scenario-rule">{scenarioRuleDigest?.victoryText ?? activeScenario.victoryText}</p>

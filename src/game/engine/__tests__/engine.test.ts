@@ -1641,6 +1641,89 @@ describe("movement rolls", () => {
     expect(summary?.summary).toContain("Failed to enter");
   });
 
+  it("does not allow movement to fail in single-player mode", () => {
+    const baseState = createState({ phase: "navigation", sessionMode: "single-player" });
+    const server = new GameRoomServer(
+      createState({
+        phase: "navigation",
+        sessionMode: "single-player",
+        sectors: baseState.sectors.map((sector) =>
+          sector.id === "sector-b"
+            ? {
+                ...sector,
+                danger: 10,
+                encounterDecks: { ...sector.encounterDecks, threat: [] }
+              }
+            : sector
+        )
+      }),
+      [],
+      createSequenceRandomSource([0, 0]),
+      createThreats(),
+      createCharacters(),
+      createGear(),
+      createContracts()
+    );
+
+    runIntent(server, {
+      type: "MOVE_REQUESTED",
+      seatId: "seat-1",
+      toSectorId: "sector-b"
+    });
+
+    const player = server.getState().players.find((entry) => entry.seatId === "seat-1");
+    const summary = server.getState().lastOutcomeSummary;
+
+    expect(player?.character.currentSpaceId).toBe("sector-b");
+    expect(player?.sectorId).toBe("sector-b");
+    expect(player?.character.heat).toBe(0);
+    expect(summary?.success).toBe(true);
+    expect(summary?.movedToSectorId).toBe("sector-b");
+    expect(summary?.summary).toContain("Moved into");
+  });
+
+  it("does not allow movement to fail in a one-player multiplayer room", () => {
+    const baseState = createState({ phase: "navigation" });
+    const onePlayerState = createState({
+      phase: "navigation",
+      turnOrder: ["seat-1"],
+      seats: baseState.seats.filter((seat) => seat.seatId === "seat-1"),
+      players: baseState.players.filter((player) => player.seatId === "seat-1"),
+      sectors: baseState.sectors.map((sector) =>
+        sector.id === "sector-b"
+          ? {
+              ...sector,
+              danger: 10,
+              encounterDecks: { ...sector.encounterDecks, threat: [] }
+            }
+          : sector
+      )
+    });
+    const server = new GameRoomServer(
+      onePlayerState,
+      [],
+      createSequenceRandomSource([0, 0]),
+      createThreats(),
+      createCharacters(),
+      createGear(),
+      createContracts()
+    );
+
+    runIntent(server, {
+      type: "MOVE_REQUESTED",
+      seatId: "seat-1",
+      toSectorId: "sector-b"
+    });
+
+    const player = server.getState().players.find((entry) => entry.seatId === "seat-1");
+    const summary = server.getState().lastOutcomeSummary;
+
+    expect(player?.character.currentSpaceId).toBe("sector-b");
+    expect(player?.character.heat).toBe(0);
+    expect(summary?.success).toBe(true);
+    expect(summary?.difficulty).toBe(summary?.checkTotal);
+  });
+
   it("rejects forged movement resolution with a mismatched origin", () => {
     const state = createState({ phase: "navigation" });
     const result = reduceGameState(state, {
@@ -3212,7 +3295,7 @@ describe("escalation flow", () => {
       toSectorId: "center_cinder_gate"
     });
 
-    expect(String(client.socket.send.mock.calls[0]?.[0] ?? "")).toContain("Resolve the Gate of Cinders");
+    expect(String(client.socket.send.mock.calls[0]?.[0] ?? "")).toContain("Resolve the Last Signal Well");
   });
 
   it("lets Guardian Span board text earn the clearance note and then opens the inner breach move", () => {

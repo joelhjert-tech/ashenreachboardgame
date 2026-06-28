@@ -410,7 +410,7 @@ describe("server API scenario flow", () => {
           message.payload.activeScenario?.id === "scenario_dying_star"
       );
 
-      expect(startedPatch.payload.scenarioTelemetry?.some((entry) => entry.label === "Star Tokens")).toBe(true);
+      expect(startedPatch.payload.scenarioTelemetry?.some((entry) => entry.label === "Starfire")).toBe(true);
 
       const state = harness.roomServer.getState();
       const activePlayer = state.players.find((player) => player.seatId === joined.payload.seatId);
@@ -447,7 +447,7 @@ describe("server API scenario flow", () => {
           message.payload.activeScenario?.id === "scenario_dying_star"
       );
 
-      expect(movedPatch.payload.scenarioTelemetry?.some((entry) => entry.label === "Star Tokens")).toBe(true);
+      expect(movedPatch.payload.scenarioTelemetry?.some((entry) => entry.label === "Starfire")).toBe(true);
     } finally {
       phone.socket.close();
     }

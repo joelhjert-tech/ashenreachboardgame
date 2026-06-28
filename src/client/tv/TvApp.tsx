@@ -253,6 +253,9 @@ function getScenarioStatus(patch: StatePatch<PublicPatchPayload> | null) {
       progressValue: 0,
       progressThreshold: 0,
       progressLabel: "Progress",
+      pressureTrack: null,
+      finalGateRequirement: null,
+      scenarioRewards: [],
       setup: [] as string[],
       specialRules: [] as string[],
       confrontationSteps: [] as string[],
@@ -272,6 +275,9 @@ function getScenarioStatus(patch: StatePatch<PublicPatchPayload> | null) {
     progressValue: scenario.progress,
     progressThreshold: scenario.threshold,
     progressLabel: scenario.progressLabel,
+    pressureTrack: scenario.pressureTrack ?? null,
+    finalGateRequirement: scenario.finalGateRequirement ?? null,
+    scenarioRewards: scenario.scenarioRewards ?? [],
     setup: scenario.setup,
     specialRules: scenario.specialRules,
     confrontationSteps: scenario.confrontationSteps,
@@ -566,6 +572,10 @@ function ScenarioSelectionPreview({ scenario }: { scenario: ScenarioCatalogEntry
           <strong>{scenario.confrontationTitle}</strong>
         </div>
         <div>
+          <span>Final Gate</span>
+          <strong>{scenario.finalGateRequirement ?? "Reach the core chamber and follow scenario rules."}</strong>
+        </div>
+        <div>
           <span>Victory</span>
           <strong>{scenario.victoryText}</strong>
         </div>
@@ -821,6 +831,20 @@ function ScenarioStatusCard({
         </div>
       )}
       <p className="tv-empty-copy">{scenarioRuleDigest?.pressureSummary ?? scenarioStatus.pressureSummary}</p>
+      {scenarioStatus.pressureTrack && (
+        <p className="tv-empty-copy">
+          {scenarioStatus.pressureTrack.name}: {scenarioStatus.pressureTrack.start}/{scenarioStatus.pressureTrack.max} |{" "}
+          {scenarioStatus.pressureTrack.collapseRule}
+        </p>
+      )}
+      {scenarioStatus.finalGateRequirement && <p className="tv-empty-copy">Final gate: {scenarioStatus.finalGateRequirement}</p>}
+      {scenarioStatus.scenarioRewards.length > 0 && (
+        <div className="board-sidebar-meta">
+          {scenarioStatus.scenarioRewards.slice(0, 3).map((reward) => (
+            <span key={reward.id}>{reward.name}</span>
+          ))}
+        </div>
+      )}
       <div className="board-sidebar-meta">
         <span>{toTitleCase(scenarioStatus.difficulty)}</span>
         <span>{scenarioStatus.confrontationTitle}</span>

@@ -38,10 +38,21 @@ describe("board space data", () => {
   it("includes the engine-critical original Ashen Reach anchor spaces", () => {
     const spaceIds = new Set(BOARD_SPACES.map((space) => space.id));
 
+    expect(BOARD_SPACES).toHaveLength(35);
     expect(spaceIds.has("outer_ember_sanctum")).toBe(true);
     expect(spaceIds.has("middle_guardian_span")).toBe(true);
     expect(spaceIds.has("inner_veil_rift")).toBe(true);
     expect(spaceIds.has("center_cinder_gate")).toBe(true);
+  });
+
+  it("gives every sector board-game presentation metadata", () => {
+    expect(
+      BOARD_SPACES.every(
+        (space) => space.tags.length > 0 && space.ruleText.trim().length > 0 && space.loreText.trim().length > 0
+      )
+    ).toBe(true);
+    expect(getBoardSpace("outer_waymarket")?.tags).toEqual(expect.arrayContaining(["shop", "crossroads"]));
+    expect(getBoardSpace("center_cinder_gate")?.ruleText).toMatch(/scenario directive/i);
   });
 
   it("surfaces movement boxes through the dedicated data file", () => {
@@ -89,11 +100,11 @@ describe("board space data", () => {
     expect(cinderGate?.movementRequirements).toEqual([
       {
         allowedFrom: ["inner_gate_of_cinders"],
-        errorMessage: "Only the Gate of Cinders opens the final route into the core chamber"
+        errorMessage: "Only the Last Signal Well opens the final route into the core chamber"
       },
       {
         requiredNotes: ["gate-of-cinders-breached"],
-        errorMessage: "Resolve the Gate of Cinders before entering the Cinder Gate"
+        errorMessage: "Resolve the Last Signal Well before entering the Ashen Reach Core"
       }
     ]);
   });
