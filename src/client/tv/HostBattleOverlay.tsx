@@ -7,7 +7,7 @@ import { statLabelById } from "../shared/statLabels.js";
 import type { ActiveResolution, PublicPatchPayload, PublicPlayer, StatePatch, Stat } from "../shared/types.js";
 import { HostCinematicFxLayer } from "./HostCinematicFxLayer.js";
 import { isHostBattleActive } from "./hostBattleState.js";
-import { ThreeBattleDiceAnimation } from "./ThreeBattleDiceAnimation.js";
+import { BattleDiceAnimation } from "./BattleDiceAnimation.js";
 
 interface HostBattleDisplayModel {
   playerName: string;
@@ -286,7 +286,7 @@ export function HostBattleOverlay({
             <p>{model.playerFormula}</p>
           </div>
           <div className="host-battle-dice-animation">
-            <ThreeBattleDiceAnimation
+            <BattleDiceAnimation
               attackValue={model.playerTotal}
               defenseValue={model.enemyTotal}
               modifierValue={model.playerModifier}

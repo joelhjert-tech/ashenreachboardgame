@@ -8,7 +8,7 @@ import { DiceRollScene } from "../DiceRollScene.js";
 describe("DiceRollScene", () => {
   afterEach(() => cleanup());
 
-  it("falls back to the 2D dice display with authoritative dice faces when WebGL is unavailable", () => {
+  it("renders the DOM dice display with authoritative dice faces", () => {
     render(
       <DiceRollScene
         attackValue={11}
@@ -22,7 +22,7 @@ describe("DiceRollScene", () => {
       />
     );
 
-    expect(screen.getByTestId("host-dice-roll-scene")).toHaveAttribute("data-fallback", "webgl-unavailable");
+    expect(screen.getByTestId("host-dice-roll-scene")).toHaveAttribute("data-fallback", "dom-animation");
     expect(screen.getByTestId("combat-die-attack")).toHaveTextContent("4");
     expect(screen.getByTestId("combat-die-defense")).toHaveTextContent("3");
     expect(screen.getByTestId("combat-die-modifier")).toHaveTextContent("2");
@@ -40,7 +40,7 @@ describe("DiceRollScene", () => {
       />
     );
 
-    expect(screen.getByTestId("host-dice-roll-scene")).toHaveAttribute("data-fallback", "webgl-unavailable");
+    expect(screen.getByTestId("host-dice-roll-scene")).toHaveAttribute("data-fallback", "dom-animation");
     expect(screen.getByTestId("combat-die-attack")).toHaveTextContent("-");
     expect(screen.getByTestId("combat-die-defense")).toHaveTextContent("-");
     expect(screen.getByTestId("combat-die-modifier")).toHaveTextContent("-");

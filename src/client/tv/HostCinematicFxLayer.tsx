@@ -1,6 +1,5 @@
-import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactElement } from "react";
+import type { CSSProperties, ReactElement } from "react";
 
-type ThreeModule = typeof import("three");
 type FxVariant = "battle" | "shop" | "map";
 type FxTone = "neutral" | "victory" | "failure" | "danger" | "reward";
 
@@ -36,125 +35,67 @@ interface HostCinematicFxLayerProps {
   testId?: string;
 }
 
-declare global {
-  interface Window {
-    __ASHEN_REACH_HOST_FX_DIAGNOSTICS__?: {
-      variant: FxVariant;
-      renderCalls: number;
-      triangles: number;
-      geometries: number;
-      textures: number;
-      dpr: number;
-      canvasWidth: number;
-      canvasHeight: number;
-    };
-  }
+function renderMapFx(points: MapFxPoint[], trails: MapFxTrail[], scanlineKey: string | number | undefined): ReactElement {
+  return (
+    <>
+      <svg className="host-map-fx-svg" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+        <defs>
+          <filter id="host-map-route-glow" x="-30%" y="-30%" width="160%" height="160%">
+            <feGaussianBlur stdDeviation="0.9" result="glow" />
+            <feMerge>
+              <feMergeNode in="glow" />
+              <feMergeNode in="SourceGraphic" />
+            </feMerge>
+          </filter>
+        </defs>
+        {trails.map((trail) => (
+          <line
+            key={trail.id}
+            className="host-map-fx-svg-trail"
+            x1={trail.fromX * 100}
+            y1={trail.fromY * 100}
+            x2={trail.toX * 100}
+            y2={trail.toY * 100}
+            pathLength={1}
+          />
+        ))}
+      </svg>
+      {points.map((point) => (
+        <span
+          key={point.id}
+          className={`host-map-fx-dot host-map-fx-dot-${point.tone}`}
+          style={{
+            left: `${point.x * 100}%`,
+            top: `${point.y * 100}%`,
+            ["--map-fx-width" as string]: point.width ? `${point.width * 100}%` : undefined,
+            ["--map-fx-height" as string]: point.height ? `${point.height * 100}%` : undefined,
+            ["--map-fx-intensity" as string]: point.intensity ? String(point.intensity) : undefined
+          }}
+        />
+      ))}
+      {scanlineKey !== undefined && <b key={scanlineKey} className="host-map-fx-scanline" />}
+    </>
+  );
 }
 
-function supportsWebGl(): boolean {
-  if (typeof document === "undefined") {
-    return false;
-  }
+function renderEncounterFx(variant: FxVariant, stockCount: number, riskActive: boolean): ReactElement {
+  const count = Math.max(3, Math.min(5, stockCount || 3));
 
-  if (typeof WebGLRenderingContext === "undefined" && typeof WebGL2RenderingContext === "undefined") {
-    return false;
-  }
-
-  try {
-    const probe = document.createElement("canvas");
-    return Boolean(probe.getContext("webgl2") ?? probe.getContext("webgl"));
-  } catch {
-    return false;
-  }
-}
-
-function prefersReducedMotion(): boolean {
-  return typeof window !== "undefined" && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
-}
-
-function toneColor(tone: MapFxPoint["tone"] | FxTone): number {
-  switch (tone) {
-    case "victory":
-    case "active":
-      return 0x76c7ff;
-    case "failure":
-    case "danger":
-    case "red":
-      return 0xf05a3f;
-    case "blue":
-    case "anomaly":
-      return 0x8f6cff;
-    case "yellow":
-    case "gold":
-    case "reward":
-      return 0xf0bd69;
-    default:
-      return 0xdcc28d;
-  }
-}
-
-function createCircleMesh(
-  THREE: ThreeModule,
-  x: number,
-  y: number,
-  radius: number,
-  color: number,
-  opacity: number
-): import("three").Mesh {
-  const geometry = new THREE.CircleGeometry(radius, 48);
-  const material = new THREE.MeshBasicMaterial({
-    color,
-    transparent: true,
-    opacity,
-    blending: THREE.AdditiveBlending,
-    depthWrite: false
-  });
-  const mesh = new THREE.Mesh(geometry, material);
-  mesh.position.set(x, y, 0);
-  return mesh;
-}
-
-function createTileGlowMesh(
-  THREE: ThreeModule,
-  point: MapFxPoint,
-  color: number,
-  opacity: number
-): import("three").Mesh {
-  const geometry = new THREE.PlaneGeometry(point.width ?? 0.07, point.height ?? point.width ?? 0.05);
-  const material = new THREE.MeshBasicMaterial({
-    color,
-    transparent: true,
-    opacity,
-    blending: THREE.AdditiveBlending,
-    depthWrite: false
-  });
-  const mesh = new THREE.Mesh(geometry, material);
-  mesh.position.set(point.x - 0.5, 0.5 - point.y, 0);
-  return mesh;
-}
-
-function createTrailMesh(THREE: ThreeModule, trail: MapFxTrail): import("three").Line {
-  const geometry = new THREE.BufferGeometry().setFromPoints([
-    new THREE.Vector3(trail.fromX - 0.5, 0.5 - trail.fromY, 0),
-    new THREE.Vector3(trail.toX - 0.5, 0.5 - trail.toY, 0)
-  ]);
-  const material = new THREE.LineBasicMaterial({
-    color: 0xef664a,
-    transparent: true,
-    opacity: 0.78,
-    blending: THREE.AdditiveBlending,
-    depthWrite: false
-  });
-  return new THREE.Line(geometry, material);
-}
-
-function disposeObject(object: import("three").Object3D): void {
-  const maybeMesh = object as import("three").Mesh | import("three").Line;
-  const geometry = maybeMesh.geometry as import("three").BufferGeometry | undefined;
-  const material = maybeMesh.material as import("three").Material | import("three").Material[] | undefined;
-  geometry?.dispose();
-  const materials = Array.isArray(material) ? material : material ? [material] : [];
-  materials.forEach((entry) => entry.dispose());
+  return (
+    <>
+      <span className="host-fx-ring" />
+      <span className="host-fx-spark host-fx-spark-one" />
+      <span className="host-fx-spark host-fx-spark-two" />
+      {variant === "shop" &&
+        Array.from({ length: count }, (_, index) => (
+          <span
+            key={`shop-card-${index}`}
+            className={`host-fx-floating-card${riskActive && index === count - 1 ? " host-fx-floating-card-risk" : ""}`}
+            style={{ ["--shop-card-index" as string]: String(index - (count - 1) / 2) }}
+          />
+        ))}
+    </>
+  );
 }
 
 export function HostCinematicFxLayer({
@@ -170,284 +111,22 @@ export function HostCinematicFxLayer({
   style,
   testId = `host-${variant}-fx-layer`
 }: HostCinematicFxLayerProps): ReactElement {
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const containerRef = useRef<HTMLDivElement | null>(null);
-  const [fallbackReason, setFallbackReason] = useState<string | null>(() => {
-    if (prefersReducedMotion()) {
-      return "reduced-motion";
-    }
-
-    return supportsWebGl() ? null : "webgl-unavailable";
-  });
-  const pointsSignature = useMemo(
-    () => points.map((point) => `${point.id}:${point.x.toFixed(3)}:${point.y.toFixed(3)}:${point.tone}`).join("|"),
-    [points]
-  );
-  const trailsSignature = useMemo(
-    () =>
-      trails
-        .map((trail) => `${trail.id}:${trail.fromX.toFixed(3)}:${trail.fromY.toFixed(3)}:${trail.toX.toFixed(3)}:${trail.toY.toFixed(3)}`)
-        .join("|"),
-    [trails]
-  );
-
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    const container = containerRef.current;
-
-    if (!canvas || !container || fallbackReason) {
-      return;
-    }
-
-    if (prefersReducedMotion()) {
-      setFallbackReason("reduced-motion");
-      return;
-    }
-
-    if (!supportsWebGl()) {
-      setFallbackReason("webgl-unavailable");
-      return;
-    }
-
-    let cancelled = false;
-    let frameId = 0;
-    let resizeObserver: ResizeObserver | null = null;
-    let teardown: (() => void) | null = null;
-
-    void import("three")
-      .then((THREE) => {
-        if (cancelled) {
-          return;
-        }
-
-        const renderer = new THREE.WebGLRenderer({
-          canvas,
-          alpha: true,
-          antialias: true,
-          powerPreference: "high-performance"
-        });
-        const dpr = Math.min(window.devicePixelRatio || 1, 1.35);
-        renderer.setPixelRatio(dpr);
-        renderer.outputColorSpace = THREE.SRGBColorSpace;
-
-        const scene = new THREE.Scene();
-        const camera = new THREE.OrthographicCamera(-0.5, 0.5, 0.5, -0.5, -10, 10);
-        camera.position.z = 2;
-
-        const objects: import("three").Object3D[] = [];
-        const baseColor = toneColor(tone);
-
-        if (variant === "battle") {
-          const ring = new THREE.Mesh(
-            new THREE.TorusGeometry(0.05, 0.003, 12, 72),
-            new THREE.MeshBasicMaterial({
-              color: baseColor,
-              transparent: true,
-              opacity: 0.36,
-              blending: THREE.AdditiveBlending,
-              depthWrite: false
-            })
-          );
-          const slashA = new THREE.Mesh(
-            new THREE.BoxGeometry(0.007, 0.105, 0.001),
-            new THREE.MeshBasicMaterial({ color: 0xf3d19a, transparent: true, opacity: 0.34, blending: THREE.AdditiveBlending })
-          );
-          const slashB = slashA.clone();
-          slashA.rotation.z = 0.76;
-          slashB.rotation.z = -0.76;
-          [ring, slashA, slashB].forEach((entry) => {
-            scene.add(entry);
-            objects.push(entry);
-          });
-        }
-
-        if (variant === "shop") {
-          const count = Math.max(3, Math.min(5, stockCount || 3));
-          Array.from({ length: count }, (_, index) => {
-            const card = new THREE.Mesh(
-              new THREE.PlaneGeometry(0.12, 0.17),
-              new THREE.MeshBasicMaterial({
-                color: riskActive && index === count - 1 ? 0xe66a3e : 0xe7c47c,
-                transparent: true,
-                opacity: 0.28,
-                blending: THREE.AdditiveBlending,
-                depthWrite: false
-              })
-            );
-            card.position.x = (index - (count - 1) / 2) * 0.08;
-            card.position.y = -0.04 + Math.abs(index - (count - 1) / 2) * 0.012;
-            card.rotation.z = (index - (count - 1) / 2) * 0.08;
-            scene.add(card);
-            objects.push(card);
-          });
-        }
-
-        if (variant === "map") {
-          points.forEach((point) => {
-            const opacity = point.tone === "active" ? 0.28 : 0.14 + Math.min(point.intensity ?? 1, 1.4) * 0.08;
-            const mesh =
-              point.width && point.height
-                ? createTileGlowMesh(THREE, point, toneColor(point.tone), opacity)
-                : createCircleMesh(THREE, point.x - 0.5, 0.5 - point.y, 0.014 + (point.intensity ?? 1) * 0.012, toneColor(point.tone), opacity);
-            scene.add(mesh);
-            objects.push(mesh);
-          });
-
-          trails.forEach((trail) => {
-            const line = createTrailMesh(THREE, trail);
-            scene.add(line);
-            objects.push(line);
-          });
-
-          if (scanlineKey !== undefined) {
-            const scanline = new THREE.Mesh(
-              new THREE.PlaneGeometry(1.2, 0.026),
-              new THREE.MeshBasicMaterial({
-                color: 0xef5d3f,
-                transparent: true,
-                opacity: 0.18,
-                blending: THREE.AdditiveBlending,
-                depthWrite: false
-              })
-            );
-            scanline.position.y = 0.44;
-            scene.add(scanline);
-            objects.push(scanline);
-          }
-        }
-
-        const resize = () => {
-          const rect = container.getBoundingClientRect();
-          const width = Math.max(1, Math.floor(rect.width));
-          const height = Math.max(1, Math.floor(rect.height));
-          renderer.setSize(width, height, false);
-          camera.updateProjectionMatrix();
-        };
-
-        resizeObserver = new ResizeObserver(resize);
-        resizeObserver.observe(container);
-        resize();
-
-        const start = performance.now();
-        const render = (now: number) => {
-          if (cancelled) {
-            return;
-          }
-
-          const elapsed = (now - start) / 1000;
-          objects.forEach((object, index) => {
-            const pulse = 0.92 + Math.sin(elapsed * 2.8 + index * 0.7) * 0.08;
-            object.scale.setScalar(pulse);
-
-            if (variant !== "map") {
-              object.rotation.z += 0.002 + index * 0.0005;
-            }
-          });
-
-          if (burstActive && variant !== "map") {
-            camera.zoom = 1 + Math.sin(Math.min(1, elapsed) * Math.PI) * 0.04;
-            camera.updateProjectionMatrix();
-          }
-
-          renderer.render(scene, camera);
-          window.__ASHEN_REACH_HOST_FX_DIAGNOSTICS__ = {
-            variant,
-            renderCalls: renderer.info.render.calls,
-            triangles: renderer.info.render.triangles,
-            geometries: renderer.info.memory.geometries,
-            textures: renderer.info.memory.textures,
-            dpr,
-            canvasWidth: canvas.width,
-            canvasHeight: canvas.height
-          };
-
-          frameId = window.requestAnimationFrame(render);
-        };
-
-        frameId = window.requestAnimationFrame(render);
-
-        teardown = () => {
-          window.cancelAnimationFrame(frameId);
-          resizeObserver?.disconnect();
-          objects.forEach((object) => {
-            scene.remove(object);
-            disposeObject(object);
-          });
-          renderer.dispose();
-        };
-      })
-      .catch(() => {
-        if (!cancelled) {
-          setFallbackReason("three-load-failed");
-        }
-      });
-
-    return () => {
-      cancelled = true;
-      window.cancelAnimationFrame(frameId);
-      resizeObserver?.disconnect();
-      teardown?.();
-    };
-  }, [burstActive, fallbackReason, points, pointsSignature, riskActive, scanlineKey, stockCount, tone, trails, trailsSignature, variant]);
-
   const rootClass = [
     "host-cinematic-fx-layer",
     `host-cinematic-fx-layer-${variant}`,
     `host-cinematic-fx-tone-${tone}`,
     riskActive ? "host-cinematic-fx-risk" : "",
     burstActive ? "host-cinematic-fx-burst" : "",
-    fallbackReason ? "host-cinematic-fx-fallback" : "",
     className
   ]
     .filter(Boolean)
     .join(" ");
 
   return (
-    <div className={rootClass} style={style} data-testid={testId} data-fallback={fallbackReason ?? undefined} aria-hidden="true">
-      {fallbackReason ? (
-        <div className="host-cinematic-fx-fallback-stage">
-          {variant === "map" ? (
-            <>
-              {points.map((point) => (
-                <span
-                  key={point.id}
-                  className={`host-map-fx-dot host-map-fx-dot-${point.tone}`}
-                  style={{
-                    left: `${point.x * 100}%`,
-                    top: `${point.y * 100}%`,
-                    ["--map-fx-width" as string]: point.width ? `${point.width * 100}%` : undefined,
-                    ["--map-fx-height" as string]: point.height ? `${point.height * 100}%` : undefined
-                  }}
-                />
-              ))}
-              {trails.map((trail) => (
-                <i
-                  key={trail.id}
-                  className="host-map-fx-trail"
-                  style={{
-                    left: `${trail.fromX * 100}%`,
-                    top: `${trail.fromY * 100}%`,
-                    ["--trail-x" as string]: `${(trail.toX - trail.fromX) * 100}%`,
-                    ["--trail-y" as string]: `${(trail.toY - trail.fromY) * 100}%`
-                  }}
-                />
-              ))}
-              {scanlineKey !== undefined && <b key={scanlineKey} className="host-map-fx-scanline" />}
-            </>
-          ) : (
-            <>
-              <span className="host-fx-ring" />
-              <span className="host-fx-spark host-fx-spark-one" />
-              <span className="host-fx-spark host-fx-spark-two" />
-              {variant === "shop" && <span className="host-fx-floating-card" />}
-            </>
-          )}
-        </div>
-      ) : (
-        <div ref={containerRef} className="host-cinematic-fx-canvas-wrap">
-          <canvas ref={canvasRef} />
-        </div>
-      )}
+    <div className={rootClass} style={style} data-testid={testId} data-fallback="dom-animation" aria-hidden="true">
+      <div className="host-cinematic-fx-fallback-stage">
+        {variant === "map" ? renderMapFx(points, trails, scanlineKey) : renderEncounterFx(variant, stockCount, riskActive)}
+      </div>
     </div>
   );
 }
