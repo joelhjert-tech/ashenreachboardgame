@@ -937,6 +937,43 @@ describe("roomServer websocket integration", () => {
     expect(startedSnapshot.payload.players).toHaveLength(1);
   });
 
+  it("writes the live movement roll into state and projects exact-distance movement", async () => {
+    const activeHarness = (harness = await startHarness([0, 2, 0, 0], createInitialSessionState("session-alpha", "single-player")));
+
+    const joinResult = activeHarness.roomServer.joinSeat("Solo", "void-marshal");
+    const tv = await connectClient(`ws://127.0.0.1:${activeHarness.port}/?view=tv`);
+    const phone = await connectClient(`ws://127.0.0.1:${activeHarness.port}/?view=phone&token=${joinResult.seatToken}`);
+    probes.push(tv, phone);
+
+    await phone.waitFor((message) => isStatePatch(message) && Object.hasOwn(message.payload, "self"));
+
+    activeHarness.roomServer.setSeatReady(joinResult.seatId, true);
+    activeHarness.roomServer.startSession();
+
+    const tvStarted = (await tv.waitFor(
+      (message) =>
+        isStatePatch(message) &&
+        message.payload.status === "active" &&
+        message.phase === "navigation" &&
+        (message.payload.movementPlanner as { movementValue?: number } | null | undefined)?.movementValue === 3
+    )) as Extract<ServerEnvelope, { type: "STATE_PATCH" }>;
+    const phoneStarted = (await phone.waitFor(
+      (message) =>
+        isStatePatch(message) &&
+        Object.hasOwn(message.payload, "self") &&
+        (message.payload.movementPlanner as { movementValue?: number } | null | undefined)?.movementValue === 3
+    )) as Extract<ServerEnvelope, { type: "STATE_PATCH" }>;
+
+    expect(activeHarness.roomServer.getState().movementRolls?.[joinResult.seatId]).toBe(3);
+    expect((tvStarted.payload.movementPlanner as { movementValue: number }).movementValue).toBe(3);
+    expect((phoneStarted.payload.movementPlanner as { movementValue: number }).movementValue).toBe(3);
+    expect(
+      ((tvStarted.payload.movementPlanner as { destinations: Array<{ distance: number; route: string[] }> }).destinations ?? []).some(
+        (destination) => destination.distance === 3 && destination.route.length === 4
+      )
+    ).toBe(true);
+  });
+
   it("fires a real linked-nemesis scenario victory over the live phone socket path", async () => {
     const soloBase = createState({
       status: "active",
