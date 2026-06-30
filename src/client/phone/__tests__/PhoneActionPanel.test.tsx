@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import "@testing-library/jest-dom/vitest";
-import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { PhoneActionPanel } from "../PhoneActionPanel.js";
 import type { CharacterCatalogEntry, ClientIntent, PhonePatchPayload } from "../../shared/types.js";
@@ -222,7 +222,7 @@ describe("PhoneActionPanel", () => {
     expect(screen.queryByRole("button", { name: /end turn/i })).not.toBeInTheDocument();
   });
 
-  it("renders movement planner destination intel without leaking hidden deck card names", () => {
+  it("renders movement planner destination intel without leaking hidden deck card names", async () => {
     render(
       <PhoneActionPanel
         characters={characters}
@@ -266,8 +266,13 @@ describe("PhoneActionPanel", () => {
     expect(screen.getByTestId("movement-planner")).toBeInTheDocument();
     expect(screen.getByText(/move 1/i)).toBeInTheDocument();
     expect(screen.getAllByText(/anchor market/i).length).toBeGreaterThan(0);
+    expect(screen.queryByText("Icons")).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /anchor market/i }));
+
+    await waitFor(() => expect(screen.getByText("Icons")).toBeInTheDocument());
     expect(screen.getByText("Icons")).toBeInTheDocument();
-    expect(screen.getByText("Yellow")).toBeInTheDocument();
+    expect(screen.getAllByText(/yellow guile/i).length).toBeGreaterThan(0);
     expect(screen.getByText(/buy gear \/ sell gear/i)).toBeInTheDocument();
     expect(screen.queryByText(/choir bulwark/i)).not.toBeInTheDocument();
   });
@@ -324,6 +329,10 @@ describe("PhoneActionPanel", () => {
     expect(screen.getByText(/chain-maul salvager/i)).toBeInTheDocument();
     expect(screen.getByText(/mira: signal witch/i)).toBeInTheDocument();
 
+    fireEvent.click(screen.getByRole("button", { name: /back/i }));
+    expect(screen.queryByRole("button", { name: /confirm move/i })).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /locked.*ashwalk bridge/i }));
     fireEvent.click(screen.getByRole("button", { name: /confirm move/i }));
     expect(onIntent).toHaveBeenCalledWith({
       type: "MOVE_REQUESTED",
@@ -332,7 +341,7 @@ describe("PhoneActionPanel", () => {
     });
   });
 
-  it("shows disabled gated destinations and prevents confirming them", () => {
+  it("shows disabled gated destinations and prevents confirming them", async () => {
     const onIntent = vi.fn<(intent: ClientIntent) => void>();
 
     render(
@@ -370,9 +379,117 @@ describe("PhoneActionPanel", () => {
     );
 
     expect(screen.getAllByText(/resolve guardian span before entering the inner breach/i).length).toBeGreaterThan(0);
+    fireEvent.click(screen.getByRole("button", { name: /gate of three ashes/i }));
+    await waitFor(() => expect(screen.getByRole("button", { name: /confirm move/i })).toBeDisabled());
     expect(screen.getByRole("button", { name: /confirm move/i })).toBeDisabled();
     fireEvent.click(screen.getByRole("button", { name: /confirm move/i }));
     expect(onIntent).not.toHaveBeenCalled();
+  });
+
+  it("renders interactive shop services and revealed stock purchases", () => {
+    const onIntent = vi.fn<(intent: ClientIntent) => void>();
+
+    render(
+      <PhoneActionPanel
+        characters={characters}
+        onIntent={onIntent}
+        patch={createPatch({
+          encounter: null,
+          shopEncounter: {
+            sectorId: "outer_waymarket",
+            sectorName: "Anchor Market",
+            shopId: "outer_waymarket",
+            shopName: "Anchor Market",
+            status: "open",
+            activePlayer: {
+              playerId: "seat-1",
+              name: "Sable Vey",
+              characterName: "Sable Vey",
+              salvage: 6,
+              heat: 1,
+              wounds: { current: 0, max: 6 },
+              trophies: 0,
+              completedContracts: 0
+            },
+            blockingThreats: [],
+            services: [
+              {
+                id: "buy-gear",
+                label: "Buy Gear",
+                cost: {},
+                enabled: true
+              },
+              {
+                id: "risk-action",
+                label: "Risk Action",
+                cost: { heat: 1 },
+                risk: "+1 Heat",
+                enabled: true
+              }
+            ],
+            revealedStock: [
+              {
+                cardId: "ashlock-carbine",
+                name: "Ashlock Carbine",
+                type: "gear",
+                cost: { salvage: 3 },
+                summary: "+1 Grit while fighting enemies.",
+                affordable: true
+              },
+              {
+                cardId: "saintplate-harness",
+                name: "Saintplate Harness",
+                type: "gear",
+                cost: { salvage: 8 },
+                summary: "Armor against wounds.",
+                affordable: false,
+                disabledReason: "Not enough Salvage"
+              }
+            ]
+          }
+        })}
+      />
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: /buy gear/i }));
+    expect(onIntent).toHaveBeenCalledWith({
+      type: "SHOP_SERVICE_REQUESTED",
+      seatId: "seat-1",
+      serviceId: "buy-gear"
+    });
+
+    expect(screen.getByText(/ashlock carbine/i)).toBeInTheDocument();
+    fireEvent.click(screen.getAllByRole("button", { name: /^buy$/i })[0]);
+    expect(onIntent).toHaveBeenCalledWith({
+      type: "SHOP_PURCHASE_REQUESTED",
+      seatId: "seat-1",
+      cardId: "ashlock-carbine"
+    });
+
+    expect(screen.getAllByText(/not enough salvage/i).length).toBeGreaterThan(0);
+  });
+
+  it("shows a movement planner empty state when no legal destinations are available", () => {
+    render(
+      <PhoneActionPanel
+        characters={characters}
+        onIntent={vi.fn()}
+        patch={createPatch({
+          phase: "navigation",
+          encounter: null,
+          movementPlanner: {
+            active: true,
+            movementValue: 1,
+            currentSectorId: "middle_guardian_span",
+            currentSectorName: "Guardian Span",
+            destinations: []
+          }
+        })}
+      />
+    );
+
+    expect(screen.getByText(/no legal destinations/i)).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /confirm move/i })).not.toBeInTheDocument();
   });
 
   it("surfaces authored contract objective labels on accept and complete actions", () => {

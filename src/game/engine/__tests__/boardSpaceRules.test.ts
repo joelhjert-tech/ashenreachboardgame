@@ -38,11 +38,18 @@ describe("board space data", () => {
   it("includes the engine-critical original Ashen Reach anchor spaces", () => {
     const spaceIds = new Set(BOARD_SPACES.map((space) => space.id));
 
-    expect(BOARD_SPACES).toHaveLength(35);
+    expect(BOARD_SPACES).toHaveLength(49);
     expect(spaceIds.has("outer_ember_sanctum")).toBe(true);
     expect(spaceIds.has("middle_guardian_span")).toBe(true);
     expect(spaceIds.has("inner_veil_rift")).toBe(true);
     expect(spaceIds.has("center_cinder_gate")).toBe(true);
+    expect(spaceIds.has("north-dock-bastion")).toBe(true);
+    expect(spaceIds.has("votive-engine-room")).toBe(true);
+    expect(spaceIds.has("kettleward-foundry")).toBe(true);
+    expect(BOARD_SPACES.filter((space) => space.tier === "outer")).toHaveLength(24);
+    expect(BOARD_SPACES.filter((space) => space.tier === "middle")).toHaveLength(16);
+    expect(BOARD_SPACES.filter((space) => space.tier === "inner")).toHaveLength(8);
+    expect(BOARD_SPACES.filter((space) => space.tier === "center")).toHaveLength(1);
   });
 
   it("gives every sector board-game presentation metadata", () => {
@@ -57,7 +64,7 @@ describe("board space data", () => {
 
   it("surfaces movement boxes through the dedicated data file", () => {
     expect(MOVEMENT_BOXES.map((entry) => entry.spaceId).sort()).toEqual(
-      ["mirecoil-beacon", "middle_guardian_span", "outer_broken_causeway"].sort()
+      ["mirecoil-beacon", "middle_guardian_span", "outer_broken_causeway", "shattered-causeway", "transit-gate"].sort()
     );
   });
 
@@ -99,8 +106,8 @@ describe("board space data", () => {
     ]);
     expect(cinderGate?.movementRequirements).toEqual([
       {
-        allowedFrom: ["inner_gate_of_cinders"],
-        errorMessage: "Only the Last Signal Well opens the final route into the core chamber"
+        allowedFrom: ["inner_gate_of_cinders", "inner_blackstar_shortcut"],
+        errorMessage: "Only the Last Signal Well or Dead Star Reliquary opens the final route into the core chamber"
       },
       {
         requiredNotes: ["gate-of-cinders-breached"],
@@ -166,7 +173,21 @@ describe("exploration and engagement rules", () => {
 
     expect(shouldResolveSpaceText(outer, [])).toBe(true);
     expect(shouldResolveSpaceText(outer, [{ id: "enemy-a", category: "enemy", icons: ["red"] }])).toBe(false);
-    expect(shouldResolveSpaceText(inner, [{ id: "enemy-a", category: "enemy", icons: ["red"] }])).toBe(true);
+    expect(shouldResolveSpaceText(inner, [{ id: "enemy-a", category: "enemy", icons: ["red"] }])).toBe(false);
+  });
+
+  it("calculates inner-ring printed threat draws instead of skipping exploration", () => {
+    const space = getBoardSpace("the-bone-meridian");
+
+    if (!space) {
+      throw new Error("Missing inner board space fixture");
+    }
+
+    expect(calculateExplorationDraws(space, [])).toEqual({
+      red: 1,
+      blue: 0,
+      yellow: 1
+    });
   });
 });
 
@@ -190,14 +211,14 @@ describe("board space resolver", () => {
 });
 
 describe("movement and scenario helpers", () => {
-  it("forces inner-tier movement to exactly one step with exploration skipped", () => {
+  it("forces inner-tier movement to exactly one step while preserving exploration", () => {
     expect(getMovementProfile("inner")).toEqual({
       tier: "inner",
       movementRollAllowed: false,
       movementAmount: 1,
       movementModifiersAllowed: false,
-      skipsExploration: true,
-      resolveTextBoxAlways: true
+      skipsExploration: false,
+      resolveTextBoxAlways: false
     });
   });
 

@@ -44,6 +44,7 @@ export const characterSchema = z.object({
   id: z.string().min(1),
   name: z.string().min(1),
   archetype: z.string().min(1),
+  qaOnly: z.boolean().optional(),
   currentSpaceId: z.string().min(1),
   status: characterStatusSchema,
   stats: statBlockSchema,
@@ -57,6 +58,10 @@ export const characterSchema = z.object({
   heldGear: z.array(gearItemSchema),
   equippedGear: equippedGearSchema,
   followers: z.array(followerSchema).optional(),
+  startingSalvage: z.number().int().min(0).optional(),
+  startingGear: z.array(z.string().min(1)).optional(),
+  startingContract: z.string().min(1).optional(),
+  startingFollower: z.array(z.string().min(1)).optional(),
   abilities: z.array(abilitySchema)
 });
 

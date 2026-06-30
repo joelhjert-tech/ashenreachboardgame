@@ -41,7 +41,14 @@ import {
   type ScenarioAmbientResolution
 } from "../game/rules/scenarioAmbient.js";
 import { getSessionStartReadiness } from "../game/rules/sessionStart.js";
-import { getSoloMovementDifficultyEase } from "../game/rules/soloTuning.js";
+import {
+  getDevourerTrophyGate,
+  getDyingStarContractGate,
+  getDyingStarTokenGate,
+  getLabyrinthEngineKeyGate,
+  getSoloCombatDifficultyEase,
+  getSoloMovementDifficultyEase
+} from "../game/rules/soloTuning.js";
 import {
   ASHEN_CROWN_NEXUS_SECTOR_ID,
   buildNemesisMovementPath,
@@ -57,6 +64,7 @@ import {
   hasCrownKeyFragment
 } from "../game/rules/nemesisRelay.js";
 import { resolveSpaceText } from "../game/rules/tileTextResolver.js";
+import { applyStartingLoadout } from "../game/rules/startingLoadout.js";
 import type {
   AcceptContractAction,
   CheckRequestedAction,
@@ -83,9 +91,13 @@ import type {
   RoundCompletedAction,
   SectorCollapsedAction,
   SpaceTextResolvedAction,
+  ShopPurchaseResolvedAction,
+  ShopServiceResolvedAction,
+  ShopStockRevealedAction,
   ScenarioConfrontationRequestedAction,
   ScenarioProgressAdvancedAction,
   ScenarioVictoryAchievedAction,
+  SoloRerollResolvedAction,
   StabilizeResolvedAction,
   StatRaisedAction,
   TableInteractionAction,
@@ -102,6 +114,7 @@ import type { Follower } from "../game/schema/follower.schema.js";
 import type { GearItem } from "../game/schema/gear.schema.js";
 import { rollDice, type RandomSource, defaultRandomSource } from "../game/engine/dice.js";
 import { reduceGameState } from "../game/engine/reducer.js";
+import { CHALLENGE_LABELS } from "../game/ui/challengeTheme.js";
 import type { ActiveResolution, GameState, NemesisChampion, PlayerState } from "../game/schema/session.schema.js";
 import { validateHostToken, validateJoinToken } from "./auth.js";
 import { getBoardSpace, type BoardTier } from "../game/data/boardSpaces.js";
@@ -119,6 +132,7 @@ const ENEMY_ROLL_TIMEOUT_MS = 30_000;
 const RESOLUTION_AUTO_CONTINUE_MS = process.env.VITEST ? 1 : 10000;
 const VISIBLE_DICE_ROLL_MS = process.env.VITEST ? 0 : 650;
 const FANDIABLOS_ID = "fandiablos";
+const MASTER_ALPHA_ID = "char_master_alpha";
 const RECENT_ENCOUNTER_LIMIT = 12;
 
 const NEMESIS_OPPOSITION = {
@@ -129,6 +143,7 @@ const NEMESIS_OPPOSITION = {
 
 const CONFRONTATION_BASE_DIFFICULTY = 6;
 const SCAR_CARDS = loadScarCards();
+const PROJECTION_GEAR_CATALOG = loadGear();
 
 const nemesisByScenarioId = new Map<string, NemesisDefinition>(
   nemeses.filter((nemesis) => nemesis.scenarioId).map((nemesis) => [nemesis.scenarioId!, nemesis])
@@ -144,6 +159,10 @@ function getScenarioProgressThreshold(scenarioId: string | null | undefined, def
 
 function getScenarioSeatCounterKey(prefix: string, seatId: string): string {
   return `${prefix}:${seatId}`;
+}
+
+function getMasterAlphaBattleBonus(player: PlayerState): number {
+  return player.character.id === MASTER_ALPHA_ID ? 3 : 0;
 }
 
 export interface ConnectedClient {
@@ -206,6 +225,7 @@ const CLIENT_INTENT_TYPES = new Set<string>([
   "CHECK_REQUESTED",
   "COMBAT_REQUESTED",
   "ENEMY_ROLL_REQUESTED",
+  "SOLO_REROLL_REQUESTED",
   "CONTINUE_RESOLUTION",
   "SET_READY",
   "RECRUIT_REPLACEMENT",
@@ -214,6 +234,8 @@ const CLIENT_INTENT_TYPES = new Set<string>([
   "USE_GEAR",
   "USE_FOLLOWER",
   "TABLE_INTERACTION",
+  "SHOP_SERVICE_REQUESTED",
+  "SHOP_PURCHASE_REQUESTED",
   "ACCEPT_CONTRACT",
   "COMPLETE_CONTRACT",
   "SCENARIO_CONFRONTATION_REQUESTED",
@@ -515,6 +537,8 @@ export class GameRoomServer {
         }
       } else if (intent.type === "ENEMY_ROLL_REQUESTED") {
         this.resolveEnemyRollIntent(intent);
+      } else if (intent.type === "SOLO_REROLL_REQUESTED") {
+        // Keep the rerolled result visible until the player continues.
       } else if (intent.type === "MOVE_REQUESTED") {
         this.resolveMoveIntent(intent);
       } else if (intent.type === "SCENARIO_CONFRONTATION_REQUESTED") {
@@ -526,6 +550,8 @@ export class GameRoomServer {
         Boolean(this.state.currentEncounter)
       ) {
         // Fandiablos battle/check support is a committed modifier for the next roll, not the end of the action window.
+      } else if (intent.type === "SHOP_SERVICE_REQUESTED" || intent.type === "SHOP_PURCHASE_REQUESTED") {
+        // Shop interactions keep the action window open so the player can reveal, compare, buy, or end the turn intentionally.
       } else {
         this.runAutomaticPhases(client.seatId);
       }
@@ -565,14 +591,16 @@ export class GameRoomServer {
     this.hostToken = hostToken;
   }
 
-  getCharacterCatalog(): Character[] {
-    return [...this.characters.values()].map((character) => ({
+  getCharacterCatalog(options: { includeQa?: boolean } = {}): Character[] {
+    return [...this.characters.values()].filter((character) => options.includeQa || !character.qaOnly).map((character) => ({
       ...character,
       activeContract: character.activeContract ? { ...character.activeContract } : null,
       heldGear: [...character.heldGear],
       equippedGear: { ...character.equippedGear },
+      followers: [...(character.followers ?? [])],
       abilities: [...character.abilities],
-      scars: [...character.scars]
+      scars: [...character.scars],
+      trophyPile: [...(character.trophyPile ?? [])]
     }));
   }
 
@@ -589,15 +617,21 @@ export class GameRoomServer {
     this.events.length = 0;
   }
 
-  joinSeat(displayName: string, characterId: string): JoinSeatResult {
+  joinSeat(displayName: string, characterId: string, requestedSeatId?: string): JoinSeatResult {
     if (this.state.status !== "lobby" || this.state.phase !== "start") {
       throw new Error("Session already started");
     }
 
-    const seat = this.state.seats.find((entry) => !entry.displayName && !entry.kicked);
+    const seat = requestedSeatId
+      ? this.state.seats.find((entry) => entry.seatId === requestedSeatId && !entry.kicked)
+      : this.state.seats.find((entry) => !entry.displayName && !entry.kicked);
 
     if (!seat) {
-      throw new Error("No open seats remain");
+      throw new Error(requestedSeatId ? `Requested seat ${requestedSeatId} is not available` : "No open seats remain");
+    }
+
+    if (seat.displayName) {
+      throw new Error(`Requested seat ${seat.seatId} is already occupied`);
     }
 
     const selectedCharacter = this.characters.get(characterId);
@@ -613,6 +647,16 @@ export class GameRoomServer {
     if (characterTaken) {
       throw new Error("Character already taken");
     }
+
+    const loadedCharacter = applyStartingLoadout(selectedCharacter, {
+      sessionMode: this.state.sessionMode,
+      seatIndex: Math.max(0, this.state.seats.findIndex((entry) => entry.seatId === seat.seatId)),
+      catalogs: {
+        contracts: this.state.availableContracts,
+        gear: this.gear,
+        followers: this.followers
+      }
+    });
 
     this.state = {
       ...this.state,
@@ -632,17 +676,18 @@ export class GameRoomServer {
           ? {
               ...player,
               character: {
-                ...selectedCharacter,
+                ...loadedCharacter,
                 currentSpaceId: player.sectorId,
                 heat: 0,
                 wounds: 0,
                 status: "active",
                 trophyPile: [],
-                activeContract: null,
-                heldGear: [...selectedCharacter.heldGear],
-                equippedGear: { ...selectedCharacter.equippedGear },
-                abilities: [...selectedCharacter.abilities],
-                scars: [...selectedCharacter.scars]
+                activeContract: loadedCharacter.activeContract ? { ...loadedCharacter.activeContract } : null,
+                heldGear: [...loadedCharacter.heldGear],
+                followers: [...(loadedCharacter.followers ?? [])],
+                equippedGear: { ...loadedCharacter.equippedGear },
+                abilities: [...loadedCharacter.abilities],
+                scars: [...loadedCharacter.scars]
               }
             }
           : player
@@ -852,6 +897,12 @@ export class GameRoomServer {
       case "TABLE_INTERACTION":
         requireStringField(message, "targetSeatId", type);
         requireEnumField(message, "interactionKind", TABLE_INTERACTION_VALUES, type);
+        break;
+      case "SHOP_SERVICE_REQUESTED":
+        requireStringField(message, "serviceId", type);
+        break;
+      case "SHOP_PURCHASE_REQUESTED":
+        requireStringField(message, "cardId", type);
         break;
       case "ACCEPT_CONTRACT":
       case "COMPLETE_CONTRACT":
@@ -1298,6 +1349,327 @@ export class GameRoomServer {
     }
   }
 
+  private createShopServiceAction(
+    intent: Extract<ClientIntent, { type: "SHOP_SERVICE_REQUESTED" }>,
+    createdAt: string
+  ): ShopServiceResolvedAction | ShopStockRevealedAction {
+    const player = this.state.players.find((entry) => entry.seatId === intent.seatId);
+
+    if (!player) {
+      throw new Error(`Missing player for seat ${intent.seatId}`);
+    }
+
+    const boardSpace = getBoardSpace(player.character.currentSpaceId);
+
+    if (!boardSpace || !boardSpace.tags.some((tag) => tag === "shop" || tag === "risk-shop" || tag === "salvage" || tag === "recovery" || tag === "shrine")) {
+      throw new Error("No shop or service is available on this sector");
+    }
+
+    const blockingThreats = buildPublicBlockingThreats(this.state);
+
+    if (blockingThreats.length > 0 || this.state.currentEncounter || this.state.pendingEnemyRoll || this.state.pendingEffect) {
+      throw new Error("Clear the local threat before using shop services");
+    }
+
+    const service = buildPublicShopServices(this.state, player).find((entry) => entry.id === intent.serviceId);
+
+    if (!service) {
+      throw new Error(`Unknown shop service ${intent.serviceId}`);
+    }
+
+    if (!service.enabled) {
+      throw new Error(service.disabledReason ?? `${service.label} is not available`);
+    }
+
+    const shopName = boardSpace.name;
+    const actorName = player.character.name;
+    const firstHeldGear = player.character.heldGear[0] ?? null;
+    const base = {
+      type: "SHOP_SERVICE_RESOLVED" as const,
+      seatId: intent.seatId,
+      serviceId: service.id,
+      serviceLabel: service.label,
+      shopName,
+      sectorId: player.character.currentSpaceId,
+      cost: service.cost,
+      createdAt
+    };
+
+    switch (service.id) {
+      case "buy-gear": {
+        const stock = this.pickShopGearStock(player, 3, "standard");
+
+        if (stock.length === 0) {
+          throw new Error("No unclaimed Gear is available from this shop");
+        }
+
+        return {
+          type: "SHOP_STOCK_REVEALED",
+          seatId: intent.seatId,
+          serviceId: service.id,
+          serviceLabel: service.label,
+          shopName,
+          sectorId: player.character.currentSpaceId,
+          cost: {},
+          stock,
+          summary: `${actorName} used ${shopName}. Revealed ${stock.length} Gear options.`,
+          createdAt
+        } satisfies ShopStockRevealedAction;
+      }
+      case "sell-gear": {
+        if (!firstHeldGear) {
+          throw new Error("No Gear to sell");
+        }
+
+        return {
+          ...base,
+          result: {
+            discardGearId: firstHeldGear.id,
+            salvageDelta: 2
+          },
+          summary: `${actorName} used ${shopName}. Sold ${firstHeldGear.name} for 2 Salvage.`
+        };
+      }
+      case "repair-gear":
+        return {
+          ...base,
+          result: {
+            note: `${shopName}: gear repair logged. The next damaged or exhausted item can be restored here.`
+          },
+          summary: `${actorName} used ${shopName}. Paid ${service.cost.salvage ?? 0} Salvage for gear repair support.`
+        };
+      case "buy-supplies":
+        return {
+          ...base,
+          result: {
+            note: `${shopName}: supply crate reserved for the next route problem.`
+          },
+          summary: `${actorName} used ${shopName}. Bought supplies for ${service.cost.salvage ?? 0} Salvage.`
+        };
+      case "buy-treatment":
+        return {
+          ...base,
+          result: {
+            woundDelta: -1,
+            note: `${shopName}: treatment receipt filed.`
+          },
+          summary: `${actorName} used ${shopName}. Bought treatment and healed 1 Wound.`
+        };
+      case "buy-boon":
+        return {
+          ...base,
+          result: {
+            heatDelta: -1,
+            note: `${shopName}: shrine boon held in reserve.`
+          },
+          summary: `${actorName} used ${shopName}. Bought a boon and cooled 1 Heat.`
+        };
+      case "risk-action": {
+        const stock = this.pickShopGearStock(player, 4, "risk");
+
+        if (stock.length === 0) {
+          throw new Error("No unclaimed Gear is available from this shop");
+        }
+
+        return {
+          type: "SHOP_STOCK_REVEALED",
+          seatId: intent.seatId,
+          serviceId: service.id,
+          serviceLabel: service.label,
+          shopName,
+          sectorId: player.character.currentSpaceId,
+          cost: service.cost,
+          stock,
+          summary: `${actorName} used ${shopName}. Took a risky refresh and revealed ${stock.length} Gear options.`,
+          createdAt
+        } satisfies ShopStockRevealedAction;
+      }
+      default:
+        throw new Error(`Unsupported shop service ${service.id}`);
+    }
+  }
+
+  private getGearShopCost(item: GearItem): number {
+    if (item.tier === "artifact") {
+      return 5;
+    }
+
+    if (item.tier === "advanced") {
+      return 4;
+    }
+
+    if (item.tier === "starter") {
+      return 2;
+    }
+
+    return item.cost ?? 3;
+  }
+
+  private pickShopGearStock(player: PlayerState, count: number, mode: "standard" | "risk"): GearItem[] {
+    const ownedGearIds = new Set([
+      ...player.character.heldGear.map((item) => item.id),
+      ...Object.values(player.character.equippedGear).filter((id): id is string => Boolean(id))
+    ]);
+
+    return [...this.gear.values()]
+      .filter((item) => !ownedGearIds.has(item.id))
+      .filter((item) => (mode === "risk" ? true : item.tier !== "artifact"))
+      .sort((left, right) => {
+        const costDelta =
+          mode === "risk"
+            ? this.getGearShopCost(right) - this.getGearShopCost(left)
+            : this.getGearShopCost(left) - this.getGearShopCost(right);
+        return costDelta || left.name.localeCompare(right.name);
+      })
+      .slice(0, count);
+  }
+
+  private createShopPurchaseAction(
+    intent: Extract<ClientIntent, { type: "SHOP_PURCHASE_REQUESTED" }>,
+    createdAt: string
+  ): ShopPurchaseResolvedAction {
+    const player = this.state.players.find((entry) => entry.seatId === intent.seatId);
+
+    if (!player) {
+      throw new Error(`Missing player for seat ${intent.seatId}`);
+    }
+
+    const boardSpace = getBoardSpace(player.character.currentSpaceId);
+
+    if (
+      !boardSpace ||
+      !boardSpace.tags.some((tag) => tag === "shop" || tag === "risk-shop" || tag === "salvage" || tag === "recovery" || tag === "shrine")
+    ) {
+      throw new Error("No shop or service is available on this sector");
+    }
+
+    const blockingThreats = buildPublicBlockingThreats(this.state);
+
+    if (blockingThreats.length > 0 || this.state.currentEncounter || this.state.pendingEnemyRoll || this.state.pendingEffect) {
+      throw new Error("Clear the local threat before buying from this shop");
+    }
+
+    const reveal = this.state.shopStockReveals.find(
+      (entry) => entry.seatId === intent.seatId && entry.sectorId === player.character.currentSpaceId && entry.stockIds.includes(intent.cardId)
+    );
+
+    if (!reveal) {
+      throw new Error("Reveal shop stock before buying this item");
+    }
+
+    const gear = this.gear.get(intent.cardId);
+
+    if (!gear) {
+      throw new Error(`Unknown shop item ${intent.cardId}`);
+    }
+
+    const ownedGearIds = new Set([
+      ...player.character.heldGear.map((item) => item.id),
+      ...Object.values(player.character.equippedGear).filter((id): id is string => Boolean(id))
+    ]);
+
+    if (ownedGearIds.has(gear.id)) {
+      throw new Error(`${gear.name} is already in this operative's inventory`);
+    }
+
+    const cost = { salvage: this.getGearShopCost(gear) };
+    const discardedStockIds = reveal.stockIds.filter((cardId) => cardId !== gear.id);
+
+    return {
+      type: "SHOP_PURCHASE_RESOLVED",
+      seatId: intent.seatId,
+      serviceId: reveal.serviceId,
+      shopName: reveal.shopName,
+      sectorId: player.character.currentSpaceId,
+      cardId: gear.id,
+      cost,
+      gainedGear: gear,
+      discardedStockIds,
+      summary: `${player.character.name} used ${reveal.shopName}. Bought ${gear.name} for ${cost.salvage} Salvage.`,
+      createdAt
+    } satisfies ShopPurchaseResolvedAction;
+  }
+
+  private createSoloRerollAction(
+    intent: Extract<ClientIntent, { type: "SOLO_REROLL_REQUESTED" }>,
+    createdAt: string
+  ): SoloRerollResolvedAction {
+    const player = this.state.players.find((entry) => entry.seatId === intent.seatId);
+
+    if (!player) {
+      throw new Error(`Missing player for seat ${intent.seatId}`);
+    }
+
+    if (this.state.sessionMode !== "single-player") {
+      throw new Error("Solo emergency rerolls are only available in single-player");
+    }
+
+    const activeResolution = this.state.activeResolution;
+    const encounter = this.state.currentEncounter;
+
+    if (
+      !activeResolution ||
+      activeResolution.playerId !== intent.seatId ||
+      activeResolution.roll?.success !== false ||
+      !["roll_result", "outcome_summary", "awaiting_continue"].includes(activeResolution.stage)
+    ) {
+      throw new Error("Solo emergency reroll requires a visible failed check");
+    }
+
+    if (!encounter || encounter.cardType !== "hazard") {
+      throw new Error("Solo emergency reroll requires a failed hazard check");
+    }
+
+    if (activeResolution.card?.id && activeResolution.card.id !== encounter.id) {
+      throw new Error("Solo emergency reroll no longer matches the active encounter");
+    }
+
+    const remainingCharge = this.state.soloRerollCharges?.[intent.seatId] ?? 1;
+
+    if (remainingCharge <= 0) {
+      throw new Error("Solo emergency reroll has already been used this round");
+    }
+
+    const outcomeStat = this.state.lastOutcomeSummary?.seatId === intent.seatId ? this.state.lastOutcomeSummary.checkStat : null;
+    const stat = typeof outcomeStat === "string" && STAT_VALUES.has(outcomeStat) ? (outcomeStat as Stat) : encounter.stat;
+    const roll = rollDice(2, 6, this.randomSource);
+    const statBonus =
+      this.state.lastOutcomeSummary?.seatId === intent.seatId && typeof this.state.lastOutcomeSummary.statBonus === "number"
+        ? this.state.lastOutcomeSummary.statBonus
+        : player.character.stats[stat] + getEquippedGearBonus(player.character, stat);
+    const difficulty =
+      this.state.lastOutcomeSummary?.seatId === intent.seatId && typeof this.state.lastOutcomeSummary.difficulty === "number"
+        ? this.state.lastOutcomeSummary.difficulty
+        : activeResolution.roll.target;
+    const total = roll.total + statBonus;
+    const success = total >= difficulty;
+    const baseOutcomeEffect =
+      (success ? encounter.successEffect : encounter.failEffect) ??
+      ({ type: "gain_note", text: "Solo emergency reroll resolved with no additional effect." } satisfies EncounterEffect);
+    const resolvedOutcomeEffect = this.resolveThreatOutcomeEffect(
+      intent.seatId,
+      encounter,
+      baseOutcomeEffect,
+      success ? encounter.successEffectKey : encounter.failEffectKey,
+      success ? "onSuccess" : "onFailure"
+    );
+    const outcomeEffect = this.maybeApplyFandiablosWoundPrevention(intent.seatId, resolvedOutcomeEffect);
+
+    return {
+      type: "SOLO_REROLL_RESOLVED",
+      seatId: intent.seatId,
+      stat,
+      difficulty,
+      roll,
+      statBonus,
+      total,
+      success,
+      effect: outcomeEffect,
+      cardId: encounter.id,
+      createdAt
+    } satisfies SoloRerollResolvedAction;
+  }
+
   private getSeatDisplayName(seatId: string): string {
     return this.state.seats.find((seat) => seat.seatId === seatId)?.displayName ?? seatId;
   }
@@ -1340,6 +1712,8 @@ export class GameRoomServer {
           seatId: intent.seatId,
           createdAt
         } satisfies EnemyRollRequestedAction;
+      case "SOLO_REROLL_REQUESTED":
+        return this.createSoloRerollAction(intent, createdAt);
       case "CONTINUE_RESOLUTION":
         return {
           type: "CONTINUE_RESOLUTION",
@@ -1377,6 +1751,10 @@ export class GameRoomServer {
         return this.createFollowerUseAction(intent.seatId, intent.followerId, createdAt);
       case "TABLE_INTERACTION":
         return this.createTableInteractionAction(intent, createdAt);
+      case "SHOP_SERVICE_REQUESTED":
+        return this.createShopServiceAction(intent, createdAt);
+      case "SHOP_PURCHASE_REQUESTED":
+        return this.createShopPurchaseAction(intent, createdAt);
       case "ACCEPT_CONTRACT":
         return {
           type: "ACCEPT_CONTRACT",
@@ -1579,6 +1957,10 @@ export class GameRoomServer {
     const completedContracts = this.getCompletedContractCount(player.seatId);
     const hasArtifact = this.hasScenarioArtifact(player);
     const progress = this.state.scenarioProgress;
+    const devourerTrophyGate = getDevourerTrophyGate(this.state.sessionMode);
+    const engineKeyGate = getLabyrinthEngineKeyGate(this.state.sessionMode);
+    const starTokenGate = getDyingStarTokenGate(this.state.sessionMode);
+    const starContractGate = getDyingStarContractGate(this.state.sessionMode);
 
     if ((progress[scenario.winConditionKey] ?? 0) > 0) {
       return null;
@@ -1598,17 +1980,17 @@ export class GameRoomServer {
           ? null
           : "Final gate locked: hold an Artifact, complete 2 Contracts, or clear Heat to 0.";
       case "scenario_devourer_beneath":
-        return player.character.trophies >= 8 || hasArtifact || this.hasScenarioGear(player, "maw-spike")
+        return player.character.trophies >= devourerTrophyGate || hasArtifact || this.hasScenarioGear(player, "maw-spike")
           ? null
-          : "Final gate locked: spend 8 Trophy value, hold an Artifact charge, or carry a Maw Spike.";
+          : `Final gate locked: spend ${devourerTrophyGate} Trophy value, hold an Artifact charge, or carry a Maw Spike.`;
       case "scenario_labyrinth_engine":
-        return (progress.engineKeys ?? 0) >= 3 || (progress.shutdownMarks ?? 0) >= 3 || hasArtifact
+        return (progress.engineKeys ?? 0) >= engineKeyGate || (progress.shutdownMarks ?? 0) >= engineKeyGate || hasArtifact
           ? null
-          : "Final gate locked: assemble 3 Engine Keys or hold an Artifact.";
+          : `Final gate locked: assemble ${engineKeyGate} Engine Keys or hold an Artifact.`;
       case "scenario_dying_star":
-        return (progress.starTokens ?? 0) >= 5 && (hasArtifact || completedContracts >= 3)
+        return (progress.starTokens ?? 0) >= starTokenGate && (hasArtifact || completedContracts >= starContractGate)
           ? null
-          : "Final gate locked: keep 5+ Starfire and hold an Artifact or complete 3 Contracts.";
+          : `Final gate locked: keep ${starTokenGate}+ Starfire and hold an Artifact or complete ${starContractGate} Contracts.`;
       default:
         return null;
     }
@@ -4560,7 +4942,8 @@ export class GameRoomServer {
       player.character.stats[stat] +
       getEquippedGearBonus(player.character, stat) +
       this.getScenarioBattleModifier(intent.seatId) +
-      assistBonus;
+      assistBonus +
+      getMasterAlphaBattleBonus(player);
     const nemesisBonus = getNemesisCombatValue(nemesis, stat);
     const attackerTotal = roll.total + statBonus;
     const nemesisTotal = nemesisRoll.total + nemesisBonus;
@@ -4907,13 +5290,20 @@ export class GameRoomServer {
     const escalationModifier = getEscalationModifier(this.state.escalationLevel);
     const keyedModifiers = this.resolveThreatEffectKeys(fighterSeatId, encounter, encounter.combatEffectKeys, "beforeCombat");
     const fandiablosBonus = this.getFandiablosSupportBonus(fighterSeatId, stat, "battle");
+    const boardTier = getBoardSpace(player.character.currentSpaceId)?.tier ?? "unknown";
+    const soloCombatEase = getSoloCombatDifficultyEase(this.state.sessionMode, boardTier);
     const statBonus =
       player.character.stats[stat] +
       getEquippedGearBonus(player.character, stat) +
       this.getScenarioBattleModifier(fighterSeatId) +
       (keyedModifiers.playerBonusModifier ?? 0) +
-      fandiablosBonus;
-    const enemyBonus = encounter.difficulty + escalationModifier + (keyedModifiers.difficultyModifier ?? 0);
+      fandiablosBonus +
+      getMasterAlphaBattleBonus(player);
+    const easedEncounterDifficulty = Math.max(
+      0,
+      encounter.difficulty + escalationModifier + (keyedModifiers.difficultyModifier ?? 0) - soloCombatEase
+    );
+    const enemyBonus = easedEncounterDifficulty;
     const scenarioEnemyBonus = this.getScenarioEnemyBattleModifier();
     const keyedEnemyBonus = keyedModifiers.enemyBonusModifier ?? 0;
     const total = playerRoll.total + statBonus;
@@ -4937,7 +5327,7 @@ export class GameRoomServer {
       type: "COMBAT_RESOLVED",
       seatId: fighterSeatId,
       stat,
-      difficulty: encounter.difficulty + escalationModifier + (keyedModifiers.difficultyModifier ?? 0),
+      difficulty: easedEncounterDifficulty,
       roll: playerRoll,
       enemyRoll,
       statBonus,
@@ -5251,6 +5641,21 @@ type PublicShopService = {
   };
   risk?: string;
   enabled: boolean;
+  disabledReason?: string;
+};
+
+type PublicShopStockItem = {
+  cardId: string;
+  name: string;
+  type: "gear" | "artifact";
+  cost: {
+    salvage?: number;
+    heat?: number;
+    wounds?: number;
+    trophies?: number;
+  };
+  summary: string;
+  affordable: boolean;
   disabledReason?: string;
 };
 
@@ -5614,6 +6019,64 @@ function canPayShopCost(
   return { enabled: true };
 }
 
+function getPublicGearShopCost(item: GearItem): number {
+  if (item.tier === "artifact") {
+    return 5;
+  }
+
+  if (item.tier === "advanced") {
+    return 4;
+  }
+
+  if (item.tier === "starter") {
+    return 2;
+  }
+
+  return item.cost ?? 3;
+}
+
+function getGearSummary(item: GearItem): string {
+  if (item.activeText) {
+    return item.activeText;
+  }
+
+  return `${CHALLENGE_LABELS[item.statBonus.stat]} +${item.statBonus.amount}.`;
+}
+
+function buildPublicShopStock(state: GameState, player: PlayerState): PublicShopStockItem[] | undefined {
+  const reveal = (state.shopStockReveals ?? []).find(
+    (entry) => entry.seatId === player.seatId && entry.sectorId === player.character.currentSpaceId
+  );
+
+  if (!reveal) {
+    return undefined;
+  }
+
+  const ownedGearIds = new Set([
+    ...player.character.heldGear.map((item) => item.id),
+    ...Object.values(player.character.equippedGear).filter((id): id is string => Boolean(id))
+  ]);
+
+  return reveal.stockIds
+    .map((cardId) => PROJECTION_GEAR_CATALOG.get(cardId))
+    .filter((item): item is GearItem => Boolean(item))
+    .map((item) => {
+      const cost = { salvage: getPublicGearShopCost(item) };
+      const payment = canPayShopCost(player, state, cost);
+      const alreadyOwned = ownedGearIds.has(item.id);
+
+      return {
+        cardId: item.id,
+        name: item.name,
+        type: item.tier === "artifact" ? "artifact" : "gear",
+        cost,
+        summary: getGearSummary(item),
+        affordable: payment.enabled && !alreadyOwned,
+        disabledReason: alreadyOwned ? "Already held" : payment.disabledReason
+      } satisfies PublicShopStockItem;
+    });
+}
+
 function createShopService(
   player: PlayerState,
   state: GameState,
@@ -5721,7 +6184,7 @@ function buildPublicShopEncounter(state: GameState, visiblePlayers: PlayerState[
   const boardSpace = activePlayer ? getBoardSpace(activePlayer.character.currentSpaceId) : null;
   const sector = state.sectors.find((entry) => entry.id === activePlayer?.character.currentSpaceId) ?? null;
 
-  if (!activePlayer || !boardSpace || !sector || !boardSpace.tags.some((tag) => tag === "shop" || tag === "risk-shop")) {
+  if (!activePlayer || !boardSpace || !sector) {
     return null;
   }
 
@@ -5729,7 +6192,12 @@ function buildPublicShopEncounter(state: GameState, visiblePlayers: PlayerState[
   const completedContracts = getCompletedContractCountForProjection(state, activePlayer.seatId);
   const blockingThreats = buildPublicBlockingThreats(state);
   const services = buildPublicShopServices(state, activePlayer);
+  const revealedStock = buildPublicShopStock(state, activePlayer);
   const latest = state.lastOutcomeSummary?.seatId === activePlayer.seatId ? state.lastOutcomeSummary : null;
+
+  if (services.length === 0 && blockingThreats.length === 0) {
+    return null;
+  }
 
   return {
     sectorId: sector.id,
@@ -5752,7 +6220,7 @@ function buildPublicShopEncounter(state: GameState, visiblePlayers: PlayerState[
     },
     blockingThreats,
     services,
-    revealedStock: undefined,
+    revealedStock,
     recentOutcome: latest
       ? {
           operativeName: activePlayer.character.name,
@@ -5762,6 +6230,24 @@ function buildPublicShopEncounter(state: GameState, visiblePlayers: PlayerState[
           summary: latest.summary
         }
       : null
+  };
+}
+
+function buildSoloRerollProjection(state: GameState, seatId: string): { available: boolean; charges: number } {
+  const charges = state.sessionMode === "single-player" ? (state.soloRerollCharges?.[seatId] ?? 1) : 0;
+  const activeResolution = state.activeResolution;
+  const available =
+    state.sessionMode === "single-player" &&
+    charges > 0 &&
+    state.phase === "resolution" &&
+    state.currentEncounter?.cardType === "hazard" &&
+    activeResolution?.playerId === seatId &&
+    activeResolution.roll?.success === false &&
+    ["roll_result", "outcome_summary", "awaiting_continue"].includes(activeResolution.stage);
+
+  return {
+    available,
+    charges
   };
 }
 
@@ -5779,6 +6265,7 @@ export function createTvProjection(state: GameState): Record<string, unknown> {
     state.seats.filter((seat) => !seat.kicked && seat.displayName).map((seat) => seat.seatId)
   );
   const visiblePlayers = state.players.filter((player) => visibleSeatIds.has(player.seatId));
+  const activeSeatId = state.turnOrder[state.activeSeatIndex] ?? null;
   const shopEncounter = buildPublicShopEncounter(state, visiblePlayers);
   const recentAbilityTriggers = state.eventLog
     .filter(
@@ -5939,6 +6426,7 @@ export function createTvProjection(state: GameState): Record<string, unknown> {
     outcomeSummary: state.lastOutcomeSummary,
     activeResolution: state.activeResolution ?? null,
     shopEncounter,
+    movementPlanner: activeSeatId ? buildPublicMovementPlanner(state, activeSeatId) : null,
     recentAbilityTriggers,
     nemesis: nemesisSummary
   };
@@ -5977,6 +6465,7 @@ export function createPhoneProjection(state: GameState, seatId: string, forcePri
     recentAbilityTriggers: publicProjection.recentAbilityTriggers,
     nemesis: publicProjection.nemesis,
     movementPlanner: buildPublicMovementPlanner(state, seatId),
+    soloReroll: buildSoloRerollProjection(state, seatId),
     boundNemesis: (publicProjection.nemesisChampions as Array<{ boundPlayerId: string }>).find(
       (champion) => champion.boundPlayerId === seatId
     ) ?? null,

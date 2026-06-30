@@ -234,9 +234,9 @@ console.log(
 
 function validateContentFloors(): void {
   const contentTargets = [
-    ["threats", threats.size, 40, 82],
+    ["threats", threats.size, 40, 120],
     ["anomalies", anomalies.size, 20, 30],
-    ["artifacts", artifacts.size, 12, 24],
+    ["artifacts", artifacts.size, 12, 30],
     ["escalations", escalations.size, 15, 25],
     ["contracts", contracts.size, 20, 30],
     ["followers", followers.size, 15, 25],
@@ -299,13 +299,13 @@ function validateLoreLanguage(): void {
 
 function validateBoardCoverage(): void {
   const boardCount = BOARD_SPACES.length;
-  if (boardCount !== 35) {
-    errors.push(`Board space target not met: ${boardCount}/35`);
+  if (boardCount !== 49) {
+    errors.push(`Board space target not met: ${boardCount}/49`);
   }
 
   const tierCounts = countBy(BOARD_SPACES, (space) => space.tier);
-  validateRange("outer board spaces", tierCounts.get("outer") ?? 0, 14, 14);
-  validateRange("middle board spaces", tierCounts.get("middle") ?? 0, 12, 12);
+  validateRange("outer board spaces", tierCounts.get("outer") ?? 0, 24, 24);
+  validateRange("middle board spaces", tierCounts.get("middle") ?? 0, 16, 16);
   validateRange("inner board spaces", tierCounts.get("inner") ?? 0, 8, 8);
   validateRange("center board spaces", tierCounts.get("center") ?? 0, 1, 1);
 

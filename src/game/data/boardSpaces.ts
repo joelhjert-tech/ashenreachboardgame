@@ -69,7 +69,7 @@ type AuthoredBoardSpaceDefinition = Omit<BoardSpaceDefinition, keyof BoardSpaceP
 const RAW_BOARD_SPACES: AuthoredBoardSpaceDefinition[] = [
   {
     id: "outer_ember_sanctum",
-    name: "Pilgrim Lock",
+    name: "Pilgrim Lock Gate",
     tier: "outer",
     index: 0,
     threatIcons: [],
@@ -255,6 +255,146 @@ const RAW_BOARD_SPACES: AuthoredBoardSpaceDefinition[] = [
     notes: "Outer shop/repair space and a route into the Rusted Host line."
   },
   {
+    id: "north-dock-bastion",
+    name: "North Dock Bastion",
+    tier: "outer",
+    index: 14,
+    threatIcons: ["yellow"],
+    textBox: {
+      title: "Bastion Watch",
+      text: "If the bastion is clear, draw a route note or take 1 Salvage from the dock stores.",
+      effectKey: "outer_relayCrew"
+    },
+    notes: "Playable northwest corner space on the Broken Perimeter."
+  },
+  {
+    id: "coldwind-wharf",
+    name: "Coldwind Wharf",
+    tier: "outer",
+    index: 15,
+    threatIcons: ["blue"],
+    textBox: {
+      title: "Cold Dock Signal",
+      text: "If the wharf is quiet, tune the dock beacon and scout one adjacent sector.",
+      effectKey: "outer_glassmereChorus"
+    },
+    notes: "Outer dock lane that previews anomaly pressure."
+  },
+  {
+    id: "cinder-fields",
+    name: "Cinder Fields",
+    tier: "outer",
+    index: 16,
+    threatIcons: ["red"],
+    textBox: {
+      title: "Cinder Sweep",
+      text: "If the fields are clear, brace through the burning rows and take one route note.",
+      effectKey: "outer_emberwatchBrace"
+    },
+    notes: "Outer combat-warning lane near the pilgrim gate."
+  },
+  {
+    id: "colony-outskirts",
+    name: "Colony Outskirts",
+    tier: "outer",
+    index: 17,
+    threatIcons: ["yellow"],
+    textBox: {
+      title: "Outskirts Sweep",
+      text: "If the outskirts are clear, salvage one workable route supply from abandoned colony stores.",
+      effectKey: "outer_hollowVeilSweep"
+    },
+    notes: "Outer salvage lane on the eastern perimeter."
+  },
+  {
+    id: "deadwater-marsh",
+    name: "Deadwater Marsh",
+    tier: "outer",
+    index: 18,
+    threatIcons: ["blue"],
+    textBox: {
+      title: "Deadwater Reading",
+      text: "If the marsh is calm, bottle signal light for Heat treatment or final-gate bargaining.",
+      effectKey: "outer_saltCrossing"
+    },
+    notes: "Outer anomaly wetland on the eastern perimeter."
+  },
+  {
+    id: "rustveil-yard",
+    name: "Rustveil Yard",
+    tier: "outer",
+    index: 19,
+    threatIcons: ["yellow"],
+    textBox: {
+      title: "Rustveil Salvage",
+      text: "If the yard is quiet, pull a salvage contact from the rust veil and mark the safest exit.",
+      effectKey: "outer_hollowVeilSweep"
+    },
+    notes: "Outer salvage tile on the lower perimeter."
+  },
+  {
+    id: "sunken-pier",
+    name: "Sunken Pier",
+    tier: "outer",
+    index: 20,
+    threatIcons: ["blue"],
+    textBox: {
+      title: "Sunken Signal",
+      text: "If the pier is clear, reveal face-down threats in adjacent sectors or record a support contact.",
+      effectKey: "outer_relayCrew"
+    },
+    notes: "Outer waterline tile for route scouting."
+  },
+  {
+    id: "shattered-causeway",
+    name: "Shattered Causeway",
+    tier: "outer",
+    index: 21,
+    threatIcons: ["yellow"],
+    movementBox: {
+      title: "Broken Route",
+      text: "This causeway can bend movement around the perimeter, but entering a new tier ends movement immediately.",
+      effectKey: "movement_brokenCauseway"
+    },
+    textBox: {
+      title: "Causeway Thread",
+      text: "If the causeway is clear, test Guile through the broken route and mark a risky shortcut.",
+      effectKey: "outer_brokenCausewayShortcut"
+    },
+    notes: "Outer lower-track movement tile."
+  },
+  {
+    id: "flooded-locks",
+    name: "Flooded Locks",
+    tier: "outer",
+    index: 22,
+    threatIcons: ["blue"],
+    textBox: {
+      title: "Flooded Lockwork",
+      text: "If the locks are calm, tune the lockwater signal and scout one adjacent sector.",
+      effectKey: "outer_glassmereChorus"
+    },
+    notes: "Outer western water-control tile."
+  },
+  {
+    id: "transit-gate",
+    name: "Transit Gate",
+    tier: "outer",
+    index: 23,
+    threatIcons: ["blue"],
+    movementBox: {
+      title: "Transit Gate",
+      text: "When you start movement here, you may route toward the Customs Gate. Entering a new tier ends movement immediately.",
+      effectKey: "movement_beaconRoute"
+    },
+    textBox: {
+      title: "Gate Dispatch",
+      text: "If the transit gate is secure, collect one contract lead and mark a route toward the War Choir Line.",
+      effectKey: "outer_mirecoilTraffic"
+    },
+    notes: "Outer-to-middle transition point."
+  },
+  {
     id: "middle_shard_sprawl",
     name: "Chain-Maul Yard",
     tier: "middle",
@@ -304,7 +444,7 @@ const RAW_BOARD_SPACES: AuthoredBoardSpaceDefinition[] = [
   },
   {
     id: "middle_guardian_span",
-    name: "The Hollow Customs Gate",
+    name: "Customs Gate",
     tier: "middle",
     index: 3,
     threatIcons: ["red", "blue", "yellow"],
@@ -454,8 +594,70 @@ const RAW_BOARD_SPACES: AuthoredBoardSpaceDefinition[] = [
     notes: "Risk shop that trades firepower for Heat."
   },
   {
+    id: "scorched-road",
+    name: "Scorched Road",
+    tier: "middle",
+    index: 12,
+    threatIcons: ["yellow"],
+    textBox: {
+      title: "Scorched Passage",
+      text: "If the road is clear, mark a dangerous route note before the ash gale returns.",
+      effectKey: "outer_ashwakeClearLane"
+    },
+    notes: "Middle-ring route pressure tile."
+  },
+  {
+    id: "blastworks",
+    name: "Blastworks",
+    tier: "middle",
+    index: 13,
+    threatIcons: ["red"],
+    textBox: {
+      title: "Blastworks Toll",
+      text: "If the works are clear, choose whether to take passage stock or press for field gossip.",
+      effectKey: "middle_shardSprawlBargain",
+      choices: [
+        {
+          id: "stock",
+          label: "Take passage stock"
+        },
+        {
+          id: "gossip",
+          label: "Press for gossip"
+        }
+      ]
+    },
+    notes: "Middle industrial war-line tile."
+  },
+  {
+    id: "ashen-chapel",
+    name: "Ashen Chapel",
+    tier: "middle",
+    index: 14,
+    threatIcons: ["blue"],
+    textBox: {
+      title: "Ashen Rite",
+      text: "If the chapel settles, resolve an anomaly and bottle a clue for the inner breach.",
+      effectKey: "middle_anomalyWell"
+    },
+    notes: "Middle anomaly shrine tile."
+  },
+  {
+    id: "reavers-den",
+    name: "Reaver's Den",
+    tier: "middle",
+    index: 15,
+    threatIcons: ["red"],
+    textBox: {
+      title: "Den Challenge",
+      text: "If the den is cleared, secure a military favor from the Ashen Choir line.",
+      effectKey: "middle_redMarchBargain"
+    },
+    notes: "Middle enemy pressure tile."
+  },
+  {
     id: "inner_veil_rift",
-    name: "Gate of Three Ashes",
+    name: "Melted Gate",
     tier: "inner",
     index: 0,
     threatIcons: [],
@@ -485,7 +687,7 @@ const RAW_BOARD_SPACES: AuthoredBoardSpaceDefinition[] = [
   },
   {
     id: "inner_tomb_gate",
-    name: "The Pale Marshal's Road",
+    name: "Rifted Approach",
     tier: "inner",
     index: 1,
     threatIcons: [],
@@ -585,7 +787,7 @@ const RAW_BOARD_SPACES: AuthoredBoardSpaceDefinition[] = [
   },
   {
     id: "choir-execution-court",
-    name: "Choir Execution Court",
+    name: "Hollow Court",
     tier: "inner",
     index: 7,
     threatIcons: ["red", "red", "yellow"],
@@ -604,8 +806,8 @@ const RAW_BOARD_SPACES: AuthoredBoardSpaceDefinition[] = [
     threatIcons: [],
     movementRequirements: [
       {
-        allowedFrom: ["inner_gate_of_cinders"],
-        errorMessage: "Only the Last Signal Well opens the final route into the core chamber"
+        allowedFrom: ["inner_gate_of_cinders", "inner_blackstar_shortcut"],
+        errorMessage: "Only the Last Signal Well or Dead Star Reliquary opens the final route into the core chamber"
       },
       {
         requiredNotes: ["gate-of-cinders-breached"],
@@ -623,10 +825,15 @@ const RAW_BOARD_SPACES: AuthoredBoardSpaceDefinition[] = [
 ];
 
 const BOARD_SPACE_PRESENTATION: Record<string, BoardSpacePresentation> = {
+  "north-dock-bastion": {
+    tags: ["crossroads", "salvage", "lore"],
+    ruleText: "If clear, draw a route note or take 1 Salvage from the dock stores.",
+    loreText: "North Dock Bastion anchors the northwest corner with salt-worn guns and old signal flags."
+  },
   outer_ember_sanctum: {
     tags: ["shrine", "recovery", "contract"],
     ruleText: "If no threats are present, heal 1 wound or take a contract lead.",
-    loreText: "Pilgrims chain brass prayers to a cracked lock that still opens for the wounded."
+    loreText: "Pilgrims chain brass prayers to a cracked gate that still opens for the wounded."
   },
   "ashwake-crossing": {
     tags: ["hazard", "crossroads"],
@@ -638,6 +845,11 @@ const BOARD_SPACE_PRESENTATION: Record<string, BoardSpacePresentation> = {
     ruleText: "If no threats are present, buy Gear, sell Gear, or reserve a contract lead.",
     loreText: "A bazaar of sealed crates, oath-brokers, and weapons that still remember previous owners."
   },
+  "coldwind-wharf": {
+    tags: ["anomaly", "crossroads"],
+    ruleText: "If clear, tune the dock beacon and scout one adjacent sector.",
+    loreText: "Coldwind Wharf freezes signal bells in place while blue-white sparks crawl over the moorings."
+  },
   "glassmere-spindle": {
     tags: ["anomaly", "crossroads"],
     ruleText: "Draw blue pressure here. If cleared, scout one adjacent sector.",
@@ -647,6 +859,11 @@ const BOARD_SPACE_PRESENTATION: Record<string, BoardSpacePresentation> = {
     tags: ["crossroads", "lore"],
     ruleText: "If clear, reveal adjacent threats or record a support contact.",
     loreText: "Lantern Post 47 keeps a tired watch over the routes no map wants to admit still exist."
+  },
+  "cinder-fields": {
+    tags: ["enemy", "hazard"],
+    ruleText: "If clear, brace through the burning rows and take one route note.",
+    loreText: "Cinder Fields smolder under low black clouds, each furrow bright with buried furnace glass."
   },
   "mirecoil-beacon": {
     tags: ["movement", "contract", "crossroads"],
@@ -658,6 +875,16 @@ const BOARD_SPACE_PRESENTATION: Record<string, BoardSpacePresentation> = {
     ruleText: "Blue threats gather here. If cleared, bottle salvage light for heat treatment.",
     loreText: "Toxic vents breathe green fire through mud, tents, and half-buried colony bells."
   },
+  "colony-outskirts": {
+    tags: ["salvage", "crossroads"],
+    ruleText: "If clear, salvage route supplies from abandoned colony stores.",
+    loreText: "Colony Outskirts are all cold cookfires, sealed doors, and hand-painted evacuation arrows."
+  },
+  "deadwater-marsh": {
+    tags: ["anomaly", "hazard"],
+    ruleText: "If clear, bottle signal light for Heat treatment or final-gate bargaining.",
+    loreText: "Deadwater Marsh reflects a sky the Reach has not had for years."
+  },
   "hollow-veil-yard": {
     tags: ["salvage", "enemy"],
     ruleText: "Draw yellow pressure. If an enemy is cleared here, the salvage is worth more.",
@@ -667,6 +894,21 @@ const BOARD_SPACE_PRESENTATION: Record<string, BoardSpacePresentation> = {
     tags: ["recovery", "risk-shop"],
     ruleText: "If no threats are present, pay salvage to heal, cool Heat, or risk surgery.",
     loreText: "Old Mercy Bay trades pain for function under lamps made from scavenged saint-glass."
+  },
+  "rustveil-yard": {
+    tags: ["salvage", "crossroads"],
+    ruleText: "If clear, pull a salvage contact from the rust veil and mark the safest exit.",
+    loreText: "Rustveil Yard buries machine bones under orange dust and salvage tags."
+  },
+  "sunken-pier": {
+    tags: ["anomaly", "lore"],
+    ruleText: "If clear, reveal adjacent threats or record a support contact.",
+    loreText: "Sunken Pier disappears into black water where signal lamps still burn under the surface."
+  },
+  "shattered-causeway": {
+    tags: ["movement", "salvage", "hazard"],
+    ruleText: "If clear, test Guile through the broken route and mark a risky shortcut.",
+    loreText: "Shattered Causeway is a chain of cracked stone plates over ash, tide, and static."
   },
   "emberwatch-step": {
     tags: ["hazard", "anomaly"],
@@ -693,6 +935,16 @@ const BOARD_SPACE_PRESENTATION: Record<string, BoardSpacePresentation> = {
     ruleText: "If clear, repair, recharge, or upgrade Gear.",
     loreText: "Kettleward Foundry hammers broken weapons into shapes that look almost intentional."
   },
+  "flooded-locks": {
+    tags: ["anomaly", "crossroads"],
+    ruleText: "If clear, tune the lockwater signal and scout one adjacent sector.",
+    loreText: "Flooded Locks grind open by inches, spilling cold blue light from drowned machinery."
+  },
+  "transit-gate": {
+    tags: ["movement", "contract", "crossroads"],
+    ruleText: "If clear, collect a contract lead and mark a route toward the Customs Gate.",
+    loreText: "Transit Gate still announces departures through speakers full of ash."
+  },
   middle_shard_sprawl: {
     tags: ["enemy", "salvage"],
     ruleText: "If clear, bargain for passage stock or field gossip.",
@@ -711,7 +963,7 @@ const BOARD_SPACE_PRESENTATION: Record<string, BoardSpacePresentation> = {
   middle_guardian_span: {
     tags: ["crossroads", "contract", "movement"],
     ruleText: "Pay, test Guile, or resolve customs work to open the inner route.",
-    loreText: "The Hollow Customs Gate taxes not just salvage, but secrets, blood type, and remembered sins."
+    loreText: "Customs Gate taxes not just salvage, but secrets, blood type, and remembered sins."
   },
   middle_rivalry_pit: {
     tags: ["anomaly", "hazard", "enemy"],
@@ -753,15 +1005,35 @@ const BOARD_SPACE_PRESENTATION: Record<string, BoardSpacePresentation> = {
     ruleText: "If clear, gain strong ammunition or a war boon at the cost of Heat.",
     loreText: "The shrine weeps live rounds into bowls of oil, and every blessing comes chambered."
   },
+  "scorched-road": {
+    tags: ["movement", "hazard"],
+    ruleText: "If clear, mark a dangerous route note before the ash gale returns.",
+    loreText: "Scorched Road glows through bootprints, cart-ruts, and the remains of a lost convoy."
+  },
+  blastworks: {
+    tags: ["enemy", "salvage"],
+    ruleText: "If clear, choose passage stock or field gossip from the blast crews.",
+    loreText: "Blastworks shakes with foundry thunder and the dull red logic of siege machinery."
+  },
+  "ashen-chapel": {
+    tags: ["anomaly", "shrine"],
+    ruleText: "If clear, resolve an anomaly and bottle a clue for the inner breach.",
+    loreText: "Ashen Chapel keeps its candles lit with static and refuses to say who tends them."
+  },
+  "reavers-den": {
+    tags: ["enemy", "hazard"],
+    ruleText: "If clear, secure a military favor from the Ashen Choir line.",
+    loreText: "Reaver's Den is a red-lit bunker where trophies hang from chain and rail."
+  },
   inner_veil_rift: {
     tags: ["artifact", "movement"],
     ruleText: "Requires inner clearance. Resolve the gate to anchor a surge or slip the fold.",
-    loreText: "The Gate of Three Ashes opens only when the route, the relic, and the witness agree."
+    loreText: "Melted Gate slumps like black wax around a route that should have closed."
   },
   inner_tomb_gate: {
     tags: ["nemesis", "hazard"],
     ruleText: "Move Nemesis pressure toward the nearest operative, then face the road trial.",
-    loreText: "The Pale Marshal's Road is paved with bootprints that appear before anyone walks there."
+    loreText: "Rifted Approach cuts between ruined walls that keep changing which side they defend."
   },
   inner_choir_shrine: {
     tags: ["artifact", "shrine", "enemy"],
@@ -786,7 +1058,7 @@ const BOARD_SPACE_PRESENTATION: Record<string, BoardSpacePresentation> = {
   "choir-execution-court": {
     tags: ["enemy", "scenario"],
     ruleText: "Draw red pressure. Enemy threats revealed here become elite until defeated.",
-    loreText: "Choir Execution Court records sentences in ember, then waits for the accused to arrive."
+    loreText: "Hollow Court receives emissaries with empty faces, velvet blades, and perfect manners."
   },
   inner_gate_of_cinders: {
     tags: ["scenario", "anomaly", "movement"],

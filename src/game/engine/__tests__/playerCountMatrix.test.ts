@@ -161,6 +161,7 @@ function createMatrixState(playerCount: number, overrides: Partial<GameState> = 
     seats,
     players,
     availableContracts: contracts,
+    shopStockReveals: [],
     nemesisChampions: overrides.nemesisChampions ?? [],
     nemesisNexusCountdowns: overrides.nemesisNexusCountdowns ?? [],
     eventLog: [],

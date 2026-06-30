@@ -1,0 +1,16 @@
+{
+  "id": "qa_alpha_weapon_02",
+  "name": "Ashen Pattern Plasma Rifle",
+  "slot": "weapon",
+  "category": "active",
+  "statBonus": {
+    "stat": "forge",
+    "amount": 4
+  },
+  "activeText": "QA only: add +4 Forge or Guile when testing ranged battle, machine pressure, or hostile salvage.",
+  "useLimit": "oncePerTurn",
+  "timingWindows": ["beforeBattleRoll", "afterBattleRoll"],
+  "tier": "artifact",
+  "cost": 0,
+  "progressionWeight": 0.01
+}

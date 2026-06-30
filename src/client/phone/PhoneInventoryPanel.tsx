@@ -1,5 +1,6 @@
 import type { ReactElement } from "react";
 import { CardArtImage } from "../shared/CardArtImage.js";
+import { GameButton } from "../shared/GameButton.js";
 import type { ClientIntent, PhonePatchPayload } from "../shared/types.js";
 import {
   getInventoryGroups,
@@ -102,8 +103,9 @@ function InventoryCard({
         {!card.canUseNow && <small>{card.statusReason}</small>}
       </div>
       {card.canUseNow && useIntent && (
-        <button
+        <GameButton
           type="button"
+          tone="action"
           className="phone-button phone-button-primary phone-inventory-use-button"
           aria-label={`Use ${card.name}`}
           onClick={() => {
@@ -112,7 +114,7 @@ function InventoryCard({
           }}
         >
           Use
-        </button>
+        </GameButton>
       )}
     </article>
   );
@@ -140,9 +142,17 @@ export function PhoneInventoryPanel({
     items: onlyUsable ? group.items.filter((card) => card.canUseNow) : group.items
   }));
   const visibleGroups = groups.filter((group) => group.items.length > 0);
+  const visibleItemCount = visibleGroups.reduce((sum, group) => sum + group.items.length, 0);
+  const panelClassName = [
+    "phone-inventory-panel",
+    compact ? "phone-inventory-panel-compact" : "",
+    visibleItemCount > 8 ? "phone-inventory-panel-overflow" : ""
+  ]
+    .filter(Boolean)
+    .join(" ");
 
   return (
-    <section className={`phone-inventory-panel${compact ? " phone-inventory-panel-compact" : ""}`} aria-label="Inventory">
+    <section className={panelClassName} aria-label="Inventory" data-item-count={visibleItemCount}>
       {visibleGroups.length === 0 ? (
         <p className="phone-sheet-action-empty">
           {onlyUsable ? "No combat cards are usable in this timing window." : "No inventory cards, followers, or quest items yet."}
@@ -150,8 +160,13 @@ export function PhoneInventoryPanel({
       ) : (
         visibleGroups.map((group) => (
           <section key={group.group} className="phone-inventory-group">
-            <div className="phone-sheet-section-heading">{group.group}</div>
-            <div className="phone-inventory-card-list">
+            <div className="phone-sheet-section-heading">
+              <span className="phone-inventory-group-label">{group.group}</span>
+              <span className="phone-inventory-group-count" aria-label={`${group.items.length} ${group.group} cards`}>
+                {group.items.length}
+              </span>
+            </div>
+            <div className={`phone-inventory-card-list${group.items.length > 3 ? " phone-inventory-card-list-scroll" : ""}`}>
               {group.items.map((card) => (
                 <InventoryCard key={`${card.source}-${card.id}`} card={card} seatId={self.seatId} onIntent={onIntent} onUse={onUse} />
               ))}

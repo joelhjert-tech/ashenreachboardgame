@@ -194,6 +194,38 @@ describe("PhoneInventoryPanel", () => {
     expect(screen.getAllByText("Usable now").length).toBeGreaterThan(0);
   });
 
+  it("marks oversized inventories and dense categories as scrollable", () => {
+    const manyWeapons = Array.from({ length: 7 }, (_, index) => ({
+      ...combatWeapon,
+      id: `black-route-fuse-${index}`,
+      name: `Black Route Fuse ${index + 1}`
+    }));
+    const basePatch = createPatch();
+    const patch = {
+      ...basePatch,
+      self: basePatch.self
+        ? {
+            ...basePatch.self,
+            character: {
+              ...basePatch.self.character,
+              heldGear: [...manyWeapons, passiveArmor, relic, consumable, questItem]
+            }
+          }
+        : null
+    } satisfies PhonePatchPayload;
+
+    render(<PhoneInventoryPanel patch={patch} onIntent={vi.fn()} />);
+
+    const inventory = screen.getByLabelText("Inventory");
+    const weaponsCount = screen.getByLabelText("7 Weapons cards");
+    const weaponsGroup = weaponsCount.closest(".phone-inventory-group");
+
+    expect(inventory).toHaveClass("phone-inventory-panel-overflow");
+    expect(inventory).toHaveAttribute("data-item-count", "12");
+    expect(weaponsGroup?.querySelector(".phone-inventory-card-list")).toHaveClass("phone-inventory-card-list-scroll");
+    expect(weaponsCount).toBeInTheDocument();
+  });
+
   it("sends a gear-use intent from a usable combat card", () => {
     const onIntent = vi.fn();
 
@@ -255,7 +287,7 @@ describe("PhoneInventoryPanel", () => {
     });
   });
 
-  it("exposes the portrait Inventory tab without replacing quick actions permanently", () => {
+  it("moves turn actions into the portrait bottom navigation", () => {
     render(
       <PortraitControllerView
         self={createPatch().self}
@@ -271,11 +303,23 @@ describe("PhoneInventoryPanel", () => {
       />
     );
 
+    expect(screen.getByRole("tab", { name: /player card/i })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: /move/i })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: /battle/i })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: /shop/i })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: /action/i })).toBeInTheDocument();
+    expect(screen.queryByRole("tab", { name: /log/i })).not.toBeInTheDocument();
+    expect(screen.queryByTestId("phone-battle-assist")).not.toBeInTheDocument();
+
     fireEvent.click(screen.getByRole("tab", { name: /inventory/i }));
 
     expect(screen.getByLabelText("Inventory")).toHaveTextContent(/black route fuse/i);
 
     fireEvent.click(screen.getByRole("tab", { name: /player card/i }));
+
+    expect(screen.queryByTestId("phone-battle-assist")).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("tab", { name: /battle/i }));
 
     expect(screen.getByTestId("phone-battle-assist")).toBeInTheDocument();
   });

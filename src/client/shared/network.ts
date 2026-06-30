@@ -1,4 +1,4 @@
-import type { CharacterCatalogEntry, GameMode, InteractionMode, PhoneSessionAuth, ScenarioCatalogEntry, SessionMode } from "./types.js";
+import type { CharacterCatalogEntry, GameMode, InteractionMode, PhoneSessionAuth, PublicSeat, ScenarioCatalogEntry, SessionMode } from "./types.js";
 
 const browserHost = typeof window !== "undefined" ? window.location.hostname : "localhost";
 const browserProtocol = typeof window !== "undefined" ? window.location.protocol : "http:";
@@ -22,7 +22,8 @@ export async function createSession(
   sessionMode: SessionMode = "multiplayer",
   scenarioId?: string,
   interactionMode?: InteractionMode,
-  gameMode: GameMode = "standard"
+  gameMode: GameMode = "standard",
+  playerCount?: number
 ): Promise<{
   roomCode: string;
   hostToken: string;
@@ -30,16 +31,23 @@ export async function createSession(
   gameMode: GameMode;
   interactionMode: InteractionMode;
   scenarioId: string;
+  playerCount: number;
 }> {
   const response = await fetch(`${apiOrigin}/api/session/create`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json"
     },
-    body: JSON.stringify({ sessionMode, scenarioId, interactionMode, gameMode })
+    body: JSON.stringify({ sessionMode, scenarioId, interactionMode, gameMode, playerCount })
   });
 
-  return await response.json();
+  const payload = await response.json();
+
+  if (!response.ok) {
+    throw new Error(payload.error ?? "Could not create session");
+  }
+
+  return payload;
 }
 
 export async function fetchSessionSummary(): Promise<{
@@ -47,6 +55,9 @@ export async function fetchSessionSummary(): Promise<{
   sessionMode: SessionMode;
   gameMode: GameMode;
   interactionMode: InteractionMode;
+  scenarioId: string;
+  playerCount: number;
+  seats: PublicSeat[];
   status: string;
   phase: string;
 }> {
@@ -62,6 +73,9 @@ export async function fetchSessionSummary(): Promise<{
     sessionMode: SessionMode;
     gameMode: GameMode;
     interactionMode: InteractionMode;
+    scenarioId: string;
+    playerCount: number;
+    seats: PublicSeat[];
     status: string;
     phase: string;
   };
@@ -74,7 +88,11 @@ export async function fetchScenarios(): Promise<ScenarioCatalogEntry[]> {
 }
 
 export async function fetchCharacters(): Promise<CharacterCatalogEntry[]> {
-  const response = await fetch(`${apiOrigin}/api/characters`);
+  const includeQa =
+    typeof window !== "undefined" &&
+    (new URLSearchParams(window.location.search).has("debug") ||
+      new URLSearchParams(window.location.search).get("qa") === "1");
+  const response = await fetch(`${apiOrigin}/api/characters${includeQa ? "?debug=1" : ""}`);
   const payload = (await response.json()) as { characters: CharacterCatalogEntry[] };
   return payload.characters;
 }
@@ -83,6 +101,7 @@ export async function joinSession(input: {
   roomCode: string;
   displayName: string;
   characterId: string;
+  seatId?: string;
 }): Promise<PhoneSessionAuth> {
   const response = await fetch(`${apiOrigin}/api/session/join`, {
     method: "POST",

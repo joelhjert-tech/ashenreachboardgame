@@ -10,7 +10,7 @@ export function buildEngagementQueue(cards: BoardThreatCard[]): BoardThreatCard[
 }
 
 export function shouldResolveSpaceText(space: BoardSpaceDefinition, cards: BoardThreatCard[]): boolean {
-  if (space.tier === "inner" || space.tier === "center") {
+  if (space.tier === "center") {
     return true;
   }
 

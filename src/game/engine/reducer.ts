@@ -23,9 +23,13 @@ import type {
   RoundCompletedAction,
   SectorCollapsedAction,
   SpaceTextResolvedAction,
+  ShopPurchaseResolvedAction,
+  ShopServiceResolvedAction,
+  ShopStockRevealedAction,
   ScenarioProgressAdvancedAction,
   ScenarioConfrontationRequestedAction,
   ScenarioVictoryAchievedAction,
+  SoloRerollResolvedAction,
   StabilizeResolvedAction,
   StatRaisedAction,
   TableInteractionAction,
@@ -70,6 +74,8 @@ export interface ReducerFailure {
 export type ReducerResult = ReducerSuccess | ReducerFailure;
 
 const RECENT_ENCOUNTER_LIMIT = 12;
+const MASTER_ALPHA_ID = "char_master_alpha";
+const MASTER_ALPHA_DEATHLESS_ABILITY_ID = "qa_deathless_protocol";
 
 function recordRecentEncounterCardId(state: GameState, cardId: string | null | undefined): string[] | undefined {
   if (!cardId) {
@@ -88,6 +94,17 @@ function getActiveSeatId(state: GameState): string {
   }
 
   return activeSeatId;
+}
+
+function hasMasterAlphaDeathlessTriggered(state: GameState, seatId: string): boolean {
+  return state.eventLog.some((entry) => {
+    const event = entry as { type?: string; seatId?: string; abilityId?: string } | undefined;
+    return (
+      event?.type === "ABILITY_TRIGGERED" &&
+      event.seatId === seatId &&
+      event.abilityId === MASTER_ALPHA_DEATHLESS_ABILITY_ID
+    );
+  });
 }
 
 function requirePlayer(state: GameState, seatId: string): PlayerState {
@@ -354,6 +371,129 @@ function addHeldGearToPlayer(
       ...player.character,
       heldGear: [...player.character.heldGear, effect.gear]
     }
+  };
+}
+
+function removeHeldGearFromPlayer(player: PlayerState, gearId: string): PlayerState {
+  const nextHeldGear = player.character.heldGear.filter((item) => item.id !== gearId);
+
+  return {
+    ...player,
+    character: {
+      ...player.character,
+      heldGear: nextHeldGear,
+      equippedGear: Object.fromEntries(
+        Object.entries(player.character.equippedGear).map(([slot, equippedId]) => [
+          slot,
+          equippedId === gearId ? null : equippedId
+        ])
+      ) as PlayerState["character"]["equippedGear"]
+    }
+  };
+}
+
+function applyShopServiceToPlayer(player: PlayerState, action: ShopServiceResolvedAction): PlayerState {
+  const afterCost = {
+    ...player,
+    character: {
+      ...player.character,
+      salvage: Math.max(
+        0,
+        (player.character.salvage ?? 0) -
+          (action.cost.salvage ?? 0) +
+          (action.result.salvageDelta ?? 0)
+      ),
+      heat: Math.max(0, player.character.heat + (action.cost.heat ?? 0) + (action.result.heatDelta ?? 0)),
+      wounds: Math.max(0, player.character.wounds + (action.cost.wounds ?? 0) + (action.result.woundDelta ?? 0)),
+      trophies: Math.max(
+        0,
+        player.character.trophies -
+          (action.cost.trophies ?? 0) +
+          (action.result.trophyDelta ?? 0)
+      )
+    },
+    private: action.result.note
+      ? {
+          ...player.private,
+          notes: [...player.private.notes, action.result.note]
+        }
+      : player.private
+  };
+  const afterDiscard = action.result.discardGearId
+    ? removeHeldGearFromPlayer(afterCost, action.result.discardGearId)
+    : afterCost;
+
+  if (!action.result.gainGear) {
+    return afterDiscard;
+  }
+
+  return addHeldGearToPlayer(afterDiscard, {
+    type: "gain_gear",
+    gearId: action.result.gainGear.id,
+    gear: action.result.gainGear
+  });
+}
+
+function applyShopCostOnlyToPlayer(player: PlayerState, cost: { salvage?: number; heat?: number; wounds?: number; trophies?: number }): PlayerState {
+  return {
+    ...player,
+    character: {
+      ...player.character,
+      salvage: Math.max(0, (player.character.salvage ?? 0) - (cost.salvage ?? 0)),
+      heat: Math.max(0, player.character.heat + (cost.heat ?? 0)),
+      wounds: Math.max(0, player.character.wounds + (cost.wounds ?? 0)),
+      trophies: Math.max(0, player.character.trophies - (cost.trophies ?? 0))
+    }
+  };
+}
+
+function applyShopPurchaseToPlayer(player: PlayerState, action: ShopPurchaseResolvedAction): PlayerState {
+  const afterCost = applyShopCostOnlyToPlayer(player, action.cost);
+
+  return addHeldGearToPlayer(afterCost, {
+    type: "gain_gear",
+    gearId: action.gainedGear.id,
+    gear: action.gainedGear
+  });
+}
+
+function canPayShopActionCost(player: PlayerState, cost: { salvage?: number; heat?: number; wounds?: number; trophies?: number }): string | null {
+  if ((player.character.salvage ?? 0) < (cost.salvage ?? 0)) {
+    return "Not enough Salvage";
+  }
+
+  if (player.character.trophies < (cost.trophies ?? 0)) {
+    return "Not enough Trophies";
+  }
+
+  return null;
+}
+
+function buildShopOutcomeSummary(args: {
+  seatId: string;
+  sectorId: string;
+  shopName: string;
+  summary: string;
+}): NonNullable<GameState["lastOutcomeSummary"]> {
+  return {
+    seatId: args.seatId,
+    movedToSectorId: args.sectorId,
+    encounterCardId: null,
+    encounterTitle: args.shopName,
+    encounterCardType: null,
+    checkStat: null,
+    die1: null,
+    die2: null,
+    statBonus: null,
+    checkTotal: null,
+    difficulty: null,
+    enemyRollerSeatId: null,
+    enemyDie1: null,
+    enemyDie2: null,
+    enemyBonus: null,
+    enemyTotal: null,
+    success: true,
+    summary: args.summary
   };
 }
 
@@ -1357,6 +1497,86 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
           : null,
         eventLog: [...state.eventLog, action]
       });
+    case "SOLO_REROLL_RESOLVED": {
+      const rerollAction = action as SoloRerollResolvedAction;
+
+      try {
+        ensureSeatTurn(state, rerollAction.seatId);
+        ensureSeatCanTakeNormalTurnAction(state, rerollAction.seatId);
+      } catch (error) {
+        return reject(state, action, error instanceof Error ? error.message : "Seat cannot reroll");
+      }
+
+      if (state.sessionMode !== "single-player") {
+        return reject(state, action, "Solo emergency rerolls are only available in single-player");
+      }
+
+      const remainingCharge = state.soloRerollCharges?.[rerollAction.seatId] ?? 1;
+
+      if (remainingCharge <= 0) {
+        return reject(state, action, "Solo emergency reroll has already been used this round");
+      }
+
+      if (state.phase !== "resolution") {
+        return reject(state, action, "Solo emergency reroll is only available while a failed result is visible");
+      }
+
+      if (!state.currentEncounter || state.currentEncounter.cardType !== "hazard") {
+        return reject(state, action, "Solo emergency reroll requires a failed hazard check");
+      }
+
+      if (state.currentEncounter.id !== rerollAction.cardId) {
+        return reject(state, action, "Solo emergency reroll no longer matches the active encounter");
+      }
+
+      if (state.activeResolution?.playerId !== rerollAction.seatId || state.activeResolution.roll?.success !== false) {
+        return reject(state, action, "Solo emergency reroll requires a visible failed check");
+      }
+
+      return succeed({
+        ...state,
+        sequence: state.sequence + 1,
+        pendingEffect: rerollAction.effect,
+        soloRerollCharges: {
+          ...(state.soloRerollCharges ?? {}),
+          [rerollAction.seatId]: remainingCharge - 1
+        },
+        activeResolution: buildRollResolution({
+          seatId: rerollAction.seatId,
+          source: "threat",
+          createdAt: rerollAction.createdAt,
+          suffix: `${rerollAction.cardId}-solo-reroll`,
+          card: summarizeThreatCard(state.currentEncounter),
+          battle: summarizeThreatBattle(state.currentEncounter, rerollAction.difficulty, [
+            { label: rerollAction.stat, value: rerollAction.statBonus },
+            { label: "Solo emergency reroll", value: 0 }
+          ]),
+          dice: rerollAction.roll.faces,
+          baseTotal: rerollAction.roll.total,
+          modifierTotal: rerollAction.statBonus,
+          finalTotal: rerollAction.total,
+          target: rerollAction.difficulty,
+          success: rerollAction.success,
+          title: rerollAction.success ? "Solo reroll passed" : "Solo reroll failed",
+          text: summarizeEffect(rerollAction.effect, rerollAction.success),
+          effects: summarizeEffects(rerollAction.effect, rerollAction.success)
+        }),
+        lastOutcomeSummary: state.lastOutcomeSummary
+          ? {
+              ...state.lastOutcomeSummary,
+              checkStat: rerollAction.stat,
+              die1: rerollAction.roll.faces[0] ?? null,
+              die2: rerollAction.roll.faces[1] ?? null,
+              statBonus: rerollAction.statBonus,
+              checkTotal: rerollAction.total,
+              difficulty: rerollAction.difficulty,
+              success: rerollAction.success,
+              summary: `Solo emergency reroll: ${state.currentEncounter.title} ${rerollAction.stat} ${rerollAction.total}/${rerollAction.difficulty}. ${summarizeEffect(rerollAction.effect, rerollAction.success)}`
+            }
+          : null,
+        eventLog: [...state.eventLog, action]
+      });
+    }
     case "COMBAT_RESOLVED":
       try {
         ensureSeatTurn(state, action.seatId);
@@ -1533,6 +1753,44 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
         ensureSeatTurn(state, woundAction.seatId);
       } catch (error) {
         return reject(state, action, error instanceof Error ? error.message : "Seat cannot act");
+      }
+
+      const player = requirePlayer(state, woundAction.seatId);
+      const shouldTriggerDeathless =
+        player.character.id === MASTER_ALPHA_ID && !hasMasterAlphaDeathlessTriggered(state, woundAction.seatId);
+
+      if (shouldTriggerDeathless) {
+        const summary = "Deathless Protocol prevented MASTER ALPHA from being recalled.";
+
+        return succeed({
+          ...state,
+          sequence: state.sequence + 1,
+          resolutionSource: state.resolutionSource,
+          players: updateActivePlayer(state, woundAction.seatId, (entry) => ({
+            ...entry,
+            character: {
+              ...entry.character,
+              wounds: 1,
+              status: "active"
+            }
+          })),
+          lastOutcomeSummary: state.lastOutcomeSummary
+            ? {
+                ...state.lastOutcomeSummary,
+                summary: `${state.lastOutcomeSummary.summary} ${summary}`
+              }
+            : null,
+          eventLog: [
+            ...state.eventLog,
+            {
+              type: "ABILITY_TRIGGERED",
+              seatId: woundAction.seatId,
+              abilityId: MASTER_ALPHA_DEATHLESS_ABILITY_ID,
+              summary,
+              createdAt: woundAction.createdAt
+            }
+          ]
+        });
       }
 
       return succeed({
@@ -1940,6 +2198,171 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
           summary: tableAction.summary
         },
         eventLog: [...finalState.eventLog, action]
+      });
+    }
+    case "SHOP_SERVICE_RESOLVED": {
+      const shopAction = action as ShopServiceResolvedAction;
+
+      try {
+        canManageGear(state, shopAction.seatId);
+      } catch (error) {
+        return reject(state, action, error instanceof Error ? error.message : "Seat cannot use shop services");
+      }
+
+      if (state.currentEncounter || state.pendingEnemyRoll || state.pendingEffect) {
+        return reject(state, action, "Clear the active encounter before using shop services");
+      }
+
+      const player = requirePlayer(state, shopAction.seatId);
+
+      if (player.character.currentSpaceId !== shopAction.sectorId) {
+        return reject(state, action, "Shop service is no longer available from this sector");
+      }
+
+      const costError = canPayShopActionCost(player, shopAction.cost);
+
+      if (costError) {
+        return reject(state, action, costError);
+      }
+
+      if (shopAction.result.discardGearId && !player.character.heldGear.some((item) => item.id === shopAction.result.discardGearId)) {
+        return reject(state, action, "No matching Gear to sell");
+      }
+
+      const nextPlayers = updateActivePlayer(state, shopAction.seatId, (entry) => applyShopServiceToPlayer(entry, shopAction));
+      const updatedPlayer = nextPlayers.find((entry) => entry.seatId === shopAction.seatId) ?? player;
+
+      return succeed({
+        ...state,
+        sequence: state.sequence + 1,
+        players: nextPlayers,
+        shopStockReveals: (state.shopStockReveals ?? []).filter(
+          (reveal) => !(reveal.seatId === shopAction.seatId && reveal.sectorId === shopAction.sectorId)
+        ),
+        lastOutcomeSummary: buildShopOutcomeSummary({
+          seatId: shopAction.seatId,
+          sectorId: updatedPlayer.sectorId,
+          shopName: shopAction.shopName,
+          summary: shopAction.summary
+        }),
+        eventLog: [...state.eventLog, action]
+      });
+    }
+    case "SHOP_STOCK_REVEALED": {
+      const revealAction = action as ShopStockRevealedAction;
+
+      try {
+        canManageGear(state, revealAction.seatId);
+      } catch (error) {
+        return reject(state, action, error instanceof Error ? error.message : "Seat cannot reveal shop stock");
+      }
+
+      if (state.currentEncounter || state.pendingEnemyRoll || state.pendingEffect) {
+        return reject(state, action, "Clear the active encounter before using shop services");
+      }
+
+      const player = requirePlayer(state, revealAction.seatId);
+
+      if (player.character.currentSpaceId !== revealAction.sectorId) {
+        return reject(state, action, "Shop stock is no longer available from this sector");
+      }
+
+      const costError = canPayShopActionCost(player, revealAction.cost);
+
+      if (costError) {
+        return reject(state, action, costError);
+      }
+
+      const nextPlayers = updateActivePlayer(state, revealAction.seatId, (entry) =>
+        applyShopCostOnlyToPlayer(entry, revealAction.cost)
+      );
+      const updatedPlayer = nextPlayers.find((entry) => entry.seatId === revealAction.seatId) ?? player;
+      const nextReveal = {
+        seatId: revealAction.seatId,
+        sectorId: revealAction.sectorId,
+        serviceId: revealAction.serviceId,
+        shopName: revealAction.shopName,
+        stockIds: revealAction.stock.map((item) => item.id),
+        revealCost: revealAction.cost,
+        createdAt: revealAction.createdAt
+      };
+
+      return succeed({
+        ...state,
+        sequence: state.sequence + 1,
+        players: nextPlayers,
+        shopStockReveals: [
+          ...(state.shopStockReveals ?? []).filter(
+            (reveal) => !(reveal.seatId === revealAction.seatId && reveal.sectorId === revealAction.sectorId)
+          ),
+          nextReveal
+        ],
+        lastOutcomeSummary: buildShopOutcomeSummary({
+          seatId: revealAction.seatId,
+          sectorId: updatedPlayer.sectorId,
+          shopName: revealAction.shopName,
+          summary: revealAction.summary
+        }),
+        eventLog: [...state.eventLog, action]
+      });
+    }
+    case "SHOP_PURCHASE_RESOLVED": {
+      const purchaseAction = action as ShopPurchaseResolvedAction;
+
+      try {
+        canManageGear(state, purchaseAction.seatId);
+      } catch (error) {
+        return reject(state, action, error instanceof Error ? error.message : "Seat cannot purchase shop stock");
+      }
+
+      if (state.currentEncounter || state.pendingEnemyRoll || state.pendingEffect) {
+        return reject(state, action, "Clear the active encounter before purchasing shop stock");
+      }
+
+      const player = requirePlayer(state, purchaseAction.seatId);
+
+      if (player.character.currentSpaceId !== purchaseAction.sectorId) {
+        return reject(state, action, "Shop stock is no longer available from this sector");
+      }
+
+      const reveal = (state.shopStockReveals ?? []).find(
+        (entry) =>
+          entry.seatId === purchaseAction.seatId &&
+          entry.sectorId === purchaseAction.sectorId &&
+          entry.stockIds.includes(purchaseAction.cardId)
+      );
+
+      if (!reveal) {
+        return reject(state, action, "Choose a shop service before buying stock");
+      }
+
+      if (player.character.heldGear.some((item) => item.id === purchaseAction.cardId)) {
+        return reject(state, action, "Gear is already held");
+      }
+
+      const costError = canPayShopActionCost(player, purchaseAction.cost);
+
+      if (costError) {
+        return reject(state, action, costError);
+      }
+
+      const nextPlayers = updateActivePlayer(state, purchaseAction.seatId, (entry) => applyShopPurchaseToPlayer(entry, purchaseAction));
+      const updatedPlayer = nextPlayers.find((entry) => entry.seatId === purchaseAction.seatId) ?? player;
+
+      return succeed({
+        ...state,
+        sequence: state.sequence + 1,
+        players: nextPlayers,
+        shopStockReveals: (state.shopStockReveals ?? []).filter(
+          (entry) => !(entry.seatId === purchaseAction.seatId && entry.sectorId === purchaseAction.sectorId)
+        ),
+        lastOutcomeSummary: buildShopOutcomeSummary({
+          seatId: purchaseAction.seatId,
+          sectorId: updatedPlayer.sectorId,
+          shopName: purchaseAction.shopName,
+          summary: purchaseAction.summary
+        }),
+        eventLog: [...state.eventLog, action]
       });
     }
     case "ACCEPT_CONTRACT": {
@@ -2669,6 +3092,10 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
       return succeed({
         ...state,
         sequence: state.sequence + 1,
+        soloRerollCharges:
+          state.sessionMode === "single-player"
+            ? Object.fromEntries(state.turnOrder.map((seatId) => [seatId, 1]))
+            : state.soloRerollCharges,
         eventLog: [...state.eventLog, action]
       });
     }

@@ -12,18 +12,28 @@ type RingNodeSeed = Omit<BoardNode, "x" | "y" | "connections"> & {
 };
 
 const outerSeeds: RingNodeSeed[] = [
+  { id: "north-dock-bastion", label: "North Dock Bastion", ring: "outer" },
   { id: "outer_waymarket", label: "Anchor Market", ring: "outer", links: ["outer_ember_sanctum"] },
+  { id: "coldwind-wharf", label: "Coldwind Wharf", ring: "outer" },
   { id: "outer_broken_causeway", label: "Dock Nine Wreckage", ring: "outer" },
   { id: "emberwatch-step", label: "Ember Stair", ring: "outer" },
-  { id: "outer_ember_sanctum", label: "Pilgrim Lock", ring: "outer", links: ["middle_relic_cache"] },
+  { id: "cinder-fields", label: "Cinder Fields", ring: "outer" },
   { id: "glassmere-spindle", label: "Glass Signal Pier", ring: "outer", links: ["black-relay-spire", "ashwake-crossing"] },
+  { id: "outer_ember_sanctum", label: "Pilgrim Lock Gate", ring: "outer", links: ["middle_red_march_outpost"] },
   { id: "mirecoil-beacon", label: "Rusted Transit Gate", ring: "outer", links: ["middle_webglass_breach"] },
+  { id: "outer_oathpost", label: "Broken Census Hall", ring: "outer", links: ["the-salt-archive"] },
+  { id: "colony-outskirts", label: "Colony Outskirts", ring: "outer" },
+  { id: "deadwater-marsh", label: "Deadwater Marsh", ring: "outer" },
   { id: "votive-engine-room", label: "Votive Engine Room", ring: "outer", links: ["weeping-ammunition-shrine"] },
   { id: "ashwake-crossing", label: "Ashwalk Bridge", ring: "outer", links: ["outer_ember_sanctum"] },
-  { id: "outer_oathpost", label: "Broken Census Hall", ring: "outer", links: ["the-salt-archive"] },
   { id: "outer_surgery_tent", label: "Old Mercy Bay", ring: "outer" },
   { id: "outer_salt_flats", label: "Mire Vent Colony", ring: "outer" },
+  { id: "rustveil-yard", label: "Rustveil Yard", ring: "outer" },
+  { id: "sunken-pier", label: "Sunken Pier", ring: "outer" },
+  { id: "shattered-causeway", label: "Shattered Causeway", ring: "outer" },
   { id: "kettleward-foundry", label: "Kettleward Foundry", ring: "outer", links: ["middle_shard_sprawl"] },
+  { id: "flooded-locks", label: "Flooded Locks", ring: "outer" },
+  { id: "transit-gate", label: "Transit Gate", ring: "outer", links: ["middle_guardian_span"] },
   { id: "outer_relay_camp", label: "Lantern Post 47", ring: "outer" },
   { id: "hollow-veil-yard", label: "Fallen Hab-Stack", ring: "outer" }
 ];
@@ -36,22 +46,26 @@ const middleSeeds: RingNodeSeed[] = [
   { id: "black-relay-spire", label: "Black Relay Spire", ring: "middle" },
   { id: "middle_relic_cache", label: "Crucible of Names", ring: "middle" },
   { id: "the-salt-archive", label: "The Salt Archive", ring: "middle" },
-  { id: "red-lantern-trenches", label: "Red Lantern Trenches", ring: "middle" },
-  { id: "middle_guardian_span", label: "The Hollow Customs Gate", ring: "middle", links: ["inner_veil_rift"] },
   { id: "middle_webglass_breach", label: "Grave-Rail Junction", ring: "middle" },
   { id: "middle_scar_surgery", label: "Sable Machine Choir", ring: "middle" },
-  { id: "weeping-ammunition-shrine", label: "Weeping Ammunition Shrine", ring: "middle" }
+  { id: "weeping-ammunition-shrine", label: "Weeping Ammunition Shrine", ring: "middle" },
+  { id: "middle_guardian_span", label: "Customs Gate", ring: "middle", links: ["inner_veil_rift"] },
+  { id: "red-lantern-trenches", label: "Red Lantern Trenches", ring: "middle" },
+  { id: "scorched-road", label: "Scorched Road", ring: "middle" },
+  { id: "blastworks", label: "Blastworks", ring: "middle" },
+  { id: "ashen-chapel", label: "Ashen Chapel", ring: "middle" },
+  { id: "reavers-den", label: "Reaver's Den", ring: "middle" }
 ];
 
 const innerSeeds: RingNodeSeed[] = [
-  { id: "inner_veil_rift", label: "Gate of Three Ashes", ring: "inner" },
-  { id: "inner_tomb_gate", label: "The Pale Marshal's Road", ring: "inner" },
+  { id: "inner_gate_of_cinders", label: "The Last Signal Well", ring: "inner", links: ["center_cinder_gate"] },
   { id: "inner_choir_shrine", label: "Saint Engine Crypt", ring: "inner" },
   { id: "inner_cinder_lattice", label: "The Crownless Observatory", ring: "inner" },
+  { id: "choir-execution-court", label: "Hollow Court", ring: "inner", links: ["middle_rivalry_pit"] },
+  { id: "inner_veil_rift", label: "Melted Gate", ring: "inner" },
+  { id: "inner_tomb_gate", label: "Rifted Approach", ring: "inner" },
   { id: "inner_blackstar_shortcut", label: "Dead Star Reliquary", ring: "inner", links: ["center_cinder_gate"] },
-  { id: "the-bone-meridian", label: "The Bone Meridian", ring: "inner" },
-  { id: "choir-execution-court", label: "Choir Execution Court", ring: "inner" },
-  { id: "inner_gate_of_cinders", label: "The Last Signal Well", ring: "inner", links: ["center_cinder_gate"] }
+  { id: "the-bone-meridian", label: "Bone Meridian", ring: "inner" }
 ];
 
 const centerSeed: RingNodeSeed = {
@@ -90,10 +104,24 @@ function spreadPositions(count: number, start: number, end: number): number[] {
   return Array.from({ length: count }, (_, index) => Number((start + step * (index + 0.5)).toFixed(4)));
 }
 
+function spreadInclusivePositions(count: number, start: number, end: number): number[] {
+  if (count <= 0) {
+    return [];
+  }
+
+  if (count === 1) {
+    return [Number(((start + end) / 2).toFixed(4))];
+  }
+
+  const step = (end - start) / (count - 1);
+
+  return Array.from({ length: count }, (_, index) => Number((start + step * index).toFixed(4)));
+}
+
 function rectangularTrackPositions(layout: RectangularTrackLayout): Array<{ x: number; y: number }> {
-  const top = spreadPositions(layout.topCount, layout.left, layout.right).map((x) => ({ x, y: layout.top }));
+  const top = spreadInclusivePositions(layout.topCount, layout.left, layout.right).map((x) => ({ x, y: layout.top }));
   const right = spreadPositions(layout.rightCount, layout.top, layout.bottom).map((y) => ({ x: layout.right, y }));
-  const bottom = spreadPositions(layout.bottomCount, layout.right, layout.left).map((x) => ({ x, y: layout.bottom }));
+  const bottom = spreadInclusivePositions(layout.bottomCount, layout.right, layout.left).map((x) => ({ x, y: layout.bottom }));
   const left = spreadPositions(layout.leftCount, layout.bottom, layout.top).map((y) => ({ x: layout.left, y }));
 
   return [...top, ...right, ...bottom, ...left];
@@ -120,30 +148,30 @@ function connectRing(connectionsById: Map<string, Set<string>>, seeds: RingNodeS
 
 function buildBoardNodes(): BoardNode[] {
   const outerPositions = rectangularTrackPositions({
-    left: 0.075,
-    right: 0.925,
-    top: 0.12,
-    bottom: 0.86,
-    topCount: 4,
-    rightCount: 3,
-    bottomCount: 4,
-    leftCount: 3
+    left: 0.06,
+    right: 0.94,
+    top: 0.08,
+    bottom: 0.92,
+    topCount: 8,
+    rightCount: 4,
+    bottomCount: 8,
+    leftCount: 4
   });
   const middlePositions = rectangularTrackPositions({
-    left: 0.19,
-    right: 0.81,
-    top: 0.31,
-    bottom: 0.69,
-    topCount: 4,
+    left: 0.22,
+    right: 0.78,
+    top: 0.29,
+    bottom: 0.71,
+    topCount: 6,
     rightCount: 2,
-    bottomCount: 4,
+    bottomCount: 6,
     leftCount: 2
   });
   const innerPositions = rectangularTrackPositions({
     left: 0.34,
     right: 0.66,
-    top: 0.43,
-    bottom: 0.57,
+    top: 0.4,
+    bottom: 0.6,
     topCount: 2,
     rightCount: 2,
     bottomCount: 2,

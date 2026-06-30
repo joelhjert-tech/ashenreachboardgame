@@ -1,0 +1,24 @@
+{
+  "id": "artifact-lucy-hell-puppy",
+  "type": "artifact",
+  "artifactKind": "factionRelic",
+  "title": "Lucy, Hell Puppy",
+  "text": "Legendary Follower / Companion. Unique. Lucy joins the operative as an ember-pawed hell puppy, marking battles, damage windows, and dangerous routes with cheerful fire.",
+  "flavor": "She has never met a battlefield she could not improve by wagging at it.",
+  "charge": 1,
+  "resolutionSummary": "Lucy bounded from the burning route and chose the active operative with terrifying joy.",
+  "resolveEffect": {
+    "type": "sequence",
+    "effects": [
+      {
+        "type": "gain_follower",
+        "followerId": "lucy-hell-puppy"
+      },
+      {
+        "type": "gain_note",
+        "text": "Lucy acquired: legendary companion, once per round ember-pup support."
+      }
+    ]
+  },
+  "imagePrompt": "A grimdark fantasy-sci-fi companion card showing a tiny fluffy hell puppy with blue eyes, ember-red horn sparks, glowing fire paws, a black spiked collar with a red ward charm, walking through burning basalt ruins and gothic-industrial ash. Cute but supernatural, fiery tail glow, dark red skies, cinematic Ashen Reach card art, no text."
+}

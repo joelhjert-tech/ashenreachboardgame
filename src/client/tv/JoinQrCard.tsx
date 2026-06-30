@@ -13,7 +13,7 @@ function buildJoinUrl(roomCode: string): string {
 
   const url = new URL(window.location.origin);
   url.pathname = "/";
-  url.searchParams.set("roomCode", roomCode);
+  url.searchParams.set("room", roomCode);
   return url.toString();
 }
 
@@ -56,7 +56,9 @@ export function JoinQrCard({ roomCode, variant = "full" }: JoinQrCardProps): Rea
       <section className="join-qr-card join-qr-card-compact">
         <div>
           <h2>Scan to Join</h2>
-          <p>Players 1-6</p>
+          <p>Open controller tabs with this URL.</p>
+          <p className="join-link">{joinUrl}</p>
+          <p className="join-link join-link-seat">Seat links: {joinUrl}&seat=1 | {joinUrl}&seat=2</p>
         </div>
         <div className="join-qr-frame" aria-label={`QR code to join room ${roomCode}`}>
           {qrMarkup ? <div dangerouslySetInnerHTML={{ __html: qrMarkup }} /> : <p>Generating code...</p>}

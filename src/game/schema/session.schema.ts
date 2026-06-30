@@ -121,6 +121,23 @@ export const nemesisNexusCountdownSchema = z.object({
   remainingTurns: z.number().int().min(0)
 });
 
+export const shopStockRevealSchema = z.object({
+  seatId: z.string().min(1),
+  sectorId: z.string().min(1),
+  serviceId: z.string().min(1),
+  shopName: z.string().min(1),
+  stockIds: z.array(z.string().min(1)),
+  revealCost: z
+    .object({
+      salvage: z.number().int().min(0).optional(),
+      heat: z.number().int().min(0).optional(),
+      wounds: z.number().int().min(0).optional(),
+      trophies: z.number().int().min(0).optional()
+    })
+    .optional(),
+  createdAt: z.string().min(1)
+});
+
 export const gameStateSchema = z.object({
   sessionId: z.string().min(1),
   status: sessionStatusSchema,
@@ -143,6 +160,8 @@ export const gameStateSchema = z.object({
   availableContracts: z.array(contractCardSchema),
   nemesisChampions: z.array(nemesisChampionSchema).default([]),
   nemesisNexusCountdowns: z.array(nemesisNexusCountdownSchema).default([]),
+  shopStockReveals: z.array(shopStockRevealSchema).default([]),
+  soloRerollCharges: z.record(z.string(), z.number().int().min(0)).optional(),
   eventLog: z.array(z.unknown()),
   recentEncounterCardIds: z.array(z.string().min(1)).optional(),
   escalationLevel: z.number().int().min(0),
@@ -201,5 +220,6 @@ export type PlayerPrivateState = z.infer<typeof playerPrivateStateSchema>;
 export type PlayerState = z.infer<typeof playerStateSchema>;
 export type NemesisChampion = z.infer<typeof nemesisChampionSchema>;
 export type NemesisNexusCountdown = z.infer<typeof nemesisNexusCountdownSchema>;
+export type ShopStockReveal = z.infer<typeof shopStockRevealSchema>;
 export type GameState = z.infer<typeof gameStateSchema>;
 export type SessionSnapshot = z.infer<typeof sessionSnapshotSchema>;

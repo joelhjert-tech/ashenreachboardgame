@@ -109,9 +109,9 @@ export const BOARD_TEXT_EFFECTS: Record<string, BoardTextEffectDefinition> = {
       type: "gain_gear",
       gearId: "coffin-rig"
     },
-    failureSummary: "The Hollow Veil stacks shifted mid-sweep and forced you to abandon the cleaner salvage pass.",
+    failureSummary: "The Hollow Veil stacks shifted mid-sweep and dropped a scaffold of rust across your ribs.",
     failureEffect: {
-      type: "gain_heat",
+      type: "take_wound",
       amount: 1
     },
     sectorDeck: {
@@ -127,9 +127,9 @@ export const BOARD_TEXT_EFFECTS: Record<string, BoardTextEffectDefinition> = {
       type: "gain_note",
       text: "Emberwatch ridge braced. Safe route marker set."
     },
-    failureSummary: "The Emberwatch ridge kicked back hard and the line only held long enough to scorch your position.",
+    failureSummary: "The Emberwatch ridge kicked back hard and left command logging the burn as a live escalation.",
     failureEffect: {
-      type: "gain_heat",
+      type: "advance_escalation",
       amount: 1
     },
     sectorDeck: {
@@ -190,9 +190,9 @@ export const BOARD_TEXT_EFFECTS: Record<string, BoardTextEffectDefinition> = {
         { type: "gain_note", text: "Void-salt vial: useful for heat treatment or gate bargaining." }
       ]
     },
-    failureSummary: "The salt bloom bit through the gloves and left the crossing colder than it looked.",
+    failureSummary: "The salt bloom bit through the gloves and left a white nerve-mark under the skin.",
     failureEffect: {
-      type: "gain_heat",
+      type: "take_wound",
       amount: 1
     },
     sectorDeck: {
@@ -270,10 +270,10 @@ export const BOARD_TEXT_EFFECTS: Record<string, BoardTextEffectDefinition> = {
       type: "gain_note",
       text: "Artifact cache cracked. One artifact has a claim tag in your name."
     },
-    failureSummary: "The cache lock punished the wrong pressure point and woke its reliquary alarms.",
+    failureSummary: "The cache lock punished the wrong pressure point and marked you as a thief in the archive glass.",
     failureEffect: {
-      type: "gain_heat",
-      amount: 1
+      type: "gain_scar",
+      scarId: "scar-wound-1"
     },
     sectorDeck: {
       kind: "artifact"
@@ -313,10 +313,10 @@ export const BOARD_TEXT_EFFECTS: Record<string, BoardTextEffectDefinition> = {
         { type: "gain_note", text: "Rivalry claim: trade, aid, duel, or steal one exposed object if the table permits rivalry." }
       ]
     },
-    failureSummary: "The pit crowd rejected your claim and sold the story to your rivals.",
+    failureSummary: "The pit crowd rejected your claim and turned the table against your next negotiation.",
     failureEffect: {
-      type: "gain_heat",
-      amount: 1
+      type: "gain_note",
+      text: "Rivalry pit embarrassment: the next table bargain starts under suspicion."
     },
     sectorDeck: {
       kind: "contract"
@@ -355,9 +355,9 @@ export const BOARD_TEXT_EFFECTS: Record<string, BoardTextEffectDefinition> = {
         { type: "gain_note", text: "Anomaly well reading: one breach clue hums in a sealed vial." }
       ]
     },
-    failureSummary: "The well answered too loudly and left the route ringing.",
+    failureSummary: "The well answered too loudly and forced the breach sirens into the round clock.",
     failureEffect: {
-      type: "gain_heat",
+      type: "advance_escalation",
       amount: 1
     },
     sectorDeck: {

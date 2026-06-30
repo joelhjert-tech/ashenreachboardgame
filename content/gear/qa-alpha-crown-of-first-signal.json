@@ -1,0 +1,17 @@
+{
+  "id": "qa_alpha_relic_01",
+  "name": "Crown of the First Signal",
+  "slot": "utility",
+  "category": "chargedRelic",
+  "statBonus": {
+    "stat": "command",
+    "amount": 2
+  },
+  "activeText": "QA only: treat this as +2 to all tests when stress-testing modifier overflow.",
+  "useLimit": "charge",
+  "charges": 5,
+  "timingWindows": ["beforeBattleRoll", "afterBattleRoll", "anyTime"],
+  "tier": "artifact",
+  "cost": 0,
+  "progressionWeight": 0.01
+}

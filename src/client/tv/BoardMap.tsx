@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type ReactElement } from "react";
 import { BOARD_SPACES, getBoardSpace, isScenarioConfrontationSpace } from "../../game/data/boardSpaces.js";
-import { RIFTFALL_BOARD_NODE_INDEX, RIFTFALL_BOARD_NODES } from "../../data/riftfallBoardNodes.js";
+import { RIFTFALL_BOARD_NODE_INDEX, RIFTFALL_BOARD_NODES, type BoardNode } from "../../data/riftfallBoardNodes.js";
 import type { OutcomeSummary, PublicPatchPayload, SectorNode, ThreatIcon } from "../shared/types.js";
 import { ThreatIconBadge } from "../shared/ChallengeBadge.js";
 import {
@@ -16,7 +16,7 @@ import { BoardStage } from "./BoardStage.js";
 import { pointerToBoardCoordinate, type BoardRect } from "./boardGeometry.js";
 import { HostCinematicFxLayer, type MapFxPoint, type MapFxTrail } from "./HostCinematicFxLayer.js";
 import { getMapBoardBaseAssetPath } from "./mapAssetRegistry.js";
-import { TalismanBoardSurface } from "./TalismanBoardSurface.js";
+import { TalismanBoardSurface, type TilePlayerMarker } from "./TalismanBoardSurface.js";
 
 interface BoardMapProps {
   patch: PublicPatchPayload;
@@ -26,37 +26,9 @@ interface BoardMapProps {
   showSidebar?: boolean;
 }
 
-interface BoardToken {
-  id: string;
-  color: string;
-  left: number;
-  top: number;
-  seatId: string;
-  label: string;
-  sectorId: string;
-}
-
 interface CalibrationPoint {
   x: number;
   y: number;
-}
-
-const tokenOffsets = [
-  { x: 0, y: -18 },
-  { x: 18, y: 0 },
-  { x: 0, y: 18 },
-  { x: -18, y: 0 }
-] as const;
-
-function getInitials(label: string): string {
-  const initials = label
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase() ?? "")
-    .join("");
-
-  return initials || label.slice(0, 2).toUpperCase();
 }
 
 function getSeatColor(index: number): string {
@@ -80,51 +52,26 @@ function outcomeText(outcome: OutcomeSummary | null): string | null {
   return `${outcome.encounterTitle} is unresolved.`;
 }
 
-function buildBoardTokens(patch: PublicPatchPayload, imageRect: BoardRect): BoardToken[] {
+function buildPlayerMarkersByNodeId(patch: PublicPatchPayload): Map<string, TilePlayerMarker[]> {
   const seatIndex = new Map(patch.seats.map((seat, index) => [seat.seatId, index] as const));
-  const groupedBySector = new Map<string, typeof patch.players>();
+  const markersByNodeId = new Map<string, TilePlayerMarker[]>();
 
   patch.players.forEach((player) => {
-    const existing = groupedBySector.get(player.sectorId);
-
-    if (existing) {
-      existing.push(player);
+    if (!RIFTFALL_BOARD_NODE_INDEX.has(player.sectorId)) {
       return;
     }
 
-    groupedBySector.set(player.sectorId, [player]);
-  });
-
-  const tokens: BoardToken[] = [];
-
-  groupedBySector.forEach((players, sectorId) => {
-    const node = RIFTFALL_BOARD_NODE_INDEX.get(sectorId);
-
-    if (!node) {
-      return;
-    }
-
-    const baseLeft = imageRect.left + node.x * imageRect.width;
-    const baseTop = imageRect.top + node.y * imageRect.height;
-
-    players.forEach((player, index) => {
-      const offset = tokenOffsets[index % tokenOffsets.length] ?? tokenOffsets[0];
-      const orbitMultiplier = Math.floor(index / tokenOffsets.length) + 1;
-      const seat = patch.seats.find((entry) => entry.seatId === player.seatId);
-
-      tokens.push({
-        id: player.character.id,
-        color: getSeatColor(seatIndex.get(player.seatId) ?? index),
-        left: baseLeft + offset.x * orbitMultiplier,
-        top: baseTop + offset.y * orbitMultiplier,
-        seatId: player.seatId,
-        label: seat?.displayName ?? player.character.name,
-        sectorId
-      });
+    const seat = patch.seats.find((entry) => entry.seatId === player.seatId);
+    const existing = markersByNodeId.get(player.sectorId) ?? [];
+    existing.push({
+      color: getSeatColor(seatIndex.get(player.seatId) ?? existing.length),
+      label: seat?.displayName ?? player.character.name,
+      seatId: player.seatId
     });
+    markersByNodeId.set(player.sectorId, existing);
   });
 
-  return tokens;
+  return markersByNodeId;
 }
 
 function threatIconTone(icon: ThreatIcon): MapFxPoint["tone"] {
@@ -133,6 +80,46 @@ function threatIconTone(icon: ThreatIcon): MapFxPoint["tone"] {
   }
 
   return icon;
+}
+
+function getNodeSide(node: (typeof RIFTFALL_BOARD_NODES)[number]): "horizontal" | "vertical" | "center" {
+  if (node.ring === "center") {
+    return "center";
+  }
+
+  if (node.y <= 0.13 || node.y >= 0.87) {
+    return "horizontal";
+  }
+
+  return Math.abs(node.y - 0.5) > Math.abs(node.x - 0.5) ? "horizontal" : "vertical";
+}
+
+function getMapFxTileSize(node: (typeof RIFTFALL_BOARD_NODES)[number]): Pick<MapFxPoint, "width" | "height"> {
+  const side = getNodeSide(node);
+  const sizes: Record<BoardNode["ring"], Record<"horizontal" | "vertical" | "center", { width: number; height: number }>> = {
+    outer: {
+      horizontal: { width: 0.112, height: 0.116 },
+      vertical: { width: 0.096, height: 0.16 },
+      center: { width: 0.112, height: 0.116 }
+    },
+    middle: {
+      horizontal: { width: 0.092, height: 0.088 },
+      vertical: { width: 0.082, height: 0.128 },
+      center: { width: 0.092, height: 0.088 }
+    },
+    inner: {
+      horizontal: { width: 0.128, height: 0.074 },
+      vertical: { width: 0.078, height: 0.092 },
+      center: { width: 0.128, height: 0.074 }
+    },
+    center: {
+      horizontal: { width: 0.2, height: 0.12 },
+      vertical: { width: 0.2, height: 0.12 },
+      center: { width: 0.2, height: 0.12 }
+    }
+  };
+
+  return sizes[node.ring][side];
 }
 
 function getThreatIconsForNode(nodeId: string, liveSector: SectorNode | null): ThreatIcon[] {
@@ -151,17 +138,19 @@ function buildMapFxPoints(patch: PublicPatchPayload, activeSectorId: string | nu
     const boardSpace = getBoardSpace(node.id);
     const liveSector = liveSectors.get(node.id) ?? null;
     const threatIcons = getThreatIconsForNode(node.id, liveSector);
+    const tileSize = getMapFxTileSize(node);
+    const dominantThreatIcon = threatIcons[0] ?? null;
 
-    threatIcons.forEach((icon, index) => {
-      const offset = (index - (threatIcons.length - 1) / 2) * 0.008;
+    if (dominantThreatIcon) {
       points.push({
-        id: `${node.id}-${icon}-${index}`,
-        x: Math.min(0.98, Math.max(0.02, node.x + offset)),
-        y: Math.min(0.98, Math.max(0.02, node.y + offset * 0.6)),
-        tone: threatIconTone(icon),
-        intensity: 0.72 + Math.min(1, (liveSector?.danger ?? boardSpace?.threatIcons.length ?? 1) / 6)
+        id: `${node.id}-threat-field`,
+        x: node.x,
+        y: node.y,
+        tone: threatIconTone(dominantThreatIcon),
+        intensity: 0.62 + Math.min(1, (liveSector?.danger ?? boardSpace?.threatIcons.length ?? 1) / 7),
+        ...tileSize
       });
-    });
+    }
 
     if (boardSpace?.tags.includes("shop") || boardSpace?.tags.includes("risk-shop") || boardSpace?.tags.includes("shrine")) {
       points.push({
@@ -169,7 +158,8 @@ function buildMapFxPoints(patch: PublicPatchPayload, activeSectorId: string | nu
         x: node.x,
         y: node.y,
         tone: "gold",
-        intensity: boardSpace.tags.includes("risk-shop") ? 1.15 : 0.84
+        intensity: boardSpace.tags.includes("risk-shop") ? 0.94 : 0.68,
+        ...tileSize
       });
     }
   });
@@ -183,7 +173,8 @@ function buildMapFxPoints(patch: PublicPatchPayload, activeSectorId: string | nu
         x: activeNode.x,
         y: activeNode.y,
         tone: "active",
-        intensity: 1.35
+        intensity: 1.08,
+        ...getMapFxTileSize(activeNode)
       });
     }
   }
@@ -244,9 +235,46 @@ export function BoardMap({ patch, previousPatch = null, phase, showHeader = true
   }, [activeNodeId]);
 
   const sectorsById = useMemo(() => new Map(patch.sectors.map((sector) => [sector.id, sector] as const)), [patch.sectors]);
+  const movementPlanner = patch.movementPlanner?.active ? patch.movementPlanner : null;
   const legalTargetIds = useMemo(
-    () => (phase === "navigation" && activeSectorId ? new Set(sectorsById.get(activeSectorId)?.neighbors ?? []) : new Set<string>()),
-    [activeSectorId, phase, sectorsById]
+    () =>
+      movementPlanner
+        ? new Set(
+            movementPlanner.destinations
+              .filter((destination) => !destination.disabledReason)
+              .map((destination) => destination.sectorId)
+          )
+        : phase === "navigation" && activeSectorId
+          ? new Set(sectorsById.get(activeSectorId)?.neighbors ?? [])
+          : new Set<string>(),
+    [activeSectorId, movementPlanner, phase, sectorsById]
+  );
+  const movementRouteSegments = useMemo(
+    () =>
+      movementPlanner
+        ? movementPlanner.destinations
+            .filter((destination) => !destination.disabledReason)
+            .flatMap((destination) =>
+              destination.route.slice(0, -1).flatMap((fromNodeId, index) => {
+                const toNodeId = destination.route[index + 1];
+                const from = RIFTFALL_BOARD_NODE_INDEX.get(fromNodeId);
+                const to = toNodeId ? RIFTFALL_BOARD_NODE_INDEX.get(toNodeId) : null;
+
+                if (!from || !to) {
+                  return [];
+                }
+
+                return [
+                  {
+                    id: `${destination.sectorId}-${index}-${fromNodeId}-${toNodeId}`,
+                    from,
+                    to
+                  }
+                ];
+              })
+            )
+        : [],
+    [movementPlanner]
   );
   const selectedNode = RIFTFALL_BOARD_NODE_INDEX.get(selectedNodeId) ?? RIFTFALL_BOARD_NODES[0];
   const selectedBoardSpace = selectedNode ? getBoardSpace(selectedNode.id) : null;
@@ -285,6 +313,7 @@ export function BoardMap({ patch, previousPatch = null, phase, showHeader = true
 
     return counts;
   }, [patch.players]);
+  const playerMarkersByNodeId = useMemo(() => buildPlayerMarkersByNodeId(patch), [patch]);
   const nemesisSectorIds = useMemo(
     () => new Set((patch.nemesisChampions ?? []).filter((champion) => !champion.defeated).map((champion) => champion.sectorId)),
     [patch.nemesisChampions]
@@ -340,8 +369,6 @@ export function BoardMap({ patch, previousPatch = null, phase, showHeader = true
           }
         >
           {({ imageRect }) => {
-            const tokens = buildBoardTokens(patch, imageRect);
-
             return (
               <>
                 <TalismanBoardSurface
@@ -351,13 +378,14 @@ export function BoardMap({ patch, previousPatch = null, phase, showHeader = true
                   legalTargetIds={legalTargetIds}
                   sectorsById={sectorsById}
                   occupantCountsByNodeId={occupantCountsByNodeId}
+                  playerMarkersByNodeId={playerMarkersByNodeId}
                   nemesisSectorIds={nemesisSectorIds}
                   onSelectNode={setSelectedNodeId}
                   debugEnabled={boardDebugEnabled}
                 />
                 <HostCinematicFxLayer
                   variant="map"
-                  points={mapFxPoints}
+                  points={boardDebugEnabled ? mapFxPoints : []}
                   trails={mapFxTrails}
                   scanlineKey={`${patch.escalationLevel}-${patch.escalationThreshold}`}
                   className="host-map-fx-layer"
@@ -369,47 +397,45 @@ export function BoardMap({ patch, previousPatch = null, phase, showHeader = true
                     height: `${imageRect.height}px`
                   }}
                 />
-                <svg className="board-route-overlay" aria-hidden="true">
-                  {scenarioRoutes.map((effect) => {
-                    const from = RIFTFALL_BOARD_NODE_INDEX.get(effect.fromNodeId);
-                    const to = RIFTFALL_BOARD_NODE_INDEX.get(effect.toNodeId);
+                {boardDebugEnabled && (
+                  <svg className="board-route-overlay" aria-hidden="true">
+                    {scenarioRoutes.map((effect) => {
+                      const from = RIFTFALL_BOARD_NODE_INDEX.get(effect.fromNodeId);
+                      const to = RIFTFALL_BOARD_NODE_INDEX.get(effect.toNodeId);
 
-                    if (!from || !to) {
-                      return null;
-                    }
+                      if (!from || !to) {
+                        return null;
+                      }
 
-                    return (
+                      return (
+                        <line
+                          key={effect.id}
+                          data-testid={`scenario-route-${effect.id}`}
+                          className={`board-route board-route-scenario board-route-scenario-${effect.tone}`}
+                          x1={imageRect.left + from.x * imageRect.width}
+                          y1={imageRect.top + from.y * imageRect.height}
+                          x2={imageRect.left + to.x * imageRect.width}
+                          y2={imageRect.top + to.y * imageRect.height}
+                        />
+                      );
+                    })}
+                  </svg>
+                )}
+                {movementRouteSegments.length > 0 && (
+                  <svg className="board-route-overlay board-route-overlay-movement" aria-hidden="true">
+                    {movementRouteSegments.map((segment) => (
                       <line
-                        key={effect.id}
-                        data-testid={`scenario-route-${effect.id}`}
-                        className={`board-route board-route-scenario board-route-scenario-${effect.tone}`}
-                        x1={imageRect.left + from.x * imageRect.width}
-                        y1={imageRect.top + from.y * imageRect.height}
-                        x2={imageRect.left + to.x * imageRect.width}
-                        y2={imageRect.top + to.y * imageRect.height}
+                        key={segment.id}
+                        data-testid={`movement-route-${segment.id}`}
+                        className="board-route board-route-movement"
+                        x1={imageRect.left + segment.from.x * imageRect.width}
+                        y1={imageRect.top + segment.from.y * imageRect.height}
+                        x2={imageRect.left + segment.to.x * imageRect.width}
+                        y2={imageRect.top + segment.to.y * imageRect.height}
                       />
-                    );
-                  })}
-                </svg>
-
-                <div className="board-token-layer" aria-label="Seat markers">
-                  {tokens.map((token) => (
-                    <div
-                      key={`${token.seatId}-${token.id}`}
-                      data-testid={`token-${token.seatId}`}
-                      data-sector-id={token.sectorId}
-                      className="board-player-token"
-                      title={token.label}
-                      style={{
-                        left: `${token.left}px`,
-                        top: `${token.top}px`,
-                        ["--token-fill" as string]: token.color
-                      }}
-                    >
-                      <span>{getInitials(token.label)}</span>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </svg>
+                )}
 
                 <div className="board-scenario-layer" aria-label="Scenario markers">
                   {scenarioAuras.map((effect) => {

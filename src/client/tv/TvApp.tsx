@@ -1,7 +1,10 @@
-import { useEffect, useMemo, useRef, useState, type ReactElement } from "react";
+import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactElement } from "react";
 import { getBoardSpace, isScenarioConfrontationSpace } from "../../game/data/boardSpaces.js";
 import { formatContractObjectiveStatus } from "../../game/contracts/objectives.js";
 import { getSessionStartReadiness } from "../../game/rules/sessionStart.js";
+import { getChallengeTheme, getChallengeThemeStyle } from "../../game/ui/challengeTheme.js";
+import { HostAudioControls } from "../audio/HostAudioControls.js";
+import { useAshenReachAudio } from "../audio/useAshenReachAudio.js";
 import { createSession, fetchCharacters, fetchScenarios, fetchSessionSummary, startSession } from "../shared/network.js";
 import { getSeatAbilityTelemetry } from "../shared/abilityTelemetry.js";
 import { CardArtImage } from "../shared/CardArtImage.js";
@@ -296,7 +299,7 @@ interface TopHeaderProps {
   phase: string;
   sessionMode: SessionMode;
   gameMode: GameMode;
-  interactionMode: InteractionMode;
+  interactionMode: InteractionMode | null;
   roundLabel: string;
   joinedCount: number;
   readyCount: number;
@@ -334,7 +337,13 @@ function TopHeader({
         <div className="tv-command-header-chip">
           <span>Mode</span>
           <strong>
-            {gameMode === "nemesis_relay" ? "Relay" : sessionMode === "single-player" ? "Solo" : getInteractionModeLabel(interactionMode)}
+            {gameMode === "nemesis_relay"
+              ? "Relay"
+              : sessionMode === "single-player"
+                ? "Solo"
+                : interactionMode
+                  ? getInteractionModeLabel(interactionMode)
+                  : "Protocol Required"}
           </strong>
         </div>
         <div className="tv-command-header-chip">
@@ -372,6 +381,163 @@ interface ActiveOperativeOverlayProps {
   activeSeat: PublicSeat | null;
   activePlayer: PublicPlayer | null;
   characterCatalog: CharacterCatalogEntry[];
+}
+
+interface HostStateBannerProps {
+  patch: StatePatch<PublicPatchPayload> | null;
+  roomCode: string | null;
+  activePlayer: PublicPlayer | null;
+  joinedCount: number;
+  readyCount: number;
+  battleMode: boolean;
+  shopMode: boolean;
+}
+
+interface HostStateBannerModel {
+  label: string;
+  detail: string;
+  meta: string;
+  tone: "idle" | "ready" | "active" | "battle" | "shop" | "danger" | "ended";
+}
+
+function getHostStateBannerModel({
+  patch,
+  roomCode,
+  activePlayer,
+  joinedCount,
+  readyCount,
+  battleMode,
+  shopMode
+}: HostStateBannerProps): HostStateBannerModel {
+  if (!roomCode || !patch) {
+    return {
+      label: "Lobby",
+      detail: "Create a room to bring the command board online.",
+      meta: "Awaiting host setup",
+      tone: "idle"
+    };
+  }
+
+  if (patch.payload.status === "ended") {
+    const winnerSeat = patch.payload.winnerSeatId
+      ? patch.payload.seats.find((seat) => seat.seatId === patch.payload.winnerSeatId)
+      : null;
+
+    return {
+      label: "Game over",
+      detail: winnerSeat?.displayName ? `${winnerSeat.displayName} secured the final outcome.` : "The session has ended.",
+      meta: "Restart or create a new room",
+      tone: "ended"
+    };
+  }
+
+  if (patch.payload.status === "lobby") {
+    if (joinedCount === 0) {
+      return {
+        label: "Character selection",
+        detail: "Players are joining, entering names, and choosing operatives.",
+        meta: "Waiting for seats",
+        tone: "idle"
+      };
+    }
+
+    return {
+      label: "Ready check",
+      detail:
+        readyCount >= joinedCount
+          ? "All joined operatives are ready. Host may start when setup is correct."
+          : "Waiting for joined operatives to press Ready.",
+      meta: `Ready ${readyCount}/${joinedCount}`,
+      tone: readyCount >= joinedCount ? "ready" : "idle"
+    };
+  }
+
+  const activeName = activePlayer?.character.name ?? "Active operative";
+  const activeResolution = patch.payload.activeResolution ?? null;
+
+  if (battleMode || activeResolution?.battle || patch.payload.pendingEnemyRoll) {
+    const enemyName =
+      activeResolution?.battle?.enemyName ??
+      activeResolution?.card?.title ??
+      patch.payload.encounter?.enemyName ??
+      patch.payload.encounter?.title ??
+      patch.payload.pendingEnemyRoll?.encounterTitle ??
+      "hostile contact";
+
+    return {
+      label: "Battle resolving",
+      detail: `${activeName} is resolving combat against ${enemyName}.`,
+      meta: activeResolution ? resolutionStageLabel[activeResolution.stage] : "Dice pending",
+      tone: "battle"
+    };
+  }
+
+  if (shopMode || patch.payload.shopEncounter) {
+    const shop = patch.payload.shopEncounter;
+
+    return {
+      label: "Shop open",
+      detail: shop ? `${activeName} is using ${shop.shopName}.` : `${activeName} is at a clear shop sector.`,
+      meta: shop ? toTitleCase(shop.status) : "Choose service on phone",
+      tone: "shop"
+    };
+  }
+
+  if (activeResolution || patch.payload.encounter) {
+    const title = activeResolution?.card?.title ?? patch.payload.encounter?.title ?? "revealed encounter";
+
+    return {
+      label: "Encounter active",
+      detail: `${activeName} is resolving ${title}.`,
+      meta: activeResolution ? resolutionStageLabel[activeResolution.stage] : "Awaiting player action",
+      tone: "danger"
+    };
+  }
+
+  if (patch.phase === "navigation") {
+    return {
+      label: "Movement resolving",
+      detail: `${activeName} is choosing a legal destination.`,
+      meta: "Route planning",
+      tone: "active"
+    };
+  }
+
+  if (patch.phase === "broadcast") {
+    return {
+      label: "Turn transition",
+      detail: "The command board is advancing to the next operative.",
+      meta: "Stand by",
+      tone: "active"
+    };
+  }
+
+  return {
+    label: "Game active",
+    detail: `${activeName} has the command channel.`,
+    meta: toTitleCase(patch.phase),
+    tone: "active"
+  };
+}
+
+function HostStateBanner(props: HostStateBannerProps): ReactElement {
+  const model = getHostStateBannerModel(props);
+
+  return (
+    <aside
+      className={`host-state-banner host-state-banner-${model.tone}`}
+      aria-label="Host game state"
+      data-testid="host-state-banner"
+      role="status"
+    >
+      <span className="host-state-banner-pulse" aria-hidden="true" />
+      <div>
+        <span>{model.label}</span>
+        <strong>{model.detail}</strong>
+      </div>
+      <em>{model.meta}</em>
+    </aside>
+  );
 }
 
 function ActiveOperativeOverlay({
@@ -440,6 +606,21 @@ interface OperativesRailProps {
   battleMode?: boolean;
 }
 
+function RosterStatCircle({ stat, value }: { stat: Stat; value: number }): ReactElement {
+  const theme = getChallengeTheme(stat);
+
+  return (
+    <span
+      className={`tv-operative-stat-circle tv-operative-stat-circle-${stat}`}
+      style={getChallengeThemeStyle(stat) as CSSProperties}
+      title={`${theme.label}: ${value}`}
+      aria-label={`${theme.label} ${value}`}
+    >
+      <strong>{value}</strong>
+    </span>
+  );
+}
+
 function OperativesRail({ patch, characterCatalog, activeSeatId, sessionMode, battleMode = false }: OperativesRailProps): ReactElement {
   const fallbackSeatCount = sessionMode === "single-player" ? 1 : 4;
   const allSeats =
@@ -466,49 +647,57 @@ function OperativesRail({ patch, characterCatalog, activeSeatId, sessionMode, ba
         {seats.map((seat) => {
           const player = patch?.payload.players.find((entry) => entry.seatId === seat.seatId) ?? null;
           const catalogCharacter = characterCatalog.find((entry) => entry.id === seat.characterId) ?? null;
-          const characterName = player?.character.name ?? seat.displayName ?? catalogCharacter?.name ?? "Open Seat";
-          const characterTitle = player?.character.archetype ?? catalogCharacter?.archetype ?? "Awaiting operative";
-          const isOpen = !seat.displayName || seat.kicked;
+          const isOccupied = Boolean(player || seat.displayName);
+          const isOpen = !isOccupied || seat.kicked;
+          const characterName = isOpen ? "Open Seat" : player?.character.name ?? seat.displayName ?? catalogCharacter?.name ?? "Open Seat";
+          const characterTitle = isOpen ? "-" : player?.character.archetype ?? catalogCharacter?.archetype ?? "Awaiting operative";
           const isActive = seat.seatId === activeSeatId;
           const statusLabel = seat.kicked
-            ? "Removed"
-            : !seat.displayName
-              ? "Open"
-              : seat.ready
-                ? "Ready"
-                : seat.connected
-                  ? "Joined"
-                  : "Offline";
+            ? "Down"
+            : isActive
+              ? "Active"
+              : isOpen
+                ? "Open"
+                : player?.character.status === "recalled"
+                  ? "Down"
+                  : seat.ready
+                    ? "Ready"
+                    : seat.connected
+                      ? "Joined"
+                      : "Offline";
           const portraitUrl = !isOpen ? getCharacterPortraitPath(player?.character.id ?? seat.characterId) : null;
+          const seatNumber = getSeatNumber(seat.seatId);
 
           return (
             <article
               key={seat.seatId}
               className={`tv-operative-card${isActive ? " tv-operative-card-active" : ""}${isOpen ? " tv-operative-card-open" : ""}`}
             >
-              <div className="tv-operative-seat">{getSeatNumber(seat.seatId)}</div>
+              <div className="tv-operative-seat" aria-label={`Seat ${seatNumber}`}>{seatNumber}</div>
               <div className="tv-operative-portrait">
-                {portraitUrl ? <img src={portraitUrl} alt={characterName} /> : <span>Open</span>}
+                {portraitUrl ? <img src={portraitUrl} alt={characterName} /> : <span aria-hidden="true">+</span>}
               </div>
               <div className="tv-operative-copy">
                 <div className="tv-operative-name-row">
                   <h3>{characterName}</h3>
                   <span className={`tv-operative-link tv-operative-link-${seat.connected && !isOpen ? "online" : "offline"}`}>
-                    {statusLabel}
+                    {statusLabel.toUpperCase()}
                   </span>
                 </div>
                 <p>{characterTitle}</p>
-                <div className="tv-operative-stats" aria-label={`${characterName} vitals`}>
-                  <span>Wounds {player?.character.wounds ?? 0}</span>
-                  <span>Heat {player?.character.heat ?? 0}</span>
-                  <span>Trophies {player?.character.trophies ?? 0}</span>
-                </div>
                 {player && (
-                  <div className="tv-operative-challenge-stats" aria-label={`${characterName} challenge stats`}>
-                    {statOrder.map((stat) => (
-                      <ChallengeBadge key={stat} stat={stat} value={player.character.stats[stat]} label={statShortLabelById[stat]} size="compact" />
-                    ))}
-                  </div>
+                  <>
+                    <div className="tv-operative-stats" aria-label={`${characterName} vitals`}>
+                      <span>W {player.character.wounds ?? 0}</span>
+                      <span>H {player.character.heat ?? 0}</span>
+                      <span>T {player.character.trophies ?? 0}</span>
+                    </div>
+                    <div className="tv-operative-challenge-stats" aria-label={`${characterName} challenge stats`}>
+                      {statOrder.map((stat) => (
+                        <RosterStatCircle key={stat} stat={stat} value={player.character.stats[stat]} />
+                      ))}
+                    </div>
+                  </>
                 )}
               </div>
             </article>
@@ -528,7 +717,8 @@ interface SessionReadoutProps {
   publicPatch: StatePatch<PublicPatchPayload> | null;
   sessionMode: SessionMode;
   gameMode: GameMode;
-  interactionMode: InteractionMode;
+  interactionMode: InteractionMode | null;
+  playerCount: number;
   joinedCount: number;
   readyCount: number;
   seatCapacity: number;
@@ -540,6 +730,7 @@ interface SessionReadoutProps {
   onScenarioSelected: (scenarioId: string) => void;
   onGameModeSelected: (gameMode: GameMode) => void;
   onInteractionModeSelected: (interactionMode: InteractionMode) => void;
+  onPlayerCountSelected: (playerCount: number) => void;
   onCreateSession: (sessionMode?: SessionMode) => Promise<void>;
   onRestartSession: () => void;
   onStartSession: () => Promise<void>;
@@ -596,13 +787,15 @@ function ScenarioSelectionPreview({ scenario }: { scenario: ScenarioCatalogEntry
   );
 }
 
-function FirstGamePanel({ interactionMode }: { interactionMode: InteractionMode }): ReactElement {
+function FirstGamePanel({ interactionMode }: { interactionMode: InteractionMode | null }): ReactElement {
   const interactionCopy =
     interactionMode === "co-op"
       ? "Share pressure, assist checks, and push the scenario objective together."
       : interactionMode === "ruthless"
         ? "Direct interference is live: duels, theft, and betrayal contracts are table legal."
-        : "Race for personal glory with bounded rivalry, trades, aid, duels, and exposed-object steals.";
+        : interactionMode === "rivalry"
+          ? "Race for personal glory with bounded rivalry, trades, aid, duels, and exposed-object steals."
+          : "Choose a mission protocol before authorizing the multiplayer room.";
 
   return (
     <section className="tv-first-game-panel" aria-label="First game guide">
@@ -621,11 +814,64 @@ function FirstGamePanel({ interactionMode }: { interactionMode: InteractionMode 
   );
 }
 
+function MissionProtocolSelector({
+  selectedMode,
+  gameMode,
+  onSelect
+}: {
+  selectedMode: InteractionMode | null;
+  gameMode: GameMode;
+  onSelect: (interactionMode: InteractionMode) => void;
+}): ReactElement {
+  const relayLocked = gameMode === "nemesis_relay";
+  const effectiveSelectedMode = relayLocked ? "co-op" : selectedMode;
+
+  return (
+    <section className="tv-mission-protocol" aria-label="Mission protocol">
+      <div className="tv-mission-protocol-header">
+        <span>Mission Protocol</span>
+        <strong>{effectiveSelectedMode ? getInteractionModeLabel(effectiveSelectedMode) : "Select authorization"}</strong>
+      </div>
+      <div className="tv-mission-protocol-options">
+        <button
+          type="button"
+          className="tv-mission-protocol-card"
+          data-selected={effectiveSelectedMode === "co-op"}
+          aria-pressed={effectiveSelectedMode === "co-op"}
+          onClick={() => onSelect("co-op")}
+        >
+          <strong>Co-op</strong>
+          <span>Players work together against the Ashenreach. Shared survival, shared victory conditions, and group-focused scenario pressure.</span>
+        </button>
+        <button
+          type="button"
+          className="tv-mission-protocol-card"
+          data-selected={effectiveSelectedMode === "rivalry"}
+          aria-pressed={effectiveSelectedMode === "rivalry"}
+          disabled={relayLocked}
+          onClick={() => onSelect("rivalry")}
+        >
+          <strong>Rivalry</strong>
+          <span>Players compete for dominance. Operatives may race, block, outscore, or outlast each other depending on the scenario.</span>
+        </button>
+      </div>
+      <p className="tv-mission-protocol-note">
+        {relayLocked
+          ? "Nemesis Relay is a co-op protocol and cannot launch as rivalry."
+          : effectiveSelectedMode
+            ? `${getInteractionModeLabel(effectiveSelectedMode)} protocol selected.`
+            : "Start Game locked until one protocol is selected."}
+      </p>
+    </section>
+  );
+}
+
 function SessionReadout({
   publicPatch,
   sessionMode,
   gameMode,
   interactionMode,
+  playerCount,
   joinedCount,
   readyCount,
   seatCapacity,
@@ -637,6 +883,7 @@ function SessionReadout({
   onScenarioSelected,
   onGameModeSelected,
   onInteractionModeSelected,
+  onPlayerCountSelected,
   onCreateSession,
   onRestartSession,
   onStartSession,
@@ -676,7 +923,13 @@ function SessionReadout({
         </div>
         <div className="tv-session-stat">
           <span>Table Feel</span>
-          <strong>{getInteractionModeLabel(publicPatch?.payload.interactionMode ?? interactionMode)}</strong>
+          <strong>
+            {publicPatch?.payload.interactionMode
+              ? getInteractionModeLabel(publicPatch.payload.interactionMode)
+              : interactionMode
+                ? getInteractionModeLabel(interactionMode)
+                : "Protocol Required"}
+          </strong>
         </div>
         <div className="tv-session-stat">
           <span>Status</span>
@@ -731,16 +984,23 @@ function SessionReadout({
                 </select>
               </label>
               <label className="tv-session-scenario-picker">
-                <span>Table Feel</span>
+                <span>Players</span>
                 <select
-                  value={interactionMode}
-                  onChange={(event) => onInteractionModeSelected(event.target.value as InteractionMode)}
+                  value={playerCount}
+                  onChange={(event) => onPlayerCountSelected(Number(event.target.value))}
                 >
-                  <option value="co-op">Co-op | shared objectives and assists</option>
-                  <option value="rivalry">Rivalry | race without hard griefing</option>
-                  <option value="ruthless">Ruthless | duels, theft, betrayal contracts</option>
+                  {Array.from({ length: gameMode === "nemesis_relay" ? 3 : 5 }, (_, index) => index + 2).map((count) => (
+                    <option key={count} value={count}>
+                      {count} players
+                    </option>
+                  ))}
                 </select>
               </label>
+              <MissionProtocolSelector
+                selectedMode={interactionMode}
+                gameMode={gameMode}
+                onSelect={onInteractionModeSelected}
+              />
               <FirstGamePanel interactionMode={interactionMode} />
             </>
           )}
@@ -751,7 +1011,11 @@ function SessionReadout({
           </button>
           {showCreate && (
             <>
-              <button type="button" onClick={() => void onCreateSession()}>
+              <button
+                type="button"
+                disabled={gameMode !== "nemesis_relay" && !interactionMode}
+                onClick={() => void onCreateSession()}
+              >
                 Create multiplayer
               </button>
               <button type="button" className="tv-button tv-button-quiet" onClick={() => void onCreateSession("single-player")}>
@@ -782,9 +1046,12 @@ interface RightSidebarProps {
   roomCode: string | null;
   scenarioStatus: ReturnType<typeof getScenarioStatus>;
   publicPatch: StatePatch<PublicPatchPayload> | null;
+  activePlayer: PublicPlayer | null;
+  currentStepCopy: string;
   sessionMode: SessionMode;
   gameMode: GameMode;
-  interactionMode: InteractionMode;
+  interactionMode: InteractionMode | null;
+  playerCount: number;
   joinedCount: number;
   readyCount: number;
   seatCapacity: number;
@@ -797,11 +1064,136 @@ interface RightSidebarProps {
   onScenarioSelected: (scenarioId: string) => void;
   onGameModeSelected: (gameMode: GameMode) => void;
   onInteractionModeSelected: (interactionMode: InteractionMode) => void;
+  onPlayerCountSelected: (playerCount: number) => void;
   onCreateSession: (sessionMode?: SessionMode) => Promise<void>;
   onRestartSession: () => void;
   onStartSession: () => Promise<void>;
   canStartSession: boolean;
   startSessionReason: string;
+}
+
+function getSectorName(patch: StatePatch<PublicPatchPayload> | null, sectorId: string | null | undefined): string {
+  if (!sectorId) {
+    return "No sector";
+  }
+
+  return patch?.payload.sectors.find((sector) => sector.id === sectorId)?.name ?? getBoardSpace(sectorId)?.name ?? sectorId;
+}
+
+function HostContextPanel({
+  patch,
+  activePlayer,
+  scenarioStatus,
+  currentStepCopy
+}: {
+  patch: StatePatch<PublicPatchPayload> | null;
+  activePlayer: PublicPlayer | null;
+  scenarioStatus: ReturnType<typeof getScenarioStatus>;
+  currentStepCopy: string;
+}): ReactElement {
+  const activeResolution = patch?.payload.activeResolution ?? null;
+  const encounter = patch?.payload.encounter ?? null;
+  const pendingEnemyRoll = patch?.payload.pendingEnemyRoll ?? null;
+  const shopEncounter = patch?.payload.shopEncounter ?? null;
+  const activeSpace = activePlayer ? getBoardSpace(activePlayer.sectorId) : null;
+  const activeSector = activePlayer ? patch?.payload.sectors.find((sector) => sector.id === activePlayer.sectorId) ?? null : null;
+  const activeSectorName = activeSpace?.name ?? activeSector?.name ?? "Awaiting deployment";
+
+  if (shopEncounter) {
+    return (
+      <section className="tv-card tv-sidebar-card tv-host-context tv-host-context-shop" aria-label="Host context">
+        <div className="tv-host-context-kicker">Shop encounter</div>
+        <h2>{shopEncounter.shopName}</h2>
+        <p>{shopEncounter.status === "locked" ? "Trade lane blocked. Clear threats before services come online." : "Choose service on player phone."}</p>
+        <div className="tv-host-context-grid">
+          <span>Sector <strong>{shopEncounter.sectorName}</strong></span>
+          <span>Salvage <strong>{shopEncounter.activePlayer.salvage}</strong></span>
+          <span>Status <strong>{toTitleCase(shopEncounter.status)}</strong></span>
+          <span>Stock <strong>{shopEncounter.revealedStock?.length ?? 0}</strong></span>
+        </div>
+        {shopEncounter.blockingThreats.length > 0 && (
+          <div className="tv-host-context-list">
+            {shopEncounter.blockingThreats.slice(0, 3).map((threat) => (
+              <span key={threat.cardId}>
+                {threat.name}
+                {threat.challenge ? <ChallengeBadge stat={threat.challenge.stat} value={threat.challenge.value} size="compact" /> : null}
+              </span>
+            ))}
+          </div>
+        )}
+      </section>
+    );
+  }
+
+  if (activeResolution?.battle || encounter || pendingEnemyRoll) {
+    const stat = activeResolution?.battle?.stat ?? encounter?.stat ?? pendingEnemyRoll?.stat ?? "grit";
+    const title =
+      activeResolution?.battle?.enemyName ??
+      activeResolution?.card?.title ??
+      encounter?.enemyName ??
+      encounter?.title ??
+      pendingEnemyRoll?.encounterTitle ??
+      "Encounter";
+    const difficulty = activeResolution?.battle?.difficulty ?? encounter?.difficulty ?? activeResolution?.roll?.target ?? 0;
+
+    return (
+      <section className="tv-card tv-sidebar-card tv-host-context tv-host-context-battle" aria-label="Host context">
+        <div className="tv-host-context-kicker">{activeResolution ? resolutionStageLabel[activeResolution.stage] : "Encounter preview"}</div>
+        <h2>{title}</h2>
+        <p>{activeResolution?.card?.flavor ?? encounter?.flavor ?? "Resolve the active threat before the table advances."}</p>
+        <div className="tv-host-context-grid">
+          <span>Challenge <ChallengeBadge stat={stat} value={difficulty || "-"} size="compact" /></span>
+          <span>Operative <strong>{activePlayer?.character.name ?? pendingEnemyRoll?.fighterSeatId ?? "Standby"}</strong></span>
+          <span>Roll <strong>{activeResolution?.roll ? `${activeResolution.roll.finalTotal}/${activeResolution.roll.target}` : "Pending"}</strong></span>
+          <span>Result <strong>{activeResolution?.roll ? (activeResolution.roll.success ? "Success" : "Failure") : "Hidden"}</strong></span>
+        </div>
+      </section>
+    );
+  }
+
+  if (patch?.phase === "navigation" && activePlayer) {
+    const movementPlanner = patch.payload.movementPlanner?.active ? patch.payload.movementPlanner : null;
+    const neighbors = activeSector?.neighbors ?? [];
+    const routePreview = movementPlanner?.destinations.filter((destination) => !destination.disabledReason).slice(0, 5) ?? [];
+
+    return (
+      <section className="tv-card tv-sidebar-card tv-host-context tv-host-context-move" aria-label="Host context">
+        <div className="tv-host-context-kicker">Movement scan</div>
+        <h2>{movementPlanner?.currentSectorName ?? activeSectorName}</h2>
+        <p>
+          {movementPlanner
+            ? `Movement value ${movementPlanner.movementValue}. Exact legal routes are highlighted on the command board.`
+            : "Movement planner unavailable; showing adjacent route pressure as a safe fallback."}
+        </p>
+        <div className="tv-host-context-list">
+          {movementPlanner
+            ? routePreview.map((destination) => (
+                <span key={destination.sectorId}>
+                  {destination.name}
+                  <strong>{destination.distance}</strong>
+                </span>
+              ))
+            : neighbors.slice(0, 5).map((sectorId) => <span key={sectorId}>{getSectorName(patch, sectorId)}</span>)}
+          {movementPlanner && routePreview.length === 0 && <span>No legal destinations</span>}
+          {!movementPlanner && neighbors.length === 0 && <span>No adjacent routes exposed</span>}
+        </div>
+      </section>
+    );
+  }
+
+  return (
+    <section className="tv-card tv-sidebar-card tv-host-context tv-host-context-scenario" aria-label="Host context">
+      <div className="tv-host-context-kicker">Scenario command</div>
+      <h2>{scenarioStatus.name}</h2>
+      <p>{currentStepCopy}</p>
+      <div className="tv-host-context-grid">
+        <span>Objective <strong>{scenarioStatus.confrontationTitle}</strong></span>
+        <span>Pressure <strong>{scenarioStatus.progress}</strong></span>
+        <span>Active sector <strong>{activeSectorName}</strong></span>
+        <span>Escalation <strong>{patch ? `${patch.payload.escalationLevel}/${patch.payload.escalationThreshold}` : "0/0"}</strong></span>
+      </div>
+    </section>
+  );
 }
 
 function ScenarioStatusCard({
@@ -1025,9 +1417,12 @@ function RightSidebar({
   roomCode,
   scenarioStatus,
   publicPatch,
+  activePlayer,
+  currentStepCopy,
   sessionMode,
   gameMode,
   interactionMode,
+  playerCount,
   joinedCount,
   readyCount,
   seatCapacity,
@@ -1040,6 +1435,7 @@ function RightSidebar({
   onScenarioSelected,
   onGameModeSelected,
   onInteractionModeSelected,
+  onPlayerCountSelected,
   onCreateSession,
   onRestartSession,
   onStartSession,
@@ -1061,6 +1457,12 @@ function RightSidebar({
 
   return (
     <aside className="tv-command-sidebar">
+      <HostContextPanel
+        patch={publicPatch}
+        activePlayer={activePlayer}
+        scenarioStatus={scenarioStatus}
+        currentStepCopy={currentStepCopy}
+      />
       <ScenarioStatusCard
         scenarioStatus={scenarioStatus}
         scenarioOutcome={scenarioOutcome}
@@ -1076,6 +1478,7 @@ function RightSidebar({
         sessionMode={sessionMode}
         gameMode={gameMode}
         interactionMode={interactionMode}
+        playerCount={playerCount}
         joinedCount={joinedCount}
         readyCount={readyCount}
         seatCapacity={seatCapacity}
@@ -1087,6 +1490,7 @@ function RightSidebar({
         onScenarioSelected={onScenarioSelected}
         onGameModeSelected={onGameModeSelected}
         onInteractionModeSelected={onInteractionModeSelected}
+        onPlayerCountSelected={onPlayerCountSelected}
         onCreateSession={onCreateSession}
         onRestartSession={onRestartSession}
         onStartSession={onStartSession}
@@ -1196,6 +1600,48 @@ function TacticalMapPanel({
       )}
       <HostBattleOverlay patch={patch} activePlayer={battlePlayer} />
       <HostShopOverlay patch={patch} activePlayer={activePlayer} />
+    </section>
+  );
+}
+
+function HostBottomStatusStrip({
+  patch,
+  currentStepCopy
+}: {
+  patch: StatePatch<PublicPatchPayload> | null;
+  currentStepCopy: string;
+}): ReactElement {
+  const turnSeats = patch?.payload.turnOrder ?? [];
+  const seatLabels = getSeatLabelMap(patch);
+  const activeSeatId = patch?.payload.turnOrder[patch.payload.activeSeatIndex] ?? null;
+  const latestLog = [
+    patch?.payload.activeResolution?.outcome?.text,
+    patch?.payload.outcomeSummary?.summary,
+    patch?.payload.encounter ? `${patch.payload.encounter.title} revealed.` : null,
+    ...(patch?.payload.recentAbilityTriggers.slice(-1).map((trigger) => trigger.summary) ?? [])
+  ].filter((entry): entry is string => Boolean(entry));
+
+  return (
+    <section className="tv-host-bottom-strip" aria-label="Host command status" data-testid="host-bottom-status-strip">
+      <div className="tv-host-turn-order" aria-label="Turn order">
+        {turnSeats.length > 0 ? (
+          turnSeats.map((seatId) => (
+            <span key={seatId} className={seatId === activeSeatId ? "tv-host-turn-active" : ""}>
+              {seatLabels[seatId] ?? seatId}
+            </span>
+          ))
+        ) : (
+          <span>Awaiting operatives</span>
+        )}
+      </div>
+      <div className="tv-host-world-state">
+        <span>World {patch ? `${patch.payload.escalationLevel}/${patch.payload.escalationThreshold}` : "offline"}</span>
+        <span>Mode {patch ? getInteractionModeLabel(patch.payload.interactionMode ?? "co-op") : "standby"}</span>
+        <span>Phase {toTitleCase(patch?.phase ?? "start")}</span>
+      </div>
+      <div className="tv-host-strip-log">
+        <strong>{latestLog[0] ?? currentStepCopy}</strong>
+      </div>
     </section>
   );
 }
@@ -1421,7 +1867,8 @@ export function TvApp(): ReactElement {
   );
   const [sessionMode, setSessionMode] = useState<SessionMode>("multiplayer");
   const [gameMode, setGameMode] = useState<GameMode>("standard");
-  const [interactionMode, setInteractionMode] = useState<InteractionMode>("rivalry");
+  const [interactionMode, setInteractionMode] = useState<InteractionMode | null>(null);
+  const [playerCount, setPlayerCount] = useState<number>(6);
   const [selectedScenarioId, setSelectedScenarioId] = useState<string | null>(null);
   const [hostToken, setHostToken] = useState<string | null>(() =>
     typeof window === "undefined" ? null : window.localStorage.getItem(hostTokenStorageKey)
@@ -1451,6 +1898,7 @@ export function TvApp(): ReactElement {
   }, []);
 
   const publicPatch = patch as StatePatch<PublicPatchPayload> | null;
+  const audio = useAshenReachAudio(publicPatch);
   const joinedSeats = publicPatch?.payload.seats.filter((seat) => seat.displayName && !seat.kicked) ?? [];
   const readySeats = joinedSeats.filter((seat) => seat.ready);
   const startReadiness = getSessionStartReadiness({
@@ -1473,6 +1921,7 @@ export function TvApp(): ReactElement {
       : scenarioCatalog.find((scenario) => scenario.id === selectedScenarioId) ?? null) ?? null;
   const scenarioStatus = useMemo(() => getScenarioStatus(publicPatch), [publicPatch]);
   const battleMode = isHostBattleActive(publicPatch, battlePlayer);
+  const shopMode = isHostShopActive(publicPatch, activePlayer);
   const resolutionDisplayMode = getTvResolutionDisplayMode(publicPatch, battlePlayer);
 
   useEffect(() => {
@@ -1524,6 +1973,7 @@ export function TvApp(): ReactElement {
         setSessionMode(summary.sessionMode);
         setGameMode(summary.gameMode ?? "standard");
         setInteractionMode(summary.interactionMode);
+        setPlayerCount(summary.playerCount ?? summary.seats?.length ?? 6);
       })
       .catch(() => {
         if (cancelled) {
@@ -1551,17 +2001,35 @@ export function TvApp(): ReactElement {
 
     try {
       const scenarioId = selectedScenarioId ?? scenarioCatalog[0]?.id;
-      const selectedInteractionMode = nextSessionMode === "single-player" ? "co-op" : interactionMode;
-      const session = await createSession(nextSessionMode, scenarioId, selectedInteractionMode, gameMode);
+      const selectedInteractionMode: InteractionMode | undefined =
+        nextSessionMode === "single-player" || gameMode === "nemesis_relay"
+          ? "co-op"
+          : interactionMode ?? undefined;
+      if (nextSessionMode !== "single-player" && !selectedInteractionMode) {
+        setRequestError("Choose Co-op or Rivalry before creating a multiplayer room.");
+        return;
+      }
+      const selectedPlayerCount = nextSessionMode === "single-player" ? 1 : Math.min(playerCount, gameMode === "nemesis_relay" ? 4 : 6);
+      const session = await createSession(nextSessionMode, scenarioId, selectedInteractionMode, gameMode, selectedPlayerCount);
       setRoomCode(session.roomCode);
       setSessionMode(session.sessionMode);
       setGameMode(session.gameMode ?? "standard");
       setInteractionMode(session.interactionMode);
+      setPlayerCount(session.playerCount);
       setSelectedScenarioId(session.scenarioId);
       setHostToken(session.hostToken);
       restoreValidatedRef.current = true;
     } catch (createFailure) {
       setRequestError(createFailure instanceof Error ? createFailure.message : "Could not create a room");
+    }
+  };
+
+  const selectGameMode = (nextGameMode: GameMode) => {
+    setGameMode(nextGameMode);
+
+    if (nextGameMode === "nemesis_relay") {
+      setPlayerCount((current) => Math.min(current, 4));
+      setInteractionMode("co-op");
     }
   };
 
@@ -1598,6 +2066,16 @@ export function TvApp(): ReactElement {
 
         {(requestError || error) && <div className="tv-banner tv-banner-error">{requestError ?? error}</div>}
         {sessionNotice && <div className="tv-banner">{sessionNotice}</div>}
+        <HostStateBanner
+          patch={publicPatch}
+          roomCode={roomCode}
+          activePlayer={activePlayer}
+          joinedCount={joinedSeats.length}
+          readyCount={readySeats.length}
+          battleMode={battleMode}
+          shopMode={shopMode}
+        />
+        <HostAudioControls audio={audio} />
         <EndgameOverlay patch={publicPatch} />
 
         <section className="tv-command-main">
@@ -1622,9 +2100,12 @@ export function TvApp(): ReactElement {
             roomCode={roomCode}
             scenarioStatus={scenarioStatus}
             publicPatch={publicPatch}
+            activePlayer={activePlayer}
+            currentStepCopy={currentStepCopy}
             sessionMode={liveSessionMode}
             gameMode={liveGameMode}
             interactionMode={liveInteractionMode}
+            playerCount={playerCount}
             joinedCount={joinedSeats.length}
             readyCount={readySeats.length}
             seatCapacity={publicPatch?.payload.seats.length ?? (liveSessionMode === "single-player" ? 1 : 3)}
@@ -1635,8 +2116,9 @@ export function TvApp(): ReactElement {
             selectedScenario={selectedScenario}
             scenarioCatalog={scenarioCatalog}
             onScenarioSelected={setSelectedScenarioId}
-            onGameModeSelected={setGameMode}
+            onGameModeSelected={selectGameMode}
             onInteractionModeSelected={setInteractionMode}
+            onPlayerCountSelected={setPlayerCount}
             onCreateSession={createHostSession}
             onRestartSession={() => {
               setRequestError(null);
@@ -1647,6 +2129,8 @@ export function TvApp(): ReactElement {
             startSessionReason={startReadiness.reason}
           />
         </section>
+
+        <HostBottomStatusStrip patch={publicPatch} currentStepCopy={currentStepCopy} />
 
         {resolutionDisplayMode !== "battle" && (
           <section

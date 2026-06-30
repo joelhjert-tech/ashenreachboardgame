@@ -16,7 +16,23 @@ function readInitialRoomCode(): string {
     return "";
   }
 
-  return new URLSearchParams(window.location.search).get("roomCode")?.toUpperCase() ?? "";
+  const params = new URLSearchParams(window.location.search);
+  return (params.get("room") ?? params.get("roomCode") ?? "").toUpperCase();
+}
+
+function readRequestedSeatId(): string {
+  if (typeof window === "undefined") {
+    return "";
+  }
+
+  const value = new URLSearchParams(window.location.search).get("seat") ?? new URLSearchParams(window.location.search).get("seatId") ?? "";
+  const normalized = value.trim().toLowerCase();
+
+  if (!normalized) {
+    return "";
+  }
+
+  return normalized.startsWith("seat-") ? normalized : `seat-${normalized}`;
 }
 
 function readStoredAuth(): PhoneSessionAuth | null {
@@ -27,11 +43,11 @@ function readStoredAuth(): PhoneSessionAuth | null {
   const params = new URLSearchParams(window.location.search);
 
   if (params.get("resetAuth") === "1") {
-    window.localStorage.removeItem(storageKey);
+    window.sessionStorage.removeItem(storageKey);
     return null;
   }
 
-  const raw = window.localStorage.getItem(storageKey);
+  const raw = window.sessionStorage.getItem(storageKey);
 
   if (!raw) {
     return null;
@@ -50,11 +66,11 @@ function writeStoredAuth(auth: PhoneSessionAuth | null): void {
   }
 
   if (!auth) {
-    window.localStorage.removeItem(storageKey);
+    window.sessionStorage.removeItem(storageKey);
     return;
   }
 
-  window.localStorage.setItem(storageKey, JSON.stringify(auth));
+  window.sessionStorage.setItem(storageKey, JSON.stringify(auth));
 }
 
 function toTitleCase(value: string): string {
@@ -69,8 +85,9 @@ function useLandscapeMode(): boolean {
 
     const orientationMatch =
       typeof window.matchMedia === "function" ? window.matchMedia("(orientation: landscape)").matches : false;
+    const phoneSizedViewport = Math.min(window.innerWidth, window.innerHeight) < 700 && Math.max(window.innerWidth, window.innerHeight) < 1000;
 
-    return orientationMatch || window.innerWidth > window.innerHeight;
+    return phoneSizedViewport && (orientationMatch || window.innerWidth > window.innerHeight);
   };
 
   const [isLandscape, setIsLandscape] = useState(getIsLandscape);
@@ -105,7 +122,8 @@ export function PhoneApp(): ReactElement {
   const [formState, setFormState] = useState(() => ({
     roomCode: readInitialRoomCode(),
     displayName: "",
-    characterId: "void-marshal"
+    characterId: "void-marshal",
+    requestedSeatId: readRequestedSeatId()
   }));
   const [auth, setAuth] = useState<PhoneSessionAuth | null>(() => readStoredAuth());
   const [joinError, setJoinError] = useState<string | null>(null);
@@ -162,7 +180,8 @@ export function PhoneApp(): ReactElement {
       const nextAuth = await joinSession({
         roomCode: formState.roomCode.trim().toUpperCase(),
         displayName: formState.displayName.trim(),
-        characterId
+        characterId,
+        ...(formState.requestedSeatId ? { seatId: formState.requestedSeatId } : {})
       });
 
       setFormState((current) => ({
@@ -235,6 +254,7 @@ export function PhoneApp(): ReactElement {
                   <div>
                     <h2>{selectedCharacter.name}</h2>
                     <p>{selectedCharacter.archetype}</p>
+                    {selectedCharacter.qaOnly && <span className="phone-character-qa-badge">QA ONLY</span>}
                     <div className="phone-character-stat-row" aria-label="Selected character stats">
                       <span>Command {selectedCharacter.stats.command}</span>
                       <span>Grit {selectedCharacter.stats.grit}</span>
@@ -309,6 +329,7 @@ export function PhoneApp(): ReactElement {
                           <span>
                             <strong>{character.name}</strong>
                             <small>{character.archetype}</small>
+                            {character.qaOnly && <em className="phone-character-qa-badge">QA ONLY</em>}
                           </span>
                         </button>
                       ))}

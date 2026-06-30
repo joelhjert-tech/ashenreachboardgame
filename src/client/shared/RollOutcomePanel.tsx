@@ -18,16 +18,6 @@ const pipLayout: Record<number, number[]> = {
   6: [0, 2, 3, 5, 6, 8]
 };
 
-function buildAnimationFrames(die1: number, die2: number): Array<[number, number]> {
-  return [
-    [((die1 + 1) % 6) + 1, ((die2 + 3) % 6) + 1],
-    [((die1 + 3) % 6) + 1, ((die2 + 5) % 6) + 1],
-    [((die1 + 5) % 6) + 1, ((die2 + 1) % 6) + 1],
-    [die2, die1],
-    [die1, die2]
-  ];
-}
-
 function DieFace({ value }: { value: number }): ReactElement {
   const activePips = new Set(pipLayout[value] ?? []);
 
@@ -108,34 +98,17 @@ export function RollOutcomePanel({
       return;
     }
 
-    const playerFrames = buildAnimationFrames(finalDie1, finalDie2);
-    const enemyFrames = buildAnimationFrames(finalEnemyDie1 ?? finalDie1, finalEnemyDie2 ?? finalDie2);
-    let frameIndex = 0;
     setIsAnimating(true);
-    setDisplayFaces(playerFrames[0] ?? [finalDie1, finalDie2]);
-    setDisplayEnemyFaces(enemyFrames[0] ?? [finalEnemyDie1 ?? 1, finalEnemyDie2 ?? 1]);
-
-    const intervalId = window.setInterval(() => {
-      frameIndex += 1;
-
-      if (frameIndex >= playerFrames.length) {
-        window.clearInterval(intervalId);
-        return;
-      }
-
-      setDisplayFaces(playerFrames[frameIndex] ?? [finalDie1, finalDie2]);
-      setDisplayEnemyFaces(enemyFrames[frameIndex] ?? [finalEnemyDie1 ?? 1, finalEnemyDie2 ?? 1]);
-    }, 95);
+    setDisplayFaces([finalDie1, finalDie2]);
+    setDisplayEnemyFaces([finalEnemyDie1 ?? 1, finalEnemyDie2 ?? 1]);
 
     const settleId = window.setTimeout(() => {
-      window.clearInterval(intervalId);
       setDisplayFaces([finalDie1, finalDie2]);
       setDisplayEnemyFaces([finalEnemyDie1 ?? 1, finalEnemyDie2 ?? 1]);
       setIsAnimating(false);
     }, 520);
 
     return () => {
-      window.clearInterval(intervalId);
       window.clearTimeout(settleId);
       setDisplayFaces([finalDie1, finalDie2]);
       setDisplayEnemyFaces([finalEnemyDie1 ?? 1, finalEnemyDie2 ?? 1]);

@@ -1,0 +1,24 @@
+{
+  "id": "artifact-murkclaw-gravecrow",
+  "type": "artifact",
+  "artifactKind": "factionRelic",
+  "title": "Murkclaw & Gravecrow",
+  "text": "Legendary Follower / Companion. Unique. A breach-touched warcat and omen-crow pair joins the operative, scouting danger windows, rattling enemies, and marking routes that smell wrong.",
+  "flavor": "The cat sees what wants to eat you. The crow tells it where to wait.",
+  "charge": 1,
+  "resolutionSummary": "Murkclaw & Gravecrow padded out of the smoke and chose the active operative as their current bad decision.",
+  "resolveEffect": {
+    "type": "sequence",
+    "effects": [
+      {
+        "type": "gain_follower",
+        "followerId": "murkclaw-gravecrow"
+      },
+      {
+        "type": "gain_note",
+        "text": "Murkclaw & Gravecrow acquired: legendary companion pair, once per round omen support."
+      }
+    ]
+  },
+  "imagePrompt": "A grimdark fantasy-sci-fi companion card showing a huge blue-black breach-touched cat with glowing orange eyes, tiny fangs, spiked black armor, red gem ward harness, and a small black-and-white gravecrow wearing a little top hat perched between its ears. They stand together in a ruined gothic-industrial battlefield under red ember skies, cute but dangerous, dark brass, violet shadow light, cinematic Ashen Reach card art, no text."
+}

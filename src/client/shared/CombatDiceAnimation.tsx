@@ -16,16 +16,10 @@ interface CombatDiceAnimationProps {
   challengeStat?: Stat;
 }
 
-function normalizeDieValue(value: number | null | undefined): number {
-  if (value === null || value === undefined || Number.isNaN(value)) {
-    return 1;
-  }
-
-  return Math.min(6, Math.max(1, Math.abs(value) % 6 || 6));
-}
-
-function resolveDieFace(explicitFace: number | null | undefined, fallbackValue: number | null): number {
-  return normalizeDieValue(explicitFace ?? fallbackValue);
+function resolveDieFace(explicitFace: number | null | undefined): number | null {
+  return typeof explicitFace === "number" && Number.isInteger(explicitFace) && explicitFace >= 1 && explicitFace <= 6
+    ? explicitFace
+    : null;
 }
 
 function formatModifier(value: number | null): string {
@@ -42,13 +36,13 @@ function AnimatedDie({
   success
 }: {
   layer: "attack" | "defense" | "modifier";
-  value: number;
+  value: number | null;
   success: boolean;
 }): ReactElement {
   return (
     <div className={`combat-die-layer combat-die-${layer}${success ? " combat-die-success" : ""}`} data-testid={`combat-die-${layer}`}>
       <span className="combat-die-label">{layer}</span>
-      <strong>{value}</strong>
+      <strong>{value ?? "-"}</strong>
     </div>
   );
 }
@@ -66,10 +60,10 @@ export function CombatDiceAnimation({
   compact = false,
   challengeStat = "grit"
 }: CombatDiceAnimationProps): ReactElement {
-  const attackDie = resolveDieFace(attackDieFace, attackValue);
-  const defenseDie = resolveDieFace(defenseDieFace, defenseValue);
+  const attackDie = resolveDieFace(attackDieFace);
+  const defenseDie = resolveDieFace(defenseDieFace);
   const modifierActive = hasModifier ?? Boolean(modifierValue);
-  const modifierDie = resolveDieFace(modifierDieFace, modifierValue);
+  const modifierDie = resolveDieFace(modifierDieFace);
   const tokenClass = attackSuccess ? "combat-result-token-attack" : defenseSuccess ? "combat-result-token-defense" : "combat-result-token-mod";
 
   return (

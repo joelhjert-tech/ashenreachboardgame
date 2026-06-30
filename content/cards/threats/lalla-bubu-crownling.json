@@ -1,0 +1,42 @@
+{
+  "id": "lalla-bubu-crownling",
+  "type": "threat",
+  "cardType": "enemy",
+  "title": "Lalla-Bubu Crownling",
+  "enemyName": "Lalla-Bubu Crownling",
+  "text": "A toy-faced breach mascot waddles from the ash in a velvet cape and thorn crown, smiling as its stitched teeth count your fears aloud.",
+  "flavor": "The first mistake is laughing. The second is letting it hear you stop.",
+  "severity": 3,
+  "region": "middle",
+  "stat": "guile",
+  "difficulty": 7,
+  "trophyValue": 2,
+  "defeatReward": {
+    "type": "gain_note",
+    "text": "You cut the Crownling's charm-chain loose and mark the hollow route it was guarding."
+  },
+  "woundOnLoss": {
+    "type": "sequence",
+    "effects": [
+      {
+        "type": "take_wound",
+        "amount": 1
+      },
+      {
+        "type": "gain_heat",
+        "amount": 1
+      }
+    ]
+  },
+  "enemyFamily": "breachborn",
+  "threatLane": "yellow",
+  "rarity": "uncommon",
+  "tempo": "stall",
+  "resourceTags": [
+    "wound",
+    "heat",
+    "trophy",
+    "movement"
+  ],
+  "imagePrompt": "A creepy-cute breachborn plush idol with rabbit-like ears, glossy black eyes, small sharp teeth, thorny black crown with a red gem, tattered purple cape, tiny ornate armor, holding a dark signal scepter, standing in an ash-blasted gothic-industrial battlefield, cute silhouette made unsettling and dangerous, Ashen Reach Hollow Court trickster enemy, medium-threat guile challenge, grimdark but absurd, cinematic portrait, no text, no logos"
+}

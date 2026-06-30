@@ -10,6 +10,8 @@ export interface MapFxPoint {
   y: number;
   tone: "active" | "red" | "blue" | "yellow" | "gold" | "anomaly";
   intensity?: number;
+  width?: number;
+  height?: number;
 }
 
 export interface MapFxTrail {
@@ -109,6 +111,25 @@ function createCircleMesh(
   });
   const mesh = new THREE.Mesh(geometry, material);
   mesh.position.set(x, y, 0);
+  return mesh;
+}
+
+function createTileGlowMesh(
+  THREE: ThreeModule,
+  point: MapFxPoint,
+  color: number,
+  opacity: number
+): import("three").Mesh {
+  const geometry = new THREE.PlaneGeometry(point.width ?? 0.07, point.height ?? point.width ?? 0.05);
+  const material = new THREE.MeshBasicMaterial({
+    color,
+    transparent: true,
+    opacity,
+    blending: THREE.AdditiveBlending,
+    depthWrite: false
+  });
+  const mesh = new THREE.Mesh(geometry, material);
+  mesh.position.set(point.x - 0.5, 0.5 - point.y, 0);
   return mesh;
 }
 
@@ -218,18 +239,18 @@ export function HostCinematicFxLayer({
 
         if (variant === "battle") {
           const ring = new THREE.Mesh(
-            new THREE.TorusGeometry(0.12, 0.006, 12, 72),
+            new THREE.TorusGeometry(0.05, 0.003, 12, 72),
             new THREE.MeshBasicMaterial({
               color: baseColor,
               transparent: true,
-              opacity: 0.72,
+              opacity: 0.36,
               blending: THREE.AdditiveBlending,
               depthWrite: false
             })
           );
           const slashA = new THREE.Mesh(
-            new THREE.BoxGeometry(0.018, 0.28, 0.001),
-            new THREE.MeshBasicMaterial({ color: 0xf3d19a, transparent: true, opacity: 0.84, blending: THREE.AdditiveBlending })
+            new THREE.BoxGeometry(0.007, 0.105, 0.001),
+            new THREE.MeshBasicMaterial({ color: 0xf3d19a, transparent: true, opacity: 0.34, blending: THREE.AdditiveBlending })
           );
           const slashB = slashA.clone();
           slashA.rotation.z = 0.76;
@@ -263,8 +284,11 @@ export function HostCinematicFxLayer({
 
         if (variant === "map") {
           points.forEach((point) => {
-            const radius = 0.014 + (point.intensity ?? 1) * 0.012;
-            const mesh = createCircleMesh(THREE, point.x - 0.5, 0.5 - point.y, radius, toneColor(point.tone), point.tone === "active" ? 0.72 : 0.36);
+            const opacity = point.tone === "active" ? 0.28 : 0.14 + Math.min(point.intensity ?? 1, 1.4) * 0.08;
+            const mesh =
+              point.width && point.height
+                ? createTileGlowMesh(THREE, point, toneColor(point.tone), opacity)
+                : createCircleMesh(THREE, point.x - 0.5, 0.5 - point.y, 0.014 + (point.intensity ?? 1) * 0.012, toneColor(point.tone), opacity);
             scene.add(mesh);
             objects.push(mesh);
           });
@@ -388,7 +412,12 @@ export function HostCinematicFxLayer({
                 <span
                   key={point.id}
                   className={`host-map-fx-dot host-map-fx-dot-${point.tone}`}
-                  style={{ left: `${point.x * 100}%`, top: `${point.y * 100}%` }}
+                  style={{
+                    left: `${point.x * 100}%`,
+                    top: `${point.y * 100}%`,
+                    ["--map-fx-width" as string]: point.width ? `${point.width * 100}%` : undefined,
+                    ["--map-fx-height" as string]: point.height ? `${point.height * 100}%` : undefined
+                  }}
                 />
               ))}
               {trails.map((trail) => (

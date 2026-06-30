@@ -82,6 +82,8 @@ describe("PhoneApp", () => {
 
   beforeEach(() => {
     window.localStorage.clear();
+    window.sessionStorage.clear();
+    window.history.replaceState(null, "", "/");
     vi.clearAllMocks();
     setViewport(390, 844);
   });
@@ -134,6 +136,54 @@ describe("PhoneApp", () => {
     });
   });
 
+  it("prefills room and requested seat from direct browser join links", async () => {
+    window.history.replaceState(null, "", "/?room=RT7P4&seat=2");
+    networkMocks.joinSession.mockResolvedValue({
+      roomCode: "RT7P4",
+      seatId: "seat-2",
+      seatToken: "seat:RT7P4:seat-2",
+      displayName: "Joel"
+    });
+
+    render(<PhoneApp />);
+
+    expect(await screen.findByDisplayValue("RT7P4")).toBeInTheDocument();
+    fireEvent.change(screen.getAllByLabelText(/player name/i)[0]!, { target: { value: "Joel" } });
+    fireEvent.click(screen.getByRole("button", { name: /continue/i }));
+    fireEvent.click(await screen.findByRole("button", { name: /deepdale.*deep route delver/i }));
+
+    await waitFor(() => {
+      expect(networkMocks.joinSession).toHaveBeenCalledWith({
+        roomCode: "RT7P4",
+        displayName: "Joel",
+        characterId: "char_deepdale",
+        seatId: "seat-2"
+      });
+    });
+  });
+
+  it("stores controller auth in session storage so separate tabs do not share a seat", async () => {
+    networkMocks.joinSession.mockResolvedValue({
+      roomCode: "RT7P4",
+      seatId: "seat-1",
+      seatToken: "seat:RT7P4:seat-1",
+      displayName: "Joel"
+    });
+
+    render(<PhoneApp />);
+
+    await screen.findByRole("button", { name: /continue/i });
+    fireEvent.change(screen.getAllByLabelText(/room code/i)[0]!, { target: { value: "RT7P4" } });
+    fireEvent.change(screen.getAllByLabelText(/player name/i)[0]!, { target: { value: "Joel" } });
+    fireEvent.click(screen.getByRole("button", { name: /continue/i }));
+    fireEvent.click(await screen.findByRole("button", { name: /mira.*cinder monk/i }));
+
+    await waitFor(() => {
+      expect(window.sessionStorage.getItem("ashen-reach-phone-auth")).toContain("seat-1");
+    });
+    expect(window.localStorage.getItem("ashen-reach-phone-auth")).toBeNull();
+  });
+
   it("shows the locked character waiting screen immediately after selection", async () => {
     networkMocks.joinSession.mockResolvedValue({
       roomCode: "RT7P4",
@@ -168,5 +218,14 @@ describe("PhoneApp", () => {
     expect(await screen.findByText(/rotate your phone to portrait mode/i)).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /continue/i })).not.toBeInTheDocument();
     expect(screen.queryByRole("list", { name: /character/i })).not.toBeInTheDocument();
+  });
+
+  it("keeps the controller usable in a desktop landscape browser tab", async () => {
+    setViewport(1280, 720);
+
+    render(<PhoneApp />);
+
+    expect(await screen.findByRole("button", { name: /continue/i })).toBeInTheDocument();
+    expect(screen.queryByText(/rotate your phone to portrait mode/i)).not.toBeInTheDocument();
   });
 });

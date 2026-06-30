@@ -1,7 +1,7 @@
 import type { Character, Stat } from "../schema/character.schema.js";
 import type { ThreatCard, EncounterEffect } from "../schema/card.schema.js";
 import type { ContractCard } from "../schema/contract.schema.js";
-import type { GearSlot } from "../schema/gear.schema.js";
+import type { GearItem, GearSlot } from "../schema/gear.schema.js";
 import type { NemesisChampion, Phase } from "../schema/session.schema.js";
 import type { DiceRollResult } from "./dice.js";
 
@@ -79,6 +79,18 @@ export interface DiceRollStartedAction extends BaseAction {
 
 export interface CheckRolledAction extends BaseAction {
   type: "CHECK_ROLLED";
+  stat: CheckStat;
+  difficulty: number;
+  roll: DiceRollResult;
+  statBonus: number;
+  total: number;
+  success: boolean;
+  effect: EncounterEffect;
+  cardId: string;
+}
+
+export interface SoloRerollResolvedAction extends BaseAction {
+  type: "SOLO_REROLL_RESOLVED";
   stat: CheckStat;
   difficulty: number;
   roll: DiceRollResult;
@@ -168,6 +180,57 @@ export interface TableInteractionAction extends BaseAction {
   targetSeatId: string;
   effect: EncounterEffect | null;
   targetEffect?: EncounterEffect | null;
+  summary: string;
+}
+
+export type ShopServiceCost = {
+  salvage?: number;
+  heat?: number;
+  wounds?: number;
+  trophies?: number;
+};
+
+export type ShopServiceResult = {
+  salvageDelta?: number;
+  heatDelta?: number;
+  woundDelta?: number;
+  trophyDelta?: number;
+  gainGear?: GearItem;
+  discardGearId?: string;
+  note?: string;
+};
+
+export interface ShopServiceResolvedAction extends BaseAction {
+  type: "SHOP_SERVICE_RESOLVED";
+  serviceId: string;
+  serviceLabel: string;
+  shopName: string;
+  sectorId: string;
+  cost: ShopServiceCost;
+  result: ShopServiceResult;
+  summary: string;
+}
+
+export interface ShopStockRevealedAction extends BaseAction {
+  type: "SHOP_STOCK_REVEALED";
+  serviceId: string;
+  serviceLabel: string;
+  shopName: string;
+  sectorId: string;
+  cost: ShopServiceCost;
+  stock: GearItem[];
+  summary: string;
+}
+
+export interface ShopPurchaseResolvedAction extends BaseAction {
+  type: "SHOP_PURCHASE_RESOLVED";
+  serviceId: string;
+  shopName: string;
+  sectorId: string;
+  cardId: string;
+  cost: ShopServiceCost;
+  gainedGear: GearItem;
+  discardedStockIds: string[];
   summary: string;
 }
 
@@ -357,6 +420,7 @@ export type GameAction =
   | EnemyRollRequestedAction
   | DiceRollStartedAction
   | CheckRolledAction
+  | SoloRerollResolvedAction
   | CombatResolvedAction
   | ResolutionAppliedAction
   | ResolutionContinuedAction
@@ -368,6 +432,9 @@ export type GameAction =
   | UseGearAction
   | UseFollowerAction
   | TableInteractionAction
+  | ShopServiceResolvedAction
+  | ShopStockRevealedAction
+  | ShopPurchaseResolvedAction
   | AcceptContractAction
   | CompleteContractAction
   | ScenarioConfrontationRequestedAction
@@ -420,6 +487,10 @@ export type ClientIntent =
       seatId: string;
     }
   | {
+      type: "SOLO_REROLL_REQUESTED";
+      seatId: string;
+    }
+  | {
       type: "CONTINUE_RESOLUTION";
       seatId: string;
     }
@@ -459,6 +530,16 @@ export type ClientIntent =
       seatId: string;
       targetSeatId: string;
       interactionKind: "trade" | "aid" | "duel" | "interfere";
+    }
+  | {
+      type: "SHOP_SERVICE_REQUESTED";
+      seatId: string;
+      serviceId: string;
+    }
+  | {
+      type: "SHOP_PURCHASE_REQUESTED";
+      seatId: string;
+      cardId: string;
     }
   | {
       type: "ACCEPT_CONTRACT";

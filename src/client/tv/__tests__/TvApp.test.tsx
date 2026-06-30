@@ -218,6 +218,10 @@ describe("TvApp", () => {
     mockFetchSessionSummary.mockResolvedValue({
       roomCode: "RT7P4",
       sessionMode: "multiplayer",
+      gameMode: "standard",
+      interactionMode: "rivalry",
+      playerCount: 6,
+      seats: [],
       status: "lobby",
       phase: "start"
     });
@@ -225,7 +229,10 @@ describe("TvApp", () => {
       roomCode: "RT7P4",
       hostToken: "host:RT7P4:secret",
       sessionMode: "multiplayer",
-      scenarioId: "scenario_broken_seal"
+      gameMode: "standard",
+      interactionMode: "rivalry",
+      scenarioId: "scenario_broken_seal",
+      playerCount: 6
     });
     mockStartSession.mockResolvedValue(undefined);
     mockUseRoomSubscription.mockReturnValue({
@@ -253,6 +260,9 @@ describe("TvApp", () => {
     render(<TvApp />);
 
     await screen.findByText("Join QR RT7P4");
+    const banner = await screen.findByTestId("host-state-banner");
+    expect(banner).toHaveTextContent(/ready check/i);
+    expect(banner).toHaveTextContent(/all joined operatives are ready/i);
     expect(screen.getByText("Ashen Reach TV")).toBeInTheDocument();
     expect(mockUseRoomSubscription).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -361,8 +371,10 @@ describe("TvApp", () => {
   it("renders the create flow when nothing is stored", async () => {
     render(<TvApp />);
 
-    expect(await screen.findByRole("button", { name: /create multiplayer/i })).toBeInTheDocument();
+    const createMultiplayer = await screen.findByRole("button", { name: /create multiplayer/i });
+    expect(createMultiplayer).toBeDisabled();
     expect(screen.getByRole("button", { name: /create single-player/i })).toBeInTheDocument();
+    expect(screen.getByRole("region", { name: /mission protocol/i })).toHaveTextContent(/start game locked/i);
     expect(mockUseRoomSubscription).toHaveBeenCalledWith(
       expect.objectContaining({
         enabled: false
@@ -394,6 +406,7 @@ describe("TvApp", () => {
   it("stores room code after creating a session", async () => {
     render(<TvApp />);
 
+    fireEvent.click(await screen.findByRole("button", { name: /co-op/i }));
     fireEvent.click((await screen.findAllByRole("button", { name: /create multiplayer/i }))[0]!);
 
     await waitFor(() => {
@@ -407,17 +420,21 @@ describe("TvApp", () => {
       roomCode: "STAR1",
       hostToken: "host:STAR1:secret",
       sessionMode: "multiplayer",
-      scenarioId: "scenario_dying_star"
+      gameMode: "standard",
+      interactionMode: "rivalry",
+      scenarioId: "scenario_dying_star",
+      playerCount: 6
     });
 
     render(<TvApp />);
 
     const scenarioSelect = (await screen.findAllByRole("combobox"))[0]!;
     fireEvent.change(scenarioSelect, { target: { value: "scenario_dying_star" } });
+    fireEvent.click(screen.getByRole("button", { name: /rivalry/i }));
     fireEvent.click(screen.getAllByRole("button", { name: /create multiplayer/i })[0]!);
 
     await waitFor(() => {
-      expect(mockCreateSession).toHaveBeenCalledWith("multiplayer", "scenario_dying_star", "rivalry", "standard");
+      expect(mockCreateSession).toHaveBeenCalledWith("multiplayer", "scenario_dying_star", "rivalry", "standard", 6);
     });
   });
 
@@ -426,7 +443,10 @@ describe("TvApp", () => {
       roomCode: "STAR2",
       hostToken: "host:STAR2:secret",
       sessionMode: "single-player",
-      scenarioId: "scenario_dying_star"
+      gameMode: "standard",
+      interactionMode: "co-op",
+      scenarioId: "scenario_dying_star",
+      playerCount: 1
     });
 
     render(<TvApp />);
@@ -436,7 +456,7 @@ describe("TvApp", () => {
     fireEvent.click(screen.getByRole("button", { name: /create single-player/i }));
 
     await waitFor(() => {
-      expect(mockCreateSession).toHaveBeenCalledWith("single-player", "scenario_dying_star", "co-op", "standard");
+      expect(mockCreateSession).toHaveBeenCalledWith("single-player", "scenario_dying_star", "co-op", "standard", 1);
     });
   });
 
@@ -446,7 +466,9 @@ describe("TvApp", () => {
       hostToken: "host:RELAY:secret",
       sessionMode: "multiplayer",
       gameMode: "nemesis_relay",
-      scenarioId: "scenario_broken_seal"
+      interactionMode: "co-op",
+      scenarioId: "scenario_broken_seal",
+      playerCount: 4
     });
 
     render(<TvApp />);
@@ -456,7 +478,30 @@ describe("TvApp", () => {
     fireEvent.click(screen.getAllByRole("button", { name: /create multiplayer/i })[0]!);
 
     await waitFor(() => {
-      expect(mockCreateSession).toHaveBeenCalledWith("multiplayer", "scenario_broken_seal", "rivalry", "nemesis_relay");
+      expect(mockCreateSession).toHaveBeenCalledWith("multiplayer", "scenario_broken_seal", "co-op", "nemesis_relay", 4);
+    });
+  });
+
+  it("sends the selected multiplayer player count when creating a room", async () => {
+    mockCreateSession.mockResolvedValue({
+      roomCode: "DUO22",
+      hostToken: "host:DUO22:secret",
+      sessionMode: "multiplayer",
+      gameMode: "standard",
+      interactionMode: "co-op",
+      scenarioId: "scenario_broken_seal",
+      playerCount: 2
+    });
+
+    render(<TvApp />);
+
+    const playerCountSelect = (await screen.findAllByRole("combobox"))[2]!;
+    fireEvent.change(playerCountSelect, { target: { value: "2" } });
+    fireEvent.click(screen.getByRole("button", { name: /co-op/i }));
+    fireEvent.click(screen.getAllByRole("button", { name: /create multiplayer/i })[0]!);
+
+    await waitFor(() => {
+      expect(mockCreateSession).toHaveBeenCalledWith("multiplayer", "scenario_broken_seal", "co-op", "standard", 2);
     });
   });
 
@@ -495,6 +540,9 @@ describe("TvApp", () => {
 
     expect((await screen.findAllByText(/the broken seal secured/i)).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/joel won the confrontation and secured the broken seal/i).length).toBeGreaterThan(0);
+    const banner = screen.getByTestId("host-state-banner");
+    expect(banner).toHaveTextContent(/game over/i);
+    expect(banner).toHaveTextContent(/joel secured the final outcome/i);
   });
 
   it("shows authored contract objective labels on the host operative card", async () => {
@@ -551,6 +599,9 @@ describe("TvApp", () => {
     render(<TvApp />);
 
     const overlay = await screen.findByTestId("host-battle-overlay");
+    const banner = screen.getByTestId("host-state-banner");
+    expect(banner).toHaveTextContent(/battle resolving/i);
+    expect(banner).toHaveTextContent(/cinder-veil stalker/i);
     expect(overlay).toHaveTextContent(/tarek voss/i);
     expect(overlay).toHaveTextContent(/cinder-veil stalker/i);
     expect(overlay).toHaveTextContent(/grit\s*2/i);
@@ -695,6 +746,9 @@ describe("TvApp", () => {
     render(<TvApp />);
 
     const overlay = await screen.findByTestId("host-shop-overlay");
+    const banner = screen.getByTestId("host-state-banner");
+    expect(banner).toHaveTextContent(/shop open/i);
+    expect(banner).toHaveTextContent(/anchor market/i);
     expect(overlay).toHaveTextContent(/shop encounter/i);
     expect(overlay).toHaveTextContent(/tarek voss/i);
     expect(overlay).toHaveTextContent(/anchor market/i);

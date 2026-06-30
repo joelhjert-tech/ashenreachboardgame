@@ -37,6 +37,9 @@ export type ImagePromptSpec = {
   prompt: string;
   negativePrompt: string;
   usage: string;
+  priority?: number;
+  releaseRequired?: boolean;
+  placeholderAllowed?: boolean;
 };
 
 export const requiredImageGenerationChecklist = [

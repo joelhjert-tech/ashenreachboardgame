@@ -212,20 +212,26 @@ describe("server API scenario flow", () => {
       roomCode: string;
       sessionMode: "single-player" | "multiplayer";
       scenarioId: string;
+      interactionMode: string;
+      playerCount: number;
       hostToken: string;
     }>(baseUrl, "/api/session/create", {
       sessionMode: "single-player",
-      scenarioId: "scenario_dying_star"
+      scenarioId: "scenario_dying_star",
+      interactionMode: "rivalry",
+      playerCount: 1
     });
 
     expect(response.status).toBe(200);
     expect(response.payload.sessionMode).toBe("single-player");
     expect(response.payload.scenarioId).toBe("scenario_dying_star");
+    expect(response.payload.interactionMode).toBe("co-op");
+    expect(response.payload.playerCount).toBe(1);
     expect(harness.roomServer.getState().activeScenarioId).toBe("scenario_dying_star");
     expect(harness.roomServer.getState().scenarioProgress).toEqual({ starTokens: 10 });
   });
 
-  it("falls back to the default scenario when an invalid scenario id is requested", async () => {
+  it("defaults to Broken Seal when no scenario id is requested", async () => {
     harness = await startAshenReachServer({ port: createTestPort(), logUrls: false });
     const baseUrl = `http://127.0.0.1:${harness.port}`;
 
@@ -236,13 +242,102 @@ describe("server API scenario flow", () => {
       hostToken: string;
     }>(baseUrl, "/api/session/create", {
       sessionMode: "multiplayer",
-      scenarioId: "scenario_not_real"
+      interactionMode: "co-op"
     });
 
     expect(response.status).toBe(200);
     expect(response.payload.scenarioId).toBe("scenario_broken_seal");
     expect(harness.roomServer.getState().activeScenarioId).toBe("scenario_broken_seal");
     expect(harness.roomServer.getState().scenarioProgress).toEqual({ sealTokens: 6 });
+  });
+
+  it("rejects multiplayer session creation until the host selects an interaction mode", async () => {
+    harness = await startAshenReachServer({ port: createTestPort(), logUrls: false });
+    const baseUrl = `http://127.0.0.1:${harness.port}`;
+
+    const response = await postJson<{ error: string }>(baseUrl, "/api/session/create", {
+      sessionMode: "multiplayer",
+      scenarioId: "scenario_broken_seal",
+      playerCount: 2
+    });
+
+    expect(response.status).toBe(400);
+    expect(response.payload.error).toContain("explicit interaction mode");
+  });
+
+  it("rejects an invalid scenario id instead of silently changing setup", async () => {
+    harness = await startAshenReachServer({ port: createTestPort(), logUrls: false });
+    const baseUrl = `http://127.0.0.1:${harness.port}`;
+
+    const response = await postJson<{ error: string }>(baseUrl, "/api/session/create", {
+      sessionMode: "multiplayer",
+      scenarioId: "scenario_not_real"
+    });
+
+    expect(response.status).toBe(400);
+    expect(response.payload.error).toContain("Invalid scenario id");
+  });
+
+  it("creates a configured multiplayer session with scenario, interaction mode, and player count", async () => {
+    harness = await startAshenReachServer({ port: createTestPort(), logUrls: false });
+    const baseUrl = `http://127.0.0.1:${harness.port}`;
+
+    const response = await postJson<{
+      roomCode: string;
+      sessionMode: "single-player" | "multiplayer";
+      interactionMode: string;
+      scenarioId: string;
+      playerCount: number;
+      hostToken: string;
+    }>(baseUrl, "/api/session/create", {
+      sessionMode: "multiplayer",
+      scenarioId: "scenario_devourer_beneath",
+      interactionMode: "co-op",
+      playerCount: 2
+    });
+
+    expect(response.status).toBe(200);
+    expect(response.payload.sessionMode).toBe("multiplayer");
+    expect(response.payload.interactionMode).toBe("co-op");
+    expect(response.payload.scenarioId).toBe("scenario_devourer_beneath");
+    expect(response.payload.playerCount).toBe(2);
+    expect(harness.roomServer.getState().seats).toHaveLength(2);
+    expect(harness.roomServer.getState().turnOrder).toHaveLength(2);
+    expect(harness.roomServer.getState().scenarioProgress).toEqual({ doomTokens: 0, devourerIndex: 0 });
+  });
+
+  it("rejects invalid player counts and mode combinations", async () => {
+    harness = await startAshenReachServer({ port: createTestPort(), logUrls: false });
+    const baseUrl = `http://127.0.0.1:${harness.port}`;
+
+    const tooFew = await postJson<{ error: string }>(baseUrl, "/api/session/create", {
+      sessionMode: "multiplayer",
+      playerCount: 1
+    });
+    const tooMany = await postJson<{ error: string }>(baseUrl, "/api/session/create", {
+      sessionMode: "multiplayer",
+      playerCount: 7
+    });
+    const relayTooMany = await postJson<{ error: string }>(baseUrl, "/api/session/create", {
+      sessionMode: "multiplayer",
+      gameMode: "nemesis_relay",
+      playerCount: 5
+    });
+    const relayRivalry = await postJson<{ error: string }>(baseUrl, "/api/session/create", {
+      sessionMode: "multiplayer",
+      gameMode: "nemesis_relay",
+      interactionMode: "rivalry",
+      playerCount: 2
+    });
+
+    expect(tooFew.status).toBe(400);
+    expect(tooFew.payload.error).toContain("2-6");
+    expect(tooMany.status).toBe(400);
+    expect(tooMany.payload.error).toContain("2-6");
+    expect(relayTooMany.status).toBe(400);
+    expect(relayTooMany.payload.error).toContain("1-4");
+    expect(relayRivalry.status).toBe(400);
+    expect(relayRivalry.payload.error).toContain("require co-op");
   });
 
   it("starts the selected scenario without losing the chosen seed", async () => {
@@ -287,6 +382,59 @@ describe("server API scenario flow", () => {
     expect(harness.roomServer.getState().scenarioProgress.engineModeIndex).toBe(1);
   });
 
+  it("marks ready through signed seat tokens and rejects legacy unsigned ready tokens", async () => {
+    harness = await startAshenReachServer({ port: createTestPort(), logUrls: false });
+    const baseUrl = `http://127.0.0.1:${harness.port}`;
+
+    const created = await postJson<{
+      roomCode: string;
+      sessionMode: "single-player" | "multiplayer";
+      scenarioId: string;
+      hostToken: string;
+    }>(baseUrl, "/api/session/create", {
+      sessionMode: "single-player",
+      scenarioId: "scenario_broken_seal"
+    });
+
+    const joined = await postJson<{
+      roomCode: string;
+      seatId: string;
+      seatToken: string;
+    }>(baseUrl, "/api/session/join", {
+      roomCode: created.payload.roomCode,
+      displayName: "Ready Tester",
+      characterId: "void-marshal"
+    });
+
+    const forgedReady = await postJson<{ error: string }>(baseUrl, "/api/session/ready", {
+      roomCode: created.payload.roomCode,
+      seatToken: `seat:${harness.roomServer.getState().sessionId}:${joined.payload.seatId}`,
+      ready: true
+    });
+
+    expect(forgedReady.status).toBe(403);
+    expect(forgedReady.payload.error).toContain("Invalid seat token");
+    expect(harness.roomServer.getState().seats.find((seat) => seat.seatId === joined.payload.seatId)?.ready).toBe(false);
+
+    const ready = await postJson<{
+      roomCode: string;
+      seatId: string;
+      ready: boolean;
+    }>(baseUrl, "/api/session/ready", {
+      roomCode: created.payload.roomCode,
+      seatToken: joined.payload.seatToken,
+      ready: true
+    });
+
+    expect(ready.status).toBe(200);
+    expect(ready.payload).toMatchObject({
+      roomCode: created.payload.roomCode,
+      seatId: joined.payload.seatId,
+      ready: true
+    });
+    expect(harness.roomServer.getState().seats.find((seat) => seat.seatId === joined.payload.seatId)?.ready).toBe(true);
+  });
+
   it("releases a pre-game character reservation through the leave endpoint", async () => {
     harness = await startAshenReachServer({ port: createTestPort(), logUrls: false });
     const baseUrl = `http://127.0.0.1:${harness.port}`;
@@ -298,7 +446,8 @@ describe("server API scenario flow", () => {
       hostToken: string;
     }>(baseUrl, "/api/session/create", {
       sessionMode: "multiplayer",
-      scenarioId: "scenario_broken_seal"
+      scenarioId: "scenario_broken_seal",
+      interactionMode: "rivalry"
     });
 
     const joined = await postJson<{
@@ -346,6 +495,69 @@ describe("server API scenario flow", () => {
     expect(rejoined.payload.seatId).toBe(joined.payload.seatId);
   });
 
+  it("lets same-machine controller tabs claim distinct direct seats and ready independently", async () => {
+    harness = await startAshenReachServer({ port: createTestPort(), logUrls: false });
+    const baseUrl = `http://127.0.0.1:${harness.port}`;
+
+    const created = await postJson<{
+      roomCode: string;
+      sessionMode: "single-player" | "multiplayer";
+      scenarioId: string;
+      playerCount: number;
+      hostToken: string;
+    }>(baseUrl, "/api/session/create", {
+      sessionMode: "multiplayer",
+      scenarioId: "scenario_broken_seal",
+      interactionMode: "rivalry",
+      playerCount: 2
+    });
+
+    const first = await postJson<{
+      roomCode: string;
+      seatId: string;
+      seatToken: string;
+    }>(baseUrl, "/api/session/join", {
+      roomCode: created.payload.roomCode,
+      displayName: "Tab One",
+      characterId: "void-marshal",
+      seatId: "seat-1"
+    });
+
+    const second = await postJson<{
+      roomCode: string;
+      seatId: string;
+      seatToken: string;
+    }>(baseUrl, "/api/session/join", {
+      roomCode: created.payload.roomCode,
+      displayName: "Tab Two",
+      characterId: "signal-witch",
+      seatId: "seat-2"
+    });
+
+    const firstReady = await postJson<{ ready: boolean; seatId: string }>(baseUrl, "/api/session/ready", {
+      roomCode: created.payload.roomCode,
+      seatToken: first.payload.seatToken,
+      ready: true
+    });
+    const secondReady = await postJson<{ ready: boolean; seatId: string }>(baseUrl, "/api/session/ready", {
+      roomCode: created.payload.roomCode,
+      seatToken: second.payload.seatToken,
+      ready: true
+    });
+
+    expect(first.status).toBe(200);
+    expect(second.status).toBe(200);
+    expect(first.payload.seatId).toBe("seat-1");
+    expect(second.payload.seatId).toBe("seat-2");
+    expect(first.payload.seatToken).not.toBe(second.payload.seatToken);
+    expect(firstReady.payload).toMatchObject({ seatId: "seat-1", ready: true });
+    expect(secondReady.payload).toMatchObject({ seatId: "seat-2", ready: true });
+    expect(harness.roomServer.getState().seats.map((seat) => [seat.seatId, seat.displayName, seat.ready])).toEqual([
+      ["seat-1", "Tab One", true],
+      ["seat-2", "Tab Two", true]
+    ]);
+  });
+
   it("can create every authored scenario through the API with matching seeded progress", async () => {
     for (const scenario of SCENARIOS) {
       harness = await startAshenReachServer({ port: createTestPort(), logUrls: false });
@@ -358,7 +570,8 @@ describe("server API scenario flow", () => {
         hostToken: string;
       }>(baseUrl, "/api/session/create", {
         sessionMode: "multiplayer",
-        scenarioId: scenario.id
+        scenarioId: scenario.id,
+        interactionMode: "co-op"
       });
 
       expect(response.status).toBe(200);

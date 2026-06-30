@@ -62,6 +62,18 @@ const inventoryGroupOrder: InventoryGroupLabel[] = [
   "Followers",
   "Quest Items"
 ];
+const RUMI_CHARACTER_ID = "char_rumi";
+const MIRA_FOLLOWER_ID = "mira-rift-twin";
+const ZOEY_FOLLOWER_ID = "zoey-thorn-violet";
+const miraRumiTeamBonus: Partial<Record<Stat, number>> = {
+  signal: 1,
+  guile: 1
+};
+const violetTriadTeamBonus: Partial<Record<Stat, number>> = {
+  grit: 1,
+  signal: 1,
+  guile: 1
+};
 
 function toTitleCase(value: string): string {
   return value.replace(/[_-]+/g, " ").replace(/\b\w/g, (character) => character.toUpperCase());
@@ -91,13 +103,32 @@ export function formatTimingWindow(window: InventoryTimingWindow): string {
 function getEquippedGearBonus(self: PhoneSelfState, stat: Stat): number {
   const equippedIds = new Set(Object.values(self.character.equippedGear).filter((value): value is string => Boolean(value)));
 
-  return self.character.heldGear.reduce((sum, item) => {
+  const gearBonus = self.character.heldGear.reduce((sum, item) => {
     if (!equippedIds.has(item.id) || item.statBonus.stat !== stat) {
       return sum;
     }
 
     return sum + item.statBonus.amount;
   }, 0);
+
+  return gearBonus + getCompanionStatBonus(self, stat);
+}
+
+function getCompanionStatBonus(self: PhoneSelfState, stat: Stat): number {
+  if (self.character.id !== RUMI_CHARACTER_ID) {
+    return 0;
+  }
+
+  const followerIds = new Set((self.character.followers ?? []).map((follower) => follower.id));
+
+  if (!followerIds.has(MIRA_FOLLOWER_ID)) {
+    return 0;
+  }
+
+  const miraBonus = miraRumiTeamBonus[stat] ?? 0;
+  const triadBonus = followerIds.has(ZOEY_FOLLOWER_ID) ? (violetTriadTeamBonus[stat] ?? 0) : 0;
+
+  return miraBonus + triadBonus;
 }
 
 function getActiveSeatId(patch: PhonePatchPayload): string | null {

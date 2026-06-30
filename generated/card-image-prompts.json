@@ -1,4 +1,4 @@
-﻿[
+[
   {
     "assetId": "threat_art_ash-choir-crusader",
     "assetType": "threatCardArt",
@@ -11,6 +11,19 @@
     "prompt": "Ashen Reach original card art, dark gothic sci-fantasy artifact-crawl, 3:4 portrait composition, centered subject with safe margins for card framing, black basalt, charcoal iron, scorched brass, ember red glow, cold blue-white signal light, toxic green salvage light, purple anomaly light, ash, smoke, ritual circuitry, damaged artifact machinery, high contrast, readable silhouette, cinematic but grounded, no text, central subject is Ash Choir Crusader, a living hostile with a clear full-body silhouette, elite horror or war-machine, dominant and oppressive, threat family Choir cultist or signal zealot, threat difficulty 8 driven by signal, regional hint middle, A crusader of the Ash Choir mistakes your pulse for a forbidden cadence and advances behind a bell shield, Each bell note lands before the blow, no gore closeup, hostile intent, broken artifact weaponry or predatory anatomy",
     "negativePrompt": "readable text, logo, watermark, UI, dice, card frame, board game brand, Talisman, copied fantasy board game art, copyrighted character, modern city, clean spaceship, cartoon, anime, low detail, blurry, cropped subject, overexposed, cluttered composition, illegible silhouette",
     "usage": "Ash Choir Crusader threat card art."
+  },
+  {
+    "assetId": "threat_art_ash-cinder-runt",
+    "assetType": "threatCardArt",
+    "cardId": "ash-cinder-runt",
+    "cardType": "threat",
+    "title": "Ash-Cinder Runt",
+    "fileName": "ash-cinder-runt.png",
+    "outputPath": "/assets/cards/threats/ash-cinder-runt.png",
+    "fallbackPath": "/assets/cards/fallbacks/threat.svg",
+    "prompt": "Ashen Reach original card art, dark gothic sci-fantasy artifact-crawl, 3:4 portrait composition, centered subject with safe margins for card framing, black basalt, charcoal iron, scorched brass, ember red glow, cold blue-white signal light, toxic green salvage light, purple anomaly light, ash, smoke, ritual circuitry, damaged artifact machinery, high contrast, readable silhouette, cinematic but grounded, no text, central subject is Ash-Cinder Runt, a living hostile with a clear full-body silhouette, small but dangerous presence, quick predator scale, threat family mutated hunting beast, threat difficulty 2 driven by grit, regional hint outer, A half-starved furnace beast noses through warm slag and snaps at anything carrying food, blood, or lamp oil, It is more smoke than muscle, but the teeth are real, no gore closeup, hostile intent, broken artifact weaponry or predatory anatomy",
+    "negativePrompt": "readable text, logo, watermark, UI, dice, card frame, board game brand, Talisman, copied fantasy board game art, copyrighted character, modern city, clean spaceship, cartoon, anime, low detail, blurry, cropped subject, overexposed, cluttered composition, illegible silhouette",
+    "usage": "Ash-Cinder Runt threat card art."
   },
   {
     "assetId": "threat_art_ash-court-duelist",
@@ -128,6 +141,19 @@
     "prompt": "Ashen Reach original card art, dark gothic sci-fantasy artifact-crawl, 3:4 portrait composition, centered subject with safe margins for card framing, black basalt, charcoal iron, scorched brass, ember red glow, cold blue-white signal light, toxic green salvage light, purple anomaly light, ash, smoke, ritual circuitry, damaged artifact machinery, high contrast, readable silhouette, cinematic but grounded, no text, central subject is the hazard itself, a dangerous place or event made readable at card size, elite horror or war-machine, dominant and oppressive, threat family machine, automaton, or judge-engine, threat difficulty 8 driven by forge, regional hint middle, A cracked survey lens catches the breach and pours the image straight through your tools, The machine sees too much and makes you share, motion, pressure, energy, environmental violence, avoid looking like a humanoid unless implied by the card",
     "negativePrompt": "readable text, logo, watermark, UI, dice, card frame, board game brand, Talisman, copied fantasy board game art, copyrighted character, modern city, clean spaceship, cartoon, anime, low detail, blurry, cropped subject, overexposed, cluttered composition, illegible silhouette",
     "usage": "Breach-Lens Overload threat card art."
+  },
+  {
+    "assetId": "threat_art_bridge-toll-runt",
+    "assetType": "threatCardArt",
+    "cardId": "bridge-toll-runt",
+    "cardType": "threat",
+    "title": "Bridge-Toll Runt",
+    "fileName": "bridge-toll-runt.png",
+    "outputPath": "/assets/cards/threats/bridge-toll-runt.png",
+    "fallbackPath": "/assets/cards/fallbacks/threat.svg",
+    "prompt": "Ashen Reach original card art, dark gothic sci-fantasy artifact-crawl, 3:4 portrait composition, centered subject with safe margins for card framing, black basalt, charcoal iron, scorched brass, ember red glow, cold blue-white signal light, toxic green salvage light, purple anomaly light, ash, smoke, ritual circuitry, damaged artifact machinery, high contrast, readable silhouette, cinematic but grounded, no text, central subject is Bridge-Toll Runt, a living hostile with a clear full-body silhouette, small but dangerous presence, quick predator scale, threat family supernatural bureaucracy or debt horror, threat difficulty 3 driven by command, regional hint outer, A junior collector in an oversized ledger mask blocks the lane and demands payment with trembling authority, The mask is official. The fear inside it is not, no gore closeup, hostile intent, broken artifact weaponry or predatory anatomy",
+    "negativePrompt": "readable text, logo, watermark, UI, dice, card frame, board game brand, Talisman, copied fantasy board game art, copyrighted character, modern city, clean spaceship, cartoon, anime, low detail, blurry, cropped subject, overexposed, cluttered composition, illegible silhouette",
+    "usage": "Bridge-Toll Runt threat card art."
   },
   {
     "assetId": "threat_art_broken-mast-collapse",
@@ -260,6 +286,32 @@
     "usage": "Copperjaw Vermin threat card art."
   },
   {
+    "assetId": "threat_art_cracked-censer-novice",
+    "assetType": "threatCardArt",
+    "cardId": "cracked-censer-novice",
+    "cardType": "threat",
+    "title": "Cracked-Censer Novice",
+    "fileName": "cracked-censer-novice.png",
+    "outputPath": "/assets/cards/threats/cracked-censer-novice.png",
+    "fallbackPath": "/assets/cards/fallbacks/threat.svg",
+    "prompt": "Ashen Reach original card art, dark gothic sci-fantasy artifact-crawl, 3:4 portrait composition, centered subject with safe margins for card framing, black basalt, charcoal iron, scorched brass, ember red glow, cold blue-white signal light, toxic green salvage light, purple anomaly light, ash, smoke, ritual circuitry, damaged artifact machinery, high contrast, readable silhouette, cinematic but grounded, no text, central subject is Cracked-Censer Novice, a living hostile with a clear full-body silhouette, small but dangerous presence, quick predator scale, threat family Choir cultist or signal zealot, threat difficulty 3 driven by signal, regional hint outer, A lost Choir novice swings a broken censer in uneven circles, broadcasting a hymn too weak to guide anyone home, The song is wrong, but not yet cruel, no gore closeup, hostile intent, broken artifact weaponry or predatory anatomy",
+    "negativePrompt": "readable text, logo, watermark, UI, dice, card frame, board game brand, Talisman, copied fantasy board game art, copyrighted character, modern city, clean spaceship, cartoon, anime, low detail, blurry, cropped subject, overexposed, cluttered composition, illegible silhouette",
+    "usage": "Cracked-Censer Novice threat card art."
+  },
+  {
+    "assetId": "threat_art_crown-bell-baron",
+    "assetType": "threatCardArt",
+    "cardId": "crown-bell-baron",
+    "cardType": "threat",
+    "title": "Crown-Bell Baron",
+    "fileName": "crown-bell-baron.png",
+    "outputPath": "/assets/cards/threats/crown-bell-baron.png",
+    "fallbackPath": "/assets/cards/fallbacks/threat.svg",
+    "prompt": "Ashen Reach original card art, dark gothic sci-fantasy artifact-crawl, 3:4 portrait composition, centered subject with safe margins for card framing, black basalt, charcoal iron, scorched brass, ember red glow, cold blue-white signal light, toxic green salvage light, purple anomaly light, ash, smoke, ritual circuitry, damaged artifact machinery, high contrast, readable silhouette, cinematic but grounded, no text, central subject is Crown-Bell Baron, a living hostile with a clear full-body silhouette, serious enemy or major hazard, memorable silhouette, threat family supernatural bureaucracy or debt horror, threat difficulty 7 driven by command, regional hint middle, A velvet-coated sector magnate arrives with brass writ-drones, fake civic authority, and a private mob that calls every route fee a public service, He never conquered a district. He invoiced it until it knelt, no gore closeup, hostile intent, broken artifact weaponry or predatory anatomy",
+    "negativePrompt": "readable text, logo, watermark, UI, dice, card frame, board game brand, Talisman, copied fantasy board game art, copyrighted character, modern city, clean spaceship, cartoon, anime, low detail, blurry, cropped subject, overexposed, cluttered composition, illegible silhouette",
+    "usage": "Crown-Bell Baron threat card art."
+  },
+  {
     "assetId": "threat_art_emberwatch-sparkfall",
     "assetType": "threatCardArt",
     "cardId": "emberwatch-sparkfall",
@@ -377,6 +429,19 @@
     "usage": "Glass Tick Cloud threat card art."
   },
   {
+    "assetId": "threat_art_glasswing-midge-cloud",
+    "assetType": "threatCardArt",
+    "cardId": "glasswing-midge-cloud",
+    "cardType": "threat",
+    "title": "Glasswing Midge Cloud",
+    "fileName": "glasswing-midge-cloud.png",
+    "outputPath": "/assets/cards/threats/glasswing-midge-cloud.png",
+    "fallbackPath": "/assets/cards/fallbacks/threat.svg",
+    "prompt": "Ashen Reach original card art, dark gothic sci-fantasy artifact-crawl, 3:4 portrait composition, centered subject with safe margins for card framing, black basalt, charcoal iron, scorched brass, ember red glow, cold blue-white signal light, toxic green salvage light, purple anomaly light, ash, smoke, ritual circuitry, damaged artifact machinery, high contrast, readable silhouette, cinematic but grounded, no text, central subject is Glasswing Midge Cloud, a living hostile with a clear full-body silhouette, small but dangerous presence, quick predator scale, threat family swarm or small scavenger vermin, threat difficulty 4 driven by signal, regional hint outer, A glittering cloud of glasswing midges gathers around signal lenses, scattering false reflections across the route, The swarm bites light before it bites skin, no gore closeup, hostile intent, broken artifact weaponry or predatory anatomy",
+    "negativePrompt": "readable text, logo, watermark, UI, dice, card frame, board game brand, Talisman, copied fantasy board game art, copyrighted character, modern city, clean spaceship, cartoon, anime, low detail, blurry, cropped subject, overexposed, cluttered composition, illegible silhouette",
+    "usage": "Glasswing Midge Cloud threat card art."
+  },
+  {
     "assetId": "threat_art_grave-lattice-reclaimer",
     "assetType": "threatCardArt",
     "cardId": "grave-lattice-reclaimer",
@@ -414,6 +479,19 @@
     "prompt": "Ashen Reach original card art, dark gothic sci-fantasy artifact-crawl, 3:4 portrait composition, centered subject with safe margins for card framing, black basalt, charcoal iron, scorched brass, ember red glow, cold blue-white signal light, toxic green salvage light, purple anomaly light, ash, smoke, ritual circuitry, damaged artifact machinery, high contrast, readable silhouette, cinematic but grounded, no text, central subject is Guardian Bridge Duelist, a living hostile with a clear full-body silhouette, local predator or raider threat, clearly lethal, threat family human faction fighter, threat difficulty 7 driven by command, regional hint outer, A bridge guardian lowers a ritual blade and permits passage only through formal challenge, The old rules survived because the old blades did, no gore closeup, hostile intent, broken artifact weaponry or predatory anatomy",
     "negativePrompt": "readable text, logo, watermark, UI, dice, card frame, board game brand, Talisman, copied fantasy board game art, copyrighted character, modern city, clean spaceship, cartoon, anime, low detail, blurry, cropped subject, overexposed, cluttered composition, illegible silhouette",
     "usage": "Guardian Bridge Duelist threat card art."
+  },
+  {
+    "assetId": "threat_art_gutter-bell-mite",
+    "assetType": "threatCardArt",
+    "cardId": "gutter-bell-mite",
+    "cardType": "threat",
+    "title": "Gutter-Bell Mite",
+    "fileName": "gutter-bell-mite.png",
+    "outputPath": "/assets/cards/threats/gutter-bell-mite.png",
+    "fallbackPath": "/assets/cards/fallbacks/threat.svg",
+    "prompt": "Ashen Reach original card art, dark gothic sci-fantasy artifact-crawl, 3:4 portrait composition, centered subject with safe margins for card framing, black basalt, charcoal iron, scorched brass, ember red glow, cold blue-white signal light, toxic green salvage light, purple anomaly light, ash, smoke, ritual circuitry, damaged artifact machinery, high contrast, readable silhouette, cinematic but grounded, no text, central subject is Gutter-Bell Mite, a living hostile with a clear full-body silhouette, small but dangerous presence, quick predator scale, threat family swarm or small scavenger vermin, threat difficulty 2 driven by signal, regional hint outer, A palm-sized brass mite clings to a signal gutter, ringing a tiny alarm whenever shadows move, A small bell can still wake the wrong thing, no gore closeup, hostile intent, broken artifact weaponry or predatory anatomy",
+    "negativePrompt": "readable text, logo, watermark, UI, dice, card frame, board game brand, Talisman, copied fantasy board game art, copyrighted character, modern city, clean spaceship, cartoon, anime, low detail, blurry, cropped subject, overexposed, cluttered composition, illegible silhouette",
+    "usage": "Gutter-Bell Mite threat card art."
   },
   {
     "assetId": "threat_art_hymn-scarred-zealot",
@@ -466,6 +544,32 @@
     "prompt": "Ashen Reach original card art, dark gothic sci-fantasy artifact-crawl, 3:4 portrait composition, centered subject with safe margins for card framing, black basalt, charcoal iron, scorched brass, ember red glow, cold blue-white signal light, toxic green salvage light, purple anomaly light, ash, smoke, ritual circuitry, damaged artifact machinery, high contrast, readable silhouette, cinematic but grounded, no text, central subject is Iron Synod Hunter, a living hostile with a clear full-body silhouette, local predator or raider threat, clearly lethal, threat family machine, automaton, or judge-engine, threat difficulty 8 driven by forge, regional hint outer, The Synod hunter names your equipment illegal and begins confiscation by force, Its warrant is stamped into the muzzle, no gore closeup, hostile intent, broken artifact weaponry or predatory anatomy",
     "negativePrompt": "readable text, logo, watermark, UI, dice, card frame, board game brand, Talisman, copied fantasy board game art, copyrighted character, modern city, clean spaceship, cartoon, anime, low detail, blurry, cropped subject, overexposed, cluttered composition, illegible silhouette",
     "usage": "Iron Synod Hunter threat card art."
+  },
+  {
+    "assetId": "threat_art_lalla-bubu-crownling",
+    "assetType": "threatCardArt",
+    "cardId": "lalla-bubu-crownling",
+    "cardType": "threat",
+    "title": "Lalla-Bubu Crownling",
+    "fileName": "lalla-bubu-crownling.png",
+    "outputPath": "/assets/cards/threats/lalla-bubu-crownling.png",
+    "fallbackPath": "/assets/cards/fallbacks/threat.svg",
+    "prompt": "Ashen Reach original card art, dark gothic sci-fantasy artifact-crawl, 3:4 portrait composition, centered subject with safe margins for card framing, black basalt, charcoal iron, scorched brass, ember red glow, cold blue-white signal light, toxic green salvage light, purple anomaly light, ash, smoke, ritual circuitry, damaged artifact machinery, high contrast, readable silhouette, cinematic but grounded, no text, central subject is Lalla-Bubu Crownling, a living hostile with a clear full-body silhouette, serious enemy or major hazard, memorable silhouette, threat family breachborn mirror-horror or breach creature, threat difficulty 7 driven by guile, regional hint middle, A toy-faced breach mascot waddles from the ash in a velvet cape and thorn crown, smiling as its stitched teeth count your fears aloud, The first mistake is laughing. The second is letting it hear you stop, no gore closeup, hostile intent, broken artifact weaponry or predatory anatomy",
+    "negativePrompt": "readable text, logo, watermark, UI, dice, card frame, board game brand, Talisman, copied fantasy board game art, copyrighted character, modern city, clean spaceship, cartoon, anime, low detail, blurry, cropped subject, overexposed, cluttered composition, illegible silhouette",
+    "usage": "Lalla-Bubu Crownling threat card art."
+  },
+  {
+    "assetId": "threat_art_lantern-ash-ghoul",
+    "assetType": "threatCardArt",
+    "cardId": "lantern-ash-ghoul",
+    "cardType": "threat",
+    "title": "Lantern-Ash Ghoul",
+    "fileName": "lantern-ash-ghoul.png",
+    "outputPath": "/assets/cards/threats/lantern-ash-ghoul.png",
+    "fallbackPath": "/assets/cards/fallbacks/threat.svg",
+    "prompt": "Ashen Reach original card art, dark gothic sci-fantasy artifact-crawl, 3:4 portrait composition, centered subject with safe margins for card framing, black basalt, charcoal iron, scorched brass, ember red glow, cold blue-white signal light, toxic green salvage light, purple anomaly light, ash, smoke, ritual circuitry, damaged artifact machinery, high contrast, readable silhouette, cinematic but grounded, no text, central subject is Lantern-Ash Ghoul, a living hostile with a clear full-body silhouette, small but dangerous presence, quick predator scale, threat family revenant, echo, or dead oathbound remnant, threat difficulty 3 driven by grit, regional hint outer, A thin ash-ghoul follows the warmth of your lamp, reaching more from need than malice, It was a person once. The Reach is full of once, no gore closeup, hostile intent, broken artifact weaponry or predatory anatomy",
+    "negativePrompt": "readable text, logo, watermark, UI, dice, card frame, board game brand, Talisman, copied fantasy board game art, copyrighted character, modern city, clean spaceship, cartoon, anime, low detail, blurry, cropped subject, overexposed, cluttered composition, illegible silhouette",
+    "usage": "Lantern-Ash Ghoul threat card art."
   },
   {
     "assetId": "threat_art_lantern-moth-swarm",
@@ -754,6 +858,19 @@
     "usage": "Rust Choir Peddlers threat card art."
   },
   {
+    "assetId": "threat_art_rust-mote-drone",
+    "assetType": "threatCardArt",
+    "cardId": "rust-mote-drone",
+    "cardType": "threat",
+    "title": "Rust-Mote Drone",
+    "fileName": "rust-mote-drone.png",
+    "outputPath": "/assets/cards/threats/rust-mote-drone.png",
+    "fallbackPath": "/assets/cards/fallbacks/threat.svg",
+    "prompt": "Ashen Reach original card art, dark gothic sci-fantasy artifact-crawl, 3:4 portrait composition, centered subject with safe margins for card framing, black basalt, charcoal iron, scorched brass, ember red glow, cold blue-white signal light, toxic green salvage light, purple anomaly light, ash, smoke, ritual circuitry, damaged artifact machinery, high contrast, readable silhouette, cinematic but grounded, no text, central subject is Rust-Mote Drone, a living hostile with a clear full-body silhouette, small but dangerous presence, quick predator scale, threat family machine, automaton, or judge-engine, threat difficulty 3 driven by forge, regional hint outer, A maintenance mote jitters from its cradle, welding sparks at ankle height while its logic wheel spins in panic, It remembers repair. It has forgotten permission, no gore closeup, hostile intent, broken artifact weaponry or predatory anatomy",
+    "negativePrompt": "readable text, logo, watermark, UI, dice, card frame, board game brand, Talisman, copied fantasy board game art, copyrighted character, modern city, clean spaceship, cartoon, anime, low detail, blurry, cropped subject, overexposed, cluttered composition, illegible silhouette",
+    "usage": "Rust-Mote Drone threat card art."
+  },
+  {
     "assetId": "threat_art_rust-plate-strider",
     "assetType": "threatCardArt",
     "cardId": "rust-plate-strider",
@@ -871,6 +988,19 @@
     "usage": "Smoke-Leech Clutch threat card art."
   },
   {
+    "assetId": "threat_art_soot-stained-cutpurse",
+    "assetType": "threatCardArt",
+    "cardId": "soot-stained-cutpurse",
+    "cardType": "threat",
+    "title": "Soot-Stained Cutpurse",
+    "fileName": "soot-stained-cutpurse.png",
+    "outputPath": "/assets/cards/threats/soot-stained-cutpurse.png",
+    "fallbackPath": "/assets/cards/fallbacks/threat.svg",
+    "prompt": "Ashen Reach original card art, dark gothic sci-fantasy artifact-crawl, 3:4 portrait composition, centered subject with safe margins for card framing, black basalt, charcoal iron, scorched brass, ember red glow, cold blue-white signal light, toxic green salvage light, purple anomaly light, ash, smoke, ritual circuitry, damaged artifact machinery, high contrast, readable silhouette, cinematic but grounded, no text, central subject is Soot-Stained Cutpurse, a living hostile with a clear full-body silhouette, small but dangerous presence, quick predator scale, threat family human faction fighter, threat difficulty 3 driven by guile, regional hint outer, A lone market thief trails you through lantern smoke, more hungry than brave and far too quick with a strap knife, In Ashen Reach, poverty learns ambush first, no gore closeup, hostile intent, broken artifact weaponry or predatory anatomy",
+    "negativePrompt": "readable text, logo, watermark, UI, dice, card frame, board game brand, Talisman, copied fantasy board game art, copyrighted character, modern city, clean spaceship, cartoon, anime, low detail, blurry, cropped subject, overexposed, cluttered composition, illegible silhouette",
+    "usage": "Soot-Stained Cutpurse threat card art."
+  },
+  {
     "assetId": "threat_art_specimen-null-arrives",
     "assetType": "threatCardArt",
     "cardId": "specimen-null-arrives",
@@ -962,6 +1092,19 @@
     "usage": "Throne-Soot Knight threat card art."
   },
   {
+    "assetId": "threat_art_toll-scrip-urchins",
+    "assetType": "threatCardArt",
+    "cardId": "toll-scrip-urchins",
+    "cardType": "threat",
+    "title": "Toll-Scrip Urchins",
+    "fileName": "toll-scrip-urchins.png",
+    "outputPath": "/assets/cards/threats/toll-scrip-urchins.png",
+    "fallbackPath": "/assets/cards/fallbacks/threat.svg",
+    "prompt": "Ashen Reach original card art, dark gothic sci-fantasy artifact-crawl, 3:4 portrait composition, centered subject with safe margins for card framing, black basalt, charcoal iron, scorched brass, ember red glow, cold blue-white signal light, toxic green salvage light, purple anomaly light, ash, smoke, ritual circuitry, damaged artifact machinery, high contrast, readable silhouette, cinematic but grounded, no text, central subject is Toll-Scrip Urchins, a living hostile with a clear full-body silhouette, small but dangerous presence, quick predator scale, threat family human faction fighter, threat difficulty 2 driven by guile, regional hint outer, A knot of soot-faced lane children flashes counterfeit toll charms and tries to cut your salvage straps, The smallest gangs know which pockets matter, no gore closeup, hostile intent, broken artifact weaponry or predatory anatomy",
+    "negativePrompt": "readable text, logo, watermark, UI, dice, card frame, board game brand, Talisman, copied fantasy board game art, copyrighted character, modern city, clean spaceship, cartoon, anime, low detail, blurry, cropped subject, overexposed, cluttered composition, illegible silhouette",
+    "usage": "Toll-Scrip Urchins threat card art."
+  },
+  {
     "assetId": "threat_art_tomb-gate-colossus",
     "assetType": "threatCardArt",
     "cardId": "tomb-gate-colossus",
@@ -1038,6 +1181,19 @@
     "prompt": "Ashen Reach original card art, dark gothic sci-fantasy artifact-crawl, 3:4 portrait composition, centered subject with safe margins for card framing, black basalt, charcoal iron, scorched brass, ember red glow, cold blue-white signal light, toxic green salvage light, purple anomaly light, ash, smoke, ritual circuitry, damaged artifact machinery, high contrast, readable silhouette, cinematic but grounded, no text, central subject is the hazard itself, a dangerous place or event made readable at card size, serious enemy or major hazard, memorable silhouette, threat family environmental hazard, threat difficulty 9 driven by guile, regional hint middle, Invisible threads map every step, tightening whenever the route is remembered wrong, The trap does not catch bodies. It catches decisions, motion, pressure, energy, environmental violence, avoid looking like a humanoid unless implied by the card",
     "negativePrompt": "readable text, logo, watermark, UI, dice, card frame, board game brand, Talisman, copied fantasy board game art, copyrighted character, modern city, clean spaceship, cartoon, anime, low detail, blurry, cropped subject, overexposed, cluttered composition, illegible silhouette",
     "usage": "Webglass Snarefield threat card art."
+  },
+  {
+    "assetId": "threat_art_wire-chewer-pack",
+    "assetType": "threatCardArt",
+    "cardId": "wire-chewer-pack",
+    "cardType": "threat",
+    "title": "Wire-Chewer Pack",
+    "fileName": "wire-chewer-pack.png",
+    "outputPath": "/assets/cards/threats/wire-chewer-pack.png",
+    "fallbackPath": "/assets/cards/fallbacks/threat.svg",
+    "prompt": "Ashen Reach original card art, dark gothic sci-fantasy artifact-crawl, 3:4 portrait composition, centered subject with safe margins for card framing, black basalt, charcoal iron, scorched brass, ember red glow, cold blue-white signal light, toxic green salvage light, purple anomaly light, ash, smoke, ritual circuitry, damaged artifact machinery, high contrast, readable silhouette, cinematic but grounded, no text, central subject is Wire-Chewer Pack, a living hostile with a clear full-body silhouette, small but dangerous presence, quick predator scale, threat family mutated hunting beast, threat difficulty 3 driven by forge, regional hint outer, A pack of cable-fed tunnel beasts gnaws at live conduit, twitching with stolen charge and bad decisions, They do not know what the wires do. They only know the wires sing, no gore closeup, hostile intent, broken artifact weaponry or predatory anatomy",
+    "negativePrompt": "readable text, logo, watermark, UI, dice, card frame, board game brand, Talisman, copied fantasy board game art, copyrighted character, modern city, clean spaceship, cartoon, anime, low detail, blurry, cropped subject, overexposed, cluttered composition, illegible silhouette",
+    "usage": "Wire-Chewer Pack threat card art."
   },
   {
     "assetId": "threat_art_yard-ghoul-welders",
@@ -1690,6 +1846,19 @@
     "usage": "Ember Burden Idol artifact card art."
   },
   {
+    "assetId": "artifact_art_artifact-fandiablos",
+    "assetType": "artifactCardArt",
+    "cardId": "artifact-fandiablos",
+    "cardType": "artifact",
+    "title": "Fandiablos",
+    "fileName": "artifact-fandiablos.png",
+    "outputPath": "/assets/cards/artifacts/artifact-fandiablos.png",
+    "fallbackPath": "/assets/cards/fallbacks/artifact.svg",
+    "prompt": "Ashen Reach original card art, dark gothic sci-fantasy artifact-crawl, 3:4 portrait composition, centered subject with safe margins for card framing, black basalt, charcoal iron, scorched brass, ember red glow, cold blue-white signal light, toxic green salvage light, purple anomaly light, ash, smoke, ritual circuitry, damaged artifact machinery, high contrast, readable silhouette, cinematic but grounded, no text, single artifact object centered in frame, dramatic lighting, strong silhouette, no hands unless necessary, artifact kind faction artifact, charge state 1, Ultimate Follower / Companion. Unique. A chaotic sacred flock of tiny breach-touched war-Chihuahuas joins the operative: scouting threats, swarming Grit battles, biting machine cabling, and sometimes causing Heat from pure battlefield enthusiasm, They came through the breach barking. The enemy line broke before command understood why, The Fandiablos flock answered the breach-whistle and joined the active operative as a unique ultimate companion, brass, black stone, glass, ember cores, blue-white signal lines",
+    "negativePrompt": "readable text, logo, watermark, UI, dice, card frame, board game brand, Talisman, copied fantasy board game art, copyrighted character, modern city, clean spaceship, cartoon, anime, low detail, blurry, cropped subject, overexposed, cluttered composition, illegible silhouette",
+    "usage": "Fandiablos artifact card art."
+  },
+  {
     "assetId": "artifact_art_artifact-gate-saint-key",
     "assetType": "artifactCardArt",
     "cardId": "artifact-gate-saint-key",
@@ -1729,6 +1898,19 @@
     "usage": "Last-Breath Rivet artifact card art."
   },
   {
+    "assetId": "artifact_art_artifact-lucy-hell-puppy",
+    "assetType": "artifactCardArt",
+    "cardId": "artifact-lucy-hell-puppy",
+    "cardType": "artifact",
+    "title": "Lucy, Hell Puppy",
+    "fileName": "artifact-lucy-hell-puppy.png",
+    "outputPath": "/assets/cards/artifacts/artifact-lucy-hell-puppy.png",
+    "fallbackPath": "/assets/cards/fallbacks/artifact.svg",
+    "prompt": "Ashen Reach original card art, dark gothic sci-fantasy artifact-crawl, 3:4 portrait composition, centered subject with safe margins for card framing, black basalt, charcoal iron, scorched brass, ember red glow, cold blue-white signal light, toxic green salvage light, purple anomaly light, ash, smoke, ritual circuitry, damaged artifact machinery, high contrast, readable silhouette, cinematic but grounded, no text, single artifact object centered in frame, dramatic lighting, strong silhouette, no hands unless necessary, artifact kind faction artifact, charge state 1, Legendary Follower / Companion. Unique. Lucy joins the operative as an ember-pawed hell puppy, marking battles, damage windows, and dangerous routes with cheerful fire, She has never met a battlefield she could not improve by wagging at it, Lucy bounded from the burning route and chose the active operative with terrifying joy, brass, black stone, glass, ember cores, blue-white signal lines",
+    "negativePrompt": "readable text, logo, watermark, UI, dice, card frame, board game brand, Talisman, copied fantasy board game art, copyrighted character, modern city, clean spaceship, cartoon, anime, low detail, blurry, cropped subject, overexposed, cluttered composition, illegible silhouette",
+    "usage": "Lucy, Hell Puppy artifact card art."
+  },
+  {
     "assetId": "artifact_art_artifact-marrow-route-key",
     "assetType": "artifactCardArt",
     "cardId": "artifact-marrow-route-key",
@@ -1742,6 +1924,19 @@
     "usage": "Marrow Route Key artifact card art."
   },
   {
+    "assetId": "artifact_art_artifact-mira-rift-twin",
+    "assetType": "artifactCardArt",
+    "cardId": "artifact-mira-rift-twin",
+    "cardType": "artifact",
+    "title": "Mira, Rift-Twin",
+    "fileName": "artifact-mira-rift-twin.png",
+    "outputPath": "/assets/cards/artifacts/artifact-mira-rift-twin.png",
+    "fallbackPath": "/assets/cards/fallbacks/artifact.svg",
+    "prompt": "Ashen Reach original card art, dark gothic sci-fantasy artifact-crawl, 3:4 portrait composition, centered subject with safe margins for card framing, black basalt, charcoal iron, scorched brass, ember red glow, cold blue-white signal light, toxic green salvage light, purple anomaly light, ash, smoke, ritual circuitry, damaged artifact machinery, high contrast, readable silhouette, cinematic but grounded, no text, single artifact object centered in frame, dramatic lighting, strong silhouette, no hands unless necessary, artifact kind faction artifact, charge state 1, Legendary Follower / Companion. Unique. Mira joins the operative as a violet breach duelist. If the operative is Rumi, their team bond grants +1 Signal and +1 Guile while Mira is following, Rumi cuts the first future. Mira waits in the second, Mira stepped through the violet split and joined the active operative as a legendary companion, brass, black stone, glass, ember cores, blue-white signal lines",
+    "negativePrompt": "readable text, logo, watermark, UI, dice, card frame, board game brand, Talisman, copied fantasy board game art, copyrighted character, modern city, clean spaceship, cartoon, anime, low detail, blurry, cropped subject, overexposed, cluttered composition, illegible silhouette",
+    "usage": "Mira, Rift-Twin artifact card art."
+  },
+  {
     "assetId": "artifact_art_artifact-mirror-reroll-token",
     "assetType": "artifactCardArt",
     "cardId": "artifact-mirror-reroll-token",
@@ -1753,6 +1948,19 @@
     "prompt": "Ashen Reach original card art, dark gothic sci-fantasy artifact-crawl, 3:4 portrait composition, centered subject with safe margins for card framing, black basalt, charcoal iron, scorched brass, ember red glow, cold blue-white signal light, toxic green salvage light, purple anomaly light, ash, smoke, ritual circuitry, damaged artifact machinery, high contrast, readable silhouette, cinematic but grounded, no text, single artifact object centered in frame, dramatic lighting, strong silhouette, no hands unless necessary, artifact kind faction artifact, charge state 1, A double-faced route coin that remembers a better failure, It lands on edge when the road is lying, Claimed the Mirror Reroll Token for a dangerous second chance, brass, black stone, glass, ember cores, blue-white signal lines",
     "negativePrompt": "readable text, logo, watermark, UI, dice, card frame, board game brand, Talisman, copied fantasy board game art, copyrighted character, modern city, clean spaceship, cartoon, anime, low detail, blurry, cropped subject, overexposed, cluttered composition, illegible silhouette",
     "usage": "Mirror Reroll Token artifact card art."
+  },
+  {
+    "assetId": "artifact_art_artifact-murkclaw-gravecrow",
+    "assetType": "artifactCardArt",
+    "cardId": "artifact-murkclaw-gravecrow",
+    "cardType": "artifact",
+    "title": "Murkclaw & Gravecrow",
+    "fileName": "artifact-murkclaw-gravecrow.png",
+    "outputPath": "/assets/cards/artifacts/artifact-murkclaw-gravecrow.png",
+    "fallbackPath": "/assets/cards/fallbacks/artifact.svg",
+    "prompt": "Ashen Reach original card art, dark gothic sci-fantasy artifact-crawl, 3:4 portrait composition, centered subject with safe margins for card framing, black basalt, charcoal iron, scorched brass, ember red glow, cold blue-white signal light, toxic green salvage light, purple anomaly light, ash, smoke, ritual circuitry, damaged artifact machinery, high contrast, readable silhouette, cinematic but grounded, no text, single artifact object centered in frame, dramatic lighting, strong silhouette, no hands unless necessary, artifact kind faction artifact, charge state 1, Legendary Follower / Companion. Unique. A breach-touched warcat and omen-crow pair joins the operative, scouting danger windows, rattling enemies, and marking routes that smell wrong, The cat sees what wants to eat you. The crow tells it where to wait, Murkclaw & Gravecrow padded out of the smoke and chose the active operative as their current bad decision, brass, black stone, glass, ember cores, blue-white signal lines",
+    "negativePrompt": "readable text, logo, watermark, UI, dice, card frame, board game brand, Talisman, copied fantasy board game art, copyrighted character, modern city, clean spaceship, cartoon, anime, low detail, blurry, cropped subject, overexposed, cluttered composition, illegible silhouette",
+    "usage": "Murkclaw & Gravecrow artifact card art."
   },
   {
     "assetId": "artifact_art_artifact-oath-chain-ledger",
@@ -1807,6 +2015,19 @@
     "usage": "Rift Anchor Spike artifact card art."
   },
   {
+    "assetId": "artifact_art_artifact-rune-eye-raven",
+    "assetType": "artifactCardArt",
+    "cardId": "artifact-rune-eye-raven",
+    "cardType": "artifact",
+    "title": "The Rune-Eye Raven",
+    "fileName": "artifact-rune-eye-raven.png",
+    "outputPath": "/assets/cards/artifacts/artifact-rune-eye-raven.png",
+    "fallbackPath": "/assets/cards/fallbacks/artifact.svg",
+    "prompt": "Ashen Reach original card art, dark gothic sci-fantasy artifact-crawl, 3:4 portrait composition, centered subject with safe margins for card framing, black basalt, charcoal iron, scorched brass, ember red glow, cold blue-white signal light, toxic green salvage light, purple anomaly light, ash, smoke, ritual circuitry, damaged artifact machinery, high contrast, readable silhouette, cinematic but grounded, no text, single artifact object centered in frame, dramatic lighting, strong silhouette, no hands unless necessary, artifact kind faction artifact, charge state 1, Legendary Follower / Companion. Unique. A three-eyed ash raven joins the operative, scouting threat draws, route choices, and bad omens before they become wounds, One eye sees the road. One eye sees the dead. The third waits for you to choose, The Rune-Eye Raven descended from the smoke and marked the active operative with a black route-feather, brass, black stone, glass, ember cores, blue-white signal lines",
+    "negativePrompt": "readable text, logo, watermark, UI, dice, card frame, board game brand, Talisman, copied fantasy board game art, copyrighted character, modern city, clean spaceship, cartoon, anime, low detail, blurry, cropped subject, overexposed, cluttered composition, illegible silhouette",
+    "usage": "The Rune-Eye Raven artifact card art."
+  },
+  {
     "assetId": "artifact_art_artifact-saintwire-splint",
     "assetType": "artifactCardArt",
     "cardId": "artifact-saintwire-splint",
@@ -1857,6 +2078,19 @@
     "prompt": "Ashen Reach original card art, dark gothic sci-fantasy artifact-crawl, 3:4 portrait composition, centered subject with safe margins for card framing, black basalt, charcoal iron, scorched brass, ember red glow, cold blue-white signal light, toxic green salvage light, purple anomaly light, ash, smoke, ritual circuitry, damaged artifact machinery, high contrast, readable silhouette, cinematic but grounded, no text, single artifact object centered in frame, dramatic lighting, strong silhouette, no hands unless necessary, artifact kind artifact object, charge state 1, A choir-grade salvage heart that still hums with route memory and old sanctifier charge, It remembers every convoy that died under its watch, Recovered the Yard Bellframe Core and pulled a Marshal Seal out of its locked relay housing, brass, black stone, glass, ember cores, blue-white signal lines",
     "negativePrompt": "readable text, logo, watermark, UI, dice, card frame, board game brand, Talisman, copied fantasy board game art, copyrighted character, modern city, clean spaceship, cartoon, anime, low detail, blurry, cropped subject, overexposed, cluttered composition, illegible silhouette",
     "usage": "Yard Bellframe Core artifact card art."
+  },
+  {
+    "assetId": "artifact_art_artifact-zoey-thorn-violet",
+    "assetType": "artifactCardArt",
+    "cardId": "artifact-zoey-thorn-violet",
+    "cardType": "artifact",
+    "title": "Zoey, Thorn-Violet",
+    "fileName": "artifact-zoey-thorn-violet.png",
+    "outputPath": "/assets/cards/artifacts/artifact-zoey-thorn-violet.png",
+    "fallbackPath": "/assets/cards/fallbacks/artifact.svg",
+    "prompt": "Ashen Reach original card art, dark gothic sci-fantasy artifact-crawl, 3:4 portrait composition, centered subject with safe margins for card framing, black basalt, charcoal iron, scorched brass, ember red glow, cold blue-white signal light, toxic green salvage light, purple anomaly light, ash, smoke, ritual circuitry, damaged artifact machinery, high contrast, readable silhouette, cinematic but grounded, no text, single artifact object centered in frame, dramatic lighting, strong silhouette, no hands unless necessary, artifact kind faction artifact, charge state 1, Legendary Follower / Companion. Unique. Zoey joins the operative as a violet breach duelist. If the operative is Rumi and Mira is also following, the Violet Triad grants an additional +1 Grit, +1 Signal, and +1 Guile, Rumi opens the wound. Mira holds the mirror. Zoey decides what survives, Zoey stepped from the violet storm and completed the triad around the active operative, brass, black stone, glass, ember cores, blue-white signal lines",
+    "negativePrompt": "readable text, logo, watermark, UI, dice, card frame, board game brand, Talisman, copied fantasy board game art, copyrighted character, modern city, clean spaceship, cartoon, anime, low detail, blurry, cropped subject, overexposed, cluttered composition, illegible silhouette",
+    "usage": "Zoey, Thorn-Violet artifact card art."
   },
   {
     "assetId": "scar_art_scar-wound-1",
@@ -2260,18 +2494,5 @@
     "prompt": "Ashen Reach original card art, dark gothic sci-fantasy artifact-crawl, 3:4 portrait composition, centered subject with safe margins for card framing, black basalt, charcoal iron, scorched brass, ember red glow, cold blue-white signal light, toxic green salvage light, purple anomaly light, ash, smoke, ritual circuitry, damaged artifact machinery, high contrast, readable silhouette, cinematic but grounded, no text, global disaster event, breach widening, collapsing routes, corrupted signal storm, burning shrine, sector-wide panic, escalation step 3, pressure shift -1, Your last route repeats behind you with too many shadows and one of them knows the way forward, Never trust a footprint that arrives before you do, Pinned the afterimage to a false route and cut the real signal free, wider, high-drama composition that still works in portrait framing",
     "negativePrompt": "readable text, logo, watermark, UI, dice, card frame, board game brand, Talisman, copied fantasy board game art, copyrighted character, modern city, clean spaceship, cartoon, anime, low detail, blurry, cropped subject, overexposed, cluttered composition, illegible silhouette",
     "usage": "Webglass Afterimage escalation card art."
-  },
-  {
-    "assetId": "artifact_art_artifact-fandiablos",
-    "assetType": "artifactCardArt",
-    "cardId": "artifact-fandiablos",
-    "cardType": "artifact",
-    "title": "Fandiablos",
-    "fileName": "artifact-fandiablos.png",
-    "outputPath": "/assets/cards/artifacts/artifact-fandiablos.png",
-    "fallbackPath": "/assets/cards/fallbacks/artifact.svg",
-    "prompt": "Ashen Reach original card art, dark gothic sci-fantasy artifact-crawl, 3:4 portrait composition, centered subject with safe margins for card framing, black basalt, charcoal iron, scorched brass, ember red glow, cold blue-white signal light, toxic green salvage light, purple anomaly light, ash, smoke, ritual circuitry, damaged artifact machinery, high contrast, readable silhouette, cinematic but grounded, no text, a heroic operative surrounded by a unruly sacred flock of tiny armored Chihuahuas, miniature ward collars, goggles, scraps of black-gold armor, tiny glowing sigils, cute but fierce war-dogs barking into smoke and sparks inside a ruined gothic-industrial battlefield",
-    "negativePrompt": "readable text, logo, watermark, UI, dice, card frame, board game brand, Talisman, copied fantasy board game art, copyrighted character, modern city, clean spaceship, cartoon, anime, low detail, blurry, cropped subject, overexposed, cluttered composition, illegible silhouette",
-    "usage": "Fandiablos ultimate companion artifact card art."
   }
 ]

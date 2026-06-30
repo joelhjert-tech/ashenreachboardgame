@@ -26,7 +26,7 @@ export function calculateExplorationDraws(
   space: BoardSpaceDefinition,
   containedThreatCards: BoardThreatCard[]
 ): ExplorationDrawCounts {
-  if (space.tier === "inner" || space.tier === "center") {
+  if (space.tier === "center") {
     return { red: 0, blue: 0, yellow: 0 };
   }
 

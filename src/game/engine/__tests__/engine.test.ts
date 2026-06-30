@@ -658,6 +658,7 @@ function createState(overrides: Partial<GameState> = {}): GameState {
       }
     ],
     availableContracts: contracts,
+    shopStockReveals: [],
     nemesisChampions: [],
     nemesisNexusCountdowns: [],
     eventLog: [],
@@ -903,6 +904,116 @@ describe("active resolution visibility state", () => {
     });
     expect(rolled.state.players[0]?.character.heat).toBe(0);
     expect(rolled.state.pendingEffect).toEqual({ type: "gain_heat", amount: 1 });
+  });
+
+  it("lets a single-player operative use one visible failed-check reroll per round", () => {
+    const state = withOnlyConnectedSeat(
+      createState({
+        sessionMode: "single-player",
+        phase: "action",
+        turnOrder: ["seat-1"],
+        soloRerollCharges: { "seat-1": 1 },
+        currentEncounter: createThreats().get("signal-static") ?? null
+      }),
+      "seat-1"
+    );
+    const sent: Array<Record<string, unknown>> = [];
+    const server = new GameRoomServer(
+      state,
+      [],
+      createSequenceRandomSource([0, 0, 5, 5]),
+      createThreats(),
+      createCharacters(),
+      createGear(),
+      createContracts()
+    );
+    const client = createCapturingClient("seat-1", sent);
+
+    server.handleIntent(client, { type: "CHECK_REQUESTED", seatId: "seat-1", stat: "signal" });
+    server.handleIntent(client, { type: "CHECK_REQUESTED", seatId: "seat-1", stat: "signal" });
+
+    expect(server.getState().activeResolution?.roll).toMatchObject({
+      dice: [1, 1],
+      success: false
+    });
+    expect((createPhoneProjection(server.getState(), "seat-1") as { soloReroll?: { available: boolean; charges: number } }).soloReroll).toEqual({
+      available: true,
+      charges: 1
+    });
+
+    server.handleIntent(client, { type: "SOLO_REROLL_REQUESTED", seatId: "seat-1" });
+
+    expect(server.getState().soloRerollCharges?.["seat-1"]).toBe(0);
+    expect(server.getState().activeResolution?.roll).toMatchObject({
+      dice: [6, 6],
+      success: true
+    });
+    expect((createPhoneProjection(server.getState(), "seat-1") as { soloReroll?: { available: boolean; charges: number } }).soloReroll).toEqual({
+      available: false,
+      charges: 0
+    });
+
+    server.handleIntent(client, { type: "SOLO_REROLL_REQUESTED", seatId: "seat-1" });
+    expect(sent.some((message) => message.type === "INTENT_REJECTED")).toBe(true);
+
+    const reset = reduceGameState(server.getState(), {
+      type: "ROUND_COMPLETED",
+      seatId: "seat-1",
+      createdAt: "2026-06-28T00:00:00.000Z"
+    });
+
+    expect(reset.ok).toBe(true);
+    if (reset.ok) {
+      expect(reset.state.soloRerollCharges?.["seat-1"]).toBe(1);
+    }
+  });
+
+  it("rejects solo emergency rerolls in multiplayer", () => {
+    const state = withOnlyConnectedSeat(
+      createState({
+        sessionMode: "multiplayer",
+        phase: "resolution",
+        currentEncounter: createThreats().get("signal-static") ?? null,
+        activeResolution: {
+          id: "seat-1:threat:signal-static:failed",
+          playerId: "seat-1",
+          source: "threat",
+          stage: "roll_result",
+          card: {
+            id: "signal-static",
+            title: "Signal Static",
+            type: "hazard"
+          },
+          roll: {
+            dice: [1, 1],
+            baseTotal: 2,
+            modifierTotal: 1,
+            finalTotal: 3,
+            target: 7,
+            success: false
+          }
+        }
+      }),
+      "seat-1"
+    );
+    const sent: Array<Record<string, unknown>> = [];
+    const server = new GameRoomServer(
+      state,
+      [],
+      createSequenceRandomSource([5, 5]),
+      createThreats(),
+      createCharacters(),
+      createGear(),
+      createContracts()
+    );
+
+    server.handleIntent(createCapturingClient("seat-1", sent), { type: "SOLO_REROLL_REQUESTED", seatId: "seat-1" });
+
+    expect(sent.some((message) => message.type === "INTENT_REJECTED" && String(message.reason).includes("single-player"))).toBe(true);
+    expect((createPhoneProjection(server.getState(), "seat-1") as { soloReroll?: { available: boolean; charges: number } }).soloReroll).toEqual({
+      available: false,
+      charges: 0
+    });
   });
 
   it("keeps resolution visible until continue reaches an outcome stage", () => {
@@ -1155,6 +1266,260 @@ describe("active resolution visibility state", () => {
       status: "open"
     });
     expect(tvProjection.shopEncounter?.services.some((service) => service.id === "buy-gear")).toBe(true);
+  });
+
+  it("resolves an open shop service as a real transaction", () => {
+    const baseState = createState({ sessionMode: "single-player" });
+    const server = new GameRoomServer(
+      createState({
+        ...baseState,
+        sessionMode: "single-player",
+        phase: "action",
+        turnOrder: ["seat-1"],
+        activeSeatIndex: 0,
+        currentEncounter: null,
+        pendingEnemyRoll: null,
+        pendingEffect: null,
+        players: baseState.players.map((player) =>
+          player.seatId === "seat-1"
+            ? {
+                ...player,
+                sectorId: "outer_waymarket",
+                character: {
+                  ...player.character,
+                  currentSpaceId: "outer_waymarket",
+                  salvage: 6,
+                  heldGear: []
+                }
+              }
+            : player
+        ),
+        sectors: baseState.sectors.map((sector) =>
+          sector.id === "outer_waymarket"
+            ? {
+                ...sector,
+                encounterDecks: { ...sector.encounterDecks, threat: [] }
+              }
+            : sector
+        )
+      }),
+      [],
+      createSequenceRandomSource([]),
+      createThreats(),
+      createCharacters(),
+      createGear(),
+      createContracts()
+    );
+
+    const sent: Array<Record<string, unknown>> = [];
+    const client = createCapturingClient("seat-1", sent);
+    server.handleIntent(client, {
+      type: "SHOP_SERVICE_REQUESTED",
+      seatId: "seat-1",
+      serviceId: "buy-gear"
+    });
+
+    expect(sent.find((message) => message.type === "INTENT_REJECTED")).toBeUndefined();
+    const reveal = server.getState().shopStockReveals.find(
+      (entry) => entry.seatId === "seat-1" && entry.sectorId === "outer_waymarket"
+    );
+    expect(reveal?.stockIds.length).toBeGreaterThan(0);
+
+    const selectedCardId = reveal?.stockIds[0];
+
+    if (!selectedCardId) {
+      throw new Error("Expected shop stock reveal to include at least one card");
+    }
+
+    server.handleIntent(client, {
+      type: "SHOP_PURCHASE_REQUESTED",
+      seatId: "seat-1",
+      cardId: selectedCardId
+    });
+
+    const player = server.getState().players.find((entry) => entry.seatId === "seat-1");
+
+    expect(sent.find((message) => message.type === "INTENT_REJECTED")).toBeUndefined();
+    expect(player?.character.salvage).toBe(3);
+    expect(player?.character.heldGear).toHaveLength(1);
+    expect(server.getState().lastOutcomeSummary?.summary).toMatch(/Bought/i);
+    expect(server.getState().eventLog.at(-1)).toMatchObject({
+      type: "SHOP_PURCHASE_RESOLVED",
+      serviceId: "buy-gear",
+      cardId: selectedCardId
+    });
+  });
+
+  it("covers shop service transactions, affordability gates, and locked-shop rejection", () => {
+    const createShopServer = (options: {
+      sectorId: string;
+      salvage: number;
+      heat?: number;
+      wounds?: number;
+      heldGear?: GearItem[];
+      currentEncounterId?: string;
+    }) => {
+      const baseState = createState({ sessionMode: "single-player" });
+      const encounter = options.currentEncounterId ? createThreats().get(options.currentEncounterId) ?? null : null;
+      const sent: Array<Record<string, unknown>> = [];
+      const server = new GameRoomServer(
+        createState({
+          ...baseState,
+          sessionMode: "single-player",
+          phase: "action",
+          turnOrder: ["seat-1"],
+          activeSeatIndex: 0,
+          currentEncounter: encounter,
+          pendingEnemyRoll: null,
+          pendingEffect: null,
+          players: baseState.players.map((player) =>
+            player.seatId === "seat-1"
+              ? {
+                  ...player,
+                  sectorId: options.sectorId,
+                  private: { ...player.private, notes: [] },
+                  character: {
+                    ...player.character,
+                    currentSpaceId: options.sectorId,
+                    salvage: options.salvage,
+                    heat: options.heat ?? 0,
+                    wounds: options.wounds ?? 0,
+                    heldGear: options.heldGear ?? []
+                  }
+                }
+              : player
+          )
+        }),
+        [],
+        createSequenceRandomSource([]),
+        createThreats(),
+        createCharacters(),
+        createGear(),
+        createContracts()
+      );
+
+      return {
+        server,
+        sent,
+        client: createCapturingClient("seat-1", sent)
+      };
+    };
+
+    const gearCatalog = createGear();
+    const veilHook = gearCatalog.get("veil-hook");
+
+    if (!veilHook) {
+      throw new Error("Missing veil-hook fixture");
+    }
+
+    const sold = createShopServer({
+      sectorId: "outer_waymarket",
+      salvage: 1,
+      heldGear: [veilHook]
+    });
+    sold.server.handleIntent(sold.client, {
+      type: "SHOP_SERVICE_REQUESTED",
+      seatId: "seat-1",
+      serviceId: "sell-gear"
+    });
+
+    expect(sold.sent.find((message) => message.type === "INTENT_REJECTED")).toBeUndefined();
+    expect(sold.server.getState().players[0]?.character.salvage).toBe(3);
+    expect(sold.server.getState().players[0]?.character.heldGear).toEqual([]);
+
+    const repaired = createShopServer({ sectorId: "kettleward-foundry", salvage: 3 });
+    repaired.server.handleIntent(repaired.client, {
+      type: "SHOP_SERVICE_REQUESTED",
+      seatId: "seat-1",
+      serviceId: "repair-gear"
+    });
+
+    expect(repaired.sent.find((message) => message.type === "INTENT_REJECTED")).toBeUndefined();
+    expect(repaired.server.getState().players[0]?.character.salvage).toBe(1);
+    expect(repaired.server.getState().players[0]?.private.notes.at(-1)).toContain("gear repair");
+
+    const supplied = createShopServer({ sectorId: "kettleward-foundry", salvage: 3 });
+    supplied.server.handleIntent(supplied.client, {
+      type: "SHOP_SERVICE_REQUESTED",
+      seatId: "seat-1",
+      serviceId: "buy-supplies"
+    });
+
+    expect(supplied.sent.find((message) => message.type === "INTENT_REJECTED")).toBeUndefined();
+    expect(supplied.server.getState().players[0]?.character.salvage).toBe(2);
+    expect(supplied.server.getState().players[0]?.private.notes.at(-1)).toContain("supply crate");
+
+    const treated = createShopServer({ sectorId: "outer_ember_sanctum", salvage: 4, wounds: 2 });
+    treated.server.handleIntent(treated.client, {
+      type: "SHOP_SERVICE_REQUESTED",
+      seatId: "seat-1",
+      serviceId: "buy-treatment"
+    });
+
+    expect(treated.sent.find((message) => message.type === "INTENT_REJECTED")).toBeUndefined();
+    expect(treated.server.getState().players[0]?.character.salvage).toBe(2);
+    expect(treated.server.getState().players[0]?.character.wounds).toBe(1);
+
+    const blessed = createShopServer({ sectorId: "outer_ember_sanctum", salvage: 4, heat: 2 });
+    blessed.server.handleIntent(blessed.client, {
+      type: "SHOP_SERVICE_REQUESTED",
+      seatId: "seat-1",
+      serviceId: "buy-boon"
+    });
+
+    expect(blessed.sent.find((message) => message.type === "INTENT_REJECTED")).toBeUndefined();
+    expect(blessed.server.getState().players[0]?.character.salvage).toBe(2);
+    expect(blessed.server.getState().players[0]?.character.heat).toBe(1);
+
+    const unaffordableService = createShopServer({ sectorId: "kettleward-foundry", salvage: 0 });
+    unaffordableService.server.handleIntent(unaffordableService.client, {
+      type: "SHOP_SERVICE_REQUESTED",
+      seatId: "seat-1",
+      serviceId: "repair-gear"
+    });
+
+    expect(unaffordableService.sent.find((message) => message.type === "INTENT_REJECTED")).toMatchObject({
+      reason: "Not enough Salvage"
+    });
+
+    const unaffordablePurchase = createShopServer({ sectorId: "outer_surgery_tent", salvage: 2 });
+    unaffordablePurchase.server.handleIntent(unaffordablePurchase.client, {
+      type: "SHOP_SERVICE_REQUESTED",
+      seatId: "seat-1",
+      serviceId: "risk-action"
+    });
+    const reveal = unaffordablePurchase.server.getState().shopStockReveals.find((entry) => entry.seatId === "seat-1");
+    const selectedCardId = reveal?.stockIds[0];
+
+    if (!selectedCardId) {
+      throw new Error("Expected shop stock reveal for affordability test");
+    }
+
+    unaffordablePurchase.server.handleIntent(unaffordablePurchase.client, {
+      type: "SHOP_PURCHASE_REQUESTED",
+      seatId: "seat-1",
+      cardId: selectedCardId
+    });
+
+    expect(unaffordablePurchase.sent.find((message) => message.type === "INTENT_REJECTED")).toMatchObject({
+      reason: "Not enough Salvage"
+    });
+    expect(unaffordablePurchase.server.getState().players[0]?.character.heldGear).toEqual([]);
+
+    const locked = createShopServer({
+      sectorId: "outer_waymarket",
+      salvage: 6,
+      currentEncounterId: "cinder-veil-stalker"
+    });
+    locked.server.handleIntent(locked.client, {
+      type: "SHOP_SERVICE_REQUESTED",
+      seatId: "seat-1",
+      serviceId: "buy-gear"
+    });
+
+    expect(locked.sent.find((message) => message.type === "INTENT_REJECTED")).toMatchObject({
+      reason: "Clear the local threat before using shop services"
+    });
   });
 
   it("renders space-text check rolls through activeResolution", () => {
@@ -1722,6 +2087,53 @@ describe("active objects and table interaction", () => {
 
     expect(server.getState().players.find((entry) => entry.seatId === "seat-2")?.character.heat).toBe(0);
     expect(sent.some((message) => message.type === "INTENT_REJECTED")).toBe(true);
+  });
+
+  it("rejects duel and interfere actions in co-op mode", () => {
+    const sent: Array<Record<string, unknown>> = [];
+    const server = new GameRoomServer(
+      createState({ interactionMode: "co-op" }),
+      [],
+      createSequenceRandomSource([0]),
+      createThreats(),
+      createCharacters(),
+      createGear(),
+      createContracts()
+    );
+
+    server.handleIntent(createCapturingClient("seat-1", sent), {
+      type: "TABLE_INTERACTION",
+      seatId: "seat-1",
+      targetSeatId: "seat-2",
+      interactionKind: "duel"
+    });
+
+    expect(server.getState().eventLog.some((event) => (event as { type?: string }).type === "TABLE_INTERACTION")).toBe(false);
+    expect(sent.some((message) => message.type === "INTENT_REJECTED" && String(message.reason).includes("Co-op mode"))).toBe(true);
+  });
+
+  it("allows duel actions in rivalry mode when the target has not been pressured this round", () => {
+    const sent: Array<Record<string, unknown>> = [];
+    const server = new GameRoomServer(
+      createState({ interactionMode: "rivalry" }),
+      [],
+      createSequenceRandomSource([0]),
+      createThreats(),
+      createCharacters(),
+      createGear(),
+      createContracts()
+    );
+
+    server.handleIntent(createCapturingClient("seat-1", sent), {
+      type: "TABLE_INTERACTION",
+      seatId: "seat-1",
+      targetSeatId: "seat-2",
+      interactionKind: "duel"
+    });
+
+    expect(sent.some((message) => message.type === "INTENT_REJECTED")).toBe(false);
+    expect(server.getState().eventLog.some((event) => (event as { type?: string }).type === "TABLE_INTERACTION")).toBe(true);
+    expect(server.getState().lastOutcomeSummary?.summary).toContain("bounded rivalry");
   });
 });
 

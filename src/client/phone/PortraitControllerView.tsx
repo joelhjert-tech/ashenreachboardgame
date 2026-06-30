@@ -1,9 +1,10 @@
 import { useState, type ReactElement } from "react";
 import { getCharacterPortraitPath, getPhoneBackgroundPath } from "../shared/assetPaths.js";
+import { GameButton } from "../shared/GameButton.js";
 import { formatSeatLabel, statLabelById, statOrder } from "../shared/statLabels.js";
 import type { CharacterCatalogEntry, ClientIntent, ContractCard, NemesisChampionSummary, PhonePatchPayload, PhoneSelfState } from "../shared/types.js";
 import { PhoneInventoryPanel } from "./PhoneInventoryPanel.js";
-import { PhoneActionPanel } from "./PhoneActionPanel.js";
+import { PhoneActionPanel, type TurnActionTab } from "./PhoneActionPanel.js";
 
 interface PortraitControllerViewProps {
   self: PhoneSelfState | null;
@@ -17,6 +18,52 @@ interface PortraitControllerViewProps {
   onIntent: ((intent: ClientIntent) => void) | null;
   onLeave: () => void;
   onLobbyBack?: () => void;
+}
+
+type PortraitTab = "player" | "inventory" | "quests" | TurnActionTab;
+
+const turnActionTabs: TurnActionTab[] = ["move", "battle", "shop", "action"];
+
+function isTurnActionTab(tab: PortraitTab): tab is TurnActionTab {
+  return turnActionTabs.includes(tab as TurnActionTab);
+}
+
+function getActionTabState(
+  tab: TurnActionTab,
+  patch: PhonePatchPayload | null
+): { disabled: boolean; locked?: boolean } {
+  if (!patch?.self) {
+    return { disabled: true };
+  }
+
+  const isActiveSeat = patch.turnOrder[patch.activeSeatIndex] === patch.self.seatId;
+  const shopLocked = Boolean(
+    patch.shopEncounter &&
+      (patch.shopEncounter.status === "locked" || patch.shopEncounter.blockingThreats.length > 0)
+  );
+
+  switch (tab) {
+    case "move":
+      return {
+        disabled: !(
+          (patch.movementPlanner?.active && patch.movementPlanner.destinations.length > 0) ||
+          (isActiveSeat && patch.phase === "navigation")
+        )
+      };
+    case "battle":
+      return {
+        disabled: !(patch.activeResolution || patch.pendingEnemyRoll || patch.encounter)
+      };
+    case "shop":
+      return {
+        disabled: !patch.shopEncounter,
+        locked: shopLocked
+      };
+    case "action":
+      return {
+        disabled: false
+      };
+  }
 }
 
 function BoundNemesisPanel({
@@ -97,7 +144,7 @@ export function PortraitControllerView({
   onLeave,
   onLobbyBack
 }: PortraitControllerViewProps): ReactElement {
-  const [activeTab, setActiveTab] = useState<"player" | "inventory" | "quests" | "log">("player");
+  const [activeTab, setActiveTab] = useState<PortraitTab>("player");
 
   if (!self) {
     return (
@@ -120,8 +167,6 @@ export function PortraitControllerView({
   const activeContractProgress = activeContractCard && self.character.activeContract
     ? `${self.character.activeContract.progress}`
     : null;
-  const notes = self.notes ?? [];
-  const latestOutcome = patch?.outcomeSummary ?? null;
   const localUnboundNemeses = (patch?.nemesisChampions ?? []).filter(
     (nemesis) => nemesis.boundPlayerId !== self.seatId && nemesis.sectorId === self.character.currentSpaceId && !nemesis.defeated
   );
@@ -161,28 +206,6 @@ export function PortraitControllerView({
                 ))}
               </div>
 
-              <section className="phone-character-waiting-section">
-                <h3>Special Abilities</h3>
-                {abilityText.length > 0 ? (
-                  abilityText.map((ability) => <p key={ability}>{ability}</p>)
-                ) : (
-                  <p>No special ability text is recorded for this character.</p>
-                )}
-              </section>
-
-              <section className="phone-character-waiting-section">
-                <h3>Starting Equipment</h3>
-                {startingGear.length > 0 ? (
-                  <div className="phone-character-waiting-gear">
-                    {startingGear.map((item) => (
-                      <span key={item.id}>{item.name}</span>
-                    ))}
-                  </div>
-                ) : (
-                  <p>No starting equipment.</p>
-                )}
-              </section>
-
               <p className="phone-lobby-ready-state">Waiting for host to start the game</p>
 
               <div className="phone-character-waiting-actions">
@@ -205,6 +228,28 @@ export function PortraitControllerView({
               ) : (
                 <span className="phone-character-waiting-status">Waiting for room sync</span>
               )}
+
+              <section className="phone-character-waiting-section">
+                <h3>Special Abilities</h3>
+                {abilityText.length > 0 ? (
+                  abilityText.map((ability) => <p key={ability}>{ability}</p>)
+                ) : (
+                  <p>No special ability text is recorded for this character.</p>
+                )}
+              </section>
+
+              <section className="phone-character-waiting-section">
+                <h3>Starting Equipment</h3>
+                {startingGear.length > 0 ? (
+                  <div className="phone-character-waiting-gear">
+                    {startingGear.map((item) => (
+                      <span key={item.id}>{item.name}</span>
+                    ))}
+                  </div>
+                ) : (
+                  <p>No starting equipment.</p>
+                )}
+              </section>
             </section>
           </main>
         </div>
@@ -298,10 +343,6 @@ export function PortraitControllerView({
                   ))}
                 </>
               )}
-
-              {patch && onIntent && (
-                <PhoneActionPanel characters={characters} onIntent={onIntent} patch={patch} />
-              )}
             </div>
           )}
 
@@ -310,11 +351,10 @@ export function PortraitControllerView({
               <section className="phone-portrait-section">
                 <div className="phone-sheet-section-heading">Inventory</div>
                 {patch && onIntent ? (
-                <PhoneInventoryPanel patch={patch} onIntent={onIntent} />
-              ) : (
+                  <PhoneInventoryPanel patch={patch} onIntent={onIntent} />
+                ) : (
                   <p className="phone-muted-copy">Inventory appears when the room syncs.</p>
-              )
-                }
+                )}
               </section>
             </div>
           )}
@@ -340,28 +380,23 @@ export function PortraitControllerView({
             </div>
           )}
 
-          {activeTab === "log" && (
+          {isTurnActionTab(activeTab) && (
             <div className="phone-portrait-screen">
-              <section className="phone-portrait-section">
-                <div className="phone-sheet-section-heading">Recent Result</div>
-                <article className="phone-portrait-info-card">
-                  <strong>{latestOutcome?.encounterTitle ?? "No result yet"}</strong>
-                  <span>{latestOutcome?.success === true ? "Success" : latestOutcome?.success === false ? "Failure" : "Waiting"}</span>
-                  <p>{latestOutcome?.summary ?? "Rolls, card effects, and private reminders will appear as the turn resolves."}</p>
-                </article>
-              </section>
-              <section className="phone-portrait-section">
-                <div className="phone-sheet-section-heading">Notes</div>
-                {notes.length > 0 ? (
-                  <div className="phone-portrait-log-list">
-                    {notes.map((note, index) => (
-                      <p key={`${index}-${note}`}>{note}</p>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="phone-muted-copy">No private notes yet.</p>
-                )}
-              </section>
+              {patch && onIntent ? (
+                <PhoneActionPanel
+                  characters={characters}
+                  onIntent={onIntent}
+                  patch={patch}
+                  selectedTurnTab={activeTab}
+                  onSelectedTurnTab={setActiveTab}
+                  hideTurnTabs
+                />
+              ) : (
+                <section className="phone-portrait-section">
+                  <div className="phone-sheet-section-heading">Turn Console</div>
+                  <p className="phone-muted-copy">Actions appear when the room syncs.</p>
+                </section>
+              )}
             </div>
           )}
         </main>
@@ -370,19 +405,48 @@ export function PortraitControllerView({
           {[
             ["player", "Player Card"],
             ["inventory", "Inventory"],
-            ["quests", "Quests"],
-            ["log", "Log"]
+            ["quests", "Quest"],
+            ["move", "Move"],
+            ["battle", "Battle"],
+            ["shop", "Shop"],
+            ["action", "Action"]
           ].map(([key, label]) => (
-            <button
-              key={key}
-              type="button"
-              role="tab"
-              aria-selected={activeTab === key}
-              className={activeTab === key ? "phone-portrait-tab phone-portrait-tab-active" : "phone-portrait-tab"}
-              onClick={() => setActiveTab(key as typeof activeTab)}
-            >
-              {label}
-            </button>
+            (() => {
+              const typedKey = key as PortraitTab;
+              const actionState = isTurnActionTab(typedKey) ? getActionTabState(typedKey, patch) : { disabled: false };
+              const tone = isTurnActionTab(typedKey)
+                ? typedKey === "move"
+                  ? "move"
+                  : typedKey === "battle"
+                    ? "battle"
+                    : typedKey === "shop"
+                      ? "shop"
+                      : "action"
+                : typedKey === "inventory"
+                  ? "action"
+                  : typedKey === "quests"
+                    ? "shop"
+                    : "neutral";
+
+              return (
+                <GameButton
+                  key={key}
+                  type="button"
+                  tone={tone}
+                  role="tab"
+                  aria-selected={activeTab === typedKey}
+                  selected={activeTab === typedKey}
+                  className={`${activeTab === typedKey ? "phone-portrait-tab phone-portrait-tab-active" : "phone-portrait-tab"}${
+                    actionState.locked ? " phone-portrait-tab-locked" : ""
+                  }`}
+                  disabled={actionState.disabled}
+                  disabledReason={actionState.disabled ? "Unavailable" : actionState.locked ? "Blocked" : undefined}
+                  onClick={() => setActiveTab(typedKey)}
+                >
+                  {label}
+                </GameButton>
+              );
+            })()
           ))}
         </nav>
       </div>

@@ -1,0 +1,16 @@
+{
+  "id": "qa_alpha_tool_01",
+  "name": "Omni-Key of Broken Gates",
+  "slot": "utility",
+  "category": "active",
+  "statBonus": {
+    "stat": "guile",
+    "amount": 4
+  },
+  "activeText": "QA only: ignore locked routes, gate checks, and shop blockers when testing recovery paths.",
+  "useLimit": "oncePerTurn",
+  "timingWindows": ["movement", "shop", "anyTime"],
+  "tier": "artifact",
+  "cost": 0,
+  "progressionWeight": 0.01
+}

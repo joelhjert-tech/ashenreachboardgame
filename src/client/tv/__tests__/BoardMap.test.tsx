@@ -159,6 +159,59 @@ describe("BoardMap", () => {
     expect(screen.getByTestId("sector-node-emberwatch-step")).toHaveAttribute("data-legal-target", "false");
   });
 
+  it("uses the public movement planner instead of falling back to adjacency when exact destinations are projected", () => {
+    const patch: PublicPatchPayload = {
+      ...createPatch(),
+      movementPlanner: {
+        active: true,
+        movementValue: 2,
+        currentSectorId: "ashwake-crossing",
+        currentSectorName: "Ashwake Crossing",
+        destinations: [
+          {
+            sectorId: "emberwatch-step",
+            name: "Emberwatch Step",
+            ring: "outer",
+            distance: 2,
+            route: ["ashwake-crossing", "mirecoil-beacon", "emberwatch-step"],
+            routeNames: ["Ashwake Crossing", "Mirecoil Beacon", "Emberwatch Step"],
+            tags: ["hazard"],
+            threatIcons: ["red"],
+            ruleText: "Cross the ember watch.",
+            faceUpThreats: [],
+            occupants: [],
+            strategicTags: ["danger"]
+          },
+          {
+            sectorId: "hollow-veil-yard",
+            name: "Hollow Veil Yard",
+            ring: "outer",
+            distance: 2,
+            route: ["ashwake-crossing", "glassmere-spindle", "hollow-veil-yard"],
+            routeNames: ["Ashwake Crossing", "Glassmere Spindle", "Hollow Veil Yard"],
+            tags: ["gate"],
+            threatIcons: ["blue"],
+            ruleText: "The gate remains locked.",
+            faceUpThreats: [],
+            occupants: [],
+            strategicTags: ["gate"],
+            disabledReason: "Resolve the gate first"
+          }
+        ]
+      }
+    };
+
+    render(<BoardMap patch={patch} phase="navigation" />);
+
+    expect(screen.getByTestId("sector-node-emberwatch-step")).toHaveAttribute("data-legal-target", "true");
+    expect(screen.getByTestId("sector-node-glassmere-spindle")).toHaveAttribute("data-legal-target", "false");
+    expect(screen.getByTestId("sector-node-mirecoil-beacon")).toHaveAttribute("data-legal-target", "false");
+    expect(screen.getByTestId("sector-node-hollow-veil-yard")).toHaveAttribute("data-legal-target", "false");
+    expect(screen.getByTestId("movement-route-emberwatch-step-0-ashwake-crossing-mirecoil-beacon")).toBeInTheDocument();
+    expect(screen.getByTestId("movement-route-emberwatch-step-1-mirecoil-beacon-emberwatch-step")).toBeInTheDocument();
+    expect(screen.queryByTestId("movement-route-hollow-veil-yard-0-ashwake-crossing-glassmere-spindle")).not.toBeInTheDocument();
+  });
+
   it("renders rectangular board tiles for the shared board-space layout and keeps live sector ids for active content", () => {
     const { container } = render(<BoardMap patch={createPatch()} phase="action" />);
     const renderedSectorIds = Array.from(container.querySelectorAll("[data-testid^='sector-node-']")).map((element) =>
@@ -234,7 +287,7 @@ describe("BoardMap", () => {
     render(<BoardMap patch={patch} phase="action" />);
 
     expect(screen.getByTestId("scenario-marker-devourer-orbit")).toHaveAttribute("data-sector-id", "glassmere-spindle");
-    expect(screen.getByTestId("scenario-route-devourer-route-preview")).toBeInTheDocument();
+    expect(screen.queryByTestId("scenario-route-devourer-route-preview")).not.toBeInTheDocument();
   });
 
   it("renders a core aura for Broken Seal pressure at the Cinder Gate", () => {

@@ -102,6 +102,7 @@ function createState(): GameState {
       }
     ],
     availableContracts: [],
+    shopStockReveals: [],
     nemesisChampions: [],
     nemesisNexusCountdowns: [],
     eventLog: [],

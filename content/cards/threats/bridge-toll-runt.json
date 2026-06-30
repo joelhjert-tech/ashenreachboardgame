@@ -1,0 +1,31 @@
+{
+  "id": "bridge-toll-runt",
+  "type": "threat",
+  "cardType": "enemy",
+  "title": "Bridge-Toll Runt",
+  "enemyName": "Bridge-Toll Runt",
+  "text": "A junior collector in an oversized ledger mask blocks the lane and demands payment with trembling authority.",
+  "flavor": "The mask is official. The fear inside it is not.",
+  "severity": 1,
+  "region": "outer",
+  "stat": "command",
+  "difficulty": 3,
+  "trophyValue": 1,
+  "defeatReward": {
+    "type": "gain_note",
+    "text": "You overrule the runt's false writ and note the bridge office seal."
+  },
+  "woundOnLoss": {
+    "type": "gain_heat",
+    "amount": 1
+  },
+  "enemyFamily": "bureaucracy",
+  "threatLane": "yellow",
+  "rarity": "common",
+  "tempo": "stall",
+  "resourceTags": [
+    "heat",
+    "trophy"
+  ],
+  "imagePrompt": "A small nervous toll collector in an oversized black ledger mask holding a brass writ on a ruined bridge checkpoint, absurd but grim gothic sci-fantasy"
+}

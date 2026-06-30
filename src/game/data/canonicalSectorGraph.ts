@@ -44,6 +44,10 @@ const dangerBySpaceId: Partial<Record<string, number>> = {
   "the-salt-archive": 5,
   "red-lantern-trenches": 7,
   "weeping-ammunition-shrine": 6,
+  "scorched-road": 6,
+  blastworks: 7,
+  "ashen-chapel": 6,
+  "reavers-den": 7,
   inner_veil_rift: 7,
   inner_tomb_gate: 7,
   inner_cinder_lattice: 8,
@@ -65,9 +69,11 @@ const encounterDecksBySpaceId: Partial<Record<string, EncounterDecks>> = {
   },
   "ashwake-crossing": {
     threat: [
+      "ash-cinder-runt",
       "smoke-leech-clutch",
       "ash-rat-skitter",
       "hymn-scarred-zealot",
+      "bridge-toll-runt",
       "bellwire-snare",
       "scrap-toll-gangers",
       "ash-lane-cutters",
@@ -86,6 +92,9 @@ const encounterDecksBySpaceId: Partial<Record<string, EncounterDecks>> = {
   },
   outer_waymarket: {
     threat: [
+      "toll-scrip-urchins",
+      "soot-stained-cutpurse",
+      "bridge-toll-runt",
       "scrap-toll-gangers",
       "gate-tax-collectors",
       "pale-toll-enforcer",
@@ -100,10 +109,13 @@ const encounterDecksBySpaceId: Partial<Record<string, EncounterDecks>> = {
   },
   "glassmere-spindle": {
     threat: [
+      "gutter-bell-mite",
+      "cracked-censer-novice",
       "glass-chime-swarm",
       "latchspire-raider",
       "lantern-moth-swarm",
       "bell-mask-pilgrim",
+      "glasswing-midge-cloud",
       "roadside-bone-oracle",
       "spindle-static-squall",
       "mirror-mite-bloom",
@@ -124,6 +136,8 @@ const encounterDecksBySpaceId: Partial<Record<string, EncounterDecks>> = {
   },
   outer_relay_camp: {
     threat: [
+      "gutter-bell-mite",
+      "cracked-censer-novice",
       "lantern-moth-swarm",
       "static-larva-swarm",
       "relay-pilgrim-riot",
@@ -139,6 +153,8 @@ const encounterDecksBySpaceId: Partial<Record<string, EncounterDecks>> = {
   },
   "mirecoil-beacon": {
     threat: [
+      "rust-mote-drone",
+      "wire-chewer-pack",
       "relay-husk",
       "slag-drone",
       "signal-rotted-engineer",
@@ -158,7 +174,15 @@ const encounterDecksBySpaceId: Partial<Record<string, EncounterDecks>> = {
     escalation: []
   },
   outer_salt_flats: {
-    threat: ["void-salt-sickness", "mudglass-sinkhole", "beacon-cable-snare", "mirror-mite-bloom", "redglass-stray"],
+    threat: [
+      "glasswing-midge-cloud",
+      "gutter-bell-mite",
+      "void-salt-sickness",
+      "mudglass-sinkhole",
+      "beacon-cable-snare",
+      "mirror-mite-bloom",
+      "redglass-stray"
+    ],
     anomaly: ["anomaly-glassmere", "anomaly-cinder-mirage-lane", "anomaly-void-salt-tide", "anomaly-saltglass-fata-morgana"],
     contract: ["clan-salt-burial"],
     artifact: ["artifact-void-salt-poultice"],
@@ -166,6 +190,8 @@ const encounterDecksBySpaceId: Partial<Record<string, EncounterDecks>> = {
   },
   "hollow-veil-yard": {
     threat: [
+      "wire-chewer-pack",
+      "lantern-ash-ghoul",
       "grave-silt-press",
       "copperjaw-vermin",
       "mudglass-sinkhole",
@@ -188,6 +214,8 @@ const encounterDecksBySpaceId: Partial<Record<string, EncounterDecks>> = {
   },
   outer_surgery_tent: {
     threat: [
+      "lantern-ash-ghoul",
+      "wire-chewer-pack",
       "yard-ghoul-welders",
       "grave-silt-press",
       "smoke-leech-clutch",
@@ -210,14 +238,30 @@ const encounterDecksBySpaceId: Partial<Record<string, EncounterDecks>> = {
     escalation: ["escalation-emberwatch", "escalation-ridge-suture", "escalation-ashfall-curfew", "escalation-saltwind-lockdown"]
   },
   outer_oathpost: {
-    threat: ["pale-cartel-shakedown", "gate-tax-collectors", "furnace-ditch-collapse", "bellwire-snare", "pale-contract-collector"],
+    threat: [
+      "bridge-toll-runt",
+      "toll-scrip-urchins",
+      "pale-cartel-shakedown",
+      "gate-tax-collectors",
+      "furnace-ditch-collapse",
+      "bellwire-snare",
+      "pale-contract-collector"
+    ],
     anomaly: [],
     contract: ["warden-span-vigil", "cartel-crossing-thread", "cartel-exposed-object"],
     artifact: [],
     escalation: []
   },
   outer_broken_causeway: {
-    threat: ["furnace-ditch-collapse", "beacon-cable-snare", "emberwatch-sparkfall", "suture-storm", "broken-mast-collapse"],
+    threat: [
+      "ash-cinder-runt",
+      "soot-stained-cutpurse",
+      "furnace-ditch-collapse",
+      "beacon-cable-snare",
+      "emberwatch-sparkfall",
+      "suture-storm",
+      "broken-mast-collapse"
+    ],
     anomaly: [],
     contract: [],
     artifact: [],
@@ -406,6 +450,34 @@ const encounterDecksBySpaceId: Partial<Record<string, EncounterDecks>> = {
     contract: ["dominion-warbell-recovery", "compact-ember-courier"],
     artifact: ["artifact-red-march-warbell", "artifact-heat-sink-prayer"],
     escalation: ["escalation-emberwatch", "escalation-red-march-levy"]
+  },
+  "scorched-road": {
+    threat: ["ash-choir-crusader", "shardvine-ambushers", "gate-tax-collectors", "red-march-cannoneer"],
+    anomaly: ["anomaly-cinder-mirage-lane", "anomaly-red-suture-field"],
+    contract: ["compact-ember-courier", "cartel-crossing-thread"],
+    artifact: [],
+    escalation: ["escalation-emberwatch", "escalation-ashfall-curfew"]
+  },
+  blastworks: {
+    threat: ["iron-lung-grenadier", "bone-rivet-brute", "coffin-frame-automaton", "red-march-cannoneer"],
+    anomaly: ["anomaly-table-fire-writ", "anomaly-warbell-parallax"],
+    contract: ["dominion-warbell-recovery", "clan-salvage-tithe"],
+    artifact: ["artifact-red-march-warbell"],
+    escalation: ["escalation-red-march-levy", "escalation-emberwatch"]
+  },
+  "ashen-chapel": {
+    threat: ["cracked-censer-novice", "choir-static-burst", "bell-mask-pilgrim", "reliquary-judge"],
+    anomaly: ["anomaly-choir-static", "anomaly-saint-static-aperture", "anomaly-ashfall-murmur"],
+    contract: ["umbral-shrine-confession", "choir-spindle-harmonics"],
+    artifact: ["artifact-choir-static-censer", "artifact-heat-sink-prayer"],
+    escalation: ["escalation-choir-feedback", "escalation-gate-saint-wake"]
+  },
+  "reavers-den": {
+    threat: ["chain-maul-salvager", "bone-rivet-brute", "iron-synod-hunter", "pale-toll-enforcer"],
+    anomaly: ["anomaly-red-suture-field", "anomaly-bellrain-inversion"],
+    contract: ["warden-span-vigil", "cartel-quiet-route"],
+    artifact: [],
+    escalation: ["escalation-red-march-levy", "escalation-ashfall-curfew"]
   },
   inner_veil_rift: {
     threat: [

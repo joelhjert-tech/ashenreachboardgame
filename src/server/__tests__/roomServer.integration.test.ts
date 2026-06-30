@@ -373,6 +373,7 @@ function createState(overrides: Partial<GameState> = {}): GameState {
       }
     ],
     availableContracts,
+    shopStockReveals: [],
     nemesisChampions: [],
     nemesisNexusCountdowns: [],
     eventLog: [],

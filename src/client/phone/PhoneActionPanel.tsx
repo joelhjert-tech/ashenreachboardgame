@@ -1,4 +1,4 @@
-import { useState, type ReactElement } from "react";
+import { useEffect, useState, type ReactElement } from "react";
 import type {
   ActiveResolution,
   CharacterCatalogEntry,
@@ -10,6 +10,8 @@ import type {
   PublicMoveDestination,
   PublicMovementPlannerState,
   PublicMoveStrategicTag,
+  PublicShopCost,
+  PublicShopEncounterState,
   SectorNode,
   Stat,
   TrophyPileEntry
@@ -23,6 +25,7 @@ import {
 } from "../shared/resolutionPresentation.js";
 import { ChallengeBadge, ThreatIconBadge, getThreatIconStat, isStat } from "../shared/ChallengeBadge.js";
 import { CombatDiceAnimation } from "../shared/CombatDiceAnimation.js";
+import { GameButton, type GameButtonTone } from "../shared/GameButton.js";
 import { statLabelById } from "../shared/statLabels.js";
 import { PhoneInventoryPanel } from "./PhoneInventoryPanel.js";
 import { formatTimingWindow, getBattleAssistViewModel, statLabelById as inventoryStatLabelById } from "./inventoryPresentation.js";
@@ -31,6 +34,9 @@ interface PhoneActionPanelProps {
   characters: CharacterCatalogEntry[];
   onIntent: (intent: ClientIntent) => void;
   patch: PhonePatchPayload;
+  selectedTurnTab?: TurnActionTab;
+  onSelectedTurnTab?: (tab: TurnActionTab) => void;
+  hideTurnTabs?: boolean;
 }
 
 interface ActionButtonDefinition {
@@ -50,6 +56,18 @@ interface ActionSectionDefinition {
   defaultOpen?: boolean;
 }
 
+export type TurnActionTab = "move" | "battle" | "shop" | "action";
+
+interface TurnActionTabDefinition {
+  id: TurnActionTab;
+  label: string;
+  detail: string;
+  tone: "move" | "battle" | "shop" | "action";
+  enabled: boolean;
+  locked?: boolean;
+  blockedReason?: string;
+}
+
 interface SectorOpportunityItem {
   key: string;
   label: string;
@@ -58,6 +76,10 @@ interface SectorOpportunityItem {
 
 const TROPHY_COST_PER_RANK = 4;
 const MAX_STAT_RANK = 9;
+
+function actionToneToGameButtonTone(tone: ActionButtonDefinition["tone"]): GameButtonTone {
+  return tone === "primary" ? "primary" : "secondary";
+}
 
 function getSector(sectors: SectorNode[], sectorId: string): SectorNode | null {
   return sectors.find((sector) => sector.id === sectorId) ?? null;
@@ -97,6 +119,19 @@ function getGearActionDetail(item: GearItem): string {
   }
 
   return `${baseDetail} | ${item.charges ?? 0} charge${item.charges === 1 ? "" : "s"} left`;
+}
+
+function formatShopCost(cost: PublicShopCost): string {
+  const parts = [
+    cost.salvage ? `${cost.salvage} Salvage` : null,
+    cost.heat ? `${cost.heat} Heat` : null,
+    cost.wounds ? `${cost.wounds} Wound${cost.wounds === 1 ? "" : "s"}` : null,
+    cost.trophies ? `${cost.trophies} Trophies` : null,
+    cost.completedContracts ? `${cost.completedContracts} Contract${cost.completedContracts === 1 ? "" : "s"}` : null,
+    cost.scars ? `${cost.scars} Scar${cost.scars === 1 ? "" : "s"}` : null
+  ].filter(Boolean);
+
+  return parts.length > 0 ? parts.join(" / ") : "No cost";
 }
 
 function ActiveResolutionCard({
@@ -166,14 +201,15 @@ function ActiveResolutionCard({
         </div>
       )}
       {canContinue && (
-        <button
+        <GameButton
+          tone="primary"
           className="phone-button phone-button-primary phone-resolution-continue"
           data-testid="phone-resolution-continue"
           type="button"
           onClick={onContinue}
         >
           Continue
-        </button>
+        </GameButton>
       )}
     </div>
   );
@@ -234,14 +270,15 @@ function OrphanResolutionRecoveryCard({
       <div className="phone-resolution-outcome">
         <p>{outcome.summary}</p>
       </div>
-      <button
+      <GameButton
+        tone="primary"
         className="phone-button phone-button-primary phone-resolution-continue"
         data-testid="phone-resolution-continue"
         type="button"
         onClick={onContinue}
       >
         Continue
-      </button>
+      </GameButton>
     </div>
   );
 }
@@ -289,13 +326,14 @@ function BattleAssistCard({
       {usableCount > 0 ? (
         <div className="phone-battle-assist-alert">
           <p>You have {usableCount} card{usableCount === 1 ? "" : "s"} that can help.</p>
-          <button
+          <GameButton
             type="button"
+            tone="battle"
             className="phone-button phone-button-primary"
             onClick={() => setDrawerOpen((current) => !current)}
           >
             Open Combat Cards
-          </button>
+          </GameButton>
         </div>
       ) : (
         <p className="phone-battle-assist-muted">No combat cards are usable in this timing window.</p>
@@ -303,13 +341,14 @@ function BattleAssistCard({
       {drawerOpen && (
         <div className="phone-combat-card-drawer" data-testid="phone-combat-card-drawer">
           <PhoneInventoryPanel patch={patch} onIntent={onIntent} compact onlyUsable onUse={() => setDrawerOpen(false)} />
-          <button
+          <GameButton
             type="button"
+            tone="secondary"
             className="phone-button phone-button-secondary phone-combat-card-skip"
             onClick={() => setDrawerOpen(false)}
           >
             Skip
-          </button>
+          </GameButton>
         </div>
       )}
     </div>
@@ -324,16 +363,18 @@ function ActionButtons({ actions }: { actions: ActionButtonDefinition[] }): Reac
   return (
     <div className="phone-sheet-action-grid">
       {actions.map((action) => (
-        <button
+        <GameButton
           key={action.key}
+          tone={actionToneToGameButtonTone(action.tone)}
           className={`phone-button phone-sheet-action-button phone-button-${action.tone}`}
           type="button"
           disabled={action.disabled}
+          disabledReason={action.disabled ? action.detail ?? "Unavailable" : undefined}
           onClick={action.onClick}
+          sublabel={action.detail}
         >
-          <span className="phone-sheet-action-label">{action.label}</span>
-          {action.detail && <span className="phone-sheet-action-detail">{action.detail}</span>}
-        </button>
+          {action.label}
+        </GameButton>
       ))}
     </div>
   );
@@ -373,6 +414,50 @@ function SectorOpportunityChips({ items }: { items: SectorOpportunityItem[] }): 
           <strong>{item.value}</strong>
           {item.label}
         </span>
+      ))}
+    </div>
+  );
+}
+
+function EmptyTurnTab({ title, text }: { title: string; text: string }): ReactElement {
+  return (
+    <div className="phone-turn-tab-empty" role="status">
+      <strong>{title}</strong>
+      <p>{text}</p>
+    </div>
+  );
+}
+
+function TurnActionTabs({
+  tabs,
+  activeTab,
+  onSelected
+}: {
+  tabs: TurnActionTabDefinition[];
+  activeTab: TurnActionTab;
+  onSelected: (tab: TurnActionTab) => void;
+}): ReactElement {
+  return (
+    <div className="phone-turn-tabs" role="tablist" aria-label="Turn actions">
+      {tabs.map((tab) => (
+        <GameButton
+          key={tab.id}
+          type="button"
+          tone={tab.tone}
+          role="tab"
+          aria-selected={activeTab === tab.id}
+          aria-controls={`phone-turn-panel-${tab.id}`}
+          selected={activeTab === tab.id}
+          className={`phone-turn-tab phone-turn-tab-${tab.tone}${activeTab === tab.id ? " phone-turn-tab-active" : ""}${
+            tab.locked ? " phone-turn-tab-locked" : ""
+          }`}
+          disabled={!tab.enabled && !tab.locked}
+          disabledReason={tab.blockedReason}
+          onClick={() => onSelected(tab.id)}
+          sublabel={tab.locked ? tab.blockedReason ?? "Shop blocked" : tab.blockedReason ?? tab.detail}
+        >
+          {tab.label}
+        </GameButton>
       ))}
     </div>
   );
@@ -455,6 +540,134 @@ function buildStrategicWarning(destination: PublicMoveDestination): string {
   return "Low public pressure from visible board information.";
 }
 
+function PhoneShopPanel({
+  shopEncounter,
+  seatId,
+  onIntent
+}: {
+  shopEncounter: PublicShopEncounterState | null | undefined;
+  seatId: string;
+  onIntent: (intent: ClientIntent) => void;
+}): ReactElement | null {
+  if (!shopEncounter) {
+    return null;
+  }
+
+  const isLocked = shopEncounter.status === "locked" || shopEncounter.blockingThreats.length > 0;
+  const revealedStock = shopEncounter.revealedStock ?? [];
+
+  return (
+    <section className={`phone-shop-panel phone-shop-panel-${shopEncounter.status}`} aria-label="Shop encounter">
+      <div className="phone-shop-header">
+        <div>
+          <span>Shop Encounter</span>
+          <strong>{shopEncounter.shopName}</strong>
+          <small>{shopEncounter.sectorName}</small>
+        </div>
+        <span className={`phone-shop-status phone-shop-status-${shopEncounter.status}`}>{shopEncounter.status.toUpperCase()}</span>
+      </div>
+
+      <div className="phone-shop-wallet" aria-label="Operative resources">
+        <span>Salvage {shopEncounter.activePlayer.salvage}</span>
+        <span>Heat {shopEncounter.activePlayer.heat}</span>
+        <span>
+          Wounds {shopEncounter.activePlayer.wounds.current}/{shopEncounter.activePlayer.wounds.max}
+        </span>
+        <span>Trophies {shopEncounter.activePlayer.trophies ?? 0}</span>
+      </div>
+
+      {isLocked ? (
+        <div className="phone-shop-locked" role="status">
+          <strong>Shop locked</strong>
+          <p>Clear local blockers before trading here.</p>
+          {shopEncounter.blockingThreats.map((threat) => (
+            <div key={threat.cardId} className="phone-shop-blocker">
+              <span>{threat.name}</span>
+              {threat.challenge ? <ChallengeBadge stat={threat.challenge.stat} value={threat.challenge.value} size="compact" /> : null}
+            </div>
+          ))}
+        </div>
+      ) : (
+        <>
+          <div className="phone-shop-services" aria-label="Shop services">
+            <div className="phone-shop-section-heading">
+              <span>Services</span>
+              <small>Choose a service. Gear purchases reveal stock before buying.</small>
+            </div>
+            {shopEncounter.services.map((service) => (
+              <GameButton
+                key={service.id}
+                type="button"
+                tone="shop"
+                size="large"
+                contentMode="custom"
+                className="phone-shop-service-card"
+                disabled={!service.enabled}
+                disabledReason={service.disabledReason}
+                onClick={() =>
+                  onIntent({
+                    type: "SHOP_SERVICE_REQUESTED",
+                    seatId,
+                    serviceId: service.id
+                  })
+                }
+                sublabel={service.disabledReason ?? formatShopCost(service.cost)}
+              >
+                <strong>{service.label}</strong>
+                {service.risk ? <small>{service.risk}</small> : null}
+              </GameButton>
+            ))}
+          </div>
+
+          <div className="phone-shop-stock" aria-label="Revealed shop stock">
+            <div className="phone-shop-section-heading">
+              <span>Revealed Stock</span>
+              <small>{revealedStock.length > 0 ? "Buy one item or reveal a different service." : "No stock revealed yet."}</small>
+            </div>
+            {revealedStock.length > 0 ? (
+              revealedStock.map((item) => (
+                <article key={item.cardId} className={`phone-shop-stock-card${item.affordable ? "" : " phone-shop-stock-card-disabled"}`}>
+                  <div>
+                    <span>{item.type}</span>
+                    <strong>{item.name}</strong>
+                    <p>{item.summary}</p>
+                    <small>{item.disabledReason ?? formatShopCost(item.cost)}</small>
+                  </div>
+                  <GameButton
+                    type="button"
+                    tone="shop"
+                    className="phone-button phone-button-primary"
+                    disabled={!item.affordable}
+                    disabledReason={item.disabledReason ?? "Cannot buy"}
+                    onClick={() =>
+                      onIntent({
+                        type: "SHOP_PURCHASE_REQUESTED",
+                        seatId,
+                        cardId: item.cardId
+                      })
+                    }
+                  >
+                    Buy
+                  </GameButton>
+                </article>
+              ))
+            ) : (
+              <p className="phone-shop-empty-stock">Use Buy Gear or Risk Action to reveal public stock here.</p>
+            )}
+          </div>
+        </>
+      )}
+
+      {shopEncounter.recentOutcome ? (
+        <div className="phone-shop-outcome">
+          <span>Market Result</span>
+          <p>{shopEncounter.recentOutcome.summary}</p>
+        </div>
+      ) : null}
+    </section>
+  );
+}
+
 function MovementPlanner({
   planner,
   seatId,
@@ -464,14 +677,19 @@ function MovementPlanner({
   seatId: string;
   onIntent: (intent: ClientIntent) => void;
 }): ReactElement | null {
-  const [selectedSectorId, setSelectedSectorId] = useState<string | null>(planner?.destinations[0]?.sectorId ?? null);
+  const [selectedSectorId, setSelectedSectorId] = useState<string | null>(null);
+
+  useEffect(() => {
+    setSelectedSectorId(null);
+  }, [planner?.currentSectorId, planner?.movementValue]);
 
   if (!planner?.active) {
     return null;
   }
 
-  const selected =
-    planner.destinations.find((destination) => destination.sectorId === selectedSectorId) ?? planner.destinations[0] ?? null;
+  const selected = selectedSectorId
+    ? planner.destinations.find((destination) => destination.sectorId === selectedSectorId) ?? null
+    : null;
 
   return (
     <section className="phone-movement-planner" aria-label="Movement planner" data-testid="movement-planner">
@@ -486,17 +704,34 @@ function MovementPlanner({
       </div>
 
       <div className="phone-movement-destination-list" role="list" aria-label="Legal destinations">
-        {planner.destinations.map((destination) => {
+        {planner.destinations.length === 0 ? (
+          <div className="phone-movement-empty" role="status">
+            <strong>No legal destinations</strong>
+            <p>No public route is currently available from this sector. Continue or resolve the current board effect.</p>
+          </div>
+        ) : (
+          planner.destinations.map((destination) => {
           const primaryTag = getPrimaryMovementTag(destination);
           const selected = selectedSectorId === destination.sectorId;
+          const isLocked = Boolean(destination.disabledReason);
 
           return (
             <article
               key={destination.sectorId}
-              className={`phone-movement-card${selected ? " phone-movement-card-selected" : ""}`}
+              className={`phone-movement-card${selected ? " phone-movement-card-selected" : ""}${
+                isLocked ? " phone-movement-card-disabled" : ""
+              }`}
               role="listitem"
             >
-              <button type="button" className="phone-movement-card-button" onClick={() => setSelectedSectorId(destination.sectorId)}>
+              <GameButton
+                type="button"
+                tone={primaryTag === "danger" || primaryTag === "locked" ? "battle" : primaryTag === "shop" ? "shop" : "move"}
+                contentMode="custom"
+                className="phone-movement-card-button"
+                aria-pressed={selected}
+                selected={selected}
+                onClick={() => setSelectedSectorId(destination.sectorId)}
+              >
                 <span className={`phone-movement-badge phone-movement-badge-${primaryTag}`}>{movementTagLabel[primaryTag]}</span>
                 <strong>{destination.name}</strong>
                 <small>
@@ -511,10 +746,14 @@ function MovementPlanner({
                 )}
                 <span>Distance: {destination.distance}</span>
                 <span>{buildDestinationSummary(destination)}</span>
-              </button>
+                {destination.disabledReason ? (
+                  <span className="phone-movement-disabled-reason">{destination.disabledReason}</span>
+                ) : null}
+              </GameButton>
             </article>
           );
-        })}
+          })
+        )}
       </div>
 
       {selected ? (
@@ -524,9 +763,9 @@ function MovementPlanner({
               <span>Full Intel</span>
               <strong>{selected.name}</strong>
             </div>
-            <button type="button" className="phone-button phone-button-secondary" onClick={() => setSelectedSectorId(null)}>
+            <GameButton type="button" tone="secondary" className="phone-button phone-button-secondary" onClick={() => setSelectedSectorId(null)}>
               Back
-            </button>
+            </GameButton>
           </div>
 
           <div className="phone-movement-intel-grid">
@@ -608,10 +847,12 @@ function MovementPlanner({
             <p>{buildStrategicWarning(selected)}</p>
           </div>
 
-          <button
+          <GameButton
             type="button"
+            tone="move"
             className="phone-button phone-button-primary phone-movement-confirm"
             disabled={Boolean(selected.disabledReason)}
+            disabledReason={selected.disabledReason}
             onClick={() =>
               onIntent({
                 type: "MOVE_REQUESTED",
@@ -621,7 +862,7 @@ function MovementPlanner({
             }
           >
             Confirm Move
-          </button>
+          </GameButton>
         </article>
       ) : (
         <p className="phone-sheet-action-copy">Tap a tile to inspect. Confirm destination when ready.</p>
@@ -719,7 +960,17 @@ function TrophyPileSection({
   );
 }
 
-export function PhoneActionPanel({ characters, onIntent, patch }: PhoneActionPanelProps): ReactElement {
+export function PhoneActionPanel({
+  characters,
+  onIntent,
+  patch,
+  selectedTurnTab: controlledSelectedTurnTab,
+  onSelectedTurnTab,
+  hideTurnTabs = false
+}: PhoneActionPanelProps): ReactElement {
+  const [localSelectedTurnTab, setLocalSelectedTurnTab] = useState<TurnActionTab>("move");
+  const selectedTurnTab = controlledSelectedTurnTab ?? localSelectedTurnTab;
+  const setSelectedTurnTab = onSelectedTurnTab ?? setLocalSelectedTurnTab;
   const self = patch.self;
 
   if (!self) {
@@ -759,6 +1010,7 @@ export function PhoneActionPanel({ characters, onIntent, patch }: PhoneActionPan
       onContinue={continueResolution}
     />
   );
+  const battleAssist = getBattleAssistViewModel(patch);
   const battleAssistPanel = <BattleAssistCard patch={patch} onIntent={onIntent} />;
   const sector = getSector(patch.sectors, self.sectorId);
   const boardSpace = getBoardSpace(self.sectorId);
@@ -778,6 +1030,8 @@ export function PhoneActionPanel({ characters, onIntent, patch }: PhoneActionPan
   const sectorOpportunityItems = getSectorOpportunityItems(sector);
   const isScenarioConfrontation = isScenarioConfrontationSpace(self.sectorId);
   const movementPlanner = patch.movementPlanner ?? null;
+  const shopEncounter =
+    patch.phase === "action" && patch.shopEncounter?.activePlayer.playerId === self.seatId ? patch.shopEncounter : null;
   const canRaiseStat =
     patch.phase === "action" &&
     !patch.encounter &&
@@ -896,6 +1150,20 @@ export function PhoneActionPanel({ characters, onIntent, patch }: PhoneActionPan
   const contractActions: ActionButtonDefinition[] = [];
   const advanceActions: ActionButtonDefinition[] = [];
   const statRaiseActions: ActionButtonDefinition[] = [];
+
+  if (patch.soloReroll?.available) {
+    resolveActions.push({
+      key: "solo-emergency-reroll",
+      label: "Use solo reroll",
+      detail: `${patch.soloReroll.charges} emergency reroll${patch.soloReroll.charges === 1 ? "" : "s"} this round`,
+      tone: "primary",
+      onClick: () =>
+        onIntent({
+          type: "SOLO_REROLL_REQUESTED",
+          seatId: self.seatId
+        })
+    });
+  }
 
   if (patch.phase === "navigation" && !movementPlanner?.active) {
     (sector?.neighbors ?? []).forEach((neighborId) => {
@@ -1212,33 +1480,149 @@ export function PhoneActionPanel({ characters, onIntent, patch }: PhoneActionPan
       : patch.phase === "action"
         ? "Resolve your current action, gear, or contract."
         : "Waiting for the server to resolve the current step.";
+  const hasMoveContent = Boolean(movementPlanner?.active && movementPlanner.destinations.length > 0) || moveActions.length > 0;
+  const hasBattleContent = Boolean(activeResolution || orphanResolutionOutcome || battleAssist) || threatActions.length > 0;
+  const hasShopContent = Boolean(shopEncounter);
+  const shopLocked = Boolean(shopEncounter && (shopEncounter.status === "locked" || shopEncounter.blockingThreats.length > 0));
+  const hasActionContent =
+    resolveActions.length +
+      gearActions.length +
+      objectActions.length +
+      followerActions.length +
+      tableActions.length +
+      contractActions.length +
+      advanceActions.length +
+      statRaiseActions.length >
+    0;
+  const moveBlockedReason = hasMoveContent
+    ? undefined
+    : movementPlanner?.active && movementPlanner.destinations.length === 0
+      ? "No legal move"
+      : patch.phase === "navigation"
+        ? "No legal move"
+        : "Resolve first";
+  const battleBlockedReason = hasBattleContent ? undefined : patch.phase === "action" ? "No enemy" : "Resolve first";
+  const shopBlockedReason = shopLocked ? "Shop blocked" : hasShopContent ? undefined : "No shop";
+  const actionBlockedReason = hasActionContent || !hasMoveContent ? undefined : "No action";
+  const tabDefinitions: TurnActionTabDefinition[] = [
+    {
+      id: "move",
+      label: "Move",
+      detail: movementPlanner?.active ? `${movementPlanner.destinations.length} routes` : patch.phase === "navigation" ? "Ready" : "Standby",
+      tone: "move",
+      enabled: hasMoveContent,
+      blockedReason: moveBlockedReason
+    },
+    {
+      id: "battle",
+      label: "Battle",
+      detail: patch.encounter?.title ?? activeResolution?.card?.title ?? battleAssist?.enemyName ?? "No threat",
+      tone: "battle",
+      enabled: hasBattleContent,
+      blockedReason: battleBlockedReason
+    },
+    {
+      id: "shop",
+      label: "Shop",
+      detail: shopEncounter?.shopName ?? "No market",
+      tone: "shop",
+      enabled: hasShopContent,
+      locked: shopLocked,
+      blockedReason: shopBlockedReason
+    },
+    {
+      id: "action",
+      label: "Action",
+      detail: boardSpace?.textBox.title ?? "Gear / quest",
+      tone: "action",
+      enabled: hasActionContent || !hasMoveContent,
+      blockedReason: actionBlockedReason
+    }
+  ];
+  const canShowSelectedTab = (tab: TurnActionTabDefinition) =>
+    tab.enabled || tab.locked || (tab.id === "move" && Boolean(movementPlanner?.active));
+  const fallbackTab = movementPlanner?.active ? "move" : tabDefinitions.find((tab) => tab.enabled || tab.locked)?.id ?? "action";
+  const activeTurnTab = tabDefinitions.find((tab) => tab.id === selectedTurnTab && canShowSelectedTab(tab))
+    ? selectedTurnTab
+    : fallbackTab;
 
   return (
     <section className="phone-sheet-actions" aria-label="Quick actions">
-      <div className="phone-sheet-section-heading">Quick Actions</div>
-      {resolutionPanel}
-      {battleAssistPanel}
+      <div className="phone-sheet-section-heading">Turn Console</div>
       <div className="phone-sheet-action-status">
         <span>Trophies: {self.character.trophies}</span>
         <span>{copy}</span>
       </div>
-      <MovementPlanner planner={movementPlanner} seatId={self.seatId} onIntent={onIntent} />
-      <SectorOpportunityChips items={sectorOpportunityItems} />
-      <ActionSections
-        sections={[
-          { key: "move", title: "Move", detail: sector?.name, actions: moveActions, defaultOpen: true },
-          { key: "threat", title: "Threat", detail: patch.encounter?.title, actions: threatActions, defaultOpen: true },
-          { key: "resolve", title: "Resolve", detail: boardSpace?.textBox.title, actions: resolveActions, defaultOpen: true },
-          { key: "gear", title: "Gear", detail: `${gearActions.length} available`, actions: gearActions },
-          { key: "objects", title: "Objects", detail: `${objectActions.length} usable`, actions: objectActions },
-          { key: "followers", title: "Followers", detail: `${followerActions.length} ready`, actions: followerActions },
-          { key: "table", title: "Table", detail: patch.interactionMode ?? "rivalry", actions: tableActions },
-          { key: "contracts", title: "Contracts", detail: `${contractActions.length} available`, actions: contractActions },
-          { key: "advance", title: "Advance", detail: "Finish or confront", actions: advanceActions, defaultOpen: true }
-        ]}
-      />
-      <TrophyPileSection actions={statRaiseActions} trophies={self.character.trophies} trophyPile={self.character.trophyPile} />
-      <TrophyAdvanceDisclosure actions={statRaiseActions} trophies={self.character.trophies} />
+      {!hideTurnTabs && <TurnActionTabs tabs={tabDefinitions} activeTab={activeTurnTab} onSelected={setSelectedTurnTab} />}
+
+      <div className="phone-turn-panel" id={`phone-turn-panel-${activeTurnTab}`} role="tabpanel" aria-label={`${activeTurnTab} actions`}>
+        {activeTurnTab === "move" && (
+          <>
+            <div className="phone-turn-panel-heading">
+              <span>Move</span>
+              <strong>{sector?.name ?? self.sectorId}</strong>
+            </div>
+            <MovementPlanner planner={movementPlanner} seatId={self.seatId} onIntent={onIntent} />
+            {!movementPlanner?.active && (
+              <ActionSections sections={[{ key: "move", title: "Move", detail: sector?.name, actions: moveActions, defaultOpen: true }]} />
+            )}
+            {!hasMoveContent && (
+              <EmptyTurnTab title="No movement choice" text="Movement is not available in this step. Resolve the current action or wait for the table." />
+            )}
+          </>
+        )}
+
+        {activeTurnTab === "battle" && (
+          <>
+            <div className="phone-turn-panel-heading">
+              <span>Battle</span>
+              <strong>{patch.encounter?.title ?? activeResolution?.card?.title ?? battleAssist?.enemyName ?? "No threat"}</strong>
+            </div>
+            {resolutionPanel}
+            {battleAssistPanel}
+            <ActionSections sections={[{ key: "threat", title: "Threat", detail: patch.encounter?.title, actions: threatActions, defaultOpen: true }]} />
+            {!hasBattleContent && (
+              <EmptyTurnTab title="No battle" text="There is no visible combat, check, or enemy roll waiting for this operative." />
+            )}
+          </>
+        )}
+
+        {activeTurnTab === "shop" && (
+          <>
+            <div className="phone-turn-panel-heading">
+              <span>Shop</span>
+              <strong>{shopEncounter?.shopName ?? "No market contact"}</strong>
+            </div>
+            <PhoneShopPanel shopEncounter={shopEncounter} seatId={self.seatId} onIntent={onIntent} />
+            {!shopEncounter && (
+              <EmptyTurnTab title="No shop here" text="Shop services appear when your operative is on a clear market, shrine, foundry, or service sector." />
+            )}
+          </>
+        )}
+
+        {activeTurnTab === "action" && (
+          <>
+            <div className="phone-turn-panel-heading">
+              <span>Action</span>
+              <strong>{boardSpace?.textBox.title ?? "Operative options"}</strong>
+            </div>
+            <SectorOpportunityChips items={sectorOpportunityItems} />
+            <ActionSections
+              sections={[
+                { key: "resolve", title: "Tile Action", detail: boardSpace?.textBox.title, actions: resolveActions, defaultOpen: true },
+                { key: "gear", title: "Gear", detail: `${gearActions.length} available`, actions: gearActions },
+                { key: "objects", title: "Items", detail: `${objectActions.length} usable`, actions: objectActions },
+                { key: "followers", title: "Followers", detail: `${followerActions.length} ready`, actions: followerActions },
+                { key: "table", title: "Table", detail: patch.interactionMode ?? "rivalry", actions: tableActions },
+                { key: "contracts", title: "Contracts", detail: `${contractActions.length} available`, actions: contractActions },
+                { key: "advance", title: "Advance", detail: "Finish or confront", actions: advanceActions, defaultOpen: true }
+              ]}
+            />
+            <TrophyPileSection actions={statRaiseActions} trophies={self.character.trophies} trophyPile={self.character.trophyPile} />
+            <TrophyAdvanceDisclosure actions={statRaiseActions} trophies={self.character.trophies} />
+          </>
+        )}
+      </div>
     </section>
   );
 }

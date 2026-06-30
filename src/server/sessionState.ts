@@ -1,9 +1,12 @@
 import { randomUUID } from "node:crypto";
 import { loadCharacters } from "../game/content/characters.js";
 import { loadContracts } from "../game/content/contracts.js";
+import { loadFollowers } from "../game/content/followers.js";
+import { loadGear } from "../game/content/gear.js";
 import { createCanonicalSectorGraph, validateCanonicalSectorGraph } from "../game/data/canonicalSectorGraph.js";
 import { getScenarioDefinition, SCENARIOS } from "../game/data/scenarios.js";
 import { createInitialScenarioProgress } from "../game/rules/scenarioAmbient.js";
+import { applyStartingLoadout, createInitialSoloRerollCharges, type StartingLoadoutCatalogs } from "../game/rules/startingLoadout.js";
 import { getHeatThresholdForMode, getWoundThresholdForMode } from "../game/rules/soloTuning.js";
 import type { Character } from "../game/schema/character.schema.js";
 import type { GameMode, GameState, InteractionMode, PlayerState, SessionMode } from "../game/schema/session.schema.js";
@@ -23,6 +26,21 @@ const sessionSeatLayouts = {
   ]
 } as const;
 
+export function getSeatCountForSession(
+  sessionMode: SessionMode,
+  playerCount?: number
+): number {
+  if (sessionMode === "single-player") {
+    return 1;
+  }
+
+  if (playerCount === undefined) {
+    return sessionSeatLayouts.multiplayer.length;
+  }
+
+  return Math.max(2, Math.min(sessionSeatLayouts.multiplayer.length, playerCount));
+}
+
 function cloneCharacter(character: Character, currentSpaceId: string): Character {
   return {
     ...character,
@@ -41,8 +59,17 @@ function cloneCharacter(character: Character, currentSpaceId: string): Character
 function createPlayerState(
   seatId: string,
   character: Character,
-  currentSpaceId: string
+  currentSpaceId: string,
+  seatIndex: number,
+  sessionMode: SessionMode,
+  loadoutCatalogs: StartingLoadoutCatalogs
 ): PlayerState {
+  const loadedCharacter = applyStartingLoadout(character, {
+    sessionMode,
+    seatIndex,
+    catalogs: loadoutCatalogs
+  });
+
   return {
     seatId,
     sectorId: currentSpaceId,
@@ -50,7 +77,7 @@ function createPlayerState(
       hand: [],
       notes: []
     },
-    character: cloneCharacter(character, currentSpaceId)
+    character: cloneCharacter(loadedCharacter, currentSpaceId)
   };
 }
 
@@ -59,13 +86,17 @@ export function createInitialSessionState(
   sessionMode: SessionMode = "multiplayer",
   scenarioId?: string,
   interactionMode?: InteractionMode,
-  gameMode: GameMode = "standard"
+  gameMode: GameMode = "standard",
+  playerCount?: number
 ): GameState {
   const characters = loadCharacters();
   const sectors = createCanonicalSectorGraph();
+  const gear = loadGear();
+  const followers = loadFollowers();
   const availableContracts = [...loadContracts().values()];
+  const loadoutCatalogs = { contracts: availableContracts, gear, followers };
   const defaultScenario = scenarioId ? getScenarioDefinition(scenarioId) ?? SCENARIOS[0] : SCENARIOS[0];
-  const configuredSeats = sessionSeatLayouts[sessionMode];
+  const configuredSeats = sessionSeatLayouts[sessionMode].slice(0, getSeatCountForSession(sessionMode, playerCount));
   const selectedCharacters = configuredSeats.map(({ characterId }) => {
     const character = characters.get(characterId);
 
@@ -109,12 +140,17 @@ export function createInitialSessionState(
       createPlayerState(
         seatId,
         selectedCharacters[index]!,
-        selectedCharacters[index]?.currentSpaceId ?? sectors[0]?.id ?? "ashwake-crossing"
+        selectedCharacters[index]?.currentSpaceId ?? sectors[0]?.id ?? "ashwake-crossing",
+        index,
+        sessionMode,
+        loadoutCatalogs
       )
     ),
     availableContracts,
     nemesisChampions: [],
     nemesisNexusCountdowns: [],
+    shopStockReveals: [],
+    soloRerollCharges: createInitialSoloRerollCharges(sessionMode, configuredSeats.map(({ seatId }) => seatId)),
     eventLog: [],
     recentEncounterCardIds: [],
     currentEncounter: null,

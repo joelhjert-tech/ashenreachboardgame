@@ -228,17 +228,17 @@ export function HostBattleOverlay({
           testId="host-battle-fx-layer"
         />
         <article className="host-battle-combatant host-battle-player host-battle-parallax-card" data-testid="host-battle-player">
+          <header className="host-battle-copy">
+            <span>Active operative</span>
+            <h2>{model.playerName}</h2>
+            <p>{model.playerTitle}</p>
+          </header>
           <div className="host-battle-portrait">
             {model.playerPortraitUrl ? (
               <img src={model.playerPortraitUrl} alt={model.playerName} />
             ) : (
               <div className="host-battle-fallback">Operative</div>
             )}
-          </div>
-          <div className="host-battle-copy">
-            <span>Active operative</span>
-            <h2>{model.playerName}</h2>
-            <p>{model.playerTitle}</p>
           </div>
           <div className="host-battle-stat-grid">
             <div>
@@ -264,13 +264,13 @@ export function HostBattleOverlay({
         </div>
 
         <article className="host-battle-combatant host-battle-enemy host-battle-parallax-card" data-testid="host-battle-enemy">
-          <div className="host-battle-portrait host-battle-card-art">
-            <CardArtImage cardType="threat" cardId={model.enemyCardId} alt={model.enemyName} />
-          </div>
-          <div className="host-battle-copy">
+          <header className="host-battle-copy">
             <span>{model.enemyType}</span>
             <h2>{model.enemyName}</h2>
             <p>{model.enemyRulesText ?? "Enemy rules will appear here once the threat is revealed."}</p>
+          </header>
+          <div className="host-battle-portrait host-battle-card-art">
+            <CardArtImage cardType="threat" cardId={model.enemyCardId} alt={model.enemyName} />
           </div>
           <div className="host-battle-stat-grid">
             <div>

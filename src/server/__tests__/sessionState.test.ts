@@ -4,8 +4,13 @@ import { loadThreatCards } from "../../game/content/threats.js";
 import { createCanonicalSectorGraph, validateCanonicalSectorGraph } from "../../game/data/canonicalSectorGraph.js";
 import { BOARD_SPACES } from "../../game/data/boardSpaces.js";
 import { SCENARIOS } from "../../game/data/scenarios.js";
+import { loadContracts } from "../../game/content/contracts.js";
+import { loadFollowers } from "../../game/content/followers.js";
+import { loadGear } from "../../game/content/gear.js";
 import { reduceGameState } from "../../game/engine/reducer.js";
+import { applyStartingLoadout } from "../../game/rules/startingLoadout.js";
 import { createPhoneProjection, createTvProjection } from "../roomServer.js";
+import { validateJoinToken } from "../auth.js";
 import { createInitialSessionState } from "../sessionState.js";
 
 describe("canonical sector graph", () => {
@@ -48,6 +53,18 @@ describe("canonical sector graph", () => {
     }
   });
 
+  it("applies normal starting salvage and contracts without granting mode gear or followers", () => {
+    const state = createInitialSessionState("session-alpha", "multiplayer");
+    const firstPlayer = state.players[0];
+
+    expect(firstPlayer?.character.salvage).toBe(3);
+    expect(firstPlayer?.character.activeContract).toMatchObject({ progress: 0 });
+    expect(firstPlayer?.character.activeContract?.contractId).toBe(state.availableContracts[0]?.id);
+    expect(firstPlayer?.character.heldGear).toEqual([]);
+    expect(firstPlayer?.character.followers ?? []).toEqual([]);
+    expect(state.soloRerollCharges).toEqual({});
+  });
+
   it("creates non-forgeable per-seat join tokens for new sessions", () => {
     const first = createInitialSessionState("session-alpha", "single-player");
     const second = createInitialSessionState("session-alpha", "single-player");
@@ -55,6 +72,11 @@ describe("canonical sector graph", () => {
     expect(first.seats[0]?.joinToken).toMatch(/^seat:session-alpha:seat-1:/);
     expect(first.seats[0]?.joinToken).not.toBe("seat:session-alpha:seat-1");
     expect(first.seats[0]?.joinToken).not.toBe(second.seats[0]?.joinToken);
+  });
+
+  it("rejects legacy unsigned join token helpers", () => {
+    expect(validateJoinToken("seat:session-alpha:seat-1", "session-alpha")).toBeNull();
+    expect(validateJoinToken("seat:session-alpha:seat-1:", "session-alpha")).toBeNull();
   });
 
   it("creates a true single-player session when requested", () => {
@@ -73,10 +95,46 @@ describe("canonical sector graph", () => {
     expect(state.heatThreshold).toBe(8);
     expect(state.woundThreshold).toBe(4);
     expect(state.scenarioProgress).toEqual({ sealTokens: 8 });
+    expect(state.soloRerollCharges).toEqual({ "seat-1": 1 });
+    expect(state.players[0]?.character.salvage).toBe(4);
+    expect(state.players[0]?.character.activeContract).toMatchObject({ progress: 0 });
+    expect(state.players[0]?.character.heldGear.map((item) => item.id)).toEqual(["veil-hook"]);
+    expect(state.players[0]?.character.followers?.map((follower) => follower.id)).toEqual(["grave-scribe"]);
     expect(tvProjection.sessionMode).toBe("single-player");
     expect(tvProjection.escalationThreshold).toBe(8);
     expect(tvProjection.seats).toHaveLength(1);
     expect(tvProjection.players).toHaveLength(0);
+  });
+
+  it("lets character starting-loadout overrides replace solo mode defaults", () => {
+    const base = createInitialSessionState("session-override", "single-player").players[0]!.character;
+    const loaded = applyStartingLoadout(
+      {
+        ...base,
+        salvage: 0,
+        activeContract: null,
+        heldGear: [],
+        followers: [],
+        startingSalvage: 7,
+        startingGear: ["tuning-spines"],
+        startingFollower: ["glassmere-mapper"],
+        startingContract: "choir-hush-census"
+      },
+      {
+        sessionMode: "single-player",
+        seatIndex: 0,
+        catalogs: {
+          contracts: [...loadContracts().values()],
+          gear: loadGear(),
+          followers: loadFollowers()
+        }
+      }
+    );
+
+    expect(loaded.salvage).toBe(7);
+    expect(loaded.activeContract).toEqual({ contractId: "choir-hush-census", progress: 0 });
+    expect(loaded.heldGear.map((item) => item.id)).toEqual(["tuning-spines"]);
+    expect(loaded.followers?.map((follower) => follower.id)).toEqual(["glassmere-mapper"]);
   });
 
   it("seeds the requested scenario instead of always defaulting to Broken Seal", () => {
@@ -160,6 +218,18 @@ describe("canonical sector graph", () => {
       }
     };
 
+    const tvProjection = createTvProjection(state) as {
+      movementPlanner: {
+        movementValue: number;
+        currentSectorName: string;
+        destinations: Array<{
+          sectorId: string;
+          name: string;
+          route: string[];
+          faceUpThreats: Array<{ name: string }>;
+        }>;
+      } | null;
+    };
     const phoneProjection = createPhoneProjection(state, "seat-1") as {
       movementPlanner: {
         movementValue: number;
@@ -179,9 +249,15 @@ describe("canonical sector graph", () => {
     };
 
     expect(phoneProjection.movementPlanner?.movementValue).toBe(1);
-    expect(phoneProjection.movementPlanner?.currentSectorName).toBe("Pilgrim Lock");
+    expect(phoneProjection.movementPlanner?.currentSectorName).toBe("Pilgrim Lock Gate");
+    expect(tvProjection.movementPlanner?.movementValue).toBe(phoneProjection.movementPlanner?.movementValue);
+    expect(tvProjection.movementPlanner?.currentSectorName).toBe(phoneProjection.movementPlanner?.currentSectorName);
+    expect(tvProjection.movementPlanner?.destinations.map((destination) => destination.sectorId).sort()).toEqual(
+      phoneProjection.movementPlanner?.destinations.map((destination) => destination.sectorId).sort()
+    );
 
     const anchorMarket = phoneProjection.movementPlanner?.destinations.find((destination) => destination.sectorId === "outer_waymarket");
+    const tvAnchorMarket = tvProjection.movementPlanner?.destinations.find((destination) => destination.sectorId === "outer_waymarket");
     const bridge = phoneProjection.movementPlanner?.destinations.find((destination) => destination.sectorId === "ashwake-crossing");
 
     expect(anchorMarket).toMatchObject({
@@ -192,9 +268,26 @@ describe("canonical sector graph", () => {
     });
     expect(anchorMarket?.shop?.servicesPreview).toContain("Buy Gear");
     expect(anchorMarket?.strategicTags).toContain("shop");
+    expect(tvAnchorMarket?.route).toEqual(anchorMarket?.route);
     expect(bridge?.threatIcons).toEqual(["yellow"]);
     expect(bridge?.faceUpThreats).toEqual([]);
     expect(JSON.stringify(phoneProjection.movementPlanner)).not.toContain("scrap-toll-gangers");
+    expect(JSON.stringify(tvProjection.movementPlanner)).not.toContain("scrap-toll-gangers");
+  });
+
+  it("omits the TV movement planner outside active movement", () => {
+    const state = createInitialSessionState("session-alpha");
+    state.status = "active";
+    state.phase = "action";
+    state.turnOrder = ["seat-1"];
+    state.activeSeatIndex = 0;
+    state.seats[0] = { ...state.seats[0]!, connected: true, displayName: "Lane", characterId: "void-marshal" };
+
+    const tvProjection = createTvProjection(state) as {
+      movementPlanner: unknown;
+    };
+
+    expect(tvProjection.movementPlanner).toBeNull();
   });
 
   it("marks gated movement destinations with disabled reasons", () => {

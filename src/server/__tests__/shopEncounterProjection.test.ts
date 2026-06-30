@@ -107,4 +107,39 @@ describe("shop encounter public projection", () => {
     ]);
     expect(tvProjection.shopEncounter?.services).toEqual([]);
   });
+
+  it("publishes clear shrine and recovery service sectors through the shop encounter model", () => {
+    const state = createInitialSessionState("session-service-sector");
+    state.status = "active";
+    state.phase = "action";
+    state.seats[0] = { ...state.seats[0]!, displayName: "Joel", connected: true };
+    state.players[0] = {
+      ...state.players[0]!,
+      sectorId: "outer_ember_sanctum",
+      character: {
+        ...state.players[0]!.character,
+        currentSpaceId: "outer_ember_sanctum",
+        salvage: 4
+      }
+    };
+
+    const tvProjection = createTvProjection(state) as {
+      shopEncounter: {
+        shopName: string;
+        status: string;
+        services: Array<{ id: string; enabled: boolean }>;
+      } | null;
+    };
+
+    expect(tvProjection.shopEncounter).toMatchObject({
+      shopName: "Pilgrim Lock Gate",
+      status: "open"
+    });
+    expect(tvProjection.shopEncounter?.services).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ id: "buy-treatment", enabled: true }),
+        expect.objectContaining({ id: "buy-boon", enabled: true })
+      ])
+    );
+  });
 });

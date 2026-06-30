@@ -1,0 +1,32 @@
+{
+  "id": "toll-scrip-urchins",
+  "type": "threat",
+  "cardType": "enemy",
+  "title": "Toll-Scrip Urchins",
+  "enemyName": "Toll-Scrip Urchins",
+  "text": "A knot of soot-faced lane children flashes counterfeit toll charms and tries to cut your salvage straps.",
+  "flavor": "The smallest gangs know which pockets matter.",
+  "severity": 1,
+  "region": "outer",
+  "stat": "guile",
+  "difficulty": 2,
+  "trophyValue": 1,
+  "defeatReward": {
+    "type": "gain_note",
+    "text": "You spot the false toll mark and learn which stalls are running the trick."
+  },
+  "woundOnLoss": {
+    "type": "gain_heat",
+    "amount": 1
+  },
+  "enemyFamily": "human",
+  "threatLane": "yellow",
+  "rarity": "common",
+  "tempo": "neutral",
+  "resourceTags": [
+    "heat",
+    "salvage",
+    "trophy"
+  ],
+  "imagePrompt": "Small ash-lane pickpockets in patched market wraps holding fake brass toll charms under yellow salvage lamps, dark gothic industrial street scene, non-heroic low threat"
+}

@@ -1,0 +1,25 @@
+{
+  "id": "rune-eye-raven",
+  "name": "The Rune-Eye Raven",
+  "role": "scout",
+  "tier": "legendary",
+  "tags": ["companion", "raven", "omen", "memory", "route-scout"],
+  "unique": true,
+  "timingWindows": ["beforeThreatDraw", "movement", "startOfTurn", "anyTime"],
+  "artCardId": "artifact-rune-eye-raven",
+  "text": "A three-eyed ash raven that flies ahead of the operative and returns with route-memory in its beak. Once per round, use it to record an omen note before drawing threats or choosing a dangerous route.",
+  "activeEffect": {
+    "type": "gain_note",
+    "text": "The Rune-Eye Raven returns with a route-memory: record one omen note before the next threat draw or route choice."
+  },
+  "useLimit": "oncePerRound",
+  "loyalty": 4,
+  "lossCondition": "choice",
+  "acquisition": [
+    "Drawn from the Artifact deck as a legendary omen companion.",
+    "Awarded by a shrine, route-memory, or battlefield-carrion event.",
+    "Recovered after clearing a Command or Signal threat from an inner-ring approach."
+  ],
+  "flavor": "One eye sees the road. One eye sees the dead. The third waits for you to choose.",
+  "imagePrompt": "A grimdark fantasy-sci-fi companion card showing a large black-and-white ash raven with three glowing golden eyes, a tall black hat, spiked dark brass collar, red gem ornaments, ragged burgundy cloak, standing on a basalt outcrop above a ruined gothic-industrial battlefield. Norse-inspired omen bird mood, runic route-memory atmosphere, dark storm clouds, ember sparks, Ashen Reach style, no text."
+}

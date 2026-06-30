@@ -42,6 +42,7 @@ export interface PublicPlayerCharacter {
   id: string;
   name: string;
   archetype: string;
+  qaOnly?: boolean;
   status: "active" | "recalled";
   activeContract: { contractId: string; progress: number } | null;
   stats: Record<Stat, number>;
@@ -133,6 +134,7 @@ export interface PrivateCharacter {
   id: string;
   name: string;
   archetype: string;
+  qaOnly?: boolean;
   currentSpaceId: string;
   status: "active" | "recalled";
   stats: Record<Stat, number>;
@@ -544,6 +546,7 @@ export interface PublicPatchPayload {
   outcomeSummary: OutcomeSummary | null;
   activeResolution?: ActiveResolution | null;
   shopEncounter?: PublicShopEncounterState | null;
+  movementPlanner?: PublicMovementPlannerState | null;
   recentAbilityTriggers: AbilityTriggerSummary[];
   nemesis: ActiveNemesisSummary | null;
 }
@@ -551,7 +554,10 @@ export interface PublicPatchPayload {
 export interface PhonePatchPayload extends PublicPatchPayload {
   phase: Phase;
   self: PhoneSelfState | null;
-  movementPlanner?: PublicMovementPlannerState | null;
+  soloReroll?: {
+    available: boolean;
+    charges: number;
+  };
   boundNemesis?: NemesisChampionSummary | null;
   crownKeyFragments?: number;
   eligibleNemesisAssistSeatIds?: string[];
@@ -625,6 +631,10 @@ export type ClientIntent =
       seatId: string;
     }
   | {
+      type: "SOLO_REROLL_REQUESTED";
+      seatId: string;
+    }
+  | {
       type: "CONTINUE_RESOLUTION";
       seatId: string;
     }
@@ -664,6 +674,16 @@ export type ClientIntent =
       seatId: string;
       targetSeatId: string;
       interactionKind: "trade" | "aid" | "duel" | "interfere";
+    }
+  | {
+      type: "SHOP_SERVICE_REQUESTED";
+      seatId: string;
+      serviceId: string;
+    }
+  | {
+      type: "SHOP_PURCHASE_REQUESTED";
+      seatId: string;
+      cardId: string;
     }
   | {
       type: "ACCEPT_CONTRACT";

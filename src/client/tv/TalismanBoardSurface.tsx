@@ -6,7 +6,6 @@ import type { SectorNode } from "../shared/types.js";
 import type { BoardRect } from "./boardGeometry.js";
 import {
   getBoardMapRuntimeAssetPaths,
-  getMapCornerTileAssetPath,
   getMapRegionLayerAssetPath,
   getMapTileBackgroundImage
 } from "./mapAssetRegistry.js";
@@ -27,24 +26,24 @@ const tileSizeByRingAndSide: Record<
   Record<"horizontal" | "vertical" | "center", { width: number; height: number }>
 > = {
   outer: {
-    horizontal: { width: 0.118, height: 0.112 },
-    vertical: { width: 0.09, height: 0.162 },
-    center: { width: 0.118, height: 0.112 }
+    horizontal: { width: 0.112, height: 0.116 },
+    vertical: { width: 0.096, height: 0.16 },
+    center: { width: 0.112, height: 0.116 }
   },
   middle: {
-    horizontal: { width: 0.106, height: 0.09 },
-    vertical: { width: 0.086, height: 0.128 },
-    center: { width: 0.106, height: 0.09 }
+    horizontal: { width: 0.092, height: 0.088 },
+    vertical: { width: 0.082, height: 0.128 },
+    center: { width: 0.092, height: 0.088 }
   },
   inner: {
-    horizontal: { width: 0.108, height: 0.074 },
-    vertical: { width: 0.078, height: 0.104 },
-    center: { width: 0.108, height: 0.074 }
+    horizontal: { width: 0.128, height: 0.074 },
+    vertical: { width: 0.078, height: 0.092 },
+    center: { width: 0.128, height: 0.074 }
   },
   center: {
-    horizontal: { width: 0.24, height: 0.18 },
-    vertical: { width: 0.24, height: 0.18 },
-    center: { width: 0.24, height: 0.18 }
+    horizontal: { width: 0.2, height: 0.12 },
+    vertical: { width: 0.2, height: 0.12 },
+    center: { width: 0.2, height: 0.12 }
   }
 };
 
@@ -55,8 +54,6 @@ const tileLabelByRing: Record<BoardNode["ring"], string> = {
   center: "Core"
 };
 
-const boardCorners = ["northwest", "northeast", "southeast", "southwest"] as const;
-
 interface TalismanBoardSurfaceProps {
   imageRect: BoardRect;
   activeNodeId?: string | null;
@@ -64,9 +61,16 @@ interface TalismanBoardSurfaceProps {
   legalTargetIds?: Set<string>;
   sectorsById?: Map<string, SectorNode>;
   occupantCountsByNodeId?: Map<string, number>;
+  playerMarkersByNodeId?: Map<string, TilePlayerMarker[]>;
   nemesisSectorIds?: Set<string>;
   onSelectNode?: (nodeId: string) => void;
   debugEnabled?: boolean;
+}
+
+export interface TilePlayerMarker {
+  seatId: string;
+  label: string;
+  color: string;
 }
 
 function getTileTone(node: BoardNode): string {
@@ -101,6 +105,10 @@ function getTileSide(node: BoardNode): "horizontal" | "vertical" | "center" {
     return "center";
   }
 
+  if (node.y <= 0.13 || node.y >= 0.87) {
+    return "horizontal";
+  }
+
   return Math.abs(node.y - 0.5) > Math.abs(node.x - 0.5) ? "horizontal" : "vertical";
 }
 
@@ -111,6 +119,7 @@ export function TalismanBoardSurface({
   legalTargetIds,
   sectorsById,
   occupantCountsByNodeId,
+  playerMarkersByNodeId,
   nemesisSectorIds,
   onSelectNode,
   debugEnabled = false
@@ -143,14 +152,6 @@ export function TalismanBoardSurface({
         className="talisman-board-ring talisman-board-ring-core"
         style={{ backgroundImage: `url("${getMapRegionLayerAssetPath("center")}")` }}
       />
-      {boardCorners.map((corner) => (
-        <div
-          key={corner}
-          className={`talisman-board-corner talisman-board-corner-${corner}`}
-          style={{ backgroundImage: `url("${getMapCornerTileAssetPath(corner)}")` }}
-          aria-hidden="true"
-        />
-      ))}
       <div className="talisman-board-spoke talisman-board-spoke-north" />
       <div className="talisman-board-spoke talisman-board-spoke-east" />
       <div className="talisman-board-spoke talisman-board-spoke-south" />
@@ -173,6 +174,7 @@ export function TalismanBoardSurface({
         const threatIcons = liveSector?.threatIcons?.length ? liveSector.threatIcons : boardSpace?.threatIcons ?? [];
         const localThreatDeckCount = liveSector?.encounterDecks.threat.length ?? 0;
         const occupantCount = occupantCountsByNodeId?.get(node.id) ?? 0;
+        const playerMarkers = playerMarkersByNodeId?.get(node.id) ?? [];
         const isShop = boardSpace?.tags.includes("shop") || boardSpace?.tags.includes("risk-shop");
         const isLockedShop = Boolean(isShop && localThreatDeckCount > 0);
         const hasNemesis = nemesisSectorIds?.has(node.id) ?? false;
@@ -230,9 +232,26 @@ export function TalismanBoardSurface({
                 ))}
               </span>
             )}
+            {playerMarkers.length > 0 && (
+              <span className="talisman-board-tile-players" aria-label={`${playerMarkers.length} operative${playerMarkers.length === 1 ? "" : "s"} on ${node.label}`}>
+                {playerMarkers.slice(0, 3).map((marker) => (
+                  <span
+                    key={marker.seatId}
+                    data-testid={`token-${marker.seatId}`}
+                    data-sector-id={node.id}
+                    className="talisman-board-player-marker"
+                    title={marker.label}
+                    style={{ ["--token-fill" as string]: marker.color }}
+                  >
+                    {marker.label.slice(0, 1).toUpperCase()}
+                  </span>
+                ))}
+                {playerMarkers.length > 3 && <span className="talisman-board-player-overflow">+{playerMarkers.length - 3}</span>}
+              </span>
+            )}
             <span className="talisman-board-tile-status" aria-hidden="true">
               {isLockedShop && <span className="talisman-board-lock">!</span>}
-              {occupantCount > 0 && <span className="talisman-board-player-count">{occupantCount}</span>}
+              {occupantCount > 0 && playerMarkers.length === 0 && <span className="talisman-board-player-count">{occupantCount}</span>}
               {hasNemesis && <span className="talisman-board-nemesis">Nemesis</span>}
             </span>
           </button>

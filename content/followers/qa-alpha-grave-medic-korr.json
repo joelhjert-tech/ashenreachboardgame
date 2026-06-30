@@ -1,0 +1,12 @@
+{
+  "id": "qa_alpha_follower_03",
+  "name": "Grave Medic Korr",
+  "role": "medic",
+  "text": "QA only: heal 1 wound at the end of each turn when testing long-run survival and recovery loops.",
+  "tier": "legendary",
+  "tags": ["qa", "medic", "recovery"],
+  "timingWindows": ["startOfTurn", "anyTime"],
+  "useLimit": "oncePerTurn",
+  "loyalty": 4,
+  "lossCondition": "choice"
+}

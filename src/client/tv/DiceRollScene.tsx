@@ -34,12 +34,8 @@ declare global {
   }
 }
 
-function normalizeDieValue(value: number | null | undefined): number {
-  if (value === null || value === undefined || Number.isNaN(value)) {
-    return 1;
-  }
-
-  return Math.min(6, Math.max(1, Math.abs(value) % 6 || 6));
+function isDieFace(value: number | null | undefined): value is number {
+  return typeof value === "number" && Number.isInteger(value) && value >= 1 && value <= 6;
 }
 
 function formatModifier(value: number | null | undefined): string {
@@ -157,20 +153,18 @@ export function DiceRollScene({
   const dice = useMemo(
     () =>
       [
-        { key: "attack", value: normalizeDieValue(attackDieFace ?? attackValue), accent: challengeTheme.color, x: -1.45 },
-        { key: "defense", value: normalizeDieValue(defenseDieFace ?? defenseValue), accent: "#6bbcff", x: 0 },
-        modifierDieFace !== undefined || modifierValue
-          ? { key: "modifier", value: normalizeDieValue(modifierDieFace ?? modifierValue), accent: "#78e08a", x: 1.45 }
-          : null
+        isDieFace(attackDieFace) ? { key: "attack", value: attackDieFace, accent: challengeTheme.color, x: -1.45 } : null,
+        isDieFace(defenseDieFace) ? { key: "defense", value: defenseDieFace, accent: "#6bbcff", x: 0 } : null,
+        isDieFace(modifierDieFace) ? { key: "modifier", value: modifierDieFace, accent: "#78e08a", x: 1.45 } : null
       ].filter((die): die is { key: string; value: number; accent: string; x: number } => Boolean(die)),
-    [attackDieFace, attackValue, challengeTheme.color, defenseDieFace, defenseValue, modifierDieFace, modifierValue]
+    [attackDieFace, challengeTheme.color, defenseDieFace, modifierDieFace]
   );
 
   useEffect(() => {
     const canvas = canvasRef.current;
     const container = containerRef.current;
 
-    if (!canvas || !container || fallbackReason) {
+    if (!canvas || !container || fallbackReason || dice.length === 0) {
       return;
     }
 
@@ -328,15 +322,15 @@ export function DiceRollScene({
     "dice-roll-scene",
     `dice-roll-scene-${challengeStat}`,
     compact ? "dice-roll-scene-compact" : "",
-    fallbackReason ? "dice-roll-scene-fallback" : "",
+    fallbackReason || dice.length === 0 ? "dice-roll-scene-fallback" : "",
     className
   ]
     .filter(Boolean)
     .join(" ");
 
   return (
-    <div className={rootClass} data-testid={testId} data-fallback={fallbackReason ?? undefined}>
-      {fallbackReason ? (
+    <div className={rootClass} data-testid={testId} data-fallback={fallbackReason ?? (dice.length === 0 ? "missing-dice-faces" : undefined)}>
+      {fallbackReason || dice.length === 0 ? (
         <CombatDiceAnimation
           attackValue={attackValue}
           defenseValue={defenseValue}

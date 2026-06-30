@@ -1,0 +1,25 @@
+{
+  "id": "lucy-hell-puppy",
+  "name": "Lucy, Hell Puppy",
+  "role": "companion",
+  "tier": "legendary",
+  "tags": ["companion", "hell-puppy", "ember", "battle", "heat"],
+  "unique": true,
+  "timingWindows": ["beforeBattleRoll", "beforeTakingDamage", "movement", "anyTime"],
+  "artCardId": "artifact-lucy-hell-puppy",
+  "text": "Lucy is a breach-warmed puppy with ember paws, blue innocent eyes, and a bite that leaves little red stars in armor plate. Once per round, use Lucy to record an ember-pup note before battle, damage, or a dangerous movement choice.",
+  "activeEffect": {
+    "type": "gain_note",
+    "text": "Lucy barks fire into the ash: record an ember-pup note for this battle, damage, or route choice."
+  },
+  "useLimit": "oncePerRound",
+  "loyalty": 5,
+  "lossCondition": "choice",
+  "acquisition": [
+    "Drawn from the Artifact deck as a legendary companion bond.",
+    "Awarded by an ember shrine, rescue event, or firebreak route.",
+    "Recovered after clearing a burning sector without taking a wound."
+  ],
+  "flavor": "She has never met a battlefield she could not improve by wagging at it.",
+  "imagePrompt": "A grimdark fantasy-sci-fi companion card showing a tiny fluffy hell puppy with blue eyes, ember-red horn sparks, glowing fire paws, a black spiked collar with a red ward charm, walking through burning basalt ruins and gothic-industrial ash. Cute but supernatural, fiery tail glow, dark red skies, cinematic Ashen Reach card art, no text."
+}
