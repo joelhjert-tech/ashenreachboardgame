@@ -7,3 +7,4 @@ coverage/
 tmp-*.log
 tmp-*.out.log
 tmp-*.err.log
+artifacts/
