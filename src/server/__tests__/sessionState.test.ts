@@ -202,7 +202,7 @@ describe("canonical sector graph", () => {
     expect(phoneProjection.nemesis).toBeNull();
   });
 
-  it("builds public movement planner intel from adjacent sectors without leaking hidden deck cards", () => {
+  it("builds public movement planner intel from legal sectors without leaking hidden deck cards", () => {
     const state = createInitialSessionState("session-alpha");
     state.status = "active";
     state.phase = "navigation";
@@ -288,6 +288,117 @@ describe("canonical sector graph", () => {
     };
 
     expect(tvProjection.movementPlanner).toBeNull();
+  });
+
+  it("builds exact rolled-distance movement routes from the authoritative graph", () => {
+    const state = createInitialSessionState("session-alpha");
+    state.status = "active";
+    state.phase = "navigation";
+    state.turnOrder = ["seat-1"];
+    state.activeSeatIndex = 0;
+    state.movementRolls = { "seat-1": 2 };
+    state.seats[0] = { ...state.seats[0]!, connected: true, displayName: "Lane", characterId: "void-marshal" };
+    state.players[0] = {
+      ...state.players[0]!,
+      sectorId: "outer_ember_sanctum",
+      character: {
+        ...state.players[0]!.character,
+        currentSpaceId: "outer_ember_sanctum"
+      }
+    };
+
+    const phoneProjection = createPhoneProjection(state, "seat-1") as {
+      movementPlanner: {
+        movementValue: number;
+        destinations: Array<{ sectorId: string; distance: number; route: string[] }>;
+      } | null;
+    };
+    const tvProjection = createTvProjection(state) as {
+      movementPlanner: {
+        movementValue: number;
+        destinations: Array<{ sectorId: string; distance: number; route: string[] }>;
+      } | null;
+    };
+
+    const cinderFields = phoneProjection.movementPlanner?.destinations.find((destination) => destination.sectorId === "cinder-fields");
+
+    expect(phoneProjection.movementPlanner?.movementValue).toBe(2);
+    expect(cinderFields).toMatchObject({
+      distance: 2,
+      route: ["outer_ember_sanctum", "glassmere-spindle", "cinder-fields"]
+    });
+    expect(phoneProjection.movementPlanner?.destinations.every((destination) => destination.distance === 2)).toBe(true);
+    expect(phoneProjection.movementPlanner?.destinations.some((destination) => destination.sectorId === "outer_waymarket")).toBe(false);
+    expect(tvProjection.movementPlanner?.destinations).toEqual(phoneProjection.movementPlanner?.destinations);
+  });
+
+  it("builds exact three-step movement routes without teleporting", () => {
+    const state = createInitialSessionState("session-alpha");
+    state.status = "active";
+    state.phase = "navigation";
+    state.turnOrder = ["seat-1"];
+    state.activeSeatIndex = 0;
+    state.movementRolls = { "seat-1": 3 };
+    state.seats[0] = { ...state.seats[0]!, connected: true, displayName: "Lane", characterId: "void-marshal" };
+    state.players[0] = {
+      ...state.players[0]!,
+      sectorId: "outer_ember_sanctum",
+      character: {
+        ...state.players[0]!.character,
+        currentSpaceId: "outer_ember_sanctum"
+      }
+    };
+
+    const phoneProjection = createPhoneProjection(state, "seat-1") as {
+      movementPlanner: {
+        movementValue: number;
+        destinations: Array<{ sectorId: string; distance: number; route: string[] }>;
+      } | null;
+    };
+    const emberwatch = phoneProjection.movementPlanner?.destinations.find((destination) => destination.sectorId === "emberwatch-step");
+
+    expect(phoneProjection.movementPlanner?.movementValue).toBe(3);
+    expect(emberwatch).toMatchObject({
+      distance: 3,
+      route: ["outer_ember_sanctum", "glassmere-spindle", "cinder-fields", "emberwatch-step"]
+    });
+    expect(phoneProjection.movementPlanner?.destinations.every((destination) => destination.route.length === 4)).toBe(true);
+    expect(phoneProjection.movementPlanner?.destinations.some((destination) => destination.route.includes("missing-sector"))).toBe(false);
+  });
+
+  it("allows reducer movement only to destinations in the rolled-distance planner", () => {
+    const state = createInitialSessionState("session-alpha");
+    state.status = "active";
+    state.phase = "navigation";
+    state.turnOrder = ["seat-1"];
+    state.activeSeatIndex = 0;
+    state.movementRolls = { "seat-1": 2 };
+    state.seats[0] = { ...state.seats[0]!, connected: true, displayName: "Lane", characterId: "void-marshal" };
+    state.players[0] = {
+      ...state.players[0]!,
+      sectorId: "outer_ember_sanctum",
+      character: {
+        ...state.players[0]!.character,
+        currentSpaceId: "outer_ember_sanctum"
+      }
+    };
+
+    const legal = reduceGameState(state, {
+      type: "MOVE_REQUESTED",
+      seatId: "seat-1",
+      toSectorId: "cinder-fields",
+      createdAt: "2026-06-30T00:00:00.000Z"
+    });
+    const illegal = reduceGameState(state, {
+      type: "MOVE_REQUESTED",
+      seatId: "seat-1",
+      toSectorId: "outer_waymarket",
+      createdAt: "2026-06-30T00:00:00.000Z"
+    });
+
+    expect(legal.ok).toBe(true);
+    expect(illegal.ok).toBe(false);
+    expect(illegal.ok ? null : illegal.rejection.reason).toContain("current movement value");
   });
 
   it("marks gated movement destinations with disabled reasons", () => {

@@ -63,6 +63,11 @@ import {
   getNemesisMovementStepCount,
   hasCrownKeyFragment
 } from "../game/rules/nemesisRelay.js";
+import {
+  buildMovementRoutePlan,
+  getLegalMovementRoute,
+  getMovementBlockReason
+} from "../game/rules/movementPlanner.js";
 import { resolveSpaceText } from "../game/rules/tileTextResolver.js";
 import { applyStartingLoadout } from "../game/rules/startingLoadout.js";
 import type {
@@ -4422,10 +4427,9 @@ export class GameRoomServer {
     }
 
     const fromSectorId = player.character.currentSpaceId;
-    const currentSector = this.state.sectors.find((entry) => entry.id === fromSectorId);
     const targetSector = this.state.sectors.find((entry) => entry.id === toSectorId);
 
-    if (!currentSector) {
+    if (!this.state.sectors.some((entry) => entry.id === fromSectorId)) {
       throw new Error(`Unknown current sector ${fromSectorId}`);
     }
 
@@ -4433,30 +4437,8 @@ export class GameRoomServer {
       throw new Error(`Unknown sector ${toSectorId}`);
     }
 
-    if (!currentSector.neighbors.includes(toSectorId)) {
-      throw new Error(`${targetSector.name} is not adjacent to ${currentSector.name}`);
-    }
-
-    const targetSpace = getBoardSpace(toSectorId);
-    const notes = new Set(player.private.notes);
-
-    if (
-      this.state.gameMode === "nemesis_relay" &&
-      targetSpace &&
-      (targetSpace.tier === "inner" || targetSpace.tier === "center") &&
-      !hasCrownKeyFragment(this.state, seatId)
-    ) {
-      throw new Error("A Crown-Key Fragment is required to enter the Inner Region during Nemesis Relay");
-    }
-
-    for (const requirement of targetSpace?.movementRequirements ?? []) {
-      if (requirement.allowedFrom && !requirement.allowedFrom.includes(fromSectorId)) {
-        throw new Error(requirement.errorMessage);
-      }
-
-      if (requirement.requiredNotes && !requirement.requiredNotes.every((note) => notes.has(note))) {
-        throw new Error(requirement.errorMessage);
-      }
+    if (!getLegalMovementRoute(this.state, seatId, toSectorId)) {
+      throw new Error(getMovementBlockReason(this.state, seatId, toSectorId) ?? `${targetSector.name} is not reachable by the current movement value`);
     }
 
     return { player, fromSectorId, targetSector };
@@ -5740,38 +5722,6 @@ function getPublicRing(tier: BoardTier): "outer" | "middle" | "inner" | "core" {
   return tier === "center" ? "core" : tier === "inner" ? "inner" : tier === "middle" ? "middle" : "outer";
 }
 
-function getDestinationDisabledReason(state: GameState, player: PlayerState, toSectorId: string): string | undefined {
-  const fromSectorId = player.character.currentSpaceId;
-  const currentSector = state.sectors.find((sector) => sector.id === fromSectorId);
-  const targetSpace = getBoardSpace(toSectorId);
-  const notes = new Set(player.private.notes);
-
-  if (!currentSector?.neighbors.includes(toSectorId)) {
-    return "Route is not adjacent from your current sector.";
-  }
-
-  if (
-    state.gameMode === "nemesis_relay" &&
-    targetSpace &&
-    (targetSpace.tier === "inner" || targetSpace.tier === "center") &&
-    !hasCrownKeyFragment(state, player.seatId)
-  ) {
-    return "Requires a Crown-Key Fragment in Nemesis Relay.";
-  }
-
-  for (const requirement of targetSpace?.movementRequirements ?? []) {
-    if (requirement.allowedFrom && !requirement.allowedFrom.includes(fromSectorId)) {
-      return requirement.errorMessage;
-    }
-
-    if (requirement.requiredNotes && !requirement.requiredNotes.every((note) => notes.has(note))) {
-      return requirement.errorMessage;
-    }
-  }
-
-  return undefined;
-}
-
 function getFaceUpThreatsForSector(state: GameState, sectorId: string): PublicMoveDestination["faceUpThreats"] {
   const activeSeatId = state.turnOrder[state.activeSeatIndex] ?? null;
   const activePlayer = activeSeatId ? state.players.find((player) => player.seatId === activeSeatId) : null;
@@ -5892,18 +5842,29 @@ function buildPublicMovementPlanner(state: GameState, seatId: string): PublicMov
     return null;
   }
 
-  const destinations = currentSector.neighbors.flatMap<PublicMoveDestination>((neighborId) => {
-    const sector = state.sectors.find((entry) => entry.id === neighborId);
-    const boardSpace = getBoardSpace(neighborId);
+  const plan = buildMovementRoutePlan(state, seatId);
+
+  if (!plan) {
+    return null;
+  }
+
+  const routeEntries = [
+    ...plan.routes.map((route) => ({ ...route, disabledReason: undefined })),
+    ...plan.blockedRoutes
+  ];
+
+  const destinations = routeEntries.flatMap<PublicMoveDestination>((routeEntry) => {
+    const sector = state.sectors.find((entry) => entry.id === routeEntry.sectorId);
+    const boardSpace = getBoardSpace(routeEntry.sectorId);
 
     if (!sector || !boardSpace) {
       return [];
     }
 
-    const faceUpThreats = getFaceUpThreatsForSector(state, neighborId);
-    const disabledReason = getDestinationDisabledReason(state, player, neighborId);
+    const faceUpThreats = getFaceUpThreatsForSector(state, routeEntry.sectorId);
+    const disabledReason = routeEntry.disabledReason;
     const occupants = state.players
-      .filter((entry) => entry.character.currentSpaceId === neighborId)
+      .filter((entry) => entry.character.currentSpaceId === routeEntry.sectorId)
       .map((entry) => {
         const seat = state.seats.find((candidate) => candidate.seatId === entry.seatId);
         return {
@@ -5912,18 +5873,19 @@ function buildPublicMovementPlanner(state: GameState, seatId: string): PublicMov
           characterName: entry.character.name
         };
       });
-    const nemesisPresent = state.nemesisChampions.some((champion) => !champion.defeated && champion.sectorId === neighborId);
+    const nemesisPresent = state.nemesisChampions.some((champion) => !champion.defeated && champion.sectorId === routeEntry.sectorId);
     const shopStatus =
       faceUpThreats.length > 0 ? "locked" : boardSpace.tags.includes("risk-shop") ? "dangerous" : "open";
+    const routeNames = routeEntry.route.map((sectorId) => state.sectors.find((entry) => entry.id === sectorId)?.name ?? sectorId);
 
     return [
       {
         sectorId: sector.id,
         name: sector.name,
         ring: getPublicRing(boardSpace.tier),
-        distance: 1,
-        route: [currentSector.id, sector.id],
-        routeNames: [currentSector.name, sector.name],
+        distance: routeEntry.distance,
+        route: routeEntry.route,
+        routeNames,
         tags: [...boardSpace.tags],
         threatIcons: [...(boardSpace.threatIcons ?? sector.threatIcons ?? [])],
         ruleText: boardSpace.textBox.text || boardSpace.ruleText,
@@ -5940,7 +5902,7 @@ function buildPublicMovementPlanner(state: GameState, seatId: string): PublicMov
         faceUpThreats,
         occupants,
         nemesisPresent,
-        scenarioMarkers: getScenarioMarkersForSector(state, neighborId),
+        scenarioMarkers: getScenarioMarkersForSector(state, routeEntry.sectorId),
         strategicTags: buildStrategicTags({
           boardTags: boardSpace.tags,
           threatIcons: boardSpace.threatIcons,
@@ -5955,7 +5917,7 @@ function buildPublicMovementPlanner(state: GameState, seatId: string): PublicMov
 
   return {
     active: true,
-    movementValue: 1,
+    movementValue: plan.movementValue,
     currentSectorId: currentSector.id,
     currentSectorName: currentSector.name,
     destinations

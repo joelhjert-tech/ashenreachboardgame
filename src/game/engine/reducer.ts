@@ -46,6 +46,7 @@ import type { ActiveResolution, GameState, PlayerState } from "../schema/session
 import type { GearSlot } from "../schema/gear.schema.js";
 import type { TrophyPileEntry } from "../schema/character.schema.js";
 import { getBoardSpace, isScenarioConfrontationSpace } from "../data/boardSpaces.js";
+import { getLegalMovementRoute, getMovementBlockReason } from "../rules/movementPlanner.js";
 import {
   advanceContractObjectiveProgress,
   getContractObjectiveTarget,
@@ -135,32 +136,14 @@ function getNextActiveSeatIndex(state: GameState): number {
   return (state.activeSeatIndex + 1) % Math.max(state.turnOrder.length, 1);
 }
 
-function ensureNeighbor(state: GameState, fromSectorId: string, toSectorId: string): void {
-  const sector = state.sectors.find((entry) => entry.id === fromSectorId);
+function ensureLegalMovementRoute(state: GameState, seatId: string, toSectorId: string): void {
+  const route = getLegalMovementRoute(state, seatId, toSectorId);
 
-  if (!sector) {
-    throw new Error(`Unknown sector ${fromSectorId}`);
+  if (route) {
+    return;
   }
 
-  if (!sector.neighbors.includes(toSectorId)) {
-    throw new Error(`Sector ${toSectorId} is not reachable from ${fromSectorId}`);
-  }
-}
-
-function ensureGateProgression(state: GameState, seatId: string, fromSectorId: string, toSectorId: string): void {
-  const player = requirePlayer(state, seatId);
-  const notes = new Set(player.private.notes);
-  const targetSpace = getBoardSpace(toSectorId);
-
-  for (const requirement of targetSpace?.movementRequirements ?? []) {
-    if (requirement.allowedFrom && !requirement.allowedFrom.includes(fromSectorId)) {
-      throw new Error(requirement.errorMessage);
-    }
-
-    if (requirement.requiredNotes && !requirement.requiredNotes.every((note) => notes.has(note))) {
-      throw new Error(requirement.errorMessage);
-    }
-  }
+  throw new Error(getMovementBlockReason(state, seatId, toSectorId) ?? `Sector ${toSectorId} is not reachable by the current movement value`);
 }
 
 function canResolveSpaceText(state: GameState, seatId: string): void {
@@ -1005,8 +988,7 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
       const player = requirePlayer(state, moveAction.seatId);
 
       try {
-        ensureNeighbor(state, player.character.currentSpaceId, moveAction.toSectorId);
-        ensureGateProgression(state, moveAction.seatId, player.character.currentSpaceId, moveAction.toSectorId);
+        ensureLegalMovementRoute(state, moveAction.seatId, moveAction.toSectorId);
       } catch (error) {
         return reject(state, action, error instanceof Error ? error.message : "Sector is not reachable");
       }
@@ -1043,8 +1025,7 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
       }
 
       try {
-        ensureNeighbor(state, movementAction.fromSectorId, movementAction.toSectorId);
-        ensureGateProgression(state, movementAction.seatId, movementAction.fromSectorId, movementAction.toSectorId);
+        ensureLegalMovementRoute(state, movementAction.seatId, movementAction.toSectorId);
       } catch (error) {
         return reject(state, action, error instanceof Error ? error.message : "Sector is not reachable");
       }

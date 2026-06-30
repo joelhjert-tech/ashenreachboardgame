@@ -150,6 +150,7 @@ export function createInitialSessionState(
     nemesisChampions: [],
     nemesisNexusCountdowns: [],
     shopStockReveals: [],
+    movementRolls: undefined,
     soloRerollCharges: createInitialSoloRerollCharges(sessionMode, configuredSeats.map(({ seatId }) => seatId)),
     eventLog: [],
     recentEncounterCardIds: [],

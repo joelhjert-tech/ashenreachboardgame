@@ -161,6 +161,7 @@ export const gameStateSchema = z.object({
   nemesisChampions: z.array(nemesisChampionSchema).default([]),
   nemesisNexusCountdowns: z.array(nemesisNexusCountdownSchema).default([]),
   shopStockReveals: z.array(shopStockRevealSchema).default([]),
+  movementRolls: z.record(z.string(), z.number().int().min(1)).optional(),
   soloRerollCharges: z.record(z.string(), z.number().int().min(0)).optional(),
   eventLog: z.array(z.unknown()),
   recentEncounterCardIds: z.array(z.string().min(1)).optional(),
