@@ -233,6 +233,14 @@ describe("BoardMap", () => {
     expect(screen.getByTestId("host-map-fx-layer")).toBeInTheDocument();
   });
 
+  it("constructs the board from individual tile PNG images instead of text-only cards", () => {
+    const { container } = render(<BoardMap patch={createPatch()} phase="action" />);
+
+    expect(container.querySelectorAll(".talisman-board-tile-art")).toHaveLength(BOARD_SPACES.length);
+    expect(screen.getByTestId("tile-art-ashwake-crossing")).toHaveAttribute("src", expect.stringContaining("/assets/map/tiles/"));
+    expect(screen.queryByTestId(/missing-tile-art-/)).not.toBeInTheDocument();
+  });
+
   it("updates token placement when a character moves to a different sector", () => {
     const patch = createPatch();
     const { rerender } = render(<BoardMap patch={patch} phase="action" />);

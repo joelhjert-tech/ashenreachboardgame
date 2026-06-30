@@ -1,51 +1,16 @@
-import type { ReactElement } from "react";
+import { useEffect, useState, type ReactElement } from "react";
 import { RIFTFALL_BOARD_NODES, type BoardNode } from "../../data/riftfallBoardNodes.js";
 import { getBoardSpace } from "../../game/data/boardSpaces.js";
 import { ThreatIconBadge } from "../shared/ChallengeBadge.js";
 import type { SectorNode } from "../shared/types.js";
 import type { BoardRect } from "./boardGeometry.js";
-import {
-  getBoardMapRuntimeAssetPaths,
-  getMapRegionLayerAssetPath,
-  getMapTileBackgroundImage
-} from "./mapAssetRegistry.js";
+import { getBoardMapRuntimeAssetPaths } from "./mapAssetRegistry.js";
+import { getBoardTileLayout } from "./boardTileLayout.js";
+import { getExpectedTileAssetPath, getTileAssetPath } from "./tileAssetManifest.js";
 
 export function getBoardTileAssetPaths(): string[] {
   return getBoardMapRuntimeAssetPaths();
 }
-
-const tileScaleByRing: Record<BoardNode["ring"], number> = {
-  outer: 0.112,
-  middle: 0.096,
-  inner: 0.078,
-  center: 0.15
-};
-
-const tileSizeByRingAndSide: Record<
-  BoardNode["ring"],
-  Record<"horizontal" | "vertical" | "center", { width: number; height: number }>
-> = {
-  outer: {
-    horizontal: { width: 0.112, height: 0.116 },
-    vertical: { width: 0.096, height: 0.16 },
-    center: { width: 0.112, height: 0.116 }
-  },
-  middle: {
-    horizontal: { width: 0.092, height: 0.088 },
-    vertical: { width: 0.082, height: 0.128 },
-    center: { width: 0.092, height: 0.088 }
-  },
-  inner: {
-    horizontal: { width: 0.128, height: 0.074 },
-    vertical: { width: 0.078, height: 0.092 },
-    center: { width: 0.128, height: 0.074 }
-  },
-  center: {
-    horizontal: { width: 0.2, height: 0.12 },
-    vertical: { width: 0.2, height: 0.12 },
-    center: { width: 0.2, height: 0.12 }
-  }
-};
 
 const tileLabelByRing: Record<BoardNode["ring"], string> = {
   outer: "Borderlight",
@@ -112,6 +77,44 @@ function getTileSide(node: BoardNode): "horizontal" | "vertical" | "center" {
   return Math.abs(node.y - 0.5) > Math.abs(node.x - 0.5) ? "horizontal" : "vertical";
 }
 
+function BoardTileImage({ nodeId, label }: { nodeId: string; label: string }): ReactElement {
+  const assetPath = getTileAssetPath(nodeId);
+  const expectedPath = getExpectedTileAssetPath(nodeId);
+  const [failed, setFailed] = useState(false);
+
+  useEffect(() => {
+    setFailed(false);
+  }, [assetPath, nodeId]);
+
+  if (!assetPath || failed) {
+    if (typeof console !== "undefined") {
+      console.warn(`[Ashen Reach] Missing board tile art for ${nodeId}. Expected ${assetPath ?? expectedPath}`);
+    }
+
+    return (
+      <span className="talisman-board-missing-art" data-testid={`missing-tile-art-${nodeId}`}>
+        <strong>Missing tile art</strong>
+        <small>{nodeId}</small>
+        <small>{assetPath ?? expectedPath}</small>
+      </span>
+    );
+  }
+
+  return (
+    <img
+      className="talisman-board-tile-art"
+      src={assetPath}
+      alt=""
+      aria-hidden="true"
+      loading="eager"
+      draggable={false}
+      onError={() => setFailed(true)}
+      data-testid={`tile-art-${nodeId}`}
+      title={label}
+    />
+  );
+}
+
 export function TalismanBoardSurface({
   imageRect,
   activeNodeId = null,
@@ -136,35 +139,20 @@ export function TalismanBoardSurface({
       }}
     >
       <div className="talisman-board-backdrop" />
-      <div
-        className="talisman-board-ring talisman-board-ring-outer"
-        style={{ backgroundImage: `url("${getMapRegionLayerAssetPath("outer")}")` }}
-      />
-      <div
-        className="talisman-board-ring talisman-board-ring-middle"
-        style={{ backgroundImage: `url("${getMapRegionLayerAssetPath("middle")}")` }}
-      />
-      <div
-        className="talisman-board-ring talisman-board-ring-inner"
-        style={{ backgroundImage: `url("${getMapRegionLayerAssetPath("inner")}")` }}
-      />
-      <div
-        className="talisman-board-ring talisman-board-ring-core"
-        style={{ backgroundImage: `url("${getMapRegionLayerAssetPath("center")}")` }}
-      />
-      <div className="talisman-board-spoke talisman-board-spoke-north" />
-      <div className="talisman-board-spoke talisman-board-spoke-east" />
-      <div className="talisman-board-spoke talisman-board-spoke-south" />
-      <div className="talisman-board-spoke talisman-board-spoke-west" />
 
       {RIFTFALL_BOARD_NODES.map((node) => {
         const side = getTileSide(node);
-        const fallbackTileSize = tileScaleByRing[node.ring] * imageRect.width;
-        const tileSize = tileSizeByRingAndSide[node.ring][side];
-        const tileWidth = tileSize ? tileSize.width * imageRect.width : fallbackTileSize;
-        const tileHeight = tileSize ? tileSize.height * imageRect.height : fallbackTileSize;
-        const left = node.x * imageRect.width;
-        const top = node.y * imageRect.height;
+        const layout = getBoardTileLayout(node.id) ?? {
+          x: node.x,
+          y: node.y,
+          width: 0.1,
+          height: 0.1,
+          routeAnchor: { x: node.x, y: node.y }
+        };
+        const tileWidth = layout.width * imageRect.width;
+        const tileHeight = layout.height * imageRect.height;
+        const left = layout.x * imageRect.width;
+        const top = layout.y * imageRect.height;
         const tone = getTileTone(node);
         const isActive = activeNodeId === node.id;
         const isSelected = selectedNodeId === node.id;
@@ -215,13 +203,15 @@ export function TalismanBoardSurface({
               top: `${top}px`,
               width: `${tileWidth}px`,
               height: `${tileHeight}px`,
-              backgroundImage: getMapTileBackgroundImage(node.id, tone)
+              ["--tile-rotation" as string]: `${layout.rotation ?? 0}deg`,
+              zIndex: layout.zIndex
             }}
             aria-label={`${node.label}, ${node.ring} region${tileStatus ? `, ${tileStatus}` : ""}`}
             aria-current={isActive ? "location" : undefined}
             aria-pressed={isSelected}
             onClick={() => onSelectNode?.(node.id)}
           >
+            <BoardTileImage nodeId={node.id} label={node.label} />
             <div className="talisman-board-tile-scrim" />
             <span className="talisman-board-tile-region">{node.ring === "center" ? "Final" : tileLabelByRing[node.ring]}</span>
             <span className="talisman-board-tile-label">{node.label}</span>

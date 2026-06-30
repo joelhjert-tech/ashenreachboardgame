@@ -1,4 +1,5 @@
 import type { BoardNode } from "../../data/riftfallBoardNodes.js";
+import { TILE_ASSETS, getExpectedTileAssetPath, getTileAssetPath } from "./tileAssetManifest.js";
 
 export const MAP_BOARD_BASE_PATH = "/assets/map/board/ashen_reach_board_base.png";
 
@@ -144,7 +145,7 @@ export function getMapMiddleCornerTileAssetPath(corner: keyof typeof MAP_MIDDLE_
 }
 
 export function getMapTileAssetPath(nodeId: string): string {
-  return canonicalTilePathByNodeId[nodeId] ?? "/assets/map/tiles/map_tile_ashen_reach_core.png";
+  return getTileAssetPath(nodeId) ?? getExpectedTileAssetPath(nodeId);
 }
 
 export function getMapTileFallbackAssetPath(nodeId: string): string {
@@ -170,6 +171,7 @@ export function getBoardMapRuntimeAssetPaths(): string[] {
     ...Object.values(MAP_REGION_LAYER_PATHS),
     ...Object.values(MAP_CORNER_TILE_PATHS),
     ...Object.values(MAP_MIDDLE_CORNER_TILE_PATHS),
+    ...Object.values(TILE_ASSETS),
     ...Object.values(canonicalTilePathByNodeId),
     ...Object.values(fallbackTilePathByNodeId)
   ].filter((value, index, paths) => paths.indexOf(value) === index);

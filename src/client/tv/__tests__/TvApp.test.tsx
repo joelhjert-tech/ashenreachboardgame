@@ -562,6 +562,52 @@ describe("TvApp", () => {
     expect(await screen.findByText(/host card tarek voss crossing thread \| clear the ashwake convoy lane \(1\/1 clears\)/i)).toBeInTheDocument();
   });
 
+  it("keeps movement planner details on the board instead of duplicating Movement Scan in the right rail", async () => {
+    window.localStorage.setItem("ashen-reach-tv-room-code", "RT7P4");
+    window.localStorage.setItem("ashen-reach-tv-host-token", "host:RT7P4:secret");
+    const patch = createPatch();
+    patch.phase = "navigation";
+    patch.payload.status = "active";
+    patch.payload.movementPlanner = {
+      active: true,
+      movementValue: 4,
+      currentSectorId: "ashwake-crossing",
+      currentSectorName: "Ashwake Crossing",
+      destinations: [
+        {
+          sectorId: "outer_anchor_market",
+          name: "Anchor Market",
+          ring: "outer",
+          distance: 4,
+          route: ["ashwake-crossing", "glassmere-spindle", "hollow-veil-yard", "outer_waymarket", "outer_anchor_market"],
+          routeNames: ["Ashwake Crossing", "Glassmere Spindle", "Hollow Veil Yard", "Anchor Market", "Anchor Market"],
+          tags: ["shop"],
+          threatIcons: ["yellow"],
+          ruleText: "Trade if the sector is clear.",
+          faceUpThreats: [],
+          occupants: [],
+          strategicTags: ["shop"]
+        }
+      ]
+    };
+    mockUseRoomSubscription.mockReturnValue({
+      patch,
+      error: null,
+      sendIntent: vi.fn(),
+      status: "open",
+      debugEvents: [],
+      clearDebugEvents: vi.fn()
+    });
+
+    render(<TvApp />);
+
+    expect(await screen.findByText(/sector brief/i)).toBeInTheDocument();
+    expect(screen.queryByText(/movement scan/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/movement value/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/exact legal routes are highlighted/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/trade if the sector is clear/i)).not.toBeInTheDocument();
+  });
+
   it("renders battle setup through the host battle overlay without a duplicate card tray", async () => {
     window.localStorage.setItem("ashen-reach-tv-room-code", "RT7P4");
     window.localStorage.setItem("ashen-reach-tv-host-token", "host:RT7P4:secret");

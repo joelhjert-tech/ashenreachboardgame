@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type ReactElement } from "react";
 import { BOARD_SPACES, getBoardSpace, isScenarioConfrontationSpace } from "../../game/data/boardSpaces.js";
-import { RIFTFALL_BOARD_NODE_INDEX, RIFTFALL_BOARD_NODES, type BoardNode } from "../../data/riftfallBoardNodes.js";
+import { RIFTFALL_BOARD_NODE_INDEX, RIFTFALL_BOARD_NODES } from "../../data/riftfallBoardNodes.js";
 import type { OutcomeSummary, PublicPatchPayload, SectorNode, ThreatIcon } from "../shared/types.js";
 import { ThreatIconBadge } from "../shared/ChallengeBadge.js";
 import {
@@ -14,6 +14,7 @@ import {
 } from "../shared/scenarioBoardVisuals.js";
 import { BoardStage } from "./BoardStage.js";
 import { pointerToBoardCoordinate, type BoardRect } from "./boardGeometry.js";
+import { getBoardTileLayout, getBoardTileRouteAnchor } from "./boardTileLayout.js";
 import { HostCinematicFxLayer, type MapFxPoint, type MapFxTrail } from "./HostCinematicFxLayer.js";
 import { getMapBoardBaseAssetPath } from "./mapAssetRegistry.js";
 import { TalismanBoardSurface, type TilePlayerMarker } from "./TalismanBoardSurface.js";
@@ -95,31 +96,19 @@ function getNodeSide(node: (typeof RIFTFALL_BOARD_NODES)[number]): "horizontal" 
 }
 
 function getMapFxTileSize(node: (typeof RIFTFALL_BOARD_NODES)[number]): Pick<MapFxPoint, "width" | "height"> {
-  const side = getNodeSide(node);
-  const sizes: Record<BoardNode["ring"], Record<"horizontal" | "vertical" | "center", { width: number; height: number }>> = {
-    outer: {
-      horizontal: { width: 0.112, height: 0.116 },
-      vertical: { width: 0.096, height: 0.16 },
-      center: { width: 0.112, height: 0.116 }
-    },
-    middle: {
-      horizontal: { width: 0.092, height: 0.088 },
-      vertical: { width: 0.082, height: 0.128 },
-      center: { width: 0.092, height: 0.088 }
-    },
-    inner: {
-      horizontal: { width: 0.128, height: 0.074 },
-      vertical: { width: 0.078, height: 0.092 },
-      center: { width: 0.128, height: 0.074 }
-    },
-    center: {
-      horizontal: { width: 0.2, height: 0.12 },
-      vertical: { width: 0.2, height: 0.12 },
-      center: { width: 0.2, height: 0.12 }
-    }
-  };
+  const layout = getBoardTileLayout(node.id);
 
-  return sizes[node.ring][side];
+  if (layout) {
+    return { width: layout.width, height: layout.height };
+  }
+
+  const side = getNodeSide(node);
+
+  if (node.ring === "center") {
+    return { width: 0.255, height: 0.19 };
+  }
+
+  return side === "vertical" ? { width: 0.125, height: 0.168 } : { width: 0.125, height: 0.15 };
 }
 
 function getThreatIconsForNode(nodeId: string, liveSector: SectorNode | null): ThreatIcon[] {
@@ -204,12 +193,15 @@ function buildNemesisTrails(patch: PublicPatchPayload, previousPatch: PublicPatc
         return null;
       }
 
+      const fromAnchor = getBoardTileRouteAnchor(from);
+      const toAnchor = getBoardTileRouteAnchor(to);
+
       return {
         id: `${champion.id}-${previous.sectorId}-${champion.sectorId}`,
-        fromX: from.x,
-        fromY: from.y,
-        toX: to.x,
-        toY: to.y
+        fromX: fromAnchor.x,
+        fromY: fromAnchor.y,
+        toX: toAnchor.x,
+        toY: toAnchor.y
       };
     })
     .filter((trail): trail is MapFxTrail => Boolean(trail));
@@ -264,11 +256,14 @@ export function BoardMap({ patch, previousPatch = null, phase, showHeader = true
                   return [];
                 }
 
+                const fromAnchor = getBoardTileRouteAnchor(from);
+                const toAnchor = getBoardTileRouteAnchor(to);
+
                 return [
                   {
                     id: `${destination.sectorId}-${index}-${fromNodeId}-${toNodeId}`,
-                    from,
-                    to
+                    from: fromAnchor,
+                    to: toAnchor
                   }
                 ];
               })

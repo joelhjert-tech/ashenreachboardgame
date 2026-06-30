@@ -8,7 +8,7 @@ import { useAshenReachAudio } from "../audio/useAshenReachAudio.js";
 import { createSession, fetchCharacters, fetchScenarios, fetchSessionSummary, startSession } from "../shared/network.js";
 import { getSeatAbilityTelemetry } from "../shared/abilityTelemetry.js";
 import { CardArtImage } from "../shared/CardArtImage.js";
-import { ChallengeBadge } from "../shared/ChallengeBadge.js";
+import { ChallengeBadge, ThreatIconBadge } from "../shared/ChallengeBadge.js";
 import { DebugPanel } from "../shared/DebugPanel.js";
 import { RollOutcomePanel } from "../shared/RollOutcomePanel.js";
 import {
@@ -44,6 +44,7 @@ import { isHostShopActive } from "./hostShopState.js";
 import { DiceRollScene } from "./DiceRollScene.js";
 import { JoinQrCard } from "./JoinQrCard.js";
 import { TacticalMapBoard } from "./TacticalMapBoard.js";
+import { getExpectedTileAssetPath, getTileAssetPath } from "./tileAssetManifest.js";
 
 const hostTokenStorageKey = "ashen-reach-tv-host-token";
 const roomCodeStorageKey = "ashen-reach-tv-room-code";
@@ -1072,14 +1073,6 @@ interface RightSidebarProps {
   startSessionReason: string;
 }
 
-function getSectorName(patch: StatePatch<PublicPatchPayload> | null, sectorId: string | null | undefined): string {
-  if (!sectorId) {
-    return "No sector";
-  }
-
-  return patch?.payload.sectors.find((sector) => sector.id === sectorId)?.name ?? getBoardSpace(sectorId)?.name ?? sectorId;
-}
-
 function HostContextPanel({
   patch,
   activePlayer,
@@ -1098,6 +1091,12 @@ function HostContextPanel({
   const activeSpace = activePlayer ? getBoardSpace(activePlayer.sectorId) : null;
   const activeSector = activePlayer ? patch?.payload.sectors.find((sector) => sector.id === activePlayer.sectorId) ?? null : null;
   const activeSectorName = activeSpace?.name ?? activeSector?.name ?? "Awaiting deployment";
+  const activeTileAssetPath = activePlayer ? getTileAssetPath(activePlayer.sectorId) : null;
+  const activeTileExpectedPath = activePlayer ? getExpectedTileAssetPath(activePlayer.sectorId) : "";
+  const occupants =
+    activePlayer && patch
+      ? patch.payload.players.filter((player) => player.sectorId === activePlayer.sectorId)
+      : [];
 
   if (shopEncounter) {
     return (
@@ -1151,46 +1150,43 @@ function HostContextPanel({
     );
   }
 
-  if (patch?.phase === "navigation" && activePlayer) {
-    const movementPlanner = patch.payload.movementPlanner?.active ? patch.payload.movementPlanner : null;
-    const neighbors = activeSector?.neighbors ?? [];
-    const routePreview = movementPlanner?.destinations.filter((destination) => !destination.disabledReason).slice(0, 5) ?? [];
-
-    return (
-      <section className="tv-card tv-sidebar-card tv-host-context tv-host-context-move" aria-label="Host context">
-        <div className="tv-host-context-kicker">Movement scan</div>
-        <h2>{movementPlanner?.currentSectorName ?? activeSectorName}</h2>
-        <p>
-          {movementPlanner
-            ? `Movement value ${movementPlanner.movementValue}. Exact legal routes are highlighted on the command board.`
-            : "Movement planner unavailable; showing adjacent route pressure as a safe fallback."}
-        </p>
-        <div className="tv-host-context-list">
-          {movementPlanner
-            ? routePreview.map((destination) => (
-                <span key={destination.sectorId}>
-                  {destination.name}
-                  <strong>{destination.distance}</strong>
-                </span>
-              ))
-            : neighbors.slice(0, 5).map((sectorId) => <span key={sectorId}>{getSectorName(patch, sectorId)}</span>)}
-          {movementPlanner && routePreview.length === 0 && <span>No legal destinations</span>}
-          {!movementPlanner && neighbors.length === 0 && <span>No adjacent routes exposed</span>}
-        </div>
-      </section>
-    );
-  }
-
   return (
-    <section className="tv-card tv-sidebar-card tv-host-context tv-host-context-scenario" aria-label="Host context">
-      <div className="tv-host-context-kicker">Scenario command</div>
-      <h2>{scenarioStatus.name}</h2>
-      <p>{currentStepCopy}</p>
+    <section className="tv-card tv-sidebar-card tv-host-context tv-host-context-sector" aria-label="Host context">
+      <div className="tv-host-context-kicker">Sector brief</div>
+      <div className="tv-host-sector-preview">
+        {activeTileAssetPath ? (
+          <img src={activeTileAssetPath} alt="" aria-hidden="true" />
+        ) : (
+          <div className="tv-host-sector-missing-art">
+            <strong>Missing tile art</strong>
+            <span>{activeTileExpectedPath || "No active sector"}</span>
+          </div>
+        )}
+        <div>
+          <h2>{activeSectorName}</h2>
+          <p>{activeSpace?.loreText ?? currentStepCopy}</p>
+        </div>
+      </div>
+      {activeSpace?.tags && activeSpace.tags.length > 0 && (
+        <div className="tv-host-context-tags" aria-label="Sector tags">
+          {activeSpace.tags.slice(0, 5).map((tag) => (
+            <span key={tag}>{tag.replace("-", " ")}</span>
+          ))}
+        </div>
+      )}
+      {activeSpace?.threatIcons && activeSpace.threatIcons.length > 0 && (
+        <div className="tv-host-sector-icons" aria-label="Printed challenge icons">
+          {activeSpace.threatIcons.map((icon, index) => (
+            <ThreatIconBadge key={`${icon}-${index}`} icon={icon} />
+          ))}
+        </div>
+      )}
+      <p>{activeSpace?.ruleText ?? "Select or activate a sector to bring its command brief online."}</p>
       <div className="tv-host-context-grid">
-        <span>Objective <strong>{scenarioStatus.confrontationTitle}</strong></span>
+        <span>Reach <strong>{toTitleCase(activeSpace?.tier ?? activeSector?.regionTier ?? "Unknown")}</strong></span>
+        <span>Occupants <strong>{occupants.length}</strong></span>
+        <span>Scenario <strong>{scenarioStatus.name}</strong></span>
         <span>Pressure <strong>{scenarioStatus.progress}</strong></span>
-        <span>Active sector <strong>{activeSectorName}</strong></span>
-        <span>Escalation <strong>{patch ? `${patch.payload.escalationLevel}/${patch.payload.escalationThreshold}` : "0/0"}</strong></span>
       </div>
     </section>
   );
