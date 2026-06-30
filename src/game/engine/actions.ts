@@ -22,6 +22,12 @@ export interface MoveRequestedAction extends BaseAction {
   toSectorId: string;
 }
 
+export interface MovementRolledAction extends BaseAction {
+  type: "MOVEMENT_ROLLED";
+  movementValue: number;
+  roll: DiceRollResult;
+}
+
 export interface MovedAction extends BaseAction {
   type: "MOVED";
   fromSectorId: string;
@@ -411,6 +417,7 @@ export interface CoopDefeatTriggeredAction extends BaseAction {
 export type GameAction =
   | SessionStartedAction
   | MoveRequestedAction
+  | MovementRolledAction
   | MovedAction
   | MovementResolvedAction
   | EncounterDrawnAction

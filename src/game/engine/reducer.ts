@@ -11,6 +11,7 @@ import type {
   EnemyRollRequestedAction,
   GameAction,
   MovementResolvedAction,
+  MovementRolledAction,
   MoveRequestedAction,
   NemesisCombatResolvedAction,
   NemesisDefeatedAction,
@@ -134,6 +135,16 @@ function ensureSeatCanTakeNormalTurnAction(state: GameState, seatId: string): vo
 
 function getNextActiveSeatIndex(state: GameState): number {
   return (state.activeSeatIndex + 1) % Math.max(state.turnOrder.length, 1);
+}
+
+function clearMovementRollForSeat(state: GameState, seatId: string): GameState["movementRolls"] {
+  if (!state.movementRolls?.[seatId]) {
+    return state.movementRolls;
+  }
+
+  const nextMovementRolls = { ...state.movementRolls };
+  delete nextMovementRolls[seatId];
+  return Object.keys(nextMovementRolls).length > 0 ? nextMovementRolls : undefined;
 }
 
 function ensureLegalMovementRoute(state: GameState, seatId: string, toSectorId: string): void {
@@ -999,6 +1010,34 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
         eventLog: [...state.eventLog, action]
       });
     }
+    case "MOVEMENT_ROLLED": {
+      const movementRolledAction = action as MovementRolledAction;
+
+      try {
+        ensureSeatTurn(state, movementRolledAction.seatId);
+        ensureSeatCanTakeNormalTurnAction(state, movementRolledAction.seatId);
+      } catch (error) {
+        return reject(state, action, error instanceof Error ? error.message : "Seat cannot act");
+      }
+
+      if (!canResolveMovement(state.phase)) {
+        return reject(state, action, `Cannot roll movement during phase ${state.phase}`);
+      }
+
+      if (!Number.isInteger(movementRolledAction.movementValue) || movementRolledAction.movementValue < 1) {
+        return reject(state, action, "Movement roll must be at least 1");
+      }
+
+      return succeed({
+        ...state,
+        sequence: state.sequence + 1,
+        movementRolls: {
+          ...(state.movementRolls ?? {}),
+          [movementRolledAction.seatId]: movementRolledAction.movementValue
+        },
+        eventLog: [...state.eventLog, action]
+      });
+    }
     case "MOVEMENT_RESOLVED": {
       const movementAction = action as MovementResolvedAction;
 
@@ -1049,6 +1088,7 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
           phase: movementAction.effect ? "resolution" : "sector",
           resolutionSource: movementAction.effect ? "movement" : null,
           pendingEffect: movementAction.effect,
+          movementRolls: clearMovementRollForSeat(state, movementAction.seatId),
           players: updateActivePlayer(state, movementAction.seatId, (entry) => ({
             ...entry,
             sectorId: destinationSectorId,
@@ -3176,6 +3216,7 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
         activeResolution: null,
         resolutionSource: null,
         lastOutcomeSummary: null,
+        movementRolls: clearMovementRollForSeat(state, action.seatId),
         eventLog: [...state.eventLog, action]
       });
     case "CONTINUE_RESOLUTION": {

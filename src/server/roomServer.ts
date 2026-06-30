@@ -85,6 +85,7 @@ import type {
   EquipGearAction,
   GameAction,
   MovementResolvedAction,
+  MovementRolledAction,
   MoveRequestedAction,
   NemesisCombatResolvedAction,
   NemesisDefeatedAction,
@@ -111,6 +112,7 @@ import type {
   UseGearAction
 } from "../game/engine/actions.js";
 import { getEquippedGearBonus } from "../game/engine/gear.js";
+import { getMovementProfile } from "../game/rules/movementPhase.js";
 import type { AnomalyCard, ArtifactCard, EncounterEffect, EscalationCard, ScarCard, ThreatCard } from "../game/schema/card.schema.js";
 import type { Character } from "../game/schema/character.schema.js";
 import type { Stat } from "../game/schema/character.schema.js";
@@ -825,6 +827,7 @@ export class GameRoomServer {
     if (this.state.status === "active") {
       this.applyStartOfTurnScenarioEffects(this.state.turnOrder[this.state.activeSeatIndex] ?? activeSeatId);
       this.maybeTriggerAbilityOnTurnStarted(this.state.turnOrder[this.state.activeSeatIndex] ?? activeSeatId);
+      this.ensureMovementRollForActiveNavigationSeat();
     }
     this.broadcastPatch();
   }
@@ -3958,10 +3961,48 @@ export class GameRoomServer {
       if (nextSeatId) {
         this.applyStartOfTurnScenarioEffects(nextSeatId);
         this.maybeTriggerAbilityOnTurnStarted(nextSeatId);
+        this.ensureMovementRollForActiveNavigationSeat();
       }
     }
 
     this.broadcastPatch();
+  }
+
+  private ensureMovementRollForActiveNavigationSeat(): void {
+    if (this.state.status !== "active" || this.state.phase !== "navigation") {
+      return;
+    }
+
+    const activeSeatId = this.state.turnOrder[this.state.activeSeatIndex] ?? null;
+
+    if (!activeSeatId || this.state.movementRolls?.[activeSeatId]) {
+      return;
+    }
+
+    const activePlayer = this.state.players.find((entry) => entry.seatId === activeSeatId);
+
+    if (!activePlayer || activePlayer.character.status !== "active") {
+      return;
+    }
+
+    const boardSpace = getBoardSpace(activePlayer.character.currentSpaceId);
+    const movementProfile = boardSpace ? getMovementProfile(boardSpace.tier) : null;
+    const roll =
+      movementProfile && !movementProfile.movementRollAllowed
+        ? { faces: movementProfile.movementAmount ? [movementProfile.movementAmount] : [], total: movementProfile.movementAmount ?? 0 }
+        : rollDice(1, 6, this.randomSource);
+
+    if (roll.total < 1) {
+      return;
+    }
+
+    this.applyAction({
+      type: "MOVEMENT_ROLLED",
+      seatId: activeSeatId,
+      movementValue: roll.total,
+      roll,
+      createdAt: new Date().toISOString()
+    } satisfies MovementRolledAction);
   }
 
   private didRoundWrap(previousActiveSeatIndex: number, nextActiveSeatIndex: number): boolean {

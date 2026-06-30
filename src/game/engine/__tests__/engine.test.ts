@@ -2344,6 +2344,106 @@ describe("threat effect keys", () => {
 });
 
 describe("movement rolls", () => {
+  it("stores a movement roll for the active seat", () => {
+    const result = reduceGameState(createState({ phase: "navigation" }), {
+      type: "MOVEMENT_ROLLED",
+      seatId: "seat-1",
+      movementValue: 4,
+      roll: { faces: [4], total: 4 },
+      createdAt: new Date().toISOString()
+    });
+
+    expect(result.ok).toBe(true);
+    expect(result.ok ? result.state.movementRolls?.["seat-1"] : null).toBe(4);
+  });
+
+  it("automatically rolls movement when the session enters navigation", () => {
+    const state = createState({
+      status: "lobby",
+      phase: "start",
+      turnOrder: [],
+      movementRolls: undefined
+    });
+    const server = new GameRoomServer(
+      state,
+      [],
+      createSequenceRandomSource([2]),
+      createThreats(),
+      createCharacters(),
+      createGear(),
+      createContracts()
+    );
+
+    server.startSession();
+
+    const started = server.getState();
+    const tvProjection = createTvProjection(started) as {
+      movementPlanner?: { movementValue: number } | null;
+    };
+
+    expect(started.phase).toBe("navigation");
+    expect(started.movementRolls?.["seat-1"]).toBe(3);
+    expect(tvProjection.movementPlanner?.movementValue).toBe(3);
+  });
+
+  it("uses stored movement rolls for longer legal destinations and clears them after movement resolves", () => {
+    const baseState = createState({ phase: "navigation" });
+    const server = new GameRoomServer(
+      createState({
+        phase: "navigation",
+        movementRolls: { "seat-1": 2 },
+        sectors: baseState.sectors.map((sector) =>
+          sector.id === "sector-c"
+            ? {
+                ...sector,
+                danger: 1,
+                encounterDecks: { ...sector.encounterDecks, threat: [] }
+              }
+            : sector
+        )
+      }),
+      [],
+      createSequenceRandomSource([0, 0]),
+      createThreats(),
+      createCharacters(),
+      createGear(),
+      createContracts()
+    );
+
+    const phoneProjection = createPhoneProjection(server.getState(), "seat-1") as {
+      movementPlanner?: { movementValue: number } | null;
+    };
+
+    expect(phoneProjection.movementPlanner?.movementValue).toBe(2);
+
+    runIntent(server, {
+      type: "MOVE_REQUESTED",
+      seatId: "seat-1",
+      toSectorId: "sector-c"
+    });
+
+    expect(server.getState().players.find((entry) => entry.seatId === "seat-1")?.character.currentSpaceId).toBe("sector-c");
+    expect(server.getState().movementRolls?.["seat-1"]).toBeUndefined();
+  });
+
+  it("clears the previous player's movement roll when the turn advances", () => {
+    const result = reduceGameState(
+      createState({
+        phase: "broadcast",
+        movementRolls: { "seat-1": 5 }
+      }),
+      {
+        type: "TURN_COMPLETED",
+        seatId: "seat-1",
+        createdAt: new Date().toISOString()
+      }
+    );
+
+    expect(result.ok).toBe(true);
+    expect(result.ok ? result.state.activeSeatIndex : null).toBe(1);
+    expect(result.ok ? result.state.movementRolls?.["seat-1"] : null).toBeUndefined();
+  });
+
   it("succeeds against a low-danger node without changing Heat", () => {
     const baseState = createState({ phase: "navigation" });
     const server = new GameRoomServer(
