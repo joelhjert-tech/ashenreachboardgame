@@ -10,8 +10,15 @@
   "activeText": "QA only: treat this as +2 to all tests when stress-testing modifier overflow.",
   "useLimit": "charge",
   "charges": 5,
-  "timingWindows": ["beforeBattleRoll", "afterBattleRoll", "anyTime"],
+  "timingWindows": [
+    "beforeBattleRoll",
+    "afterBattleRoll",
+    "anyTime"
+  ],
   "tier": "artifact",
   "cost": 0,
-  "progressionWeight": 0.01
+  "progressionWeight": 0.01,
+  "shopCategories": [
+    "relic-dealer"
+  ]
 }

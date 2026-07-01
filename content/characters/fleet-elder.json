@@ -5,11 +5,11 @@
   "currentSpaceId": "emberwatch-step",
   "status": "active",
   "stats": {
-    "command": 3,
+    "command": 5,
     "grit": 1,
-    "signal": 2,
-    "guile": 1,
-    "forge": 2
+    "signal": 4,
+    "guile": 2,
+    "forge": 3
   },
   "trophies": 0,
   "heat": 0,
@@ -43,5 +43,9 @@
       "name": "Fleet Memory",
       "text": "You read convoy pressure like weather and treat panic as something that can still be ordered."
     }
-  ]
+  ],
+  "startingGear": [
+    "marshal-seal"
+  ],
+  "startingContract": "contract-beacon"
 }

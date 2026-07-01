@@ -5,11 +5,11 @@
   "currentSpaceId": "cinder-fields",
   "status": "active",
   "stats": {
-    "command": 1,
-    "grit": 3,
+    "command": 2,
+    "grit": 5,
     "signal": 1,
-    "guile": 1,
-    "forge": 3
+    "guile": 2,
+    "forge": 5
   },
   "trophies": 0,
   "heat": 0,
@@ -43,5 +43,9 @@
       "name": "Foam and Fury",
       "text": "His suppression rig hisses cold sealant across hot iron, then he charges through the steam with both paws raised."
     }
-  ]
+  ],
+  "startingGear": [
+    "red-march-warbell"
+  ],
+  "startingContract": "compact-ember-courier"
 }

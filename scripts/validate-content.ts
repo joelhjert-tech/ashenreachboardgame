@@ -28,7 +28,7 @@ import {
   type EncounterEffect,
   type ThreatCard
 } from "../src/game/schema/card.schema.js";
-import type { GearItem } from "../src/game/schema/gear.schema.js";
+import { shopCategorySchema, type GearItem } from "../src/game/schema/gear.schema.js";
 import { sectorGraphSchema, type SectorNode } from "../src/game/schema/sector.schema.js";
 
 const sectorsRoot = join(process.cwd(), "content", "sectors");
@@ -138,6 +138,27 @@ validateLoreLanguage();
 const sectorFiles = readdirSync(sectorsRoot).filter((entry) => entry.endsWith(".json"));
 
 for (const character of characters.values()) {
+  const statValues = Object.values(character.stats);
+  const totalStats = statValues.reduce((total, value) => total + value, 0);
+
+  if (!character.qaOnly) {
+    if (totalStats < 14 || totalStats > 16) {
+      errors.push(`Character ${character.id} stat total ${totalStats} is outside normal 14-16 range`);
+    }
+
+    if (totalStats !== 15) {
+      errors.push(`Character ${character.id} should normally use the 15-point baseline; found ${totalStats}`);
+    }
+
+    if (statValues.some((value) => value <= 0)) {
+      errors.push(`Character ${character.id} has a zero starting stat`);
+    }
+
+    if (statValues.some((value) => value > 5)) {
+      errors.push(`Character ${character.id} has a starting stat above 5 without qaOnly`);
+    }
+  }
+
   for (const heldItem of character.heldGear) {
     if (!gear.has(heldItem.id)) {
       errors.push(`Character ${character.id} holds unknown gear ${heldItem.id}`);
@@ -148,6 +169,16 @@ for (const character of characters.values()) {
     if (itemId && !gear.has(itemId)) {
       errors.push(`Character ${character.id} equips unknown ${slot} gear ${itemId}`);
     }
+  }
+
+  for (const gearId of character.startingGear ?? []) {
+    if (!gear.has(gearId)) {
+      errors.push(`Character ${character.id} starts with unknown gear ${gearId}`);
+    }
+  }
+
+  if (character.startingContract && !contracts.has(character.startingContract)) {
+    errors.push(`Character ${character.id} starts with unknown contract ${character.startingContract}`);
   }
 }
 
@@ -370,6 +401,29 @@ function validateScenarioCoverage(): void {
     if (scenario.tileEventHooks.length === 0) {
       errors.push(`Scenario ${scenario.id} has no tileEventHooks`);
     }
+
+    if (scenario.supportedPlayerCounts.min < 1 || scenario.supportedPlayerCounts.max < scenario.supportedPlayerCounts.min) {
+      errors.push(`Scenario ${scenario.id} has invalid supportedPlayerCounts`);
+    }
+
+    if (scenario.supportedModes.length === 0) {
+      errors.push(`Scenario ${scenario.id} has no supportedModes`);
+    }
+
+    if (!scenario.publicDisplay.modeLabel || !scenario.publicDisplay.objective || !scenario.publicDisplay.privacy) {
+      errors.push(`Scenario ${scenario.id} has incomplete publicDisplay metadata`);
+    }
+
+    if (!scenario.victoryCondition || !scenario.lossCondition) {
+      errors.push(`Scenario ${scenario.id} must define victoryCondition and lossCondition`);
+    }
+
+    if (
+      scenario.privateMetadata.hiddenAgendaReveal !== "not-implemented" &&
+      scenario.privateMetadata.hiddenAgendaReveal !== "future"
+    ) {
+      errors.push(`Scenario ${scenario.id} has invalid private hidden agenda metadata`);
+    }
   }
 }
 
@@ -569,6 +623,16 @@ function validateGearProgression(item: GearItem): void {
 
   if (typeof item.progressionWeight !== "number" || item.progressionWeight <= 0) {
     errors.push(`${item.id} must define a positive progressionWeight`);
+  }
+
+  if (!item.shopCategories?.length) {
+    errors.push(`${item.id} is missing shopCategories metadata`);
+  }
+
+  for (const category of item.shopCategories ?? []) {
+    if (!shopCategorySchema.safeParse(category).success) {
+      errors.push(`${item.id} has invalid shop category ${category}`);
+    }
   }
 }
 

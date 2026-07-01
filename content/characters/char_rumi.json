@@ -6,10 +6,10 @@
   "status": "active",
   "stats": {
     "command": 1,
-    "grit": 2,
-    "signal": 3,
-    "guile": 2,
-    "forge": 1
+    "grit": 3,
+    "signal": 5,
+    "guile": 4,
+    "forge": 2
   },
   "trophies": 0,
   "heat": 0,
@@ -43,5 +43,9 @@
       "name": "Courtbreaker Smile",
       "text": "The Hollow Court expects fear. Rumi answers with a smile sharp enough to make masked nobles step back."
     }
-  ]
+  ],
+  "startingGear": [
+    "mirror-reroll-token"
+  ],
+  "startingContract": "umbral-blackstar-sample"
 }

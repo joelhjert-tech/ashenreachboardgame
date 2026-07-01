@@ -53,14 +53,14 @@ describe("canonical sector graph", () => {
     }
   });
 
-  it("applies normal starting salvage and contracts without granting mode gear or followers", () => {
+  it("applies normal starting salvage, character gear, and contracts without granting mode followers", () => {
     const state = createInitialSessionState("session-alpha", "multiplayer");
     const firstPlayer = state.players[0];
 
     expect(firstPlayer?.character.salvage).toBe(3);
     expect(firstPlayer?.character.activeContract).toMatchObject({ progress: 0 });
-    expect(firstPlayer?.character.activeContract?.contractId).toBe(state.availableContracts[0]?.id);
-    expect(firstPlayer?.character.heldGear).toEqual([]);
+    expect(firstPlayer?.character.activeContract?.contractId).toBe("dominion-warbell-recovery");
+    expect(firstPlayer?.character.heldGear.map((item) => item.id)).toEqual(["cinder-suture-kit"]);
     expect(firstPlayer?.character.followers ?? []).toEqual([]);
     expect(state.soloRerollCharges).toEqual({});
   });
@@ -98,7 +98,7 @@ describe("canonical sector graph", () => {
     expect(state.soloRerollCharges).toEqual({ "seat-1": 1 });
     expect(state.players[0]?.character.salvage).toBe(4);
     expect(state.players[0]?.character.activeContract).toMatchObject({ progress: 0 });
-    expect(state.players[0]?.character.heldGear.map((item) => item.id)).toEqual(["veil-hook"]);
+    expect(state.players[0]?.character.heldGear.map((item) => item.id)).toEqual(["cinder-suture-kit"]);
     expect(state.players[0]?.character.followers?.map((follower) => follower.id)).toEqual(["grave-scribe"]);
     expect(tvProjection.sessionMode).toBe("single-player");
     expect(tvProjection.escalationThreshold).toBe(8);

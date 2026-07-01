@@ -8,5 +8,8 @@
   },
   "flavor": "A slab-bound harness of cold braces and grave bolts built to hold through crush and sparks.",
   "tier": "starter",
-  "progressionWeight": 0.75
+  "progressionWeight": 0.75,
+  "shopCategories": [
+    "forge-armoury"
+  ]
 }

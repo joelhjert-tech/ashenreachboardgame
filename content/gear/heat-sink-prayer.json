@@ -12,5 +12,9 @@
   "charges": 2,
   "flavor": "A prayer wheel packed with ash-cold teeth and stolen ventilation rites.",
   "tier": "artifact",
-  "progressionWeight": 2.5
+  "progressionWeight": 2.5,
+  "shopCategories": [
+    "medicae-shrine",
+    "relic-dealer"
+  ]
 }

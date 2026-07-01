@@ -9,8 +9,14 @@
   },
   "activeText": "QA only: add +4 Forge or Guile when testing ranged battle, machine pressure, or hostile salvage.",
   "useLimit": "oncePerTurn",
-  "timingWindows": ["beforeBattleRoll", "afterBattleRoll"],
+  "timingWindows": [
+    "beforeBattleRoll",
+    "afterBattleRoll"
+  ],
   "tier": "artifact",
   "cost": 0,
-  "progressionWeight": 0.01
+  "progressionWeight": 0.01,
+  "shopCategories": [
+    "forge-armoury"
+  ]
 }

@@ -11,5 +11,9 @@
   "useLimit": "discard",
   "flavor": "A thumb-sized vial of night that refuses to reflect you.",
   "tier": "standard",
-  "progressionWeight": 1
+  "progressionWeight": 1,
+  "shopCategories": [
+    "market",
+    "relic-dealer"
+  ]
 }

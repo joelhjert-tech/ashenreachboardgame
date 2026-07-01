@@ -8,8 +8,13 @@
     "amount": 3
   },
   "activeText": "QA only: prevent 2 wounds after battle while testing damage and armor UI.",
-  "timingWindows": ["beforeTakingDamage"],
+  "timingWindows": [
+    "beforeTakingDamage"
+  ],
   "tier": "artifact",
   "cost": 0,
-  "progressionWeight": 0.01
+  "progressionWeight": 0.01,
+  "shopCategories": [
+    "forge-armoury"
+  ]
 }

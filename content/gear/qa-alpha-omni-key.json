@@ -9,8 +9,16 @@
   },
   "activeText": "QA only: ignore locked routes, gate checks, and shop blockers when testing recovery paths.",
   "useLimit": "oncePerTurn",
-  "timingWindows": ["movement", "shop", "anyTime"],
+  "timingWindows": [
+    "movement",
+    "shop",
+    "anyTime"
+  ],
   "tier": "artifact",
   "cost": 0,
-  "progressionWeight": 0.01
+  "progressionWeight": 0.01,
+  "shopCategories": [
+    "market",
+    "contract-broker"
+  ]
 }

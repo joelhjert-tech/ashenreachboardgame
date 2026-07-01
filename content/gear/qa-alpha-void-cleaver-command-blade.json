@@ -8,8 +8,13 @@
     "amount": 4
   },
   "activeText": "QA only: add +4 Grit in battle.",
-  "timingWindows": ["beforeBattleRoll"],
+  "timingWindows": [
+    "beforeBattleRoll"
+  ],
   "tier": "artifact",
   "cost": 0,
-  "progressionWeight": 0.01
+  "progressionWeight": 0.01,
+  "shopCategories": [
+    "forge-armoury"
+  ]
 }

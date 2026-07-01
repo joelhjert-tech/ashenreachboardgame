@@ -7,7 +7,7 @@ import { applyStartingLoadout } from "../../rules/startingLoadout.js";
 import { getCompanionStatBonus } from "../gear.js";
 
 describe("character roster content", () => {
-  it("loads sixteen playable characters with the expected stat budget", () => {
+  it("loads sixteen playable characters with the expected normal stat budget", () => {
     const characters = [...loadCharacters().values()].filter((character) => !character.qaOnly);
 
     expect(characters).toHaveLength(16);
@@ -15,7 +15,9 @@ describe("character roster content", () => {
     for (const character of characters) {
       const totalStats = Object.values(character.stats).reduce((total, value) => total + value, 0);
 
-      expect(totalStats).toBe(9);
+      expect(totalStats).toBe(15);
+      expect(Math.min(...Object.values(character.stats))).toBeGreaterThan(0);
+      expect(Math.max(...Object.values(character.stats))).toBeLessThanOrEqual(5);
       expect(character.heat).toBe(0);
       expect(character.wounds).toBe(0);
       expect(character.status).toBe("active");
@@ -26,6 +28,35 @@ describe("character roster content", () => {
         armor: null,
         utility: null
       });
+      expect(character.startingGear?.length).toBe(1);
+      expect(character.startingContract).toBeTruthy();
+    }
+  });
+
+  it("exempts QA-only characters from normal stat-balance validation", () => {
+    const qaCharacters = [...loadCharacters().values()].filter((character) => character.qaOnly);
+
+    expect(qaCharacters).toHaveLength(1);
+    expect(qaCharacters[0]?.id).toBe("char_master_alpha");
+    expect(Object.values(qaCharacters[0]!.stats).reduce((total, value) => total + value, 0)).toBeGreaterThan(16);
+  });
+
+  it("resolves normal starting loadouts without missing gear or contract references", () => {
+    const contracts = [...loadContracts().values()];
+    const gear = loadGear();
+    const followers = loadFollowers();
+    const characters = [...loadCharacters().values()].filter((character) => !character.qaOnly);
+
+    for (const [index, character] of characters.entries()) {
+      const loaded = applyStartingLoadout(character, {
+        sessionMode: "multiplayer",
+        seatIndex: index,
+        catalogs: { contracts, gear, followers }
+      });
+
+      expect(loaded.salvage).toBe(3);
+      expect(loaded.heldGear.map((item) => item.id)).toEqual(character.startingGear);
+      expect(loaded.activeContract?.contractId).toBe(character.startingContract);
     }
   });
 
@@ -52,10 +83,10 @@ describe("character roster content", () => {
     expect(deepdale?.currentSpaceId).toBe("mirecoil-beacon");
     expect(deepdale?.stats).toEqual({
       command: 1,
-      grit: 2,
-      signal: 2,
-      guile: 1,
-      forge: 3
+      grit: 3,
+      signal: 4,
+      guile: 2,
+      forge: 5
     });
   });
 
@@ -66,11 +97,11 @@ describe("character roster content", () => {
     expect(bjornis?.archetype).toBe("Firebreak Conqueror");
     expect(bjornis?.currentSpaceId).toBe("cinder-fields");
     expect(bjornis?.stats).toEqual({
-      command: 1,
-      grit: 3,
+      command: 2,
+      grit: 5,
       signal: 1,
-      guile: 1,
-      forge: 3
+      guile: 2,
+      forge: 5
     });
   });
 
@@ -82,10 +113,10 @@ describe("character roster content", () => {
     expect(rumi?.currentSpaceId).toBe("glassmere-spindle");
     expect(rumi?.stats).toEqual({
       command: 1,
-      grit: 2,
-      signal: 3,
-      guile: 2,
-      forge: 1
+      grit: 3,
+      signal: 5,
+      guile: 4,
+      forge: 2
     });
   });
 

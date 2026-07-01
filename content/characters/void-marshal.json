@@ -5,11 +5,11 @@
   "currentSpaceId": "ashwake-crossing",
   "status": "active",
   "stats": {
-    "command": 3,
-    "grit": 2,
-    "signal": 1,
-    "guile": 1,
-    "forge": 2
+    "command": 5,
+    "grit": 3,
+    "signal": 2,
+    "guile": 2,
+    "forge": 3
   },
   "trophies": 0,
   "heat": 0,
@@ -43,5 +43,9 @@
       "name": "Marshal's Presence",
       "text": "Once per round, reduce local Heat pressure by 1 after a successful objective push."
     }
-  ]
+  ],
+  "startingGear": [
+    "cinder-suture-kit"
+  ],
+  "startingContract": "dominion-warbell-recovery"
 }

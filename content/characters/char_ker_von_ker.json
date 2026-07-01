@@ -5,11 +5,11 @@
   "currentSpaceId": "emberwatch-step",
   "status": "active",
   "stats": {
-    "command": 1,
-    "grit": 4,
+    "command": 2,
+    "grit": 5,
     "signal": 1,
-    "guile": 1,
-    "forge": 2
+    "guile": 2,
+    "forge": 5
   },
   "trophies": 0,
   "heat": 0,
@@ -43,5 +43,9 @@
       "name": "Hold the Line",
       "text": "When the breach pressure rises, Ker makes a narrow path feel like a fortress."
     }
-  ]
+  ],
+  "startingGear": [
+    "last-breath-rivet"
+  ],
+  "startingContract": "warden-span-vigil"
 }

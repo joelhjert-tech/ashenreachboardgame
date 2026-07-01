@@ -6,10 +6,10 @@
   "status": "active",
   "stats": {
     "command": 1,
-    "grit": 2,
-    "signal": 1,
-    "guile": 2,
-    "forge": 3
+    "grit": 3,
+    "signal": 2,
+    "guile": 4,
+    "forge": 5
   },
   "trophies": 0,
   "heat": 0,
@@ -43,5 +43,9 @@
       "name": "Cold Brace",
       "text": "When escalation climbs from direct damage, your field braces keep the collapse from feeling immediate."
     }
-  ]
+  ],
+  "startingGear": [
+    "coffin-rig"
+  ],
+  "startingContract": "compact-cleanse-ledger"
 }

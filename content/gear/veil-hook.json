@@ -8,5 +8,9 @@
   },
   "flavor": "A hooked furnace blade balanced for close pursuit in ash-choked lanes.",
   "tier": "starter",
-  "progressionWeight": 0.75
+  "progressionWeight": 0.75,
+  "shopCategories": [
+    "forge-armoury",
+    "market"
+  ]
 }

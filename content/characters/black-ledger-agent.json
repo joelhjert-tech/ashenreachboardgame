@@ -5,11 +5,11 @@
   "currentSpaceId": "hollow-veil-yard",
   "status": "active",
   "stats": {
-    "command": 1,
+    "command": 3,
     "grit": 1,
-    "signal": 2,
-    "guile": 3,
-    "forge": 2
+    "signal": 3,
+    "guile": 5,
+    "forge": 3
   },
   "trophies": 0,
   "heat": 0,
@@ -43,5 +43,9 @@
       "name": "Black File",
       "text": "Once per round, a finished job can be turned into leverage instead of mere survival."
     }
-  ]
+  ],
+  "startingGear": [
+    "blackstar-ampoule"
+  ],
+  "startingContract": "cartel-ledger-skim"
 }

@@ -5,11 +5,11 @@
   "currentSpaceId": "glassmere-spindle",
   "status": "active",
   "stats": {
-    "command": 2,
-    "grit": 1,
+    "command": 4,
+    "grit": 2,
     "signal": 1,
-    "guile": 3,
-    "forge": 2
+    "guile": 5,
+    "forge": 3
   },
   "trophies": 0,
   "heat": 0,
@@ -43,5 +43,9 @@
       "name": "Ruin Courtesy",
       "text": "You move through broken grandeur like it still belongs to you."
     }
-  ]
+  ],
+  "startingGear": [
+    "oath-chain-ledger"
+  ],
+  "startingContract": "dominion-gate-tithe"
 }

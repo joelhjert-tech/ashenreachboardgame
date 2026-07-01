@@ -5,11 +5,11 @@
   "currentSpaceId": "ashwake-crossing",
   "status": "active",
   "stats": {
-    "command": 2,
+    "command": 3,
     "grit": 3,
-    "signal": 1,
-    "guile": 1,
-    "forge": 2
+    "signal": 2,
+    "guile": 2,
+    "forge": 5
   },
   "trophies": 0,
   "heat": 0,
@@ -43,5 +43,9 @@
       "name": "Amber Draught",
       "text": "Relief arrives from your kit in precise doses, never by miracle."
     }
-  ]
+  ],
+  "startingGear": [
+    "saintwire-splint"
+  ],
+  "startingContract": "compact-surgery-bond"
 }

@@ -11,5 +11,9 @@
   "useLimit": "discard",
   "flavor": "A single coffin nail hammered into living armor.",
   "tier": "starter",
-  "progressionWeight": 0.5
+  "progressionWeight": 0.5,
+  "shopCategories": [
+    "forge-armoury",
+    "medicae-shrine"
+  ]
 }

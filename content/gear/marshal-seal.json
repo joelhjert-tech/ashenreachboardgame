@@ -8,5 +8,9 @@
   },
   "flavor": "A stamped relay sigil that carries enough authority to still a crowded platform.",
   "tier": "starter",
-  "progressionWeight": 0.75
+  "progressionWeight": 0.75,
+  "shopCategories": [
+    "contract-broker",
+    "market"
+  ]
 }

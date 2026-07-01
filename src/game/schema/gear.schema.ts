@@ -22,6 +22,13 @@ export const gearCategorySchema = z.enum([
   "contractObject",
   "followerLinked"
 ]);
+export const shopCategorySchema = z.enum([
+  "forge-armoury",
+  "market",
+  "medicae-shrine",
+  "relic-dealer",
+  "contract-broker"
+]);
 export const gearUseLimitSchema = z.enum(["oncePerTurn", "oncePerRound", "discard", "charge"]);
 
 export const gearItemSchema = z.object({
@@ -29,6 +36,7 @@ export const gearItemSchema = z.object({
   name: z.string().min(1),
   slot: gearSlotSchema,
   category: gearCategorySchema.optional(),
+  shopCategories: z.array(shopCategorySchema).min(1).optional(),
   statBonus: z.object({
     stat: gearBonusStatSchema,
     amount: z.number().int().positive()
@@ -47,6 +55,7 @@ export const gearItemSchema = z.object({
 
 export type GearSlot = z.infer<typeof gearSlotSchema>;
 export type GearCategory = z.infer<typeof gearCategorySchema>;
+export type ShopCategory = z.infer<typeof shopCategorySchema>;
 export type GearTier = z.infer<typeof gearTierSchema>;
 export type GearTimingWindow = z.infer<typeof gearTimingWindowSchema>;
 export type GearItem = z.infer<typeof gearItemSchema>;

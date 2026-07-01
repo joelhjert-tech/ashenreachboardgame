@@ -11,5 +11,9 @@
   "useLimit": "oncePerTurn",
   "flavor": "One side shows your face. The other shows the version that got away.",
   "tier": "standard",
-  "progressionWeight": 1.25
+  "progressionWeight": 1.25,
+  "shopCategories": [
+    "market",
+    "relic-dealer"
+  ]
 }

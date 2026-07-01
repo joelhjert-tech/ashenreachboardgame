@@ -6,10 +6,10 @@
   "status": "active",
   "stats": {
     "command": 1,
-    "grit": 2,
-    "signal": 2,
-    "guile": 1,
-    "forge": 3
+    "grit": 3,
+    "signal": 4,
+    "guile": 2,
+    "forge": 5
   },
   "trophies": 0,
   "heat": 0,
@@ -43,5 +43,9 @@
       "name": "Deep Bargain",
       "text": "When a market demands risk, he knows which debt can be paid now and which one can wait."
     }
-  ]
+  ],
+  "startingGear": [
+    "grave-lens"
+  ],
+  "startingContract": "clan-bone-road-guide"
 }

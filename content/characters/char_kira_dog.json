@@ -5,11 +5,11 @@
   "currentSpaceId": "ashwake-crossing",
   "status": "active",
   "stats": {
-    "command": 2,
-    "grit": 3,
+    "command": 3,
+    "grit": 5,
     "signal": 1,
-    "guile": 2,
-    "forge": 1
+    "guile": 4,
+    "forge": 2
   },
   "trophies": 0,
   "heat": 0,
@@ -43,5 +43,9 @@
       "name": "Heroic Bite",
       "text": "When a wounded enemy thinks the duel is over, Kira reminds it that a sword is not the only weapon in reach."
     }
-  ]
+  ],
+  "startingGear": [
+    "veil-hook"
+  ],
+  "startingContract": "contract-lantern-run"
 }

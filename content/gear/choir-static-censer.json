@@ -12,5 +12,9 @@
   "charges": 2,
   "flavor": "It sings only when the air is already wrong.",
   "tier": "artifact",
-  "progressionWeight": 2.5
+  "progressionWeight": 2.5,
+  "shopCategories": [
+    "relic-dealer",
+    "medicae-shrine"
+  ]
 }

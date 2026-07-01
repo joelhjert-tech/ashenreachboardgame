@@ -11,5 +11,9 @@
   "useLimit": "discard",
   "flavor": "A useful medical error in a sealed brass case.",
   "tier": "starter",
-  "progressionWeight": 0.5
+  "progressionWeight": 0.5,
+  "shopCategories": [
+    "medicae-shrine",
+    "market"
+  ]
 }

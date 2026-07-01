@@ -12,5 +12,9 @@
   "heatCost": 1,
   "flavor": "A length of dead-route cord that burns toward the nearest argument.",
   "tier": "standard",
-  "progressionWeight": 1
+  "progressionWeight": 1,
+  "shopCategories": [
+    "forge-armoury",
+    "relic-dealer"
+  ]
 }

@@ -5,11 +5,11 @@
   "currentSpaceId": "emberwatch-step",
   "status": "active",
   "stats": {
-    "command": 1,
-    "grit": 3,
-    "signal": 2,
-    "guile": 1,
-    "forge": 2
+    "command": 2,
+    "grit": 4,
+    "signal": 3,
+    "guile": 3,
+    "forge": 3
   },
   "trophies": 0,
   "heat": 0,
@@ -43,5 +43,9 @@
       "name": "Cinder Oath",
       "text": "Core-ward confrontations never feel routine, but your vows make them survivable."
     }
-  ]
+  ],
+  "startingGear": [
+    "heat-sink-prayer"
+  ],
+  "startingContract": "umbral-shrine-confession"
 }

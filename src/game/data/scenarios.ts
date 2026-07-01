@@ -4,6 +4,7 @@ import { easeBrokenSealConfrontationDifficulty } from "../rules/soloTuning.js";
 export type ScenarioConfrontationStat = "command" | "grit" | "signal" | "guile" | "forge";
 export type ScenarioDifficulty = "easy" | "easy-medium" | "medium" | "medium-hard" | "hard" | "brutal";
 export type ScenarioMode = "coop" | "rivalry" | "hybrid";
+export type ScenarioSupportedMode = "solo" | "co-op" | "competitive" | "rivalry" | "hidden-agenda";
 export type ScenarioRewardType = "boon" | "gear" | "ability" | "tile-event" | "tactic" | "artifact";
 
 export interface ScenarioConfrontationCheck {
@@ -47,6 +48,23 @@ export interface ScenarioBoardHooks {
   anomaly?: string;
 }
 
+export interface ScenarioPlayerCountSupport {
+  min: number;
+  max: number;
+}
+
+export interface ScenarioPublicDisplayMetadata {
+  modeLabel: string;
+  objective: string;
+  privacy: string;
+}
+
+export interface ScenarioPrivateMetadata {
+  reservedForPhonePayloads: boolean;
+  hiddenAgendaReveal: "not-implemented" | "future";
+  notes: string;
+}
+
 export interface ScenarioRewardDefinition {
   id: string;
   name: string;
@@ -62,6 +80,12 @@ export interface ScenarioDefinition {
   pressureRule: string;
   expectedDuration: string;
   mode: ScenarioMode;
+  supportedPlayerCounts: ScenarioPlayerCountSupport;
+  supportedModes: ScenarioSupportedMode[];
+  publicDisplay: ScenarioPublicDisplayMetadata;
+  privateMetadata: ScenarioPrivateMetadata;
+  victoryCondition: string;
+  lossCondition: string;
   pressureTrack: ScenarioPressureTrack;
   boardHooks: ScenarioBoardHooks;
   progressSources: string[];
@@ -107,6 +131,20 @@ export const SCENARIOS: ScenarioDefinition[] = [
       "Seal Integrity ticks at round pressure and through breach surges. Blue threats, shrines, contracts, and artifact charges can restore the ward.",
     expectedDuration: "45-60 min",
     mode: "coop",
+    supportedPlayerCounts: { min: 1, max: 6 },
+    supportedModes: ["solo", "co-op"],
+    publicDisplay: {
+      modeLabel: "Solo / Co-op",
+      objective: "Stabilize the Broken Seal before the breach collapses the ward.",
+      privacy: "Public scenario pressure only; no private rivalry agenda."
+    },
+    privateMetadata: {
+      reservedForPhonePayloads: false,
+      hiddenAgendaReveal: "not-implemented",
+      notes: "Tutorial scenario keeps all objective progress public."
+    },
+    victoryCondition: "Earn 2 restoration marks during one Ashen Reach Core confrontation.",
+    lossCondition: "Escalation loss or repeated Seal Integrity collapse overwhelms the operatives.",
     pressureTrack: {
       name: "Seal Integrity",
       start: 6,
@@ -231,6 +269,20 @@ export const SCENARIOS: ScenarioDefinition[] = [
       "Crowns are earned through elite victories, contracts, Crown sectors, and risky shops. If all Crowns are held, Crown Hunger wakes the Ash Regent.",
     expectedDuration: "60-75 min",
     mode: "hybrid",
+    supportedPlayerCounts: { min: 2, max: 6 },
+    supportedModes: ["co-op", "competitive", "rivalry", "hidden-agenda"],
+    publicDisplay: {
+      modeLabel: "Hybrid Rivalry",
+      objective: "Claim Crowns and survive the Ash Regent's hunger.",
+      privacy: "Public Crown pressure with private rivalry hooks reserved for phones."
+    },
+    privateMetadata: {
+      reservedForPhonePayloads: true,
+      hiddenAgendaReveal: "future",
+      notes: "Supports private Crown leverage later; reveal/scoring remains unwired."
+    },
+    victoryCondition: "Earn 6 throne claims before Crown Hunger turns the table against the claimants.",
+    lossCondition: "Escalation loss or Crown Hunger collapse summons an unrecoverable Regent state.",
     pressureTrack: {
       name: "Crown Hunger",
       start: 0,
@@ -358,6 +410,20 @@ export const SCENARIOS: ScenarioDefinition[] = [
       "Reflection rises from voluntary Heat, forbidden abilities, Artifact charges, selfish Contract rewards, and Scars. High pressure wakes the False Hero.",
     expectedDuration: "60-75 min",
     mode: "coop",
+    supportedPlayerCounts: { min: 1, max: 6 },
+    supportedModes: ["solo", "co-op", "rivalry", "hidden-agenda"],
+    publicDisplay: {
+      modeLabel: "Co-op / Rivalry-ready",
+      objective: "Break the false mirror before Reflection pressure rewrites the run.",
+      privacy: "Public mirror pressure; private reflection hooks reserved for phones."
+    },
+    privateMetadata: {
+      reservedForPhonePayloads: true,
+      hiddenAgendaReveal: "future",
+      notes: "Private temptation and reflection scoring can attach later without changing public win logic."
+    },
+    victoryCondition: "Earn 4 mirror breaks through confrontation progress.",
+    lossCondition: "Escalation loss or Reflection pressure reaching its collapse state defeats the table.",
     pressureTrack: {
       name: "Mirror Pressure",
       start: 0,
@@ -468,6 +534,20 @@ export const SCENARIOS: ScenarioDefinition[] = [
       "The Devourer moves at end of turn, consumes unresolved threats for Doom, and becomes faster as the track rises.",
     expectedDuration: "60-80 min",
     mode: "coop",
+    supportedPlayerCounts: { min: 1, max: 6 },
+    supportedModes: ["solo", "co-op", "rivalry"],
+    publicDisplay: {
+      modeLabel: "Boss Co-op",
+      objective: "Hunt and strike the Devourer before Doom consumes the routes.",
+      privacy: "Roaming boss state is public; private rivalry hooks are optional future overlays."
+    },
+    privateMetadata: {
+      reservedForPhonePayloads: true,
+      hiddenAgendaReveal: "future",
+      notes: "Rivalry can later score risky boss positioning privately, but no reveal mechanic is active."
+    },
+    victoryCondition: "Earn 5 maw strikes against the Devourer.",
+    lossCondition: "Escalation loss or Doom collapse overwhelms the board.",
     pressureTrack: {
       name: "Doom",
       start: 0,
@@ -583,6 +663,20 @@ export const SCENARIOS: ScenarioDefinition[] = [
       "The Engine rotates every turn. Each mode changes threats, shops, Gear, rewards, and the final confrontation sequence.",
     expectedDuration: "70-90 min",
     mode: "coop",
+    supportedPlayerCounts: { min: 1, max: 6 },
+    supportedModes: ["solo", "co-op"],
+    publicDisplay: {
+      modeLabel: "Rotating Co-op",
+      objective: "Shutdown the Labyrinth Engine while its active mode keeps changing.",
+      privacy: "Engine mode and progress are public; no private rivalry agenda."
+    },
+    privateMetadata: {
+      reservedForPhonePayloads: false,
+      hiddenAgendaReveal: "not-implemented",
+      notes: "No hidden agenda metadata is needed until an engine rivalry variant exists."
+    },
+    victoryCondition: "Earn 5 shutdown marks through engine-mode confrontation checks.",
+    lossCondition: "Escalation loss or Engine Instability collapse locks the engine open.",
     pressureTrack: {
       name: "Engine Instability",
       start: 0,
@@ -711,6 +805,20 @@ export const SCENARIOS: ScenarioDefinition[] = [
       "Starfire burns down at end of turn, from wounds, and from voluntary Heat. Artifacts, Forge work, Star sectors, and contracts can restore it.",
     expectedDuration: "50-70 min",
     mode: "coop",
+    supportedPlayerCounts: { min: 1, max: 6 },
+    supportedModes: ["solo", "co-op"],
+    publicDisplay: {
+      modeLabel: "Hard Timer Co-op",
+      objective: "Ignite the Dying Star before Starfire burns out.",
+      privacy: "Starfire pressure and ignition progress are public; no private rivalry agenda."
+    },
+    privateMetadata: {
+      reservedForPhonePayloads: false,
+      hiddenAgendaReveal: "not-implemented",
+      notes: "Private rivalry data is intentionally unused for this public timer scenario."
+    },
+    victoryCondition: "Earn 4 ignition marks before the Starfire track collapses.",
+    lossCondition: "Escalation loss or Starfire collapse ends the run.",
     pressureTrack: {
       name: "Starfire",
       start: 10,

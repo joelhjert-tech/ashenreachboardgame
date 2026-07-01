@@ -5,11 +5,11 @@
   "currentSpaceId": "mirecoil-beacon",
   "status": "active",
   "stats": {
-    "command": 2,
-    "grit": 3,
+    "command": 3,
+    "grit": 5,
     "signal": 1,
-    "guile": 1,
-    "forge": 2
+    "guile": 2,
+    "forge": 4
   },
   "trophies": 0,
   "heat": 0,
@@ -43,5 +43,9 @@
       "name": "Ripe Warning",
       "text": "When danger gets too close, everyone nearby knows it before the first blade is drawn."
     }
-  ]
+  ],
+  "startingGear": [
+    "black-route-fuse"
+  ],
+  "startingContract": "clan-salvage-tithe"
 }

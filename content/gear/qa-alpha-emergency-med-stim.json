@@ -10,8 +10,14 @@
   "activeText": "QA only: discard one charge to heal 4 wounds.",
   "useLimit": "discard",
   "charges": 5,
-  "timingWindows": ["beforeTakingDamage", "anyTime"],
+  "timingWindows": [
+    "beforeTakingDamage",
+    "anyTime"
+  ],
   "tier": "advanced",
   "cost": 0,
-  "progressionWeight": 0.01
+  "progressionWeight": 0.01,
+  "shopCategories": [
+    "medicae-shrine"
+  ]
 }

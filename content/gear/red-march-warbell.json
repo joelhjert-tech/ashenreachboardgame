@@ -12,5 +12,9 @@
   "heatCost": 1,
   "flavor": "It wins arguments by making the whole district listen.",
   "tier": "advanced",
-  "progressionWeight": 2.25
+  "progressionWeight": 2.25,
+  "shopCategories": [
+    "forge-armoury",
+    "relic-dealer"
+  ]
 }

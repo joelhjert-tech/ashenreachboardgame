@@ -6,9 +6,9 @@
   "status": "active",
   "stats": {
     "command": 1,
-    "grit": 1,
-    "signal": 2,
-    "guile": 3,
+    "grit": 2,
+    "signal": 5,
+    "guile": 5,
     "forge": 2
   },
   "trophies": 0,
@@ -43,5 +43,9 @@
       "name": "Rift Script",
       "text": "You annotate hostile ground fast enough that other operatives can use your work before it fades."
     }
-  ]
+  ],
+  "startingGear": [
+    "ashen-route-compass"
+  ],
+  "startingContract": "cartel-quiet-route"
 }
