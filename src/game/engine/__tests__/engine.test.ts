@@ -4236,6 +4236,8 @@ describe("escalation flow", () => {
       "Guardian Span threshold aligned for breach entry."
     );
 
+    server.getState().movementRolls = { "seat-1": 1 };
+
     runIntent(server, {
       type: "MOVE_REQUESTED",
       seatId: "seat-1",

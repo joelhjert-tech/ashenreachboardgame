@@ -245,13 +245,17 @@ function withoutThreats(state: GameState): GameState {
 
 describe.each([1, 2, 3, 4, 5, 6])("player count matrix (%i players)", (playerCount) => {
   it("rotates turns across the full table and advances escalation once per round", () => {
+    const movementRolls = Object.fromEntries(
+      Array.from({ length: playerCount }, (_, index) => [`seat-${index + 1}`, 1])
+    );
     const server = new GameRoomServer(
       withoutThreats(
         createMatrixState(playerCount, {
           phase: "navigation",
           currentEncounter: null,
           pendingEnemyRoll: null,
-          pendingEffect: null
+          pendingEffect: null,
+          movementRolls
         })
       ),
       [],
