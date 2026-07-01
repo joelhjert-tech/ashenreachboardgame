@@ -731,6 +731,14 @@ function runIntent(server: GameRoomServer, intent: ClientIntent): void {
   }
 }
 
+function runOneStepMove(server: GameRoomServer, intent: Extract<ClientIntent, { type: "MOVE_REQUESTED" }>): void {
+  server.getState().movementRolls = {
+    ...(server.getState().movementRolls ?? {}),
+    [intent.seatId]: 1
+  };
+  runIntent(server, intent);
+}
+
 function withOnlyConnectedSeat(state: GameState, connectedSeatId: string): GameState {
   return {
     ...state,
@@ -6715,21 +6723,33 @@ describe("contracts", () => {
     const server = new GameRoomServer(
       withOnlyConnectedSeat(
         createState({
-        phase: "navigation",
-        players: createState({
-          phase: "navigation"
-        }).players.map((entry) =>
-          entry.seatId === "seat-1"
-            ? {
-                ...entry,
-                character: {
-                  ...entry.character,
-                  heldGear: [],
-                  equippedGear: { weapon: null, armor: null, utility: null }
+          phase: "navigation",
+          sectors: createState().sectors.map((sector) =>
+            sector.id === "sector-b"
+              ? {
+                  ...sector,
+                  encounterDecks: { ...sector.encounterDecks, threat: ["cinder-veil-stalker"] }
                 }
-              }
-            : entry
-        )
+              : sector
+          ),
+          players: createState({
+            phase: "navigation"
+          }).players.map((entry) =>
+            entry.seatId === "seat-1"
+              ? {
+                  ...entry,
+                  character: {
+                    ...entry.character,
+                    stats: {
+                      ...entry.character.stats,
+                      grit: 8
+                    },
+                    heldGear: [],
+                    equippedGear: { weapon: null, armor: null, utility: null }
+                  }
+                }
+              : entry
+          )
         }),
         "seat-1"
       ),
@@ -6749,7 +6769,7 @@ describe("contracts", () => {
       contracts
     );
 
-    runIntent(server, {
+    runOneStepMove(server, {
       type: "MOVE_REQUESTED",
       seatId: "seat-1",
       toSectorId: "sector-b"
@@ -6767,7 +6787,7 @@ describe("contracts", () => {
 
     expect(server.getState().players.find((entry) => entry.seatId === "seat-1")?.character.activeContract?.progress).toBe(1);
 
-    runIntent(server, {
+    runOneStepMove(server, {
       type: "MOVE_REQUESTED",
       seatId: "seat-2",
       toSectorId: "sector-c"
@@ -6778,7 +6798,7 @@ describe("contracts", () => {
       stat: "signal"
     });
 
-    runIntent(server, {
+    runOneStepMove(server, {
       type: "MOVE_REQUESTED",
       seatId: "seat-3",
       toSectorId: "sector-a"
@@ -6789,7 +6809,7 @@ describe("contracts", () => {
       stat: "signal"
     });
 
-    runIntent(server, {
+    runOneStepMove(server, {
       type: "MOVE_REQUESTED",
       seatId: "seat-1",
       toSectorId: "sector-c"
@@ -6802,33 +6822,9 @@ describe("contracts", () => {
 
     expect(server.getState().players.find((entry) => entry.seatId === "seat-1")?.character.activeContract?.progress).toBe(2);
 
-    runIntent(server, {
-      type: "MOVE_REQUESTED",
-      seatId: "seat-2",
-      toSectorId: "sector-b"
-    });
-    runIntent(server, {
-      type: "CHECK_REQUESTED",
-      seatId: "seat-2",
-      stat: "signal"
-    });
+    server.getState().phase = "action";
+    server.getState().activeSeatIndex = 0;
 
-    runIntent(server, {
-      type: "MOVE_REQUESTED",
-      seatId: "seat-3",
-      toSectorId: "sector-b"
-    });
-    runIntent(server, {
-      type: "CHECK_REQUESTED",
-      seatId: "seat-3",
-      stat: "signal"
-    });
-
-    runIntent(server, {
-      type: "MOVE_REQUESTED",
-      seatId: "seat-1",
-      toSectorId: "sector-b"
-    });
     runIntent(server, {
       type: "COMPLETE_CONTRACT",
       seatId: "seat-1",
