@@ -408,6 +408,11 @@ describe("PhoneActionPanel", () => {
             sectorName: "Anchor Market",
             shopId: "outer_waymarket",
             shopName: "Anchor Market",
+            available: true,
+            blocked: false,
+            shopType: "forge market",
+            shopCategory: "forge-armoury",
+            stockCategory: "forge-armoury",
             status: "open",
             activePlayer: {
               playerId: "seat-1",
@@ -424,6 +429,7 @@ describe("PhoneActionPanel", () => {
               {
                 id: "buy-gear",
                 label: "Buy Gear",
+                shopCategory: "forge-armoury",
                 cost: {},
                 enabled: true
               },
@@ -440,6 +446,7 @@ describe("PhoneActionPanel", () => {
                 cardId: "ashlock-carbine",
                 name: "Ashlock Carbine",
                 type: "gear",
+                shopCategories: ["forge-armoury"],
                 cost: { salvage: 3 },
                 summary: "+1 Grit while fighting enemies.",
                 affordable: true
@@ -461,6 +468,10 @@ describe("PhoneActionPanel", () => {
 
     expect(screen.getByTestId("phone-current-prompt")).toHaveTextContent(/choose shop action/i);
     expect(screen.getByTestId("phone-current-prompt")).toHaveTextContent(/anchor market/i);
+    expect(screen.getByText(/forge market/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/forge armoury/i).length).toBeGreaterThan(0);
+    expect(screen.getByText(/salvage: 6/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/choose gear to buy/i).length).toBeGreaterThan(0);
     fireEvent.click(screen.getByRole("button", { name: /buy gear/i }));
     expect(onIntent).toHaveBeenCalledWith({
       type: "SHOP_SERVICE_REQUESTED",
@@ -469,7 +480,15 @@ describe("PhoneActionPanel", () => {
     });
 
     expect(screen.getByText(/ashlock carbine/i)).toBeInTheDocument();
+    expect(screen.getByText(/\+1 grit while fighting enemies/i)).toBeInTheDocument();
     fireEvent.click(screen.getAllByRole("button", { name: /^buy$/i })[0]);
+    expect(screen.getByRole("dialog", { name: /confirm purchase/i })).toHaveTextContent(/buy ashlock carbine for 3 salvage/i);
+    expect(onIntent).not.toHaveBeenCalledWith({
+      type: "SHOP_PURCHASE_REQUESTED",
+      seatId: "seat-1",
+      cardId: "ashlock-carbine"
+    });
+    fireEvent.click(screen.getByRole("button", { name: /confirm purchase/i }));
     expect(onIntent).toHaveBeenCalledWith({
       type: "SHOP_PURCHASE_REQUESTED",
       seatId: "seat-1",
@@ -477,6 +496,143 @@ describe("PhoneActionPanel", () => {
     });
 
     expect(screen.getAllByText(/not enough salvage/i).length).toBeGreaterThan(0);
+    const unaffordableCard = screen.getByText(/saintplate harness/i).closest("article");
+    expect(unaffordableCard).not.toBeNull();
+    expect(within(unaffordableCard as HTMLElement).getByRole("button", { name: /buy/i })).toBeDisabled();
+    expect(screen.getByRole("tablist", { name: /turn actions/i })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: /shop/i })).toBeInTheDocument();
+  });
+
+  it("shows blocked shop reasons from the phone projection", () => {
+    render(
+      <PhoneActionPanel
+        characters={characters}
+        onIntent={vi.fn()}
+        patch={createPatch({
+          encounter: null,
+          shopEncounter: {
+            sectorId: "outer_waymarket",
+            sectorName: "Anchor Market",
+            shopId: "outer_waymarket",
+            shopName: "Anchor Market",
+            available: false,
+            blocked: true,
+            blockedReason: "shopBlockedByThreat",
+            blockedReasonText: "Shop blocked by threat.",
+            shopType: "market",
+            shopCategory: "market",
+            stockCategory: "market",
+            status: "locked",
+            activePlayer: {
+              playerId: "seat-1",
+              name: "Sable Vey",
+              characterName: "Sable Vey",
+              salvage: 6,
+              heat: 1,
+              wounds: { current: 0, max: 6 },
+              trophies: 0,
+              completedContracts: 0
+            },
+            blockingThreats: [
+              {
+                cardId: "market-stalker",
+                name: "Market Stalker",
+                type: "enemy",
+                challenge: { stat: "grit", value: 7 }
+              }
+            ],
+            services: [],
+            revealedStock: []
+          }
+        })}
+      />
+    );
+
+    expect(screen.getByTestId("phone-current-prompt")).toHaveTextContent(/shop blocked/i);
+    expect(screen.getAllByText(/shop blocked by threat/i).length).toBeGreaterThan(0);
+    expect(screen.getByText(/market stalker/i)).toBeInTheDocument();
+  });
+
+  it("allows the shop tab to show a no-shop state", () => {
+    render(
+      <PhoneActionPanel characters={characters} onIntent={vi.fn()} selectedTurnTab="shop" patch={createPatch({ encounter: null, shopEncounter: null })} />
+    );
+
+    expect(screen.getByRole("tab", { name: /shop/i })).toBeInTheDocument();
+    expect(screen.getByText(/no shop here/i)).toBeInTheDocument();
+    expect(screen.getByText(/shop services appear when your operative is on a clear market/i)).toBeInTheDocument();
+  });
+
+  it("shows empty stock and purchase feedback without exposing rivalry agenda details", () => {
+    render(
+      <PhoneActionPanel
+        characters={characters}
+        onIntent={vi.fn()}
+        patch={createPatch({
+          encounter: null,
+          privateRivalry: {
+            active: true,
+            mode: "rivalry",
+            secrecy: "private",
+            tableWarning: "Do not reveal private agenda data.",
+            objective: {
+              id: "claim-black-ledger",
+              title: "Claim the Black Ledger",
+              summary: "Secret shop leverage",
+              progressLabel: "ledgerMarks",
+              progress: 1,
+              target: 3,
+              stakes: "Keep it quiet"
+            },
+            recentPrivateNotes: ["Hidden-agenda reveal moments are not wired yet."],
+            reveal: {
+              available: false,
+              label: "Reveal agenda",
+              hint: "Hidden-agenda reveal moments are not wired yet."
+            }
+          },
+          shopEncounter: {
+            sectorId: "outer_waymarket",
+            sectorName: "Anchor Market",
+            shopId: "outer_waymarket",
+            shopName: "Anchor Market",
+            available: true,
+            blocked: false,
+            shopType: "market",
+            shopCategory: "market",
+            stockCategory: "market",
+            status: "open",
+            activePlayer: {
+              playerId: "seat-1",
+              name: "Sable Vey",
+              characterName: "Sable Vey",
+              salvage: 3,
+              heat: 1,
+              wounds: { current: 0, max: 6 },
+              trophies: 0,
+              completedContracts: 0
+            },
+            blockingThreats: [],
+            services: [],
+            revealedStock: [],
+            recentOutcome: {
+              operativeName: "Sable Vey",
+              shopName: "Anchor Market",
+              action: "buy",
+              gained: "Ashlock Carbine",
+              costPaid: { salvage: 3 },
+              remainingSalvage: 3,
+              summary: "Sable Vey purchased Ashlock Carbine."
+            }
+          }
+        })}
+      />
+    );
+
+    expect(screen.getAllByText(/no stock available/i).length).toBeGreaterThan(0);
+    expect(screen.getByText(/purchased: ashlock carbine/i)).toBeInTheDocument();
+    expect(screen.queryByText(/claim the black ledger/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/do not reveal private agenda data/i)).not.toBeInTheDocument();
   });
 
   it("shows a movement planner empty state when no legal destinations are available", () => {

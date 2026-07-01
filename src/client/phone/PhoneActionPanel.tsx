@@ -157,6 +157,10 @@ function formatShopDisabledReason(reason: string | undefined): string | undefine
   return reason && reason in shopFailureLabels ? shopFailureLabels[reason as ShopFailureReason] : reason;
 }
 
+function formatShopCategory(value: string | undefined): string {
+  return value ? toTitleCase(value) : "General Stock";
+}
+
 function ActiveResolutionCard({
   resolution,
   canContinue,
@@ -601,27 +605,70 @@ function PhoneShopPanel({
   seatId: string;
   onIntent: (intent: ClientIntent) => void;
 }): ReactElement | null {
+  const [confirmingCardId, setConfirmingCardId] = useState<string | null>(null);
+  const [pendingCardId, setPendingCardId] = useState<string | null>(null);
+  const revealedStock = shopEncounter?.revealedStock ?? [];
+  const confirmingItem = revealedStock.find((item) => item.cardId === confirmingCardId) ?? null;
+
+  useEffect(() => {
+    if (!confirmingCardId || revealedStock.some((item) => item.cardId === confirmingCardId)) {
+      return;
+    }
+    setConfirmingCardId(null);
+  }, [confirmingCardId, revealedStock]);
+
+  useEffect(() => {
+    if (!pendingCardId) {
+      return;
+    }
+    if (shopEncounter?.recentOutcome || !revealedStock.some((item) => item.cardId === pendingCardId)) {
+      setPendingCardId(null);
+    }
+  }, [pendingCardId, revealedStock, shopEncounter?.recentOutcome]);
+
   if (!shopEncounter) {
     return null;
   }
 
   const isLocked = shopEncounter.status === "locked" || shopEncounter.blockingThreats.length > 0;
-  const revealedStock = shopEncounter.revealedStock ?? [];
   const blockedReasonText = shopEncounter.blockedReasonText ?? formatShopDisabledReason(shopEncounter.blockedReason);
+  const categoryLabel = formatShopCategory(shopEncounter.stockCategory ?? shopEncounter.shopCategory);
+  const shopTypeLabel = shopEncounter.shopType ? toTitleCase(shopEncounter.shopType) : "Shop Encounter";
+  const purchasedItemName = shopEncounter.recentOutcome?.gained;
+
+  function confirmPurchase(cardId: string): void {
+    setPendingCardId(cardId);
+    setConfirmingCardId(null);
+    onIntent({
+      type: "SHOP_PURCHASE_REQUESTED",
+      seatId,
+      cardId
+    });
+  }
 
   return (
     <section className={`phone-shop-panel phone-shop-panel-${shopEncounter.status}`} aria-label="Shop encounter">
       <div className="phone-shop-header">
         <div>
-          <span>Shop Encounter</span>
+          <span>{shopTypeLabel}</span>
           <strong>{shopEncounter.shopName}</strong>
-          <small>{shopEncounter.sectorName}</small>
+          <small>
+            {categoryLabel} | {shopEncounter.sectorName}
+          </small>
         </div>
         <span className={`phone-shop-status phone-shop-status-${shopEncounter.status}`}>{shopEncounter.status.toUpperCase()}</span>
       </div>
 
+      <div className="phone-shop-state-copy" role="status">
+        {isLocked
+          ? blockedReasonText ?? "Shop blocked by threat."
+          : shopEncounter.available === false
+            ? "No shop available here."
+            : "Choose gear to buy."}
+      </div>
+
       <div className="phone-shop-wallet" aria-label="Operative resources">
-        <span>Salvage {shopEncounter.activePlayer.salvage}</span>
+        <span>Salvage: {shopEncounter.activePlayer.salvage}</span>
         <span>Heat {shopEncounter.activePlayer.heat}</span>
         <span>
           Wounds {shopEncounter.activePlayer.wounds.current}/{shopEncounter.activePlayer.wounds.max}
@@ -645,76 +692,105 @@ function PhoneShopPanel({
           <div className="phone-shop-services" aria-label="Shop services">
             <div className="phone-shop-section-heading">
               <span>Services</span>
-              <small>Choose a service. Gear purchases reveal stock before buying.</small>
+              <small>Reveal stock or use local services. Sell flow arrives later.</small>
             </div>
-            {shopEncounter.services.map((service) => (
-              <GameButton
-                key={service.id}
-                type="button"
-                tone="shop"
-                size="large"
-                contentMode="custom"
-                className="phone-shop-service-card"
-                disabled={!service.enabled}
-                disabledReason={formatShopDisabledReason(service.disabledReason)}
-                onClick={() =>
-                  onIntent({
-                    type: "SHOP_SERVICE_REQUESTED",
-                    seatId,
-                    serviceId: service.id
-                  })
-                }
-                sublabel={formatShopDisabledReason(service.disabledReason) ?? formatShopCost(service.cost)}
-              >
-                <strong>{service.label}</strong>
-                {service.risk ? <small>{service.risk}</small> : null}
-              </GameButton>
-            ))}
+            {shopEncounter.services.map((service) => {
+              const sellComingLater = service.id === "sell-gear";
+              const disabledReason = sellComingLater ? "Sell coming later" : formatShopDisabledReason(service.disabledReason);
+              return (
+                <GameButton
+                  key={service.id}
+                  type="button"
+                  tone="shop"
+                  size="large"
+                  contentMode="custom"
+                  className="phone-shop-service-card"
+                  disabled={sellComingLater || !service.enabled}
+                  disabledReason={disabledReason}
+                  onClick={() =>
+                    onIntent({
+                      type: "SHOP_SERVICE_REQUESTED",
+                      seatId,
+                      serviceId: service.id
+                    })
+                  }
+                  sublabel={disabledReason ?? formatShopCost(service.cost)}
+                >
+                  <strong>{service.label}</strong>
+                  {service.shopCategory ? <span>{formatShopCategory(service.shopCategory)}</span> : null}
+                  {service.risk ? <small>{service.risk}</small> : null}
+                </GameButton>
+              );
+            })}
           </div>
 
           <div className="phone-shop-stock" aria-label="Revealed shop stock">
             <div className="phone-shop-section-heading">
-              <span>Revealed Stock</span>
-              <small>{revealedStock.length > 0 ? "Buy one item or reveal a different service." : "No stock revealed yet."}</small>
+              <span>Stock</span>
+              <small>{revealedStock.length > 0 ? "Tap Buy to review the purchase before spending Salvage." : "No stock available."}</small>
             </div>
             {revealedStock.length > 0 ? (
-              revealedStock.map((item) => (
-                <article key={item.cardId} className={`phone-shop-stock-card${item.affordable ? "" : " phone-shop-stock-card-disabled"}`}>
-                  <div>
-                    <span>{item.type}</span>
-                    <strong>{item.name}</strong>
-                    <p>{item.summary}</p>
-                    <small>{formatShopDisabledReason(item.disabledReason) ?? formatShopCost(item.cost)}</small>
-                  </div>
-                  <GameButton
-                    type="button"
-                    tone="shop"
-                    className="phone-button phone-button-primary"
-                    disabled={!item.affordable}
-                    disabledReason={formatShopDisabledReason(item.disabledReason) ?? "Cannot buy"}
-                    onClick={() =>
-                      onIntent({
-                        type: "SHOP_PURCHASE_REQUESTED",
-                        seatId,
-                        cardId: item.cardId
-                      })
-                    }
-                  >
-                    Buy
-                  </GameButton>
-                </article>
-              ))
+              <div className="phone-shop-stock-list">
+                {revealedStock.map((item) => {
+                  const itemCategory = item.shopCategories?.map(formatShopCategory).join(" / ") ?? toTitleCase(item.type);
+                  const disabledReason = formatShopDisabledReason(item.disabledReason) ?? (!item.affordable ? "Not enough Salvage" : undefined);
+                  const isPending = pendingCardId === item.cardId;
+                  const isPurchased = purchasedItemName === item.name;
+                  return (
+                    <article key={item.cardId} className={`phone-shop-stock-card${item.affordable ? "" : " phone-shop-stock-card-disabled"}`}>
+                      <div>
+                        <span>{itemCategory}</span>
+                        <strong>{item.name}</strong>
+                        <p>{item.summary}</p>
+                        <small>{disabledReason ?? formatShopCost(item.cost)}</small>
+                      </div>
+                      <GameButton
+                        type="button"
+                        tone="shop"
+                        className="phone-button phone-button-primary"
+                        disabled={!item.affordable || isPending || isPurchased}
+                        disabledReason={disabledReason ?? (isPending ? "Buying..." : isPurchased ? "Purchased" : undefined)}
+                        onClick={() => setConfirmingCardId(item.cardId)}
+                      >
+                        {isPending ? "Buying..." : isPurchased ? "Purchased" : "Buy"}
+                      </GameButton>
+                    </article>
+                  );
+                })}
+              </div>
             ) : (
-              <p className="phone-shop-empty-stock">Use Buy Gear or Risk Action to reveal public stock here.</p>
+              <p className="phone-shop-empty-stock">No stock available.</p>
             )}
           </div>
+
+          {confirmingItem ? (
+            <div className="phone-shop-confirm" role="dialog" aria-label="Confirm purchase">
+              <span>Confirm Purchase</span>
+              <strong>
+                Buy {confirmingItem.name} for {formatShopCost(confirmingItem.cost)}?
+              </strong>
+              <p>{confirmingItem.summary}</p>
+              <div className="phone-shop-confirm-actions">
+                <GameButton type="button" tone="secondary" onClick={() => setConfirmingCardId(null)}>
+                  Cancel
+                </GameButton>
+                <GameButton type="button" tone="shop" onClick={() => confirmPurchase(confirmingItem.cardId)}>
+                  Confirm Purchase
+                </GameButton>
+              </div>
+            </div>
+          ) : null}
         </>
       )}
 
       {shopEncounter.recentOutcome ? (
-        <div className="phone-shop-outcome">
-          <span>Market Result</span>
-          <p>{shopEncounter.recentOutcome.summary}</p>
+        <div className="phone-shop-outcome" role="status">
+          <span>{shopEncounter.recentOutcome.gained ? "Purchase Complete" : "Market Result"}</span>
+          <p>
+            {shopEncounter.recentOutcome.gained
+              ? `Purchased: ${shopEncounter.recentOutcome.gained}`
+              : shopEncounter.recentOutcome.summary}
+          </p>
         </div>
       ) : null}
     </section>
@@ -1639,7 +1715,7 @@ export function PhoneActionPanel({
     }
   ];
   const canShowSelectedTab = (tab: TurnActionTabDefinition) =>
-    tab.enabled || tab.locked || (tab.id === "move" && Boolean(movementPlanner?.active));
+    tab.enabled || tab.locked || tab.id === "shop" || (tab.id === "move" && Boolean(movementPlanner?.active));
   const fallbackTab = movementPlanner?.active ? "move" : tabDefinitions.find((tab) => tab.enabled || tab.locked)?.id ?? "action";
   const activeTurnTab = tabDefinitions.find((tab) => tab.id === selectedTurnTab && canShowSelectedTab(tab))
     ? selectedTurnTab
@@ -1735,7 +1811,7 @@ export function PhoneActionPanel({
         title: shopLocked ? "Shop blocked" : "Choose shop action",
         detail: shopLocked
           ? `${shopEncounter.shopName}: ${shopPromptBlockedReason}`
-          : `${shopEncounter.shopName} is open. Buy, sell, or use services from the Shop tab.`,
+          : `${shopEncounter.shopName} is open. Choose gear to buy from the Shop tab.`,
         meta: toTitleCase(shopEncounter.status),
         tone: "shop",
         targetTab: "shop",
