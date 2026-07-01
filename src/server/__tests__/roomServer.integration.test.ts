@@ -146,7 +146,7 @@ function createThreats(): Map<string, ThreatCard> {
         flavor: "Even the warning lights lie here.",
         severity: 1,
         stat: "signal",
-        difficulty: 7,
+        difficulty: 20,
         successEffect: {
           type: "gain_note",
           text: "You caught the false cadence and marked a safer route."
@@ -1390,13 +1390,33 @@ describe("roomServer websocket integration", () => {
   });
 
   it("drives a full multi-seat session through real socket intents and public/private patches", async () => {
-    harness = await startHarness([
-      0, 0, 0, 0, 0,
-      5, 5, 5, 5, 5, 5, 5,
-      0, 0, 0, 0, 0, 0, 0, 0,
-      5, 5, 5, 5, 5, 5, 5, 5,
-      0, 0, 0, 0, 0, 0
-    ]);
+    const baseState = createState();
+    harness = await startHarness(
+      [
+        0, 0, 0, 0, 0,
+        5, 5, 5, 5, 5, 5, 5,
+        0, 0, 0, 0, 0, 0, 0, 0,
+        5, 5, 5, 5, 5, 5, 5, 5,
+        0, 0, 0, 0, 0, 0
+      ],
+      {
+        ...baseState,
+        players: baseState.players.map((player) =>
+          player.seatId === "seat-3"
+            ? {
+                ...player,
+                character: {
+                  ...player.character,
+                  stats: {
+                    ...player.character.stats,
+                    grit: 8
+                  }
+                }
+              }
+            : player
+        )
+      }
+    );
 
     const tv = await connectClient(`ws://127.0.0.1:${harness.port}/?view=tv`);
     const phone1 = await connectClient(
