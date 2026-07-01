@@ -20,6 +20,18 @@ export type GearCategory =
   | "dangerous"
   | "contractObject"
   | "followerLinked";
+export type ShopCategory =
+  | "forge-armoury"
+  | "market"
+  | "medicae-shrine"
+  | "relic-dealer"
+  | "contract-broker";
+export type ShopFailureReason =
+  | "notAtShop"
+  | "shopBlockedByThreat"
+  | "insufficientSalvage"
+  | "itemUnavailable"
+  | "inventoryFull";
 export type Phase = "start" | "navigation" | "sector" | "action" | "resolution" | "broadcast";
 export type SessionStatus = "lobby" | "active" | "ended";
 export type SessionMode = "multiplayer" | "single-player";
@@ -85,6 +97,7 @@ export interface GearItem {
   slot: GearSlot;
   statBonus: { stat: Stat; amount: number };
   category?: GearCategory;
+  shopCategories?: ShopCategory[];
   cost?: number;
   tier?: GearTier;
   timingWindows?: GearTimingWindow[];
@@ -310,6 +323,13 @@ export interface PublicShopEncounterState {
   sectorName: string;
   shopId: string;
   shopName: string;
+  available?: boolean;
+  blocked?: boolean;
+  blockedReason?: ShopFailureReason;
+  blockedReasonText?: string;
+  shopType?: string;
+  shopCategory?: ShopCategory;
+  stockCategory?: ShopCategory;
   status: PublicShopStatus;
   activePlayer: {
     playerId: string;
@@ -337,6 +357,7 @@ export interface PublicShopEncounterState {
   services: Array<{
     id: string;
     label: string;
+    shopCategory?: ShopCategory;
     cost: PublicShopCost;
     risk?: string;
     enabled: boolean;
@@ -346,6 +367,7 @@ export interface PublicShopEncounterState {
     cardId: string;
     name: string;
     type: "gear" | "tactic" | "ability" | "boon" | "implant" | "artifact";
+    shopCategories?: ShopCategory[];
     cost: {
       salvage?: number;
       heat?: number;

@@ -13,6 +13,7 @@ import type {
   PublicShopCost,
   PublicShopEncounterState,
   SectorNode,
+  ShopFailureReason,
   Stat,
   TrophyPileEntry
 } from "../shared/types.js";
@@ -142,6 +143,18 @@ function formatShopCost(cost: PublicShopCost): string {
   ].filter(Boolean);
 
   return parts.length > 0 ? parts.join(" / ") : "No cost";
+}
+
+const shopFailureLabels: Record<ShopFailureReason, string> = {
+  notAtShop: "No shop here",
+  shopBlockedByThreat: "Shop blocked by threat",
+  insufficientSalvage: "Not enough Salvage",
+  itemUnavailable: "Item unavailable",
+  inventoryFull: "Inventory full"
+};
+
+function formatShopDisabledReason(reason: string | undefined): string | undefined {
+  return reason && reason in shopFailureLabels ? shopFailureLabels[reason as ShopFailureReason] : reason;
 }
 
 function ActiveResolutionCard({
@@ -594,6 +607,7 @@ function PhoneShopPanel({
 
   const isLocked = shopEncounter.status === "locked" || shopEncounter.blockingThreats.length > 0;
   const revealedStock = shopEncounter.revealedStock ?? [];
+  const blockedReasonText = shopEncounter.blockedReasonText ?? formatShopDisabledReason(shopEncounter.blockedReason);
 
   return (
     <section className={`phone-shop-panel phone-shop-panel-${shopEncounter.status}`} aria-label="Shop encounter">
@@ -618,7 +632,7 @@ function PhoneShopPanel({
       {isLocked ? (
         <div className="phone-shop-locked" role="status">
           <strong>Shop locked</strong>
-          <p>Clear local blockers before trading here.</p>
+          <p>{blockedReasonText ?? "Clear local blockers before trading here."}</p>
           {shopEncounter.blockingThreats.map((threat) => (
             <div key={threat.cardId} className="phone-shop-blocker">
               <span>{threat.name}</span>
@@ -642,7 +656,7 @@ function PhoneShopPanel({
                 contentMode="custom"
                 className="phone-shop-service-card"
                 disabled={!service.enabled}
-                disabledReason={service.disabledReason}
+                disabledReason={formatShopDisabledReason(service.disabledReason)}
                 onClick={() =>
                   onIntent({
                     type: "SHOP_SERVICE_REQUESTED",
@@ -650,7 +664,7 @@ function PhoneShopPanel({
                     serviceId: service.id
                   })
                 }
-                sublabel={service.disabledReason ?? formatShopCost(service.cost)}
+                sublabel={formatShopDisabledReason(service.disabledReason) ?? formatShopCost(service.cost)}
               >
                 <strong>{service.label}</strong>
                 {service.risk ? <small>{service.risk}</small> : null}
@@ -670,14 +684,14 @@ function PhoneShopPanel({
                     <span>{item.type}</span>
                     <strong>{item.name}</strong>
                     <p>{item.summary}</p>
-                    <small>{item.disabledReason ?? formatShopCost(item.cost)}</small>
+                    <small>{formatShopDisabledReason(item.disabledReason) ?? formatShopCost(item.cost)}</small>
                   </div>
                   <GameButton
                     type="button"
                     tone="shop"
                     className="phone-button phone-button-primary"
                     disabled={!item.affordable}
-                    disabledReason={item.disabledReason ?? "Cannot buy"}
+                    disabledReason={formatShopDisabledReason(item.disabledReason) ?? "Cannot buy"}
                     onClick={() =>
                       onIntent({
                         type: "SHOP_PURCHASE_REQUESTED",
@@ -1586,6 +1600,8 @@ export function PhoneActionPanel({
         : "Resolve first";
   const battleBlockedReason = hasBattleContent ? undefined : patch.phase === "action" ? "No enemy" : "Resolve first";
   const shopBlockedReason = shopLocked ? "Shop blocked" : hasShopContent ? undefined : "No shop";
+  const shopPromptBlockedReason =
+    shopEncounter?.blockedReasonText ?? formatShopDisabledReason(shopEncounter?.blockedReason) ?? "Shop blocked";
   const actionBlockedReason = hasActionContent || !hasMoveContent ? undefined : "No action";
   const tabDefinitions: TurnActionTabDefinition[] = [
     {
@@ -1718,7 +1734,7 @@ export function PhoneActionPanel({
         label: "Market",
         title: shopLocked ? "Shop blocked" : "Choose shop action",
         detail: shopLocked
-          ? `${shopEncounter.shopName} is blocked by visible threats. Clear the lane before buying.`
+          ? `${shopEncounter.shopName}: ${shopPromptBlockedReason}`
           : `${shopEncounter.shopName} is open. Buy, sell, or use services from the Shop tab.`,
         meta: toTitleCase(shopEncounter.status),
         tone: "shop",

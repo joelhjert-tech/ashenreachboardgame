@@ -44,7 +44,8 @@ describe("shop encounter public projection", () => {
     });
     expect(tvProjection.shopEncounter?.services.find((service) => service.id === "buy-gear")).toMatchObject({
       enabled: true,
-      cost: { salvage: 3 }
+      cost: {},
+      shopCategory: "market"
     });
     expect(tvProjection.shopEncounter?.services.find((service) => service.id === "sell-gear")).toMatchObject({
       enabled: false,

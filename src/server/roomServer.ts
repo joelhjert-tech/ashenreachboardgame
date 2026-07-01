@@ -68,6 +68,20 @@ import {
   getLegalMovementRoute,
   getMovementBlockReason
 } from "../game/rules/movementPlanner.js";
+import {
+  canUseQaShopGear,
+  getAvailableShopStockForCategory,
+  getBoardSpaceShopCategory,
+  getBoardSpaceShopTypeLabel,
+  getGearShopCategoryIds,
+  getShopGearCost,
+  getShopStockCategoryForService,
+  isBoardSpaceShopCapable,
+  isGearAvailableFromShopCategory,
+  SHOP_FAILURE_LABELS,
+  SHOP_FAILURE_REASONS,
+  type ShopFailureReason
+} from "../game/rules/shopAvailability.js";
 import { resolveSpaceText } from "../game/rules/tileTextResolver.js";
 import { applyStartingLoadout } from "../game/rules/startingLoadout.js";
 import type {
@@ -118,7 +132,7 @@ import type { Character } from "../game/schema/character.schema.js";
 import type { Stat } from "../game/schema/character.schema.js";
 import type { ContractCard } from "../game/schema/contract.schema.js";
 import type { Follower } from "../game/schema/follower.schema.js";
-import type { GearItem } from "../game/schema/gear.schema.js";
+import type { GearItem, ShopCategory } from "../game/schema/gear.schema.js";
 import { rollDice, type RandomSource, defaultRandomSource } from "../game/engine/dice.js";
 import { reduceGameState } from "../game/engine/reducer.js";
 import { CHALLENGE_LABELS } from "../game/ui/challengeTheme.js";
@@ -1369,14 +1383,14 @@ export class GameRoomServer {
 
     const boardSpace = getBoardSpace(player.character.currentSpaceId);
 
-    if (!boardSpace || !boardSpace.tags.some((tag) => tag === "shop" || tag === "risk-shop" || tag === "salvage" || tag === "recovery" || tag === "shrine")) {
-      throw new Error("No shop or service is available on this sector");
+    if (!boardSpace || !isBoardSpaceShopCapable(boardSpace)) {
+      throw new Error(SHOP_FAILURE_REASONS.notAtShop);
     }
 
     const blockingThreats = buildPublicBlockingThreats(this.state);
 
     if (blockingThreats.length > 0 || this.state.currentEncounter || this.state.pendingEnemyRoll || this.state.pendingEffect) {
-      throw new Error("Clear the local threat before using shop services");
+      throw new Error(SHOP_FAILURE_REASONS.shopBlockedByThreat);
     }
 
     const service = buildPublicShopServices(this.state, player).find((entry) => entry.id === intent.serviceId);
@@ -1405,10 +1419,16 @@ export class GameRoomServer {
 
     switch (service.id) {
       case "buy-gear": {
-        const stock = this.pickShopGearStock(player, 3, "standard");
+        const stockCategory = getShopStockCategoryForService(boardSpace, service.id);
+
+        if (!stockCategory) {
+          throw new Error(SHOP_FAILURE_REASONS.itemUnavailable);
+        }
+
+        const stock = this.pickShopGearStock(player, 3, "standard", stockCategory);
 
         if (stock.length === 0) {
-          throw new Error("No unclaimed Gear is available from this shop");
+          throw new Error(SHOP_FAILURE_REASONS.itemUnavailable);
         }
 
         return {
@@ -1473,10 +1493,16 @@ export class GameRoomServer {
           summary: `${actorName} used ${shopName}. Bought a boon and cooled 1 Heat.`
         };
       case "risk-action": {
-        const stock = this.pickShopGearStock(player, 4, "risk");
+        const stockCategory = getShopStockCategoryForService(boardSpace, service.id);
+
+        if (!stockCategory) {
+          throw new Error(SHOP_FAILURE_REASONS.itemUnavailable);
+        }
+
+        const stock = this.pickShopGearStock(player, 4, "risk", stockCategory);
 
         if (stock.length === 0) {
-          throw new Error("No unclaimed Gear is available from this shop");
+          throw new Error(SHOP_FAILURE_REASONS.itemUnavailable);
         }
 
         return {
@@ -1497,39 +1523,19 @@ export class GameRoomServer {
     }
   }
 
-  private getGearShopCost(item: GearItem): number {
-    if (item.tier === "artifact") {
-      return 5;
-    }
-
-    if (item.tier === "advanced") {
-      return 4;
-    }
-
-    if (item.tier === "starter") {
-      return 2;
-    }
-
-    return item.cost ?? 3;
-  }
-
-  private pickShopGearStock(player: PlayerState, count: number, mode: "standard" | "risk"): GearItem[] {
+  private pickShopGearStock(player: PlayerState, count: number, mode: "standard" | "risk", category: ShopCategory): GearItem[] {
     const ownedGearIds = new Set([
       ...player.character.heldGear.map((item) => item.id),
       ...Object.values(player.character.equippedGear).filter((id): id is string => Boolean(id))
     ]);
 
-    return [...this.gear.values()]
-      .filter((item) => !ownedGearIds.has(item.id))
-      .filter((item) => (mode === "risk" ? true : item.tier !== "artifact"))
-      .sort((left, right) => {
-        const costDelta =
-          mode === "risk"
-            ? this.getGearShopCost(right) - this.getGearShopCost(left)
-            : this.getGearShopCost(left) - this.getGearShopCost(right);
-        return costDelta || left.name.localeCompare(right.name);
-      })
-      .slice(0, count);
+    return getAvailableShopStockForCategory(this.gear.values(), category, {
+      count,
+      ownedGearIds,
+      includeArtifacts: mode === "risk",
+      includeQaGear: canUseQaShopGear(player.character),
+      expensiveFirst: mode === "risk"
+    });
   }
 
   private createShopPurchaseAction(
@@ -1544,17 +1550,14 @@ export class GameRoomServer {
 
     const boardSpace = getBoardSpace(player.character.currentSpaceId);
 
-    if (
-      !boardSpace ||
-      !boardSpace.tags.some((tag) => tag === "shop" || tag === "risk-shop" || tag === "salvage" || tag === "recovery" || tag === "shrine")
-    ) {
-      throw new Error("No shop or service is available on this sector");
+    if (!boardSpace || !isBoardSpaceShopCapable(boardSpace)) {
+      throw new Error(SHOP_FAILURE_REASONS.notAtShop);
     }
 
     const blockingThreats = buildPublicBlockingThreats(this.state);
 
     if (blockingThreats.length > 0 || this.state.currentEncounter || this.state.pendingEnemyRoll || this.state.pendingEffect) {
-      throw new Error("Clear the local threat before buying from this shop");
+      throw new Error(SHOP_FAILURE_REASONS.shopBlockedByThreat);
     }
 
     const reveal = this.state.shopStockReveals.find(
@@ -1562,13 +1565,19 @@ export class GameRoomServer {
     );
 
     if (!reveal) {
-      throw new Error("Reveal shop stock before buying this item");
+      throw new Error(SHOP_FAILURE_REASONS.itemUnavailable);
     }
 
     const gear = this.gear.get(intent.cardId);
 
     if (!gear) {
-      throw new Error(`Unknown shop item ${intent.cardId}`);
+      throw new Error(SHOP_FAILURE_REASONS.itemUnavailable);
+    }
+
+    const stockCategory = getShopStockCategoryForService(boardSpace, reveal.serviceId);
+
+    if (!stockCategory || !isGearAvailableFromShopCategory(gear, stockCategory)) {
+      throw new Error(SHOP_FAILURE_REASONS.itemUnavailable);
     }
 
     const ownedGearIds = new Set([
@@ -1577,10 +1586,15 @@ export class GameRoomServer {
     ]);
 
     if (ownedGearIds.has(gear.id)) {
-      throw new Error(`${gear.name} is already in this operative's inventory`);
+      throw new Error(SHOP_FAILURE_REASONS.itemUnavailable);
     }
 
-    const cost = { salvage: this.getGearShopCost(gear) };
+    const cost = { salvage: getShopGearCost(gear) };
+
+    if ((player.character.salvage ?? 0) < cost.salvage) {
+      throw new Error(SHOP_FAILURE_REASONS.insufficientSalvage);
+    }
+
     const discardedStockIds = reveal.stockIds.filter((cardId) => cardId !== gear.id);
 
     return {
@@ -5654,6 +5668,7 @@ export class GameRoomServer {
 type PublicShopService = {
   id: string;
   label: string;
+  shopCategory?: ShopCategory;
   cost: {
     salvage?: number;
     heat?: number;
@@ -5671,6 +5686,7 @@ type PublicShopStockItem = {
   cardId: string;
   name: string;
   type: "gear" | "artifact";
+  shopCategories: ShopCategory[];
   cost: {
     salvage?: number;
     heat?: number;
@@ -5757,6 +5773,12 @@ function getPublicShopStatus(state: GameState, player: PlayerState): "open" | "l
   }
 
   return "open";
+}
+
+function getPublicShopBlockedReason(state: GameState, blockingThreatCount: number): ShopFailureReason | undefined {
+  return blockingThreatCount > 0 || state.currentEncounter || state.pendingEnemyRoll || state.pendingEffect
+    ? SHOP_FAILURE_REASONS.shopBlockedByThreat
+    : undefined;
 }
 
 function getPublicRing(tier: BoardTier): "outer" | "middle" | "inner" | "core" {
@@ -6004,7 +6026,7 @@ function canPayShopCost(
   const completedContracts = getCompletedContractCountForProjection(state, player.seatId);
 
   if (cost.salvage !== undefined && salvage < cost.salvage) {
-    return { enabled: false, disabledReason: "Not enough Salvage" };
+    return { enabled: false, disabledReason: SHOP_FAILURE_REASONS.insufficientSalvage };
   }
 
   if (cost.trophies !== undefined && player.character.trophies < cost.trophies) {
@@ -6023,19 +6045,7 @@ function canPayShopCost(
 }
 
 function getPublicGearShopCost(item: GearItem): number {
-  if (item.tier === "artifact") {
-    return 5;
-  }
-
-  if (item.tier === "advanced") {
-    return 4;
-  }
-
-  if (item.tier === "starter") {
-    return 2;
-  }
-
-  return item.cost ?? 3;
+  return getShopGearCost(item);
 }
 
 function getGearSummary(item: GearItem): string {
@@ -6072,6 +6082,7 @@ function buildPublicShopStock(state: GameState, player: PlayerState): PublicShop
         cardId: item.id,
         name: item.name,
         type: item.tier === "artifact" ? "artifact" : "gear",
+        shopCategories: getGearShopCategoryIds(item),
         cost,
         summary: getGearSummary(item),
         affordable: payment.enabled && !alreadyOwned,
@@ -6104,7 +6115,7 @@ function createShopService(
 function buildPublicShopServices(state: GameState, player: PlayerState): PublicShopService[] {
   const boardSpace = getBoardSpace(player.character.currentSpaceId);
 
-  if (!boardSpace || state.currentEncounter) {
+  if (!boardSpace || !isBoardSpaceShopCapable(boardSpace) || state.currentEncounter) {
     return [];
   }
 
@@ -6115,7 +6126,8 @@ function buildPublicShopServices(state: GameState, player: PlayerState): PublicS
       createShopService(player, state, {
         id: "buy-gear",
         label: "Buy Gear",
-        cost: { salvage: 3 }
+        shopCategory: getShopStockCategoryForService(boardSpace, "buy-gear") ?? undefined,
+        cost: {}
       }),
       createShopService(player, state, {
         id: "sell-gear",
@@ -6133,11 +6145,13 @@ function buildPublicShopServices(state: GameState, player: PlayerState): PublicS
       createShopService(player, state, {
         id: "repair-gear",
         label: "Repair Gear",
+        shopCategory: "forge-armoury",
         cost: { salvage: 2 }
       }),
       createShopService(player, state, {
         id: "buy-supplies",
         label: "Buy Supplies",
+        shopCategory: "market",
         cost: { salvage: 1 }
       })
     );
@@ -6148,6 +6162,7 @@ function buildPublicShopServices(state: GameState, player: PlayerState): PublicS
       createShopService(player, state, {
         id: "buy-treatment",
         label: "Buy Treatment",
+        shopCategory: "medicae-shrine",
         cost: { salvage: 2 }
       })
     );
@@ -6158,6 +6173,7 @@ function buildPublicShopServices(state: GameState, player: PlayerState): PublicS
       createShopService(player, state, {
         id: "buy-boon",
         label: "Buy Boon",
+        shopCategory: "medicae-shrine",
         cost: { salvage: 2 }
       })
     );
@@ -6168,6 +6184,7 @@ function buildPublicShopServices(state: GameState, player: PlayerState): PublicS
       createShopService(player, state, {
         id: "risk-action",
         label: "Risk Action",
+        shopCategory: getShopStockCategoryForService(boardSpace, "risk-action") ?? undefined,
         cost: { heat: 1 },
         risk: "+1 Heat"
       })
@@ -6197,6 +6214,12 @@ function buildPublicShopEncounter(state: GameState, visiblePlayers: PlayerState[
   const services = buildPublicShopServices(state, activePlayer);
   const revealedStock = buildPublicShopStock(state, activePlayer);
   const latest = state.lastOutcomeSummary?.seatId === activePlayer.seatId ? state.lastOutcomeSummary : null;
+  const blockedReason = getPublicShopBlockedReason(state, blockingThreats.length);
+  const shopCategory = getBoardSpaceShopCategory(boardSpace);
+  const stockCategory =
+    services.find((service) => service.id === "buy-gear")?.shopCategory ??
+    services.find((service) => service.id === "risk-action")?.shopCategory ??
+    shopCategory;
 
   if (services.length === 0 && blockingThreats.length === 0) {
     return null;
@@ -6207,7 +6230,14 @@ function buildPublicShopEncounter(state: GameState, visiblePlayers: PlayerState[
     sectorName: sector.name,
     shopId: boardSpace.id,
     shopName: boardSpace.name,
-    status: blockingThreats.length > 0 ? "locked" : getPublicShopStatus(state, activePlayer),
+    available: services.length > 0 && !blockedReason,
+    blocked: Boolean(blockedReason),
+    blockedReason,
+    blockedReasonText: blockedReason ? SHOP_FAILURE_LABELS[blockedReason] : undefined,
+    shopType: getBoardSpaceShopTypeLabel(boardSpace),
+    shopCategory,
+    stockCategory,
+    status: blockedReason ? "locked" : getPublicShopStatus(state, activePlayer),
     activePlayer: {
       playerId: activePlayer.seatId,
       name: activePlayer.character.name,

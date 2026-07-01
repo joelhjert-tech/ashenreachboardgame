@@ -48,6 +48,7 @@ import type { GearSlot } from "../schema/gear.schema.js";
 import type { TrophyPileEntry } from "../schema/character.schema.js";
 import { getBoardSpace, isScenarioConfrontationSpace } from "../data/boardSpaces.js";
 import { getLegalMovementRoute, getMovementBlockReason } from "../rules/movementPlanner.js";
+import { SHOP_FAILURE_REASONS } from "../rules/shopAvailability.js";
 import {
   advanceContractObjectiveProgress,
   getContractObjectiveTarget,
@@ -453,7 +454,7 @@ function applyShopPurchaseToPlayer(player: PlayerState, action: ShopPurchaseReso
 
 function canPayShopActionCost(player: PlayerState, cost: { salvage?: number; heat?: number; wounds?: number; trophies?: number }): string | null {
   if ((player.character.salvage ?? 0) < (cost.salvage ?? 0)) {
-    return "Not enough Salvage";
+    return SHOP_FAILURE_REASONS.insufficientSalvage;
   }
 
   if (player.character.trophies < (cost.trophies ?? 0)) {
@@ -2231,13 +2232,13 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
       }
 
       if (state.currentEncounter || state.pendingEnemyRoll || state.pendingEffect) {
-        return reject(state, action, "Clear the active encounter before using shop services");
+        return reject(state, action, SHOP_FAILURE_REASONS.shopBlockedByThreat);
       }
 
       const player = requirePlayer(state, shopAction.seatId);
 
       if (player.character.currentSpaceId !== shopAction.sectorId) {
-        return reject(state, action, "Shop service is no longer available from this sector");
+        return reject(state, action, SHOP_FAILURE_REASONS.notAtShop);
       }
 
       const costError = canPayShopActionCost(player, shopAction.cost);
@@ -2279,13 +2280,13 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
       }
 
       if (state.currentEncounter || state.pendingEnemyRoll || state.pendingEffect) {
-        return reject(state, action, "Clear the active encounter before using shop services");
+        return reject(state, action, SHOP_FAILURE_REASONS.shopBlockedByThreat);
       }
 
       const player = requirePlayer(state, revealAction.seatId);
 
       if (player.character.currentSpaceId !== revealAction.sectorId) {
-        return reject(state, action, "Shop stock is no longer available from this sector");
+        return reject(state, action, SHOP_FAILURE_REASONS.notAtShop);
       }
 
       const costError = canPayShopActionCost(player, revealAction.cost);
@@ -2337,13 +2338,13 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
       }
 
       if (state.currentEncounter || state.pendingEnemyRoll || state.pendingEffect) {
-        return reject(state, action, "Clear the active encounter before purchasing shop stock");
+        return reject(state, action, SHOP_FAILURE_REASONS.shopBlockedByThreat);
       }
 
       const player = requirePlayer(state, purchaseAction.seatId);
 
       if (player.character.currentSpaceId !== purchaseAction.sectorId) {
-        return reject(state, action, "Shop stock is no longer available from this sector");
+        return reject(state, action, SHOP_FAILURE_REASONS.notAtShop);
       }
 
       const reveal = (state.shopStockReveals ?? []).find(
@@ -2354,11 +2355,11 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
       );
 
       if (!reveal) {
-        return reject(state, action, "Choose a shop service before buying stock");
+        return reject(state, action, SHOP_FAILURE_REASONS.itemUnavailable);
       }
 
       if (player.character.heldGear.some((item) => item.id === purchaseAction.cardId)) {
-        return reject(state, action, "Gear is already held");
+        return reject(state, action, SHOP_FAILURE_REASONS.itemUnavailable);
       }
 
       const costError = canPayShopActionCost(player, purchaseAction.cost);

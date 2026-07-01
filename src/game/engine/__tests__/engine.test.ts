@@ -1487,14 +1487,14 @@ describe("active resolution visibility state", () => {
     });
 
     expect(unaffordableService.sent.find((message) => message.type === "INTENT_REJECTED")).toMatchObject({
-      reason: "Not enough Salvage"
+      reason: "insufficientSalvage"
     });
 
-    const unaffordablePurchase = createShopServer({ sectorId: "outer_surgery_tent", salvage: 2 });
+    const unaffordablePurchase = createShopServer({ sectorId: "outer_waymarket", salvage: 0 });
     unaffordablePurchase.server.handleIntent(unaffordablePurchase.client, {
       type: "SHOP_SERVICE_REQUESTED",
       seatId: "seat-1",
-      serviceId: "risk-action"
+      serviceId: "buy-gear"
     });
     const reveal = unaffordablePurchase.server.getState().shopStockReveals.find((entry) => entry.seatId === "seat-1");
     const selectedCardId = reveal?.stockIds[0];
@@ -1510,7 +1510,7 @@ describe("active resolution visibility state", () => {
     });
 
     expect(unaffordablePurchase.sent.find((message) => message.type === "INTENT_REJECTED")).toMatchObject({
-      reason: "Not enough Salvage"
+      reason: "insufficientSalvage"
     });
     expect(unaffordablePurchase.server.getState().players[0]?.character.heldGear).toEqual([]);
 
@@ -1526,7 +1526,7 @@ describe("active resolution visibility state", () => {
     });
 
     expect(locked.sent.find((message) => message.type === "INTENT_REJECTED")).toMatchObject({
-      reason: "Clear the local threat before using shop services"
+      reason: "shopBlockedByThreat"
     });
   });
 
