@@ -150,7 +150,10 @@ const shopFailureLabels: Record<ShopFailureReason, string> = {
   shopBlockedByThreat: "Shop blocked by threat",
   insufficientSalvage: "Not enough Salvage",
   itemUnavailable: "Item unavailable",
-  inventoryFull: "Inventory full"
+  inventoryFull: "Inventory full",
+  itemNotHeld: "Item not held",
+  itemNotSellable: "Cannot sell this item",
+  invalidItem: "Invalid item"
 };
 
 function formatShopDisabledReason(reason: string | undefined): string | undefined {
@@ -607,8 +610,12 @@ function PhoneShopPanel({
 }): ReactElement | null {
   const [confirmingCardId, setConfirmingCardId] = useState<string | null>(null);
   const [pendingCardId, setPendingCardId] = useState<string | null>(null);
+  const [confirmingSellGearId, setConfirmingSellGearId] = useState<string | null>(null);
+  const [pendingSellGearId, setPendingSellGearId] = useState<string | null>(null);
   const revealedStock = shopEncounter?.revealedStock ?? [];
+  const sellInventory = shopEncounter?.sellInventory ?? [];
   const confirmingItem = revealedStock.find((item) => item.cardId === confirmingCardId) ?? null;
+  const confirmingSellItem = sellInventory.find((item) => item.gearId === confirmingSellGearId) ?? null;
 
   useEffect(() => {
     if (!confirmingCardId || revealedStock.some((item) => item.cardId === confirmingCardId)) {
@@ -626,6 +633,22 @@ function PhoneShopPanel({
     }
   }, [pendingCardId, revealedStock, shopEncounter?.recentOutcome]);
 
+  useEffect(() => {
+    if (!confirmingSellGearId || sellInventory.some((item) => item.gearId === confirmingSellGearId)) {
+      return;
+    }
+    setConfirmingSellGearId(null);
+  }, [confirmingSellGearId, sellInventory]);
+
+  useEffect(() => {
+    if (!pendingSellGearId) {
+      return;
+    }
+    if (shopEncounter?.recentOutcome || !sellInventory.some((item) => item.gearId === pendingSellGearId)) {
+      setPendingSellGearId(null);
+    }
+  }, [pendingSellGearId, sellInventory, shopEncounter?.recentOutcome]);
+
   if (!shopEncounter) {
     return null;
   }
@@ -635,6 +658,8 @@ function PhoneShopPanel({
   const categoryLabel = formatShopCategory(shopEncounter.stockCategory ?? shopEncounter.shopCategory);
   const shopTypeLabel = shopEncounter.shopType ? toTitleCase(shopEncounter.shopType) : "Shop Encounter";
   const purchasedItemName = shopEncounter.recentOutcome?.gained;
+  const soldItemName = shopEncounter.recentOutcome?.sold;
+  const serviceActions = shopEncounter.services.filter((service) => service.id !== "sell-gear");
 
   function confirmPurchase(cardId: string): void {
     setPendingCardId(cardId);
@@ -643,6 +668,16 @@ function PhoneShopPanel({
       type: "SHOP_PURCHASE_REQUESTED",
       seatId,
       cardId
+    });
+  }
+
+  function confirmSale(gearId: string): void {
+    setPendingSellGearId(gearId);
+    setConfirmingSellGearId(null);
+    onIntent({
+      type: "SHOP_SELL_REQUESTED",
+      seatId,
+      gearId
     });
   }
 
@@ -662,9 +697,9 @@ function PhoneShopPanel({
       <div className="phone-shop-state-copy" role="status">
         {isLocked
           ? blockedReasonText ?? "Shop blocked by threat."
-          : shopEncounter.available === false
-            ? "No shop available here."
-            : "Choose gear to buy."}
+            : shopEncounter.available === false
+              ? "No shop available here."
+              : "Choose gear to buy or sell."}
       </div>
 
       <div className="phone-shop-wallet" aria-label="Operative resources">
@@ -689,40 +724,41 @@ function PhoneShopPanel({
         </div>
       ) : (
         <>
-          <div className="phone-shop-services" aria-label="Shop services">
-            <div className="phone-shop-section-heading">
-              <span>Services</span>
-              <small>Reveal stock or use local services. Sell flow arrives later.</small>
+          {serviceActions.length > 0 ? (
+            <div className="phone-shop-services" aria-label="Shop services">
+              <div className="phone-shop-section-heading">
+                <span>Services</span>
+                <small>Reveal stock or use local services.</small>
+              </div>
+              {serviceActions.map((service) => {
+                const disabledReason = formatShopDisabledReason(service.disabledReason);
+                return (
+                  <GameButton
+                    key={service.id}
+                    type="button"
+                    tone="shop"
+                    size="large"
+                    contentMode="custom"
+                    className="phone-shop-service-card"
+                    disabled={!service.enabled}
+                    disabledReason={disabledReason}
+                    onClick={() =>
+                      onIntent({
+                        type: "SHOP_SERVICE_REQUESTED",
+                        seatId,
+                        serviceId: service.id
+                      })
+                    }
+                    sublabel={disabledReason ?? formatShopCost(service.cost)}
+                  >
+                    <strong>{service.label}</strong>
+                    {service.shopCategory ? <span>{formatShopCategory(service.shopCategory)}</span> : null}
+                    {service.risk ? <small>{service.risk}</small> : null}
+                  </GameButton>
+                );
+              })}
             </div>
-            {shopEncounter.services.map((service) => {
-              const sellComingLater = service.id === "sell-gear";
-              const disabledReason = sellComingLater ? "Sell coming later" : formatShopDisabledReason(service.disabledReason);
-              return (
-                <GameButton
-                  key={service.id}
-                  type="button"
-                  tone="shop"
-                  size="large"
-                  contentMode="custom"
-                  className="phone-shop-service-card"
-                  disabled={sellComingLater || !service.enabled}
-                  disabledReason={disabledReason}
-                  onClick={() =>
-                    onIntent({
-                      type: "SHOP_SERVICE_REQUESTED",
-                      seatId,
-                      serviceId: service.id
-                    })
-                  }
-                  sublabel={disabledReason ?? formatShopCost(service.cost)}
-                >
-                  <strong>{service.label}</strong>
-                  {service.shopCategory ? <span>{formatShopCategory(service.shopCategory)}</span> : null}
-                  {service.risk ? <small>{service.risk}</small> : null}
-                </GameButton>
-              );
-            })}
-          </div>
+          ) : null}
 
           <div className="phone-shop-stock" aria-label="Revealed shop stock">
             <div className="phone-shop-section-heading">
@@ -763,6 +799,44 @@ function PhoneShopPanel({
             )}
           </div>
 
+          <div className="phone-shop-sell" aria-label="Sell held items">
+            <div className="phone-shop-section-heading">
+              <span>Sell</span>
+              <small>{sellInventory.length > 0 ? "Trade held gear for Salvage." : "No sellable items."}</small>
+            </div>
+            {sellInventory.length > 0 ? (
+              <div className="phone-shop-stock-list">
+                {sellInventory.map((item) => {
+                  const disabledReason = formatShopDisabledReason(item.disabledReason);
+                  const isPending = pendingSellGearId === item.gearId;
+                  const isSold = soldItemName === item.name;
+                  return (
+                    <article key={item.gearId} className={`phone-shop-stock-card phone-shop-sell-card${item.sellable ? "" : " phone-shop-stock-card-disabled"}`}>
+                      <div>
+                        <span>{item.category ? toTitleCase(item.category) : toTitleCase(item.type)}</span>
+                        <strong>{item.name}</strong>
+                        <p>{item.summary}</p>
+                        <small>{item.sellable ? `${item.sellValue} Salvage` : disabledReason ?? "Cannot sell this item"}</small>
+                      </div>
+                      <GameButton
+                        type="button"
+                        tone="shop"
+                        className="phone-button phone-button-primary"
+                        disabled={!item.sellable || isPending || isSold}
+                        disabledReason={disabledReason ?? (isPending ? "Selling..." : isSold ? "Sold" : undefined)}
+                        onClick={() => setConfirmingSellGearId(item.gearId)}
+                      >
+                        {isPending ? "Selling..." : isSold ? "Sold" : "Sell"}
+                      </GameButton>
+                    </article>
+                  );
+                })}
+              </div>
+            ) : (
+              <p className="phone-shop-empty-stock">No sellable items.</p>
+            )}
+          </div>
+
           {confirmingItem ? (
             <div className="phone-shop-confirm" role="dialog" aria-label="Confirm purchase">
               <span>Confirm Purchase</span>
@@ -780,15 +854,35 @@ function PhoneShopPanel({
               </div>
             </div>
           ) : null}
+
+          {confirmingSellItem ? (
+            <div className="phone-shop-confirm phone-shop-confirm-sale" role="dialog" aria-label="Confirm sale">
+              <span>Confirm Sale</span>
+              <strong>
+                Sell {confirmingSellItem.name} for {confirmingSellItem.sellValue} Salvage?
+              </strong>
+              <p>{confirmingSellItem.summary}</p>
+              <div className="phone-shop-confirm-actions">
+                <GameButton type="button" tone="secondary" onClick={() => setConfirmingSellGearId(null)}>
+                  Cancel
+                </GameButton>
+                <GameButton type="button" tone="shop" onClick={() => confirmSale(confirmingSellItem.gearId)}>
+                  Confirm Sale
+                </GameButton>
+              </div>
+            </div>
+          ) : null}
         </>
       )}
 
       {shopEncounter.recentOutcome ? (
         <div className="phone-shop-outcome" role="status">
-          <span>{shopEncounter.recentOutcome.gained ? "Purchase Complete" : "Market Result"}</span>
+          <span>{shopEncounter.recentOutcome.gained ? "Purchase Complete" : shopEncounter.recentOutcome.sold ? "Sale Complete" : "Market Result"}</span>
           <p>
             {shopEncounter.recentOutcome.gained
               ? `Purchased: ${shopEncounter.recentOutcome.gained}`
+              : shopEncounter.recentOutcome.sold
+                ? `Sold: ${shopEncounter.recentOutcome.sold}`
               : shopEncounter.recentOutcome.summary}
           </p>
         </div>

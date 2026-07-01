@@ -73,7 +73,9 @@ import {
   getAvailableShopStockForCategory,
   getBoardSpaceShopCategory,
   getBoardSpaceShopTypeLabel,
+  getGearSellRestriction,
   getGearShopCategoryIds,
+  getShopGearSellValue,
   getShopGearCost,
   getShopStockCategoryForService,
   isBoardSpaceShopCapable,
@@ -112,6 +114,7 @@ import type {
   SectorCollapsedAction,
   SpaceTextResolvedAction,
   ShopPurchaseResolvedAction,
+  ShopSellResolvedAction,
   ShopServiceResolvedAction,
   ShopStockRevealedAction,
   ScenarioConfrontationRequestedAction,
@@ -257,6 +260,7 @@ const CLIENT_INTENT_TYPES = new Set<string>([
   "TABLE_INTERACTION",
   "SHOP_SERVICE_REQUESTED",
   "SHOP_PURCHASE_REQUESTED",
+  "SHOP_SELL_REQUESTED",
   "ACCEPT_CONTRACT",
   "COMPLETE_CONTRACT",
   "SCENARIO_CONFRONTATION_REQUESTED",
@@ -571,7 +575,7 @@ export class GameRoomServer {
         Boolean(this.state.currentEncounter)
       ) {
         // Fandiablos battle/check support is a committed modifier for the next roll, not the end of the action window.
-      } else if (intent.type === "SHOP_SERVICE_REQUESTED" || intent.type === "SHOP_PURCHASE_REQUESTED") {
+      } else if (intent.type === "SHOP_SERVICE_REQUESTED" || intent.type === "SHOP_PURCHASE_REQUESTED" || intent.type === "SHOP_SELL_REQUESTED") {
         // Shop interactions keep the action window open so the player can reveal, compare, buy, or end the turn intentionally.
       } else {
         this.runAutomaticPhases(client.seatId);
@@ -925,6 +929,9 @@ export class GameRoomServer {
         break;
       case "SHOP_PURCHASE_REQUESTED":
         requireStringField(message, "cardId", type);
+        break;
+      case "SHOP_SELL_REQUESTED":
+        requireStringField(message, "gearId", type);
         break;
       case "ACCEPT_CONTRACT":
       case "COMPLETE_CONTRACT":
@@ -1405,7 +1412,6 @@ export class GameRoomServer {
 
     const shopName = boardSpace.name;
     const actorName = player.character.name;
-    const firstHeldGear = player.character.heldGear[0] ?? null;
     const base = {
       type: "SHOP_SERVICE_RESOLVED" as const,
       seatId: intent.seatId,
@@ -1445,18 +1451,7 @@ export class GameRoomServer {
         } satisfies ShopStockRevealedAction;
       }
       case "sell-gear": {
-        if (!firstHeldGear) {
-          throw new Error("No Gear to sell");
-        }
-
-        return {
-          ...base,
-          result: {
-            discardGearId: firstHeldGear.id,
-            salvageDelta: 2
-          },
-          summary: `${actorName} used ${shopName}. Sold ${firstHeldGear.name} for 2 Salvage.`
-        };
+        throw new Error(SHOP_FAILURE_REASONS.invalidItem);
       }
       case "repair-gear":
         return {
@@ -1610,6 +1605,59 @@ export class GameRoomServer {
       summary: `${player.character.name} used ${reveal.shopName}. Bought ${gear.name} for ${cost.salvage} Salvage.`,
       createdAt
     } satisfies ShopPurchaseResolvedAction;
+  }
+
+  private createShopSellAction(
+    intent: Extract<ClientIntent, { type: "SHOP_SELL_REQUESTED" }>,
+    createdAt: string
+  ): ShopSellResolvedAction {
+    const player = this.state.players.find((entry) => entry.seatId === intent.seatId);
+
+    if (!player) {
+      throw new Error(`Missing player for seat ${intent.seatId}`);
+    }
+
+    const boardSpace = getBoardSpace(player.character.currentSpaceId);
+
+    if (!boardSpace || !isBoardSpaceShopCapable(boardSpace)) {
+      throw new Error(SHOP_FAILURE_REASONS.notAtShop);
+    }
+
+    const blockingThreats = buildPublicBlockingThreats(this.state);
+
+    if (blockingThreats.length > 0 || this.state.currentEncounter || this.state.pendingEnemyRoll || this.state.pendingEffect) {
+      throw new Error(SHOP_FAILURE_REASONS.shopBlockedByThreat);
+    }
+
+    const gear = player.character.heldGear.find((item) => item.id === intent.gearId);
+
+    if (!gear) {
+      throw new Error(SHOP_FAILURE_REASONS.itemNotHeld);
+    }
+
+    const restriction = getGearSellRestriction(gear, player.character);
+
+    if (restriction) {
+      throw new Error(restriction);
+    }
+
+    const sellValue = getShopGearSellValue(gear);
+
+    if (sellValue === null || sellValue < 1) {
+      throw new Error(SHOP_FAILURE_REASONS.itemNotSellable);
+    }
+
+    return {
+      type: "SHOP_SELL_RESOLVED",
+      seatId: intent.seatId,
+      shopName: boardSpace.name,
+      sectorId: player.character.currentSpaceId,
+      gearId: gear.id,
+      soldGear: gear,
+      salvageDelta: sellValue,
+      summary: `${player.character.name} used ${boardSpace.name}. Sold ${gear.name} for ${sellValue} Salvage.`,
+      createdAt
+    } satisfies ShopSellResolvedAction;
   }
 
   private createSoloRerollAction(
@@ -1777,6 +1825,8 @@ export class GameRoomServer {
         return this.createShopServiceAction(intent, createdAt);
       case "SHOP_PURCHASE_REQUESTED":
         return this.createShopPurchaseAction(intent, createdAt);
+      case "SHOP_SELL_REQUESTED":
+        return this.createShopSellAction(intent, createdAt);
       case "ACCEPT_CONTRACT":
         return {
           type: "ACCEPT_CONTRACT",
@@ -5698,6 +5748,17 @@ type PublicShopStockItem = {
   disabledReason?: string;
 };
 
+type PublicShopSellItem = {
+  gearId: string;
+  name: string;
+  type: "gear" | "artifact";
+  category?: GearItem["category"];
+  sellValue: number;
+  summary: string;
+  sellable: boolean;
+  disabledReason?: ShopFailureReason | string;
+};
+
 type PublicMoveDestination = {
   sectorId: string;
   name: string;
@@ -6091,6 +6152,24 @@ function buildPublicShopStock(state: GameState, player: PlayerState): PublicShop
     });
 }
 
+function buildPublicShopSellInventory(player: PlayerState): PublicShopSellItem[] {
+  return player.character.heldGear.map((item) => {
+    const restriction = getGearSellRestriction(item, player.character);
+    const sellValue = getShopGearSellValue(item) ?? 0;
+
+    return {
+      gearId: item.id,
+      name: item.name,
+      type: item.tier === "artifact" ? "artifact" : "gear",
+      category: item.category,
+      sellValue,
+      summary: getGearSummary(item),
+      sellable: !restriction,
+      disabledReason: restriction
+    } satisfies PublicShopSellItem;
+  });
+}
+
 function createShopService(
   player: PlayerState,
   state: GameState,
@@ -6120,6 +6199,8 @@ function buildPublicShopServices(state: GameState, player: PlayerState): PublicS
   }
 
   const services: PublicShopService[] = [];
+  const sellInventory = buildPublicShopSellInventory(player);
+  const hasSellableGear = sellInventory.some((item) => item.sellable);
 
   if (boardSpace.tags.includes("shop")) {
     services.push(
@@ -6133,9 +6214,9 @@ function buildPublicShopServices(state: GameState, player: PlayerState): PublicS
         id: "sell-gear",
         label: "Sell Gear",
         cost: {},
-        risk: player.character.heldGear.length === 0 ? undefined : "Trade one carried item",
-        enabled: player.character.heldGear.length > 0,
-        disabledReason: player.character.heldGear.length > 0 ? undefined : "No Gear to sell"
+        risk: hasSellableGear ? "Choose one held item below" : undefined,
+        enabled: hasSellableGear,
+        disabledReason: hasSellableGear ? undefined : "No sellable items"
       })
     );
   }
@@ -6213,7 +6294,17 @@ function buildPublicShopEncounter(state: GameState, visiblePlayers: PlayerState[
   const blockingThreats = buildPublicBlockingThreats(state);
   const services = buildPublicShopServices(state, activePlayer);
   const revealedStock = buildPublicShopStock(state, activePlayer);
+  const sellInventory = buildPublicShopSellInventory(activePlayer);
   const latest = state.lastOutcomeSummary?.seatId === activePlayer.seatId ? state.lastOutcomeSummary : null;
+  const latestAction = state.eventLog.at(-1) as GameAction | undefined;
+  const latestPurchase =
+    latestAction?.type === "SHOP_PURCHASE_RESOLVED" && latestAction.seatId === activePlayer.seatId
+      ? (latestAction as ShopPurchaseResolvedAction)
+      : null;
+  const latestSale =
+    latestAction?.type === "SHOP_SELL_RESOLVED" && latestAction.seatId === activePlayer.seatId
+      ? (latestAction as ShopSellResolvedAction)
+      : null;
   const blockedReason = getPublicShopBlockedReason(state, blockingThreats.length);
   const shopCategory = getBoardSpaceShopCategory(boardSpace);
   const stockCategory =
@@ -6254,11 +6345,16 @@ function buildPublicShopEncounter(state: GameState, visiblePlayers: PlayerState[
     blockingThreats,
     services,
     revealedStock,
+    sellInventory,
     recentOutcome: latest
       ? {
           operativeName: activePlayer.character.name,
           shopName: boardSpace.name,
-          action: "Recent outcome",
+          action: latestSale ? "sell" : latestPurchase ? "buy" : "Recent outcome",
+          gained: latestPurchase?.gainedGear.name,
+          sold: latestSale?.soldGear.name,
+          salvageDelta: latestSale?.salvageDelta,
+          costPaid: latestPurchase?.cost,
           remainingSalvage: salvage,
           summary: latest.summary
         }

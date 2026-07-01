@@ -460,6 +460,27 @@ describe("PhoneActionPanel", () => {
                 affordable: false,
                 disabledReason: "Not enough Salvage"
               }
+            ],
+            sellInventory: [
+              {
+                gearId: "veil-hook",
+                name: "Veil Hook",
+                type: "gear",
+                category: "active",
+                sellValue: 1,
+                summary: "Grit +1.",
+                sellable: true
+              },
+              {
+                gearId: "oath-chain-ledger",
+                name: "Oath-Chain Ledger",
+                type: "gear",
+                category: "contractObject",
+                sellValue: 1,
+                summary: "Contract leverage.",
+                sellable: false,
+                disabledReason: "itemNotSellable"
+              }
             ]
           }
         })}
@@ -499,6 +520,23 @@ describe("PhoneActionPanel", () => {
     const unaffordableCard = screen.getByText(/saintplate harness/i).closest("article");
     expect(unaffordableCard).not.toBeNull();
     expect(within(unaffordableCard as HTMLElement).getByRole("button", { name: /buy/i })).toBeDisabled();
+    expect(screen.getAllByText(/^sell$/i).length).toBeGreaterThan(0);
+    expect(screen.getByText(/veil hook/i)).toBeInTheDocument();
+    expect(screen.getByText(/1 salvage/i)).toBeInTheDocument();
+    const nonSellableCard = screen.getByText(/oath-chain ledger/i).closest("article");
+    expect(nonSellableCard).not.toBeNull();
+    expect(within(nonSellableCard as HTMLElement).getByRole("button", { name: /sell/i })).toBeDisabled();
+    expect(within(nonSellableCard as HTMLElement).getAllByText(/cannot sell this item/i).length).toBeGreaterThan(0);
+    const sellableCard = screen.getByText(/veil hook/i).closest("article");
+    expect(sellableCard).not.toBeNull();
+    fireEvent.click(within(sellableCard as HTMLElement).getByRole("button", { name: /^sell$/i }));
+    expect(screen.getByRole("dialog", { name: /confirm sale/i })).toHaveTextContent(/sell veil hook for 1 salvage/i);
+    fireEvent.click(screen.getByRole("button", { name: /confirm sale/i }));
+    expect(onIntent).toHaveBeenCalledWith({
+      type: "SHOP_SELL_REQUESTED",
+      seatId: "seat-1",
+      gearId: "veil-hook"
+    });
     expect(screen.getByRole("tablist", { name: /turn actions/i })).toBeInTheDocument();
     expect(screen.getByRole("tab", { name: /shop/i })).toBeInTheDocument();
   });
@@ -542,7 +580,8 @@ describe("PhoneActionPanel", () => {
               }
             ],
             services: [],
-            revealedStock: []
+            revealedStock: [],
+            sellInventory: []
           }
         })}
       />
@@ -615,6 +654,7 @@ describe("PhoneActionPanel", () => {
             blockingThreats: [],
             services: [],
             revealedStock: [],
+            sellInventory: [],
             recentOutcome: {
               operativeName: "Sable Vey",
               shopName: "Anchor Market",
@@ -630,9 +670,59 @@ describe("PhoneActionPanel", () => {
     );
 
     expect(screen.getAllByText(/no stock available/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/no sellable items/i).length).toBeGreaterThan(0);
     expect(screen.getByText(/purchased: ashlock carbine/i)).toBeInTheDocument();
     expect(screen.queryByText(/claim the black ledger/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/do not reveal private agenda data/i)).not.toBeInTheDocument();
+  });
+
+  it("shows sale feedback from recent shop outcomes", () => {
+    render(
+      <PhoneActionPanel
+        characters={characters}
+        onIntent={vi.fn()}
+        patch={createPatch({
+          encounter: null,
+          shopEncounter: {
+            sectorId: "outer_waymarket",
+            sectorName: "Anchor Market",
+            shopId: "outer_waymarket",
+            shopName: "Anchor Market",
+            available: true,
+            blocked: false,
+            shopType: "market",
+            shopCategory: "market",
+            stockCategory: "market",
+            status: "open",
+            activePlayer: {
+              playerId: "seat-1",
+              name: "Sable Vey",
+              characterName: "Sable Vey",
+              salvage: 4,
+              heat: 1,
+              wounds: { current: 0, max: 6 },
+              trophies: 0,
+              completedContracts: 0
+            },
+            blockingThreats: [],
+            services: [],
+            revealedStock: [],
+            sellInventory: [],
+            recentOutcome: {
+              operativeName: "Sable Vey",
+              shopName: "Anchor Market",
+              action: "sell",
+              sold: "Veil Hook",
+              salvageDelta: 1,
+              remainingSalvage: 4,
+              summary: "Sable Vey sold Veil Hook for 1 Salvage."
+            }
+          }
+        })}
+      />
+    );
+
+    expect(screen.getByText(/sold: veil hook/i)).toBeInTheDocument();
   });
 
   it("shows a movement planner empty state when no legal destinations are available", () => {

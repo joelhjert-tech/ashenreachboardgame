@@ -240,6 +240,16 @@ export interface ShopPurchaseResolvedAction extends BaseAction {
   summary: string;
 }
 
+export interface ShopSellResolvedAction extends BaseAction {
+  type: "SHOP_SELL_RESOLVED";
+  shopName: string;
+  sectorId: string;
+  gearId: string;
+  soldGear: GearItem;
+  salvageDelta: number;
+  summary: string;
+}
+
 export interface AcceptContractAction extends BaseAction {
   type: "ACCEPT_CONTRACT";
   contractId: string;
@@ -442,6 +452,7 @@ export type GameAction =
   | ShopServiceResolvedAction
   | ShopStockRevealedAction
   | ShopPurchaseResolvedAction
+  | ShopSellResolvedAction
   | AcceptContractAction
   | CompleteContractAction
   | ScenarioConfrontationRequestedAction
@@ -547,6 +558,11 @@ export type ClientIntent =
       type: "SHOP_PURCHASE_REQUESTED";
       seatId: string;
       cardId: string;
+    }
+  | {
+      type: "SHOP_SELL_REQUESTED";
+      seatId: string;
+      gearId: string;
     }
   | {
       type: "ACCEPT_CONTRACT";

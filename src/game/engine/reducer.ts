@@ -25,6 +25,7 @@ import type {
   SectorCollapsedAction,
   SpaceTextResolvedAction,
   ShopPurchaseResolvedAction,
+  ShopSellResolvedAction,
   ShopServiceResolvedAction,
   ShopStockRevealedAction,
   ScenarioProgressAdvancedAction,
@@ -48,7 +49,7 @@ import type { GearSlot } from "../schema/gear.schema.js";
 import type { TrophyPileEntry } from "../schema/character.schema.js";
 import { getBoardSpace, isScenarioConfrontationSpace } from "../data/boardSpaces.js";
 import { getLegalMovementRoute, getMovementBlockReason } from "../rules/movementPlanner.js";
-import { SHOP_FAILURE_REASONS } from "../rules/shopAvailability.js";
+import { isBoardSpaceShopCapable, SHOP_FAILURE_REASONS } from "../rules/shopAvailability.js";
 import {
   advanceContractObjectiveProgress,
   getContractObjectiveTarget,
@@ -450,6 +451,18 @@ function applyShopPurchaseToPlayer(player: PlayerState, action: ShopPurchaseReso
     gearId: action.gainedGear.id,
     gear: action.gainedGear
   });
+}
+
+function applyShopSellToPlayer(player: PlayerState, action: ShopSellResolvedAction): PlayerState {
+  const afterSale = {
+    ...player,
+    character: {
+      ...player.character,
+      salvage: Math.max(0, (player.character.salvage ?? 0) + action.salvageDelta)
+    }
+  };
+
+  return removeHeldGearFromPlayer(afterSale, action.gearId);
 }
 
 function canPayShopActionCost(player: PlayerState, cost: { salvage?: number; heat?: number; wounds?: number; trophies?: number }): string | null {
@@ -2383,6 +2396,53 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
           sectorId: updatedPlayer.sectorId,
           shopName: purchaseAction.shopName,
           summary: purchaseAction.summary
+        }),
+        eventLog: [...state.eventLog, action]
+      });
+    }
+    case "SHOP_SELL_RESOLVED": {
+      const sellAction = action as ShopSellResolvedAction;
+
+      try {
+        canManageGear(state, sellAction.seatId);
+      } catch (error) {
+        return reject(state, action, error instanceof Error ? error.message : "Seat cannot sell shop gear");
+      }
+
+      if (state.currentEncounter || state.pendingEnemyRoll || state.pendingEffect) {
+        return reject(state, action, SHOP_FAILURE_REASONS.shopBlockedByThreat);
+      }
+
+      const player = requirePlayer(state, sellAction.seatId);
+      const boardSpace = getBoardSpace(player.character.currentSpaceId);
+
+      if (player.character.currentSpaceId !== sellAction.sectorId || !boardSpace || !isBoardSpaceShopCapable(boardSpace)) {
+        return reject(state, action, SHOP_FAILURE_REASONS.notAtShop);
+      }
+
+      if (!player.character.heldGear.some((item) => item.id === sellAction.gearId)) {
+        return reject(state, action, SHOP_FAILURE_REASONS.itemNotHeld);
+      }
+
+      if (sellAction.salvageDelta < 1) {
+        return reject(state, action, SHOP_FAILURE_REASONS.itemNotSellable);
+      }
+
+      const nextPlayers = updateActivePlayer(state, sellAction.seatId, (entry) => applyShopSellToPlayer(entry, sellAction));
+      const updatedPlayer = nextPlayers.find((entry) => entry.seatId === sellAction.seatId) ?? player;
+
+      return succeed({
+        ...state,
+        sequence: state.sequence + 1,
+        players: nextPlayers,
+        shopStockReveals: (state.shopStockReveals ?? []).filter(
+          (entry) => !(entry.seatId === sellAction.seatId && entry.sectorId === sellAction.sectorId)
+        ),
+        lastOutcomeSummary: buildShopOutcomeSummary({
+          seatId: sellAction.seatId,
+          sectorId: updatedPlayer.sectorId,
+          shopName: sellAction.shopName,
+          summary: sellAction.summary
         }),
         eventLog: [...state.eventLog, action]
       });

@@ -1420,19 +1420,20 @@ describe("active resolution visibility state", () => {
       throw new Error("Missing veil-hook fixture");
     }
 
+    const sellableVeilHook = { ...veilHook, sellValue: 1 };
     const sold = createShopServer({
       sectorId: "outer_waymarket",
       salvage: 1,
-      heldGear: [veilHook]
+      heldGear: [sellableVeilHook]
     });
     sold.server.handleIntent(sold.client, {
-      type: "SHOP_SERVICE_REQUESTED",
+      type: "SHOP_SELL_REQUESTED",
       seatId: "seat-1",
-      serviceId: "sell-gear"
+      gearId: sellableVeilHook.id
     });
 
     expect(sold.sent.find((message) => message.type === "INTENT_REJECTED")).toBeUndefined();
-    expect(sold.server.getState().players[0]?.character.salvage).toBe(3);
+    expect(sold.server.getState().players[0]?.character.salvage).toBe(2);
     expect(sold.server.getState().players[0]?.character.heldGear).toEqual([]);
 
     const repaired = createShopServer({ sectorId: "kettleward-foundry", salvage: 3 });

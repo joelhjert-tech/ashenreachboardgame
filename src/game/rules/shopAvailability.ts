@@ -8,7 +8,10 @@ export const SHOP_FAILURE_REASONS = {
   shopBlockedByThreat: "shopBlockedByThreat",
   insufficientSalvage: "insufficientSalvage",
   itemUnavailable: "itemUnavailable",
-  inventoryFull: "inventoryFull"
+  inventoryFull: "inventoryFull",
+  itemNotHeld: "itemNotHeld",
+  itemNotSellable: "itemNotSellable",
+  invalidItem: "invalidItem"
 } as const;
 
 export type ShopFailureReason = (typeof SHOP_FAILURE_REASONS)[keyof typeof SHOP_FAILURE_REASONS];
@@ -18,7 +21,10 @@ export const SHOP_FAILURE_LABELS: Record<ShopFailureReason, string> = {
   shopBlockedByThreat: "Clear the local threat before shopping.",
   insufficientSalvage: "Not enough Salvage.",
   itemUnavailable: "That item is not available from this shop.",
-  inventoryFull: "Inventory is full."
+  inventoryFull: "Inventory is full.",
+  itemNotHeld: "That item is not in your held inventory.",
+  itemNotSellable: "That item cannot be sold.",
+  invalidItem: "That item cannot be sold here."
 };
 
 export type ShopStockServiceId = "buy-gear" | "risk-action";
@@ -88,12 +94,51 @@ export function getShopGearCost(item: GearItem): number {
   return 3;
 }
 
+export function getShopGearSellValue(item: GearItem): number | null {
+  if (item.sellValue !== undefined) {
+    return item.sellValue;
+  }
+
+  if (item.cost !== undefined) {
+    return Math.max(1, Math.floor(item.cost / 2));
+  }
+
+  if (item.tier !== undefined) {
+    return Math.max(1, Math.floor(getShopGearCost(item) / 2));
+  }
+
+  return null;
+}
+
 export function isQaShopGear(item: GearItem): boolean {
   return item.id.startsWith("qa_") || item.id.startsWith("qa-alpha");
 }
 
 export function canUseQaShopGear(character: Pick<Character, "id" | "qaOnly">): boolean {
   return character.qaOnly === true || character.id === "char_master_alpha";
+}
+
+export function getGearSellRestriction(
+  item: GearItem,
+  character: Pick<Character, "id" | "qaOnly">
+): ShopFailureReason | undefined {
+  if (isQaShopGear(item) && !canUseQaShopGear(character)) {
+    return SHOP_FAILURE_REASONS.itemNotSellable;
+  }
+
+  if (item.sellable === false) {
+    return SHOP_FAILURE_REASONS.itemNotSellable;
+  }
+
+  if ((item.category === "contractObject" || item.category === "followerLinked") && item.sellable !== true) {
+    return SHOP_FAILURE_REASONS.itemNotSellable;
+  }
+
+  if (getShopGearSellValue(item) === null) {
+    return SHOP_FAILURE_REASONS.itemNotSellable;
+  }
+
+  return undefined;
 }
 
 export function getAvailableShopStockForCategory(

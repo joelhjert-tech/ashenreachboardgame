@@ -31,7 +31,10 @@ export type ShopFailureReason =
   | "shopBlockedByThreat"
   | "insufficientSalvage"
   | "itemUnavailable"
-  | "inventoryFull";
+  | "inventoryFull"
+  | "itemNotHeld"
+  | "itemNotSellable"
+  | "invalidItem";
 export type Phase = "start" | "navigation" | "sector" | "action" | "resolution" | "broadcast";
 export type SessionStatus = "lobby" | "active" | "ended";
 export type SessionMode = "multiplayer" | "single-player";
@@ -99,6 +102,8 @@ export interface GearItem {
   category?: GearCategory;
   shopCategories?: ShopCategory[];
   cost?: number;
+  sellValue?: number;
+  sellable?: boolean;
   tier?: GearTier;
   timingWindows?: GearTimingWindow[];
   exhausted?: boolean;
@@ -377,6 +382,16 @@ export interface PublicShopEncounterState {
     affordable: boolean;
     disabledReason?: string;
   }>;
+  sellInventory?: Array<{
+    gearId: string;
+    name: string;
+    type: "gear" | "artifact";
+    category?: GearCategory;
+    sellValue: number;
+    summary: string;
+    sellable: boolean;
+    disabledReason?: ShopFailureReason | string;
+  }>;
   recentOutcome?: {
     operativeName: string;
     shopName: string;
@@ -388,6 +403,8 @@ export interface PublicShopEncounterState {
     woundDelta?: number;
     scarDelta?: number;
     discarded?: string[];
+    sold?: string;
+    salvageDelta?: number;
     summary: string;
   } | null;
 }
@@ -733,6 +750,11 @@ export type ClientIntent =
       type: "SHOP_PURCHASE_REQUESTED";
       seatId: string;
       cardId: string;
+    }
+  | {
+      type: "SHOP_SELL_REQUESTED";
+      seatId: string;
+      gearId: string;
     }
   | {
       type: "ACCEPT_CONTRACT";

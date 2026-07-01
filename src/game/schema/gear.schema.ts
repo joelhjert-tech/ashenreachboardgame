@@ -42,6 +42,8 @@ export const gearItemSchema = z.object({
     amount: z.number().int().positive()
   }),
   cost: z.number().int().min(0).optional(),
+  sellValue: z.number().int().min(0).optional(),
+  sellable: z.boolean().optional(),
   tier: gearTierSchema.optional(),
   progressionWeight: z.number().min(0).optional(),
   timingWindows: z.array(gearTimingWindowSchema).optional(),

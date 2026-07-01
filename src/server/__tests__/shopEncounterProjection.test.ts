@@ -49,7 +49,7 @@ describe("shop encounter public projection", () => {
     });
     expect(tvProjection.shopEncounter?.services.find((service) => service.id === "sell-gear")).toMatchObject({
       enabled: false,
-      disabledReason: "No Gear to sell"
+      disabledReason: "No sellable items"
     });
     expect(tvProjection.shopEncounter?.revealedStock).toBeUndefined();
     expect(tvProjection.players[0]?.character.salvage).toBe(6);
