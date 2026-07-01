@@ -355,6 +355,7 @@ const encounterDecksBySpaceId: Partial<Record<string, EncounterDecks>> = {
       "webglass-snarefield",
       "ash-court-duelist",
       "velvet-knife-confessor",
+      "lalla-bubu-crownling",
       "iron-synod-hunter",
       "false-route-procession"
     ],
@@ -431,7 +432,7 @@ const encounterDecksBySpaceId: Partial<Record<string, EncounterDecks>> = {
     escalation: ["escalation-choir-feedback", "escalation-webglass-afterimage"]
   },
   "the-salt-archive": {
-    threat: ["marrow-tax-auditors", "memory-tax-gate", "false-route-procession", "starless-taxation"],
+    threat: ["marrow-tax-auditors", "memory-tax-gate", "crown-bell-baron", "false-route-procession", "starless-taxation"],
     anomaly: ["anomaly-saltglass-fata-morgana", "anomaly-table-fire-writ"],
     contract: ["cartel-ledger-skim", "choir-hush-census", "dominion-gate-tithe"],
     artifact: ["artifact-oath-chain-ledger", "artifact-pale-ledger-token"],
