@@ -150,6 +150,8 @@ describe("PhoneActionPanel", () => {
     );
 
     expect(screen.getByText(/waiting for another seat/i)).toBeInTheDocument();
+    expect(screen.getByTestId("phone-current-prompt")).toHaveTextContent(/waiting for mira/i);
+    expect(screen.getByTestId("phone-current-prompt")).toHaveTextContent(/watch the tv command table/i);
     expect(screen.queryByRole("button", { name: /attempt signal check/i })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /enter combat/i })).not.toBeInTheDocument();
   });
@@ -172,6 +174,8 @@ describe("PhoneActionPanel", () => {
       />
     );
 
+    expect(screen.getByTestId("phone-current-prompt")).toHaveTextContent(/resolve event/i);
+    expect(screen.getByTestId("phone-current-prompt")).toHaveTextContent(/glass chime swarm/i);
     expect(screen.getByRole("button", { name: /attempt signal check/i })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /enter combat/i })).not.toBeInTheDocument();
   });
@@ -195,6 +199,8 @@ describe("PhoneActionPanel", () => {
       />
     );
 
+    expect(screen.getByTestId("phone-current-prompt")).toHaveTextContent(/roll battle/i);
+    expect(screen.getByTestId("phone-current-prompt")).toHaveTextContent(/cinder-veil stalker/i);
     expect(screen.getByRole("button", { name: /enter combat.*cinder-veil stalker/i })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /attempt grit check/i })).not.toBeInTheDocument();
   });
@@ -263,6 +269,8 @@ describe("PhoneActionPanel", () => {
       />
     );
 
+    expect(screen.getByTestId("phone-current-prompt")).toHaveTextContent(/choose destination/i);
+    expect(screen.getByTestId("phone-current-prompt")).toHaveTextContent(/you rolled 1/i);
     expect(screen.getByTestId("movement-planner")).toBeInTheDocument();
     expect(screen.getByText(/move 1/i)).toBeInTheDocument();
     expect(screen.getAllByText(/anchor market/i).length).toBeGreaterThan(0);
@@ -451,6 +459,8 @@ describe("PhoneActionPanel", () => {
       />
     );
 
+    expect(screen.getByTestId("phone-current-prompt")).toHaveTextContent(/choose shop action/i);
+    expect(screen.getByTestId("phone-current-prompt")).toHaveTextContent(/anchor market/i);
     fireEvent.click(screen.getByRole("button", { name: /buy gear/i }));
     expect(onIntent).toHaveBeenCalledWith({
       type: "SHOP_SERVICE_REQUESTED",
@@ -488,6 +498,8 @@ describe("PhoneActionPanel", () => {
       />
     );
 
+    expect(screen.getByTestId("phone-current-prompt")).toHaveTextContent(/no legal destination/i);
+    expect(screen.getByTestId("phone-current-prompt")).toHaveTextContent(/you rolled 1/i);
     expect(screen.getByText(/no legal destinations/i)).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /confirm move/i })).not.toBeInTheDocument();
   });
@@ -1029,7 +1041,7 @@ describe("PhoneActionPanel", () => {
     );
 
     expect(screen.getByRole("button", { name: /roll for the enemy/i })).toBeInTheDocument();
-    expect(screen.getByText(/seat-2 is engaged|mira is engaged/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/seat-2 is engaged|mira is engaged/i).length).toBeGreaterThan(0);
   });
 
   it("shows a waiting state for seats that are neither the fighter nor the assigned roller", () => {
@@ -1158,7 +1170,7 @@ describe("PhoneActionPanel", () => {
     expect(screen.getByTestId("phone-roll-result")).toHaveTextContent(/roll: 3 \+ 2 \+ 1 = 6/i);
     expect(screen.getByTestId("phone-roll-result")).toHaveTextContent(/target: 7/i);
     expect(screen.getByTestId("phone-roll-result")).toHaveTextContent(/failure/i);
-    expect(screen.getByText(/failed to enter red march outpost/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/failed to enter red march outpost/i).length).toBeGreaterThan(0);
 
     fireEvent.click(screen.getByRole("button", { name: /continue/i }));
 

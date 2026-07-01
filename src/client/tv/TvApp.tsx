@@ -412,9 +412,9 @@ function getHostStateBannerModel({
 }: HostStateBannerProps): HostStateBannerModel {
   if (!roomCode || !patch) {
     return {
-      label: "Lobby",
-      detail: "Create a room to bring the command board online.",
-      meta: "Awaiting host setup",
+      label: "Host setup",
+      detail: "Select a scenario, mode, and player count to create the room.",
+      meta: "Host selecting Co-op or Rivalry",
       tone: "idle"
     };
   }
@@ -436,8 +436,8 @@ function getHostStateBannerModel({
     if (joinedCount === 0) {
       return {
         label: "Character selection",
-        detail: "Players are joining, entering names, and choosing operatives.",
-        meta: "Waiting for seats",
+        detail: "Share the room code while players enter names and choose operatives.",
+        meta: "Waiting on players",
         tone: "idle"
       };
     }
@@ -447,7 +447,7 @@ function getHostStateBannerModel({
       detail:
         readyCount >= joinedCount
           ? "All joined operatives are ready. Host may start when setup is correct."
-          : "Waiting for joined operatives to press Ready.",
+          : "Waiting for all players to ready on phone.",
       meta: `Ready ${readyCount}/${joinedCount}`,
       tone: readyCount >= joinedCount ? "ready" : "idle"
     };
@@ -467,7 +467,7 @@ function getHostStateBannerModel({
 
     return {
       label: "Battle resolving",
-      detail: `${activeName} is resolving combat against ${enemyName}.`,
+      detail: `Waiting on ${activeName} to resolve combat against ${enemyName} on phone.`,
       meta: activeResolution ? resolutionStageLabel[activeResolution.stage] : "Dice pending",
       tone: "battle"
     };
@@ -478,7 +478,7 @@ function getHostStateBannerModel({
 
     return {
       label: "Shop open",
-      detail: shop ? `${activeName} is using ${shop.shopName}.` : `${activeName} is at a clear shop sector.`,
+      detail: shop ? `Waiting on ${activeName} to choose a shop action at ${shop.shopName}.` : `Waiting on ${activeName} to choose a shop service.`,
       meta: shop ? toTitleCase(shop.status) : "Choose service on phone",
       tone: "shop"
     };
@@ -489,7 +489,7 @@ function getHostStateBannerModel({
 
     return {
       label: "Encounter active",
-      detail: `${activeName} is resolving ${title}.`,
+      detail: `Waiting on ${activeName} to resolve ${title} on phone.`,
       meta: activeResolution ? resolutionStageLabel[activeResolution.stage] : "Awaiting player action",
       tone: "danger"
     };
@@ -498,7 +498,7 @@ function getHostStateBannerModel({
   if (patch.phase === "navigation") {
     return {
       label: "Movement resolving",
-      detail: `${activeName} is choosing a legal destination.`,
+      detail: `Waiting on ${activeName} to choose a legal destination.`,
       meta: "Route planning",
       tone: "active"
     };
@@ -1007,9 +1007,11 @@ function SessionReadout({
           )}
         </div>
         <div className="tv-session-command-bar">
-          <button type="button" className="tv-button tv-button-quiet" onClick={onToggleDebug}>
-            {debugOpen ? "Hide debug" : "Show debug"}
-          </button>
+          {debugOpen && (
+            <button type="button" className="tv-button tv-button-quiet" onClick={onToggleDebug}>
+              Hide debug
+            </button>
+          )}
           {showCreate && (
             <>
               <button

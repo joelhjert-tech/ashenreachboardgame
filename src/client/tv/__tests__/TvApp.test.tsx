@@ -263,6 +263,8 @@ describe("TvApp", () => {
     const banner = await screen.findByTestId("host-state-banner");
     expect(banner).toHaveTextContent(/ready check/i);
     expect(banner).toHaveTextContent(/all joined operatives are ready/i);
+    expect(screen.queryByRole("button", { name: /show debug/i })).not.toBeInTheDocument();
+    expect(screen.queryByText(/tv debug/i)).not.toBeInTheDocument();
     expect(screen.getByText("Ashen Reach TV")).toBeInTheDocument();
     expect(mockUseRoomSubscription).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -299,6 +301,7 @@ describe("TvApp", () => {
 
     expect(await screen.findByRole("button", { name: /start session/i })).toBeDisabled();
     expect(screen.getByText(/waiting for player to press ready/i)).toBeInTheDocument();
+    expect(screen.getByTestId("host-state-banner")).toHaveTextContent(/waiting for all players to ready/i);
 
     fireEvent.click(screen.getByRole("button", { name: /start session/i }));
 
@@ -602,6 +605,7 @@ describe("TvApp", () => {
     render(<TvApp />);
 
     expect(await screen.findByText(/sector brief/i)).toBeInTheDocument();
+    expect(screen.getByTestId("host-state-banner")).toHaveTextContent(/waiting on tarek voss to choose a legal destination/i);
     expect(screen.queryByText(/movement scan/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/movement value/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/exact legal routes are highlighted/i)).not.toBeInTheDocument();
@@ -794,6 +798,7 @@ describe("TvApp", () => {
     const overlay = await screen.findByTestId("host-shop-overlay");
     const banner = screen.getByTestId("host-state-banner");
     expect(banner).toHaveTextContent(/shop open/i);
+    expect(banner).toHaveTextContent(/waiting on tarek voss/i);
     expect(banner).toHaveTextContent(/anchor market/i);
     expect(overlay).toHaveTextContent(/shop encounter/i);
     expect(overlay).toHaveTextContent(/tarek voss/i);

@@ -58,6 +58,16 @@ interface ActionSectionDefinition {
 
 export type TurnActionTab = "move" | "battle" | "shop" | "action";
 
+interface CurrentPromptViewModel {
+  label: string;
+  title: string;
+  detail: string;
+  meta?: string;
+  tone: "waiting" | "move" | "battle" | "shop" | "action" | "result";
+  targetTab?: TurnActionTab;
+  actionLabel?: string;
+}
+
 interface TurnActionTabDefinition {
   id: TurnActionTab;
   label: string;
@@ -460,6 +470,35 @@ function TurnActionTabs({
         </GameButton>
       ))}
     </div>
+  );
+}
+
+function CurrentPromptCard({
+  prompt,
+  onSelectedTab
+}: {
+  prompt: CurrentPromptViewModel;
+  onSelectedTab?: (tab: TurnActionTab) => void;
+}): ReactElement {
+  return (
+    <section className={`phone-current-prompt phone-current-prompt-${prompt.tone}`} data-testid="phone-current-prompt" aria-label="Current prompt">
+      <div>
+        <span>{prompt.label}</span>
+        <strong>{prompt.title}</strong>
+        <p>{prompt.detail}</p>
+        {prompt.meta ? <small>{prompt.meta}</small> : null}
+      </div>
+      {prompt.targetTab && prompt.actionLabel && onSelectedTab ? (
+        <GameButton
+          type="button"
+          tone={prompt.targetTab}
+          className="phone-button phone-current-prompt-button"
+          onClick={() => onSelectedTab(prompt.targetTab!)}
+        >
+          {prompt.actionLabel}
+        </GameButton>
+      ) : null}
+    </section>
   );
 }
 
@@ -1042,6 +1081,14 @@ export function PhoneActionPanel({
     return (
       <section className="phone-sheet-actions" aria-label="Quick actions">
         <div className="phone-sheet-section-heading">Quick Actions</div>
+        <CurrentPromptCard
+          prompt={{
+            label: "Session complete",
+            title: "Run ended",
+            detail: `${winnerName} secured the final outcome. Watch the TV for the table summary.`,
+            tone: "result"
+          }}
+        />
         {resolutionPanel}
         <p className="phone-sheet-action-copy">Trophies: {self.character.trophies}</p>
         <p className="phone-sheet-action-copy">Game over: {winnerName} wins.</p>
@@ -1054,6 +1101,15 @@ export function PhoneActionPanel({
       return (
         <section className="phone-sheet-actions" aria-label="Quick actions">
           <div className="phone-sheet-section-heading">Quick Actions</div>
+          <CurrentPromptCard
+            prompt={{
+              label: "Engagement",
+              title: "Roll battle",
+              detail: `${pendingFighterName} is engaged. Roll for ${pendingEnemyRoll.encounterTitle} when the table is ready.`,
+              meta: "Enemy roll assigned to you",
+              tone: "battle"
+            }}
+          />
           {resolutionPanel}
           {battleAssistPanel}
           <p className="phone-sheet-action-copy">Trophies: {self.character.trophies}</p>
@@ -1087,6 +1143,14 @@ export function PhoneActionPanel({
     return (
       <section className="phone-sheet-actions" aria-label="Quick actions">
         <div className="phone-sheet-section-heading">Quick Actions</div>
+        <CurrentPromptCard
+          prompt={{
+            label: "Waiting",
+            title: `Waiting for ${pendingRollerName}`,
+            detail: `${pendingRollerName} is rolling for ${pendingEnemyRoll.encounterTitle}. Watch the TV for the public result.`,
+            tone: "waiting"
+          }}
+        />
         {resolutionPanel}
         {battleAssistPanel}
         <p className="phone-sheet-action-copy">Trophies: {self.character.trophies}</p>
@@ -1096,9 +1160,20 @@ export function PhoneActionPanel({
   }
 
   if (!isActiveSeat) {
+    const activeSeat = patch.seats.find((seat) => seat.seatId === getActiveSeatId(patch));
+    const activeName = activeSeat?.displayName ?? getActiveSeatId(patch) ?? "another operative";
+
     return (
       <section className="phone-sheet-actions" aria-label="Quick actions">
         <div className="phone-sheet-section-heading">Quick Actions</div>
+        <CurrentPromptCard
+          prompt={{
+            label: "Standby",
+            title: `Waiting for ${activeName}`,
+            detail: "Your orders are locked while another operative acts. Watch the TV command table.",
+            tone: "waiting"
+          }}
+        />
         {resolutionPanel}
         {battleAssistPanel}
         <p className="phone-sheet-action-copy">Trophies: {self.character.trophies}</p>
@@ -1111,6 +1186,14 @@ export function PhoneActionPanel({
     return (
       <section className="phone-sheet-actions" aria-label="Quick actions">
         <div className="phone-sheet-section-heading">Quick Actions</div>
+        <CurrentPromptCard
+          prompt={{
+            label: "Replacement",
+            title: "Recruit operative",
+            detail: "Your operative has been recalled. Choose a replacement before your command channel can continue.",
+            tone: "action"
+          }}
+        />
         {resolutionPanel}
         {battleAssistPanel}
         <p className="phone-sheet-action-copy">Trophies: {self.character.trophies}</p>
@@ -1545,10 +1628,141 @@ export function PhoneActionPanel({
   const activeTurnTab = tabDefinitions.find((tab) => tab.id === selectedTurnTab && canShowSelectedTab(tab))
     ? selectedTurnTab
     : fallbackTab;
+  const currentPrompt: CurrentPromptViewModel = (() => {
+    if (movementPlanner?.active) {
+      return {
+        label: "Your turn",
+        title: movementPlanner.destinations.length > 0 ? "Choose destination" : "No legal destination",
+        detail:
+          movementPlanner.destinations.length > 0
+            ? `You rolled ${movementPlanner.movementValue}. Choose one exact-distance destination.`
+            : `You rolled ${movementPlanner.movementValue}, but no legal destination is available from ${movementPlanner.currentSectorName}.`,
+        meta: `${movementPlanner.destinations.length} legal route${movementPlanner.destinations.length === 1 ? "" : "s"}`,
+        tone: "move",
+        targetTab: "move",
+        actionLabel: activeTurnTab === "move" ? undefined : "Open Move"
+      };
+    }
+
+    if (patch.phase === "navigation") {
+      return {
+        label: "Your turn",
+        title: "Choose destination",
+        detail: "Movement is ready. Choose a legal adjacent sector to continue.",
+        meta: sector?.name,
+        tone: "move",
+        targetTab: "move",
+        actionLabel: activeTurnTab === "move" ? undefined : "Open Move"
+      };
+    }
+
+    if (canContinueResolution) {
+      return {
+        label: "Resolution",
+        title: activeResolution?.roll?.success ? "Confirm success" : "Confirm result",
+        detail: activeResolution?.outcome?.text ?? "Review the roll result, then continue when the table is ready.",
+        tone: "result",
+        targetTab: "battle",
+        actionLabel: activeTurnTab === "battle" ? undefined : "Open Battle"
+      };
+    }
+
+    if (orphanResolutionOutcome) {
+      return {
+        label: "Resolution",
+        title: orphanResolutionOutcome.success ? "Confirm success" : "Confirm result",
+        detail: orphanResolutionOutcome.summary,
+        tone: "result",
+        targetTab: "battle",
+        actionLabel: activeTurnTab === "battle" ? undefined : "Open Battle"
+      };
+    }
+
+    if (activeResolution?.battle) {
+      return {
+        label: "Engagement",
+        title: activeResolution.stage === "battle_setup" ? "Roll battle" : "Resolve battle",
+        detail: `${activeResolution.battle.enemyName ?? activeResolution.card?.title ?? "Threat"} is waiting on your roll.`,
+        meta: statLabelById[activeResolution.battle.stat],
+        tone: "battle",
+        targetTab: "battle",
+        actionLabel: activeTurnTab === "battle" ? undefined : "Open Battle"
+      };
+    }
+
+    if (patch.encounter?.cardType === "enemy") {
+      return {
+        label: "Engagement",
+        title: "Roll battle",
+        detail: `${patch.encounter.enemyName ?? patch.encounter.title} is in your space. Enter combat from the Battle tab.`,
+        meta: statLabelById[patch.encounter.stat],
+        tone: "battle",
+        targetTab: "battle",
+        actionLabel: activeTurnTab === "battle" ? undefined : "Open Battle"
+      };
+    }
+
+    if (patch.encounter) {
+      return {
+        label: "Event",
+        title: "Resolve event",
+        detail: `${patch.encounter.title} is waiting for your ${statLabelById[patch.encounter.stat]} check.`,
+        tone: "action",
+        targetTab: "battle",
+        actionLabel: activeTurnTab === "battle" ? undefined : "Open Battle"
+      };
+    }
+
+    if (shopEncounter) {
+      return {
+        label: "Market",
+        title: shopLocked ? "Shop blocked" : "Choose shop action",
+        detail: shopLocked
+          ? `${shopEncounter.shopName} is blocked by visible threats. Clear the lane before buying.`
+          : `${shopEncounter.shopName} is open. Buy, sell, or use services from the Shop tab.`,
+        meta: toTitleCase(shopEncounter.status),
+        tone: "shop",
+        targetTab: "shop",
+        actionLabel: activeTurnTab === "shop" ? undefined : "Open Shop"
+      };
+    }
+
+    if (isScenarioConfrontation && patch.activeScenario) {
+      return {
+        label: "Objective",
+        title: patch.activeScenario.confrontationTitle,
+        detail: "Resolve the active scenario objective from the Action tab.",
+        tone: "action",
+        targetTab: "action",
+        actionLabel: activeTurnTab === "action" ? undefined : "Open Action"
+      };
+    }
+
+    if (hasActionContent) {
+      return {
+        label: "Your turn",
+        title: "Choose action",
+        detail: boardSpace ? `Resolve ${boardSpace.textBox.title}, use gear, or advance your turn.` : "Choose an available action for this sector.",
+        tone: "action",
+        targetTab: "action",
+        actionLabel: activeTurnTab === "action" ? undefined : "Open Action"
+      };
+    }
+
+    return {
+      label: "Your turn",
+      title: "Confirm end turn",
+      detail: "No required prompt is waiting. End your turn or watch the TV for the next public result.",
+      tone: "action",
+      targetTab: "action",
+      actionLabel: activeTurnTab === "action" ? undefined : "Open Action"
+    };
+  })();
 
   return (
     <section className="phone-sheet-actions" aria-label="Quick actions">
       <div className="phone-sheet-section-heading">Turn Console</div>
+      <CurrentPromptCard prompt={currentPrompt} onSelectedTab={setSelectedTurnTab} />
       <div className="phone-sheet-action-status">
         <span>Trophies: {self.character.trophies}</span>
         <span>{copy}</span>

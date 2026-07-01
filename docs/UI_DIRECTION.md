@@ -21,6 +21,19 @@ Ashen Reach is a digital board game with a host TV command surface and private p
 - Private inventory, movement choices, battle choices, and ready/join flows live here.
 - Debug information should stay hidden unless explicitly opened.
 
+## TV + Phone Controller UX Rules
+
+- The TV is shared public state: room code, QR, joined players, ready state, active player, phase, map, public results, route glow, and visible table pressure.
+- The phone is private command input: current prompt, available actions, confirmations, inventory, legal movement destinations, hidden objectives, and player-specific choices.
+- The TV should explain what the group is waiting on: host setup, all players ready, a player choosing destination, a player resolving an event, a player shopping, or a player resolving battle.
+- The phone should put the current required action above generic tabs. Tabs remain navigation; the prompt is the command priority.
+- Do not show private rivalry objectives, hidden agendas, private cards, or secret action text on the TV unless the game explicitly reveals them.
+- Rivalry mode may show a public warning that hidden agendas are active, but private victory paths belong on the phone payload.
+- Co-op mode should emphasize shared objective progress, group pressure, and help/team actions.
+- Do not show a full permanent character sheet during battle or event resolution on the TV. Show only the current duel or check: relevant stat, roll, modifier, total, target, and outcome.
+- Do not show debug, test, raw state, planner internals, or development controls in the normal host display.
+- Missing private payload data should be documented as TODOs instead of invented in the UI.
+
 ## Board
 
 - Current board direction: Talisman/Relic-style concentric/tiered board feel.
