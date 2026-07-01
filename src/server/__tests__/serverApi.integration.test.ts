@@ -32,17 +32,28 @@ type StatePatchEnvelope = {
     activeResolution?: {
       stage: string;
     } | null;
+    movementPlanner?: {
+      active: boolean;
+      movementValue: number;
+      currentSectorId: string;
+      currentSectorName: string;
+      destinations: Array<{
+        sectorId: string;
+        distance: number;
+        route: string[];
+      }>;
+    } | null;
   };
 };
 
 type SocketProbe = {
   socket: WebSocket;
-  messages: StatePatchEnvelope[];
+  messages: Array<StatePatchEnvelope | Record<string, unknown>>;
 };
 
 async function connectSocket(url: string): Promise<SocketProbe> {
   const socket = new WebSocket(url);
-  const messages: StatePatchEnvelope[] = [];
+  const messages: Array<StatePatchEnvelope | Record<string, unknown>> = [];
 
   socket.on("message", (raw) => {
     messages.push(JSON.parse(String(raw)) as StatePatchEnvelope);
@@ -60,7 +71,9 @@ async function waitForStatePatch(
   predicate: (message: StatePatchEnvelope) => boolean,
   timeoutMs = 10000
 ): Promise<StatePatchEnvelope> {
-  const existing = probe.messages.find((message) => message.type === "STATE_PATCH" && predicate(message));
+  const existing = probe.messages.find(
+    (message): message is StatePatchEnvelope => message.type === "STATE_PATCH" && predicate(message as StatePatchEnvelope)
+  );
 
   if (existing) {
     return existing;
@@ -70,7 +83,15 @@ async function waitForStatePatch(
     const timer = setTimeout(() => {
       probe.socket.off("message", onMessage);
       const received = probe.messages
-        .map((message) => `${message.type}:${message.phase}:${message.payload.status ?? "unknown"}`)
+        .map((message) => {
+          if (message.type === "STATE_PATCH") {
+            const patch = message as StatePatchEnvelope;
+            return `${patch.type}:${patch.phase}:${patch.payload.status ?? "unknown"}`;
+          }
+
+          const socketMessage = message as Record<string, unknown>;
+          return `${String(socketMessage.type ?? "UNKNOWN")}:${String(socketMessage.actionType ?? "none")}`;
+        })
         .join(", ");
       reject(new Error(`Timed out waiting for state patch. Received: ${received || "none"}`));
     }, timeoutMs);
@@ -638,16 +659,16 @@ describe("server API scenario flow", () => {
 
       const state = harness.roomServer.getState();
       const activePlayer = state.players.find((player) => player.seatId === joined.payload.seatId);
-      const currentSector = state.sectors.find((sector) => sector.id === activePlayer?.character.currentSpaceId);
-      const neighborSectorId = currentSector?.neighbors[0];
+      const legalDestinationId = startedPatch.payload.movementPlanner?.destinations[0]?.sectorId;
 
-      expect(neighborSectorId).toBeTruthy();
+      expect(activePlayer?.character.currentSpaceId).toBe(startedPatch.payload.movementPlanner?.currentSectorId);
+      expect(legalDestinationId).toBeTruthy();
 
       phone.socket.send(
         JSON.stringify({
           type: "MOVE_REQUESTED",
           seatId: joined.payload.seatId,
-          toSectorId: neighborSectorId
+          toSectorId: legalDestinationId
         })
       );
 
@@ -667,7 +688,7 @@ describe("server API scenario flow", () => {
         phone,
         (message) =>
           message.phase === "action" &&
-          message.payload.self?.sectorId === neighborSectorId &&
+          message.payload.self?.sectorId === legalDestinationId &&
           message.payload.activeScenario?.id === "scenario_dying_star"
       );
 
