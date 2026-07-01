@@ -202,6 +202,73 @@ describe("canonical sector graph", () => {
     expect(phoneProjection.nemesis).toBeNull();
   });
 
+  it("adds private rivalry objectives only to phone projections", () => {
+    const state = createInitialSessionState("session-rivalry");
+    state.players[0] = {
+      ...state.players[0]!,
+      private: {
+        ...state.players[0]!.private,
+        notes: ["Watch salvage", "Delay the vote", "Claim credit", "Keep it quiet"]
+      },
+      character: {
+        ...state.players[0]!.character,
+        trophies: 2
+      }
+    };
+
+    const phoneProjection = createPhoneProjection(state, "seat-1") as {
+      privateRivalry: {
+        active: boolean;
+        mode: string;
+        secrecy: string;
+        tableWarning: string;
+        objective: {
+          id: string;
+          title: string;
+          progressLabel: string;
+          progress: number;
+          target: number;
+        };
+        recentPrivateNotes: string[];
+        reveal: { available: boolean; hint: string };
+      } | null;
+    };
+    const tvProjection = createTvProjection(state) as Record<string, unknown>;
+    const tvJson = JSON.stringify(tvProjection);
+
+    expect(phoneProjection.privateRivalry).toMatchObject({
+      active: true,
+      mode: "rivalry",
+      secrecy: "private",
+      objective: {
+        id: "claim-trophies",
+        title: "Claim the Black Ledger",
+        progressLabel: "Trophies held",
+        progress: 2,
+        target: 3
+      },
+      reveal: {
+        available: false,
+        hint: "Hidden-agenda reveal moments are not wired yet."
+      }
+    });
+    expect(phoneProjection.privateRivalry?.tableWarning).toContain("only on this phone");
+    expect(phoneProjection.privateRivalry?.recentPrivateNotes).toEqual(["Keep it quiet", "Claim credit", "Delay the vote"]);
+    expect(tvProjection.privateRivalry).toBeUndefined();
+    expect(tvJson).not.toContain("Claim the Black Ledger");
+    expect(tvJson).not.toContain("Hidden-agenda reveal moments");
+  });
+
+  it("omits private rivalry objectives for co-op and single-player sessions", () => {
+    const coOpState = createInitialSessionState("session-coop", "multiplayer", undefined, "co-op");
+    const soloState = createInitialSessionState("session-solo", "single-player");
+    const coOpPhoneProjection = createPhoneProjection(coOpState, "seat-1") as { privateRivalry: unknown };
+    const soloPhoneProjection = createPhoneProjection(soloState, "seat-1") as { privateRivalry: unknown };
+
+    expect(coOpPhoneProjection.privateRivalry).toBeNull();
+    expect(soloPhoneProjection.privateRivalry).toBeNull();
+  });
+
   it("builds public movement planner intel from legal sectors without leaking hidden deck cards", () => {
     const state = createInitialSessionState("session-alpha");
     state.status = "active";

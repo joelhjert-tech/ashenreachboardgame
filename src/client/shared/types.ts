@@ -160,6 +160,32 @@ export interface PhoneSelfState {
   character: PrivateCharacter;
 }
 
+export interface PrivateRivalryObjective {
+  id: string;
+  title: string;
+  summary: string;
+  progressLabel: string;
+  progress: number;
+  target: number;
+  stakes: string;
+}
+
+export interface PrivateRivalryRevealState {
+  available: boolean;
+  label: string;
+  hint: string;
+}
+
+export interface PrivateRivalryPayload {
+  active: boolean;
+  mode: Extract<InteractionMode, "rivalry" | "ruthless">;
+  secrecy: "private";
+  tableWarning: string;
+  objective: PrivateRivalryObjective;
+  recentPrivateNotes: string[];
+  reveal: PrivateRivalryRevealState;
+}
+
 export interface SectorNode {
   id: string;
   name: string;
@@ -554,6 +580,7 @@ export interface PublicPatchPayload {
 export interface PhonePatchPayload extends PublicPatchPayload {
   phase: Phase;
   self: PhoneSelfState | null;
+  privateRivalry?: PrivateRivalryPayload | null;
   soloReroll?: {
     available: boolean;
     charges: number;

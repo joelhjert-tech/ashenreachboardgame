@@ -2,7 +2,15 @@ import { useState, type ReactElement } from "react";
 import { getCharacterPortraitPath, getPhoneBackgroundPath } from "../shared/assetPaths.js";
 import { GameButton } from "../shared/GameButton.js";
 import { formatSeatLabel, statLabelById, statOrder } from "../shared/statLabels.js";
-import type { CharacterCatalogEntry, ClientIntent, ContractCard, NemesisChampionSummary, PhonePatchPayload, PhoneSelfState } from "../shared/types.js";
+import type {
+  CharacterCatalogEntry,
+  ClientIntent,
+  ContractCard,
+  NemesisChampionSummary,
+  PhonePatchPayload,
+  PhoneSelfState,
+  PrivateRivalryPayload
+} from "../shared/types.js";
 import { PhoneInventoryPanel } from "./PhoneInventoryPanel.js";
 import { PhoneActionPanel, type TurnActionTab } from "./PhoneActionPanel.js";
 
@@ -126,6 +134,43 @@ function BoundNemesisPanel({
             Fight Nemesis
           </button>
         ) : null}
+      </article>
+    </section>
+  );
+}
+
+function RivalryQuestPanel({ rivalry }: { rivalry: PrivateRivalryPayload }): ReactElement {
+  const modeLabel = rivalry.mode === "ruthless" ? "Ruthless" : "Rivalry";
+  const progressLabel = `${rivalry.objective.progress}/${rivalry.objective.target}`;
+
+  return (
+    <section className="phone-portrait-section phone-rivalry-quest-panel" aria-label="Private rivalry agenda">
+      <div className="phone-sheet-section-heading">Rivalry Agenda</div>
+      <article className="phone-portrait-info-card phone-rivalry-quest-card">
+        <div className="phone-rivalry-quest-topline">
+          <span>{modeLabel}</span>
+          <span>{rivalry.secrecy}</span>
+        </div>
+        <strong>{rivalry.objective.title}</strong>
+        <p>{rivalry.objective.summary}</p>
+        <div className="phone-rivalry-progress" aria-label={`${rivalry.objective.progressLabel} ${progressLabel}`}>
+          <span>{rivalry.objective.progressLabel}</span>
+          <strong>{progressLabel}</strong>
+        </div>
+        <p className="phone-rivalry-stakes">{rivalry.objective.stakes}</p>
+        <div className="phone-portrait-chip-row phone-rivalry-chip-row">
+          <span>{rivalry.reveal.label}</span>
+          <span>{rivalry.reveal.hint}</span>
+        </div>
+        {rivalry.recentPrivateNotes.length > 0 ? (
+          <div className="phone-rivalry-notes">
+            <span>Private notes</span>
+            {rivalry.recentPrivateNotes.map((note) => (
+              <p key={note}>{note}</p>
+            ))}
+          </div>
+        ) : null}
+        <small>{rivalry.tableWarning}</small>
       </article>
     </section>
   );
@@ -361,6 +406,7 @@ export function PortraitControllerView({
 
           {activeTab === "quests" && (
             <div className="phone-portrait-screen">
+              {patch?.privateRivalry ? <RivalryQuestPanel rivalry={patch.privateRivalry} /> : null}
               <section className="phone-portrait-section">
                 <div className="phone-sheet-section-heading">Active Quest</div>
                 <article className="phone-portrait-info-card">

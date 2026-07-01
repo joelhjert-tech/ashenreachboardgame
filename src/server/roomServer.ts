@@ -122,7 +122,7 @@ import type { GearItem } from "../game/schema/gear.schema.js";
 import { rollDice, type RandomSource, defaultRandomSource } from "../game/engine/dice.js";
 import { reduceGameState } from "../game/engine/reducer.js";
 import { CHALLENGE_LABELS } from "../game/ui/challengeTheme.js";
-import type { ActiveResolution, GameState, NemesisChampion, PlayerState } from "../game/schema/session.schema.js";
+import type { ActiveResolution, GameState, InteractionMode, NemesisChampion, PlayerState } from "../game/schema/session.schema.js";
 import { validateHostToken, validateJoinToken } from "./auth.js";
 import { getBoardSpace, type BoardTier } from "../game/data/boardSpaces.js";
 
@@ -6254,6 +6254,111 @@ function buildSoloRerollProjection(state: GameState, seatId: string): { availabl
   };
 }
 
+type RivalryProjectionMode = Extract<InteractionMode, "rivalry" | "ruthless">;
+
+interface PrivateRivalryDirective {
+  id: string;
+  title: string;
+  summary: string;
+  progressLabel: string;
+  target: number;
+  stakes: string;
+  getProgress: (player: PlayerState) => number;
+}
+
+const PRIVATE_RIVALRY_DIRECTIVES: PrivateRivalryDirective[] = [
+  {
+    id: "claim-trophies",
+    title: "Claim the Black Ledger",
+    summary: "End the run with the table believing your trophies carried the expedition.",
+    progressLabel: "Trophies held",
+    target: 3,
+    stakes: "Reveal when the crew starts counting who paid the highest price.",
+    getProgress: (player) => player.character.trophies
+  },
+  {
+    id: "secure-salvage",
+    title: "Control the Salvage Chain",
+    summary: "Keep enough salvage on hand to decide what the crew can afford.",
+    progressLabel: "Salvage held",
+    target: 8,
+    stakes: "Reveal when one purchase can shift the expedition's loyalty.",
+    getProgress: (player) => player.character.salvage ?? 0
+  },
+  {
+    id: "finish-contracts",
+    title: "Own the Contract Record",
+    summary: "Push your active contract line ahead before the others can claim the story.",
+    progressLabel: "Contract progress",
+    target: 3,
+    stakes: "Reveal when a completed contract can be credited to your ledger.",
+    getProgress: (player) => player.character.activeContract?.progress ?? 0
+  },
+  {
+    id: "stay-clean",
+    title: "Leave No Heat Trail",
+    summary: "Advance your agenda while keeping your own heat low.",
+    progressLabel: "Safe heat margin",
+    target: 4,
+    stakes: "Reveal when blame starts moving around the table.",
+    getProgress: (player) => Math.max(0, 4 - player.character.heat)
+  }
+];
+
+function getEffectiveInteractionMode(state: GameState): InteractionMode {
+  return state.interactionMode ?? (state.sessionMode === "single-player" ? "co-op" : "rivalry");
+}
+
+function getPrivateRivalryDirectiveIndex(state: GameState, seatId: string): number {
+  const turnOrderIndex = state.turnOrder.indexOf(seatId);
+
+  if (turnOrderIndex >= 0) {
+    return turnOrderIndex;
+  }
+
+  return Math.max(0, state.players.findIndex((player) => player.seatId === seatId));
+}
+
+function buildPrivateRivalryProjection(state: GameState, player: PlayerState | undefined): Record<string, unknown> | null {
+  if (!player || state.sessionMode === "single-player") {
+    return null;
+  }
+
+  const interactionMode = getEffectiveInteractionMode(state);
+
+  if (interactionMode === "co-op") {
+    return null;
+  }
+
+  const directive =
+    PRIVATE_RIVALRY_DIRECTIVES[
+      getPrivateRivalryDirectiveIndex(state, player.seatId) % PRIVATE_RIVALRY_DIRECTIVES.length
+    ] ?? PRIVATE_RIVALRY_DIRECTIVES[0]!;
+  const progress = Math.max(0, Math.trunc(directive.getProgress(player)));
+
+  return {
+    active: true,
+    mode: interactionMode as RivalryProjectionMode,
+    secrecy: "private",
+    tableWarning: "Shown only on this phone. Keep it off the TV table.",
+    objective: {
+      id: directive.id,
+      title: directive.title,
+      summary: directive.summary,
+      progressLabel: directive.progressLabel,
+      progress,
+      target: directive.target,
+      stakes: directive.stakes
+    },
+    recentPrivateNotes: player.private.notes.slice(-3).reverse(),
+    reveal: {
+      available: false,
+      label: "Reveal locked",
+      hint: "Hidden-agenda reveal moments are not wired yet."
+    }
+  };
+}
+
 export function createTvProjection(state: GameState): Record<string, unknown> {
   const escalationThreshold = getEscalationCollapseLevel(state.sessionMode);
   const activeScenario = getScenarioDefinition(state.activeScenarioId);
@@ -6468,6 +6573,7 @@ export function createPhoneProjection(state: GameState, seatId: string, forcePri
     recentAbilityTriggers: publicProjection.recentAbilityTriggers,
     nemesis: publicProjection.nemesis,
     movementPlanner: buildPublicMovementPlanner(state, seatId),
+    privateRivalry: buildPrivateRivalryProjection(state, player),
     soloReroll: buildSoloRerollProjection(state, seatId),
     boundNemesis: (publicProjection.nemesisChampions as Array<{ boundPlayerId: string }>).find(
       (champion) => champion.boundPlayerId === seatId

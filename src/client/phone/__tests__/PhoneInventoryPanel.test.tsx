@@ -324,6 +324,84 @@ describe("PhoneInventoryPanel", () => {
     expect(screen.getByTestId("phone-battle-assist")).toBeInTheDocument();
   });
 
+  it("shows private rivalry agenda details on the Quest tab", () => {
+    const patch = createPatch({
+      interactionMode: "rivalry",
+      privateRivalry: {
+        active: true,
+        mode: "rivalry",
+        secrecy: "private",
+        tableWarning: "Shown only on this phone. Keep it off the TV table.",
+        objective: {
+          id: "claim-trophies",
+          title: "Claim the Black Ledger",
+          summary: "End the run with the table believing your trophies carried the expedition.",
+          progressLabel: "Trophies held",
+          progress: 1,
+          target: 3,
+          stakes: "Reveal when the crew starts counting who paid the highest price."
+        },
+        recentPrivateNotes: ["Keep it quiet"],
+        reveal: {
+          available: false,
+          label: "Reveal locked",
+          hint: "Hidden-agenda reveal moments are not wired yet."
+        }
+      }
+    });
+
+    render(
+      <PortraitControllerView
+        self={patch.self}
+        roomCode="RT7P4"
+        displayName="Lane"
+        connectionStatus="open"
+        activeSeatId="seat-1"
+        activeContractCard={null}
+        patch={patch}
+        characters={characters}
+        onIntent={vi.fn()}
+        onLeave={vi.fn()}
+      />
+    );
+
+    fireEvent.click(screen.getByRole("tab", { name: /^quest$/i }));
+
+    const agenda = screen.getByRole("region", { name: /private rivalry agenda/i });
+
+    expect(within(agenda).getByText("Claim the Black Ledger")).toBeInTheDocument();
+    expect(within(agenda).getByText("1/3")).toBeInTheDocument();
+    expect(within(agenda).getByText("Hidden-agenda reveal moments are not wired yet.")).toBeInTheDocument();
+    expect(within(agenda).getByText("Keep it quiet")).toBeInTheDocument();
+  });
+
+  it("hides the rivalry agenda on the Quest tab when no private payload is supplied", () => {
+    const patch = createPatch({
+      interactionMode: "co-op",
+      privateRivalry: null
+    });
+
+    render(
+      <PortraitControllerView
+        self={patch.self}
+        roomCode="RT7P4"
+        displayName="Lane"
+        connectionStatus="open"
+        activeSeatId="seat-1"
+        activeContractCard={null}
+        patch={patch}
+        characters={characters}
+        onIntent={vi.fn()}
+        onLeave={vi.fn()}
+      />
+    );
+
+    fireEvent.click(screen.getByRole("tab", { name: /^quest$/i }));
+
+    expect(screen.queryByRole("region", { name: /private rivalry agenda/i })).not.toBeInTheDocument();
+    expect(screen.getByText("No active contract")).toBeInTheDocument();
+  });
+
   it("shows a locked pre-game character screen with Back instead of bottom navigation", () => {
     const onLobbyBack = vi.fn();
     const onIntent = vi.fn();
