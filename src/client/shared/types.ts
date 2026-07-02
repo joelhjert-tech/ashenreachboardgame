@@ -189,19 +189,34 @@ export interface PrivateRivalryObjective {
 }
 
 export interface PrivateRivalryRevealState {
+  state: "hidden" | "revealLocked" | "revealAvailable" | "revealed" | "completed" | "failed";
   available: boolean;
   label: string;
   hint: string;
+  lockedReason?: string | null;
+  publicTitle?: string;
+  publicSummary?: string | null;
+  revealedAtRound?: number | null;
 }
 
 export interface PrivateRivalryPayload {
   active: boolean;
   mode: Extract<InteractionMode, "rivalry" | "ruthless">;
   secrecy: "private";
+  revealState: PrivateRivalryRevealState["state"];
   tableWarning: string;
   objective: PrivateRivalryObjective;
   recentPrivateNotes: string[];
   reveal: PrivateRivalryRevealState;
+}
+
+export interface PublicRivalryAgendaReveal {
+  seatId: string;
+  playerName: string;
+  title: string;
+  summary: string;
+  revealedAtRound: number | null;
+  createdAt: string | null;
 }
 
 export interface SectorNode {
@@ -647,6 +662,7 @@ export interface PublicPatchPayload {
   encounter: EncounterCard | null;
   pendingEnemyRoll: PendingEnemyRoll | null;
   outcomeSummary: OutcomeSummary | null;
+  rivalryAgendaReveal?: PublicRivalryAgendaReveal | null;
   activeResolution?: ActiveResolution | null;
   shopEncounter?: PublicShopEncounterState | null;
   movementPlanner?: PublicMovementPlannerState | null;
@@ -806,6 +822,10 @@ export type ClientIntent =
     }
   | {
       type: "SCENARIO_CONFRONTATION_REQUESTED";
+      seatId: string;
+    }
+  | {
+      type: "RIVALRY_AGENDA_REVEAL_REQUESTED";
       seatId: string;
     }
   | {

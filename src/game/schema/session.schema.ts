@@ -86,7 +86,16 @@ export const seatSchema = z.object({
 
 export const playerPrivateStateSchema = z.object({
   hand: z.array(z.string()),
-  notes: z.array(z.string()).default([])
+  notes: z.array(z.string()).default([]),
+  rivalryAgenda: z
+    .object({
+      revealState: z.enum(["hidden", "revealLocked", "revealAvailable", "revealed", "completed", "failed"]),
+      revealedAtRound: z.number().int().min(0).nullable().optional(),
+      revealedBySeatId: z.string().min(1).nullable().optional(),
+      publicRevealTitle: z.string().min(1).optional(),
+      publicRevealSummary: z.string().min(1).optional()
+    })
+    .optional()
 });
 
 export const playerStateSchema = z.object({

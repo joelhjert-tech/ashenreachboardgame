@@ -139,9 +139,19 @@ function BoundNemesisPanel({
   );
 }
 
-function RivalryQuestPanel({ rivalry }: { rivalry: PrivateRivalryPayload }): ReactElement {
+function RivalryQuestPanel({
+  rivalry,
+  seatId,
+  onIntent
+}: {
+  rivalry: PrivateRivalryPayload;
+  seatId: string;
+  onIntent: ((intent: ClientIntent) => void) | null;
+}): ReactElement {
+  const [confirmingReveal, setConfirmingReveal] = useState(false);
   const modeLabel = rivalry.mode === "ruthless" ? "Ruthless" : "Rivalry";
   const progressLabel = `${rivalry.objective.progress}/${rivalry.objective.target}`;
+  const canReveal = rivalry.reveal.available && rivalry.reveal.state === "revealAvailable" && Boolean(onIntent);
 
   return (
     <section className="phone-portrait-section phone-rivalry-quest-panel" aria-label="Private rivalry agenda">
@@ -162,6 +172,38 @@ function RivalryQuestPanel({ rivalry }: { rivalry: PrivateRivalryPayload }): Rea
           <span>{rivalry.reveal.label}</span>
           <span>{rivalry.reveal.hint}</span>
         </div>
+        {canReveal ? (
+          confirmingReveal ? (
+            <div className="phone-rivalry-reveal-confirm" role="region" aria-label="Reveal agenda confirmation">
+              <p>Reveal this agenda? This may become visible to the table.</p>
+              <div className="phone-rivalry-reveal-actions">
+                <button type="button" className="phone-button phone-button-secondary" onClick={() => setConfirmingReveal(false)}>
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  className="phone-button phone-button-primary"
+                  onClick={() => {
+                    setConfirmingReveal(false);
+                    onIntent?.({ type: "RIVALRY_AGENDA_REVEAL_REQUESTED", seatId });
+                  }}
+                >
+                  Confirm Reveal
+                </button>
+              </div>
+            </div>
+          ) : (
+            <button
+              type="button"
+              className="phone-button phone-button-primary phone-rivalry-reveal-button"
+              onClick={() => setConfirmingReveal(true)}
+            >
+              Reveal Agenda
+            </button>
+          )
+        ) : rivalry.reveal.lockedReason && rivalry.reveal.state !== "revealed" ? (
+          <p className="phone-rivalry-locked-reason">{rivalry.reveal.lockedReason}</p>
+        ) : null}
         {rivalry.recentPrivateNotes.length > 0 ? (
           <div className="phone-rivalry-notes">
             <span>Private notes</span>
@@ -406,7 +448,7 @@ export function PortraitControllerView({
 
           {activeTab === "quests" && (
             <div className="phone-portrait-screen">
-              {patch?.privateRivalry ? <RivalryQuestPanel rivalry={patch.privateRivalry} /> : null}
+              {patch?.privateRivalry ? <RivalryQuestPanel rivalry={patch.privateRivalry} seatId={self.seatId} onIntent={onIntent} /> : null}
               <section className="phone-portrait-section">
                 <div className="phone-sheet-section-heading">Active Quest</div>
                 <article className="phone-portrait-info-card">

@@ -116,6 +116,7 @@ import type {
   NemesisSpawnedAction,
   PhaseAdvancedAction,
   ResolutionContinuedAction,
+  RivalryAgendaRevealedAction,
   RoundCompletedAction,
   SectorCollapsedAction,
   SpaceTextResolvedAction,
@@ -272,6 +273,7 @@ const CLIENT_INTENT_TYPES = new Set<string>([
   "ACCEPT_CONTRACT",
   "COMPLETE_CONTRACT",
   "SCENARIO_CONFRONTATION_REQUESTED",
+  "RIVALRY_AGENDA_REVEAL_REQUESTED",
   "RESOLVE_SPACE_TEXT",
   "STABILIZE_REQUESTED",
   "RAISE_STAT_REQUESTED",
@@ -585,6 +587,8 @@ export class GameRoomServer {
         // Fandiablos battle/check support is a committed modifier for the next roll, not the end of the action window.
       } else if (intent.type === "SHOP_SERVICE_REQUESTED" || intent.type === "SHOP_PURCHASE_REQUESTED" || intent.type === "SHOP_SELL_REQUESTED") {
         // Shop interactions keep the action window open so the player can reveal, compare, buy, or end the turn intentionally.
+      } else if (intent.type === "RIVALRY_AGENDA_REVEAL_REQUESTED") {
+        // Reveal is a public table moment, not an automatic turn advance.
       } else {
         this.runAutomaticPhases(client.seatId);
       }
@@ -1669,6 +1673,41 @@ export class GameRoomServer {
     } satisfies ShopSellResolvedAction;
   }
 
+  private createRivalryAgendaRevealAction(
+    intent: Extract<ClientIntent, { type: "RIVALRY_AGENDA_REVEAL_REQUESTED" }>,
+    createdAt: string
+  ): RivalryAgendaRevealedAction {
+    const player = this.state.players.find((entry) => entry.seatId === intent.seatId);
+
+    if (!player) {
+      throw new Error(`Missing player for seat ${intent.seatId}`);
+    }
+
+    const interactionMode = getEffectiveInteractionMode(this.state);
+
+    if (this.state.sessionMode === "single-player" || interactionMode === "co-op") {
+      throw new Error("Rivalry agendas can only be revealed in rivalry or ruthless mode");
+    }
+
+    const revealState = getPrivateRivalryRevealState(player);
+
+    if (revealState !== "revealAvailable") {
+      throw new Error(revealState === "revealed" ? "Rivalry agenda is already revealed" : "Rivalry agenda reveal is locked");
+    }
+
+    const revealedAtRound = getCurrentRoundNumber(this.state);
+    const actorName = player.character.name || this.getSeatDisplayName(intent.seatId);
+
+    return {
+      type: "RIVALRY_AGENDA_REVEALED",
+      seatId: intent.seatId,
+      publicRevealTitle: "Rivalry Agenda",
+      publicRevealSummary: `${actorName} revealed a Rivalry Agenda.`,
+      revealedAtRound,
+      createdAt
+    } satisfies RivalryAgendaRevealedAction;
+  }
+
   private createSoloRerollAction(
     intent: Extract<ClientIntent, { type: "SOLO_REROLL_REQUESTED" }>,
     createdAt: string
@@ -1858,6 +1897,8 @@ export class GameRoomServer {
           seatId: intent.seatId,
           createdAt
         } satisfies ScenarioConfrontationRequestedAction;
+      case "RIVALRY_AGENDA_REVEAL_REQUESTED":
+        return this.createRivalryAgendaRevealAction(intent, createdAt);
       case "RESOLVE_SPACE_TEXT":
         throw new Error("Space text resolution is handled directly");
       case "STABILIZE_REQUESTED":
@@ -6454,6 +6495,8 @@ interface PrivateRivalryDirective {
   getProgress: (player: PlayerState) => number;
 }
 
+type RivalryAgendaRevealState = NonNullable<PlayerState["private"]["rivalryAgenda"]>["revealState"];
+
 const PRIVATE_RIVALRY_DIRECTIVES: PrivateRivalryDirective[] = [
   {
     id: "claim-trophies",
@@ -6507,6 +6550,105 @@ function getPrivateRivalryDirectiveIndex(state: GameState, seatId: string): numb
   return Math.max(0, state.players.findIndex((player) => player.seatId === seatId));
 }
 
+function getCurrentRoundNumber(state: GameState): number {
+  return (
+    state.eventLog.filter((entry) => {
+      const event = entry as { type?: string } | undefined;
+      return event?.type === "ROUND_COMPLETED";
+    }).length + 1
+  );
+}
+
+function getPrivateRivalryRevealState(player: PlayerState): RivalryAgendaRevealState {
+  return player.private.rivalryAgenda?.revealState ?? "revealLocked";
+}
+
+function buildPrivateRivalryRevealProjection(player: PlayerState): Record<string, unknown> {
+  const agendaState = player.private.rivalryAgenda;
+  const revealState = getPrivateRivalryRevealState(player);
+
+  switch (revealState) {
+    case "revealAvailable":
+      return {
+        state: revealState,
+        available: true,
+        label: "Reveal Agenda",
+        hint: "Ready to reveal a public agenda moment.",
+        lockedReason: null
+      };
+    case "revealed":
+      return {
+        state: revealState,
+        available: false,
+        label: "Revealed",
+        hint: agendaState?.publicRevealSummary ?? "This agenda has been revealed to the table.",
+        publicTitle: agendaState?.publicRevealTitle ?? "Rivalry Agenda",
+        publicSummary: agendaState?.publicRevealSummary ?? null,
+        revealedAtRound: agendaState?.revealedAtRound ?? null
+      };
+    case "completed":
+      return {
+        state: revealState,
+        available: false,
+        label: "Completed",
+        hint: "This agenda is complete.",
+        publicTitle: agendaState?.publicRevealTitle ?? "Rivalry Agenda",
+        publicSummary: agendaState?.publicRevealSummary ?? null,
+        revealedAtRound: agendaState?.revealedAtRound ?? null
+      };
+    case "failed":
+      return {
+        state: revealState,
+        available: false,
+        label: "Failed",
+        hint: "This agenda can no longer be completed.",
+        publicTitle: agendaState?.publicRevealTitle ?? "Rivalry Agenda",
+        publicSummary: agendaState?.publicRevealSummary ?? null,
+        revealedAtRound: agendaState?.revealedAtRound ?? null
+      };
+    case "hidden":
+      return {
+        state: revealState,
+        available: false,
+        label: "Hidden",
+        hint: "Keep this agenda private until a reveal window opens.",
+        lockedReason: "Reveal window has not opened."
+      };
+    case "revealLocked":
+    default:
+      return {
+        state: "revealLocked",
+        available: false,
+        label: "Reveal locked",
+        hint: "Reveal is locked until this agenda's table moment becomes available.",
+        lockedReason: "Reveal window has not opened."
+      };
+  }
+}
+
+function buildPublicRivalryAgendaReveal(state: GameState): Record<string, unknown> | null {
+  for (let index = state.eventLog.length - 1; index >= 0; index -= 1) {
+    const event = state.eventLog[index] as Partial<RivalryAgendaRevealedAction> | undefined;
+
+    if (event?.type !== "RIVALRY_AGENDA_REVEALED" || !event.seatId || !event.publicRevealSummary) {
+      continue;
+    }
+
+    const player = state.players.find((entry) => entry.seatId === event.seatId);
+
+    return {
+      seatId: event.seatId,
+      playerName: player?.character.name ?? event.seatId,
+      title: event.publicRevealTitle ?? "Rivalry Agenda",
+      summary: event.publicRevealSummary,
+      revealedAtRound: event.revealedAtRound ?? null,
+      createdAt: event.createdAt ?? null
+    };
+  }
+
+  return null;
+}
+
 function buildPrivateRivalryProjection(state: GameState, player: PlayerState | undefined): Record<string, unknown> | null {
   if (!player || state.sessionMode === "single-player") {
     return null;
@@ -6528,6 +6670,7 @@ function buildPrivateRivalryProjection(state: GameState, player: PlayerState | u
     active: true,
     mode: interactionMode as RivalryProjectionMode,
     secrecy: "private",
+    revealState: getPrivateRivalryRevealState(player),
     tableWarning: "Shown only on this phone. Keep it off the TV table.",
     objective: {
       id: directive.id,
@@ -6539,11 +6682,7 @@ function buildPrivateRivalryProjection(state: GameState, player: PlayerState | u
       stakes: directive.stakes
     },
     recentPrivateNotes: player.private.notes.slice(-3).reverse(),
-    reveal: {
-      available: false,
-      label: "Reveal locked",
-      hint: "Hidden-agenda reveal moments are not wired yet."
-    }
+    reveal: buildPrivateRivalryRevealProjection(player)
   };
 }
 
@@ -6722,6 +6861,7 @@ export function createTvProjection(state: GameState): Record<string, unknown> {
       : null,
     pendingEnemyRoll: state.pendingEnemyRoll,
     outcomeSummary: state.lastOutcomeSummary,
+    rivalryAgendaReveal: buildPublicRivalryAgendaReveal(state),
     activeResolution: state.activeResolution ?? null,
     shopEncounter,
     movementPlanner: activeSeatId ? buildPublicMovementPlanner(state, activeSeatId) : null,
@@ -6759,6 +6899,7 @@ export function createPhoneProjection(state: GameState, seatId: string, forcePri
     encounter: state.currentEncounter,
     pendingEnemyRoll: state.pendingEnemyRoll,
     outcomeSummary: state.lastOutcomeSummary,
+    rivalryAgendaReveal: publicProjection.rivalryAgendaReveal,
     activeResolution: state.activeResolution ?? null,
     shopEncounter: publicProjection.shopEncounter,
     recentAbilityTriggers: publicProjection.recentAbilityTriggers,

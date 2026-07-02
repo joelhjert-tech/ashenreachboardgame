@@ -318,6 +318,13 @@ export interface ScenarioObjectiveCompletedAction extends BaseAction {
   summary: string;
 }
 
+export interface RivalryAgendaRevealedAction extends BaseAction {
+  type: "RIVALRY_AGENDA_REVEALED";
+  publicRevealTitle: string;
+  publicRevealSummary: string;
+  revealedAtRound: number;
+}
+
 export interface StabilizeResolvedAction extends BaseAction {
   type: "STABILIZE_RESOLVED";
   cost: { kind: "heat" | "trophy" | "action"; amount: number };
@@ -477,6 +484,7 @@ export type GameAction =
   | ScenarioObjectiveProgressTriggeredAction
   | ScenarioVictoryAchievedAction
   | ScenarioObjectiveCompletedAction
+  | RivalryAgendaRevealedAction
   | StabilizeResolvedAction
   | StatRaisedAction
   | RoundCompletedAction
@@ -594,6 +602,10 @@ export type ClientIntent =
     }
   | {
       type: "SCENARIO_CONFRONTATION_REQUESTED";
+      seatId: string;
+    }
+  | {
+      type: "RIVALRY_AGENDA_REVEAL_REQUESTED";
       seatId: string;
     }
   | {

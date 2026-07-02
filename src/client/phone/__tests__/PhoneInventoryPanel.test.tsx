@@ -331,6 +331,7 @@ describe("PhoneInventoryPanel", () => {
         active: true,
         mode: "rivalry",
         secrecy: "private",
+        revealState: "revealLocked",
         tableWarning: "Shown only on this phone. Keep it off the TV table.",
         objective: {
           id: "claim-trophies",
@@ -343,9 +344,11 @@ describe("PhoneInventoryPanel", () => {
         },
         recentPrivateNotes: ["Keep it quiet"],
         reveal: {
+          state: "revealLocked",
           available: false,
           label: "Reveal locked",
-          hint: "Hidden-agenda reveal moments are not wired yet."
+          hint: "Reveal is locked until this agenda's table moment becomes available.",
+          lockedReason: "Reveal window has not opened."
         }
       }
     });
@@ -371,8 +374,122 @@ describe("PhoneInventoryPanel", () => {
 
     expect(within(agenda).getByText("Claim the Black Ledger")).toBeInTheDocument();
     expect(within(agenda).getByText("1/3")).toBeInTheDocument();
-    expect(within(agenda).getByText("Hidden-agenda reveal moments are not wired yet.")).toBeInTheDocument();
+    expect(within(agenda).getByText("Reveal is locked until this agenda's table moment becomes available.")).toBeInTheDocument();
+    expect(within(agenda).getByText("Reveal window has not opened.")).toBeInTheDocument();
     expect(within(agenda).getByText("Keep it quiet")).toBeInTheDocument();
+  });
+
+  it("confirms and sends a rivalry agenda reveal intent when available", () => {
+    const onIntent = vi.fn();
+    const patch = createPatch({
+      interactionMode: "rivalry",
+      privateRivalry: {
+        active: true,
+        mode: "rivalry",
+        secrecy: "private",
+        revealState: "revealAvailable",
+        tableWarning: "Shown only on this phone. Keep it off the TV table.",
+        objective: {
+          id: "claim-trophies",
+          title: "Claim the Black Ledger",
+          summary: "End the run with the table believing your trophies carried the expedition.",
+          progressLabel: "Trophies held",
+          progress: 1,
+          target: 3,
+          stakes: "Reveal when the crew starts counting who paid the highest price."
+        },
+        recentPrivateNotes: [],
+        reveal: {
+          state: "revealAvailable",
+          available: true,
+          label: "Reveal Agenda",
+          hint: "Ready to reveal a public agenda moment.",
+          lockedReason: null
+        }
+      }
+    });
+
+    render(
+      <PortraitControllerView
+        self={patch.self}
+        roomCode="RT7P4"
+        displayName="Lane"
+        connectionStatus="open"
+        activeSeatId="seat-1"
+        activeContractCard={null}
+        patch={patch}
+        characters={characters}
+        onIntent={onIntent}
+        onLeave={vi.fn()}
+      />
+    );
+
+    fireEvent.click(screen.getByRole("tab", { name: /^quest$/i }));
+    fireEvent.click(screen.getByRole("button", { name: /reveal agenda/i }));
+
+    expect(screen.getByRole("region", { name: /reveal agenda confirmation/i })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /confirm reveal/i }));
+
+    expect(onIntent).toHaveBeenCalledWith({
+      type: "RIVALRY_AGENDA_REVEAL_REQUESTED",
+      seatId: "seat-1"
+    });
+  });
+
+  it("shows revealed rivalry agenda state without exposing new controls", () => {
+    const patch = createPatch({
+      interactionMode: "rivalry",
+      privateRivalry: {
+        active: true,
+        mode: "rivalry",
+        secrecy: "private",
+        revealState: "revealed",
+        tableWarning: "Shown only on this phone. Keep it off the TV table.",
+        objective: {
+          id: "claim-trophies",
+          title: "Claim the Black Ledger",
+          summary: "End the run with the table believing your trophies carried the expedition.",
+          progressLabel: "Trophies held",
+          progress: 1,
+          target: 3,
+          stakes: "Reveal when the crew starts counting who paid the highest price."
+        },
+        recentPrivateNotes: [],
+        reveal: {
+          state: "revealed",
+          available: false,
+          label: "Revealed",
+          hint: "Lane revealed a Rivalry Agenda.",
+          publicTitle: "Rivalry Agenda",
+          publicSummary: "Lane revealed a Rivalry Agenda.",
+          revealedAtRound: 1
+        }
+      }
+    });
+
+    render(
+      <PortraitControllerView
+        self={patch.self}
+        roomCode="RT7P4"
+        displayName="Lane"
+        connectionStatus="open"
+        activeSeatId="seat-1"
+        activeContractCard={null}
+        patch={patch}
+        characters={characters}
+        onIntent={vi.fn()}
+        onLeave={vi.fn()}
+      />
+    );
+
+    fireEvent.click(screen.getByRole("tab", { name: /^quest$/i }));
+
+    const agenda = screen.getByRole("region", { name: /private rivalry agenda/i });
+
+    expect(within(agenda).getByText("Revealed")).toBeInTheDocument();
+    expect(within(agenda).getByText("Lane revealed a Rivalry Agenda.")).toBeInTheDocument();
+    expect(within(agenda).queryByRole("button", { name: /reveal agenda/i })).not.toBeInTheDocument();
   });
 
   it("hides the rivalry agenda on the Quest tab when no private payload is supplied", () => {

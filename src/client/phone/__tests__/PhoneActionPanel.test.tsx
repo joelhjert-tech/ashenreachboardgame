@@ -613,6 +613,7 @@ describe("PhoneActionPanel", () => {
             active: true,
             mode: "rivalry",
             secrecy: "private",
+            revealState: "revealLocked",
             tableWarning: "Do not reveal private agenda data.",
             objective: {
               id: "claim-black-ledger",
@@ -625,9 +626,11 @@ describe("PhoneActionPanel", () => {
             },
             recentPrivateNotes: ["Hidden-agenda reveal moments are not wired yet."],
             reveal: {
+              state: "revealLocked",
               available: false,
               label: "Reveal agenda",
-              hint: "Hidden-agenda reveal moments are not wired yet."
+              hint: "Reveal is locked until this agenda's table moment becomes available.",
+              lockedReason: "Reveal window has not opened."
             }
           },
           shopEncounter: {

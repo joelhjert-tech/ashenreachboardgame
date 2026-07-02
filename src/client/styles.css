@@ -1761,6 +1761,39 @@ select {
   color: #f0c19a;
 }
 
+.phone-rivalry-reveal-button {
+  width: 100%;
+  border-color: rgba(234, 177, 94, 0.48);
+  color: #ffe4b4;
+}
+
+.phone-rivalry-locked-reason,
+.phone-rivalry-reveal-confirm {
+  margin: 0;
+  padding: 0.6rem;
+  border: 1px solid rgba(196, 74, 69, 0.32);
+  border-radius: 6px;
+  background: rgba(74, 22, 22, 0.28);
+  color: #f0c19a;
+  font-size: 0.78rem;
+  line-height: 1.3;
+}
+
+.phone-rivalry-reveal-confirm {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.phone-rivalry-reveal-confirm p {
+  margin: 0;
+}
+
+.phone-rivalry-reveal-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
 .phone-rivalry-notes {
   padding: 0.55rem;
   border: 1px solid rgba(118, 145, 161, 0.18);

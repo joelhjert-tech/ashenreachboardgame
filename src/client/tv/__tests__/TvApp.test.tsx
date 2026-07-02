@@ -275,6 +275,36 @@ describe("TvApp", () => {
     );
   });
 
+  it("shows only the public rivalry agenda reveal summary on TV", async () => {
+    window.localStorage.setItem("ashen-reach-tv-room-code", "RT7P4");
+    window.localStorage.setItem("ashen-reach-tv-host-token", "host:RT7P4:secret");
+    const patch = createPatch();
+    patch.phase = "action";
+    patch.payload.status = "active";
+    patch.payload.rivalryAgendaReveal = {
+      seatId: "seat-1",
+      playerName: "Tarek Voss",
+      title: "Rivalry Agenda",
+      summary: "Tarek Voss revealed a Rivalry Agenda.",
+      revealedAtRound: 1,
+      createdAt: "2026-07-02T12:00:00.000Z"
+    };
+    mockUseRoomSubscription.mockReturnValue({
+      patch,
+      error: null,
+      sendIntent: vi.fn(),
+      status: "open",
+      debugEvents: [],
+      clearDebugEvents: vi.fn()
+    });
+
+    render(<TvApp />);
+
+    expect(await screen.findAllByText("Tarek Voss revealed a Rivalry Agenda.")).not.toHaveLength(0);
+    expect(screen.queryByText(/claim the black ledger/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/end the run with the table believing/i)).not.toBeInTheDocument();
+  });
+
   it("blocks host start until joined players are ready", async () => {
     window.localStorage.setItem("ashen-reach-tv-room-code", "RT7P4");
     window.localStorage.setItem("ashen-reach-tv-host-token", "host:RT7P4:secret");

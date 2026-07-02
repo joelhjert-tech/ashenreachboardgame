@@ -280,7 +280,8 @@ describe("canonical sector graph", () => {
           target: number;
         };
         recentPrivateNotes: string[];
-        reveal: { available: boolean; hint: string };
+        revealState: string;
+        reveal: { state: string; available: boolean; hint: string; lockedReason: string };
       } | null;
     };
     const tvProjection = createTvProjection(state) as Record<string, unknown>;
@@ -297,9 +298,12 @@ describe("canonical sector graph", () => {
         progress: 2,
         target: 3
       },
+      revealState: "revealLocked",
       reveal: {
+        state: "revealLocked",
         available: false,
-        hint: "Hidden-agenda reveal moments are not wired yet."
+        hint: "Reveal is locked until this agenda's table moment becomes available.",
+        lockedReason: "Reveal window has not opened."
       }
     });
     expect(phoneProjection.privateRivalry?.tableWarning).toContain("only on this phone");
@@ -308,7 +312,7 @@ describe("canonical sector graph", () => {
     expect(tvJson).toContain("scenarioPressure");
     expect(tvJson).toContain("phone-only");
     expect(tvJson).not.toContain("Claim the Black Ledger");
-    expect(tvJson).not.toContain("Hidden-agenda reveal moments");
+    expect(tvJson).not.toContain("Claim the Black Ledger");
   });
 
   it("omits private rivalry objectives for co-op and single-player sessions", () => {

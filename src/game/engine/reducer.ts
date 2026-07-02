@@ -21,6 +21,7 @@ import type {
   RecruitReplacementAction,
   ResolutionAppliedAction,
   ResolutionContinuedAction,
+  RivalryAgendaRevealedAction,
   RoundCompletedAction,
   SectorCollapsedAction,
   SpaceTextResolvedAction,
@@ -2988,6 +2989,62 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
           text: scenarioAction.summary,
           effects: []
         }),
+        eventLog: [...state.eventLog, action]
+      });
+    }
+    case "RIVALRY_AGENDA_REVEALED": {
+      const rivalryAction = action as RivalryAgendaRevealedAction;
+
+      if (state.sessionMode === "single-player" || (state.interactionMode ?? "rivalry") === "co-op") {
+        return reject(state, action, "Rivalry agendas can only be revealed in rivalry or ruthless mode");
+      }
+
+      const player = requirePlayer(state, rivalryAction.seatId);
+      const revealState = player.private.rivalryAgenda?.revealState ?? "revealLocked";
+
+      if (revealState !== "revealAvailable") {
+        return reject(state, action, revealState === "revealed" ? "Rivalry agenda is already revealed" : "Rivalry agenda reveal is locked");
+      }
+
+      const nextPlayers = updateActivePlayer(state, rivalryAction.seatId, (entry) => ({
+        ...entry,
+        private: {
+          ...entry.private,
+          rivalryAgenda: {
+            ...(entry.private.rivalryAgenda ?? {}),
+            revealState: "revealed",
+            revealedAtRound: rivalryAction.revealedAtRound,
+            revealedBySeatId: rivalryAction.seatId,
+            publicRevealTitle: rivalryAction.publicRevealTitle,
+            publicRevealSummary: rivalryAction.publicRevealSummary
+          }
+        }
+      }));
+
+      return succeed({
+        ...state,
+        sequence: state.sequence + 1,
+        players: nextPlayers,
+        lastOutcomeSummary: {
+          seatId: rivalryAction.seatId,
+          movedToSectorId: player.sectorId,
+          encounterCardId: null,
+          encounterTitle: "Rivalry Agenda",
+          encounterCardType: null,
+          checkStat: null,
+          die1: null,
+          die2: null,
+          statBonus: null,
+          checkTotal: null,
+          difficulty: null,
+          enemyRollerSeatId: null,
+          enemyDie1: null,
+          enemyDie2: null,
+          enemyBonus: null,
+          enemyTotal: null,
+          success: true,
+          summary: rivalryAction.publicRevealSummary
+        },
         eventLog: [...state.eventLog, action]
       });
     }
