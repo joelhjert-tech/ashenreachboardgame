@@ -22,6 +22,7 @@ import type {
   ResolutionAppliedAction,
   ResolutionContinuedAction,
   RivalryAgendaRevealedAction,
+  RivalryAgendaProgressTriggeredAction,
   RoundCompletedAction,
   SectorCollapsedAction,
   SpaceTextResolvedAction,
@@ -150,6 +151,15 @@ function clearMovementRollForSeat(state: GameState, seatId: string): GameState["
   const nextMovementRolls = { ...state.movementRolls };
   delete nextMovementRolls[seatId];
   return Object.keys(nextMovementRolls).length > 0 ? nextMovementRolls : undefined;
+}
+
+function getCompletedRoundFromEventLog(state: GameState): number {
+  return (
+    state.eventLog.filter((entry) => {
+      const event = entry as { type?: string } | undefined;
+      return event?.type === "ROUND_COMPLETED";
+    }).length + 1
+  );
 }
 
 function ensureLegalMovementRoute(state: GameState, seatId: string, toSectorId: string): void {
@@ -3045,6 +3055,90 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
           success: true,
           summary: rivalryAction.publicRevealSummary
         },
+        eventLog: [...state.eventLog, action]
+      });
+    }
+    case "RIVALRY_AGENDA_PROGRESS_TRIGGERED": {
+      const rivalryAction = action as RivalryAgendaProgressTriggeredAction;
+
+      if (state.sessionMode === "single-player" || (state.interactionMode ?? "rivalry") === "co-op") {
+        return reject(state, action, "Rivalry agendas can only progress in rivalry or ruthless mode");
+      }
+
+      const player = requirePlayer(state, rivalryAction.seatId);
+      const agendaState = player.private.rivalryAgenda;
+      const revealState = agendaState?.revealState ?? "revealLocked";
+
+      if (revealState === "completed" || revealState === "failed") {
+        return reject(state, action, `Rivalry agenda is already ${revealState}`);
+      }
+
+      if (rivalryAction.required < 1 || rivalryAction.amount < 1) {
+        return reject(state, action, "Rivalry agenda progress must be positive");
+      }
+
+      const previousProgress = Math.max(0, agendaState?.progressCurrent ?? 0);
+      const nextProgress = Math.min(rivalryAction.required, previousProgress + rivalryAction.amount);
+
+      if (nextProgress <= previousProgress) {
+        return reject(state, action, "Rivalry agenda progress did not advance");
+      }
+
+      const completed = rivalryAction.completed || nextProgress >= rivalryAction.required;
+      const completedAtRound = completed ? (agendaState?.completedAtRound ?? getCompletedRoundFromEventLog(state)) : agendaState?.completedAtRound;
+      const nextAgenda = {
+        ...(agendaState ?? {}),
+        revealState: completed ? "completed" as const : revealState,
+        progressCurrent: nextProgress,
+        progressRequired: rivalryAction.required,
+        progressLabel: rivalryAction.progressLabel,
+        pointsAwarded: (agendaState?.pointsAwarded ?? 0) + (completed ? rivalryAction.pointsAwarded : 0),
+        completedAtRound,
+        completedBySeatId: completed ? (agendaState?.completedBySeatId ?? rivalryAction.seatId) : agendaState?.completedBySeatId,
+        publicCompletionTitle: completed ? rivalryAction.publicCompletionTitle : agendaState?.publicCompletionTitle,
+        publicCompletionSummary: completed ? rivalryAction.publicCompletionSummary : agendaState?.publicCompletionSummary,
+        privateCompletionSummary: completed ? rivalryAction.privateCompletionSummary : agendaState?.privateCompletionSummary
+      };
+      const nextOutcomeSummary =
+        completed && state.lastOutcomeSummary
+          ? {
+              ...state.lastOutcomeSummary,
+              summary: `${state.lastOutcomeSummary.summary} ${rivalryAction.publicCompletionSummary}`
+            }
+          : completed
+            ? {
+                seatId: rivalryAction.seatId,
+                movedToSectorId: player.sectorId,
+                encounterCardId: null,
+                encounterTitle: rivalryAction.publicCompletionTitle,
+                encounterCardType: null,
+                checkStat: null,
+                die1: null,
+                die2: null,
+                statBonus: null,
+                checkTotal: null,
+                difficulty: null,
+                enemyRollerSeatId: null,
+                enemyDie1: null,
+                enemyDie2: null,
+                enemyBonus: null,
+                enemyTotal: null,
+                success: true,
+                summary: rivalryAction.publicCompletionSummary
+              }
+            : state.lastOutcomeSummary;
+
+      return succeed({
+        ...state,
+        sequence: state.sequence + 1,
+        players: updateActivePlayer(state, rivalryAction.seatId, (entry) => ({
+          ...entry,
+          private: {
+            ...entry.private,
+            rivalryAgenda: nextAgenda
+          }
+        })),
+        lastOutcomeSummary: nextOutcomeSummary,
         eventLog: [...state.eventLog, action]
       });
     }

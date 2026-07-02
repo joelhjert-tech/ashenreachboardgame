@@ -1619,6 +1619,7 @@ function HostBottomStatusStrip({
   const seatLabels = getSeatLabelMap(patch);
   const activeSeatId = patch?.payload.turnOrder[patch.payload.activeSeatIndex] ?? null;
   const latestLog = [
+    patch?.payload.rivalryAgendaCompletion?.summary,
     patch?.payload.rivalryAgendaReveal?.summary,
     patch?.payload.activeResolution?.outcome?.text,
     patch?.payload.outcomeSummary?.summary,
@@ -1754,6 +1755,7 @@ function RecentOutcomePanel({
   const latestOutcome = activeOutcome ?? patch?.payload.outcomeSummary ?? null;
   const recentTriggers = patch?.payload.recentAbilityTriggers.slice(-2) ?? [];
   const logEntries = [
+    patch?.payload.rivalryAgendaCompletion?.summary,
     patch?.payload.rivalryAgendaReveal?.summary,
     activeResolution?.outcome?.text,
     latestOutcome?.summary,

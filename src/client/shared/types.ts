@@ -206,6 +206,12 @@ export interface PrivateRivalryPayload {
   revealState: PrivateRivalryRevealState["state"];
   tableWarning: string;
   objective: PrivateRivalryObjective;
+  scoring?: {
+    pointsAwarded: number;
+    completedAtRound: number | null;
+    completedBySeatId: string | null;
+    completionSummary: string | null;
+  };
   recentPrivateNotes: string[];
   reveal: PrivateRivalryRevealState;
 }
@@ -216,6 +222,15 @@ export interface PublicRivalryAgendaReveal {
   title: string;
   summary: string;
   revealedAtRound: number | null;
+  createdAt: string | null;
+}
+
+export interface PublicRivalryAgendaCompletion {
+  seatId: string;
+  playerName: string;
+  title: string;
+  summary: string;
+  pointsAwarded: number;
   createdAt: string | null;
 }
 
@@ -662,6 +677,7 @@ export interface PublicPatchPayload {
   encounter: EncounterCard | null;
   pendingEnemyRoll: PendingEnemyRoll | null;
   outcomeSummary: OutcomeSummary | null;
+  rivalryAgendaCompletion?: PublicRivalryAgendaCompletion | null;
   rivalryAgendaReveal?: PublicRivalryAgendaReveal | null;
   activeResolution?: ActiveResolution | null;
   shopEncounter?: PublicShopEncounterState | null;

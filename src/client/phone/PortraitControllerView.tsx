@@ -167,6 +167,13 @@ function RivalryQuestPanel({
           <span>{rivalry.objective.progressLabel}</span>
           <strong>{progressLabel}</strong>
         </div>
+        {rivalry.scoring?.completionSummary ? (
+          <div className="phone-rivalry-completion" aria-label="Rivalry agenda completion">
+            <span>{rivalry.revealState === "failed" ? "Failed" : "Completed"}</span>
+            <strong>{rivalry.scoring.pointsAwarded > 0 ? `${rivalry.scoring.pointsAwarded} rivalry point` : "No points awarded"}</strong>
+            <p>{rivalry.scoring.completionSummary}</p>
+          </div>
+        ) : null}
         <p className="phone-rivalry-stakes">{rivalry.objective.stakes}</p>
         <div className="phone-portrait-chip-row phone-rivalry-chip-row">
           <span>{rivalry.reveal.label}</span>

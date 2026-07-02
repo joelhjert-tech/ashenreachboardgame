@@ -93,7 +93,16 @@ export const playerPrivateStateSchema = z.object({
       revealedAtRound: z.number().int().min(0).nullable().optional(),
       revealedBySeatId: z.string().min(1).nullable().optional(),
       publicRevealTitle: z.string().min(1).optional(),
-      publicRevealSummary: z.string().min(1).optional()
+      publicRevealSummary: z.string().min(1).optional(),
+      progressCurrent: z.number().int().min(0).optional(),
+      progressRequired: z.number().int().min(1).optional(),
+      progressLabel: z.string().min(1).optional(),
+      pointsAwarded: z.number().int().min(0).optional(),
+      completedAtRound: z.number().int().min(0).nullable().optional(),
+      completedBySeatId: z.string().min(1).nullable().optional(),
+      publicCompletionTitle: z.string().min(1).optional(),
+      publicCompletionSummary: z.string().min(1).optional(),
+      privateCompletionSummary: z.string().min(1).optional()
     })
     .optional()
 });

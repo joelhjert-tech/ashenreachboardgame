@@ -492,6 +492,69 @@ describe("PhoneInventoryPanel", () => {
     expect(within(agenda).queryByRole("button", { name: /reveal agenda/i })).not.toBeInTheDocument();
   });
 
+  it("shows completed rivalry agenda progress and private scoring to the owner", () => {
+    const patch = createPatch({
+      interactionMode: "rivalry",
+      privateRivalry: {
+        active: true,
+        mode: "rivalry",
+        secrecy: "private",
+        revealState: "completed",
+        tableWarning: "Shown only on this phone. Keep it off the TV table.",
+        objective: {
+          id: "finish-contracts",
+          title: "Own the Contract Record",
+          summary: "Close contracts while everyone else argues over priorities.",
+          progressLabel: "Contracts completed",
+          progress: 3,
+          target: 3,
+          stakes: "Reveal once your ledger is hard to dispute."
+        },
+        scoring: {
+          pointsAwarded: 1,
+          completedAtRound: 2,
+          completedBySeatId: "seat-1",
+          completionSummary: "You completed Own the Contract Record."
+        },
+        recentPrivateNotes: [],
+        reveal: {
+          state: "completed",
+          available: false,
+          label: "Completed",
+          hint: "You completed Own the Contract Record.",
+          publicTitle: "Rivalry Agenda",
+          publicSummary: "Lane completed a Rivalry Agenda."
+        }
+      }
+    });
+
+    render(
+      <PortraitControllerView
+        self={patch.self}
+        roomCode="RT7P4"
+        displayName="Lane"
+        connectionStatus="open"
+        activeSeatId="seat-1"
+        activeContractCard={null}
+        patch={patch}
+        characters={characters}
+        onIntent={vi.fn()}
+        onLeave={vi.fn()}
+      />
+    );
+
+    fireEvent.click(screen.getByRole("tab", { name: /^quest$/i }));
+
+    const agenda = screen.getByRole("region", { name: /private rivalry agenda/i });
+
+    expect(within(agenda).getByText("Own the Contract Record")).toBeInTheDocument();
+    expect(within(agenda).getByText("3/3")).toBeInTheDocument();
+    expect(within(agenda).getAllByText("Completed")).toHaveLength(2);
+    expect(within(agenda).getByText("1 rivalry point")).toBeInTheDocument();
+    expect(within(agenda).getAllByText("You completed Own the Contract Record.")).toHaveLength(2);
+    expect(within(agenda).queryByRole("button", { name: /reveal agenda/i })).not.toBeInTheDocument();
+  });
+
   it("hides the rivalry agenda on the Quest tab when no private payload is supplied", () => {
     const patch = createPatch({
       interactionMode: "co-op",

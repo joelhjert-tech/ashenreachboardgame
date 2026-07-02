@@ -325,6 +325,28 @@ export interface RivalryAgendaRevealedAction extends BaseAction {
   revealedAtRound: number;
 }
 
+export interface RivalryAgendaProgressTriggeredAction extends BaseAction {
+  type: "RIVALRY_AGENDA_PROGRESS_TRIGGERED";
+  agendaId: string;
+  triggerType:
+    | "contractCompleted"
+    | "threatDefeated"
+    | "sectorActionCompleted"
+    | "shopPurchaseCompleted"
+    | "shopSaleCompleted"
+    | "itemAcquired"
+    | "scenarioObjectiveProgressed";
+  progressLabel: string;
+  amount: number;
+  required: number;
+  completed: boolean;
+  pointsAwarded: number;
+  publicCompletionTitle: string;
+  publicCompletionSummary: string;
+  privateCompletionSummary: string;
+  summary: string;
+}
+
 export interface StabilizeResolvedAction extends BaseAction {
   type: "STABILIZE_RESOLVED";
   cost: { kind: "heat" | "trophy" | "action"; amount: number };
@@ -485,6 +507,7 @@ export type GameAction =
   | ScenarioVictoryAchievedAction
   | ScenarioObjectiveCompletedAction
   | RivalryAgendaRevealedAction
+  | RivalryAgendaProgressTriggeredAction
   | StabilizeResolvedAction
   | StatRaisedAction
   | RoundCompletedAction

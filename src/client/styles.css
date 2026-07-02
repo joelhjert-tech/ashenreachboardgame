@@ -1752,6 +1752,30 @@ select {
   font-size: 1.05rem;
 }
 
+.phone-rivalry-completion {
+  display: grid;
+  gap: 0.35rem;
+  padding: 0.6rem;
+  border: 1px solid rgba(92, 204, 155, 0.34);
+  border-radius: 6px;
+  background: rgba(18, 64, 47, 0.26);
+}
+
+.phone-rivalry-completion span {
+  color: #8be0b7;
+  font-size: 0.72rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.phone-rivalry-completion strong {
+  color: #d8ffed;
+}
+
+.phone-rivalry-completion p {
+  margin: 0;
+}
+
 .phone-rivalry-stakes {
   color: #f0c19a;
 }

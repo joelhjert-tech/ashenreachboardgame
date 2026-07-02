@@ -75,6 +75,13 @@ import {
   type ScenarioObjectiveTriggerEvent
 } from "../game/rules/scenarioObjectiveTriggers.js";
 import {
+  getEffectiveRivalryMode,
+  getRivalryAgendaDefinition,
+  getRivalryAgendaProgressSnapshot,
+  resolveRivalryAgendaTrigger,
+  type RivalryAgendaTriggerEvent
+} from "../game/rules/rivalryAgendaTriggers.js";
+import {
   canUseQaShopGear,
   getAvailableShopStockForCategory,
   getBoardSpaceShopCategory,
@@ -117,6 +124,7 @@ import type {
   PhaseAdvancedAction,
   ResolutionContinuedAction,
   RivalryAgendaRevealedAction,
+  RivalryAgendaProgressTriggeredAction,
   RoundCompletedAction,
   SectorCollapsedAction,
   SpaceTextResolvedAction,
@@ -596,10 +604,34 @@ export class GameRoomServer {
       if (intent.type === "COMPLETE_CONTRACT") {
         this.applyScenarioOnContractCompleted(client.seatId);
         this.applyScenarioObjectiveOnContractCompleted(client.seatId, intent.contractId);
+        this.applyRivalryAgendaProgressTrigger(client.seatId, {
+          type: "contractCompleted",
+          seatId: client.seatId,
+          contractId: intent.contractId,
+          sectorId: this.state.players.find((entry) => entry.seatId === client.seatId)?.sectorId
+        });
       }
 
       if (intent.type === "ACCEPT_CONTRACT") {
         this.maybeTriggerAbilityOnContractAccepted(client.seatId);
+      }
+
+      if (intent.type === "SHOP_PURCHASE_REQUESTED") {
+        this.applyRivalryAgendaProgressTrigger(client.seatId, {
+          type: "shopPurchaseCompleted",
+          seatId: client.seatId,
+          itemId: intent.cardId,
+          sectorId: this.state.players.find((entry) => entry.seatId === client.seatId)?.sectorId
+        });
+      }
+
+      if (intent.type === "SHOP_SELL_REQUESTED") {
+        this.applyRivalryAgendaProgressTrigger(client.seatId, {
+          type: "shopSaleCompleted",
+          seatId: client.seatId,
+          itemId: intent.gearId,
+          sectorId: this.state.players.find((entry) => entry.seatId === client.seatId)?.sectorId
+        });
       }
 
       if (intent.type === "COMPLETE_CONTRACT") {
@@ -1683,7 +1715,7 @@ export class GameRoomServer {
       throw new Error(`Missing player for seat ${intent.seatId}`);
     }
 
-    const interactionMode = getEffectiveInteractionMode(this.state);
+    const interactionMode = getEffectiveRivalryMode(this.state);
 
     if (this.state.sessionMode === "single-player" || interactionMode === "co-op") {
       throw new Error("Rivalry agendas can only be revealed in rivalry or ruthless mode");
@@ -3601,6 +3633,31 @@ export class GameRoomServer {
     }
   }
 
+  private applyRivalryAgendaProgressTrigger(seatId: string, event: RivalryAgendaTriggerEvent): void {
+    const result = resolveRivalryAgendaTrigger(this.state, event);
+
+    if (!result) {
+      return;
+    }
+
+    this.applyAction({
+      type: "RIVALRY_AGENDA_PROGRESS_TRIGGERED",
+      seatId,
+      agendaId: result.agendaId,
+      triggerType: result.triggerType,
+      progressLabel: result.progressLabel,
+      amount: result.amount,
+      required: result.required,
+      completed: result.completed,
+      pointsAwarded: result.pointsAwarded,
+      publicCompletionTitle: result.publicCompletionTitle,
+      publicCompletionSummary: result.publicCompletionSummary,
+      privateCompletionSummary: result.privateCompletionSummary,
+      summary: result.summary,
+      createdAt: new Date().toISOString()
+    } satisfies RivalryAgendaProgressTriggeredAction);
+  }
+
   private applyScenarioObjectiveOnContractCompleted(seatId: string, contractId: string): void {
     const contract = this.resolveContract(this.contracts.get(contractId));
     const player = this.state.players.find((entry) => entry.seatId === seatId);
@@ -4754,6 +4811,11 @@ export class GameRoomServer {
         effectKey: resolution.effectKey,
         sectorId: player.sectorId
       });
+      this.applyRivalryAgendaProgressTrigger(intent.seatId, {
+        type: "sectorActionCompleted",
+        seatId: intent.seatId,
+        sectorId: player.sectorId
+      });
     }
     this.maybeTriggerAbilityOnSpaceTextResolved(intent.seatId, resolution.effectKey);
   }
@@ -5528,6 +5590,14 @@ export class GameRoomServer {
       this.applyScenarioOnEnemyDefeat(fighterSeatId);
       this.applyScenarioObjectiveTrigger(fighterSeatId, {
         type: "threatDefeated",
+        threatId: encounter.id,
+        threatLane: encounter.threatLane,
+        enemyFamily: encounter.enemyFamily,
+        sectorId: player.sectorId
+      });
+      this.applyRivalryAgendaProgressTrigger(fighterSeatId, {
+        type: "threatDefeated",
+        seatId: fighterSeatId,
         threatId: encounter.id,
         threatLane: encounter.threatLane,
         enemyFamily: encounter.enemyFamily,
@@ -6485,70 +6555,7 @@ function buildSoloRerollProjection(state: GameState, seatId: string): { availabl
 
 type RivalryProjectionMode = Extract<InteractionMode, "rivalry" | "ruthless">;
 
-interface PrivateRivalryDirective {
-  id: string;
-  title: string;
-  summary: string;
-  progressLabel: string;
-  target: number;
-  stakes: string;
-  getProgress: (player: PlayerState) => number;
-}
-
 type RivalryAgendaRevealState = NonNullable<PlayerState["private"]["rivalryAgenda"]>["revealState"];
-
-const PRIVATE_RIVALRY_DIRECTIVES: PrivateRivalryDirective[] = [
-  {
-    id: "claim-trophies",
-    title: "Claim the Black Ledger",
-    summary: "End the run with the table believing your trophies carried the expedition.",
-    progressLabel: "Trophies held",
-    target: 3,
-    stakes: "Reveal when the crew starts counting who paid the highest price.",
-    getProgress: (player) => player.character.trophies
-  },
-  {
-    id: "secure-salvage",
-    title: "Control the Salvage Chain",
-    summary: "Keep enough salvage on hand to decide what the crew can afford.",
-    progressLabel: "Salvage held",
-    target: 8,
-    stakes: "Reveal when one purchase can shift the expedition's loyalty.",
-    getProgress: (player) => player.character.salvage ?? 0
-  },
-  {
-    id: "finish-contracts",
-    title: "Own the Contract Record",
-    summary: "Push your active contract line ahead before the others can claim the story.",
-    progressLabel: "Contract progress",
-    target: 3,
-    stakes: "Reveal when a completed contract can be credited to your ledger.",
-    getProgress: (player) => player.character.activeContract?.progress ?? 0
-  },
-  {
-    id: "stay-clean",
-    title: "Leave No Heat Trail",
-    summary: "Advance your agenda while keeping your own heat low.",
-    progressLabel: "Safe heat margin",
-    target: 4,
-    stakes: "Reveal when blame starts moving around the table.",
-    getProgress: (player) => Math.max(0, 4 - player.character.heat)
-  }
-];
-
-function getEffectiveInteractionMode(state: GameState): InteractionMode {
-  return state.interactionMode ?? (state.sessionMode === "single-player" ? "co-op" : "rivalry");
-}
-
-function getPrivateRivalryDirectiveIndex(state: GameState, seatId: string): number {
-  const turnOrderIndex = state.turnOrder.indexOf(seatId);
-
-  if (turnOrderIndex >= 0) {
-    return turnOrderIndex;
-  }
-
-  return Math.max(0, state.players.findIndex((player) => player.seatId === seatId));
-}
 
 function getCurrentRoundNumber(state: GameState): number {
   return (
@@ -6591,9 +6598,9 @@ function buildPrivateRivalryRevealProjection(player: PlayerState): Record<string
         state: revealState,
         available: false,
         label: "Completed",
-        hint: "This agenda is complete.",
+        hint: agendaState?.privateCompletionSummary ?? "This agenda is complete.",
         publicTitle: agendaState?.publicRevealTitle ?? "Rivalry Agenda",
-        publicSummary: agendaState?.publicRevealSummary ?? null,
+        publicSummary: agendaState?.publicCompletionSummary ?? agendaState?.publicRevealSummary ?? null,
         revealedAtRound: agendaState?.revealedAtRound ?? null
       };
     case "failed":
@@ -6649,22 +6656,47 @@ function buildPublicRivalryAgendaReveal(state: GameState): Record<string, unknow
   return null;
 }
 
+function buildPublicRivalryAgendaCompletion(state: GameState): Record<string, unknown> | null {
+  for (let index = state.eventLog.length - 1; index >= 0; index -= 1) {
+    const event = state.eventLog[index] as Partial<RivalryAgendaProgressTriggeredAction> | undefined;
+
+    if (event?.type !== "RIVALRY_AGENDA_PROGRESS_TRIGGERED" || !event.completed || !event.seatId || !event.publicCompletionSummary) {
+      continue;
+    }
+
+    const player = state.players.find((entry) => entry.seatId === event.seatId);
+
+    return {
+      seatId: event.seatId,
+      playerName: player?.character.name ?? event.seatId,
+      title: event.publicCompletionTitle ?? "Rivalry Agenda",
+      summary: event.publicCompletionSummary,
+      pointsAwarded: event.pointsAwarded ?? 0,
+      createdAt: event.createdAt ?? null
+    };
+  }
+
+  return null;
+}
+
 function buildPrivateRivalryProjection(state: GameState, player: PlayerState | undefined): Record<string, unknown> | null {
   if (!player || state.sessionMode === "single-player") {
     return null;
   }
 
-  const interactionMode = getEffectiveInteractionMode(state);
+  const interactionMode = getEffectiveRivalryMode(state);
 
   if (interactionMode === "co-op") {
     return null;
   }
 
-  const directive =
-    PRIVATE_RIVALRY_DIRECTIVES[
-      getPrivateRivalryDirectiveIndex(state, player.seatId) % PRIVATE_RIVALRY_DIRECTIVES.length
-    ] ?? PRIVATE_RIVALRY_DIRECTIVES[0]!;
-  const progress = Math.max(0, Math.trunc(directive.getProgress(player)));
+  const directive = getRivalryAgendaDefinition(state, player.seatId);
+
+  if (!directive) {
+    return null;
+  }
+
+  const progress = getRivalryAgendaProgressSnapshot(player, directive);
 
   return {
     active: true,
@@ -6676,10 +6708,16 @@ function buildPrivateRivalryProjection(state: GameState, player: PlayerState | u
       id: directive.id,
       title: directive.title,
       summary: directive.summary,
-      progressLabel: directive.progressLabel,
-      progress,
-      target: directive.target,
+      progressLabel: progress.label,
+      progress: progress.current,
+      target: progress.required,
       stakes: directive.stakes
+    },
+    scoring: {
+      pointsAwarded: progress.pointsAwarded,
+      completedAtRound: progress.completedAtRound,
+      completedBySeatId: progress.completedBySeatId,
+      completionSummary: progress.completionSummary
     },
     recentPrivateNotes: player.private.notes.slice(-3).reverse(),
     reveal: buildPrivateRivalryRevealProjection(player)
@@ -6861,6 +6899,7 @@ export function createTvProjection(state: GameState): Record<string, unknown> {
       : null,
     pendingEnemyRoll: state.pendingEnemyRoll,
     outcomeSummary: state.lastOutcomeSummary,
+    rivalryAgendaCompletion: buildPublicRivalryAgendaCompletion(state),
     rivalryAgendaReveal: buildPublicRivalryAgendaReveal(state),
     activeResolution: state.activeResolution ?? null,
     shopEncounter,
@@ -6899,6 +6938,7 @@ export function createPhoneProjection(state: GameState, seatId: string, forcePri
     encounter: state.currentEncounter,
     pendingEnemyRoll: state.pendingEnemyRoll,
     outcomeSummary: state.lastOutcomeSummary,
+    rivalryAgendaCompletion: publicProjection.rivalryAgendaCompletion,
     rivalryAgendaReveal: publicProjection.rivalryAgendaReveal,
     activeResolution: state.activeResolution ?? null,
     shopEncounter: publicProjection.shopEncounter,
