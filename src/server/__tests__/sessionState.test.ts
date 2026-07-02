@@ -172,11 +172,25 @@ describe("canonical sector graph", () => {
         confrontationSteps: string[];
         victoryText: string;
       } | null;
+      scenarioPressure: {
+        scenarioId: string;
+        mode: string;
+        scenarioStatus: string;
+        pressureTrack: { name: string; current: number; max: number };
+        collapseTrack: { name: string; current: number; max: number; failureAtMax: boolean };
+        objectiveProgress: { label: string; current: number; required: number; completed: boolean };
+        modeSpecific: { privateAgenda: string };
+      } | null;
       scenarioProgress: Record<string, number>;
       nemesis: { id: string } | null;
     };
     const phoneProjection = createPhoneProjection(state, "seat-1") as {
       activeScenario: { confrontationTitle: string; specialRules: string[]; victoryText: string } | null;
+      scenarioPressure: {
+        scenarioId: string;
+        pressureTrack: { current: number; max: number };
+        objectiveProgress: { current: number; required: number };
+      } | null;
       scenarioProgress: Record<string, number>;
       nemesis: { id: string } | null;
     };
@@ -196,6 +210,42 @@ describe("canonical sector graph", () => {
     expect(phoneProjection.activeScenario?.confrontationTitle).toBe("Reseal the Prison");
     expect(phoneProjection.activeScenario?.specialRules.length).toBeGreaterThan(0);
     expect(phoneProjection.activeScenario?.victoryText).toContain("win");
+    expect(tvProjection.scenarioPressure).toMatchObject({
+      scenarioId: "scenario_broken_seal",
+      mode: "rivalry",
+      scenarioStatus: "active",
+      pressureTrack: {
+        name: "Seal Integrity",
+        current: 6,
+        max: 6
+      },
+      collapseTrack: {
+        name: "Escalation",
+        current: 0,
+        max: 6,
+        failureAtMax: true
+      },
+      objectiveProgress: {
+        label: "Seal Restoration Marks",
+        current: 0,
+        required: 2,
+        completed: false
+      },
+      modeSpecific: {
+        privateAgenda: "phone-only"
+      }
+    });
+    expect(phoneProjection.scenarioPressure).toMatchObject({
+      scenarioId: "scenario_broken_seal",
+      pressureTrack: {
+        current: 6,
+        max: 6
+      },
+      objectiveProgress: {
+        current: 0,
+        required: 2
+      }
+    });
     expect(tvProjection.scenarioProgress).toEqual({ sealTokens: 6 });
     expect(phoneProjection.scenarioProgress).toEqual({ sealTokens: 6 });
     expect(tvProjection.nemesis).toBeNull();
@@ -255,6 +305,8 @@ describe("canonical sector graph", () => {
     expect(phoneProjection.privateRivalry?.tableWarning).toContain("only on this phone");
     expect(phoneProjection.privateRivalry?.recentPrivateNotes).toEqual(["Keep it quiet", "Claim credit", "Delay the vote"]);
     expect(tvProjection.privateRivalry).toBeUndefined();
+    expect(tvJson).toContain("scenarioPressure");
+    expect(tvJson).toContain("phone-only");
     expect(tvJson).not.toContain("Claim the Black Ledger");
     expect(tvJson).not.toContain("Hidden-agenda reveal moments");
   });

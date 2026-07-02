@@ -586,6 +586,43 @@ export interface ScenarioTelemetryItem {
   value: string;
 }
 
+export interface ScenarioPressureTrackState {
+  name: string;
+  current: number;
+  max: number;
+  modifier: number;
+  difficultyBonus: number;
+  failureAtMax: boolean;
+  tickTiming: string;
+  collapseRule: string;
+}
+
+export interface ScenarioObjectiveProgressState {
+  label: string;
+  current: number;
+  required: number;
+  completed: boolean;
+}
+
+export interface ScenarioModeSpecificPublicState {
+  kind: "single" | "co-op" | "rivalry" | "ruthless";
+  label: string;
+  summary: string;
+  privateAgenda: "none" | "phone-only";
+}
+
+export interface ScenarioPressureState {
+  scenarioId: string;
+  scenarioName: string;
+  mode: "single" | "co-op" | "rivalry" | "ruthless";
+  scenarioStatus: "active" | "completed" | "failed";
+  pressureTrack: ScenarioPressureTrackState;
+  collapseTrack: ScenarioPressureTrackState;
+  objectiveProgress: ScenarioObjectiveProgressState;
+  publicSummary: string;
+  modeSpecific: ScenarioModeSpecificPublicState;
+}
+
 export interface PublicPatchPayload {
   status: SessionStatus;
   sessionMode: SessionMode;
@@ -594,6 +631,7 @@ export interface PublicPatchPayload {
   winnerSeatId: string | null;
   activeScenario: ActiveScenarioSummary | null;
   scenarioTelemetry: ScenarioTelemetryItem[];
+  scenarioPressure?: ScenarioPressureState | null;
   scenarioProgress: Record<string, number>;
   nemesisChampions?: NemesisChampionSummary[];
   nemesisNexusCountdowns?: NemesisNexusCountdownSummary[];

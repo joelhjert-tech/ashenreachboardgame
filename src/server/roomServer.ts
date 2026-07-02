@@ -40,6 +40,7 @@ import {
   resolveScenarioWoundsTaken,
   type ScenarioAmbientResolution
 } from "../game/rules/scenarioAmbient.js";
+import { buildScenarioPressureState } from "../game/rules/scenarioPressure.js";
 import { getSessionStartReadiness } from "../game/rules/sessionStart.js";
 import {
   getDevourerTrophyGate,
@@ -6494,6 +6495,7 @@ export function createTvProjection(state: GameState): Record<string, unknown> {
   const escalationModifier = getEscalationModifier(state.escalationLevel);
   const scenarioPressureSummary = describeScenarioPressure(state) ?? "Scenario pressure will appear once the room is active.";
   const scenarioTelemetry = buildScenarioTelemetry(state);
+  const scenarioPressure = buildScenarioPressureState(state, scenarioPressureSummary);
 
   const visibleSeatIds = new Set(
     state.seats.filter((seat) => !seat.kicked && seat.displayName).map((seat) => seat.seatId)
@@ -6572,6 +6574,7 @@ export function createTvProjection(state: GameState): Record<string, unknown> {
         }
       : null,
     scenarioTelemetry,
+    scenarioPressure,
     scenarioProgress: state.scenarioProgress,
     nemesisChampions: state.nemesisChampions.map((champion) => {
       const sector = state.sectors.find((entry) => entry.id === champion.sectorId);
@@ -6679,6 +6682,7 @@ export function createPhoneProjection(state: GameState, seatId: string, forcePri
     winnerSeatId: state.winnerSeatId,
     activeScenario: publicProjection.activeScenario,
     scenarioTelemetry: publicProjection.scenarioTelemetry,
+    scenarioPressure: publicProjection.scenarioPressure,
     scenarioProgress: publicProjection.scenarioProgress,
     nemesisChampions: publicProjection.nemesisChampions,
     nemesisNexusCountdowns: publicProjection.nemesisNexusCountdowns,
