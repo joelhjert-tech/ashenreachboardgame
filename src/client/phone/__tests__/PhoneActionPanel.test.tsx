@@ -589,7 +589,7 @@ describe("PhoneActionPanel", () => {
 
     expect(screen.getByTestId("phone-current-prompt")).toHaveTextContent(/shop blocked/i);
     expect(screen.getAllByText(/shop blocked by threat/i).length).toBeGreaterThan(0);
-    expect(screen.getByText(/market stalker/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/market stalker/i).length).toBeGreaterThan(0);
   });
 
   it("allows the shop tab to show a no-shop state", () => {

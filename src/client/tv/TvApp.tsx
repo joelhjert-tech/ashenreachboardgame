@@ -17,6 +17,7 @@ import {
   resolutionStageLabel
 } from "../shared/resolutionPresentation.js";
 import { buildScenarioOutcomeSummary, buildScenarioRuleDigest } from "../shared/scenarioPresentation.js";
+import { buildCurrentTablePrompt, type ExplainabilityTone } from "../shared/explainabilityPrompts.js";
 import { formatSeatLabel, statOrder, statShortLabelById } from "../shared/statLabels.js";
 import { useRoomSubscription } from "../shared/useRoomSubscription.js";
 import { getCharacterPortraitPath, getNemesisPortraitPath } from "../shared/assetPaths.js";
@@ -401,15 +402,23 @@ interface HostStateBannerModel {
   tone: "idle" | "ready" | "active" | "battle" | "shop" | "danger" | "ended";
 }
 
-function getHostStateBannerModel({
-  patch,
-  roomCode,
-  activePlayer,
-  joinedCount,
-  readyCount,
-  battleMode,
-  shopMode
-}: HostStateBannerProps): HostStateBannerModel {
+function promptToneToHostTone(tone: ExplainabilityTone): HostStateBannerModel["tone"] {
+  if (tone === "waiting") {
+    return "idle";
+  }
+
+  if (tone === "move" || tone === "action") {
+    return "active";
+  }
+
+  if (tone === "result") {
+    return "active";
+  }
+
+  return tone;
+}
+
+function getHostStateBannerModel({ patch, roomCode }: HostStateBannerProps): HostStateBannerModel {
   if (!roomCode || !patch) {
     return {
       label: "Host setup",
@@ -419,111 +428,12 @@ function getHostStateBannerModel({
     };
   }
 
-  if (patch.payload.status === "ended") {
-    const winnerSeat = patch.payload.winnerSeatId
-      ? patch.payload.seats.find((seat) => seat.seatId === patch.payload.winnerSeatId)
-      : null;
-
-    return {
-      label: "Game over",
-      detail: winnerSeat?.displayName ? `${winnerSeat.displayName} secured the final outcome.` : "The session has ended.",
-      meta: "Restart or create a new room",
-      tone: "ended"
-    };
-  }
-
-  if (patch.payload.status === "lobby") {
-    if (joinedCount === 0) {
-      return {
-        label: "Character selection",
-        detail: "Share the room code while players enter names and choose operatives.",
-        meta: "Waiting on players",
-        tone: "idle"
-      };
-    }
-
-    return {
-      label: "Ready check",
-      detail:
-        readyCount >= joinedCount
-          ? "All joined operatives are ready. Host may start when setup is correct."
-          : "Waiting for all players to ready on phone.",
-      meta: `Ready ${readyCount}/${joinedCount}`,
-      tone: readyCount >= joinedCount ? "ready" : "idle"
-    };
-  }
-
-  const activeName = activePlayer?.character.name ?? "Active operative";
-  const activeResolution = patch.payload.activeResolution ?? null;
-
-  if (battleMode || activeResolution?.battle || patch.payload.pendingEnemyRoll) {
-    const enemyName =
-      activeResolution?.battle?.enemyName ??
-      activeResolution?.card?.title ??
-      patch.payload.encounter?.enemyName ??
-      patch.payload.encounter?.title ??
-      patch.payload.pendingEnemyRoll?.encounterTitle ??
-      "hostile contact";
-
-    return {
-      label: "Battle resolving",
-      detail: `Waiting on ${activeName} to resolve combat against ${enemyName} on phone.`,
-      meta: activeResolution ? resolutionStageLabel[activeResolution.stage] : "Dice pending",
-      tone: "battle"
-    };
-  }
-
-  if (shopMode || patch.payload.shopEncounter) {
-    const shop = patch.payload.shopEncounter;
-    const shopBlocked = Boolean(shop && (shop.status === "locked" || shop.blocked || shop.blockingThreats.length > 0));
-    const blockedDetail = shop?.blockedReasonText ?? "Shop blocked by threat.";
-
-    return {
-      label: shopBlocked ? "Shop blocked" : "Shop open",
-      detail: shop
-        ? shopBlocked
-          ? blockedDetail
-          : `Waiting on ${activeName} to choose a shop action at ${shop.shopName}.`
-        : `Waiting on ${activeName} to choose a shop service.`,
-      meta: shop ? toTitleCase(shop.status) : "Choose service on phone",
-      tone: "shop"
-    };
-  }
-
-  if (activeResolution || patch.payload.encounter) {
-    const title = activeResolution?.card?.title ?? patch.payload.encounter?.title ?? "revealed encounter";
-
-    return {
-      label: "Encounter active",
-      detail: `Waiting on ${activeName} to resolve ${title} on phone.`,
-      meta: activeResolution ? resolutionStageLabel[activeResolution.stage] : "Awaiting player action",
-      tone: "danger"
-    };
-  }
-
-  if (patch.phase === "navigation") {
-    return {
-      label: "Movement resolving",
-      detail: `Waiting on ${activeName} to choose a legal destination.`,
-      meta: "Route planning",
-      tone: "active"
-    };
-  }
-
-  if (patch.phase === "broadcast") {
-    return {
-      label: "Turn transition",
-      detail: "The command board is advancing to the next operative.",
-      meta: "Stand by",
-      tone: "active"
-    };
-  }
-
+  const prompt = buildCurrentTablePrompt(patch);
   return {
-    label: "Game active",
-    detail: `${activeName} has the command channel.`,
-    meta: toTitleCase(patch.phase),
-    tone: "active"
+    label: prompt.phaseLabel,
+    detail: prompt.publicText,
+    meta: prompt.lockedReason ?? prompt.availableActionSummary ?? prompt.phaseReason,
+    tone: patch.payload.status === "ended" ? "ended" : promptToneToHostTone(prompt.tone)
   };
 }
 

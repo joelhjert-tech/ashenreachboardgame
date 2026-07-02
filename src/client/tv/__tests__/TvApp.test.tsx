@@ -667,6 +667,8 @@ describe("TvApp", () => {
 
     expect(await screen.findByText(/sector brief/i)).toBeInTheDocument();
     expect(screen.getByTestId("host-state-banner")).toHaveTextContent(/waiting on tarek voss to choose a legal destination/i);
+    expect(screen.getByTestId("host-state-banner")).toHaveTextContent(/you rolled 4/i);
+    expect(screen.getByTestId("host-state-banner")).toHaveTextContent(/exactly 4 steps away/i);
     expect(screen.queryByText(/movement scan/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/movement value/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/exact legal routes are highlighted/i)).not.toBeInTheDocument();
@@ -955,6 +957,7 @@ describe("TvApp", () => {
 
     const overlay = await screen.findByTestId("host-shop-overlay");
     expect(screen.getByTestId("host-state-banner")).toHaveTextContent(/shop blocked/i);
+    expect(screen.getByTestId("host-state-banner")).toHaveTextContent(/clear gate-tax collectors/i);
     expect(overlay).toHaveTextContent(/shop blocked/i);
     expect(overlay).toHaveTextContent(/gate-tax collectors command 5/i);
     expect(overlay).toHaveTextContent(/shop blocked by threat/i);

@@ -24,6 +24,7 @@ import {
   formatResolutionModifiers,
   resolutionStageLabel
 } from "../shared/resolutionPresentation.js";
+import { buildCurrentPlayerPrompt, type CurrentPlayerPrompt } from "../shared/explainabilityPrompts.js";
 import { ChallengeBadge, ThreatIconBadge, getThreatIconStat, isStat } from "../shared/ChallengeBadge.js";
 import { CombatDiceAnimation } from "../shared/CombatDiceAnimation.js";
 import { GameButton, type GameButtonTone } from "../shared/GameButton.js";
@@ -67,6 +68,37 @@ interface CurrentPromptViewModel {
   tone: "waiting" | "move" | "battle" | "shop" | "action" | "result";
   targetTab?: TurnActionTab;
   actionLabel?: string;
+}
+
+function mapPromptTone(tone: CurrentPlayerPrompt["tone"]): CurrentPromptViewModel["tone"] {
+  if (tone === "waiting") {
+    return "waiting";
+  }
+
+  return tone;
+}
+
+function currentPromptFromSharedPrompt(
+  prompt: CurrentPlayerPrompt,
+  activeTurnTab?: TurnActionTab
+): CurrentPromptViewModel {
+  const targetTab = prompt.targetTab;
+  const detail = prompt.lastOutcomeSummary
+    ? `${prompt.privateText} Last change: ${prompt.lastOutcomeSummary}`
+    : prompt.privateText;
+  const meta = [prompt.actionSummary, prompt.disabledReasons.length > 0 ? prompt.disabledReasons.join(", ") : null]
+    .filter(Boolean)
+    .join(" | ");
+
+  return {
+    label: prompt.phaseLabel,
+    title: prompt.requiredAction,
+    detail,
+    meta,
+    tone: mapPromptTone(prompt.tone),
+    targetTab,
+    actionLabel: targetTab && activeTurnTab !== targetTab ? `Open ${targetTab === "move" ? "Move" : targetTab === "battle" ? "Battle" : targetTab === "shop" ? "Shop" : "Action"}` : undefined
+  };
 }
 
 interface TurnActionTabDefinition {
@@ -1206,6 +1238,7 @@ export function PhoneActionPanel({
     );
   }
 
+  const sharedPrompt = buildCurrentPlayerPrompt(patch);
   const isActiveSeat = getActiveSeatId(patch) === self.seatId;
   const activeResolution = patch.activeResolution ?? null;
   const orphanResolutionOutcome =
@@ -1265,14 +1298,7 @@ export function PhoneActionPanel({
     return (
       <section className="phone-sheet-actions" aria-label="Quick actions">
         <div className="phone-sheet-section-heading">Quick Actions</div>
-        <CurrentPromptCard
-          prompt={{
-            label: "Session complete",
-            title: "Run ended",
-            detail: `${winnerName} secured the final outcome. Watch the TV for the table summary.`,
-            tone: "result"
-          }}
-        />
+        <CurrentPromptCard prompt={currentPromptFromSharedPrompt(sharedPrompt)} />
         {resolutionPanel}
         <p className="phone-sheet-action-copy">Trophies: {self.character.trophies}</p>
         <p className="phone-sheet-action-copy">Game over: {winnerName} wins.</p>
@@ -1286,13 +1312,7 @@ export function PhoneActionPanel({
         <section className="phone-sheet-actions" aria-label="Quick actions">
           <div className="phone-sheet-section-heading">Quick Actions</div>
           <CurrentPromptCard
-            prompt={{
-              label: "Engagement",
-              title: "Roll battle",
-              detail: `${pendingFighterName} is engaged. Roll for ${pendingEnemyRoll.encounterTitle} when the table is ready.`,
-              meta: "Enemy roll assigned to you",
-              tone: "battle"
-            }}
+            prompt={currentPromptFromSharedPrompt(sharedPrompt, "battle")}
           />
           {resolutionPanel}
           {battleAssistPanel}
@@ -1328,12 +1348,7 @@ export function PhoneActionPanel({
       <section className="phone-sheet-actions" aria-label="Quick actions">
         <div className="phone-sheet-section-heading">Quick Actions</div>
         <CurrentPromptCard
-          prompt={{
-            label: "Waiting",
-            title: `Waiting for ${pendingRollerName}`,
-            detail: `${pendingRollerName} is rolling for ${pendingEnemyRoll.encounterTitle}. Watch the TV for the public result.`,
-            tone: "waiting"
-          }}
+          prompt={currentPromptFromSharedPrompt(sharedPrompt)}
         />
         {resolutionPanel}
         {battleAssistPanel}
@@ -1344,19 +1359,11 @@ export function PhoneActionPanel({
   }
 
   if (!isActiveSeat) {
-    const activeSeat = patch.seats.find((seat) => seat.seatId === getActiveSeatId(patch));
-    const activeName = activeSeat?.displayName ?? getActiveSeatId(patch) ?? "another operative";
-
     return (
       <section className="phone-sheet-actions" aria-label="Quick actions">
         <div className="phone-sheet-section-heading">Quick Actions</div>
         <CurrentPromptCard
-          prompt={{
-            label: "Standby",
-            title: `Waiting for ${activeName}`,
-            detail: "Your orders are locked while another operative acts. Watch the TV command table.",
-            tone: "waiting"
-          }}
+          prompt={currentPromptFromSharedPrompt(sharedPrompt)}
         />
         {resolutionPanel}
         {battleAssistPanel}
@@ -1770,8 +1777,6 @@ export function PhoneActionPanel({
         : "Resolve first";
   const battleBlockedReason = hasBattleContent ? undefined : patch.phase === "action" ? "No enemy" : "Resolve first";
   const shopBlockedReason = shopLocked ? "Shop blocked" : hasShopContent ? undefined : "No shop";
-  const shopPromptBlockedReason =
-    shopEncounter?.blockedReasonText ?? formatShopDisabledReason(shopEncounter?.blockedReason) ?? "Shop blocked";
   const actionBlockedReason = hasActionContent || !hasMoveContent ? undefined : "No action";
   const tabDefinitions: TurnActionTabDefinition[] = [
     {
@@ -1814,136 +1819,7 @@ export function PhoneActionPanel({
   const activeTurnTab = tabDefinitions.find((tab) => tab.id === selectedTurnTab && canShowSelectedTab(tab))
     ? selectedTurnTab
     : fallbackTab;
-  const currentPrompt: CurrentPromptViewModel = (() => {
-    if (movementPlanner?.active) {
-      return {
-        label: "Your turn",
-        title: movementPlanner.destinations.length > 0 ? "Choose destination" : "No legal destination",
-        detail:
-          movementPlanner.destinations.length > 0
-            ? `You rolled ${movementPlanner.movementValue}. Choose one exact-distance destination.`
-            : `You rolled ${movementPlanner.movementValue}, but no legal destination is available from ${movementPlanner.currentSectorName}.`,
-        meta: `${movementPlanner.destinations.length} legal route${movementPlanner.destinations.length === 1 ? "" : "s"}`,
-        tone: "move",
-        targetTab: "move",
-        actionLabel: activeTurnTab === "move" ? undefined : "Open Move"
-      };
-    }
-
-    if (patch.phase === "navigation") {
-      return {
-        label: "Your turn",
-        title: "Choose destination",
-        detail: "Movement is ready. Choose a legal adjacent sector to continue.",
-        meta: sector?.name,
-        tone: "move",
-        targetTab: "move",
-        actionLabel: activeTurnTab === "move" ? undefined : "Open Move"
-      };
-    }
-
-    if (canContinueResolution) {
-      return {
-        label: "Resolution",
-        title: activeResolution?.roll?.success ? "Confirm success" : "Confirm result",
-        detail: activeResolution?.outcome?.text ?? "Review the roll result, then continue when the table is ready.",
-        tone: "result",
-        targetTab: "battle",
-        actionLabel: activeTurnTab === "battle" ? undefined : "Open Battle"
-      };
-    }
-
-    if (orphanResolutionOutcome) {
-      return {
-        label: "Resolution",
-        title: orphanResolutionOutcome.success ? "Confirm success" : "Confirm result",
-        detail: orphanResolutionOutcome.summary,
-        tone: "result",
-        targetTab: "battle",
-        actionLabel: activeTurnTab === "battle" ? undefined : "Open Battle"
-      };
-    }
-
-    if (activeResolution?.battle) {
-      return {
-        label: "Engagement",
-        title: activeResolution.stage === "battle_setup" ? "Roll battle" : "Resolve battle",
-        detail: `${activeResolution.battle.enemyName ?? activeResolution.card?.title ?? "Threat"} is waiting on your roll.`,
-        meta: statLabelById[activeResolution.battle.stat],
-        tone: "battle",
-        targetTab: "battle",
-        actionLabel: activeTurnTab === "battle" ? undefined : "Open Battle"
-      };
-    }
-
-    if (patch.encounter?.cardType === "enemy") {
-      return {
-        label: "Engagement",
-        title: "Roll battle",
-        detail: `${patch.encounter.enemyName ?? patch.encounter.title} is in your space. Enter combat from the Battle tab.`,
-        meta: statLabelById[patch.encounter.stat],
-        tone: "battle",
-        targetTab: "battle",
-        actionLabel: activeTurnTab === "battle" ? undefined : "Open Battle"
-      };
-    }
-
-    if (patch.encounter) {
-      return {
-        label: "Event",
-        title: "Resolve event",
-        detail: `${patch.encounter.title} is waiting for your ${statLabelById[patch.encounter.stat]} check.`,
-        tone: "action",
-        targetTab: "battle",
-        actionLabel: activeTurnTab === "battle" ? undefined : "Open Battle"
-      };
-    }
-
-    if (shopEncounter) {
-      return {
-        label: "Market",
-        title: shopLocked ? "Shop blocked" : "Choose shop action",
-        detail: shopLocked
-          ? `${shopEncounter.shopName}: ${shopPromptBlockedReason}`
-          : `${shopEncounter.shopName} is open. Choose gear to buy from the Shop tab.`,
-        meta: toTitleCase(shopEncounter.status),
-        tone: "shop",
-        targetTab: "shop",
-        actionLabel: activeTurnTab === "shop" ? undefined : "Open Shop"
-      };
-    }
-
-    if (isScenarioConfrontation && patch.activeScenario) {
-      return {
-        label: "Objective",
-        title: patch.activeScenario.confrontationTitle,
-        detail: "Resolve the active scenario objective from the Action tab.",
-        tone: "action",
-        targetTab: "action",
-        actionLabel: activeTurnTab === "action" ? undefined : "Open Action"
-      };
-    }
-
-    if (hasActionContent) {
-      return {
-        label: "Your turn",
-        title: "Choose action",
-        detail: boardSpace ? `Resolve ${boardSpace.textBox.title}, use gear, or advance your turn.` : "Choose an available action for this sector.",
-        tone: "action",
-        targetTab: "action",
-        actionLabel: activeTurnTab === "action" ? undefined : "Open Action"
-      };
-    }
-
-    return {
-      label: "Your turn",
-      title: "Confirm end turn",
-      detail: "No required prompt is waiting. End your turn or watch the TV for the next public result.",
-      tone: "action",
-      targetTab: "action",
-      actionLabel: activeTurnTab === "action" ? undefined : "Open Action"
-    };
-  })();
+  const currentPrompt: CurrentPromptViewModel = currentPromptFromSharedPrompt(sharedPrompt, activeTurnTab);
 
   return (
     <section className="phone-sheet-actions" aria-label="Quick actions">
