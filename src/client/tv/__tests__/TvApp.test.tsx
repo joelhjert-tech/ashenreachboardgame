@@ -821,6 +821,33 @@ describe("TvApp", () => {
         effects: ["Success: the signal holds."]
       }
     };
+    patch.payload.publicResultDeltas = [
+      {
+        id: "battle-trophy",
+        type: "trophy",
+        label: "Trophy",
+        value: 1,
+        sign: "gain",
+        targetScope: "personal",
+        targetSeatId: "seat-1",
+        visibility: "public",
+        source: "combat",
+        publicText: "Tarek Voss gained 1 Trophy.",
+        severity: "reward"
+      },
+      {
+        id: "battle-threat",
+        type: "threatDefeated",
+        label: "Threat defeated",
+        sign: "gain",
+        targetScope: "sector",
+        targetSeatId: "seat-1",
+        visibility: "public",
+        source: "combat",
+        publicText: "Signal Static defeated.",
+        severity: "reward"
+      }
+    ];
     mockUseRoomSubscription.mockReturnValue({
       patch,
       error: null,
@@ -841,6 +868,8 @@ describe("TvApp", () => {
     expect(screen.getByTestId("host-battle-result-banner")).toHaveTextContent(/wins by 1/i);
     expect(screen.getByTestId("host-battle-rolls")).toHaveTextContent(/Signal 1 \+ Roll 7 = Total 8/i);
     expect(screen.getByTestId("host-battle-rolls")).toHaveTextContent(/Difficulty 7 = Total 7/i);
+    expect(within(overlay).getByTestId("result-delta-row")).toHaveTextContent(/\+1 Trophy/i);
+    expect(within(overlay).getByTestId("result-delta-row")).toHaveTextContent(/Threat defeated/i);
     expect(screen.queryByTestId("roll-outcome-panel")).not.toBeInTheDocument();
     expect(screen.queryByTestId("tv-resolution-footer")).not.toBeInTheDocument();
   });
@@ -926,6 +955,34 @@ describe("TvApp", () => {
         }
       ]
     };
+    patch.payload.publicResultDeltas = [
+      {
+        id: "shop-item",
+        type: "itemBought",
+        label: "Item bought",
+        value: "Ashlock Carbine",
+        sign: "gain",
+        targetScope: "personal",
+        targetSeatId: "seat-1",
+        visibility: "public",
+        source: "shop:purchase",
+        publicText: "Tarek Voss bought Ashlock Carbine.",
+        severity: "reward"
+      },
+      {
+        id: "shop-salvage",
+        type: "salvage",
+        label: "Salvage",
+        value: 3,
+        sign: "loss",
+        targetScope: "personal",
+        targetSeatId: "seat-1",
+        visibility: "public",
+        source: "shop:purchase",
+        publicText: "Tarek Voss spent 3 Salvage.",
+        severity: "loss"
+      }
+    ];
     mockUseRoomSubscription.mockReturnValue({
       patch,
       error: null,
@@ -952,6 +1009,8 @@ describe("TvApp", () => {
     expect(screen.getByTestId("host-shop-status-panel")).toHaveTextContent(/sellable/i);
     expect(screen.getByTestId("host-shop-status-panel")).toHaveTextContent("1");
     expect(overlay).toHaveTextContent(/buy gear/i);
+    expect(within(overlay).getByTestId("result-delta-row")).toHaveTextContent(/Item bought: Ashlock Carbine/i);
+    expect(within(overlay).getByTestId("result-delta-row")).toHaveTextContent(/-3 Salvage/i);
     expect(overlay).toHaveTextContent(/choose on player phone/i);
     expect(overlay).not.toHaveTextContent(/^vs$/i);
     expect(overlay).not.toHaveTextContent(/active operative/i);
@@ -1077,6 +1136,34 @@ describe("TvApp", () => {
         summary: "Tarek Voss bought Ashlock Carbine for 3 Salvage."
       }
     };
+    patch.payload.publicResultDeltas = [
+      {
+        id: "shop-purchase-item",
+        type: "itemBought",
+        label: "Item bought",
+        value: "Ashlock Carbine",
+        sign: "gain",
+        targetScope: "personal",
+        targetSeatId: "seat-1",
+        visibility: "public",
+        source: "shop:buy",
+        publicText: "Tarek Voss bought Ashlock Carbine.",
+        severity: "reward"
+      },
+      {
+        id: "shop-purchase-salvage",
+        type: "salvage",
+        label: "Salvage",
+        value: 3,
+        sign: "loss",
+        targetScope: "personal",
+        targetSeatId: "seat-1",
+        visibility: "public",
+        source: "shop:buy",
+        publicText: "Tarek Voss spent 3 Salvage.",
+        severity: "loss"
+      }
+    ];
     mockUseRoomSubscription.mockReturnValue({
       patch,
       error: null,

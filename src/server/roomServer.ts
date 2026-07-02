@@ -6005,6 +6005,44 @@ type PublicSectorExplorationSummary = {
   explanationLines: string[];
 };
 
+type ResultDelta = {
+  id: string;
+  type:
+    | "wound"
+    | "heat"
+    | "salvage"
+    | "trophy"
+    | "gearGained"
+    | "gearLost"
+    | "itemBought"
+    | "itemSold"
+    | "contractProgress"
+    | "contractCompleted"
+    | "scenarioProgress"
+    | "scenarioPressure"
+    | "agendaProgress"
+    | "agendaCompleted"
+    | "threatDefeated"
+    | "threatRemains"
+    | "sectorUnlocked"
+    | "shopUnlocked"
+    | "scarGained"
+    | "recallTriggered"
+    | "fateSpent"
+    | "modifierApplied";
+  label: string;
+  value?: number | string;
+  sign: "gain" | "loss" | "neutral";
+  targetScope: "personal" | "table" | "sector" | "scenario" | "privateAgenda";
+  targetSeatId?: string | null;
+  visibility: "public" | "ownerPrivate" | "hidden";
+  reason?: string;
+  source?: string;
+  publicText: string;
+  privateText?: string;
+  severity: "reward" | "loss" | "danger" | "scenario" | "private" | "neutral";
+};
+
 function getPublicSalvage(player: PlayerState): number {
   return Math.max(0, player.character.salvage ?? 0);
 }
@@ -6679,6 +6717,524 @@ function buildPublicShopEncounter(state: GameState, visiblePlayers: PlayerState[
   };
 }
 
+function createResultDelta(args: Omit<ResultDelta, "id"> & { id?: string }): ResultDelta {
+  return {
+    ...args,
+    id: args.id ?? `${args.type}:${args.targetSeatId ?? args.targetScope}:${args.source ?? args.publicText}`
+  };
+}
+
+function getShopResultDeltas(shopEncounter: Record<string, unknown> | null): ResultDelta[] {
+  const recentOutcome = shopEncounter?.recentOutcome as {
+    operativeName?: string;
+    shopName?: string;
+    action?: string;
+    gained?: string;
+    sold?: string;
+    costPaid?: { salvage?: number; heat?: number; wounds?: number; trophies?: number };
+    salvageDelta?: number;
+    heatDelta?: number;
+    woundDelta?: number;
+    scarDelta?: number;
+    summary?: string;
+  } | null | undefined;
+  const activePlayer = shopEncounter?.activePlayer as { playerId?: string } | undefined;
+
+  if (!recentOutcome) {
+    return [];
+  }
+
+  const seatId = activePlayer?.playerId ?? null;
+  const source = `shop:${recentOutcome.action ?? "outcome"}`;
+  const deltas: ResultDelta[] = [];
+
+  if (recentOutcome.gained) {
+    deltas.push(createResultDelta({
+      type: "itemBought",
+      label: "Item bought",
+      value: recentOutcome.gained,
+      sign: "gain",
+      targetScope: "personal",
+      targetSeatId: seatId,
+      visibility: "public",
+      source,
+      reason: recentOutcome.shopName,
+      publicText: `${recentOutcome.operativeName ?? "Operative"} bought ${recentOutcome.gained}.`,
+      severity: "reward"
+    }));
+  }
+
+  if (recentOutcome.costPaid?.salvage) {
+    deltas.push(createResultDelta({
+      type: "salvage",
+      label: "Salvage",
+      value: recentOutcome.costPaid.salvage,
+      sign: "loss",
+      targetScope: "personal",
+      targetSeatId: seatId,
+      visibility: "public",
+      source,
+      reason: "Shop purchase",
+      publicText: `${recentOutcome.operativeName ?? "Operative"} spent ${recentOutcome.costPaid.salvage} Salvage.`,
+      severity: "loss"
+    }));
+  }
+
+  if (recentOutcome.sold) {
+    deltas.push(createResultDelta({
+      type: "itemSold",
+      label: "Item sold",
+      value: recentOutcome.sold,
+      sign: "neutral",
+      targetScope: "personal",
+      targetSeatId: seatId,
+      visibility: "public",
+      source,
+      reason: recentOutcome.shopName,
+      publicText: `${recentOutcome.operativeName ?? "Operative"} sold ${recentOutcome.sold}.`,
+      severity: "neutral"
+    }));
+  }
+
+  if (recentOutcome.salvageDelta) {
+    deltas.push(createResultDelta({
+      type: "salvage",
+      label: "Salvage",
+      value: Math.abs(recentOutcome.salvageDelta),
+      sign: recentOutcome.salvageDelta >= 0 ? "gain" : "loss",
+      targetScope: "personal",
+      targetSeatId: seatId,
+      visibility: "public",
+      source,
+      reason: "Shop sale",
+      publicText: `${recentOutcome.operativeName ?? "Operative"} ${recentOutcome.salvageDelta >= 0 ? "gained" : "spent"} ${Math.abs(recentOutcome.salvageDelta)} Salvage.`,
+      severity: recentOutcome.salvageDelta >= 0 ? "reward" : "loss"
+    }));
+  }
+
+  if (recentOutcome.heatDelta) {
+    deltas.push(createResultDelta({
+      type: "heat",
+      label: "Heat",
+      value: Math.abs(recentOutcome.heatDelta),
+      sign: recentOutcome.heatDelta >= 0 ? "gain" : "loss",
+      targetScope: "personal",
+      targetSeatId: seatId,
+      visibility: "public",
+      source,
+      reason: "Shop service",
+      publicText: `${recentOutcome.operativeName ?? "Operative"} ${recentOutcome.heatDelta >= 0 ? "gained" : "cleared"} ${Math.abs(recentOutcome.heatDelta)} Heat.`,
+      severity: recentOutcome.heatDelta >= 0 ? "danger" : "reward"
+    }));
+  }
+
+  if (recentOutcome.woundDelta) {
+    deltas.push(createResultDelta({
+      type: "wound",
+      label: "Wound",
+      value: Math.abs(recentOutcome.woundDelta),
+      sign: recentOutcome.woundDelta >= 0 ? "gain" : "loss",
+      targetScope: "personal",
+      targetSeatId: seatId,
+      visibility: "public",
+      source,
+      reason: "Shop service",
+      publicText: `${recentOutcome.operativeName ?? "Operative"} ${recentOutcome.woundDelta >= 0 ? "took" : "healed"} ${Math.abs(recentOutcome.woundDelta)} Wound.`,
+      severity: recentOutcome.woundDelta >= 0 ? "danger" : "reward"
+    }));
+  }
+
+  return deltas;
+}
+
+function parseResolutionEffectDelta(effect: string, seatId: string | null): ResultDelta | null {
+  const lower = effect.toLowerCase();
+  const gainHeat = lower.match(/gain (\d+) heat/);
+  const loseHeat = lower.match(/lose (\d+) heat|clear(?:ed)? (\d+) heat/);
+  const wound = lower.match(/take (\d+) wound/);
+  const heal = lower.match(/heal (\d+) wound/);
+  const trophy = lower.match(/\+(\d+) trophies?|gain (\d+) trophies?/);
+  const scar = lower.match(/gain scar ([\w-]+)/);
+
+  if (gainHeat) {
+    const amount = Number(gainHeat[1]);
+    return createResultDelta({
+      type: "heat",
+      label: "Heat",
+      value: amount,
+      sign: "gain",
+      targetScope: "personal",
+      targetSeatId: seatId,
+      visibility: "public",
+      source: "resolution-effect",
+      reason: effect,
+      publicText: effect,
+      severity: "danger"
+    });
+  }
+
+  if (loseHeat) {
+    const amount = Number(loseHeat[1] ?? loseHeat[2]);
+    return createResultDelta({
+      type: "heat",
+      label: "Heat",
+      value: amount,
+      sign: "loss",
+      targetScope: "personal",
+      targetSeatId: seatId,
+      visibility: "public",
+      source: "resolution-effect",
+      reason: effect,
+      publicText: effect,
+      severity: "reward"
+    });
+  }
+
+  if (wound) {
+    const amount = Number(wound[1]);
+    return createResultDelta({
+      type: "wound",
+      label: "Wound",
+      value: amount,
+      sign: "loss",
+      targetScope: "personal",
+      targetSeatId: seatId,
+      visibility: "public",
+      source: "resolution-effect",
+      reason: effect,
+      publicText: effect,
+      severity: "danger"
+    });
+  }
+
+  if (heal) {
+    const amount = Number(heal[1]);
+    return createResultDelta({
+      type: "wound",
+      label: "Wound",
+      value: amount,
+      sign: "loss",
+      targetScope: "personal",
+      targetSeatId: seatId,
+      visibility: "public",
+      source: "resolution-effect",
+      reason: effect,
+      publicText: effect,
+      severity: "reward"
+    });
+  }
+
+  if (trophy) {
+    const amount = Number(trophy[1] ?? trophy[2]);
+    return createResultDelta({
+      type: "trophy",
+      label: "Trophy",
+      value: amount,
+      sign: "gain",
+      targetScope: "personal",
+      targetSeatId: seatId,
+      visibility: "public",
+      source: "resolution-effect",
+      reason: effect,
+      publicText: effect,
+      severity: "reward"
+    });
+  }
+
+  if (scar) {
+    return createResultDelta({
+      type: "scarGained",
+      label: "Scar gained",
+      value: scar[1],
+      sign: "loss",
+      targetScope: "personal",
+      targetSeatId: seatId,
+      visibility: "public",
+      source: "resolution-effect",
+      reason: effect,
+      publicText: effect,
+      severity: "danger"
+    });
+  }
+
+  if (/trophy pile|defeat|defeated/i.test(effect)) {
+    return createResultDelta({
+      type: "threatDefeated",
+      label: "Threat defeated",
+      sign: "gain",
+      targetScope: "sector",
+      targetSeatId: seatId,
+      visibility: "public",
+      source: "resolution-effect",
+      reason: effect,
+      publicText: effect,
+      severity: "reward"
+    });
+  }
+
+  if (/remains|return.+space|place this enemy/i.test(effect)) {
+    return createResultDelta({
+      type: "threatRemains",
+      label: "Blocker remains",
+      sign: "neutral",
+      targetScope: "sector",
+      targetSeatId: seatId,
+      visibility: "public",
+      source: "resolution-effect",
+      reason: effect,
+      publicText: effect,
+      severity: "danger"
+    });
+  }
+
+  return null;
+}
+
+function getResolutionResultDeltas(state: GameState): ResultDelta[] {
+  const outcome = state.lastOutcomeSummary;
+  const resolution = state.activeResolution;
+  const seatId = resolution?.playerId ?? outcome?.seatId ?? null;
+  const deltas: ResultDelta[] = [];
+
+  if (outcome?.encounterCardType === "enemy" && outcome.success === true) {
+    deltas.push(createResultDelta({
+      type: "threatDefeated",
+      label: "Threat defeated",
+      value: outcome.encounterTitle ?? "Enemy",
+      sign: "gain",
+      targetScope: "sector",
+      targetSeatId: seatId,
+      visibility: "public",
+      source: "combat",
+      reason: outcome.summary,
+      publicText: `${outcome.encounterTitle ?? "Threat"} defeated.`,
+      severity: "reward"
+    }));
+  }
+
+  if (outcome?.encounterCardType === "enemy" && outcome.success === false) {
+    deltas.push(createResultDelta({
+      type: "threatRemains",
+      label: "Blocker remains",
+      value: outcome.encounterTitle ?? "Enemy",
+      sign: "neutral",
+      targetScope: "sector",
+      targetSeatId: seatId,
+      visibility: "public",
+      source: "combat",
+      reason: outcome.summary,
+      publicText: `${outcome.encounterTitle ?? "Threat"} remains unresolved.`,
+      severity: "danger"
+    }));
+  }
+
+  for (const effect of resolution?.outcome?.effects ?? []) {
+    const delta = parseResolutionEffectDelta(effect, seatId);
+
+    if (delta) {
+      deltas.push(delta);
+    }
+  }
+
+  const outcomeSummary = outcome?.summary ?? null;
+  const trophyMatch = outcomeSummary?.match(/\+(\d+) trophies?/i);
+  if (trophyMatch && !deltas.some((delta) => delta.type === "trophy")) {
+    const amount = Number(trophyMatch[1]);
+    deltas.push(createResultDelta({
+      type: "trophy",
+      label: "Trophy",
+      value: amount,
+      sign: "gain",
+      targetScope: "personal",
+      targetSeatId: seatId,
+      visibility: "public",
+      source: "combat",
+      reason: outcomeSummary ?? undefined,
+      publicText: `Gained ${amount} Trophy${amount === 1 ? "" : "ies"}.`,
+      severity: "reward"
+    }));
+  }
+
+  return deltas;
+}
+
+function getEventLogResultDeltas(state: GameState, ownerSeatId?: string | null): ResultDelta[] {
+  const deltas: ResultDelta[] = [];
+  const recentEvents = state.eventLog.slice(-8);
+
+  recentEvents.forEach((event, index) => {
+    const entry = event as Record<string, unknown>;
+    const type = entry.type;
+    const seatId = typeof entry.seatId === "string" ? entry.seatId : null;
+    const source = `${type ?? "event"}:${index}`;
+
+    if (type === "SCENARIO_OBJECTIVE_PROGRESS_TRIGGERED") {
+      const amount = typeof entry.amount === "number" ? entry.amount : 1;
+      deltas.push(createResultDelta({
+        id: `scenario-progress:${source}`,
+        type: "scenarioProgress",
+        label: "Scenario",
+        value: amount,
+        sign: "gain",
+        targetScope: "scenario",
+        targetSeatId: seatId,
+        visibility: "public",
+        source,
+        reason: typeof entry.triggerType === "string" ? entry.triggerType : "objective trigger",
+        publicText: typeof entry.summary === "string" ? entry.summary : `Scenario objective advanced by ${amount}.`,
+        severity: "scenario"
+      }));
+    }
+
+    if (type === "SCENARIO_OBJECTIVE_COMPLETED" || type === "SCENARIO_VICTORY_ACHIEVED") {
+      deltas.push(createResultDelta({
+        id: `scenario-complete:${source}`,
+        type: "scenarioProgress",
+        label: type === "SCENARIO_VICTORY_ACHIEVED" ? "Scenario victory" : "Scenario complete",
+        sign: "gain",
+        targetScope: "scenario",
+        targetSeatId: seatId,
+        visibility: "public",
+        source,
+        reason: "Objective threshold reached",
+        publicText: typeof entry.summary === "string" ? entry.summary : "Scenario objective completed.",
+        severity: "scenario"
+      }));
+    }
+
+    if (type === "CONTRACT_PROGRESS_UPDATED") {
+      deltas.push(createResultDelta({
+        id: `contract-progress:${source}`,
+        type: "contractProgress",
+        label: "Contract",
+        value: 1,
+        sign: "gain",
+        targetScope: "personal",
+        targetSeatId: seatId,
+        visibility: "public",
+        source,
+        reason: typeof entry.contractId === "string" ? entry.contractId : "contract progress",
+        publicText: typeof entry.summary === "string" ? entry.summary : "Contract progress advanced.",
+        severity: "reward"
+      }));
+    }
+
+    if (type === "COMPLETE_CONTRACT") {
+      deltas.push(createResultDelta({
+        id: `contract-complete:${source}`,
+        type: "contractCompleted",
+        label: "Contract complete",
+        sign: "gain",
+        targetScope: "personal",
+        targetSeatId: seatId,
+        visibility: "public",
+        source,
+        reason: typeof entry.contractId === "string" ? entry.contractId : "contract completion",
+        publicText: typeof entry.summary === "string" ? entry.summary : "Contract completed.",
+        severity: "reward"
+      }));
+    }
+
+    if (type === "ESCALATION_ADVANCED") {
+      const amount = typeof entry.amount === "number" ? entry.amount : 0;
+      deltas.push(createResultDelta({
+        id: `escalation:${source}`,
+        type: "scenarioPressure",
+        label: "Escalation",
+        value: Math.abs(amount),
+        sign: amount >= 0 ? "gain" : "loss",
+        targetScope: "scenario",
+        targetSeatId: seatId,
+        visibility: "public",
+        source,
+        reason: typeof entry.reason === "string" ? entry.reason : "pressure",
+        publicText: `Escalation ${amount >= 0 ? "+" : ""}${amount}: ${typeof entry.reason === "string" ? entry.reason : "pressure"}.`,
+        severity: "scenario"
+      }));
+    }
+
+    if (type === "RIVALRY_AGENDA_PROGRESS_TRIGGERED") {
+      const amount = typeof entry.amount === "number" ? entry.amount : 1;
+      const completed = entry.completed === true;
+
+      if (completed) {
+        deltas.push(createResultDelta({
+          id: `agenda-complete-public:${source}`,
+          type: "agendaCompleted",
+          label: "Rivalry agenda",
+          sign: "gain",
+          targetScope: "privateAgenda",
+          targetSeatId: seatId,
+          visibility: "public",
+          source,
+          reason: "Rivalry completion",
+          publicText: typeof entry.publicCompletionSummary === "string" ? entry.publicCompletionSummary : "A Rivalry Agenda was completed.",
+          severity: "private"
+        }));
+      }
+
+      if (ownerSeatId && seatId === ownerSeatId) {
+        deltas.push(createResultDelta({
+          id: `agenda-progress-private:${source}`,
+          type: completed ? "agendaCompleted" : "agendaProgress",
+          label: completed ? "Agenda complete" : "Agenda",
+          value: completed ? undefined : amount,
+          sign: "gain",
+          targetScope: "privateAgenda",
+          targetSeatId: seatId,
+          visibility: "ownerPrivate",
+          source,
+          reason: typeof entry.triggerType === "string" ? entry.triggerType : "agenda trigger",
+          publicText: completed ? "A Rivalry Agenda was completed." : "A Rivalry Agenda advanced.",
+          privateText: typeof entry.summary === "string" ? entry.summary : completed ? "Your Rivalry Agenda completed." : `Your Rivalry Agenda advanced by ${amount}.`,
+          severity: "private"
+        }));
+      }
+    }
+  });
+
+  return deltas;
+}
+
+function dedupeResultDeltas(deltas: ResultDelta[]): ResultDelta[] {
+  const seen = new Set<string>();
+  const unique: ResultDelta[] = [];
+
+  for (const delta of deltas) {
+    const key = `${delta.type}:${delta.label}:${delta.value ?? ""}:${delta.targetSeatId ?? ""}:${delta.visibility}:${delta.publicText}`;
+
+    if (seen.has(key)) {
+      continue;
+    }
+
+    seen.add(key);
+    unique.push(delta);
+  }
+
+  return unique.slice(-10);
+}
+
+function buildPublicResultDeltas(state: GameState, shopEncounter: Record<string, unknown> | null): ResultDelta[] {
+  return dedupeResultDeltas([
+    ...getResolutionResultDeltas(state),
+    ...getShopResultDeltas(shopEncounter),
+    ...getEventLogResultDeltas(state).filter((delta) => delta.visibility === "public")
+  ]);
+}
+
+function buildPlayerResultDeltas(
+  state: GameState,
+  seatId: string,
+  publicDeltas: ResultDelta[],
+  shopEncounter: Record<string, unknown> | null
+): ResultDelta[] {
+  return dedupeResultDeltas([
+    ...publicDeltas,
+    ...getShopResultDeltas(shopEncounter).filter((delta) => delta.targetSeatId === seatId),
+    ...getEventLogResultDeltas(state, seatId).filter((delta) => delta.visibility === "ownerPrivate" && delta.targetSeatId === seatId)
+  ]).filter((delta) => delta.visibility === "public" || delta.targetSeatId === seatId);
+}
+
 function buildSoloRerollProjection(state: GameState, seatId: string): { available: boolean; charges: number } {
   const charges = state.sessionMode === "single-player" ? (state.soloRerollCharges?.[seatId] ?? 1) : 0;
   const activeResolution = state.activeResolution;
@@ -6885,6 +7441,7 @@ export function createTvProjection(state: GameState): Record<string, unknown> {
   const visiblePlayers = state.players.filter((player) => visibleSeatIds.has(player.seatId));
   const activeSeatId = state.turnOrder[state.activeSeatIndex] ?? null;
   const shopEncounter = buildPublicShopEncounter(state, visiblePlayers);
+  const publicResultDeltas = buildPublicResultDeltas(state, shopEncounter as Record<string, unknown> | null);
   const recentAbilityTriggers = state.eventLog
     .filter(
       (
@@ -7045,6 +7602,7 @@ export function createTvProjection(state: GameState): Record<string, unknown> {
     outcomeSummary: state.lastOutcomeSummary,
     rivalryAgendaCompletion: buildPublicRivalryAgendaCompletion(state),
     rivalryAgendaReveal: buildPublicRivalryAgendaReveal(state),
+    publicResultDeltas,
     activeResolution: state.activeResolution ?? null,
     shopEncounter,
     movementPlanner: activeSeatId ? buildPublicMovementPlanner(state, activeSeatId) : null,
@@ -7085,6 +7643,13 @@ export function createPhoneProjection(state: GameState, seatId: string, forcePri
     outcomeSummary: state.lastOutcomeSummary,
     rivalryAgendaCompletion: publicProjection.rivalryAgendaCompletion,
     rivalryAgendaReveal: publicProjection.rivalryAgendaReveal,
+    publicResultDeltas: publicProjection.publicResultDeltas,
+    playerResultDeltas: buildPlayerResultDeltas(
+      state,
+      seatId,
+      (publicProjection.publicResultDeltas as ResultDelta[] | undefined) ?? [],
+      publicProjection.shopEncounter as Record<string, unknown> | null
+    ),
     activeResolution: state.activeResolution ?? null,
     shopEncounter: publicProjection.shopEncounter,
     recentAbilityTriggers: publicProjection.recentAbilityTriggers,

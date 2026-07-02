@@ -637,6 +637,34 @@ describe("PhoneActionPanel", () => {
               lockedReason: "Reveal window has not opened."
             }
           },
+          playerResultDeltas: [
+            {
+              id: "phone-shop-item",
+              type: "itemBought",
+              label: "Item bought",
+              value: "Ashlock Carbine",
+              sign: "gain",
+              targetScope: "personal",
+              targetSeatId: "seat-1",
+              visibility: "public",
+              source: "shop:buy",
+              publicText: "Sable Vey bought Ashlock Carbine.",
+              severity: "reward"
+            },
+            {
+              id: "phone-shop-salvage",
+              type: "salvage",
+              label: "Salvage",
+              value: 3,
+              sign: "loss",
+              targetScope: "personal",
+              targetSeatId: "seat-1",
+              visibility: "public",
+              source: "shop:buy",
+              publicText: "Sable Vey spent 3 Salvage.",
+              severity: "loss"
+            }
+          ],
           shopEncounter: {
             sectorId: "outer_waymarket",
             sectorName: "Anchor Market",
@@ -679,6 +707,8 @@ describe("PhoneActionPanel", () => {
     expect(screen.getAllByText(/no stock available/i).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/no sellable items/i).length).toBeGreaterThan(0);
     expect(screen.getByText(/purchased: ashlock carbine/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/Item bought: Ashlock Carbine/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/-3 Salvage/i).length).toBeGreaterThan(0);
     expect(screen.queryByText(/claim the black ledger/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/do not reveal private agenda data/i)).not.toBeInTheDocument();
   });

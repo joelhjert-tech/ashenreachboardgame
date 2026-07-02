@@ -234,6 +234,51 @@ export interface PublicRivalryAgendaCompletion {
   createdAt: string | null;
 }
 
+export type ResultDeltaType =
+  | "wound"
+  | "heat"
+  | "salvage"
+  | "trophy"
+  | "gearGained"
+  | "gearLost"
+  | "itemBought"
+  | "itemSold"
+  | "contractProgress"
+  | "contractCompleted"
+  | "scenarioProgress"
+  | "scenarioPressure"
+  | "agendaProgress"
+  | "agendaCompleted"
+  | "threatDefeated"
+  | "threatRemains"
+  | "sectorUnlocked"
+  | "shopUnlocked"
+  | "scarGained"
+  | "recallTriggered"
+  | "fateSpent"
+  | "modifierApplied";
+
+export type ResultDeltaTargetScope = "personal" | "table" | "sector" | "scenario" | "privateAgenda";
+export type ResultDeltaVisibility = "public" | "ownerPrivate" | "hidden";
+export type ResultDeltaSeverity = "reward" | "loss" | "danger" | "scenario" | "private" | "neutral";
+export type ResultDeltaSign = "gain" | "loss" | "neutral";
+
+export interface ResultDelta {
+  id: string;
+  type: ResultDeltaType;
+  label: string;
+  value?: number | string;
+  sign: ResultDeltaSign;
+  targetScope: ResultDeltaTargetScope;
+  targetSeatId?: string | null;
+  visibility: ResultDeltaVisibility;
+  reason?: string;
+  source?: string;
+  publicText: string;
+  privateText?: string;
+  severity: ResultDeltaSeverity;
+}
+
 export interface SectorNode {
   id: string;
   name: string;
@@ -703,6 +748,7 @@ export interface PublicPatchPayload {
   outcomeSummary: OutcomeSummary | null;
   rivalryAgendaCompletion?: PublicRivalryAgendaCompletion | null;
   rivalryAgendaReveal?: PublicRivalryAgendaReveal | null;
+  publicResultDeltas?: ResultDelta[];
   activeResolution?: ActiveResolution | null;
   shopEncounter?: PublicShopEncounterState | null;
   movementPlanner?: PublicMovementPlannerState | null;
@@ -715,6 +761,7 @@ export interface PhonePatchPayload extends PublicPatchPayload {
   phase: Phase;
   self: PhoneSelfState | null;
   privateRivalry?: PrivateRivalryPayload | null;
+  playerResultDeltas?: ResultDelta[];
   soloReroll?: {
     available: boolean;
     charges: number;

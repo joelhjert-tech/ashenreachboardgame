@@ -325,6 +325,58 @@ describe("canonical sector graph", () => {
     expect(soloPhoneProjection.privateRivalry).toBeNull();
   });
 
+  it("projects public result deltas to TV and owner-private agenda deltas only to the owner phone", () => {
+    const state = createInitialSessionState("session-rivalry-deltas");
+    state.eventLog.push(
+      {
+        type: "SCENARIO_OBJECTIVE_PROGRESS_TRIGGERED",
+        seatId: "seat-1",
+        triggerType: "contractCompleted",
+        amount: 1,
+        summary: "Contract completed: +1 objective progress.",
+        createdAt: "2026-07-02T00:00:00.000Z"
+      } as never,
+      {
+        type: "CONTRACT_PROGRESS_UPDATED",
+        seatId: "seat-1",
+        contractId: "dominion-warbell-recovery",
+        progress: 1,
+        summary: "Contract +1 from resolving the sector.",
+        createdAt: "2026-07-02T00:00:30.000Z"
+      } as never,
+      {
+        type: "RIVALRY_AGENDA_PROGRESS_TRIGGERED",
+        seatId: "seat-1",
+        triggerType: "contractCompleted",
+        amount: 1,
+        summary: "Private trigger: claim the black ledger.",
+        publicCompletionSummary: "A Rivalry Agenda advanced.",
+        createdAt: "2026-07-02T00:01:00.000Z"
+      } as never
+    );
+
+    const tvProjection = createTvProjection(state) as {
+      publicResultDeltas: Array<{ type: string; publicText: string; privateText?: string }>;
+    };
+    const ownerPhone = createPhoneProjection(state, "seat-1") as {
+      playerResultDeltas: Array<{ type: string; publicText: string; privateText?: string; visibility: string }>;
+    };
+    const otherPhone = createPhoneProjection(state, "seat-2") as {
+      playerResultDeltas: Array<{ type: string; publicText: string; privateText?: string; visibility: string }>;
+    };
+    const tvJson = JSON.stringify(tvProjection);
+    const ownerJson = JSON.stringify(ownerPhone);
+    const otherJson = JSON.stringify(otherPhone);
+
+    expect(tvProjection.publicResultDeltas.some((delta) => delta.type === "scenarioProgress")).toBe(true);
+    expect(tvProjection.publicResultDeltas.some((delta) => delta.type === "contractProgress")).toBe(true);
+    expect(ownerPhone.playerResultDeltas.some((delta) => delta.type === "agendaProgress" && delta.visibility === "ownerPrivate")).toBe(true);
+    expect(otherPhone.playerResultDeltas.some((delta) => delta.type === "agendaProgress")).toBe(false);
+    expect(ownerJson).toContain("Private trigger: claim the black ledger.");
+    expect(tvJson).not.toContain("Private trigger");
+    expect(otherJson).not.toContain("Private trigger");
+  });
+
   it("builds public movement planner intel from legal sectors without leaking hidden deck cards", () => {
     const state = createInitialSessionState("session-alpha");
     state.status = "active";

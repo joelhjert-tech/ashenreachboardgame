@@ -4,7 +4,8 @@ import { getCharacterPortraitPath } from "../shared/assetPaths.js";
 import { ChallengeBadge } from "../shared/ChallengeBadge.js";
 import { getChallengeThemeStyle } from "../../game/ui/challengeTheme.js";
 import { statLabelById } from "../shared/statLabels.js";
-import type { ActiveResolution, PublicPatchPayload, PublicPlayer, StatePatch, Stat } from "../shared/types.js";
+import { ResultDeltaRow } from "../shared/ResultDeltaChips.js";
+import type { ActiveResolution, PublicPatchPayload, PublicPlayer, ResultDelta, StatePatch, Stat } from "../shared/types.js";
 import { HostCinematicFxLayer } from "./HostCinematicFxLayer.js";
 import { isHostBattleActive } from "./hostBattleState.js";
 import { DiceRollScene } from "./DiceRollScene.js";
@@ -42,6 +43,7 @@ interface HostBattleDisplayModel {
   cardMovementText: string | null;
   logEntries: string[];
   autoResolveAvailable: boolean;
+  resultDeltas: ResultDelta[];
 }
 
 function sumDice(dice: number[]): number | null {
@@ -170,6 +172,24 @@ function getOpponentCardType(resolution: ActiveResolution | null): ResolutionSid
   return "threat";
 }
 
+function battleResultDeltas(deltas: ResultDelta[] | null | undefined): ResultDelta[] {
+  const battleTypes = new Set<ResultDelta["type"]>([
+    "wound",
+    "heat",
+    "trophy",
+    "threatDefeated",
+    "threatRemains",
+    "scarGained",
+    "modifierApplied"
+  ]);
+
+  return (deltas ?? []).filter((delta) =>
+    delta.source === "combat" ||
+    delta.source === "resolution-effect" ||
+    battleTypes.has(delta.type)
+  );
+}
+
 function buildBattleModel(
   patch: StatePatch<PublicPatchPayload>,
   activePlayer: PublicPlayer
@@ -282,7 +302,8 @@ function buildBattleModel(
     marginText: getMarginText(outcomeLabel, playerTotal, enemyTotal),
     cardMovementText,
     logEntries,
-    autoResolveAvailable: Boolean(pendingEnemyRoll)
+    autoResolveAvailable: Boolean(pendingEnemyRoll),
+    resultDeltas: patch.payload.publicResultDeltas ?? []
   };
 }
 
@@ -410,6 +431,7 @@ export function HostBattleOverlay({
               Enemy roller pending
             </div>
           )}
+          <ResultDeltaRow deltas={model.resultDeltas} publicOnly className="host-battle-delta-row" />
         </div>
 
         <div className="host-battle-log" data-testid="host-battle-log">

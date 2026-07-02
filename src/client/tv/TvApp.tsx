@@ -22,6 +22,7 @@ import {
   buildSectorExplorationCopy,
   type ExplainabilityTone
 } from "../shared/explainabilityPrompts.js";
+import { ResultDeltaRow } from "../shared/ResultDeltaChips.js";
 import { formatSeatLabel, statOrder, statShortLabelById } from "../shared/statLabels.js";
 import { useRoomSubscription } from "../shared/useRoomSubscription.js";
 import { getCharacterPortraitPath, getNemesisPortraitPath } from "../shared/assetPaths.js";
@@ -1728,6 +1729,7 @@ function RecentOutcomePanel({
         </div>
         <div className="tv-recent-log">
           <p>{currentStepCopy}</p>
+          <ResultDeltaRow deltas={patch?.payload.publicResultDeltas} publicOnly className="tv-recent-deltas" />
           <ul>
             {logEntries.length > 0 ? (
               logEntries.slice(0, 4).map((entry, index) => <li key={`${entry}-${index}`}>{entry}</li>)

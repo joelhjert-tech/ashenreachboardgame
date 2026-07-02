@@ -12,11 +12,13 @@ import type {
   PublicMoveStrategicTag,
   PublicShopCost,
   PublicShopEncounterState,
+  ResultDelta,
   SectorNode,
   ShopFailureReason,
   Stat,
   TrophyPileEntry
 } from "../shared/types.js";
+import { ResultDeltaRow } from "../shared/ResultDeltaChips.js";
 import { getBoardSpace, isScenarioConfrontationSpace } from "../../game/data/boardSpaces.js";
 import { describeContractObjective, formatContractObjectiveStatus } from "../../game/contracts/objectives.js";
 import {
@@ -665,12 +667,53 @@ function buildStrategicWarning(destination: PublicMoveDestination): string {
   return "Low public pressure from visible board information.";
 }
 
+function shopResultDeltas(deltas: ResultDelta[] | null | undefined): ResultDelta[] {
+  const shopTypes = new Set<ResultDelta["type"]>(["itemBought", "itemSold", "salvage", "heat", "wound", "shopUnlocked"]);
+
+  return (deltas ?? []).filter((delta) => delta.source?.startsWith("shop:") || shopTypes.has(delta.type));
+}
+
+function battleResultDeltas(deltas: ResultDelta[] | null | undefined): ResultDelta[] {
+  const battleTypes = new Set<ResultDelta["type"]>([
+    "wound",
+    "heat",
+    "trophy",
+    "threatDefeated",
+    "threatRemains",
+    "scarGained",
+    "modifierApplied"
+  ]);
+
+  return (deltas ?? []).filter((delta) =>
+    delta.source === "combat" ||
+    delta.source === "resolution-effect" ||
+    battleTypes.has(delta.type)
+  );
+}
+
+function actionResultDeltas(deltas: ResultDelta[] | null | undefined): ResultDelta[] {
+  const actionTypes = new Set<ResultDelta["type"]>([
+    "scenarioProgress",
+    "scenarioPressure",
+    "contractProgress",
+    "contractCompleted",
+    "agendaProgress",
+    "agendaCompleted",
+    "sectorUnlocked",
+    "shopUnlocked"
+  ]);
+
+  return (deltas ?? []).filter((delta) => actionTypes.has(delta.type));
+}
+
 function PhoneShopPanel({
   shopEncounter,
+  resultDeltas,
   seatId,
   onIntent
 }: {
   shopEncounter: PublicShopEncounterState | null | undefined;
+  resultDeltas?: ResultDelta[] | null;
   seatId: string;
   onIntent: (intent: ClientIntent) => void;
 }): ReactElement | null {
@@ -726,6 +769,7 @@ function PhoneShopPanel({
   const purchasedItemName = shopEncounter.recentOutcome?.gained;
   const soldItemName = shopEncounter.recentOutcome?.sold;
   const serviceActions = shopEncounter.services.filter((service) => service.id !== "sell-gear");
+  const visibleShopDeltas = shopResultDeltas(resultDeltas);
 
   function confirmPurchase(cardId: string): void {
     setPendingCardId(cardId);
@@ -951,6 +995,7 @@ function PhoneShopPanel({
                 ? `Sold: ${shopEncounter.recentOutcome.sold}`
               : shopEncounter.recentOutcome.summary}
           </p>
+          <ResultDeltaRow deltas={visibleShopDeltas} className="phone-shop-deltas" />
         </div>
       ) : null}
     </section>
@@ -1885,11 +1930,15 @@ export function PhoneActionPanel({
     ? selectedTurnTab
     : fallbackTab;
   const currentPrompt: CurrentPromptViewModel = currentPromptFromSharedPrompt(sharedPrompt, activeTurnTab);
+  const currentDeltas = patch.playerResultDeltas ?? patch.publicResultDeltas ?? [];
+  const visibleBattleDeltas = battleResultDeltas(currentDeltas);
+  const visibleActionDeltas = actionResultDeltas(currentDeltas);
 
   return (
     <section className="phone-sheet-actions" aria-label="Quick actions">
       <div className="phone-sheet-section-heading">Turn Console</div>
       <CurrentPromptCard prompt={currentPrompt} onSelectedTab={setSelectedTurnTab} />
+      <ResultDeltaRow deltas={currentDeltas} className="phone-current-deltas" />
       <div className="phone-sheet-action-status">
         <span>Trophies: {self.character.trophies}</span>
         <span>{copy}</span>
@@ -1920,6 +1969,7 @@ export function PhoneActionPanel({
               <strong>{patch.encounter?.title ?? activeResolution?.card?.title ?? battleAssist?.enemyName ?? "No threat"}</strong>
             </div>
             {resolutionPanel}
+            <ResultDeltaRow deltas={visibleBattleDeltas} className="phone-battle-deltas" />
             {battleAssistPanel}
             <ActionSections sections={[{ key: "threat", title: "Threat", detail: patch.encounter?.title, actions: threatActions, defaultOpen: true }]} />
             {!hasBattleContent && (
@@ -1934,7 +1984,7 @@ export function PhoneActionPanel({
               <span>Shop</span>
               <strong>{shopEncounter?.shopName ?? "No market contact"}</strong>
             </div>
-            <PhoneShopPanel shopEncounter={shopEncounter} seatId={self.seatId} onIntent={onIntent} />
+            <PhoneShopPanel shopEncounter={shopEncounter} resultDeltas={currentDeltas} seatId={self.seatId} onIntent={onIntent} />
             {!shopEncounter && (
               <EmptyTurnTab title="No shop here" text="Shop services appear when your operative is on a clear market, shrine, foundry, or service sector." />
             )}
@@ -1949,6 +1999,7 @@ export function PhoneActionPanel({
             </div>
             <SectorOpportunityChips items={sectorOpportunityItems} />
             <SectorExplorationPanel summary={sectorExplorationCopy} />
+            <ResultDeltaRow deltas={visibleActionDeltas} className="phone-action-deltas" />
             <ActionSections
               sections={[
                 { key: "resolve", title: "Tile Action", detail: boardSpace?.textBox.title, actions: resolveActions, defaultOpen: true },

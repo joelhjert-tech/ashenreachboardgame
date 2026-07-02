@@ -2,7 +2,8 @@ import type { CSSProperties, ReactElement } from "react";
 import { getBoardSpace } from "../../game/data/boardSpaces.js";
 import { getChallengeThemeStyle } from "../../game/ui/challengeTheme.js";
 import { ChallengeBadge } from "../shared/ChallengeBadge.js";
-import type { PublicPatchPayload, PublicPlayer, PublicShopCost, PublicShopEncounterState, StatePatch, Stat } from "../shared/types.js";
+import { ResultDeltaRow } from "../shared/ResultDeltaChips.js";
+import type { PublicPatchPayload, PublicPlayer, PublicShopCost, PublicShopEncounterState, ResultDelta, StatePatch, Stat } from "../shared/types.js";
 import { HostCinematicFxLayer } from "./HostCinematicFxLayer.js";
 import { isHostShopActive } from "./hostShopState.js";
 
@@ -40,6 +41,7 @@ interface HostShopDisplayModel {
   transactionComplete: boolean;
   outcome: string | null;
   guidance: string;
+  resultDeltas: ResultDelta[];
 }
 
 function toTitleCase(value: string): string {
@@ -146,7 +148,13 @@ function buildShopType(shopEncounter: PublicShopEncounterState): string {
   return serviceTags.map(toTitleCase).join(" / ") || toTitleCase(boardSpace?.tier ?? "shop");
 }
 
-function buildFromPayload(shopEncounter: PublicShopEncounterState): HostShopDisplayModel {
+function shopResultDeltas(deltas: ResultDelta[] | null | undefined): ResultDelta[] {
+  const shopTypes = new Set<ResultDelta["type"]>(["itemBought", "itemSold", "salvage", "heat", "wound", "shopUnlocked"]);
+
+  return (deltas ?? []).filter((delta) => delta.source?.startsWith("shop:") || shopTypes.has(delta.type));
+}
+
+function buildFromPayload(shopEncounter: PublicShopEncounterState, resultDeltas: ResultDelta[]): HostShopDisplayModel {
   const isBlocked = shopEncounter.status === "locked" || shopEncounter.blocked === true || shopEncounter.blockingThreats.length > 0;
   const status: ShopStatus = isBlocked
     ? "BLOCKED"
@@ -186,7 +194,8 @@ function buildFromPayload(shopEncounter: PublicShopEncounterState): HostShopDisp
     riskActive: shopEncounter.status === "dangerous" || shopEncounter.services.some((service) => Boolean(service.risk || service.cost.heat)),
     transactionComplete: Boolean(shopEncounter.recentOutcome),
     outcome: shopEncounter.recentOutcome?.summary ?? null,
-    guidance: isBlocked ? "Clear the threat lock before trade resumes." : "Choose on player phone"
+    guidance: isBlocked ? "Clear the threat lock before trade resumes." : "Choose on player phone",
+    resultDeltas
   };
 }
 
@@ -219,7 +228,8 @@ function buildFallbackModel(activePlayer: PublicPlayer): HostShopDisplayModel | 
     riskActive: status === "DANGEROUS",
     transactionComplete: false,
     outcome: null,
-    guidance: "Choose on player phone"
+    guidance: "Choose on player phone",
+    resultDeltas: []
   };
 }
 
@@ -227,7 +237,9 @@ function buildShopModel(
   patch: StatePatch<PublicPatchPayload>,
   activePlayer: PublicPlayer
 ): HostShopDisplayModel | null {
-  return patch.payload.shopEncounter ? buildFromPayload(patch.payload.shopEncounter) : buildFallbackModel(activePlayer);
+  return patch.payload.shopEncounter
+    ? buildFromPayload(patch.payload.shopEncounter, shopResultDeltas(patch.payload.publicResultDeltas))
+    : buildFallbackModel(activePlayer);
 }
 
 function HostShopPreviewCard({ card, index }: { card: ShopPreviewCard; index: number }): ReactElement {
@@ -357,7 +369,11 @@ export function HostShopOverlay({
 
         <section className="host-shop-outcome" aria-label="Market result" data-testid="host-shop-outcome">
           <p>{model.outcome ?? `${model.playerName} is using ${model.shopName}.`}</p>
-          <p>{model.stockRevealed ? "Public stock is revealed." : model.status === "BLOCKED" ? "Trade is suspended." : "No stock available until the phone reveals offers."}</p>
+          {model.resultDeltas.length > 0 ? (
+            <ResultDeltaRow deltas={model.resultDeltas} publicOnly className="host-shop-delta-row" />
+          ) : (
+            <p>{model.stockRevealed ? "Public stock is revealed." : model.status === "BLOCKED" ? "Trade is suspended." : "No stock available until the phone reveals offers."}</p>
+          )}
           <p>{model.guidance}</p>
         </section>
       </div>
