@@ -675,6 +675,62 @@ describe("TvApp", () => {
     expect(screen.queryByText(/trade if the sector is clear/i)).not.toBeInTheDocument();
   });
 
+  it("shows sector exploration math in the sector brief without duplicating private data", async () => {
+    window.localStorage.setItem("ashen-reach-tv-room-code", "RT7P4");
+    window.localStorage.setItem("ashen-reach-tv-host-token", "host:RT7P4:secret");
+    const patch = createPatch();
+    patch.phase = "action";
+    patch.payload.status = "active";
+    patch.payload.sectorExplorationSummary = {
+      sectorId: "ashwake-crossing",
+      sectorName: "Ashwake Crossing",
+      printedThreatIcons: ["red", "yellow"],
+      unresolvedThreats: [
+        {
+          instanceId: "ashwake-crossing:chain-maul-salvager",
+          cardId: "chain-maul-salvager",
+          name: "Chain-Maul Salvager",
+          type: "enemy",
+          lane: "red",
+          blocksShop: true,
+          blocksSectorText: true
+        }
+      ],
+      drawCountsDue: { red: 0, blue: 0, yellow: 1 },
+      sectorTextLocked: true,
+      shopLocked: false,
+      lockedReason: "Resolve Chain-Maul Salvager first.",
+      sectorTextTitle: "Hold the Bridge",
+      shopName: null,
+      explanationLines: [
+        "Printed icons: 1 red, 1 yellow.",
+        "Unresolved blockers: Chain-Maul Salvager.",
+        "Draw due: 1 yellow.",
+        "Sector text locked: Resolve Chain-Maul Salvager first."
+      ]
+    };
+    mockUseRoomSubscription.mockReturnValue({
+      patch,
+      error: null,
+      sendIntent: vi.fn(),
+      status: "open",
+      debugEvents: [],
+      clearDebugEvents: vi.fn()
+    });
+
+    render(<TvApp />);
+
+    const exploration = await screen.findByTestId("tv-sector-exploration");
+    expect(exploration).toHaveTextContent(/printed/i);
+    expect(exploration).toHaveTextContent(/1 red, 1 yellow/i);
+    expect(exploration).toHaveTextContent(/blockers/i);
+    expect(exploration).toHaveTextContent(/chain-maul salvager/i);
+    expect(exploration).toHaveTextContent(/draw/i);
+    expect(exploration).toHaveTextContent(/1 yellow/i);
+    expect(exploration).toHaveTextContent(/sector text locked/i);
+    expect(JSON.stringify(patch.payload)).not.toContain("Private agenda");
+  });
+
   it("renders battle setup through the host battle overlay without a duplicate card tray", async () => {
     window.localStorage.setItem("ashen-reach-tv-room-code", "RT7P4");
     window.localStorage.setItem("ashen-reach-tv-host-token", "host:RT7P4:secret");

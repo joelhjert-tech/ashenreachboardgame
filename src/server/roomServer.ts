@@ -69,6 +69,8 @@ import {
   getLegalMovementRoute,
   getMovementBlockReason
 } from "../game/rules/movementPlanner.js";
+import { resolveBoardSpaceEvent } from "../game/tileResolver.js";
+import type { BoardThreatCard } from "../game/rules/explorationPhase.js";
 import {
   buildContractCompletedObjectiveEvent,
   resolveScenarioObjectiveTrigger,
@@ -5981,6 +5983,28 @@ type PublicMovementPlannerState = {
   destinations: PublicMoveDestination[];
 };
 
+type PublicSectorExplorationSummary = {
+  sectorId: string;
+  sectorName: string;
+  printedThreatIcons: Array<"red" | "blue" | "yellow">;
+  unresolvedThreats: Array<{
+    instanceId: string;
+    cardId: string;
+    name: string;
+    type: string;
+    lane?: "red" | "blue" | "yellow" | "scenario";
+    blocksShop: boolean;
+    blocksSectorText: boolean;
+  }>;
+  drawCountsDue: Record<"red" | "blue" | "yellow", number>;
+  sectorTextLocked: boolean;
+  shopLocked: boolean;
+  lockedReason: string | null;
+  sectorTextTitle: string | null;
+  shopName: string | null;
+  explanationLines: string[];
+};
+
 function getPublicSalvage(player: PlayerState): number {
   return Math.max(0, player.character.salvage ?? 0);
 }
@@ -6218,6 +6242,126 @@ function buildPublicMovementPlanner(state: GameState, seatId: string): PublicMov
     currentSectorId: currentSector.id,
     currentSectorName: currentSector.name,
     destinations
+  };
+}
+
+function formatIconCount(count: number, icon: "red" | "blue" | "yellow"): string {
+  return `${count} ${icon}`;
+}
+
+function formatThreatIconCounts(icons: Array<"red" | "blue" | "yellow">): string {
+  const counts = icons.reduce<Record<"red" | "blue" | "yellow", number>>(
+    (accumulator, icon) => {
+      accumulator[icon] += 1;
+      return accumulator;
+    },
+    { red: 0, blue: 0, yellow: 0 }
+  );
+
+  return (["red", "blue", "yellow"] as const)
+    .flatMap((icon) => (counts[icon] > 0 ? [formatIconCount(counts[icon], icon)] : []))
+    .join(", ");
+}
+
+function buildSectorThreatCardsFromPublicThreats(threats: PublicMoveDestination["faceUpThreats"]): BoardThreatCard[] {
+  return threats.map((threat) => ({
+    id: threat.cardId,
+    category: threat.type === "enemy" ? "enemy" : threat.type === "nemesis" ? "nemesis" : "event",
+    icons: threat.deck === "red" || threat.deck === "blue" || threat.deck === "yellow" ? [threat.deck] : []
+  }));
+}
+
+function buildPublicSectorExplorationSummary(state: GameState, seatId: string | null | undefined): PublicSectorExplorationSummary | null {
+  if (!seatId || state.status !== "active") {
+    return null;
+  }
+
+  const player = state.players.find((entry) => entry.seatId === seatId);
+
+  if (!player) {
+    return null;
+  }
+
+  const sectorId = player.character.currentSpaceId;
+  const sector = state.sectors.find((entry) => entry.id === sectorId);
+  const boardSpace = getBoardSpace(sectorId);
+
+  if (!sector || !boardSpace) {
+    return null;
+  }
+
+  const unresolvedThreats = getFaceUpThreatsForSector(state, sectorId);
+  const event = resolveBoardSpaceEvent(player, boardSpace, buildSectorThreatCardsFromPublicThreats(unresolvedThreats));
+  const isShopCapable = isBoardSpaceShopCapable(boardSpace);
+  const shopLocked = isShopCapable && unresolvedThreats.some((threat) => threat.blocksShop);
+  const sectorTextLocked = !event.engagement.shouldResolveTextBox;
+  const blocker = unresolvedThreats[0] ?? null;
+  const lockedReason = blocker
+    ? `Clear ${blocker.name} before ${shopLocked ? "shopping or using sector text" : "using sector text"}.`
+    : null;
+  const lanesWithBlockers = new Set(unresolvedThreats.flatMap((threat) => (
+    threat.deck === "red" || threat.deck === "blue" || threat.deck === "yellow" ? [threat.deck] : []
+  )));
+  const explanationLines: string[] = [];
+  const printedIconText = formatThreatIconCounts(event.printedThreatIcons);
+
+  explanationLines.push(printedIconText ? `Printed icons: ${printedIconText}.` : "Printed icons: none.");
+
+  if (unresolvedThreats.length > 0) {
+    explanationLines.push(
+      `Unresolved blockers: ${unresolvedThreats.map((threat) => threat.name).join(", ")}.`
+    );
+  } else {
+    explanationLines.push("No unresolved threats on this sector.");
+  }
+
+  (["red", "blue", "yellow"] as const).forEach((icon) => {
+    const due = event.exploration.drawCounts[icon];
+
+    if (due > 0) {
+      explanationLines.push(`Draw due: ${formatIconCount(due, icon)} threat${due === 1 ? "" : "s"}.`);
+      return;
+    }
+
+    if (event.printedThreatIcons.includes(icon) && lanesWithBlockers.has(icon)) {
+      explanationLines.push(`No draw: ${icon} lane already has an unresolved card.`);
+    }
+  });
+
+  explanationLines.push(
+    sectorTextLocked
+      ? `Sector text locked: ${blocker ? `clear ${blocker.name} first` : "clear unresolved threats first"}.`
+      : "Sector text unlocked: no unresolved blocker remains."
+  );
+
+  if (isShopCapable) {
+    explanationLines.push(
+      shopLocked
+        ? `Shop locked: ${blocker ? `clear ${blocker.name} first` : "unresolved threat remains"}.`
+        : "Shop unlocked: services are available if no new threat appears."
+    );
+  }
+
+  return {
+    sectorId,
+    sectorName: boardSpace.name ?? sector.name,
+    printedThreatIcons: [...event.printedThreatIcons],
+    unresolvedThreats: unresolvedThreats.map((threat) => ({
+      instanceId: threat.instanceId,
+      cardId: threat.cardId,
+      name: threat.name,
+      type: threat.type,
+      lane: threat.deck,
+      blocksShop: threat.blocksShop,
+      blocksSectorText: threat.blocksSectorText
+    })),
+    drawCountsDue: event.exploration.drawCounts,
+    sectorTextLocked,
+    shopLocked,
+    lockedReason,
+    sectorTextTitle: boardSpace.textBox.title ?? null,
+    shopName: isShopCapable ? boardSpace.name : null,
+    explanationLines
   };
 }
 
@@ -6904,6 +7048,7 @@ export function createTvProjection(state: GameState): Record<string, unknown> {
     activeResolution: state.activeResolution ?? null,
     shopEncounter,
     movementPlanner: activeSeatId ? buildPublicMovementPlanner(state, activeSeatId) : null,
+    sectorExplorationSummary: buildPublicSectorExplorationSummary(state, activeSeatId),
     recentAbilityTriggers,
     nemesis: nemesisSummary
   };
@@ -6945,6 +7090,7 @@ export function createPhoneProjection(state: GameState, seatId: string, forcePri
     recentAbilityTriggers: publicProjection.recentAbilityTriggers,
     nemesis: publicProjection.nemesis,
     movementPlanner: buildPublicMovementPlanner(state, seatId),
+    sectorExplorationSummary: buildPublicSectorExplorationSummary(state, seatId),
     privateRivalry: buildPrivateRivalryProjection(state, player),
     soloReroll: buildSoloRerollProjection(state, seatId),
     boundNemesis: (publicProjection.nemesisChampions as Array<{ boundPlayerId: string }>).find(

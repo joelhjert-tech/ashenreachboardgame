@@ -24,7 +24,12 @@ import {
   formatResolutionModifiers,
   resolutionStageLabel
 } from "../shared/resolutionPresentation.js";
-import { buildCurrentPlayerPrompt, type CurrentPlayerPrompt } from "../shared/explainabilityPrompts.js";
+import {
+  buildCurrentPlayerPrompt,
+  buildRoutePreviewCopy,
+  buildSectorExplorationCopy,
+  type CurrentPlayerPrompt
+} from "../shared/explainabilityPrompts.js";
 import { ChallengeBadge, ThreatIconBadge, getThreatIconStat, isStat } from "../shared/ChallengeBadge.js";
 import { CombatDiceAnimation } from "../shared/CombatDiceAnimation.js";
 import { GameButton, type GameButtonTone } from "../shared/GameButton.js";
@@ -478,6 +483,35 @@ function SectorOpportunityChips({ items }: { items: SectorOpportunityItem[] }): 
         </span>
       ))}
     </div>
+  );
+}
+
+function SectorExplorationPanel({
+  summary
+}: {
+  summary: ReturnType<typeof buildSectorExplorationCopy>;
+}): ReactElement | null {
+  if (!summary) {
+    return null;
+  }
+
+  return (
+    <section className="phone-sector-exploration" aria-label="Sector exploration math" data-testid="phone-sector-exploration">
+      <div className="phone-sector-exploration-header">
+        <span>Sector Math</span>
+        <strong>{summary.lockText}</strong>
+      </div>
+      <div className="phone-sector-exploration-grid">
+        <span>{summary.printedIconsText}</span>
+        <span>{summary.unresolvedText}</span>
+        <span>{summary.drawDueText}</span>
+      </div>
+      <ul>
+        {summary.lines.slice(0, 5).map((line) => (
+          <li key={line}>{line}</li>
+        ))}
+      </ul>
+    </section>
   );
 }
 
@@ -969,6 +1003,7 @@ function MovementPlanner({
           const primaryTag = getPrimaryMovementTag(destination);
           const selected = selectedSectorId === destination.sectorId;
           const isLocked = Boolean(destination.disabledReason);
+          const routePreview = buildRoutePreviewCopy(destination, planner.movementValue, planner.currentSectorName, selected);
 
           return (
             <article
@@ -990,8 +1025,19 @@ function MovementPlanner({
                 <span className={`phone-movement-badge phone-movement-badge-${primaryTag}`}>{movementTagLabel[primaryTag]}</span>
                 <strong>{destination.name}</strong>
                 <small>
-                  {destination.ring} ring | {destination.tags.slice(0, 3).join(" / ") || "sector"}
+                  {destination.distance} steps | exact route
                 </small>
+                <span className={`phone-movement-route-state phone-movement-route-state-${routePreview.statusLabel.toLowerCase()}`}>
+                  {routePreview.statusLabel}
+                </span>
+                <span className="phone-movement-route-exact">{routePreview.exactText}</span>
+                {routePreview.tagLabels.length > 0 && (
+                  <span className="phone-movement-route-tags" aria-label={`${destination.name} route tags`}>
+                    {routePreview.tagLabels.map((tag) => (
+                      <em key={tag}>{tag}</em>
+                    ))}
+                  </span>
+                )}
                 {destination.threatIcons.length > 0 && (
                   <span className="phone-movement-card-icons">
                     {destination.threatIcons.map((icon, index) => (
@@ -999,8 +1045,8 @@ function MovementPlanner({
                     ))}
                   </span>
                 )}
-                <span>Distance: {destination.distance}</span>
-                <span>{buildDestinationSummary(destination)}</span>
+                <span>{routePreview.riskText ?? buildDestinationSummary(destination)}</span>
+                {routePreview.rewardText ? <span>{routePreview.rewardText}</span> : null}
                 {destination.disabledReason ? (
                   <span className="phone-movement-disabled-reason">{destination.disabledReason}</span>
                 ) : null}
@@ -1013,6 +1059,11 @@ function MovementPlanner({
 
       {selected ? (
         <article className="phone-movement-intel" aria-label={`${selected.name} full intel`}>
+          {(() => {
+            const routePreview = buildRoutePreviewCopy(selected, planner.movementValue, planner.currentSectorName, true);
+
+            return (
+              <>
           <div className="phone-movement-intel-heading">
             <div>
               <span>Full Intel</span>
@@ -1026,6 +1077,10 @@ function MovementPlanner({
           <div className="phone-movement-intel-grid">
             <span>Route</span>
             <strong>{(selected.routeNames ?? selected.route).join(" -> ")}</strong>
+            <span>Why legal</span>
+            <strong>{routePreview.exactText}</strong>
+            <span>Steps</span>
+            <strong>{selected.distance} / {planner.movementValue}</strong>
             <span>Icons</span>
             <strong className="phone-movement-inline-icons">
               {selected.threatIcons.length > 0
@@ -1038,7 +1093,13 @@ function MovementPlanner({
                 : "None"}
             </strong>
             <span>Status</span>
-            <strong>{selected.disabledReason ? "Locked" : selected.faceUpThreats.length > 0 ? "Blocked" : "Open"}</strong>
+            <strong>{routePreview.statusLabel}: {routePreview.statusReason}</strong>
+          </div>
+
+          <div className="phone-movement-route-explain" aria-label="Route explanation">
+            <p>{routePreview.pathText}</p>
+            {routePreview.riskText ? <p>{routePreview.riskText}</p> : null}
+            {routePreview.rewardText ? <p>{routePreview.rewardText}</p> : null}
           </div>
 
           {selected.loreText ? <p className="phone-movement-lore">{selected.loreText}</p> : null}
@@ -1118,6 +1179,9 @@ function MovementPlanner({
           >
             Confirm Move
           </GameButton>
+              </>
+            );
+          })()}
         </article>
       ) : (
         <p className="phone-sheet-action-copy">Tap a tile to inspect. Confirm destination when ready.</p>
@@ -1270,6 +1334,7 @@ export function PhoneActionPanel({
   const battleAssistPanel = <BattleAssistCard patch={patch} onIntent={onIntent} />;
   const sector = getSector(patch.sectors, self.sectorId);
   const boardSpace = getBoardSpace(self.sectorId);
+  const sectorExplorationCopy = buildSectorExplorationCopy(patch.sectorExplorationSummary);
   const activeContract = getActiveContractCard(patch);
   const equippedIds = new Set(Object.values(self.character.equippedGear).filter((value): value is string => Boolean(value)));
   const winnerName = patch.seats.find((seat) => seat.seatId === patch.winnerSeatId)?.displayName ?? patch.winnerSeatId ?? "unknown";
@@ -1883,6 +1948,7 @@ export function PhoneActionPanel({
               <strong>{boardSpace?.textBox.title ?? "Operative options"}</strong>
             </div>
             <SectorOpportunityChips items={sectorOpportunityItems} />
+            <SectorExplorationPanel summary={sectorExplorationCopy} />
             <ActionSections
               sections={[
                 { key: "resolve", title: "Tile Action", detail: boardSpace?.textBox.title, actions: resolveActions, defaultOpen: true },

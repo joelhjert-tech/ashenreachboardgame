@@ -398,6 +398,49 @@ describe("canonical sector graph", () => {
     expect(JSON.stringify(tvProjection.movementPlanner)).not.toContain("scrap-toll-gangers");
   });
 
+  it("projects public sector exploration math for TV and the owning phone", () => {
+    const state = createInitialSessionState("session-alpha");
+    const threat = loadThreatCards().get("hook-runner") ?? loadThreatCards().values().next().value;
+    state.status = "active";
+    state.phase = "action";
+    state.turnOrder = ["seat-1"];
+    state.activeSeatIndex = 0;
+    state.currentEncounter = threat ?? null;
+    state.seats[0] = { ...state.seats[0]!, connected: true, displayName: "Lane", characterId: "void-marshal" };
+    state.players[0] = {
+      ...state.players[0]!,
+      sectorId: "outer_waymarket",
+      character: {
+        ...state.players[0]!.character,
+        currentSpaceId: "outer_waymarket"
+      }
+    };
+
+    const tvProjection = createTvProjection(state) as {
+      sectorExplorationSummary: {
+        sectorId: string;
+        sectorName: string;
+        unresolvedThreats: Array<{ name: string; blocksSectorText: boolean }>;
+        drawCountsDue: Record<string, number>;
+        explanationLines: string[];
+        sectorTextLocked: boolean;
+      } | null;
+    };
+    const phoneProjection = createPhoneProjection(state, "seat-1") as {
+      sectorExplorationSummary: typeof tvProjection.sectorExplorationSummary;
+    };
+    const tvJson = JSON.stringify(tvProjection);
+
+    expect(tvProjection.sectorExplorationSummary?.sectorId).toBe("outer_waymarket");
+    expect(tvProjection.sectorExplorationSummary?.sectorName).toBe("Anchor Market");
+    expect(tvProjection.sectorExplorationSummary?.unresolvedThreats[0]?.blocksSectorText).toBe(true);
+    expect(tvProjection.sectorExplorationSummary?.sectorTextLocked).toBe(true);
+    expect(Object.values(tvProjection.sectorExplorationSummary?.drawCountsDue ?? {}).some((count) => count >= 0)).toBe(true);
+    expect(tvProjection.sectorExplorationSummary?.explanationLines.join(" ")).toMatch(/printed icons|unresolved blockers/i);
+    expect(phoneProjection.sectorExplorationSummary).toEqual(tvProjection.sectorExplorationSummary);
+    expect(tvJson).not.toContain("Claim the Black Ledger");
+  });
+
   it("omits the TV movement planner outside active movement", () => {
     const state = createInitialSessionState("session-alpha");
     state.status = "active";

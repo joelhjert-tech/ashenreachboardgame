@@ -3,6 +3,7 @@ import { BOARD_SPACES, getBoardSpace, isScenarioConfrontationSpace } from "../..
 import { RIFTFALL_BOARD_NODE_INDEX, RIFTFALL_BOARD_NODES } from "../../data/riftfallBoardNodes.js";
 import type { OutcomeSummary, PublicPatchPayload, SectorNode, ThreatIcon } from "../shared/types.js";
 import { ThreatIconBadge } from "../shared/ChallengeBadge.js";
+import { buildRoutePreviewCopy } from "../shared/explainabilityPrompts.js";
 import {
   buildEscalationMarker,
   buildScenarioAuras,
@@ -275,6 +276,14 @@ export function BoardMap({ patch, previousPatch = null, phase, showHeader = true
   const selectedBoardSpace = selectedNode ? getBoardSpace(selectedNode.id) : null;
   const selectedSector = selectedNode ? sectorsById.get(selectedNode.id) ?? null : null;
   const selectedOccupants = selectedNode ? patch.players.filter((player) => player.sectorId === selectedNode.id) : [];
+  const selectedMoveDestination =
+    selectedNode && movementPlanner
+      ? movementPlanner.destinations.find((destination) => destination.sectorId === selectedNode.id) ?? null
+      : null;
+  const selectedRoutePreview =
+    selectedMoveDestination && movementPlanner
+      ? buildRoutePreviewCopy(selectedMoveDestination, movementPlanner.movementValue, movementPlanner.currentSectorName, true)
+      : null;
   const selectedGateRules =
     selectedBoardSpace?.movementRequirements?.map((requirement) => {
       const parts = [
@@ -503,6 +512,24 @@ export function BoardMap({ patch, previousPatch = null, phase, showHeader = true
                 <span className="board-sidebar-ring">{selectedNode?.ring ?? "outer"}</span>
               </div>
               <p className="board-sidebar-title">{selectedNode?.label ?? "Unknown node"}</p>
+              {selectedMoveDestination && selectedRoutePreview && (
+                <div className="board-sidebar-route-preview" data-testid="tv-route-preview">
+                  <div>
+                    <span>Route preview</span>
+                    <strong>{selectedMoveDestination.name}</strong>
+                  </div>
+                  <p>
+                    Move {movementPlanner?.movementValue ?? selectedMoveDestination.distance}: {selectedRoutePreview.exactText}
+                  </p>
+                  <p>{selectedRoutePreview.pathText}</p>
+                  <div className="board-sidebar-tags" aria-label={`${selectedMoveDestination.name} route preview tags`}>
+                    {selectedRoutePreview.tagLabels.map((tag) => (
+                      <span key={tag}>{tag}</span>
+                    ))}
+                  </div>
+                  <small>{selectedRoutePreview.riskText ?? selectedRoutePreview.rewardText ?? selectedRoutePreview.statusReason}</small>
+                </div>
+              )}
               {selectedBoardSpace?.tags && selectedBoardSpace.tags.length > 0 && (
                 <div className="board-sidebar-tags" aria-label="Sector tags">
                   {selectedBoardSpace.tags.map((tag) => (

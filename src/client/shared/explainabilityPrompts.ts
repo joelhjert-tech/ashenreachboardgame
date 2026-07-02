@@ -1,10 +1,12 @@
 import { statLabelById } from "./statLabels.js";
 import type {
   ActiveResolution,
+  PublicMoveDestination,
   PhonePatchPayload,
   PublicMovementPlannerState,
   PublicPatchPayload,
   PublicPlayer,
+  PublicSectorExplorationSummary,
   PublicShopEncounterState,
   StatePatch
 } from "./types.js";
@@ -37,8 +39,49 @@ export interface CurrentPlayerPrompt {
   targetTab?: "move" | "battle" | "shop" | "action";
 }
 
+export interface RoutePreviewCopy {
+  exactText: string;
+  pathText: string;
+  statusLabel: "Reachable" | "Blocked" | "Selected";
+  statusReason: string;
+  riskText: string | null;
+  rewardText: string | null;
+  tagLabels: string[];
+}
+
+export interface SectorExplorationCopy {
+  printedIconsText: string;
+  unresolvedText: string;
+  drawDueText: string;
+  lockText: string;
+  lines: string[];
+}
+
 function toTitleCase(value: string): string {
   return value.replace(/[-_]/g, " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
+}
+
+function formatCount(count: number, singular: string, plural = `${singular}s`): string {
+  return `${count} ${count === 1 ? singular : plural}`;
+}
+
+function formatThreatIconName(icon: string): string {
+  return icon.charAt(0).toUpperCase() + icon.slice(1);
+}
+
+function formatThreatIconCounts(icons: string[]): string {
+  const counts = icons.reduce<Record<string, number>>((accumulator, icon) => {
+    accumulator[icon] = (accumulator[icon] ?? 0) + 1;
+    return accumulator;
+  }, {});
+
+  return Object.entries(counts)
+    .map(([icon, count]) => `${count} ${icon}`)
+    .join(", ");
+}
+
+function normalizeTagLabel(tag: string): string {
+  return tag.replace(/[-_]/g, " ");
 }
 
 function getActiveSeatId(payload: PublicPatchPayload): string | null {
@@ -98,6 +141,99 @@ function describeMovement(planner: PublicMovementPlannerState): {
     text: `You rolled ${planner.movementValue}. Choose one glowing space exactly ${planner.movementValue} step${planner.movementValue === 1 ? "" : "s"} away.`,
     summary: `${planner.destinations.length} legal destination${planner.destinations.length === 1 ? "" : "s"} from ${planner.currentSectorName}.`,
     lockedReason: null
+  };
+}
+
+export function buildRoutePreviewCopy(
+  destination: PublicMoveDestination,
+  movementValue: number,
+  currentSectorName: string,
+  selected = false
+): RoutePreviewCopy {
+  const isBlocked = Boolean(destination.disabledReason);
+  const routeNames = destination.routeNames ?? destination.route;
+  const exactText =
+    destination.distance === movementValue
+      ? `Legal: exactly ${movementValue} step${movementValue === 1 ? "" : "s"} from ${currentSectorName}.`
+      : `Blocked: route is ${destination.distance} step${destination.distance === 1 ? "" : "s"}, not ${movementValue}.`;
+  const blockerNames = destination.faceUpThreats.map((threat) => threat.name);
+  const tagLabels = [
+    ...new Set(
+      [
+        ...destination.tags,
+        ...destination.strategicTags,
+        destination.threatIcons.length > 0 || destination.faceUpThreats.length > 0 ? "threat" : null,
+        destination.shop ? "shop" : null,
+        destination.scenarioMarkers?.length ? "objective" : null
+      ]
+        .filter((tag): tag is string => Boolean(tag))
+        .filter((tag) => ["shop", "hazard", "objective", "sanctuary", "anomaly", "threat", "danger", "reward", "gate", "nemesis", "safe", "locked"].includes(tag))
+        .map(normalizeTagLabel)
+    )
+  ].slice(0, 6);
+  const riskText = destination.disabledReason
+    ? `Blocked: ${destination.disabledReason}.`
+    : destination.faceUpThreats.length > 0
+      ? `Risk: ${blockerNames.join(", ")} already blocks the sector.`
+      : destination.nemesisPresent
+        ? "Risk: Nemesis present."
+        : destination.threatIcons.length > 0
+          ? `Risk: ${formatThreatIconCounts(destination.threatIcons)} printed threat icon${destination.threatIcons.length === 1 ? "" : "s"}.`
+          : null;
+  const rewardText = destination.shop
+    ? destination.shop.status === "locked"
+      ? "Reward: shop available after threats are clear."
+      : `Reward: ${destination.shop.shopName} services are available.`
+    : destination.scenarioMarkers?.length
+      ? `Reward: ${destination.scenarioMarkers.join(", ")} objective marker.`
+      : destination.strategicTags.includes("reward")
+        ? "Reward: public upside if the sector stays clear."
+        : null;
+
+  return {
+    exactText,
+    pathText: `Path: ${routeNames.join(" -> ")}.`,
+    statusLabel: selected ? "Selected" : isBlocked || destination.faceUpThreats.length > 0 ? "Blocked" : "Reachable",
+    statusReason: isBlocked
+      ? destination.disabledReason ?? "Route blocked."
+      : destination.faceUpThreats.length > 0
+        ? `${formatCount(destination.faceUpThreats.length, "blocker")} must be cleared.`
+        : `Reachable by the stored movement roll of ${movementValue}.`,
+    riskText,
+    rewardText,
+    tagLabels
+  };
+}
+
+export function buildSectorExplorationCopy(summary: PublicSectorExplorationSummary | null | undefined): SectorExplorationCopy | null {
+  if (!summary) {
+    return null;
+  }
+
+  const drawEntries = (["red", "blue", "yellow"] as const).flatMap((icon) => (
+    summary.drawCountsDue[icon] > 0 ? [`${summary.drawCountsDue[icon]} ${icon}`] : []
+  ));
+  const printedIconsText = summary.printedThreatIcons.length > 0
+    ? `Printed icons: ${formatThreatIconCounts(summary.printedThreatIcons)}.`
+    : "Printed icons: none.";
+  const unresolvedText = summary.unresolvedThreats.length > 0
+    ? `Unresolved blockers: ${summary.unresolvedThreats.map((threat) => threat.name).join(", ")}.`
+    : "Unresolved blockers: none.";
+  const drawDueText = drawEntries.length > 0 ? `Draw due: ${drawEntries.join(", ")}.` : "Draw due: none.";
+  const lockText = summary.lockedReason ?? (
+    summary.sectorTextLocked || summary.shopLocked
+      ? "Actions locked until unresolved threats are clear."
+      : "Action unlocked: sector text and services are clear."
+  );
+
+  return {
+    printedIconsText,
+    unresolvedText,
+    drawDueText,
+    lockText,
+    lines: summary.explanationLines.length > 0
+      ? summary.explanationLines
+      : [printedIconsText, unresolvedText, drawDueText, lockText]
   };
 }
 

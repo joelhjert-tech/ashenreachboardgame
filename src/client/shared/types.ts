@@ -490,6 +490,30 @@ export interface PublicMovementPlannerState {
   destinations: PublicMoveDestination[];
 }
 
+export interface PublicSectorExplorationThreat {
+  instanceId: string;
+  cardId: string;
+  name: string;
+  type: string;
+  lane?: ThreatIcon | "scenario";
+  blocksShop: boolean;
+  blocksSectorText: boolean;
+}
+
+export interface PublicSectorExplorationSummary {
+  sectorId: string;
+  sectorName: string;
+  printedThreatIcons: ThreatIcon[];
+  unresolvedThreats: PublicSectorExplorationThreat[];
+  drawCountsDue: Record<ThreatIcon, number>;
+  sectorTextLocked: boolean;
+  shopLocked: boolean;
+  lockedReason: string | null;
+  sectorTextTitle: string | null;
+  shopName: string | null;
+  explanationLines: string[];
+}
+
 export interface AbilityTriggerSummary {
   seatId: string;
   abilityId: string;
@@ -682,6 +706,7 @@ export interface PublicPatchPayload {
   activeResolution?: ActiveResolution | null;
   shopEncounter?: PublicShopEncounterState | null;
   movementPlanner?: PublicMovementPlannerState | null;
+  sectorExplorationSummary?: PublicSectorExplorationSummary | null;
   recentAbilityTriggers: AbilityTriggerSummary[];
   nemesis: ActiveNemesisSummary | null;
 }

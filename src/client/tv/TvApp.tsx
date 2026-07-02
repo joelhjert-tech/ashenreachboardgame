@@ -17,7 +17,11 @@ import {
   resolutionStageLabel
 } from "../shared/resolutionPresentation.js";
 import { buildScenarioOutcomeSummary, buildScenarioRuleDigest } from "../shared/scenarioPresentation.js";
-import { buildCurrentTablePrompt, type ExplainabilityTone } from "../shared/explainabilityPrompts.js";
+import {
+  buildCurrentTablePrompt,
+  buildSectorExplorationCopy,
+  type ExplainabilityTone
+} from "../shared/explainabilityPrompts.js";
 import { formatSeatLabel, statOrder, statShortLabelById } from "../shared/statLabels.js";
 import { useRoomSubscription } from "../shared/useRoomSubscription.js";
 import { getCharacterPortraitPath, getNemesisPortraitPath } from "../shared/assetPaths.js";
@@ -1011,6 +1015,7 @@ function HostContextPanel({
   const activeSectorName = activeSpace?.name ?? activeSector?.name ?? "Awaiting deployment";
   const activeTileAssetPath = activePlayer ? getTileAssetPath(activePlayer.sectorId) : null;
   const activeTileExpectedPath = activePlayer ? getExpectedTileAssetPath(activePlayer.sectorId) : "";
+  const sectorExplorationCopy = buildSectorExplorationCopy(patch?.payload.sectorExplorationSummary);
   const occupants =
     activePlayer && patch
       ? patch.payload.players.filter((player) => player.sectorId === activePlayer.sectorId)
@@ -1097,6 +1102,21 @@ function HostContextPanel({
           {activeSpace.threatIcons.map((icon, index) => (
             <ThreatIconBadge key={`${icon}-${index}`} icon={icon} />
           ))}
+        </div>
+      )}
+      {sectorExplorationCopy && (
+        <div className="tv-sector-exploration" aria-label="Sector exploration math" data-testid="tv-sector-exploration">
+          <div className="tv-host-context-grid">
+            <span>Printed <strong>{sectorExplorationCopy.printedIconsText.replace(/^Printed icons: /, "")}</strong></span>
+            <span>Blockers <strong>{sectorExplorationCopy.unresolvedText.replace(/^Unresolved blockers: /, "")}</strong></span>
+            <span>Draw <strong>{sectorExplorationCopy.drawDueText.replace(/^Draw due: /, "")}</strong></span>
+            <span>Status <strong>{sectorExplorationCopy.lockText}</strong></span>
+          </div>
+          <div className="tv-sector-exploration-lines">
+            {sectorExplorationCopy.lines.slice(0, 4).map((line) => (
+              <p key={line}>{line}</p>
+            ))}
+          </div>
         </div>
       )}
       <p>{activeSpace?.ruleText ?? "Select or activate a sector to bring its command brief online."}</p>

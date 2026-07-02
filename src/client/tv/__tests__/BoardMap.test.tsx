@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import "@testing-library/jest-dom/vitest";
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 import { BOARD_SPACES } from "../../../game/data/boardSpaces.js";
 import type { PublicPatchPayload } from "../../shared/types.js";
@@ -210,6 +210,55 @@ describe("BoardMap", () => {
     expect(screen.getByTestId("movement-route-emberwatch-step-0-ashwake-crossing-mirecoil-beacon")).toBeInTheDocument();
     expect(screen.getByTestId("movement-route-emberwatch-step-1-mirecoil-beacon-emberwatch-step")).toBeInTheDocument();
     expect(screen.queryByTestId("movement-route-hollow-veil-yard-0-ashwake-crossing-glassmere-spindle")).not.toBeInTheDocument();
+  });
+
+  it("shows the selected legal route explanation in the board sidebar", () => {
+    const patch: PublicPatchPayload = {
+      ...createPatch(),
+      movementPlanner: {
+        active: true,
+        movementValue: 2,
+        currentSectorId: "ashwake-crossing",
+        currentSectorName: "Ashwake Crossing",
+        destinations: [
+          {
+            sectorId: "emberwatch-step",
+            name: "Emberwatch Step",
+            ring: "outer",
+            distance: 2,
+            route: ["ashwake-crossing", "mirecoil-beacon", "emberwatch-step"],
+            routeNames: ["Ashwake Crossing", "Mirecoil Beacon", "Emberwatch Step"],
+            tags: ["hazard", "objective"],
+            threatIcons: ["red"],
+            ruleText: "Cross the ember watch.",
+            faceUpThreats: [
+              {
+                instanceId: "emberwatch-step:ash-wolf",
+                cardId: "ash-wolf",
+                name: "Ash Wolf",
+                type: "enemy",
+                deck: "red",
+                challenge: { stat: "grit", value: 7 },
+                blocksShop: true,
+                blocksSectorText: true
+              }
+            ],
+            occupants: [],
+            strategicTags: ["danger"]
+          }
+        ]
+      }
+    };
+
+    render(<BoardMap patch={patch} phase="navigation" />);
+
+    fireEvent.click(screen.getByTestId("sector-node-emberwatch-step"));
+
+    expect(screen.getByTestId("tv-route-preview")).toHaveTextContent(/move 2/i);
+    expect(screen.getByTestId("tv-route-preview")).toHaveTextContent(/legal: exactly 2 steps from ashwake crossing/i);
+    expect(screen.getByTestId("tv-route-preview")).toHaveTextContent(/ashwake crossing -> mirecoil beacon -> emberwatch step/i);
+    expect(screen.getByTestId("tv-route-preview")).toHaveTextContent(/hazard/i);
+    expect(screen.getByTestId("tv-route-preview")).toHaveTextContent(/risk: ash wolf/i);
   });
 
   it("renders rectangular board tiles for the shared board-space layout and keeps live sector ids for active content", () => {

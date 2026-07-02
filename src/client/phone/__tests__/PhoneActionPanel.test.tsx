@@ -274,6 +274,8 @@ describe("PhoneActionPanel", () => {
     expect(screen.getByTestId("movement-planner")).toBeInTheDocument();
     expect(screen.getByText(/move 1/i)).toBeInTheDocument();
     expect(screen.getAllByText(/anchor market/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/legal: exactly 1 step from pilgrim lock/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/reward: anchor market services are available/i).length).toBeGreaterThan(0);
     expect(screen.queryByText("Icons")).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: /anchor market/i }));
@@ -334,7 +336,9 @@ describe("PhoneActionPanel", () => {
 
     fireEvent.click(screen.getByRole("button", { name: /locked.*ashwalk bridge/i }));
     expect(onIntent).not.toHaveBeenCalled();
-    expect(screen.getByText(/chain-maul salvager/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/chain-maul salvager/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/legal: exactly 1 step from pilgrim lock/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/risk: chain-maul salvager/i).length).toBeGreaterThan(0);
     expect(screen.getByText(/mira: signal witch/i)).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: /back/i }));
@@ -844,12 +848,34 @@ describe("PhoneActionPanel", () => {
         characters={characters}
         onIntent={vi.fn()}
         patch={createPatch({
-          encounter: null
+          encounter: null,
+          sectorExplorationSummary: {
+            sectorId: "ashwake-crossing",
+            sectorName: "Ashwake Crossing",
+            printedThreatIcons: ["red", "yellow"],
+            unresolvedThreats: [],
+            drawCountsDue: { red: 1, blue: 0, yellow: 1 },
+            sectorTextLocked: false,
+            shopLocked: false,
+            lockedReason: null,
+            sectorTextTitle: "Hold the Bridge",
+            shopName: null,
+            explanationLines: [
+              "Printed icons: 1 red, 1 yellow.",
+              "No unresolved blockers.",
+              "Draw due: 1 red, 1 yellow.",
+              "Sector text unlocked: Hold the Bridge."
+            ]
+          }
         })}
       />
     );
 
     expect(screen.getByRole("button", { name: /resolve hold the bridge/i })).toBeInTheDocument();
+    expect(screen.getByTestId("phone-sector-exploration")).toHaveTextContent(/sector math/i);
+    expect(screen.getByTestId("phone-sector-exploration")).toHaveTextContent(/printed icons: 1 red, 1 yellow/i);
+    expect(screen.getByTestId("phone-sector-exploration")).toHaveTextContent(/draw due: 1 red, 1 yellow/i);
+    expect(screen.getByTestId("phone-sector-exploration")).toHaveTextContent(/sector text unlocked/i);
   });
 
   it("renders separate sector-text actions for authored board-text choices", () => {
