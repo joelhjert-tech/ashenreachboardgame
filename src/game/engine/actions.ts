@@ -296,8 +296,24 @@ export interface ScenarioProgressAdvancedAction extends BaseAction {
   effect?: EncounterEffect | null;
 }
 
+export interface ScenarioObjectiveProgressTriggeredAction extends BaseAction {
+  type: "SCENARIO_OBJECTIVE_PROGRESS_TRIGGERED";
+  scenarioId: string;
+  progressKey: string;
+  amount: number;
+  required: number;
+  triggerType: "contractCompleted" | "threatDefeated" | "sectorActionCompleted";
+  summary: string;
+}
+
 export interface ScenarioVictoryAchievedAction extends BaseAction {
   type: "SCENARIO_VICTORY_ACHIEVED";
+  scenarioId: string;
+  summary: string;
+}
+
+export interface ScenarioObjectiveCompletedAction extends BaseAction {
+  type: "SCENARIO_OBJECTIVE_COMPLETED";
   scenarioId: string;
   summary: string;
 }
@@ -458,7 +474,9 @@ export type GameAction =
   | ScenarioConfrontationRequestedAction
   | SpaceTextResolvedAction
   | ScenarioProgressAdvancedAction
+  | ScenarioObjectiveProgressTriggeredAction
   | ScenarioVictoryAchievedAction
+  | ScenarioObjectiveCompletedAction
   | StabilizeResolvedAction
   | StatRaisedAction
   | RoundCompletedAction

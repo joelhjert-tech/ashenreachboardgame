@@ -70,6 +70,11 @@ import {
   getMovementBlockReason
 } from "../game/rules/movementPlanner.js";
 import {
+  buildContractCompletedObjectiveEvent,
+  resolveScenarioObjectiveTrigger,
+  type ScenarioObjectiveTriggerEvent
+} from "../game/rules/scenarioObjectiveTriggers.js";
+import {
   canUseQaShopGear,
   getAvailableShopStockForCategory,
   getBoardSpaceShopCategory,
@@ -119,6 +124,8 @@ import type {
   ShopServiceResolvedAction,
   ShopStockRevealedAction,
   ScenarioConfrontationRequestedAction,
+  ScenarioObjectiveCompletedAction,
+  ScenarioObjectiveProgressTriggeredAction,
   ScenarioProgressAdvancedAction,
   ScenarioVictoryAchievedAction,
   SoloRerollResolvedAction,
@@ -584,6 +591,7 @@ export class GameRoomServer {
 
       if (intent.type === "COMPLETE_CONTRACT") {
         this.applyScenarioOnContractCompleted(client.seatId);
+        this.applyScenarioObjectiveOnContractCompleted(client.seatId, intent.contractId);
       }
 
       if (intent.type === "ACCEPT_CONTRACT") {
@@ -3522,6 +3530,47 @@ export class GameRoomServer {
     );
   }
 
+  private applyScenarioObjectiveTrigger(seatId: string, event: ScenarioObjectiveTriggerEvent): void {
+    const result = resolveScenarioObjectiveTrigger(this.state, event);
+
+    if (!result) {
+      return;
+    }
+
+    this.applyAction({
+      type: "SCENARIO_OBJECTIVE_PROGRESS_TRIGGERED",
+      seatId,
+      scenarioId: result.scenarioId,
+      progressKey: result.progressKey,
+      amount: result.amount,
+      required: result.required,
+      triggerType: result.triggerType,
+      summary: result.summary,
+      createdAt: new Date().toISOString()
+    } satisfies ScenarioObjectiveProgressTriggeredAction);
+
+    if (result.completed && this.state.status === "active") {
+      this.applyAction({
+        type: "SCENARIO_OBJECTIVE_COMPLETED",
+        seatId,
+        scenarioId: result.scenarioId,
+        summary: `${getScenarioDefinition(result.scenarioId)?.name ?? "Scenario"} completed. Public objective reached ${result.next}/${result.required}.`,
+        createdAt: new Date().toISOString()
+      } satisfies ScenarioObjectiveCompletedAction);
+    }
+  }
+
+  private applyScenarioObjectiveOnContractCompleted(seatId: string, contractId: string): void {
+    const contract = this.resolveContract(this.contracts.get(contractId));
+    const player = this.state.players.find((entry) => entry.seatId === seatId);
+
+    if (!contract) {
+      return;
+    }
+
+    this.applyScenarioObjectiveTrigger(seatId, buildContractCompletedObjectiveEvent(contract, player?.sectorId));
+  }
+
   private applyScenarioOnWoundsTaken(seatId: string, woundDelta: number): void {
     this.applyScenarioAmbientResolution(
       seatId,
@@ -4659,6 +4708,11 @@ export class GameRoomServer {
         },
         "The local board-text objective advanced."
       );
+      this.applyScenarioObjectiveTrigger(intent.seatId, {
+        type: "sectorActionCompleted",
+        effectKey: resolution.effectKey,
+        sectorId: player.sectorId
+      });
     }
     this.maybeTriggerAbilityOnSpaceTextResolved(intent.seatId, resolution.effectKey);
   }
@@ -5431,6 +5485,13 @@ export class GameRoomServer {
     if (success) {
       this.maybeTriggerAbilityOnCombatVictory(fighterSeatId);
       this.applyScenarioOnEnemyDefeat(fighterSeatId);
+      this.applyScenarioObjectiveTrigger(fighterSeatId, {
+        type: "threatDefeated",
+        threatId: encounter.id,
+        threatLane: encounter.threatLane,
+        enemyFamily: encounter.enemyFamily,
+        sectorId: player.sectorId
+      });
     }
     this.runAutomaticPhases(fighterSeatId);
   }

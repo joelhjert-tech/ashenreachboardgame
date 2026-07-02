@@ -29,6 +29,8 @@ import type {
   ShopServiceResolvedAction,
   ShopStockRevealedAction,
   ScenarioProgressAdvancedAction,
+  ScenarioObjectiveCompletedAction,
+  ScenarioObjectiveProgressTriggeredAction,
   ScenarioConfrontationRequestedAction,
   ScenarioVictoryAchievedAction,
   SoloRerollResolvedAction,
@@ -2788,6 +2790,68 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
         eventLog: [...nextState.eventLog, action]
       });
     }
+    case "SCENARIO_OBJECTIVE_PROGRESS_TRIGGERED": {
+      const scenarioAction = action as ScenarioObjectiveProgressTriggeredAction;
+
+      if (state.status !== "active") {
+        return reject(state, action, "Scenario objective progress can only advance during an active session");
+      }
+
+      if (state.activeScenarioId !== scenarioAction.scenarioId) {
+        return reject(state, action, `Scenario ${scenarioAction.scenarioId} is not active`);
+      }
+
+      const player = requirePlayer(state, scenarioAction.seatId);
+      const currentProgress = Math.max(0, state.scenarioProgress[scenarioAction.progressKey] ?? 0);
+      const nextProgress =
+        scenarioAction.required > 0
+          ? Math.min(scenarioAction.required, currentProgress + Math.max(0, scenarioAction.amount))
+          : currentProgress + Math.max(0, scenarioAction.amount);
+
+      if (nextProgress <= currentProgress) {
+        return reject(state, action, "Scenario objective trigger did not add progress");
+      }
+
+      const previousSummary = state.lastOutcomeSummary?.summary;
+
+      return succeed({
+        ...state,
+        sequence: state.sequence + 1,
+        scenarioProgress: {
+          ...state.scenarioProgress,
+          [scenarioAction.progressKey]: nextProgress
+        },
+        lastOutcomeSummary: state.lastOutcomeSummary
+          ? {
+              ...state.lastOutcomeSummary,
+              seatId: scenarioAction.seatId,
+              movedToSectorId: player.sectorId,
+              success: true,
+              summary: [previousSummary, scenarioAction.summary].filter(Boolean).join(" ")
+            }
+          : {
+              seatId: scenarioAction.seatId,
+              movedToSectorId: player.sectorId,
+              encounterCardId: null,
+              encounterTitle: "Scenario Objective",
+              encounterCardType: null,
+              checkStat: null,
+              die1: null,
+              die2: null,
+              statBonus: null,
+              checkTotal: null,
+              difficulty: null,
+              enemyRollerSeatId: null,
+              enemyDie1: null,
+              enemyDie2: null,
+              enemyBonus: null,
+              enemyTotal: null,
+              success: true,
+              summary: scenarioAction.summary
+            },
+        eventLog: [...state.eventLog, action]
+      });
+    }
     case "SCENARIO_VICTORY_ACHIEVED": {
       const scenarioAction = action as ScenarioVictoryAchievedAction;
 
@@ -2854,6 +2918,75 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
           title: "Scenario victory",
           text: scenarioAction.summary,
           effects: [scenarioAction.summary]
+        }),
+        eventLog: [...state.eventLog, action]
+      });
+    }
+    case "SCENARIO_OBJECTIVE_COMPLETED": {
+      const scenarioAction = action as ScenarioObjectiveCompletedAction;
+
+      if (state.status !== "active") {
+        return reject(state, action, "Scenario objective can only complete during an active session");
+      }
+
+      if (state.activeScenarioId !== scenarioAction.scenarioId) {
+        return reject(state, action, `Scenario ${scenarioAction.scenarioId} is not active`);
+      }
+
+      const player = requirePlayer(state, scenarioAction.seatId);
+
+      return succeed({
+        ...state,
+        status: "ended",
+        winnerSeatId: scenarioAction.seatId,
+        phase: "broadcast",
+        sequence: state.sequence + 1,
+        resolutionSource: null,
+        currentEncounter: null,
+        pendingEnemyRoll: null,
+        pendingEffect: null,
+        lastOutcomeSummary: state.lastOutcomeSummary
+          ? {
+              ...state.lastOutcomeSummary,
+              seatId: scenarioAction.seatId,
+              movedToSectorId: player.sectorId,
+              success: true,
+              summary: [state.lastOutcomeSummary.summary, scenarioAction.summary].filter(Boolean).join(" ")
+            }
+          : {
+              seatId: scenarioAction.seatId,
+              movedToSectorId: player.sectorId,
+              encounterCardId: null,
+              encounterTitle: "Scenario Complete",
+              encounterCardType: null,
+              checkStat: null,
+              die1: null,
+              die2: null,
+              statBonus: null,
+              checkTotal: null,
+              difficulty: null,
+              enemyRollerSeatId: null,
+              enemyDie1: null,
+              enemyDie2: null,
+              enemyBonus: null,
+              enemyTotal: null,
+              success: true,
+              summary: scenarioAction.summary
+            },
+        activeResolution: buildOutcomeResolution({
+          seatId: scenarioAction.seatId,
+          source: "scenario",
+          createdAt: scenarioAction.createdAt,
+          suffix: "objective-complete",
+          card: {
+            id: scenarioAction.scenarioId,
+            title: "Scenario Complete",
+            type: "scenario",
+            flavor: scenarioAction.summary
+          },
+          title: "Scenario complete",
+          text: scenarioAction.summary,
+          effects: []
         }),
         eventLog: [...state.eventLog, action]
       });
