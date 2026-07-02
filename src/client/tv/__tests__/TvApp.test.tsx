@@ -756,6 +756,8 @@ describe("TvApp", () => {
       sectorName: "Anchor Market",
       shopId: "outer_waymarket",
       shopName: "Anchor Market",
+      shopType: "Forge Market",
+      stockCategory: "forge-armoury",
       status: "open",
       activePlayer: {
         playerId: "seat-1",
@@ -768,10 +770,21 @@ describe("TvApp", () => {
         completedContracts: 1
       },
       blockingThreats: [],
+      sellInventory: [
+        {
+          gearId: "veil-hook",
+          name: "Veil Hook",
+          type: "gear",
+          sellValue: 1,
+          summary: "Trade carried gear for salvage.",
+          sellable: true
+        }
+      ],
       services: [
         {
           id: "buy-gear",
           label: "Buy Gear",
+          shopCategory: "forge-armoury",
           cost: { salvage: 3 },
           enabled: true
         },
@@ -800,15 +813,19 @@ describe("TvApp", () => {
     expect(banner).toHaveTextContent(/shop open/i);
     expect(banner).toHaveTextContent(/waiting on tarek voss/i);
     expect(banner).toHaveTextContent(/anchor market/i);
-    expect(overlay).toHaveTextContent(/shop encounter/i);
+    expect(overlay).toHaveTextContent(/shop open/i);
     expect(overlay).toHaveTextContent(/tarek voss/i);
     expect(overlay).toHaveTextContent(/anchor market/i);
-    expect(overlay).toHaveTextContent(/salvage/i);
-    expect(overlay).toHaveTextContent("6");
+    expect(overlay).toHaveTextContent(/forge market/i);
+    expect(overlay).toHaveTextContent(/armoury/i);
+    expect(within(screen.getByTestId("host-shop-status-panel")).getByText(/salvage/i)).toBeInTheDocument();
+    expect(screen.getByTestId("host-shop-status-panel")).toHaveTextContent("6");
+    expect(screen.getByTestId("host-shop-status-panel")).toHaveTextContent(/sellable/i);
+    expect(screen.getByTestId("host-shop-status-panel")).toHaveTextContent("1");
     expect(overlay).toHaveTextContent(/buy gear/i);
-    expect(overlay).toHaveTextContent(/shop stock - anchor market/i);
-    expect(overlay).toHaveTextContent(/no stock revealed/i);
-    expect(overlay).toHaveTextContent(/choose service on phone/i);
+    expect(overlay).toHaveTextContent(/choose on player phone/i);
+    expect(overlay).not.toHaveTextContent(/^vs$/i);
+    expect(overlay).not.toHaveTextContent(/active operative/i);
     expect(within(overlay).getByTestId("host-shop-fx-layer")).toBeInTheDocument();
     expect(screen.queryByTestId("host-battle-overlay")).not.toBeInTheDocument();
   });
@@ -833,6 +850,8 @@ describe("TvApp", () => {
       shopId: "outer_waymarket",
       shopName: "Anchor Market",
       status: "locked",
+      blocked: true,
+      blockedReasonText: "Shop blocked by threat.",
       activePlayer: {
         playerId: "seat-1",
         name: "Tarek Voss",
@@ -864,10 +883,117 @@ describe("TvApp", () => {
     render(<TvApp />);
 
     const overlay = await screen.findByTestId("host-shop-overlay");
-    expect(overlay).toHaveTextContent(/shop locked/i);
+    expect(screen.getByTestId("host-state-banner")).toHaveTextContent(/shop blocked/i);
+    expect(overlay).toHaveTextContent(/shop blocked/i);
     expect(overlay).toHaveTextContent(/gate-tax collectors command 5/i);
-    expect(overlay).toHaveTextContent(/clear threats before trade/i);
+    expect(overlay).toHaveTextContent(/shop blocked by threat/i);
     expect(within(screen.getByLabelText("Shop services")).queryByText(/buy gear/i)).not.toBeInTheDocument();
+  });
+
+  it("shows public shop purchase and sale outcomes without battle content", async () => {
+    window.localStorage.setItem("ashen-reach-tv-room-code", "RT7P4");
+    window.localStorage.setItem("ashen-reach-tv-host-token", "host:RT7P4:secret");
+    const patch = createPatch();
+    patch.phase = "action";
+    patch.payload.status = "active";
+    patch.payload.players[0] = {
+      ...patch.payload.players[0],
+      sectorId: "outer_waymarket",
+      character: {
+        ...patch.payload.players[0].character,
+        salvage: 4
+      }
+    };
+    patch.payload.shopEncounter = {
+      sectorId: "outer_waymarket",
+      sectorName: "Anchor Market",
+      shopId: "outer_waymarket",
+      shopName: "Anchor Market",
+      status: "open",
+      activePlayer: {
+        playerId: "seat-1",
+        name: "Tarek Voss",
+        characterName: "Tarek Voss",
+        salvage: 4,
+        heat: 0,
+        wounds: { current: 1, max: 6 }
+      },
+      blockingThreats: [],
+      services: [
+        {
+          id: "buy-gear",
+          label: "Buy Gear",
+          cost: { salvage: 3 },
+          enabled: true
+        }
+      ],
+      revealedStock: [
+        {
+          cardId: "ashlock-carbine",
+          name: "Ashlock Carbine",
+          type: "gear",
+          cost: { salvage: 3 },
+          summary: "A public weapon offer.",
+          affordable: true
+        }
+      ],
+      recentOutcome: {
+        operativeName: "Tarek Voss",
+        shopName: "Anchor Market",
+        action: "buy",
+        gained: "Ashlock Carbine",
+        costPaid: { salvage: 3 },
+        remainingSalvage: 4,
+        summary: "Tarek Voss bought Ashlock Carbine for 3 Salvage."
+      }
+    };
+    mockUseRoomSubscription.mockReturnValue({
+      patch,
+      error: null,
+      sendIntent: vi.fn(),
+      status: "open",
+      debugEvents: [],
+      clearDebugEvents: vi.fn()
+    });
+
+    render(<TvApp />);
+
+    const purchaseOverlay = await screen.findByTestId("host-shop-overlay");
+    expect(screen.getByTestId("host-shop-outcome")).toHaveTextContent(/bought ashlock carbine for 3 salvage/i);
+    expect(purchaseOverlay).toHaveTextContent(/ashlock carbine/i);
+    expect(purchaseOverlay).not.toHaveTextContent(/battle resolving/i);
+    expect(screen.queryByTestId("host-battle-overlay")).not.toBeInTheDocument();
+
+    cleanup();
+    vi.clearAllMocks();
+    window.localStorage.setItem("ashen-reach-tv-room-code", "RT7P4");
+    window.localStorage.setItem("ashen-reach-tv-host-token", "host:RT7P4:secret");
+    patch.payload.shopEncounter = {
+      ...patch.payload.shopEncounter,
+      recentOutcome: {
+        operativeName: "Tarek Voss",
+        shopName: "Anchor Market",
+        action: "sell",
+        sold: "Veil Hook",
+        salvageDelta: 1,
+        remainingSalvage: 5,
+        summary: "Tarek Voss sold Veil Hook for 1 Salvage."
+      }
+    };
+    mockUseRoomSubscription.mockReturnValue({
+      patch,
+      error: null,
+      sendIntent: vi.fn(),
+      status: "open",
+      debugEvents: [],
+      clearDebugEvents: vi.fn()
+    });
+
+    render(<TvApp />);
+
+    expect(await screen.findByTestId("host-shop-overlay")).toBeInTheDocument();
+    expect(screen.getByTestId("host-shop-outcome")).toHaveTextContent(/sold veil hook for 1 salvage/i);
+    expect(JSON.stringify(patch.payload.shopEncounter)).not.toContain("Private agenda");
   });
 
   it("keeps the shop encounter hidden while battle resolution is active on a shop sector", async () => {

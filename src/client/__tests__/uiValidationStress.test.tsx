@@ -466,7 +466,7 @@ describe("Ashen Reach UI validation stress states", () => {
     expect(screen.getByTestId("host-battle-log").querySelectorAll("p").length).toBeLessThanOrEqual(2);
   });
 
-  it("shows a host shop encounter as a VS service screen without exposing private inventory names", () => {
+  it("shows a host shop encounter as a public service stage without exposing private inventory names", () => {
     const phonePatch = createMasterAlphaPhonePatch({
       phase: "action",
       activeResolution: null,
@@ -478,10 +478,10 @@ describe("Ashen Reach UI validation stress states", () => {
 
     render(<HostShopOverlay patch={patch} activePlayer={activePlayer} />);
 
-    expect(screen.getByTestId("host-shop-overlay")).toHaveTextContent("Shop Encounter");
-    expect(screen.getByTestId("host-shop-operative")).toHaveTextContent("8 carried");
-    expect(screen.getByTestId("host-shop-service")).toHaveTextContent("Anchor Market");
-    expect(screen.getByTestId("host-shop-overlay")).toHaveTextContent(/clear threats before trade/i);
+    expect(screen.getByTestId("host-shop-overlay")).toHaveTextContent("Shop Blocked");
+    expect(screen.getByTestId("host-shop-status-panel")).toHaveTextContent("Anchor Market");
+    expect(screen.getByTestId("host-shop-overlay")).toHaveTextContent(/shop blocked by threat/i);
+    expect(screen.getByTestId("host-shop-overlay")).not.toHaveTextContent(/^vs$/i);
     expect(screen.queryByText("Void-Cleaver Command Blade")).not.toBeInTheDocument();
   });
 });

@@ -475,10 +475,16 @@ function getHostStateBannerModel({
 
   if (shopMode || patch.payload.shopEncounter) {
     const shop = patch.payload.shopEncounter;
+    const shopBlocked = Boolean(shop && (shop.status === "locked" || shop.blocked || shop.blockingThreats.length > 0));
+    const blockedDetail = shop?.blockedReasonText ?? "Shop blocked by threat.";
 
     return {
-      label: "Shop open",
-      detail: shop ? `Waiting on ${activeName} to choose a shop action at ${shop.shopName}.` : `Waiting on ${activeName} to choose a shop service.`,
+      label: shopBlocked ? "Shop blocked" : "Shop open",
+      detail: shop
+        ? shopBlocked
+          ? blockedDetail
+          : `Waiting on ${activeName} to choose a shop action at ${shop.shopName}.`
+        : `Waiting on ${activeName} to choose a shop service.`,
       meta: shop ? toTitleCase(shop.status) : "Choose service on phone",
       tone: "shop"
     };
