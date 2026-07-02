@@ -461,7 +461,9 @@ describe("Ashen Reach UI validation stress states", () => {
     expect(enemyPortrait).not.toContainElement(enemyHeader as HTMLElement);
     const battleRolls = screen.getByTestId("host-battle-rolls");
     expect(battleRolls).toHaveTextContent("31");
-    expect(within(battleRolls).getByTestId("battle-dice-animation")).toBeInTheDocument();
+    expect(screen.getByTestId("battle-dice-animation")).toBeInTheDocument();
+    expect(screen.getByTestId("battle-dice-animation")).toHaveClass("dice-roll-scene-dom");
+    expect(screen.getByTestId("host-battle-result-banner")).toHaveTextContent(/success/i);
     expect(screen.getAllByTestId("combat-dice-animation")).toHaveLength(1);
     expect(screen.getByTestId("host-battle-log").querySelectorAll("p").length).toBeLessThanOrEqual(2);
   });

@@ -5550,6 +5550,216 @@ body {
   text-overflow: ellipsis;
 }
 
+.host-battle-panel {
+  grid-template-columns: minmax(17rem, 1fr) minmax(14rem, 0.42fr) minmax(17rem, 1fr);
+  grid-template-rows:
+    minmax(0, 1fr)
+    clamp(3.6rem, 8svh, 5.2rem)
+    clamp(2.6rem, 5.6svh, 3.7rem)
+    clamp(2.55rem, 5.6svh, 3.8rem);
+  gap: clamp(0.34rem, 0.58vw, 0.72rem);
+  padding: clamp(0.32rem, 0.6vw, 0.72rem);
+  border: 1px solid rgba(231, 210, 176, 0.1);
+}
+
+.host-battle-combatant {
+  grid-template-rows:
+    clamp(4rem, 10svh, 6.1rem)
+    minmax(0, 1fr)
+    clamp(4.4rem, 9.4svh, 6.6rem);
+}
+
+.host-battle-total-footer {
+  grid-row: 3;
+  z-index: 3;
+  min-width: 0;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: clamp(0.34rem, 0.58vw, 0.7rem);
+  padding: clamp(0.38rem, 0.64vw, 0.75rem);
+  border: 1px solid rgba(231, 210, 176, 0.16);
+  background: rgba(5, 8, 12, 0.38);
+  -webkit-backdrop-filter: blur(0.34rem);
+  backdrop-filter: blur(0.34rem);
+  overflow: hidden;
+}
+
+.host-battle-enemy .host-battle-total-footer {
+  direction: rtl;
+}
+
+.host-battle-enemy .host-battle-total-footer p,
+.host-battle-enemy .host-battle-total-footer .challenge-badge {
+  direction: ltr;
+}
+
+.host-battle-total-footer p {
+  margin: 0;
+  color: #f1dfc1;
+  overflow: hidden;
+  font-size: clamp(0.72rem, 0.94vw, 1.08rem);
+  line-height: 1.18;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.host-battle-vs {
+  display: none;
+}
+
+.host-battle-vs-block {
+  grid-column: 2;
+  grid-row: 1;
+  position: relative;
+  z-index: 8;
+  align-self: stretch;
+  justify-self: stretch;
+  display: grid;
+  grid-template-rows: auto auto auto minmax(0, 1fr) auto;
+  place-items: center;
+  gap: clamp(0.24rem, 0.54vw, 0.68rem);
+  min-width: 0;
+  min-height: 0;
+  padding: clamp(0.52rem, 0.86vw, 1rem) clamp(0.34rem, 0.66vw, 0.8rem);
+  pointer-events: none;
+}
+
+.host-battle-vs-block > span {
+  color: #d7b878;
+  font-size: clamp(0.56rem, 0.72vw, 0.86rem);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.host-battle-vs-block > strong {
+  color: #f5d49c;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(2.7rem, 5.4vw, 7rem);
+  line-height: 0.78;
+  text-shadow:
+    0 0 1rem rgba(230, 78, 45, 0.52),
+    0 0 1.8rem rgba(78, 166, 229, 0.34);
+}
+
+.host-battle-dice-large {
+  width: 100%;
+  overflow: visible;
+}
+
+.host-battle-dice-large .dice-roll-scene,
+.host-battle-dice-large .battle-dice-animation {
+  width: 100%;
+}
+
+.host-battle-dice-large .combat-dice-animation {
+  --combat-die-size: clamp(2.25rem, 3.6vw, 4.7rem);
+  width: min(100%, calc(var(--combat-die-size) * 3.35));
+  gap: clamp(0.18rem, 0.34vw, 0.42rem);
+  margin: 0 auto;
+}
+
+.host-battle-dice-large .combat-dice-stage {
+  min-height: calc(var(--combat-die-size) * 1.14);
+  padding: clamp(0.16rem, 0.28vw, 0.34rem);
+  gap: clamp(0.16rem, 0.28vw, 0.34rem);
+  border-color: rgba(232, 221, 198, 0.2);
+  background: rgba(5, 8, 12, 0.36);
+}
+
+.host-battle-dice-large .combat-result-token {
+  width: min(100%, calc(var(--combat-die-size) * 2.6));
+  min-height: clamp(1.6rem, 2.6vw, 2.65rem);
+  padding: 0.2rem 0.42rem;
+}
+
+.host-battle-dice-large .combat-result-token span {
+  width: clamp(1.05rem, 1.56vw, 1.7rem);
+  height: clamp(1.05rem, 1.56vw, 1.7rem);
+}
+
+.host-battle-dice-large .combat-result-token strong {
+  font-size: clamp(0.62rem, 0.86vw, 1.02rem);
+}
+
+.host-battle-result-banner {
+  width: min(100%, 16rem);
+  display: grid;
+  justify-items: center;
+  gap: 0.12rem;
+  padding: 0.46rem 0.58rem;
+  border: 1px solid rgba(231, 210, 176, 0.18);
+  background: rgba(5, 8, 12, 0.44);
+  box-shadow: inset 0 0 1rem rgba(255, 255, 255, 0.03);
+}
+
+.host-battle-result-banner b {
+  color: #f7ead1;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(1rem, 1.55vw, 2rem);
+  line-height: 1;
+  letter-spacing: 0.08em;
+}
+
+.host-battle-result-banner span {
+  color: #d7b878;
+  font-size: clamp(0.58rem, 0.76vw, 0.9rem);
+  text-transform: uppercase;
+}
+
+.host-battle-result-success {
+  border-color: rgba(116, 218, 151, 0.44);
+  box-shadow: 0 0 1.1rem rgba(91, 210, 149, 0.16);
+}
+
+.host-battle-result-defeat {
+  border-color: rgba(237, 72, 50, 0.48);
+  box-shadow: 0 0 1.1rem rgba(232, 70, 54, 0.18);
+}
+
+.host-battle-rolls {
+  grid-row: 2;
+  align-self: stretch;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(8rem, 0.36fr) minmax(0, 1fr);
+  padding: 0;
+}
+
+.host-battle-formula {
+  width: min(24rem, 74%);
+  min-height: 0;
+}
+
+.host-battle-formula-player,
+.host-battle-formula-enemy {
+  margin-top: 0;
+}
+
+.host-battle-battle-line {
+  grid-column: 2;
+  align-self: center;
+  width: min(13rem, 96%);
+}
+
+.host-battle-actions {
+  grid-row: 3;
+}
+
+.host-battle-status-chip {
+  min-width: min(44rem, 72%);
+  font-size: clamp(0.72rem, 0.95vw, 1.08rem);
+  letter-spacing: 0.04em;
+  text-transform: none;
+}
+
+.host-battle-status-chip-secondary {
+  min-width: min(20rem, 28%);
+}
+
+.host-battle-log {
+  grid-row: 4;
+}
+
 .host-shop-overlay {
   position: absolute;
   inset: clamp(0.35rem, 0.72vw, 0.82rem);

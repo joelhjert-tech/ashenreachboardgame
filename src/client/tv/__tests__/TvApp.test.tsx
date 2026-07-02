@@ -654,8 +654,13 @@ describe("TvApp", () => {
     expect(banner).toHaveTextContent(/cinder-veil stalker/i);
     expect(overlay).toHaveTextContent(/tarek voss/i);
     expect(overlay).toHaveTextContent(/cinder-veil stalker/i);
+    expect(within(overlay).getByTestId("host-battle-vs-block")).toHaveTextContent(/vs/i);
+    expect(within(overlay).getByTestId("host-battle-result-banner")).toHaveTextContent(/resolving/i);
     expect(overlay).toHaveTextContent(/grit\s*2/i);
-    expect(overlay).toHaveTextContent(/battle\s*8/i);
+    expect(overlay).toHaveTextContent(/difficulty\s*8/i);
+    expect(overlay).not.toHaveTextContent(/wounds/i);
+    expect(overlay).not.toHaveTextContent(/salvage/i);
+    expect(overlay).not.toHaveTextContent(/heat/i);
     expect(within(overlay).getByTestId("host-battle-fx-layer")).toBeInTheDocument();
     expect(screen.queryByTestId("tv-card-reveal")).not.toBeInTheDocument();
     expect(screen.queryByTestId("tv-resolution-footer")).not.toBeInTheDocument();
@@ -708,12 +713,17 @@ describe("TvApp", () => {
 
     render(<TvApp />);
 
-    expect(await screen.findByTestId("roll-outcome-panel")).toHaveTextContent(/success: the signal holds/i);
-    expect(screen.getByTestId("host-dice-roll-scene")).toHaveTextContent("A 8 / D 7 / +1");
-    expect(screen.getByTestId("roll-state")).toHaveTextContent(/success/i);
-    expect(screen.getAllByTestId("roll-die")).toHaveLength(2);
-    expect(screen.getByTestId("roll-total")).toHaveTextContent("8");
-    expect(screen.getByTestId("roll-difficulty")).toHaveTextContent("7");
+    const overlay = await screen.findByTestId("host-battle-overlay");
+    expect(overlay).toHaveTextContent(/signal static/i);
+    expect(overlay).toHaveTextContent(/success: the signal holds/i);
+    expect(screen.getByTestId("host-battle-vs-block")).toHaveTextContent(/test/i);
+    expect(screen.getByTestId("battle-dice-animation")).toHaveTextContent("A 8 / D 7 / +1");
+    expect(screen.getByTestId("host-battle-result-banner")).toHaveTextContent(/success/i);
+    expect(screen.getByTestId("host-battle-result-banner")).toHaveTextContent(/wins by 1/i);
+    expect(screen.getByTestId("host-battle-rolls")).toHaveTextContent(/Signal 1 \+ Roll 7 = Total 8/i);
+    expect(screen.getByTestId("host-battle-rolls")).toHaveTextContent(/Difficulty 7 = Total 7/i);
+    expect(screen.queryByTestId("roll-outcome-panel")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("tv-resolution-footer")).not.toBeInTheDocument();
   });
 
   it("renders a shop encounter overlay when the active operative reaches a shop sector", async () => {
@@ -1143,17 +1153,21 @@ describe("TvApp", () => {
 
     expect(overlay).toHaveTextContent(/tarek voss/i);
     expect(overlay).toHaveTextContent(/cinder-veil stalker/i);
-    expect(overlay.querySelector("[data-testid='combat-dice-animation']")).toHaveClass("combat-dice-animation-compact");
+    expect(overlay.querySelector("[data-testid='combat-dice-animation']")).not.toHaveClass("combat-dice-animation-compact");
+    expect(screen.getByTestId("battle-dice-animation")).toHaveClass("dice-roll-scene-dom");
+    expect(screen.getByTestId("host-battle-vs-block")).toHaveTextContent(/vs/i);
+    expect(screen.getByTestId("host-battle-result-banner")).toHaveTextContent(/success/i);
+    expect(screen.getByTestId("host-battle-result-banner")).toHaveTextContent(/wins by 3/i);
     expect(overlay.querySelector("[data-testid='combat-die-attack']")).toHaveTextContent("4");
     expect(overlay.querySelector("[data-testid='combat-die-defense']")).toHaveTextContent("3");
     expect(screen.getByTestId("host-battle-rolls")).toHaveTextContent(/player total/i);
     expect(screen.getByTestId("host-battle-rolls")).toHaveTextContent("11");
-    expect(screen.getByTestId("host-battle-rolls")).toHaveTextContent(/4 \+ 1 \+ grit 6 = 11/i);
-    expect(screen.getByTestId("host-battle-rolls")).toHaveTextContent(/enemy total/i);
+    expect(screen.getByTestId("host-battle-rolls")).toHaveTextContent(/Grit 6 \+ Roll 5 = Total 11/i);
+    expect(screen.getByTestId("host-battle-rolls")).toHaveTextContent(/opposition total/i);
     expect(overlay).toHaveTextContent(/cinder-veil stalker added to trophy pile/i);
     expect(screen.getByTestId("host-battle-rolls")).toHaveTextContent("8");
-    expect(screen.getByTestId("host-battle-rolls")).toHaveTextContent(/3 \+ battle 5 = 8/i);
-    expect(screen.getByTestId("host-battle-log")).toHaveTextContent(/tarek voss engages cinder-veil stalker/i);
+    expect(screen.getByTestId("host-battle-rolls")).toHaveTextContent(/Battle 5 \+ Roll 3 = Total 8/i);
+    expect(screen.getByTestId("host-battle-log")).toHaveTextContent(/tarek voss faces cinder-veil stalker/i);
     expect(screen.queryByTestId("roll-outcome-panel")).not.toBeInTheDocument();
     expect(screen.queryByTestId("tv-card-reveal")).not.toBeInTheDocument();
     expect(screen.queryByTestId("tv-resolution-footer")).not.toBeInTheDocument();
@@ -1267,6 +1281,8 @@ describe("TvApp", () => {
     expect(overlay).toHaveTextContent(/cinder-veil stalker/i);
     expect(screen.getByTestId("host-battle-rolls")).toHaveTextContent("11");
     expect(screen.getByTestId("host-battle-rolls")).toHaveTextContent("8");
+    expect(screen.getByTestId("host-battle-rolls")).toHaveTextContent(/Grit 6 \+ Roll 5 = Total 11/i);
+    expect(screen.getByTestId("host-battle-rolls")).toHaveTextContent(/Battle 0 \+ Roll 8 = Total 8/i);
     expect(screen.queryByTestId("tv-card-reveal")).not.toBeInTheDocument();
     expect(screen.queryByTestId("roll-outcome-panel")).not.toBeInTheDocument();
     expect(screen.queryByTestId("tv-resolution-footer")).not.toBeInTheDocument();

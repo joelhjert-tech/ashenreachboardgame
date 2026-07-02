@@ -1,7 +1,7 @@
 import type { ActiveResolution, PublicPatchPayload, PublicPlayer, StatePatch } from "../shared/types.js";
 
-function isEnemyBattleResolution(resolution: ActiveResolution | null | undefined): boolean {
-  return Boolean(resolution?.battle && (resolution.card?.type === "enemy" || resolution.battle.enemyName));
+function isHostResolution(resolution: ActiveResolution | null | undefined): boolean {
+  return Boolean(resolution?.battle);
 }
 
 export function isHostBattleActive(
@@ -13,7 +13,7 @@ export function isHostBattleActive(
   }
 
   return Boolean(
-    isEnemyBattleResolution(patch.payload.activeResolution) ||
+    isHostResolution(patch.payload.activeResolution) ||
       patch.payload.encounter?.cardType === "enemy" ||
       patch.payload.pendingEnemyRoll
   );
