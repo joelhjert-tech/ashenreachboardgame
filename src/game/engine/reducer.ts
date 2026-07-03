@@ -26,6 +26,7 @@ import type {
   RoundCompletedAction,
   SectorCollapsedAction,
   SpaceTextResolvedAction,
+  ShopSkippedAction,
   ShopPurchaseResolvedAction,
   ShopSellResolvedAction,
   ShopServiceResolvedAction,
@@ -2456,6 +2457,45 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
           sectorId: updatedPlayer.sectorId,
           shopName: sellAction.shopName,
           summary: sellAction.summary
+        }),
+        eventLog: [...state.eventLog, action]
+      });
+    }
+    case "SHOP_SKIPPED": {
+      const skipAction = action as ShopSkippedAction;
+
+      try {
+        canManageGear(state, skipAction.seatId);
+      } catch (error) {
+        return reject(state, action, error instanceof Error ? error.message : "Seat cannot use shop services");
+      }
+
+      const player = requirePlayer(state, skipAction.seatId);
+      const boardSpace = getBoardSpace(player.character.currentSpaceId);
+
+      if (player.character.currentSpaceId !== skipAction.sectorId || !boardSpace || !isBoardSpaceShopCapable(boardSpace)) {
+        return reject(state, action, SHOP_FAILURE_REASONS.notAtShop);
+      }
+
+      const hasUnresolvedBlocker = Boolean(state.currentEncounter || state.pendingEnemyRoll || state.pendingEffect);
+
+      return succeed({
+        ...state,
+        phase: hasUnresolvedBlocker ? state.phase : "broadcast",
+        sequence: state.sequence + 1,
+        currentEncounter: state.currentEncounter,
+        pendingEnemyRoll: state.pendingEnemyRoll,
+        pendingEffect: state.pendingEffect,
+        activeResolution: hasUnresolvedBlocker ? state.activeResolution : null,
+        resolutionSource: hasUnresolvedBlocker ? state.resolutionSource : null,
+        shopStockReveals: (state.shopStockReveals ?? []).filter(
+          (entry) => !(entry.seatId === skipAction.seatId && entry.sectorId === skipAction.sectorId)
+        ),
+        lastOutcomeSummary: buildShopOutcomeSummary({
+          seatId: skipAction.seatId,
+          sectorId: player.sectorId,
+          shopName: skipAction.shopName,
+          summary: skipAction.summary
         }),
         eventLog: [...state.eventLog, action]
       });

@@ -504,6 +504,7 @@ describe("PhoneActionPanel", () => {
     expect(screen.getAllByText(/forge armoury/i).length).toBeGreaterThan(0);
     expect(screen.getByText(/salvage: 6/i)).toBeInTheDocument();
     expect(screen.getAllByText(/choose gear to buy/i).length).toBeGreaterThan(0);
+    expect(screen.getByRole("button", { name: /skip \/ continue/i })).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: /buy gear/i }));
     expect(onIntent).toHaveBeenCalledWith({
       type: "SHOP_SERVICE_REQUESTED",
@@ -547,6 +548,11 @@ describe("PhoneActionPanel", () => {
       type: "SHOP_SELL_REQUESTED",
       seatId: "seat-1",
       gearId: "veil-hook"
+    });
+    fireEvent.click(screen.getByRole("button", { name: /skip \/ continue/i }));
+    expect(onIntent).toHaveBeenCalledWith({
+      type: "SHOP_SKIP_REQUESTED",
+      seatId: "seat-1"
     });
     expect(screen.getByRole("tablist", { name: /turn actions/i })).toBeInTheDocument();
     expect(screen.getByRole("tab", { name: /shop/i })).toBeInTheDocument();

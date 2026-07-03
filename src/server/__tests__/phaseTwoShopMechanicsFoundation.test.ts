@@ -156,6 +156,60 @@ describe("Phase 2A shop mechanics foundation", () => {
     expect(server.getState().lastOutcomeSummary?.summary).toContain(`Bought ${selectedGear.name}`);
   });
 
+  it("lets a player skip a shop without changing salvage or inventory", () => {
+    const { server, client, sent } = createShopServer({ sectorId: "outer_waymarket", salvage: 6 });
+
+    server.handleIntent(client, {
+      type: "SHOP_SERVICE_REQUESTED",
+      seatId: "seat-1",
+      serviceId: "buy-gear"
+    });
+
+    expect(server.getState().shopStockReveals.some((entry) => entry.seatId === "seat-1")).toBe(true);
+
+    server.handleIntent(client, {
+      type: "SHOP_SKIP_REQUESTED",
+      seatId: "seat-1"
+    });
+
+    const player = server.getState().players.find((entry) => entry.seatId === "seat-1");
+
+    expect(getRejectedReason(sent)).toBeUndefined();
+    expect(player?.character.salvage).toBe(6);
+    expect(player?.character.heldGear).toEqual([]);
+    expect(server.getState().shopStockReveals.some((entry) => entry.seatId === "seat-1")).toBe(false);
+    expect(server.getState().phase).not.toBe("broadcast");
+    expect(server.getState().phase).not.toBe("resolution");
+    expect(server.getState().activeSeatIndex).toBe(1);
+    expect(server.getState().eventLog.some((entry) => (entry as { type?: string }).type === "SHOP_SKIPPED")).toBe(true);
+  });
+
+  it("accepts shop skip on a blocked shop without allowing blocked buy or sell", () => {
+    const blocked = createShopServer({
+      sectorId: "outer_waymarket",
+      salvage: 6,
+      currentEncounterId: "gate-tax-collectors"
+    });
+
+    blocked.server.handleIntent(blocked.client, {
+      type: "SHOP_SKIP_REQUESTED",
+      seatId: "seat-1"
+    });
+
+    expect(getRejectedReason(blocked.sent)).toBeUndefined();
+    expect(blocked.server.getState().phase).toBe("action");
+    expect(blocked.server.getState().currentEncounter?.id).toBe("gate-tax-collectors");
+    expect(blocked.server.getState().lastOutcomeSummary?.summary).toContain("Continued without trading");
+
+    blocked.server.handleIntent(blocked.client, {
+      type: "SHOP_PURCHASE_REQUESTED",
+      seatId: "seat-1",
+      cardId: "veil-hook"
+    });
+
+    expect(getRejectedReason(blocked.sent)).toBe(SHOP_FAILURE_REASONS.shopBlockedByThreat);
+  });
+
   it("rejects insufficient salvage, non-shop sectors, unavailable items, and blocked shops", () => {
     const insufficient = createShopServer({ sectorId: "outer_waymarket", salvage: 0 });
     insufficient.server.handleIntent(insufficient.client, {

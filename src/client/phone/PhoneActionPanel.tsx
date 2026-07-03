@@ -819,6 +819,17 @@ function PhoneShopPanel({
     });
   }
 
+  function skipShop(): void {
+    setConfirmingCardId(null);
+    setConfirmingSellGearId(null);
+    setPendingCardId(null);
+    setPendingSellGearId(null);
+    onIntent({
+      type: "SHOP_SKIP_REQUESTED",
+      seatId
+    });
+  }
+
   return (
     <section className={`phone-shop-panel phone-shop-panel-${shopEncounter.status}`} aria-label="Shop encounter">
       <div className="phone-shop-header">
@@ -847,6 +858,13 @@ function PhoneShopPanel({
           Wounds {shopEncounter.activePlayer.wounds.current}/{shopEncounter.activePlayer.wounds.max}
         </span>
         <span>Trophies {shopEncounter.activePlayer.trophies ?? 0}</span>
+      </div>
+
+      <div className="phone-shop-skip">
+        <GameButton type="button" tone="secondary" className="phone-shop-skip-button" onClick={skipShop}>
+          Skip / Continue
+        </GameButton>
+        <small>{isLocked ? "Continue without trading and resolve the blocker." : "Leave the shop without buying or selling."}</small>
       </div>
 
       {isLocked ? (

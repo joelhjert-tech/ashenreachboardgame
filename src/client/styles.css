@@ -12610,11 +12610,28 @@ body {
 .phone-shop-services,
 .phone-shop-stock,
 .phone-shop-sell,
+.phone-shop-skip,
 .phone-shop-locked,
 .phone-shop-outcome {
   display: grid;
   gap: 0.55rem;
   min-width: 0;
+}
+
+.phone-shop-skip {
+  padding: 0.62rem;
+  border: 1px solid rgba(197, 146, 70, 0.22);
+  border-radius: 0.6rem;
+  background: rgba(255, 255, 255, 0.035);
+}
+
+.phone-shop-skip-button {
+  width: 100%;
+}
+
+.phone-shop-skip small {
+  color: rgba(236, 228, 210, 0.7);
+  line-height: 1.35;
 }
 
 .phone-shop-stock-list {

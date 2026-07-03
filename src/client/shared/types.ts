@@ -922,6 +922,10 @@ export type ClientIntent =
       gearId: string;
     }
   | {
+      type: "SHOP_SKIP_REQUESTED";
+      seatId: string;
+    }
+  | {
       type: "ACCEPT_CONTRACT";
       seatId: string;
       contractId: string;

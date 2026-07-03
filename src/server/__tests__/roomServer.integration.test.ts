@@ -11,7 +11,7 @@ import type { ContractCard } from "../../game/schema/contract.schema.js";
 import type { GearItem } from "../../game/schema/gear.schema.js";
 import type { GameState } from "../../game/schema/session.schema.js";
 import { createHostToken, createJoinToken } from "../auth.js";
-import { GameRoomServer } from "../roomServer.js";
+import { GameRoomServer, type ConnectedClient } from "../roomServer.js";
 import { createInitialSessionState } from "../sessionState.js";
 
 type ServerEnvelope =
@@ -873,6 +873,35 @@ describe("roomServer websocket integration", () => {
     expect(activeHarness.roomServer.getState().turnOrder).toEqual([joinResult.seatId]);
   });
 
+  it("auto-starts a single-player room when the phone presses Ready", async () => {
+    const activeHarness = (harness = await startHarness([0, 0, 0, 0], createInitialSessionState("session-alpha", "single-player")));
+    const joinResult = activeHarness.roomServer.joinSeat("Solo", "signal-witch");
+    const phone = await connectClient(`ws://127.0.0.1:${activeHarness.port}/?view=phone&token=${joinResult.seatToken}`);
+    probes.push(phone);
+
+    await phone.waitFor((message) => isStatePatch(message) && Object.hasOwn(message.payload, "self"));
+
+    phone.send({
+      type: "SET_READY",
+      seatId: joinResult.seatId,
+      ready: true
+    });
+
+    const startedSnapshot = (await phone.waitFor(
+      (message) =>
+        isStatePatch(message) &&
+        message.payload.status === "active" &&
+        message.phase === "navigation" &&
+        Array.isArray(message.payload.turnOrder) &&
+        message.payload.turnOrder.length === 1
+    )) as Extract<ServerEnvelope, { type: "STATE_PATCH" }>;
+
+    expect(startedSnapshot.payload.status).toBe("active");
+    expect(startedSnapshot.payload.sessionMode).toBe("single-player");
+    expect(startedSnapshot.payload.turnOrder).toEqual([joinResult.seatId]);
+    expect(activeHarness.roomServer.getState().status).toBe("active");
+  });
+
   it("blocks single-player start when the occupied seat has no selected character", async () => {
     const state = createInitialSessionState("session-alpha", "single-player");
     state.seats[0] = {
@@ -935,6 +964,70 @@ describe("roomServer websocket integration", () => {
     expect(startedSnapshot.payload.turnOrder).toEqual(["seat-1"]);
     expect(Number(startedSnapshot.payload.activeSeatIndex)).toBe(0);
     expect(startedSnapshot.payload.players).toHaveLength(1);
+  });
+
+  it("continues from a resolved battle awaiting acknowledgement into the next action state", async () => {
+    const state = createState({
+      phase: "resolution",
+      resolutionSource: "encounter",
+      activeSeatIndex: 0,
+      turnOrder: ["seat-1"],
+      currentEncounter: null,
+      pendingEnemyRoll: null,
+      pendingEffect: null,
+      activeResolution: {
+        id: "seat-1:threat:awaiting:test",
+        playerId: "seat-1",
+        source: "threat",
+        stage: "awaiting_continue",
+        outcome: {
+          title: "Threat defeated",
+          text: "Seat One defeated the threat.",
+          effects: ["+1 Trophy"]
+        }
+      },
+      lastOutcomeSummary: {
+        seatId: "seat-1",
+        movedToSectorId: "seat-1-start",
+        encounterCardId: "hook-runner",
+        encounterTitle: "Hook Runner",
+        encounterCardType: "enemy",
+        checkStat: "grit",
+        die1: 4,
+        die2: 2,
+        statBonus: 3,
+        checkTotal: 9,
+        difficulty: 6,
+        enemyRollerSeatId: null,
+        enemyDie1: null,
+        enemyDie2: null,
+        enemyBonus: null,
+        enemyTotal: null,
+        success: true,
+        summary: "Seat One defeated Hook Runner."
+      }
+    });
+    const activeHarness = (harness = await startHarness([0, 0, 0, 0], state));
+    const sent: Array<Record<string, unknown>> = [];
+    const client: ConnectedClient = {
+      seatId: "seat-1",
+      view: "phone",
+      socket: {
+        send(payload: string) {
+          sent.push(JSON.parse(payload) as Record<string, unknown>);
+        },
+        close() {}
+      } as unknown as ConnectedClient["socket"]
+    };
+
+    activeHarness.roomServer.handleIntent(client, {
+      type: "CONTINUE_RESOLUTION",
+      seatId: "seat-1"
+    });
+
+    expect(sent.find((message) => message.type === "INTENT_REJECTED")).toBeUndefined();
+    expect(activeHarness.roomServer.getState().phase).not.toBe("resolution");
+    expect(activeHarness.roomServer.getState().activeResolution).toBeNull();
   });
 
   it("writes the live movement roll into state and projects exact-distance movement", async () => {

@@ -135,6 +135,7 @@ import type {
   ShopPurchaseResolvedAction,
   ShopSellResolvedAction,
   ShopServiceResolvedAction,
+  ShopSkippedAction,
   ShopStockRevealedAction,
   ScenarioConfrontationRequestedAction,
   ScenarioObjectiveCompletedAction,
@@ -282,6 +283,7 @@ const CLIENT_INTENT_TYPES = new Set<string>([
   "SHOP_SERVICE_REQUESTED",
   "SHOP_PURCHASE_REQUESTED",
   "SHOP_SELL_REQUESTED",
+  "SHOP_SKIP_REQUESTED",
   "ACCEPT_CONTRACT",
   "COMPLETE_CONTRACT",
   "SCENARIO_CONFRONTATION_REQUESTED",
@@ -501,6 +503,17 @@ export class GameRoomServer {
 
       if (intent.type === "SET_READY") {
         this.setSeatReady(intent.seatId, intent.ready);
+        if (intent.ready && this.state.sessionMode === "single-player") {
+          const readiness = getSessionStartReadiness({
+            sessionMode: this.state.sessionMode,
+            gameMode: this.state.gameMode,
+            seats: this.state.seats
+          });
+
+          if (readiness.canStart) {
+            this.startSession();
+          }
+        }
         this.broadcastPatch();
         return;
       }
@@ -599,6 +612,8 @@ export class GameRoomServer {
         // Fandiablos battle/check support is a committed modifier for the next roll, not the end of the action window.
       } else if (intent.type === "SHOP_SERVICE_REQUESTED" || intent.type === "SHOP_PURCHASE_REQUESTED" || intent.type === "SHOP_SELL_REQUESTED") {
         // Shop interactions keep the action window open so the player can reveal, compare, buy, or end the turn intentionally.
+      } else if (intent.type === "SHOP_SKIP_REQUESTED") {
+        // Skipping the shop is the intentional end of this action window.
       } else if (intent.type === "RIVALRY_AGENDA_REVEAL_REQUESTED") {
         // Reveal is a public table moment, not an automatic turn advance.
       } else {
@@ -1714,6 +1729,32 @@ export class GameRoomServer {
     } satisfies ShopSellResolvedAction;
   }
 
+  private createShopSkipAction(
+    intent: Extract<ClientIntent, { type: "SHOP_SKIP_REQUESTED" }>,
+    createdAt: string
+  ): ShopSkippedAction {
+    const player = this.state.players.find((entry) => entry.seatId === intent.seatId);
+
+    if (!player) {
+      throw new Error(`Missing player for seat ${intent.seatId}`);
+    }
+
+    const boardSpace = getBoardSpace(player.character.currentSpaceId);
+
+    if (!boardSpace || !isBoardSpaceShopCapable(boardSpace)) {
+      throw new Error(SHOP_FAILURE_REASONS.notAtShop);
+    }
+
+    return {
+      type: "SHOP_SKIPPED",
+      seatId: intent.seatId,
+      shopName: boardSpace.name,
+      sectorId: player.character.currentSpaceId,
+      summary: `${player.character.name} used ${boardSpace.name}. Continued without trading.`,
+      createdAt
+    } satisfies ShopSkippedAction;
+  }
+
   private createRivalryAgendaRevealAction(
     intent: Extract<ClientIntent, { type: "RIVALRY_AGENDA_REVEAL_REQUESTED" }>,
     createdAt: string
@@ -1916,6 +1957,8 @@ export class GameRoomServer {
         return this.createShopPurchaseAction(intent, createdAt);
       case "SHOP_SELL_REQUESTED":
         return this.createShopSellAction(intent, createdAt);
+      case "SHOP_SKIP_REQUESTED":
+        return this.createShopSkipAction(intent, createdAt);
       case "ACCEPT_CONTRACT":
         return {
           type: "ACCEPT_CONTRACT",
@@ -4486,7 +4529,11 @@ export class GameRoomServer {
 
     this.applyAction(this.intentToAction(intent));
 
-    if (previousStage === "roll_result" || previousStage === "outcome_summary") {
+    if (
+      previousStage === "roll_result" ||
+      previousStage === "outcome_summary" ||
+      (previousStage === "awaiting_continue" && this.state.phase === "resolution" && !this.state.activeResolution)
+    ) {
       this.runAutomaticPhases(intent.seatId);
     }
 
@@ -5470,7 +5517,11 @@ export class GameRoomServer {
         createdAt: new Date().toISOString()
       });
 
-      if (previousStage === "roll_result" || previousStage === "outcome_summary") {
+      if (
+        previousStage === "roll_result" ||
+        previousStage === "outcome_summary" ||
+        (previousStage === "awaiting_continue" && this.state.phase === "resolution" && !this.state.activeResolution)
+      ) {
         this.runAutomaticPhases(continuingSeatId);
       }
 
