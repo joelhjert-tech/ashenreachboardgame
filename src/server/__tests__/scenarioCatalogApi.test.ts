@@ -43,7 +43,9 @@ describe("/api/scenarios", () => {
     expect(payload.scenarios.find((scenario) => scenario.id === "scenario_broken_seal")?.sheetArtPath).toBe(
       "/assets/scenarios/broken-seal.png"
     );
-    expect(payload.scenarios.find((scenario) => scenario.id === "scenario_mirror_of_false_heroes")?.sheetArtPath).toBeNull();
+    expect(payload.scenarios.find((scenario) => scenario.id === "scenario_mirror_of_false_heroes")?.sheetArtPath).toBe(
+      "/assets/scenarios/mirror-of-false-heroes.png"
+    );
     expect(payload.scenarios.find((scenario) => scenario.id === "scenario_dying_star")?.nemesis).toEqual({
       name: "Kharvox",
       title: "The Red Maw",
