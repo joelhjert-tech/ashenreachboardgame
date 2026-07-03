@@ -7,6 +7,7 @@ Assets are runtime data. Do not delete an asset just because TypeScript does not
 - Current board tiles: `public/assets/map/tiles/`
 - Current board base/region/corner assets: `public/assets/map/board/`, `public/assets/map/corners/`
 - Current generated card art: `public/assets/cards/`
+- Legacy/reference card art source: `public/assets/riftfall/cards/`
 - Runtime portraits, nemeses, tokens, UI frames: `public/assets/riftfall/`
 - Fallback card art: `public/assets/cards/fallbacks/`
 
@@ -24,6 +25,7 @@ Assets are runtime data. Do not delete an asset just because TypeScript does not
 - Board tile PNGs in the current map system use `map_tile_*` names under `public/assets/map/tiles/`.
 - Card art generated from content uses the card ID as the PNG filename under `public/assets/cards/<type>/`.
 - Active threat card art is organized by `threatLane` under `public/assets/cards/threats/red/`, `public/assets/cards/threats/blue/`, and `public/assets/cards/threats/yellow/`.
+- Do not add new Ashenreach card art under `public/assets/riftfall/cards/`. Treat that folder as legacy/source/reference material until a later archive pass proves it can move.
 - Runtime character portraits use character IDs where possible.
 - Avoid adding mockups, prompt sheets, or contact sheets to runtime asset folders.
 
@@ -35,32 +37,20 @@ Run:
 npm run audit:assets
 ```
 
-Current baseline from this cleanup audit:
+Current baseline after Phase 5C/5D:
 
 - 402 expected assets
-- 392 present
-- 10 missing threat card PNGs
+- 402 present
+- 0 missing card PNGs
 - 0 invalid assets
 - 0 placeholder violations
 
-The missing baseline threat images are:
-
-- `/assets/cards/threats/red/ash-cinder-runt.png`
-- `/assets/cards/threats/yellow/bridge-toll-runt.png`
-- `/assets/cards/threats/blue/cracked-censer-novice.png`
-- `/assets/cards/threats/blue/glasswing-midge-cloud.png`
-- `/assets/cards/threats/blue/gutter-bell-mite.png`
-- `/assets/cards/threats/red/lantern-ash-ghoul.png`
-- `/assets/cards/threats/yellow/rust-mote-drone.png`
-- `/assets/cards/threats/yellow/soot-stained-cutpurse.png`
-- `/assets/cards/threats/yellow/toll-scrip-urchins.png`
-- `/assets/cards/threats/yellow/wire-chewer-pack.png`
-
-Do not remove those content cards or manifest entries to make the audit green. Add the missing art instead.
+The previous ten missing lane-based threat images were added under `public/assets/cards/threats/<lane>/`.
 
 ## Cleanup Rules
 
 - Keep all assets returned by `getRuntimeAssetPaths()`, `getBoardTileAssetPaths()`, `imagePrompts`, or `generatedCardImagePrompts`.
+- Use `public/assets/riftfall/cards/` as an import source only: audit, classify, match to active content IDs, copy to `public/assets/cards/...`, update resolver/manifest if needed, then validate.
 - Treat `public/assets/riftfall/board/tiles/` as fallback/design-pipeline material until `mapAssetRegistry.ts` and `imagePrompts.ts` no longer reference it.
 - Move mockups/reference images out of runtime asset folders only after confirming no manifest or content JSON references them.
 - Archive useful prompt/contact-sheet history under `_archive/old-generated-content/` if it is no longer part of the active pipeline.
