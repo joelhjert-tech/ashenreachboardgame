@@ -18,6 +18,7 @@ import {
 import { resolveBoardTextChoice, resolveBoardTextEffect, type BoardTextDeckKind } from "../game/data/boardTextEffects.js";
 import { nemeses, type NemesisDefinition } from "../game/data/nemeses.js";
 import { getScenarioDefinition, type ScenarioDefinition } from "../game/data/scenarios.js";
+import { getScenarioSheetArtPath } from "../game/data/scenarioSheetArt.js";
 import { getCharacterPresentation, type CharacterPresentation } from "../game/data/characterPresentation.js";
 import {
   advanceContractObjectiveProgress,
@@ -7496,6 +7497,7 @@ export function createTvProjection(state: GameState): Record<string, unknown> {
           id: activeScenario.id,
           name: activeScenario.name,
           theme: activeScenario.theme,
+          sheetArtPath: getScenarioSheetArtPath(activeScenario),
           difficulty: activeScenario.difficulty,
           mode: activeScenario.mode,
           pressureSummary: scenarioPressureSummary,
@@ -7508,6 +7510,7 @@ export function createTvProjection(state: GameState): Record<string, unknown> {
           shopInteractions: activeScenario.shopInteractions,
           tileEventHooks: activeScenario.tileEventHooks,
           modeScaling: activeScenario.modeScaling,
+          publicDisplay: activeScenario.publicDisplay,
           confrontationTitle: activeScenario.confrontationTitle,
           progressLabel: activeScenario.winConditionKey,
           progress: activeScenarioProgress,

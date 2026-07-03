@@ -1,6 +1,7 @@
 import { useState, type ReactElement } from "react";
 import { getCharacterPortraitPath, getPhoneBackgroundPath } from "../shared/assetPaths.js";
 import { GameButton } from "../shared/GameButton.js";
+import { ResultDeltaRow } from "../shared/ResultDeltaChips.js";
 import { formatSeatLabel, statLabelById, statOrder } from "../shared/statLabels.js";
 import type {
   CharacterCatalogEntry,
@@ -9,7 +10,8 @@ import type {
   NemesisChampionSummary,
   PhonePatchPayload,
   PhoneSelfState,
-  PrivateRivalryPayload
+  PrivateRivalryPayload,
+  ResultDelta
 } from "../shared/types.js";
 import { PhoneInventoryPanel } from "./PhoneInventoryPanel.js";
 import { PhoneActionPanel, type TurnActionTab } from "./PhoneActionPanel.js";
@@ -72,6 +74,17 @@ function getActionTabState(
         disabled: false
       };
   }
+}
+
+function scenarioQuestDeltas(deltas: ResultDelta[] | null | undefined): ResultDelta[] {
+  const scenarioTypes = new Set<ResultDelta["type"]>([
+    "scenarioProgress",
+    "scenarioPressure",
+    "contractProgress",
+    "contractCompleted"
+  ]);
+
+  return (deltas ?? []).filter((delta) => scenarioTypes.has(delta.type));
 }
 
 function BoundNemesisPanel({
@@ -256,6 +269,8 @@ export function PortraitControllerView({
   }
 
   const activeScenario = patch?.activeScenario ?? null;
+  const scenarioPressure = patch?.scenarioPressure ?? null;
+  const scenarioDeltas = scenarioQuestDeltas(patch?.playerResultDeltas ?? patch?.publicResultDeltas);
   const ownSeat = patch?.seats.find((seat) => seat.seatId === self.seatId) ?? null;
   const isLobbyWaiting = patch?.status === "lobby" || (!patch && Boolean(onLobbyBack));
   const activeContractProgress = activeContractCard && self.character.activeContract
@@ -466,10 +481,38 @@ export function PortraitControllerView({
               </section>
               <section className="phone-portrait-section">
                 <div className="phone-sheet-section-heading">Scenario</div>
-                <article className="phone-portrait-info-card">
+                <article className="phone-portrait-info-card phone-scenario-quest-card" data-testid="phone-scenario-sheet-summary">
                   <strong>{activeScenario?.name ?? "No active scenario"}</strong>
-                  <span>{activeScenario ? `${activeScenario.progress}/${activeScenario.threshold}` : "Awaiting scenario"}</span>
-                  <p>{activeScenario?.pressureSummary ?? "Scenario pressure appears here once the host starts the room."}</p>
+                  <span>{scenarioPressure?.modeSpecific.label ?? activeScenario?.publicDisplay?.modeLabel ?? "Awaiting scenario"}</span>
+                  <p>{activeScenario?.publicDisplay?.objective ?? activeScenario?.victoryText ?? "Scenario pressure appears here once the host starts the room."}</p>
+                  <div className="phone-scenario-progress-grid" aria-label="Scenario progress and pressure">
+                    <div>
+                      <span>Win Progress</span>
+                      <strong>
+                        {scenarioPressure
+                          ? `${scenarioPressure.objectiveProgress.current}/${scenarioPressure.objectiveProgress.required}`
+                          : activeScenario
+                            ? `${activeScenario.progress}/${activeScenario.threshold}`
+                            : "0/0"}
+                      </strong>
+                      <small>{scenarioPressure?.objectiveProgress.label ?? activeScenario?.progressLabel ?? "Progress"}</small>
+                    </div>
+                    <div>
+                      <span>Loss Pressure</span>
+                      <strong>
+                        {scenarioPressure
+                          ? `${scenarioPressure.collapseTrack.current}/${scenarioPressure.collapseTrack.max}`
+                          : patch
+                            ? `${patch.escalationLevel}/${patch.escalationThreshold}`
+                            : "0/0"}
+                      </strong>
+                      <small>{scenarioPressure?.collapseTrack.name ?? "Escalation"}</small>
+                    </div>
+                  </div>
+                  <p className="phone-scenario-next-action">
+                    Next: {activeScenario?.finalGateRequirement ?? scenarioPressure?.publicSummary ?? "Watch for scenario prompts after threats, contracts, and sector actions."}
+                  </p>
+                  <ResultDeltaRow deltas={scenarioDeltas} className="phone-scenario-deltas" />
                 </article>
               </section>
             </div>

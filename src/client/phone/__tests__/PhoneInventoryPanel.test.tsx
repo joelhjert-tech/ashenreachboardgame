@@ -588,6 +588,118 @@ describe("PhoneInventoryPanel", () => {
     expect(screen.getByText("No active contract")).toBeInTheDocument();
   });
 
+  it("shows public scenario sheet progress and pressure on the Quest tab without private agenda data", () => {
+    const patch = createPatch({
+      activeScenario: {
+        id: "scenario_broken_seal",
+        name: "The Broken Seal",
+        theme: "The last ward is splitting.",
+        sheetArtPath: "/assets/scenarios/broken-seal.png",
+        difficulty: "easy-medium",
+        mode: "coop",
+        publicDisplay: {
+          modeLabel: "Solo / Co-op",
+          objective: "Stabilize the Broken Seal before the breach collapses the ward.",
+          privacy: "Public scenario pressure only."
+        },
+        pressureSummary: "Keep the seals intact.",
+        confrontationTitle: "Reseal the Prison",
+        progressLabel: "Seal Restoration Marks",
+        progress: 1,
+        threshold: 2,
+        finalGateRequirement: "Close 2 Riftgates before pressure reaches 6.",
+        setup: [],
+        specialRules: [],
+        confrontationSteps: [],
+        victoryText: "Complete the seal work to win."
+      },
+      scenarioPressure: {
+        scenarioId: "scenario_broken_seal",
+        scenarioName: "The Broken Seal",
+        mode: "co-op",
+        scenarioStatus: "active",
+        pressureTrack: {
+          name: "Seal Integrity",
+          current: 5,
+          max: 6,
+          modifier: 0,
+          difficultyBonus: 0,
+          failureAtMax: false,
+          tickTiming: "Round end",
+          collapseRule: "Seal integrity reaches zero."
+        },
+        collapseTrack: {
+          name: "Escalation",
+          current: 2,
+          max: 6,
+          modifier: 0,
+          difficultyBonus: 0,
+          failureAtMax: true,
+          tickTiming: "Round end",
+          collapseRule: "The run fails at maximum escalation."
+        },
+        objectiveProgress: {
+          label: "Seal Restoration Marks",
+          current: 1,
+          required: 2,
+          completed: false
+        },
+        publicSummary: "Restore seals before the table collapses.",
+        modeSpecific: {
+          kind: "co-op",
+          label: "Co-op",
+          summary: "Shared objective and shared pressure.",
+          privateAgenda: "none"
+        }
+      },
+      publicResultDeltas: [
+        {
+          id: "scenario-progress",
+          type: "scenarioProgress",
+          label: "Scenario",
+          value: 1,
+          sign: "gain",
+          targetScope: "scenario",
+          visibility: "public",
+          reason: "Contract completed: +1 objective progress.",
+          source: "scenario:objective",
+          publicText: "Contract completed: +1 objective progress.",
+          severity: "scenario"
+        }
+      ],
+      privateRivalry: null
+    });
+
+    render(
+      <PortraitControllerView
+        self={patch.self}
+        roomCode="RT7P4"
+        displayName="Lane"
+        connectionStatus="open"
+        activeSeatId="seat-1"
+        activeContractCard={null}
+        patch={patch}
+        characters={characters}
+        onIntent={vi.fn()}
+        onLeave={vi.fn()}
+      />
+    );
+
+    fireEvent.click(screen.getByRole("tab", { name: /^quest$/i }));
+
+    const scenario = screen.getByTestId("phone-scenario-sheet-summary");
+    expect(scenario).toHaveTextContent(/the broken seal/i);
+    expect(scenario).toHaveTextContent(/stabilize the broken seal/i);
+    expect(scenario).toHaveTextContent(/win progress/i);
+    expect(scenario).toHaveTextContent(/1\/2/i);
+    expect(scenario).toHaveTextContent(/loss pressure/i);
+    expect(scenario).toHaveTextContent(/2\/6/i);
+    expect(scenario).toHaveTextContent(/close 2 riftgates/i);
+    expect(within(scenario).getByTestId("result-delta-row")).toHaveTextContent(/\+1 Scenario/i);
+    expect(screen.queryByRole("region", { name: /private rivalry agenda/i })).not.toBeInTheDocument();
+    expect(screen.queryByText(/private trigger/i)).not.toBeInTheDocument();
+  });
+
   it("shows a locked pre-game character screen with Back instead of bottom navigation", () => {
     const onLobbyBack = vi.fn();
     const onIntent = vi.fn();

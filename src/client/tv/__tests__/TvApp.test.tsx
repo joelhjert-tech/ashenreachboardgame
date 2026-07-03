@@ -70,7 +70,13 @@ const scenarios: ScenarioCatalogEntry[] = [
     id: "scenario_broken_seal",
     name: "The Broken Seal",
     theme: "An ancient prison has cracked open.",
+    sheetArtPath: "/assets/scenarios/broken-seal.png",
     difficulty: "easy-medium",
+    publicDisplay: {
+      modeLabel: "Solo / Co-op",
+      objective: "Stabilize the Broken Seal before the breach collapses the ward.",
+      privacy: "Public scenario pressure only."
+    },
     pressureRule: "Seal pressure degrades at the start of each turn.",
     expectedDuration: "45-60 min",
     nemesis: null,
@@ -84,7 +90,13 @@ const scenarios: ScenarioCatalogEntry[] = [
     id: "scenario_dying_star",
     name: "The Dying Star",
     theme: "The system's sun is collapsing.",
+    sheetArtPath: "/assets/scenarios/relic-core-awakens.png",
     difficulty: "hard",
+    publicDisplay: {
+      modeLabel: "Ruthless",
+      objective: "Ignite the star core before collapse reaches the table.",
+      privacy: "Public pressure; private agendas stay on phones."
+    },
     pressureRule: "Star tokens burn down at the end of each turn.",
     expectedDuration: "50-70 min",
     nemesis: {
@@ -114,7 +126,13 @@ function createPatch(roomCode = "RT7P4"): StatePatch<PublicPatchPayload> {
         id: "scenario_broken_seal",
         name: "The Broken Seal",
         theme: "An ancient prison has cracked open.",
+        sheetArtPath: "/assets/scenarios/broken-seal.png",
         difficulty: "easy-medium",
+        publicDisplay: {
+          modeLabel: "Solo / Co-op",
+          objective: "Stabilize the Broken Seal before the breach collapses the ward.",
+          privacy: "Public scenario pressure only."
+        },
         pressureSummary: "Keep the seals intact.",
         confrontationTitle: "Reseal the Prison",
         progressLabel: "Seals",
@@ -126,6 +144,45 @@ function createPatch(roomCode = "RT7P4"): StatePatch<PublicPatchPayload> {
         victoryText: "Pass at least two tests to win."
       },
       scenarioTelemetry: [],
+      scenarioPressure: {
+        scenarioId: "scenario_broken_seal",
+        scenarioName: "The Broken Seal",
+        mode: "rivalry",
+        scenarioStatus: "active",
+        pressureTrack: {
+          name: "Seal Integrity",
+          current: 4,
+          max: 6,
+          modifier: 0,
+          difficultyBonus: 0,
+          failureAtMax: false,
+          tickTiming: "Round end",
+          collapseRule: "Seal collapses when integrity hits 0."
+        },
+        collapseTrack: {
+          name: "Escalation",
+          current: 1,
+          max: 6,
+          modifier: 0,
+          difficultyBonus: 0,
+          failureAtMax: true,
+          tickTiming: "Round end",
+          collapseRule: "The run fails at maximum escalation."
+        },
+        objectiveProgress: {
+          label: "Seal Restoration Marks",
+          current: 2,
+          required: 6,
+          completed: false
+        },
+        publicSummary: "Restore seals while the escalation clock climbs.",
+        modeSpecific: {
+          kind: "rivalry",
+          label: "Rivalry",
+          summary: "Public scenario pressure with phone-only private agendas.",
+          privateAgenda: "phone-only"
+        }
+      },
       scenarioProgress: { seals: 2 },
       seats: [
         {
@@ -273,6 +330,83 @@ describe("TvApp", () => {
         hostToken: "host:RT7P4:secret"
       })
     );
+  });
+
+  it("shows scenario sheet art, win progress, loss pressure, and last public trigger on TV", async () => {
+    window.localStorage.setItem("ashen-reach-tv-room-code", "RT7P4");
+    window.localStorage.setItem("ashen-reach-tv-host-token", "host:RT7P4:secret");
+    const patch = createPatch();
+    patch.phase = "action";
+    patch.payload.status = "active";
+    patch.payload.publicResultDeltas = [
+      {
+        id: "scenario-progress",
+        type: "scenarioProgress",
+        label: "Scenario +1",
+        value: 1,
+        sign: "gain",
+        targetScope: "scenario",
+        visibility: "public",
+        reason: "Contract completed: +1 objective progress.",
+        source: "scenario:objective",
+        publicText: "Contract completed: +1 objective progress.",
+        severity: "scenario"
+      }
+    ];
+    mockUseRoomSubscription.mockReturnValue({
+      patch,
+      error: null,
+      sendIntent: vi.fn(),
+      status: "open",
+      debugEvents: [],
+      clearDebugEvents: vi.fn()
+    });
+
+    render(<TvApp />);
+
+    const scenarioCard = await screen.findByRole("region", { name: /^scenario$/i });
+    expect(within(scenarioCard).getByTestId("scenario-sheet-art").querySelector("img")).toHaveAttribute(
+      "src",
+      "/assets/scenarios/broken-seal.png"
+    );
+    expect(scenarioCard).toHaveTextContent(/stabilize the broken seal/i);
+    expect(scenarioCard).toHaveTextContent(/win progress/i);
+    expect(scenarioCard).toHaveTextContent(/2\/6/i);
+    expect(scenarioCard).toHaveTextContent(/loss pressure/i);
+    expect(scenarioCard).toHaveTextContent(/1\/6/i);
+    expect(scenarioCard).toHaveTextContent(/last trigger: contract completed/i);
+    expect(JSON.stringify(patch.payload)).not.toContain("private trigger");
+  });
+
+  it("uses a scenario sheet fallback when no canonical art is available", async () => {
+    window.localStorage.setItem("ashen-reach-tv-room-code", "RT7P4");
+    window.localStorage.setItem("ashen-reach-tv-host-token", "host:RT7P4:secret");
+    const patch = createPatch();
+    patch.payload.activeScenario = {
+      ...patch.payload.activeScenario!,
+      id: "scenario_mirror_of_false_heroes",
+      name: "Mirror of False Heroes",
+      sheetArtPath: null,
+      publicDisplay: {
+        modeLabel: "Rivalry",
+        objective: "Break mirror claims before the table turns on itself.",
+        privacy: "Private agendas stay on phones."
+      }
+    };
+    mockUseRoomSubscription.mockReturnValue({
+      patch,
+      error: null,
+      sendIntent: vi.fn(),
+      status: "open",
+      debugEvents: [],
+      clearDebugEvents: vi.fn()
+    });
+
+    render(<TvApp />);
+
+    const scenarioCard = await screen.findByRole("region", { name: /^scenario$/i });
+    expect(within(scenarioCard).getByRole("img", { name: /mirror of false heroes scenario sheet art pending/i })).toBeInTheDocument();
+    expect(scenarioCard).toHaveTextContent(/break mirror claims/i);
   });
 
   it("shows only the public rivalry agenda reveal summary on TV", async () => {

@@ -24,6 +24,7 @@ describe("/api/scenarios", () => {
     const payload = (await response.json()) as {
       scenarios: Array<{
         id: string;
+        sheetArtPath: string | null;
         pressureRule: string;
         expectedDuration: string;
         nemesis: { name: string; title: string; faction: string } | null;
@@ -39,6 +40,10 @@ describe("/api/scenarios", () => {
     }
 
     expect(payload.scenarios.find((scenario) => scenario.id === "scenario_broken_seal")?.nemesis).toBeNull();
+    expect(payload.scenarios.find((scenario) => scenario.id === "scenario_broken_seal")?.sheetArtPath).toBe(
+      "/assets/scenarios/broken-seal.png"
+    );
+    expect(payload.scenarios.find((scenario) => scenario.id === "scenario_mirror_of_false_heroes")?.sheetArtPath).toBeNull();
     expect(payload.scenarios.find((scenario) => scenario.id === "scenario_dying_star")?.nemesis).toEqual({
       name: "Kharvox",
       title: "The Red Maw",

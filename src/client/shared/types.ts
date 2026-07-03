@@ -627,6 +627,7 @@ export interface ActiveScenarioSummary {
   id: string;
   name: string;
   theme: string;
+  sheetArtPath?: string | null;
   difficulty: ScenarioDifficulty;
   mode?: ScenarioMode;
   pressureSummary: string;
@@ -662,6 +663,11 @@ export interface ActiveScenarioSummary {
     singlePlayer?: string;
     multiplayer?: string;
   };
+  publicDisplay?: {
+    modeLabel: string;
+    objective: string;
+    privacy: string;
+  };
   confrontationTitle: string;
   progressLabel: string;
   progress: number;
@@ -676,8 +682,10 @@ export interface ScenarioCatalogEntry {
   id: string;
   name: string;
   theme: string;
+  sheetArtPath?: string | null;
   difficulty: ScenarioDifficulty;
   mode?: ScenarioMode;
+  publicDisplay?: ActiveScenarioSummary["publicDisplay"];
   pressureRule: string;
   expectedDuration: string;
   pressureTrack?: ActiveScenarioSummary["pressureTrack"];

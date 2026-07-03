@@ -9,6 +9,7 @@ import { createInitialSessionState } from "./sessionState.js";
 import { createHostToken, validateJoinToken } from "./auth.js";
 import type { GameMode, InteractionMode, SessionMode } from "../game/schema/session.schema.js";
 import { SCENARIOS, getScenarioDefinition } from "../game/data/scenarios.js";
+import { getScenarioSheetArtPath } from "../game/data/scenarioSheetArt.js";
 import { nemeses } from "../game/data/nemeses.js";
 
 const DEFAULT_SERVER_PORT = 8080;
@@ -163,8 +164,10 @@ function createHttpServer(): HttpServer {
             id: scenario.id,
             name: scenario.name,
             theme: scenario.theme,
+            sheetArtPath: getScenarioSheetArtPath(scenario),
             difficulty: scenario.difficulty,
             mode: scenario.mode,
+            publicDisplay: scenario.publicDisplay,
             pressureRule: scenario.pressureRule,
             expectedDuration: scenario.expectedDuration,
             pressureTrack: scenario.pressureTrack,

@@ -161,6 +161,7 @@ describe("canonical sector graph", () => {
         id: string;
         name: string;
         theme: string;
+        sheetArtPath?: string | null;
         difficulty: string;
         pressureSummary: string;
         progress: number;
@@ -196,6 +197,7 @@ describe("canonical sector graph", () => {
     };
 
     expect(tvProjection.activeScenario?.id).toBe("scenario_broken_seal");
+    expect(tvProjection.activeScenario?.sheetArtPath).toBe("/assets/scenarios/broken-seal.png");
     expect(tvProjection.activeScenario?.theme).toContain("Ashen Reach Core");
     expect(tvProjection.activeScenario?.difficulty).toBe("easy-medium");
     expect(tvProjection.activeScenario?.pressureSummary).toContain("6 seals remain");

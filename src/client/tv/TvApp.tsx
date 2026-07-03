@@ -148,6 +148,32 @@ function getScenarioNemesisLabel(scenario: ScenarioCatalogEntry | null): string 
   return `${scenario.nemesis.name} | ${scenario.nemesis.title}`;
 }
 
+function ScenarioSheetArtFrame({
+  path,
+  title,
+  compact = false
+}: {
+  path?: string | null;
+  title: string;
+  compact?: boolean;
+}): ReactElement {
+  const [failed, setFailed] = useState(false);
+  const showImage = Boolean(path) && !failed;
+
+  return (
+    <div className={`tv-scenario-sheet-art${compact ? " tv-scenario-sheet-art-compact" : ""}`} data-testid="scenario-sheet-art">
+      {showImage ? (
+        <img src={path ?? ""} alt={`${title} scenario sheet art`} onError={() => setFailed(true)} />
+      ) : (
+        <div className="tv-scenario-sheet-art-fallback" role="img" aria-label={`${title} scenario sheet art pending`}>
+          <span>Scenario Sheet</span>
+          <strong>{title}</strong>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function getGearSummary(player: PublicPlayer | null): string {
   const gear = Object.values(player?.character.equippedGear ?? {}).filter(Boolean);
   const followerCopy = player?.character.followerCount ? `${player.character.followerCount} follower` : null;
@@ -260,13 +286,22 @@ function getScenarioStatus(patch: StatePatch<PublicPatchPayload> | null) {
     return {
       name: "No active scenario",
       theme: "Awaiting directive",
+      sheetArtPath: null,
       difficulty: "medium" as const,
+      modeLabel: "Awaiting mode",
+      publicObjective: "Create a room to load the active scenario.",
+      privacy: "No private agenda data is available.",
       pressureSummary: "Create a room to load scenario pressure.",
       confrontationTitle: "Awaiting directive",
       progress: "0/0",
       progressValue: 0,
       progressThreshold: 0,
       progressLabel: "Progress",
+      objectiveProgress: null,
+      pressureState: null,
+      collapseState: null,
+      status: "lobby",
+      lastTrigger: null,
       pressureTrack: null,
       finalGateRequirement: null,
       scenarioRewards: [],
@@ -282,13 +317,25 @@ function getScenarioStatus(patch: StatePatch<PublicPatchPayload> | null) {
   return {
     name: scenario.name,
     theme: scenario.theme,
+    sheetArtPath: scenario.sheetArtPath ?? null,
     difficulty: scenario.difficulty,
+    modeLabel: patch?.payload.scenarioPressure?.modeSpecific.label ?? scenario.publicDisplay?.modeLabel ?? toTitleCase(scenario.mode ?? "coop"),
+    publicObjective: scenario.publicDisplay?.objective ?? scenario.victoryText,
+    privacy: scenario.publicDisplay?.privacy ?? patch?.payload.scenarioPressure?.modeSpecific.summary ?? "Public scenario pressure only.",
     pressureSummary: scenario.pressureSummary,
     confrontationTitle: scenario.confrontationTitle,
     progress: `${scenario.progress}/${scenario.threshold}`,
     progressValue: scenario.progress,
     progressThreshold: scenario.threshold,
     progressLabel: scenario.progressLabel,
+    objectiveProgress: patch?.payload.scenarioPressure?.objectiveProgress ?? null,
+    pressureState: patch?.payload.scenarioPressure?.pressureTrack ?? null,
+    collapseState: patch?.payload.scenarioPressure?.collapseTrack ?? null,
+    status: patch?.payload.scenarioPressure?.scenarioStatus ?? patch?.payload.status ?? "active",
+    lastTrigger:
+      patch?.payload.publicResultDeltas
+        ?.filter((delta) => delta.type === "scenarioProgress" || delta.type === "scenarioPressure")
+        .slice(-1)[0] ?? null,
     pressureTrack: scenario.pressureTrack ?? null,
     finalGateRequirement: scenario.finalGateRequirement ?? null,
     scenarioRewards: scenario.scenarioRewards ?? [],
@@ -682,6 +729,7 @@ function ScenarioSelectionPreview({ scenario }: { scenario: ScenarioCatalogEntry
 
   return (
     <section className="tv-session-scenario-preview" aria-label="Scenario preview">
+      <ScenarioSheetArtFrame path={scenario.sheetArtPath ?? null} title={scenario.name} compact />
       <div className="tv-session-scenario-preview-header">
         <div>
           <span>Scenario Briefing</span>
@@ -693,6 +741,7 @@ function ScenarioSelectionPreview({ scenario }: { scenario: ScenarioCatalogEntry
         </div>
       </div>
       <p className="tv-session-scenario-preview-theme">{scenario.theme}</p>
+      <p className="tv-session-scenario-preview-theme">{scenario.publicDisplay?.objective ?? scenario.victoryText}</p>
       <div className="tv-session-scenario-preview-grid">
         <div>
           <span>Pressure Rule</span>
@@ -1152,6 +1201,10 @@ function ScenarioStatusCard({
 }): ReactElement {
   const stepCount = Math.min(Math.max(scenarioStatus.progressThreshold, 3), 8);
   const progressPercent = getProgressPercent(scenarioStatus.progressValue, scenarioStatus.progressThreshold);
+  const objective = scenarioStatus.objectiveProgress;
+  const pressure = scenarioStatus.pressureState;
+  const collapse = scenarioStatus.collapseState;
+  const lastTriggerCopy = scenarioStatus.lastTrigger?.reason ?? scenarioStatus.lastTrigger?.publicText ?? null;
 
   return (
     <section className="tv-card tv-sidebar-card tv-scenario-card" aria-label="Scenario">
@@ -1160,6 +1213,7 @@ function ScenarioStatusCard({
         <h2>Scenario</h2>
         <span />
       </div>
+      <ScenarioSheetArtFrame path={scenarioStatus.sheetArtPath} title={scenarioStatus.name} compact />
       <div className="tv-scenario-parchment">
         <h3>{scenarioStatus.name}</h3>
         <div className="tv-scenario-track" aria-label={`${scenarioStatus.progressLabel} ${scenarioStatus.progress}`}>
@@ -1172,6 +1226,37 @@ function ScenarioStatusCard({
           <strong>{scenarioStatus.progress}</strong>
         </div>
         <p>{scenarioStatus.progressLabel}</p>
+      </div>
+      <div className="tv-scenario-presentation" aria-label="Scenario sheet summary">
+        <span>{scenarioStatus.modeLabel}</span>
+        <p>{scenarioStatus.publicObjective}</p>
+        {objective ? (
+          <div className="tv-scenario-meter" aria-label={`Win progress ${objective.current}/${objective.required}`}>
+            <div>
+              <strong>Win Progress</strong>
+              <span>{objective.label}</span>
+            </div>
+            <em>{objective.current}/{objective.required}</em>
+          </div>
+        ) : null}
+        {collapse ? (
+          <div className="tv-scenario-meter tv-scenario-meter-loss" aria-label={`Loss pressure ${collapse.current}/${collapse.max}`}>
+            <div>
+              <strong>Loss Pressure</strong>
+              <span>{collapse.name}</span>
+            </div>
+            <em>{collapse.current}/{collapse.max}</em>
+          </div>
+        ) : pressure ? (
+          <div className="tv-scenario-meter tv-scenario-meter-loss" aria-label={`Pressure ${pressure.current}/${pressure.max}`}>
+            <div>
+              <strong>Pressure</strong>
+              <span>{pressure.name}</span>
+            </div>
+            <em>{pressure.current}/{pressure.max}</em>
+          </div>
+        ) : null}
+        {lastTriggerCopy ? <p className="tv-scenario-last-trigger">Last trigger: {lastTriggerCopy}</p> : null}
       </div>
       {scenarioOutcome && (
         <div className={`tv-scenario-outcome tv-scenario-outcome-${scenarioOutcome.tone}`}>
@@ -1197,6 +1282,7 @@ function ScenarioStatusCard({
       <div className="board-sidebar-meta">
         <span>{toTitleCase(scenarioStatus.difficulty)}</span>
         <span>{scenarioStatus.confrontationTitle}</span>
+        <span>{scenarioStatus.status}</span>
       </div>
     </section>
   );
