@@ -102,7 +102,7 @@ function buildCardImagePrompts(): PromptEntryMap {
 
   return {
     threat: threats.map((card) =>
-      buildPromptEntry("threat", card.id, card.title, buildThreatPrompt(card), `${card.title} threat card art.`)
+      buildPromptEntry("threat", card.id, card.title, buildThreatPrompt(card), `${card.title} threat card art.`, card.threatLane)
     ),
     contract: contracts.map((card) =>
       buildPromptEntry("contract", card.id, card.name, buildContractPrompt(card), `${card.name} contract card art.`)
@@ -127,7 +127,8 @@ function buildPromptEntry(
   cardId: string,
   title: string,
   prompt: string,
-  usage: string
+  usage: string,
+  threatLane?: "red" | "blue" | "yellow"
 ): CardImagePromptCatalogEntry {
   return {
     assetId: getCardArtAssetId(cardType, cardId),
@@ -136,7 +137,7 @@ function buildPromptEntry(
     cardType,
     title,
     fileName: getCardArtFileName(cardId),
-    outputPath: getCardArtOutputPath(cardType, cardId),
+    outputPath: getCardArtOutputPath(cardType, cardId, threatLane),
     fallbackPath: getCardFallbackArtPath(cardType),
     prompt,
     negativePrompt,

@@ -1,6 +1,7 @@
 export const CARD_IMAGE_TYPES = ["threat", "contract", "anomaly", "artifact", "scar", "escalation"] as const;
 
 export type CardImageType = (typeof CARD_IMAGE_TYPES)[number];
+export type ThreatCardArtLane = "red" | "blue" | "yellow";
 
 export type CardImageAssetType =
   | "contractCardArt"
@@ -42,6 +43,8 @@ export const CARD_IMAGE_OUTPUT_DIRECTORIES: Record<CardImageType, string> = {
   escalation: "/assets/cards/escalations"
 };
 
+const THREAT_CARD_ART_LANES = new Set<ThreatCardArtLane>(["red", "blue", "yellow"]);
+
 const CARD_IMAGE_ASSET_TYPES: Record<CardImageType, CardImageAssetType> = {
   threat: "threatCardArt",
   contract: "contractCardArt",
@@ -59,7 +62,15 @@ export function getCardArtAssetId(cardType: CardImageType, cardId: string): stri
   return `${cardType}_art_${cardId}`;
 }
 
-export function getCardArtOutputPath(cardType: CardImageType, cardId: string): string {
+export function getCardArtOutputPath(cardType: CardImageType, cardId: string, threatLane?: ThreatCardArtLane): string {
+  if (cardType === "threat") {
+    if (!threatLane || !THREAT_CARD_ART_LANES.has(threatLane)) {
+      throw new Error(`Threat card art path requires a canonical threatLane for ${cardId}`);
+    }
+
+    return `${CARD_IMAGE_OUTPUT_DIRECTORIES[cardType]}/${threatLane}/${cardId}.png`;
+  }
+
   return `${CARD_IMAGE_OUTPUT_DIRECTORIES[cardType]}/${cardId}.png`;
 }
 

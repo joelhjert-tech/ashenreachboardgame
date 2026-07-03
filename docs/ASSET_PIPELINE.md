@@ -23,6 +23,7 @@ Assets are runtime data. Do not delete an asset just because TypeScript does not
 
 - Board tile PNGs in the current map system use `map_tile_*` names under `public/assets/map/tiles/`.
 - Card art generated from content uses the card ID as the PNG filename under `public/assets/cards/<type>/`.
+- Active threat card art is organized by `threatLane` under `public/assets/cards/threats/red/`, `public/assets/cards/threats/blue/`, and `public/assets/cards/threats/yellow/`.
 - Runtime character portraits use character IDs where possible.
 - Avoid adding mockups, prompt sheets, or contact sheets to runtime asset folders.
 
@@ -44,16 +45,16 @@ Current baseline from this cleanup audit:
 
 The missing baseline threat images are:
 
-- `/assets/cards/threats/ash-cinder-runt.png`
-- `/assets/cards/threats/bridge-toll-runt.png`
-- `/assets/cards/threats/cracked-censer-novice.png`
-- `/assets/cards/threats/glasswing-midge-cloud.png`
-- `/assets/cards/threats/gutter-bell-mite.png`
-- `/assets/cards/threats/lantern-ash-ghoul.png`
-- `/assets/cards/threats/rust-mote-drone.png`
-- `/assets/cards/threats/soot-stained-cutpurse.png`
-- `/assets/cards/threats/toll-scrip-urchins.png`
-- `/assets/cards/threats/wire-chewer-pack.png`
+- `/assets/cards/threats/red/ash-cinder-runt.png`
+- `/assets/cards/threats/yellow/bridge-toll-runt.png`
+- `/assets/cards/threats/blue/cracked-censer-novice.png`
+- `/assets/cards/threats/blue/glasswing-midge-cloud.png`
+- `/assets/cards/threats/blue/gutter-bell-mite.png`
+- `/assets/cards/threats/red/lantern-ash-ghoul.png`
+- `/assets/cards/threats/yellow/rust-mote-drone.png`
+- `/assets/cards/threats/yellow/soot-stained-cutpurse.png`
+- `/assets/cards/threats/yellow/toll-scrip-urchins.png`
+- `/assets/cards/threats/yellow/wire-chewer-pack.png`
 
 Do not remove those content cards or manifest entries to make the audit green. Add the missing art instead.
 

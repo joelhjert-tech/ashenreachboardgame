@@ -4,6 +4,7 @@ import "@testing-library/jest-dom/vitest";
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { CardArtImage } from "../CardArtImage.js";
+import { getCardArtOutputPath } from "../../../game/assets/design/cardImageCatalog.js";
 import {
   getCardArtPath,
   getCardFallbackArtPath,
@@ -14,7 +15,14 @@ import {
 describe("card art paths", () => {
   it("returns generated card output paths for known cards", () => {
     expect(getCardArtPath("contract", "compact-cleanse-ledger")).toBe("/assets/cards/contracts/compact-cleanse-ledger.png");
-    expect(getCardArtPath("threat", "cinder-veil-stalker")).toBe("/assets/cards/threats/cinder-veil-stalker.png");
+    expect(getCardArtPath("threat", "cinder-veil-stalker")).toBe("/assets/cards/threats/red/cinder-veil-stalker.png");
+  });
+
+  it("requires lane-based output paths for generated threat art", () => {
+    expect(getCardArtOutputPath("threat", "cinder-veil-stalker", "red")).toBe(
+      "/assets/cards/threats/red/cinder-veil-stalker.png"
+    );
+    expect(() => getCardArtOutputPath("threat", "cinder-veil-stalker")).toThrow(/threatLane/i);
   });
 
   it("returns type fallbacks for unknown cards", () => {
