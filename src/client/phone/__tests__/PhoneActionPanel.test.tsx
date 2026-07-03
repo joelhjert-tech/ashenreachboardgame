@@ -152,6 +152,7 @@ describe("PhoneActionPanel", () => {
     expect(screen.getByText(/waiting for another seat/i)).toBeInTheDocument();
     expect(screen.getByTestId("phone-current-prompt")).toHaveTextContent(/waiting for mira/i);
     expect(screen.getByTestId("phone-current-prompt")).toHaveTextContent(/watch the tv command table/i);
+    expect(screen.getByTestId("phone-useful-now")).toHaveTextContent(/watch the tv/i);
     expect(screen.queryByRole("button", { name: /attempt signal check/i })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /enter combat/i })).not.toBeInTheDocument();
   });
@@ -176,6 +177,8 @@ describe("PhoneActionPanel", () => {
 
     expect(screen.getByTestId("phone-current-prompt")).toHaveTextContent(/resolve event/i);
     expect(screen.getByTestId("phone-current-prompt")).toHaveTextContent(/glass chime swarm/i);
+    expect(screen.getByTestId("phone-useful-now")).toHaveTextContent(/useful now: signal/i);
+    expect(screen.getByTestId("phone-useful-now")).toHaveTextContent(/current value 1/i);
     expect(screen.getByRole("button", { name: /attempt signal check/i })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /enter combat/i })).not.toBeInTheDocument();
   });
@@ -271,6 +274,8 @@ describe("PhoneActionPanel", () => {
 
     expect(screen.getByTestId("phone-current-prompt")).toHaveTextContent(/choose destination/i);
     expect(screen.getByTestId("phone-current-prompt")).toHaveTextContent(/you rolled 1/i);
+    expect(screen.getByTestId("phone-useful-now")).toHaveTextContent(/route and movement tools/i);
+    expect(screen.getByTestId("phone-useful-now")).toHaveTextContent(/movement roll 1/i);
     expect(screen.getByTestId("movement-planner")).toBeInTheDocument();
     expect(screen.getByText(/move 1/i)).toBeInTheDocument();
     expect(screen.getAllByText(/anchor market/i).length).toBeGreaterThan(0);
@@ -493,6 +498,8 @@ describe("PhoneActionPanel", () => {
 
     expect(screen.getByTestId("phone-current-prompt")).toHaveTextContent(/choose shop action/i);
     expect(screen.getByTestId("phone-current-prompt")).toHaveTextContent(/anchor market/i);
+    expect(screen.getByTestId("phone-useful-now")).toHaveTextContent(/salvage and sellable gear/i);
+    expect(screen.getByTestId("phone-useful-now")).toHaveTextContent(/1 item can be sold here/i);
     expect(screen.getByText(/forge market/i)).toBeInTheDocument();
     expect(screen.getAllByText(/forge armoury/i).length).toBeGreaterThan(0);
     expect(screen.getByText(/salvage: 6/i)).toBeInTheDocument();
@@ -592,6 +599,7 @@ describe("PhoneActionPanel", () => {
     );
 
     expect(screen.getByTestId("phone-current-prompt")).toHaveTextContent(/shop blocked/i);
+    expect(screen.getByTestId("phone-useful-now")).toHaveTextContent(/shop blocked by threat/i);
     expect(screen.getAllByText(/shop blocked by threat/i).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/market stalker/i).length).toBeGreaterThan(0);
   });
@@ -762,6 +770,46 @@ describe("PhoneActionPanel", () => {
     expect(screen.getByText(/sold: veil hook/i)).toBeInTheDocument();
   });
 
+  it("shows private rivalry useful-now hints only from the owner phone payload", () => {
+    render(
+      <PhoneActionPanel
+        characters={characters}
+        onIntent={vi.fn()}
+        patch={createPatch({
+          encounter: null,
+          privateRivalry: {
+            active: true,
+            mode: "rivalry",
+            secrecy: "private",
+            revealState: "revealAvailable",
+            tableWarning: "Shown only on this phone.",
+            objective: {
+              id: "claim-black-ledger",
+              title: "Claim the Black Ledger",
+              summary: "Secret shop leverage",
+              progressLabel: "ledgerMarks",
+              progress: 2,
+              target: 3,
+              stakes: "Keep it quiet"
+            },
+            recentPrivateNotes: [],
+            reveal: {
+              state: "revealAvailable",
+              available: true,
+              label: "Reveal Agenda",
+              hint: "Ready to reveal a public agenda moment.",
+              lockedReason: null
+            }
+          }
+        })}
+      />
+    );
+
+    expect(screen.getByTestId("phone-useful-now")).toHaveTextContent(/private agenda/i);
+    expect(screen.getByTestId("phone-useful-now")).toHaveTextContent(/2\/3 ledgermarks/i);
+    expect(screen.getByTestId("phone-useful-now")).toHaveTextContent(/ready to reveal a public agenda moment/i);
+  });
+
   it("shows a movement planner empty state when no legal destinations are available", () => {
     render(
       <PhoneActionPanel
@@ -854,7 +902,7 @@ describe("PhoneActionPanel", () => {
     expect(
       screen.getByRole("button", { name: /complete crossing thread/i })
     ).toBeInTheDocument();
-    expect(screen.getByText(/clear the ashwake convoy lane \(1\/1 clears\)/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/clear the ashwake convoy lane \(1\/1 clears\)/i).length).toBeGreaterThan(0);
   });
 
   it("offers stabilize when escalation is live and no encounter is blocking the action", () => {

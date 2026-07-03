@@ -43,6 +43,19 @@ export type InteractionMode = "co-op" | "rivalry" | "ruthless";
 export type ScenarioDifficulty = "easy" | "easy-medium" | "medium" | "medium-hard" | "hard" | "brutal";
 export type ScenarioMode = "coop" | "rivalry" | "hybrid";
 export type ScenarioRewardType = "boon" | "gear" | "ability" | "tile-event" | "tactic" | "artifact";
+export type CharacterComplexity = "beginner" | "standard" | "advanced" | "expert";
+
+export interface CharacterPresentation {
+  role: string;
+  complexity: CharacterComplexity;
+  playstyleSummary: string;
+  recommendedForFirstGame: boolean;
+  strengths: string[];
+  weaknesses: string[];
+  usefulStats: Stat[];
+  signatureItemSummary: string;
+  startingContractSummary: string;
+}
 
 export interface PublicSeat {
   seatId: string;
@@ -58,6 +71,7 @@ export interface PublicPlayerCharacter {
   name: string;
   archetype: string;
   qaOnly?: boolean;
+  presentation?: CharacterPresentation;
   status: "active" | "recalled";
   activeContract: { contractId: string; progress: number } | null;
   stats: Record<Stat, number>;
@@ -153,6 +167,7 @@ export interface PrivateCharacter {
   name: string;
   archetype: string;
   qaOnly?: boolean;
+  presentation?: CharacterPresentation;
   currentSpaceId: string;
   status: "active" | "recalled";
   stats: Record<Stat, number>;

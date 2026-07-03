@@ -188,10 +188,16 @@ describe("PhoneInventoryPanel", () => {
     expect(screen.getAllByText("Consumables").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Followers").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Quest Items").length).toBeGreaterThan(0);
-    expect(screen.getByText("Black Route Fuse")).toBeInTheDocument();
-    expect(screen.getByText("Coffin Rig")).toBeInTheDocument();
+    expect(screen.getAllByText("Black Route Fuse").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Coffin Rig").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Passive").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Usable now").length).toBeGreaterThan(0);
+    expect(screen.getByRole("region", { name: /inventory timing groups/i })).toHaveTextContent(/useful now/i);
+    expect(screen.getByRole("region", { name: /inventory timing groups/i })).toHaveTextContent(/passive \/ already applied/i);
+    expect(screen.getByRole("region", { name: /inventory timing groups/i })).toHaveTextContent(/not usable now/i);
+    expect(screen.getByRole("region", { name: /inventory timing groups/i })).toHaveTextContent(/black route fuse/i);
+    expect(screen.getByRole("region", { name: /inventory timing groups/i })).toHaveTextContent(/coffin rig/i);
+    expect(screen.getByText(/no wounds to heal/i)).toBeInTheDocument();
   });
 
   it("marks oversized inventories and dense categories as scrollable", () => {

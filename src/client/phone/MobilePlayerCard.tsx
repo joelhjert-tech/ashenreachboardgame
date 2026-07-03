@@ -200,6 +200,11 @@ export function MobilePlayerCard({
           <div className="mobile-player-card-title phone-sheet-title">
             <p className="mobile-player-card-kicker">{self.character.archetype}</p>
             <h2>{self.character.name}</h2>
+            {self.character.presentation && (
+              <p className="phone-sheet-role-line">
+                {self.character.presentation.role} | {toTitleCase(self.character.presentation.complexity)}
+              </p>
+            )}
             <p className="mobile-player-card-subtitle">Sector {toTitleCase(self.sectorId)}</p>
           </div>
 

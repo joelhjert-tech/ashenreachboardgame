@@ -34,6 +34,49 @@ const self: PhoneSelfState = {
 };
 
 describe("MobilePlayerCard", () => {
+  it("shows projected character role and complexity on the player card", () => {
+    render(
+      <MobilePlayerCard
+        self={{
+          ...self,
+          character: {
+            ...self.character,
+            presentation: {
+              role: "Commander",
+              complexity: "beginner",
+              playstyleSummary: "A clear first-game leader.",
+              recommendedForFirstGame: true,
+              strengths: ["Command"],
+              weaknesses: ["Low Signal"],
+              usefulStats: ["command", "grit"],
+              signatureItemSummary: "Cinder Suture Kit.",
+              startingContractSummary: "Warbell recovery."
+            }
+          }
+        }}
+        activeContractCard={null}
+        roomCode="RT7P4"
+        displayName="Joel"
+        connectionStatus="open"
+        sessionStatus="active"
+        winnerSeatId={null}
+        phase="action"
+        activeSeatId="seat-1"
+        activeNemesis={null}
+        activeScenario={null}
+        scenarioTelemetry={[]}
+        escalationLevel={0}
+        escalationThreshold={6}
+        escalationModifier={0}
+        encounter={null}
+        outcomeSummary={null}
+        onLeave={() => {}}
+      />
+    );
+
+    expect(screen.getByText(/commander \| beginner/i)).toBeInTheDocument();
+  });
+
   it("surfaces scenario victory messaging for the winner", () => {
     render(
       <MobilePlayerCard

@@ -18,6 +18,8 @@ describe("HostPlayerCard", () => {
         isConnected
         characterName="Sable Vey"
         characterTitle="Void Marshal"
+        characterRole="Commander"
+        characterComplexity="beginner"
         portraitUrl="/assets/riftfall/characters/void-marshal.png"
         locationName="Ashwake Crossing"
         fieldStatus="Field status stable"
@@ -44,6 +46,7 @@ describe("HostPlayerCard", () => {
 
     expect(screen.getByLabelText("Ultimate companions")).toHaveTextContent("Fandiablos");
     expect(screen.getByLabelText("Ultimate companions")).toHaveTextContent("ultimate");
+    expect(screen.getByText(/commander \| beginner/i)).toBeInTheDocument();
     expect(screen.queryByText(/black route fuse/i)).not.toBeInTheDocument();
   });
 });

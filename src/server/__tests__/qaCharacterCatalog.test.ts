@@ -9,4 +9,17 @@ describe("QA character catalog gating", () => {
     expect(roomServer.getCharacterCatalog().some((character) => character.id === "char_master_alpha")).toBe(false);
     expect(roomServer.getCharacterCatalog({ includeQa: true }).some((character) => character.id === "char_master_alpha")).toBe(true);
   });
+
+  it("projects normal character role metadata without recommending QA operatives", () => {
+    const roomServer = new GameRoomServer(createInitialSessionState("QA01"));
+    const normalCatalog = roomServer.getCharacterCatalog();
+    const debugCatalog = roomServer.getCharacterCatalog({ includeQa: true });
+
+    expect(normalCatalog.find((character) => character.id === "void-marshal")?.presentation).toMatchObject({
+      role: "Commander",
+      complexity: "beginner",
+      recommendedForFirstGame: true
+    });
+    expect(debugCatalog.find((character) => character.id === "char_master_alpha")?.presentation).toBeUndefined();
+  });
 });

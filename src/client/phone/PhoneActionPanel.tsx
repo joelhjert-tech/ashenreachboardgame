@@ -38,6 +38,7 @@ import { GameButton, type GameButtonTone } from "../shared/GameButton.js";
 import { statLabelById } from "../shared/statLabels.js";
 import { PhoneInventoryPanel } from "./PhoneInventoryPanel.js";
 import { formatTimingWindow, getBattleAssistViewModel, statLabelById as inventoryStatLabelById } from "./inventoryPresentation.js";
+import { buildUsefulNowViewModel, type UsefulNowViewModel } from "./usefulNowPresentation.js";
 
 interface PhoneActionPanelProps {
   characters: CharacterCatalogEntry[];
@@ -688,6 +689,33 @@ function battleResultDeltas(deltas: ResultDelta[] | null | undefined): ResultDel
     delta.source === "combat" ||
     delta.source === "resolution-effect" ||
     battleTypes.has(delta.type)
+  );
+}
+
+function UsefulNowPanel({ model }: { model: UsefulNowViewModel | null }): ReactElement | null {
+  if (!model) {
+    return null;
+  }
+
+  return (
+    <aside className="phone-useful-now" data-testid="phone-useful-now" aria-label="Useful now">
+      <div className="phone-useful-now-header">
+        <span>{model.phaseLabel}</span>
+        <strong>{model.headline}</strong>
+        {model.relevantStat && <em>{statLabelById[model.relevantStat]}</em>}
+      </div>
+      <p>{model.detail}</p>
+      {model.items.length > 0 && (
+        <div className="phone-useful-now-items">
+          {model.items.map((item) => (
+            <span key={`${item.label}-${item.detail}`} className={`phone-useful-now-chip phone-useful-now-chip-${item.tone}`}>
+              <strong>{item.label}</strong>
+              <small>{item.detail}</small>
+            </span>
+          ))}
+        </div>
+      )}
+    </aside>
   );
 }
 
@@ -1348,6 +1376,7 @@ export function PhoneActionPanel({
   }
 
   const sharedPrompt = buildCurrentPlayerPrompt(patch);
+  const usefulNow = buildUsefulNowViewModel(patch);
   const isActiveSeat = getActiveSeatId(patch) === self.seatId;
   const activeResolution = patch.activeResolution ?? null;
   const orphanResolutionOutcome =
@@ -1460,6 +1489,7 @@ export function PhoneActionPanel({
         <CurrentPromptCard
           prompt={currentPromptFromSharedPrompt(sharedPrompt)}
         />
+        <UsefulNowPanel model={usefulNow} />
         {resolutionPanel}
         {battleAssistPanel}
         <p className="phone-sheet-action-copy">Trophies: {self.character.trophies}</p>
@@ -1475,6 +1505,7 @@ export function PhoneActionPanel({
         <CurrentPromptCard
           prompt={currentPromptFromSharedPrompt(sharedPrompt)}
         />
+        <UsefulNowPanel model={usefulNow} />
         {resolutionPanel}
         {battleAssistPanel}
         <p className="phone-sheet-action-copy">Trophies: {self.character.trophies}</p>
@@ -1938,6 +1969,7 @@ export function PhoneActionPanel({
     <section className="phone-sheet-actions" aria-label="Quick actions">
       <div className="phone-sheet-section-heading">Turn Console</div>
       <CurrentPromptCard prompt={currentPrompt} onSelectedTab={setSelectedTurnTab} />
+      <UsefulNowPanel model={usefulNow} />
       <ResultDeltaRow deltas={currentDeltas} className="phone-current-deltas" />
       <div className="phone-sheet-action-status">
         <span>Trophies: {self.character.trophies}</span>

@@ -18,6 +18,7 @@ import {
 import { resolveBoardTextChoice, resolveBoardTextEffect, type BoardTextDeckKind } from "../game/data/boardTextEffects.js";
 import { nemeses, type NemesisDefinition } from "../game/data/nemeses.js";
 import { getScenarioDefinition, type ScenarioDefinition } from "../game/data/scenarios.js";
+import { getCharacterPresentation, type CharacterPresentation } from "../game/data/characterPresentation.js";
 import {
   advanceContractObjectiveProgress,
   describeContractObjective,
@@ -663,17 +664,22 @@ export class GameRoomServer {
     this.hostToken = hostToken;
   }
 
-  getCharacterCatalog(options: { includeQa?: boolean } = {}): Character[] {
-    return [...this.characters.values()].filter((character) => options.includeQa || !character.qaOnly).map((character) => ({
-      ...character,
-      activeContract: character.activeContract ? { ...character.activeContract } : null,
-      heldGear: [...character.heldGear],
-      equippedGear: { ...character.equippedGear },
-      followers: [...(character.followers ?? [])],
-      abilities: [...character.abilities],
-      scars: [...character.scars],
-      trophyPile: [...(character.trophyPile ?? [])]
-    }));
+  getCharacterCatalog(options: { includeQa?: boolean } = {}): Array<Character & { presentation?: CharacterPresentation }> {
+    return [...this.characters.values()].filter((character) => options.includeQa || !character.qaOnly).map((character) => {
+      const presentation = getCharacterPresentation(character.id);
+
+      return {
+        ...character,
+        ...(presentation ? { presentation } : {}),
+        activeContract: character.activeContract ? { ...character.activeContract } : null,
+        heldGear: [...character.heldGear],
+        equippedGear: { ...character.equippedGear },
+        followers: [...(character.followers ?? [])],
+        abilities: [...character.abilities],
+        scars: [...character.scars],
+        trophyPile: [...(character.trophyPile ?? [])]
+      };
+    });
   }
 
   resetSession(state: GameState): void {
@@ -7557,6 +7563,7 @@ export function createTvProjection(state: GameState): Record<string, unknown> {
         id: player.character.id,
         name: player.character.name,
         archetype: player.character.archetype,
+        ...(getCharacterPresentation(player.character.id) ? { presentation: getCharacterPresentation(player.character.id) } : {}),
         status: player.character.status,
         activeContract: player.character.activeContract,
         stats: player.character.stats,
@@ -7674,6 +7681,7 @@ function sanitizePlayerForPhone(player: PlayerState): Record<string, unknown> {
     seatId: player.seatId,
     character: {
       ...player.character,
+      ...(getCharacterPresentation(player.character.id) ? { presentation: getCharacterPresentation(player.character.id) } : {}),
       scarCards: summarizeScars(player.character.scars)
     },
     sectorId: player.character.currentSpaceId,

@@ -17,6 +17,8 @@ export interface HostPlayerCardProps {
   isConnected: boolean;
   characterName: string | null;
   characterTitle: string | null;
+  characterRole?: string | null;
+  characterComplexity?: string | null;
   portraitUrl: string | null;
   locationName: string;
   fieldStatus: string;
@@ -59,6 +61,8 @@ export function HostPlayerCard({
   isConnected,
   characterName,
   characterTitle,
+  characterRole = null,
+  characterComplexity = null,
   portraitUrl,
   locationName,
   fieldStatus,
@@ -112,6 +116,11 @@ export function HostPlayerCard({
             <p className="host-player-card-seat">{seatLabel}</p>
             <h3>{characterName ?? "Open Seat"}</h3>
             <p className="host-player-card-title">{characterTitle ?? "Unclaimed operative frame"}</p>
+            {(characterRole || characterComplexity) && (
+              <p className="host-player-card-role">
+                {[characterRole, characterComplexity].filter(Boolean).join(" | ")}
+              </p>
+            )}
           </div>
 
           <div className="host-player-card-status-row">

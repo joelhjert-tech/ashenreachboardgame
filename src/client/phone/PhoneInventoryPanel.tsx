@@ -120,6 +120,39 @@ function InventoryCard({
   );
 }
 
+function InventoryTimingGroups({ cards }: { cards: InventoryCardViewModel[] }): ReactElement | null {
+  const groups = [
+    {
+      label: "Useful now",
+      items: cards.filter((card) => card.canUseNow)
+    },
+    {
+      label: "Passive / already applied",
+      items: cards.filter((card) => card.status === "Passive")
+    },
+    {
+      label: "Not usable now",
+      items: cards.filter((card) => !card.canUseNow && card.status !== "Passive")
+    }
+  ];
+
+  if (cards.length === 0) {
+    return null;
+  }
+
+  return (
+    <section className="phone-inventory-timing-groups" aria-label="Inventory timing groups">
+      {groups.map((group) => (
+        <article key={group.label} className="phone-inventory-timing-group">
+          <span>{group.label}</span>
+          <strong>{group.items.length}</strong>
+          <small>{group.items.slice(0, 2).map((item) => item.name).join(", ") || "None"}</small>
+        </article>
+      ))}
+    </section>
+  );
+}
+
 export function PhoneInventoryPanel({
   patch,
   onIntent,
@@ -137,7 +170,9 @@ export function PhoneInventoryPanel({
     );
   }
 
-  const groups = getInventoryGroups(patch).map((group) => ({
+  const inventoryGroups = getInventoryGroups(patch);
+  const allCards = inventoryGroups.flatMap((group) => group.items);
+  const groups = inventoryGroups.map((group) => ({
     ...group,
     items: onlyUsable ? group.items.filter((card) => card.canUseNow) : group.items
   }));
@@ -153,6 +188,7 @@ export function PhoneInventoryPanel({
 
   return (
     <section className={panelClassName} aria-label="Inventory" data-item-count={visibleItemCount}>
+      {!onlyUsable && <InventoryTimingGroups cards={allCards} />}
       {visibleGroups.length === 0 ? (
         <p className="phone-sheet-action-empty">
           {onlyUsable ? "No combat cards are usable in this timing window." : "No inventory cards, followers, or quest items yet."}

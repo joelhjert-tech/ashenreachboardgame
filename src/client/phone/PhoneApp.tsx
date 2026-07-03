@@ -77,6 +77,10 @@ function toTitleCase(value: string): string {
   return value.replace(/[_-]+/g, " ").replace(/\b\w/g, (character) => character.toUpperCase());
 }
 
+function formatComplexity(value: string | undefined): string {
+  return value ? toTitleCase(value) : "Standard";
+}
+
 function useLandscapeMode(): boolean {
   const getIsLandscape = () => {
     if (typeof window === "undefined") {
@@ -255,6 +259,36 @@ export function PhoneApp(): ReactElement {
                     <h2>{selectedCharacter.name}</h2>
                     <p>{selectedCharacter.archetype}</p>
                     {selectedCharacter.qaOnly && <span className="phone-character-qa-badge">QA ONLY</span>}
+                    {selectedCharacter.presentation && (
+                      <div className="phone-character-presentation" data-testid="phone-character-presentation">
+                        <div className="phone-character-role-row">
+                          <span>{selectedCharacter.presentation.role}</span>
+                          <span>{formatComplexity(selectedCharacter.presentation.complexity)}</span>
+                          {selectedCharacter.presentation.recommendedForFirstGame && <strong>First-game pick</strong>}
+                        </div>
+                        <p>{selectedCharacter.presentation.playstyleSummary}</p>
+                        <div className="phone-character-summary-grid">
+                          <span>
+                            <strong>Gear</strong>
+                            {selectedCharacter.presentation.signatureItemSummary}
+                          </span>
+                          <span>
+                            <strong>Contract</strong>
+                            {selectedCharacter.presentation.startingContractSummary}
+                          </span>
+                        </div>
+                        <div className="phone-character-strength-grid">
+                          <span>
+                            <strong>Good at</strong>
+                            {selectedCharacter.presentation.strengths.slice(0, 2).join(", ")}
+                          </span>
+                          <span>
+                            <strong>Watch out</strong>
+                            {selectedCharacter.presentation.weaknesses.slice(0, 2).join(", ")}
+                          </span>
+                        </div>
+                      </div>
+                    )}
                     <div className="phone-character-stat-row" aria-label="Selected character stats">
                       <span>Command {selectedCharacter.stats.command}</span>
                       <span>Grit {selectedCharacter.stats.grit}</span>
@@ -329,6 +363,12 @@ export function PhoneApp(): ReactElement {
                           <span>
                             <strong>{character.name}</strong>
                             <small>{character.archetype}</small>
+                            {character.presentation && (
+                              <small className="phone-character-option-meta">
+                                {character.presentation.role} | {formatComplexity(character.presentation.complexity)}
+                                {character.presentation.recommendedForFirstGame ? " | First-game pick" : ""}
+                              </small>
+                            )}
                             {character.qaOnly && <em className="phone-character-qa-badge">QA ONLY</em>}
                           </span>
                         </button>

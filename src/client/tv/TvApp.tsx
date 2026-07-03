@@ -471,6 +471,8 @@ function ActiveOperativeOverlay({
 }: ActiveOperativeOverlayProps): ReactElement {
   const seatStatus = getSeatStatus(activeSeat, activePlayer, true);
   const abilityTelemetry = getSeatAbilityTelemetry(patch?.payload ?? null, previousPatch?.payload ?? null, activeSeat?.seatId ?? null);
+  const activeCatalogCharacter = characterCatalog.find((entry) => entry.id === activePlayer?.character.id);
+  const activePresentation = activePlayer?.character.presentation ?? activeCatalogCharacter?.presentation;
 
   if (!activeSeat) {
     return (
@@ -490,6 +492,8 @@ function ActiveOperativeOverlay({
         isConnected={activeSeat.connected}
         characterName={activePlayer?.character.name ?? activeSeat.displayName}
         characterTitle={activePlayer?.character.archetype ?? null}
+        characterRole={activePresentation?.role ?? null}
+        characterComplexity={activePresentation?.complexity ? toTitleCase(activePresentation.complexity) : null}
         portraitUrl={
           activePlayer && activeSeat.displayName && !activeSeat.kicked
             ? getCharacterPortraitPath(activePlayer.character.id)
@@ -573,6 +577,7 @@ function OperativesRail({ patch, characterCatalog, activeSeatId, sessionMode, ba
           const isOpen = !isOccupied || seat.kicked;
           const characterName = isOpen ? "Open Seat" : player?.character.name ?? seat.displayName ?? catalogCharacter?.name ?? "Open Seat";
           const characterTitle = isOpen ? "-" : player?.character.archetype ?? catalogCharacter?.archetype ?? "Awaiting operative";
+          const characterPresentation = player?.character.presentation ?? catalogCharacter?.presentation;
           const isActive = seat.seatId === activeSeatId;
           const statusLabel = seat.kicked
             ? "Down"
@@ -607,6 +612,11 @@ function OperativesRail({ patch, characterCatalog, activeSeatId, sessionMode, ba
                   </span>
                 </div>
                 <p>{characterTitle}</p>
+                {characterPresentation && (
+                  <p className="tv-operative-role-row">
+                    {characterPresentation.role} | {toTitleCase(characterPresentation.complexity)}
+                  </p>
+                )}
                 {player && (
                   <>
                     <div className="tv-operative-stats" aria-label={`${characterName} vitals`}>

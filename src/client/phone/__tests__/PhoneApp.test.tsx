@@ -32,7 +32,21 @@ const characters: CharacterCatalogEntry[] = [
   activeContract: null,
   heldGear: [],
   equippedGear: { weapon: null, armor: null, utility: null },
-  abilities: []
+  abilities: [],
+  presentation:
+    id === "void-marshal"
+      ? {
+          role: "Commander",
+          complexity: "beginner",
+          playstyleSummary: "A clear first-game leader with Command pressure and safe recovery tools.",
+          recommendedForFirstGame: true,
+          strengths: ["Command", "Team direction"],
+          weaknesses: ["Low Signal"],
+          usefulStats: ["command", "grit"],
+          signatureItemSummary: "Cinder Suture Kit: emergency recovery for rough turns.",
+          startingContractSummary: "Warbell recovery: rewards direct table leadership."
+        }
+      : undefined
 })) as CharacterCatalogEntry[];
 
 const networkMocks = vi.hoisted(() => ({
@@ -109,6 +123,23 @@ describe("PhoneApp", () => {
     expect(screen.getByRole("button", { name: /mira.*cinder monk/i })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /orenna tash.*fleet elder/i })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /deepdale.*deep route delver/i })).toBeInTheDocument();
+  });
+
+  it("shows character role, complexity, starting gear, and starting contract guidance", async () => {
+    render(<PhoneApp />);
+
+    await screen.findByRole("button", { name: /continue/i });
+    fireEvent.change(screen.getAllByLabelText(/room code/i)[0]!, { target: { value: "RT7P4" } });
+    fireEvent.change(screen.getAllByLabelText(/player name/i)[0]!, { target: { value: "Joel" } });
+    fireEvent.click(screen.getByRole("button", { name: /continue/i }));
+
+    expect(await screen.findByTestId("phone-character-presentation")).toHaveTextContent(/commander/i);
+    expect(screen.getByTestId("phone-character-presentation")).toHaveTextContent(/beginner/i);
+    expect(screen.getByTestId("phone-character-presentation")).toHaveTextContent(/first-game pick/i);
+    expect(screen.getByTestId("phone-character-presentation")).toHaveTextContent(/cinder suture kit/i);
+    expect(screen.getByTestId("phone-character-presentation")).toHaveTextContent(/warbell recovery/i);
+    expect(screen.getByTestId("phone-character-presentation")).toHaveTextContent(/good at/i);
+    expect(screen.getByTestId("phone-character-presentation")).toHaveTextContent(/watch out/i);
   });
 
   it("reserves the chosen Deepdale character when selected", async () => {
