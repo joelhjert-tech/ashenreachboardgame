@@ -56,6 +56,13 @@ const networkMocks = vi.hoisted(() => ({
 
 vi.mock("../../shared/network.js", () => ({
   fetchCharacters: vi.fn(async () => characters),
+  getConnectionDiagnostics: vi.fn(() => ({
+    pageUrl: "http://192.168.1.40:5173/?room=RT7P4",
+    apiOrigin: "http://192.168.1.40:8080",
+    webSocketOrigin: "ws://192.168.1.40:8080",
+    publicClientOrigin: "http://192.168.1.40:5173",
+    isLocalhostPage: false
+  })),
   joinSession: networkMocks.joinSession,
   leaveSession: networkMocks.leaveSession
 }));
@@ -165,6 +172,22 @@ describe("PhoneApp", () => {
         characterId: "char_deepdale"
       });
     });
+  });
+
+  it("shows actionable connection guidance when the phone cannot reach the host", async () => {
+    networkMocks.joinSession.mockRejectedValue(new TypeError("Failed to fetch"));
+
+    render(<PhoneApp />);
+
+    await screen.findByRole("button", { name: /continue/i });
+    fireEvent.change(screen.getAllByLabelText(/room code/i)[0]!, { target: { value: "RT7P4" } });
+    fireEvent.change(screen.getAllByLabelText(/player name/i)[0]!, { target: { value: "Joel" } });
+    fireEvent.click(screen.getByRole("button", { name: /continue/i }));
+    fireEvent.click(await screen.findByRole("button", { name: /deepdale.*deep route delver/i }));
+
+    expect(await screen.findByText(/cannot reach host server/i)).toBeInTheDocument();
+    expect(screen.getByText(/same wi-fi/i)).toBeInTheDocument();
+    expect(screen.getByText(/windows firewall/i)).toBeInTheDocument();
   });
 
   it("prefills room and requested seat from direct browser join links", async () => {

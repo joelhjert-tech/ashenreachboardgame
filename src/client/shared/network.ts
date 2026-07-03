@@ -1,14 +1,94 @@
 import type { CharacterCatalogEntry, GameMode, InteractionMode, PhoneSessionAuth, PublicSeat, ScenarioCatalogEntry, SessionMode } from "./types.js";
 
-const browserHost = typeof window !== "undefined" ? window.location.hostname : "localhost";
-const browserProtocol = typeof window !== "undefined" ? window.location.protocol : "http:";
-const websocketProtocol = browserProtocol === "https:" ? "wss:" : "ws:";
+interface BrowserOriginParts {
+  protocol: string;
+  hostname: string;
+  origin: string;
+}
+
+interface ResolveNetworkOriginOptions {
+  protocol: string;
+  hostname: string;
+  port: string;
+  configuredOrigin?: string;
+}
+
+interface BuildPhoneJoinUrlOptions {
+  roomCode: string;
+  currentOrigin: string;
+  publicClientOrigin?: string;
+}
+
+const defaultBrowserOrigin: BrowserOriginParts =
+  typeof window !== "undefined"
+    ? {
+        protocol: window.location.protocol,
+        hostname: window.location.hostname,
+        origin: window.location.origin
+      }
+    : {
+        protocol: "http:",
+        hostname: "localhost",
+        origin: "http://localhost"
+      };
+
 const apiPort = import.meta.env.VITE_API_PORT ?? "8080";
 const wsPort = import.meta.env.VITE_WS_PORT ?? apiPort;
-const apiOrigin =
-  import.meta.env.VITE_API_ORIGIN ?? `${browserProtocol}//${browserHost}:${apiPort}`;
-const wsOrigin =
-  import.meta.env.VITE_WS_ORIGIN ?? `${websocketProtocol}//${browserHost}:${wsPort}`;
+
+function trimTrailingSlash(value: string): string {
+  return value.replace(/\/+$/, "");
+}
+
+function normalizeConfiguredOrigin(origin: string | undefined): string | null {
+  const normalized = origin?.trim();
+  return normalized ? trimTrailingSlash(normalized) : null;
+}
+
+export function resolveApiOrigin({
+  protocol,
+  hostname,
+  port,
+  configuredOrigin
+}: ResolveNetworkOriginOptions): string {
+  return normalizeConfiguredOrigin(configuredOrigin) ?? `${protocol}//${hostname}:${port}`;
+}
+
+export function resolveWebSocketOrigin({
+  protocol,
+  hostname,
+  port,
+  configuredOrigin
+}: ResolveNetworkOriginOptions): string {
+  const websocketProtocol = protocol === "https:" ? "wss:" : "ws:";
+  return normalizeConfiguredOrigin(configuredOrigin) ?? `${websocketProtocol}//${hostname}:${port}`;
+}
+
+export function buildPhoneJoinUrl({
+  roomCode,
+  currentOrigin,
+  publicClientOrigin
+}: BuildPhoneJoinUrlOptions): string {
+  const joinOrigin = normalizeConfiguredOrigin(publicClientOrigin) ?? trimTrailingSlash(currentOrigin);
+  const url = new URL(joinOrigin);
+  url.pathname = "/";
+  url.search = "";
+  url.hash = "";
+  url.searchParams.set("room", roomCode);
+  return url.toString();
+}
+
+const apiOrigin = resolveApiOrigin({
+  protocol: defaultBrowserOrigin.protocol,
+  hostname: defaultBrowserOrigin.hostname,
+  port: apiPort,
+  configuredOrigin: import.meta.env.VITE_API_ORIGIN
+});
+const wsOrigin = resolveWebSocketOrigin({
+  protocol: defaultBrowserOrigin.protocol,
+  hostname: defaultBrowserOrigin.hostname,
+  port: wsPort,
+  configuredOrigin: import.meta.env.VITE_WS_ORIGIN
+});
 
 export function getApiOrigin(): string {
   return apiOrigin;
@@ -16,6 +96,33 @@ export function getApiOrigin(): string {
 
 export function getWebSocketOrigin(): string {
   return wsOrigin;
+}
+
+export function getPhoneJoinUrl(roomCode: string): string {
+  return buildPhoneJoinUrl({
+    roomCode,
+    currentOrigin: defaultBrowserOrigin.origin,
+    publicClientOrigin: import.meta.env.VITE_PUBLIC_CLIENT_ORIGIN
+  });
+}
+
+export function getConnectionDiagnostics(): {
+  pageUrl: string;
+  apiOrigin: string;
+  webSocketOrigin: string;
+  publicClientOrigin: string | null;
+  isLocalhostPage: boolean;
+} {
+  const pageUrl = typeof window !== "undefined" ? window.location.href : "";
+  const publicClientOrigin = normalizeConfiguredOrigin(import.meta.env.VITE_PUBLIC_CLIENT_ORIGIN);
+
+  return {
+    pageUrl,
+    apiOrigin,
+    webSocketOrigin: wsOrigin,
+    publicClientOrigin,
+    isLocalhostPage: defaultBrowserOrigin.hostname === "localhost" || defaultBrowserOrigin.hostname === "127.0.0.1"
+  };
 }
 
 export async function createSession(

@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent, type ReactElement } from "react";
-import { fetchCharacters, joinSession, leaveSession } from "../shared/network.js";
+import { fetchCharacters, getConnectionDiagnostics, joinSession, leaveSession } from "../shared/network.js";
 import type { CharacterCatalogEntry, PhonePatchPayload, PhoneSelfState, PhoneSessionAuth, StatePatch } from "../shared/types.js";
 import { useRoomSubscription } from "../shared/useRoomSubscription.js";
 import {
@@ -79,6 +79,22 @@ function toTitleCase(value: string): string {
 
 function formatComplexity(value: string | undefined): string {
   return value ? toTitleCase(value) : "Standard";
+}
+
+function formatJoinFailure(joinFailure: unknown): string {
+  const message = joinFailure instanceof Error ? joinFailure.message : "Join failed";
+
+  if (!/failed to fetch|networkerror|load failed|cannot reach|fetch/i.test(message)) {
+    return message;
+  }
+
+  const diagnostics = getConnectionDiagnostics();
+
+  if (diagnostics.isLocalhostPage) {
+    return "Cannot reach host server. This phone is using a localhost URL; open the LAN URL or scan the TV QR from a LAN-hosted TV page.";
+  }
+
+  return "Cannot reach host server. Check that the phone and host are on the same Wi-Fi, then confirm Windows firewall allows the Ashen Reach ports.";
 }
 
 function useLandscapeMode(): boolean {
@@ -196,7 +212,7 @@ export function PhoneApp(): ReactElement {
       setAuth(nextAuth);
       writeStoredAuth(nextAuth);
     } catch (joinFailure) {
-      setJoinError(joinFailure instanceof Error ? joinFailure.message : "Join failed");
+      setJoinError(formatJoinFailure(joinFailure));
     }
   };
 

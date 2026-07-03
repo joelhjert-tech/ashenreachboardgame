@@ -16,6 +16,8 @@ async function main(): Promise<void> {
   delete process.env.VITE_WS_ORIGIN;
   process.env.VITE_API_PORT = String(server.port);
   process.env.VITE_WS_PORT = String(server.port);
+  process.env.VITE_PUBLIC_CLIENT_ORIGIN =
+    process.env.PUBLIC_CLIENT_ORIGIN || `http://${server.lanHost}:${requestedClientPort}`;
 
   const viteConfig: InlineConfig = {
     clearScreen: false,

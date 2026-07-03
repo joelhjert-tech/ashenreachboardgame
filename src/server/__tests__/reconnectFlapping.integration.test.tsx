@@ -28,6 +28,13 @@ class TestWebSocket extends NodeWebSocket {
 }
 
 vi.mock("../../client/shared/network.js", () => ({
+  getConnectionDiagnostics: () => ({
+    pageUrl: "http://127.0.0.1:5173/",
+    apiOrigin: "http://127.0.0.1:8080",
+    webSocketOrigin: mockedWebSocketOrigin,
+    publicClientOrigin: null,
+    isLocalhostPage: true
+  }),
   getWebSocketOrigin: () => mockedWebSocketOrigin
 }));
 
