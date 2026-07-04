@@ -6004,12 +6004,8 @@ body {
 }
 
 .host-battle-panel {
-  grid-template-columns: minmax(17rem, 1fr) minmax(14rem, 0.42fr) minmax(17rem, 1fr);
-  grid-template-rows:
-    minmax(0, 1fr)
-    clamp(3.6rem, 8svh, 5.2rem)
-    clamp(2.6rem, 5.6svh, 3.7rem)
-    clamp(2.55rem, 5.6svh, 3.8rem);
+  grid-template-columns: minmax(18rem, 1fr) minmax(16.5rem, 0.5fr) minmax(18rem, 1fr);
+  grid-template-rows: minmax(0, 1fr);
   gap: clamp(0.34rem, 0.58vw, 0.72rem);
   padding: clamp(0.32rem, 0.6vw, 0.72rem);
   border: 1px solid rgba(231, 210, 176, 0.1);
@@ -6017,9 +6013,9 @@ body {
 
 .host-battle-combatant {
   grid-template-rows:
-    clamp(4rem, 10svh, 6.1rem)
+    clamp(4.15rem, 10svh, 6.2rem)
     minmax(0, 1fr)
-    clamp(4.4rem, 9.4svh, 6.6rem);
+    clamp(6.7rem, 15.5svh, 10rem);
 }
 
 .host-battle-total-footer {
@@ -6027,9 +6023,9 @@ body {
   z-index: 3;
   min-width: 0;
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  align-items: center;
-  gap: clamp(0.34rem, 0.58vw, 0.7rem);
+  grid-template-columns: minmax(0, 1fr);
+  align-content: center;
+  gap: clamp(0.2rem, 0.36vw, 0.44rem);
   padding: clamp(0.38rem, 0.64vw, 0.75rem);
   border: 1px solid rgba(231, 210, 176, 0.16);
   background: rgba(5, 8, 12, 0.38);
@@ -6039,12 +6035,53 @@ body {
 }
 
 .host-battle-enemy .host-battle-total-footer {
-  direction: rtl;
+  direction: ltr;
 }
 
 .host-battle-enemy .host-battle-total-footer p,
 .host-battle-enemy .host-battle-total-footer .challenge-badge {
   direction: ltr;
+}
+
+.host-battle-relevant-stat {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: clamp(0.32rem, 0.52vw, 0.68rem);
+}
+
+.host-battle-relevant-stat > span,
+.host-battle-math-grid dt {
+  color: #baa37e;
+  font-size: clamp(0.52rem, 0.62vw, 0.76rem);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.host-battle-math-grid {
+  margin: 0;
+  min-width: 0;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: clamp(0.14rem, 0.24vw, 0.28rem);
+}
+
+.host-battle-math-grid > div {
+  min-width: 0;
+  display: grid;
+  gap: 0.08rem;
+  padding: clamp(0.18rem, 0.28vw, 0.34rem);
+  border: 1px solid rgba(231, 210, 176, 0.12);
+  background: rgba(4, 7, 11, 0.34);
+}
+
+.host-battle-math-grid dd {
+  margin: 0;
+  color: #fff0d2;
+  font-size: clamp(0.92rem, 1.28vw, 1.64rem);
+  font-weight: 850;
+  line-height: 1;
 }
 
 .host-battle-total-footer p {
@@ -6069,12 +6106,19 @@ body {
   align-self: stretch;
   justify-self: stretch;
   display: grid;
-  grid-template-rows: auto auto auto minmax(0, 1fr) auto;
+  grid-template-rows: auto auto auto minmax(5.5rem, 0.72fr) auto auto minmax(0, auto);
   place-items: center;
   gap: clamp(0.24rem, 0.54vw, 0.68rem);
   min-width: 0;
   min-height: 0;
   padding: clamp(0.52rem, 0.86vw, 1rem) clamp(0.34rem, 0.66vw, 0.8rem);
+  border: 1px solid rgba(231, 210, 176, 0.18);
+  background:
+    radial-gradient(circle at 50% 28%, rgba(245, 212, 156, 0.12), transparent 38%),
+    rgba(3, 5, 8, 0.32);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 240, 208, 0.04),
+    0 0 1.6rem rgba(0, 0, 0, 0.22);
   pointer-events: none;
 }
 
@@ -6171,46 +6215,75 @@ body {
 }
 
 .host-battle-rolls {
-  grid-row: 2;
-  align-self: stretch;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(8rem, 0.36fr) minmax(0, 1fr);
-  padding: 0;
-}
-
-.host-battle-formula {
-  width: min(24rem, 74%);
-  min-height: 0;
-}
-
-.host-battle-formula-player,
-.host-battle-formula-enemy {
-  margin-top: 0;
-}
-
-.host-battle-battle-line {
-  grid-column: 2;
+  grid-column: auto;
+  grid-row: auto;
+  position: static;
   align-self: center;
-  width: min(13rem, 96%);
+  justify-self: stretch;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto auto minmax(0, 1fr);
+  align-items: center;
+  justify-items: center;
+  gap: clamp(0.18rem, 0.42vw, 0.52rem);
+  width: 100%;
+  min-height: 0;
+  margin: 0;
+  padding: clamp(0.3rem, 0.5vw, 0.58rem);
+  border: 1px solid rgba(231, 210, 176, 0.16);
+  background: rgba(5, 8, 12, 0.4);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.03);
+  overflow: hidden;
 }
 
-.host-battle-actions {
-  grid-row: 3;
+.host-battle-rolls span {
+  min-width: 0;
+  max-width: 100%;
+  color: #d7b878;
+  font-size: clamp(0.56rem, 0.7vw, 0.84rem);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.host-battle-status-chip {
-  min-width: min(44rem, 72%);
-  font-size: clamp(0.72rem, 0.95vw, 1.08rem);
-  letter-spacing: 0.04em;
-  text-transform: none;
+.host-battle-rolls strong {
+  color: #f7ead1;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(1.2rem, 2vw, 2.5rem);
+  line-height: 1;
 }
 
-.host-battle-status-chip-secondary {
-  min-width: min(20rem, 28%);
+.host-battle-rolls b {
+  color: #f5d49c;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(1rem, 1.5vw, 1.9rem);
+  line-height: 1;
+  text-transform: uppercase;
 }
 
-.host-battle-log {
-  grid-row: 4;
+.host-battle-result-copy {
+  width: 100%;
+  min-width: 0;
+  display: grid;
+  gap: 0.18rem;
+}
+
+.host-battle-result-copy p {
+  margin: 0;
+  color: #e9dac0;
+  display: -webkit-box;
+  overflow: hidden;
+  font-size: clamp(0.62rem, 0.8vw, 0.96rem);
+  line-height: 1.18;
+  text-align: center;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.host-battle-vs-block .host-battle-delta-row {
+  max-width: 100%;
+  align-self: end;
 }
 
 .host-shop-overlay {
@@ -13188,19 +13261,15 @@ body {
     0 0 3rem color-mix(in srgb, var(--challenge-color) 16%, transparent);
 }
 
-.host-battle-formula,
-.host-battle-battle-line,
-.host-battle-stat-grid > div {
+.host-battle-math-grid > div,
+.host-battle-rolls,
+.host-battle-total-footer {
   border-color: color-mix(in srgb, var(--challenge-color) 42%, rgba(231, 210, 176, 0.16));
 }
 
-.host-battle-stat-grid .challenge-badge {
+.host-battle-relevant-stat .challenge-badge {
   width: 100%;
   justify-content: space-between;
-}
-
-.host-battle-battle-line .challenge-badge {
-  max-width: 6.8rem;
 }
 
 .host-shop-panel {

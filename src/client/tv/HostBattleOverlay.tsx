@@ -41,7 +41,6 @@ interface HostBattleDisplayModel {
   resultTone: "victory" | "failure" | "neutral";
   marginText: string;
   cardMovementText: string | null;
-  logEntries: string[];
   autoResolveAvailable: boolean;
   resultDeltas: ResultDelta[];
 }
@@ -54,8 +53,8 @@ function formatNumber(value: number | null): string {
   return value === null ? "-" : String(value);
 }
 
-function formatDiceExpression(dice: number[]): string {
-  return dice.length > 0 ? dice.join(" + ") : "-";
+function formatModifier(value: number | null): string {
+  return value === null || value === 0 ? "+0" : value > 0 ? `+${value}` : String(value);
 }
 
 function formatResolutionType(resolution: ActiveResolution | null, fallbackType: string | null | undefined): string {
@@ -162,6 +161,18 @@ function getMarginText(outcomeLabel: HostBattleDisplayModel["outcomeLabel"], pla
   return outcomeLabel === "SUCCESS" ? `Wins by ${margin}` : `Fails by ${margin}`;
 }
 
+function getComparisonSymbol(playerTotal: number | null, enemyTotal: number | null): string {
+  if (playerTotal === null || enemyTotal === null) {
+    return "vs";
+  }
+
+  if (playerTotal === enemyTotal) {
+    return "=";
+  }
+
+  return playerTotal > enemyTotal ? ">" : "<";
+}
+
 function getOpponentCardType(resolution: ActiveResolution | null): ResolutionSideModel["cardType"] {
   const artType = resolution?.card?.artType ?? resolution?.source ?? null;
 
@@ -247,14 +258,6 @@ function buildBattleModel(
       : outcomeLabel === "DEFEAT"
         ? `${activePlayer.character.name} fails the resolution.`
         : "Resolution pending.");
-  const logEntries = [
-    `${activePlayer.character.name} faces ${opponentName}`,
-    `${statLabel} is the relevant stat.`,
-    playerDice.length > 0 || enemyDice.length > 0 ? "Dice rolled." : null,
-    cardMovementText,
-    outcomeText
-  ].filter((entry): entry is string => Boolean(entry));
-
   return {
     player: {
       name: activePlayer.character.name,
@@ -301,16 +304,38 @@ function buildBattleModel(
     resultTone,
     marginText: getMarginText(outcomeLabel, playerTotal, enemyTotal),
     cardMovementText,
-    logEntries,
     autoResolveAvailable: Boolean(pendingEnemyRoll),
-    resultDeltas: patch.payload.publicResultDeltas ?? []
+    resultDeltas: battleResultDeltas(patch.payload.publicResultDeltas)
   };
 }
 
-function StatTotalFooter({ side }: { side: ResolutionSideModel }): ReactElement {
+function StatTotalFooter({ side, variant }: { side: ResolutionSideModel; variant: "player" | "opponent" }): ReactElement {
+  const testIdSide = variant === "opponent" ? "enemy" : "player";
+
   return (
-    <footer className="host-battle-total-footer" data-testid={`host-battle-total-${side.eyebrow.toLowerCase().replace(/\s+/g, "-")}`}>
-      <ChallengeBadge stat={side.stat} value={formatNumber(side.statValue)} label={side.statLabel} active />
+    <footer className="host-battle-total-footer" data-testid={`host-battle-${testIdSide}-math`}>
+      <div className="host-battle-relevant-stat">
+        <span>{variant === "player" ? "Relevant stat" : side.rollTotal === null ? "Opposing value" : "Opposing roll"}</span>
+        <ChallengeBadge stat={side.stat} value={formatNumber(side.statValue)} label={side.statLabel} active />
+      </div>
+      <dl className="host-battle-math-grid" aria-label={`${side.name} battle math`}>
+        <div>
+          <dt>Base</dt>
+          <dd>{formatNumber(side.statValue)}</dd>
+        </div>
+        <div>
+          <dt>Roll</dt>
+          <dd>{formatNumber(side.rollTotal)}</dd>
+        </div>
+        <div>
+          <dt>Mod</dt>
+          <dd>{formatModifier(side.modifier)}</dd>
+        </div>
+        <div>
+          <dt>Total</dt>
+          <dd>{formatNumber(side.total)}</dd>
+        </div>
+      </dl>
       <p>{side.formula}</p>
     </footer>
   );
@@ -335,8 +360,52 @@ function HostBattleCard({ side, variant }: { side: ResolutionSideModel; variant:
           <div className="host-battle-fallback">Operative</div>
         )}
       </div>
-      <StatTotalFooter side={side} />
+      <StatTotalFooter side={side} variant={variant} />
     </article>
+  );
+}
+
+function HostBattleVsCore({ model }: { model: HostBattleDisplayModel }): ReactElement {
+  const comparisonSymbol = getComparisonSymbol(model.playerTotal, model.enemyTotal);
+
+  return (
+    <section className="host-battle-vs-block" aria-label="Resolution comparison" data-testid="host-battle-vs-block">
+      <span>{model.resolutionType}</span>
+      <strong>VS</strong>
+      <ChallengeBadge stat={model.challengeStat} label={statLabelById[model.challengeStat]} size="compact" active />
+      <div className="host-battle-dice-animation host-battle-dice-large">
+        <DiceRollScene
+          attackValue={model.playerTotal}
+          defenseValue={model.enemyTotal}
+          modifierValue={model.playerModifier}
+          attackDieFace={model.playerDice[0] ?? null}
+          defenseDieFace={model.enemyDice[0] ?? model.playerDice[1] ?? null}
+          modifierDieFace={model.playerDice[1] ?? null}
+          attackSuccess={model.outcomeLabel === "SUCCESS"}
+          defenseSuccess={model.outcomeLabel === "DEFEAT"}
+          challengeStat={model.challengeStat}
+          className="battle-dice-animation"
+          testId="battle-dice-animation"
+        />
+      </div>
+      <div className={`host-battle-result-banner host-battle-result-${model.outcomeLabel.toLowerCase()}`} data-testid="host-battle-result-banner">
+        <b>{model.outcomeLabel}</b>
+        <span>{model.marginText}</span>
+      </div>
+      <div className="host-battle-rolls" data-testid="host-battle-rolls">
+        <span>{model.player.name}</span>
+        <strong>{formatNumber(model.playerTotal)}</strong>
+        <b>{comparisonSymbol}</b>
+        <strong>{formatNumber(model.enemyTotal)}</strong>
+        <span>{model.opponent.rollTotal === null ? model.opponent.statLabel : "Enemy"}</span>
+      </div>
+      <div className="host-battle-result-copy" role="status">
+        <p>{model.outcomeCopy}</p>
+        {model.cardMovementText && <p>{model.cardMovementText}</p>}
+        {model.autoResolveAvailable && <p>Enemy roller pending</p>}
+      </div>
+      <ResultDeltaRow deltas={model.resultDeltas} publicOnly className="host-battle-delta-row" />
+    </section>
   );
 }
 
@@ -372,73 +441,9 @@ export function HostBattleOverlay({
 
         <HostBattleCard side={model.player} variant="player" />
 
-        <section className="host-battle-vs-block" aria-label="Resolution comparison" data-testid="host-battle-vs-block">
-          <span>{model.resolutionType}</span>
-          <strong>VS</strong>
-          <ChallengeBadge stat={model.challengeStat} label={statLabelById[model.challengeStat]} size="compact" active />
-          <div className="host-battle-dice-animation host-battle-dice-large">
-            <DiceRollScene
-              attackValue={model.playerTotal}
-              defenseValue={model.enemyTotal}
-              modifierValue={model.playerModifier}
-              attackDieFace={model.playerDice[0] ?? null}
-              defenseDieFace={model.enemyDice[0] ?? model.playerDice[1] ?? null}
-              modifierDieFace={model.playerDice[1] ?? null}
-              attackSuccess={model.outcomeLabel === "SUCCESS"}
-              defenseSuccess={model.outcomeLabel === "DEFEAT"}
-              challengeStat={model.challengeStat}
-              className="battle-dice-animation"
-              testId="battle-dice-animation"
-            />
-          </div>
-          <div className={`host-battle-result-banner host-battle-result-${model.outcomeLabel.toLowerCase()}`} data-testid="host-battle-result-banner">
-            <b>{model.outcomeLabel}</b>
-            <span>{model.marginText}</span>
-          </div>
-        </section>
+        <HostBattleVsCore model={model} />
 
         <HostBattleCard side={model.opponent} variant="opponent" />
-
-        <div className="host-battle-rolls" data-testid="host-battle-rolls">
-          <div className="host-battle-formula host-battle-formula-player">
-            <span>Player total</span>
-            <strong>{formatNumber(model.playerTotal)}</strong>
-            <p>{model.player.formula}</p>
-          </div>
-          <div className="host-battle-battle-line">
-            <span><ChallengeBadge stat={model.challengeStat} value={formatNumber(model.player.statValue)} size="compact" /></span>
-            <strong>vs</strong>
-            <span><ChallengeBadge stat={model.challengeStat} value={formatNumber(model.opponent.statValue)} label={model.opponent.statLabel} size="compact" /></span>
-          </div>
-          <div className="host-battle-formula host-battle-formula-enemy">
-            <span>Opposition total</span>
-            <strong>{formatNumber(model.enemyTotal)}</strong>
-            <p>{model.opponent.formula}</p>
-          </div>
-        </div>
-
-        <div className="host-battle-actions">
-          <div className="host-battle-status-chip" role="status">
-            {model.outcomeCopy}
-          </div>
-          {model.cardMovementText && (
-            <div className="host-battle-status-chip host-battle-status-chip-secondary" role="status">
-              {model.cardMovementText}
-            </div>
-          )}
-          {model.autoResolveAvailable && (
-            <div className="host-battle-status-chip host-battle-status-chip-secondary" role="status">
-              Enemy roller pending
-            </div>
-          )}
-          <ResultDeltaRow deltas={model.resultDeltas} publicOnly className="host-battle-delta-row" />
-        </div>
-
-        <div className="host-battle-log" data-testid="host-battle-log">
-          {model.logEntries.slice(0, 2).map((entry) => (
-            <p key={entry}>{entry}</p>
-          ))}
-        </div>
       </div>
     </section>
   );
