@@ -3411,6 +3411,120 @@ select {
   overflow: hidden;
 }
 
+.phone-sheet-actions.phone-action-panel {
+  --tab-accent: #7eb7ef;
+  --tab-accent-soft: rgba(126, 183, 239, 0.14);
+  --tab-border: rgba(126, 183, 239, 0.3);
+  min-height: 0;
+  grid-template-rows: auto minmax(0, 1fr) auto auto;
+  gap: 0.48rem;
+  padding-bottom: calc(0.6rem + env(safe-area-inset-bottom));
+  border-color: var(--tab-border);
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--tab-accent) 8%, rgba(12, 16, 22, 0.92)), rgba(6, 9, 14, 0.97)),
+    rgba(7, 10, 15, 0.92);
+  overflow: hidden;
+}
+
+.phone-action-panel--move {
+  --tab-accent: #69cdf8;
+  --tab-accent-soft: rgba(53, 150, 211, 0.15);
+  --tab-border: rgba(96, 186, 240, 0.38);
+}
+
+.phone-action-panel--battle {
+  --tab-accent: #ee604b;
+  --tab-accent-soft: rgba(190, 53, 41, 0.14);
+  --tab-border: rgba(220, 77, 58, 0.38);
+}
+
+.phone-action-panel--shop {
+  --tab-accent: #d5bd5c;
+  --tab-accent-soft: rgba(146, 156, 72, 0.16);
+  --tab-border: rgba(214, 185, 88, 0.36);
+}
+
+.phone-action-panel--action {
+  --tab-accent: #d6b16c;
+  --tab-accent-soft: rgba(174, 130, 67, 0.14);
+  --tab-border: rgba(220, 179, 103, 0.35);
+}
+
+.phone-action-content-root {
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.phone-action-active-panel {
+  min-width: 0;
+  min-height: 0;
+  display: grid;
+  align-content: start;
+  gap: 0.62rem;
+  height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 0.05rem 0.12rem calc(0.72rem + env(safe-area-inset-bottom)) 0;
+  scrollbar-gutter: stable;
+}
+
+.phone-move-panel {
+  background:
+    linear-gradient(180deg, rgba(5, 12, 18, 0.15), rgba(3, 6, 10, 0)),
+    transparent;
+}
+
+.phone-battle-panel,
+.phone-sector-action-panel,
+.phone-shop-command-panel {
+  border-top: 1px solid var(--tab-border);
+  padding-top: 0.55rem;
+}
+
+.phone-battle-panel__header,
+.phone-sector-action-panel__header {
+  min-width: 0;
+  display: grid;
+  gap: 0.12rem;
+  padding: 0.52rem 0.62rem;
+  border: 1px solid var(--tab-border);
+  border-radius: 8px;
+  background:
+    linear-gradient(90deg, color-mix(in srgb, var(--tab-accent) 15%, rgba(9, 12, 18, 0.94)), rgba(5, 8, 12, 0.86)),
+    rgba(6, 9, 14, 0.88);
+}
+
+.phone-battle-panel__header span,
+.phone-sector-action-panel__header span {
+  color: var(--tab-accent);
+  font-size: clamp(0.62rem, 2.35vw, 0.72rem);
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.phone-battle-panel__header strong,
+.phone-sector-action-panel__header strong {
+  min-width: 0;
+  color: #f3e4c8;
+  font-size: clamp(0.98rem, 3.9vw, 1.2rem);
+  line-height: 1.08;
+  overflow-wrap: anywhere;
+}
+
+.phone-battle-panel__roll-card,
+.phone-battle-panel__result,
+.phone-sector-action-panel__result,
+.phone-sector-action-panel__action-card {
+  min-width: 0;
+}
+
+.phone-sector-action-panel__action-card {
+  border-color: color-mix(in srgb, var(--tab-accent) 28%, rgba(151, 126, 87, 0.22));
+}
+
 .phone-sheet-action-copy,
 .phone-sheet-action-empty {
   margin: 0;
@@ -3528,12 +3642,47 @@ select {
   box-shadow: inset 0 0 0 1px rgba(255, 244, 220, 0.035);
 }
 
+.phone-useful-now-secondary {
+  gap: 0;
+  padding: 0;
+  border-color: rgba(126, 183, 239, 0.14);
+  background: rgba(4, 7, 11, 0.42);
+  box-shadow: none;
+}
+
 .phone-useful-now-header {
   min-width: 0;
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 0.14rem 0.46rem;
   align-items: center;
+}
+
+.phone-useful-now summary {
+  cursor: pointer;
+  list-style: none;
+}
+
+.phone-useful-now summary::-webkit-details-marker {
+  display: none;
+}
+
+.phone-useful-now-secondary .phone-useful-now-header {
+  padding: 0.46rem 0.56rem;
+}
+
+.phone-useful-now-body {
+  display: grid;
+  gap: 0.38rem;
+}
+
+.phone-useful-now-secondary .phone-useful-now-body {
+  padding: 0 0.56rem 0.56rem;
+}
+
+.phone-useful-now:not([open]).phone-useful-now-secondary .phone-useful-now-header strong {
+  font-family: var(--font-display);
+  font-size: clamp(0.74rem, 2.7vw, 0.86rem);
 }
 
 .phone-useful-now-header span,
@@ -3605,6 +3754,18 @@ select {
   --useful-now-color: #b98cff;
 }
 
+.phone-action-panel--move .phone-useful-now-secondary {
+  border-color: rgba(96, 186, 240, 0.2);
+}
+
+.phone-action-panel--battle .phone-useful-now-secondary {
+  border-color: rgba(220, 77, 58, 0.2);
+}
+
+.phone-action-panel--shop .phone-useful-now-secondary {
+  border-color: rgba(214, 185, 88, 0.2);
+}
+
 .phone-portrait-scroll > .phone-sheet-actions {
   height: auto;
   min-height: 0;
@@ -3647,8 +3808,7 @@ select {
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.025);
 }
 
-.phone-turn-tab span,
-.phone-turn-panel-heading span {
+.phone-turn-tab span {
   font-size: clamp(0.68rem, 2.6vw, 0.78rem);
   font-weight: 900;
   letter-spacing: 0.08em;
@@ -3699,35 +3859,6 @@ select {
 
 .phone-turn-tab-locked {
   border-style: dashed;
-}
-
-.phone-turn-panel {
-  min-width: 0;
-  display: grid;
-  gap: 0.62rem;
-  padding-top: 0.18rem;
-}
-
-.phone-turn-panel-heading {
-  display: flex;
-  align-items: end;
-  justify-content: space-between;
-  gap: 0.75rem;
-  padding: 0.28rem 0.1rem 0;
-  border-top: 1px solid rgba(151, 126, 87, 0.18);
-}
-
-.phone-turn-panel-heading span {
-  color: #d1b07a;
-}
-
-.phone-turn-panel-heading strong {
-  min-width: 0;
-  color: #f1e4ca;
-  font-size: clamp(0.88rem, 3.5vw, 1.05rem);
-  line-height: 1.1;
-  overflow-wrap: anywhere;
-  text-align: right;
 }
 
 .phone-turn-tab-empty {
@@ -4399,6 +4530,19 @@ select {
     linear-gradient(180deg, rgba(12, 16, 22, 0.9), rgba(6, 9, 14, 0.96)),
     rgba(7, 10, 15, 0.9);
   overflow: visible;
+}
+
+.phone-portrait-screen .phone-sheet-actions.phone-action-panel {
+  height: min(42rem, calc(100dvh - 8.5rem - env(safe-area-inset-top) - env(safe-area-inset-bottom)));
+  min-height: min(31rem, calc(100dvh - 8.5rem - env(safe-area-inset-top) - env(safe-area-inset-bottom)));
+  grid-template-rows: auto minmax(0, 1fr) auto auto;
+  padding-bottom: calc(0.7rem + env(safe-area-inset-bottom));
+  overflow: hidden;
+}
+
+.phone-portrait-screen .phone-action-content-root,
+.phone-portrait-screen .phone-action-active-panel {
+  min-height: 0;
 }
 
 .phone-portrait-screen .phone-sheet-action-sections {
@@ -6754,14 +6898,12 @@ body {
   justify-content: flex-start;
 }
 
-.phone-current-deltas,
 .phone-battle-deltas,
 .phone-action-deltas,
 .phone-shop-deltas {
   margin: 0.45rem 0;
 }
 
-.phone-current-deltas .result-delta-chip,
 .phone-battle-deltas .result-delta-chip,
 .phone-action-deltas .result-delta-chip,
 .phone-shop-deltas .result-delta-chip {

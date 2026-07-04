@@ -450,7 +450,13 @@ function ActionButtons({ actions }: { actions: ActionButtonDefinition[] }): Reac
   );
 }
 
-function ActionSections({ sections }: { sections: ActionSectionDefinition[] }): ReactElement {
+function ActionSections({
+  sections,
+  sectionClassName
+}: {
+  sections: ActionSectionDefinition[];
+  sectionClassName?: string;
+}): ReactElement {
   const visibleSections = sections.filter((section) => section.actions.length > 0);
 
   if (visibleSections.length === 0) {
@@ -460,7 +466,7 @@ function ActionSections({ sections }: { sections: ActionSectionDefinition[] }): 
   return (
     <div className="phone-sheet-action-sections">
       {visibleSections.map((section) => (
-        <details key={section.key} className="phone-sheet-action-section" open={section.defaultOpen}>
+        <details key={section.key} className={`phone-sheet-action-section${sectionClassName ? ` ${sectionClassName}` : ""}`} open={section.defaultOpen}>
           <summary>
             <span>{section.title}</span>
             {section.detail && <small>{section.detail}</small>}
@@ -706,30 +712,45 @@ function battleResultDeltas(deltas: ResultDelta[] | null | undefined): ResultDel
   );
 }
 
-function UsefulNowPanel({ model }: { model: UsefulNowViewModel | null }): ReactElement | null {
+function UsefulNowPanel({
+  model,
+  variant = "standard"
+}: {
+  model: UsefulNowViewModel | null;
+  variant?: "standard" | "secondary";
+}): ReactElement | null {
   if (!model) {
     return null;
   }
 
+  const isSecondary = variant === "secondary";
+
   return (
-    <aside className="phone-useful-now" data-testid="phone-useful-now" aria-label="Useful now">
-      <div className="phone-useful-now-header">
+    <details
+      className={`phone-useful-now${isSecondary ? " phone-useful-now-secondary" : ""}`}
+      data-testid="phone-useful-now"
+      aria-label="Useful now"
+      open={!isSecondary}
+    >
+      <summary className="phone-useful-now-header">
         <span>{model.phaseLabel}</span>
         <strong>{model.headline}</strong>
         {model.relevantStat && <em>{statLabelById[model.relevantStat]}</em>}
+      </summary>
+      <div className="phone-useful-now-body">
+        <p>{model.detail}</p>
+        {model.items.length > 0 && (
+          <div className="phone-useful-now-items">
+            {model.items.map((item) => (
+              <span key={`${item.label}-${item.detail}`} className={`phone-useful-now-chip phone-useful-now-chip-${item.tone}`}>
+                <strong>{item.label}</strong>
+                <small>{item.detail}</small>
+              </span>
+            ))}
+          </div>
+        )}
       </div>
-      <p>{model.detail}</p>
-      {model.items.length > 0 && (
-        <div className="phone-useful-now-items">
-          {model.items.map((item) => (
-            <span key={`${item.label}-${item.detail}`} className={`phone-useful-now-chip phone-useful-now-chip-${item.tone}`}>
-              <strong>{item.label}</strong>
-              <small>{item.detail}</small>
-            </span>
-          ))}
-        </div>
-      )}
-    </aside>
+    </details>
   );
 }
 
@@ -845,7 +866,7 @@ function PhoneShopPanel({
   }
 
   return (
-    <section className={`phone-shop-panel phone-shop-panel-${shopEncounter.status}`} aria-label="Shop encounter">
+    <section className={`phone-shop-panel phone-shop-panel-${shopEncounter.status}`} aria-label="Shop encounter" data-testid="phone-shop-panel">
       <div className="phone-shop-header">
         <div>
           <span>{shopTypeLabel}</span>
@@ -943,7 +964,10 @@ function PhoneShopPanel({
                   const isPending = pendingCardId === item.cardId;
                   const isPurchased = purchasedItemName === item.name;
                   return (
-                    <article key={item.cardId} className={`phone-shop-stock-card${item.affordable ? "" : " phone-shop-stock-card-disabled"}`}>
+                    <article
+                      key={item.cardId}
+                      className={`phone-shop-stock-card phone-shop-panel__stock-card${item.affordable ? "" : " phone-shop-stock-card-disabled"}`}
+                    >
                       <div>
                         <span>{itemCategory}</span>
                         <strong>{item.name}</strong>
@@ -981,7 +1005,12 @@ function PhoneShopPanel({
                   const isPending = pendingSellGearId === item.gearId;
                   const isSold = soldItemName === item.name;
                   return (
-                    <article key={item.gearId} className={`phone-shop-stock-card phone-shop-sell-card${item.sellable ? "" : " phone-shop-stock-card-disabled"}`}>
+                    <article
+                      key={item.gearId}
+                      className={`phone-shop-stock-card phone-shop-panel__stock-card phone-shop-sell-card${
+                        item.sellable ? "" : " phone-shop-stock-card-disabled"
+                      }`}
+                    >
                       <div>
                         <span>{item.category ? toTitleCase(item.category) : toTitleCase(item.type)}</span>
                         <strong>{item.name}</strong>
@@ -1008,7 +1037,7 @@ function PhoneShopPanel({
           </div>
 
           {confirmingItem ? (
-            <div className="phone-shop-confirm" role="dialog" aria-label="Confirm purchase">
+            <div className="phone-shop-confirm phone-shop-panel__confirm" role="dialog" aria-label="Confirm purchase">
               <span>Confirm Purchase</span>
               <strong>
                 Buy {confirmingItem.name} for {formatShopCost(confirmingItem.cost)}?
@@ -1026,7 +1055,7 @@ function PhoneShopPanel({
           ) : null}
 
           {confirmingSellItem ? (
-            <div className="phone-shop-confirm phone-shop-confirm-sale" role="dialog" aria-label="Confirm sale">
+            <div className="phone-shop-confirm phone-shop-panel__confirm phone-shop-confirm-sale" role="dialog" aria-label="Confirm sale">
               <span>Confirm Sale</span>
               <strong>
                 Sell {confirmingSellItem.name} for {confirmingSellItem.sellValue} Salvage?
@@ -1199,7 +1228,11 @@ function MovementDestinationRow({
   const tagLabels = getMovementTagLabels(destination, routePreview.tagLabels);
 
   return (
-    <article className={`phone-movement-row${isLocked ? " phone-movement-row-disabled" : ""}`} role="listitem" data-testid="movement-destination-row">
+    <article
+      className={`phone-movement-row phone-move-panel__destination-row${isLocked ? " phone-movement-row-disabled" : ""}`}
+      role="listitem"
+      data-testid="movement-destination-row"
+    >
       <GameButton
         type="button"
         tone={primaryTag === "danger" || primaryTag === "locked" ? "battle" : primaryTag === "shop" ? "shop" : "move"}
@@ -1217,7 +1250,7 @@ function MovementDestinationRow({
             <em key={tag}>{tag}</em>
           ))}
         </span>
-        <span className="phone-movement-row-route" data-testid="movement-route-preview">{getRoutePreviewLine(destination)}</span>
+        <span className="phone-movement-row-route phone-move-panel__route-preview" data-testid="movement-route-preview">{getRoutePreviewLine(destination)}</span>
         {destination.disabledReason ? (
           <span className="phone-movement-disabled-reason">{destination.disabledReason}</span>
         ) : null}
@@ -1275,7 +1308,7 @@ function MovementDestinationDetail({
   const routeUnavailable = Boolean(selected.disabledReason);
 
   return (
-    <article className="phone-movement-detail" aria-label={`${selected.name} movement detail`} data-testid="movement-detail-view">
+    <article className="phone-movement-detail phone-move-panel__detail" aria-label={`${selected.name} movement detail`} data-testid="movement-detail-view">
       <div className="phone-movement-detail-body">
         <div className="phone-movement-detail-back-row">
           <GameButton type="button" tone="secondary" className="phone-button phone-button-secondary" onClick={onBack}>
@@ -1488,6 +1521,152 @@ function TrophyPileSection({
             ? "No eligible stat raise right now."
             : `Need ${TROPHY_COST_PER_RANK - trophies} more trophy value to raise a stat.`}
       </p>
+    </section>
+  );
+}
+
+function PhoneMovePanel({
+  movementPlanner,
+  hasMoveContent,
+  seatId,
+  onIntent,
+  usefulNow
+}: {
+  movementPlanner: PublicMovementPlannerState | null | undefined;
+  hasMoveContent: boolean;
+  seatId: string;
+  onIntent: (intent: ClientIntent) => void;
+  usefulNow: UsefulNowViewModel | null;
+}): ReactElement {
+  return (
+    <section className="phone-action-active-panel phone-move-panel" data-testid="phone-action-active-panel" aria-label="Move command screen">
+      <MovementPlanner planner={movementPlanner} seatId={seatId} onIntent={onIntent} />
+      {!hasMoveContent && !movementPlanner?.active && (
+        <EmptyTurnTab title="No movement choice" text="Movement is not available in this step. Resolve the current action or wait for the table." />
+      )}
+      <UsefulNowPanel model={usefulNow} variant="secondary" />
+    </section>
+  );
+}
+
+function PhoneBattlePanel({
+  title,
+  resolutionPanel,
+  battleAssistPanel,
+  threatActions,
+  hasBattleContent,
+  visibleBattleDeltas,
+  usefulNow
+}: {
+  title: string;
+  resolutionPanel: ReactElement | null;
+  battleAssistPanel: ReactElement | null;
+  threatActions: ActionButtonDefinition[];
+  hasBattleContent: boolean;
+  visibleBattleDeltas: ResultDelta[];
+  usefulNow: UsefulNowViewModel | null;
+}): ReactElement {
+  return (
+    <section className="phone-action-active-panel phone-battle-panel" data-testid="phone-action-active-panel" aria-label="Battle command screen">
+      <header className="phone-battle-panel__header">
+        <span>Battle</span>
+        <strong>{title}</strong>
+      </header>
+      {resolutionPanel ? <div className="phone-battle-panel__roll-card">{resolutionPanel}</div> : null}
+      <ActionSections sections={[{ key: "threat", title: "Threat", detail: title, actions: threatActions, defaultOpen: true }]} />
+      {battleAssistPanel}
+      <UsefulNowPanel model={usefulNow} variant="secondary" />
+      <ResultDeltaRow deltas={visibleBattleDeltas} className="phone-battle-deltas phone-battle-panel__result" />
+      {!hasBattleContent && (
+        <EmptyTurnTab title="No battle" text="There is no visible combat, check, or enemy roll waiting for this operative." />
+      )}
+    </section>
+  );
+}
+
+function PhoneShopCommandPanel({
+  shopEncounter,
+  resultDeltas,
+  seatId,
+  onIntent,
+  usefulNow
+}: {
+  shopEncounter: PublicShopEncounterState | null | undefined;
+  resultDeltas: ResultDelta[];
+  seatId: string;
+  onIntent: (intent: ClientIntent) => void;
+  usefulNow: UsefulNowViewModel | null;
+}): ReactElement {
+  return (
+    <section className="phone-action-active-panel phone-shop-command-panel" data-testid="phone-action-active-panel" aria-label="Shop command screen">
+      <PhoneShopPanel shopEncounter={shopEncounter} resultDeltas={resultDeltas} seatId={seatId} onIntent={onIntent} />
+      {!shopEncounter && (
+        <EmptyTurnTab title="No shop here" text="Shop services appear when your operative is on a clear market, shrine, foundry, or service sector." />
+      )}
+      <UsefulNowPanel model={usefulNow} variant="secondary" />
+    </section>
+  );
+}
+
+function PhoneSectorActionPanel({
+  title,
+  sectorOpportunityItems,
+  sectorExplorationCopy,
+  visibleActionDeltas,
+  resolveActions,
+  gearActions,
+  objectActions,
+  followerActions,
+  tableActions,
+  contractActions,
+  advanceActions,
+  statRaiseActions,
+  trophies,
+  trophyPile,
+  interactionMode,
+  usefulNow
+}: {
+  title: string;
+  sectorOpportunityItems: SectorOpportunityItem[];
+  sectorExplorationCopy: ReturnType<typeof buildSectorExplorationCopy>;
+  visibleActionDeltas: ResultDelta[];
+  resolveActions: ActionButtonDefinition[];
+  gearActions: ActionButtonDefinition[];
+  objectActions: ActionButtonDefinition[];
+  followerActions: ActionButtonDefinition[];
+  tableActions: ActionButtonDefinition[];
+  contractActions: ActionButtonDefinition[];
+  advanceActions: ActionButtonDefinition[];
+  statRaiseActions: ActionButtonDefinition[];
+  trophies: number;
+  trophyPile: TrophyPileEntry[] | undefined;
+  interactionMode: PhonePatchPayload["interactionMode"];
+  usefulNow: UsefulNowViewModel | null;
+}): ReactElement {
+  return (
+    <section className="phone-action-active-panel phone-sector-action-panel" data-testid="phone-action-active-panel" aria-label="Sector action command screen">
+      <header className="phone-sector-action-panel__header">
+        <span>Sector action</span>
+        <strong>{title}</strong>
+      </header>
+      <SectorOpportunityChips items={sectorOpportunityItems} />
+      <SectorExplorationPanel summary={sectorExplorationCopy} />
+      <ActionSections
+        sectionClassName="phone-sector-action-panel__action-card"
+        sections={[
+          { key: "resolve", title: "Tile Action", detail: title, actions: resolveActions, defaultOpen: true },
+          { key: "gear", title: "Gear", detail: `${gearActions.length} available`, actions: gearActions },
+          { key: "objects", title: "Items", detail: `${objectActions.length} usable`, actions: objectActions },
+          { key: "followers", title: "Followers", detail: `${followerActions.length} ready`, actions: followerActions },
+          { key: "table", title: "Table", detail: interactionMode ?? "rivalry", actions: tableActions },
+          { key: "contracts", title: "Contracts", detail: `${contractActions.length} available`, actions: contractActions },
+          { key: "advance", title: "Advance", detail: "Finish or confront", actions: advanceActions, defaultOpen: true }
+        ]}
+      />
+      <ResultDeltaRow deltas={visibleActionDeltas} className="phone-action-deltas phone-sector-action-panel__result" />
+      <TrophyPileSection actions={statRaiseActions} trophies={trophies} trophyPile={trophyPile} />
+      <TrophyAdvanceDisclosure actions={statRaiseActions} trophies={trophies} />
+      <UsefulNowPanel model={usefulNow} variant="secondary" />
     </section>
   );
 }
@@ -2104,87 +2283,71 @@ export function PhoneActionPanel({
   const currentDeltas = patch.playerResultDeltas ?? patch.publicResultDeltas ?? [];
   const visibleBattleDeltas = battleResultDeltas(currentDeltas);
   const visibleActionDeltas = actionResultDeltas(currentDeltas);
+  const battleTitle = patch.encounter?.title ?? activeResolution?.card?.title ?? battleAssist?.enemyName ?? "No threat";
+  const actionTitle = boardSpace?.textBox.title ?? "Operative options";
+  const activeTabContent =
+    activeTurnTab === "move" ? (
+      <PhoneMovePanel
+        movementPlanner={movementPlanner}
+        hasMoveContent={hasMoveContent}
+        seatId={self.seatId}
+        onIntent={onIntent}
+        usefulNow={usefulNow}
+      />
+    ) : activeTurnTab === "battle" ? (
+      <PhoneBattlePanel
+        title={battleTitle}
+        resolutionPanel={resolutionPanel}
+        battleAssistPanel={battleAssistPanel}
+        threatActions={threatActions}
+        hasBattleContent={hasBattleContent}
+        visibleBattleDeltas={visibleBattleDeltas}
+        usefulNow={usefulNow}
+      />
+    ) : activeTurnTab === "shop" ? (
+      <PhoneShopCommandPanel
+        shopEncounter={shopEncounter}
+        resultDeltas={currentDeltas}
+        seatId={self.seatId}
+        onIntent={onIntent}
+        usefulNow={usefulNow}
+      />
+    ) : (
+      <PhoneSectorActionPanel
+        title={actionTitle}
+        sectorOpportunityItems={sectorOpportunityItems}
+        sectorExplorationCopy={sectorExplorationCopy}
+        visibleActionDeltas={visibleActionDeltas}
+        resolveActions={resolveActions}
+        gearActions={gearActions}
+        objectActions={objectActions}
+        followerActions={followerActions}
+        tableActions={tableActions}
+        contractActions={contractActions}
+        advanceActions={advanceActions}
+        statRaiseActions={statRaiseActions}
+        trophies={self.character.trophies}
+        trophyPile={self.character.trophyPile}
+        interactionMode={patch.interactionMode}
+        usefulNow={usefulNow}
+      />
+    );
 
   return (
-    <section className="phone-sheet-actions" aria-label="Quick actions">
-      <div className="phone-sheet-section-heading">Turn Console</div>
+    <section
+      className={`phone-sheet-actions phone-action-panel phone-action-panel--${activeTurnTab}`}
+      aria-label={`${activeTurnTab} command screen`}
+      data-testid="phone-action-panel-root"
+    >
       <CurrentPromptCard prompt={currentPrompt} onSelectedTab={setSelectedTurnTab} />
-      <UsefulNowPanel model={usefulNow} />
-      <ResultDeltaRow deltas={currentDeltas} className="phone-current-deltas" />
+      <div className="phone-action-content-root" id={`phone-turn-panel-${activeTurnTab}`} role="tabpanel" aria-label={`${activeTurnTab} actions`}>
+        {activeTabContent}
+      </div>
       <div className="phone-sheet-action-status">
         <span>Trophies: {self.character.trophies}</span>
         <span>{copy}</span>
       </div>
       {!hideTurnTabs && <TurnActionTabs tabs={tabDefinitions} activeTab={activeTurnTab} onSelected={setSelectedTurnTab} />}
-
-      <div className="phone-turn-panel" id={`phone-turn-panel-${activeTurnTab}`} role="tabpanel" aria-label={`${activeTurnTab} actions`}>
-        {activeTurnTab === "move" && (
-          <>
-            <div className="phone-turn-panel-heading">
-              <span>Move</span>
-              <strong>{sector?.name ?? self.sectorId}</strong>
-            </div>
-            <MovementPlanner planner={movementPlanner} seatId={self.seatId} onIntent={onIntent} />
-            {!hasMoveContent && !movementPlanner?.active && (
-              <EmptyTurnTab title="No movement choice" text="Movement is not available in this step. Resolve the current action or wait for the table." />
-            )}
-          </>
-        )}
-
-        {activeTurnTab === "battle" && (
-          <>
-            <div className="phone-turn-panel-heading">
-              <span>Battle</span>
-              <strong>{patch.encounter?.title ?? activeResolution?.card?.title ?? battleAssist?.enemyName ?? "No threat"}</strong>
-            </div>
-            {resolutionPanel}
-            <ResultDeltaRow deltas={visibleBattleDeltas} className="phone-battle-deltas" />
-            {battleAssistPanel}
-            <ActionSections sections={[{ key: "threat", title: "Threat", detail: patch.encounter?.title, actions: threatActions, defaultOpen: true }]} />
-            {!hasBattleContent && (
-              <EmptyTurnTab title="No battle" text="There is no visible combat, check, or enemy roll waiting for this operative." />
-            )}
-          </>
-        )}
-
-        {activeTurnTab === "shop" && (
-          <>
-            <div className="phone-turn-panel-heading">
-              <span>Shop</span>
-              <strong>{shopEncounter?.shopName ?? "No market contact"}</strong>
-            </div>
-            <PhoneShopPanel shopEncounter={shopEncounter} resultDeltas={currentDeltas} seatId={self.seatId} onIntent={onIntent} />
-            {!shopEncounter && (
-              <EmptyTurnTab title="No shop here" text="Shop services appear when your operative is on a clear market, shrine, foundry, or service sector." />
-            )}
-          </>
-        )}
-
-        {activeTurnTab === "action" && (
-          <>
-            <div className="phone-turn-panel-heading">
-              <span>Action</span>
-              <strong>{boardSpace?.textBox.title ?? "Operative options"}</strong>
-            </div>
-            <SectorOpportunityChips items={sectorOpportunityItems} />
-            <SectorExplorationPanel summary={sectorExplorationCopy} />
-            <ResultDeltaRow deltas={visibleActionDeltas} className="phone-action-deltas" />
-            <ActionSections
-              sections={[
-                { key: "resolve", title: "Tile Action", detail: boardSpace?.textBox.title, actions: resolveActions, defaultOpen: true },
-                { key: "gear", title: "Gear", detail: `${gearActions.length} available`, actions: gearActions },
-                { key: "objects", title: "Items", detail: `${objectActions.length} usable`, actions: objectActions },
-                { key: "followers", title: "Followers", detail: `${followerActions.length} ready`, actions: followerActions },
-                { key: "table", title: "Table", detail: patch.interactionMode ?? "rivalry", actions: tableActions },
-                { key: "contracts", title: "Contracts", detail: `${contractActions.length} available`, actions: contractActions },
-                { key: "advance", title: "Advance", detail: "Finish or confront", actions: advanceActions, defaultOpen: true }
-              ]}
-            />
-            <TrophyPileSection actions={statRaiseActions} trophies={self.character.trophies} trophyPile={self.character.trophyPile} />
-            <TrophyAdvanceDisclosure actions={statRaiseActions} trophies={self.character.trophies} />
-          </>
-        )}
-      </div>
     </section>
   );
 }

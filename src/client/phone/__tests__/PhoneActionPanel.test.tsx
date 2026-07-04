@@ -177,10 +177,15 @@ describe("PhoneActionPanel", () => {
 
     expect(screen.getByTestId("phone-current-prompt")).toHaveTextContent(/resolve event/i);
     expect(screen.getByTestId("phone-current-prompt")).toHaveTextContent(/glass chime swarm/i);
+    expect(screen.getByTestId("phone-action-panel-root")).toHaveClass("phone-action-panel--battle");
+    expect(screen.getByTestId("phone-action-active-panel")).toHaveClass("phone-battle-panel");
     expect(screen.getByTestId("phone-useful-now")).toHaveTextContent(/useful now: signal/i);
     expect(screen.getByTestId("phone-useful-now")).toHaveTextContent(/current value 1/i);
     expect(screen.getByRole("button", { name: /attempt signal check/i })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /enter combat/i })).not.toBeInTheDocument();
+    expect(screen.queryByTestId("movement-planner")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("phone-shop-panel")).not.toBeInTheDocument();
+    expect(screen.getByRole("tablist", { name: /turn actions/i })).toBeInTheDocument();
   });
 
   it("shows combat and not check when an active seat faces an enemy", () => {
@@ -229,6 +234,10 @@ describe("PhoneActionPanel", () => {
 
     expect(screen.getByRole("button", { name: /resolve reseal the prison/i })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /end turn/i })).not.toBeInTheDocument();
+    expect(screen.getByTestId("phone-action-panel-root")).toHaveClass("phone-action-panel--action");
+    expect(screen.getByTestId("phone-action-active-panel")).toHaveClass("phone-sector-action-panel");
+    expect(screen.queryByTestId("movement-planner")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("phone-shop-panel")).not.toBeInTheDocument();
   });
 
   it("renders movement planner destination intel without leaking hidden deck card names", async () => {
@@ -267,21 +276,50 @@ describe("PhoneActionPanel", () => {
                 strategicTags: ["shop", "reward", "danger"]
               }
             ]
-          }
+          },
+          publicResultDeltas: [
+            {
+              id: "move-global-escalation",
+              type: "scenarioPressure",
+              label: "Global Escalation",
+              value: 1,
+              sign: "gain",
+              targetScope: "scenario",
+              visibility: "public",
+              source: "scenario",
+              publicText: "+1 Global Escalation",
+              severity: "scenario"
+            }
+          ]
         })}
       />
     );
 
     expect(screen.getByTestId("phone-current-prompt")).toHaveTextContent(/choose destination/i);
     expect(screen.getByTestId("phone-current-prompt")).toHaveTextContent(/you rolled 1/i);
+    expect(screen.queryByText(/turn console/i)).not.toBeInTheDocument();
+    expect(screen.getByTestId("phone-action-panel-root")).toHaveClass("phone-action-panel--move");
+    expect(screen.getByTestId("phone-action-active-panel")).toHaveClass("phone-move-panel");
     expect(screen.getByTestId("phone-useful-now")).toHaveTextContent(/route and movement tools/i);
     expect(screen.getByTestId("phone-useful-now")).toHaveTextContent(/movement roll 1/i);
+    expect(screen.getByTestId("phone-useful-now")).not.toHaveAttribute("open");
     expect(screen.getByTestId("movement-planner")).toBeInTheDocument();
+    expect(
+      screen.getByTestId("phone-current-prompt").compareDocumentPosition(screen.getByTestId("phone-action-active-panel")) &
+        Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy();
+    expect(
+      screen.getByTestId("movement-list-view").compareDocumentPosition(screen.getByTestId("phone-useful-now")) &
+        Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy();
     expect(screen.getByText(/move 1/i)).toBeInTheDocument();
     expect(screen.getByTestId("movement-summary")).toHaveTextContent(/move value/i);
     expect(screen.getByTestId("movement-summary")).toHaveTextContent(/pilgrim lock/i);
     expect(screen.getByTestId("movement-summary")).toHaveTextContent(/legal destinations/i);
     expect(screen.getAllByTestId("movement-destination-row")).toHaveLength(1);
+    expect(screen.queryByTestId("phone-shop-panel")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /attempt signal check/i })).not.toBeInTheDocument();
+    expect(screen.queryByText(/global escalation/i)).not.toBeInTheDocument();
     expect(screen.getAllByText(/anchor market/i).length).toBeGreaterThan(0);
     expect(screen.getByTestId("movement-route-preview")).toHaveTextContent(/pilgrim lock -> anchor market/i);
     expect(screen.queryByText(/legal: exactly 1 step from pilgrim lock/i)).not.toBeInTheDocument();
@@ -574,8 +612,12 @@ describe("PhoneActionPanel", () => {
 
     expect(screen.getByTestId("phone-current-prompt")).toHaveTextContent(/choose shop action/i);
     expect(screen.getByTestId("phone-current-prompt")).toHaveTextContent(/anchor market/i);
+    expect(screen.getByTestId("phone-action-panel-root")).toHaveClass("phone-action-panel--shop");
+    expect(screen.getByTestId("phone-action-active-panel")).toHaveClass("phone-shop-command-panel");
     expect(screen.getByTestId("phone-useful-now")).toHaveTextContent(/salvage and sellable gear/i);
     expect(screen.getByTestId("phone-useful-now")).toHaveTextContent(/1 item can be sold here/i);
+    expect(screen.queryByTestId("movement-planner")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /attempt signal check/i })).not.toBeInTheDocument();
     expect(screen.getByText(/forge market/i)).toBeInTheDocument();
     expect(screen.getAllByText(/forge armoury/i).length).toBeGreaterThan(0);
     expect(screen.getByText(/salvage: 6/i)).toBeInTheDocument();
@@ -694,6 +736,99 @@ describe("PhoneActionPanel", () => {
     expect(screen.getByRole("tab", { name: /shop/i })).toBeInTheDocument();
     expect(screen.getByText(/no shop here/i)).toBeInTheDocument();
     expect(screen.getByText(/shop services appear when your operative is on a clear market/i)).toBeInTheDocument();
+  });
+
+  it("clears stale action-tab content when the selected command screen changes", () => {
+    const movementPatch = createPatch({
+      phase: "navigation",
+      encounter: null,
+      movementPlanner: {
+        active: true,
+        movementValue: 1,
+        currentSectorId: "outer_ember_sanctum",
+        currentSectorName: "Pilgrim Lock",
+        destinations: [
+          {
+            sectorId: "outer_waymarket",
+            name: "Anchor Market",
+            ring: "outer",
+            distance: 1,
+            route: ["outer_ember_sanctum", "outer_waymarket"],
+            routeNames: ["Pilgrim Lock", "Anchor Market"],
+            tags: ["shop"],
+            threatIcons: [],
+            ruleText: "If clear, buy Gear.",
+            faceUpThreats: [],
+            occupants: [],
+            strategicTags: ["shop", "reward"]
+          }
+        ]
+      }
+    });
+    const shopPatch = createPatch({
+      encounter: null,
+      shopEncounter: {
+        sectorId: "outer_waymarket",
+        sectorName: "Anchor Market",
+        shopId: "outer_waymarket",
+        shopName: "Anchor Market",
+        available: true,
+        blocked: false,
+        shopType: "market",
+        shopCategory: "market",
+        stockCategory: "market",
+        status: "open",
+        activePlayer: {
+          playerId: "seat-1",
+          name: "Sable Vey",
+          characterName: "Sable Vey",
+          salvage: 3,
+          heat: 1,
+          wounds: { current: 0, max: 6 },
+          trophies: 0,
+          completedContracts: 0
+        },
+        blockingThreats: [],
+        services: [],
+        revealedStock: [],
+        sellInventory: []
+      }
+    });
+    const battlePatch = createPatch({
+      encounter: {
+        id: "cinder-veil-stalker",
+        title: "Cinder-Veil Stalker",
+        cardType: "enemy",
+        enemyName: "Cinder-Veil Stalker",
+        flavor: "The ash around it boils before the strike.",
+        difficulty: 6,
+        stat: "grit"
+      }
+    });
+    const actionPatch = createPatch({ encounter: null });
+
+    const { rerender } = render(
+      <PhoneActionPanel characters={characters} onIntent={vi.fn()} selectedTurnTab="move" patch={movementPatch} />
+    );
+
+    expect(screen.getByTestId("phone-action-active-panel")).toHaveClass("phone-move-panel");
+    expect(screen.getByTestId("movement-planner")).toBeInTheDocument();
+
+    rerender(<PhoneActionPanel characters={characters} onIntent={vi.fn()} selectedTurnTab="shop" patch={shopPatch} />);
+    expect(screen.getByTestId("phone-action-active-panel")).toHaveClass("phone-shop-command-panel");
+    expect(screen.getByTestId("phone-shop-panel")).toBeInTheDocument();
+    expect(screen.queryByTestId("movement-planner")).not.toBeInTheDocument();
+
+    rerender(<PhoneActionPanel characters={characters} onIntent={vi.fn()} selectedTurnTab="battle" patch={battlePatch} />);
+    expect(screen.getByTestId("phone-action-active-panel")).toHaveClass("phone-battle-panel");
+    expect(screen.getByRole("button", { name: /enter combat.*cinder-veil stalker/i })).toBeInTheDocument();
+    expect(screen.queryByTestId("phone-shop-panel")).not.toBeInTheDocument();
+
+    rerender(<PhoneActionPanel characters={characters} onIntent={vi.fn()} selectedTurnTab="action" patch={actionPatch} />);
+    expect(screen.getByTestId("phone-action-active-panel")).toHaveClass("phone-sector-action-panel");
+    expect(screen.getByRole("button", { name: /end turn/i })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /enter combat/i })).not.toBeInTheDocument();
+    expect(screen.queryByTestId("phone-shop-panel")).not.toBeInTheDocument();
   });
 
   it("shows empty stock and purchase feedback without exposing rivalry agenda details", () => {
