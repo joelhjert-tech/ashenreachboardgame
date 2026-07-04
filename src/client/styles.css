@@ -13509,3 +13509,24 @@ body {
     -webkit-line-clamp: 2;
   }
 }
+/* Boot shell shown only while the selected TV or phone route chunk loads. */
+.client-loading-shell {
+  align-items: center;
+  background:
+    radial-gradient(circle at 50% 20%, rgba(137, 198, 255, 0.14), transparent 34rem),
+    #080706;
+  color: #f4ead6;
+  display: flex;
+  font-family: "Cinzel", Georgia, serif;
+  justify-content: center;
+  letter-spacing: 0.08em;
+  min-height: 100vh;
+  text-transform: uppercase;
+}
+
+.client-loading-shell span {
+  border: 1px solid rgba(209, 164, 92, 0.55);
+  background: rgba(13, 11, 10, 0.82);
+  box-shadow: 0 0 24px rgba(209, 164, 92, 0.15);
+  padding: 0.85rem 1.2rem;
+}
