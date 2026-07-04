@@ -5,6 +5,8 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { CardArtImage } from "../CardArtImage.js";
 import { getCardArtOutputPath } from "../../../game/assets/design/cardImageCatalog.js";
+import { generatedCardImagePrompts } from "../../../game/assets/design/generatedCardImagePrompts.js";
+import { cardArtRuntimeCatalog, getRuntimeCardArtPath } from "../../../game/assets/runtime/cardArtRuntimeCatalog.js";
 import {
   getCardArtPath,
   getCardFallbackArtPath,
@@ -16,6 +18,21 @@ describe("card art paths", () => {
   it("returns generated card output paths for known cards", () => {
     expect(getCardArtPath("contract", "compact-cleanse-ledger")).toBe("/assets/cards/contracts/compact-cleanse-ledger.png");
     expect(getCardArtPath("threat", "cinder-veil-stalker")).toBe("/assets/cards/threats/red/cinder-veil-stalker.png");
+    expect(getCardArtPath("anomaly", "anomaly-ashfall-murmur")).toBe("/assets/cards/anomalies/anomaly-ashfall-murmur.png");
+  });
+
+  it("uses a runtime-safe card art catalog without prompt text", () => {
+    expect(getRuntimeCardArtPath("threat", "cinder-veil-stalker")).toBe("/assets/cards/threats/red/cinder-veil-stalker.png");
+    expect(getRuntimeCardArtPath("anomaly", "anomaly-ashfall-murmur")).toBe("/assets/cards/anomalies/anomaly-ashfall-murmur.png");
+    expect(cardArtRuntimeCatalog[0]).not.toHaveProperty("prompt");
+    expect(cardArtRuntimeCatalog[0]).not.toHaveProperty("negativePrompt");
+  });
+
+  it("keeps generated prompt data available for tooling", () => {
+    expect(generatedCardImagePrompts.some((entry) => entry.cardId === "cinder-veil-stalker")).toBe(true);
+    expect(generatedCardImagePrompts.find((entry) => entry.cardId === "cinder-veil-stalker")?.prompt).toEqual(
+      expect.stringContaining("Ashen Reach original card art")
+    );
   });
 
   it("requires lane-based output paths for generated threat art", () => {

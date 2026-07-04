@@ -2,7 +2,7 @@ import {
   CARD_IMAGE_FALLBACK_PATHS,
   type CardImageType
 } from "../../game/assets/design/cardImageCatalog.js";
-import { generatedCardImagePrompts } from "../../game/assets/design/generatedCardImagePrompts.js";
+import { getRuntimeCardArtPath } from "../../game/assets/runtime/cardArtRuntimeCatalog.js";
 import type { ContractCard, EncounterCard, PrivateCharacter, PublicPlayerCharacter, Stat } from "./types.js";
 
 const characterPortraitById: Record<string, string> = {
@@ -64,21 +64,6 @@ const uiAssetPaths = [
   "/assets/riftfall/ui/dice_roll_combat@2s.lottie.json"
 ];
 
-const cardArtByType = generatedCardImagePrompts.reduce<Record<CardImageType, Record<string, string>>>(
-  (summary, prompt) => {
-    summary[prompt.cardType][prompt.cardId] = prompt.outputPath;
-    return summary;
-  },
-  {
-    threat: {},
-    contract: {},
-    anomaly: {},
-    artifact: {},
-    scar: {},
-    escalation: {}
-  }
-);
-
 export function getPhoneBackgroundPath(): string {
   return "/assets/riftfall/ui/ui_phone_controller_background.png";
 }
@@ -104,7 +89,7 @@ export function getCardFallbackArtPath(cardType: CardImageType): string {
 }
 
 export function getCardArtPath(cardType: CardImageType, cardId: string): string {
-  return cardArtByType[cardType][cardId] ?? getCardFallbackArtPath(cardType);
+  return getRuntimeCardArtPath(cardType, cardId) ?? getCardFallbackArtPath(cardType);
 }
 
 export function getContractArtPath(contractId: string): string {

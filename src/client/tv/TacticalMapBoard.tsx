@@ -1,5 +1,5 @@
 import type { ReactElement } from "react";
-import { getAssetPath } from "../../game/assets/design/assetManifest.js";
+import { getRuntimeAssetPath } from "../../game/assets/runtime/runtimeAssetManifest.js";
 import type { PublicPatchPayload } from "../shared/types.js";
 import { BoardMap } from "./BoardMap.js";
 import { BoardStage } from "./BoardStage.js";
@@ -12,7 +12,7 @@ interface TacticalMapBoardProps {
 }
 
 function StaticTacticalBoard(): ReactElement {
-  const boardAssetPath = getAssetPath("full_board_main");
+  const boardAssetPath = getRuntimeAssetPath("full_board_main");
 
   return (
     <section className="tv-board-panel tv-board-panel-static" aria-label="Tactical campaign board">

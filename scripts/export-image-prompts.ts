@@ -1,5 +1,5 @@
 import { mkdirSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import { loadAnomalyCards } from "../src/game/content/anomalies.js";
 import { loadArtifactCards } from "../src/game/content/artifacts.js";
 import { loadContracts } from "../src/game/content/contracts.js";
@@ -26,6 +26,7 @@ import { uiPrompts } from "../src/game/assets/design/uiPrompts.js";
 const generatedRoot = join(process.cwd(), "generated");
 const docsRoot = join(process.cwd(), "docs");
 const generatedTsPath = join(process.cwd(), "src", "game", "assets", "design", "generatedCardImagePrompts.ts");
+const runtimeCardArtCatalogPath = join(process.cwd(), "src", "game", "assets", "runtime", "cardArtRuntimeCatalog.ts");
 const generatedJsonPath = join(generatedRoot, "card-image-prompts.json");
 const markdownPath = join(docsRoot, "CARD_IMAGE_PROMPTS.md");
 
@@ -85,8 +86,10 @@ const allImagePrompts = [
 
 mkdirSync(generatedRoot, { recursive: true });
 mkdirSync(docsRoot, { recursive: true });
+mkdirSync(dirname(runtimeCardArtCatalogPath), { recursive: true });
 
 writeFileSync(generatedTsPath, renderGeneratedTypeScript(generatedCardImagePrompts));
+writeFileSync(runtimeCardArtCatalogPath, renderRuntimeTypeScript(generatedCardImagePrompts));
 writeFileSync(generatedJsonPath, `${JSON.stringify(generatedCardImagePrompts, null, 2)}\n`);
 writeFileSync(markdownPath, renderMarkdown(promptEntriesByType));
 
@@ -319,6 +322,42 @@ function renderGeneratedTypeScript(entries: CardImagePromptCatalogEntry[]): stri
   const serialized = JSON.stringify(entries, null, 2);
   return `import type { CardImagePromptCatalogEntry } from "./cardImageCatalog.js";\n\n` +
     `export const generatedCardImagePrompts: CardImagePromptCatalogEntry[] = ${serialized} as CardImagePromptCatalogEntry[];\n`;
+}
+
+function renderRuntimeTypeScript(entries: CardImagePromptCatalogEntry[]): string {
+  const runtimeEntries = entries.map((entry) => ({
+    cardId: entry.cardId,
+    cardType: entry.cardType,
+    outputPath: entry.outputPath
+  }));
+  const serialized = JSON.stringify(runtimeEntries, null, 2);
+
+  return (
+    `import type { CardImageType } from "../design/cardImageCatalog.js";\n\n` +
+    `export interface RuntimeCardArtCatalogEntry {\n` +
+    `  cardId: string;\n` +
+    `  cardType: CardImageType;\n` +
+    `  outputPath: string;\n` +
+    `}\n\n` +
+    `export const cardArtRuntimeCatalog: RuntimeCardArtCatalogEntry[] = ${serialized} as RuntimeCardArtCatalogEntry[];\n\n` +
+    `const cardArtPathByType = cardArtRuntimeCatalog.reduce<Record<CardImageType, Record<string, string>>>(\n` +
+    `  (summary, entry) => {\n` +
+    `    summary[entry.cardType][entry.cardId] = entry.outputPath;\n` +
+    `    return summary;\n` +
+    `  },\n` +
+    `  {\n` +
+    `    threat: {},\n` +
+    `    contract: {},\n` +
+    `    anomaly: {},\n` +
+    `    artifact: {},\n` +
+    `    scar: {},\n` +
+    `    escalation: {}\n` +
+    `  }\n` +
+    `);\n\n` +
+    `export function getRuntimeCardArtPath(cardType: CardImageType, cardId: string): string | undefined {\n` +
+    `  return cardArtPathByType[cardType][cardId];\n` +
+    `}\n`
+  );
 }
 
 function renderMarkdown(entriesByType: PromptEntryMap): string {
