@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent, type ReactElement } from "react";
-import { fetchCharacters, getConnectionDiagnostics, joinSession, leaveSession } from "../shared/network.js";
+import { fetchCharacters, fetchSessionSummary, getConnectionDiagnostics, joinSession, leaveSession } from "../shared/network.js";
 import type { CharacterCatalogEntry, PhonePatchPayload, PhoneSelfState, PhoneSessionAuth, StatePatch } from "../shared/types.js";
 import { useRoomSubscription } from "../shared/useRoomSubscription.js";
 import {
@@ -139,6 +139,7 @@ export function PhoneApp(): ReactElement {
   const [characters, setCharacters] = useState<CharacterCatalogEntry[]>([]);
   const [debugOpen, setDebugOpen] = useState(() => new URLSearchParams(window.location.search).has("debug"));
   const [joinStep, setJoinStep] = useState<"nameEntry" | "characterSelect">("nameEntry");
+  const [joiningRoom, setJoiningRoom] = useState(false);
   const [formState, setFormState] = useState(() => ({
     roomCode: readInitialRoomCode(),
     displayName: "",
@@ -187,10 +188,29 @@ export function PhoneApp(): ReactElement {
   const phonePatch =
     patch && "self" in patch.payload ? (patch as StatePatch<PhonePatchPayload>) : null;
 
-  const handleNameSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const handleNameSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setJoinError(null);
-    setJoinStep("characterSelect");
+    setJoiningRoom(true);
+
+    try {
+      const requestedRoomCode = formState.roomCode.trim().toUpperCase();
+      const session = await fetchSessionSummary();
+
+      if (session.roomCode !== requestedRoomCode) {
+        throw new Error("Unknown room code");
+      }
+
+      setFormState((current) => ({
+        ...current,
+        roomCode: requestedRoomCode
+      }));
+      setJoinStep("characterSelect");
+    } catch (joinFailure) {
+      setJoinError(formatJoinFailure(joinFailure));
+    } finally {
+      setJoiningRoom(false);
+    }
   };
 
   const handleCharacterSelected = async (characterId: string) => {
@@ -259,62 +279,21 @@ export function PhoneApp(): ReactElement {
             </div>
           </section>
         ) : (
-          <div className="phone-join-layout">
+          <div className={`phone-join-layout phone-join-layout-${joinStep}`}>
             <section className="phone-join-hero phone-panel">
               <p className="phone-panel-kicker">Ashen Reach Controller</p>
               <h1>{joinStep === "nameEntry" ? "Join room" : "Select character"}</h1>
               <p className="phone-muted-copy">
                 {joinStep === "nameEntry"
-                  ? "Enter the room code and your player name before choosing a character."
-                  : "Pick one operative. After selection, the character is locked until you press Back."}
+                  ? "Enter the room code from the TV and the name you want at the table."
+                  : "Choose the operative you want to reserve for this room."}
               </p>
-              {selectedCharacter && (
-                <div className="phone-character-preview">
-                  <img src={getCharacterPortraitPath(selectedCharacter.id)} alt="" />
-                  <div>
-                    <h2>{selectedCharacter.name}</h2>
-                    <p>{selectedCharacter.archetype}</p>
-                    {selectedCharacter.qaOnly && <span className="phone-character-qa-badge">QA ONLY</span>}
-                    {selectedCharacter.presentation && (
-                      <div className="phone-character-presentation" data-testid="phone-character-presentation">
-                        <div className="phone-character-role-row">
-                          <span>{selectedCharacter.presentation.role}</span>
-                          <span>{formatComplexity(selectedCharacter.presentation.complexity)}</span>
-                          {selectedCharacter.presentation.recommendedForFirstGame && <strong>First-game pick</strong>}
-                        </div>
-                        <p>{selectedCharacter.presentation.playstyleSummary}</p>
-                        <div className="phone-character-summary-grid">
-                          <span>
-                            <strong>Gear</strong>
-                            {selectedCharacter.presentation.signatureItemSummary}
-                          </span>
-                          <span>
-                            <strong>Contract</strong>
-                            {selectedCharacter.presentation.startingContractSummary}
-                          </span>
-                        </div>
-                        <div className="phone-character-strength-grid">
-                          <span>
-                            <strong>Good at</strong>
-                            {selectedCharacter.presentation.strengths.slice(0, 2).join(", ")}
-                          </span>
-                          <span>
-                            <strong>Watch out</strong>
-                            {selectedCharacter.presentation.weaknesses.slice(0, 2).join(", ")}
-                          </span>
-                        </div>
-                      </div>
-                    )}
-                    <div className="phone-character-stat-row" aria-label="Selected character stats">
-                      <span>Command {selectedCharacter.stats.command}</span>
-                      <span>Grit {selectedCharacter.stats.grit}</span>
-                      <span>Signal {selectedCharacter.stats.signal}</span>
-                      <span>Guile {selectedCharacter.stats.guile}</span>
-                      <span>Forge {selectedCharacter.stats.forge}</span>
-                    </div>
-                  </div>
+              {joinStep === "characterSelect" ? (
+                <div className="phone-join-summary" aria-label="Joined room summary">
+                  <span>Room {formState.roomCode}</span>
+                  <span>{formState.displayName}</span>
                 </div>
-              )}
+              ) : null}
             </section>
 
             <section className="phone-panel phone-join-panel">
@@ -357,8 +336,8 @@ export function PhoneApp(): ReactElement {
                   </section>
                   {(joinError || error) && <p className="error">{joinError ?? error}</p>}
                   <div className="phone-join-actions">
-                    <button className="phone-button phone-button-primary" type="submit">
-                      Continue
+                    <button className="phone-button phone-button-primary" type="submit" disabled={joiningRoom}>
+                      {joiningRoom ? "Joining..." : "Join / Continue"}
                     </button>
                     {debugOpen && <MobileDebugDrawer events={debugEvents} onClear={clearDebugEvents} />}
                   </div>
@@ -380,12 +359,44 @@ export function PhoneApp(): ReactElement {
                             <strong>{character.name}</strong>
                             <small>{character.archetype}</small>
                             {character.presentation && (
-                              <small className="phone-character-option-meta">
-                                {character.presentation.role} | {formatComplexity(character.presentation.complexity)}
-                                {character.presentation.recommendedForFirstGame ? " | First-game pick" : ""}
-                              </small>
+                              <span className="phone-character-presentation" data-testid="phone-character-presentation">
+                                <span className="phone-character-role-row">
+                                  <small>{character.presentation.role}</small>
+                                  <small>{formatComplexity(character.presentation.complexity)}</small>
+                                  {character.presentation.recommendedForFirstGame ? <em>First-game pick</em> : null}
+                                </span>
+                                <small>{character.presentation.playstyleSummary}</small>
+                                <span className="phone-character-summary-grid">
+                                  <small>
+                                    <strong>Gear</strong>
+                                    {character.presentation.signatureItemSummary}
+                                  </small>
+                                  <small>
+                                    <strong>Contract</strong>
+                                    {character.presentation.startingContractSummary}
+                                  </small>
+                                </span>
+                                <span className="phone-character-strength-grid">
+                                  <small>
+                                    <strong>Good at</strong>
+                                    {character.presentation.strengths.slice(0, 2).join(", ")}
+                                  </small>
+                                  <small>
+                                    <strong>Watch out</strong>
+                                    {character.presentation.weaknesses.slice(0, 2).join(", ")}
+                                  </small>
+                                </span>
+                              </span>
                             )}
                             {character.qaOnly && <em className="phone-character-qa-badge">QA ONLY</em>}
+                            <span className="phone-character-stat-row" aria-label={`${character.name} stats`}>
+                              <small>Command {character.stats.command}</small>
+                              <small>Grit {character.stats.grit}</small>
+                              <small>Signal {character.stats.signal}</small>
+                              <small>Guile {character.stats.guile}</small>
+                              <small>Forge {character.stats.forge}</small>
+                            </span>
+                            <small className="phone-character-select-label">Select character</small>
                           </span>
                         </button>
                       ))}
