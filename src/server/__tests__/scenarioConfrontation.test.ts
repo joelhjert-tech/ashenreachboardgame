@@ -69,6 +69,14 @@ function continueVisibleResolution(roomServer: GameRoomServer, seatId = "seat-1"
   }
 }
 
+function endBroadcastTurn(roomServer: GameRoomServer, seatId = "seat-1"): void {
+  roomServer.handleIntent(createPhoneClient(seatId) as never, {
+    type: "PHASE_ADVANCED",
+    seatId,
+    toPhase: "start"
+  } satisfies ClientIntent);
+}
+
 function runVisibleIntent(roomServer: GameRoomServer, intent: ClientIntent): void {
   roomServer.handleIntent(createPhoneClient(intent.seatId) as never, intent);
 
@@ -114,6 +122,7 @@ describe("scenario confrontation flow", () => {
       stage: "outcome_summary"
     });
     continueVisibleResolution(roomServer);
+    endBroadcastTurn(roomServer);
     expect(roomServer.getState().activeSeatIndex).toBe(1);
   });
 
@@ -561,6 +570,7 @@ describe("scenario confrontation flow", () => {
     expect(roomServer.getState().activeResolution?.stage).toBe("outcome_summary");
     expect(roomServer.getState().lastOutcomeSummary?.summary ?? "").toContain("cannot face the mirror");
     continueVisibleResolution(roomServer);
+    endBroadcastTurn(roomServer);
 
     expect(roomServer.getState().phase).toBe("navigation");
     expect(roomServer.getState().activeResolution).toBeNull();

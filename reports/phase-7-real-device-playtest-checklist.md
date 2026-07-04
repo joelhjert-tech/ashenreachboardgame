@@ -1,6 +1,7 @@
 # Phase 7A Real-Device Playtest Checklist
 
 Baseline: `8459aea phase-6c-slim-runtime-card-art-catalog`
+Phase 7D stat-upgrade baseline: `7efa638 phase-7c-stat-upgrade-system`
 
 Purpose: prove the intended Ashenreach table setup works on real devices before adding new mechanics, assets, UI redesigns, or deeper bundle work.
 
@@ -225,6 +226,20 @@ Player counts:
 - [ ] Continue appears if acknowledgement is required.
 - [ ] Post-battle continue advances to the next state.
 - [ ] No prompt says waiting forever after resolution.
+
+## Stat Upgrade Progression Checks
+
+- [ ] Defeating a threat grants trophy value and adds the defeated threat to the trophy pile.
+- [ ] Phone shows stat upgrade availability once the player has enough trophies.
+- [ ] Upgrade choices show current stat, next stat, trophy cost, and disabled reasons.
+- [ ] Stat upgrades are unavailable during movement choice, active battle, unresolved threat, and pending resolution.
+- [ ] Performing an upgrade deducts trophies equal to the next stat value.
+- [ ] Performing an upgrade increases the selected printed/base stat by +1.
+- [ ] Phone result chips show `-N Trophies` and `+1 Stat`.
+- [ ] TV public result says `[Player] upgraded [Stat] to [Value]`.
+- [ ] A later battle/test uses upgraded base stat + gear modifier + temporary modifier + roll = total.
+- [ ] Gear remains visible as a modifier and does not merge into the base stat.
+- [ ] MASTER ALPHA / QA-only characters cannot use the normal stat upgrade flow.
 
 ## Scenario Checks
 

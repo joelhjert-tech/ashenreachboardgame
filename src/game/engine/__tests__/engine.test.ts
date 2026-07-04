@@ -740,6 +740,17 @@ function runOneStepMove(server: GameRoomServer, intent: Extract<ClientIntent, { 
   runIntent(server, intent);
 }
 
+function endBroadcastTurn(server: GameRoomServer): void {
+  const seatId = server.getState().turnOrder[server.getState().activeSeatIndex];
+  if (server.getState().phase === "broadcast" && seatId) {
+    runIntent(server, {
+      type: "PHASE_ADVANCED",
+      seatId,
+      toPhase: "start"
+    });
+  }
+}
+
 function withOnlyConnectedSeat(state: GameState, connectedSeatId: string): GameState {
   return {
     ...state,
@@ -2703,6 +2714,7 @@ describe("movement rolls", () => {
       seatId: "seat-1",
       toSectorId: "sector-b"
     });
+    endBroadcastTurn(server);
 
     const seat1 = server.getState().players.find((entry) => entry.seatId === "seat-1");
 
@@ -3480,6 +3492,7 @@ describe("escalation flow", () => {
       type: "RESOLVE_SPACE_TEXT",
       seatId: "seat-1"
     });
+    endBroadcastTurn(server);
 
     expect(server.getState().players[0]?.private.notes).toContain("Ashwake crossing cleared. The convoy lane is charted.");
     expect(server.getState().phase).toBe("navigation");
@@ -4246,6 +4259,7 @@ describe("escalation flow", () => {
       "Guardian Span threshold aligned for breach entry."
     );
 
+    endBroadcastTurn(server);
     server.getState().movementRolls = { "seat-1": 1 };
 
     runIntent(server, {
@@ -4314,6 +4328,7 @@ describe("escalation flow", () => {
       "Gate of Cinders relay pulse timed cleanly for the core breach."
     );
 
+    endBroadcastTurn(server);
     runIntent(server, {
       type: "MOVE_REQUESTED",
       seatId: "seat-1",
@@ -4523,6 +4538,152 @@ describe("trophy progression", () => {
         cardType: "enemy"
       }
     ]);
+  });
+
+  it("validates the combat reward to stat upgrade to future roll progression loop", () => {
+    const progressionThreats = new Map(createThreats());
+    const pikeRunner = progressionThreats.get("pike-runner");
+    if (!pikeRunner) {
+      throw new Error("Missing pike-runner fixture");
+    }
+    progressionThreats.set("pike-runner", {
+      ...pikeRunner,
+      difficulty: 0
+    });
+    progressionThreats.set("command-lock", {
+      id: "command-lock",
+      type: "threat",
+      cardType: "hazard",
+      title: "Command Lock",
+      text: "A sealed route yields only to a sharper command cipher.",
+      flavor: "The lock remembers who flinched.",
+      severity: 2,
+      stat: "command",
+      difficulty: 15,
+      successEffect: { type: "gain_note", text: "The command lock opened cleanly." },
+      failEffect: { type: "gain_heat", amount: 1 }
+    });
+
+    const baseCharacter = cloneCharacter(createCharacters().get("void-marshal"));
+    const server = new GameRoomServer(
+      withOnlyConnectedSeat(
+        createState({
+          sessionMode: "single-player",
+          phase: "action",
+          turnOrder: ["seat-1"],
+          seats: [{ ...createState().seats[0]!, characterId: "void-marshal" }],
+          players: [
+            {
+              ...createState().players[0]!,
+              sectorId: "sector-a",
+              character: {
+                ...baseCharacter,
+                currentSpaceId: "sector-a",
+                stats: { ...baseCharacter.stats, command: 3 },
+                trophies: 0,
+                trophyPile: []
+              }
+            }
+          ],
+          currentEncounter: progressionThreats.get("pike-runner") ?? null
+        }),
+        "seat-1"
+      ),
+      [],
+      createSequenceRandomSource([5, 5, 0, 0, 5, 5]),
+      progressionThreats,
+      createCharacters(),
+      createGear(),
+      createContracts()
+    );
+
+    runIntent(server, {
+      type: "COMBAT_REQUESTED",
+      seatId: "seat-1",
+      stat: "grit"
+    });
+
+    let player = server.getState().players.find((entry) => entry.seatId === "seat-1");
+    expect(player?.character.trophies).toBe(6);
+    expect(player?.character.trophyPile).toEqual([
+      {
+        cardId: "pike-runner",
+        name: "Pike Runner",
+        trophyValue: 6,
+        spentValue: 0,
+        stat: "grit",
+        cardType: "enemy"
+      }
+    ]);
+    expect(player?.character.heldGear.some((item) => item.id === "veil-hook")).toBe(true);
+
+    const phoneAfterReward = createPhoneProjection(server.getState(), "seat-1") as {
+      self: { character: { trophies: number; stats: { command: number } } };
+    };
+    expect(phoneAfterReward.self.character.trophies).toBe(6);
+    expect(phoneAfterReward.self.character.stats.command).toBe(3);
+
+    runIntent(server, {
+      type: "RAISE_STAT_REQUESTED",
+      seatId: "seat-1",
+      stat: "command"
+    });
+
+    player = server.getState().players.find((entry) => entry.seatId === "seat-1");
+    expect(player?.character.trophies).toBe(2);
+    expect(player?.character.stats.command).toBe(4);
+    expect(player?.character.statUpgrades?.command).toBe(1);
+    expect(player?.character.trophyPile).toEqual([
+      expect.objectContaining({
+        cardId: "pike-runner",
+        trophyValue: 6,
+        spentValue: 4
+      })
+    ]);
+    expect(player?.character.equippedGear.utility).toBe("marshal-seal");
+    expect(player ? getEquippedGearBonus(player.character, "command") : null).toBe(1);
+
+    const tvAfterUpgrade = createTvProjection(server.getState()) as {
+      outcomeSummary: { summary: string } | null;
+      publicResultDeltas: Array<{ type: string; sign: string; value?: number | string; publicText: string }>;
+    };
+    expect(tvAfterUpgrade.outcomeSummary?.summary).toMatch(/upgraded command to 4/i);
+    expect(tvAfterUpgrade.publicResultDeltas).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ type: "trophy", sign: "loss", value: 4 }),
+        expect.objectContaining({ type: "statUpgrade", sign: "gain", value: 1, publicText: expect.stringMatching(/Command to 4/i) })
+      ])
+    );
+
+    const nextState = server.getState();
+    nextState.phase = "action";
+    nextState.currentEncounter = progressionThreats.get("command-lock") ?? null;
+    nextState.pendingEnemyRoll = null;
+    nextState.pendingEffect = null;
+    nextState.activeResolution = null;
+
+    server.handleIntent(createClient("seat-1"), {
+      type: "CHECK_REQUESTED",
+      seatId: "seat-1",
+      stat: "command"
+    });
+    if (server.getState().activeResolution?.stage === "battle_setup") {
+      server.handleIntent(createClient("seat-1"), {
+        type: "CHECK_REQUESTED",
+        seatId: "seat-1",
+        stat: "command"
+      });
+    }
+
+    expect(server.getState().activeResolution?.roll).toMatchObject({
+      baseTotal: 12,
+      modifierTotal: 5,
+      finalTotal: 17,
+      target: 15,
+      success: true
+    });
+    expect(player?.character.stats.command).toBe(4);
+    expect(player ? getEquippedGearBonus(player.character, "command") : null).toBe(1);
   });
 
   it("spends trophies equal to the next stat value to upgrade a base stat", () => {
@@ -6910,6 +7071,7 @@ describe("contracts", () => {
     });
 
     expect(server.getState().players.find((entry) => entry.seatId === "seat-1")?.character.activeContract?.progress).toBe(1);
+    endBroadcastTurn(server);
 
     runOneStepMove(server, {
       type: "MOVE_REQUESTED",
@@ -6921,6 +7083,7 @@ describe("contracts", () => {
       seatId: "seat-2",
       stat: "signal"
     });
+    endBroadcastTurn(server);
 
     runOneStepMove(server, {
       type: "MOVE_REQUESTED",
@@ -6932,6 +7095,7 @@ describe("contracts", () => {
       seatId: "seat-3",
       stat: "signal"
     });
+    endBroadcastTurn(server);
 
     runOneStepMove(server, {
       type: "MOVE_REQUESTED",
@@ -6943,6 +7107,7 @@ describe("contracts", () => {
       seatId: "seat-1",
       stat: "grit"
     });
+    endBroadcastTurn(server);
 
     expect(server.getState().players.find((entry) => entry.seatId === "seat-1")?.character.activeContract?.progress).toBe(2);
 

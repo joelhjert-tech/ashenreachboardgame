@@ -505,6 +505,21 @@ export class GameRoomServer {
         return;
       }
 
+      if (
+        intent.type === "PHASE_ADVANCED" &&
+        intent.toPhase === "start" &&
+        this.state.status === "active" &&
+        this.state.phase === "broadcast" &&
+        !this.state.activeResolution
+      ) {
+        if (this.state.turnOrder[this.state.activeSeatIndex] !== intent.seatId) {
+          throw new Error("Only the active seat can end the broadcast step");
+        }
+
+        this.completeBroadcastTurn(intent.seatId);
+        return;
+      }
+
       if (intent.type === "SET_READY") {
         this.setSeatReady(intent.seatId, intent.ready);
         if (intent.ready && this.state.sessionMode === "single-player") {
@@ -4507,14 +4522,13 @@ export class GameRoomServer {
   resolveContinueResolutionIntent(intent: Extract<ClientIntent, { type: "CONTINUE_RESOLUTION" }>): void {
     this.clearResolutionAutoContinueTimeout();
     const previousStage = this.state.activeResolution?.stage ?? null;
-    const activeSeatId = this.state.turnOrder[this.state.activeSeatIndex] ?? intent.seatId;
 
     if (!this.state.activeResolution && this.state.status === "active" && this.state.phase === "resolution") {
       this.runAutomaticPhases(intent.seatId);
       const phaseAfterRecovery = this.state.phase as GameState["phase"];
 
       if (this.state.status === "active" && phaseAfterRecovery === "broadcast" && !this.state.activeResolution) {
-        this.completeBroadcastTurn(activeSeatId);
+        this.broadcastPatch();
         return;
       }
 
@@ -4533,7 +4547,7 @@ export class GameRoomServer {
     }
 
     if (this.state.status === "active" && this.state.phase === "broadcast" && !this.state.activeResolution) {
-      this.completeBroadcastTurn(activeSeatId);
+      this.broadcastPatch();
       return;
     }
 
@@ -4647,12 +4661,11 @@ export class GameRoomServer {
 
         const shouldCompleteTurn =
           this.state.status === "active" && this.state.phase === "broadcast" && !this.state.activeResolution;
-        const completingSeatId = this.state.turnOrder[this.state.activeSeatIndex] ?? client.seatId;
 
         this.broadcastPatch();
 
-        if (shouldCompleteTurn && completingSeatId) {
-          this.completeBroadcastTurn(completingSeatId);
+        if (shouldCompleteTurn) {
+          return;
         }
       } catch (error) {
         const reason = error instanceof Error ? error.message : "Intent rejected";
@@ -5533,7 +5546,7 @@ export class GameRoomServer {
       }
 
       if (this.state.status === "active" && this.state.phase === "broadcast" && !this.state.activeResolution) {
-        this.completeBroadcastTurn(continuingSeatId);
+        this.broadcastPatch();
         return;
       }
 
