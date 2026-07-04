@@ -314,6 +314,7 @@ describe("PhoneInventoryPanel", () => {
     expect(screen.getByRole("tab", { name: /battle/i })).toBeInTheDocument();
     expect(screen.getByRole("tab", { name: /shop/i })).toBeInTheDocument();
     expect(screen.getByRole("tab", { name: /action/i })).toBeInTheDocument();
+    expect(screen.getByRole("tablist", { name: /phone navigation/i })).toHaveClass("phone-portrait-bottom-nav");
     expect(screen.queryByRole("tab", { name: /log/i })).not.toBeInTheDocument();
     expect(screen.queryByTestId("phone-battle-assist")).not.toBeInTheDocument();
 
@@ -327,7 +328,10 @@ describe("PhoneInventoryPanel", () => {
 
     fireEvent.click(screen.getByRole("tab", { name: /battle/i }));
 
+    expect(screen.getByTestId("phone-action-screen")).toHaveClass("phone-portrait-screen-command");
+    expect(screen.getByTestId("phone-action-content-root")).toContainElement(screen.getByTestId("phone-action-active-panel"));
     expect(screen.getByTestId("phone-battle-assist")).toBeInTheDocument();
+    expect(screen.queryByText(/turn console/i)).not.toBeInTheDocument();
   });
 
   it("shows private rivalry agenda details on the Quest tab", () => {

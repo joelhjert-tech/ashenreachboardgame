@@ -1356,21 +1356,24 @@ select {
 .phone-portrait-controller {
   width: 100%;
   height: 100%;
+  max-height: 100%;
   min-height: 0;
   display: block;
   background-position: center;
   background-repeat: no-repeat;
   background-size: cover;
+  overflow: hidden;
 }
 
 .phone-portrait-panel {
   --phone-header-height: 5.8rem;
   --phone-nav-height: 6.9rem;
+  --phone-bottom-nav-height: var(--phone-nav-height);
   position: relative;
   min-height: 0;
   height: 100%;
   display: grid;
-  grid-template-rows: var(--phone-header-height) minmax(0, 1fr) var(--phone-nav-height);
+  grid-template-rows: auto minmax(0, 1fr) auto;
   gap: 0;
   padding: 0;
   border: 1px solid rgba(116, 132, 145, 0.42);
@@ -1396,6 +1399,7 @@ select {
   position: relative;
   z-index: 3;
   min-width: 0;
+  min-height: var(--phone-header-height);
   display: grid;
   grid-template-columns: 3.65rem minmax(0, 1fr) minmax(4.8rem, auto) auto;
   gap: 0.55rem;
@@ -1495,6 +1499,7 @@ select {
 
 .phone-portrait-scroll {
   min-height: 0;
+  height: 100%;
   overflow-y: auto;
   overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
@@ -1508,8 +1513,27 @@ select {
 
 .phone-portrait-screen {
   min-width: 0;
+  min-height: 0;
   display: grid;
   gap: 0.8rem;
+}
+
+.phone-portrait-scroll:has(.phone-action-panel) {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding:
+    0.65rem
+    max(0.75rem, env(safe-area-inset-right))
+    0
+    max(0.75rem, env(safe-area-inset-left));
+}
+
+.phone-portrait-screen-command {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  gap: 0;
 }
 
 .phone-portrait-hero-card,
@@ -1668,6 +1692,7 @@ select {
 .phone-portrait-bottom-nav {
   position: relative;
   z-index: 3;
+  min-height: var(--phone-nav-height);
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 0.3rem;
@@ -3415,14 +3440,16 @@ select {
   --tab-accent: #7eb7ef;
   --tab-accent-soft: rgba(126, 183, 239, 0.14);
   --tab-border: rgba(126, 183, 239, 0.3);
+  width: 100%;
+  height: 100%;
   min-height: 0;
-  grid-template-rows: auto minmax(0, 1fr) auto auto;
+  grid-template-rows: auto minmax(0, 1fr) auto;
   gap: 0.48rem;
-  padding-bottom: calc(0.6rem + env(safe-area-inset-bottom));
-  border-color: var(--tab-border);
-  background:
-    linear-gradient(180deg, color-mix(in srgb, var(--tab-accent) 8%, rgba(12, 16, 22, 0.92)), rgba(6, 9, 14, 0.97)),
-    rgba(7, 10, 15, 0.92);
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
   overflow: hidden;
 }
 
@@ -3453,7 +3480,15 @@ select {
 .phone-action-content-root {
   min-width: 0;
   min-height: 0;
-  overflow: hidden;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding:
+    0.05rem
+    0.12rem
+    calc(var(--phone-bottom-nav-height, 7rem) + env(safe-area-inset-bottom) + 1rem)
+    0;
+  scrollbar-gutter: stable;
+  -webkit-overflow-scrolling: touch;
 }
 
 .phone-action-active-panel {
@@ -3462,11 +3497,10 @@ select {
   display: grid;
   align-content: start;
   gap: 0.62rem;
-  height: 100%;
-  overflow-y: auto;
+  height: auto;
+  overflow-y: visible;
   overflow-x: hidden;
-  padding: 0.05rem 0.12rem calc(0.72rem + env(safe-area-inset-bottom)) 0;
-  scrollbar-gutter: stable;
+  padding: 0;
 }
 
 .phone-move-panel {
@@ -3478,8 +3512,8 @@ select {
 .phone-battle-panel,
 .phone-sector-action-panel,
 .phone-shop-command-panel {
-  border-top: 1px solid var(--tab-border);
-  padding-top: 0.55rem;
+  border-top: 0;
+  padding-top: 0;
 }
 
 .phone-battle-panel__header,
@@ -3543,6 +3577,14 @@ select {
 .phone-sheet-action-status span:first-child {
   color: var(--accent-strong);
   white-space: nowrap;
+}
+
+.phone-action-secondary-status {
+  margin-top: 0.66rem;
+  padding: 0.5rem 0.58rem;
+  border: 1px solid rgba(126, 183, 239, 0.12);
+  border-radius: 7px;
+  background: rgba(4, 7, 11, 0.36);
 }
 
 .phone-current-prompt {
@@ -4540,10 +4582,14 @@ select {
 }
 
 .phone-portrait-screen .phone-sheet-actions.phone-action-panel {
-  height: min(42rem, calc(100dvh - 8.5rem - env(safe-area-inset-top) - env(safe-area-inset-bottom)));
-  min-height: min(31rem, calc(100dvh - 8.5rem - env(safe-area-inset-top) - env(safe-area-inset-bottom)));
-  grid-template-rows: auto minmax(0, 1fr) auto auto;
-  padding-bottom: calc(0.7rem + env(safe-area-inset-bottom));
+  height: 100%;
+  min-height: 0;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
   overflow: hidden;
 }
 
@@ -12468,11 +12514,9 @@ body {
 .phone-movement-destination-list {
   display: grid;
   gap: 0.56rem;
-  max-height: min(48dvh, 28rem);
-  overflow-y: auto;
-  overflow-x: hidden;
-  padding: 0 0.1rem 0.1rem 0;
-  scrollbar-gutter: stable;
+  max-height: none;
+  overflow: visible;
+  padding: 0;
   min-width: 0;
 }
 
@@ -12607,13 +12651,13 @@ body {
 
 .phone-movement-detail {
   display: grid;
-  grid-template-rows: minmax(0, 1fr) auto;
+  grid-template-rows: auto auto;
   gap: 0;
-  max-height: min(63dvh, 38rem);
+  max-height: none;
   border: 1px solid rgba(197, 181, 143, 0.22);
   border-radius: 8px;
   background: rgba(3, 5, 8, 0.74);
-  overflow: hidden;
+  overflow: visible;
   min-width: 0;
   min-height: 0;
 }
@@ -12622,10 +12666,8 @@ body {
   display: grid;
   gap: 0.75rem;
   min-height: 0;
-  overflow-y: auto;
-  overflow-x: hidden;
+  overflow: visible;
   padding: 0.78rem 0.78rem 1rem;
-  scrollbar-gutter: stable;
 }
 
 .phone-movement-detail-back-row {
@@ -12990,10 +13032,9 @@ body {
 .phone-shop-stock-list {
   display: grid;
   gap: 0.55rem;
-  max-height: min(42svh, 22rem);
-  overflow: auto;
-  padding-right: 0.12rem;
-  scrollbar-width: thin;
+  max-height: none;
+  overflow: visible;
+  padding-right: 0;
 }
 
 .phone-shop-service-card {
@@ -13107,6 +13148,14 @@ body {
   padding: 0.65rem;
   border-left: 3px solid rgba(104, 184, 232, 0.72);
   background: rgba(104, 184, 232, 0.08);
+}
+
+.phone-shop-command-panel.phone-shop-panel {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
 }
 
 /* Shared challenge language: color is always paired with icon and label. */

@@ -300,6 +300,8 @@ describe("PhoneActionPanel", () => {
     expect(screen.queryByText(/turn console/i)).not.toBeInTheDocument();
     expect(screen.getByTestId("phone-action-panel-root")).toHaveClass("phone-action-panel--move");
     expect(screen.getByTestId("phone-action-active-panel")).toHaveClass("phone-move-panel");
+    expect(screen.getByTestId("phone-action-content-root")).toContainElement(screen.getByTestId("phone-action-active-panel"));
+    expect(screen.getByTestId("phone-action-content-root")).toContainElement(screen.getByTestId("phone-action-secondary-status"));
     expect(screen.getByTestId("phone-useful-now")).toHaveTextContent(/route and movement tools/i);
     expect(screen.getByTestId("phone-useful-now")).toHaveTextContent(/movement roll 1/i);
     expect(screen.getByTestId("phone-useful-now")).not.toHaveAttribute("open");
@@ -310,6 +312,10 @@ describe("PhoneActionPanel", () => {
     ).toBeTruthy();
     expect(
       screen.getByTestId("movement-list-view").compareDocumentPosition(screen.getByTestId("phone-useful-now")) &
+        Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy();
+    expect(
+      screen.getByTestId("movement-planner").compareDocumentPosition(screen.getByTestId("phone-action-secondary-status")) &
         Node.DOCUMENT_POSITION_FOLLOWING
     ).toBeTruthy();
     expect(screen.getByText(/move 1/i)).toBeInTheDocument();

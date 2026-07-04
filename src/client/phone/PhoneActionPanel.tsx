@@ -1603,7 +1603,7 @@ function PhoneShopCommandPanel({
   usefulNow: UsefulNowViewModel | null;
 }): ReactElement {
   return (
-    <section className="phone-action-active-panel phone-shop-command-panel" data-testid="phone-action-active-panel" aria-label="Shop command screen">
+    <section className="phone-action-active-panel phone-shop-command-panel phone-shop-panel" data-testid="phone-action-active-panel" aria-label="Shop command screen">
       <PhoneShopPanel shopEncounter={shopEncounter} resultDeltas={resultDeltas} seatId={seatId} onIntent={onIntent} />
       {!shopEncounter && (
         <EmptyTurnTab title="No shop here" text="Shop services appear when your operative is on a clear market, shrine, foundry, or service sector." />
@@ -1655,7 +1655,6 @@ function PhoneSectorActionPanel({
         <strong>{title}</strong>
       </header>
       <SectorOpportunityChips items={sectorOpportunityItems} />
-      <SectorExplorationPanel summary={sectorExplorationCopy} />
       <ActionSections
         sectionClassName="phone-sector-action-panel__action-card"
         sections={[
@@ -1668,6 +1667,7 @@ function PhoneSectorActionPanel({
           { key: "advance", title: "Advance", detail: "Finish or confront", actions: advanceActions, defaultOpen: true }
         ]}
       />
+      <SectorExplorationPanel summary={sectorExplorationCopy} />
       <ResultDeltaRow deltas={visibleActionDeltas} className="phone-action-deltas phone-sector-action-panel__result" />
       <TrophyPileSection actions={statRaiseActions} trophies={trophies} trophyPile={trophyPile} />
       <TrophyAdvanceDisclosure actions={statRaiseActions} trophies={trophies} />
@@ -2376,12 +2376,18 @@ export function PhoneActionPanel({
       data-testid="phone-action-panel-root"
     >
       <CurrentPromptCard prompt={currentPrompt} onSelectedTab={setSelectedTurnTab} />
-      <div className="phone-action-content-root" id={`phone-turn-panel-${activeTurnTab}`} role="tabpanel" aria-label={`${activeTurnTab} actions`}>
+      <div
+        className="phone-action-content-root"
+        id={`phone-turn-panel-${activeTurnTab}`}
+        role="tabpanel"
+        aria-label={`${activeTurnTab} actions`}
+        data-testid="phone-action-content-root"
+      >
         {activeTabContent}
-      </div>
-      <div className="phone-sheet-action-status">
-        <span>Trophies: {self.character.trophies}</span>
-        <span>{copy}</span>
+        <div className="phone-sheet-action-status phone-action-secondary-status" data-testid="phone-action-secondary-status">
+          <span>Trophies: {self.character.trophies}</span>
+          <span>{copy}</span>
+        </div>
       </div>
       {!hideTurnTabs && <TurnActionTabs tabs={tabDefinitions} activeTab={activeTurnTab} onSelected={setSelectedTurnTab} />}
     </section>

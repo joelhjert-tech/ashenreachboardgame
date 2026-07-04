@@ -519,7 +519,7 @@ export function PortraitControllerView({
           )}
 
           {isTurnActionTab(activeTab) && (
-            <div className="phone-portrait-screen">
+            <div className="phone-portrait-screen phone-portrait-screen-command" data-testid="phone-action-screen">
               {patch && onIntent ? (
                 <PhoneActionPanel
                   characters={characters}
@@ -531,7 +531,7 @@ export function PortraitControllerView({
                 />
               ) : (
                 <section className="phone-portrait-section">
-                  <div className="phone-sheet-section-heading">Turn Console</div>
+                  <div className="phone-sheet-section-heading">Command Sync</div>
                   <p className="phone-muted-copy">Actions appear when the room syncs.</p>
                 </section>
               )}
