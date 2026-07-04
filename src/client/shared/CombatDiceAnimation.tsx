@@ -12,6 +12,7 @@ interface CombatDiceAnimationProps {
   attackSuccess?: boolean;
   defenseSuccess?: boolean;
   hasModifier?: boolean;
+  showModifierDie?: boolean;
   compact?: boolean;
   challengeStat?: Stat;
 }
@@ -57,6 +58,7 @@ export function CombatDiceAnimation({
   attackSuccess = false,
   defenseSuccess = false,
   hasModifier,
+  showModifierDie = true,
   compact = false,
   challengeStat = "grit"
 }: CombatDiceAnimationProps): ReactElement {
@@ -76,7 +78,7 @@ export function CombatDiceAnimation({
       <div className="combat-dice-stage">
         <AnimatedDie layer="attack" value={attackDie} success={attackSuccess} />
         <AnimatedDie layer="defense" value={defenseDie} success={defenseSuccess} />
-        <AnimatedDie layer="modifier" value={modifierDie} success={modifierActive} />
+        {showModifierDie && <AnimatedDie layer="modifier" value={modifierDie} success={modifierActive} />}
       </div>
       <div className={`combat-result-token ${tokenClass}`} data-testid="combat-result-token">
         <span aria-hidden="true">{attackSuccess ? "A" : defenseSuccess ? "D" : "*"}</span>

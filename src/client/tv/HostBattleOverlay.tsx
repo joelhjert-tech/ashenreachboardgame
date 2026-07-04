@@ -372,25 +372,31 @@ function HostBattleVsCore({ model }: { model: HostBattleDisplayModel }): ReactEl
     <section className="host-battle-vs-block" aria-label="Resolution comparison" data-testid="host-battle-vs-block">
       <span>{model.resolutionType}</span>
       <strong>VS</strong>
-      <ChallengeBadge stat={model.challengeStat} label={statLabelById[model.challengeStat]} size="compact" active />
-      <div className="host-battle-dice-animation host-battle-dice-large">
-        <DiceRollScene
-          attackValue={model.playerTotal}
-          defenseValue={model.enemyTotal}
-          modifierValue={model.playerModifier}
-          attackDieFace={model.playerDice[0] ?? null}
-          defenseDieFace={model.enemyDice[0] ?? model.playerDice[1] ?? null}
-          modifierDieFace={model.playerDice[1] ?? null}
-          attackSuccess={model.outcomeLabel === "SUCCESS"}
-          defenseSuccess={model.outcomeLabel === "DEFEAT"}
-          challengeStat={model.challengeStat}
-          className="battle-dice-animation"
-          testId="battle-dice-animation"
-        />
-      </div>
       <div className={`host-battle-result-banner host-battle-result-${model.outcomeLabel.toLowerCase()}`} data-testid="host-battle-result-banner">
         <b>{model.outcomeLabel}</b>
         <span>{model.marginText}</span>
+      </div>
+      <div className="host-battle-dice-band" data-testid="host-battle-dice-band">
+        <div className="host-battle-dice-animation host-battle-dice-large">
+          <DiceRollScene
+            attackValue={model.playerTotal}
+            defenseValue={model.enemyTotal}
+            modifierValue={model.playerModifier}
+            attackDieFace={model.playerDice[0] ?? null}
+            defenseDieFace={model.enemyDice[0] ?? model.playerDice[1] ?? null}
+            modifierDieFace={model.playerDice[1] ?? null}
+            attackSuccess={model.outcomeLabel === "SUCCESS"}
+            defenseSuccess={model.outcomeLabel === "DEFEAT"}
+            challengeStat={model.challengeStat}
+            showModifierDie={false}
+            className="battle-dice-animation"
+            testId="battle-dice-animation"
+          />
+        </div>
+      </div>
+      <div className="host-battle-test-label" data-testid="host-battle-test-label">
+        <ChallengeBadge stat={model.challengeStat} label={statLabelById[model.challengeStat]} size="compact" active />
+        <span>{statLabelById[model.challengeStat]} test</span>
       </div>
       <div className="host-battle-rolls" data-testid="host-battle-rolls">
         <span>{model.player.name}</span>

@@ -1516,10 +1516,21 @@ describe("TvApp", () => {
     expect(overlay.querySelector("[data-testid='combat-dice-animation']")).not.toHaveClass("combat-dice-animation-compact");
     expect(screen.getByTestId("battle-dice-animation")).toHaveClass("dice-roll-scene-dom");
     expect(screen.getByTestId("host-battle-vs-block")).toHaveTextContent(/vs/i);
+    expect(within(screen.getByTestId("host-battle-vs-block")).getByTestId("host-battle-dice-band")).toContainElement(
+      screen.getByTestId("battle-dice-animation")
+    );
+    expect(screen.getByTestId("host-battle-result-banner").compareDocumentPosition(screen.getByTestId("host-battle-dice-band"))).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING
+    );
+    expect(screen.getByTestId("host-battle-dice-band").compareDocumentPosition(screen.getByTestId("host-battle-test-label"))).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING
+    );
     expect(screen.getByTestId("host-battle-result-banner")).toHaveTextContent(/success/i);
     expect(screen.getByTestId("host-battle-result-banner")).toHaveTextContent(/wins by 3/i);
+    expect(screen.getByTestId("host-battle-test-label")).toHaveTextContent(/grit test/i);
     expect(overlay.querySelector("[data-testid='combat-die-attack']")).toHaveTextContent("4");
     expect(overlay.querySelector("[data-testid='combat-die-defense']")).toHaveTextContent("3");
+    expect(overlay.querySelector("[data-testid='combat-die-modifier']")).not.toBeInTheDocument();
     expect(screen.getByTestId("host-battle-rolls")).toHaveTextContent(/Tarek Voss\s*11\s*>\s*8\s*Enemy/i);
     expect(screen.getByTestId("host-battle-rolls")).not.toHaveTextContent(/player total/i);
     expect(screen.getByTestId("host-battle-player-math")).toHaveTextContent(/Grit 6 \+ Roll 5 = Total 11/i);

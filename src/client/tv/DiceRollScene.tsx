@@ -11,6 +11,7 @@ export interface DiceRollSceneProps {
   modifierDieFace?: number | null;
   attackSuccess?: boolean;
   defenseSuccess?: boolean;
+  showModifierDie?: boolean;
   compact?: boolean;
   className?: string;
   testId?: string;
@@ -26,6 +27,7 @@ export function DiceRollScene({
   modifierDieFace,
   attackSuccess = false,
   defenseSuccess = false,
+  showModifierDie = true,
   compact = false,
   className = "",
   testId = "host-dice-roll-scene",
@@ -53,6 +55,7 @@ export function DiceRollScene({
         attackSuccess={attackSuccess}
         defenseSuccess={defenseSuccess}
         hasModifier={Boolean(modifierValue)}
+        showModifierDie={showModifierDie}
         compact={compact}
         challengeStat={challengeStat}
       />
