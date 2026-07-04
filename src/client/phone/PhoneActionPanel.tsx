@@ -668,6 +668,20 @@ function buildStrategicWarning(destination: PublicMoveDestination): string {
   return "Low public pressure from visible board information.";
 }
 
+function getMovementTagLabels(destination: PublicMoveDestination, routePreviewTagLabels: string[]): string[] {
+  const strategicLabels = destination.strategicTags.map((tag) => movementTagLabel[tag]);
+
+  return [...new Set([...strategicLabels, ...routePreviewTagLabels.map((tag) => tag.toUpperCase())])].slice(0, 4);
+}
+
+function getRouteNames(destination: PublicMoveDestination): string[] {
+  return destination.routeNames ?? destination.route;
+}
+
+function getRoutePreviewLine(destination: PublicMoveDestination): string {
+  return getRouteNames(destination).join(" -> ");
+}
+
 function shopResultDeltas(deltas: ResultDelta[] | null | undefined): ResultDelta[] {
   const shopTypes = new Set<ResultDelta["type"]>(["itemBought", "itemSold", "salvage", "heat", "wound", "shopUnlocked"]);
 
@@ -1064,7 +1078,15 @@ function MovementPlanner({
   }, [planner?.currentSectorId, planner?.movementValue]);
 
   if (!planner?.active) {
-    return null;
+    return (
+      <section className="phone-movement-planner" aria-label="Movement planner" data-testid="movement-planner">
+        <MovementEmptyState
+          title="No movement roll"
+          text="Roll Movement to see your legal destinations."
+          detail="Movement options appear here once the server projects a public route list."
+        />
+      </section>
+    );
   }
 
   const selected = selectedSectorId
@@ -1073,211 +1095,311 @@ function MovementPlanner({
 
   return (
     <section className="phone-movement-planner" aria-label="Movement planner" data-testid="movement-planner">
-      <div className="phone-movement-planner-header">
-        <div>
-          <span>Movement Planner</span>
-          <strong>Move {planner.movementValue}</strong>
-        </div>
-        <p>
-          Current: {planner.currentSectorName}. Legal destinations: {planner.destinations.length}.
-        </p>
-      </div>
-
-      <div className="phone-movement-destination-list" role="list" aria-label="Legal destinations">
-        {planner.destinations.length === 0 ? (
-          <div className="phone-movement-empty" role="status">
-            <strong>No legal destinations</strong>
-            <p>No public route is currently available from this sector. Continue or resolve the current board effect.</p>
-          </div>
-        ) : (
-          planner.destinations.map((destination) => {
-          const primaryTag = getPrimaryMovementTag(destination);
-          const selected = selectedSectorId === destination.sectorId;
-          const isLocked = Boolean(destination.disabledReason);
-          const routePreview = buildRoutePreviewCopy(destination, planner.movementValue, planner.currentSectorName, selected);
-
-          return (
-            <article
-              key={destination.sectorId}
-              className={`phone-movement-card${selected ? " phone-movement-card-selected" : ""}${
-                isLocked ? " phone-movement-card-disabled" : ""
-              }`}
-              role="listitem"
-            >
-              <GameButton
-                type="button"
-                tone={primaryTag === "danger" || primaryTag === "locked" ? "battle" : primaryTag === "shop" ? "shop" : "move"}
-                contentMode="custom"
-                className="phone-movement-card-button"
-                aria-pressed={selected}
-                selected={selected}
-                onClick={() => setSelectedSectorId(destination.sectorId)}
-              >
-                <span className={`phone-movement-badge phone-movement-badge-${primaryTag}`}>{movementTagLabel[primaryTag]}</span>
-                <strong>{destination.name}</strong>
-                <small>
-                  {destination.distance} steps | exact route
-                </small>
-                <span className={`phone-movement-route-state phone-movement-route-state-${routePreview.statusLabel.toLowerCase()}`}>
-                  {routePreview.statusLabel}
-                </span>
-                <span className="phone-movement-route-exact">{routePreview.exactText}</span>
-                {routePreview.tagLabels.length > 0 && (
-                  <span className="phone-movement-route-tags" aria-label={`${destination.name} route tags`}>
-                    {routePreview.tagLabels.map((tag) => (
-                      <em key={tag}>{tag}</em>
-                    ))}
-                  </span>
-                )}
-                {destination.threatIcons.length > 0 && (
-                  <span className="phone-movement-card-icons">
-                    {destination.threatIcons.map((icon, index) => (
-                      <ThreatIconBadge key={`${icon}-${index}`} icon={icon} />
-                    ))}
-                  </span>
-                )}
-                <span>{routePreview.riskText ?? buildDestinationSummary(destination)}</span>
-                {routePreview.rewardText ? <span>{routePreview.rewardText}</span> : null}
-                {destination.disabledReason ? (
-                  <span className="phone-movement-disabled-reason">{destination.disabledReason}</span>
-                ) : null}
-              </GameButton>
-            </article>
-          );
-          })
-        )}
-      </div>
-
       {selected ? (
-        <article className="phone-movement-intel" aria-label={`${selected.name} full intel`}>
-          {(() => {
-            const routePreview = buildRoutePreviewCopy(selected, planner.movementValue, planner.currentSectorName, true);
-
-            return (
-              <>
-          <div className="phone-movement-intel-heading">
-            <div>
-              <span>Full Intel</span>
-              <strong>{selected.name}</strong>
-            </div>
-            <GameButton type="button" tone="secondary" className="phone-button phone-button-secondary" onClick={() => setSelectedSectorId(null)}>
-              Back
-            </GameButton>
-          </div>
-
-          <div className="phone-movement-intel-grid">
-            <span>Route</span>
-            <strong>{(selected.routeNames ?? selected.route).join(" -> ")}</strong>
-            <span>Why legal</span>
-            <strong>{routePreview.exactText}</strong>
-            <span>Steps</span>
-            <strong>{selected.distance} / {planner.movementValue}</strong>
-            <span>Icons</span>
-            <strong className="phone-movement-inline-icons">
-              {selected.threatIcons.length > 0
-                ? selected.threatIcons.map((icon, index) => (
-                    <span key={`${icon}-${index}`} className="phone-movement-inline-icon-wrap">
-                      <span className="sr-only">{formatThreatIcon(icon)}</span>
-                      <ThreatIconBadge icon={icon} />
-                    </span>
-                  ))
-                : "None"}
-            </strong>
-            <span>Status</span>
-            <strong>{routePreview.statusLabel}: {routePreview.statusReason}</strong>
-          </div>
-
-          <div className="phone-movement-route-explain" aria-label="Route explanation">
-            <p>{routePreview.pathText}</p>
-            {routePreview.riskText ? <p>{routePreview.riskText}</p> : null}
-            {routePreview.rewardText ? <p>{routePreview.rewardText}</p> : null}
-          </div>
-
-          {selected.loreText ? <p className="phone-movement-lore">{selected.loreText}</p> : null}
-          <div className="phone-movement-rule">
-            <span>Printed effect</span>
-            <p>{selected.ruleText}</p>
-          </div>
-
-          <div className="phone-movement-threats">
-            <span>Current blockers</span>
-            {selected.faceUpThreats.length > 0 ? (
-              selected.faceUpThreats.map((threat) => (
-                <div key={threat.instanceId} className="phone-movement-threat-row">
-                  <strong>{threat.name}</strong>
-                  <small>
-                    {threat.deck ? `${formatThreatIcon(threat.deck)} ` : ""}
-                    {threat.type}
-                    {threat.challenge ? (
-                      <>
-                        {" | "}
-                        <ChallengeBadge stat={threat.challenge.stat} value={threat.challenge.value} size="compact" />
-                      </>
-                    ) : ""}
-                  </small>
-                </div>
-              ))
-            ) : (
-              <p>No face-up blockers. Hidden deck cards remain unknown.</p>
-            )}
-          </div>
-
-          {selected.shop ? (
-            <div className="phone-movement-shop">
-              <span>{selected.shop.shopName}</span>
-              <strong>{selected.shop.status.toUpperCase()}</strong>
-              <p>{selected.shop.servicesPreview.join(" / ")}</p>
-            </div>
-          ) : null}
-
-          {selected.occupants.length > 0 ? (
-            <div className="phone-movement-occupants">
-              <span>Occupants</span>
-              {selected.occupants.map((occupant) => (
-                <p key={occupant.playerId}>
-                  {occupant.name}: {occupant.characterName}
-                </p>
-              ))}
-            </div>
-          ) : null}
-
-          {selected.scenarioMarkers && selected.scenarioMarkers.length > 0 ? (
-            <div className="phone-movement-markers">
-              <span>Scenario markers</span>
-              <p>{selected.scenarioMarkers.join(", ")}</p>
-            </div>
-          ) : null}
-
-          <div className="phone-movement-warning">
-            <span>{movementTagLabel[getPrimaryMovementTag(selected)]}</span>
-            {selected.threatIcons[0] && <ThreatIconBadge icon={selected.threatIcons[0]} />}
-            <p>{buildStrategicWarning(selected)}</p>
-          </div>
-
-          <GameButton
-            type="button"
-            tone="move"
-            className="phone-button phone-button-primary phone-movement-confirm"
-            disabled={Boolean(selected.disabledReason)}
-            disabledReason={selected.disabledReason}
-            onClick={() =>
-              onIntent({
-                type: "MOVE_REQUESTED",
-                seatId,
-                toSectorId: selected.sectorId
-              })
-            }
-          >
-            Confirm Move
-          </GameButton>
-              </>
-            );
-          })()}
-        </article>
+        <MovementDestinationDetail
+          planner={planner}
+          selected={selected}
+          seatId={seatId}
+          onBack={() => setSelectedSectorId(null)}
+          onIntent={onIntent}
+        />
       ) : (
-        <p className="phone-sheet-action-copy">Tap a tile to inspect. Confirm destination when ready.</p>
+        <MovementDestinationList planner={planner} onSelected={setSelectedSectorId} />
       )}
     </section>
+  );
+}
+
+function MovementSummaryHeader({ planner }: { planner: PublicMovementPlannerState }): ReactElement {
+  return (
+    <div className="phone-movement-summary" aria-label="Movement summary" data-testid="movement-summary">
+      <span className="sr-only">Move {planner.movementValue}</span>
+      <div>
+        <span>Move Value</span>
+        <strong>{planner.movementValue}</strong>
+      </div>
+      <div>
+        <span>Current Sector</span>
+        <strong>{planner.currentSectorName}</strong>
+      </div>
+      <div>
+        <span>Legal Destinations</span>
+        <strong>{planner.destinations.length}</strong>
+      </div>
+    </div>
+  );
+}
+
+function MovementEmptyState({
+  title,
+  text,
+  detail
+}: {
+  title: string;
+  text: string;
+  detail?: string;
+}): ReactElement {
+  return (
+    <div className="phone-movement-empty" role="status">
+      <strong>{title}</strong>
+      <p>{text}</p>
+      {detail ? <small>{detail}</small> : null}
+    </div>
+  );
+}
+
+function MovementDestinationList({
+  planner,
+  onSelected
+}: {
+  planner: PublicMovementPlannerState;
+  onSelected: (sectorId: string) => void;
+}): ReactElement {
+  return (
+    <div className="phone-movement-list-view" data-testid="movement-list-view">
+      <MovementSummaryHeader planner={planner} />
+      <div className="phone-movement-list-heading">
+        <span>Legal destinations</span>
+        <small>{planner.destinations.length} route{planner.destinations.length === 1 ? "" : "s"}</small>
+      </div>
+      {planner.destinations.length === 0 ? (
+        <MovementEmptyState
+          title="No legal destinations"
+          text="There are no legal destinations from your current sector."
+          detail="This can happen when no exact route matches the movement roll or a scenario effect seals the route."
+        />
+      ) : (
+        <div className="phone-movement-destination-list" role="list" aria-label="Legal destinations">
+          {planner.destinations.map((destination) => (
+            <MovementDestinationRow
+              key={destination.sectorId}
+              destination={destination}
+              planner={planner}
+              onSelected={onSelected}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function MovementDestinationRow({
+  destination,
+  planner,
+  onSelected
+}: {
+  destination: PublicMoveDestination;
+  planner: PublicMovementPlannerState;
+  onSelected: (sectorId: string) => void;
+}): ReactElement {
+  const primaryTag = getPrimaryMovementTag(destination);
+  const isLocked = Boolean(destination.disabledReason);
+  const routePreview = buildRoutePreviewCopy(destination, planner.movementValue, planner.currentSectorName);
+  const tagLabels = getMovementTagLabels(destination, routePreview.tagLabels);
+
+  return (
+    <article className={`phone-movement-row${isLocked ? " phone-movement-row-disabled" : ""}`} role="listitem" data-testid="movement-destination-row">
+      <GameButton
+        type="button"
+        tone={primaryTag === "danger" || primaryTag === "locked" ? "battle" : primaryTag === "shop" ? "shop" : "move"}
+        contentMode="custom"
+        className="phone-movement-row-button"
+        onClick={() => onSelected(destination.sectorId)}
+      >
+        <span className="sr-only">{movementTagLabel[primaryTag]}</span>
+        <span className="phone-movement-row-main">
+          <strong>{destination.name}</strong>
+          <small>{destination.distance} step{destination.distance === 1 ? "" : "s"}</small>
+        </span>
+        <span className="phone-movement-row-tags" aria-label={`${destination.name} route tags`}>
+          {tagLabels.map((tag) => (
+            <em key={tag}>{tag}</em>
+          ))}
+        </span>
+        <span className="phone-movement-row-route" data-testid="movement-route-preview">{getRoutePreviewLine(destination)}</span>
+        {destination.disabledReason ? (
+          <span className="phone-movement-disabled-reason">{destination.disabledReason}</span>
+        ) : null}
+      </GameButton>
+    </article>
+  );
+}
+
+function MovementRouteSteps({
+  destination,
+  currentSectorId
+}: {
+  destination: PublicMoveDestination;
+  currentSectorId: string;
+}): ReactElement {
+  const routeNames = getRouteNames(destination);
+
+  return (
+    <ol className="phone-movement-route-steps" aria-label="Route steps" data-testid="movement-route-steps">
+      {routeNames.map((routeName, index) => {
+        const sectorId = destination.route[index];
+        const isCurrent = sectorId === currentSectorId || index === 0;
+        const isDestination = index === routeNames.length - 1;
+
+        return (
+          <li key={`${sectorId ?? routeName}-${index}`}>
+            <span>{index + 1}</span>
+            <div>
+              <strong>{routeName}</strong>
+              {isCurrent ? <small>Current Sector</small> : null}
+              {isDestination ? <small>Destination</small> : null}
+            </div>
+          </li>
+        );
+      })}
+    </ol>
+  );
+}
+
+function MovementDestinationDetail({
+  planner,
+  selected,
+  seatId,
+  onBack,
+  onIntent
+}: {
+  planner: PublicMovementPlannerState;
+  selected: PublicMoveDestination;
+  seatId: string;
+  onBack: () => void;
+  onIntent: (intent: ClientIntent) => void;
+}): ReactElement {
+  const routePreview = buildRoutePreviewCopy(selected, planner.movementValue, planner.currentSectorName, true);
+  const tagLabels = getMovementTagLabels(selected, routePreview.tagLabels);
+  const routeUnavailable = Boolean(selected.disabledReason);
+
+  return (
+    <article className="phone-movement-detail" aria-label={`${selected.name} movement detail`} data-testid="movement-detail-view">
+      <div className="phone-movement-detail-body">
+        <div className="phone-movement-detail-back-row">
+          <GameButton type="button" tone="secondary" className="phone-button phone-button-secondary" onClick={onBack}>
+            Back
+          </GameButton>
+        </div>
+
+        <header className="phone-movement-detail-hero">
+          <span>Destination</span>
+          <h3>{selected.name}</h3>
+          <strong>{selected.distance} step{selected.distance === 1 ? "" : "s"}</strong>
+          <div className="phone-movement-row-tags">
+            {tagLabels.map((tag) => (
+              <em key={tag}>{tag}</em>
+            ))}
+          </div>
+        </header>
+
+        <div className="phone-movement-intel-grid">
+          <span>Why legal</span>
+          <strong>{routePreview.exactText}</strong>
+          <span>Icons</span>
+          <strong className="phone-movement-inline-icons">
+            {selected.threatIcons.length > 0
+              ? selected.threatIcons.map((icon, index) => (
+                  <span key={`${icon}-${index}`} className="phone-movement-inline-icon-wrap">
+                    <span className="sr-only">{formatThreatIcon(icon)}</span>
+                    <ThreatIconBadge icon={icon} />
+                  </span>
+                ))
+              : "None"}
+          </strong>
+          <span>Status</span>
+          <strong>{routeUnavailable ? "Route unavailable" : `${routePreview.statusLabel}: ${routePreview.statusReason}`}</strong>
+        </div>
+
+        <section className="phone-movement-route-section" aria-label="Route review">
+          <span>Route</span>
+          <MovementRouteSteps destination={selected} currentSectorId={planner.currentSectorId} />
+        </section>
+
+        <section className="phone-movement-detail-section">
+          <span>Sector effects</span>
+          <p>{selected.ruleText || "None detected."}</p>
+        </section>
+
+        {selected.loreText || routePreview.riskText || routePreview.rewardText || selected.shop ? (
+          <section className="phone-movement-detail-section">
+            <span>Intel</span>
+            {selected.loreText ? <p>{selected.loreText}</p> : null}
+            {routePreview.riskText ? <p>{routePreview.riskText}</p> : null}
+            {routePreview.rewardText ? <p>{routePreview.rewardText}</p> : null}
+            {selected.shop ? <p>{selected.shop.servicesPreview.join(" / ")}</p> : null}
+          </section>
+        ) : null}
+
+        <section className="phone-movement-threats">
+          <span>Current blockers</span>
+          {selected.faceUpThreats.length > 0 ? (
+            selected.faceUpThreats.map((threat) => (
+              <div key={threat.instanceId} className="phone-movement-threat-row">
+                <strong>{threat.name}</strong>
+                <small>
+                  {threat.deck ? `${formatThreatIcon(threat.deck)} ` : ""}
+                  {threat.type}
+                  {threat.challenge ? (
+                    <>
+                      {" | "}
+                      <ChallengeBadge stat={threat.challenge.stat} value={threat.challenge.value} size="compact" />
+                    </>
+                  ) : ""}
+                </small>
+              </div>
+            ))
+          ) : (
+            <p>No face-up blockers. Hidden deck cards remain unknown.</p>
+          )}
+        </section>
+
+        {selected.occupants.length > 0 ? (
+          <section className="phone-movement-occupants">
+            <span>Occupants</span>
+            {selected.occupants.map((occupant) => (
+              <p key={occupant.playerId}>
+                {occupant.name}: {occupant.characterName}
+              </p>
+            ))}
+          </section>
+        ) : null}
+
+        {selected.scenarioMarkers && selected.scenarioMarkers.length > 0 ? (
+          <section className="phone-movement-markers">
+            <span>Scenario markers</span>
+            <p>{selected.scenarioMarkers.join(", ")}</p>
+          </section>
+        ) : null}
+
+        <div className="phone-movement-warning">
+          <span>{movementTagLabel[getPrimaryMovementTag(selected)]}</span>
+          {selected.threatIcons[0] ? <ThreatIconBadge icon={selected.threatIcons[0]} /> : null}
+          <p>{buildStrategicWarning(selected)}</p>
+        </div>
+      </div>
+
+      <footer className="phone-movement-confirm-footer" data-testid="movement-confirm-footer">
+        <GameButton
+          type="button"
+          tone="move"
+          className="phone-button phone-button-primary phone-movement-confirm"
+          disabled={routeUnavailable}
+          disabledReason={selected.disabledReason}
+          onClick={() =>
+            onIntent({
+              type: "MOVE_REQUESTED",
+              seatId,
+              toSectorId: selected.sectorId
+            })
+          }
+        >
+          CONFIRM MOVE
+        </GameButton>
+        <p>{routeUnavailable ? "This route is blocked by a scenario effect or sealed sector." : "This will end your movement."}</p>
+      </footer>
+    </article>
   );
 }
 
@@ -1527,7 +1649,7 @@ export function PhoneActionPanel({
         {resolutionPanel}
         {battleAssistPanel}
         <p className="phone-sheet-action-copy">Trophies: {self.character.trophies}</p>
-        <p className="phone-sheet-action-copy">Waiting for another seat to finish its turn.</p>
+        <p className="phone-sheet-action-copy">Waiting for another seat. You will be able to move when it's your turn.</p>
       </section>
     );
   }
@@ -2003,10 +2125,7 @@ export function PhoneActionPanel({
               <strong>{sector?.name ?? self.sectorId}</strong>
             </div>
             <MovementPlanner planner={movementPlanner} seatId={self.seatId} onIntent={onIntent} />
-            {!movementPlanner?.active && (
-              <ActionSections sections={[{ key: "move", title: "Move", detail: sector?.name, actions: moveActions, defaultOpen: true }]} />
-            )}
-            {!hasMoveContent && (
+            {!hasMoveContent && !movementPlanner?.active && (
               <EmptyTurnTab title="No movement choice" text="Movement is not available in this step. Resolve the current action or wait for the table." />
             )}
           </>

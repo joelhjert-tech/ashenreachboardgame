@@ -278,15 +278,23 @@ describe("PhoneActionPanel", () => {
     expect(screen.getByTestId("phone-useful-now")).toHaveTextContent(/movement roll 1/i);
     expect(screen.getByTestId("movement-planner")).toBeInTheDocument();
     expect(screen.getByText(/move 1/i)).toBeInTheDocument();
+    expect(screen.getByTestId("movement-summary")).toHaveTextContent(/move value/i);
+    expect(screen.getByTestId("movement-summary")).toHaveTextContent(/pilgrim lock/i);
+    expect(screen.getByTestId("movement-summary")).toHaveTextContent(/legal destinations/i);
+    expect(screen.getAllByTestId("movement-destination-row")).toHaveLength(1);
     expect(screen.getAllByText(/anchor market/i).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/legal: exactly 1 step from pilgrim lock/i).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/reward: anchor market services are available/i).length).toBeGreaterThan(0);
+    expect(screen.getByTestId("movement-route-preview")).toHaveTextContent(/pilgrim lock -> anchor market/i);
+    expect(screen.queryByText(/legal: exactly 1 step from pilgrim lock/i)).not.toBeInTheDocument();
     expect(screen.queryByText("Icons")).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: /anchor market/i }));
 
     await waitFor(() => expect(screen.getByText("Icons")).toBeInTheDocument());
     expect(screen.getByText("Icons")).toBeInTheDocument();
+    expect(screen.getAllByText(/legal: exactly 1 step from pilgrim lock/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/reward: anchor market services are available/i).length).toBeGreaterThan(0);
+    expect(screen.getByTestId("movement-route-steps")).toHaveTextContent(/pilgrim lock/i);
+    expect(screen.getByTestId("movement-confirm-footer")).toHaveTextContent(/this will end your movement/i);
     expect(screen.getAllByText(/yellow guile/i).length).toBeGreaterThan(0);
     expect(screen.getByText(/buy gear \/ sell gear/i)).toBeInTheDocument();
     expect(screen.queryByText(/choir bulwark/i)).not.toBeInTheDocument();
@@ -356,6 +364,74 @@ describe("PhoneActionPanel", () => {
       seatId: "seat-1",
       toSectorId: "ashwake-crossing"
     });
+  });
+
+  it("keeps long movement rows readable and puts confirm in the detail footer", () => {
+    render(
+      <PhoneActionPanel
+        characters={characters}
+        onIntent={vi.fn()}
+        patch={createPatch({
+          phase: "navigation",
+          encounter: null,
+          movementPlanner: {
+            active: true,
+            movementValue: 6,
+            currentSectorId: "ashwake-crossing",
+            currentSectorName: "Ashwalk Bridge",
+            destinations: [
+              {
+                sectorId: "pilgrim-lock-gate",
+                name: "Weathered Pilgrim Lock Gate With a Very Long Signal Name",
+                ring: "outer",
+                distance: 6,
+                route: [
+                  "ashwake-crossing",
+                  "votive-engine-room",
+                  "deadwater-marsh",
+                  "colony-outskirts",
+                  "broken-census-hall",
+                  "pilgrim-lock-gate"
+                ],
+                routeNames: [
+                  "Ashwalk Bridge",
+                  "Votive Engine Room",
+                  "Deadwater Marsh",
+                  "Colony Outskirts",
+                  "Broken Census Hall",
+                  "Weathered Pilgrim Lock Gate With a Very Long Signal Name"
+                ],
+                tags: ["shop", "objective"],
+                threatIcons: [],
+                ruleText: "If clear, open the Pilgrim trade lock.",
+                loreText: "A fortified lock gate controlling access to the trade route.",
+                shop: {
+                  shopId: "pilgrim-lock-market",
+                  shopName: "Pilgrim Lock Gate",
+                  status: "open",
+                  servicesPreview: ["Buy Gear", "Repair", "Trade"]
+                },
+                faceUpThreats: [],
+                occupants: [],
+                strategicTags: ["reward", "shop", "safe"]
+              }
+            ]
+          }
+        })}
+      />
+    );
+
+    const row = screen.getByTestId("movement-destination-row");
+    expect(row).toHaveTextContent(/weathered pilgrim lock gate/i);
+    expect(screen.getByTestId("movement-route-preview")).toHaveClass("phone-movement-row-route");
+    expect(screen.getByTestId("movement-route-preview")).toHaveTextContent(/ashwalk bridge -> votive engine room/i);
+
+    fireEvent.click(screen.getByRole("button", { name: /weathered pilgrim lock gate/i }));
+
+    expect(screen.queryByTestId("movement-list-view")).not.toBeInTheDocument();
+    expect(screen.getByTestId("movement-route-steps")).toHaveTextContent(/broken census hall/i);
+    expect(screen.getByTestId("movement-confirm-footer")).toContainElement(screen.getByRole("button", { name: /confirm move/i }));
+    expect(screen.getByTestId("movement-confirm-footer")).toHaveTextContent(/this will end your movement/i);
   });
 
   it("shows disabled gated destinations and prevents confirming them", async () => {
@@ -837,8 +913,26 @@ describe("PhoneActionPanel", () => {
 
     expect(screen.getByTestId("phone-current-prompt")).toHaveTextContent(/no legal destination/i);
     expect(screen.getByTestId("phone-current-prompt")).toHaveTextContent(/you rolled 1/i);
-    expect(screen.getByText(/no legal destinations/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/no legal destinations/i).length).toBeGreaterThan(0);
     expect(screen.queryByRole("button", { name: /confirm move/i })).not.toBeInTheDocument();
+  });
+
+  it("renders a no movement roll state without direct neighbor move buttons", () => {
+    render(
+      <PhoneActionPanel
+        characters={characters}
+        onIntent={vi.fn()}
+        patch={createPatch({
+          phase: "navigation",
+          encounter: null,
+          movementPlanner: null
+        })}
+      />
+    );
+
+    expect(screen.getByTestId("movement-planner")).toHaveTextContent(/no movement roll/i);
+    expect(screen.getByText(/roll movement to see your legal destinations/i)).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /glassmere-spindle/i })).not.toBeInTheDocument();
   });
 
   it("surfaces authored contract objective labels on accept and complete actions", () => {
