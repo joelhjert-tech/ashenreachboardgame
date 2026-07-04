@@ -200,7 +200,7 @@ describe("PhoneInventoryPanel", () => {
     expect(screen.getByText(/no wounds to heal/i)).toBeInTheDocument();
   });
 
-  it("marks oversized inventories and dense categories as scrollable", () => {
+  it("marks oversized inventories without creating nested category scrollers", () => {
     const manyWeapons = Array.from({ length: 7 }, (_, index) => ({
       ...combatWeapon,
       id: `black-route-fuse-${index}`,
@@ -228,8 +228,18 @@ describe("PhoneInventoryPanel", () => {
 
     expect(inventory).toHaveClass("phone-inventory-panel-overflow");
     expect(inventory).toHaveAttribute("data-item-count", "12");
-    expect(weaponsGroup?.querySelector(".phone-inventory-card-list")).toHaveClass("phone-inventory-card-list-scroll");
+    expect(weaponsGroup?.querySelector(".phone-inventory-card-list")).not.toHaveClass("phone-inventory-card-list-scroll");
     expect(weaponsCount).toBeInTheDocument();
+  });
+
+  it("makes usable, passive, and inactive item state explicit", () => {
+    render(<PhoneInventoryPanel patch={createPatch()} onIntent={vi.fn()} />);
+
+    expect(screen.getByLabelText(/black route fuse: usable now/i)).toHaveAttribute("data-inventory-state", "active");
+    expect(screen.getByLabelText(/black route fuse: usable now/i)).toHaveTextContent(/active in this timing window/i);
+    expect(screen.getByRole("button", { name: /use black route fuse/i })).toHaveTextContent(/use now/i);
+    expect(screen.getByLabelText(/coffin rig: passive/i)).toHaveAttribute("data-inventory-state", "applied");
+    expect(screen.getByLabelText(/cinder suture kit: locked/i)).toHaveAttribute("data-inventory-state", "inactive");
   });
 
   it("sends a gear-use intent from a usable combat card", () => {

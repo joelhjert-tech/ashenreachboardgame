@@ -80,17 +80,24 @@ function InventoryCard({
 }): ReactElement {
   const useIntent = toUseIntent(card, seatId);
   const statusLabel = getStatusLabel(card.status);
+  const statusReason = card.canUseNow ? "Active in this timing window." : card.statusReason;
+  const stateLabel = card.canUseNow ? "active" : card.status === "Passive" ? "applied" : "inactive";
 
   return (
-    <article className={`phone-inventory-card phone-inventory-card-${card.status.toLowerCase().replace(/[^a-z]+/g, "-")}`}>
+    <article
+      className={`phone-inventory-card phone-inventory-card-${card.status.toLowerCase().replace(/[^a-z]+/g, "-")}`}
+      data-inventory-state={stateLabel}
+      aria-label={`${card.name}: ${card.status}. ${statusReason}`}
+    >
       <InventoryThumbnail card={card} />
       <div className="phone-inventory-card-copy">
         <div className="phone-inventory-card-heading">
           <h3>{card.name}</h3>
-          <span>{statusLabel}</span>
+          <span className="phone-inventory-card-status">{statusLabel}</span>
         </div>
         <small>{card.group}</small>
         <p>{card.effectText}</p>
+        <small className="phone-inventory-card-status-reason">{statusReason}</small>
         <div className="phone-inventory-card-meta">
           <span>{card.timingText}</span>
           {card.statBonus && (
@@ -100,7 +107,6 @@ function InventoryCard({
           )}
           {card.charges !== null && card.charges !== undefined && <span>{card.charges} charge{card.charges === 1 ? "" : "s"}</span>}
         </div>
-        {!card.canUseNow && <small>{card.statusReason}</small>}
       </div>
       {card.canUseNow && useIntent && (
         <GameButton
@@ -113,7 +119,7 @@ function InventoryCard({
             onUse?.();
           }}
         >
-          Use
+          Use now
         </GameButton>
       )}
     </article>
@@ -202,7 +208,7 @@ export function PhoneInventoryPanel({
                 {group.items.length}
               </span>
             </div>
-            <div className={`phone-inventory-card-list${group.items.length > 3 ? " phone-inventory-card-list-scroll" : ""}`}>
+            <div className="phone-inventory-card-list">
               {group.items.map((card) => (
                 <InventoryCard key={`${card.source}-${card.id}`} card={card} seatId={self.seatId} onIntent={onIntent} onUse={onUse} />
               ))}
