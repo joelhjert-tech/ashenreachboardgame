@@ -363,6 +363,8 @@ export interface StatRaisedAction extends BaseAction {
   type: "STAT_RAISED";
   stat: Stat;
   cost: number;
+  previousValue: number;
+  nextValue: number;
 }
 
 export interface RoundCompletedAction extends BaseAction {

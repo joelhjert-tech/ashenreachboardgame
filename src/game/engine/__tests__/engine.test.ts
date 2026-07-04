@@ -10,6 +10,7 @@ import type { AnomalyCard, ArtifactCard, EscalationCard, ThreatCard } from "../.
 import type { ClientIntent, GameAction } from "../actions.js";
 import type { GameState } from "../../schema/session.schema.js";
 import { reduceGameState } from "../reducer.js";
+import { getEquippedGearBonus } from "../gear.js";
 
 function createGear(): Map<string, GearItem> {
   return new Map<string, GearItem>([
@@ -4524,7 +4525,7 @@ describe("trophy progression", () => {
     ]);
   });
 
-  it("spends trophies to raise a stat, feeds escalation, and consumes the turn", () => {
+  it("spends trophies equal to the next stat value to upgrade a base stat", () => {
     const server = new GameRoomServer(
       createState({
         phase: "action",
@@ -4578,13 +4579,28 @@ describe("trophy progression", () => {
 
     const player = server.getState().players.find((entry) => entry.seatId === "seat-1");
     expect(player?.character.stats.command).toBe(4);
+    expect(player?.character.statUpgrades?.command).toBe(1);
     expect(player?.character.trophies).toBe(0);
     expect(player?.character.trophyPile).toEqual([]);
-    expect(server.getState().escalationLevel).toBe(1);
-    expect(server.getState().activeSeatIndex).toBe(1);
+    expect(server.getState().escalationLevel).toBe(0);
+    expect(server.getState().phase).toBe("broadcast");
+    expect(server.getState().activeSeatIndex).toBe(0);
+    expect(server.getState().lastOutcomeSummary?.summary).toMatch(/upgraded command to 4/i);
+
+    const tvProjection = createTvProjection(server.getState()) as {
+      outcomeSummary: { summary: string } | null;
+      publicResultDeltas: Array<{ type: string; sign: string; value?: number | string; publicText: string }>;
+    };
+    expect(tvProjection.outcomeSummary?.summary).toMatch(/upgraded command to 4/i);
+    expect(tvProjection.publicResultDeltas).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ type: "trophy", sign: "loss", value: 4 }),
+        expect.objectContaining({ type: "statUpgrade", sign: "gain", value: 1 })
+      ])
+    );
   });
 
-  it("rejects raise-stat requests when underfunded or already at the cap", () => {
+  it("rejects stat upgrades when underfunded, capped, invalid, unsafe, or qa-only", () => {
     const underfundedServer = new GameRoomServer(
       createState({
         phase: "action",
@@ -4623,7 +4639,7 @@ describe("trophy progression", () => {
 
     expect(
       underfundedResponses.some(
-        (message) => message.type === "INTENT_REJECTED" && String(message.reason).includes("Not enough trophies")
+        (message) => message.type === "INTENT_REJECTED" && String(message.reason).includes("Need 1 more Trophy")
       )
     ).toBe(true);
 
@@ -4639,10 +4655,10 @@ describe("trophy progression", () => {
                 ...entry,
                 character: {
                   ...entry.character,
-                  trophies: 4,
+                  trophies: 6,
                   stats: {
                     ...entry.character.stats,
-                    command: 9
+                    command: 6
                   }
                 }
               }
@@ -4670,6 +4686,103 @@ describe("trophy progression", () => {
     expect(
       cappedResponses.some(
         (message) => message.type === "INTENT_REJECTED" && String(message.reason).includes("already at the maximum")
+      )
+    ).toBe(true);
+
+    const unsafeServer = new GameRoomServer(
+      createState({
+        phase: "navigation",
+        currentEncounter: null,
+        pendingEnemyRoll: null,
+        pendingEffect: null,
+        players: createState().players.map((entry) =>
+          entry.seatId === "seat-1"
+            ? {
+                ...entry,
+                character: {
+                  ...entry.character,
+                  trophies: 4
+                }
+              }
+            : entry
+        )
+      }),
+      [],
+      createSequenceRandomSource([5, 5]),
+      createThreats(),
+      createCharacters(),
+      createGear(),
+      createContracts()
+    );
+    const unsafeResponses: Array<Record<string, unknown>> = [];
+    unsafeServer.handleIntent(
+      createCapturingClient("seat-1", unsafeResponses),
+      {
+        type: "RAISE_STAT_REQUESTED",
+        seatId: "seat-1",
+        stat: "command"
+      }
+    );
+    expect(
+      unsafeResponses.some(
+        (message) => message.type === "INTENT_REJECTED" && String(message.reason).includes("safe action or broadcast")
+      )
+    ).toBe(true);
+
+    const invalidResponses: Array<Record<string, unknown>> = [];
+    underfundedServer.handleIntent(
+      createCapturingClient("seat-1", invalidResponses),
+      {
+        type: "RAISE_STAT_REQUESTED",
+        seatId: "seat-1",
+        stat: "salvage"
+      } as never
+    );
+    expect(
+      invalidResponses.some(
+        (message) => message.type === "INTENT_REJECTED" && String(message.reason).includes("stat is not allowed")
+      )
+    ).toBe(true);
+
+    const qaServer = new GameRoomServer(
+      createState({
+        phase: "action",
+        currentEncounter: null,
+        pendingEnemyRoll: null,
+        pendingEffect: null,
+        players: createState().players.map((entry) =>
+          entry.seatId === "seat-1"
+            ? {
+                ...entry,
+                character: {
+                  ...entry.character,
+                  id: "char_master_alpha",
+                  qaOnly: true,
+                  trophies: 99
+                }
+              }
+            : entry
+        )
+      }),
+      [],
+      createSequenceRandomSource([5, 5]),
+      createThreats(),
+      createCharacters(),
+      createGear(),
+      createContracts()
+    );
+    const qaResponses: Array<Record<string, unknown>> = [];
+    qaServer.handleIntent(
+      createCapturingClient("seat-1", qaResponses),
+      {
+        type: "RAISE_STAT_REQUESTED",
+        seatId: "seat-1",
+        stat: "command"
+      }
+    );
+    expect(
+      qaResponses.some(
+        (message) => message.type === "INTENT_REJECTED" && String(message.reason).includes("QA operatives")
       )
     ).toBe(true);
   });
@@ -4723,7 +4836,7 @@ describe("trophy progression", () => {
     expect(player?.character.scars).toEqual(["scar-ember"]);
   });
 
-  it("uses a raised stat on a later check outcome", () => {
+  it("uses an upgraded base stat and keeps equipped gear modifiers separate on a later check outcome", () => {
     const boostedThreats = new Map(createThreats());
     boostedThreats.set("tight-band", {
       id: "tight-band",
@@ -4777,6 +4890,8 @@ describe("trophy progression", () => {
                   character: {
                     ...cloneCharacter(createCharacters().get("void-marshal")),
                     currentSpaceId: "sector-a",
+                    heldGear: withBoost ? [createGear().get("marshal-seal")!] : [],
+                    equippedGear: withBoost ? { weapon: null, armor: null, utility: "marshal-seal" } : { weapon: null, armor: null, utility: null },
                     trophies: withBoost ? 4 : 0
                   }
                 }
@@ -4832,6 +4947,11 @@ describe("trophy progression", () => {
       stat: "command"
     });
     runIntent(boostedServer, {
+      type: "PHASE_ADVANCED",
+      seatId: "seat-1",
+      toPhase: "start"
+    });
+    runIntent(boostedServer, {
       type: "MOVE_REQUESTED",
       seatId: "seat-2",
       toSectorId: "sector-b"
@@ -4852,7 +4972,10 @@ describe("trophy progression", () => {
       stat: "command"
     });
 
-    expect(boostedServer.getState().players.find((entry) => entry.seatId === "seat-1")?.character.stats.command).toBe(4);
+    const boostedPlayer = boostedServer.getState().players.find((entry) => entry.seatId === "seat-1");
+    expect(boostedPlayer?.character.stats.command).toBe(4);
+    expect(boostedPlayer?.character.equippedGear.utility).toBe("marshal-seal");
+    expect(boostedPlayer ? getEquippedGearBonus(boostedPlayer.character, "command") : null).toBe(1);
     expect(boostedServer.getState().players.find((entry) => entry.seatId === "seat-1")?.character.heat).toBe(0);
   });
 });

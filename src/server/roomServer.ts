@@ -103,6 +103,12 @@ import {
 } from "../game/rules/shopAvailability.js";
 import { resolveSpaceText } from "../game/rules/tileTextResolver.js";
 import { applyStartingLoadout } from "../game/rules/startingLoadout.js";
+import {
+  getStatUpgradeCost,
+  getStatUpgradeDisabledReason,
+  isUpgradeableStat,
+  NORMAL_STAT_UPGRADE_CAP
+} from "../game/rules/statUpgrades.js";
 import type {
   AcceptContractAction,
   CheckRequestedAction,
@@ -170,9 +176,7 @@ export const ESCALATION_FEEDERS = {
   trophyDiscarded: 1
 } as const;
 
-const TROPHY_COST_PER_RANK = 4;
-const MAX_STAT_RANK = 9;
-const RAISE_STAT_FEEDS_ESCALATION = true;
+const RAISE_STAT_FEEDS_ESCALATION = false;
 const RAISE_STAT_ESCALATION_REASON = "forged in fire";
 const ENEMY_ROLL_TIMEOUT_MS = 30_000;
 const RESOLUTION_AUTO_CONTINUE_MS = process.env.VITEST ? 1 : 10000;
@@ -535,16 +539,7 @@ export class GameRoomServer {
 
       if (intent.type === "RAISE_STAT_REQUESTED") {
         this.resolveRaiseStatIntent(intent);
-        const shouldCompleteTurn =
-          this.state.status === "active" && this.state.phase === "broadcast" && !this.state.activeResolution;
-        const completingSeatId = this.state.turnOrder[this.state.activeSeatIndex] ?? client.seatId;
-
         this.broadcastPatch();
-
-        if (shouldCompleteTurn && completingSeatId) {
-          this.completeBroadcastTurn(completingSeatId);
-        }
-
         return;
       }
 
@@ -5089,18 +5084,20 @@ export class GameRoomServer {
       return;
     }
 
-    this.applyAction({
-      type: "PHASE_ADVANCED",
-      seatId: intent.seatId,
-      toPhase: "resolution",
-      createdAt: new Date().toISOString()
-    });
+    if (this.state.phase === "action") {
+      this.applyAction({
+        type: "PHASE_ADVANCED",
+        seatId: intent.seatId,
+        toPhase: "resolution",
+        createdAt: new Date().toISOString()
+      });
 
-    this.runAutomaticPhases(intent.seatId);
+      this.runAutomaticPhases(intent.seatId);
+    }
   }
 
-  private getRaiseStatCost(): number {
-    return TROPHY_COST_PER_RANK;
+  private getRaiseStatCost(currentValue: number): number {
+    return getStatUpgradeCost(currentValue);
   }
 
   resolveRaiseStatIntent(intent: Extract<ClientIntent, { type: "RAISE_STAT_REQUESTED" }>): void {
@@ -5110,8 +5107,8 @@ export class GameRoomServer {
       throw new Error(`Missing player for seat ${intent.seatId}`);
     }
 
-    if (this.state.status !== "active" || this.state.phase !== "action") {
-      throw new Error("Stat raises are only available during an active action phase");
+    if (this.state.status !== "active" || (this.state.phase !== "action" && this.state.phase !== "broadcast")) {
+      throw new Error("Stat upgrades are only available during a safe action or broadcast window");
     }
 
     if (this.state.turnOrder[this.state.activeSeatIndex] !== intent.seatId) {
@@ -5122,18 +5119,26 @@ export class GameRoomServer {
       throw new Error("Recalled operatives cannot raise stats");
     }
 
-    if (this.state.pendingEnemyRoll || this.state.currentEncounter || this.state.pendingEffect) {
+    if (this.state.pendingEnemyRoll || this.state.currentEncounter || this.state.pendingEffect || this.state.activeResolution) {
       throw new Error("Resolve the current threat before raising a stat");
     }
 
-    if (player.character.stats[intent.stat] >= MAX_STAT_RANK) {
-      throw new Error(`${intent.stat} is already at the maximum rank`);
+    if (!isUpgradeableStat(intent.stat)) {
+      throw new Error("Invalid stat: stat is not allowed for upgrades");
     }
 
-    const cost = this.getRaiseStatCost();
+    const currentValue = player.character.stats[intent.stat];
+    const cost = this.getRaiseStatCost(currentValue);
+    const disabledReason = getStatUpgradeDisabledReason({
+      stat: intent.stat,
+      currentValue,
+      trophies: player.character.trophies,
+      qaOnly: player.character.qaOnly === true || player.character.id === MASTER_ALPHA_ID,
+      cap: NORMAL_STAT_UPGRADE_CAP
+    });
 
-    if (player.character.trophies < cost) {
-      throw new Error(`Not enough trophies to raise ${intent.stat}`);
+    if (disabledReason) {
+      throw new Error(disabledReason);
     }
 
     this.applyAction({
@@ -5141,6 +5146,8 @@ export class GameRoomServer {
       seatId: intent.seatId,
       stat: intent.stat,
       cost,
+      previousValue: currentValue,
+      nextValue: currentValue + 1,
       createdAt: new Date().toISOString()
     } satisfies StatRaisedAction);
 
@@ -6087,6 +6094,7 @@ type ResultDelta = {
     | "scarGained"
     | "recallTriggered"
     | "fateSpent"
+    | "statUpgrade"
     | "modifierApplied";
   label: string;
   value?: number | string;
@@ -7193,6 +7201,50 @@ function getEventLogResultDeltas(state: GameState, ownerSeatId?: string | null):
       }));
     }
 
+    if (type === "STAT_RAISED") {
+      const stat = typeof entry.stat === "string" && entry.stat in CHALLENGE_LABELS ? entry.stat as Stat : null;
+      const cost = typeof entry.cost === "number" ? entry.cost : 0;
+      const nextValue = typeof entry.nextValue === "number" ? entry.nextValue : null;
+      const statLabel = stat ? CHALLENGE_LABELS[stat] : "Stat";
+      const playerName = seatId
+        ? state.players.find((player) => player.seatId === seatId)?.character.name ?? "An operative"
+        : "An operative";
+
+      if (cost > 0) {
+        deltas.push(createResultDelta({
+          id: `stat-upgrade-trophy-cost:${source}`,
+          type: "trophy",
+          label: "Trophy",
+          value: cost,
+          sign: "loss",
+          targetScope: "personal",
+          targetSeatId: seatId,
+          visibility: "public",
+          source,
+          reason: "Stat upgrade cost",
+          publicText: `${playerName} spent ${cost} Troph${cost === 1 ? "y" : "ies"} on training.`,
+          severity: "loss"
+        }));
+      }
+
+      if (stat) {
+        deltas.push(createResultDelta({
+          id: `stat-upgrade-gain:${source}`,
+          type: "statUpgrade",
+          label: statLabel,
+          value: 1,
+          sign: "gain",
+          targetScope: "personal",
+          targetSeatId: seatId,
+          visibility: "public",
+          source,
+          reason: "Permanent base stat upgrade",
+          publicText: `${playerName} upgraded ${statLabel}${nextValue ? ` to ${nextValue}` : ""}.`,
+          severity: "reward"
+        }));
+      }
+    }
+
     if (type === "ESCALATION_ADVANCED") {
       const amount = typeof entry.amount === "number" ? entry.amount : 0;
       deltas.push(createResultDelta({
@@ -7621,6 +7673,7 @@ export function createTvProjection(state: GameState): Record<string, unknown> {
         status: player.character.status,
         activeContract: player.character.activeContract,
         stats: player.character.stats,
+        statUpgrades: player.character.statUpgrades ?? {},
         trophies: player.character.trophies,
         trophyPile: player.character.trophyPile ?? [],
         salvage: player.character.salvage ?? 0,

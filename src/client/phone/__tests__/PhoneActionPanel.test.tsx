@@ -1939,8 +1939,61 @@ describe("PhoneActionPanel", () => {
     expect(screen.getByTestId("phone-trophy-pile")).toHaveTextContent(/6 available/i);
     expect(screen.getByTestId("phone-trophy-pile")).toHaveTextContent(/cinder-veil stalker/i);
     expect(screen.getByTestId("phone-trophy-pile")).toHaveTextContent(/trophy 6\/6/i);
-    expect(screen.getByTestId("phone-trophy-pile")).toHaveTextContent(/can raise: command, grit, signal, guile, forge/i);
-    expect(screen.getByText(/6 held, 4 per rank/i)).toBeInTheDocument();
+    expect(screen.getByTestId("phone-trophy-pile")).toHaveTextContent(/can upgrade: command 3 -> 4, grit 2 -> 3, signal 1 -> 2, guile 2 -> 3, forge 1 -> 2/i);
+    expect(screen.getByText(/6 trophies held/i)).toBeInTheDocument();
+    expect(screen.getByText(/spend trophies equal to the next stat value/i)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /grit 2 -> 3\s*cost 3 trophies/i })).toBeEnabled();
+  });
+
+  it("shows stat upgrade disabled reasons and upgrade result chips", () => {
+    render(
+      <PhoneActionPanel
+        characters={characters}
+        onIntent={vi.fn()}
+        patch={createPatch({
+          encounter: null,
+          playerResultDeltas: [
+            {
+              id: "upgrade-cost",
+              type: "trophy",
+              label: "Trophy",
+              value: 4,
+              sign: "loss",
+              targetScope: "personal",
+              targetSeatId: "seat-1",
+              visibility: "public",
+              publicText: "Rumi spent 4 Trophies on training.",
+              severity: "loss"
+            },
+            {
+              id: "upgrade-stat",
+              type: "statUpgrade",
+              label: "Grit",
+              value: 1,
+              sign: "gain",
+              targetScope: "personal",
+              targetSeatId: "seat-1",
+              visibility: "public",
+              publicText: "Rumi upgraded Grit to 4.",
+              severity: "reward"
+            }
+          ],
+          self: {
+            ...createPatch().self!,
+            character: {
+              ...createPatch().self!.character,
+              stats: { command: 6, grit: 3, signal: 1, guile: 2, forge: 1 },
+              trophies: 2
+            }
+          }
+        })}
+      />
+    );
+
+    expect(screen.getByRole("button", { name: /command 6\s*command is already at the maximum rank/i })).toBeDisabled();
+    expect(screen.getByRole("button", { name: /grit 3 -> 4\s*need 2 more trophies/i })).toBeDisabled();
+    expect(screen.getByText(/-4 trophy/i)).toBeInTheDocument();
+    expect(screen.getByText(/\+1 grit/i)).toBeInTheDocument();
   });
 
   it("renders scenario and space outcome summaries from activeResolution", () => {

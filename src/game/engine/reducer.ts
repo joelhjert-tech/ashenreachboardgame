@@ -56,6 +56,12 @@ import { getBoardSpace, isScenarioConfrontationSpace } from "../data/boardSpaces
 import { getLegalMovementRoute, getMovementBlockReason } from "../rules/movementPlanner.js";
 import { isBoardSpaceShopCapable, SHOP_FAILURE_REASONS } from "../rules/shopAvailability.js";
 import {
+  getStatUpgradeCost,
+  getStatUpgradeDisabledReason,
+  isUpgradeableStat,
+  NORMAL_STAT_UPGRADE_CAP
+} from "../rules/statUpgrades.js";
+import {
   advanceContractObjectiveProgress,
   getContractObjectiveTarget,
   formatContractObjectiveStatus,
@@ -959,11 +965,11 @@ function canRaiseStat(state: GameState, seatId: string): void {
   ensureSeatTurn(state, seatId);
   ensureSeatCanTakeNormalTurnAction(state, seatId);
 
-  if (state.phase !== "action") {
+  if (state.phase !== "action" && state.phase !== "broadcast") {
     throw new Error(`Cannot raise a stat during phase ${state.phase}`);
   }
 
-  if (state.currentEncounter || state.pendingEnemyRoll || state.pendingEffect) {
+  if (state.currentEncounter || state.pendingEnemyRoll || state.pendingEffect || state.activeResolution) {
     throw new Error("Resolve the current threat before raising a stat");
   }
 }
@@ -1945,6 +1951,33 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
         return reject(state, action, error instanceof Error ? error.message : "Seat cannot raise a stat");
       }
 
+      const player = requirePlayer(state, statRaisedAction.seatId);
+      if (!isUpgradeableStat(statRaisedAction.stat)) {
+        return reject(state, action, "Invalid stat: stat is not allowed for upgrades");
+      }
+
+      const currentValue = player.character.stats[statRaisedAction.stat];
+      const expectedCost = getStatUpgradeCost(currentValue);
+      const disabledReason = getStatUpgradeDisabledReason({
+        stat: statRaisedAction.stat,
+        currentValue,
+        trophies: player.character.trophies,
+        qaOnly: player.character.qaOnly === true || player.character.id === MASTER_ALPHA_ID,
+        cap: NORMAL_STAT_UPGRADE_CAP
+      });
+
+      if (disabledReason) {
+        return reject(state, action, disabledReason);
+      }
+
+      if (statRaisedAction.cost !== expectedCost) {
+        return reject(state, action, `Stat upgrade cost must equal the next stat value (${expectedCost})`);
+      }
+
+      if (statRaisedAction.previousValue !== currentValue || statRaisedAction.nextValue !== currentValue + 1) {
+        return reject(state, action, "Stat upgrade values are stale");
+      }
+
       return succeed({
         ...state,
         sequence: state.sequence + 1,
@@ -1957,6 +1990,10 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
             stats: {
               ...player.character.stats,
               [statRaisedAction.stat]: player.character.stats[statRaisedAction.stat] + 1
+            },
+            statUpgrades: {
+              ...(player.character.statUpgrades ?? {}),
+              [statRaisedAction.stat]: (player.character.statUpgrades?.[statRaisedAction.stat] ?? 0) + 1
             }
           }
         })),
@@ -1978,7 +2015,7 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
           enemyBonus: null,
           enemyTotal: null,
           success: true,
-          summary: `${statRaisedAction.stat} increased by 1 for ${statRaisedAction.cost} trophies.`
+          summary: `${player.character.name} upgraded ${statRaisedAction.stat} to ${statRaisedAction.nextValue}.`
         },
         eventLog: [...state.eventLog, action]
       });

@@ -11,6 +11,13 @@ export const statBlockSchema = z.object(
   >
 );
 
+export const statUpgradeSchema = z.object(
+  Object.fromEntries(statSchema.options.map((stat) => [stat, z.number().int().min(0).optional()])) as Record<
+    z.infer<typeof statSchema>,
+    z.ZodOptional<z.ZodNumber>
+  >
+);
+
 export const abilitySchema = z.object({
   id: z.string().min(1),
   name: z.string().min(1),
@@ -48,6 +55,7 @@ export const characterSchema = z.object({
   currentSpaceId: z.string().min(1),
   status: characterStatusSchema,
   stats: statBlockSchema,
+  statUpgrades: statUpgradeSchema.optional(),
   trophies: z.number().int().min(0),
   trophyPile: z.array(trophyPileEntrySchema).optional(),
   salvage: z.number().int().min(0).optional(),
@@ -67,6 +75,7 @@ export const characterSchema = z.object({
 
 export type Stat = z.infer<typeof statSchema>;
 export type StatBlock = z.infer<typeof statBlockSchema>;
+export type StatUpgrades = z.infer<typeof statUpgradeSchema>;
 export type Ability = z.infer<typeof abilitySchema>;
 export type TrophyPileEntry = z.infer<typeof trophyPileEntrySchema>;
 export type CharacterStatus = z.infer<typeof characterStatusSchema>;

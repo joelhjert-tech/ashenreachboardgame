@@ -22,6 +22,11 @@ import { ResultDeltaRow } from "../shared/ResultDeltaChips.js";
 import { getBoardSpace, isScenarioConfrontationSpace } from "../../game/data/boardSpaces.js";
 import { describeContractObjective, formatContractObjectiveStatus } from "../../game/contracts/objectives.js";
 import {
+  getStatUpgradeCost,
+  getStatUpgradeDisabledReason,
+  NORMAL_STAT_UPGRADE_CAP
+} from "../../game/rules/statUpgrades.js";
+import {
   describeActiveResolutionRoll,
   formatResolutionModifiers,
   resolutionStageLabel
@@ -124,9 +129,6 @@ interface SectorOpportunityItem {
   label: string;
   value: number;
 }
-
-const TROPHY_COST_PER_RANK = 4;
-const MAX_STAT_RANK = 9;
 
 function actionToneToGameButtonTone(tone: ActionButtonDefinition["tone"]): GameButtonTone {
   return tone === "primary" ? "primary" : "secondary";
@@ -763,7 +765,9 @@ function actionResultDeltas(deltas: ResultDelta[] | null | undefined): ResultDel
     "agendaProgress",
     "agendaCompleted",
     "sectorUnlocked",
-    "shopUnlocked"
+    "shopUnlocked",
+    "trophy",
+    "statUpgrade"
   ]);
 
   return (deltas ?? []).filter((delta) => actionTypes.has(delta.type));
@@ -1456,11 +1460,12 @@ function TrophyAdvanceDisclosure({
       onToggle={(event) => setIsOpen(event.currentTarget.open)}
     >
       <summary>
-        <span>Spend trophies</span>
+        <span>Stat upgrade available</span>
         <small>
-          {trophies} held, {TROPHY_COST_PER_RANK} per rank
+          {trophies} Troph{trophies === 1 ? "y" : "ies"} held
         </small>
       </summary>
+      <p className="phone-stat-upgrade-rule">Spend trophies equal to the next stat value. Salvage stays for shops.</p>
       <ActionButtons actions={actions} />
     </details>
   );
@@ -1516,10 +1521,10 @@ function TrophyPileSection({
       </div>
       <p className="phone-trophy-pile-raise">
         {availableStats.length > 0
-          ? `Can raise: ${availableStats.join(", ")}`
-          : trophies >= TROPHY_COST_PER_RANK
+          ? `Can upgrade: ${availableStats.join(", ")}`
+          : trophies > 0
             ? "No eligible stat raise right now."
-            : `Need ${TROPHY_COST_PER_RANK - trophies} more trophy value to raise a stat.`}
+            : "Defeat threats to earn trophies for permanent stat upgrades."}
       </p>
     </section>
   );
@@ -1747,9 +1752,10 @@ export function PhoneActionPanel({
   const shopEncounter =
     patch.phase === "action" && patch.shopEncounter?.activePlayer.playerId === self.seatId ? patch.shopEncounter : null;
   const canRaiseStat =
-    patch.phase === "action" &&
+    (patch.phase === "action" || patch.phase === "broadcast") &&
     !patch.encounter &&
     !patch.pendingEnemyRoll &&
+    !patch.activeResolution &&
     self.character.status === "active";
 
   if (patch.status === "ended") {
@@ -1884,6 +1890,33 @@ export function PhoneActionPanel({
   const contractActions: ActionButtonDefinition[] = [];
   const advanceActions: ActionButtonDefinition[] = [];
   const statRaiseActions: ActionButtonDefinition[] = [];
+  const addStatRaiseActions = () => {
+    (Object.entries(self.character.stats) as Array<[Stat, number]>).forEach(([stat, value]) => {
+      const nextValue = Math.min(value + 1, NORMAL_STAT_UPGRADE_CAP);
+      const cost = getStatUpgradeCost(value);
+      const disabledReason = getStatUpgradeDisabledReason({
+        stat,
+        currentValue: value,
+        trophies: self.character.trophies,
+        qaOnly: self.character.qaOnly === true,
+        cap: NORMAL_STAT_UPGRADE_CAP
+      });
+
+      statRaiseActions.push({
+        key: `raise-${stat}`,
+        label: value >= NORMAL_STAT_UPGRADE_CAP ? `${statLabelById[stat]} ${value}` : `${statLabelById[stat]} ${value} -> ${nextValue}`,
+        detail: disabledReason ?? `Cost ${cost} Troph${cost === 1 ? "y" : "ies"}`,
+        tone: "secondary",
+        disabled: Boolean(disabledReason),
+        onClick: () =>
+          onIntent({
+            type: "RAISE_STAT_REQUESTED",
+            seatId: self.seatId,
+            stat
+          })
+      });
+    });
+  };
 
   if (patch.soloReroll?.available) {
     resolveActions.push({
@@ -2155,25 +2188,7 @@ export function PhoneActionPanel({
     }
 
     if (canRaiseStat) {
-      (Object.entries(self.character.stats) as Array<[Stat, number]>).forEach(([stat, value]) => {
-        const atCap = value >= MAX_STAT_RANK;
-        const canAfford = self.character.trophies >= TROPHY_COST_PER_RANK;
-        const nextValue = Math.min(value + 1, MAX_STAT_RANK);
-
-        statRaiseActions.push({
-          key: `raise-${stat}`,
-          label: statLabelById[stat],
-          detail: atCap ? "At rank cap" : `${value} to ${nextValue}, cost ${TROPHY_COST_PER_RANK}`,
-          tone: "secondary",
-          disabled: atCap || !canAfford,
-          onClick: () =>
-            onIntent({
-              type: "RAISE_STAT_REQUESTED",
-              seatId: self.seatId,
-              stat
-            })
-        });
-      });
+      addStatRaiseActions();
     }
 
     if (isScenarioConfrontation && patch.activeScenario && !patch.encounter) {
@@ -2204,6 +2219,25 @@ export function PhoneActionPanel({
     }
   }
 
+  if (patch.phase === "broadcast") {
+    if (canRaiseStat) {
+      addStatRaiseActions();
+    }
+
+    advanceActions.push({
+      key: "end-turn",
+      label: "End turn",
+      detail: "Pass to the next operative",
+      tone: "primary",
+      onClick: () =>
+        onIntent({
+          type: "PHASE_ADVANCED",
+          seatId: self.seatId,
+          toPhase: "start"
+        })
+    });
+  }
+
   const copy =
     patch.phase === "navigation"
       ? "Inspect public route intel before confirming movement."
@@ -2213,6 +2247,8 @@ export function PhoneActionPanel({
         ? `Resolve ${boardSpace.textBox.title}, then handle gear, contracts, or advancement.`
       : patch.phase === "action"
         ? "Resolve your current action, gear, or contract."
+      : patch.phase === "broadcast"
+        ? "Review the result, upgrade with trophies, or end your turn."
         : "Waiting for the server to resolve the current step.";
   const hasMoveContent = Boolean(movementPlanner?.active && movementPlanner.destinations.length > 0) || moveActions.length > 0;
   const hasBattleContent = Boolean(activeResolution || orphanResolutionOutcome || battleAssist) || threatActions.length > 0;

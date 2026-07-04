@@ -75,6 +75,7 @@ export interface PublicPlayerCharacter {
   status: "active" | "recalled";
   activeContract: { contractId: string; progress: number } | null;
   stats: Record<Stat, number>;
+  statUpgrades?: Partial<Record<Stat, number>>;
   trophies: number;
   trophyPile?: TrophyPileEntry[];
   salvage?: number;
@@ -171,6 +172,7 @@ export interface PrivateCharacter {
   currentSpaceId: string;
   status: "active" | "recalled";
   stats: Record<Stat, number>;
+  statUpgrades?: Partial<Record<Stat, number>>;
   trophies: number;
   trophyPile?: TrophyPileEntry[];
   salvage?: number;
@@ -271,6 +273,7 @@ export type ResultDeltaType =
   | "scarGained"
   | "recallTriggered"
   | "fateSpent"
+  | "statUpgrade"
   | "modifierApplied";
 
 export type ResultDeltaTargetScope = "personal" | "table" | "sector" | "scenario" | "privateAgenda";
