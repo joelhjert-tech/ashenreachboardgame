@@ -234,7 +234,7 @@ function getCurrentStepCopy(
     return `${boardSpace.name} is the active confrontation chamber for ${activeSeatId ?? "the active seat"}. Resolve ${publicPatch.payload.activeScenario?.confrontationTitle ?? "the active scenario confrontation"}.`;
   }
 
-  return `Phase ${toTitleCase(publicPatch.phase)} is live${activeSeatId ? ` for ${activeSeatId}` : ""}. Escalation ${publicPatch.payload.escalationLevel}/${publicPatch.payload.escalationThreshold} with modifier +${publicPatch.payload.escalationModifier}.`;
+  return `Phase ${toTitleCase(publicPatch.phase)} is live${activeSeatId ? ` for ${activeSeatId}` : ""}. Global Escalation ${publicPatch.payload.escalationLevel}/${publicPatch.payload.escalationThreshold} with modifier +${publicPatch.payload.escalationModifier}.`;
 }
 
 function getSpecialAbilitySummary(player: PublicPlayer | null, characterCatalog: CharacterCatalogEntry[]): string {
@@ -925,7 +925,7 @@ function SessionReadout({
           <strong>{activeSeatId ?? "Standby"}</strong>
         </div>
         <div className="tv-session-stat">
-          <span>Escalation</span>
+          <span>Global Escalation</span>
           <strong>
             {(publicPatch?.payload.escalationLevel ?? 0)}/{publicPatch?.payload.escalationThreshold ?? 6} | +{publicPatch?.payload.escalationModifier ?? 0}
           </strong>
@@ -1243,14 +1243,14 @@ function ScenarioStatusCard({
           <div className="tv-scenario-meter tv-scenario-meter-loss" aria-label={`Loss pressure ${collapse.current}/${collapse.max}`}>
             <div>
               <strong>Loss Pressure</strong>
-              <span>{collapse.name}</span>
+              <span>If this reaches the limit, the scenario fails.</span>
             </div>
             <em>{collapse.current}/{collapse.max}</em>
           </div>
         ) : pressure ? (
-          <div className="tv-scenario-meter tv-scenario-meter-loss" aria-label={`Pressure ${pressure.current}/${pressure.max}`}>
+          <div className="tv-scenario-meter tv-scenario-meter-loss" aria-label={`Scenario pressure ${pressure.current}/${pressure.max}`}>
             <div>
-              <strong>Pressure</strong>
+              <strong>Scenario Pressure</strong>
               <span>{pressure.name}</span>
             </div>
             <em>{pressure.current}/{pressure.max}</em>
@@ -1389,10 +1389,10 @@ function EscalationMeter({ patch }: { patch: StatePatch<PublicPatchPayload> | nu
   const highlightedStep = Math.ceil(getProgressPercent(level, threshold) / 20);
 
   return (
-    <section className="tv-card tv-sidebar-card tv-escalation-card" aria-label="Escalation">
+    <section className="tv-card tv-sidebar-card tv-escalation-card" aria-label="Global Escalation">
       <div className="tv-panel-title tv-panel-title-small">
         <span />
-        <h2>Escalation</h2>
+        <h2>Global Escalation</h2>
         <span />
       </div>
       <div className="tv-escalation-meter">
@@ -1403,7 +1403,7 @@ function EscalationMeter({ patch }: { patch: StatePatch<PublicPatchPayload> | nu
         ))}
       </div>
       <p>
-        Collapse risk {level}/{threshold} | modifier +{modifier}
+        Round pressure {level}/{threshold} | modifier +{modifier}
       </p>
     </section>
   );
@@ -1668,7 +1668,7 @@ function HostBottomStatusStrip({
         )}
       </div>
       <div className="tv-host-world-state">
-        <span>World {patch ? `${patch.payload.escalationLevel}/${patch.payload.escalationThreshold}` : "offline"}</span>
+        <span>Global {patch ? `${patch.payload.escalationLevel}/${patch.payload.escalationThreshold}` : "offline"}</span>
         <span>Mode {patch ? getInteractionModeLabel(patch.payload.interactionMode ?? "co-op") : "standby"}</span>
         <span>Phase {toTitleCase(patch?.phase ?? "start")}</span>
       </div>

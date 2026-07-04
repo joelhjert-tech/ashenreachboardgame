@@ -260,10 +260,10 @@ function getScenarioSummary(payload: PublicPatchPayload): string {
   const pressure = payload.scenarioPressure;
 
   if (!pressure) {
-    return `Escalation ${payload.escalationLevel}/${payload.escalationThreshold}.`;
+    return `Global Escalation ${payload.escalationLevel}/${payload.escalationThreshold}.`;
   }
 
-  return `${pressure.objectiveProgress.label}: ${pressure.objectiveProgress.current}/${pressure.objectiveProgress.required}. ${pressure.collapseTrack.name}: ${pressure.collapseTrack.current}/${pressure.collapseTrack.max}.`;
+  return `${pressure.objectiveProgress.label}: ${pressure.objectiveProgress.current}/${pressure.objectiveProgress.required}. Loss Pressure: ${pressure.collapseTrack.current}/${pressure.collapseTrack.max}.`;
 }
 
 export function buildCurrentTablePrompt(patch: StatePatch<PublicPatchPayload> | null): CurrentTablePrompt {

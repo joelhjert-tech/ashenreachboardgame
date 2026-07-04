@@ -694,6 +694,8 @@ describe("PhoneInventoryPanel", () => {
     expect(scenario).toHaveTextContent(/1\/2/i);
     expect(scenario).toHaveTextContent(/loss pressure/i);
     expect(scenario).toHaveTextContent(/2\/6/i);
+    expect(scenario).toHaveTextContent(/if this reaches the limit, the scenario fails/i);
+    expect(scenario).not.toHaveTextContent(/global escalation/i);
     expect(scenario).toHaveTextContent(/close 2 riftgates/i);
     expect(within(scenario).getByTestId("result-delta-row")).toHaveTextContent(/\+1 Scenario/i);
     expect(screen.queryByRole("region", { name: /private rivalry agenda/i })).not.toBeInTheDocument();

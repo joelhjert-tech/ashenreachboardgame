@@ -7198,7 +7198,7 @@ function getEventLogResultDeltas(state: GameState, ownerSeatId?: string | null):
       deltas.push(createResultDelta({
         id: `escalation:${source}`,
         type: "scenarioPressure",
-        label: "Escalation",
+        label: "Global Escalation",
         value: Math.abs(amount),
         sign: amount >= 0 ? "gain" : "loss",
         targetScope: "scenario",
@@ -7206,7 +7206,7 @@ function getEventLogResultDeltas(state: GameState, ownerSeatId?: string | null):
         visibility: "public",
         source,
         reason: typeof entry.reason === "string" ? entry.reason : "pressure",
-        publicText: `Escalation ${amount >= 0 ? "+" : ""}${amount}: ${typeof entry.reason === "string" ? entry.reason : "pressure"}.`,
+        publicText: `Global Escalation ${amount >= 0 ? "+" : ""}${amount}: ${typeof entry.reason === "string" ? entry.reason : "pressure"}.`,
         severity: "scenario"
       }));
     }

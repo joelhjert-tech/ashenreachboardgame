@@ -506,7 +506,7 @@ export function PortraitControllerView({
                             ? `${patch.escalationLevel}/${patch.escalationThreshold}`
                             : "0/0"}
                       </strong>
-                      <small>{scenarioPressure?.collapseTrack.name ?? "Escalation"}</small>
+                      <small>If this reaches the limit, the scenario fails.</small>
                     </div>
                   </div>
                   <p className="phone-scenario-next-action">

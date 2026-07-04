@@ -374,7 +374,10 @@ describe("TvApp", () => {
     expect(scenarioCard).toHaveTextContent(/2\/6/i);
     expect(scenarioCard).toHaveTextContent(/loss pressure/i);
     expect(scenarioCard).toHaveTextContent(/1\/6/i);
+    expect(scenarioCard).toHaveTextContent(/if this reaches the limit, the scenario fails/i);
+    expect(scenarioCard).not.toHaveTextContent(/global escalation/i);
     expect(scenarioCard).toHaveTextContent(/last trigger: contract completed/i);
+    expect(screen.getByRole("region", { name: /global escalation/i })).toHaveTextContent(/round pressure 0\/6/i);
     expect(JSON.stringify(patch.payload)).not.toContain("private trigger");
   });
 

@@ -1697,7 +1697,7 @@ export function PhoneActionPanel({
       resolveActions.push({
         key: "stabilize",
         label: "Stabilize breach",
-        detail: `Escalation ${patch.escalationLevel}/${patch.escalationThreshold}`,
+        detail: `Global Escalation ${patch.escalationLevel}/${patch.escalationThreshold}`,
         tone: "secondary",
         onClick: () =>
           onIntent({

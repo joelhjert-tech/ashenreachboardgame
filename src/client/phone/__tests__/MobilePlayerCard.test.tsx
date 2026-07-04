@@ -75,6 +75,7 @@ describe("MobilePlayerCard", () => {
     );
 
     expect(screen.getByText(/commander \| beginner/i)).toBeInTheDocument();
+    expect(screen.getByText(/global escalation 0\/6, \+0/i)).toBeInTheDocument();
   });
 
   it("surfaces scenario victory messaging for the winner", () => {
