@@ -318,25 +318,31 @@ describe("Ashen Reach UI validation stress states", () => {
     render(<PhoneActionPanel characters={catalogFromMasterAlpha()} patch={createMasterAlphaPhonePatch()} onIntent={vi.fn()} />);
 
     const tabs = screen.getByRole("tablist", { name: /turn actions/i });
+    const turnTabs = within(tabs).getAllByRole("tab");
+    const getTabByLabel = (label: string) => turnTabs.find((tab) => within(tab).queryByText(label))!;
+    const moveTab = getTabByLabel("Move");
+    const battleTab = getTabByLabel("Battle");
+    const shopTab = getTabByLabel("Shop");
+    const actionTab = getTabByLabel("Action");
 
-    expect(within(tabs).getByRole("tab", { name: /move/i })).toBeInTheDocument();
-    expect(within(tabs).getByRole("tab", { name: /battle/i })).toBeInTheDocument();
-    expect(within(tabs).getByRole("tab", { name: /shop/i })).toBeInTheDocument();
-    expect(within(tabs).getByRole("tab", { name: /action/i })).toBeInTheDocument();
-    expect(within(tabs).getByRole("tab", { name: /move/i })).toHaveClass("game-button");
-    expect(within(tabs).getByRole("tab", { name: /battle/i })).toHaveClass("game-button-battle");
-    expect(within(tabs).getByRole("tab", { name: /shop/i })).toHaveClass("game-button-shop");
-    expect(within(tabs).getByRole("tab", { name: /action/i })).toHaveClass("game-button-action");
+    expect(moveTab).toBeInTheDocument();
+    expect(battleTab).toBeInTheDocument();
+    expect(shopTab).toBeInTheDocument();
+    expect(actionTab).toBeInTheDocument();
+    expect(moveTab).toHaveClass("game-button");
+    expect(battleTab).toHaveClass("game-button-battle");
+    expect(shopTab).toHaveClass("game-button-shop");
+    expect(actionTab).toHaveClass("game-button-action");
     expect(screen.getByTestId("movement-planner")).toHaveTextContent("Move 4");
 
-    fireEvent.click(within(tabs).getByRole("tab", { name: /shop/i }));
+    fireEvent.click(shopTab);
 
     const shopPanel = screen.getByRole("tabpanel", { name: /shop actions/i });
 
     expect(shopPanel).toHaveTextContent("Shop locked");
     expect(shopPanel).toHaveTextContent(longEnemyName);
 
-    fireEvent.click(within(tabs).getByRole("tab", { name: /battle/i }));
+    fireEvent.click(battleTab);
 
     expect(screen.getByRole("tabpanel", { name: /battle actions/i })).toHaveTextContent(longEnemyName);
     expect(screen.getByText(/roll result/i)).toBeInTheDocument();
@@ -429,16 +435,18 @@ describe("Ashen Reach UI validation stress states", () => {
     render(<PhoneActionPanel characters={catalogFromMasterAlpha()} patch={patch} onIntent={vi.fn()} />);
 
     const tabs = screen.getByRole("tablist", { name: /turn actions/i });
-    const moveTab = within(tabs).getByRole("tab", { name: /move/i });
-    const battleTab = within(tabs).getByRole("tab", { name: /battle/i });
-    const shopTab = within(tabs).getByRole("tab", { name: /shop/i });
+    const turnTabs = within(tabs).getAllByRole("tab");
+    const getTabByLabel = (label: string) => turnTabs.find((tab) => within(tab).queryByText(label))!;
+    const moveTab = getTabByLabel("Move");
+    const battleTab = getTabByLabel("Battle");
+    const shopTab = getTabByLabel("Shop");
 
-    expect(moveTab).toBeDisabled();
+    expect(moveTab).toHaveAttribute("aria-disabled", "true");
     expect(moveTab).toHaveTextContent("No legal move");
-    expect(moveTab).toHaveAttribute("data-disabled-reason", "No legal move");
-    expect(battleTab).toBeDisabled();
+    expect(moveTab).toHaveAttribute("title", "No legal move");
+    expect(battleTab).toHaveAttribute("aria-disabled", "true");
     expect(battleTab).toHaveTextContent("No enemy");
-    expect(shopTab).toBeDisabled();
+    expect(shopTab).toHaveAttribute("aria-disabled", "true");
     expect(shopTab).toHaveTextContent("No shop");
   });
 

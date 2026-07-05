@@ -1,11 +1,8 @@
-import { useEffect, useState, type FormEvent, type ReactElement } from "react";
+import { useEffect, useMemo, useState, type FormEvent, type ReactElement } from "react";
 import { fetchCharacters, fetchSessionSummary, getConnectionDiagnostics, joinSession, leaveSession } from "../shared/network.js";
 import type { CharacterCatalogEntry, PhonePatchPayload, PhoneSelfState, PhoneSessionAuth, StatePatch } from "../shared/types.js";
 import { useRoomSubscription } from "../shared/useRoomSubscription.js";
-import {
-  getCharacterPortraitPath,
-  getPhoneBackgroundPath
-} from "../shared/assetPaths.js";
+import { getCharacterPortraitPath } from "../shared/assetPaths.js";
 import { MobileDebugDrawer } from "./MobileDebugDrawer.js";
 import { PortraitControllerView } from "./PortraitControllerView.js";
 
@@ -79,6 +76,30 @@ function toTitleCase(value: string): string {
 
 function formatComplexity(value: string | undefined): string {
   return value ? toTitleCase(value) : "Standard";
+}
+
+function getCharacterSelectionRank(character: CharacterCatalogEntry): number {
+  if (character.qaOnly) {
+    return 40;
+  }
+
+  if (character.presentation?.recommendedForFirstGame) {
+    return 0;
+  }
+
+  switch (character.presentation?.complexity) {
+    case "beginner":
+      return 1;
+    case "standard":
+    case undefined:
+      return 10;
+    case "advanced":
+      return 20;
+    case "expert":
+      return 30;
+    default:
+      return 10;
+  }
 }
 
 function formatJoinFailure(joinFailure: unknown): string {
@@ -259,6 +280,19 @@ export function PhoneApp(): ReactElement {
     }
   };
 
+  const displayCharacters = useMemo(
+    () =>
+      [...characters].sort((left, right) => {
+        const rankDelta = getCharacterSelectionRank(left) - getCharacterSelectionRank(right);
+
+        if (rankDelta !== 0) {
+          return rankDelta;
+        }
+
+        return left.name.localeCompare(right.name);
+      }),
+    [characters]
+  );
   const selectedCharacter = characters.find((character) => character.id === formState.characterId);
   const portraitPlayerName = auth?.displayName || selectedCharacter?.name || "Ashen Reach Controller";
   const portraitRoomCode = auth?.roomCode || formState.roomCode || "Awaiting room";
@@ -270,7 +304,7 @@ export function PhoneApp(): ReactElement {
 
   if (!auth) {
     return (
-      <main className="phone-page" style={{ backgroundImage: `url(${getPhoneBackgroundPath()})` }}>
+      <main className="phone-page">
         {isLandscape ? (
           <section className="phone-rotate-warning" aria-live="polite">
             <div>
@@ -314,6 +348,11 @@ export function PhoneApp(): ReactElement {
                     <label className="field">
                       <span>Room code</span>
                       <input
+                        name="roomCode"
+                        autoComplete="off"
+                        autoCapitalize="characters"
+                        inputMode="text"
+                        spellCheck={false}
                         value={formState.roomCode}
                         onChange={(event) =>
                           setFormState((current) => ({ ...current, roomCode: event.target.value.toUpperCase() }))
@@ -325,6 +364,9 @@ export function PhoneApp(): ReactElement {
                     <label className="field">
                       <span>Player name</span>
                       <input
+                        name="playerName"
+                        autoComplete="nickname"
+                        spellCheck={false}
                         value={formState.displayName}
                         onChange={(event) =>
                           setFormState((current) => ({ ...current, displayName: event.target.value }))
@@ -347,7 +389,7 @@ export function PhoneApp(): ReactElement {
                   <div className="phone-join-step" aria-label="Step 2 select character">
                     <span className="phone-join-step-kicker">Step 2</span>
                     <div className="phone-character-grid" role="list" aria-label="Character">
-                      {characters.map((character) => (
+                      {displayCharacters.map((character) => (
                         <button
                           key={character.id}
                           type="button"

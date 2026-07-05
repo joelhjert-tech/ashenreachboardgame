@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import "@testing-library/jest-dom/vitest";
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { PhoneApp } from "../PhoneApp.js";
 import type { CharacterCatalogEntry } from "../../shared/types.js";
@@ -46,6 +46,18 @@ const characters: CharacterCatalogEntry[] = [
           signatureItemSummary: "Cinder Suture Kit: emergency recovery for rough turns.",
           startingContractSummary: "Warbell recovery: rewards direct table leadership."
         }
+      : id === "black-ledger-agent"
+        ? {
+            role: "Intrigue",
+            complexity: "advanced",
+            playstyleSummary: "A hidden-economy operative for players who already understand the table.",
+            recommendedForFirstGame: false,
+            strengths: ["Guile", "Private scoring"],
+            weaknesses: ["Direct fights"],
+            usefulStats: ["guile", "signal"],
+            signatureItemSummary: "Black Ledger: converts risky deals into leverage.",
+            startingContractSummary: "Ledger claim: rewards advanced timing."
+          }
       : undefined
 })) as CharacterCatalogEntry[];
 
@@ -136,8 +148,17 @@ describe("PhoneApp", () => {
     render(<PhoneApp />);
 
     await screen.findByRole("button", { name: /join \/ continue/i });
-    expect(screen.getAllByLabelText(/room code/i)[0]).toBeInTheDocument();
-    expect(screen.getAllByLabelText(/player name/i)[0]).toBeInTheDocument();
+    const roomCodeInput = screen.getAllByLabelText(/room code/i)[0]!;
+    const playerNameInput = screen.getAllByLabelText(/player name/i)[0]!;
+    expect(roomCodeInput).toBeInTheDocument();
+    expect(roomCodeInput).toHaveAttribute("name", "roomCode");
+    expect(roomCodeInput).toHaveAttribute("autocomplete", "off");
+    expect(roomCodeInput).toHaveAttribute("inputmode", "text");
+    expect(roomCodeInput).toHaveAttribute("spellcheck", "false");
+    expect(playerNameInput).toBeInTheDocument();
+    expect(playerNameInput).toHaveAttribute("name", "playerName");
+    expect(playerNameInput).toHaveAttribute("autocomplete", "nickname");
+    expect(playerNameInput).toHaveAttribute("spellcheck", "false");
     expect(screen.getByRole("button", { name: /join \/ continue/i })).toBeInTheDocument();
     expect(screen.getByText(/ashen reach controller/i)).toBeInTheDocument();
     expect(screen.queryByRole("list", { name: /character/i })).not.toBeInTheDocument();
@@ -182,13 +203,35 @@ describe("PhoneApp", () => {
     fireEvent.change(screen.getAllByLabelText(/player name/i)[0]!, { target: { value: "Joel" } });
     fireEvent.click(screen.getByRole("button", { name: /join \/ continue/i }));
 
-    expect(await screen.findByTestId("phone-character-presentation")).toHaveTextContent(/commander/i);
-    expect(screen.getByTestId("phone-character-presentation")).toHaveTextContent(/beginner/i);
-    expect(screen.getByTestId("phone-character-presentation")).toHaveTextContent(/first-game pick/i);
-    expect(screen.getByTestId("phone-character-presentation")).toHaveTextContent(/cinder suture kit/i);
-    expect(screen.getByTestId("phone-character-presentation")).toHaveTextContent(/warbell recovery/i);
-    expect(screen.getByTestId("phone-character-presentation")).toHaveTextContent(/good at/i);
-    expect(screen.getByTestId("phone-character-presentation")).toHaveTextContent(/watch out/i);
+    const presentations = await screen.findAllByTestId("phone-character-presentation");
+    const firstGamePresentation = presentations.find((presentation) => /first-game pick/i.test(presentation.textContent ?? ""));
+
+    expect(firstGamePresentation).toBeDefined();
+    expect(firstGamePresentation!).toHaveTextContent(/commander/i);
+    expect(firstGamePresentation!).toHaveTextContent(/beginner/i);
+    expect(firstGamePresentation!).toHaveTextContent(/first-game pick/i);
+    expect(firstGamePresentation!).toHaveTextContent(/cinder suture kit/i);
+    expect(firstGamePresentation!).toHaveTextContent(/warbell recovery/i);
+    expect(firstGamePresentation!).toHaveTextContent(/good at/i);
+    expect(firstGamePresentation!).toHaveTextContent(/watch out/i);
+  });
+
+  it("sorts first-game characters before advanced operatives", async () => {
+    render(<PhoneApp />);
+
+    await screen.findByRole("button", { name: /join \/ continue/i });
+    fireEvent.change(screen.getAllByLabelText(/room code/i)[0]!, { target: { value: "RT7P4" } });
+    fireEvent.change(screen.getAllByLabelText(/player name/i)[0]!, { target: { value: "Joel" } });
+    fireEvent.click(screen.getByRole("button", { name: /join \/ continue/i }));
+
+    const picker = await screen.findByRole("list", { name: /character/i });
+    const options = within(picker).getAllByRole("button");
+    const firstGameIndex = options.findIndex((option) => /tarek voss/i.test(option.textContent ?? ""));
+    const advancedIndex = options.findIndex((option) => /joss var/i.test(option.textContent ?? ""));
+
+    expect(firstGameIndex).toBe(0);
+    expect(advancedIndex).toBeGreaterThan(firstGameIndex);
+    expect(options[advancedIndex]).toHaveTextContent(/advanced/i);
   });
 
   it("reserves the chosen Deepdale character when selected", async () => {

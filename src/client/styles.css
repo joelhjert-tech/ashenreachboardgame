@@ -4022,7 +4022,8 @@ select {
     0 0 0.8rem color-mix(in srgb, var(--turn-tab-color) 18%, transparent);
 }
 
-.phone-turn-tab:disabled {
+.phone-turn-tab:disabled,
+.phone-turn-tab[aria-disabled="true"] {
   opacity: 0.42;
 }
 
@@ -5044,14 +5045,11 @@ body {
 }
 
 .host-state-banner {
-  position: absolute;
-  top: clamp(4.45rem, 7.2svh, 5.4rem);
-  left: 50%;
-  z-index: 32;
-  width: min(46rem, 48vw);
+  position: relative;
+  z-index: 4;
+  width: 100%;
   min-height: 2.75rem;
   padding: 0.48rem 0.76rem;
-  transform: translateX(-50%);
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
   gap: 0.72rem;
@@ -5130,7 +5128,6 @@ body {
 
 .host-state-banner-battle,
 .host-state-banner-danger {
-  top: clamp(3.95rem, 6.4svh, 5rem);
   border-color: rgba(219, 79, 58, 0.54);
 }
 
@@ -10463,7 +10460,6 @@ body {
   color: #f4ead7;
   background:
     linear-gradient(180deg, rgba(7, 7, 8, 0.82), rgba(5, 5, 6, 0.94)),
-    url("/assets/riftfall/ui/ui_tv_board_background.png"),
     #050506;
   background-size: cover;
   background-position: center;
@@ -10819,6 +10815,14 @@ body {
 .join-qr-card-compact p {
   color: #d3b98a;
   font-size: 0.72rem;
+}
+
+.join-qr-card-compact .join-room-code {
+  color: #f2dec0;
+  font-size: clamp(0.82rem, 0.9vw, 1rem);
+  font-weight: 850;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
 .join-qr-card-compact .join-link {
@@ -12614,8 +12618,8 @@ body {
 
 .phone-movement-summary {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0.36rem;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.42rem;
   padding: 0.54rem;
   border: 1px solid rgba(197, 181, 143, 0.22);
   border-radius: 6px;
@@ -12623,11 +12627,24 @@ body {
   min-width: 0;
 }
 
-.phone-movement-summary div {
+.phone-movement-summary-chips {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.36rem;
+  min-width: 0;
+}
+
+.phone-movement-summary-chip,
+.phone-movement-summary-current {
   display: grid;
   align-content: start;
   gap: 0.16rem;
   min-width: 0;
+}
+
+.phone-movement-summary-current {
+  padding-top: 0.36rem;
+  border-top: 1px solid rgba(174, 205, 228, 0.14);
 }
 
 .phone-movement-summary span,
@@ -12650,9 +12667,7 @@ body {
   color: #f2dec0;
   font-size: clamp(0.92rem, 3.7vw, 1.12rem);
   line-height: 1.1;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
 }
 
 .phone-movement-list-heading {
@@ -12860,6 +12875,37 @@ body {
 .phone-movement-detail-hero strong {
   color: #e3a755;
   font-size: clamp(0.98rem, 3.9vw, 1.12rem);
+}
+
+.phone-movement-transition {
+  display: grid;
+  gap: 0.34rem;
+  padding: 0.72rem;
+  border: 1px solid rgba(104, 184, 232, 0.42);
+  border-radius: 8px;
+  background:
+    radial-gradient(circle at 96% 12%, rgba(104, 184, 232, 0.16), transparent 36%),
+    linear-gradient(180deg, rgba(9, 18, 27, 0.92), rgba(5, 8, 12, 0.94));
+  box-shadow: inset 0 0 0 1px rgba(210, 238, 255, 0.05);
+}
+
+.phone-movement-transition span {
+  color: #8ecbff;
+  font-size: clamp(0.68rem, 2.4vw, 0.76rem);
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.phone-movement-transition strong {
+  color: #f5e8c9;
+  font-size: clamp(0.98rem, 3.7vw, 1.12rem);
+}
+
+.phone-movement-transition p {
+  margin: 0;
+  color: rgba(236, 228, 210, 0.8);
+  line-height: 1.35;
 }
 
 .phone-movement-intel-grid {
@@ -13988,7 +14034,7 @@ body {
 }
 
 .tv-host-turn-order,
-.tv-host-world-state,
+.tv-host-table-context,
 .tv-host-strip-log {
   min-width: 0;
   display: flex;
@@ -13998,7 +14044,7 @@ body {
 }
 
 .tv-host-turn-order span,
-.tv-host-world-state span {
+.tv-host-table-context span {
   flex: 0 1 auto;
   min-width: 0;
   padding: 0.22rem 0.42rem;

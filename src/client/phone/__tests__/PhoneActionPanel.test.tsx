@@ -466,6 +466,8 @@ describe("PhoneActionPanel", () => {
     );
 
     const row = screen.getByTestId("movement-destination-row");
+    expect(screen.getByTestId("movement-current-sector")).toHaveTextContent("Ashwalk Bridge");
+    expect(screen.getByTestId("movement-current-sector")).toHaveClass("phone-movement-summary-current");
     expect(row).toHaveTextContent(/weathered pilgrim lock gate/i);
     expect(screen.getByTestId("movement-route-preview")).toHaveClass("phone-movement-row-route");
     expect(screen.getByTestId("movement-route-preview")).toHaveTextContent(/ashwalk bridge -> votive engine room/i);
@@ -476,6 +478,18 @@ describe("PhoneActionPanel", () => {
     expect(screen.getByTestId("movement-route-steps")).toHaveTextContent(/broken census hall/i);
     expect(screen.getByTestId("movement-confirm-footer")).toContainElement(screen.getByRole("button", { name: /confirm move/i }));
     expect(screen.getByTestId("movement-confirm-footer")).toHaveTextContent(/this will end your movement/i);
+    expect(
+      screen.getByRole("heading", { name: /weathered pilgrim lock gate/i }).compareDocumentPosition(screen.getByTestId("movement-route-steps")) &
+        Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy();
+    expect(
+      screen.getByTestId("movement-route-steps").compareDocumentPosition(screen.getByTestId("movement-confirm-footer")) &
+        Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy();
+    expect(
+      screen.getByTestId("movement-confirm-footer").compareDocumentPosition(screen.getByText(/sector effects/i)) &
+        Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy();
   });
 
   it("shows disabled gated destinations and prevents confirming them", async () => {
@@ -742,6 +756,63 @@ describe("PhoneActionPanel", () => {
     expect(screen.getByRole("tab", { name: /shop/i })).toBeInTheDocument();
     expect(screen.getByText(/no shop here/i)).toBeInTheDocument();
     expect(screen.getByText(/shop services appear when your operative is on a clear market/i)).toBeInTheDocument();
+  });
+
+  it("shows a locked shop state during battle without rendering battle controls", () => {
+    render(
+      <PhoneActionPanel
+        characters={characters}
+        onIntent={vi.fn()}
+        selectedTurnTab="shop"
+        patch={createPatch({
+          encounter: {
+            id: "cinder-veil-stalker",
+            title: "Cinder-Veil Stalker",
+            cardType: "enemy",
+            enemyName: "Cinder-Veil Stalker",
+            flavor: "The ash around it boils before the strike.",
+            difficulty: 6,
+            stat: "grit"
+          },
+          shopEncounter: null
+        })}
+      />
+    );
+
+    expect(screen.getByTestId("phone-action-panel-root")).toHaveClass("phone-action-panel--shop");
+    expect(screen.getByTestId("phone-action-active-panel")).toHaveClass("phone-shop-command-panel");
+    expect(screen.getByText(/shop locked/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/resolve battle first/i).length).toBeGreaterThan(0);
+    expect(screen.queryByRole("button", { name: /enter combat/i })).not.toBeInTheDocument();
+    expect(screen.queryByTestId("phone-battle-assist")).not.toBeInTheDocument();
+  });
+
+  it("shows a locked action state during battle without duplicating battle content", () => {
+    render(
+      <PhoneActionPanel
+        characters={characters}
+        onIntent={vi.fn()}
+        selectedTurnTab="action"
+        patch={createPatch({
+          encounter: {
+            id: "cinder-veil-stalker",
+            title: "Cinder-Veil Stalker",
+            cardType: "enemy",
+            enemyName: "Cinder-Veil Stalker",
+            flavor: "The ash around it boils before the strike.",
+            difficulty: 6,
+            stat: "grit"
+          }
+        })}
+      />
+    );
+
+    expect(screen.getByTestId("phone-action-panel-root")).toHaveClass("phone-action-panel--action");
+    expect(screen.getByTestId("phone-action-active-panel")).toHaveClass("phone-sector-action-panel");
+    expect(within(screen.getByTestId("phone-action-active-panel")).getByText(/resolve battle first/i)).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /enter combat/i })).not.toBeInTheDocument();
+    expect(screen.queryByTestId("phone-battle-assist")).not.toBeInTheDocument();
+    expect(screen.queryByText(/sector math/i)).not.toBeInTheDocument();
   });
 
   it("clears stale action-tab content when the selected command screen changes", () => {
@@ -1724,6 +1795,56 @@ describe("PhoneActionPanel", () => {
       type: "CONTINUE_RESOLUTION",
       seatId: "seat-1"
     });
+  });
+
+  it("separates a completed movement result from the next battle setup", () => {
+    render(
+      <PhoneActionPanel
+        characters={characters}
+        onIntent={vi.fn()}
+        patch={createPatch({
+          encounter: {
+            id: "cinder-veil-stalker",
+            title: "Cinder-Veil Stalker",
+            cardType: "enemy",
+            enemyName: "Cinder-Veil Stalker",
+            flavor: "The ash around it boils before the strike.",
+            difficulty: 6,
+            stat: "grit"
+          },
+          outcomeSummary: {
+            seatId: "seat-1",
+            movedToSectorId: "ashwake-crossing",
+            encounterCardId: "cinder-veil-stalker",
+            encounterTitle: "Cinder-Veil Stalker",
+            encounterCardType: "enemy",
+            checkStat: null,
+            die1: null,
+            die2: null,
+            statBonus: null,
+            checkTotal: null,
+            difficulty: null,
+            enemyRollerSeatId: null,
+            enemyDie1: null,
+            enemyDie2: null,
+            enemyBonus: null,
+            enemyTotal: null,
+            success: null,
+            summary: "Moved into Ashwake Crossing. Cinder-Veil Stalker is revealed."
+          }
+        })}
+      />
+    );
+
+    expect(screen.getByTestId("phone-action-active-panel")).toHaveClass("phone-battle-panel");
+    expect(screen.getByTestId("phone-movement-transition")).toHaveTextContent(/movement complete/i);
+    expect(screen.getByTestId("phone-movement-transition")).toHaveTextContent(/moved to ashwake crossing/i);
+    expect(screen.getByTestId("phone-movement-transition")).toHaveTextContent(/encounter revealed: cinder-veil stalker/i);
+    expect(screen.getByRole("button", { name: /enter combat.*cinder-veil stalker/i })).toBeInTheDocument();
+    expect(
+      screen.getByTestId("phone-movement-transition").compareDocumentPosition(screen.getByRole("button", { name: /enter combat/i })) &
+        Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy();
   });
 
   it("renders a recovery continue button for orphaned movement roll summaries", () => {

@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactElement } from "react";
+import { useEffect, useRef, useState, type ReactElement } from "react";
 import type {
   ActiveResolution,
   CharacterCatalogEntry,
@@ -535,6 +535,33 @@ function EmptyTurnTab({ title, text }: { title: string; text: string }): ReactEl
   );
 }
 
+function LockedCommandPanel({
+  tab,
+  title,
+  text
+}: {
+  tab: TurnActionTab;
+  title: string;
+  text: string;
+}): ReactElement {
+  const panelClass =
+    tab === "action"
+      ? "phone-sector-action-panel"
+      : tab === "shop"
+        ? "phone-shop-command-panel phone-shop-panel"
+        : `phone-${tab}-panel`;
+
+  return (
+    <section
+      className={`phone-action-active-panel ${panelClass} phone-${tab}-panel-locked`}
+      data-testid="phone-action-active-panel"
+      aria-label={`${tab} command screen locked`}
+    >
+      <EmptyTurnTab title={title} text={text} />
+    </section>
+  );
+}
+
 function TurnActionTabs({
   tabs,
   activeTab,
@@ -546,26 +573,30 @@ function TurnActionTabs({
 }): ReactElement {
   return (
     <div className="phone-turn-tabs" role="tablist" aria-label="Turn actions">
-      {tabs.map((tab) => (
-        <GameButton
-          key={tab.id}
-          type="button"
-          tone={tab.tone}
-          role="tab"
-          aria-selected={activeTab === tab.id}
-          aria-controls={`phone-turn-panel-${tab.id}`}
-          selected={activeTab === tab.id}
-          className={`phone-turn-tab phone-turn-tab-${tab.tone}${activeTab === tab.id ? " phone-turn-tab-active" : ""}${
-            tab.locked ? " phone-turn-tab-locked" : ""
-          }`}
-          disabled={!tab.enabled && !tab.locked}
-          disabledReason={tab.blockedReason}
-          onClick={() => onSelected(tab.id)}
-          sublabel={tab.locked ? tab.blockedReason ?? "Shop blocked" : tab.blockedReason ?? tab.detail}
-        >
-          {tab.label}
-        </GameButton>
-      ))}
+      {tabs.map((tab) => {
+        const unavailable = !tab.enabled || tab.locked;
+
+        return (
+          <GameButton
+            key={tab.id}
+            type="button"
+            tone={tab.tone}
+            role="tab"
+            aria-selected={activeTab === tab.id}
+            aria-disabled={unavailable || undefined}
+            aria-controls={`phone-turn-panel-${tab.id}`}
+            selected={activeTab === tab.id}
+            className={`phone-turn-tab phone-turn-tab-${tab.tone}${activeTab === tab.id ? " phone-turn-tab-active" : ""}${
+              unavailable ? " phone-turn-tab-locked" : ""
+            }`}
+            title={unavailable ? tab.blockedReason : undefined}
+            onClick={() => onSelected(tab.id)}
+            sublabel={tab.locked ? tab.blockedReason ?? "Shop blocked" : tab.blockedReason ?? tab.detail}
+          >
+            {tab.label}
+          </GameButton>
+        );
+      })}
     </div>
   );
 }
@@ -1147,17 +1178,19 @@ function MovementSummaryHeader({ planner }: { planner: PublicMovementPlannerStat
   return (
     <div className="phone-movement-summary" aria-label="Movement summary" data-testid="movement-summary">
       <span className="sr-only">Move {planner.movementValue}</span>
-      <div>
-        <span>Move Value</span>
-        <strong>{planner.movementValue}</strong>
+      <div className="phone-movement-summary-chips">
+        <div className="phone-movement-summary-chip">
+          <span>Move Value</span>
+          <strong>{planner.movementValue}</strong>
+        </div>
+        <div className="phone-movement-summary-chip">
+          <span>Legal Destinations</span>
+          <strong>{planner.destinations.length}</strong>
+        </div>
       </div>
-      <div>
+      <div className="phone-movement-summary-current" data-testid="movement-current-sector">
         <span>Current Sector</span>
         <strong>{planner.currentSectorName}</strong>
-      </div>
-      <div>
-        <span>Legal Destinations</span>
-        <strong>{planner.destinations.length}</strong>
       </div>
     </div>
   );
@@ -1310,9 +1343,19 @@ function MovementDestinationDetail({
   const routePreview = buildRoutePreviewCopy(selected, planner.movementValue, planner.currentSectorName, true);
   const tagLabels = getMovementTagLabels(selected, routePreview.tagLabels);
   const routeUnavailable = Boolean(selected.disabledReason);
+  const detailRef = useRef<HTMLElement | null>(null);
+
+  useEffect(() => {
+    detailRef.current?.scrollIntoView?.({ block: "start" });
+  }, [selected.sectorId]);
 
   return (
-    <article className="phone-movement-detail phone-move-panel__detail" aria-label={`${selected.name} movement detail`} data-testid="movement-detail-view">
+    <article
+      ref={detailRef}
+      className="phone-movement-detail phone-move-panel__detail"
+      aria-label={`${selected.name} movement detail`}
+      data-testid="movement-detail-view"
+    >
       <div className="phone-movement-detail-body">
         <div className="phone-movement-detail-back-row">
           <GameButton type="button" tone="secondary" className="phone-button phone-button-secondary" onClick={onBack}>
@@ -1353,6 +1396,26 @@ function MovementDestinationDetail({
           <span>Route</span>
           <MovementRouteSteps destination={selected} currentSectorId={planner.currentSectorId} />
         </section>
+
+        <footer className="phone-movement-confirm-footer" data-testid="movement-confirm-footer">
+          <GameButton
+            type="button"
+            tone="move"
+            className="phone-button phone-button-primary phone-movement-confirm"
+            disabled={routeUnavailable}
+            disabledReason={selected.disabledReason}
+            onClick={() =>
+              onIntent({
+                type: "MOVE_REQUESTED",
+                seatId,
+                toSectorId: selected.sectorId
+              })
+            }
+          >
+            CONFIRM MOVE
+          </GameButton>
+          <p>{routeUnavailable ? "This route is blocked by a scenario effect or sealed sector." : "This will end your movement."}</p>
+        </footer>
 
         <section className="phone-movement-detail-section">
           <span>Sector effects</span>
@@ -1416,26 +1479,6 @@ function MovementDestinationDetail({
           <p>{buildStrategicWarning(selected)}</p>
         </div>
       </div>
-
-      <footer className="phone-movement-confirm-footer" data-testid="movement-confirm-footer">
-        <GameButton
-          type="button"
-          tone="move"
-          className="phone-button phone-button-primary phone-movement-confirm"
-          disabled={routeUnavailable}
-          disabledReason={selected.disabledReason}
-          onClick={() =>
-            onIntent({
-              type: "MOVE_REQUESTED",
-              seatId,
-              toSectorId: selected.sectorId
-            })
-          }
-        >
-          CONFIRM MOVE
-        </GameButton>
-        <p>{routeUnavailable ? "This route is blocked by a scenario effect or sealed sector." : "This will end your movement."}</p>
-      </footer>
     </article>
   );
 }
@@ -1556,6 +1599,7 @@ function PhoneMovePanel({
 
 function PhoneBattlePanel({
   title,
+  movementTransition,
   resolutionPanel,
   battleAssistPanel,
   threatActions,
@@ -1564,6 +1608,7 @@ function PhoneBattlePanel({
   usefulNow
 }: {
   title: string;
+  movementTransition: ReactElement | null;
   resolutionPanel: ReactElement | null;
   battleAssistPanel: ReactElement | null;
   threatActions: ActionButtonDefinition[];
@@ -1577,6 +1622,7 @@ function PhoneBattlePanel({
         <span>Battle</span>
         <strong>{title}</strong>
       </header>
+      {movementTransition}
       {resolutionPanel ? <div className="phone-battle-panel__roll-card">{resolutionPanel}</div> : null}
       <ActionSections sections={[{ key: "threat", title: "Threat", detail: title, actions: threatActions, defaultOpen: true }]} />
       {battleAssistPanel}
@@ -1589,24 +1635,48 @@ function PhoneBattlePanel({
   );
 }
 
+function MovementTransitionNotice({
+  outcome,
+  sectorName
+}: {
+  outcome: OutcomeSummary;
+  sectorName: string;
+}): ReactElement {
+  const nextStep = outcome.encounterTitle
+    ? `Encounter revealed: ${outcome.encounterTitle}. Next: Roll battle.`
+    : "No encounter was revealed. Next: Resolve the sector.";
+
+  return (
+    <section className="phone-movement-transition" data-testid="phone-movement-transition" aria-label="Movement result">
+      <span>Movement complete</span>
+      <strong>Moved to {sectorName}</strong>
+      <p>{nextStep}</p>
+    </section>
+  );
+}
+
 function PhoneShopCommandPanel({
   shopEncounter,
   resultDeltas,
   seatId,
   onIntent,
-  usefulNow
+  usefulNow,
+  emptyTitle = "No shop here",
+  emptyText = "Shop services appear when your operative is on a clear market, shrine, foundry, or service sector."
 }: {
   shopEncounter: PublicShopEncounterState | null | undefined;
   resultDeltas: ResultDelta[];
   seatId: string;
   onIntent: (intent: ClientIntent) => void;
   usefulNow: UsefulNowViewModel | null;
+  emptyTitle?: string;
+  emptyText?: string;
 }): ReactElement {
   return (
     <section className="phone-action-active-panel phone-shop-command-panel phone-shop-panel" data-testid="phone-action-active-panel" aria-label="Shop command screen">
       <PhoneShopPanel shopEncounter={shopEncounter} resultDeltas={resultDeltas} seatId={seatId} onIntent={onIntent} />
       {!shopEncounter && (
-        <EmptyTurnTab title="No shop here" text="Shop services appear when your operative is on a clear market, shrine, foundry, or service sector." />
+        <EmptyTurnTab title={emptyTitle} text={emptyText} />
       )}
       <UsefulNowPanel model={usefulNow} variant="secondary" />
     </section>
@@ -2264,6 +2334,8 @@ export function PhoneActionPanel({
       advanceActions.length +
       statRaiseActions.length >
     0;
+  const battleRequiresResolution = Boolean(patch.encounter || activeResolution || orphanResolutionOutcome || battleAssist);
+  const battleBlocksNonBattleTabs = battleRequiresResolution && hasBattleContent;
   const moveBlockedReason = hasMoveContent
     ? undefined
     : movementPlanner?.active && movementPlanner.destinations.length === 0
@@ -2272,8 +2344,18 @@ export function PhoneActionPanel({
         ? "No legal move"
         : "Resolve first";
   const battleBlockedReason = hasBattleContent ? undefined : patch.phase === "action" ? "No enemy" : "Resolve first";
-  const shopBlockedReason = shopLocked ? "Shop blocked" : hasShopContent ? undefined : "No shop";
-  const actionBlockedReason = hasActionContent || !hasMoveContent ? undefined : "No action";
+  const shopBlockedReason = shopLocked
+    ? "Shop blocked"
+    : hasShopContent
+      ? undefined
+      : battleBlocksNonBattleTabs
+        ? "Resolve battle first"
+        : "No shop";
+  const actionBlockedReason = battleBlocksNonBattleTabs
+    ? "Resolve battle first"
+    : hasActionContent || !hasMoveContent
+      ? undefined
+      : "No action";
   const tabDefinitions: TurnActionTabDefinition[] = [
     {
       id: "move",
@@ -2305,12 +2387,12 @@ export function PhoneActionPanel({
       label: "Action",
       detail: boardSpace?.textBox.title ?? "Gear / quest",
       tone: "action",
-      enabled: hasActionContent || !hasMoveContent,
+      enabled: !battleBlocksNonBattleTabs && (hasActionContent || !hasMoveContent),
       blockedReason: actionBlockedReason
     }
   ];
   const canShowSelectedTab = (tab: TurnActionTabDefinition) =>
-    tab.enabled || tab.locked || tab.id === "shop" || (tab.id === "move" && Boolean(movementPlanner?.active));
+    tab.enabled || tab.locked || tab.id === "shop" || tab.id === "action" || (tab.id === "move" && Boolean(movementPlanner?.active));
   const fallbackTab = movementPlanner?.active ? "move" : tabDefinitions.find((tab) => tab.enabled || tab.locked)?.id ?? "action";
   const activeTurnTab = tabDefinitions.find((tab) => tab.id === selectedTurnTab && canShowSelectedTab(tab))
     ? selectedTurnTab
@@ -2321,6 +2403,17 @@ export function PhoneActionPanel({
   const visibleActionDeltas = actionResultDeltas(currentDeltas);
   const battleTitle = patch.encounter?.title ?? activeResolution?.card?.title ?? battleAssist?.enemyName ?? "No threat";
   const actionTitle = boardSpace?.textBox.title ?? "Operative options";
+  const movementTransitionOutcome =
+    patch.outcomeSummary?.seatId === self.seatId && patch.outcomeSummary.movedToSectorId ? patch.outcomeSummary : null;
+  const movementTransition =
+    movementTransitionOutcome && (patch.encounter || activeResolution || battleAssist)
+      ? (
+          <MovementTransitionNotice
+            outcome={movementTransitionOutcome}
+            sectorName={getSector(patch.sectors, movementTransitionOutcome.movedToSectorId)?.name ?? movementTransitionOutcome.movedToSectorId}
+          />
+        )
+      : null;
   const activeTabContent =
     activeTurnTab === "move" ? (
       <PhoneMovePanel
@@ -2333,6 +2426,7 @@ export function PhoneActionPanel({
     ) : activeTurnTab === "battle" ? (
       <PhoneBattlePanel
         title={battleTitle}
+        movementTransition={movementTransition}
         resolutionPanel={resolutionPanel}
         battleAssistPanel={battleAssistPanel}
         threatActions={threatActions}
@@ -2347,6 +2441,18 @@ export function PhoneActionPanel({
         seatId={self.seatId}
         onIntent={onIntent}
         usefulNow={usefulNow}
+        emptyTitle={battleBlocksNonBattleTabs ? "Shop locked" : "No shop here"}
+        emptyText={
+          battleBlocksNonBattleTabs
+            ? "Resolve battle first. Shop services unlock after the encounter is cleared."
+            : "Shop services appear when your operative is on a clear market, shrine, foundry, or service sector."
+        }
+      />
+    ) : battleBlocksNonBattleTabs ? (
+      <LockedCommandPanel
+        tab="action"
+        title="Resolve battle first"
+        text="This sector action is paused until the active encounter is resolved in the Battle tab."
       />
     ) : (
       <PhoneSectorActionPanel

@@ -207,7 +207,6 @@ function getSeatStatus(seat: PublicSeat | null, player: PublicPlayer | null, isA
 
 function getCurrentStepCopy(
   publicPatch: StatePatch<PublicPatchPayload> | null,
-  activeSeatId: string | null,
   activePlayer: PublicPlayer | null
 ): string {
   if (!publicPatch) {
@@ -217,13 +216,13 @@ function getCurrentStepCopy(
   const boardSpace = activePlayer ? getBoardSpace(activePlayer.sectorId) : null;
 
   if (publicPatch.payload.encounter) {
-    return `${publicPatch.payload.encounter.title} is in play for ${activeSeatId ?? "the active seat"} using ${toTitleCase(
+    return `${publicPatch.payload.encounter.title} is in play for ${activePlayer?.character.name ?? "the active operative"} using ${toTitleCase(
       publicPatch.payload.encounter.stat
     )}.`;
   }
 
   if (publicPatch.payload.pendingEnemyRoll) {
-    return `Enemy roll assigned to ${publicPatch.payload.pendingEnemyRoll.assignedRollerSeatId}. Awaiting combat response.`;
+    return "Enemy roll assigned. Awaiting combat response.";
   }
 
   if (publicPatch.payload.status === "ended") {
@@ -231,10 +230,22 @@ function getCurrentStepCopy(
   }
 
   if (publicPatch.phase === "action" && activePlayer && boardSpace?.textBox.intent === "scenario-confrontation") {
-    return `${boardSpace.name} is the active confrontation chamber for ${activeSeatId ?? "the active seat"}. Resolve ${publicPatch.payload.activeScenario?.confrontationTitle ?? "the active scenario confrontation"}.`;
+    return `${boardSpace.name} is the active confrontation chamber for ${activePlayer.character.name}. Resolve ${publicPatch.payload.activeScenario?.confrontationTitle ?? "the active scenario confrontation"}.`;
   }
 
-  return `Phase ${toTitleCase(publicPatch.phase)} is live${activeSeatId ? ` for ${activeSeatId}` : ""}. Global Escalation ${publicPatch.payload.escalationLevel}/${publicPatch.payload.escalationThreshold} with modifier +${publicPatch.payload.escalationModifier}.`;
+  if (publicPatch.phase === "navigation") {
+    return `${activePlayer?.character.name ?? "The active operative"} is choosing movement. Watch the glowing legal destinations.`;
+  }
+
+  if (publicPatch.phase === "action") {
+    return `${activePlayer?.character.name ?? "The active operative"} is resolving the current sector.`;
+  }
+
+  if (publicPatch.phase === "broadcast") {
+    return "Review the public result, then advance the table when the active player is ready.";
+  }
+
+  return "The table is preparing the next command step.";
 }
 
 function getSpecialAbilitySummary(player: PublicPlayer | null, characterCatalog: CharacterCatalogEntry[]): string {
@@ -412,7 +423,7 @@ function TopHeader({
 
       <div className="tv-command-join-module">
         {roomCode ? (
-          <JoinQrCard roomCode={roomCode} variant="compact" />
+          <JoinQrCard roomCode={roomCode} variant="compact" showJoinDetails={phase === "start"} />
         ) : (
           <div className="join-qr-card join-qr-card-compact join-qr-card-empty">
             <div>
@@ -1645,6 +1656,8 @@ function HostBottomStatusStrip({
   const turnSeats = patch?.payload.turnOrder ?? [];
   const seatLabels = getSeatLabelMap(patch);
   const activeSeatId = patch?.payload.turnOrder[patch.payload.activeSeatIndex] ?? null;
+  const activeLabel = activeSeatId ? seatLabels[activeSeatId] ?? "Active operative" : "Awaiting active operative";
+  const scenarioLabel = patch?.payload.activeScenario?.name ?? "Scenario pending";
   const latestLog = [
     patch?.payload.rivalryAgendaCompletion?.summary,
     patch?.payload.rivalryAgendaReveal?.summary,
@@ -1667,10 +1680,9 @@ function HostBottomStatusStrip({
           <span>Awaiting operatives</span>
         )}
       </div>
-      <div className="tv-host-world-state">
-        <span>Global {patch ? `${patch.payload.escalationLevel}/${patch.payload.escalationThreshold}` : "offline"}</span>
-        <span>Mode {patch ? getInteractionModeLabel(patch.payload.interactionMode ?? "co-op") : "standby"}</span>
-        <span>Phase {toTitleCase(patch?.phase ?? "start")}</span>
+      <div className="tv-host-table-context">
+        <span>{patch ? `Active: ${activeLabel}` : "Table standby"}</span>
+        <span>{scenarioLabel}</span>
       </div>
       <div className="tv-host-strip-log">
         <strong>{latestLog[0] ?? currentStepCopy}</strong>
@@ -2083,7 +2095,7 @@ export function TvApp(): ReactElement {
     }
   };
 
-  const currentStepCopy = getCurrentStepCopy(publicPatch, activeSeatId, activePlayer);
+  const currentStepCopy = getCurrentStepCopy(publicPatch, activePlayer);
 
   return (
     <main className="tv-dashboard tv-command-dashboard">

@@ -2,6 +2,7 @@
 
 import "@testing-library/jest-dom/vitest";
 import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { readFileSync } from "node:fs";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type {
   CharacterCatalogEntry,
@@ -43,7 +44,11 @@ vi.mock("../HostPlayerCard.js", () => ({
 }));
 
 vi.mock("../JoinQrCard.js", () => ({
-  JoinQrCard: (props: { roomCode: string }) => <div>Join QR {props.roomCode}</div>
+  JoinQrCard: (props: { roomCode: string; showJoinDetails?: boolean }) => (
+    <div data-testid="mock-join-qr" data-show-join-details={String(props.showJoinDetails)}>
+      Join QR {props.roomCode}
+    </div>
+  )
 }));
 
 const characters: CharacterCatalogEntry[] = [
@@ -317,6 +322,7 @@ describe("TvApp", () => {
     render(<TvApp />);
 
     await screen.findByText("Join QR RT7P4");
+    expect(screen.getByTestId("mock-join-qr")).toHaveAttribute("data-show-join-details", "true");
     const banner = await screen.findByTestId("host-state-banner");
     expect(banner).toHaveTextContent(/ready check/i);
     expect(banner).toHaveTextContent(/all joined operatives are ready/i);
@@ -330,6 +336,69 @@ describe("TvApp", () => {
         hostToken: "host:RT7P4:secret"
       })
     );
+  });
+
+  it("switches compact QR join details off during active play", async () => {
+    window.localStorage.setItem("ashen-reach-tv-room-code", "RT7P4");
+    window.localStorage.setItem("ashen-reach-tv-host-token", "host:RT7P4:secret");
+    const patch = createPatch();
+    patch.phase = "navigation";
+    patch.payload.status = "active";
+    mockUseRoomSubscription.mockReturnValue({
+      patch,
+      error: null,
+      sendIntent: vi.fn(),
+      status: "open",
+      debugEvents: [],
+      clearDebugEvents: vi.fn()
+    });
+
+    render(<TvApp />);
+
+    await screen.findByText("Join QR RT7P4");
+    expect(screen.getByTestId("mock-join-qr")).toHaveAttribute("data-show-join-details", "false");
+  });
+
+  it("keeps active host status player-facing without duplicate mode or debug chips", async () => {
+    window.localStorage.setItem("ashen-reach-tv-room-code", "RT7P4");
+    window.localStorage.setItem("ashen-reach-tv-host-token", "host:RT7P4:secret");
+    const patch = createPatch();
+    patch.phase = "navigation";
+    patch.payload.status = "active";
+    patch.payload.sessionMode = "single-player";
+    patch.payload.interactionMode = "co-op";
+    patch.payload.seats = [
+      { seatId: "seat-1", characterId: "void-marshal", displayName: "Joel", connected: true, ready: true, kicked: false }
+    ];
+    patch.payload.turnOrder = ["seat-1"];
+    patch.payload.activeSeatIndex = 0;
+    mockUseRoomSubscription.mockReturnValue({
+      patch,
+      error: null,
+      sendIntent: vi.fn(),
+      status: "open",
+      debugEvents: [],
+      clearDebugEvents: vi.fn()
+    });
+
+    render(<TvApp />);
+
+    const strip = await screen.findByTestId("host-bottom-status-strip");
+    expect(strip).toHaveTextContent(/active: joel/i);
+    expect(strip).toHaveTextContent(/the broken seal/i);
+    expect(strip).toHaveTextContent(/choosing movement/i);
+    expect(strip).not.toHaveTextContent(/mode co-op/i);
+    expect(strip).not.toHaveTextContent(/phase navigation/i);
+    expect(strip).not.toHaveTextContent(/global 0\/6/i);
+  });
+
+  it("keeps the host state banner in reserved layout space instead of absolutely overlaying the map", () => {
+    const styles = readFileSync("src/client/styles.css", "utf8");
+    const bannerRule = styles.match(/\.host-state-banner\s*\{([^}]*)\}/)?.[1] ?? "";
+
+    expect(bannerRule).toMatch(/position:\s*relative/);
+    expect(bannerRule).not.toMatch(/position:\s*absolute/);
+    expect(bannerRule).not.toMatch(/transform:\s*translateX/);
   });
 
   it("shows scenario sheet art, win progress, loss pressure, and last public trigger on TV", async () => {
