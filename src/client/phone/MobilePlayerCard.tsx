@@ -2,7 +2,7 @@ import type { ReactElement, ReactNode } from "react";
 import { describeContractObjective, formatContractObjectiveStatus } from "../../game/contracts/objectives.js";
 import { CardArtImage } from "../shared/CardArtImage.js";
 import { ChallengeBadge } from "../shared/ChallengeBadge.js";
-import { getCharacterPortraitPath, getPhoneSheetFramePath } from "../shared/assetPaths.js";
+import { getCharacterPortraitPath } from "../shared/assetPaths.js";
 import type { AbilityChangeItem } from "../shared/abilityTelemetry.js";
 import {
   buildScenarioOutcomeSummary,
@@ -93,7 +93,6 @@ export function MobilePlayerCard({
   className
 }: MobilePlayerCardProps): ReactElement {
   const portraitPath = getCharacterPortraitPath(self.character.id);
-  const framePath = getPhoneSheetFramePath();
   const heatTrack = buildTrack(self.character.heat);
   const woundTrack = buildTrack(self.character.wounds);
   const latestOutcome = outcomeSummary?.seatId === self.seatId ? outcomeSummary.summary : null;
@@ -135,8 +134,6 @@ export function MobilePlayerCard({
       className={`mobile-player-card phone-sheet-card${className ? ` ${className}` : ""}`}
       aria-label={`${self.character.name} player card`}
     >
-      <img className="mobile-player-card-frame phone-sheet-frame" src={framePath} alt="" aria-hidden="true" />
-
       <div className="phone-sheet-topbar" aria-label="Controller status">
         <div className="phone-sheet-identity-chip">
           <span>{roomCode}</span>

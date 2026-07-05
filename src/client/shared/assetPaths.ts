@@ -3,7 +3,7 @@ import {
   type CardImageType
 } from "../../game/assets/design/cardImageCatalog.js";
 import { getRuntimeCardArtPath } from "../../game/assets/runtime/cardArtRuntimeCatalog.js";
-import type { ContractCard, EncounterCard, PrivateCharacter, PublicPlayerCharacter, Stat } from "./types.js";
+import type { ContractCard, EncounterCard, Stat } from "./types.js";
 
 const characterPortraitById: Record<string, string> = {
   "char_void_marshal_kael_dorn": "/assets/riftfall/characters/char_void_marshal_kael_dorn.png",
@@ -53,28 +53,13 @@ const statFrameByStat: Record<Stat, string> = {
 };
 
 const uiAssetPaths = [
-  "/assets/riftfall/ui/ui_phone_controller_background.png",
-  "/assets/riftfall/ui/ui_character_sheet_frame.png",
   "/assets/riftfall/ui/ui_scenario_frame.png",
   "/assets/riftfall/ui/ui_card_frame_red.png",
   "/assets/riftfall/ui/ui_card_frame_blue.png",
   "/assets/riftfall/ui/ui_card_frame_yellow.png",
-  "/assets/riftfall/ui/ui_tv_board_background.png",
   "/assets/riftfall/ui/dice_roll_combat@2s.gif",
   "/assets/riftfall/ui/dice_roll_combat@2s.lottie.json"
 ];
-
-export function getPhoneBackgroundPath(): string {
-  return "/assets/riftfall/ui/ui_phone_controller_background.png";
-}
-
-export function getCharacterFramePath(): string {
-  return "/assets/riftfall/ui/ui_character_sheet_frame.png";
-}
-
-export function getPhoneSheetFramePath(): string {
-  return "/assets/riftfall/ui/ui_character_sheet_frame.png";
-}
 
 export function getScenarioFramePath(): string {
   return "/assets/riftfall/ui/ui_scenario_frame.png";
@@ -121,10 +106,6 @@ export function getRuntimeAssetPaths(): string[] {
     ...Object.values(statFrameByStat),
     ...uiAssetPaths
   ].filter((value, index, paths) => paths.indexOf(value) === index);
-}
-
-export function getCharacterPortraitStyle(character: Pick<PrivateCharacter | PublicPlayerCharacter, "id">): string {
-  return `url(${getCharacterFramePath()}), url(${getCharacterPortraitPath(character.id)})`;
 }
 
 export function getContractCardStyle(contract: Pick<ContractCard, "id">): string {

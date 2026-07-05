@@ -4156,7 +4156,11 @@ export class GameRoomServer {
   private getPhaseAfterResolution(seatId: string): GameState["phase"] {
     const player = this.state.players.find((entry) => entry.seatId === seatId);
 
-    if (this.state.resolutionSource === "movement" && player?.character.status === "active") {
+    if (
+      this.state.resolutionSource === "movement" &&
+      player?.character.status === "active" &&
+      this.state.lastOutcomeSummary?.success !== false
+    ) {
       return "sector";
     }
 

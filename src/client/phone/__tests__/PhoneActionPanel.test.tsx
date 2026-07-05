@@ -1788,6 +1788,10 @@ describe("PhoneActionPanel", () => {
     expect(screen.getByTestId("phone-roll-result")).toHaveTextContent(/success/i);
     expect(screen.getByTestId("phone-roll-result")).toHaveTextContent("A 8 / D 7 / +1");
     expect(screen.getByTestId("phone-resolution-continue")).toBeVisible();
+    expect(
+      screen.getByTestId("phone-resolution-continue").compareDocumentPosition(screen.getByTestId("phone-roll-result")) &
+        Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy();
 
     fireEvent.click(screen.getByRole("button", { name: /continue/i }));
 
@@ -1886,6 +1890,10 @@ describe("PhoneActionPanel", () => {
     expect(screen.getByTestId("phone-roll-result")).toHaveTextContent(/target: 7/i);
     expect(screen.getByTestId("phone-roll-result")).toHaveTextContent(/failure/i);
     expect(screen.getAllByText(/failed to enter red march outpost/i).length).toBeGreaterThan(0);
+    expect(
+      screen.getByTestId("phone-resolution-continue").compareDocumentPosition(screen.getByTestId("phone-roll-result")) &
+        Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy();
 
     fireEvent.click(screen.getByRole("button", { name: /continue/i }));
 

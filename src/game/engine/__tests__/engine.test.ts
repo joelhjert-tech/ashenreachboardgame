@@ -1189,6 +1189,93 @@ describe("active resolution visibility state", () => {
     expect(server.getState().activeResolution).toBeNull();
   });
 
+  it("recovers an orphaned successful encounter by reopening the sector flow", () => {
+    const baseState = createState({ sessionMode: "single-player" });
+    const encounter = createThreats().get("cinder-veil-stalker");
+
+    if (!encounter) {
+      throw new Error("Missing cinder-veil-stalker fixture");
+    }
+
+    const server = new GameRoomServer(
+      createState({
+        sessionMode: "single-player",
+        turnOrder: ["seat-1"],
+        phase: "resolution",
+        resolutionSource: "encounter",
+        currentEncounter: encounter,
+        activeResolution: null,
+        pendingEffect: null,
+        sectors: [
+          {
+            id: "outer_waymarket",
+            name: "Anchor Market",
+            regionTier: "borderlight",
+            neighbors: [],
+            danger: 0,
+            encounterDecks: { threat: ["signal-static"], anomaly: [], contract: [], artifact: [], escalation: [] }
+          }
+        ],
+        seats: baseState.seats.map((seat) =>
+          seat.seatId === "seat-1"
+            ? {
+                ...seat,
+                characterId: "void-marshal",
+                displayName: "Solo",
+                connected: true
+              }
+            : seat
+        ),
+        players: baseState.players
+          .filter((player) => player.seatId === "seat-1")
+          .map((player) => ({
+            ...player,
+            sectorId: "outer_waymarket",
+            character: {
+              ...player.character,
+              currentSpaceId: "outer_waymarket",
+              status: "active" as const
+            }
+          })),
+        lastOutcomeSummary: {
+          seatId: "seat-1",
+          movedToSectorId: "outer_waymarket",
+          encounterCardId: encounter.id,
+          encounterTitle: encounter.title,
+          encounterCardType: encounter.cardType,
+          checkStat: encounter.stat,
+          die1: 6,
+          die2: 6,
+          statBonus: 3,
+          checkTotal: 15,
+          difficulty: encounter.difficulty,
+          enemyRollerSeatId: null,
+          enemyDie1: 1,
+          enemyDie2: 1,
+          enemyBonus: encounter.difficulty,
+          enemyTotal: 8,
+          success: true,
+          summary: "Cinder-Veil Stalker defeated. Another threat waits in the sector."
+        }
+      }),
+      [],
+      createSequenceRandomSource([]),
+      createThreats(),
+      createCharacters(),
+      createGear(),
+      createContracts()
+    );
+
+    server.handleIntent(createClient("seat-1"), {
+      type: "CONTINUE_RESOLUTION",
+      seatId: "seat-1"
+    });
+
+    expect(server.getState().phase).toBe("action");
+    expect(server.getState().currentEncounter?.id).toBe("signal-static");
+    expect(server.getState().activeResolution?.card?.id).toBe("signal-static");
+  });
+
   it("reopens a cleared shop sector after a successful encounter instead of ending a single-player turn", () => {
     const baseState = createState({ sessionMode: "single-player" });
     const encounter = createThreats().get("cinder-veil-stalker");

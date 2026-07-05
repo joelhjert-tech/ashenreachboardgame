@@ -242,36 +242,6 @@ export function BoardMap({ patch, previousPatch = null, phase, showHeader = true
           : new Set<string>(),
     [activeSectorId, movementPlanner, phase, sectorsById]
   );
-  const movementRouteSegments = useMemo(
-    () =>
-      movementPlanner
-        ? movementPlanner.destinations
-            .filter((destination) => !destination.disabledReason)
-            .flatMap((destination) =>
-              destination.route.slice(0, -1).flatMap((fromNodeId, index) => {
-                const toNodeId = destination.route[index + 1];
-                const from = RIFTFALL_BOARD_NODE_INDEX.get(fromNodeId);
-                const to = toNodeId ? RIFTFALL_BOARD_NODE_INDEX.get(toNodeId) : null;
-
-                if (!from || !to) {
-                  return [];
-                }
-
-                const fromAnchor = getBoardTileRouteAnchor(from);
-                const toAnchor = getBoardTileRouteAnchor(to);
-
-                return [
-                  {
-                    id: `${destination.sectorId}-${index}-${fromNodeId}-${toNodeId}`,
-                    from: fromAnchor,
-                    to: toAnchor
-                  }
-                ];
-              })
-            )
-        : [],
-    [movementPlanner]
-  );
   const selectedNode = RIFTFALL_BOARD_NODE_INDEX.get(selectedNodeId) ?? RIFTFALL_BOARD_NODES[0];
   const selectedBoardSpace = selectedNode ? getBoardSpace(selectedNode.id) : null;
   const selectedSector = selectedNode ? sectorsById.get(selectedNode.id) ?? null : null;
@@ -284,6 +254,32 @@ export function BoardMap({ patch, previousPatch = null, phase, showHeader = true
     selectedMoveDestination && movementPlanner
       ? buildRoutePreviewCopy(selectedMoveDestination, movementPlanner.movementValue, movementPlanner.currentSectorName, true)
       : null;
+  const movementRouteSegments = useMemo(
+    () =>
+      selectedMoveDestination && !selectedMoveDestination.disabledReason
+        ? selectedMoveDestination.route.slice(0, -1).flatMap((fromNodeId, index) => {
+            const toNodeId = selectedMoveDestination.route[index + 1];
+            const from = RIFTFALL_BOARD_NODE_INDEX.get(fromNodeId);
+            const to = toNodeId ? RIFTFALL_BOARD_NODE_INDEX.get(toNodeId) : null;
+
+            if (!from || !to) {
+              return [];
+            }
+
+            const fromAnchor = getBoardTileRouteAnchor(from);
+            const toAnchor = getBoardTileRouteAnchor(to);
+
+            return [
+              {
+                id: `${selectedMoveDestination.sectorId}-${index}-${fromNodeId}-${toNodeId}`,
+                from: fromAnchor,
+                to: toAnchor
+              }
+            ];
+          })
+        : [],
+    [selectedMoveDestination]
+  );
   const selectedGateRules =
     selectedBoardSpace?.movementRequirements?.map((requirement) => {
       const parts = [

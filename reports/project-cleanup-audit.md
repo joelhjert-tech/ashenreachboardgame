@@ -101,7 +101,7 @@ Do not delete these without deeper review.
 - Active board tile PNGs: `public/assets/map/tiles/`.
 - Active character portraits: `public/assets/riftfall/characters/`, via `assetPaths.ts`.
 - Active enemy/threat/card portraits: `public/assets/cards/`, via `generatedCardImagePrompts.ts`.
-- Active UI icons/tokens/frames: `public/assets/riftfall/icons/`, `tokens/`, `ui/`, via `assetPaths.ts`, `imagePrompts.ts`, and audit script.
+- Active UI tokens/frames: `public/assets/riftfall/tokens/` and `public/assets/riftfall/ui/`, via `assetPaths.ts`, `imagePrompts.ts`, and audit script.
 - Missing manifest assets: 10 threat card PNGs listed in `docs/ASSET_PIPELINE.md`.
 - Unmanifested but useful assets: not proven in this pass; requires comparing all files under `public/assets` against audit entries.
 - Duplicate/old placeholders: no placeholder violations from `npm run audit:assets`.

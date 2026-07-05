@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import "@testing-library/jest-dom/vitest";
-import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { PhoneInventoryPanel } from "../PhoneInventoryPanel.js";
 import { PortraitControllerView } from "../PortraitControllerView.js";
@@ -176,6 +176,8 @@ const characters: CharacterCatalogEntry[] = [
 
 afterEach(() => {
   cleanup();
+  window.localStorage.removeItem("ashen-reach-immersive-controller-mode");
+  vi.useRealTimers();
 });
 
 describe("PhoneInventoryPanel", () => {
@@ -240,6 +242,11 @@ describe("PhoneInventoryPanel", () => {
     expect(screen.getByRole("button", { name: /use black route fuse/i })).toHaveTextContent(/use now/i);
     expect(screen.getByLabelText(/coffin rig: passive/i)).toHaveAttribute("data-inventory-state", "applied");
     expect(screen.getByLabelText(/cinder suture kit: locked/i)).toHaveAttribute("data-inventory-state", "inactive");
+
+    cleanup();
+    render(<PhoneInventoryPanel patch={createPatch({ phase: "navigation", encounter: null })} onIntent={vi.fn()} />);
+    expect(screen.getByLabelText(/black route fuse: ready but not usable now/i)).toHaveTextContent(/timing locked/i);
+    expect(screen.getByLabelText(/black route fuse: ready but not usable now/i)).not.toHaveTextContent(/\bready\b/i);
   });
 
   it("sends a gear-use intent from a usable combat card", () => {
@@ -303,7 +310,7 @@ describe("PhoneInventoryPanel", () => {
     });
   });
 
-  it("moves turn actions into the portrait bottom navigation", () => {
+  it("moves turn actions into the portrait bottom navigation", async () => {
     render(
       <PortraitControllerView
         self={createPatch().self}
@@ -326,7 +333,8 @@ describe("PhoneInventoryPanel", () => {
     expect(screen.getByRole("tab", { name: /action/i })).toBeInTheDocument();
     expect(screen.getByRole("tablist", { name: /phone navigation/i })).toHaveClass("phone-portrait-bottom-nav");
     expect(screen.queryByRole("tab", { name: /log/i })).not.toBeInTheDocument();
-    expect(screen.queryByTestId("phone-battle-assist")).not.toBeInTheDocument();
+    await waitFor(() => expect(screen.getByTestId("phone-action-screen")).toHaveClass("phone-portrait-screen-command"));
+    expect(screen.getByTestId("phone-battle-assist")).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("tab", { name: /inventory/i }));
 
@@ -334,19 +342,88 @@ describe("PhoneInventoryPanel", () => {
 
     fireEvent.click(screen.getByRole("tab", { name: /player card/i }));
 
-    expect(screen.queryByTestId("phone-battle-assist")).not.toBeInTheDocument();
-
-    fireEvent.click(screen.getByRole("tab", { name: /battle/i }));
-
-    expect(screen.getByTestId("phone-action-screen")).toHaveClass("phone-portrait-screen-command");
+    await waitFor(() => expect(screen.getByTestId("phone-battle-assist")).toBeInTheDocument());
     expect(screen.getByTestId("phone-action-content-root")).toContainElement(screen.getByTestId("phone-action-active-panel"));
     expect(screen.getByTestId("phone-battle-assist")).toBeInTheDocument();
     expect(screen.queryByText(/turn console/i)).not.toBeInTheDocument();
   });
 
+  it("collapses immersive controller chrome into visible handles after idle time", () => {
+    vi.useFakeTimers();
+    render(
+      <PortraitControllerView
+        self={createPatch().self}
+        roomCode="RT7P4"
+        displayName="Lane"
+        connectionStatus="open"
+        activeSeatId="seat-1"
+        activeContractCard={null}
+        patch={createPatch({ encounter: null, phase: "broadcast" })}
+        characters={characters}
+        onIntent={vi.fn()}
+        onLeave={vi.fn()}
+      />
+    );
+
+    const shell = document.querySelector(".phone-portrait-controller");
+
+    fireEvent.click(screen.getByRole("button", { name: /^immersive$/i }));
+
+    expect(shell).toHaveClass("phone-shell--immersive");
+
+    act(() => {
+      vi.advanceTimersByTime(3700);
+    });
+
+    expect(shell).toHaveClass("phone-shell--controls-collapsed");
+    expect(screen.getByRole("button", { name: /show player summary/i })).toHaveClass("phone-command-handle");
+    expect(screen.getByRole("button", { name: /show command navigation/i })).toHaveClass("phone-command-handle");
+    expect(screen.getByRole("tablist", { name: /phone navigation/i })).toHaveClass("phone-bottomnav--collapsed");
+
+    fireEvent.click(screen.getByRole("button", { name: /show command navigation/i }));
+
+    expect(shell).not.toHaveClass("phone-shell--controls-collapsed");
+    expect(screen.getByRole("tab", { name: /inventory/i })).toBeInTheDocument();
+  });
+
+  it("keeps controls visible in immersive mode while battle input is required", async () => {
+    render(
+      <PortraitControllerView
+        self={createPatch().self}
+        roomCode="RT7P4"
+        displayName="Lane"
+        connectionStatus="open"
+        activeSeatId="seat-1"
+        activeContractCard={null}
+        patch={createPatch()}
+        characters={characters}
+        onIntent={vi.fn()}
+        onLeave={vi.fn()}
+      />
+    );
+
+    await waitFor(() => expect(screen.getByTestId("phone-action-screen")).toBeInTheDocument());
+    vi.useFakeTimers();
+
+    const shell = document.querySelector(".phone-portrait-controller");
+
+    fireEvent.click(screen.getByRole("button", { name: /^immersive$/i }));
+
+    act(() => {
+      vi.advanceTimersByTime(3700);
+    });
+
+    expect(shell).toHaveClass("phone-shell--immersive");
+    expect(shell).not.toHaveClass("phone-shell--controls-collapsed");
+    expect(screen.getByRole("tab", { name: /battle/i })).toBeInTheDocument();
+    expect(screen.getByTestId("phone-battle-assist")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /show command navigation/i })).not.toBeInTheDocument();
+  });
+
   it("shows private rivalry agenda details on the Quest tab", () => {
     const patch = createPatch({
       interactionMode: "rivalry",
+      encounter: null,
       privateRivalry: {
         active: true,
         mode: "rivalry",
@@ -403,6 +480,7 @@ describe("PhoneInventoryPanel", () => {
     const onIntent = vi.fn();
     const patch = createPatch({
       interactionMode: "rivalry",
+      encounter: null,
       privateRivalry: {
         active: true,
         mode: "rivalry",
@@ -460,6 +538,7 @@ describe("PhoneInventoryPanel", () => {
   it("shows revealed rivalry agenda state without exposing new controls", () => {
     const patch = createPatch({
       interactionMode: "rivalry",
+      encounter: null,
       privateRivalry: {
         active: true,
         mode: "rivalry",
@@ -515,6 +594,7 @@ describe("PhoneInventoryPanel", () => {
   it("shows completed rivalry agenda progress and private scoring to the owner", () => {
     const patch = createPatch({
       interactionMode: "rivalry",
+      encounter: null,
       privateRivalry: {
         active: true,
         mode: "rivalry",
@@ -578,6 +658,7 @@ describe("PhoneInventoryPanel", () => {
   it("hides the rivalry agenda on the Quest tab when no private payload is supplied", () => {
     const patch = createPatch({
       interactionMode: "co-op",
+      encounter: null,
       privateRivalry: null
     });
 
@@ -604,6 +685,7 @@ describe("PhoneInventoryPanel", () => {
 
   it("shows public scenario sheet progress and pressure on the Quest tab without private agenda data", () => {
     const patch = createPatch({
+      encounter: null,
       activeScenario: {
         id: "scenario_broken_seal",
         name: "The Broken Seal",

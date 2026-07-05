@@ -53,9 +53,8 @@ export const requiredImageGenerationChecklist = [
   "12 contract card art images",
   "15 threat card art images",
   "12 route-note/Heat/artifact/wargear sample card images",
-  "8 icons",
   "4 tokens",
-  "7 UI frames/backgrounds",
+  "4 UI frames/backgrounds",
   "6 printable scenario sheet illustrations"
 ] as const;
 

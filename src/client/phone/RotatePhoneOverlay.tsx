@@ -1,5 +1,4 @@
 import type { ReactElement } from "react";
-import { getPhoneBackgroundPath } from "../shared/assetPaths.js";
 
 interface RotatePhoneOverlayProps {
   playerName: string;
@@ -16,7 +15,7 @@ export function RotatePhoneOverlay({
 }: RotatePhoneOverlayProps): ReactElement {
   return (
     <section className="rotate-overlay" aria-live="polite">
-      <div className="rotate-overlay-card" style={{ backgroundImage: `url(${getPhoneBackgroundPath()})` }}>
+      <div className="rotate-overlay-card">
         <div className="rotate-overlay-panel">
           <p className="rotate-overlay-kicker">Limited Portrait View</p>
           <h1>{playerName}</h1>

@@ -183,6 +183,20 @@ describe("BoardMap", () => {
             strategicTags: ["danger"]
           },
           {
+            sectorId: "glassmere-spindle",
+            name: "Glassmere Spindle",
+            ring: "outer",
+            distance: 2,
+            route: ["ashwake-crossing", "glassmere-spindle"],
+            routeNames: ["Ashwake Crossing", "Glassmere Spindle"],
+            tags: ["signal"],
+            threatIcons: ["blue"],
+            ruleText: "The spindle hums.",
+            faceUpThreats: [],
+            occupants: [],
+            strategicTags: ["safe"]
+          },
+          {
             sectorId: "hollow-veil-yard",
             name: "Hollow Veil Yard",
             ring: "outer",
@@ -204,11 +218,16 @@ describe("BoardMap", () => {
     render(<BoardMap patch={patch} phase="navigation" />);
 
     expect(screen.getByTestId("sector-node-emberwatch-step")).toHaveAttribute("data-legal-target", "true");
-    expect(screen.getByTestId("sector-node-glassmere-spindle")).toHaveAttribute("data-legal-target", "false");
+    expect(screen.getByTestId("sector-node-glassmere-spindle")).toHaveAttribute("data-legal-target", "true");
     expect(screen.getByTestId("sector-node-mirecoil-beacon")).toHaveAttribute("data-legal-target", "false");
     expect(screen.getByTestId("sector-node-hollow-veil-yard")).toHaveAttribute("data-legal-target", "false");
+    expect(screen.queryByTestId("movement-route-emberwatch-step-0-ashwake-crossing-mirecoil-beacon")).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId("sector-node-emberwatch-step"));
+
     expect(screen.getByTestId("movement-route-emberwatch-step-0-ashwake-crossing-mirecoil-beacon")).toBeInTheDocument();
     expect(screen.getByTestId("movement-route-emberwatch-step-1-mirecoil-beacon-emberwatch-step")).toBeInTheDocument();
+    expect(screen.queryByTestId("movement-route-glassmere-spindle-0-ashwake-crossing-glassmere-spindle")).not.toBeInTheDocument();
     expect(screen.queryByTestId("movement-route-hollow-veil-yard-0-ashwake-crossing-glassmere-spindle")).not.toBeInTheDocument();
   });
 

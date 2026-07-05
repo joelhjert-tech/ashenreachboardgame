@@ -230,6 +230,17 @@ function ActiveResolutionCard({
         <span>{resolutionStageLabel[resolution.stage]}</span>
         <strong>{resolution.card?.title ?? outcome?.title ?? "Resolution"}</strong>
       </div>
+      {canContinue && (
+        <GameButton
+          tone="primary"
+          className="phone-button phone-button-primary phone-resolution-continue phone-resolution-continue-priority"
+          data-testid="phone-resolution-continue"
+          type="button"
+          onClick={onContinue}
+        >
+          Continue
+        </GameButton>
+      )}
       {battle && (
         <div className="phone-resolution-grid" data-testid="phone-battle-panel">
           <span>{battle.enemyName ?? "Check"}</span>
@@ -272,17 +283,6 @@ function ActiveResolutionCard({
           )}
         </div>
       )}
-      {canContinue && (
-        <GameButton
-          tone="primary"
-          className="phone-button phone-button-primary phone-resolution-continue"
-          data-testid="phone-resolution-continue"
-          type="button"
-          onClick={onContinue}
-        >
-          Continue
-        </GameButton>
-      )}
     </div>
   );
 }
@@ -308,6 +308,15 @@ function OrphanResolutionRecoveryCard({
         <span>Resolution</span>
         <strong>{outcome.encounterTitle ?? "Roll result"}</strong>
       </div>
+      <GameButton
+        tone="primary"
+        className="phone-button phone-button-primary phone-resolution-continue phone-resolution-continue-priority"
+        data-testid="phone-resolution-continue"
+        type="button"
+        onClick={onContinue}
+      >
+        Continue
+      </GameButton>
       <div className="phone-resolution-roll" data-testid="phone-roll-result">
         {dice.length > 0 && total !== null && target !== null && (
           <CombatDiceAnimation
@@ -342,15 +351,6 @@ function OrphanResolutionRecoveryCard({
       <div className="phone-resolution-outcome">
         <p>{outcome.summary}</p>
       </div>
-      <GameButton
-        tone="primary"
-        className="phone-button phone-button-primary phone-resolution-continue"
-        data-testid="phone-resolution-continue"
-        type="button"
-        onClick={onContinue}
-      >
-        Continue
-      </GameButton>
     </div>
   );
 }

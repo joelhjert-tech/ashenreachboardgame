@@ -59,7 +59,7 @@ function InventoryThumbnail({ card }: { card: InventoryCardViewModel }): ReactEl
 function getStatusLabel(status: InventoryCardViewModel["status"]): string {
   switch (status) {
     case "Ready but not usable now":
-      return "Ready";
+      return "Timing locked";
     case "Locked / condition not met":
       return "Locked";
     default:
