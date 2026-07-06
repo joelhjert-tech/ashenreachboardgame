@@ -1606,6 +1606,10 @@ export class GameRoomServer {
       throw new IntentRejectedError("USE_FOLLOWER", `Follower ${followerId} is not attached to this character`);
     }
 
+    if (!follower.activeEffect && !follower.useLimit) {
+      throw new IntentRejectedError("USE_FOLLOWER", `${follower.name} is passive and applies automatically.`);
+    }
+
     const fandiablosUse = follower?.id === FANDIABLOS_ID ? this.createFandiablosUseEffect(seatId) : null;
     const effect = this.resolveEffect((follower?.activeEffect as EncounterEffect | undefined) ?? this.getFollowerRoleEffect(follower), seatId);
     const rollModifier = this.createFollowerRollModifier(seatId, follower);

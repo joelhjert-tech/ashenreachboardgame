@@ -2432,6 +2432,10 @@ export function PhoneActionPanel({
     );
 
     (self.character.followers ?? []).forEach((follower) => {
+      if (!follower.useLimit) {
+        return;
+      }
+
       const useState = getObjectUseState(patch, "follower", follower.id);
       const useDisabledReason = useState?.disabledReason ?? null;
       followerActions.push({

@@ -220,6 +220,53 @@ describe("PhoneActionPanel", () => {
     expect(screen.getAllByText(/choir defector has already been used this round/i).length).toBeGreaterThan(0);
   });
 
+  it("does not show a misleading Use action for passive-only followers", () => {
+    render(
+      <PhoneActionPanel
+        characters={characters}
+        onIntent={vi.fn()}
+        selectedTurnTab="action"
+        patch={createPatch({
+          encounter: null,
+          self: {
+            seatId: "seat-1",
+            sectorId: "ashwake-crossing",
+            hand: [],
+            notes: [],
+            character: {
+              id: "void-marshal",
+              name: "Sable Vey",
+              archetype: "Void Marshal",
+              currentSpaceId: "ashwake-crossing",
+              status: "active",
+              stats: { command: 3, grit: 2, signal: 1, guile: 2, forge: 1 },
+              trophies: 0,
+              heat: 1,
+              wounds: 0,
+              scars: [],
+              activeContract: null,
+              heldGear: [],
+              equippedGear: { weapon: null, armor: null, utility: null },
+              followers: [
+                {
+                  id: "grave-medic-korr",
+                  name: "Grave Medic Korr",
+                  role: "medic",
+                  text: "Passive: patch wounds after the dust settles.",
+                  loyalty: 2,
+                  lossCondition: "choice"
+                }
+              ],
+              abilities: []
+            }
+          }
+        })}
+      />
+    );
+
+    expect(screen.queryByRole("button", { name: /use grave medic korr/i })).not.toBeInTheDocument();
+  });
+
   it("hides action buttons when this seat is not active", () => {
     render(
       <PhoneActionPanel

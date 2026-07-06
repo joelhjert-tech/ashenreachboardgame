@@ -2211,6 +2211,10 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
         return reject(state, action, `Follower ${useFollowerAction.followerId} is not attached to this character`);
       }
 
+      if (!follower.activeEffect && !follower.useLimit) {
+        return reject(state, action, `${follower.name} is passive and applies automatically.`);
+      }
+
       try {
         ensureUseLimitAvailable(
           state,

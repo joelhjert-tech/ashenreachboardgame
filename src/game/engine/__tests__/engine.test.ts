@@ -1778,15 +1778,7 @@ describe("active objects and table interaction", () => {
           : player
       )
     });
-    const server = new GameRoomServer(
-      withOnlyConnectedSeat(state, "seat-1"),
-      [],
-      createSequenceRandomSource([0, 0, 0, 0]),
-      createThreats(),
-      createCharacters(),
-      createGear(),
-      createContracts()
-    );
+    const server = new GameRoomServer(state, [], createSequenceRandomSource([0]), createThreats(), createCharacters(), createGear(), createContracts());
     const client = createCapturingClient("seat-1", sent);
 
     server.handleIntent(client, {
@@ -1986,7 +1978,15 @@ describe("active objects and table interaction", () => {
           : player
       )
     });
-    const server = new GameRoomServer(state, [], createSequenceRandomSource([0]), createThreats(), createCharacters(), createGear(), createContracts());
+    const server = new GameRoomServer(
+      withOnlyConnectedSeat(state, "seat-1"),
+      [],
+      createSequenceRandomSource([0, 0, 0, 0]),
+      createThreats(),
+      createCharacters(),
+      createGear(),
+      createContracts()
+    );
 
     runIntent(server, {
       type: "USE_GEAR",
@@ -2043,7 +2043,15 @@ describe("active objects and table interaction", () => {
           : player
       )
     });
-    const server = new GameRoomServer(state, [], createSequenceRandomSource([0]), createThreats(), createCharacters(), createGear(), createContracts());
+    const server = new GameRoomServer(
+      withOnlyConnectedSeat(state, "seat-1"),
+      [],
+      createSequenceRandomSource([0, 0, 0, 0]),
+      createThreats(),
+      createCharacters(),
+      createGear(),
+      createContracts()
+    );
     const client = createCapturingClient("seat-1", sent);
 
     server.handleIntent(client, {
@@ -2061,6 +2069,25 @@ describe("active objects and table interaction", () => {
     expect(player?.character.heat).toBe(1);
     expect(server.getState().activeResolution?.battle?.modifiers).toContainEqual({ label: "Red March Warbell", value: 2 });
     expect(sent.some((message) => message.type === "INTENT_REJECTED" && String(message.reason).includes("already been used this turn"))).toBe(true);
+
+    runIntent(server, {
+      type: "COMBAT_REQUESTED",
+      seatId: "seat-1",
+      stat: "grit"
+    });
+
+    const resolvedCombat = [...server.getState().eventLog].reverse().find((entry) => {
+      return (entry as { type?: string }).type === "COMBAT_RESOLVED";
+    }) as { statBonus?: number; total?: number; modifierSources?: Array<{ label: string; value: number }> } | undefined;
+
+    expect(resolvedCombat?.statBonus).toBe(4);
+    expect(resolvedCombat?.total).toBe(6);
+    expect(resolvedCombat?.modifierSources).toEqual(
+      expect.arrayContaining([
+        { label: "Base Grit", value: 2 },
+        { label: "Red March Warbell", value: 2 }
+      ])
+    );
   });
 
   it("rejects Red March Warbell before it can falsely project a battle modifier", () => {
@@ -2203,6 +2230,43 @@ describe("active objects and table interaction", () => {
     expect(player?.character.heat).toBe(1);
     expect(player?.character.followers).toHaveLength(1);
     expect(server.getState().lastOutcomeSummary?.summary).toContain("Crownless Advocate used");
+  });
+
+  it("rejects passive-only follower use instead of synthesizing a phone-only action", () => {
+    const sent: Array<Record<string, unknown>> = [];
+    const passiveFollower: Follower = {
+      id: "grave-medic-korr",
+      name: "Grave Medic Korr",
+      role: "medic",
+      text: "Passive: patch wounds after the dust settles.",
+      loyalty: 2,
+      lossCondition: "choice"
+    };
+    const state = createState({
+      players: createState().players.map((player) =>
+        player.seatId === "seat-1"
+          ? {
+              ...player,
+              character: {
+                ...player.character,
+                heat: 2,
+                followers: [passiveFollower]
+              }
+            }
+          : player
+      )
+    });
+    const server = new GameRoomServer(state, [], createSequenceRandomSource([0]), createThreats(), createCharacters(), createGear(), createContracts());
+
+    server.handleIntent(createCapturingClient("seat-1", sent), {
+      type: "USE_FOLLOWER",
+      seatId: "seat-1",
+      followerId: "grave-medic-korr"
+    });
+
+    expect(sent.some((message) => message.type === "INTENT_REJECTED" && String(message.reason).includes("passive and applies automatically"))).toBe(true);
+    expect(server.getState().eventLog.some((entry) => (entry as { type?: string }).type === "USE_FOLLOWER")).toBe(false);
+    expect(server.getState().players.find((entry) => entry.seatId === "seat-1")?.character.heat).toBe(2);
   });
 
   it("keeps Fandiablos unique across the whole game", () => {
