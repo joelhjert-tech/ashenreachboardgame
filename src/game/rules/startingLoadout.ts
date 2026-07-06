@@ -20,6 +20,7 @@ export type StartingLoadoutOptions = {
   sessionMode: SessionMode;
   seatIndex: number;
   catalogs: StartingLoadoutCatalogs;
+  assignStartingContract?: boolean;
 };
 
 function cloneCharacter(character: Character): Character {
@@ -90,7 +91,10 @@ function resolveStartingFollowerIds(character: Character, sessionMode: SessionMo
 
 export function applyStartingLoadout(character: Character, options: StartingLoadoutOptions): Character {
   const nextCharacter = cloneCharacter(character);
-  const startingContractId = resolveStartingContractId(nextCharacter, options.catalogs.contracts, options.seatIndex);
+  const assignStartingContract = options.assignStartingContract ?? true;
+  const startingContractId = assignStartingContract
+    ? resolveStartingContractId(nextCharacter, options.catalogs.contracts, options.seatIndex)
+    : null;
   const startingGear = resolveStartingGearIds(nextCharacter, options.sessionMode)
     .map((gearId) => options.catalogs.gear.get(gearId))
     .filter((gear): gear is GearItem => Boolean(gear));
@@ -103,7 +107,7 @@ export function applyStartingLoadout(character: Character, options: StartingLoad
     salvage:
       nextCharacter.startingSalvage ??
       (isSinglePlayerMode(options.sessionMode) ? SOLO_STARTING_SALVAGE : NORMAL_STARTING_SALVAGE),
-    activeContract: nextCharacter.activeContract
+    activeContract: assignStartingContract && nextCharacter.activeContract
       ? { ...nextCharacter.activeContract }
       : startingContractId
         ? { contractId: startingContractId, progress: 0 }

@@ -69,6 +69,16 @@ function continueVisibleResolution(roomServer: GameRoomServer, seatId = "seat-1"
   }
 }
 
+function selectFirstStartingContract(roomServer: GameRoomServer, seatId: string): void {
+  const contractId = roomServer.getState().seats.find((seat) => seat.seatId === seatId)?.startingContractOptions[0];
+
+  if (!contractId) {
+    throw new Error(`Missing starting contract option for ${seatId}`);
+  }
+
+  roomServer.selectStartingContract(seatId, contractId);
+}
+
 function endBroadcastTurn(roomServer: GameRoomServer, seatId = "seat-1"): void {
   roomServer.handleIntent(createPhoneClient(seatId) as never, {
     type: "PHASE_ADVANCED",
@@ -582,6 +592,7 @@ describe("scenario confrontation flow", () => {
     const roomServer = new GameRoomServer(state, [], createSequenceRandomSource([0]));
 
     roomServer.joinSeat("Solo", "signal-witch");
+    selectFirstStartingContract(roomServer, "seat-1");
     roomServer.setSeatReady("seat-1", true);
     roomServer.startSession();
 
@@ -594,6 +605,7 @@ describe("scenario confrontation flow", () => {
     const roomServer = new GameRoomServer(state, [], createSequenceRandomSource([0]));
 
     roomServer.joinSeat("Solo", "signal-witch");
+    selectFirstStartingContract(roomServer, "seat-1");
     roomServer.setSeatReady("seat-1", true);
     roomServer.startSession();
 
@@ -638,6 +650,7 @@ describe("scenario confrontation flow", () => {
     const roomServer = new GameRoomServer(state, [], createSequenceRandomSource([2, 0]));
 
     roomServer.joinSeat("Solo", "signal-witch");
+    selectFirstStartingContract(roomServer, "seat-1");
     roomServer.setSeatReady("seat-1", true);
     roomServer.startSession();
 
@@ -744,6 +757,7 @@ describe("scenario confrontation flow", () => {
     const roomServer = new GameRoomServer(state, [], createSequenceRandomSource([0]));
 
     roomServer.joinSeat("Solo", "signal-witch");
+    selectFirstStartingContract(roomServer, "seat-1");
     roomServer.setSeatReady("seat-1", true);
     roomServer.startSession();
 

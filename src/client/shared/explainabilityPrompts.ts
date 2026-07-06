@@ -308,7 +308,14 @@ export function buildCurrentTablePrompt(patch: StatePatch<PublicPatchPayload> | 
   if (payload.status === "lobby") {
     const joined = payload.seats.filter((seat) => seat.displayName).length;
     const ready = payload.seats.filter((seat) => seat.displayName && seat.ready).length;
+    const waitingForMission = payload.seats.find((seat) => seat.displayName && !seat.startingMissionSelected);
+    const missionReady = payload.seats.filter((seat) => seat.displayName && seat.startingMissionSelected).length;
     const readyText =
+      waitingForMission
+        ? `Waiting for ${waitingForMission.displayName ?? waitingForMission.seatId} to choose a starting mission.`
+        : joined > 0 && missionReady < joined
+          ? `Waiting for starting missions. Missions ${missionReady}/${Math.max(joined, 1)}.`
+          :
       joined > 0 && ready >= joined
         ? "All joined operatives are ready. Host may start when setup is correct."
         : `Waiting for all players to ready on phone. Ready ${ready}/${Math.max(joined, 1)}.`;
@@ -319,8 +326,12 @@ export function buildCurrentTablePrompt(patch: StatePatch<PublicPatchPayload> | 
       requiredActorSeatId: null,
       requiredActorName: null,
       phaseReason: "The expedition has not started.",
-      availableActionSummary: "Players join and ready from phones.",
-      lockedReason: joined > 0 && ready < joined ? "Start is locked until joined players are ready." : null,
+      availableActionSummary: "Players join, choose characters, choose starting missions, and ready from phones.",
+      lockedReason: waitingForMission
+        ? "Start is locked until joined players choose starting missions."
+        : joined > 0 && ready < joined
+          ? "Start is locked until joined players are ready."
+          : null,
       lastOutcomeSummary: latestOutcome,
       watchText: "Phones control character selection.",
       tone: "waiting"

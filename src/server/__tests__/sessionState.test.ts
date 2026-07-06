@@ -53,13 +53,14 @@ describe("canonical sector graph", () => {
     }
   });
 
-  it("applies normal starting salvage, character gear, and contracts without granting mode followers", () => {
+  it("applies normal starting salvage and character gear without auto-assigning starting contracts", () => {
     const state = createInitialSessionState("session-alpha", "multiplayer");
     const firstPlayer = state.players[0];
 
     expect(firstPlayer?.character.salvage).toBe(3);
-    expect(firstPlayer?.character.activeContract).toMatchObject({ progress: 0 });
-    expect(firstPlayer?.character.activeContract?.contractId).toBe("dominion-warbell-recovery");
+    expect(firstPlayer?.character.activeContract).toBeNull();
+    expect(state.seats[0]?.startingContractOptions).toEqual([]);
+    expect(state.seats[0]?.selectedStartingContractId).toBeNull();
     expect(firstPlayer?.character.heldGear.map((item) => item.id)).toEqual(["cinder-suture-kit"]);
     expect(firstPlayer?.character.followers ?? []).toEqual([]);
     expect(state.soloRerollCharges).toEqual({});
@@ -97,7 +98,9 @@ describe("canonical sector graph", () => {
     expect(state.scenarioProgress).toEqual({ sealTokens: 8 });
     expect(state.soloRerollCharges).toEqual({ "seat-1": 1 });
     expect(state.players[0]?.character.salvage).toBe(4);
-    expect(state.players[0]?.character.activeContract).toMatchObject({ progress: 0 });
+    expect(state.players[0]?.character.activeContract).toBeNull();
+    expect(state.seats[0]?.startingContractOptions).toEqual([]);
+    expect(state.seats[0]?.selectedStartingContractId).toBeNull();
     expect(state.players[0]?.character.heldGear.map((item) => item.id)).toEqual(["cinder-suture-kit"]);
     expect(state.players[0]?.character.followers?.map((follower) => follower.id)).toEqual(["grave-scribe"]);
     expect(tvProjection.sessionMode).toBe("single-player");

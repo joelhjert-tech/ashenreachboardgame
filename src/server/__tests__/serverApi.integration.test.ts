@@ -131,6 +131,50 @@ async function postJson<TResponse>(
   };
 }
 
+function firstStartingContractId(harness: StartedAshenReachServer, seatId: string): string {
+  const contractId = harness.roomServer.getState().seats.find((seat) => seat.seatId === seatId)?.startingContractOptions[0];
+
+  if (!contractId) {
+    throw new Error(`Missing starting contract option for ${seatId}`);
+  }
+
+  return contractId;
+}
+
+function selectFirstStartingContract(harness: StartedAshenReachServer, seatId: string): string {
+  const contractId = firstStartingContractId(harness, seatId);
+  harness.roomServer.selectStartingContract(seatId, contractId);
+  return contractId;
+}
+
+async function selectFirstStartingMissionViaApi(
+  baseUrl: string,
+  roomCode: string,
+  seatToken: string,
+  harness: StartedAshenReachServer,
+  seatId: string
+): Promise<string> {
+  const contractId = firstStartingContractId(harness, seatId);
+  const selected = await postJson<{ roomCode: string; seatId: string; selectedStartingContractId: string }>(
+    baseUrl,
+    "/api/session/starting-mission",
+    {
+      roomCode,
+      seatToken,
+      contractId
+    }
+  );
+
+  expect(selected.status).toBe(200);
+  expect(selected.payload).toMatchObject({
+    roomCode,
+    seatId,
+    selectedStartingContractId: contractId
+  });
+
+  return contractId;
+}
+
 function primeLiveScenarioState(
   state: GameState,
   options: {
@@ -385,6 +429,7 @@ describe("server API scenario flow", () => {
       characterId: "void-marshal"
     });
 
+    selectFirstStartingContract(harness, joined.payload.seatId);
     harness.roomServer.setSeatReady(joined.payload.seatId, true);
 
     const started = await postJson<{
@@ -436,6 +481,17 @@ describe("server API scenario flow", () => {
     expect(forgedReady.status).toBe(403);
     expect(forgedReady.payload.error).toContain("Invalid seat token");
     expect(harness.roomServer.getState().seats.find((seat) => seat.seatId === joined.payload.seatId)?.ready).toBe(false);
+
+    const missingMissionReady = await postJson<{ error: string }>(baseUrl, "/api/session/ready", {
+      roomCode: created.payload.roomCode,
+      seatToken: joined.payload.seatToken,
+      ready: true
+    });
+
+    expect(missingMissionReady.status).toBe(400);
+    expect(missingMissionReady.payload.error).toContain("Choose a starting mission");
+
+    await selectFirstStartingMissionViaApi(baseUrl, created.payload.roomCode, joined.payload.seatToken, harness, joined.payload.seatId);
 
     const ready = await postJson<{
       roomCode: string;
@@ -555,6 +611,9 @@ describe("server API scenario flow", () => {
       seatId: "seat-2"
     });
 
+    await selectFirstStartingMissionViaApi(baseUrl, created.payload.roomCode, first.payload.seatToken, harness, first.payload.seatId);
+    await selectFirstStartingMissionViaApi(baseUrl, created.payload.roomCode, second.payload.seatToken, harness, second.payload.seatId);
+
     const firstReady = await postJson<{ ready: boolean; seatId: string }>(baseUrl, "/api/session/ready", {
       roomCode: created.payload.roomCode,
       seatToken: first.payload.seatToken,
@@ -634,6 +693,7 @@ describe("server API scenario flow", () => {
     try {
       await waitForStatePatch(phone, (message) => message.payload.self?.seatId === joined.payload.seatId);
 
+      selectFirstStartingContract(harness, joined.payload.seatId);
       harness.roomServer.setSeatReady(joined.payload.seatId, true);
 
       const started = await postJson<{
@@ -780,6 +840,7 @@ describe("server API scenario flow", () => {
     try {
       await waitForStatePatch(phone, (message) => message.payload.self?.seatId === joined.payload.seatId);
 
+      selectFirstStartingContract(harness, joined.payload.seatId);
       harness.roomServer.setSeatReady(joined.payload.seatId, true);
 
       const started = await postJson<{
@@ -908,6 +969,7 @@ describe("server API scenario flow", () => {
     try {
       await waitForStatePatch(phone, (message) => message.payload.self?.seatId === joined.payload.seatId);
 
+      selectFirstStartingContract(harness, joined.payload.seatId);
       harness.roomServer.setSeatReady(joined.payload.seatId, true);
 
       const started = await postJson<{

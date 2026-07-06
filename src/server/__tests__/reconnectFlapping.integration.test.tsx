@@ -91,6 +91,8 @@ function createState(): GameState {
         seatId,
         characterId: "void-marshal",
         displayName: "Seat One",
+        startingContractOptions: [],
+        selectedStartingContractId: null,
         connected: false,
         ready: false,
         kicked: false,

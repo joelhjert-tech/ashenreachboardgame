@@ -190,6 +190,16 @@ function isPhonePatch(message: ServerEnvelope): message is Extract<ServerEnvelop
   return isStatePatch(message) && Object.hasOwn(message.payload, "self");
 }
 
+function selectFirstStartingContract(roomServer: GameRoomServer, seatId: string): void {
+  const contractId = roomServer.getState().seats.find((seat) => seat.seatId === seatId)?.startingContractOptions[0];
+
+  if (!contractId) {
+    throw new Error(`Missing starting contract option for ${seatId}`);
+  }
+
+  roomServer.selectStartingContract(seatId, contractId);
+}
+
 function broadcastHarnessPatch(harness: Harness): void {
   (harness.roomServer as unknown as BroadcastableRoomServer).broadcastPatch();
 }
@@ -298,6 +308,7 @@ describe("player count integration matrix", () => {
       await Promise.all(phones.map((phone) => phone.waitFor((message) => isStatePatch(message) && Object.hasOwn(message.payload, "self"))));
 
       for (const joinResult of joinResults) {
+        selectFirstStartingContract(harness.roomServer, joinResult.seatId);
         harness.roomServer.setSeatReady(joinResult.seatId, true);
       }
 
@@ -392,6 +403,7 @@ describe("player count integration matrix", () => {
       await Promise.all(phones.map((phone) => phone.waitFor(isPhonePatch)));
 
       for (const joinResult of joinResults) {
+        selectFirstStartingContract(harness.roomServer, joinResult.seatId);
         harness.roomServer.setSeatReady(joinResult.seatId, true);
       }
 

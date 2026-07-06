@@ -6,6 +6,8 @@ export interface SessionStartSeat {
   seatId: string;
   characterId?: string | null;
   displayName?: string | null;
+  selectedStartingContractId?: string | null;
+  startingMissionSelected?: boolean;
   ready: boolean;
   kicked?: boolean;
 }
@@ -17,6 +19,7 @@ export interface SessionStartReadiness {
   occupiedSeatIds: string[];
   occupiedCount: number;
   selectedCharacterCount: number;
+  selectedMissionCount: number;
   readyCount: number;
 }
 
@@ -27,12 +30,16 @@ export function getSessionStartReadiness(input: {
 }): SessionStartReadiness {
   const occupiedSeats = input.seats.filter((seat) => Boolean(seat.displayName) && !seat.kicked);
   const selectedCharacterCount = occupiedSeats.filter((seat) => Boolean(seat.characterId)).length;
+  const selectedMissionCount = occupiedSeats.filter(
+    (seat) => Boolean(seat.selectedStartingContractId) || seat.startingMissionSelected === true
+  ).length;
   const readyCount = occupiedSeats.filter((seat) => seat.ready).length;
   const base = {
     occupiedSeats,
     occupiedSeatIds: occupiedSeats.map((seat) => seat.seatId),
     occupiedCount: occupiedSeats.length,
     selectedCharacterCount,
+    selectedMissionCount,
     readyCount
   };
 
@@ -73,6 +80,19 @@ export function getSessionStartReadiness(input: {
       ...base,
       canStart: false,
       reason: "Waiting for player to choose character"
+    };
+  }
+
+  if (selectedMissionCount < occupiedSeats.length) {
+    const waitingSeat = occupiedSeats.find(
+      (seat) => !Boolean(seat.selectedStartingContractId) && seat.startingMissionSelected !== true
+    );
+    const waitingName = waitingSeat?.displayName ?? waitingSeat?.seatId ?? "player";
+
+    return {
+      ...base,
+      canStart: false,
+      reason: `Waiting for ${waitingName} to choose a starting mission`
     };
   }
 

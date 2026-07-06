@@ -622,9 +622,9 @@ function createState(overrides: Partial<GameState> = {}): GameState {
       }
     ],
     seats: [
-      { seatId: "seat-1", characterId: "void-marshal", displayName: "Seat One", connected: true, ready: true, kicked: false, joinToken: "seat:session-alpha:seat-1" },
-      { seatId: "seat-2", characterId: "signal-witch", displayName: "Seat Two", connected: true, ready: true, kicked: false, joinToken: "seat:session-alpha:seat-2" },
-      { seatId: "seat-3", characterId: "grave-engineer", displayName: "Seat Three", connected: true, ready: true, kicked: false, joinToken: "seat:session-alpha:seat-3" }
+      { seatId: "seat-1", characterId: "void-marshal", displayName: "Seat One", startingContractOptions: [], selectedStartingContractId: null, connected: true, ready: true, kicked: false, joinToken: "seat:session-alpha:seat-1" },
+      { seatId: "seat-2", characterId: "signal-witch", displayName: "Seat Two", startingContractOptions: [], selectedStartingContractId: null, connected: true, ready: true, kicked: false, joinToken: "seat:session-alpha:seat-2" },
+      { seatId: "seat-3", characterId: "grave-engineer", displayName: "Seat Three", startingContractOptions: [], selectedStartingContractId: null, connected: true, ready: true, kicked: false, joinToken: "seat:session-alpha:seat-3" }
     ],
     players: [
       {
@@ -2470,6 +2470,41 @@ describe("movement rolls", () => {
       status: "lobby",
       phase: "start",
       turnOrder: [],
+      seats: [
+        {
+          seatId: "seat-1",
+          characterId: "void-marshal",
+          displayName: "Seat One",
+          startingContractOptions: ["choir-hush-census", "compact-cleanse-ledger", "contract-beacon"],
+          selectedStartingContractId: "choir-hush-census",
+          connected: true,
+          ready: true,
+          kicked: false,
+          joinToken: "seat:session-alpha:seat-1"
+        },
+        {
+          seatId: "seat-2",
+          characterId: "signal-witch",
+          displayName: "Seat Two",
+          startingContractOptions: ["compact-cleanse-ledger", "contract-beacon", "contract-lantern-run"],
+          selectedStartingContractId: "compact-cleanse-ledger",
+          connected: true,
+          ready: true,
+          kicked: false,
+          joinToken: "seat:session-alpha:seat-2"
+        },
+        {
+          seatId: "seat-3",
+          characterId: "grave-engineer",
+          displayName: "Seat Three",
+          startingContractOptions: ["contract-beacon", "contract-lantern-run", "cartel-crossing-thread"],
+          selectedStartingContractId: "contract-beacon",
+          connected: true,
+          ready: true,
+          kicked: false,
+          joinToken: "seat:session-alpha:seat-3"
+        }
+      ],
       movementRolls: undefined
     });
     const server = new GameRoomServer(

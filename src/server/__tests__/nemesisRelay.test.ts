@@ -17,6 +17,16 @@ function createClient(seatId: string): ConnectedClient {
   };
 }
 
+function selectFirstStartingContract(server: GameRoomServer, seatId: string): void {
+  const contractId = server.getState().seats.find((seat) => seat.seatId === seatId)?.startingContractOptions[0];
+
+  if (!contractId) {
+    throw new Error(`Missing starting contract option for ${seatId}`);
+  }
+
+  server.selectStartingContract(seatId, contractId);
+}
+
 function startRelayServer(playerCount: 1 | 2 = 1, randomSequence: number[] = [0]): GameRoomServer {
   const state = createInitialSessionState(
     "relay-test",
@@ -28,10 +38,12 @@ function startRelayServer(playerCount: 1 | 2 = 1, randomSequence: number[] = [0]
   const server = new GameRoomServer(state, [], createSequenceRandomSource(randomSequence));
 
   server.joinSeat("Lead", "void-marshal");
+  selectFirstStartingContract(server, "seat-1");
   server.setSeatReady("seat-1", true);
 
   if (playerCount === 2) {
     server.joinSeat("Assist", "signal-witch");
+    selectFirstStartingContract(server, "seat-2");
     server.setSeatReady("seat-2", true);
   }
 

@@ -121,6 +121,8 @@ function createMatrixState(playerCount: number, overrides: Partial<GameState> = 
       seatId: `seat-${seatNumber}`,
       characterId: roster[index % roster.length],
       displayName: `Seat ${seatNumber}`,
+      startingContractOptions: [],
+      selectedStartingContractId: null,
       connected: true,
       ready: true,
       kicked: false,

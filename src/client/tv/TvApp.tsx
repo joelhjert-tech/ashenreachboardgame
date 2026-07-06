@@ -615,6 +615,7 @@ function OperativesRail({ patch, characterCatalog, activeSeatId, sessionMode, ba
       displayName: null,
       connected: false,
       ready: false,
+      startingMissionSelected: false,
       kicked: false
     }));
   const seats = battleMode && activeSeatId ? allSeats.filter((seat) => seat.seatId === activeSeatId) : allSeats;
@@ -647,6 +648,8 @@ function OperativesRail({ patch, characterCatalog, activeSeatId, sessionMode, ba
                   ? "Down"
                   : seat.ready
                     ? "Ready"
+                    : seat.startingMissionSelected
+                      ? "Mission"
                     : seat.connected
                       ? "Joined"
                       : "Offline";
@@ -675,6 +678,13 @@ function OperativesRail({ patch, characterCatalog, activeSeatId, sessionMode, ba
                     {characterPresentation.role} | {toTitleCase(characterPresentation.complexity)}
                   </p>
                 )}
+                {isOccupied && !isOpen ? (
+                  <div className="tv-operative-setup-row" aria-label={`${characterName} setup state`}>
+                    <span>Character ✓</span>
+                    <span>Mission {seat.startingMissionSelected ? "✓" : "..."}</span>
+                    <span>Ready {seat.ready ? "✓" : seat.startingMissionSelected ? "..." : "locked"}</span>
+                  </div>
+                ) : null}
                 {player && (
                   <>
                     <div className="tv-operative-stats" aria-label={`${characterName} vitals`}>
@@ -887,6 +897,9 @@ function SessionReadout({
   debugOpen,
   onToggleDebug
 }: SessionReadoutProps): ReactElement {
+  const missionSelectedCount =
+    publicPatch?.payload.seats.filter((seat) => Boolean(seat.displayName) && !seat.kicked && seat.startingMissionSelected).length ?? 0;
+
   return (
     <section className="tv-card tv-panel-card tv-session-panel">
       <div className="tv-card-header">
@@ -904,6 +917,10 @@ function SessionReadout({
         <div className="tv-session-stat">
           <span>Ready</span>
           <strong>{readyCount}/{Math.max(joinedCount, 1)}</strong>
+        </div>
+        <div className="tv-session-stat">
+          <span>Missions</span>
+          <strong>{missionSelectedCount}/{Math.max(joinedCount, 1)}</strong>
         </div>
         <div className="tv-session-stat">
           <span>Mode</span>

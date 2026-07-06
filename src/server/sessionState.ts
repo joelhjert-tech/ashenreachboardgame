@@ -68,7 +68,8 @@ function createPlayerState(
   const loadedCharacter = applyStartingLoadout(character, {
     sessionMode,
     seatIndex,
-    catalogs: loadoutCatalogs
+    catalogs: loadoutCatalogs,
+    assignStartingContract: false
   });
 
   return {
@@ -132,6 +133,9 @@ export function createInitialSessionState(
       seatId,
       characterId,
       displayName: null,
+      startingContractOptions: [],
+      selectedStartingContractId: null,
+      missionSelectedAt: null,
       connected: false,
       ready: false,
       kicked: false,

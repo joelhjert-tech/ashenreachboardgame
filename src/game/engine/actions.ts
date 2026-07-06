@@ -577,6 +577,11 @@ export type ClientIntent =
       ready: boolean;
     }
   | {
+      type: "SELECT_STARTING_CONTRACT";
+      seatId: string;
+      contractId: string;
+    }
+  | {
       type: "RECRUIT_REPLACEMENT";
       seatId: string;
       replacementCharacterId: string;

@@ -4,12 +4,25 @@ import { reduceGameState } from "../../game/engine/reducer.js";
 import { GameRoomServer } from "../roomServer.js";
 import { createInitialSessionState } from "../sessionState.js";
 
+function selectFirstStartingContract(server: GameRoomServer, seatId: string): void {
+  const contractId = server.getState().seats.find((seat) => seat.seatId === seatId)?.startingContractOptions[0];
+
+  if (!contractId) {
+    throw new Error(`Missing starting contract option for ${seatId}`);
+  }
+
+  server.selectStartingContract(seatId, contractId);
+}
+
 describe("kick turn-order regression", () => {
   it("keeps reducer turn ownership aligned with server turnOrder after the active seat is kicked", () => {
     const server = new GameRoomServer(createInitialSessionState("ROOM1", "multiplayer"));
     server.joinSeat("A", "void-marshal");
     server.joinSeat("B", "signal-witch");
     server.joinSeat("C", "grave-engineer");
+    selectFirstStartingContract(server, "seat-1");
+    selectFirstStartingContract(server, "seat-2");
+    selectFirstStartingContract(server, "seat-3");
     server.setSeatReady("seat-1", true);
     server.setSeatReady("seat-2", true);
     server.setSeatReady("seat-3", true);

@@ -113,6 +113,85 @@ function scenarioQuestDeltas(deltas: ResultDelta[] | null | undefined): ResultDe
   return (deltas ?? []).filter((delta) => scenarioTypes.has(delta.type));
 }
 
+function describeContractObjective(contract: ContractCard): string {
+  if (contract.objective.type === "defeatCount") {
+    return `Defeat ${contract.objective.target} threat${contract.objective.target === 1 ? "" : "s"}.`;
+  }
+
+  return contract.objective.label;
+}
+
+function describeContractProgress(contract: ContractCard): string {
+  if (contract.objective.type === "defeatCount") {
+    return `Progress 0/${contract.objective.target} defeated`;
+  }
+
+  return `Progress 0/${contract.objective.target} resolved`;
+}
+
+function describeContractReward(contract: ContractCard): string {
+  const reward = contract.reward;
+
+  if (!reward || typeof reward !== "object") {
+    return "Reward listed on contract.";
+  }
+
+  if ("type" in reward && typeof reward.type === "string") {
+    return reward.type
+      .replace(/_/g, " ")
+      .replace(/([a-z])([A-Z])/g, "$1 $2")
+      .replace(/\b\w/g, (letter) => letter.toUpperCase());
+  }
+
+  return "Contract reward.";
+}
+
+function ContractMissionCard({
+  contract,
+  recommended,
+  selected,
+  disabled,
+  onSelect
+}: {
+  contract: ContractCard;
+  recommended?: boolean;
+  selected?: boolean;
+  disabled?: boolean;
+  onSelect?: () => void;
+}): ReactElement {
+  return (
+    <article className="phone-starting-mission-card" data-selected={selected ? "true" : "false"}>
+      <div className="phone-starting-mission-card-top">
+        <span>{recommended ? "Recommended Mission" : contract.factionGiver}</span>
+        <strong>{contract.name}</strong>
+      </div>
+      <p>{contract.text}</p>
+      <dl className="phone-starting-mission-details">
+        <div>
+          <dt>Objective</dt>
+          <dd>{describeContractObjective(contract)}</dd>
+        </div>
+        <div>
+          <dt>Progress</dt>
+          <dd>{describeContractProgress(contract)}</dd>
+        </div>
+        <div>
+          <dt>Reward</dt>
+          <dd>{describeContractReward(contract)}</dd>
+        </div>
+      </dl>
+      <div className="phone-starting-mission-footer">
+        <span>{contract.objective.type === "defeatCount" ? "Threat lane" : "Sector action"}</span>
+        {onSelect ? (
+          <button type="button" className="phone-button phone-button-primary" disabled={disabled} onClick={onSelect}>
+            {selected ? "Selected" : "Select Mission"}
+          </button>
+        ) : null}
+      </div>
+    </article>
+  );
+}
+
 function BoundNemesisPanel({
   heading = "Bound Nemesis",
   nemesis,
@@ -407,6 +486,12 @@ export function PortraitControllerView({
     const isReady = ownSeat?.ready ?? false;
     const abilityText = self.character.abilities.map((ability) => `${ability.name}: ${ability.text}`);
     const startingGear = self.character.heldGear;
+    const startingContractOptions = patch?.startingContractOptions ?? [];
+    const selectedStartingContract = patch?.selectedStartingContract ?? null;
+    const canReady = Boolean(patch?.canReady && selectedStartingContract && onIntent && !isReady);
+    const readyDisabledReason =
+      patch?.readyDisabledReason ??
+      (selectedStartingContract ? "Waiting for room sync" : "Choose a starting mission before Ready");
 
     return (
       <section className="phone-portrait-controller">
@@ -425,7 +510,7 @@ export function PortraitControllerView({
                   <p className="phone-panel-kicker">Character locked</p>
                   <strong>{self.character.name}</strong>
                   <span>{self.character.archetype}</span>
-                  <small>{isReady ? "Ready for host start" : "Character selected"}</small>
+                  <small>{isReady ? "You are ready. Watch the TV." : selectedStartingContract ? "Mission selected" : "Choose starting mission"}</small>
                 </div>
               </div>
 
@@ -438,13 +523,46 @@ export function PortraitControllerView({
                 ))}
               </div>
 
-              <p className="phone-lobby-ready-state">Waiting for host to start the game</p>
+              <section className="phone-character-waiting-section phone-starting-mission-section" aria-label="Starting Mission">
+                <h3>{selectedStartingContract ? "Selected Starting Mission" : "Choose Starting Mission"}</h3>
+                {selectedStartingContract ? (
+                  <ContractMissionCard contract={selectedStartingContract} selected />
+                ) : startingContractOptions.length > 0 ? (
+                  <div className="phone-starting-mission-list">
+                    {startingContractOptions.map((contract, index) => (
+                      <ContractMissionCard
+                        key={contract.id}
+                        contract={contract}
+                        recommended={index === 0}
+                        disabled={!onIntent}
+                        onSelect={() =>
+                          onIntent?.({
+                            type: "SELECT_STARTING_CONTRACT",
+                            seatId: self.seatId,
+                            contractId: contract.id
+                          })
+                        }
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <p className="phone-muted-copy">Waiting for starting mission options from the room.</p>
+                )}
+              </section>
+
+              <p className="phone-lobby-ready-state">
+                {isReady
+                  ? "You are ready. Watch the TV."
+                  : selectedStartingContract
+                    ? "Mission locked. Press Ready when set."
+                    : readyDisabledReason}
+              </p>
 
               <div className="phone-character-waiting-actions">
                 <button
                   type="button"
                   className="phone-button phone-button-primary phone-lobby-ready-button"
-                  disabled={isReady || !onIntent}
+                  disabled={!canReady}
                   onClick={() => onIntent?.({ type: "SET_READY", seatId: self.seatId, ready: true })}
                 >
                   Ready
@@ -456,7 +574,13 @@ export function PortraitControllerView({
                 ) : null}
               </div>
               {onIntent ? (
-                <span className="phone-character-waiting-status">{isReady ? "Ready for host" : "Character reserved. Press Ready when set."}</span>
+                <span className="phone-character-waiting-status">
+                  {isReady
+                    ? "Ready for host"
+                    : selectedStartingContract
+                      ? "Character and mission reserved."
+                      : "Character reserved. Choose a starting mission."}
+                </span>
               ) : (
                 <span className="phone-character-waiting-status">Waiting for room sync</span>
               )}

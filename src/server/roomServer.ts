@@ -184,6 +184,7 @@ const VISIBLE_DICE_ROLL_MS = process.env.VITEST ? 0 : 650;
 const FANDIABLOS_ID = "fandiablos";
 const MASTER_ALPHA_ID = "char_master_alpha";
 const RECENT_ENCOUNTER_LIMIT = 12;
+const STARTING_CONTRACT_OPTION_COUNT = 3;
 
 const NEMESIS_OPPOSITION = {
   strength: { attackStat: "grit", label: "Overpower" },
@@ -278,6 +279,7 @@ const CLIENT_INTENT_TYPES = new Set<string>([
   "SOLO_REROLL_REQUESTED",
   "CONTINUE_RESOLUTION",
   "SET_READY",
+  "SELECT_STARTING_CONTRACT",
   "RECRUIT_REPLACEMENT",
   "EQUIP_GEAR",
   "UNEQUIP_GEAR",
@@ -380,6 +382,17 @@ function requireEnumField(
   }
 
   return value;
+}
+
+function stableSetupHash(value: string): number {
+  let hash = 2166136261;
+
+  for (let index = 0; index < value.length; index += 1) {
+    hash ^= value.charCodeAt(index);
+    hash = Math.imul(hash, 16777619);
+  }
+
+  return hash >>> 0;
 }
 
 export class GameRoomServer {
@@ -533,6 +546,12 @@ export class GameRoomServer {
             this.startSession();
           }
         }
+        this.broadcastPatch();
+        return;
+      }
+
+      if (intent.type === "SELECT_STARTING_CONTRACT") {
+        this.selectStartingContract(intent.seatId, intent.contractId);
         this.broadcastPatch();
         return;
       }
@@ -759,8 +778,13 @@ export class GameRoomServer {
         contracts: this.state.availableContracts,
         gear: this.gear,
         followers: this.followers
-      }
+      },
+      assignStartingContract: false
     });
+    const startingContractOptions = this.resolveStartingContractOptions(
+      selectedCharacter,
+      Math.max(0, this.state.seats.findIndex((entry) => entry.seatId === seat.seatId))
+    );
 
     this.state = {
       ...this.state,
@@ -771,6 +795,9 @@ export class GameRoomServer {
               ...entry,
               characterId,
               displayName,
+              startingContractOptions,
+              selectedStartingContractId: null,
+              missionSelectedAt: null,
               ready: false
             }
           : entry
@@ -786,7 +813,7 @@ export class GameRoomServer {
                 wounds: 0,
                 status: "active",
                 trophyPile: [],
-                activeContract: loadedCharacter.activeContract ? { ...loadedCharacter.activeContract } : null,
+                activeContract: null,
                 heldGear: [...loadedCharacter.heldGear],
                 followers: [...(loadedCharacter.followers ?? [])],
                 equippedGear: { ...loadedCharacter.equippedGear },
@@ -806,6 +833,53 @@ export class GameRoomServer {
     };
   }
 
+  selectStartingContract(seatId: string, contractId: string): void {
+    if (this.state.status !== "lobby" || this.state.phase !== "start") {
+      throw new Error("Starting mission can only be selected before the session starts");
+    }
+
+    const seat = this.state.seats.find((entry) => entry.seatId === seatId);
+
+    if (!seat || seat.kicked) {
+      throw new Error(`Unknown seat ${seatId}`);
+    }
+
+    if (!seat.displayName) {
+      throw new Error("Seat must be joined before choosing a starting mission");
+    }
+
+    if (!seat.characterId) {
+      throw new Error("Choose a character before choosing a starting mission");
+    }
+
+    if (seat.selectedStartingContractId) {
+      throw new Error("Starting mission already selected");
+    }
+
+    if (!this.contracts.has(contractId) || !this.state.availableContracts.some((contract) => contract.id === contractId)) {
+      throw new Error("Unknown starting mission");
+    }
+
+    if (!seat.startingContractOptions.includes(contractId)) {
+      throw new Error("Starting mission was not offered to this player");
+    }
+
+    this.state = {
+      ...this.state,
+      sequence: this.state.sequence + 1,
+      seats: this.state.seats.map((entry) =>
+        entry.seatId === seatId
+          ? {
+              ...entry,
+              selectedStartingContractId: contractId,
+              missionSelectedAt: new Date().toISOString(),
+              ready: false
+            }
+          : entry
+      )
+    };
+  }
+
   setSeatReady(seatId: string, ready: boolean): void {
     if (this.state.status !== "lobby" || this.state.phase !== "start") {
       throw new Error("Ready state can only be changed before the session starts");
@@ -819,6 +893,10 @@ export class GameRoomServer {
 
     if (!seat.displayName) {
       throw new Error("Seat must be joined before it can be readied");
+    }
+
+    if (ready && !seat.selectedStartingContractId) {
+      throw new Error("Choose a starting mission before Ready");
     }
 
     if (seat.ready === ready) {
@@ -862,6 +940,9 @@ export class GameRoomServer {
           ? {
               ...entry,
               displayName: null,
+              startingContractOptions: [],
+              selectedStartingContractId: null,
+              missionSelectedAt: null,
               connected: false,
               ready: false
             }
@@ -901,7 +982,8 @@ export class GameRoomServer {
       status: "active",
       winnerSeatId: null,
       activeSeatIndex: 0,
-      turnOrder: startReadiness.occupiedSeatIds
+      turnOrder: startReadiness.occupiedSeatIds,
+      players: this.applySelectedStartingContracts()
     };
 
     const activeSeatId = this.state.turnOrder[0] ?? this.state.seats[0]?.seatId;
@@ -1013,6 +1095,7 @@ export class GameRoomServer {
         requireStringField(message, "gearId", type);
         break;
       case "ACCEPT_CONTRACT":
+      case "SELECT_STARTING_CONTRACT":
       case "COMPLETE_CONTRACT":
         requireStringField(message, "contractId", type);
         break;
@@ -1932,6 +2015,8 @@ export class GameRoomServer {
         } satisfies ResolutionContinuedAction;
       case "SET_READY":
         throw new Error("Ready state is handled directly");
+      case "SELECT_STARTING_CONTRACT":
+        throw new Error("Starting mission selection is handled directly");
       case "RECRUIT_REPLACEMENT":
         return {
           type: "RECRUIT_REPLACEMENT",
@@ -2057,15 +2142,76 @@ export class GameRoomServer {
     return this.state.sectors[0]?.id ?? "ashwake-crossing";
   }
 
+  private resolveStartingContractOptions(character: Character, seatIndex: number): string[] {
+    const availableIds = this.state.availableContracts
+      .map((contract) => contract.id)
+      .filter((contractId) => this.contracts.has(contractId));
+    const options: string[] = [];
+    const preferredContractId = character.activeContract?.contractId ?? character.startingContract ?? null;
+
+    if (preferredContractId && availableIds.includes(preferredContractId)) {
+      options.push(preferredContractId);
+    }
+
+    const rankedIds = availableIds
+      .filter((contractId) => !options.includes(contractId))
+      .sort(
+        (left, right) =>
+          stableSetupHash(`${this.state.sessionId}:${character.id}:${seatIndex}:${left}`) -
+          stableSetupHash(`${this.state.sessionId}:${character.id}:${seatIndex}:${right}`)
+      );
+
+    for (const contractId of rankedIds) {
+      if (options.length >= STARTING_CONTRACT_OPTION_COUNT) {
+        break;
+      }
+
+      options.push(contractId);
+    }
+
+    return options;
+  }
+
+  private applySelectedStartingContracts(): PlayerState[] {
+    return this.state.players.map((player) => {
+      const seat = this.state.seats.find((entry) => entry.seatId === player.seatId);
+
+      if (!seat?.displayName || seat.kicked || !seat.selectedStartingContractId) {
+        return player;
+      }
+
+      return {
+        ...player,
+        character: {
+          ...player.character,
+          activeContract: {
+            contractId: seat.selectedStartingContractId,
+            progress: 0
+          }
+        }
+      };
+    });
+  }
+
   private createFreshCharacter(characterId: string, currentSpaceId: string): Character {
     const template = this.characters.get(characterId);
 
     if (!template) {
       throw new Error(`Unknown character ${characterId}`);
     }
+    const loadedCharacter = applyStartingLoadout(template, {
+      sessionMode: this.state.sessionMode,
+      seatIndex: Math.max(0, this.state.seats.findIndex((seat) => seat.characterId === characterId)),
+      catalogs: {
+        contracts: this.state.availableContracts,
+        gear: this.gear,
+        followers: this.followers
+      },
+      assignStartingContract: false
+    });
 
     return {
-      ...template,
+      ...loadedCharacter,
       currentSpaceId,
       trophies: 0,
       trophyPile: [],
@@ -2073,10 +2219,11 @@ export class GameRoomServer {
       wounds: 0,
       status: "active",
       activeContract: null,
-      heldGear: [...template.heldGear],
-      equippedGear: { ...template.equippedGear },
-      abilities: [...template.abilities],
-      scars: [...template.scars]
+      heldGear: [...loadedCharacter.heldGear],
+      equippedGear: { ...loadedCharacter.equippedGear },
+      followers: [...(loadedCharacter.followers ?? [])],
+      abilities: [...loadedCharacter.abilities],
+      scars: [...loadedCharacter.scars]
     };
   }
 
@@ -3895,6 +4042,8 @@ export class GameRoomServer {
         entry.seatId === targetSeatId
           ? {
               ...entry,
+              selectedStartingContractId: null,
+              missionSelectedAt: null,
               connected: false,
               ready: false,
               kicked: true
@@ -3935,6 +4084,15 @@ export class GameRoomServer {
           ? seat
           : {
               ...seat,
+              startingContractOptions:
+                seat.displayName && this.characters.has(seat.characterId)
+                  ? this.resolveStartingContractOptions(
+                      this.characters.get(seat.characterId)!,
+                      Math.max(0, this.state.seats.findIndex((entry) => entry.seatId === seat.seatId))
+                    )
+                  : [],
+              selectedStartingContractId: null,
+              missionSelectedAt: null,
               ready: false
             }
       ),
@@ -7675,6 +7833,7 @@ export function createTvProjection(state: GameState): Record<string, unknown> {
       seatId: seat.seatId,
       characterId: seat.characterId,
       displayName: seat.displayName ?? null,
+      startingMissionSelected: Boolean(seat.selectedStartingContractId),
       connected: seat.connected,
       ready: seat.ready,
       kicked: seat.kicked
@@ -7745,7 +7904,17 @@ export function createTvProjection(state: GameState): Record<string, unknown> {
 
 export function createPhoneProjection(state: GameState, seatId: string, forcePrivate = false): Record<string, unknown> {
   const player = state.players.find((entry) => entry.seatId === seatId);
+  const seat = state.seats.find((entry) => entry.seatId === seatId) ?? null;
   const publicProjection = createTvProjection(state);
+  const startingContractOptions =
+    seat?.startingContractOptions
+      .map((contractId) => state.availableContracts.find((contract) => contract.id === contractId))
+      .filter((contract): contract is ContractCard => Boolean(contract)) ?? [];
+  const selectedStartingContract =
+    seat?.selectedStartingContractId
+      ? state.availableContracts.find((contract) => contract.id === seat.selectedStartingContractId) ?? null
+      : null;
+  const readyDisabledReason = getReadyDisabledReasonForSeat(seat);
 
   return {
     phase: state.phase,
@@ -7796,8 +7965,32 @@ export function createPhoneProjection(state: GameState, seatId: string, forcePri
     eligibleNemesisAssistSeatIds: state.nemesisChampions.flatMap((champion) =>
       champion.defeated ? [] : getEligibleAssistSeatIds(state, seatId, champion)
     ),
+    startingContractOptions,
+    selectedStartingContract,
+    canReady: readyDisabledReason === null,
+    readyDisabledReason,
     self: player ? sanitizePlayerForPhone(player) : null
   };
+}
+
+function getReadyDisabledReasonForSeat(seat: GameState["seats"][number] | null): string | null {
+  if (!seat || seat.kicked) {
+    return "Join a seat before Ready";
+  }
+
+  if (!seat.displayName) {
+    return "Join the room before Ready";
+  }
+
+  if (!seat.characterId) {
+    return "Choose a character before Ready";
+  }
+
+  if (!seat.selectedStartingContractId) {
+    return "Choose a starting mission before Ready";
+  }
+
+  return null;
 }
 
 function sanitizePlayerForPhone(player: PlayerState): Record<string, unknown> {

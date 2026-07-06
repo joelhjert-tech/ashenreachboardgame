@@ -61,6 +61,7 @@ export interface PublicSeat {
   seatId: string;
   characterId: string;
   displayName: string | null;
+  startingMissionSelected?: boolean;
   connected: boolean;
   ready: boolean;
   kicked: boolean;
@@ -331,6 +332,7 @@ export interface ContractCard {
   objective:
     | { type: "defeatCount"; target: number }
     | { type: "spaceTextResolved"; effectKey: string; label: string; target: number };
+  reward?: unknown;
 }
 
 export interface PendingEnemyRoll {
@@ -786,6 +788,10 @@ export interface PublicPatchPayload {
 export interface PhonePatchPayload extends PublicPatchPayload {
   phase: Phase;
   self: PhoneSelfState | null;
+  startingContractOptions?: ContractCard[];
+  selectedStartingContract?: ContractCard | null;
+  canReady?: boolean;
+  readyDisabledReason?: string | null;
   privateRivalry?: PrivateRivalryPayload | null;
   playerResultDeltas?: ResultDelta[];
   soloReroll?: {
@@ -876,6 +882,11 @@ export type ClientIntent =
       type: "SET_READY";
       seatId: string;
       ready: boolean;
+    }
+  | {
+      type: "SELECT_STARTING_CONTRACT";
+      seatId: string;
+      contractId: string;
     }
   | {
       type: "RECRUIT_REPLACEMENT";

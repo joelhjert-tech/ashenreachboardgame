@@ -804,7 +804,19 @@ describe("PhoneInventoryPanel", () => {
     const lobbyPatch = createPatch({
       phase: "start",
       status: "lobby",
-      seats: [{ seatId: "seat-1", characterId: "void-marshal", displayName: "Lane", connected: true, ready: false, kicked: false }]
+      seats: [{ seatId: "seat-1", characterId: "void-marshal", displayName: "Lane", connected: true, ready: false, kicked: false }],
+      startingContractOptions: [
+        {
+          id: "choir-quietus",
+          name: "Quietus Ledger",
+          factionGiver: "Glass Choir",
+          text: "Silence one hunter on the listening road.",
+          objective: { type: "defeatCount", target: 1 },
+          reward: { type: "lose_heat", amount: 1 }
+        }
+      ],
+      canReady: false,
+      readyDisabledReason: "Choose a starting mission before Ready"
     });
 
     render(
@@ -824,13 +836,18 @@ describe("PhoneInventoryPanel", () => {
     );
 
     expect(screen.getByText(/character locked/i)).toBeInTheDocument();
-    expect(screen.getByText(/waiting for host to start the game/i)).toBeInTheDocument();
-    expect(screen.getByText(/lane/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/choose starting mission/i).length).toBeGreaterThan(0);
+    expect(screen.getByText(/quietus ledger/i)).toBeInTheDocument();
+    expect(screen.getByText(/silence one hunter/i)).toBeInTheDocument();
+    expect(screen.getByText("Lane")).toBeInTheDocument();
     expect(screen.queryByRole("tab", { name: /inventory/i })).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /select mission/i }));
+    expect(onIntent).toHaveBeenCalledWith({ type: "SELECT_STARTING_CONTRACT", seatId: "seat-1", contractId: "choir-quietus" });
 
     fireEvent.click(screen.getByRole("button", { name: /^ready$/i }));
 
-    expect(onIntent).toHaveBeenCalledWith({ type: "SET_READY", seatId: "seat-1", ready: true });
+    expect(onIntent).not.toHaveBeenCalledWith({ type: "SET_READY", seatId: "seat-1", ready: true });
 
     fireEvent.click(screen.getByRole("button", { name: /^back$/i }));
 

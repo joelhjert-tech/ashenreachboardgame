@@ -220,6 +220,50 @@ function createContracts(): Map<string, ContractCard> {
         objective: { type: "defeatCount", target: 1 },
         reward: { type: "lose_heat", amount: 1 }
       }
+    ],
+    [
+      "cartel-crossing-thread",
+      {
+        id: "cartel-crossing-thread",
+        name: "Crossing Thread",
+        factionGiver: "Pale Cartels",
+        text: "Carry a route marker through hostile ground and report a safe crossing.",
+        objective: { type: "defeatCount", target: 1 },
+        reward: { type: "gain_note", text: "You banked a safer crossing for the table." }
+      }
+    ],
+    [
+      "clan-salt-burial",
+      {
+        id: "clan-salt-burial",
+        name: "Salt Burial",
+        factionGiver: "Veyr Clans",
+        text: "Put down a marked threat before it drags another caravan into the dust.",
+        objective: { type: "defeatCount", target: 2 },
+        reward: { type: "lose_heat", amount: 1 }
+      }
+    ],
+    [
+      "compact-ember-courier",
+      {
+        id: "compact-ember-courier",
+        name: "Ember Courier",
+        factionGiver: "Meridian Compact",
+        text: "Deliver a sealed ember message to the borderlight before the ash eats the wax.",
+        objective: { type: "defeatCount", target: 1 },
+        reward: { type: "gain_note", text: "The Compact owes you a clean favor." }
+      }
+    ],
+    [
+      "warden-span-vigil",
+      {
+        id: "warden-span-vigil",
+        name: "Span Vigil",
+        factionGiver: "Kaldr Dominion",
+        text: "Hold the line at a broken span long enough for the wardens to pass.",
+        objective: { type: "defeatCount", target: 2 },
+        reward: { type: "gain_note", text: "The span holds for one more route." }
+      }
     ]
   ]);
 }
@@ -318,6 +362,8 @@ function createState(overrides: Partial<GameState> = {}): GameState {
         seatId: "seat-1",
         characterId: "void-marshal",
         displayName: "Seat One",
+        startingContractOptions: [],
+        selectedStartingContractId: null,
         connected: false,
         ready: false,
         kicked: false,
@@ -327,6 +373,8 @@ function createState(overrides: Partial<GameState> = {}): GameState {
         seatId: "seat-2",
         characterId: "signal-witch",
         displayName: "Seat Two",
+        startingContractOptions: [],
+        selectedStartingContractId: null,
         connected: false,
         ready: false,
         kicked: false,
@@ -336,6 +384,8 @@ function createState(overrides: Partial<GameState> = {}): GameState {
         seatId: "seat-3",
         characterId: "grave-engineer",
         displayName: "Seat Three",
+        startingContractOptions: [],
+        selectedStartingContractId: null,
         connected: false,
         ready: false,
         kicked: false,
@@ -820,6 +870,17 @@ function getSeatFromPatch(message: Extract<ServerEnvelope, { type: "STATE_PATCH"
     | undefined;
 }
 
+function selectFirstStartingContract(roomServer: GameRoomServer, seatId: string): string {
+  const contractId = roomServer.getState().seats.find((seat) => seat.seatId === seatId)?.startingContractOptions[0];
+
+  if (!contractId) {
+    throw new Error(`Missing starting contract option for ${seatId}`);
+  }
+
+  roomServer.selectStartingContract(seatId, contractId);
+  return contractId;
+}
+
 describe("roomServer websocket integration", () => {
   let harness: Harness | null = null;
   const probes: SocketProbe[] = [];
@@ -869,9 +930,12 @@ describe("roomServer websocket integration", () => {
     expect(joinedSeat?.characterId).toBe("char_deepdale");
     expect(joinedSeat?.displayName).toBe("Deepdale");
     expect(joinedSeat?.ready).toBe(false);
+    expect(joinedSeat?.startingContractOptions).toHaveLength(3);
+    expect(joinedSeat?.selectedStartingContractId).toBeNull();
     expect(joinedPlayer?.character.id).toBe("char_deepdale");
     expect(joinedPlayer?.character.name).toBe("Deepdale");
     expect(joinedPlayer?.character.archetype).toBe("Deep Route Delver");
+    expect(joinedPlayer?.character.activeContract).toBeNull();
 
     const phone = await connectClient(`ws://127.0.0.1:${harness.port}/?view=phone&token=${joinResult.seatToken}`);
     probes.push(phone);
@@ -888,6 +952,70 @@ describe("roomServer websocket integration", () => {
     expect(snapshotSeat?.ready).toBe(false);
     expect(snapshotSelf?.id).toBe("char_deepdale");
     expect(snapshotSelf?.name).toBe("Deepdale");
+  });
+
+  it("stores a selected starting mission and blocks invalid setup timing", async () => {
+    const activeHarness = (harness = await startHarness([0, 0, 0, 0], createInitialSessionState("session-alpha", "single-player")));
+    const joinResult = activeHarness.roomServer.joinSeat("Solo", "signal-witch");
+    const seat = activeHarness.roomServer.getState().seats.find((entry) => entry.seatId === joinResult.seatId);
+    const offeredContractId = seat?.startingContractOptions[0];
+    const unofferedContract = [...createContracts().values()].find((contract) => !seat?.startingContractOptions.includes(contract.id));
+
+    if (unofferedContract) {
+      activeHarness.roomServer.getState().availableContracts.push(unofferedContract);
+    }
+
+    expect(seat?.startingContractOptions).toHaveLength(3);
+    expect(offeredContractId).toBeTruthy();
+    expect(unofferedContract).toBeTruthy();
+    expect(() => activeHarness.roomServer.setSeatReady(joinResult.seatId, true)).toThrow("Choose a starting mission before Ready");
+    expect(() => activeHarness.roomServer.selectStartingContract(joinResult.seatId, unofferedContract!.id)).toThrow(
+      "Starting mission was not offered to this player"
+    );
+
+    activeHarness.roomServer.selectStartingContract(joinResult.seatId, offeredContractId!);
+
+    const updatedSeat = activeHarness.roomServer.getState().seats.find((entry) => entry.seatId === joinResult.seatId);
+    expect(updatedSeat?.selectedStartingContractId).toBe(offeredContractId);
+    expect(updatedSeat?.missionSelectedAt).toBeTruthy();
+    expect(activeHarness.roomServer.getState().players.find((player) => player.seatId === joinResult.seatId)?.character.activeContract).toBeNull();
+  });
+
+  it("rejects spoofed starting mission selection from another phone seat", async () => {
+    const activeHarness = (harness = await startHarness([0, 0, 0, 0], createInitialSessionState("session-alpha", "multiplayer")));
+    const firstJoin = activeHarness.roomServer.joinSeat("One", "void-marshal");
+    const secondJoin = activeHarness.roomServer.joinSeat("Two", "signal-witch");
+    const contractId = activeHarness.roomServer.getState().seats.find((seat) => seat.seatId === secondJoin.seatId)?.startingContractOptions[0];
+    const sent: Array<Record<string, unknown>> = [];
+    const client: ConnectedClient = {
+      seatId: firstJoin.seatId,
+      view: "phone",
+      socket: {
+        send(payload: string) {
+          sent.push(JSON.parse(payload) as Record<string, unknown>);
+        },
+        close() {}
+      } as unknown as ConnectedClient["socket"]
+    };
+
+    expect(contractId).toBeTruthy();
+
+    activeHarness.roomServer.handleIntent(client, {
+      type: "SELECT_STARTING_CONTRACT",
+      seatId: secondJoin.seatId,
+      contractId: contractId!
+    });
+
+    expect(sent).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          type: "INTENT_REJECTED",
+          actionType: "SELECT_STARTING_CONTRACT",
+          reason: "Seat mismatch between token and submitted intent"
+        })
+      ])
+    );
+    expect(activeHarness.roomServer.getState().seats.find((seat) => seat.seatId === secondJoin.seatId)?.selectedStartingContractId).toBeNull();
   });
 
   it("rejects duplicate character reservations and releases a seat before start", async () => {
@@ -913,13 +1041,22 @@ describe("roomServer websocket integration", () => {
     activeHarness.roomServer.setSeatReady(joinResult.seatId, false);
 
     expect(activeHarness.roomServer.getState().seats.find((seat) => seat.seatId === joinResult.seatId)?.ready).toBe(false);
-    expect(() => activeHarness.roomServer.startSession()).toThrow("Waiting for player to press Ready");
+    expect(() => activeHarness.roomServer.startSession()).toThrow("Waiting for Solo to choose a starting mission");
 
+    selectFirstStartingContract(activeHarness.roomServer, joinResult.seatId);
+    expect(() => activeHarness.roomServer.startSession()).toThrow("Waiting for player to press Ready");
     activeHarness.roomServer.setSeatReady(joinResult.seatId, true);
     activeHarness.roomServer.startSession();
 
     expect(activeHarness.roomServer.getState().status).toBe("active");
     expect(activeHarness.roomServer.getState().turnOrder).toEqual([joinResult.seatId]);
+    expect(activeHarness.roomServer.getState().players.find((player) => player.seatId === joinResult.seatId)?.character.activeContract).toEqual({
+      contractId: activeHarness.roomServer.getState().seats.find((seat) => seat.seatId === joinResult.seatId)?.selectedStartingContractId,
+      progress: 0
+    });
+    expect(() => activeHarness.roomServer.selectStartingContract(joinResult.seatId, "choir-quietus")).toThrow(
+      "Starting mission can only be selected before the session starts"
+    );
   });
 
   it("auto-starts a single-player room when the phone presses Ready", async () => {
@@ -930,6 +1067,7 @@ describe("roomServer websocket integration", () => {
 
     await phone.waitFor((message) => isStatePatch(message) && Object.hasOwn(message.payload, "self"));
 
+    const contractId = selectFirstStartingContract(activeHarness.roomServer, joinResult.seatId);
     phone.send({
       type: "SET_READY",
       seatId: joinResult.seatId,
@@ -949,6 +1087,9 @@ describe("roomServer websocket integration", () => {
     expect(startedSnapshot.payload.sessionMode).toBe("single-player");
     expect(startedSnapshot.payload.turnOrder).toEqual([joinResult.seatId]);
     expect(activeHarness.roomServer.getState().status).toBe("active");
+    expect(activeHarness.roomServer.getState().players.find((player) => player.seatId === joinResult.seatId)?.character.activeContract?.contractId).toBe(
+      contractId
+    );
   });
 
   it("blocks single-player start when the occupied seat has no selected character", async () => {
@@ -970,6 +1111,8 @@ describe("roomServer websocket integration", () => {
 
     const firstJoin = activeHarness.roomServer.joinSeat("One", "void-marshal");
     const secondJoin = activeHarness.roomServer.joinSeat("Two", "signal-witch");
+    selectFirstStartingContract(activeHarness.roomServer, firstJoin.seatId);
+    selectFirstStartingContract(activeHarness.roomServer, secondJoin.seatId);
     activeHarness.roomServer.setSeatReady(firstJoin.seatId, true);
     activeHarness.roomServer.setSeatReady(secondJoin.seatId, true);
     activeHarness.roomServer.startSession();
@@ -996,6 +1139,7 @@ describe("roomServer websocket integration", () => {
 
     await phone.waitFor((message) => isStatePatch(message) && Object.hasOwn(message.payload, "self"));
 
+    selectFirstStartingContract(activeHarness.roomServer, joinResult.seatId);
     activeHarness.roomServer.setSeatReady(joinResult.seatId, true);
     activeHarness.roomServer.startSession();
 
@@ -1089,6 +1233,7 @@ describe("roomServer websocket integration", () => {
 
     await phone.waitFor((message) => isStatePatch(message) && Object.hasOwn(message.payload, "self"));
 
+    selectFirstStartingContract(activeHarness.roomServer, joinResult.seatId);
     activeHarness.roomServer.setSeatReady(joinResult.seatId, true);
     activeHarness.roomServer.startSession();
 

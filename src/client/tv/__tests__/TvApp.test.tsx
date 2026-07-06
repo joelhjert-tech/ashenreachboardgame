@@ -196,6 +196,7 @@ function createPatch(roomCode = "RT7P4"): StatePatch<PublicPatchPayload> {
           displayName: "Joel",
           connected: true,
           ready: true,
+          startingMissionSelected: true,
           kicked: false
         }
       ],
@@ -368,7 +369,15 @@ describe("TvApp", () => {
     patch.payload.sessionMode = "single-player";
     patch.payload.interactionMode = "co-op";
     patch.payload.seats = [
-      { seatId: "seat-1", characterId: "void-marshal", displayName: "Joel", connected: true, ready: true, kicked: false }
+      {
+        seatId: "seat-1",
+        characterId: "void-marshal",
+        displayName: "Joel",
+        connected: true,
+        ready: true,
+        startingMissionSelected: true,
+        kicked: false
+      }
     ];
     patch.payload.turnOrder = ["seat-1"];
     patch.payload.activeSeatIndex = 0;
@@ -553,6 +562,7 @@ describe("TvApp", () => {
       displayName: "Mira",
       connected: true,
       ready: true,
+      startingMissionSelected: true,
       kicked: false
     });
     mockUseRoomSubscription.mockReturnValue({
@@ -1491,6 +1501,7 @@ describe("TvApp", () => {
       displayName: "Pax",
       connected: true,
       ready: true,
+      startingMissionSelected: true,
       kicked: false
     });
     patch.payload.players.push({
@@ -1630,6 +1641,7 @@ describe("TvApp", () => {
       displayName: "Pax",
       connected: true,
       ready: true,
+      startingMissionSelected: true,
       kicked: false
     });
     patch.payload.players.push({

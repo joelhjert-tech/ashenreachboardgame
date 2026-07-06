@@ -2372,6 +2372,34 @@ select {
   padding-right: 0.2rem;
 }
 
+.phone-character-filter-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.4rem;
+  min-width: 0;
+  margin-bottom: 0.65rem;
+}
+
+.phone-character-filter {
+  min-width: 0;
+  min-height: 2.4rem;
+  padding: 0.45rem 0.35rem;
+  border: 1px solid rgba(143, 183, 218, 0.24);
+  border-radius: 6px;
+  background: rgba(7, 12, 17, 0.62);
+  color: var(--text-secondary);
+  font-size: 0.68rem;
+  font-weight: 850;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.phone-character-filter-active {
+  border-color: rgba(210, 173, 115, 0.68);
+  background: rgba(62, 43, 22, 0.68);
+  color: #ffe0a3;
+}
+
 .phone-character-option {
   position: relative;
   min-height: 8.4rem;
@@ -2738,6 +2766,100 @@ select {
   color: var(--text-secondary);
   line-height: 1.45;
   overflow-wrap: anywhere;
+}
+
+.phone-starting-mission-section {
+  gap: 0.65rem;
+}
+
+.phone-starting-mission-list {
+  display: grid;
+  gap: 0.65rem;
+  min-width: 0;
+}
+
+.phone-starting-mission-card {
+  display: grid;
+  gap: 0.6rem;
+  min-width: 0;
+  padding: 0.75rem;
+  border: 1px solid rgba(143, 183, 218, 0.28);
+  border-radius: 7px;
+  background:
+    linear-gradient(180deg, rgba(16, 22, 29, 0.9), rgba(8, 12, 17, 0.96)),
+    rgba(8, 12, 17, 0.9);
+  overflow: hidden;
+}
+
+.phone-starting-mission-card[data-selected="true"] {
+  border-color: rgba(113, 205, 166, 0.55);
+}
+
+.phone-starting-mission-card-top {
+  display: grid;
+  gap: 0.22rem;
+  min-width: 0;
+}
+
+.phone-starting-mission-card-top span,
+.phone-starting-mission-footer span {
+  color: #a7d8c5;
+  font-size: 0.62rem;
+  font-weight: 850;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.phone-starting-mission-card-top strong {
+  color: #f1e6cf;
+  font-size: 1rem;
+  overflow-wrap: anywhere;
+}
+
+.phone-starting-mission-details {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.45rem;
+  min-width: 0;
+  margin: 0;
+}
+
+.phone-starting-mission-details div {
+  display: grid;
+  gap: 0.12rem;
+  min-width: 0;
+  padding: 0.45rem;
+  border: 1px solid rgba(143, 183, 218, 0.16);
+  background: rgba(5, 8, 12, 0.45);
+}
+
+.phone-starting-mission-details dt {
+  color: #9fc7e4;
+  font-size: 0.6rem;
+  font-weight: 850;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.phone-starting-mission-details dd {
+  min-width: 0;
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+  overflow-wrap: anywhere;
+}
+
+.phone-starting-mission-footer {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(7rem, auto);
+  gap: 0.55rem;
+  align-items: center;
+  min-width: 0;
+}
+
+.phone-starting-mission-footer .phone-button {
+  width: 100%;
+  min-width: 0;
 }
 
 .phone-character-waiting-gear {
@@ -11109,6 +11231,25 @@ body {
   color: #d8aa5f !important;
   font-size: clamp(0.45rem, 0.5vw, 0.58rem) !important;
   letter-spacing: 0.08em;
+}
+
+.tv-operative-setup-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.18rem;
+  min-width: 0;
+}
+
+.tv-operative-setup-row span {
+  min-width: 0;
+  padding: 0.05rem 0.22rem;
+  border: 1px solid rgba(119, 94, 60, 0.34);
+  border-radius: 0.2rem;
+  background: rgba(0, 0, 0, 0.24);
+  color: #d8c6a4;
+  font-size: clamp(0.42rem, 0.45vw, 0.54rem);
+  font-weight: 760;
+  overflow-wrap: anywhere;
 }
 
 .tv-operative-link {

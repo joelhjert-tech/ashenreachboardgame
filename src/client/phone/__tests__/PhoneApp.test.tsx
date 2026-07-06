@@ -185,6 +185,12 @@ describe("PhoneApp", () => {
     });
 
     expect(picker).toBeInTheDocument();
+    expect(screen.getAllByRole("heading", { name: /select character/i })).toHaveLength(1);
+    expect(screen.queryByRole("heading", { name: /choose character/i })).not.toBeInTheDocument();
+    expect(screen.queryByText(/step 2/i)).not.toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: /recommended/i })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: /all operatives/i })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: /advanced/i })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /tarek voss.*void marshal/i })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /mira.*cinder monk/i })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /orenna tash.*fleet elder/i })).toBeInTheDocument();
@@ -193,6 +199,7 @@ describe("PhoneApp", () => {
     expect(screen.getByLabelText(/joined room summary/i)).toHaveTextContent(/joel/i);
     expect(networkMocks.joinSession).not.toHaveBeenCalled();
     expect(screen.queryByRole("button", { name: /^ready$/i })).not.toBeInTheDocument();
+    expect(document.body.scrollWidth).toBeLessThanOrEqual(390);
   });
 
   it("shows character role, complexity, starting gear, and starting contract guidance", async () => {
@@ -214,6 +221,10 @@ describe("PhoneApp", () => {
     expect(firstGamePresentation!).toHaveTextContent(/warbell recovery/i);
     expect(firstGamePresentation!).toHaveTextContent(/good at/i);
     expect(firstGamePresentation!).toHaveTextContent(/watch out/i);
+
+    const marshalCard = screen.getByRole("button", { name: /tarek voss.*void marshal/i });
+    expect(within(marshalCard).getByLabelText(/tarek voss stats/i)).toBeInTheDocument();
+    expect(within(marshalCard).getByText(/select character/i)).toBeInTheDocument();
   });
 
   it("sorts first-game characters before advanced operatives", async () => {
@@ -344,7 +355,8 @@ describe("PhoneApp", () => {
     expect(screen.getByText("Cinder Monk")).toBeInTheDocument();
     expect(screen.getByText("RT7P4")).toBeInTheDocument();
     expect(screen.getByText("Joel")).toBeInTheDocument();
-    expect(screen.getByText(/waiting for host to start the game/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/choose starting mission/i).length).toBeGreaterThan(0);
+    expect(screen.getByText(/waiting for starting mission options from the room/i)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /^ready$/i })).toBeDisabled();
     expect(screen.queryByRole("list", { name: /character/i })).not.toBeInTheDocument();
   });

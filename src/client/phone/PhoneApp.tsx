@@ -102,6 +102,20 @@ function getCharacterSelectionRank(character: CharacterCatalogEntry): number {
   }
 }
 
+type CharacterSelectionFilter = "recommended" | "all" | "advanced";
+
+function matchesCharacterFilter(character: CharacterCatalogEntry, filter: CharacterSelectionFilter): boolean {
+  if (filter === "all") {
+    return true;
+  }
+
+  if (filter === "recommended") {
+    return Boolean(character.presentation?.recommendedForFirstGame || character.presentation?.complexity === "beginner");
+  }
+
+  return Boolean(character.qaOnly || character.presentation?.complexity === "advanced" || character.presentation?.complexity === "expert");
+}
+
 function formatJoinFailure(joinFailure: unknown): string {
   const message = joinFailure instanceof Error ? joinFailure.message : "Join failed";
 
@@ -160,6 +174,7 @@ export function PhoneApp(): ReactElement {
   const [characters, setCharacters] = useState<CharacterCatalogEntry[]>([]);
   const [debugOpen, setDebugOpen] = useState(() => new URLSearchParams(window.location.search).has("debug"));
   const [joinStep, setJoinStep] = useState<"nameEntry" | "characterSelect">("nameEntry");
+  const [characterFilter, setCharacterFilter] = useState<CharacterSelectionFilter>("all");
   const [joiningRoom, setJoiningRoom] = useState(false);
   const [formState, setFormState] = useState(() => ({
     roomCode: readInitialRoomCode(),
@@ -280,7 +295,7 @@ export function PhoneApp(): ReactElement {
     }
   };
 
-  const displayCharacters = useMemo(
+  const sortedCharacters = useMemo(
     () =>
       [...characters].sort((left, right) => {
         const rankDelta = getCharacterSelectionRank(left) - getCharacterSelectionRank(right);
@@ -292,6 +307,10 @@ export function PhoneApp(): ReactElement {
         return left.name.localeCompare(right.name);
       }),
     [characters]
+  );
+  const displayCharacters = useMemo(
+    () => sortedCharacters.filter((character) => matchesCharacterFilter(character, characterFilter)),
+    [characterFilter, sortedCharacters]
   );
   const selectedCharacter = characters.find((character) => character.id === formState.characterId);
   const portraitPlayerName = auth?.displayName || selectedCharacter?.name || "Ashen Reach Controller";
@@ -316,11 +335,11 @@ export function PhoneApp(): ReactElement {
           <div className={`phone-join-layout phone-join-layout-${joinStep}`}>
             <section className="phone-join-hero phone-panel">
               <p className="phone-panel-kicker">Ashen Reach Controller</p>
-              <h1>{joinStep === "nameEntry" ? "Join room" : "Select character"}</h1>
+              <h1>{joinStep === "nameEntry" ? "Join room" : "Select Character"}</h1>
               <p className="phone-muted-copy">
                 {joinStep === "nameEntry"
                   ? "Enter the room code from the TV and the name you want at the table."
-                  : "Choose the operative you want to reserve for this room."}
+                  : "Choose your operative."}
               </p>
               {joinStep === "characterSelect" ? (
                 <div className="phone-join-summary" aria-label="Joined room summary">
@@ -330,17 +349,15 @@ export function PhoneApp(): ReactElement {
               ) : null}
             </section>
 
-            <section className="phone-panel phone-join-panel">
-              <div className="phone-panel-header">
-                <div>
-                  <h2>{joinStep === "nameEntry" ? "Join Room" : "Choose Character"}</h2>
-                  <p className="phone-muted-copy">
-                    {joinStep === "nameEntry"
-                      ? "Step 1: enter room code and player name."
-                      : "Step 2: select an available character to reserve it."}
-                  </p>
+            <section className={`phone-panel phone-join-panel${joinStep === "characterSelect" ? " phone-character-select-surface" : ""}`}>
+              {joinStep === "nameEntry" ? (
+                <div className="phone-panel-header">
+                  <div>
+                    <h2>Join Room</h2>
+                    <p className="phone-muted-copy">Step 1: enter room code and player name.</p>
+                  </div>
                 </div>
-              </div>
+              ) : null}
               {joinStep === "nameEntry" ? (
                 <form className="phone-join-form" onSubmit={handleNameSubmit}>
                   <section className="phone-join-step" aria-label="Step 1 enter room code and name">
@@ -385,10 +402,26 @@ export function PhoneApp(): ReactElement {
                   </div>
                 </form>
               ) : (
-                <div className="phone-join-form">
-                  <div className="phone-join-step" aria-label="Step 2 select character">
-                    <span className="phone-join-step-kicker">Step 2</span>
-                    <div className="phone-character-grid" role="list" aria-label="Character">
+                <div className="phone-join-form phone-character-select-form">
+                  <div className="phone-character-filter-row" role="tablist" aria-label="Character filters">
+                    {[
+                      ["recommended", "Recommended"],
+                      ["all", "All Operatives"],
+                      ["advanced", "Advanced"]
+                    ].map(([filter, label]) => (
+                      <button
+                        key={filter}
+                        type="button"
+                        role="tab"
+                        aria-selected={characterFilter === filter}
+                        className={`phone-character-filter${characterFilter === filter ? " phone-character-filter-active" : ""}`}
+                        onClick={() => setCharacterFilter(filter as CharacterSelectionFilter)}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="phone-character-grid" role="list" aria-label="Character">
                       {displayCharacters.map((character) => (
                         <button
                           key={character.id}
@@ -442,7 +475,6 @@ export function PhoneApp(): ReactElement {
                           </span>
                         </button>
                       ))}
-                    </div>
                   </div>
                   {(joinError || error) && <p className="error">{joinError ?? error}</p>}
                   <div className="phone-join-actions">
@@ -472,6 +504,7 @@ export function PhoneApp(): ReactElement {
       : null;
   const self = phonePatch?.payload.self ?? fallbackLobbySelf;
   const activeSeatId = phonePatch?.payload.turnOrder[phonePatch.payload.activeSeatIndex] ?? null;
+  const canSendLobbyIntent = Boolean(phonePatch) || (Boolean(auth) && status === "open");
   const activeContractCard =
     self?.character.activeContract &&
     phonePatch?.payload.availableContracts.find((contract) => contract.id === self.character.activeContract?.contractId);
@@ -496,7 +529,7 @@ export function PhoneApp(): ReactElement {
             activeContractCard={activeContractCard ?? null}
             patch={phonePatch?.payload ?? null}
             characters={characters}
-            onIntent={phonePatch ? sendIntent : null}
+            onIntent={canSendLobbyIntent ? sendIntent : null}
             onLeave={clearSession}
             onLobbyBack={() => void backToCharacterSelect()}
           />

@@ -344,6 +344,44 @@ function createHttpServer(): HttpServer {
         return;
       }
 
+      if (request.method === "POST" && url.pathname === "/api/session/starting-mission") {
+        const body = (await readJsonBody(request)) as {
+          roomCode?: string;
+          seatToken?: string;
+          contractId?: string;
+        };
+
+        if (body.roomCode !== roomServer.getState().sessionId) {
+          sendJson(response, 404, { error: "Unknown room code" });
+          return;
+        }
+
+        if (!body.seatToken) {
+          sendJson(response, 400, { error: "Seat token is required" });
+          return;
+        }
+
+        if (!body.contractId) {
+          sendJson(response, 400, { error: "Starting mission is required" });
+          return;
+        }
+
+        const tokenPayload = validateJoinToken(body.seatToken, roomServer.getState().sessionId);
+
+        if (!tokenPayload) {
+          sendJson(response, 403, { error: "Invalid seat token" });
+          return;
+        }
+
+        roomServer.selectStartingContract(tokenPayload.seatId, body.contractId);
+        sendJson(response, 200, {
+          roomCode: roomServer.getState().sessionId,
+          seatId: tokenPayload.seatId,
+          selectedStartingContractId: body.contractId
+        });
+        return;
+      }
+
       if (request.method === "POST" && url.pathname === "/api/session/start") {
         const body = (await readJsonBody(request)) as { roomCode?: string; hostToken?: string };
 
