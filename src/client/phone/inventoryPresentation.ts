@@ -1,4 +1,4 @@
-import type { ActiveResolution, Follower, GearItem, GearSlot, PhonePatchPayload, PhoneSelfState, Stat } from "../shared/types.js";
+import type { ActiveResolution, Follower, GearItem, GearSlot, PhoneObjectUseState, PhonePatchPayload, PhoneSelfState, Stat } from "../shared/types.js";
 import { gearSlotLabelById, statLabelById } from "../shared/statLabels.js";
 
 export type InventoryTimingWindow =
@@ -33,6 +33,7 @@ export interface InventoryCardViewModel {
   statBonus?: { stat: Stat; amount: number } | null;
   useLimit?: GearItem["useLimit"] | Follower["useLimit"];
   charges?: number | null;
+  maxUses?: number | null;
   artCardId?: string | null;
   fallbackLabel: string;
 }
@@ -326,6 +327,14 @@ function getGearLockReason(item: GearItem, self: PhoneSelfState): string | null 
   return null;
 }
 
+function getObjectUseState(
+  patch: PhonePatchPayload,
+  source: PhoneObjectUseState["source"],
+  id: string
+): PhoneObjectUseState | null {
+  return patch.objectUseStates?.find((state) => state.source === source && state.id === id) ?? null;
+}
+
 function getStatus({
   timingWindows,
   currentTimingWindow,
@@ -382,14 +391,32 @@ function getFallbackLabel(name: string): string {
 function buildGearCard(item: GearItem, patch: PhonePatchPayload, self: PhoneSelfState): InventoryCardViewModel {
   const timingWindows = inferGearTimingWindows(item);
   const active = Boolean(item.activeText || item.useLimit);
+  const equippedIds = new Set(Object.values(self.character.equippedGear).filter((value): value is string => Boolean(value)));
+  const isEquipped = equippedIds.has(item.id);
+  const useState = getObjectUseState(patch, "gear", item.id);
   const currentTimingWindow = getCurrentTimingWindow(patch);
-  const status = getStatus({
-    timingWindows,
-    currentTimingWindow,
-    lockedReason: getGearLockReason(item, self),
-    active,
-    canServerAccept: serverAcceptsCardUse(patch)
-  });
+  const lockedReason = useState?.disabledReason ?? getGearLockReason(item, self);
+  const status = active
+    ? getStatus({
+        timingWindows,
+        currentTimingWindow,
+        lockedReason,
+        active,
+        canServerAccept: serverAcceptsCardUse(patch)
+      })
+    : isEquipped
+      ? {
+          status: "Passive" as const,
+          statusReason: "Equipped passive modifier is applied by the server when relevant.",
+          canUseNow: false
+        }
+      : {
+          status: "Ready but not usable now" as const,
+          statusReason: "Equip to apply this passive modifier.",
+          canUseNow: false
+        };
+  const remainingUses = useState?.remainingUses ?? item.charges ?? null;
+  const maxUses = useState?.maxUses ?? item.maxUses ?? (item.useLimit === "charge" ? item.charges ?? null : null);
 
   return {
     id: item.id,
@@ -403,7 +430,8 @@ function buildGearCard(item: GearItem, patch: PhonePatchPayload, self: PhoneSelf
     useIntent: status.canUseNow ? { type: "USE_GEAR", gearId: item.id } : null,
     statBonus: item.statBonus,
     useLimit: item.useLimit,
-    charges: item.charges ?? null,
+    charges: remainingUses,
+    maxUses,
     artCardId: `artifact-${item.id}`,
     fallbackLabel: getFallbackLabel(item.name)
   };
@@ -412,13 +440,16 @@ function buildGearCard(item: GearItem, patch: PhonePatchPayload, self: PhoneSelf
 function buildFollowerCard(follower: Follower, patch: PhonePatchPayload): InventoryCardViewModel {
   const timingWindows = inferFollowerTimingWindows(follower);
   const active = Boolean(follower.useLimit);
+  const useState = getObjectUseState(patch, "follower", follower.id);
   const status = getStatus({
     timingWindows,
     currentTimingWindow: getCurrentTimingWindow(patch),
-    lockedReason: null,
+    lockedReason: useState?.disabledReason ?? null,
     active,
     canServerAccept: serverAcceptsCardUse(patch)
   });
+  const remainingUses = useState?.remainingUses ?? null;
+  const maxUses = useState?.maxUses ?? (follower.useLimit ? 1 : null);
 
   return {
     id: follower.id,
@@ -431,7 +462,8 @@ function buildFollowerCard(follower: Follower, patch: PhonePatchPayload): Invent
     ...status,
     useIntent: status.canUseNow ? { type: "USE_FOLLOWER", followerId: follower.id } : null,
     useLimit: follower.useLimit,
-    charges: null,
+    charges: remainingUses,
+    maxUses,
     artCardId: follower.artCardId ?? null,
     fallbackLabel: getFallbackLabel(follower.name)
   };

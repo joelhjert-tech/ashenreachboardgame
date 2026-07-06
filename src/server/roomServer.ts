@@ -1378,11 +1378,12 @@ export class GameRoomServer {
     }
 
     if (
-      item.id === "red-march-warbell" &&
-      this.state.phase === "action" &&
-      encounter?.cardType === "enemy" &&
-      !this.hasPendingRoll(seatId)
+      item.id === "red-march-warbell"
     ) {
+      if (this.state.phase !== "action" || !encounter || encounter.cardType !== "enemy" || this.hasPendingRoll(seatId)) {
+        throw new IntentRejectedError("USE_GEAR", "Red March Warbell can only be used before a battle roll.");
+      }
+
       return {
         label: item.name,
         value: 2,
@@ -6445,8 +6446,171 @@ type ResultDelta = {
   severity: "reward" | "loss" | "danger" | "scenario" | "private" | "neutral";
 };
 
+type PhoneObjectUseState = {
+  source: "gear" | "follower";
+  id: string;
+  usedThisTurn: boolean;
+  usedThisRound: boolean;
+  remainingUses?: number | null;
+  maxUses?: number | null;
+  disabledReason?: string | null;
+  activeModifier?: (RollModifierSource & { stat: Stat; mode: "battle" | "check" }) | null;
+};
+
 function getPublicSalvage(player: PlayerState): number {
   return Math.max(0, player.character.salvage ?? 0);
+}
+
+function hasUsedObjectSinceLogBoundary(
+  state: GameState,
+  seatId: string,
+  objectId: string,
+  idField: "gearId" | "followerId",
+  boundaryType: "TURN_COMPLETED" | "ROUND_COMPLETED"
+): boolean {
+  for (let index = state.eventLog.length - 1; index >= 0; index -= 1) {
+    const entry = state.eventLog[index] as Record<string, unknown> | undefined;
+
+    if (entry?.type === boundaryType) {
+      return false;
+    }
+
+    if (entry?.seatId === seatId && entry[idField] === objectId && (entry.type === "USE_GEAR" || entry.type === "USE_FOLLOWER")) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+function getPendingObjectRollModifier(
+  state: GameState,
+  seatId: string,
+  source: "gear" | "follower",
+  objectId: string
+): PhoneObjectUseState["activeModifier"] {
+  const idField = source === "gear" ? "gearId" : "followerId";
+  const actionType = source === "gear" ? "USE_GEAR" : "USE_FOLLOWER";
+
+  for (let index = state.eventLog.length - 1; index >= 0; index -= 1) {
+    const entry = state.eventLog[index] as
+      | {
+          type?: string;
+          seatId?: string;
+          gearId?: string;
+          followerId?: string;
+          rollModifier?: RollModifierSource & { stat: Stat; mode: "battle" | "check" };
+        }
+      | undefined;
+
+    if (entry?.type === "TURN_COMPLETED") {
+      break;
+    }
+
+    if (entry?.seatId === seatId && (entry.type === "COMBAT_RESOLVED" || entry.type === "CHECK_ROLLED")) {
+      break;
+    }
+
+    if (entry?.type === actionType && entry.seatId === seatId && entry[idField] === objectId && entry.rollModifier) {
+      return entry.rollModifier;
+    }
+  }
+
+  return null;
+}
+
+function getUseLimitProjection(args: {
+  useLimit?: "oncePerTurn" | "oncePerRound" | "discard" | "charge";
+  usedThisTurn: boolean;
+  usedThisRound: boolean;
+  charges?: number | null;
+  maxUses?: number | null;
+  objectName: string;
+}): Pick<PhoneObjectUseState, "remainingUses" | "maxUses" | "disabledReason"> {
+  if (args.useLimit === "charge") {
+    const remainingUses = Math.max(0, args.charges ?? 0);
+    return {
+      remainingUses,
+      maxUses: args.maxUses ?? args.charges ?? null,
+      disabledReason: remainingUses <= 0 ? `${args.objectName} has no charges remaining.` : null
+    };
+  }
+
+  if (args.useLimit === "oncePerTurn") {
+    return {
+      remainingUses: args.usedThisTurn ? 0 : 1,
+      maxUses: 1,
+      disabledReason: args.usedThisTurn ? `${args.objectName} has already been used this turn.` : null
+    };
+  }
+
+  if (args.useLimit === "oncePerRound") {
+    return {
+      remainingUses: args.usedThisRound ? 0 : 1,
+      maxUses: 1,
+      disabledReason: args.usedThisRound ? `${args.objectName} has already been used this round.` : null
+    };
+  }
+
+  if (args.useLimit === "discard") {
+    return {
+      remainingUses: 1,
+      maxUses: 1,
+      disabledReason: null
+    };
+  }
+
+  return {
+    remainingUses: null,
+    maxUses: null,
+    disabledReason: null
+  };
+}
+
+function buildPhoneObjectUseStates(state: GameState, player: PlayerState | undefined): PhoneObjectUseState[] {
+  if (!player) {
+    return [];
+  }
+
+  const gearStates = player.character.heldGear.map((item) => {
+    const usedThisTurn = hasUsedObjectSinceLogBoundary(state, player.seatId, item.id, "gearId", "TURN_COMPLETED");
+    const usedThisRound = hasUsedObjectSinceLogBoundary(state, player.seatId, item.id, "gearId", "ROUND_COMPLETED");
+    return {
+      source: "gear" as const,
+      id: item.id,
+      usedThisTurn,
+      usedThisRound,
+      ...getUseLimitProjection({
+        useLimit: item.useLimit,
+        usedThisTurn,
+        usedThisRound,
+        charges: item.charges ?? null,
+        maxUses: item.maxUses ?? item.charges ?? null,
+        objectName: item.name
+      }),
+      activeModifier: getPendingObjectRollModifier(state, player.seatId, "gear", item.id)
+    };
+  });
+
+  const followerStates = (player.character.followers ?? []).map((follower) => {
+    const usedThisTurn = hasUsedObjectSinceLogBoundary(state, player.seatId, follower.id, "followerId", "TURN_COMPLETED");
+    const usedThisRound = hasUsedObjectSinceLogBoundary(state, player.seatId, follower.id, "followerId", "ROUND_COMPLETED");
+    return {
+      source: "follower" as const,
+      id: follower.id,
+      usedThisTurn,
+      usedThisRound,
+      ...getUseLimitProjection({
+        useLimit: follower.useLimit,
+        usedThisTurn,
+        usedThisRound,
+        objectName: follower.name
+      }),
+      activeModifier: getPendingObjectRollModifier(state, player.seatId, "follower", follower.id)
+    };
+  });
+
+  return [...gearStates, ...followerStates];
 }
 
 function getCompletedContractCountForProjection(state: GameState, seatId: string): number {
@@ -7488,6 +7652,37 @@ function getEventLogResultDeltas(state: GameState, ownerSeatId?: string | null):
       }));
     }
 
+    if ((type === "USE_GEAR" || type === "USE_FOLLOWER") && ownerSeatId && seatId === ownerSeatId) {
+      const rollModifier = entry.rollModifier as { label?: unknown; value?: unknown; stat?: unknown; mode?: unknown } | undefined;
+      const label = typeof rollModifier?.label === "string"
+        ? rollModifier.label
+        : typeof entry.summary === "string"
+          ? entry.summary.split(".")[0] ?? "Item used"
+          : type === "USE_GEAR"
+            ? "Item used"
+            : "Follower used";
+      const modifierValue = typeof rollModifier?.value === "number" ? rollModifier.value : undefined;
+      const sourceLabel = type === "USE_GEAR" ? "Item used" : "Follower used";
+
+      deltas.push(createResultDelta({
+        id: `object-used:${source}`,
+        type: "modifierApplied",
+        label: sourceLabel,
+        value: modifierValue ?? label,
+        sign: modifierValue && modifierValue !== 0 ? "gain" : "neutral",
+        targetScope: "personal",
+        targetSeatId: seatId,
+        visibility: "ownerPrivate",
+        source,
+        reason: typeof entry.summary === "string" ? entry.summary : label,
+        publicText: `${sourceLabel}.`,
+        privateText: modifierValue
+          ? `${label} accepted by server: ${modifierValue > 0 ? "+" : ""}${modifierValue}.`
+          : `${label} accepted by server.`,
+        severity: modifierValue && modifierValue > 0 ? "reward" : "neutral"
+      }));
+    }
+
     if (type === "SCENARIO_OBJECTIVE_COMPLETED" || type === "SCENARIO_VICTORY_ACHIEVED") {
       deltas.push(createResultDelta({
         id: `scenario-complete:${source}`,
@@ -8095,6 +8290,7 @@ export function createPhoneProjection(state: GameState, seatId: string, forcePri
     turnOrder: publicProjection.turnOrder,
     sectors: state.sectors,
     players: publicProjection.players,
+    objectUseStates: buildPhoneObjectUseStates(state, player),
     escalationLevel: publicProjection.escalationLevel,
     escalationThreshold: publicProjection.escalationThreshold,
     escalationModifier: publicProjection.escalationModifier,

@@ -126,6 +126,7 @@ export interface GearItem {
   activeText?: string;
   useLimit?: "oncePerTurn" | "oncePerRound" | "discard" | "charge";
   charges?: number;
+  maxUses?: number;
   heatCost?: number;
   linkedFollowerRole?: FollowerRole;
 }
@@ -194,6 +195,22 @@ export interface PhoneSelfState {
   hand: string[];
   notes: string[];
   character: PrivateCharacter;
+}
+
+export interface PhoneObjectUseState {
+  source: "gear" | "follower";
+  id: string;
+  usedThisTurn: boolean;
+  usedThisRound: boolean;
+  remainingUses?: number | null;
+  maxUses?: number | null;
+  disabledReason?: string | null;
+  activeModifier?: {
+    label: string;
+    value: number;
+    stat: Stat;
+    mode: "battle" | "check";
+  } | null;
 }
 
 export interface PrivateRivalryObjective {
@@ -788,6 +805,7 @@ export interface PublicPatchPayload {
 export interface PhonePatchPayload extends PublicPatchPayload {
   phase: Phase;
   self: PhoneSelfState | null;
+  objectUseStates?: PhoneObjectUseState[];
   startingContractOptions?: ContractCard[];
   selectedStartingContract?: ContractCard | null;
   canReady?: boolean;

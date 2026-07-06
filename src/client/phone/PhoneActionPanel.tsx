@@ -6,6 +6,7 @@ import type {
   ContractCard,
   GearItem,
   OutcomeSummary,
+  PhoneObjectUseState,
   PhonePatchPayload,
   PublicMoveDestination,
   PublicMovementPlannerState,
@@ -166,14 +167,25 @@ function toTitleCase(value: string): string {
   return value.replace(/[_-]+/g, " ").replace(/\b\w/g, (character) => character.toUpperCase());
 }
 
-function getGearActionDetail(item: GearItem): string {
+function getObjectUseState(
+  patch: PhonePatchPayload,
+  source: PhoneObjectUseState["source"],
+  id: string
+): PhoneObjectUseState | null {
+  return patch.objectUseStates?.find((state) => state.source === source && state.id === id) ?? null;
+}
+
+function getGearActionDetail(item: GearItem, useState?: PhoneObjectUseState | null): string {
   const baseDetail = item.activeText ?? toTitleCase(item.category ?? "active");
 
   if (item.useLimit !== "charge") {
     return baseDetail;
   }
 
-  return `${baseDetail} | ${item.charges ?? 0} charge${item.charges === 1 ? "" : "s"} left`;
+  const remaining = useState?.remainingUses ?? item.charges ?? 0;
+  const maxUses = useState?.maxUses ?? item.maxUses ?? item.charges ?? null;
+  const useCopy = maxUses !== null ? `${remaining}/${maxUses}` : `${remaining}`;
+  return `${baseDetail} | ${useCopy} charge${remaining === 1 ? "" : "s"} left`;
 }
 
 function formatShopCost(cost: PublicShopCost): string {
@@ -2163,14 +2175,17 @@ export function PhoneActionPanel({
     }
 
     self.character.heldGear.forEach((item) => {
+      const useState = getObjectUseState(patch, "gear", item.id);
+      const useDisabledReason =
+        useState?.disabledReason ?? (item.useLimit === "charge" && (item.charges ?? 0) <= 0 ? `${item.name} has no charges remaining.` : null);
       if (equippedIds.has(item.id)) {
         if (item.activeText || item.useLimit) {
           objectActions.push({
             key: `use-${item.id}`,
             label: `Use ${item.name}`,
-            detail: getGearActionDetail(item),
+            detail: useDisabledReason ?? getGearActionDetail(item, useState),
             tone: item.useLimit === "discard" ? "primary" : "secondary",
-            disabled: item.useLimit === "charge" && (item.charges ?? 0) <= 0,
+            disabled: Boolean(useDisabledReason),
             onClick: () =>
               onIntent({
                 type: "USE_GEAR",
@@ -2201,9 +2216,9 @@ export function PhoneActionPanel({
         objectActions.push({
           key: `use-${item.id}`,
           label: `Use ${item.name}`,
-          detail: getGearActionDetail(item),
+          detail: useDisabledReason ?? getGearActionDetail(item, useState),
           tone: item.useLimit === "discard" ? "primary" : "secondary",
-          disabled: item.useLimit === "charge" && (item.charges ?? 0) <= 0,
+          disabled: Boolean(useDisabledReason),
           onClick: () =>
             onIntent({
               type: "USE_GEAR",
@@ -2236,11 +2251,14 @@ export function PhoneActionPanel({
     );
 
     (self.character.followers ?? []).forEach((follower) => {
+      const useState = getObjectUseState(patch, "follower", follower.id);
+      const useDisabledReason = useState?.disabledReason ?? null;
       followerActions.push({
         key: `use-follower-${follower.id}`,
         label: `Use ${follower.name}`,
-        detail: `${toTitleCase(follower.role)}${follower.useLimit ? ` | ${toTitleCase(follower.useLimit)}` : ""}`,
+        detail: useDisabledReason ?? `${toTitleCase(follower.role)}${follower.useLimit ? ` | ${toTitleCase(follower.useLimit)}` : ""}`,
         tone: follower.useLimit === "discard" ? "primary" : "secondary",
+        disabled: Boolean(useDisabledReason),
         onClick: () =>
           onIntent({
             type: "USE_FOLLOWER",

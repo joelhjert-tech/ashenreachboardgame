@@ -51,6 +51,7 @@ export const gearItemSchema = z.object({
   activeText: z.string().min(1).optional(),
   useLimit: gearUseLimitSchema.optional(),
   charges: z.number().int().min(0).optional(),
+  maxUses: z.number().int().min(0).optional(),
   heatCost: z.number().int().min(0).optional(),
   linkedFollowerRole: z.string().min(1).optional()
 });

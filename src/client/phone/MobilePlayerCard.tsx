@@ -29,6 +29,7 @@ import {
   statOrder
 } from "../shared/statLabels.js";
 import { formatEscalation } from "./formatEscalation.js";
+import { formatSignedStatBonus, getPhoneStatBreakdown } from "./statBreakdown.js";
 
 interface MobilePlayerCardProps {
   self: PhoneSelfState;
@@ -223,12 +224,22 @@ export function MobilePlayerCard({
           <div className="phone-sheet-section">
             <div className="phone-sheet-section-heading">Attributes</div>
             <div className="mobile-player-card-stats phone-sheet-stat-grid">
-              {statOrder.map((stat) => (
-                <div key={stat} className={`mobile-player-stat phone-sheet-stat-card phone-sheet-stat-card-${stat}`}>
-                  <ChallengeBadge stat={stat} value={self.character.stats[stat]} label={statAbbreviationById[stat]} active={encounter?.stat === stat} />
-                  <p>{statLabelById[stat]}</p>
-                </div>
-              ))}
+              {statOrder.map((stat) => {
+                const breakdown = getPhoneStatBreakdown(self, stat);
+                return (
+                  <div key={stat} className={`mobile-player-stat phone-sheet-stat-card phone-sheet-stat-card-${stat}`}>
+                    <ChallengeBadge stat={stat} value={breakdown.current} label={statAbbreviationById[stat]} active={encounter?.stat === stat} />
+                    {breakdown.gearFollower !== 0 && (
+                      <strong className="phone-stat-bonus">({formatSignedStatBonus(breakdown.gearFollower)})</strong>
+                    )}
+                    <p>{statLabelById[stat]}</p>
+                    <small className="phone-stat-breakdown">
+                      Base {breakdown.base} | Permanent {formatSignedStatBonus(breakdown.permanent)} | Gear/Follower{" "}
+                      {formatSignedStatBonus(breakdown.gearFollower)}
+                    </small>
+                  </div>
+                );
+              })}
             </div>
           </div>
 

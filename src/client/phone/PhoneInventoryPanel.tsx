@@ -87,7 +87,11 @@ function InventoryCard({
   const metaItems = [
     card.timingText,
     card.statBonus ? `+${card.statBonus.amount} ${statLabelById[card.statBonus.stat]}` : null,
-    card.charges !== null && card.charges !== undefined ? `${card.charges} charge${card.charges === 1 ? "" : "s"}` : null
+    card.charges !== null && card.charges !== undefined
+      ? card.maxUses !== null && card.maxUses !== undefined
+        ? `${card.charges}/${card.maxUses} use${card.maxUses === 1 ? "" : "s"}`
+        : `${card.charges} charge${card.charges === 1 ? "" : "s"}`
+      : null
   ].filter(Boolean);
 
   return (

@@ -910,7 +910,13 @@ function spendHeldGearCharge(state: GameState, seatId: string, gearId: string): 
       character: {
         ...entry.character,
         heldGear: entry.character.heldGear.map((item) =>
-          item.id === gearId ? { ...item, charges: Math.max((item.charges ?? 0) - 1, 0) } : item
+          item.id === gearId
+            ? {
+                ...item,
+                charges: Math.max((item.charges ?? 0) - 1, 0),
+                maxUses: item.maxUses ?? item.charges ?? 0
+              }
+            : item
         )
       }
     }))

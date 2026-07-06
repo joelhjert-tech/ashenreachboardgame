@@ -78,6 +78,50 @@ describe("MobilePlayerCard", () => {
     expect(screen.getByText(/global escalation 0\/6, \+0/i)).toBeInTheDocument();
   });
 
+  it("shows compact stat bonuses without merging permanent or gear sources into base", () => {
+    render(
+      <MobilePlayerCard
+        self={{
+          ...self,
+          character: {
+            ...self.character,
+            stats: { ...self.character.stats, command: 4 },
+            statUpgrades: { command: 1 },
+            heldGear: [
+              {
+                id: "marshal-seal",
+                name: "Marshal Seal",
+                slot: "utility",
+                statBonus: { stat: "command", amount: 1 }
+              }
+            ],
+            equippedGear: { weapon: null, armor: null, utility: "marshal-seal" }
+          }
+        }}
+        activeContractCard={null}
+        roomCode="RT7P4"
+        displayName="Joel"
+        connectionStatus="open"
+        sessionStatus="active"
+        winnerSeatId={null}
+        phase="action"
+        activeSeatId="seat-1"
+        activeNemesis={null}
+        activeScenario={null}
+        scenarioTelemetry={[]}
+        escalationLevel={0}
+        escalationThreshold={6}
+        escalationModifier={0}
+        encounter={null}
+        outcomeSummary={null}
+        onLeave={() => {}}
+      />
+    );
+
+    expect(screen.getByText(/base 3 \| permanent \+1 \| gear\/follower \+1/i)).toBeInTheDocument();
+    expect(screen.getByText("(+1)")).toBeInTheDocument();
+  });
+
   it("surfaces scenario victory messaging for the winner", () => {
     render(
       <MobilePlayerCard

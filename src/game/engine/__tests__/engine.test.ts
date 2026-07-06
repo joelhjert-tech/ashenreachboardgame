@@ -2003,7 +2003,22 @@ describe("active objects and table interaction", () => {
 
   it("rejects using once-per-turn gear twice before turn completion", () => {
     const sent: Array<Record<string, unknown>> = [];
+    const encounter = createThreats().get("cinder-veil-stalker")!;
     const state = createState({
+      currentEncounter: encounter,
+      activeResolution: {
+        id: "seat-1:threat:cinder-veil-stalker:test",
+        playerId: "seat-1",
+        source: "threat",
+        stage: "card_reveal",
+        card: {
+          id: encounter.id,
+          title: encounter.title,
+          type: encounter.cardType,
+          flavor: encounter.flavor,
+          artType: "threat"
+        }
+      },
       players: createState().players.map((player) =>
         player.seatId === "seat-1"
           ? {
@@ -2044,7 +2059,51 @@ describe("active objects and table interaction", () => {
 
     const player = server.getState().players.find((entry) => entry.seatId === "seat-1");
     expect(player?.character.heat).toBe(1);
+    expect(server.getState().activeResolution?.battle?.modifiers).toContainEqual({ label: "Red March Warbell", value: 2 });
     expect(sent.some((message) => message.type === "INTENT_REJECTED" && String(message.reason).includes("already been used this turn"))).toBe(true);
+  });
+
+  it("rejects Red March Warbell before it can falsely project a battle modifier", () => {
+    const sent: Array<Record<string, unknown>> = [];
+    const state = createState({
+      currentEncounter: null,
+      activeResolution: null,
+      players: createState().players.map((player) =>
+        player.seatId === "seat-1"
+          ? {
+              ...player,
+              character: {
+                ...player.character,
+                heat: 0,
+                heldGear: [
+                  {
+                    id: "red-march-warbell",
+                    name: "Red March Warbell",
+                    slot: "utility",
+                    category: "active",
+                    statBonus: { stat: "command", amount: 1 },
+                    activeText: "Gain 1 heat to bank combat pressure.",
+                    useLimit: "oncePerTurn"
+                  }
+                ],
+                equippedGear: { weapon: null, armor: null, utility: null }
+              }
+            }
+          : player
+      )
+    });
+    const server = new GameRoomServer(state, [], createSequenceRandomSource([0]), createThreats(), createCharacters(), createGear(), createContracts());
+    const client = createCapturingClient("seat-1", sent);
+
+    server.handleIntent(client, {
+      type: "USE_GEAR",
+      seatId: "seat-1",
+      gearId: "red-march-warbell"
+    });
+
+    expect(sent.some((message) => message.type === "INTENT_REJECTED" && String(message.reason).includes("before a battle roll"))).toBe(true);
+    expect(server.getState().eventLog.some((entry) => (entry as { type?: string }).type === "USE_GEAR")).toBe(false);
+    expect(server.getState().activeResolution?.battle?.modifiers ?? []).not.toContainEqual({ label: "Red March Warbell", value: 2 });
   });
 
   it("decrements gear charges and rejects use at zero charges", () => {
@@ -2091,8 +2150,19 @@ describe("active objects and table interaction", () => {
 
     const player = server.getState().players.find((entry) => entry.seatId === "seat-1");
     const censer = player?.character.heldGear.find((item) => item.id === "choir-static-censer");
+    const phoneProjection = createPhoneProjection(server.getState(), "seat-1") as {
+      objectUseStates?: Array<{ source: string; id: string; remainingUses?: number | null; maxUses?: number | null; disabledReason?: string | null }>;
+      playerResultDeltas?: Array<{ type: string; privateText?: string }>;
+    };
+    const censerUseState = phoneProjection.objectUseStates?.find((entry) => entry.source === "gear" && entry.id === "choir-static-censer");
     expect(player?.character.heat).toBe(1);
     expect(censer?.charges).toBe(0);
+    expect(censerUseState).toMatchObject({
+      remainingUses: 0,
+      maxUses: 1,
+      disabledReason: "Choir Static Censer has no charges remaining."
+    });
+    expect(phoneProjection.playerResultDeltas?.some((delta) => delta.type === "modifierApplied" && delta.privateText?.includes("accepted by server"))).toBe(true);
     expect(sent.some((message) => message.type === "INTENT_REJECTED" && String(message.reason).includes("no charges"))).toBe(true);
   });
 

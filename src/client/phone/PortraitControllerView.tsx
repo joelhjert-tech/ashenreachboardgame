@@ -7,6 +7,7 @@ import type {
   CharacterCatalogEntry,
   ClientIntent,
   ContractCard,
+  Stat,
   NemesisChampionSummary,
   PhonePatchPayload,
   PhoneSelfState,
@@ -15,6 +16,7 @@ import type {
 } from "../shared/types.js";
 import { PhoneInventoryPanel } from "./PhoneInventoryPanel.js";
 import { PhoneActionPanel, type TurnActionTab } from "./PhoneActionPanel.js";
+import { formatSignedStatBonus, getPhoneStatBreakdown } from "./statBreakdown.js";
 
 interface PortraitControllerViewProps {
   self: PhoneSelfState | null;
@@ -71,6 +73,23 @@ function writeStoredPhoneChromeVisible(visible: boolean): void {
   } catch {
     // Local storage can be unavailable in private browser contexts.
   }
+}
+
+function PortraitStatValue({ self, stat }: { self: PhoneSelfState; stat: Stat }): ReactElement {
+  const breakdown = getPhoneStatBreakdown(self, stat);
+
+  return (
+    <>
+      <strong>
+        {breakdown.current}
+        {breakdown.gearFollower !== 0 && <span className="phone-stat-bonus"> ({formatSignedStatBonus(breakdown.gearFollower)})</span>}
+      </strong>
+      <small className="phone-stat-breakdown">
+        Base {breakdown.base} | Permanent {formatSignedStatBonus(breakdown.permanent)} | Gear/Follower{" "}
+        {formatSignedStatBonus(breakdown.gearFollower)}
+      </small>
+    </>
+  );
 }
 
 function getActionTabState(
@@ -479,7 +498,7 @@ export function PortraitControllerView({
                 {statOrder.map((stat) => (
                   <div key={stat}>
                     <span>{statLabelById[stat]}</span>
-                    <strong>{self.character.stats[stat]}</strong>
+                    <PortraitStatValue self={self} stat={stat} />
                   </div>
                 ))}
               </div>
@@ -671,7 +690,7 @@ export function PortraitControllerView({
                   {statOrder.map((stat) => (
                     <div key={stat}>
                       <span>{statLabelById[stat]}</span>
-                      <strong>{self.character.stats[stat]}</strong>
+                      <PortraitStatValue self={self} stat={stat} />
                     </div>
                   ))}
                 </div>

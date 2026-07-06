@@ -133,7 +133,7 @@ function createPatch(overrides: Partial<PhonePatchPayload> = {}): PhonePatchPayl
         scars: [],
         activeContract: null,
         heldGear: [combatWeapon, passiveArmor, relic, consumable, questItem],
-        equippedGear: { weapon: null, armor: null, utility: null },
+        equippedGear: { weapon: null, armor: "coffin-rig", utility: null },
         followers: [
           {
             id: "choir-defector",
@@ -264,6 +264,65 @@ describe("PhoneInventoryPanel", () => {
     render(<PhoneInventoryPanel patch={createPatch({ phase: "navigation", encounter: null })} onIntent={vi.fn()} />);
     expect(screen.getByLabelText(/black route fuse: ready but not usable now/i)).toHaveTextContent(/timing locked/i);
     expect(screen.getByLabelText(/black route fuse: ready but not usable now/i)).not.toHaveTextContent(/\bready\b/i);
+  });
+
+  it("does not present unequipped passive gear as an applied server modifier", () => {
+    const basePatch = createPatch();
+    const patch = {
+      ...basePatch,
+      self: basePatch.self
+        ? {
+            ...basePatch.self,
+            character: {
+              ...basePatch.self.character,
+              equippedGear: { weapon: null, armor: null, utility: null }
+            }
+          }
+        : null
+    } satisfies PhonePatchPayload;
+
+    render(<PhoneInventoryPanel patch={patch} onIntent={vi.fn()} />);
+
+    const armorCard = screen.getByLabelText(/coffin rig: ready but not usable now/i);
+    expect(armorCard).toHaveAttribute("data-inventory-state", "inactive");
+    expect(armorCard).toHaveTextContent(/equip to apply this passive modifier/i);
+    expect(screen.queryByRole("button", { name: /use coffin rig/i })).not.toBeInTheDocument();
+  });
+
+  it("uses server-confirmed use state for charges and once-per-round locks", () => {
+    const basePatch = createPatch();
+    const patch = {
+      ...basePatch,
+      objectUseStates: [
+        {
+          source: "gear" as const,
+          id: "choir-static-censer",
+          usedThisTurn: true,
+          usedThisRound: true,
+          remainingUses: 1,
+          maxUses: 2,
+          disabledReason: null
+        },
+        {
+          source: "follower" as const,
+          id: "choir-defector",
+          usedThisTurn: true,
+          usedThisRound: true,
+          remainingUses: 0,
+          maxUses: 1,
+          disabledReason: "Choir Defector has already been used this round."
+        }
+      ]
+    } satisfies PhonePatchPayload;
+
+    render(<PhoneInventoryPanel patch={patch} onIntent={vi.fn()} />);
+
+    const relicCard = screen.getByLabelText(/choir static censer: usable now/i);
+    expect(relicCard).toHaveTextContent(/1\/2 uses/i);
+    const followerCard = screen.getByLabelText(/choir defector: locked/i);
+    expect(followerCard).toHaveAttribute("data-inventory-state", "inactive");
+    expect(followerCard).toHaveTextContent(/already been used this round/i);
+    expect(screen.queryByRole("button", { name: /use choir defector/i })).not.toBeInTheDocument();
   });
 
   it("sends a gear-use intent from a usable combat card", () => {

@@ -140,6 +140,85 @@ describe("PhoneActionPanel", () => {
     cleanup();
   });
 
+  it("disables generic item/follower use shortcuts from server-confirmed use state", () => {
+    render(
+      <PhoneActionPanel
+        characters={characters}
+        onIntent={vi.fn()}
+        selectedTurnTab="action"
+        patch={createPatch({
+          encounter: null,
+          objectUseStates: [
+            {
+              source: "gear",
+              id: "red-march-warbell",
+              usedThisTurn: true,
+              usedThisRound: true,
+              remainingUses: 0,
+              maxUses: 1,
+              disabledReason: "Red March Warbell has already been used this turn."
+            },
+            {
+              source: "follower",
+              id: "choir-defector",
+              usedThisTurn: true,
+              usedThisRound: true,
+              remainingUses: 0,
+              maxUses: 1,
+              disabledReason: "Choir Defector has already been used this round."
+            }
+          ],
+          self: {
+            seatId: "seat-1",
+            sectorId: "ashwake-crossing",
+            hand: [],
+            notes: [],
+            character: {
+              id: "void-marshal",
+              name: "Sable Vey",
+              archetype: "Void Marshal",
+              currentSpaceId: "ashwake-crossing",
+              status: "active",
+              stats: { command: 3, grit: 2, signal: 1, guile: 2, forge: 1 },
+              trophies: 0,
+              heat: 1,
+              wounds: 0,
+              scars: [],
+              activeContract: null,
+              heldGear: [
+                {
+                  id: "red-march-warbell",
+                  name: "Red March Warbell",
+                  slot: "weapon",
+                  category: "active",
+                  statBonus: { stat: "grit", amount: 1 },
+                  activeText: "Exhaust to add +2 to combat, then gain 1 heat.",
+                  useLimit: "oncePerTurn"
+                }
+              ],
+              equippedGear: { weapon: "red-march-warbell", armor: null, utility: null },
+              followers: [
+                {
+                  id: "choir-defector",
+                  name: "Choir Defector",
+                  role: "ritualist",
+                  text: "Once per round, reduce an anomaly instability or signal difficulty by 1 before rolling.",
+                  useLimit: "oncePerRound"
+                }
+              ],
+              abilities: []
+            }
+          }
+        })}
+      />
+    );
+
+    expect(screen.getByRole("button", { name: /use red march warbell/i })).toBeDisabled();
+    expect(screen.getAllByText(/red march warbell has already been used this turn/i).length).toBeGreaterThan(0);
+    expect(screen.getByRole("button", { name: /use choir defector/i })).toBeDisabled();
+    expect(screen.getAllByText(/choir defector has already been used this round/i).length).toBeGreaterThan(0);
+  });
+
   it("hides action buttons when this seat is not active", () => {
     render(
       <PhoneActionPanel
