@@ -1925,7 +1925,8 @@ describe("PhoneActionPanel", () => {
               stat: "grit",
               difficulty: 8,
               modifiers: [
-                { label: "Grit", value: 2 },
+                { label: "Base Grit", value: 2 },
+                { label: "Black Route Fuse", value: 3 },
                 { label: "Enemy", value: 6 }
               ]
             }
@@ -1937,7 +1938,8 @@ describe("PhoneActionPanel", () => {
     expect(screen.getByTestId("phone-resolution-card")).toHaveTextContent(/battle setup/i);
     expect(screen.getByTestId("phone-battle-panel")).toHaveTextContent(/cinder-veil stalker/i);
     expect(screen.getByTestId("phone-battle-panel")).toHaveTextContent(/grit vs 8/i);
-    expect(screen.getByTestId("phone-battle-panel")).toHaveTextContent(/grit \+2/i);
+    expect(screen.getByTestId("phone-battle-panel")).toHaveTextContent(/base grit \+2/i);
+    expect(screen.getByTestId("phone-battle-panel")).toHaveTextContent(/black route fuse \+3/i);
   });
 
   it("shows battle assist and opens usable combat cards during an enemy encounter", () => {

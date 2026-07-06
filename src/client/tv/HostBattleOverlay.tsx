@@ -24,6 +24,7 @@ interface ResolutionSideModel {
   modifier: number | null;
   total: number | null;
   formula: string;
+  modifierSources: Array<{ label: string; value: number }>;
 }
 
 interface HostBattleDisplayModel {
@@ -107,8 +108,18 @@ function getPlayerBattleValue(resolution: ActiveResolution | null, activePlayer:
     return resolution.roll.modifierTotal;
   }
 
+  const publicModifierTotal = getPlayerModifierSources(resolution).reduce((sum, modifier) => sum + modifier.value, 0);
+
+  if (publicModifierTotal > 0) {
+    return publicModifierTotal;
+  }
+
   const stat = resolution?.battle?.stat;
   return stat && activePlayer ? activePlayer.character.stats[stat] : null;
+}
+
+function getPlayerModifierSources(resolution: ActiveResolution | null): Array<{ label: string; value: number }> {
+  return (resolution?.battle?.modifiers ?? []).filter((modifier) => modifier.label.toLowerCase() !== "enemy");
 }
 
 function getCardMovementText(enemyName: string, outcomeText: string | null | undefined): string | null {
@@ -226,6 +237,7 @@ function buildBattleModel(
   const playerTotal = resolution?.roll?.finalTotal ?? outcome?.checkTotal ?? null;
   const enemyTotal = outcome?.enemyTotal ?? (resolution?.roll?.target ?? battle?.difficulty ?? encounter?.difficulty ?? null);
   const playerBattleValue = getPlayerBattleValue(resolution, activePlayer);
+  const playerModifierSources = getPlayerModifierSources(resolution);
   const enemyBattleValue = getEnemyBattleValue(resolution, patch);
   const success = resolution?.roll?.success ?? outcome?.success ?? null;
   const outcomeLabel = getOutcomeLabel(success, playerTotal, enemyTotal);
@@ -270,6 +282,7 @@ function buildBattleModel(
       rollTotal: playerRollTotal,
       modifier: null,
       total: playerTotal,
+      modifierSources: playerModifierSources,
       formula: formatFormula({
         statLabel,
         statValue: playerBattleValue,
@@ -290,6 +303,7 @@ function buildBattleModel(
       rollTotal: enemyRollTotal,
       modifier: null,
       total: enemyTotal,
+      modifierSources: [],
       formula: opponentFormula
     },
     challengeStat: stat,
@@ -336,6 +350,15 @@ function StatTotalFooter({ side, variant }: { side: ResolutionSideModel; variant
           <dd>{formatNumber(side.total)}</dd>
         </div>
       </dl>
+      {variant === "player" && side.modifierSources.length > 0 && (
+        <div className="host-battle-modifiers" aria-label={`${side.name} modifier sources`}>
+          {side.modifierSources.map((modifier) => (
+            <span key={`${modifier.label}:${modifier.value}`}>
+              {modifier.label} {formatModifier(modifier.value)}
+            </span>
+          ))}
+        </div>
+      )}
       <p>{side.formula}</p>
     </footer>
   );

@@ -154,9 +154,10 @@ import type {
   TableInteractionAction,
   UnequipGearAction,
   UseFollowerAction,
-  UseGearAction
+  UseGearAction,
+  RollModifierSource
 } from "../game/engine/actions.js";
-import { getEquippedGearBonus } from "../game/engine/gear.js";
+import { getEquippedGearModifierSources } from "../game/engine/gear.js";
 import { getMovementProfile } from "../game/rules/movementPhase.js";
 import type { AnomalyCard, ArtifactCard, EncounterEffect, EscalationCard, ScarCard, ThreatCard } from "../game/schema/card.schema.js";
 import type { Character } from "../game/schema/character.schema.js";
@@ -335,6 +336,11 @@ type SectorCardResolution = {
     contract?: string[];
     escalation?: string[];
   };
+};
+
+type PendingRollModifier = RollModifierSource & {
+  stat: Stat;
+  mode: "battle" | "check";
 };
 
 class IntentRejectedError extends Error {
@@ -1264,40 +1270,180 @@ export class GameRoomServer {
     ]);
   }
 
-  private hasPendingFandiablosUse(seatId: string): boolean {
+  private getPendingRollModifierSources(seatId: string, stat: Stat, mode: "battle" | "check"): RollModifierSource[] {
+    const sources: RollModifierSource[] = [];
+
     for (let index = this.state.eventLog.length - 1; index >= 0; index -= 1) {
-      const entry = this.state.eventLog[index] as { type?: string; seatId?: string; followerId?: string } | undefined;
+      const entry = this.state.eventLog[index] as
+        | { type?: string; seatId?: string; rollModifier?: PendingRollModifier }
+        | undefined;
 
       if (entry?.type === "TURN_COMPLETED") {
-        return false;
+        break;
       }
 
       if (entry?.seatId === seatId && (entry.type === "COMBAT_RESOLVED" || entry.type === "CHECK_ROLLED")) {
-        return false;
+        break;
       }
 
-      if (entry?.type === "USE_FOLLOWER" && entry.seatId === seatId && entry.followerId === FANDIABLOS_ID) {
-        return true;
+      if (
+        entry?.seatId === seatId &&
+        (entry.type === "USE_GEAR" || entry.type === "USE_FOLLOWER") &&
+        entry.rollModifier?.stat === stat &&
+        entry.rollModifier.mode === mode
+      ) {
+        sources.push({
+          label: entry.rollModifier.label,
+          value: entry.rollModifier.value
+        });
       }
     }
 
-    return false;
+    return sources.reverse();
   }
 
-  private getFandiablosSupportBonus(seatId: string, stat: Stat, mode: "battle" | "check"): number {
-    if (!this.hasPendingFandiablosUse(seatId)) {
-      return 0;
+  private buildStatModifierSources(
+    player: PlayerState,
+    stat: Stat,
+    mode: "battle" | "check",
+    options: {
+      scenarioModifier?: number;
+      keyedPlayerModifier?: number;
+      masterAlphaModifier?: number;
+      extraSources?: RollModifierSource[];
+    } = {}
+  ): RollModifierSource[] {
+    const permanent = player.character.statUpgrades?.[stat] ?? 0;
+    const base = Math.max(0, player.character.stats[stat] - permanent);
+    const sources: RollModifierSource[] = [
+      { label: `Base ${CHALLENGE_LABELS[stat]}`, value: base }
+    ];
+
+    if (permanent !== 0) {
+      sources.push({ label: `Permanent ${CHALLENGE_LABELS[stat]}`, value: permanent });
     }
 
-    if (mode === "battle" && stat === "grit") {
-      return 3;
+    sources.push(...getEquippedGearModifierSources(player.character, stat));
+
+    if (options.scenarioModifier) {
+      sources.push({ label: "Scenario", value: options.scenarioModifier });
     }
 
-    if (mode === "check" && (stat === "forge" || stat === "guile")) {
-      return 2;
+    if (options.keyedPlayerModifier) {
+      sources.push({ label: "Threat effect", value: options.keyedPlayerModifier });
     }
 
-    return 0;
+    sources.push(...this.getPendingRollModifierSources(player.seatId, stat, mode));
+
+    if (options.masterAlphaModifier) {
+      sources.push({ label: "MASTER ALPHA", value: options.masterAlphaModifier });
+    }
+
+    if (options.extraSources?.length) {
+      sources.push(...options.extraSources);
+    }
+
+    return sources.filter((source) => source.value !== 0);
+  }
+
+  private sumModifierSources(sources: RollModifierSource[]): number {
+    return sources.reduce((sum, source) => sum + source.value, 0);
+  }
+
+  private hasPendingRoll(seatId: string): boolean {
+    const resolution = this.state.activeResolution;
+
+    return Boolean(
+      this.state.pendingEnemyRoll ||
+        (resolution &&
+          resolution.playerId === seatId &&
+          (resolution.roll || resolution.stage === "dice_roll" || resolution.stage === "roll_result"))
+    );
+  }
+
+  private createGearRollModifier(seatId: string, item: GearItem): PendingRollModifier | undefined {
+    const encounter = this.state.currentEncounter;
+
+    if (item.id === "black-route-fuse") {
+      if (this.state.phase !== "action" || !encounter || encounter.cardType !== "enemy" || this.hasPendingRoll(seatId)) {
+        throw new IntentRejectedError("USE_GEAR", "Black Route Fuse can only be used before a battle roll.");
+      }
+
+      return {
+        label: item.name,
+        value: 3,
+        stat: encounter.stat,
+        mode: "battle"
+      };
+    }
+
+    if (
+      item.id === "red-march-warbell" &&
+      this.state.phase === "action" &&
+      encounter?.cardType === "enemy" &&
+      !this.hasPendingRoll(seatId)
+    ) {
+      return {
+        label: item.name,
+        value: 2,
+        stat: encounter.stat,
+        mode: "battle"
+      };
+    }
+
+    return undefined;
+  }
+
+  private createFollowerRollModifier(seatId: string, follower: Follower): PendingRollModifier | undefined {
+    if (follower.id !== FANDIABLOS_ID || this.hasPendingRoll(seatId)) {
+      return undefined;
+    }
+
+    const encounter = this.state.currentEncounter;
+
+    if (this.state.phase !== "action" || !encounter) {
+      return undefined;
+    }
+
+    if (encounter.cardType === "enemy" && encounter.stat === "grit") {
+      return {
+        label: "Fandiablos",
+        value: 3,
+        stat: "grit",
+        mode: "battle"
+      };
+    }
+
+    if (encounter.cardType === "hazard" && (encounter.stat === "forge" || encounter.stat === "guile")) {
+      return {
+        label: "Fandiablos",
+        value: 2,
+        stat: encounter.stat,
+        mode: "check"
+      };
+    }
+
+    return undefined;
+  }
+
+  private assertGearUseAllowed(seatId: string, item: GearItem): void {
+    const player = this.state.players.find((entry) => entry.seatId === seatId);
+
+    if (!player || !player.character.heldGear.some((heldItem) => heldItem.id === item.id)) {
+      throw new IntentRejectedError("USE_GEAR", `Gear ${item.id} is not held by this character`);
+    }
+
+    if (!item.activeText && !item.useLimit) {
+      throw new IntentRejectedError("USE_GEAR", `${item.name} is passive and applies automatically.`);
+    }
+
+    if ((item.heatCost ?? 0) > player.character.heat) {
+      throw new IntentRejectedError("USE_GEAR", `${item.name} needs ${item.heatCost} heat.`);
+    }
+
+    if (item.linkedFollowerRole && !(player.character.followers ?? []).some((follower) => follower.role === item.linkedFollowerRole)) {
+      throw new IntentRejectedError("USE_GEAR", `${item.name} needs a ${item.linkedFollowerRole} follower.`);
+    }
   }
 
   private createFandiablosWarningEffect(seatId: string): EncounterEffect {
@@ -1357,9 +1503,17 @@ export class GameRoomServer {
     createdAt: string
   ): UseGearAction {
     const player = this.state.players.find((entry) => entry.seatId === seatId);
-    const item = player?.character.heldGear.find((entry) => entry.id === gearId) ?? this.gear.get(gearId);
+    const item = player?.character.heldGear.find((entry) => entry.id === gearId);
+
+    if (!item) {
+      throw new IntentRejectedError("USE_GEAR", `Gear ${gearId} is not held by this character`);
+    }
+
+    this.assertGearUseAllowed(seatId, item);
+
     const itemName = item?.name ?? gearId;
     const discard = item?.useLimit === "discard";
+    const rollModifier = this.createGearRollModifier(seatId, item);
     const effect = this.resolveEffect(this.getGearUseEffect(gearId), seatId);
 
     return {
@@ -1368,6 +1522,7 @@ export class GameRoomServer {
       gearId,
       effect,
       discard,
+      rollModifier,
       summary: `${itemName} used. ${item?.activeText ?? "Its effect was recorded for the table."}`,
       createdAt
     } satisfies UseGearAction;
@@ -1444,9 +1599,15 @@ export class GameRoomServer {
     createdAt: string
   ): UseFollowerAction {
     const player = this.state.players.find((entry) => entry.seatId === seatId);
-    const follower = (player?.character.followers ?? []).find((entry) => entry.id === followerId) ?? this.followers.get(followerId);
+    const follower = (player?.character.followers ?? []).find((entry) => entry.id === followerId);
+
+    if (!follower) {
+      throw new IntentRejectedError("USE_FOLLOWER", `Follower ${followerId} is not attached to this character`);
+    }
+
     const fandiablosUse = follower?.id === FANDIABLOS_ID ? this.createFandiablosUseEffect(seatId) : null;
     const effect = this.resolveEffect((follower?.activeEffect as EncounterEffect | undefined) ?? this.getFollowerRoleEffect(follower), seatId);
+    const rollModifier = this.createFollowerRollModifier(seatId, follower);
 
     return {
       type: "USE_FOLLOWER",
@@ -1454,6 +1615,7 @@ export class GameRoomServer {
       followerId,
       effect: fandiablosUse ? this.resolveEffect(fandiablosUse.effect, seatId) : effect,
       discard: follower?.useLimit === "discard",
+      rollModifier,
       summary: (fandiablosUse ?? follower)
         ? `${follower?.name ?? followerId} used. ${fandiablosUse?.summary ?? follower?.text ?? "Their table effect was recorded."}`
         : `${followerId} used. Their table effect was recorded.`,
@@ -1929,7 +2091,8 @@ export class GameRoomServer {
     const statBonus =
       this.state.lastOutcomeSummary?.seatId === intent.seatId && typeof this.state.lastOutcomeSummary.statBonus === "number"
         ? this.state.lastOutcomeSummary.statBonus
-        : player.character.stats[stat] + getEquippedGearBonus(player.character, stat);
+        : player.character.stats[stat] +
+          getEquippedGearModifierSources(player.character, stat).reduce((sum, source) => sum + source.value, 0);
     const difficulty =
       this.state.lastOutcomeSummary?.seatId === intent.seatId && typeof this.state.lastOutcomeSummary.difficulty === "number"
         ? this.state.lastOutcomeSummary.difficulty
@@ -4638,14 +4801,12 @@ export class GameRoomServer {
 
     const escalationModifier = getEscalationModifier(this.state.escalationLevel);
     const keyedModifiers = this.resolveThreatEffectKeys(intent.seatId, encounter, encounter.combatEffectKeys, "beforeCombat");
-    const fandiablosBonus = this.getFandiablosSupportBonus(intent.seatId, intent.stat, "check");
+    const modifierSources = this.buildStatModifierSources(player, intent.stat, "check", {
+      scenarioModifier: this.getScenarioSkillModifier(intent.seatId),
+      keyedPlayerModifier: keyedModifiers.playerBonusModifier ?? 0
+    });
     const roll = rollDice(2, 6, this.randomSource);
-    const statBonus =
-      player.character.stats[intent.stat] +
-      getEquippedGearBonus(player.character, intent.stat) +
-      this.getScenarioSkillModifier(intent.seatId) +
-      (keyedModifiers.playerBonusModifier ?? 0) +
-      fandiablosBonus;
+    const statBonus = this.sumModifierSources(modifierSources);
     const difficulty = encounter.difficulty + escalationModifier + (keyedModifiers.difficultyModifier ?? 0);
     const total = roll.total + statBonus;
     const success = total >= difficulty;
@@ -4670,6 +4831,7 @@ export class GameRoomServer {
       difficulty,
       roll,
       statBonus,
+      modifierSources,
       total,
       success,
       effect: outcomeEffect,
@@ -4850,7 +5012,7 @@ export class GameRoomServer {
     const roll = rollDice(2, 6, this.randomSource);
     const statBonus =
       player.character.stats.guile +
-      getEquippedGearBonus(player.character, "guile") +
+      getEquippedGearModifierSources(player.character, "guile").reduce((sum, source) => sum + source.value, 0) +
       this.getScenarioSkillModifier(intent.seatId);
     const total = roll.total + statBonus;
     const routeDifficulty = Math.max(
@@ -4967,7 +5129,7 @@ export class GameRoomServer {
       const escalationModifier = getEscalationModifier(this.state.escalationLevel);
       const statBonus =
         player.character.stats[resolution.check.stat] +
-        getEquippedGearBonus(player.character, resolution.check.stat) +
+        getEquippedGearModifierSources(player.character, resolution.check.stat).reduce((sum, source) => sum + source.value, 0) +
         this.getScenarioSkillModifier(intent.seatId);
       const difficulty = resolution.check.difficulty + escalationModifier;
       const total = roll.total + statBonus;
@@ -5089,7 +5251,7 @@ export class GameRoomServer {
       const roll = rollDice(2, 6, this.randomSource);
       const statBonus =
         player.character.stats[check.stat] +
-        getEquippedGearBonus(player.character, check.stat) +
+        getEquippedGearModifierSources(player.character, check.stat).reduce((sum, source) => sum + source.value, 0) +
         this.getScenarioSkillModifier(intent.seatId);
       const difficulty = check.difficulty + confrontationModifier;
       const total = roll.total + statBonus;
@@ -5423,7 +5585,7 @@ export class GameRoomServer {
     const assistBonus = getAssistBonus(this.state, intent.seatId, nemesis, requestedAssistSeatIds);
     const statBonus =
       player.character.stats[stat] +
-      getEquippedGearBonus(player.character, stat) +
+      getEquippedGearModifierSources(player.character, stat).reduce((sum, source) => sum + source.value, 0) +
       this.getScenarioBattleModifier(intent.seatId) +
       assistBonus +
       getMasterAlphaBattleBonus(player);
@@ -5776,16 +5938,14 @@ export class GameRoomServer {
     const enemyRoll = rollDice(2, 6, this.randomSource);
     const escalationModifier = getEscalationModifier(this.state.escalationLevel);
     const keyedModifiers = this.resolveThreatEffectKeys(fighterSeatId, encounter, encounter.combatEffectKeys, "beforeCombat");
-    const fandiablosBonus = this.getFandiablosSupportBonus(fighterSeatId, stat, "battle");
     const boardTier = getBoardSpace(player.character.currentSpaceId)?.tier ?? "unknown";
     const soloCombatEase = getSoloCombatDifficultyEase(this.state.sessionMode, boardTier);
-    const statBonus =
-      player.character.stats[stat] +
-      getEquippedGearBonus(player.character, stat) +
-      this.getScenarioBattleModifier(fighterSeatId) +
-      (keyedModifiers.playerBonusModifier ?? 0) +
-      fandiablosBonus +
-      getMasterAlphaBattleBonus(player);
+    const modifierSources = this.buildStatModifierSources(player, stat, "battle", {
+      scenarioModifier: this.getScenarioBattleModifier(fighterSeatId),
+      keyedPlayerModifier: keyedModifiers.playerBonusModifier ?? 0,
+      masterAlphaModifier: getMasterAlphaBattleBonus(player)
+    });
+    const statBonus = this.sumModifierSources(modifierSources);
     const easedEncounterDifficulty = Math.max(
       0,
       encounter.difficulty + escalationModifier + (keyedModifiers.difficultyModifier ?? 0) - soloCombatEase
@@ -5818,6 +5978,7 @@ export class GameRoomServer {
       roll: playerRoll,
       enemyRoll,
       statBonus,
+      modifierSources,
       enemyBonus: enemyBonus + scenarioEnemyBonus + keyedEnemyBonus,
       total,
       enemyTotal,

@@ -28,27 +28,48 @@ export function getEquippedGearItem(
 }
 
 export function getEquippedGearBonus(character: Character, stat: Stat): number {
-  const gearBonus = (Object.keys(character.equippedGear) as GearSlot[]).reduce((sum, slot) => {
-    const item = getEquippedGearItem(character, slot);
-    return item && item.statBonus.stat === stat ? sum + item.statBonus.amount : sum;
-  }, 0);
-
-  return gearBonus + getCompanionStatBonus(character, stat);
+  return getEquippedGearModifierSources(character, stat).reduce((sum, source) => sum + source.value, 0);
 }
 
 export function getCompanionStatBonus(character: Character, stat: Stat): number {
+  return getCompanionStatModifierSources(character, stat).reduce((sum, source) => sum + source.value, 0);
+}
+
+export function getEquippedGearModifierSources(character: Character, stat: Stat): Array<{ label: string; value: number }> {
+  const gearSources = (Object.keys(character.equippedGear) as GearSlot[])
+    .map((slot) => getEquippedGearItem(character, slot))
+    .filter((item): item is GearItem => item !== undefined && item.statBonus.stat === stat)
+    .map((item) => ({
+      label: item.name,
+      value: item.statBonus.amount
+    }));
+
+  return [...gearSources, ...getCompanionStatModifierSources(character, stat)];
+}
+
+export function getCompanionStatModifierSources(character: Character, stat: Stat): Array<{ label: string; value: number }> {
   if (character.id !== RUMI_CHARACTER_ID) {
-    return 0;
+    return [];
   }
 
   const followerIds = new Set((character.followers ?? []).map((follower) => follower.id));
 
   if (!followerIds.has(MIRA_FOLLOWER_ID)) {
-    return 0;
+    return [];
   }
 
+  const sources: Array<{ label: string; value: number }> = [];
   const miraBonus = MIRA_RUMI_TEAM_BONUS[stat] ?? 0;
+
+  if (miraBonus > 0) {
+    sources.push({ label: "Mira Rift-Twin", value: miraBonus });
+  }
+
   const triadBonus = followerIds.has(ZOEY_FOLLOWER_ID) ? (VIOLET_TRIAD_TEAM_BONUS[stat] ?? 0) : 0;
 
-  return miraBonus + triadBonus;
+  if (triadBonus > 0) {
+    sources.push({ label: "Zoey Thorn Violet", value: triadBonus });
+  }
+
+  return sources;
 }

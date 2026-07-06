@@ -7,6 +7,11 @@ import type { DiceRollResult } from "./dice.js";
 
 export type CheckStat = Stat;
 
+export interface RollModifierSource {
+  label: string;
+  value: number;
+}
+
 export interface BaseAction {
   type: string;
   seatId: string;
@@ -89,6 +94,7 @@ export interface CheckRolledAction extends BaseAction {
   difficulty: number;
   roll: DiceRollResult;
   statBonus: number;
+  modifierSources?: RollModifierSource[];
   total: number;
   success: boolean;
   effect: EncounterEffect;
@@ -101,6 +107,7 @@ export interface SoloRerollResolvedAction extends BaseAction {
   difficulty: number;
   roll: DiceRollResult;
   statBonus: number;
+  modifierSources?: RollModifierSource[];
   total: number;
   success: boolean;
   effect: EncounterEffect;
@@ -114,6 +121,7 @@ export interface CombatResolvedAction extends BaseAction {
   roll: DiceRollResult;
   enemyRoll: DiceRollResult;
   statBonus: number;
+  modifierSources?: RollModifierSource[];
   enemyBonus: number;
   total: number;
   enemyTotal: number;
@@ -170,6 +178,10 @@ export interface UseGearAction extends BaseAction {
   effect: EncounterEffect | null;
   summary: string;
   discard?: boolean;
+  rollModifier?: RollModifierSource & {
+    stat: CheckStat;
+    mode: "battle" | "check";
+  };
 }
 
 export interface UseFollowerAction extends BaseAction {
@@ -178,6 +190,10 @@ export interface UseFollowerAction extends BaseAction {
   effect: EncounterEffect | null;
   summary: string;
   discard?: boolean;
+  rollModifier?: RollModifierSource & {
+    stat: CheckStat;
+    mode: "battle" | "check";
+  };
 }
 
 export interface TableInteractionAction extends BaseAction {

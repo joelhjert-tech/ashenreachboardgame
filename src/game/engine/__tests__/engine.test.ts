@@ -1736,6 +1736,229 @@ describe("active resolution visibility state", () => {
 });
 
 describe("active objects and table interaction", () => {
+  it("applies accepted combat item modifiers to the real final total and visible source rows", () => {
+    const sent: Array<Record<string, unknown>> = [];
+    const encounter = createThreats().get("cinder-veil-stalker")!;
+    const blackRouteFuse: GearItem = {
+      id: "black-route-fuse",
+      name: "Black Route Fuse",
+      slot: "weapon",
+      category: "dangerous",
+      statBonus: { stat: "grit", amount: 1 },
+      activeText: "Break for +3 combat pressure, then advance escalation by 1.",
+      useLimit: "discard",
+      heatCost: 1
+    };
+    const state = createState({
+      currentEncounter: encounter,
+      activeResolution: {
+        id: "seat-1:threat:cinder-veil-stalker:test",
+        playerId: "seat-1",
+        source: "threat",
+        stage: "card_reveal",
+        card: {
+          id: encounter.id,
+          title: encounter.title,
+          type: encounter.cardType,
+          flavor: encounter.flavor,
+          artType: "threat"
+        }
+      },
+      players: createState().players.map((player) =>
+        player.seatId === "seat-1"
+          ? {
+              ...player,
+              character: {
+                ...player.character,
+                heat: 1,
+                heldGear: [blackRouteFuse],
+                equippedGear: { weapon: null, armor: null, utility: null }
+              }
+            }
+          : player
+      )
+    });
+    const server = new GameRoomServer(
+      withOnlyConnectedSeat(state, "seat-1"),
+      [],
+      createSequenceRandomSource([0, 0, 0, 0]),
+      createThreats(),
+      createCharacters(),
+      createGear(),
+      createContracts()
+    );
+    const client = createCapturingClient("seat-1", sent);
+
+    server.handleIntent(client, {
+      type: "USE_GEAR",
+      seatId: "seat-1",
+      gearId: "black-route-fuse"
+    });
+
+    expect(sent.some((message) => message.type === "INTENT_REJECTED")).toBe(false);
+    expect(server.getState().activeResolution?.battle?.modifiers).toContainEqual({ label: "Black Route Fuse", value: 3 });
+    expect(server.getState().players[0]?.character.heldGear.some((item) => item.id === "black-route-fuse")).toBe(false);
+
+    runIntent(server, {
+      type: "COMBAT_REQUESTED",
+      seatId: "seat-1",
+      stat: "grit"
+    });
+
+    const resolvedCombat = [...server.getState().eventLog].reverse().find((entry) => {
+      return (entry as { type?: string }).type === "COMBAT_RESOLVED";
+    }) as { statBonus?: number; total?: number; modifierSources?: Array<{ label: string; value: number }> } | undefined;
+
+    expect(resolvedCombat?.statBonus).toBe(5);
+    expect(resolvedCombat?.total).toBe(7);
+    expect(resolvedCombat?.modifierSources).toEqual(
+      expect.arrayContaining([
+        { label: "Base Grit", value: 2 },
+        { label: "Black Route Fuse", value: 3 }
+      ])
+    );
+
+    server.getState().phase = "action";
+    server.getState().currentEncounter = encounter;
+    server.getState().pendingEnemyRoll = null;
+    server.getState().pendingEffect = null;
+    server.getState().activeResolution = null;
+
+    runIntent(server, {
+      type: "COMBAT_REQUESTED",
+      seatId: "seat-1",
+      stat: "grit"
+    });
+
+    const secondCombat = [...server.getState().eventLog].reverse().find((entry, index, log) => {
+      return (entry as { type?: string }).type === "COMBAT_RESOLVED" && index < log.length;
+    }) as { statBonus?: number; modifierSources?: Array<{ label: string; value: number }> } | undefined;
+
+    expect(secondCombat?.statBonus).toBe(2);
+    expect(secondCombat?.modifierSources).not.toEqual(expect.arrayContaining([{ label: "Black Route Fuse", value: 3 }]));
+  });
+
+  it("rejects combat-only item use outside the battle timing window without changing totals", () => {
+    const sent: Array<Record<string, unknown>> = [];
+    const blackRouteFuse: GearItem = {
+      id: "black-route-fuse",
+      name: "Black Route Fuse",
+      slot: "weapon",
+      category: "dangerous",
+      statBonus: { stat: "grit", amount: 1 },
+      activeText: "Break for +3 combat pressure, then advance escalation by 1.",
+      useLimit: "discard",
+      heatCost: 1
+    };
+    const state = createState({
+      currentEncounter: null,
+      activeResolution: null,
+      players: createState().players.map((player) =>
+        player.seatId === "seat-1"
+          ? {
+              ...player,
+              character: {
+                ...player.character,
+                heat: 1,
+                heldGear: [blackRouteFuse],
+                equippedGear: { weapon: null, armor: null, utility: null }
+              }
+            }
+          : player
+      )
+    });
+    const server = new GameRoomServer(state, [], createSequenceRandomSource([0]), createThreats(), createCharacters(), createGear(), createContracts());
+
+    server.handleIntent(createCapturingClient("seat-1", sent), {
+      type: "USE_GEAR",
+      seatId: "seat-1",
+      gearId: "black-route-fuse"
+    });
+
+    expect(sent.some((message) => message.type === "INTENT_REJECTED" && String(message.reason).includes("before a battle roll"))).toBe(true);
+    expect(server.getState().players[0]?.character.heldGear.some((item) => item.id === "black-route-fuse")).toBe(true);
+    expect(server.getState().eventLog.some((entry) => (entry as { type?: string }).type === "USE_GEAR")).toBe(false);
+  });
+
+  it("keeps passive gear, follower, and permanent stat sources separate in combat math", () => {
+    const encounter = {
+      ...createThreats().get("cinder-veil-stalker")!,
+      stat: "signal" as const
+    };
+    const rumi: Character = {
+      id: "char_rumi",
+      name: "Rumi",
+      archetype: "Signal Twin",
+      currentSpaceId: "sector-a",
+      status: "active",
+      stats: { command: 1, grit: 1, signal: 4, guile: 1, forge: 1 },
+      statUpgrades: { signal: 1 },
+      trophies: 0,
+      heat: 0,
+      wounds: 0,
+      scars: [],
+      activeContract: null,
+      heldGear: [
+        {
+          id: "tuning-spines",
+          name: "Tuning Spines",
+          slot: "utility",
+          statBonus: { stat: "signal", amount: 1 }
+        }
+      ],
+      equippedGear: { weapon: null, armor: null, utility: "tuning-spines" },
+      followers: [
+        {
+          id: "mira-rift-twin",
+          name: "Mira Rift-Twin",
+          role: "companion",
+          text: "Rumi's rift twin keeps the signal path stable."
+        }
+      ],
+      abilities: []
+    };
+    const state = createState({
+      currentEncounter: encounter,
+      players: createState().players.map((player) =>
+        player.seatId === "seat-1"
+          ? {
+              ...player,
+              character: rumi
+            }
+          : player
+      )
+    });
+    const server = new GameRoomServer(
+      withOnlyConnectedSeat(state, "seat-1"),
+      [],
+      createSequenceRandomSource([0, 0, 0, 0]),
+      createThreats(),
+      createCharacters(),
+      createGear(),
+      createContracts()
+    );
+
+    runIntent(server, {
+      type: "COMBAT_REQUESTED",
+      seatId: "seat-1",
+      stat: "signal"
+    });
+
+    const resolvedCombat = [...server.getState().eventLog].reverse().find((entry) => {
+      return (entry as { type?: string }).type === "COMBAT_RESOLVED";
+    }) as { statBonus?: number; modifierSources?: Array<{ label: string; value: number }> } | undefined;
+
+    expect(resolvedCombat?.statBonus).toBe(6);
+    expect(resolvedCombat?.modifierSources).toEqual(
+      expect.arrayContaining([
+        { label: "Base Signal", value: 3 },
+        { label: "Permanent Signal", value: 1 },
+        { label: "Tuning Spines", value: 1 },
+        { label: "Mira Rift-Twin", value: 1 }
+      ])
+    );
+  });
+
   it("uses and discards a consumable gear object from the phone", () => {
     const state = createState({
       players: createState().players.map((player) =>

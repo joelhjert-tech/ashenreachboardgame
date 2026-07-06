@@ -969,7 +969,10 @@ describe("TvApp", () => {
         enemyName: "Cinder-Veil Stalker",
         stat: "grit",
         difficulty: 8,
-        modifiers: [{ label: "Grit", value: 2 }]
+        modifiers: [
+          { label: "Base Grit", value: 2 },
+          { label: "Black Route Fuse", value: 3 }
+        ]
       }
     };
     mockUseRoomSubscription.mockReturnValue({
@@ -991,7 +994,8 @@ describe("TvApp", () => {
     expect(overlay).toHaveTextContent(/cinder-veil stalker/i);
     expect(within(overlay).getByTestId("host-battle-vs-block")).toHaveTextContent(/vs/i);
     expect(within(overlay).getByTestId("host-battle-result-banner")).toHaveTextContent(/resolving/i);
-    expect(overlay).toHaveTextContent(/grit\s*2/i);
+    expect(overlay).toHaveTextContent(/base grit\s*\+2/i);
+    expect(overlay).toHaveTextContent(/black route fuse\s*\+3/i);
     expect(overlay).toHaveTextContent(/difficulty\s*8/i);
     expect(overlay).not.toHaveTextContent(/wounds/i);
     expect(overlay).not.toHaveTextContent(/salvage/i);
@@ -1539,7 +1543,9 @@ describe("TvApp", () => {
         stat: "grit",
         difficulty: 5,
         modifiers: [
-          { label: "grit", value: 6 },
+          { label: "Base Grit", value: 2 },
+          { label: "Black Route Fuse", value: 3 },
+          { label: "Fandiablos", value: 1 },
           { label: "Enemy", value: 5 }
         ]
       },
@@ -1608,6 +1614,9 @@ describe("TvApp", () => {
     expect(screen.getByTestId("host-battle-result-banner")).toHaveTextContent(/success/i);
     expect(screen.getByTestId("host-battle-result-banner")).toHaveTextContent(/wins by 3/i);
     expect(screen.getByTestId("host-battle-test-label")).toHaveTextContent(/grit test/i);
+    expect(overlay).toHaveTextContent(/base grit\s*\+2/i);
+    expect(overlay).toHaveTextContent(/black route fuse\s*\+3/i);
+    expect(overlay).toHaveTextContent(/fandiablos\s*\+1/i);
     expect(overlay.querySelector("[data-testid='combat-die-attack']")).toHaveTextContent("4");
     expect(overlay.querySelector("[data-testid='combat-die-defense']")).toHaveTextContent("3");
     expect(overlay.querySelector("[data-testid='combat-die-modifier']")).not.toBeInTheDocument();

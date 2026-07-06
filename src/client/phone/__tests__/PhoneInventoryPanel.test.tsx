@@ -241,6 +241,7 @@ describe("PhoneInventoryPanel", () => {
     expect(screen.getByLabelText(/black route fuse: usable now/i)).toHaveTextContent(/active in this timing window/i);
     expect(screen.getByRole("button", { name: /use black route fuse/i })).toHaveTextContent(/use now/i);
     expect(screen.getByLabelText(/coffin rig: passive/i)).toHaveAttribute("data-inventory-state", "applied");
+    expect(screen.queryByRole("button", { name: /use coffin rig/i })).not.toBeInTheDocument();
     expect(screen.getByLabelText(/cinder suture kit: locked/i)).toHaveAttribute("data-inventory-state", "inactive");
 
     cleanup();

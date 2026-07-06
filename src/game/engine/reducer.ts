@@ -43,7 +43,8 @@ import type {
   WoundThresholdReachedAction,
   UnequipGearAction,
   UseFollowerAction,
-  UseGearAction
+  UseGearAction,
+  RollModifierSource
 } from "./actions.js";
 import { getHeldGearItem } from "./gear.js";
 import { canAdvancePhase, canResolveMovement } from "./phases.js";
@@ -719,6 +720,33 @@ function summarizeThreatBattle(
     stat: card.stat,
     difficulty,
     modifiers
+  };
+}
+
+function fallbackModifierSources(stat: string, value: number): RollModifierSource[] {
+  return [{ label: stat, value }];
+}
+
+function appendPendingRollModifierToResolution(
+  resolution: ActiveResolution | null | undefined,
+  encounter: ThreatCard | null,
+  modifier: UseGearAction["rollModifier"] | UseFollowerAction["rollModifier"] | undefined
+): ActiveResolution | null | undefined {
+  if (!resolution || !encounter || !modifier) {
+    return resolution;
+  }
+
+  const battle = resolution.battle ?? summarizeThreatBattle(encounter);
+  const alreadyApplied = battle.modifiers.some((entry) => entry.label === modifier.label && entry.value === modifier.value);
+
+  return {
+    ...resolution,
+    battle: {
+      ...battle,
+      modifiers: alreadyApplied
+        ? battle.modifiers
+        : [...battle.modifiers, { label: modifier.label, value: modifier.value }]
+    }
   };
 }
 
@@ -1524,9 +1552,11 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
           createdAt: action.createdAt,
           suffix: action.cardId,
           card: summarizeThreatCard(state.currentEncounter),
-          battle: summarizeThreatBattle(state.currentEncounter, action.difficulty, [
-            { label: action.stat, value: action.statBonus }
-          ]),
+          battle: summarizeThreatBattle(
+            state.currentEncounter,
+            action.difficulty,
+            action.modifierSources ?? fallbackModifierSources(action.stat, action.statBonus)
+          ),
           dice: action.roll.faces,
           baseTotal: action.roll.total,
           modifierTotal: action.statBonus,
@@ -1603,7 +1633,7 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
           suffix: `${rerollAction.cardId}-solo-reroll`,
           card: summarizeThreatCard(state.currentEncounter),
           battle: summarizeThreatBattle(state.currentEncounter, rerollAction.difficulty, [
-            { label: rerollAction.stat, value: rerollAction.statBonus },
+            ...(rerollAction.modifierSources ?? fallbackModifierSources(rerollAction.stat, rerollAction.statBonus)),
             { label: "Solo emergency reroll", value: 0 }
           ]),
           dice: rerollAction.roll.faces,
@@ -1686,7 +1716,7 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
           suffix: action.cardId,
           card: summarizeThreatCard(state.currentEncounter),
           battle: summarizeThreatBattle(state.currentEncounter, action.difficulty, [
-            { label: action.stat, value: action.statBonus },
+            ...(action.modifierSources ?? fallbackModifierSources(action.stat, action.statBonus)),
             { label: "Enemy", value: action.enemyBonus }
           ]),
           dice: action.roll.faces,
@@ -2127,6 +2157,11 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
       return succeed({
         ...finalState,
         sequence: state.sequence + 1,
+        activeResolution: appendPendingRollModifierToResolution(
+          finalState.activeResolution,
+          finalState.currentEncounter,
+          useGearAction.rollModifier
+        ),
         lastOutcomeSummary: {
           seatId: useGearAction.seatId,
           movedToSectorId: updatedPlayer.sectorId,
@@ -2194,6 +2229,11 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
       return succeed({
         ...finalState,
         sequence: state.sequence + 1,
+        activeResolution: appendPendingRollModifierToResolution(
+          finalState.activeResolution,
+          finalState.currentEncounter,
+          useFollowerAction.rollModifier
+        ),
         lastOutcomeSummary: {
           seatId: useFollowerAction.seatId,
           movedToSectorId: updatedPlayer.sectorId,

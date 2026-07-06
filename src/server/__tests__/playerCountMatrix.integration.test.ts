@@ -469,6 +469,7 @@ describe("player count integration matrix", () => {
 
       expect(gearUsePayload.self?.character.heldGear.some((item) => item.id === "black-route-fuse")).toBe(false);
       expect(gearUsePayload.outcomeSummary?.summary).toContain("Black Route Fuse used");
+      expect(gearUsePayload.activeResolution?.battle?.modifiers).toContainEqual({ label: "Black Route Fuse", value: 3 });
       expect(harness.roomServer.getState().eventLog.some((entry) => {
         const maybeEntry = entry as { type?: unknown; gearId?: unknown };
         return maybeEntry.type === "USE_GEAR" && maybeEntry.gearId === "black-route-fuse";
@@ -548,6 +549,8 @@ describe("player count integration matrix", () => {
       const rollResolution = getPhonePayload(rolledPatch).activeResolution;
 
       expect(rollResolution?.battle?.enemyName).toBe(matrixBattleThreat.enemyName);
+      expect(rollResolution?.battle?.modifiers).toContainEqual({ label: "Black Route Fuse", value: 3 });
+      expect(rollResolution?.roll?.modifierTotal).toBeGreaterThanOrEqual(5);
       expect(rollResolution?.roll?.dice).toHaveLength(2);
       expect(typeof rollResolution?.roll?.finalTotal).toBe("number");
       expect(typeof rollResolution?.roll?.target).toBe("number");
