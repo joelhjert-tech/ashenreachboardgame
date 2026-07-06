@@ -167,7 +167,7 @@ describe("PhoneApp", () => {
     expect(screen.queryByRole("button", { name: /^ready$/i })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /leave/i })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /hide ui/i })).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /show ui/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /show tabs/i })).not.toBeInTheDocument();
   });
 
   it("moves from room/name entry to character selection after room validation", async () => {

@@ -34,6 +34,15 @@ type PortraitTab = "player" | "inventory" | "quests" | TurnActionTab;
 
 const turnActionTabs: TurnActionTab[] = ["move", "battle", "shop", "action"];
 const phoneChromeStorageKey = "ashenreach.phoneChromeVisible";
+const portraitTabLabels: Record<PortraitTab, string> = {
+  player: "Player Card",
+  inventory: "Inventory",
+  quests: "Quest",
+  move: "Move",
+  battle: "Battle",
+  shop: "Shop",
+  action: "Action"
+};
 
 function isTurnActionTab(tab: PortraitTab): tab is TurnActionTab {
   return turnActionTabs.includes(tab as TurnActionTab);
@@ -567,20 +576,29 @@ export function PortraitControllerView({
 
   const rootClassName = [
     "phone-portrait-controller",
-    phoneChromeVisible ? "phone-shell--chrome-visible" : "phone-shell--chrome-hidden"
+    phoneChromeVisible ? "phone-shell--chrome-visible" : "phone-shell--immersive"
   ]
     .filter(Boolean)
     .join(" ");
-  const topbarClassName = ["phone-portrait-header", "phone-topbar", phoneChromeHidden ? "phone-topbar--hidden" : ""]
+  const topbarClassName = ["phone-portrait-header", "phone-topbar", phoneChromeHidden ? "phone-topbar--compact" : ""]
     .filter(Boolean)
     .join(" ");
   const bottomNavClassName = [
     "phone-portrait-bottom-nav",
     "phone-bottomnav",
-    phoneChromeHidden ? "phone-bottom-nav--hidden" : ""
+    phoneChromeHidden ? "phone-bottomdock--compact" : "phone-bottomdock--expanded"
   ]
     .filter(Boolean)
     .join(" ");
+  const contentClassName = [
+    "phone-portrait-scroll",
+    phoneChromeHidden ? "phone-content--expanded" : ""
+  ]
+    .filter(Boolean)
+    .join(" ");
+  const compactStatusDetail = self.character.scars.length > 0
+    ? `${self.character.scars.length} scar${self.character.scars.length === 1 ? "" : "s"}`
+    : `${self.character.heat} heat`;
 
   return (
     <section
@@ -617,10 +635,17 @@ export function PortraitControllerView({
                 </button>
               </div>
             </>
-          ) : null}
+          ) : (
+            <div className="phone-compact-status-strip" aria-label="Compact player status">
+              <strong>{self.character.name}</strong>
+              <span>
+                {self.character.wounds} wounds | {compactStatusDetail}
+              </span>
+            </div>
+          )}
         </header>
 
-        <main className="phone-portrait-scroll" aria-label="Phone content">
+        <main className={contentClassName} aria-label="Phone content">
           {activeTab === "player" && (
             <div className="phone-portrait-screen">
               <section className="phone-portrait-hero-card">
@@ -819,18 +844,28 @@ export function PortraitControllerView({
                 );
               })()
             ))
-          ) : null}
+          ) : (
+            <div className="phone-compact-tab-dock" aria-label="Compact phone navigation">
+              <button
+                type="button"
+                className="phone-compact-active-tab"
+                role="tab"
+                aria-selected="true"
+                aria-current="page"
+                onClick={showPhoneChrome}
+              >
+                {portraitTabLabels[activeTab]}
+              </button>
+              <button
+                type="button"
+                className="phone-button phone-button-secondary phone-chrome-restore"
+                onClick={showPhoneChrome}
+              >
+                Show Tabs
+              </button>
+            </div>
+          )}
         </nav>
-
-        {phoneChromeHidden ? (
-          <button
-            type="button"
-            className="phone-button phone-button-secondary phone-chrome-restore"
-            onClick={showPhoneChrome}
-          >
-            Show UI
-          </button>
-        ) : null}
       </div>
     </section>
   );

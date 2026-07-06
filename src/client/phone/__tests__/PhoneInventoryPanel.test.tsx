@@ -379,16 +379,24 @@ describe("PhoneInventoryPanel", () => {
     await waitFor(() => expect(screen.getByLabelText("Inventory")).toHaveTextContent(/black route fuse/i));
     fireEvent.click(screen.getByRole("button", { name: /hide ui/i }));
 
-    expect(shell).toHaveClass("phone-shell--chrome-hidden");
+    expect(shell).toHaveClass("phone-shell--immersive");
     expect(shell).toHaveAttribute("data-phone-chrome-visible", "false");
     expect(window.localStorage.getItem("ashenreach.phoneChromeVisible")).toBe("false");
+    const compactStatus = screen.getByLabelText(/compact player status/i);
+    expect(compactStatus).toHaveTextContent(/sable vey/i);
+    expect(compactStatus).toHaveTextContent(/0 wounds \| 1 heat/i);
+    expect(compactStatus.querySelector("img")).not.toBeInTheDocument();
+    expect(screen.getByRole("banner")).toHaveClass("phone-topbar--compact");
     expect(screen.queryByRole("tab", { name: /player card/i })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /leave/i })).not.toBeInTheDocument();
     expect(screen.getByLabelText("Inventory")).toHaveTextContent(/black route fuse/i);
-    expect(screen.getByRole("button", { name: /show ui/i })).toHaveClass("phone-chrome-restore");
+    expect(screen.getByLabelText(/phone content/i)).toHaveClass("phone-content--expanded");
+    expect(document.querySelectorAll(".phone-portrait-scroll")).toHaveLength(1);
+    expect(screen.getByLabelText(/compact phone navigation/i)).toHaveTextContent(/inventory/i);
+    expect(screen.getByRole("button", { name: /show tabs/i })).toHaveClass("phone-chrome-restore");
     expect(onIntent).not.toHaveBeenCalled();
 
-    fireEvent.click(screen.getByRole("button", { name: /show ui/i }));
+    fireEvent.click(screen.getByRole("button", { name: /show tabs/i }));
 
     expect(shell).toHaveClass("phone-shell--chrome-visible");
     expect(window.localStorage.getItem("ashenreach.phoneChromeVisible")).toBe("true");
@@ -416,7 +424,7 @@ describe("PhoneInventoryPanel", () => {
     const shell = document.querySelector(".phone-portrait-controller");
 
     fireEvent.click(screen.getByRole("button", { name: /hide ui/i }));
-    expect(shell).toHaveClass("phone-shell--chrome-hidden");
+    expect(shell).toHaveClass("phone-shell--immersive");
 
     fireEvent.keyDown(window, { key: "Escape" });
 
@@ -445,7 +453,7 @@ describe("PhoneInventoryPanel", () => {
     await waitFor(() => expect(screen.getByTestId("phone-action-screen")).toBeInTheDocument());
     fireEvent.click(screen.getByRole("button", { name: /hide ui/i }));
 
-    expect(document.querySelector(".phone-portrait-controller")).toHaveClass("phone-shell--chrome-hidden");
+    expect(document.querySelector(".phone-portrait-controller")).toHaveClass("phone-shell--immersive");
     expect(screen.getByTestId("phone-current-prompt")).toHaveTextContent(/roll battle/i);
     fireEvent.click(screen.getByRole("button", { name: /enter combat.*cinder-veil stalker/i }));
 

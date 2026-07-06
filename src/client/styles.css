@@ -1367,8 +1367,9 @@ select {
 
 .phone-portrait-panel {
   --phone-header-height: 5.8rem;
+  --phone-compact-header-height: 2.2rem;
   --phone-nav-height: 6.9rem;
-  --phone-nav-collapsed-height: 2.8rem;
+  --phone-compact-dock-height: 3.05rem;
   --phone-bottom-nav-height: var(--phone-nav-height);
   position: relative;
   min-height: 0;
@@ -1388,14 +1389,14 @@ select {
 }
 
 .phone-shell--chrome-visible,
-.phone-shell--chrome-hidden {
+.phone-shell--immersive {
   height: 100dvh;
   max-height: 100dvh;
 }
 
-.phone-shell--chrome-hidden .phone-portrait-panel {
-  --phone-bottom-nav-height: 0rem;
-  grid-template-rows: minmax(0, 1fr);
+.phone-shell--immersive .phone-portrait-panel {
+  --phone-bottom-nav-height: var(--phone-compact-dock-height);
+  grid-template-rows: auto minmax(0, 1fr) auto;
 }
 
 .phone-portrait-controller-empty .phone-portrait-panel {
@@ -1524,9 +1525,53 @@ select {
   line-height: 1.05;
 }
 
-.phone-topbar--hidden,
-.phone-bottom-nav--hidden {
-  display: none;
+.phone-topbar--compact {
+  min-height: var(--phone-compact-header-height);
+  display: block;
+  padding:
+    max(0.28rem, env(safe-area-inset-top))
+    max(0.65rem, env(safe-area-inset-right))
+    0.28rem
+    max(0.65rem, env(safe-area-inset-left));
+  border-bottom-color: rgba(143, 183, 218, 0.12);
+  background:
+    linear-gradient(180deg, rgba(8, 11, 17, 0.9), rgba(5, 7, 10, 0.96)),
+    rgba(5, 7, 10, 0.94);
+  box-shadow: none;
+}
+
+.phone-compact-status-strip {
+  min-width: 0;
+  min-height: 1.55rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  color: #d8e0e7;
+  font-size: 0.72rem;
+  line-height: 1.1;
+}
+
+.phone-compact-status-strip strong,
+.phone-compact-status-strip span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.phone-compact-status-strip strong {
+  color: #f0debd;
+  font-size: 0.78rem;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.phone-compact-status-strip span {
+  flex: 0 1 auto;
+  color: #a7d8c5;
+  font-weight: 800;
 }
 
 .phone-portrait-scroll {
@@ -1561,26 +1606,26 @@ select {
     max(0.75rem, env(safe-area-inset-left));
 }
 
-.phone-shell--chrome-hidden .phone-portrait-scroll {
-  padding-bottom: calc(env(safe-area-inset-bottom) + 4.35rem);
+.phone-content--expanded {
+  padding-top: 0.48rem;
+  padding-bottom: calc(env(safe-area-inset-bottom) + 0.55rem);
 }
 
-.phone-shell--chrome-hidden .phone-portrait-scroll:has(.phone-action-panel) {
-  padding-bottom: calc(env(safe-area-inset-bottom) + 4.35rem);
+.phone-content--expanded:has(.phone-action-panel) {
+  padding:
+    0.48rem
+    max(0.65rem, env(safe-area-inset-right))
+    calc(env(safe-area-inset-bottom) + 0.45rem)
+    max(0.65rem, env(safe-area-inset-left));
 }
 
 .phone-chrome-restore {
-  position: absolute;
-  right: max(0.75rem, env(safe-area-inset-right));
-  bottom: calc(env(safe-area-inset-bottom) + 0.75rem);
-  z-index: 8;
-  min-width: 4.85rem;
-  min-height: 2.75rem;
-  padding-inline: 0.72rem;
+  position: static;
+  min-width: 0;
+  min-height: 2.22rem;
+  padding-inline: 0.65rem;
   border-radius: 999px;
-  box-shadow:
-    0 0.8rem 1.7rem rgba(0, 0, 0, 0.34),
-    0 0 1.1rem rgba(126, 183, 239, 0.18);
+  box-shadow: none;
 }
 
 .phone-portrait-screen-command {
@@ -1600,6 +1645,24 @@ select {
     linear-gradient(180deg, rgba(12, 16, 22, 0.9), rgba(6, 9, 14, 0.96)),
     rgba(7, 10, 15, 0.9);
   box-shadow: inset 0 0 0 1px rgba(234, 221, 196, 0.03);
+}
+
+.phone-shell--immersive .phone-portrait-hero-card,
+.phone-shell--immersive .phone-portrait-section,
+.phone-shell--immersive .phone-portrait-info-card {
+  border-color: rgba(118, 145, 161, 0.14);
+  background:
+    linear-gradient(180deg, rgba(10, 14, 19, 0.68), rgba(6, 9, 14, 0.78)),
+    rgba(7, 10, 15, 0.72);
+  box-shadow: none;
+}
+
+.phone-shell--immersive .phone-portrait-section {
+  padding: 0.62rem;
+}
+
+.phone-shell--immersive .phone-portrait-screen {
+  gap: 0.62rem;
 }
 
 .phone-portrait-hero-card {
@@ -1762,9 +1825,52 @@ select {
     rgba(5, 7, 10, 0.98);
 }
 
-.phone-portrait-header.phone-topbar--hidden,
-.phone-portrait-bottom-nav.phone-bottom-nav--hidden {
-  display: none;
+.phone-bottomdock--compact {
+  min-height: var(--phone-compact-dock-height);
+  display: block;
+  padding:
+    0.32rem
+    max(0.65rem, env(safe-area-inset-right))
+    max(0.32rem, env(safe-area-inset-bottom))
+    max(0.65rem, env(safe-area-inset-left));
+  border-top-color: rgba(143, 183, 218, 0.12);
+  background:
+    linear-gradient(180deg, rgba(7, 10, 15, 0.86), rgba(5, 7, 10, 0.95)),
+    rgba(5, 7, 10, 0.94);
+}
+
+.phone-bottomdock--expanded {
+  min-height: var(--phone-nav-height);
+}
+
+.phone-compact-tab-dock {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.42rem;
+  align-items: center;
+}
+
+.phone-compact-active-tab {
+  min-width: 0;
+  min-height: 2.22rem;
+  padding: 0.42rem 0.72rem;
+  border: 1px solid rgba(234, 177, 94, 0.42);
+  border-radius: 999px;
+  background:
+    linear-gradient(180deg, rgba(31, 24, 18, 0.86), rgba(8, 11, 16, 0.92)),
+    rgba(9, 12, 17, 0.88);
+  color: #f0debd;
+  font: inherit;
+  font-size: 0.76rem;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  line-height: 1.1;
+  text-align: left;
+  text-transform: uppercase;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .phone-portrait-info-card {
@@ -13570,6 +13676,31 @@ body {
   border-radius: 0;
   background: transparent;
   box-shadow: none;
+}
+
+.phone-shell--immersive .phone-movement-planner,
+.phone-shell--immersive .phone-shop-panel,
+.phone-shell--immersive .phone-resolution-card,
+.phone-shell--immersive .phone-battle-assist,
+.phone-shell--immersive .phone-inventory-card,
+.phone-shell--immersive .phone-inventory-timing-group,
+.phone-shell--immersive .phone-movement-row-button,
+.phone-shell--immersive .phone-movement-summary,
+.phone-shell--immersive .phone-movement-detail-section,
+.phone-shell--immersive .phone-movement-route-section,
+.phone-shell--immersive .phone-movement-threat-row,
+.phone-shell--immersive .phone-movement-confirm-footer {
+  border-color: rgba(118, 145, 161, 0.16);
+  box-shadow: none;
+}
+
+.phone-shell--immersive .phone-movement-planner,
+.phone-shell--immersive .phone-shop-panel,
+.phone-shell--immersive .phone-resolution-card,
+.phone-shell--immersive .phone-battle-assist {
+  background:
+    linear-gradient(180deg, rgba(8, 12, 18, 0.62), rgba(5, 8, 12, 0.72)),
+    rgba(5, 8, 12, 0.72);
 }
 
 /* Shared challenge language: color is always paired with icon and label. */
