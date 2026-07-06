@@ -713,6 +713,11 @@ export const cardArtRuntimeCatalog: RuntimeCardArtCatalogEntry[] = [
     "outputPath": "/assets/cards/artifacts/artifact-cinder-suture-kit.png"
   },
   {
+    "cardId": "artifact-coffin-rig",
+    "cardType": "artifact",
+    "outputPath": "/assets/cards/artifacts/artifact-coffin-rig.png"
+  },
+  {
     "cardId": "artifact-ember-burden-idol",
     "cardType": "artifact",
     "outputPath": "/assets/cards/artifacts/artifact-ember-burden-idol.png"
@@ -726,6 +731,11 @@ export const cardArtRuntimeCatalog: RuntimeCardArtCatalogEntry[] = [
     "cardId": "artifact-gate-saint-key",
     "cardType": "artifact",
     "outputPath": "/assets/cards/artifacts/artifact-gate-saint-key.png"
+  },
+  {
+    "cardId": "artifact-grave-lens",
+    "cardType": "artifact",
+    "outputPath": "/assets/cards/artifacts/artifact-grave-lens.png"
   },
   {
     "cardId": "artifact-heat-sink-prayer",
@@ -746,6 +756,11 @@ export const cardArtRuntimeCatalog: RuntimeCardArtCatalogEntry[] = [
     "cardId": "artifact-marrow-route-key",
     "cardType": "artifact",
     "outputPath": "/assets/cards/artifacts/artifact-marrow-route-key.png"
+  },
+  {
+    "cardId": "artifact-marshal-seal",
+    "cardType": "artifact",
+    "outputPath": "/assets/cards/artifacts/artifact-marshal-seal.png"
   },
   {
     "cardId": "artifact-mira-rift-twin",
@@ -796,6 +811,16 @@ export const cardArtRuntimeCatalog: RuntimeCardArtCatalogEntry[] = [
     "cardId": "artifact-throne-crown-fragment",
     "cardType": "artifact",
     "outputPath": "/assets/cards/artifacts/artifact-throne-crown-fragment.png"
+  },
+  {
+    "cardId": "artifact-tuning-spines",
+    "cardType": "artifact",
+    "outputPath": "/assets/cards/artifacts/artifact-tuning-spines.png"
+  },
+  {
+    "cardId": "artifact-veil-hook",
+    "cardType": "artifact",
+    "outputPath": "/assets/cards/artifacts/artifact-veil-hook.png"
   },
   {
     "cardId": "artifact-void-salt-poultice",

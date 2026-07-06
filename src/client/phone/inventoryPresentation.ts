@@ -1,4 +1,5 @@
 import type { ActiveResolution, Follower, GearItem, GearSlot, PhoneObjectUseState, PhonePatchPayload, PhoneSelfState, Stat } from "../shared/types.js";
+import { getGearCardArtId } from "../shared/assetPaths.js";
 import { gearSlotLabelById, statLabelById } from "../shared/statLabels.js";
 
 export type InventoryTimingWindow =
@@ -432,7 +433,7 @@ function buildGearCard(item: GearItem, patch: PhonePatchPayload, self: PhoneSelf
     useLimit: item.useLimit,
     charges: remainingUses,
     maxUses,
-    artCardId: `artifact-${item.id}`,
+    artCardId: getGearCardArtId(item.id),
     fallbackLabel: getFallbackLabel(item.name)
   };
 }

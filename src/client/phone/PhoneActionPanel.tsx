@@ -43,6 +43,7 @@ import { ChallengeBadge, ThreatIconBadge, getThreatIconStat, isStat } from "../s
 import { CombatDiceAnimation } from "../shared/CombatDiceAnimation.js";
 import { GameButton, type GameButtonTone } from "../shared/GameButton.js";
 import { CardArtImage } from "../shared/CardArtImage.js";
+import { getGearCardArtId } from "../shared/assetPaths.js";
 import { statLabelById } from "../shared/statLabels.js";
 import { PhoneInventoryPanel } from "./PhoneInventoryPanel.js";
 import { PhoneWrappedMediaCard } from "./PhoneWrappedMediaCard.js";
@@ -207,7 +208,7 @@ function ShopItemMedia({ cardId, label }: { cardId: string; label: string }): Re
   return (
     <CardArtImage
       cardType="artifact"
-      cardId={cardId}
+      cardId={getGearCardArtId(cardId)}
       alt=""
       aria-hidden="true"
       className="phone-wrap-card__image phone-shop-stock-card-art"
@@ -2610,7 +2611,12 @@ export function PhoneActionPanel({
     }
   ];
   const canShowSelectedTab = (tab: TurnActionTabDefinition) =>
-    tab.enabled || tab.locked || tab.id === "shop" || tab.id === "action" || (tab.id === "move" && Boolean(movementPlanner?.active));
+    tab.enabled ||
+    tab.locked ||
+    tab.id === "battle" ||
+    tab.id === "shop" ||
+    tab.id === "action" ||
+    (tab.id === "move" && Boolean(movementPlanner?.active));
   const fallbackTab = movementPlanner?.active ? "move" : tabDefinitions.find((tab) => tab.enabled || tab.locked)?.id ?? "action";
   const activeTurnTab = tabDefinitions.find((tab) => tab.id === selectedTurnTab && canShowSelectedTab(tab))
     ? selectedTurnTab

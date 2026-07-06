@@ -77,6 +77,10 @@ export function getCardArtPath(cardType: CardImageType, cardId: string): string 
   return getRuntimeCardArtPath(cardType, cardId) ?? getCardFallbackArtPath(cardType);
 }
 
+export function getGearCardArtId(gearId: string): string {
+  return gearId.startsWith("artifact-") ? gearId : `artifact-${gearId}`;
+}
+
 export function getContractArtPath(contractId: string): string {
   return getCardArtPath("contract", contractId);
 }

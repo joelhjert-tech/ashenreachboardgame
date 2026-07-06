@@ -694,12 +694,12 @@ describe("PhoneActionPanel", () => {
             ],
             revealedStock: [
               {
-                cardId: "ashlock-carbine",
-                name: "Ashlock Carbine",
+                cardId: "coffin-rig",
+                name: "Coffin Rig",
                 type: "gear",
                 shopCategories: ["forge-armoury"],
                 cost: { salvage: 3 },
-                summary: "+1 Grit while fighting enemies.",
+                summary: "Forge +1 while bracing wounds.",
                 affordable: true
               },
               {
@@ -758,29 +758,30 @@ describe("PhoneActionPanel", () => {
       serviceId: "buy-gear"
     });
 
-    expect(screen.getByText(/ashlock carbine/i)).toBeInTheDocument();
-    expect(screen.getByText(/\+1 grit while fighting enemies/i)).toBeInTheDocument();
-    const buyCard = screen.getByText(/ashlock carbine/i).closest("article");
+    expect(screen.getByText(/coffin rig/i)).toBeInTheDocument();
+    expect(screen.getByText(/forge \+1 while bracing wounds/i)).toBeInTheDocument();
+    const buyCard = screen.getByText(/coffin rig/i).closest("article");
     expect(buyCard).not.toBeNull();
     expect(buyCard).toHaveClass("phone-wrap-card", "phone-wrap-card--shop");
     expect(buyCard?.querySelector(".phone-wrap-card__media")).toBeInTheDocument();
-    expect(buyCard?.querySelector(".phone-wrap-card__description")).toHaveTextContent(/\+1 grit while fighting enemies/i);
+    expect(buyCard?.querySelector(".phone-wrap-card__image")).toHaveAttribute("src", "/assets/cards/artifacts/artifact-coffin-rig.png");
+    expect(buyCard?.querySelector(".phone-wrap-card__description")).toHaveTextContent(/forge \+1 while bracing wounds/i);
     expect(buyCard?.querySelector(".phone-wrap-card__details")).toHaveTextContent(/cost: 3 salvage/i);
     expect(buyCard?.querySelector(".phone-wrap-card__actions")).toContainElement(
       within(buyCard as HTMLElement).getByRole("button", { name: /^buy$/i })
     );
     fireEvent.click(screen.getAllByRole("button", { name: /^buy$/i })[0]);
-    expect(screen.getByRole("dialog", { name: /confirm purchase/i })).toHaveTextContent(/buy ashlock carbine for 3 salvage/i);
+    expect(screen.getByRole("dialog", { name: /confirm purchase/i })).toHaveTextContent(/buy coffin rig for 3 salvage/i);
     expect(onIntent).not.toHaveBeenCalledWith({
       type: "SHOP_PURCHASE_REQUESTED",
       seatId: "seat-1",
-      cardId: "ashlock-carbine"
+      cardId: "coffin-rig"
     });
     fireEvent.click(screen.getByRole("button", { name: /confirm purchase/i }));
     expect(onIntent).toHaveBeenCalledWith({
       type: "SHOP_PURCHASE_REQUESTED",
       seatId: "seat-1",
-      cardId: "ashlock-carbine"
+      cardId: "coffin-rig"
     });
 
     expect(screen.getAllByText(/not enough salvage/i).length).toBeGreaterThan(0);
@@ -799,6 +800,7 @@ describe("PhoneActionPanel", () => {
     expect(sellableCard).not.toBeNull();
     expect(sellableCard).toHaveClass("phone-wrap-card", "phone-wrap-card--shop", "phone-shop-sell-card");
     expect(sellableCard?.querySelector(".phone-wrap-card__media")).toBeInTheDocument();
+    expect(sellableCard?.querySelector(".phone-wrap-card__image")).toHaveAttribute("src", "/assets/cards/artifacts/artifact-veil-hook.png");
     expect(sellableCard?.querySelector(".phone-wrap-card__details")).toHaveTextContent(/sell value: 1 salvage/i);
     expect(sellableCard?.querySelector(".phone-wrap-card__actions")).toContainElement(
       within(sellableCard as HTMLElement).getByRole("button", { name: /^sell$/i })
@@ -1035,6 +1037,11 @@ describe("PhoneActionPanel", () => {
 
     expect(screen.getByTestId("phone-action-active-panel")).toHaveClass("phone-move-panel");
     expect(screen.getByTestId("movement-planner")).toBeInTheDocument();
+
+    rerender(<PhoneActionPanel characters={characters} onIntent={vi.fn()} selectedTurnTab="battle" patch={movementPatch} />);
+    expect(screen.getByTestId("phone-action-active-panel")).toHaveClass("phone-battle-panel");
+    expect(screen.getByText(/battle locked: no enemy here/i)).toBeInTheDocument();
+    expect(screen.queryByTestId("movement-planner")).not.toBeInTheDocument();
 
     rerender(<PhoneActionPanel characters={characters} onIntent={vi.fn()} selectedTurnTab="shop" patch={shopPatch} />);
     expect(screen.getByTestId("phone-action-active-panel")).toHaveClass("phone-shop-command-panel");
