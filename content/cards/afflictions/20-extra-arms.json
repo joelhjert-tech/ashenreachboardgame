@@ -1,0 +1,13 @@
+{
+  "id": "extra-arms",
+  "name": "Extra Arms",
+  "severity": 2,
+  "category": "mutationBoon",
+  "duration": "ongoing",
+  "trigger": "During battle.",
+  "rulesText": "You may use 1 additional weapon during battle.",
+  "effectKind": "mutationBoon",
+  "effectPayload": { "battleWeaponSlotModifier": 1 },
+  "flipFacedownAfterResolve": false,
+  "isFaceupOngoing": true
+}

@@ -1,0 +1,13 @@
+{
+  "id": "violent-vigor",
+  "name": "Violent Vigor",
+  "severity": 3,
+  "category": "immediateHeal",
+  "duration": "immediate",
+  "trigger": "When revealed.",
+  "rulesText": "Heal 4 wounds. Then flip facedown.",
+  "effectKind": "immediateHeal",
+  "effectPayload": { "heal": 4, "cap": "maxHealth" },
+  "flipFacedownAfterResolve": true,
+  "isFaceupOngoing": false
+}

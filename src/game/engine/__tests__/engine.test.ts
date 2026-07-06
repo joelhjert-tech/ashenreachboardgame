@@ -1797,6 +1797,15 @@ describe("active objects and table interaction", () => {
       stat: "grit"
     });
 
+    const enemyRollerSeatId = server.getState().pendingEnemyRoll?.assignedRollerSeatId;
+
+    if (enemyRollerSeatId) {
+      runIntent(server, {
+        type: "ENEMY_ROLL_REQUESTED",
+        seatId: enemyRollerSeatId
+      });
+    }
+
     const resolvedCombat = [...server.getState().eventLog].reverse().find((entry) => {
       return (entry as { type?: string }).type === "COMBAT_RESOLVED";
     }) as { statBonus?: number; total?: number; modifierSources?: Array<{ label: string; value: number }> } | undefined;
@@ -1816,14 +1825,25 @@ describe("active objects and table interaction", () => {
     server.getState().pendingEffect = null;
     server.getState().activeResolution = null;
 
+    const secondCombatStartIndex = server.getState().eventLog.length;
+
     runIntent(server, {
       type: "COMBAT_REQUESTED",
       seatId: "seat-1",
       stat: "grit"
     });
 
-    const secondCombat = [...server.getState().eventLog].reverse().find((entry, index, log) => {
-      return (entry as { type?: string }).type === "COMBAT_RESOLVED" && index < log.length;
+    const secondEnemyRollerSeatId = server.getState().pendingEnemyRoll?.assignedRollerSeatId;
+
+    if (secondEnemyRollerSeatId) {
+      runIntent(server, {
+        type: "ENEMY_ROLL_REQUESTED",
+        seatId: secondEnemyRollerSeatId
+      });
+    }
+
+    const secondCombat = server.getState().eventLog.slice(secondCombatStartIndex).reverse().find((entry) => {
+      return (entry as { type?: string }).type === "COMBAT_RESOLVED";
     }) as { statBonus?: number; modifierSources?: Array<{ label: string; value: number }> } | undefined;
 
     expect(secondCombat?.statBonus).toBe(2);

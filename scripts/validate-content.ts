@@ -1,5 +1,6 @@
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
+import { loadAfflictionCards } from "../src/game/content/afflictions.js";
 import { loadAnomalyCards } from "../src/game/content/anomalies.js";
 import { loadArtifactCards } from "../src/game/content/artifacts.js";
 import { loadCharacters } from "../src/game/content/characters.js";
@@ -127,6 +128,7 @@ const artifacts = loadArtifactCards();
 const followers = loadFollowers();
 const scars = loadScarCards();
 const escalations = loadEscalationCards();
+const afflictions = loadAfflictionCards();
 const canonicalSectors = createCanonicalSectorGraph();
 
 validateContentFloors();
@@ -250,6 +252,7 @@ reportDuplicateIds("artifacts", artifacts.keys());
 reportDuplicateIds("followers", followers.keys());
 reportDuplicateIds("scars", scars.keys());
 reportDuplicateIds("escalations", escalations.keys());
+reportDuplicateIds("afflictions", afflictions.keys());
 
 if (errors.length > 0) {
   console.error("Content validation failed:");
@@ -260,7 +263,7 @@ if (errors.length > 0) {
 }
 
 console.log(
-  `Content validation passed (${characters.size} characters, ${gear.size} gear, ${threats.size} threats, ${contracts.size} contracts, ${anomalies.size} anomalies, ${artifacts.size} artifacts, ${followers.size} followers, ${scars.size} scars, ${escalations.size} escalations)`
+  `Content validation passed (${characters.size} characters, ${gear.size} gear, ${threats.size} threats, ${contracts.size} contracts, ${anomalies.size} anomalies, ${artifacts.size} artifacts, ${followers.size} followers, ${scars.size} scars, ${escalations.size} escalations, ${afflictions.size} afflictions)`
 );
 
 function validateContentFloors(): void {
@@ -271,7 +274,8 @@ function validateContentFloors(): void {
     ["escalations", escalations.size, 15, 25],
     ["contracts", contracts.size, 20, 30],
     ["followers", followers.size, 15, 25],
-    ["scars", scars.size, 12, 18]
+    ["scars", scars.size, 12, 18],
+    ["afflictions", afflictions.size, 30, 30]
   ] as const;
 
   for (const [label, actual, minimum, maximum] of contentTargets) {

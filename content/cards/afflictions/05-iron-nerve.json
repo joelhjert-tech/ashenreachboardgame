@@ -1,0 +1,13 @@
+{
+  "id": "iron-nerve",
+  "name": "Iron Nerve",
+  "severity": 3,
+  "category": "battleReaction",
+  "duration": "ongoing",
+  "trigger": "When you lose a Command battle.",
+  "rulesText": "Roll 1 die. On 5-6, prevent 1 wound from that battle.",
+  "effectKind": "battleReaction",
+  "effectPayload": { "stat": "command", "preventWoundOn": [5, 6] },
+  "flipFacedownAfterResolve": false,
+  "isFaceupOngoing": true
+}

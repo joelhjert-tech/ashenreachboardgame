@@ -1,0 +1,13 @@
+{
+  "id": "overclocked-mind",
+  "name": "Overclocked Mind",
+  "severity": 2,
+  "category": "capacityModifier",
+  "duration": "ongoing",
+  "trigger": "While faceup.",
+  "rulesText": "Your tactic limit increases by 1.",
+  "effectKind": "capacityModifier",
+  "effectPayload": { "powerLimitModifier": 1 },
+  "flipFacedownAfterResolve": false,
+  "isFaceupOngoing": true
+}

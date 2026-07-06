@@ -1,0 +1,13 @@
+{
+  "id": "dread-spasm",
+  "name": "Dread Spasm",
+  "severity": 1,
+  "category": "testPenalty",
+  "duration": "ongoing",
+  "trigger": "When testing Command.",
+  "rulesText": "Subtract 2 from Command tests, minimum 1.",
+  "effectKind": "testModifier",
+  "effectPayload": { "stat": "command", "amount": -2, "floor": 1 },
+  "flipFacedownAfterResolve": false,
+  "isFaceupOngoing": true
+}

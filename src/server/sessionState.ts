@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { loadCharacters } from "../game/content/characters.js";
+import { loadAfflictionCards } from "../game/content/afflictions.js";
 import { loadContracts } from "../game/content/contracts.js";
 import { loadFollowers } from "../game/content/followers.js";
 import { loadGear } from "../game/content/gear.js";
@@ -8,6 +9,7 @@ import { getScenarioDefinition, SCENARIOS } from "../game/data/scenarios.js";
 import { createInitialScenarioProgress } from "../game/rules/scenarioAmbient.js";
 import { applyStartingLoadout, createInitialSoloRerollCharges, type StartingLoadoutCatalogs } from "../game/rules/startingLoadout.js";
 import { getHeatThresholdForMode, getWoundThresholdForMode } from "../game/rules/soloTuning.js";
+import { createInitialAfflictionUsageState } from "../game/rules/afflictions.js";
 import type { Character } from "../game/schema/character.schema.js";
 import type { GameMode, GameState, InteractionMode, PlayerState, SessionMode } from "../game/schema/session.schema.js";
 import { createJoinToken } from "./auth.js";
@@ -79,6 +81,10 @@ function createPlayerState(
       hand: [],
       notes: []
     },
+    faceupAfflictions: [],
+    facedownAfflictions: [],
+    afflictionUsageState: createInitialAfflictionUsageState(),
+    afflictionDrawHistory: [],
     character: cloneCharacter(loadedCharacter, currentSpaceId)
   };
 }
@@ -96,6 +102,7 @@ export function createInitialSessionState(
   const gear = loadGear();
   const followers = loadFollowers();
   const availableContracts = [...loadContracts().values()];
+  const availableAfflictions = [...loadAfflictionCards().values()];
   const loadoutCatalogs = { contracts: availableContracts, gear, followers };
   const defaultScenario = scenarioId ? getScenarioDefinition(scenarioId) ?? SCENARIOS[0] : SCENARIOS[0];
   const configuredSeats = sessionSeatLayouts[sessionMode].slice(0, getSeatCountForSession(sessionMode, playerCount));
@@ -152,6 +159,7 @@ export function createInitialSessionState(
       )
     ),
     availableContracts,
+    availableAfflictions,
     nemesisChampions: [],
     nemesisNexusCountdowns: [],
     shopStockReveals: [],

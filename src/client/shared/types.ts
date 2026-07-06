@@ -83,6 +83,7 @@ export interface PublicPlayerCharacter {
   heat: number;
   wounds: number;
   scars: string[];
+  afflictions?: PlayerAfflictionSummary;
   heldGearCount: number;
   followerCount?: number;
   companionBadges?: Array<{
@@ -165,6 +166,22 @@ export interface ScarSummary {
   upside?: string;
 }
 
+export interface AfflictionSummary {
+  id: string;
+  name: string;
+  severity: number;
+  category: string;
+  duration: "immediate" | "ongoing" | "oncePerTurn" | "oncePerBattle" | "reaction";
+  trigger: string;
+  rulesText: string;
+  isFaceupOngoing: boolean;
+}
+
+export interface PlayerAfflictionSummary {
+  faceup: AfflictionSummary[];
+  facedownCount: number;
+}
+
 export interface PrivateCharacter {
   id: string;
   name: string;
@@ -181,6 +198,7 @@ export interface PrivateCharacter {
   heat: number;
   wounds: number;
   scars: string[];
+  afflictions?: PlayerAfflictionSummary;
   activeContract: { contractId: string; progress: number } | null;
   heldGear: GearItem[];
   equippedGear: Record<GearSlot, string | null>;
@@ -288,6 +306,8 @@ export type ResultDeltaType =
   | "threatRemains"
   | "sectorUnlocked"
   | "shopUnlocked"
+  | "afflictionDrawn"
+  | "afflictionFlipped"
   | "scarGained"
   | "recallTriggered"
   | "fateSpent"

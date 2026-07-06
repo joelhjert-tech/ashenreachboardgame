@@ -1,6 +1,7 @@
 import type { Character, Stat } from "../schema/character.schema.js";
 import type { ThreatCard, EncounterEffect } from "../schema/card.schema.js";
 import type { ContractCard } from "../schema/contract.schema.js";
+import type { AfflictionCard } from "../schema/affliction.schema.js";
 import type { GearItem, GearSlot } from "../schema/gear.schema.js";
 import type { NemesisChampion, Phase } from "../schema/session.schema.js";
 import type { DiceRollResult } from "./dice.js";
@@ -194,6 +195,17 @@ export interface UseFollowerAction extends BaseAction {
     stat: CheckStat;
     mode: "battle" | "check";
   };
+}
+
+export interface AfflictionDrawnAction extends BaseAction {
+  type: "AFFLICTION_DRAWN";
+  afflictionId: string;
+  affliction?: AfflictionCard;
+  die?: number;
+  chosenStat?: Stat;
+  publicSummary?: string;
+  privateSummary?: string;
+  deltas?: string[];
 }
 
 export interface TableInteractionAction extends BaseAction {
@@ -518,6 +530,7 @@ export type GameAction =
   | UnequipGearAction
   | UseGearAction
   | UseFollowerAction
+  | AfflictionDrawnAction
   | TableInteractionAction
   | ShopServiceResolvedAction
   | ShopStockRevealedAction

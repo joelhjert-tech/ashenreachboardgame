@@ -1,5 +1,6 @@
 import type {
   AcceptContractAction,
+  AfflictionDrawnAction,
   CheckRequestedAction,
   CombatRequestedAction,
   CompleteContractAction,
@@ -53,6 +54,7 @@ import type { ContractCard } from "../schema/contract.schema.js";
 import type { ActiveResolution, GameState, PlayerState } from "../schema/session.schema.js";
 import type { GearSlot } from "../schema/gear.schema.js";
 import type { TrophyPileEntry } from "../schema/character.schema.js";
+import { applyMovementDieAfflictions, resolveAfflictionDraw } from "../rules/afflictions.js";
 import { getBoardSpace, isScenarioConfrontationSpace } from "../data/boardSpaces.js";
 import { getLegalMovementRoute, getMovementBlockReason } from "../rules/movementPlanner.js";
 import { isBoardSpaceShopCapable, SHOP_FAILURE_REASONS } from "../rules/shopAvailability.js";
@@ -1096,8 +1098,20 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
         return reject(state, action, "Movement roll must be at least 1");
       }
 
+      const afflictionCatalog = new Map((state.availableAfflictions ?? []).map((entry) => [entry.id, entry]));
+      const movedState = movementRolledAction.movementValue === 6
+        ? {
+            ...state,
+            players: state.players.map((entry) =>
+              entry.seatId === movementRolledAction.seatId
+                ? applyMovementDieAfflictions(entry, movementRolledAction.movementValue, afflictionCatalog)
+                : entry
+            )
+          }
+        : state;
+
       return succeed({
-        ...state,
+        ...movedState,
         sequence: state.sequence + 1,
         movementRolls: {
           ...(state.movementRolls ?? {}),
@@ -2265,6 +2279,66 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
           summary: useFollowerAction.summary
         },
         eventLog: [...finalState.eventLog, action]
+      });
+    }
+    case "AFFLICTION_DRAWN": {
+      const afflictionAction = action as AfflictionDrawnAction;
+      const player = state.players.find((entry) => entry.seatId === afflictionAction.seatId);
+
+      if (!player) {
+        return reject(state, action, `Unknown seat ${afflictionAction.seatId}`);
+      }
+
+      const affliction =
+        afflictionAction.affliction ??
+        state.availableAfflictions?.find((entry) => entry.id === afflictionAction.afflictionId) ??
+        null;
+
+      if (!affliction) {
+        return reject(state, action, `Unknown Affliction ${afflictionAction.afflictionId}`);
+      }
+
+      const catalog = new Map((state.availableAfflictions ?? [affliction]).map((entry) => [entry.id, entry]));
+      catalog.set(affliction.id, affliction);
+      const result = resolveAfflictionDraw(player, affliction, catalog, {
+        createdAt: afflictionAction.createdAt,
+        die: afflictionAction.die,
+        chosenStat: afflictionAction.chosenStat
+      });
+
+      const nextAction: AfflictionDrawnAction = {
+        ...afflictionAction,
+        affliction,
+        publicSummary: afflictionAction.publicSummary ?? result.publicSummary,
+        privateSummary: afflictionAction.privateSummary ?? result.privateSummary,
+        deltas: afflictionAction.deltas ?? result.deltas
+      };
+
+      return succeed({
+        ...state,
+        sequence: state.sequence + 1,
+        players: state.players.map((entry) => (entry.seatId === afflictionAction.seatId ? result.player : entry)),
+        lastOutcomeSummary: {
+          seatId: afflictionAction.seatId,
+          movedToSectorId: result.player.sectorId,
+          encounterCardId: null,
+          encounterTitle: affliction.name,
+          encounterCardType: null,
+          checkStat: null,
+          die1: null,
+          die2: null,
+          statBonus: null,
+          checkTotal: null,
+          difficulty: null,
+          enemyRollerSeatId: null,
+          enemyDie1: null,
+          enemyDie2: null,
+          enemyBonus: null,
+          enemyTotal: null,
+          success: true,
+          summary: result.publicSummary
+        },
+        eventLog: [...state.eventLog, nextAction]
       });
     }
     case "TABLE_INTERACTION": {

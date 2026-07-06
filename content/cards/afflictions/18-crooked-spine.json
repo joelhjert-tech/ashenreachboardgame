@@ -1,0 +1,13 @@
+{
+  "id": "crooked-spine",
+  "name": "Crooked Spine",
+  "severity": 4,
+  "category": "capacityModifier",
+  "duration": "ongoing",
+  "trigger": "While faceup.",
+  "rulesText": "Your asset limit is reduced by 1, minimum 1.",
+  "effectKind": "capacityModifier",
+  "effectPayload": { "assetLimitModifier": -1, "floor": 1 },
+  "flipFacedownAfterResolve": false,
+  "isFaceupOngoing": true
+}

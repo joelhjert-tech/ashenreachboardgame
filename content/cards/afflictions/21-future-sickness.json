@@ -1,0 +1,13 @@
+{
+  "id": "future-sickness",
+  "name": "Future Sickness",
+  "severity": 5,
+  "category": "rerollRisk",
+  "duration": "ongoing",
+  "trigger": "Once per turn.",
+  "rulesText": "You may reroll one of your dice. If the rerolled die matches the original result, draw 1 Affliction.",
+  "effectKind": "rerollRisk",
+  "effectPayload": { "trigger": "oncePerTurnReroll", "drawAffliction": 1 },
+  "flipFacedownAfterResolve": false,
+  "isFaceupOngoing": true
+}

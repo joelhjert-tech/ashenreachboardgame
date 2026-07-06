@@ -1,0 +1,13 @@
+{
+  "id": "bile-spit",
+  "name": "Bile Spit",
+  "severity": 2,
+  "category": "pvpReaction",
+  "duration": "ongoing",
+  "trigger": "When another player ends movement in your sector.",
+  "rulesText": "You may make them suffer 1 wound. This cannot be used in the inner region.",
+  "effectKind": "pvpReaction",
+  "effectPayload": { "trigger": "otherPlayerSameSector", "wound": 1, "regionRestriction": "notInner" },
+  "flipFacedownAfterResolve": false,
+  "isFaceupOngoing": true
+}

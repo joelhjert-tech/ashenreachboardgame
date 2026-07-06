@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { characterSchema, statSchema } from "./character.schema.js";
+import { afflictionCardSchema, afflictionInstanceSchema, afflictionUsageStateSchema } from "./affliction.schema.js";
 import { effectSchema, threatCardSchema } from "./card.schema.js";
 import { contractCardSchema } from "./contract.schema.js";
 import { sectorNodeSchema } from "./sector.schema.js";
@@ -114,7 +115,11 @@ export const playerStateSchema = z.object({
   seatId: z.string().min(1),
   character: characterSchema,
   sectorId: z.string().min(1),
-  private: playerPrivateStateSchema
+  private: playerPrivateStateSchema,
+  faceupAfflictions: z.array(afflictionInstanceSchema).optional(),
+  facedownAfflictions: z.array(afflictionInstanceSchema).optional(),
+  afflictionUsageState: afflictionUsageStateSchema.optional(),
+  afflictionDrawHistory: z.array(z.string().min(1)).optional()
 });
 
 export const nemesisChampionSchema = z.object({
@@ -179,6 +184,7 @@ export const gameStateSchema = z.object({
   seats: z.array(seatSchema),
   players: z.array(playerStateSchema),
   availableContracts: z.array(contractCardSchema),
+  availableAfflictions: z.array(afflictionCardSchema).optional(),
   nemesisChampions: z.array(nemesisChampionSchema).default([]),
   nemesisNexusCountdowns: z.array(nemesisNexusCountdownSchema).default([]),
   shopStockReveals: z.array(shopStockRevealSchema).default([]),

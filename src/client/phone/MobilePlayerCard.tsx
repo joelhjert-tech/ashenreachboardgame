@@ -128,6 +128,7 @@ export function MobilePlayerCard({
   const nemesisRemaining = activeNemesis ? Math.max(0, activeNemesis.life - activeNemesis.damageDealt) : 0;
   const nemesisProgressPercent = activeNemesis ? Math.min(100, (activeNemesis.damageDealt / Math.max(activeNemesis.life, 1)) * 100) : 0;
   const scarCards = self.character.scarCards ?? [];
+  const afflictions = self.character.afflictions ?? { faceup: [], facedownCount: 0 };
   const scarEffectSummary = scarCards.map((scar) => scar.title).join(", ") || self.character.scars.join(", ");
   const gearNameById = new Map(self.character.heldGear.map((item) => [item.id, item.name] as const));
 
@@ -387,6 +388,35 @@ export function MobilePlayerCard({
               </article>
             </div>
           </div>
+
+          {(afflictions.faceup.length > 0 || afflictions.facedownCount > 0) && (
+            <div className="phone-sheet-section" data-testid="phone-afflictions-section">
+              <div className="phone-sheet-section-heading">Afflictions</div>
+              <div className="phone-sheet-ability-list">
+                {afflictions.faceup.map((affliction) => (
+                  <article key={affliction.id} className="phone-sheet-ability-card phone-affliction-card">
+                    <div className="phone-sheet-ability-icon">S{affliction.severity}</div>
+                    <div className="phone-sheet-ability-copy">
+                      <h3>{affliction.name}</h3>
+                      <p>
+                        <strong>{toTitleCase(affliction.duration)}</strong> {affliction.trigger}
+                      </p>
+                      <p>{affliction.rulesText}</p>
+                    </div>
+                  </article>
+                ))}
+                {afflictions.facedownCount > 0 && (
+                  <article className="phone-sheet-ability-card phone-affliction-card phone-affliction-card-facedown">
+                    <div className="phone-sheet-ability-icon">{afflictions.facedownCount}</div>
+                    <div className="phone-sheet-ability-copy">
+                      <h3>Facedown Afflictions</h3>
+                      <p>Resolved corruption remains in your Affliction area.</p>
+                    </div>
+                  </article>
+                )}
+              </div>
+            </div>
+          )}
 
           {scarCards.length > 0 && (
             <div className="phone-sheet-section">

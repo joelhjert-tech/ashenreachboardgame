@@ -126,6 +126,56 @@ describe("MobilePlayerCard", () => {
     expect(screen.getByText("(+1)")).toBeInTheDocument();
   });
 
+  it("shows active Afflictions and facedown Affliction count without renaming wounds", () => {
+    render(
+      <MobilePlayerCard
+        self={{
+          ...self,
+          character: {
+            ...self.character,
+            afflictions: {
+              faceup: [
+                {
+                  id: "brittle-frame",
+                  name: "Brittle Frame",
+                  severity: 3,
+                  category: "restriction",
+                  duration: "ongoing",
+                  trigger: "While faceup.",
+                  rulesText: "You cannot use armor.",
+                  isFaceupOngoing: true
+                }
+              ],
+              facedownCount: 2
+            }
+          }
+        }}
+        activeContractCard={null}
+        roomCode="RT7P4"
+        displayName="Joel"
+        connectionStatus="open"
+        sessionStatus="active"
+        winnerSeatId={null}
+        phase="action"
+        activeSeatId="seat-1"
+        activeNemesis={null}
+        activeScenario={null}
+        scenarioTelemetry={[]}
+        escalationLevel={0}
+        escalationThreshold={6}
+        escalationModifier={0}
+        encounter={null}
+        outcomeSummary={null}
+        onLeave={() => {}}
+      />
+    );
+
+    expect(screen.getByTestId("phone-afflictions-section")).toHaveTextContent("Afflictions");
+    expect(screen.getByText("Brittle Frame")).toBeInTheDocument();
+    expect(screen.getByText("Facedown Afflictions")).toBeInTheDocument();
+    expect(screen.getByText(/resolved corruption remains/i)).toBeInTheDocument();
+  });
+
   it("surfaces scenario victory messaging for the winner", () => {
     render(
       <MobilePlayerCard

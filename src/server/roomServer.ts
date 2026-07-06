@@ -1,5 +1,6 @@
 import { WebSocketServer, type WebSocket } from "ws";
 import { loadCharacters } from "../game/content/characters.js";
+import { loadAfflictionCards } from "../game/content/afflictions.js";
 import { loadContracts } from "../game/content/contracts.js";
 import { loadAnomalyCards } from "../game/content/anomalies.js";
 import { loadArtifactCards } from "../game/content/artifacts.js";
@@ -43,6 +44,13 @@ import {
   type ScenarioAmbientResolution
 } from "../game/rules/scenarioAmbient.js";
 import { buildScenarioPressureState } from "../game/rules/scenarioPressure.js";
+import {
+  getAfflictionWoundPrevention,
+  getAfflictionModifierSources,
+  getAfflictionRestrictions,
+  preventWoundInEffect,
+  summarizeAfflictions
+} from "../game/rules/afflictions.js";
 import { getSessionStartReadiness } from "../game/rules/sessionStart.js";
 import {
   getDevourerTrophyGate,
@@ -165,6 +173,7 @@ import type { Stat } from "../game/schema/character.schema.js";
 import type { ContractCard } from "../game/schema/contract.schema.js";
 import type { Follower } from "../game/schema/follower.schema.js";
 import type { GearItem, ShopCategory } from "../game/schema/gear.schema.js";
+import type { AfflictionCard } from "../game/schema/affliction.schema.js";
 import { rollDice, type RandomSource, defaultRandomSource } from "../game/engine/dice.js";
 import { reduceGameState } from "../game/engine/reducer.js";
 import { CHALLENGE_LABELS } from "../game/ui/challengeTheme.js";
@@ -195,6 +204,7 @@ const NEMESIS_OPPOSITION = {
 
 const CONFRONTATION_BASE_DIFFICULTY = 6;
 const SCAR_CARDS = loadScarCards();
+const AFFLICTION_CARDS = loadAfflictionCards();
 const PROJECTION_GEAR_CATALOG = loadGear();
 
 const nemesisByScenarioId = new Map<string, NemesisDefinition>(
@@ -1324,6 +1334,7 @@ export class GameRoomServer {
     }
 
     sources.push(...getEquippedGearModifierSources(player.character, stat));
+    sources.push(...getAfflictionModifierSources(player, stat, mode, getAfflictionCatalog(this.state)));
 
     if (options.scenarioModifier) {
       sources.push({ label: "Scenario", value: options.scenarioModifier });
@@ -1436,6 +1447,16 @@ export class GameRoomServer {
 
     if (!item.activeText && !item.useLimit) {
       throw new IntentRejectedError("USE_GEAR", `${item.name} is passive and applies automatically.`);
+    }
+
+    const restrictions = getAfflictionRestrictions(player, getAfflictionCatalog(this.state));
+
+    if (item.slot === "weapon" && restrictions.cannotUseWeapons) {
+      throw new IntentRejectedError("USE_GEAR", `Affliction blocks weapon use: ${item.name} cannot help now.`);
+    }
+
+    if (item.slot === "armor" && restrictions.cannotUseArmor) {
+      throw new IntentRejectedError("USE_GEAR", `Affliction blocks armor use: ${item.name} cannot help now.`);
     }
 
     if ((item.heatCost ?? 0) > player.character.heat) {
@@ -5973,7 +5994,26 @@ export class GameRoomServer {
       success ? encounter.defeatEffectKey : encounter.failEffectKey,
       success ? "onDefeat" : "onFailure"
     );
-    const outcomeEffect = this.maybeApplyFandiablosWoundPrevention(fighterSeatId, resolvedOutcomeEffect);
+    const faceupAfflictionIds = new Set((player.faceupAfflictions ?? []).map((affliction) => affliction.cardId));
+    const hasMatchingPreventionAffliction =
+      !success &&
+      ((stat === "command" && faceupAfflictionIds.has("iron-nerve")) ||
+        (stat === "grit" && faceupAfflictionIds.has("metal-hide")));
+    const afflictionPreventionRoll = hasMatchingPreventionAffliction ? this.randomSource.nextInt(6) + 1 : 0;
+    const afflictionPrevention = !hasMatchingPreventionAffliction
+      ? { prevented: 0, source: null }
+      : getAfflictionWoundPrevention(player, stat, afflictionPreventionRoll, getAfflictionCatalog(this.state));
+    const afflictionOutcomeEffect =
+      afflictionPrevention.prevented > 0
+        ? this.makeEffectSequence([
+            preventWoundInEffect(resolvedOutcomeEffect, afflictionPrevention.prevented),
+            {
+              type: "gain_note",
+              text: `${afflictionPrevention.source} reaction rolled ${afflictionPreventionRoll}: prevented ${afflictionPrevention.prevented} wound.`
+            }
+          ])
+        : resolvedOutcomeEffect;
+    const outcomeEffect = this.maybeApplyFandiablosWoundPrevention(fighterSeatId, afflictionOutcomeEffect);
 
     this.applyAction({
       type: "COMBAT_RESOLVED",
@@ -6432,6 +6472,8 @@ type ResultDelta = {
     | "threatRemains"
     | "sectorUnlocked"
     | "shopUnlocked"
+    | "afflictionDrawn"
+    | "afflictionFlipped"
     | "scarGained"
     | "recallTriggered"
     | "fateSpent"
@@ -7656,6 +7698,49 @@ function getEventLogResultDeltas(state: GameState, ownerSeatId?: string | null):
       }));
     }
 
+    if (type === "AFFLICTION_DRAWN") {
+      const affliction = entry.affliction as { name?: unknown; flipFacedownAfterResolve?: unknown } | undefined;
+      const afflictionName =
+        typeof affliction?.name === "string"
+          ? affliction.name
+          : typeof entry.afflictionId === "string"
+            ? entry.afflictionId
+            : "Affliction";
+
+      deltas.push(createResultDelta({
+        id: `affliction-drawn:${source}`,
+        type: "afflictionDrawn",
+        label: "Affliction drawn",
+        value: afflictionName,
+        sign: "neutral",
+        targetScope: "personal",
+        targetSeatId: seatId,
+        visibility: "public",
+        source,
+        reason: "Affliction reveal",
+        publicText: typeof entry.publicSummary === "string" ? entry.publicSummary : `Affliction drawn: ${afflictionName}.`,
+        privateText: typeof entry.privateSummary === "string" ? entry.privateSummary : undefined,
+        severity: "danger"
+      }));
+
+      if (affliction?.flipFacedownAfterResolve === true) {
+        deltas.push(createResultDelta({
+          id: `affliction-flipped:${source}`,
+          type: "afflictionFlipped",
+          label: "Affliction facedown",
+          value: afflictionName,
+          sign: "neutral",
+          targetScope: "personal",
+          targetSeatId: seatId,
+          visibility: "public",
+          source,
+          reason: "Immediate Affliction resolved",
+          publicText: `${afflictionName} resolved and flipped facedown.`,
+          severity: "neutral"
+        }));
+      }
+    }
+
     if ((type === "USE_GEAR" || type === "USE_FOLLOWER") && ownerSeatId && seatId === ownerSeatId) {
       const rollModifier = entry.rollModifier as { label?: unknown; value?: unknown; stat?: unknown; mode?: unknown } | undefined;
       const label = typeof rollModifier?.label === "string"
@@ -8216,6 +8301,7 @@ export function createTvProjection(state: GameState): Record<string, unknown> {
         heat: player.character.heat,
         wounds: player.character.wounds,
         scars: player.character.scars,
+        afflictions: summarizeAfflictions(player, getAfflictionCatalog(state)),
         heldGearCount: player.character.heldGear.length,
         followerCount: player.character.followers?.length ?? 0,
         companionBadges: (player.character.followers ?? [])
@@ -8360,12 +8446,27 @@ function sanitizePlayerForPhone(player: PlayerState): Record<string, unknown> {
     character: {
       ...player.character,
       ...(getCharacterPresentation(player.character.id) ? { presentation: getCharacterPresentation(player.character.id) } : {}),
-      scarCards: summarizeScars(player.character.scars)
+      scarCards: summarizeScars(player.character.scars),
+      afflictions: summarizeAfflictions(player, getAfflictionCatalogForPlayer())
     },
     sectorId: player.character.currentSpaceId,
     hand: player.private.hand,
     notes: player.private.notes
   };
+}
+
+function getAfflictionCatalog(state: Pick<GameState, "availableAfflictions">): Map<string, AfflictionCard> {
+  const catalog = new Map(AFFLICTION_CARDS);
+
+  for (const card of state.availableAfflictions ?? []) {
+    catalog.set(card.id, card);
+  }
+
+  return catalog;
+}
+
+function getAfflictionCatalogForPlayer(): Map<string, AfflictionCard> {
+  return new Map(AFFLICTION_CARDS);
 }
 
 function summarizeScars(scarIds: string[]): Array<Pick<ScarCard, "id" | "title" | "text" | "trigger" | "penalty" | "relief" | "upside">> {
