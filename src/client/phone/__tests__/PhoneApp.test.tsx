@@ -3,6 +3,7 @@
 import "@testing-library/jest-dom/vitest";
 import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { getChallengeThemeStyle } from "../../../game/ui/challengeTheme.js";
 import { PhoneApp } from "../PhoneApp.js";
 import type { CharacterCatalogEntry } from "../../shared/types.js";
 
@@ -194,6 +195,11 @@ describe("PhoneApp", () => {
     expect(screen.getByRole("tab", { name: /all operatives/i })).toBeInTheDocument();
     expect(screen.getByRole("tab", { name: /advanced/i })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /tarek voss.*void marshal/i })).toBeInTheDocument();
+    const tarekCard = screen.getByRole("button", { name: /tarek voss.*void marshal/i });
+    const tarekStats = within(tarekCard).getByLabelText(/tarek voss stats/i);
+    expect((within(tarekStats).getByText(/command/i).closest("small") as HTMLElement).style.getPropertyValue("--challenge-color")).toBe(
+      getChallengeThemeStyle("command")["--challenge-color"]
+    );
     expect(screen.getByRole("button", { name: /mira.*cinder monk/i })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /orenna tash.*fleet elder/i })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /deepdale.*deep route delver/i })).toBeInTheDocument();

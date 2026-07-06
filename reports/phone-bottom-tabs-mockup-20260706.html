@@ -1,0 +1,410 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Ashen Reach Phone Bottom Tabs Mockup</title>
+    <style>
+      :root {
+        --ash-black: #050608;
+        --panel: #090d10;
+        --panel-2: #0e1418;
+        --line: rgba(236, 190, 123, 0.28);
+        --line-blue: rgba(104, 184, 232, 0.34);
+        --gold: #f4d49c;
+        --gold-hot: #ffc861;
+        --blue: #8fd8ff;
+        --green: #89e0bc;
+        --muted: rgba(236, 228, 210, 0.68);
+        --dim: rgba(236, 228, 210, 0.36);
+        --red: #ff9d8b;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        background:
+          radial-gradient(circle at 50% 0%, rgba(132, 21, 21, 0.34), transparent 34rem),
+          radial-gradient(circle at 10% 100%, rgba(104, 184, 232, 0.16), transparent 22rem),
+          var(--ash-black);
+        color: #f2dec0;
+        font-family: Inter, "Segoe UI", system-ui, sans-serif;
+      }
+
+      .board {
+        display: grid;
+        grid-template-columns: 390px 310px;
+        gap: 24px;
+        align-items: start;
+        padding: 28px;
+      }
+
+      .phone {
+        width: 390px;
+        height: 844px;
+        overflow: hidden;
+        border: 1px solid rgba(236, 190, 123, 0.32);
+        border-radius: 22px;
+        background:
+          radial-gradient(circle at 82% 4%, rgba(104, 184, 232, 0.12), transparent 34%),
+          linear-gradient(180deg, #0c1115 0%, #060708 100%);
+        box-shadow:
+          0 22px 60px rgba(0, 0, 0, 0.52),
+          inset 0 0 0 1px rgba(255, 255, 255, 0.025);
+        display: grid;
+        grid-template-rows: auto 1fr auto;
+      }
+
+      .top {
+        padding: 14px 16px 10px;
+        border-bottom: 1px solid rgba(236, 190, 123, 0.18);
+      }
+
+      .top span,
+      .eyebrow {
+        color: var(--gold-hot);
+        font-size: 10px;
+        font-weight: 900;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+      }
+
+      .top strong {
+        display: block;
+        margin-top: 2px;
+        font-family: Georgia, "Times New Roman", serif;
+        font-size: 24px;
+        line-height: 1;
+      }
+
+      .top small {
+        display: block;
+        margin-top: 5px;
+        color: var(--muted);
+        line-height: 1.35;
+      }
+
+      .content {
+        min-height: 0;
+        overflow: hidden;
+        padding: 12px 12px 0;
+        display: grid;
+        gap: 10px;
+        align-content: start;
+      }
+
+      .prompt {
+        padding: 12px;
+        border: 1px solid rgba(104, 184, 232, 0.34);
+        border-radius: 9px;
+        background:
+          linear-gradient(90deg, rgba(104, 184, 232, 0.11), transparent 64%),
+          rgba(7, 10, 12, 0.9);
+      }
+
+      .prompt h1 {
+        margin: 2px 0 3px;
+        font-family: Georgia, "Times New Roman", serif;
+        font-size: 24px;
+        line-height: 1;
+      }
+
+      .prompt p {
+        margin: 0;
+        color: var(--muted);
+        font-size: 13px;
+        line-height: 1.35;
+      }
+
+      .card {
+        padding: 12px;
+        border: 1px solid rgba(236, 190, 123, 0.18);
+        border-radius: 8px;
+        background: rgba(6, 8, 10, 0.82);
+      }
+
+      .card h2 {
+        margin: 4px 0 7px;
+        font-family: Georgia, "Times New Roman", serif;
+        font-size: 23px;
+      }
+
+      .card p {
+        margin: 0;
+        color: #f2dec0;
+        font-size: 13px;
+        line-height: 1.4;
+      }
+
+      .chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 5px;
+        margin-top: 10px;
+      }
+
+      .chip {
+        padding: 4px 6px;
+        border: 1px solid rgba(104, 184, 232, 0.26);
+        border-radius: 5px;
+        background: rgba(104, 184, 232, 0.08);
+        color: #dce7ef;
+        font-size: 10px;
+        font-weight: 850;
+        text-transform: uppercase;
+      }
+
+      .button {
+        margin-top: 12px;
+        width: 104px;
+        min-height: 44px;
+        border: 1px solid rgba(104, 184, 232, 0.48);
+        border-radius: 7px;
+        background: linear-gradient(180deg, rgba(36, 75, 96, 0.82), rgba(20, 36, 48, 0.92));
+        color: white;
+        font-size: 11px;
+        font-weight: 950;
+        letter-spacing: 0.07em;
+        text-transform: uppercase;
+      }
+
+      .dock-wrap {
+        padding: 8px 8px calc(9px + env(safe-area-inset-bottom));
+        border-top: 1px solid rgba(236, 190, 123, 0.24);
+        background:
+          linear-gradient(180deg, rgba(5, 6, 8, 0.6), rgba(5, 6, 8, 0.96)),
+          rgba(6, 8, 10, 0.94);
+      }
+
+      .reason-strip {
+        display: grid;
+        grid-template-columns: auto 1fr auto;
+        gap: 8px;
+        align-items: center;
+        margin-bottom: 7px;
+        padding: 8px 9px;
+        border: 1px solid rgba(255, 200, 97, 0.28);
+        border-radius: 8px;
+        background:
+          linear-gradient(90deg, rgba(255, 200, 97, 0.13), transparent 76%),
+          rgba(16, 12, 8, 0.94);
+      }
+
+      .reason-strip b {
+        color: var(--gold-hot);
+        font-size: 10px;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+      }
+
+      .reason-strip span {
+        color: #f5e5c8;
+        font-size: 12px;
+        font-weight: 750;
+        line-height: 1.2;
+      }
+
+      .reason-strip small {
+        color: var(--muted);
+        font-size: 10px;
+        font-weight: 800;
+        text-transform: uppercase;
+      }
+
+      .dock {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 6px;
+      }
+
+      .tab {
+        position: relative;
+        min-height: 58px;
+        padding: 8px 6px 7px;
+        border: 1px solid rgba(236, 190, 123, 0.16);
+        border-radius: 8px;
+        background: rgba(9, 11, 13, 0.86);
+        color: var(--dim);
+        display: grid;
+        align-content: center;
+        justify-items: center;
+        gap: 2px;
+        text-align: center;
+      }
+
+      .tab strong {
+        color: inherit;
+        font-size: 11px;
+        font-weight: 950;
+        letter-spacing: 0.08em;
+        line-height: 1.05;
+        text-transform: uppercase;
+        white-space: nowrap;
+      }
+
+      .tab small {
+        max-width: 100%;
+        color: inherit;
+        font-size: 9px;
+        font-weight: 900;
+        letter-spacing: 0.08em;
+        line-height: 1;
+        opacity: 0.9;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        text-transform: uppercase;
+        white-space: nowrap;
+      }
+
+      .tab::before {
+        content: "";
+        width: 15px;
+        height: 15px;
+        border: 1px solid currentColor;
+        border-radius: 4px;
+        opacity: 0.75;
+      }
+
+      .tab.locked {
+        color: rgba(236, 190, 123, 0.42);
+      }
+
+      .tab.locked::after {
+        content: "";
+        position: absolute;
+        top: 7px;
+        right: 7px;
+        width: 5px;
+        height: 5px;
+        border-radius: 50%;
+        background: rgba(255, 157, 139, 0.72);
+        box-shadow: 0 0 8px rgba(255, 157, 139, 0.5);
+      }
+
+      .tab.available {
+        color: var(--blue);
+        border-color: rgba(104, 184, 232, 0.26);
+      }
+
+      .tab.active {
+        color: white;
+        border-color: rgba(255, 200, 97, 0.78);
+        background:
+          linear-gradient(180deg, rgba(255, 200, 97, 0.18), rgba(94, 67, 24, 0.52)),
+          rgba(22, 17, 9, 0.95);
+        box-shadow:
+          inset 0 3px 0 var(--gold-hot),
+          0 0 18px rgba(255, 200, 97, 0.18);
+      }
+
+      .callouts {
+        display: grid;
+        gap: 12px;
+      }
+
+      .callout {
+        padding: 14px;
+        border: 1px solid rgba(236, 190, 123, 0.22);
+        border-radius: 10px;
+        background: rgba(8, 11, 13, 0.82);
+      }
+
+      .callout h3 {
+        margin: 0 0 6px;
+        color: var(--gold);
+        font-size: 12px;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+      }
+
+      .callout p {
+        margin: 0;
+        color: var(--muted);
+        font-size: 13px;
+        line-height: 1.45;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="board">
+      <section class="phone" aria-label="Proposed phone bottom tab mockup">
+        <header class="top">
+          <span>Ashen Reach Controller</span>
+          <strong>Sable Vey</strong>
+          <small>0 wounds | 1 heat | Room QA390</small>
+        </header>
+
+        <section class="content">
+          <article class="prompt">
+            <span class="eyebrow">Shop</span>
+            <h1>Choose shop action</h1>
+            <p>Anchor Market is open. Buy, sell, or leave from the Shop tab.</p>
+          </article>
+
+          <article class="card">
+            <span class="eyebrow">Forge Market</span>
+            <h2>Anchor Market</h2>
+            <p>Choose gear to buy or sell. Costs and disabled reasons stay on the card, not inside the dock.</p>
+            <div class="chips">
+              <span class="chip">6 Salvage</span>
+              <span class="chip">Open</span>
+              <span class="chip">Forge Armoury</span>
+            </div>
+            <button class="button">Buy</button>
+          </article>
+        </section>
+
+        <footer class="dock-wrap" aria-label="Proposed bottom dock">
+          <div class="reason-strip">
+            <b>Action locked</b>
+            <span>Resolve battle first.</span>
+            <small>Ignore for now</small>
+          </div>
+          <nav class="dock" aria-label="Turn actions">
+            <button class="tab available" type="button">
+              <strong>Move</strong>
+              <small>1 route</small>
+            </button>
+            <button class="tab locked" type="button">
+              <strong>Battle</strong>
+              <small>Locked</small>
+            </button>
+            <button class="tab active" type="button">
+              <strong>Shop</strong>
+              <small>Active</small>
+            </button>
+            <button class="tab locked" type="button">
+              <strong>Action</strong>
+              <small>Locked</small>
+            </button>
+          </nav>
+        </footer>
+      </section>
+
+      <aside class="callouts" aria-label="Mockup notes">
+        <article class="callout">
+          <h3>Key change</h3>
+          <p>The dock stops explaining everything. It uses short labels plus compact states, while the reason strip carries the full lock reason.</p>
+        </article>
+        <article class="callout">
+          <h3>Thumb target</h3>
+          <p>Each tab remains tall and easy to hit. Text stays one line, so the dock feels like a controller instead of a warning console.</p>
+        </article>
+        <article class="callout">
+          <h3>Active state</h3>
+          <p>The active tab gets a stronger fill and top rail. Locked tabs go quieter but still show a red lock-status dot.</p>
+        </article>
+        <article class="callout">
+          <h3>Implementation note</h3>
+          <p>Keep full reasons in aria-label/title and the reason strip. Avoid multi-line lock paragraphs inside the tab buttons.</p>
+        </article>
+      </aside>
+    </main>
+  </body>
+</html>

@@ -3,6 +3,7 @@
 import "@testing-library/jest-dom/vitest";
 import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
+import { getChallengeThemeStyle } from "../../../game/ui/challengeTheme.js";
 import { HostPlayerCard } from "../HostPlayerCard.js";
 
 describe("HostPlayerCard", () => {
@@ -48,5 +49,8 @@ describe("HostPlayerCard", () => {
     expect(screen.getByLabelText("Ultimate companions")).toHaveTextContent("ultimate");
     expect(screen.getByText(/commander \| beginner/i)).toBeInTheDocument();
     expect(screen.queryByText(/black route fuse/i)).not.toBeInTheDocument();
+    expect((document.querySelector(".host-player-card-attribute-command") as HTMLElement).style.getPropertyValue("--challenge-color")).toBe(
+      getChallengeThemeStyle("command")["--challenge-color"]
+    );
   });
 });

@@ -404,6 +404,10 @@ describe("Ashen Reach UI validation stress states", () => {
     );
 
     const navigation = screen.getByRole("tablist", { name: /phone navigation/i });
+    expect(within(navigation).getByRole("button", { name: /show tabs/i })).toBeInTheDocument();
+
+    fireEvent.click(within(navigation).getByRole("button", { name: /show tabs/i }));
+
     const inventoryTab = within(navigation).getByRole("tab", { name: /inventory/i });
 
     expect(inventoryTab).toHaveClass("game-button", "game-button-action");
@@ -442,12 +446,15 @@ describe("Ashen Reach UI validation stress states", () => {
     const shopTab = getTabByLabel("Shop");
 
     expect(moveTab).toHaveAttribute("aria-disabled", "true");
-    expect(moveTab).toHaveTextContent("Move locked: no legal destination.");
+    expect(moveTab).toHaveTextContent("Locked");
+    expect(moveTab).not.toHaveTextContent("Move locked: no legal destination.");
     expect(moveTab).toHaveAttribute("title", "Move locked: no legal destination.");
     expect(battleTab).toHaveAttribute("aria-disabled", "true");
-    expect(battleTab).toHaveTextContent("Battle locked: no enemy here.");
+    expect(battleTab).toHaveTextContent("Locked");
+    expect(battleTab).not.toHaveTextContent("Battle locked: no enemy here.");
     expect(shopTab).toHaveAttribute("aria-disabled", "true");
-    expect(shopTab).toHaveTextContent("Shop locked: no shop here.");
+    expect(shopTab).toHaveTextContent("Locked");
+    expect(shopTab).not.toHaveTextContent("Shop locked: no shop here.");
   });
 
   it("keeps host battle identity headers outside portrait art and uses a three-panel result core", () => {

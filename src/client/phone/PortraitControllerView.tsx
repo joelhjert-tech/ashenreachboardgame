@@ -1,4 +1,5 @@
-import { useEffect, useState, type ReactElement } from "react";
+import { useEffect, useState, type CSSProperties, type ReactElement } from "react";
+import { getChallengeThemeStyle } from "../../game/ui/challengeTheme.js";
 import { getCharacterPortraitPath } from "../shared/assetPaths.js";
 import { GameButton } from "../shared/GameButton.js";
 import { ResultDeltaRow } from "../shared/ResultDeltaChips.js";
@@ -386,6 +387,7 @@ export function PortraitControllerView({
 }: PortraitControllerViewProps): ReactElement {
   const [activeTab, setActiveTab] = useState<PortraitTab>("player");
   const [phoneChromeVisible, setPhoneChromeVisible] = useState(readStoredPhoneChromeVisible);
+  const [bottomDockExpanded, setBottomDockExpanded] = useState(false);
   const requiresBattleFocus = Boolean(
     self &&
       patch?.status === "active" &&
@@ -430,6 +432,14 @@ export function PortraitControllerView({
 
   const showPhoneChrome = () => {
     setPhoneChromeVisible(true);
+  };
+
+  const showBottomDock = () => {
+    setBottomDockExpanded(true);
+  };
+
+  const hideBottomDock = () => {
+    setBottomDockExpanded(false);
   };
 
   const handleLeave = () => {
@@ -496,7 +506,7 @@ export function PortraitControllerView({
 
               <div className="phone-portrait-attributes" aria-label="Character stats">
                 {statOrder.map((stat) => (
-                  <div key={stat}>
+                  <div key={stat} style={getChallengeThemeStyle(stat) as CSSProperties}>
                     <span>{statLabelById[stat]}</span>
                     <PortraitStatValue self={self} stat={stat} />
                   </div>
@@ -595,7 +605,8 @@ export function PortraitControllerView({
 
   const rootClassName = [
     "phone-portrait-controller",
-    phoneChromeVisible ? "phone-shell--chrome-visible" : "phone-shell--immersive"
+    phoneChromeVisible ? "phone-shell--chrome-visible" : "phone-shell--immersive",
+    bottomDockExpanded ? "phone-shell--bottomdock-expanded" : "phone-shell--bottomdock-compact"
   ]
     .filter(Boolean)
     .join(" ");
@@ -605,7 +616,7 @@ export function PortraitControllerView({
   const bottomNavClassName = [
     "phone-portrait-bottom-nav",
     "phone-bottomnav",
-    phoneChromeHidden ? "phone-bottomdock--compact" : "phone-bottomdock--expanded"
+    bottomDockExpanded ? "phone-bottomdock--expanded" : "phone-bottomdock--compact"
   ]
     .filter(Boolean)
     .join(" ");
@@ -623,6 +634,7 @@ export function PortraitControllerView({
     <section
       className={rootClassName}
       data-phone-chrome-visible={phoneChromeVisible ? "true" : "false"}
+      data-phone-bottom-dock-expanded={bottomDockExpanded ? "true" : "false"}
     >
       <div className="phone-portrait-panel">
         <header className={topbarClassName}>
@@ -688,7 +700,7 @@ export function PortraitControllerView({
                 <div className="phone-sheet-section-heading">Stats</div>
                 <div className="phone-portrait-attributes" aria-label="Character stats">
                   {statOrder.map((stat) => (
-                    <div key={stat}>
+                    <div key={stat} style={getChallengeThemeStyle(stat) as CSSProperties}>
                       <span>{statLabelById[stat]}</span>
                       <PortraitStatValue self={self} stat={stat} />
                     </div>
@@ -816,53 +828,62 @@ export function PortraitControllerView({
         </main>
 
         <nav className={bottomNavClassName} role="tablist" aria-label="Phone navigation">
-          {phoneChromeVisible ? (
-            [
-              ["player", "Player Card"],
-              ["inventory", "Inventory"],
-              ["quests", "Quest"],
-              ["move", "Move"],
-              ["battle", "Battle"],
-              ["shop", "Shop"],
-              ["action", "Action"]
-            ].map(([key, label]) => (
-              (() => {
-                const typedKey = key as PortraitTab;
-                const actionState = isTurnActionTab(typedKey) ? getActionTabState(typedKey, patch) : { disabled: false };
-                const tone = isTurnActionTab(typedKey)
-                  ? typedKey === "move"
-                    ? "move"
-                    : typedKey === "battle"
-                      ? "battle"
-                      : typedKey === "shop"
+          {bottomDockExpanded ? (
+            <>
+              {[
+                ["player", "Player Card"],
+                ["inventory", "Inventory"],
+                ["quests", "Quest"],
+                ["move", "Move"],
+                ["battle", "Battle"],
+                ["shop", "Shop"],
+                ["action", "Action"]
+              ].map(([key, label]) => (
+                (() => {
+                  const typedKey = key as PortraitTab;
+                  const actionState = isTurnActionTab(typedKey) ? getActionTabState(typedKey, patch) : { disabled: false };
+                  const tone = isTurnActionTab(typedKey)
+                    ? typedKey === "move"
+                      ? "move"
+                      : typedKey === "battle"
+                        ? "battle"
+                        : typedKey === "shop"
+                          ? "shop"
+                          : "action"
+                    : typedKey === "inventory"
+                      ? "action"
+                      : typedKey === "quests"
                         ? "shop"
-                        : "action"
-                  : typedKey === "inventory"
-                    ? "action"
-                    : typedKey === "quests"
-                      ? "shop"
-                      : "neutral";
+                        : "neutral";
 
-                return (
-                  <GameButton
-                    key={key}
-                    type="button"
-                    tone={tone}
-                    role="tab"
-                    aria-selected={activeTab === typedKey}
-                    selected={activeTab === typedKey}
-                    className={`${activeTab === typedKey ? "phone-portrait-tab phone-portrait-tab-active" : "phone-portrait-tab"}${
-                      actionState.locked ? " phone-portrait-tab-locked" : ""
-                    }`}
-                    disabled={actionState.disabled}
-                    disabledReason={actionState.disabled ? "Unavailable" : actionState.locked ? "Blocked" : undefined}
-                    onClick={() => setActiveTab(typedKey)}
-                  >
-                    {label}
-                  </GameButton>
-                );
-              })()
-            ))
+                  return (
+                    <GameButton
+                      key={key}
+                      type="button"
+                      tone={tone}
+                      role="tab"
+                      aria-selected={activeTab === typedKey}
+                      selected={activeTab === typedKey}
+                      className={`${activeTab === typedKey ? "phone-portrait-tab phone-portrait-tab-active" : "phone-portrait-tab"}${
+                        actionState.locked ? " phone-portrait-tab-locked" : ""
+                      }`}
+                      disabled={actionState.disabled}
+                      disabledReason={actionState.disabled ? "Unavailable" : actionState.locked ? "Blocked" : undefined}
+                      onClick={() => setActiveTab(typedKey)}
+                    >
+                      {label}
+                    </GameButton>
+                  );
+                })()
+              ))}
+              <button
+                type="button"
+                className="phone-button phone-button-secondary phone-tabs-collapse"
+                onClick={hideBottomDock}
+              >
+                Hide Tabs
+              </button>
+            </>
           ) : (
             <div className="phone-compact-tab-dock" aria-label="Compact phone navigation">
               <button
@@ -871,14 +892,14 @@ export function PortraitControllerView({
                 role="tab"
                 aria-selected="true"
                 aria-current="page"
-                onClick={showPhoneChrome}
+                onClick={showBottomDock}
               >
                 {portraitTabLabels[activeTab]}
               </button>
               <button
                 type="button"
                 className="phone-button phone-button-secondary phone-chrome-restore"
-                onClick={showPhoneChrome}
+                onClick={showBottomDock}
               >
                 Show Tabs
               </button>

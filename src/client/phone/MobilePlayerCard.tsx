@@ -1,5 +1,6 @@
-import type { ReactElement, ReactNode } from "react";
+import type { CSSProperties, ReactElement, ReactNode } from "react";
 import { describeContractObjective, formatContractObjectiveStatus } from "../../game/contracts/objectives.js";
+import { getChallengeThemeStyle } from "../../game/ui/challengeTheme.js";
 import { CardArtImage } from "../shared/CardArtImage.js";
 import { ChallengeBadge } from "../shared/ChallengeBadge.js";
 import { getCharacterPortraitPath } from "../shared/assetPaths.js";
@@ -227,7 +228,11 @@ export function MobilePlayerCard({
               {statOrder.map((stat) => {
                 const breakdown = getPhoneStatBreakdown(self, stat);
                 return (
-                  <div key={stat} className={`mobile-player-stat phone-sheet-stat-card phone-sheet-stat-card-${stat}`}>
+                  <div
+                    key={stat}
+                    className={`mobile-player-stat phone-sheet-stat-card phone-sheet-stat-card-${stat}`}
+                    style={getChallengeThemeStyle(stat) as CSSProperties}
+                  >
                     <ChallengeBadge stat={stat} value={breakdown.current} label={statAbbreviationById[stat]} active={encounter?.stat === stat} />
                     {breakdown.gearFollower !== 0 && (
                       <strong className="phone-stat-bonus">({formatSignedStatBonus(breakdown.gearFollower)})</strong>

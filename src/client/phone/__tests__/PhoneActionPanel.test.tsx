@@ -3,6 +3,7 @@
 import "@testing-library/jest-dom/vitest";
 import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { getChallengeThemeStyle } from "../../../game/ui/challengeTheme.js";
 import { PhoneActionPanel } from "../PhoneActionPanel.js";
 import type { CharacterCatalogEntry, ClientIntent, PhonePatchPayload } from "../../shared/types.js";
 
@@ -877,7 +878,11 @@ describe("PhoneActionPanel", () => {
     );
 
     expect(screen.getByRole("tab", { name: /shop/i })).toBeInTheDocument();
-    expect(screen.getByRole("status")).toHaveTextContent(/no shop here/i);
+    expect(screen.getByRole("tab", { name: /shop/i })).toHaveTextContent(/locked/i);
+    expect(screen.getByRole("tab", { name: /shop/i })).not.toHaveTextContent(/shop locked: no shop here/i);
+    expect(screen.getByTestId("phone-turn-tab-reason")).toHaveTextContent(/shop locked/i);
+    expect(screen.getByTestId("phone-turn-tab-reason")).toHaveTextContent(/no shop here/i);
+    expect(within(screen.getByTestId("phone-action-active-panel")).getByRole("status")).toHaveTextContent(/no shop here/i);
     expect(screen.getByText(/shop services appear when your operative is on a clear market/i)).toBeInTheDocument();
   });
 
@@ -886,7 +891,8 @@ describe("PhoneActionPanel", () => {
       <PhoneActionPanel characters={characters} onIntent={vi.fn()} selectedTurnTab="battle" patch={createPatch({ encounter: null, pendingEnemyRoll: null })} />
     );
 
-    expect(screen.getByRole("tab", { name: /battle/i })).toHaveTextContent(/battle locked: no enemy here/i);
+    expect(screen.getByRole("tab", { name: /battle/i })).toHaveTextContent(/locked/i);
+    expect(screen.getByRole("tab", { name: /battle/i })).not.toHaveTextContent(/battle locked: no enemy here/i);
     expect(screen.getByRole("tab", { name: /battle/i })).toHaveAttribute("title", "Battle locked: no enemy here.");
     expect(screen.queryByRole("button", { name: /enter combat/i })).not.toBeInTheDocument();
   });
@@ -914,7 +920,9 @@ describe("PhoneActionPanel", () => {
 
     expect(screen.getByTestId("phone-action-panel-root")).toHaveClass("phone-action-panel--shop");
     expect(screen.getByTestId("phone-action-active-panel")).toHaveClass("phone-shop-command-panel");
-    expect(screen.getByRole("status")).toHaveTextContent(/shop locked/i);
+    expect(screen.getByTestId("phone-turn-tab-reason")).toHaveTextContent(/shop locked/i);
+    expect(screen.getByTestId("phone-turn-tab-reason")).toHaveTextContent(/resolve battle first/i);
+    expect(within(screen.getByTestId("phone-action-active-panel")).getByRole("status")).toHaveTextContent(/shop locked/i);
     expect(screen.getAllByText(/shop locked: resolve battle first/i).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/ignore shop until the encounter is cleared/i).length).toBeGreaterThan(0);
     expect(screen.queryByRole("button", { name: /enter combat/i })).not.toBeInTheDocument();
@@ -943,6 +951,8 @@ describe("PhoneActionPanel", () => {
 
     expect(screen.getByTestId("phone-action-panel-root")).toHaveClass("phone-action-panel--action");
     expect(screen.getByTestId("phone-action-active-panel")).toHaveClass("phone-sector-action-panel");
+    expect(screen.getByTestId("phone-turn-tab-reason")).toHaveTextContent(/action locked/i);
+    expect(screen.getByTestId("phone-turn-tab-reason")).toHaveTextContent(/resolve battle first/i);
     expect(within(screen.getByTestId("phone-action-active-panel")).getByText(/action locked: resolve battle first/i)).toBeInTheDocument();
     expect(within(screen.getByTestId("phone-action-active-panel")).getByText(/ignore sector actions until the battle tab is cleared/i)).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /enter combat/i })).not.toBeInTheDocument();
@@ -2214,7 +2224,9 @@ describe("PhoneActionPanel", () => {
     expect(screen.getByTestId("phone-trophy-pile")).toHaveTextContent(/can upgrade: command 3 -> 4, grit 2 -> 3, signal 1 -> 2, guile 2 -> 3, forge 1 -> 2/i);
     expect(screen.getByText(/6 trophies held/i)).toBeInTheDocument();
     expect(screen.getByText(/spend trophies equal to the next stat value/i)).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /grit 2 -> 3\s*cost 3 trophies/i })).toBeEnabled();
+    const gritUpgrade = screen.getByRole("button", { name: /grit 2 -> 3\s*cost 3 trophies/i });
+    expect(gritUpgrade).toBeEnabled();
+    expect(gritUpgrade.style.getPropertyValue("--challenge-color")).toBe(getChallengeThemeStyle("grit")["--challenge-color"]);
   });
 
   it("shows stat upgrade disabled reasons and upgrade result chips", () => {

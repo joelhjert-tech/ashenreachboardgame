@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ReactElement } from "react";
+import { useEffect, useRef, useState, type CSSProperties, type ReactElement } from "react";
 import type {
   ActiveResolution,
   CharacterCatalogEntry,
@@ -22,6 +22,7 @@ import type {
 import { ResultDeltaRow } from "../shared/ResultDeltaChips.js";
 import { getBoardSpace, isScenarioConfrontationSpace } from "../../game/data/boardSpaces.js";
 import { describeContractObjective, formatContractObjectiveStatus } from "../../game/contracts/objectives.js";
+import { getChallengeThemeStyle } from "../../game/ui/challengeTheme.js";
 import {
   getStatUpgradeCost,
   getStatUpgradeDisabledReason,
@@ -62,6 +63,7 @@ interface ActionButtonDefinition {
   label: string;
   detail?: string;
   tone: "primary" | "secondary";
+  stat?: Stat;
   disabled?: boolean;
   onClick: () => void;
 }
@@ -476,7 +478,10 @@ function ActionButtons({ actions }: { actions: ActionButtonDefinition[] }): Reac
         <GameButton
           key={action.key}
           tone={actionToneToGameButtonTone(action.tone)}
-          className={`phone-button phone-sheet-action-button phone-button-${action.tone}`}
+          className={`phone-button phone-sheet-action-button phone-button-${action.tone}${
+            action.stat ? " phone-sheet-action-button-stat" : ""
+          }`}
+          style={action.stat ? (getChallengeThemeStyle(action.stat) as CSSProperties) : undefined}
           type="button"
           disabled={action.disabled}
           disabledReason={action.disabled ? action.detail ?? "Unavailable" : undefined}
@@ -573,6 +578,54 @@ function EmptyTurnTab({ title, text }: { title: string; text: string }): ReactEl
   );
 }
 
+function stripTabReasonPrefix(tab: TurnActionTabDefinition, reason: string): string {
+  const prefix = `${tab.label} locked:`;
+  const trimmedReason = reason.trim();
+
+  if (trimmedReason.toLowerCase().startsWith(prefix.toLowerCase())) {
+    const withoutPrefix = trimmedReason.slice(prefix.length).trim();
+    return withoutPrefix.length > 0 ? `${withoutPrefix.slice(0, 1).toUpperCase()}${withoutPrefix.slice(1)}` : trimmedReason;
+  }
+
+  return trimmedReason;
+}
+
+function getTabCompactSublabel(tab: TurnActionTabDefinition, activeTab: TurnActionTab): string {
+  const unavailable = !tab.enabled || tab.locked;
+
+  if (unavailable) {
+    return "Locked";
+  }
+
+  if (activeTab === tab.id) {
+    return "Active";
+  }
+
+  if (tab.id === "move") {
+    return tab.detail;
+  }
+
+  if (tab.id === "shop") {
+    return "Open";
+  }
+
+  return "Ready";
+}
+
+function TurnActionReasonStrip({ tab }: { tab: TurnActionTabDefinition | undefined }): ReactElement | null {
+  if (!tab?.blockedReason) {
+    return null;
+  }
+
+  return (
+    <aside className={`phone-turn-tab-reason phone-turn-tab-reason-${tab.tone}`} data-testid="phone-turn-tab-reason" role="status">
+      <strong>{tab.label} locked</strong>
+      <span>{stripTabReasonPrefix(tab, tab.blockedReason)}</span>
+      <small>Ignore for now</small>
+    </aside>
+  );
+}
+
 function LockedCommandPanel({
   tab,
   title,
@@ -613,6 +666,8 @@ function TurnActionTabs({
     <div className="phone-turn-tabs" role="tablist" aria-label="Turn actions">
       {tabs.map((tab) => {
         const unavailable = !tab.enabled || tab.locked;
+        const compactSublabel = getTabCompactSublabel(tab, activeTab);
+        const accessibleState = unavailable ? tab.blockedReason ?? `${tab.label} locked.` : `${tab.label}: ${tab.detail}.`;
 
         return (
           <GameButton
@@ -627,9 +682,10 @@ function TurnActionTabs({
             className={`phone-turn-tab phone-turn-tab-${tab.tone}${activeTab === tab.id ? " phone-turn-tab-active" : ""}${
               unavailable ? " phone-turn-tab-locked" : ""
             }`}
-            title={unavailable ? tab.blockedReason : undefined}
+            title={unavailable ? tab.blockedReason : tab.detail}
+            aria-label={`${tab.label}. ${accessibleState}`}
             onClick={() => onSelected(tab.id)}
-            sublabel={tab.locked ? tab.blockedReason ?? "Shop blocked" : tab.blockedReason ?? tab.detail}
+            sublabel={compactSublabel}
           >
             {tab.label}
           </GameButton>
@@ -804,6 +860,25 @@ function MovementRouteConfidence({
       {items.map((item) => (
         <span key={item}>{item}</span>
       ))}
+    </div>
+  );
+}
+
+function TurnActionDock({
+  tabs,
+  activeTab,
+  onSelected
+}: {
+  tabs: TurnActionTabDefinition[];
+  activeTab: TurnActionTab;
+  onSelected: (tab: TurnActionTab) => void;
+}): ReactElement {
+  const activeDefinition = tabs.find((tab) => tab.id === activeTab);
+
+  return (
+    <div className="phone-turn-dock" aria-label="Turn action dock">
+      <TurnActionReasonStrip tab={activeDefinition} />
+      <TurnActionTabs tabs={tabs} activeTab={activeTab} onSelected={onSelected} />
     </div>
   );
 }
@@ -2099,6 +2174,7 @@ export function PhoneActionPanel({
         label: value >= NORMAL_STAT_UPGRADE_CAP ? `${statLabelById[stat]} ${value}` : `${statLabelById[stat]} ${value} -> ${nextValue}`,
         detail: disabledReason ?? `Cost ${cost} Troph${cost === 1 ? "y" : "ies"}`,
         tone: "secondary",
+        stat,
         disabled: Boolean(disabledReason),
         onClick: () =>
           onIntent({
@@ -2154,6 +2230,7 @@ export function PhoneActionPanel({
       label: checkIsStaged ? "Roll check dice" : `Attempt ${statLabelById[patch.encounter.stat]} check`,
       detail: patch.encounter.title,
       tone: "primary",
+      stat: patch.encounter.stat,
       onClick: () =>
         onIntent({
           type: "CHECK_REQUESTED",
@@ -2174,6 +2251,7 @@ export function PhoneActionPanel({
       label: combatIsStaged ? "Roll combat dice" : "Enter combat",
       detail: patch.encounter.enemyName ?? patch.encounter.title,
       tone: "primary",
+      stat: patch.encounter.stat,
       onClick: () =>
         onIntent({
           type: "COMBAT_REQUESTED",
@@ -2244,6 +2322,7 @@ export function PhoneActionPanel({
             label: `Use ${item.name}`,
             detail: useDisabledReason ?? getGearActionDetail(item, useState),
             tone: item.useLimit === "discard" ? "primary" : "secondary",
+            stat: item.statBonus.stat,
             disabled: Boolean(useDisabledReason),
             onClick: () =>
               onIntent({
@@ -2262,6 +2341,7 @@ export function PhoneActionPanel({
         label: `Equip ${item.name}`,
         detail: `${toTitleCase(item.slot)}: +${item.statBonus.amount} ${statLabelById[item.statBonus.stat]}`,
         tone: "secondary",
+        stat: item.statBonus.stat,
         onClick: () =>
           onIntent({
             type: "EQUIP_GEAR",
@@ -2277,6 +2357,7 @@ export function PhoneActionPanel({
           label: `Use ${item.name}`,
           detail: useDisabledReason ?? getGearActionDetail(item, useState),
           tone: item.useLimit === "discard" ? "primary" : "secondary",
+          stat: item.statBonus.stat,
           disabled: Boolean(useDisabledReason),
           onClick: () =>
             onIntent({
@@ -2493,7 +2574,11 @@ export function PhoneActionPanel({
     {
       id: "move",
       label: "Move",
-      detail: movementPlanner?.active ? `${movementPlanner.destinations.length} routes` : patch.phase === "navigation" ? "Ready" : "Standby",
+      detail: movementPlanner?.active
+        ? `${movementPlanner.destinations.length} route${movementPlanner.destinations.length === 1 ? "" : "s"}`
+        : patch.phase === "navigation"
+          ? "Ready"
+          : "Standby",
       tone: "move",
       enabled: hasMoveContent,
       blockedReason: moveBlockedReason
@@ -2628,7 +2713,7 @@ export function PhoneActionPanel({
           <span>{copy}</span>
         </div>
       </div>
-      {!hideTurnTabs && <TurnActionTabs tabs={tabDefinitions} activeTab={activeTurnTab} onSelected={setSelectedTurnTab} />}
+      {!hideTurnTabs && <TurnActionDock tabs={tabDefinitions} activeTab={activeTurnTab} onSelected={setSelectedTurnTab} />}
     </section>
   );
 }

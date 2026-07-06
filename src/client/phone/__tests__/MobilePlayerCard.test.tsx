@@ -3,6 +3,7 @@
 import "@testing-library/jest-dom/vitest";
 import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
+import { getChallengeThemeStyle } from "../../../game/ui/challengeTheme.js";
 import { MobilePlayerCard } from "../MobilePlayerCard.js";
 import type { PhoneSelfState } from "../../shared/types.js";
 
@@ -76,6 +77,9 @@ describe("MobilePlayerCard", () => {
 
     expect(screen.getByText(/commander \| beginner/i)).toBeInTheDocument();
     expect(screen.getByText(/global escalation 0\/6, \+0/i)).toBeInTheDocument();
+    expect((document.querySelector(".phone-sheet-stat-card-command") as HTMLElement).style.getPropertyValue("--challenge-color")).toBe(
+      getChallengeThemeStyle("command")["--challenge-color"]
+    );
   });
 
   it("shows compact stat bonuses without merging permanent or gear sources into base", () => {

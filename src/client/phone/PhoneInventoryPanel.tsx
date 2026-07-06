@@ -1,4 +1,5 @@
-import type { ReactElement } from "react";
+import type { CSSProperties, ReactElement, ReactNode } from "react";
+import { getChallengeThemeStyle } from "../../game/ui/challengeTheme.js";
 import { CardArtImage } from "../shared/CardArtImage.js";
 import { GameButton } from "../shared/GameButton.js";
 import type { ClientIntent, PhonePatchPayload } from "../shared/types.js";
@@ -95,16 +96,32 @@ function InventoryCard({
   const stateLabel = card.canUseNow ? "active" : card.status === "Passive" ? "applied" : "inactive";
   const consequence = getInventoryConsequence(card);
 
-  const metaItems = [
-    consequence !== card.effectText ? card.effectText : null,
-    card.timingText,
-    card.statBonus ? `+${card.statBonus.amount} ${statLabelById[card.statBonus.stat]}` : null,
+  const metaItems = ([
+    consequence !== card.effectText ? { key: "effect", node: card.effectText } : null,
+    { key: "timing", node: card.timingText },
+    card.statBonus
+      ? {
+          key: "stat-bonus",
+          node: (
+            <em
+              className="phone-inventory-stat-bonus"
+              style={getChallengeThemeStyle(card.statBonus.stat) as CSSProperties}
+            >
+              +{card.statBonus.amount} {statLabelById[card.statBonus.stat]}
+            </em>
+          )
+        }
+      : null,
     card.charges !== null && card.charges !== undefined
-      ? card.maxUses !== null && card.maxUses !== undefined
-        ? `${card.charges}/${card.maxUses} use${card.maxUses === 1 ? "" : "s"}`
-        : `${card.charges} charge${card.charges === 1 ? "" : "s"}`
+      ? {
+          key: "charges",
+          node:
+            card.maxUses !== null && card.maxUses !== undefined
+              ? `${card.charges}/${card.maxUses} use${card.maxUses === 1 ? "" : "s"}`
+              : `${card.charges} charge${card.charges === 1 ? "" : "s"}`
+      }
       : null
-  ].filter(Boolean);
+  ] as Array<{ key: string; node: ReactNode } | null>).filter((item): item is { key: string; node: ReactNode } => Boolean(item));
 
   return (
     <PhoneWrappedMediaCard
@@ -121,7 +138,7 @@ function InventoryCard({
       meta={
         <div className="phone-inventory-card-meta">
           {metaItems.map((item) => (
-            <span key={item}>{item}</span>
+            <span key={item.key}>{item.node}</span>
           ))}
         </div>
       }

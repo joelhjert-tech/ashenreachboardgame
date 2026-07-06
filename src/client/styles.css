@@ -227,10 +227,10 @@ button:disabled {
 }
 
 .phone-turn-tab-locked .game-button-sublabel {
-  overflow: visible;
-  line-height: 1.12;
-  text-overflow: clip;
-  white-space: normal;
+  overflow: hidden;
+  line-height: 1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .game-button-spinner {
@@ -1406,6 +1406,14 @@ select {
   grid-template-rows: auto minmax(0, 1fr) auto;
 }
 
+.phone-shell--bottomdock-compact .phone-portrait-panel {
+  --phone-bottom-nav-height: var(--phone-compact-dock-height);
+}
+
+.phone-shell--bottomdock-expanded .phone-portrait-panel {
+  --phone-bottom-nav-height: var(--phone-nav-height);
+}
+
 .phone-portrait-controller-empty .phone-portrait-panel {
   padding: 1rem;
   align-content: center;
@@ -1734,27 +1742,35 @@ select {
   justify-content: space-between;
   gap: 0.75rem;
   padding: 0.58rem 0.7rem;
-  border: 1px solid rgba(90, 111, 136, 0.28);
+  border: 1px solid color-mix(in srgb, var(--challenge-color, #5faaf7) 36%, rgba(90, 111, 136, 0.28));
   border-radius: 6px;
   background:
+    radial-gradient(circle at 0 50%, var(--challenge-soft, rgba(95, 170, 247, 0.12)), transparent 42%),
     linear-gradient(180deg, rgba(13, 18, 24, 0.92), rgba(7, 10, 15, 0.98)),
     rgba(8, 11, 16, 0.96);
+  box-shadow:
+    inset 0.18rem 0 0 var(--challenge-color, #5faaf7),
+    inset 0 0 0 1px color-mix(in srgb, var(--challenge-color, #5faaf7) 12%, transparent);
 }
 
 .phone-portrait-attributes strong {
   flex: 0 0 auto;
-  color: #f0debd;
+  color: var(--challenge-color, #f0debd);
   font-size: 1.25rem;
   line-height: 1;
 }
 
 .phone-portrait-attributes span {
   min-width: 0;
-  color: #5faaf7;
+  color: #f7ead1;
   font-size: 0.75rem;
   font-weight: 900;
   letter-spacing: 0.12em;
   text-transform: uppercase;
+}
+
+.phone-portrait-attributes .phone-stat-breakdown {
+  color: rgba(224, 215, 197, 0.62);
 }
 
 .phone-portrait-chip-row,
@@ -1848,6 +1864,18 @@ select {
 
 .phone-bottomdock--expanded {
   min-height: var(--phone-nav-height);
+}
+
+.phone-tabs-collapse {
+  min-width: 0;
+  min-height: 2.48rem;
+  padding: 0.28rem 0.16rem;
+  border-radius: 8px;
+  font-size: clamp(0.56rem, 2.2vw, 0.72rem);
+  font-weight: 800;
+  letter-spacing: 0;
+  line-height: 1.12;
+  text-transform: uppercase;
 }
 
 .phone-compact-tab-dock {
@@ -2660,11 +2688,18 @@ select {
 
 .phone-join-layout-characterSelect .phone-character-stat-row small {
   padding: 0.2rem 0.34rem;
-  border: 1px solid rgba(143, 183, 218, 0.2);
-  background: rgba(9, 14, 20, 0.48);
+  border: 1px solid color-mix(in srgb, var(--challenge-color, #8fb7da) 32%, rgba(143, 183, 218, 0.2));
+  background:
+    radial-gradient(circle at 0 50%, var(--challenge-soft, rgba(143, 183, 218, 0.12)), transparent 46%),
+    rgba(9, 14, 20, 0.48);
   color: var(--text-secondary);
   font-size: 0.62rem;
   line-height: 1.1;
+  box-shadow: inset 0.14rem 0 0 var(--challenge-color, #8fb7da);
+}
+
+.phone-join-layout-characterSelect .phone-character-stat-row small strong {
+  color: var(--challenge-color, #f2ead9);
 }
 
 .phone-join-layout-characterSelect .phone-character-select-label {
@@ -4244,6 +4279,74 @@ select {
   grid-template-rows: none;
 }
 
+.phone-turn-dock {
+  display: grid;
+  gap: 0.38rem;
+  min-width: 0;
+}
+
+.phone-turn-tab-reason {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 0.45rem;
+  align-items: center;
+  min-width: 0;
+  padding: 0.48rem 0.58rem;
+  border: 1px solid rgba(255, 200, 97, 0.26);
+  border-radius: 0.55rem;
+  background:
+    linear-gradient(90deg, rgba(255, 200, 97, 0.12), transparent 78%),
+    rgba(16, 12, 8, 0.82);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.025);
+}
+
+.phone-turn-tab-reason strong {
+  color: #ffc861;
+  font-size: clamp(0.58rem, 2.2vw, 0.66rem);
+  font-weight: 950;
+  line-height: 1;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.phone-turn-tab-reason span {
+  min-width: 0;
+  overflow: hidden;
+  color: #f5e5c8;
+  font-size: clamp(0.68rem, 2.7vw, 0.78rem);
+  font-weight: 800;
+  line-height: 1.16;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.phone-turn-tab-reason small {
+  color: rgba(236, 228, 210, 0.62);
+  font-size: clamp(0.52rem, 2vw, 0.6rem);
+  font-weight: 900;
+  line-height: 1;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.phone-turn-tab-reason-battle {
+  border-color: rgba(216, 74, 50, 0.38);
+  background:
+    linear-gradient(90deg, rgba(216, 74, 50, 0.13), transparent 78%),
+    rgba(18, 8, 7, 0.84);
+}
+
+.phone-turn-tab-reason-shop {
+  border-color: rgba(227, 179, 65, 0.34);
+}
+
+.phone-turn-tab-reason-action {
+  border-color: rgba(57, 169, 255, 0.34);
+  background:
+    linear-gradient(90deg, rgba(57, 169, 255, 0.12), transparent 78%),
+    rgba(8, 13, 18, 0.84);
+}
+
 .phone-turn-tabs {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -4255,12 +4358,13 @@ select {
 }
 
 .phone-turn-tab {
+  position: relative;
   min-width: 0;
-  min-height: 3.1rem;
+  min-height: 3.55rem;
   display: grid;
   align-content: center;
   gap: 0.1rem;
-  padding: 0.42rem 0.22rem;
+  padding: 0.46rem 0.22rem 0.38rem;
   border: 1px solid rgba(151, 126, 87, 0.3);
   border-radius: 0.52rem;
   background:
@@ -4289,6 +4393,17 @@ select {
   white-space: nowrap;
 }
 
+.phone-turn-tab::before {
+  content: "";
+  justify-self: center;
+  width: 0.72rem;
+  height: 0.72rem;
+  margin-bottom: 0.08rem;
+  border: 1px solid currentColor;
+  border-radius: 0.18rem;
+  opacity: 0.58;
+}
+
 .phone-turn-tab-move {
   --turn-tab-color: #f1e8d5;
 }
@@ -4312,17 +4427,34 @@ select {
     linear-gradient(180deg, color-mix(in srgb, var(--turn-tab-color) 22%, rgba(20, 21, 24, 0.84)), rgba(6, 8, 11, 0.92)),
     rgba(7, 10, 15, 0.88);
   box-shadow:
+    inset 0 0.2rem 0 color-mix(in srgb, var(--turn-tab-color) 80%, #ffc861),
     inset 0 0 0 1px color-mix(in srgb, var(--turn-tab-color) 18%, transparent),
     0 0 0.8rem color-mix(in srgb, var(--turn-tab-color) 18%, transparent);
 }
 
 .phone-turn-tab:disabled,
 .phone-turn-tab[aria-disabled="true"] {
-  opacity: 0.42;
+  opacity: 0.56;
+}
+
+.phone-turn-tab-active[aria-disabled="true"] {
+  opacity: 0.88;
 }
 
 .phone-turn-tab-locked {
   border-style: dashed;
+}
+
+.phone-turn-tab-locked::after {
+  content: "";
+  position: absolute;
+  top: 0.42rem;
+  right: 0.42rem;
+  width: 0.34rem;
+  height: 0.34rem;
+  border-radius: 999px;
+  background: rgba(255, 157, 139, 0.82);
+  box-shadow: 0 0 0.45rem rgba(255, 157, 139, 0.5);
 }
 
 .phone-turn-tab-empty {
@@ -4731,6 +4863,18 @@ select {
   text-align: left;
 }
 
+.phone-sheet-action-button-stat {
+  border-color: color-mix(in srgb, var(--challenge-color, #d1b07a) 34%, rgba(143, 183, 218, 0.22));
+  background:
+    radial-gradient(circle at 0 50%, var(--challenge-soft, rgba(209, 176, 122, 0.14)), transparent 48%),
+    var(--button-surface, rgba(13, 18, 24, 0.78));
+  box-shadow: inset 0.16rem 0 0 var(--challenge-color, #d1b07a);
+}
+
+.phone-sheet-action-button-stat .game-button-label {
+  color: var(--challenge-color, #f2ead9);
+}
+
 .phone-sheet-action-label,
 .phone-sheet-action-detail {
   min-width: 0;
@@ -5022,6 +5166,12 @@ select {
   color: #cbd4da;
   font-size: 0.62rem;
   line-height: 1.1;
+}
+
+.phone-inventory-card-meta .phone-inventory-stat-bonus {
+  color: var(--challenge-color, #cbd4da);
+  font-style: normal;
+  font-weight: 850;
 }
 
 .phone-inventory-use-button {

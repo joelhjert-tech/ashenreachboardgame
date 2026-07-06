@@ -1,8 +1,10 @@
-import { useEffect, useMemo, useState, type FormEvent, type ReactElement } from "react";
+import { useEffect, useMemo, useState, type CSSProperties, type FormEvent, type ReactElement } from "react";
+import { getChallengeThemeStyle } from "../../game/ui/challengeTheme.js";
 import { fetchCharacters, fetchSessionSummary, getConnectionDiagnostics, joinSession, leaveSession } from "../shared/network.js";
 import type { CharacterCatalogEntry, PhonePatchPayload, PhoneSelfState, PhoneSessionAuth, StatePatch } from "../shared/types.js";
 import { useRoomSubscription } from "../shared/useRoomSubscription.js";
 import { getCharacterPortraitPath } from "../shared/assetPaths.js";
+import { statLabelById, statOrder } from "../shared/statLabels.js";
 import { MobileDebugDrawer } from "./MobileDebugDrawer.js";
 import { PortraitControllerView } from "./PortraitControllerView.js";
 
@@ -465,11 +467,11 @@ export function PhoneApp(): ReactElement {
                             )}
                             {character.qaOnly && <em className="phone-character-qa-badge">QA ONLY</em>}
                             <span className="phone-character-stat-row" aria-label={`${character.name} stats`}>
-                              <small>Command {character.stats.command}</small>
-                              <small>Grit {character.stats.grit}</small>
-                              <small>Signal {character.stats.signal}</small>
-                              <small>Guile {character.stats.guile}</small>
-                              <small>Forge {character.stats.forge}</small>
+                              {statOrder.map((stat) => (
+                                <small key={stat} style={getChallengeThemeStyle(stat) as CSSProperties}>
+                                  {statLabelById[stat]} <strong>{character.stats[stat]}</strong>
+                                </small>
+                              ))}
                             </span>
                             <small className="phone-character-select-label">Select character</small>
                           </span>

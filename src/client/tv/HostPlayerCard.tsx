@@ -1,4 +1,5 @@
-import type { ReactElement } from "react";
+import type { CSSProperties, ReactElement } from "react";
+import { getChallengeThemeStyle } from "../../game/ui/challengeTheme.js";
 import type { AbilityChangeItem } from "../shared/abilityTelemetry.js";
 import { ChallengeBadge } from "../shared/ChallengeBadge.js";
 import type { Stat } from "../shared/types.js";
@@ -141,7 +142,11 @@ export function HostPlayerCard({
 
           <div className="host-player-card-attributes">
             {attributeOrder.map((attribute) => (
-              <div key={attribute.key} className={`host-player-card-attribute host-player-card-attribute-${attribute.stat}`}>
+              <div
+                key={attribute.key}
+                className={`host-player-card-attribute host-player-card-attribute-${attribute.stat}`}
+                style={getChallengeThemeStyle(attribute.stat) as CSSProperties}
+              >
                 <ChallengeBadge stat={attribute.stat} value={renderValue(attributes[attribute.key])} label={attribute.label} size="compact" />
               </div>
             ))}
