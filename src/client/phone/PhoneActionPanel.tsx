@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type CSSProperties, type ReactElement } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactElement } from "react";
 import type {
   ActiveResolution,
   CharacterCatalogEntry,
@@ -47,6 +47,7 @@ import { getGearCardArtId } from "../shared/assetPaths.js";
 import { statLabelById } from "../shared/statLabels.js";
 import { PhoneInventoryPanel } from "./PhoneInventoryPanel.js";
 import { PhoneWrappedMediaCard } from "./PhoneWrappedMediaCard.js";
+import { getTileAssetPath } from "../tv/tileAssetManifest.js";
 import { formatTimingWindow, getBattleAssistViewModel, statLabelById as inventoryStatLabelById } from "./inventoryPresentation.js";
 import { buildUsefulNowViewModel, type UsefulNowViewModel } from "./usefulNowPresentation.js";
 
@@ -219,9 +220,26 @@ function ShopItemMedia({ cardId, label }: { cardId: string; label: string }): Re
 
 function MovementTileMedia({ destination }: { destination: PublicMoveDestination }): ReactElement {
   const primaryTag = getPrimaryMovementTag(destination);
+  const tileAssetPath = getTileAssetPath(destination.sectorId);
+
+  if (tileAssetPath) {
+    return (
+      <img
+        src={tileAssetPath}
+        alt=""
+        className="phone-wrap-card__image phone-movement-tile-image"
+        aria-hidden="true"
+        data-testid="movement-tile-image"
+      />
+    );
+  }
 
   return (
-    <div className={`phone-wrap-card__fallback phone-movement-tile-fallback phone-movement-tile-fallback-${primaryTag}`} aria-hidden="true">
+    <div
+      className={`phone-wrap-card__fallback phone-movement-tile-fallback phone-movement-tile-fallback-${primaryTag}`}
+      aria-hidden="true"
+      data-testid="movement-tile-fallback"
+    >
       <span>{destination.ring.slice(0, 1).toUpperCase()}</span>
       <strong>{destination.distance}</strong>
     </div>
@@ -1528,8 +1546,21 @@ function MovementDestinationDetail({
   const confidenceItems = getMovementRouteConfidenceItems(selected, routePreview);
   const detailRef = useRef<HTMLElement | null>(null);
 
-  useEffect(() => {
-    detailRef.current?.scrollIntoView?.({ block: "start" });
+  useLayoutEffect(() => {
+    const scrollContainer = detailRef.current?.closest<HTMLElement>(".phone-action-content-root");
+
+    if (scrollContainer) {
+      scrollContainer.scrollTop = 0;
+      scrollContainer.scrollLeft = 0;
+      return;
+    }
+
+    const phoneScrollContainer = detailRef.current?.closest<HTMLElement>(".phone-portrait-scroll");
+
+    if (phoneScrollContainer) {
+      phoneScrollContainer.scrollTop = 0;
+      phoneScrollContainer.scrollLeft = 0;
+    }
   }, [selected.sectorId]);
 
   return (
@@ -1540,12 +1571,6 @@ function MovementDestinationDetail({
       data-testid="movement-detail-view"
     >
       <div className="phone-movement-detail-body">
-        <div className="phone-movement-detail-back-row">
-          <GameButton type="button" tone="secondary" className="phone-button phone-button-secondary" onClick={onBack}>
-            Back
-          </GameButton>
-        </div>
-
         <PhoneWrappedMediaCard
           variant="movement"
           className="phone-movement-detail-hero"
@@ -1553,7 +1578,14 @@ function MovementDestinationDetail({
           title={selected.name}
           eyebrow="Destination"
           status={<MovementRouteConfidence items={confidenceItems} testId="movement-detail-route-confidence" />}
-          description={<p>{selected.ruleText || "No printed sector action detected."}</p>}
+          description={
+            <>
+              <p className="phone-movement-route-summary" data-testid="movement-detail-route-summary">
+                Route: {getRoutePreviewLine(selected)}
+              </p>
+              <p>{routeUnavailable ? "Route unavailable." : `${routePreview.statusLabel}: ${routePreview.statusReason}`}</p>
+            </>
+          }
           meta={
             <>
               <div className="phone-movement-row-tags">
@@ -1569,42 +1601,29 @@ function MovementDestinationDetail({
           }
           disabledReason={routeUnavailable ? <span className="phone-movement-disabled-reason">{selected.disabledReason}. Ignore this route for now.</span> : null}
           actions={
-            <GameButton
-              type="button"
-              tone="move"
-              className="phone-button phone-button-primary phone-movement-confirm"
-              disabled={routeUnavailable}
-              disabledReason={selected.disabledReason}
-              onClick={() =>
-                onIntent({
-                  type: "MOVE_REQUESTED",
-                  seatId,
-                  toSectorId: selected.sectorId
-                })
-              }
-            >
-              Confirm Move
-            </GameButton>
+            <>
+              <GameButton type="button" tone="secondary" className="phone-button phone-button-secondary phone-movement-back" onClick={onBack}>
+                Back
+              </GameButton>
+              <GameButton
+                type="button"
+                tone="move"
+                className="phone-button phone-button-primary phone-movement-confirm"
+                disabled={routeUnavailable}
+                disabledReason={selected.disabledReason}
+                onClick={() =>
+                  onIntent({
+                    type: "MOVE_REQUESTED",
+                    seatId,
+                    toSectorId: selected.sectorId
+                  })
+                }
+              >
+                Confirm Move
+              </GameButton>
+            </>
           }
         />
-
-        <div className="phone-movement-intel-grid">
-          <span>Why legal</span>
-          <strong>{routePreview.exactText}</strong>
-          <span>Icons</span>
-          <strong className="phone-movement-inline-icons">
-            {selected.threatIcons.length > 0
-              ? selected.threatIcons.map((icon, index) => (
-                  <span key={`${icon}-${index}`} className="phone-movement-inline-icon-wrap">
-                    <span className="sr-only">{formatThreatIcon(icon)}</span>
-                    <ThreatIconBadge icon={icon} />
-                  </span>
-                ))
-              : "None"}
-          </strong>
-          <span>Status</span>
-          <strong>{routeUnavailable ? "Route unavailable" : `${routePreview.statusLabel}: ${routePreview.statusReason}`}</strong>
-        </div>
 
         <section className="phone-movement-route-section" aria-label="Route review">
           <span>Route</span>
@@ -1620,9 +1639,30 @@ function MovementDestinationDetail({
           <p>{selected.ruleText || "None detected."}</p>
         </section>
 
+        <section className="phone-movement-detail-section" aria-label="Movement intel">
+          <span>Intel</span>
+          <div className="phone-movement-intel-grid">
+            <span>Why legal</span>
+            <strong>{routePreview.exactText}</strong>
+            <span>Icons</span>
+            <strong className="phone-movement-inline-icons">
+              {selected.threatIcons.length > 0
+                ? selected.threatIcons.map((icon, index) => (
+                    <span key={`${icon}-${index}`} className="phone-movement-inline-icon-wrap">
+                      <span className="sr-only">{formatThreatIcon(icon)}</span>
+                      <ThreatIconBadge icon={icon} />
+                    </span>
+                  ))
+                : "None"}
+            </strong>
+            <span>Status</span>
+            <strong>{routeUnavailable ? "Route unavailable" : `${routePreview.statusLabel}: ${routePreview.statusReason}`}</strong>
+          </div>
+        </section>
+
         {selected.loreText || routePreview.riskText || routePreview.rewardText || selected.shop ? (
           <section className="phone-movement-detail-section">
-            <span>Intel</span>
+            <span>Notes</span>
             {selected.loreText ? <p>{selected.loreText}</p> : null}
             {routePreview.riskText ? <p>{routePreview.riskText}</p> : null}
             {routePreview.rewardText ? <p>{routePreview.rewardText}</p> : null}

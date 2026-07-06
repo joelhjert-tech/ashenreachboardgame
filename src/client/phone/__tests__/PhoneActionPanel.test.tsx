@@ -417,6 +417,10 @@ describe("PhoneActionPanel", () => {
     const destinationCard = screen.getByTestId("movement-destination-row").querySelector(".phone-wrap-card");
     expect(destinationCard).toHaveClass("phone-wrap-card--movement", "phone-movement-row-button");
     expect(destinationCard?.querySelector(".phone-wrap-card__media")).toBeInTheDocument();
+    expect(destinationCard?.querySelector('[data-testid="movement-tile-image"]')).toHaveAttribute(
+      "src",
+      "/assets/map/tiles/map_tile_anchor_market.png"
+    );
     expect(destinationCard?.querySelector(".phone-wrap-card__actions")).toContainElement(
       screen.getByRole("button", { name: /select anchor market/i })
     );
@@ -426,8 +430,13 @@ describe("PhoneActionPanel", () => {
     fireEvent.click(screen.getByRole("button", { name: /anchor market/i }));
 
     await waitFor(() => expect(screen.getByText("Icons")).toBeInTheDocument());
+    expect(screen.getByTestId("movement-detail-route-summary")).toHaveTextContent(/route: pilgrim lock -> anchor market/i);
     const detailCard = screen.getByTestId("movement-detail-view").querySelector(".phone-wrap-card");
     expect(detailCard).toHaveClass("phone-wrap-card--movement", "phone-movement-detail-hero");
+    expect(detailCard?.querySelector('[data-testid="movement-tile-image"]')).toHaveAttribute(
+      "src",
+      "/assets/map/tiles/map_tile_anchor_market.png"
+    );
     expect(screen.getByTestId("movement-detail-route-confidence")).toHaveTextContent(/1 step/i);
     expect(screen.getByTestId("movement-detail-route-confidence")).toHaveTextContent(/exact route/i);
     expect(screen.getByTestId("movement-detail-route-confidence")).toHaveTextContent(/shop reward/i);
@@ -576,10 +585,20 @@ describe("PhoneActionPanel", () => {
     expect(row).toHaveTextContent(/0 blockers/i);
     expect(screen.getByTestId("movement-route-preview")).toHaveClass("phone-movement-row-route");
     expect(screen.getByTestId("movement-route-preview")).toHaveTextContent(/ashwalk bridge -> votive engine room/i);
+    expect(row.querySelector('[data-testid="movement-tile-fallback"]')).toBeInTheDocument();
+
+    const scrollRoot = screen.getByTestId("phone-action-content-root");
+    scrollRoot.scrollTop = 480;
 
     fireEvent.click(screen.getByRole("button", { name: /weathered pilgrim lock gate/i }));
 
     expect(screen.queryByTestId("movement-list-view")).not.toBeInTheDocument();
+    expect(scrollRoot.scrollTop).toBe(0);
+    expect(screen.getByTestId("movement-detail-view").querySelector(".phone-movement-detail-body")?.firstElementChild).toHaveClass(
+      "phone-movement-detail-hero"
+    );
+    expect(screen.getByTestId("movement-detail-view").querySelector('[data-testid="movement-tile-fallback"]')).toBeInTheDocument();
+    expect(screen.getByTestId("movement-detail-route-summary")).toHaveTextContent(/route: ashwalk bridge/i);
     expect(screen.getByTestId("movement-route-steps")).toHaveTextContent(/broken census hall/i);
     expect(screen.getByTestId("movement-detail-view").querySelector(".phone-wrap-card__actions")).toContainElement(
       screen.getByRole("button", { name: /confirm move/i })
