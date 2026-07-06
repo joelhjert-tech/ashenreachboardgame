@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import "@testing-library/jest-dom/vitest";
-import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { PhoneInventoryPanel } from "../PhoneInventoryPanel.js";
 import { PortraitControllerView } from "../PortraitControllerView.js";
@@ -176,7 +176,7 @@ const characters: CharacterCatalogEntry[] = [
 
 afterEach(() => {
   cleanup();
-  window.localStorage.removeItem("ashen-reach-immersive-controller-mode");
+  window.localStorage.removeItem("ashenreach.phoneChromeVisible");
   vi.useRealTimers();
 });
 
@@ -349,8 +349,55 @@ describe("PhoneInventoryPanel", () => {
     expect(screen.queryByText(/turn console/i)).not.toBeInTheDocument();
   });
 
-  it("collapses immersive controller chrome into visible handles after idle time", () => {
-    vi.useFakeTimers();
+  it("shows phone chrome by default, hides it on request, and restores the same active tab", async () => {
+    const onIntent = vi.fn();
+
+    render(
+      <PortraitControllerView
+        self={createPatch().self}
+        roomCode="RT7P4"
+        displayName="Lane"
+        connectionStatus="open"
+        activeSeatId="seat-1"
+        activeContractCard={null}
+        patch={createPatch({ encounter: null, phase: "broadcast" })}
+        characters={characters}
+        onIntent={onIntent}
+        onLeave={vi.fn()}
+      />
+    );
+
+    const shell = document.querySelector(".phone-portrait-controller");
+    const tablist = screen.getByRole("tablist", { name: /phone navigation/i });
+
+    expect(shell).toHaveClass("phone-shell--chrome-visible");
+    expect(within(screen.getByRole("banner")).getByRole("heading", { name: /sable vey/i })).toBeInTheDocument();
+    expect(tablist).toHaveClass("phone-portrait-bottom-nav");
+    expect(screen.getByRole("button", { name: /hide ui/i })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("tab", { name: /inventory/i }));
+    await waitFor(() => expect(screen.getByLabelText("Inventory")).toHaveTextContent(/black route fuse/i));
+    fireEvent.click(screen.getByRole("button", { name: /hide ui/i }));
+
+    expect(shell).toHaveClass("phone-shell--chrome-hidden");
+    expect(shell).toHaveAttribute("data-phone-chrome-visible", "false");
+    expect(window.localStorage.getItem("ashenreach.phoneChromeVisible")).toBe("false");
+    expect(screen.queryByRole("tab", { name: /player card/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /leave/i })).not.toBeInTheDocument();
+    expect(screen.getByLabelText("Inventory")).toHaveTextContent(/black route fuse/i);
+    expect(screen.getByRole("button", { name: /show ui/i })).toHaveClass("phone-chrome-restore");
+    expect(onIntent).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole("button", { name: /show ui/i }));
+
+    expect(shell).toHaveClass("phone-shell--chrome-visible");
+    expect(window.localStorage.getItem("ashenreach.phoneChromeVisible")).toBe("true");
+    expect(screen.getByRole("tab", { name: /inventory/i })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: /inventory/i })).toHaveAttribute("aria-selected", "true");
+    expect(screen.getByRole("button", { name: /hide ui/i })).toBeInTheDocument();
+  });
+
+  it("restores hidden phone chrome with Escape", () => {
     render(
       <PortraitControllerView
         self={createPatch().self}
@@ -368,26 +415,18 @@ describe("PhoneInventoryPanel", () => {
 
     const shell = document.querySelector(".phone-portrait-controller");
 
-    fireEvent.click(screen.getByRole("button", { name: /^immersive$/i }));
+    fireEvent.click(screen.getByRole("button", { name: /hide ui/i }));
+    expect(shell).toHaveClass("phone-shell--chrome-hidden");
 
-    expect(shell).toHaveClass("phone-shell--immersive");
+    fireEvent.keyDown(window, { key: "Escape" });
 
-    act(() => {
-      vi.advanceTimersByTime(3700);
-    });
-
-    expect(shell).toHaveClass("phone-shell--controls-collapsed");
-    expect(screen.getByRole("button", { name: /show player summary/i })).toHaveClass("phone-command-handle");
-    expect(screen.getByRole("button", { name: /show command navigation/i })).toHaveClass("phone-command-handle");
-    expect(screen.getByRole("tablist", { name: /phone navigation/i })).toHaveClass("phone-bottomnav--collapsed");
-
-    fireEvent.click(screen.getByRole("button", { name: /show command navigation/i }));
-
-    expect(shell).not.toHaveClass("phone-shell--controls-collapsed");
-    expect(screen.getByRole("tab", { name: /inventory/i })).toBeInTheDocument();
+    expect(shell).toHaveClass("phone-shell--chrome-visible");
+    expect(screen.getByRole("tablist", { name: /phone navigation/i })).toBeInTheDocument();
   });
 
-  it("keeps controls visible in immersive mode while battle input is required", async () => {
+  it("keeps battle actions usable when phone chrome is hidden", async () => {
+    const onIntent = vi.fn();
+
     render(
       <PortraitControllerView
         self={createPatch().self}
@@ -398,27 +437,141 @@ describe("PhoneInventoryPanel", () => {
         activeContractCard={null}
         patch={createPatch()}
         characters={characters}
-        onIntent={vi.fn()}
+        onIntent={onIntent}
         onLeave={vi.fn()}
       />
     );
 
     await waitFor(() => expect(screen.getByTestId("phone-action-screen")).toBeInTheDocument());
-    vi.useFakeTimers();
+    fireEvent.click(screen.getByRole("button", { name: /hide ui/i }));
 
-    const shell = document.querySelector(".phone-portrait-controller");
+    expect(document.querySelector(".phone-portrait-controller")).toHaveClass("phone-shell--chrome-hidden");
+    expect(screen.getByTestId("phone-current-prompt")).toHaveTextContent(/roll battle/i);
+    fireEvent.click(screen.getByRole("button", { name: /enter combat.*cinder-veil stalker/i }));
 
-    fireEvent.click(screen.getByRole("button", { name: /^immersive$/i }));
+    expect(onIntent).toHaveBeenCalledWith({
+      type: "COMBAT_REQUESTED",
+      seatId: "seat-1",
+      stat: "grit"
+    });
+  });
 
-    act(() => {
-      vi.advanceTimersByTime(3700);
+  it("keeps movement detail and Confirm Move usable when phone chrome is hidden", async () => {
+    const onIntent = vi.fn();
+    const movementPatch = createPatch({
+      phase: "navigation",
+      encounter: null,
+      movementPlanner: {
+        active: true,
+        movementValue: 1,
+        currentSectorId: "outer_ember_sanctum",
+        currentSectorName: "Pilgrim Lock",
+        destinations: [
+          {
+            sectorId: "ashwake-crossing",
+            name: "Ashwalk Bridge",
+            ring: "outer",
+            distance: 1,
+            route: ["outer_ember_sanctum", "ashwake-crossing"],
+            routeNames: ["Pilgrim Lock", "Ashwalk Bridge"],
+            tags: ["hazard", "crossroads"],
+            threatIcons: ["yellow"],
+            ruleText: "If clear, mark your route and gain a scouting note.",
+            faceUpThreats: [],
+            occupants: [],
+            strategicTags: ["safe"]
+          }
+        ]
+      }
     });
 
-    expect(shell).toHaveClass("phone-shell--immersive");
-    expect(shell).not.toHaveClass("phone-shell--controls-collapsed");
-    expect(screen.getByRole("tab", { name: /battle/i })).toBeInTheDocument();
-    expect(screen.getByTestId("phone-battle-assist")).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /show command navigation/i })).not.toBeInTheDocument();
+    render(
+      <PortraitControllerView
+        self={movementPatch.self}
+        roomCode="RT7P4"
+        displayName="Lane"
+        connectionStatus="open"
+        activeSeatId="seat-1"
+        activeContractCard={null}
+        patch={movementPatch}
+        characters={characters}
+        onIntent={onIntent}
+        onLeave={vi.fn()}
+      />
+    );
+
+    fireEvent.click(screen.getByRole("tab", { name: /move/i }));
+    fireEvent.click(screen.getByRole("button", { name: /hide ui/i }));
+    expect(screen.getByTestId("movement-planner")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /ashwalk bridge/i }));
+    await waitFor(() => expect(screen.getByTestId("movement-confirm-footer")).toBeInTheDocument());
+    fireEvent.click(screen.getByRole("button", { name: /confirm move/i }));
+
+    expect(onIntent).toHaveBeenCalledWith({
+      type: "MOVE_REQUESTED",
+      seatId: "seat-1",
+      toSectorId: "ashwake-crossing"
+    });
+  });
+
+  it("keeps shop Skip usable when phone chrome is hidden", () => {
+    const onIntent = vi.fn();
+    const shopPatch = createPatch({
+      encounter: null,
+      shopEncounter: {
+        sectorId: "outer_waymarket",
+        sectorName: "Anchor Market",
+        shopId: "outer_waymarket",
+        shopName: "Anchor Market",
+        available: true,
+        blocked: false,
+        shopType: "market",
+        shopCategory: "market",
+        stockCategory: "market",
+        status: "open",
+        activePlayer: {
+          playerId: "seat-1",
+          name: "Sable Vey",
+          characterName: "Sable Vey",
+          salvage: 3,
+          heat: 1,
+          wounds: { current: 0, max: 6 },
+          trophies: 0,
+          completedContracts: 0
+        },
+        blockingThreats: [],
+        services: [],
+        revealedStock: [],
+        sellInventory: []
+      }
+    });
+
+    render(
+      <PortraitControllerView
+        self={shopPatch.self}
+        roomCode="RT7P4"
+        displayName="Lane"
+        connectionStatus="open"
+        activeSeatId="seat-1"
+        activeContractCard={null}
+        patch={shopPatch}
+        characters={characters}
+        onIntent={onIntent}
+        onLeave={vi.fn()}
+      />
+    );
+
+    fireEvent.click(screen.getByRole("tab", { name: /shop/i }));
+    fireEvent.click(screen.getByRole("button", { name: /hide ui/i }));
+    expect(screen.getByTestId("phone-shop-panel")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /skip \/ continue/i }));
+
+    expect(onIntent).toHaveBeenCalledWith({
+      type: "SHOP_SKIP_REQUESTED",
+      seatId: "seat-1"
+    });
   });
 
   it("shows private rivalry agenda details on the Quest tab", () => {

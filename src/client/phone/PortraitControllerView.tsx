@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ReactElement, type TouchEvent } from "react";
+import { useEffect, useState, type ReactElement } from "react";
 import { getCharacterPortraitPath } from "../shared/assetPaths.js";
 import { GameButton } from "../shared/GameButton.js";
 import { ResultDeltaRow } from "../shared/ResultDeltaChips.js";
@@ -33,32 +33,32 @@ interface PortraitControllerViewProps {
 type PortraitTab = "player" | "inventory" | "quests" | TurnActionTab;
 
 const turnActionTabs: TurnActionTab[] = ["move", "battle", "shop", "action"];
-const immersiveControllerStorageKey = "ashen-reach-immersive-controller-mode";
-const immersiveAutoHideDelayMs = 3600;
+const phoneChromeStorageKey = "ashenreach.phoneChromeVisible";
 
 function isTurnActionTab(tab: PortraitTab): tab is TurnActionTab {
   return turnActionTabs.includes(tab as TurnActionTab);
 }
 
-function readStoredImmersiveControllerMode(): boolean {
+function readStoredPhoneChromeVisible(): boolean {
   if (typeof window === "undefined") {
-    return false;
+    return true;
   }
 
   try {
-    return window.localStorage.getItem(immersiveControllerStorageKey) === "1";
+    const stored = window.localStorage.getItem(phoneChromeStorageKey);
+    return stored === null ? true : stored !== "false" && stored !== "0";
   } catch {
-    return false;
+    return true;
   }
 }
 
-function writeStoredImmersiveControllerMode(enabled: boolean): void {
+function writeStoredPhoneChromeVisible(visible: boolean): void {
   if (typeof window === "undefined") {
     return;
   }
 
   try {
-    window.localStorage.setItem(immersiveControllerStorageKey, enabled ? "1" : "0");
+    window.localStorage.setItem(phoneChromeStorageKey, visible ? "true" : "false");
   } catch {
     // Local storage can be unavailable in private browser contexts.
   }
@@ -357,10 +357,7 @@ export function PortraitControllerView({
   onLobbyBack
 }: PortraitControllerViewProps): ReactElement {
   const [activeTab, setActiveTab] = useState<PortraitTab>("player");
-  const [immersiveControllerMode, setImmersiveControllerMode] = useState(readStoredImmersiveControllerMode);
-  const [controlsExpanded, setControlsExpanded] = useState(true);
-  const [lastInteractionAt, setLastInteractionAt] = useState(0);
-  const touchStartY = useRef<number | null>(null);
+  const [phoneChromeVisible, setPhoneChromeVisible] = useState(readStoredPhoneChromeVisible);
   const requiresBattleFocus = Boolean(
     self &&
       patch?.status === "active" &&
@@ -371,38 +368,7 @@ export function PortraitControllerView({
           patch.outcomeSummary?.seatId === self.seatId &&
           Boolean(patch.outcomeSummary.encounterCardId)))
   );
-  const movementRequiresControls = Boolean(
-    activeTab === "move" &&
-      self &&
-      patch?.status === "active" &&
-      patch.movementPlanner?.active &&
-      patch.movementPlanner.destinations.length > 0
-  );
-  const shopRequiresControls = Boolean(
-    activeTab === "shop" &&
-      self &&
-      patch?.status === "active" &&
-      patch.phase === "action" &&
-      patch.shopEncounter?.activePlayer.playerId === self.seatId &&
-      patch.shopEncounter.status !== "locked"
-  );
-  const sectorActionRequiresControls = Boolean(
-    activeTab === "action" &&
-      self &&
-      patch?.status === "active" &&
-      patch.phase === "action" &&
-      !patch.activeResolution &&
-      !patch.pendingEnemyRoll &&
-      !patch.encounter
-  );
-  const forceExpandedControls = Boolean(
-    requiresBattleFocus ||
-      movementRequiresControls ||
-      shopRequiresControls ||
-      sectorActionRequiresControls ||
-      patch?.status === "lobby"
-  );
-  const controlsCollapsed = immersiveControllerMode && !controlsExpanded && !forceExpandedControls;
+  const phoneChromeHidden = !phoneChromeVisible;
 
   useEffect(() => {
     if (requiresBattleFocus && activeTab !== "battle" && activeTab !== "inventory") {
@@ -411,51 +377,37 @@ export function PortraitControllerView({
   }, [activeTab, requiresBattleFocus]);
 
   useEffect(() => {
-    writeStoredImmersiveControllerMode(immersiveControllerMode);
-    setControlsExpanded(true);
-  }, [immersiveControllerMode]);
+    writeStoredPhoneChromeVisible(phoneChromeVisible);
+  }, [phoneChromeVisible]);
 
   useEffect(() => {
-    if (!immersiveControllerMode || forceExpandedControls) {
-      setControlsExpanded(true);
+    if (phoneChromeVisible || typeof window === "undefined") {
       return;
     }
 
-    const hideTimer = window.setTimeout(() => setControlsExpanded(false), immersiveAutoHideDelayMs);
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setPhoneChromeVisible(true);
+      }
+    };
 
-    return () => window.clearTimeout(hideTimer);
-  }, [activeTab, forceExpandedControls, immersiveControllerMode, lastInteractionAt, patch?.phase, patch?.status]);
+    window.addEventListener("keydown", handleKeyDown);
 
-  const expandImmersiveControls = () => {
-    if (immersiveControllerMode) {
-      setControlsExpanded(true);
-      setLastInteractionAt((current) => current + 1);
-    }
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [phoneChromeVisible]);
+
+  const hidePhoneChrome = () => {
+    setPhoneChromeVisible(false);
   };
 
-  const toggleImmersiveControllerMode = () => {
-    setImmersiveControllerMode((current) => !current);
+  const showPhoneChrome = () => {
+    setPhoneChromeVisible(true);
   };
 
-  const handleTouchStart = (event: TouchEvent<HTMLElement>) => {
-    touchStartY.current = event.touches[0]?.clientY ?? null;
-  };
-
-  const handleTouchEnd = (event: TouchEvent<HTMLElement>) => {
-    const startY = touchStartY.current;
-    touchStartY.current = null;
-
-    if (startY === null) {
-      return;
-    }
-
-    const endY = event.changedTouches[0]?.clientY ?? startY;
-    const movedUp = startY - endY > 36;
-    const startedNearBottom = typeof window !== "undefined" ? startY > window.innerHeight - 130 : false;
-
-    if (immersiveControllerMode && controlsCollapsed && movedUp && startedNearBottom) {
-      setControlsExpanded(true);
-    }
+  const handleLeave = () => {
+    writeStoredPhoneChromeVisible(true);
+    setPhoneChromeVisible(true);
+    onLeave();
   };
 
   if (!self) {
@@ -615,18 +567,17 @@ export function PortraitControllerView({
 
   const rootClassName = [
     "phone-portrait-controller",
-    immersiveControllerMode ? "phone-shell--immersive" : "",
-    controlsCollapsed ? "phone-shell--controls-collapsed" : ""
+    phoneChromeVisible ? "phone-shell--chrome-visible" : "phone-shell--chrome-hidden"
   ]
     .filter(Boolean)
     .join(" ");
-  const topbarClassName = ["phone-portrait-header", "phone-topbar", controlsCollapsed ? "phone-topbar--collapsed" : ""]
+  const topbarClassName = ["phone-portrait-header", "phone-topbar", phoneChromeHidden ? "phone-topbar--hidden" : ""]
     .filter(Boolean)
     .join(" ");
   const bottomNavClassName = [
     "phone-portrait-bottom-nav",
     "phone-bottomnav",
-    controlsCollapsed ? "phone-bottomnav--collapsed" : ""
+    phoneChromeHidden ? "phone-bottom-nav--hidden" : ""
   ]
     .filter(Boolean)
     .join(" ");
@@ -634,24 +585,11 @@ export function PortraitControllerView({
   return (
     <section
       className={rootClassName}
-      data-immersive-controller-mode={immersiveControllerMode ? "true" : "false"}
-      onPointerDown={expandImmersiveControls}
-      onTouchStart={handleTouchStart}
-      onTouchEnd={handleTouchEnd}
+      data-phone-chrome-visible={phoneChromeVisible ? "true" : "false"}
     >
       <div className="phone-portrait-panel">
         <header className={topbarClassName}>
-          {controlsCollapsed ? (
-            <button
-              type="button"
-              className="phone-command-handle phone-command-handle-top"
-              onClick={() => setControlsExpanded(true)}
-              aria-label="Show player summary"
-            >
-              <span>{self.character.name}</span>
-              <small>{self.character.wounds} wounds | {self.character.heat} heat</small>
-            </button>
-          ) : (
+          {phoneChromeVisible ? (
             <>
               <div className="phone-portrait-header-art">
                 <img src={getCharacterPortraitPath(self.character.id)} alt="" />
@@ -669,18 +607,17 @@ export function PortraitControllerView({
               <div className="phone-portrait-header-actions">
                 <button
                   type="button"
-                  className="phone-button phone-button-secondary phone-immersive-toggle"
-                  onClick={toggleImmersiveControllerMode}
-                  aria-pressed={immersiveControllerMode}
+                  className="phone-button phone-button-secondary phone-chrome-toggle"
+                  onClick={hidePhoneChrome}
                 >
-                  {immersiveControllerMode ? "Exit immersive" : "Immersive"}
+                  Hide UI
                 </button>
-                <button type="button" className="phone-button phone-button-secondary phone-portrait-leave-button" onClick={onLeave}>
+                <button type="button" className="phone-button phone-button-secondary phone-portrait-leave-button" onClick={handleLeave}>
                   Leave
                 </button>
               </div>
             </>
-          )}
+          ) : null}
         </header>
 
         <main className="phone-portrait-scroll" aria-label="Phone content">
@@ -835,17 +772,7 @@ export function PortraitControllerView({
         </main>
 
         <nav className={bottomNavClassName} role="tablist" aria-label="Phone navigation">
-          {controlsCollapsed ? (
-            <button
-              type="button"
-              className="phone-command-handle phone-command-handle-bottom"
-              onClick={() => setControlsExpanded(true)}
-              aria-label="Show command navigation"
-            >
-              <span>Command</span>
-              <small>{activeTab === "quests" ? "Quest" : activeTab === "player" ? "Player" : activeTab}</small>
-            </button>
-          ) : (
+          {phoneChromeVisible ? (
             [
               ["player", "Player Card"],
               ["inventory", "Inventory"],
@@ -892,8 +819,18 @@ export function PortraitControllerView({
                 );
               })()
             ))
-          )}
+          ) : null}
         </nav>
+
+        {phoneChromeHidden ? (
+          <button
+            type="button"
+            className="phone-button phone-button-secondary phone-chrome-restore"
+            onClick={showPhoneChrome}
+          >
+            Show UI
+          </button>
+        ) : null}
       </div>
     </section>
   );
