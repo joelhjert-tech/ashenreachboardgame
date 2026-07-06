@@ -76,20 +76,70 @@ function writeStoredPhoneChromeVisible(visible: boolean): void {
   }
 }
 
-function PortraitStatValue({ self, stat }: { self: PhoneSelfState; stat: Stat }): ReactElement {
+function getCompactStatSummary(self: PhoneSelfState, stat: Stat): string {
   const breakdown = getPhoneStatBreakdown(self, stat);
+  const additions = [
+    breakdown.permanent !== 0 ? `Permanent ${formatSignedStatBonus(breakdown.permanent)}` : null,
+    breakdown.gearFollower !== 0 ? `Gear ${formatSignedStatBonus(breakdown.gearFollower)}` : null
+  ].filter((entry): entry is string => Boolean(entry));
+
+  return [`Base ${breakdown.base}`, ...additions].join(" | ");
+}
+
+function PortraitStatCard({
+  self,
+  stat,
+  expanded,
+  onToggle
+}: {
+  self: PhoneSelfState;
+  stat: Stat;
+  expanded: boolean;
+  onToggle: () => void;
+}): ReactElement {
+  const breakdown = getPhoneStatBreakdown(self, stat);
+  const label = statLabelById[stat];
+  const displayLabel = label.toUpperCase();
 
   return (
-    <>
-      <strong>
-        {breakdown.current}
-        {breakdown.gearFollower !== 0 && <span className="phone-stat-bonus"> ({formatSignedStatBonus(breakdown.gearFollower)})</span>}
-      </strong>
-      <small className="phone-stat-breakdown">
-        Base {breakdown.base} | Permanent {formatSignedStatBonus(breakdown.permanent)} | Gear/Follower{" "}
-        {formatSignedStatBonus(breakdown.gearFollower)}
-      </small>
-    </>
+    <button
+      type="button"
+      className={`phone-stat-card${expanded ? " phone-stat-card-expanded" : ""}`}
+      style={getChallengeThemeStyle(stat) as CSSProperties}
+      aria-expanded={expanded}
+      aria-label={`${label} stat ${breakdown.current}${expanded ? ", details expanded" : ""}`}
+      onClick={onToggle}
+    >
+      <span className="phone-stat-card-heading">
+        <span className="phone-stat-card-label">{displayLabel}</span>{" "}
+        <strong className="phone-stat-card-value">{breakdown.current}</strong>
+      </span>
+      <span className="phone-stat-card-summary">{getCompactStatSummary(self, stat)}</span>
+      {expanded && (
+        <dl className="phone-stat-card-details" aria-label={`${label} stat details`}>
+          <div>
+            <dt>Base</dt>
+            <dd>{breakdown.base}</dd>
+          </div>
+          <div>
+            <dt>Permanent</dt>
+            <dd>{formatSignedStatBonus(breakdown.permanent)}</dd>
+          </div>
+          <div>
+            <dt>Gear/Follower</dt>
+            <dd>{formatSignedStatBonus(breakdown.gearFollower)}</dd>
+          </div>
+          <div>
+            <dt>Temporary</dt>
+            <dd>+0</dd>
+          </div>
+          <div>
+            <dt>Final</dt>
+            <dd>{breakdown.current}</dd>
+          </div>
+        </dl>
+      )}
+    </button>
   );
 }
 
@@ -388,6 +438,7 @@ export function PortraitControllerView({
   const [activeTab, setActiveTab] = useState<PortraitTab>("player");
   const [phoneChromeVisible, setPhoneChromeVisible] = useState(readStoredPhoneChromeVisible);
   const [bottomDockExpanded, setBottomDockExpanded] = useState(false);
+  const [expandedStat, setExpandedStat] = useState<Stat | null>(null);
   const requiresBattleFocus = Boolean(
     self &&
       patch?.status === "active" &&
@@ -506,10 +557,13 @@ export function PortraitControllerView({
 
               <div className="phone-portrait-attributes" aria-label="Character stats">
                 {statOrder.map((stat) => (
-                  <div key={stat} style={getChallengeThemeStyle(stat) as CSSProperties}>
-                    <span>{statLabelById[stat]}</span>
-                    <PortraitStatValue self={self} stat={stat} />
-                  </div>
+                  <PortraitStatCard
+                    key={stat}
+                    self={self}
+                    stat={stat}
+                    expanded={expandedStat === stat}
+                    onToggle={() => setExpandedStat((current) => (current === stat ? null : stat))}
+                  />
                 ))}
               </div>
 
@@ -700,10 +754,13 @@ export function PortraitControllerView({
                 <div className="phone-sheet-section-heading">Stats</div>
                 <div className="phone-portrait-attributes" aria-label="Character stats">
                   {statOrder.map((stat) => (
-                    <div key={stat} style={getChallengeThemeStyle(stat) as CSSProperties}>
-                      <span>{statLabelById[stat]}</span>
-                      <PortraitStatValue self={self} stat={stat} />
-                    </div>
+                    <PortraitStatCard
+                      key={stat}
+                      self={self}
+                      stat={stat}
+                      expanded={expandedStat === stat}
+                      onToggle={() => setExpandedStat((current) => (current === stat ? null : stat))}
+                    />
                   ))}
                 </div>
               </section>

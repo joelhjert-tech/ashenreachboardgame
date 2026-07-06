@@ -521,6 +521,66 @@ describe("PhoneInventoryPanel", () => {
     expect(screen.queryByRole("button", { name: /hide ui/i })).not.toBeInTheDocument();
   });
 
+  it("renders compact expandable player card stats without label value collision", () => {
+    const patch = createPatch({ encounter: null, phase: "broadcast" });
+    const self = {
+      ...patch.self!,
+      character: {
+        ...patch.self!.character,
+        stats: { ...patch.self!.character.stats, command: 4 },
+        statUpgrades: { command: 1 },
+        equippedGear: { weapon: null, armor: "coffin-rig", utility: "oath-chain-ledger" }
+      }
+    };
+
+    render(
+      <PortraitControllerView
+        self={self}
+        roomCode="RT7P4"
+        displayName="Lane"
+        connectionStatus="open"
+        activeSeatId="seat-1"
+        activeContractCard={null}
+        patch={{ ...patch, self }}
+        characters={characters}
+        onIntent={vi.fn()}
+        onLeave={vi.fn()}
+      />
+    );
+
+    const statsRegion = screen.getByLabelText(/character stats/i);
+    const commandStat = within(statsRegion).getByRole("button", { name: /command stat 4/i });
+    const commandHeading = commandStat.querySelector(".phone-stat-card-heading");
+
+    expect(commandStat.querySelector(".phone-stat-card-label")).toHaveTextContent(/^COMMAND$/);
+    expect(commandStat.querySelector(".phone-stat-card-value")).toHaveTextContent(/^4$/);
+    expect(commandHeading).toHaveTextContent(/COMMAND\s+4/);
+    expect(commandHeading).not.toHaveTextContent(/COMMAND4/);
+    expect(commandStat).toHaveTextContent(/base 3/i);
+    expect(commandStat).toHaveTextContent(/permanent \+1/i);
+    expect(commandStat).toHaveTextContent(/gear \+1/i);
+    expect(screen.queryByText(/base 3 \| permanent \+1 \| gear\/follower \+1/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/^Temporary$/)).not.toBeInTheDocument();
+
+    fireEvent.click(commandStat);
+
+    expect(commandStat).toHaveAttribute("aria-expanded", "true");
+    expect(within(commandStat).getByText("Base")).toBeInTheDocument();
+    expect(within(commandStat).getByText("Permanent")).toBeInTheDocument();
+    expect(within(commandStat).getByText("Gear/Follower")).toBeInTheDocument();
+    expect(within(commandStat).getByText("Temporary")).toBeInTheDocument();
+    expect(within(commandStat).getByText("Final")).toBeInTheDocument();
+    expect(within(commandStat).getByText("+0")).toBeInTheDocument();
+    expect(within(commandStat).getAllByText("4").length).toBeGreaterThan(0);
+
+    fireEvent.click(within(statsRegion).getByRole("button", { name: /grit stat 2/i }));
+
+    expect(commandStat).toHaveAttribute("aria-expanded", "false");
+    expect(within(statsRegion).getByRole("button", { name: /grit stat 2, details expanded/i })).toHaveAttribute("aria-expanded", "true");
+    expect(document.querySelector(".phone-portrait-vitals")).toHaveTextContent(/heat 1/i);
+    expect(screen.getByLabelText(/compact phone navigation/i)).toHaveTextContent(/player card/i);
+  });
+
   it("restores hidden phone chrome with Escape", () => {
     render(
       <PortraitControllerView

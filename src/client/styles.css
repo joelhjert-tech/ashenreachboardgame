@@ -1732,16 +1732,15 @@ select {
 .phone-portrait-attributes {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 0.45rem;
+  gap: 0.36rem;
 }
 
-.phone-portrait-attributes div {
-  min-height: 2.9rem;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
-  padding: 0.58rem 0.7rem;
+.phone-stat-card {
+  min-width: 0;
+  min-height: 2.65rem;
+  display: grid;
+  gap: 0.18rem;
+  padding: 0.48rem 0.62rem 0.5rem;
   border: 1px solid color-mix(in srgb, var(--challenge-color, #5faaf7) 36%, rgba(90, 111, 136, 0.28));
   border-radius: 6px;
   background:
@@ -1749,28 +1748,91 @@ select {
     linear-gradient(180deg, rgba(13, 18, 24, 0.92), rgba(7, 10, 15, 0.98)),
     rgba(8, 11, 16, 0.96);
   box-shadow:
-    inset 0.18rem 0 0 var(--challenge-color, #5faaf7),
+    inset 0.16rem 0 0 var(--challenge-color, #5faaf7),
     inset 0 0 0 1px color-mix(in srgb, var(--challenge-color, #5faaf7) 12%, transparent);
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  touch-action: manipulation;
 }
 
-.phone-portrait-attributes strong {
-  flex: 0 0 auto;
-  color: var(--challenge-color, #f0debd);
-  font-size: 1.25rem;
-  line-height: 1;
+.phone-stat-card:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--challenge-color, #5faaf7) 72%, #ffffff);
+  outline-offset: 2px;
 }
 
-.phone-portrait-attributes span {
+.phone-stat-card-expanded {
+  border-color: color-mix(in srgb, var(--challenge-color, #5faaf7) 58%, rgba(238, 219, 180, 0.2));
+  box-shadow:
+    inset 0.16rem 0 0 var(--challenge-color, #5faaf7),
+    inset 0 0 0 1px color-mix(in srgb, var(--challenge-color, #5faaf7) 18%, transparent),
+    0 0 1rem color-mix(in srgb, var(--challenge-color, #5faaf7) 14%, transparent);
+}
+
+.phone-stat-card-heading {
+  min-width: 0;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.9rem;
+}
+
+.phone-stat-card-label {
   min-width: 0;
   color: #f7ead1;
-  font-size: 0.75rem;
+  font-size: 0.72rem;
   font-weight: 900;
   letter-spacing: 0.12em;
+  line-height: 1;
   text-transform: uppercase;
 }
 
-.phone-portrait-attributes .phone-stat-breakdown {
-  color: rgba(224, 215, 197, 0.62);
+.phone-stat-card-value {
+  flex: 0 0 auto;
+  color: var(--challenge-color, #f0debd);
+  font-size: 1.22rem;
+  line-height: 1;
+}
+
+.phone-stat-card-summary {
+  min-width: 0;
+  color: rgba(224, 215, 197, 0.68);
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
+.phone-stat-card-details {
+  display: grid;
+  gap: 0.18rem;
+  margin: 0.28rem 0 0;
+  padding-top: 0.36rem;
+  border-top: 1px solid color-mix(in srgb, var(--challenge-color, #5faaf7) 28%, rgba(238, 219, 180, 0.12));
+}
+
+.phone-stat-card-details div {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.phone-stat-card-details dt,
+.phone-stat-card-details dd {
+  margin: 0;
+  font-size: 0.68rem;
+  line-height: 1.2;
+}
+
+.phone-stat-card-details dt {
+  color: rgba(224, 215, 197, 0.7);
+  font-weight: 700;
+}
+
+.phone-stat-card-details dd {
+  color: #f7ead1;
+  font-weight: 900;
 }
 
 .phone-portrait-chip-row,
