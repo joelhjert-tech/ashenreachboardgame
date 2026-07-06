@@ -759,6 +759,55 @@ function getRoutePreviewLine(destination: PublicMoveDestination): string {
   return getRouteNames(destination).join(" -> ");
 }
 
+function getMovementRouteConfidenceItems(
+  destination: PublicMoveDestination,
+  routePreview: ReturnType<typeof buildRoutePreviewCopy>
+): string[] {
+  const blockers = destination.faceUpThreats.length;
+  const primaryReward =
+    destination.shop
+      ? `${destination.shop.status === "locked" ? "locked " : ""}shop reward`
+      : destination.scenarioMarkers?.length
+        ? "objective reward"
+        : destination.strategicTags.includes("reward")
+          ? "reward"
+          : null;
+  const riskTag =
+    destination.disabledReason
+      ? "blocked"
+      : destination.nemesisPresent
+        ? "nemesis risk"
+        : destination.threatIcons.length > 0
+          ? "threat risk"
+          : destination.strategicTags.includes("safe")
+            ? "low risk"
+            : null;
+
+  return [
+    `${destination.distance} step${destination.distance === 1 ? "" : "s"}`,
+    routePreview.exactText.startsWith("Legal") ? "exact route" : "route mismatch",
+    primaryReward,
+    riskTag,
+    `${blockers} blocker${blockers === 1 ? "" : "s"}`
+  ].filter((item): item is string => Boolean(item));
+}
+
+function MovementRouteConfidence({
+  items,
+  testId
+}: {
+  items: string[];
+  testId?: string;
+}): ReactElement {
+  return (
+    <div className="phone-movement-route-confidence" data-testid={testId} aria-label="Route confidence">
+      {items.map((item) => (
+        <span key={item}>{item}</span>
+      ))}
+    </div>
+  );
+}
+
 function shopResultDeltas(deltas: ResultDelta[] | null | undefined): ResultDelta[] {
   const shopTypes = new Set<ResultDelta["type"]>(["itemBought", "itemSold", "salvage", "heat", "wound", "shopUnlocked"]);
 
@@ -1044,8 +1093,10 @@ function PhoneShopPanel({
                       media={<ShopItemMedia cardId={item.cardId} label={item.name} />}
                       title={item.name}
                       eyebrow={itemCategory}
-                      costValue={disabledReason ?? formatShopCost(item.cost)}
-                      description={<p>{item.summary}</p>}
+                      status={<span className="phone-shop-card-status">{itemCategory}</span>}
+                      description={<p className="phone-wrap-card__consequence">{item.summary}</p>}
+                      disabledReason={disabledReason ? <small>{disabledReason}. Ignore until you can pay or free the slot.</small> : null}
+                      meta={<span>Cost: {formatShopCost(item.cost)}</span>}
                       actions={
                         <GameButton
                           type="button"
@@ -1088,8 +1139,10 @@ function PhoneShopPanel({
                       media={<ShopItemMedia cardId={item.gearId} label={item.name} />}
                       title={item.name}
                       eyebrow={item.category ? toTitleCase(item.category) : toTitleCase(item.type)}
-                      costValue={item.sellable ? `${item.sellValue} Salvage` : disabledReason ?? "Cannot sell this item"}
-                      description={<p>{item.summary}</p>}
+                      status={<span className="phone-shop-card-status">{item.sellable ? "Sell value" : "Cannot sell"}</span>}
+                      description={<p className="phone-wrap-card__consequence">{item.summary}</p>}
+                      disabledReason={disabledReason ? <small>{disabledReason}. Ignore this item for selling.</small> : null}
+                      meta={<span>{item.sellable ? `Sell value: ${item.sellValue} Salvage` : "Cannot sell this item"}</span>}
                       actions={
                         <GameButton
                           type="button"
@@ -1303,6 +1356,7 @@ function MovementDestinationRow({
   const isLocked = Boolean(destination.disabledReason);
   const routePreview = buildRoutePreviewCopy(destination, planner.movementValue, planner.currentSectorName);
   const tagLabels = getMovementTagLabels(destination, routePreview.tagLabels);
+  const confidenceItems = getMovementRouteConfidenceItems(destination, routePreview);
   const tags = (
     <div className="phone-movement-row-tags" aria-label={`${destination.name} route tags`}>
       {tagLabels.map((tag) => (
@@ -1323,11 +1377,15 @@ function MovementDestinationRow({
         media={<MovementTileMedia destination={destination} />}
         title={destination.name}
         eyebrow={movementTagLabel[primaryTag]}
-        costValue={`${destination.distance} step${destination.distance === 1 ? "" : "s"}`}
-        tags={tags}
-        description={<span className="phone-movement-row-route phone-move-panel__route-preview" data-testid="movement-route-preview">{getRoutePreviewLine(destination)}</span>}
-        meta={routePreview.riskText || routePreview.rewardText ? <span>{routePreview.riskText ?? routePreview.rewardText}</span> : null}
-        disabledReason={destination.disabledReason ? <span className="phone-movement-disabled-reason">{destination.disabledReason}</span> : null}
+        status={<MovementRouteConfidence items={confidenceItems} testId="movement-route-confidence" />}
+        description={<span className="phone-movement-row-route phone-move-panel__route-preview" data-testid="movement-route-preview">Route: {getRoutePreviewLine(destination)}</span>}
+        meta={
+          <>
+            {tags}
+            {routePreview.riskText || routePreview.rewardText ? <span>{routePreview.riskText ?? routePreview.rewardText}</span> : null}
+          </>
+        }
+        disabledReason={destination.disabledReason ? <span className="phone-movement-disabled-reason">{destination.disabledReason}. Ignore this route for now.</span> : null}
         actions={
           <GameButton
             type="button"
@@ -1391,6 +1449,7 @@ function MovementDestinationDetail({
   const routePreview = buildRoutePreviewCopy(selected, planner.movementValue, planner.currentSectorName, true);
   const tagLabels = getMovementTagLabels(selected, routePreview.tagLabels);
   const routeUnavailable = Boolean(selected.disabledReason);
+  const confidenceItems = getMovementRouteConfidenceItems(selected, routePreview);
   const detailRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
@@ -1417,22 +1476,22 @@ function MovementDestinationDetail({
           media={<MovementTileMedia destination={selected} />}
           title={selected.name}
           eyebrow="Destination"
-          costValue={`${selected.distance} step${selected.distance === 1 ? "" : "s"}`}
-          tags={
-            <div className="phone-movement-row-tags">
-              {tagLabels.map((tag) => (
-                <em key={tag}>{tag}</em>
-              ))}
-            </div>
-          }
+          status={<MovementRouteConfidence items={confidenceItems} testId="movement-detail-route-confidence" />}
           description={<p>{selected.ruleText || "No printed sector action detected."}</p>}
           meta={
-            <div className="phone-movement-detail-meta">
-              <span>{routePreview.exactText}</span>
-              <span>{routeUnavailable ? "Route unavailable" : `${routePreview.statusLabel}: ${routePreview.statusReason}`}</span>
-            </div>
+            <>
+              <div className="phone-movement-row-tags">
+                {tagLabels.map((tag) => (
+                  <em key={tag}>{tag}</em>
+                ))}
+              </div>
+              <div className="phone-movement-detail-meta">
+                <span>{routePreview.exactText}</span>
+                <span>{routeUnavailable ? "Route unavailable" : `${routePreview.statusLabel}: ${routePreview.statusReason}`}</span>
+              </div>
+            </>
           }
-          disabledReason={routeUnavailable ? <span className="phone-movement-disabled-reason">{selected.disabledReason}</span> : null}
+          disabledReason={routeUnavailable ? <span className="phone-movement-disabled-reason">{selected.disabledReason}. Ignore this route for now.</span> : null}
           actions={
             <GameButton
               type="button"
@@ -1692,7 +1751,7 @@ function PhoneBattlePanel({
       <UsefulNowPanel model={usefulNow} variant="secondary" />
       <ResultDeltaRow deltas={visibleBattleDeltas} className="phone-battle-deltas phone-battle-panel__result" />
       {!hasBattleContent && (
-        <EmptyTurnTab title="No battle" text="There is no visible combat, check, or enemy roll waiting for this operative." />
+        <EmptyTurnTab title="Battle locked" text="Battle locked: no enemy here. Ignore Battle until an encounter, check, or enemy roll appears." />
       )}
     </section>
   );
@@ -2393,6 +2452,7 @@ export function PhoneActionPanel({
   const hasBattleContent = Boolean(activeResolution || orphanResolutionOutcome || battleAssist) || threatActions.length > 0;
   const hasShopContent = Boolean(shopEncounter);
   const shopLocked = Boolean(shopEncounter && (shopEncounter.status === "locked" || shopEncounter.blockingThreats.length > 0));
+  const shopLockReasonText = shopEncounter?.blockedReasonText ?? formatShopDisabledReason(shopEncounter?.blockedReason);
   const hasActionContent =
     resolveActions.length +
       gearActions.length +
@@ -2408,23 +2468,27 @@ export function PhoneActionPanel({
   const moveBlockedReason = hasMoveContent
     ? undefined
     : movementPlanner?.active && movementPlanner.destinations.length === 0
-      ? "No legal move"
+      ? "Move locked: no legal destination."
       : patch.phase === "navigation"
-        ? "No legal move"
-        : "Resolve first";
-  const battleBlockedReason = hasBattleContent ? undefined : patch.phase === "action" ? "No enemy" : "Resolve first";
+        ? "Move locked: no legal destination."
+        : "Move locked: resolve the current step first.";
+  const battleBlockedReason = hasBattleContent
+    ? undefined
+    : patch.phase === "action"
+      ? "Battle locked: no enemy here."
+      : "Battle locked: resolve the current step first.";
   const shopBlockedReason = shopLocked
-    ? "Shop blocked"
+    ? `Shop locked: ${shopLockReasonText ?? "clear local blockers first."}`
     : hasShopContent
       ? undefined
       : battleBlocksNonBattleTabs
-        ? "Resolve battle first"
-        : "No shop";
+        ? "Shop locked: resolve battle first."
+        : "Shop locked: no shop here.";
   const actionBlockedReason = battleBlocksNonBattleTabs
-    ? "Resolve battle first"
+    ? "Action locked: resolve battle first."
     : hasActionContent || !hasMoveContent
       ? undefined
-      : "No action";
+      : "Action locked: no sector action here.";
   const tabDefinitions: TurnActionTabDefinition[] = [
     {
       id: "move",
@@ -2513,7 +2577,7 @@ export function PhoneActionPanel({
         emptyTitle={battleBlocksNonBattleTabs ? "Shop locked" : "No shop here"}
         emptyText={
           battleBlocksNonBattleTabs
-            ? "Resolve battle first. Shop services unlock after the encounter is cleared."
+            ? "Shop locked: resolve battle first. Ignore shop until the encounter is cleared."
             : "Shop services appear when your operative is on a clear market, shrine, foundry, or service sector."
         }
       />
@@ -2521,7 +2585,7 @@ export function PhoneActionPanel({
       <LockedCommandPanel
         tab="action"
         title="Resolve battle first"
-        text="This sector action is paused until the active encounter is resolved in the Battle tab."
+        text="Action locked: resolve battle first. Ignore sector actions until the Battle tab is cleared."
       />
     ) : (
       <PhoneSectorActionPanel

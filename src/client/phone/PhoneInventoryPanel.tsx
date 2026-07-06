@@ -68,6 +68,16 @@ function getStatusLabel(status: InventoryCardViewModel["status"]): string {
   }
 }
 
+function getInventoryConsequence(card: InventoryCardViewModel): string {
+  if (card.statBonus) {
+    const bonus = `+${card.statBonus.amount} ${statLabelById[card.statBonus.stat]}`;
+    const timing = card.timingText && card.timingText !== "Passive" ? ` during ${card.timingText.toLowerCase()}` : "";
+    return `${card.status === "Passive" ? "Applies" : "Adds"} ${bonus}${timing}.`;
+  }
+
+  return card.effectText;
+}
+
 function InventoryCard({
   card,
   seatId,
@@ -83,8 +93,10 @@ function InventoryCard({
   const statusLabel = getStatusLabel(card.status);
   const statusReason = card.canUseNow ? "Active in this timing window." : card.statusReason;
   const stateLabel = card.canUseNow ? "active" : card.status === "Passive" ? "applied" : "inactive";
+  const consequence = getInventoryConsequence(card);
 
   const metaItems = [
+    consequence !== card.effectText ? card.effectText : null,
     card.timingText,
     card.statBonus ? `+${card.statBonus.amount} ${statLabelById[card.statBonus.stat]}` : null,
     card.charges !== null && card.charges !== undefined
@@ -104,7 +116,7 @@ function InventoryCard({
       title={card.name}
       eyebrow={card.group}
       status={<span className="phone-inventory-card-status">{statusLabel}</span>}
-      description={<p>{card.effectText}</p>}
+      description={<p className="phone-wrap-card__consequence">{consequence}</p>}
       disabledReason={<small className="phone-inventory-card-status-reason">{statusReason}</small>}
       meta={
         <div className="phone-inventory-card-meta">

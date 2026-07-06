@@ -442,12 +442,12 @@ describe("Ashen Reach UI validation stress states", () => {
     const shopTab = getTabByLabel("Shop");
 
     expect(moveTab).toHaveAttribute("aria-disabled", "true");
-    expect(moveTab).toHaveTextContent("No legal move");
-    expect(moveTab).toHaveAttribute("title", "No legal move");
+    expect(moveTab).toHaveTextContent("Move locked: no legal destination.");
+    expect(moveTab).toHaveAttribute("title", "Move locked: no legal destination.");
     expect(battleTab).toHaveAttribute("aria-disabled", "true");
-    expect(battleTab).toHaveTextContent("No enemy");
+    expect(battleTab).toHaveTextContent("Battle locked: no enemy here.");
     expect(shopTab).toHaveAttribute("aria-disabled", "true");
-    expect(shopTab).toHaveTextContent("No shop");
+    expect(shopTab).toHaveTextContent("Shop locked: no shop here.");
   });
 
   it("keeps host battle identity headers outside portrait art and uses a three-panel result core", () => {

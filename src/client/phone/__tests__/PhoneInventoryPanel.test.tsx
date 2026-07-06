@@ -209,8 +209,13 @@ describe("PhoneInventoryPanel", () => {
     expect(itemCard).toHaveClass("phone-wrap-card", "phone-wrap-card--inventory");
     expect(itemCard.querySelector(".phone-wrap-card__media")).toBeInTheDocument();
     expect(itemCard.querySelector(".phone-wrap-card__body")).toHaveTextContent(/black route fuse/i);
-    expect(itemCard.querySelector(".phone-wrap-card__description")).toHaveTextContent(/combat pressure/i);
+    expect(itemCard.querySelector(".phone-wrap-card__description")).toHaveClass("phone-wrap-card__description");
+    expect(itemCard.querySelector(".phone-wrap-card__description")).toHaveTextContent(/adds \+1 grit/i);
+    expect(itemCard.querySelector(".phone-wrap-card__details")).toHaveTextContent(/combat pressure/i);
     expect(itemCard.querySelector(".phone-wrap-card__actions")).toContainElement(screen.getByRole("button", { name: /use black route fuse/i }));
+    expect(itemCard.querySelector(".phone-wrap-card__actions")?.compareDocumentPosition(itemCard.querySelector(".phone-wrap-card__description") as Node)).toBe(
+      Node.DOCUMENT_POSITION_PRECEDING
+    );
 
     const followerCard = screen.getByLabelText(/^choir defector:/i);
     expect(followerCard).toHaveClass("phone-wrap-card", "phone-wrap-card--inventory");

@@ -407,6 +407,12 @@ describe("PhoneActionPanel", () => {
     expect(screen.queryByText(/global escalation/i)).not.toBeInTheDocument();
     expect(screen.getAllByText(/anchor market/i).length).toBeGreaterThan(0);
     expect(screen.getByTestId("movement-route-preview")).toHaveTextContent(/pilgrim lock -> anchor market/i);
+    expect(screen.getByTestId("movement-route-preview")).toHaveTextContent(/^route:/i);
+    expect(screen.getByTestId("movement-route-confidence")).toHaveTextContent(/1 step/i);
+    expect(screen.getByTestId("movement-route-confidence")).toHaveTextContent(/exact route/i);
+    expect(screen.getByTestId("movement-route-confidence")).toHaveTextContent(/shop reward/i);
+    expect(screen.getByTestId("movement-route-confidence")).toHaveTextContent(/threat risk/i);
+    expect(screen.getByTestId("movement-route-confidence")).toHaveTextContent(/0 blockers/i);
     const destinationCard = screen.getByTestId("movement-destination-row").querySelector(".phone-wrap-card");
     expect(destinationCard).toHaveClass("phone-wrap-card--movement", "phone-movement-row-button");
     expect(destinationCard?.querySelector(".phone-wrap-card__media")).toBeInTheDocument();
@@ -421,6 +427,9 @@ describe("PhoneActionPanel", () => {
     await waitFor(() => expect(screen.getByText("Icons")).toBeInTheDocument());
     const detailCard = screen.getByTestId("movement-detail-view").querySelector(".phone-wrap-card");
     expect(detailCard).toHaveClass("phone-wrap-card--movement", "phone-movement-detail-hero");
+    expect(screen.getByTestId("movement-detail-route-confidence")).toHaveTextContent(/1 step/i);
+    expect(screen.getByTestId("movement-detail-route-confidence")).toHaveTextContent(/exact route/i);
+    expect(screen.getByTestId("movement-detail-route-confidence")).toHaveTextContent(/shop reward/i);
     expect(detailCard?.querySelector(".phone-wrap-card__actions")).toContainElement(
       screen.getByRole("button", { name: /confirm move/i })
     );
@@ -559,6 +568,11 @@ describe("PhoneActionPanel", () => {
     expect(screen.getByTestId("movement-current-sector")).toHaveTextContent("Ashwalk Bridge");
     expect(screen.getByTestId("movement-current-sector")).toHaveClass("phone-movement-summary-current");
     expect(row).toHaveTextContent(/weathered pilgrim lock gate/i);
+    expect(row).toHaveTextContent(/6 steps/i);
+    expect(row).toHaveTextContent(/exact route/i);
+    expect(row).toHaveTextContent(/shop reward/i);
+    expect(row).toHaveTextContent(/low risk/i);
+    expect(row).toHaveTextContent(/0 blockers/i);
     expect(screen.getByTestId("movement-route-preview")).toHaveClass("phone-movement-row-route");
     expect(screen.getByTestId("movement-route-preview")).toHaveTextContent(/ashwalk bridge -> votive engine room/i);
 
@@ -622,6 +636,7 @@ describe("PhoneActionPanel", () => {
     );
 
     expect(screen.getAllByText(/resolve guardian span before entering the inner breach/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/ignore this route for now/i).length).toBeGreaterThan(0);
     fireEvent.click(screen.getByRole("button", { name: /gate of three ashes/i }));
     await waitFor(() => expect(screen.getByRole("button", { name: /confirm move/i })).toBeDisabled());
     expect(screen.getByRole("button", { name: /confirm move/i })).toBeDisabled();
@@ -748,6 +763,8 @@ describe("PhoneActionPanel", () => {
     expect(buyCard).not.toBeNull();
     expect(buyCard).toHaveClass("phone-wrap-card", "phone-wrap-card--shop");
     expect(buyCard?.querySelector(".phone-wrap-card__media")).toBeInTheDocument();
+    expect(buyCard?.querySelector(".phone-wrap-card__description")).toHaveTextContent(/\+1 grit while fighting enemies/i);
+    expect(buyCard?.querySelector(".phone-wrap-card__details")).toHaveTextContent(/cost: 3 salvage/i);
     expect(buyCard?.querySelector(".phone-wrap-card__actions")).toContainElement(
       within(buyCard as HTMLElement).getByRole("button", { name: /^buy$/i })
     );
@@ -769,6 +786,7 @@ describe("PhoneActionPanel", () => {
     const unaffordableCard = screen.getByText(/saintplate harness/i).closest("article");
     expect(unaffordableCard).not.toBeNull();
     expect(within(unaffordableCard as HTMLElement).getByRole("button", { name: /buy/i })).toBeDisabled();
+    expect(unaffordableCard).toHaveTextContent(/ignore until you can pay or free the slot/i);
     expect(screen.getAllByText(/^sell$/i).length).toBeGreaterThan(0);
     expect(screen.getByText(/veil hook/i)).toBeInTheDocument();
     expect(screen.getByText(/1 salvage/i)).toBeInTheDocument();
@@ -780,6 +798,7 @@ describe("PhoneActionPanel", () => {
     expect(sellableCard).not.toBeNull();
     expect(sellableCard).toHaveClass("phone-wrap-card", "phone-wrap-card--shop", "phone-shop-sell-card");
     expect(sellableCard?.querySelector(".phone-wrap-card__media")).toBeInTheDocument();
+    expect(sellableCard?.querySelector(".phone-wrap-card__details")).toHaveTextContent(/sell value: 1 salvage/i);
     expect(sellableCard?.querySelector(".phone-wrap-card__actions")).toContainElement(
       within(sellableCard as HTMLElement).getByRole("button", { name: /^sell$/i })
     );
@@ -858,8 +877,18 @@ describe("PhoneActionPanel", () => {
     );
 
     expect(screen.getByRole("tab", { name: /shop/i })).toBeInTheDocument();
-    expect(screen.getByText(/no shop here/i)).toBeInTheDocument();
+    expect(screen.getByRole("status")).toHaveTextContent(/no shop here/i);
     expect(screen.getByText(/shop services appear when your operative is on a clear market/i)).toBeInTheDocument();
+  });
+
+  it("shows a direct battle lock reason when no enemy or check is active", () => {
+    render(
+      <PhoneActionPanel characters={characters} onIntent={vi.fn()} selectedTurnTab="battle" patch={createPatch({ encounter: null, pendingEnemyRoll: null })} />
+    );
+
+    expect(screen.getByRole("tab", { name: /battle/i })).toHaveTextContent(/battle locked: no enemy here/i);
+    expect(screen.getByRole("tab", { name: /battle/i })).toHaveAttribute("title", "Battle locked: no enemy here.");
+    expect(screen.queryByRole("button", { name: /enter combat/i })).not.toBeInTheDocument();
   });
 
   it("shows a locked shop state during battle without rendering battle controls", () => {
@@ -885,8 +914,9 @@ describe("PhoneActionPanel", () => {
 
     expect(screen.getByTestId("phone-action-panel-root")).toHaveClass("phone-action-panel--shop");
     expect(screen.getByTestId("phone-action-active-panel")).toHaveClass("phone-shop-command-panel");
-    expect(screen.getByText(/shop locked/i)).toBeInTheDocument();
-    expect(screen.getAllByText(/resolve battle first/i).length).toBeGreaterThan(0);
+    expect(screen.getByRole("status")).toHaveTextContent(/shop locked/i);
+    expect(screen.getAllByText(/shop locked: resolve battle first/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/ignore shop until the encounter is cleared/i).length).toBeGreaterThan(0);
     expect(screen.queryByRole("button", { name: /enter combat/i })).not.toBeInTheDocument();
     expect(screen.queryByTestId("phone-battle-assist")).not.toBeInTheDocument();
   });
@@ -913,7 +943,8 @@ describe("PhoneActionPanel", () => {
 
     expect(screen.getByTestId("phone-action-panel-root")).toHaveClass("phone-action-panel--action");
     expect(screen.getByTestId("phone-action-active-panel")).toHaveClass("phone-sector-action-panel");
-    expect(within(screen.getByTestId("phone-action-active-panel")).getByText(/resolve battle first/i)).toBeInTheDocument();
+    expect(within(screen.getByTestId("phone-action-active-panel")).getByText(/action locked: resolve battle first/i)).toBeInTheDocument();
+    expect(within(screen.getByTestId("phone-action-active-panel")).getByText(/ignore sector actions until the battle tab is cleared/i)).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /enter combat/i })).not.toBeInTheDocument();
     expect(screen.queryByTestId("phone-battle-assist")).not.toBeInTheDocument();
     expect(screen.queryByText(/sector math/i)).not.toBeInTheDocument();

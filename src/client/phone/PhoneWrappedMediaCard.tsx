@@ -68,19 +68,19 @@ export function PhoneWrappedMediaCard({
       <div className="phone-wrap-card__body">
         <div className="phone-wrap-card__heading">
           <div className="phone-wrap-card__title-block">
-            {eyebrow ? <span className="phone-wrap-card__eyebrow">{eyebrow}</span> : null}
             <h3 className="phone-wrap-card__title">{title}</h3>
+            {eyebrow ? <span className="phone-wrap-card__eyebrow">{eyebrow}</span> : null}
           </div>
           {costValue ? <span className="phone-wrap-card__cost">{costValue}</span> : null}
         </div>
         {status ? <div className="phone-wrap-card__status">{status}</div> : null}
-        {tags ? <div className="phone-wrap-card__tags">{tags}</div> : null}
         {description ? <div className="phone-wrap-card__description">{description}</div> : null}
-        {meta ? <div className="phone-wrap-card__meta">{meta}</div> : null}
         {disabledReason ? <div className="phone-wrap-card__disabled-reason">{disabledReason}</div> : null}
       </div>
 
       {actions ? <div className="phone-wrap-card__actions">{actions}</div> : null}
+      {tags ? <div className="phone-wrap-card__tags phone-wrap-card__details">{tags}</div> : null}
+      {meta ? <div className="phone-wrap-card__meta phone-wrap-card__details">{meta}</div> : null}
     </article>
   );
 }
