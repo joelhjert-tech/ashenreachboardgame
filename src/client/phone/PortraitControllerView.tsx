@@ -78,12 +78,12 @@ function writeStoredPhoneChromeVisible(visible: boolean): void {
 
 function getCompactStatSummary(self: PhoneSelfState, stat: Stat): string {
   const breakdown = getPhoneStatBreakdown(self, stat);
-  const additions = [
-    breakdown.permanent !== 0 ? `Permanent ${formatSignedStatBonus(breakdown.permanent)}` : null,
-    breakdown.gearFollower !== 0 ? `Gear ${formatSignedStatBonus(breakdown.gearFollower)}` : null
-  ].filter((entry): entry is string => Boolean(entry));
+  const modifierTotal = breakdown.permanent + breakdown.gearFollower;
+  const additions = modifierTotal !== 0
+    ? [`Bonus ${formatSignedStatBonus(modifierTotal)}`]
+    : [];
 
-  return [`Base ${breakdown.base}`, ...additions].join(" | ");
+  return [`Base ${breakdown.base}`, ...additions].join(" ");
 }
 
 function PortraitStatCard({
@@ -100,20 +100,32 @@ function PortraitStatCard({
   const breakdown = getPhoneStatBreakdown(self, stat);
   const label = statLabelById[stat];
   const displayLabel = label.toUpperCase();
+  const modifierTotal = breakdown.permanent + breakdown.gearFollower;
 
   return (
     <button
       type="button"
-      className={`phone-stat-card${expanded ? " phone-stat-card-expanded" : ""}`}
+      className={`phone-stat-card phone-stat-card-${stat}${expanded ? " phone-stat-card-expanded" : ""}`}
       style={getChallengeThemeStyle(stat) as CSSProperties}
+      data-stat={stat}
       aria-expanded={expanded}
       aria-label={`${label} stat ${breakdown.current}${expanded ? ", details expanded" : ""}`}
       onClick={onToggle}
     >
       <span className="phone-stat-card-heading">
-        <span className="phone-stat-card-label">{displayLabel}</span>{" "}
-        <strong className="phone-stat-card-value">{breakdown.current}</strong>
+        <span className="phone-stat-card-label">{displayLabel}</span>
+        {" "}
+        <span className="phone-stat-card-numbers">
+          <strong className="phone-stat-card-value">{breakdown.current}</strong>
+          {modifierTotal !== 0 ? (
+            <>
+              {" "}
+              <em className="phone-stat-card-modifier">{formatSignedStatBonus(modifierTotal)}</em>
+            </>
+          ) : null}
+        </span>
       </span>
+      {" "}
       <span className="phone-stat-card-summary">{getCompactStatSummary(self, stat)}</span>
       {expanded && (
         <dl className="phone-stat-card-details" aria-label={`${label} stat details`}>
@@ -160,19 +172,21 @@ function getActionTabState(
   switch (tab) {
     case "move":
       return {
-        disabled: !(
+        disabled: false,
+        locked: !(
           (patch.movementPlanner?.active && patch.movementPlanner.destinations.length > 0) ||
           (isActiveSeat && patch.phase === "navigation")
         )
       };
     case "battle":
       return {
-        disabled: !(patch.activeResolution || patch.pendingEnemyRoll || patch.encounter)
+        disabled: false,
+        locked: !(patch.activeResolution || patch.pendingEnemyRoll || patch.encounter)
       };
     case "shop":
       return {
-        disabled: !patch.shopEncounter,
-        locked: shopLocked
+        disabled: false,
+        locked: !patch.shopEncounter || shopLocked
       };
     case "action":
       return {
@@ -439,23 +453,7 @@ export function PortraitControllerView({
   const [phoneChromeVisible, setPhoneChromeVisible] = useState(readStoredPhoneChromeVisible);
   const [bottomDockExpanded, setBottomDockExpanded] = useState(false);
   const [expandedStat, setExpandedStat] = useState<Stat | null>(null);
-  const requiresBattleFocus = Boolean(
-    self &&
-      patch?.status === "active" &&
-      (patch.activeResolution ||
-        patch.pendingEnemyRoll ||
-        patch.encounter ||
-        (patch.phase === "resolution" &&
-          patch.outcomeSummary?.seatId === self.seatId &&
-          Boolean(patch.outcomeSummary.encounterCardId)))
-  );
   const phoneChromeHidden = !phoneChromeVisible;
-
-  useEffect(() => {
-    if (requiresBattleFocus && activeTab !== "battle" && activeTab !== "inventory") {
-      setActiveTab("battle");
-    }
-  }, [activeTab, requiresBattleFocus]);
 
   useEffect(() => {
     writeStoredPhoneChromeVisible(phoneChromeVisible);
@@ -770,8 +768,8 @@ export function PortraitControllerView({
                 <div className="phone-portrait-vitals" aria-label="Character vitals">
                   <span>Heat {self.character.heat}</span>
                   <span>Wounds {self.character.wounds}</span>
-                  <span>Trophies {self.character.trophies}</span>
                   <span>Gear {self.character.heldGear.length}</span>
+                  <span>Status {self.character.status}</span>
                 </div>
               </section>
 
@@ -921,9 +919,10 @@ export function PortraitControllerView({
                       role="tab"
                       aria-selected={activeTab === typedKey}
                       selected={activeTab === typedKey}
-                      className={`${activeTab === typedKey ? "phone-portrait-tab phone-portrait-tab-active" : "phone-portrait-tab"}${
+                      className={`${activeTab === typedKey ? "phone-portrait-tab phone-portrait-tab-active" : "phone-portrait-tab"} phone-portrait-tab-${typedKey}${
                         actionState.locked ? " phone-portrait-tab-locked" : ""
                       }`}
+                      data-tab={typedKey}
                       disabled={actionState.disabled}
                       disabledReason={actionState.disabled ? "Unavailable" : actionState.locked ? "Blocked" : undefined}
                       onClick={() => setActiveTab(typedKey)}

@@ -3,7 +3,6 @@
 import "@testing-library/jest-dom/vitest";
 import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { getChallengeThemeStyle } from "../../../game/ui/challengeTheme.js";
 import { PhoneActionPanel } from "../PhoneActionPanel.js";
 import type { CharacterCatalogEntry, ClientIntent, PhonePatchPayload } from "../../shared/types.js";
 
@@ -1106,7 +1105,8 @@ describe("PhoneActionPanel", () => {
 
     rerender(<PhoneActionPanel characters={characters} onIntent={vi.fn()} selectedTurnTab="battle" patch={movementPatch} />);
     expect(screen.getByTestId("phone-action-active-panel")).toHaveClass("phone-battle-panel");
-    expect(screen.getByText(/battle locked: no enemy here/i)).toBeInTheDocument();
+    expect(screen.getByText(/battle unavailable/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/no enemy or event is ready to resolve/i).length).toBeGreaterThan(0);
     expect(screen.queryByTestId("movement-planner")).not.toBeInTheDocument();
 
     rerender(<PhoneActionPanel characters={characters} onIntent={vi.fn()} selectedTurnTab="shop" patch={shopPatch} />);
@@ -2019,7 +2019,7 @@ describe("PhoneActionPanel", () => {
     });
   });
 
-  it("separates a completed movement result from the next battle setup", () => {
+  it("keeps completed movement context out of the battle command screen", () => {
     render(
       <PhoneActionPanel
         characters={characters}
@@ -2059,14 +2059,8 @@ describe("PhoneActionPanel", () => {
     );
 
     expect(screen.getByTestId("phone-action-active-panel")).toHaveClass("phone-battle-panel");
-    expect(screen.getByTestId("phone-movement-transition")).toHaveTextContent(/movement complete/i);
-    expect(screen.getByTestId("phone-movement-transition")).toHaveTextContent(/moved to ashwake crossing/i);
-    expect(screen.getByTestId("phone-movement-transition")).toHaveTextContent(/encounter revealed: cinder-veil stalker/i);
+    expect(screen.queryByTestId("phone-movement-transition")).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: /enter combat.*cinder-veil stalker/i })).toBeInTheDocument();
-    expect(
-      screen.getByTestId("phone-movement-transition").compareDocumentPosition(screen.getByRole("button", { name: /enter combat/i })) &
-        Node.DOCUMENT_POSITION_FOLLOWING
-    ).toBeTruthy();
   });
 
   it("renders a recovery continue button for orphaned movement roll summaries", () => {
@@ -2263,7 +2257,7 @@ describe("PhoneActionPanel", () => {
     expect(screen.queryByRole("button", { name: /open combat cards/i })).not.toBeInTheDocument();
   });
 
-  it("shows defeated enemy trophy pile and stat raises available from trophies", () => {
+  it("keeps trophies and stat upgrades out of the sector action tab", () => {
     render(
       <PhoneActionPanel
         characters={characters}
@@ -2291,15 +2285,10 @@ describe("PhoneActionPanel", () => {
       />
     );
 
-    expect(screen.getByTestId("phone-trophy-pile")).toHaveTextContent(/6 available/i);
-    expect(screen.getByTestId("phone-trophy-pile")).toHaveTextContent(/cinder-veil stalker/i);
-    expect(screen.getByTestId("phone-trophy-pile")).toHaveTextContent(/trophy 6\/6/i);
-    expect(screen.getByTestId("phone-trophy-pile")).toHaveTextContent(/can upgrade: command 3 -> 4, grit 2 -> 3, signal 1 -> 2, guile 2 -> 3, forge 1 -> 2/i);
-    expect(screen.getByText(/6 trophies held/i)).toBeInTheDocument();
-    expect(screen.getByText(/spend trophies equal to the next stat value/i)).toBeInTheDocument();
-    const gritUpgrade = screen.getByRole("button", { name: /grit 2 -> 3\s*cost 3 trophies/i });
-    expect(gritUpgrade).toBeEnabled();
-    expect(gritUpgrade.style.getPropertyValue("--challenge-color")).toBe(getChallengeThemeStyle("grit")["--challenge-color"]);
+    expect(screen.getByTestId("phone-action-active-panel")).toHaveClass("phone-sector-action-panel");
+    expect(screen.queryByTestId("phone-trophy-pile")).not.toBeInTheDocument();
+    expect(screen.queryByText(/spend trophies equal to the next stat value/i)).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /grit 2 -> 3\s*cost 3 trophies/i })).not.toBeInTheDocument();
   });
 
   it("shows stat upgrade disabled reasons and upgrade result chips", () => {
@@ -2347,8 +2336,8 @@ describe("PhoneActionPanel", () => {
       />
     );
 
-    expect(screen.getByRole("button", { name: /command 6\s*command is already at the maximum rank/i })).toBeDisabled();
-    expect(screen.getByRole("button", { name: /grit 3 -> 4\s*need 2 more trophies/i })).toBeDisabled();
+    expect(screen.queryByRole("button", { name: /command 6\s*command is already at the maximum rank/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /grit 3 -> 4\s*need 2 more trophies/i })).not.toBeInTheDocument();
     expect(screen.getByText(/-4 trophy/i)).toBeInTheDocument();
     expect(screen.getByText(/\+1 grit/i)).toBeInTheDocument();
   });

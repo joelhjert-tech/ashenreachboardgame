@@ -199,6 +199,9 @@ describe("PhoneInventoryPanel", () => {
     expect(screen.getAllByText("Consumables").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Followers").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Quest Items").length).toBeGreaterThan(0);
+    expect(screen.getByTestId("phone-inventory-progression")).toHaveTextContent(/progression/i);
+    expect(screen.getByTestId("phone-inventory-progression")).toHaveTextContent(/trophies: 0/i);
+    expect(screen.getByRole("button", { name: /command 3 -> 4\s*need 4 more trophies/i })).toBeDisabled();
     expect(screen.getAllByText("Black Route Fuse").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Coffin Rig").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Passive").length).toBeGreaterThan(0);
@@ -209,6 +212,52 @@ describe("PhoneInventoryPanel", () => {
     expect(screen.getByRole("region", { name: /inventory timing groups/i })).toHaveTextContent(/black route fuse/i);
     expect(screen.getByRole("region", { name: /inventory timing groups/i })).toHaveTextContent(/coffin rig/i);
     expect(screen.getByText(/no wounds to heal/i)).toBeInTheDocument();
+  });
+
+  it("shows trophies and stat upgrades in Inventory progression", () => {
+    const onIntent = vi.fn();
+    const basePatch = createPatch();
+    const patch = {
+      ...basePatch,
+      self: basePatch.self
+        ? {
+            ...basePatch.self,
+            character: {
+              ...basePatch.self.character,
+              trophies: 6,
+              trophyPile: [
+                {
+                  cardId: "cinder-veil-stalker",
+                  name: "Cinder-Veil Stalker",
+                  trophyValue: 6,
+                  spentValue: 0,
+                  stat: "grit" as const,
+                  cardType: "enemy" as const
+                }
+              ]
+            }
+          }
+        : null
+    } satisfies PhonePatchPayload;
+
+    render(<PhoneInventoryPanel patch={patch} onIntent={onIntent} />);
+
+    const progression = screen.getByTestId("phone-inventory-progression");
+    expect(progression).toHaveTextContent(/trophies: 6/i);
+    expect(progression).toHaveTextContent(/cinder-veil stalker/i);
+    expect(progression).toHaveTextContent(/6\/6/i);
+
+    const gritUpgrade = within(progression).getByRole("button", { name: /grit 2 -> 3\s*cost 3 trophies/i });
+    expect(gritUpgrade).toBeEnabled();
+    expect(gritUpgrade.style.getPropertyValue("--challenge-color")).toBe(getChallengeThemeStyle("grit")["--challenge-color"]);
+
+    fireEvent.click(gritUpgrade);
+
+    expect(onIntent).toHaveBeenCalledWith({
+      type: "RAISE_STAT_REQUESTED",
+      seatId: "seat-1",
+      stat: "grit"
+    });
   });
 
   it("renders inventory and follower cards with wrapped media and cleared actions", () => {
@@ -419,7 +468,7 @@ describe("PhoneInventoryPanel", () => {
       />
     );
 
-    expect(screen.getByLabelText(/compact phone navigation/i)).toHaveTextContent(/battle/i);
+    expect(screen.getByLabelText(/compact phone navigation/i)).toHaveTextContent(/player card/i);
     openPhoneTabs();
 
     expect(screen.getByRole("tab", { name: /player card/i })).toBeInTheDocument();
@@ -427,8 +476,16 @@ describe("PhoneInventoryPanel", () => {
     expect(screen.getByRole("tab", { name: /battle/i })).toBeInTheDocument();
     expect(screen.getByRole("tab", { name: /shop/i })).toBeInTheDocument();
     expect(screen.getByRole("tab", { name: /action/i })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: /player card/i })).toHaveClass("phone-portrait-tab-player");
+    expect(screen.getByRole("tab", { name: /inventory/i })).toHaveClass("phone-portrait-tab-inventory");
+    expect(screen.getByRole("tab", { name: /quest/i })).toHaveClass("phone-portrait-tab-quests");
+    expect(screen.getByRole("tab", { name: /move/i })).toHaveClass("phone-portrait-tab-move");
+    expect(screen.getByRole("tab", { name: /battle/i })).toHaveClass("phone-portrait-tab-battle");
+    expect(screen.getByRole("tab", { name: /shop/i })).toHaveClass("phone-portrait-tab-shop");
+    expect(screen.getByRole("tab", { name: /action/i })).toHaveClass("phone-portrait-tab-action");
     expect(screen.getByRole("tablist", { name: /phone navigation/i })).toHaveClass("phone-portrait-bottom-nav");
     expect(screen.queryByRole("tab", { name: /log/i })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("tab", { name: /battle/i }));
     await waitFor(() => expect(screen.getByTestId("phone-action-screen")).toHaveClass("phone-portrait-screen-command"));
     expect(screen.getByTestId("phone-battle-assist")).toBeInTheDocument();
 
@@ -438,9 +495,8 @@ describe("PhoneInventoryPanel", () => {
 
     fireEvent.click(screen.getByRole("tab", { name: /player card/i }));
 
-    await waitFor(() => expect(screen.getByTestId("phone-battle-assist")).toBeInTheDocument());
-    expect(screen.getByTestId("phone-action-content-root")).toContainElement(screen.getByTestId("phone-action-active-panel"));
-    expect(screen.getByTestId("phone-battle-assist")).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByLabelText(/character stats/i)).toBeInTheDocument());
+    expect(screen.queryByTestId("phone-battle-assist")).not.toBeInTheDocument();
     expect(screen.queryByText(/turn console/i)).not.toBeInTheDocument();
   });
 
@@ -554,11 +610,15 @@ describe("PhoneInventoryPanel", () => {
 
     expect(commandStat.querySelector(".phone-stat-card-label")).toHaveTextContent(/^COMMAND$/);
     expect(commandStat.querySelector(".phone-stat-card-value")).toHaveTextContent(/^4$/);
+    expect(commandStat.querySelector(".phone-stat-card-modifier")).toHaveTextContent(/^\+2$/);
+    expect(commandStat).toHaveAttribute("data-stat", "command");
+    expect(commandStat).toHaveClass("phone-stat-card-command");
     expect(commandHeading).toHaveTextContent(/COMMAND\s+4/);
     expect(commandHeading).not.toHaveTextContent(/COMMAND4/);
     expect(commandStat).toHaveTextContent(/base 3/i);
-    expect(commandStat).toHaveTextContent(/permanent \+1/i);
-    expect(commandStat).toHaveTextContent(/gear \+1/i);
+    expect(commandStat).toHaveTextContent(/bonus \+2/i);
+    expect(commandStat).not.toHaveTextContent(/permanent \+1/i);
+    expect(commandStat).not.toHaveTextContent(/gear\/follower \+1/i);
     expect(screen.queryByText(/base 3 \| permanent \+1 \| gear\/follower \+1/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/^Temporary$/)).not.toBeInTheDocument();
 
@@ -578,6 +638,7 @@ describe("PhoneInventoryPanel", () => {
     expect(commandStat).toHaveAttribute("aria-expanded", "false");
     expect(within(statsRegion).getByRole("button", { name: /grit stat 2, details expanded/i })).toHaveAttribute("aria-expanded", "true");
     expect(document.querySelector(".phone-portrait-vitals")).toHaveTextContent(/heat 1/i);
+    expect(document.querySelector(".phone-portrait-vitals")).not.toHaveTextContent(/trophies/i);
     expect(screen.getByLabelText(/compact phone navigation/i)).toHaveTextContent(/player card/i);
   });
 
@@ -626,6 +687,8 @@ describe("PhoneInventoryPanel", () => {
       />
     );
 
+    openPhoneTabs();
+    fireEvent.click(screen.getByRole("tab", { name: /battle/i }));
     await waitFor(() => expect(screen.getByTestId("phone-action-screen")).toBeInTheDocument());
     fireEvent.click(screen.getByRole("button", { name: /hide ui/i }));
 

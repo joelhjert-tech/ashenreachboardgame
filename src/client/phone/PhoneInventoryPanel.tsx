@@ -1,8 +1,14 @@
 import type { CSSProperties, ReactElement, ReactNode } from "react";
 import { getChallengeThemeStyle } from "../../game/ui/challengeTheme.js";
+import {
+  getStatUpgradeCost,
+  getStatUpgradeDisabledReason,
+  NORMAL_STAT_UPGRADE_CAP
+} from "../../game/rules/statUpgrades.js";
 import { CardArtImage } from "../shared/CardArtImage.js";
 import { GameButton } from "../shared/GameButton.js";
-import type { ClientIntent, PhonePatchPayload } from "../shared/types.js";
+import { statOrder } from "../shared/statLabels.js";
+import type { ClientIntent, PhonePatchPayload, Stat, TrophyPileEntry } from "../shared/types.js";
 import { PhoneWrappedMediaCard } from "./PhoneWrappedMediaCard.js";
 import {
   getInventoryGroups,
@@ -193,6 +199,103 @@ function InventoryTimingGroups({ cards }: { cards: InventoryCardViewModel[] }): 
   );
 }
 
+function getTrophyPileEntryAvailableValue(entry: TrophyPileEntry): number {
+  return Math.max(0, entry.trophyValue - (entry.spentValue ?? 0));
+}
+
+function InventoryProgressionSection({
+  patch,
+  onIntent
+}: {
+  patch: PhonePatchPayload;
+  onIntent: ((intent: ClientIntent) => void) | null;
+}): ReactElement | null {
+  const self = patch.self;
+
+  if (!self) {
+    return null;
+  }
+
+  const trophies = self.character.trophies;
+  const trophyPile = self.character.trophyPile ?? [];
+  const pileAvailableValue = trophyPile.reduce((total, entry) => total + getTrophyPileEntryAvailableValue(entry), 0);
+
+  return (
+    <section className="phone-inventory-progression" aria-label="Progression" data-testid="phone-inventory-progression">
+      <div className="phone-inventory-progression-header">
+        <div>
+          <span>Progression</span>
+          <strong>Trophies: {trophies}</strong>
+        </div>
+        <small>{pileAvailableValue} from defeated enemies</small>
+      </div>
+
+      <div className="phone-inventory-trophy-list" aria-label="Trophy source summary">
+        {trophyPile.length > 0 ? (
+          trophyPile.slice(0, 3).map((entry) => {
+            const availableValue = getTrophyPileEntryAvailableValue(entry);
+
+            return (
+              <article key={`${entry.cardId}-${entry.spentValue ?? 0}`} className="phone-inventory-trophy-card">
+                <span>{entry.stat ? statLabelById[entry.stat] : "Trophy"}</span>
+                <strong>{entry.name}</strong>
+                <em>
+                  {availableValue}/{entry.trophyValue}
+                </em>
+              </article>
+            );
+          })
+        ) : (
+          <p>Defeat threats to bank trophies for permanent stat upgrades.</p>
+        )}
+      </div>
+
+      <div className="phone-inventory-upgrades">
+        <span className="phone-inventory-upgrades-title">Available Upgrades</span>
+        <div className="phone-inventory-upgrade-grid">
+          {statOrder.map((stat) => {
+            const currentValue = self.character.stats[stat];
+            const nextValue = Math.min(currentValue + 1, NORMAL_STAT_UPGRADE_CAP);
+            const cost = getStatUpgradeCost(currentValue);
+            const disabledReason = getStatUpgradeDisabledReason({
+              stat: stat as Stat,
+              currentValue,
+              trophies,
+              qaOnly: self.character.qaOnly === true,
+              cap: NORMAL_STAT_UPGRADE_CAP
+            });
+            const label = currentValue >= NORMAL_STAT_UPGRADE_CAP
+              ? `${statLabelById[stat]} ${currentValue}`
+              : `${statLabelById[stat]} ${currentValue} -> ${nextValue}`;
+
+            return (
+              <GameButton
+                key={stat}
+                type="button"
+                tone="secondary"
+                className="phone-button phone-sheet-action-button phone-sheet-action-button-stat phone-inventory-upgrade-button"
+                style={getChallengeThemeStyle(stat) as CSSProperties}
+                disabled={Boolean(disabledReason)}
+                disabledReason={disabledReason ?? undefined}
+                onClick={() =>
+                  onIntent?.({
+                    type: "RAISE_STAT_REQUESTED",
+                    seatId: self.seatId,
+                    stat: stat as Stat
+                  })
+                }
+                sublabel={disabledReason ?? `Cost ${cost} Troph${cost === 1 ? "y" : "ies"}`}
+              >
+                {label}
+              </GameButton>
+            );
+          })}
+        </div>
+      </div>
+    </section>
+  );
+}
+
 export function PhoneInventoryPanel({
   patch,
   onIntent,
@@ -228,6 +331,7 @@ export function PhoneInventoryPanel({
 
   return (
     <section className={panelClassName} aria-label="Inventory" data-item-count={visibleItemCount}>
+      {!onlyUsable && <InventoryProgressionSection patch={patch} onIntent={onIntent} />}
       {!onlyUsable && <InventoryTimingGroups cards={allCards} />}
       {visibleGroups.length === 0 ? (
         <p className="phone-sheet-action-empty">

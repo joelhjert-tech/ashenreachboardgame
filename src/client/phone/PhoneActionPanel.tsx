@@ -16,18 +16,12 @@ import type {
   ResultDelta,
   SectorNode,
   ShopFailureReason,
-  Stat,
-  TrophyPileEntry
+  Stat
 } from "../shared/types.js";
 import { ResultDeltaRow } from "../shared/ResultDeltaChips.js";
 import { getBoardSpace, isScenarioConfrontationSpace } from "../../game/data/boardSpaces.js";
 import { describeContractObjective, formatContractObjectiveStatus } from "../../game/contracts/objectives.js";
 import { getChallengeThemeStyle } from "../../game/ui/challengeTheme.js";
-import {
-  getStatUpgradeCost,
-  getStatUpgradeDisabledReason,
-  NORMAL_STAT_UPGRADE_CAP
-} from "../../game/rules/statUpgrades.js";
 import {
   describeActiveResolutionRoll,
   formatResolutionModifiers,
@@ -629,6 +623,38 @@ function getTabCompactSublabel(tab: TurnActionTabDefinition, activeTab: TurnActi
   }
 
   return "Ready";
+}
+
+function portraitActionStatusLabel(tab: TurnActionTab): string {
+  switch (tab) {
+    case "move":
+      return "Move";
+    case "battle":
+      return "Battle";
+    case "shop":
+      return "Shop";
+    case "action":
+      return "Action";
+  }
+}
+
+function usefulNowForTurnTab(model: UsefulNowViewModel | null, tab: TurnActionTab): UsefulNowViewModel | null {
+  if (!model) {
+    return null;
+  }
+
+  const phaseLabel = model.phaseLabel.toLowerCase();
+
+  switch (tab) {
+    case "move":
+      return phaseLabel.includes("movement") ? model : null;
+    case "battle":
+      return phaseLabel.includes("battle") ? model : null;
+    case "shop":
+      return phaseLabel.includes("shop") ? model : null;
+    case "action":
+      return phaseLabel.includes("movement") || phaseLabel.includes("battle") || phaseLabel.includes("shop") ? null : model;
+  }
 }
 
 function TurnActionReasonStrip({ tab }: { tab: TurnActionTabDefinition | undefined }): ReactElement | null {
@@ -1721,96 +1747,6 @@ function MovementDestinationDetail({
   );
 }
 
-function TrophyAdvanceDisclosure({
-  actions,
-  trophies
-}: {
-  actions: ActionButtonDefinition[];
-  trophies: number;
-}): ReactElement | null {
-  const [isOpen, setIsOpen] = useState(false);
-
-  if (actions.length === 0) {
-    return null;
-  }
-
-  return (
-    <details
-      className="phone-sheet-action-section phone-sheet-action-section-advance"
-      open={isOpen}
-      onToggle={(event) => setIsOpen(event.currentTarget.open)}
-    >
-      <summary>
-        <span>Stat upgrade available</span>
-        <small>
-          {trophies} Troph{trophies === 1 ? "y" : "ies"} held
-        </small>
-      </summary>
-      <p className="phone-stat-upgrade-rule">Spend trophies equal to the next stat value. Salvage stays for shops.</p>
-      <ActionButtons actions={actions} />
-    </details>
-  );
-}
-
-function getTrophyPileEntryAvailableValue(entry: TrophyPileEntry): number {
-  return Math.max(0, entry.trophyValue - (entry.spentValue ?? 0));
-}
-
-function TrophyPileSection({
-  actions,
-  trophies,
-  trophyPile
-}: {
-  actions: ActionButtonDefinition[];
-  trophies: number;
-  trophyPile: TrophyPileEntry[] | undefined;
-}): ReactElement {
-  const availableStats = actions.filter((action) => !action.disabled).map((action) => action.label);
-  const pile = trophyPile ?? [];
-  const pileAvailableValue = pile.reduce((total, entry) => total + getTrophyPileEntryAvailableValue(entry), 0);
-
-  return (
-    <section className="phone-trophy-pile" aria-label="Trophy pile" data-testid="phone-trophy-pile">
-      <div className="phone-trophy-pile-header">
-        <div>
-          <span>Trophy Pile</span>
-          <strong>{trophies} available</strong>
-        </div>
-        <small>{pileAvailableValue} from defeated enemies</small>
-      </div>
-      <div className="phone-trophy-pile-list">
-        {pile.length > 0 ? (
-          pile.slice(0, 4).map((entry) => {
-            const availableValue = getTrophyPileEntryAvailableValue(entry);
-
-            return (
-              <article key={`${entry.cardId}-${entry.spentValue ?? 0}`} className="phone-trophy-pile-card">
-                <div>
-                  <strong>{entry.name}</strong>
-                  <span>
-                    {entry.stat ? `${statLabelById[entry.stat]} | ` : ""}
-                    Trophy {availableValue}/{entry.trophyValue}
-                  </span>
-                </div>
-                <em>{availableValue}</em>
-              </article>
-            );
-          })
-        ) : (
-          <p>No defeated enemies saved yet.</p>
-        )}
-      </div>
-      <p className="phone-trophy-pile-raise">
-        {availableStats.length > 0
-          ? `Can upgrade: ${availableStats.join(", ")}`
-          : trophies > 0
-            ? "No eligible stat raise right now."
-            : "Defeat threats to earn trophies for permanent stat upgrades."}
-      </p>
-    </section>
-  );
-}
-
 function PhoneMovePanel({
   movementPlanner,
   hasMoveContent,
@@ -1837,7 +1773,6 @@ function PhoneMovePanel({
 
 function PhoneBattlePanel({
   title,
-  movementTransition,
   resolutionPanel,
   battleAssistPanel,
   threatActions,
@@ -1846,7 +1781,6 @@ function PhoneBattlePanel({
   usefulNow
 }: {
   title: string;
-  movementTransition: ReactElement | null;
   resolutionPanel: ReactElement | null;
   battleAssistPanel: ReactElement | null;
   threatActions: ActionButtonDefinition[];
@@ -1860,35 +1794,14 @@ function PhoneBattlePanel({
         <span>Battle</span>
         <strong>{title}</strong>
       </header>
-      {movementTransition}
       {resolutionPanel ? <div className="phone-battle-panel__roll-card">{resolutionPanel}</div> : null}
       <ActionSections sections={[{ key: "threat", title: "Threat", detail: title, actions: threatActions, defaultOpen: true }]} />
       {battleAssistPanel}
       <UsefulNowPanel model={usefulNow} variant="secondary" />
       <ResultDeltaRow deltas={visibleBattleDeltas} className="phone-battle-deltas phone-battle-panel__result" />
       {!hasBattleContent && (
-        <EmptyTurnTab title="Battle locked" text="Battle locked: no enemy here. Ignore Battle until an encounter, check, or enemy roll appears." />
+        <EmptyTurnTab title="Battle unavailable" text="No enemy or event is ready to resolve." />
       )}
-    </section>
-  );
-}
-
-function MovementTransitionNotice({
-  outcome,
-  sectorName
-}: {
-  outcome: OutcomeSummary;
-  sectorName: string;
-}): ReactElement {
-  const nextStep = outcome.encounterTitle
-    ? `Encounter revealed: ${outcome.encounterTitle}. Next: Roll battle.`
-    : "No encounter was revealed. Next: Resolve the sector.";
-
-  return (
-    <section className="phone-movement-transition" data-testid="phone-movement-transition" aria-label="Movement result">
-      <span>Movement complete</span>
-      <strong>Moved to {sectorName}</strong>
-      <p>{nextStep}</p>
     </section>
   );
 }
@@ -1933,9 +1846,6 @@ function PhoneSectorActionPanel({
   tableActions,
   contractActions,
   advanceActions,
-  statRaiseActions,
-  trophies,
-  trophyPile,
   interactionMode,
   usefulNow
 }: {
@@ -1950,9 +1860,6 @@ function PhoneSectorActionPanel({
   tableActions: ActionButtonDefinition[];
   contractActions: ActionButtonDefinition[];
   advanceActions: ActionButtonDefinition[];
-  statRaiseActions: ActionButtonDefinition[];
-  trophies: number;
-  trophyPile: TrophyPileEntry[] | undefined;
   interactionMode: PhonePatchPayload["interactionMode"];
   usefulNow: UsefulNowViewModel | null;
 }): ReactElement {
@@ -1977,8 +1884,6 @@ function PhoneSectorActionPanel({
       />
       <SectorExplorationPanel summary={sectorExplorationCopy} />
       <ResultDeltaRow deltas={visibleActionDeltas} className="phone-action-deltas phone-sector-action-panel__result" />
-      <TrophyPileSection actions={statRaiseActions} trophies={trophies} trophyPile={trophyPile} />
-      <TrophyAdvanceDisclosure actions={statRaiseActions} trophies={trophies} />
       <UsefulNowPanel model={usefulNow} variant="secondary" />
     </section>
   );
@@ -1992,9 +1897,16 @@ export function PhoneActionPanel({
   onSelectedTurnTab,
   hideTurnTabs = false
 }: PhoneActionPanelProps): ReactElement {
-  const [localSelectedTurnTab, setLocalSelectedTurnTab] = useState<TurnActionTab>("move");
+  const [localSelectedTurnTab, setLocalSelectedTurnTab] = useState<TurnActionTab | null>(null);
   const selectedTurnTab = controlledSelectedTurnTab ?? localSelectedTurnTab;
-  const setSelectedTurnTab = onSelectedTurnTab ?? setLocalSelectedTurnTab;
+  const setSelectedTurnTab = (tab: TurnActionTab) => {
+    if (onSelectedTurnTab) {
+      onSelectedTurnTab(tab);
+      return;
+    }
+
+    setLocalSelectedTurnTab(tab);
+  };
   const self = patch.self;
 
   if (!self) {
@@ -2059,12 +1971,6 @@ export function PhoneActionPanel({
   const movementPlanner = patch.movementPlanner ?? null;
   const shopEncounter =
     patch.phase === "action" && patch.shopEncounter?.activePlayer.playerId === self.seatId ? patch.shopEncounter : null;
-  const canRaiseStat =
-    (patch.phase === "action" || patch.phase === "broadcast") &&
-    !patch.encounter &&
-    !patch.pendingEnemyRoll &&
-    !patch.activeResolution &&
-    self.character.status === "active";
 
   if (patch.status === "ended") {
     return (
@@ -2197,35 +2103,6 @@ export function PhoneActionPanel({
   const tableActions: ActionButtonDefinition[] = [];
   const contractActions: ActionButtonDefinition[] = [];
   const advanceActions: ActionButtonDefinition[] = [];
-  const statRaiseActions: ActionButtonDefinition[] = [];
-  const addStatRaiseActions = () => {
-    (Object.entries(self.character.stats) as Array<[Stat, number]>).forEach(([stat, value]) => {
-      const nextValue = Math.min(value + 1, NORMAL_STAT_UPGRADE_CAP);
-      const cost = getStatUpgradeCost(value);
-      const disabledReason = getStatUpgradeDisabledReason({
-        stat,
-        currentValue: value,
-        trophies: self.character.trophies,
-        qaOnly: self.character.qaOnly === true,
-        cap: NORMAL_STAT_UPGRADE_CAP
-      });
-
-      statRaiseActions.push({
-        key: `raise-${stat}`,
-        label: value >= NORMAL_STAT_UPGRADE_CAP ? `${statLabelById[stat]} ${value}` : `${statLabelById[stat]} ${value} -> ${nextValue}`,
-        detail: disabledReason ?? `Cost ${cost} Troph${cost === 1 ? "y" : "ies"}`,
-        tone: "secondary",
-        stat,
-        disabled: Boolean(disabledReason),
-        onClick: () =>
-          onIntent({
-            type: "RAISE_STAT_REQUESTED",
-            seatId: self.seatId,
-            stat
-          })
-      });
-    });
-  };
 
   if (patch.soloReroll?.available) {
     resolveActions.push({
@@ -2511,10 +2388,6 @@ export function PhoneActionPanel({
       });
     }
 
-    if (canRaiseStat) {
-      addStatRaiseActions();
-    }
-
     if (isScenarioConfrontation && patch.activeScenario && !patch.encounter) {
       advanceActions.push({
         key: "resolve-scenario",
@@ -2544,10 +2417,6 @@ export function PhoneActionPanel({
   }
 
   if (patch.phase === "broadcast") {
-    if (canRaiseStat) {
-      addStatRaiseActions();
-    }
-
     advanceActions.push({
       key: "end-turn",
       label: "End turn",
@@ -2586,8 +2455,7 @@ export function PhoneActionPanel({
       followerActions.length +
       tableActions.length +
       contractActions.length +
-      advanceActions.length +
-      statRaiseActions.length >
+      advanceActions.length >
     0;
   const battleRequiresResolution = Boolean(patch.encounter || activeResolution || orphanResolutionOutcome || battleAssist);
   const battleBlocksNonBattleTabs = battleRequiresResolution && hasBattleContent;
@@ -2654,34 +2522,36 @@ export function PhoneActionPanel({
       blockedReason: actionBlockedReason
     }
   ];
-  const canShowSelectedTab = (tab: TurnActionTabDefinition) =>
-    tab.enabled ||
-    tab.locked ||
-    tab.id === "battle" ||
-    tab.id === "shop" ||
-    tab.id === "action" ||
-    (tab.id === "move" && Boolean(movementPlanner?.active));
-  const fallbackTab = movementPlanner?.active ? "move" : tabDefinitions.find((tab) => tab.enabled || tab.locked)?.id ?? "action";
-  const activeTurnTab = tabDefinitions.find((tab) => tab.id === selectedTurnTab && canShowSelectedTab(tab))
-    ? selectedTurnTab
-    : fallbackTab;
+  const canShowSelectedTab = (tab: TurnActionTabDefinition) => Boolean(tab);
+  const fallbackTab = movementPlanner?.active
+    ? "move"
+    : hasBattleContent
+      ? "battle"
+      : hasShopContent
+        ? "shop"
+        : tabDefinitions.find((tab) => tab.id === "action" && (tab.enabled || tab.locked))?.id ??
+          tabDefinitions.find((tab) => tab.enabled || tab.locked)?.id ??
+          "action";
+  const selectedTabDefinition = tabDefinitions.find((tab) => tab.id === selectedTurnTab && canShowSelectedTab(tab));
+  const activeTurnTab: TurnActionTab = selectedTabDefinition?.id ?? fallbackTab;
   const currentPrompt: CurrentPromptViewModel = currentPromptFromSharedPrompt(sharedPrompt, activeTurnTab);
+  const showCurrentPrompt = !currentPrompt.targetTab || currentPrompt.targetTab === activeTurnTab;
+  const activeUsefulNow = usefulNowForTurnTab(usefulNow, activeTurnTab);
+  const activeStatusCopy =
+    activeTurnTab === "move"
+      ? copy
+      : activeTurnTab === "battle"
+        ? hasBattleContent
+          ? "Resolve the active enemy, event, or roll."
+          : "No enemy or event is ready to resolve."
+        : activeTurnTab === "shop"
+          ? (shopBlockedReason ?? "Buy and sell only when a shop is available here.")
+          : (actionBlockedReason ?? "Resolve this sector action only.");
   const currentDeltas = patch.playerResultDeltas ?? patch.publicResultDeltas ?? [];
   const visibleBattleDeltas = battleResultDeltas(currentDeltas);
   const visibleActionDeltas = actionResultDeltas(currentDeltas);
   const battleTitle = patch.encounter?.title ?? activeResolution?.card?.title ?? battleAssist?.enemyName ?? "No threat";
   const actionTitle = boardSpace?.textBox.title ?? "Operative options";
-  const movementTransitionOutcome =
-    patch.outcomeSummary?.seatId === self.seatId && patch.outcomeSummary.movedToSectorId ? patch.outcomeSummary : null;
-  const movementTransition =
-    movementTransitionOutcome && (patch.encounter || activeResolution || battleAssist)
-      ? (
-          <MovementTransitionNotice
-            outcome={movementTransitionOutcome}
-            sectorName={getSector(patch.sectors, movementTransitionOutcome.movedToSectorId)?.name ?? movementTransitionOutcome.movedToSectorId}
-          />
-        )
-      : null;
   const activeTabContent =
     activeTurnTab === "move" ? (
       <PhoneMovePanel
@@ -2689,18 +2559,17 @@ export function PhoneActionPanel({
         hasMoveContent={hasMoveContent}
         seatId={self.seatId}
         onIntent={onIntent}
-        usefulNow={usefulNow}
+        usefulNow={activeUsefulNow}
       />
     ) : activeTurnTab === "battle" ? (
       <PhoneBattlePanel
         title={battleTitle}
-        movementTransition={movementTransition}
         resolutionPanel={resolutionPanel}
         battleAssistPanel={battleAssistPanel}
         threatActions={threatActions}
         hasBattleContent={hasBattleContent}
         visibleBattleDeltas={visibleBattleDeltas}
-        usefulNow={usefulNow}
+        usefulNow={activeUsefulNow}
       />
     ) : activeTurnTab === "shop" ? (
       <PhoneShopCommandPanel
@@ -2708,7 +2577,7 @@ export function PhoneActionPanel({
         resultDeltas={currentDeltas}
         seatId={self.seatId}
         onIntent={onIntent}
-        usefulNow={usefulNow}
+        usefulNow={activeUsefulNow}
         emptyTitle={battleBlocksNonBattleTabs ? "Shop locked" : "No shop here"}
         emptyText={
           battleBlocksNonBattleTabs
@@ -2735,11 +2604,8 @@ export function PhoneActionPanel({
         tableActions={tableActions}
         contractActions={contractActions}
         advanceActions={advanceActions}
-        statRaiseActions={statRaiseActions}
-        trophies={self.character.trophies}
-        trophyPile={self.character.trophyPile}
         interactionMode={patch.interactionMode}
-        usefulNow={usefulNow}
+        usefulNow={activeUsefulNow}
       />
     );
 
@@ -2749,7 +2615,7 @@ export function PhoneActionPanel({
       aria-label={`${activeTurnTab} command screen`}
       data-testid="phone-action-panel-root"
     >
-      <CurrentPromptCard prompt={currentPrompt} onSelectedTab={setSelectedTurnTab} />
+      {showCurrentPrompt ? <CurrentPromptCard prompt={currentPrompt} onSelectedTab={setSelectedTurnTab} /> : null}
       <div
         className="phone-action-content-root"
         id={`phone-turn-panel-${activeTurnTab}`}
@@ -2759,8 +2625,8 @@ export function PhoneActionPanel({
       >
         {activeTabContent}
         <div className="phone-sheet-action-status phone-action-secondary-status" data-testid="phone-action-secondary-status">
-          <span>Trophies: {self.character.trophies}</span>
-          <span>{copy}</span>
+          <span>{portraitActionStatusLabel(activeTurnTab)}</span>
+          <span>{activeStatusCopy}</span>
         </div>
       </div>
       {!hideTurnTabs && <TurnActionDock tabs={tabDefinitions} activeTab={activeTurnTab} onSelected={setSelectedTurnTab} />}
