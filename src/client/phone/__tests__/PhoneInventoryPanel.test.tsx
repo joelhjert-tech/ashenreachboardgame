@@ -202,6 +202,22 @@ describe("PhoneInventoryPanel", () => {
     expect(screen.getByText(/no wounds to heal/i)).toBeInTheDocument();
   });
 
+  it("renders inventory and follower cards with wrapped media and cleared actions", () => {
+    render(<PhoneInventoryPanel patch={createPatch()} onIntent={vi.fn()} />);
+
+    const itemCard = screen.getByLabelText(/black route fuse: usable now/i);
+    expect(itemCard).toHaveClass("phone-wrap-card", "phone-wrap-card--inventory");
+    expect(itemCard.querySelector(".phone-wrap-card__media")).toBeInTheDocument();
+    expect(itemCard.querySelector(".phone-wrap-card__body")).toHaveTextContent(/black route fuse/i);
+    expect(itemCard.querySelector(".phone-wrap-card__description")).toHaveTextContent(/combat pressure/i);
+    expect(itemCard.querySelector(".phone-wrap-card__actions")).toContainElement(screen.getByRole("button", { name: /use black route fuse/i }));
+
+    const followerCard = screen.getByLabelText(/^choir defector:/i);
+    expect(followerCard).toHaveClass("phone-wrap-card", "phone-wrap-card--inventory");
+    expect(followerCard.querySelector(".phone-wrap-card__fallback")).toHaveTextContent("CD");
+    expect(followerCard.querySelector(".phone-wrap-card__actions")).toContainElement(screen.getByRole("button", { name: /use choir defector/i }));
+  });
+
   it("marks oversized inventories without creating nested category scrollers", () => {
     const manyWeapons = Array.from({ length: 7 }, (_, index) => ({
       ...combatWeapon,

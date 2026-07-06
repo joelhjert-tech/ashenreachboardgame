@@ -2,6 +2,7 @@ import type { ReactElement } from "react";
 import { CardArtImage } from "../shared/CardArtImage.js";
 import { GameButton } from "../shared/GameButton.js";
 import type { ClientIntent, PhonePatchPayload } from "../shared/types.js";
+import { PhoneWrappedMediaCard } from "./PhoneWrappedMediaCard.js";
 import {
   getInventoryGroups,
   statLabelById,
@@ -44,13 +45,13 @@ function InventoryThumbnail({ card }: { card: InventoryCardViewModel }): ReactEl
         cardId={card.artCardId}
         alt=""
         aria-hidden="true"
-        className="phone-inventory-card-art"
+        className="phone-wrap-card__image phone-inventory-card-art"
       />
     );
   }
 
   return (
-    <div className="phone-inventory-card-fallback" aria-hidden="true">
+    <div className="phone-wrap-card__fallback phone-inventory-card-fallback" aria-hidden="true">
       {card.fallbackLabel}
     </div>
   );
@@ -83,32 +84,32 @@ function InventoryCard({
   const statusReason = card.canUseNow ? "Active in this timing window." : card.statusReason;
   const stateLabel = card.canUseNow ? "active" : card.status === "Passive" ? "applied" : "inactive";
 
+  const metaItems = [
+    card.timingText,
+    card.statBonus ? `+${card.statBonus.amount} ${statLabelById[card.statBonus.stat]}` : null,
+    card.charges !== null && card.charges !== undefined ? `${card.charges} charge${card.charges === 1 ? "" : "s"}` : null
+  ].filter(Boolean);
+
   return (
-    <article
+    <PhoneWrappedMediaCard
+      variant="inventory"
       className={`phone-inventory-card phone-inventory-card-${card.status.toLowerCase().replace(/[^a-z]+/g, "-")}`}
-      data-inventory-state={stateLabel}
-      aria-label={`${card.name}: ${card.status}. ${statusReason}`}
-    >
-      <InventoryThumbnail card={card} />
-      <div className="phone-inventory-card-copy">
-        <div className="phone-inventory-card-heading">
-          <h3>{card.name}</h3>
-          <span className="phone-inventory-card-status">{statusLabel}</span>
-        </div>
-        <small>{card.group}</small>
-        <p>{card.effectText}</p>
-        <small className="phone-inventory-card-status-reason">{statusReason}</small>
+      dataState={stateLabel}
+      ariaLabel={`${card.name}: ${card.status}. ${statusReason}`}
+      media={<InventoryThumbnail card={card} />}
+      title={card.name}
+      eyebrow={card.group}
+      status={<span className="phone-inventory-card-status">{statusLabel}</span>}
+      description={<p>{card.effectText}</p>}
+      disabledReason={<small className="phone-inventory-card-status-reason">{statusReason}</small>}
+      meta={
         <div className="phone-inventory-card-meta">
-          <span>{card.timingText}</span>
-          {card.statBonus && (
-            <span>
-              +{card.statBonus.amount} {statLabelById[card.statBonus.stat]}
-            </span>
-          )}
-          {card.charges !== null && card.charges !== undefined && <span>{card.charges} charge{card.charges === 1 ? "" : "s"}</span>}
+          {metaItems.map((item) => (
+            <span key={item}>{item}</span>
+          ))}
         </div>
-      </div>
-      {card.canUseNow && useIntent && (
+      }
+      actions={card.canUseNow && useIntent ? (
         <GameButton
           type="button"
           tone="action"
@@ -121,8 +122,8 @@ function InventoryCard({
         >
           Use now
         </GameButton>
-      )}
-    </article>
+      ) : null}
+    />
   );
 }
 

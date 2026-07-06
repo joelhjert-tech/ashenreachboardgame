@@ -13678,6 +13678,266 @@ body {
   box-shadow: none;
 }
 
+.phone-wrap-card {
+  min-width: 0;
+  display: block;
+  padding: 0.72rem;
+  border: 1px solid rgba(118, 145, 161, 0.22);
+  border-radius: 8px;
+  background:
+    linear-gradient(180deg, rgba(12, 16, 22, 0.9), rgba(6, 9, 14, 0.94)),
+    rgba(7, 10, 15, 0.88);
+  color: inherit;
+  overflow: visible;
+}
+
+.phone-wrap-card::after {
+  content: "";
+  display: block;
+  clear: both;
+}
+
+.phone-wrap-card__media {
+  float: left;
+  width: clamp(4.5rem, 24vw, 6rem);
+  height: clamp(4.5rem, 24vw, 6rem);
+  margin: 0 0.84rem 0.62rem 0;
+  border: 1px solid rgba(234, 177, 94, 0.32);
+  border-radius: 7px;
+  background:
+    linear-gradient(150deg, rgba(95, 170, 247, 0.18), rgba(163, 54, 42, 0.1)),
+    rgba(8, 11, 16, 0.96);
+  overflow: hidden;
+}
+
+.phone-wrap-card__image,
+.phone-wrap-card__fallback {
+  width: 100%;
+  height: 100%;
+}
+
+.phone-wrap-card__image {
+  display: block;
+  object-fit: cover;
+}
+
+.phone-wrap-card__fallback {
+  display: grid;
+  place-items: center;
+  color: #f0debd;
+  font-size: 0.86rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.phone-wrap-card__body {
+  min-width: 0;
+}
+
+.phone-wrap-card__heading {
+  min-width: 0;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.48rem;
+}
+
+.phone-wrap-card__title-block {
+  min-width: min(9rem, 100%);
+}
+
+.phone-wrap-card__eyebrow,
+.phone-wrap-card__cost,
+.phone-wrap-card__status,
+.phone-wrap-card__meta,
+.phone-wrap-card__disabled-reason {
+  overflow-wrap: anywhere;
+}
+
+.phone-wrap-card__eyebrow {
+  display: block;
+  margin-bottom: 0.16rem;
+  color: rgba(174, 205, 228, 0.82);
+  font-size: 0.68rem;
+  font-weight: 850;
+  letter-spacing: 0.08em;
+  line-height: 1.1;
+  text-transform: uppercase;
+}
+
+.phone-wrap-card__title {
+  min-width: 0;
+  margin: 0;
+  color: #f0debd;
+  font-size: clamp(0.98rem, 4vw, 1.16rem);
+  line-height: 1.12;
+  overflow-wrap: anywhere;
+}
+
+.phone-wrap-card__cost {
+  flex: 0 0 auto;
+  max-width: 7rem;
+  color: #f0debd;
+  font-size: 0.76rem;
+  font-weight: 850;
+  line-height: 1.18;
+  text-align: right;
+}
+
+.phone-wrap-card__status,
+.phone-wrap-card__tags,
+.phone-wrap-card__description,
+.phone-wrap-card__meta,
+.phone-wrap-card__disabled-reason {
+  margin-top: 0.34rem;
+}
+
+.phone-wrap-card__description p,
+.phone-wrap-card__description span,
+.phone-wrap-card__meta,
+.phone-wrap-card__disabled-reason {
+  margin: 0;
+  color: #d7dde2;
+  font-size: 0.78rem;
+  line-height: 1.34;
+}
+
+.phone-wrap-card__meta {
+  display: block;
+}
+
+.phone-wrap-card__actions {
+  clear: both;
+  display: flex;
+  justify-content: flex-start;
+  gap: 0.5rem;
+  margin-top: 0.78rem;
+}
+
+.phone-wrap-card__actions .phone-button,
+.phone-wrap-card__actions .game-button {
+  min-height: 2.7rem;
+}
+
+.phone-wrap-card--inventory.phone-inventory-card,
+.phone-wrap-card--shop.phone-shop-stock-card,
+.phone-wrap-card--movement.phone-movement-row-button,
+.phone-wrap-card--movement.phone-movement-detail-hero {
+  grid-template-columns: none;
+  align-items: start;
+}
+
+.phone-wrap-card--inventory.phone-inventory-card {
+  padding: 0.62rem;
+}
+
+.phone-wrap-card--inventory .phone-wrap-card__media {
+  height: clamp(5.15rem, 27vw, 6.4rem);
+}
+
+.phone-wrap-card--inventory .phone-wrap-card__title {
+  font-size: clamp(0.9rem, 3.7vw, 1.06rem);
+}
+
+.phone-wrap-card--inventory .phone-inventory-card-meta {
+  margin-top: 0;
+}
+
+.phone-wrap-card--inventory .phone-inventory-use-button {
+  min-width: 6.4rem;
+}
+
+.phone-wrap-card--shop.phone-shop-stock-card {
+  padding: 0.72rem;
+  border-color: rgba(104, 184, 232, 0.26);
+  background:
+    linear-gradient(90deg, rgba(30, 70, 95, 0.24), transparent 68%),
+    rgba(7, 9, 12, 0.78);
+}
+
+.phone-wrap-card--shop .phone-wrap-card__eyebrow {
+  color: rgba(104, 184, 232, 0.84);
+}
+
+.phone-wrap-card--shop .phone-wrap-card__cost {
+  color: #f4d49c;
+}
+
+.phone-wrap-card--shop .phone-button {
+  min-width: 5.6rem;
+}
+
+.phone-wrap-card--movement.phone-movement-row-button {
+  width: 100%;
+  min-height: 0;
+  padding: 0.72rem;
+  text-align: left;
+}
+
+.phone-wrap-card--movement .phone-wrap-card__eyebrow {
+  color: rgba(174, 205, 228, 0.82);
+}
+
+.phone-wrap-card--movement .phone-wrap-card__title {
+  color: #f4e2c0;
+}
+
+.phone-wrap-card--movement .phone-wrap-card__cost {
+  color: #f2dec0;
+}
+
+.phone-movement-tile-fallback {
+  gap: 0.08rem;
+  background:
+    radial-gradient(circle at 26% 22%, rgba(104, 184, 232, 0.22), transparent 42%),
+    linear-gradient(150deg, rgba(28, 45, 54, 0.92), rgba(8, 10, 13, 0.96));
+}
+
+.phone-movement-tile-fallback span {
+  color: rgba(174, 205, 228, 0.8);
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
+}
+
+.phone-movement-tile-fallback strong {
+  color: #f2dec0;
+  font-size: 1.38rem;
+  line-height: 1;
+}
+
+.phone-movement-tile-fallback-shop {
+  background:
+    radial-gradient(circle at 30% 20%, rgba(234, 177, 94, 0.28), transparent 42%),
+    linear-gradient(150deg, rgba(55, 38, 17, 0.92), rgba(8, 10, 13, 0.96));
+}
+
+.phone-movement-tile-fallback-danger,
+.phone-movement-tile-fallback-locked {
+  background:
+    radial-gradient(circle at 30% 20%, rgba(218, 73, 50, 0.28), transparent 42%),
+    linear-gradient(150deg, rgba(54, 20, 16, 0.92), rgba(8, 10, 13, 0.96));
+}
+
+.phone-movement-tile-fallback-reward {
+  background:
+    radial-gradient(circle at 30% 20%, rgba(126, 210, 255, 0.24), transparent 42%),
+    linear-gradient(150deg, rgba(18, 42, 55, 0.92), rgba(8, 10, 13, 0.96));
+}
+
+.phone-movement-select-button {
+  min-width: 6rem;
+}
+
+.phone-movement-detail-meta {
+  display: grid;
+  gap: 0.24rem;
+}
+
+.phone-movement-confirm-footer {
+  clear: both;
+}
+
 .phone-shell--immersive .phone-movement-planner,
 .phone-shell--immersive .phone-shop-panel,
 .phone-shell--immersive .phone-resolution-card,

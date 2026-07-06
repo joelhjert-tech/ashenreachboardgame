@@ -40,8 +40,10 @@ import {
 import { ChallengeBadge, ThreatIconBadge, getThreatIconStat, isStat } from "../shared/ChallengeBadge.js";
 import { CombatDiceAnimation } from "../shared/CombatDiceAnimation.js";
 import { GameButton, type GameButtonTone } from "../shared/GameButton.js";
+import { CardArtImage } from "../shared/CardArtImage.js";
 import { statLabelById } from "../shared/statLabels.js";
 import { PhoneInventoryPanel } from "./PhoneInventoryPanel.js";
+import { PhoneWrappedMediaCard } from "./PhoneWrappedMediaCard.js";
 import { formatTimingWindow, getBattleAssistViewModel, statLabelById as inventoryStatLabelById } from "./inventoryPresentation.js";
 import { buildUsefulNowViewModel, type UsefulNowViewModel } from "./usefulNowPresentation.js";
 
@@ -185,6 +187,30 @@ function formatShopCost(cost: PublicShopCost): string {
   ].filter(Boolean);
 
   return parts.length > 0 ? parts.join(" / ") : "No cost";
+}
+
+function ShopItemMedia({ cardId, label }: { cardId: string; label: string }): ReactElement {
+  return (
+    <CardArtImage
+      cardType="artifact"
+      cardId={cardId}
+      alt=""
+      aria-hidden="true"
+      className="phone-wrap-card__image phone-shop-stock-card-art"
+      data-fallback-label={label}
+    />
+  );
+}
+
+function MovementTileMedia({ destination }: { destination: PublicMoveDestination }): ReactElement {
+  const primaryTag = getPrimaryMovementTag(destination);
+
+  return (
+    <div className={`phone-wrap-card__fallback phone-movement-tile-fallback phone-movement-tile-fallback-${primaryTag}`} aria-hidden="true">
+      <span>{destination.ring.slice(0, 1).toUpperCase()}</span>
+      <strong>{destination.distance}</strong>
+    </div>
+  );
 }
 
 const shopFailureLabels: Record<ShopFailureReason, string> = {
@@ -999,27 +1025,28 @@ function PhoneShopPanel({
                   const isPending = pendingCardId === item.cardId;
                   const isPurchased = purchasedItemName === item.name;
                   return (
-                    <article
+                    <PhoneWrappedMediaCard
                       key={item.cardId}
+                      variant="shop"
                       className={`phone-shop-stock-card phone-shop-panel__stock-card${item.affordable ? "" : " phone-shop-stock-card-disabled"}`}
-                    >
-                      <div>
-                        <span>{itemCategory}</span>
-                        <strong>{item.name}</strong>
-                        <p>{item.summary}</p>
-                        <small>{disabledReason ?? formatShopCost(item.cost)}</small>
-                      </div>
-                      <GameButton
-                        type="button"
-                        tone="shop"
-                        className="phone-button phone-button-primary"
-                        disabled={!item.affordable || isPending || isPurchased}
-                        disabledReason={disabledReason ?? (isPending ? "Buying..." : isPurchased ? "Purchased" : undefined)}
-                        onClick={() => setConfirmingCardId(item.cardId)}
-                      >
-                        {isPending ? "Buying..." : isPurchased ? "Purchased" : "Buy"}
-                      </GameButton>
-                    </article>
+                      media={<ShopItemMedia cardId={item.cardId} label={item.name} />}
+                      title={item.name}
+                      eyebrow={itemCategory}
+                      costValue={disabledReason ?? formatShopCost(item.cost)}
+                      description={<p>{item.summary}</p>}
+                      actions={
+                        <GameButton
+                          type="button"
+                          tone="shop"
+                          className="phone-button phone-button-primary"
+                          disabled={!item.affordable || isPending || isPurchased}
+                          disabledReason={disabledReason ?? (isPending ? "Buying..." : isPurchased ? "Purchased" : undefined)}
+                          onClick={() => setConfirmingCardId(item.cardId)}
+                        >
+                          {isPending ? "Buying..." : isPurchased ? "Purchased" : "Buy"}
+                        </GameButton>
+                      }
+                    />
                   );
                 })}
               </div>
@@ -1040,29 +1067,30 @@ function PhoneShopPanel({
                   const isPending = pendingSellGearId === item.gearId;
                   const isSold = soldItemName === item.name;
                   return (
-                    <article
+                    <PhoneWrappedMediaCard
                       key={item.gearId}
+                      variant="shop"
                       className={`phone-shop-stock-card phone-shop-panel__stock-card phone-shop-sell-card${
                         item.sellable ? "" : " phone-shop-stock-card-disabled"
                       }`}
-                    >
-                      <div>
-                        <span>{item.category ? toTitleCase(item.category) : toTitleCase(item.type)}</span>
-                        <strong>{item.name}</strong>
-                        <p>{item.summary}</p>
-                        <small>{item.sellable ? `${item.sellValue} Salvage` : disabledReason ?? "Cannot sell this item"}</small>
-                      </div>
-                      <GameButton
-                        type="button"
-                        tone="shop"
-                        className="phone-button phone-button-primary"
-                        disabled={!item.sellable || isPending || isSold}
-                        disabledReason={disabledReason ?? (isPending ? "Selling..." : isSold ? "Sold" : undefined)}
-                        onClick={() => setConfirmingSellGearId(item.gearId)}
-                      >
-                        {isPending ? "Selling..." : isSold ? "Sold" : "Sell"}
-                      </GameButton>
-                    </article>
+                      media={<ShopItemMedia cardId={item.gearId} label={item.name} />}
+                      title={item.name}
+                      eyebrow={item.category ? toTitleCase(item.category) : toTitleCase(item.type)}
+                      costValue={item.sellable ? `${item.sellValue} Salvage` : disabledReason ?? "Cannot sell this item"}
+                      description={<p>{item.summary}</p>}
+                      actions={
+                        <GameButton
+                          type="button"
+                          tone="shop"
+                          className="phone-button phone-button-primary"
+                          disabled={!item.sellable || isPending || isSold}
+                          disabledReason={disabledReason ?? (isPending ? "Selling..." : isSold ? "Sold" : undefined)}
+                          onClick={() => setConfirmingSellGearId(item.gearId)}
+                        >
+                          {isPending ? "Selling..." : isSold ? "Sold" : "Sell"}
+                        </GameButton>
+                      }
+                    />
                   );
                 })}
               </div>
@@ -1263,6 +1291,13 @@ function MovementDestinationRow({
   const isLocked = Boolean(destination.disabledReason);
   const routePreview = buildRoutePreviewCopy(destination, planner.movementValue, planner.currentSectorName);
   const tagLabels = getMovementTagLabels(destination, routePreview.tagLabels);
+  const tags = (
+    <div className="phone-movement-row-tags" aria-label={`${destination.name} route tags`}>
+      {tagLabels.map((tag) => (
+        <em key={tag}>{tag}</em>
+      ))}
+    </div>
+  );
 
   return (
     <article
@@ -1270,28 +1305,29 @@ function MovementDestinationRow({
       role="listitem"
       data-testid="movement-destination-row"
     >
-      <GameButton
-        type="button"
-        tone={primaryTag === "danger" || primaryTag === "locked" ? "battle" : primaryTag === "shop" ? "shop" : "move"}
-        contentMode="custom"
+      <PhoneWrappedMediaCard
+        variant="movement"
         className="phone-movement-row-button"
-        onClick={() => onSelected(destination.sectorId)}
-      >
-        <span className="sr-only">{movementTagLabel[primaryTag]}</span>
-        <span className="phone-movement-row-main">
-          <strong>{destination.name}</strong>
-          <small>{destination.distance} step{destination.distance === 1 ? "" : "s"}</small>
-        </span>
-        <span className="phone-movement-row-tags" aria-label={`${destination.name} route tags`}>
-          {tagLabels.map((tag) => (
-            <em key={tag}>{tag}</em>
-          ))}
-        </span>
-        <span className="phone-movement-row-route phone-move-panel__route-preview" data-testid="movement-route-preview">{getRoutePreviewLine(destination)}</span>
-        {destination.disabledReason ? (
-          <span className="phone-movement-disabled-reason">{destination.disabledReason}</span>
-        ) : null}
-      </GameButton>
+        media={<MovementTileMedia destination={destination} />}
+        title={destination.name}
+        eyebrow={movementTagLabel[primaryTag]}
+        costValue={`${destination.distance} step${destination.distance === 1 ? "" : "s"}`}
+        tags={tags}
+        description={<span className="phone-movement-row-route phone-move-panel__route-preview" data-testid="movement-route-preview">{getRoutePreviewLine(destination)}</span>}
+        meta={routePreview.riskText || routePreview.rewardText ? <span>{routePreview.riskText ?? routePreview.rewardText}</span> : null}
+        disabledReason={destination.disabledReason ? <span className="phone-movement-disabled-reason">{destination.disabledReason}</span> : null}
+        actions={
+          <GameButton
+            type="button"
+            tone={primaryTag === "danger" || primaryTag === "locked" ? "battle" : primaryTag === "shop" ? "shop" : "move"}
+            className="phone-button phone-button-primary phone-movement-select-button"
+            aria-label={`${primaryTag === "locked" ? "Locked " : "Select "}${destination.name}`}
+            onClick={() => onSelected(destination.sectorId)}
+          >
+            Select
+          </GameButton>
+        }
+      />
     </article>
   );
 }
@@ -1363,16 +1399,47 @@ function MovementDestinationDetail({
           </GameButton>
         </div>
 
-        <header className="phone-movement-detail-hero">
-          <span>Destination</span>
-          <h3>{selected.name}</h3>
-          <strong>{selected.distance} step{selected.distance === 1 ? "" : "s"}</strong>
-          <div className="phone-movement-row-tags">
-            {tagLabels.map((tag) => (
-              <em key={tag}>{tag}</em>
-            ))}
-          </div>
-        </header>
+        <PhoneWrappedMediaCard
+          variant="movement"
+          className="phone-movement-detail-hero"
+          media={<MovementTileMedia destination={selected} />}
+          title={selected.name}
+          eyebrow="Destination"
+          costValue={`${selected.distance} step${selected.distance === 1 ? "" : "s"}`}
+          tags={
+            <div className="phone-movement-row-tags">
+              {tagLabels.map((tag) => (
+                <em key={tag}>{tag}</em>
+              ))}
+            </div>
+          }
+          description={<p>{selected.ruleText || "No printed sector action detected."}</p>}
+          meta={
+            <div className="phone-movement-detail-meta">
+              <span>{routePreview.exactText}</span>
+              <span>{routeUnavailable ? "Route unavailable" : `${routePreview.statusLabel}: ${routePreview.statusReason}`}</span>
+            </div>
+          }
+          disabledReason={routeUnavailable ? <span className="phone-movement-disabled-reason">{selected.disabledReason}</span> : null}
+          actions={
+            <GameButton
+              type="button"
+              tone="move"
+              className="phone-button phone-button-primary phone-movement-confirm"
+              disabled={routeUnavailable}
+              disabledReason={selected.disabledReason}
+              onClick={() =>
+                onIntent({
+                  type: "MOVE_REQUESTED",
+                  seatId,
+                  toSectorId: selected.sectorId
+                })
+              }
+            >
+              Confirm Move
+            </GameButton>
+          }
+        />
 
         <div className="phone-movement-intel-grid">
           <span>Why legal</span>
@@ -1398,22 +1465,6 @@ function MovementDestinationDetail({
         </section>
 
         <footer className="phone-movement-confirm-footer" data-testid="movement-confirm-footer">
-          <GameButton
-            type="button"
-            tone="move"
-            className="phone-button phone-button-primary phone-movement-confirm"
-            disabled={routeUnavailable}
-            disabledReason={selected.disabledReason}
-            onClick={() =>
-              onIntent({
-                type: "MOVE_REQUESTED",
-                seatId,
-                toSectorId: selected.sectorId
-              })
-            }
-          >
-            CONFIRM MOVE
-          </GameButton>
           <p>{routeUnavailable ? "This route is blocked by a scenario effect or sealed sector." : "This will end your movement."}</p>
         </footer>
 

@@ -328,12 +328,23 @@ describe("PhoneActionPanel", () => {
     expect(screen.queryByText(/global escalation/i)).not.toBeInTheDocument();
     expect(screen.getAllByText(/anchor market/i).length).toBeGreaterThan(0);
     expect(screen.getByTestId("movement-route-preview")).toHaveTextContent(/pilgrim lock -> anchor market/i);
+    const destinationCard = screen.getByTestId("movement-destination-row").querySelector(".phone-wrap-card");
+    expect(destinationCard).toHaveClass("phone-wrap-card--movement", "phone-movement-row-button");
+    expect(destinationCard?.querySelector(".phone-wrap-card__media")).toBeInTheDocument();
+    expect(destinationCard?.querySelector(".phone-wrap-card__actions")).toContainElement(
+      screen.getByRole("button", { name: /select anchor market/i })
+    );
     expect(screen.queryByText(/legal: exactly 1 step from pilgrim lock/i)).not.toBeInTheDocument();
     expect(screen.queryByText("Icons")).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: /anchor market/i }));
 
     await waitFor(() => expect(screen.getByText("Icons")).toBeInTheDocument());
+    const detailCard = screen.getByTestId("movement-detail-view").querySelector(".phone-wrap-card");
+    expect(detailCard).toHaveClass("phone-wrap-card--movement", "phone-movement-detail-hero");
+    expect(detailCard?.querySelector(".phone-wrap-card__actions")).toContainElement(
+      screen.getByRole("button", { name: /confirm move/i })
+    );
     expect(screen.getByText("Icons")).toBeInTheDocument();
     expect(screen.getAllByText(/legal: exactly 1 step from pilgrim lock/i).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/reward: anchor market services are available/i).length).toBeGreaterThan(0);
@@ -476,7 +487,9 @@ describe("PhoneActionPanel", () => {
 
     expect(screen.queryByTestId("movement-list-view")).not.toBeInTheDocument();
     expect(screen.getByTestId("movement-route-steps")).toHaveTextContent(/broken census hall/i);
-    expect(screen.getByTestId("movement-confirm-footer")).toContainElement(screen.getByRole("button", { name: /confirm move/i }));
+    expect(screen.getByTestId("movement-detail-view").querySelector(".phone-wrap-card__actions")).toContainElement(
+      screen.getByRole("button", { name: /confirm move/i })
+    );
     expect(screen.getByTestId("movement-confirm-footer")).toHaveTextContent(/this will end your movement/i);
     expect(
       screen.getByRole("heading", { name: /weathered pilgrim lock gate/i }).compareDocumentPosition(screen.getByTestId("movement-route-steps")) &
@@ -652,6 +665,13 @@ describe("PhoneActionPanel", () => {
 
     expect(screen.getByText(/ashlock carbine/i)).toBeInTheDocument();
     expect(screen.getByText(/\+1 grit while fighting enemies/i)).toBeInTheDocument();
+    const buyCard = screen.getByText(/ashlock carbine/i).closest("article");
+    expect(buyCard).not.toBeNull();
+    expect(buyCard).toHaveClass("phone-wrap-card", "phone-wrap-card--shop");
+    expect(buyCard?.querySelector(".phone-wrap-card__media")).toBeInTheDocument();
+    expect(buyCard?.querySelector(".phone-wrap-card__actions")).toContainElement(
+      within(buyCard as HTMLElement).getByRole("button", { name: /^buy$/i })
+    );
     fireEvent.click(screen.getAllByRole("button", { name: /^buy$/i })[0]);
     expect(screen.getByRole("dialog", { name: /confirm purchase/i })).toHaveTextContent(/buy ashlock carbine for 3 salvage/i);
     expect(onIntent).not.toHaveBeenCalledWith({
@@ -679,6 +699,11 @@ describe("PhoneActionPanel", () => {
     expect(within(nonSellableCard as HTMLElement).getAllByText(/cannot sell this item/i).length).toBeGreaterThan(0);
     const sellableCard = screen.getByText(/veil hook/i).closest("article");
     expect(sellableCard).not.toBeNull();
+    expect(sellableCard).toHaveClass("phone-wrap-card", "phone-wrap-card--shop", "phone-shop-sell-card");
+    expect(sellableCard?.querySelector(".phone-wrap-card__media")).toBeInTheDocument();
+    expect(sellableCard?.querySelector(".phone-wrap-card__actions")).toContainElement(
+      within(sellableCard as HTMLElement).getByRole("button", { name: /^sell$/i })
+    );
     fireEvent.click(within(sellableCard as HTMLElement).getByRole("button", { name: /^sell$/i }));
     expect(screen.getByRole("dialog", { name: /confirm sale/i })).toHaveTextContent(/sell veil hook for 1 salvage/i);
     fireEvent.click(screen.getByRole("button", { name: /confirm sale/i }));
