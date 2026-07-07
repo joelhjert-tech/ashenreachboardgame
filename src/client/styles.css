@@ -2180,6 +2180,61 @@ select {
   line-height: 1.3;
 }
 
+.phone-active-mission-card {
+  border-color: rgba(234, 177, 94, 0.34);
+  background:
+    linear-gradient(180deg, rgba(33, 24, 12, 0.58), rgba(7, 9, 14, 0.96)),
+    rgba(13, 10, 13, 0.94);
+}
+
+.phone-active-mission-topline,
+.phone-active-mission-details {
+  min-width: 0;
+}
+
+.phone-active-mission-topline {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.6rem;
+}
+
+.phone-active-mission-details {
+  display: grid;
+  gap: 0.42rem;
+  margin: 0;
+}
+
+.phone-active-mission-details div {
+  display: grid;
+  gap: 0.12rem;
+  min-width: 0;
+  padding: 0.48rem;
+  border: 1px solid rgba(234, 177, 94, 0.16);
+  border-radius: 6px;
+  background: rgba(5, 8, 12, 0.42);
+}
+
+.phone-active-mission-details dt {
+  color: #efc27f;
+  font-size: 0.6rem;
+  font-weight: 850;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.phone-active-mission-details dd {
+  min-width: 0;
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+  overflow-wrap: anywhere;
+}
+
+.phone-active-mission-chip-row span {
+  border-color: rgba(234, 177, 94, 0.28);
+  color: #efc27f;
+}
+
 .phone-scenario-quest-card {
   border-color: rgba(126, 183, 239, 0.34);
 }

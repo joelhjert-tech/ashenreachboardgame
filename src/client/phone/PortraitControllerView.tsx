@@ -222,6 +222,14 @@ function describeContractProgress(contract: ContractCard): string {
   return `Progress 0/${contract.objective.target} resolved`;
 }
 
+function describeActiveContractProgress(contract: ContractCard, progress: number): string {
+  if (contract.objective.type === "defeatCount") {
+    return `Progress ${progress}/${contract.objective.target} defeated`;
+  }
+
+  return `Progress ${progress}/${contract.objective.target} resolved`;
+}
+
 function describeContractReward(contract: ContractCard): string {
   const reward = contract.reward;
 
@@ -280,6 +288,63 @@ function ContractMissionCard({
             {selected ? "Selected" : "Select Mission"}
           </button>
         ) : null}
+      </div>
+    </article>
+  );
+}
+
+function ActiveMissionQuestCard({
+  activeContract,
+  contract
+}: {
+  activeContract: PhoneSelfState["character"]["activeContract"];
+  contract: ContractCard | null;
+}): ReactElement {
+  if (!activeContract) {
+    return (
+      <article className="phone-portrait-info-card phone-active-mission-card" data-testid="phone-active-mission-card">
+        <span>Active Mission</span>
+        <strong>No active mission</strong>
+        <p>Choose or accept a mission to track your personal objective here.</p>
+      </article>
+    );
+  }
+
+  if (!contract) {
+    return (
+      <article className="phone-portrait-info-card phone-active-mission-card" data-testid="phone-active-mission-card">
+        <span>Active Mission</span>
+        <strong>Mission syncing</strong>
+        <p>Mission {activeContract.contractId} is active. Progress {activeContract.progress}.</p>
+      </article>
+    );
+  }
+
+  return (
+    <article className="phone-portrait-info-card phone-active-mission-card" data-testid="phone-active-mission-card">
+      <div className="phone-active-mission-topline">
+        <span>Active Mission</span>
+        <span>{contract.factionGiver}</span>
+      </div>
+      <strong>{contract.name}</strong>
+      <p>{contract.text}</p>
+      <dl className="phone-active-mission-details">
+        <div>
+          <dt>Objective</dt>
+          <dd>{describeContractObjective(contract)}</dd>
+        </div>
+        <div>
+          <dt>Progress</dt>
+          <dd>{describeActiveContractProgress(contract, activeContract.progress)}</dd>
+        </div>
+        <div>
+          <dt>Reward</dt>
+          <dd>{describeContractReward(contract)}</dd>
+        </div>
+      </dl>
+      <div className="phone-portrait-chip-row phone-active-mission-chip-row">
+        <span>{contract.objective.type === "defeatCount" ? "Threat lane" : "Sector action"}</span>
+        <span>Personal</span>
       </div>
     </article>
   );
@@ -514,9 +579,6 @@ export function PortraitControllerView({
   const scenarioDeltas = scenarioQuestDeltas(patch?.playerResultDeltas ?? patch?.publicResultDeltas);
   const ownSeat = patch?.seats.find((seat) => seat.seatId === self.seatId) ?? null;
   const isLobbyWaiting = patch?.status === "lobby" || (!patch && Boolean(onLobbyBack));
-  const activeContractProgress = activeContractCard && self.character.activeContract
-    ? `${self.character.activeContract.progress}`
-    : null;
   const localUnboundNemeses = (patch?.nemesisChampions ?? []).filter(
     (nemesis) => nemesis.boundPlayerId !== self.seatId && nemesis.sectorId === self.character.currentSpaceId && !nemesis.defeated
   );
@@ -815,12 +877,8 @@ export function PortraitControllerView({
             <div className="phone-portrait-screen">
               {patch?.privateRivalry ? <RivalryQuestPanel rivalry={patch.privateRivalry} seatId={self.seatId} onIntent={onIntent} /> : null}
               <section className="phone-portrait-section">
-                <div className="phone-sheet-section-heading">Active Quest</div>
-                <article className="phone-portrait-info-card">
-                  <strong>{activeContractCard?.name ?? "No active contract"}</strong>
-                  <span>{activeContractProgress ? `Progress ${activeContractProgress}` : "No contract progress yet."}</span>
-                  <p>{activeContractCard?.text ?? "Accept a contract from the board to track private objectives here."}</p>
-                </article>
+                <div className="phone-sheet-section-heading">Active Mission</div>
+                <ActiveMissionQuestCard activeContract={self.character.activeContract} contract={activeContractCard} />
               </section>
               <section className="phone-portrait-section">
                 <div className="phone-sheet-section-heading">Scenario</div>

@@ -1088,7 +1088,59 @@ describe("PhoneInventoryPanel", () => {
     fireEvent.click(screen.getByRole("tab", { name: /^quest$/i }));
 
     expect(screen.queryByRole("region", { name: /private rivalry agenda/i })).not.toBeInTheDocument();
-    expect(screen.getByText("No active contract")).toBeInTheDocument();
+    expect(screen.getByText("No active mission")).toBeInTheDocument();
+  });
+
+  it("shows the active mission with objective and progress on the Quest tab", () => {
+    const basePatch = createPatch();
+    const baseSelf = basePatch.self;
+    if (!baseSelf) {
+      throw new Error("Expected phone self fixture.");
+    }
+
+    const patch = createPatch({
+      encounter: null,
+      privateRivalry: null,
+      self: {
+        ...baseSelf,
+        character: {
+          ...baseSelf.character,
+          activeContract: { contractId: "choir-hush-census", progress: 1 }
+        }
+      }
+    });
+    const activeContractCard = {
+      id: "choir-hush-census",
+      name: "Choir Hush Census",
+      factionGiver: "Glass Choir",
+      text: "Record the quiet names before the hall notices.",
+      objective: { type: "defeatCount" as const, target: 2 },
+      reward: { type: "lose_heat" as const, amount: 1 }
+    };
+
+    render(
+      <PortraitControllerView
+        self={patch.self}
+        roomCode="RT7P4"
+        displayName="Lane"
+        connectionStatus="open"
+        activeSeatId="seat-1"
+        activeContractCard={activeContractCard}
+        patch={patch}
+        characters={characters}
+        onIntent={vi.fn()}
+        onLeave={vi.fn()}
+      />
+    );
+
+    openPhoneTabs();
+    fireEvent.click(screen.getByRole("tab", { name: /^quest$/i }));
+
+    const mission = screen.getByTestId("phone-active-mission-card");
+    expect(within(mission).getByText("Choir Hush Census")).toBeInTheDocument();
+    expect(within(mission).getByText("Defeat 2 threats.")).toBeInTheDocument();
+    expect(within(mission).getByText("Progress 1/2 defeated")).toBeInTheDocument();
+    expect(within(mission).getByText("Lose Heat")).toBeInTheDocument();
   });
 
   it("shows public scenario sheet progress and pressure on the Quest tab without private agenda data", () => {
