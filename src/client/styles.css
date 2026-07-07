@@ -13507,6 +13507,90 @@ body {
   min-width: 0;
 }
 
+.phone-current-tile-card {
+  border-color: rgba(104, 184, 232, 0.28);
+  background:
+    radial-gradient(circle at 12% 0%, rgba(104, 184, 232, 0.16), transparent 40%),
+    linear-gradient(180deg, rgba(8, 15, 20, 0.9), rgba(5, 7, 10, 0.86));
+}
+
+.phone-current-tile-card.phone-wrap-card {
+  padding: 0.68rem;
+}
+
+.phone-current-tile-card .phone-wrap-card__media {
+  width: clamp(4rem, 20vw, 5.4rem);
+  height: clamp(4rem, 20vw, 5.4rem);
+  margin-right: 0.7rem;
+  margin-bottom: 0.45rem;
+}
+
+.phone-current-tile-card .phone-wrap-card__title {
+  font-size: clamp(1.05rem, 4.6vw, 1.36rem);
+}
+
+.phone-current-tile-status {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.24rem;
+  min-width: 0;
+}
+
+.phone-current-tile-status span,
+.phone-current-tile-facts span {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+
+.phone-current-tile-status span {
+  padding: 0.14rem 0.36rem;
+  border: 1px solid rgba(174, 205, 228, 0.18);
+  border-radius: 4px;
+  background: rgba(104, 184, 232, 0.07);
+  color: rgba(220, 231, 239, 0.9);
+  font-size: 0.64rem;
+  font-weight: 850;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.phone-current-tile-facts {
+  display: grid;
+  gap: 0.26rem;
+  margin-top: 0.18rem;
+  min-width: 0;
+}
+
+.phone-current-tile-facts span {
+  color: rgba(236, 228, 210, 0.76);
+  font-size: clamp(0.72rem, 2.9vw, 0.82rem);
+  line-height: 1.25;
+}
+
+.phone-current-tile-image {
+  object-fit: cover;
+}
+
+.phone-current-tile-fallback {
+  gap: 0.04rem;
+  background:
+    radial-gradient(circle at 38% 20%, rgba(104, 184, 232, 0.26), transparent 44%),
+    linear-gradient(150deg, rgba(22, 42, 52, 0.94), rgba(7, 8, 11, 0.96));
+}
+
+.phone-current-tile-fallback span {
+  color: rgba(174, 205, 228, 0.78);
+  font-size: 0.66rem;
+  font-weight: 850;
+  letter-spacing: 0.08em;
+}
+
+.phone-current-tile-fallback strong {
+  color: #f2dec0;
+  font-size: 1.42rem;
+  line-height: 1;
+}
+
 .phone-movement-list-view {
   display: grid;
   gap: 0.68rem;

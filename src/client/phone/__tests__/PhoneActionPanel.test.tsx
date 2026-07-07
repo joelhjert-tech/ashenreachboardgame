@@ -403,6 +403,19 @@ describe("PhoneActionPanel", () => {
               }
             ]
           },
+          sectorExplorationSummary: {
+            sectorId: "outer_ember_sanctum",
+            sectorName: "Pilgrim Lock",
+            printedThreatIcons: [],
+            unresolvedThreats: [],
+            drawCountsDue: { red: 0, blue: 0, yellow: 0 },
+            sectorTextLocked: false,
+            shopLocked: false,
+            lockedReason: null,
+            sectorTextTitle: "Pilgrim Rest",
+            shopName: null,
+            explanationLines: ["Pilgrim Lock is clear."]
+          },
           publicResultDeltas: [
             {
               id: "move-global-escalation",
@@ -431,6 +444,10 @@ describe("PhoneActionPanel", () => {
     expect(screen.getByTestId("phone-useful-now")).toHaveTextContent(/route and movement tools/i);
     expect(screen.getByTestId("phone-useful-now")).toHaveTextContent(/movement roll 1/i);
     expect(screen.getByTestId("phone-useful-now")).not.toHaveAttribute("open");
+    expect(screen.getByTestId("movement-current-tile-card")).toHaveTextContent(/current tile/i);
+    expect(screen.getByTestId("movement-current-tile-name")).toHaveTextContent(/pilgrim lock/i);
+    expect(screen.getByTestId("movement-current-tile-card")).toHaveTextContent(/pilgrims chain brass prayers/i);
+    expect(screen.getByTestId("movement-current-tile-action")).toHaveTextContent(/pilgrim rest/i);
     expect(screen.getByTestId("movement-planner")).toBeInTheDocument();
     expect(
       screen.getByTestId("phone-current-prompt").compareDocumentPosition(screen.getByTestId("phone-action-active-panel")) &
@@ -476,6 +493,8 @@ describe("PhoneActionPanel", () => {
     fireEvent.click(screen.getByRole("button", { name: /anchor market/i }));
 
     await waitFor(() => expect(screen.getByText("Icons")).toBeInTheDocument());
+    expect(screen.getByTestId("movement-current-tile-name")).toHaveTextContent(/pilgrim lock/i);
+    expect(screen.getByTestId("movement-detail-view")).toHaveTextContent(/anchor market/i);
     expect(screen.getByTestId("movement-detail-route-summary")).toHaveTextContent(/route: pilgrim lock -> anchor market/i);
     const detailCard = screen.getByTestId("movement-detail-view").querySelector(".phone-wrap-card");
     expect(detailCard).toHaveClass("phone-wrap-card--movement", "phone-movement-detail-hero");
@@ -496,6 +515,89 @@ describe("PhoneActionPanel", () => {
     expect(screen.getAllByText(/green guile/i).length).toBeGreaterThan(0);
     expect(screen.getByText(/buy gear \/ sell gear/i)).toBeInTheDocument();
     expect(screen.queryByText(/choir bulwark/i)).not.toBeInTheDocument();
+  });
+
+  it("shows current tile information before movement is rolled", () => {
+    const onIntent = vi.fn<(intent: ClientIntent) => void>();
+
+    render(
+      <PhoneActionPanel
+        characters={characters}
+        onIntent={onIntent}
+        selectedTurnTab="move"
+        patch={createPatch({
+          phase: "navigation",
+          encounter: null,
+          movementPlanner: null,
+          players: [
+            ...createPatch().players,
+            {
+              seatId: "seat-2",
+              sectorId: "ashwake-crossing",
+              character: {
+                id: "signal-witch",
+                name: "Mira",
+                archetype: "Signal Witch",
+                status: "active",
+                activeContract: null,
+                stats: { command: 1, grit: 2, signal: 4, guile: 3, forge: 1 },
+                trophies: 0,
+                heat: 0,
+                wounds: 0,
+                scars: [],
+                heldGearCount: 0,
+                equippedGear: { weapon: null, armor: null, utility: null }
+              }
+            }
+          ],
+          sectorExplorationSummary: {
+            sectorId: "ashwake-crossing",
+            sectorName: "Ashwalk Bridge",
+            printedThreatIcons: ["yellow"],
+            unresolvedThreats: [
+              {
+                instanceId: "ashwake-crossing:marrow-tax-auditors",
+                cardId: "marrow-tax-auditors",
+                name: "Marrow-Tax Auditors",
+                type: "enemy",
+                lane: "yellow",
+                blocksShop: true,
+                blocksSectorText: true
+              }
+            ],
+            drawCountsDue: { red: 0, blue: 0, yellow: 1 },
+            sectorTextLocked: true,
+            shopLocked: true,
+            lockedReason: "Clear Marrow-Tax Auditors first.",
+            sectorTextTitle: "Hold the Bridge",
+            shopName: null,
+            explanationLines: ["A blocker is holding the bridge."]
+          }
+        })}
+      />
+    );
+
+    const currentTile = screen.getByTestId("movement-current-tile-card");
+    expect(currentTile).toHaveTextContent(/ashwalk bridge/i);
+    expect(screen.getByTestId("movement-current-tile-region")).toHaveTextContent(/outer reach/i);
+    expect(screen.getByTestId("movement-current-tile-region")).toHaveTextContent(/hazard/i);
+    expect(screen.getByTestId("movement-current-tile-icons")).toHaveTextContent(/printed icons: 1 yellow/i);
+    expect(screen.getByTestId("movement-current-tile-blockers")).toHaveTextContent(/blocked: marrow-tax auditors/i);
+    expect(screen.getByTestId("movement-current-tile-shop")).toHaveTextContent(/shop: none/i);
+    expect(screen.getByTestId("movement-current-tile-action")).toHaveTextContent(/action locked: clear marrow-tax auditors first/i);
+    expect(screen.getByTestId("movement-current-tile-facts")).toHaveTextContent(/draw due: 1 yellow/i);
+    expect(screen.getByTestId("movement-current-tile-occupants")).toHaveTextContent(/mira \(mira\)/i);
+    expect(screen.getByTestId("movement-current-tile-image")).toHaveAttribute("src", "/assets/map/tiles/map_tile_hollow_gate.png");
+    expect(screen.getAllByText(/roll movement to reveal your legal destinations/i).length).toBeGreaterThan(0);
+    expect(screen.queryByTestId("movement-list-view")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("phone-shop-panel")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("phone-battle-subject-card")).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /roll movement/i }));
+    expect(onIntent).toHaveBeenCalledWith({
+      type: "MOVEMENT_ROLL_REQUESTED",
+      seatId: "seat-1"
+    });
   });
 
   it("lets the player inspect a route without committing movement, then confirm", () => {

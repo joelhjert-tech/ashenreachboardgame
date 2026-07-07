@@ -12,12 +12,15 @@ import type {
   PublicMoveDestination,
   PublicMovementPlannerState,
   PublicMoveStrategicTag,
+  PublicSectorExplorationSummary,
+  PublicSectorExplorationThreat,
   PublicShopCost,
   PublicShopEncounterState,
   ResultDelta,
   SectorNode,
   ShopFailureReason,
-  Stat
+  Stat,
+  ThreatIcon
 } from "../shared/types.js";
 import { ResultDeltaRow } from "../shared/ResultDeltaChips.js";
 import { getBoardSpace, isScenarioConfrontationSpace } from "../../game/data/boardSpaces.js";
@@ -130,6 +133,25 @@ interface SectorOpportunityItem {
   key: string;
   label: string;
   value: number;
+}
+
+interface CurrentTileViewModel {
+  sectorId: string;
+  name: string;
+  regionLabel: string;
+  tags: string[];
+  note: string;
+  artPath: string | null;
+  printedThreatIcons: ThreatIcon[];
+  unresolvedThreats: PublicSectorExplorationThreat[];
+  drawDueText: string;
+  shopText: string;
+  actionText: string;
+  occupants: Array<{
+    playerId: string;
+    name: string;
+    characterName: string;
+  }>;
 }
 
 function actionToneToGameButtonTone(tone: ActionButtonDefinition["tone"]): GameButtonTone {
@@ -898,6 +920,102 @@ function formatThreatIconWithStat(icon: PublicMoveDestination["threatIcons"][num
   return `${formatThreatIcon(icon)} ${statLabelById[getThreatIconStat(icon)]}`;
 }
 
+function formatThreatIconCounts(icons: ThreatIcon[]): string {
+  if (icons.length === 0) {
+    return "none";
+  }
+
+  const counts = icons.reduce<Record<ThreatIcon, number>>(
+    (accumulator, icon) => {
+      accumulator[icon] += 1;
+      return accumulator;
+    },
+    { red: 0, blue: 0, yellow: 0 }
+  );
+
+  return (["red", "blue", "yellow"] as const)
+    .filter((icon) => counts[icon] > 0)
+    .map((icon) => `${counts[icon]} ${icon}`)
+    .join(", ");
+}
+
+function formatDrawDueText(summary: PublicSectorExplorationSummary | null | undefined): string {
+  if (!summary) {
+    return "Draw due: unknown until sector scan.";
+  }
+
+  const drawEntries = (["red", "blue", "yellow"] as const)
+    .filter((icon) => summary.drawCountsDue[icon] > 0)
+    .map((icon) => `${summary.drawCountsDue[icon]} ${icon}`);
+
+  return drawEntries.length > 0 ? `Draw due: ${drawEntries.join(", ")}.` : "Draw due: none.";
+}
+
+function formatCurrentTileShopText(summary: PublicSectorExplorationSummary | null | undefined, tags: string[]): string {
+  if (summary?.shopName) {
+    const lockedReason = summary.lockedReason?.replace(/[.]+$/g, "") ?? "clear unresolved blockers first";
+    return summary.shopLocked
+      ? `Shop locked: ${lockedReason}.`
+      : `Shop: ${summary.shopName}.`;
+  }
+
+  return tags.includes("shop") ? "Shop: possible if the sector is clear." : "Shop: none.";
+}
+
+function formatCurrentTileActionText(
+  summary: PublicSectorExplorationSummary | null | undefined,
+  boardSpace: ReturnType<typeof getBoardSpace>
+): string {
+  const title = summary?.sectorTextTitle ?? boardSpace?.textBox.title ?? null;
+
+  if (!title) {
+    return "Action: none.";
+  }
+
+  if (summary?.sectorTextLocked) {
+    const lockedReason = summary.lockedReason?.replace(/[.]+$/g, "") ?? "clear unresolved blockers first";
+    return `Action locked: ${lockedReason}.`;
+  }
+
+  return `Action: ${title}.`;
+}
+
+function buildCurrentTileViewModel(
+  patch: PhonePatchPayload,
+  self: NonNullable<PhonePatchPayload["self"]>,
+  sector: SectorNode | null,
+  boardSpace: ReturnType<typeof getBoardSpace>
+): CurrentTileViewModel {
+  const summary = patch.sectorExplorationSummary;
+  const sectorId = summary?.sectorId ?? patch.movementPlanner?.currentSectorId ?? self.sectorId;
+  const currentSector = sector?.id === sectorId ? sector : getSector(patch.sectors, sectorId);
+  const currentBoardSpace = boardSpace?.id === sectorId ? boardSpace : getBoardSpace(sectorId);
+  const name = summary?.sectorName ?? currentSector?.name ?? currentBoardSpace?.name ?? sectorId;
+  const tags = currentBoardSpace?.tags ?? [];
+  const sameSectorOccupants = patch.players
+    .filter((player) => player.sectorId === sectorId && player.seatId !== self.seatId)
+    .map((player) => ({
+      playerId: player.seatId,
+      name: patch.seats.find((seat) => seat.seatId === player.seatId)?.displayName ?? player.character.name,
+      characterName: player.character.name
+    }));
+
+  return {
+    sectorId,
+    name,
+    regionLabel: currentBoardSpace ? `${toTitleCase(currentBoardSpace.tier)} Reach` : toTitleCase(currentSector?.regionTier ?? "unknown reach"),
+    tags,
+    note: currentBoardSpace?.loreText?.trim() || currentBoardSpace?.ruleText?.trim() || "No stable sector note is available yet.",
+    artPath: getTileAssetPath(sectorId),
+    printedThreatIcons: summary?.printedThreatIcons ?? currentBoardSpace?.threatIcons ?? [],
+    unresolvedThreats: summary?.unresolvedThreats ?? [],
+    drawDueText: formatDrawDueText(summary),
+    shopText: formatCurrentTileShopText(summary, tags),
+    actionText: formatCurrentTileActionText(summary, currentBoardSpace),
+    occupants: sameSectorOccupants
+  };
+}
+
 function buildDestinationSummary(destination: PublicMoveDestination): string {
   if (destination.disabledReason) {
     return destination.disabledReason;
@@ -982,6 +1100,69 @@ function MovementRouteConfidence({
         <span key={item}>{item}</span>
       ))}
     </div>
+  );
+}
+
+function CurrentTileMedia({ tile }: { tile: CurrentTileViewModel }): ReactElement {
+  if (tile.artPath) {
+    return (
+      <img
+        src={tile.artPath}
+        alt=""
+        className="phone-wrap-card__image phone-current-tile-image"
+        aria-hidden="true"
+        data-testid="movement-current-tile-image"
+      />
+    );
+  }
+
+  return (
+    <div className="phone-wrap-card__fallback phone-current-tile-fallback" aria-hidden="true" data-testid="movement-current-tile-fallback">
+      <span>{tile.regionLabel.slice(0, 1).toUpperCase()}</span>
+      <strong>{tile.name.slice(0, 1).toUpperCase()}</strong>
+    </div>
+  );
+}
+
+function CurrentTileCard({ tile }: { tile: CurrentTileViewModel }): ReactElement {
+  const tagLabels = tile.tags.slice(0, 4).map(toTitleCase);
+  const unresolvedText =
+    tile.unresolvedThreats.length > 0
+      ? `Blocked: ${tile.unresolvedThreats.map((threat) => threat.name).join(", ")}.`
+      : "Unresolved blockers: none.";
+  const occupantText =
+    tile.occupants.length > 0
+      ? `Occupants: ${tile.occupants.map((occupant) => `${occupant.name} (${occupant.characterName})`).join(", ")}.`
+      : "Occupants: none.";
+
+  return (
+    <PhoneWrappedMediaCard
+      variant="movement"
+      className="phone-current-tile-card phone-move-panel__current-tile"
+      media={<CurrentTileMedia tile={tile} />}
+      title={<span data-testid="movement-current-tile-name">{tile.name}</span>}
+      eyebrow="Current Tile"
+      status={
+        <div className="phone-current-tile-status" data-testid="movement-current-tile-region">
+          <span>{tile.regionLabel}</span>
+          {tagLabels.map((tag) => (
+            <span key={tag}>{tag}</span>
+          ))}
+        </div>
+      }
+      description={<p data-testid="movement-current-tile-note">{tile.note}</p>}
+      meta={
+        <div className="phone-current-tile-facts" data-testid="movement-current-tile-facts">
+          <span data-testid="movement-current-tile-icons">Printed icons: {formatThreatIconCounts(tile.printedThreatIcons)}.</span>
+          <span data-testid="movement-current-tile-blockers">{unresolvedText}</span>
+          <span data-testid="movement-current-tile-shop">{tile.shopText}</span>
+          <span data-testid="movement-current-tile-action">{tile.actionText}</span>
+          <span>{tile.drawDueText}</span>
+          <span data-testid="movement-current-tile-occupants">{occupantText}</span>
+        </div>
+      }
+      testId="movement-current-tile-card"
+    />
   );
 }
 
@@ -1829,12 +2010,14 @@ function MovementDestinationDetail({
 
 function PhoneMovePanel({
   movementPlanner,
+  currentTile,
   hasMoveContent,
   seatId,
   onIntent,
   usefulNow
 }: {
   movementPlanner: PublicMovementPlannerState | null | undefined;
+  currentTile: CurrentTileViewModel;
   hasMoveContent: boolean;
   seatId: string;
   onIntent: (intent: ClientIntent) => void;
@@ -1842,6 +2025,7 @@ function PhoneMovePanel({
 }): ReactElement {
   return (
     <section className="phone-action-active-panel phone-move-panel" data-testid="phone-action-active-panel" aria-label="Move command screen">
+      <CurrentTileCard tile={currentTile} />
       <MovementPlanner planner={movementPlanner} seatId={seatId} onIntent={onIntent} />
       {!hasMoveContent && !movementPlanner?.active && (
         <EmptyTurnTab title="No movement choice" text="Movement is not available in this step. Resolve the current action or wait for the table." />
@@ -2037,6 +2221,7 @@ export function PhoneActionPanel({
   const battleAssistPanel = <BattleAssistCard patch={patch} onIntent={onIntent} />;
   const sector = getSector(patch.sectors, self.sectorId);
   const boardSpace = getBoardSpace(self.sectorId);
+  const currentTile = buildCurrentTileViewModel(patch, self, sector, boardSpace);
   const sectorExplorationCopy = buildSectorExplorationCopy(patch.sectorExplorationSummary);
   const activeContract = getActiveContractCard(patch);
   const equippedIds = new Set(Object.values(self.character.equippedGear).filter((value): value is string => Boolean(value)));
@@ -2638,6 +2823,7 @@ export function PhoneActionPanel({
     activeTurnTab === "move" ? (
       <PhoneMovePanel
         movementPlanner={movementPlanner}
+        currentTile={currentTile}
         hasMoveContent={hasMoveContent}
         seatId={self.seatId}
         onIntent={onIntent}
