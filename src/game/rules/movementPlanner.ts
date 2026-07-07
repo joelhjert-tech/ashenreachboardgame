@@ -1,4 +1,4 @@
-import { RIFTFALL_BOARD_NODE_INDEX } from "../../data/riftfallBoardNodes.js";
+import { RIFTFALL_BOARD_NODE_INDEX, RIFTFALL_BOARD_NODES, type BoardNode } from "../../data/riftfallBoardNodes.js";
 import { getBoardSpace } from "../data/boardSpaces.js";
 import type { GameState, PlayerState } from "../schema/session.schema.js";
 import { hasCrownKeyFragment } from "./nemesisRelay.js";
@@ -56,6 +56,169 @@ function getRegionTransitionBlockReason(state: GameState, fromSectorId: string, 
   }
 
   return `Route blocked: ${getSectorDisplayName(state, toSectorId)} requires a transition tile from ${getSectorDisplayName(state, fromSectorId)}`;
+}
+
+function getRingTrack(ring: BoardNode["ring"]): BoardNode[] {
+  return RIFTFALL_BOARD_NODES.filter((node) => node.ring === ring);
+}
+
+function getRingTrackNeighbor(sectorId: string, direction: -1 | 1): string | null {
+  const node = RIFTFALL_BOARD_NODE_INDEX.get(sectorId);
+
+  if (!node || node.ring === "center") {
+    return null;
+  }
+
+  const ringTrack = getRingTrack(node.ring);
+  const index = ringTrack.findIndex((entry) => entry.id === sectorId);
+
+  if (index < 0 || ringTrack.length < 2) {
+    return null;
+  }
+
+  const nextIndex = (index + direction + ringTrack.length) % ringTrack.length;
+  return ringTrack[nextIndex]?.id ?? null;
+}
+
+function isAuthoredTransitionEdge(fromSectorId: string, toSectorId: string): boolean {
+  const fromNode = RIFTFALL_BOARD_NODE_INDEX.get(fromSectorId);
+  const toNode = RIFTFALL_BOARD_NODE_INDEX.get(toSectorId);
+
+  if (!fromNode || !toNode || fromNode.ring === toNode.ring) {
+    return false;
+  }
+
+  return fromNode.connections.includes(toSectorId) && toNode.connections.includes(fromSectorId);
+}
+
+function addMovementRoute(
+  routesByDestination: Map<string, MovementRoute>,
+  route: MovementRoute,
+  currentSectorId: string
+): void {
+  if (route.sectorId !== currentSectorId && !routesByDestination.has(route.sectorId)) {
+    routesByDestination.set(route.sectorId, route);
+  }
+}
+
+function addBlockedMovementRoute(
+  blockedRoutesByDestination: Map<string, BlockedMovementRoute>,
+  route: BlockedMovementRoute
+): void {
+  if (!blockedRoutesByDestination.has(route.sectorId)) {
+    blockedRoutesByDestination.set(route.sectorId, route);
+  }
+}
+
+function buildRingTrackRoute(
+  state: GameState,
+  player: PlayerState,
+  currentSectorId: string,
+  movementValue: number,
+  direction: -1 | 1
+): MovementRoute | BlockedMovementRoute | null {
+  const route = [currentSectorId];
+  let fromSectorId = currentSectorId;
+
+  for (let distance = 1; distance <= movementValue; distance += 1) {
+    const neighborId = getRingTrackNeighbor(fromSectorId, direction);
+
+    if (!neighborId) {
+      return null;
+    }
+
+    const nextRoute = [...route, neighborId];
+    const disabledReason = getMovementStepBlockReason(state, player, fromSectorId, neighborId);
+
+    if (disabledReason) {
+      return {
+        sectorId: neighborId,
+        distance,
+        route: nextRoute,
+        disabledReason
+      };
+    }
+
+    route.push(neighborId);
+    fromSectorId = neighborId;
+  }
+
+  return {
+    sectorId: fromSectorId,
+    distance: movementValue,
+    route
+  };
+}
+
+function buildGraphRoutePlan(state: GameState, player: PlayerState, currentSectorId: string, movementValue: number): MovementRoutePlan {
+  const queue: Array<{ sectorId: string; route: string[] }> = [{ sectorId: currentSectorId, route: [currentSectorId] }];
+  const routesByDestination = new Map<string, MovementRoute>();
+  const blockedRoutesByDestination = new Map<string, BlockedMovementRoute>();
+  const visitedBySectorAndDistance = new Set<string>([`${currentSectorId}:0`]);
+
+  while (queue.length > 0) {
+    const current = queue.shift();
+
+    if (!current) {
+      continue;
+    }
+
+    const distance = current.route.length - 1;
+
+    if (distance === movementValue) {
+      addMovementRoute(
+        routesByDestination,
+        {
+          sectorId: current.sectorId,
+          distance,
+          route: current.route
+        },
+        currentSectorId
+      );
+      continue;
+    }
+
+    const sector = state.sectors.find((entry) => entry.id === current.sectorId);
+
+    if (!sector) {
+      continue;
+    }
+
+    for (const neighborId of sector.neighbors) {
+      const nextDistance = distance + 1;
+      const nextRoute = [...current.route, neighborId];
+      const disabledReason = getMovementStepBlockReason(state, player, current.sectorId, neighborId);
+
+      if (disabledReason) {
+        addBlockedMovementRoute(blockedRoutesByDestination, {
+          sectorId: neighborId,
+          distance: nextDistance,
+          route: nextRoute,
+          disabledReason
+        });
+        continue;
+      }
+
+      const visitKey = `${neighborId}:${nextDistance}`;
+
+      if (visitedBySectorAndDistance.has(visitKey)) {
+        continue;
+      }
+
+      visitedBySectorAndDistance.add(visitKey);
+      queue.push({
+        sectorId: neighborId,
+        route: nextRoute
+      });
+    }
+  }
+
+  return {
+    movementValue,
+    currentSectorId,
+    routes: [...routesByDestination.values()],
+    blockedRoutes: [...blockedRoutesByDestination.values()]
+  };
 }
 
 export function getMovementStepBlockReason(
@@ -121,54 +284,58 @@ export function buildMovementRoutePlan(state: GameState, seatId: string): Moveme
   const movementValue = getMovementValueForSeat(state, seatId);
   const routesByDestination = new Map<string, MovementRoute>();
   const blockedRoutesByDestination = new Map<string, BlockedMovementRoute>();
-  let frontier: string[][] = [[currentSectorId]];
+  const currentBoardNode = RIFTFALL_BOARD_NODE_INDEX.get(currentSectorId);
 
-  for (let distance = 1; distance <= movementValue; distance += 1) {
-    const nextFrontier: string[][] = [];
+  if (!currentBoardNode) {
+    return buildGraphRoutePlan(state, player, currentSectorId, movementValue);
+  }
 
-    for (const route of frontier) {
-      const fromSectorId = route[route.length - 1]!;
-      const fromSector = state.sectors.find((sector) => sector.id === fromSectorId);
+  ([-1, 1] as const).forEach((direction) => {
+    const route = buildRingTrackRoute(state, player, currentSectorId, movementValue, direction);
 
-      if (!fromSector) {
+    if (!route) {
+      return;
+    }
+
+    if ("disabledReason" in route) {
+      addBlockedMovementRoute(blockedRoutesByDestination, route);
+      return;
+    }
+
+    addMovementRoute(routesByDestination, route, currentSectorId);
+  });
+
+  if (movementValue === 1) {
+    for (const neighborId of currentSector.neighbors) {
+      const nextRoute = [currentSectorId, neighborId];
+      const disabledReason = getMovementStepBlockReason(state, player, currentSectorId, neighborId);
+
+      if (disabledReason) {
+        addBlockedMovementRoute(blockedRoutesByDestination, {
+          sectorId: neighborId,
+          distance: 1,
+          route: nextRoute,
+          disabledReason
+        });
         continue;
       }
 
-      for (const neighborId of fromSector.neighbors) {
-        if (route.includes(neighborId)) {
-          continue;
-        }
+      const fromSpace = getBoardSpace(currentSectorId);
+      const toSpace = getBoardSpace(neighborId);
+      const isSameRegionStep = !fromSpace || !toSpace || fromSpace.tier === toSpace.tier;
 
-        const nextRoute = [...route, neighborId];
-        const disabledReason = getMovementStepBlockReason(state, player, fromSectorId, neighborId);
-
-        if (disabledReason) {
-          if (distance === 1 && !blockedRoutesByDestination.has(neighborId)) {
-            blockedRoutesByDestination.set(neighborId, {
-              sectorId: neighborId,
-              distance,
-              route: nextRoute,
-              disabledReason
-            });
-          }
-          continue;
-        }
-
-        if (distance === movementValue) {
-          if (neighborId !== currentSectorId && !routesByDestination.has(neighborId)) {
-            routesByDestination.set(neighborId, {
-              sectorId: neighborId,
-              distance,
-              route: nextRoute
-            });
-          }
-        } else {
-          nextFrontier.push(nextRoute);
-        }
+      if (isSameRegionStep || isAuthoredTransitionEdge(currentSectorId, neighborId)) {
+        addMovementRoute(
+          routesByDestination,
+          {
+            sectorId: neighborId,
+            distance: 1,
+            route: nextRoute
+          },
+          currentSectorId
+        );
       }
     }
-
-    frontier = nextFrontier;
   }
 
   return {

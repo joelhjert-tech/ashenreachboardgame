@@ -829,6 +829,7 @@ export interface PhonePatchPayload extends PublicPatchPayload {
   objectUseStates?: PhoneObjectUseState[];
   startingContractOptions?: ContractCard[];
   selectedStartingContract?: ContractCard | null;
+  activeContractCard?: ContractCard | null;
   canReady?: boolean;
   readyDisabledReason?: string | null;
   privateRivalry?: PrivateRivalryPayload | null;

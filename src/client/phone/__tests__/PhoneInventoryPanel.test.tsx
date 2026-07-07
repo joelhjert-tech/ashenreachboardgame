@@ -601,6 +601,7 @@ describe("PhoneInventoryPanel", () => {
     expect(shell).toHaveClass("phone-shell--bottomdock-expanded");
     expect(shell).toHaveAttribute("data-phone-bottom-dock-expanded", "true");
     expect(screen.getByRole("button", { name: /hide ui/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /hide tabs/i })).toHaveClass("phone-portrait-tab-utility");
     fireEvent.click(screen.getByRole("tab", { name: /inventory/i }));
     await waitFor(() => expect(screen.getByLabelText("Inventory")).toHaveTextContent(/black route fuse/i));
     fireEvent.click(screen.getByRole("button", { name: /hide ui/i }));
@@ -1203,6 +1204,7 @@ describe("PhoneInventoryPanel", () => {
 
     const mission = screen.getByTestId("phone-active-mission-card");
     expect(within(mission).getByText("Choir Hush Census")).toBeInTheDocument();
+    expect(within(mission).getByTestId("phone-active-mission-art")).toHaveAttribute("src", expect.stringMatching(/\/assets\/cards\/(contracts|fallbacks)\//));
     expect(within(mission).getByText("Defeat 2 threats.")).toBeInTheDocument();
     expect(within(mission).getByText("Progress 1/2 defeated")).toBeInTheDocument();
     expect(within(mission).getByText("Lose Heat")).toBeInTheDocument();
@@ -1364,6 +1366,7 @@ describe("PhoneInventoryPanel", () => {
     expect(screen.getByText(/character locked/i)).toBeInTheDocument();
     expect(screen.getAllByText(/choose starting mission/i).length).toBeGreaterThan(0);
     expect(screen.getByText(/quietus ledger/i)).toBeInTheDocument();
+    expect(screen.getByTestId("phone-starting-mission-art")).toHaveAttribute("src", expect.stringMatching(/\/assets\/cards\/(contracts|fallbacks)\//));
     expect(screen.getByText(/silence one hunter/i)).toBeInTheDocument();
     expect(screen.getByText("Lane")).toBeInTheDocument();
     expect(screen.queryByRole("tab", { name: /inventory/i })).not.toBeInTheDocument();

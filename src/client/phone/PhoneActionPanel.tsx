@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactElement } from "react";
+import type { CardImageType } from "../../game/assets/design/cardImageCatalog.js";
 import type {
   ActiveResolution,
   CharacterCatalogEntry,
@@ -144,8 +145,7 @@ function getActiveSeatId(patch: PhonePatchPayload): string | null {
 }
 
 function getActiveContractCard(patch: PhonePatchPayload): ContractCard | null {
-  const contractId = patch.self?.character.activeContract?.contractId;
-  return contractId ? patch.availableContracts.find((contract) => contract.id === contractId) ?? null : null;
+  return patch.activeContractCard ?? null;
 }
 
 function getSectorOpportunityItems(sector: SectorNode | null): SectorOpportunityItem[] {
@@ -237,6 +237,86 @@ function MovementTileMedia({ destination }: { destination: PublicMoveDestination
       <span>{destination.ring.slice(0, 1).toUpperCase()}</span>
       <strong>{destination.distance}</strong>
     </div>
+  );
+}
+
+const cardImageTypes = new Set<CardImageType>(["threat", "contract", "anomaly", "artifact", "scar", "escalation"]);
+
+function isCardImageType(value: string | null | undefined): value is CardImageType {
+  return Boolean(value && cardImageTypes.has(value as CardImageType));
+}
+
+function getResolutionCardImageType(
+  resolution: ActiveResolution | null | undefined,
+  encounter: PhonePatchPayload["encounter"]
+): CardImageType | null {
+  if (isCardImageType(resolution?.card?.artType)) {
+    return resolution.card.artType;
+  }
+
+  if (encounter) {
+    return "threat";
+  }
+
+  if (resolution?.source === "threat" || resolution?.source === "contract" || resolution?.source === "anomaly" || resolution?.source === "artifact") {
+    return resolution.source;
+  }
+
+  return null;
+}
+
+function BattleSubjectCard({
+  resolution,
+  encounter
+}: {
+  resolution: ActiveResolution | null | undefined;
+  encounter: PhonePatchPayload["encounter"];
+}): ReactElement | null {
+  const title = resolution?.card?.title ?? encounter?.enemyName ?? encounter?.title ?? null;
+
+  if (!title) {
+    return null;
+  }
+
+  const imageType = getResolutionCardImageType(resolution, encounter);
+  const imageId = resolution?.card?.id ?? encounter?.id ?? null;
+  const battle = resolution?.battle;
+  const stat = battle?.stat ?? encounter?.stat ?? null;
+  const difficulty = battle?.difficulty ?? encounter?.difficulty ?? null;
+  const typeLabel = toTitleCase(encounter?.cardType ?? resolution?.card?.type ?? resolution?.source ?? "encounter");
+  const summary = resolution?.card?.flavor ?? encounter?.flavor ?? "Resolve the revealed threat before continuing.";
+  const media = imageType ? (
+    <CardArtImage
+      cardType={imageType}
+      cardId={imageId}
+      alt=""
+      aria-hidden="true"
+      className="phone-wrap-card__image"
+      data-testid="phone-battle-subject-art"
+    />
+  ) : (
+    <span className="phone-wrap-card__fallback" aria-hidden="true">
+      {typeLabel.slice(0, 3)}
+    </span>
+  );
+
+  return (
+    <PhoneWrappedMediaCard
+      variant="action"
+      className="phone-battle-subject-card"
+      media={media}
+      title={title}
+      eyebrow={typeLabel}
+      status={stat && typeof difficulty === "number" ? <ChallengeBadge stat={stat} value={difficulty} size="compact" /> : null}
+      description={summary}
+      tags={
+        <>
+          <span>{typeLabel}</span>
+          {stat ? <span>{statLabelById[stat]} test</span> : <span>Resolution</span>}
+        </>
+      }
+      testId="phone-battle-subject-card"
+    />
   );
 }
 
@@ -1773,6 +1853,8 @@ function PhoneMovePanel({
 
 function PhoneBattlePanel({
   title,
+  activeResolution,
+  encounter,
   resolutionPanel,
   battleAssistPanel,
   threatActions,
@@ -1781,6 +1863,8 @@ function PhoneBattlePanel({
   usefulNow
 }: {
   title: string;
+  activeResolution: ActiveResolution | null;
+  encounter: PhonePatchPayload["encounter"];
   resolutionPanel: ReactElement | null;
   battleAssistPanel: ReactElement | null;
   threatActions: ActionButtonDefinition[];
@@ -1794,6 +1878,7 @@ function PhoneBattlePanel({
         <span>Battle</span>
         <strong>{title}</strong>
       </header>
+      <BattleSubjectCard resolution={activeResolution} encounter={encounter} />
       {resolutionPanel ? <div className="phone-battle-panel__roll-card">{resolutionPanel}</div> : null}
       <ActionSections sections={[{ key: "threat", title: "Threat", detail: title, actions: threatActions, defaultOpen: true }]} />
       {battleAssistPanel}
@@ -2561,6 +2646,8 @@ export function PhoneActionPanel({
     ) : activeTurnTab === "battle" ? (
       <PhoneBattlePanel
         title={battleTitle}
+        activeResolution={activeResolution}
+        encounter={patch.encounter}
         resolutionPanel={resolutionPanel}
         battleAssistPanel={battleAssistPanel}
         threatActions={threatActions}

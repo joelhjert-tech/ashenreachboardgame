@@ -1,6 +1,7 @@
 import { useEffect, useState, type CSSProperties, type ReactElement } from "react";
 import { getChallengeThemeStyle } from "../../game/ui/challengeTheme.js";
 import { getCharacterPortraitPath } from "../shared/assetPaths.js";
+import { CardArtImage } from "../shared/CardArtImage.js";
 import { GameButton } from "../shared/GameButton.js";
 import { ResultDeltaRow } from "../shared/ResultDeltaChips.js";
 import { formatSeatLabel, statLabelById, statOrder } from "../shared/statLabels.js";
@@ -262,6 +263,14 @@ function ContractMissionCard({
 }): ReactElement {
   return (
     <article className="phone-starting-mission-card" data-selected={selected ? "true" : "false"}>
+      <CardArtImage
+        cardType="contract"
+        cardId={contract.id}
+        alt=""
+        aria-hidden="true"
+        className="phone-starting-mission-art"
+        data-testid="phone-starting-mission-art"
+      />
       <div className="phone-starting-mission-card-top">
         <span>{recommended ? "Recommended Mission" : contract.factionGiver}</span>
         <strong>{contract.name}</strong>
@@ -322,6 +331,14 @@ function ActiveMissionQuestCard({
 
   return (
     <article className="phone-portrait-info-card phone-active-mission-card" data-testid="phone-active-mission-card">
+      <CardArtImage
+        cardType="contract"
+        cardId={contract.id}
+        alt=""
+        aria-hidden="true"
+        className="phone-active-mission-art"
+        data-testid="phone-active-mission-art"
+      />
       <div className="phone-active-mission-topline">
         <span>Active Mission</span>
         <span>{contract.factionGiver}</span>
@@ -992,7 +1009,7 @@ export function PortraitControllerView({
               ))}
               <button
                 type="button"
-                className="phone-button phone-button-secondary phone-tabs-collapse"
+                className="phone-portrait-tab phone-portrait-tab-utility phone-tabs-collapse"
                 onClick={hideBottomDock}
               >
                 Hide Tabs

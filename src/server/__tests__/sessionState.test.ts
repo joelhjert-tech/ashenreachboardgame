@@ -392,10 +392,10 @@ describe("canonical sector graph", () => {
     state.seats[0] = { ...state.seats[0]!, connected: true, displayName: "Lane", characterId: "void-marshal" };
     state.players[0] = {
       ...state.players[0]!,
-      sectorId: "outer_ember_sanctum",
+      sectorId: "votive-engine-room",
       character: {
         ...state.players[0]!.character,
-        currentSpaceId: "outer_ember_sanctum"
+        currentSpaceId: "votive-engine-room"
       }
     };
 
@@ -430,26 +430,22 @@ describe("canonical sector graph", () => {
     };
 
     expect(phoneProjection.movementPlanner?.movementValue).toBe(1);
-    expect(phoneProjection.movementPlanner?.currentSectorName).toBe("Pilgrim Lock Gate");
+    expect(phoneProjection.movementPlanner?.currentSectorName).toBe("Votive Engine Room");
     expect(tvProjection.movementPlanner?.movementValue).toBe(phoneProjection.movementPlanner?.movementValue);
     expect(tvProjection.movementPlanner?.currentSectorName).toBe(phoneProjection.movementPlanner?.currentSectorName);
     expect(tvProjection.movementPlanner?.destinations.map((destination) => destination.sectorId).sort()).toEqual(
       phoneProjection.movementPlanner?.destinations.map((destination) => destination.sectorId).sort()
     );
 
-    const anchorMarket = phoneProjection.movementPlanner?.destinations.find((destination) => destination.sectorId === "outer_waymarket");
-    const tvAnchorMarket = tvProjection.movementPlanner?.destinations.find((destination) => destination.sectorId === "outer_waymarket");
     const bridge = phoneProjection.movementPlanner?.destinations.find((destination) => destination.sectorId === "ashwake-crossing");
+    const tvBridge = tvProjection.movementPlanner?.destinations.find((destination) => destination.sectorId === "ashwake-crossing");
 
-    expect(anchorMarket).toMatchObject({
-      name: "Anchor Market",
+    expect(bridge).toMatchObject({
+      name: "Ashwalk Bridge",
       ring: "outer",
-      route: ["outer_ember_sanctum", "outer_waymarket"],
-      shop: { status: "open" }
+      route: ["votive-engine-room", "ashwake-crossing"]
     });
-    expect(anchorMarket?.shop?.servicesPreview).toContain("Buy Gear");
-    expect(anchorMarket?.strategicTags).toContain("shop");
-    expect(tvAnchorMarket?.route).toEqual(anchorMarket?.route);
+    expect(tvBridge?.route).toEqual(bridge?.route);
     expect(bridge?.threatIcons).toEqual(["yellow"]);
     expect(bridge?.faceUpThreats).toEqual([]);
     expect(JSON.stringify(phoneProjection.movementPlanner)).not.toContain("scrap-toll-gangers");
@@ -512,6 +508,37 @@ describe("canonical sector graph", () => {
     };
 
     expect(tvProjection.movementPlanner).toBeNull();
+  });
+
+  it("projects the owning phone active mission card from the player active contract", () => {
+    const state = createInitialSessionState("session-alpha");
+    const activeContract = state.availableContracts[0]!;
+    const poolOnlyContract = state.availableContracts[1]!;
+    state.status = "active";
+    state.phase = "action";
+    state.turnOrder = ["seat-1"];
+    state.activeSeatIndex = 0;
+    state.seats[0] = { ...state.seats[0]!, connected: true, displayName: "Lane", characterId: "void-marshal" };
+    state.players[0] = {
+      ...state.players[0]!,
+      character: {
+        ...state.players[0]!.character,
+        activeContract: {
+          contractId: activeContract.id,
+          progress: 1
+        }
+      }
+    };
+
+    const phoneProjection = createPhoneProjection(state, "seat-1") as {
+      activeContractCard: { id: string; name: string } | null;
+    };
+
+    expect(phoneProjection.activeContractCard).toMatchObject({
+      id: activeContract.id,
+      name: activeContract.name
+    });
+    expect(phoneProjection.activeContractCard?.id).not.toBe(poolOnlyContract.id);
   });
 
   it("hides movement planner routes until the active player rolls movement", () => {
@@ -615,6 +642,42 @@ describe("canonical sector graph", () => {
     });
     expect(phoneProjection.movementPlanner?.destinations.every((destination) => destination.route.length === 4)).toBe(true);
     expect(phoneProjection.movementPlanner?.destinations.some((destination) => destination.route.includes("missing-sector"))).toBe(false);
+  });
+
+  it("does not inflate legal destinations by chaining shortcut links during exact movement", () => {
+    const state = createInitialSessionState("session-alpha");
+    state.status = "active";
+    state.phase = "navigation";
+    state.turnOrder = ["seat-1"];
+    state.activeSeatIndex = 0;
+    state.movementRolls = { "seat-1": 4 };
+    state.seats[0] = { ...state.seats[0]!, connected: true, displayName: "Lane", characterId: "void-marshal" };
+    state.players[0] = {
+      ...state.players[0]!,
+      sectorId: "ashwake-crossing",
+      character: {
+        ...state.players[0]!.character,
+        currentSpaceId: "ashwake-crossing"
+      }
+    };
+
+    const phoneProjection = createPhoneProjection(state, "seat-1") as {
+      movementPlanner: {
+        movementValue: number;
+        destinations: Array<{ sectorId: string; distance: number; route: string[] }>;
+      } | null;
+    };
+    const destinationIds = phoneProjection.movementPlanner?.destinations.map((destination) => destination.sectorId).sort();
+
+    expect(phoneProjection.movementPlanner?.movementValue).toBe(4);
+    expect(destinationIds).toEqual(["outer_oathpost", "sunken-pier"]);
+    expect(phoneProjection.movementPlanner?.destinations).toHaveLength(2);
+    expect(phoneProjection.movementPlanner?.destinations.every((destination) => destination.distance === 4)).toBe(true);
+    expect(
+      phoneProjection.movementPlanner?.destinations.some((destination) =>
+        destination.route.some((sectorId) => sectorId.startsWith("middle_") || sectorId.startsWith("inner_"))
+      )
+    ).toBe(false);
   });
 
   it("allows cross-region movement only through authored transition sectors", () => {
@@ -840,7 +903,7 @@ describe("canonical sector graph", () => {
     const legalMove = reduceGameState(rolled.state, {
       type: "MOVE_REQUESTED",
       seatId: "seat-1",
-      toSectorId: "outer_ember_sanctum",
+      toSectorId: "votive-engine-room",
       createdAt: new Date().toISOString()
     });
     const illegalMove = reduceGameState(rolled.state, {

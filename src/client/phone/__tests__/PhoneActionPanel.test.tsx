@@ -1424,6 +1424,18 @@ describe("PhoneActionPanel", () => {
               }
             }
           ],
+          activeContractCard: {
+            id: "cartel-crossing-thread",
+            name: "Crossing Thread",
+            factionGiver: "Pale Cartels",
+            text: "The Cartels want one convoy lane at Ashwake Crossing charted cleanly before they commit a lantern courier to the route.",
+            objective: {
+              type: "spaceTextResolved",
+              effectKey: "outer_ashwakeClearLane",
+              label: "Clear the Ashwake convoy lane",
+              target: 1
+            }
+          },
           self: {
             ...createPatch().self!,
             character: {
@@ -2139,6 +2151,7 @@ describe("PhoneActionPanel", () => {
               id: "cinder-veil-stalker",
               title: "Cinder-Veil Stalker",
               type: "enemy",
+              flavor: "The ash around it boils before the strike.",
               artType: "threat"
             },
             battle: {
@@ -2157,6 +2170,9 @@ describe("PhoneActionPanel", () => {
     );
 
     expect(screen.getByTestId("phone-resolution-card")).toHaveTextContent(/battle setup/i);
+    expect(screen.getByTestId("phone-battle-subject-card")).toHaveTextContent(/cinder-veil stalker/i);
+    expect(screen.getByTestId("phone-battle-subject-card")).toHaveTextContent(/ash around it boils/i);
+    expect(screen.getByTestId("phone-battle-subject-art")).toHaveAttribute("src", expect.stringMatching(/\/assets\/cards\/(threats|fallbacks)\//));
     expect(screen.getByTestId("phone-battle-panel")).toHaveTextContent(/cinder-veil stalker/i);
     expect(screen.getByTestId("phone-battle-panel")).toHaveTextContent(/grit vs 8/i);
     expect(screen.getByTestId("phone-battle-panel")).toHaveTextContent(/base grit \+2/i);

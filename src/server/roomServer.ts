@@ -8416,6 +8416,10 @@ export function createPhoneProjection(state: GameState, seatId: string, forcePri
     seat?.selectedStartingContractId
       ? state.availableContracts.find((contract) => contract.id === seat.selectedStartingContractId) ?? null
       : null;
+  const activeContractCard =
+    player?.character.activeContract?.contractId
+      ? state.availableContracts.find((contract) => contract.id === player.character.activeContract?.contractId) ?? null
+      : null;
   const readyDisabledReason = getReadyDisabledReasonForSeat(seat);
 
   return {
@@ -8470,6 +8474,7 @@ export function createPhoneProjection(state: GameState, seatId: string, forcePri
     ),
     startingContractOptions,
     selectedStartingContract,
+    activeContractCard,
     canReady: readyDisabledReason === null,
     readyDisabledReason,
     self: player ? sanitizePlayerForPhone(player) : null

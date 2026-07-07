@@ -562,9 +562,7 @@ export function PhoneApp(): ReactElement {
   const self = phonePatch?.payload.self ?? fallbackLobbySelf;
   const activeSeatId = phonePatch?.payload.turnOrder[phonePatch.payload.activeSeatIndex] ?? null;
   const canSendLobbyIntent = Boolean(phonePatch) || (Boolean(auth) && status === "open");
-  const activeContractCard =
-    self?.character.activeContract &&
-    phonePatch?.payload.availableContracts.find((contract) => contract.id === self.character.activeContract?.contractId);
+  const activeContractCard = phonePatch?.payload.activeContractCard ?? null;
 
   return (
     <main className="phone-page phone-page-controller">
