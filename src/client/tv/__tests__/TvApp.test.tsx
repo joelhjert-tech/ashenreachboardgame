@@ -197,6 +197,7 @@ function createPatch(roomCode = "RT7P4"): StatePatch<PublicPatchPayload> {
           connected: true,
           ready: true,
           startingMissionSelected: true,
+          startingMissionTitle: "Crossing Thread",
           kicked: false
         }
       ],
@@ -255,6 +256,20 @@ function createPatch(roomCode = "RT7P4"): StatePatch<PublicPatchPayload> {
             effectKey: "outer_ashwakeClearLane",
             label: "Clear the Ashwake convoy lane",
             target: 1
+          }
+        },
+        {
+          id: "cartel-exposed-object",
+          name: "Exposed Object",
+          factionGiver: "Pale Cartels",
+          text: "A public contract pool option that has not been assigned to a player.",
+          objective: {
+            type: "defeatCount",
+            target: 2
+          },
+          reward: {
+            type: "gain_gear",
+            gearId: "veil-hook"
           }
         }
       ],
@@ -358,6 +373,68 @@ describe("TvApp", () => {
 
     await screen.findByText("Join QR RT7P4");
     expect(screen.getByTestId("mock-join-qr")).toHaveAttribute("data-show-join-details", "false");
+  });
+
+  it("shows selected starting mission in setup rows without treating the contract pool as active missions", async () => {
+    window.localStorage.setItem("ashen-reach-tv-room-code", "RT7P4");
+    window.localStorage.setItem("ashen-reach-tv-host-token", "host:RT7P4:secret");
+    const patch = createPatch();
+    patch.payload.status = "lobby";
+    patch.phase = "start";
+    mockUseRoomSubscription.mockReturnValue({
+      patch,
+      error: null,
+      sendIntent: vi.fn(),
+      status: "open",
+      debugEvents: [],
+      clearDebugEvents: vi.fn()
+    });
+
+    render(<TvApp />);
+
+    const operatives = await screen.findByRole("complementary", { name: /operatives/i });
+    expect(operatives).toHaveTextContent(/mission: crossing thread/i);
+    const setupMissions = screen.getByRole("region", { name: /setup missions/i });
+    expect(setupMissions).toHaveTextContent(/joel/i);
+    expect(setupMissions).toHaveTextContent(/crossing thread/i);
+    expect(setupMissions).not.toHaveTextContent(/exposed object/i);
+  });
+
+  it("renders active player missions from character.activeContract instead of public availableContracts", async () => {
+    window.localStorage.setItem("ashen-reach-tv-room-code", "RT7P4");
+    window.localStorage.setItem("ashen-reach-tv-host-token", "host:RT7P4:secret");
+    const patch = createPatch();
+    patch.phase = "navigation";
+    patch.payload.status = "active";
+    patch.payload.players[0] = {
+      ...patch.payload.players[0],
+      character: {
+        ...patch.payload.players[0].character,
+        activeContract: {
+          contractId: "cartel-crossing-thread",
+          progress: 1
+        }
+      }
+    };
+    mockUseRoomSubscription.mockReturnValue({
+      patch,
+      error: null,
+      sendIntent: vi.fn(),
+      status: "open",
+      debugEvents: [],
+      clearDebugEvents: vi.fn()
+    });
+
+    render(<TvApp />);
+
+    const activeMissions = await screen.findByRole("region", { name: /active missions/i });
+    expect(activeMissions).toHaveTextContent(/joel/i);
+    expect(activeMissions).toHaveTextContent(/crossing thread/i);
+    expect(activeMissions).toHaveTextContent(/1\/1 clears/i);
+    expect(activeMissions).toHaveTextContent(/complete/i);
+    expect(activeMissions).not.toHaveTextContent(/exposed object/i);
+    expect(activeMissions).not.toHaveTextContent(/0\/2 defeats/i);
+    expect(screen.queryByRole("region", { name: /^contracts$/i })).not.toBeInTheDocument();
   });
 
   it("keeps active host status player-facing without duplicate mode or debug chips", async () => {
@@ -1665,7 +1742,7 @@ describe("TvApp", () => {
     expect(screen.queryByTestId("tv-card-reveal")).not.toBeInTheDocument();
     expect(screen.queryByTestId("tv-resolution-footer")).not.toBeInTheDocument();
     expect(screen.queryByText(/battle display active/i)).not.toBeInTheDocument();
-    expect(screen.queryByText(/pax/i)).not.toBeInTheDocument();
+    expect(within(screen.getByRole("complementary", { name: /operatives/i })).queryByText(/pax/i)).not.toBeInTheDocument();
   });
 
   it("keeps the visible battle bound to activeResolution.playerId when turn order has advanced", async () => {

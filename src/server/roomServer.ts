@@ -8294,15 +8294,22 @@ export function createTvProjection(state: GameState): Record<string, unknown> {
       };
     }),
     nemesisNexusCountdowns: state.nemesisNexusCountdowns,
-    seats: state.seats.map((seat) => ({
-      seatId: seat.seatId,
-      characterId: seat.characterId,
-      displayName: seat.displayName ?? null,
-      startingMissionSelected: Boolean(seat.selectedStartingContractId),
-      connected: seat.connected,
-      ready: seat.ready,
-      kicked: seat.kicked
-    })),
+    seats: state.seats.map((seat) => {
+      const selectedStartingContract = seat.selectedStartingContractId
+        ? state.availableContracts.find((contract) => contract.id === seat.selectedStartingContractId) ?? null
+        : null;
+
+      return {
+        seatId: seat.seatId,
+        characterId: seat.characterId,
+        displayName: seat.displayName ?? null,
+        startingMissionSelected: Boolean(seat.selectedStartingContractId),
+        startingMissionTitle: selectedStartingContract?.name ?? null,
+        connected: seat.connected,
+        ready: seat.ready,
+        kicked: seat.kicked
+      };
+    }),
     sectors: state.sectors,
     players: visiblePlayers.map((player) => ({
       seatId: player.seatId,

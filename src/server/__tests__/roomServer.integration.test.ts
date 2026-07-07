@@ -679,11 +679,21 @@ function statePatchForPhase(
 }
 
 function statePatchWithMovementPlanner(activeSeatIndex?: number): (message: ServerEnvelope) => boolean {
-  return (message) =>
-    statePatchForPhase("navigation", activeSeatIndex)(message) &&
-    typeof message.payload.movementPlanner === "object" &&
-    message.payload.movementPlanner !== null &&
-    (message.payload.movementPlanner as { active?: boolean }).active === true;
+  return (message) => {
+    if (!isStatePatch(message) || message.phase !== "navigation") {
+      return false;
+    }
+
+    if (activeSeatIndex !== undefined && Number(message.payload.activeSeatIndex) !== activeSeatIndex) {
+      return false;
+    }
+
+    return (
+      typeof message.payload.movementPlanner === "object" &&
+      message.payload.movementPlanner !== null &&
+      (message.payload.movementPlanner as { active?: boolean }).active === true
+    );
+  };
 }
 
 function statePatchWithResolutionStage(stage: string): (message: ServerEnvelope) => boolean {

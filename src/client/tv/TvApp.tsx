@@ -1,6 +1,12 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactElement } from "react";
 import { getBoardSpace, isScenarioConfrontationSpace } from "../../game/data/boardSpaces.js";
-import { formatContractObjectiveStatus } from "../../game/contracts/objectives.js";
+import {
+  describeContractObjective,
+  formatContractObjectiveStatus,
+  formatContractProgress,
+  getContractObjectiveTarget,
+  isContractObjectiveComplete
+} from "../../game/contracts/objectives.js";
 import { getSessionStartReadiness } from "../../game/rules/sessionStart.js";
 import { getChallengeTheme, getChallengeThemeStyle } from "../../game/ui/challengeTheme.js";
 import { HostAudioControls } from "../audio/HostAudioControls.js";
@@ -40,7 +46,8 @@ import type {
   SessionMode,
   ScenarioTelemetryItem,
   StatePatch,
-  Stat
+  Stat,
+  ContractCard
 } from "../shared/types.js";
 import { HostPlayerCard } from "./HostPlayerCard.js";
 import { HostBattleOverlay } from "./HostBattleOverlay.js";
@@ -67,6 +74,35 @@ function toTitleCase(value: string): string {
 
 function getSessionModeLabel(sessionMode: SessionMode): string {
   return sessionMode === "single-player" ? "Single Player" : "Multiplayer";
+}
+
+function formatContractRewardSummary(contract: ContractCard): string {
+  const reward = contract.reward;
+
+  if (!reward || typeof reward !== "object" || !("type" in reward)) {
+    return "Reward on completion";
+  }
+
+  const rewardType = String((reward as { type?: unknown }).type ?? "");
+
+  switch (rewardType) {
+    case "gain_gear":
+      return "Reward: gear";
+    case "gain_follower":
+      return "Reward: follower";
+    case "gain_trophy":
+      return `Reward: ${(reward as { amount?: number }).amount ?? 1} trophy`;
+    case "lose_heat":
+      return `Reward: clear ${(reward as { amount?: number }).amount ?? 1} Heat`;
+    case "heal_wound":
+      return `Reward: heal ${(reward as { amount?: number }).amount ?? 1} wound`;
+    case "gain_note":
+      return "Reward: field note";
+    case "sequence":
+      return "Reward: bundled payout";
+    default:
+      return `Reward: ${toTitleCase(rewardType || "completion")}`;
+  }
 }
 
 function getInteractionModeLabel(interactionMode: InteractionMode): string {
@@ -279,6 +315,10 @@ function getContractSummary(player: PublicPlayer | null, patch: StatePatch<Publi
   }
 
   return `${contract.name} | ${formatContractObjectiveStatus(contract, player.character.activeContract.progress)}`;
+}
+
+function getContractLookup(patch: StatePatch<PublicPatchPayload> | null): Map<string, ContractCard> {
+  return new Map((patch?.payload.availableContracts ?? []).map((contract) => [contract.id, contract]));
 }
 
 function getSeatLabelMap(patch: StatePatch<PublicPatchPayload> | null): Record<string, string> {
@@ -685,7 +725,7 @@ function OperativesRail({ patch, characterCatalog, activeSeatId, sessionMode, ba
                 {isOccupied && !isOpen ? (
                   <div className="tv-operative-setup-row" aria-label={`${characterName} setup state`}>
                     <span>Character ✓</span>
-                    <span>Mission {seat.startingMissionSelected ? "✓" : "..."}</span>
+                    <span>{seat.startingMissionSelected ? `Mission: ${seat.startingMissionTitle ?? "Selected"}` : "Mission: Choose mission"}</span>
                     <span>Ready {seat.ready ? "✓" : seat.startingMissionSelected ? "..." : "locked"}</span>
                   </div>
                 ) : null}
@@ -1441,35 +1481,70 @@ function EscalationMeter({ patch }: { patch: StatePatch<PublicPatchPayload> | nu
   );
 }
 
-function ContractsPanel({ patch }: { patch: StatePatch<PublicPatchPayload> | null }): ReactElement {
-  const contracts = patch?.payload.availableContracts.slice(0, 2) ?? [];
+function ActiveMissionsPanel({ patch }: { patch: StatePatch<PublicPatchPayload> | null }): ReactElement {
+  const contractLookup = getContractLookup(patch);
+  const occupiedSeats = (patch?.payload.seats ?? []).filter((seat) => Boolean(seat.displayName) && !seat.kicked);
+  const isSetup = !patch || patch.payload.status === "lobby";
+  const playersBySeatId = new Map((patch?.payload.players ?? []).map((player) => [player.seatId, player]));
 
   return (
-    <section className="tv-card tv-sidebar-card tv-contracts-card" aria-label="Contracts">
+    <section className="tv-card tv-sidebar-card tv-contracts-card" aria-label={isSetup ? "Setup Missions" : "Active Missions"}>
       <div className="tv-panel-title tv-panel-title-small">
         <span />
-        <h2>Contracts</h2>
+        <h2>{isSetup ? "Setup Missions" : "Active Missions"}</h2>
         <span />
       </div>
-      <div className="tv-contracts-grid">
-        {contracts.length > 0 ? (
-          contracts.map((contract) => {
-            const activeProgress =
-              patch?.payload.players.find((player) => player.character.activeContract?.contractId === contract.id)?.character.activeContract
-              ?.progress ?? 0;
+      <div className="tv-active-missions-list">
+        {occupiedSeats.length > 0 ? (
+          occupiedSeats.map((seat) => {
+            const player = playersBySeatId.get(seat.seatId) ?? null;
+            const activeContract = player?.character.activeContract ?? null;
+            const contract = activeContract ? contractLookup.get(activeContract.contractId) ?? null : null;
+            const progress = activeContract?.progress ?? 0;
+            const target = contract ? getContractObjectiveTarget(contract) : 0;
+            const isComplete = contract ? isContractObjectiveComplete(contract, progress) : false;
+
             return (
-              <article key={contract.id} className="tv-contract-card-mini">
-                <CardArtImage cardType="contract" cardId={contract.id} alt="" aria-hidden="true" />
-                <div>
-                  <h3>{contract.name}</h3>
-                  <p>{contract.objective.type === "defeatCount" ? contract.text : contract.objective.label}</p>
-                  <strong>{formatContractObjectiveStatus(contract, activeProgress)}</strong>
+              <article
+                key={seat.seatId}
+                className={`tv-active-mission-row${isSetup || !contract ? " tv-active-mission-row-compact" : ""}${isComplete ? " tv-active-mission-row-complete" : ""}`}
+              >
+                <div className="tv-active-mission-owner">
+                  <strong>{seat.displayName}</strong>
+                  <span>{seat.connected ? "connected" : "disconnected"}</span>
                 </div>
+                {isSetup ? (
+                  <div className="tv-active-mission-copy">
+                    <h3>{seat.startingMissionSelected ? seat.startingMissionTitle ?? "Mission selected" : "Choose mission"}</h3>
+                    <p>{seat.startingMissionSelected ? "Starting mission selected." : "Waiting for phone selection."}</p>
+                  </div>
+                ) : contract && activeContract ? (
+                  <>
+                    <CardArtImage cardType="contract" cardId={contract.id} alt="" aria-hidden="true" />
+                    <div className="tv-active-mission-copy">
+                      <h3>{contract.name}</h3>
+                      <p>{describeContractObjective(contract)}</p>
+                      <div className="tv-active-mission-progress" aria-label={`${contract.name} progress ${progress}/${target}`}>
+                        <span style={{ width: `${getProgressPercent(progress, target)}%` }} />
+                      </div>
+                      <div className="tv-active-mission-meta">
+                        <span>{formatContractProgress(contract, progress)}</span>
+                        <span>{isComplete ? "Complete" : "Active"}</span>
+                        <span>{formatContractRewardSummary(contract)}</span>
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <div className="tv-active-mission-copy">
+                    <h3>No active mission</h3>
+                    <p>This operative has no selected active contract.</p>
+                  </div>
+                )}
               </article>
             );
           })
         ) : (
-          <p className="tv-empty-copy">No contracts discovered yet.</p>
+          <p className="tv-empty-copy">{isSetup ? "Players choose starting missions on their phones." : "No active missions assigned."}</p>
         )}
       </div>
     </section>
@@ -1534,7 +1609,7 @@ function RightSidebar({
       <NemesisStatusCard nemesis={publicPatch?.payload.nemesis ?? null} selectedScenario={selectedScenario} />
       <NemesisRelayTrack patch={publicPatch} />
       <EscalationMeter patch={publicPatch} />
-      <ContractsPanel patch={publicPatch} />
+      <ActiveMissionsPanel patch={publicPatch} />
 
       <SessionReadout
         publicPatch={publicPatch}

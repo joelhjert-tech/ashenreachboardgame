@@ -62,6 +62,7 @@ export interface PublicSeat {
   characterId: string;
   displayName: string | null;
   startingMissionSelected?: boolean;
+  startingMissionTitle?: string | null;
   connected: boolean;
   ready: boolean;
   kicked: boolean;
