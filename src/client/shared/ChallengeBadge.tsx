@@ -75,8 +75,14 @@ export function ThreatIconBadge({
   className?: string;
 }): ReactElement {
   const stat = getThreatIconStat(icon);
-  const colorLabel = `${icon.charAt(0).toUpperCase()}${icon.slice(1)}`;
-  const iconLabel = `${colorLabel} ${getChallengeTheme(stat).label}`;
+  const statColorLabel: Record<Stat, string> = {
+    command: "Purple",
+    grit: "Red",
+    signal: "Blue",
+    guile: "Green",
+    forge: "Orange"
+  };
+  const iconLabel = `${statColorLabel[stat]} ${getChallengeTheme(stat).label}`;
 
   return (
     <ChallengeBadge

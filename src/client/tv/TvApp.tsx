@@ -1689,7 +1689,7 @@ function BoardLegend(): ReactElement {
   const items = [
     { label: "Red Grit", stat: "grit" as const },
     { label: "Blue Signal", stat: "signal" as const },
-    { label: "Yellow Guile", stat: "guile" as const },
+    { label: "Green Guile", stat: "guile" as const },
     { label: "Orange Forge", stat: "forge" as const },
     { label: "Purple Command", stat: "command" as const }
   ];

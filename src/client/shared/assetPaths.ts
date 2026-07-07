@@ -48,7 +48,7 @@ const statFrameByStat: Record<Stat, string> = {
   command: "/assets/riftfall/ui/ui_card_frame_red.png",
   grit: "/assets/riftfall/ui/ui_card_frame_red.png",
   signal: "/assets/riftfall/ui/ui_card_frame_blue.png",
-  guile: "/assets/riftfall/ui/ui_card_frame_yellow.png",
+  guile: "/assets/riftfall/ui/ui_card_frame_green.png",
   forge: "/assets/riftfall/ui/ui_card_frame_yellow.png"
 };
 
@@ -56,6 +56,7 @@ const uiAssetPaths = [
   "/assets/riftfall/ui/ui_scenario_frame.png",
   "/assets/riftfall/ui/ui_card_frame_red.png",
   "/assets/riftfall/ui/ui_card_frame_blue.png",
+  "/assets/riftfall/ui/ui_card_frame_green.png",
   "/assets/riftfall/ui/ui_card_frame_yellow.png",
   "/assets/riftfall/ui/dice_roll_combat@2s.gif",
   "/assets/riftfall/ui/dice_roll_combat@2s.lottie.json"

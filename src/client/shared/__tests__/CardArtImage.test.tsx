@@ -11,7 +11,9 @@ import {
   getCardArtPath,
   getCardFallbackArtPath,
   getCharacterPortraitPath,
-  getNemesisPortraitPath
+  getEncounterFramePath,
+  getNemesisPortraitPath,
+  getRuntimeAssetPaths
 } from "../assetPaths.js";
 
 describe("card art paths", () => {
@@ -52,6 +54,12 @@ describe("card art paths", () => {
     expect(getNemesisPortraitPath("nemesis_iron_vicar_orm_seat-1")).toBe(
       "/assets/riftfall/nemeses/nemesis_iron_vicar_orm.png"
     );
+  });
+
+  it("uses the green Guile encounter frame", () => {
+    expect(getEncounterFramePath("guile")).toBe("/assets/riftfall/ui/ui_card_frame_green.png");
+    expect(getEncounterFramePath("guile")).not.toBe("/assets/riftfall/ui/ui_card_frame_yellow.png");
+    expect(getRuntimeAssetPaths()).toContain("/assets/riftfall/ui/ui_card_frame_green.png");
   });
 });
 

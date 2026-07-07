@@ -35,7 +35,7 @@ layer should describe player-facing systems with:
 
 - `grit` for red physical pressure
 - `signal` for blue focus and weird-tech pressure
-- `guile` for yellow stealth and leverage pressure
+- `guile` for green stealth and leverage pressure
 - `wounds` for harm
 - `trophies` as table-visible rewards
 - `Heat` as accumulating attention and bad resonance

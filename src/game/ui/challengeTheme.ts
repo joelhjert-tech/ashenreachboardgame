@@ -49,10 +49,10 @@ export const CHALLENGE_THEME: Record<Stat, ChallengeTheme> = {
   guile: {
     label: "Guile",
     shortLabel: "Gui",
-    color: "#E3B341",
-    glow: "rgba(227, 179, 65, 0.55)",
-    soft: "rgba(227, 179, 65, 0.17)",
-    border: "rgba(227, 179, 65, 0.68)",
+    color: "#4FBF78",
+    glow: "rgba(79, 191, 120, 0.52)",
+    soft: "rgba(79, 191, 120, 0.15)",
+    border: "rgba(79, 191, 120, 0.64)",
     icon: "◆",
     iconLabel: "mask",
     treatment: "Traps, trade, salvage tricks"

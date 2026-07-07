@@ -493,7 +493,7 @@ describe("PhoneActionPanel", () => {
     expect(screen.getAllByText(/reward: anchor market services are available/i).length).toBeGreaterThan(0);
     expect(screen.getByTestId("movement-route-steps")).toHaveTextContent(/pilgrim lock/i);
     expect(screen.getByTestId("movement-confirm-footer")).toHaveTextContent(/this will end your movement/i);
-    expect(screen.getAllByText(/yellow guile/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/green guile/i).length).toBeGreaterThan(0);
     expect(screen.getByText(/buy gear \/ sell gear/i)).toBeInTheDocument();
     expect(screen.queryByText(/choir bulwark/i)).not.toBeInTheDocument();
   });

@@ -26,6 +26,16 @@ export const uiPrompts: ImagePromptSpec[] = [
     usage: "Blue threat card frame."
   },
   {
+    id: "ui_card_frame_green",
+    fileName: "ui_card_frame_green.png",
+    outputPath: "/assets/riftfall/ui/ui_card_frame_green.png",
+    assetType: "uiFrame",
+    size: "card",
+    prompt: `${style}; transparent green guile threat card frame, black metal border, tactical poison-green pressure glow, empty center, no text`,
+    negativePrompt: sharedNegativePrompt,
+    usage: "Green Guile threat card frame."
+  },
+  {
     id: "ui_card_frame_yellow",
     fileName: "ui_card_frame_yellow.png",
     outputPath: "/assets/riftfall/ui/ui_card_frame_yellow.png",

@@ -80,6 +80,12 @@ describe("MobilePlayerCard", () => {
     expect((document.querySelector(".phone-sheet-stat-card-command") as HTMLElement).style.getPropertyValue("--challenge-color")).toBe(
       getChallengeThemeStyle("command")["--challenge-color"]
     );
+    expect((document.querySelector(".phone-sheet-stat-card-guile") as HTMLElement).style.getPropertyValue("--challenge-color")).toBe(
+      getChallengeThemeStyle("guile")["--challenge-color"]
+    );
+    expect((document.querySelector(".phone-sheet-stat-card-guile") as HTMLElement).style.getPropertyValue("--challenge-color")).not.toBe(
+      "#E3B341"
+    );
   });
 
   it("shows compact stat bonuses without merging permanent or gear sources into base", () => {
