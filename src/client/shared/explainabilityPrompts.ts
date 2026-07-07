@@ -407,6 +407,21 @@ export function buildCurrentTablePrompt(patch: StatePatch<PublicPatchPayload> | 
     };
   }
 
+  if (patch.phase === "navigation") {
+    return {
+      phaseLabel: "Movement",
+      publicText: `Waiting on ${activeName} to roll movement.`,
+      requiredActorSeatId: activeSeatId,
+      requiredActorName: activeName,
+      phaseReason: "Legal destinations are hidden until the movement roll is stored.",
+      availableActionSummary: "Active phone must press Roll Movement.",
+      lockedReason: null,
+      lastOutcomeSummary: latestOutcome,
+      watchText: "Route glow appears after the roll.",
+      tone: "move"
+    };
+  }
+
   return {
     phaseLabel: toTitleCase(patch.phase),
     publicText: `${activeName} has the command channel.`,
@@ -502,6 +517,21 @@ export function buildCurrentPlayerPrompt(patch: PhonePatchPayload): CurrentPlaye
       usefulNow: "Open Move to compare routes, blockers, shops, and danger.",
       lastOutcomeSummary: latestOutcome,
       waitText: "Watch route glow on the TV.",
+      tone: "move",
+      targetTab: "move"
+    };
+  }
+
+  if (patch.phase === "navigation") {
+    return {
+      phaseLabel: "Movement",
+      privateText: isActive ? "Roll movement to reveal your legal destinations." : `Waiting on ${activeName} to roll movement.`,
+      requiredAction: isActive ? "Roll movement" : "Wait",
+      actionSummary: isActive ? "Open Move and press Roll Movement." : "Legal destinations appear after the roll.",
+      disabledReasons: isActive ? [] : ["notYourTurn"],
+      usefulNow: "The server will reveal exact-distance routes after the roll.",
+      lastOutcomeSummary: latestOutcome,
+      waitText: isActive ? "Roll first, choose a route second." : `Waiting on ${activeName}.`,
       tone: "move",
       targetTab: "move"
     };

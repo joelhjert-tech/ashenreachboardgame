@@ -1,3 +1,4 @@
+import { RIFTFALL_BOARD_NODE_INDEX } from "../../data/riftfallBoardNodes.js";
 import { getBoardSpace } from "../data/boardSpaces.js";
 import type { GameState, PlayerState } from "../schema/session.schema.js";
 import { hasCrownKeyFragment } from "./nemesisRelay.js";
@@ -23,10 +24,38 @@ function getPlayer(state: GameState, seatId: string): PlayerState | null {
   return state.players.find((entry) => entry.seatId === seatId) ?? null;
 }
 
+export function hasMovementRollForSeat(state: GameState, seatId: string): boolean {
+  const rolledValue = state.movementRolls?.[seatId];
+
+  return typeof rolledValue === "number" && Number.isInteger(rolledValue) && rolledValue > 0;
+}
+
 export function getMovementValueForSeat(state: GameState, seatId: string): number {
   const rolledValue = state.movementRolls?.[seatId];
 
   return typeof rolledValue === "number" && Number.isInteger(rolledValue) && rolledValue > 0 ? Math.max(1, rolledValue) : 1;
+}
+
+function getSectorDisplayName(state: GameState, sectorId: string): string {
+  return state.sectors.find((sector) => sector.id === sectorId)?.name ?? getBoardSpace(sectorId)?.name ?? sectorId;
+}
+
+function getRegionTransitionBlockReason(state: GameState, fromSectorId: string, toSectorId: string): string | null {
+  const fromSpace = getBoardSpace(fromSectorId);
+  const toSpace = getBoardSpace(toSectorId);
+
+  if (!fromSpace || !toSpace || fromSpace.tier === toSpace.tier) {
+    return null;
+  }
+
+  const fromNode = RIFTFALL_BOARD_NODE_INDEX.get(fromSectorId);
+  const toNode = RIFTFALL_BOARD_NODE_INDEX.get(toSectorId);
+
+  if (fromNode?.connections.includes(toSectorId) && toNode?.connections.includes(fromSectorId)) {
+    return null;
+  }
+
+  return `Route blocked: ${getSectorDisplayName(state, toSectorId)} requires a transition tile from ${getSectorDisplayName(state, fromSectorId)}`;
 }
 
 export function getMovementStepBlockReason(
@@ -45,6 +74,12 @@ export function getMovementStepBlockReason(
 
   if (!fromSector.neighbors.includes(toSectorId)) {
     return `Sector ${toSectorId} is not reachable from ${fromSectorId}`;
+  }
+
+  const regionTransitionBlockReason = getRegionTransitionBlockReason(state, fromSectorId, toSectorId);
+
+  if (regionTransitionBlockReason) {
+    return regionTransitionBlockReason;
   }
 
   if (
@@ -79,7 +114,7 @@ export function buildMovementRoutePlan(state: GameState, seatId: string): Moveme
   const currentSectorId = player.character.currentSpaceId;
   const currentSector = state.sectors.find((sector) => sector.id === currentSectorId);
 
-  if (!currentSector) {
+  if (!currentSector || !hasMovementRollForSeat(state, seatId)) {
     return null;
   }
 
@@ -152,7 +187,7 @@ export function getMovementBlockReason(state: GameState, seatId: string, toSecto
   const plan = buildMovementRoutePlan(state, seatId);
 
   if (!plan) {
-    return "No movement planner is available";
+    return hasMovementRollForSeat(state, seatId) ? "No movement planner is available" : "Roll movement before choosing a destination";
   }
 
   return plan.blockedRoutes.find((route) => route.sectorId === toSectorId)?.disabledReason ?? null;

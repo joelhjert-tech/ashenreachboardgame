@@ -42,6 +42,11 @@ describe("kick turn-order regression", () => {
       throw new Error("Kick regression fixture did not produce an active seat with a legal move");
     }
 
+    state.movementRolls = {
+      ...(state.movementRolls ?? {}),
+      [activeSeatId]: 1
+    };
+
     const result = reduceGameState(state, {
       type: "MOVE_REQUESTED",
       seatId: activeSeatId,

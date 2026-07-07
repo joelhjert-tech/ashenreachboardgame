@@ -434,13 +434,12 @@ describe("PhoneApp", () => {
     fireEvent.click(screen.getByRole("button", { name: /join \/ continue/i }));
     fireEvent.click(await screen.findByRole("button", { name: /mira.*cinder monk/i }));
 
-    expect(await screen.findByText(/character locked/i)).toBeInTheDocument();
+    expect(await screen.findByText(/waiting for starting mission options from the room/i)).toBeInTheDocument();
     expect(screen.getByText("Mira")).toBeInTheDocument();
     expect(screen.getByText("Cinder Monk")).toBeInTheDocument();
     expect(screen.getByText("RT7P4")).toBeInTheDocument();
     expect(screen.getByText("Joel")).toBeInTheDocument();
     expect(screen.getAllByText(/choose starting mission/i).length).toBeGreaterThan(0);
-    expect(screen.getByText(/waiting for starting mission options from the room/i)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /^ready$/i })).toBeDisabled();
     expect(screen.queryByRole("list", { name: /character/i })).not.toBeInTheDocument();
   });

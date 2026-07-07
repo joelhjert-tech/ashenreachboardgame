@@ -890,6 +890,10 @@ export type ClientIntent =
       toSectorId: string;
     }
   | {
+      type: "MOVEMENT_ROLL_REQUESTED";
+      seatId: string;
+    }
+  | {
       type: "PHASE_ADVANCED";
       seatId: string;
       toPhase: Phase;

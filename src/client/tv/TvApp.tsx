@@ -234,7 +234,11 @@ function getCurrentStepCopy(
   }
 
   if (publicPatch.phase === "navigation") {
-    return `${activePlayer?.character.name ?? "The active operative"} is choosing movement. Watch the glowing legal destinations.`;
+    if (publicPatch.payload.movementPlanner?.active) {
+      return `${activePlayer?.character.name ?? "The active operative"} rolled ${publicPatch.payload.movementPlanner.movementValue} and is choosing a legal destination.`;
+    }
+
+    return `Waiting on ${activePlayer?.character.name ?? "the active operative"} to roll movement.`;
   }
 
   if (publicPatch.phase === "action") {

@@ -13464,6 +13464,15 @@ body {
   line-height: 1.35;
 }
 
+.phone-movement-roll-actions {
+  display: flex;
+  margin-top: 12px;
+}
+
+.phone-movement-roll-actions .phone-action-button {
+  width: 100%;
+}
+
 .phone-movement-detail {
   display: grid;
   grid-template-rows: auto auto;

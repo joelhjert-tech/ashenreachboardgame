@@ -28,6 +28,10 @@ export interface MoveRequestedAction extends BaseAction {
   toSectorId: string;
 }
 
+export interface MovementRollRequestedAction extends BaseAction {
+  type: "MOVEMENT_ROLL_REQUESTED";
+}
+
 export interface MovementRolledAction extends BaseAction {
   type: "MOVEMENT_ROLLED";
   movementValue: number;
@@ -509,6 +513,7 @@ export interface CoopDefeatTriggeredAction extends BaseAction {
 export type GameAction =
   | SessionStartedAction
   | MoveRequestedAction
+  | MovementRollRequestedAction
   | MovementRolledAction
   | MovedAction
   | MovementResolvedAction
@@ -572,6 +577,10 @@ export type ClientIntent =
       type: "MOVE_REQUESTED";
       seatId: string;
       toSectorId: string;
+    }
+  | {
+      type: "MOVEMENT_ROLL_REQUESTED";
+      seatId: string;
     }
   | {
       type: "PHASE_ADVANCED";

@@ -388,6 +388,7 @@ describe("canonical sector graph", () => {
     state.phase = "navigation";
     state.turnOrder = ["seat-1"];
     state.activeSeatIndex = 0;
+    state.movementRolls = { "seat-1": 1 };
     state.seats[0] = { ...state.seats[0]!, connected: true, displayName: "Lane", characterId: "void-marshal" };
     state.players[0] = {
       ...state.players[0]!,
@@ -513,6 +514,33 @@ describe("canonical sector graph", () => {
     expect(tvProjection.movementPlanner).toBeNull();
   });
 
+  it("hides movement planner routes until the active player rolls movement", () => {
+    const state = createInitialSessionState("session-alpha");
+    state.status = "active";
+    state.phase = "navigation";
+    state.turnOrder = ["seat-1"];
+    state.activeSeatIndex = 0;
+    state.seats[0] = { ...state.seats[0]!, connected: true, displayName: "Lane", characterId: "void-marshal" };
+    state.players[0] = {
+      ...state.players[0]!,
+      sectorId: "outer_ember_sanctum",
+      character: {
+        ...state.players[0]!.character,
+        currentSpaceId: "outer_ember_sanctum"
+      }
+    };
+
+    const phoneProjection = createPhoneProjection(state, "seat-1") as {
+      movementPlanner: unknown;
+    };
+    const tvProjection = createTvProjection(state) as {
+      movementPlanner: unknown;
+    };
+
+    expect(phoneProjection.movementPlanner).toBeNull();
+    expect(tvProjection.movementPlanner).toBeNull();
+  });
+
   it("builds exact rolled-distance movement routes from the authoritative graph", () => {
     const state = createInitialSessionState("session-alpha");
     state.status = "active";
@@ -589,6 +617,80 @@ describe("canonical sector graph", () => {
     expect(phoneProjection.movementPlanner?.destinations.some((destination) => destination.route.includes("missing-sector"))).toBe(false);
   });
 
+  it("allows cross-region movement only through authored transition sectors", () => {
+    const state = createInitialSessionState("session-alpha");
+    state.status = "active";
+    state.phase = "navigation";
+    state.turnOrder = ["seat-1"];
+    state.activeSeatIndex = 0;
+    state.movementRolls = { "seat-1": 1 };
+    state.seats[0] = { ...state.seats[0]!, connected: true, displayName: "Lane", characterId: "void-marshal" };
+    state.players[0] = {
+      ...state.players[0]!,
+      sectorId: "outer_ember_sanctum",
+      character: {
+        ...state.players[0]!.character,
+        currentSpaceId: "outer_ember_sanctum"
+      }
+    };
+
+    const phoneProjection = createPhoneProjection(state, "seat-1") as {
+      movementPlanner: {
+        destinations: Array<{ sectorId: string; distance: number; route: string[]; disabledReason?: string }>;
+      } | null;
+    };
+    const middleTransition = phoneProjection.movementPlanner?.destinations.find(
+      (destination) => destination.sectorId === "middle_red_march_outpost"
+    );
+
+    expect(middleTransition).toMatchObject({
+      distance: 1,
+      route: ["outer_ember_sanctum", "middle_red_march_outpost"]
+    });
+    expect(middleTransition?.disabledReason).toBeUndefined();
+  });
+
+  it("blocks direct cross-region neighbors that are not authored transition links", () => {
+    const state = createInitialSessionState("session-alpha");
+    state.status = "active";
+    state.phase = "navigation";
+    state.turnOrder = ["seat-1"];
+    state.activeSeatIndex = 0;
+    state.movementRolls = { "seat-1": 1 };
+    state.seats[0] = { ...state.seats[0]!, connected: true, displayName: "Lane", characterId: "void-marshal" };
+    state.players[0] = {
+      ...state.players[0]!,
+      sectorId: "outer_waymarket",
+      character: {
+        ...state.players[0]!.character,
+        currentSpaceId: "outer_waymarket"
+      }
+    };
+    state.sectors = state.sectors.map((sector) => {
+      if (sector.id === "outer_waymarket") {
+        return { ...sector, neighbors: [...sector.neighbors, "middle_relic_cache"] };
+      }
+
+      if (sector.id === "middle_relic_cache") {
+        return { ...sector, neighbors: [...sector.neighbors, "outer_waymarket"] };
+      }
+
+      return sector;
+    });
+
+    const phoneProjection = createPhoneProjection(state, "seat-1") as {
+      movementPlanner: {
+        destinations: Array<{ sectorId: string; disabledReason?: string; route: string[] }>;
+      } | null;
+    };
+    const fakeCrossRing = phoneProjection.movementPlanner?.destinations.find(
+      (destination) => destination.sectorId === "middle_relic_cache"
+    );
+
+    expect(fakeCrossRing?.disabledReason).toContain("requires a transition tile");
+    expect(fakeCrossRing?.route).toEqual(["outer_waymarket", "middle_relic_cache"]);
+  });
+
   it("allows reducer movement only to destinations in the rolled-distance planner", () => {
     const state = createInitialSessionState("session-alpha");
     state.status = "active";
@@ -630,6 +732,7 @@ describe("canonical sector graph", () => {
     state.phase = "navigation";
     state.turnOrder = ["seat-1"];
     state.activeSeatIndex = 0;
+    state.movementRolls = { "seat-1": 1 };
     state.seats[0] = { ...state.seats[0]!, connected: true, displayName: "Lane", characterId: "void-marshal" };
     state.players[0] = {
       ...state.players[0]!,
@@ -722,13 +825,25 @@ describe("canonical sector graph", () => {
       throw new Error(started.rejection.reason);
     }
 
-    const legalMove = reduceGameState(started.state, {
+    const rolled = reduceGameState(started.state, {
+      type: "MOVEMENT_ROLLED",
+      seatId: "seat-1",
+      movementValue: 1,
+      roll: { faces: [1], total: 1 },
+      createdAt: new Date().toISOString()
+    });
+
+    if (!rolled.ok) {
+      throw new Error(rolled.rejection.reason);
+    }
+
+    const legalMove = reduceGameState(rolled.state, {
       type: "MOVE_REQUESTED",
       seatId: "seat-1",
       toSectorId: "outer_ember_sanctum",
       createdAt: new Date().toISOString()
     });
-    const illegalMove = reduceGameState(started.state, {
+    const illegalMove = reduceGameState(rolled.state, {
       type: "MOVE_REQUESTED",
       seatId: "seat-1",
       toSectorId: "hollow-veil-yard",

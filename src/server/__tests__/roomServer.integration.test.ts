@@ -678,6 +678,14 @@ function statePatchForPhase(
     (activeSeatIndex === undefined || Number(message.payload.activeSeatIndex) === activeSeatIndex);
 }
 
+function statePatchWithMovementPlanner(activeSeatIndex?: number): (message: ServerEnvelope) => boolean {
+  return (message) =>
+    statePatchForPhase("navigation", activeSeatIndex)(message) &&
+    typeof message.payload.movementPlanner === "object" &&
+    message.payload.movementPlanner !== null &&
+    (message.payload.movementPlanner as { active?: boolean }).active === true;
+}
+
 function statePatchWithResolutionStage(stage: string): (message: ServerEnvelope) => boolean {
   return (message) => {
     if (!isStatePatch(message)) {
@@ -725,6 +733,20 @@ async function sendVisibleCombat(probe: SocketProbe, seatId: string, stat: "comm
     seatId,
     stat
   });
+}
+
+async function requestMovementRoll(
+  probe: SocketProbe,
+  observer: SocketProbe,
+  seatId: string,
+  activeSeatIndex?: number
+): Promise<void> {
+  const marker = observer.mark();
+  probe.send({
+    type: "MOVEMENT_ROLL_REQUESTED",
+    seatId
+  });
+  await observer.waitForSince(marker, statePatchWithMovementPlanner(activeSeatIndex));
 }
 
 async function endBroadcastTurn(
@@ -1264,6 +1286,25 @@ describe("roomServer websocket integration", () => {
     activeHarness.roomServer.setSeatReady(joinResult.seatId, true);
     activeHarness.roomServer.startSession();
 
+    await tv.waitFor(
+      (message) =>
+        isStatePatch(message) &&
+        message.payload.status === "active" &&
+        message.phase === "navigation" &&
+        (message.payload.movementPlanner as unknown) === null
+    );
+    await phone.waitFor(
+      (message) =>
+        isStatePatch(message) &&
+        Object.hasOwn(message.payload, "self") &&
+        (message.payload.movementPlanner as unknown) === null
+    );
+
+    phone.send({
+      type: "MOVEMENT_ROLL_REQUESTED",
+      seatId: joinResult.seatId
+    });
+
     const tvStarted = (await tv.waitFor(
       (message) =>
         isStatePatch(message) &&
@@ -1647,6 +1688,8 @@ describe("roomServer websocket integration", () => {
 
     await phone.waitFor(statePatchForPhase("navigation", 0));
 
+    harness.roomServer.getState().movementRolls = { "seat-1": 1 };
+
     phone.send({
       type: "MOVE_REQUESTED",
       seatId: "seat-1",
@@ -1765,6 +1808,7 @@ describe("roomServer websocket integration", () => {
     );
     expect(isIntentRejected(rejection) && rejection.reason).toContain("outside its turn");
 
+    await requestMovementRoll(phone1, tv, "seat-1", 0);
     let marker = tv.mark();
     phone1.send({
       type: "MOVE_REQUESTED",
@@ -1807,6 +1851,7 @@ describe("roomServer websocket integration", () => {
         )
     ).toBe(true);
 
+    await requestMovementRoll(phone2, tv, "seat-2", 1);
     marker = tv.mark();
     phone2.send({
       type: "MOVE_REQUESTED",
@@ -1867,6 +1912,7 @@ describe("roomServer websocket integration", () => {
         )
     ).toBe(true);
 
+    await requestMovementRoll(phone3, tv, "seat-3", 2);
     marker = tv.mark();
     phone3.send({
       type: "MOVE_REQUESTED",
@@ -1888,6 +1934,7 @@ describe("roomServer websocket integration", () => {
     });
     await tv.waitForSince(marker, statePatchForPhase("navigation", 0));
 
+    await requestMovementRoll(phone1, tv, "seat-1", 0);
     marker = tv.mark();
     phone1.send({
       type: "MOVE_REQUESTED",
@@ -1906,6 +1953,7 @@ describe("roomServer websocket integration", () => {
     expect(postCheckSeatOne?.character.status).toBe("active");
     expect(postCheckSeatOne?.character.heat).toBe(1);
 
+    await requestMovementRoll(phone2, tv, "seat-2", 1);
     marker = tv.mark();
     phone2.send({
       type: "MOVE_REQUESTED",
@@ -1928,6 +1976,7 @@ describe("roomServer websocket integration", () => {
     await tv.waitForSince(marker, statePatchForPhase("broadcast", 1));
     await endBroadcastTurn(phone2, tv, "seat-2", 2);
 
+    await requestMovementRoll(phone3, tv, "seat-3", 2);
     marker = tv.mark();
     const phone3ContractMoveMarker = phone3.mark();
     phone3.send({
@@ -1997,6 +2046,7 @@ describe("roomServer websocket integration", () => {
     expect(seatOneAfterAdvance?.character.status).toBe("active");
     expect(seatOneAfterAdvance?.character.heat).toBe(0);
 
+    await requestMovementRoll(phone2, tv, "seat-2", 1);
     marker = tv.mark();
     phone2.send({
       type: "MOVE_REQUESTED",
@@ -2013,6 +2063,7 @@ describe("roomServer websocket integration", () => {
     await tv.waitForSince(marker, statePatchForPhase("broadcast", 1));
     await endBroadcastTurn(phone2, tv, "seat-2", 2);
 
+    await requestMovementRoll(phone3, tv, "seat-3", 2);
     marker = tv.mark();
     phone3.send({
       type: "MOVE_REQUESTED",
@@ -2281,12 +2332,13 @@ describe("roomServer websocket integration", () => {
       expect(isStatePatch(initialTvPatch) ? getSeatConnectionFromPatch(initialTvPatch, "seat-2") : null).toBe(true);
       expect(isStatePatch(initialTvPatch) ? getSeatConnectionFromPatch(initialTvPatch, "seat-3") : null).toBe(true);
 
+      await requestMovementRoll(phone1, tv, "seat-1", 0);
       let marker = tv.mark();
-    phone1.send({
-      type: "MOVE_REQUESTED",
-      seatId: "seat-1",
-      toSectorId: "hazard-east"
-    });
+      phone1.send({
+        type: "MOVE_REQUESTED",
+        seatId: "seat-1",
+        toSectorId: "hazard-east"
+      });
       step = "seat1 move";
       await tv.waitForSince(marker, statePatchForPhase("action", 0));
 
@@ -2296,12 +2348,13 @@ describe("roomServer websocket integration", () => {
       await tv.waitForSince(marker, statePatchForPhase("broadcast", 0));
       await endBroadcastTurn(phone1, tv, "seat-1", 1);
 
+      await requestMovementRoll(phone2, tv, "seat-2", 1);
       marker = tv.mark();
-    phone2.send({
-      type: "MOVE_REQUESTED",
-      seatId: "seat-2",
-      toSectorId: "enemy-yard"
-    });
+      phone2.send({
+        type: "MOVE_REQUESTED",
+        seatId: "seat-2",
+        toSectorId: "enemy-yard"
+      });
       step = "seat2 move to enemy";
       await tv.waitForSince(marker, statePatchForPhase("action", 1));
 
@@ -2332,12 +2385,13 @@ describe("roomServer websocket integration", () => {
       expect(harness.roomServer.getState().phase).toBe("broadcast");
       await endBroadcastTurn(phone2, tv, "seat-2", 2);
 
+      await requestMovementRoll(phone3, tv, "seat-3", 2);
       marker = tv.mark();
-    phone3.send({
-      type: "MOVE_REQUESTED",
-      seatId: "seat-3",
-      toSectorId: "seat-1-start"
-    });
+      phone3.send({
+        type: "MOVE_REQUESTED",
+        seatId: "seat-3",
+        toSectorId: "seat-1-start"
+      });
       step = "seat3 move to contract accept setup";
       await tv.waitForSince(marker, statePatchForPhase("action", 2));
 
@@ -2355,12 +2409,13 @@ describe("roomServer websocket integration", () => {
       step = "seat3 end turn";
       await tv.waitForSince(marker, statePatchForPhase("navigation", 0));
 
+      await requestMovementRoll(phone1, tv, "seat-1", 0);
       marker = tv.mark();
-    phone1.send({
-      type: "MOVE_REQUESTED",
-      seatId: "seat-1",
-      toSectorId: "seat-1-start"
-    });
+      phone1.send({
+        type: "MOVE_REQUESTED",
+        seatId: "seat-1",
+        toSectorId: "seat-1-start"
+      });
       step = "seat1 empty move";
       await tv.waitForSince(marker, statePatchForPhase("action", 0));
 
@@ -2373,12 +2428,13 @@ describe("roomServer websocket integration", () => {
       step = "seat1 empty resolve";
       await tv.waitForSince(marker, statePatchForPhase("navigation", 1));
 
+      await requestMovementRoll(phone2, tv, "seat-2", 1);
       marker = tv.mark();
-    phone2.send({
-      type: "MOVE_REQUESTED",
-      seatId: "seat-2",
-      toSectorId: "seat-2-start"
-    });
+      phone2.send({
+        type: "MOVE_REQUESTED",
+        seatId: "seat-2",
+        toSectorId: "seat-2-start"
+      });
       step = "seat2 move to equip";
       await tv.waitForSince(marker, statePatchForPhase("action", 1));
     phone2.send({
@@ -2470,12 +2526,13 @@ describe("roomServer websocket integration", () => {
     expect(staleCode).toBe(4003);
     expect(String(staleReason)).toContain("Replaced by newer connection");
 
+      await requestMovementRoll(phone3, tv, "seat-3", 2);
       marker = tv.mark();
-    phone3.send({
-      type: "MOVE_REQUESTED",
-      seatId: "seat-3",
-      toSectorId: "contract-hunt"
-    });
+      phone3.send({
+        type: "MOVE_REQUESTED",
+        seatId: "seat-3",
+        toSectorId: "contract-hunt"
+      });
       step = "seat3 move to active disconnect";
       await tv.waitForSince(marker, statePatchForPhase("action", 2));
 

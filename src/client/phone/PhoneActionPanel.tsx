@@ -1330,10 +1330,24 @@ function MovementPlanner({
     return (
       <section className="phone-movement-planner" aria-label="Movement planner" data-testid="movement-planner">
         <MovementEmptyState
-          title="No movement roll"
-          text="Roll Movement to see your legal destinations."
-          detail="Movement options appear here once the server projects a public route list."
+          title="Roll movement"
+          text="Roll movement to reveal your legal destinations."
+          detail="Legal destinations appear after the server records your movement roll."
         />
+        <div className="phone-movement-roll-actions">
+          <button
+            type="button"
+            className="phone-action-button phone-action-button-primary"
+            onClick={() =>
+              onIntent({
+                type: "MOVEMENT_ROLL_REQUESTED",
+                seatId
+              })
+            }
+          >
+            Roll Movement
+          </button>
+        </div>
       </section>
     );
   }
@@ -2081,21 +2095,16 @@ export function PhoneActionPanel({
   }
 
   if (patch.phase === "navigation" && !movementPlanner?.active) {
-    (sector?.neighbors ?? []).forEach((neighborId) => {
-      const neighbor = getSector(patch.sectors, neighborId);
-
-      moveActions.push({
-        key: `move-${neighborId}`,
-        label: neighbor?.name ?? neighborId,
-        detail: "Move",
-        tone: "primary",
-        onClick: () =>
-          onIntent({
-            type: "MOVE_REQUESTED",
-            seatId: self.seatId,
-            toSectorId: neighborId
-          })
-      });
+    moveActions.push({
+      key: "movement-roll",
+      label: "Roll Movement",
+      detail: "Reveal legal destinations",
+      tone: "primary",
+      onClick: () =>
+        onIntent({
+          type: "MOVEMENT_ROLL_REQUESTED",
+          seatId: self.seatId
+        })
     });
   }
 
@@ -2395,7 +2404,9 @@ export function PhoneActionPanel({
 
   const copy =
     patch.phase === "navigation"
-      ? "Inspect public route intel before confirming movement."
+      ? movementPlanner?.active
+        ? "Inspect public route intel before confirming movement."
+        : "Roll movement to reveal your legal destinations."
       : patch.phase === "action" && isScenarioConfrontation
         ? "The Cinder Gate is open. Resolve the active scenario confrontation."
       : patch.phase === "action" && boardSpace
@@ -2452,7 +2463,7 @@ export function PhoneActionPanel({
       detail: movementPlanner?.active
         ? `${movementPlanner.destinations.length} route${movementPlanner.destinations.length === 1 ? "" : "s"}`
         : patch.phase === "navigation"
-          ? "Ready"
+          ? "Roll"
           : "Standby",
       tone: "move",
       enabled: hasMoveContent,

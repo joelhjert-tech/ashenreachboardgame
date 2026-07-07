@@ -717,11 +717,28 @@ describe("server API scenario flow", () => {
 
       expect(startedPatch.payload.scenarioTelemetry?.some((entry) => entry.label === "Starfire")).toBe(true);
 
+      expect(startedPatch.payload.movementPlanner).toBeNull();
+
+      phone.socket.send(
+        JSON.stringify({
+          type: "MOVEMENT_ROLL_REQUESTED",
+          seatId: joined.payload.seatId
+        })
+      );
+
+      const movementPatch = await waitForStatePatch(
+        phone,
+        (message) =>
+          message.phase === "navigation" &&
+          message.payload.status === "active" &&
+          Boolean(message.payload.movementPlanner?.destinations.length)
+      );
+
       const state = harness.roomServer.getState();
       const activePlayer = state.players.find((player) => player.seatId === joined.payload.seatId);
-      const legalDestinationId = startedPatch.payload.movementPlanner?.destinations[0]?.sectorId;
+      const legalDestinationId = movementPatch.payload.movementPlanner?.destinations[0]?.sectorId;
 
-      expect(activePlayer?.character.currentSpaceId).toBe(startedPatch.payload.movementPlanner?.currentSectorId);
+      expect(activePlayer?.character.currentSpaceId).toBe(movementPatch.payload.movementPlanner?.currentSectorId);
       expect(legalDestinationId).toBeTruthy();
 
       phone.socket.send(

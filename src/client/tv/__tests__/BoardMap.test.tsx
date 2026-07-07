@@ -149,11 +149,11 @@ function createPatch(): PublicPatchPayload {
 }
 
 describe("BoardMap", () => {
-  it("highlights exactly the active sector neighbors as legal targets", () => {
+  it("does not highlight legal targets before movement is rolled", () => {
     render(<BoardMap patch={createPatch()} phase="navigation" />);
 
-    expect(screen.getByTestId("sector-node-glassmere-spindle")).toHaveAttribute("data-legal-target", "true");
-    expect(screen.getByTestId("sector-node-mirecoil-beacon")).toHaveAttribute("data-legal-target", "true");
+    expect(screen.getByTestId("sector-node-glassmere-spindle")).toHaveAttribute("data-legal-target", "false");
+    expect(screen.getByTestId("sector-node-mirecoil-beacon")).toHaveAttribute("data-legal-target", "false");
     expect(screen.getByTestId("sector-node-ashwake-crossing")).toHaveAttribute("data-legal-target", "false");
     expect(screen.getByTestId("sector-node-hollow-veil-yard")).toHaveAttribute("data-legal-target", "false");
     expect(screen.getByTestId("sector-node-emberwatch-step")).toHaveAttribute("data-legal-target", "false");

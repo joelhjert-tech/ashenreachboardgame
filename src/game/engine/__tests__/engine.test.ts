@@ -2887,7 +2887,7 @@ describe("movement rolls", () => {
     expect(result.ok ? result.state.movementRolls?.["seat-1"] : null).toBe(4);
   });
 
-  it("automatically rolls movement when the session enters navigation", () => {
+  it("waits for an explicit movement roll when the session enters navigation", () => {
     const state = createState({
       status: "lobby",
       phase: "start",
@@ -2947,8 +2947,21 @@ describe("movement rolls", () => {
     };
 
     expect(started.phase).toBe("navigation");
-    expect(started.movementRolls?.["seat-1"]).toBe(3);
-    expect(tvProjection.movementPlanner?.movementValue).toBe(3);
+    expect(started.movementRolls?.["seat-1"]).toBeUndefined();
+    expect(tvProjection.movementPlanner).toBeNull();
+
+    runIntent(server, {
+      type: "MOVEMENT_ROLL_REQUESTED",
+      seatId: "seat-1"
+    });
+
+    const rolled = server.getState();
+    const rolledProjection = createTvProjection(rolled) as {
+      movementPlanner?: { movementValue: number } | null;
+    };
+
+    expect(rolled.movementRolls?.["seat-1"]).toBe(3);
+    expect(rolledProjection.movementPlanner?.movementValue).toBe(3);
   });
 
   it("uses stored movement rolls for longer legal destinations and clears them after movement resolves", () => {
@@ -3032,6 +3045,8 @@ describe("movement rolls", () => {
       createContracts()
     );
 
+    server.getState().movementRolls = { "seat-1": 1 };
+
     runIntent(server, {
       type: "MOVE_REQUESTED",
       seatId: "seat-1",
@@ -3072,6 +3087,8 @@ describe("movement rolls", () => {
       createGear(),
       createContracts()
     );
+
+    server.getState().movementRolls = { "seat-1": 1 };
 
     runIntent(server, {
       type: "MOVE_REQUESTED",
@@ -3114,6 +3131,8 @@ describe("movement rolls", () => {
       createGear(),
       createContracts()
     );
+
+    server.getState().movementRolls = { "seat-1": 1 };
 
     runIntent(server, {
       type: "MOVE_REQUESTED",
@@ -3159,6 +3178,8 @@ describe("movement rolls", () => {
       createContracts()
     );
 
+    server.getState().movementRolls = { "seat-1": 1 };
+
     runIntent(server, {
       type: "MOVE_REQUESTED",
       seatId: "seat-1",
@@ -3197,7 +3218,7 @@ describe("movement rolls", () => {
   });
 
   it("rejects forged movement resolution to a non-neighbor", () => {
-    const state = createState({ phase: "navigation" });
+    const state = createState({ phase: "navigation", movementRolls: { "seat-1": 1 } });
     const result = reduceGameState(state, {
       type: "MOVEMENT_RESOLVED",
       seatId: "seat-1",
@@ -3252,6 +3273,8 @@ describe("movement rolls", () => {
       createGear(),
       createContracts()
     );
+
+    server.getState().movementRolls = { "seat-1": 1 };
 
     runIntent(server, {
       type: "MOVE_REQUESTED",
@@ -3513,6 +3536,8 @@ describe("escalation flow", () => {
       createGear(),
       createContracts()
     );
+
+    moveServer.getState().movementRolls = { "seat-1": 1 };
 
     runIntent(moveServer, {
       type: "MOVE_REQUESTED",
@@ -4741,6 +4766,8 @@ describe("escalation flow", () => {
       createContracts()
     );
 
+    server.getState().movementRolls = { "seat-1": 1 };
+
     server.handleIntent(client as never, {
       type: "MOVE_REQUESTED",
       seatId: "seat-1",
@@ -4873,6 +4900,7 @@ describe("escalation flow", () => {
     );
 
     endBroadcastTurn(server);
+    server.getState().movementRolls = { "seat-1": 1 };
     runIntent(server, {
       type: "MOVE_REQUESTED",
       seatId: "seat-1",
@@ -5623,6 +5651,8 @@ describe("trophy progression", () => {
       createContracts()
     );
 
+    baselineServer.getState().movementRolls = { "seat-1": 1 };
+
     runIntent(baselineServer, {
       type: "MOVE_REQUESTED",
       seatId: "seat-1",
@@ -5656,6 +5686,7 @@ describe("trophy progression", () => {
       seatId: "seat-1",
       toPhase: "start"
     });
+    boostedServer.getState().movementRolls = { "seat-2": 1 };
     runIntent(boostedServer, {
       type: "MOVE_REQUESTED",
       seatId: "seat-2",
@@ -5666,6 +5697,7 @@ describe("trophy progression", () => {
       seatId: "seat-2",
       toPhase: "resolution"
     });
+    boostedServer.getState().movementRolls = { "seat-1": 1 };
     runIntent(boostedServer, {
       type: "MOVE_REQUESTED",
       seatId: "seat-1",
@@ -7073,6 +7105,8 @@ describe("contracts", () => {
       createContracts()
     );
 
+    server.getState().movementRolls = { "seat-1": 1 };
+
     runIntent(server, {
       type: "MOVE_REQUESTED",
       seatId: "seat-1",
@@ -7154,6 +7188,8 @@ describe("contracts", () => {
       createGear(),
       createContracts()
     );
+
+    server.getState().movementRolls = { "seat-1": 1 };
 
     runIntent(server, {
       type: "MOVE_REQUESTED",

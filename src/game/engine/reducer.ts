@@ -13,6 +13,7 @@ import type {
   GameAction,
   MovementResolvedAction,
   MovementRolledAction,
+  MovementRollRequestedAction,
   MoveRequestedAction,
   NemesisCombatResolvedAction,
   NemesisDefeatedAction,
@@ -1080,6 +1081,30 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
         eventLog: [...state.eventLog, action]
       });
     }
+    case "MOVEMENT_ROLL_REQUESTED": {
+      const movementRollRequestedAction = action as MovementRollRequestedAction;
+
+      try {
+        ensureSeatTurn(state, movementRollRequestedAction.seatId);
+        ensureSeatCanTakeNormalTurnAction(state, movementRollRequestedAction.seatId);
+      } catch (error) {
+        return reject(state, action, error instanceof Error ? error.message : "Seat cannot act");
+      }
+
+      if (!canResolveMovement(state.phase)) {
+        return reject(state, action, `Cannot roll movement during phase ${state.phase}`);
+      }
+
+      if (state.movementRolls?.[movementRollRequestedAction.seatId]) {
+        return reject(state, action, "Movement has already been rolled this turn");
+      }
+
+      return succeed({
+        ...state,
+        sequence: state.sequence + 1,
+        eventLog: [...state.eventLog, action]
+      });
+    }
     case "MOVEMENT_ROLLED": {
       const movementRolledAction = action as MovementRolledAction;
 
@@ -1092,6 +1117,10 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
 
       if (!canResolveMovement(state.phase)) {
         return reject(state, action, `Cannot roll movement during phase ${state.phase}`);
+      }
+
+      if (state.movementRolls?.[movementRolledAction.seatId]) {
+        return reject(state, action, "Movement has already been rolled this turn");
       }
 
       if (!Number.isInteger(movementRolledAction.movementValue) || movementRolledAction.movementValue < 1) {

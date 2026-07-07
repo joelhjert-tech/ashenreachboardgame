@@ -237,10 +237,8 @@ export function BoardMap({ patch, previousPatch = null, phase, showHeader = true
               .filter((destination) => !destination.disabledReason)
               .map((destination) => destination.sectorId)
           )
-        : phase === "navigation" && activeSectorId
-          ? new Set(sectorsById.get(activeSectorId)?.neighbors ?? [])
-          : new Set<string>(),
-    [activeSectorId, movementPlanner, phase, sectorsById]
+        : new Set<string>(),
+    [movementPlanner]
   );
   const selectedNode = RIFTFALL_BOARD_NODE_INDEX.get(selectedNodeId) ?? RIFTFALL_BOARD_NODES[0];
   const selectedBoardSpace = selectedNode ? getBoardSpace(selectedNode.id) : null;

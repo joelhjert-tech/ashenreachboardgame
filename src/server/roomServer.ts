@@ -283,6 +283,7 @@ type ClientMessage = ClientIntent | RejoinMessage | HostCommandMessage;
 
 const CLIENT_INTENT_TYPES = new Set<string>([
   "MOVE_REQUESTED",
+  "MOVEMENT_ROLL_REQUESTED",
   "PHASE_ADVANCED",
   "CHECK_REQUESTED",
   "COMBAT_REQUESTED",
@@ -644,6 +645,8 @@ export class GameRoomServer {
         this.resolveEnemyRollIntent(intent);
       } else if (intent.type === "SOLO_REROLL_REQUESTED") {
         // Keep the rerolled result visible until the player continues.
+      } else if (intent.type === "MOVEMENT_ROLL_REQUESTED") {
+        this.resolveMovementRollIntent(intent);
       } else if (intent.type === "MOVE_REQUESTED") {
         this.resolveMoveIntent(intent);
       } else if (intent.type === "SCENARIO_CONFRONTATION_REQUESTED") {
@@ -1022,7 +1025,6 @@ export class GameRoomServer {
     if (this.state.status === "active") {
       this.applyStartOfTurnScenarioEffects(this.state.turnOrder[this.state.activeSeatIndex] ?? activeSeatId);
       this.maybeTriggerAbilityOnTurnStarted(this.state.turnOrder[this.state.activeSeatIndex] ?? activeSeatId);
-      this.ensureMovementRollForActiveNavigationSeat();
     }
     this.broadcastPatch();
   }
@@ -1066,6 +1068,8 @@ export class GameRoomServer {
     switch (type) {
       case "MOVE_REQUESTED":
         requireStringField(message, "toSectorId", type);
+        break;
+      case "MOVEMENT_ROLL_REQUESTED":
         break;
       case "PHASE_ADVANCED":
         requireEnumField(message, "toPhase", PHASE_VALUES, type);
@@ -2175,6 +2179,12 @@ export class GameRoomServer {
           toSectorId: intent.toSectorId,
           createdAt
         } satisfies MoveRequestedAction;
+      case "MOVEMENT_ROLL_REQUESTED":
+        return {
+          type: "MOVEMENT_ROLL_REQUESTED",
+          seatId: intent.seatId,
+          createdAt
+        };
       case "PHASE_ADVANCED":
         return {
           type: "PHASE_ADVANCED",
@@ -4594,28 +4604,31 @@ export class GameRoomServer {
       if (nextSeatId) {
         this.applyStartOfTurnScenarioEffects(nextSeatId);
         this.maybeTriggerAbilityOnTurnStarted(nextSeatId);
-        this.ensureMovementRollForActiveNavigationSeat();
       }
     }
 
     this.broadcastPatch();
   }
 
-  private ensureMovementRollForActiveNavigationSeat(): void {
+  private resolveMovementRollIntent(intent: Extract<ClientIntent, { type: "MOVEMENT_ROLL_REQUESTED" }>): void {
     if (this.state.status !== "active" || this.state.phase !== "navigation") {
-      return;
+      throw new IntentRejectedError("MOVEMENT_ROLL_REQUESTED", `Cannot roll movement during phase ${this.state.phase}`);
     }
 
     const activeSeatId = this.state.turnOrder[this.state.activeSeatIndex] ?? null;
 
-    if (!activeSeatId || this.state.movementRolls?.[activeSeatId]) {
-      return;
+    if (!activeSeatId || activeSeatId !== intent.seatId) {
+      throw new IntentRejectedError("MOVEMENT_ROLL_REQUESTED", `Seat ${intent.seatId} cannot act outside its turn`);
+    }
+
+    if (this.state.movementRolls?.[activeSeatId]) {
+      throw new IntentRejectedError("MOVEMENT_ROLL_REQUESTED", "Movement has already been rolled this turn");
     }
 
     const activePlayer = this.state.players.find((entry) => entry.seatId === activeSeatId);
 
     if (!activePlayer || activePlayer.character.status !== "active") {
-      return;
+      throw new IntentRejectedError("MOVEMENT_ROLL_REQUESTED", `Seat ${intent.seatId} must recruit a replacement before acting`);
     }
 
     const boardSpace = getBoardSpace(activePlayer.character.currentSpaceId);
@@ -4626,7 +4639,7 @@ export class GameRoomServer {
         : rollDice(1, 6, this.randomSource);
 
     if (roll.total < 1) {
-      return;
+      throw new IntentRejectedError("MOVEMENT_ROLL_REQUESTED", "Movement is not available from this sector");
     }
 
     this.applyAction({

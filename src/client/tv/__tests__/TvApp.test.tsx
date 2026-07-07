@@ -395,7 +395,7 @@ describe("TvApp", () => {
     const strip = await screen.findByTestId("host-bottom-status-strip");
     expect(strip).toHaveTextContent(/active: joel/i);
     expect(strip).toHaveTextContent(/the broken seal/i);
-    expect(strip).toHaveTextContent(/choosing movement/i);
+    expect(strip).toHaveTextContent(/waiting on .*roll movement/i);
     expect(strip).not.toHaveTextContent(/mode co-op/i);
     expect(strip).not.toHaveTextContent(/phase navigation/i);
     expect(strip).not.toHaveTextContent(/global 0\/6/i);

@@ -338,6 +338,10 @@ describe("player count integration matrix", () => {
       }
 
       const moveTarget = getFirstNeighborForSeat(harness.roomServer.getState(), "seat-1");
+      harness.roomServer.getState().movementRolls = {
+        ...(harness.roomServer.getState().movementRolls ?? {}),
+        "seat-1": 1
+      };
 
       phones[0]!.socket.send(
         JSON.stringify({

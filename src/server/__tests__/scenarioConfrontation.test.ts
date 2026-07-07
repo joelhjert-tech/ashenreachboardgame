@@ -670,6 +670,7 @@ describe("scenario confrontation flow", () => {
         ...state,
         status: "active",
         phase: "navigation",
+        movementRolls: { "seat-1": 1 },
         sectors: state.sectors.map((sector) =>
           sector.id === targetSectorId
             ? {
@@ -878,6 +879,7 @@ describe("scenario confrontation flow", () => {
           devourerIndex: 3
         },
         phase: "navigation",
+        movementRolls: { "seat-1": 1 },
         players: createScenarioState().players
           .slice(0, 1)
           .map((player) => ({
@@ -920,6 +922,7 @@ describe("scenario confrontation flow", () => {
           devourerIndex: 3
         },
         phase: "navigation",
+        movementRolls: { "seat-1": 1 },
         players: createScenarioState().players
           .slice(0, 1)
           .map((player) => ({

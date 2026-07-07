@@ -1347,10 +1347,12 @@ describe("PhoneActionPanel", () => {
   });
 
   it("renders a no movement roll state without direct neighbor move buttons", () => {
+    const onIntent = vi.fn();
+
     render(
       <PhoneActionPanel
         characters={characters}
-        onIntent={vi.fn()}
+        onIntent={onIntent}
         patch={createPatch({
           phase: "navigation",
           encounter: null,
@@ -1359,9 +1361,17 @@ describe("PhoneActionPanel", () => {
       />
     );
 
-    expect(screen.getByTestId("movement-planner")).toHaveTextContent(/no movement roll/i);
-    expect(screen.getByText(/roll movement to see your legal destinations/i)).toBeInTheDocument();
+    const planner = within(screen.getByTestId("movement-planner"));
+    expect(planner.getAllByText(/^roll movement$/i).length).toBeGreaterThan(0);
+    expect(planner.getByText(/roll movement to reveal your legal destinations/i)).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /glassmere-spindle/i })).not.toBeInTheDocument();
+
+    fireEvent.click(planner.getByRole("button", { name: /roll movement/i }));
+
+    expect(onIntent).toHaveBeenCalledWith({
+      type: "MOVEMENT_ROLL_REQUESTED",
+      seatId: "seat-1"
+    });
   });
 
   it("surfaces authored contract objective labels on accept and complete actions", () => {
