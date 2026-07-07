@@ -15,6 +15,17 @@
   --focus-ring: #9ed8ff;
   --radius-panel: 8px;
   --radius-control: 6px;
+  --motion-instant: 80ms;
+  --motion-quick: 140ms;
+  --motion-normal: 220ms;
+  --motion-deliberate: 360ms;
+  --motion-cinematic: 520ms;
+  --motion-heavy: 760ms;
+  --ease-command: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --ease-impact: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-warning: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-snap: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-fade: ease-out;
   color: var(--text-primary);
   background: var(--surface-panel);
   font-family: var(--font-body);
@@ -255,6 +266,92 @@ button:disabled {
 
   .game-button-spinner {
     animation: none;
+  }
+}
+
+.motion-token-step {
+  --motion-pattern-duration: var(--motion-normal);
+  --motion-pattern-ease: var(--ease-command);
+}
+
+.motion-route-glow {
+  --motion-pattern-duration: var(--motion-cinematic);
+  --motion-pattern-ease: var(--ease-command);
+}
+
+.motion-dice-throw {
+  --motion-pattern-duration: var(--motion-cinematic);
+  --motion-pattern-ease: var(--ease-snap);
+}
+
+.motion-card-flip {
+  --motion-pattern-duration: var(--motion-cinematic);
+  --motion-pattern-ease: var(--ease-impact);
+}
+
+.motion-wound-reveal {
+  --motion-pattern-duration: var(--motion-heavy);
+  --motion-pattern-ease: var(--ease-impact);
+}
+
+.motion-battle-impact {
+  --motion-pattern-duration: var(--motion-deliberate);
+  --motion-pattern-ease: var(--ease-impact);
+}
+
+.motion-reward-pulse {
+  --motion-pattern-duration: var(--motion-deliberate);
+  --motion-pattern-ease: var(--ease-snap);
+}
+
+.motion-shop-transaction {
+  --motion-pattern-duration: var(--motion-deliberate);
+  --motion-pattern-ease: var(--ease-command);
+}
+
+.motion-scenario-progress {
+  --motion-pattern-duration: var(--motion-cinematic);
+  --motion-pattern-ease: var(--ease-command);
+}
+
+.motion-tab-enter,
+.motion-tab-exit {
+  --motion-pattern-duration: var(--motion-normal);
+  --motion-pattern-ease: var(--ease-command);
+}
+
+.motion-invalid-action {
+  --motion-pattern-duration: var(--motion-quick);
+  --motion-pattern-ease: var(--ease-warning);
+}
+
+.motion-network-status {
+  --motion-pattern-duration: var(--motion-cinematic);
+  --motion-pattern-ease: var(--ease-fade);
+}
+
+.motion-reduced-fallback {
+  --motion-pattern-duration: var(--motion-instant);
+  --motion-pattern-ease: var(--ease-fade);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .motion-token-step,
+  .motion-route-glow,
+  .motion-dice-throw,
+  .motion-card-flip,
+  .motion-wound-reveal,
+  .motion-battle-impact,
+  .motion-reward-pulse,
+  .motion-shop-transaction,
+  .motion-scenario-progress,
+  .motion-tab-enter,
+  .motion-tab-exit,
+  .motion-invalid-action,
+  .motion-network-status,
+  .motion-reduced-fallback {
+    --motion-pattern-duration: var(--motion-instant);
+    --motion-pattern-ease: var(--ease-fade);
   }
 }
 
