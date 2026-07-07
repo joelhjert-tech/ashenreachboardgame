@@ -5,6 +5,7 @@ import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-li
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { getChallengeThemeStyle } from "../../../game/ui/challengeTheme.js";
 import { PhoneApp } from "../PhoneApp.js";
+import { useRoomSubscription } from "../../shared/useRoomSubscription.js";
 import type { CharacterCatalogEntry } from "../../shared/types.js";
 
 const characters: CharacterCatalogEntry[] = [
@@ -320,7 +321,7 @@ describe("PhoneApp", () => {
     });
   });
 
-  it("stores controller auth in session storage so separate tabs do not share a seat", async () => {
+  it("stores controller auth durably so a closed phone browser can reclaim its seat", async () => {
     networkMocks.joinSession.mockResolvedValue({
       roomCode: "RT7P4",
       seatId: "seat-1",
@@ -337,9 +338,84 @@ describe("PhoneApp", () => {
     fireEvent.click(await screen.findByRole("button", { name: /mira.*cinder monk/i }));
 
     await waitFor(() => {
-      expect(window.sessionStorage.getItem("ashen-reach-phone-auth")).toContain("seat-1");
+      expect(window.sessionStorage.getItem("ashenreach.controllerSession")).toContain("seat-1");
+      expect(window.localStorage.getItem("ashenreach.controllerSession")).toContain("seat-1");
     });
-    expect(window.localStorage.getItem("ashen-reach-phone-auth")).toBeNull();
+  });
+
+  it("reconnects from stored controller auth after browser close instead of returning to Join Room", async () => {
+    window.localStorage.setItem(
+      "ashenreach.controllerSession",
+      JSON.stringify({
+        roomCode: "RT7P4",
+        seatId: "seat-1",
+        seatToken: "seat:RT7P4:seat-1",
+        displayName: "Joel",
+        lastConnectedAt: "2026-07-07T00:00:00.000Z"
+      })
+    );
+
+    render(<PhoneApp />);
+
+    await waitFor(() => {
+      expect(vi.mocked(useRoomSubscription)).toHaveBeenCalledWith(
+        expect.objectContaining({
+          view: "phone",
+          auth: expect.objectContaining({
+            roomCode: "RT7P4",
+            seatId: "seat-1",
+            seatToken: "seat:RT7P4:seat-1",
+            displayName: "Joel"
+          })
+        })
+      );
+    });
+    expect(screen.queryByRole("button", { name: /join \/ continue/i })).not.toBeInTheDocument();
+    expect(await screen.findByText(/character locked/i)).toBeInTheDocument();
+  });
+
+  it("does not reuse a stored seat when a direct link asks for a different seat", async () => {
+    window.history.replaceState(null, "", "/?room=RT7P4&seat=2");
+    window.localStorage.setItem(
+      "ashenreach.controllerSession",
+      JSON.stringify({
+        roomCode: "RT7P4",
+        seatId: "seat-1",
+        seatToken: "seat:RT7P4:seat-1",
+        displayName: "Joel"
+      })
+    );
+
+    render(<PhoneApp />);
+
+    expect(await screen.findByRole("button", { name: /join \/ continue/i })).toBeInTheDocument();
+    expect(screen.getByDisplayValue("RT7P4")).toBeInTheDocument();
+  });
+
+  it("clears stale stored auth when the server rejects seat rejoin", async () => {
+    vi.mocked(useRoomSubscription).mockReturnValue({
+      patch: null,
+      error: "Invalid seat token",
+      sendIntent: vi.fn(),
+      status: "closed",
+      debugEvents: [],
+      clearDebugEvents: vi.fn()
+    });
+    window.localStorage.setItem(
+      "ashenreach.controllerSession",
+      JSON.stringify({
+        roomCode: "RT7P4",
+        seatId: "seat-1",
+        seatToken: "seat:RT7P4:seat-1",
+        displayName: "Joel"
+      })
+    );
+
+    render(<PhoneApp />);
+
+    expect(await screen.findByText(/could not reclaim your seat/i)).toBeInTheDocument();
+    expect(window.localStorage.getItem("ashenreach.controllerSession")).toBeNull();
+    expect(screen.getByRole("button", { name: /join \/ continue/i })).toBeInTheDocument();
   });
 
   it("shows the locked character waiting screen immediately after selection", async () => {

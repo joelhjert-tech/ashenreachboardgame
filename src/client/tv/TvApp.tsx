@@ -1964,6 +1964,7 @@ export function TvApp(): ReactElement {
 
   const publicPatch = patch as StatePatch<PublicPatchPayload> | null;
   const audio = useAshenReachAudio(publicPatch);
+  const effectiveRoomCode = roomCode ?? publicPatch?.sessionId ?? null;
   const joinedSeats = publicPatch?.payload.seats.filter((seat) => seat.displayName && !seat.kicked) ?? [];
   const readySeats = joinedSeats.filter((seat) => seat.ready);
   const startReadiness = getSessionStartReadiness({
@@ -2099,14 +2100,16 @@ export function TvApp(): ReactElement {
   };
 
   const startHostSession = async () => {
-    if (!roomCode) {
+    const targetRoomCode = roomCode ?? publicPatch?.sessionId ?? null;
+
+    if (!targetRoomCode) {
       return;
     }
 
     setRequestError(null);
 
     try {
-      await startSession(roomCode);
+      await startSession(targetRoomCode);
     } catch (startFailure) {
       setRequestError(startFailure instanceof Error ? startFailure.message : "Could not start");
     }
@@ -2118,7 +2121,7 @@ export function TvApp(): ReactElement {
     <main className="tv-dashboard tv-command-dashboard">
       <div className="tv-title-safe">
         <TopHeader
-          roomCode={roomCode}
+          roomCode={effectiveRoomCode}
           phase={publicPatch?.phase ?? "start"}
           sessionMode={liveSessionMode}
           gameMode={liveGameMode}
@@ -2162,7 +2165,7 @@ export function TvApp(): ReactElement {
           />
 
           <RightSidebar
-            roomCode={roomCode}
+            roomCode={effectiveRoomCode}
             scenarioStatus={scenarioStatus}
             publicPatch={publicPatch}
             activePlayer={activePlayer}

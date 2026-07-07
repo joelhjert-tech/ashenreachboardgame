@@ -577,7 +577,7 @@ describe("TvApp", () => {
     render(<TvApp />);
 
     expect(await screen.findByRole("button", { name: /start session/i })).toBeDisabled();
-    expect(screen.getByText(/waiting for player to press ready/i)).toBeInTheDocument();
+    expect(screen.getByText(/waiting for Joel to press ready/i)).toBeInTheDocument();
     expect(screen.getByTestId("host-state-banner")).toHaveTextContent(/waiting for all players to ready/i);
 
     fireEvent.click(screen.getByRole("button", { name: /start session/i }));
@@ -603,6 +603,38 @@ describe("TvApp", () => {
 
     expect(await screen.findByText(/single-player ready/i)).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: /start session/i }));
+
+    await waitFor(() => {
+      expect(mockStartSession).toHaveBeenCalledWith("RT7P4");
+    });
+  });
+
+  it("uses the live patch room code for host start when restored local room state is stale", async () => {
+    const patch = createPatch();
+    patch.payload.seats.push({
+      seatId: "seat-2",
+      characterId: "signal-witch",
+      displayName: "Mira",
+      connected: true,
+      ready: true,
+      startingMissionSelected: true,
+      kicked: false
+    });
+    mockUseRoomSubscription.mockReturnValue({
+      patch,
+      error: null,
+      sendIntent: vi.fn(),
+      status: "open",
+      debugEvents: [],
+      clearDebugEvents: vi.fn()
+    });
+
+    render(<TvApp />);
+
+    const startButton = await screen.findByRole("button", { name: /start session/i });
+    expect(startButton).toBeEnabled();
+
+    fireEvent.click(startButton);
 
     await waitFor(() => {
       expect(mockStartSession).toHaveBeenCalledWith("RT7P4");

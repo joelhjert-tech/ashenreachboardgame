@@ -97,10 +97,13 @@ export function getSessionStartReadiness(input: {
   }
 
   if (readyCount < occupiedSeats.length) {
+    const waitingSeat = occupiedSeats.find((seat) => !seat.ready);
+    const waitingName = waitingSeat?.displayName ?? waitingSeat?.seatId ?? "player";
+
     return {
       ...base,
       canStart: false,
-      reason: "Waiting for player to press Ready"
+      reason: `Waiting for ${waitingName} to press Ready`
     };
   }
 

@@ -6286,15 +6286,14 @@ export class GameRoomServer {
       seat.seatId === seatId
         ? {
             ...seat,
-            connected,
-            ready: connected || this.state.status !== "lobby" ? seat.ready : false
+            connected
           }
         : seat
     );
 
     const changed = nextSeats.some((seat, index) => {
       const previous = this.state.seats[index];
-      return seat.connected !== previous?.connected || seat.ready !== previous?.ready;
+      return seat.connected !== previous?.connected;
     });
 
     if (!changed) {

@@ -1044,7 +1044,7 @@ describe("roomServer websocket integration", () => {
     expect(() => activeHarness.roomServer.startSession()).toThrow("Waiting for Solo to choose a starting mission");
 
     selectFirstStartingContract(activeHarness.roomServer, joinResult.seatId);
-    expect(() => activeHarness.roomServer.startSession()).toThrow("Waiting for player to press Ready");
+    expect(() => activeHarness.roomServer.startSession()).toThrow("Waiting for Solo to press Ready");
     activeHarness.roomServer.setSeatReady(joinResult.seatId, true);
     activeHarness.roomServer.startSession();
 
@@ -1117,6 +1117,33 @@ describe("roomServer websocket integration", () => {
     activeHarness.roomServer.setSeatReady(secondJoin.seatId, true);
     activeHarness.roomServer.startSession();
 
+    expect(activeHarness.roomServer.getState().status).toBe("active");
+    expect(activeHarness.roomServer.getState().turnOrder).toEqual(["seat-1", "seat-2"]);
+  });
+
+  it("keeps completed multiplayer setup ready after a phone disconnect so the host can still start", async () => {
+    const activeHarness = (harness = await startHarness([0, 0, 0, 0], createInitialSessionState("session-alpha", "multiplayer")));
+
+    const firstJoin = activeHarness.roomServer.joinSeat("One", "void-marshal");
+    const secondJoin = activeHarness.roomServer.joinSeat("Two", "signal-witch");
+    const phone1 = await connectClient(`ws://127.0.0.1:${activeHarness.port}/?view=phone&token=${firstJoin.seatToken}`);
+    const phone2 = await connectClient(`ws://127.0.0.1:${activeHarness.port}/?view=phone&token=${secondJoin.seatToken}`);
+
+    probes.push(phone1, phone2);
+    await waitForServerTick();
+    selectFirstStartingContract(activeHarness.roomServer, firstJoin.seatId);
+    selectFirstStartingContract(activeHarness.roomServer, secondJoin.seatId);
+    activeHarness.roomServer.setSeatReady(firstJoin.seatId, true);
+    activeHarness.roomServer.setSeatReady(secondJoin.seatId, true);
+
+    phone2.socket.terminate();
+    await waitForServerTick();
+
+    const secondSeat = activeHarness.roomServer.getState().seats.find((seat) => seat.seatId === secondJoin.seatId);
+
+    expect(secondSeat?.connected).toBe(false);
+    expect(secondSeat?.ready).toBe(true);
+    activeHarness.roomServer.startSession();
     expect(activeHarness.roomServer.getState().status).toBe("active");
     expect(activeHarness.roomServer.getState().turnOrder).toEqual(["seat-1", "seat-2"]);
   });

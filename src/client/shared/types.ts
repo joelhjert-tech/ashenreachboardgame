@@ -1031,6 +1031,7 @@ export interface PhoneSessionAuth {
   seatId: string;
   seatToken: string;
   displayName: string;
+  lastConnectedAt?: string;
 }
 
 export interface CharacterCatalogEntry extends PrivateCharacter {}

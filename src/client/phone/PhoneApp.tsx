@@ -8,7 +8,8 @@ import { statLabelById, statOrder } from "../shared/statLabels.js";
 import { MobileDebugDrawer } from "./MobileDebugDrawer.js";
 import { PortraitControllerView } from "./PortraitControllerView.js";
 
-const storageKey = "ashen-reach-phone-auth";
+const storageKey = "ashenreach.controllerSession";
+const legacyStorageKey = "ashen-reach-phone-auth";
 
 function readInitialRoomCode(): string {
   if (typeof window === "undefined") {
@@ -42,21 +43,54 @@ function readStoredAuth(): PhoneSessionAuth | null {
   const params = new URLSearchParams(window.location.search);
 
   if (params.get("resetAuth") === "1") {
+    window.localStorage.removeItem(storageKey);
+    window.localStorage.removeItem(legacyStorageKey);
     window.sessionStorage.removeItem(storageKey);
+    window.sessionStorage.removeItem(legacyStorageKey);
     return null;
   }
 
-  const raw = window.sessionStorage.getItem(storageKey);
+  const roomCode = readInitialRoomCode();
+  const requestedSeatId = readRequestedSeatId();
+  const candidates = [
+    window.sessionStorage.getItem(storageKey),
+    window.sessionStorage.getItem(legacyStorageKey),
+    window.localStorage.getItem(storageKey),
+    window.localStorage.getItem(legacyStorageKey)
+  ];
 
-  if (!raw) {
-    return null;
+  for (const raw of candidates) {
+    if (!raw) {
+      continue;
+    }
+
+    try {
+      const parsed = JSON.parse(raw) as PhoneSessionAuth;
+
+      if (!parsed.roomCode || !parsed.seatId || !parsed.seatToken || !parsed.displayName) {
+        continue;
+      }
+
+      const normalized = {
+        ...parsed,
+        roomCode: parsed.roomCode.toUpperCase()
+      };
+
+      if (roomCode && normalized.roomCode !== roomCode) {
+        continue;
+      }
+
+      if (requestedSeatId && normalized.seatId !== requestedSeatId) {
+        continue;
+      }
+
+      return normalized;
+    } catch {
+      continue;
+    }
   }
 
-  try {
-    return JSON.parse(raw) as PhoneSessionAuth;
-  } catch {
-    return null;
-  }
+  return null;
 }
 
 function writeStoredAuth(auth: PhoneSessionAuth | null): void {
@@ -65,11 +99,23 @@ function writeStoredAuth(auth: PhoneSessionAuth | null): void {
   }
 
   if (!auth) {
+    window.localStorage.removeItem(storageKey);
+    window.localStorage.removeItem(legacyStorageKey);
     window.sessionStorage.removeItem(storageKey);
+    window.sessionStorage.removeItem(legacyStorageKey);
     return;
   }
 
-  window.sessionStorage.setItem(storageKey, JSON.stringify(auth));
+  const storedAuth: PhoneSessionAuth = {
+    ...auth,
+    roomCode: auth.roomCode.toUpperCase(),
+    lastConnectedAt: new Date().toISOString()
+  };
+
+  window.sessionStorage.setItem(storageKey, JSON.stringify(storedAuth));
+  window.localStorage.setItem(storageKey, JSON.stringify(storedAuth));
+  window.sessionStorage.removeItem(legacyStorageKey);
+  window.localStorage.removeItem(legacyStorageKey);
 }
 
 function toTitleCase(value: string): string {
@@ -210,21 +256,30 @@ export function PhoneApp(): ReactElement {
       return;
     }
 
-    if (!/mismatch|rejoin/i.test(error)) {
+    if (!/mismatch|rejoin|invalid seat token|invalid rejoin token|session mismatch/i.test(error)) {
       return;
     }
 
     setFormState((current) => ({
       ...current,
-      roomCode: auth.roomCode
+      roomCode: auth.roomCode,
+      displayName: auth.displayName
     }));
-    setJoinError("Saved seat expired. Enter a room code to join again.");
+    setJoinError("Could not reclaim your seat. Join again or ask host to free the seat.");
     setAuth(null);
     writeStoredAuth(null);
   }, [auth, error]);
 
   const phonePatch =
     patch && "self" in patch.payload ? (patch as StatePatch<PhonePatchPayload>) : null;
+
+  useEffect(() => {
+    if (!auth || !phonePatch) {
+      return;
+    }
+
+    writeStoredAuth(auth);
+  }, [auth, phonePatch?.sequence]);
 
   const handleNameSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
