@@ -12,7 +12,13 @@ export type InventoryTimingWindow =
   | "shop"
   | "anyTime";
 
-export type InventoryGroupLabel = "Weapons" | "Armor" | "Relics" | "Consumables" | "Followers" | "Quest Items";
+export type InventoryGroupLabel =
+  | "Weapons"
+  | "Armor"
+  | "Items / Consumables"
+  | "Followers"
+  | "Artifacts / Relics"
+  | "Quest Items";
 
 export type InventoryUsabilityStatus = "Usable now" | "Ready but not usable now" | "Passive" | "Locked / condition not met";
 
@@ -59,9 +65,9 @@ export interface BattleAssistViewModel {
 const inventoryGroupOrder: InventoryGroupLabel[] = [
   "Weapons",
   "Armor",
-  "Relics",
-  "Consumables",
+  "Items / Consumables",
   "Followers",
+  "Artifacts / Relics",
   "Quest Items"
 ];
 const RUMI_CHARACTER_ID = "char_rumi";
@@ -295,15 +301,15 @@ function getGearGroup(item: GearItem): InventoryGroupLabel {
     return "Armor";
   }
 
-  if (item.category === "consumable") {
-    return "Consumables";
-  }
-
   if (item.category === "contractObject") {
     return "Quest Items";
   }
 
-  return "Relics";
+  if (item.category === "chargedRelic" || item.tier === "artifact") {
+    return "Artifacts / Relics";
+  }
+
+  return "Items / Consumables";
 }
 
 function getGearLockReason(item: GearItem, self: PhoneSelfState): string | null {

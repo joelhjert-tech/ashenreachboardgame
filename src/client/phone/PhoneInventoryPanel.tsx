@@ -76,6 +76,10 @@ function getStatusLabel(status: InventoryCardViewModel["status"]): string {
 }
 
 function getInventoryConsequence(card: InventoryCardViewModel): string {
+  if (card.effectText && card.status !== "Passive") {
+    return card.effectText;
+  }
+
   if (card.statBonus) {
     const bonus = `+${card.statBonus.amount} ${statLabelById[card.statBonus.stat]}`;
     const timing = card.timingText === "Before battle roll"

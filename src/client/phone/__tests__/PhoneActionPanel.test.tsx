@@ -2188,7 +2188,7 @@ describe("PhoneActionPanel", () => {
         slot: "weapon" as const,
         category: "dangerous" as const,
         statBonus: { stat: "grit" as const, amount: 1 },
-        activeText: "Break for +3 combat pressure, then advance escalation by 1.",
+        activeText: "Break for +3 Grit before the battle roll, then advance escalation by 1.",
         useLimit: "discard" as const,
         heatCost: 1
       },

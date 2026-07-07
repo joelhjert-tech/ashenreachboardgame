@@ -1607,7 +1607,7 @@ export class GameRoomServer {
           type: "sequence",
           effects: [
             { type: "advance_escalation", amount: 1 },
-            { type: "gain_note", text: "Black Route Fuse broken: +3 Grit combat pressure is banked for this fight." }
+            { type: "gain_note", text: "Black Route Fuse broken: +3 Grit before the battle roll is banked for this fight." }
           ]
         };
       case "grave-lens":
@@ -1617,7 +1617,7 @@ export class GameRoomServer {
           type: "sequence",
           effects: [
             { type: "gain_heat", amount: 1 },
-            { type: "gain_note", text: "Red March Warbell sounded: +2 Grit combat pressure is banked for this fight." }
+            { type: "gain_note", text: "Red March Warbell sounded: +2 Grit before the battle roll is banked for this fight." }
           ]
         };
       case "ashen-route-compass":

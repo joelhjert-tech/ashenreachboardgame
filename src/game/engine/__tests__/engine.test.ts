@@ -1745,7 +1745,7 @@ describe("active objects and table interaction", () => {
       slot: "weapon",
       category: "dangerous",
       statBonus: { stat: "grit", amount: 1 },
-      activeText: "Break for +3 combat pressure, then advance escalation by 1.",
+      activeText: "Break for +3 Grit before the battle roll, then advance escalation by 1.",
       useLimit: "discard",
       heatCost: 1
     };
@@ -1858,7 +1858,7 @@ describe("active objects and table interaction", () => {
       slot: "weapon",
       category: "dangerous",
       statBonus: { stat: "grit", amount: 1 },
-      activeText: "Break for +3 combat pressure, then advance escalation by 1.",
+      activeText: "Break for +3 Grit before the battle roll, then advance escalation by 1.",
       useLimit: "discard",
       heatCost: 1
     };

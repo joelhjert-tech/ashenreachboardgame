@@ -14,7 +14,7 @@ const combatWeapon = {
   slot: "weapon" as const,
   category: "dangerous" as const,
   statBonus: { stat: "grit" as const, amount: 1 },
-  activeText: "Break for +3 combat pressure, then advance escalation by 1.",
+  activeText: "Break for +3 Grit before the battle roll, then advance escalation by 1.",
   useLimit: "discard" as const,
   heatCost: 1
 };
@@ -36,6 +36,16 @@ const relic = {
   activeText: "Spend 1 charge to reduce anomaly instability by 1 or lose 1 heat after a signal check.",
   useLimit: "charge" as const,
   charges: 2
+};
+
+const activeUtility = {
+  id: "ashen-route-compass",
+  name: "Ashen Route Compass",
+  slot: "utility" as const,
+  category: "active" as const,
+  statBonus: { stat: "signal" as const, amount: 1 },
+  activeText: "Once per round, reroll a failed movement or anomaly check.",
+  useLimit: "oncePerRound" as const
 };
 
 const consumable = {
@@ -95,7 +105,7 @@ function createPatch(overrides: Partial<PhonePatchPayload> = {}): PhonePatchPayl
           heat: 1,
           wounds: 0,
           scars: [],
-          heldGearCount: 5,
+          heldGearCount: 6,
           equippedGear: { weapon: null, armor: null, utility: null }
         }
       }
@@ -133,7 +143,7 @@ function createPatch(overrides: Partial<PhonePatchPayload> = {}): PhonePatchPayl
         wounds: 0,
         scars: [],
         activeContract: null,
-        heldGear: [combatWeapon, passiveArmor, relic, consumable, questItem],
+        heldGear: [combatWeapon, passiveArmor, activeUtility, relic, consumable, questItem],
         equippedGear: { weapon: null, armor: "coffin-rig", utility: null },
         followers: [
           {
@@ -195,8 +205,8 @@ describe("PhoneInventoryPanel", () => {
 
     expect(screen.getAllByText("Weapons").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Armor").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("Relics").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("Consumables").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Items / Consumables").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Artifacts / Relics").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Followers").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Quest Items").length).toBeGreaterThan(0);
     expect(screen.getByTestId("phone-inventory-progression")).toHaveTextContent(/progression/i);
@@ -204,6 +214,7 @@ describe("PhoneInventoryPanel", () => {
     expect(screen.getByRole("button", { name: /command 3 -> 4\s*need 4 more trophies/i })).toBeDisabled();
     expect(screen.getAllByText("Black Route Fuse").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Coffin Rig").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Ashen Route Compass").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Passive").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Usable now").length).toBeGreaterThan(0);
     expect(screen.getByRole("region", { name: /inventory timing groups/i })).toHaveTextContent(/useful now/i);
@@ -307,10 +318,9 @@ describe("PhoneInventoryPanel", () => {
     expect(itemCard.querySelector(".phone-wrap-card__media")).toBeInTheDocument();
     expect(itemCard.querySelector(".phone-wrap-card__body")).toHaveTextContent(/black route fuse/i);
     expect(itemCard.querySelector(".phone-wrap-card__description")).toHaveClass("phone-wrap-card__description");
-    expect(itemCard.querySelector(".phone-wrap-card__description")).toHaveTextContent(/adds \+1 grit/i);
+    expect(itemCard.querySelector(".phone-wrap-card__description")).toHaveTextContent(/break for \+3 grit/i);
     expect(itemCard.querySelector(".phone-wrap-card__details")).toHaveTextContent(/before battle roll/i);
     expect(itemCard.querySelector(".phone-wrap-card__details")).toHaveTextContent(/\+1 grit/i);
-    expect(itemCard.querySelector(".phone-wrap-card__details")).not.toHaveTextContent(/combat pressure/i);
     expect((itemCard.querySelector(".phone-inventory-stat-bonus") as HTMLElement).style.getPropertyValue("--challenge-color")).toBe(
       getChallengeThemeStyle("grit")["--challenge-color"]
     );
