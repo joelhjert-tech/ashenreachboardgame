@@ -1380,10 +1380,14 @@ export class GameRoomServer {
         throw new IntentRejectedError("USE_GEAR", "Black Route Fuse can only be used before a battle roll.");
       }
 
+      if (item.statBonus.stat !== encounter.stat) {
+        throw new IntentRejectedError("USE_GEAR", `Black Route Fuse is usable only in ${CHALLENGE_LABELS[item.statBonus.stat]} battles. This encounter uses ${CHALLENGE_LABELS[encounter.stat]}.`);
+      }
+
       return {
         label: item.name,
         value: 3,
-        stat: encounter.stat,
+        stat: item.statBonus.stat,
         mode: "battle"
       };
     }
@@ -1395,10 +1399,14 @@ export class GameRoomServer {
         throw new IntentRejectedError("USE_GEAR", "Red March Warbell can only be used before a battle roll.");
       }
 
+      if (item.statBonus.stat !== encounter.stat) {
+        throw new IntentRejectedError("USE_GEAR", `Red March Warbell is usable only in ${CHALLENGE_LABELS[item.statBonus.stat]} battles. This encounter uses ${CHALLENGE_LABELS[encounter.stat]}.`);
+      }
+
       return {
         label: item.name,
         value: 2,
-        stat: encounter.stat,
+        stat: item.statBonus.stat,
         mode: "battle"
       };
     }
@@ -1595,7 +1603,7 @@ export class GameRoomServer {
           type: "sequence",
           effects: [
             { type: "advance_escalation", amount: 1 },
-            { type: "gain_note", text: "Black Route Fuse broken: +3 combat pressure is banked for this fight." }
+            { type: "gain_note", text: "Black Route Fuse broken: +3 Grit combat pressure is banked for this fight." }
           ]
         };
       case "grave-lens":
@@ -1605,7 +1613,7 @@ export class GameRoomServer {
           type: "sequence",
           effects: [
             { type: "gain_heat", amount: 1 },
-            { type: "gain_note", text: "Red March Warbell sounded: +2 combat pressure is banked for this fight." }
+            { type: "gain_note", text: "Red March Warbell sounded: +2 Grit combat pressure is banked for this fight." }
           ]
         };
       case "ashen-route-compass":

@@ -336,6 +336,24 @@ function getObjectUseState(
   return patch.objectUseStates?.find((state) => state.source === source && state.id === id) ?? null;
 }
 
+function isBattleRollTiming(timingWindows: InventoryTimingWindow[], currentTimingWindow: InventoryTimingWindow): boolean {
+  return currentTimingWindow === "beforeBattleRoll" && timingWindows.includes("beforeBattleRoll");
+}
+
+function getStatMismatchReason(item: GearItem, timingWindows: InventoryTimingWindow[], currentTimingWindow: InventoryTimingWindow, patch: PhonePatchPayload): string | null {
+  if (!item.statBonus || !isBattleRollTiming(timingWindows, currentTimingWindow)) {
+    return null;
+  }
+
+  const battleStat = getBattleStat(patch);
+
+  if (item.statBonus.stat === battleStat) {
+    return null;
+  }
+
+  return `Usable only in ${statLabelById[item.statBonus.stat]} battles. This encounter uses ${statLabelById[battleStat]}.`;
+}
+
 function getStatus({
   timingWindows,
   currentTimingWindow,
@@ -396,7 +414,7 @@ function buildGearCard(item: GearItem, patch: PhonePatchPayload, self: PhoneSelf
   const isEquipped = equippedIds.has(item.id);
   const useState = getObjectUseState(patch, "gear", item.id);
   const currentTimingWindow = getCurrentTimingWindow(patch);
-  const lockedReason = useState?.disabledReason ?? getGearLockReason(item, self);
+  const lockedReason = useState?.disabledReason ?? getGearLockReason(item, self) ?? getStatMismatchReason(item, timingWindows, currentTimingWindow, patch);
   const status = active
     ? getStatus({
         timingWindows,

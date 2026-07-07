@@ -1892,6 +1892,51 @@ describe("active objects and table interaction", () => {
     expect(server.getState().eventLog.some((entry) => (entry as { type?: string }).type === "USE_GEAR")).toBe(false);
   });
 
+  it("rejects stat-specific combat items during the wrong battle stat", () => {
+    const sent: Array<Record<string, unknown>> = [];
+    const encounter = {
+      ...createThreats().get("cinder-veil-stalker")!,
+      stat: "command" as const
+    };
+    const redMarchWarbell: GearItem = {
+      id: "red-march-warbell",
+      name: "Red March Warbell",
+      slot: "weapon",
+      category: "active",
+      statBonus: { stat: "grit", amount: 1 },
+      activeText: "Gain 1 heat to bank +2 Grit before the battle roll.",
+      useLimit: "oncePerTurn"
+    };
+    const state = createState({
+      currentEncounter: encounter,
+      players: createState().players.map((player) =>
+        player.seatId === "seat-1"
+          ? {
+              ...player,
+              character: {
+                ...player.character,
+                heat: 0,
+                heldGear: [redMarchWarbell],
+                equippedGear: { weapon: "red-march-warbell", armor: null, utility: null }
+              }
+            }
+          : player
+      )
+    });
+    const server = new GameRoomServer(state, [], createSequenceRandomSource([0]), createThreats(), createCharacters(), createGear(), createContracts());
+
+    server.handleIntent(createCapturingClient("seat-1", sent), {
+      type: "USE_GEAR",
+      seatId: "seat-1",
+      gearId: "red-march-warbell"
+    });
+
+    expect(sent.some((message) => message.type === "INTENT_REJECTED" && String(message.reason).includes("Grit battles"))).toBe(true);
+    expect(sent.some((message) => message.type === "INTENT_REJECTED" && String(message.reason).includes("Command"))).toBe(true);
+    expect(server.getState().activeResolution?.battle?.modifiers ?? []).not.toContainEqual({ label: "Red March Warbell", value: 2 });
+    expect(server.getState().eventLog.some((entry) => (entry as { type?: string }).type === "USE_GEAR")).toBe(false);
+  });
+
   it("keeps passive gear, follower, and permanent stat sources separate in combat math", () => {
     const encounter = {
       ...createThreats().get("cinder-veil-stalker")!,
@@ -2052,8 +2097,8 @@ describe("active objects and table interaction", () => {
                     name: "Red March Warbell",
                     slot: "utility",
                     category: "active",
-                    statBonus: { stat: "command", amount: 1 },
-                    activeText: "Gain 1 heat to bank combat pressure.",
+                    statBonus: { stat: "grit", amount: 1 },
+                    activeText: "Gain 1 heat to bank +2 Grit before the battle roll.",
                     useLimit: "oncePerTurn"
                   }
                 ],
@@ -2128,8 +2173,8 @@ describe("active objects and table interaction", () => {
                     name: "Red March Warbell",
                     slot: "utility",
                     category: "active",
-                    statBonus: { stat: "command", amount: 1 },
-                    activeText: "Gain 1 heat to bank combat pressure.",
+                    statBonus: { stat: "grit", amount: 1 },
+                    activeText: "Gain 1 heat to bank +2 Grit before the battle roll.",
                     useLimit: "oncePerTurn"
                   }
                 ],

@@ -269,7 +269,9 @@ describe("PhoneInventoryPanel", () => {
     expect(itemCard.querySelector(".phone-wrap-card__body")).toHaveTextContent(/black route fuse/i);
     expect(itemCard.querySelector(".phone-wrap-card__description")).toHaveClass("phone-wrap-card__description");
     expect(itemCard.querySelector(".phone-wrap-card__description")).toHaveTextContent(/adds \+1 grit/i);
-    expect(itemCard.querySelector(".phone-wrap-card__details")).toHaveTextContent(/combat pressure/i);
+    expect(itemCard.querySelector(".phone-wrap-card__details")).toHaveTextContent(/before battle roll/i);
+    expect(itemCard.querySelector(".phone-wrap-card__details")).toHaveTextContent(/\+1 grit/i);
+    expect(itemCard.querySelector(".phone-wrap-card__details")).not.toHaveTextContent(/combat pressure/i);
     expect((itemCard.querySelector(".phone-inventory-stat-bonus") as HTMLElement).style.getPropertyValue("--challenge-color")).toBe(
       getChallengeThemeStyle("grit")["--challenge-color"]
     );
@@ -330,6 +332,30 @@ describe("PhoneInventoryPanel", () => {
     render(<PhoneInventoryPanel patch={createPatch({ phase: "navigation", encounter: null })} onIntent={vi.fn()} />);
     expect(screen.getByLabelText(/black route fuse: ready but not usable now/i)).toHaveTextContent(/timing locked/i);
     expect(screen.getByLabelText(/black route fuse: ready but not usable now/i)).not.toHaveTextContent(/\bready\b/i);
+  });
+
+  it("locks stat-specific battle items when the encounter uses another stat", () => {
+    render(
+      <PhoneInventoryPanel
+        patch={createPatch({
+          encounter: {
+            id: "gate-tax-collectors",
+            title: "Gate-Tax Collectors",
+            cardType: "enemy",
+            enemyName: "Gate-Tax Collectors",
+            flavor: "The toll stamp is already wet.",
+            difficulty: 6,
+            stat: "command"
+          }
+        })}
+        onIntent={vi.fn()}
+      />
+    );
+
+    const itemCard = screen.getByLabelText(/black route fuse: locked/i);
+    expect(itemCard).toHaveTextContent(/usable only in grit battles/i);
+    expect(itemCard).toHaveTextContent(/this encounter uses command/i);
+    expect(screen.queryByRole("button", { name: /use black route fuse/i })).not.toBeInTheDocument();
   });
 
   it("does not present unequipped passive gear as an applied server modifier", () => {

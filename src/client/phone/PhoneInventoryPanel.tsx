@@ -78,11 +78,30 @@ function getStatusLabel(status: InventoryCardViewModel["status"]): string {
 function getInventoryConsequence(card: InventoryCardViewModel): string {
   if (card.statBonus) {
     const bonus = `+${card.statBonus.amount} ${statLabelById[card.statBonus.stat]}`;
-    const timing = card.timingText && card.timingText !== "Passive" ? ` during ${card.timingText.toLowerCase()}` : "";
+    const timing = card.timingText === "Before battle roll"
+      ? " before battle roll"
+      : card.timingText && card.timingText !== "Passive"
+        ? ` during ${card.timingText.toLowerCase()}`
+        : "";
     return `${card.status === "Passive" ? "Applies" : "Adds"} ${bonus}${timing}.`;
   }
 
   return card.effectText;
+}
+
+function shouldShowRawEffectMeta(card: InventoryCardViewModel, consequence: string): boolean {
+  if (consequence === card.effectText) {
+    return false;
+  }
+
+  if (!card.statBonus) {
+    return true;
+  }
+
+  const normalizedEffect = card.effectText.toLowerCase();
+  const statLabel = statLabelById[card.statBonus.stat].toLowerCase();
+
+  return normalizedEffect.includes(statLabel) || !/\+\d+/.test(normalizedEffect) || !normalizedEffect.includes("combat");
 }
 
 function InventoryCard({
@@ -103,7 +122,7 @@ function InventoryCard({
   const consequence = getInventoryConsequence(card);
 
   const metaItems = ([
-    consequence !== card.effectText ? { key: "effect", node: card.effectText } : null,
+    shouldShowRawEffectMeta(card, consequence) ? { key: "effect", node: card.effectText } : null,
     { key: "timing", node: card.timingText },
     card.statBonus
       ? {

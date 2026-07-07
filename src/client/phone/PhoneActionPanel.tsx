@@ -814,36 +814,8 @@ function buildDestinationSummary(destination: PublicMoveDestination): string {
   return "No public blockers are visible.";
 }
 
-function buildStrategicWarning(destination: PublicMoveDestination): string {
-  if (destination.disabledReason) {
-    return destination.disabledReason;
-  }
-
-  if (destination.nemesisPresent) {
-    return "Nemesis present. Enter only if you are ready for pressure.";
-  }
-
-  if (destination.faceUpThreats.length > 0) {
-    return destination.shop
-      ? "Shop unavailable until blockers are cleared."
-      : "Known blockers remain on this sector.";
-  }
-
-  if (destination.strategicTags.includes("shop")) {
-    return destination.shop?.status === "dangerous"
-      ? "Useful services, but risky actions can raise Heat."
-      : "Good service tile if you need gear, repairs, or supplies.";
-  }
-
-  if (destination.strategicTags.includes("danger")) {
-    return "Printed threat icons suggest danger, but the exact draw is hidden.";
-  }
-
-  if (destination.strategicTags.includes("reward")) {
-    return "Reward-oriented tile with public upside if you can keep it clear.";
-  }
-
-  return "Low public pressure from visible board information.";
+function buildDestinationIdentityLine(destination: PublicMoveDestination): string {
+  return destination.loreText?.trim() || buildDestinationSummary(destination);
 }
 
 function getMovementTagLabels(destination: PublicMoveDestination, routePreviewTagLabels: string[]): string[] {
@@ -886,10 +858,10 @@ function getMovementRouteConfidenceItems(
 
   return [
     `${destination.distance} step${destination.distance === 1 ? "" : "s"}`,
-    routePreview.exactText.startsWith("Legal") ? "exact route" : "route mismatch",
-    primaryReward,
+    `${blockers} blocker${blockers === 1 ? "" : "s"}`,
     riskTag,
-    `${blockers} blocker${blockers === 1 ? "" : "s"}`
+    primaryReward,
+    routePreview.exactText.startsWith("Legal") ? null : "route mismatch"
   ].filter((item): item is string => Boolean(item));
 }
 
@@ -1475,15 +1447,8 @@ function MovementDestinationRow({
   const primaryTag = getPrimaryMovementTag(destination);
   const isLocked = Boolean(destination.disabledReason);
   const routePreview = buildRoutePreviewCopy(destination, planner.movementValue, planner.currentSectorName);
-  const tagLabels = getMovementTagLabels(destination, routePreview.tagLabels);
   const confidenceItems = getMovementRouteConfidenceItems(destination, routePreview);
-  const tags = (
-    <div className="phone-movement-row-tags" aria-label={`${destination.name} route tags`}>
-      {tagLabels.map((tag) => (
-        <em key={tag}>{tag}</em>
-      ))}
-    </div>
-  );
+  const identityLine = buildDestinationIdentityLine(destination);
 
   return (
     <article
@@ -1498,12 +1463,14 @@ function MovementDestinationRow({
         title={destination.name}
         eyebrow={movementTagLabel[primaryTag]}
         status={<MovementRouteConfidence items={confidenceItems} testId="movement-route-confidence" />}
-        description={<span className="phone-movement-row-route phone-move-panel__route-preview" data-testid="movement-route-preview">Route: {getRoutePreviewLine(destination)}</span>}
+        description={<p className="phone-movement-row-lore" data-testid="movement-destination-lore">{identityLine}</p>}
         meta={
-          <>
-            {tags}
-            {routePreview.riskText || routePreview.rewardText ? <span>{routePreview.riskText ?? routePreview.rewardText}</span> : null}
-          </>
+          <details className="phone-movement-route-details">
+            <summary>Route details</summary>
+            <span className="phone-movement-row-route phone-move-panel__route-preview" data-testid="movement-route-preview">
+              Route: {getRoutePreviewLine(destination)}
+            </span>
+          </details>
         }
         disabledReason={destination.disabledReason ? <span className="phone-movement-disabled-reason">{destination.disabledReason}. Ignore this route for now.</span> : null}
         actions={
@@ -1570,6 +1537,7 @@ function MovementDestinationDetail({
   const tagLabels = getMovementTagLabels(selected, routePreview.tagLabels);
   const routeUnavailable = Boolean(selected.disabledReason);
   const confidenceItems = getMovementRouteConfidenceItems(selected, routePreview);
+  const identityLine = buildDestinationIdentityLine(selected);
   const detailRef = useRef<HTMLElement | null>(null);
 
   useLayoutEffect(() => {
@@ -1606,9 +1574,7 @@ function MovementDestinationDetail({
           status={<MovementRouteConfidence items={confidenceItems} testId="movement-detail-route-confidence" />}
           description={
             <>
-              <p className="phone-movement-route-summary" data-testid="movement-detail-route-summary">
-                Route: {getRoutePreviewLine(selected)}
-              </p>
+              <p className="phone-movement-row-lore" data-testid="movement-detail-lore">{identityLine}</p>
               <p>{routeUnavailable ? "Route unavailable." : `${routePreview.statusLabel}: ${routePreview.statusReason}`}</p>
             </>
           }
@@ -1619,10 +1585,12 @@ function MovementDestinationDetail({
                   <em key={tag}>{tag}</em>
                 ))}
               </div>
-              <div className="phone-movement-detail-meta">
-                <span>{routePreview.exactText}</span>
-                <span>{routeUnavailable ? "Route unavailable" : `${routePreview.statusLabel}: ${routePreview.statusReason}`}</span>
-              </div>
+              <details className="phone-movement-route-details">
+                <summary>Exact route</summary>
+                <span className="phone-movement-route-summary" data-testid="movement-detail-route-summary">
+                  Route: {getRoutePreviewLine(selected)}
+                </span>
+              </details>
             </>
           }
           disabledReason={routeUnavailable ? <span className="phone-movement-disabled-reason">{selected.disabledReason}. Ignore this route for now.</span> : null}
@@ -1686,10 +1654,9 @@ function MovementDestinationDetail({
           </div>
         </section>
 
-        {selected.loreText || routePreview.riskText || routePreview.rewardText || selected.shop ? (
+        {routePreview.riskText || routePreview.rewardText || selected.shop ? (
           <section className="phone-movement-detail-section">
             <span>Notes</span>
-            {selected.loreText ? <p>{selected.loreText}</p> : null}
             {routePreview.riskText ? <p>{routePreview.riskText}</p> : null}
             {routePreview.rewardText ? <p>{routePreview.rewardText}</p> : null}
             {selected.shop ? <p>{selected.shop.servicesPreview.join(" / ")}</p> : null}
@@ -1737,11 +1704,6 @@ function MovementDestinationDetail({
           </section>
         ) : null}
 
-        <div className="phone-movement-warning">
-          <span>{movementTagLabel[getPrimaryMovementTag(selected)]}</span>
-          {selected.threatIcons[0] ? <ThreatIconBadge icon={selected.threatIcons[0]} /> : null}
-          <p>{buildStrategicWarning(selected)}</p>
-        </div>
       </div>
     </article>
   );

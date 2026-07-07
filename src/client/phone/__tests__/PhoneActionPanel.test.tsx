@@ -453,10 +453,10 @@ describe("PhoneActionPanel", () => {
     expect(screen.queryByRole("button", { name: /attempt signal check/i })).not.toBeInTheDocument();
     expect(screen.queryByText(/global escalation/i)).not.toBeInTheDocument();
     expect(screen.getAllByText(/anchor market/i).length).toBeGreaterThan(0);
+    expect(screen.getByTestId("movement-destination-lore")).toHaveTextContent(/market of sealed crates/i);
     expect(screen.getByTestId("movement-route-preview")).toHaveTextContent(/pilgrim lock -> anchor market/i);
     expect(screen.getByTestId("movement-route-preview")).toHaveTextContent(/^route:/i);
     expect(screen.getByTestId("movement-route-confidence")).toHaveTextContent(/1 step/i);
-    expect(screen.getByTestId("movement-route-confidence")).toHaveTextContent(/exact route/i);
     expect(screen.getByTestId("movement-route-confidence")).toHaveTextContent(/shop reward/i);
     expect(screen.getByTestId("movement-route-confidence")).toHaveTextContent(/threat risk/i);
     expect(screen.getByTestId("movement-route-confidence")).toHaveTextContent(/0 blockers/i);
@@ -484,7 +484,6 @@ describe("PhoneActionPanel", () => {
       "/assets/map/tiles/map_tile_anchor_market.png"
     );
     expect(screen.getByTestId("movement-detail-route-confidence")).toHaveTextContent(/1 step/i);
-    expect(screen.getByTestId("movement-detail-route-confidence")).toHaveTextContent(/exact route/i);
     expect(screen.getByTestId("movement-detail-route-confidence")).toHaveTextContent(/shop reward/i);
     expect(detailCard?.querySelector(".phone-wrap-card__actions")).toContainElement(
       screen.getByRole("button", { name: /confirm move/i })
@@ -624,8 +623,8 @@ describe("PhoneActionPanel", () => {
     expect(screen.getByTestId("movement-current-sector")).toHaveTextContent("Ashwalk Bridge");
     expect(screen.getByTestId("movement-current-sector")).toHaveClass("phone-movement-summary-current");
     expect(row).toHaveTextContent(/weathered pilgrim lock gate/i);
+    expect(screen.getByTestId("movement-destination-lore")).toHaveTextContent(/fortified lock gate/i);
     expect(row).toHaveTextContent(/6 steps/i);
-    expect(row).toHaveTextContent(/exact route/i);
     expect(row).toHaveTextContent(/shop reward/i);
     expect(row).toHaveTextContent(/low risk/i);
     expect(row).toHaveTextContent(/0 blockers/i);
@@ -2217,6 +2216,51 @@ describe("PhoneActionPanel", () => {
       seatId: "seat-1",
       gearId: "black-route-fuse"
     });
+  });
+
+  it("does not present Grit-only combat cards during Command battles", () => {
+    const heldGear = [
+      {
+        id: "red-march-warbell",
+        name: "Red March Warbell",
+        slot: "weapon" as const,
+        category: "active" as const,
+        statBonus: { stat: "grit" as const, amount: 1 },
+        activeText: "Gain 1 heat to bank +2 Grit before the battle roll.",
+        useLimit: "oncePerTurn" as const
+      }
+    ];
+
+    render(
+      <PhoneActionPanel
+        characters={characters}
+        onIntent={vi.fn()}
+        patch={createPatch({
+          encounter: {
+            id: "gate-tax-collectors",
+            title: "Gate-Tax Collectors",
+            cardType: "enemy",
+            enemyName: "Gate-Tax Collectors",
+            flavor: "The toll stamp is already wet.",
+            difficulty: 6,
+            stat: "command"
+          },
+          self: {
+            ...createPatch().self!,
+            character: {
+              ...createPatch().self!.character,
+              heat: 1,
+              heldGear,
+              equippedGear: { weapon: "red-march-warbell", armor: null, utility: null }
+            }
+          }
+        })}
+      />
+    );
+
+    expect(screen.getByTestId("phone-battle-assist")).toHaveTextContent(/no combat cards are usable/i);
+    expect(screen.queryByRole("button", { name: /open combat cards/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /use red march warbell/i })).not.toBeInTheDocument();
   });
 
   it("does not interrupt battle flow when no combat cards are usable", () => {

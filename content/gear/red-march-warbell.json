@@ -7,7 +7,7 @@
     "stat": "grit",
     "amount": 2
   },
-  "activeText": "Exhaust to add +2 to combat, then gain 1 heat.",
+  "activeText": "Exhaust to add +2 Grit before the battle roll, then gain 1 heat.",
   "useLimit": "oncePerTurn",
   "heatCost": 1,
   "flavor": "It wins arguments by making the whole district listen.",
