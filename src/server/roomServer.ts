@@ -4588,6 +4588,7 @@ export class GameRoomServer {
     }
 
     const previousActiveSeatIndex = this.state.activeSeatIndex;
+    const suppressRoundEscalation = this.shouldSuppressRoundEscalationAfterStabilization(seatId);
 
     this.applyAction({
       type: "TURN_COMPLETED",
@@ -4596,7 +4597,9 @@ export class GameRoomServer {
     });
 
     if (this.state.status === "active" && this.didRoundWrap(previousActiveSeatIndex, this.state.activeSeatIndex)) {
-      this.applyRoundEscalation(seatId);
+      if (!suppressRoundEscalation) {
+        this.applyRoundEscalation(seatId);
+      }
     }
 
     if (this.state.status === "active") {
@@ -4608,6 +4611,32 @@ export class GameRoomServer {
     }
 
     this.broadcastPatch();
+  }
+
+  private shouldSuppressRoundEscalationAfterStabilization(seatId: string): boolean {
+    for (let index = this.state.eventLog.length - 1; index >= 0; index -= 1) {
+      const entry = this.state.eventLog[index] as Record<string, unknown> | undefined;
+
+      if (!entry) {
+        continue;
+      }
+
+      if (entry.type === "TURN_COMPLETED" || entry.type === "ROUND_COMPLETED") {
+        return false;
+      }
+
+      if (
+        entry.type === "ESCALATION_ADVANCED" &&
+        entry.seatId === seatId &&
+        typeof entry.amount === "number" &&
+        entry.amount < 0 &&
+        (entry.reason === "sector stabilization" || entry.reason === "stabilized")
+      ) {
+        return true;
+      }
+    }
+
+    return false;
   }
 
   private resolveMovementRollIntent(intent: Extract<ClientIntent, { type: "MOVEMENT_ROLL_REQUESTED" }>): void {

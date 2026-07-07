@@ -4699,6 +4699,62 @@ describe("escalation flow", () => {
     ]);
   });
 
+  it("does not immediately cancel a successful stabilization with same-turn round pressure", () => {
+    const baseState = createState();
+    const server = new GameRoomServer(
+      createState({
+        sessionMode: "single-player",
+        currentEncounter: null,
+        phase: "action",
+        escalationLevel: 2,
+        turnOrder: ["seat-1"],
+        seats: baseState.seats.slice(0, 1),
+        players: baseState.players.slice(0, 1).map((player) => ({
+          ...player,
+          sectorId: "emberwatch-step",
+          character: {
+            ...player.character,
+            heat: 2,
+            currentSpaceId: "emberwatch-step"
+          }
+        })),
+        sectors: baseState.sectors.map((sector) =>
+          sector.id === "sector-c"
+            ? {
+                ...sector,
+                id: "emberwatch-step",
+                name: "Emberwatch Step",
+                encounterDecks: { ...sector.encounterDecks, threat: [], escalation: ["escalation-emberwatch", "escalation-ridge-suture"] }
+              }
+            : sector
+        )
+      }),
+      [],
+      createSequenceRandomSource([1, 5, 5]),
+      createThreats(),
+      createCharacters(),
+      createGear(),
+      createContracts(),
+      createAnomalies(),
+      createArtifacts(),
+      createEscalations()
+    );
+
+    runIntent(server, {
+      type: "RESOLVE_SPACE_TEXT",
+      seatId: "seat-1"
+    });
+
+    const escalationEvents = server.getState().eventLog.filter((event): event is GameAction & { amount: number; reason?: string } =>
+      (event as GameAction).type === "ESCALATION_ADVANCED"
+    );
+
+    expect(server.getState().escalationLevel).toBe(1);
+    expect(escalationEvents).toHaveLength(1);
+    expect(escalationEvents[0]?.amount).toBe(-1);
+    expect(escalationEvents[0]?.reason).toBe("sector stabilization");
+  });
+
   it("blocks entry into the core chamber until the Gate of Cinders text has been resolved", () => {
     const base = createState({
       phase: "navigation",

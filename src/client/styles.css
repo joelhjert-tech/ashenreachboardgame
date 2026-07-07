@@ -5000,6 +5000,40 @@ select {
     rgba(7, 10, 15, 0.74);
 }
 
+.phone-inventory-scars {
+  min-width: 0;
+  display: grid;
+  gap: 0.5rem;
+  padding: 0.58rem;
+  border: 1px solid rgba(181, 116, 226, 0.34);
+  border-radius: 8px;
+  background:
+    linear-gradient(135deg, rgba(93, 45, 134, 0.22), transparent 48%),
+    rgba(7, 10, 15, 0.76);
+}
+
+.phone-inventory-scars-header span,
+.phone-inventory-scar-card .phone-inventory-card-status {
+  color: rgba(216, 178, 255, 0.94);
+}
+
+.phone-inventory-scar-card {
+  border-color: rgba(181, 116, 226, 0.3);
+}
+
+.phone-inventory-scar-copy {
+  display: grid;
+  gap: 0.34rem;
+}
+
+.phone-inventory-scar-copy p {
+  margin: 0;
+}
+
+.phone-inventory-scar-copy strong {
+  color: #f0debd;
+}
+
 .phone-inventory-progression-header {
   min-width: 0;
   display: flex;

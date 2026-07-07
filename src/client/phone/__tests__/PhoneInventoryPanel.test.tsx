@@ -214,6 +214,45 @@ describe("PhoneInventoryPanel", () => {
     expect(screen.getByText(/no wounds to heal/i)).toBeInTheDocument();
   });
 
+  it("shows persistent scar cards and their effects in Inventory status", () => {
+    const basePatch = createPatch();
+    render(
+      <PhoneInventoryPanel
+        patch={{
+          ...basePatch,
+          self: basePatch.self
+            ? {
+                ...basePatch.self,
+                character: {
+                  ...basePatch.self.character,
+                  scars: ["scar-wound-1"],
+                  scarCards: [
+                    {
+                      id: "scar-wound-1",
+                      title: "Ash-Lanced",
+                      text: "A furnace-raked wound that never fully seals.",
+                      trigger: "Your first failed grit test each session.",
+                      penalty: "Gain 1 Heat after the failure resolves.",
+                      relief: "At a surgery or shrine space, spend 1 trophy after a passed forge check to suppress this scar.",
+                      upside: "After this scar adds Heat, gain a route note about what hurt you."
+                    }
+                  ]
+                }
+              }
+            : null
+        }}
+        onIntent={vi.fn()}
+      />
+    );
+
+    const scars = screen.getByTestId("phone-inventory-scars");
+
+    expect(scars).toHaveTextContent(/scars: 1/i);
+    expect(scars).toHaveTextContent(/ash-lanced/i);
+    expect(scars).toHaveTextContent(/first failed grit test/i);
+    expect(scars).toHaveTextContent(/gain 1 heat/i);
+  });
+
   it("shows trophies and stat upgrades in Inventory progression", () => {
     const onIntent = vi.fn();
     const basePatch = createPatch();

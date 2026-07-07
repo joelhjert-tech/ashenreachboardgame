@@ -2426,4 +2426,36 @@ describe("PhoneActionPanel", () => {
     expect(screen.getByTestId("phone-resolution-card")).toHaveTextContent(/scenario pressure/i);
     expect(screen.getByTestId("phone-resolution-card")).toHaveTextContent(/doom rises by 1/i);
   });
+
+  it("does not repeat identical success copy as both outcome text and bullet", () => {
+    render(
+      <PhoneActionPanel
+        characters={characters}
+        onIntent={vi.fn()}
+        patch={createPatch({
+          activeResolution: {
+            id: "seat-1:threat:marrow-tax-auditors:test",
+            playerId: "seat-1",
+            source: "threat",
+            stage: "outcome_summary",
+            card: {
+              id: "marrow-tax-auditors",
+              title: "Marrow-Tax Auditors",
+              type: "hazard"
+            },
+            outcome: {
+              title: "Check passed",
+              text: "Success: note added: You found a loophole in a dead empire tariff.",
+              effects: ["Success: note added: You found a loophole in a dead empire tariff."]
+            }
+          }
+        })}
+      />
+    );
+
+    const resolutionCard = screen.getByTestId("phone-resolution-card");
+
+    expect(within(resolutionCard).getAllByText(/you found a loophole in a dead empire tariff/i)).toHaveLength(1);
+    expect(within(resolutionCard).queryByRole("listitem", { name: /you found a loophole/i })).not.toBeInTheDocument();
+  });
 });

@@ -8,7 +8,7 @@ import {
 import { CardArtImage } from "../shared/CardArtImage.js";
 import { GameButton } from "../shared/GameButton.js";
 import { statOrder } from "../shared/statLabels.js";
-import type { ClientIntent, PhonePatchPayload, Stat, TrophyPileEntry } from "../shared/types.js";
+import type { ClientIntent, PhonePatchPayload, ScarSummary, Stat, TrophyPileEntry } from "../shared/types.js";
 import { PhoneWrappedMediaCard } from "./PhoneWrappedMediaCard.js";
 import {
   getInventoryGroups,
@@ -218,6 +218,63 @@ function InventoryTimingGroups({ cards }: { cards: InventoryCardViewModel[] }): 
   );
 }
 
+function InventoryScarsSection({ scars }: { scars: ScarSummary[] }): ReactElement | null {
+  if (scars.length === 0) {
+    return null;
+  }
+
+  return (
+    <section className="phone-inventory-scars" aria-label="Scars and status" data-testid="phone-inventory-scars">
+      <div className="phone-inventory-progression-header phone-inventory-scars-header">
+        <div>
+          <span>Status</span>
+          <strong>Scars: {scars.length}</strong>
+        </div>
+        <small>Persistent effects</small>
+      </div>
+      <div className="phone-inventory-card-list">
+        {scars.map((scar) => (
+          <PhoneWrappedMediaCard
+            key={scar.id}
+            variant="inventory"
+            className="phone-inventory-card phone-inventory-scar-card"
+            dataState="persistent"
+            ariaLabel={`${scar.title}: ${scar.trigger}. ${scar.penalty}`}
+            media={
+              <CardArtImage
+                cardType="scar"
+                cardId={scar.id}
+                alt=""
+                aria-hidden="true"
+                className="phone-wrap-card__image phone-inventory-card-art phone-inventory-scar-art"
+              />
+            }
+            title={scar.title}
+            eyebrow="Scar"
+            status={<span className="phone-inventory-card-status">Persistent</span>}
+            description={
+              <div className="phone-wrap-card__consequence phone-inventory-scar-copy">
+                <p>{scar.text}</p>
+                <p>
+                  <strong>{scar.trigger}</strong> {scar.penalty}
+                </p>
+              </div>
+            }
+            disabledReason={<small className="phone-inventory-card-status-reason">Relief: {scar.relief}</small>}
+            meta={
+              <div className="phone-inventory-card-meta">
+                <span>Passive scar</span>
+                <span>Affects status / tests when triggered</span>
+                {scar.upside ? <span>{scar.upside}</span> : null}
+              </div>
+            }
+          />
+        ))}
+      </div>
+    </section>
+  );
+}
+
 function getTrophyPileEntryAvailableValue(entry: TrophyPileEntry): number {
   return Math.max(0, entry.trophyValue - (entry.spentValue ?? 0));
 }
@@ -350,6 +407,7 @@ export function PhoneInventoryPanel({
 
   return (
     <section className={panelClassName} aria-label="Inventory" data-item-count={visibleItemCount}>
+      {!onlyUsable && <InventoryScarsSection scars={self.character.scarCards ?? []} />}
       {!onlyUsable && <InventoryProgressionSection patch={patch} onIntent={onIntent} />}
       {!onlyUsable && <InventoryTimingGroups cards={allCards} />}
       {visibleGroups.length === 0 ? (

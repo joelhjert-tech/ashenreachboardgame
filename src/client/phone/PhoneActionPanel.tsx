@@ -255,6 +255,29 @@ function formatShopDisabledReason(reason: string | undefined): string | undefine
   return reason && reason in shopFailureLabels ? shopFailureLabels[reason as ShopFailureReason] : reason;
 }
 
+function normalizeOutcomeCopy(value: string): string {
+  return value
+    .toLowerCase()
+    .replace(/\s+/g, " ")
+    .replace(/[.。]+$/g, "")
+    .trim();
+}
+
+function dedupeOutcomeEffects(text: string, effects: string[]): string[] {
+  const seen = new Set<string>([normalizeOutcomeCopy(text)]);
+
+  return effects.filter((effect) => {
+    const normalized = normalizeOutcomeCopy(effect);
+
+    if (!normalized || seen.has(normalized)) {
+      return false;
+    }
+
+    seen.add(normalized);
+    return true;
+  });
+}
+
 function formatShopCategory(value: string | undefined): string {
   return value ? toTitleCase(value) : "General Stock";
 }
@@ -276,6 +299,7 @@ function ActiveResolutionCard({
   const battle = resolution.battle;
   const outcome = resolution.outcome;
   const challengeStat = battle?.stat ?? "grit";
+  const visibleOutcomeEffects = outcome ? dedupeOutcomeEffects(outcome.text, outcome.effects) : [];
 
   return (
     <div className="phone-resolution-card" data-testid="phone-resolution-card">
@@ -327,9 +351,9 @@ function ActiveResolutionCard({
       {outcome && (
         <div className="phone-resolution-outcome">
           <p>{outcome.text}</p>
-          {outcome.effects.length > 0 && (
+          {visibleOutcomeEffects.length > 0 && (
             <ul>
-              {outcome.effects.map((effect) => (
+              {visibleOutcomeEffects.map((effect) => (
                 <li key={effect}>{effect}</li>
               ))}
             </ul>
