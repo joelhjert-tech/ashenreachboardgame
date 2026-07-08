@@ -374,6 +374,18 @@ describe("PhoneActionPanel", () => {
         patch={createPatch({
           phase: "navigation",
           encounter: null,
+          activeContractCard: {
+            id: "anchor-market-ledger",
+            name: "Anchor Market Ledger",
+            factionGiver: "Pale Cartels",
+            text: "Recover a sealed ledger from Anchor Market before the route disappears.",
+            objective: {
+              type: "spaceTextResolved",
+              effectKey: "outer_waymarketExchange",
+              label: "Recover the Anchor Market ledger",
+              target: 1
+            }
+          },
           movementPlanner: {
             active: true,
             movementValue: 1,
@@ -429,7 +441,17 @@ describe("PhoneActionPanel", () => {
               publicText: "+1 Global Escalation",
               severity: "scenario"
             }
-          ]
+          ],
+          self: {
+            ...createPatch().self!,
+            character: {
+              ...createPatch().self!.character,
+              activeContract: {
+                contractId: "anchor-market-ledger",
+                progress: 0
+              }
+            }
+          }
         })}
       />
     );
@@ -449,6 +471,7 @@ describe("PhoneActionPanel", () => {
     expect(screen.getByTestId("movement-current-tile-card")).toHaveTextContent(/pilgrims chain brass prayers/i);
     expect(screen.getByTestId("movement-current-tile-action")).toHaveTextContent(/pilgrim rest/i);
     expect(screen.getByTestId("movement-planner")).toBeInTheDocument();
+    expect(screen.getByTestId("movement-dice-animation")).toHaveTextContent(/1/);
     expect(
       screen.getByTestId("phone-current-prompt").compareDocumentPosition(screen.getByTestId("phone-action-active-panel")) &
         Node.DOCUMENT_POSITION_FOLLOWING
@@ -466,6 +489,7 @@ describe("PhoneActionPanel", () => {
     expect(screen.getByTestId("movement-summary")).toHaveTextContent(/pilgrim lock/i);
     expect(screen.getByTestId("movement-summary")).toHaveTextContent(/legal destinations/i);
     expect(screen.getAllByTestId("movement-destination-row")).toHaveLength(1);
+    expect(screen.getByTestId("movement-destination-mission-marker")).toHaveTextContent(/mission/i);
     expect(screen.queryByTestId("phone-shop-panel")).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /attempt signal check/i })).not.toBeInTheDocument();
     expect(screen.queryByText(/global escalation/i)).not.toBeInTheDocument();
@@ -504,6 +528,7 @@ describe("PhoneActionPanel", () => {
     );
     expect(screen.getByTestId("movement-detail-route-confidence")).toHaveTextContent(/1 step/i);
     expect(screen.getByTestId("movement-detail-route-confidence")).toHaveTextContent(/shop reward/i);
+    expect(screen.getByTestId("movement-detail-mission")).toHaveTextContent(/can progress your mission/i);
     expect(detailCard?.querySelector(".phone-wrap-card__actions")).toContainElement(
       screen.getByRole("button", { name: /confirm move/i })
     );
@@ -529,6 +554,18 @@ describe("PhoneActionPanel", () => {
           phase: "navigation",
           encounter: null,
           movementPlanner: null,
+          activeContractCard: {
+            id: "crossing-thread",
+            name: "Crossing Thread",
+            factionGiver: "Pale Cartels",
+            text: "Clear the Ashwake convoy lane.",
+            objective: {
+              type: "spaceTextResolved",
+              effectKey: "outer_ashwakeClearLane",
+              label: "Clear the Ashwake convoy lane",
+              target: 1
+            }
+          },
           players: [
             ...createPatch().players,
             {
@@ -572,6 +609,16 @@ describe("PhoneActionPanel", () => {
             sectorTextTitle: "Hold the Bridge",
             shopName: null,
             explanationLines: ["A blocker is holding the bridge."]
+          },
+          self: {
+            ...createPatch().self!,
+            character: {
+              ...createPatch().self!.character,
+              activeContract: {
+                contractId: "crossing-thread",
+                progress: 0
+              }
+            }
           }
         })}
       />
@@ -585,6 +632,8 @@ describe("PhoneActionPanel", () => {
     expect(screen.getByTestId("movement-current-tile-blockers")).toHaveTextContent(/blocked: marrow-tax auditors/i);
     expect(screen.getByTestId("movement-current-tile-shop")).toHaveTextContent(/shop: none/i);
     expect(screen.getByTestId("movement-current-tile-action")).toHaveTextContent(/action locked: clear marrow-tax auditors first/i);
+    expect(screen.getByTestId("movement-current-tile-mission")).toHaveTextContent(/mission:/i);
+    expect(screen.getByTestId("movement-current-tile-mission")).toHaveTextContent(/crossing thread/i);
     expect(screen.getByTestId("movement-current-tile-facts")).toHaveTextContent(/draw due: 1 yellow/i);
     expect(screen.getByTestId("movement-current-tile-occupants")).toHaveTextContent(/mira \(mira\)/i);
     expect(screen.getByTestId("movement-current-tile-image")).toHaveAttribute("src", "/assets/map/tiles/map_tile_hollow_gate.png");
@@ -664,6 +713,38 @@ describe("PhoneActionPanel", () => {
       seatId: "seat-1",
       toSectorId: "ashwake-crossing"
     });
+  });
+
+  it("shows compact movement feedback after a confirmed move outcome", () => {
+    render(
+      <PhoneActionPanel
+        characters={characters}
+        onIntent={vi.fn()}
+        selectedTurnTab="move"
+        patch={createPatch({
+          phase: "action",
+          encounter: null,
+          outcomeSummary: {
+            seatId: "seat-1",
+            movedToSectorId: "outer_waymarket",
+            encounterCardId: null,
+            encounterTitle: null,
+            encounterCardType: null,
+            checkStat: null,
+            die1: null,
+            die2: null,
+            statBonus: null,
+            checkTotal: null,
+            difficulty: null,
+            summary: "Lane reached Anchor Market.",
+            success: true
+          }
+        })}
+      />
+    );
+
+    expect(screen.getByTestId("phone-movement-animation")).toHaveTextContent(/movement confirmed/i);
+    expect(screen.getByTestId("phone-movement-animation")).toHaveTextContent(/anchor market/i);
   });
 
   it("keeps long movement rows readable and puts confirm in the detail footer", () => {

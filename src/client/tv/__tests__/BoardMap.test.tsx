@@ -309,6 +309,79 @@ describe("BoardMap", () => {
     expect(screen.queryByTestId(/missing-tile-art-/)).not.toBeInTheDocument();
   });
 
+  it("marks active mission sectors from player active contracts instead of generic contract pool cards", () => {
+    const activeMissionPatch: PublicPatchPayload = {
+      ...createPatch(),
+      players: createPatch().players.map((player) =>
+        player.seatId === "seat-1"
+          ? {
+              ...player,
+              character: {
+                ...player.character,
+                activeContract: {
+                  contractId: "choir-spindle-harmonics",
+                  progress: 0
+                }
+              }
+            }
+          : player
+      ),
+      availableContracts: [
+        {
+          id: "choir-spindle-harmonics",
+          name: "Spindle Harmonics",
+          factionGiver: "Glass Choir",
+          text: "Tune the Glassmere Spindle before the choir burns its last note.",
+          objective: {
+            type: "spaceTextResolved",
+            effectKey: "outer_glassmereChorus",
+            label: "Tune the Glassmere Spindle",
+            target: 1
+          }
+        },
+        {
+          id: "contract-pool-only",
+          name: "Pool Only",
+          factionGiver: "Pale Cartels",
+          text: "This public pool contract is not assigned to a player.",
+          objective: {
+            type: "spaceTextResolved",
+            effectKey: "outer_ashwakeClearLane",
+            label: "Clear Ashwake",
+            target: 1
+          }
+        }
+      ]
+    };
+
+    const { rerender } = render(<BoardMap patch={activeMissionPatch} phase="navigation" />);
+
+    expect(screen.getByTestId("sector-node-glassmere-spindle")).toHaveAttribute("data-mission-target", "true");
+    expect(screen.getByTestId("mission-marker-glassmere-spindle")).toHaveTextContent(/mission/i);
+    expect(screen.getByTestId("sector-node-ashwake-crossing")).toHaveAttribute("data-mission-target", "false");
+
+    const poolOnlyPatch: PublicPatchPayload = {
+      ...activeMissionPatch,
+      players: activeMissionPatch.players.map((player) =>
+        player.seatId === "seat-1"
+          ? {
+              ...player,
+              character: {
+                ...player.character,
+                activeContract: null
+              }
+            }
+          : player
+      )
+    };
+
+    rerender(<BoardMap patch={poolOnlyPatch} phase="navigation" />);
+
+    expect(screen.getByTestId("sector-node-glassmere-spindle")).toHaveAttribute("data-mission-target", "false");
+    expect(screen.queryByTestId("mission-marker-glassmere-spindle")).not.toBeInTheDocument();
+    expect(screen.getByTestId("sector-node-ashwake-crossing")).toHaveAttribute("data-mission-target", "false");
+  });
+
   it("updates token placement when a character moves to a different sector", () => {
     const patch = createPatch();
     const { rerender } = render(<BoardMap patch={patch} phase="action" />);
@@ -330,6 +403,26 @@ describe("BoardMap", () => {
     rerender(<BoardMap patch={movedPatch} phase="action" />);
 
     expect(screen.getByTestId("token-seat-1")).toHaveAttribute("data-sector-id", "glassmere-spindle");
+  });
+
+  it("marks a moved token as animating when previous and current authoritative sectors differ", () => {
+    const previousPatch = createPatch();
+    const movedPatch: PublicPatchPayload = {
+      ...previousPatch,
+      players: previousPatch.players.map((player) =>
+        player.seatId === "seat-1"
+          ? {
+              ...player,
+              sectorId: "glassmere-spindle"
+            }
+          : player
+      )
+    };
+
+    render(<BoardMap patch={movedPatch} previousPatch={previousPatch} phase="action" />);
+
+    expect(screen.getByTestId("token-seat-1")).toHaveAttribute("data-sector-id", "glassmere-spindle");
+    expect(screen.getByTestId("token-seat-1")).toHaveAttribute("data-moving", "true");
   });
 
   it("renders a scenario marker on the board for roaming scenario pressure", () => {

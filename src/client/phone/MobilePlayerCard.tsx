@@ -242,6 +242,10 @@ export function MobilePlayerCard({
                     <small className="phone-stat-breakdown">
                       Base {breakdown.base} | Permanent {formatSignedStatBonus(breakdown.permanent)} | Gear/Follower{" "}
                       {formatSignedStatBonus(breakdown.gearFollower)}
+                      {breakdown.gearFollowerSources.length > 0
+                        ? ` (${breakdown.gearFollowerSources.map((source) => `${source.label} ${formatSignedStatBonus(source.value)}`).join(", ")})`
+                        : ""}
+                      {" | "}Final {breakdown.final}
                     </small>
                   </div>
                 );

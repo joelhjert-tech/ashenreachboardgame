@@ -27,6 +27,8 @@ interface TalismanBoardSurfaceProps {
   sectorsById?: Map<string, SectorNode>;
   occupantCountsByNodeId?: Map<string, number>;
   playerMarkersByNodeId?: Map<string, TilePlayerMarker[]>;
+  missionMarkersByNodeId?: Map<string, TileMissionMarker[]>;
+  movingSeatIds?: Set<string>;
   nemesisSectorIds?: Set<string>;
   onSelectNode?: (nodeId: string) => void;
   debugEnabled?: boolean;
@@ -36,6 +38,13 @@ export interface TilePlayerMarker {
   seatId: string;
   label: string;
   color: string;
+}
+
+export interface TileMissionMarker {
+  seatId: string;
+  playerLabel: string;
+  missionTitle: string;
+  reason: string;
 }
 
 function getTileTone(node: BoardNode): string {
@@ -123,6 +132,8 @@ export function TalismanBoardSurface({
   sectorsById,
   occupantCountsByNodeId,
   playerMarkersByNodeId,
+  missionMarkersByNodeId,
+  movingSeatIds,
   nemesisSectorIds,
   onSelectNode,
   debugEnabled = false
@@ -163,12 +174,15 @@ export function TalismanBoardSurface({
         const localThreatDeckCount = liveSector?.encounterDecks.threat.length ?? 0;
         const occupantCount = occupantCountsByNodeId?.get(node.id) ?? 0;
         const playerMarkers = playerMarkersByNodeId?.get(node.id) ?? [];
+        const missionMarkers = missionMarkersByNodeId?.get(node.id) ?? [];
+        const isMissionTarget = missionMarkers.length > 0;
         const isShop = boardSpace?.tags.includes("shop") || boardSpace?.tags.includes("risk-shop");
         const isLockedShop = Boolean(isShop && localThreatDeckCount > 0);
         const hasNemesis = nemesisSectorIds?.has(node.id) ?? false;
         const tileStatus = [
           isActive ? "current location" : null,
           isLegal ? "legal destination" : null,
+          isMissionTarget ? "mission target" : null,
           isLockedShop ? "shop locked" : null,
           hasNemesis ? "nemesis present" : null
         ]
@@ -182,6 +196,7 @@ export function TalismanBoardSurface({
             data-testid={`sector-node-${node.id}`}
             data-sector-id={node.id}
             data-legal-target={isLegal ? "true" : "false"}
+            data-mission-target={isMissionTarget ? "true" : "false"}
             className={[
               "talisman-board-tile",
               "talisman-board-tile-button",
@@ -192,6 +207,7 @@ export function TalismanBoardSurface({
               isActive ? "talisman-board-tile-current" : "",
               isSelected ? "talisman-board-tile-selected" : "",
               isLegal ? "talisman-board-tile-legal" : "",
+              isMissionTarget ? "talisman-board-tile-mission" : "",
               isLockedShop ? "talisman-board-tile-locked" : "",
               hasNemesis ? "talisman-board-tile-nemesis" : "",
               debugEnabled ? "talisman-board-tile-debug" : ""
@@ -222,6 +238,15 @@ export function TalismanBoardSurface({
                 ))}
               </span>
             )}
+            {isMissionTarget && (
+              <span
+                className="talisman-board-mission-badge"
+                data-testid={`mission-marker-${node.id}`}
+                title={missionMarkers.map((marker) => `${marker.playerLabel}: ${marker.missionTitle}`).join(" | ")}
+              >
+                Mission
+              </span>
+            )}
             {playerMarkers.length > 0 && (
               <span className="talisman-board-tile-players" aria-label={`${playerMarkers.length} operative${playerMarkers.length === 1 ? "" : "s"} on ${node.label}`}>
                 {playerMarkers.slice(0, 3).map((marker) => (
@@ -229,7 +254,8 @@ export function TalismanBoardSurface({
                     key={marker.seatId}
                     data-testid={`token-${marker.seatId}`}
                     data-sector-id={node.id}
-                    className="talisman-board-player-marker"
+                    data-moving={movingSeatIds?.has(marker.seatId) ? "true" : "false"}
+                    className={`talisman-board-player-marker${movingSeatIds?.has(marker.seatId) ? " talisman-board-player-marker-moving" : ""}`}
                     title={marker.label}
                     style={{ ["--token-fill" as string]: marker.color }}
                   >

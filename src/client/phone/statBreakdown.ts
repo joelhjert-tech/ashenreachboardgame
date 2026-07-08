@@ -5,25 +5,34 @@ export interface PhoneStatBreakdown {
   base: number;
   permanent: number;
   gearFollower: number;
+  final: number;
+  gearFollowerSources: Array<{
+    label: string;
+    value: number;
+    sourceType: "gear" | "follower";
+  }>;
 }
 
 export function getPhoneStatBreakdown(self: PhoneSelfState, stat: Stat): PhoneStatBreakdown {
   const permanent = self.character.statUpgrades?.[stat] ?? 0;
   const base = Math.max(0, self.character.stats[stat] - permanent);
   const equippedIds = new Set(Object.values(self.character.equippedGear).filter((value): value is string => Boolean(value)));
-  const gearFollower = self.character.heldGear.reduce((sum, item) => {
-    if (!equippedIds.has(item.id) || item.statBonus.stat !== stat) {
-      return sum;
-    }
-
-    return sum + item.statBonus.amount;
-  }, 0);
+  const gearFollowerSources = self.character.heldGear
+    .filter((item) => equippedIds.has(item.id) && item.statBonus.stat === stat)
+    .map((item) => ({
+      label: item.name,
+      value: item.statBonus.amount,
+      sourceType: "gear" as const
+    }));
+  const gearFollower = gearFollowerSources.reduce((sum, source) => sum + source.value, 0);
 
   return {
     current: self.character.stats[stat],
     base,
     permanent,
-    gearFollower
+    gearFollower,
+    final: self.character.stats[stat] + gearFollower,
+    gearFollowerSources
   };
 }
 

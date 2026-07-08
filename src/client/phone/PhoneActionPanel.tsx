@@ -48,6 +48,7 @@ import { PhoneWrappedMediaCard } from "./PhoneWrappedMediaCard.js";
 import { getTileAssetPath } from "../tv/tileAssetManifest.js";
 import { formatTimingWindow, getBattleAssistViewModel, statLabelById as inventoryStatLabelById } from "./inventoryPresentation.js";
 import { buildUsefulNowViewModel, type UsefulNowViewModel } from "./usefulNowPresentation.js";
+import { getMissionRelevanceForSector, type MissionRelevance } from "../shared/missionRelevance.js";
 
 interface PhoneActionPanelProps {
   characters: CharacterCatalogEntry[];
@@ -147,6 +148,7 @@ interface CurrentTileViewModel {
   drawDueText: string;
   shopText: string;
   actionText: string;
+  missionRelevance: MissionRelevance | null;
   occupants: Array<{
     playerId: string;
     name: string;
@@ -984,7 +986,8 @@ function buildCurrentTileViewModel(
   patch: PhonePatchPayload,
   self: NonNullable<PhonePatchPayload["self"]>,
   sector: SectorNode | null,
-  boardSpace: ReturnType<typeof getBoardSpace>
+  boardSpace: ReturnType<typeof getBoardSpace>,
+  activeContract: ContractCard | null
 ): CurrentTileViewModel {
   const summary = patch.sectorExplorationSummary;
   const sectorId = summary?.sectorId ?? patch.movementPlanner?.currentSectorId ?? self.sectorId;
@@ -1012,6 +1015,10 @@ function buildCurrentTileViewModel(
     drawDueText: formatDrawDueText(summary),
     shopText: formatCurrentTileShopText(summary, tags),
     actionText: formatCurrentTileActionText(summary, currentBoardSpace),
+    missionRelevance: getMissionRelevanceForSector(activeContract, sectorId, {
+      threatIcons: summary?.printedThreatIcons ?? currentBoardSpace?.threatIcons ?? [],
+      faceUpThreatCount: summary?.unresolvedThreats.length ?? 0
+    }),
     occupants: sameSectorOccupants
   };
 }
@@ -1157,6 +1164,11 @@ function CurrentTileCard({ tile }: { tile: CurrentTileViewModel }): ReactElement
           <span data-testid="movement-current-tile-blockers">{unresolvedText}</span>
           <span data-testid="movement-current-tile-shop">{tile.shopText}</span>
           <span data-testid="movement-current-tile-action">{tile.actionText}</span>
+          {tile.missionRelevance ? (
+            <span className="phone-current-tile-mission" data-testid="movement-current-tile-mission">
+              Mission: {tile.missionRelevance.reason}
+            </span>
+          ) : null}
           <span>{tile.drawDueText}</span>
           <span data-testid="movement-current-tile-occupants">{occupantText}</span>
         </div>
@@ -1599,10 +1611,12 @@ function PhoneShopPanel({
 function MovementPlanner({
   planner,
   seatId,
+  activeContract,
   onIntent
 }: {
   planner: PublicMovementPlannerState | null | undefined;
   seatId: string;
+  activeContract: ContractCard | null;
   onIntent: (intent: ClientIntent) => void;
 }): ReactElement | null {
   const [selectedSectorId, setSelectedSectorId] = useState<string | null>(null);
@@ -1648,11 +1662,12 @@ function MovementPlanner({
           planner={planner}
           selected={selected}
           seatId={seatId}
+          activeContract={activeContract}
           onBack={() => setSelectedSectorId(null)}
           onIntent={onIntent}
         />
       ) : (
-        <MovementDestinationList planner={planner} onSelected={setSelectedSectorId} />
+        <MovementDestinationList planner={planner} activeContract={activeContract} onSelected={setSelectedSectorId} />
       )}
     </section>
   );
@@ -1662,6 +1677,22 @@ function MovementSummaryHeader({ planner }: { planner: PublicMovementPlannerStat
   return (
     <div className="phone-movement-summary" aria-label="Movement summary" data-testid="movement-summary">
       <span className="sr-only">Move {planner.movementValue}</span>
+      <div
+        className="phone-movement-dice"
+        data-testid="movement-dice-animation"
+        aria-label={`Movement die result ${planner.movementValue}`}
+      >
+        <CombatDiceAnimation
+          attackValue={planner.movementValue}
+          defenseValue={null}
+          modifierValue={0}
+          attackDieFace={planner.movementValue}
+          defenseDieFace={null}
+          showModifierDie={false}
+          compact
+          challengeStat="signal"
+        />
+      </div>
       <div className="phone-movement-summary-chips">
         <div className="phone-movement-summary-chip">
           <span>Move Value</span>
@@ -1698,11 +1729,33 @@ function MovementEmptyState({
   );
 }
 
+function PhoneMovementAnimation({ outcome }: { outcome: OutcomeSummary | null }): ReactElement | null {
+  if (!outcome?.movedToSectorId) {
+    return null;
+  }
+
+  const destinationName = getBoardSpace(outcome.movedToSectorId)?.name ?? outcome.movedToSectorId;
+
+  return (
+    <div className="phone-movement-animation" data-testid="phone-movement-animation" role="status">
+      <span className="phone-movement-animation-track" aria-hidden="true">
+        <span className="phone-movement-animation-token" />
+      </span>
+      <div>
+        <span>Movement confirmed</span>
+        <strong>{destinationName}</strong>
+      </div>
+    </div>
+  );
+}
+
 function MovementDestinationList({
   planner,
+  activeContract,
   onSelected
 }: {
   planner: PublicMovementPlannerState;
+  activeContract: ContractCard | null;
   onSelected: (sectorId: string) => void;
 }): ReactElement {
   return (
@@ -1725,6 +1778,7 @@ function MovementDestinationList({
               key={destination.sectorId}
               destination={destination}
               planner={planner}
+              activeContract={activeContract}
               onSelected={onSelected}
             />
           ))}
@@ -1737,10 +1791,12 @@ function MovementDestinationList({
 function MovementDestinationRow({
   destination,
   planner,
+  activeContract,
   onSelected
 }: {
   destination: PublicMoveDestination;
   planner: PublicMovementPlannerState;
+  activeContract: ContractCard | null;
   onSelected: (sectorId: string) => void;
 }): ReactElement {
   const primaryTag = getPrimaryMovementTag(destination);
@@ -1748,12 +1804,17 @@ function MovementDestinationRow({
   const routePreview = buildRoutePreviewCopy(destination, planner.movementValue, planner.currentSectorName);
   const confidenceItems = getMovementRouteConfidenceItems(destination, routePreview);
   const identityLine = buildDestinationIdentityLine(destination);
+  const missionRelevance = getMissionRelevanceForSector(activeContract, destination.sectorId, {
+    threatIcons: destination.threatIcons,
+    faceUpThreatCount: destination.faceUpThreats.length
+  });
 
   return (
     <article
-      className={`phone-movement-row phone-move-panel__destination-row${isLocked ? " phone-movement-row-disabled" : ""}`}
+      className={`phone-movement-row phone-move-panel__destination-row${isLocked ? " phone-movement-row-disabled" : ""}${missionRelevance ? " phone-movement-row-mission" : ""}`}
       role="listitem"
       data-testid="movement-destination-row"
+      data-mission-target={missionRelevance ? "true" : "false"}
     >
       <PhoneWrappedMediaCard
         variant="movement"
@@ -1761,7 +1822,16 @@ function MovementDestinationRow({
         media={<MovementTileMedia destination={destination} />}
         title={destination.name}
         eyebrow={movementTagLabel[primaryTag]}
-        status={<MovementRouteConfidence items={confidenceItems} testId="movement-route-confidence" />}
+        status={
+          <>
+            <MovementRouteConfidence items={confidenceItems} testId="movement-route-confidence" />
+            {missionRelevance ? (
+              <span className="phone-mission-marker" data-testid="movement-destination-mission-marker">
+                Mission
+              </span>
+            ) : null}
+          </>
+        }
         description={<p className="phone-movement-row-lore" data-testid="movement-destination-lore">{identityLine}</p>}
         meta={
           <details className="phone-movement-route-details">
@@ -1823,12 +1893,14 @@ function MovementDestinationDetail({
   planner,
   selected,
   seatId,
+  activeContract,
   onBack,
   onIntent
 }: {
   planner: PublicMovementPlannerState;
   selected: PublicMoveDestination;
   seatId: string;
+  activeContract: ContractCard | null;
   onBack: () => void;
   onIntent: (intent: ClientIntent) => void;
 }): ReactElement {
@@ -1837,6 +1909,10 @@ function MovementDestinationDetail({
   const routeUnavailable = Boolean(selected.disabledReason);
   const confidenceItems = getMovementRouteConfidenceItems(selected, routePreview);
   const identityLine = buildDestinationIdentityLine(selected);
+  const missionRelevance = getMissionRelevanceForSector(activeContract, selected.sectorId, {
+    threatIcons: selected.threatIcons,
+    faceUpThreatCount: selected.faceUpThreats.length
+  });
   const detailRef = useRef<HTMLElement | null>(null);
 
   useLayoutEffect(() => {
@@ -1875,6 +1951,11 @@ function MovementDestinationDetail({
             <>
               <p className="phone-movement-row-lore" data-testid="movement-detail-lore">{identityLine}</p>
               <p>{routeUnavailable ? "Route unavailable." : `${routePreview.statusLabel}: ${routePreview.statusReason}`}</p>
+              {missionRelevance ? (
+                <p className="phone-mission-callout" data-testid="movement-detail-mission">
+                  This destination can progress your mission.
+                </p>
+              ) : null}
             </>
           }
           meta={
@@ -2011,22 +2092,27 @@ function MovementDestinationDetail({
 function PhoneMovePanel({
   movementPlanner,
   currentTile,
+  movementOutcome,
   hasMoveContent,
   seatId,
+  activeContract,
   onIntent,
   usefulNow
 }: {
   movementPlanner: PublicMovementPlannerState | null | undefined;
   currentTile: CurrentTileViewModel;
+  movementOutcome: OutcomeSummary | null;
   hasMoveContent: boolean;
   seatId: string;
+  activeContract: ContractCard | null;
   onIntent: (intent: ClientIntent) => void;
   usefulNow: UsefulNowViewModel | null;
 }): ReactElement {
   return (
     <section className="phone-action-active-panel phone-move-panel" data-testid="phone-action-active-panel" aria-label="Move command screen">
       <CurrentTileCard tile={currentTile} />
-      <MovementPlanner planner={movementPlanner} seatId={seatId} onIntent={onIntent} />
+      <PhoneMovementAnimation outcome={movementOutcome} />
+      <MovementPlanner planner={movementPlanner} seatId={seatId} activeContract={activeContract} onIntent={onIntent} />
       {!hasMoveContent && !movementPlanner?.active && (
         <EmptyTurnTab title="No movement choice" text="Movement is not available in this step. Resolve the current action or wait for the table." />
       )}
@@ -2221,9 +2307,9 @@ export function PhoneActionPanel({
   const battleAssistPanel = <BattleAssistCard patch={patch} onIntent={onIntent} />;
   const sector = getSector(patch.sectors, self.sectorId);
   const boardSpace = getBoardSpace(self.sectorId);
-  const currentTile = buildCurrentTileViewModel(patch, self, sector, boardSpace);
   const sectorExplorationCopy = buildSectorExplorationCopy(patch.sectorExplorationSummary);
   const activeContract = getActiveContractCard(patch);
+  const currentTile = buildCurrentTileViewModel(patch, self, sector, boardSpace, activeContract);
   const equippedIds = new Set(Object.values(self.character.equippedGear).filter((value): value is string => Boolean(value)));
   const winnerName = patch.seats.find((seat) => seat.seatId === patch.winnerSeatId)?.displayName ?? patch.winnerSeatId ?? "unknown";
   const pendingEnemyRoll = patch.pendingEnemyRoll;
@@ -2239,6 +2325,10 @@ export function PhoneActionPanel({
   const sectorOpportunityItems = getSectorOpportunityItems(sector);
   const isScenarioConfrontation = isScenarioConfrontationSpace(self.sectorId);
   const movementPlanner = patch.movementPlanner ?? null;
+  const movementOutcome =
+    patch.outcomeSummary?.seatId === self.seatId && patch.outcomeSummary.movedToSectorId
+      ? patch.outcomeSummary
+      : null;
   const shopEncounter =
     patch.phase === "action" && patch.shopEncounter?.activePlayer.playerId === self.seatId ? patch.shopEncounter : null;
 
@@ -2824,8 +2914,10 @@ export function PhoneActionPanel({
       <PhoneMovePanel
         movementPlanner={movementPlanner}
         currentTile={currentTile}
+        movementOutcome={movementOutcome}
         hasMoveContent={hasMoveContent}
         seatId={self.seatId}
+        activeContract={activeContract}
         onIntent={onIntent}
         usefulNow={activeUsefulNow}
       />

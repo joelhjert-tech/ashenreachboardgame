@@ -704,6 +704,7 @@ describe("PhoneInventoryPanel", () => {
     expect(within(commandStat).getByText("Base")).toBeInTheDocument();
     expect(within(commandStat).getByText("Permanent")).toBeInTheDocument();
     expect(within(commandStat).getByText("Gear/Follower")).toBeInTheDocument();
+    expect(within(commandStat).getByText(/oath-chain ledger \+1/i)).toBeInTheDocument();
     expect(within(commandStat).getByText("Temporary")).toBeInTheDocument();
     expect(within(commandStat).getByText("Final")).toBeInTheDocument();
     expect(within(commandStat).getByText("+0")).toBeInTheDocument();

@@ -4,6 +4,7 @@ import { getCharacterPortraitPath } from "../shared/assetPaths.js";
 import { CardArtImage } from "../shared/CardArtImage.js";
 import { GameButton } from "../shared/GameButton.js";
 import { ResultDeltaRow } from "../shared/ResultDeltaChips.js";
+import { getMissionTargetClue } from "../shared/missionRelevance.js";
 import { formatSeatLabel, statLabelById, statOrder } from "../shared/statLabels.js";
 import type {
   CharacterCatalogEntry,
@@ -140,7 +141,18 @@ function PortraitStatCard({
           </div>
           <div>
             <dt>Gear/Follower</dt>
-            <dd>{formatSignedStatBonus(breakdown.gearFollower)}</dd>
+            <dd>
+              {formatSignedStatBonus(breakdown.gearFollower)}
+              {breakdown.gearFollowerSources.length > 0 ? (
+                <small className="phone-stat-card-source-list">
+                  {breakdown.gearFollowerSources.map((source) => (
+                    <span key={`${source.sourceType}-${source.label}`}>
+                      {source.label} {formatSignedStatBonus(source.value)}
+                    </span>
+                  ))}
+                </small>
+              ) : null}
+            </dd>
           </div>
           <div>
             <dt>Temporary</dt>
@@ -148,7 +160,7 @@ function PortraitStatCard({
           </div>
           <div>
             <dt>Final</dt>
-            <dd>{breakdown.current}</dd>
+            <dd>{breakdown.final}</dd>
           </div>
         </dl>
       )}
@@ -329,6 +341,8 @@ function ActiveMissionQuestCard({
     );
   }
 
+  const targetClue = getMissionTargetClue(contract);
+
   return (
     <article className="phone-portrait-info-card phone-active-mission-card" data-testid="phone-active-mission-card">
       <CardArtImage
@@ -345,6 +359,11 @@ function ActiveMissionQuestCard({
       </div>
       <strong>{contract.name}</strong>
       <p>{contract.text}</p>
+      {targetClue ? (
+        <p className="phone-active-mission-target" data-testid="phone-active-mission-target">
+          {targetClue}
+        </p>
+      ) : null}
       <dl className="phone-active-mission-details">
         <div>
           <dt>Objective</dt>

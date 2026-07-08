@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState, type ReactElement } from "react";
 import { BOARD_SPACES, getBoardSpace, isScenarioConfrontationSpace } from "../../game/data/boardSpaces.js";
 import { RIFTFALL_BOARD_NODE_INDEX, RIFTFALL_BOARD_NODES } from "../../data/riftfallBoardNodes.js";
-import type { OutcomeSummary, PublicPatchPayload, SectorNode, ThreatIcon } from "../shared/types.js";
+import type { ContractCard, OutcomeSummary, PublicPatchPayload, SectorNode, ThreatIcon } from "../shared/types.js";
 import { ThreatIconBadge } from "../shared/ChallengeBadge.js";
 import { buildRoutePreviewCopy } from "../shared/explainabilityPrompts.js";
 import {
@@ -18,7 +18,8 @@ import { pointerToBoardCoordinate, type BoardRect } from "./boardGeometry.js";
 import { getBoardTileLayout, getBoardTileRouteAnchor } from "./boardTileLayout.js";
 import { HostCinematicFxLayer, type MapFxPoint, type MapFxTrail } from "./HostCinematicFxLayer.js";
 import { getMapBoardBaseAssetPath } from "./mapAssetRegistry.js";
-import { TalismanBoardSurface, type TilePlayerMarker } from "./TalismanBoardSurface.js";
+import { TalismanBoardSurface, type TileMissionMarker, type TilePlayerMarker } from "./TalismanBoardSurface.js";
+import { getMissionRelevanceForSector } from "../shared/missionRelevance.js";
 
 interface BoardMapProps {
   patch: PublicPatchPayload;
@@ -74,6 +75,73 @@ function buildPlayerMarkersByNodeId(patch: PublicPatchPayload): Map<string, Tile
   });
 
   return markersByNodeId;
+}
+
+function buildActiveContractLookup(contracts: ContractCard[]): Map<string, ContractCard> {
+  return new Map(contracts.map((contract) => [contract.id, contract] as const));
+}
+
+function buildMissionMarkersByNodeId(patch: PublicPatchPayload): Map<string, TileMissionMarker[]> {
+  const contractById = buildActiveContractLookup(patch.availableContracts);
+  const markersByNodeId = new Map<string, TileMissionMarker[]>();
+
+  patch.players.forEach((player) => {
+    const activeContract = player.character.activeContract
+      ? contractById.get(player.character.activeContract.contractId) ?? null
+      : null;
+
+    if (!activeContract) {
+      return;
+    }
+
+    const playerLabel =
+      patch.seats.find((seat) => seat.seatId === player.seatId)?.displayName ??
+      player.character.name;
+
+    RIFTFALL_BOARD_NODES.forEach((node) => {
+      const boardSpace = getBoardSpace(node.id);
+      const liveSector = patch.sectors.find((sector) => sector.id === node.id) ?? null;
+      const relevance = getMissionRelevanceForSector(activeContract, node.id, {
+        threatIcons: liveSector?.threatIcons?.length ? liveSector.threatIcons : boardSpace?.threatIcons ?? [],
+        faceUpThreatCount: 0
+      });
+
+      if (!relevance) {
+        return;
+      }
+
+      const existing = markersByNodeId.get(node.id) ?? [];
+      existing.push({
+        seatId: player.seatId,
+        playerLabel,
+        missionTitle: activeContract.name,
+        reason: relevance.reason
+      });
+      markersByNodeId.set(node.id, existing);
+    });
+  });
+
+  return markersByNodeId;
+}
+
+function buildMovingSeatIds(patch: PublicPatchPayload, previousPatch: PublicPatchPayload | null): Set<string> {
+  const movingSeatIds = new Set<string>();
+
+  if (!previousPatch) {
+    return movingSeatIds;
+  }
+
+  const previousSectorBySeatId = new Map(previousPatch.players.map((player) => [player.seatId, player.sectorId] as const));
+
+  patch.players.forEach((player) => {
+    const previousSectorId = previousSectorBySeatId.get(player.seatId);
+
+    if (previousSectorId && previousSectorId !== player.sectorId) {
+      movingSeatIds.add(player.seatId);
+    }
+  });
+
+  return movingSeatIds;
 }
 
 function threatIconTone(icon: ThreatIcon): MapFxPoint["tone"] {
@@ -312,6 +380,8 @@ export function BoardMap({ patch, previousPatch = null, phase, showHeader = true
     return counts;
   }, [patch.players]);
   const playerMarkersByNodeId = useMemo(() => buildPlayerMarkersByNodeId(patch), [patch]);
+  const missionMarkersByNodeId = useMemo(() => buildMissionMarkersByNodeId(patch), [patch]);
+  const movingSeatIds = useMemo(() => buildMovingSeatIds(patch, previousPatch), [patch, previousPatch]);
   const nemesisSectorIds = useMemo(
     () => new Set((patch.nemesisChampions ?? []).filter((champion) => !champion.defeated).map((champion) => champion.sectorId)),
     [patch.nemesisChampions]
@@ -377,6 +447,8 @@ export function BoardMap({ patch, previousPatch = null, phase, showHeader = true
                   sectorsById={sectorsById}
                   occupantCountsByNodeId={occupantCountsByNodeId}
                   playerMarkersByNodeId={playerMarkersByNodeId}
+                  missionMarkersByNodeId={missionMarkersByNodeId}
+                  movingSeatIds={movingSeatIds}
                   nemesisSectorIds={nemesisSectorIds}
                   onSelectNode={setSelectedNodeId}
                   debugEnabled={boardDebugEnabled}

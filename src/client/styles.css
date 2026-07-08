@@ -1948,6 +1948,16 @@ select {
   font-weight: 900;
 }
 
+.phone-stat-card-source-list {
+  display: grid;
+  gap: 0.1rem;
+  margin-top: 0.16rem;
+  color: rgba(224, 215, 197, 0.72);
+  font-size: 0.62rem;
+  font-weight: 760;
+  text-align: right;
+}
+
 .phone-portrait-chip-row,
 .phone-portrait-vitals {
   display: flex;
@@ -2317,6 +2327,15 @@ select {
   display: grid;
   gap: 0.42rem;
   margin: 0;
+}
+
+.phone-active-mission-target {
+  padding: 0.46rem 0.58rem;
+  border: 1px solid rgba(213, 181, 255, 0.24);
+  border-radius: 6px;
+  background: rgba(54, 30, 80, 0.24);
+  color: #f4deff;
+  font-weight: 800;
 }
 
 .phone-active-mission-details div {
@@ -5828,7 +5847,7 @@ body {
   min-height: 2.75rem;
   padding: 0.48rem 0.76rem;
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
   gap: 0.72rem;
   align-items: center;
   pointer-events: none;
@@ -5854,6 +5873,21 @@ body {
   min-width: 0;
   display: grid;
   gap: 0.12rem;
+}
+
+.host-state-banner-movement-dice {
+  min-width: 5.4rem;
+  justify-self: end;
+}
+
+.host-state-banner-movement-dice .dice-roll-scene {
+  padding: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.host-state-banner-movement-dice .combat-dice-stage {
+  min-height: 3.6rem;
 }
 
 .host-state-banner span,
@@ -10551,6 +10585,28 @@ body {
   pointer-events: none;
 }
 
+.talisman-board-mission-badge {
+  position: absolute;
+  top: clamp(0.14rem, 0.22vw, 0.24rem);
+  left: clamp(0.14rem, 0.22vw, 0.24rem);
+  z-index: 4;
+  max-width: calc(100% - 0.5rem);
+  padding: 0.16rem 0.34rem;
+  border: 1px solid rgba(213, 181, 255, 0.58);
+  border-radius: 999px;
+  background: rgba(22, 12, 36, 0.78);
+  color: #f4deff;
+  font-size: clamp(0.42rem, 0.46vw, 0.58rem);
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  line-height: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+  box-shadow: 0 0 0.72rem rgba(176, 122, 255, 0.34);
+}
+
 .talisman-board-lock,
 .talisman-board-threat-count,
 .talisman-board-player-count,
@@ -10608,6 +10664,10 @@ body {
   color: #f7ead0;
 }
 
+.talisman-board-player-marker-moving {
+  animation: board-token-step-settle 720ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
 .talisman-board-lock {
   color: #f4c96e;
 }
@@ -10661,6 +10721,24 @@ body {
 .talisman-board-tile-legal {
   border-style: dashed;
   border-color: rgba(227, 179, 65, 0.9);
+}
+
+.talisman-board-tile-mission {
+  box-shadow:
+    inset 0 0 0 1px rgba(4, 3, 2, 0.75),
+    inset 0 -1.85rem 1.9rem rgba(0, 0, 0, 0.58),
+    0 0 0 2px rgba(176, 122, 255, 0.32),
+    0 0 1.25rem rgba(176, 122, 255, 0.35);
+}
+
+.talisman-board-tile-legal.talisman-board-tile-mission {
+  border-color: rgba(244, 215, 116, 0.95);
+  box-shadow:
+    inset 0 0 0 1px rgba(4, 3, 2, 0.75),
+    inset 0 -1.85rem 1.9rem rgba(0, 0, 0, 0.58),
+    0 0 0 2px rgba(227, 179, 65, 0.3),
+    0 0 0 4px rgba(176, 122, 255, 0.18),
+    0 0 1.4rem rgba(176, 122, 255, 0.34);
 }
 
 .talisman-board-tile-locked {
@@ -11037,6 +11115,21 @@ body {
   50% {
     opacity: 1;
     stroke-dashoffset: -6;
+  }
+}
+
+@keyframes board-token-step-settle {
+  0% {
+    transform: translateY(-0.45rem) scale(0.86);
+    opacity: 0.32;
+  }
+  58% {
+    transform: translateY(-0.08rem) scale(1.1);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(0) scale(1);
+    opacity: 1;
   }
 }
 
@@ -14621,6 +14714,14 @@ body {
   min-width: 0;
 }
 
+.phone-movement-dice {
+  margin: 0.2rem 0 0.55rem;
+}
+
+.phone-movement-dice .combat-dice-stage {
+  min-height: 4.2rem;
+}
+
 .phone-movement-route-confidence span {
   max-width: 100%;
   padding: 0.16rem 0.4rem;
@@ -14635,6 +14736,43 @@ body {
   text-overflow: ellipsis;
   text-transform: uppercase;
   white-space: nowrap;
+}
+
+.phone-mission-marker,
+.phone-mission-callout,
+.phone-current-tile-mission {
+  color: #f4deff;
+}
+
+.phone-mission-marker {
+  display: inline-flex;
+  width: max-content;
+  max-width: 100%;
+  margin-top: 0.3rem;
+  padding: 0.18rem 0.46rem;
+  border: 1px solid rgba(213, 181, 255, 0.48);
+  border-radius: 999px;
+  background: rgba(54, 30, 80, 0.42);
+  font-size: 0.66rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  line-height: 1;
+  text-transform: uppercase;
+  box-shadow: 0 0 0.72rem rgba(176, 122, 255, 0.18);
+}
+
+.phone-movement-row-mission .phone-wrap-card {
+  border-color: rgba(213, 181, 255, 0.32);
+  box-shadow: inset 0.18rem 0 0 rgba(176, 122, 255, 0.7);
+}
+
+.phone-mission-callout {
+  margin-top: 0.45rem !important;
+  padding: 0.46rem 0.58rem;
+  border: 1px solid rgba(213, 181, 255, 0.3);
+  border-radius: 6px;
+  background: rgba(54, 30, 80, 0.26);
+  font-weight: 800;
 }
 
 .phone-movement-tile-fallback {
@@ -14730,6 +14868,83 @@ body {
 
 .phone-movement-confirm-footer {
   clear: both;
+}
+
+.phone-movement-animation {
+  display: grid;
+  grid-template-columns: 5.3rem minmax(0, 1fr);
+  gap: 0.6rem;
+  align-items: center;
+  padding: 0.58rem 0.66rem;
+  border: 1px solid rgba(104, 184, 232, 0.26);
+  border-radius: 8px;
+  background:
+    linear-gradient(90deg, rgba(104, 184, 232, 0.16), transparent 72%),
+    rgba(5, 9, 13, 0.64);
+}
+
+.phone-movement-animation-track {
+  position: relative;
+  height: 0.28rem;
+  border-radius: 999px;
+  background: rgba(104, 184, 232, 0.2);
+  box-shadow: inset 0 0 0 1px rgba(104, 184, 232, 0.18);
+}
+
+.phone-movement-animation-token {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 1rem;
+  aspect-ratio: 1;
+  border: 2px solid rgba(240, 248, 255, 0.9);
+  border-radius: 999px;
+  background: #7fb2d8;
+  transform: translateY(-50%);
+  animation: phone-movement-token-travel 760ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  box-shadow: 0 0 0.8rem rgba(104, 184, 232, 0.46);
+}
+
+.phone-movement-animation span {
+  color: rgba(174, 205, 228, 0.84);
+  font-size: 0.66rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.phone-movement-animation strong {
+  color: #f4e2c0;
+  font-size: 0.92rem;
+}
+
+@keyframes phone-movement-token-travel {
+  0% {
+    left: 0;
+    transform: translateY(-50%) scale(0.84);
+    opacity: 0.55;
+  }
+  72% {
+    transform: translateY(-50%) scale(1.12);
+    opacity: 1;
+  }
+  100% {
+    left: calc(100% - 1rem);
+    transform: translateY(-50%) scale(1);
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .talisman-board-player-marker-moving,
+  .phone-movement-animation-token {
+    animation: none !important;
+  }
+
+  .phone-movement-animation-token {
+    left: calc(100% - 1rem);
+    opacity: 1;
+  }
 }
 
 .phone-shell--immersive .phone-movement-planner,

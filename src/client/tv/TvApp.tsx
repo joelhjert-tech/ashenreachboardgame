@@ -546,6 +546,7 @@ function getHostStateBannerModel({ patch, roomCode }: HostStateBannerProps): Hos
 
 function HostStateBanner(props: HostStateBannerProps): ReactElement {
   const model = getHostStateBannerModel(props);
+  const movementPlanner = props.patch?.payload.movementPlanner?.active ? props.patch.payload.movementPlanner : null;
 
   return (
     <aside
@@ -559,6 +560,22 @@ function HostStateBanner(props: HostStateBannerProps): ReactElement {
         <span>{model.label}</span>
         <strong>{model.detail}</strong>
       </div>
+      {movementPlanner ? (
+        <div className="host-state-banner-movement-dice">
+          <DiceRollScene
+            attackValue={movementPlanner.movementValue}
+            defenseValue={null}
+            modifierValue={0}
+            attackDieFace={movementPlanner.movementValue}
+            defenseDieFace={null}
+            showModifierDie={false}
+            compact
+            challengeStat="signal"
+            testId="movement-dice-animation"
+            className="movement-dice-animation"
+          />
+        </div>
+      ) : null}
       <em>{model.meta}</em>
     </aside>
   );

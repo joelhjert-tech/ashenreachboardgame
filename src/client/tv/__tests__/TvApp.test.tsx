@@ -994,6 +994,7 @@ describe("TvApp", () => {
     expect(screen.getByTestId("host-state-banner")).toHaveTextContent(/waiting on tarek voss to choose a legal destination/i);
     expect(screen.getByTestId("host-state-banner")).toHaveTextContent(/you rolled 4/i);
     expect(screen.getByTestId("host-state-banner")).toHaveTextContent(/exactly 4 steps away/i);
+    expect(screen.getByTestId("movement-dice-animation")).toHaveTextContent(/4/);
     expect(screen.queryByText(/movement scan/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/movement value/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/exact legal routes are highlighted/i)).not.toBeInTheDocument();
