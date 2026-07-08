@@ -947,7 +947,7 @@ function formatDrawDueText(summary: PublicSectorExplorationSummary | null | unde
   }
 
   if (summary.unresolvedThreats.length > 0) {
-    return "Draw due: blocked until threats clear.";
+    return "No new draw: printed lane occupied; clear blockers first.";
   }
 
   const drawEntries = (["red", "blue", "yellow"] as const)
