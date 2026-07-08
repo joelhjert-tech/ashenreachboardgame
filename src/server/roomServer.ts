@@ -80,7 +80,11 @@ import {
   getMovementBlockReason
 } from "../game/rules/movementPlanner.js";
 import { resolveBoardSpaceEvent } from "../game/tileResolver.js";
-import type { BoardThreatCard } from "../game/rules/explorationPhase.js";
+import {
+  calculateExplorationDraws,
+  type BoardThreatCard,
+  type ExplorationDrawCounts
+} from "../game/rules/explorationPhase.js";
 import {
   buildContractCompletedObjectiveEvent,
   resolveScenarioObjectiveTrigger,
@@ -4457,7 +4461,16 @@ export class GameRoomServer {
       }
 
       if (this.state.phase === "sector") {
-        this.applyAction(this.createEncounterDrawnAction(seatId));
+        if (this.shouldDrawEncounterForCurrentSector(seatId)) {
+          this.applyAction(this.createEncounterDrawnAction(seatId));
+        } else {
+          this.applyAction({
+            type: "PHASE_ADVANCED",
+            seatId,
+            toPhase: "action",
+            createdAt: new Date().toISOString()
+          });
+        }
         progressMade = true;
         continue;
       }
@@ -4735,6 +4748,64 @@ export class GameRoomServer {
       revealEffect: revealEffect ? this.resolveEffect(revealEffect, seatId, card?.id) : null,
       createdAt: new Date().toISOString()
     };
+  }
+
+  private shouldDrawEncounterForCurrentSector(seatId: string): boolean {
+    const counts = this.getCurrentSectorExplorationDrawCounts(seatId);
+
+    if (!counts) {
+      return this.getCurrentSectorThreatDeck(seatId).length > 0;
+    }
+
+    return counts.red > 0 || counts.blue > 0 || counts.yellow > 0;
+  }
+
+  private getCurrentSectorExplorationDrawCounts(seatId: string): ExplorationDrawCounts | null {
+    const player = this.state.players.find((entry) => entry.seatId === seatId);
+
+    if (!player || player.character.status !== "active") {
+      return null;
+    }
+
+    const boardSpace = getBoardSpace(player.character.currentSpaceId);
+
+    if (!boardSpace) {
+      return null;
+    }
+
+    return calculateExplorationDraws(boardSpace, this.getCurrentSectorThreatCards(player));
+  }
+
+  private getCurrentSectorThreatCards(player: PlayerState): BoardThreatCard[] {
+    const encounter = this.state.currentEncounter;
+
+    if (!encounter || !this.isCurrentEncounterBlockingPlayerSector(player)) {
+      return [];
+    }
+
+    const category: BoardThreatCard["category"] = encounter.cardType === "enemy" ? "enemy" : "event";
+    const icons = encounter.threatLane ? [encounter.threatLane] : [];
+
+    return [{ id: encounter.id, category, icons }];
+  }
+
+  private getCurrentSectorThreatDeck(seatId: string): string[] {
+    const player = this.state.players.find((entry) => entry.seatId === seatId);
+    const sector = player ? this.state.sectors.find((entry) => entry.id === player.character.currentSpaceId) : null;
+
+    return sector?.encounterDecks.threat ?? [];
+  }
+
+  private isCurrentEncounterBlockingPlayerSector(player: PlayerState): boolean {
+    if (!this.state.currentEncounter) {
+      return false;
+    }
+
+    if (this.state.lastOutcomeSummary?.movedToSectorId) {
+      return this.state.lastOutcomeSummary.movedToSectorId === player.character.currentSpaceId;
+    }
+
+    return this.state.phase !== "broadcast";
   }
 
   private shouldTriggerHeatThreshold(seatId: string): boolean {
@@ -7014,18 +7085,22 @@ function buildPublicSectorExplorationSummary(state: GameState, seatId: string | 
     explanationLines.push("No unresolved threats on this sector.");
   }
 
-  (["red", "blue", "yellow"] as const).forEach((icon) => {
-    const due = event.exploration.drawCounts[icon];
+  if (unresolvedThreats.length > 0) {
+    explanationLines.push("No new draw: clear unresolved blockers first.");
+  } else {
+    (["red", "blue", "yellow"] as const).forEach((icon) => {
+      const due = event.exploration.drawCounts[icon];
 
-    if (due > 0) {
-      explanationLines.push(`Draw due: ${formatIconCount(due, icon)} threat${due === 1 ? "" : "s"}.`);
-      return;
-    }
+      if (due > 0) {
+        explanationLines.push(`Draw due: ${formatIconCount(due, icon)} threat${due === 1 ? "" : "s"}.`);
+        return;
+      }
 
-    if (event.printedThreatIcons.includes(icon) && lanesWithBlockers.has(icon)) {
-      explanationLines.push(`No draw: ${icon} lane already has an unresolved card.`);
-    }
-  });
+      if (event.printedThreatIcons.includes(icon) && lanesWithBlockers.has(icon)) {
+        explanationLines.push(`No draw: ${icon} lane already has an unresolved card.`);
+      }
+    });
+  }
 
   explanationLines.push(
     sectorTextLocked

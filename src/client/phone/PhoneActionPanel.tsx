@@ -946,6 +946,10 @@ function formatDrawDueText(summary: PublicSectorExplorationSummary | null | unde
     return "Draw due: unknown until sector scan.";
   }
 
+  if (summary.unresolvedThreats.length > 0) {
+    return "Draw due: blocked until threats clear.";
+  }
+
   const drawEntries = (["red", "blue", "yellow"] as const)
     .filter((icon) => summary.drawCountsDue[icon] > 0)
     .map((icon) => `${summary.drawCountsDue[icon]} ${icon}`);

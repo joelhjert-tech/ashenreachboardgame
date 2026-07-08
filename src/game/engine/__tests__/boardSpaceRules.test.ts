@@ -124,7 +124,7 @@ describe("board space data", () => {
 });
 
 describe("exploration and engagement rules", () => {
-  it("calculates draw counts from printed icons, card icons, and existing cards", () => {
+  it("calculates draw counts from printed icons, occupied lanes, and additional card pressure", () => {
     const space = getBoardSpace("ashwake-crossing");
 
     if (!space) {
@@ -147,7 +147,43 @@ describe("exploration and engagement rules", () => {
     expect(calculateExplorationDraws(space, cards)).toEqual({
       red: 0,
       blue: 0,
-      yellow: 2
+      yellow: 1
+    });
+  });
+
+  it("does not redraw a printed threat lane while a matching blocker remains", () => {
+    const space = getBoardSpace("ashwake-crossing");
+
+    if (!space) {
+      throw new Error("Missing board space fixture");
+    }
+
+    expect(
+      calculateExplorationDraws(space, [
+        {
+          id: "marrow-tax-auditors",
+          category: "enemy",
+          icons: ["yellow"]
+        }
+      ])
+    ).toEqual({
+      red: 0,
+      blue: 0,
+      yellow: 0
+    });
+  });
+
+  it("does not draw automatic threats for service spaces with no printed icons", () => {
+    const space = getBoardSpace("outer_ember_sanctum");
+
+    if (!space) {
+      throw new Error("Missing service board space fixture");
+    }
+
+    expect(calculateExplorationDraws(space, [])).toEqual({
+      red: 0,
+      blue: 0,
+      yellow: 0
     });
   });
 

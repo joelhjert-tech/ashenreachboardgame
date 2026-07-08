@@ -31,17 +31,17 @@ export function calculateExplorationDraws(
   }
 
   const printed = countIcons(space.threatIcons);
-  const cardIcons = countIcons(containedThreatCards.flatMap((card) => card.icons));
-  const existingCards = countIcons(
+  const existingSlotOccupants = countIcons(
     containedThreatCards.flatMap((card) => {
       const firstIcon = card.icons[0];
       return firstIcon ? [firstIcon] : [];
     })
   );
+  const additionalPressure = countIcons(containedThreatCards.flatMap((card) => card.icons.slice(1)));
 
   return {
-    red: Math.max(0, printed.red + cardIcons.red - existingCards.red),
-    blue: Math.max(0, printed.blue + cardIcons.blue - existingCards.blue),
-    yellow: Math.max(0, printed.yellow + cardIcons.yellow - existingCards.yellow)
+    red: Math.max(0, printed.red + additionalPressure.red - existingSlotOccupants.red),
+    blue: Math.max(0, printed.blue + additionalPressure.blue - existingSlotOccupants.blue),
+    yellow: Math.max(0, printed.yellow + additionalPressure.yellow - existingSlotOccupants.yellow)
   };
 }

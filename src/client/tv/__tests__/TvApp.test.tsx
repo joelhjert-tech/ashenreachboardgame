@@ -1031,7 +1031,7 @@ describe("TvApp", () => {
       explanationLines: [
         "Printed icons: 1 red, 1 yellow.",
         "Unresolved blockers: Chain-Maul Salvager.",
-        "Draw due: 1 yellow.",
+        "No new draw: clear unresolved blockers first.",
         "Sector text locked: Resolve Chain-Maul Salvager first."
       ]
     };
@@ -1052,7 +1052,7 @@ describe("TvApp", () => {
     expect(exploration).toHaveTextContent(/blockers/i);
     expect(exploration).toHaveTextContent(/chain-maul salvager/i);
     expect(exploration).toHaveTextContent(/draw/i);
-    expect(exploration).toHaveTextContent(/1 yellow/i);
+    expect(exploration).toHaveTextContent(/blocked until threats clear/i);
     expect(exploration).toHaveTextContent(/sector text locked/i);
     expect(JSON.stringify(patch.payload)).not.toContain("Private agenda");
   });

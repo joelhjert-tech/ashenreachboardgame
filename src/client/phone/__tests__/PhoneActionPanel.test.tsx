@@ -634,7 +634,7 @@ describe("PhoneActionPanel", () => {
     expect(screen.getByTestId("movement-current-tile-action")).toHaveTextContent(/action locked: clear marrow-tax auditors first/i);
     expect(screen.getByTestId("movement-current-tile-mission")).toHaveTextContent(/mission:/i);
     expect(screen.getByTestId("movement-current-tile-mission")).toHaveTextContent(/crossing thread/i);
-    expect(screen.getByTestId("movement-current-tile-facts")).toHaveTextContent(/draw due: 1 yellow/i);
+    expect(screen.getByTestId("movement-current-tile-facts")).toHaveTextContent(/draw due: blocked until threats clear/i);
     expect(screen.getByTestId("movement-current-tile-occupants")).toHaveTextContent(/mira \(mira\)/i);
     expect(screen.getByTestId("movement-current-tile-image")).toHaveAttribute("src", "/assets/map/tiles/map_tile_hollow_gate.png");
     expect(screen.getAllByText(/roll movement to reveal your legal destinations/i).length).toBeGreaterThan(0);

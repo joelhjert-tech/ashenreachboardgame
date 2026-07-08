@@ -454,7 +454,7 @@ describe("canonical sector graph", () => {
 
   it("projects public sector exploration math for TV and the owning phone", () => {
     const state = createInitialSessionState("session-alpha");
-    const threat = loadThreatCards().get("hook-runner") ?? loadThreatCards().values().next().value;
+    const threat = loadThreatCards().get("gate-tax-collectors") ?? loadThreatCards().values().next().value;
     state.status = "active";
     state.phase = "action";
     state.turnOrder = ["seat-1"];
@@ -489,8 +489,10 @@ describe("canonical sector graph", () => {
     expect(tvProjection.sectorExplorationSummary?.sectorName).toBe("Anchor Market");
     expect(tvProjection.sectorExplorationSummary?.unresolvedThreats[0]?.blocksSectorText).toBe(true);
     expect(tvProjection.sectorExplorationSummary?.sectorTextLocked).toBe(true);
-    expect(Object.values(tvProjection.sectorExplorationSummary?.drawCountsDue ?? {}).some((count) => count >= 0)).toBe(true);
-    expect(tvProjection.sectorExplorationSummary?.explanationLines.join(" ")).toMatch(/printed icons|unresolved blockers/i);
+    expect(tvProjection.sectorExplorationSummary?.drawCountsDue).toMatchObject({ red: 0, blue: 0, yellow: 0 });
+    expect(tvProjection.sectorExplorationSummary?.explanationLines.join(" ")).toMatch(
+      /printed icons|unresolved blockers|no new draw/i
+    );
     expect(phoneProjection.sectorExplorationSummary).toEqual(tvProjection.sectorExplorationSummary);
     expect(tvJson).not.toContain("Claim the Black Ledger");
   });

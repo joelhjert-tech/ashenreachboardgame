@@ -219,7 +219,11 @@ export function buildSectorExplorationCopy(summary: PublicSectorExplorationSumma
   const unresolvedText = summary.unresolvedThreats.length > 0
     ? `Unresolved blockers: ${summary.unresolvedThreats.map((threat) => threat.name).join(", ")}.`
     : "Unresolved blockers: none.";
-  const drawDueText = drawEntries.length > 0 ? `Draw due: ${drawEntries.join(", ")}.` : "Draw due: none.";
+  const drawDueText = summary.unresolvedThreats.length > 0
+    ? "Draw due: blocked until threats clear."
+    : drawEntries.length > 0
+      ? `Draw due: ${drawEntries.join(", ")}.`
+      : "Draw due: none.";
   const lockText = summary.lockedReason ?? (
     summary.sectorTextLocked || summary.shopLocked
       ? "Actions locked until unresolved threats are clear."

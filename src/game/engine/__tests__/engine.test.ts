@@ -1375,6 +1375,147 @@ describe("active resolution visibility state", () => {
     expect(tvProjection.shopEncounter?.services.some((service) => service.id === "buy-gear")).toBe(true);
   });
 
+  it("advances service sectors without printed icons without drawing an automatic threat", () => {
+    const baseState = createState({ sessionMode: "single-player" });
+    const server = new GameRoomServer(
+      createState({
+        sessionMode: "single-player",
+        turnOrder: ["seat-1"],
+        phase: "sector",
+        sectors: [
+          {
+            id: "outer_ember_sanctum",
+            name: "Pilgrim Lock Gate",
+            regionTier: "borderlight",
+            neighbors: [],
+            danger: 0,
+            encounterDecks: { threat: ["signal-static"], anomaly: [], contract: [], artifact: [], escalation: [] }
+          }
+        ],
+        seats: baseState.seats.map((seat) =>
+          seat.seatId === "seat-1"
+            ? {
+                ...seat,
+                characterId: "void-marshal",
+                displayName: "Solo",
+                connected: true
+              }
+            : seat
+        ),
+        players: baseState.players
+          .filter((player) => player.seatId === "seat-1")
+          .map((player) => ({
+            ...player,
+            sectorId: "outer_ember_sanctum",
+            character: {
+              ...player.character,
+              currentSpaceId: "outer_ember_sanctum",
+              status: "active" as const
+            }
+          }))
+      }),
+      [],
+      createSequenceRandomSource([]),
+      createThreats(),
+      createCharacters(),
+      createGear(),
+      createContracts()
+    );
+
+    (server as unknown as { runAutomaticPhases: (seatId: string) => void }).runAutomaticPhases("seat-1");
+
+    expect(server.getState().phase).toBe("action");
+    expect(server.getState().currentEncounter).toBeNull();
+    expect(server.getState().sectors.find((sector) => sector.id === "outer_ember_sanctum")?.encounterDecks.threat).toEqual([
+      "signal-static"
+    ]);
+  });
+
+  it("does not draw another threat while the printed lane has an unresolved blocker", () => {
+    const baseState = createState({ sessionMode: "single-player" });
+    const signalStatic = createThreats().get("signal-static");
+
+    if (!signalStatic) {
+      throw new Error("Missing signal-static fixture");
+    }
+
+    const blocker: ThreatCard = { ...signalStatic, threatLane: "yellow" };
+
+    const server = new GameRoomServer(
+      createState({
+        sessionMode: "single-player",
+        turnOrder: ["seat-1"],
+        phase: "sector",
+        currentEncounter: blocker,
+        sectors: [
+          {
+            id: "ashwake-crossing",
+            name: "Ashwalk Bridge",
+            regionTier: "borderlight",
+            neighbors: [],
+            danger: 1,
+            encounterDecks: { threat: ["signal-static"], anomaly: [], contract: [], artifact: [], escalation: [] }
+          }
+        ],
+        seats: baseState.seats.map((seat) =>
+          seat.seatId === "seat-1"
+            ? {
+                ...seat,
+                characterId: "void-marshal",
+                displayName: "Solo",
+                connected: true
+              }
+            : seat
+        ),
+        players: baseState.players
+          .filter((player) => player.seatId === "seat-1")
+          .map((player) => ({
+            ...player,
+            sectorId: "ashwake-crossing",
+            character: {
+              ...player.character,
+              currentSpaceId: "ashwake-crossing",
+              status: "active" as const
+            }
+          })),
+        lastOutcomeSummary: {
+          seatId: "seat-1",
+          movedToSectorId: "ashwake-crossing",
+          encounterCardId: blocker.id,
+          encounterTitle: blocker.title,
+          encounterCardType: blocker.cardType,
+          checkStat: blocker.stat,
+          die1: null,
+          die2: null,
+          statBonus: null,
+          checkTotal: null,
+          difficulty: blocker.difficulty,
+          enemyRollerSeatId: null,
+          enemyDie1: null,
+          enemyDie2: null,
+          enemyBonus: null,
+          enemyTotal: null,
+          success: null,
+          summary: "Gate-Tax Collectors block the bridge."
+        }
+      }),
+      [],
+      createSequenceRandomSource([]),
+      createThreats(),
+      createCharacters(),
+      createGear(),
+      createContracts()
+    );
+
+    (server as unknown as { runAutomaticPhases: (seatId: string) => void }).runAutomaticPhases("seat-1");
+
+    expect(server.getState().phase).toBe("action");
+    expect(server.getState().currentEncounter?.id).toBe("signal-static");
+    expect(server.getState().sectors.find((sector) => sector.id === "ashwake-crossing")?.encounterDecks.threat).toEqual([
+      "signal-static"
+    ]);
+  });
+
   it("resolves an open shop service as a real transaction", () => {
     const baseState = createState({ sessionMode: "single-player" });
     const server = new GameRoomServer(
