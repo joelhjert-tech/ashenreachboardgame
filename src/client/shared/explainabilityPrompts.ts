@@ -213,17 +213,25 @@ export function buildSectorExplorationCopy(summary: PublicSectorExplorationSumma
   const drawEntries = (["red", "blue", "yellow"] as const).flatMap((icon) => (
     summary.drawCountsDue[icon] > 0 ? [`${summary.drawCountsDue[icon]} ${icon}`] : []
   ));
+  const lanesWithBlockers = new Set(
+    summary.unresolvedThreats.flatMap((threat) => (
+      threat.lane === "red" || threat.lane === "blue" || threat.lane === "yellow" ? [threat.lane] : []
+    ))
+  );
+  const occupiedPrintedLanes = (["red", "blue", "yellow"] as const).filter(
+    (icon) => summary.printedThreatIcons.includes(icon) && lanesWithBlockers.has(icon)
+  );
   const printedIconsText = summary.printedThreatIcons.length > 0
     ? `Printed icons: ${formatThreatIconCounts(summary.printedThreatIcons)}.`
     : "Printed icons: none.";
   const unresolvedText = summary.unresolvedThreats.length > 0
     ? `Unresolved blockers: ${summary.unresolvedThreats.map((threat) => threat.name).join(", ")}.`
     : "Unresolved blockers: none.";
-  const drawDueText = summary.unresolvedThreats.length > 0
-    ? "Draw due: blocked until threats clear."
-    : drawEntries.length > 0
+  const drawDueText = drawEntries.length > 0
       ? `Draw due: ${drawEntries.join(", ")}.`
-      : "Draw due: none.";
+      : occupiedPrintedLanes.length > 0
+        ? `Draw due: none. Printed lane occupied: ${occupiedPrintedLanes.join(", ")}.`
+        : "Draw due: none.";
   const lockText = summary.lockedReason ?? (
     summary.sectorTextLocked || summary.shopLocked
       ? "Actions locked until unresolved threats are clear."

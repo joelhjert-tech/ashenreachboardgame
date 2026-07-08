@@ -413,6 +413,14 @@ function getFallbackLabel(name: string): string {
     .join("");
 }
 
+function formatPassiveGearBonus(item: GearItem): string {
+  const amount = item.statBonus.amount >= 0 ? `+${item.statBonus.amount}` : String(item.statBonus.amount);
+  const stat = statLabelById[item.statBonus.stat];
+  const battleScope = item.slot === "weapon" ? " in battle" : "";
+
+  return `${amount} ${stat}${battleScope}`;
+}
+
 function buildGearCard(item: GearItem, patch: PhonePatchPayload, self: PhoneSelfState): InventoryCardViewModel {
   const timingWindows = inferGearTimingWindows(item);
   const active = Boolean(item.activeText || item.useLimit);
@@ -432,12 +440,12 @@ function buildGearCard(item: GearItem, patch: PhonePatchPayload, self: PhoneSelf
     : isEquipped
       ? {
           status: "Passive" as const,
-          statusReason: "Equipped passive modifier is applied by the server when relevant.",
+          statusReason: `${formatPassiveGearBonus(item)}. Already applied by the server when relevant.`,
           canUseNow: false
         }
       : {
           status: "Ready but not usable now" as const,
-          statusReason: "Equip to apply this passive modifier.",
+          statusReason: `Equip to apply ${formatPassiveGearBonus(item)}.`,
           canUseNow: false
         };
   const remainingUses = useState?.remainingUses ?? item.charges ?? null;
@@ -448,7 +456,7 @@ function buildGearCard(item: GearItem, patch: PhonePatchPayload, self: PhoneSelf
     source: "gear",
     group: getGearGroup(item),
     name: item.name,
-    effectText: item.activeText ?? `Passive +${item.statBonus.amount} ${statLabelById[item.statBonus.stat]}.`,
+    effectText: item.activeText ?? `Passive ${formatPassiveGearBonus(item)}.`,
     timingText: timingWindows.length > 0 ? timingWindows.map(formatTimingWindow).join(", ") : "Passive",
     timingWindows,
     ...status,

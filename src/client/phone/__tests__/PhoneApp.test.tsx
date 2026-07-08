@@ -132,6 +132,9 @@ describe("PhoneApp", () => {
     window.sessionStorage.clear();
     window.history.replaceState(null, "", "/");
     vi.clearAllMocks();
+    networkMocks.fetchSessionSummary.mockReset();
+    networkMocks.joinSession.mockReset();
+    networkMocks.leaveSession.mockReset();
     networkMocks.fetchSessionSummary.mockResolvedValue({
       roomCode: "RT7P4",
       sessionMode: "single-player",
@@ -142,6 +145,14 @@ describe("PhoneApp", () => {
       seats: [],
       status: "lobby",
       phase: "setup"
+    });
+    vi.mocked(useRoomSubscription).mockReturnValue({
+      patch: null,
+      error: null,
+      sendIntent: vi.fn(),
+      status: "idle",
+      debugEvents: [],
+      clearDebugEvents: vi.fn()
     });
     setViewport(390, 844);
   });

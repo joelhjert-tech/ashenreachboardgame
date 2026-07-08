@@ -183,7 +183,7 @@ import { reduceGameState } from "../game/engine/reducer.js";
 import { CHALLENGE_LABELS } from "../game/ui/challengeTheme.js";
 import type { ActiveResolution, GameState, InteractionMode, NemesisChampion, PlayerState } from "../game/schema/session.schema.js";
 import { validateHostToken, validateJoinToken } from "./auth.js";
-import { getBoardSpace, type BoardTier } from "../game/data/boardSpaces.js";
+import { getBoardSpace, type BoardTier, type ThreatIcon } from "../game/data/boardSpaces.js";
 
 export const ESCALATION_FEEDERS = {
   woundTaken: 1,
@@ -2452,6 +2452,12 @@ export class GameRoomServer {
     const pool = cooledPool.length > 0 ? cooledPool : deck;
 
     return pool[this.randomSource.nextInt(pool.length)] ?? null;
+  }
+
+  private drawThreatIdWithSoftExileForLane(deck: string[], lane: ThreatIcon): string | null {
+    return this.drawThreatIdWithSoftExile(
+      deck.filter((cardId) => this.threats.get(cardId)?.threatLane === lane)
+    );
   }
 
   private getRecentEncounterCardIdsAfterDraw(cardId: string | null | undefined): string[] | undefined {
@@ -4735,7 +4741,10 @@ export class GameRoomServer {
     }
 
     const deck = sector.encounterDecks.threat;
-    const drawnThreatId = this.drawThreatIdWithSoftExile(deck);
+    const lane = this.getNextCurrentSectorThreatLane(seatId);
+    const drawnThreatId = lane
+      ? this.drawThreatIdWithSoftExileForLane(deck, lane)
+      : this.drawThreatIdWithSoftExile(deck);
     const card = drawnThreatId ? this.threats.get(drawnThreatId) ?? null : null;
     const revealEffectKey = card?.revealEffectKey ?? card?.effectKey;
     const revealEffect = card ? this.resolveThreatEffectKey(seatId, card, revealEffectKey, "onReveal")?.effect ?? null : null;
@@ -4758,6 +4767,24 @@ export class GameRoomServer {
     }
 
     return counts.red > 0 || counts.blue > 0 || counts.yellow > 0;
+  }
+
+  private getNextCurrentSectorThreatLane(seatId: string): ThreatIcon | null {
+    const player = this.state.players.find((entry) => entry.seatId === seatId);
+    const boardSpace = player ? getBoardSpace(player.character.currentSpaceId) : null;
+    const counts = this.getCurrentSectorExplorationDrawCounts(seatId);
+
+    if (!boardSpace || !counts) {
+      return null;
+    }
+
+    for (const lane of boardSpace.threatIcons) {
+      if (counts[lane] > 0) {
+        return lane;
+      }
+    }
+
+    return (["red", "blue", "yellow"] as const).find((lane) => counts[lane] > 0) ?? null;
   }
 
   private getCurrentSectorExplorationDrawCounts(seatId: string): ExplorationDrawCounts | null {
@@ -7085,21 +7112,26 @@ function buildPublicSectorExplorationSummary(state: GameState, seatId: string | 
     explanationLines.push("No unresolved threats on this sector.");
   }
 
-  if (unresolvedThreats.length > 0) {
-    explanationLines.push("No new draw: clear unresolved blockers first.");
-  } else {
-    (["red", "blue", "yellow"] as const).forEach((icon) => {
-      const due = event.exploration.drawCounts[icon];
+  (["red", "blue", "yellow"] as const).forEach((icon) => {
+    const due = event.exploration.drawCounts[icon];
 
-      if (due > 0) {
-        explanationLines.push(`Draw due: ${formatIconCount(due, icon)} threat${due === 1 ? "" : "s"}.`);
-        return;
-      }
+    if (due > 0) {
+      explanationLines.push(`Draw due: ${formatIconCount(due, icon)} threat${due === 1 ? "" : "s"}.`);
+      return;
+    }
 
-      if (event.printedThreatIcons.includes(icon) && lanesWithBlockers.has(icon)) {
-        explanationLines.push(`No draw: ${icon} lane already has an unresolved card.`);
-      }
-    });
+    if (event.printedThreatIcons.includes(icon) && lanesWithBlockers.has(icon)) {
+      explanationLines.push(`No draw: ${icon} lane already has an unresolved card.`);
+    }
+  });
+
+  if (
+    unresolvedThreats.length > 0 &&
+    event.exploration.drawCounts.red === 0 &&
+    event.exploration.drawCounts.blue === 0 &&
+    event.exploration.drawCounts.yellow === 0
+  ) {
+    explanationLines.push("Printed lane occupied: no new draw.");
   }
 
   explanationLines.push(

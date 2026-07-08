@@ -426,7 +426,7 @@ describe("PhoneInventoryPanel", () => {
 
     const armorCard = screen.getByLabelText(/coffin rig: ready but not usable now/i);
     expect(armorCard).toHaveAttribute("data-inventory-state", "inactive");
-    expect(armorCard).toHaveTextContent(/equip to apply this passive modifier/i);
+    expect(armorCard).toHaveTextContent(/equip to apply \+1 forge/i);
     expect(screen.queryByRole("button", { name: /use coffin rig/i })).not.toBeInTheDocument();
   });
 

@@ -1031,7 +1031,8 @@ describe("TvApp", () => {
       explanationLines: [
         "Printed icons: 1 red, 1 yellow.",
         "Unresolved blockers: Chain-Maul Salvager.",
-        "No new draw: clear unresolved blockers first.",
+        "No draw: red lane already has an unresolved card.",
+        "Draw due: 1 yellow threat.",
         "Sector text locked: Resolve Chain-Maul Salvager first."
       ]
     };
@@ -1052,8 +1053,9 @@ describe("TvApp", () => {
     expect(exploration).toHaveTextContent(/blockers/i);
     expect(exploration).toHaveTextContent(/chain-maul salvager/i);
     expect(exploration).toHaveTextContent(/draw/i);
-    expect(exploration).toHaveTextContent(/blocked until threats clear/i);
-    expect(exploration).toHaveTextContent(/sector text locked/i);
+    expect(exploration).toHaveTextContent(/draw 1 yellow/i);
+    expect(exploration).toHaveTextContent(/red lane already has an unresolved card/i);
+    expect(exploration).toHaveTextContent(/resolve chain-maul salvager first/i);
     expect(JSON.stringify(patch.payload)).not.toContain("Private agenda");
   });
 

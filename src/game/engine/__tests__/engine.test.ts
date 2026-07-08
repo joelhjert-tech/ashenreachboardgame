@@ -296,6 +296,7 @@ function createThreats(): Map<string, ThreatCard> {
         text: "A heat-shimmer shape slips between pylons, then breaks cover with a hooked furnace blade.",
         flavor: "You spot it only when the ash around it begins to boil.",
         severity: 2,
+        threatLane: "red",
         stat: "grit",
         difficulty: 6,
         trophyValue: 6,
@@ -320,6 +321,7 @@ function createThreats(): Map<string, ThreatCard> {
         text: "A scavenger courier lowers a long ash-pike and charges through the glare.",
         flavor: "The tip sings before the carrier does.",
         severity: 2,
+        threatLane: "yellow",
         stat: "grit",
         difficulty: 6,
         trophyValue: 6,
@@ -343,6 +345,7 @@ function createThreats(): Map<string, ThreatCard> {
         text: "A wash of fractured relay noise blurs every route marker in view.",
         flavor: "The air hisses like a torn wire bundle.",
         severity: 1,
+        threatLane: "yellow",
         stat: "signal",
         difficulty: 7,
         successEffect: {
@@ -365,6 +368,7 @@ function createThreats(): Map<string, ThreatCard> {
         text: "A half-born transmission skates across the rails and erases the true path beneath it.",
         flavor: "It sounds close enough to trust until the floor drops away.",
         severity: 1,
+        threatLane: "blue",
         stat: "signal",
         difficulty: 7,
         successEffect: {
@@ -1514,6 +1518,196 @@ describe("active resolution visibility state", () => {
     expect(server.getState().sectors.find((sector) => sector.id === "ashwake-crossing")?.encounterDecks.threat).toEqual([
       "signal-static"
     ]);
+  });
+
+  it("draws a threat from the printed yellow lane instead of the top generic threat", () => {
+    const baseState = createState({ sessionMode: "single-player" });
+    const server = new GameRoomServer(
+      createState({
+        sessionMode: "single-player",
+        turnOrder: ["seat-1"],
+        phase: "sector",
+        sectors: [
+          {
+            id: "ashwake-crossing",
+            name: "Ashwalk Bridge",
+            regionTier: "borderlight",
+            neighbors: [],
+            danger: 1,
+            encounterDecks: { threat: ["relay-whisper", "signal-static"], anomaly: [], contract: [], artifact: [], escalation: [] }
+          }
+        ],
+        seats: baseState.seats.map((seat) =>
+          seat.seatId === "seat-1"
+            ? {
+                ...seat,
+                characterId: "void-marshal",
+                displayName: "Solo",
+                connected: true
+              }
+            : seat
+        ),
+        players: baseState.players
+          .filter((player) => player.seatId === "seat-1")
+          .map((player) => ({
+            ...player,
+            sectorId: "ashwake-crossing",
+            character: {
+              ...player.character,
+              currentSpaceId: "ashwake-crossing",
+              status: "active" as const
+            }
+          }))
+      }),
+      [],
+      createSequenceRandomSource([0]),
+      createThreats(),
+      createCharacters(),
+      createGear(),
+      createContracts()
+    );
+
+    (server as unknown as { runAutomaticPhases: (seatId: string) => void }).runAutomaticPhases("seat-1");
+
+    expect(server.getState().currentEncounter?.id).toBe("signal-static");
+    expect(server.getState().sectors.find((sector) => sector.id === "ashwake-crossing")?.encounterDecks.threat).toEqual([
+      "relay-whisper"
+    ]);
+  });
+
+  it("draws a threat from the printed blue lane", () => {
+    const baseState = createState({ sessionMode: "single-player" });
+    const server = new GameRoomServer(
+      createState({
+        sessionMode: "single-player",
+        turnOrder: ["seat-1"],
+        phase: "sector",
+        sectors: [
+          {
+            id: "glassmere-spindle",
+            name: "Glass Signal Pier",
+            regionTier: "borderlight",
+            neighbors: [],
+            danger: 1,
+            encounterDecks: { threat: ["signal-static", "relay-whisper"], anomaly: [], contract: [], artifact: [], escalation: [] }
+          }
+        ],
+        seats: baseState.seats.map((seat) =>
+          seat.seatId === "seat-1"
+            ? {
+                ...seat,
+                characterId: "void-marshal",
+                displayName: "Solo",
+                connected: true
+              }
+            : seat
+        ),
+        players: baseState.players
+          .filter((player) => player.seatId === "seat-1")
+          .map((player) => ({
+            ...player,
+            sectorId: "glassmere-spindle",
+            character: {
+              ...player.character,
+              currentSpaceId: "glassmere-spindle",
+              status: "active" as const
+            }
+          }))
+      }),
+      [],
+      createSequenceRandomSource([0]),
+      createThreats(),
+      createCharacters(),
+      createGear(),
+      createContracts()
+    );
+
+    (server as unknown as { runAutomaticPhases: (seatId: string) => void }).runAutomaticPhases("seat-1");
+
+    expect(server.getState().currentEncounter?.id).toBe("relay-whisper");
+    expect(server.getState().sectors.find((sector) => sector.id === "glassmere-spindle")?.encounterDecks.threat).toEqual([
+      "signal-static"
+    ]);
+  });
+
+  it("lets a blocker in one printed lane leave another mixed lane due", () => {
+    const baseState = createState({ sessionMode: "single-player" });
+    const signalStatic = createThreats().get("signal-static");
+
+    if (!signalStatic) {
+      throw new Error("Missing signal-static fixture");
+    }
+
+    const server = new GameRoomServer(
+      createState({
+        sessionMode: "single-player",
+        turnOrder: ["seat-1"],
+        phase: "sector",
+        currentEncounter: signalStatic,
+        sectors: [
+          {
+            id: "mirecoil-beacon",
+            name: "Rusted Transit Gate",
+            regionTier: "borderlight",
+            neighbors: [],
+            danger: 2,
+            encounterDecks: { threat: ["relay-whisper"], anomaly: [], contract: [], artifact: [], escalation: [] }
+          }
+        ],
+        seats: baseState.seats.map((seat) =>
+          seat.seatId === "seat-1"
+            ? {
+                ...seat,
+                characterId: "void-marshal",
+                displayName: "Solo",
+                connected: true
+              }
+            : seat
+        ),
+        players: baseState.players
+          .filter((player) => player.seatId === "seat-1")
+          .map((player) => ({
+            ...player,
+            sectorId: "mirecoil-beacon",
+            character: {
+              ...player.character,
+              currentSpaceId: "mirecoil-beacon",
+              status: "active" as const
+            }
+          })),
+        lastOutcomeSummary: {
+          seatId: "seat-1",
+          movedToSectorId: "mirecoil-beacon",
+          encounterCardId: signalStatic.id,
+          encounterTitle: signalStatic.title,
+          encounterCardType: signalStatic.cardType,
+          checkStat: signalStatic.stat,
+          die1: null,
+          die2: null,
+          statBonus: null,
+          checkTotal: null,
+          difficulty: signalStatic.difficulty,
+          enemyRollerSeatId: null,
+          enemyDie1: null,
+          enemyDie2: null,
+          enemyBonus: null,
+          enemyTotal: null,
+          success: null,
+          summary: "Signal Static occupies the yellow lane."
+        }
+      }),
+      [],
+      createSequenceRandomSource([0]),
+      createThreats(),
+      createCharacters(),
+      createGear(),
+      createContracts()
+    );
+
+    (server as unknown as { runAutomaticPhases: (seatId: string) => void }).runAutomaticPhases("seat-1");
+
+    expect(server.getState().currentEncounter?.id).toBe("relay-whisper");
+    expect(server.getState().sectors.find((sector) => sector.id === "mirecoil-beacon")?.encounterDecks.threat).toEqual([]);
   });
 
   it("resolves an open shop service as a real transaction", () => {
