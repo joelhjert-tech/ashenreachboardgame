@@ -5878,17 +5878,20 @@ body {
 }
 
 .host-state-banner {
-  position: relative;
-  z-index: 4;
-  width: 100%;
-  min-height: 2.75rem;
-  padding: 0.48rem 0.76rem;
+  position: absolute;
+  top: clamp(5.25rem, 9svh, 7.2rem);
+  right: clamp(0.75rem, 1.05vw, 1.35rem);
+  z-index: 18;
+  width: min(42rem, 42vw);
+  min-height: 3.35rem;
+  padding: 0.72rem 0.95rem;
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto auto;
-  gap: 0.72rem;
+  gap: 0.9rem;
   align-items: center;
   pointer-events: none;
   border: 1px solid rgba(183, 144, 83, 0.42);
+  border-radius: 0.18rem;
   background:
     linear-gradient(90deg, rgba(8, 12, 18, 0.78), rgba(9, 13, 18, 0.54)),
     rgba(4, 6, 10, 0.54);
@@ -5899,8 +5902,8 @@ body {
 }
 
 .host-state-banner-pulse {
-  width: 0.72rem;
-  height: 0.72rem;
+  width: 0.96rem;
+  height: 0.96rem;
   border-radius: 999px;
   background: #d8b57a;
   box-shadow: 0 0 1rem rgba(216, 181, 122, 0.58);
@@ -5913,7 +5916,7 @@ body {
 }
 
 .host-state-banner-movement-dice {
-  min-width: 5.4rem;
+  min-width: 6.4rem;
   justify-self: end;
 }
 
@@ -5924,13 +5927,13 @@ body {
 }
 
 .host-state-banner-movement-dice .combat-dice-stage {
-  min-height: 3.6rem;
+  min-height: 4.25rem;
 }
 
 .host-state-banner span,
 .host-state-banner em {
   color: #d8b57a;
-  font-size: clamp(0.62rem, 0.58vw, 0.78rem);
+  font-size: clamp(0.83rem, 0.77vw, 1.04rem);
   font-style: normal;
   font-weight: 800;
   letter-spacing: 0.16em;
@@ -5940,7 +5943,7 @@ body {
 .host-state-banner strong {
   min-width: 0;
   color: #fff3d6;
-  font-size: clamp(0.82rem, 0.9vw, 1.06rem);
+  font-size: clamp(1.09rem, 1.2vw, 1.41rem);
   line-height: 1.12;
   white-space: nowrap;
   overflow: hidden;

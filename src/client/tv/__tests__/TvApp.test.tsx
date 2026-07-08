@@ -487,12 +487,16 @@ describe("TvApp", () => {
     expect(screen.queryByText(/global escalation/i)).not.toBeInTheDocument();
   });
 
-  it("keeps the host state banner in reserved layout space instead of absolutely overlaying the map", () => {
+  it("places the host state banner as a larger top-right overlay", () => {
     const styles = readFileSync("src/client/styles.css", "utf8");
     const bannerRule = styles.match(/\.host-state-banner\s*\{([^}]*)\}/)?.[1] ?? "";
+    const detailRule = styles.match(/\.host-state-banner strong\s*\{([^}]*)\}/)?.[1] ?? "";
 
-    expect(bannerRule).toMatch(/position:\s*relative/);
-    expect(bannerRule).not.toMatch(/position:\s*absolute/);
+    expect(bannerRule).toMatch(/position:\s*absolute/);
+    expect(bannerRule).toMatch(/top:\s*clamp/);
+    expect(bannerRule).toMatch(/right:\s*clamp/);
+    expect(bannerRule).toMatch(/width:\s*min\(42rem,\s*42vw\)/);
+    expect(detailRule).toMatch(/font-size:\s*clamp\(1\.09rem,\s*1\.2vw,\s*1\.41rem\)/);
     expect(bannerRule).not.toMatch(/transform:\s*translateX/);
   });
 
