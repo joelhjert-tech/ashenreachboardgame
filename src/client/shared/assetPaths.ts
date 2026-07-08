@@ -58,6 +58,11 @@ const uiAssetPaths = [
   "/assets/riftfall/ui/ui_card_frame_blue.png",
   "/assets/riftfall/ui/ui_card_frame_green.png",
   "/assets/riftfall/ui/ui_card_frame_yellow.png",
+  "/assets/riftfall/ui/shop-category-contract-broker.svg",
+  "/assets/riftfall/ui/shop-category-forge-armoury.svg",
+  "/assets/riftfall/ui/shop-category-market.svg",
+  "/assets/riftfall/ui/shop-category-medicae-shrine.svg",
+  "/assets/riftfall/ui/shop-category-relic-dealer.svg",
   "/assets/riftfall/ui/dice_roll_combat@2s.gif",
   "/assets/riftfall/ui/dice_roll_combat@2s.lottie.json"
 ];
@@ -80,6 +85,22 @@ export function getCardArtPath(cardType: CardImageType, cardId: string): string 
 
 export function getGearCardArtId(gearId: string): string {
   return gearId.startsWith("artifact-") ? gearId : `artifact-${gearId}`;
+}
+
+export function getShopCategoryIconPath(category: string | null | undefined): string {
+  switch (category) {
+    case "contract-broker":
+      return "/assets/riftfall/ui/shop-category-contract-broker.svg";
+    case "forge-armoury":
+      return "/assets/riftfall/ui/shop-category-forge-armoury.svg";
+    case "medicae-shrine":
+      return "/assets/riftfall/ui/shop-category-medicae-shrine.svg";
+    case "relic-dealer":
+      return "/assets/riftfall/ui/shop-category-relic-dealer.svg";
+    case "market":
+    default:
+      return "/assets/riftfall/ui/shop-category-market.svg";
+  }
 }
 
 export function getContractArtPath(contractId: string): string {

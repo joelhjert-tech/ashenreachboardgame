@@ -41,7 +41,7 @@ import { ChallengeBadge, ThreatIconBadge, getThreatIconStat, isStat } from "../s
 import { CombatDiceAnimation } from "../shared/CombatDiceAnimation.js";
 import { GameButton, type GameButtonTone } from "../shared/GameButton.js";
 import { CardArtImage } from "../shared/CardArtImage.js";
-import { getGearCardArtId } from "../shared/assetPaths.js";
+import { getGearCardArtId, getShopCategoryIconPath } from "../shared/assetPaths.js";
 import { statLabelById } from "../shared/statLabels.js";
 import { PhoneInventoryPanel } from "./PhoneInventoryPanel.js";
 import { PhoneWrappedMediaCard } from "./PhoneWrappedMediaCard.js";
@@ -231,6 +231,28 @@ function ShopItemMedia({ cardId, label }: { cardId: string; label: string }): Re
       alt=""
       aria-hidden="true"
       className="phone-wrap-card__image phone-shop-stock-card-art"
+      data-fallback-label={label}
+    />
+  );
+}
+
+function ShopCategoryIcon({
+  category,
+  label,
+  className = ""
+}: {
+  category: string | null | undefined;
+  label: string;
+  className?: string;
+}): ReactElement {
+  return (
+    <img
+      src={getShopCategoryIconPath(category)}
+      alt=""
+      aria-hidden="true"
+      className={`phone-shop-category-icon ${className}`.trim()}
+      data-testid="phone-shop-category-icon"
+      data-category={category ?? "market"}
       data-fallback-label={label}
     />
   );
@@ -1344,10 +1366,12 @@ function PhoneShopPanel({
   const blockedReasonText = shopEncounter.blockedReasonText ?? formatShopDisabledReason(shopEncounter.blockedReason);
   const categoryLabel = formatShopCategory(shopEncounter.stockCategory ?? shopEncounter.shopCategory);
   const shopTypeLabel = shopEncounter.shopType ? toTitleCase(shopEncounter.shopType) : "Shop Encounter";
-  const purchasedItemName = shopEncounter.recentOutcome?.gained;
-  const soldItemName = shopEncounter.recentOutcome?.sold;
+  const recentOutcome = shopEncounter.recentOutcome ?? null;
+  const purchasedItemName = recentOutcome?.gained;
+  const soldItemName = recentOutcome?.sold;
   const serviceActions = shopEncounter.services.filter((service) => service.id !== "sell-gear");
   const visibleShopDeltas = shopResultDeltas(resultDeltas);
+  const showRecentOutcome = Boolean(recentOutcome && (purchasedItemName || soldItemName || visibleShopDeltas.length > 0));
 
   function confirmPurchase(cardId: string): void {
     setPendingCardId(cardId);
@@ -1383,11 +1407,12 @@ function PhoneShopPanel({
   return (
     <section className={`phone-shop-panel phone-shop-panel-${shopEncounter.status}`} aria-label="Shop encounter" data-testid="phone-shop-panel">
       <div className="phone-shop-header">
+        <ShopCategoryIcon category={shopEncounter.stockCategory ?? shopEncounter.shopCategory} label={categoryLabel} className="phone-shop-header-icon" />
         <div>
           <span>{shopTypeLabel}</span>
           <strong>{shopEncounter.shopName}</strong>
           <small>
-            {categoryLabel} | {shopEncounter.sectorName}
+            {categoryLabel} · {shopEncounter.sectorName}
           </small>
         </div>
         <span className={`phone-shop-status phone-shop-status-${shopEncounter.status}`}>{shopEncounter.status.toUpperCase()}</span>
@@ -1398,7 +1423,7 @@ function PhoneShopPanel({
           ? blockedReasonText ?? "Shop blocked by threat."
             : shopEncounter.available === false
               ? "No shop available here."
-              : "Choose gear to buy or sell."}
+              : "Choose a market service, then review stock or sell gear."}
       </div>
 
       <div className="phone-shop-wallet" aria-label="Operative resources">
@@ -1408,13 +1433,6 @@ function PhoneShopPanel({
           Wounds {shopEncounter.activePlayer.wounds.current}/{shopEncounter.activePlayer.wounds.max}
         </span>
         <span>Trophies {shopEncounter.activePlayer.trophies ?? 0}</span>
-      </div>
-
-      <div className="phone-shop-skip">
-        <GameButton type="button" tone="secondary" className="phone-shop-skip-button" onClick={skipShop}>
-          Skip / Continue
-        </GameButton>
-        <small>{isLocked ? "Continue without trading and resolve the blocker." : "Leave the shop without buying or selling."}</small>
       </div>
 
       {isLocked ? (
@@ -1457,9 +1475,12 @@ function PhoneShopPanel({
                     }
                     sublabel={disabledReason ?? formatShopCost(service.cost)}
                   >
-                    <strong>{service.label}</strong>
-                    {service.shopCategory ? <span>{formatShopCategory(service.shopCategory)}</span> : null}
-                    {service.risk ? <small>{service.risk}</small> : null}
+                    <ShopCategoryIcon category={service.shopCategory ?? shopEncounter.stockCategory ?? shopEncounter.shopCategory} label={service.label} />
+                    <span className="phone-shop-service-card-copy">
+                      <strong>{service.label}</strong>
+                      {service.shopCategory ? <span>{formatShopCategory(service.shopCategory)}</span> : <span>{categoryLabel}</span>}
+                      {service.risk ? <small>{service.risk}</small> : null}
+                    </span>
                   </GameButton>
                 );
               })}
@@ -1469,7 +1490,7 @@ function PhoneShopPanel({
           <div className="phone-shop-stock" aria-label="Revealed shop stock">
             <div className="phone-shop-section-heading">
               <span>Stock</span>
-              <small>{revealedStock.length > 0 ? "Tap Buy to review the purchase before spending Salvage." : "No stock available."}</small>
+              <small>{revealedStock.length > 0 ? "Tap Buy to review the purchase before spending Salvage." : "Use a buy service to reveal market stock."}</small>
             </div>
             {revealedStock.length > 0 ? (
               <div className="phone-shop-stock-list">
@@ -1514,7 +1535,7 @@ function PhoneShopPanel({
           <div className="phone-shop-sell" aria-label="Sell held items">
             <div className="phone-shop-section-heading">
               <span>Sell</span>
-              <small>{sellInventory.length > 0 ? "Trade held gear for Salvage." : "No sellable items."}</small>
+              <small>{sellInventory.length > 0 ? "Trade held gear for Salvage." : "Only sellable carried gear appears here."}</small>
             </div>
             {sellInventory.length > 0 ? (
               <div className="phone-shop-stock-list">
@@ -1595,15 +1616,22 @@ function PhoneShopPanel({
         </>
       )}
 
-      {shopEncounter.recentOutcome ? (
+      <div className="phone-shop-skip">
+        <GameButton type="button" tone="secondary" className="phone-shop-skip-button" onClick={skipShop}>
+          Skip / Continue
+        </GameButton>
+        <small>{isLocked ? "Continue without trading and resolve the blocker." : "Leave the market without buying or selling."}</small>
+      </div>
+
+      {showRecentOutcome ? (
         <div className="phone-shop-outcome" role="status">
-          <span>{shopEncounter.recentOutcome.gained ? "Purchase Complete" : shopEncounter.recentOutcome.sold ? "Sale Complete" : "Market Result"}</span>
+          <span>{recentOutcome?.gained ? "Purchase Complete" : recentOutcome?.sold ? "Sale Complete" : "Market Result"}</span>
           <p>
-            {shopEncounter.recentOutcome.gained
-              ? `Purchased: ${shopEncounter.recentOutcome.gained}`
-              : shopEncounter.recentOutcome.sold
-                ? `Sold: ${shopEncounter.recentOutcome.sold}`
-              : shopEncounter.recentOutcome.summary}
+            {recentOutcome?.gained
+              ? `Purchased: ${recentOutcome.gained}`
+              : recentOutcome?.sold
+                ? `Sold: ${recentOutcome.sold}`
+              : recentOutcome?.summary}
           </p>
           <ResultDeltaRow deltas={visibleShopDeltas} className="phone-shop-deltas" />
         </div>

@@ -996,7 +996,9 @@ describe("PhoneActionPanel", () => {
     expect(screen.getByText(/forge market/i)).toBeInTheDocument();
     expect(screen.getAllByText(/forge armoury/i).length).toBeGreaterThan(0);
     expect(screen.getByText(/salvage: 6/i)).toBeInTheDocument();
-    expect(screen.getAllByText(/choose gear to buy/i).length).toBeGreaterThan(0);
+    expect(screen.getByText(/choose a market service/i)).toBeInTheDocument();
+    expect(screen.getAllByTestId("phone-shop-category-icon").length).toBeGreaterThanOrEqual(2);
+    expect(screen.getAllByTestId("phone-shop-category-icon")[0]).toHaveAttribute("src", "/assets/riftfall/ui/shop-category-forge-armoury.svg");
     expect(screen.getByRole("button", { name: /skip \/ continue/i })).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: /buy gear/i }));
     expect(onIntent).toHaveBeenCalledWith({
@@ -1406,8 +1408,11 @@ describe("PhoneActionPanel", () => {
       />
     );
 
-    expect(screen.getAllByText(/no stock available/i).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/no sellable items/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/no stock available/i)).toHaveLength(1);
+    expect(screen.getAllByText(/no sellable items/i)).toHaveLength(1);
+    expect(screen.getByText(/use a buy service to reveal market stock/i)).toBeInTheDocument();
+    expect(screen.getByText(/only sellable carried gear appears here/i)).toBeInTheDocument();
+    expect(screen.getByTestId("phone-shop-category-icon")).toHaveAttribute("src", "/assets/riftfall/ui/shop-category-market.svg");
     expect(screen.getByText(/purchased: ashlock carbine/i)).toBeInTheDocument();
     expect(screen.getAllByText(/Item bought: Ashlock Carbine/i).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/-3 Salvage/i).length).toBeGreaterThan(0);
