@@ -7,7 +7,7 @@
     "stat": "signal",
     "amount": 1
   },
-  "activeText": "Spend 1 charge to reduce anomaly instability by 1 or lose 1 heat after a signal check.",
+  "activeText": "Spend 1 charge to reduce anomaly instability by 1 or steady one scar trigger after a Signal check.",
   "useLimit": "charge",
   "charges": 2,
   "flavor": "It sings only when the air is already wrong.",

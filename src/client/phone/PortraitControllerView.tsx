@@ -270,6 +270,10 @@ function describeContractReward(contract: ContractCard): string {
   }
 
   if ("type" in reward && typeof reward.type === "string") {
+    if (reward.type === "lose_heat") {
+      return "Scar relief";
+    }
+
     return reward.type
       .replace(/_/g, " ")
       .replace(/([a-z])([A-Z])/g, "$1 $2")
@@ -795,9 +799,8 @@ export function PortraitControllerView({
   ]
     .filter(Boolean)
     .join(" ");
-  const compactStatusDetail = self.character.scars.length > 0
-    ? `${self.character.scars.length} scar${self.character.scars.length === 1 ? "" : "s"}`
-    : `${self.character.heat} heat`;
+  const scarCount = self.character.scars.length;
+  const compactStatusDetail = `${scarCount} scar${scarCount === 1 ? "" : "s"}`;
   const scarCards = self.character.scarCards ?? [];
   const afflictions = self.character.afflictions ?? { faceup: [], facedownCount: 0 };
 
@@ -822,7 +825,7 @@ export function PortraitControllerView({
               <div className="phone-portrait-header-vitals" aria-label="Character vitals">
                 <span>Health</span>
                 <strong>{self.character.wounds} wounds</strong>
-                <small>{self.character.heat} heat</small>
+                <small>{scarCount} scar{scarCount === 1 ? "" : "s"}</small>
               </div>
               <div className="phone-portrait-header-actions">
                 <button
@@ -885,8 +888,8 @@ export function PortraitControllerView({
               <section className="phone-portrait-section">
                 <div className="phone-sheet-section-heading">Vitals</div>
                 <div className="phone-portrait-vitals" aria-label="Character vitals">
-                  <span>Heat {self.character.heat}</span>
                   <span>Wounds {self.character.wounds}</span>
+                  <span>Scars {scarCount}</span>
                   <span>Gear {self.character.heldGear.length}</span>
                   <span>Status {self.character.status}</span>
                 </div>

@@ -199,7 +199,7 @@ describe("MobilePlayerCard", () => {
                 title: "Ash-Lanced",
                 text: "A furnace-raked wound that never fully seals.",
                 trigger: "Your first failed Grit test each session.",
-                penalty: "Gain 1 Heat after the failure resolves.",
+                penalty: "Gain 1 scar after the failure resolves.",
                 relief: "At a surgery or shrine space, spend 1 trophy after a passed Forge check to suppress this scar."
               }
             ]

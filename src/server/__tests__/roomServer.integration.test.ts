@@ -1961,7 +1961,7 @@ describe("roomServer websocket integration", () => {
       .getState()
       .players.find((player) => player.seatId === "seat-1");
     expect(postCheckSeatOne?.character.status).toBe("active");
-    expect(postCheckSeatOne?.character.heat).toBe(1);
+    expect(postCheckSeatOne?.character.heat).toBe(0);
 
     await requestMovementRoll(phone2, tv, "seat-2", 1);
     marker = tv.mark();
@@ -2098,7 +2098,6 @@ describe("roomServer websocket integration", () => {
     expect(seat2State?.character.equippedGear.weapon).toBe("veil-hook");
     expect(seat2State?.character.heldGear.some((item) => item.id === "veil-hook")).toBe(true);
     expect(seat3State?.character.activeContract).toBeNull();
-    expect(seat3State?.character.heat).toBe(0);
     expect(tv.messages.every((message) => !isStatePatch(message) || !Object.hasOwn(message.payload, "self"))).toBe(true);
   }, 15000);
 

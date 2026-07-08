@@ -225,7 +225,7 @@ function getGearActionDetail(item: GearItem, useState?: PhoneObjectUseState | nu
 function formatShopCost(cost: PublicShopCost): string {
   const parts = [
     cost.salvage ? `${cost.salvage} Salvage` : null,
-    cost.heat ? `${cost.heat} Heat` : null,
+    cost.heat ? `${cost.heat} Risk` : null,
     cost.wounds ? `${cost.wounds} Wound${cost.wounds === 1 ? "" : "s"}` : null,
     cost.trophies ? `${cost.trophies} Trophies` : null,
     cost.completedContracts ? `${cost.completedContracts} Contract${cost.completedContracts === 1 ? "" : "s"}` : null,
@@ -1130,7 +1130,7 @@ function buildDestinationSummary(destination: PublicMoveDestination): string {
   }
 
   if (destination.shop) {
-    return destination.shop.status === "dangerous" ? "Risk shop. Services may add Heat." : "Shop services available if the sector stays clear.";
+    return destination.shop.status === "dangerous" ? "Risk shop. Services may add scars or wounds." : "Shop services available if the sector stays clear.";
   }
 
   if (destination.threatIcons.length > 0) {
@@ -1295,15 +1295,15 @@ function TurnActionDock({
 }
 
 function shopResultDeltas(deltas: ResultDelta[] | null | undefined): ResultDelta[] {
-  const shopTypes = new Set<ResultDelta["type"]>(["itemBought", "itemSold", "salvage", "heat", "wound", "shopUnlocked"]);
+  const shopTypes = new Set<ResultDelta["type"]>(["itemBought", "itemSold", "salvage", "wound", "scarGained", "shopUnlocked"]);
 
-  return (deltas ?? []).filter((delta) => delta.source?.startsWith("shop:") || shopTypes.has(delta.type));
+  return (deltas ?? []).filter((delta) => delta.type !== "heat" && (delta.source?.startsWith("shop:") || shopTypes.has(delta.type)));
 }
 
 function battleResultDeltas(deltas: ResultDelta[] | null | undefined): ResultDelta[] {
   const battleTypes = new Set<ResultDelta["type"]>([
     "wound",
-    "heat",
+    "scarGained",
     "trophy",
     "threatDefeated",
     "threatRemains",
@@ -1380,11 +1380,13 @@ function actionResultDeltas(deltas: ResultDelta[] | null | undefined): ResultDel
 function PhoneShopPanel({
   shopEncounter,
   resultDeltas,
+  scarCount,
   seatId,
   onIntent
 }: {
   shopEncounter: PublicShopEncounterState | null | undefined;
   resultDeltas?: ResultDelta[] | null;
+  scarCount: number;
   seatId: string;
   onIntent: (intent: ClientIntent) => void;
 }): ReactElement | null {
@@ -1499,7 +1501,7 @@ function PhoneShopPanel({
 
       <div className="phone-shop-wallet" aria-label="Operative resources">
         <span>Salvage: {shopEncounter.activePlayer.salvage}</span>
-        <span>Heat {shopEncounter.activePlayer.heat}</span>
+        <span>Scars {scarCount}</span>
         <span>
           Wounds {shopEncounter.activePlayer.wounds.current}/{shopEncounter.activePlayer.wounds.max}
         </span>
@@ -2285,6 +2287,7 @@ function PhoneBattlePanel({
 function PhoneShopCommandPanel({
   shopEncounter,
   resultDeltas,
+  scarCount,
   seatId,
   onIntent,
   usefulNow,
@@ -2293,6 +2296,7 @@ function PhoneShopCommandPanel({
 }: {
   shopEncounter: PublicShopEncounterState | null | undefined;
   resultDeltas: ResultDelta[];
+  scarCount: number;
   seatId: string;
   onIntent: (intent: ClientIntent) => void;
   usefulNow: UsefulNowViewModel | null;
@@ -2301,7 +2305,7 @@ function PhoneShopCommandPanel({
 }): ReactElement {
   return (
     <section className="phone-action-active-panel phone-shop-command-panel phone-shop-panel" data-testid="phone-action-active-panel" aria-label="Shop command screen">
-      <PhoneShopPanel shopEncounter={shopEncounter} resultDeltas={resultDeltas} seatId={seatId} onIntent={onIntent} />
+      <PhoneShopPanel shopEncounter={shopEncounter} resultDeltas={resultDeltas} scarCount={scarCount} seatId={seatId} onIntent={onIntent} />
       {!shopEncounter && (
         <EmptyTurnTab title={emptyTitle} text={emptyText} />
       )}
@@ -3097,6 +3101,7 @@ export function PhoneActionPanel({
       <PhoneShopCommandPanel
         shopEncounter={shopEncounter}
         resultDeltas={currentDeltas}
+        scarCount={self.character.scars.length}
         seatId={self.seatId}
         onIntent={onIntent}
         usefulNow={activeUsefulNow}

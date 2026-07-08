@@ -7,7 +7,7 @@
     "stat": "forge",
     "amount": 1
   },
-  "activeText": "Discard to heal 1 wound, then gain 1 heat.",
+  "activeText": "Discard to heal 1 wound, then record the treatment as unstable.",
   "useLimit": "discard",
   "flavor": "A useful medical error in a sealed brass case.",
   "tier": "starter",

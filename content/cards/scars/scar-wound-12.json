@@ -4,7 +4,7 @@
   "title": "Relay Ghost",
   "text": "A dead station keeps routing distress calls through your bones.",
   "flavor": "Every message arrives addressed to a name you almost remember.",
-  "trigger": "At the start of your turn while you have 3 or more Heat.",
+  "trigger": "At the start of your turn while you have 3 or more Scars.",
   "penalty": "Gain a relay note, then advance escalation by 1 if you ignore it this round.",
   "effect": {
     "type": "gain_note",

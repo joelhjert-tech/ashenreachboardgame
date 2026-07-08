@@ -1022,7 +1022,7 @@ describe("PhoneActionPanel", () => {
                 id: "risk-action",
                 label: "Risk Action",
                 cost: { heat: 1 },
-                risk: "+1 Heat",
+                risk: "+1 Risk",
                 enabled: true
               }
             ],
@@ -2291,7 +2291,7 @@ describe("PhoneActionPanel", () => {
             outcome: {
               title: "Check failed",
               text: "Failure: the signal collapses.",
-              effects: ["Failure: gain 1 Heat."]
+              effects: ["Failure: lasting harm is handled by Scars."]
             }
           }
         })}
@@ -2392,7 +2392,7 @@ describe("PhoneActionPanel", () => {
             enemyBonus: null,
             enemyTotal: null,
             success: false,
-            summary: "Failed to enter Red March Outpost. Failure: gain 1 Heat."
+            summary: "Failed to enter Red March Outpost. Failure: lasting harm is handled by Scars."
           }
         })}
       />
@@ -2577,7 +2577,7 @@ describe("PhoneActionPanel", () => {
         slot: "weapon" as const,
         category: "active" as const,
         statBonus: { stat: "grit" as const, amount: 1 },
-        activeText: "Gain 1 heat to bank +2 Grit before the battle roll.",
+        activeText: "Mark the roll unstable to bank +2 Grit before the battle roll.",
         useLimit: "oncePerTurn" as const
       }
     ];

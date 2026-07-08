@@ -197,7 +197,6 @@ function getOpponentCardType(resolution: ActiveResolution | null): ResolutionSid
 function battleResultDeltas(deltas: ResultDelta[] | null | undefined): ResultDelta[] {
   const battleTypes = new Set<ResultDelta["type"]>([
     "wound",
-    "heat",
     "trophy",
     "threatDefeated",
     "threatRemains",

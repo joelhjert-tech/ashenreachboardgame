@@ -24,7 +24,6 @@ describe("HostPlayerCard", () => {
         portraitUrl="/assets/riftfall/characters/void-marshal.png"
         locationName="Ashwake Crossing"
         fieldStatus="Field status stable"
-        heat={1}
         wounds={0}
         scars={0}
         attributes={{ cmd: 3, grit: 2, signal: 1, guile: 2, forge: 1 }}

@@ -37,7 +37,7 @@ export interface BoardTextValidationResult {
 export const BOARD_TEXT_EFFECTS: Record<string, BoardTextEffectDefinition> = {
   outer_emberSanctumRest: {
     effectKey: "outer_emberSanctumRest",
-    summary: "Recovered 1 wound and cooled 1 Heat at Ember Sanctum.",
+    summary: "Recovered 1 wound and stabilized lingering scar pressure at Ember Sanctum.",
     effect: {
       type: "sequence",
       effects: [
@@ -148,7 +148,7 @@ export const BOARD_TEXT_EFFECTS: Record<string, BoardTextEffectDefinition> = {
         { type: "gain_note", text: "Waymarket favor banked for trade, aid, or a safer route." }
       ]
     },
-    failureSummary: "The Waymarket deal soured and every stall seemed to know your Heat tally.",
+    failureSummary: "The Waymarket deal soured and every stall seemed to know your scar tally.",
     failureEffect: {
       type: "gain_heat",
       amount: 1
@@ -187,7 +187,7 @@ export const BOARD_TEXT_EFFECTS: Record<string, BoardTextEffectDefinition> = {
       type: "sequence",
       effects: [
         { type: "lose_heat", amount: 1 },
-        { type: "gain_note", text: "Void-salt vial: useful for heat treatment or gate bargaining." }
+        { type: "gain_note", text: "Void-salt vial: useful for scar treatment or gate bargaining." }
       ]
     },
     failureSummary: "The salt bloom bit through the gloves and left a white nerve-mark under the skin.",
@@ -201,7 +201,7 @@ export const BOARD_TEXT_EFFECTS: Record<string, BoardTextEffectDefinition> = {
   },
   outer_surgeryTreatment: {
     effectKey: "outer_surgeryTreatment",
-    summary: "Accepted rough cinder surgery and walked away patched but warmer.",
+    summary: "Accepted rough cinder surgery and walked away patched but marked.",
     stat: "forge",
     difficulty: 7,
     effect: {
@@ -231,7 +231,7 @@ export const BOARD_TEXT_EFFECTS: Record<string, BoardTextEffectDefinition> = {
       type: "gain_note",
       text: "Faction writ: can be cashed for bounded rivalry, aid, or a contract lead."
     },
-    failureSummary: "The Oathpost refused your claim and marked the attempt as unpaid Heat.",
+    failureSummary: "The Oathpost refused your claim and marked the attempt as unpaid scar debt.",
     failureEffect: {
       type: "gain_heat",
       amount: 1
@@ -598,7 +598,7 @@ export const BOARD_TEXT_EFFECTS: Record<string, BoardTextEffectDefinition> = {
           type: "gain_note",
           text: "Cinder lattice ember pulse traced into a stable core approach."
         },
-        failureSummary: "The ember trace slipped its rhythm and the lattice answered with rising heat.",
+        failureSummary: "The ember trace slipped its rhythm and the lattice answered with rising scar pressure.",
         failureEffect: {
           type: "gain_heat",
           amount: 1
@@ -659,7 +659,7 @@ export const BOARD_TEXT_EFFECTS: Record<string, BoardTextEffectDefinition> = {
             { type: "gain_note", text: "Gate of Cinders relay pulse timed cleanly for the core breach." }
           ]
         },
-        failureSummary: "The relay timing slipped and the gate answered with a surge of static heat.",
+        failureSummary: "The relay timing slipped and the gate answered with a surge of static scar pressure.",
         failureEffect: {
           type: "gain_heat",
           amount: 1

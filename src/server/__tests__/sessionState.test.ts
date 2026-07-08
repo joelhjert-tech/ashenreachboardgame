@@ -853,7 +853,7 @@ describe("canonical sector graph", () => {
     const expectations: Record<string, string[]> = {
       scenario_broken_seal: ["Seal Tokens", "Turn Pressure", "Collapses", "Restoration"],
       scenario_throne_of_ash: ["Crown Claims", "Crown Holders", "Active Crowns"],
-      scenario_mirror_of_false_heroes: ["Mirror Breaks", "Heat Proxy", "Reflection Feed"],
+      scenario_mirror_of_false_heroes: ["Mirror Breaks", "Scar Pressure", "Reflection Feed"],
       scenario_devourer_beneath: ["Doom Tokens", "Devourer", "Collapse Pulse"],
       scenario_labyrinth_engine: ["Engine Mode", "Rotation", "Shutdown"],
       scenario_dying_star: ["Starfire", "Wound Burn", "Ignition"]

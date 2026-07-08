@@ -23,7 +23,6 @@ export interface HostPlayerCardProps {
   portraitUrl: string | null;
   locationName: string;
   fieldStatus: string;
-  heat: number | null;
   wounds: number | null;
   scars: number | null;
   attributes: HostPlayerCardAttributes;
@@ -67,7 +66,6 @@ export function HostPlayerCard({
   portraitUrl,
   locationName,
   fieldStatus,
-  heat,
   wounds,
   scars,
   attributes,
@@ -135,7 +133,6 @@ export function HostPlayerCard({
 
         <div className="host-player-card-midline">
           <div className="host-player-card-vitals">
-            <span className="host-player-card-chip host-player-card-chip-vital">Heat {renderValue(heat)}</span>
             <span className="host-player-card-chip host-player-card-chip-vital">Wounds {renderValue(wounds)}</span>
             <span className="host-player-card-chip host-player-card-chip-vital">Scars {renderValue(scars)}</span>
           </div>

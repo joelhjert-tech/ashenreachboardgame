@@ -109,8 +109,8 @@ export const RIVALRY_AGENDAS: RivalryAgendaDefinition[] = [
   },
   {
     id: "stay-clean",
-    title: "Leave No Heat Trail",
-    summary: "Advance your agenda while keeping your own heat low.",
+    title: "Leave No Scar Trail",
+    summary: "Advance your agenda while avoiding lasting marks.",
     progressLabel: "Clean operations",
     target: 2,
     stakes: "Reveal when blame starts moving around the table.",

@@ -165,8 +165,8 @@ export const ashenReachCharacters: CharacterDefinition[] = [
     title: "Rift Warden",
     affiliation: "Wardens of the Last Seal",
     loreRole: "An oathbound breach knight stationed where the inner gate begins to scream.",
-    gameplayRole: "Heat-resistant heavy fighter.",
-    linkedMechanic: "Heat suppression and hostile-jump movement.",
+    gameplayRole: "Scar-resistant heavy fighter.",
+    linkedMechanic: "Scar suppression and hostile-jump movement.",
     startingSpaceId: "middle_guardian_span",
     startingStats: { strength: 4, willpower: 3, cunning: 2, life: 5 },
     assetLimit: 7,
@@ -176,7 +176,7 @@ export const ashenReachCharacters: CharacterDefinition[] = [
     abilities: [
       {
         timing: "passive",
-        text: "Your inactive Heat marks never trigger scar pressure."
+        text: "Your inactive Scar marks never trigger extra scar pressure."
       },
       {
         timing: "instead_of_movement",
@@ -198,8 +198,8 @@ export const ashenReachCharacters: CharacterDefinition[] = [
     title: "Saint-Bound Preacher",
     affiliation: "Sanctuary of the Last Saint",
     loreRole: "A survivor-priest who keeps the sanctuary lit while the sector tears itself open.",
-    gameplayRole: "Heat control and contract progress support.",
-    linkedMechanic: "Heat cleansing and contract completion support.",
+    gameplayRole: "Scar control and contract progress support.",
+    linkedMechanic: "Scar cleansing and contract completion support.",
     startingSpaceId: "outer_ember_sanctum",
     startingStats: { strength: 2, willpower: 4, cunning: 2, life: 4 },
     assetLimit: 8,
@@ -209,7 +209,7 @@ export const ashenReachCharacters: CharacterDefinition[] = [
     abilities: [
       {
         timing: "passive",
-        text: "Your inactive Heat marks never trigger scar pressure."
+        text: "Your inactive Scar marks never trigger extra scar pressure."
       },
       {
         timing: "acquire_asset",
@@ -217,7 +217,7 @@ export const ashenReachCharacters: CharacterDefinition[] = [
       },
       {
         timing: "experience_phase",
-        text: "You may clear 1 Heat from another character in your space. If you do, gain 1 completed contract mark."
+        text: "You may soothe 1 Scar effect on another character in your space for this turn. If you do, gain 1 completed contract mark."
       }
     ],
     imagePrompt:

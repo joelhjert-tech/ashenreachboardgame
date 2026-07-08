@@ -7,7 +7,7 @@
     "stat": "forge",
     "amount": 1
   },
-  "activeText": "Discard before recall to heal 1 wound and lose 1 Heat.",
+  "activeText": "Discard before recall to heal 1 wound and steady one scar trigger.",
   "useLimit": "discard",
   "flavor": "Blessed wire remembers the shape of a body before it broke.",
   "tier": "starter",

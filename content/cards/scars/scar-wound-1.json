@@ -5,11 +5,11 @@
   "text": "A furnace-raked wound that never fully seals.",
   "flavor": "The skin shines like coal glass under hard light.",
   "trigger": "Your first failed grit test each session.",
-  "penalty": "Gain 1 Heat after the failure resolves.",
+  "penalty": "Gain a route note about what hurt you after the failure resolves.",
   "effect": {
-    "type": "gain_heat",
-    "amount": 1
+    "type": "gain_note",
+    "text": "Ash-Lanced scar recorded the source of the failed grit test."
   },
   "relief": "At a surgery or shrine space, spend 1 trophy after a passed forge check to suppress this scar until the next collapse.",
-  "upside": "After this scar adds Heat, gain a route note about what hurt you."
+  "upside": "After this scar records the hit, gain a route note about what hurt you."
 }

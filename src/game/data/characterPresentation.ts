@@ -29,7 +29,7 @@ export const characterPresentationById: Record<string, CharacterPresentation> = 
   char_bjornis: {
     role: "Bruiser",
     complexity: "standard",
-    playstyleSummary: "Wins fights and forges pressure into progress, but draws heat when overextended.",
+    playstyleSummary: "Wins fights and forges pressure into progress, but risks lasting scars when overextended.",
     recommendedForFirstGame: true,
     strengths: ["Grit battles", "Forge rewards", "Threat removal"],
     weaknesses: ["Weak Signal", "Limited subtlety"],
@@ -95,12 +95,12 @@ export const characterPresentationById: Record<string, CharacterPresentation> = 
   "cinder-monk": {
     role: "Support",
     complexity: "standard",
-    playstyleSummary: "Stabilizes heat and supports the table through controlled risk.",
+    playstyleSummary: "Stabilizes scars and supports the table through controlled risk.",
     recommendedForFirstGame: true,
-    strengths: ["Heat control", "Grit resilience", "Signal support"],
+    strengths: ["Scar control", "Grit resilience", "Signal support"],
     weaknesses: ["Lower Guile", "Needs table awareness"],
     usefulStats: ["grit", "signal"],
-    signatureItemSummary: "Heat-Sink Prayer: stabilizes pressure before it spikes.",
+    signatureItemSummary: "Scar-Sink Prayer: stabilizes pressure before it leaves a mark.",
     startingContractSummary: "Shrine confession: rewards cleansing and recovery."
   },
   "fleet-elder": {

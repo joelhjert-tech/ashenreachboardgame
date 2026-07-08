@@ -93,7 +93,7 @@ function formatContractRewardSummary(contract: ContractCard): string {
     case "gain_trophy":
       return `Reward: ${(reward as { amount?: number }).amount ?? 1} trophy`;
     case "lose_heat":
-      return `Reward: clear ${(reward as { amount?: number }).amount ?? 1} Heat`;
+      return "Reward: scar relief";
     case "heal_wound":
       return `Reward: heal ${(reward as { amount?: number }).amount ?? 1} wound`;
     case "gain_note":
@@ -677,7 +677,6 @@ function ActiveOperativeOverlay({
         }
         locationName={getActiveSectorLabel(patch, activePlayer)}
         fieldStatus={activePlayer?.character.status === "recalled" ? "Field status recalled" : "Field status stable"}
-        heat={activePlayer?.character.heat ?? null}
         wounds={activePlayer?.character.wounds ?? null}
         scars={activePlayer?.character.scars.length ?? null}
         attributes={{
@@ -815,7 +814,7 @@ function OperativesRail({ patch, characterCatalog, activeSeatId, sessionMode, ba
                   <>
                     <div className="tv-operative-stats" aria-label={`${characterName} vitals`}>
                       <span>W {player.character.wounds ?? 0}</span>
-                      <span>H {player.character.heat ?? 0}</span>
+                      <span>S {player.character.scars.length ?? 0}</span>
                       <span>T {player.character.trophies ?? 0}</span>
                     </div>
                     <div className="tv-operative-challenge-stats" aria-label={`${characterName} challenge stats`}>
@@ -832,7 +831,7 @@ function OperativesRail({ patch, characterCatalog, activeSeatId, sessionMode, ba
       </div>
       <div className="tv-operatives-legend" aria-label="Operative stat legend">
         <span>Wounds</span>
-        <span>Heat</span>
+        <span>Scars</span>
         <span>Trophies</span>
       </div>
     </aside>
@@ -1980,7 +1979,7 @@ function EndgameOverlay({ patch }: { patch: StatePatch<PublicPatchPayload> | nul
   });
   const topTrophies = [...patch.payload.players].sort((left, right) => right.character.trophies - left.character.trophies)[0] ?? null;
   const topWounds = [...patch.payload.players].sort((left, right) => right.character.wounds - left.character.wounds)[0] ?? null;
-  const topHeat = [...patch.payload.players].sort((left, right) => right.character.heat - left.character.heat)[0] ?? null;
+  const topScars = [...patch.payload.players].sort((left, right) => right.character.scars.length - left.character.scars.length)[0] ?? null;
   const finalOutcome = patch.payload.outcomeSummary?.summary ?? "No final roll was recorded.";
   const escalationCopy = `${patch.payload.escalationLevel}/${patch.payload.escalationThreshold}`;
 
@@ -2005,8 +2004,8 @@ function EndgameOverlay({ patch }: { patch: StatePatch<PublicPatchPayload> | nul
           <strong>{topWounds ? `${seatLabelById[topWounds.seatId]} | ${topWounds.character.wounds}` : "None"}</strong>
         </article>
         <article>
-          <span>Most heat carried</span>
-          <strong>{topHeat ? `${seatLabelById[topHeat.seatId]} | ${topHeat.character.heat}` : "None"}</strong>
+          <span>Most scars carried</span>
+          <strong>{topScars ? `${seatLabelById[topScars.seatId]} | ${topScars.character.scars.length}` : "None"}</strong>
         </article>
         <article>
           <span>Closest collapse</span>

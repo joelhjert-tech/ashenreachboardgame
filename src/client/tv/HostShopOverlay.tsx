@@ -53,7 +53,7 @@ function toTitleCase(value: string): string {
 function formatCost(cost: PublicShopCost): string {
   const entries = [
     cost.salvage !== undefined ? `${cost.salvage} Salvage` : null,
-    cost.heat !== undefined ? `+${cost.heat} Heat` : null,
+    cost.heat !== undefined ? `${cost.heat} Risk` : null,
     cost.wounds !== undefined ? `${cost.wounds} Wound${cost.wounds === 1 ? "" : "s"}` : null,
     cost.trophies !== undefined ? `${cost.trophies} Trophies` : null,
     cost.completedContracts !== undefined ? `${cost.completedContracts} Contracts` : null,
@@ -149,9 +149,9 @@ function buildShopType(shopEncounter: PublicShopEncounterState): string {
 }
 
 function shopResultDeltas(deltas: ResultDelta[] | null | undefined): ResultDelta[] {
-  const shopTypes = new Set<ResultDelta["type"]>(["itemBought", "itemSold", "salvage", "heat", "wound", "shopUnlocked"]);
+  const shopTypes = new Set<ResultDelta["type"]>(["itemBought", "itemSold", "salvage", "wound", "scarGained", "shopUnlocked"]);
 
-  return (deltas ?? []).filter((delta) => delta.source?.startsWith("shop:") || shopTypes.has(delta.type));
+  return (deltas ?? []).filter((delta) => delta.type !== "heat" && (delta.source?.startsWith("shop:") || shopTypes.has(delta.type)));
 }
 
 function buildFromPayload(shopEncounter: PublicShopEncounterState, resultDeltas: ResultDelta[]): HostShopDisplayModel {

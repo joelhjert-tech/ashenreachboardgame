@@ -1475,10 +1475,6 @@ export class GameRoomServer {
       throw new IntentRejectedError("USE_GEAR", `Affliction blocks armor use: ${item.name} cannot help now.`);
     }
 
-    if ((item.heatCost ?? 0) > player.character.heat) {
-      throw new IntentRejectedError("USE_GEAR", `${item.name} needs ${item.heatCost} heat.`);
-    }
-
     if (item.linkedFollowerRole && !(player.character.followers ?? []).some((follower) => follower.role === item.linkedFollowerRole)) {
       throw new IntentRejectedError("USE_GEAR", `${item.name} needs a ${item.linkedFollowerRole} follower.`);
     }
@@ -1522,9 +1518,8 @@ export class GameRoomServer {
     const chaosRoll = this.randomSource.nextInt(6) + 1;
 
     if (chaosRoll === 1) {
-      effects.push({ type: "gain_heat", amount: 1 });
-      effects.push({ type: "gain_note", text: "Too Many Dogs: chaos roll 1. The flock triggered a Heat spike instead of a softlock." });
-      summary = `${summary} Too Many Dogs triggered: gain 1 Heat.`;
+      effects.push({ type: "gain_note", text: "Too Many Dogs: chaos roll 1. The flock barked the route into a scar-safe warning instead of a softlock." });
+      summary = `${summary} Too Many Dogs triggered: the flock raised a warning without adding persistent harm.`;
     } else {
       effects.push({ type: "gain_note", text: `Too Many Dogs: chaos roll ${chaosRoll}. The flock behaved, mostly.` });
     }
@@ -1571,15 +1566,15 @@ export class GameRoomServer {
       case "blackstar-ampoule":
         return { type: "gain_note", text: "Blackstar Ampoule spent: one failed movement or hazard penalty may be ignored." };
       case "choir-static-censer":
-        return { type: "lose_heat", amount: 1 };
+        return { type: "gain_note", text: "Choir Static Censer spent: legacy pressure relief is deprecated; Scars remain the persistent harm track." };
       case "heat-sink-prayer":
-        return { type: "lose_heat", amount: 2 };
+        return { type: "gain_note", text: "Scar-Sink Prayer steadied the operative; legacy pressure relief is deprecated." };
       case "cinder-suture-kit":
         return {
           type: "sequence",
           effects: [
             { type: "heal_wound", amount: 1 },
-            { type: "gain_heat", amount: 1 }
+            { type: "gain_note", text: "Cinder Suture Kit sealed the wound without creating a second persistent harm track." }
           ]
         };
       case "last-breath-rivet":
@@ -1595,14 +1590,14 @@ export class GameRoomServer {
           type: "sequence",
           effects: [
             { type: "heal_wound", amount: 1 },
-            { type: "lose_heat", amount: 1 }
+            { type: "gain_note", text: "Saintwire Splint steadied the body; legacy pressure relief is deprecated." }
           ]
         };
       case "mirror-reroll-token":
         return {
           type: "sequence",
           effects: [
-            { type: "gain_heat", amount: 1 },
+            { type: "gain_note", text: "Mirror Reroll Token risk recorded without adding persistent harm." },
             { type: "gain_note", text: "Mirror Reroll Token spent: reroll a failed guile or signal check and keep the new fate." }
           ]
         };
@@ -1620,7 +1615,7 @@ export class GameRoomServer {
         return {
           type: "sequence",
           effects: [
-            { type: "gain_heat", amount: 1 },
+            { type: "gain_note", text: "Red March Warbell risk recorded without adding persistent harm." },
             { type: "gain_note", text: "Red March Warbell sounded: +2 Grit before the battle roll is banked for this fight." }
           ]
         };
@@ -1672,12 +1667,12 @@ export class GameRoomServer {
           type: "sequence",
           effects: [
             { type: "heal_wound", amount: 1 },
-            { type: "gain_heat", amount: 1 }
+            { type: "gain_note", text: `${follower.name} treated the wound without adding persistent harm.` }
           ]
         };
       case "ritualist":
       case "informant":
-        return { type: "lose_heat", amount: 1 };
+        return { type: "gain_note", text: `${follower.name} steadied the operative; legacy pressure relief is deprecated.` };
       case "gunner":
         return { type: "gain_note", text: `${follower.name} is covering the next combat exchange.` };
       case "guide":
@@ -1703,8 +1698,8 @@ export class GameRoomServer {
           targetSeatId: intent.targetSeatId,
           interactionKind: intent.interactionKind,
           effect: { type: "gain_note", text: `${actorName} aided ${targetName}.` },
-          targetEffect: { type: "lose_heat", amount: 1 },
-          summary: `${actorName} aided ${targetName}; the target loses 1 Heat.`,
+          targetEffect: { type: "gain_note", text: `${targetName} was steadied by table aid.` },
+          summary: `${actorName} aided ${targetName}; the target records a steadier position.`,
           createdAt
         } satisfies TableInteractionAction;
       case "duel":
@@ -1714,8 +1709,8 @@ export class GameRoomServer {
           targetSeatId: intent.targetSeatId,
           interactionKind: intent.interactionKind,
           effect: { type: "gain_note", text: `${actorName} challenged ${targetName} to a bounded duel.` },
-          targetEffect: { type: "gain_heat", amount: 1 },
-          summary: `${actorName} challenged ${targetName}; bounded rivalry marks the target with 1 Heat.`,
+          targetEffect: { type: "gain_note", text: `${targetName} was marked by bounded rivalry pressure.` },
+          summary: `${actorName} challenged ${targetName}; bounded rivalry pressure was recorded.`,
           createdAt
         } satisfies TableInteractionAction;
       case "interfere":
@@ -1724,9 +1719,9 @@ export class GameRoomServer {
           seatId: intent.seatId,
           targetSeatId: intent.targetSeatId,
           interactionKind: intent.interactionKind,
-          effect: { type: "gain_heat", amount: 1 },
-          targetEffect: { type: "gain_heat", amount: 1 },
-          summary: `${actorName} interfered with ${targetName}; both operatives gain 1 Heat.`,
+          effect: { type: "gain_note", text: `${actorName} interfered and drew public attention.` },
+          targetEffect: { type: "gain_note", text: `${targetName} was caught in the interference.` },
+          summary: `${actorName} interfered with ${targetName}; both operatives record public pressure.`,
           createdAt
         } satisfies TableInteractionAction;
       case "trade":
@@ -1851,7 +1846,7 @@ export class GameRoomServer {
             heatDelta: -1,
             note: `${shopName}: shrine boon held in reserve.`
           },
-          summary: `${actorName} used ${shopName}. Bought a boon and cooled 1 Heat.`
+          summary: `${actorName} used ${shopName}. Bought a boon and recorded steady footing.`
         };
       case "risk-action": {
         const stockCategory = getShopStockCategoryForService(boardSpace, service.id);
@@ -2556,9 +2551,9 @@ export class GameRoomServer {
           ? null
           : "Final gate locked: hold 1 Crown or complete 2 Contracts.";
       case "scenario_mirror_of_false_heroes":
-        return hasArtifact || completedContracts >= 2 || player.character.heat === 0
+        return hasArtifact || completedContracts >= 2 || player.character.scars.length === 0
           ? null
-          : "Final gate locked: hold an Artifact, complete 2 Contracts, or clear Heat to 0.";
+          : "Final gate locked: hold an Artifact, complete 2 Contracts, or carry no Scars.";
       case "scenario_devourer_beneath":
         return player.character.trophies >= devourerTrophyGate || hasArtifact || this.hasScenarioGear(player, "maw-spike")
           ? null
@@ -2819,7 +2814,7 @@ export class GameRoomServer {
       this.applyAbilityMutation(
         seatId,
         "marshal-presence",
-        "Marshal's Presence steadied the line and bled off 1 Heat.",
+        "Marshal's Presence steadied the line and reduced public pressure.",
         (entry) => ({
           ...entry,
           private: {
@@ -4494,20 +4489,6 @@ export class GameRoomServer {
         continue;
       }
 
-      if (this.state.phase === "resolution" && this.shouldTriggerHeatThreshold(seatId)) {
-        const player = this.state.players.find((entry) => entry.seatId === seatId);
-
-        this.applyAction({
-          type: "HEAT_THRESHOLD_REACHED",
-          seatId,
-          threshold: this.state.heatThreshold,
-          newHeatTotal: player?.character.heat ?? 0,
-          createdAt: new Date().toISOString()
-        });
-        progressMade = true;
-        continue;
-      }
-
       if (this.state.phase === "resolution" && this.shouldTriggerWoundThreshold(seatId)) {
         const player = this.state.players.find((entry) => entry.seatId === seatId);
 
@@ -4836,15 +4817,8 @@ export class GameRoomServer {
   }
 
   private shouldTriggerHeatThreshold(seatId: string): boolean {
-    const player = this.state.players.find((entry) => entry.seatId === seatId);
-
-    return (
-      this.state.phase === "resolution" &&
-      this.state.status === "active" &&
-      !this.state.pendingEffect &&
-      player?.character.status === "active" &&
-      player.character.heat >= this.state.heatThreshold
-    );
+    void seatId;
+    return false;
   }
 
   private shouldTriggerWoundThreshold(seatId: string): boolean {
@@ -4882,16 +4856,6 @@ export class GameRoomServer {
       return;
     }
 
-    if (player.character.status === "active" && player.character.heat >= this.state.heatThreshold) {
-      this.applyAction({
-        type: "HEAT_THRESHOLD_REACHED",
-        seatId,
-        threshold: this.state.heatThreshold,
-        newHeatTotal: player.character.heat,
-        createdAt: new Date().toISOString()
-      });
-    }
-
     const refreshedPlayer = this.state.players.find((entry) => entry.seatId === seatId);
 
     if (
@@ -4915,7 +4879,7 @@ export class GameRoomServer {
     const equippedGearCount = this.countEquippedGear(player);
     const salvageLeverage = Math.min(3, heldGearCount + equippedGearCount);
     const crownProxy = Math.min(3, this.getThroneCrownCount(player.seatId));
-    const mirrorPressure = player.character.heat;
+    const mirrorPressure = player.character.scars.length;
     const engineModeIndex = this.getScenarioCounter("engineModeIndex", 0) % 3;
     const scenario = getScenarioDefinition(this.state.activeScenarioId);
     const nemesis = this.getActiveNemesis();
@@ -5207,7 +5171,7 @@ export class GameRoomServer {
       statBonus,
       total,
       success,
-      effect: success ? null : this.resolveEffect({ type: "gain_heat", amount: 1 }, intent.seatId),
+      effect: success ? null : this.resolveEffect({ type: "gain_note", text: "Failed route entry: lasting harm is handled by Scars." }, intent.seatId),
       createdAt: new Date().toISOString()
     } satisfies MovementResolvedAction);
     this.applyScenarioOnSkillResolved(intent.seatId, "guile", success);
@@ -5394,11 +5358,13 @@ export class GameRoomServer {
       throw new Error(`Unknown active scenario ${this.state.activeScenarioId}`);
     }
 
-    if (scenario.id === "scenario_mirror_of_false_heroes" && player.character.heat >= this.state.heatThreshold) {
+    const mirrorPressure = this.state.scenarioProgress.mirrorPressure ?? player.character.scars.length;
+
+    if (scenario.id === "scenario_mirror_of_false_heroes" && mirrorPressure >= this.state.heatThreshold) {
       this.applyAmbientScenarioMutation(
         intent.seatId,
         (state) => state,
-        `${player.character.name} cannot face the mirror while reflection pressure sits at ${player.character.heat}/${this.state.heatThreshold}. The confrontation ends immediately.`
+        `${player.character.name} cannot face the mirror while reflection pressure sits at ${mirrorPressure}/${this.state.heatThreshold}. The confrontation ends immediately.`
       );
       this.applyAction({
         type: "PHASE_ADVANCED",
@@ -5464,18 +5430,18 @@ export class GameRoomServer {
         break;
       case "scenario_mirror_of_false_heroes":
         if (failedChecks > 0) {
-          effectParts.push({ type: "gain_heat", amount: failedChecks });
+          effectParts.push({ type: "gain_note", text: `Mirror backlash raised reflection pressure by ${failedChecks}.` });
         }
         break;
       case "scenario_devourer_beneath":
         if (failedChecks > 0) {
           effectParts.push({ type: "take_wound", amount: 1 });
-          effectParts.push({ type: "gain_heat", amount: 1 });
+          effectParts.push({ type: "gain_note", text: "Devourer backlash left a scar-safe corruption note instead of deprecated pressure." });
         }
         break;
       case "scenario_labyrinth_engine":
         if (failedChecks > 0) {
-          effectParts.push({ type: "gain_heat", amount: failedChecks });
+          effectParts.push({ type: "gain_note", text: `Engine backlash raised instability by ${failedChecks}.` });
         }
         break;
       case "scenario_dying_star":
@@ -7390,7 +7356,7 @@ function buildPublicShopServices(state: GameState, player: PlayerState): PublicS
         label: "Risk Action",
         shopCategory: getShopStockCategoryForService(boardSpace, "risk-action") ?? undefined,
         cost: { heat: 1 },
-        risk: "+1 Heat"
+        risk: "Risk"
       })
     );
   }
@@ -7457,7 +7423,7 @@ function buildPublicShopEncounter(state: GameState, visiblePlayers: PlayerState[
       name: activePlayer.character.name,
       characterName: activePlayer.character.name,
       salvage,
-      heat: activePlayer.character.heat,
+      heat: 0,
       wounds: {
         current: activePlayer.character.wounds,
         max: state.woundThreshold
@@ -7580,22 +7546,6 @@ function getShopResultDeltas(shopEncounter: Record<string, unknown> | null): Res
     }));
   }
 
-  if (recentOutcome.heatDelta) {
-    deltas.push(createResultDelta({
-      type: "heat",
-      label: "Heat",
-      value: Math.abs(recentOutcome.heatDelta),
-      sign: recentOutcome.heatDelta >= 0 ? "gain" : "loss",
-      targetScope: "personal",
-      targetSeatId: seatId,
-      visibility: "public",
-      source,
-      reason: "Shop service",
-      publicText: `${recentOutcome.operativeName ?? "Operative"} ${recentOutcome.heatDelta >= 0 ? "gained" : "cleared"} ${Math.abs(recentOutcome.heatDelta)} Heat.`,
-      severity: recentOutcome.heatDelta >= 0 ? "danger" : "reward"
-    }));
-  }
-
   if (recentOutcome.woundDelta) {
     deltas.push(createResultDelta({
       type: "wound",
@@ -7617,46 +7567,10 @@ function getShopResultDeltas(shopEncounter: Record<string, unknown> | null): Res
 
 function parseResolutionEffectDelta(effect: string, seatId: string | null): ResultDelta | null {
   const lower = effect.toLowerCase();
-  const gainHeat = lower.match(/gain (\d+) heat/);
-  const loseHeat = lower.match(/lose (\d+) heat|clear(?:ed)? (\d+) heat/);
   const wound = lower.match(/take (\d+) wound/);
   const heal = lower.match(/heal (\d+) wound/);
   const trophy = lower.match(/\+(\d+) trophies?|gain (\d+) trophies?/);
   const scar = lower.match(/gain scar ([\w-]+)/);
-
-  if (gainHeat) {
-    const amount = Number(gainHeat[1]);
-    return createResultDelta({
-      type: "heat",
-      label: "Heat",
-      value: amount,
-      sign: "gain",
-      targetScope: "personal",
-      targetSeatId: seatId,
-      visibility: "public",
-      source: "resolution-effect",
-      reason: effect,
-      publicText: effect,
-      severity: "danger"
-    });
-  }
-
-  if (loseHeat) {
-    const amount = Number(loseHeat[1] ?? loseHeat[2]);
-    return createResultDelta({
-      type: "heat",
-      label: "Heat",
-      value: amount,
-      sign: "loss",
-      targetScope: "personal",
-      targetSeatId: seatId,
-      visibility: "public",
-      source: "resolution-effect",
-      reason: effect,
-      publicText: effect,
-      severity: "reward"
-    });
-  }
 
   if (wound) {
     const amount = Number(wound[1]);
@@ -8461,7 +8375,7 @@ export function createTvProjection(state: GameState): Record<string, unknown> {
         trophies: player.character.trophies,
         trophyPile: player.character.trophyPile ?? [],
         salvage: player.character.salvage ?? 0,
-        heat: player.character.heat,
+        heat: 0,
         wounds: player.character.wounds,
         scars: player.character.scars,
         afflictions: summarizeAfflictions(player, getAfflictionCatalog(state)),

@@ -4,7 +4,7 @@
   "cardType": "enemy",
   "title": "Gate-Tax Collectors",
   "enemyName": "Gate-Tax Collectors",
-  "text": "Uniformed gate collectors demand your route writ, your heat tally, and one impossible fee.",
+  "text": "Uniformed gate collectors demand your route writ, your scar tally, and one impossible fee.",
   "flavor": "They call extortion civic maintenance.",
   "severity": 2,
   "stat": "command",

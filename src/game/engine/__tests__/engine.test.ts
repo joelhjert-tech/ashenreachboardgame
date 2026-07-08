@@ -1106,8 +1106,8 @@ describe("active resolution visibility state", () => {
           },
           outcome: {
             title: "Movement failed",
-            text: "Failed to enter Glassmere Spindle. Failure: gain 1 Heat.",
-            effects: ["Failure: gain 1 Heat."]
+            text: "Failed to enter Glassmere Spindle. Failure: legacy pressure.",
+            effects: ["Failure: legacy pressure."]
           }
         },
         pendingEffect: { type: "gain_heat", amount: 1 },
@@ -1129,7 +1129,7 @@ describe("active resolution visibility state", () => {
           enemyBonus: null,
           enemyTotal: null,
           success: false,
-          summary: "Failed to enter Glassmere Spindle. Failure: gain 1 Heat."
+          summary: "Failed to enter Glassmere Spindle. Failure: legacy pressure."
         }
       }),
       [],
@@ -1173,7 +1173,7 @@ describe("active resolution visibility state", () => {
           enemyBonus: null,
           enemyTotal: null,
           success: false,
-          summary: "Failed to enter Glassmere Spindle. Failure: gain 1 Heat."
+          summary: "Failed to enter Glassmere Spindle. Failure: legacy pressure."
         }
       }),
       [],
@@ -1912,7 +1912,7 @@ describe("active resolution visibility state", () => {
 
     expect(blessed.sent.find((message) => message.type === "INTENT_REJECTED")).toBeUndefined();
     expect(blessed.server.getState().players[0]?.character.salvage).toBe(2);
-    expect(blessed.server.getState().players[0]?.character.heat).toBe(1);
+    expect(blessed.server.getState().players[0]?.character.heat).toBe(2);
 
     const unaffordableService = createShopServer({ sectorId: "kettleward-foundry", salvage: 0 });
     unaffordableService.server.handleIntent(unaffordableService.client, {
@@ -2396,7 +2396,7 @@ describe("active objects and table interaction", () => {
 
     const player = server.getState().players.find((entry) => entry.seatId === "seat-1");
     expect(player?.character.wounds).toBe(0);
-    expect(player?.character.heat).toBe(1);
+    expect(player?.character.heat).toBe(0);
     expect(player?.character.heldGear).toHaveLength(0);
     expect(server.getState().lastOutcomeSummary?.summary).toContain("Cinder Suture Kit used");
   });
@@ -2433,7 +2433,7 @@ describe("active objects and table interaction", () => {
                     slot: "utility",
                     category: "active",
                     statBonus: { stat: "grit", amount: 1 },
-                    activeText: "Gain 1 heat to bank +2 Grit before the battle roll.",
+                    activeText: "Bank +2 Grit before the battle roll.",
                     useLimit: "oncePerTurn"
                   }
                 ],
@@ -2466,7 +2466,7 @@ describe("active objects and table interaction", () => {
     });
 
     const player = server.getState().players.find((entry) => entry.seatId === "seat-1");
-    expect(player?.character.heat).toBe(1);
+    expect(player?.character.heat).toBe(0);
     expect(server.getState().activeResolution?.battle?.modifiers).toContainEqual({ label: "Red March Warbell", value: 2 });
     expect(sent.some((message) => message.type === "INTENT_REJECTED" && String(message.reason).includes("already been used this turn"))).toBe(true);
 
@@ -2509,7 +2509,7 @@ describe("active objects and table interaction", () => {
                     slot: "utility",
                     category: "active",
                     statBonus: { stat: "grit", amount: 1 },
-                    activeText: "Gain 1 heat to bank +2 Grit before the battle roll.",
+                    activeText: "Bank +2 Grit before the battle roll.",
                     useLimit: "oncePerTurn"
                   }
                 ],
@@ -2550,7 +2550,7 @@ describe("active objects and table interaction", () => {
                     slot: "utility",
                     category: "chargedRelic",
                     statBonus: { stat: "signal", amount: 1 },
-                    activeText: "Spend 1 charge to lose 1 heat.",
+                    activeText: "Spend 1 charge to steady your scar tremor.",
                     useLimit: "charge",
                     charges: 1
                   }
@@ -2582,7 +2582,7 @@ describe("active objects and table interaction", () => {
       playerResultDeltas?: Array<{ type: string; privateText?: string }>;
     };
     const censerUseState = phoneProjection.objectUseStates?.find((entry) => entry.source === "gear" && entry.id === "choir-static-censer");
-    expect(player?.character.heat).toBe(1);
+    expect(player?.character.heat).toBe(2);
     expect(censer?.charges).toBe(0);
     expect(censerUseState).toMatchObject({
       remainingUses: 0,
@@ -2627,7 +2627,7 @@ describe("active objects and table interaction", () => {
     });
 
     const player = server.getState().players.find((entry) => entry.seatId === "seat-1");
-    expect(player?.character.heat).toBe(1);
+    expect(player?.character.heat).toBe(2);
     expect(player?.character.followers).toHaveLength(1);
     expect(server.getState().lastOutcomeSummary?.summary).toContain("Crownless Advocate used");
   });
@@ -2896,7 +2896,7 @@ describe("active objects and table interaction", () => {
     expect(player?.private.notes.join(" ")).toContain("Fandiablos Unreasonable Courage rolled 4");
   });
 
-  it("triggers Too Many Dogs safely as Heat on a chaos roll of 1", () => {
+  it("triggers Too Many Dogs safely as a legacy pressure no-op on a chaos roll of 1", () => {
     const fandiablos = createFandiablos();
     const state = createState({
       players: createState().players.map((player) =>
@@ -2920,7 +2920,7 @@ describe("active objects and table interaction", () => {
     });
 
     const player = server.getState().players.find((entry) => entry.seatId === "seat-1");
-    expect(player?.character.heat).toBe(1);
+    expect(player?.character.heat).toBe(0);
     expect(server.getState().lastOutcomeSummary?.summary).toContain("Too Many Dogs");
   });
 
@@ -3055,8 +3055,8 @@ describe("threat effect keys", () => {
     (server as any).runAutomaticPhases("seat-1");
 
     expect(server.getState().currentEncounter?.id).toBe("keyed-rats");
-    expect(server.getState().players.find((entry) => entry.seatId === "seat-1")?.character.heat).toBe(1);
-    expect(server.getState().lastOutcomeSummary?.summary).toContain("gain 1 Heat");
+    expect(server.getState().players.find((entry) => entry.seatId === "seat-1")?.character.heat).toBe(0);
+    expect(server.getState().lastOutcomeSummary?.summary).toContain("Legacy pressure");
   });
 
   it("applies table-wide and escalation reveal effect keys", () => {
@@ -3118,8 +3118,8 @@ describe("threat effect keys", () => {
 
     (heatedServer as any).runAutomaticPhases("seat-1");
 
-    expect(heatedServer.getState().players.every((entry) => entry.character.heat === 1)).toBe(true);
-    expect(heatedServer.getState().lastOutcomeSummary?.summary).toContain("all operatives gain 1 Heat");
+    expect(heatedServer.getState().players.every((entry) => entry.character.heat === 0)).toBe(true);
+    expect(heatedServer.getState().lastOutcomeSummary?.summary).toContain("Legacy pressure");
 
     const escalatedThreats = createThreats();
     escalatedThreats.set("keyed-bell", {
@@ -3203,7 +3203,7 @@ describe("threat effect keys", () => {
     });
 
     const player = server.getState().players.find((entry) => entry.seatId === "seat-1");
-    expect(player?.character.heat).toBe(1);
+    expect(player?.character.heat).toBe(0);
     expect(player?.character.wounds).toBe(1);
   });
 });
@@ -3357,7 +3357,7 @@ describe("movement rolls", () => {
     expect(result.ok ? result.state.movementRolls?.["seat-1"] : null).toBeUndefined();
   });
 
-  it("succeeds against a low-danger node without changing Heat", () => {
+  it("succeeds against a low-danger node without changing legacy heat", () => {
     const baseState = createState({ phase: "navigation" });
     const server = new GameRoomServer(
       createState({
@@ -3400,7 +3400,7 @@ describe("movement rolls", () => {
     expect(summary?.die2).toBe(1);
   });
 
-  it("leaves the operative in place on a failed roll and applies Heat", () => {
+  it("leaves the operative in place on a failed roll without applying legacy heat", () => {
     const baseState = createState({ phase: "navigation" });
     const server = new GameRoomServer(
       createState({
@@ -3436,7 +3436,7 @@ describe("movement rolls", () => {
 
     expect(player?.character.currentSpaceId).toBe("sector-a");
     expect(player?.sectorId).toBe("sector-a");
-    expect(player?.character.heat).toBe(1);
+    expect(player?.character.heat).toBe(0);
     expect(summary?.movedToSectorId).toBe("sector-a");
     expect(summary?.success).toBe(false);
     expect(summary?.difficulty).toBe(8);
@@ -3574,7 +3574,7 @@ describe("movement rolls", () => {
     expect(result.state.players.find((player) => player.seatId === "seat-1")?.character.currentSpaceId).toBe("sector-a");
   });
 
-  it("triggers the recall flow when failed movement Heat reaches the threshold", () => {
+  it("does not trigger recall from deprecated failed movement pressure", () => {
     const baseState = createState({ phase: "navigation" });
     const server = new GameRoomServer(
       createState({
@@ -3621,8 +3621,8 @@ describe("movement rolls", () => {
     const seat1 = server.getState().players.find((entry) => entry.seatId === "seat-1");
 
     expect(seat1?.character.currentSpaceId).toBe("sector-a");
-    expect(seat1?.character.heat).toBe(2);
-    expect(seat1?.character.status).toBe("recalled");
+    expect(seat1?.character.heat).toBe(1);
+    expect(seat1?.character.status).toBe("active");
     expect(server.getState().activeSeatIndex).toBe(1);
     expect(server.getState().phase).toBe("navigation");
     expect(server.getState().currentEncounter).toBeNull();
@@ -4538,7 +4538,7 @@ describe("escalation flow", () => {
       choiceId: "stock"
     });
 
-    expect(server.getState().players[0]?.character.heat).toBe(0);
+    expect(server.getState().players[0]?.character.heat).toBe(1);
     expect(server.getState().players[0]?.private.notes).toContain(
       "Shard Sprawl passage stock secured for the next route push."
     );
@@ -4703,7 +4703,7 @@ describe("escalation flow", () => {
       seatId: "seat-1"
     });
 
-    expect(server.getState().players[0]?.character.heat).toBe(0);
+    expect(server.getState().players[0]?.character.heat).toBe(1);
     expect(server.getState().players[0]?.private.notes).toContain(
       "Glassmere anomaly contained. The spindle now answers the relay choir cleanly."
     );
@@ -5025,7 +5025,7 @@ describe("escalation flow", () => {
     });
 
     expect(server.getState().escalationLevel).toBe(1);
-    expect(server.getState().players[0]?.character.heat).toBe(0);
+    expect(server.getState().players[0]?.character.heat).toBe(1);
     expect(server.getState().players[0]?.private.notes).toContain(
       "Ridge suture anchored. The watch posts can still hold for one more convoy."
     );
@@ -5344,7 +5344,7 @@ describe("escalation flow", () => {
       choiceId: "anchor-surge"
     });
 
-    expect(server.getState().players[0]?.character.heat).toBe(0);
+    expect(server.getState().players[0]?.character.heat).toBe(1);
     expect(server.getState().players[0]?.private.notes).toContain(
       "Veil Rift surge anchored for deeper breach timing."
     );
@@ -6055,7 +6055,7 @@ describe("trophy progression", () => {
       stat: "command"
     });
 
-    expect(baselineServer.getState().players.find((entry) => entry.seatId === "seat-1")?.character.heat).toBe(1);
+    expect(baselineServer.getState().players.find((entry) => entry.seatId === "seat-1")?.character.heat).toBe(0);
 
     const boostedServer = new GameRoomServer(
       createCommandState(true, "action"),
@@ -6426,7 +6426,7 @@ describe("contracts", () => {
       seatId: "seat-1"
     });
 
-    expect(server.getState().players.find((entry) => entry.seatId === "seat-1")?.character.heat).toBe(0);
+    expect(server.getState().players.find((entry) => entry.seatId === "seat-1")?.character.heat).toBe(1);
     expect(server.getState().players.find((entry) => entry.seatId === "seat-1")?.private.notes).toContain(
       "Hush Static drowned the local anomaly in controlled noise."
     );
@@ -6599,7 +6599,7 @@ describe("contracts", () => {
     );
   });
 
-  it("lets the Rift Cartographer map a cleared lane into lower Heat and a route note", () => {
+  it("lets the Rift Cartographer map a cleared lane into scar relief and a route note", () => {
     const characters = createAbilityCharacters();
     const server = new GameRoomServer(
       createState({
@@ -7855,7 +7855,7 @@ describe("contracts", () => {
           type: "threat",
           cardType: "hazard",
           title: "Forge Surge",
-          text: "Heat blows through the wreck frame while the line buckles.",
+          text: "Scar pressure blows through the wreck frame while the line buckles.",
           flavor: "Only practical hands keep it from turning into shrapnel.",
           severity: 1,
           stat: "forge",
@@ -7971,7 +7971,7 @@ describe("contracts", () => {
 
     const player = readyServer.getState().players.find((entry) => entry.seatId === "seat-1");
     expect(player?.character.activeContract).toBeNull();
-    expect(player?.character.heat).toBe(0);
+    expect(player?.character.heat).toBe(1);
   });
 
   it("accepts a contract, wins two combats across turns, completes it, and receives the reward", () => {

@@ -155,7 +155,7 @@ const RAW_BOARD_SPACES: AuthoredBoardSpaceDefinition[] = [
     threatIcons: ["blue"],
     textBox: {
       title: "Vent Harvest",
-      text: "If the colony is quiet, bottle toxic salvage light for heat treatment or final-gate bargaining.",
+      text: "If the colony is quiet, bottle toxic salvage light for scar treatment or final-gate bargaining.",
       effectKey: "outer_saltCrossing"
     },
     notes: "Consumable salvage and bargaining-chip space."
@@ -180,7 +180,7 @@ const RAW_BOARD_SPACES: AuthoredBoardSpaceDefinition[] = [
     threatIcons: ["red"],
     textBox: {
       title: "Rough Treatment",
-      text: "If the bay is secure, pay salvage to heal wounds, cool Heat, or leave with a darker mark.",
+      text: "If the bay is secure, pay salvage to heal wounds, treat Scars, or leave with a darker mark.",
       effectKey: "outer_surgeryTreatment"
     },
     notes: "Scar treatment and surgery pressure point."
@@ -236,10 +236,10 @@ const RAW_BOARD_SPACES: AuthoredBoardSpaceDefinition[] = [
     threatIcons: ["blue"],
     textBox: {
       title: "Recharge the Votive",
-      text: "If the engine room is quiet, recharge 1 Gear or gain 1 Heat to force a stronger effect.",
+      text: "If the engine room is quiet, recharge 1 Gear or accept 1 Risk to force a stronger effect.",
       effectKey: "outer_saltCrossing"
     },
-    notes: "Outer salvage-shrine space that feeds gear and Heat choices."
+    notes: "Outer salvage-shrine space that feeds gear and risk choices."
   },
   {
     id: "kettleward-foundry",
@@ -314,7 +314,7 @@ const RAW_BOARD_SPACES: AuthoredBoardSpaceDefinition[] = [
     threatIcons: ["blue"],
     textBox: {
       title: "Deadwater Reading",
-      text: "If the marsh is calm, bottle signal light for Heat treatment or final-gate bargaining.",
+      text: "If the marsh is calm, bottle signal light for scar treatment or final-gate bargaining.",
       effectKey: "outer_saltCrossing"
     },
     notes: "Outer anomaly wetland on the eastern perimeter."
@@ -588,10 +588,10 @@ const RAW_BOARD_SPACES: AuthoredBoardSpaceDefinition[] = [
     threatIcons: ["red", "blue"],
     textBox: {
       title: "Risk Ammunition",
-      text: "If the shrine is quiet, gain a strong ammo blessing, then decide whether the Heat is worth it.",
+      text: "If the shrine is quiet, gain a strong ammo blessing, then decide whether the Risk is worth it.",
       effectKey: "middle_redMarchBargain"
     },
-    notes: "Risk shop that trades firepower for Heat."
+    notes: "Risk shop that trades firepower for danger."
   },
   {
     id: "scorched-road",
@@ -728,7 +728,7 @@ const RAW_BOARD_SPACES: AuthoredBoardSpaceDefinition[] = [
     threatIcons: [],
     textBox: {
       title: "Dead Star Claim",
-      text: "Take an Artifact from the reliquary, then gain Heat as the dead star notices the theft.",
+      text: "Take an Artifact from the reliquary, then accept a Scar as the dead star notices the theft.",
       effectKey: "inner_blackstarShortcut"
     },
     notes: "High-risk inner shortcut."
@@ -872,7 +872,7 @@ const BOARD_SPACE_PRESENTATION: Record<string, BoardSpacePresentation> = {
   },
   outer_salt_flats: {
     tags: ["anomaly", "hazard", "salvage"],
-    ruleText: "Blue threats gather here. If cleared, bottle salvage light for heat treatment.",
+    ruleText: "Blue threats gather here. If cleared, bottle salvage light for scar treatment.",
     loreText: "Toxic vents breathe green fire through mud, tents, and half-buried colony bells."
   },
   "colony-outskirts": {
@@ -882,7 +882,7 @@ const BOARD_SPACE_PRESENTATION: Record<string, BoardSpacePresentation> = {
   },
   "deadwater-marsh": {
     tags: ["anomaly", "hazard"],
-    ruleText: "If clear, bottle signal light for Heat treatment or final-gate bargaining.",
+    ruleText: "If clear, bottle signal light for scar treatment or final-gate bargaining.",
     loreText: "Deadwater Marsh reflects a sky the Reach has not had for years."
   },
   "hollow-veil-yard": {
@@ -892,7 +892,7 @@ const BOARD_SPACE_PRESENTATION: Record<string, BoardSpacePresentation> = {
   },
   outer_surgery_tent: {
     tags: ["recovery", "risk-shop"],
-    ruleText: "If no threats are present, pay salvage to heal, cool Heat, or risk surgery.",
+    ruleText: "If no threats are present, pay salvage to heal, treat Scars, or risk surgery.",
     loreText: "Old Mercy Bay trades pain for function under lamps made from scavenged saint-glass."
   },
   "rustveil-yard": {
@@ -927,7 +927,7 @@ const BOARD_SPACE_PRESENTATION: Record<string, BoardSpacePresentation> = {
   },
   "votive-engine-room": {
     tags: ["salvage", "shrine", "risk-shop"],
-    ruleText: "If clear, recharge 1 Gear or gain 1 Heat for a stronger effect.",
+    ruleText: "If clear, recharge 1 Gear or accept 1 Risk for a stronger effect.",
     loreText: "The engine room burns prayers as fuel and answers only when the brass tanks are fed."
   },
   "kettleward-foundry": {
@@ -982,7 +982,7 @@ const BOARD_SPACE_PRESENTATION: Record<string, BoardSpacePresentation> = {
   },
   middle_anomaly_well: {
     tags: ["anomaly", "lore"],
-    ruleText: "Failed Resolve tests add Heat. If clear, bottle a clue for the inner breach.",
+    ruleText: "Failed Resolve tests add Scar pressure. If clear, bottle a clue for the inner breach.",
     loreText: "Static Chapel receives prayers from every dead radio in the Reach at once."
   },
   "black-relay-spire": {
@@ -1002,7 +1002,7 @@ const BOARD_SPACE_PRESENTATION: Record<string, BoardSpacePresentation> = {
   },
   "weeping-ammunition-shrine": {
     tags: ["risk-shop", "shrine", "enemy"],
-    ruleText: "If clear, gain strong ammunition or a war boon at the cost of Heat.",
+    ruleText: "If clear, gain strong ammunition or a war boon at the cost of Risk.",
     loreText: "The shrine weeps live rounds into bowls of oil, and every blessing comes chambered."
   },
   "scorched-road": {
@@ -1047,7 +1047,7 @@ const BOARD_SPACE_PRESENTATION: Record<string, BoardSpacePresentation> = {
   },
   inner_blackstar_shortcut: {
     tags: ["artifact", "hazard"],
-    ruleText: "Gain an Artifact, then gain Heat as the dead star notices the theft.",
+    ruleText: "Gain an Artifact, then gain a Scar as the dead star notices the theft.",
     loreText: "Dead Star Reliquary keeps black-light relics behind glass that has never reflected a living face."
   },
   "the-bone-meridian": {

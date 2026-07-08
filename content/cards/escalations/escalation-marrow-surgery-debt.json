@@ -5,7 +5,7 @@
   "text": "Field surgeons call in favors, and every healed wound starts billing the future.",
   "flavor": "You can leave the table alive and still owe it blood.",
   "step": 3,
-  "resolutionSummary": "Surgery debt followed the party as a new heat mark.",
+  "resolutionSummary": "Surgery debt followed the party as a new lasting mark.",
   "resolveEffect": {
     "type": "gain_heat",
     "amount": 1

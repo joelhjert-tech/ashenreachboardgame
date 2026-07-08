@@ -5,7 +5,7 @@
   "text": "Your weapon hand shakes whenever old artillery wakes below the route.",
   "flavor": "The tremor stops only after the shot is fired.",
   "trigger": "Before your first combat roll each session.",
-  "penalty": "Take 1 wound unless you gain 1 Heat to lock the tremor down.",
+  "penalty": "Take 1 wound to lock the tremor down.",
   "effect": {
     "type": "take_wound",
     "amount": 1

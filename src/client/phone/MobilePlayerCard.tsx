@@ -96,7 +96,7 @@ export function MobilePlayerCard({
   className
 }: MobilePlayerCardProps): ReactElement {
   const portraitPath = getCharacterPortraitPath(self.character.id);
-  const heatTrack = buildTrack(self.character.heat);
+  const scarTrack = buildTrack(self.character.scars.length);
   const woundTrack = buildTrack(self.character.wounds);
   const latestOutcome = outcomeSummary?.seatId === self.seatId ? outcomeSummary.summary : null;
   const scenarioRuleDigest = buildScenarioRuleDigest(activeScenario, scenarioTelemetry, {
@@ -169,10 +169,10 @@ export function MobilePlayerCard({
 
         <div className="phone-sheet-resource-stack">
           <div className="phone-sheet-track">
-            <span>Heat</span>
+            <span>Scars</span>
             <div className="phone-sheet-track-pips">
-              {heatTrack.map((filled, index) => (
-                <span key={`heat-${index}`} className={filled ? "phone-sheet-pip phone-sheet-pip-filled" : "phone-sheet-pip"} />
+              {scarTrack.map((filled, index) => (
+                <span key={`scar-${index}`} className={filled ? "phone-sheet-pip phone-sheet-pip-filled" : "phone-sheet-pip"} />
               ))}
             </div>
           </div>
@@ -211,8 +211,8 @@ export function MobilePlayerCard({
 
           <div className="phone-sheet-vitals">
             <div className="phone-sheet-vital-card">
-              <span>Heat</span>
-              <strong>{self.character.heat}</strong>
+              <span>Scars</span>
+              <strong>{self.character.scars.length}</strong>
             </div>
             <div className="phone-sheet-vital-card">
               <span>Wounds</span>

@@ -5,7 +5,7 @@
   "text": "Void-salt wind cakes the outer lanes and turns every easy crossing abrasive.",
   "flavor": "The road is still open. It just hates you now.",
   "step": 2,
-  "resolutionSummary": "Saltwind closed the comfortable routes and pushed heat into the party.",
+  "resolutionSummary": "Saltwind closed the comfortable routes and tightened pressure around the party.",
   "resolveEffect": {
     "type": "gain_heat_all",
     "amount": 1

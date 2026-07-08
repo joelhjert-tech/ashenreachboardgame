@@ -33,7 +33,7 @@ export const nemeses: NemesisDefinition[] = [
     name: "The Fary Lord",
     title: "Monarch of the Violet Thorn",
     faction: "Violet Court",
-    bounty: "Draw 1 artifact and clear 1 Heat from the victorious operative.",
+    bounty: "Draw 1 artifact and soothe 1 Scar effect on the victorious operative.",
     loreRole: "A beautiful breach-court monarch whose impossible bargains turn ruined roads into hunting gardens.",
     gameplayRole: "Guile and signal pressure boss.",
     linkedMechanic: "False bargains, court illusions, and route denial.",
@@ -83,7 +83,7 @@ export const nemeses: NemesisDefinition[] = [
     title: "The Brood Memory",
     faction: "Shardborn Brood",
     scenarioId: "scenario_devourer_beneath",
-    bounty: "Clear one active Heat mark and draw 1 contract.",
+    bounty: "Soothe one active Scar effect and draw 1 contract.",
     loreRole: "A laboratory escape turned colony intelligence nesting through broken decks.",
     gameplayRole: "Board infestation scaler.",
     linkedMechanic: "Threat multiplication and brood spread.",
@@ -105,12 +105,12 @@ export const nemeses: NemesisDefinition[] = [
     scenarioId: "scenario_mirror_of_false_heroes",
     bounty: "Record 2 route notes. Keep both.",
     loreRole: "A breakaway oracle who weaponizes prophecy and relay harmonics.",
-    gameplayRole: "Heat and route-note manipulator.",
+    gameplayRole: "Scar pressure and route-note manipulator.",
     linkedMechanic: "Route-note denial and false revelation.",
     stats: { willpower: 6, life: 4 },
     abilities: [
       { timing: "start_of_engagement", text: "Each character here reveals one route note. The Prophet may force one revealed note to be discarded." },
-      { timing: "after_skill_test_fail", text: "That character gains 1 Heat." },
+      { timing: "after_skill_test_fail", text: "That character gains 1 Scar." },
       { timing: "battle_roll", text: "On a natural 6, cancel one opposing route-note substitution." }
     ],
     imagePrompt: "Original prophet in cracked glass vestments, mirrored halo fragments, and blue relay glare.",
@@ -150,7 +150,7 @@ export const nemeses: NemesisDefinition[] = [
     stats: { willpower: 5, cunning: 5, life: 6 },
     abilities: [
       { timing: "start_of_confrontation", text: "Choose one: force a Signal test, tax 1 route note, or place 1 Court mark." },
-      { timing: "after_character_fail", text: "That character gains 1 Heat." },
+      { timing: "after_character_fail", text: "That character gains 1 Scar." },
       { timing: "passive", text: "While the Regent remains active, no character may win by ordinary contract rewards." }
     ],
     imagePrompt: "Original regal void sovereign in a broken court of blue-black glass and funeral steel, seated before the breach core.",

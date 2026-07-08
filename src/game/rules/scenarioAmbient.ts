@@ -131,20 +131,19 @@ const SCENARIO_AMBIENT_RULES: Record<string, ScenarioAmbientRule> = {
             players:
               collapsed
                 ? state.players.map((player) => ({
-                    ...player,
-                    character: {
-                      ...player.character,
-                      heat: player.character.heat + 1,
-                      scars: nextCollapses >= 2 ? [...player.character.scars, "scar-wound-1"] : player.character.scars
-                    }
+                  ...player,
+                  character: {
+                    ...player.character,
+                    scars: nextCollapses >= 2 ? [...player.character.scars, "scar-wound-1"] : player.character.scars
+                  }
                   }))
                 : state.players
           }),
           summary:
             collapsed && nextCollapses >= 2
-              ? "The Broken Seal collapsed again. Every operative gained 1 Heat and 1 Scar, then the ward reset to 3 seals."
+              ? "The Broken Seal collapsed again. Every operative gained 1 Scar, then the ward reset to 3 seals."
               : collapsed
-                ? "The last seal broke. Every operative gained 1 Heat, then the ward reset to 3 seals."
+                ? "The last seal broke. The ward reset to 3 seals."
                 : `The Broken Seal weakens. ${nextSealTokens} seal tokens remain.`
         };
       }
@@ -283,53 +282,39 @@ const SCENARIO_AMBIENT_RULES: Record<string, ScenarioAmbientRule> = {
   scenario_mirror_of_false_heroes: {
     initialProgress: {},
     describePressure: () =>
-      "Heat is acting as mirror pressure until per-player Reflection is fully surfaced. Contracts, artifacts, and greedy upgrades feed the final reflection.",
+      "Scars act as mirror pressure until per-player Reflection is fully surfaced. Contracts, artifacts, and greedy upgrades feed the final reflection.",
     buildTelemetry: (state) => {
       const activeSeatId = getActiveSeatId(state);
-      const activeHeat =
+      const activeScars =
         activeSeatId
-          ? state.players.find((player) => player.seatId === activeSeatId)?.character.heat ?? 0
+          ? state.players.find((player) => player.seatId === activeSeatId)?.character.scars.length ?? 0
           : 0;
 
       return [
         { label: "Mirror Breaks", value: `${state.scenarioProgress.mirrorBreaks ?? 0}/2` },
-        { label: "Heat Proxy", value: `${activeHeat} on active operative` },
-        { label: "Reflection Feed", value: "Contracts, artifacts, Heat" }
+        { label: "Scar Pressure", value: `${activeScars} on active operative` },
+        { label: "Reflection Feed", value: "Contracts, artifacts, Scars" }
       ];
     },
     onContractCompleted: ({ seatId }) => ({
       updater: (state) => ({
         ...state,
-        players: state.players.map((player) =>
-          player.seatId === seatId
-            ? {
-                ...player,
-                character: {
-                  ...player.character,
-                  heat: player.character.heat + 1
-                }
-              }
-            : player
-        )
+        scenarioProgress: {
+          ...state.scenarioProgress,
+          mirrorPressure: (state.scenarioProgress.mirrorPressure ?? 0) + 1
+        }
       }),
-      summary: "The mirror feeds on selfish praise. The active operative gains 1 Heat."
+      summary: "The mirror feeds on selfish praise. Mirror pressure rises by 1."
     }),
     onGearGained: ({ seatId, gainedGearCount }) => ({
       updater: (state) => ({
         ...state,
-        players: state.players.map((player) =>
-          player.seatId === seatId
-            ? {
-                ...player,
-                character: {
-                  ...player.character,
-                  heat: player.character.heat + gainedGearCount
-                }
-              }
-            : player
-        )
+        scenarioProgress: {
+          ...state.scenarioProgress,
+          mirrorPressure: (state.scenarioProgress.mirrorPressure ?? 0) + gainedGearCount
+        }
       }),
-      summary: `The mirror strains around fresh artifact power. ${seatId} gains ${gainedGearCount} Heat.`
+      summary: `The mirror strains around fresh artifact power. Mirror pressure rises by ${gainedGearCount}.`
     })
   },
   scenario_devourer_beneath: {
@@ -501,38 +486,18 @@ const SCENARIO_AMBIENT_RULES: Record<string, ScenarioAmbientRule> = {
 
       return success
         ? {
-            updater: (state) => ({
-              ...state,
-              players: state.players.map((player) =>
-                player.seatId === seatId
-                  ? {
-                      ...player,
-                      character: {
-                        ...player.character,
-                        heat: Math.max(0, player.character.heat - 1)
-                      }
-                    }
-                  : player
-              )
-            }),
-            summary: `The ${mode} mode aligns with ${seatId}. The Labyrinth Engine bleeds off 1 Heat after the successful test.`
+            updater: (state) => state,
+            summary: `The ${mode} mode aligns with ${seatId}. The Labyrinth Engine stabilizes without changing persistent status.`
           }
         : {
             updater: (state) => ({
               ...state,
-              players: state.players.map((player) =>
-                player.seatId === seatId
-                  ? {
-                      ...player,
-                      character: {
-                        ...player.character,
-                        heat: player.character.heat + 1
-                      }
-                    }
-                  : player
-              )
+              scenarioProgress: {
+                ...state.scenarioProgress,
+                engineInstability: (state.scenarioProgress.engineInstability ?? 0) + 1
+              }
             }),
-            summary: `The ${mode} mode punishes ${seatId}. The Labyrinth Engine adds 1 Heat after the failed test.`
+            summary: `The ${mode} mode punishes ${seatId}. The Labyrinth Engine gains 1 instability after the failed test.`
           };
     }
   },
@@ -566,8 +531,7 @@ const SCENARIO_AMBIENT_RULES: Record<string, ScenarioAmbientRule> = {
             return {
               seatId: player.seatId,
               passed,
-              wounds: passed ? 1 : 2,
-              heat: passed ? 0 : 1
+              wounds: passed ? 1 : 2
             };
           })
         : [];
@@ -589,8 +553,7 @@ const SCENARIO_AMBIENT_RULES: Record<string, ScenarioAmbientRule> = {
                       ...player,
                       character: {
                         ...player.character,
-                        wounds: player.character.wounds + outcome.wounds,
-                        heat: player.character.heat + outcome.heat
+                        wounds: player.character.wounds + outcome.wounds
                       }
                     }
                   : player;
@@ -598,7 +561,7 @@ const SCENARIO_AMBIENT_RULES: Record<string, ScenarioAmbientRule> = {
             : state.players
         }),
         summary: erupted
-          ? `The Dying Star erupts. Signal tests fail for ${failedSeats.join(", ") || "no one"}; failed operatives take 2 wounds and 1 Heat, passes still take 1 wound, and Starfire resets to 5.`
+          ? `The Dying Star erupts. Signal tests fail for ${failedSeats.join(", ") || "no one"}; failed operatives take 2 wounds, passes still take 1 wound, and Starfire resets to 5.`
           : `The Dying Star dims to ${nextStars} remaining Starfire tokens.`
       };
     },

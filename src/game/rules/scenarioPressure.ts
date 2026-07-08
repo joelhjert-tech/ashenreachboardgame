@@ -78,7 +78,7 @@ function getScenarioPressureCurrent(state: GameState, scenario: ScenarioDefiniti
     case "scenario_throne_of_ash":
       return state.scenarioProgress.crownHunger ?? 0;
     case "scenario_mirror_of_false_heroes":
-      return state.scenarioProgress.mirrorPressure ?? Math.max(0, ...state.players.map((player) => player.character.heat));
+      return state.scenarioProgress.mirrorPressure ?? Math.max(0, ...state.players.map((player) => player.character.scars.length));
     case "scenario_devourer_beneath":
       return state.scenarioProgress.doomTokens ?? 0;
     case "scenario_labyrinth_engine":

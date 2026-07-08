@@ -150,7 +150,7 @@ export const SCENARIOS: ScenarioDefinition[] = [
       start: 6,
       max: 8,
       tickTiming: "End of each round, with solo pressure slowed by mode tuning.",
-      collapseRule: "At 0 Seal Integrity, all operatives gain 1 Heat. On the second collapse, each operative also gains 1 Scar."
+      collapseRule: "At 0 Seal Integrity, the ward buckles without adding a second harm track. On the second collapse, each operative gains 1 Scar."
     },
     boardHooks: {
       blueThreat: "Blue threats represent breach leaks. Clearing one restores 1 Seal Integrity.",
@@ -183,7 +183,7 @@ export const SCENARIOS: ScenarioDefinition[] = [
         id: "cinder-gate-key",
         name: "Cinder Gate Key",
         type: "artifact",
-        text: "Spend 1 charge to cancel 1 Heat gained from scenario pressure."
+        text: "Spend 1 charge to cancel 1 Scar gained from scenario pressure."
       },
       {
         id: "seal-crack-surge",
@@ -216,7 +216,7 @@ export const SCENARIOS: ScenarioDefinition[] = [
       "Whenever a player clears a Blue threat or completes a Contract, restore 1 Seal token.",
       "A player may pay 2 Salvage at a clear shrine to restore 1 Seal token.",
       "A player may spend an Artifact charge to restore 2 Seal tokens.",
-      "At 0 Seal tokens, every player gains 1 Heat and the track resets to 3. The second collapse also gives each player 1 Scar."
+      "At 0 Seal tokens, the track resets to 3. The second collapse gives each player 1 Scar."
     ],
     confrontationTitle: "Reseal the Prison",
     confrontationSteps: [
@@ -288,19 +288,19 @@ export const SCENARIOS: ScenarioDefinition[] = [
       start: 0,
       max: 6,
       tickTiming: "End of each round while all Crowns are held.",
-      collapseRule: "At Crown Hunger 6, spawn the Ash Regent nemesis and make Crowned victories generate Heat."
+      collapseRule: "At Crown Hunger 6, spawn the Ash Regent nemesis and make Crowned victories generate Scars."
     },
     boardHooks: {
       redThreat: "Elite Red enemies can award Crown tokens.",
       yellowThreat: "Yellow political traps can make Crowned players drop tokens.",
-      shop: "Contract Spire and Black Vault style shops can sell Crown claims for Salvage plus Heat.",
+      shop: "Contract Spire and Black Vault style shops can sell Crown claims for Salvage plus Risk.",
       salvage: "Salvage can buy authority, but every shortcut stains the claimant."
     },
     progressSources: [
       "Defeat an Elite enemy.",
       "Complete a Contract.",
       "Clear Choir Bastion, The Hollow Customs Gate, or Choir Execution Court.",
-      "Pay 4 Salvage at a Crown shop and gain 1 Heat."
+      "Pay 4 Salvage at a Crown shop and accept 1 Risk."
     ],
     finalGateRequirement: "Attempt the Throne only while holding 1+ Crown or by spending 2 completed Contracts.",
     scenarioRewards: [
@@ -321,7 +321,7 @@ export const SCENARIOS: ScenarioDefinition[] = [
         id: "black-throne-oath",
         name: "Black Throne Oath",
         type: "boon",
-        text: "Gain +2 Command in confrontations. Whenever you fail, gain 1 Heat."
+        text: "Gain +2 Command in confrontations. Whenever you fail, gain 1 Scar."
       },
       {
         id: "crown-sector-toll",
@@ -332,7 +332,7 @@ export const SCENARIOS: ScenarioDefinition[] = [
     ],
     nemesis: "Ash Regent",
     shopInteractions: [
-      "Contract Spire may sell 1 Crown for 4 Salvage and 1 Heat if a Crown remains unclaimed.",
+      "Contract Spire may sell 1 Crown for 4 Salvage and 1 Risk if a Crown remains unclaimed.",
       "Black Vault may sell Crown abilities only to Crowned players.",
       "A Crowned player may discount one shop action by 1 Salvage through Ash-Crowned Authority."
     ],
@@ -350,11 +350,11 @@ export const SCENARIOS: ScenarioDefinition[] = [
       "Mark Choir Bastion, The Hollow Customs Gate, and Choir Execution Court as Crown sectors."
     ],
     specialRules: [
-      "A player may claim 1 Crown after defeating an Elite enemy, completing a Contract, clearing a Crown sector, or paying 4 Salvage plus 1 Heat at Contract Spire.",
+      "A player may claim 1 Crown after defeating an Elite enemy, completing a Contract, clearing a Crown sector, or paying 4 Salvage plus 1 Risk at Contract Spire.",
       "Each Crown gives +1 Grit during battles.",
       "Each Crown gives -1 Guile and -1 Signal during stat checks.",
       "At the end of each round, if all Crowns are held, increase Crown Hunger by 1.",
-      "At Crown Hunger 3+, Crowned players gain 1 Heat when they defeat enemies. At Crown Hunger 6, spawn the Ash Regent nemesis.",
+      "At Crown Hunger 3+, Crowned players gain 1 Scar when they defeat enemies. At Crown Hunger 6, spawn the Ash Regent nemesis.",
       "If a Crowned player is wounded by a player, nemesis, or Elite enemy, they drop 1 Crown on their sector."
     ],
     confrontationTitle: "Claim the Throne",
@@ -407,7 +407,7 @@ export const SCENARIOS: ScenarioDefinition[] = [
     name: "The Mirror of False Heroes",
     theme: "The breach answers ambition with a reflection that grows stronger every time an operative chooses speed, glory, or forbidden leverage.",
     pressureRule:
-      "Reflection rises from voluntary Heat, forbidden abilities, Artifact charges, selfish Contract rewards, and Scars. High pressure wakes the False Hero.",
+      "Reflection rises from forbidden abilities, Artifact charges, selfish Contract rewards, and Scars. High pressure wakes the False Hero.",
     expectedDuration: "60-75 min",
     mode: "coop",
     supportedPlayerCounts: { min: 1, max: 6 },
@@ -434,29 +434,29 @@ export const SCENARIOS: ScenarioDefinition[] = [
     boardHooks: {
       blueThreat: "Blue threats gain difficulty at high Mirror Pressure.",
       yellowThreat: "Yellow traps tempt selfish rewards.",
-      anomaly: "Mirror sectors convert Heat and Scars into confrontation difficulty.",
+      anomaly: "Mirror sectors convert Scars and Reflection into confrontation difficulty.",
       shop: "Forbidden upgrades are stronger but feed Reflection."
     },
     progressSources: [
-      "Refuse a selfish Contract reward to lower Heat pressure.",
+      "Refuse a selfish Contract reward to lower Reflection pressure.",
       "Complete 2 Contracts to qualify for the final gate.",
-      "Carry 1 Artifact or keep Heat at 0 to face the Mirror early.",
+      "Carry 1 Artifact or keep Scars at 0 to face the Mirror early.",
       "Clear Mirror Barracks or Static Chapel to remove 1 Reflection."
     ],
-    finalGateRequirement: "Face the Mirror with 1 Artifact, 2 completed Contracts, or 0 Heat.",
+    finalGateRequirement: "Face the Mirror with 1 Artifact, 2 completed Contracts, or 0 Scars.",
     scenarioRewards: [
       {
         id: "shattered-reflection",
         name: "Shattered Reflection",
         type: "boon",
         timing: "after failing a Guile check",
-        text: "Discard to treat the failure as a success, then gain 1 Heat."
+        text: "Discard to treat the failure as a success, then gain 1 Scar."
       },
       {
         id: "honest-wound",
         name: "Honest Wound",
         type: "ability",
-        text: "Once per round, when you refuse a selfish reward, remove 1 Heat."
+        text: "Once per round, when you refuse a selfish reward, remove 1 Reflection."
       },
       {
         id: "mirror-knife-technique",
@@ -484,12 +484,12 @@ export const SCENARIOS: ScenarioDefinition[] = [
       "At Mirror Pressure 5+, all Blue threats gain +1 difficulty."
     ],
     modeScaling: {
-      singlePlayer: "Solo treats Heat as the main Reflection proxy until per-player Reflection is surfaced.",
+      singlePlayer: "Solo uses Scars and public mirror pressure as the Reflection proxy.",
       multiplayer: "Each operative tracks Reflection separately; the highest Reflection drives pressure."
     },
     setup: ["Each player begins with 0 Reflection."],
     specialRules: [
-      "Gain 1 Reflection when you voluntarily gain Heat, buy a forbidden ability, use an Artifact charge, take a selfish Contract reward, or gain a Scar.",
+      "Gain 1 Reflection when you buy a forbidden ability, use an Artifact charge, take a selfish Contract reward, or gain a Scar.",
       "When completing a Contract, choose humble reward for the normal payout or mirror reward for +2 Salvage or 1 Tactic and 1 Reflection.",
       "At the end of each round, if any player has 3+ Reflection, increase Mirror Pressure by 1.",
       "At Mirror Pressure 5+, all Blue threats gain +1 difficulty.",
@@ -497,11 +497,11 @@ export const SCENARIOS: ScenarioDefinition[] = [
     ],
     confrontationTitle: "Face Yourself",
     confrontationSteps: [
-      "Final gate: 1 Artifact, 2 completed Contracts, or 0 Heat.",
+      "Final gate: 1 Artifact, 2 completed Contracts, or 0 Scars.",
       "Test Guile 10 plus your Reflection.",
-      "Test Signal 10 plus your Heat.",
+      "Test Signal 10 plus your Reflection.",
       "Test Grit 10 plus your Scars.",
-      "If your Reflection is 4+ when you fail, gain 1 Scar instead of Heat."
+      "If your Reflection is 4+ when you fail, gain 1 Scar."
     ],
     victoryText: "If you pass at least 2 of the 3 mirror stat checks, you win the game.",
     designFeel: "Temptation scenario that lets players move fast, but makes every shortcut visible on the final mirror.",
@@ -682,7 +682,7 @@ export const SCENARIOS: ScenarioDefinition[] = [
       start: 0,
       max: 6,
       tickTiming: "At the start of each player turn, rotate the Engine to the next mode.",
-      collapseRule: "At high instability, failed matching checks exhaust Gear or add Heat."
+      collapseRule: "At high instability, failed matching checks exhaust Gear or add a Scar."
     },
     boardHooks: {
       redThreat: "Grit mode makes Red enemies harder.",
@@ -693,7 +693,7 @@ export const SCENARIOS: ScenarioDefinition[] = [
     },
     progressSources: [
       "Pass a stat check matching the active Engine mode.",
-      "Buy an Engine Key at Black Vault for 4 Salvage and 1 Heat.",
+      "Buy an Engine Key at Black Vault for 4 Salvage and 1 Risk.",
       "Complete a Contract in a sector matching the active mode.",
       "Use a Modebreaker Implant to count your stat as matching the Engine."
     ],
@@ -729,12 +729,12 @@ export const SCENARIOS: ScenarioDefinition[] = [
     shopInteractions: [
       "Command mode makes shop actions cost +1 Salvage unless the player has a Contract.",
       "Forge mode makes Gear repairs and upgrades cost 1 less Salvage.",
-      "Black Vault can sell Engine Keys for 4 Salvage and 1 Heat."
+      "Black Vault can sell Engine Keys for 4 Salvage and 1 Risk."
     ],
     tileEventHooks: [
       "Engine modes rotate command to grit to signal to guile to forge.",
       "Matching-mode checks can grant Salvage or Tactics.",
-      "Failed matching-mode checks add Heat or exhaust Gear."
+      "Failed matching-mode checks add a Scar or exhaust Gear."
     ],
     modeScaling: {
       singlePlayer: "Solo Engine Keys may be earned through any matching-mode check once per round.",
@@ -748,10 +748,10 @@ export const SCENARIOS: ScenarioDefinition[] = [
       "At the start of each player turn, rotate the Engine to the next mode: Command, Grit, Signal, Guile, then Forge.",
       "Command mode: shop actions cost +1 Salvage unless you have a Contract.",
       "Grit mode: all Red enemies gain +1.",
-      "Signal mode: all Blue threats gain +1 and drawing Tactics may add Heat.",
+      "Signal mode: all Blue threats gain +1 and drawing Tactics may add a Scar.",
       "Guile mode: when drawing Yellow threats, draw +1, then discard one.",
       "Forge mode: Gear repairs and upgrades cost -1 Salvage, but failed Forge checks exhaust one Gear.",
-      "When you pass a stat check matching the Engine mode, gain 1 Salvage or 1 Tactic. When you fail one, gain 1 Heat or exhaust Gear."
+      "When you pass a stat check matching the Engine mode, gain 1 Salvage or 1 Tactic. When you fail one, gain 1 Scar or exhaust Gear."
     ],
     confrontationTitle: "Stop the Engine",
     confrontationSteps: [
@@ -800,9 +800,9 @@ export const SCENARIOS: ScenarioDefinition[] = [
   {
     id: "scenario_dying_star",
     name: "The Dying Star",
-    theme: "The system sun is collapsing, and every wound, greedy Heat choice, and delayed repair burns away the light left to restart it.",
+    theme: "The system sun is collapsing, and every wound, greedy risk choice, and delayed repair burns away the light left to restart it.",
     pressureRule:
-      "Starfire burns down at end of turn, from wounds, and from voluntary Heat. Artifacts, Forge work, Star sectors, and contracts can restore it.",
+      "Starfire burns down at end of turn, from wounds, and from voluntary risk. Artifacts, Forge work, Star sectors, and contracts can restore it.",
     expectedDuration: "50-70 min",
     mode: "coop",
     supportedPlayerCounts: { min: 1, max: 6 },
@@ -823,8 +823,8 @@ export const SCENARIOS: ScenarioDefinition[] = [
       name: "Starfire",
       start: 10,
       max: 12,
-      tickTiming: "End of each player turn, plus wound and voluntary Heat triggers.",
-      collapseRule: "At 0 Starfire, all players test Signal 12, suffer wounds and possible Heat, then Starfire resets to 5."
+      tickTiming: "End of each player turn, plus wound and voluntary risk triggers.",
+      collapseRule: "At 0 Starfire, all players test Signal 12, suffer wounds and possible Scars, then Starfire resets to 5."
     },
     boardHooks: {
       blueThreat: "Blue threats interfere with restart pulses.",
@@ -876,7 +876,7 @@ export const SCENARIOS: ScenarioDefinition[] = [
     tileEventHooks: [
       "Mark Kettleward Foundry, Votive Engine Room, Dead Star Reliquary, and Saint Engine Crypt as Star sectors.",
       "Whenever a player takes a wound, remove 1 additional Starfire.",
-      "Whenever a player voluntarily gains Heat, remove 1 Starfire."
+      "Whenever a player accepts voluntary risk, remove 1 Starfire."
     ],
     modeScaling: {
       singlePlayer: "Solo can use one extra Artifact slot and Starfire loss remains one token per player turn.",
@@ -889,10 +889,10 @@ export const SCENARIOS: ScenarioDefinition[] = [
     specialRules: [
       "At the end of each player turn, remove 1 Starfire token.",
       "Whenever a player takes a wound, remove 1 additional Starfire token.",
-      "Whenever a player voluntarily gains Heat, remove 1 Starfire token.",
+      "Whenever a player accepts voluntary risk, remove 1 Starfire token.",
       "Gain an Artifact or spend an Artifact charge to restore 2 Starfire tokens.",
       "Pass Forge 8 at Kettleward Foundry, clear a Star sector, or complete a Contract to restore 1 Starfire token.",
-      "At 0 Starfire, each player tests Signal 12. Success takes 1 wound. Failure takes 2 wounds and gains 1 Heat. Then restore Starfire to 5."
+      "At 0 Starfire, each player tests Signal 12. Success takes 1 wound. Failure takes 2 wounds and gains 1 Scar. Then restore Starfire to 5."
     ],
     confrontationTitle: "Ignite the Core",
     confrontationSteps: [

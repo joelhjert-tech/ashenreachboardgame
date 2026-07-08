@@ -4,12 +4,12 @@
   "title": "Blackstar Shadow",
   "text": "Your shadow is darker than the room and heavier than your feet.",
   "flavor": "It reaches the exit first and waits there, patient.",
-  "trigger": "When you would lose Heat from an effect or space.",
-  "penalty": "Lose 1 less Heat, then gain a note that the shadow has been fed.",
+  "trigger": "When an effect would suppress a Scar or lasting pressure.",
+  "penalty": "The suppression is weaker, then gain a note that the shadow has been fed.",
   "effect": {
     "type": "gain_note",
-    "text": "Blackstar Shadow fed: reduce this Heat loss by 1."
+    "text": "Blackstar Shadow fed: reduce this relief by 1."
   },
-  "relief": "Spend a blackstar or void-salt item to let the full Heat loss resolve.",
-  "upside": "The first time this scar blocks Heat loss each session, add +1 to your next guile check."
+  "relief": "Spend a blackstar or void-salt item to let the full relief resolve.",
+  "upside": "The first time this scar blocks relief each session, add +1 to your next guile check."
 }

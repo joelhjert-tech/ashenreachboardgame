@@ -1356,7 +1356,7 @@ describe("TvApp", () => {
           id: "risk-action",
           label: "Risk Action",
           cost: { heat: 1 },
-          risk: "+1 Heat",
+          risk: "+1 Risk",
           enabled: true
         }
       ]

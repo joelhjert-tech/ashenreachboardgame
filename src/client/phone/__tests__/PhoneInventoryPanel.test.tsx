@@ -33,7 +33,7 @@ const relic = {
   slot: "utility" as const,
   category: "chargedRelic" as const,
   statBonus: { stat: "signal" as const, amount: 1 },
-  activeText: "Spend 1 charge to reduce anomaly instability by 1 or lose 1 heat after a signal check.",
+  activeText: "Spend 1 charge to reduce anomaly instability by 1 or steady one scar trigger after a Signal check.",
   useLimit: "charge" as const,
   charges: 2
 };
@@ -54,7 +54,7 @@ const consumable = {
   slot: "utility" as const,
   category: "consumable" as const,
   statBonus: { stat: "forge" as const, amount: 1 },
-  activeText: "Discard to heal 1 wound, then gain 1 heat.",
+  activeText: "Discard to heal 1 wound, then record the treatment as unstable.",
   useLimit: "discard" as const
 };
 
@@ -243,9 +243,9 @@ describe("PhoneInventoryPanel", () => {
                       title: "Ash-Lanced",
                       text: "A furnace-raked wound that never fully seals.",
                       trigger: "Your first failed grit test each session.",
-                      penalty: "Gain 1 Heat after the failure resolves.",
+                      penalty: "Gain 1 scar after the failure resolves.",
                       relief: "At a surgery or shrine space, spend 1 trophy after a passed forge check to suppress this scar.",
-                      upside: "After this scar adds Heat, gain a route note about what hurt you."
+                      upside: "After this scar leaves a mark, gain a route note about what hurt you."
                     }
                   ]
                 }
@@ -261,7 +261,7 @@ describe("PhoneInventoryPanel", () => {
     expect(scars).toHaveTextContent(/scars: 1/i);
     expect(scars).toHaveTextContent(/ash-lanced/i);
     expect(scars).toHaveTextContent(/first failed grit test/i);
-    expect(scars).toHaveTextContent(/gain 1 heat/i);
+    expect(scars).toHaveTextContent(/gain 1 scar/i);
   });
 
   it("groups faceup and facedown Afflictions as persistent status cards", () => {
@@ -368,7 +368,7 @@ describe("PhoneInventoryPanel", () => {
             title: "Ash-Lanced",
             text: "A furnace-raked wound that never fully seals.",
             trigger: "Your first failed Grit test each session.",
-            penalty: "Gain 1 Heat after the failure resolves.",
+            penalty: "Gain 1 scar after the failure resolves.",
             relief: "At a surgery or shrine space, spend 1 trophy after a passed Forge check to suppress this scar."
           }
         ],
@@ -737,7 +737,7 @@ describe("PhoneInventoryPanel", () => {
     expect(window.localStorage.getItem("ashenreach.phoneChromeVisible")).toBe("false");
     const compactStatus = screen.getByLabelText(/compact player status/i);
     expect(compactStatus).toHaveTextContent(/sable vey/i);
-    expect(compactStatus).toHaveTextContent(/0 wounds \| 1 heat/i);
+    expect(compactStatus).toHaveTextContent(/0 wounds \| 0 scars/i);
     expect(compactStatus.querySelector("img")).not.toBeInTheDocument();
     expect(screen.getByRole("banner")).toHaveClass("phone-topbar--compact");
     expect(screen.getByRole("tab", { name: /player card/i })).toBeInTheDocument();
@@ -828,7 +828,8 @@ describe("PhoneInventoryPanel", () => {
 
     expect(commandStat).toHaveAttribute("aria-expanded", "false");
     expect(within(statsRegion).getByRole("button", { name: /grit stat 2, details expanded/i })).toHaveAttribute("aria-expanded", "true");
-    expect(document.querySelector(".phone-portrait-vitals")).toHaveTextContent(/heat 1/i);
+    expect(document.querySelector(".phone-portrait-vitals")).toHaveTextContent(/scars 0/i);
+    expect(document.querySelector(".phone-portrait-vitals")).not.toHaveTextContent(/heat/i);
     expect(document.querySelector(".phone-portrait-vitals")).not.toHaveTextContent(/trophies/i);
     expect(screen.getByLabelText(/compact phone navigation/i)).toHaveTextContent(/player card/i);
   });
@@ -1333,7 +1334,7 @@ describe("PhoneInventoryPanel", () => {
     expect(within(mission).getByTestId("phone-active-mission-target")).toHaveTextContent(/target: any sector with a threat or enemy/i);
     expect(within(mission).getByText("Defeat 2 threats.")).toBeInTheDocument();
     expect(within(mission).getByText("Progress 1/2 defeated")).toBeInTheDocument();
-    expect(within(mission).getByText("Lose Heat")).toBeInTheDocument();
+    expect(within(mission).getByText("Scar relief")).toBeInTheDocument();
   });
 
   it("shows public scenario sheet progress and pressure on the Quest tab without private agenda data", () => {

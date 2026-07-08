@@ -555,13 +555,14 @@ describe("scenario confrontation flow", () => {
       createScenarioState({
         activeScenarioId: "scenario_mirror_of_false_heroes",
         heatThreshold: 3,
+        scenarioProgress: { mirrorPressure: 3 },
         players: createScenarioState().players.map((player) =>
           player.seatId === "seat-1"
             ? {
                 ...player,
                 character: {
                   ...player.character,
-                  heat: 3
+                  scars: ["scar-wound-1", "scar-wound-2", "scar-wound-3"]
                 }
               }
             : player
@@ -599,7 +600,7 @@ describe("scenario confrontation flow", () => {
     expect(roomServer.getState().scenarioProgress.sealTokens).toBe(7);
   });
 
-  it("heats every operative when the Broken Seal loses its final token at turn start", () => {
+  it("does not heat operatives when the Broken Seal loses its final token at turn start", () => {
     const state = createInitialSessionState("session-alpha", "single-player");
     state.scenarioProgress = { sealTokens: 1 };
     const roomServer = new GameRoomServer(state, [], createSequenceRandomSource([0]));
@@ -611,7 +612,7 @@ describe("scenario confrontation flow", () => {
 
     expect(roomServer.getState().scenarioProgress.sealTokens).toBe(3);
     expect(roomServer.getState().scenarioProgress.sealCollapses).toBe(1);
-    expect(roomServer.getState().players.every((player) => player.character.heat === 1)).toBe(true);
+    expect(roomServer.getState().players.every((player) => player.character.heat === 0)).toBe(true);
     expect(roomServer.getState().lastOutcomeSummary?.summary ?? "").toContain("last seal broke");
   });
 
@@ -818,10 +819,10 @@ describe("scenario confrontation flow", () => {
     } satisfies ClientIntent);
     continueVisibleResolution(roomServer);
 
-    expect(roomServer.getState().players[0]?.character.heat).toBe(1);
+    expect(roomServer.getState().players[0]?.character.heat).toBe(0);
   });
 
-  it("lets Labyrinth Engine signal mode cool heat on a successful matching check", () => {
+  it("leaves legacy heat unchanged on a successful matching Labyrinth Engine signal check", () => {
     const roomServer = new GameRoomServer(
       createSoloAmbientState({
         activeScenarioId: "scenario_labyrinth_engine",
@@ -867,7 +868,7 @@ describe("scenario confrontation flow", () => {
       stat: "signal"
     } satisfies ClientIntent);
 
-    expect(roomServer.getState().players[0]?.character.heat).toBe(0);
+    expect(roomServer.getState().players[0]?.character.heat).toBe(1);
   });
 
   it("resolves a Devourer clash when an operative moves onto the roaming sector and can reduce doom", () => {

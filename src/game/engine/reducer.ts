@@ -241,11 +241,11 @@ function summarizeEffect(effect: EncounterEffect, success: boolean | null): stri
 
   switch (effect.type) {
     case "gain_heat":
-      return `${prefix} gain ${effect.amount} Heat.`;
+      return `${prefix} legacy pressure ignored; Scars are the persistent harm track.`;
     case "gain_heat_all":
-      return `${prefix} all operatives gain ${effect.amount} Heat.`;
+      return `${prefix} legacy table pressure ignored; Scars are the persistent harm track.`;
     case "lose_heat":
-      return `${prefix} lose ${effect.amount} Heat.`;
+      return `${prefix} legacy pressure relief has no status effect.`;
     case "take_wound":
       return `${prefix} take ${effect.amount} wound${effect.amount === 1 ? "" : "s"}.`;
     case "heal_wound":
@@ -284,21 +284,8 @@ function summarizeEffect(effect: EncounterEffect, success: boolean | null): stri
 function applyEffectToPlayer(player: PlayerState, effect: EncounterEffect): PlayerState {
   switch (effect.type) {
     case "gain_heat":
-      return {
-        ...player,
-        character: {
-          ...player.character,
-          heat: player.character.heat + effect.amount
-        }
-      };
     case "lose_heat":
-      return {
-        ...player,
-        character: {
-          ...player.character,
-          heat: Math.max(0, player.character.heat - effect.amount)
-        }
-      };
+      return player;
     case "take_wound":
       return {
         ...player,
@@ -423,7 +410,7 @@ function applyShopServiceToPlayer(player: PlayerState, action: ShopServiceResolv
           (action.cost.salvage ?? 0) +
           (action.result.salvageDelta ?? 0)
       ),
-      heat: Math.max(0, player.character.heat + (action.cost.heat ?? 0) + (action.result.heatDelta ?? 0)),
+      heat: player.character.heat,
       wounds: Math.max(0, player.character.wounds + (action.cost.wounds ?? 0) + (action.result.woundDelta ?? 0)),
       trophies: Math.max(
         0,
@@ -460,7 +447,7 @@ function applyShopCostOnlyToPlayer(player: PlayerState, cost: { salvage?: number
     character: {
       ...player.character,
       salvage: Math.max(0, (player.character.salvage ?? 0) - (cost.salvage ?? 0)),
-      heat: Math.max(0, player.character.heat + (cost.heat ?? 0)),
+      heat: player.character.heat,
       wounds: Math.max(0, player.character.wounds + (cost.wounds ?? 0)),
       trophies: Math.max(0, player.character.trophies - (cost.trophies ?? 0))
     }
@@ -1874,7 +1861,7 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
         lastOutcomeSummary: state.lastOutcomeSummary
           ? {
               ...state.lastOutcomeSummary,
-              summary: `${state.lastOutcomeSummary.summary} Heat threshold reached. Operative recalled.`
+              summary: `${state.lastOutcomeSummary.summary} Legacy pressure threshold reached. Operative recalled.`
             }
           : null,
         eventLog: [...state.eventLog, action]

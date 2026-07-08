@@ -34,8 +34,9 @@ type ThreatEffectDefinition = {
 };
 
 const note = (text: string): EncounterEffect => ({ type: "gain_note", text });
-const heat = (amount: number): EncounterEffect => ({ type: "gain_heat", amount });
-const heatAll = (amount: number): EncounterEffect => ({ type: "gain_heat_all", amount });
+const legacyPressure = (): EncounterEffect => ({ type: "gain_note", text: "Legacy pressure effect ignored; Scars are the persistent harm track." });
+const heat = (_amount: number): EncounterEffect => legacyPressure();
+const heatAll = (_amount: number): EncounterEffect => legacyPressure();
 const wound = (amount: number): EncounterEffect => ({ type: "take_wound", amount });
 const trophy = (amount: number): EncounterEffect => ({ type: "gain_trophy", amount });
 const sequence = (...effects: EncounterEffect[]): EncounterEffect => ({ type: "sequence", effects });
@@ -53,11 +54,11 @@ function regionIsInner(ctx: ThreatEffectContext): boolean {
 export const THREAT_CARD_EFFECTS = {
   threat_heat_on_reveal: {
     timing: "onReveal",
-    resolve: () => ({ effect: heat(1), summary: "Reveal: active operative gains 1 Heat." })
+    resolve: () => ({ effect: heat(1), summary: "Reveal: legacy pressure flares without adding persistent status." })
   },
   threat_all_heat_on_reveal: {
     timing: "onReveal",
-    resolve: () => ({ effect: heatAll(1), summary: "Reveal: all operatives gain 1 Heat." })
+    resolve: () => ({ effect: heatAll(1), summary: "Reveal: legacy table pressure flares without adding persistent status." })
   },
   threat_escalate_on_reveal: {
     timing: "onReveal",
@@ -73,11 +74,11 @@ export const THREAT_CARD_EFFECTS = {
   },
   threat_force_choose_heat_or_wound: {
     timing: "onReveal",
-    resolve: () => ({ effect: heat(1), summary: "Reveal choice defaults to Heat when no private choice is supplied." })
+    resolve: () => ({ effect: heat(1), summary: "Reveal choice uses legacy pressure compatibility with no persistent status change." })
   },
   threat_force_discard_gear_or_gain_heat: {
     timing: "onReveal",
-    resolve: () => ({ effect: heat(1), summary: "Reveal choice defaults to Heat instead of object loss." })
+    resolve: () => ({ effect: heat(1), summary: "Reveal choice uses legacy pressure compatibility instead of object loss." })
   },
   threat_attach_to_space: {
     timing: "onReveal",
@@ -94,7 +95,7 @@ export const THREAT_CARD_EFFECTS = {
 
   threat_combat_plus_one_if_player_has_heat: {
     timing: "beforeCombat",
-    resolve: (ctx) => ({ enemyBonusModifier: ctx.player.character.heat > 0 ? 1 : 0 })
+    resolve: (ctx) => ({ enemyBonusModifier: ctx.player.character.scars.length > 0 ? 1 : 0 })
   },
   threat_combat_plus_two_if_inner_region: {
     timing: "beforeCombat",
@@ -110,10 +111,7 @@ export const THREAT_CARD_EFFECTS = {
   },
   threat_pay_heat_or_enemy_plus_two: {
     timing: "beforeCombat",
-    resolve: (ctx) =>
-      ctx.player.character.heat > 0
-        ? { effect: { type: "lose_heat", amount: 1 }, summary: "Paid 1 Heat to disrupt the enemy's reclaiming rite." }
-        : { enemyBonusModifier: 2, summary: "No Heat was available to pay; enemy difficulty increased by 2." }
+    resolve: () => ({ enemyBonusModifier: 2, summary: "No legacy pressure payment is available; enemy difficulty increased by 2." })
   },
   threat_force_enemy_roll_advantage: {
     timing: "beforeCombat",
@@ -195,7 +193,7 @@ export const THREAT_CARD_EFFECTS = {
   },
   threat_defeat_reduce_heat: {
     timing: "onDefeat",
-    resolve: () => ({ effect: { type: "lose_heat", amount: 1 } })
+    resolve: () => ({ effect: note("Legacy pressure relief ignored; Scars remain the persistent harm track.") })
   },
   threat_defeat_heal_wound: {
     timing: "onDefeat",

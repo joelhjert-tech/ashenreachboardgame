@@ -2,7 +2,7 @@
   "id": "pale-cartel-fixer",
   "name": "Pale Cartel Fixer",
   "role": "informant",
-  "text": "Convert one contract reward into gear, Heat reduction, or a safer faction debt.",
+  "text": "Convert one contract reward into gear, scar relief, or a safer faction debt.",
   "useLimit": "oncePerRound",
   "loyalty": 1,
   "lossCondition": "choice"

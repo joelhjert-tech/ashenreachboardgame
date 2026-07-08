@@ -122,21 +122,21 @@ export function getNemesisCombatValue(nemesis: NemesisChampion, stat: Stat): num
 }
 
 export function getGlobalHeatLevel(state: GameState): number {
-  return Math.max(0, ...state.players.map((player) => player.character.heat), state.escalationLevel);
+  return Math.max(0, ...state.players.map((player) => player.character.scars.length), state.escalationLevel);
 }
 
 export function getNemesisMovementStepCount(state: GameState, randomSource: RandomSource): number {
-  const heat = getGlobalHeatLevel(state);
+  const pressure = getGlobalHeatLevel(state);
 
-  if (heat >= 9) {
+  if (pressure >= 9) {
     return 2;
   }
 
-  if (heat >= 6) {
+  if (pressure >= 6) {
     return 2;
   }
 
-  if (heat >= 3) {
+  if (pressure >= 3) {
     return 1 + (randomSource.nextInt(6) + 1 >= 5 ? 1 : 0);
   }
 

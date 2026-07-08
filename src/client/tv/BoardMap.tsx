@@ -728,7 +728,7 @@ export function BoardMap({ patch, previousPatch = null, phase, showHeader = true
 
                     return (
                       <li key={player.seatId}>
-                        {seat?.displayName ?? player.character.name} | Heat {player.character.heat} | Wounds {player.character.wounds}
+                        {seat?.displayName ?? player.character.name} | Wounds {player.character.wounds} | Scars {player.character.scars.length}
                       </li>
                     );
                   })}

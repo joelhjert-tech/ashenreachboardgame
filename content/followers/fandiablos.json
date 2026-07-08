@@ -9,7 +9,7 @@
   "ultimateCompanion": true,
   "timingWindows": ["beforeThreatDraw", "beforeBattleRoll", "beforeTakingDamage", "anyTime"],
   "artCardId": "artifact-fandiablos",
-  "text": "Warning Barks: before drawing threats, reveal one local threat and record whether it stays or gets driven under the deck. Swarm of Tiny Teeth: during a Grit battle, use Fandiablos to gain +3 Grit for that battle. Unreasonable Courage: the first wound each round may be prevented on 4+. Cable Biters: gain +2 on Forge or Guile tests involving machines, locks, traps, or salvage. Too Many Dogs: after use, on a mayhem roll of 1 gain 1 Heat.",
+  "text": "Warning Barks: before drawing threats, reveal one local threat and record whether it stays or gets driven under the deck. Swarm of Tiny Teeth: during a Grit battle, use Fandiablos to gain +3 Grit for that battle. Unreasonable Courage: the first wound each round may be prevented on 4+. Cable Biters: gain +2 on Forge or Guile tests involving machines, locks, traps, or salvage. Too Many Dogs: after use, on a mayhem roll of 1 the action becomes unstable.",
   "activeEffect": {
     "type": "gain_note",
     "text": "Fandiablos is awake: warning barks, tiny teeth, and cable biting support are committed to the current action window."

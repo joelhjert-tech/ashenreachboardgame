@@ -7,7 +7,7 @@
     "stat": "guile",
     "amount": 1
   },
-  "activeText": "Exhaust to reroll a failed guile or signal check, then gain 1 Heat.",
+  "activeText": "Exhaust to reroll a failed Guile or Signal check, then mark the roll as unstable.",
   "useLimit": "oncePerTurn",
   "flavor": "One side shows your face. The other shows the version that got away.",
   "tier": "standard",

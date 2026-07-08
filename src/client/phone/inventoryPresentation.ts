@@ -323,10 +323,6 @@ function getGearLockReason(item: GearItem, self: PhoneSelfState): string | null 
     return "No wounds to heal.";
   }
 
-  if ((item.heatCost ?? 0) > self.character.heat) {
-    return `Needs ${item.heatCost} heat.`;
-  }
-
   if (item.linkedFollowerRole && !(self.character.followers ?? []).some((follower) => follower.role === item.linkedFollowerRole)) {
     return `Needs a ${toTitleCase(item.linkedFollowerRole)} follower.`;
   }

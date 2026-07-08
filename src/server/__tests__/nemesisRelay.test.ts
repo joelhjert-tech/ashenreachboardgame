@@ -98,7 +98,7 @@ describe("Nemesis Relay mode", () => {
     expect(originalSector.neighbors).toContain(movedNemesis.sectorId);
   });
 
-  it("uses Heat to increase Nemesis movement speed", () => {
+  it("uses Scars to increase Nemesis movement speed", () => {
     const server = startRelayServer(1);
     const nemesis = getActiveNemesis(server);
 
@@ -112,7 +112,14 @@ describe("Nemesis Relay mode", () => {
               ...player,
               character: {
                 ...player.character,
-                heat: 6
+                scars: [
+                  "scar-wound-1",
+                  "scar-wound-2",
+                  "scar-wound-3",
+                  "scar-wound-4",
+                  "scar-wound-5",
+                  "scar-wound-7"
+                ]
               }
             }
           : player
