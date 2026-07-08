@@ -351,12 +351,37 @@ describe("BoardMap", () => {
             target: 1
           }
         }
-      ]
+      ],
+      movementPlanner: {
+        active: true,
+        movementValue: 1,
+        currentSectorId: "ashwake-crossing",
+        currentSectorName: "Ashwake Crossing",
+        destinations: [
+          {
+            sectorId: "glassmere-spindle",
+            name: "Glassmere Spindle",
+            ring: "outer",
+            distance: 1,
+            route: ["ashwake-crossing", "glassmere-spindle"],
+            routeNames: ["Ashwake Crossing", "Glassmere Spindle"],
+            tags: ["signal"],
+            threatIcons: ["blue"],
+            ruleText: "Tune the spindle if the lane is clear.",
+            loreText: "A choir spindle buried in wet glass.",
+            faceUpThreats: [],
+            occupants: [],
+            strategicTags: ["reward"]
+          }
+        ]
+      }
     };
 
     const { rerender } = render(<BoardMap patch={activeMissionPatch} phase="navigation" />);
 
     expect(screen.getByTestId("sector-node-glassmere-spindle")).toHaveAttribute("data-mission-target", "true");
+    expect(screen.getByTestId("sector-node-glassmere-spindle")).toHaveAttribute("data-legal-target", "true");
+    expect(screen.getByTestId("sector-node-glassmere-spindle")).toHaveClass("talisman-board-tile-legal", "talisman-board-tile-mission");
     expect(screen.getByTestId("mission-marker-glassmere-spindle")).toHaveTextContent(/mission/i);
     expect(screen.getByTestId("sector-node-ashwake-crossing")).toHaveAttribute("data-mission-target", "false");
 

@@ -1216,6 +1216,7 @@ describe("PhoneInventoryPanel", () => {
     const mission = screen.getByTestId("phone-active-mission-card");
     expect(within(mission).getByText("Choir Hush Census")).toBeInTheDocument();
     expect(within(mission).getByTestId("phone-active-mission-art")).toHaveAttribute("src", expect.stringMatching(/\/assets\/cards\/(contracts|fallbacks)\//));
+    expect(within(mission).getByTestId("phone-active-mission-target")).toHaveTextContent(/target: any sector with a threat or enemy/i);
     expect(within(mission).getByText("Defeat 2 threats.")).toBeInTheDocument();
     expect(within(mission).getByText("Progress 1/2 defeated")).toBeInTheDocument();
     expect(within(mission).getByText("Lose Heat")).toBeInTheDocument();

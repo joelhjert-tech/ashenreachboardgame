@@ -472,6 +472,10 @@ describe("PhoneActionPanel", () => {
     expect(screen.getByTestId("movement-current-tile-action")).toHaveTextContent(/pilgrim rest/i);
     expect(screen.getByTestId("movement-planner")).toBeInTheDocument();
     expect(screen.getByTestId("movement-dice-animation")).toHaveTextContent(/1/);
+    expect(screen.getByTestId("movement-dice-animation").querySelector("[data-testid='combat-dice-animation']")).toHaveClass(
+      "combat-dice-animation-compact"
+    );
+    expect(within(screen.getByTestId("movement-dice-animation")).getByTestId("combat-die-attack")).toHaveTextContent(/1/);
     expect(
       screen.getByTestId("phone-current-prompt").compareDocumentPosition(screen.getByTestId("phone-action-active-panel")) &
         Node.DOCUMENT_POSITION_FOLLOWING
