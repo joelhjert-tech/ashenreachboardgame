@@ -2454,6 +2454,52 @@ describe("PhoneActionPanel", () => {
     expect(screen.getByTestId("phone-battle-panel")).toHaveTextContent(/black route fuse \+3/i);
   });
 
+  it("renders active anomaly test cards with fallback art and battle controls", () => {
+    render(
+      <PhoneActionPanel
+        characters={characters}
+        onIntent={vi.fn()}
+        patch={createPatch({
+          encounter: null,
+          activeResolution: {
+            id: "seat-1:anomaly:unknown-test:setup",
+            playerId: "seat-1",
+            source: "anomaly",
+            stage: "battle_setup",
+            card: {
+              id: "unknown-anomaly-test",
+              title: "Null Choir Interference",
+              type: "test",
+              flavor: "A dead signal braids itself through the command channel.",
+              artType: "anomaly"
+            },
+            battle: {
+              stat: "command",
+              difficulty: 7,
+              modifiers: [
+                { label: "Base Command", value: 3 },
+                { label: "Relay Discipline", value: 1 }
+              ]
+            }
+          }
+        })}
+      />
+    );
+
+    expect(screen.getByTestId("phone-action-active-panel")).toHaveClass("phone-battle-panel");
+    expect(screen.getByRole("article", { name: /null choir interference test card/i })).toBeInTheDocument();
+    expect(screen.getByTestId("phone-battle-subject-card")).toHaveTextContent(/null choir interference/i);
+    expect(screen.getByTestId("phone-battle-subject-card")).toHaveTextContent(/test/i);
+    expect(screen.getByTestId("phone-battle-subject-card")).toHaveTextContent(/anomaly/i);
+    expect(screen.getByTestId("phone-battle-subject-card")).toHaveTextContent(/dead signal braids/i);
+    expect(screen.getByTestId("phone-battle-subject-details")).toHaveTextContent(/command/i);
+    expect(screen.getByTestId("phone-battle-subject-details")).toHaveTextContent(/target 7/i);
+    expect(screen.getByTestId("phone-battle-subject-art")).toHaveAttribute("src", "/assets/cards/fallbacks/anomaly.svg");
+    expect(screen.getByTestId("phone-resolution-card")).toHaveTextContent(/command vs 7/i);
+    expect(screen.queryByTestId("movement-planner")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("phone-shop-panel")).not.toBeInTheDocument();
+  });
+
   it("shows battle assist and opens usable combat cards during an enemy encounter", () => {
     const onIntent = vi.fn();
     const heldGear = [

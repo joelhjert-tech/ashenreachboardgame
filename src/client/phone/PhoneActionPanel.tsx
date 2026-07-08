@@ -415,6 +415,7 @@ function BattleSubjectCard({
       variant="action"
       className="phone-battle-subject-card"
       media={media}
+      ariaLabel={`${title} ${typeLabel} card`}
       title={title}
       eyebrow={typeLabel}
       status={
