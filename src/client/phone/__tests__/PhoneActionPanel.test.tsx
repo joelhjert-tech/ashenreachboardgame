@@ -305,6 +305,12 @@ describe("PhoneActionPanel", () => {
     expect(screen.getByTestId("phone-current-prompt")).toHaveTextContent(/glass chime swarm/i);
     expect(screen.getByTestId("phone-action-panel-root")).toHaveClass("phone-action-panel--battle");
     expect(screen.getByTestId("phone-action-active-panel")).toHaveClass("phone-battle-panel");
+    expect(screen.getByTestId("phone-battle-subject-card")).toHaveTextContent(/glass chime swarm/i);
+    expect(screen.getByTestId("phone-battle-subject-card")).toHaveTextContent(/hazard/i);
+    expect(screen.getByTestId("phone-battle-subject-card")).toHaveTextContent(/ringing tide skates/i);
+    expect(screen.getByTestId("phone-battle-subject-details")).toHaveTextContent(/signal/i);
+    expect(screen.getByTestId("phone-battle-subject-details")).toHaveTextContent(/target 6/i);
+    expect(screen.getByTestId("phone-battle-subject-art")).toHaveAttribute("src", expect.stringMatching(/\/assets\/cards\/(threats|fallbacks)\//));
     expect(screen.getByTestId("phone-useful-now")).toHaveTextContent(/useful now: signal/i);
     expect(screen.getByTestId("phone-useful-now")).toHaveTextContent(/current value 1/i);
     expect(screen.getByRole("button", { name: /attempt signal check/i })).toBeInTheDocument();
@@ -335,8 +341,16 @@ describe("PhoneActionPanel", () => {
 
     expect(screen.getByTestId("phone-current-prompt")).toHaveTextContent(/roll battle/i);
     expect(screen.getByTestId("phone-current-prompt")).toHaveTextContent(/cinder-veil stalker/i);
+    expect(screen.getByTestId("phone-battle-subject-card")).toHaveTextContent(/cinder-veil stalker/i);
+    expect(screen.getByTestId("phone-battle-subject-card")).toHaveTextContent(/enemy/i);
+    expect(screen.getByTestId("phone-battle-subject-card")).toHaveTextContent(/battle/i);
+    expect(screen.getByTestId("phone-battle-subject-card")).toHaveTextContent(/threat/i);
+    expect(screen.getByTestId("phone-battle-subject-details")).toHaveTextContent(/grit/i);
+    expect(screen.getByTestId("phone-battle-subject-details")).toHaveTextContent(/opponent 6/i);
     expect(screen.getByRole("button", { name: /enter combat.*cinder-veil stalker/i })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /attempt grit check/i })).not.toBeInTheDocument();
+    expect(screen.queryByTestId("movement-planner")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("phone-shop-panel")).not.toBeInTheDocument();
   });
 
   it("shows the Cinder Gate confrontation action instead of a generic end turn", () => {
@@ -1362,8 +1376,8 @@ describe("PhoneActionPanel", () => {
 
     rerender(<PhoneActionPanel characters={characters} onIntent={vi.fn()} selectedTurnTab="battle" patch={movementPatch} />);
     expect(screen.getByTestId("phone-action-active-panel")).toHaveClass("phone-battle-panel");
-    expect(screen.getByText(/battle unavailable/i)).toBeInTheDocument();
-    expect(screen.getAllByText(/no enemy or event is ready to resolve/i).length).toBeGreaterThan(0);
+    expect(screen.getByText(/no battle active/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/battle cards will appear here/i).length).toBeGreaterThan(0);
     expect(screen.queryByTestId("movement-planner")).not.toBeInTheDocument();
 
     rerender(<PhoneActionPanel characters={characters} onIntent={vi.fn()} selectedTurnTab="shop" patch={shopPatch} />);

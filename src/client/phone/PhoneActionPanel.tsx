@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactElement } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactElement, type ReactNode } from "react";
 import type { CardImageType } from "../../game/assets/design/cardImageCatalog.js";
 import type {
   ActiveResolution,
@@ -323,6 +323,55 @@ function getResolutionCardImageType(
   return null;
 }
 
+function formatEncounterSourceLabel(source: ActiveResolution["source"] | undefined, cardType: string | null | undefined): string {
+  if (cardType) {
+    return toTitleCase(cardType);
+  }
+
+  switch (source) {
+    case "threat":
+      return "Threat";
+    case "anomaly":
+      return "Anomaly";
+    case "artifact":
+      return "Artifact";
+    case "contract":
+      return "Mission";
+    case "scenario":
+      return "Scenario";
+    case "movement":
+      return "Encounter";
+    default:
+      return "Encounter";
+  }
+}
+
+function formatEncounterIntentLabel(cardType: string | null | undefined, stat: Stat | null): string {
+  if (cardType === "enemy") {
+    return "Battle";
+  }
+
+  if (cardType === "hazard" || cardType === "event" || cardType === "anomaly") {
+    return stat ? `${statLabelById[stat]} test` : "Test";
+  }
+
+  return stat ? `${statLabelById[stat]} resolution` : "Resolution";
+}
+
+function formatEncounterSummary(
+  resolution: ActiveResolution | null | undefined,
+  encounter: PhonePatchPayload["encounter"],
+  typeLabel: string
+): ReactNode {
+  const summary = resolution?.card?.flavor ?? encounter?.flavor ?? null;
+
+  if (summary) {
+    return <p className="phone-battle-subject-summary">{summary}</p>;
+  }
+
+  return <p className="phone-battle-subject-summary">Resolve this {typeLabel.toLowerCase()} before the table advances.</p>;
+}
+
 function BattleSubjectCard({
   resolution,
   encounter
@@ -341,8 +390,11 @@ function BattleSubjectCard({
   const battle = resolution?.battle;
   const stat = battle?.stat ?? encounter?.stat ?? null;
   const difficulty = battle?.difficulty ?? encounter?.difficulty ?? null;
-  const typeLabel = toTitleCase(encounter?.cardType ?? resolution?.card?.type ?? resolution?.source ?? "encounter");
-  const summary = resolution?.card?.flavor ?? encounter?.flavor ?? "Resolve the revealed threat before continuing.";
+  const cardType = encounter?.cardType ?? resolution?.card?.type ?? null;
+  const typeLabel = formatEncounterSourceLabel(resolution?.source, cardType);
+  const intentLabel = formatEncounterIntentLabel(cardType, stat);
+  const opponentLabel = typeof difficulty === "number" ? (cardType === "enemy" ? `Opponent ${difficulty}` : `Target ${difficulty}`) : null;
+  const sourceLabel = resolution?.source ? formatEncounterSourceLabel(resolution.source, null) : "Threat";
   const media = imageType ? (
     <CardArtImage
       cardType={imageType}
@@ -365,12 +417,18 @@ function BattleSubjectCard({
       media={media}
       title={title}
       eyebrow={typeLabel}
-      status={stat && typeof difficulty === "number" ? <ChallengeBadge stat={stat} value={difficulty} size="compact" /> : null}
-      description={summary}
+      status={
+        <div className="phone-battle-subject-status" data-testid="phone-battle-subject-details">
+          {stat && typeof difficulty === "number" ? <ChallengeBadge stat={stat} value={difficulty} size="compact" /> : null}
+          {opponentLabel ? <span className="phone-battle-subject-chip">{opponentLabel}</span> : null}
+        </div>
+      }
+      description={formatEncounterSummary(resolution, encounter, typeLabel)}
       tags={
         <>
-          <span>{typeLabel}</span>
-          {stat ? <span>{statLabelById[stat]} test</span> : <span>Resolution</span>}
+          <span>{intentLabel}</span>
+          <span>{sourceLabel}</span>
+          {stat ? <span>{statLabelById[stat]}</span> : null}
         </>
       }
       testId="phone-battle-subject-card"
@@ -2217,7 +2275,7 @@ function PhoneBattlePanel({
       <UsefulNowPanel model={usefulNow} variant="secondary" />
       <ResultDeltaRow deltas={visibleBattleDeltas} className="phone-battle-deltas phone-battle-panel__result" />
       {!hasBattleContent && (
-        <EmptyTurnTab title="Battle unavailable" text="No enemy or event is ready to resolve." />
+        <EmptyTurnTab title="No battle active." text="Battle cards will appear here when you engage an enemy or event." />
       )}
     </section>
   );
