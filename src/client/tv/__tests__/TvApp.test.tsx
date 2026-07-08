@@ -437,7 +437,7 @@ describe("TvApp", () => {
     expect(screen.queryByRole("region", { name: /^contracts$/i })).not.toBeInTheDocument();
   });
 
-  it("keeps active host status player-facing without duplicate mode or debug chips", async () => {
+  it("keeps active host status in one banner without the old bottom strip", async () => {
     window.localStorage.setItem("ashen-reach-tv-room-code", "RT7P4");
     window.localStorage.setItem("ashen-reach-tv-host-token", "host:RT7P4:secret");
     const patch = createPatch();
@@ -469,13 +469,20 @@ describe("TvApp", () => {
 
     render(<TvApp />);
 
-    const strip = await screen.findByTestId("host-bottom-status-strip");
-    expect(strip).toHaveTextContent(/active: joel/i);
-    expect(strip).toHaveTextContent(/the broken seal/i);
-    expect(strip).toHaveTextContent(/waiting on .*roll movement/i);
-    expect(strip).not.toHaveTextContent(/mode co-op/i);
-    expect(strip).not.toHaveTextContent(/phase navigation/i);
-    expect(strip).not.toHaveTextContent(/global 0\/6/i);
+    const banner = await screen.findByTestId("host-state-banner");
+    expect(banner).toHaveTextContent(/waiting on .*roll movement/i);
+    expect(screen.queryByTestId("host-bottom-status-strip")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("tv-resolution-footer")).not.toBeInTheDocument();
+
+    const topBar = screen.getByLabelText(/host status bar/i);
+    expect(topBar).toHaveTextContent(/room code/i);
+    expect(topBar).toHaveTextContent(/mode/i);
+    expect(topBar).toHaveTextContent(/win progress/i);
+    expect(topBar).toHaveTextContent(/loss pressure/i);
+    expect(topBar).not.toHaveTextContent(/round/i);
+    expect(topBar).not.toHaveTextContent(/phase/i);
+    expect(topBar).not.toHaveTextContent(/global/i);
+    expect(screen.queryByText(/global escalation/i)).not.toBeInTheDocument();
   });
 
   it("keeps the host state banner in reserved layout space instead of absolutely overlaying the map", () => {
@@ -487,7 +494,7 @@ describe("TvApp", () => {
     expect(bannerRule).not.toMatch(/transform:\s*translateX/);
   });
 
-  it("shows scenario sheet art, win progress, loss pressure, and last public trigger on TV", async () => {
+  it("shows scenario sheet art while win progress and loss pressure live in the top bar", async () => {
     window.localStorage.setItem("ashen-reach-tv-room-code", "RT7P4");
     window.localStorage.setItem("ashen-reach-tv-host-token", "host:RT7P4:secret");
     const patch = createPatch();
@@ -525,14 +532,17 @@ describe("TvApp", () => {
       "/assets/scenarios/broken-seal.png"
     );
     expect(scenarioCard).toHaveTextContent(/stabilize the broken seal/i);
-    expect(scenarioCard).toHaveTextContent(/win progress/i);
-    expect(scenarioCard).toHaveTextContent(/2\/6/i);
-    expect(scenarioCard).toHaveTextContent(/loss pressure/i);
-    expect(scenarioCard).toHaveTextContent(/1\/6/i);
-    expect(scenarioCard).toHaveTextContent(/if this reaches the limit, the scenario fails/i);
+    expect(scenarioCard).not.toHaveTextContent(/win progress/i);
+    expect(scenarioCard).not.toHaveTextContent(/loss pressure/i);
+    expect(scenarioCard).not.toHaveTextContent(/if this reaches the limit, the scenario fails/i);
     expect(scenarioCard).not.toHaveTextContent(/global escalation/i);
     expect(scenarioCard).toHaveTextContent(/last trigger: contract completed/i);
-    expect(screen.getByRole("region", { name: /global escalation/i })).toHaveTextContent(/round pressure 0\/6/i);
+    const topBar = screen.getByLabelText(/host status bar/i);
+    expect(topBar).toHaveTextContent(/win progress/i);
+    expect(topBar).toHaveTextContent(/2\/6/i);
+    expect(topBar).toHaveTextContent(/loss pressure/i);
+    expect(topBar).toHaveTextContent(/1\/6/i);
+    expect(screen.queryByRole("region", { name: /global escalation/i })).not.toBeInTheDocument();
     expect(JSON.stringify(patch.payload)).not.toContain("private trigger");
   });
 

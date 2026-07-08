@@ -129,16 +129,6 @@ function getProgressPercent(current: number, total: number): number {
   return Math.min(100, Math.max(0, (current / Math.max(total, 1)) * 100));
 }
 
-function getRoundLabel(patch: StatePatch<PublicPatchPayload> | null): string {
-  if (!patch) {
-    return "0 / 0";
-  }
-
-  const activeIndex = patch.payload.activeSeatIndex + 1;
-  const turnCount = Math.max(patch.payload.turnOrder.length, patch.payload.seats.filter((seat) => seat.displayName).length, 1);
-  return `${activeIndex} / ${turnCount}`;
-}
-
 function getResolutionPlayerId(patch: StatePatch<PublicPatchPayload> | null): string | null {
   return patch?.payload.activeResolution?.playerId ?? patch?.payload.pendingEnemyRoll?.fighterSeatId ?? null;
 }
@@ -409,10 +399,47 @@ interface TopHeaderProps {
   sessionMode: SessionMode;
   gameMode: GameMode;
   interactionMode: InteractionMode | null;
-  roundLabel: string;
+  scenarioStatus: ReturnType<typeof getScenarioStatus>;
   joinedCount: number;
   readyCount: number;
   seatCapacity: number;
+}
+
+function TopProgressModule({
+  tone,
+  label,
+  title,
+  current,
+  max
+}: {
+  tone: "win" | "loss";
+  label: string;
+  title: string;
+  current: number;
+  max: number;
+}): ReactElement {
+  const safeMax = Math.max(max, 0);
+  const stepCount = safeMax > 0 ? Math.min(Math.max(safeMax, 3), 8) : 3;
+  const progressPercent = safeMax > 0 ? getProgressPercent(current, safeMax) : 0;
+  const filledSteps = Math.ceil((progressPercent / 100) * stepCount);
+
+  return (
+    <section className={`tv-command-progress-module tv-command-progress-module-${tone}`} aria-label={`${label} ${current}/${safeMax}`}>
+      <div className="tv-command-progress-emblem" aria-hidden="true" />
+      <div className="tv-command-progress-copy">
+        <span>{label}</span>
+        <strong>{title}</strong>
+        <div className="tv-command-progress-row">
+          <em>{current}/{safeMax}</em>
+          <div className="tv-command-progress-pips" aria-hidden="true">
+            {Array.from({ length: stepCount }, (_, index) => (
+              <i key={index} className={index < filledSteps ? "tv-command-progress-pip-filled" : ""} />
+            ))}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
 }
 
 function TopHeader({
@@ -421,11 +448,20 @@ function TopHeader({
   sessionMode,
   gameMode,
   interactionMode,
-  roundLabel,
+  scenarioStatus,
   joinedCount,
   readyCount,
   seatCapacity
 }: TopHeaderProps): ReactElement {
+  const objective = scenarioStatus.objectiveProgress;
+  const pressure = scenarioStatus.pressureState;
+  const collapse = scenarioStatus.collapseState;
+  const winCurrent = objective?.current ?? scenarioStatus.progressValue;
+  const winMax = objective?.required ?? scenarioStatus.progressThreshold;
+  const lossCurrent = collapse?.current ?? pressure?.current ?? 0;
+  const lossMax = collapse?.max ?? pressure?.max ?? scenarioStatus.progressThreshold;
+  const lossTitle = collapse ? "Collapse" : pressure?.name ?? "Scenario Pressure";
+
   return (
     <header className="tv-command-header tv-card" aria-label="Host status bar">
       <div className="tv-command-brand">
@@ -455,14 +491,23 @@ function TopHeader({
                   : "Protocol Required"}
           </strong>
         </div>
-        <div className="tv-command-header-chip">
-          <span>Round</span>
-          <strong>{roundLabel}</strong>
-        </div>
-        <div className="tv-command-header-chip">
-          <span>Phase</span>
-          <strong>{toTitleCase(phase)}</strong>
-        </div>
+      </div>
+
+      <div className="tv-command-progress-grid">
+        <TopProgressModule
+          tone="win"
+          label="Win Progress"
+          title={objective?.label ?? scenarioStatus.progressLabel}
+          current={winCurrent}
+          max={winMax}
+        />
+        <TopProgressModule
+          tone="loss"
+          label="Loss Pressure"
+          title={lossTitle}
+          current={lossCurrent}
+          max={lossMax}
+        />
       </div>
 
       <div className="tv-command-join-module">
@@ -1014,12 +1059,6 @@ function SessionReadout({
           <strong>{activeSeatId ?? "Standby"}</strong>
         </div>
         <div className="tv-session-stat">
-          <span>Global Escalation</span>
-          <strong>
-            {(publicPatch?.payload.escalationLevel ?? 0)}/{publicPatch?.payload.escalationThreshold ?? 6} | +{publicPatch?.payload.escalationModifier ?? 0}
-          </strong>
-        </div>
-        <div className="tv-session-stat">
           <span>Socket</span>
           <strong>{status}</strong>
         </div>
@@ -1273,7 +1312,6 @@ function HostContextPanel({
         <span>Reach <strong>{toTitleCase(activeSpace?.tier ?? activeSector?.regionTier ?? "Unknown")}</strong></span>
         <span>Occupants <strong>{occupants.length}</strong></span>
         <span>Scenario <strong>{scenarioStatus.name}</strong></span>
-        <span>Pressure <strong>{scenarioStatus.progress}</strong></span>
       </div>
     </section>
   );
@@ -1288,11 +1326,6 @@ function ScenarioStatusCard({
   scenarioOutcome: ReturnType<typeof buildScenarioOutcomeSummary>;
   scenarioRuleDigest: ReturnType<typeof buildScenarioRuleDigest>;
 }): ReactElement {
-  const stepCount = Math.min(Math.max(scenarioStatus.progressThreshold, 3), 8);
-  const progressPercent = getProgressPercent(scenarioStatus.progressValue, scenarioStatus.progressThreshold);
-  const objective = scenarioStatus.objectiveProgress;
-  const pressure = scenarioStatus.pressureState;
-  const collapse = scenarioStatus.collapseState;
   const lastTriggerCopy = scenarioStatus.lastTrigger?.reason ?? scenarioStatus.lastTrigger?.publicText ?? null;
 
   return (
@@ -1303,48 +1336,12 @@ function ScenarioStatusCard({
         <span />
       </div>
       <ScenarioSheetArtFrame path={scenarioStatus.sheetArtPath} title={scenarioStatus.name} compact />
-      <div className="tv-scenario-parchment">
+      <div className="tv-scenario-parchment tv-scenario-parchment-compact">
         <h3>{scenarioStatus.name}</h3>
-        <div className="tv-scenario-track" aria-label={`${scenarioStatus.progressLabel} ${scenarioStatus.progress}`}>
-          {Array.from({ length: stepCount }, (_, index) => (
-            <span
-              key={index}
-              className={index < Math.ceil((progressPercent / 100) * stepCount) ? "tv-scenario-track-filled" : ""}
-            />
-          ))}
-          <strong>{scenarioStatus.progress}</strong>
-        </div>
-        <p>{scenarioStatus.progressLabel}</p>
+        <p>{scenarioStatus.modeLabel}</p>
       </div>
       <div className="tv-scenario-presentation" aria-label="Scenario sheet summary">
-        <span>{scenarioStatus.modeLabel}</span>
         <p>{scenarioStatus.publicObjective}</p>
-        {objective ? (
-          <div className="tv-scenario-meter" aria-label={`Win progress ${objective.current}/${objective.required}`}>
-            <div>
-              <strong>Win Progress</strong>
-              <span>{objective.label}</span>
-            </div>
-            <em>{objective.current}/{objective.required}</em>
-          </div>
-        ) : null}
-        {collapse ? (
-          <div className="tv-scenario-meter tv-scenario-meter-loss" aria-label={`Loss pressure ${collapse.current}/${collapse.max}`}>
-            <div>
-              <strong>Loss Pressure</strong>
-              <span>If this reaches the limit, the scenario fails.</span>
-            </div>
-            <em>{collapse.current}/{collapse.max}</em>
-          </div>
-        ) : pressure ? (
-          <div className="tv-scenario-meter tv-scenario-meter-loss" aria-label={`Scenario pressure ${pressure.current}/${pressure.max}`}>
-            <div>
-              <strong>Scenario Pressure</strong>
-              <span>{pressure.name}</span>
-            </div>
-            <em>{pressure.current}/{pressure.max}</em>
-          </div>
-        ) : null}
         {lastTriggerCopy ? <p className="tv-scenario-last-trigger">Last trigger: {lastTriggerCopy}</p> : null}
       </div>
       {scenarioOutcome && (
@@ -1354,12 +1351,6 @@ function ScenarioStatusCard({
         </div>
       )}
       <p className="tv-empty-copy">{scenarioRuleDigest?.pressureSummary ?? scenarioStatus.pressureSummary}</p>
-      {scenarioStatus.pressureTrack && (
-        <p className="tv-empty-copy">
-          {scenarioStatus.pressureTrack.name}: {scenarioStatus.pressureTrack.start}/{scenarioStatus.pressureTrack.max} |{" "}
-          {scenarioStatus.pressureTrack.collapseRule}
-        </p>
-      )}
       {scenarioStatus.finalGateRequirement && <p className="tv-empty-copy">Final gate: {scenarioStatus.finalGateRequirement}</p>}
       {scenarioStatus.scenarioRewards.length > 0 && (
         <div className="board-sidebar-meta">
@@ -1471,29 +1462,21 @@ function NemesisRelayTrack({ patch }: { patch: StatePatch<PublicPatchPayload> | 
   );
 }
 
-function EscalationMeter({ patch }: { patch: StatePatch<PublicPatchPayload> | null }): ReactElement {
-  const level = patch?.payload.escalationLevel ?? 0;
-  const threshold = patch?.payload.escalationThreshold ?? 6;
-  const modifier = patch?.payload.escalationModifier ?? 0;
-  const highlightedStep = Math.ceil(getProgressPercent(level, threshold) / 20);
+function PublicRivalrySummaryCard({ patch }: { patch: StatePatch<PublicPatchPayload> | null }): ReactElement | null {
+  const summary = patch?.payload.rivalryAgendaCompletion?.summary ?? patch?.payload.rivalryAgendaReveal?.summary ?? null;
+
+  if (!summary) {
+    return null;
+  }
 
   return (
-    <section className="tv-card tv-sidebar-card tv-escalation-card" aria-label="Global Escalation">
+    <section className="tv-card tv-sidebar-card tv-rivalry-public-card" aria-label="Rivalry public update">
       <div className="tv-panel-title tv-panel-title-small">
         <span />
-        <h2>Global Escalation</h2>
+        <h2>Rivalry</h2>
         <span />
       </div>
-      <div className="tv-escalation-meter">
-        {[1, 2, 3, 4, 5].map((step) => (
-          <span key={step} className={step <= highlightedStep ? "tv-escalation-step-active" : ""}>
-            {step}
-          </span>
-        ))}
-      </div>
-      <p>
-        Round pressure {level}/{threshold} | modifier +{modifier}
-      </p>
+      <p>{summary}</p>
     </section>
   );
 }
@@ -1623,9 +1606,9 @@ function RightSidebar({
         scenarioOutcome={scenarioOutcome}
         scenarioRuleDigest={scenarioRuleDigest}
       />
+      <PublicRivalrySummaryCard patch={publicPatch} />
       <NemesisStatusCard nemesis={publicPatch?.payload.nemesis ?? null} selectedScenario={selectedScenario} />
       <NemesisRelayTrack patch={publicPatch} />
-      <EscalationMeter patch={publicPatch} />
       <ActiveMissionsPanel patch={publicPatch} />
 
       <SessionReadout
@@ -2084,7 +2067,6 @@ export function TvApp(): ReactElement {
   const scenarioStatus = useMemo(() => getScenarioStatus(publicPatch), [publicPatch]);
   const battleMode = isHostBattleActive(publicPatch, battlePlayer);
   const shopMode = isHostShopActive(publicPatch, activePlayer);
-  const resolutionDisplayMode = getTvResolutionDisplayMode(publicPatch, battlePlayer);
 
   useEffect(() => {
     if (publicPatch) {
@@ -2222,7 +2204,7 @@ export function TvApp(): ReactElement {
           sessionMode={liveSessionMode}
           gameMode={liveGameMode}
           interactionMode={liveInteractionMode}
-          roundLabel={getRoundLabel(publicPatch)}
+          scenarioStatus={scenarioStatus}
           joinedCount={joinedSeats.length}
           readyCount={readySeats.length}
           seatCapacity={publicPatch?.payload.seats.length ?? (liveSessionMode === "single-player" ? 1 : 6)}
@@ -2293,34 +2275,6 @@ export function TvApp(): ReactElement {
             startSessionReason={startReadiness.reason}
           />
         </section>
-
-        <HostBottomStatusStrip patch={publicPatch} currentStepCopy={currentStepCopy} />
-
-        {resolutionDisplayMode !== "battle" && (
-          <section
-            className={`tv-command-footer tv-command-footer-${resolutionDisplayMode}`}
-            data-testid="tv-resolution-footer"
-          >
-            {resolutionDisplayMode === "cardReveal" ? (
-              <CardRevealPanel patch={publicPatch} />
-            ) : resolutionDisplayMode === "outcome" ? (
-              <RecentOutcomePanel
-                patch={publicPatch}
-                currentStepCopy={currentStepCopy}
-                debugEvents={debugEvents}
-              />
-            ) : (
-              <>
-                <CardRevealPanel patch={publicPatch} />
-                <RecentOutcomePanel
-                  patch={publicPatch}
-                  currentStepCopy={currentStepCopy}
-                  debugEvents={debugEvents}
-                />
-              </>
-            )}
-          </section>
-        )}
 
         {debugOpen && (
           <section className="tv-debug-drawer">
