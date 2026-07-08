@@ -1135,7 +1135,7 @@ describe("roomServer websocket integration", () => {
     };
     const activeHarness = (harness = await startHarness([0, 0, 0, 0], state));
 
-    expect(() => activeHarness.roomServer.startSession()).toThrow("Waiting for player to choose character");
+    expect(() => activeHarness.roomServer.startSession()).toThrow("Waiting for Solo to choose a character");
   });
 
   it("starts multiplayer with enough ready occupied seats while ignoring empty seats", async () => {

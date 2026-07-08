@@ -768,7 +768,7 @@ describe("TvApp", () => {
     render(<TvApp />);
 
     expect(await screen.findByRole("button", { name: /start session/i })).toBeDisabled();
-    expect(screen.getByText(/waiting for player to choose character/i)).toBeInTheDocument();
+    expect(screen.getByText(/waiting for joel to choose a character/i)).toBeInTheDocument();
   });
 
   it("renders the create flow when nothing is stored", async () => {
@@ -833,12 +833,52 @@ describe("TvApp", () => {
 
     const scenarioSelect = (await screen.findAllByRole("combobox"))[0]!;
     fireEvent.change(scenarioSelect, { target: { value: "scenario_dying_star" } });
-    fireEvent.click(screen.getByRole("button", { name: /rivalry/i }));
+    fireEvent.click(screen.getByRole("button", { name: /nemesis/i }));
     fireEvent.click(screen.getAllByRole("button", { name: /create multiplayer/i })[0]!);
 
     await waitFor(() => {
       expect(mockCreateSession).toHaveBeenCalledWith("multiplayer", "scenario_dying_star", "rivalry", "standard", 6);
     });
+  });
+
+  it("labels the competitive setup protocol as Nemesis while preserving the rivalry interaction mode", async () => {
+    render(<TvApp />);
+
+    fireEvent.click(await screen.findByRole("button", { name: /nemesis/i }));
+    expect(screen.getByText(/nemesis protocol selected/i)).toBeInTheDocument();
+    fireEvent.click(screen.getAllByRole("button", { name: /create multiplayer/i })[0]!);
+
+    await waitFor(() => {
+      expect(mockCreateSession).toHaveBeenCalledWith("multiplayer", "scenario_broken_seal", "rivalry", "standard", 6);
+    });
+  });
+
+  it("shows a disconnected ready player without clearing setup state", async () => {
+    window.localStorage.setItem("ashen-reach-tv-room-code", "RT7P4");
+    window.localStorage.setItem("ashen-reach-tv-host-token", "host:RT7P4:secret");
+    const patch = createPatch();
+    patch.payload.seats[0] = {
+      ...patch.payload.seats[0]!,
+      connected: false,
+      ready: true,
+      startingMissionSelected: true,
+      startingMissionTitle: "Crossing Thread"
+    };
+    mockUseRoomSubscription.mockReturnValue({
+      patch,
+      error: null,
+      sendIntent: vi.fn(),
+      status: "open",
+      debugEvents: [],
+      clearDebugEvents: vi.fn()
+    });
+
+    render(<TvApp />);
+
+    const operatives = await screen.findByRole("complementary", { name: /operatives/i });
+    expect(operatives).toHaveTextContent(/disconnected/i);
+    expect(operatives).toHaveTextContent(/mission: crossing thread/i);
+    expect(operatives).toHaveTextContent(/ready/i);
   });
 
   it("uses the selected scenario for single-player creation too", async () => {

@@ -110,11 +110,7 @@ function getInteractionModeLabel(interactionMode: InteractionMode): string {
     return "Co-op";
   }
 
-  if (interactionMode === "ruthless") {
-    return "Ruthless";
-  }
-
-  return "Rivalry";
+  return "Nemesis";
 }
 
 function getGameModeLabel(gameMode: GameMode | undefined): string {
@@ -760,21 +756,29 @@ function OperativesRail({ patch, characterCatalog, activeSeatId, sessionMode, ba
           const characterTitle = isOpen ? "-" : player?.character.archetype ?? catalogCharacter?.archetype ?? "Awaiting operative";
           const characterPresentation = player?.character.presentation ?? catalogCharacter?.presentation;
           const isActive = seat.seatId === activeSeatId;
-          const statusLabel = seat.kicked
-            ? "Down"
-            : isActive
-              ? "Active"
-              : isOpen
-                ? "Open"
-                : player?.character.status === "recalled"
-                  ? "Down"
-                  : seat.ready
-                    ? "Ready"
-                    : seat.startingMissionSelected
-                      ? "Mission"
-                    : seat.connected
-                      ? "Joined"
-                      : "Offline";
+          const statusLabel = (() => {
+            if (seat.kicked || player?.character.status === "recalled") {
+              return "Down";
+            }
+
+            if (isOpen) {
+              return "Open";
+            }
+
+            if (!seat.connected) {
+              return "Disconnected";
+            }
+
+            if (isActive) {
+              return "Active";
+            }
+
+            if (seat.ready) {
+              return "Ready";
+            }
+
+            return seat.startingMissionSelected ? "Mission" : "Joined";
+          })();
           const portraitUrl = !isOpen ? getCharacterPortraitPath(player?.character.id ?? seat.characterId) : null;
           const seatNumber = getSeatNumber(seat.seatId);
 
@@ -915,11 +919,9 @@ function FirstGamePanel({ interactionMode }: { interactionMode: InteractionMode 
   const interactionCopy =
     interactionMode === "co-op"
       ? "Share pressure, assist checks, and push the scenario objective together."
-      : interactionMode === "ruthless"
-        ? "Direct interference is live: duels, theft, and betrayal contracts are table legal."
-        : interactionMode === "rivalry"
-          ? "Race for personal glory with bounded rivalry, trades, aid, duels, and exposed-object steals."
-          : "Choose a mission protocol before authorizing the multiplayer room.";
+      : interactionMode === "ruthless" || interactionMode === "rivalry"
+        ? "Race for personal glory with private Nemesis agendas, public-safe reveals, trades, aid, duels, and exposed-object steals."
+        : "Choose a mission protocol before authorizing the multiplayer room.";
 
   return (
     <section className="tv-first-game-panel" aria-label="First game guide">
@@ -975,13 +977,13 @@ function MissionProtocolSelector({
           disabled={relayLocked}
           onClick={() => onSelect("rivalry")}
         >
-          <strong>Rivalry</strong>
-          <span>Players compete for dominance. Operatives may race, block, outscore, or outlast each other depending on the scenario.</span>
+          <strong>Nemesis</strong>
+          <span>Players compete through private agendas. Operatives may race, block, outscore, or outlast each other depending on the scenario.</span>
         </button>
       </div>
       <p className="tv-mission-protocol-note">
         {relayLocked
-          ? "Nemesis Relay is a co-op protocol and cannot launch as rivalry."
+          ? "Nemesis Relay is a co-op protocol and cannot launch as Nemesis."
           : effectiveSelectedMode
             ? `${getInteractionModeLabel(effectiveSelectedMode)} protocol selected.`
             : "Start Game locked until one protocol is selected."}
@@ -2166,7 +2168,7 @@ export function TvApp(): ReactElement {
           ? "co-op"
           : interactionMode ?? undefined;
       if (nextSessionMode !== "single-player" && !selectedInteractionMode) {
-        setRequestError("Choose Co-op or Rivalry before creating a multiplayer room.");
+        setRequestError("Choose Co-op or Nemesis before creating a multiplayer room.");
         return;
       }
       const selectedPlayerCount = nextSessionMode === "single-player" ? 1 : Math.min(playerCount, gameMode === "nemesis_relay" ? 4 : 6);

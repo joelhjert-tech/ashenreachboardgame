@@ -76,10 +76,13 @@ export function getSessionStartReadiness(input: {
   }
 
   if (selectedCharacterCount < occupiedSeats.length) {
+    const waitingSeat = occupiedSeats.find((seat) => !Boolean(seat.characterId));
+    const waitingName = waitingSeat?.displayName ?? waitingSeat?.seatId ?? "player";
+
     return {
       ...base,
       canStart: false,
-      reason: "Waiting for player to choose character"
+      reason: `Waiting for ${waitingName} to choose a character`
     };
   }
 
