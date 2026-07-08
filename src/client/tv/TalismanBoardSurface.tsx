@@ -1,11 +1,11 @@
-import { useEffect, useState, type ReactElement } from "react";
-import { RIFTFALL_BOARD_NODES, type BoardNode } from "../../data/riftfallBoardNodes.js";
+import { useEffect, useState, type CSSProperties, type ReactElement } from "react";
+import { RIFTFALL_BOARD_NODE_INDEX, RIFTFALL_BOARD_NODES, type BoardNode } from "../../data/riftfallBoardNodes.js";
 import { getBoardSpace } from "../../game/data/boardSpaces.js";
 import { ThreatIconBadge } from "../shared/ChallengeBadge.js";
 import type { SectorNode } from "../shared/types.js";
 import type { BoardRect } from "./boardGeometry.js";
 import { getBoardMapRuntimeAssetPaths } from "./mapAssetRegistry.js";
-import { getBoardTileLayout } from "./boardTileLayout.js";
+import { getBoardTileLayout, getBoardTileRouteAnchor } from "./boardTileLayout.js";
 import { getExpectedTileAssetPath, getTileAssetPath } from "./tileAssetManifest.js";
 
 export function getBoardTileAssetPaths(): string[] {
@@ -29,6 +29,7 @@ interface TalismanBoardSurfaceProps {
   playerMarkersByNodeId?: Map<string, TilePlayerMarker[]>;
   missionMarkersByNodeId?: Map<string, TileMissionMarker[]>;
   movingSeatIds?: Set<string>;
+  movementAnimations?: TileMovementAnimation[];
   nemesisSectorIds?: Set<string>;
   onSelectNode?: (nodeId: string) => void;
   debugEnabled?: boolean;
@@ -45,6 +46,16 @@ export interface TileMissionMarker {
   playerLabel: string;
   missionTitle: string;
   reason: string;
+}
+
+export interface TileMovementAnimation {
+  seatId: string;
+  label: string;
+  color: string;
+  fromSectorId: string;
+  toSectorId: string;
+  routeSectorIds: string[];
+  durationMs: number;
 }
 
 function getTileTone(node: BoardNode): string {
@@ -134,6 +145,7 @@ export function TalismanBoardSurface({
   playerMarkersByNodeId,
   missionMarkersByNodeId,
   movingSeatIds,
+  movementAnimations = [],
   nemesisSectorIds,
   onSelectNode,
   debugEnabled = false
@@ -271,6 +283,73 @@ export function TalismanBoardSurface({
               {hasNemesis && <span className="talisman-board-nemesis">Nemesis</span>}
             </span>
           </button>
+        );
+      })}
+
+      {movementAnimations.map((animation) => {
+        const routePoints = animation.routeSectorIds
+          .map((sectorId) => {
+            const node = RIFTFALL_BOARD_NODE_INDEX.get(sectorId);
+            return node ? getBoardTileRouteAnchor(node) : null;
+          })
+          .filter((point): point is NonNullable<typeof point> => Boolean(point));
+        const start = routePoints[0];
+        const end = routePoints[routePoints.length - 1];
+
+        if (!start || !end) {
+          return null;
+        }
+
+        const path = routePoints
+          .map((point, index) => `${index === 0 ? "M" : "L"} ${point.x * imageRect.width} ${point.y * imageRect.height}`)
+          .join(" ");
+        const routeSegments = routePoints.slice(0, -1).map((from, index) => ({
+          id: `${animation.seatId}-${index}-${animation.routeSectorIds[index]}-${animation.routeSectorIds[index + 1]}`,
+          from,
+          to: routePoints[index + 1]!
+        }));
+        const animationStyle: CSSProperties = {
+          ["--token-fill" as string]: animation.color,
+          ["--movement-duration" as string]: `${animation.durationMs}ms`,
+          ["--movement-path" as string]: `path("${path}")`
+        };
+
+        return (
+          <span
+            key={`${animation.seatId}-${animation.fromSectorId}-${animation.toSectorId}`}
+            className="talisman-board-travel"
+            data-testid={`movement-token-animation-${animation.seatId}`}
+            data-from-sector-id={animation.fromSectorId}
+            data-to-sector-id={animation.toSectorId}
+            data-route={animation.routeSectorIds.join(" ")}
+            style={animationStyle}
+            aria-hidden="true"
+          >
+            <svg className="talisman-board-travel-route" aria-hidden="true">
+              {routeSegments.map((segment) => (
+                <line
+                  key={segment.id}
+                  data-testid={`movement-travel-route-${segment.id}`}
+                  className="board-route board-route-movement board-route-movement-travel"
+                  x1={segment.from.x * imageRect.width}
+                  y1={segment.from.y * imageRect.height}
+                  x2={segment.to.x * imageRect.width}
+                  y2={segment.to.y * imageRect.height}
+                />
+              ))}
+            </svg>
+            <span className="talisman-board-travel-token" title={animation.label}>
+              {animation.label.slice(0, 1).toUpperCase()}
+            </span>
+            <span
+              className="talisman-board-travel-arrival"
+              data-testid={`movement-arrival-pulse-${animation.seatId}`}
+              style={{
+                left: `${end.x * imageRect.width}px`,
+                top: `${end.y * imageRect.height}px`
+              }}
+            />
+          </span>
         );
       })}
     </div>

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ReactElement } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactElement } from "react";
 import { BOARD_SPACES, getBoardSpace, isScenarioConfrontationSpace } from "../../game/data/boardSpaces.js";
 import { RIFTFALL_BOARD_NODE_INDEX, RIFTFALL_BOARD_NODES } from "../../data/riftfallBoardNodes.js";
 import type { ContractCard, OutcomeSummary, PublicPatchPayload, SectorNode, ThreatIcon } from "../shared/types.js";
@@ -18,7 +18,7 @@ import { pointerToBoardCoordinate, type BoardRect } from "./boardGeometry.js";
 import { getBoardTileLayout, getBoardTileRouteAnchor } from "./boardTileLayout.js";
 import { HostCinematicFxLayer, type MapFxPoint, type MapFxTrail } from "./HostCinematicFxLayer.js";
 import { getMapBoardBaseAssetPath } from "./mapAssetRegistry.js";
-import { TalismanBoardSurface, type TileMissionMarker, type TilePlayerMarker } from "./TalismanBoardSurface.js";
+import { TalismanBoardSurface, type TileMissionMarker, type TileMovementAnimation, type TilePlayerMarker } from "./TalismanBoardSurface.js";
 import { getMissionRelevanceForSector } from "../shared/missionRelevance.js";
 
 interface BoardMapProps {
@@ -142,6 +142,58 @@ function buildMovingSeatIds(patch: PublicPatchPayload, previousPatch: PublicPatc
   });
 
   return movingSeatIds;
+}
+
+function buildMovementRouteCacheKey(seatId: string, fromSectorId: string, toSectorId: string): string {
+  return `${seatId}:${fromSectorId}:${toSectorId}`;
+}
+
+function getMovementAnimationDuration(routeSectorIds: string[]): number {
+  const stepCount = Math.max(1, routeSectorIds.length - 1);
+  return Math.min(900, Math.max(360, stepCount * 220));
+}
+
+function buildMovementAnimations(
+  patch: PublicPatchPayload,
+  previousPatch: PublicPatchPayload | null,
+  routeCache: Map<string, string[]>
+): TileMovementAnimation[] {
+  if (!previousPatch) {
+    return [];
+  }
+
+  const previousSectorBySeatId = new Map(previousPatch.players.map((player) => [player.seatId, player.sectorId] as const));
+  const seatIndex = new Map(patch.seats.map((seat, index) => [seat.seatId, index] as const));
+
+  return patch.players.flatMap((player): TileMovementAnimation[] => {
+    const previousSectorId = previousSectorBySeatId.get(player.seatId);
+
+    if (!previousSectorId || previousSectorId === player.sectorId) {
+      return [];
+    }
+
+    const routeKey = buildMovementRouteCacheKey(player.seatId, previousSectorId, player.sectorId);
+    const cachedRoute = routeCache.get(routeKey);
+    const routeSectorIds = cachedRoute?.length ? cachedRoute : [previousSectorId, player.sectorId];
+
+    if (routeSectorIds.some((sectorId) => !RIFTFALL_BOARD_NODE_INDEX.has(sectorId))) {
+      return [];
+    }
+
+    const seat = patch.seats.find((entry) => entry.seatId === player.seatId);
+
+    return [
+      {
+        seatId: player.seatId,
+        label: seat?.displayName ?? player.character.name,
+        color: getSeatColor(seatIndex.get(player.seatId) ?? 0),
+        fromSectorId: previousSectorId,
+        toSectorId: player.sectorId,
+        routeSectorIds,
+        durationMs: getMovementAnimationDuration(routeSectorIds)
+      }
+    ];
+  });
 }
 
 function threatIconTone(icon: ThreatIcon): MapFxPoint["tone"] {
@@ -281,6 +333,7 @@ export function BoardMap({ patch, previousPatch = null, phase, showHeader = true
   const [selectedNodeId, setSelectedNodeId] = useState<string>(() => RIFTFALL_BOARD_NODES[0]?.id ?? "");
   const [calibrationPoint, setCalibrationPoint] = useState<CalibrationPoint | null>(null);
   const [calibrationNodeId, setCalibrationNodeId] = useState<string>(() => RIFTFALL_BOARD_NODES[0]?.id ?? "");
+  const movementRouteCacheRef = useRef<Map<string, string[]>>(new Map());
   const boardDebugEnabled =
     typeof window !== "undefined" && new URLSearchParams(window.location.search).get("boardDebug") === "1";
 
@@ -297,6 +350,22 @@ export function BoardMap({ patch, previousPatch = null, phase, showHeader = true
 
   const sectorsById = useMemo(() => new Map(patch.sectors.map((sector) => [sector.id, sector] as const)), [patch.sectors]);
   const movementPlanner = patch.movementPlanner?.active ? patch.movementPlanner : null;
+  useEffect(() => {
+    if (!movementPlanner || !activeSeatId) {
+      return;
+    }
+
+    movementPlanner.destinations.forEach((destination) => {
+      if (destination.disabledReason || destination.route.length < 2) {
+        return;
+      }
+
+      movementRouteCacheRef.current.set(
+        buildMovementRouteCacheKey(activeSeatId, movementPlanner.currentSectorId, destination.sectorId),
+        destination.route
+      );
+    });
+  }, [activeSeatId, movementPlanner]);
   const legalTargetIds = useMemo(
     () =>
       movementPlanner
@@ -382,6 +451,10 @@ export function BoardMap({ patch, previousPatch = null, phase, showHeader = true
   const playerMarkersByNodeId = useMemo(() => buildPlayerMarkersByNodeId(patch), [patch]);
   const missionMarkersByNodeId = useMemo(() => buildMissionMarkersByNodeId(patch), [patch]);
   const movingSeatIds = useMemo(() => buildMovingSeatIds(patch, previousPatch), [patch, previousPatch]);
+  const movementAnimations = useMemo(
+    () => buildMovementAnimations(patch, previousPatch, movementRouteCacheRef.current),
+    [patch, previousPatch]
+  );
   const nemesisSectorIds = useMemo(
     () => new Set((patch.nemesisChampions ?? []).filter((champion) => !champion.defeated).map((champion) => champion.sectorId)),
     [patch.nemesisChampions]
@@ -449,6 +522,7 @@ export function BoardMap({ patch, previousPatch = null, phase, showHeader = true
                   playerMarkersByNodeId={playerMarkersByNodeId}
                   missionMarkersByNodeId={missionMarkersByNodeId}
                   movingSeatIds={movingSeatIds}
+                  movementAnimations={movementAnimations}
                   nemesisSectorIds={nemesisSectorIds}
                   onSelectNode={setSelectedNodeId}
                   debugEnabled={boardDebugEnabled}

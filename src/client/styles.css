@@ -10668,6 +10668,69 @@ body {
   animation: board-token-step-settle 720ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
+.talisman-board-travel {
+  position: absolute;
+  inset: 0;
+  z-index: 8;
+  pointer-events: none;
+}
+
+.talisman-board-travel-route {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.board-route-movement-travel {
+  stroke-width: 4;
+  opacity: 0;
+  animation: board-route-travel-fade var(--movement-duration, 760ms) cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.talisman-board-travel-token {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: grid;
+  place-items: center;
+  width: clamp(1.18rem, 1.34vw, 1.58rem);
+  aspect-ratio: 1;
+  border: 2px solid rgba(246, 247, 240, 0.96);
+  border-radius: 999px;
+  background:
+    radial-gradient(circle at 34% 22%, rgba(255, 255, 255, 0.55), transparent 28%),
+    var(--token-fill, #7fb2d8);
+  color: #f8fbff;
+  font-size: clamp(0.48rem, 0.56vw, 0.68rem);
+  font-weight: 950;
+  line-height: 1;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.82);
+  box-shadow:
+    0 0 0.82rem color-mix(in srgb, var(--token-fill, #7fb2d8) 62%, transparent),
+    0 0.34rem 0.74rem rgba(0, 0, 0, 0.62);
+  offset-path: var(--movement-path);
+  offset-position: 0 0;
+  offset-distance: 100%;
+  transform: translate(-50%, -50%);
+  animation: board-token-route-travel var(--movement-duration, 760ms) cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.talisman-board-travel-arrival {
+  position: absolute;
+  width: clamp(2rem, 2.4vw, 2.8rem);
+  aspect-ratio: 1;
+  border: 2px solid rgba(246, 231, 184, 0.84);
+  border-radius: 999px;
+  transform: translate(-50%, -50%);
+  opacity: 0;
+  box-shadow:
+    0 0 0.9rem rgba(227, 179, 65, 0.48),
+    inset 0 0 0.8rem rgba(227, 179, 65, 0.22);
+  animation: board-token-arrival-pulse 360ms cubic-bezier(0.16, 1, 0.3, 1) var(--movement-duration, 760ms) both;
+}
+
 .talisman-board-lock {
   color: #f4c96e;
 }
@@ -11115,6 +11178,53 @@ body {
   50% {
     opacity: 1;
     stroke-dashoffset: -6;
+  }
+}
+
+@keyframes board-token-route-travel {
+  0% {
+    offset-distance: 0%;
+    transform: translate(-50%, -50%) scale(0.86);
+    opacity: 0.55;
+  }
+  18%,
+  58% {
+    transform: translate(-50%, -50%) scale(1.08);
+    opacity: 1;
+  }
+  100% {
+    offset-distance: 100%;
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 0.92;
+  }
+}
+
+@keyframes board-route-travel-fade {
+  0% {
+    opacity: 0.84;
+    stroke-dashoffset: 18;
+  }
+  72% {
+    opacity: 0.58;
+  }
+  100% {
+    opacity: 0;
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes board-token-arrival-pulse {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.58);
+  }
+  45% {
+    opacity: 0.86;
+    transform: translate(-50%, -50%) scale(1.08);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(1.36);
   }
 }
 
@@ -14908,7 +15018,7 @@ body {
 
 .phone-movement-animation {
   display: grid;
-  grid-template-columns: 5.3rem minmax(0, 1fr);
+  grid-template-columns: minmax(5.8rem, 0.42fr) minmax(0, 1fr);
   gap: 0.6rem;
   align-items: center;
   padding: 0.58rem 0.66rem;
@@ -14921,10 +15031,34 @@ body {
 
 .phone-movement-animation-track {
   position: relative;
-  height: 0.28rem;
+  height: 1.18rem;
   border-radius: 999px;
-  background: rgba(104, 184, 232, 0.2);
-  box-shadow: inset 0 0 0 1px rgba(104, 184, 232, 0.18);
+  background:
+    linear-gradient(90deg, rgba(104, 184, 232, 0.22), rgba(227, 179, 65, 0.2)),
+    rgba(104, 184, 232, 0.08);
+  box-shadow:
+    inset 0 0 0 1px rgba(104, 184, 232, 0.18),
+    0 0 0.5rem rgba(104, 184, 232, 0.12);
+}
+
+.phone-movement-animation-node {
+  position: absolute;
+  top: 50%;
+  width: 0.48rem;
+  aspect-ratio: 1;
+  border: 1px solid rgba(245, 230, 196, 0.72);
+  border-radius: 999px;
+  background: rgba(5, 9, 13, 0.82);
+  transform: translateY(-50%);
+}
+
+.phone-movement-animation-node-start {
+  left: 0.18rem;
+}
+
+.phone-movement-animation-node-end {
+  right: 0.18rem;
+  box-shadow: 0 0 0.66rem rgba(227, 179, 65, 0.44);
 }
 
 .phone-movement-animation-token {
@@ -14937,7 +15071,7 @@ body {
   border-radius: 999px;
   background: #7fb2d8;
   transform: translateY(-50%);
-  animation: phone-movement-token-travel 760ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: phone-movement-token-travel var(--phone-movement-duration, 760ms) cubic-bezier(0.16, 1, 0.3, 1) both;
   box-shadow: 0 0 0.8rem rgba(104, 184, 232, 0.46);
 }
 
@@ -14952,6 +15086,7 @@ body {
 .phone-movement-animation strong {
   color: #f4e2c0;
   font-size: 0.92rem;
+  line-height: 1.18;
 }
 
 @keyframes phone-movement-token-travel {
@@ -14973,13 +15108,28 @@ body {
 
 @media (prefers-reduced-motion: reduce) {
   .talisman-board-player-marker-moving,
+  .talisman-board-travel-token,
+  .talisman-board-travel-arrival,
+  .board-route-movement-travel,
   .phone-movement-animation-token {
     animation: none !important;
+  }
+
+  .talisman-board-travel-token {
+    opacity: 0;
+  }
+
+  .talisman-board-travel-arrival {
+    opacity: 0.55;
   }
 
   .phone-movement-animation-token {
     left: calc(100% - 1rem);
     opacity: 1;
+  }
+
+  .phone-movement-animation--reduced .phone-movement-animation-token {
+    display: none;
   }
 }
 

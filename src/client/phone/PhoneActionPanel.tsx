@@ -136,6 +136,18 @@ interface SectorOpportunityItem {
   value: number;
 }
 
+interface PhoneMovementTravelState {
+  key: string;
+  fromSectorName: string;
+  toSectorName: string;
+  durationMs: number;
+  reducedMotion: boolean;
+}
+
+function prefersReducedMotion(): boolean {
+  return typeof window !== "undefined" && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches === true;
+}
+
 interface CurrentTileViewModel {
   sectorId: string;
   name: string;
@@ -1761,21 +1773,29 @@ function MovementEmptyState({
   );
 }
 
-function PhoneMovementAnimation({ outcome }: { outcome: OutcomeSummary | null }): ReactElement | null {
-  if (!outcome?.movedToSectorId) {
+function PhoneMovementAnimation({ travel }: { travel: PhoneMovementTravelState | null }): ReactElement | null {
+  if (!travel) {
     return null;
   }
 
-  const destinationName = getBoardSpace(outcome.movedToSectorId)?.name ?? outcome.movedToSectorId;
-
   return (
-    <div className="phone-movement-animation" data-testid="phone-movement-animation" role="status">
+    <div
+      className={`phone-movement-animation${travel.reducedMotion ? " phone-movement-animation--reduced" : ""}`}
+      data-testid="phone-movement-animation"
+      data-reduced-motion={travel.reducedMotion ? "true" : "false"}
+      role="status"
+      style={{ ["--phone-movement-duration" as string]: `${travel.durationMs}ms` }}
+    >
       <span className="phone-movement-animation-track" aria-hidden="true">
+        <span className="phone-movement-animation-node phone-movement-animation-node-start" />
         <span className="phone-movement-animation-token" />
+        <span className="phone-movement-animation-node phone-movement-animation-node-end" />
       </span>
       <div>
-        <span>Movement confirmed</span>
-        <strong>{destinationName}</strong>
+        <span>{travel.reducedMotion ? "Moved" : "Moving"}</span>
+        <strong>
+          {travel.fromSectorName} to {travel.toSectorName}
+        </strong>
       </div>
     </div>
   );
@@ -1946,6 +1966,7 @@ function MovementDestinationDetail({
     faceUpThreatCount: selected.faceUpThreats.length
   });
   const detailRef = useRef<HTMLElement | null>(null);
+  const [moveSubmitted, setMoveSubmitted] = useState(false);
 
   useLayoutEffect(() => {
     const scrollContainer = detailRef.current?.closest<HTMLElement>(".phone-action-content-root");
@@ -1962,6 +1983,10 @@ function MovementDestinationDetail({
       phoneScrollContainer.scrollTop = 0;
       phoneScrollContainer.scrollLeft = 0;
     }
+  }, [selected.sectorId]);
+
+  useEffect(() => {
+    setMoveSubmitted(false);
   }, [selected.sectorId]);
 
   return (
@@ -2015,17 +2040,22 @@ function MovementDestinationDetail({
                 type="button"
                 tone="move"
                 className="phone-button phone-button-primary phone-movement-confirm"
-                disabled={routeUnavailable}
-                disabledReason={selected.disabledReason}
-                onClick={() =>
+                disabled={routeUnavailable || moveSubmitted}
+                disabledReason={selected.disabledReason ?? (moveSubmitted ? "Movement is already being confirmed." : undefined)}
+                onClick={() => {
+                  if (routeUnavailable || moveSubmitted) {
+                    return;
+                  }
+
+                  setMoveSubmitted(true);
                   onIntent({
                     type: "MOVE_REQUESTED",
                     seatId,
                     toSectorId: selected.sectorId
-                  })
-                }
+                  });
+                }}
               >
-                Confirm Move
+                {moveSubmitted ? "Moving..." : "Confirm Move"}
               </GameButton>
             </>
           }
@@ -2124,7 +2154,7 @@ function MovementDestinationDetail({
 function PhoneMovePanel({
   movementPlanner,
   currentTile,
-  movementOutcome,
+  movementTravel,
   hasMoveContent,
   seatId,
   activeContract,
@@ -2133,7 +2163,7 @@ function PhoneMovePanel({
 }: {
   movementPlanner: PublicMovementPlannerState | null | undefined;
   currentTile: CurrentTileViewModel;
-  movementOutcome: OutcomeSummary | null;
+  movementTravel: PhoneMovementTravelState | null;
   hasMoveContent: boolean;
   seatId: string;
   activeContract: ContractCard | null;
@@ -2143,7 +2173,7 @@ function PhoneMovePanel({
   return (
     <section className="phone-action-active-panel phone-move-panel" data-testid="phone-action-active-panel" aria-label="Move command screen">
       <CurrentTileCard tile={currentTile} />
-      <PhoneMovementAnimation outcome={movementOutcome} />
+      <PhoneMovementAnimation travel={movementTravel} />
       <MovementPlanner planner={movementPlanner} seatId={seatId} activeContract={activeContract} onIntent={onIntent} />
       {!hasMoveContent && !movementPlanner?.active && (
         <EmptyTurnTab title="No movement choice" text="Movement is not available in this step. Resolve the current action or wait for the table." />
@@ -2295,6 +2325,8 @@ export function PhoneActionPanel({
     setLocalSelectedTurnTab(tab);
   };
   const self = patch.self;
+  const previousSectorRef = useRef<{ sectorId: string; sectorName: string } | null>(null);
+  const [movementTravel, setMovementTravel] = useState<PhoneMovementTravelState | null>(null);
 
   if (!self) {
     return (
@@ -2361,6 +2393,43 @@ export function PhoneActionPanel({
     patch.outcomeSummary?.seatId === self.seatId && patch.outcomeSummary.movedToSectorId
       ? patch.outcomeSummary
       : null;
+  useEffect(() => {
+    const currentSectorName = getBoardSpace(self.sectorId)?.name ?? sector?.name ?? self.sectorId;
+    const previousSector = previousSectorRef.current;
+
+    if (movementOutcome?.movedToSectorId === self.sectorId) {
+      const fromSectorName =
+        previousSector && previousSector.sectorId !== self.sectorId
+          ? previousSector.sectorName
+          : "Previous sector";
+
+      setMovementTravel({
+        key: `${self.seatId}:${fromSectorName}:${self.sectorId}:${movementOutcome.summary}`,
+        fromSectorName,
+        toSectorName: currentSectorName,
+        durationMs: prefersReducedMotion() ? 0 : 760,
+        reducedMotion: prefersReducedMotion()
+      });
+    }
+
+    previousSectorRef.current = {
+      sectorId: self.sectorId,
+      sectorName: currentSectorName
+    };
+  }, [movementOutcome?.movedToSectorId, movementOutcome?.summary, sector?.name, self.seatId, self.sectorId]);
+
+  useEffect(() => {
+    if (!movementTravel) {
+      return;
+    }
+
+    const timeout = window.setTimeout(
+      () => setMovementTravel((current) => (current?.key === movementTravel.key ? null : current)),
+      movementTravel.reducedMotion ? 1200 : Math.max(980, movementTravel.durationMs + 260)
+    );
+
+    return () => window.clearTimeout(timeout);
+  }, [movementTravel]);
   const shopEncounter =
     patch.phase === "action" && patch.shopEncounter?.activePlayer.playerId === self.seatId ? patch.shopEncounter : null;
 
@@ -2946,7 +3015,7 @@ export function PhoneActionPanel({
       <PhoneMovePanel
         movementPlanner={movementPlanner}
         currentTile={currentTile}
-        movementOutcome={movementOutcome}
+        movementTravel={movementTravel}
         hasMoveContent={hasMoveContent}
         seatId={self.seatId}
         activeContract={activeContract}

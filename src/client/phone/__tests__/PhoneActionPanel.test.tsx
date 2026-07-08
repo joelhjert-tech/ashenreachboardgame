@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import "@testing-library/jest-dom/vitest";
-import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { PhoneActionPanel } from "../PhoneActionPanel.js";
 import type { CharacterCatalogEntry, ClientIntent, PhonePatchPayload } from "../../shared/types.js";
@@ -712,43 +712,112 @@ describe("PhoneActionPanel", () => {
 
     fireEvent.click(screen.getByRole("button", { name: /locked.*ashwalk bridge/i }));
     fireEvent.click(screen.getByRole("button", { name: /confirm move/i }));
+    expect(screen.getByRole("button", { name: /moving/i })).toBeDisabled();
+    fireEvent.click(screen.getByRole("button", { name: /moving/i }));
     expect(onIntent).toHaveBeenCalledWith({
       type: "MOVE_REQUESTED",
       seatId: "seat-1",
       toSectorId: "ashwake-crossing"
     });
+    expect(onIntent).toHaveBeenCalledTimes(1);
   });
 
-  it("shows compact movement feedback after a confirmed move outcome", () => {
-    render(
-      <PhoneActionPanel
-        characters={characters}
-        onIntent={vi.fn()}
-        selectedTurnTab="move"
-        patch={createPatch({
-          phase: "action",
-          encounter: null,
-          outcomeSummary: {
-            seatId: "seat-1",
-            movedToSectorId: "outer_waymarket",
-            encounterCardId: null,
-            encounterTitle: null,
-            encounterCardType: null,
-            checkStat: null,
-            die1: null,
-            die2: null,
-            statBonus: null,
-            checkTotal: null,
-            difficulty: null,
-            summary: "Lane reached Anchor Market.",
-            success: true
-          }
-        })}
-      />
-    );
+  it("shows compact movement feedback after a confirmed move outcome", async () => {
+    vi.useFakeTimers();
 
-    expect(screen.getByTestId("phone-movement-animation")).toHaveTextContent(/movement confirmed/i);
-    expect(screen.getByTestId("phone-movement-animation")).toHaveTextContent(/anchor market/i);
+    try {
+      const initialPatch = createPatch({
+        phase: "navigation",
+        encounter: null,
+        movementPlanner: {
+          active: true,
+          movementValue: 1,
+          currentSectorId: "ashwake-crossing",
+          currentSectorName: "Ashwalk Bridge",
+          destinations: [
+            {
+              sectorId: "outer_waymarket",
+              name: "Anchor Market",
+              ring: "outer",
+              distance: 1,
+              route: ["ashwake-crossing", "outer_waymarket"],
+              routeNames: ["Ashwalk Bridge", "Anchor Market"],
+              tags: ["shop"],
+              threatIcons: ["yellow"],
+              ruleText: "Trade under the iron awnings.",
+              faceUpThreats: [],
+              occupants: [],
+              strategicTags: ["shop", "reward"]
+            }
+          ]
+        }
+      });
+      const { rerender } = render(
+        <PhoneActionPanel
+          characters={characters}
+          onIntent={vi.fn()}
+          selectedTurnTab="move"
+          patch={initialPatch}
+        />
+      );
+
+      rerender(
+        <PhoneActionPanel
+          characters={characters}
+          onIntent={vi.fn()}
+          selectedTurnTab="move"
+          patch={createPatch({
+            phase: "action",
+            encounter: null,
+            self: {
+              ...createPatch().self!,
+              sectorId: "outer_waymarket",
+              character: {
+                ...createPatch().self!.character,
+                currentSpaceId: "outer_waymarket"
+              }
+            },
+            players: createPatch().players.map((player) =>
+              player.seatId === "seat-1"
+                ? {
+                    ...player,
+                    sectorId: "outer_waymarket"
+                  }
+                : player
+            ),
+            outcomeSummary: {
+              seatId: "seat-1",
+              movedToSectorId: "outer_waymarket",
+              encounterCardId: null,
+              encounterTitle: null,
+              encounterCardType: null,
+              checkStat: null,
+              die1: null,
+              die2: null,
+              statBonus: null,
+              checkTotal: null,
+              difficulty: null,
+              summary: "Lane reached Anchor Market.",
+              success: true
+            }
+          })}
+        />
+      );
+
+      await act(async () => {});
+
+      expect(screen.getByTestId("phone-movement-animation")).toHaveTextContent(/moving/i);
+      expect(screen.getByTestId("phone-movement-animation")).toHaveTextContent(/ashwalk bridge to anchor market/i);
+      expect(screen.getByTestId("phone-movement-animation")).toHaveAttribute("data-reduced-motion", "false");
+
+      act(() => {
+        vi.advanceTimersByTime(1300);
+      });
+
+      expect(screen.queryByTestId("phone-movement-animation")).not.toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("keeps long movement rows readable and puts confirm in the detail footer", () => {

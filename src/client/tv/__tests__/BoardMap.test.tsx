@@ -448,6 +448,60 @@ describe("BoardMap", () => {
 
     expect(screen.getByTestId("token-seat-1")).toHaveAttribute("data-sector-id", "glassmere-spindle");
     expect(screen.getByTestId("token-seat-1")).toHaveAttribute("data-moving", "true");
+    expect(screen.getByTestId("movement-token-animation-seat-1")).toHaveAttribute("data-from-sector-id", "ashwake-crossing");
+    expect(screen.getByTestId("movement-token-animation-seat-1")).toHaveAttribute("data-to-sector-id", "glassmere-spindle");
+    expect(screen.getByTestId("movement-arrival-pulse-seat-1")).toBeInTheDocument();
+  });
+
+  it("uses the projected movement route for the cinematic travel overlay when it is cached before confirm", () => {
+    const previousPatch: PublicPatchPayload = {
+      ...createPatch(),
+      movementPlanner: {
+        active: true,
+        movementValue: 2,
+        currentSectorId: "ashwake-crossing",
+        currentSectorName: "Ashwake Crossing",
+        destinations: [
+          {
+            sectorId: "emberwatch-step",
+            name: "Emberwatch Step",
+            ring: "outer",
+            distance: 2,
+            route: ["ashwake-crossing", "mirecoil-beacon", "emberwatch-step"],
+            routeNames: ["Ashwake Crossing", "Mirecoil Beacon", "Emberwatch Step"],
+            tags: ["hazard"],
+            threatIcons: ["red"],
+            ruleText: "Cross the ember watch.",
+            faceUpThreats: [],
+            occupants: [],
+            strategicTags: ["danger"]
+          }
+        ]
+      }
+    };
+    const { rerender } = render(<BoardMap patch={previousPatch} phase="navigation" />);
+    const movedPatch: PublicPatchPayload = {
+      ...previousPatch,
+      movementPlanner: null,
+      players: previousPatch.players.map((player) =>
+        player.seatId === "seat-1"
+          ? {
+              ...player,
+              sectorId: "emberwatch-step"
+            }
+          : player
+      )
+    };
+
+    rerender(<BoardMap patch={movedPatch} previousPatch={previousPatch} phase="action" />);
+
+    expect(screen.getByTestId("token-seat-1")).toHaveAttribute("data-sector-id", "emberwatch-step");
+    expect(screen.getByTestId("movement-token-animation-seat-1")).toHaveAttribute(
+      "data-route",
+      "ashwake-crossing mirecoil-beacon emberwatch-step"
+    );
+    expect(screen.getByTestId("movement-travel-route-seat-1-0-ashwake-crossing-mirecoil-beacon")).toBeInTheDocument();
+    expect(screen.getByTestId("movement-travel-route-seat-1-1-mirecoil-beacon-emberwatch-step")).toBeInTheDocument();
   });
 
   it("renders a scenario marker on the board for roaming scenario pressure", () => {
