@@ -30,6 +30,7 @@ import {
   statOrder
 } from "../shared/statLabels.js";
 import { formatEscalation } from "./formatEscalation.js";
+import { getAfflictionEffectChips, getAfflictionStatusLabel } from "./afflictionPresentation.js";
 import { formatSignedStatBonus, getPhoneStatBreakdown } from "./statBreakdown.js";
 
 interface MobilePlayerCardProps {
@@ -403,9 +404,16 @@ export function MobilePlayerCard({
                     <div className="phone-sheet-ability-copy">
                       <h3>{affliction.name}</h3>
                       <p>
-                        <strong>{toTitleCase(affliction.duration)}</strong> {affliction.trigger}
+                        <strong>{getAfflictionStatusLabel(affliction)}</strong> {affliction.trigger}
                       </p>
                       <p>{affliction.rulesText}</p>
+                      {getAfflictionEffectChips(affliction).length > 0 && (
+                        <div className="phone-status-effect-chip-row">
+                          {getAfflictionEffectChips(affliction).map((chip) => (
+                            <span key={chip}>{chip}</span>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   </article>
                 ))}
@@ -423,14 +431,21 @@ export function MobilePlayerCard({
           )}
 
           {scarCards.length > 0 && (
-            <div className="phone-sheet-section">
+            <div className="phone-sheet-section" data-testid="phone-scars-section">
               <div className="phone-sheet-section-heading">Scars</div>
               <div className="phone-sheet-ability-list">
                 {scarCards.map((scar) => (
-                  <article key={scar.id} className="phone-sheet-ability-card">
-                    <div className="phone-sheet-ability-icon">Scar</div>
+                  <article key={scar.id} className="phone-sheet-ability-card phone-sheet-scar-card">
+                    <CardArtImage
+                      cardType="scar"
+                      cardId={scar.id}
+                      alt=""
+                      aria-hidden="true"
+                      className="phone-sheet-scar-art"
+                    />
                     <div className="phone-sheet-ability-copy">
                       <h3>{scar.title}</h3>
+                      <p>{scar.text}</p>
                       <p>
                         <strong>{scar.trigger}</strong> {scar.penalty}
                       </p>

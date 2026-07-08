@@ -264,6 +264,51 @@ describe("PhoneInventoryPanel", () => {
     expect(scars).toHaveTextContent(/gain 1 heat/i);
   });
 
+  it("groups faceup and facedown Afflictions as persistent status cards", () => {
+    const basePatch = createPatch();
+
+    render(
+      <PhoneInventoryPanel
+        patch={{
+          ...basePatch,
+          self: basePatch.self
+            ? {
+                ...basePatch.self,
+                character: {
+                  ...basePatch.self.character,
+                  afflictions: {
+                    faceup: [
+                      {
+                        id: "brittle-frame",
+                        name: "Brittle Frame",
+                        severity: 3,
+                        category: "restriction",
+                        duration: "ongoing",
+                        trigger: "While faceup.",
+                        rulesText: "You cannot use armor.",
+                        effectKind: "restriction",
+                        effectPayload: { cannotUseArmor: true },
+                        isFaceupOngoing: true
+                      }
+                    ],
+                    facedownCount: 1
+                  }
+                }
+              }
+            : null
+        }}
+        onIntent={vi.fn()}
+      />
+    );
+
+    const afflictions = screen.getByTestId("phone-inventory-afflictions");
+
+    expect(afflictions).toHaveTextContent(/afflictions: 2/i);
+    expect(afflictions).toHaveTextContent(/brittle frame/i);
+    expect(afflictions).toHaveTextContent(/blocks armor/i);
+    expect(afflictions).toHaveTextContent(/facedown afflictions/i);
+  });
+
   it("shows trophies and stat upgrades in Inventory progression", () => {
     const onIntent = vi.fn();
     const basePatch = createPatch();
@@ -308,6 +353,75 @@ describe("PhoneInventoryPanel", () => {
       seatId: "seat-1",
       stat: "grit"
     });
+  });
+
+  it("shows scar and affliction effects on the Player Card tab with stat breakdown sources", () => {
+    const patch = createPatch();
+    const self = {
+      ...patch.self!,
+      character: {
+        ...patch.self!.character,
+        scars: ["scar-wound-1"],
+        scarCards: [
+          {
+            id: "scar-wound-1",
+            title: "Ash-Lanced",
+            text: "A furnace-raked wound that never fully seals.",
+            trigger: "Your first failed Grit test each session.",
+            penalty: "Gain 1 Heat after the failure resolves.",
+            relief: "At a surgery or shrine space, spend 1 trophy after a passed Forge check to suppress this scar."
+          }
+        ],
+        afflictions: {
+          faceup: [
+            {
+              id: "hollow-belly",
+              name: "Hollow Belly",
+              severity: 1,
+              category: "testPenalty",
+              duration: "ongoing" as const,
+              trigger: "When testing Grit.",
+              rulesText: "Subtract 2 from Grit tests, minimum 1.",
+              effectKind: "testModifier",
+              effectPayload: { stat: "grit" as const, amount: -2, floor: 1 },
+              isFaceupOngoing: true
+            }
+          ],
+          facedownCount: 0
+        }
+      }
+    };
+
+    render(
+      <PortraitControllerView
+        self={self}
+        roomCode="RT7P4"
+        displayName="Lane"
+        connectionStatus="open"
+        activeSeatId="seat-1"
+        activeContractCard={null}
+        patch={{ ...patch, self }}
+        characters={characters}
+        onIntent={vi.fn()}
+        onLeave={vi.fn()}
+      />
+    );
+
+    const statusEffects = screen.getByTestId("phone-portrait-status-effects");
+
+    expect(statusEffects).toHaveTextContent(/ash-lanced/i);
+    expect(statusEffects).toHaveTextContent(/hollow belly/i);
+    expect(statusEffects).toHaveTextContent(/grit -2 tests, minimum 1/i);
+
+    const statsRegion = screen.getByLabelText(/character stats/i);
+    const gritStat = within(statsRegion).getByRole("button", { name: /grit stat 2/i });
+
+    expect(gritStat).toHaveTextContent(/status -2/i);
+
+    fireEvent.click(gritStat);
+
+    expect(gritStat).toHaveTextContent(/scars\/afflictions/i);
+    expect(gritStat).toHaveTextContent(/hollow belly test -2/i);
   });
 
   it("renders inventory and follower cards with wrapped media and cleared actions", () => {

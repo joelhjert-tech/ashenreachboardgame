@@ -149,6 +149,8 @@ describe("MobilePlayerCard", () => {
                   duration: "ongoing",
                   trigger: "While faceup.",
                   rulesText: "You cannot use armor.",
+                  effectKind: "restriction",
+                  effectPayload: { cannotUseArmor: true },
                   isFaceupOngoing: true
                 }
               ],
@@ -178,8 +180,56 @@ describe("MobilePlayerCard", () => {
 
     expect(screen.getByTestId("phone-afflictions-section")).toHaveTextContent("Afflictions");
     expect(screen.getByText("Brittle Frame")).toBeInTheDocument();
+    expect(screen.getByText(/blocks armor/i)).toBeInTheDocument();
     expect(screen.getByText("Facedown Afflictions")).toBeInTheDocument();
     expect(screen.getByText(/resolved corruption remains/i)).toBeInTheDocument();
+  });
+
+  it("shows scar cards as inspectable player status effects", () => {
+    render(
+      <MobilePlayerCard
+        self={{
+          ...self,
+          character: {
+            ...self.character,
+            scars: ["scar-wound-1"],
+            scarCards: [
+              {
+                id: "scar-wound-1",
+                title: "Ash-Lanced",
+                text: "A furnace-raked wound that never fully seals.",
+                trigger: "Your first failed Grit test each session.",
+                penalty: "Gain 1 Heat after the failure resolves.",
+                relief: "At a surgery or shrine space, spend 1 trophy after a passed Forge check to suppress this scar."
+              }
+            ]
+          }
+        }}
+        activeContractCard={null}
+        roomCode="RT7P4"
+        displayName="Joel"
+        connectionStatus="open"
+        sessionStatus="active"
+        winnerSeatId={null}
+        phase="action"
+        activeSeatId="seat-1"
+        activeNemesis={null}
+        activeScenario={null}
+        scenarioTelemetry={[]}
+        escalationLevel={0}
+        escalationThreshold={6}
+        escalationModifier={0}
+        encounter={null}
+        outcomeSummary={null}
+        onLeave={() => {}}
+      />
+    );
+
+    const scars = screen.getByTestId("phone-scars-section");
+
+    expect(scars).toHaveTextContent(/ash-lanced/i);
+    expect(scars).toHaveTextContent(/furnace-raked wound/i);
+    expect(scars.querySelector(".phone-sheet-scar-art")).toBeInTheDocument();
   });
 
   it("surfaces scenario victory messaging for the winner", () => {

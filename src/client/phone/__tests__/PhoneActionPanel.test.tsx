@@ -2275,32 +2275,36 @@ describe("PhoneActionPanel", () => {
             battle: {
               stat: "signal",
               difficulty: 7,
-              modifiers: [{ label: "Signal", value: 1 }]
+              modifiers: [
+                { label: "Signal", value: 1 },
+                { label: "Affliction: Hollow Belly", value: -2 }
+              ]
             },
             roll: {
               dice: [2, 5],
               baseTotal: 7,
-              modifierTotal: 1,
-              finalTotal: 8,
+              modifierTotal: -1,
+              finalTotal: 6,
               target: 7,
-              success: true
+              success: false
             },
             outcome: {
-              title: "Check passed",
-              text: "Success: the signal holds.",
-              effects: ["Success: gain a note."]
+              title: "Check failed",
+              text: "Failure: the signal collapses.",
+              effects: ["Failure: gain 1 Heat."]
             }
           }
         })}
       />
     );
 
-    expect(screen.getByTestId("phone-roll-result")).toHaveTextContent(/roll: 2 \+ 5 \+ 1 = 8/i);
+    expect(screen.getByTestId("phone-roll-result")).toHaveTextContent(/roll: 2 \+ 5 - 1 = 6/i);
     expect(within(screen.getByTestId("phone-roll-result")).getByTestId("combat-die-attack")).toHaveTextContent("2");
     expect(within(screen.getByTestId("phone-roll-result")).getByTestId("combat-die-defense")).toHaveTextContent("5");
     expect(screen.getByTestId("phone-roll-result")).toHaveTextContent(/target: 7/i);
-    expect(screen.getByTestId("phone-roll-result")).toHaveTextContent(/success/i);
-    expect(screen.getByTestId("phone-roll-result")).toHaveTextContent("A 8 / D 7 / +1");
+    expect(screen.getByTestId("phone-roll-result")).toHaveTextContent(/failure/i);
+    expect(screen.getByTestId("phone-roll-result")).toHaveTextContent("A 6 / D 7 / -1");
+    expect(screen.getByTestId("phone-battle-panel")).toHaveTextContent(/affliction: hollow belly -2/i);
     expect(screen.getByTestId("phone-resolution-continue")).toBeVisible();
     expect(
       screen.getByTestId("phone-resolution-continue").compareDocumentPosition(screen.getByTestId("phone-roll-result")) &

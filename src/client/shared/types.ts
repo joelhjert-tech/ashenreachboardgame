@@ -167,6 +167,24 @@ export interface ScarSummary {
   upside?: string;
 }
 
+export interface AfflictionEffectPayloadSummary {
+  cannotUseArmor?: boolean;
+  cannotUseWeapons?: boolean;
+  cannotEvadeEnemies?: boolean;
+  canEvadeEnemies?: boolean;
+  stat?: Stat;
+  amount?: number;
+  floor?: number;
+  preventWoundOn?: number[];
+  heal?: number;
+  powerLimitModifier?: number;
+  assetLimitModifier?: number;
+  battleWeaponSlotModifier?: number;
+  innateBattleBonus?: number;
+  drawAffliction?: number;
+  wound?: number;
+}
+
 export interface AfflictionSummary {
   id: string;
   name: string;
@@ -175,6 +193,8 @@ export interface AfflictionSummary {
   duration: "immediate" | "ongoing" | "oncePerTurn" | "oncePerBattle" | "reaction";
   trigger: string;
   rulesText: string;
+  effectKind?: string;
+  effectPayload?: AfflictionEffectPayloadSummary;
   isFaceupOngoing: boolean;
 }
 

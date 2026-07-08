@@ -19,6 +19,7 @@ import type {
 } from "../shared/types.js";
 import { PhoneInventoryPanel } from "./PhoneInventoryPanel.js";
 import { PhoneActionPanel, type TurnActionTab } from "./PhoneActionPanel.js";
+import { getAfflictionEffectChips, getAfflictionStatusLabel } from "./afflictionPresentation.js";
 import { formatSignedStatBonus, getPhoneStatBreakdown } from "./statBreakdown.js";
 
 interface PortraitControllerViewProps {
@@ -81,11 +82,15 @@ function writeStoredPhoneChromeVisible(visible: boolean): void {
 function getCompactStatSummary(self: PhoneSelfState, stat: Stat): string {
   const breakdown = getPhoneStatBreakdown(self, stat);
   const modifierTotal = breakdown.permanent + breakdown.gearFollower;
+  const statusTotal = breakdown.scarAfflictionSources
+    .filter((source) => source.scope === "test")
+    .reduce((sum, source) => sum + source.value, 0);
   const additions = modifierTotal !== 0
     ? [`Bonus ${formatSignedStatBonus(modifierTotal)}`]
     : [];
+  const status = statusTotal !== 0 ? [`Status ${formatSignedStatBonus(statusTotal)}`] : [];
 
-  return [`Base ${breakdown.base}`, ...additions].join(" ");
+  return [`Base ${breakdown.base}`, ...additions, ...status].join(" ");
 }
 
 function PortraitStatCard({
@@ -158,6 +163,20 @@ function PortraitStatCard({
             <dt>Temporary</dt>
             <dd>+0</dd>
           </div>
+          {breakdown.scarAfflictionSources.length > 0 && (
+            <div>
+              <dt>Scars/Afflictions</dt>
+              <dd>
+                <small className="phone-stat-card-source-list">
+                  {breakdown.scarAfflictionSources.map((source) => (
+                    <span key={`${source.scope}-${source.label}`}>
+                      {source.label} {source.scope} {formatSignedStatBonus(source.value)}
+                    </span>
+                  ))}
+                </small>
+              </dd>
+            </div>
+          )}
           <div>
             <dt>Final</dt>
             <dd>{breakdown.final}</dd>
@@ -779,6 +798,8 @@ export function PortraitControllerView({
   const compactStatusDetail = self.character.scars.length > 0
     ? `${self.character.scars.length} scar${self.character.scars.length === 1 ? "" : "s"}`
     : `${self.character.heat} heat`;
+  const scarCards = self.character.scarCards ?? [];
+  const afflictions = self.character.afflictions ?? { faceup: [], facedownCount: 0 };
 
   return (
     <section
@@ -870,6 +891,63 @@ export function PortraitControllerView({
                   <span>Status {self.character.status}</span>
                 </div>
               </section>
+
+              {(scarCards.length > 0 || afflictions.faceup.length > 0 || afflictions.facedownCount > 0) && (
+                <section className="phone-portrait-section" data-testid="phone-portrait-status-effects">
+                  <div className="phone-sheet-section-heading">Scars / Afflictions</div>
+                  <div className="phone-status-effect-list">
+                    {scarCards.map((scar) => (
+                      <article key={scar.id} className="phone-portrait-info-card phone-status-effect-card phone-status-effect-card-scar">
+                        <CardArtImage
+                          cardType="scar"
+                          cardId={scar.id}
+                          alt=""
+                          aria-hidden="true"
+                          className="phone-status-effect-art"
+                        />
+                        <div className="phone-status-effect-copy">
+                          <span>Scar | Persistent</span>
+                          <strong>{scar.title}</strong>
+                          <p>{scar.text}</p>
+                          <small>{scar.trigger}: {scar.penalty}</small>
+                        </div>
+                      </article>
+                    ))}
+                    {afflictions.faceup.map((affliction) => {
+                      const effectChips = getAfflictionEffectChips(affliction);
+
+                      return (
+                        <article key={affliction.id} className="phone-portrait-info-card phone-status-effect-card phone-status-effect-card-affliction">
+                          <div className="phone-status-effect-severity">S{affliction.severity}</div>
+                          <div className="phone-status-effect-copy">
+                            <span>Affliction | {getAfflictionStatusLabel(affliction)}</span>
+                            <strong>{affliction.name}</strong>
+                            <p>{affliction.rulesText}</p>
+                            <small>{affliction.trigger}</small>
+                            {effectChips.length > 0 && (
+                              <div className="phone-portrait-chip-row phone-status-effect-chip-row">
+                                {effectChips.map((chip) => (
+                                  <span key={chip}>{chip}</span>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        </article>
+                      );
+                    })}
+                    {afflictions.facedownCount > 0 && (
+                      <article className="phone-portrait-info-card phone-status-effect-card phone-status-effect-card-facedown">
+                        <div className="phone-status-effect-severity">{afflictions.facedownCount}</div>
+                        <div className="phone-status-effect-copy">
+                          <span>Affliction | Facedown</span>
+                          <strong>Resolved Afflictions</strong>
+                          <p>Resolved corruption remains in your Affliction area.</p>
+                        </div>
+                      </article>
+                    )}
+                  </div>
+                </section>
+              )}
 
               {patch?.gameMode === "nemesis_relay" && (
                 <>

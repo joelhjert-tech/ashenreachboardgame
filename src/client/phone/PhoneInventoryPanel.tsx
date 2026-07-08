@@ -8,7 +8,8 @@ import {
 import { CardArtImage } from "../shared/CardArtImage.js";
 import { GameButton } from "../shared/GameButton.js";
 import { statOrder } from "../shared/statLabels.js";
-import type { ClientIntent, PhonePatchPayload, ScarSummary, Stat, TrophyPileEntry } from "../shared/types.js";
+import type { AfflictionSummary, ClientIntent, PhonePatchPayload, ScarSummary, Stat, TrophyPileEntry } from "../shared/types.js";
+import { getAfflictionEffectChips, getAfflictionStatusLabel } from "./afflictionPresentation.js";
 import { PhoneWrappedMediaCard } from "./PhoneWrappedMediaCard.js";
 import {
   getInventoryGroups,
@@ -279,6 +280,88 @@ function InventoryScarsSection({ scars }: { scars: ScarSummary[] }): ReactElemen
   );
 }
 
+function InventoryAfflictionsSection({
+  afflictions,
+  facedownCount
+}: {
+  afflictions: AfflictionSummary[];
+  facedownCount: number;
+}): ReactElement | null {
+  if (afflictions.length === 0 && facedownCount === 0) {
+    return null;
+  }
+
+  return (
+    <section className="phone-inventory-scars phone-inventory-afflictions" aria-label="Afflictions and corruption" data-testid="phone-inventory-afflictions">
+      <div className="phone-inventory-progression-header phone-inventory-scars-header">
+        <div>
+          <span>Status</span>
+          <strong>Afflictions: {afflictions.length + facedownCount}</strong>
+        </div>
+        <small>{facedownCount > 0 ? `${facedownCount} facedown` : "Faceup effects"}</small>
+      </div>
+      <div className="phone-inventory-card-list">
+        {afflictions.map((affliction) => {
+          const effectChips = getAfflictionEffectChips(affliction);
+
+          return (
+            <PhoneWrappedMediaCard
+              key={affliction.id}
+              variant="inventory"
+              className="phone-inventory-card phone-inventory-scar-card phone-inventory-affliction-card"
+              dataState="persistent"
+              ariaLabel={`${affliction.name}: ${affliction.trigger}. ${affliction.rulesText}`}
+              media={
+                <div className="phone-wrap-card__fallback phone-inventory-card-fallback phone-inventory-affliction-fallback" aria-hidden="true">
+                  S{affliction.severity}
+                </div>
+              }
+              title={affliction.name}
+              eyebrow="Affliction"
+              status={<span className="phone-inventory-card-status">{getAfflictionStatusLabel(affliction)}</span>}
+              description={
+                <div className="phone-wrap-card__consequence phone-inventory-scar-copy">
+                  <p>{affliction.rulesText}</p>
+                  <p>
+                    <strong>{affliction.trigger}</strong>
+                  </p>
+                </div>
+              }
+              disabledReason={<small className="phone-inventory-card-status-reason">Category: {affliction.category}</small>}
+              meta={
+                <div className="phone-inventory-card-meta">
+                  <span>Severity {affliction.severity}</span>
+                  <span>{affliction.duration}</span>
+                  {effectChips.map((chip) => (
+                    <span key={chip}>{chip}</span>
+                  ))}
+                </div>
+              }
+            />
+          );
+        })}
+        {facedownCount > 0 && (
+          <PhoneWrappedMediaCard
+            variant="inventory"
+            className="phone-inventory-card phone-inventory-scar-card phone-inventory-affliction-card phone-inventory-affliction-card-facedown"
+            dataState="facedown"
+            ariaLabel={`${facedownCount} facedown Afflictions. Resolved corruption remains in your Affliction area.`}
+            media={
+              <div className="phone-wrap-card__fallback phone-inventory-card-fallback phone-inventory-affliction-fallback" aria-hidden="true">
+                {facedownCount}
+              </div>
+            }
+            title="Facedown Afflictions"
+            eyebrow="Affliction"
+            status={<span className="phone-inventory-card-status">Resolved</span>}
+            description={<p className="phone-wrap-card__consequence">Resolved corruption remains in your Affliction area.</p>}
+          />
+        )}
+      </div>
+    </section>
+  );
+}
+
 function getTrophyPileEntryAvailableValue(entry: TrophyPileEntry): number {
   return Math.max(0, entry.trophyValue - (entry.spentValue ?? 0));
 }
@@ -412,6 +495,12 @@ export function PhoneInventoryPanel({
   return (
     <section className={panelClassName} aria-label="Inventory" data-item-count={visibleItemCount}>
       {!onlyUsable && <InventoryScarsSection scars={self.character.scarCards ?? []} />}
+      {!onlyUsable && (
+        <InventoryAfflictionsSection
+          afflictions={self.character.afflictions?.faceup ?? []}
+          facedownCount={self.character.afflictions?.facedownCount ?? 0}
+        />
+      )}
       {!onlyUsable && <InventoryProgressionSection patch={patch} onIntent={onIntent} />}
       {!onlyUsable && <InventoryTimingGroups cards={allCards} />}
       {visibleGroups.length === 0 ? (

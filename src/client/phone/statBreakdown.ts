@@ -1,4 +1,5 @@
 import type { PhoneSelfState, Stat } from "../shared/types.js";
+import { getAfflictionStatSources } from "./afflictionPresentation.js";
 
 export interface PhoneStatBreakdown {
   current: number;
@@ -10,6 +11,11 @@ export interface PhoneStatBreakdown {
     label: string;
     value: number;
     sourceType: "gear" | "follower";
+  }>;
+  scarAfflictionSources: Array<{
+    label: string;
+    value: number;
+    scope: "test" | "battle";
   }>;
 }
 
@@ -25,6 +31,7 @@ export function getPhoneStatBreakdown(self: PhoneSelfState, stat: Stat): PhoneSt
       sourceType: "gear" as const
     }));
   const gearFollower = gearFollowerSources.reduce((sum, source) => sum + source.value, 0);
+  const scarAfflictionSources = getAfflictionStatSources(self.character.afflictions?.faceup ?? [], stat);
 
   return {
     current: self.character.stats[stat],
@@ -32,7 +39,8 @@ export function getPhoneStatBreakdown(self: PhoneSelfState, stat: Stat): PhoneSt
     permanent,
     gearFollower,
     final: self.character.stats[stat] + gearFollower,
-    gearFollowerSources
+    gearFollowerSources,
+    scarAfflictionSources
   };
 }
 

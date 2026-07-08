@@ -75,6 +75,8 @@ export function summarizeAfflictionCard(card: AfflictionCard) {
     duration: card.duration,
     trigger: card.trigger,
     rulesText: card.rulesText,
+    effectKind: card.effectKind,
+    effectPayload: card.effectPayload,
     isFaceupOngoing: card.isFaceupOngoing
   };
 }
