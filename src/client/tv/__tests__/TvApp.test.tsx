@@ -479,6 +479,8 @@ describe("TvApp", () => {
     expect(topBar).toHaveTextContent(/mode/i);
     expect(topBar).toHaveTextContent(/win progress/i);
     expect(topBar).toHaveTextContent(/loss pressure/i);
+    expect(within(topBar).getByRole("region", { name: /win progress/i })).toHaveClass("host-progress-relic--win");
+    expect(within(topBar).getByRole("region", { name: /loss pressure/i })).toHaveClass("host-progress-relic--loss");
     expect(topBar).not.toHaveTextContent(/round/i);
     expect(topBar).not.toHaveTextContent(/phase/i);
     expect(topBar).not.toHaveTextContent(/global/i);
@@ -542,6 +544,8 @@ describe("TvApp", () => {
     expect(topBar).toHaveTextContent(/2\/6/i);
     expect(topBar).toHaveTextContent(/loss pressure/i);
     expect(topBar).toHaveTextContent(/1\/6/i);
+    expect(within(topBar).getByRole("region", { name: /win progress 2\/6/i })).toHaveClass("host-progress-relic--win");
+    expect(within(topBar).getByRole("region", { name: /loss pressure 1\/6/i })).toHaveClass("host-progress-relic--loss");
     expect(screen.queryByRole("region", { name: /global escalation/i })).not.toBeInTheDocument();
     expect(JSON.stringify(patch.payload)).not.toContain("private trigger");
   });

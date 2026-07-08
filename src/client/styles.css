@@ -15550,7 +15550,7 @@ body {
   padding: clamp(0.28rem, 0.44vw, 0.55rem);
 }
 
-.tv-command-progress-grid {
+.host-scenario-progress {
   min-width: 0;
   height: 100%;
   display: grid;
@@ -15558,124 +15558,191 @@ body {
   gap: clamp(0.34rem, 0.52vw, 0.72rem);
 }
 
-.tv-command-progress-module {
+.host-progress-relic {
+  --relic-accent: #65d58e;
+  --relic-accent-soft: rgba(101, 213, 142, 0.18);
+  --relic-accent-deep: rgba(12, 54, 34, 0.72);
+  --relic-glow: rgba(55, 190, 105, 0.22);
   min-width: 0;
   min-height: 0;
+  position: relative;
+  isolation: isolate;
   display: grid;
-  grid-template-columns: clamp(2.1rem, 2.6vw, 3.1rem) minmax(0, 1fr);
+  grid-template-columns: clamp(2.45rem, 2.95vw, 3.45rem) minmax(0, 1fr);
   align-items: center;
-  gap: clamp(0.3rem, 0.5vw, 0.58rem);
-  padding: clamp(0.32rem, 0.46vw, 0.62rem);
-  border: 1px solid rgba(151, 190, 136, 0.58);
+  gap: clamp(0.34rem, 0.54vw, 0.66rem);
+  padding: clamp(0.34rem, 0.52vw, 0.68rem);
+  overflow: hidden;
+  border: 1px solid rgba(190, 140, 72, 0.78);
+  border-radius: 0.28rem;
   background:
-    linear-gradient(180deg, rgba(8, 23, 15, 0.9), rgba(4, 9, 8, 0.94)),
-    rgba(4, 9, 8, 0.9);
+    linear-gradient(135deg, rgba(222, 176, 94, 0.16), transparent 24%, rgba(0, 0, 0, 0.1) 76%, rgba(222, 176, 94, 0.08)),
+    radial-gradient(circle at 14% 48%, var(--relic-accent-soft), transparent 34%),
+    linear-gradient(180deg, rgba(19, 18, 15, 0.96), rgba(5, 8, 8, 0.98));
   box-shadow:
-    inset 0 0 0 1px rgba(198, 255, 186, 0.08),
-    0 0 1.4rem rgba(61, 180, 91, 0.12);
+    inset 0 0 0 1px rgba(255, 224, 158, 0.08),
+    inset 0 0 1.35rem rgba(0, 0, 0, 0.38),
+    0 0 1.1rem var(--relic-glow);
 }
 
-.tv-command-progress-module-loss {
-  border-color: rgba(210, 68, 52, 0.68);
-  background:
-    linear-gradient(180deg, rgba(32, 9, 8, 0.92), rgba(10, 5, 5, 0.95)),
-    rgba(15, 5, 5, 0.9);
-  box-shadow:
-    inset 0 0 0 1px rgba(255, 138, 112, 0.08),
-    0 0 1.4rem rgba(210, 68, 52, 0.13);
+.host-progress-relic::before,
+.host-progress-relic::after {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  pointer-events: none;
 }
 
-.tv-command-progress-emblem {
-  width: clamp(2rem, 2.42vw, 2.9rem);
-  height: clamp(2rem, 2.42vw, 2.9rem);
-  border: 1px solid rgba(92, 196, 116, 0.62);
+.host-progress-relic::before {
+  inset: 0.18rem;
+  border: 1px solid rgba(247, 204, 126, 0.16);
+  background:
+    linear-gradient(90deg, rgba(255, 255, 255, 0.04), transparent 19%, transparent 81%, rgba(255, 255, 255, 0.035)),
+    repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.025) 0 1px, transparent 1px 8px);
+}
+
+.host-progress-relic::after {
+  inset: auto 0.5rem 0.38rem 0.5rem;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--relic-accent), transparent);
+  opacity: 0.55;
+  filter: drop-shadow(0 0 0.45rem var(--relic-accent));
+}
+
+.host-progress-relic--loss {
+  --relic-accent: #f05f4b;
+  --relic-accent-soft: rgba(240, 95, 75, 0.2);
+  --relic-accent-deep: rgba(72, 14, 10, 0.76);
+  --relic-glow: rgba(218, 50, 39, 0.24);
+  border-color: rgba(151, 64, 45, 0.86);
+  background:
+    linear-gradient(135deg, rgba(142, 73, 38, 0.16), transparent 21%, rgba(0, 0, 0, 0.12) 70%, rgba(230, 73, 48, 0.08)),
+    radial-gradient(circle at 14% 48%, rgba(212, 45, 36, 0.18), transparent 36%),
+    linear-gradient(180deg, rgba(26, 12, 10, 0.96), rgba(7, 5, 5, 0.98));
+}
+
+.host-progress-relic__icon {
+  width: clamp(2.1rem, 2.55vw, 3rem);
+  height: clamp(2.1rem, 2.55vw, 3rem);
+  position: relative;
+  display: grid;
+  place-items: center;
+  border: 1px solid color-mix(in srgb, var(--relic-accent) 68%, #d6ad67 32%);
   border-radius: 999px;
   background:
-    radial-gradient(circle, rgba(95, 214, 125, 0.42), rgba(18, 86, 45, 0.16) 58%, rgba(4, 8, 6, 0.2)),
-    rgba(6, 20, 12, 0.82);
-  box-shadow: inset 0 0 0.85rem rgba(93, 224, 129, 0.22);
+    radial-gradient(circle at 50% 44%, color-mix(in srgb, var(--relic-accent) 42%, transparent), transparent 38%),
+    radial-gradient(circle, rgba(245, 215, 153, 0.15), transparent 64%),
+    linear-gradient(180deg, rgba(36, 35, 31, 0.92), rgba(5, 8, 8, 0.95));
+  box-shadow:
+    inset 0 0 0 2px rgba(0, 0, 0, 0.34),
+    inset 0 0 0.86rem var(--relic-accent-soft),
+    0 0 0.9rem var(--relic-glow);
 }
 
-.tv-command-progress-module-loss .tv-command-progress-emblem {
-  border-color: rgba(236, 61, 48, 0.66);
-  background:
-    radial-gradient(circle, rgba(224, 52, 39, 0.46), rgba(91, 16, 12, 0.18) 58%, rgba(8, 3, 3, 0.2)),
-    rgba(27, 6, 5, 0.84);
-  box-shadow: inset 0 0 0.85rem rgba(238, 65, 48, 0.22);
+.host-progress-relic__icon::before,
+.host-progress-relic__icon::after {
+  content: "";
+  position: absolute;
+  border: 1px solid color-mix(in srgb, var(--relic-accent) 52%, transparent);
+  opacity: 0.74;
 }
 
-.tv-command-progress-copy {
+.host-progress-relic__icon::before {
+  inset: 0.36rem;
+  transform: rotate(45deg);
+}
+
+.host-progress-relic__icon::after {
+  inset: 0.7rem;
+  border-radius: 999px;
+}
+
+.host-progress-relic__icon span {
+  position: relative;
+  z-index: 1;
+  color: color-mix(in srgb, var(--relic-accent) 82%, #f8e7bc 18%);
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(1rem, 1.26vw, 1.48rem);
+  font-weight: 900;
+  line-height: 1;
+  text-shadow: 0 0 0.65rem var(--relic-accent);
+}
+
+.host-progress-relic__body {
   min-width: 0;
   display: grid;
-  gap: 0.16rem;
+  gap: 0.14rem;
 }
 
-.tv-command-progress-copy > span {
-  color: #9be3b0;
+.host-progress-relic__label {
+  color: color-mix(in srgb, var(--relic-accent) 74%, #f0cf8e 26%);
   font-size: clamp(0.54rem, 0.62vw, 0.72rem);
-  font-weight: 800;
-  letter-spacing: 0.11em;
+  font-weight: 900;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
+  text-shadow: 0 0 0.5rem var(--relic-glow);
 }
 
-.tv-command-progress-module-loss .tv-command-progress-copy > span {
-  color: #ff6d5d;
-}
-
-.tv-command-progress-copy strong {
+.host-progress-relic__title {
   min-width: 0;
-  color: #e8f7df;
+  color: #f4e5bf;
   font-size: clamp(0.62rem, 0.72vw, 0.86rem);
+  letter-spacing: 0.015em;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.tv-command-progress-module-loss .tv-command-progress-copy strong {
-  color: #ffe0d8;
+.host-progress-relic--win .host-progress-relic__title {
+  color: #e5f7dc;
 }
 
-.tv-command-progress-row {
+.host-progress-relic--loss .host-progress-relic__title {
+  color: #f8d8c7;
+}
+
+.host-progress-relic__meter {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
   align-items: center;
-  gap: 0.44rem;
+  gap: 0.48rem;
 }
 
-.tv-command-progress-row em {
+.host-progress-relic__value {
   color: #f7f1df;
   font-size: clamp(0.9rem, 1.04vw, 1.24rem);
   font-style: normal;
   font-weight: 900;
   letter-spacing: 0.04em;
+  text-shadow: 0 0 0.5rem rgba(0, 0, 0, 0.62);
 }
 
-.tv-command-progress-pips {
+.host-progress-relic__bar {
   min-width: 0;
   display: flex;
-  gap: 0.18rem;
+  gap: 0.16rem;
+  padding: 0.08rem;
+  border: 1px solid rgba(236, 193, 118, 0.14);
+  background: rgba(0, 0, 0, 0.24);
 }
 
-.tv-command-progress-pips i {
+.host-progress-relic__pip {
   flex: 1 1 0;
-  height: 0.34rem;
-  border: 1px solid rgba(119, 195, 132, 0.34);
-  background: rgba(12, 38, 18, 0.58);
+  height: clamp(0.28rem, 0.4vw, 0.4rem);
+  border: 1px solid color-mix(in srgb, var(--relic-accent) 28%, transparent);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.045), transparent),
+    var(--relic-accent-deep);
+  box-shadow: inset 0 0 0.28rem rgba(0, 0, 0, 0.46);
 }
 
-.tv-command-progress-module-loss .tv-command-progress-pips i {
-  border-color: rgba(219, 73, 55, 0.36);
-  background: rgba(55, 12, 10, 0.58);
-}
-
-.tv-command-progress-pips .tv-command-progress-pip-filled {
-  background: linear-gradient(90deg, rgba(75, 195, 96, 0.88), rgba(151, 227, 121, 0.84));
-  box-shadow: 0 0 0.55rem rgba(75, 195, 96, 0.35);
-}
-
-.tv-command-progress-module-loss .tv-command-progress-pips .tv-command-progress-pip-filled {
-  background: linear-gradient(90deg, rgba(214, 51, 41, 0.9), rgba(246, 100, 70, 0.84));
-  box-shadow: 0 0 0.55rem rgba(214, 51, 41, 0.38);
+.host-progress-relic__pip--filled {
+  border-color: color-mix(in srgb, var(--relic-accent) 74%, #f7d899 26%);
+  background:
+    linear-gradient(90deg, color-mix(in srgb, var(--relic-accent) 88%, #f6d684 12%), color-mix(in srgb, var(--relic-accent) 68%, #fff0b5 32%));
+  box-shadow:
+    0 0 0.58rem var(--relic-glow),
+    inset 0 0 0.24rem rgba(255, 255, 255, 0.14);
 }
 
 .tv-command-dashboard .tv-command-main {

@@ -405,14 +405,14 @@ interface TopHeaderProps {
   seatCapacity: number;
 }
 
-function TopProgressModule({
-  tone,
+function ScenarioProgressRelicPanel({
+  variant,
   label,
   title,
   current,
   max
 }: {
-  tone: "win" | "loss";
+  variant: "win" | "loss";
   label: string;
   title: string;
   current: number;
@@ -422,23 +422,41 @@ function TopProgressModule({
   const stepCount = safeMax > 0 ? Math.min(Math.max(safeMax, 3), 8) : 3;
   const progressPercent = safeMax > 0 ? getProgressPercent(current, safeMax) : 0;
   const filledSteps = Math.ceil((progressPercent / 100) * stepCount);
+  const icon = variant === "win" ? "✦" : "☠";
 
   return (
-    <section className={`tv-command-progress-module tv-command-progress-module-${tone}`} aria-label={`${label} ${current}/${safeMax}`}>
-      <div className="tv-command-progress-emblem" aria-hidden="true" />
-      <div className="tv-command-progress-copy">
-        <span>{label}</span>
-        <strong>{title}</strong>
-        <div className="tv-command-progress-row">
-          <em>{current}/{safeMax}</em>
-          <div className="tv-command-progress-pips" aria-hidden="true">
+    <section className={`host-progress-relic host-progress-relic--${variant}`} aria-label={`${label} ${current}/${safeMax}`}>
+      <div className="host-progress-relic__icon" aria-hidden="true">
+        <span>{icon}</span>
+      </div>
+      <div className="host-progress-relic__body">
+        <span className="host-progress-relic__label">{label}</span>
+        <strong className="host-progress-relic__title">{title}</strong>
+        <div className="host-progress-relic__meter">
+          <em className="host-progress-relic__value">{current}/{safeMax}</em>
+          <div className="host-progress-relic__bar" aria-hidden="true">
             {Array.from({ length: stepCount }, (_, index) => (
-              <i key={index} className={index < filledSteps ? "tv-command-progress-pip-filled" : ""} />
+              <i key={index} className={`host-progress-relic__pip${index < filledSteps ? " host-progress-relic__pip--filled" : ""}`} />
             ))}
           </div>
         </div>
       </div>
     </section>
+  );
+}
+
+function HostTopScenarioProgress({
+  win,
+  loss
+}: {
+  win: { label: string; title: string; current: number; max: number };
+  loss: { label: string; title: string; current: number; max: number };
+}): ReactElement {
+  return (
+    <div className="host-scenario-progress" aria-label="Scenario progress">
+      <ScenarioProgressRelicPanel variant="win" {...win} />
+      <ScenarioProgressRelicPanel variant="loss" {...loss} />
+    </div>
   );
 }
 
@@ -493,22 +511,20 @@ function TopHeader({
         </div>
       </div>
 
-      <div className="tv-command-progress-grid">
-        <TopProgressModule
-          tone="win"
-          label="Win Progress"
-          title={objective?.label ?? scenarioStatus.progressLabel}
-          current={winCurrent}
-          max={winMax}
-        />
-        <TopProgressModule
-          tone="loss"
-          label="Loss Pressure"
-          title={lossTitle}
-          current={lossCurrent}
-          max={lossMax}
-        />
-      </div>
+      <HostTopScenarioProgress
+        win={{
+          label: "Win Progress",
+          title: objective?.label ?? scenarioStatus.progressLabel,
+          current: winCurrent,
+          max: winMax
+        }}
+        loss={{
+          label: "Loss Pressure",
+          title: lossTitle,
+          current: lossCurrent,
+          max: lossMax
+        }}
+      />
 
       <div className="tv-command-join-module">
         {roomCode ? (
