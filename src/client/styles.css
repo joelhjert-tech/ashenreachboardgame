@@ -1638,6 +1638,14 @@ select {
   grid-template-rows: minmax(0, 1fr);
 }
 
+.phone-portrait-controller-empty .phone-portrait-lobby-panel,
+.phone-portrait-controller > .phone-portrait-lobby-panel {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
 .phone-portrait-header {
   position: relative;
   z-index: 3;
@@ -3230,6 +3238,12 @@ select {
   background:
     linear-gradient(180deg, rgba(21, 28, 35, 0.92), rgba(10, 13, 18, 0.96)),
     rgba(10, 13, 18, 0.92);
+}
+
+.phone-portrait-lobby-panel .phone-lobby-ready-panel {
+  padding: 0;
+  border: 0;
+  background: transparent;
 }
 
 .phone-lobby-ready-panel h2,
