@@ -11,6 +11,7 @@ Archive root:
 - `_archive/legacy-promoted-card-assets/threats/red/`
 - `_archive/legacy-promoted-card-assets/threats/blue/`
 - `_archive/legacy-promoted-card-assets/threats/yellow/`
+- `_archive/legacy-promoted-card-assets/contracts/`
 
 No active runtime assets were moved. No gameplay, content balance, movement, battle, shop, mission, multiplayer, scar, scenario, or lobby mechanics changed.
 
@@ -67,6 +68,20 @@ All archived files were exact hash matches with their active replacements.
 | `_archive/legacy-promoted-card-assets/threats/yellow/yellow_enemy_shiv_market_crew.png` | `public/assets/cards/threats/yellow/shiv-market-crew.png` |
 | `_archive/legacy-promoted-card-assets/threats/yellow/yellow_event_route_splice.png` | `public/assets/cards/threats/yellow/route-splice.png` |
 
+## Archived Contract Sources
+
+| archive path | active replacement path |
+|---|---|
+| `_archive/legacy-promoted-card-assets/contracts/mission_break_the_raider_chain.png` | `public/assets/cards/contracts/break-the-raider-chain.png` |
+| `_archive/legacy-promoted-card-assets/contracts/mission_hunt_breachborn.png` | `public/assets/cards/contracts/hunt-breachborn.png` |
+| `_archive/legacy-promoted-card-assets/contracts/mission_map_broken_paths.png` | `public/assets/cards/contracts/map-broken-paths.png` |
+| `_archive/legacy-promoted-card-assets/contracts/mission_gatefire_vigil.png` | `public/assets/cards/contracts/gatefire-vigil.png` |
+| `_archive/legacy-promoted-card-assets/contracts/mission_salvage_the_bellframe.png` | `public/assets/cards/contracts/salvage-the-bellframe.png` |
+| `_archive/legacy-promoted-card-assets/contracts/mission_restart_void_relay.png` | `public/assets/cards/contracts/restart-void-relay.png` |
+| `_archive/legacy-promoted-card-assets/contracts/mission_pilgrim_convoy.png` | `public/assets/cards/contracts/pilgrim-convoy.png` |
+| `_archive/legacy-promoted-card-assets/contracts/mission_choir_quietus.png` | `public/assets/cards/contracts/choir-quietus.png` |
+| `_archive/legacy-promoted-card-assets/contracts/mission_cleanse_ember_sanctum.png` | `public/assets/cards/contracts/cleanse-ember-sanctum.png` |
+
 ## Deliberately Retained Legacy Files
 
 The following legacy files were not archived:
@@ -77,21 +92,27 @@ The following legacy files were not archived:
 - `public/assets/riftfall/cards/threat-blue/card_back_threat_blue.png`
 - `public/assets/riftfall/cards/threat-yellow/card_back_threat_yellow.png`
 - `public/assets/riftfall/cards/gear/relic_choir_route_orb.png`
+- `public/assets/riftfall/cards/contracts/card_back_contract.png`
+- `public/assets/riftfall/cards/contracts/mission_lattice_witness.png`
+- `public/assets/riftfall/cards/contracts/mission_hold_the_ridge.png`
+- `public/assets/riftfall/cards/contracts/mission_span_of_the_last_seal.png`
 - all Heat files
 - all route-note files
-- all contract files
 
 Reasons:
 
 - Card backs are reference/template assets and were not promoted.
 - `relic_choir_route_orb.png` remains deferred because the artifact card cap is full.
+- The three retained contract mission images were deliberately deferred to keep the contract cap at 30.
 - Heat is deprecated and remains reference-only.
-- Route-note and contract cleanup is out of scope for this pass.
+- Route-note cleanup is out of scope for this pass.
 
 ## Prompt References
 
 Promoted Wargear and Artifact prompt seed paths were retargeted to active card-art paths where the prompt source still referenced promoted legacy locations. Generated prompt outputs were regenerated afterward.
 
 Promoted threat prompt paths were retargeted to active lane card-art paths where the prompt source or manual handoff file still referenced promoted legacy locations.
+
+Promoted contract prompt paths were retargeted to active contract card-art paths for the 9 promoted mission IDs. The separate older mission-sheet prompt stream under `public/assets/riftfall/cards/missions/` remains unchanged.
 
 Remaining old-path mentions are historical audit/report references, not active runtime or prompt-generation dependencies.

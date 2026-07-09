@@ -117,16 +117,59 @@ const specialCardArtSeeds: Array<{
   }
 ];
 
-const missionCardArtPrompts = missions.map((mission) => ({
-  id: `contract_art_${mission.id}`,
-  fileName: `${mission.id}.png`,
-  outputPath: `/assets/riftfall/cards/contracts/${mission.id}.png`,
-  assetType: "missionCardArt" as const,
-  size: "card" as const,
-  prompt: `${style}; ${mission.imagePrompt}, no text`,
-  negativePrompt: sharedNegativePrompt,
-  usage: `${mission.name} contract card art.`
-}));
+const promotedContractMissionArtPaths: Record<string, { fileName: string; outputPath: string }> = {
+  mission_break_the_raider_chain: {
+    fileName: "break-the-raider-chain.png",
+    outputPath: "/assets/cards/contracts/break-the-raider-chain.png"
+  },
+  mission_choir_quietus: {
+    fileName: "choir-quietus.png",
+    outputPath: "/assets/cards/contracts/choir-quietus.png"
+  },
+  mission_cleanse_ember_sanctum: {
+    fileName: "cleanse-ember-sanctum.png",
+    outputPath: "/assets/cards/contracts/cleanse-ember-sanctum.png"
+  },
+  mission_gatefire_vigil: {
+    fileName: "gatefire-vigil.png",
+    outputPath: "/assets/cards/contracts/gatefire-vigil.png"
+  },
+  mission_hunt_breachborn: {
+    fileName: "hunt-breachborn.png",
+    outputPath: "/assets/cards/contracts/hunt-breachborn.png"
+  },
+  mission_map_broken_paths: {
+    fileName: "map-broken-paths.png",
+    outputPath: "/assets/cards/contracts/map-broken-paths.png"
+  },
+  mission_pilgrim_convoy: {
+    fileName: "pilgrim-convoy.png",
+    outputPath: "/assets/cards/contracts/pilgrim-convoy.png"
+  },
+  mission_restart_void_relay: {
+    fileName: "restart-void-relay.png",
+    outputPath: "/assets/cards/contracts/restart-void-relay.png"
+  },
+  mission_salvage_the_bellframe: {
+    fileName: "salvage-the-bellframe.png",
+    outputPath: "/assets/cards/contracts/salvage-the-bellframe.png"
+  }
+};
+
+const missionCardArtPrompts = missions.map((mission) => {
+  const promotedArtPath = promotedContractMissionArtPaths[mission.id];
+
+  return {
+    id: `contract_art_${mission.id}`,
+    fileName: promotedArtPath?.fileName ?? `${mission.id}.png`,
+    outputPath: promotedArtPath?.outputPath ?? `/assets/riftfall/cards/contracts/${mission.id}.png`,
+    assetType: "missionCardArt" as const,
+    size: "card" as const,
+    prompt: `${style}; ${mission.imagePrompt}, no text`,
+    negativePrompt: sharedNegativePrompt,
+    usage: `${mission.name} contract card art.`
+  };
+});
 
 const promotedThreatArtPaths: Record<string, { fileName: string; outputPath: string }> = {
   red_asset_breach_halberd: {

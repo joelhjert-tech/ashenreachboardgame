@@ -240,3 +240,30 @@ Prompt/reference handling:
 
 - Promoted threat prompt paths in `generated/manual-image-prompts-all.txt` and `src/game/assets/design/cardArtPrompts.ts` were retargeted to the active lane folders.
 - Remaining `public/assets/riftfall/cards/threat-*` mentions are historical reports, archived-file paths, card-back references, or legacy prompt IDs, not runtime asset paths.
+
+## Contract Source Archive Follow-up
+
+Commit pass: `archive-promoted-legacy-contract-assets`
+
+The 9 selected legacy contract sources were promoted in `promote-selected-legacy-contract-assets` and then archived after SHA-256 verification against their active replacements.
+
+| legacy source | archive path | active replacement |
+|---|---|---|
+| `public/assets/riftfall/cards/contracts/mission_break_the_raider_chain.png` | `_archive/legacy-promoted-card-assets/contracts/mission_break_the_raider_chain.png` | `public/assets/cards/contracts/break-the-raider-chain.png` |
+| `public/assets/riftfall/cards/contracts/mission_hunt_breachborn.png` | `_archive/legacy-promoted-card-assets/contracts/mission_hunt_breachborn.png` | `public/assets/cards/contracts/hunt-breachborn.png` |
+| `public/assets/riftfall/cards/contracts/mission_map_broken_paths.png` | `_archive/legacy-promoted-card-assets/contracts/mission_map_broken_paths.png` | `public/assets/cards/contracts/map-broken-paths.png` |
+| `public/assets/riftfall/cards/contracts/mission_gatefire_vigil.png` | `_archive/legacy-promoted-card-assets/contracts/mission_gatefire_vigil.png` | `public/assets/cards/contracts/gatefire-vigil.png` |
+| `public/assets/riftfall/cards/contracts/mission_salvage_the_bellframe.png` | `_archive/legacy-promoted-card-assets/contracts/mission_salvage_the_bellframe.png` | `public/assets/cards/contracts/salvage-the-bellframe.png` |
+| `public/assets/riftfall/cards/contracts/mission_restart_void_relay.png` | `_archive/legacy-promoted-card-assets/contracts/mission_restart_void_relay.png` | `public/assets/cards/contracts/restart-void-relay.png` |
+| `public/assets/riftfall/cards/contracts/mission_pilgrim_convoy.png` | `_archive/legacy-promoted-card-assets/contracts/mission_pilgrim_convoy.png` | `public/assets/cards/contracts/pilgrim-convoy.png` |
+| `public/assets/riftfall/cards/contracts/mission_choir_quietus.png` | `_archive/legacy-promoted-card-assets/contracts/mission_choir_quietus.png` | `public/assets/cards/contracts/choir-quietus.png` |
+| `public/assets/riftfall/cards/contracts/mission_cleanse_ember_sanctum.png` | `_archive/legacy-promoted-card-assets/contracts/mission_cleanse_ember_sanctum.png` | `public/assets/cards/contracts/cleanse-ember-sanctum.png` |
+
+Retained legacy contract files:
+
+- `public/assets/riftfall/cards/contracts/mission_lattice_witness.png`
+- `public/assets/riftfall/cards/contracts/mission_hold_the_ridge.png`
+- `public/assets/riftfall/cards/contracts/mission_span_of_the_last_seal.png`
+- `public/assets/riftfall/cards/contracts/card_back_contract.png`
+
+Contract card-art prompt paths for promoted mission IDs were retargeted to active `public/assets/cards/contracts/` paths. Heat stayed deprecated/reference-only, and no `/assets/cards/heat/` path was created.

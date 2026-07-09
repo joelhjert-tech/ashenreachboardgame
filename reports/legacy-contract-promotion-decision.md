@@ -164,3 +164,34 @@ Implementation notes:
 - No Heat rewards were added to the promoted contracts.
 - No `/assets/cards/heat/` path was created.
 - Legacy source images were retained for a later archive-only pass.
+
+## Promoted Source Archive Follow-up
+
+Commit pass: `archive-promoted-legacy-contract-assets`
+
+The 9 promoted legacy contract source PNGs were archived after SHA-256 verification against their active replacements. Active contract art remains under `public/assets/cards/contracts/`; no active runtime assets were moved.
+
+| contract ID | archived source path | active replacement path |
+|---|---|---|
+| `break-the-raider-chain` | `_archive/legacy-promoted-card-assets/contracts/mission_break_the_raider_chain.png` | `public/assets/cards/contracts/break-the-raider-chain.png` |
+| `hunt-breachborn` | `_archive/legacy-promoted-card-assets/contracts/mission_hunt_breachborn.png` | `public/assets/cards/contracts/hunt-breachborn.png` |
+| `map-broken-paths` | `_archive/legacy-promoted-card-assets/contracts/mission_map_broken_paths.png` | `public/assets/cards/contracts/map-broken-paths.png` |
+| `gatefire-vigil` | `_archive/legacy-promoted-card-assets/contracts/mission_gatefire_vigil.png` | `public/assets/cards/contracts/gatefire-vigil.png` |
+| `salvage-the-bellframe` | `_archive/legacy-promoted-card-assets/contracts/mission_salvage_the_bellframe.png` | `public/assets/cards/contracts/salvage-the-bellframe.png` |
+| `restart-void-relay` | `_archive/legacy-promoted-card-assets/contracts/mission_restart_void_relay.png` | `public/assets/cards/contracts/restart-void-relay.png` |
+| `pilgrim-convoy` | `_archive/legacy-promoted-card-assets/contracts/mission_pilgrim_convoy.png` | `public/assets/cards/contracts/pilgrim-convoy.png` |
+| `choir-quietus` | `_archive/legacy-promoted-card-assets/contracts/mission_choir_quietus.png` | `public/assets/cards/contracts/choir-quietus.png` |
+| `cleanse-ember-sanctum` | `_archive/legacy-promoted-card-assets/contracts/mission_cleanse_ember_sanctum.png` | `public/assets/cards/contracts/cleanse-ember-sanctum.png` |
+
+Retained legacy contract files:
+
+- `public/assets/riftfall/cards/contracts/mission_lattice_witness.png`
+- `public/assets/riftfall/cards/contracts/mission_hold_the_ridge.png`
+- `public/assets/riftfall/cards/contracts/mission_span_of_the_last_seal.png`
+- `public/assets/riftfall/cards/contracts/card_back_contract.png`
+
+Prompt/reference handling:
+
+- Contract card-art prompt paths for the promoted mission IDs were retargeted to active `public/assets/cards/contracts/` replacements.
+- The older mission-sheet prompt stream under `public/assets/riftfall/cards/missions/` remains separate and was not changed by this contract-source archive pass.
+- Heat remained deprecated; no `/assets/cards/heat/` path was created.
