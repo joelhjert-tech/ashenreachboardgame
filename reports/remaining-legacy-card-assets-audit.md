@@ -267,3 +267,39 @@ Retained legacy contract files:
 - `public/assets/riftfall/cards/contracts/card_back_contract.png`
 
 Contract card-art prompt paths for promoted mission IDs were retargeted to active `public/assets/cards/contracts/` paths. Heat stayed deprecated/reference-only, and no `/assets/cards/heat/` path was created.
+
+## Final Legacy Boundary
+
+Commit pass: `finalize-legacy-card-asset-boundary`
+
+After the Equipment, Artifact/Relic, Threat, and Contract promotion/archive passes, `public/assets/riftfall/cards/` is no longer an active runtime card-art source. It remains only for deferred, reference, and prompt-only material.
+
+Active runtime card roots are:
+
+- `public/assets/cards/threats/red/`
+- `public/assets/cards/threats/blue/`
+- `public/assets/cards/threats/yellow/`
+- `public/assets/cards/contracts/`
+- `public/assets/cards/anomalies/`
+- `public/assets/cards/artifacts/`
+- `public/assets/cards/equipment/`
+- `public/assets/cards/scars/`
+- `public/assets/cards/escalations/`
+- `public/assets/cards/fallbacks/`
+
+Remaining legacy files are limited to:
+
+- Heat files, deprecated/reference-only.
+- Route-note files, reference-only.
+- Deferred contracts: `mission_lattice_witness.png`, `mission_hold_the_ridge.png`, `mission_span_of_the_last_seal.png`.
+- Deferred artifact: `relic_choir_route_orb.png`.
+- Card backs for contracts, threats, artifacts, and wargear.
+
+Runtime boundary confirmation:
+
+- browser/client runtime source does not reference `/assets/riftfall/cards/`
+- runtime card art catalog paths resolve under `/assets/cards/`
+- no active path emits `/assets/cards/heat/`
+- deferred/reference legacy files are not active card-art entries
+
+Current `audit:assets` result: 404/404 present.

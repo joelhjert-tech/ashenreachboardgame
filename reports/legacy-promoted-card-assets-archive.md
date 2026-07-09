@@ -116,3 +116,23 @@ Promoted threat prompt paths were retargeted to active lane card-art paths where
 Promoted contract prompt paths were retargeted to active contract card-art paths for the 9 promoted mission IDs. The separate older mission-sheet prompt stream under `public/assets/riftfall/cards/missions/` remains unchanged.
 
 Remaining old-path mentions are historical audit/report references, not active runtime or prompt-generation dependencies.
+
+## Final Legacy Boundary
+
+Commit pass: `finalize-legacy-card-asset-boundary`
+
+The promoted-card loop is closed. Equipment, Artifact/Relic, Threat, and Contract assets promoted from legacy source images now live under active `public/assets/cards/` roots, and their promoted source files have been archived.
+
+`public/assets/riftfall/cards/` is reference/deferred only. It must not be used as an active runtime card-art source.
+
+Current retained legacy material:
+
+- Heat files: deprecated/reference-only.
+- Route-note files: reference-only until a route-note card system exists.
+- Deferred contracts: `mission_lattice_witness.png`, `mission_hold_the_ridge.png`, `mission_span_of_the_last_seal.png`.
+- Deferred artifact: `relic_choir_route_orb.png`.
+- Card backs: contract, threat, artifact, and wargear reference/template images.
+
+Runtime boundary is guarded by `src/client/__tests__/runtimeImportBoundaries.test.ts`.
+
+Current `audit:assets` result for this boundary: 404/404 present.
