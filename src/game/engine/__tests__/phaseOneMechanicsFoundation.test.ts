@@ -12,10 +12,28 @@ describe("phase one mechanics foundation", () => {
     const shrineStock = filterGearByShopCategory(gear, "medicae-shrine").map((item) => item.id);
 
     expect(SHOP_CATEGORY_LABELS["forge-armoury"]).toBe("Forge / Armoury");
-    expect(forgeStock).toEqual(expect.arrayContaining(["veil-hook", "coffin-rig", "red-march-warbell"]));
+    expect(forgeStock).toEqual(
+      expect.arrayContaining([
+        "veil-hook",
+        "coffin-rig",
+        "red-march-warbell",
+        "ashlock-cleaver",
+        "signal-pike",
+        "mirecoil-wardcloak",
+        "saintplate-harness",
+        "riftblade",
+        "void-plate"
+      ])
+    );
+    expect(filterGearByShopCategory(gear, "market").map((item) => item.id)).toEqual(
+      expect.arrayContaining(["ashlock-cleaver", "signal-pike", "scrap-drone"])
+    );
+    expect(shrineStock).toEqual(expect.arrayContaining(["cinder-stim-ampoule", "voidsalt-poultice"]));
     expect(brokerStock).toEqual(expect.arrayContaining(["marshal-seal", "oath-chain-ledger"]));
     expect(shrineStock).toEqual(expect.arrayContaining(["cinder-suture-kit", "saintwire-splint"]));
     expect(getGearShopCategories(loadGear().get("choir-static-censer")!)).toContain("relic-dealer");
+    expect(getGearShopCategories(loadGear().get("cinder-stim-ampoule")!)).toContain("medicae-shrine");
+    expect(getGearShopCategories(loadGear().get("choir-static-censer")!)).not.toContain("forge-armoury");
   });
 
   it("defines explicit scenario mode metadata for every scenario", () => {

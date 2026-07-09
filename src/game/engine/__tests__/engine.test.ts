@@ -24,6 +24,20 @@ function createGear(): Map<string, GearItem> {
       }
     ],
     [
+      "ashlock-cleaver",
+      {
+        id: "ashlock-cleaver",
+        name: "Ashlock Cleaver",
+        slot: "weapon",
+        category: "passive",
+        tier: "standard",
+        statBonus: { stat: "grit", amount: 1 },
+        cost: 4,
+        sellValue: 2,
+        shopCategories: ["forge-armoury", "market"]
+      }
+    ],
+    [
       "tuning-spines",
       {
         id: "tuning-spines",
@@ -2071,6 +2085,62 @@ describe("active resolution visibility state", () => {
 });
 
 describe("active objects and table interaction", () => {
+  it("shows imported passive Equipment as a named source in battle formula rows", () => {
+    const encounter = createThreats().get("cinder-veil-stalker")!;
+    const ashlockCleaver = createGear().get("ashlock-cleaver")!;
+    const state = createState({
+      currentEncounter: encounter,
+      players: createState().players.map((player) =>
+        player.seatId === "seat-1"
+          ? {
+              ...player,
+              character: {
+                ...player.character,
+                heldGear: [ashlockCleaver],
+                equippedGear: { weapon: ashlockCleaver.id, armor: null, utility: null }
+              }
+            }
+          : player
+      )
+    });
+    const server = new GameRoomServer(
+      state,
+      [],
+      createSequenceRandomSource([0, 0, 0, 0]),
+      createThreats(),
+      createCharacters(),
+      createGear(),
+      createContracts()
+    );
+
+    runIntent(server, {
+      type: "COMBAT_REQUESTED",
+      seatId: "seat-1",
+      stat: "grit"
+    });
+
+    const enemyRollerSeatId = server.getState().pendingEnemyRoll?.assignedRollerSeatId;
+
+    if (enemyRollerSeatId) {
+      runIntent(server, {
+        type: "ENEMY_ROLL_REQUESTED",
+        seatId: enemyRollerSeatId
+      });
+    }
+
+    const resolvedCombat = [...server.getState().eventLog].reverse().find((entry) => {
+      return (entry as { type?: string }).type === "COMBAT_RESOLVED";
+    }) as { statBonus?: number; modifierSources?: Array<{ label: string; value: number }> } | undefined;
+
+    expect(resolvedCombat?.statBonus).toBe(3);
+    expect(resolvedCombat?.modifierSources).toEqual(
+      expect.arrayContaining([
+        { label: "Base Grit", value: 2 },
+        { label: "Ashlock Cleaver", value: 1 }
+      ])
+    );
+  });
+
   it("applies accepted combat item modifiers to the real final total and visible source rows", () => {
     const sent: Array<Record<string, unknown>> = [];
     const encounter = createThreats().get("cinder-veil-stalker")!;

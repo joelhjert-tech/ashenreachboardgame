@@ -1182,6 +1182,10 @@ describe("PhoneActionPanel", () => {
     expect(screen.getAllByText(/not enough salvage/i).length).toBeGreaterThan(0);
     const unaffordableCard = screen.getByText(/saintplate harness/i).closest("article");
     expect(unaffordableCard).not.toBeNull();
+    expect(unaffordableCard?.querySelector(".phone-wrap-card__image")).toHaveAttribute(
+      "src",
+      "/assets/cards/equipment/saintplate-harness.png"
+    );
     expect(within(unaffordableCard as HTMLElement).getByRole("button", { name: /buy/i })).toBeDisabled();
     expect(unaffordableCard).toHaveTextContent(/ignore until you can pay or free the slot/i);
     expect(screen.getAllByText(/^sell$/i).length).toBeGreaterThan(0);

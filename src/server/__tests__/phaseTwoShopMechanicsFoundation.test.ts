@@ -1,12 +1,15 @@
 import { describe, expect, it } from "vitest";
 import { loadGear } from "../../game/content/gear.js";
 import { loadThreatCards } from "../../game/content/threats.js";
+import { filterGearByShopCategory } from "../../game/rules/shopCategories.js";
 import {
   getAvailableShopStockForCategory,
   getGearShopCategoryIds,
+  getShopGearSellValue,
   getShopGearCost,
   SHOP_FAILURE_REASONS
 } from "../../game/rules/shopAvailability.js";
+import type { GearItem } from "../../game/schema/gear.schema.js";
 import type { GameState } from "../../game/schema/session.schema.js";
 import { createPhoneProjection, createTvProjection, GameRoomServer, type ConnectedClient } from "../roomServer.js";
 import { createInitialSessionState } from "../sessionState.js";
@@ -97,6 +100,16 @@ function getRejectedReason(sent: Array<Record<string, unknown>>): unknown {
   return sent.find((message) => message.type === "INTENT_REJECTED")?.reason;
 }
 
+function requireGear(id: string): GearItem {
+  const item = loadGear().get(id);
+
+  if (!item) {
+    throw new Error(`Missing gear fixture ${id}`);
+  }
+
+  return item;
+}
+
 describe("Phase 2A shop mechanics foundation", () => {
   it("filters shop stock by shop category metadata and excludes QA stock for normal operatives", () => {
     const gear = loadGear();
@@ -111,11 +124,62 @@ describe("Phase 2A shop mechanics foundation", () => {
       includeQaGear: false
     });
 
+    const allMarketIds = filterGearByShopCategory(gear.values(), "market").map((item) => item.id);
+    const allForgeIds = filterGearByShopCategory(gear.values(), "forge-armoury").map((item) => item.id);
+
     expect(marketStock.map((item) => item.id)).toContain("ashen-route-compass");
+    expect(allMarketIds).toEqual(expect.arrayContaining(["ashlock-cleaver", "signal-pike", "scrap-drone"]));
     expect(marketStock.every((item) => getGearShopCategoryIds(item).includes("market"))).toBe(true);
     expect(marketStock.some((item) => item.id.startsWith("qa_"))).toBe(false);
     expect(forgeStock.map((item) => item.id)).toContain("coffin-rig");
+    expect(allForgeIds).toEqual(expect.arrayContaining(["ashlock-cleaver", "riftblade", "void-plate"]));
     expect(forgeStock.every((item) => getGearShopCategoryIds(item).includes("forge-armoury"))).toBe(true);
+    expect(forgeStock.some((item) => item.tier === "artifact")).toBe(false);
+    expect(getAvailableShopStockForCategory(gear.values(), "relic-dealer", { count: 12, includeArtifacts: false }).some((item) => item.tier === "artifact")).toBe(false);
+    expect(getAvailableShopStockForCategory(gear.values(), "relic-dealer", { count: 12, includeArtifacts: true }).some((item) => item.tier === "artifact")).toBe(true);
+  });
+
+  it("buys and sells imported Equipment through ordinary shop flows", () => {
+    const ashlockCleaver = requireGear("ashlock-cleaver");
+    const { server, client, sent } = createShopServer({ sectorId: "outer_waymarket", salvage: 6 });
+
+    server.getState().shopStockReveals = [
+      {
+        seatId: "seat-1",
+        sectorId: "outer_waymarket",
+        serviceId: "buy-gear",
+        shopName: "Anchor Market",
+        stockIds: [ashlockCleaver.id],
+        createdAt: new Date().toISOString()
+      }
+    ];
+
+    server.handleIntent(client, {
+      type: "SHOP_PURCHASE_REQUESTED",
+      seatId: "seat-1",
+      cardId: ashlockCleaver.id
+    });
+
+    let player = server.getState().players.find((entry) => entry.seatId === "seat-1");
+
+    expect(getRejectedReason(sent)).toBeUndefined();
+    expect(player?.character.heldGear.map((item) => item.id)).toContain(ashlockCleaver.id);
+    expect(player?.character.salvage).toBe(6 - getShopGearCost(ashlockCleaver));
+    expect(server.getState().lastOutcomeSummary?.summary).toContain("Bought Ashlock Cleaver");
+
+    server.handleIntent(client, {
+      type: "SHOP_SELL_REQUESTED",
+      seatId: "seat-1",
+      gearId: ashlockCleaver.id
+    });
+
+    player = server.getState().players.find((entry) => entry.seatId === "seat-1");
+
+    expect(getRejectedReason(sent)).toBeUndefined();
+    expect(getShopGearSellValue(ashlockCleaver)).toBe(2);
+    expect(player?.character.heldGear.map((item) => item.id)).not.toContain(ashlockCleaver.id);
+    expect(player?.character.salvage).toBe(4);
+    expect(server.getState().lastOutcomeSummary?.summary).toContain("Sold Ashlock Cleaver for 2 Salvage");
   });
 
   it("lets a player buy available category stock and deducts salvage", () => {
