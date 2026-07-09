@@ -197,7 +197,7 @@ This pass promotes only selected legacy `gear` and `wargear` images into the act
 | `public/assets/riftfall/cards/wargear/wargear_scrap_drone.png` | `public/assets/cards/equipment/scrap-drone.png` | `scrap-drone` | utility | passive | standard | +1 Signal passive equipment source | Scavenger drone with battlefield memory. |
 | `public/assets/riftfall/cards/wargear/wargear_void_plate.png` | `public/assets/cards/equipment/void-plate.png` | `void-plate` | armor | passive | advanced | +1 Forge passive equipment source | Heavy black plate with chapel lacquer and dead-star rivets. |
 
-The import deliberately excludes `card_back_wargear.png`, `relic_choir_route_orb.png`, and `relic_oathchain_lens.png`. The two relic-named images remain deferred for a later Artifact/Relic pass.
+The import deliberately excludes `card_back_wargear.png` and `relic_choir_route_orb.png`. `relic_oathchain_lens.png` was later promoted in the Artifact / Relic import pass as `artifact-oathchain-lens`; `relic_choir_route_orb.png` remains deferred because the artifact card cap is full.
 
 Verification after import:
 
@@ -205,6 +205,24 @@ Verification after import:
 - `audit:assets`: 406/406 present.
 - Active Equipment art: 9/9 present.
 - Heat folder: retained as legacy/reference only; no active Heat category or `/assets/cards/heat/` runtime path was created.
+
+## Promoted Legacy Equipment Sources Archived
+
+The promoted Equipment source images were exact hash matches with their active copies and have been archived under `_archive/legacy-promoted-card-assets/equipment/`.
+
+| legacy source path | active replacement path | archive path | verification |
+|---|---|---|---|
+| `public/assets/riftfall/cards/gear/weapon_ashlock_cleaver.png` | `public/assets/cards/equipment/ashlock-cleaver.png` | `_archive/legacy-promoted-card-assets/equipment/weapon_ashlock_cleaver.png` | SHA-256 match, dimensions match |
+| `public/assets/riftfall/cards/gear/weapon_signal_pike.png` | `public/assets/cards/equipment/signal-pike.png` | `_archive/legacy-promoted-card-assets/equipment/weapon_signal_pike.png` | SHA-256 match, dimensions match |
+| `public/assets/riftfall/cards/gear/armor_mirecoil_wardcloak.png` | `public/assets/cards/equipment/mirecoil-wardcloak.png` | `_archive/legacy-promoted-card-assets/equipment/armor_mirecoil_wardcloak.png` | SHA-256 match, dimensions match |
+| `public/assets/riftfall/cards/gear/armor_saintplate_harness.png` | `public/assets/cards/equipment/saintplate-harness.png` | `_archive/legacy-promoted-card-assets/equipment/armor_saintplate_harness.png` | SHA-256 match, dimensions match |
+| `public/assets/riftfall/cards/gear/consumable_cinder_stim_ampoule.png` | `public/assets/cards/equipment/cinder-stim-ampoule.png` | `_archive/legacy-promoted-card-assets/equipment/consumable_cinder_stim_ampoule.png` | SHA-256 match, dimensions match |
+| `public/assets/riftfall/cards/gear/consumable_voidsalt_poultice.png` | `public/assets/cards/equipment/voidsalt-poultice.png` | `_archive/legacy-promoted-card-assets/equipment/consumable_voidsalt_poultice.png` | SHA-256 match, dimensions match |
+| `public/assets/riftfall/cards/wargear/wargear_riftblade.png` | `public/assets/cards/equipment/riftblade.png` | `_archive/legacy-promoted-card-assets/equipment/wargear_riftblade.png` | SHA-256 match, dimensions match |
+| `public/assets/riftfall/cards/wargear/wargear_scrap_drone.png` | `public/assets/cards/equipment/scrap-drone.png` | `_archive/legacy-promoted-card-assets/equipment/wargear_scrap_drone.png` | SHA-256 match, dimensions match |
+| `public/assets/riftfall/cards/wargear/wargear_void_plate.png` | `public/assets/cards/equipment/void-plate.png` | `_archive/legacy-promoted-card-assets/equipment/wargear_void_plate.png` | SHA-256 match, dimensions match |
+
+`card_back_wargear.png` was not archived because it was not promoted as active Equipment content. Heat files remain legacy/reference-only and were not moved.
 
 ## Recommended Implementation Sequence
 

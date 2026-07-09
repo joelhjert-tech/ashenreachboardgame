@@ -60,3 +60,16 @@ After import:
 - Legacy source files were retained.
 - `card_back_artifact.png` remains reference-only.
 - `relic_choir_route_orb.png` remains deferred for a future artifact-cap or archive pass.
+
+## Promoted Legacy Artifact Sources Archived
+
+The promoted Artifact / Relic source images were exact hash matches with their active copies and have been archived under `_archive/legacy-promoted-card-assets/artifacts/`.
+
+| legacy source path | active replacement path | archive path | verification |
+|---|---|---|---|
+| `public/assets/riftfall/cards/artifacts/artifact_choir_lantern.png` | `public/assets/cards/artifacts/artifact-choir-lantern.png` | `_archive/legacy-promoted-card-assets/artifacts/artifact_choir_lantern.png` | SHA-256 match, dimensions match |
+| `public/assets/riftfall/cards/artifacts/artifact_route_star.png` | `public/assets/cards/artifacts/artifact-route-star.png` | `_archive/legacy-promoted-card-assets/artifacts/artifact_route_star.png` | SHA-256 match, dimensions match |
+| `public/assets/riftfall/cards/artifacts/artifact_void_key.png` | `public/assets/cards/artifacts/artifact-void-key.png` | `_archive/legacy-promoted-card-assets/artifacts/artifact_void_key.png` | SHA-256 match, dimensions match |
+| `public/assets/riftfall/cards/gear/relic_oathchain_lens.png` | `public/assets/cards/artifacts/artifact-oathchain-lens.png` | `_archive/legacy-promoted-card-assets/artifacts/relic_oathchain_lens.png` | SHA-256 match, dimensions match |
+
+`card_back_artifact.png` was not archived because it was not promoted as active content. `relic_choir_route_orb.png` remains in legacy gear reference material and is still deferred while the artifact card cap is full. Heat files remain legacy/reference-only and were not moved.

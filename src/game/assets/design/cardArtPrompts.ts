@@ -14,6 +14,7 @@ const specialCardArtSeeds: Array<{
     | "powerCardArt"
     | "corruptionCardArt"
     | "artifactCardArt"
+    | "equipmentCardArt"
     | "wargearCardArt";
   prompt: string;
   usage: string;
@@ -67,52 +68,52 @@ const specialCardArtSeeds: Array<{
     usage: "Heat card art sample."
   },
   {
-    id: "artifact_route_star",
-    fileName: "artifact_route_star.png",
-    outputPath: "/assets/riftfall/cards/artifacts/artifact_route_star.png",
+    id: "artifact-route-star",
+    fileName: "artifact-route-star.png",
+    outputPath: "/assets/cards/artifacts/artifact-route-star.png",
     assetType: "artifactCardArt",
     prompt: "golden route-star artifact floating above a cracked altar, blue-white sacred light",
-    usage: "Artifact card art sample."
+    usage: "Route Star artifact card art."
   },
   {
-    id: "artifact_void_key",
-    fileName: "artifact_void_key.png",
-    outputPath: "/assets/riftfall/cards/artifacts/artifact_void_key.png",
+    id: "artifact-void-key",
+    fileName: "artifact-void-key.png",
+    outputPath: "/assets/cards/artifacts/artifact-void-key.png",
     assetType: "artifactCardArt",
     prompt: "ancient void key of gold and black glass, floating map rings, final gate artifact",
-    usage: "Artifact card art sample."
+    usage: "Void Key artifact card art."
   },
   {
-    id: "artifact_choir_lantern",
-    fileName: "artifact_choir_lantern.png",
-    outputPath: "/assets/riftfall/cards/artifacts/artifact_choir_lantern.png",
+    id: "artifact-choir-lantern",
+    fileName: "artifact-choir-lantern.png",
+    outputPath: "/assets/cards/artifacts/artifact-choir-lantern.png",
     assetType: "artifactCardArt",
     prompt: "brass lantern containing blue ghost flame, saint scrolls tied around the handle, holy protection artifact",
-    usage: "Artifact card art sample."
+    usage: "Choir Lantern artifact card art."
   },
   {
-    id: "wargear_riftblade",
-    fileName: "wargear_riftblade.png",
-    outputPath: "/assets/riftfall/cards/wargear/wargear_riftblade.png",
-    assetType: "wargearCardArt",
+    id: "equipment-riftblade",
+    fileName: "riftblade.png",
+    outputPath: "/assets/cards/equipment/riftblade.png",
+    assetType: "equipmentCardArt",
     prompt: "black metal sword with a blue-white energy edge resting on worn tactical cloth",
-    usage: "Wargear card art sample."
+    usage: "Riftblade equipment card art."
   },
   {
-    id: "wargear_void_plate",
-    fileName: "wargear_void_plate.png",
-    outputPath: "/assets/riftfall/cards/wargear/wargear_void_plate.png",
-    assetType: "wargearCardArt",
+    id: "equipment-void-plate",
+    fileName: "void-plate.png",
+    outputPath: "/assets/cards/equipment/void-plate.png",
+    assetType: "equipmentCardArt",
     prompt: "heavy void plate armor on a repair stand, silver-black plates, blue shield nodes",
-    usage: "Wargear card art sample."
+    usage: "Void Plate equipment card art."
   },
   {
-    id: "wargear_scrap_drone",
-    fileName: "wargear_scrap_drone.png",
-    outputPath: "/assets/riftfall/cards/wargear/wargear_scrap_drone.png",
-    assetType: "wargearCardArt",
+    id: "equipment-scrap-drone",
+    fileName: "scrap-drone.png",
+    outputPath: "/assets/cards/equipment/scrap-drone.png",
+    assetType: "equipmentCardArt",
     prompt: "small hovering scrap drone with lamp and tool arms, workshop sparks, useful scavenger gear",
-    usage: "Wargear card art sample."
+    usage: "Scrap Drone equipment card art."
   }
 ];
 

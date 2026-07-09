@@ -1546,12 +1546,12 @@ NEGATIVE PROMPT / AVOID:
 Warhammer, Warhammer 40k, Space Marine, Astartes, Imperium, Emperor, Aquila, Chaos, Daemon, Eldar, Tyranid, Necron, Mechanicus, official faction logo, copied board game art, copied card art, copied portrait, copyrighted symbols, readable copyrighted text, real-world brand, low resolution, blurry, bad anatomy, cluttered UI, unreadable layout
 
 ========================================================================================
-111. wargear_riftblade
-USAGE: Wargear card art sample.
-ASSET TYPE: wargearCardArt
+111. equipment-riftblade
+USAGE: Riftblade equipment card art.
+ASSET TYPE: equipmentCardArt
 SUGGESTED SIZE: 2:3 or 1024x1536
-OUTPUT PATH: /assets/riftfall/cards/wargear/wargear_riftblade.png
-SAVE AS: public/assets/riftfall/cards/wargear/wargear_riftblade.png
+OUTPUT PATH: /assets/cards/equipment/riftblade.png
+SAVE AS: public/assets/cards/equipment/riftblade.png
 
 PROMPT:
 original dark gothic science-fantasy board-game art, premium tabletop component, aged blackened metal, worn parchment, blue-white rift glow, cinematic lighting, clear silhouette, readable composition, original symbols only; black metal sword with a blue-white energy edge resting on worn tactical cloth, no text
@@ -1560,12 +1560,12 @@ NEGATIVE PROMPT / AVOID:
 Warhammer, Warhammer 40k, Space Marine, Astartes, Imperium, Emperor, Aquila, Chaos, Daemon, Eldar, Tyranid, Necron, Mechanicus, official faction logo, copied board game art, copied card art, copied portrait, copyrighted symbols, readable copyrighted text, real-world brand, low resolution, blurry, bad anatomy, cluttered UI, unreadable layout
 
 ========================================================================================
-112. wargear_void_plate
-USAGE: Wargear card art sample.
-ASSET TYPE: wargearCardArt
+112. equipment-void-plate
+USAGE: Void Plate equipment card art.
+ASSET TYPE: equipmentCardArt
 SUGGESTED SIZE: 2:3 or 1024x1536
-OUTPUT PATH: /assets/riftfall/cards/wargear/wargear_void_plate.png
-SAVE AS: public/assets/riftfall/cards/wargear/wargear_void_plate.png
+OUTPUT PATH: /assets/cards/equipment/void-plate.png
+SAVE AS: public/assets/cards/equipment/void-plate.png
 
 PROMPT:
 original dark gothic science-fantasy board-game art, premium tabletop component, aged blackened metal, worn parchment, blue-white rift glow, cinematic lighting, clear silhouette, readable composition, original symbols only; heavy void plate armor on a repair stand, silver-black plates, blue shield nodes, no text
@@ -1574,12 +1574,12 @@ NEGATIVE PROMPT / AVOID:
 Warhammer, Warhammer 40k, Space Marine, Astartes, Imperium, Emperor, Aquila, Chaos, Daemon, Eldar, Tyranid, Necron, Mechanicus, official faction logo, copied board game art, copied card art, copied portrait, copyrighted symbols, readable copyrighted text, real-world brand, low resolution, blurry, bad anatomy, cluttered UI, unreadable layout
 
 ========================================================================================
-113. wargear_scrap_drone
-USAGE: Wargear card art sample.
-ASSET TYPE: wargearCardArt
+113. equipment-scrap-drone
+USAGE: Scrap Drone equipment card art.
+ASSET TYPE: equipmentCardArt
 SUGGESTED SIZE: 2:3 or 1024x1536
-OUTPUT PATH: /assets/riftfall/cards/wargear/wargear_scrap_drone.png
-SAVE AS: public/assets/riftfall/cards/wargear/wargear_scrap_drone.png
+OUTPUT PATH: /assets/cards/equipment/scrap-drone.png
+SAVE AS: public/assets/cards/equipment/scrap-drone.png
 
 PROMPT:
 original dark gothic science-fantasy board-game art, premium tabletop component, aged blackened metal, worn parchment, blue-white rift glow, cinematic lighting, clear silhouette, readable composition, original symbols only; small hovering scrap drone with lamp and tool arms, workshop sparks, useful scavenger gear, no text
@@ -3826,4 +3826,3 @@ Round mission progress token, parchment and star-map symbol, bronze rim, transpa
 
 NEGATIVE PROMPT / AVOID:
 Warhammer, Warhammer 40k, Space Marine, Astartes, Imperium, Emperor, Aquila, Chaos, Daemon, Eldar, Tyranid, Necron, Mechanicus, official faction logo, copied board game art, copied card art, copied portrait, copyrighted symbols, readable copyrighted text, real-world brand, low resolution, blurry, bad anatomy, cluttered UI, unreadable layout
-
