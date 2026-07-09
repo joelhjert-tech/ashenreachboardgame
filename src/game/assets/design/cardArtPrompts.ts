@@ -128,10 +128,73 @@ const missionCardArtPrompts = missions.map((mission) => ({
   usage: `${mission.name} contract card art.`
 }));
 
+const promotedThreatArtPaths: Record<string, { fileName: string; outputPath: string }> = {
+  red_asset_breach_halberd: {
+    fileName: "breach-halberd.png",
+    outputPath: "/assets/cards/threats/red/breach-halberd.png"
+  },
+  red_encounter_shattered_barricade: {
+    fileName: "shattered-barricade.png",
+    outputPath: "/assets/cards/threats/red/shattered-barricade.png"
+  },
+  red_enemy_cinder_hounds: {
+    fileName: "cinder-hounds.png",
+    outputPath: "/assets/cards/threats/red/cinder-hounds.png"
+  },
+  red_enemy_red_maw_raiders: {
+    fileName: "red-maw-raiders.png",
+    outputPath: "/assets/cards/threats/red/red-maw-raiders.png"
+  },
+  red_event_trench_blast: {
+    fileName: "trench-blast.png",
+    outputPath: "/assets/cards/threats/red/trench-blast.png"
+  },
+  blue_asset_sanctifier_beads: {
+    fileName: "sanctifier-beads.png",
+    outputPath: "/assets/cards/threats/blue/sanctifier-beads.png"
+  },
+  blue_encounter_hushed_chapel: {
+    fileName: "hushed-chapel.png",
+    outputPath: "/assets/cards/threats/blue/hushed-chapel.png"
+  },
+  blue_enemy_choir_wraith: {
+    fileName: "choir-wraith.png",
+    outputPath: "/assets/cards/threats/blue/choir-wraith.png"
+  },
+  blue_enemy_veil_censor: {
+    fileName: "veil-censor.png",
+    outputPath: "/assets/cards/threats/blue/veil-censor.png"
+  },
+  blue_event_rift_whispers: {
+    fileName: "rift-whispers.png",
+    outputPath: "/assets/cards/threats/blue/rift-whispers.png"
+  },
+  yellow_asset_wireghost_key: {
+    fileName: "wireghost-key.png",
+    outputPath: "/assets/cards/threats/yellow/wireghost-key.png"
+  },
+  yellow_encounter_locked_vault: {
+    fileName: "locked-vault.png",
+    outputPath: "/assets/cards/threats/yellow/locked-vault.png"
+  },
+  yellow_enemy_null_drone: {
+    fileName: "null-drone.png",
+    outputPath: "/assets/cards/threats/yellow/null-drone.png"
+  },
+  yellow_enemy_shiv_market_crew: {
+    fileName: "shiv-market-crew.png",
+    outputPath: "/assets/cards/threats/yellow/shiv-market-crew.png"
+  },
+  yellow_event_route_splice: {
+    fileName: "route-splice.png",
+    outputPath: "/assets/cards/threats/yellow/route-splice.png"
+  }
+};
+
 const threatCardArtPrompts = allThreatCards.map((card) => ({
   id: `threat_art_${card.id}`,
-  fileName: `${card.id}.png`,
-  outputPath: `/assets/riftfall/cards/threat-${card.color}/${card.id}.png`,
+  fileName: promotedThreatArtPaths[card.id]?.fileName ?? `${card.id}.png`,
+  outputPath: promotedThreatArtPaths[card.id]?.outputPath ?? `/assets/riftfall/cards/threat-${card.color}/${card.id}.png`,
   assetType: "threatCardArt" as const,
   size: "card" as const,
   prompt: `${style}; ${card.imagePrompt}, no text`,

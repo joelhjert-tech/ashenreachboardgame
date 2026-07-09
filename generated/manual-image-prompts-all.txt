@@ -1214,8 +1214,8 @@ Warhammer, Warhammer 40k, Space Marine, Astartes, Imperium, Emperor, Aquila, Cha
 USAGE: Red Maw Raiders red threat card art.
 ASSET TYPE: threatCardArt
 SUGGESTED SIZE: 2:3 or 1024x1536
-OUTPUT PATH: /assets/riftfall/cards/threat-red/red_enemy_red_maw_raiders.png
-SAVE AS: public/assets/riftfall/cards/threat-red/red_enemy_red_maw_raiders.png
+OUTPUT PATH: /assets/cards/threats/red/red-maw-raiders.png
+SAVE AS: public/assets/cards/threats/red/red-maw-raiders.png
 
 PROMPT:
 original dark gothic science-fantasy board-game art, premium tabletop component, aged blackened metal, worn parchment, blue-white rift glow, cinematic lighting, clear silhouette, readable composition, original symbols only; Threat card art of ash-raiders charging from furnace smoke with hooked scrap weapons., no text
@@ -1228,8 +1228,8 @@ Warhammer, Warhammer 40k, Space Marine, Astartes, Imperium, Emperor, Aquila, Cha
 USAGE: Cinder Hounds red threat card art.
 ASSET TYPE: threatCardArt
 SUGGESTED SIZE: 2:3 or 1024x1536
-OUTPUT PATH: /assets/riftfall/cards/threat-red/red_enemy_cinder_hounds.png
-SAVE AS: public/assets/riftfall/cards/threat-red/red_enemy_cinder_hounds.png
+OUTPUT PATH: /assets/cards/threats/red/cinder-hounds.png
+SAVE AS: public/assets/cards/threats/red/cinder-hounds.png
 
 PROMPT:
 original dark gothic science-fantasy board-game art, premium tabletop component, aged blackened metal, worn parchment, blue-white rift glow, cinematic lighting, clear silhouette, readable composition, original symbols only; Ash-coated attack beasts running low through trench light and sparks., no text
@@ -1242,8 +1242,8 @@ Warhammer, Warhammer 40k, Space Marine, Astartes, Imperium, Emperor, Aquila, Cha
 USAGE: Trench Blast red threat card art.
 ASSET TYPE: threatCardArt
 SUGGESTED SIZE: 2:3 or 1024x1536
-OUTPUT PATH: /assets/riftfall/cards/threat-red/red_event_trench_blast.png
-SAVE AS: public/assets/riftfall/cards/threat-red/red_event_trench_blast.png
+OUTPUT PATH: /assets/cards/threats/red/trench-blast.png
+SAVE AS: public/assets/cards/threats/red/trench-blast.png
 
 PROMPT:
 original dark gothic science-fantasy board-game art, premium tabletop component, aged blackened metal, worn parchment, blue-white rift glow, cinematic lighting, clear silhouette, readable composition, original symbols only; Exploding trench line under a night sky with debris and warning fire., no text
@@ -1256,8 +1256,8 @@ Warhammer, Warhammer 40k, Space Marine, Astartes, Imperium, Emperor, Aquila, Cha
 USAGE: Shattered Barricade red threat card art.
 ASSET TYPE: threatCardArt
 SUGGESTED SIZE: 2:3 or 1024x1536
-OUTPUT PATH: /assets/riftfall/cards/threat-red/red_encounter_shattered_barricade.png
-SAVE AS: public/assets/riftfall/cards/threat-red/red_encounter_shattered_barricade.png
+OUTPUT PATH: /assets/cards/threats/red/shattered-barricade.png
+SAVE AS: public/assets/cards/threats/red/shattered-barricade.png
 
 PROMPT:
 original dark gothic science-fantasy board-game art, premium tabletop component, aged blackened metal, worn parchment, blue-white rift glow, cinematic lighting, clear silhouette, readable composition, original symbols only; Broken metal barricade in a narrow war lane, lit by red beacons., no text
@@ -1270,8 +1270,8 @@ Warhammer, Warhammer 40k, Space Marine, Astartes, Imperium, Emperor, Aquila, Cha
 USAGE: Breach Halberd red threat card art.
 ASSET TYPE: threatCardArt
 SUGGESTED SIZE: 2:3 or 1024x1536
-OUTPUT PATH: /assets/riftfall/cards/threat-red/red_asset_breach_halberd.png
-SAVE AS: public/assets/riftfall/cards/threat-red/red_asset_breach_halberd.png
+OUTPUT PATH: /assets/cards/threats/red/breach-halberd.png
+SAVE AS: public/assets/cards/threats/red/breach-halberd.png
 
 PROMPT:
 original dark gothic science-fantasy board-game art, premium tabletop component, aged blackened metal, worn parchment, blue-white rift glow, cinematic lighting, clear silhouette, readable composition, original symbols only; Long industrial halberd resting against scorched bulkhead plating., no text
@@ -1284,8 +1284,8 @@ Warhammer, Warhammer 40k, Space Marine, Astartes, Imperium, Emperor, Aquila, Cha
 USAGE: Rift Whispers blue threat card art.
 ASSET TYPE: threatCardArt
 SUGGESTED SIZE: 2:3 or 1024x1536
-OUTPUT PATH: /assets/riftfall/cards/threat-blue/blue_event_rift_whispers.png
-SAVE AS: public/assets/riftfall/cards/threat-blue/blue_event_rift_whispers.png
+OUTPUT PATH: /assets/cards/threats/blue/rift-whispers.png
+SAVE AS: public/assets/cards/threats/blue/rift-whispers.png
 
 PROMPT:
 original dark gothic science-fantasy board-game art, premium tabletop component, aged blackened metal, worn parchment, blue-white rift glow, cinematic lighting, clear silhouette, readable composition, original symbols only; A corridor of pale voices and floating prayer strips under cold breach light., no text
@@ -1298,8 +1298,8 @@ Warhammer, Warhammer 40k, Space Marine, Astartes, Imperium, Emperor, Aquila, Cha
 USAGE: Choir Wraith blue threat card art.
 ASSET TYPE: threatCardArt
 SUGGESTED SIZE: 2:3 or 1024x1536
-OUTPUT PATH: /assets/riftfall/cards/threat-blue/blue_enemy_choir_wraith.png
-SAVE AS: public/assets/riftfall/cards/threat-blue/blue_enemy_choir_wraith.png
+OUTPUT PATH: /assets/cards/threats/blue/choir-wraith.png
+SAVE AS: public/assets/cards/threats/blue/choir-wraith.png
 
 PROMPT:
 original dark gothic science-fantasy board-game art, premium tabletop component, aged blackened metal, worn parchment, blue-white rift glow, cinematic lighting, clear silhouette, readable composition, original symbols only; Translucent choir wraith with glass hymn shards and blue-white spectral drift., no text
@@ -1312,8 +1312,8 @@ Warhammer, Warhammer 40k, Space Marine, Astartes, Imperium, Emperor, Aquila, Cha
 USAGE: Veil Censor blue threat card art.
 ASSET TYPE: threatCardArt
 SUGGESTED SIZE: 2:3 or 1024x1536
-OUTPUT PATH: /assets/riftfall/cards/threat-blue/blue_enemy_veil_censor.png
-SAVE AS: public/assets/riftfall/cards/threat-blue/blue_enemy_veil_censor.png
+OUTPUT PATH: /assets/cards/threats/blue/veil-censor.png
+SAVE AS: public/assets/cards/threats/blue/veil-censor.png
 
 PROMPT:
 original dark gothic science-fantasy board-game art, premium tabletop component, aged blackened metal, worn parchment, blue-white rift glow, cinematic lighting, clear silhouette, readable composition, original symbols only; Floating judicial machine with censor lamps and cold blue scanning beams., no text
@@ -1326,8 +1326,8 @@ Warhammer, Warhammer 40k, Space Marine, Astartes, Imperium, Emperor, Aquila, Cha
 USAGE: Hushed Chapel blue threat card art.
 ASSET TYPE: threatCardArt
 SUGGESTED SIZE: 2:3 or 1024x1536
-OUTPUT PATH: /assets/riftfall/cards/threat-blue/blue_encounter_hushed_chapel.png
-SAVE AS: public/assets/riftfall/cards/threat-blue/blue_encounter_hushed_chapel.png
+OUTPUT PATH: /assets/cards/threats/blue/hushed-chapel.png
+SAVE AS: public/assets/cards/threats/blue/hushed-chapel.png
 
 PROMPT:
 original dark gothic science-fantasy board-game art, premium tabletop component, aged blackened metal, worn parchment, blue-white rift glow, cinematic lighting, clear silhouette, readable composition, original symbols only; Silent chapel alcove with extinguished candles and reflected blue dust., no text
@@ -1340,8 +1340,8 @@ Warhammer, Warhammer 40k, Space Marine, Astartes, Imperium, Emperor, Aquila, Cha
 USAGE: Sanctifier Beads blue threat card art.
 ASSET TYPE: threatCardArt
 SUGGESTED SIZE: 2:3 or 1024x1536
-OUTPUT PATH: /assets/riftfall/cards/threat-blue/blue_asset_sanctifier_beads.png
-SAVE AS: public/assets/riftfall/cards/threat-blue/blue_asset_sanctifier_beads.png
+OUTPUT PATH: /assets/cards/threats/blue/sanctifier-beads.png
+SAVE AS: public/assets/cards/threats/blue/sanctifier-beads.png
 
 PROMPT:
 original dark gothic science-fantasy board-game art, premium tabletop component, aged blackened metal, worn parchment, blue-white rift glow, cinematic lighting, clear silhouette, readable composition, original symbols only; Consecrated beads and metal prayer knots on worn blue cloth., no text
@@ -1354,8 +1354,8 @@ Warhammer, Warhammer 40k, Space Marine, Astartes, Imperium, Emperor, Aquila, Cha
 USAGE: Locked Vault yellow threat card art.
 ASSET TYPE: threatCardArt
 SUGGESTED SIZE: 2:3 or 1024x1536
-OUTPUT PATH: /assets/riftfall/cards/threat-yellow/yellow_encounter_locked_vault.png
-SAVE AS: public/assets/riftfall/cards/threat-yellow/yellow_encounter_locked_vault.png
+OUTPUT PATH: /assets/cards/threats/yellow/locked-vault.png
+SAVE AS: public/assets/cards/threats/yellow/locked-vault.png
 
 PROMPT:
 original dark gothic science-fantasy board-game art, premium tabletop component, aged blackened metal, worn parchment, blue-white rift glow, cinematic lighting, clear silhouette, readable composition, original symbols only; Sealed vault door cut into a maintenance wall with yellow warning strips and pry marks., no text
@@ -1368,8 +1368,8 @@ Warhammer, Warhammer 40k, Space Marine, Astartes, Imperium, Emperor, Aquila, Cha
 USAGE: Null Drone yellow threat card art.
 ASSET TYPE: threatCardArt
 SUGGESTED SIZE: 2:3 or 1024x1536
-OUTPUT PATH: /assets/riftfall/cards/threat-yellow/yellow_enemy_null_drone.png
-SAVE AS: public/assets/riftfall/cards/threat-yellow/yellow_enemy_null_drone.png
+OUTPUT PATH: /assets/cards/threats/yellow/null-drone.png
+SAVE AS: public/assets/cards/threats/yellow/null-drone.png
 
 PROMPT:
 original dark gothic science-fantasy board-game art, premium tabletop component, aged blackened metal, worn parchment, blue-white rift glow, cinematic lighting, clear silhouette, readable composition, original symbols only; A spidery repair drone with bright yellow work lights and cutting limbs., no text
@@ -1382,8 +1382,8 @@ Warhammer, Warhammer 40k, Space Marine, Astartes, Imperium, Emperor, Aquila, Cha
 USAGE: Shiv Market Crew yellow threat card art.
 ASSET TYPE: threatCardArt
 SUGGESTED SIZE: 2:3 or 1024x1536
-OUTPUT PATH: /assets/riftfall/cards/threat-yellow/yellow_enemy_shiv_market_crew.png
-SAVE AS: public/assets/riftfall/cards/threat-yellow/yellow_enemy_shiv_market_crew.png
+OUTPUT PATH: /assets/cards/threats/yellow/shiv-market-crew.png
+SAVE AS: public/assets/cards/threats/yellow/shiv-market-crew.png
 
 PROMPT:
 original dark gothic science-fantasy board-game art, premium tabletop component, aged blackened metal, worn parchment, blue-white rift glow, cinematic lighting, clear silhouette, readable composition, original symbols only; Masked thieves in layered market leathers under sodium lamps and steam haze., no text
@@ -1396,8 +1396,8 @@ Warhammer, Warhammer 40k, Space Marine, Astartes, Imperium, Emperor, Aquila, Cha
 USAGE: Route Splice yellow threat card art.
 ASSET TYPE: threatCardArt
 SUGGESTED SIZE: 2:3 or 1024x1536
-OUTPUT PATH: /assets/riftfall/cards/threat-yellow/yellow_event_route_splice.png
-SAVE AS: public/assets/riftfall/cards/threat-yellow/yellow_event_route_splice.png
+OUTPUT PATH: /assets/cards/threats/yellow/route-splice.png
+SAVE AS: public/assets/cards/threats/yellow/route-splice.png
 
 PROMPT:
 original dark gothic science-fantasy board-game art, premium tabletop component, aged blackened metal, worn parchment, blue-white rift glow, cinematic lighting, clear silhouette, readable composition, original symbols only; Mechanical route plates sliding apart under hazard lights and sparks., no text
@@ -1410,8 +1410,8 @@ Warhammer, Warhammer 40k, Space Marine, Astartes, Imperium, Emperor, Aquila, Cha
 USAGE: Wireghost Key yellow threat card art.
 ASSET TYPE: threatCardArt
 SUGGESTED SIZE: 2:3 or 1024x1536
-OUTPUT PATH: /assets/riftfall/cards/threat-yellow/yellow_asset_wireghost_key.png
-SAVE AS: public/assets/riftfall/cards/threat-yellow/yellow_asset_wireghost_key.png
+OUTPUT PATH: /assets/cards/threats/yellow/wireghost-key.png
+SAVE AS: public/assets/cards/threats/yellow/wireghost-key.png
 
 PROMPT:
 original dark gothic science-fantasy board-game art, premium tabletop component, aged blackened metal, worn parchment, blue-white rift glow, cinematic lighting, clear silhouette, readable composition, original symbols only; A thin improvised bypass key wrapped in yellow wire and old seal tags., no text

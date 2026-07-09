@@ -205,3 +205,38 @@ Implementation notes:
 - Asset-role threat images were promoted as `resolutionType: "asset"` hazards using existing note/wound/scar effects, not as new Equipment.
 - Each promoted threat was registered once in an appropriate canonical sector threat deck so the live deck reference set remains complete.
 - Threat count increased from 94 to 109, still within the 40-120 validation target.
+
+## Threat Source Archive Follow-up
+
+Commit pass: `archive-promoted-legacy-threat-assets`
+
+The 15 promoted legacy threat source PNGs were archived after SHA-256 verification against their active replacements. The legacy threat card backs were deliberately retained as reference/template assets.
+
+| legacy source | archive path | active replacement |
+|---|---|---|
+| `public/assets/riftfall/cards/threat-red/red_asset_breach_halberd.png` | `_archive/legacy-promoted-card-assets/threats/red/red_asset_breach_halberd.png` | `public/assets/cards/threats/red/breach-halberd.png` |
+| `public/assets/riftfall/cards/threat-red/red_encounter_shattered_barricade.png` | `_archive/legacy-promoted-card-assets/threats/red/red_encounter_shattered_barricade.png` | `public/assets/cards/threats/red/shattered-barricade.png` |
+| `public/assets/riftfall/cards/threat-red/red_enemy_cinder_hounds.png` | `_archive/legacy-promoted-card-assets/threats/red/red_enemy_cinder_hounds.png` | `public/assets/cards/threats/red/cinder-hounds.png` |
+| `public/assets/riftfall/cards/threat-red/red_enemy_red_maw_raiders.png` | `_archive/legacy-promoted-card-assets/threats/red/red_enemy_red_maw_raiders.png` | `public/assets/cards/threats/red/red-maw-raiders.png` |
+| `public/assets/riftfall/cards/threat-red/red_event_trench_blast.png` | `_archive/legacy-promoted-card-assets/threats/red/red_event_trench_blast.png` | `public/assets/cards/threats/red/trench-blast.png` |
+| `public/assets/riftfall/cards/threat-blue/blue_asset_sanctifier_beads.png` | `_archive/legacy-promoted-card-assets/threats/blue/blue_asset_sanctifier_beads.png` | `public/assets/cards/threats/blue/sanctifier-beads.png` |
+| `public/assets/riftfall/cards/threat-blue/blue_encounter_hushed_chapel.png` | `_archive/legacy-promoted-card-assets/threats/blue/blue_encounter_hushed_chapel.png` | `public/assets/cards/threats/blue/hushed-chapel.png` |
+| `public/assets/riftfall/cards/threat-blue/blue_enemy_choir_wraith.png` | `_archive/legacy-promoted-card-assets/threats/blue/blue_enemy_choir_wraith.png` | `public/assets/cards/threats/blue/choir-wraith.png` |
+| `public/assets/riftfall/cards/threat-blue/blue_enemy_veil_censor.png` | `_archive/legacy-promoted-card-assets/threats/blue/blue_enemy_veil_censor.png` | `public/assets/cards/threats/blue/veil-censor.png` |
+| `public/assets/riftfall/cards/threat-blue/blue_event_rift_whispers.png` | `_archive/legacy-promoted-card-assets/threats/blue/blue_event_rift_whispers.png` | `public/assets/cards/threats/blue/rift-whispers.png` |
+| `public/assets/riftfall/cards/threat-yellow/yellow_asset_wireghost_key.png` | `_archive/legacy-promoted-card-assets/threats/yellow/yellow_asset_wireghost_key.png` | `public/assets/cards/threats/yellow/wireghost-key.png` |
+| `public/assets/riftfall/cards/threat-yellow/yellow_encounter_locked_vault.png` | `_archive/legacy-promoted-card-assets/threats/yellow/yellow_encounter_locked_vault.png` | `public/assets/cards/threats/yellow/locked-vault.png` |
+| `public/assets/riftfall/cards/threat-yellow/yellow_enemy_null_drone.png` | `_archive/legacy-promoted-card-assets/threats/yellow/yellow_enemy_null_drone.png` | `public/assets/cards/threats/yellow/null-drone.png` |
+| `public/assets/riftfall/cards/threat-yellow/yellow_enemy_shiv_market_crew.png` | `_archive/legacy-promoted-card-assets/threats/yellow/yellow_enemy_shiv_market_crew.png` | `public/assets/cards/threats/yellow/shiv-market-crew.png` |
+| `public/assets/riftfall/cards/threat-yellow/yellow_event_route_splice.png` | `_archive/legacy-promoted-card-assets/threats/yellow/yellow_event_route_splice.png` | `public/assets/cards/threats/yellow/route-splice.png` |
+
+Retained legacy threat files:
+
+- `public/assets/riftfall/cards/threat-red/card_back_threat_red.png`
+- `public/assets/riftfall/cards/threat-blue/card_back_threat_blue.png`
+- `public/assets/riftfall/cards/threat-yellow/card_back_threat_yellow.png`
+
+Prompt/reference handling:
+
+- Promoted threat prompt paths in `generated/manual-image-prompts-all.txt` and `src/game/assets/design/cardArtPrompts.ts` were retargeted to the active lane folders.
+- Remaining `public/assets/riftfall/cards/threat-*` mentions are historical reports, archived-file paths, card-back references, or legacy prompt IDs, not runtime asset paths.

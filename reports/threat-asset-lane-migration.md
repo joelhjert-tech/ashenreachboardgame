@@ -54,3 +54,7 @@ Active flat threat card paths were removed from source, generated prompt manifes
 Remaining `riftfall/cards/threat-*` references are legacy Riftfall prompt/card-back paths and were not changed in this pass.
 
 `public/assets/riftfall` was not touched.
+
+## Follow-up Archive Note
+
+Later pass `archive-promoted-legacy-threat-assets` archived the 15 promoted legacy threat source PNGs after they were promoted to active lane paths. The legacy red, blue, and yellow threat card backs remain under `public/assets/riftfall/cards/threat-*` as reference/template assets.
