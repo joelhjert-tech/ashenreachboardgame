@@ -2894,10 +2894,6 @@ export class GameRoomServer {
           private: {
             ...entry.private,
             notes: [...entry.private.notes, "Old Oaths made the frightened route crews fall into line at once."]
-          },
-          character: {
-            ...entry.character,
-            heat: Math.max(0, entry.character.heat - 1)
           }
         })
       );
@@ -2948,13 +2944,13 @@ export class GameRoomServer {
           private: {
             ...entry.private,
             notes: [...entry.private.notes, "Void Marshal command presence stabilized the objective push."]
-          },
-          character: {
-            ...entry.character,
-            heat: Math.max(0, entry.character.heat - 1)
           }
         })
       );
+
+      if (this.state.escalationLevel > 0) {
+        this.feedEscalation(seatId, -1, "Marshal's Presence");
+      }
     }
 
     if (player.character.id === "black-ledger-agent" && !this.hasAbilityTriggeredThisRound(seatId, "black-file")) {
@@ -2967,10 +2963,6 @@ export class GameRoomServer {
           private: {
             ...entry.private,
             notes: [...entry.private.notes, "Black file leverage extracted from the finished contract."]
-          },
-          character: {
-            ...entry.character,
-            heat: Math.max(0, entry.character.heat - 1)
           }
         })
       );
@@ -2989,11 +2981,11 @@ export class GameRoomServer {
           ...entry,
           private: {
             ...entry.private,
-            notes: [...entry.private.notes, "Ash Tithe skimmed tribute off the quiet victory before the lane could cool."]
+            notes: [...entry.private.notes, "Ash Tithe skimmed tribute off the quiet victory before the route closed."]
           },
           character: {
             ...entry.character,
-            heat: Math.max(0, entry.character.heat - 1)
+            salvage: (entry.character.salvage ?? 0) + 1
           }
         })
       );
@@ -3012,7 +3004,7 @@ export class GameRoomServer {
           },
           character: {
             ...entry.character,
-            heat: Math.max(0, entry.character.heat - 1)
+            wounds: Math.max(0, entry.character.wounds - 1)
           }
         })
       );
@@ -3041,10 +3033,6 @@ export class GameRoomServer {
           private: {
             ...entry.private,
             notes: [...entry.private.notes, "Ashwake Step marked the opening lane before anyone else had to test it."]
-          },
-          character: {
-            ...entry.character,
-            heat: Math.max(0, entry.character.heat - 1)
           }
         })
       );
@@ -3064,13 +3052,13 @@ export class GameRoomServer {
           private: {
             ...entry.private,
             notes: [...entry.private.notes, "Fleet Memory read the pressure pattern before the convoy line could panic."]
-          },
-          character: {
-            ...entry.character,
-            heat: Math.max(0, entry.character.heat - 1)
           }
         })
       );
+
+      if (this.state.escalationLevel > 0) {
+        this.feedEscalation(seatId, -1, "Fleet Memory");
+      }
     }
 
     if (
@@ -3090,10 +3078,14 @@ export class GameRoomServer {
           },
           character: {
             ...entry.character,
-            heat: Math.max(0, entry.character.heat - 1)
+            wounds: entry.character.wounds + 1
           }
         })
       );
+
+      if (this.state.escalationLevel > 0) {
+        this.feedEscalation(seatId, -1, "Ember Vigil");
+      }
     }
 
     if (
@@ -3113,7 +3105,7 @@ export class GameRoomServer {
           },
           character: {
             ...entry.character,
-            heat: Math.max(0, entry.character.heat - 1)
+            wounds: Math.max(0, entry.character.wounds - 1)
           }
         })
       );
@@ -3142,10 +3134,6 @@ export class GameRoomServer {
           private: {
             ...entry.private,
             notes: [...entry.private.notes, "Ruin Courtesy made the shattered approach feel like a hall already claimed."]
-          },
-          character: {
-            ...entry.character,
-            heat: Math.max(0, entry.character.heat - 1)
           }
         })
       );
@@ -3165,10 +3153,6 @@ export class GameRoomServer {
           private: {
             ...entry.private,
             notes: [...entry.private.notes, "Ghost Mile stripped the false path out of the approach before it could set in."]
-          },
-          character: {
-            ...entry.character,
-            heat: Math.max(0, entry.character.heat - 1)
           }
         })
       );
@@ -3196,10 +3180,6 @@ export class GameRoomServer {
           private: {
             ...entry.private,
             notes: [...entry.private.notes, "Witchglass choir mapped the live signal into a stable route note."]
-          },
-          character: {
-            ...entry.character,
-            heat: Math.max(0, entry.character.heat - 1)
           }
         })
       );
@@ -3215,10 +3195,6 @@ export class GameRoomServer {
           private: {
             ...entry.private,
             notes: [...entry.private.notes, "Grave Spark turned the dead system into one more workable machine."]
-          },
-          character: {
-            ...entry.character,
-            heat: Math.max(0, entry.character.heat - 1)
           }
         })
       );
@@ -3276,10 +3252,6 @@ export class GameRoomServer {
           private: {
             ...entry.private,
             notes: [...entry.private.notes, "Scrap Bastion converted damaged cover into a workable defensive shell."]
-          },
-          character: {
-            ...entry.character,
-            heat: Math.max(0, entry.character.heat - 1)
           }
         })
       );
@@ -3303,10 +3275,6 @@ export class GameRoomServer {
           private: {
             ...entry.private,
             notes: [...entry.private.notes, "Void Command marked the cleared lane for allied movement."]
-          },
-          character: {
-            ...entry.character,
-            heat: Math.max(0, entry.character.heat - 1)
           }
         })
       );
@@ -3326,10 +3294,6 @@ export class GameRoomServer {
           private: {
             ...entry.private,
             notes: [...entry.private.notes, "Hush Static drowned the local anomaly in controlled noise."]
-          },
-          character: {
-            ...entry.character,
-            heat: Math.max(0, entry.character.heat - 1)
           }
         })
       );
@@ -3393,10 +3357,6 @@ export class GameRoomServer {
           private: {
             ...entry.private,
             notes: [...entry.private.notes, "Chain Signal fixed the route into a convoy-safe sequence for the next push."]
-          },
-          character: {
-            ...entry.character,
-            heat: Math.max(0, entry.character.heat - 1)
           }
         })
       );
@@ -3418,10 +3378,6 @@ export class GameRoomServer {
           private: {
             ...entry.private,
             notes: [...entry.private.notes, "Breach Atlas logged a safer approach through the mapped lane."]
-          },
-          character: {
-            ...entry.character,
-            heat: Math.max(0, entry.character.heat - 1)
           }
         })
       );
@@ -3480,10 +3436,6 @@ export class GameRoomServer {
           private: {
             ...entry.private,
             notes: [...entry.private.notes, "Silent Audit extracted sharper route intelligence from the cleared sector."]
-          },
-          character: {
-            ...entry.character,
-            heat: Math.max(0, entry.character.heat - 1)
           }
         })
       );
@@ -3503,10 +3455,6 @@ export class GameRoomServer {
           private: {
             ...entry.private,
             notes: [...entry.private.notes, "Ash Psalm hardened the cleared line into a disciplined hold."]
-          },
-          character: {
-            ...entry.character,
-            heat: Math.max(0, entry.character.heat - 1)
           }
         })
       );
@@ -3549,7 +3497,7 @@ export class GameRoomServer {
           },
           character: {
             ...entry.character,
-            heat: Math.max(0, entry.character.heat - 1),
+            salvage: (entry.character.salvage ?? 0) + 1,
             equippedGear: {
               ...entry.character.equippedGear,
               armor: entry.character.heldGear.some((item) => item.id === "coffin-rig")
@@ -3731,10 +3679,6 @@ export class GameRoomServer {
           private: {
             ...entry.private,
             notes: [...entry.private.notes, "Signal Relay amplified allied pressure in the Marshal's sector."]
-          },
-          character: {
-            ...entry.character,
-            heat: Math.max(0, entry.character.heat - 1)
           }
         })
       );
@@ -3757,7 +3701,7 @@ export class GameRoomServer {
           },
           character: {
             ...entry.character,
-            heat: Math.max(0, entry.character.heat - 1)
+            salvage: (entry.character.salvage ?? 0) + 1
           }
         })
       );
@@ -3781,10 +3725,6 @@ export class GameRoomServer {
           private: {
             ...entry.private,
             notes: [...entry.private.notes, "Cinder Oath made the confrontation feel survivable before the first test landed."]
-          },
-          character: {
-            ...entry.character,
-            heat: Math.max(0, entry.character.heat - 1)
           }
         })
       );
@@ -3809,10 +3749,6 @@ export class GameRoomServer {
           private: {
             ...entry.private,
             notes: [...entry.private.notes, "Choir Lash bled the breach spike into a controlled pulse."]
-          },
-          character: {
-            ...entry.character,
-            heat: Math.max(0, entry.character.heat - 1)
           }
         })
       );

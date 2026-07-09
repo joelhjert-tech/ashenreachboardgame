@@ -26,22 +26,22 @@
     {
       "id": "underway-ear",
       "name": "Underway Ear",
-      "text": "Deepdale hears pressure changes in sealed routes before the lamps begin to flicker."
+      "text": "Once per round, before you resolve a movement or hazard test, inspect its target value before choosing Gear."
     },
     {
       "id": "black-dust-craft",
       "name": "Black Dust Craft",
-      "text": "Broken shops, caches, and salvage yards give him enough material to make one more repair matter."
+      "text": "After you pass a Forge test in a route, machine, or salvage sector, repair 1 exhausted Gear."
     },
     {
       "id": "lantern-delver",
       "name": "Lantern Delver",
-      "text": "Anomaly-lit paths are less frightening when Deepdale has already counted the echoes."
+      "text": "Passive. Add +1 Signal on anomaly-lit route tests."
     },
     {
       "id": "deep-bargain",
       "name": "Deep Bargain",
-      "text": "When a market demands risk, he knows which debt can be paid now and which one can wait."
+      "text": "Once per shop visit, when buying Equipment, you may pay 1 Salvage less. Weakness: Black Dust Craft cannot be used in shops."
     }
   ],
   "startingGear": [

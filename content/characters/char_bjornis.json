@@ -26,22 +26,22 @@
     {
       "id": "firebreak-vow",
       "name": "Firebreak Vow",
-      "text": "Bjornis treats burning routes as a personal insult and plants himself between the flame front and anyone still breathing."
+      "text": "Passive. Add +1 Grit against red threats and enemies in ember or fire sectors."
     },
     {
       "id": "smoke-sniffer",
       "name": "Smoke Sniffer",
-      "text": "Furnace leaks, ember traps, and hidden pressure fires announce themselves to Bjornis before the rest of the squad sees the glow."
+      "text": "Once per round, before you resolve a red hazard or fire-marked sector action, inspect the target or blocker summary before choosing Gear."
     },
     {
       "id": "cinder-hug",
       "name": "Cinder Hug",
-      "text": "When panic breaks a line, Bjornis can turn one terrified retreat into a braced stand with a soot-blackened bear hug."
+      "text": "Once per round, when another operative in your sector would take 1 Wound or retreat from a red threat, you may take 1 Wound to cancel that effect for them."
     },
     {
       "id": "foam-and-fury",
       "name": "Foam and Fury",
-      "text": "His suppression rig hisses cold sealant across hot iron, then he charges through the steam with both paws raised."
+      "text": "After you defeat a red threat, reduce scenario pressure by 1 if it is above 0. Weakness: you suffer -1 on blue Anomaly tests."
     }
   ],
   "startingGear": [

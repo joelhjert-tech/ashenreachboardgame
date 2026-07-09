@@ -26,22 +26,22 @@
     {
       "id": "mire-pitchfork",
       "name": "Mire Pitchfork",
-      "text": "Popelord turns a humble farm tool into a brutal answer to anything crawling out of the muck."
+      "text": "Passive. Add +1 Grit against enemies in salvage, hazard, or mire sectors."
     },
     {
       "id": "compost-cape",
       "name": "Compost Cape",
-      "text": "Old grime, wet straw, and stubborn pride make him harder to read than any polished duelist."
+      "text": "Once per round, the first yellow trap or ambush you face has -1 difficulty."
     },
     {
       "id": "yard-king",
       "name": "Yard King",
-      "text": "Caches, dumps, and broken work sites tend to reveal one more useful thing when Popelord starts digging."
+      "text": "Once per round, after you clear a salvage, hazard, or mire sector, gain 1 Salvage."
     },
     {
       "id": "ripe-warning",
       "name": "Ripe Warning",
-      "text": "When danger gets too close, everyone nearby knows it before the first blade is drawn."
+      "text": "When another operative enters your sector, they may inspect one unresolved yellow blocker there. Weakness: when you fail a blue Anomaly test, take 1 Wound unless you discard 1 Salvage."
     }
   ],
   "startingGear": [

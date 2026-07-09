@@ -4085,7 +4085,7 @@ describe("escalation flow", () => {
     expect(server.getState().escalationLevel).toBe(0);
   });
 
-  it("lets the Cinder Monk turn a cleared Emberwatch line into an Ash Psalm reset", () => {
+  it("lets the Cinder Monk turn a cleared Emberwatch line into an Ash Psalm vow note", () => {
     const characters = createAbilityCharacters();
     const server = new GameRoomServer(
       createState({
@@ -4134,7 +4134,7 @@ describe("escalation flow", () => {
       seatId: "seat-1"
     });
 
-    expect(server.getState().players.find((entry) => entry.seatId === "seat-1")?.character.heat).toBe(0);
+    expect(server.getState().players.find((entry) => entry.seatId === "seat-1")?.character.heat).toBe(1);
     expect(server.getState().players.find((entry) => entry.seatId === "seat-1")?.private.notes).toContain(
       "Ash Psalm hardened the cleared line into a disciplined hold."
     );
@@ -4179,13 +4179,14 @@ describe("escalation flow", () => {
       toPhase: "resolution"
     });
 
-    expect(server.getState().players[0]?.character.heat).toBe(0);
+    expect(server.getState().players[0]?.character.heat).toBe(1);
+    expect(server.getState().players[0]?.character.wounds).toBe(1);
     expect(server.getState().players[0]?.private.notes).toContain(
       "Ember Vigil kept the dangerous sector from dictating the tempo."
     );
   });
 
-  it("lets Choir Lash cool the Signal Witch when escalation spikes on their turn", () => {
+  it("lets Choir Lash mark a route note when escalation spikes on the Signal Witch's turn", () => {
     const characters = createCharacters();
     const server = new GameRoomServer(
       withOnlyConnectedSeat(
@@ -4223,7 +4224,7 @@ describe("escalation flow", () => {
     });
 
     expect(server.getState().escalationLevel).toBe(1);
-    expect(server.getState().players.find((entry) => entry.seatId === "seat-1")?.character.heat).toBe(0);
+    expect(server.getState().players.find((entry) => entry.seatId === "seat-1")?.character.heat).toBe(1);
     expect(server.getState().players.find((entry) => entry.seatId === "seat-1")?.private.notes).toContain(
       "Choir Lash bled the breach spike into a controlled pulse."
     );
@@ -4608,7 +4609,7 @@ describe("escalation flow", () => {
       choiceId: "stock"
     });
 
-    expect(server.getState().players[0]?.character.heat).toBe(1);
+    expect(server.getState().players[0]?.character.heat).toBe(2);
     expect(server.getState().players[0]?.private.notes).toContain(
       "Shard Sprawl passage stock secured for the next route push."
     );
@@ -4773,7 +4774,7 @@ describe("escalation flow", () => {
       seatId: "seat-1"
     });
 
-    expect(server.getState().players[0]?.character.heat).toBe(1);
+    expect(server.getState().players[0]?.character.heat).toBe(2);
     expect(server.getState().players[0]?.private.notes).toContain(
       "Glassmere anomaly contained. The spindle now answers the relay choir cleanly."
     );
@@ -5095,7 +5096,7 @@ describe("escalation flow", () => {
     });
 
     expect(server.getState().escalationLevel).toBe(1);
-    expect(server.getState().players[0]?.character.heat).toBe(1);
+    expect(server.getState().players[0]?.character.heat).toBe(2);
     expect(server.getState().players[0]?.private.notes).toContain(
       "Ridge suture anchored. The watch posts can still hold for one more convoy."
     );
@@ -5414,7 +5415,7 @@ describe("escalation flow", () => {
       choiceId: "anchor-surge"
     });
 
-    expect(server.getState().players[0]?.character.heat).toBe(1);
+    expect(server.getState().players[0]?.character.heat).toBe(2);
     expect(server.getState().players[0]?.private.notes).toContain(
       "Veil Rift surge anchored for deeper breach timing."
     );
@@ -6441,7 +6442,7 @@ describe("contracts", () => {
       stat: "signal"
     });
 
-    expect(server.getState().players.find((entry) => entry.seatId === "seat-1")?.character.heat).toBe(0);
+    expect(server.getState().players.find((entry) => entry.seatId === "seat-1")?.character.heat).toBe(1);
     expect(server.getState().players.find((entry) => entry.seatId === "seat-1")?.private.notes).toContain(
       "Witchglass choir mapped the live signal into a stable route note."
     );
@@ -6496,7 +6497,7 @@ describe("contracts", () => {
       seatId: "seat-1"
     });
 
-    expect(server.getState().players.find((entry) => entry.seatId === "seat-1")?.character.heat).toBe(1);
+    expect(server.getState().players.find((entry) => entry.seatId === "seat-1")?.character.heat).toBe(3);
     expect(server.getState().players.find((entry) => entry.seatId === "seat-1")?.private.notes).toContain(
       "Hush Static drowned the local anomaly in controlled noise."
     );
@@ -6669,7 +6670,7 @@ describe("contracts", () => {
     );
   });
 
-  it("lets the Rift Cartographer map a cleared lane into scar relief and a route note", () => {
+  it("lets the Rift Cartographer map a cleared lane into a route note", () => {
     const characters = createAbilityCharacters();
     const server = new GameRoomServer(
       createState({
@@ -6718,7 +6719,7 @@ describe("contracts", () => {
       seatId: "seat-1"
     });
 
-    expect(server.getState().players.find((entry) => entry.seatId === "seat-1")?.character.heat).toBe(0);
+    expect(server.getState().players.find((entry) => entry.seatId === "seat-1")?.character.heat).toBe(1);
     expect(server.getState().players.find((entry) => entry.seatId === "seat-1")?.private.notes).toContain(
       "Breach Atlas logged a safer approach through the mapped lane."
     );
@@ -6768,7 +6769,7 @@ describe("contracts", () => {
     );
   });
 
-  it("lets Fleet Memory calm the Fleet Elder at the start of a pressured turn", () => {
+  it("lets Fleet Memory mark convoy pressure for the Fleet Elder at turn start", () => {
     const characters = createAbilityCharacters();
     const server = new GameRoomServer(
       withOnlyConnectedSeat(
@@ -6806,13 +6807,13 @@ describe("contracts", () => {
       toPhase: "resolution"
     });
 
-    expect(server.getState().players.find((entry) => entry.seatId === "seat-1")?.character.heat).toBe(0);
+    expect(server.getState().players.find((entry) => entry.seatId === "seat-1")?.character.heat).toBe(1);
     expect(server.getState().players.find((entry) => entry.seatId === "seat-1")?.private.notes).toContain(
       "Fleet Memory read the pressure pattern before the convoy line could panic."
     );
   });
 
-  it("lets Old Oaths calm the Fleet Elder when a new route job is accepted", () => {
+  it("lets Old Oaths mark convoy discipline when a new route job is accepted", () => {
     const characters = createAbilityCharacters();
     const server = new GameRoomServer(
       createState({
@@ -6847,7 +6848,7 @@ describe("contracts", () => {
       contractId: "choir-hush-census"
     });
 
-    expect(server.getState().players[0]?.character.heat).toBe(0);
+    expect(server.getState().players[0]?.character.heat).toBe(1);
     expect(server.getState().players[0]?.private.notes).toContain(
       "Old Oaths made the frightened route crews fall into line at once."
     );
@@ -6899,7 +6900,7 @@ describe("contracts", () => {
       seatId: "seat-1"
     });
 
-    expect(server.getState().players.find((entry) => entry.seatId === "seat-1")?.character.heat).toBe(0);
+    expect(server.getState().players.find((entry) => entry.seatId === "seat-1")?.character.heat).toBe(1);
     expect(server.getState().players.find((entry) => entry.seatId === "seat-1")?.private.notes).toContain(
       "Chain Signal fixed the route into a convoy-safe sequence for the next push."
     );
@@ -6949,13 +6950,13 @@ describe("contracts", () => {
       toPhase: "resolution"
     });
 
-    expect(server.getState().players[0]?.character.heat).toBe(0);
+    expect(server.getState().players[0]?.character.heat).toBe(1);
     expect(server.getState().players[0]?.private.notes).toContain(
       "Ashwake Step marked the opening lane before anyone else had to test it."
     );
   });
 
-  it("lets Void Command cool the Void Marshal after clearing a live lane", () => {
+  it("lets Void Command mark the Void Marshal's cleared live lane", () => {
     const characters = createCharacters();
     const server = new GameRoomServer(
       createState({
@@ -6998,7 +6999,7 @@ describe("contracts", () => {
       seatId: "seat-1"
     });
 
-    expect(server.getState().players[0]?.character.heat).toBe(0);
+    expect(server.getState().players[0]?.character.heat).toBe(1);
     expect(server.getState().players[0]?.private.notes).toContain(
       "Void Command marked the cleared lane for allied movement."
     );
@@ -7049,13 +7050,13 @@ describe("contracts", () => {
       stat: "grit"
     });
 
-    expect(server.getState().players[0]?.character.heat).toBe(0);
+    expect(server.getState().players[0]?.character.heat).toBe(1);
     expect(server.getState().players[0]?.private.notes).toContain(
       "Signal Relay amplified allied pressure in the Marshal's sector."
     );
   });
 
-  it("lets Silent Audit cool the Black Ledger Agent after a cleared-sector read", () => {
+  it("lets Silent Audit mark Black Ledger leverage after a cleared-sector read", () => {
     const characters = createAbilityCharacters();
     const server = new GameRoomServer(
       createState({
@@ -7101,7 +7102,7 @@ describe("contracts", () => {
       seatId: "seat-1"
     });
 
-    expect(server.getState().players[0]?.character.heat).toBe(0);
+    expect(server.getState().players[0]?.character.heat).toBe(1);
     expect(server.getState().players[0]?.private.notes).toContain(
       "Silent Audit extracted sharper route intelligence from the cleared sector."
     );
@@ -7190,7 +7191,7 @@ describe("contracts", () => {
       contractId: "choir-hush-census"
     });
 
-    expect(server.getState().players[0]?.character.heat).toBe(0);
+    expect(server.getState().players[0]?.character.heat).toBe(1);
     expect(server.getState().escalationLevel).toBe(0);
     expect(server.getState().players[0]?.private.notes).toContain(
       "Black file leverage extracted from the finished contract."
@@ -7293,7 +7294,7 @@ describe("contracts", () => {
     );
   });
 
-  it("lets Grave Spark cool the Grave Engineer after a successful forge check", () => {
+  it("lets Grave Spark mark the Grave Engineer's successful forge check", () => {
     const characters = createAbilityCharacters();
     const server = new GameRoomServer(
       createState({
@@ -7341,7 +7342,7 @@ describe("contracts", () => {
       stat: "forge"
     });
 
-    expect(server.getState().players[0]?.character.heat).toBe(0);
+    expect(server.getState().players[0]?.character.heat).toBe(1);
     expect(server.getState().players[0]?.private.notes).toContain(
       "Grave Spark turned the dead system into one more workable machine."
     );
@@ -7441,13 +7442,13 @@ describe("contracts", () => {
       seatId: "seat-1"
     });
 
-    expect(server.getState().players[0]?.character.heat).toBe(0);
+    expect(server.getState().players[0]?.character.heat).toBe(1);
     expect(server.getState().players[0]?.private.notes).toContain(
       "Cinder Oath made the confrontation feel survivable before the first test landed."
     );
   });
 
-  it("lets Ash Tithe cool the Oathbroken Prince when a contract pays out", () => {
+  it("lets Ash Tithe pay the Oathbroken Prince when a contract closes", () => {
     const characters = createAbilityCharacters();
     const server = new GameRoomServer(
       createState({
@@ -7486,13 +7487,13 @@ describe("contracts", () => {
       contractId: "choir-hush-census"
     });
 
-    expect(server.getState().players[0]?.character.heat).toBe(0);
+    expect(server.getState().players[0]?.character.heat).toBe(1);
     expect(server.getState().players[0]?.private.notes).toContain(
-      "Ash Tithe skimmed tribute off the quiet victory before the lane could cool."
+      "Ash Tithe skimmed tribute off the quiet victory before the route closed."
     );
   });
 
-  it("lets Crown Debt cool the Oathbroken Prince after a marked kill", () => {
+  it("lets Crown Debt pay the Oathbroken Prince after a marked kill", () => {
     const characters = createAbilityCharacters();
     const server = new GameRoomServer(
       withOnlyConnectedSeat(
@@ -7530,13 +7531,13 @@ describe("contracts", () => {
       stat: "grit"
     });
 
-    expect(server.getState().players[0]?.character.heat).toBe(0);
+    expect(server.getState().players[0]?.character.heat).toBe(1);
     expect(server.getState().players[0]?.private.notes).toContain(
       "Crown Debt pressed the kill into service as collected obligation."
     );
   });
 
-  it("lets Ruin Courtesy cool the Oathbroken Prince on a clean movement through broken ground", () => {
+  it("lets Ruin Courtesy mark a clean movement through broken ground", () => {
     const characters = createAbilityCharacters();
     const server = new GameRoomServer(
       createState({
@@ -7574,7 +7575,7 @@ describe("contracts", () => {
       toSectorId: "sector-b"
     });
 
-    expect(server.getState().players[0]?.character.heat).toBe(0);
+    expect(server.getState().players[0]?.character.heat).toBe(1);
     expect(server.getState().players[0]?.private.notes).toContain(
       "Ruin Courtesy made the shattered approach feel like a hall already claimed."
     );
@@ -7620,7 +7621,7 @@ describe("contracts", () => {
     );
   });
 
-  it("lets Ghost Mile cool the Rift Cartographer on a clean movement through a false lane", () => {
+  it("lets Ghost Mile mark a clean movement through a false lane", () => {
     const characters = createAbilityCharacters();
     const server = new GameRoomServer(
       createState({
@@ -7658,7 +7659,7 @@ describe("contracts", () => {
       toSectorId: "sector-b"
     });
 
-    expect(server.getState().players[0]?.character.heat).toBe(0);
+    expect(server.getState().players[0]?.character.heat).toBe(1);
     expect(server.getState().players[0]?.private.notes).toContain(
       "Ghost Mile stripped the false path out of the approach before it could set in."
     );
@@ -7716,7 +7717,7 @@ describe("contracts", () => {
     );
   });
 
-  it("lets the Rift Cartographer turn a successful Webglass route choice into a cooler mapped lane", () => {
+  it("lets the Rift Cartographer turn a successful Webglass route choice into a mapped lane", () => {
     const characters = createAbilityCharacters();
     const server = new GameRoomServer(
       createState({
@@ -7763,7 +7764,7 @@ describe("contracts", () => {
       choiceId: "hidden-lane"
     });
 
-    expect(server.getState().players[0]?.character.heat).toBe(0);
+    expect(server.getState().players[0]?.character.heat).toBe(1);
     expect(server.getState().players[0]?.private.notes).toContain(
       "Webglass hidden lane mapped through shifting lanes."
     );
@@ -7772,7 +7773,7 @@ describe("contracts", () => {
     );
   });
 
-  it("lets Siege Discipline calm the Siege Medic at the start of a pressured turn", () => {
+  it("lets Siege Discipline mark the Siege Medic's pressured turn", () => {
     const characters = createAbilityCharacters();
     const server = new GameRoomServer(
       withOnlyConnectedSeat(
@@ -7810,7 +7811,7 @@ describe("contracts", () => {
       toPhase: "resolution"
     });
 
-    expect(server.getState().players[0]?.character.heat).toBe(0);
+    expect(server.getState().players[0]?.character.heat).toBe(1);
     expect(server.getState().players[0]?.private.notes).toContain(
       "Siege Discipline turned long pressure into a steady working rhythm."
     );
@@ -7870,7 +7871,7 @@ describe("contracts", () => {
     );
   });
 
-  it("lets Scar Ledger cool the Siege Medic when a contract closes cleanly", () => {
+  it("lets Scar Ledger heal the Siege Medic when a contract closes cleanly", () => {
     const characters = createAbilityCharacters();
     const server = new GameRoomServer(
       createState({
@@ -7909,13 +7910,13 @@ describe("contracts", () => {
       contractId: "choir-hush-census"
     });
 
-    expect(server.getState().players[0]?.character.heat).toBe(0);
+    expect(server.getState().players[0]?.character.heat).toBe(1);
     expect(server.getState().players[0]?.private.notes).toContain(
       "Scar Ledger filed the surviving harm into something the crew could carry."
     );
   });
 
-  it("lets Scrap Bastion cool the Salvage Warden after a successful forge check", () => {
+  it("lets Scrap Bastion mark the Salvage Warden's successful forge check", () => {
     const characters = createAbilityCharacters();
     const server = new GameRoomServer(
       createState({
@@ -7969,7 +7970,7 @@ describe("contracts", () => {
       stat: "forge"
     });
 
-    expect(server.getState().players[0]?.character.heat).toBe(0);
+    expect(server.getState().players[0]?.character.heat).toBe(1);
     expect(server.getState().players[0]?.private.notes).toContain(
       "Scrap Bastion converted damaged cover into a workable defensive shell."
     );
@@ -8041,7 +8042,7 @@ describe("contracts", () => {
 
     const player = readyServer.getState().players.find((entry) => entry.seatId === "seat-1");
     expect(player?.character.activeContract).toBeNull();
-    expect(player?.character.heat).toBe(1);
+    expect(player?.character.heat).toBe(2);
   });
 
   it("accepts a contract, wins two combats across turns, completes it, and receives the reward", () => {

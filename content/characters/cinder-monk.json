@@ -26,22 +26,22 @@
     {
       "id": "ember-vigil",
       "name": "Ember Vigil",
-      "text": "You hold steady in dangerous sectors where other operatives would let the pressure own the pace."
+      "text": "Once per round, when scenario pressure would rise on your turn, you may take 1 Wound to reduce that increase by 1."
     },
     {
       "id": "ash-psalm",
       "name": "Ash Psalm",
-      "text": "When the line is clear, your rites turn the moment into discipline instead of relief."
+      "text": "After you clear a dangerous, ember, or sanctuary sector, record 1 Vow Note."
     },
     {
       "id": "bone-bell",
       "name": "Bone Bell",
-      "text": "The first time escalation spikes on your turn, answer it with a prayer that keeps the breach honest."
+      "text": "Once per round, when a Wound or failed test would raise scenario pressure on your turn, record 1 Vow Note."
     },
     {
       "id": "cinder-oath",
       "name": "Cinder Oath",
-      "text": "Core-ward confrontations never feel routine, but your vows make them survivable."
+      "text": "Spend 1 Vow Note before a scenario confrontation test to add +2. Weakness: Vow Notes cannot be used for shop, salvage, or Contract rewards."
     }
   ],
   "startingGear": [

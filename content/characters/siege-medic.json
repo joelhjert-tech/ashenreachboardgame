@@ -26,22 +26,22 @@
     {
       "id": "field-triage",
       "name": "Field Triage",
-      "text": "Once per round, when you stabilize the breach or recover in a sanctuary, you can clear 1 wound and turn panic into procedure."
+      "text": "Once per round, after you resolve a sanctuary, clinic, or stabilization action, heal 1 Wound from yourself or an operative in your sector."
     },
     {
       "id": "scar-ledger",
       "name": "Scar Ledger",
-      "text": "You keep a practical account of harm and treat every survivor like a problem that can still be solved."
+      "text": "When a Scar would block your Gear or action, reveal it and reduce its penalty by 1 for this roll only."
     },
     {
       "id": "siege-discipline",
       "name": "Siege Discipline",
-      "text": "Long pressure does not break your pace; it sharpens it."
+      "text": "At the start of your turn, if you have at least 1 Wound, record 1 Triage Note."
     },
     {
       "id": "amber-draught",
       "name": "Amber Draught",
-      "text": "Relief arrives from your kit in precise doses, never by miracle."
+      "text": "Once per round, after you pass a Grit test, heal 1 Wound. Weakness: Field Triage cannot be used during battle."
     }
   ],
   "startingGear": [

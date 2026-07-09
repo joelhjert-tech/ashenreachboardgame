@@ -26,22 +26,22 @@
     {
       "id": "convoy-law",
       "name": "Convoy Law",
-      "text": "Once per round, when you secure a contract lead from a live lane, you can steady the whole convoy spine and bleed pressure off the breach."
+      "text": "Once per round, when you reveal or accept a Contract, reduce scenario pressure by 1 if it is above 0."
     },
     {
       "id": "old-oaths",
       "name": "Old Oaths",
-      "text": "Your authority still means something when frightened crews need a route called fast."
+      "text": "Once per round, when you accept a route or escort Contract, record 1 Convoy Note."
     },
     {
       "id": "chain-signal",
       "name": "Chain Signal",
-      "text": "A cleared transport lane stays useful longer when you are the one who locked its sequence in place."
+      "text": "After you clear a movement or contract sector, leave 1 Convoy Note there. The next operative entering that sector gains +1 to their first non-battle test."
     },
     {
       "id": "fleet-memory",
       "name": "Fleet Memory",
-      "text": "You read convoy pressure like weather and treat panic as something that can still be ordered."
+      "text": "At the start of your turn, if scenario pressure is above 0, record 1 Convoy Note. Weakness: Convoy Notes cannot be spent on your own Grit battles."
     }
   ],
   "startingGear": [

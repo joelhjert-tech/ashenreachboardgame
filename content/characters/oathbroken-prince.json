@@ -26,22 +26,22 @@
     {
       "id": "broken-claim",
       "name": "Broken Claim",
-      "text": "Once per round, when you clear a lucrative lane or recover live salvage, you can twist the moment into progress on your active objective."
+      "text": "Once per round, after you clear a sector matching your active Contract tag, advance that Contract by 1 valid progress step."
     },
     {
       "id": "ash-tithe",
       "name": "Ash Tithe",
-      "text": "Every quiet victory still feels like something the world owes you back."
+      "text": "When you gain Salvage from a sector, gain +1 Salvage."
     },
     {
       "id": "crown-debt",
       "name": "Crown Debt",
-      "text": "People who owe you fear your patience more than your temper."
+      "text": "Rivalry only. Once per round, after another operative in your sector gains Salvage, mark them; the next time you help or hinder them, gain 1 Salvage."
     },
     {
       "id": "ruin-courtesy",
       "name": "Ruin Courtesy",
-      "text": "You move through broken grandeur like it still belongs to you."
+      "text": "Once per round, after you enter a danger 2+ sector, record 1 Debt Note. Weakness: Broken Claim cannot gain bonus progress from blue Anomaly sectors."
     }
   ],
   "startingGear": [

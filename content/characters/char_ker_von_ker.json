@@ -26,22 +26,22 @@
     {
       "id": "shield-breaker",
       "name": "Shield Breaker",
-      "text": "When a fight has to happen face-to-face, Ker turns the first step forward into a threat of its own."
+      "text": "Passive. Add +1 Grit when fighting an enemy with difficulty 8 or higher."
     },
     {
       "id": "iron-bulwark",
       "name": "Iron Bulwark",
-      "text": "Once per round, when a route would punish exposed armor or broken ground, Ker can brace through the worst of it."
+      "text": "Passive. Enemy dice cannot explode against you."
     },
     {
       "id": "close-quarters-doctrine",
       "name": "Close-Quarters Doctrine",
-      "text": "Ker is at his best when the enemy is too close to run and too close to lie."
+      "text": "Once per round, before a battle in your sector, you may ignore evade options to add +1 to that battle."
     },
     {
       "id": "hold-the-line",
       "name": "Hold the Line",
-      "text": "When the breach pressure rises, Ker makes a narrow path feel like a fortress."
+      "text": "Once per round, after battle or hazard damage is assigned to you, prevent 1 Wound. Weakness: when you roll movement, roll 2 dice and use the lower result."
     }
   ],
   "startingGear": [

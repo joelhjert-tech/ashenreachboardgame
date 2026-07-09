@@ -26,22 +26,22 @@
     {
       "id": "houndblade-charge",
       "name": "Houndblade Charge",
-      "text": "When Kira commits to a close fight, the first step is already a warning growl and the second is steel."
+      "text": "Once per turn, add +1 Grit to the first battle you start."
     },
     {
       "id": "loyal-guard",
       "name": "Loyal Guard",
-      "text": "Kira is hardest to break when holding the line for someone else."
+      "text": "Once per round, when another operative in your sector would take 1 Wound, you may take that Wound instead and gain +1 on your next battle this turn."
     },
     {
       "id": "ash-scent-tracker",
       "name": "Ash-Scent Tracker",
-      "text": "Fresh danger leaves a trail in the smoke, and Kira knows which footprints are lying."
+      "text": "Once per round, after threats are revealed in your sector, inspect one unresolved non-blue threat there."
     },
     {
       "id": "heroic-bite",
       "name": "Heroic Bite",
-      "text": "When a wounded enemy thinks the duel is over, Kira reminds it that a sword is not the only weapon in reach."
+      "text": "After you defeat an enemy with difficulty 7 or higher, gain 1 Spoil. Weakness: Ash-Scent Tracker cannot inspect blue Anomalies."
     }
   ],
   "startingGear": [
