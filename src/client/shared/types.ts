@@ -235,6 +235,7 @@ export interface PhoneSelfState {
   sectorId: string;
   hand: string[];
   notes: string[];
+  noteResources?: Partial<Record<"vow", number>>;
   character: PrivateCharacter;
 }
 
@@ -988,6 +989,11 @@ export type ClientIntent =
       type: "USE_FOLLOWER";
       seatId: string;
       followerId: string;
+    }
+  | {
+      type: "USE_CHARACTER_ABILITY";
+      seatId: string;
+      abilityId: string;
     }
   | {
       type: "TABLE_INTERACTION";

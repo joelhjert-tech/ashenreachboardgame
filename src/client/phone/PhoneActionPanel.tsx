@@ -2910,6 +2910,25 @@ export function PhoneActionPanel({
     }
 
     if (isScenarioConfrontation && patch.activeScenario && !patch.encounter) {
+      if (self.character.id === "cinder-monk") {
+        const vowNotes = self.noteResources?.vow ?? 0;
+        const cinderOathDisabledReason = vowNotes < 1 ? `Requires 1 Vow Note (${vowNotes} available).` : null;
+
+        advanceActions.push({
+          key: "cinder-oath",
+          label: "Prepare Cinder Oath",
+          detail: cinderOathDisabledReason ?? `Spend 1 Vow Note (${vowNotes} available) for +2 to each confrontation test`,
+          tone: "secondary",
+          disabled: Boolean(cinderOathDisabledReason),
+          onClick: () =>
+            onIntent({
+              type: "USE_CHARACTER_ABILITY",
+              seatId: self.seatId,
+              abilityId: "cinder-oath"
+            })
+        });
+      }
+
       advanceActions.push({
         key: "resolve-scenario",
         label: `Resolve ${patch.activeScenario.confrontationTitle}`,

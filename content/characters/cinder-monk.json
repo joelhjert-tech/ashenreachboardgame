@@ -26,22 +26,22 @@
     {
       "id": "ember-vigil",
       "name": "Ember Vigil",
-      "text": "Once per round, when scenario pressure would rise on your turn, you may take 1 Wound to reduce that increase by 1."
+      "text": "Once per round, at the start of your turn in danger 3+ or while scenario pressure is above 0, take 1 Wound. If pressure is above 0, reduce it by 1."
     },
     {
       "id": "ash-psalm",
       "name": "Ash Psalm",
-      "text": "After you clear a dangerous, ember, or sanctuary sector, record 1 Vow Note."
+      "text": "Once per round, after resolving Emberwatch Brace or Ember Sanctum Rest, record 1 Vow Note."
     },
     {
       "id": "bone-bell",
       "name": "Bone Bell",
-      "text": "Once per round, when a Wound or failed test would raise scenario pressure on your turn, record 1 Vow Note."
+      "text": "Once per round, when scenario pressure first rises on your turn, record 1 Vow Note and reduce that increase by 1."
     },
     {
       "id": "cinder-oath",
       "name": "Cinder Oath",
-      "text": "Spend 1 Vow Note before a scenario confrontation test to add +2. Weakness: Vow Notes cannot be used for shop, salvage, or Contract rewards."
+      "text": "At the Cinder Gate during your action phase, spend 1 Vow Note before a scenario confrontation to add +2 to each confrontation test. Weakness: Vow Notes cannot be used for shop, salvage, or Contract rewards."
     }
   ],
   "startingGear": [

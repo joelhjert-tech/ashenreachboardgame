@@ -184,7 +184,7 @@ import { reduceGameState } from "../game/engine/reducer.js";
 import { CHALLENGE_LABELS } from "../game/ui/challengeTheme.js";
 import type { ActiveResolution, GameMode, GameState, InteractionMode, NemesisChampion, PlayerState, SessionMode } from "../game/schema/session.schema.js";
 import { validateHostToken, validateJoinToken } from "./auth.js";
-import { getBoardSpace, type BoardTier, type ThreatIcon } from "../game/data/boardSpaces.js";
+import { getBoardSpace, isScenarioConfrontationSpace, type BoardTier, type ThreatIcon } from "../game/data/boardSpaces.js";
 
 export const ESCALATION_FEEDERS = {
   woundTaken: 1,
@@ -1463,15 +1463,15 @@ export class GameRoomServer {
     return sources.reverse();
   }
 
-  private hasResolvedCheckOrCombatThisTurn(seatId: string): boolean {
+  private hasAbilityTriggeredThisTurn(seatId: string, abilityId: string): boolean {
     for (let index = this.state.eventLog.length - 1; index >= 0; index -= 1) {
-      const entry = this.state.eventLog[index] as { type?: string; seatId?: string } | undefined;
+      const entry = this.state.eventLog[index] as { type?: string; seatId?: string; abilityId?: string } | undefined;
 
       if (entry?.type === "TURN_COMPLETED") {
         return false;
       }
 
-      if (entry?.seatId === seatId && (entry.type === "CHECK_ROLLED" || entry.type === "COMBAT_RESOLVED")) {
+      if (entry?.type === "ABILITY_TRIGGERED" && entry.seatId === seatId && entry.abilityId === abilityId) {
         return true;
       }
     }
@@ -1483,7 +1483,6 @@ export class GameRoomServer {
     const encounter = this.state.currentEncounter;
     const sector = getBoardSpace(player.sectorId);
     const tags = new Set(sector?.tags ?? []);
-    const firstRollThisTurn = !this.hasResolvedCheckOrCombatThisTurn(player.seatId);
 
     if (player.character.id === "char_bjornis" && mode === "battle" && stat === "grit" && (encounter?.threatLane === "red" || player.sectorId === "cinder-fields")) {
       return [{ label: "Firebreak Vow", value: 1 }];
@@ -1497,7 +1496,7 @@ export class GameRoomServer {
       return [{ label: "Shield Breaker", value: 1 }];
     }
 
-    if (player.character.id === "char_kira_dog" && mode === "battle" && stat === "grit" && firstRollThisTurn) {
+    if (player.character.id === "char_kira_dog" && mode === "battle" && stat === "grit" && !this.hasAbilityTriggeredThisTurn(player.seatId, "houndblade-charge")) {
       return [{ label: "Houndblade Charge", value: 1 }];
     }
 
@@ -1505,7 +1504,7 @@ export class GameRoomServer {
       return [{ label: "Mire Pitchfork", value: 1 }];
     }
 
-    if (player.character.id === "char_rumi" && firstRollThisTurn && (stat === "signal" || stat === "guile")) {
+    if (player.character.id === "char_rumi" && !this.hasAbilityTriggeredThisRound(player.seatId, "violet-edge") && (stat === "signal" || stat === "guile")) {
       return [{ label: "Violet Edge", value: 1 }];
     }
 
@@ -1513,15 +1512,15 @@ export class GameRoomServer {
   }
 
   private getCharacterDifficultyModifier(player: PlayerState, encounter: ThreatCard): number {
-    if (encounter.cardType !== "hazard" || this.hasResolvedCheckOrCombatThisTurn(player.seatId)) {
+    if (encounter.cardType !== "hazard") {
       return 0;
     }
 
-    if (player.character.id === "signal-witch" && encounter.threatLane === "blue") {
+    if (player.character.id === "signal-witch" && encounter.threatLane === "blue" && !this.hasAbilityTriggeredThisRound(player.seatId, "hush-static")) {
       return -1;
     }
 
-    if (player.character.id === "char_popelord" && encounter.threatLane === "yellow") {
+    if (player.character.id === "char_popelord" && encounter.threatLane === "yellow" && !this.hasAbilityTriggeredThisRound(player.seatId, "compost-cape")) {
       return -1;
     }
 
@@ -1572,6 +1571,42 @@ export class GameRoomServer {
     }
 
     return sources.filter((source) => source.value !== 0);
+  }
+
+  private markFirstEligibleCharacterAbility(
+    seatId: string,
+    stat: Stat,
+    mode: "battle" | "check",
+    encounter: ThreatCard
+  ): void {
+    const player = this.state.players.find((entry) => entry.seatId === seatId);
+
+    if (!player) {
+      return;
+    }
+
+    const ability =
+      player.character.id === "char_kira_dog" && mode === "battle" && stat === "grit" && !this.hasAbilityTriggeredThisTurn(seatId, "houndblade-charge")
+        ? { id: "houndblade-charge", summary: "Houndblade Charge drove the first battle Kira started this turn.", note: "Houndblade Charge was spent on Kira's first battle this turn." }
+        : player.character.id === "char_rumi" && (stat === "signal" || stat === "guile") && !this.hasAbilityTriggeredThisRound(seatId, "violet-edge")
+          ? { id: "violet-edge", summary: "Violet Edge cut into Rumi's first eligible test this round.", note: "Violet Edge was spent on this Signal or Guile test." }
+          : player.character.id === "signal-witch" && mode === "check" && encounter.cardType === "hazard" && encounter.threatLane === "blue" && !this.hasAbilityTriggeredThisRound(seatId, "hush-static")
+            ? { id: "hush-static", summary: "Hush Static softened Lane's first Blue Anomaly this round.", note: "Hush Static reduced this Blue Anomaly's difficulty." }
+            : player.character.id === "char_popelord" && mode === "check" && encounter.cardType === "hazard" && encounter.threatLane === "yellow" && !this.hasAbilityTriggeredThisRound(seatId, "compost-cape")
+              ? { id: "compost-cape", summary: "Compost Cape softened Popelord's first yellow hazard this round.", note: "Compost Cape reduced this yellow hazard's difficulty." }
+              : null;
+
+    if (!ability) {
+      return;
+    }
+
+    this.applyAbilityMutation(seatId, ability.id, ability.summary, (entry) => ({
+      ...entry,
+      private: {
+        ...entry.private,
+        notes: [...entry.private.notes, ability.note]
+      }
+    }));
   }
 
   private sumModifierSources(sources: RollModifierSource[]): number {
@@ -5157,6 +5192,7 @@ export class GameRoomServer {
       cardId: encounter.id,
       createdAt: new Date().toISOString()
     });
+    this.markFirstEligibleCharacterAbility(intent.seatId, intent.stat, "check", encounter);
     this.applyScenarioOnSkillResolved(intent.seatId, intent.stat, success);
     this.maybeTriggerAbilityOnCheckResolved(intent.seatId, intent.stat, success);
     this.runAutomaticPhases(intent.seatId);
@@ -5536,6 +5572,10 @@ export class GameRoomServer {
 
     if (this.state.status !== "active" || this.state.phase !== "action") {
       throw new IntentRejectedError(intent.type, "Cinder Oath can only be prepared during your action phase before the confrontation.");
+    }
+
+    if (!isScenarioConfrontationSpace(player.character.currentSpaceId)) {
+      throw new IntentRejectedError(intent.type, "Cinder Oath can only be prepared at the Cinder Gate before a scenario confrontation.");
     }
 
     if (this.state.turnOrder[this.state.activeSeatIndex] !== intent.seatId) {
@@ -6372,6 +6412,7 @@ export class GameRoomServer {
       enemyRollerSeatId,
       createdAt: new Date().toISOString()
     } satisfies CombatResolvedAction);
+    this.markFirstEligibleCharacterAbility(fighterSeatId, stat, "battle", encounter);
     if (success) {
       this.maybeTriggerAbilityOnCombatVictory(fighterSeatId);
       this.applyScenarioOnEnemyDefeat(fighterSeatId);
@@ -8781,7 +8822,8 @@ function sanitizePlayerForPhone(player: PlayerState): Record<string, unknown> {
     },
     sectorId: player.character.currentSpaceId,
     hand: player.private.hand,
-    notes: player.private.notes
+    notes: player.private.notes,
+    noteResources: player.private.noteResources
   };
 }
 

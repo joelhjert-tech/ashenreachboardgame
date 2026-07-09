@@ -140,6 +140,77 @@ describe("PhoneActionPanel", () => {
     cleanup();
   });
 
+  it("shows Mira's Cinder Oath at the confrontation with her private Vow Note balance", () => {
+    const onIntent = vi.fn();
+    render(
+      <PhoneActionPanel
+        characters={characters}
+        onIntent={onIntent}
+        selectedTurnTab="action"
+        patch={createPatch({
+          encounter: null,
+          self: {
+            seatId: "seat-1",
+            sectorId: "center_cinder_gate",
+            hand: [],
+            notes: [],
+            noteResources: { vow: 1 },
+            character: {
+              ...createPatch().self!.character,
+              id: "cinder-monk",
+              name: "Mira",
+              archetype: "Cinder Monk",
+              currentSpaceId: "center_cinder_gate"
+            }
+          }
+        })}
+      />
+    );
+
+    const button = screen.getByRole("button", { name: /prepare cinder oath/i });
+    expect(button).toBeEnabled();
+    expect(button).toHaveTextContent(/1 available/i);
+    fireEvent.click(button);
+    expect(onIntent).toHaveBeenCalledWith({ type: "USE_CHARACTER_ABILITY", seatId: "seat-1", abilityId: "cinder-oath" });
+  });
+
+  it("keeps Cinder Oath disabled without a Vow Note and out of non-confrontation actions", () => {
+    const mira = {
+      ...createPatch().self!.character,
+      id: "cinder-monk",
+      name: "Mira",
+      archetype: "Cinder Monk"
+    };
+    const { rerender } = render(
+      <PhoneActionPanel
+        characters={characters}
+        onIntent={vi.fn()}
+        selectedTurnTab="action"
+        patch={createPatch({
+          encounter: null,
+          self: { seatId: "seat-1", sectorId: "center_cinder_gate", hand: [], notes: [], noteResources: {}, character: { ...mira, currentSpaceId: "center_cinder_gate" } }
+        })}
+      />
+    );
+
+    expect(screen.getByRole("button", { name: /prepare cinder oath/i })).toBeDisabled();
+    expect(screen.getByText(/requires 1 vow note \(0 available\)/i)).toBeInTheDocument();
+
+    rerender(
+      <PhoneActionPanel
+        characters={characters}
+        onIntent={vi.fn()}
+        selectedTurnTab="action"
+        patch={createPatch({
+          encounter: null,
+          self: { seatId: "seat-1", sectorId: "ashwake-crossing", hand: [], notes: [], noteResources: { vow: 1 }, character: { ...mira, currentSpaceId: "ashwake-crossing" } }
+        })}
+      />
+    );
+
+    expect(screen.queryByRole("button", { name: /prepare cinder oath/i })).not.toBeInTheDocument();
+  });
+
   it("disables generic item/follower use shortcuts from server-confirmed use state", () => {
     render(
       <PhoneActionPanel
