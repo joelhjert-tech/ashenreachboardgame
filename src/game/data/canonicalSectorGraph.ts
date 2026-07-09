@@ -76,6 +76,9 @@ const encounterDecksBySpaceId: Partial<Record<string, EncounterDecks>> = {
       "bridge-toll-runt",
       "bellwire-snare",
       "scrap-toll-gangers",
+      "breach-halberd",
+      "shattered-barricade",
+      "cinder-hounds",
       "ash-lane-cutters",
       "chain-maul-salvager",
       "furnace-ditch-collapse",
@@ -98,6 +101,10 @@ const encounterDecksBySpaceId: Partial<Record<string, EncounterDecks>> = {
       "scrap-toll-gangers",
       "gate-tax-collectors",
       "pale-toll-enforcer",
+      "wireghost-key",
+      "locked-vault",
+      "null-drone",
+      "shiv-market-crew",
       "rust-choir-peddlers",
       "pale-cartel-shakedown",
       "pale-contract-collector"
@@ -114,6 +121,8 @@ const encounterDecksBySpaceId: Partial<Record<string, EncounterDecks>> = {
       "glass-chime-swarm",
       "latchspire-raider",
       "lantern-moth-swarm",
+      "sanctifier-beads",
+      "hushed-chapel",
       "bell-mask-pilgrim",
       "glasswing-midge-cloud",
       "roadside-bone-oracle",
@@ -432,14 +441,22 @@ const encounterDecksBySpaceId: Partial<Record<string, EncounterDecks>> = {
     escalation: ["escalation-choir-feedback", "escalation-webglass-afterimage"]
   },
   "the-salt-archive": {
-    threat: ["marrow-tax-auditors", "memory-tax-gate", "crown-bell-baron", "false-route-procession", "starless-taxation"],
+    threat: ["marrow-tax-auditors", "memory-tax-gate", "crown-bell-baron", "route-splice", "false-route-procession", "starless-taxation"],
     anomaly: ["anomaly-saltglass-fata-morgana", "anomaly-table-fire-writ"],
     contract: ["cartel-ledger-skim", "choir-hush-census", "dominion-gate-tithe"],
     artifact: ["artifact-oath-chain-ledger", "artifact-pale-ledger-token"],
     escalation: ["escalation-gate-tax-mandate", "escalation-crownfall-writ"]
   },
   "red-lantern-trenches": {
-    threat: ["red-march-cannoneer", "iron-lung-grenadier", "bone-rivet-brute", "ash-choir-crusader", "shardvine-ambushers"],
+    threat: [
+      "red-march-cannoneer",
+      "iron-lung-grenadier",
+      "bone-rivet-brute",
+      "red-maw-raiders",
+      "trench-blast",
+      "ash-choir-crusader",
+      "shardvine-ambushers"
+    ],
     anomaly: ["anomaly-red-suture-field", "anomaly-warbell-parallax"],
     contract: ["warden-span-vigil", "dominion-warbell-recovery"],
     artifact: ["artifact-red-march-warbell"],
@@ -467,7 +484,7 @@ const encounterDecksBySpaceId: Partial<Record<string, EncounterDecks>> = {
     escalation: ["escalation-red-march-levy", "escalation-emberwatch"]
   },
   "ashen-chapel": {
-    threat: ["cracked-censer-novice", "choir-static-burst", "bell-mask-pilgrim", "reliquary-judge"],
+    threat: ["cracked-censer-novice", "choir-static-burst", "choir-wraith", "veil-censor", "rift-whispers", "bell-mask-pilgrim", "reliquary-judge"],
     anomaly: ["anomaly-choir-static", "anomaly-saint-static-aperture", "anomaly-ashfall-murmur"],
     contract: ["umbral-shrine-confession", "choir-spindle-harmonics"],
     artifact: ["artifact-choir-static-censer", "artifact-heat-sink-prayer"],

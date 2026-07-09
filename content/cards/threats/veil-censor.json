@@ -1,0 +1,31 @@
+{
+  "id": "veil-censor",
+  "type": "threat",
+  "cardType": "enemy",
+  "title": "Veil Censor",
+  "enemyName": "Veil Censor",
+  "text": "The censor edits witnesses from the room and leaves their shadows to sign the report.",
+  "flavor": "Truth survives here only as an administrative error.",
+  "severity": 3,
+  "stat": "guile",
+  "difficulty": 7,
+  "trophyValue": 4,
+  "defeatReward": {
+    "type": "gain_note",
+    "text": "You stole the censor's redaction key and kept the blank space."
+  },
+  "woundOnLoss": {
+    "type": "gain_scar",
+    "scarId": "scar-wound-7"
+  },
+  "enemyFamily": "bureaucracy",
+  "threatLane": "blue",
+  "resolutionType": "enemy",
+  "region": "middle",
+  "rarity": "uncommon",
+  "tempo": "neutral",
+  "resourceTags": [
+    "scar",
+    "trophy"
+  ]
+}

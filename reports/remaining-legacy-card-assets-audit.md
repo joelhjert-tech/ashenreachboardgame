@@ -172,3 +172,36 @@ Files that should remain reference-only for now:
 3. Route-note design pass: decide whether route notes are cards, counters, or text-only notes.
 4. Heat archive/scar-inspiration pass: either archive Heat files or map selected images to Scar/Affliction concepts without restoring Heat.
 5. Prompt catalog cleanup pass: retarget or remove old Riftfall prompt outputs once the remaining reference decisions are final.
+
+## Threat Promotion Implementation
+
+Commit pass: `promote-legacy-lane-threat-assets`
+
+The 15 non-card-back threat candidates were promoted as active lane-specific Threat cards. Legacy sources were retained in place for a later archive-only pass.
+
+| legacy source | active threat ID | active image path | lane | role |
+|---|---|---|---|---|
+| `public/assets/riftfall/cards/threat-red/red_asset_breach_halberd.png` | `breach-halberd` | `public/assets/cards/threats/red/breach-halberd.png` | red | asset hazard |
+| `public/assets/riftfall/cards/threat-red/red_encounter_shattered_barricade.png` | `shattered-barricade` | `public/assets/cards/threats/red/shattered-barricade.png` | red | encounter hazard |
+| `public/assets/riftfall/cards/threat-red/red_enemy_cinder_hounds.png` | `cinder-hounds` | `public/assets/cards/threats/red/cinder-hounds.png` | red | enemy |
+| `public/assets/riftfall/cards/threat-red/red_enemy_red_maw_raiders.png` | `red-maw-raiders` | `public/assets/cards/threats/red/red-maw-raiders.png` | red | enemy |
+| `public/assets/riftfall/cards/threat-red/red_event_trench_blast.png` | `trench-blast` | `public/assets/cards/threats/red/trench-blast.png` | red | event hazard |
+| `public/assets/riftfall/cards/threat-blue/blue_asset_sanctifier_beads.png` | `sanctifier-beads` | `public/assets/cards/threats/blue/sanctifier-beads.png` | blue | asset hazard |
+| `public/assets/riftfall/cards/threat-blue/blue_encounter_hushed_chapel.png` | `hushed-chapel` | `public/assets/cards/threats/blue/hushed-chapel.png` | blue | encounter hazard |
+| `public/assets/riftfall/cards/threat-blue/blue_enemy_choir_wraith.png` | `choir-wraith` | `public/assets/cards/threats/blue/choir-wraith.png` | blue | enemy |
+| `public/assets/riftfall/cards/threat-blue/blue_enemy_veil_censor.png` | `veil-censor` | `public/assets/cards/threats/blue/veil-censor.png` | blue | enemy |
+| `public/assets/riftfall/cards/threat-blue/blue_event_rift_whispers.png` | `rift-whispers` | `public/assets/cards/threats/blue/rift-whispers.png` | blue | event hazard |
+| `public/assets/riftfall/cards/threat-yellow/yellow_asset_wireghost_key.png` | `wireghost-key` | `public/assets/cards/threats/yellow/wireghost-key.png` | yellow | asset hazard |
+| `public/assets/riftfall/cards/threat-yellow/yellow_encounter_locked_vault.png` | `locked-vault` | `public/assets/cards/threats/yellow/locked-vault.png` | yellow | encounter hazard |
+| `public/assets/riftfall/cards/threat-yellow/yellow_enemy_null_drone.png` | `null-drone` | `public/assets/cards/threats/yellow/null-drone.png` | yellow | enemy |
+| `public/assets/riftfall/cards/threat-yellow/yellow_enemy_shiv_market_crew.png` | `shiv-market-crew` | `public/assets/cards/threats/yellow/shiv-market-crew.png` | yellow | enemy |
+| `public/assets/riftfall/cards/threat-yellow/yellow_event_route_splice.png` | `route-splice` | `public/assets/cards/threats/yellow/route-splice.png` | yellow | event hazard |
+
+Implementation notes:
+
+- No Heat effects were added.
+- No `/assets/cards/heat/` path was created.
+- No movement, shop, mission, multiplayer, scar, scenario, or artifact rules were changed.
+- Asset-role threat images were promoted as `resolutionType: "asset"` hazards using existing note/wound/scar effects, not as new Equipment.
+- Each promoted threat was registered once in an appropriate canonical sector threat deck so the live deck reference set remains complete.
+- Threat count increased from 94 to 109, still within the 40-120 validation target.

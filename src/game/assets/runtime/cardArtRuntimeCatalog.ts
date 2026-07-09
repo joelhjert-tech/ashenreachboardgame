@@ -58,6 +58,11 @@ export const cardArtRuntimeCatalog: RuntimeCardArtCatalogEntry[] = [
     "outputPath": "/assets/cards/threats/red/bone-rivet-brute.png"
   },
   {
+    "cardId": "breach-halberd",
+    "cardType": "threat",
+    "outputPath": "/assets/cards/threats/red/breach-halberd.png"
+  },
+  {
     "cardId": "breach-lens-overload",
     "cardType": "threat",
     "outputPath": "/assets/cards/threats/yellow/breach-lens-overload.png"
@@ -88,6 +93,11 @@ export const cardArtRuntimeCatalog: RuntimeCardArtCatalogEntry[] = [
     "outputPath": "/assets/cards/threats/blue/choir-static-burst.png"
   },
   {
+    "cardId": "choir-wraith",
+    "cardType": "threat",
+    "outputPath": "/assets/cards/threats/blue/choir-wraith.png"
+  },
+  {
     "cardId": "cinder-bone-marauder",
     "cardType": "threat",
     "outputPath": "/assets/cards/threats/red/cinder-bone-marauder.png"
@@ -96,6 +106,11 @@ export const cardArtRuntimeCatalog: RuntimeCardArtCatalogEntry[] = [
     "cardId": "cinder-gate-backlash",
     "cardType": "threat",
     "outputPath": "/assets/cards/threats/blue/cinder-gate-backlash.png"
+  },
+  {
+    "cardId": "cinder-hounds",
+    "cardType": "threat",
+    "outputPath": "/assets/cards/threats/red/cinder-hounds.png"
   },
   {
     "cardId": "cinder-lattice-maw",
@@ -198,6 +213,11 @@ export const cardArtRuntimeCatalog: RuntimeCardArtCatalogEntry[] = [
     "outputPath": "/assets/cards/threats/blue/gutter-bell-mite.png"
   },
   {
+    "cardId": "hushed-chapel",
+    "cardType": "threat",
+    "outputPath": "/assets/cards/threats/blue/hushed-chapel.png"
+  },
+  {
     "cardId": "hymn-scarred-zealot",
     "cardType": "threat",
     "outputPath": "/assets/cards/threats/red/hymn-scarred-zealot.png"
@@ -243,6 +263,11 @@ export const cardArtRuntimeCatalog: RuntimeCardArtCatalogEntry[] = [
     "outputPath": "/assets/cards/threats/yellow/latchspire-raider.png"
   },
   {
+    "cardId": "locked-vault",
+    "cardType": "threat",
+    "outputPath": "/assets/cards/threats/yellow/locked-vault.png"
+  },
+  {
     "cardId": "marrow-tax-auditors",
     "cardType": "threat",
     "outputPath": "/assets/cards/threats/yellow/marrow-tax-auditors.png"
@@ -283,6 +308,11 @@ export const cardArtRuntimeCatalog: RuntimeCardArtCatalogEntry[] = [
     "outputPath": "/assets/cards/threats/red/mudglass-sinkhole.png"
   },
   {
+    "cardId": "null-drone",
+    "cardType": "threat",
+    "outputPath": "/assets/cards/threats/yellow/null-drone.png"
+  },
+  {
     "cardId": "pale-cartel-shakedown",
     "cardType": "threat",
     "outputPath": "/assets/cards/threats/yellow/pale-cartel-shakedown.png"
@@ -308,6 +338,11 @@ export const cardArtRuntimeCatalog: RuntimeCardArtCatalogEntry[] = [
     "outputPath": "/assets/cards/threats/red/red-march-cannoneer.png"
   },
   {
+    "cardId": "red-maw-raiders",
+    "cardType": "threat",
+    "outputPath": "/assets/cards/threats/red/red-maw-raiders.png"
+  },
+  {
     "cardId": "redglass-stray",
     "cardType": "threat",
     "outputPath": "/assets/cards/threats/red/redglass-stray.png"
@@ -328,9 +363,19 @@ export const cardArtRuntimeCatalog: RuntimeCardArtCatalogEntry[] = [
     "outputPath": "/assets/cards/threats/blue/reliquary-judge.png"
   },
   {
+    "cardId": "rift-whispers",
+    "cardType": "threat",
+    "outputPath": "/assets/cards/threats/blue/rift-whispers.png"
+  },
+  {
     "cardId": "roadside-bone-oracle",
     "cardType": "threat",
     "outputPath": "/assets/cards/threats/blue/roadside-bone-oracle.png"
+  },
+  {
+    "cardId": "route-splice",
+    "cardType": "threat",
+    "outputPath": "/assets/cards/threats/yellow/route-splice.png"
   },
   {
     "cardId": "rust-choir-peddlers",
@@ -353,6 +398,11 @@ export const cardArtRuntimeCatalog: RuntimeCardArtCatalogEntry[] = [
     "outputPath": "/assets/cards/threats/blue/saint-of-ashes-echo.png"
   },
   {
+    "cardId": "sanctifier-beads",
+    "cardType": "threat",
+    "outputPath": "/assets/cards/threats/blue/sanctifier-beads.png"
+  },
+  {
     "cardId": "scrap-toll-gangers",
     "cardType": "threat",
     "outputPath": "/assets/cards/threats/yellow/scrap-toll-gangers.png"
@@ -366,6 +416,16 @@ export const cardArtRuntimeCatalog: RuntimeCardArtCatalogEntry[] = [
     "cardId": "shardwind-front",
     "cardType": "threat",
     "outputPath": "/assets/cards/threats/red/shardwind-front.png"
+  },
+  {
+    "cardId": "shattered-barricade",
+    "cardType": "threat",
+    "outputPath": "/assets/cards/threats/red/shattered-barricade.png"
+  },
+  {
+    "cardId": "shiv-market-crew",
+    "cardType": "threat",
+    "outputPath": "/assets/cards/threats/yellow/shiv-market-crew.png"
   },
   {
     "cardId": "signal-rotted-engineer",
@@ -438,6 +498,16 @@ export const cardArtRuntimeCatalog: RuntimeCardArtCatalogEntry[] = [
     "outputPath": "/assets/cards/threats/red/tomb-gate-colossus.png"
   },
   {
+    "cardId": "trench-blast",
+    "cardType": "threat",
+    "outputPath": "/assets/cards/threats/red/trench-blast.png"
+  },
+  {
+    "cardId": "veil-censor",
+    "cardType": "threat",
+    "outputPath": "/assets/cards/threats/blue/veil-censor.png"
+  },
+  {
     "cardId": "veil-rift-judicator",
     "cardType": "threat",
     "outputPath": "/assets/cards/threats/blue/veil-rift-judicator.png"
@@ -466,6 +536,11 @@ export const cardArtRuntimeCatalog: RuntimeCardArtCatalogEntry[] = [
     "cardId": "wire-chewer-pack",
     "cardType": "threat",
     "outputPath": "/assets/cards/threats/yellow/wire-chewer-pack.png"
+  },
+  {
+    "cardId": "wireghost-key",
+    "cardType": "threat",
+    "outputPath": "/assets/cards/threats/yellow/wireghost-key.png"
   },
   {
     "cardId": "yard-ghoul-welders",

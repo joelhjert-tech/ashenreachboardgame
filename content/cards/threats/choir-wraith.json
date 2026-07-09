@@ -1,0 +1,31 @@
+{
+  "id": "choir-wraith",
+  "type": "threat",
+  "cardType": "enemy",
+  "title": "Choir Wraith",
+  "enemyName": "Choir Wraith",
+  "text": "A signal-wraith drifts forward carrying the note that killed it.",
+  "flavor": "It hums like a funeral remembering the wrong name.",
+  "severity": 3,
+  "stat": "signal",
+  "difficulty": 7,
+  "trophyValue": 4,
+  "defeatReward": {
+    "type": "gain_note",
+    "text": "You caught the wraith's killing note and folded it into a route mark."
+  },
+  "woundOnLoss": {
+    "type": "gain_scar",
+    "scarId": "scar-wound-4"
+  },
+  "enemyFamily": "revenant",
+  "threatLane": "blue",
+  "resolutionType": "enemy",
+  "region": "middle",
+  "rarity": "uncommon",
+  "tempo": "stall",
+  "resourceTags": [
+    "scar",
+    "trophy"
+  ]
+}

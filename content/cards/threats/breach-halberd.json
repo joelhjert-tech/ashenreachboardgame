@@ -1,0 +1,29 @@
+{
+  "id": "breach-halberd",
+  "type": "threat",
+  "cardType": "hazard",
+  "title": "Breach Halberd",
+  "text": "A breach-rusted halberd hangs from a shrine hook, still twitching toward warm hands.",
+  "flavor": "It remembers the last charge better than the soldier did.",
+  "severity": 2,
+  "stat": "forge",
+  "difficulty": 6,
+  "successEffect": {
+    "type": "gain_note",
+    "text": "You stripped a breach-halberd for a brutal route note."
+  },
+  "failEffect": {
+    "type": "take_wound",
+    "amount": 1
+  },
+  "enemyFamily": "hazard",
+  "threatLane": "red",
+  "resolutionType": "asset",
+  "region": "outer",
+  "rarity": "uncommon",
+  "tempo": "push",
+  "resourceTags": [
+    "loot",
+    "wound"
+  ]
+}
