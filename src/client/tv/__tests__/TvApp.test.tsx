@@ -696,8 +696,9 @@ describe("TvApp", () => {
 
     render(<TvApp />);
 
-    expect(await screen.findByText(/single-player ready/i)).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: /start session/i }));
+    const startButton = await screen.findByRole("button", { name: /start session/i });
+    expect(startButton).toBeEnabled();
+    fireEvent.click(startButton);
 
     await waitFor(() => {
       expect(mockStartSession).toHaveBeenCalledWith("RT7P4");
@@ -780,10 +781,12 @@ describe("TvApp", () => {
 
     render(<TvApp />);
 
-    const createMultiplayer = await screen.findByRole("button", { name: /create multiplayer/i });
-    expect(createMultiplayer).toBeDisabled();
-    expect(screen.getByRole("button", { name: /create single-player/i })).toBeInTheDocument();
-    expect(screen.getByRole("region", { name: /mission protocol/i })).toHaveTextContent(/start game locked/i);
+    expect(await screen.findByRole("region", { name: /game selection/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /solo run/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /^multiplayer/i })).toBeInTheDocument();
+    expect(screen.queryByText(/ruthless/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/nemesis_relay/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/^standard$/i)).not.toBeInTheDocument();
     expect(mockUseRoomSubscription).toHaveBeenCalledWith(
       expect.objectContaining({
         enabled: false
@@ -791,19 +794,17 @@ describe("TvApp", () => {
     );
   });
 
-  it("auto-connects a fresh TV display to the current public session without a host token", async () => {
+  it("keeps a fresh TV display on game selection instead of auto-attaching to the server room", async () => {
     render(<TvApp />);
 
-    await waitFor(() => {
-      expect(mockUseRoomSubscription).toHaveBeenLastCalledWith(
-        expect.objectContaining({
-          view: "tv",
-          enabled: true,
-          hostToken: null
-        })
-      );
-    });
-    expect(window.localStorage.getItem("ashen-reach-tv-room-code")).toBe("RT7P4");
+    expect(await screen.findByRole("region", { name: /game selection/i })).toBeInTheDocument();
+    expect(mockFetchSessionSummary).not.toHaveBeenCalled();
+    expect(mockUseRoomSubscription).toHaveBeenCalledWith(
+      expect.objectContaining({
+        enabled: false
+      })
+    );
+    expect(window.localStorage.getItem("ashen-reach-tv-room-code")).toBeNull();
     expect(window.localStorage.getItem("ashen-reach-tv-host-token")).toBeNull();
   });
 
@@ -821,7 +822,9 @@ describe("TvApp", () => {
         })
       );
     });
-    expect(window.localStorage.getItem("ashen-reach-tv-room-code")).toBe("RT7P4");
+    await waitFor(() => {
+      expect(window.localStorage.getItem("ashen-reach-tv-room-code")).toBe("RT7P4");
+    });
     expect(window.localStorage.getItem("ashen-reach-tv-host-token")).toBeNull();
     expect(screen.queryByText(/previous session ended/i)).not.toBeInTheDocument();
   });
@@ -831,7 +834,8 @@ describe("TvApp", () => {
 
     render(<TvApp />);
 
-    fireEvent.click(await screen.findByRole("button", { name: /co-op/i }));
+    fireEvent.click(await screen.findByRole("button", { name: /^multiplayer/i }));
+    fireEvent.click(within(screen.getByRole("region", { name: /mission protocol/i })).getAllByRole("button")[0]!);
     fireEvent.click((await screen.findAllByRole("button", { name: /create multiplayer/i }))[0]!);
 
     await waitFor(() => {
@@ -854,9 +858,10 @@ describe("TvApp", () => {
 
     render(<TvApp />);
 
+    fireEvent.click(await screen.findByRole("button", { name: /^multiplayer/i }));
     const scenarioSelect = (await screen.findAllByRole("combobox"))[0]!;
     fireEvent.change(scenarioSelect, { target: { value: "scenario_dying_star" } });
-    fireEvent.click(screen.getByRole("button", { name: /nemesis/i }));
+    fireEvent.click(screen.getByRole("button", { name: /rivalry/i }));
     fireEvent.click(screen.getAllByRole("button", { name: /create multiplayer/i })[0]!);
 
     await waitFor(() => {
@@ -864,13 +869,14 @@ describe("TvApp", () => {
     });
   });
 
-  it("labels the competitive setup protocol as Nemesis while preserving the rivalry interaction mode", async () => {
+  it("labels the competitive setup protocol as Rivalry while preserving the rivalry interaction mode", async () => {
     mockFetchSessionSummary.mockRejectedValue(new Error("No active room"));
 
     render(<TvApp />);
 
-    fireEvent.click(await screen.findByRole("button", { name: /nemesis/i }));
-    expect(screen.getByText(/nemesis protocol selected/i)).toBeInTheDocument();
+    fireEvent.click(await screen.findByRole("button", { name: /^multiplayer/i }));
+    fireEvent.click(screen.getByRole("button", { name: /rivalry/i }));
+    expect(screen.getByText(/rivalry selected/i)).toBeInTheDocument();
     fireEvent.click(screen.getAllByRole("button", { name: /create multiplayer/i })[0]!);
 
     await waitFor(() => {
@@ -920,36 +926,28 @@ describe("TvApp", () => {
 
     render(<TvApp />);
 
+    fireEvent.click(await screen.findByRole("button", { name: /solo run/i }));
     const scenarioSelect = (await screen.findAllByRole("combobox"))[0]!;
     fireEvent.change(scenarioSelect, { target: { value: "scenario_dying_star" } });
-    fireEvent.click(screen.getByRole("button", { name: /create single-player/i }));
+    expect(screen.queryByText(/^Open Seat$/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/waiting for other players/i)).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /create solo run/i }));
 
     await waitFor(() => {
       expect(mockCreateSession).toHaveBeenCalledWith("single-player", "scenario_dying_star", "co-op", "standard", 1);
     });
   });
 
-  it("sends Nemesis Relay as the selected game mode when creating a room", async () => {
+  it("keeps Nemesis disabled until the hidden-agenda mode is supported", async () => {
     mockFetchSessionSummary.mockRejectedValue(new Error("No active room"));
-    mockCreateSession.mockResolvedValue({
-      roomCode: "RELAY",
-      hostToken: "host:RELAY:secret",
-      sessionMode: "multiplayer",
-      gameMode: "nemesis_relay",
-      interactionMode: "co-op",
-      scenarioId: "scenario_broken_seal",
-      playerCount: 4
-    });
 
     render(<TvApp />);
 
-    const gameModeSelect = (await screen.findAllByRole("combobox"))[1]!;
-    fireEvent.change(gameModeSelect, { target: { value: "nemesis_relay" } });
-    fireEvent.click(screen.getAllByRole("button", { name: /create multiplayer/i })[0]!);
+    fireEvent.click(await screen.findByRole("button", { name: /^multiplayer/i }));
 
-    await waitFor(() => {
-      expect(mockCreateSession).toHaveBeenCalledWith("multiplayer", "scenario_broken_seal", "co-op", "nemesis_relay", 4);
-    });
+    expect(screen.getByRole("button", { name: /nemesis/i })).toBeDisabled();
+    expect(screen.getByText(/coming later/i)).toBeInTheDocument();
+    expect(screen.queryByText(/nemesis_relay/i)).not.toBeInTheDocument();
   });
 
   it("sends the selected multiplayer player count when creating a room", async () => {
@@ -966,9 +964,10 @@ describe("TvApp", () => {
 
     render(<TvApp />);
 
-    const playerCountSelect = (await screen.findAllByRole("combobox"))[2]!;
+    fireEvent.click(await screen.findByRole("button", { name: /^multiplayer/i }));
+    const playerCountSelect = (await screen.findAllByRole("combobox"))[1]!;
     fireEvent.change(playerCountSelect, { target: { value: "2" } });
-    fireEvent.click(screen.getByRole("button", { name: /co-op/i }));
+    fireEvent.click(within(screen.getByRole("region", { name: /mission protocol/i })).getAllByRole("button")[0]!);
     fireEvent.click(screen.getAllByRole("button", { name: /create multiplayer/i })[0]!);
 
     await waitFor(() => {
@@ -981,6 +980,7 @@ describe("TvApp", () => {
 
     render(<TvApp />);
 
+    fireEvent.click(await screen.findByRole("button", { name: /solo run/i }));
     expect(await screen.findByText(/scenario briefing/i)).toBeInTheDocument();
     expect(screen.getByText(/seal pressure degrades at the start of each turn/i)).toBeInTheDocument();
     expect(screen.getByText(/no linked nemesis/i)).toBeInTheDocument();

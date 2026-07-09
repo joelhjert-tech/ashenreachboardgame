@@ -73,6 +73,7 @@ const previousSessionEndedNotice = "Previous session ended. Create a new room to
 
 const statLabelById = statShortLabelById;
 type TvResolutionDisplayMode = "idle" | "cardReveal" | "battle" | "outcome";
+type HostLobbyPath = "solo" | "multiplayer" | null;
 
 function toTitleCase(value: string): string {
   return value
@@ -81,7 +82,7 @@ function toTitleCase(value: string): string {
 }
 
 function getSessionModeLabel(sessionMode: SessionMode): string {
-  return sessionMode === "single-player" ? "Single Player" : "Multiplayer";
+  return sessionMode === "single-player" ? "Solo Run" : "Multiplayer";
 }
 
 function formatContractRewardSummary(contract: ContractCard): string {
@@ -118,11 +119,11 @@ function getInteractionModeLabel(interactionMode: InteractionMode): string {
     return "Co-op";
   }
 
-  return "Nemesis";
+  return "Rivalry";
 }
 
 function getGameModeLabel(gameMode: GameMode | undefined): string {
-  return gameMode === "nemesis_relay" ? "Nemesis Relay" : "Standard";
+  return gameMode === "nemesis_relay" ? "Relay Trial" : "Scenario Race";
 }
 
 function getSeatNumber(seatId: string): string {
@@ -536,7 +537,7 @@ function TopHeader({
         ) : (
           <div className="join-qr-card join-qr-card-compact join-qr-card-empty">
             <div>
-              <h2>Scan to Join</h2>
+              <h2>Create Room</h2>
               <p>Players {joinedCount}/{seatCapacity} | Ready {readyCount}/{Math.max(joinedCount, 1)}</p>
             </div>
             <div className="join-qr-frame" aria-label="QR code placeholder">
@@ -848,6 +849,7 @@ function OperativesRail({ patch, characterCatalog, activeSeatId, sessionMode, ba
 
 interface SessionReadoutProps {
   publicPatch: StatePatch<PublicPatchPayload> | null;
+  lobbyPath: HostLobbyPath;
   sessionMode: SessionMode;
   gameMode: GameMode;
   interactionMode: InteractionMode | null;
@@ -860,8 +862,9 @@ interface SessionReadoutProps {
   roomCode: string | null;
   selectedScenario: ScenarioCatalogEntry | null;
   scenarioCatalog: ScenarioCatalogEntry[];
+  onLobbyPathSelected: (path: Exclude<HostLobbyPath, null>) => void;
+  onLobbyBack: () => void;
   onScenarioSelected: (scenarioId: string) => void;
-  onGameModeSelected: (gameMode: GameMode) => void;
   onInteractionModeSelected: (interactionMode: InteractionMode) => void;
   onPlayerCountSelected: (playerCount: number) => void;
   onCreateSession: (sessionMode?: SessionMode) => Promise<void>;
@@ -874,6 +877,37 @@ interface SessionReadoutProps {
   showStart: boolean;
   debugOpen: boolean;
   onToggleDebug: () => void;
+}
+
+function HostGameSelection({
+  onSelect
+}: {
+  onSelect: (path: Exclude<HostLobbyPath, null>) => void;
+}): ReactElement {
+  return (
+    <section className="tv-game-selection" aria-label="Game selection">
+      <button
+        type="button"
+        className="tv-game-selection-card tv-game-selection-card--solo"
+        onClick={() => onSelect("solo")}
+      >
+        <span>Solo Run</span>
+        <strong>One operative against the Reach.</strong>
+        <p>Fast setup. No open seats, no table waiting, no hidden agenda furniture.</p>
+        <em>1 player</em>
+      </button>
+      <button
+        type="button"
+        className="tv-game-selection-card tv-game-selection-card--multiplayer"
+        onClick={() => onSelect("multiplayer")}
+      >
+        <span>Multiplayer</span>
+        <strong>Phones join the command board.</strong>
+        <p>Choose Co-op or Rivalry, then each player locks character, mission, and ready.</p>
+        <em>2-6 players</em>
+      </button>
+    </section>
+  );
 }
 
 function ScenarioSelectionPreview({ scenario }: { scenario: ScenarioCatalogEntry | null }): ReactElement | null {
@@ -927,8 +961,8 @@ function FirstGamePanel({ interactionMode }: { interactionMode: InteractionMode 
     interactionMode === "co-op"
       ? "Share pressure, assist checks, and push the scenario objective together."
       : interactionMode === "ruthless" || interactionMode === "rivalry"
-        ? "Race for personal glory with private Nemesis agendas, public-safe reveals, trades, aid, duels, and exposed-object steals."
-        : "Choose a mission protocol before authorizing the multiplayer room.";
+        ? "Race for personal glory with owner-only rivalry agendas, public-safe reveals, trades, aid, duels, and exposed-object steals."
+        : "Choose Co-op or Rivalry before authorizing the multiplayer room.";
 
   return (
     <section className="tv-first-game-panel" aria-label="First game guide">
@@ -949,28 +983,23 @@ function FirstGamePanel({ interactionMode }: { interactionMode: InteractionMode 
 
 function MissionProtocolSelector({
   selectedMode,
-  gameMode,
   onSelect
 }: {
   selectedMode: InteractionMode | null;
-  gameMode: GameMode;
   onSelect: (interactionMode: InteractionMode) => void;
 }): ReactElement {
-  const relayLocked = gameMode === "nemesis_relay";
-  const effectiveSelectedMode = relayLocked ? "co-op" : selectedMode;
-
   return (
     <section className="tv-mission-protocol" aria-label="Mission protocol">
       <div className="tv-mission-protocol-header">
-        <span>Mission Protocol</span>
-        <strong>{effectiveSelectedMode ? getInteractionModeLabel(effectiveSelectedMode) : "Select authorization"}</strong>
+        <span>Table Mode</span>
+        <strong>{selectedMode ? getInteractionModeLabel(selectedMode) : "Select authorization"}</strong>
       </div>
       <div className="tv-mission-protocol-options">
         <button
           type="button"
           className="tv-mission-protocol-card"
-          data-selected={effectiveSelectedMode === "co-op"}
-          aria-pressed={effectiveSelectedMode === "co-op"}
+          data-selected={selectedMode === "co-op"}
+          aria-pressed={selectedMode === "co-op"}
           onClick={() => onSelect("co-op")}
         >
           <strong>Co-op</strong>
@@ -979,21 +1008,25 @@ function MissionProtocolSelector({
         <button
           type="button"
           className="tv-mission-protocol-card"
-          data-selected={effectiveSelectedMode === "rivalry"}
-          aria-pressed={effectiveSelectedMode === "rivalry"}
-          disabled={relayLocked}
+          data-selected={selectedMode === "rivalry"}
+          aria-pressed={selectedMode === "rivalry"}
           onClick={() => onSelect("rivalry")}
         >
+          <strong>Rivalry</strong>
+          <span>Players compete through owner-only agendas. Operatives may race, block, outscore, or outlast each other depending on the scenario.</span>
+        </button>
+        <button
+          type="button"
+          className="tv-mission-protocol-card tv-mission-protocol-card--disabled"
+          disabled
+          aria-disabled="true"
+        >
           <strong>Nemesis</strong>
-          <span>Players compete through private agendas. Operatives may race, block, outscore, or outlast each other depending on the scenario.</span>
+          <span>Coming later. Current relay rules are co-op champion pressure, not the hidden-agenda mode.</span>
         </button>
       </div>
       <p className="tv-mission-protocol-note">
-        {relayLocked
-          ? "Nemesis Relay is a co-op protocol and cannot launch as Nemesis."
-          : effectiveSelectedMode
-            ? `${getInteractionModeLabel(effectiveSelectedMode)} protocol selected.`
-            : "Start Game locked until one protocol is selected."}
+        {selectedMode ? `${getInteractionModeLabel(selectedMode)} selected.` : "Create Multiplayer locked until Co-op or Rivalry is selected."}
       </p>
     </section>
   );
@@ -1001,6 +1034,7 @@ function MissionProtocolSelector({
 
 function SessionReadout({
   publicPatch,
+  lobbyPath,
   sessionMode,
   gameMode,
   interactionMode,
@@ -1013,8 +1047,9 @@ function SessionReadout({
   roomCode,
   selectedScenario,
   scenarioCatalog,
+  onLobbyPathSelected,
+  onLobbyBack,
   onScenarioSelected,
-  onGameModeSelected,
   onInteractionModeSelected,
   onPlayerCountSelected,
   onCreateSession,
@@ -1030,6 +1065,116 @@ function SessionReadout({
 }: SessionReadoutProps): ReactElement {
   const missionSelectedCount =
     publicPatch?.payload.seats.filter((seat) => Boolean(seat.displayName) && !seat.kicked && seat.startingMissionSelected).length ?? 0;
+
+  if (showCreate && !roomCode && !lobbyPath) {
+    return (
+      <section className="tv-card tv-panel-card tv-session-panel tv-session-panel--game-selection">
+        <div className="tv-card-header">
+          <div>
+            <h2>Choose Game Type</h2>
+            <p>Pick the table shape before players enter setup.</p>
+          </div>
+        </div>
+        <HostGameSelection onSelect={onLobbyPathSelected} />
+        {debugOpen && (
+          <div className="tv-session-command-bar">
+            <button type="button" className="tv-button tv-button-quiet" onClick={onToggleDebug}>
+              Hide debug
+            </button>
+          </div>
+        )}
+      </section>
+    );
+  }
+
+  if (showCreate && !roomCode && lobbyPath) {
+    const isSoloSetup = lobbyPath === "solo";
+    return (
+      <section className="tv-card tv-panel-card tv-session-panel tv-session-panel--setup-path">
+        <div className="tv-card-header">
+          <div>
+            <h2>{isSoloSetup ? "Solo Run Setup" : "Multiplayer Setup"}</h2>
+            <p>{isSoloSetup ? "One operative, no open seats, server-authored setup." : "Choose table mode, create the room, then players join by phone."}</p>
+          </div>
+        </div>
+
+        <div className="tv-session-actions">
+          <div className="tv-session-setup-scroll">
+            {scenarioCatalog.length > 0 && (
+              <>
+                <label className="tv-session-scenario-picker">
+                  <span>Scenario</span>
+                  <select
+                    value={selectedScenario?.id ?? scenarioCatalog[0]?.id ?? ""}
+                    onChange={(event) => onScenarioSelected(event.target.value)}
+                  >
+                    {scenarioCatalog.map((scenario) => (
+                      <option key={scenario.id} value={scenario.id}>
+                        {scenario.name} | {toTitleCase(scenario.difficulty)}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <ScenarioSelectionPreview scenario={selectedScenario} />
+              </>
+            )}
+
+            {isSoloSetup ? (
+              <section className="tv-lobby-setup-note" aria-label="Solo setup requirements">
+                <span>Solo Run</span>
+                <strong>Character and starting mission happen through the normal setup path.</strong>
+                <p>Create the solo room, join or use the controller flow, choose an operative, choose a starting mission, then start when ready.</p>
+              </section>
+            ) : (
+              <>
+                <label className="tv-session-scenario-picker">
+                  <span>Players</span>
+                  <select
+                    value={playerCount}
+                    onChange={(event) => onPlayerCountSelected(Number(event.target.value))}
+                  >
+                    {Array.from({ length: 5 }, (_, index) => index + 2).map((count) => (
+                      <option key={count} value={count}>
+                        {count} players
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <MissionProtocolSelector
+                  selectedMode={interactionMode}
+                  onSelect={onInteractionModeSelected}
+                />
+                <FirstGamePanel interactionMode={interactionMode} />
+                <section className="tv-lobby-setup-note" aria-label="Multiplayer join note">
+                  <span>Room Join</span>
+                  <strong>Room code and QR appear after the host creates the multiplayer room.</strong>
+                  <p>Each joined phone then follows Character, Starting Mission, Ready.</p>
+                </section>
+              </>
+            )}
+          </div>
+          <div className="tv-session-command-bar">
+            {debugOpen && (
+              <button type="button" className="tv-button tv-button-quiet" onClick={onToggleDebug}>
+                Hide debug
+              </button>
+            )}
+            <button type="button" className="tv-button tv-button-quiet" onClick={onLobbyBack}>
+              Back
+            </button>
+            <button
+              type="button"
+              disabled={!isSoloSetup && !interactionMode}
+              onClick={() => void onCreateSession(isSoloSetup ? "single-player" : "multiplayer")}
+            >
+              {isSoloSetup ? "Create Solo Run" : "Create Multiplayer"}
+            </button>
+            {!isSoloSetup && !interactionMode && <p className="tv-session-ready-note">Choose Co-op or Rivalry before creating a multiplayer room.</p>}
+          </div>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section className="tv-card tv-panel-card tv-session-panel">
@@ -1091,53 +1236,7 @@ function SessionReadout({
 
       <div className="tv-session-actions">
         <div className="tv-session-setup-scroll">
-          {!roomCode && scenarioCatalog.length > 0 && (
-            <>
-              <label className="tv-session-scenario-picker">
-                <span>Scenario</span>
-                <select
-                  value={selectedScenario?.id ?? scenarioCatalog[0]?.id ?? ""}
-                  onChange={(event) => onScenarioSelected(event.target.value)}
-                >
-                  {scenarioCatalog.map((scenario) => (
-                    <option key={scenario.id} value={scenario.id}>
-                      {scenario.name} | {toTitleCase(scenario.difficulty)}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <ScenarioSelectionPreview scenario={selectedScenario} />
-              <label className="tv-session-scenario-picker">
-                <span>Game Mode</span>
-                <select
-                  value={gameMode}
-                  onChange={(event) => onGameModeSelected(event.target.value as GameMode)}
-                >
-                  <option value="standard">Standard | scenario race</option>
-                  <option value="nemesis_relay">Nemesis Relay | co-op champion pressure</option>
-                </select>
-              </label>
-              <label className="tv-session-scenario-picker">
-                <span>Players</span>
-                <select
-                  value={playerCount}
-                  onChange={(event) => onPlayerCountSelected(Number(event.target.value))}
-                >
-                  {Array.from({ length: gameMode === "nemesis_relay" ? 3 : 5 }, (_, index) => index + 2).map((count) => (
-                    <option key={count} value={count}>
-                      {count} players
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <MissionProtocolSelector
-                selectedMode={interactionMode}
-                gameMode={gameMode}
-                onSelect={onInteractionModeSelected}
-              />
-              <FirstGamePanel interactionMode={interactionMode} />
-            </>
-          )}
+          {!roomCode && <p className="tv-session-ready-note">Choose Solo Run or Multiplayer to create a room.</p>}
         </div>
         <div className="tv-session-command-bar">
           {debugOpen && (
@@ -1149,13 +1248,13 @@ function SessionReadout({
             <>
               <button
                 type="button"
-                disabled={gameMode !== "nemesis_relay" && !interactionMode}
+                disabled={!interactionMode}
                 onClick={() => void onCreateSession()}
               >
                 Create multiplayer
               </button>
               <button type="button" className="tv-button tv-button-quiet" onClick={() => void onCreateSession("single-player")}>
-                Create single-player
+                Create Solo Run
               </button>
             </>
           )}
@@ -1197,8 +1296,10 @@ interface RightSidebarProps {
   onToggleDebug: () => void;
   selectedScenario: ScenarioCatalogEntry | null;
   scenarioCatalog: ScenarioCatalogEntry[];
+  lobbyPath: HostLobbyPath;
+  onLobbyPathSelected: (path: Exclude<HostLobbyPath, null>) => void;
+  onLobbyBack: () => void;
   onScenarioSelected: (scenarioId: string) => void;
-  onGameModeSelected: (gameMode: GameMode) => void;
   onInteractionModeSelected: (interactionMode: InteractionMode) => void;
   onPlayerCountSelected: (playerCount: number) => void;
   onCreateSession: (sessionMode?: SessionMode) => Promise<void>;
@@ -1595,8 +1696,10 @@ function RightSidebar({
   onToggleDebug,
   selectedScenario,
   scenarioCatalog,
+  lobbyPath,
+  onLobbyPathSelected,
+  onLobbyBack,
   onScenarioSelected,
-  onGameModeSelected,
   onInteractionModeSelected,
   onPlayerCountSelected,
   onCreateSession,
@@ -1638,6 +1741,7 @@ function RightSidebar({
 
       <SessionReadout
         publicPatch={publicPatch}
+        lobbyPath={lobbyPath}
         sessionMode={sessionMode}
         gameMode={gameMode}
         interactionMode={interactionMode}
@@ -1650,8 +1754,9 @@ function RightSidebar({
         roomCode={roomCode}
         selectedScenario={selectedScenario}
         scenarioCatalog={scenarioCatalog}
+        onLobbyPathSelected={onLobbyPathSelected}
+        onLobbyBack={onLobbyBack}
         onScenarioSelected={onScenarioSelected}
-        onGameModeSelected={onGameModeSelected}
         onInteractionModeSelected={onInteractionModeSelected}
         onPlayerCountSelected={onPlayerCountSelected}
         onCreateSession={onCreateSession}
@@ -2035,6 +2140,7 @@ export function TvApp(): ReactElement {
   const [sessionMode, setSessionMode] = useState<SessionMode>("multiplayer");
   const [gameMode, setGameMode] = useState<GameMode>("standard");
   const [interactionMode, setInteractionMode] = useState<InteractionMode | null>(null);
+  const [lobbyPath, setLobbyPath] = useState<HostLobbyPath>(null);
   const [playerCount, setPlayerCount] = useState<number>(6);
   const [selectedScenarioId, setSelectedScenarioId] = useState<string | null>(null);
   const [hostToken, setHostToken] = useState<string | null>(() =>
@@ -2121,6 +2227,11 @@ export function TvApp(): ReactElement {
       return;
     }
 
+    if (!roomCode) {
+      restoreValidatedRef.current = true;
+      return;
+    }
+
     let cancelled = false;
 
     void fetchSessionSummary()
@@ -2184,19 +2295,21 @@ export function TvApp(): ReactElement {
     try {
       const scenarioId = selectedScenarioId ?? scenarioCatalog[0]?.id;
       const selectedInteractionMode: InteractionMode | undefined =
-        nextSessionMode === "single-player" || gameMode === "nemesis_relay"
+        nextSessionMode === "single-player"
           ? "co-op"
           : interactionMode ?? undefined;
       if (nextSessionMode !== "single-player" && !selectedInteractionMode) {
-        setRequestError("Choose Co-op or Nemesis before creating a multiplayer room.");
+        setRequestError("Choose Co-op or Rivalry before creating a multiplayer room.");
         return;
       }
-      const selectedPlayerCount = nextSessionMode === "single-player" ? 1 : Math.min(playerCount, gameMode === "nemesis_relay" ? 4 : 6);
-      const session = await createSession(nextSessionMode, scenarioId, selectedInteractionMode, gameMode, selectedPlayerCount);
+      const selectedGameMode: GameMode = "standard";
+      const selectedPlayerCount = nextSessionMode === "single-player" ? 1 : Math.min(Math.max(playerCount, 2), 6);
+      const session = await createSession(nextSessionMode, scenarioId, selectedInteractionMode, selectedGameMode, selectedPlayerCount);
       setRoomCode(session.roomCode);
       setSessionMode(session.sessionMode);
       setGameMode(session.gameMode ?? "standard");
       setInteractionMode(session.interactionMode);
+      setLobbyPath(null);
       setPlayerCount(session.playerCount);
       setSelectedScenarioId(session.scenarioId);
       setHostToken(session.hostToken);
@@ -2206,13 +2319,22 @@ export function TvApp(): ReactElement {
     }
   };
 
-  const selectGameMode = (nextGameMode: GameMode) => {
-    setGameMode(nextGameMode);
+  const selectLobbyPath = (nextLobbyPath: Exclude<HostLobbyPath, null>) => {
+    setRequestError(null);
+    setSessionNotice(null);
+    setLobbyPath(nextLobbyPath);
+    setGameMode("standard");
 
-    if (nextGameMode === "nemesis_relay") {
-      setPlayerCount((current) => Math.min(current, 4));
+    if (nextLobbyPath === "solo") {
+      setSessionMode("single-player");
       setInteractionMode("co-op");
+      setPlayerCount(1);
+      return;
     }
+
+    setSessionMode("multiplayer");
+    setInteractionMode(null);
+    setPlayerCount((current) => Math.min(Math.max(current, 2), 6));
   };
 
   const startHostSession = async () => {
@@ -2232,6 +2354,7 @@ export function TvApp(): ReactElement {
   };
 
   const currentStepCopy = getCurrentStepCopy(publicPatch, activePlayer);
+  const isPreRoomLobby = !effectiveRoomCode && !publicPatch;
 
   return (
     <main className="tv-dashboard tv-command-dashboard">
@@ -2262,56 +2385,107 @@ export function TvApp(): ReactElement {
         <HostAudioControls audio={audio} />
         <EndgameOverlay patch={publicPatch} />
 
-        <section className="tv-command-main">
-          <OperativesRail
-            patch={publicPatch}
-            characterCatalog={characterCatalog}
-            activeSeatId={battleMode ? combatSeatId : activeSeatId}
-            sessionMode={liveSessionMode}
-            battleMode={battleMode}
-          />
+        <section className={`tv-command-main${isPreRoomLobby ? " tv-command-main--pre-room" : ""}`}>
+          {isPreRoomLobby ? (
+            <section className="tv-pre-room-lobby-stage" aria-label="Host lobby setup">
+              <SessionReadout
+                publicPatch={publicPatch}
+                lobbyPath={lobbyPath}
+                sessionMode={liveSessionMode}
+                gameMode={liveGameMode}
+                interactionMode={liveInteractionMode}
+                playerCount={playerCount}
+                joinedCount={joinedSeats.length}
+                readyCount={readySeats.length}
+                seatCapacity={liveSessionMode === "single-player" ? 1 : 6}
+                activeSeatId={activeSeatId}
+                status={status}
+                roomCode={effectiveRoomCode}
+                selectedScenario={selectedScenario}
+                scenarioCatalog={scenarioCatalog}
+                onLobbyPathSelected={selectLobbyPath}
+                onLobbyBack={() => {
+                  setRequestError(null);
+                  setLobbyPath(null);
+                }}
+                onScenarioSelected={setSelectedScenarioId}
+                onInteractionModeSelected={setInteractionMode}
+                onPlayerCountSelected={setPlayerCount}
+                onCreateSession={createHostSession}
+                onRestartSession={() => {
+                  setRequestError(null);
+                  sendIntent({ type: "RESTART_SESSION" });
+                }}
+                onStartSession={startHostSession}
+                canStartSession={startReadiness.canStart}
+                startSessionReason={startReadiness.reason}
+                showCreate
+                showRestart={false}
+                showStart={false}
+                debugOpen={debugOpen}
+                onToggleDebug={() => setDebugOpen((current) => !current)}
+              />
+            </section>
+          ) : (
+            <>
+              {(publicPatch || effectiveRoomCode) && (
+            <OperativesRail
+              patch={publicPatch}
+              characterCatalog={characterCatalog}
+              activeSeatId={battleMode ? combatSeatId : activeSeatId}
+              sessionMode={liveSessionMode}
+              battleMode={battleMode}
+            />
+              )}
 
-          <TacticalMapPanel
-            patch={publicPatch}
-            previousPatch={previousPatchRef.current}
-            activeSeat={activeSeat}
-            activePlayer={activePlayer}
-            battlePlayer={battlePlayer}
-            characterCatalog={characterCatalog}
-          />
+              <TacticalMapPanel
+                patch={publicPatch}
+                previousPatch={previousPatchRef.current}
+                activeSeat={activeSeat}
+                activePlayer={activePlayer}
+                battlePlayer={battlePlayer}
+                characterCatalog={characterCatalog}
+              />
 
-          <RightSidebar
-            roomCode={effectiveRoomCode}
-            scenarioStatus={scenarioStatus}
-            publicPatch={publicPatch}
-            activePlayer={activePlayer}
-            currentStepCopy={currentStepCopy}
-            sessionMode={liveSessionMode}
-            gameMode={liveGameMode}
-            interactionMode={liveInteractionMode}
-            playerCount={playerCount}
-            joinedCount={joinedSeats.length}
-            readyCount={readySeats.length}
-            seatCapacity={publicPatch?.payload.seats.length ?? (liveSessionMode === "single-player" ? 1 : 3)}
-            activeSeatId={activeSeatId}
-            status={status}
-            debugOpen={debugOpen}
-            onToggleDebug={() => setDebugOpen((current) => !current)}
-            selectedScenario={selectedScenario}
-            scenarioCatalog={scenarioCatalog}
-            onScenarioSelected={setSelectedScenarioId}
-            onGameModeSelected={selectGameMode}
-            onInteractionModeSelected={setInteractionMode}
-            onPlayerCountSelected={setPlayerCount}
-            onCreateSession={createHostSession}
-            onRestartSession={() => {
-              setRequestError(null);
-              sendIntent({ type: "RESTART_SESSION" });
-            }}
-            onStartSession={startHostSession}
-            canStartSession={startReadiness.canStart}
-            startSessionReason={startReadiness.reason}
-          />
+              <RightSidebar
+                roomCode={effectiveRoomCode}
+                scenarioStatus={scenarioStatus}
+                publicPatch={publicPatch}
+                activePlayer={activePlayer}
+                currentStepCopy={currentStepCopy}
+                sessionMode={liveSessionMode}
+                gameMode={liveGameMode}
+                interactionMode={liveInteractionMode}
+                playerCount={playerCount}
+                joinedCount={joinedSeats.length}
+                readyCount={readySeats.length}
+                seatCapacity={publicPatch?.payload.seats.length ?? (liveSessionMode === "single-player" ? 1 : 3)}
+                activeSeatId={activeSeatId}
+                status={status}
+                debugOpen={debugOpen}
+                onToggleDebug={() => setDebugOpen((current) => !current)}
+                selectedScenario={selectedScenario}
+                scenarioCatalog={scenarioCatalog}
+                lobbyPath={lobbyPath}
+                onLobbyPathSelected={selectLobbyPath}
+                onLobbyBack={() => {
+                  setRequestError(null);
+                  setLobbyPath(null);
+                }}
+                onScenarioSelected={setSelectedScenarioId}
+                onInteractionModeSelected={setInteractionMode}
+                onPlayerCountSelected={setPlayerCount}
+                onCreateSession={createHostSession}
+                onRestartSession={() => {
+                  setRequestError(null);
+                  sendIntent({ type: "RESTART_SESSION" });
+                }}
+                onStartSession={startHostSession}
+                canStartSession={startReadiness.canStart}
+                startSessionReason={startReadiness.reason}
+              />
+            </>
+          )}
         </section>
 
         {debugOpen && (
