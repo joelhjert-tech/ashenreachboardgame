@@ -79,6 +79,7 @@ import {
   getLegalMovementRoute,
   getMovementBlockReason
 } from "../game/rules/movementPlanner.js";
+import { createInitialSessionState } from "./sessionState.js";
 import { resolveBoardSpaceEvent } from "../game/tileResolver.js";
 import {
   calculateExplorationDraws,
@@ -181,7 +182,7 @@ import type { AfflictionCard } from "../game/schema/affliction.schema.js";
 import { rollDice, type RandomSource, defaultRandomSource } from "../game/engine/dice.js";
 import { reduceGameState } from "../game/engine/reducer.js";
 import { CHALLENGE_LABELS } from "../game/ui/challengeTheme.js";
-import type { ActiveResolution, GameState, InteractionMode, NemesisChampion, PlayerState } from "../game/schema/session.schema.js";
+import type { ActiveResolution, GameMode, GameState, InteractionMode, NemesisChampion, PlayerState, SessionMode } from "../game/schema/session.schema.js";
 import { validateHostToken, validateJoinToken } from "./auth.js";
 import { getBoardSpace, type BoardTier, type ThreatIcon } from "../game/data/boardSpaces.js";
 
@@ -295,6 +296,7 @@ const CLIENT_INTENT_TYPES = new Set<string>([
   "SOLO_REROLL_REQUESTED",
   "CONTINUE_RESOLUTION",
   "SET_READY",
+  "SELECT_CHARACTER",
   "SELECT_STARTING_CONTRACT",
   "RECRUIT_REPLACEMENT",
   "EQUIP_GEAR",
@@ -325,6 +327,7 @@ interface JoinSeatResult {
   roomCode: string;
   seatId: string;
   seatToken: string;
+  isHostPhone: boolean;
 }
 
 type ScenarioCheck = {
@@ -556,18 +559,12 @@ export class GameRoomServer {
 
       if (intent.type === "SET_READY") {
         this.setSeatReady(intent.seatId, intent.ready);
-        if (intent.ready && this.state.sessionMode === "single-player") {
-          const readiness = getSessionStartReadiness({
-            sessionMode: this.state.sessionMode,
-            gameMode: this.state.gameMode,
-            seats: this.state.seats
-          });
-
-          if (readiness.canStart) {
-            this.startSession();
-          }
-        }
         this.broadcastPatch();
+        return;
+      }
+
+      if (intent.type === "SELECT_CHARACTER") {
+        this.selectSeatCharacter(intent.seatId, intent.characterId);
         return;
       }
 
@@ -763,7 +760,7 @@ export class GameRoomServer {
     this.events.length = 0;
   }
 
-  joinSeat(displayName: string, characterId: string, requestedSeatId?: string): JoinSeatResult {
+  joinSeat(displayName: string, characterId?: string, requestedSeatId?: string): JoinSeatResult {
     if (this.state.status !== "lobby" || this.state.phase !== "start") {
       throw new Error("Session already started");
     }
@@ -780,6 +777,56 @@ export class GameRoomServer {
       throw new Error(`Requested seat ${seat.seatId} is already occupied`);
     }
 
+    const isFirstHostPhone = !this.state.setupHostSeatId;
+
+    this.state = {
+      ...this.state,
+      sequence: this.state.sequence + 1,
+      setupHostSeatId: this.state.setupHostSeatId ?? seat.seatId,
+      seats: this.state.seats.map((entry) =>
+        entry.seatId === seat.seatId
+          ? {
+              ...entry,
+              ...(characterId ? { characterId } : {}),
+              characterSelected: false,
+              displayName,
+              startingContractOptions: [],
+              selectedStartingContractId: null,
+              missionSelectedAt: null,
+              connected: true,
+              ready: false
+            }
+          : entry
+      )
+    };
+    if (characterId) {
+      this.selectSeatCharacter(seat.seatId, characterId, { suppressBroadcast: true });
+    }
+    this.broadcastPatch();
+
+    return {
+      roomCode: this.state.sessionId,
+      seatId: seat.seatId,
+      seatToken: seat.joinToken,
+      isHostPhone: isFirstHostPhone
+    };
+  }
+
+  selectSeatCharacter(seatId: string, characterId: string, options: { suppressBroadcast?: boolean } = {}): void {
+    if (this.state.status !== "lobby" || this.state.phase !== "start") {
+      throw new Error("Character can only be selected before the session starts");
+    }
+
+    const seat = this.state.seats.find((entry) => entry.seatId === seatId);
+
+    if (!seat || seat.kicked) {
+      throw new Error(`Unknown seat ${seatId}`);
+    }
+
+    if (!seat.displayName) {
+      throw new Error("Join the room before choosing a character");
+    }
+
     const selectedCharacter = this.characters.get(characterId);
 
     if (!selectedCharacter) {
@@ -787,16 +834,17 @@ export class GameRoomServer {
     }
 
     const characterTaken = this.state.seats.some(
-      (entry) => entry.displayName && !entry.kicked && entry.characterId === characterId
+      (entry) => entry.seatId !== seatId && entry.displayName && !entry.kicked && entry.characterSelected !== false && entry.characterId === characterId
     );
 
     if (characterTaken) {
       throw new Error("Character already taken");
     }
 
+    const seatIndex = Math.max(0, this.state.seats.findIndex((entry) => entry.seatId === seatId));
     const loadedCharacter = applyStartingLoadout(selectedCharacter, {
       sessionMode: this.state.sessionMode,
-      seatIndex: Math.max(0, this.state.seats.findIndex((entry) => entry.seatId === seat.seatId)),
+      seatIndex,
       catalogs: {
         contracts: this.state.availableContracts,
         gear: this.gear,
@@ -804,20 +852,17 @@ export class GameRoomServer {
       },
       assignStartingContract: false
     });
-    const startingContractOptions = this.resolveStartingContractOptions(
-      selectedCharacter,
-      Math.max(0, this.state.seats.findIndex((entry) => entry.seatId === seat.seatId))
-    );
+    const startingContractOptions = this.resolveStartingContractOptions(selectedCharacter, seatIndex);
 
     this.state = {
       ...this.state,
       sequence: this.state.sequence + 1,
       seats: this.state.seats.map((entry) =>
-        entry.seatId === seat.seatId
+        entry.seatId === seatId
           ? {
               ...entry,
               characterId,
-              displayName,
+              characterSelected: true,
               startingContractOptions,
               selectedStartingContractId: null,
               missionSelectedAt: null,
@@ -826,7 +871,7 @@ export class GameRoomServer {
           : entry
       ),
       players: this.state.players.map((player) =>
-        player.seatId === seat.seatId
+        player.seatId === seatId
           ? {
               ...player,
               character: {
@@ -847,13 +892,58 @@ export class GameRoomServer {
           : player
       )
     };
-    this.broadcastPatch();
 
-    return {
-      roomCode: this.state.sessionId,
-      seatId: seat.seatId,
-      seatToken: seat.joinToken
+    if (!options.suppressBroadcast) {
+      this.broadcastPatch();
+    }
+  }
+
+  configureLobbyFromHostPhone(seatId: string, input: { sessionMode: SessionMode; interactionMode: InteractionMode; gameMode?: GameMode; playerCount?: number; scenarioId?: string }): void {
+    if (this.state.status !== "lobby" || this.state.phase !== "start") {
+      throw new Error("Lobby can only be configured before the session starts");
+    }
+
+    if (this.state.setupHostSeatId !== seatId) {
+      throw new Error("Only the Host Phone can configure the lobby");
+    }
+
+    const hostSeat = this.state.seats.find((entry) => entry.seatId === seatId);
+
+    if (!hostSeat?.displayName) {
+      throw new Error("Host Phone must join before configuring the lobby");
+    }
+
+    const nextState = createInitialSessionState(
+      this.state.sessionId,
+      input.sessionMode,
+      input.scenarioId ?? this.state.activeScenarioId,
+      input.interactionMode,
+      input.gameMode ?? "standard",
+      input.sessionMode === "single-player" ? 1 : input.playerCount,
+      { lobbyConfigured: true, setupHostSeatId: seatId }
+    );
+    const nextHostSeat = nextState.seats.find((entry) => entry.seatId === seatId);
+
+    if (!nextHostSeat) {
+      throw new Error("Host Phone seat is not available in the selected game type");
+    }
+
+    this.state = {
+      ...nextState,
+      sequence: this.state.sequence + 1,
+      seats: nextState.seats.map((entry) =>
+        entry.seatId === seatId
+          ? {
+              ...entry,
+              displayName: hostSeat.displayName,
+              connected: true,
+              joinToken: hostSeat.joinToken,
+              characterSelected: false
+            }
+          : entry
+      )
     };
+    this.broadcastPatch();
   }
 
   selectStartingContract(seatId: string, contractId: string): void {
@@ -871,7 +961,7 @@ export class GameRoomServer {
       throw new Error("Seat must be joined before choosing a starting mission");
     }
 
-    if (!seat.characterId) {
+    if (!seat.characterId || seat.characterSelected === false) {
       throw new Error("Choose a character before choosing a starting mission");
     }
 
@@ -916,6 +1006,10 @@ export class GameRoomServer {
 
     if (!seat.displayName) {
       throw new Error("Seat must be joined before it can be readied");
+    }
+
+    if (ready && (!seat.characterId || seat.characterSelected === false)) {
+      throw new Error("Choose a character before Ready");
     }
 
     if (ready && !seat.selectedStartingContractId) {
@@ -966,6 +1060,7 @@ export class GameRoomServer {
               startingContractOptions: [],
               selectedStartingContractId: null,
               missionSelectedAt: null,
+              characterSelected: false,
               connected: false,
               ready: false
             }
@@ -988,6 +1083,10 @@ export class GameRoomServer {
   startSession(): void {
     if (this.state.status !== "lobby" || this.state.phase !== "start") {
       throw new Error("Session already started");
+    }
+
+    if (this.state.lobbyConfigured === false) {
+      throw new Error("Choose Single Player or Multiplayer before starting");
     }
 
     const startReadiness = getSessionStartReadiness({
@@ -1091,6 +1190,9 @@ export class GameRoomServer {
         break;
       case "RECRUIT_REPLACEMENT":
         requireStringField(message, "replacementCharacterId", type);
+        break;
+      case "SELECT_CHARACTER":
+        requireStringField(message, "characterId", type);
         break;
       case "EQUIP_GEAR":
         requireStringField(message, "gearId", type);
@@ -4323,7 +4425,7 @@ export class GameRoomServer {
           : {
               ...seat,
               startingContractOptions:
-                seat.displayName && this.characters.has(seat.characterId)
+                seat.displayName && seat.characterSelected !== false && this.characters.has(seat.characterId)
                   ? this.resolveStartingContractOptions(
                       this.characters.get(seat.characterId)!,
                       Math.max(0, this.state.seats.findIndex((entry) => entry.seatId === seat.seatId))
@@ -8250,6 +8352,18 @@ function buildPrivateRivalryProjection(state: GameState, player: PlayerState | u
   };
 }
 
+function isSeatCharacterSelectedForProjection(state: GameState, seat: GameState["seats"][number], playerSeatIds: Set<string>): boolean {
+  if (state.status !== "lobby" && playerSeatIds.has(seat.seatId)) {
+    return true;
+  }
+
+  if (typeof seat.characterSelected === "boolean") {
+    return seat.characterSelected;
+  }
+
+  return Boolean(seat.characterId) || playerSeatIds.has(seat.seatId);
+}
+
 export function createTvProjection(state: GameState): Record<string, unknown> {
   const escalationThreshold = getEscalationCollapseLevel(state.sessionMode);
   const activeScenario = getScenarioDefinition(state.activeScenarioId);
@@ -8261,8 +8375,11 @@ export function createTvProjection(state: GameState): Record<string, unknown> {
   const scenarioTelemetry = buildScenarioTelemetry(state);
   const scenarioPressure = buildScenarioPressureState(state, scenarioPressureSummary);
 
+  const playerSeatIds = new Set(state.players.map((player) => player.seatId));
   const visibleSeatIds = new Set(
-    state.seats.filter((seat) => !seat.kicked && seat.displayName).map((seat) => seat.seatId)
+    state.seats
+      .filter((seat) => !seat.kicked && seat.displayName && isSeatCharacterSelectedForProjection(state, seat, playerSeatIds))
+      .map((seat) => seat.seatId)
   );
   const visiblePlayers = state.players.filter((player) => visibleSeatIds.has(player.seatId));
   const activeSeatId = state.turnOrder[state.activeSeatIndex] ?? null;
@@ -8310,6 +8427,9 @@ export function createTvProjection(state: GameState): Record<string, unknown> {
     sessionMode: state.sessionMode,
     gameMode: state.gameMode,
     interactionMode: state.interactionMode ?? (state.sessionMode === "single-player" ? "co-op" : "rivalry"),
+    setupHostSeatId: state.setupHostSeatId ?? null,
+    lobbyConfigured: state.lobbyConfigured !== false,
+    hostPhoneConnected: Boolean(state.setupHostSeatId && state.seats.find((seat) => seat.seatId === state.setupHostSeatId)?.connected),
     winnerSeatId: state.winnerSeatId,
     activeScenario: activeScenario
       ? {
@@ -8378,6 +8498,7 @@ export function createTvProjection(state: GameState): Record<string, unknown> {
       return {
         seatId: seat.seatId,
         characterId: seat.characterId,
+        characterSelected: isSeatCharacterSelectedForProjection(state, seat, playerSeatIds),
         displayName: seat.displayName ?? null,
         startingMissionSelected: Boolean(seat.selectedStartingContractId),
         startingMissionTitle: selectedStartingContract?.name ?? null,
@@ -8475,6 +8596,10 @@ export function createPhoneProjection(state: GameState, seatId: string, forcePri
     sessionMode: state.sessionMode,
     gameMode: state.gameMode,
     interactionMode: state.interactionMode ?? (state.sessionMode === "single-player" ? "co-op" : "rivalry"),
+    setupHostSeatId: publicProjection.setupHostSeatId,
+    lobbyConfigured: publicProjection.lobbyConfigured,
+    hostPhoneConnected: publicProjection.hostPhoneConnected,
+    selfIsSetupHost: state.setupHostSeatId === seatId,
     winnerSeatId: state.winnerSeatId,
     activeScenario: publicProjection.activeScenario,
     scenarioTelemetry: publicProjection.scenarioTelemetry,
@@ -8524,7 +8649,7 @@ export function createPhoneProjection(state: GameState, seatId: string, forcePri
     activeContractCard,
     canReady: readyDisabledReason === null,
     readyDisabledReason,
-    self: player ? sanitizePlayerForPhone(player) : null
+    self: player && seat && isSeatCharacterSelectedForProjection(state, seat, new Set(state.players.map((entry) => entry.seatId))) ? sanitizePlayerForPhone(player) : null
   };
 }
 
@@ -8537,7 +8662,7 @@ function getReadyDisabledReasonForSeat(seat: GameState["seats"][number] | null):
     return "Join the room before Ready";
   }
 
-  if (!seat.characterId) {
+  if (!seat.characterId || seat.characterSelected === false) {
     return "Choose a character before Ready";
   }
 

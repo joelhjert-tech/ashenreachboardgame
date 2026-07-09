@@ -910,6 +910,83 @@ function HostGameSelection({
   );
 }
 
+function TvStartupScreen({
+  roomCode,
+  patch,
+  status,
+  error
+}: {
+  roomCode: string | null;
+  patch: StatePatch<PublicPatchPayload> | null;
+  status: string;
+  error: string | null;
+}): ReactElement {
+  const seats = patch?.payload.seats ?? [];
+  const joinedSeats = seats.filter((seat) => seat.displayName && !seat.kicked);
+  const hostSeat = seats.find((seat) => seat.seatId === patch?.payload.setupHostSeatId) ?? null;
+  const hostConnected = Boolean(patch?.payload.hostPhoneConnected);
+  const lobbyConfigured = patch?.payload.lobbyConfigured === true;
+  const waitingCopy = !roomCode
+    ? "Creating room..."
+    : !patch
+      ? "Connecting to room..."
+      : !hostConnected
+        ? "Waiting for Host Phone"
+        : !lobbyConfigured
+          ? "Host Phone connected. Waiting for game type."
+          : patch.payload.sessionMode === "single-player"
+            ? "Single Player setup in progress."
+            : "Multiplayer setup in progress.";
+  const startReason = patch
+    ? getSessionStartReadiness({
+        sessionMode: patch.payload.sessionMode,
+        gameMode: patch.payload.gameMode,
+        seats: patch.payload.seats
+      }).reason
+    : "Scan to control setup";
+
+  return (
+    <main className="tv-startup-screen" aria-label="Ashen Reach startup">
+      <section className="tv-startup-card">
+        <div className="tv-startup-brand">
+          <span>ASHEN REACH</span>
+          <h1>{waitingCopy}</h1>
+          <p>{lobbyConfigured ? startReason : "Scan to control setup"}</p>
+        </div>
+        <div className="tv-startup-room">
+          <span>Room Code</span>
+          <strong>{roomCode ?? "..."}</strong>
+          {roomCode ? <JoinQrCard roomCode={roomCode} variant="full" /> : null}
+        </div>
+        {patch && (
+          <div className="tv-startup-lobby">
+            <div className="tv-startup-lobby-header">
+              <span>{hostConnected ? `Host Phone: ${hostSeat?.displayName ?? hostSeat?.seatId ?? "Connected"}` : "No Host Phone yet"}</span>
+              <strong>{patch.payload.lobbyConfigured ? getSessionModeLabel(patch.payload.sessionMode) : "Game type pending"}</strong>
+            </div>
+            {joinedSeats.length > 0 ? (
+              <div className="tv-startup-player-list" aria-label="Players joined">
+                {joinedSeats.map((seat) => (
+                  <div key={seat.seatId} className="tv-startup-player-row">
+                    <strong>{seat.displayName}</strong>
+                    <span>{seat.seatId === patch.payload.setupHostSeatId ? "Host Phone" : "Player"}</span>
+                    <span>Character {seat.characterSelected === false ? "..." : "yes"}</span>
+                    <span>Mission {seat.startingMissionSelected ? "yes" : "-"}</span>
+                    <span>Ready {seat.ready ? "yes" : "-"}</span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="tv-startup-empty">No phones joined yet.</p>
+            )}
+          </div>
+        )}
+        {(error || status === "closed") && <p className="tv-startup-error">{error ?? "Connection closed"}</p>}
+      </section>
+    </main>
+  );
+}
+
 function ScenarioSelectionPreview({ scenario }: { scenario: ScenarioCatalogEntry | null }): ReactElement | null {
   if (!scenario) {
     return null;
@@ -2228,7 +2305,40 @@ export function TvApp(): ReactElement {
     }
 
     if (!roomCode) {
-      restoreValidatedRef.current = true;
+      let cancelled = false;
+
+      void fetchSessionSummary()
+        .then((summary) => {
+          if (cancelled) {
+            return;
+          }
+
+          setRoomCode(summary.roomCode);
+          setHostToken(null);
+          setSessionMode(summary.sessionMode);
+          setGameMode(summary.gameMode ?? "standard");
+          setInteractionMode(summary.interactionMode);
+          setPlayerCount(summary.playerCount ?? summary.seats?.length ?? 6);
+          setSelectedScenarioId(summary.scenarioId);
+        })
+        .catch(() => {
+          if (!cancelled) {
+            setRoomCode(null);
+            setHostToken(null);
+          }
+        })
+        .finally(() => {
+          if (!cancelled) {
+            restoreValidatedRef.current = true;
+          }
+        });
+
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    if (!roomCode) {
       return;
     }
 
@@ -2355,6 +2465,15 @@ export function TvApp(): ReactElement {
 
   const currentStepCopy = getCurrentStepCopy(publicPatch, activePlayer);
   const isPreRoomLobby = !effectiveRoomCode && !publicPatch;
+
+  const gameUiReady =
+    publicPatch &&
+    (publicPatch.payload.status === "active" || publicPatch.payload.status === "ended") &&
+    publicPatch.payload.lobbyConfigured !== false;
+
+  if (!gameUiReady) {
+    return <TvStartupScreen roomCode={effectiveRoomCode} patch={publicPatch} status={status} error={requestError ?? error} />;
+  }
 
   return (
     <main className="tv-dashboard tv-command-dashboard">

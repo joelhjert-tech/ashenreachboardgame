@@ -38,7 +38,7 @@ export interface StartedAshenReachServer {
 
 let roomCode = createRoomCode();
 let hostToken = createRoomCode();
-const roomServer = new GameRoomServer(createInitialSessionState(roomCode));
+const roomServer = new GameRoomServer(createInitialSessionState(roomCode, "multiplayer", undefined, "rivalry", "standard", undefined, { lobbyConfigured: false }));
 roomServer.setHostToken(createHostToken({ sessionId: roomCode, secret: hostToken }));
 const nemesisByScenarioId = new Map(
   nemeses.filter((nemesis) => nemesis.scenarioId).map((nemesis) => [nemesis.scenarioId!, nemesis] as const)
@@ -139,6 +139,12 @@ function createHttpServer(): HttpServer {
             (roomServer.getState().sessionMode === "single-player" ? "co-op" : "rivalry"),
           status: roomServer.getState().status,
           phase: roomServer.getState().phase,
+          setupHostSeatId: roomServer.getState().setupHostSeatId ?? null,
+          lobbyConfigured: roomServer.getState().lobbyConfigured !== false,
+          hostPhoneConnected: Boolean(
+            roomServer.getState().setupHostSeatId &&
+              roomServer.getState().seats.find((seat) => seat.seatId === roomServer.getState().setupHostSeatId)?.connected
+          ),
           scenarioId: roomServer.getState().activeScenarioId,
           playerCount: roomServer.getState().seats.length,
           seats: roomServer.getState().seats
@@ -276,13 +282,78 @@ function createHttpServer(): HttpServer {
           return;
         }
 
-        if (!body.displayName?.trim() || !body.characterId) {
-          sendJson(response, 400, { error: "Display name and character are required" });
+        if (!body.displayName?.trim()) {
+          sendJson(response, 400, { error: "Display name is required" });
           return;
         }
 
         const joinResult = roomServer.joinSeat(body.displayName.trim(), body.characterId, body.seatId);
         sendJson(response, 200, joinResult);
+        return;
+      }
+
+      if (request.method === "POST" && url.pathname === "/api/session/configure") {
+        const body = (await readJsonBody(request)) as {
+          roomCode?: string;
+          seatToken?: string;
+          mode?: "single-player" | "co-op" | "rivalry" | "nemesis";
+          scenarioId?: string;
+          playerCount?: number;
+        };
+
+        if (body.roomCode !== roomServer.getState().sessionId) {
+          sendJson(response, 404, { error: "Unknown room code" });
+          return;
+        }
+
+        if (!body.seatToken) {
+          sendJson(response, 400, { error: "Seat token is required" });
+          return;
+        }
+
+        const tokenPayload = validateJoinToken(body.seatToken, roomServer.getState().sessionId);
+
+        if (!tokenPayload) {
+          sendJson(response, 403, { error: "Invalid seat token" });
+          return;
+        }
+
+        if (body.scenarioId !== undefined && !getScenarioDefinition(body.scenarioId)) {
+          sendJson(response, 400, { error: "Invalid scenario id" });
+          return;
+        }
+
+        if (!body.mode) {
+          sendJson(response, 400, { error: "Choose Single Player or Multiplayer mode" });
+          return;
+        }
+
+        const modeMap: Record<NonNullable<typeof body.mode>, { sessionMode: SessionMode; interactionMode: InteractionMode; gameMode: GameMode; playerCount?: number }> = {
+          "single-player": { sessionMode: "single-player", interactionMode: "co-op", gameMode: "standard", playerCount: 1 },
+          "co-op": { sessionMode: "multiplayer", interactionMode: "co-op", gameMode: "standard", playerCount: body.playerCount },
+          rivalry: { sessionMode: "multiplayer", interactionMode: "rivalry", gameMode: "standard", playerCount: body.playerCount },
+          nemesis: { sessionMode: "multiplayer", interactionMode: "co-op", gameMode: "nemesis_relay", playerCount: body.playerCount }
+        };
+        const mapped = modeMap[body.mode];
+        const playerCountError = getPlayerCountError(mapped.sessionMode, mapped.gameMode, mapped.playerCount);
+
+        if (playerCountError) {
+          sendJson(response, 400, { error: playerCountError });
+          return;
+        }
+
+        roomServer.configureLobbyFromHostPhone(tokenPayload.seatId, {
+          ...mapped,
+          scenarioId: body.scenarioId
+        });
+        sendJson(response, 200, {
+          roomCode: roomServer.getState().sessionId,
+          sessionMode: roomServer.getState().sessionMode,
+          gameMode: roomServer.getState().gameMode,
+          interactionMode: roomServer.getState().interactionMode,
+          lobbyConfigured: roomServer.getState().lobbyConfigured !== false,
+          playerCount: roomServer.getState().seats.length
+        });
         return;
       }
 
@@ -383,15 +454,19 @@ function createHttpServer(): HttpServer {
       }
 
       if (request.method === "POST" && url.pathname === "/api/session/start") {
-        const body = (await readJsonBody(request)) as { roomCode?: string; hostToken?: string };
+        const body = (await readJsonBody(request)) as { roomCode?: string; hostToken?: string; seatToken?: string };
 
         if (body.roomCode !== roomServer.getState().sessionId) {
           sendJson(response, 404, { error: "Unknown room code" });
           return;
         }
 
-        if (body.hostToken !== createHostToken({ sessionId: roomCode, secret: hostToken })) {
-          sendJson(response, 403, { error: "Only the host can start the session" });
+        const hostTokenValid = body.hostToken === createHostToken({ sessionId: roomCode, secret: hostToken });
+        const tokenPayload = body.seatToken ? validateJoinToken(body.seatToken, roomServer.getState().sessionId) : null;
+        const seatTokenValid = Boolean(tokenPayload && tokenPayload.seatId === roomServer.getState().setupHostSeatId);
+
+        if (!hostTokenValid && !seatTokenValid) {
+          sendJson(response, 403, { error: "Only the Host Phone can start the session" });
           return;
         }
 

@@ -41,6 +41,124 @@ body {
   color: var(--text-primary);
 }
 
+.tv-startup-screen {
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: 40px;
+  background:
+    radial-gradient(circle at 50% 20%, rgba(130, 83, 31, 0.18), transparent 34rem),
+    linear-gradient(180deg, #020304 0%, #080705 55%, #030303 100%);
+  color: #f6ead2;
+}
+
+.tv-startup-card {
+  width: min(1180px, 100%);
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(320px, 0.85fr);
+  gap: 24px;
+  padding: 30px;
+  border: 1px solid rgba(190, 141, 69, 0.46);
+  background:
+    linear-gradient(135deg, rgba(18, 13, 8, 0.96), rgba(5, 6, 8, 0.94)),
+    #080705;
+  box-shadow: 0 0 60px rgba(0, 0, 0, 0.65), inset 0 0 0 1px rgba(255, 230, 170, 0.06);
+}
+
+.tv-startup-brand span,
+.tv-startup-room span,
+.tv-startup-lobby-header span {
+  color: #d6a85b;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.tv-startup-brand h1 {
+  max-width: 720px;
+  margin: 18px 0 12px;
+  font-family: var(--font-display);
+  font-size: clamp(3rem, 7vw, 6rem);
+  line-height: 0.92;
+  letter-spacing: 0;
+}
+
+.tv-startup-brand p,
+.tv-startup-empty,
+.tv-startup-error {
+  margin: 0;
+  color: rgba(246, 234, 210, 0.76);
+  font-size: 1.2rem;
+}
+
+.tv-startup-room {
+  display: grid;
+  gap: 14px;
+  align-content: start;
+  padding: 18px;
+  border: 1px solid rgba(190, 141, 69, 0.36);
+  background: rgba(0, 0, 0, 0.34);
+}
+
+.tv-startup-room > strong {
+  font-size: 3.2rem;
+  letter-spacing: 0.08em;
+}
+
+.tv-startup-room .join-qr-card-full {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+.tv-startup-room .join-qr-card-full > div:first-child h2 {
+  display: none;
+}
+
+.tv-startup-lobby {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 14px;
+  border-top: 1px solid rgba(190, 141, 69, 0.24);
+  padding-top: 18px;
+}
+
+.tv-startup-lobby-header,
+.tv-startup-player-row {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr repeat(3, 0.7fr);
+  gap: 12px;
+  align-items: center;
+}
+
+.tv-startup-player-list {
+  display: grid;
+  gap: 8px;
+}
+
+.tv-startup-player-row {
+  padding: 12px;
+  border: 1px solid rgba(255, 229, 170, 0.14);
+  background: rgba(255, 255, 255, 0.035);
+}
+
+.tv-startup-error {
+  grid-column: 1 / -1;
+  color: #ff8b7b;
+}
+
+.phone-host-mode-grid {
+  display: grid;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.phone-host-mode-grid .phone-button {
+  width: 100%;
+}
+
 button,
 input,
 select {

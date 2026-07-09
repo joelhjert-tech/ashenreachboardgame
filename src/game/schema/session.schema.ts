@@ -78,6 +78,7 @@ export const activeResolutionSchema = z.object({
 export const seatSchema = z.object({
   seatId: z.string().min(1),
   characterId: z.string().min(1),
+  characterSelected: z.boolean().optional(),
   displayName: z.string().min(1).nullable().optional(),
   startingContractOptions: z.array(z.string().min(1)).default([]),
   selectedStartingContractId: z.string().min(1).nullable().default(null),
@@ -170,6 +171,8 @@ export const gameStateSchema = z.object({
   sessionMode: sessionModeSchema,
   gameMode: gameModeSchema.default("standard"),
   interactionMode: interactionModeSchema.optional(),
+  setupHostSeatId: z.string().min(1).nullable().optional(),
+  lobbyConfigured: z.boolean().optional(),
   winnerSeatId: z.string().min(1).nullable(),
   activeScenarioId: z.string().min(1),
   scenarioProgress: z.record(z.string(), z.number().int().min(0)),

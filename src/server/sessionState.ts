@@ -95,7 +95,8 @@ export function createInitialSessionState(
   scenarioId?: string,
   interactionMode?: InteractionMode,
   gameMode: GameMode = "standard",
-  playerCount?: number
+  playerCount?: number,
+  options: { lobbyConfigured?: boolean; setupHostSeatId?: string | null } = {}
 ): GameState {
   const characters = loadCharacters();
   const sectors = createCanonicalSectorGraph();
@@ -124,6 +125,8 @@ export function createInitialSessionState(
     sessionMode,
     gameMode,
     interactionMode: interactionMode ?? (sessionMode === "single-player" ? "co-op" : "rivalry"),
+    setupHostSeatId: options.setupHostSeatId ?? null,
+    lobbyConfigured: options.lobbyConfigured ?? true,
     winnerSeatId: null,
     activeScenarioId: defaultScenario?.id ?? "scenario_broken_seal",
     scenarioProgress: createInitialScenarioProgress(defaultScenario?.id ?? "scenario_broken_seal", sessionMode),
@@ -139,6 +142,7 @@ export function createInitialSessionState(
     seats: configuredSeats.map(({ seatId, characterId }) => ({
       seatId,
       characterId,
+      characterSelected: false,
       displayName: null,
       startingContractOptions: [],
       selectedStartingContractId: null,

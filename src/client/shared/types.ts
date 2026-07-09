@@ -60,6 +60,7 @@ export interface CharacterPresentation {
 export interface PublicSeat {
   seatId: string;
   characterId: string;
+  characterSelected?: boolean;
   displayName: string | null;
   startingMissionSelected?: boolean;
   startingMissionTitle?: string | null;
@@ -814,6 +815,9 @@ export interface PublicPatchPayload {
   sessionMode: SessionMode;
   gameMode?: GameMode;
   interactionMode?: InteractionMode;
+  setupHostSeatId?: string | null;
+  lobbyConfigured?: boolean;
+  hostPhoneConnected?: boolean;
   winnerSeatId: string | null;
   activeScenario: ActiveScenarioSummary | null;
   scenarioTelemetry: ScenarioTelemetryItem[];
@@ -847,6 +851,7 @@ export interface PublicPatchPayload {
 export interface PhonePatchPayload extends PublicPatchPayload {
   phase: Phase;
   self: PhoneSelfState | null;
+  selfIsSetupHost?: boolean;
   objectUseStates?: PhoneObjectUseState[];
   startingContractOptions?: ContractCard[];
   selectedStartingContract?: ContractCard | null;
@@ -954,6 +959,11 @@ export type ClientIntent =
       contractId: string;
     }
   | {
+      type: "SELECT_CHARACTER";
+      seatId: string;
+      characterId: string;
+    }
+  | {
       type: "RECRUIT_REPLACEMENT";
       seatId: string;
       replacementCharacterId: string;
@@ -1058,6 +1068,7 @@ export interface PhoneSessionAuth {
   seatId: string;
   seatToken: string;
   displayName: string;
+  isHostPhone?: boolean;
   lastConnectedAt?: string;
 }
 

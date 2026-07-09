@@ -1,6 +1,14 @@
 import { useEffect, useMemo, useState, type CSSProperties, type FormEvent, type ReactElement } from "react";
 import { getChallengeThemeStyle } from "../../game/ui/challengeTheme.js";
-import { fetchCharacters, fetchSessionSummary, getConnectionDiagnostics, joinSession, leaveSession } from "../shared/network.js";
+import {
+  configureSessionFromPhone,
+  fetchCharacters,
+  fetchSessionSummary,
+  getConnectionDiagnostics,
+  joinSession,
+  leaveSession,
+  startSession
+} from "../shared/network.js";
 import type { CharacterCatalogEntry, PhonePatchPayload, PhoneSelfState, PhoneSessionAuth, StatePatch } from "../shared/types.js";
 import { useRoomSubscription } from "../shared/useRoomSubscription.js";
 import { getCharacterPortraitPath } from "../shared/assetPaths.js";
@@ -221,7 +229,6 @@ function useLandscapeMode(): boolean {
 export function PhoneApp(): ReactElement {
   const [characters, setCharacters] = useState<CharacterCatalogEntry[]>([]);
   const [debugOpen, setDebugOpen] = useState(() => new URLSearchParams(window.location.search).has("debug"));
-  const [joinStep, setJoinStep] = useState<"nameEntry" | "characterSelect">("nameEntry");
   const [characterFilter, setCharacterFilter] = useState<CharacterSelectionFilter>("all");
   const [joiningRoom, setJoiningRoom] = useState(false);
   const [formState, setFormState] = useState(() => ({
@@ -298,7 +305,14 @@ export function PhoneApp(): ReactElement {
         ...current,
         roomCode: requestedRoomCode
       }));
-      setJoinStep("characterSelect");
+      const nextAuth = await joinSession({
+        roomCode: requestedRoomCode,
+        displayName: formState.displayName.trim(),
+        ...(formState.requestedSeatId ? { seatId: formState.requestedSeatId } : {})
+      });
+
+      setAuth(nextAuth);
+      writeStoredAuth(nextAuth);
     } catch (joinFailure) {
       setJoinError(formatJoinFailure(joinFailure));
     } finally {
@@ -306,26 +320,37 @@ export function PhoneApp(): ReactElement {
     }
   };
 
-  const handleCharacterSelected = async (characterId: string) => {
+  const handleCharacterSelected = (characterId: string) => {
+    setJoinError(null);
+    setFormState((current) => ({ ...current, characterId }));
+    sendIntent({ type: "SELECT_CHARACTER", seatId: auth?.seatId ?? "", characterId });
+  };
+
+  const handleConfigureLobby = async (mode: "single-player" | "co-op" | "rivalry" | "nemesis") => {
+    if (!auth) {
+      return;
+    }
+
     setJoinError(null);
 
     try {
-      const nextAuth = await joinSession({
-        roomCode: formState.roomCode.trim().toUpperCase(),
-        displayName: formState.displayName.trim(),
-        characterId,
-        ...(formState.requestedSeatId ? { seatId: formState.requestedSeatId } : {})
-      });
+      await configureSessionFromPhone(auth, { mode, playerCount: mode === "single-player" ? 1 : 4 });
+    } catch (configureFailure) {
+      setJoinError(configureFailure instanceof Error ? configureFailure.message : "Could not configure lobby");
+    }
+  };
 
-      setFormState((current) => ({
-        ...current,
-        characterId,
-        roomCode: nextAuth.roomCode
-      }));
-      setAuth(nextAuth);
-      writeStoredAuth(nextAuth);
-    } catch (joinFailure) {
-      setJoinError(formatJoinFailure(joinFailure));
+  const handleStartFromPhone = async () => {
+    if (!auth) {
+      return;
+    }
+
+    setJoinError(null);
+
+    try {
+      await startSession(auth.roomCode, auth.seatToken);
+    } catch (startFailure) {
+      setJoinError(startFailure instanceof Error ? startFailure.message : "Could not start game");
     }
   };
 
@@ -336,7 +361,6 @@ export function PhoneApp(): ReactElement {
 
   const backToCharacterSelect = async () => {
     if (!auth) {
-      setJoinStep("characterSelect");
       return;
     }
 
@@ -346,7 +370,6 @@ export function PhoneApp(): ReactElement {
       await leaveSession(auth);
       setAuth(null);
       writeStoredAuth(null);
-      setJoinStep("characterSelect");
     } catch (leaveFailure) {
       setJoinError(leaveFailure instanceof Error ? leaveFailure.message : "Could not release character");
     }
@@ -389,33 +412,22 @@ export function PhoneApp(): ReactElement {
             </div>
           </section>
         ) : (
-          <div className={`phone-join-layout phone-join-layout-${joinStep}`}>
-            <section className="phone-join-hero phone-panel">
-              <p className="phone-panel-kicker">Ashen Reach Controller</p>
-              <h1>{joinStep === "nameEntry" ? "Join room" : "Select Character"}</h1>
+            <div className="phone-join-layout phone-join-layout-nameEntry">
+              <section className="phone-join-hero phone-panel">
+                <p className="phone-panel-kicker">Ashen Reach Controller</p>
+              <h1>Join room</h1>
               <p className="phone-muted-copy">
-                {joinStep === "nameEntry"
-                  ? "Enter the room code from the TV and the name you want at the table."
-                  : "Choose your operative."}
+                Enter the room code from the TV and the name you want at the table.
               </p>
-              {joinStep === "characterSelect" ? (
-                <div className="phone-join-summary" aria-label="Joined room summary">
-                  <span>Room {formState.roomCode}</span>
-                  <span>{formState.displayName}</span>
-                </div>
-              ) : null}
             </section>
 
-            <section className={`phone-panel phone-join-panel${joinStep === "characterSelect" ? " phone-character-select-surface" : ""}`}>
-              {joinStep === "nameEntry" ? (
+            <section className="phone-panel phone-join-panel">
                 <div className="phone-panel-header">
                   <div>
                     <h2>Join Room</h2>
-                    <p className="phone-muted-copy">Step 1: enter room code and player name.</p>
+                    <p className="phone-muted-copy">Enter room code and player name. First phone becomes Host Phone.</p>
                   </div>
                 </div>
-              ) : null}
-              {joinStep === "nameEntry" ? (
                 <form className="phone-join-form" onSubmit={handleNameSubmit}>
                   <section className="phone-join-step" aria-label="Step 1 enter room code and name">
                     <span className="phone-join-step-kicker">Step 1</span>
@@ -453,95 +465,11 @@ export function PhoneApp(): ReactElement {
                   {(joinError || error) && <p className="error">{joinError ?? error}</p>}
                   <div className="phone-join-actions">
                     <button className="phone-button phone-button-primary" type="submit" disabled={joiningRoom}>
-                      {joiningRoom ? "Joining..." : "Join / Continue"}
+                      {joiningRoom ? "Joining..." : "Join as Host Phone"}
                     </button>
                     {debugOpen && <MobileDebugDrawer events={debugEvents} onClear={clearDebugEvents} />}
                   </div>
                 </form>
-              ) : (
-                <div className="phone-join-form phone-character-select-form">
-                  <div className="phone-character-filter-row" role="tablist" aria-label="Character filters">
-                    {[
-                      ["recommended", "Recommended"],
-                      ["all", "All Operatives"],
-                      ["advanced", "Advanced"]
-                    ].map(([filter, label]) => (
-                      <button
-                        key={filter}
-                        type="button"
-                        role="tab"
-                        aria-selected={characterFilter === filter}
-                        className={`phone-character-filter${characterFilter === filter ? " phone-character-filter-active" : ""}`}
-                        onClick={() => setCharacterFilter(filter as CharacterSelectionFilter)}
-                      >
-                        {label}
-                      </button>
-                    ))}
-                  </div>
-                  <div className="phone-character-grid" role="list" aria-label="Character">
-                      {displayCharacters.map((character) => (
-                        <button
-                          key={character.id}
-                          type="button"
-                          className={`phone-character-option${formState.characterId === character.id ? " phone-character-option-selected" : ""}`}
-                          onClick={() => void handleCharacterSelected(character.id)}
-                        >
-                          <img src={getCharacterPortraitPath(character.id)} alt="" />
-                          <span>
-                            <strong>{character.name}</strong>
-                            <small>{character.archetype}</small>
-                            {character.presentation && (
-                              <span className="phone-character-presentation" data-testid="phone-character-presentation">
-                                <span className="phone-character-role-row">
-                                  <small>{character.presentation.role}</small>
-                                  <small>{formatComplexity(character.presentation.complexity)}</small>
-                                  {character.presentation.recommendedForFirstGame ? <em>First-game pick</em> : null}
-                                </span>
-                                <small>{character.presentation.playstyleSummary}</small>
-                                <span className="phone-character-summary-grid">
-                                  <small>
-                                    <strong>Gear</strong>
-                                    {character.presentation.signatureItemSummary}
-                                  </small>
-                                  <small>
-                                    <strong>Contract</strong>
-                                    {character.presentation.startingContractSummary}
-                                  </small>
-                                </span>
-                                <span className="phone-character-strength-grid">
-                                  <small>
-                                    <strong>Good at</strong>
-                                    {character.presentation.strengths.slice(0, 2).join(", ")}
-                                  </small>
-                                  <small>
-                                    <strong>Watch out</strong>
-                                    {character.presentation.weaknesses.slice(0, 2).join(", ")}
-                                  </small>
-                                </span>
-                              </span>
-                            )}
-                            {character.qaOnly && <em className="phone-character-qa-badge">QA ONLY</em>}
-                            <span className="phone-character-stat-row" aria-label={`${character.name} stats`}>
-                              {statOrder.map((stat) => (
-                                <small key={stat} style={getChallengeThemeStyle(stat) as CSSProperties}>
-                                  {statLabelById[stat]} <strong>{character.stats[stat]}</strong>
-                                </small>
-                              ))}
-                            </span>
-                            <small className="phone-character-select-label">Select character</small>
-                          </span>
-                        </button>
-                      ))}
-                  </div>
-                  {(joinError || error) && <p className="error">{joinError ?? error}</p>}
-                  <div className="phone-join-actions">
-                    <button className="phone-button phone-button-secondary" type="button" onClick={() => setJoinStep("nameEntry")}>
-                      Back
-                    </button>
-                    {debugOpen && <MobileDebugDrawer events={debugEvents} onClear={clearDebugEvents} />}
-                  </div>
-                </div>
-              )}
             </section>
           </div>
         )}
@@ -563,6 +491,147 @@ export function PhoneApp(): ReactElement {
   const activeSeatId = phonePatch?.payload.turnOrder[phonePatch.payload.activeSeatIndex] ?? null;
   const canSendLobbyIntent = Boolean(phonePatch) || (Boolean(auth) && status === "open");
   const activeContractCard = phonePatch?.payload.activeContractCard ?? null;
+  const ownSeat = phonePatch?.payload.seats.find((seat) => seat.seatId === auth.seatId) ?? null;
+  const isSetupHost = Boolean(phonePatch?.payload.selfIsSetupHost);
+
+  if (auth && phonePatch?.payload.status === "lobby" && isSetupHost && phonePatch.payload.lobbyConfigured === false) {
+    return (
+      <main className="phone-page phone-page-controller">
+        <section className="phone-portrait-controller phone-portrait-controller-empty">
+          <div className="phone-portrait-panel phone-portrait-lobby-panel">
+            <main className="phone-portrait-scroll phone-lobby-waiting-scroll" aria-label="Host Phone game type">
+              <section className="phone-lobby-ready-panel phone-character-waiting-panel">
+                <div className="phone-character-waiting-topline">
+                  <span>{auth.roomCode}</span>
+                  <span>Host Phone</span>
+                  <span>{status}</span>
+                </div>
+                <p className="phone-panel-kicker">Choose Game Type</p>
+                <h1>Host Phone</h1>
+                <p className="phone-muted-copy">The TV is waiting. Choose the game shape, then continue setup here.</p>
+                <div className="phone-host-mode-grid">
+                  <button type="button" className="phone-button phone-button-primary" onClick={() => void handleConfigureLobby("single-player")}>
+                    Single Player
+                  </button>
+                  <button type="button" className="phone-button phone-button-secondary" onClick={() => void handleConfigureLobby("co-op")}>
+                    Multiplayer Co-op
+                  </button>
+                  <button type="button" className="phone-button phone-button-secondary" disabled>
+                    Normal Coming Later
+                  </button>
+                  <button type="button" className="phone-button phone-button-secondary" onClick={() => void handleConfigureLobby("rivalry")}>
+                    Rivalry
+                  </button>
+                  <button type="button" className="phone-button phone-button-secondary" onClick={() => void handleConfigureLobby("nemesis")}>
+                    Nemesis
+                  </button>
+                </div>
+                {(joinError || error) && <p className="error">{joinError ?? error}</p>}
+              </section>
+            </main>
+          </div>
+        </section>
+      </main>
+    );
+  }
+
+  if (auth && phonePatch?.payload.status === "lobby" && phonePatch.payload.lobbyConfigured === false && !isSetupHost) {
+    return (
+      <main className="phone-page phone-page-controller">
+        <section className="phone-portrait-controller phone-portrait-controller-empty">
+          <div className="phone-portrait-panel phone-portrait-lobby-panel">
+            <main className="phone-portrait-scroll phone-lobby-waiting-scroll" aria-label="Waiting for Host Phone">
+              <section className="phone-lobby-ready-panel phone-character-waiting-panel">
+                <div className="phone-character-waiting-topline">
+                  <span>{auth.roomCode}</span>
+                  <span>{auth.displayName}</span>
+                  <span>{status}</span>
+                </div>
+                <p className="phone-panel-kicker">Waiting</p>
+                <h1>Host Phone is choosing game type.</h1>
+                <p className="phone-muted-copy">Keep this controller open. Character selection unlocks after the Host Phone chooses Single Player or Multiplayer.</p>
+              </section>
+            </main>
+          </div>
+        </section>
+      </main>
+    );
+  }
+
+  if (auth && phonePatch?.payload.status === "lobby" && ownSeat && ownSeat.characterSelected === false) {
+    return (
+      <main className="phone-page phone-page-controller">
+        <section className="phone-portrait-controller phone-portrait-controller-empty">
+          <div className="phone-portrait-panel phone-portrait-lobby-panel">
+            <main className="phone-portrait-scroll phone-lobby-waiting-scroll" aria-label="Choose character">
+              <section className="phone-lobby-ready-panel phone-character-waiting-panel phone-character-select-surface">
+                <div className="phone-character-waiting-topline">
+                  <span>{auth.roomCode}</span>
+                  <span>{auth.displayName}</span>
+                  <span>{isSetupHost ? "Host Phone" : "Player"}</span>
+                </div>
+                <p className="phone-panel-kicker">Choose Character</p>
+                <h1>Select operative</h1>
+                <div className="phone-character-filter-row" role="tablist" aria-label="Character filters">
+                  {[
+                    ["recommended", "Recommended"],
+                    ["all", "All Operatives"],
+                    ["advanced", "Advanced"]
+                  ].map(([filter, label]) => (
+                    <button
+                      key={filter}
+                      type="button"
+                      role="tab"
+                      aria-selected={characterFilter === filter}
+                      className={`phone-character-filter${characterFilter === filter ? " phone-character-filter-active" : ""}`}
+                      onClick={() => setCharacterFilter(filter as CharacterSelectionFilter)}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+                <div className="phone-character-grid" role="list" aria-label="Character">
+                  {displayCharacters.map((character) => (
+                    <button
+                      key={character.id}
+                      type="button"
+                      className={`phone-character-option${formState.characterId === character.id ? " phone-character-option-selected" : ""}`}
+                      onClick={() => handleCharacterSelected(character.id)}
+                    >
+                      <img src={getCharacterPortraitPath(character.id)} alt="" />
+                      <span>
+                        <strong>{character.name}</strong>
+                        <small>{character.archetype}</small>
+                        {character.presentation && (
+                          <span className="phone-character-presentation" data-testid="phone-character-presentation">
+                            <span className="phone-character-role-row">
+                              <small>{character.presentation.role}</small>
+                              <small>{formatComplexity(character.presentation.complexity)}</small>
+                              {character.presentation.recommendedForFirstGame ? <em>First-game pick</em> : null}
+                            </span>
+                            <small>{character.presentation.playstyleSummary}</small>
+                          </span>
+                        )}
+                        <span className="phone-character-stat-row" aria-label={`${character.name} stats`}>
+                          {statOrder.map((stat) => (
+                            <small key={stat} style={getChallengeThemeStyle(stat) as CSSProperties}>
+                              {statLabelById[stat]} <strong>{character.stats[stat]}</strong>
+                            </small>
+                          ))}
+                        </span>
+                        <small className="phone-character-select-label">Select character</small>
+                      </span>
+                    </button>
+                  ))}
+                </div>
+                {(joinError || error) && <p className="error">{joinError ?? error}</p>}
+              </section>
+            </main>
+          </div>
+        </section>
+      </main>
+    );
+  }
 
   return (
     <main className="phone-page phone-page-controller">
@@ -587,6 +656,7 @@ export function PhoneApp(): ReactElement {
             onIntent={canSendLobbyIntent ? sendIntent : null}
             onLeave={clearSession}
             onLobbyBack={() => void backToCharacterSelect()}
+            onStartSession={isSetupHost ? handleStartFromPhone : undefined}
           />
         )}
 

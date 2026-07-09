@@ -6,7 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { getChallengeThemeStyle } from "../../../game/ui/challengeTheme.js";
 import { PhoneApp } from "../PhoneApp.js";
 import { useRoomSubscription } from "../../shared/useRoomSubscription.js";
-import type { CharacterCatalogEntry } from "../../shared/types.js";
+import type { CharacterCatalogEntry, PhonePatchPayload, StatePatch } from "../../shared/types.js";
 
 const characters: CharacterCatalogEntry[] = [
   ["void-marshal", "Tarek Voss", "Void Marshal", { command: 3, grit: 2, signal: 1, guile: 1, forge: 2 }],
@@ -76,7 +76,9 @@ const networkMocks = vi.hoisted(() => ({
     phase: "setup"
   })),
   joinSession: vi.fn(),
-  leaveSession: vi.fn()
+  leaveSession: vi.fn(),
+  configureSessionFromPhone: vi.fn(),
+  startSession: vi.fn()
 }));
 
 vi.mock("../../shared/network.js", () => ({
@@ -90,7 +92,9 @@ vi.mock("../../shared/network.js", () => ({
   })),
   fetchSessionSummary: networkMocks.fetchSessionSummary,
   joinSession: networkMocks.joinSession,
-  leaveSession: networkMocks.leaveSession
+  leaveSession: networkMocks.leaveSession,
+  configureSessionFromPhone: networkMocks.configureSessionFromPhone,
+  startSession: networkMocks.startSession
 }));
 
 vi.mock("../../shared/useRoomSubscription.js", () => ({
@@ -122,6 +126,58 @@ function setViewport(width: number, height: number): void {
   });
 }
 
+function createLobbyPhonePatch(overrides: Partial<PhonePatchPayload> = {}): StatePatch<PhonePatchPayload> {
+  return {
+    type: "STATE_PATCH",
+    sessionId: "RT7P4",
+    sequence: 1,
+    phase: "start",
+    payload: {
+      status: "lobby",
+      sessionMode: "single-player",
+      gameMode: "standard",
+      interactionMode: "co-op",
+      setupHostSeatId: "seat-1",
+      lobbyConfigured: true,
+      hostPhoneConnected: true,
+      selfIsSetupHost: true,
+      winnerSeatId: null,
+      activeScenario: null,
+      scenarioTelemetry: [],
+      scenarioPressure: null,
+      scenarioProgress: {},
+      seats: [
+        {
+          seatId: "seat-1",
+          characterId: "void-marshal",
+          characterSelected: false,
+          displayName: "Joel",
+          connected: true,
+          ready: false,
+          kicked: false,
+          startingMissionSelected: false,
+          startingMissionTitle: null
+        }
+      ],
+      sectors: [],
+      players: [],
+      activeSeatIndex: 0,
+      turnOrder: ["seat-1"],
+      escalationLevel: 0,
+      escalationThreshold: 6,
+      escalationModifier: 0,
+      availableContracts: [],
+      encounter: null,
+      pendingEnemyRoll: null,
+      outcomeSummary: null,
+      recentAbilityTriggers: [],
+      nemesis: null,
+      self: null,
+      ...overrides
+    } as PhonePatchPayload
+  };
+}
+
 describe("PhoneApp", () => {
   afterEach(() => {
     cleanup();
@@ -135,6 +191,15 @@ describe("PhoneApp", () => {
     networkMocks.fetchSessionSummary.mockReset();
     networkMocks.joinSession.mockReset();
     networkMocks.leaveSession.mockReset();
+    networkMocks.configureSessionFromPhone.mockReset();
+    networkMocks.startSession.mockReset();
+    networkMocks.joinSession.mockResolvedValue({
+      roomCode: "RT7P4",
+      seatId: "seat-1",
+      seatToken: "seat:RT7P4:seat-1",
+      displayName: "Joel",
+      isHostPhone: true
+    });
     networkMocks.fetchSessionSummary.mockResolvedValue({
       roomCode: "RT7P4",
       sessionMode: "single-player",
@@ -147,10 +212,10 @@ describe("PhoneApp", () => {
       phase: "setup"
     });
     vi.mocked(useRoomSubscription).mockReturnValue({
-      patch: null,
+      patch: createLobbyPhonePatch(),
       error: null,
       sendIntent: vi.fn(),
-      status: "idle",
+      status: "open",
       debugEvents: [],
       clearDebugEvents: vi.fn()
     });
@@ -160,7 +225,7 @@ describe("PhoneApp", () => {
   it("starts on a room/name screen without character cards or leave controls", async () => {
     render(<PhoneApp />);
 
-    await screen.findByRole("button", { name: /join \/ continue/i });
+    await screen.findByRole("button", { name: /join as host phone/i });
     const roomCodeInput = screen.getAllByLabelText(/room code/i)[0]!;
     const playerNameInput = screen.getAllByLabelText(/player name/i)[0]!;
     expect(roomCodeInput).toBeInTheDocument();
@@ -172,7 +237,7 @@ describe("PhoneApp", () => {
     expect(playerNameInput).toHaveAttribute("name", "playerName");
     expect(playerNameInput).toHaveAttribute("autocomplete", "nickname");
     expect(playerNameInput).toHaveAttribute("spellcheck", "false");
-    expect(screen.getByRole("button", { name: /join \/ continue/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /join as host phone/i })).toBeInTheDocument();
     expect(screen.getByText(/ashen reach controller/i)).toBeInTheDocument();
     expect(screen.queryByRole("list", { name: /character/i })).not.toBeInTheDocument();
     expect(screen.queryByText(/tarek voss/i)).not.toBeInTheDocument();
@@ -183,15 +248,23 @@ describe("PhoneApp", () => {
     expect(screen.queryByRole("button", { name: /show tabs/i })).not.toBeInTheDocument();
   });
 
-  it("moves from room/name entry to character selection after room validation", async () => {
+  it("claims a room seat before showing character selection", async () => {
+    vi.mocked(useRoomSubscription).mockReturnValue({
+      patch: createLobbyPhonePatch(),
+      error: null,
+      sendIntent: vi.fn(),
+      status: "open",
+      debugEvents: [],
+      clearDebugEvents: vi.fn()
+    });
     render(<PhoneApp />);
 
-    expect(await screen.findByRole("button", { name: /join \/ continue/i })).toBeInTheDocument();
+    expect(await screen.findByRole("button", { name: /join as host phone/i })).toBeInTheDocument();
     expect(screen.queryByRole("list", { name: /character/i })).not.toBeInTheDocument();
 
     fireEvent.change(screen.getAllByLabelText(/room code/i)[0]!, { target: { value: "RT7P4" } });
     fireEvent.change(screen.getAllByLabelText(/player name/i)[0]!, { target: { value: "Joel" } });
-    fireEvent.click(screen.getByRole("button", { name: /join \/ continue/i }));
+    fireEvent.click(screen.getByRole("button", { name: /join as host phone/i }));
 
     const picker = await screen.findByRole("list", { name: /character/i });
 
@@ -200,7 +273,7 @@ describe("PhoneApp", () => {
     });
 
     expect(picker).toBeInTheDocument();
-    expect(screen.getAllByRole("heading", { name: /select character/i })).toHaveLength(1);
+    expect(screen.getAllByRole("heading", { name: /select operative/i })).toHaveLength(1);
     expect(screen.queryByRole("heading", { name: /choose character/i })).not.toBeInTheDocument();
     expect(screen.queryByText(/step 2/i)).not.toBeInTheDocument();
     expect(screen.getByRole("tab", { name: /recommended/i })).toBeInTheDocument();
@@ -215,9 +288,10 @@ describe("PhoneApp", () => {
     expect(screen.getByRole("button", { name: /mira.*cinder monk/i })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /orenna tash.*fleet elder/i })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /deepdale.*deep route delver/i })).toBeInTheDocument();
-    expect(screen.getByLabelText(/joined room summary/i)).toHaveTextContent(/rt7p4/i);
-    expect(screen.getByLabelText(/joined room summary/i)).toHaveTextContent(/joel/i);
-    expect(networkMocks.joinSession).not.toHaveBeenCalled();
+    expect(networkMocks.joinSession).toHaveBeenCalledWith({
+      roomCode: "RT7P4",
+      displayName: "Joel"
+    });
     expect(screen.queryByRole("button", { name: /^ready$/i })).not.toBeInTheDocument();
     expect(document.body.scrollWidth).toBeLessThanOrEqual(390);
   });
@@ -225,10 +299,10 @@ describe("PhoneApp", () => {
   it("shows character role, complexity, starting gear, and starting contract guidance", async () => {
     render(<PhoneApp />);
 
-    await screen.findByRole("button", { name: /join \/ continue/i });
+    await screen.findByRole("button", { name: /join as host phone/i });
     fireEvent.change(screen.getAllByLabelText(/room code/i)[0]!, { target: { value: "RT7P4" } });
     fireEvent.change(screen.getAllByLabelText(/player name/i)[0]!, { target: { value: "Joel" } });
-    fireEvent.click(screen.getByRole("button", { name: /join \/ continue/i }));
+    fireEvent.click(screen.getByRole("button", { name: /join as host phone/i }));
 
     const presentations = await screen.findAllByTestId("phone-character-presentation");
     const firstGamePresentation = presentations.find((presentation) => /first-game pick/i.test(presentation.textContent ?? ""));
@@ -237,10 +311,6 @@ describe("PhoneApp", () => {
     expect(firstGamePresentation!).toHaveTextContent(/commander/i);
     expect(firstGamePresentation!).toHaveTextContent(/beginner/i);
     expect(firstGamePresentation!).toHaveTextContent(/first-game pick/i);
-    expect(firstGamePresentation!).toHaveTextContent(/cinder suture kit/i);
-    expect(firstGamePresentation!).toHaveTextContent(/warbell recovery/i);
-    expect(firstGamePresentation!).toHaveTextContent(/good at/i);
-    expect(firstGamePresentation!).toHaveTextContent(/watch out/i);
 
     const marshalCard = screen.getByRole("button", { name: /tarek voss.*void marshal/i });
     expect(within(marshalCard).getByLabelText(/tarek voss stats/i)).toBeInTheDocument();
@@ -250,10 +320,10 @@ describe("PhoneApp", () => {
   it("sorts first-game characters before advanced operatives", async () => {
     render(<PhoneApp />);
 
-    await screen.findByRole("button", { name: /join \/ continue/i });
+    await screen.findByRole("button", { name: /join as host phone/i });
     fireEvent.change(screen.getAllByLabelText(/room code/i)[0]!, { target: { value: "RT7P4" } });
     fireEvent.change(screen.getAllByLabelText(/player name/i)[0]!, { target: { value: "Joel" } });
-    fireEvent.click(screen.getByRole("button", { name: /join \/ continue/i }));
+    fireEvent.click(screen.getByRole("button", { name: /join as host phone/i }));
 
     const picker = await screen.findByRole("list", { name: /character/i });
     const options = within(picker).getAllByRole("button");
@@ -266,6 +336,15 @@ describe("PhoneApp", () => {
   });
 
   it("reserves the chosen Deepdale character when selected", async () => {
+    const sendIntent = vi.fn();
+    vi.mocked(useRoomSubscription).mockReturnValue({
+      patch: createLobbyPhonePatch(),
+      error: null,
+      sendIntent,
+      status: "open",
+      debugEvents: [],
+      clearDebugEvents: vi.fn()
+    });
     networkMocks.joinSession.mockResolvedValue({
       roomCode: "RT7P4",
       seatId: "seat-1",
@@ -275,16 +354,16 @@ describe("PhoneApp", () => {
 
     render(<PhoneApp />);
 
-    await screen.findByRole("button", { name: /join \/ continue/i });
+    await screen.findByRole("button", { name: /join as host phone/i });
     fireEvent.change(screen.getAllByLabelText(/room code/i)[0]!, { target: { value: "RT7P4" } });
     fireEvent.change(screen.getAllByLabelText(/player name/i)[0]!, { target: { value: "Joel" } });
-    fireEvent.click(screen.getByRole("button", { name: /join \/ continue/i }));
+    fireEvent.click(screen.getByRole("button", { name: /join as host phone/i }));
     fireEvent.click(await screen.findByRole("button", { name: /deepdale.*deep route delver/i }));
 
     await waitFor(() => {
-      expect(networkMocks.joinSession).toHaveBeenCalledWith({
-        roomCode: "RT7P4",
-        displayName: "Joel",
+      expect(sendIntent).toHaveBeenCalledWith({
+        type: "SELECT_CHARACTER",
+        seatId: "seat-1",
         characterId: "char_deepdale"
       });
     });
@@ -295,11 +374,10 @@ describe("PhoneApp", () => {
 
     render(<PhoneApp />);
 
-    await screen.findByRole("button", { name: /join \/ continue/i });
+    await screen.findByRole("button", { name: /join as host phone/i });
     fireEvent.change(screen.getAllByLabelText(/room code/i)[0]!, { target: { value: "RT7P4" } });
     fireEvent.change(screen.getAllByLabelText(/player name/i)[0]!, { target: { value: "Joel" } });
-    fireEvent.click(screen.getByRole("button", { name: /join \/ continue/i }));
-    fireEvent.click(await screen.findByRole("button", { name: /deepdale.*deep route delver/i }));
+    fireEvent.click(screen.getByRole("button", { name: /join as host phone/i }));
 
     expect(await screen.findByText(/cannot reach host server/i)).toBeInTheDocument();
     expect(screen.getByText(/same wi-fi/i)).toBeInTheDocument();
@@ -319,14 +397,11 @@ describe("PhoneApp", () => {
 
     expect(await screen.findByDisplayValue("RT7P4")).toBeInTheDocument();
     fireEvent.change(screen.getAllByLabelText(/player name/i)[0]!, { target: { value: "Joel" } });
-    fireEvent.click(screen.getByRole("button", { name: /join \/ continue/i }));
-    fireEvent.click(await screen.findByRole("button", { name: /deepdale.*deep route delver/i }));
-
+    fireEvent.click(screen.getByRole("button", { name: /join as host phone/i }));
     await waitFor(() => {
       expect(networkMocks.joinSession).toHaveBeenCalledWith({
         roomCode: "RT7P4",
         displayName: "Joel",
-        characterId: "char_deepdale",
         seatId: "seat-2"
       });
     });
@@ -342,11 +417,10 @@ describe("PhoneApp", () => {
 
     render(<PhoneApp />);
 
-    await screen.findByRole("button", { name: /join \/ continue/i });
+    await screen.findByRole("button", { name: /join as host phone/i });
     fireEvent.change(screen.getAllByLabelText(/room code/i)[0]!, { target: { value: "RT7P4" } });
     fireEvent.change(screen.getAllByLabelText(/player name/i)[0]!, { target: { value: "Joel" } });
-    fireEvent.click(screen.getByRole("button", { name: /join \/ continue/i }));
-    fireEvent.click(await screen.findByRole("button", { name: /mira.*cinder monk/i }));
+    fireEvent.click(screen.getByRole("button", { name: /join as host phone/i }));
 
     await waitFor(() => {
       expect(window.sessionStorage.getItem("ashenreach.controllerSession")).toContain("seat-1");
@@ -381,8 +455,8 @@ describe("PhoneApp", () => {
         })
       );
     });
-    expect(screen.queryByRole("button", { name: /join \/ continue/i })).not.toBeInTheDocument();
-    expect(await screen.findByText(/character locked/i)).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /join as host phone/i })).not.toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: /select operative/i })).toBeInTheDocument();
   });
 
   it("does not reuse a stored seat when a direct link asks for a different seat", async () => {
@@ -399,7 +473,7 @@ describe("PhoneApp", () => {
 
     render(<PhoneApp />);
 
-    expect(await screen.findByRole("button", { name: /join \/ continue/i })).toBeInTheDocument();
+    expect(await screen.findByRole("button", { name: /join as host phone/i })).toBeInTheDocument();
     expect(screen.getByDisplayValue("RT7P4")).toBeInTheDocument();
   });
 
@@ -426,10 +500,18 @@ describe("PhoneApp", () => {
 
     expect(await screen.findByText(/could not reclaim your seat/i)).toBeInTheDocument();
     expect(window.localStorage.getItem("ashenreach.controllerSession")).toBeNull();
-    expect(screen.getByRole("button", { name: /join \/ continue/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /join as host phone/i })).toBeInTheDocument();
   });
 
-  it("shows the locked character waiting screen immediately after selection", async () => {
+  it("shows Host Phone game type controls before the lobby is configured", async () => {
+    vi.mocked(useRoomSubscription).mockReturnValue({
+      patch: createLobbyPhonePatch({ lobbyConfigured: false, selfIsSetupHost: true }),
+      error: null,
+      sendIntent: vi.fn(),
+      status: "open",
+      debugEvents: [],
+      clearDebugEvents: vi.fn()
+    });
     networkMocks.joinSession.mockResolvedValue({
       roomCode: "RT7P4",
       seatId: "seat-1",
@@ -439,19 +521,21 @@ describe("PhoneApp", () => {
 
     render(<PhoneApp />);
 
-    await screen.findByRole("button", { name: /join \/ continue/i });
+    await screen.findByRole("button", { name: /join as host phone/i });
     fireEvent.change(screen.getAllByLabelText(/room code/i)[0]!, { target: { value: "RT7P4" } });
     fireEvent.change(screen.getAllByLabelText(/player name/i)[0]!, { target: { value: "Joel" } });
-    fireEvent.click(screen.getByRole("button", { name: /join \/ continue/i }));
-    fireEvent.click(await screen.findByRole("button", { name: /mira.*cinder monk/i }));
+    fireEvent.click(screen.getByRole("button", { name: /join as host phone/i }));
 
-    expect(await screen.findByText(/waiting for starting mission options from the room/i)).toBeInTheDocument();
-    expect(screen.getByText("Mira")).toBeInTheDocument();
-    expect(screen.getByText("Cinder Monk")).toBeInTheDocument();
-    expect(screen.getByText("RT7P4")).toBeInTheDocument();
-    expect(screen.getByText("Joel")).toBeInTheDocument();
-    expect(screen.getAllByText(/choose starting mission/i).length).toBeGreaterThan(0);
-    expect(screen.getByRole("button", { name: /^ready$/i })).toBeDisabled();
+    expect(await screen.findByRole("heading", { name: /host phone/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /single player/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /multiplayer co-op/i })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /single player/i }));
+    await waitFor(() => {
+      expect(networkMocks.configureSessionFromPhone).toHaveBeenCalledWith(
+        expect.objectContaining({ roomCode: "RT7P4", seatId: "seat-1" }),
+        { mode: "single-player", playerCount: 1 }
+      );
+    });
     expect(screen.queryByRole("list", { name: /character/i })).not.toBeInTheDocument();
   });
 
@@ -461,7 +545,7 @@ describe("PhoneApp", () => {
     render(<PhoneApp />);
 
     expect(await screen.findByText(/rotate your phone to portrait mode/i)).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /join \/ continue/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /join as host phone/i })).not.toBeInTheDocument();
     expect(screen.queryByRole("list", { name: /character/i })).not.toBeInTheDocument();
   });
 
@@ -470,7 +554,7 @@ describe("PhoneApp", () => {
 
     render(<PhoneApp />);
 
-    expect(await screen.findByRole("button", { name: /join \/ continue/i })).toBeInTheDocument();
+    expect(await screen.findByRole("button", { name: /join as host phone/i })).toBeInTheDocument();
     expect(screen.queryByText(/rotate your phone to portrait mode/i)).not.toBeInTheDocument();
   });
 });

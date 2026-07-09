@@ -34,6 +34,7 @@ interface PortraitControllerViewProps {
   onIntent: ((intent: ClientIntent) => void) | null;
   onLeave: () => void;
   onLobbyBack?: () => void;
+  onStartSession?: () => void;
 }
 
 type PortraitTab = "player" | "inventory" | "quests" | TurnActionTab;
@@ -571,7 +572,8 @@ export function PortraitControllerView({
   characters,
   onIntent,
   onLeave,
-  onLobbyBack
+  onLobbyBack,
+  onStartSession
 }: PortraitControllerViewProps): ReactElement {
   const [activeTab, setActiveTab] = useState<PortraitTab>("player");
   const [phoneChromeVisible, setPhoneChromeVisible] = useState(readStoredPhoneChromeVisible);
@@ -649,6 +651,14 @@ export function PortraitControllerView({
     const startingContractOptions = patch?.startingContractOptions ?? [];
     const selectedStartingContract = patch?.selectedStartingContract ?? null;
     const canReady = Boolean(patch?.canReady && selectedStartingContract && onIntent && !isReady);
+    const joinedSeats = patch?.seats.filter((seat) => seat.displayName && !seat.kicked) ?? [];
+    const canHostStart = Boolean(
+      onStartSession &&
+        patch?.selfIsSetupHost &&
+        patch.lobbyConfigured &&
+        joinedSeats.length > 0 &&
+        joinedSeats.every((seat) => seat.characterSelected !== false && seat.startingMissionSelected && seat.ready)
+    );
     const readyDisabledReason =
       patch?.readyDisabledReason ??
       (selectedStartingContract ? "Waiting for room sync" : "Choose a starting mission before Ready");
@@ -735,7 +745,22 @@ export function PortraitControllerView({
                     Back
                   </button>
                 ) : null}
+                {patch?.selfIsSetupHost ? (
+                  <button
+                    type="button"
+                    className="phone-button phone-button-primary phone-lobby-ready-button"
+                    disabled={!canHostStart}
+                    onClick={onStartSession}
+                  >
+                    Start Game
+                  </button>
+                ) : null}
               </div>
+              {patch?.selfIsSetupHost ? (
+                <p className="phone-lobby-ready-state">
+                  {canHostStart ? "All joined players are ready. Start from this Host Phone." : "Host start unlocks when joined players have character, mission, and Ready."}
+                </p>
+              ) : null}
               {onIntent ? (
                 <span className="phone-character-waiting-status">
                   {isReady

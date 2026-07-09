@@ -924,6 +924,43 @@ describe("roomServer websocket integration", () => {
     probes.length = 0;
   });
 
+  it("assigns the first joined phone as setup host and restricts lobby configuration to that phone", async () => {
+    const state = createInitialSessionState("session-alpha", "multiplayer", undefined, "rivalry", "standard", undefined, {
+      lobbyConfigured: false
+    });
+    harness = await startHarness([0, 0, 0, 0], state);
+
+    const hostJoin = harness.roomServer.joinSeat("Joel");
+    expect(hostJoin.isHostPhone).toBe(true);
+    expect(harness.roomServer.getState().setupHostSeatId).toBe(hostJoin.seatId);
+    expect(harness.roomServer.getState().lobbyConfigured).toBe(false);
+
+    const secondJoin = harness.roomServer.joinSeat("Anna");
+    expect(secondJoin.isHostPhone).toBe(false);
+    expect(() =>
+      harness!.roomServer.configureLobbyFromHostPhone(secondJoin.seatId, {
+        sessionMode: "single-player",
+        interactionMode: "co-op",
+        gameMode: "standard",
+        playerCount: 1
+      })
+    ).toThrow("Only the Host Phone can configure the lobby");
+
+    harness.roomServer.configureLobbyFromHostPhone(hostJoin.seatId, {
+      sessionMode: "single-player",
+      interactionMode: "co-op",
+      gameMode: "standard",
+      playerCount: 1
+    });
+
+    const configuredState = harness.roomServer.getState();
+    expect(configuredState.lobbyConfigured).toBe(true);
+    expect(configuredState.sessionMode).toBe("single-player");
+    expect(configuredState.setupHostSeatId).toBe(hostJoin.seatId);
+    expect(configuredState.seats[0]?.displayName).toBe("Joel");
+    expect(configuredState.seats[0]?.characterSelected).toBe(false);
+  });
+
   it("rejects missing and invalid join tokens before session state changes", async () => {
     harness = await startHarness();
 
@@ -1091,7 +1128,7 @@ describe("roomServer websocket integration", () => {
     );
   });
 
-  it("auto-starts a single-player room when the phone presses Ready", async () => {
+  it("keeps single-player ready in setup until the Host Phone explicitly starts", async () => {
     const activeHarness = (harness = await startHarness([0, 0, 0, 0], createInitialSessionState("session-alpha", "single-player")));
     const joinResult = activeHarness.roomServer.joinSeat("Solo", "signal-witch");
     const phone = await connectClient(`ws://127.0.0.1:${activeHarness.port}/?view=phone&token=${joinResult.seatToken}`);
@@ -1105,6 +1142,20 @@ describe("roomServer websocket integration", () => {
       seatId: joinResult.seatId,
       ready: true
     });
+
+    const readySnapshot = (await phone.waitFor(
+      (message) =>
+        isStatePatch(message) &&
+        message.payload.status === "lobby" &&
+        message.phase === "start" &&
+        Array.isArray(message.payload.seats) &&
+        message.payload.seats.some((seat) => typeof seat === "object" && seat && "seatId" in seat && seat.seatId === joinResult.seatId && "ready" in seat && seat.ready === true)
+    )) as Extract<ServerEnvelope, { type: "STATE_PATCH" }>;
+
+    expect(readySnapshot.payload.status).toBe("lobby");
+    expect(activeHarness.roomServer.getState().status).toBe("lobby");
+
+    activeHarness.roomServer.startSession();
 
     const startedSnapshot = (await phone.waitFor(
       (message) =>

@@ -5,6 +5,7 @@ export const MULTIPLAYER_MIN_READY_PLAYERS = 2;
 export interface SessionStartSeat {
   seatId: string;
   characterId?: string | null;
+  characterSelected?: boolean;
   displayName?: string | null;
   selectedStartingContractId?: string | null;
   startingMissionSelected?: boolean;
@@ -29,7 +30,7 @@ export function getSessionStartReadiness(input: {
   seats: readonly SessionStartSeat[];
 }): SessionStartReadiness {
   const occupiedSeats = input.seats.filter((seat) => Boolean(seat.displayName) && !seat.kicked);
-  const selectedCharacterCount = occupiedSeats.filter((seat) => Boolean(seat.characterId)).length;
+  const selectedCharacterCount = occupiedSeats.filter((seat) => Boolean(seat.characterId) && seat.characterSelected !== false).length;
   const selectedMissionCount = occupiedSeats.filter(
     (seat) => Boolean(seat.selectedStartingContractId) || seat.startingMissionSelected === true
   ).length;
@@ -76,7 +77,7 @@ export function getSessionStartReadiness(input: {
   }
 
   if (selectedCharacterCount < occupiedSeats.length) {
-    const waitingSeat = occupiedSeats.find((seat) => !Boolean(seat.characterId));
+    const waitingSeat = occupiedSeats.find((seat) => !Boolean(seat.characterId) || seat.characterSelected === false);
     const waitingName = waitingSeat?.displayName ?? waitingSeat?.seatId ?? "player";
 
     return {

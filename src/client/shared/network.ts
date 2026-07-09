@@ -162,6 +162,9 @@ export async function fetchSessionSummary(): Promise<{
   sessionMode: SessionMode;
   gameMode: GameMode;
   interactionMode: InteractionMode;
+  setupHostSeatId?: string | null;
+  lobbyConfigured?: boolean;
+  hostPhoneConnected?: boolean;
   scenarioId: string;
   playerCount: number;
   seats: PublicSeat[];
@@ -180,6 +183,9 @@ export async function fetchSessionSummary(): Promise<{
     sessionMode: SessionMode;
     gameMode: GameMode;
     interactionMode: InteractionMode;
+    setupHostSeatId?: string | null;
+    lobbyConfigured?: boolean;
+    hostPhoneConnected?: boolean;
     scenarioId: string;
     playerCount: number;
     seats: PublicSeat[];
@@ -207,9 +213,9 @@ export async function fetchCharacters(): Promise<CharacterCatalogEntry[]> {
 export async function joinSession(input: {
   roomCode: string;
   displayName: string;
-  characterId: string;
+  characterId?: string;
   seatId?: string;
-}): Promise<PhoneSessionAuth> {
+}): Promise<PhoneSessionAuth & { isHostPhone?: boolean }> {
   const response = await fetch(`${apiOrigin}/api/session/join`, {
     method: "POST",
     headers: {
@@ -227,8 +233,35 @@ export async function joinSession(input: {
     roomCode: payload.roomCode,
     seatId: payload.seatId,
     seatToken: payload.seatToken,
-    displayName: input.displayName
+    displayName: input.displayName,
+    isHostPhone: payload.isHostPhone
   };
+}
+
+export async function configureSessionFromPhone(
+  auth: PhoneSessionAuth,
+  input: {
+    mode: "single-player" | "co-op" | "rivalry" | "nemesis";
+    scenarioId?: string;
+    playerCount?: number;
+  }
+): Promise<void> {
+  const response = await fetch(`${apiOrigin}/api/session/configure`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      roomCode: auth.roomCode,
+      seatToken: auth.seatToken,
+      ...input
+    })
+  });
+  const payload = await response.json();
+
+  if (!response.ok) {
+    throw new Error(payload.error ?? "Could not configure lobby");
+  }
 }
 
 export async function leaveSession(auth: PhoneSessionAuth): Promise<void> {
@@ -249,7 +282,7 @@ export async function leaveSession(auth: PhoneSessionAuth): Promise<void> {
   }
 }
 
-export async function startSession(roomCode: string): Promise<void> {
+export async function startSession(roomCode: string, seatToken?: string): Promise<void> {
   const response = await fetch(`${apiOrigin}/api/session/start`, {
     method: "POST",
     headers: {
@@ -257,6 +290,7 @@ export async function startSession(roomCode: string): Promise<void> {
     },
     body: JSON.stringify({
       roomCode,
+      seatToken,
       hostToken: typeof window !== "undefined" ? window.localStorage.getItem("ashen-reach-tv-host-token") : null
     })
   });

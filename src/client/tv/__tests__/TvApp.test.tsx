@@ -124,8 +124,11 @@ function createPatch(roomCode = "RT7P4"): StatePatch<PublicPatchPayload> {
     sequence: 1,
     phase: "start",
     payload: {
-      status: "lobby",
+      status: "active",
       sessionMode: "multiplayer",
+      setupHostSeatId: "seat-1",
+      lobbyConfigured: true,
+      hostPhoneConnected: true,
       winnerSeatId: null,
       activeScenario: {
         id: "scenario_broken_seal",
@@ -340,8 +343,8 @@ describe("TvApp", () => {
     await screen.findByText("Join QR RT7P4");
     expect(screen.getByTestId("mock-join-qr")).toHaveAttribute("data-show-join-details", "true");
     const banner = await screen.findByTestId("host-state-banner");
-    expect(banner).toHaveTextContent(/ready check/i);
-    expect(banner).toHaveTextContent(/all joined operatives are ready/i);
+    expect(banner).toHaveTextContent(/tarek voss has the command channel/i);
+    expect(banner).toHaveTextContent(/active phone chooses the next legal action/i);
     expect(screen.queryByRole("button", { name: /show debug/i })).not.toBeInTheDocument();
     expect(screen.queryByText(/tv debug/i)).not.toBeInTheDocument();
     expect(screen.getByText("Ashen Reach TV")).toBeInTheDocument();
@@ -375,7 +378,7 @@ describe("TvApp", () => {
     expect(screen.getByTestId("mock-join-qr")).toHaveAttribute("data-show-join-details", "false");
   });
 
-  it("shows selected starting mission in setup rows without treating the contract pool as active missions", async () => {
+  it("shows selected starting mission setup state on the startup screen without treating the contract pool as active missions", async () => {
     window.localStorage.setItem("ashen-reach-tv-room-code", "RT7P4");
     window.localStorage.setItem("ashen-reach-tv-host-token", "host:RT7P4:secret");
     const patch = createPatch();
@@ -392,12 +395,10 @@ describe("TvApp", () => {
 
     render(<TvApp />);
 
-    const operatives = await screen.findByRole("complementary", { name: /operatives/i });
-    expect(operatives).toHaveTextContent(/mission: crossing thread/i);
-    const setupMissions = screen.getByRole("region", { name: /setup missions/i });
-    expect(setupMissions).toHaveTextContent(/joel/i);
-    expect(setupMissions).toHaveTextContent(/crossing thread/i);
-    expect(setupMissions).not.toHaveTextContent(/exposed object/i);
+    expect(await screen.findByRole("main", { name: /ashen reach startup/i })).toHaveTextContent(/multiplayer setup in progress/i);
+    expect(screen.getByRole("generic", { name: /players joined/i })).toHaveTextContent(/mission yes/i);
+    expect(screen.queryByRole("complementary", { name: /operatives/i })).not.toBeInTheDocument();
+    expect(screen.queryByText(/exposed object/i)).not.toBeInTheDocument();
   });
 
   it("renders active player missions from character.activeContract instead of public availableContracts", async () => {
@@ -673,7 +674,7 @@ describe("TvApp", () => {
 
     expect(await screen.findByRole("button", { name: /start session/i })).toBeDisabled();
     expect(screen.getByText(/waiting for Joel to press ready/i)).toBeInTheDocument();
-    expect(screen.getByTestId("host-state-banner")).toHaveTextContent(/waiting for all players to ready/i);
+    expect(screen.getByTestId("host-state-banner")).toHaveTextContent(/tarek voss has the command channel/i);
 
     fireEvent.click(screen.getByRole("button", { name: /start session/i }));
 
@@ -776,35 +777,34 @@ describe("TvApp", () => {
     expect(screen.getByText(/waiting for joel to choose a character/i)).toBeInTheDocument();
   });
 
-  it("renders the create flow when nothing is stored", async () => {
-    mockFetchSessionSummary.mockRejectedValue(new Error("No active room"));
-
+  it("renders the black host-phone waiting screen when the TV first opens", async () => {
     render(<TvApp />);
 
-    expect(await screen.findByRole("region", { name: /game selection/i })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /solo run/i })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /^multiplayer/i })).toBeInTheDocument();
-    expect(screen.queryByText(/ruthless/i)).not.toBeInTheDocument();
-    expect(screen.queryByText(/nemesis_relay/i)).not.toBeInTheDocument();
-    expect(screen.queryByText(/^standard$/i)).not.toBeInTheDocument();
-    expect(mockUseRoomSubscription).toHaveBeenCalledWith(
-      expect.objectContaining({
-        enabled: false
-      })
-    );
+    const startup = await screen.findByRole("main", { name: /ashen reach startup/i });
+    expect(startup).toHaveTextContent(/ashen reach/i);
+    expect(startup).toHaveTextContent(/room code/i);
+    expect(startup).toHaveTextContent(/scan to control setup/i);
+    expect(screen.queryByText(/tactical map/i)).not.toBeInTheDocument();
+    expect(screen.queryByRole("complementary", { name: /operatives/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("region", { name: /^scenario$/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /solo run/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /^multiplayer/i })).not.toBeInTheDocument();
   });
 
-  it("keeps a fresh TV display on game selection instead of auto-attaching to the server room", async () => {
+  it("auto-attaches the TV display to the server room without storing a host token", async () => {
     render(<TvApp />);
 
-    expect(await screen.findByRole("region", { name: /game selection/i })).toBeInTheDocument();
-    expect(mockFetchSessionSummary).not.toHaveBeenCalled();
+    expect((await screen.findAllByText(/RT7P4/i)).length).toBeGreaterThan(0);
+    expect(mockFetchSessionSummary).toHaveBeenCalled();
     expect(mockUseRoomSubscription).toHaveBeenCalledWith(
       expect.objectContaining({
-        enabled: false
+        enabled: true,
+        hostToken: null
       })
     );
-    expect(window.localStorage.getItem("ashen-reach-tv-room-code")).toBeNull();
+    await waitFor(() => {
+      expect(window.localStorage.getItem("ashen-reach-tv-room-code")).toBe("RT7P4");
+    });
     expect(window.localStorage.getItem("ashen-reach-tv-host-token")).toBeNull();
   });
 
@@ -829,59 +829,16 @@ describe("TvApp", () => {
     expect(screen.queryByText(/previous session ended/i)).not.toBeInTheDocument();
   });
 
-  it("stores room code after creating a session", async () => {
-    mockFetchSessionSummary.mockRejectedValue(new Error("No active room"));
-
+  it("does not expose TV-side room creation or mode controls", async () => {
     render(<TvApp />);
 
-    fireEvent.click(await screen.findByRole("button", { name: /^multiplayer/i }));
-    fireEvent.click(within(screen.getByRole("region", { name: /mission protocol/i })).getAllByRole("button")[0]!);
-    fireEvent.click((await screen.findAllByRole("button", { name: /create multiplayer/i }))[0]!);
-
-    await waitFor(() => {
-      expect(window.localStorage.getItem("ashen-reach-tv-room-code")).toBe("RT7P4");
-    });
-    expect(window.localStorage.getItem("ashen-reach-tv-host-token")).toBe("host:RT7P4:secret");
-  });
-
-  it("sends the selected scenario id when the host creates a room", async () => {
-    mockFetchSessionSummary.mockRejectedValue(new Error("No active room"));
-    mockCreateSession.mockResolvedValue({
-      roomCode: "STAR1",
-      hostToken: "host:STAR1:secret",
-      sessionMode: "multiplayer",
-      gameMode: "standard",
-      interactionMode: "rivalry",
-      scenarioId: "scenario_dying_star",
-      playerCount: 6
-    });
-
-    render(<TvApp />);
-
-    fireEvent.click(await screen.findByRole("button", { name: /^multiplayer/i }));
-    const scenarioSelect = (await screen.findAllByRole("combobox"))[0]!;
-    fireEvent.change(scenarioSelect, { target: { value: "scenario_dying_star" } });
-    fireEvent.click(screen.getByRole("button", { name: /rivalry/i }));
-    fireEvent.click(screen.getAllByRole("button", { name: /create multiplayer/i })[0]!);
-
-    await waitFor(() => {
-      expect(mockCreateSession).toHaveBeenCalledWith("multiplayer", "scenario_dying_star", "rivalry", "standard", 6);
-    });
-  });
-
-  it("labels the competitive setup protocol as Rivalry while preserving the rivalry interaction mode", async () => {
-    mockFetchSessionSummary.mockRejectedValue(new Error("No active room"));
-
-    render(<TvApp />);
-
-    fireEvent.click(await screen.findByRole("button", { name: /^multiplayer/i }));
-    fireEvent.click(screen.getByRole("button", { name: /rivalry/i }));
-    expect(screen.getByText(/rivalry selected/i)).toBeInTheDocument();
-    fireEvent.click(screen.getAllByRole("button", { name: /create multiplayer/i })[0]!);
-
-    await waitFor(() => {
-      expect(mockCreateSession).toHaveBeenCalledWith("multiplayer", "scenario_broken_seal", "rivalry", "standard", 6);
-    });
+    await screen.findByRole("main", { name: /ashen reach startup/i });
+    expect(screen.queryByRole("button", { name: /create multiplayer/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /create solo run/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /rivalry/i })).not.toBeInTheDocument();
+    expect(screen.queryByText(/ruthless/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/nemesis_relay/i)).not.toBeInTheDocument();
+    expect(mockCreateSession).not.toHaveBeenCalled();
   });
 
   it("shows a disconnected ready player without clearing setup state", async () => {
@@ -912,86 +869,14 @@ describe("TvApp", () => {
     expect(operatives).toHaveTextContent(/ready/i);
   });
 
-  it("uses the selected scenario for single-player creation too", async () => {
-    mockFetchSessionSummary.mockRejectedValue(new Error("No active room"));
-    mockCreateSession.mockResolvedValue({
-      roomCode: "STAR2",
-      hostToken: "host:STAR2:secret",
-      sessionMode: "single-player",
-      gameMode: "standard",
-      interactionMode: "co-op",
-      scenarioId: "scenario_dying_star",
-      playerCount: 1
-    });
-
+  it("keeps setup mode labels off the TV until the Host Phone chooses them", async () => {
     render(<TvApp />);
 
-    fireEvent.click(await screen.findByRole("button", { name: /solo run/i }));
-    const scenarioSelect = (await screen.findAllByRole("combobox"))[0]!;
-    fireEvent.change(scenarioSelect, { target: { value: "scenario_dying_star" } });
-    expect(screen.queryByText(/^Open Seat$/i)).not.toBeInTheDocument();
-    expect(screen.queryByText(/waiting for other players/i)).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: /create solo run/i }));
-
-    await waitFor(() => {
-      expect(mockCreateSession).toHaveBeenCalledWith("single-player", "scenario_dying_star", "co-op", "standard", 1);
-    });
-  });
-
-  it("keeps Nemesis disabled until the hidden-agenda mode is supported", async () => {
-    mockFetchSessionSummary.mockRejectedValue(new Error("No active room"));
-
-    render(<TvApp />);
-
-    fireEvent.click(await screen.findByRole("button", { name: /^multiplayer/i }));
-
-    expect(screen.getByRole("button", { name: /nemesis/i })).toBeDisabled();
-    expect(screen.getByText(/coming later/i)).toBeInTheDocument();
-    expect(screen.queryByText(/nemesis_relay/i)).not.toBeInTheDocument();
-  });
-
-  it("sends the selected multiplayer player count when creating a room", async () => {
-    mockFetchSessionSummary.mockRejectedValue(new Error("No active room"));
-    mockCreateSession.mockResolvedValue({
-      roomCode: "DUO22",
-      hostToken: "host:DUO22:secret",
-      sessionMode: "multiplayer",
-      gameMode: "standard",
-      interactionMode: "co-op",
-      scenarioId: "scenario_broken_seal",
-      playerCount: 2
-    });
-
-    render(<TvApp />);
-
-    fireEvent.click(await screen.findByRole("button", { name: /^multiplayer/i }));
-    const playerCountSelect = (await screen.findAllByRole("combobox"))[1]!;
-    fireEvent.change(playerCountSelect, { target: { value: "2" } });
-    fireEvent.click(within(screen.getByRole("region", { name: /mission protocol/i })).getAllByRole("button")[0]!);
-    fireEvent.click(screen.getAllByRole("button", { name: /create multiplayer/i })[0]!);
-
-    await waitFor(() => {
-      expect(mockCreateSession).toHaveBeenCalledWith("multiplayer", "scenario_broken_seal", "co-op", "standard", 2);
-    });
-  });
-
-  it("shows a scenario briefing preview and updates it when the host changes the picker", async () => {
-    mockFetchSessionSummary.mockRejectedValue(new Error("No active room"));
-
-    render(<TvApp />);
-
-    fireEvent.click(await screen.findByRole("button", { name: /solo run/i }));
-    expect(await screen.findByText(/scenario briefing/i)).toBeInTheDocument();
-    expect(screen.getByText(/seal pressure degrades at the start of each turn/i)).toBeInTheDocument();
-    expect(screen.getByText(/no linked nemesis/i)).toBeInTheDocument();
-
-    const scenarioSelect = screen.getAllByRole("combobox")[0]!;
-    fireEvent.change(scenarioSelect, { target: { value: "scenario_dying_star" } });
-
-    expect(screen.getByText(/the system's sun is collapsing/i)).toBeInTheDocument();
-    expect(screen.getByText(/star tokens burn down at the end of each turn/i)).toBeInTheDocument();
-    expect(screen.getByText(/kharvox \| the red maw/i)).toBeInTheDocument();
-    expect(screen.getByText(/50-70 min/i)).toBeInTheDocument();
+    await screen.findByRole("main", { name: /ashen reach startup/i });
+    expect(screen.queryByText(/normal/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/co-op selected/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/rivalry selected/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/coming later/i)).not.toBeInTheDocument();
   });
 
   it("surfaces scenario victory copy when the session has ended with a winner", async () => {
