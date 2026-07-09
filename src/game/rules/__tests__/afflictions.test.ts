@@ -77,8 +77,11 @@ describe("Afflictions", () => {
     const restrictions = getAfflictionRestrictions(player, afflictions);
 
     expect(restrictions.cannotUseArmor).toBe(true);
+    expect(restrictions.cannotUseArmorSource).toBe("Brittle Frame");
     expect(restrictions.cannotUseWeapons).toBe(true);
+    expect(restrictions.cannotUseWeaponsSource).toBe("Severed Grip");
     expect(restrictions.cannotEvadeEnemies).toBe(true);
+    expect(restrictions.cannotEvadeEnemiesSource).toBe("Red Madness");
     expect(restrictions.canEvadeEnemies).toBe(false);
   });
 

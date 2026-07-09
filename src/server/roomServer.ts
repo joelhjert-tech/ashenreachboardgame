@@ -1468,11 +1468,13 @@ export class GameRoomServer {
     const restrictions = getAfflictionRestrictions(player, getAfflictionCatalog(this.state));
 
     if (item.slot === "weapon" && restrictions.cannotUseWeapons) {
-      throw new IntentRejectedError("USE_GEAR", `Affliction blocks weapon use: ${item.name} cannot help now.`);
+      const source = restrictions.cannotUseWeaponsSource ?? "an Affliction";
+      throw new IntentRejectedError("USE_GEAR", `Weapon disabled: blocked by ${source}. ${item.name} cannot help now.`);
     }
 
     if (item.slot === "armor" && restrictions.cannotUseArmor) {
-      throw new IntentRejectedError("USE_GEAR", `Affliction blocks armor use: ${item.name} cannot help now.`);
+      const source = restrictions.cannotUseArmorSource ?? "an Affliction";
+      throw new IntentRejectedError("USE_GEAR", `Armor disabled: blocked by ${source}. ${item.name} cannot help now.`);
     }
 
     if (item.linkedFollowerRole && !(player.character.followers ?? []).some((follower) => follower.role === item.linkedFollowerRole)) {

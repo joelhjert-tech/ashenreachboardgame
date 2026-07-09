@@ -14,9 +14,13 @@ export interface AfflictionModifierSource {
 
 export interface AfflictionRestrictions {
   cannotUseArmor: boolean;
+  cannotUseArmorSource: string | null;
   cannotUseWeapons: boolean;
+  cannotUseWeaponsSource: string | null;
   canEvadeEnemies: boolean;
+  canEvadeEnemiesSource: string | null;
   cannotEvadeEnemies: boolean;
+  cannotEvadeEnemiesSource: string | null;
   battleWeaponSlotModifier: number;
   powerLimitModifier: number;
   assetLimitModifier: number;
@@ -91,9 +95,13 @@ export function summarizeAfflictions(player: PlayerState, catalog: AfflictionCat
 export function getAfflictionRestrictions(player: PlayerState, catalog: AfflictionCatalog): AfflictionRestrictions {
   const restrictions: AfflictionRestrictions = {
     cannotUseArmor: false,
+    cannotUseArmorSource: null,
     cannotUseWeapons: false,
+    cannotUseWeaponsSource: null,
     canEvadeEnemies: false,
+    canEvadeEnemiesSource: null,
     cannotEvadeEnemies: false,
+    cannotEvadeEnemiesSource: null,
     battleWeaponSlotModifier: 0,
     powerLimitModifier: 0,
     assetLimitModifier: 0
@@ -101,10 +109,27 @@ export function getAfflictionRestrictions(player: PlayerState, catalog: Afflicti
 
   for (const card of getFaceupAfflictionCards(player, catalog)) {
     const payload = card.effectPayload;
-    restrictions.cannotUseArmor ||= payload.cannotUseArmor === true;
-    restrictions.cannotUseWeapons ||= payload.cannotUseWeapons === true;
-    restrictions.canEvadeEnemies ||= payload.canEvadeEnemies === true;
-    restrictions.cannotEvadeEnemies ||= payload.cannotEvadeEnemies === true;
+
+    if (payload.cannotUseArmor === true) {
+      restrictions.cannotUseArmor = true;
+      restrictions.cannotUseArmorSource ??= card.name;
+    }
+
+    if (payload.cannotUseWeapons === true) {
+      restrictions.cannotUseWeapons = true;
+      restrictions.cannotUseWeaponsSource ??= card.name;
+    }
+
+    if (payload.canEvadeEnemies === true) {
+      restrictions.canEvadeEnemies = true;
+      restrictions.canEvadeEnemiesSource ??= card.name;
+    }
+
+    if (payload.cannotEvadeEnemies === true) {
+      restrictions.cannotEvadeEnemies = true;
+      restrictions.cannotEvadeEnemiesSource ??= card.name;
+    }
+
     restrictions.battleWeaponSlotModifier += payload.battleWeaponSlotModifier ?? 0;
     restrictions.powerLimitModifier += payload.powerLimitModifier ?? 0;
     restrictions.assetLimitModifier += payload.assetLimitModifier ?? 0;

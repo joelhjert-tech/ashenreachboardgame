@@ -1,54 +1,47 @@
 # Scar / Affliction Visibility Audit
 
-Date: 2026-07-08
+Date: 2026-07-09
 
 ## Scope
 
-This audit covers scar and affliction visibility on the phone controller, source display in roll/stat breakdowns, and public-safe TV behavior. It does not change scar, affliction, battle, movement, shop, mission, scenario, rivalry, or multiplayer mechanics.
+This audit reviewed the post-Heat baseline where Wounds are short-term damage and Scars are the canonical persistent harm/status track. Heat was not restored as visible player status.
 
-## Existing Content And State
+## State Model
 
-- Scar card content exists under `content/cards/scars/`.
-- Scar art exists under `public/assets/cards/scars/`, with a fallback at `public/assets/cards/fallbacks/scar.svg`.
-- Affliction card content exists under `content/cards/afflictions/`.
-- Player state already tracks afflictions as `faceupAfflictions`, `facedownAfflictions`, `afflictionUsageState`, and `afflictionDrawHistory`.
-- Phone projection already includes `scarCards` and `afflictions` for the owning player.
+- Character scars are stored as scar ids on `character.scars`.
+- Owner phone projection resolves those ids into `character.scarCards` with title, art, rules text, trigger, penalty, relief, and upside where available.
+- Afflictions are stored as `faceupAfflictions` and `facedownAfflictions` instances on the player state.
+- Owner phone projection resolves faceup Afflictions into `character.afflictions.faceup` and exposes `facedownCount`.
 
-## Existing Mechanics
+## Existing Visibility
 
-- `src/game/rules/afflictions.ts` already exposes affliction summaries, restrictions, modifier sources, draw resolution, and wound prevention.
-- `src/server/roomServer.ts` already includes affliction modifier sources in stat roll math through `getAfflictionModifierSources`.
-- Server gear validation already rejects weapon and armor use when faceup afflictions block those equipment types.
-- Existing active resolution rendering can display modifier source labels when the server projection includes them.
+- Phone Player Card already renders a Scars section with card title, art/fallback, effect text, trigger, penalty, and upside/relief copy.
+- Phone Player Card already renders active Afflictions and facedown Affliction count.
+- Phone Inventory already groups Scars and Afflictions as persistent status cards instead of normal usable gear.
+- Stat breakdowns already include Affliction test and battle modifiers separately from permanent upgrades and gear/follower sources.
+- Battle formula sources already include Affliction modifier labels from the authoritative rules resolver.
 
-## Visibility Gaps Found
+## Gaps Found
 
-1. The main phone Player Card tab did not show inspectable scar or affliction status cards.
-2. Scar cards were visible in one phone sheet path, but not consistently as status cards with art and effect text.
-3. Inventory status grouping showed scars but not afflictions.
-4. Compact stat rows did not tell the player when a faceup affliction affected the stat test.
-5. Expanded stat breakdowns did not list scar/affliction sources separately from permanent upgrades or gear/follower modifiers.
-6. Affliction summaries did not project effect payload metadata needed for readable chips such as "Blocks armor" or "Grit -2 tests, minimum 1".
+1. Affliction equipment restrictions returned booleans, but not the source card name.
+2. Server rejection messages for weapon/armor restrictions named only "Affliction" and did not identify the blocking card.
+3. Phone Battle "Useful Now" did not surface faceup Afflictions that were currently affecting the roll or blocking combat options.
 
 ## Changes Made
 
-- Added phone presentation helpers for affliction status labels, effect chips, and stat test source summaries.
-- Projected affliction `effectKind` and a public-safe summary of `effectPayload` to the phone owner.
-- Added Scars / Afflictions status cards to the phone Player Card tab.
-- Added scar art and effect text to phone scar display.
-- Added Afflictions as a separate persistent status group in Inventory, distinct from normal usable items.
-- Added scar/affliction rows to expanded stat breakdowns without merging those modifiers into printed/base stats.
-- Added compact stat text for current affliction test penalties, such as `Status -2`.
-- Added phone tests for scar visibility, affliction inventory grouping, stat source display, and active roll formula source display.
+- `getAfflictionRestrictions` now includes source names for armor, weapon, evade-allowed, and evade-blocked restrictions.
+- Gear use rejection messages now name the blocking Affliction, such as `Weapon disabled: blocked by Severed Grip.`
+- Battle Useful Now now lists current Affliction effects:
+  - matching stat test penalties
+  - innate battle bonuses
+  - weapon, armor, and evade blockers
 
-## Privacy And TV Behavior
+## Privacy Notes
 
-This pass does not add detailed scar or affliction text to TV. TV remains limited to compact public status already available from projection. Owner phone receives the inspectable scar/affliction detail.
+- Owner phone receives full scar and affliction details.
+- TV remains compact and public-safe; this pass did not add broad scar text to host display.
+- Hidden rivalry/nemesis data was not touched.
 
-## Mechanics Confirmation
+## Remaining Notes
 
-- No battle math was changed.
-- No movement rules were changed.
-- No shop rules were changed.
-- No mission, scenario, rivalry, or multiplayer rules were changed.
-- Scar and affliction effects remain server-authoritative; the phone displays projected state and source rows only.
+- The current content distinguishes Scars and Afflictions, but the phone presents both as persistent harm/status. Future copy can further clarify whether Afflictions are a subcategory of Scars or a sibling persistent condition deck.

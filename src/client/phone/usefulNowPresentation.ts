@@ -1,5 +1,5 @@
 import { describeContractObjective, formatContractObjectiveStatus } from "../../game/contracts/objectives.js";
-import type { PhonePatchPayload, Stat } from "../shared/types.js";
+import type { AfflictionSummary, PhonePatchPayload, Stat } from "../shared/types.js";
 import { statLabelById } from "../shared/statLabels.js";
 import {
   formatTimingWindow,
@@ -54,6 +54,60 @@ function relevantBattleStat(patch: PhonePatchPayload): Stat {
   return patch.activeResolution?.battle?.stat ?? patch.encounter?.stat ?? patch.pendingEnemyRoll?.stat ?? "grit";
 }
 
+function formatSignedValue(value: number): string {
+  return value >= 0 ? `+${value}` : String(value);
+}
+
+function afflictionBattleItems(afflictions: AfflictionSummary[], stat: Stat): UsefulNowItem[] {
+  const items: UsefulNowItem[] = [];
+
+  for (const affliction of afflictions) {
+    const payload = affliction.effectPayload ?? {};
+
+    if (affliction.effectKind === "testModifier" && payload.stat === stat && typeof payload.amount === "number") {
+      items.push({
+        label: "Affecting this roll",
+        detail: `${affliction.name}: ${formatSignedValue(payload.amount)} ${statLabelById[stat]} tests.`,
+        tone: "locked"
+      });
+    }
+
+    if (affliction.effectKind === "battleBonus" && typeof payload.innateBattleBonus === "number") {
+      items.push({
+        label: "Affecting this battle",
+        detail: `${affliction.name}: ${formatSignedValue(payload.innateBattleBonus)} battle bonus.`,
+        tone: payload.innateBattleBonus >= 0 ? "passive" : "locked"
+      });
+    }
+
+    if (payload.cannotUseWeapons) {
+      items.push({
+        label: "Blocking weapons",
+        detail: `Blocked by ${affliction.name}.`,
+        tone: "locked"
+      });
+    }
+
+    if (payload.cannotUseArmor) {
+      items.push({
+        label: "Blocking armor",
+        detail: `Blocked by ${affliction.name}.`,
+        tone: "locked"
+      });
+    }
+
+    if (payload.cannotEvadeEnemies) {
+      items.push({
+        label: "Blocking evade",
+        detail: `Blocked by ${affliction.name}.`,
+        tone: "locked"
+      });
+    }
+  }
+
+  return items;
+}
+
 export function buildUsefulNowViewModel(patch: PhonePatchPayload): UsefulNowViewModel | null {
   const self = patch.self;
 
@@ -97,13 +151,15 @@ export function buildUsefulNowViewModel(patch: PhonePatchPayload): UsefulNowView
   if (patch.activeResolution?.battle || patch.encounter?.cardType === "enemy" || patch.encounter?.cardType === "hazard" || patch.pendingEnemyRoll) {
     const stat = relevantBattleStat(patch);
     const battleItems = topCards([...usableCards, ...lockedCards, ...passiveCards], 4);
+    const afflictionItems = afflictionBattleItems(self.character.afflictions?.faceup ?? [], stat);
+    const items = [...afflictionItems, ...battleItems].slice(0, 4);
 
     return {
       phaseLabel: "Battle",
       headline: `Useful now: ${statLabelById[stat]}`,
       detail: `Current value ${self.character.stats[stat]}. Use roll tools only in their timing window.`,
       relevantStat: stat,
-      items: battleItems.length > 0 ? battleItems : [{ label: statLabelById[stat], detail: "No gear or followers are usable in this timing window.", tone: "locked" }]
+      items: items.length > 0 ? items : [{ label: statLabelById[stat], detail: "No gear, followers, or Afflictions are changing this timing window.", tone: "locked" }]
     };
   }
 

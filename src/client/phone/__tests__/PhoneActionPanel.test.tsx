@@ -320,6 +320,65 @@ describe("PhoneActionPanel", () => {
     expect(screen.getByRole("tablist", { name: /turn actions/i })).toBeInTheDocument();
   });
 
+  it("shows active affliction effects in battle Useful Now context", () => {
+    render(
+      <PhoneActionPanel
+        characters={characters}
+        onIntent={vi.fn()}
+        patch={createPatch({
+          encounter: {
+            id: "glass-chime-swarm",
+            title: "Glass Chime Swarm",
+            cardType: "hazard",
+            flavor: "A ringing tide skates over the broken rails.",
+            difficulty: 6,
+            stat: "signal"
+          },
+          self: {
+            ...createPatch().self!,
+            character: {
+              ...createPatch().self!.character,
+              afflictions: {
+                faceup: [
+                  {
+                    id: "static-migraine",
+                    name: "Static Migraine",
+                    severity: 2,
+                    category: "testPenalty",
+                    duration: "ongoing",
+                    trigger: "When testing Signal.",
+                    rulesText: "Signal tests suffer -2, minimum 1.",
+                    effectKind: "testModifier",
+                    effectPayload: { stat: "signal", amount: -2, floor: 1 },
+                    isFaceupOngoing: true
+                  },
+                  {
+                    id: "brittle-frame",
+                    name: "Brittle Frame",
+                    severity: 3,
+                    category: "restriction",
+                    duration: "ongoing",
+                    trigger: "Always.",
+                    rulesText: "You cannot use armor.",
+                    effectKind: "restriction",
+                    effectPayload: { cannotUseArmor: true },
+                    isFaceupOngoing: true
+                  }
+                ],
+                facedownCount: 0
+              }
+            }
+          }
+        })}
+      />
+    );
+
+    expect(screen.getByTestId("phone-useful-now")).toHaveTextContent(/affecting this roll/i);
+    expect(screen.getByTestId("phone-useful-now")).toHaveTextContent(/static migraine: -2 signal tests/i);
+    expect(screen.getByTestId("phone-useful-now")).toHaveTextContent(/blocking armor/i);
+    expect(screen.getByTestId("phone-useful-now")).toHaveTextContent(/blocked by brittle frame/i);
+  });
+
   it("shows combat and not check when an active seat faces an enemy", () => {
     render(
       <PhoneActionPanel
