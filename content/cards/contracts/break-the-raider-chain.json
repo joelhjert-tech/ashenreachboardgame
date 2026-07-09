@@ -1,0 +1,23 @@
+{
+  "id": "break-the-raider-chain",
+  "name": "Break the Raider Chain",
+  "factionGiver": "Kaldr Dominion",
+  "text": "The Dominion wants the toll-chain broken before the raiders learn to tax every road with blood.",
+  "objective": {
+    "type": "defeatCount",
+    "target": 2
+  },
+  "reward": {
+    "type": "sequence",
+    "effects": [
+      {
+        "type": "gain_trophy",
+        "amount": 1
+      },
+      {
+        "type": "gain_note",
+        "text": "The raider chain broke, and one hard road now answers to your name."
+      }
+    ]
+  }
+}

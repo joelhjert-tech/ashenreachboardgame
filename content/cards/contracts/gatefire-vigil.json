@@ -1,0 +1,25 @@
+{
+  "id": "gatefire-vigil",
+  "name": "Gatefire Vigil",
+  "factionGiver": "Kaldr Dominion",
+  "text": "Hold the gatefire until the old passage stops screaming and starts counting witnesses.",
+  "objective": {
+    "type": "spaceTextResolved",
+    "effectKey": "inner_gateOfCindersTrial",
+    "label": "Gatefire vigil held",
+    "target": 1
+  },
+  "reward": {
+    "type": "sequence",
+    "effects": [
+      {
+        "type": "gain_trophy",
+        "amount": 1
+      },
+      {
+        "type": "gain_note",
+        "text": "The gatefire held long enough to mark you as a permitted trespasser."
+      }
+    ]
+  }
+}

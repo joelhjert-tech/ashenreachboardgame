@@ -1,0 +1,16 @@
+{
+  "id": "choir-quietus",
+  "name": "Choir Quietus",
+  "factionGiver": "Glass Choir",
+  "text": "Silence a choir node before it turns prayer into command and command into evidence.",
+  "objective": {
+    "type": "spaceTextResolved",
+    "effectKey": "inner_choirShrine",
+    "label": "Choir node silenced",
+    "target": 1
+  },
+  "reward": {
+    "type": "gain_note",
+    "text": "The Choir's quietus left one clean frequency folded into your route notes."
+  }
+}

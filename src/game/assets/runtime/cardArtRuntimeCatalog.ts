@@ -553,6 +553,11 @@ export const cardArtRuntimeCatalog: RuntimeCardArtCatalogEntry[] = [
     "outputPath": "/assets/cards/threats/yellow/yard-rivet-brute.png"
   },
   {
+    "cardId": "break-the-raider-chain",
+    "cardType": "contract",
+    "outputPath": "/assets/cards/contracts/break-the-raider-chain.png"
+  },
+  {
     "cardId": "cartel-crossing-thread",
     "cardType": "contract",
     "outputPath": "/assets/cards/contracts/cartel-crossing-thread.png"
@@ -578,6 +583,11 @@ export const cardArtRuntimeCatalog: RuntimeCardArtCatalogEntry[] = [
     "outputPath": "/assets/cards/contracts/choir-hush-census.png"
   },
   {
+    "cardId": "choir-quietus",
+    "cardType": "contract",
+    "outputPath": "/assets/cards/contracts/choir-quietus.png"
+  },
+  {
     "cardId": "choir-spindle-harmonics",
     "cardType": "contract",
     "outputPath": "/assets/cards/contracts/choir-spindle-harmonics.png"
@@ -601,6 +611,11 @@ export const cardArtRuntimeCatalog: RuntimeCardArtCatalogEntry[] = [
     "cardId": "clan-salvage-tithe",
     "cardType": "contract",
     "outputPath": "/assets/cards/contracts/clan-salvage-tithe.png"
+  },
+  {
+    "cardId": "cleanse-ember-sanctum",
+    "cardType": "contract",
+    "outputPath": "/assets/cards/contracts/cleanse-ember-sanctum.png"
   },
   {
     "cardId": "compact-cleanse-ledger",
@@ -636,6 +651,36 @@ export const cardArtRuntimeCatalog: RuntimeCardArtCatalogEntry[] = [
     "cardId": "dominion-warbell-recovery",
     "cardType": "contract",
     "outputPath": "/assets/cards/contracts/dominion-warbell-recovery.png"
+  },
+  {
+    "cardId": "gatefire-vigil",
+    "cardType": "contract",
+    "outputPath": "/assets/cards/contracts/gatefire-vigil.png"
+  },
+  {
+    "cardId": "hunt-breachborn",
+    "cardType": "contract",
+    "outputPath": "/assets/cards/contracts/hunt-breachborn.png"
+  },
+  {
+    "cardId": "map-broken-paths",
+    "cardType": "contract",
+    "outputPath": "/assets/cards/contracts/map-broken-paths.png"
+  },
+  {
+    "cardId": "pilgrim-convoy",
+    "cardType": "contract",
+    "outputPath": "/assets/cards/contracts/pilgrim-convoy.png"
+  },
+  {
+    "cardId": "restart-void-relay",
+    "cardType": "contract",
+    "outputPath": "/assets/cards/contracts/restart-void-relay.png"
+  },
+  {
+    "cardId": "salvage-the-bellframe",
+    "cardType": "contract",
+    "outputPath": "/assets/cards/contracts/salvage-the-bellframe.png"
   },
   {
     "cardId": "umbral-blackstar-sample",

@@ -1,0 +1,25 @@
+{
+  "id": "cleanse-ember-sanctum",
+  "name": "Cleanse Ember Sanctum",
+  "factionGiver": "Meridian Compact",
+  "text": "Scrape the old ash from a sanctum that still believes every visitor is kindling.",
+  "objective": {
+    "type": "spaceTextResolved",
+    "effectKey": "outer_emberSanctumRest",
+    "label": "Ember sanctum cleansed",
+    "target": 1
+  },
+  "reward": {
+    "type": "sequence",
+    "effects": [
+      {
+        "type": "heal_wound",
+        "amount": 1
+      },
+      {
+        "type": "gain_note",
+        "text": "The sanctum cooled enough to leave a clean ember blessing behind."
+      }
+    ]
+  }
+}

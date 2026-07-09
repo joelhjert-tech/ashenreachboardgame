@@ -1419,6 +1419,19 @@ export const generatedCardImagePrompts: CardImagePromptCatalogEntry[] = [
     "usage": "Yard-Rivet Brute threat card art."
   },
   {
+    "assetId": "contract_art_break-the-raider-chain",
+    "assetType": "contractCardArt",
+    "cardId": "break-the-raider-chain",
+    "cardType": "contract",
+    "title": "Break the Raider Chain",
+    "fileName": "break-the-raider-chain.png",
+    "outputPath": "/assets/cards/contracts/break-the-raider-chain.png",
+    "fallbackPath": "/assets/cards/fallbacks/contract.svg",
+    "prompt": "Ashen Reach original card art, dark gothic sci-fantasy artifact-crawl, 3:4 portrait composition, centered subject with safe margins for card framing, black basalt, charcoal iron, scorched brass, ember red glow, cold blue-white signal light, toxic green salvage light, purple anomaly light, ash, smoke, ritual circuitry, damaged artifact machinery, high contrast, readable silhouette, cinematic but grounded, no text, contract scene, route objective, artifact target, convoy lane, or faction job rather than a poster, martial artifact engines, warbell standards, disciplined shrine armor, contract objective scene showing 2 hostile disruptions to clear, The Dominion wants the toll-chain broken before the raiders learn to tax every road with blood, grounded palette, objective-forward composition, no readable orders or signage",
+    "negativePrompt": "readable text, logo, watermark, UI, dice, card frame, board game brand, Talisman, copied fantasy board game art, copyrighted character, modern city, clean spaceship, cartoon, anime, low detail, blurry, cropped subject, overexposed, cluttered composition, illegible silhouette",
+    "usage": "Break the Raider Chain contract card art."
+  },
+  {
     "assetId": "contract_art_cartel-crossing-thread",
     "assetType": "contractCardArt",
     "cardId": "cartel-crossing-thread",
@@ -1484,6 +1497,19 @@ export const generatedCardImagePrompts: CardImagePromptCatalogEntry[] = [
     "usage": "Hush Census contract card art."
   },
   {
+    "assetId": "contract_art_choir-quietus",
+    "assetType": "contractCardArt",
+    "cardId": "choir-quietus",
+    "cardType": "contract",
+    "title": "Choir Quietus",
+    "fileName": "choir-quietus.png",
+    "outputPath": "/assets/cards/contracts/choir-quietus.png",
+    "fallbackPath": "/assets/cards/fallbacks/contract.svg",
+    "prompt": "Ashen Reach original card art, dark gothic sci-fantasy artifact-crawl, 3:4 portrait composition, centered subject with safe margins for card framing, black basalt, charcoal iron, scorched brass, ember red glow, cold blue-white signal light, toxic green salvage light, purple anomaly light, ash, smoke, ritual circuitry, damaged artifact machinery, high contrast, readable silhouette, cinematic but grounded, no text, contract scene, route objective, artifact target, convoy lane, or faction job rather than a poster, ritual chorus hardware, chime lattices, sanctified relay light, contract objective scene focused on Choir node silenced, Silence a choir node before it turns prayer into command and command into evidence, grounded palette, objective-forward composition, no readable orders or signage",
+    "negativePrompt": "readable text, logo, watermark, UI, dice, card frame, board game brand, Talisman, copied fantasy board game art, copyrighted character, modern city, clean spaceship, cartoon, anime, low detail, blurry, cropped subject, overexposed, cluttered composition, illegible silhouette",
+    "usage": "Choir Quietus contract card art."
+  },
+  {
     "assetId": "contract_art_choir-spindle-harmonics",
     "assetType": "contractCardArt",
     "cardId": "choir-spindle-harmonics",
@@ -1547,6 +1573,19 @@ export const generatedCardImagePrompts: CardImagePromptCatalogEntry[] = [
     "prompt": "Ashen Reach original card art, dark gothic sci-fantasy artifact-crawl, 3:4 portrait composition, centered subject with safe margins for card framing, black basalt, charcoal iron, scorched brass, ember red glow, cold blue-white signal light, toxic green salvage light, purple anomaly light, ash, smoke, ritual circuitry, damaged artifact machinery, high contrast, readable silhouette, cinematic but grounded, no text, contract scene, route objective, artifact target, convoy lane, or faction job rather than a poster, funeral road shrines, salt-worn caravans, bone-and-brass route markers, contract objective scene showing 3 hostile disruptions to clear, Break three hostile scavenger nests and the clans will release a sealed haul from their red ledger vaults, grounded palette, objective-forward composition, no readable orders or signage",
     "negativePrompt": "readable text, logo, watermark, UI, dice, card frame, board game brand, Talisman, copied fantasy board game art, copyrighted character, modern city, clean spaceship, cartoon, anime, low detail, blurry, cropped subject, overexposed, cluttered composition, illegible silhouette",
     "usage": "Salvage Tithe contract card art."
+  },
+  {
+    "assetId": "contract_art_cleanse-ember-sanctum",
+    "assetType": "contractCardArt",
+    "cardId": "cleanse-ember-sanctum",
+    "cardType": "contract",
+    "title": "Cleanse Ember Sanctum",
+    "fileName": "cleanse-ember-sanctum.png",
+    "outputPath": "/assets/cards/contracts/cleanse-ember-sanctum.png",
+    "fallbackPath": "/assets/cards/fallbacks/contract.svg",
+    "prompt": "Ashen Reach original card art, dark gothic sci-fantasy artifact-crawl, 3:4 portrait composition, centered subject with safe margins for card framing, black basalt, charcoal iron, scorched brass, ember red glow, cold blue-white signal light, toxic green salvage light, purple anomaly light, ash, smoke, ritual circuitry, damaged artifact machinery, high contrast, readable silhouette, cinematic but grounded, no text, contract scene, route objective, artifact target, convoy lane, or faction job rather than a poster, precise audit machinery, branded ledger seals, brass route mechanisms, contract objective scene focused on Ember sanctum cleansed, Scrape the old ash from a sanctum that still believes every visitor is kindling, grounded palette, objective-forward composition, no readable orders or signage",
+    "negativePrompt": "readable text, logo, watermark, UI, dice, card frame, board game brand, Talisman, copied fantasy board game art, copyrighted character, modern city, clean spaceship, cartoon, anime, low detail, blurry, cropped subject, overexposed, cluttered composition, illegible silhouette",
+    "usage": "Cleanse Ember Sanctum contract card art."
   },
   {
     "assetId": "contract_art_compact-cleanse-ledger",
@@ -1638,6 +1677,84 @@ export const generatedCardImagePrompts: CardImagePromptCatalogEntry[] = [
     "prompt": "Ashen Reach original card art, dark gothic sci-fantasy artifact-crawl, 3:4 portrait composition, centered subject with safe margins for card framing, black basalt, charcoal iron, scorched brass, ember red glow, cold blue-white signal light, toxic green salvage light, purple anomaly light, ash, smoke, ritual circuitry, damaged artifact machinery, high contrast, readable silhouette, cinematic but grounded, no text, contract scene, route objective, artifact target, convoy lane, or faction job rather than a poster, martial artifact engines, warbell standards, disciplined shrine armor, contract objective scene focused on Red March bargain secured, Recover a Red March warbell before the artillery crews teach it a new song, grounded palette, objective-forward composition, no readable orders or signage",
     "negativePrompt": "readable text, logo, watermark, UI, dice, card frame, board game brand, Talisman, copied fantasy board game art, copyrighted character, modern city, clean spaceship, cartoon, anime, low detail, blurry, cropped subject, overexposed, cluttered composition, illegible silhouette",
     "usage": "Warbell Recovery contract card art."
+  },
+  {
+    "assetId": "contract_art_gatefire-vigil",
+    "assetType": "contractCardArt",
+    "cardId": "gatefire-vigil",
+    "cardType": "contract",
+    "title": "Gatefire Vigil",
+    "fileName": "gatefire-vigil.png",
+    "outputPath": "/assets/cards/contracts/gatefire-vigil.png",
+    "fallbackPath": "/assets/cards/fallbacks/contract.svg",
+    "prompt": "Ashen Reach original card art, dark gothic sci-fantasy artifact-crawl, 3:4 portrait composition, centered subject with safe margins for card framing, black basalt, charcoal iron, scorched brass, ember red glow, cold blue-white signal light, toxic green salvage light, purple anomaly light, ash, smoke, ritual circuitry, damaged artifact machinery, high contrast, readable silhouette, cinematic but grounded, no text, contract scene, route objective, artifact target, convoy lane, or faction job rather than a poster, martial artifact engines, warbell standards, disciplined shrine armor, contract objective scene focused on Gatefire vigil held, Hold the gatefire until the old passage stops screaming and starts counting witnesses, grounded palette, objective-forward composition, no readable orders or signage",
+    "negativePrompt": "readable text, logo, watermark, UI, dice, card frame, board game brand, Talisman, copied fantasy board game art, copyrighted character, modern city, clean spaceship, cartoon, anime, low detail, blurry, cropped subject, overexposed, cluttered composition, illegible silhouette",
+    "usage": "Gatefire Vigil contract card art."
+  },
+  {
+    "assetId": "contract_art_hunt-breachborn",
+    "assetType": "contractCardArt",
+    "cardId": "hunt-breachborn",
+    "cardType": "contract",
+    "title": "Hunt the Breachborn",
+    "fileName": "hunt-breachborn.png",
+    "outputPath": "/assets/cards/contracts/hunt-breachborn.png",
+    "fallbackPath": "/assets/cards/fallbacks/contract.svg",
+    "prompt": "Ashen Reach original card art, dark gothic sci-fantasy artifact-crawl, 3:4 portrait composition, centered subject with safe margins for card framing, black basalt, charcoal iron, scorched brass, ember red glow, cold blue-white signal light, toxic green salvage light, purple anomaly light, ash, smoke, ritual circuitry, damaged artifact machinery, high contrast, readable silhouette, cinematic but grounded, no text, contract scene, route objective, artifact target, convoy lane, or faction job rather than a poster, funeral road shrines, salt-worn caravans, bone-and-brass route markers, contract objective scene showing 2 hostile disruptions to clear, The clans mark a thing born from a split road and pay for proof that it can still die, grounded palette, objective-forward composition, no readable orders or signage",
+    "negativePrompt": "readable text, logo, watermark, UI, dice, card frame, board game brand, Talisman, copied fantasy board game art, copyrighted character, modern city, clean spaceship, cartoon, anime, low detail, blurry, cropped subject, overexposed, cluttered composition, illegible silhouette",
+    "usage": "Hunt the Breachborn contract card art."
+  },
+  {
+    "assetId": "contract_art_map-broken-paths",
+    "assetType": "contractCardArt",
+    "cardId": "map-broken-paths",
+    "cardType": "contract",
+    "title": "Map Broken Paths",
+    "fileName": "map-broken-paths.png",
+    "outputPath": "/assets/cards/contracts/map-broken-paths.png",
+    "fallbackPath": "/assets/cards/fallbacks/contract.svg",
+    "prompt": "Ashen Reach original card art, dark gothic sci-fantasy artifact-crawl, 3:4 portrait composition, centered subject with safe margins for card framing, black basalt, charcoal iron, scorched brass, ember red glow, cold blue-white signal light, toxic green salvage light, purple anomaly light, ash, smoke, ritual circuitry, damaged artifact machinery, high contrast, readable silhouette, cinematic but grounded, no text, contract scene, route objective, artifact target, convoy lane, or faction job rather than a poster, quiet convoy lanes, smuggler caches, masked courier tradecraft, contract objective scene focused on Broken paths mapped, The Cartels want a route charted before the route notices it has been sold, grounded palette, objective-forward composition, no readable orders or signage",
+    "negativePrompt": "readable text, logo, watermark, UI, dice, card frame, board game brand, Talisman, copied fantasy board game art, copyrighted character, modern city, clean spaceship, cartoon, anime, low detail, blurry, cropped subject, overexposed, cluttered composition, illegible silhouette",
+    "usage": "Map Broken Paths contract card art."
+  },
+  {
+    "assetId": "contract_art_pilgrim-convoy",
+    "assetType": "contractCardArt",
+    "cardId": "pilgrim-convoy",
+    "cardType": "contract",
+    "title": "Pilgrim Convoy",
+    "fileName": "pilgrim-convoy.png",
+    "outputPath": "/assets/cards/contracts/pilgrim-convoy.png",
+    "fallbackPath": "/assets/cards/fallbacks/contract.svg",
+    "prompt": "Ashen Reach original card art, dark gothic sci-fantasy artifact-crawl, 3:4 portrait composition, centered subject with safe margins for card framing, black basalt, charcoal iron, scorched brass, ember red glow, cold blue-white signal light, toxic green salvage light, purple anomaly light, ash, smoke, ritual circuitry, damaged artifact machinery, high contrast, readable silhouette, cinematic but grounded, no text, contract scene, route objective, artifact target, convoy lane, or faction job rather than a poster, quiet convoy lanes, smuggler caches, masked courier tradecraft, contract objective scene focused on Pilgrim convoy escorted, Escort the pilgrims through roads that charge passage in blood, breath, and witness names, grounded palette, objective-forward composition, no readable orders or signage",
+    "negativePrompt": "readable text, logo, watermark, UI, dice, card frame, board game brand, Talisman, copied fantasy board game art, copyrighted character, modern city, clean spaceship, cartoon, anime, low detail, blurry, cropped subject, overexposed, cluttered composition, illegible silhouette",
+    "usage": "Pilgrim Convoy contract card art."
+  },
+  {
+    "assetId": "contract_art_restart-void-relay",
+    "assetType": "contractCardArt",
+    "cardId": "restart-void-relay",
+    "cardType": "contract",
+    "title": "Restart the Void Relay",
+    "fileName": "restart-void-relay.png",
+    "outputPath": "/assets/cards/contracts/restart-void-relay.png",
+    "fallbackPath": "/assets/cards/fallbacks/contract.svg",
+    "prompt": "Ashen Reach original card art, dark gothic sci-fantasy artifact-crawl, 3:4 portrait composition, centered subject with safe margins for card framing, black basalt, charcoal iron, scorched brass, ember red glow, cold blue-white signal light, toxic green salvage light, purple anomaly light, ash, smoke, ritual circuitry, damaged artifact machinery, high contrast, readable silhouette, cinematic but grounded, no text, contract scene, route objective, artifact target, convoy lane, or faction job rather than a poster, precise audit machinery, branded ledger seals, brass route mechanisms, contract objective scene focused on Void relay restarted, Restart a dead relay without letting it learn a new voice from the dark between signals, grounded palette, objective-forward composition, no readable orders or signage",
+    "negativePrompt": "readable text, logo, watermark, UI, dice, card frame, board game brand, Talisman, copied fantasy board game art, copyrighted character, modern city, clean spaceship, cartoon, anime, low detail, blurry, cropped subject, overexposed, cluttered composition, illegible silhouette",
+    "usage": "Restart the Void Relay contract card art."
+  },
+  {
+    "assetId": "contract_art_salvage-the-bellframe",
+    "assetType": "contractCardArt",
+    "cardId": "salvage-the-bellframe",
+    "cardType": "contract",
+    "title": "Salvage the Bellframe",
+    "fileName": "salvage-the-bellframe.png",
+    "outputPath": "/assets/cards/contracts/salvage-the-bellframe.png",
+    "fallbackPath": "/assets/cards/fallbacks/contract.svg",
+    "prompt": "Ashen Reach original card art, dark gothic sci-fantasy artifact-crawl, 3:4 portrait composition, centered subject with safe margins for card framing, black basalt, charcoal iron, scorched brass, ember red glow, cold blue-white signal light, toxic green salvage light, purple anomaly light, ash, smoke, ritual circuitry, damaged artifact machinery, high contrast, readable silhouette, cinematic but grounded, no text, contract scene, route objective, artifact target, convoy lane, or faction job rather than a poster, funeral road shrines, salt-worn caravans, bone-and-brass route markers, contract objective scene focused on Bellframe salvage claimed, Recover the bellframe before the clans melt it down into debt tokens and warning chimes, grounded palette, objective-forward composition, no readable orders or signage",
+    "negativePrompt": "readable text, logo, watermark, UI, dice, card frame, board game brand, Talisman, copied fantasy board game art, copyrighted character, modern city, clean spaceship, cartoon, anime, low detail, blurry, cropped subject, overexposed, cluttered composition, illegible silhouette",
+    "usage": "Salvage the Bellframe contract card art."
   },
   {
     "assetId": "contract_art_umbral-blackstar-sample",

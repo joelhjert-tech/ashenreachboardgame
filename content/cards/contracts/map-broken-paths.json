@@ -1,0 +1,16 @@
+{
+  "id": "map-broken-paths",
+  "name": "Map Broken Paths",
+  "factionGiver": "Pale Cartels",
+  "text": "The Cartels want a route charted before the route notices it has been sold.",
+  "objective": {
+    "type": "spaceTextResolved",
+    "effectKey": "outer_brokenCausewayShortcut",
+    "label": "Broken paths mapped",
+    "target": 1
+  },
+  "reward": {
+    "type": "gain_note",
+    "text": "A broken-path map now points at one safer road and three profitable lies."
+  }
+}

@@ -23,6 +23,9 @@ import {
 describe("card art paths", () => {
   it("returns generated card output paths for known cards", () => {
     expect(getCardArtPath("contract", "compact-cleanse-ledger")).toBe("/assets/cards/contracts/compact-cleanse-ledger.png");
+    expect(getCardArtPath("contract", "break-the-raider-chain")).toBe(
+      "/assets/cards/contracts/break-the-raider-chain.png"
+    );
     expect(getCardArtPath("threat", "cinder-veil-stalker")).toBe("/assets/cards/threats/red/cinder-veil-stalker.png");
     expect(getCardArtPath("anomaly", "anomaly-ashfall-murmur")).toBe("/assets/cards/anomalies/anomaly-ashfall-murmur.png");
   });
@@ -57,6 +60,7 @@ describe("card art paths", () => {
 
   it("uses a runtime-safe card art catalog without prompt text", () => {
     expect(getRuntimeCardArtPath("threat", "cinder-veil-stalker")).toBe("/assets/cards/threats/red/cinder-veil-stalker.png");
+    expect(getRuntimeCardArtPath("contract", "choir-quietus")).toBe("/assets/cards/contracts/choir-quietus.png");
     expect(getRuntimeCardArtPath("anomaly", "anomaly-ashfall-murmur")).toBe("/assets/cards/anomalies/anomaly-ashfall-murmur.png");
     expect(cardArtRuntimeCatalog[0]).not.toHaveProperty("prompt");
     expect(cardArtRuntimeCatalog[0]).not.toHaveProperty("negativePrompt");
@@ -79,6 +83,7 @@ describe("card art paths", () => {
   it("returns type fallbacks for unknown cards", () => {
     expect(getCardArtPath("anomaly", "missing-card")).toBe(getCardFallbackArtPath("anomaly"));
     expect(getCardArtPath("equipment", "missing-equipment")).toBe(getCardFallbackArtPath("equipment"));
+    expect(getCardArtPath("contract", "lattice-witness")).toBe(getCardFallbackArtPath("contract"));
   });
 
   it("returns custom character and Relay nemesis portrait paths", () => {

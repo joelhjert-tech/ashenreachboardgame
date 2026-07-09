@@ -132,3 +132,35 @@ That pass should:
 4. Keep deferred legacy source images in place.
 5. Run `validate:content`, `typecheck`, `test:engine`, `test:client`, `test`, `build`, and `audit:assets`.
 
+## Promotion Implementation
+
+Commit pass: `promote-selected-legacy-contract-assets`
+
+The selected 9 legacy mission images were promoted as active Contract cards. The contract cap stayed at 30, and the deferred candidates remained legacy/reference-only.
+
+| contract ID | source path | active target path | objective summary | reward summary |
+|---|---|---|---|---|
+| `break-the-raider-chain` | `public/assets/riftfall/cards/contracts/mission_break_the_raider_chain.png` | `public/assets/cards/contracts/break-the-raider-chain.png` | Defeat 2 enemies. | Gain 1 trophy and a route note. |
+| `hunt-breachborn` | `public/assets/riftfall/cards/contracts/mission_hunt_breachborn.png` | `public/assets/cards/contracts/hunt-breachborn.png` | Defeat 2 enemies. | Gain 1 trophy and a breach-hunt note. |
+| `map-broken-paths` | `public/assets/riftfall/cards/contracts/mission_map_broken_paths.png` | `public/assets/cards/contracts/map-broken-paths.png` | Resolve `outer_brokenCausewayShortcut`. | Gain a broken-path map note. |
+| `gatefire-vigil` | `public/assets/riftfall/cards/contracts/mission_gatefire_vigil.png` | `public/assets/cards/contracts/gatefire-vigil.png` | Resolve `inner_gateOfCindersTrial`. | Gain 1 trophy and a gatefire note. |
+| `salvage-the-bellframe` | `public/assets/riftfall/cards/contracts/mission_salvage_the_bellframe.png` | `public/assets/cards/contracts/salvage-the-bellframe.png` | Resolve `middle_shardSprawlBargain`. | Gain `scrap-drone`. |
+| `restart-void-relay` | `public/assets/riftfall/cards/contracts/mission_restart_void_relay.png` | `public/assets/cards/contracts/restart-void-relay.png` | Resolve `outer_relayCrew`. | Gain `signal-pike`. |
+| `pilgrim-convoy` | `public/assets/riftfall/cards/contracts/mission_pilgrim_convoy.png` | `public/assets/cards/contracts/pilgrim-convoy.png` | Resolve `middle_guardianSpanThreshold`. | Gain a convoy toll-credit note. |
+| `choir-quietus` | `public/assets/riftfall/cards/contracts/mission_choir_quietus.png` | `public/assets/cards/contracts/choir-quietus.png` | Resolve `inner_choirShrine`. | Gain a clean-frequency note. |
+| `cleanse-ember-sanctum` | `public/assets/riftfall/cards/contracts/mission_cleanse_ember_sanctum.png` | `public/assets/cards/contracts/cleanse-ember-sanctum.png` | Resolve `outer_emberSanctumRest`. | Heal 1 wound and gain an ember blessing note. |
+
+Deferred and retained:
+
+- `public/assets/riftfall/cards/contracts/mission_lattice_witness.png`
+- `public/assets/riftfall/cards/contracts/mission_hold_the_ridge.png`
+- `public/assets/riftfall/cards/contracts/mission_span_of_the_last_seal.png`
+- `public/assets/riftfall/cards/contracts/card_back_contract.png`
+
+Implementation notes:
+
+- Active contract count is 30, matching the current validation maximum.
+- No contract cap increase was made.
+- No Heat rewards were added to the promoted contracts.
+- No `/assets/cards/heat/` path was created.
+- Legacy source images were retained for a later archive-only pass.
