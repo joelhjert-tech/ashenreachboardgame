@@ -1159,7 +1159,7 @@ describe("PhoneActionPanel", () => {
     expect(buyCard).not.toBeNull();
     expect(buyCard).toHaveClass("phone-wrap-card", "phone-wrap-card--shop");
     expect(buyCard?.querySelector(".phone-wrap-card__media")).toBeInTheDocument();
-    expect(buyCard?.querySelector(".phone-wrap-card__image")).toHaveAttribute("src", "/assets/cards/artifacts/artifact-coffin-rig.png");
+    expect(buyCard?.querySelector(".phone-wrap-card__image")).toHaveAttribute("src", "/assets/cards/fallbacks/equipment.svg");
     expect(buyCard?.querySelector(".phone-wrap-card__description")).toHaveTextContent(/forge \+1 while bracing wounds/i);
     expect(buyCard?.querySelector(".phone-wrap-card__details")).toHaveTextContent(/cost: 3 salvage/i);
     expect(buyCard?.querySelector(".phone-wrap-card__actions")).toContainElement(
@@ -1195,7 +1195,7 @@ describe("PhoneActionPanel", () => {
     expect(sellableCard).not.toBeNull();
     expect(sellableCard).toHaveClass("phone-wrap-card", "phone-wrap-card--shop", "phone-shop-sell-card");
     expect(sellableCard?.querySelector(".phone-wrap-card__media")).toBeInTheDocument();
-    expect(sellableCard?.querySelector(".phone-wrap-card__image")).toHaveAttribute("src", "/assets/cards/artifacts/artifact-veil-hook.png");
+    expect(sellableCard?.querySelector(".phone-wrap-card__image")).toHaveAttribute("src", "/assets/cards/fallbacks/equipment.svg");
     expect(sellableCard?.querySelector(".phone-wrap-card__details")).toHaveTextContent(/sell value: 1 salvage/i);
     expect(sellableCard?.querySelector(".phone-wrap-card__actions")).toContainElement(
       within(sellableCard as HTMLElement).getByRole("button", { name: /^sell$/i })

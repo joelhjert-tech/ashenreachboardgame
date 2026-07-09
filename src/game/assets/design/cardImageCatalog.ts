@@ -1,4 +1,4 @@
-export const CARD_IMAGE_TYPES = ["threat", "contract", "anomaly", "artifact", "scar", "escalation"] as const;
+export const CARD_IMAGE_TYPES = ["threat", "contract", "anomaly", "artifact", "equipment", "scar", "escalation"] as const;
 
 export type CardImageType = (typeof CARD_IMAGE_TYPES)[number];
 export type ThreatCardArtLane = "red" | "blue" | "yellow";
@@ -7,6 +7,7 @@ export type CardImageAssetType =
   | "contractCardArt"
   | "anomalyCardArt"
   | "artifactCardArt"
+  | "equipmentCardArt"
   | "scarCardArt"
   | "escalationCardArt"
   | "threatCardArt";
@@ -30,6 +31,7 @@ export const CARD_IMAGE_FALLBACK_PATHS: Record<CardImageType, string> = {
   contract: "/assets/cards/fallbacks/contract.svg",
   anomaly: "/assets/cards/fallbacks/anomaly.svg",
   artifact: "/assets/cards/fallbacks/artifact.svg",
+  equipment: "/assets/cards/fallbacks/equipment.svg",
   scar: "/assets/cards/fallbacks/scar.svg",
   escalation: "/assets/cards/fallbacks/escalation.svg"
 };
@@ -39,6 +41,7 @@ export const CARD_IMAGE_OUTPUT_DIRECTORIES: Record<CardImageType, string> = {
   contract: "/assets/cards/contracts",
   anomaly: "/assets/cards/anomalies",
   artifact: "/assets/cards/artifacts",
+  equipment: "/assets/cards/equipment",
   scar: "/assets/cards/scars",
   escalation: "/assets/cards/escalations"
 };
@@ -50,6 +53,7 @@ const CARD_IMAGE_ASSET_TYPES: Record<CardImageType, CardImageAssetType> = {
   contract: "contractCardArt",
   anomaly: "anomalyCardArt",
   artifact: "artifactCardArt",
+  equipment: "equipmentCardArt",
   scar: "scarCardArt",
   escalation: "escalationCardArt"
 };

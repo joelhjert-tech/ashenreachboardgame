@@ -116,6 +116,7 @@ function buildCardImagePrompts(): PromptEntryMap {
     artifact: artifacts.map((card) =>
       buildPromptEntry("artifact", card.id, card.title, buildArtifactPrompt(card), `${card.title} artifact card art.`)
     ),
+    equipment: [],
     scar: scars.map((card) =>
       buildPromptEntry("scar", card.id, card.title, buildScarPrompt(card), `${card.title} scar card art.`)
     ),
@@ -350,6 +351,7 @@ function renderRuntimeTypeScript(entries: CardImagePromptCatalogEntry[]): string
     `    contract: {},\n` +
     `    anomaly: {},\n` +
     `    artifact: {},\n` +
+    `    equipment: {},\n` +
     `    scar: {},\n` +
     `    escalation: {}\n` +
     `  }\n` +
@@ -392,6 +394,8 @@ function toHeading(cardType: CardImageType): string {
       return "Anomalies";
     case "artifact":
       return "Artifacts";
+    case "equipment":
+      return "Equipment";
     case "scar":
       return "Scars";
     case "escalation":

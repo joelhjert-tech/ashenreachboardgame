@@ -3,7 +3,7 @@ import {
   type CardImageType
 } from "../../game/assets/design/cardImageCatalog.js";
 import { getRuntimeCardArtPath } from "../../game/assets/runtime/cardArtRuntimeCatalog.js";
-import type { ContractCard, EncounterCard, Stat } from "./types.js";
+import type { ContractCard, EncounterCard, GearTier, Stat } from "./types.js";
 
 const characterPortraitById: Record<string, string> = {
   "char_void_marshal_kael_dorn": "/assets/riftfall/characters/char_void_marshal_kael_dorn.png",
@@ -83,8 +83,28 @@ export function getCardArtPath(cardType: CardImageType, cardId: string): string 
   return getRuntimeCardArtPath(cardType, cardId) ?? getCardFallbackArtPath(cardType);
 }
 
-export function getGearCardArtId(gearId: string): string {
-  return gearId.startsWith("artifact-") ? gearId : `artifact-${gearId}`;
+type GearArtInput = string | { id: string; tier?: GearTier | null };
+
+function normalizeGearArtInput(input: GearArtInput, tier?: GearTier | null): { id: string; tier?: GearTier | null } {
+  return typeof input === "string" ? { id: input, tier } : { id: input.id, tier: input.tier ?? tier };
+}
+
+export function getGearCardArtType(input: GearArtInput, tier?: GearTier | null): CardImageType {
+  const gear = normalizeGearArtInput(input, tier);
+  return gear.tier === "artifact" || gear.id.startsWith("artifact-") ? "artifact" : "equipment";
+}
+
+export function getGearCardArtId(input: GearArtInput, tier?: GearTier | null): string {
+  const gear = normalizeGearArtInput(input, tier);
+  return getGearCardArtType(gear) === "artifact" && !gear.id.startsWith("artifact-") ? `artifact-${gear.id}` : gear.id;
+}
+
+export function getGearCardArtPath(input: GearArtInput, tier?: GearTier | null): string {
+  return getCardArtPath(getGearCardArtType(input, tier), getGearCardArtId(input, tier));
+}
+
+export function getEquipmentCardArtPath(equipmentId: string): string {
+  return getCardArtPath("equipment", equipmentId);
 }
 
 export function getShopCategoryIconPath(category: string | null | undefined): string {

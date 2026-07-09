@@ -41,7 +41,7 @@ import { ChallengeBadge, ThreatIconBadge, getThreatIconStat, isStat } from "../s
 import { CombatDiceAnimation } from "../shared/CombatDiceAnimation.js";
 import { GameButton, type GameButtonTone } from "../shared/GameButton.js";
 import { CardArtImage } from "../shared/CardArtImage.js";
-import { getGearCardArtId, getShopCategoryIconPath } from "../shared/assetPaths.js";
+import { getGearCardArtId, getGearCardArtType, getShopCategoryIconPath } from "../shared/assetPaths.js";
 import { statLabelById } from "../shared/statLabels.js";
 import { PhoneInventoryPanel } from "./PhoneInventoryPanel.js";
 import { PhoneWrappedMediaCard } from "./PhoneWrappedMediaCard.js";
@@ -235,11 +235,13 @@ function formatShopCost(cost: PublicShopCost): string {
   return parts.length > 0 ? parts.join(" / ") : "No cost";
 }
 
-function ShopItemMedia({ cardId, label }: { cardId: string; label: string }): ReactElement {
+function ShopItemMedia({ cardId, label, itemType }: { cardId: string; label: string; itemType?: string }): ReactElement {
+  const cardType = itemType === "artifact" ? getGearCardArtType(cardId, "artifact") : getGearCardArtType(cardId);
+
   return (
     <CardArtImage
-      cardType="artifact"
-      cardId={getGearCardArtId(cardId)}
+      cardType={cardType}
+      cardId={getGearCardArtId(cardId, itemType === "artifact" ? "artifact" : undefined)}
       alt=""
       aria-hidden="true"
       className="phone-wrap-card__image phone-shop-stock-card-art"
@@ -298,7 +300,7 @@ function MovementTileMedia({ destination }: { destination: PublicMoveDestination
   );
 }
 
-const cardImageTypes = new Set<CardImageType>(["threat", "contract", "anomaly", "artifact", "scar", "escalation"]);
+const cardImageTypes = new Set<CardImageType>(["threat", "contract", "anomaly", "artifact", "equipment", "scar", "escalation"]);
 
 function isCardImageType(value: string | null | undefined): value is CardImageType {
   return Boolean(value && cardImageTypes.has(value as CardImageType));
@@ -1577,7 +1579,7 @@ function PhoneShopPanel({
                       key={item.cardId}
                       variant="shop"
                       className={`phone-shop-stock-card phone-shop-panel__stock-card${item.affordable ? "" : " phone-shop-stock-card-disabled"}`}
-                      media={<ShopItemMedia cardId={item.cardId} label={item.name} />}
+                      media={<ShopItemMedia cardId={item.cardId} label={item.name} itemType={item.type} />}
                       title={item.name}
                       eyebrow={itemCategory}
                       status={<span className="phone-shop-card-status">{itemCategory}</span>}
@@ -1623,7 +1625,7 @@ function PhoneShopPanel({
                       className={`phone-shop-stock-card phone-shop-panel__stock-card phone-shop-sell-card${
                         item.sellable ? "" : " phone-shop-stock-card-disabled"
                       }`}
-                      media={<ShopItemMedia cardId={item.gearId} label={item.name} />}
+                      media={<ShopItemMedia cardId={item.gearId} label={item.name} itemType={item.type} />}
                       title={item.name}
                       eyebrow={item.category ? toTitleCase(item.category) : toTitleCase(item.type)}
                       status={<span className="phone-shop-card-status">{item.sellable ? "Sell value" : "Cannot sell"}</span>}

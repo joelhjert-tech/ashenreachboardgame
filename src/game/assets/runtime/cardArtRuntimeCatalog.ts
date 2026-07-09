@@ -1004,6 +1004,7 @@ const cardArtPathByType = cardArtRuntimeCatalog.reduce<Record<CardImageType, Rec
     contract: {},
     anomaly: {},
     artifact: {},
+    equipment: {},
     scar: {},
     escalation: {}
   }

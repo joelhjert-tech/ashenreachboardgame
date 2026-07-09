@@ -49,7 +49,7 @@ function InventoryThumbnail({ card }: { card: InventoryCardViewModel }): ReactEl
   if (card.artCardId) {
     return (
       <CardArtImage
-        cardType="artifact"
+        cardType={card.artCardType ?? "artifact"}
         cardId={card.artCardId}
         alt=""
         aria-hidden="true"

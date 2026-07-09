@@ -4,7 +4,7 @@ import "@testing-library/jest-dom/vitest";
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { CardArtImage } from "../CardArtImage.js";
-import { getCardArtOutputPath } from "../../../game/assets/design/cardImageCatalog.js";
+import { CARD_IMAGE_TYPES, getCardArtOutputPath } from "../../../game/assets/design/cardImageCatalog.js";
 import { generatedCardImagePrompts } from "../../../game/assets/design/generatedCardImagePrompts.js";
 import { cardArtRuntimeCatalog, getRuntimeCardArtPath } from "../../../game/assets/runtime/cardArtRuntimeCatalog.js";
 import {
@@ -12,6 +12,10 @@ import {
   getCardFallbackArtPath,
   getCharacterPortraitPath,
   getEncounterFramePath,
+  getEquipmentCardArtPath,
+  getGearCardArtId,
+  getGearCardArtPath,
+  getGearCardArtType,
   getNemesisPortraitPath,
   getRuntimeAssetPaths
 } from "../assetPaths.js";
@@ -21,6 +25,25 @@ describe("card art paths", () => {
     expect(getCardArtPath("contract", "compact-cleanse-ledger")).toBe("/assets/cards/contracts/compact-cleanse-ledger.png");
     expect(getCardArtPath("threat", "cinder-veil-stalker")).toBe("/assets/cards/threats/red/cinder-veil-stalker.png");
     expect(getCardArtPath("anomaly", "anomaly-ashfall-murmur")).toBe("/assets/cards/anomalies/anomaly-ashfall-murmur.png");
+  });
+
+  it("treats equipment as a first-class card art type", () => {
+    expect(CARD_IMAGE_TYPES).toContain("equipment");
+    expect(getCardArtOutputPath("equipment", "veil-hook")).toBe("/assets/cards/equipment/veil-hook.png");
+    expect(getCardFallbackArtPath("equipment")).toBe("/assets/cards/fallbacks/equipment.svg");
+    expect(getEquipmentCardArtPath("veil-hook")).toBe("/assets/cards/fallbacks/equipment.svg");
+  });
+
+  it("routes ordinary gear through equipment art and artifact-tier gear through artifacts", () => {
+    expect(getGearCardArtType({ id: "veil-hook", tier: "starter" })).toBe("equipment");
+    expect(getGearCardArtId({ id: "veil-hook", tier: "starter" })).toBe("veil-hook");
+    expect(getGearCardArtPath({ id: "veil-hook", tier: "starter" })).toBe("/assets/cards/fallbacks/equipment.svg");
+
+    expect(getGearCardArtType({ id: "heat-sink-prayer", tier: "artifact" })).toBe("artifact");
+    expect(getGearCardArtId({ id: "heat-sink-prayer", tier: "artifact" })).toBe("artifact-heat-sink-prayer");
+    expect(getGearCardArtPath({ id: "heat-sink-prayer", tier: "artifact" })).toBe(
+      "/assets/cards/artifacts/artifact-heat-sink-prayer.png"
+    );
   });
 
   it("uses a runtime-safe card art catalog without prompt text", () => {
@@ -46,6 +69,7 @@ describe("card art paths", () => {
 
   it("returns type fallbacks for unknown cards", () => {
     expect(getCardArtPath("anomaly", "missing-card")).toBe(getCardFallbackArtPath("anomaly"));
+    expect(getCardArtPath("equipment", "missing-equipment")).toBe(getCardFallbackArtPath("equipment"));
   });
 
   it("returns custom character and Relay nemesis portrait paths", () => {
@@ -77,5 +101,11 @@ describe("CardArtImage", () => {
     fireEvent.error(image);
 
     expect(image).toHaveAttribute("src", "/assets/cards/fallbacks/scar.svg");
+  });
+
+  it("renders equipment fallback safely when no active equipment art exists yet", () => {
+    render(<CardArtImage cardType="equipment" cardId="veil-hook" alt="equipment art" />);
+
+    expect(screen.getByAltText("equipment art")).toHaveAttribute("src", "/assets/cards/fallbacks/equipment.svg");
   });
 });

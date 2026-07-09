@@ -2,24 +2,25 @@
 
 Date: 2026-07-09
 
-Scope: audit only. No assets were moved, copied, deleted, renamed, or promoted in this pass.
+Scope: audit plus resolver implementation notes. No legacy assets were moved, copied, deleted, renamed, or promoted in this pass.
 
 ## Summary
 
 Ashen Reach has an active card art root at `public/assets/cards/` and a legacy/source card art root at `public/assets/riftfall/cards/`.
 
-The active card art pipeline currently supports these first-class card image types:
+The active card art pipeline now supports these first-class card image types:
 
 - threats
 - contracts
 - anomalies
 - artifacts
+- equipment
 - scars
 - escalations
 
-It does not yet support a first-class Equipment card art type. Current gear UI art is routed through artifact art conventions: `getGearCardArtId(gearId)` maps normal gear IDs to `artifact-[gearId]`, and `getCardArtPath("artifact", ...)` resolves the image. This keeps gear visible today, but it blurs the design line between basic equipment and true artifacts.
+The original audit found gear UI art routed through artifact art conventions. The resolver pass added Equipment as a first-class category so ordinary gear can resolve through `/assets/cards/equipment/[equipmentId].png`, while artifact-tier gear can still intentionally resolve through Artifact art.
 
-Recommended canonical active folder for the next implementation pass:
+Canonical active Equipment folder:
 
 ```txt
 public/assets/cards/equipment/
@@ -166,6 +167,20 @@ public/assets/cards/heat/
 
 Useful images from the Heat folder may later be used only as Scar/Affliction inspiration or mapped to an existing Scar/Affliction content ID. They must not reintroduce Heat as a player-facing track, card category, or status.
 
+## Equipment Resolver Implementation Notes
+
+Equipment is now represented as a first-class card-art type in the resolver/catalog layer.
+
+- Canonical active folder: `public/assets/cards/equipment/`
+- Runtime path format: `/assets/cards/equipment/[equipmentId].png`
+- Fallback path: `/assets/cards/fallbacks/equipment.svg`
+- Runtime catalog type: `equipment`
+- Asset prompt/audit asset type: `equipmentCardArt`
+
+Ordinary gear should resolve through Equipment art. Artifact-tier gear can still resolve through Artifact art when the content record or projected shop item intentionally marks it as artifact-tier.
+
+This implementation pass did not move, import, delete, or rename any legacy images. No new Equipment content records were added. The legacy Heat folder remains reference-only and no `/assets/cards/heat/` runtime path was created.
+
 ## Recommended Implementation Sequence
 
 1. Add Equipment as a first-class asset type in the resolver/catalog:
@@ -190,20 +205,21 @@ Useful images from the Heat folder may later be used only as Scar/Affliction ins
 
 ## Implementation Risks
 
-- Current gear art is artifact-routed. Adding Equipment must not break existing gear images before new equipment art exists.
-- Several existing gear records have artifact IDs in the active artifact art catalog. A migration should preserve fallbacks for old gear until replacement art is present.
+- Previous gear art was artifact-routed. Equipment fallback support must keep old gear readable until replacement art is imported.
+- Several existing gear records have artifact IDs in the active artifact art catalog. Artifact-tier gear should preserve intentional artifact routing.
 - `heatCost` still exists as cost metadata. It should not be displayed as Heat status.
 - Route-note images should not be promoted unless a real route-note system is in scope.
 - Legacy threat images look useful but are not safe to import without threat content records and lane validation.
 
-## Audit-Only Acceptance
+## Audit And Resolver Acceptance
 
-This pass satisfies audit-only criteria:
+This audit and resolver support pass satisfies these criteria:
 
 - Worktree was clean before the audit.
 - Legacy source assets were inventoried.
 - Active runtime assets were compared by hash and normalized filename.
 - No duplicate deletion was recommended.
-- Equipment folder path recommendation is `public/assets/cards/equipment/`.
+- Equipment folder path is `public/assets/cards/equipment/`.
+- Equipment has first-class resolver/catalog/fallback support.
 - Heat remains deprecated and unpromoted.
 - No gameplay rules changed.

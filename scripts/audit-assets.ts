@@ -323,6 +323,7 @@ const cardImageSummary = CARD_IMAGE_TYPES.reduce<Record<CardImageType, { total: 
     contract: { total: 0, present: 0, missing: 0 },
     anomaly: { total: 0, present: 0, missing: 0 },
     artifact: { total: 0, present: 0, missing: 0 },
+    equipment: { total: 0, present: 0, missing: 0 },
     scar: { total: 0, present: 0, missing: 0 },
     escalation: { total: 0, present: 0, missing: 0 }
   }

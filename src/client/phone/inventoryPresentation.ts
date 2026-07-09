@@ -1,5 +1,6 @@
+import type { CardImageType } from "../../game/assets/design/cardImageCatalog.js";
 import type { ActiveResolution, Follower, GearItem, GearSlot, PhoneObjectUseState, PhonePatchPayload, PhoneSelfState, Stat } from "../shared/types.js";
-import { getGearCardArtId } from "../shared/assetPaths.js";
+import { getGearCardArtId, getGearCardArtType } from "../shared/assetPaths.js";
 import { gearSlotLabelById, statLabelById } from "../shared/statLabels.js";
 
 export type InventoryTimingWindow =
@@ -41,6 +42,7 @@ export interface InventoryCardViewModel {
   useLimit?: GearItem["useLimit"] | Follower["useLimit"];
   charges?: number | null;
   maxUses?: number | null;
+  artCardType?: CardImageType | null;
   artCardId?: string | null;
   fallbackLabel: string;
 }
@@ -461,7 +463,8 @@ function buildGearCard(item: GearItem, patch: PhonePatchPayload, self: PhoneSelf
     useLimit: item.useLimit,
     charges: remainingUses,
     maxUses,
-    artCardId: getGearCardArtId(item.id),
+    artCardType: getGearCardArtType(item),
+    artCardId: getGearCardArtId(item),
     fallbackLabel: getFallbackLabel(item.name)
   };
 }
@@ -493,6 +496,7 @@ function buildFollowerCard(follower: Follower, patch: PhonePatchPayload): Invent
     useLimit: follower.useLimit,
     charges: remainingUses,
     maxUses,
+    artCardType: follower.artCardId ? "artifact" : null,
     artCardId: follower.artCardId ?? null,
     fallbackLabel: getFallbackLabel(follower.name)
   };
