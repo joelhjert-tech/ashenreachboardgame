@@ -776,6 +776,8 @@ describe("TvApp", () => {
   });
 
   it("renders the create flow when nothing is stored", async () => {
+    mockFetchSessionSummary.mockRejectedValue(new Error("No active room"));
+
     render(<TvApp />);
 
     const createMultiplayer = await screen.findByRole("button", { name: /create multiplayer/i });
@@ -789,28 +791,44 @@ describe("TvApp", () => {
     );
   });
 
-  it("clears stale restored storage and falls back to the create flow", async () => {
+  it("auto-connects a fresh TV display to the current public session without a host token", async () => {
+    render(<TvApp />);
+
+    await waitFor(() => {
+      expect(mockUseRoomSubscription).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          view: "tv",
+          enabled: true,
+          hostToken: null
+        })
+      );
+    });
+    expect(window.localStorage.getItem("ashen-reach-tv-room-code")).toBe("RT7P4");
+    expect(window.localStorage.getItem("ashen-reach-tv-host-token")).toBeNull();
+  });
+
+  it("drops stale restored host storage and reconnects as a public TV display", async () => {
     window.localStorage.setItem("ashen-reach-tv-room-code", "OLD99");
     window.localStorage.setItem("ashen-reach-tv-host-token", "host:OLD99:secret");
-    mockFetchSessionSummary.mockRejectedValue(new Error("Unknown room code"));
 
     render(<TvApp />);
 
-    await screen.findByText(/previous session ended/i);
     await waitFor(() => {
-      expect(screen.getAllByRole("button", { name: /create multiplayer/i }).length).toBeGreaterThan(0);
+      expect(mockUseRoomSubscription).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          enabled: true,
+          hostToken: null
+        })
+      );
     });
-    expect(window.localStorage.getItem("ashen-reach-tv-room-code")).toBeNull();
+    expect(window.localStorage.getItem("ashen-reach-tv-room-code")).toBe("RT7P4");
     expect(window.localStorage.getItem("ashen-reach-tv-host-token")).toBeNull();
-    expect(mockUseRoomSubscription).toHaveBeenLastCalledWith(
-      expect.objectContaining({
-        enabled: false,
-        hostToken: null
-      })
-    );
+    expect(screen.queryByText(/previous session ended/i)).not.toBeInTheDocument();
   });
 
   it("stores room code after creating a session", async () => {
+    mockFetchSessionSummary.mockRejectedValue(new Error("No active room"));
+
     render(<TvApp />);
 
     fireEvent.click(await screen.findByRole("button", { name: /co-op/i }));
@@ -823,6 +841,7 @@ describe("TvApp", () => {
   });
 
   it("sends the selected scenario id when the host creates a room", async () => {
+    mockFetchSessionSummary.mockRejectedValue(new Error("No active room"));
     mockCreateSession.mockResolvedValue({
       roomCode: "STAR1",
       hostToken: "host:STAR1:secret",
@@ -846,6 +865,8 @@ describe("TvApp", () => {
   });
 
   it("labels the competitive setup protocol as Nemesis while preserving the rivalry interaction mode", async () => {
+    mockFetchSessionSummary.mockRejectedValue(new Error("No active room"));
+
     render(<TvApp />);
 
     fireEvent.click(await screen.findByRole("button", { name: /nemesis/i }));
@@ -886,6 +907,7 @@ describe("TvApp", () => {
   });
 
   it("uses the selected scenario for single-player creation too", async () => {
+    mockFetchSessionSummary.mockRejectedValue(new Error("No active room"));
     mockCreateSession.mockResolvedValue({
       roomCode: "STAR2",
       hostToken: "host:STAR2:secret",
@@ -908,6 +930,7 @@ describe("TvApp", () => {
   });
 
   it("sends Nemesis Relay as the selected game mode when creating a room", async () => {
+    mockFetchSessionSummary.mockRejectedValue(new Error("No active room"));
     mockCreateSession.mockResolvedValue({
       roomCode: "RELAY",
       hostToken: "host:RELAY:secret",
@@ -930,6 +953,7 @@ describe("TvApp", () => {
   });
 
   it("sends the selected multiplayer player count when creating a room", async () => {
+    mockFetchSessionSummary.mockRejectedValue(new Error("No active room"));
     mockCreateSession.mockResolvedValue({
       roomCode: "DUO22",
       hostToken: "host:DUO22:secret",
@@ -953,6 +977,8 @@ describe("TvApp", () => {
   });
 
   it("shows a scenario briefing preview and updates it when the host changes the picker", async () => {
+    mockFetchSessionSummary.mockRejectedValue(new Error("No active room"));
+
     render(<TvApp />);
 
     expect(await screen.findByText(/scenario briefing/i)).toBeInTheDocument();

@@ -61,6 +61,14 @@ import { getExpectedTileAssetPath, getTileAssetPath } from "./tileAssetManifest.
 
 const hostTokenStorageKey = "ashen-reach-tv-host-token";
 const roomCodeStorageKey = "ashen-reach-tv-room-code";
+
+function getInitialTvRoomCode(): string | null {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  return new URLSearchParams(window.location.search).get("room") ?? window.localStorage.getItem(roomCodeStorageKey);
+}
 const previousSessionEndedNotice = "Previous session ended. Create a new room to continue.";
 
 const statLabelById = statShortLabelById;
@@ -2023,9 +2031,7 @@ function EndgameOverlay({ patch }: { patch: StatePatch<PublicPatchPayload> | nul
 export function TvApp(): ReactElement {
   const [characterCatalog, setCharacterCatalog] = useState<CharacterCatalogEntry[]>([]);
   const [scenarioCatalog, setScenarioCatalog] = useState<ScenarioCatalogEntry[]>([]);
-  const [roomCode, setRoomCode] = useState<string | null>(() =>
-    typeof window === "undefined" ? null : window.localStorage.getItem(roomCodeStorageKey)
-  );
+  const [roomCode, setRoomCode] = useState<string | null>(() => getInitialTvRoomCode());
   const [sessionMode, setSessionMode] = useState<SessionMode>("multiplayer");
   const [gameMode, setGameMode] = useState<GameMode>("standard");
   const [interactionMode, setInteractionMode] = useState<InteractionMode | null>(null);
@@ -2096,9 +2102,13 @@ export function TvApp(): ReactElement {
       return;
     }
 
-    if (roomCode && hostToken) {
+    if (roomCode) {
       window.localStorage.setItem(roomCodeStorageKey, roomCode);
-      window.localStorage.setItem(hostTokenStorageKey, hostToken);
+      if (hostToken) {
+        window.localStorage.setItem(hostTokenStorageKey, hostToken);
+      } else {
+        window.localStorage.removeItem(hostTokenStorageKey);
+      }
       return;
     }
 
@@ -2107,11 +2117,6 @@ export function TvApp(): ReactElement {
   }, [hostToken, roomCode]);
 
   useEffect(() => {
-    if (!roomCode || !hostToken) {
-      restoreValidatedRef.current = true;
-      return;
-    }
-
     if (restoreValidatedRef.current) {
       return;
     }
@@ -2124,10 +2129,24 @@ export function TvApp(): ReactElement {
           return;
         }
 
-        if (summary.roomCode !== roomCode) {
-          setRoomCode(null);
+        if (!roomCode || !hostToken) {
+          setRoomCode(summary.roomCode);
           setHostToken(null);
-          setSessionNotice(previousSessionEndedNotice);
+          setSessionMode(summary.sessionMode);
+          setGameMode(summary.gameMode ?? "standard");
+          setInteractionMode(summary.interactionMode);
+          setPlayerCount(summary.playerCount ?? summary.seats?.length ?? 6);
+          return;
+        }
+
+        if (summary.roomCode !== roomCode) {
+          setRoomCode(summary.roomCode);
+          setHostToken(null);
+          setSessionNotice(null);
+          setSessionMode(summary.sessionMode);
+          setGameMode(summary.gameMode ?? "standard");
+          setInteractionMode(summary.interactionMode);
+          setPlayerCount(summary.playerCount ?? summary.seats?.length ?? 6);
           return;
         }
 
@@ -2143,7 +2162,9 @@ export function TvApp(): ReactElement {
 
         setRoomCode(null);
         setHostToken(null);
-        setSessionNotice(previousSessionEndedNotice);
+        if (roomCode && hostToken) {
+          setSessionNotice(previousSessionEndedNotice);
+        }
       })
       .finally(() => {
         if (!cancelled) {
