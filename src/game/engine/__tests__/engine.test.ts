@@ -855,6 +855,67 @@ describe("encounter state effects", () => {
   });
 });
 
+describe("first eligible character timing", () => {
+  const hazard = (id: string, stat: "command" | "grit" | "signal" | "guile" | "forge", threatLane?: "blue" | "yellow") => ({
+    id,
+    type: "threat" as const,
+    cardType: "hazard" as const,
+    title: id,
+    text: "Timing fixture.",
+    flavor: "Timing fixture.",
+    severity: 1,
+    stat,
+    difficulty: 6,
+    ...(threatLane ? { threatLane } : {}),
+    successEffect: { type: "gain_note" as const, text: "Passed." },
+    failEffect: { type: "gain_heat" as const, amount: 1 }
+  });
+
+  const timingServer = (characterId: string, stats: Character["stats"], encounter: ThreatCard) => {
+    const base = createState({ currentEncounter: encounter });
+    const character: Character = {
+      ...base.players[0]!.character,
+      id: characterId,
+      name: characterId,
+      stats,
+      abilities: []
+    };
+    return new GameRoomServer(
+      { ...base, players: [{ ...base.players[0]!, character }, ...base.players.slice(1)] },
+      [], createSequenceRandomSource([5, 5, 5, 5]), createThreats(), createCharacters(), createGear(), createContracts()
+    );
+  };
+
+  it.each([
+    ["Kira", "char_kira_dog", { command: 1, grit: 5, signal: 1, guile: 1, forge: 1 }, "houndblade-charge", "battle", "grit", { id: "enemy", type: "threat", cardType: "enemy", title: "enemy", enemyName: "enemy", text: "", flavor: "", severity: 1, stat: "grit", difficulty: 6 }],
+    ["Rumi", "char_rumi", { command: 1, grit: 1, signal: 5, guile: 4, forge: 1 }, "violet-edge", "check", "signal", hazard("signal-hazard", "signal")],
+    ["Lane", "signal-witch", { command: 1, grit: 1, signal: 5, guile: 1, forge: 1 }, "hush-static", "check", "signal", hazard("blue-hazard", "signal", "blue")],
+    ["Popelord", "char_popelord", { command: 1, grit: 5, signal: 1, guile: 1, forge: 1 }, "compost-cape", "check", "grit", hazard("yellow-hazard", "grit", "yellow")]
+  ] as const)("keeps %s available until its first eligible event, consumes it once, and resets at the intended boundary", (_name, characterId, stats, abilityId, mode, stat, encounter) => {
+    const server = timingServer(characterId, stats, encounter as ThreatCard);
+    const internals = server as unknown as {
+      getCharacterModifierSources: (player: GameState["players"][number], stat: "command" | "grit" | "signal" | "guile" | "forge", mode: "battle" | "check") => Array<{ label: string }>;
+      getCharacterDifficultyModifier: (player: GameState["players"][number], encounter: ThreatCard) => number;
+      markFirstEligibleCharacterAbility: (seatId: string, stat: "command" | "grit" | "signal" | "guile" | "forge", mode: "battle" | "check", encounter: ThreatCard) => void;
+    };
+    const player = server.getState().players[0]!;
+
+    // An unrelated completed check is intentionally not an ability marker.
+    server.getState().eventLog.push({ type: "CHECK_ROLLED", seatId: "seat-1" } as never);
+    const before = mode === "check" ? internals.getCharacterModifierSources(player, stat, mode) : internals.getCharacterModifierSources(player, stat, mode);
+    expect(before.length + (internals.getCharacterDifficultyModifier(player, encounter as ThreatCard) === -1 ? 1 : 0)).toBeGreaterThan(0);
+
+    internals.markFirstEligibleCharacterAbility("seat-1", stat, mode, encounter as ThreatCard);
+    expect(server.getState().eventLog.some((entry) => (entry as { abilityId?: string }).abilityId === abilityId)).toBe(true);
+    internals.markFirstEligibleCharacterAbility("seat-1", stat, mode, encounter as ThreatCard);
+    expect(server.getState().eventLog.filter((entry) => (entry as { abilityId?: string }).abilityId === abilityId)).toHaveLength(1);
+
+    server.getState().eventLog.push({ type: abilityId === "houndblade-charge" ? "TURN_COMPLETED" : "ROUND_COMPLETED" } as never);
+    internals.markFirstEligibleCharacterAbility("seat-1", stat, mode, encounter as ThreatCard);
+    expect(server.getState().eventLog.filter((entry) => (entry as { abilityId?: string }).abilityId === abilityId)).toHaveLength(2);
+  });
+});
+
 describe("active resolution visibility state", () => {
   it("creates a card reveal stage when a threat is drawn", () => {
     const card = createThreats().get("signal-static")!;
