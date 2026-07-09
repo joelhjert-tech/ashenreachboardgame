@@ -1,0 +1,19 @@
+{
+  "id": "mirecoil-wardcloak",
+  "name": "Mirecoil Wardcloak",
+  "slot": "armor",
+  "category": "passive",
+  "statBonus": {
+    "stat": "guile",
+    "amount": 1
+  },
+  "flavor": "A tar-wet cloak stitched with coilwire charms from the marsh wards.",
+  "tier": "standard",
+  "cost": 4,
+  "sellValue": 2,
+  "progressionWeight": 1,
+  "shopCategories": [
+    "forge-armoury",
+    "market"
+  ]
+}

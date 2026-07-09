@@ -32,12 +32,16 @@ describe("card art paths", () => {
     expect(getCardArtOutputPath("equipment", "veil-hook")).toBe("/assets/cards/equipment/veil-hook.png");
     expect(getCardFallbackArtPath("equipment")).toBe("/assets/cards/fallbacks/equipment.svg");
     expect(getEquipmentCardArtPath("veil-hook")).toBe("/assets/cards/fallbacks/equipment.svg");
+    expect(getEquipmentCardArtPath("ashlock-cleaver")).toBe("/assets/cards/equipment/ashlock-cleaver.png");
   });
 
   it("routes ordinary gear through equipment art and artifact-tier gear through artifacts", () => {
     expect(getGearCardArtType({ id: "veil-hook", tier: "starter" })).toBe("equipment");
     expect(getGearCardArtId({ id: "veil-hook", tier: "starter" })).toBe("veil-hook");
     expect(getGearCardArtPath({ id: "veil-hook", tier: "starter" })).toBe("/assets/cards/fallbacks/equipment.svg");
+    expect(getGearCardArtPath({ id: "ashlock-cleaver", tier: "standard" })).toBe(
+      "/assets/cards/equipment/ashlock-cleaver.png"
+    );
 
     expect(getGearCardArtType({ id: "heat-sink-prayer", tier: "artifact" })).toBe("artifact");
     expect(getGearCardArtId({ id: "heat-sink-prayer", tier: "artifact" })).toBe("artifact-heat-sink-prayer");
@@ -103,9 +107,18 @@ describe("CardArtImage", () => {
     expect(image).toHaveAttribute("src", "/assets/cards/fallbacks/scar.svg");
   });
 
-  it("renders equipment fallback safely when no active equipment art exists yet", () => {
+  it("renders equipment fallback safely when active equipment art is missing", () => {
     render(<CardArtImage cardType="equipment" cardId="veil-hook" alt="equipment art" />);
 
     expect(screen.getByAltText("equipment art")).toHaveAttribute("src", "/assets/cards/fallbacks/equipment.svg");
+  });
+
+  it("renders imported equipment art when active equipment art exists", () => {
+    render(<CardArtImage cardType="equipment" cardId="ashlock-cleaver" alt="ashlock cleaver art" />);
+
+    expect(screen.getByAltText("ashlock cleaver art")).toHaveAttribute(
+      "src",
+      "/assets/cards/equipment/ashlock-cleaver.png"
+    );
   });
 });

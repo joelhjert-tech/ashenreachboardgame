@@ -205,7 +205,8 @@ describe("PhoneInventoryPanel", () => {
 
     expect(screen.getAllByText("Weapons").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Armor").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("Items / Consumables").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Equipment").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Consumables").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Artifacts / Relics").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Followers").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Quest Items").length).toBeGreaterThan(0);

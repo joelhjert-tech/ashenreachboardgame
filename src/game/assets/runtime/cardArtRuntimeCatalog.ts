@@ -713,11 +713,6 @@ export const cardArtRuntimeCatalog: RuntimeCardArtCatalogEntry[] = [
     "outputPath": "/assets/cards/artifacts/artifact-cinder-suture-kit.png"
   },
   {
-    "cardId": "artifact-coffin-rig",
-    "cardType": "artifact",
-    "outputPath": "/assets/cards/artifacts/artifact-coffin-rig.png"
-  },
-  {
     "cardId": "artifact-ember-burden-idol",
     "cardType": "artifact",
     "outputPath": "/assets/cards/artifacts/artifact-ember-burden-idol.png"
@@ -731,11 +726,6 @@ export const cardArtRuntimeCatalog: RuntimeCardArtCatalogEntry[] = [
     "cardId": "artifact-gate-saint-key",
     "cardType": "artifact",
     "outputPath": "/assets/cards/artifacts/artifact-gate-saint-key.png"
-  },
-  {
-    "cardId": "artifact-grave-lens",
-    "cardType": "artifact",
-    "outputPath": "/assets/cards/artifacts/artifact-grave-lens.png"
   },
   {
     "cardId": "artifact-heat-sink-prayer",
@@ -756,11 +746,6 @@ export const cardArtRuntimeCatalog: RuntimeCardArtCatalogEntry[] = [
     "cardId": "artifact-marrow-route-key",
     "cardType": "artifact",
     "outputPath": "/assets/cards/artifacts/artifact-marrow-route-key.png"
-  },
-  {
-    "cardId": "artifact-marshal-seal",
-    "cardType": "artifact",
-    "outputPath": "/assets/cards/artifacts/artifact-marshal-seal.png"
   },
   {
     "cardId": "artifact-mira-rift-twin",
@@ -813,16 +798,6 @@ export const cardArtRuntimeCatalog: RuntimeCardArtCatalogEntry[] = [
     "outputPath": "/assets/cards/artifacts/artifact-throne-crown-fragment.png"
   },
   {
-    "cardId": "artifact-tuning-spines",
-    "cardType": "artifact",
-    "outputPath": "/assets/cards/artifacts/artifact-tuning-spines.png"
-  },
-  {
-    "cardId": "artifact-veil-hook",
-    "cardType": "artifact",
-    "outputPath": "/assets/cards/artifacts/artifact-veil-hook.png"
-  },
-  {
     "cardId": "artifact-void-salt-poultice",
     "cardType": "artifact",
     "outputPath": "/assets/cards/artifacts/artifact-void-salt-poultice.png"
@@ -836,6 +811,51 @@ export const cardArtRuntimeCatalog: RuntimeCardArtCatalogEntry[] = [
     "cardId": "artifact-zoey-thorn-violet",
     "cardType": "artifact",
     "outputPath": "/assets/cards/artifacts/artifact-zoey-thorn-violet.png"
+  },
+  {
+    "cardId": "ashlock-cleaver",
+    "cardType": "equipment",
+    "outputPath": "/assets/cards/equipment/ashlock-cleaver.png"
+  },
+  {
+    "cardId": "cinder-stim-ampoule",
+    "cardType": "equipment",
+    "outputPath": "/assets/cards/equipment/cinder-stim-ampoule.png"
+  },
+  {
+    "cardId": "mirecoil-wardcloak",
+    "cardType": "equipment",
+    "outputPath": "/assets/cards/equipment/mirecoil-wardcloak.png"
+  },
+  {
+    "cardId": "riftblade",
+    "cardType": "equipment",
+    "outputPath": "/assets/cards/equipment/riftblade.png"
+  },
+  {
+    "cardId": "saintplate-harness",
+    "cardType": "equipment",
+    "outputPath": "/assets/cards/equipment/saintplate-harness.png"
+  },
+  {
+    "cardId": "scrap-drone",
+    "cardType": "equipment",
+    "outputPath": "/assets/cards/equipment/scrap-drone.png"
+  },
+  {
+    "cardId": "signal-pike",
+    "cardType": "equipment",
+    "outputPath": "/assets/cards/equipment/signal-pike.png"
+  },
+  {
+    "cardId": "void-plate",
+    "cardType": "equipment",
+    "outputPath": "/assets/cards/equipment/void-plate.png"
+  },
+  {
+    "cardId": "voidsalt-poultice",
+    "cardType": "equipment",
+    "outputPath": "/assets/cards/equipment/voidsalt-poultice.png"
   },
   {
     "cardId": "scar-wound-1",

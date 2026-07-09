@@ -16,7 +16,8 @@ export type InventoryTimingWindow =
 export type InventoryGroupLabel =
   | "Weapons"
   | "Armor"
-  | "Items / Consumables"
+  | "Equipment"
+  | "Consumables"
   | "Followers"
   | "Artifacts / Relics"
   | "Quest Items";
@@ -67,7 +68,8 @@ export interface BattleAssistViewModel {
 const inventoryGroupOrder: InventoryGroupLabel[] = [
   "Weapons",
   "Armor",
-  "Items / Consumables",
+  "Equipment",
+  "Consumables",
   "Followers",
   "Artifacts / Relics",
   "Quest Items"
@@ -311,7 +313,11 @@ function getGearGroup(item: GearItem): InventoryGroupLabel {
     return "Artifacts / Relics";
   }
 
-  return "Items / Consumables";
+  if (item.category === "consumable") {
+    return "Consumables";
+  }
+
+  return "Equipment";
 }
 
 function getGearLockReason(item: GearItem, self: PhoneSelfState): string | null {

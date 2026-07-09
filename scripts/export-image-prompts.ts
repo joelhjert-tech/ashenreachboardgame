@@ -1,11 +1,13 @@
-import { mkdirSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { loadAnomalyCards } from "../src/game/content/anomalies.js";
 import { loadArtifactCards } from "../src/game/content/artifacts.js";
 import { loadContracts } from "../src/game/content/contracts.js";
 import { loadEscalationCards } from "../src/game/content/escalations.js";
+import { loadGear } from "../src/game/content/gear.js";
 import { loadScarCards } from "../src/game/content/scars.js";
 import { loadThreatCards } from "../src/game/content/threats.js";
+import type { GearItem } from "../src/game/schema/gear.schema.js";
 import { boardTilePrompts } from "../src/game/assets/design/boardTilePrompts.js";
 import {
   CARD_IMAGE_TYPES,
@@ -100,6 +102,9 @@ function buildCardImagePrompts(): PromptEntryMap {
   const contracts = [...loadContracts().values()].sort(compareById);
   const anomalies = [...loadAnomalyCards().values()].sort(compareById);
   const artifacts = [...loadArtifactCards().values()].sort(compareById);
+  const equipment = [...loadGear().values()]
+    .filter((item) => item.tier !== "artifact" && hasActiveEquipmentArt(item.id))
+    .sort(compareById);
   const scars = [...loadScarCards().values()].sort(compareById);
   const escalations = [...loadEscalationCards().values()].sort(compareById);
 
@@ -116,7 +121,9 @@ function buildCardImagePrompts(): PromptEntryMap {
     artifact: artifacts.map((card) =>
       buildPromptEntry("artifact", card.id, card.title, buildArtifactPrompt(card), `${card.title} artifact card art.`)
     ),
-    equipment: [],
+    equipment: equipment.map((item) =>
+      buildPromptEntry("equipment", item.id, item.name, buildEquipmentPrompt(item), `${item.name} equipment card art.`)
+    ),
     scar: scars.map((card) =>
       buildPromptEntry("scar", card.id, card.title, buildScarPrompt(card), `${card.title} scar card art.`)
     ),
@@ -271,6 +278,18 @@ function buildArtifactPrompt(card: {
   ].join(", ");
 }
 
+function buildEquipmentPrompt(item: GearItem): string {
+  const effectSummary = item.activeText ?? `${item.statBonus.stat} +${item.statBonus.amount}`;
+  return [
+    promptPrefix,
+    "single piece of practical equipment centered in frame, weapon armor tool or field consumable, rugged and usable, less mythic than artifacts",
+    `equipment slot ${item.slot}, category ${item.category ?? "passive"}, tier ${item.tier ?? "standard"}`,
+    sanitizeSentence(effectSummary),
+    sanitizeSentence(item.flavor ?? `${item.name} carried by an Ashen Reach operative`),
+    "worn metal, leather, brass repair seams, soot, believable scale, no readable text"
+  ].join(", ");
+}
+
 function buildScarPrompt(card: PromptLike & { penalty: string }): string {
   return [
     promptPrefix,
@@ -313,6 +332,12 @@ function buildEscalationPrompt(card: PromptLike & { step: number; resolutionSumm
 
 function sanitizeSentence(value: string): string {
   return value.replace(/\s+/g, " ").replace(/[.]+$/g, "").trim();
+}
+
+function hasActiveEquipmentArt(cardId: string): boolean {
+  const outputPath = getCardArtOutputPath("equipment", cardId);
+  const publicPath = join(process.cwd(), "public", outputPath.replace(/^\//, ""));
+  return existsSync(publicPath);
 }
 
 function compareById(left: { id: string }, right: { id: string }): number {

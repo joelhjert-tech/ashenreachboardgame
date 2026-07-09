@@ -1,0 +1,18 @@
+{
+  "id": "void-plate",
+  "name": "Void Plate",
+  "slot": "armor",
+  "category": "passive",
+  "statBonus": {
+    "stat": "forge",
+    "amount": 1
+  },
+  "flavor": "Heavy black plate sealed with chapel lacquer and dead-star rivets.",
+  "tier": "advanced",
+  "cost": 6,
+  "sellValue": 3,
+  "progressionWeight": 1.5,
+  "shopCategories": [
+    "forge-armoury"
+  ]
+}

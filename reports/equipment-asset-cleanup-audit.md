@@ -181,6 +181,31 @@ Ordinary gear should resolve through Equipment art. Artifact-tier gear can still
 
 This implementation pass did not move, import, delete, or rename any legacy images. No new Equipment content records were added. The legacy Heat folder remains reference-only and no `/assets/cards/heat/` runtime path was created.
 
+## First Equipment Import
+
+This pass promotes only selected legacy `gear` and `wargear` images into the active Equipment card-art category. Legacy source files are retained in place for reference.
+
+| source path | active target path | content ID | slot | category | tier | effect summary | lore summary |
+|---|---|---|---|---|---|---|---|
+| `public/assets/riftfall/cards/gear/weapon_ashlock_cleaver.png` | `public/assets/cards/equipment/ashlock-cleaver.png` | `ashlock-cleaver` | weapon | passive | standard | +1 Grit passive equipment source | Soot-bitten boarding cleaver with an oath notch in the spine. |
+| `public/assets/riftfall/cards/gear/weapon_signal_pike.png` | `public/assets/cards/equipment/signal-pike.png` | `signal-pike` | weapon | passive | standard | +1 Signal passive equipment source | Conductor-blade used to pin unstable signals. |
+| `public/assets/riftfall/cards/gear/armor_mirecoil_wardcloak.png` | `public/assets/cards/equipment/mirecoil-wardcloak.png` | `mirecoil-wardcloak` | armor | passive | standard | +1 Guile passive equipment source | Tar-wet coilwire cloak from the marsh wards. |
+| `public/assets/riftfall/cards/gear/armor_saintplate_harness.png` | `public/assets/cards/equipment/saintplate-harness.png` | `saintplate-harness` | armor | passive | advanced | +1 Forge passive equipment source | Chapel plate scavenged from a saint-engine. |
+| `public/assets/riftfall/cards/gear/consumable_cinder_stim_ampoule.png` | `public/assets/cards/equipment/cinder-stim-ampoule.png` | `cinder-stim-ampoule` | utility | consumable | standard | Discard to heal 1 wound using existing recovery effect handling | Red ampoule that burns the blood clean for a few seconds. |
+| `public/assets/riftfall/cards/gear/consumable_voidsalt_poultice.png` | `public/assets/cards/equipment/voidsalt-poultice.png` | `voidsalt-poultice` | utility | consumable | standard | Discard to heal 1 wound using existing recovery effect handling | Cold salt and black herb paste for stubborn wounds. |
+| `public/assets/riftfall/cards/wargear/wargear_riftblade.png` | `public/assets/cards/equipment/riftblade.png` | `riftblade` | weapon | passive | advanced | +1 Grit passive equipment source | Cracked blade that hums near broken routes. |
+| `public/assets/riftfall/cards/wargear/wargear_scrap_drone.png` | `public/assets/cards/equipment/scrap-drone.png` | `scrap-drone` | utility | passive | standard | +1 Signal passive equipment source | Scavenger drone with battlefield memory. |
+| `public/assets/riftfall/cards/wargear/wargear_void_plate.png` | `public/assets/cards/equipment/void-plate.png` | `void-plate` | armor | passive | advanced | +1 Forge passive equipment source | Heavy black plate with chapel lacquer and dead-star rivets. |
+
+The import deliberately excludes `card_back_wargear.png`, `relic_choir_route_orb.png`, and `relic_oathchain_lens.png`. The two relic-named images remain deferred for a later Artifact/Relic pass.
+
+Verification after import:
+
+- `validate:content`: 33 gear records.
+- `audit:assets`: 406/406 present.
+- Active Equipment art: 9/9 present.
+- Heat folder: retained as legacy/reference only; no active Heat category or `/assets/cards/heat/` runtime path was created.
+
 ## Recommended Implementation Sequence
 
 1. Add Equipment as a first-class asset type in the resolver/catalog:

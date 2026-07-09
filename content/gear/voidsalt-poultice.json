@@ -1,0 +1,25 @@
+{
+  "id": "voidsalt-poultice",
+  "name": "Voidsalt Poultice",
+  "slot": "utility",
+  "category": "consumable",
+  "statBonus": {
+    "stat": "signal",
+    "amount": 1
+  },
+  "activeText": "Discard to heal 1 wound with cold voidsalt dressing.",
+  "useLimit": "discard",
+  "timingWindows": [
+    "beforeTakingDamage",
+    "anyTime"
+  ],
+  "flavor": "A cold paste of salt and black herbs used to keep a wound from learning your name.",
+  "tier": "standard",
+  "cost": 3,
+  "sellValue": 1,
+  "progressionWeight": 0.75,
+  "shopCategories": [
+    "medicae-shrine",
+    "market"
+  ]
+}

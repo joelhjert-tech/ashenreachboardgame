@@ -46,6 +46,7 @@ export const gearItemSchema = z.object({
   sellable: z.boolean().optional(),
   tier: gearTierSchema.optional(),
   progressionWeight: z.number().min(0).optional(),
+  flavor: z.string().min(1).optional(),
   timingWindows: z.array(gearTimingWindowSchema).optional(),
   exhausted: z.boolean().optional(),
   activeText: z.string().min(1).optional(),

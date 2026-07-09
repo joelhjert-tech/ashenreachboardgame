@@ -1579,6 +1579,22 @@ export class GameRoomServer {
             { type: "gain_note", text: "Cinder Suture Kit sealed the wound without creating a second persistent harm track." }
           ]
         };
+      case "cinder-stim-ampoule":
+        return {
+          type: "sequence",
+          effects: [
+            { type: "heal_wound", amount: 1 },
+            { type: "gain_note", text: "Cinder-Stim Ampoule burned one wound clean enough to keep moving." }
+          ]
+        };
+      case "voidsalt-poultice":
+        return {
+          type: "sequence",
+          effects: [
+            { type: "heal_wound", amount: 1 },
+            { type: "gain_note", text: "Voidsalt Poultice packed the wound in cold salt and black herbs." }
+          ]
+        };
       case "last-breath-rivet":
         return {
           type: "sequence",

@@ -1,0 +1,18 @@
+{
+  "id": "riftblade",
+  "name": "Riftblade",
+  "slot": "weapon",
+  "category": "passive",
+  "statBonus": {
+    "stat": "grit",
+    "amount": 1
+  },
+  "flavor": "A cracked blade that hums louder near broken routes.",
+  "tier": "advanced",
+  "cost": 6,
+  "sellValue": 3,
+  "progressionWeight": 1.5,
+  "shopCategories": [
+    "forge-armoury"
+  ]
+}

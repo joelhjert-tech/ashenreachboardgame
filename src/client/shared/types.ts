@@ -123,6 +123,7 @@ export interface GearItem {
   sellValue?: number;
   sellable?: boolean;
   tier?: GearTier;
+  flavor?: string;
   timingWindows?: GearTimingWindow[];
   exhausted?: boolean;
   activeText?: string;
