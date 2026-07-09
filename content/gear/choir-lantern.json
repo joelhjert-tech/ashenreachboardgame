@@ -1,0 +1,21 @@
+{
+  "id": "choir-lantern",
+  "name": "Choir Lantern",
+  "slot": "utility",
+  "category": "chargedRelic",
+  "statBonus": {
+    "stat": "signal",
+    "amount": 1
+  },
+  "activeText": "Spend 1 charge after a Signal check or anomaly reveal to record a warded route note.",
+  "useLimit": "charge",
+  "charges": 2,
+  "flavor": "A lantern that burns without flame when the choir is near.",
+  "tier": "artifact",
+  "progressionWeight": 2.5,
+  "cost": 6,
+  "sellValue": 3,
+  "shopCategories": [
+    "relic-dealer"
+  ]
+}

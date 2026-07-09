@@ -1,0 +1,21 @@
+{
+  "id": "route-star",
+  "name": "Route Star",
+  "slot": "utility",
+  "category": "chargedRelic",
+  "statBonus": {
+    "stat": "guile",
+    "amount": 1
+  },
+  "activeText": "Spend 1 charge after movement to record a safer route through the next breach-marked path.",
+  "useLimit": "charge",
+  "charges": 2,
+  "flavor": "A compass-star cut from dead navigation glass.",
+  "tier": "artifact",
+  "progressionWeight": 2.5,
+  "cost": 6,
+  "sellValue": 3,
+  "shopCategories": [
+    "relic-dealer"
+  ]
+}

@@ -136,7 +136,10 @@ describe("Phase 2A shop mechanics foundation", () => {
     expect(forgeStock.every((item) => getGearShopCategoryIds(item).includes("forge-armoury"))).toBe(true);
     expect(forgeStock.some((item) => item.tier === "artifact")).toBe(false);
     expect(getAvailableShopStockForCategory(gear.values(), "relic-dealer", { count: 12, includeArtifacts: false }).some((item) => item.tier === "artifact")).toBe(false);
-    expect(getAvailableShopStockForCategory(gear.values(), "relic-dealer", { count: 12, includeArtifacts: true }).some((item) => item.tier === "artifact")).toBe(true);
+    const relicStock = getAvailableShopStockForCategory(gear.values(), "relic-dealer", { count: 20, includeArtifacts: true });
+    expect(relicStock.some((item) => item.tier === "artifact")).toBe(true);
+    expect(relicStock.map((item) => item.id)).toContain("oathchain-lens");
+    expect(relicStock.map((item) => item.id)).not.toContain("ashlock-cleaver");
   });
 
   it("buys and sells imported Equipment through ordinary shop flows", () => {

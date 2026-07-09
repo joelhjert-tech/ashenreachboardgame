@@ -32,8 +32,10 @@ describe("phase one mechanics foundation", () => {
     expect(brokerStock).toEqual(expect.arrayContaining(["marshal-seal", "oath-chain-ledger"]));
     expect(shrineStock).toEqual(expect.arrayContaining(["cinder-suture-kit", "saintwire-splint"]));
     expect(getGearShopCategories(loadGear().get("choir-static-censer")!)).toContain("relic-dealer");
+    expect(getGearShopCategories(loadGear().get("oathchain-lens")!)).toEqual(["relic-dealer"]);
     expect(getGearShopCategories(loadGear().get("cinder-stim-ampoule")!)).toContain("medicae-shrine");
     expect(getGearShopCategories(loadGear().get("choir-static-censer")!)).not.toContain("forge-armoury");
+    expect(getGearShopCategories(loadGear().get("oathchain-lens")!)).not.toContain("forge-armoury");
   });
 
   it("defines explicit scenario mode metadata for every scenario", () => {

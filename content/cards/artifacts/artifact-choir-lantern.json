@@ -1,0 +1,14 @@
+{
+  "id": "artifact-choir-lantern",
+  "type": "artifact",
+  "artifactKind": "chargedRelic",
+  "title": "Choir Lantern",
+  "text": "A brass ward-lantern that refuses flame, burning instead with a cold choir signal.",
+  "flavor": "It lights safest when everyone nearby stops breathing.",
+  "charge": 2,
+  "resolutionSummary": "Recovered the Choir Lantern and bound its remaining ward charges.",
+  "resolveEffect": {
+    "type": "gain_gear",
+    "gearId": "choir-lantern"
+  }
+}

@@ -1639,6 +1639,14 @@ export class GameRoomServer {
         };
       case "ashen-route-compass":
         return { type: "gain_note", text: "Ashen Route Compass fixed a reroll route for a failed movement or anomaly check." };
+      case "choir-lantern":
+        return { type: "gain_note", text: "Choir Lantern spent: a warded route note was recorded from the cold choir flame." };
+      case "route-star":
+        return { type: "gain_note", text: "Route Star spent: a safer breach-marked path was recorded for the table." };
+      case "void-key":
+        return { type: "gain_note", text: "Void Key spent: a gate or final-approach route claim was recorded." };
+      case "oathchain-lens":
+        return { type: "gain_note", text: "Oathchain Lens spent: the bargain cost was recorded before the promise was sealed." };
       default:
         return { type: "gain_note", text: `${gearId} was used and its table effect was recorded.` };
     }

@@ -703,6 +703,11 @@ export const cardArtRuntimeCatalog: RuntimeCardArtCatalogEntry[] = [
     "outputPath": "/assets/cards/artifacts/artifact-blackstar-ampoule.png"
   },
   {
+    "cardId": "artifact-choir-lantern",
+    "cardType": "artifact",
+    "outputPath": "/assets/cards/artifacts/artifact-choir-lantern.png"
+  },
+  {
     "cardId": "artifact-choir-static-censer",
     "cardType": "artifact",
     "outputPath": "/assets/cards/artifacts/artifact-choir-static-censer.png"
@@ -768,6 +773,11 @@ export const cardArtRuntimeCatalog: RuntimeCardArtCatalogEntry[] = [
     "outputPath": "/assets/cards/artifacts/artifact-oath-chain-ledger.png"
   },
   {
+    "cardId": "artifact-oathchain-lens",
+    "cardType": "artifact",
+    "outputPath": "/assets/cards/artifacts/artifact-oathchain-lens.png"
+  },
+  {
     "cardId": "artifact-pale-ledger-token",
     "cardType": "artifact",
     "outputPath": "/assets/cards/artifacts/artifact-pale-ledger-token.png"
@@ -783,6 +793,11 @@ export const cardArtRuntimeCatalog: RuntimeCardArtCatalogEntry[] = [
     "outputPath": "/assets/cards/artifacts/artifact-rift-anchor-spike.png"
   },
   {
+    "cardId": "artifact-route-star",
+    "cardType": "artifact",
+    "outputPath": "/assets/cards/artifacts/artifact-route-star.png"
+  },
+  {
     "cardId": "artifact-rune-eye-raven",
     "cardType": "artifact",
     "outputPath": "/assets/cards/artifacts/artifact-rune-eye-raven.png"
@@ -796,6 +811,11 @@ export const cardArtRuntimeCatalog: RuntimeCardArtCatalogEntry[] = [
     "cardId": "artifact-throne-crown-fragment",
     "cardType": "artifact",
     "outputPath": "/assets/cards/artifacts/artifact-throne-crown-fragment.png"
+  },
+  {
+    "cardId": "artifact-void-key",
+    "cardType": "artifact",
+    "outputPath": "/assets/cards/artifacts/artifact-void-key.png"
   },
   {
     "cardId": "artifact-void-salt-poultice",

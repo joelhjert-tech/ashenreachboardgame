@@ -48,6 +48,11 @@ describe("card art paths", () => {
     expect(getGearCardArtPath({ id: "heat-sink-prayer", tier: "artifact" })).toBe(
       "/assets/cards/artifacts/artifact-heat-sink-prayer.png"
     );
+    expect(getGearCardArtType({ id: "oathchain-lens", tier: "artifact" })).toBe("artifact");
+    expect(getGearCardArtId({ id: "oathchain-lens", tier: "artifact" })).toBe("artifact-oathchain-lens");
+    expect(getGearCardArtPath({ id: "oathchain-lens", tier: "artifact" })).toBe(
+      "/assets/cards/artifacts/artifact-oathchain-lens.png"
+    );
   });
 
   it("uses a runtime-safe card art catalog without prompt text", () => {
@@ -119,6 +124,15 @@ describe("CardArtImage", () => {
     expect(screen.getByAltText("ashlock cleaver art")).toHaveAttribute(
       "src",
       "/assets/cards/equipment/ashlock-cleaver.png"
+    );
+  });
+
+  it("renders imported relic art from the artifact catalog, not equipment", () => {
+    render(<CardArtImage cardType="artifact" cardId="artifact-oathchain-lens" alt="oathchain lens art" />);
+
+    expect(screen.getByAltText("oathchain lens art")).toHaveAttribute(
+      "src",
+      "/assets/cards/artifacts/artifact-oathchain-lens.png"
     );
   });
 });

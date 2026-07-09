@@ -38,6 +38,18 @@ const relic = {
   charges: 2
 };
 
+const importedRelic = {
+  id: "oathchain-lens",
+  name: "Oathchain Lens",
+  slot: "utility" as const,
+  category: "chargedRelic" as const,
+  statBonus: { stat: "command" as const, amount: 1 },
+  activeText: "Spend 1 charge after a contract, mission, or bargain check to record the cost the lens revealed.",
+  useLimit: "charge" as const,
+  charges: 2,
+  tier: "artifact" as const
+};
+
 const activeUtility = {
   id: "ashen-route-compass",
   name: "Ashen Route Compass",
@@ -224,6 +236,35 @@ describe("PhoneInventoryPanel", () => {
     expect(screen.getByRole("region", { name: /inventory timing groups/i })).toHaveTextContent(/black route fuse/i);
     expect(screen.getByRole("region", { name: /inventory timing groups/i })).toHaveTextContent(/coffin rig/i);
     expect(screen.getByText(/no wounds to heal/i)).toBeInTheDocument();
+  });
+
+  it("renders imported relics under Artifacts / Relics instead of Equipment", () => {
+    const basePatch = createPatch();
+    const patch = {
+      ...basePatch,
+      self: basePatch.self
+        ? {
+            ...basePatch.self,
+            character: {
+              ...basePatch.self.character,
+              heldGear: [...basePatch.self.character.heldGear, importedRelic]
+            }
+          }
+        : null
+    } satisfies PhonePatchPayload;
+
+    render(<PhoneInventoryPanel patch={patch} onIntent={vi.fn()} />);
+
+    const relicCard = screen.getByLabelText(/oathchain lens: usable now/i);
+    const relicGroup = relicCard.closest(".phone-inventory-group");
+
+    expect(relicGroup).toHaveTextContent(/artifacts \/ relics/i);
+    expect(relicGroup).not.toHaveTextContent(/^equipment$/i);
+    expect(relicCard.querySelector(".phone-wrap-card__image")).toHaveAttribute(
+      "src",
+      "/assets/cards/artifacts/artifact-oathchain-lens.png"
+    );
+    expect(relicCard).toHaveTextContent(/2\/2 uses/i);
   });
 
   it("shows persistent scar cards and their effects in Inventory status", () => {

@@ -1809,6 +1809,19 @@ export const generatedCardImagePrompts: CardImagePromptCatalogEntry[] = [
     "usage": "Blackstar Ampoule artifact card art."
   },
   {
+    "assetId": "artifact_art_artifact-choir-lantern",
+    "assetType": "artifactCardArt",
+    "cardId": "artifact-choir-lantern",
+    "cardType": "artifact",
+    "title": "Choir Lantern",
+    "fileName": "artifact-choir-lantern.png",
+    "outputPath": "/assets/cards/artifacts/artifact-choir-lantern.png",
+    "fallbackPath": "/assets/cards/fallbacks/artifact.svg",
+    "prompt": "Ashen Reach original card art, dark gothic sci-fantasy artifact-crawl, 3:4 portrait composition, centered subject with safe margins for card framing, black basalt, charcoal iron, scorched brass, ember red glow, cold blue-white signal light, toxic green salvage light, purple anomaly light, ash, smoke, ritual circuitry, damaged artifact machinery, high contrast, readable silhouette, cinematic but grounded, no text, single artifact object centered in frame, dramatic lighting, strong silhouette, no hands unless necessary, artifact kind charged artifact, charge state 2, A brass ward-lantern that refuses flame, burning instead with a cold choir signal, It lights safest when everyone nearby stops breathing, Recovered the Choir Lantern and bound its remaining ward charges, brass, black stone, glass, ember cores, blue-white signal lines",
+    "negativePrompt": "readable text, logo, watermark, UI, dice, card frame, board game brand, Talisman, copied fantasy board game art, copyrighted character, modern city, clean spaceship, cartoon, anime, low detail, blurry, cropped subject, overexposed, cluttered composition, illegible silhouette",
+    "usage": "Choir Lantern artifact card art."
+  },
+  {
     "assetId": "artifact_art_artifact-choir-static-censer",
     "assetType": "artifactCardArt",
     "cardId": "artifact-choir-static-censer",
@@ -1978,6 +1991,19 @@ export const generatedCardImagePrompts: CardImagePromptCatalogEntry[] = [
     "usage": "Oath-Chain Ledger artifact card art."
   },
   {
+    "assetId": "artifact_art_artifact-oathchain-lens",
+    "assetType": "artifactCardArt",
+    "cardId": "artifact-oathchain-lens",
+    "cardType": "artifact",
+    "title": "Oathchain Lens",
+    "fileName": "artifact-oathchain-lens.png",
+    "outputPath": "/assets/cards/artifacts/artifact-oathchain-lens.png",
+    "fallbackPath": "/assets/cards/fallbacks/artifact.svg",
+    "prompt": "Ashen Reach original card art, dark gothic sci-fantasy artifact-crawl, 3:4 portrait composition, centered subject with safe margins for card framing, black basalt, charcoal iron, scorched brass, ember red glow, cold blue-white signal light, toxic green salvage light, purple anomaly light, ash, smoke, ritual circuitry, damaged artifact machinery, high contrast, readable silhouette, cinematic but grounded, no text, single artifact object centered in frame, dramatic lighting, strong silhouette, no hands unless necessary, artifact kind faction artifact, charge state 2, A cracked ledger-lens that shows the cost of every promise before the promise is made, Some debts prefer to be seen, Recovered the Oathchain Lens and chained its bargain-sight to the operative, brass, black stone, glass, ember cores, blue-white signal lines",
+    "negativePrompt": "readable text, logo, watermark, UI, dice, card frame, board game brand, Talisman, copied fantasy board game art, copyrighted character, modern city, clean spaceship, cartoon, anime, low detail, blurry, cropped subject, overexposed, cluttered composition, illegible silhouette",
+    "usage": "Oathchain Lens artifact card art."
+  },
+  {
     "assetId": "artifact_art_artifact-pale-ledger-token",
     "assetType": "artifactCardArt",
     "cardId": "artifact-pale-ledger-token",
@@ -2017,6 +2043,19 @@ export const generatedCardImagePrompts: CardImagePromptCatalogEntry[] = [
     "usage": "Rift Anchor Spike artifact card art."
   },
   {
+    "assetId": "artifact_art_artifact-route-star",
+    "assetType": "artifactCardArt",
+    "cardId": "artifact-route-star",
+    "cardType": "artifact",
+    "title": "Route Star",
+    "fileName": "artifact-route-star.png",
+    "outputPath": "/assets/cards/artifacts/artifact-route-star.png",
+    "fallbackPath": "/assets/cards/fallbacks/artifact.svg",
+    "prompt": "Ashen Reach original card art, dark gothic sci-fantasy artifact-crawl, 3:4 portrait composition, centered subject with safe margins for card framing, black basalt, charcoal iron, scorched brass, ember red glow, cold blue-white signal light, toxic green salvage light, purple anomaly light, ash, smoke, ritual circuitry, damaged artifact machinery, high contrast, readable silhouette, cinematic but grounded, no text, single artifact object centered in frame, dramatic lighting, strong silhouette, no hands unless necessary, artifact kind charged artifact, charge state 2, A dead-glass navigation star that points toward the route least hungry for blood, North is for maps. The Reach prefers bargains, Recovered the Route Star and set its surviving route charges, brass, black stone, glass, ember cores, blue-white signal lines",
+    "negativePrompt": "readable text, logo, watermark, UI, dice, card frame, board game brand, Talisman, copied fantasy board game art, copyrighted character, modern city, clean spaceship, cartoon, anime, low detail, blurry, cropped subject, overexposed, cluttered composition, illegible silhouette",
+    "usage": "Route Star artifact card art."
+  },
+  {
     "assetId": "artifact_art_artifact-rune-eye-raven",
     "assetType": "artifactCardArt",
     "cardId": "artifact-rune-eye-raven",
@@ -2054,6 +2093,19 @@ export const generatedCardImagePrompts: CardImagePromptCatalogEntry[] = [
     "prompt": "Ashen Reach original card art, dark gothic sci-fantasy artifact-crawl, 3:4 portrait composition, centered subject with safe margins for card framing, black basalt, charcoal iron, scorched brass, ember red glow, cold blue-white signal light, toxic green salvage light, purple anomaly light, ash, smoke, ritual circuitry, damaged artifact machinery, high contrast, readable silhouette, cinematic but grounded, no text, single artifact object centered in frame, dramatic lighting, strong silhouette, no hands unless necessary, artifact kind burden artifact, charge state 0, A radiant Crownfall burden worth leverage, progress, and a terrible amount of attention, The shard is light until it notices you carrying it, Claimed a Throne-Crown Fragment and marked progress at the cost of heat, brass, black stone, glass, ember cores, blue-white signal lines",
     "negativePrompt": "readable text, logo, watermark, UI, dice, card frame, board game brand, Talisman, copied fantasy board game art, copyrighted character, modern city, clean spaceship, cartoon, anime, low detail, blurry, cropped subject, overexposed, cluttered composition, illegible silhouette",
     "usage": "Throne-Crown Fragment artifact card art."
+  },
+  {
+    "assetId": "artifact_art_artifact-void-key",
+    "assetType": "artifactCardArt",
+    "cardId": "artifact-void-key",
+    "cardType": "artifact",
+    "title": "Void Key",
+    "fileName": "artifact-void-key.png",
+    "outputPath": "/assets/cards/artifacts/artifact-void-key.png",
+    "fallbackPath": "/assets/cards/fallbacks/artifact.svg",
+    "prompt": "Ashen Reach original card art, dark gothic sci-fantasy artifact-crawl, 3:4 portrait composition, centered subject with safe margins for card framing, black basalt, charcoal iron, scorched brass, ember red glow, cold blue-white signal light, toxic green salvage light, purple anomaly light, ash, smoke, ritual circuitry, damaged artifact machinery, high contrast, readable silhouette, cinematic but grounded, no text, single artifact object centered in frame, dramatic lighting, strong silhouette, no hands unless necessary, artifact kind gate artifact, charge state 1, A black key with teeth shaped for gates that have not finished existing, It opens the lock by teaching the lock what fear is, Recovered the Void Key as a final-approach gate artifact, brass, black stone, glass, ember cores, blue-white signal lines",
+    "negativePrompt": "readable text, logo, watermark, UI, dice, card frame, board game brand, Talisman, copied fantasy board game art, copyrighted character, modern city, clean spaceship, cartoon, anime, low detail, blurry, cropped subject, overexposed, cluttered composition, illegible silhouette",
+    "usage": "Void Key artifact card art."
   },
   {
     "assetId": "artifact_art_artifact-void-salt-poultice",

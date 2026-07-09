@@ -1,0 +1,21 @@
+{
+  "id": "void-key",
+  "name": "Void Key",
+  "slot": "utility",
+  "category": "chargedRelic",
+  "statBonus": {
+    "stat": "command",
+    "amount": 1
+  },
+  "activeText": "Spend 1 charge at a gate, lock, or final-approach space to record a void-key route claim.",
+  "useLimit": "charge",
+  "charges": 1,
+  "flavor": "A black key that turns in locks which are not yet built.",
+  "tier": "artifact",
+  "progressionWeight": 3,
+  "cost": 7,
+  "sellValue": 3,
+  "shopCategories": [
+    "relic-dealer"
+  ]
+}
