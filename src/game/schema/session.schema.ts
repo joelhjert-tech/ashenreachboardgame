@@ -89,9 +89,13 @@ export const seatSchema = z.object({
   joinToken: z.string().min(1)
 });
 
+export const noteResourceSchema = z.enum(["vow"]);
+
 export const playerPrivateStateSchema = z.object({
   hand: z.array(z.string()),
   notes: z.array(z.string()).default([]),
+  // Named notes only become counters when a rule can authoritatively spend them.
+  noteResources: z.record(noteResourceSchema, z.number().int().min(0)).optional(),
   rivalryAgenda: z
     .object({
       revealState: z.enum(["hidden", "revealLocked", "revealAvailable", "revealed", "completed", "failed"]),
@@ -247,6 +251,7 @@ export type InteractionMode = z.infer<typeof interactionModeSchema>;
 export type ResolutionStage = z.infer<typeof resolutionStageSchema>;
 export type ActiveResolution = z.infer<typeof activeResolutionSchema>;
 export type Seat = z.infer<typeof seatSchema>;
+export type NoteResource = z.infer<typeof noteResourceSchema>;
 export type PlayerPrivateState = z.infer<typeof playerPrivateStateSchema>;
 export type PlayerState = z.infer<typeof playerStateSchema>;
 export type NemesisChampion = z.infer<typeof nemesisChampionSchema>;

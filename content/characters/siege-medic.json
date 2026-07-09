@@ -36,7 +36,7 @@
     {
       "id": "siege-discipline",
       "name": "Siege Discipline",
-      "text": "At the start of your turn, if you have at least 1 Wound, record 1 Triage Note."
+      "text": "At the start of your turn, if you have at least 1 Wound, record a private triage entry."
     },
     {
       "id": "amber-draught",

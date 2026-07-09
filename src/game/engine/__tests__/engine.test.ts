@@ -2410,13 +2410,14 @@ describe("active objects and table interaction", () => {
       return (entry as { type?: string }).type === "COMBAT_RESOLVED";
     }) as { statBonus?: number; modifierSources?: Array<{ label: string; value: number }> } | undefined;
 
-    expect(resolvedCombat?.statBonus).toBe(6);
+    expect(resolvedCombat?.statBonus).toBe(7);
     expect(resolvedCombat?.modifierSources).toEqual(
       expect.arrayContaining([
         { label: "Base Signal", value: 3 },
         { label: "Permanent Signal", value: 1 },
         { label: "Tuning Spines", value: 1 },
-        { label: "Mira Rift-Twin", value: 1 }
+        { label: "Mira Rift-Twin", value: 1 },
+        { label: "Violet Edge", value: 1 }
       ])
     );
   });
@@ -7391,7 +7392,7 @@ describe("contracts", () => {
     );
   });
 
-  it("lets Cinder Oath steady the Cinder Monk before a scenario confrontation", () => {
+  it("spends a typed Vow Note for Cinder Oath and rejects a second use before the confrontation", () => {
     const characters = createAbilityCharacters();
     const server = new GameRoomServer(
       withOnlyConnectedSeat(
@@ -7405,6 +7406,7 @@ describe("contracts", () => {
             {
               ...createState().players[0]!,
               sectorId: "center_cinder_gate",
+              private: { hand: [], notes: [], noteResources: {} },
               character: {
                 ...cloneCharacter(characters.get("cinder-monk")),
                 currentSpaceId: "center_cinder_gate",
@@ -7437,15 +7439,54 @@ describe("contracts", () => {
       createEscalations()
     );
 
+    const sent: Array<Record<string, unknown>> = [];
+    const client = createCapturingClient("seat-1", sent);
+
+    server.handleIntent(client, {
+      type: "USE_CHARACTER_ABILITY",
+      seatId: "seat-1",
+      abilityId: "cinder-oath"
+    });
+
+    expect(sent.at(-1)).toMatchObject({
+      type: "INTENT_REJECTED",
+      actionType: "USE_CHARACTER_ABILITY",
+      reason: "Cinder Oath requires 1 Vow Note."
+    });
+
+    server.getState().players[0]!.private.noteResources = { vow: 1 };
+
+    server.handleIntent(client, {
+      type: "USE_CHARACTER_ABILITY",
+      seatId: "seat-1",
+      abilityId: "cinder-oath"
+    });
+
+    expect(server.getState().players[0]?.private.noteResources?.vow).toBe(0);
+
+    server.handleIntent(client, {
+      type: "USE_CHARACTER_ABILITY",
+      seatId: "seat-1",
+      abilityId: "cinder-oath"
+    });
+
+    expect(sent.at(-1)).toMatchObject({
+      type: "INTENT_REJECTED",
+      actionType: "USE_CHARACTER_ABILITY",
+      reason: "Cinder Oath has already been prepared this round."
+    });
+
     runIntent(server, {
       type: "SCENARIO_CONFRONTATION_REQUESTED",
       seatId: "seat-1"
     });
 
     expect(server.getState().players[0]?.character.heat).toBe(1);
-    expect(server.getState().players[0]?.private.notes).toContain(
-      "Cinder Oath made the confrontation feel survivable before the first test landed."
-    );
+    const confrontation = [...server.getState().eventLog].reverse().find((entry) => {
+      return (entry as { type?: string }).type === "SCENARIO_PROGRESS_ADVANCED";
+    }) as { summary?: string } | undefined;
+
+    expect(confrontation?.summary).toContain("Cinder Oath +2 applied to each test.");
   });
 
   it("lets Ash Tithe pay the Oathbroken Prince when a contract closes", () => {

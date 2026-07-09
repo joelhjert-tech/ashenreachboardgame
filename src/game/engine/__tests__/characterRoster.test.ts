@@ -100,9 +100,20 @@ describe("character roster content", () => {
       command: 2,
       grit: 5,
       signal: 1,
-      guile: 2,
-      forge: 5
+      guile: 3,
+      forge: 4
     });
+  });
+
+  it("keeps Bjornis and Ker distinct while preserving their 15-point budgets", () => {
+    const characters = loadCharacters();
+    const bjornis = characters.get("char_bjornis");
+    const ker = characters.get("char_ker_von_ker");
+
+    expect(bjornis?.stats).toEqual({ command: 2, grit: 5, signal: 1, guile: 3, forge: 4 });
+    expect(ker?.stats).toEqual({ command: 1, grit: 5, signal: 1, guile: 3, forge: 5 });
+    expect(Object.values(bjornis?.stats ?? {}).reduce((sum, value) => sum + value, 0)).toBe(15);
+    expect(Object.values(ker?.stats ?? {}).reduce((sum, value) => sum + value, 0)).toBe(15);
   });
 
   it("includes Rumi as a playable Violet Riftblade", () => {

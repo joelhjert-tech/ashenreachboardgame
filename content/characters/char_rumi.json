@@ -31,17 +31,17 @@
     {
       "id": "glassmere-footwork",
       "name": "Glassmere Footwork",
-      "text": "Once per round, you may evade one non-boss enemy in an anomaly or mirror sector."
+      "text": "Descriptive only. Rumi specializes in slipping past lesser enemies in anomaly and mirror ground."
     },
     {
       "id": "rift-flame-hand",
       "name": "Rift-Flame Hand",
-      "text": "After you fail a Signal test, you may discard 1 Route Note to reroll that test."
+      "text": "Descriptive only. A failed Signal read leaves Rumi with a revised route insight for a later decision."
     },
     {
       "id": "courtbreaker-smile",
       "name": "Courtbreaker Smile",
-      "text": "Once per round, after you pass a Guile test against a noble, mirror, or court sector, record 1 Route Note. Weakness: Violet Edge cannot be used on Forge or Command tests."
+      "text": "Descriptive only. Rumi turns successful Guile reads in courtly or mirrored ground into route intelligence. Weakness: Violet Edge cannot be used on Forge or Command tests."
     }
   ],
   "startingGear": [

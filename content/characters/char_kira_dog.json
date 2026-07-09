@@ -31,17 +31,17 @@
     {
       "id": "loyal-guard",
       "name": "Loyal Guard",
-      "text": "Once per round, when another operative in your sector would take 1 Wound, you may take that Wound instead and gain +1 on your next battle this turn."
+      "text": "Descriptive only. Kira is the roster's guardian striker; ally-damage transfer needs an explicit shared-reaction window before it can become a live rule."
     },
     {
       "id": "ash-scent-tracker",
       "name": "Ash-Scent Tracker",
-      "text": "Once per round, after threats are revealed in your sector, inspect one unresolved non-blue threat there."
+      "text": "Descriptive only. Kira tracks non-blue threats after they are revealed."
     },
     {
       "id": "heroic-bite",
       "name": "Heroic Bite",
-      "text": "After you defeat an enemy with difficulty 7 or higher, gain 1 Spoil. Weakness: Ash-Scent Tracker cannot inspect blue Anomalies."
+      "text": "After you defeat an enemy with difficulty 7 or higher, mark it as a hard-won trophy in the encounter record. Weakness: Ash-Scent Tracker cannot inspect blue Anomalies."
     }
   ],
   "startingGear": [

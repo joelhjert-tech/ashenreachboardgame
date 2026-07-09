@@ -31,17 +31,17 @@
     {
       "id": "old-oaths",
       "name": "Old Oaths",
-      "text": "Once per round, when you accept a route or escort Contract, record 1 Convoy Note."
+      "text": "Once per round, when you accept a route or escort Contract, record a private convoy briefing."
     },
     {
       "id": "chain-signal",
       "name": "Chain Signal",
-      "text": "After you clear a movement or contract sector, leave 1 Convoy Note there. The next operative entering that sector gains +1 to their first non-battle test."
+      "text": "Descriptive only. Orenna's cleared movement and contract sectors carry a convoy briefing for the next operative."
     },
     {
       "id": "fleet-memory",
       "name": "Fleet Memory",
-      "text": "At the start of your turn, if scenario pressure is above 0, record 1 Convoy Note. Weakness: Convoy Notes cannot be spent on your own Grit battles."
+      "text": "At the start of your turn, if scenario pressure is above 0, record a private convoy briefing."
     }
   ],
   "startingGear": [

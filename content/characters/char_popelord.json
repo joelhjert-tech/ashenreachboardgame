@@ -31,17 +31,17 @@
     {
       "id": "compost-cape",
       "name": "Compost Cape",
-      "text": "Once per round, the first yellow trap or ambush you face has -1 difficulty."
+      "text": "Once per round, the first yellow hazard you face has -1 difficulty."
     },
     {
       "id": "yard-king",
       "name": "Yard King",
-      "text": "Once per round, after you clear a salvage, hazard, or mire sector, gain 1 Salvage."
+      "text": "Descriptive only. Popelord turns cleared salvage and hazard ground into a stronger local haul."
     },
     {
       "id": "ripe-warning",
       "name": "Ripe Warning",
-      "text": "When another operative enters your sector, they may inspect one unresolved yellow blocker there. Weakness: when you fail a blue Anomaly test, take 1 Wound unless you discard 1 Salvage."
+      "text": "Descriptive only. Popelord warns arrivals about unresolved yellow blockers. Weakness: failed blue Anomaly tests remain especially dangerous."
     }
   ],
   "startingGear": [

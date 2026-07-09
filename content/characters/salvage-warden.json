@@ -36,7 +36,7 @@
     {
       "id": "yard-warden",
       "name": "Yard Warden",
-      "text": "After you clear a salvage site, record 1 Yard Note. The next time you sell Gear this round, gain +1 Salvage."
+      "text": "After you clear a salvage site, record the yard's cleanest sale route in your private notes."
     },
     {
       "id": "last-haul",

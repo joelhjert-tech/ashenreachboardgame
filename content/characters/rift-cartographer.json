@@ -26,12 +26,12 @@
     {
       "id": "breach-atlas",
       "name": "Breach Atlas",
-      "text": "Once per round, after you enter or clear a movement/anomaly sector, record 1 Route Note."
+      "text": "Once per round, after you enter or clear a movement/anomaly sector, record a private route insight."
     },
     {
       "id": "ghost-mile",
       "name": "Ghost Mile",
-      "text": "When you fail a movement or route test, you may spend 1 Route Note to reroll it."
+      "text": "Descriptive only. A failed movement or route test leaves Senna with a revised route insight for a later decision."
     },
     {
       "id": "surveyor-cut",
@@ -41,7 +41,7 @@
     {
       "id": "rift-script",
       "name": "Rift Script",
-      "text": "After you pass a Signal or Guile test, another operative may use one Route Note from your sector this round. Weakness: Route Notes cannot be spent on battle rolls."
+      "text": "Descriptive only. After a clean Signal or Guile read, Senna shares route intelligence with the sector."
     }
   ],
   "startingGear": [

@@ -31,7 +31,7 @@
     {
       "id": "silent-audit",
       "name": "Silent Audit",
-      "text": "Once per round, after you clear a sector with no unresolved blockers, record 1 Leverage Note."
+      "text": "Once per round, after you clear a sector with no unresolved blockers, record a private leverage entry."
     },
     {
       "id": "debt-knife",
@@ -41,7 +41,7 @@
     {
       "id": "black-file",
       "name": "Black File",
-      "text": "Once per round, after you complete a Contract, record 1 Leverage Note and reduce scenario pressure by 1 if it is above 0. Weakness: Leverage Notes cannot be spent on battles unrelated to your Contract."
+      "text": "Once per round, after you complete a Contract, record a private leverage entry and reduce scenario pressure by 1 if it is above 0."
     }
   ],
   "startingGear": [

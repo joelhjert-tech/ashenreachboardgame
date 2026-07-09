@@ -651,6 +651,11 @@ export type ClientIntent =
       followerId: string;
     }
   | {
+      type: "USE_CHARACTER_ABILITY";
+      seatId: string;
+      abilityId: string;
+    }
+  | {
       type: "TABLE_INTERACTION";
       seatId: string;
       targetSeatId: string;

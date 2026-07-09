@@ -8,8 +8,8 @@
     "command": 2,
     "grit": 5,
     "signal": 1,
-    "guile": 2,
-    "forge": 5
+    "guile": 3,
+    "forge": 4
   },
   "trophies": 0,
   "heat": 0,
@@ -26,17 +26,17 @@
     {
       "id": "firebreak-vow",
       "name": "Firebreak Vow",
-      "text": "Passive. Add +1 Grit against red threats and enemies in ember or fire sectors."
+      "text": "Passive. Add +1 Grit against red threats and while fighting in Cinder Fields."
     },
     {
       "id": "smoke-sniffer",
       "name": "Smoke Sniffer",
-      "text": "Once per round, before you resolve a red hazard or fire-marked sector action, inspect the target or blocker summary before choosing Gear."
+      "text": "Descriptive only. Bjornis reads smoke, scorch, and enemy movement before committing Gear."
     },
     {
       "id": "cinder-hug",
       "name": "Cinder Hug",
-      "text": "Once per round, when another operative in your sector would take 1 Wound or retreat from a red threat, you may take 1 Wound to cancel that effect for them."
+      "text": "Descriptive only. Bjornis is the roster's red-lane protector; ally-damage transfer needs an explicit shared-reaction window before it can become a live rule."
     },
     {
       "id": "foam-and-fury",

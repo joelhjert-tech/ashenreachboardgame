@@ -198,6 +198,8 @@ const RESOLUTION_AUTO_CONTINUE_MS = process.env.VITEST ? 1 : 10000;
 const VISIBLE_DICE_ROLL_MS = process.env.VITEST ? 0 : 650;
 const FANDIABLOS_ID = "fandiablos";
 const MASTER_ALPHA_ID = "char_master_alpha";
+// Save compatibility only: the user-facing relic has long been Scar-Sink Prayer.
+const LEGACY_SCAR_SINK_PRAYER_ID = "heat-sink-prayer";
 const RECENT_ENCOUNTER_LIMIT = 12;
 const STARTING_CONTRACT_OPTION_COUNT = 3;
 
@@ -303,6 +305,7 @@ const CLIENT_INTENT_TYPES = new Set<string>([
   "UNEQUIP_GEAR",
   "USE_GEAR",
   "USE_FOLLOWER",
+  "USE_CHARACTER_ABILITY",
   "TABLE_INTERACTION",
   "SHOP_SERVICE_REQUESTED",
   "SHOP_PURCHASE_REQUESTED",
@@ -591,6 +594,12 @@ export class GameRoomServer {
 
       if (intent.type === "RAISE_STAT_REQUESTED") {
         this.resolveRaiseStatIntent(intent);
+        this.broadcastPatch();
+        return;
+      }
+
+      if (intent.type === "USE_CHARACTER_ABILITY") {
+        this.resolveCharacterAbilityIntent(intent);
         this.broadcastPatch();
         return;
       }
@@ -1207,6 +1216,9 @@ export class GameRoomServer {
       case "USE_FOLLOWER":
         requireStringField(message, "followerId", type);
         break;
+      case "USE_CHARACTER_ABILITY":
+        requireStringField(message, "abilityId", type);
+        break;
       case "TABLE_INTERACTION":
         requireStringField(message, "targetSeatId", type);
         requireEnumField(message, "interactionKind", TABLE_INTERACTION_VALUES, type);
@@ -1390,6 +1402,35 @@ export class GameRoomServer {
     ]);
   }
 
+  private hasKerPreventedWoundThisRound(seatId: string): boolean {
+    for (let index = this.state.eventLog.length - 1; index >= 0; index -= 1) {
+      const entry = this.state.eventLog[index] as { type?: string; seatId?: string; effect?: EncounterEffect } | undefined;
+
+      if (entry?.type === "ROUND_COMPLETED") {
+        return false;
+      }
+
+      if (entry?.seatId === seatId && this.effectContainsNote(entry.effect, "Hold the Line prevented")) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  private maybeApplyKerWoundPrevention(seatId: string, effect: EncounterEffect): EncounterEffect {
+    const player = this.state.players.find((entry) => entry.seatId === seatId);
+
+    if (player?.character.id !== "char_ker_von_ker" || !this.effectContainsWound(effect) || this.hasKerPreventedWoundThisRound(seatId)) {
+      return effect;
+    }
+
+    return this.makeEffectSequence([
+      this.reduceFirstWound(effect) ?? { type: "gain_note", text: "Hold the Line absorbed the full wound event." },
+      { type: "gain_note", text: "Hold the Line prevented 1 Wound." }
+    ]);
+  }
+
   private getPendingRollModifierSources(seatId: string, stat: Stat, mode: "battle" | "check"): RollModifierSource[] {
     const sources: RollModifierSource[] = [];
 
@@ -1422,6 +1463,71 @@ export class GameRoomServer {
     return sources.reverse();
   }
 
+  private hasResolvedCheckOrCombatThisTurn(seatId: string): boolean {
+    for (let index = this.state.eventLog.length - 1; index >= 0; index -= 1) {
+      const entry = this.state.eventLog[index] as { type?: string; seatId?: string } | undefined;
+
+      if (entry?.type === "TURN_COMPLETED") {
+        return false;
+      }
+
+      if (entry?.seatId === seatId && (entry.type === "CHECK_ROLLED" || entry.type === "COMBAT_RESOLVED")) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  private getCharacterModifierSources(player: PlayerState, stat: Stat, mode: "battle" | "check"): RollModifierSource[] {
+    const encounter = this.state.currentEncounter;
+    const sector = getBoardSpace(player.sectorId);
+    const tags = new Set(sector?.tags ?? []);
+    const firstRollThisTurn = !this.hasResolvedCheckOrCombatThisTurn(player.seatId);
+
+    if (player.character.id === "char_bjornis" && mode === "battle" && stat === "grit" && (encounter?.threatLane === "red" || player.sectorId === "cinder-fields")) {
+      return [{ label: "Firebreak Vow", value: 1 }];
+    }
+
+    if (player.character.id === "char_bjornis" && mode === "check" && stat === "signal" && encounter?.threatLane === "blue") {
+      return [{ label: "Blue Anomaly weakness", value: -1 }];
+    }
+
+    if (player.character.id === "char_ker_von_ker" && mode === "battle" && stat === "grit" && encounter?.cardType === "enemy" && encounter.difficulty >= 8) {
+      return [{ label: "Shield Breaker", value: 1 }];
+    }
+
+    if (player.character.id === "char_kira_dog" && mode === "battle" && stat === "grit" && firstRollThisTurn) {
+      return [{ label: "Houndblade Charge", value: 1 }];
+    }
+
+    if (player.character.id === "char_popelord" && mode === "battle" && stat === "grit" && (tags.has("salvage") || tags.has("hazard"))) {
+      return [{ label: "Mire Pitchfork", value: 1 }];
+    }
+
+    if (player.character.id === "char_rumi" && firstRollThisTurn && (stat === "signal" || stat === "guile")) {
+      return [{ label: "Violet Edge", value: 1 }];
+    }
+
+    return [];
+  }
+
+  private getCharacterDifficultyModifier(player: PlayerState, encounter: ThreatCard): number {
+    if (encounter.cardType !== "hazard" || this.hasResolvedCheckOrCombatThisTurn(player.seatId)) {
+      return 0;
+    }
+
+    if (player.character.id === "signal-witch" && encounter.threatLane === "blue") {
+      return -1;
+    }
+
+    if (player.character.id === "char_popelord" && encounter.threatLane === "yellow") {
+      return -1;
+    }
+
+    return 0;
+  }
+
   private buildStatModifierSources(
     player: PlayerState,
     stat: Stat,
@@ -1445,6 +1551,7 @@ export class GameRoomServer {
 
     sources.push(...getEquippedGearModifierSources(player.character, stat));
     sources.push(...getAfflictionModifierSources(player, stat, mode, getAfflictionCatalog(this.state)));
+    sources.push(...this.getCharacterModifierSources(player, stat, mode));
 
     if (options.scenarioModifier) {
       sources.push({ label: "Scenario", value: options.scenarioModifier });
@@ -1671,7 +1778,7 @@ export class GameRoomServer {
         return { type: "gain_note", text: "Blackstar Ampoule spent: one failed movement or hazard penalty may be ignored." };
       case "choir-static-censer":
         return { type: "gain_note", text: "Choir Static Censer spent: legacy pressure relief is deprecated; Scars remain the persistent harm track." };
-      case "heat-sink-prayer":
+      case LEGACY_SCAR_SINK_PRAYER_ID:
         return { type: "gain_note", text: "Scar-Sink Prayer steadied the operative; legacy pressure relief is deprecated." };
       case "cinder-suture-kit":
         return {
@@ -2274,7 +2381,10 @@ export class GameRoomServer {
       success ? encounter.successEffectKey : encounter.failEffectKey,
       success ? "onSuccess" : "onFailure"
     );
-    const outcomeEffect = this.maybeApplyFandiablosWoundPrevention(intent.seatId, resolvedOutcomeEffect);
+    const outcomeEffect = this.maybeApplyKerWoundPrevention(
+      intent.seatId,
+      this.maybeApplyFandiablosWoundPrevention(intent.seatId, resolvedOutcomeEffect)
+    );
 
     return {
       type: "SOLO_REROLL_RESOLVED",
@@ -3454,6 +3564,10 @@ export class GameRoomServer {
           ...entry,
           private: {
             ...entry.private,
+            noteResources: {
+              ...(entry.private.noteResources ?? {}),
+              vow: (entry.private.noteResources?.vow ?? 0) + 1
+            },
             notes: [...entry.private.notes, "Ash Psalm hardened the cleared line into a disciplined hold."]
           }
         })
@@ -3633,6 +3747,27 @@ export class GameRoomServer {
     }
 
     if (
+      player.character.id === "char_bjornis" &&
+      this.state.currentEncounter?.threatLane === "red" &&
+      !this.hasAbilityTriggeredThisRound(seatId, "foam-and-fury") &&
+      this.state.escalationLevel > 0
+    ) {
+      this.applyAbilityMutation(
+        seatId,
+        "foam-and-fury",
+        "Foam and Fury turned the red-threat victory into 1 less scenario pressure.",
+        (entry) => ({
+          ...entry,
+          private: {
+            ...entry.private,
+            notes: [...entry.private.notes, "Foam and Fury reduced scenario pressure after the red-threat victory."]
+          }
+        })
+      );
+      this.feedEscalation(seatId, -1, "Foam and Fury");
+    }
+
+    if (
       player.character.id === "black-ledger-agent" &&
       player.character.activeContract &&
       !this.hasAbilityTriggeredThisRound(seatId, "debt-knife")
@@ -3708,29 +3843,6 @@ export class GameRoomServer {
     }
   }
 
-  private maybeTriggerAbilityOnScenarioConfrontationRequested(seatId: string): void {
-    const player = this.state.players.find((entry) => entry.seatId === seatId);
-
-    if (!player) {
-      return;
-    }
-
-    if (player.character.id === "cinder-monk" && !this.hasAbilityTriggeredThisRound(seatId, "cinder-oath")) {
-      this.applyAbilityMutation(
-        seatId,
-        "cinder-oath",
-        "Cinder Oath hardened the Monk before the core-ward trial broke open.",
-        (entry) => ({
-          ...entry,
-          private: {
-            ...entry.private,
-            notes: [...entry.private.notes, "Cinder Oath made the confrontation feel survivable before the first test landed."]
-          }
-        })
-      );
-    }
-  }
-
   private maybeTriggerEscalationAbility(seatId: string, delta: number, reason: string): void {
     const player = this.state.players.find((entry) => entry.seatId === seatId);
 
@@ -3797,26 +3909,22 @@ export class GameRoomServer {
       return;
     }
 
-    this.state = {
-      ...this.state,
-      sequence: this.state.sequence + 1,
-      eventLog: [
-        ...this.state.eventLog,
-        {
-          type: "ABILITY_TRIGGERED",
-          seatId,
-          abilityId: "bone-bell",
-          summary: "Bone Bell answered the first escalation spike this round.",
-          createdAt: new Date().toISOString()
+    this.applyAbilityMutation(
+      seatId,
+      "bone-bell",
+      "Bone Bell gained 1 Vow Note from the first escalation spike this round.",
+      (entry) => ({
+        ...entry,
+        private: {
+          ...entry.private,
+          noteResources: {
+            ...(entry.private.noteResources ?? {}),
+            vow: (entry.private.noteResources?.vow ?? 0) + 1
+          },
+          notes: [...entry.private.notes, "Bone Bell recorded 1 Vow Note."]
         }
-      ],
-      lastOutcomeSummary: this.state.lastOutcomeSummary
-        ? {
-            ...this.state.lastOutcomeSummary,
-            summary: `${this.state.lastOutcomeSummary.summary} Bone Bell answered the spike.`
-          }
-        : this.state.lastOutcomeSummary
-    };
+      })
+    );
 
     this.feedEscalation(seatId, -1, "Bone Bell");
   }
@@ -4729,7 +4837,12 @@ export class GameRoomServer {
     const roll =
       movementProfile && !movementProfile.movementRollAllowed
         ? { faces: movementProfile.movementAmount ? [movementProfile.movementAmount] : [], total: movementProfile.movementAmount ?? 0 }
-        : rollDice(1, 6, this.randomSource);
+        : activePlayer.character.id === "char_ker_von_ker"
+          ? (() => {
+              const dice = rollDice(2, 6, this.randomSource);
+              return { faces: dice.faces, total: Math.min(...dice.faces) };
+            })()
+          : rollDice(1, 6, this.randomSource);
 
     if (roll.total < 1) {
       throw new IntentRejectedError("MOVEMENT_ROLL_REQUESTED", "Movement is not available from this sector");
@@ -5009,7 +5122,8 @@ export class GameRoomServer {
     });
     const roll = rollDice(2, 6, this.randomSource);
     const statBonus = this.sumModifierSources(modifierSources);
-    const difficulty = encounter.difficulty + escalationModifier + (keyedModifiers.difficultyModifier ?? 0);
+    const characterDifficultyModifier = this.getCharacterDifficultyModifier(player, encounter);
+    const difficulty = encounter.difficulty + escalationModifier + (keyedModifiers.difficultyModifier ?? 0) + characterDifficultyModifier;
     const total = roll.total + statBonus;
     const success = total >= difficulty;
     const baseOutcomeEffect = this.combineEffects(
@@ -5024,7 +5138,10 @@ export class GameRoomServer {
       success ? encounter.successEffectKey : encounter.failEffectKey,
       success ? "onSuccess" : "onFailure"
     );
-    const outcomeEffect = this.maybeApplyFandiablosWoundPrevention(intent.seatId, resolvedOutcomeEffect);
+    const outcomeEffect = this.maybeApplyKerWoundPrevention(
+      intent.seatId,
+      this.maybeApplyFandiablosWoundPrevention(intent.seatId, resolvedOutcomeEffect)
+    );
 
     this.applyAction({
       type: "CHECK_ROLLED",
@@ -5410,6 +5527,48 @@ export class GameRoomServer {
     this.maybeTriggerAbilityOnSpaceTextResolved(intent.seatId, resolution.effectKey);
   }
 
+  private resolveCharacterAbilityIntent(intent: Extract<ClientIntent, { type: "USE_CHARACTER_ABILITY" }>): void {
+    const player = this.state.players.find((entry) => entry.seatId === intent.seatId);
+
+    if (!player || player.character.id !== "cinder-monk" || intent.abilityId !== "cinder-oath") {
+      throw new IntentRejectedError(intent.type, "That character ability is not available to this operative.");
+    }
+
+    if (this.state.status !== "active" || this.state.phase !== "action") {
+      throw new IntentRejectedError(intent.type, "Cinder Oath can only be prepared during your action phase before the confrontation.");
+    }
+
+    if (this.state.turnOrder[this.state.activeSeatIndex] !== intent.seatId) {
+      throw new IntentRejectedError(intent.type, "Only the active operative can prepare Cinder Oath.");
+    }
+
+    if (this.hasAbilityTriggeredThisRound(intent.seatId, "cinder-oath")) {
+      throw new IntentRejectedError(intent.type, "Cinder Oath has already been prepared this round.");
+    }
+
+    const vowNotes = player.private.noteResources?.vow ?? 0;
+    if (vowNotes < 1) {
+      throw new IntentRejectedError(intent.type, "Cinder Oath requires 1 Vow Note.");
+    }
+
+    this.applyAbilityMutation(
+      intent.seatId,
+      "cinder-oath",
+      "Cinder Oath spent 1 Vow Note; the next scenario confrontation gains +2 to each test.",
+      (entry) => ({
+        ...entry,
+        private: {
+          ...entry.private,
+          noteResources: {
+            ...(entry.private.noteResources ?? {}),
+            vow: Math.max(0, (entry.private.noteResources?.vow ?? 0) - 1)
+          },
+          notes: [...entry.private.notes, "Cinder Oath is prepared: +2 to the next scenario confrontation test."]
+        }
+      })
+    );
+  }
+
   resolveScenarioConfrontationIntent(intent: Extract<ClientIntent, { type: "SCENARIO_CONFRONTATION_REQUESTED" }>): void {
     const player = this.state.players.find((entry) => entry.seatId === intent.seatId);
     const scenario = getScenarioDefinition(this.state.activeScenarioId);
@@ -5445,18 +5604,17 @@ export class GameRoomServer {
       throw new IntentRejectedError(intent.type, gateBlockReason);
     }
 
-    this.maybeTriggerAbilityOnScenarioConfrontationRequested(intent.seatId);
-
     const plan = this.buildScenarioPlan(player);
     const nemesis = this.getActiveNemesis();
     const confrontationModifier = getEscalationModifier(this.state.escalationLevel);
 
+    const cinderOathBonus = player.character.id === "cinder-monk" && this.hasAbilityTriggeredThisRound(intent.seatId, "cinder-oath") ? 2 : 0;
     const results = plan.checks.map((check) => {
       const roll = rollDice(2, 6, this.randomSource);
       const statBonus =
         player.character.stats[check.stat] +
         getEquippedGearModifierSources(player.character, check.stat).reduce((sum, source) => sum + source.value, 0) +
-        this.getScenarioSkillModifier(intent.seatId);
+        this.getScenarioSkillModifier(intent.seatId) + cinderOathBonus;
       const difficulty = check.difficulty + confrontationModifier;
       const total = roll.total + statBonus;
 
@@ -5532,7 +5690,7 @@ export class GameRoomServer {
           : "No backlash.";
 
     const summary = [
-      `${scenario.confrontationTitle}: ${marksEarned} ${plan.markLabel}${marksEarned === 1 ? "" : "s"} earned.`,
+      `${scenario.confrontationTitle}: ${marksEarned} ${plan.markLabel}${marksEarned === 1 ? "" : "s"} earned.${cinderOathBonus ? " Cinder Oath +2 applied to each test." : player.character.id === "cinder-monk" ? " Cinder Oath unavailable: no prepared Vow Note." : ""}`,
       ...results.map((result) =>
         `${result.label} via ${result.stat} ${result.total}/${result.difficulty} ${result.success ? "passed" : "failed"}`
       ),
@@ -6191,7 +6349,10 @@ export class GameRoomServer {
             }
           ])
         : resolvedOutcomeEffect;
-    const outcomeEffect = this.maybeApplyFandiablosWoundPrevention(fighterSeatId, afflictionOutcomeEffect);
+    const outcomeEffect = this.maybeApplyKerWoundPrevention(
+      fighterSeatId,
+      this.maybeApplyFandiablosWoundPrevention(fighterSeatId, afflictionOutcomeEffect)
+    );
 
     this.applyAction({
       type: "COMBAT_RESOLVED",

@@ -41,7 +41,7 @@
     {
       "id": "ruin-courtesy",
       "name": "Ruin Courtesy",
-      "text": "Once per round, after you enter a danger 2+ sector, record 1 Debt Note. Weakness: Broken Claim cannot gain bonus progress from blue Anomaly sectors."
+      "text": "Once per round, after you enter a danger 2+ sector, record a private debt entry. Weakness: Broken Claim cannot gain bonus progress from blue Anomaly sectors."
     }
   ],
   "startingGear": [

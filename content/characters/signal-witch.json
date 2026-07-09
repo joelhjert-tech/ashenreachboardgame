@@ -26,12 +26,12 @@
     {
       "id": "witchglass-choir",
       "name": "Witchglass Choir",
-      "text": "Once per round, after you pass a Signal test, record 1 Route Note."
+      "text": "Once per round, after you pass a Signal test, record a private route insight."
     },
     {
       "id": "route-burn",
       "name": "Route Burn",
-      "text": "After you clear a blue or movement sector, leave 1 Route Note on that sector for any operative."
+      "text": "Descriptive only. After clearing blue or movement ground, Lane leaves route intelligence for the table."
     },
     {
       "id": "hush-static",
@@ -41,7 +41,7 @@
     {
       "id": "choir-lash",
       "name": "Choir Lash",
-      "text": "Once per round, when scenario pressure rises on your turn, record 1 Route Note. Weakness: Route Notes cannot be used on Grit battles."
+      "text": "Once per round, when scenario pressure rises on your turn, record a private route insight."
     }
   ],
   "startingGear": [

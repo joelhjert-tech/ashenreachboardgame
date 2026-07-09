@@ -5,10 +5,10 @@
   "currentSpaceId": "emberwatch-step",
   "status": "active",
   "stats": {
-    "command": 2,
+    "command": 1,
     "grit": 5,
     "signal": 1,
-    "guile": 2,
+    "guile": 3,
     "forge": 5
   },
   "trophies": 0,
@@ -36,12 +36,12 @@
     {
       "id": "close-quarters-doctrine",
       "name": "Close-Quarters Doctrine",
-      "text": "Once per round, before a battle in your sector, you may ignore evade options to add +1 to that battle."
+      "text": "Descriptive only. Ker refuses evasive lines and commits to holding the battle space."
     },
     {
       "id": "hold-the-line",
       "name": "Hold the Line",
-      "text": "Once per round, after battle or hazard damage is assigned to you, prevent 1 Wound. Weakness: when you roll movement, roll 2 dice and use the lower result."
+      "text": "Once per round, the first battle or hazard Wound assigned to you is prevented. Weakness: when you roll movement, roll 2 dice and use the lower result."
     }
   ],
   "startingGear": [

@@ -26,22 +26,22 @@
     {
       "id": "void-command",
       "name": "Void Command",
-      "text": "Once per round, after you clear a sector or complete a Contract, record 1 Command Note."
+      "text": "Once per round, after you clear a sector or complete a Contract, record a private command briefing."
     },
     {
       "id": "ashwake-step",
       "name": "Ashwake Step",
-      "text": "At the start of your turn in a clear sector, record 1 Command Note."
+      "text": "At the start of your turn in a clear sector, record a private command briefing."
     },
     {
       "id": "signal-relay",
       "name": "Signal Relay",
-      "text": "When another operative in your sector rolls a battle or test, you may spend 1 Command Note to give them +1."
+      "text": "Once per round, after you win a battle with another operative in your sector, record how the command relay held the line."
     },
     {
       "id": "marshal-presence",
       "name": "Marshal's Presence",
-      "text": "Once per round, after a successful objective push, reduce scenario pressure by 1 if it is above 0. Weakness: Command Notes cannot be spent on your own Signal tests."
+      "text": "Once per round, after a successful objective push, reduce scenario pressure by 1 if it is above 0."
     }
   ],
   "startingGear": [
