@@ -1899,6 +1899,14 @@ select {
   padding: 0.62rem;
 }
 
+.phone-portrait-screen > .phone-portrait-section {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
 .phone-shell--immersive .phone-portrait-screen {
   gap: 0.62rem;
 }
