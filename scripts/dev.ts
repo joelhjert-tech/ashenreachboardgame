@@ -10,7 +10,8 @@ async function main(): Promise<void> {
   });
   const server = await startAshenReachServer({
     clientPort: resolvedClientPort,
-    logUrls: false
+    logUrls: false,
+    qaFixturesEnabled: process.env.ASHEN_REACH_QA_FIXTURES === "1"
   });
 
   const apiOrigin = `http://${server.lanHost}:${server.port}`;

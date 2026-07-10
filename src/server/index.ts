@@ -11,6 +11,7 @@ import type { GameMode, InteractionMode, SessionMode } from "../game/schema/sess
 import { SCENARIOS, getScenarioDefinition } from "../game/data/scenarios.js";
 import { getScenarioSheetArtPath } from "../game/data/scenarioSheetArt.js";
 import { nemeses } from "../game/data/nemeses.js";
+import { applyPhaseOneQaFixture, type PhaseOneQaFixture } from "./phaseOneQaFixture.js";
 
 const DEFAULT_SERVER_PORT = 8080;
 const DEFAULT_CLIENT_PORT = 5173;
@@ -23,6 +24,7 @@ export interface StartAshenReachServerOptions {
   host?: string;
   maxPortAttempts?: number;
   logUrls?: boolean;
+  qaFixturesEnabled?: boolean;
 }
 
 export interface StartedAshenReachServer {
@@ -109,7 +111,7 @@ function getPlayerCountError(sessionMode: SessionMode, gameMode: GameMode, playe
   return null;
 }
 
-function createHttpServer(): HttpServer {
+function createHttpServer(qaFixturesEnabled: boolean): HttpServer {
   return createServer(async (request, response) => {
     if (!request.url) {
       sendJson(response, 400, { error: "Missing request URL" });
@@ -129,6 +131,25 @@ function createHttpServer(): HttpServer {
     const url = new URL(request.url, `http://${request.headers.host ?? "localhost"}`);
 
     try {
+      if (request.method === "POST" && url.pathname === "/api/qa/phase1-fixture") {
+        if (!qaFixturesEnabled) {
+          sendJson(response, 404, { error: "Not found" });
+          return;
+        }
+        const body = (await readJsonBody(request)) as { roomCode?: string; seatToken?: string; fixture?: PhaseOneQaFixture };
+        if (body.roomCode !== roomServer.getState().sessionId || !body.seatToken || !body.fixture) {
+          sendJson(response, 400, { error: "Valid room, seat token, and fixture are required" });
+          return;
+        }
+        const tokenPayload = validateJoinToken(body.seatToken, roomServer.getState().sessionId);
+        if (!tokenPayload) {
+          sendJson(response, 403, { error: "Invalid seat token" });
+          return;
+        }
+        applyPhaseOneQaFixture(roomServer.getState(), tokenPayload.seatId, body.fixture);
+        sendJson(response, 200, { ok: true, fixture: body.fixture, sequence: roomServer.getState().sequence });
+        return;
+      }
       if (request.method === "GET" && url.pathname === "/api/session") {
         sendJson(response, 200, {
           roomCode: roomServer.getState().sessionId,
@@ -557,7 +578,7 @@ export async function startAshenReachServer(
   const host = options.host ?? DEFAULT_SERVER_HOST;
   const maxPortAttempts = options.maxPortAttempts ?? DEFAULT_PORT_ATTEMPTS;
   const logUrls = options.logUrls ?? true;
-  const httpServer = createHttpServer();
+  const httpServer = createHttpServer(options.qaFixturesEnabled ?? false);
   const websocketServer = new WebSocketServer({ server: httpServer });
 
   roomServer.attach(websocketServer);
