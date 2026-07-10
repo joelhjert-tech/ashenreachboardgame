@@ -352,6 +352,11 @@ export function BoardMap({ patch, previousPatch = null, phase, showHeader = true
   const sectorsById = useMemo(() => new Map(patch.sectors.map((sector) => [sector.id, sector] as const)), [patch.sectors]);
   const movementPlanner = patch.movementPlanner?.active ? patch.movementPlanner : null;
   useEffect(() => {
+    if (movementPlanner?.selectedDestinationId) {
+      setSelectedNodeId(movementPlanner.selectedDestinationId);
+    }
+  }, [movementPlanner?.selectedDestinationId]);
+  useEffect(() => {
     if (!movementPlanner || !activeSeatId) {
       return;
     }

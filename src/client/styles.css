@@ -31,6 +31,110 @@
   font-family: var(--font-body);
 }
 
+/* TV movement focus: centered HUD cards over a board that remains full-size. */
+.tv-command-dashboard--movement-focus .tv-command-header {
+  flex-shrink: 0;
+}
+
+.tv-movement-focus {
+  inset: clamp(0.45rem, 0.8vw, 0.8rem);
+  display: grid;
+  grid-template-columns: minmax(12rem, 17rem) minmax(16rem, 24rem);
+  grid-template-areas:
+    "heading heading"
+    "roll destination"
+    "travel travel"
+    "timeline timeline";
+  justify-content: center;
+  align-content: center;
+  gap: clamp(0.45rem, 0.75vw, 0.8rem);
+}
+
+.tv-movement-focus-heading,
+.tv-movement-focus-roll,
+.tv-movement-focus-destination,
+.tv-movement-focus-travel,
+.tv-movement-focus-timeline {
+  position: static;
+  inset: auto;
+  width: auto;
+  transform: none;
+  min-width: 0;
+  margin: 0;
+}
+
+.tv-movement-focus-heading {
+  grid-area: heading;
+  justify-self: center;
+  width: min(30rem, 100%);
+}
+
+.tv-movement-focus-roll { grid-area: roll; }
+.tv-movement-focus-destination { grid-area: destination; }
+
+.tv-movement-focus-travel {
+  grid-area: travel;
+  width: min(42rem, 100%);
+  justify-self: center;
+}
+
+.tv-movement-focus-timeline {
+  grid-area: timeline;
+  width: min(44rem, 100%);
+  justify-self: center;
+}
+
+@media (max-width: 1500px), (max-height: 850px) {
+  .tv-movement-focus {
+    grid-template-columns: minmax(11.5rem, 15rem) minmax(15rem, 22rem);
+    gap: 0.42rem 0.58rem;
+  }
+
+  .tv-movement-focus-heading,
+  .tv-movement-focus-roll,
+  .tv-movement-focus-destination,
+  .tv-movement-focus-travel,
+  .tv-movement-focus-timeline {
+    padding-block: 0.42rem;
+  }
+}
+
+.tv-command-dashboard--movement-focus .tv-command-stage-movement-focus {
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
+}
+
+.tv-command-dashboard--movement-focus .tv-command-stage-movement-focus > .tv-command-map-shell,
+.tv-command-dashboard--movement-focus .tv-command-map-shell > .tv-board-panel,
+.tv-command-dashboard--movement-focus .tv-command-map-shell .tv-board-shell,
+.tv-command-dashboard--movement-focus .tv-command-map-shell .board-stage {
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  max-height: none;
+  min-width: 0;
+  min-height: 0;
+}
+
+.tv-command-dashboard--movement-focus .tv-command-stage-movement-focus > .tv-command-map-shell {
+  grid-column: 1;
+  grid-row: 1;
+  justify-self: stretch;
+  align-self: stretch;
+}
+
+.tv-command-dashboard--movement-focus .tv-command-stage-movement-focus > .tv-movement-focus {
+  position: absolute;
+}
+
+.tv-command-dashboard--movement-focus .tv-command-map-shell .tv-board-shell {
+  display: block;
+}
+
+.tv-command-dashboard--movement-focus .tv-command-map-shell .board-stage {
+  aspect-ratio: auto;
+}
+
 /* TV shop focus: a public, display-only merchant stage over the mounted board. */
 .tv-command-dashboard .tv-command-main--shop-focus {
   grid-template-columns: clamp(12.5rem, 15.5vw, 18rem) minmax(0, 1fr);

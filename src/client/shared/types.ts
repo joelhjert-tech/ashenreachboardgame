@@ -615,6 +615,7 @@ export interface PublicMovementPlannerState {
   movementValue: number;
   currentSectorId: string;
   currentSectorName: string;
+  selectedDestinationId?: string | null;
   destinations: PublicMoveDestination[];
 }
 

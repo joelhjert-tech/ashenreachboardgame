@@ -983,10 +983,26 @@ describe("TvApp", () => {
     expect(screen.getByTestId("movement-roll-hud")).toHaveTextContent(/move 4/i);
     expect(screen.getByTestId("movement-roll-hud")).toHaveTextContent(/legal\s*1/i);
     expect(screen.getByTestId("movement-destination-hud")).toHaveTextContent(/choose on phone/i);
-    fireEvent.click(screen.getByRole("button", { name: /preview movement destination/i }));
+    patch.payload.movementPlanner.selectedDestinationId = "outer_anchor_market";
+    mockUseRoomSubscription.mockReturnValue({
+      patch,
+      error: null,
+      sendIntent: vi.fn(),
+      status: "open",
+      debugEvents: [],
+      clearDebugEvents: vi.fn()
+    });
+    rerender(<TvApp />);
     expect(screen.getByTestId("movement-destination-hud")).toHaveTextContent(/anchor market/i);
     expect(screen.getByTestId("movement-destination-hud")).toHaveTextContent(/4 steps/i);
     expect(screen.getByTestId("movement-travel-hud")).toHaveTextContent(/step 0 \/ 4/i);
+    patch.payload.movementPlanner.selectedDestinationId = null;
+    rerender(<TvApp />);
+    expect(screen.getByTestId("movement-destination-hud")).toHaveTextContent(/choose on phone/i);
+    expect(screen.queryByTestId("movement-travel-hud")).not.toBeInTheDocument();
+    patch.payload.movementPlanner.selectedDestinationId = "outer_anchor_market";
+    rerender(<TvApp />);
+    expect(screen.getByTestId("movement-destination-hud")).toHaveTextContent(/anchor market/i);
     expect(screen.queryByText(/movement scan/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/movement value/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/exact legal routes are highlighted/i)).not.toBeInTheDocument();
@@ -1005,12 +1021,16 @@ describe("TvApp", () => {
       clearDebugEvents: vi.fn()
     });
     rerender(<TvApp />);
-    expect(screen.getByTestId("movement-travel-hud")).toHaveTextContent(/step 4 \/ 4/i);
-    expect(screen.getByTestId("movement-travel-hud")).toHaveTextContent(/destination: anchor market/i);
+    const arrivalFocus = await screen.findByTestId("tv-arrival-focus");
+    expect(arrivalFocus).toHaveTextContent(/arrived at anchor market/i);
+    expect(arrivalFocus).toHaveTextContent(/outer reach/i);
+    expect(arrivalFocus).toHaveTextContent(/trade if the sector is clear/i);
+    expect(arrivalFocus).toHaveTextContent(/printed challenge icons will resolve on arrival/i);
+    expect(screen.queryByTestId("tv-movement-focus")).not.toBeInTheDocument();
     expect(screen.getByText("Tactical map")).toBeInTheDocument();
 
+    await waitFor(() => expect(screen.queryByTestId("tv-arrival-focus")).not.toBeInTheDocument(), { timeout: 3_500 });
     rerender(<TvApp />);
-    expect(screen.queryByTestId("tv-movement-focus")).not.toBeInTheDocument();
     expect(screen.getByTestId("tv-command-main")).not.toHaveClass("tv-command-main--movement-focus");
     expect(screen.getByRole("complementary", { name: /operatives/i })).toBeInTheDocument();
     expect(document.querySelector(".tv-command-sidebar")).toBeInTheDocument();
@@ -1102,6 +1122,14 @@ describe("TvApp", () => {
         ]
       }
     };
+    patch.payload.movementPlanner = {
+      active: true,
+      movementValue: 3,
+      currentSectorId: "ashwake-crossing",
+      currentSectorName: "Ashwake Crossing",
+      selectedDestinationId: "outer_waymarket",
+      destinations: []
+    };
     mockUseRoomSubscription.mockReturnValue({
       patch,
       error: null,
@@ -1135,6 +1163,7 @@ describe("TvApp", () => {
     expect(within(overlay).getByTestId("host-battle-fx-layer")).toBeInTheDocument();
     expect(screen.queryByTestId("tv-card-reveal")).not.toBeInTheDocument();
     expect(screen.queryByTestId("tv-resolution-footer")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("tv-movement-focus")).not.toBeInTheDocument();
   });
 
   it("renders active dice faces and roll totals from activeResolution", async () => {

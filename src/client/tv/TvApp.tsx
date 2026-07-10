@@ -1865,11 +1865,13 @@ function MovementFocusHud({
   planner,
   selectedDestination,
   arrival,
+  travelStep,
   activePlayerName
 }: {
   planner: PublicMovementPlannerState | null;
   selectedDestination: PublicMoveDestination | null;
   arrival: MovementArrivalModel | null;
+  travelStep?: number;
   activePlayerName: string;
 }): ReactElement | null {
   if (!planner && !arrival) {
@@ -1883,8 +1885,58 @@ function MovementFocusHud({
   const legalDestinationCount = planner?.destinations.filter((entry) => !entry.disabledReason).length ?? 0;
   const beat = arrival ? "moving" : selectedDestination ? "destination" : "roll";
   const playerName = arrival?.playerName ?? activePlayerName;
-  const currentName = arrival ? routeNames.at(-2) ?? planner?.currentSectorName ?? "Previous tile" : planner?.currentSectorName ?? "Current tile";
-  const nextName = arrival ? destination?.name ?? "Arrival tile" : routeNames[1] ?? destination?.name ?? "Choose on phone";
+  const visibleStep = arrival ? Math.min(Math.max(travelStep ?? 1, 1), Math.max(stepTotal, 1)) : 0;
+  const currentName = arrival
+    ? routeNames[Math.max(0, visibleStep - 1)] ?? planner?.currentSectorName ?? "Previous tile"
+    : planner?.currentSectorName ?? "Current tile";
+  const nextName = arrival
+    ? routeNames[Math.min(visibleStep, routeNames.length - 1)] ?? destination?.name ?? "Arrival tile"
+    : routeNames[1] ?? destination?.name ?? "Choose on phone";
+
+  if (arrival && destination) {
+    const threats = destination.faceUpThreats ?? [];
+    const occupants = destination.occupants ?? [];
+
+    return (
+      <section className="tv-arrival-focus" aria-label="Arrival sector brief" data-testid="tv-arrival-focus">
+        <header>
+          <span>Movement complete</span>
+          <strong>Arrived at {destination.name}</strong>
+          <p>{threats.length > 0 ? "Threat present" : destination.threatIcons.length > 0 ? "Challenge detected" : "Sector reached"}</p>
+        </header>
+        <div className="tv-arrival-focus-meta">
+          <span>{toTitleCase(destination.ring)} Reach</span>
+          {destination.tags.map((tag) => <span key={tag}>{toTitleCase(tag)}</span>)}
+          {destination.threatIcons.map((icon, index) => <span key={`${icon}-${index}`}>{toTitleCase(icon)} challenge</span>)}
+        </div>
+        <div className="tv-arrival-focus-grid">
+          <article>
+            <span>Sector rule</span>
+            <strong>{destination.ruleText || "No special sector rule."}</strong>
+            {destination.loreText ? <p>{destination.loreText}</p> : null}
+          </article>
+          <article>
+            <span>Challenges and threats</span>
+            {threats.length > 0 ? (
+              <ul>
+                {threats.map((threat) => (
+                  <li key={threat.instanceId}>
+                    <strong>{threat.name}</strong>
+                    <small>{threat.challenge ? `${toTitleCase(threat.challenge.stat)} ${threat.challenge.value}` : toTitleCase(threat.type)}</small>
+                  </li>
+                ))}
+              </ul>
+            ) : <strong>{destination.threatIcons.length > 0 ? "Printed challenge icons will resolve on arrival." : "No visible threat."}</strong>}
+          </article>
+          <article>
+            <span>Occupants</span>
+            <strong>{occupants.length > 0 ? occupants.map((occupant) => occupant.characterName).join(", ") : "No other operatives"}</strong>
+            <p>{destination.strategicTags.length > 0 ? destination.strategicTags.map(toTitleCase).join(" ? ") : "Awaiting sector resolution"}</p>
+          </article>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section className={`tv-movement-focus tv-movement-focus-${beat}`} aria-label="Movement focus" data-testid="tv-movement-focus">
@@ -1924,7 +1976,7 @@ function MovementFocusHud({
       {destination && (
         <div className="tv-movement-focus-travel" data-testid="movement-travel-hud">
           <span>{arrival ? "Moving to destination" : "Route preview"}</span>
-          <strong>Step {arrival ? stepTotal : 0} / {stepTotal}</strong>
+          <strong data-testid="movement-route-step">Step {visibleStep} / {stepTotal}</strong>
           <p>Current: {currentName} · Next: {nextName} · Destination: {destination.name}</p>
         </div>
       )}
@@ -2006,30 +2058,53 @@ function TacticalMapPanel({
   const shopMode = isHostShopActive(patch, activePlayer);
   const planner = patch?.payload.movementPlanner?.active ? patch.payload.movementPlanner : null;
   const arrival = getMovementArrivalModel(patch?.payload, previousPatch?.payload);
-  const movementFocusMode = !battleMode && !shopMode && Boolean(planner || arrival);
-  const [selectedMovementDestination, setSelectedMovementDestination] = useState<PublicMoveDestination | null>(null);
-
+  const arrivalKey = arrival ? `${arrival.playerName}:${arrival.destination.sectorId}:${arrival.destination.route.join(">")}` : null;
+  const [visualTravel, setVisualTravel] = useState<{ key: string; arrival: MovementArrivalModel; step: number } | null>(null);
+  const completedTravelKeyRef = useRef<string | null>(null);
   useEffect(() => {
-    if (!planner) {
-      setSelectedMovementDestination(null);
+    if (arrival && arrivalKey && completedTravelKeyRef.current !== arrivalKey && !battleMode && !shopMode) {
+      setVisualTravel((current) => current?.key === arrivalKey ? current : { key: arrivalKey, arrival, step: 1 });
     }
-  }, [planner]);
+  }, [arrival, arrivalKey, battleMode, shopMode]);
+  useEffect(() => {
+    if (battleMode || shopMode) {
+      setVisualTravel(null);
+    }
+  }, [battleMode, shopMode]);
+  useEffect(() => {
+    if (!visualTravel) return;
+    const stepTotal = Math.max(1, visualTravel.arrival.destination.route.length - 1);
+    const timeout = window.setTimeout(() => {
+      setVisualTravel((current) => {
+        if (!current || current.key !== visualTravel.key) return current;
+        if (current.step < stepTotal) return { ...current, step: current.step + 1 };
+        completedTravelKeyRef.current = current.key;
+        return null;
+      });
+    }, 720);
+    return () => window.clearTimeout(timeout);
+  }, [visualTravel]);
+  const focusBattleMode = battleMode;
+  const focusShopMode = !focusBattleMode && shopMode;
+  const movementFocusMode = !focusBattleMode && !focusShopMode && Boolean(planner || visualTravel);
+  const projectedDestination = planner?.selectedDestinationId
+    ? planner.destinations.find((destination) => destination.sectorId === planner.selectedDestinationId) ?? null
+    : null;
 
   return (
-    <section className={`tv-command-stage${battleMode ? " tv-command-stage-battle-mode" : ""}${shopMode ? " tv-command-stage-shop-mode" : ""}${movementFocusMode ? " tv-command-stage-movement-focus" : ""}`}>
-      {!battleMode && (
+    <section className={`tv-command-stage${focusBattleMode ? " tv-command-stage-battle-mode" : ""}${focusShopMode ? " tv-command-stage-shop-mode" : ""}${movementFocusMode ? " tv-command-stage-movement-focus" : ""}`}>
+      {!focusBattleMode && (
         <div className="tv-command-map-shell">
           <TacticalMapBoard
             patch={patch?.payload ?? null}
             previousPatch={previousPatch?.payload ?? null}
             phase={patch?.phase ?? "start"}
-            onMovementDestinationSelected={setSelectedMovementDestination}
           />
           {!movementFocusMode && <BoardLegend />}
         </div>
       )}
-      {!battleMode && <NemesisBanner nemesis={patch?.payload.nemesis ?? null} />}
-      {!battleMode && !shopMode && !movementFocusMode && (
+      {!focusBattleMode && <NemesisBanner nemesis={patch?.payload.nemesis ?? null} />}
+      {!focusBattleMode && !focusShopMode && !movementFocusMode && (
         <ActiveOperativeOverlay
           patch={patch}
           previousPatch={previousPatch}
@@ -2038,13 +2113,14 @@ function TacticalMapPanel({
           characterCatalog={characterCatalog}
         />
       )}
-      <HostBattleOverlay patch={patch} activePlayer={battlePlayer} />
-      <HostShopOverlay patch={patch} activePlayer={activePlayer} />
-      {!shopMode && (
+      {focusBattleMode && <HostBattleOverlay patch={patch} activePlayer={battlePlayer} />}
+      {focusShopMode && <HostShopOverlay patch={patch} activePlayer={activePlayer} />}
+      {movementFocusMode && (
         <MovementFocusHud
           planner={planner}
-          selectedDestination={selectedMovementDestination}
-          arrival={arrival}
+          selectedDestination={projectedDestination}
+          arrival={visualTravel?.arrival ?? null}
+          travelStep={visualTravel?.step}
           activePlayerName={activePlayer?.character.name ?? "Active operative"}
         />
       )}
