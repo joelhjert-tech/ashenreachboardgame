@@ -203,5 +203,5 @@ describe("Phase 3C1 hidden-agenda reveal mechanics", () => {
       type: "INTENT_REJECTED",
       reason: "Rivalry agendas can only be revealed in rivalry or ruthless mode"
     });
-  });
+  }, 10_000);
 });

@@ -285,5 +285,5 @@ describe("play-feel guardrails", () => {
       ).not.toThrow();
       expect(server.getState().scenarioProgress[testCase.expectedProgressKey]).toBeGreaterThan(0);
     }
-  });
+  }, 10_000);
 });

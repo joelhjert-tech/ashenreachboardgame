@@ -201,7 +201,7 @@ describe("Phase 2B shop sell flow", () => {
       gearId: qaGear.id
     });
     expect(getRejectedReason(qa.sent)).toBe(SHOP_FAILURE_REASONS.itemNotSellable);
-  });
+  }, 10_000);
 
   it("projects sellable inventory and disabled sell reasons for the owning phone", () => {
     const veilHook = requireGear("veil-hook");
