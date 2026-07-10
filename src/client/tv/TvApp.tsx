@@ -2006,7 +2006,7 @@ function TacticalMapPanel({
   const shopMode = isHostShopActive(patch, activePlayer);
   const planner = patch?.payload.movementPlanner?.active ? patch.payload.movementPlanner : null;
   const arrival = getMovementArrivalModel(patch?.payload, previousPatch?.payload);
-  const movementFocusMode = !battleMode && Boolean(planner || arrival);
+  const movementFocusMode = !battleMode && !shopMode && Boolean(planner || arrival);
   const [selectedMovementDestination, setSelectedMovementDestination] = useState<PublicMoveDestination | null>(null);
 
   useEffect(() => {
@@ -2040,12 +2040,14 @@ function TacticalMapPanel({
       )}
       <HostBattleOverlay patch={patch} activePlayer={battlePlayer} />
       <HostShopOverlay patch={patch} activePlayer={activePlayer} />
-      <MovementFocusHud
-        planner={planner}
-        selectedDestination={selectedMovementDestination}
-        arrival={arrival}
-        activePlayerName={activePlayer?.character.name ?? "Active operative"}
-      />
+      {!shopMode && (
+        <MovementFocusHud
+          planner={planner}
+          selectedDestination={selectedMovementDestination}
+          arrival={arrival}
+          activePlayerName={activePlayer?.character.name ?? "Active operative"}
+        />
+      )}
     </section>
   );
 }
@@ -2375,7 +2377,7 @@ export function TvApp(): ReactElement {
   const battleMode = isHostBattleActive(publicPatch, battlePlayer);
   const shopMode = isHostShopActive(publicPatch, activePlayer);
   const movementArrival = getMovementArrivalModel(publicPatch?.payload, previousPatchRef.current?.payload);
-  const movementFocusMode = !battleMode && Boolean(publicPatch?.payload.movementPlanner?.active || movementArrival);
+  const movementFocusMode = !battleMode && !shopMode && Boolean(publicPatch?.payload.movementPlanner?.active || movementArrival);
 
   useEffect(() => {
     if (publicPatch) {
@@ -2588,7 +2590,7 @@ export function TvApp(): ReactElement {
   }
 
   return (
-    <main className={`tv-dashboard tv-command-dashboard${battleMode ? " tv-command-dashboard--battle-focus" : ""}${movementFocusMode ? " tv-command-dashboard--movement-focus" : ""}`}>
+    <main className={`tv-dashboard tv-command-dashboard${battleMode ? " tv-command-dashboard--battle-focus" : ""}${shopMode ? " tv-command-dashboard--shop-focus" : ""}${movementFocusMode ? " tv-command-dashboard--movement-focus" : ""}`}>
       <div className="tv-title-safe">
         <TopHeader
           roomCode={effectiveRoomCode}
@@ -2608,7 +2610,7 @@ export function TvApp(): ReactElement {
         <EndgameOverlay patch={publicPatch} />
 
         <section
-          className={`tv-command-main${isPreRoomLobby ? " tv-command-main--pre-room" : ""}${battleMode ? " tv-command-main--battle-focus" : ""}${movementFocusMode ? " tv-command-main--movement-focus" : ""}`}
+          className={`tv-command-main${isPreRoomLobby ? " tv-command-main--pre-room" : ""}${battleMode ? " tv-command-main--battle-focus" : ""}${shopMode ? " tv-command-main--shop-focus" : ""}${movementFocusMode ? " tv-command-main--movement-focus" : ""}`}
           data-testid="tv-command-main"
         >
           {isPreRoomLobby ? (
@@ -2672,7 +2674,7 @@ export function TvApp(): ReactElement {
                 characterCatalog={characterCatalog}
               />
 
-              {!battleMode && !movementFocusMode && <RightSidebar
+              {!battleMode && !shopMode && !movementFocusMode && <RightSidebar
                 roomCode={effectiveRoomCode}
                 scenarioStatus={scenarioStatus}
                 publicPatch={publicPatch}

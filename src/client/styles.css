@@ -31,6 +31,207 @@
   font-family: var(--font-body);
 }
 
+/* TV shop focus: a public, display-only merchant stage over the mounted board. */
+.tv-command-dashboard .tv-command-main--shop-focus {
+  grid-template-columns: clamp(12.5rem, 15.5vw, 18rem) minmax(0, 1fr);
+  gap: clamp(0.45rem, 0.72vw, 0.8rem);
+}
+
+.tv-command-dashboard--shop-focus .tv-operatives-rail {
+  opacity: 0.62;
+  filter: saturate(0.68) brightness(0.76);
+}
+
+.tv-command-dashboard--shop-focus .tv-command-stage-shop-mode {
+  border-color: rgba(210, 164, 84, 0.34);
+  background: rgba(3, 5, 8, 0.98);
+  box-shadow: inset 0 0 7rem rgba(0, 0, 0, 0.68);
+}
+
+.tv-command-dashboard--shop-focus .tv-command-stage-shop-mode .tv-command-map-shell {
+  filter: brightness(0.24) saturate(0.5) contrast(1.12);
+}
+
+.tv-command-dashboard--shop-focus .host-shop-overlay {
+  inset: clamp(0.25rem, 0.5vw, 0.6rem);
+}
+
+.tv-command-dashboard--shop-focus .host-shop-panel-stage {
+  width: 100%;
+  grid-template-columns: minmax(0, 1fr) clamp(13rem, 17vw, 19rem);
+  grid-template-rows: clamp(2.6rem, 5.5svh, 4rem) minmax(0, 1fr) clamp(2.8rem, 6.4svh, 4.35rem);
+  gap: clamp(0.35rem, 0.58vw, 0.68rem);
+  background:
+    radial-gradient(circle at 42% 36%, rgba(218, 169, 77, 0.18), transparent 32%),
+    linear-gradient(120deg, rgba(16, 12, 9, 0.82), rgba(3, 6, 9, 0.88));
+}
+
+.tv-command-dashboard--shop-focus .host-shop-alert {
+  background: linear-gradient(90deg, rgba(18, 12, 8, 0.72), rgba(4, 10, 14, 0.68));
+  box-shadow: none;
+}
+
+.tv-command-dashboard--shop-focus .host-shop-stage {
+  position: relative;
+  isolation: isolate;
+  grid-template-rows: auto minmax(0, 1fr) auto auto;
+  padding: clamp(0.55rem, 0.9vw, 1.05rem);
+  background:
+    linear-gradient(180deg, rgba(3, 5, 8, 0.18), rgba(3, 5, 8, 0.58)),
+    radial-gradient(circle at 50% 38%, rgba(222, 172, 79, 0.1), transparent 40%);
+}
+
+.tv-command-dashboard--shop-focus .host-shop-stage > :not(.host-shop-card-backdrop) {
+  position: relative;
+  z-index: 2;
+}
+
+.host-shop-card-backdrop {
+  position: absolute;
+  inset: 8% 12% 20%;
+  z-index: 0;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  pointer-events: none;
+  opacity: 0.25;
+  filter: saturate(0.72);
+}
+
+.host-shop-card-backdrop > div {
+  width: clamp(7rem, 10vw, 11rem);
+  aspect-ratio: 0.7;
+  margin-inline: clamp(-2.8rem, -2.2vw, -1.5rem);
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border: 1px solid rgba(224, 183, 103, 0.46);
+  background: linear-gradient(150deg, rgba(48, 35, 20, 0.84), rgba(4, 7, 10, 0.92));
+  transform: rotate(calc((var(--shop-backdrop-index) - 2) * 7deg));
+  animation: host-shop-card-float 5.8s ease-in-out infinite alternate;
+  animation-delay: calc(var(--shop-backdrop-index) * -0.7s);
+}
+
+.host-shop-card-backdrop > div:nth-child(1),
+.host-shop-card-backdrop > div:nth-child(5) {
+  translate: 0 1rem;
+}
+
+.host-shop-card-backdrop > div:nth-child(2),
+.host-shop-card-backdrop > div:nth-child(4) {
+  translate: 0 0.42rem;
+}
+
+.host-shop-card-backdrop img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.host-shop-card-backdrop svg {
+  width: 52%;
+  fill: rgba(236, 202, 139, 0.78);
+}
+
+.tv-command-dashboard--shop-focus .host-shop-heading {
+  gap: 0.12rem;
+}
+
+.tv-command-dashboard--shop-focus .host-shop-heading h2 {
+  font-size: clamp(1.8rem, 3.6vw, 4.7rem);
+  text-shadow: 0 0 1.4rem rgba(220, 163, 70, 0.38), 0 0.12rem 0 rgba(0, 0, 0, 0.8);
+}
+
+.tv-command-dashboard--shop-focus .host-shop-preview-grid {
+  align-items: center;
+  grid-template-columns: repeat(auto-fit, minmax(min(9.5rem, 100%), 1fr));
+  max-height: 100%;
+}
+
+.tv-command-dashboard--shop-focus .host-shop-preview-card {
+  position: relative;
+  height: min(100%, 25rem);
+  grid-template-rows: auto auto minmax(5rem, 1fr) auto auto;
+  padding: clamp(0.55rem, 0.82vw, 0.92rem);
+  border-color: rgba(225, 183, 103, 0.46);
+  background: linear-gradient(180deg, rgba(27, 20, 13, 0.9), rgba(4, 7, 10, 0.92));
+  box-shadow: inset 0 0 0 1px rgba(255, 237, 197, 0.035), 0 0.7rem 1.5rem rgba(0, 0, 0, 0.34);
+}
+
+.host-shop-preview-media {
+  min-height: 0;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border-block: 1px solid rgba(225, 183, 103, 0.18);
+  background: radial-gradient(circle, rgba(219, 169, 78, 0.15), rgba(2, 5, 8, 0.42) 68%);
+}
+
+.host-shop-preview-media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0.78;
+  mask-image: linear-gradient(180deg, transparent, #000 12%, #000 82%, transparent);
+}
+
+.host-shop-preview-media svg {
+  width: clamp(2.8rem, 4.6vw, 5rem);
+  fill: currentColor;
+  filter: drop-shadow(0 0 0.8rem currentColor);
+}
+
+.host-shop-preview-service .host-shop-preview-media { color: #69d594; }
+.host-shop-preview-stock .host-shop-preview-media { color: #6fc7f4; }
+.host-shop-preview-sell .host-shop-preview-media { color: #ee8c54; }
+.host-shop-preview-blocked .host-shop-preview-media,
+.host-shop-preview-empty .host-shop-preview-media { color: #dc654e; }
+
+.host-shop-preview-cost {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.35rem;
+  padding-top: 0.38rem;
+  border-top: 1px solid rgba(225, 183, 103, 0.2);
+}
+
+.host-shop-preview-cost strong { color: #f3c96f; }
+
+.tv-command-dashboard--shop-focus .host-shop-preview-disabled {
+  opacity: 0.62;
+  filter: grayscale(0.72) saturate(0.5);
+}
+
+.tv-command-dashboard--shop-focus .host-shop-status-panel {
+  background: linear-gradient(180deg, rgba(8, 12, 15, 0.74), rgba(4, 7, 10, 0.66));
+  border-color: rgba(217, 171, 86, 0.28);
+}
+
+.tv-command-dashboard--shop-focus .host-shop-instruction {
+  background: rgba(5, 8, 12, 0.66);
+  border-color: rgba(224, 179, 94, 0.38);
+}
+
+@keyframes host-shop-card-float {
+  from { translate: 0 -0.2rem; }
+  to { translate: 0 0.55rem; }
+}
+
+@media (max-width: 1500px) {
+  .tv-command-dashboard .tv-command-main--shop-focus {
+    grid-template-columns: clamp(10.5rem, 14vw, 13rem) minmax(0, 1fr);
+  }
+
+  .tv-command-dashboard--shop-focus .host-shop-panel-stage {
+    grid-template-columns: minmax(0, 1fr) clamp(11rem, 16vw, 14rem);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .host-shop-card-backdrop > div { animation: none; }
+}
+
 * {
   box-sizing: border-box;
 }

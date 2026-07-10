@@ -1278,6 +1278,13 @@ describe("TvApp", () => {
         heldGearCount: 1
       }
     };
+    patch.payload.movementPlanner = {
+      active: true,
+      movementValue: 3,
+      currentSectorId: "ashwake-crossing",
+      currentSectorName: "Ashwake Crossing",
+      destinations: []
+    };
     patch.payload.shopEncounter = {
       sectorId: "outer_waymarket",
       sectorName: "Anchor Market",
@@ -1310,7 +1317,7 @@ describe("TvApp", () => {
       services: [
         {
           id: "buy-gear",
-          label: "Buy Gear",
+          label: "Buy Equipment",
           shopCategory: "forge-armoury",
           cost: { salvage: 3 },
           enabled: true
@@ -1361,13 +1368,19 @@ describe("TvApp", () => {
       clearDebugEvents: vi.fn()
     });
 
-    render(<TvApp />);
+    const { rerender } = render(<TvApp />);
 
     const overlay = await screen.findByTestId("host-shop-overlay");
     const banner = screen.getByTestId("host-live-status");
     expect(banner).toHaveTextContent(/shop open/i);
     expect(banner).toHaveTextContent(/waiting on tarek voss/i);
     expect(banner).toHaveTextContent(/anchor market/i);
+    expect(screen.getByTestId("tv-command-main")).toHaveClass("tv-command-main--shop-focus");
+    expect(document.querySelector(".tv-command-dashboard--shop-focus")).toBeInTheDocument();
+    expect(document.querySelector(".tv-command-stage-shop-mode")).toBeInTheDocument();
+    expect(screen.getByLabelText("Operatives")).toBeInTheDocument();
+    expect(screen.queryByLabelText("Scenario")).not.toBeInTheDocument();
+    expect(screen.getByText("Tactical map")).toBeInTheDocument();
     expect(overlay).toHaveTextContent(/shop open/i);
     expect(overlay).toHaveTextContent(/tarek voss/i);
     expect(overlay).toHaveTextContent(/anchor market/i);
@@ -1377,7 +1390,12 @@ describe("TvApp", () => {
     expect(screen.getByTestId("host-shop-status-panel")).toHaveTextContent("6");
     expect(screen.getByTestId("host-shop-status-panel")).toHaveTextContent(/sellable/i);
     expect(screen.getByTestId("host-shop-status-panel")).toHaveTextContent("1");
-    expect(overlay).toHaveTextContent(/buy gear/i);
+    expect(overlay).toHaveTextContent(/buy equipment/i);
+    expect(overlay).not.toHaveTextContent(/buy supplies/i);
+    expect(within(overlay).getByTestId("host-shop-card-backdrop")).toBeInTheDocument();
+    expect(
+      within(overlay).getByTestId("host-shop-preview-service-buy-gear").querySelector(".host-shop-preview-media svg")
+    ).toBeInTheDocument();
     expect(within(overlay).getByTestId("result-delta-row")).toHaveTextContent(/Item bought: Ashlock Carbine/i);
     expect(within(overlay).getByTestId("result-delta-row")).toHaveTextContent(/-3 Salvage/i);
     expect(overlay).toHaveTextContent(/choose on player phone/i);
@@ -1385,6 +1403,28 @@ describe("TvApp", () => {
     expect(overlay).not.toHaveTextContent(/active operative/i);
     expect(within(overlay).getByTestId("host-shop-fx-layer")).toBeInTheDocument();
     expect(screen.queryByTestId("host-battle-overlay")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("tv-movement-focus")).not.toBeInTheDocument();
+
+    patch.payload.shopEncounter = null;
+    patch.payload.movementPlanner = null;
+    patch.payload.players[0] = {
+      ...patch.payload.players[0],
+      sectorId: "ashwake-crossing"
+    };
+    mockUseRoomSubscription.mockReturnValue({
+      patch,
+      error: null,
+      sendIntent: vi.fn(),
+      status: "open",
+      debugEvents: [],
+      clearDebugEvents: vi.fn()
+    });
+    rerender(<TvApp />);
+
+    expect(screen.queryByTestId("host-shop-overlay")).not.toBeInTheDocument();
+    expect(screen.getByTestId("tv-command-main")).not.toHaveClass("tv-command-main--shop-focus");
+    expect(screen.getByTestId("host-live-status")).toBeInTheDocument();
+    expect(screen.getByLabelText("Scenario")).toBeInTheDocument();
   });
 
   it("renders named blocking threats from authoritative shop payload", async () => {
@@ -1442,10 +1482,11 @@ describe("TvApp", () => {
     const overlay = await screen.findByTestId("host-shop-overlay");
     expect(screen.getByTestId("host-live-status")).toHaveTextContent(/shop blocked/i);
     expect(screen.getByTestId("host-live-status")).toHaveTextContent(/clear gate-tax collectors/i);
+    expect(screen.queryByTestId("tv-movement-focus")).not.toBeInTheDocument();
     expect(overlay).toHaveTextContent(/shop blocked/i);
     expect(overlay).toHaveTextContent(/gate-tax collectors command 5/i);
     expect(overlay).toHaveTextContent(/shop blocked by threat/i);
-    expect(within(screen.getByLabelText("Shop services")).queryByText(/buy gear/i)).not.toBeInTheDocument();
+    expect(within(screen.getByLabelText("Shop services")).queryByText(/buy equipment/i)).not.toBeInTheDocument();
   });
 
   it("shows public shop purchase and sale outcomes without battle content", async () => {
