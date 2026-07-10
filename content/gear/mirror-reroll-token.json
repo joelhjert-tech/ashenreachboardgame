@@ -10,7 +10,9 @@
   "activeText": "Exhaust to reroll a failed Guile or Signal check, then mark the roll as unstable.",
   "useLimit": "oncePerTurn",
   "flavor": "One side shows your face. The other shows the version that got away.",
-  "tier": "standard",
+  "tier": "artifact",
+  "startingEligible": false,
+  "normalShopCommon": false,
   "progressionWeight": 1.25,
   "shopCategories": [
     "market",

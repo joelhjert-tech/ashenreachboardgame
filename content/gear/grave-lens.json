@@ -11,7 +11,9 @@
   "useLimit": "oncePerRound",
   "linkedFollowerRole": "ritualist",
   "flavor": "The glass makes old roads look freshly buried.",
-  "tier": "standard",
+  "tier": "artifact",
+  "startingEligible": false,
+  "normalShopCommon": false,
   "progressionWeight": 1.25,
   "shopCategories": [
     "market",

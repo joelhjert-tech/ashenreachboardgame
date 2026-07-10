@@ -7,7 +7,9 @@
     "amount": 1
   },
   "flavor": "A fan of resonant needles that sharpen weak transmissions into usable patterns.",
-  "tier": "starter",
+  "tier": "artifact",
+  "startingEligible": false,
+  "normalShopCommon": false,
   "progressionWeight": 0.75,
   "shopCategories": [
     "market"

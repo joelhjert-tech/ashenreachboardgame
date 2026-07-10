@@ -314,6 +314,12 @@ export const artifactKindSchema = z.enum([
 export const artifactCardSchema = cardBaseSchema.extend({
   type: z.literal("artifact"),
   artifactKind: artifactKindSchema.optional(),
+  missionRewardEligible: z.boolean().optional(),
+  eliteThreatRewardEligible: z.boolean().optional(),
+  rareShopEligible: z.boolean().optional(),
+  scenarioRewardEligible: z.boolean().optional(),
+  startingEligible: z.literal(false).optional(),
+  normalShopCommon: z.literal(false).optional(),
   charge: z.number().int().min(0),
   resolutionSummary: z.string().min(1),
   resolveEffect: effectSchema

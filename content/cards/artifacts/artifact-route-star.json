@@ -1,6 +1,12 @@
 {
   "id": "artifact-route-star",
   "type": "artifact",
+  "missionRewardEligible": true,
+  "eliteThreatRewardEligible": true,
+  "rareShopEligible": true,
+  "scenarioRewardEligible": true,
+  "startingEligible": false,
+  "normalShopCommon": false,
   "artifactKind": "chargedRelic",
   "title": "Route Star",
   "text": "A dead-glass navigation star that points toward the route least hungry for blood.",

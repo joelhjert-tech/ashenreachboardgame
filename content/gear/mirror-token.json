@@ -1,0 +1,24 @@
+{
+  "id": "mirror-token",
+  "name": "Mirror Token",
+  "slot": "utility",
+  "subtype": "utility",
+  "category": "passive",
+  "statBonus": {
+    "stat": "command",
+    "amount": 1
+  },
+  "cost": 3,
+  "sellValue": 1,
+  "sellable": true,
+  "tier": "standard",
+  "progressionWeight": 1,
+  "flavor": "A polished signal token that adds +1 Command on contested tests.",
+  "activeText": "A polished signal token that adds +1 Command on contested tests.",
+  "shopCategories": [
+    "market"
+  ],
+  "startingEligible": true,
+  "normalShopCommon": true,
+  "allowedFallbackArt": true
+}

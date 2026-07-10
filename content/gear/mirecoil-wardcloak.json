@@ -9,6 +9,8 @@
   },
   "flavor": "A tar-wet cloak stitched with coilwire charms from the marsh wards.",
   "tier": "standard",
+  "startingEligible": false,
+  "normalShopCommon": false,
   "cost": 4,
   "sellValue": 2,
   "progressionWeight": 1,

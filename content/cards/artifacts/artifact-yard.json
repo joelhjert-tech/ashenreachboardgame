@@ -1,6 +1,12 @@
 {
   "id": "artifact-yard",
   "type": "artifact",
+  "missionRewardEligible": true,
+  "eliteThreatRewardEligible": true,
+  "rareShopEligible": true,
+  "scenarioRewardEligible": true,
+  "startingEligible": false,
+  "normalShopCommon": false,
   "title": "Yard Bellframe Core",
   "text": "A choir-grade salvage heart that still hums with route memory and old sanctifier charge.",
   "flavor": "It remembers every convoy that died under its watch.",

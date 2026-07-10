@@ -61,7 +61,7 @@ describe("canonical sector graph", () => {
     expect(firstPlayer?.character.activeContract).toBeNull();
     expect(state.seats[0]?.startingContractOptions).toEqual([]);
     expect(state.seats[0]?.selectedStartingContractId).toBeNull();
-    expect(firstPlayer?.character.heldGear.map((item) => item.id)).toEqual(["cinder-suture-kit"]);
+    expect(firstPlayer?.character.heldGear.map((item) => item.id)).toEqual(["rustknife-carbine", "chapel-guard-harness"]);
     expect(firstPlayer?.character.followers ?? []).toEqual([]);
     expect(state.soloRerollCharges).toEqual({});
   });
@@ -101,7 +101,7 @@ describe("canonical sector graph", () => {
     expect(state.players[0]?.character.activeContract).toBeNull();
     expect(state.seats[0]?.startingContractOptions).toEqual([]);
     expect(state.seats[0]?.selectedStartingContractId).toBeNull();
-    expect(state.players[0]?.character.heldGear.map((item) => item.id)).toEqual(["cinder-suture-kit"]);
+    expect(state.players[0]?.character.heldGear.map((item) => item.id)).toEqual(["rustknife-carbine", "chapel-guard-harness"]);
     expect(state.players[0]?.character.followers?.map((follower) => follower.id)).toEqual(["grave-scribe"]);
     expect(tvProjection.sessionMode).toBe("single-player");
     expect(tvProjection.escalationThreshold).toBe(8);

@@ -1,7 +1,11 @@
 import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { basename, join, sep } from "node:path";
 import { getRuntimeAssetPaths } from "../src/client/shared/assetPaths.js";
+import { getGearCardArtPath, getGearCardArtType } from "../src/client/shared/assetPaths.js";
 import { getBoardTileAssetPaths } from "../src/client/tv/TalismanBoardSurface.js";
+import { loadArtifactCards } from "../src/game/content/artifacts.js";
+import { loadCharacters } from "../src/game/content/characters.js";
+import { loadGear } from "../src/game/content/gear.js";
 import { getAssetPath } from "../src/game/assets/design/assetManifest.js";
 import { CARD_IMAGE_TYPES, type CardImageType } from "../src/game/assets/design/cardImageCatalog.js";
 import { imagePrompts } from "../src/game/assets/design/imagePrompts.js";
@@ -46,6 +50,7 @@ type MissingAssetSummary = {
   invalid: number;
   placeholders: number;
   releaseBlocking: number;
+  tierSeparationIssues: string[];
   byType: Record<string, number>;
   cardImageSummary: Record<CardImageType, { total: number; present: number; missing: number }>;
   missingAssets: AssetIssue[];
@@ -216,6 +221,40 @@ function toIssue(entry: AssetAuditEntry, reason: string): AssetIssue {
 }
 
 const mode = getMode();
+const gearCatalog = loadGear();
+const tierSeparationIssues: string[] = [];
+
+for (const item of gearCatalog.values()) {
+  if (item.normalShopCommon === true || item.startingEligible === true) {
+    if (item.tier === "artifact") {
+      tierSeparationIssues.push(`${item.id}: normal equipment eligibility cannot use artifact tier`);
+    }
+    if (getGearCardArtType(item) !== "equipment" || getGearCardArtPath(item).includes("/artifacts/")) {
+      tierSeparationIssues.push(`${item.id}: normal equipment resolves through artifact art`);
+    }
+    if (getGearCardArtPath(item).includes("/fallbacks/") && item.allowedFallbackArt !== true) {
+      tierSeparationIssues.push(`${item.id}: equipment fallback art is not explicitly allowed`);
+    }
+  }
+}
+
+for (const character of loadCharacters().values()) {
+  if (character.qaOnly) {
+    continue;
+  }
+  for (const gearId of character.startingGear ?? []) {
+    const item = gearCatalog.get(gearId);
+    if (!item || item.tier === "artifact" || item.startingEligible !== true || getGearCardArtType(item) !== "equipment") {
+      tierSeparationIssues.push(`${character.id}: invalid normal starting equipment ${gearId}`);
+    }
+  }
+}
+
+for (const artifact of loadArtifactCards().values()) {
+  if (artifact.startingEligible !== false || artifact.normalShopCommon !== false) {
+    tierSeparationIssues.push(`${artifact.id}: artifact cannot be starting equipment or common shop stock`);
+  }
+}
 const artifactsRoot = join(process.cwd(), "artifacts", "assets");
 const auditReportPath = join(artifactsRoot, "audit-report.json");
 const missingPrioritizedPath = join(artifactsRoot, "missing-prioritized.json");
@@ -346,6 +385,7 @@ const report: MissingAssetSummary = {
   invalid: invalidEntries.length,
   placeholders: placeholderEntries.length,
   releaseBlocking: releaseBlockingEntries.length,
+  tierSeparationIssues,
   byType,
   cardImageSummary,
   missingAssets,
@@ -376,6 +416,6 @@ writeFileSync(
 
 console.log(JSON.stringify(report, null, 2));
 
-if (invalidEntries.length > 0 || (mode === "release" && releaseBlockingEntries.length > 0)) {
+if (tierSeparationIssues.length > 0 || invalidEntries.length > 0 || (mode === "release" && releaseBlockingEntries.length > 0)) {
   process.exitCode = 1;
 }

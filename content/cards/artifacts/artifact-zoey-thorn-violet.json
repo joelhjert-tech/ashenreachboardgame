@@ -1,6 +1,12 @@
 {
   "id": "artifact-zoey-thorn-violet",
   "type": "artifact",
+  "missionRewardEligible": true,
+  "eliteThreatRewardEligible": true,
+  "rareShopEligible": true,
+  "scenarioRewardEligible": true,
+  "startingEligible": false,
+  "normalShopCommon": false,
   "artifactKind": "factionRelic",
   "title": "Zoey, Thorn-Violet",
   "text": "Legendary Follower / Companion. Unique. Zoey joins the operative as a violet breach duelist. If the operative is Rumi and Mira is also following, the Violet Triad grants an additional +1 Grit, +1 Signal, and +1 Guile.",

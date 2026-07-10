@@ -1,6 +1,12 @@
 {
   "id": "artifact-saintwire-splint",
   "type": "artifact",
+  "missionRewardEligible": true,
+  "eliteThreatRewardEligible": true,
+  "rareShopEligible": true,
+  "scenarioRewardEligible": true,
+  "startingEligible": false,
+  "normalShopCommon": false,
   "artifactKind": "consumableSalvage",
   "title": "Saintwire Splint",
   "text": "A sainted emergency brace for a body already past sensible limits.",

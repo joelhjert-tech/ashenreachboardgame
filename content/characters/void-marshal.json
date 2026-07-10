@@ -45,7 +45,8 @@
     }
   ],
   "startingGear": [
-    "cinder-suture-kit"
+    "rustknife-carbine",
+    "chapel-guard-harness"
   ],
   "startingContract": "dominion-warbell-recovery"
 }

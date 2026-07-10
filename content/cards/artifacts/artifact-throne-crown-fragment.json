@@ -1,6 +1,12 @@
 {
   "id": "artifact-throne-crown-fragment",
   "type": "artifact",
+  "missionRewardEligible": true,
+  "eliteThreatRewardEligible": true,
+  "rareShopEligible": true,
+  "scenarioRewardEligible": true,
+  "startingEligible": false,
+  "normalShopCommon": false,
   "artifactKind": "burdenRelic",
   "title": "Throne-Crown Fragment",
   "text": "A radiant Crownfall burden worth leverage, progress, and a terrible amount of attention.",

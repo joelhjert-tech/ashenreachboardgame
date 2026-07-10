@@ -1,0 +1,25 @@
+{
+  "id": "wardens-kneeplate",
+  "name": "Warden's Kneeplate",
+  "slot": "armor",
+  "subtype": "armour",
+  "category": "passive",
+  "statBonus": {
+    "stat": "grit",
+    "amount": 1
+  },
+  "cost": 2,
+  "sellValue": 1,
+  "sellable": true,
+  "tier": "starter",
+  "progressionWeight": 1,
+  "flavor": "A road-worn guard that adds +1 Grit while equipped.",
+  "activeText": "A road-worn guard that adds +1 Grit while equipped.",
+  "shopCategories": [
+    "forge-armoury",
+    "market"
+  ],
+  "startingEligible": true,
+  "normalShopCommon": true,
+  "allowedFallbackArt": true
+}

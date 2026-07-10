@@ -45,7 +45,8 @@
     }
   ],
   "startingGear": [
-    "grave-lens"
+    "field-lens",
+    "bridge-spike"
   ],
   "startingContract": "clan-bone-road-guide"
 }

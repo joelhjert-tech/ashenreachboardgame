@@ -9,7 +9,9 @@
   },
   "activeText": "Protect this object to convert a completed contract reward into gear, scar relief, or a safer faction debt.",
   "flavor": "Every blank line already knows whose name belongs there.",
-  "tier": "standard",
+  "tier": "artifact",
+  "startingEligible": false,
+  "normalShopCommon": false,
   "progressionWeight": 1.25,
   "shopCategories": [
     "contract-broker"

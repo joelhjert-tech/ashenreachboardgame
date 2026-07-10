@@ -45,7 +45,8 @@
     }
   ],
   "startingGear": [
-    "marshal-seal"
+    "emberlock-pistol",
+    "surveyor-chalk"
   ],
   "startingContract": "contract-beacon"
 }

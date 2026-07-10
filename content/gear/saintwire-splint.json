@@ -2,18 +2,24 @@
   "id": "saintwire-splint",
   "name": "Saintwire Splint",
   "slot": "armor",
-  "category": "consumable",
+  "subtype": "medical",
+  "category": "passive",
   "statBonus": {
     "stat": "forge",
     "amount": 1
   },
-  "activeText": "Discard before recall to heal 1 wound and steady one scar trigger.",
-  "useLimit": "discard",
-  "flavor": "Blessed wire remembers the shape of a body before it broke.",
-  "tier": "starter",
-  "progressionWeight": 0.5,
+  "cost": 3,
+  "sellValue": 1,
+  "sellable": true,
+  "tier": "standard",
+  "progressionWeight": 1,
+  "flavor": "A reusable brace that adds +1 Forge while holding together.",
+  "activeText": "A reusable brace that adds +1 Forge while holding together.",
   "shopCategories": [
     "medicae-shrine",
-    "forge-armoury"
-  ]
+    "market"
+  ],
+  "startingEligible": true,
+  "normalShopCommon": true,
+  "allowedFallbackArt": true
 }

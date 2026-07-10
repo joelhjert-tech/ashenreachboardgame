@@ -953,6 +953,31 @@ export const cardArtRuntimeCatalog: RuntimeCardArtCatalogEntry[] = [
     "outputPath": "/assets/cards/artifacts/artifact-zoey-thorn-violet.png"
   },
   {
+    "cardId": "artifact-coffin-rig",
+    "cardType": "artifact",
+    "outputPath": "/assets/cards/artifacts/artifact-coffin-rig.png"
+  },
+  {
+    "cardId": "artifact-grave-lens",
+    "cardType": "artifact",
+    "outputPath": "/assets/cards/artifacts/artifact-grave-lens.png"
+  },
+  {
+    "cardId": "artifact-marshal-seal",
+    "cardType": "artifact",
+    "outputPath": "/assets/cards/artifacts/artifact-marshal-seal.png"
+  },
+  {
+    "cardId": "artifact-tuning-spines",
+    "cardType": "artifact",
+    "outputPath": "/assets/cards/artifacts/artifact-tuning-spines.png"
+  },
+  {
+    "cardId": "artifact-veil-hook",
+    "cardType": "artifact",
+    "outputPath": "/assets/cards/artifacts/artifact-veil-hook.png"
+  },
+  {
     "cardId": "ashlock-cleaver",
     "cardType": "equipment",
     "outputPath": "/assets/cards/equipment/ashlock-cleaver.png"

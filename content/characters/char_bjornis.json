@@ -45,7 +45,8 @@
     }
   ],
   "startingGear": [
-    "red-march-warbell"
+    "nailspike-maul",
+    "rivetplate-vest"
   ],
   "startingContract": "compact-ember-courier"
 }

@@ -45,7 +45,8 @@
     }
   ],
   "startingGear": [
-    "blackstar-ampoule"
+    "salvage-ledger",
+    "lockjaw-kit"
   ],
   "startingContract": "cartel-ledger-skim"
 }

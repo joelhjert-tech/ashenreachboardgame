@@ -45,6 +45,7 @@
     }
   ],
   "startingGear": [
+    "cinder-suture-kit",
     "saintwire-splint"
   ],
   "startingContract": "compact-surgery-bond"

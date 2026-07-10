@@ -45,7 +45,8 @@
     }
   ],
   "startingGear": [
-    "black-route-fuse"
+    "black-route-fuse",
+    "salt-gauze-wrap"
   ],
   "startingContract": "clan-salvage-tithe"
 }

@@ -1,6 +1,12 @@
 {
   "id": "artifact-blackstar-ampoule",
   "type": "artifact",
+  "missionRewardEligible": true,
+  "eliteThreatRewardEligible": true,
+  "rareShopEligible": true,
+  "scenarioRewardEligible": true,
+  "startingEligible": false,
+  "normalShopCommon": false,
   "artifactKind": "consumableSalvage",
   "title": "Blackstar Ampoule",
   "text": "A sealed vial of starless residue that can swallow one terrible consequence.",

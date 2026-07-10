@@ -45,7 +45,8 @@
     }
   ],
   "startingGear": [
-    "last-breath-rivet"
+    "chapel-guard-harness",
+    "wound-clamp"
   ],
   "startingContract": "warden-span-vigil"
 }

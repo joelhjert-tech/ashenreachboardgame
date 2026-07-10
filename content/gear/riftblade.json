@@ -9,6 +9,8 @@
   },
   "flavor": "A cracked blade that hums louder near broken routes.",
   "tier": "advanced",
+  "startingEligible": false,
+  "normalShopCommon": false,
   "cost": 6,
   "sellValue": 3,
   "progressionWeight": 1.5,

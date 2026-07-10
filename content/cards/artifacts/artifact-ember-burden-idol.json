@@ -1,6 +1,12 @@
 {
   "id": "artifact-ember-burden-idol",
   "type": "artifact",
+  "missionRewardEligible": true,
+  "eliteThreatRewardEligible": true,
+  "rareShopEligible": true,
+  "scenarioRewardEligible": true,
+  "startingEligible": false,
+  "normalShopCommon": false,
   "title": "Ember Burden Idol",
   "text": "A squat iron idol that grows warmer whenever the bearer tries to leave it behind.",
   "flavor": "Worth hauling. Terrible to carry.",

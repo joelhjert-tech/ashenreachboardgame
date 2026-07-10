@@ -1,0 +1,25 @@
+{
+  "id": "salvage-guard-mask",
+  "name": "Salvage Guard Mask",
+  "slot": "armor",
+  "subtype": "armour",
+  "category": "passive",
+  "statBonus": {
+    "stat": "signal",
+    "amount": 1
+  },
+  "cost": 3,
+  "sellValue": 1,
+  "sellable": true,
+  "tier": "standard",
+  "progressionWeight": 1,
+  "flavor": "A sealed survey mask that adds +1 Signal while equipped.",
+  "activeText": "A sealed survey mask that adds +1 Signal while equipped.",
+  "shopCategories": [
+    "forge-armoury",
+    "market"
+  ],
+  "startingEligible": true,
+  "normalShopCommon": true,
+  "allowedFallbackArt": true
+}

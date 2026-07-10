@@ -28,7 +28,8 @@ describe("character roster content", () => {
         armor: null,
         utility: null
       });
-      expect(character.startingGear?.length).toBe(1);
+      expect(character.startingGear?.length).toBeGreaterThanOrEqual(1);
+      expect(character.startingGear?.length).toBeLessThanOrEqual(2);
       expect(character.startingContract).toBeTruthy();
     }
   });

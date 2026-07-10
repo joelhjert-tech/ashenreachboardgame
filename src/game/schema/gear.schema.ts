@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 export const gearSlotSchema = z.enum(["weapon", "armor", "utility"]);
+export const equipmentSubtypeSchema = z.enum(["weapon", "armour", "tool", "medical", "supply", "utility"]);
 export const gearBonusStatSchema = z.enum(["command", "grit", "signal", "guile", "forge"]);
 export const gearTierSchema = z.enum(["starter", "standard", "advanced", "artifact"]);
 export const gearTimingWindowSchema = z.enum([
@@ -35,6 +36,7 @@ export const gearItemSchema = z.object({
   id: z.string().min(1),
   name: z.string().min(1),
   slot: gearSlotSchema,
+  subtype: equipmentSubtypeSchema.optional(),
   category: gearCategorySchema.optional(),
   shopCategories: z.array(shopCategorySchema).min(1).optional(),
   statBonus: z.object({
@@ -54,10 +56,15 @@ export const gearItemSchema = z.object({
   charges: z.number().int().min(0).optional(),
   maxUses: z.number().int().min(0).optional(),
   heatCost: z.number().int().min(0).optional(),
-  linkedFollowerRole: z.string().min(1).optional()
+  linkedFollowerRole: z.string().min(1).optional(),
+  startingEligible: z.boolean().optional(),
+  normalShopCommon: z.boolean().optional(),
+  allowedFallbackArt: z.boolean().optional(),
+  qaOnly: z.boolean().optional()
 });
 
 export type GearSlot = z.infer<typeof gearSlotSchema>;
+export type EquipmentSubtype = z.infer<typeof equipmentSubtypeSchema>;
 export type GearCategory = z.infer<typeof gearCategorySchema>;
 export type ShopCategory = z.infer<typeof shopCategorySchema>;
 export type GearTier = z.infer<typeof gearTierSchema>;

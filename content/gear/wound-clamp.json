@@ -1,0 +1,25 @@
+{
+  "id": "wound-clamp",
+  "name": "Wound Clamp",
+  "slot": "armor",
+  "subtype": "medical",
+  "category": "passive",
+  "statBonus": {
+    "stat": "grit",
+    "amount": 1
+  },
+  "cost": 3,
+  "sellValue": 1,
+  "sellable": true,
+  "tier": "standard",
+  "progressionWeight": 1,
+  "flavor": "A hard-lock trauma clamp that adds +1 Grit while equipped.",
+  "activeText": "A hard-lock trauma clamp that adds +1 Grit while equipped.",
+  "shopCategories": [
+    "medicae-shrine",
+    "market"
+  ],
+  "startingEligible": true,
+  "normalShopCommon": true,
+  "allowedFallbackArt": true
+}

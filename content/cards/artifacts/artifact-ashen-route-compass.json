@@ -1,6 +1,12 @@
 {
   "id": "artifact-ashen-route-compass",
   "type": "artifact",
+  "missionRewardEligible": true,
+  "eliteThreatRewardEligible": true,
+  "rareShopEligible": true,
+  "scenarioRewardEligible": true,
+  "startingEligible": false,
+  "normalShopCommon": false,
   "artifactKind": "chargedRelic",
   "title": "Ashen Route Compass",
   "text": "A cracked surveyor compass that points toward survivable routes instead of north.",

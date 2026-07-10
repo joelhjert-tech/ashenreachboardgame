@@ -9,6 +9,8 @@
   },
   "flavor": "A scavenger drone that remembers every battlefield it stole from.",
   "tier": "standard",
+  "startingEligible": false,
+  "normalShopCommon": false,
   "cost": 4,
   "sellValue": 2,
   "progressionWeight": 1,

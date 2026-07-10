@@ -45,7 +45,8 @@
     }
   ],
   "startingGear": [
-    "veil-hook"
+    "chainhook-blade",
+    "sootmantle-cloak"
   ],
   "startingContract": "contract-lantern-run"
 }

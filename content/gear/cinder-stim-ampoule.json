@@ -15,6 +15,8 @@
   ],
   "flavor": "A sealed red ampoule that burns the blood clean for a few terrible seconds.",
   "tier": "standard",
+  "startingEligible": false,
+  "normalShopCommon": false,
   "cost": 3,
   "sellValue": 1,
   "progressionWeight": 0.75,
