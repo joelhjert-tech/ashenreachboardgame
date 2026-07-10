@@ -110,3 +110,7 @@ They are QA evidence only and are not intended for commit.
 **Incomplete browser sign-off, with no confirmed Phase 1 gameplay blocker.** The browser run validates fresh-session availability, readable phone/TV projection, real movement selection, and focus handoff. It does not provide enough evidence to approve route completion, duplicate suppression, shop progression, reward-once behavior, completed-mission inventory, or new-mission availability from the browser alone.
 
 The existing automated coverage remains green and directly covers the schema and progress rules. A deterministic QA-only fixture is the safest next step before calling Phase 1 browser-verified.
+
+## Follow-up status
+
+This first run remains the record of the stochastic reachability limitation. A guarded deterministic fixture was subsequently added and the missing route, shop, reward, inventory, and new-mission checks were rerun successfully. See `reports/phase1-mission-objectives-deterministic-browser-qa.md` for the final browser verdict.
