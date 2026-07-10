@@ -12328,12 +12328,14 @@ body {
 }
 
 .join-qr-card-compact {
-  grid-template-columns: minmax(0, 1fr) auto;
+  display: grid;
+  grid-template-columns: auto;
+  place-items: center;
   align-items: center;
   gap: 0.55rem;
-  width: 100%;
+  width: auto;
   height: 100%;
-  padding: 0.35rem 0.45rem;
+  padding: 0.22rem;
   border: 1px solid rgba(157, 111, 55, 0.72);
   background:
     linear-gradient(180deg, rgba(41, 32, 22, 0.96), rgba(11, 9, 9, 0.98)),
@@ -13903,13 +13905,13 @@ body {
 }
 
 /* Host TV responsive lock: keep the mockup rails at 16:9 TV widths. */
-@media (max-width: 1500px) {
-  .tv-command-dashboard .tv-command-header {
-    grid-template-columns: minmax(12.5rem, 0.82fr) minmax(0, 1.65fr) minmax(10.75rem, 0.72fr);
+  @media (max-width: 1500px) {
+    .tv-command-dashboard .tv-command-header {
+    grid-template-columns: minmax(11.5rem, 0.7fr) minmax(8.5rem, 0.5fr) minmax(21rem, 1.25fr) minmax(13rem, 0.82fr) auto;
   }
 
-  .tv-command-dashboard .tv-command-header-grid {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    .tv-command-dashboard .tv-command-header-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .tv-command-dashboard .tv-command-main {
@@ -13939,11 +13941,11 @@ body {
     gap: 0.4rem;
   }
 
-  .tv-command-dashboard .tv-command-header {
+    .tv-command-dashboard .tv-command-header {
     min-height: 4rem;
     padding: 0.34rem 0.48rem;
     gap: 0.44rem;
-    grid-template-columns: minmax(10.5rem, 0.74fr) minmax(0, 1.55fr) minmax(9.4rem, 0.7fr);
+    grid-template-columns: minmax(10.5rem, 0.68fr) minmax(7.8rem, 0.48fr) minmax(18rem, 1.2fr) minmax(11rem, 0.8fr) auto;
   }
 
   .tv-command-dashboard .tv-command-brand h1 {
@@ -16034,7 +16036,7 @@ body {
   flex: 0 0 clamp(4.35rem, 8.7svh, 6.35rem);
   min-height: 0;
   padding: clamp(0.36rem, 0.6vw, 0.72rem) clamp(0.55rem, 0.8vw, 1rem);
-  grid-template-columns: minmax(20rem, 0.78fr) minmax(9rem, 0.34fr) minmax(25rem, 1.02fr) minmax(16rem, 0.7fr);
+  grid-template-columns: minmax(12rem, 0.72fr) minmax(9rem, 0.5fr) minmax(23rem, 1.28fr) minmax(14rem, 0.9fr) auto;
   border-color: rgba(189, 134, 67, 0.72);
   background:
     linear-gradient(90deg, rgba(31, 20, 12, 0.94), rgba(5, 8, 12, 0.96) 48%, rgba(19, 13, 9, 0.94)),
@@ -16067,6 +16069,61 @@ body {
 .tv-command-dashboard .tv-command-header-chip {
   min-height: clamp(2.9rem, 5.4svh, 4.3rem);
   padding: clamp(0.28rem, 0.44vw, 0.55rem);
+}
+
+.tv-command-live-status {
+  min-width: 0;
+  height: 100%;
+  padding: clamp(0.32rem, 0.48vw, 0.6rem);
+  display: grid;
+  align-content: center;
+  gap: 0.12rem;
+  overflow: hidden;
+  border: 1px solid rgba(83, 156, 187, 0.45);
+  background: linear-gradient(180deg, rgba(10, 24, 31, 0.78), rgba(5, 10, 14, 0.84));
+  box-shadow: inset 0 0 1rem rgba(50, 150, 190, 0.08);
+}
+
+.tv-command-live-status > span {
+  color: #72c7e4;
+  font-size: clamp(0.54rem, 0.62vw, 0.72rem);
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.tv-command-live-status strong,
+.tv-command-live-status p {
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tv-command-live-status strong {
+  color: #f0dfbf;
+  font-size: clamp(0.72rem, 0.82vw, 0.98rem);
+  letter-spacing: 0.055em;
+  text-transform: uppercase;
+}
+
+.tv-command-live-status p {
+  color: #b9cbd2;
+  font-size: clamp(0.62rem, 0.7vw, 0.82rem);
+}
+
+.tv-command-live-status p em {
+  color: #8fa8b1;
+  font-style: normal;
+}
+
+.tv-command-live-status--battle,
+.tv-command-live-status--danger {
+  border-color: rgba(218, 69, 49, 0.62);
+}
+
+.tv-command-live-status--shop {
+  border-color: rgba(96, 190, 128, 0.58);
 }
 
 .host-scenario-progress {
@@ -16688,7 +16745,7 @@ body {
 
 @media (max-width: 1500px), (max-height: 850px) {
   .tv-command-dashboard .tv-command-header {
-    grid-template-columns: minmax(16rem, 0.68fr) minmax(8rem, 0.28fr) minmax(22rem, 1fr) minmax(13.5rem, 0.62fr);
+    grid-template-columns: minmax(11rem, 0.68fr) minmax(8rem, 0.45fr) minmax(21rem, 1.2fr) minmax(13rem, 0.82fr) auto;
   }
 
   .tv-command-dashboard .tv-command-brand h1 {

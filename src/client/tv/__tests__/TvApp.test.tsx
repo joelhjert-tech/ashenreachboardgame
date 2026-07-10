@@ -56,9 +56,9 @@ vi.mock("../HostPlayerCard.js", () => ({
 }));
 
 vi.mock("../JoinQrCard.js", () => ({
-  JoinQrCard: (props: { roomCode: string; showJoinDetails?: boolean }) => (
-    <div data-testid="mock-join-qr" data-show-join-details={String(props.showJoinDetails)}>
-      Join QR {props.roomCode}
+  JoinQrCard: (props: { roomCode: string; variant?: string }) => (
+    <div data-testid="mock-join-qr" data-room-code={props.roomCode} data-variant={props.variant} aria-label={`QR code to join room ${props.roomCode}`}>
+      QR tile
     </div>
   )
 }));
@@ -352,9 +352,8 @@ describe("TvApp", () => {
 
     render(<TvApp />);
 
-    await screen.findByText("Join QR RT7P4");
-    expect(screen.getByTestId("mock-join-qr")).toHaveAttribute("data-show-join-details", "true");
-    const banner = await screen.findByTestId("host-state-banner");
+    await screen.findByTestId("mock-join-qr");
+    const banner = await screen.findByTestId("host-live-status");
     expect(banner).toHaveTextContent(/tarek voss has the command channel/i);
     expect(banner).toHaveTextContent(/active phone chooses the next legal action/i);
     expect(screen.queryByRole("button", { name: /show debug/i })).not.toBeInTheDocument();
@@ -369,7 +368,7 @@ describe("TvApp", () => {
     );
   });
 
-  it("switches compact QR join details off during active play", async () => {
+  it("keeps the active header QR tile free of visible join copy", async () => {
     window.localStorage.setItem("ashen-reach-tv-room-code", "RT7P4");
     window.localStorage.setItem("ashen-reach-tv-host-token", "host:RT7P4:secret");
     const patch = createPatch();
@@ -386,8 +385,9 @@ describe("TvApp", () => {
 
     render(<TvApp />);
 
-    await screen.findByText("Join QR RT7P4");
-    expect(screen.getByTestId("mock-join-qr")).toHaveAttribute("data-show-join-details", "false");
+    const qr = await screen.findByTestId("mock-join-qr");
+    expect(qr).toHaveAttribute("data-variant", "compact");
+    expect(qr).not.toHaveTextContent(/scan to join|room rt7p4/i);
   });
 
   it("shows selected starting mission setup state on the startup screen without treating the contract pool as active missions", async () => {
@@ -482,7 +482,7 @@ describe("TvApp", () => {
 
     render(<TvApp />);
 
-    const banner = await screen.findByTestId("host-state-banner");
+    const banner = await screen.findByTestId("host-live-status");
     expect(banner).toHaveTextContent(/waiting on .*roll movement/i);
     expect(screen.queryByTestId("host-bottom-status-strip")).not.toBeInTheDocument();
     expect(screen.queryByTestId("tv-resolution-footer")).not.toBeInTheDocument();
@@ -492,6 +492,11 @@ describe("TvApp", () => {
     expect(topBar).toHaveTextContent(/mode/i);
     expect(topBar).toHaveTextContent(/win progress/i);
     expect(topBar).toHaveTextContent(/loss pressure/i);
+    expect(within(topBar).getAllByText("RT7P4")).toHaveLength(1);
+    expect(within(topBar).queryByText(/scan to join/i)).not.toBeInTheDocument();
+    expect(within(topBar).getByTestId("mock-join-qr")).not.toHaveTextContent(/room rt7p4/i);
+    expect(within(topBar).getByTestId("host-live-status")).toBeInTheDocument();
+    expect(screen.queryByTestId("host-state-banner")).not.toBeInTheDocument();
     expect(within(topBar).getByRole("region", { name: /win progress/i })).toHaveClass("host-progress-relic--win");
     expect(within(topBar).getByRole("region", { name: /loss pressure/i })).toHaveClass("host-progress-relic--loss");
     expect(topBar).not.toHaveTextContent(/round/i);
@@ -500,17 +505,12 @@ describe("TvApp", () => {
     expect(screen.queryByText(/global escalation/i)).not.toBeInTheDocument();
   });
 
-  it("places the host state banner as a larger top-right overlay", () => {
+  it("places live status inside the command header instead of an absolute board overlay", () => {
     const styles = readFileSync("src/client/styles.css", "utf8");
-    const bannerRule = styles.match(/\.host-state-banner\s*\{([^}]*)\}/)?.[1] ?? "";
-    const detailRule = styles.match(/\.host-state-banner strong\s*\{([^}]*)\}/)?.[1] ?? "";
+    const bannerRule = styles.match(/\.tv-command-live-status\s*\{([^}]*)\}/)?.[1] ?? "";
 
-    expect(bannerRule).toMatch(/position:\s*absolute/);
-    expect(bannerRule).toMatch(/top:\s*clamp/);
-    expect(bannerRule).toMatch(/right:\s*clamp/);
-    expect(bannerRule).toMatch(/width:\s*min\(42rem,\s*42vw\)/);
-    expect(detailRule).toMatch(/font-size:\s*clamp\(1\.09rem,\s*1\.2vw,\s*1\.41rem\)/);
-    expect(bannerRule).not.toMatch(/transform:\s*translateX/);
+    expect(bannerRule).toMatch(/height:\s*100%/);
+    expect(bannerRule).not.toMatch(/position:\s*(absolute|fixed)/);
   });
 
   it("shows scenario sheet art while win progress and loss pressure live in the top bar", async () => {
@@ -686,7 +686,7 @@ describe("TvApp", () => {
 
     expect(await screen.findByRole("button", { name: /start session/i })).toBeDisabled();
     expect(screen.getByText(/waiting for Joel to press ready/i)).toBeInTheDocument();
-    expect(screen.getByTestId("host-state-banner")).toHaveTextContent(/tarek voss has the command channel/i);
+    expect(screen.getByTestId("host-live-status")).toHaveTextContent(/tarek voss has the command channel/i);
 
     fireEvent.click(screen.getByRole("button", { name: /start session/i }));
 
@@ -910,7 +910,7 @@ describe("TvApp", () => {
 
     expect((await screen.findAllByText(/the broken seal secured/i)).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/joel won the confrontation and secured the broken seal/i).length).toBeGreaterThan(0);
-    const banner = screen.getByTestId("host-state-banner");
+    const banner = screen.getByTestId("host-live-status");
     expect(banner).toHaveTextContent(/game over/i);
     expect(banner).toHaveTextContent(/joel secured the final outcome/i);
   });
@@ -978,6 +978,7 @@ describe("TvApp", () => {
     expect(screen.queryByRole("complementary", { name: /operatives/i })).not.toBeInTheDocument();
     expect(document.querySelector(".tv-command-sidebar")).not.toBeInTheDocument();
     expect(screen.queryByTestId("host-state-banner")).not.toBeInTheDocument();
+    expect(within(screen.getByLabelText(/host status bar/i)).getByTestId("host-live-status")).toBeInTheDocument();
     expect(screen.queryByTestId("host-battle-overlay")).not.toBeInTheDocument();
     expect(screen.getByTestId("movement-roll-hud")).toHaveTextContent(/move 4/i);
     expect(screen.getByTestId("movement-roll-hud")).toHaveTextContent(/legal\s*1/i);
@@ -1115,6 +1116,7 @@ describe("TvApp", () => {
     const overlay = await screen.findByTestId("host-battle-overlay");
     expect(screen.getByTestId("tv-command-main")).toHaveClass("tv-command-main--battle-focus");
     expect(screen.queryByTestId("host-state-banner")).not.toBeInTheDocument();
+    expect(within(screen.getByLabelText(/host status bar/i)).getByTestId("host-live-status")).toBeInTheDocument();
     expect(screen.queryByText("Tactical map")).not.toBeInTheDocument();
     expect(screen.queryByRole("complementary", { name: /operatives/i })).not.toBeInTheDocument();
     expect(document.querySelector(".tv-command-sidebar")).not.toBeInTheDocument();
@@ -1362,7 +1364,7 @@ describe("TvApp", () => {
     render(<TvApp />);
 
     const overlay = await screen.findByTestId("host-shop-overlay");
-    const banner = screen.getByTestId("host-state-banner");
+    const banner = screen.getByTestId("host-live-status");
     expect(banner).toHaveTextContent(/shop open/i);
     expect(banner).toHaveTextContent(/waiting on tarek voss/i);
     expect(banner).toHaveTextContent(/anchor market/i);
@@ -1438,8 +1440,8 @@ describe("TvApp", () => {
     render(<TvApp />);
 
     const overlay = await screen.findByTestId("host-shop-overlay");
-    expect(screen.getByTestId("host-state-banner")).toHaveTextContent(/shop blocked/i);
-    expect(screen.getByTestId("host-state-banner")).toHaveTextContent(/clear gate-tax collectors/i);
+    expect(screen.getByTestId("host-live-status")).toHaveTextContent(/shop blocked/i);
+    expect(screen.getByTestId("host-live-status")).toHaveTextContent(/clear gate-tax collectors/i);
     expect(overlay).toHaveTextContent(/shop blocked/i);
     expect(overlay).toHaveTextContent(/gate-tax collectors command 5/i);
     expect(overlay).toHaveTextContent(/shop blocked by threat/i);

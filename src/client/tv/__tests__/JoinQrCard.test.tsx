@@ -35,18 +35,11 @@ describe("JoinQrCard", () => {
     expect(screen.queryByText(/phones need the lan url/i)).not.toBeInTheDocument();
   });
 
-  it("keeps the room code in compact seat links", () => {
+  it("renders the compact header variant as a QR-only tile", () => {
     render(<JoinQrCard roomCode="AB12C" variant="compact" />);
 
-    expect(screen.getByText(/seat links/i)).toHaveTextContent("room=AB12C");
-    expect(screen.getByText(/seat links/i)).toHaveTextContent("seat=1");
-    expect(screen.getByText(/seat links/i)).toHaveTextContent("seat=2");
-  });
-
-  it("hides long URL and seat-link text in active compact mode", () => {
-    render(<JoinQrCard roomCode="AB12C" variant="compact" showJoinDetails={false} />);
-
-    expect(screen.getByText("Room AB12C")).toBeInTheDocument();
+    expect(screen.queryByText(/scan to join/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/room ab12c/i)).not.toBeInTheDocument();
     expect(screen.queryByText("http://192.168.1.40:5173/?room=AB12C")).not.toBeInTheDocument();
     expect(screen.queryByText(/seat links/i)).not.toBeInTheDocument();
     expect(screen.getByLabelText(/qr code to join room ab12c/i)).toBeInTheDocument();

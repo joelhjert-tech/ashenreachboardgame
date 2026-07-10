@@ -402,7 +402,6 @@ function getScenarioStatus(patch: StatePatch<PublicPatchPayload> | null) {
 
 interface TopHeaderProps {
   roomCode: string | null;
-  phase: string;
   sessionMode: SessionMode;
   gameMode: GameMode;
   interactionMode: InteractionMode | null;
@@ -410,6 +409,7 @@ interface TopHeaderProps {
   joinedCount: number;
   readyCount: number;
   seatCapacity: number;
+  liveStatus: HostStateBannerModel;
 }
 
 function ScenarioProgressRelicPanel({
@@ -469,14 +469,14 @@ function HostTopScenarioProgress({
 
 function TopHeader({
   roomCode,
-  phase,
   sessionMode,
   gameMode,
   interactionMode,
   scenarioStatus,
   joinedCount,
   readyCount,
-  seatCapacity
+  seatCapacity,
+  liveStatus
 }: TopHeaderProps): ReactElement {
   const objective = scenarioStatus.objectiveProgress;
   const pressure = scenarioStatus.pressureState;
@@ -533,9 +533,23 @@ function TopHeader({
         }}
       />
 
+      <section
+        className={`tv-command-live-status tv-command-live-status--${liveStatus.tone}`}
+        aria-label="Live status"
+        data-testid="host-live-status"
+        role="status"
+      >
+        <span>Live Status</span>
+        <strong>{liveStatus.label}</strong>
+        <p>
+          {liveStatus.detail}
+          {liveStatus.meta ? <em> — {liveStatus.meta}</em> : null}
+        </p>
+      </section>
+
       <div className="tv-command-join-module">
         {roomCode ? (
-          <JoinQrCard roomCode={roomCode} variant="compact" showJoinDetails={phase === "start"} />
+          <JoinQrCard roomCode={roomCode} variant="compact" />
         ) : (
           <div className="join-qr-card join-qr-card-compact join-qr-card-empty">
             <div>
@@ -610,43 +624,6 @@ function getHostStateBannerModel({ patch, roomCode }: HostStateBannerProps): Hos
     meta: prompt.lockedReason ?? prompt.availableActionSummary ?? prompt.phaseReason,
     tone: patch.payload.status === "ended" ? "ended" : promptToneToHostTone(prompt.tone)
   };
-}
-
-function HostStateBanner(props: HostStateBannerProps): ReactElement {
-  const model = getHostStateBannerModel(props);
-  const movementPlanner = props.patch?.payload.movementPlanner?.active ? props.patch.payload.movementPlanner : null;
-
-  return (
-    <aside
-      className={`host-state-banner host-state-banner-${model.tone}${movementPlanner ? " tv-movement-overlay" : ""}`}
-      aria-label="Host game state"
-      data-testid="host-state-banner"
-      role="status"
-    >
-      <span className="host-state-banner-pulse" aria-hidden="true" />
-      <div>
-        <span>{model.label}</span>
-        <strong>{model.detail}</strong>
-      </div>
-      {movementPlanner ? (
-        <div className="host-state-banner-movement-dice">
-          <DiceRollScene
-            attackValue={movementPlanner.movementValue}
-            defenseValue={null}
-            modifierValue={0}
-            attackDieFace={movementPlanner.movementValue}
-            defenseDieFace={null}
-            showModifierDie={false}
-            compact
-            challengeStat="signal"
-            testId="movement-dice-animation"
-            className="movement-dice-animation"
-          />
-        </div>
-      ) : null}
-      <em>{model.meta}</em>
-    </aside>
-  );
 }
 
 function ActiveOperativeOverlay({
@@ -2590,6 +2567,15 @@ export function TvApp(): ReactElement {
   };
 
   const currentStepCopy = getCurrentStepCopy(publicPatch, activePlayer);
+  const liveStatus = getHostStateBannerModel({
+    patch: publicPatch,
+    roomCode: effectiveRoomCode,
+    activePlayer,
+    joinedCount: joinedSeats.length,
+    readyCount: readySeats.length,
+    battleMode,
+    shopMode
+  });
   const isPreRoomLobby = !effectiveRoomCode && !publicPatch;
 
   const gameUiReady =
@@ -2606,7 +2592,6 @@ export function TvApp(): ReactElement {
       <div className="tv-title-safe">
         <TopHeader
           roomCode={effectiveRoomCode}
-          phase={publicPatch?.phase ?? "start"}
           sessionMode={liveSessionMode}
           gameMode={liveGameMode}
           interactionMode={liveInteractionMode}
@@ -2614,21 +2599,11 @@ export function TvApp(): ReactElement {
           joinedCount={joinedSeats.length}
           readyCount={readySeats.length}
           seatCapacity={publicPatch?.payload.seats.length ?? (liveSessionMode === "single-player" ? 1 : 6)}
+          liveStatus={liveStatus}
         />
 
         {(requestError || error) && <div className="tv-banner tv-banner-error">{requestError ?? error}</div>}
         {sessionNotice && <div className="tv-banner">{sessionNotice}</div>}
-        {!battleMode && !movementFocusMode && (
-          <HostStateBanner
-            patch={publicPatch}
-            roomCode={roomCode}
-            activePlayer={activePlayer}
-            joinedCount={joinedSeats.length}
-            readyCount={readySeats.length}
-            battleMode={battleMode}
-            shopMode={shopMode}
-          />
-        )}
         <HostAudioControls audio={audio} />
         <EndgameOverlay patch={publicPatch} />
 
