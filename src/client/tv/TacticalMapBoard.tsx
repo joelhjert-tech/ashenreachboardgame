@@ -1,6 +1,6 @@
 import type { ReactElement } from "react";
 import { getRuntimeAssetPath } from "../../game/assets/runtime/runtimeAssetManifest.js";
-import type { PublicPatchPayload } from "../shared/types.js";
+import type { PublicMoveDestination, PublicPatchPayload } from "../shared/types.js";
 import { BoardMap } from "./BoardMap.js";
 import { BoardStage } from "./BoardStage.js";
 import { TalismanBoardSurface } from "./TalismanBoardSurface.js";
@@ -9,6 +9,7 @@ interface TacticalMapBoardProps {
   patch: PublicPatchPayload | null;
   previousPatch?: PublicPatchPayload | null;
   phase: string;
+  onMovementDestinationSelected?: (destination: PublicMoveDestination | null) => void;
 }
 
 function StaticTacticalBoard(): ReactElement {
@@ -31,10 +32,10 @@ function StaticTacticalBoard(): ReactElement {
   );
 }
 
-export function TacticalMapBoard({ patch, previousPatch = null, phase }: TacticalMapBoardProps): ReactElement {
+export function TacticalMapBoard({ patch, previousPatch = null, phase, onMovementDestinationSelected }: TacticalMapBoardProps): ReactElement {
   if (!patch) {
     return <StaticTacticalBoard />;
   }
 
-  return <BoardMap patch={patch} previousPatch={previousPatch} phase={phase} showHeader={false} showSidebar={false} />;
+  return <BoardMap patch={patch} previousPatch={previousPatch} phase={phase} showHeader={false} showSidebar={false} onMovementDestinationSelected={onMovementDestinationSelected} />;
 }

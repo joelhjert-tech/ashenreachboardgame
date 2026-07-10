@@ -32,7 +32,19 @@ vi.mock("../../shared/network.js", () => ({
 }));
 
 vi.mock("../TacticalMapBoard.js", () => ({
-  TacticalMapBoard: () => <div>Tactical map</div>
+  TacticalMapBoard: (props: {
+    patch?: PublicPatchPayload | null;
+    onMovementDestinationSelected?: (destination: NonNullable<PublicPatchPayload["movementPlanner"]>["destinations"][number]) => void;
+  }) => (
+    <div>
+      Tactical map
+      {props.patch?.movementPlanner?.destinations[0] && (
+        <button type="button" onClick={() => props.onMovementDestinationSelected?.(props.patch!.movementPlanner!.destinations[0]!)}>
+          Preview movement destination
+        </button>
+      )}
+    </div>
+  )
 }));
 
 vi.mock("../HostPlayerCard.js", () => ({
@@ -957,24 +969,50 @@ describe("TvApp", () => {
       clearDebugEvents: vi.fn()
     });
 
-    render(<TvApp />);
+    const { rerender } = render(<TvApp />);
 
-    expect(await screen.findByText(/sector brief/i)).toBeInTheDocument();
+    expect(await screen.findByTestId("tv-movement-focus")).toBeInTheDocument();
+    expect(screen.getByTestId("tv-command-main")).toHaveClass("tv-command-main--movement-focus");
     expect(screen.getByTestId("tv-command-main")).not.toHaveClass("tv-command-main--battle-focus");
     expect(screen.getByText("Tactical map")).toBeInTheDocument();
-    expect(screen.getByRole("complementary", { name: /operatives/i })).toBeInTheDocument();
-    expect(document.querySelector(".tv-command-sidebar")).toBeInTheDocument();
-    const movementOverlay = screen.getByTestId("host-state-banner");
-    expect(movementOverlay).toHaveClass("tv-movement-overlay");
-    expect(movementOverlay).not.toHaveClass("tv-card");
-    expect(movementOverlay).toHaveTextContent(/waiting on tarek voss to choose a legal destination/i);
-    expect(movementOverlay).toHaveTextContent(/you rolled 4/i);
-    expect(movementOverlay).toHaveTextContent(/exactly 4 steps away/i);
-    expect(screen.getByTestId("movement-dice-animation")).toHaveTextContent(/4/);
+    expect(screen.queryByRole("complementary", { name: /operatives/i })).not.toBeInTheDocument();
+    expect(document.querySelector(".tv-command-sidebar")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("host-state-banner")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("host-battle-overlay")).not.toBeInTheDocument();
+    expect(screen.getByTestId("movement-roll-hud")).toHaveTextContent(/move 4/i);
+    expect(screen.getByTestId("movement-roll-hud")).toHaveTextContent(/legal\s*1/i);
+    expect(screen.getByTestId("movement-destination-hud")).toHaveTextContent(/choose on phone/i);
+    fireEvent.click(screen.getByRole("button", { name: /preview movement destination/i }));
+    expect(screen.getByTestId("movement-destination-hud")).toHaveTextContent(/anchor market/i);
+    expect(screen.getByTestId("movement-destination-hud")).toHaveTextContent(/4 steps/i);
+    expect(screen.getByTestId("movement-travel-hud")).toHaveTextContent(/step 0 \/ 4/i);
     expect(screen.queryByText(/movement scan/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/movement value/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/exact legal routes are highlighted/i)).not.toBeInTheDocument();
-    expect(screen.queryByText(/trade if the sector is clear/i)).not.toBeInTheDocument();
+    expect(within(screen.getByTestId("movement-destination-hud")).getByText(/trade if the sector is clear/i)).toBeInTheDocument();
+
+    const movedPatch = structuredClone(patch);
+    movedPatch.phase = "action";
+    movedPatch.payload.movementPlanner = null;
+    movedPatch.payload.players[0]!.sectorId = "outer_anchor_market";
+    mockUseRoomSubscription.mockReturnValue({
+      patch: movedPatch,
+      error: null,
+      sendIntent: vi.fn(),
+      status: "open",
+      debugEvents: [],
+      clearDebugEvents: vi.fn()
+    });
+    rerender(<TvApp />);
+    expect(screen.getByTestId("movement-travel-hud")).toHaveTextContent(/step 4 \/ 4/i);
+    expect(screen.getByTestId("movement-travel-hud")).toHaveTextContent(/destination: anchor market/i);
+    expect(screen.getByText("Tactical map")).toBeInTheDocument();
+
+    rerender(<TvApp />);
+    expect(screen.queryByTestId("tv-movement-focus")).not.toBeInTheDocument();
+    expect(screen.getByTestId("tv-command-main")).not.toHaveClass("tv-command-main--movement-focus");
+    expect(screen.getByRole("complementary", { name: /operatives/i })).toBeInTheDocument();
+    expect(document.querySelector(".tv-command-sidebar")).toBeInTheDocument();
   });
 
   it("shows sector exploration math in the sector brief without duplicating private data", async () => {

@@ -40,6 +40,8 @@ import type {
   InteractionMode,
   NemesisChampionSummary,
   PublicPatchPayload,
+  PublicMoveDestination,
+  PublicMovementPlannerState,
   PublicPlayer,
   PublicSeat,
   ScenarioCatalogEntry,
@@ -1860,6 +1862,105 @@ interface TacticalMapPanelProps {
   characterCatalog: CharacterCatalogEntry[];
 }
 
+interface MovementArrivalModel {
+  destination: PublicMoveDestination;
+  playerName: string;
+}
+
+function getMovementArrivalModel(
+  patch: PublicPatchPayload | null | undefined,
+  previousPatch: PublicPatchPayload | null | undefined
+): MovementArrivalModel | null {
+  const planner = previousPatch?.movementPlanner?.active ? previousPatch.movementPlanner : null;
+
+  if (!patch || !planner) {
+    return null;
+  }
+
+  const previousSectorBySeat = new Map((previousPatch?.players ?? []).map((player) => [player.seatId, player.sectorId] as const));
+  const movedPlayer = patch.players.find((player) => previousSectorBySeat.get(player.seatId) !== player.sectorId);
+  const destination = movedPlayer ? planner.destinations.find((entry) => entry.sectorId === movedPlayer.sectorId) ?? null : null;
+
+  return movedPlayer && destination ? { destination, playerName: movedPlayer.character.name } : null;
+}
+
+function MovementFocusHud({
+  planner,
+  selectedDestination,
+  arrival,
+  activePlayerName
+}: {
+  planner: PublicMovementPlannerState | null;
+  selectedDestination: PublicMoveDestination | null;
+  arrival: MovementArrivalModel | null;
+  activePlayerName: string;
+}): ReactElement | null {
+  if (!planner && !arrival) {
+    return null;
+  }
+
+  const destination = arrival?.destination ?? selectedDestination;
+  const route = destination?.route ?? [];
+  const routeNames = destination?.routeNames ?? route;
+  const stepTotal = Math.max(0, route.length - 1);
+  const legalDestinationCount = planner?.destinations.filter((entry) => !entry.disabledReason).length ?? 0;
+  const beat = arrival ? "moving" : selectedDestination ? "destination" : "roll";
+  const playerName = arrival?.playerName ?? activePlayerName;
+  const currentName = arrival ? routeNames.at(-2) ?? planner?.currentSectorName ?? "Previous tile" : planner?.currentSectorName ?? "Current tile";
+  const nextName = arrival ? destination?.name ?? "Arrival tile" : routeNames[1] ?? destination?.name ?? "Choose on phone";
+
+  return (
+    <section className={`tv-movement-focus tv-movement-focus-${beat}`} aria-label="Movement focus" data-testid="tv-movement-focus">
+      <header className="tv-movement-focus-heading">
+        <span>Movement resolving</span>
+        <strong>{playerName}&apos;s command</strong>
+        <p>{arrival ? `Travelling to ${destination?.name}.` : "Resolve the move on the active phone."}</p>
+      </header>
+
+      <aside className="tv-movement-focus-roll" data-testid="movement-roll-hud">
+        <span>Roll result</span>
+        <strong>Move {planner?.movementValue ?? destination?.distance ?? stepTotal}</strong>
+        <dl>
+          <div><dt>Roll total</dt><dd>{planner?.movementValue ?? destination?.distance ?? stepTotal}</dd></div>
+          <div><dt>Modifier</dt><dd>—</dd></div>
+          <div><dt>Legal</dt><dd>{legalDestinationCount}</dd></div>
+        </dl>
+      </aside>
+
+      <aside className="tv-movement-focus-destination" data-testid="movement-destination-hud">
+        <span>{destination ? "Destination selected" : "Awaiting destination"}</span>
+        <strong>{destination?.name ?? "Choose on phone"}</strong>
+        {destination ? (
+          <>
+            <p>{toTitleCase(destination.ring)} reach · {stepTotal} steps</p>
+            <div className="tv-movement-focus-tags">
+              {destination.threatIcons.map((icon) => <i key={icon}>{toTitleCase(icon)}</i>)}
+              <i>Threats {destination.faceUpThreats.length}</i>
+              <i>Occupants {destination.occupants.length}</i>
+              {(destination.scenarioMarkers ?? []).map((marker) => <i key={marker}>{marker}</i>)}
+            </div>
+            <small>{destination.ruleText || destination.loreText || "No additional tile rule."}</small>
+          </>
+        ) : <p>{legalDestinationCount} legal tiles glow on the board.</p>}
+      </aside>
+
+      {destination && (
+        <div className="tv-movement-focus-travel" data-testid="movement-travel-hud">
+          <span>{arrival ? "Moving to destination" : "Route preview"}</span>
+          <strong>Step {arrival ? stepTotal : 0} / {stepTotal}</strong>
+          <p>Current: {currentName} · Next: {nextName} · Destination: {destination.name}</p>
+        </div>
+      )}
+
+      <ol className="tv-movement-focus-timeline" aria-label="Movement progress">
+        {(["roll", "destination", "moving", "arrival", "encounter"] as const).map((entry) => (
+          <li key={entry} className={entry === beat ? "is-active" : ""}>{toTitleCase(entry)}</li>
+        ))}
+      </ol>
+    </section>
+  );
+}
+
 function NemesisBanner({ nemesis }: { nemesis: ActiveNemesisSummary | null }): ReactElement | null {
   if (!nemesis) {
     return null;
@@ -1926,17 +2027,32 @@ function TacticalMapPanel({
 }: TacticalMapPanelProps): ReactElement {
   const battleMode = isHostBattleActive(patch, battlePlayer);
   const shopMode = isHostShopActive(patch, activePlayer);
+  const planner = patch?.payload.movementPlanner?.active ? patch.payload.movementPlanner : null;
+  const arrival = getMovementArrivalModel(patch?.payload, previousPatch?.payload);
+  const movementFocusMode = !battleMode && Boolean(planner || arrival);
+  const [selectedMovementDestination, setSelectedMovementDestination] = useState<PublicMoveDestination | null>(null);
+
+  useEffect(() => {
+    if (!planner) {
+      setSelectedMovementDestination(null);
+    }
+  }, [planner]);
 
   return (
-    <section className={`tv-command-stage${battleMode ? " tv-command-stage-battle-mode" : ""}${shopMode ? " tv-command-stage-shop-mode" : ""}`}>
+    <section className={`tv-command-stage${battleMode ? " tv-command-stage-battle-mode" : ""}${shopMode ? " tv-command-stage-shop-mode" : ""}${movementFocusMode ? " tv-command-stage-movement-focus" : ""}`}>
       {!battleMode && (
         <div className="tv-command-map-shell">
-          <TacticalMapBoard patch={patch?.payload ?? null} previousPatch={previousPatch?.payload ?? null} phase={patch?.phase ?? "start"} />
-          <BoardLegend />
+          <TacticalMapBoard
+            patch={patch?.payload ?? null}
+            previousPatch={previousPatch?.payload ?? null}
+            phase={patch?.phase ?? "start"}
+            onMovementDestinationSelected={setSelectedMovementDestination}
+          />
+          {!movementFocusMode && <BoardLegend />}
         </div>
       )}
       {!battleMode && <NemesisBanner nemesis={patch?.payload.nemesis ?? null} />}
-      {!battleMode && !shopMode && (
+      {!battleMode && !shopMode && !movementFocusMode && (
         <ActiveOperativeOverlay
           patch={patch}
           previousPatch={previousPatch}
@@ -1947,6 +2063,12 @@ function TacticalMapPanel({
       )}
       <HostBattleOverlay patch={patch} activePlayer={battlePlayer} />
       <HostShopOverlay patch={patch} activePlayer={activePlayer} />
+      <MovementFocusHud
+        planner={planner}
+        selectedDestination={selectedMovementDestination}
+        arrival={arrival}
+        activePlayerName={activePlayer?.character.name ?? "Active operative"}
+      />
     </section>
   );
 }
@@ -2275,6 +2397,8 @@ export function TvApp(): ReactElement {
   const scenarioStatus = useMemo(() => getScenarioStatus(publicPatch), [publicPatch]);
   const battleMode = isHostBattleActive(publicPatch, battlePlayer);
   const shopMode = isHostShopActive(publicPatch, activePlayer);
+  const movementArrival = getMovementArrivalModel(publicPatch?.payload, previousPatchRef.current?.payload);
+  const movementFocusMode = !battleMode && Boolean(publicPatch?.payload.movementPlanner?.active || movementArrival);
 
   useEffect(() => {
     if (publicPatch) {
@@ -2478,7 +2602,7 @@ export function TvApp(): ReactElement {
   }
 
   return (
-    <main className={`tv-dashboard tv-command-dashboard${battleMode ? " tv-command-dashboard--battle-focus" : ""}`}>
+    <main className={`tv-dashboard tv-command-dashboard${battleMode ? " tv-command-dashboard--battle-focus" : ""}${movementFocusMode ? " tv-command-dashboard--movement-focus" : ""}`}>
       <div className="tv-title-safe">
         <TopHeader
           roomCode={effectiveRoomCode}
@@ -2494,7 +2618,7 @@ export function TvApp(): ReactElement {
 
         {(requestError || error) && <div className="tv-banner tv-banner-error">{requestError ?? error}</div>}
         {sessionNotice && <div className="tv-banner">{sessionNotice}</div>}
-        {!battleMode && (
+        {!battleMode && !movementFocusMode && (
           <HostStateBanner
             patch={publicPatch}
             roomCode={roomCode}
@@ -2509,7 +2633,7 @@ export function TvApp(): ReactElement {
         <EndgameOverlay patch={publicPatch} />
 
         <section
-          className={`tv-command-main${isPreRoomLobby ? " tv-command-main--pre-room" : ""}${battleMode ? " tv-command-main--battle-focus" : ""}`}
+          className={`tv-command-main${isPreRoomLobby ? " tv-command-main--pre-room" : ""}${battleMode ? " tv-command-main--battle-focus" : ""}${movementFocusMode ? " tv-command-main--movement-focus" : ""}`}
           data-testid="tv-command-main"
         >
           {isPreRoomLobby ? (
@@ -2554,7 +2678,7 @@ export function TvApp(): ReactElement {
             </section>
           ) : (
             <>
-              {!battleMode && (publicPatch || effectiveRoomCode) && (
+              {!battleMode && !movementFocusMode && (publicPatch || effectiveRoomCode) && (
             <OperativesRail
               patch={publicPatch}
               characterCatalog={characterCatalog}
@@ -2573,7 +2697,7 @@ export function TvApp(): ReactElement {
                 characterCatalog={characterCatalog}
               />
 
-              {!battleMode && <RightSidebar
+              {!battleMode && !movementFocusMode && <RightSidebar
                 roomCode={effectiveRoomCode}
                 scenarioStatus={scenarioStatus}
                 publicPatch={publicPatch}

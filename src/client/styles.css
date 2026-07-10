@@ -16736,3 +16736,256 @@ body {
   grid-template-columns: minmax(0, 1fr);
   gap: 0;
 }
+
+/* Movement focus keeps the authored tile board dominant and frames it with compact public HUDs. */
+.tv-command-dashboard .tv-command-main.tv-command-main--movement-focus {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0;
+}
+
+.tv-command-dashboard--movement-focus .tv-command-stage-movement-focus {
+  border-color: rgba(85, 165, 222, 0.58);
+  box-shadow:
+    inset 0 0 0 1px rgba(108, 194, 242, 0.08),
+    inset 0 0 5rem rgba(35, 112, 164, 0.08);
+}
+
+.tv-command-dashboard--movement-focus .tv-command-map-shell {
+  padding: clamp(0.18rem, 0.3vw, 0.34rem);
+}
+
+.tv-command-dashboard--movement-focus .tv-command-map-shell .board-stage {
+  border-color: rgba(91, 177, 229, 0.62);
+  box-shadow:
+    inset 0 0 0 1px rgba(130, 205, 246, 0.1),
+    0 0 2.8rem rgba(32, 122, 184, 0.2);
+}
+
+.tv-movement-focus {
+  position: absolute;
+  inset: 0;
+  z-index: 12;
+  pointer-events: none;
+  color: #e9f4f8;
+}
+
+.tv-movement-focus-heading,
+.tv-movement-focus-roll,
+.tv-movement-focus-destination,
+.tv-movement-focus-travel,
+.tv-movement-focus-timeline {
+  border: 1px solid rgba(95, 177, 224, 0.42);
+  background:
+    linear-gradient(180deg, rgba(7, 15, 22, 0.82), rgba(4, 9, 14, 0.72)),
+    rgba(4, 9, 14, 0.72);
+  box-shadow:
+    inset 0 0 0 1px rgba(219, 242, 252, 0.035),
+    0 0.7rem 1.8rem rgba(0, 0, 0, 0.32);
+  -webkit-backdrop-filter: blur(0.42rem);
+  backdrop-filter: blur(0.42rem);
+}
+
+.tv-movement-focus-heading {
+  position: absolute;
+  top: clamp(0.45rem, 0.8vw, 0.8rem);
+  left: 50%;
+  width: min(28rem, 42vw);
+  transform: translateX(-50%);
+  display: grid;
+  justify-items: center;
+  gap: 0.08rem;
+  padding: clamp(0.36rem, 0.54vw, 0.6rem) clamp(0.7rem, 1vw, 1.1rem);
+  text-align: center;
+}
+
+.tv-movement-focus-heading span,
+.tv-movement-focus-roll > span,
+.tv-movement-focus-destination > span,
+.tv-movement-focus-travel > span {
+  color: #82cffa;
+  font-size: clamp(0.54rem, 0.66vw, 0.76rem);
+  font-weight: 850;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.tv-movement-focus-heading strong {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(0.9rem, 1.18vw, 1.35rem);
+  text-transform: uppercase;
+}
+
+.tv-movement-focus-heading p,
+.tv-movement-focus-roll p,
+.tv-movement-focus-destination p,
+.tv-movement-focus-travel p {
+  margin: 0;
+  color: #c8d7df;
+  font-size: clamp(0.56rem, 0.68vw, 0.78rem);
+}
+
+.tv-movement-focus-roll,
+.tv-movement-focus-destination {
+  position: absolute;
+  top: clamp(5rem, 12svh, 7rem);
+  width: clamp(13rem, 17vw, 18rem);
+  display: grid;
+  gap: 0.38rem;
+  padding: clamp(0.5rem, 0.72vw, 0.82rem);
+}
+
+.tv-movement-focus-roll {
+  left: clamp(0.5rem, 0.8vw, 0.9rem);
+}
+
+.tv-movement-focus-destination {
+  right: clamp(0.5rem, 0.8vw, 0.9rem);
+  border-color: rgba(81, 190, 151, 0.42);
+}
+
+.tv-movement-focus-roll > strong,
+.tv-movement-focus-destination > strong {
+  color: #f1e2bd;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(1rem, 1.32vw, 1.55rem);
+  line-height: 1;
+}
+
+.tv-movement-focus-roll dl {
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.22rem;
+}
+
+.tv-movement-focus-roll dl > div {
+  min-width: 0;
+  padding: 0.24rem;
+  border: 1px solid rgba(110, 190, 234, 0.22);
+  background: rgba(2, 8, 13, 0.44);
+}
+
+.tv-movement-focus-roll dt,
+.tv-movement-focus-roll dd {
+  margin: 0;
+}
+
+.tv-movement-focus-roll dt {
+  color: #8fb8cf;
+  font-size: 0.52rem;
+  text-transform: uppercase;
+}
+
+.tv-movement-focus-roll dd {
+  color: #f4ead1;
+  font-size: clamp(0.86rem, 1.05vw, 1.18rem);
+  font-weight: 900;
+}
+
+.tv-movement-focus-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.2rem;
+}
+
+.tv-movement-focus-tags i {
+  padding: 0.16rem 0.28rem;
+  border: 1px solid rgba(99, 193, 160, 0.28);
+  color: #bfe4d4;
+  font-size: 0.52rem;
+  font-style: normal;
+  text-transform: uppercase;
+}
+
+.tv-movement-focus-destination small {
+  color: #aebec6;
+  display: -webkit-box;
+  overflow: hidden;
+  font-size: clamp(0.5rem, 0.62vw, 0.72rem);
+  line-height: 1.2;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+}
+
+.tv-movement-focus-travel {
+  position: absolute;
+  left: 50%;
+  bottom: clamp(3.35rem, 8svh, 4.8rem);
+  width: min(38rem, 58vw);
+  transform: translateX(-50%);
+  display: grid;
+  grid-template-columns: auto auto;
+  gap: 0.18rem 0.72rem;
+  align-items: center;
+  padding: clamp(0.4rem, 0.58vw, 0.66rem) clamp(0.7rem, 1vw, 1.1rem);
+  border-color: rgba(215, 171, 86, 0.52);
+}
+
+.tv-movement-focus-travel > strong {
+  justify-self: end;
+  color: #efc86e;
+}
+
+.tv-movement-focus-travel > p {
+  grid-column: 1 / -1;
+  text-align: center;
+}
+
+.tv-movement-focus-timeline {
+  position: absolute;
+  left: 50%;
+  bottom: clamp(0.45rem, 0.8vw, 0.8rem);
+  width: min(42rem, 68vw);
+  transform: translateX(-50%);
+  margin: 0;
+  padding: 0.34rem 0.5rem;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  list-style: none;
+}
+
+.tv-movement-focus-timeline li {
+  position: relative;
+  color: #718995;
+  font-size: clamp(0.48rem, 0.6vw, 0.7rem);
+  letter-spacing: 0.08em;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.tv-movement-focus-timeline li:not(:last-child)::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 72%;
+  width: 56%;
+  height: 1px;
+  background: rgba(101, 164, 196, 0.28);
+}
+
+.tv-movement-focus-timeline li.is-active {
+  color: #f0c66d;
+  text-shadow: 0 0 0.65rem rgba(240, 198, 109, 0.46);
+}
+
+.tv-command-stage-movement-focus .talisman-board-tile-legal {
+  filter: brightness(1.12) saturate(1.16);
+}
+
+.tv-command-stage-movement-focus .board-route-movement,
+.tv-command-stage-movement-focus .board-route-movement-travel {
+  stroke-width: 5;
+  filter: drop-shadow(0 0 0.42rem rgba(91, 205, 255, 0.92));
+}
+
+@media (max-width: 1500px) {
+  .tv-movement-focus-roll,
+  .tv-movement-focus-destination {
+    top: 4.35rem;
+    width: clamp(11.5rem, 18vw, 15rem);
+  }
+
+  .tv-movement-focus-heading {
+    width: min(25rem, 40vw);
+  }
+}

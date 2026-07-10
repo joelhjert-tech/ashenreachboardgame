@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type ReactElement } from "react";
 import { BOARD_SPACES, getBoardSpace, isScenarioConfrontationSpace } from "../../game/data/boardSpaces.js";
 import { RIFTFALL_BOARD_NODE_INDEX, RIFTFALL_BOARD_NODES } from "../../data/riftfallBoardNodes.js";
-import type { ContractCard, OutcomeSummary, PublicPatchPayload, SectorNode, ThreatIcon } from "../shared/types.js";
+import type { ContractCard, OutcomeSummary, PublicMoveDestination, PublicPatchPayload, SectorNode, ThreatIcon } from "../shared/types.js";
 import { ThreatIconBadge } from "../shared/ChallengeBadge.js";
 import { buildRoutePreviewCopy } from "../shared/explainabilityPrompts.js";
 import {
@@ -27,6 +27,7 @@ interface BoardMapProps {
   phase: string;
   showHeader?: boolean;
   showSidebar?: boolean;
+  onMovementDestinationSelected?: (destination: PublicMoveDestination | null) => void;
 }
 
 interface CalibrationPoint {
@@ -328,7 +329,7 @@ function buildNemesisTrails(patch: PublicPatchPayload, previousPatch: PublicPatc
     .filter((trail): trail is MapFxTrail => Boolean(trail));
 }
 
-export function BoardMap({ patch, previousPatch = null, phase, showHeader = true, showSidebar = true }: BoardMapProps): ReactElement {
+export function BoardMap({ patch, previousPatch = null, phase, showHeader = true, showSidebar = true, onMovementDestinationSelected }: BoardMapProps): ReactElement {
   const boardAssetPath = getMapBoardBaseAssetPath();
   const [selectedNodeId, setSelectedNodeId] = useState<string>(() => RIFTFALL_BOARD_NODES[0]?.id ?? "");
   const [calibrationPoint, setCalibrationPoint] = useState<CalibrationPoint | null>(null);
@@ -385,6 +386,9 @@ export function BoardMap({ patch, previousPatch = null, phase, showHeader = true
     selectedNode && movementPlanner
       ? movementPlanner.destinations.find((destination) => destination.sectorId === selectedNode.id) ?? null
       : null;
+  useEffect(() => {
+    onMovementDestinationSelected?.(selectedMoveDestination);
+  }, [onMovementDestinationSelected, selectedMoveDestination]);
   const selectedRoutePreview =
     selectedMoveDestination && movementPlanner
       ? buildRoutePreviewCopy(selectedMoveDestination, movementPlanner.movementValue, movementPlanner.currentSectorName, true)
