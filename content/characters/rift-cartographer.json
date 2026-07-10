@@ -45,7 +45,8 @@
     }
   ],
   "startingGear": [
-    "ashen-route-compass"
+    "route-compass",
+    "surveyor-chalk"
   ],
   "startingContract": "cartel-quiet-route"
 }

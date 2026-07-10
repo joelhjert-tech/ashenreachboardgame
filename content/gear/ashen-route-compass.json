@@ -10,7 +10,9 @@
   "activeText": "Exhaust to reroll a failed movement or anomaly check.",
   "useLimit": "oncePerRound",
   "flavor": "The needle points toward the route that hurts least.",
-  "tier": "standard",
+  "tier": "artifact",
+  "startingEligible": false,
+  "normalShopCommon": false,
   "progressionWeight": 1.25,
   "shopCategories": [
     "market"

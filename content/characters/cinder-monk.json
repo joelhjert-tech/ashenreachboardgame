@@ -45,7 +45,8 @@
     }
   ],
   "startingGear": [
-    "heat-sink-prayer"
+    "oath-chain",
+    "ember-poultice"
   ],
   "startingContract": "umbral-shrine-confession"
 }

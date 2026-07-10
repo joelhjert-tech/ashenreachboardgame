@@ -1,6 +1,12 @@
 {
   "id": "artifact-void-key",
   "type": "artifact",
+  "missionRewardEligible": true,
+  "eliteThreatRewardEligible": true,
+  "rareShopEligible": true,
+  "scenarioRewardEligible": true,
+  "startingEligible": false,
+  "normalShopCommon": false,
   "artifactKind": "gateRelic",
   "title": "Void Key",
   "text": "A black key with teeth shaped for gates that have not finished existing.",

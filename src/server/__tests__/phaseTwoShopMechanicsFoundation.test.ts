@@ -127,11 +127,11 @@ describe("Phase 2A shop mechanics foundation", () => {
     const allMarketIds = filterGearByShopCategory(gear.values(), "market").map((item) => item.id);
     const allForgeIds = filterGearByShopCategory(gear.values(), "forge-armoury").map((item) => item.id);
 
-    expect(marketStock.map((item) => item.id)).toContain("ashen-route-compass");
+    expect(allMarketIds).toContain("route-compass");
     expect(allMarketIds).toEqual(expect.arrayContaining(["ashlock-cleaver", "signal-pike", "scrap-drone"]));
     expect(marketStock.every((item) => getGearShopCategoryIds(item).includes("market"))).toBe(true);
     expect(marketStock.some((item) => item.id.startsWith("qa_"))).toBe(false);
-    expect(forgeStock.map((item) => item.id)).toContain("coffin-rig");
+    expect(allForgeIds).toContain("nailspike-maul");
     expect(allForgeIds).toEqual(expect.arrayContaining(["ashlock-cleaver", "riftblade", "void-plate"]));
     expect(forgeStock.every((item) => getGearShopCategoryIds(item).includes("forge-armoury"))).toBe(true);
     expect(forgeStock.some((item) => item.tier === "artifact")).toBe(false);

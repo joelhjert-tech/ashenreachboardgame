@@ -1,20 +1,29 @@
 {
   "id": "black-route-fuse",
   "name": "Black Route Fuse",
-  "slot": "weapon",
+  "slot": "utility",
+  "subtype": "supply",
   "category": "dangerous",
   "statBonus": {
     "stat": "grit",
     "amount": 1
   },
-  "activeText": "Break for +3 Grit before the battle roll, then advance escalation by 1.",
-  "useLimit": "discard",
-  "heatCost": 1,
-  "flavor": "A length of dead-route cord that burns toward the nearest argument.",
+  "cost": 3,
+  "sellable": true,
   "tier": "standard",
   "progressionWeight": 1,
+  "flavor": "A controlled length of dead-route cord reserved for one desperate breach.",
+  "activeText": "Break for +3 Grit before the battle roll, then advance escalation by 1.",
+  "timingWindows": [
+    "beforeBattleRoll"
+  ],
+  "useLimit": "discard",
+  "heatCost": 1,
   "shopCategories": [
     "forge-armoury",
-    "relic-dealer"
-  ]
+    "market"
+  ],
+  "startingEligible": true,
+  "normalShopCommon": true,
+  "allowedFallbackArt": true
 }

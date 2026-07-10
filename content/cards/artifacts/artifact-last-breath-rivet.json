@@ -1,6 +1,12 @@
 {
   "id": "artifact-last-breath-rivet",
   "type": "artifact",
+  "missionRewardEligible": true,
+  "eliteThreatRewardEligible": true,
+  "rareShopEligible": true,
+  "scenarioRewardEligible": true,
+  "startingEligible": false,
+  "normalShopCommon": false,
   "artifactKind": "consumableSalvage",
   "title": "Last-Breath Rivet",
   "text": "A coffin nail meant to fail once in exactly the right direction.",

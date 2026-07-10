@@ -1,0 +1,25 @@
+{
+  "id": "ironhide-bracers",
+  "name": "Ironhide Bracers",
+  "slot": "armor",
+  "subtype": "armour",
+  "category": "passive",
+  "statBonus": {
+    "stat": "forge",
+    "amount": 1
+  },
+  "cost": 3,
+  "sellValue": 1,
+  "sellable": true,
+  "tier": "standard",
+  "progressionWeight": 1,
+  "flavor": "Work-braced guards that add +1 Forge while equipped.",
+  "activeText": "Work-braced guards that add +1 Forge while equipped.",
+  "shopCategories": [
+    "forge-armoury",
+    "market"
+  ],
+  "startingEligible": true,
+  "normalShopCommon": true,
+  "allowedFallbackArt": true
+}

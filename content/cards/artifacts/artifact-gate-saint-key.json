@@ -1,6 +1,12 @@
 {
   "id": "artifact-gate-saint-key",
   "type": "artifact",
+  "missionRewardEligible": true,
+  "eliteThreatRewardEligible": true,
+  "rareShopEligible": true,
+  "scenarioRewardEligible": true,
+  "startingEligible": false,
+  "normalShopCommon": false,
   "artifactKind": "gateRelic",
   "title": "Gate-Saint Key",
   "text": "A final-approach artifact that understands Crownfall locks better than living hands do.",

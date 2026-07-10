@@ -1,6 +1,12 @@
 {
   "id": "artifact-rift-anchor-spike",
   "type": "artifact",
+  "missionRewardEligible": true,
+  "eliteThreatRewardEligible": true,
+  "rareShopEligible": true,
+  "scenarioRewardEligible": true,
+  "startingEligible": false,
+  "normalShopCommon": false,
   "title": "Rift Anchor Spike",
   "text": "A scorched brass spike that pins one impossible route to the board for a few breaths.",
   "flavor": "Hammer it in and the world has to admit you were there.",

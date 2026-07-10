@@ -1,6 +1,12 @@
 {
   "id": "artifact-mira-rift-twin",
   "type": "artifact",
+  "missionRewardEligible": true,
+  "eliteThreatRewardEligible": true,
+  "rareShopEligible": true,
+  "scenarioRewardEligible": true,
+  "startingEligible": false,
+  "normalShopCommon": false,
   "artifactKind": "factionRelic",
   "title": "Mira, Rift-Twin",
   "text": "Legendary Follower / Companion. Unique. Mira joins the operative as a violet breach duelist. If the operative is Rumi, their team bond grants +1 Signal and +1 Guile while Mira is following.",

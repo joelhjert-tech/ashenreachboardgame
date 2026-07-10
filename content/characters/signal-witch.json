@@ -45,7 +45,8 @@
     }
   ],
   "startingGear": [
-    "choir-static-censer"
+    "static-probe",
+    "signal-lantern"
   ],
   "startingContract": "choir-spindle-harmonics"
 }

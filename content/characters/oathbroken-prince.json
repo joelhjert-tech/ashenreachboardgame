@@ -45,7 +45,8 @@
     }
   ],
   "startingGear": [
-    "oath-chain-ledger"
+    "oath-chain",
+    "ashen-bayonet"
   ],
   "startingContract": "dominion-gate-tithe"
 }

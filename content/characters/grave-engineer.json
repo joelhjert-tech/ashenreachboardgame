@@ -45,7 +45,8 @@
     }
   ],
   "startingGear": [
-    "coffin-rig"
+    "ironhide-bracers",
+    "bridge-spike"
   ],
   "startingContract": "compact-cleanse-ledger"
 }

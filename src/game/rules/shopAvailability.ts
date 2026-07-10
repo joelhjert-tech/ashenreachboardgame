@@ -156,7 +156,7 @@ export function getAvailableShopStockForCategory(
 
   const stock = filterGearByShopCategory(items, category)
     .filter((item) => !ownedGearIds.has(item.id))
-    .filter((item) => options.includeArtifacts === true || item.tier !== "artifact")
+    .filter((item) => item.tier === "artifact" ? options.includeArtifacts === true : item.normalShopCommon !== false)
     .filter((item) => options.includeQaGear === true || !isQaShopGear(item))
     .sort((left, right) => {
       const costDelta = options.expensiveFirst

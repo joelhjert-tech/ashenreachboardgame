@@ -1,0 +1,25 @@
+{
+  "id": "salt-gauze-wrap",
+  "name": "Salt Gauze Wrap",
+  "slot": "utility",
+  "subtype": "medical",
+  "category": "passive",
+  "statBonus": {
+    "stat": "grit",
+    "amount": 1
+  },
+  "cost": 2,
+  "sellValue": 1,
+  "sellable": true,
+  "tier": "starter",
+  "progressionWeight": 1,
+  "flavor": "A sealed wound wrap that adds +1 Grit while recovering.",
+  "activeText": "A sealed wound wrap that adds +1 Grit while recovering.",
+  "shopCategories": [
+    "medicae-shrine",
+    "market"
+  ],
+  "startingEligible": true,
+  "normalShopCommon": true,
+  "allowedFallbackArt": true
+}

@@ -1,6 +1,12 @@
 {
   "id": "artifact-rune-eye-raven",
   "type": "artifact",
+  "missionRewardEligible": true,
+  "eliteThreatRewardEligible": true,
+  "rareShopEligible": true,
+  "scenarioRewardEligible": true,
+  "startingEligible": false,
+  "normalShopCommon": false,
   "artifactKind": "factionRelic",
   "title": "The Rune-Eye Raven",
   "text": "Legendary Follower / Companion. Unique. A three-eyed ash raven joins the operative, scouting threat draws, route choices, and bad omens before they become wounds.",

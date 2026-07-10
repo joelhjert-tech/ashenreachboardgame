@@ -1,6 +1,12 @@
 {
   "id": "artifact-red-march-warbell",
   "type": "artifact",
+  "missionRewardEligible": true,
+  "eliteThreatRewardEligible": true,
+  "rareShopEligible": true,
+  "scenarioRewardEligible": true,
+  "startingEligible": false,
+  "normalShopCommon": false,
   "artifactKind": "cursedRelic",
   "title": "Red March Warbell",
   "text": "A battle bell from a buried convoy command post, still eager to call witnesses.",

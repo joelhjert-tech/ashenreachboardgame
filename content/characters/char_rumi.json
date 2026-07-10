@@ -45,7 +45,8 @@
     }
   ],
   "startingGear": [
-    "mirror-reroll-token"
+    "mirror-token",
+    "field-lens"
   ],
   "startingContract": "umbral-blackstar-sample"
 }

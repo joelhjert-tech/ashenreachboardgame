@@ -1,0 +1,25 @@
+{
+  "id": "stormcut-axe",
+  "name": "Stormcut Axe",
+  "slot": "weapon",
+  "subtype": "weapon",
+  "category": "passive",
+  "statBonus": {
+    "stat": "forge",
+    "amount": 1
+  },
+  "cost": 4,
+  "sellValue": 2,
+  "sellable": true,
+  "tier": "advanced",
+  "progressionWeight": 1,
+  "flavor": "An insulated breach axe that adds +1 Forge in battle.",
+  "activeText": "An insulated breach axe that adds +1 Forge in battle.",
+  "shopCategories": [
+    "forge-armoury",
+    "market"
+  ],
+  "startingEligible": true,
+  "normalShopCommon": true,
+  "allowedFallbackArt": true
+}

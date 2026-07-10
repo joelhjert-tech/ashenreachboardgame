@@ -2,18 +2,24 @@
   "id": "cinder-suture-kit",
   "name": "Cinder Suture Kit",
   "slot": "utility",
-  "category": "consumable",
+  "subtype": "medical",
+  "category": "passive",
   "statBonus": {
     "stat": "forge",
     "amount": 1
   },
-  "activeText": "Discard to heal 1 wound, then record the treatment as unstable.",
-  "useLimit": "discard",
-  "flavor": "A useful medical error in a sealed brass case.",
-  "tier": "starter",
-  "progressionWeight": 0.5,
+  "cost": 3,
+  "sellValue": 1,
+  "sellable": true,
+  "tier": "standard",
+  "progressionWeight": 1,
+  "flavor": "Field sutures that add +1 Forge during recovery work.",
+  "activeText": "Field sutures that add +1 Forge during recovery work.",
   "shopCategories": [
     "medicae-shrine",
     "market"
-  ]
+  ],
+  "startingEligible": true,
+  "normalShopCommon": true,
+  "allowedFallbackArt": true
 }

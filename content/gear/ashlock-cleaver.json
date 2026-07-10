@@ -9,6 +9,8 @@
   },
   "flavor": "A soot-bitten boarding cleaver with an oath notch cut into the spine.",
   "tier": "standard",
+  "startingEligible": false,
+  "normalShopCommon": false,
   "cost": 4,
   "sellValue": 2,
   "progressionWeight": 1,

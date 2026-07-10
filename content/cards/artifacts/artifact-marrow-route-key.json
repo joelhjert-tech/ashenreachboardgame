@@ -1,6 +1,12 @@
 {
   "id": "artifact-marrow-route-key",
   "type": "artifact",
+  "missionRewardEligible": true,
+  "eliteThreatRewardEligible": true,
+  "rareShopEligible": true,
+  "scenarioRewardEligible": true,
+  "startingEligible": false,
+  "normalShopCommon": false,
   "title": "Marrow Route Key",
   "text": "A bone-white key cut for a door that only exists after a failed movement check.",
   "flavor": "The key does not open locks. It forgives wrong turns.",

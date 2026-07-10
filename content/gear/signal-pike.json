@@ -9,6 +9,8 @@
   },
   "flavor": "A long conductor-blade used to pin unstable signals before they become voices.",
   "tier": "standard",
+  "startingEligible": false,
+  "normalShopCommon": false,
   "cost": 4,
   "sellValue": 2,
   "progressionWeight": 1,

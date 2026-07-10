@@ -1,0 +1,24 @@
+{
+  "id": "red-march-bell",
+  "name": "Red March Bell",
+  "slot": "utility",
+  "subtype": "utility",
+  "category": "passive",
+  "statBonus": {
+    "stat": "grit",
+    "amount": 1
+  },
+  "cost": 3,
+  "sellValue": 1,
+  "sellable": true,
+  "tier": "standard",
+  "progressionWeight": 1,
+  "flavor": "A warning bell that adds +1 Grit when danger closes.",
+  "activeText": "A warning bell that adds +1 Grit when danger closes.",
+  "shopCategories": [
+    "market"
+  ],
+  "startingEligible": true,
+  "normalShopCommon": true,
+  "allowedFallbackArt": true
+}

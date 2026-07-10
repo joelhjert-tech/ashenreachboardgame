@@ -1,6 +1,12 @@
 {
   "id": "artifact-mirror-reroll-token",
   "type": "artifact",
+  "missionRewardEligible": true,
+  "eliteThreatRewardEligible": true,
+  "rareShopEligible": true,
+  "scenarioRewardEligible": true,
+  "startingEligible": false,
+  "normalShopCommon": false,
   "artifactKind": "factionRelic",
   "title": "Mirror Reroll Token",
   "text": "A double-faced route coin that remembers a better failure.",

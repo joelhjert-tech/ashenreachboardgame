@@ -1,6 +1,12 @@
 {
   "id": "artifact-choir-lantern",
   "type": "artifact",
+  "missionRewardEligible": true,
+  "eliteThreatRewardEligible": true,
+  "rareShopEligible": true,
+  "scenarioRewardEligible": true,
+  "startingEligible": false,
+  "normalShopCommon": false,
   "artifactKind": "chargedRelic",
   "title": "Choir Lantern",
   "text": "A brass ward-lantern that refuses flame, burning instead with a cold choir signal.",

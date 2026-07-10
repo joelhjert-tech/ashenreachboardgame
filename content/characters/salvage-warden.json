@@ -45,7 +45,8 @@
     }
   ],
   "startingGear": [
-    "tuning-spines"
+    "salvage-guard-mask",
+    "salvage-ledger"
   ],
   "startingContract": "clan-salt-burial"
 }

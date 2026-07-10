@@ -1,6 +1,12 @@
 {
   "id": "artifact-black-route-fuse",
   "type": "artifact",
+  "missionRewardEligible": true,
+  "eliteThreatRewardEligible": true,
+  "rareShopEligible": true,
+  "scenarioRewardEligible": true,
+  "startingEligible": false,
+  "normalShopCommon": false,
   "artifactKind": "cursedRelic",
   "title": "Black Route Fuse",
   "text": "A dead-road explosive cord that can turn a losing fight into a louder problem.",
