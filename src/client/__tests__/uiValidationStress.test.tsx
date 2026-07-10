@@ -478,10 +478,10 @@ describe("Ashen Reach UI validation stress states", () => {
     expect(battleRolls).toHaveTextContent("31");
     expect(screen.getByTestId("host-battle-player-math")).toHaveTextContent(/Grit 20 \+ Roll 11 = Total 31/i);
     expect(screen.getByTestId("host-battle-enemy-math")).toHaveTextContent(/Difficulty 10 = Total 18/i);
-    expect(screen.getByTestId("battle-dice-animation")).toBeInTheDocument();
-    expect(screen.getByTestId("battle-dice-animation")).toHaveClass("dice-roll-scene-dom");
+    expect(screen.getByTestId("host-battle-player-dice")).toHaveTextContent(/6.*5.*roll 11/i);
+    expect(screen.getByTestId("host-battle-enemy-dice")).toHaveTextContent(/roll -/i);
     expect(screen.getByTestId("host-battle-result-banner")).toHaveTextContent(/success/i);
-    expect(screen.getAllByTestId("combat-dice-animation")).toHaveLength(1);
+    expect(screen.queryByTestId("combat-dice-animation")).not.toBeInTheDocument();
     expect(screen.queryByTestId("host-battle-log")).not.toBeInTheDocument();
     expect(screen.queryByText(/player total/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/opposition total/i)).not.toBeInTheDocument();

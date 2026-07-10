@@ -616,7 +616,7 @@ function HostStateBanner(props: HostStateBannerProps): ReactElement {
 
   return (
     <aside
-      className={`host-state-banner host-state-banner-${model.tone}`}
+      className={`host-state-banner host-state-banner-${model.tone}${movementPlanner ? " tv-movement-overlay" : ""}`}
       aria-label="Host game state"
       data-testid="host-state-banner"
       role="status"
@@ -1929,11 +1929,13 @@ function TacticalMapPanel({
 
   return (
     <section className={`tv-command-stage${battleMode ? " tv-command-stage-battle-mode" : ""}${shopMode ? " tv-command-stage-shop-mode" : ""}`}>
-      <div className="tv-command-map-shell">
-        <TacticalMapBoard patch={patch?.payload ?? null} previousPatch={previousPatch?.payload ?? null} phase={patch?.phase ?? "start"} />
-        <BoardLegend />
-      </div>
-      <NemesisBanner nemesis={patch?.payload.nemesis ?? null} />
+      {!battleMode && (
+        <div className="tv-command-map-shell">
+          <TacticalMapBoard patch={patch?.payload ?? null} previousPatch={previousPatch?.payload ?? null} phase={patch?.phase ?? "start"} />
+          <BoardLegend />
+        </div>
+      )}
+      {!battleMode && <NemesisBanner nemesis={patch?.payload.nemesis ?? null} />}
       {!battleMode && !shopMode && (
         <ActiveOperativeOverlay
           patch={patch}
@@ -2476,7 +2478,7 @@ export function TvApp(): ReactElement {
   }
 
   return (
-    <main className="tv-dashboard tv-command-dashboard">
+    <main className={`tv-dashboard tv-command-dashboard${battleMode ? " tv-command-dashboard--battle-focus" : ""}`}>
       <div className="tv-title-safe">
         <TopHeader
           roomCode={effectiveRoomCode}
@@ -2492,19 +2494,24 @@ export function TvApp(): ReactElement {
 
         {(requestError || error) && <div className="tv-banner tv-banner-error">{requestError ?? error}</div>}
         {sessionNotice && <div className="tv-banner">{sessionNotice}</div>}
-        <HostStateBanner
-          patch={publicPatch}
-          roomCode={roomCode}
-          activePlayer={activePlayer}
-          joinedCount={joinedSeats.length}
-          readyCount={readySeats.length}
-          battleMode={battleMode}
-          shopMode={shopMode}
-        />
+        {!battleMode && (
+          <HostStateBanner
+            patch={publicPatch}
+            roomCode={roomCode}
+            activePlayer={activePlayer}
+            joinedCount={joinedSeats.length}
+            readyCount={readySeats.length}
+            battleMode={battleMode}
+            shopMode={shopMode}
+          />
+        )}
         <HostAudioControls audio={audio} />
         <EndgameOverlay patch={publicPatch} />
 
-        <section className={`tv-command-main${isPreRoomLobby ? " tv-command-main--pre-room" : ""}`}>
+        <section
+          className={`tv-command-main${isPreRoomLobby ? " tv-command-main--pre-room" : ""}${battleMode ? " tv-command-main--battle-focus" : ""}`}
+          data-testid="tv-command-main"
+        >
           {isPreRoomLobby ? (
             <section className="tv-pre-room-lobby-stage" aria-label="Host lobby setup">
               <SessionReadout
@@ -2547,7 +2554,7 @@ export function TvApp(): ReactElement {
             </section>
           ) : (
             <>
-              {(publicPatch || effectiveRoomCode) && (
+              {!battleMode && (publicPatch || effectiveRoomCode) && (
             <OperativesRail
               patch={publicPatch}
               characterCatalog={characterCatalog}
@@ -2566,7 +2573,7 @@ export function TvApp(): ReactElement {
                 characterCatalog={characterCatalog}
               />
 
-              <RightSidebar
+              {!battleMode && <RightSidebar
                 roomCode={effectiveRoomCode}
                 scenarioStatus={scenarioStatus}
                 publicPatch={publicPatch}
@@ -2602,7 +2609,7 @@ export function TvApp(): ReactElement {
                 onStartSession={startHostSession}
                 canStartSession={startReadiness.canStart}
                 startSessionReason={startReadiness.reason}
-              />
+              />}
             </>
           )}
         </section>

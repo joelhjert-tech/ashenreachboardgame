@@ -6184,6 +6184,54 @@ body {
   min-height: 4.25rem;
 }
 
+.tv-movement-overlay {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  right: auto;
+  width: min(34rem, 72vw);
+  min-height: 0;
+  transform: translate(-50%, -50%);
+  z-index: 80;
+  grid-template-columns: minmax(0, auto) auto;
+  justify-content: center;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+  pointer-events: none;
+}
+
+.tv-movement-overlay .host-state-banner-pulse,
+.tv-movement-overlay > em {
+  display: none;
+}
+
+.tv-movement-overlay > div:not(.host-state-banner-movement-dice) {
+  justify-items: center;
+  text-align: center;
+  filter: drop-shadow(0 0.15rem 0.3rem rgba(0, 0, 0, 0.92));
+}
+
+.tv-movement-overlay .host-state-banner-movement-dice {
+  min-width: 0;
+  justify-self: center;
+}
+
+.tv-movement-overlay .movement-dice-animation,
+.tv-movement-overlay .combat-dice-stage {
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+}
+
+.tv-movement-overlay .combat-dice-animation {
+  margin-top: 0;
+}
+
 .host-state-banner span,
 .host-state-banner em {
   color: #d8b57a;
@@ -6368,6 +6416,35 @@ body {
 
 .tv-command-stage-battle-mode .tv-command-map-shell {
   filter: brightness(0.42) saturate(0.78) contrast(1.08);
+}
+
+.tv-command-dashboard--battle-focus .tv-title-safe {
+  gap: clamp(0.22rem, 0.38vw, 0.42rem);
+}
+
+.tv-command-dashboard--battle-focus .tv-command-header {
+  min-height: 3.2rem;
+  padding-block: clamp(0.24rem, 0.38vw, 0.42rem);
+  opacity: 0.72;
+}
+
+.tv-command-dashboard--battle-focus .tv-command-header-chip {
+  min-height: 3.35rem;
+  padding-block: 0.34rem;
+}
+
+.tv-command-dashboard .tv-command-main--battle-focus {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0;
+}
+
+.tv-command-dashboard--battle-focus .tv-command-stage-battle-mode {
+  border-color: rgba(207, 153, 82, 0.32);
+  background:
+    radial-gradient(circle at 22% 52%, rgba(48, 142, 210, 0.13), transparent 32%),
+    radial-gradient(circle at 78% 52%, rgba(205, 58, 38, 0.14), transparent 32%),
+    linear-gradient(180deg, rgba(5, 8, 12, 0.96), rgba(2, 4, 7, 0.99));
+  box-shadow: inset 0 0 7rem rgba(0, 0, 0, 0.54);
 }
 
 .tv-command-stage-battle-mode .tv-board-legend,
@@ -7340,7 +7417,7 @@ body {
   grid-template-rows:
     clamp(4.15rem, 10svh, 6.2rem)
     minmax(0, 1fr)
-    clamp(6.7rem, 15.5svh, 10rem);
+    clamp(8.6rem, 19svh, 12.5rem);
 }
 
 .host-battle-total-footer {
@@ -7380,6 +7457,46 @@ body {
   align-items: center;
   justify-content: space-between;
   gap: clamp(0.32rem, 0.52vw, 0.68rem);
+}
+
+.host-battle-side-roll {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: clamp(0.28rem, 0.48vw, 0.58rem);
+}
+
+.host-battle-side-roll > span {
+  color: #f1dfc1;
+  font-size: clamp(0.65rem, 0.82vw, 0.96rem);
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.host-battle-side-dice {
+  display: flex;
+  align-items: center;
+  gap: clamp(0.16rem, 0.28vw, 0.34rem);
+}
+
+.host-battle-side-dice strong {
+  width: clamp(1.75rem, 2.15vw, 2.45rem);
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+  border: 1px solid color-mix(in srgb, var(--challenge-color) 72%, #f3e3c5 28%);
+  border-radius: 0.22rem;
+  background:
+    radial-gradient(circle at 32% 24%, rgba(255, 255, 255, 0.9), transparent 18%),
+    linear-gradient(145deg, #f1f5f2, #b9c8ca);
+  color: #111b21;
+  font-size: clamp(0.9rem, 1.22vw, 1.42rem);
+  line-height: 1;
+  box-shadow:
+    inset 0 -0.2rem 0.42rem rgba(15, 23, 29, 0.18),
+    0 0.35rem 0.75rem rgba(0, 0, 0, 0.32);
 }
 
 .host-battle-relevant-stat > span,
@@ -7437,7 +7554,7 @@ body {
   align-self: stretch;
   justify-self: stretch;
   display: grid;
-  grid-template-rows: auto auto auto auto auto auto minmax(0, 1fr) auto;
+  grid-template-rows: auto auto auto auto auto auto auto minmax(0, 1fr) auto auto;
   place-items: center;
   gap: clamp(0.24rem, 0.44vw, 0.56rem);
   min-width: 0;
@@ -7649,6 +7766,31 @@ body {
   text-align: center;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
+}
+
+.host-battle-phase-status {
+  width: min(100%, 16rem);
+  display: grid;
+  justify-items: center;
+  gap: 0.12rem;
+  padding: clamp(0.28rem, 0.42vw, 0.48rem);
+  border: 1px solid color-mix(in srgb, var(--challenge-color) 38%, rgba(231, 210, 176, 0.16));
+  background: rgba(4, 7, 10, 0.62);
+  text-align: center;
+}
+
+.host-battle-phase-status strong {
+  color: #dcebcf;
+  font-size: clamp(0.56rem, 0.7vw, 0.82rem);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.host-battle-phase-status span {
+  color: #cbb78f;
+  font-size: clamp(0.52rem, 0.64vw, 0.74rem);
+  letter-spacing: 0.04em;
+  text-transform: none;
 }
 
 .host-battle-vs-block .host-battle-delta-row {
@@ -9009,6 +9151,32 @@ body {
   font-weight: 900;
   letter-spacing: 0.16em;
   text-transform: uppercase;
+}
+
+.host-battle-encounter-title,
+.host-battle-resolution-type {
+  margin: 0;
+  max-width: 100%;
+  overflow: hidden;
+  text-align: center;
+  text-overflow: ellipsis;
+}
+
+.host-battle-encounter-title {
+  color: #f2e3c9;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(0.9rem, 1.28vw, 1.55rem);
+  line-height: 1.05;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.host-battle-resolution-type {
+  color: #bca477;
+  font-size: clamp(0.54rem, 0.68vw, 0.78rem);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  white-space: nowrap;
 }
 
 .tv-game-selection-card strong,
@@ -16561,4 +16729,10 @@ body {
   background: rgba(13, 11, 10, 0.82);
   box-shadow: 0 0 24px rgba(209, 164, 92, 0.15);
   padding: 0.85rem 1.2rem;
+}
+
+/* Final TV cascade lock: combat focus owns the full command stage at every TV breakpoint. */
+.tv-command-dashboard .tv-command-main.tv-command-main--battle-focus {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0;
 }

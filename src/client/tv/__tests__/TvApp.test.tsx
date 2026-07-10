@@ -960,9 +960,16 @@ describe("TvApp", () => {
     render(<TvApp />);
 
     expect(await screen.findByText(/sector brief/i)).toBeInTheDocument();
-    expect(screen.getByTestId("host-state-banner")).toHaveTextContent(/waiting on tarek voss to choose a legal destination/i);
-    expect(screen.getByTestId("host-state-banner")).toHaveTextContent(/you rolled 4/i);
-    expect(screen.getByTestId("host-state-banner")).toHaveTextContent(/exactly 4 steps away/i);
+    expect(screen.getByTestId("tv-command-main")).not.toHaveClass("tv-command-main--battle-focus");
+    expect(screen.getByText("Tactical map")).toBeInTheDocument();
+    expect(screen.getByRole("complementary", { name: /operatives/i })).toBeInTheDocument();
+    expect(document.querySelector(".tv-command-sidebar")).toBeInTheDocument();
+    const movementOverlay = screen.getByTestId("host-state-banner");
+    expect(movementOverlay).toHaveClass("tv-movement-overlay");
+    expect(movementOverlay).not.toHaveClass("tv-card");
+    expect(movementOverlay).toHaveTextContent(/waiting on tarek voss to choose a legal destination/i);
+    expect(movementOverlay).toHaveTextContent(/you rolled 4/i);
+    expect(movementOverlay).toHaveTextContent(/exactly 4 steps away/i);
     expect(screen.getByTestId("movement-dice-animation")).toHaveTextContent(/4/);
     expect(screen.queryByText(/movement scan/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/movement value/i)).not.toBeInTheDocument();
@@ -1068,12 +1075,16 @@ describe("TvApp", () => {
     render(<TvApp />);
 
     const overlay = await screen.findByTestId("host-battle-overlay");
-    const banner = screen.getByTestId("host-state-banner");
-    expect(banner).toHaveTextContent(/battle resolving/i);
-    expect(banner).toHaveTextContent(/cinder-veil stalker/i);
+    expect(screen.getByTestId("tv-command-main")).toHaveClass("tv-command-main--battle-focus");
+    expect(screen.queryByTestId("host-state-banner")).not.toBeInTheDocument();
+    expect(screen.queryByText("Tactical map")).not.toBeInTheDocument();
+    expect(screen.queryByRole("complementary", { name: /operatives/i })).not.toBeInTheDocument();
+    expect(document.querySelector(".tv-command-sidebar")).not.toBeInTheDocument();
     expect(overlay).toHaveTextContent(/tarek voss/i);
     expect(overlay).toHaveTextContent(/cinder-veil stalker/i);
     expect(within(overlay).getByTestId("host-battle-vs-block")).toHaveTextContent(/vs/i);
+    expect(within(overlay).getByTestId("host-battle-vs-block")).toHaveTextContent(/battle resolving/i);
+    expect(within(overlay).getByTestId("host-battle-vs-block")).toHaveTextContent(/cinder-veil stalker/i);
     expect(within(overlay).getByTestId("host-battle-result-banner")).toHaveTextContent(/resolving/i);
     expect(overlay).toHaveTextContent(/base grit\s*\+2/i);
     expect(overlay).toHaveTextContent(/black route fuse\s*\+3/i);
@@ -1177,7 +1188,8 @@ describe("TvApp", () => {
     expect(overlay).toHaveTextContent(/signal static/i);
     expect(overlay).toHaveTextContent(/success: the signal holds/i);
     expect(screen.getByTestId("host-battle-vs-block")).toHaveTextContent(/test/i);
-    expect(screen.getByTestId("battle-dice-animation")).toHaveTextContent("A 8 / D 7 / +1");
+    expect(screen.getByTestId("host-battle-player-dice")).toHaveTextContent(/roll 7/i);
+    expect(screen.getByTestId("host-battle-enemy-dice")).toHaveTextContent(/roll -/i);
     expect(screen.getByTestId("host-battle-result-banner")).toHaveTextContent(/success/i);
     expect(screen.getByTestId("host-battle-result-banner")).toHaveTextContent(/wins by 1/i);
     expect(screen.getByTestId("host-battle-rolls")).toHaveTextContent(/Tarek Voss\s*8\s*>\s*7\s*Difficulty/i);
@@ -1675,32 +1687,21 @@ describe("TvApp", () => {
 
     render(<TvApp />);
 
-    expect(await screen.findByText("Tactical map")).toBeInTheDocument();
-    const overlay = screen.getByTestId("host-battle-overlay");
+    const overlay = await screen.findByTestId("host-battle-overlay");
 
     expect(overlay).toHaveTextContent(/tarek voss/i);
     expect(overlay).toHaveTextContent(/cinder-veil stalker/i);
-    expect(overlay.querySelector("[data-testid='combat-dice-animation']")).not.toHaveClass("combat-dice-animation-compact");
-    expect(screen.getByTestId("battle-dice-animation")).toHaveClass("dice-roll-scene-dom");
     expect(screen.getByTestId("host-battle-vs-block")).toHaveTextContent(/vs/i);
-    expect(within(screen.getByTestId("host-battle-vs-block")).getByTestId("host-battle-dice-band")).toContainElement(
-      screen.getByTestId("battle-dice-animation")
-    );
-    expect(screen.getByTestId("host-battle-result-banner").compareDocumentPosition(screen.getByTestId("host-battle-dice-band"))).toBe(
-      Node.DOCUMENT_POSITION_FOLLOWING
-    );
-    expect(screen.getByTestId("host-battle-dice-band").compareDocumentPosition(screen.getByTestId("host-battle-test-label"))).toBe(
-      Node.DOCUMENT_POSITION_FOLLOWING
-    );
+    expect(screen.getByTestId("host-battle-player-dice")).toHaveTextContent(/4.*1.*roll 5/i);
+    expect(screen.getByTestId("host-battle-enemy-dice")).toHaveTextContent(/3.*roll 3/i);
     expect(screen.getByTestId("host-battle-result-banner")).toHaveTextContent(/success/i);
     expect(screen.getByTestId("host-battle-result-banner")).toHaveTextContent(/wins by 3/i);
+    expect(screen.getByTestId("host-battle-phase-status")).toHaveTextContent(/applying success outcome/i);
+    expect(screen.getByTestId("host-battle-phase-status")).toHaveTextContent(/preparing next phase/i);
     expect(screen.getByTestId("host-battle-test-label")).toHaveTextContent(/grit test/i);
     expect(overlay).toHaveTextContent(/base grit\s*\+2/i);
     expect(overlay).toHaveTextContent(/black route fuse\s*\+3/i);
     expect(overlay).toHaveTextContent(/fandiablos\s*\+1/i);
-    expect(overlay.querySelector("[data-testid='combat-die-attack']")).toHaveTextContent("4");
-    expect(overlay.querySelector("[data-testid='combat-die-defense']")).toHaveTextContent("3");
-    expect(overlay.querySelector("[data-testid='combat-die-modifier']")).not.toBeInTheDocument();
     expect(screen.getByTestId("host-battle-rolls")).toHaveTextContent(/Tarek Voss\s*11\s*>\s*8\s*Enemy/i);
     expect(screen.getByTestId("host-battle-rolls")).not.toHaveTextContent(/player total/i);
     expect(screen.getByTestId("host-battle-player-math")).toHaveTextContent(/Grit 6 \+ Roll 5 = Total 11/i);
@@ -1714,7 +1715,7 @@ describe("TvApp", () => {
     expect(screen.queryByTestId("tv-card-reveal")).not.toBeInTheDocument();
     expect(screen.queryByTestId("tv-resolution-footer")).not.toBeInTheDocument();
     expect(screen.queryByText(/battle display active/i)).not.toBeInTheDocument();
-    expect(within(screen.getByRole("complementary", { name: /operatives/i })).queryByText(/pax/i)).not.toBeInTheDocument();
+    expect(screen.queryByRole("complementary", { name: /operatives/i })).not.toBeInTheDocument();
   });
 
   it("keeps the visible battle bound to activeResolution.playerId when turn order has advanced", async () => {
