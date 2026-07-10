@@ -45,6 +45,7 @@ import { getGearCardArtId, getGearCardArtType, getShopCategoryIconPath } from ".
 import { statLabelById } from "../shared/statLabels.js";
 import { PhoneInventoryPanel } from "./PhoneInventoryPanel.js";
 import { PhoneWrappedMediaCard } from "./PhoneWrappedMediaCard.js";
+import { PhoneInspectableCardArt } from "./PhoneInspectableCardArt.js";
 import { getTileAssetPath } from "../tv/tileAssetManifest.js";
 import { formatTimingWindow, getBattleAssistViewModel, statLabelById as inventoryStatLabelById } from "./inventoryPresentation.js";
 import { buildUsefulNowViewModel, type UsefulNowViewModel } from "./usefulNowPresentation.js";
@@ -235,17 +236,16 @@ function formatShopCost(cost: PublicShopCost): string {
   return parts.length > 0 ? parts.join(" / ") : "No cost";
 }
 
-function ShopItemMedia({ cardId, label, itemType }: { cardId: string; label: string; itemType?: string }): ReactElement {
+function ShopItemMedia({ cardId, label, itemType, rules }: { cardId: string; label: string; itemType?: string; rules?: string | null }): ReactElement {
   const cardType = itemType === "artifact" ? getGearCardArtType(cardId, "artifact") : getGearCardArtType(cardId);
 
   return (
-    <CardArtImage
+    <PhoneInspectableCardArt
       cardType={cardType}
       cardId={getGearCardArtId(cardId, itemType === "artifact" ? "artifact" : undefined)}
-      alt=""
-      aria-hidden="true"
+      title={label}
+      rules={rules}
       className="phone-wrap-card__image phone-shop-stock-card-art"
-      data-fallback-label={label}
     />
   );
 }
@@ -398,13 +398,14 @@ function BattleSubjectCard({
   const opponentLabel = typeof difficulty === "number" ? (cardType === "enemy" ? `Opponent ${difficulty}` : `Target ${difficulty}`) : null;
   const sourceLabel = resolution?.source ? formatEncounterSourceLabel(resolution.source, null) : "Threat";
   const media = imageType ? (
-    <CardArtImage
+    <PhoneInspectableCardArt
       cardType={imageType}
       cardId={imageId}
-      alt=""
-      aria-hidden="true"
+      title={title}
+      lore={resolution?.card?.flavor ?? encounter?.flavor ?? null}
+      rules={[intentLabel, opponentLabel].filter(Boolean).join(" · ")}
       className="phone-wrap-card__image"
-      data-testid="phone-battle-subject-art"
+      testId="phone-battle-subject-art"
     />
   ) : (
     <span className="phone-wrap-card__fallback" aria-hidden="true">
@@ -1579,7 +1580,7 @@ function PhoneShopPanel({
                       key={item.cardId}
                       variant="shop"
                       className={`phone-shop-stock-card phone-shop-panel__stock-card${item.affordable ? "" : " phone-shop-stock-card-disabled"}`}
-                      media={<ShopItemMedia cardId={item.cardId} label={item.name} itemType={item.type} />}
+                      media={<ShopItemMedia cardId={item.cardId} label={item.name} itemType={item.type} rules={item.summary} />}
                       title={item.name}
                       eyebrow={itemCategory}
                       status={<span className="phone-shop-card-status">{itemCategory}</span>}
@@ -1603,7 +1604,7 @@ function PhoneShopPanel({
                 })}
               </div>
             ) : (
-              <p className="phone-shop-empty-stock">No stock available.</p>
+              <p className="phone-shop-empty-stock">No equipment available.</p>
             )}
           </div>
 
@@ -1625,7 +1626,7 @@ function PhoneShopPanel({
                       className={`phone-shop-stock-card phone-shop-panel__stock-card phone-shop-sell-card${
                         item.sellable ? "" : " phone-shop-stock-card-disabled"
                       }`}
-                      media={<ShopItemMedia cardId={item.gearId} label={item.name} itemType={item.type} />}
+                      media={<ShopItemMedia cardId={item.gearId} label={item.name} itemType={item.type} rules={item.summary} />}
                       title={item.name}
                       eyebrow={item.category ? toTitleCase(item.category) : toTitleCase(item.type)}
                       status={<span className="phone-shop-card-status">{item.sellable ? "Sell value" : "Cannot sell"}</span>}

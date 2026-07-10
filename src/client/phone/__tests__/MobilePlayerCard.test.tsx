@@ -130,6 +130,7 @@ describe("MobilePlayerCard", () => {
 
     expect(screen.getByText(/base 3 \| permanent \+1 \| gear\/follower \+1/i)).toBeInTheDocument();
     expect(screen.getByText("(+1)")).toBeInTheDocument();
+    expect(document.querySelector(".phone-sheet-stat-card-command")).toHaveTextContent(/5/);
   });
 
   it("shows active Afflictions and facedown Affliction count without renaming wounds", () => {

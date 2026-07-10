@@ -22,6 +22,7 @@ import { PhoneInventoryPanel } from "./PhoneInventoryPanel.js";
 import { PhoneActionPanel, type TurnActionTab } from "./PhoneActionPanel.js";
 import { getAfflictionEffectChips, getAfflictionStatusLabel } from "./afflictionPresentation.js";
 import { formatSignedStatBonus, getPhoneStatBreakdown } from "./statBreakdown.js";
+import { PhoneInspectableCardArt } from "./PhoneInspectableCardArt.js";
 
 interface PortraitControllerViewProps {
   self: PhoneSelfState | null;
@@ -118,14 +119,14 @@ function PortraitStatCard({
       style={getChallengeThemeStyle(stat) as CSSProperties}
       data-stat={stat}
       aria-expanded={expanded}
-      aria-label={`${label} stat ${breakdown.current}${expanded ? ", details expanded" : ""}`}
+      aria-label={`${label} stat ${breakdown.final}${expanded ? ", details expanded" : ""}`}
       onClick={onToggle}
     >
       <span className="phone-stat-card-heading">
         <span className="phone-stat-card-label">{displayLabel}</span>
         {" "}
         <span className="phone-stat-card-numbers">
-          <strong className="phone-stat-card-value">{breakdown.current}</strong>
+          <strong className="phone-stat-card-value">{breakdown.final}</strong>
           {modifierTotal !== 0 ? (
             <>
               {" "}
@@ -300,13 +301,14 @@ function ContractMissionCard({
 }): ReactElement {
   return (
     <article className="phone-starting-mission-card" data-selected={selected ? "true" : "false"}>
-      <CardArtImage
+      <PhoneInspectableCardArt
         cardType="contract"
         cardId={contract.id}
-        alt=""
-        aria-hidden="true"
+        title={contract.name}
+        lore={contract.text}
+        rules={`${describeContractObjective(contract)} ${describeContractProgress(contract)}`}
         className="phone-starting-mission-art"
-        data-testid="phone-starting-mission-art"
+        testId="phone-starting-mission-art"
       />
       <div className="phone-starting-mission-card-top">
         <span>{recommended ? "Recommended Mission" : contract.factionGiver}</span>
@@ -370,13 +372,14 @@ function ActiveMissionQuestCard({
 
   return (
     <article className="phone-portrait-info-card phone-active-mission-card" data-testid="phone-active-mission-card">
-      <CardArtImage
+      <PhoneInspectableCardArt
         cardType="contract"
         cardId={contract.id}
-        alt=""
-        aria-hidden="true"
+        title={contract.name}
+        lore={contract.text}
+        rules={describeContractObjective(contract)}
         className="phone-active-mission-art"
-        data-testid="phone-active-mission-art"
+        testId="phone-active-mission-art"
       />
       <div className="phone-active-mission-topline">
         <span>Active Mission</span>
@@ -851,7 +854,7 @@ export function PortraitControllerView({
               <div className="phone-portrait-header-vitals" aria-label="Character vitals">
                 <span>Health</span>
                 <strong>{self.character.wounds} wounds</strong>
-                <small>{scarCount} scar{scarCount === 1 ? "" : "s"}</small>
+                <small>{self.character.salvage ?? 0} Salvage · {scarCount} scar{scarCount === 1 ? "" : "s"}</small>
               </div>
               <div className="phone-portrait-header-actions">
                 <button
@@ -870,7 +873,7 @@ export function PortraitControllerView({
             <div className="phone-compact-status-strip" aria-label="Compact player status">
               <strong>{self.character.name}</strong>
               <span>
-                {self.character.wounds} wounds | {compactStatusDetail}
+                {self.character.wounds} wounds | {self.character.salvage ?? 0} Salvage | {compactStatusDetail}
               </span>
             </div>
           )}
@@ -915,6 +918,7 @@ export function PortraitControllerView({
                 <div className="phone-sheet-section-heading">Vitals</div>
                 <div className="phone-portrait-vitals" aria-label="Character vitals">
                   <span>Wounds {self.character.wounds}</span>
+                  <span>Salvage {self.character.salvage ?? 0}</span>
                   <span>Scars {scarCount}</span>
                   <span>Gear {self.character.heldGear.length}</span>
                   <span>Status {self.character.status}</span>

@@ -235,7 +235,7 @@ export function MobilePlayerCard({
                     className={`mobile-player-stat phone-sheet-stat-card phone-sheet-stat-card-${stat}`}
                     style={getChallengeThemeStyle(stat) as CSSProperties}
                   >
-                    <ChallengeBadge stat={stat} value={breakdown.current} label={statAbbreviationById[stat]} active={encounter?.stat === stat} />
+                    <ChallengeBadge stat={stat} value={breakdown.final} label={statAbbreviationById[stat]} active={encounter?.stat === stat} />
                     {breakdown.gearFollower !== 0 && (
                       <strong className="phone-stat-bonus">({formatSignedStatBonus(breakdown.gearFollower)})</strong>
                     )}

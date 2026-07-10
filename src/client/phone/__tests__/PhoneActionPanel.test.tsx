@@ -1639,7 +1639,7 @@ describe("PhoneActionPanel", () => {
       />
     );
 
-    expect(screen.getAllByText(/no stock available/i)).toHaveLength(1);
+    expect(screen.getAllByText(/no equipment available/i)).toHaveLength(1);
     expect(screen.getAllByText(/no sellable items/i)).toHaveLength(1);
     expect(screen.getByText(/use a buy service to reveal market stock/i)).toBeInTheDocument();
     expect(screen.getByText(/only sellable carried gear appears here/i)).toBeInTheDocument();

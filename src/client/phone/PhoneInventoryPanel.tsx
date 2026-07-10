@@ -11,6 +11,7 @@ import { statOrder } from "../shared/statLabels.js";
 import type { AfflictionSummary, ClientIntent, PhonePatchPayload, ScarSummary, Stat, TrophyPileEntry } from "../shared/types.js";
 import { getAfflictionEffectChips, getAfflictionStatusLabel } from "./afflictionPresentation.js";
 import { PhoneWrappedMediaCard } from "./PhoneWrappedMediaCard.js";
+import { PhoneInspectableCardArt } from "./PhoneInspectableCardArt.js";
 import {
   getInventoryGroups,
   statLabelById,
@@ -48,11 +49,11 @@ function toUseIntent(card: InventoryCardViewModel, seatId: string): ClientIntent
 function InventoryThumbnail({ card }: { card: InventoryCardViewModel }): ReactElement {
   if (card.artCardId) {
     return (
-      <CardArtImage
+      <PhoneInspectableCardArt
         cardType={card.artCardType ?? "artifact"}
         cardId={card.artCardId}
-        alt=""
-        aria-hidden="true"
+        title={card.name}
+        rules={card.effectText}
         className="phone-wrap-card__image phone-inventory-card-art"
       />
     );

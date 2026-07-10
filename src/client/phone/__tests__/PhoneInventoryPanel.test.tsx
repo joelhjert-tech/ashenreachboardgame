@@ -779,7 +779,7 @@ describe("PhoneInventoryPanel", () => {
     expect(window.localStorage.getItem("ashenreach.phoneChromeVisible")).toBe("false");
     const compactStatus = screen.getByLabelText(/compact player status/i);
     expect(compactStatus).toHaveTextContent(/sable vey/i);
-    expect(compactStatus).toHaveTextContent(/0 wounds \| 0 scars/i);
+    expect(compactStatus).toHaveTextContent(/0 wounds \| 0 Salvage \| 0 scars/i);
     expect(compactStatus.querySelector("img")).not.toBeInTheDocument();
     expect(screen.getByRole("banner")).toHaveClass("phone-topbar--compact");
     expect(screen.getByRole("tab", { name: /player card/i })).toBeInTheDocument();
@@ -837,15 +837,15 @@ describe("PhoneInventoryPanel", () => {
     );
 
     const statsRegion = screen.getByLabelText(/character stats/i);
-    const commandStat = within(statsRegion).getByRole("button", { name: /command stat 4/i });
+    const commandStat = within(statsRegion).getByRole("button", { name: /command stat 5/i });
     const commandHeading = commandStat.querySelector(".phone-stat-card-heading");
 
     expect(commandStat.querySelector(".phone-stat-card-label")).toHaveTextContent(/^COMMAND$/);
-    expect(commandStat.querySelector(".phone-stat-card-value")).toHaveTextContent(/^4$/);
+    expect(commandStat.querySelector(".phone-stat-card-value")).toHaveTextContent(/^5$/);
     expect(commandStat.querySelector(".phone-stat-card-modifier")).toHaveTextContent(/^\+2$/);
     expect(commandStat).toHaveAttribute("data-stat", "command");
     expect(commandStat).toHaveClass("phone-stat-card-command");
-    expect(commandHeading).toHaveTextContent(/COMMAND\s+4/);
+    expect(commandHeading).toHaveTextContent(/COMMAND\s+5/);
     expect(commandHeading).not.toHaveTextContent(/COMMAND4/);
     expect(commandStat).toHaveTextContent(/base 3/i);
     expect(commandStat).toHaveTextContent(/bonus \+2/i);
@@ -864,7 +864,8 @@ describe("PhoneInventoryPanel", () => {
     expect(within(commandStat).getByText("Temporary")).toBeInTheDocument();
     expect(within(commandStat).getByText("Final")).toBeInTheDocument();
     expect(within(commandStat).getByText("+0")).toBeInTheDocument();
-    expect(within(commandStat).getAllByText("4").length).toBeGreaterThan(0);
+    expect(within(commandStat).getAllByText("5").length).toBeGreaterThan(0);
+    expect(screen.getAllByLabelText(/character vitals/i)[0]).toHaveTextContent(/salvage/i);
 
     fireEvent.click(within(statsRegion).getByRole("button", { name: /grit stat 2/i }));
 
