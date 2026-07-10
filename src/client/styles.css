@@ -17514,3 +17514,47 @@ body {
     width: min(25rem, 40vw);
   }
 }
+.phone-move-panel--needs-roll,
+.phone-move-panel--needs-destination,
+.phone-move-panel--needs-confirm { gap: 0.42rem; }
+
+.phone-move-panel--needs-roll .phone-current-tile-card,
+.phone-move-panel--needs-destination .phone-current-tile-card,
+.phone-move-panel--needs-confirm .phone-current-tile-card { padding: 0.42rem; }
+
+.phone-move-panel--needs-roll .phone-current-tile-card .phone-wrap-card__media,
+.phone-move-panel--needs-destination .phone-current-tile-card .phone-wrap-card__media,
+.phone-move-panel--needs-confirm .phone-current-tile-card .phone-wrap-card__media {
+  width: 3.4rem;
+  height: 3.4rem;
+  margin: 0 0.5rem 0.25rem 0;
+}
+
+.phone-move-panel--needs-roll .phone-current-tile-facts,
+.phone-move-panel--needs-destination .phone-current-tile-facts,
+.phone-move-panel--needs-confirm .phone-current-tile-facts,
+.phone-move-panel--needs-roll .phone-current-tile-card .phone-wrap-card__description,
+.phone-move-panel--needs-destination .phone-current-tile-card .phone-wrap-card__description,
+.phone-move-panel--needs-confirm .phone-current-tile-card .phone-wrap-card__description { display: none; }
+
+.phone-move-panel--needs-roll .phone-movement-planner { padding: 0.6rem; gap: 0.5rem; }
+.phone-move-panel--needs-roll .phone-movement-empty { min-height: 4.4rem; padding: 0.65rem; }
+.phone-movement-roll-actions .phone-action-button,
+.phone-movement-detail-hero .phone-movement-confirm {
+  min-height: 3.1rem;
+  border-color: rgba(121, 205, 248, 0.72);
+  box-shadow: 0 0 1rem rgba(52, 159, 220, 0.22);
+}
+
+.phone-movement-summary .combat-die-layer {
+  background: radial-gradient(circle at 32% 24%, rgba(255, 255, 255, 0.34), transparent 20%), linear-gradient(145deg, #cfeaf4 0%, #82bfd8 52%, #397792 100%);
+  border-color: rgba(7, 23, 32, 0.92);
+  filter: contrast(1.16) saturate(1.08);
+  box-shadow: inset 0 -0.35rem 0.7rem rgba(4, 15, 23, 0.42), 0 0.55rem 1rem rgba(0, 0, 0, 0.42);
+}
+.phone-movement-summary .combat-die-layer strong {
+  color: #06131b;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.72), 0 0 0.28rem rgba(255, 255, 255, 0.32);
+}
+.phone-movement-summary .combat-die-label { color: rgba(4, 16, 23, 0.82); text-shadow: 0 1px 0 rgba(255, 255, 255, 0.46); }
+.phone-move-panel--resolving .phone-movement-empty { min-height: 5rem; border-style: solid; border-color: rgba(90, 185, 225, 0.42); }

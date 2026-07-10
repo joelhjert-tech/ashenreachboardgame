@@ -1720,20 +1720,21 @@ function MovementPlanner({
   planner,
   seatId,
   activeContract,
+  canRoll,
+  selectedSectorId,
+  onSelectedSectorId,
   onIntent
 }: {
   planner: PublicMovementPlannerState | null | undefined;
   seatId: string;
   activeContract: ContractCard | null;
+  canRoll: boolean;
+  selectedSectorId: string | null;
+  onSelectedSectorId: (sectorId: string | null) => void;
   onIntent: (intent: ClientIntent) => void;
 }): ReactElement | null {
-  const [selectedSectorId, setSelectedSectorId] = useState<string | null>(null);
-
-  useEffect(() => {
-    setSelectedSectorId(null);
-  }, [planner?.currentSectorId, planner?.movementValue]);
-
   if (!planner?.active) {
+    if (!canRoll) return null;
     return (
       <section className="phone-movement-planner" aria-label="Movement planner" data-testid="movement-planner">
         <MovementEmptyState
@@ -1763,19 +1764,6 @@ function MovementPlanner({
     ? planner.destinations.find((destination) => destination.sectorId === selectedSectorId) ?? null
     : null;
 
-  const selectDestination = (sectorId: string): void => {
-    const destination = planner.destinations.find((entry) => entry.sectorId === sectorId) ?? null;
-    if (!destination) return;
-    setSelectedSectorId(sectorId);
-    if (destination.disabledReason) return;
-    onIntent({ type: "MOVEMENT_DESTINATION_PREVIEWED", seatId, toSectorId: sectorId });
-  };
-
-  const clearDestination = (): void => {
-    setSelectedSectorId(null);
-    onIntent({ type: "MOVEMENT_DESTINATION_PREVIEWED", seatId, toSectorId: null });
-  };
-
   return (
     <section className="phone-movement-planner" aria-label="Movement planner" data-testid="movement-planner">
       {selected ? (
@@ -1784,11 +1772,11 @@ function MovementPlanner({
           selected={selected}
           seatId={seatId}
           activeContract={activeContract}
-          onBack={clearDestination}
+          onBack={() => onSelectedSectorId(null)}
           onIntent={onIntent}
         />
       ) : (
-        <MovementDestinationList planner={planner} activeContract={activeContract} onSelected={selectDestination} />
+        <MovementDestinationList planner={planner} activeContract={activeContract} onSelected={onSelectedSectorId} />
       )}
     </section>
   );
@@ -2236,7 +2224,9 @@ function PhoneMovePanel({
   seatId,
   activeContract,
   onIntent,
-  usefulNow
+  usefulNow,
+  canRollMovement,
+  movementResolving
 }: {
   movementPlanner: PublicMovementPlannerState | null | undefined;
   currentTile: CurrentTileViewModel;
@@ -2246,13 +2236,49 @@ function PhoneMovePanel({
   activeContract: ContractCard | null;
   onIntent: (intent: ClientIntent) => void;
   usefulNow: UsefulNowViewModel | null;
+  canRollMovement: boolean;
+  movementResolving: boolean;
 }): ReactElement {
+  const [selectedSectorId, setSelectedSectorId] = useState<string | null>(null);
+  const panelRef = useRef<HTMLElement | null>(null);
+  const movementState = movementResolving
+    ? "resolving"
+    : movementPlanner?.active
+      ? selectedSectorId ? "needs-confirm" : "needs-destination"
+      : canRollMovement ? "needs-roll" : "complete";
+
+  useEffect(() => {
+    setSelectedSectorId(null);
+  }, [movementPlanner?.currentSectorId, movementPlanner?.movementValue]);
+
+  useLayoutEffect(() => {
+    const scrollContainer = panelRef.current?.closest<HTMLElement>(".phone-portrait-scroll");
+    if (!scrollContainer) return;
+    if (typeof scrollContainer.scrollTo === "function") {
+      scrollContainer.scrollTo({ top: 0, left: 0, behavior: "auto" });
+    } else {
+      scrollContainer.scrollTop = 0;
+      scrollContainer.scrollLeft = 0;
+    }
+  }, [movementState, movementTravel?.key]);
+
+  const selectDestination = (sectorId: string | null): void => {
+    setSelectedSectorId(sectorId);
+    const destination = sectorId ? movementPlanner?.destinations.find((entry) => entry.sectorId === sectorId) ?? null : null;
+    if (destination?.disabledReason) return;
+    onIntent({ type: "MOVEMENT_DESTINATION_PREVIEWED", seatId, toSectorId: sectorId });
+  };
+
   return (
-    <section className="phone-action-active-panel phone-move-panel" data-testid="phone-action-active-panel" aria-label="Move command screen">
+    <section ref={panelRef} className={`phone-action-active-panel phone-move-panel phone-move-panel--${movementState}`} data-testid="phone-action-active-panel" data-movement-state={movementState} aria-label="Move command screen">
       <CurrentTileCard tile={currentTile} />
       <PhoneMovementAnimation travel={movementTravel} />
-      <MovementPlanner planner={movementPlanner} seatId={seatId} activeContract={activeContract} onIntent={onIntent} />
-      {!hasMoveContent && !movementPlanner?.active && (
+      {!movementResolving ? (
+        <MovementPlanner planner={movementPlanner} seatId={seatId} activeContract={activeContract} canRoll={canRollMovement} selectedSectorId={selectedSectorId} onSelectedSectorId={selectDestination} onIntent={onIntent} />
+      ) : (
+        <MovementEmptyState title={movementTravel ? "Route confirmed" : "Arrival resolving"} text={movementTravel ? `Travelling to ${movementTravel.toSectorName}.` : "Movement is complete. Resolve the arrival test or event."} detail="Movement controls will return on the next navigation step." />
+      )}
+      {!hasMoveContent && !movementPlanner?.active && !movementResolving && !canRollMovement && (
         <EmptyTurnTab title="No movement choice" text="Movement is not available in this step. Resolve the current action or wait for the table." />
       )}
       <UsefulNowPanel model={usefulNow} variant="secondary" />
@@ -3119,6 +3145,8 @@ export function PhoneActionPanel({
         activeContract={activeContract}
         onIntent={onIntent}
         usefulNow={activeUsefulNow}
+        canRollMovement={patch.phase === "navigation" && !movementPlanner?.active}
+        movementResolving={Boolean(!movementPlanner?.active && (movementTravel || (patch.phase !== "navigation" && (activeResolution || movementOutcome))))}
       />
     ) : activeTurnTab === "battle" ? (
       <PhoneBattlePanel

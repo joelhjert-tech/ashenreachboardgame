@@ -786,6 +786,8 @@ describe("PhoneActionPanel", () => {
     expect(screen.getByTestId("movement-current-tile-occupants")).toHaveTextContent(/mira \(mira\)/i);
     expect(screen.getByTestId("movement-current-tile-image")).toHaveAttribute("src", "/assets/map/tiles/map_tile_hollow_gate.png");
     expect(screen.getAllByText(/roll movement to reveal your legal destinations/i).length).toBeGreaterThan(0);
+    expect(screen.getByTestId("phone-action-active-panel")).toHaveAttribute("data-movement-state", "needs-roll");
+    expect(screen.getByRole("button", { name: /roll movement/i })).toBeVisible();
     expect(screen.queryByTestId("movement-list-view")).not.toBeInTheDocument();
     expect(screen.queryByTestId("phone-shop-panel")).not.toBeInTheDocument();
     expect(screen.queryByTestId("phone-battle-subject-card")).not.toBeInTheDocument();
@@ -845,6 +847,8 @@ describe("PhoneActionPanel", () => {
     );
 
     fireEvent.click(screen.getByRole("button", { name: /locked.*ashwalk bridge/i }));
+    expect(screen.getByTestId("phone-action-active-panel")).toHaveAttribute("data-movement-state", "needs-confirm");
+    expect(screen.getByRole("button", { name: /confirm move/i })).toBeVisible();
     expect(onIntent).toHaveBeenCalledWith({
       type: "MOVEMENT_DESTINATION_PREVIEWED",
       seatId: "seat-1",
@@ -963,6 +967,9 @@ describe("PhoneActionPanel", () => {
       expect(screen.getByTestId("phone-movement-animation")).toHaveTextContent(/moving/i);
       expect(screen.getByTestId("phone-movement-animation")).toHaveTextContent(/ashwalk bridge to anchor market/i);
       expect(screen.getByTestId("phone-movement-animation")).toHaveAttribute("data-reduced-motion", "false");
+      expect(screen.getByTestId("phone-action-active-panel")).toHaveAttribute("data-movement-state", "resolving");
+      expect(screen.queryByText(/no movement choice/i)).not.toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: /roll movement/i })).not.toBeInTheDocument();
 
       act(() => {
         vi.advanceTimersByTime(1300);
@@ -1761,6 +1768,8 @@ describe("PhoneActionPanel", () => {
 
     expect(screen.getByTestId("phone-current-prompt")).toHaveTextContent(/no legal destination/i);
     expect(screen.getByTestId("phone-current-prompt")).toHaveTextContent(/you rolled 1/i);
+    expect(screen.getByTestId("phone-action-active-panel")).toHaveAttribute("data-movement-state", "needs-destination");
+    expect(screen.getByTestId("movement-dice-animation")).toHaveClass("phone-movement-dice");
     expect(screen.getAllByText(/no legal destinations/i).length).toBeGreaterThan(0);
     expect(screen.queryByRole("button", { name: /confirm move/i })).not.toBeInTheDocument();
   });
