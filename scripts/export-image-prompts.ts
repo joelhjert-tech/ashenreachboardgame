@@ -221,12 +221,16 @@ function buildContractPrompt(card: {
   name: string;
   text: string;
   factionGiver: string;
-  objective: { type: string; target: number; label?: string };
+  objective: { type: string; target?: number; label?: string; targets?: Array<{ label: string }> };
 }): string {
   const objectiveCopy =
     card.objective.type === "spaceTextResolved"
       ? `contract objective scene focused on ${sanitizeSentence(card.objective.label ?? "a sector operation")}`
-      : `contract objective scene showing ${card.objective.target} hostile disruptions to clear`;
+      : card.objective.type === "multiStopRoute"
+        ? `contract route scene linking ${card.objective.targets?.map((target) => sanitizeSentence(target.label)).join(", ") ?? "several sectors"}`
+        : card.objective.type === "shopTransaction"
+          ? `contract shop scene focused on ${sanitizeSentence(card.objective.label ?? "a field transaction")}`
+          : `contract objective scene showing ${card.objective.target ?? 1} hostile disruptions to clear`;
   return [
     promptPrefix,
     "contract scene, route objective, artifact target, convoy lane, or faction job rather than a poster",

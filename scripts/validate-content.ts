@@ -30,6 +30,7 @@ import {
   type ThreatCard
 } from "../src/game/schema/card.schema.js";
 import { shopCategorySchema, type GearItem } from "../src/game/schema/gear.schema.js";
+import type { ContractCard } from "../src/game/schema/contract.schema.js";
 import { sectorGraphSchema, type SectorNode } from "../src/game/schema/sector.schema.js";
 
 const sectorsRoot = join(process.cwd(), "content", "sectors");
@@ -200,6 +201,7 @@ for (const item of gear.values()) {
 
 for (const contract of contracts.values()) {
   validateEffect(contract.reward, `${contract.id} reward`);
+  validateContractObjective(contract);
 }
 
 for (const anomaly of anomalies.values()) {
@@ -272,7 +274,7 @@ function validateContentFloors(): void {
     ["anomalies", anomalies.size, 20, 30],
     ["artifacts", artifacts.size, 12, 30],
     ["escalations", escalations.size, 15, 25],
-    ["contracts", contracts.size, 20, 30],
+    ["contracts", contracts.size, 20, 36],
     ["followers", followers.size, 15, 25],
     ["scars", scars.size, 12, 18],
     ["afflictions", afflictions.size, 30, 30]
@@ -637,6 +639,24 @@ function validateGearProgression(item: GearItem): void {
     if (!shopCategorySchema.safeParse(category).success) {
       errors.push(`${item.id} has invalid shop category ${category}`);
     }
+  }
+}
+
+function validateContractObjective(contract: ContractCard): void {
+  if (contract.objective.type === "multiStopRoute") {
+    const targetIds = new Set<string>();
+    for (const target of contract.objective.targets) {
+      if (targetIds.has(target.id)) errors.push(`${contract.id} repeats route target id ${target.id}`);
+      targetIds.add(target.id);
+      if (target.type === "spaceId" && !BOARD_SPACES.some((space) => space.id === target.value)) errors.push(`${contract.id} references missing route sector ${target.value}`);
+      if (target.type === "tag" && !BOARD_SPACES.some((space) => space.tags.includes(target.value as never))) errors.push(`${contract.id} references unsupported route tag ${target.value}`);
+    }
+  }
+  if (contract.objective.type === "shopTransaction") {
+    const requiredSectorId = contract.objective.requiredSectorId;
+    const requiredShopType = contract.objective.requiredShopType;
+    if (requiredSectorId && !BOARD_SPACES.some((space) => space.id === requiredSectorId && (space.tags.includes("shop") || space.tags.includes("risk-shop")))) errors.push(`${contract.id} references invalid shop sector ${requiredSectorId}`);
+    if (requiredShopType && !BOARD_SPACES.some((space) => (space.tags.includes("shop") || space.tags.includes("risk-shop")) && space.tags.includes(requiredShopType as never))) errors.push(`${contract.id} references invalid shop type ${requiredShopType}`);
   }
 }
 

@@ -1,4 +1,4 @@
-import { describeContractObjective, formatContractObjectiveStatus } from "../../game/contracts/objectives.js";
+import { describeContractObjective, formatContractObjectiveStatus, isContractObjectiveComplete } from "../../game/contracts/objectives.js";
 import type { AfflictionSummary, PhonePatchPayload, Stat } from "../shared/types.js";
 import { statLabelById } from "../shared/statLabels.js";
 import {
@@ -187,7 +187,7 @@ export function buildUsefulNowViewModel(patch: PhonePatchPayload): UsefulNowView
     questItems.push({
       label: activeContract.name,
       detail: `${formatContractObjectiveStatus(activeContract, self.character.activeContract.progress)}. ${describeContractObjective(activeContract)}`,
-      tone: self.character.activeContract.progress >= activeContract.objective.target ? "ready" : "passive"
+      tone: isContractObjectiveComplete(activeContract, self.character.activeContract.progress) ? "ready" : "passive"
     });
   }
 

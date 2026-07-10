@@ -54,6 +54,21 @@ export function getMissionRelevanceForSector(
     };
   }
 
+  if (contract.objective.type === "multiStopRoute") {
+    const boardSpace = getBoardSpace(sectorId);
+    const target = contract.objective.targets.find((entry) => entry.type === "spaceId" ? entry.value === sectorId : Boolean(boardSpace?.tags.includes(entry.value as never)));
+    if (target) return { label: "Mission", missionTitle: contract.name, reason: `${target.label} is a route stop for ${contract.name}.` };
+  }
+
+  if (contract.objective.type === "shopTransaction") {
+    const boardSpace = getBoardSpace(sectorId);
+    const sectorMatches = !contract.objective.requiredSectorId || contract.objective.requiredSectorId === sectorId;
+    const shopMatches = !contract.objective.requiredShopType || boardSpace?.tags.includes(contract.objective.requiredShopType as never);
+    if (sectorMatches && shopMatches && boardSpace && (boardSpace.tags.includes("shop") || boardSpace.tags.includes("risk-shop"))) {
+      return { label: "Mission", missionTitle: contract.name, reason: `This shop can progress ${contract.name}.` };
+    }
+  }
+
   return null;
 }
 
@@ -77,5 +92,7 @@ export function getMissionTargetClue(contract: ContractCard | null | undefined):
       : `Target sectors: ${targetNames.slice(0, 3).join(", ")}${targetNames.length > 3 ? ", ..." : ""}.`;
   }
 
+  if (contract.objective.type === "multiStopRoute") return `Route: ${contract.objective.targets.map((target) => target.label).join(" → ")}.`;
+  if (contract.objective.type === "shopTransaction") return `Shop objective: ${contract.objective.label}.`;
   return "Target: any sector with a threat or enemy.";
 }

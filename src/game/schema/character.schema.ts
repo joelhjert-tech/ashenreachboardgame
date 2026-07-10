@@ -28,7 +28,9 @@ export const characterStatusSchema = z.enum(["active", "recalled"]);
 export const activeContractSchema = z
   .object({
     contractId: z.string().min(1),
-    progress: z.number().int().min(0)
+    progress: z.number().int().min(0),
+    completedTargetIds: z.array(z.string().min(1)).optional(),
+    salvageSpent: z.number().int().min(0).optional()
   })
   .nullable();
 

@@ -76,7 +76,7 @@ export interface PublicPlayerCharacter {
   qaOnly?: boolean;
   presentation?: CharacterPresentation;
   status: "active" | "recalled";
-  activeContract: { contractId: string; progress: number } | null;
+  activeContract: { contractId: string; progress: number; completedTargetIds?: string[]; salvageSpent?: number } | null;
   stats: Record<Stat, number>;
   statUpgrades?: Partial<Record<Stat, number>>;
   trophies: number;
@@ -392,7 +392,9 @@ export interface ContractCard {
   text: string;
   objective:
     | { type: "defeatCount"; target: number }
-    | { type: "spaceTextResolved"; effectKey: string; label: string; target: number };
+    | { type: "spaceTextResolved"; effectKey: string; label: string; target: number }
+    | { type: "multiStopRoute"; ordered: boolean; targets: Array<{ id: string; type: "spaceId" | "tag"; value: string; label: string }> }
+    | { type: "shopTransaction"; action: "buyEquipment" | "sellGear" | "repairGear" | "upgradeGear" | "trade"; requiredShopType?: string; requiredSectorId?: string; requiredCount: number; minimumSalvageSpent?: number; label: string };
   reward?: unknown;
 }
 

@@ -23,6 +23,7 @@ import { getScenarioSheetArtPath } from "../game/data/scenarioSheetArt.js";
 import { getCharacterPresentation, type CharacterPresentation } from "../game/data/characterPresentation.js";
 import {
   advanceContractObjectiveProgress,
+  advanceContractObjectiveState,
   describeContractObjective,
   formatContractObjectiveStatus,
   formatContractProgress,
@@ -640,6 +641,29 @@ export class GameRoomServer {
         this.state.activeResolution.playerId === intent.seatId;
       const action = this.intentToAction(intent);
       this.applyAction(action);
+
+      if (action.type === "SHOP_PURCHASE_RESOLVED") {
+        const space = getBoardSpace(action.sectorId);
+        this.maybeAdvanceContractObjective(intent.seatId, {
+          type: "shop-transaction", action: "buyEquipment", sectorId: action.sectorId,
+          shopTypes: space?.tags ?? [], salvageSpent: action.cost.salvage ?? 0
+        }, `Bought equipment at ${action.shopName}.`);
+      } else if (action.type === "SHOP_SELL_RESOLVED") {
+        const space = getBoardSpace(action.sectorId);
+        this.maybeAdvanceContractObjective(intent.seatId, {
+          type: "shop-transaction", action: "sellGear", sectorId: action.sectorId, shopTypes: space?.tags ?? []
+        }, `Sold gear at ${action.shopName}.`);
+      } else if (action.type === "SHOP_SERVICE_RESOLVED") {
+        const space = getBoardSpace(action.sectorId);
+        const missionAction = action.serviceId === "repair-gear" ? "repairGear"
+          : action.serviceId === "trade-missions-for-artifact" ? "trade"
+          : action.serviceId.includes("upgrade") ? "upgradeGear"
+          : action.serviceId === "buy-supplies" ? "buyEquipment" : null;
+        if (missionAction) this.maybeAdvanceContractObjective(intent.seatId, {
+          type: "shop-transaction", action: missionAction, sectorId: action.sectorId,
+          shopTypes: space?.tags ?? [], salvageSpent: action.cost.salvage ?? 0
+        }, `Completed ${action.serviceLabel} at ${action.shopName}.`);
+      }
 
       if (intent.type === "CHECK_REQUESTED") {
         if (shouldResolveVisibleCheckOrCombat) {
@@ -2950,9 +2974,12 @@ export class GameRoomServer {
       return;
     }
 
-    const nextProgress = advanceContractObjectiveProgress(contract, player.character.activeContract.progress, trigger);
+    const nextState = advanceContractObjectiveState(contract, player.character.activeContract, trigger);
+    const nextProgress = nextState.progress;
 
-    if (nextProgress === player.character.activeContract.progress) {
+    if (nextProgress === player.character.activeContract.progress &&
+        JSON.stringify(nextState.completedTargetIds ?? []) === JSON.stringify(player.character.activeContract.completedTargetIds ?? []) &&
+        nextState.salvageSpent === player.character.activeContract.salvageSpent) {
       return;
     }
 
@@ -2967,6 +2994,7 @@ export class GameRoomServer {
                 ...entry.character,
                 activeContract: {
                   ...entry.character.activeContract,
+                  ...nextState,
                   progress: nextProgress
                 }
               }
@@ -5391,6 +5419,12 @@ export class GameRoomServer {
       effect: success ? null : this.resolveEffect({ type: "gain_note", text: "Failed route entry: lasting harm is handled by Scars." }, intent.seatId),
       createdAt: new Date().toISOString()
     } satisfies MovementResolvedAction);
+    if (success) {
+      const destination = getBoardSpace(intent.toSectorId);
+      this.maybeAdvanceContractObjective(intent.seatId, {
+        type: "sector-visited", sectorId: intent.toSectorId, sectorTags: destination?.tags ?? []
+      }, `Visited ${destination?.name ?? intent.toSectorId}.`);
+    }
     this.applyScenarioOnSkillResolved(intent.seatId, "guile", success);
     this.maybeTriggerAbilityOnMovementResolved(intent.seatId, intent.toSectorId, success);
     if (success) {

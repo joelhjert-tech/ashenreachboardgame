@@ -22,9 +22,36 @@ const spaceTextResolvedObjectiveSchema = z.object({
   target: z.number().int().min(1)
 });
 
+const routeTargetSchema = z.object({
+  id: z.string().min(1),
+  type: z.enum(["spaceId", "tag"]),
+  value: z.string().min(1),
+  label: z.string().min(1)
+});
+
+const multiStopRouteObjectiveSchema = z.object({
+  type: z.literal("multiStopRoute"),
+  ordered: z.boolean(),
+  targets: z.array(routeTargetSchema).min(2).max(4)
+});
+
+export const shopTransactionActionSchema = z.enum(["buyEquipment", "sellGear", "repairGear", "upgradeGear", "trade"]);
+
+const shopTransactionObjectiveSchema = z.object({
+  type: z.literal("shopTransaction"),
+  action: shopTransactionActionSchema,
+  requiredShopType: z.string().min(1).optional(),
+  requiredSectorId: z.string().min(1).optional(),
+  requiredCount: z.number().int().min(1),
+  minimumSalvageSpent: z.number().int().min(1).optional(),
+  label: z.string().min(1)
+});
+
 export const contractObjectiveSchema = z.discriminatedUnion("type", [
   defeatCountObjectiveSchema,
-  spaceTextResolvedObjectiveSchema
+  spaceTextResolvedObjectiveSchema,
+  multiStopRouteObjectiveSchema,
+  shopTransactionObjectiveSchema
 ]);
 
 export const contractCardSchema = z.object({

@@ -24,7 +24,7 @@ import type {
 } from "../shared/types.js";
 import { ResultDeltaRow } from "../shared/ResultDeltaChips.js";
 import { getBoardSpace, isScenarioConfrontationSpace } from "../../game/data/boardSpaces.js";
-import { describeContractObjective, formatContractObjectiveStatus } from "../../game/contracts/objectives.js";
+import { describeContractObjective, formatContractObjectiveStatus, isContractObjectiveComplete } from "../../game/contracts/objectives.js";
 import { getChallengeThemeStyle } from "../../game/ui/challengeTheme.js";
 import {
   describeActiveResolutionRoll,
@@ -2894,7 +2894,7 @@ export function PhoneActionPanel({
       });
     }
 
-    if (self.character.activeContract && activeContract && self.character.activeContract.progress >= activeContract.objective.target) {
+    if (self.character.activeContract && activeContract && isContractObjectiveComplete(activeContract, self.character.activeContract.progress)) {
       contractActions.push({
         key: `complete-${activeContract.id}`,
         label: `Complete ${activeContract.name}`,

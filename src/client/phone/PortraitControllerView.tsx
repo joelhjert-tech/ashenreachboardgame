@@ -1,5 +1,6 @@
 import { useEffect, useState, type CSSProperties, type ReactElement } from "react";
 import { getChallengeThemeStyle } from "../../game/ui/challengeTheme.js";
+import { describeContractObjective as describeObjective, formatContractProgress } from "../../game/contracts/objectives.js";
 import { getCharacterPortraitPath } from "../shared/assetPaths.js";
 import { CardArtImage } from "../shared/CardArtImage.js";
 import { GameButton } from "../shared/GameButton.js";
@@ -243,24 +244,24 @@ function describeContractObjective(contract: ContractCard): string {
   if (contract.objective.type === "defeatCount") {
     return `Defeat ${contract.objective.target} threat${contract.objective.target === 1 ? "" : "s"}.`;
   }
-
-  return contract.objective.label;
+  if (contract.objective.type === "spaceTextResolved") return contract.objective.label;
+  return describeObjective(contract);
 }
 
 function describeContractProgress(contract: ContractCard): string {
   if (contract.objective.type === "defeatCount") {
     return `Progress 0/${contract.objective.target} defeated`;
   }
-
-  return `Progress 0/${contract.objective.target} resolved`;
+  if (contract.objective.type === "spaceTextResolved") return `Progress 0/${contract.objective.target} resolved`;
+  return `Progress ${formatContractProgress(contract, 0)}`;
 }
 
 function describeActiveContractProgress(contract: ContractCard, progress: number): string {
   if (contract.objective.type === "defeatCount") {
     return `Progress ${progress}/${contract.objective.target} defeated`;
   }
-
-  return `Progress ${progress}/${contract.objective.target} resolved`;
+  if (contract.objective.type === "spaceTextResolved") return `Progress ${progress}/${contract.objective.target} resolved`;
+  return `Progress ${formatContractProgress(contract, progress)}`;
 }
 
 function describeContractReward(contract: ContractCard): string {
