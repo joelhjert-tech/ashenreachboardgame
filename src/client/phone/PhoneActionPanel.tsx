@@ -1762,6 +1762,19 @@ function MovementPlanner({
     ? planner.destinations.find((destination) => destination.sectorId === selectedSectorId) ?? null
     : null;
 
+  const selectDestination = (sectorId: string): void => {
+    const destination = planner.destinations.find((entry) => entry.sectorId === sectorId) ?? null;
+    if (!destination) return;
+    setSelectedSectorId(sectorId);
+    if (destination.disabledReason) return;
+    onIntent({ type: "MOVEMENT_DESTINATION_PREVIEWED", seatId, toSectorId: sectorId });
+  };
+
+  const clearDestination = (): void => {
+    setSelectedSectorId(null);
+    onIntent({ type: "MOVEMENT_DESTINATION_PREVIEWED", seatId, toSectorId: null });
+  };
+
   return (
     <section className="phone-movement-planner" aria-label="Movement planner" data-testid="movement-planner">
       {selected ? (
@@ -1770,11 +1783,11 @@ function MovementPlanner({
           selected={selected}
           seatId={seatId}
           activeContract={activeContract}
-          onBack={() => setSelectedSectorId(null)}
+          onBack={clearDestination}
           onIntent={onIntent}
         />
       ) : (
-        <MovementDestinationList planner={planner} activeContract={activeContract} onSelected={setSelectedSectorId} />
+        <MovementDestinationList planner={planner} activeContract={activeContract} onSelected={selectDestination} />
       )}
     </section>
   );

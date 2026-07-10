@@ -1388,6 +1388,47 @@ describe("roomServer websocket integration", () => {
         (destination) => destination.distance === 3 && destination.route.length === 4
       )
     ).toBe(true);
+
+    const destinations = (tvStarted.payload.movementPlanner as { destinations: Array<{ sectorId: string; disabledReason?: string }> }).destinations;
+    const destination = destinations.find((entry) => !entry.disabledReason);
+    expect(destination).toBeDefined();
+
+    const selectedMark = tv.mark();
+    phone.send({
+      type: "MOVEMENT_DESTINATION_PREVIEWED",
+      seatId: joinResult.seatId,
+      toSectorId: destination!.sectorId
+    });
+    const selectedPatch = (await tv.waitFor(
+      (message, index) =>
+        index >= selectedMark &&
+        isStatePatch(message) &&
+        (message.payload.movementPlanner as { selectedDestinationId?: string } | null)?.selectedDestinationId === destination!.sectorId
+    )) as Extract<ServerEnvelope, { type: "STATE_PATCH" }>;
+    expect((selectedPatch.payload.movementPlanner as { selectedDestinationId: string }).selectedDestinationId).toBe(destination!.sectorId);
+
+    const rejectedMark = phone.mark();
+    phone.send({
+      type: "MOVEMENT_DESTINATION_PREVIEWED",
+      seatId: joinResult.seatId,
+      toSectorId: "not-a-legal-sector"
+    });
+    await phone.waitFor(
+      (message, index) => index >= rejectedMark && message.type === "INTENT_REJECTED"
+    );
+
+    const clearedMark = tv.mark();
+    phone.send({
+      type: "MOVEMENT_DESTINATION_PREVIEWED",
+      seatId: joinResult.seatId,
+      toSectorId: null
+    });
+    await tv.waitFor(
+      (message, index) =>
+        index >= clearedMark &&
+        isStatePatch(message) &&
+        (message.payload.movementPlanner as { selectedDestinationId?: string | null } | null)?.selectedDestinationId === null
+    );
   });
 
   it("fires a real linked-nemesis scenario victory over the live phone socket path", async () => {

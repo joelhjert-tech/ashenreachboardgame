@@ -845,16 +845,26 @@ describe("PhoneActionPanel", () => {
     );
 
     fireEvent.click(screen.getByRole("button", { name: /locked.*ashwalk bridge/i }));
-    expect(onIntent).not.toHaveBeenCalled();
+    expect(onIntent).toHaveBeenCalledWith({
+      type: "MOVEMENT_DESTINATION_PREVIEWED",
+      seatId: "seat-1",
+      toSectorId: "ashwake-crossing"
+    });
     expect(screen.getAllByText(/chain-maul salvager/i).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/legal: exactly 1 step from pilgrim lock/i).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/risk: chain-maul salvager/i).length).toBeGreaterThan(0);
     expect(screen.getByText(/mira: signal witch/i)).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: /back/i }));
+    expect(onIntent).toHaveBeenCalledWith({
+      type: "MOVEMENT_DESTINATION_PREVIEWED",
+      seatId: "seat-1",
+      toSectorId: null
+    });
     expect(screen.queryByRole("button", { name: /confirm move/i })).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: /locked.*ashwalk bridge/i }));
+    onIntent.mockClear();
     fireEvent.click(screen.getByRole("button", { name: /confirm move/i }));
     expect(screen.getByRole("button", { name: /moving/i })).toBeDisabled();
     fireEvent.click(screen.getByRole("button", { name: /moving/i }));

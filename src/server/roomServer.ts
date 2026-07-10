@@ -290,6 +290,7 @@ type HostCommandMessage = KickSeatMessage | RestartSessionMessage;
 type ClientMessage = ClientIntent | RejoinMessage | HostCommandMessage;
 
 const CLIENT_INTENT_TYPES = new Set<string>([
+  "MOVEMENT_DESTINATION_PREVIEWED",
   "MOVE_REQUESTED",
   "MOVEMENT_ROLL_REQUESTED",
   "PHASE_ADVANCED",
@@ -436,6 +437,7 @@ export class GameRoomServer {
   private hostToken: string | null = null;
   private enemyRollTimeout: ReturnType<typeof setTimeout> | null = null;
   private resolutionAutoContinueTimeout: ReturnType<typeof setTimeout> | null = null;
+  private readonly movementPreviewBySeatId = new Map<string, string>();
 
   public constructor(
     private state: GameState,
@@ -539,6 +541,26 @@ export class GameRoomServer {
 
       if (intent.seatId !== client.seatId) {
         throw new IntentRejectedError(intent.type, "Seat mismatch between token and submitted intent");
+      }
+
+      if (intent.type === "MOVEMENT_DESTINATION_PREVIEWED") {
+        const planner = buildPublicMovementPlanner(this.state, intent.seatId);
+        if (!planner?.active) {
+          throw new Error("Movement preview is unavailable outside destination selection");
+        }
+        if (intent.toSectorId === null) {
+          this.movementPreviewBySeatId.delete(intent.seatId);
+        } else {
+          const destination = planner.destinations.find(
+            (entry) => entry.sectorId === intent.toSectorId && !entry.disabledReason
+          );
+          if (!destination) {
+            throw new Error("Movement preview must use a legal destination");
+          }
+          this.movementPreviewBySeatId.set(intent.seatId, destination.sectorId);
+        }
+        this.broadcastPatch();
+        return;
       }
 
       if (intent.type === "CONTINUE_RESOLUTION") {
@@ -680,8 +702,10 @@ export class GameRoomServer {
       } else if (intent.type === "SOLO_REROLL_REQUESTED") {
         // Keep the rerolled result visible until the player continues.
       } else if (intent.type === "MOVEMENT_ROLL_REQUESTED") {
+        this.movementPreviewBySeatId.delete(intent.seatId);
         this.resolveMovementRollIntent(intent);
       } else if (intent.type === "MOVE_REQUESTED") {
+        this.movementPreviewBySeatId.delete(intent.seatId);
         this.resolveMoveIntent(intent);
       } else if (intent.type === "SCENARIO_CONFRONTATION_REQUESTED") {
         this.resolveScenarioConfrontationIntent(intent);
@@ -791,6 +815,7 @@ export class GameRoomServer {
 
     this.state = state;
     this.events.length = 0;
+    this.movementPreviewBySeatId.clear();
   }
 
   joinSeat(displayName: string, characterId?: string, requestedSeatId?: string): JoinSeatResult {
@@ -1202,6 +1227,11 @@ export class GameRoomServer {
     requireStringField(message, "seatId", type);
 
     switch (type) {
+      case "MOVEMENT_DESTINATION_PREVIEWED":
+        if (message.toSectorId !== null) {
+          requireStringField(message, "toSectorId", type);
+        }
+        break;
       case "MOVE_REQUESTED":
         requireStringField(message, "toSectorId", type);
         break;
@@ -6743,7 +6773,7 @@ export class GameRoomServer {
       phase: this.state.phase,
       payload:
         client.view === "tv"
-          ? createTvProjection(this.state)
+          ? createTvProjection(this.state, this.movementPreviewBySeatId)
           : createPhoneProjection(this.state, client.seatId ?? "", forcePrivate)
     };
   }
@@ -6840,6 +6870,7 @@ type PublicMovementPlannerState = {
   currentSectorId: string;
   currentSectorName: string;
   destinations: PublicMoveDestination[];
+  selectedDestinationId?: string | null;
 };
 
 type PublicSectorExplorationSummary = {
@@ -8536,7 +8567,10 @@ function isSeatCharacterSelectedForProjection(state: GameState, seat: GameState[
   return Boolean(seat.characterId) || playerSeatIds.has(seat.seatId);
 }
 
-export function createTvProjection(state: GameState): Record<string, unknown> {
+export function createTvProjection(
+  state: GameState,
+  movementPreviewBySeatId: ReadonlyMap<string, string> = new Map()
+): Record<string, unknown> {
   const escalationThreshold = getEscalationCollapseLevel(state.sessionMode);
   const activeScenario = getScenarioDefinition(state.activeScenarioId);
   const activeScenarioProgress = activeScenario ? (state.scenarioProgress[activeScenario.winConditionKey] ?? 0) : 0;
@@ -8737,7 +8771,22 @@ export function createTvProjection(state: GameState): Record<string, unknown> {
     publicResultDeltas,
     activeResolution: state.activeResolution ?? null,
     shopEncounter,
-    movementPlanner: activeSeatId ? buildPublicMovementPlanner(state, activeSeatId) : null,
+    movementPlanner: activeSeatId
+      ? (() => {
+          const planner = buildPublicMovementPlanner(state, activeSeatId);
+          const selectedDestinationId = movementPreviewBySeatId.get(activeSeatId) ?? null;
+          return planner
+            ? {
+                ...planner,
+                selectedDestinationId: planner.destinations.some(
+                  (destination) => destination.sectorId === selectedDestinationId && !destination.disabledReason
+                )
+                  ? selectedDestinationId
+                  : null
+              }
+            : null;
+        })()
+      : null,
     sectorExplorationSummary: buildPublicSectorExplorationSummary(state, activeSeatId),
     recentAbilityTriggers,
     nemesis: nemesisSummary

@@ -574,6 +574,11 @@ export type GameAction =
 
 export type ClientIntent =
   | {
+      type: "MOVEMENT_DESTINATION_PREVIEWED";
+      seatId: string;
+      toSectorId: string | null;
+    }
+  | {
       type: "MOVE_REQUESTED";
       seatId: string;
       toSectorId: string;
