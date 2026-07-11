@@ -11,6 +11,8 @@ import type { ClientIntent, GameAction } from "../actions.js";
 import type { GameState } from "../../schema/session.schema.js";
 import { reduceGameState } from "../reducer.js";
 import { getEquippedGearBonus } from "../gear.js";
+import { loadGear } from "../../content/gear.js";
+import { loadArtifactCards } from "../../content/artifacts.js";
 
 function createGear(): Map<string, GearItem> {
   return new Map<string, GearItem>([
@@ -78,6 +80,95 @@ function createGear(): Map<string, GearItem> {
     ]
   ]);
 }
+
+describe("Phase 2 owned Artifact consumables", () => {
+  const cases: Array<{ id: string; grantedGear?: string; grantedFollower?: string; heals?: boolean }> = [
+    { id: "artifact-bell-votive", grantedGear: "veil-hook" },
+    { id: "artifact-pale-ledger-token", grantedFollower: "pale-cartel-fixer" },
+    { id: "artifact-void-salt-poultice", heals: true },
+    { id: "artifact-yard", grantedGear: "marshal-seal" }
+  ];
+
+  it.each(cases)("acquires and resolves $id exactly once through its owner", ({ id, grantedGear, grantedFollower, heals }) => {
+    const artifact = loadArtifactCards().get(id)!;
+    const ownedItem = loadGear().get(id)!;
+    expect(artifact.resolveEffect).toMatchObject({ type: "gain_gear", gearId: id });
+
+    const base = createState({ phase: "action" });
+    const state: GameState = {
+      ...base,
+      players: base.players.map((player) => player.seatId === "seat-1" ? {
+        ...player,
+        character: {
+          ...player.character,
+          wounds: heals ? 2 : player.character.wounds,
+          heldGear: [...player.character.heldGear.filter((item) => item.id !== grantedGear), ownedItem],
+          followers: (player.character.followers ?? []).filter((item) => item.id !== grantedFollower)
+        }
+      } : player)
+    };
+    const roundTrip = JSON.parse(JSON.stringify(state)) as GameState;
+    expect(roundTrip.players[0]?.character.heldGear.some((item) => item.id === id)).toBe(true);
+    if (grantedGear) expect(roundTrip.players[0]?.character.heldGear.some((item) => item.id === grantedGear)).toBe(false);
+    if (grantedFollower) expect(roundTrip.players[0]?.character.followers?.some((item) => item.id === grantedFollower) ?? false).toBe(false);
+    if (heals) expect(roundTrip.players[0]?.character.wounds).toBe(2);
+
+    const sent: Array<Record<string, unknown>> = [];
+    const server = new GameRoomServer(roundTrip);
+    server.handleIntent(createCapturingClient("seat-1", sent), { type: "USE_GEAR", seatId: "seat-1", gearId: id });
+    expect(sent.some((message) => message.type === "INTENT_REJECTED")).toBe(false);
+    const character = server.getState().players[0]!.character;
+    expect(character.heldGear.some((item) => item.id === id)).toBe(false);
+    if (grantedGear) expect(character.heldGear.some((item) => item.id === grantedGear)).toBe(true);
+    if (grantedFollower) expect(character.followers?.some((item) => item.id === grantedFollower)).toBe(true);
+    if (heals) expect(character.wounds).toBe(1);
+
+    server.handleIntent(createCapturingClient("seat-1", sent), { type: "USE_GEAR", seatId: "seat-1", gearId: id });
+    expect(sent.filter((message) => message.type === "INTENT_REJECTED")).toHaveLength(1);
+    expect((JSON.parse(JSON.stringify(server.getState())) as GameState).players[0]?.character.heldGear.some((item) => item.id === id)).toBe(false);
+  });
+
+  it.each(cases)("rejects wrong-seat and invalid-timing use of $id without consumption", ({ id }) => {
+    const ownedItem = loadGear().get(id)!;
+    const base = createState({ phase: "navigation" });
+    const state: GameState = {
+      ...base,
+      players: base.players.map((player) => player.seatId === "seat-1" ? {
+        ...player,
+        character: { ...player.character, wounds: 1, heldGear: [...player.character.heldGear, ownedItem] }
+      } : player)
+    };
+    const server = new GameRoomServer(state);
+    const wrongSeat: Array<Record<string, unknown>> = [];
+    server.handleIntent(createCapturingClient("seat-2", wrongSeat), { type: "USE_GEAR", seatId: "seat-1", gearId: id });
+    expect(wrongSeat.some((message) => message.type === "INTENT_REJECTED")).toBe(true);
+    const wrongTiming: Array<Record<string, unknown>> = [];
+    server.handleIntent(createCapturingClient("seat-1", wrongTiming), { type: "USE_GEAR", seatId: "seat-1", gearId: id });
+    expect(wrongTiming.some((message) => message.type === "INTENT_REJECTED")).toBe(true);
+    expect(server.getState().players[0]?.character.heldGear.some((item) => item.id === id)).toBe(true);
+  });
+
+  it("rejects unresolved targets without consuming their Artifact", () => {
+    const gear = loadGear();
+    const base = createState({ phase: "action" });
+    const blockedIds = ["artifact-bell-votive", "artifact-pale-ledger-token", "artifact-void-salt-poultice", "artifact-yard"];
+    const state: GameState = {
+      ...base,
+      players: base.players.map((player) => player.seatId === "seat-1" ? {
+        ...player,
+        character: {
+          ...player.character,
+          wounds: 0,
+          heldGear: [...player.character.heldGear, ...blockedIds.map((id) => gear.get(id)!), gear.get("veil-hook")!, gear.get("marshal-seal")!],
+          followers: [...(player.character.followers ?? []), { id: "pale-cartel-fixer", name: "Pale Cartel Fixer", role: "informant", text: "Fixer" }]
+        }
+      } : player)
+    };
+    const server = new GameRoomServer(state);
+    for (const id of blockedIds) server.handleIntent(createClient("seat-1"), { type: "USE_GEAR", seatId: "seat-1", gearId: id });
+    expect(blockedIds.every((id) => server.getState().players[0]?.character.heldGear.some((item) => item.id === id))).toBe(true);
+  });
+});
 
 function createFandiablos(): Follower {
   return {

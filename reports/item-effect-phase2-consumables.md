@@ -14,6 +14,8 @@ The 60 canonical audit rows were recounted directly: 30 Equipment and 30 Artifac
 | Void-Salt Poultice | Action window, while wounded | Heals one wound |
 | Yard Bellframe Core | Action window | Grants Marshal Seal |
 
+All four remaining cards were reviewed against their authored acquisition effects and implemented without changing their payloads. None is blocked: Bell Votive and Yard explicitly open containers to grant their named gear, Pale Ledger Token is cashed for its authored fixer, and Void-Salt Poultice has a complete heal-one-wound outcome and a valid-target requirement. Their timing is the normal `action` window; Void-Salt additionally requires at least one wound.
+
 Artifact draws now grant an owned Artifact-tier consumable instead of immediately resolving the payload. The existing typed `USE_GEAR` path validates authenticated ownership and timing, resolves the typed effect, and only then removes the item. A failed validation leaves inventory unchanged. Removal is persistent game state, so reconnect cannot restore the card; a duplicate or stale use is rejected because ownership no longer exists.
 
 Blackstar uses an explicit persisted `pendingFailureReaction` record tied to one seat, test type, source, timestamp, and reaction ID. Movement and hazard failures retain their consequences in `pendingEffect` until the resolution window advances. Using the matching owned `artifact-blackstar-ampoule` clears only that failure's pending consequences and the reaction record; it neither changes the failed roll nor rolls back resolved state. Continuing without using it applies the pending failure normally and closes the window. Reconnect serialization preserves both the window and owned inventory.
@@ -21,6 +23,8 @@ Blackstar uses an explicit persisted `pendingFailureReaction` record tied to one
 ## Validation and UI
 
 Consumables require `effectModel: consumable`, explicit `activationTiming`, `consumeOnUse: true`, and a typed `consumableEffect`. Passive, equipped, and charged declarations are rejected. Phone inventory labels the effect as `One Use`, keeps inspection separate from the Use intent, displays timing, and relies on server-projected eligibility. Consumables never enter effective-stat calculations even if stale data places one in an equipped slot.
+
+The server also rejects effects that cannot produce a valid result: Bell Votive when Veil Hook is already owned, Yard when Marshal Seal is already owned, Pale Ledger Token when the fixer is already attached, and Void-Salt when no wound can be healed. These rejections preserve the Artifact. Phone projections expose the same disabled reasons and do not present the consumables' schema-compatibility stat field as a passive bonus.
 
 ## Deferred
 

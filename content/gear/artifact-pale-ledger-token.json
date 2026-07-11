@@ -2,5 +2,5 @@
   "id": "artifact-pale-ledger-token", "name": "Pale Ledger Token", "slot": "utility", "subtype": "utility", "category": "consumable",
   "statBonus": { "stat": "command", "amount": 1 }, "tier": "artifact", "progressionWeight": 1, "startingEligible": false, "normalShopCommon": false,
   "shopCategories": ["relic-dealer"], "activeText": "Cash the token to recruit a Pale Cartel Fixer.", "useLimit": "discard",
-  "effectModel": "consumable", "activationTiming": ["anyTime"], "consumeOnUse": true, "consumableEffect": "grantPaleCartelFixer", "requiresEquipped": false
+  "effectModel": "consumable", "activationTiming": ["action"], "consumeOnUse": true, "consumableEffect": "grantPaleCartelFixer", "requiresEquipped": false
 }

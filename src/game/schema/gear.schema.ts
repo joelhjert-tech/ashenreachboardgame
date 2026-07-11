@@ -13,6 +13,7 @@ export const gearTimingWindowSchema = z.enum([
   "startOfTurn",
   "movement",
   "shop",
+  "action",
   "anyTime"
 ]);
 export const gearCategorySchema = z.enum([

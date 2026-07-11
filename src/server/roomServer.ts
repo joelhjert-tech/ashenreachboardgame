@@ -1779,6 +1779,13 @@ export class GameRoomServer {
       if (item.consumableEffect === "healWound" && (player.character.wounds ?? 0) <= 0) {
         throw new IntentRejectedError("USE_GEAR", `${item.name} cannot resolve because this character has no wounds.`);
       }
+      const grantedGearId = item.consumableEffect === "grantVeilHook" ? "veil-hook" : item.consumableEffect === "grantMarshalSeal" ? "marshal-seal" : null;
+      if (grantedGearId && player.character.heldGear.some((heldItem) => heldItem.id === grantedGearId)) {
+        throw new IntentRejectedError("USE_GEAR", `${item.name} cannot resolve because this character already owns ${this.gear.get(grantedGearId)?.name ?? grantedGearId}.`);
+      }
+      if (item.consumableEffect === "grantPaleCartelFixer" && (player.character.followers ?? []).some((follower) => follower.id === "pale-cartel-fixer")) {
+        throw new IntentRejectedError("USE_GEAR", `${item.name} cannot resolve because this character already has the Pale Cartel Fixer.`);
+      }
     }
 
     const restrictions = getAfflictionRestrictions(player, getAfflictionCatalog(this.state));
@@ -7112,19 +7119,38 @@ function buildPhoneObjectUseStates(state: GameState, player: PlayerState | undef
   const gearStates = player.character.heldGear.map((item) => {
     const usedThisTurn = hasUsedObjectSinceLogBoundary(state, player.seatId, item.id, "gearId", "TURN_COMPLETED");
     const usedThisRound = hasUsedObjectSinceLogBoundary(state, player.seatId, item.id, "gearId", "ROUND_COMPLETED");
+    const projectedLimit = getUseLimitProjection({
+      useLimit: item.useLimit,
+      usedThisTurn,
+      usedThisRound,
+      charges: item.charges ?? null,
+      maxUses: item.maxUses ?? item.charges ?? null,
+      objectName: item.name
+    });
+    const consumableDisabledReason = item.effectModel === "consumable"
+      ? item.consumableEffect === "ignoreFailedMovementOrHazard"
+        ? state.phase === "resolution" && state.pendingEffect && state.pendingFailureReaction?.seatId === player.seatId
+          ? null
+          : "Use only after your failed movement or hazard test, before its effects resolve."
+        : state.phase !== "action"
+          ? "Wait for an action window."
+          : item.consumableEffect === "healWound" && player.character.wounds <= 0
+            ? "No wounds to heal."
+            : item.consumableEffect === "grantVeilHook" && player.character.heldGear.some((held) => held.id === "veil-hook")
+              ? "Veil Hook is already owned."
+              : item.consumableEffect === "grantMarshalSeal" && player.character.heldGear.some((held) => held.id === "marshal-seal")
+                ? "Marshal Seal is already owned."
+                : item.consumableEffect === "grantPaleCartelFixer" && (player.character.followers ?? []).some((follower) => follower.id === "pale-cartel-fixer")
+                  ? "Pale Cartel Fixer is already attached."
+                  : null
+      : null;
     return {
       source: "gear" as const,
       id: item.id,
       usedThisTurn,
       usedThisRound,
-      ...getUseLimitProjection({
-        useLimit: item.useLimit,
-        usedThisTurn,
-        usedThisRound,
-        charges: item.charges ?? null,
-        maxUses: item.maxUses ?? item.charges ?? null,
-        objectName: item.name
-      }),
+      ...projectedLimit,
+      disabledReason: consumableDisabledReason ?? projectedLimit.disabledReason,
       activeModifier: getPendingObjectRollModifier(state, player.seatId, "gear", item.id)
     };
   });

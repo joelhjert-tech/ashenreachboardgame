@@ -12,6 +12,7 @@ export type GearTimingWindow =
   | "startOfTurn"
   | "movement"
   | "shop"
+  | "action"
   | "anyTime";
 export type GearCategory =
   | "passive"

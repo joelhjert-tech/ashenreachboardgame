@@ -70,6 +70,22 @@ const consumable = {
   useLimit: "discard" as const
 };
 
+const artifactConsumable = {
+  id: "artifact-bell-votive",
+  name: "Bell Votive Casket",
+  slot: "utility" as const,
+  category: "consumable" as const,
+  tier: "artifact" as const,
+  statBonus: { stat: "guile" as const, amount: 1 },
+  activeText: "Open the casket to recover its Veil Hook.",
+  useLimit: "discard" as const,
+  effectModel: "consumable" as const,
+  activationTiming: ["action" as const],
+  consumeOnUse: true,
+  consumableEffect: "grantVeilHook" as const,
+  requiresEquipped: false
+};
+
 const questItem = {
   id: "oath-chain-ledger",
   name: "Oath-Chain Ledger",
@@ -212,6 +228,29 @@ function openPhoneTabs(): void {
 }
 
 describe("PhoneInventoryPanel", () => {
+  it("presents owned Artifact consumables as one-use action-window items without passive stat UI", () => {
+    const basePatch = createPatch();
+    const patch = {
+      ...basePatch,
+      objectUseStates: [{ source: "gear" as const, id: artifactConsumable.id, usedThisTurn: false, usedThisRound: false, remainingUses: 1, maxUses: 1, disabledReason: null, activeModifier: null }],
+      self: basePatch.self ? { ...basePatch.self, character: { ...basePatch.self.character, heldGear: [artifactConsumable] } } : null
+    } satisfies PhonePatchPayload;
+    const onIntent = vi.fn();
+    render(<PhoneInventoryPanel patch={patch} onIntent={onIntent} />);
+
+    const card = screen.getByLabelText(/bell votive casket: usable now/i);
+    expect(card).toHaveTextContent(/one use/i);
+    expect(card).toHaveTextContent(/action window/i);
+    expect(within(card).queryByText(/\+1 guile/i)).not.toBeInTheDocument();
+    fireEvent.click(within(card).getByRole("button", { name: /use bell votive casket/i }));
+    expect(onIntent).toHaveBeenCalledWith({ type: "USE_GEAR", seatId: "seat-1", gearId: artifactConsumable.id });
+
+    cleanup();
+    render(<PhoneInventoryPanel patch={{ ...patch, phase: "navigation" }} onIntent={vi.fn()} />);
+    expect(screen.getByLabelText(/bell votive casket: ready but not usable now/i)).toHaveTextContent(/wait for an action window/i);
+    expect(screen.queryByRole("button", { name: /use bell votive casket/i })).not.toBeInTheDocument();
+  });
+
   it("groups private inventory cards by type and shows usability status", () => {
     render(<PhoneInventoryPanel patch={createPatch()} onIntent={vi.fn()} />);
 

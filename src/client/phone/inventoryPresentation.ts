@@ -12,6 +12,7 @@ export type InventoryTimingWindow =
   | "startOfTurn"
   | "movement"
   | "shop"
+  | "action"
   | "anyTime";
 
 export type InventoryGroupLabel =
@@ -110,6 +111,8 @@ export function formatTimingWindow(window: InventoryTimingWindow): string {
       return "Movement";
     case "shop":
       return "Shop";
+    case "action":
+      return "Action window";
     case "anyTime":
       return "Any time";
   }
@@ -206,7 +209,7 @@ export function getCurrentTimingWindow(patch: PhonePatchPayload): InventoryTimin
     return "startOfTurn";
   }
 
-  return "anyTime";
+  return patch.phase === "action" ? "action" : "anyTime";
 }
 
 function serverAcceptsCardUse(patch: PhonePatchPayload): boolean {
@@ -441,7 +444,7 @@ function buildGearCard(item: GearItem, patch: PhonePatchPayload, self: PhoneSelf
   const equippedIds = new Set(Object.values(self.character.equippedGear).filter((value): value is string => Boolean(value)));
   const isEquipped = equippedIds.has(item.id);
   const useState = getObjectUseState(patch, "gear", item.id);
-  const currentTimingWindow = getCurrentTimingWindow(patch);
+  const currentTimingWindow = timingWindows.includes("action") && patch.phase === "action" ? "action" : getCurrentTimingWindow(patch);
   const lockedReason = useState?.disabledReason ?? getGearLockReason(item, self) ?? getStatMismatchReason(item, timingWindows, currentTimingWindow, patch);
   const status = active
     ? getStatus({
@@ -475,7 +478,7 @@ function buildGearCard(item: GearItem, patch: PhonePatchPayload, self: PhoneSelf
     timingWindows,
     ...status,
     useIntent: status.canUseNow ? { type: "USE_GEAR", gearId: item.id } : null,
-    statBonus: item.statBonus,
+    statBonus: item.effectModel === "consumable" ? null : item.statBonus,
     useLimit: item.useLimit,
     charges: remainingUses,
     maxUses,
