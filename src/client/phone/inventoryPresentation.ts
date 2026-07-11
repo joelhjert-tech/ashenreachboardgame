@@ -11,6 +11,7 @@ export type InventoryTimingWindow =
   | "beforeTakingDamage"
   | "startOfTurn"
   | "movement"
+  | "movementRouteConfirmation"
   | "shop"
   | "action"
   | "anyTime";
@@ -111,6 +112,8 @@ export function formatTimingWindow(window: InventoryTimingWindow): string {
       return "Start of turn";
     case "movement":
       return "Movement";
+    case "movementRouteConfirmation":
+      return "Movement route confirmation";
     case "shop":
       return "Shop";
     case "action":
@@ -332,7 +335,7 @@ function getGearGroup(item: GearItem): InventoryGroupLabel {
 function getGearLockReason(item: GearItem, self: PhoneSelfState): string | null {
   const text = `${item.activeText ?? ""}`.toLowerCase();
 
-  if (item.useLimit === "charge" && (item.charges ?? 0) <= 0) {
+  if (item.useLimit === "charge" && (item.currentCharges ?? item.charges ?? 0) <= 0) {
     return "No charges remain.";
   }
   if (item.effectModel === "exhaust" && item.requiresEquipped && !Object.values(self.character.equippedGear).includes(item.id)) return "Equip this Artifact before using it.";
@@ -468,8 +471,8 @@ function buildGearCard(item: GearItem, patch: PhonePatchPayload, self: PhoneSelf
           statusReason: `Equip to apply ${formatConditionalGearBonus(item) ?? formatPassiveGearBonus(item)}.`,
           canUseNow: false
         };
-  const remainingUses = useState?.remainingUses ?? item.charges ?? null;
-  const maxUses = useState?.maxUses ?? item.maxUses ?? (item.useLimit === "charge" ? item.charges ?? null : null);
+  const remainingUses = useState?.remainingUses ?? item.currentCharges ?? item.charges ?? null;
+  const maxUses = useState?.maxUses ?? item.maxCharges ?? item.maxUses ?? (item.useLimit === "charge" ? item.charges ?? null : null);
 
   return {
     id: item.id,

@@ -23,4 +23,11 @@ describe("gear effect model schema", () => {
     expect(gearItemSchema.safeParse({ ...base, effectModel: "consumable", consumeOnUse: true, consumableEffect: "healWound" }).success).toBe(false);
     expect(gearItemSchema.safeParse({ ...base, effectModel: "consumable", activationTiming: ["anyTime"], consumeOnUse: false, consumableEffect: "healWound" }).success).toBe(false);
   });
+
+  it("accepts the bounded Void Key charge model and rejects it on normal Equipment", () => {
+    const charged = { ...base, tier: "artifact", category: "chargedRelic", useLimit: "charge", effectModel: "charged", requiresEquipped: true, activationTiming: ["movementRouteConfirmation"], maxCharges: 2, startingCharges: 2, chargeCost: 1, rechargeRule: "none", chargedEffect: "personalGateOverride" } as const;
+    expect(gearItemSchema.safeParse(charged).success).toBe(true);
+    expect(gearItemSchema.safeParse({ ...charged, tier: "standard" }).success).toBe(false);
+    expect(gearItemSchema.safeParse({ ...charged, startingCharges: 3 }).success).toBe(false);
+  });
 });

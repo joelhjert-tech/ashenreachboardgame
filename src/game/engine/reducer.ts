@@ -58,7 +58,7 @@ import type { GearSlot } from "../schema/gear.schema.js";
 import type { TrophyPileEntry } from "../schema/character.schema.js";
 import { applyMovementDieAfflictions, resolveAfflictionDraw } from "../rules/afflictions.js";
 import { getBoardSpace, isScenarioConfrontationSpace } from "../data/boardSpaces.js";
-import { getLegalMovementRoute, getMovementBlockReason } from "../rules/movementPlanner.js";
+import { getLegalMovementRoute, getMovementBlockReason, getVoidKeyMovementRoute } from "../rules/movementPlanner.js";
 import { isBoardSpaceShopCapable, SHOP_FAILURE_REASONS } from "../rules/shopAvailability.js";
 import {
   getStatUpgradeCost,
@@ -1081,16 +1081,26 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
 
       const player = requirePlayer(state, moveAction.seatId);
 
-      try {
-        ensureLegalMovementRoute(state, moveAction.seatId, moveAction.toSectorId);
-      } catch (error) {
-        return reject(state, action, error instanceof Error ? error.message : "Sector is not reachable");
+      const voidKey = moveAction.voidKeyInstanceId
+        ? player.character.heldGear.find((item) => item.instanceId === moveAction.voidKeyInstanceId && item.id === "void-key")
+        : null;
+      const keyCharges = voidKey?.currentCharges ?? voidKey?.charges ?? 0;
+      if (moveAction.voidKeyInstanceId) {
+        if (!voidKey || keyCharges < 1 || player.character.equippedGear.utility !== voidKey.id || !getVoidKeyMovementRoute(state, moveAction.seatId, moveAction.toSectorId)) return reject(state, action, "Void Key cannot authorize this route");
+      } else {
+        try {
+          ensureLegalMovementRoute(state, moveAction.seatId, moveAction.toSectorId);
+        } catch (error) {
+          return reject(state, action, error instanceof Error ? error.message : "Sector is not reachable");
+        }
       }
 
+      const chargedState = voidKey ? { ...state, players: updateActivePlayer(state, moveAction.seatId, (entry) => ({ ...entry, character: { ...entry.character, heldGear: entry.character.heldGear.map((item) => item.instanceId === voidKey.instanceId ? { ...item, currentCharges: keyCharges - 1, maxCharges: item.maxCharges ?? 2 } : item) } })) } : state;
+
       return succeed(consumeTemporaryAllStatBoost({
-        ...state,
-        sequence: state.sequence + 1,
-        eventLog: [...state.eventLog, action]
+        ...chargedState,
+        sequence: chargedState.sequence + 1,
+        eventLog: [...chargedState.eventLog, action]
       }, action.seatId));
     }
     case "MOVEMENT_ROLL_REQUESTED": {

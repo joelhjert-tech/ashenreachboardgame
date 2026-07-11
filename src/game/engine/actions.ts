@@ -26,6 +26,7 @@ export interface SessionStartedAction extends BaseAction {
 export interface MoveRequestedAction extends BaseAction {
   type: "MOVE_REQUESTED";
   toSectorId: string;
+  voidKeyInstanceId?: string;
 }
 
 export interface MovementRollRequestedAction extends BaseAction {
@@ -592,6 +593,7 @@ export type ClientIntent =
       type: "MOVE_REQUESTED";
       seatId: string;
       toSectorId: string;
+      voidKeyInstanceId?: string;
     }
   | {
       type: "MOVEMENT_ROLL_REQUESTED";

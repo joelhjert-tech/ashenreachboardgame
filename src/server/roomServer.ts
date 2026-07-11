@@ -78,7 +78,8 @@ import {
 import {
   buildMovementRoutePlan,
   getLegalMovementRoute,
-  getMovementBlockReason
+  getMovementBlockReason,
+  getVoidKeyMovementRoute
 } from "../game/rules/movementPlanner.js";
 import { createInitialSessionState } from "./sessionState.js";
 import { resolveBoardSpaceEvent } from "../game/tileResolver.js";
@@ -2596,6 +2597,7 @@ export class GameRoomServer {
           type: "MOVE_REQUESTED",
           seatId: intent.seatId,
           toSectorId: intent.toSectorId,
+          voidKeyInstanceId: intent.voidKeyInstanceId,
           createdAt
         } satisfies MoveRequestedAction;
       case "MOVEMENT_ROLL_REQUESTED":
@@ -5509,7 +5511,7 @@ export class GameRoomServer {
   }
 
   resolveMoveIntent(intent: Extract<ClientIntent, { type: "MOVE_REQUESTED" }>): void {
-    const { player, fromSectorId, targetSector } = this.assertLegalMove(intent.seatId, intent.toSectorId);
+    const { player, fromSectorId, targetSector } = this.assertLegalMove(intent.seatId, intent.toSectorId, intent.voidKeyInstanceId, true);
 
     const escalationModifier = getEscalationModifier(this.state.escalationLevel);
     const roll = rollDice(2, 6, this.randomSource);
@@ -5568,7 +5570,9 @@ export class GameRoomServer {
 
   private assertLegalMove(
     seatId: string,
-    toSectorId: string
+    toSectorId: string,
+    voidKeyInstanceId?: string,
+    chargeAlreadySpent = false
   ): { player: PlayerState; fromSectorId: string; targetSector: GameState["sectors"][number] } {
     const player = this.state.players.find((entry) => entry.seatId === seatId);
 
@@ -5587,7 +5591,11 @@ export class GameRoomServer {
       throw new Error(`Unknown sector ${toSectorId}`);
     }
 
-    if (!getLegalMovementRoute(this.state, seatId, toSectorId)) {
+    if (voidKeyInstanceId) {
+      const key = player.character.heldGear.find((item) => item.id === "void-key" && item.instanceId === voidKeyInstanceId);
+      const charges = key?.currentCharges ?? key?.charges ?? 0;
+      if (!key || (!chargeAlreadySpent && charges < 1) || player.character.equippedGear.utility !== key.id || !getVoidKeyMovementRoute(this.state, seatId, toSectorId)) throw new Error("Void Key cannot authorize this route");
+    } else if (!getLegalMovementRoute(this.state, seatId, toSectorId)) {
       throw new Error(getMovementBlockReason(this.state, seatId, toSectorId) ?? `${targetSector.name} is not reachable by the current movement value`);
     }
 
@@ -6593,7 +6601,7 @@ export class GameRoomServer {
     if (effect.type === "gain_gear") {
       return {
         ...effect,
-        gear: this.gear.get(effect.gearId) ? { ...this.gear.get(effect.gearId)!, instanceId: `${effect.gearId}:${seatId ?? "table"}:${this.state.sequence}`, exhausted: false } : undefined
+        gear: this.gear.get(effect.gearId) ? (() => { const definition = this.gear.get(effect.gearId)!; return { ...definition, instanceId: `${effect.gearId}:${seatId ?? "table"}:${this.state.sequence}`, exhausted: false, currentCharges: definition.startingCharges ?? definition.charges, maxCharges: definition.maxCharges ?? definition.charges }; })() : undefined
       };
     }
 
@@ -7165,8 +7173,8 @@ function buildPhoneObjectUseStates(state: GameState, player: PlayerState | undef
       useLimit: item.useLimit,
       usedThisTurn,
       usedThisRound,
-      charges: item.charges ?? null,
-      maxUses: item.maxUses ?? item.charges ?? null,
+      charges: item.currentCharges ?? item.charges ?? null,
+      maxUses: item.maxCharges ?? item.maxUses ?? item.charges ?? null,
       objectName: item.name
     });
     const consumableDisabledReason = item.effectModel === "consumable"
@@ -7399,6 +7407,8 @@ function buildPublicMovementPlanner(state: GameState, seatId: string): PublicMov
 
     const faceUpThreats = getFaceUpThreatsForSector(state, routeEntry.sectorId);
     const disabledReason = routeEntry.disabledReason;
+    const voidKey = player.character.heldGear.find((item) => item.id === "void-key" && player.character.equippedGear.utility === item.id && (item.currentCharges ?? item.charges ?? 0) > 0);
+    const voidKeyEligible = Boolean(disabledReason && voidKey && getVoidKeyMovementRoute(state, seatId, routeEntry.sectorId));
     const occupants = state.players
       .filter((entry) => entry.character.currentSpaceId === routeEntry.sectorId)
       .map((entry) => {
@@ -7446,7 +7456,8 @@ function buildPublicMovementPlanner(state: GameState, seatId: string): PublicMov
           disabledReason,
           nemesisPresent
         }),
-        disabledReason
+        disabledReason,
+        voidKeyPrompt: voidKeyEligible && voidKey ? { instanceId: voidKey.instanceId!, currentCharges: voidKey.currentCharges ?? voidKey.charges ?? 0, maxCharges: voidKey.maxCharges ?? 2, chargeCost: 1 as const } : undefined
       }
     ];
   });

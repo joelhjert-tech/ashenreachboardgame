@@ -2028,6 +2028,8 @@ function MovementDestinationDetail({
   const routePreview = buildRoutePreviewCopy(selected, planner.movementValue, planner.currentSectorName, true);
   const tagLabels = getMovementTagLabels(selected, routePreview.tagLabels);
   const routeUnavailable = Boolean(selected.disabledReason);
+  const voidKeyPrompt = selected.voidKeyPrompt;
+  const canUseVoidKey = routeUnavailable && Boolean(voidKeyPrompt);
   const confidenceItems = getMovementRouteConfidenceItems(selected, routePreview);
   const identityLine = buildDestinationIdentityLine(selected);
   const missionRelevance = getMissionRelevanceForSector(activeContract, selected.sectorId, {
@@ -2076,7 +2078,7 @@ function MovementDestinationDetail({
           description={
             <>
               <p className="phone-movement-row-lore" data-testid="movement-detail-lore">{identityLine}</p>
-              <p>{routeUnavailable ? "Route unavailable." : `${routePreview.statusLabel}: ${routePreview.statusReason}`}</p>
+              <p>{routeUnavailable ? (canUseVoidKey ? "Route requires Void Key." : "Route unavailable.") : `${routePreview.statusLabel}: ${routePreview.statusReason}`}</p>
               {missionRelevance ? (
                 <p className="phone-mission-callout" data-testid="movement-detail-mission">
                   This destination can progress your mission.
@@ -2099,7 +2101,7 @@ function MovementDestinationDetail({
               </details>
             </>
           }
-          disabledReason={routeUnavailable ? <span className="phone-movement-disabled-reason">{selected.disabledReason}. Ignore this route for now.</span> : null}
+          disabledReason={routeUnavailable && !canUseVoidKey ? <span className="phone-movement-disabled-reason">{selected.disabledReason}. Ignore this route for now.</span> : null}
           actions={
             <>
               <GameButton type="button" tone="secondary" className="phone-button phone-button-secondary phone-movement-back" onClick={onBack}>
@@ -2109,10 +2111,10 @@ function MovementDestinationDetail({
                 type="button"
                 tone="move"
                 className="phone-button phone-button-primary phone-movement-confirm"
-                disabled={routeUnavailable || moveSubmitted}
+                disabled={(routeUnavailable && !canUseVoidKey) || moveSubmitted}
                 disabledReason={selected.disabledReason ?? (moveSubmitted ? "Movement is already being confirmed." : undefined)}
                 onClick={() => {
-                  if (routeUnavailable || moveSubmitted) {
+                  if ((routeUnavailable && !canUseVoidKey) || moveSubmitted) {
                     return;
                   }
 
@@ -2121,10 +2123,11 @@ function MovementDestinationDetail({
                     type: "MOVE_REQUESTED",
                     seatId,
                     toSectorId: selected.sectorId
+                    ,voidKeyInstanceId: voidKeyPrompt?.instanceId
                   });
                 }}
               >
-                {moveSubmitted ? "Moving..." : "Confirm Move"}
+                {moveSubmitted ? "Moving..." : canUseVoidKey ? "Use Void Key — 1 charge" : "Confirm Move"}
               </GameButton>
             </>
           }
@@ -2136,7 +2139,7 @@ function MovementDestinationDetail({
         </section>
 
         <footer className="phone-movement-confirm-footer" data-testid="movement-confirm-footer">
-          <p>{routeUnavailable ? "This route is blocked by a scenario effect or sealed sector." : "This will end your movement."}</p>
+          <p>{canUseVoidKey ? `Use Void Key? Spend 1 charge to ignore this gate for this movement. ${voidKeyPrompt!.currentCharges - 1}/${voidKeyPrompt!.maxCharges} charges will remain.` : routeUnavailable ? "This route is blocked by a scenario effect or sealed sector." : "This will end your movement."}</p>
         </footer>
 
         <section className="phone-movement-detail-section">

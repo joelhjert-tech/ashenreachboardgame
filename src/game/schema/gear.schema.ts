@@ -12,6 +12,7 @@ export const gearTimingWindowSchema = z.enum([
   "beforeTakingDamage",
   "startOfTurn",
   "movement",
+  "movementRouteConfirmation",
   "shop",
   "action",
   "anyTime"
@@ -33,7 +34,7 @@ export const shopCategorySchema = z.enum([
   "contract-broker"
 ]);
 export const gearUseLimitSchema = z.enum(["oncePerTurn", "oncePerRound", "discard", "charge"]);
-export const gearEffectModelSchema = z.enum(["permanent", "conditional", "consumable", "exhaust"]);
+export const gearEffectModelSchema = z.enum(["permanent", "conditional", "consumable", "exhaust", "charged"]);
 export const gearExhaustEffectSchema = z.enum(["mirrorReroll", "warbellCommand"]);
 export const gearConditionTypeSchema = z.enum(["battle"]);
 export const consumableEffectSchema = z.enum(["grantVeilHook", "ignoreFailedMovementOrHazard", "grantPaleCartelFixer", "healWound", "grantMarshalSeal"]);
@@ -61,6 +62,12 @@ export const gearItemSchema = z.object({
   activeText: z.string().min(1).optional(),
   useLimit: gearUseLimitSchema.optional(),
   charges: z.number().int().min(0).optional(),
+  currentCharges: z.number().int().min(0).optional(),
+  maxCharges: z.number().int().positive().optional(),
+  startingCharges: z.number().int().positive().optional(),
+  chargeCost: z.number().int().positive().optional(),
+  rechargeRule: z.enum(["none"]).optional(),
+  chargedEffect: z.enum(["personalGateOverride"]).optional(),
   maxUses: z.number().int().min(0).optional(),
   heatCost: z.number().int().min(0).optional(),
   linkedFollowerRole: z.string().min(1).optional(),
@@ -100,6 +107,10 @@ export const gearItemSchema = z.object({
   if (item.effectModel === "exhaust") {
     if (!item.activationTiming?.length || item.resetWindow !== "round" || !item.exhaustEffect || !item.activationCost) context.addIssue({ code: z.ZodIssueCode.custom, message: "exhaust items require timing, round reset, typed effect and cost", path: ["effectModel"] });
     if (item.consumeOnUse || item.useLimit === "charge" || item.useLimit === "discard") context.addIssue({ code: z.ZodIssueCode.custom, message: "exhaust items cannot be charged or consumed", path: ["useLimit"] });
+  }
+  if (item.effectModel === "charged") {
+    if (!item.maxCharges || !item.startingCharges || item.startingCharges > item.maxCharges || !item.chargeCost || item.chargeCost > item.maxCharges || item.rechargeRule !== "none" || !item.activationTiming?.length || !item.chargedEffect || item.requiresEquipped !== true) context.addIssue({ code: z.ZodIssueCode.custom, message: "charged items require bounded charges, no recharge, timing, typed effect, and equipped state", path: ["effectModel"] });
+    if (item.consumeOnUse || item.resetWindow || item.exhaustEffect) context.addIssue({ code: z.ZodIssueCode.custom, message: "charged items cannot be consumable or exhaust items", path: ["effectModel"] });
   }
 });
 

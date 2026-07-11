@@ -808,19 +808,29 @@ describe("canonical sector graph", () => {
       },
       character: {
         ...state.players[0]!.character,
-        currentSpaceId: "middle_guardian_span"
+        currentSpaceId: "middle_guardian_span",
+        heldGear: [{ id: "void-key", instanceId: "void-key:test", name: "Void Key", slot: "utility", category: "chargedRelic", statBonus: { stat: "command", amount: 1 }, tier: "artifact", useLimit: "charge", effectModel: "charged", requiresEquipped: true, activationTiming: ["movementRouteConfirmation"], maxCharges: 2, startingCharges: 2, currentCharges: 2, chargeCost: 1, rechargeRule: "none", chargedEffect: "personalGateOverride" }],
+        equippedGear: { ...state.players[0]!.character.equippedGear, utility: "void-key" }
       }
     };
 
     const phoneProjection = createPhoneProjection(state, "seat-1") as {
       movementPlanner: {
-        destinations: Array<{ sectorId: string; disabledReason?: string; strategicTags: string[] }>;
+        destinations: Array<{ sectorId: string; disabledReason?: string; strategicTags: string[]; voidKeyPrompt?: { instanceId: string; currentCharges: number; maxCharges: number } }>;
       } | null;
     };
     const innerGate = phoneProjection.movementPlanner?.destinations.find((destination) => destination.sectorId === "inner_veil_rift");
 
     expect(innerGate?.disabledReason).toBe("Resolve Guardian Span before entering the inner breach");
     expect(innerGate?.strategicTags).toContain("gate");
+    expect(innerGate?.voidKeyPrompt).toMatchObject({ instanceId: "void-key:test", currentCharges: 2, maxCharges: 2 });
+
+    const used = reduceGameState(state, { type: "MOVE_REQUESTED", seatId: "seat-1", toSectorId: "inner_veil_rift", voidKeyInstanceId: "void-key:test", createdAt: "2026-07-11T00:00:00.000Z" });
+    expect(used.ok).toBe(true);
+    if (used.ok) expect(used.state.players[0]?.character.heldGear[0]?.currentCharges).toBe(1);
+
+    const ordinary = reduceGameState(state, { type: "MOVE_REQUESTED", seatId: "seat-1", toSectorId: "inner_veil_rift", createdAt: "2026-07-11T00:00:01.000Z" });
+    expect(ordinary.ok).toBe(false);
   });
 
   it("includes the linked nemesis block in TV and phone projections", () => {

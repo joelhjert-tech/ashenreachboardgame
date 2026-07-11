@@ -36,11 +36,12 @@ The ten corrected-audit IDs appear exactly once below: ten Artifacts, zero norma
 Recommended player-facing text: **“During movement, when your chosen route is legal except for one gate restriction, spend 1 charge to pass that gate for this movement only. You must still have enough movement, and this does not bypass threats, scenario locks, blockers, or any other route requirement.”**
 
 Void Key:
-- Selected option: [UNAPPROVED]
-- Maximum charges: [UNAPPROVED]
-- Starting charges: [UNAPPROVED]
-- Cost per use: [UNAPPROVED]
-- Final rule text: [UNAPPROVED]
+- Selected option: Option A — Personal Gate Override
+- Maximum charges: 2
+- Starting charges: 2
+- Cost per use: 1 charge
+- Recharge: none
+- Final rule text: After selecting a movement route that would be legal except for one gate restriction, you may spend 1 charge before confirming the route. Ignore that gate restriction for this movement only. Movement distance and all other route, destination, scenario, threat, and blocker requirements still apply. The gate remains locked after you pass.
 
 ## 3. Other gate relics
 

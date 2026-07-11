@@ -11,6 +11,7 @@ export type GearTimingWindow =
   | "beforeTakingDamage"
   | "startOfTurn"
   | "movement"
+  | "movementRouteConfirmation"
   | "shop"
   | "action"
   | "anyTime";
@@ -133,10 +134,16 @@ export interface GearItem {
   activeText?: string;
   useLimit?: "oncePerTurn" | "oncePerRound" | "discard" | "charge";
   charges?: number;
+  currentCharges?: number;
+  maxCharges?: number;
+  startingCharges?: number;
+  chargeCost?: number;
+  rechargeRule?: "none";
+  chargedEffect?: "personalGateOverride";
   maxUses?: number;
   heatCost?: number;
   linkedFollowerRole?: FollowerRole;
-  effectModel?: "permanent" | "conditional" | "consumable" | "exhaust";
+  effectModel?: "permanent" | "conditional" | "consumable" | "exhaust" | "charged";
   instanceId?: string;
   requiresEquipped?: boolean;
   conditionType?: "battle";
@@ -628,6 +635,7 @@ export interface PublicMoveDestination {
   scenarioMarkers?: string[];
   strategicTags: PublicMoveStrategicTag[];
   disabledReason?: string;
+  voidKeyPrompt?: { instanceId: string; currentCharges: number; maxCharges: number; chargeCost: 1 };
 }
 
 export interface PublicMovementPlannerState {
@@ -945,6 +953,7 @@ export type ClientIntent =
       type: "MOVE_REQUESTED";
       seatId: string;
       toSectorId: string;
+      voidKeyInstanceId?: string;
     }
   | {
       type: "MOVEMENT_ROLL_REQUESTED";

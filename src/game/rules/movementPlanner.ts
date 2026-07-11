@@ -359,3 +359,21 @@ export function getMovementBlockReason(state: GameState, seatId: string, toSecto
 
   return plan.blockedRoutes.find((route) => route.sectorId === toSectorId)?.disabledReason ?? null;
 }
+
+export function getVoidKeyMovementRoute(state: GameState, seatId: string, toSectorId: string): BlockedMovementRoute | null {
+  const plan = buildMovementRoutePlan(state, seatId);
+  const player = getPlayer(state, seatId);
+  if (!plan || !player) return null;
+  const blocked = plan.blockedRoutes.find((route) => route.sectorId === toSectorId && route.distance === plan.movementValue);
+  const target = getBoardSpace(toSectorId);
+  if (!blocked || !target?.movementRequirements?.length) return null;
+  const previous = blocked.route.at(-2);
+  if (!previous || !state.sectors.find((sector) => sector.id === previous)?.neighbors.includes(toSectorId)) return null;
+  const supportedReasons = (target.movementRequirements ?? []).flatMap((requirement) => {
+    const blockedByFrom = Boolean(requirement.allowedFrom && !requirement.allowedFrom.includes(previous));
+    const notes = new Set(player.private.notes);
+    const blockedByNotes = Boolean(requirement.requiredNotes && !requirement.requiredNotes.every((note) => notes.has(note)));
+    return blockedByFrom || blockedByNotes ? [requirement.errorMessage] : [];
+  });
+  return supportedReasons.length === 1 && supportedReasons[0] === blocked.disabledReason ? blocked : null;
+}
