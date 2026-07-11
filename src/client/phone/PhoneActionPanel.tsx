@@ -1532,6 +1532,9 @@ function PhoneShopPanel({
               </div>
               {serviceActions.map((service) => {
                 const disabledReason = formatShopDisabledReason(service.disabledReason);
+                const completedMissionProgress = service.cost.completedContracts !== undefined
+                  ? `${shopEncounter.activePlayer.completedContracts ?? 0}/${service.cost.completedContracts} completed Missions`
+                  : null;
                 return (
                   <GameButton
                     key={service.id}
@@ -1541,7 +1544,7 @@ function PhoneShopPanel({
                     contentMode="custom"
                     className="phone-shop-service-card"
                     disabled={!service.enabled}
-                    disabledReason={disabledReason}
+                    disabledReason={completedMissionProgress ?? disabledReason}
                     onClick={() =>
                       onIntent({
                         type: "SHOP_SERVICE_REQUESTED",
@@ -1549,12 +1552,13 @@ function PhoneShopPanel({
                         serviceId: service.id
                       })
                     }
-                    sublabel={disabledReason ?? formatShopCost(service.cost)}
+                    sublabel={completedMissionProgress ?? disabledReason ?? formatShopCost(service.cost)}
                   >
                     <ShopCategoryIcon category={service.shopCategory ?? shopEncounter.stockCategory ?? shopEncounter.shopCategory} label={service.label} />
                     <span className="phone-shop-service-card-copy">
                       <strong>{service.label}</strong>
                       {service.shopCategory ? <span>{formatShopCategory(service.shopCategory)}</span> : <span>{categoryLabel}</span>}
+                      {completedMissionProgress ? <small>{completedMissionProgress}</small> : null}
                       {service.risk ? <small>{service.risk}</small> : null}
                     </span>
                   </GameButton>

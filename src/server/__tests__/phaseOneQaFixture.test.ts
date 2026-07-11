@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import { createInitialSessionState } from "../sessionState.js";
 import { applyPhaseOneQaFixture } from "../phaseOneQaFixture.js";
 import { startAshenReachServer, type StartedAshenReachServer } from "../index.js";
+import { createPhoneProjection, createTvProjection } from "../roomServer.js";
 
 const started: StartedAshenReachServer[] = [];
 
@@ -54,5 +55,44 @@ describe("Phase 1 QA fixture", () => {
       body: "{}"
     });
     expect(qaResponse.status).toBe(400);
+  });
+
+  it.each([0, 1, 2, 3] as const)("seeds exactly %i completed contracts at a clear relic dealer", (count) => {
+    const state = createInitialSessionState("QA001", "single-player", "scenario_broken_seal", "co-op", "standard", 1);
+    state.status = "active";
+    state.seats[0] = { ...state.seats[0]!, displayName: "QA Operative", characterSelected: true, connected: true, ready: true };
+
+    applyPhaseOneQaFixture(state, "seat-1", { kind: "relic-trade", completedContracts: count });
+
+    expect(state.players[0]?.character.currentSpaceId).toBe("outer_surgery_tent");
+    expect(state.players[0]?.character.completedContracts).toEqual(
+      Array.from({ length: count }, (_, index) => `qa-completed-contract-${index + 1}`)
+    );
+    const phone = createPhoneProjection(state, "seat-1", true) as { self: { character: { completedContracts: string[] } }; shopEncounter: { services: Array<{ id: string; enabled: boolean }> } };
+    const tv = createTvProjection(state) as { players: Array<{ character: { completedContracts: number } }>; shopEncounter: { activePlayer: { completedContracts: number }; services: Array<{ id: string; enabled: boolean }> } };
+    const phoneTrade = phone.shopEncounter.services.find((service) => service.id === "trade-missions-for-artifact");
+    const tvTrade = tv.shopEncounter.services.find((service) => service.id === "trade-missions-for-artifact");
+    expect(phone.self.character.completedContracts).toHaveLength(count);
+    expect(tv.players[0]?.character.completedContracts).toBe(count);
+    expect(tv.shopEncounter.activePlayer.completedContracts).toBe(count);
+    expect(phoneTrade?.enabled).toBe(count === 3);
+    expect(tvTrade?.enabled).toBe(count === 3);
+  });
+
+  it("requires the current room and a valid signed seat token", async () => {
+    const qa = await startAshenReachServer({ port: 18180, host: "127.0.0.1", maxPortAttempts: 5, logUrls: false, qaFixturesEnabled: true });
+    started.push(qa);
+    const baseUrl = `http://127.0.0.1:${qa.port}`;
+    const invalidRoom = await fetch(`${baseUrl}/api/qa/phase1-fixture`, {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ roomCode: "WRONG", seatToken: "forged", fixture: { kind: "relic-trade", completedContracts: 3 } })
+    });
+    expect(invalidRoom.status).toBe(400);
+
+    const invalidToken = await fetch(`${baseUrl}/api/qa/phase1-fixture`, {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ roomCode: qa.roomServer.getState().sessionId, seatToken: "forged", fixture: { kind: "relic-trade", completedContracts: 3 } })
+    });
+    expect(invalidToken.status).toBe(403);
   });
 });

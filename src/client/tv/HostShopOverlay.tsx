@@ -74,7 +74,7 @@ function formatShopCategory(value: string | undefined): string {
   return value ? toTitleCase(value) : "Public Shop";
 }
 
-function servicePreview(service: PublicShopEncounterState["services"][number]): ShopPreviewCard {
+function servicePreview(service: PublicShopEncounterState["services"][number], completedContracts = 0): ShopPreviewCard {
   const isSellService = service.id === "sell-gear";
   const serviceText = `${service.id} ${service.label}`.toLowerCase();
   const icon: ShopIcon = isSellService
@@ -89,7 +89,9 @@ function servicePreview(service: PublicShopEncounterState["services"][number]): 
     id: `service-${service.id}`,
     eyebrow: service.shopCategory ? formatShopCategory(service.shopCategory) : isSellService ? "Sell" : "Service",
     title: service.label,
-    cost: formatCost(service.cost),
+    cost: service.cost.completedContracts !== undefined
+      ? `${completedContracts}/${service.cost.completedContracts} Completed Missions`
+      : formatCost(service.cost),
     summary: service.enabled ? "Confirm this service from the active player's phone." : (service.disabledReason ?? "Unavailable"),
     footer: service.risk ?? (service.enabled ? "Phone confirms" : "Unavailable"),
     tone: isSellService ? "sell" : service.risk || service.cost.heat ? "stock" : "service",
@@ -158,7 +160,7 @@ function buildPreviewCards(shopEncounter: PublicShopEncounterState, isBlocked: b
     return stockCards;
   }
 
-  return shopEncounter.services.slice(0, 4).map(servicePreview);
+  return shopEncounter.services.slice(0, 4).map((service) => servicePreview(service, shopEncounter.activePlayer.completedContracts));
 }
 
 function buildShopType(shopEncounter: PublicShopEncounterState): string {

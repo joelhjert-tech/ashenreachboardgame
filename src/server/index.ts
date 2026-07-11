@@ -147,6 +147,7 @@ function createHttpServer(qaFixturesEnabled: boolean): HttpServer {
           return;
         }
         applyPhaseOneQaFixture(roomServer.getState(), tokenPayload.seatId, body.fixture);
+        roomServer.broadcastQaFixtureState();
         sendJson(response, 200, { ok: true, fixture: body.fixture, sequence: roomServer.getState().sequence });
         return;
       }
