@@ -13,8 +13,5 @@
   "flavor": "Every tooth is shaped like a promise someone broke.",
   "charge": 1,
   "resolutionSummary": "Recovered a Gate-Saint Key that may answer during the final confrontation.",
-  "resolveEffect": {
-    "type": "gain_note",
-    "text": "Gate-Saint Key: final confrontation bargaining artifact."
-  }
+  "resolveEffect": { "type": "gain_gear", "gearId": "gate-saint-key" }
 }

@@ -33,6 +33,8 @@ export interface MovementRollRequestedAction extends BaseAction {
   type: "MOVEMENT_ROLL_REQUESTED";
 }
 export interface AdjustMovementRequestedAction extends BaseAction { type: "ADJUST_MOVEMENT_REQUESTED"; instanceId: string; adjustment: -1 | 1 }
+export interface ActivateGateSaintAction extends BaseAction { type: "ACTIVATE_GATE_SAINT"; instanceId: string }
+export interface UseMarrowDetourAction extends BaseAction { type: "USE_MARROW_DETOUR"; instanceId: string; reactionId: string; toSectorId: string }
 
 export interface MovementRolledAction extends BaseAction {
   type: "MOVEMENT_ROLLED";
@@ -527,6 +529,8 @@ export type GameAction =
   | MoveRequestedAction
   | MovementRollRequestedAction
   | AdjustMovementRequestedAction
+  | ActivateGateSaintAction
+  | UseMarrowDetourAction
   | MovementRolledAction
   | MovedAction
   | MovementResolvedAction
@@ -602,6 +606,8 @@ export type ClientIntent =
       seatId: string;
     }
   | { type: "ADJUST_MOVEMENT_REQUESTED"; seatId: string; instanceId: string; adjustment: -1 | 1 }
+  | { type: "ACTIVATE_GATE_SAINT"; seatId: string; instanceId: string }
+  | { type: "USE_MARROW_DETOUR"; seatId: string; instanceId: string; reactionId: string; toSectorId: string }
   | {
       type: "PHASE_ADVANCED";
       seatId: string;

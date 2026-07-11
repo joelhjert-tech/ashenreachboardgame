@@ -139,7 +139,7 @@ export interface GearItem {
   startingCharges?: number;
   chargeCost?: number;
   rechargeRule?: "none";
-  chargedEffect?: "personalGateOverride" | "movementAdjustment";
+  chargedEffect?: "personalGateOverride" | "movementAdjustment" | "saintSafeConduct" | "bonewayDetour";
   maxUses?: number;
   heatCost?: number;
   linkedFollowerRole?: FollowerRole;
@@ -963,6 +963,8 @@ export type ClientIntent =
       seatId: string;
     }
   | { type: "ADJUST_MOVEMENT_REQUESTED"; seatId: string; instanceId: string; adjustment: -1 | 1 }
+  | { type: "ACTIVATE_GATE_SAINT"; seatId: string; instanceId: string }
+  | { type: "USE_MARROW_DETOUR"; seatId: string; instanceId: string; reactionId: string; toSectorId: string }
   | {
       type: "PHASE_ADVANCED";
       seatId: string;

@@ -294,6 +294,8 @@ const CLIENT_INTENT_TYPES = new Set<string>([
   "MOVEMENT_DESTINATION_PREVIEWED",
   "MOVE_REQUESTED",
   "ADJUST_MOVEMENT_REQUESTED",
+  "ACTIVATE_GATE_SAINT",
+  "USE_MARROW_DETOUR",
   "MOVEMENT_ROLL_REQUESTED",
   "PHASE_ADVANCED",
   "CHECK_REQUESTED",
@@ -1247,6 +1249,10 @@ export class GameRoomServer {
         requireStringField(message, "instanceId", type);
         if (message.adjustment !== -1 && message.adjustment !== 1) throw new IntentRejectedError(type, "Movement adjustment must be -1 or +1");
         break;
+      case "ACTIVATE_GATE_SAINT":
+        requireStringField(message, "instanceId", type); break;
+      case "USE_MARROW_DETOUR":
+        requireStringField(message, "instanceId", type); requireStringField(message, "reactionId", type); requireStringField(message, "toSectorId", type); break;
       case "PHASE_ADVANCED":
         requireEnumField(message, "toPhase", PHASE_VALUES, type);
         break;
@@ -2613,6 +2619,8 @@ export class GameRoomServer {
         };
       case "ADJUST_MOVEMENT_REQUESTED":
         return { type: "ADJUST_MOVEMENT_REQUESTED", seatId: intent.seatId, instanceId: intent.instanceId, adjustment: intent.adjustment, createdAt };
+      case "ACTIVATE_GATE_SAINT": return { type: "ACTIVATE_GATE_SAINT", seatId: intent.seatId, instanceId: intent.instanceId, createdAt };
+      case "USE_MARROW_DETOUR": return { type: "USE_MARROW_DETOUR", seatId: intent.seatId, instanceId: intent.instanceId, reactionId: intent.reactionId, toSectorId: intent.toSectorId, createdAt };
       case "PHASE_ADVANCED":
         return {
           type: "PHASE_ADVANCED",

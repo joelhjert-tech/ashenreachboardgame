@@ -169,6 +169,7 @@ export function createInitialSessionState(
     shopStockReveals: [],
     movementRolls: undefined,
     movementAdjustments: undefined,
+    gateSaintSafeConduct: null,
     soloRerollCharges: createInitialSoloRerollCharges(sessionMode, configuredSeats.map(({ seatId }) => seatId)),
     eventLog: [],
     recentEncounterCardIds: [],

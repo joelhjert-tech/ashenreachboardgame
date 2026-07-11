@@ -1,6 +1,8 @@
 import type {
   AcceptContractAction,
   AdjustMovementRequestedAction,
+  ActivateGateSaintAction,
+  UseMarrowDetourAction,
   AfflictionDrawnAction,
   CheckRequestedAction,
   CombatRequestedAction,
@@ -59,7 +61,7 @@ import type { GearSlot } from "../schema/gear.schema.js";
 import type { TrophyPileEntry } from "../schema/character.schema.js";
 import { applyMovementDieAfflictions, resolveAfflictionDraw } from "../rules/afflictions.js";
 import { getBoardSpace, isScenarioConfrontationSpace } from "../data/boardSpaces.js";
-import { getLegalMovementRoute, getMovementBlockReason, getVoidKeyMovementRoute } from "../rules/movementPlanner.js";
+import { getLegalMovementRoute, getMovementBlockReason, getVoidKeyMovementRoute, getMovementStepBlockReason } from "../rules/movementPlanner.js";
 import { isBoardSpaceShopCapable, SHOP_FAILURE_REASONS } from "../rules/shopAvailability.js";
 import {
   getStatUpgradeCost,
@@ -1142,6 +1144,21 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
       const adjusted = state.movementRolls[adjust.seatId]! + adjust.adjustment;
       if (!item || player.character.equippedGear.utility !== item.id || charges < 1 || adjusted < 1) return reject(state, action, "Ashen Route Compass cannot adjust this movement");
       const next = { ...state, movementAdjustments: { ...(state.movementAdjustments ?? {}), [adjust.seatId]: { adjustment: adjust.adjustment, sourceInstanceId: adjust.instanceId } }, players: updateActivePlayer(state, adjust.seatId, (entry) => ({ ...entry, character: { ...entry.character, heldGear: entry.character.heldGear.map((gear) => gear.instanceId === adjust.instanceId ? { ...gear, currentCharges: charges - 1, maxCharges: gear.maxCharges ?? 2 } : gear) } })) };
+      return succeed({ ...next, sequence: state.sequence + 1, eventLog: [...state.eventLog, action] });
+    }
+    case "ACTIVATE_GATE_SAINT": {
+      const activate = action as ActivateGateSaintAction; const player = requirePlayer(state, activate.seatId);
+      const key = player.character.heldGear.find((item) => item.id === "gate-saint-key" && item.instanceId === activate.instanceId); const charges = key?.currentCharges ?? key?.charges ?? 0;
+      const atFinalGate = state.players.some((entry) => entry.character.currentSpaceId === "inner_gate_of_cinders");
+      if (!key || charges < 1 || state.gateSaintSafeConduct || !atFinalGate) return reject(state, action, "Saint’s Safe Conduct cannot be activated now");
+      const next = { ...state, gateSaintSafeConduct: { id: `saint:${state.sequence}`, sourceInstanceId: activate.instanceId, usedSeatIds: [] }, players: updateActivePlayer(state, activate.seatId, (entry) => ({ ...entry, character: { ...entry.character, heldGear: entry.character.heldGear.map((item) => item.instanceId === activate.instanceId ? { ...item, currentCharges: charges - 1, maxCharges: 1 } : item) } })) };
+      return succeed({ ...next, sequence: state.sequence + 1, eventLog: [...state.eventLog, action] });
+    }
+    case "USE_MARROW_DETOUR": {
+      const detour = action as UseMarrowDetourAction; const player = requirePlayer(state, detour.seatId); const key = player.character.heldGear.find((item) => item.id === "marrow-route-key" && item.instanceId === detour.instanceId); const charges = key?.currentCharges ?? key?.charges ?? 0;
+      const reaction = state.pendingFailureReaction; const current = player.character.currentSpaceId;
+      if (!key || charges < 1 || !reaction || reaction.id !== detour.reactionId || reaction.seatId !== detour.seatId || reaction.testType !== "movement" || player.character.wounds + 1 >= state.woundThreshold || getMovementStepBlockReason(state, player, current, detour.toSectorId)) return reject(state, action, "Boneway Detour cannot resolve this reaction");
+      const next = { ...state, pendingFailureReaction: null, pendingEffect: null, players: updateActivePlayer(state, detour.seatId, (entry) => ({ ...entry, sectorId: detour.toSectorId, character: { ...entry.character, currentSpaceId: detour.toSectorId, wounds: entry.character.wounds + 1, heldGear: entry.character.heldGear.map((item) => item.instanceId === detour.instanceId ? { ...item, currentCharges: charges - 1, maxCharges: 2 } : item) } })) };
       return succeed({ ...next, sequence: state.sequence + 1, eventLog: [...state.eventLog, action] });
     }
     case "MOVEMENT_ROLLED": {
@@ -3805,6 +3822,7 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
 
       return succeed({
         ...state,
+        gateSaintSafeConduct: null,
         players: state.players.map((player) => ({
           ...player,
           character: {

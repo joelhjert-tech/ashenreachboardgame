@@ -19,12 +19,12 @@ Recommended identity: safe, sanctified, party-wide final-gate passage for one bo
 **Recommendation: Option A — Saint’s Safe Conduct.** It is the clearest sanctified identity: safe party utility, not a personal route exception. The one passage window must be a typed scenario/final-gate lifecycle boundary; it cannot become a free permanent party unlock.
 
 Gate-Saint Key:
-- Selected option: [UNAPPROVED]
-- Maximum charges: [UNAPPROVED]
-- Starting charges: [UNAPPROVED]
-- Charge cost: [UNAPPROVED]
-- Scope: [UNAPPROVED]
-- Final rule text: [UNAPPROVED]
+- Selected option: Option A — Saint’s Safe Conduct
+- Maximum charges: 1
+- Starting charges: 1
+- Charge cost: 1
+- Scope: all allied operatives until the current round ends
+- Final rule text: Spend 1 charge when an allied operative reaches the final gate. Until the end of the current round, each allied operative may pass that final gate once without its normal passage test or requirement. No bonus reward is gained from this passage. Movement distance and all other route, destination, threat, blocker, and scenario rules still apply. The gate remains locked afterward.
 
 ## Marrow Route Key options
 
@@ -39,12 +39,12 @@ Recommended identity: a dangerous owner-only reaction after failed movement, bef
 **Recommendation: Option A — Boneway Detour.** It best preserves the dangerous wrong-turn identity and creates a real route decision. The adjacent destination set must come from ordinary server validation; gates, scenario locks, threats, and blockers remain effective. The Wound is an activation cost, while the failed result remains available to mission/scenario triggers.
 
 Marrow Route Key:
-- Selected option: [UNAPPROVED]
-- Maximum charges: [UNAPPROVED]
-- Starting charges: [UNAPPROVED]
-- Charge cost: [UNAPPROVED]
-- Wound cost: [UNAPPROVED]
-- Final rule text: [UNAPPROVED]
+- Selected option: Option A — Boneway Detour
+- Maximum charges: 2
+- Starting charges: 2
+- Charge cost: 1
+- Wound cost: 1
+- Final rule text: Reaction — After you fail a movement test, but before its failure consequences resolve, spend 1 charge and suffer 1 Wound. Choose one adjacent legal sector and move there instead of resolving the original failure consequences. The test still counts as failed. Gates, scenario locks, threats, blockers, and destination restrictions still apply.
 
 ## Identity separation proof
 
