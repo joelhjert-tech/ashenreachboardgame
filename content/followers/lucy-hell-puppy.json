@@ -13,6 +13,11 @@
     "text": "Lucy barks fire into the ash: record an ember-pup note for this battle, damage, or route choice."
   },
   "useLimit": "oncePerRound",
+  "effectModel": "exhaust",
+  "activationTiming": ["beforeBattleRoll", "beforeTakingDamage", "movement"],
+  "resetWindow": "round",
+  "exhaustEffect": "recordEmberPupNote",
+  "requiresEquipped": false,
   "loyalty": 5,
   "lossCondition": "choice",
   "acquisition": [

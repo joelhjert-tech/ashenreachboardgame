@@ -13,6 +13,11 @@
     "text": "Murkclaw & Gravecrow read the ash: record an omen note for this threat, route, or battle."
   },
   "useLimit": "oncePerRound",
+  "effectModel": "exhaust",
+  "activationTiming": ["beforeThreatDraw", "beforeBattleRoll", "movement"],
+  "resetWindow": "round",
+  "exhaustEffect": "recordOmenNote",
+  "requiresEquipped": false,
   "loyalty": 3,
   "lossCondition": "choice",
   "acquisition": [

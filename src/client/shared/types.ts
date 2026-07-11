@@ -148,6 +148,7 @@ export type FollowerTimingWindow = GearTimingWindow;
 
 export interface Follower {
   id: string;
+  instanceId?: string;
   name: string;
   role: FollowerRole;
   text: string;
@@ -158,6 +159,11 @@ export interface Follower {
   ultimateCompanion?: boolean;
   timingWindows?: FollowerTimingWindow[];
   exhausted?: boolean;
+  effectModel?: "exhaust";
+  activationTiming?: FollowerTimingWindow[];
+  resetWindow?: "round";
+  exhaustEffect?: "recordEmberPupNote" | "recordOmenNote" | "recordRouteMemoryNote";
+  requiresEquipped?: boolean;
   artCardId?: string;
   acquisition?: string[];
   flavor?: string;

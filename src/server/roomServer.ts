@@ -2002,6 +2002,18 @@ export class GameRoomServer {
       throw new IntentRejectedError("USE_FOLLOWER", `${follower.name} is passive and applies automatically.`);
     }
 
+    if (follower.effectModel === "exhaust") {
+      if (follower.exhausted) throw new IntentRejectedError("USE_FOLLOWER", `${follower.name} is Exhausted. Refreshes next round.`);
+      const timings = follower.activationTiming ?? [];
+      const beforeBattle = this.state.phase === "action" && this.state.currentEncounter?.cardType === "enemy" && !this.state.activeResolution?.roll;
+      const beforeThreat = this.state.phase === "sector";
+      const movement = this.state.phase === "navigation";
+      const beforeDamage = this.state.phase === "resolution" && Boolean(this.state.pendingEffect && this.effectContainsWound(this.state.pendingEffect));
+      const eligible = (timings.includes("beforeBattleRoll") && beforeBattle) || (timings.includes("beforeThreatDraw") && beforeThreat) ||
+        (timings.includes("movement") && movement) || (timings.includes("beforeTakingDamage") && beforeDamage);
+      if (!eligible) throw new IntentRejectedError("USE_FOLLOWER", `${follower.name} is not usable in this timing window.`);
+    }
+
     const fandiablosUse = follower?.id === FANDIABLOS_ID ? this.createFandiablosUseEffect(seatId) : null;
     const effect = this.resolveEffect((follower?.activeEffect as EncounterEffect | undefined) ?? this.getFollowerRoleEffect(follower), seatId);
     const rollModifier = this.createFollowerRollModifier(seatId, follower);
@@ -2010,6 +2022,7 @@ export class GameRoomServer {
       type: "USE_FOLLOWER",
       seatId,
       followerId,
+      followerInstanceId: follower.instanceId,
       effect: fandiablosUse ? this.resolveEffect(fandiablosUse.effect, seatId) : effect,
       discard: follower?.useLimit === "discard",
       rollModifier,
@@ -6596,6 +6609,8 @@ export class GameRoomServer {
       return {
         ...effect,
         follower: this.followers.get(effect.followerId)
+          ? { ...this.followers.get(effect.followerId)!, instanceId: `${effect.followerId}:${seatId ?? "table"}:${this.state.sequence}`, exhausted: false }
+          : undefined
       };
     }
 
@@ -7111,6 +7126,10 @@ function getUseLimitProjection(args: {
   };
 }
 
+function projectedEffectContainsWound(effect: EncounterEffect | null | undefined): boolean {
+  return Boolean(effect && (effect.type === "take_wound" ? effect.amount > 0 : effect.type === "sequence" && effect.effects.some(projectedEffectContainsWound)));
+}
+
 function buildPhoneObjectUseStates(state: GameState, player: PlayerState | undefined): PhoneObjectUseState[] {
   if (!player) {
     return [];
@@ -7158,17 +7177,21 @@ function buildPhoneObjectUseStates(state: GameState, player: PlayerState | undef
   const followerStates = (player.character.followers ?? []).map((follower) => {
     const usedThisTurn = hasUsedObjectSinceLogBoundary(state, player.seatId, follower.id, "followerId", "TURN_COMPLETED");
     const usedThisRound = hasUsedObjectSinceLogBoundary(state, player.seatId, follower.id, "followerId", "ROUND_COMPLETED");
+    const projectedLimit = getUseLimitProjection({ useLimit: follower.useLimit, usedThisTurn, usedThisRound, objectName: follower.name });
+    const timings = follower.activationTiming ?? follower.timingWindows ?? [];
+    const timingEligible = (timings.includes("beforeBattleRoll") && state.phase === "action" && state.currentEncounter?.cardType === "enemy" && !state.activeResolution?.roll) ||
+      (timings.includes("beforeThreatDraw") && state.phase === "sector") || (timings.includes("movement") && state.phase === "navigation") ||
+      (timings.includes("beforeTakingDamage") && state.phase === "resolution" && projectedEffectContainsWound(state.pendingEffect));
+    const exhaustDisabledReason = follower.effectModel === "exhaust"
+      ? follower.exhausted ? `${follower.name} is Exhausted. Refreshes next round.` : timingEligible ? null : `${follower.name} is Ready, but not usable in this timing window.`
+      : null;
     return {
       source: "follower" as const,
       id: follower.id,
       usedThisTurn,
       usedThisRound,
-      ...getUseLimitProjection({
-        useLimit: follower.useLimit,
-        usedThisTurn,
-        usedThisRound,
-        objectName: follower.name
-      }),
+      ...projectedLimit,
+      disabledReason: exhaustDisabledReason ?? projectedLimit.disabledReason,
       activeModifier: getPendingObjectRollModifier(state, player.seatId, "follower", follower.id)
     };
   });

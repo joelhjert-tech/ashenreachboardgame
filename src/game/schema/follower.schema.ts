@@ -13,6 +13,9 @@ export const followerRoleSchema = z.enum([
 export const followerUseLimitSchema = z.enum(["oncePerTurn", "oncePerRound", "discard"]);
 export const followerLossConditionSchema = z.enum(["wound", "heat", "combatLoss", "choice"]);
 export const followerTierSchema = z.enum(["standard", "legendary", "ultimate"]);
+export const followerEffectModelSchema = z.enum(["exhaust"]);
+export const followerResetWindowSchema = z.enum(["round"]);
+export const followerExhaustEffectSchema = z.enum(["recordEmberPupNote", "recordOmenNote", "recordRouteMemoryNote"]);
 export const followerTimingWindowSchema = z.enum([
   "beforeThreatDraw",
   "beforeBattleRoll",
@@ -26,6 +29,7 @@ export const followerTimingWindowSchema = z.enum([
 
 export const followerSchema = z.object({
   id: z.string().min(1),
+  instanceId: z.string().min(1).optional(),
   name: z.string().min(1),
   role: followerRoleSchema,
   text: z.string().min(1),
@@ -36,6 +40,11 @@ export const followerSchema = z.object({
   ultimateCompanion: z.boolean().optional(),
   timingWindows: z.array(followerTimingWindowSchema).optional(),
   exhausted: z.boolean().optional(),
+  effectModel: followerEffectModelSchema.optional(),
+  activationTiming: z.array(followerTimingWindowSchema).min(1).optional(),
+  resetWindow: followerResetWindowSchema.optional(),
+  exhaustEffect: followerExhaustEffectSchema.optional(),
+  requiresEquipped: z.boolean().optional(),
   artCardId: z.string().min(1).optional(),
   acquisition: z.array(z.string().min(1)).optional(),
   flavor: z.string().min(1).optional(),
@@ -45,6 +54,12 @@ export const followerSchema = z.object({
   useLimit: followerUseLimitSchema.optional(),
   loyalty: z.number().int().min(0).max(5).optional(),
   lossCondition: followerLossConditionSchema.optional()
+}).superRefine((follower, context) => {
+  if (follower.effectModel !== "exhaust") return;
+  if (!follower.activationTiming?.length) context.addIssue({ code: z.ZodIssueCode.custom, message: "exhaust followers require activation timing", path: ["activationTiming"] });
+  if (!follower.resetWindow) context.addIssue({ code: z.ZodIssueCode.custom, message: "exhaust followers require a reset window", path: ["resetWindow"] });
+  if (!follower.exhaustEffect) context.addIssue({ code: z.ZodIssueCode.custom, message: "exhaust followers require a typed effect", path: ["exhaustEffect"] });
+  if (follower.useLimit === "discard") context.addIssue({ code: z.ZodIssueCode.custom, message: "exhaust followers cannot be consumable", path: ["useLimit"] });
 });
 
 export type FollowerRole = z.infer<typeof followerRoleSchema>;

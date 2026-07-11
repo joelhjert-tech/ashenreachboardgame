@@ -122,7 +122,7 @@ function InventoryCard({
   onUse?: () => void;
 }): ReactElement {
   const useIntent = toUseIntent(card, seatId);
-  const statusLabel = getStatusLabel(card.status);
+  const statusLabel = card.exhaustState ?? getStatusLabel(card.status);
   const statusReason = card.canUseNow ? "Active in this timing window." : card.statusReason;
   const stateLabel = card.canUseNow ? "active" : card.status === "Passive" ? "applied" : "inactive";
   const consequence = getInventoryConsequence(card);

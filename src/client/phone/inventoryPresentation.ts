@@ -48,6 +48,7 @@ export interface InventoryCardViewModel {
   artCardType?: CardImageType | null;
   artCardId?: string | null;
   fallbackLabel: string;
+  exhaustState?: "Ready" | "Exhausted";
 }
 
 export interface InventoryGroupViewModel {
@@ -497,7 +498,7 @@ function buildFollowerCard(follower: Follower, patch: PhonePatchPayload): Invent
     currentTimingWindow: getCurrentTimingWindow(patch),
     lockedReason: useState?.disabledReason ?? null,
     active,
-    canServerAccept: serverAcceptsCardUse(patch)
+    canServerAccept: follower.effectModel === "exhaust" ? ["action", "sector", "navigation", "resolution"].includes(patch.phase) : serverAcceptsCardUse(patch)
   });
   const remainingUses = useState?.remainingUses ?? null;
   const maxUses = useState?.maxUses ?? (follower.useLimit ? 1 : null);
@@ -508,13 +509,14 @@ function buildFollowerCard(follower: Follower, patch: PhonePatchPayload): Invent
     group: "Followers",
     name: follower.name,
     effectText: follower.text,
-    timingText: timingWindows.length > 0 ? timingWindows.map(formatTimingWindow).join(", ") : "Passive",
+    timingText: `${timingWindows.length > 0 ? timingWindows.map(formatTimingWindow).join(", ") : "Passive"}${follower.effectModel === "exhaust" ? ". Refreshes next round" : ""}`,
     timingWindows,
     ...status,
     useIntent: status.canUseNow ? { type: "USE_FOLLOWER", followerId: follower.id } : null,
     useLimit: follower.useLimit,
-    charges: remainingUses,
-    maxUses,
+    charges: follower.effectModel === "exhaust" ? null : remainingUses,
+    maxUses: follower.effectModel === "exhaust" ? null : maxUses,
+    exhaustState: follower.effectModel === "exhaust" ? (follower.exhausted ? "Exhausted" : "Ready") : undefined,
     artCardType: follower.artCardId ? "artifact" : null,
     artCardId: follower.artCardId ?? null,
     fallbackLabel: getFallbackLabel(follower.name)

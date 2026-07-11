@@ -2262,10 +2262,16 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
     case "USE_FOLLOWER": {
       const useFollowerAction = action as UseFollowerAction;
       const player = requirePlayer(state, useFollowerAction.seatId);
-      const follower = (player.character.followers ?? []).find((entry) => entry.id === useFollowerAction.followerId);
+      const follower = (player.character.followers ?? []).find((entry) =>
+        useFollowerAction.followerInstanceId ? entry.instanceId === useFollowerAction.followerInstanceId : entry.id === useFollowerAction.followerId
+      );
 
       try {
-        if (follower?.id === "fandiablos" && state.phase === "sector") {
+        if (follower?.effectModel === "exhaust") {
+          ensureSeatTurn(state, useFollowerAction.seatId);
+          ensureSeatCanTakeNormalTurnAction(state, useFollowerAction.seatId);
+          if (!["action", "sector", "navigation", "resolution"].includes(state.phase)) throw new Error(`Cannot use ${follower.name} during phase ${state.phase}`);
+        } else if (follower?.id === "fandiablos" && state.phase === "sector") {
           ensureSeatTurn(state, useFollowerAction.seatId);
           ensureSeatCanTakeNormalTurnAction(state, useFollowerAction.seatId);
         } else {
@@ -2277,6 +2283,10 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
 
       if (!follower) {
         return reject(state, action, `Follower ${useFollowerAction.followerId} is not attached to this character`);
+      }
+
+      if (follower.effectModel === "exhaust" && follower.exhausted) {
+        return reject(state, action, `${follower.name} is Exhausted. Refreshes next round.`);
       }
 
       if (!follower.activeEffect && !follower.useLimit) {
@@ -2299,9 +2309,23 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
       const effectedState = useFollowerAction.effect
         ? applyEffectToState(state, useFollowerAction.seatId, useFollowerAction.effect)
         : state;
-      const finalState = useFollowerAction.discard
-        ? discardFollower(effectedState, useFollowerAction.seatId, useFollowerAction.followerId)
+      const exhaustedState = follower.effectModel === "exhaust"
+        ? {
+            ...effectedState,
+            players: updateActivePlayer(effectedState, useFollowerAction.seatId, (entry) => ({
+              ...entry,
+              character: {
+                ...entry.character,
+                followers: (entry.character.followers ?? []).map((owned) =>
+                  (follower.instanceId ? owned.instanceId === follower.instanceId : owned === follower) ? { ...owned, exhausted: true } : owned
+                )
+              }
+            }))
+          }
         : effectedState;
+      const finalState = useFollowerAction.discard
+        ? discardFollower(exhaustedState, useFollowerAction.seatId, useFollowerAction.followerId)
+        : exhaustedState;
       const updatedPlayer = requirePlayer(finalState, useFollowerAction.seatId);
 
       return succeed({
@@ -3726,6 +3750,15 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
 
       return succeed({
         ...state,
+        players: state.players.map((player) => ({
+          ...player,
+          character: {
+            ...player.character,
+            followers: (player.character.followers ?? []).map((follower) =>
+              follower.effectModel === "exhaust" && follower.resetWindow === "round" ? { ...follower, exhausted: false } : follower
+            )
+          }
+        })),
         sequence: state.sequence + 1,
         soloRerollCharges:
           state.sessionMode === "single-player"

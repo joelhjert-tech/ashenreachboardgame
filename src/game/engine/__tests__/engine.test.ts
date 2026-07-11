@@ -13,6 +13,7 @@ import { reduceGameState } from "../reducer.js";
 import { getEquippedGearBonus } from "../gear.js";
 import { loadGear } from "../../content/gear.js";
 import { loadArtifactCards } from "../../content/artifacts.js";
+import { loadFollowers } from "../../content/followers.js";
 
 function createGear(): Map<string, GearItem> {
   return new Map<string, GearItem>([
@@ -167,6 +168,72 @@ describe("Phase 2 owned Artifact consumables", () => {
     const server = new GameRoomServer(state);
     for (const id of blockedIds) server.handleIntent(createClient("seat-1"), { type: "USE_GEAR", seatId: "seat-1", gearId: id });
     expect(blockedIds.every((id) => server.getState().players[0]?.character.heldGear.some((item) => item.id === id))).toBe(true);
+  });
+});
+
+describe("Phase 3A round-exhaust Artifact followers", () => {
+  const ids = ["lucy-hell-puppy", "murkclaw-gravecrow", "rune-eye-raven"];
+
+  it.each(ids)("persists, exhausts, rejects duplicate use, and refreshes %s only on round completion", (id) => {
+    const follower = { ...loadFollowers().get(id)!, instanceId: `${id}:seat-1:test`, exhausted: false };
+    const base = createState({ phase: "navigation" });
+    const state: GameState = {
+      ...base,
+      players: base.players.map((player) => player.seatId === "seat-1" ? {
+        ...player,
+        character: { ...player.character, followers: [...(player.character.followers ?? []), follower] }
+      } : player)
+    };
+    const reconnectState = JSON.parse(JSON.stringify(state)) as GameState;
+    expect(reconnectState.players[0]?.character.followers?.find((entry) => entry.instanceId === follower.instanceId)?.exhausted).toBe(false);
+
+    const sent: Array<Record<string, unknown>> = [];
+    const server = new GameRoomServer(reconnectState);
+    const notesBefore = server.getState().players[0]?.private.notes.length ?? 0;
+    server.handleIntent(createCapturingClient("seat-1", sent), { type: "USE_FOLLOWER", seatId: "seat-1", followerId: id });
+    expect(sent.some((message) => message.type === "INTENT_REJECTED")).toBe(false);
+    const exhausted = server.getState().players[0]?.character.followers?.find((entry) => entry.instanceId === follower.instanceId);
+    expect(exhausted?.exhausted).toBe(true);
+    expect(server.getState().players[0]?.private.notes.length).toBe(notesBefore + 1);
+
+    server.handleIntent(createCapturingClient("seat-1", sent), { type: "USE_FOLLOWER", seatId: "seat-1", followerId: id });
+    expect(sent.filter((message) => message.type === "INTENT_REJECTED")).toHaveLength(1);
+    expect(server.getState().players[0]?.private.notes.length).toBe(notesBefore + 1);
+    expect((JSON.parse(JSON.stringify(server.getState())) as GameState).players[0]?.character.followers?.find((entry) => entry.instanceId === follower.instanceId)?.exhausted).toBe(true);
+
+    const roundReset = reduceGameState(server.getState(), { type: "ROUND_COMPLETED", seatId: "seat-1", createdAt: "2026-07-11T12:00:00.000Z" });
+    expect(roundReset.ok).toBe(true);
+    if (!roundReset.ok) return;
+    expect(roundReset.state.players[0]?.character.followers?.find((entry) => entry.instanceId === follower.instanceId)?.exhausted).toBe(false);
+    expect((JSON.parse(JSON.stringify(roundReset.state)) as GameState).players[0]?.character.followers?.find((entry) => entry.instanceId === follower.instanceId)?.exhausted).toBe(false);
+  });
+
+  it.each(ids)("rejects wrong-seat and invalid-timing use of %s without exhaustion", (id) => {
+    const follower = { ...loadFollowers().get(id)!, instanceId: `${id}:seat-1:reject`, exhausted: false };
+    const base = createState({ phase: "broadcast" });
+    const state: GameState = { ...base, players: base.players.map((player) => player.seatId === "seat-1" ? { ...player, character: { ...player.character, followers: [follower] } } : player) };
+    const server = new GameRoomServer(state);
+    const wrongSeat: Array<Record<string, unknown>> = [];
+    server.handleIntent(createCapturingClient("seat-2", wrongSeat), { type: "USE_FOLLOWER", seatId: "seat-1", followerId: id });
+    const wrongTiming: Array<Record<string, unknown>> = [];
+    server.handleIntent(createCapturingClient("seat-1", wrongTiming), { type: "USE_FOLLOWER", seatId: "seat-1", followerId: id });
+    expect(wrongSeat.some((message) => message.type === "INTENT_REJECTED")).toBe(true);
+    expect(wrongTiming.some((message) => message.type === "INTENT_REJECTED")).toBe(true);
+    expect(server.getState().players[0]?.character.followers?.[0]?.exhausted).toBe(false);
+  });
+
+  it("tracks synthetic duplicate instances independently", () => {
+    const catalog = loadFollowers().get("lucy-hell-puppy")!;
+    const base = createState({ phase: "navigation" });
+    const copies = [{ ...catalog, instanceId: "lucy:one", exhausted: false }, { ...catalog, instanceId: "lucy:two", exhausted: false }];
+    const state: GameState = { ...base, players: base.players.map((player) => player.seatId === "seat-1" ? { ...player, character: { ...player.character, followers: copies } } : player) };
+    const result = reduceGameState(state, {
+      type: "USE_FOLLOWER", seatId: "seat-1", followerId: catalog.id, followerInstanceId: "lucy:one",
+      effect: { type: "gain_note", text: "Lucy used." }, summary: "Lucy used.", createdAt: "2026-07-11T12:00:00.000Z"
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.state.players[0]?.character.followers?.map((entry) => entry.exhausted)).toEqual([true, false]);
   });
 });
 

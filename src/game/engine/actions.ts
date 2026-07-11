@@ -194,6 +194,7 @@ export interface UseGearAction extends BaseAction {
 export interface UseFollowerAction extends BaseAction {
   type: "USE_FOLLOWER";
   followerId: string;
+  followerInstanceId?: string;
   effect: EncounterEffect | null;
   summary: string;
   discard?: boolean;

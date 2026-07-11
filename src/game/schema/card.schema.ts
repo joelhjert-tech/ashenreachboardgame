@@ -2,8 +2,9 @@ import { z } from "zod";
 import { statSchema } from "./character.schema.js";
 import { gearItemSchema } from "./gear.schema.js";
 import type { GearItem } from "./gear.schema.js";
+import { followerSchema } from "./follower.schema.js";
 
-const followerGrantSchema = z.object({
+const legacyFollowerGrantSchema = z.object({
   id: z.string().min(1),
   name: z.string().min(1),
   role: z.enum(["scout", "medic", "gunner", "ritualist", "porter", "guide", "informant", "companion"]),
@@ -35,6 +36,8 @@ const followerGrantSchema = z.object({
   loyalty: z.number().int().min(0).max(5).optional(),
   lossCondition: z.enum(["wound", "heat", "combatLoss", "choice"]).optional()
 });
+
+const followerGrantSchema = followerSchema.or(legacyFollowerGrantSchema);
 
 type FollowerGrant = z.infer<typeof followerGrantSchema>;
 

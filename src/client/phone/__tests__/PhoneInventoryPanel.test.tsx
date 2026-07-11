@@ -228,6 +228,29 @@ function openPhoneTabs(): void {
 }
 
 describe("PhoneInventoryPanel", () => {
+  it("shows round-exhaust companions as Ready or Exhausted without charge counters", () => {
+    const basePatch = createPatch();
+    const lucy = {
+      id: "lucy-hell-puppy", instanceId: "lucy:test", name: "Lucy, Hell Puppy", role: "companion" as const,
+      text: "Record an ember-pup note.", tier: "legendary" as const, artCardId: "artifact-lucy-hell-puppy",
+      timingWindows: ["movement" as const], activationTiming: ["movement" as const], useLimit: "oncePerRound" as const,
+      effectModel: "exhaust" as const, resetWindow: "round" as const, exhaustEffect: "recordEmberPupNote" as const,
+      requiresEquipped: false, exhausted: true
+    };
+    const patch = {
+      ...basePatch,
+      phase: "navigation" as const,
+      objectUseStates: [{ source: "follower" as const, id: lucy.id, usedThisTurn: false, usedThisRound: true, remainingUses: 0, maxUses: 1, disabledReason: "Lucy, Hell Puppy is Exhausted. Refreshes next round.", activeModifier: null }],
+      self: basePatch.self ? { ...basePatch.self, character: { ...basePatch.self.character, followers: [lucy] } } : null
+    } satisfies PhonePatchPayload;
+    render(<PhoneInventoryPanel patch={patch} onIntent={vi.fn()} />);
+    const card = screen.getByLabelText(/lucy, hell puppy: locked/i);
+    expect(card).toHaveTextContent(/exhausted/i);
+    expect(card).toHaveTextContent(/refreshes next round/i);
+    expect(card).not.toHaveTextContent(/charge/i);
+    expect(within(card).queryByRole("button", { name: /use lucy/i })).not.toBeInTheDocument();
+  });
+
   it("presents owned Artifact consumables as one-use action-window items without passive stat UI", () => {
     const basePatch = createPatch();
     const patch = {

@@ -13,6 +13,11 @@
     "text": "The Rune-Eye Raven returns with a route-memory: record one omen note before the next threat draw or route choice."
   },
   "useLimit": "oncePerRound",
+  "effectModel": "exhaust",
+  "activationTiming": ["beforeThreatDraw", "movement"],
+  "resetWindow": "round",
+  "exhaustEffect": "recordRouteMemoryNote",
+  "requiresEquipped": false,
   "loyalty": 4,
   "lossCondition": "choice",
   "acquisition": [
