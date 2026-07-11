@@ -15,6 +15,8 @@
   "progressionWeight": 1,
   "flavor": "Work-braced guards that add +1 Forge while equipped.",
   "activeText": "Work-braced guards that add +1 Forge while equipped.",
+  "effectModel": "permanent",
+  "requiresEquipped": true,
   "shopCategories": [
     "forge-armoury",
     "market"

@@ -15,6 +15,9 @@
   "progressionWeight": 1,
   "flavor": "A disciplined sidearm that adds +1 Command in battle.",
   "activeText": "A disciplined sidearm that adds +1 Command in battle.",
+  "effectModel": "conditional",
+  "requiresEquipped": true,
+  "conditionType": "battle",
   "shopCategories": [
     "forge-armoury",
     "market"

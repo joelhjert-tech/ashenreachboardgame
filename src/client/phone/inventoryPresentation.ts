@@ -112,11 +112,11 @@ export function formatTimingWindow(window: InventoryTimingWindow): string {
   }
 }
 
-function getEquippedGearBonus(self: PhoneSelfState, stat: Stat): number {
+function getEquippedGearBonus(self: PhoneSelfState, stat: Stat, mode: "resting" | "battle" = "resting"): number {
   const equippedIds = new Set(Object.values(self.character.equippedGear).filter((value): value is string => Boolean(value)));
 
   const gearBonus = self.character.heldGear.reduce((sum, item) => {
-    if (!equippedIds.has(item.id) || item.statBonus.stat !== stat) {
+    if (!equippedIds.has(item.id) || item.statBonus.stat !== stat || (item.effectModel === "conditional" && mode !== "battle")) {
       return sum;
     }
 
@@ -420,14 +420,20 @@ function getFallbackLabel(name: string): string {
 function formatPassiveGearBonus(item: GearItem): string {
   const amount = item.statBonus.amount >= 0 ? `+${item.statBonus.amount}` : String(item.statBonus.amount);
   const stat = statLabelById[item.statBonus.stat];
-  const battleScope = item.slot === "weapon" ? " in battle" : "";
+  const battleScope = item.slot === "weapon" && item.effectModel !== "conditional" ? " in battle" : "";
 
   return `${amount} ${stat}${battleScope}`;
 }
 
+function formatConditionalGearBonus(item: GearItem): string | null {
+  return item.effectModel === "conditional" && item.conditionType === "battle"
+    ? `${formatPassiveGearBonus(item)} in battles`
+    : null;
+}
+
 function buildGearCard(item: GearItem, patch: PhonePatchPayload, self: PhoneSelfState): InventoryCardViewModel {
   const timingWindows = inferGearTimingWindows(item);
-  const active = Boolean(item.activeText || item.useLimit);
+  const active = item.effectModel ? false : Boolean(item.activeText || item.useLimit);
   const equippedIds = new Set(Object.values(self.character.equippedGear).filter((value): value is string => Boolean(value)));
   const isEquipped = equippedIds.has(item.id);
   const useState = getObjectUseState(patch, "gear", item.id);
@@ -444,12 +450,12 @@ function buildGearCard(item: GearItem, patch: PhonePatchPayload, self: PhoneSelf
     : isEquipped
       ? {
           status: "Passive" as const,
-          statusReason: `${formatPassiveGearBonus(item)}. Already applied by the server when relevant.`,
+          statusReason: `${formatConditionalGearBonus(item) ?? formatPassiveGearBonus(item)}. Already applied by the server when relevant.`,
           canUseNow: false
         }
       : {
           status: "Ready but not usable now" as const,
-          statusReason: `Equip to apply ${formatPassiveGearBonus(item)}.`,
+          statusReason: `Equip to apply ${formatConditionalGearBonus(item) ?? formatPassiveGearBonus(item)}.`,
           canUseNow: false
         };
   const remainingUses = useState?.remainingUses ?? item.charges ?? null;
@@ -552,7 +558,7 @@ export function getBattleAssistViewModel(patch: PhonePatchPayload): BattleAssist
 
   const stat = getBattleStat(patch);
   const enemyBattleValue = resolution?.battle?.difficulty ?? encounter?.difficulty ?? 0;
-  const playerBattleValue = self.character.stats[stat] + getEquippedGearBonus(self, stat);
+  const playerBattleValue = self.character.stats[stat] + getEquippedGearBonus(self, stat, "battle");
   const currentTimingWindow = getCurrentTimingWindow(patch);
   const usableCards = getInventoryCards(patch).filter(
     (card) =>

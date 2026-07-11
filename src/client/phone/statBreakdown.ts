@@ -24,7 +24,7 @@ export function getPhoneStatBreakdown(self: PhoneSelfState, stat: Stat): PhoneSt
   const base = Math.max(0, self.character.stats[stat] - permanent);
   const equippedIds = new Set(Object.values(self.character.equippedGear).filter((value): value is string => Boolean(value)));
   const gearFollowerSources = self.character.heldGear
-    .filter((item) => equippedIds.has(item.id) && item.statBonus.stat === stat)
+    .filter((item) => equippedIds.has(item.id) && item.statBonus.stat === stat && item.effectModel !== "conditional")
     .map((item) => ({
       label: item.name,
       value: item.statBonus.amount,

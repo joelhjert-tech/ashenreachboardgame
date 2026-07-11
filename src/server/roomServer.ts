@@ -1606,7 +1606,7 @@ export class GameRoomServer {
       sources.push({ label: `Permanent ${CHALLENGE_LABELS[stat]}`, value: permanent });
     }
 
-    sources.push(...getEquippedGearModifierSources(player.character, stat));
+    sources.push(...getEquippedGearModifierSources(player.character, stat, { mode }));
     sources.push(...getAfflictionModifierSources(player, stat, mode, getAfflictionCatalog(this.state)));
     sources.push(...this.getCharacterModifierSources(player, stat, mode));
 
@@ -6073,7 +6073,7 @@ export class GameRoomServer {
     const assistBonus = getAssistBonus(this.state, intent.seatId, nemesis, requestedAssistSeatIds);
     const statBonus =
       player.character.stats[stat] +
-      getEquippedGearModifierSources(player.character, stat).reduce((sum, source) => sum + source.value, 0) +
+      getEquippedGearModifierSources(player.character, stat, { mode: "battle" }).reduce((sum, source) => sum + source.value, 0) +
       this.getScenarioBattleModifier(intent.seatId) +
       assistBonus +
       getMasterAlphaBattleBonus(player);

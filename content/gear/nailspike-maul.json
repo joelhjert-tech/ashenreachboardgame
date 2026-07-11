@@ -15,6 +15,9 @@
   "progressionWeight": 1,
   "flavor": "A brutal salvage maul that adds +1 Grit in battle.",
   "activeText": "A brutal salvage maul that adds +1 Grit in battle.",
+  "effectModel": "conditional",
+  "requiresEquipped": true,
+  "conditionType": "battle",
   "shopCategories": [
     "forge-armoury",
     "market"

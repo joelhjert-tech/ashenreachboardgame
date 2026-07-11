@@ -133,6 +133,9 @@ export interface GearItem {
   maxUses?: number;
   heatCost?: number;
   linkedFollowerRole?: FollowerRole;
+  effectModel?: "permanent" | "conditional";
+  requiresEquipped?: boolean;
+  conditionType?: "battle";
 }
 
 export type FollowerRole = "scout" | "medic" | "gunner" | "ritualist" | "porter" | "guide" | "informant" | "companion";

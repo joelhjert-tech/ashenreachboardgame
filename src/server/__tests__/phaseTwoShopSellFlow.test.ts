@@ -24,6 +24,7 @@ function createShopState(options: {
   sectorId?: string;
   salvage?: number;
   heldGear?: GearItem[];
+  equippedGearId?: string;
   currentEncounterId?: string;
   interactionMode?: "co-op" | "rivalry" | "ruthless";
 } = {}): GameState {
@@ -59,7 +60,11 @@ function createShopState(options: {
             currentSpaceId: sectorId,
             salvage: options.salvage ?? 1,
             heldGear: options.heldGear ?? [],
-            equippedGear: { weapon: null, armor: null, utility: null }
+            equippedGear: {
+              weapon: options.heldGear?.find((item) => item.id === options.equippedGearId && item.slot === "weapon")?.id ?? null,
+              armor: options.heldGear?.find((item) => item.id === options.equippedGearId && item.slot === "armor")?.id ?? null,
+              utility: options.heldGear?.find((item) => item.id === options.equippedGearId && item.slot === "utility")?.id ?? null
+            }
           }
         }
       : player
@@ -98,6 +103,17 @@ function requireGear(id: string): GearItem {
 }
 
 describe("Phase 2B shop sell flow", () => {
+  it("removes an equipped permanent passive and its modifier when sold", () => {
+    const vest = requireGear("rivetplate-vest");
+    const { server, client } = createShopServer({ heldGear: [vest], equippedGearId: vest.id, salvage: 1 });
+
+    server.handleIntent(client, { type: "SHOP_SELL_REQUESTED", seatId: "seat-1", gearId: vest.id });
+
+    const character = server.getState().players[0]!.character;
+    expect(character.heldGear).toEqual([]);
+    expect(character.equippedGear.armor).toBeNull();
+  });
+
   it("sells a held item at a shop, removes it from inventory, and adds salvage by tier fallback", () => {
     const veilHook = requireGear("veil-hook");
     const { server, client, sent } = createShopServer({ heldGear: [veilHook], salvage: 1 });

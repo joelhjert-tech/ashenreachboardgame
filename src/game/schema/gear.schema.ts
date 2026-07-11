@@ -31,6 +31,8 @@ export const shopCategorySchema = z.enum([
   "contract-broker"
 ]);
 export const gearUseLimitSchema = z.enum(["oncePerTurn", "oncePerRound", "discard", "charge"]);
+export const gearEffectModelSchema = z.enum(["permanent", "conditional"]);
+export const gearConditionTypeSchema = z.enum(["battle"]);
 
 export const gearItemSchema = z.object({
   id: z.string().min(1),
@@ -60,7 +62,24 @@ export const gearItemSchema = z.object({
   startingEligible: z.boolean().optional(),
   normalShopCommon: z.boolean().optional(),
   allowedFallbackArt: z.boolean().optional(),
-  qaOnly: z.boolean().optional()
+  qaOnly: z.boolean().optional(),
+  effectModel: gearEffectModelSchema.optional(),
+  requiresEquipped: z.boolean().optional(),
+  conditionType: gearConditionTypeSchema.optional()
+}).superRefine((item, context) => {
+  if (item.tier !== "artifact" && (item.useLimit === "charge" || item.category === "chargedRelic")) {
+    context.addIssue({ code: z.ZodIssueCode.custom, message: "normal Equipment cannot use Artifact charge mechanics", path: ["useLimit"] });
+  }
+  if (!item.effectModel) return;
+  if (item.requiresEquipped !== true) {
+    context.addIssue({ code: z.ZodIssueCode.custom, message: `${item.effectModel} passive items must require equipped state`, path: ["requiresEquipped"] });
+  }
+  if (item.effectModel === "conditional" && !item.conditionType) {
+    context.addIssue({ code: z.ZodIssueCode.custom, message: "conditional passive items must define a condition", path: ["conditionType"] });
+  }
+  if (item.effectModel === "permanent" && item.conditionType) {
+    context.addIssue({ code: z.ZodIssueCode.custom, message: "permanent passive items cannot define a condition", path: ["conditionType"] });
+  }
 });
 
 export type GearSlot = z.infer<typeof gearSlotSchema>;
@@ -70,3 +89,5 @@ export type ShopCategory = z.infer<typeof shopCategorySchema>;
 export type GearTier = z.infer<typeof gearTierSchema>;
 export type GearTimingWindow = z.infer<typeof gearTimingWindowSchema>;
 export type GearItem = z.infer<typeof gearItemSchema>;
+export type GearEffectModel = z.infer<typeof gearEffectModelSchema>;
+export type GearConditionType = z.infer<typeof gearConditionTypeSchema>;

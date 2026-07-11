@@ -15,6 +15,8 @@
   "progressionWeight": 1,
   "flavor": "A warded harness that adds +1 Command while equipped.",
   "activeText": "A warded harness that adds +1 Command while equipped.",
+  "effectModel": "permanent",
+  "requiresEquipped": true,
   "shopCategories": [
     "forge-armoury",
     "market"

@@ -35,10 +35,22 @@ export function getCompanionStatBonus(character: Character, stat: Stat): number 
   return getCompanionStatModifierSources(character, stat).reduce((sum, source) => sum + source.value, 0);
 }
 
-export function getEquippedGearModifierSources(character: Character, stat: Stat): Array<{ label: string; value: number }> {
+export interface GearModifierContext {
+  mode: "resting" | "battle" | "check";
+}
+
+export function isGearModifierActive(item: GearItem, context: GearModifierContext): boolean {
+  return item.effectModel !== "conditional" || (item.conditionType === "battle" && context.mode === "battle");
+}
+
+export function getEquippedGearModifierSources(
+  character: Character,
+  stat: Stat,
+  context: GearModifierContext = { mode: "resting" }
+): Array<{ label: string; value: number }> {
   const gearSources = (Object.keys(character.equippedGear) as GearSlot[])
     .map((slot) => getEquippedGearItem(character, slot))
-    .filter((item): item is GearItem => item !== undefined && item.statBonus.stat === stat)
+    .filter((item): item is GearItem => item !== undefined && item.statBonus.stat === stat && isGearModifierActive(item, context))
     .map((item) => ({
       label: item.name,
       value: item.statBonus.amount
