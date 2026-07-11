@@ -10,6 +10,7 @@ import { loadFollowers } from "../src/game/content/followers.js";
 import { loadGear } from "../src/game/content/gear.js";
 import { loadScarCards } from "../src/game/content/scars.js";
 import { loadThreatCards } from "../src/game/content/threats.js";
+import { loadTileChallenges } from "../src/game/content/tileChallenges.js";
 import { getThreatEffectTiming, isThreatEffectKey } from "../src/game/cards/threatEffects.js";
 import { BOARD_SPACES } from "../src/game/data/boardSpaces.js";
 import { validateBoardTextEffectCoverage } from "../src/game/data/boardTextEffects.js";
@@ -124,6 +125,7 @@ const characters = loadCharacters();
 const gear = loadGear();
 const threats = loadThreatCards();
 const contracts = loadContracts();
+const tileChallenges = loadTileChallenges();
 const anomalies = loadAnomalyCards();
 const artifacts = loadArtifactCards();
 const followers = loadFollowers();
@@ -657,6 +659,21 @@ function validateContractObjective(contract: ContractCard): void {
     const requiredShopType = contract.objective.requiredShopType;
     if (requiredSectorId && !BOARD_SPACES.some((space) => space.id === requiredSectorId && (space.tags.includes("shop") || space.tags.includes("risk-shop")))) errors.push(`${contract.id} references invalid shop sector ${requiredSectorId}`);
     if (requiredShopType && !BOARD_SPACES.some((space) => (space.tags.includes("shop") || space.tags.includes("risk-shop")) && space.tags.includes(requiredShopType as never))) errors.push(`${contract.id} references invalid shop type ${requiredShopType}`);
+  }
+  if (contract.objective.type === "tileChallengeResolved") {
+    const objective = contract.objective;
+    if (!objective.challengeId && !objective.sectorId && !objective.challengeType && !objective.challengeTag) errors.push(`${contract.id} tile challenge objective requires at least one authored matcher`);
+    const candidates = [...tileChallenges.values()].filter((challenge) =>
+      (!objective.challengeId || challenge.id === objective.challengeId) &&
+      (!objective.sectorId || challenge.sectorId === objective.sectorId) &&
+      (!objective.challengeType || challenge.challengeType === objective.challengeType) &&
+      (!objective.challengeTag || challenge.tags.includes(objective.challengeTag))
+    );
+    if (objective.challengeId && !tileChallenges.has(objective.challengeId)) errors.push(`${contract.id} references missing tile challenge ${objective.challengeId}`);
+    if (objective.sectorId && !BOARD_SPACES.some((space) => space.id === objective.sectorId)) errors.push(`${contract.id} references missing challenge sector ${objective.sectorId}`);
+    if (objective.challengeId && objective.sectorId && tileChallenges.get(objective.challengeId)?.sectorId !== objective.sectorId) errors.push(`${contract.id} references ${objective.challengeId} outside its authored sector ${objective.sectorId}`);
+    if (objective.challengeTag && ![...tileChallenges.values()].some((challenge) => challenge.tags.includes(objective.challengeTag!))) errors.push(`${contract.id} references unsupported challenge tag ${objective.challengeTag}`);
+    if (candidates.length === 0) errors.push(`${contract.id} has no reachable tile challenge completion path`);
   }
 }
 

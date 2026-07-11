@@ -105,4 +105,22 @@ describe("contract objectives", () => {
     expect(formatContractProgress(routeContract, 1)).toBe("1/1 clears");
     expect(isContractObjectiveComplete(routeContract, 1)).toBe(true);
   });
+
+  it("matches tile challenge objectives only against their authored challenge facts", () => {
+    const mission = { objective: { type: "tileChallengeResolved" as const, challengeId: "rift-whispers-ashen-chapel", sectorId: "ashen-chapel", challengeType: "anomaly" as const, challengeTag: "signal", requireSuccess: true, target: 1, label: "Quiet Rift Whispers" } };
+    const matching = { type: "tile-challenge-resolved" as const, challengeId: "rift-whispers-ashen-chapel", sectorId: "ashen-chapel", challengeType: "anomaly" as const, challengeTags: ["signal", "recurring"], testStat: "signal" as const, success: true };
+    expect(advanceContractObjectiveProgress(mission, 0, { ...matching, success: false })).toBe(0);
+    expect(advanceContractObjectiveProgress(mission, 0, { ...matching, challengeId: "other-rift" })).toBe(0);
+    expect(advanceContractObjectiveProgress(mission, 0, { ...matching, sectorId: "reavers-den" })).toBe(0);
+    expect(advanceContractObjectiveProgress(mission, 0, { ...matching, challengeType: "hazard" })).toBe(0);
+    expect(advanceContractObjectiveProgress(mission, 0, { ...matching, challengeTags: ["recurring"] })).toBe(0);
+    expect(advanceContractObjectiveProgress(mission, 0, matching)).toBe(1);
+  });
+
+  it("allows resolution-only tile challenge objectives to count success or failure", () => {
+    const mission = { objective: { type: "tileChallengeResolved" as const, challengeId: "rift-whispers-ashen-chapel", target: 2, label: "Witness Rift Whispers" } };
+    const trigger = { type: "tile-challenge-resolved" as const, challengeId: "rift-whispers-ashen-chapel", sectorId: "ashen-chapel", challengeType: "anomaly" as const, challengeTags: ["signal"], testStat: "signal" as const, success: false };
+    expect(advanceContractObjectiveProgress(mission, 0, trigger)).toBe(1);
+    expect(advanceContractObjectiveProgress(mission, 1, { ...trigger, success: true })).toBe(2);
+  });
 });

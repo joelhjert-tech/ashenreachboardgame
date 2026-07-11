@@ -27,6 +27,7 @@ import {
   describeContractObjective,
   formatContractObjectiveStatus,
   formatContractProgress,
+  isContractObjectiveComplete,
   setContractProgressFloor
 } from "../game/contracts/objectives.js";
 import { getEscalationCollapseLevel, getEscalationModifier } from "../game/engine/escalation.js";
@@ -3175,6 +3176,23 @@ export class GameRoomServer {
         }
       ]
     };
+
+  }
+
+  private completeSatisfiedContract(seatId: string): boolean {
+    const player = this.state.players.find((entry) => entry.seatId === seatId);
+    const activeContract = player?.character.activeContract;
+    if (!activeContract || this.state.phase !== "action") return false;
+    const contract = this.state.availableContracts.find((entry) => entry.id === activeContract.contractId);
+    if (!contract || contract.objective.type !== "tileChallengeResolved" || !isContractObjectiveComplete(contract, activeContract)) return false;
+    this.applyAction({
+      type: "COMPLETE_CONTRACT",
+      seatId,
+      contractId: contract.id,
+      contract: this.resolveContract(contract),
+      createdAt: new Date().toISOString()
+    } satisfies CompleteContractAction);
+    return true;
   }
 
   private maybeTriggerAbilityOnContractAccepted(seatId: string): void {
@@ -4850,6 +4868,11 @@ export class GameRoomServer {
         return;
       }
 
+      if (this.completeSatisfiedContract(seatId)) {
+        progressMade = true;
+        continue;
+      }
+
       if (this.state.phase === "sector") {
         if (this.startNextTileChallenge(seatId)) {
           return;
@@ -4900,6 +4923,7 @@ export class GameRoomServer {
         if (this.state.resolutionSource === "tileChallenge" && this.state.pendingTileChallenge) {
           const pending = this.state.pendingTileChallenge;
           const progress = this.state.tileChallengeProgress;
+          const success = this.state.lastOutcomeSummary?.success === true;
           this.state = {
             ...this.state,
             pendingTileChallenge: null,
@@ -4909,6 +4933,15 @@ export class GameRoomServer {
               resolvedChallengeIds: [...new Set([...(progress?.resolvedChallengeIds ?? []), pending.challengeId])]
             }
           };
+          this.maybeAdvanceContractObjective(pending.seatId, {
+            type: "tile-challenge-resolved",
+            challengeId: pending.challengeId,
+            sectorId: pending.sectorId,
+            challengeType: pending.challengeType,
+            challengeTags: pending.sourceTags,
+            testStat: pending.testStat,
+            success
+          }, `Resolved ${pending.challengeId} at ${pending.sectorId} (${pending.challengeType}, ${pending.testStat}, ${success ? "success" : "failure"}).`);
         }
         const nextPhase = this.getPhaseAfterResolution(seatId);
 

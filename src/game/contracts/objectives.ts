@@ -1,5 +1,5 @@
 export interface ContractObjectiveLike {
-  type: "defeatCount" | "spaceTextResolved" | "multiStopRoute" | "shopTransaction";
+  type: "defeatCount" | "spaceTextResolved" | "multiStopRoute" | "shopTransaction" | "tileChallengeResolved";
   target?: number;
   effectKey?: string;
   label?: string;
@@ -10,6 +10,11 @@ export interface ContractObjectiveLike {
   requiredSectorId?: string;
   requiredCount?: number;
   minimumSalvageSpent?: number;
+  challengeId?: string;
+  sectorId?: string;
+  challengeType?: "hazard" | "anomaly";
+  challengeTag?: string;
+  requireSuccess?: boolean;
 }
 
 export interface ContractCardLike {
@@ -42,6 +47,15 @@ export type ContractObjectiveTrigger =
       sectorId: string;
       shopTypes: string[];
       salvageSpent?: number;
+    }
+  | {
+      type: "tile-challenge-resolved";
+      challengeId: string;
+      sectorId: string;
+      challengeType: "hazard" | "anomaly";
+      challengeTags: string[];
+      testStat: "command" | "grit" | "signal" | "guile" | "forge";
+      success: boolean;
     };
 
 function getProgressDelta(trigger: ContractObjectiveTrigger): number {
@@ -52,6 +66,7 @@ function getProgressDelta(trigger: ContractObjectiveTrigger): number {
       return 1;
     case "sector-visited":
     case "shop-transaction":
+    case "tile-challenge-resolved":
       return 1;
   }
 }
@@ -72,6 +87,8 @@ export function describeContractObjective(contract: ContractCardLike): string {
       return `${contract.objective.ordered ? "Visit in order" : "Visit"}: ${(contract.objective.targets ?? []).map((target) => target.label).join(" → ")}`;
     case "shopTransaction":
       return contract.objective.label ?? "Complete the required shop transaction";
+    case "tileChallengeResolved":
+      return contract.objective.label ?? "Resolve the assigned recurring tile challenge";
   }
 }
 
@@ -87,6 +104,13 @@ export function canAdvanceContractObjective(contract: ContractCardLike, trigger:
       return trigger.type === "shop-transaction" && trigger.action === contract.objective.action &&
         (!contract.objective.requiredSectorId || trigger.sectorId === contract.objective.requiredSectorId) &&
         (!contract.objective.requiredShopType || trigger.shopTypes.includes(contract.objective.requiredShopType));
+    case "tileChallengeResolved":
+      return trigger.type === "tile-challenge-resolved" &&
+        (!contract.objective.challengeId || trigger.challengeId === contract.objective.challengeId) &&
+        (!contract.objective.sectorId || trigger.sectorId === contract.objective.sectorId) &&
+        (!contract.objective.challengeType || trigger.challengeType === contract.objective.challengeType) &&
+        (!contract.objective.challengeTag || trigger.challengeTags.includes(contract.objective.challengeTag)) &&
+        (!contract.objective.requireSuccess || trigger.success);
   }
 }
 
@@ -167,6 +191,8 @@ export function formatContractProgress(contract: ContractCardLike, progress: num
       return `${clampedProgress}/${target} stops`;
     case "shopTransaction":
       return `${clampedProgress}/${target} transactions`;
+    case "tileChallengeResolved":
+      return `${clampedProgress}/${target} challenges`;
   }
 }
 

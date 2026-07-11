@@ -32,6 +32,11 @@ describe("contract schema and completability", () => {
     expect(contractCardSchema.safeParse({ ...base, objective: { type: "spaceTextResolved", effectKey: "outer_test", label: "Resolve test", target: 1 } }).success).toBe(true);
   });
 
+  it("accepts narrowly authored tile challenge objectives", () => {
+    expect(contractCardSchema.safeParse({ ...base, objective: { type: "tileChallengeResolved", challengeId: "rift-whispers-ashen-chapel", sectorId: "ashen-chapel", challengeType: "anomaly", challengeTag: "anomaly", requireSuccess: true, target: 1, label: "Resolve Rift Whispers" } }).success).toBe(true);
+    expect(contractCardSchema.safeParse({ ...base, objective: { type: "tileChallengeResolved", challengeType: "enemy", target: 1, label: "Invalid" } }).success).toBe(false);
+  });
+
   it("audits every authored contract for a valid, reachable, displayable lifecycle", () => {
     const contracts = [...loadContracts().values()];
     const gear = loadGear();

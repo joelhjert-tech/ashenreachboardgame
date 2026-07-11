@@ -16,6 +16,7 @@ import { loadTileChallenges } from "../../game/content/tileChallenges.js";
 import { attachTileChallengesToSectors } from "../../game/rules/tileChallenges.js";
 import { GameRoomServer, type ConnectedClient } from "../roomServer.js";
 import type { PhonePatchPayload, PublicPatchPayload } from "../../client/shared/types.js";
+import type { ContractCard } from "../../game/schema/contract.schema.js";
 
 describe("canonical sector graph", () => {
   it("attaches Rift Whispers as a recurring anomaly challenge instead of a threat", () => {
@@ -134,6 +135,97 @@ describe("canonical sector graph", () => {
     server.getState().pendingTileChallenge = { ...server.getState().pendingTileChallenge!, id: "signal-hazard", challengeType: "hazard", modifierSources: [] };
     server.handleIntent(client, { type: "USE_GEAR", seatId: "seat-1", gearId: "choir-lantern", instanceId: "choir-instance", pendingTileChallengeId: "signal-hazard" });
     expect(server.getState().players[0]!.character.heldGear.find((item) => item.instanceId === "choir-instance")?.currentCharges).toBe(1);
+  });
+
+  it("routes tile challenge mission completion through COMPLETE_CONTRACT exactly once", () => {
+    const state = createInitialSessionState("tile-challenge-contract", "single-player");
+    const mission: ContractCard = {
+      id: "contract-rift-witness",
+      name: "Rift Witness",
+      factionGiver: "Glass Choir",
+      text: "Resolve Rift Whispers and return with the signal intact.",
+      objective: {
+        type: "tileChallengeResolved",
+        challengeId: "rift-whispers-ashen-chapel",
+        sectorId: "ashen-chapel",
+        challengeType: "anomaly",
+        challengeTag: "anomaly",
+        requireSuccess: true,
+        target: 1,
+        label: "Succeed at Rift Whispers"
+      },
+      reward: { type: "gain_salvage", amount: 2 }
+    };
+    const missionTwo = state.availableContracts.find((contract) => contract.id !== mission.id)!;
+    state.availableContracts.push(mission);
+    state.status = "active";
+    state.phase = "resolution";
+    state.resolutionSource = "tileChallenge";
+    state.turnOrder = ["seat-1"];
+    state.activeSeatIndex = 0;
+    state.players[0]!.sectorId = "ashen-chapel";
+    state.players[0]!.character.currentSpaceId = "ashen-chapel";
+    state.players[0]!.character.activeContract = { contractId: mission.id, progress: 0 };
+    const startingSalvage = state.players[0]!.character.salvage ?? 0;
+    const challenge = state.sectors.find((sector) => sector.id === "ashen-chapel")!.tileChallenges![0]!;
+    const chapel = state.sectors.find((sector) => sector.id === "ashen-chapel")!;
+    chapel.threatIcons = [];
+    chapel.encounterDecks = { threat: [], anomaly: [], artifact: [], contract: [], escalation: [] };
+    state.pendingTileChallenge = {
+      id: "pending-rift-contract",
+      challengeId: challenge.id,
+      sectorId: challenge.sectorId,
+      seatId: "seat-1",
+      challengeType: challenge.challengeType,
+      testStat: challenge.testStat,
+      difficulty: challenge.difficulty,
+      sourceTags: challenge.tags,
+      successEffect: challenge.successEffect,
+      failureEffect: challenge.failureEffect,
+      authoredOrder: challenge.authoredOrder,
+      totalChallenges: 1,
+      rolled: true,
+      modifierSources: [],
+      createdAt: "2026-07-11T00:00:00.000Z"
+    };
+    state.lastOutcomeSummary = {
+      seatId: "seat-1", movedToSectorId: "ashen-chapel", encounterCardId: challenge.id, encounterTitle: challenge.name,
+      encounterCardType: "hazard", checkStat: "signal", die1: 4, die2: 5, statBonus: 1, checkTotal: 10, difficulty: 8,
+      enemyRollerSeatId: null, enemyDie1: null, enemyDie2: null, enemyBonus: null, enemyTotal: null, success: true, summary: "Rift Whispers resolved."
+    };
+
+    const server = new GameRoomServer(state);
+    (server as unknown as { runAutomaticPhases: (seatId: string) => void }).runAutomaticPhases("seat-1");
+    server.getState().activeResolution = null;
+    server.getState().currentEncounter = null;
+    (server as unknown as { runAutomaticPhases: (seatId: string) => void }).runAutomaticPhases("seat-1");
+    const completed = server.getState().players[0]!.character;
+    expect(completed.salvage).toBe(startingSalvage + 2);
+    expect(completed.completedContracts).toEqual([mission.id]);
+    expect(completed.activeContract).toBeNull();
+    expect(server.getState().eventLog.filter((event) => (event as { type?: string; contractId?: string }).type === "COMPLETE_CONTRACT" && (event as { contractId?: string }).contractId === mission.id)).toHaveLength(1);
+    expect(server.getState().sectors.find((sector) => sector.id === "ashen-chapel")?.tileChallenges).toContainEqual(challenge);
+
+    const phone = createPhoneProjection(server.getState(), "seat-1") as unknown as PhonePatchPayload & { activeContractCard: unknown };
+    const tv = createTvProjection(server.getState()) as unknown as PublicPatchPayload;
+    expect(phone.activeContractCard).toBeNull();
+    expect((phone.self as unknown as { character: { completedContracts: string[] } }).character.completedContracts).toEqual([mission.id]);
+    expect(tv.players.find((player) => player.seatId === "seat-1")?.character.activeContract ?? null).toBeNull();
+
+    server.getState().phase = "action";
+    const sent: Array<Record<string, unknown>> = [];
+    const client: ConnectedClient = { seatId: "seat-1", view: "phone", socket: { send: (payload: string) => sent.push(JSON.parse(payload)), close() {} } as unknown as ConnectedClient["socket"] };
+    server.handleIntent(client, { type: "ACCEPT_CONTRACT", seatId: "seat-1", contractId: missionTwo.id });
+    expect(server.getState().players[0]!.character.activeContract?.contractId).toBe(missionTwo.id);
+
+    server.getState().phase = "resolution";
+    server.getState().resolutionSource = "tileChallenge";
+    server.getState().pendingTileChallenge = structuredClone(state.pendingTileChallenge);
+    server.getState().lastOutcomeSummary = { ...state.lastOutcomeSummary, success: true };
+    (server as unknown as { runAutomaticPhases: (seatId: string) => void }).runAutomaticPhases("seat-1");
+    expect(server.getState().players[0]!.character.salvage).toBe(startingSalvage + 2);
+    expect(server.getState().players[0]!.character.completedContracts).toEqual([mission.id]);
+    expect(server.getState().eventLog.filter((event) => (event as { type?: string; contractId?: string }).type === "COMPLETE_CONTRACT" && (event as { contractId?: string }).contractId === mission.id)).toHaveLength(1);
   });
   it("creates one live sector for every board node and keeps ids aligned", () => {
     const sectors = createCanonicalSectorGraph();
