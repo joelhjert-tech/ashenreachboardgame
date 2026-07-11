@@ -32,6 +32,7 @@ import type {
   ShopPurchaseResolvedAction,
   ShopSellResolvedAction,
   ShopServiceResolvedAction,
+  ShopServiceCost,
   ShopStockRevealedAction,
   ScenarioProgressAdvancedAction,
   ScenarioObjectiveCompletedAction,
@@ -252,6 +253,8 @@ function summarizeEffect(effect: EncounterEffect, success: boolean | null): stri
       return `${prefix} heal ${effect.amount} wound${effect.amount === 1 ? "" : "s"}.`;
     case "gain_trophy":
       return `${prefix} gain ${effect.amount} Troph${effect.amount === 1 ? "y" : "ies"}.`;
+    case "gain_salvage":
+      return `${prefix} gain ${effect.amount} Salvage.`;
     case "gain_scar":
       return `${prefix} gain scar ${effect.scarId}.`;
     case "gain_gear":
@@ -308,6 +311,14 @@ function applyEffectToPlayer(player: PlayerState, effect: EncounterEffect): Play
         character: {
           ...player.character,
           trophies: player.character.trophies + effect.amount
+        }
+      };
+    case "gain_salvage":
+      return {
+        ...player,
+        character: {
+          ...player.character,
+          salvage: (player.character.salvage ?? 0) + effect.amount
         }
       };
     case "gain_scar":
@@ -417,7 +428,8 @@ function applyShopServiceToPlayer(player: PlayerState, action: ShopServiceResolv
         player.character.trophies -
           (action.cost.trophies ?? 0) +
           (action.result.trophyDelta ?? 0)
-      )
+      ),
+      completedContracts: (player.character.completedContracts ?? []).slice(action.cost.completedContracts ?? 0)
     },
     private: action.result.note
       ? {
@@ -441,7 +453,7 @@ function applyShopServiceToPlayer(player: PlayerState, action: ShopServiceResolv
   });
 }
 
-function applyShopCostOnlyToPlayer(player: PlayerState, cost: { salvage?: number; heat?: number; wounds?: number; trophies?: number }): PlayerState {
+function applyShopCostOnlyToPlayer(player: PlayerState, cost: ShopServiceCost): PlayerState {
   return {
     ...player,
     character: {
@@ -449,7 +461,8 @@ function applyShopCostOnlyToPlayer(player: PlayerState, cost: { salvage?: number
       salvage: Math.max(0, (player.character.salvage ?? 0) - (cost.salvage ?? 0)),
       heat: player.character.heat,
       wounds: Math.max(0, player.character.wounds + (cost.wounds ?? 0)),
-      trophies: Math.max(0, player.character.trophies - (cost.trophies ?? 0))
+      trophies: Math.max(0, player.character.trophies - (cost.trophies ?? 0)),
+      completedContracts: (player.character.completedContracts ?? []).slice(cost.completedContracts ?? 0)
     }
   };
 }
@@ -476,13 +489,16 @@ function applyShopSellToPlayer(player: PlayerState, action: ShopSellResolvedActi
   return removeHeldGearFromPlayer(afterSale, action.gearId);
 }
 
-function canPayShopActionCost(player: PlayerState, cost: { salvage?: number; heat?: number; wounds?: number; trophies?: number }): string | null {
+function canPayShopActionCost(player: PlayerState, cost: ShopServiceCost): string | null {
   if ((player.character.salvage ?? 0) < (cost.salvage ?? 0)) {
     return SHOP_FAILURE_REASONS.insufficientSalvage;
   }
 
   if (player.character.trophies < (cost.trophies ?? 0)) {
     return "Not enough Trophies";
+  }
+  if ((player.character.completedContracts ?? []).length < (cost.completedContracts ?? 0)) {
+    return "Need completed Missions";
   }
 
   return null;
@@ -2451,6 +2467,13 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
         return reject(state, action, costError);
       }
 
+      if (
+        shopAction.serviceId === "trade-missions-for-artifact" &&
+        (!shopAction.result.gainGear || shopAction.result.gainGear.tier !== "artifact")
+      ) {
+        return reject(state, action, "Relic dealer trades must grant an Artifact-tier item");
+      }
+
       if (shopAction.result.discardGearId && !player.character.heldGear.some((item) => item.id === shopAction.result.discardGearId)) {
         return reject(state, action, "No matching Gear to sell");
       }
@@ -2758,20 +2781,27 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
         return reject(state, action, "Contract objective is not complete yet");
       }
 
-      return succeed({
+      const rewardedState = applyEffectToState({
         ...state,
-        sequence: state.sequence + 1,
-        phase: "resolution",
-        resolutionSource: "contract",
-        pendingEnemyRoll: null,
-        pendingEffect: contract.reward,
         players: updateActivePlayer(state, completeAction.seatId, (entry) => ({
           ...entry,
           character: {
             ...entry.character,
-            activeContract: null
+            activeContract: null,
+            completedContracts: (entry.character.completedContracts ?? []).includes(contract.id)
+              ? entry.character.completedContracts
+              : [...(entry.character.completedContracts ?? []), contract.id]
           }
-        })),
+        }))
+      }, completeAction.seatId, contract.reward);
+
+      return succeed({
+        ...rewardedState,
+        sequence: state.sequence + 1,
+        phase: "resolution",
+        resolutionSource: "contract",
+        pendingEnemyRoll: null,
+        pendingEffect: null,
         lastOutcomeSummary: {
           seatId: completeAction.seatId,
           movedToSectorId: player.sectorId,

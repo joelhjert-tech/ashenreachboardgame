@@ -75,6 +75,11 @@ type GainTrophyEffect = {
   amount: number;
 };
 
+type GainSalvageEffect = {
+  type: "gain_salvage";
+  amount: number;
+};
+
 type GainScarEffect = {
   type: "gain_scar";
   scarId: string;
@@ -132,6 +137,7 @@ type SimpleEncounterEffect =
   | TakeWoundEffect
   | HealWoundEffect
   | GainTrophyEffect
+  | GainSalvageEffect
   | GainScarEffect
   | GainGearEffect
   | DrawArtifactEffect
@@ -167,6 +173,10 @@ const simpleEffectSchema: z.ZodType<SimpleEncounterEffect> = z.union([
   }),
   z.object({
     type: z.literal("gain_trophy"),
+    amount: z.number().int().positive()
+  }),
+  z.object({
+    type: z.literal("gain_salvage"),
     amount: z.number().int().positive()
   }),
   z.object({

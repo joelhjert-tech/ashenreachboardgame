@@ -63,6 +63,18 @@ function createGear(): Map<string, GearItem> {
         slot: "utility",
         statBonus: { stat: "command", amount: 1 }
       }
+    ],
+    [
+      "oathchain-lens",
+      {
+        id: "oathchain-lens",
+        name: "Oathchain Lens",
+        slot: "utility",
+        category: "chargedRelic",
+        tier: "artifact",
+        normalShopCommon: false,
+        statBonus: { stat: "signal", amount: 1 }
+      }
     ]
   ]);
 }
@@ -8267,6 +8279,54 @@ describe("contracts", () => {
     const player = server.getState().players.find((entry) => entry.seatId === "seat-1");
     expect(player?.character.activeContract).toBeNull();
     expect(player?.character.heldGear.some((item) => item.id === "veil-hook")).toBe(true);
+  });
+});
+
+describe("contract lifecycle ledger", () => {
+  it("makes completedContracts authoritative for projections and relic-dealer spending", () => {
+    const server = new GameRoomServer(
+      createState({
+        players: createState().players.map((entry) => entry.seatId === "seat-1" ? {
+          ...entry,
+          sectorId: "outer_surgery_tent",
+          character: {
+            ...entry.character,
+            currentSpaceId: "outer_surgery_tent",
+            completedContracts: ["contract-a", "contract-b", "contract-c"],
+            activeContract: { contractId: "choir-hush-census", progress: 1 }
+          }
+        } : entry)
+      }),
+      [], createSequenceRandomSource([0]), createThreats(), createCharacters(), createGear(), createContracts()
+    );
+
+    runIntent(server, { type: "SHOP_SERVICE_REQUESTED", seatId: "seat-1", serviceId: "trade-missions-for-artifact" });
+    const traded = server.getState().players.find((entry) => entry.seatId === "seat-1")!;
+    expect(traded.character.completedContracts).toEqual([]);
+    expect(traded.character.activeContract).toEqual({ contractId: "choir-hush-census", progress: 1 });
+    expect(traded.character.heldGear.filter((item) => item.tier === "artifact")).toHaveLength(1);
+
+    runIntent(server, { type: "SHOP_SERVICE_REQUESTED", seatId: "seat-1", serviceId: "trade-missions-for-artifact" });
+    expect(server.getState().players.find((entry) => entry.seatId === "seat-1")?.character.heldGear.filter((item) => item.tier === "artifact")).toHaveLength(1);
+
+    const phone = createPhoneProjection(server.getState(), "seat-1", true) as { self: { character: { completedContracts: string[] } } };
+    const tv = createTvProjection(server.getState()) as { players: Array<{ character: { completedContracts: number } }> };
+    expect(phone.self.character.completedContracts).toEqual([]);
+    expect(tv.players[0]?.character.completedContracts).toBe(0);
+  });
+
+  it("does not spend legacy completion events when an empty ledger is present", () => {
+    const state = createState({
+      eventLog: [{ type: "COMPLETE_CONTRACT", seatId: "seat-1", contractId: "legacy-a", createdAt: "2026-07-11T00:00:00.000Z" } as GameAction],
+      players: createState().players.map((entry) => entry.seatId === "seat-1" ? {
+        ...entry,
+        sectorId: "outer_surgery_tent",
+        character: { ...entry.character, currentSpaceId: "outer_surgery_tent", completedContracts: [] }
+      } : entry)
+    });
+    const server = new GameRoomServer(state, [], createSequenceRandomSource([0]), createThreats(), createCharacters(), createGear(), createContracts());
+    runIntent(server, { type: "SHOP_SERVICE_REQUESTED", seatId: "seat-1", serviceId: "trade-missions-for-artifact" });
+    expect(server.getState().players[0]?.character.heldGear.some((item) => item.tier === "artifact")).toBe(false);
   });
 });
 
