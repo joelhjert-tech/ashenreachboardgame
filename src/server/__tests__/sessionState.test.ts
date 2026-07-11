@@ -12,8 +12,129 @@ import { applyStartingLoadout } from "../../game/rules/startingLoadout.js";
 import { createPhoneProjection, createTvProjection } from "../roomServer.js";
 import { validateJoinToken } from "../auth.js";
 import { createInitialSessionState } from "../sessionState.js";
+import { loadTileChallenges } from "../../game/content/tileChallenges.js";
+import { attachTileChallengesToSectors } from "../../game/rules/tileChallenges.js";
+import { GameRoomServer, type ConnectedClient } from "../roomServer.js";
+import type { PhonePatchPayload, PublicPatchPayload } from "../../client/shared/types.js";
 
 describe("canonical sector graph", () => {
+  it("attaches Rift Whispers as a recurring anomaly challenge instead of a threat", () => {
+    const state = createInitialSessionState("tile-challenge-session");
+    const chapel = state.sectors.find((sector) => sector.id === "ashen-chapel");
+    expect(chapel?.encounterDecks.threat).not.toContain("rift-whispers");
+    expect(chapel?.tileChallenges).toEqual([
+      expect.objectContaining({ id: "rift-whispers-ashen-chapel", challengeType: "anomaly", testStat: "signal", recurring: true })
+    ]);
+  });
+
+  it("rejects unknown sectors and duplicate authored order", () => {
+    const sectors = createCanonicalSectorGraph();
+    const challenge = [...loadTileChallenges().values()][0]!;
+    expect(() => attachTileChallengesToSectors(sectors, [{ ...challenge, sectorId: "missing-sector" }])).toThrow(/unknown sector/i);
+    expect(() => attachTileChallengesToSectors(sectors, [challenge, { ...challenge, id: `${challenge.id}-copy` }])).toThrow(/authored order is duplicated/i);
+  });
+
+  it("opens a persisted recurring tile challenge before sector threats", () => {
+    const state = createInitialSessionState("tile-challenge-lifecycle", "single-player");
+    state.status = "active";
+    state.phase = "sector";
+    state.players[0]!.sectorId = "ashen-chapel";
+    state.players[0]!.character.currentSpaceId = "ashen-chapel";
+    const server = new GameRoomServer(state);
+    (server as unknown as { runAutomaticPhases: (seatId: string) => void }).runAutomaticPhases("seat-1");
+    const pending = server.getState().pendingTileChallenge;
+    expect(pending).toMatchObject({ challengeId: "rift-whispers-ashen-chapel", challengeType: "anomaly", testStat: "signal", rolled: false });
+    expect(server.getState().currentEncounter?.cardType).toBe("hazard");
+    expect(server.getState().sectors.find((sector) => sector.id === "ashen-chapel")?.tileChallenges).toHaveLength(1);
+    expect(server.getState().players[0]?.character.trophyPile).toEqual([]);
+  });
+
+  it("keeps challenges recurring across outcomes, authored order, revisits, and operatives", () => {
+    const outcomeState = createInitialSessionState("tile-challenge-outcomes", "single-player");
+    const challenge = outcomeState.sectors.find((sector) => sector.id === "ashen-chapel")!.tileChallenges![0]!;
+    for (const success of [true, false]) {
+      const state = structuredClone(outcomeState);
+      state.status = "active";
+      state.phase = "resolution";
+      state.resolutionSource = "tileChallenge";
+      state.pendingEffect = success ? challenge.successEffect : challenge.failureEffect;
+      const result = reduceGameState(state, { type: "RESOLUTION_APPLIED", seatId: "seat-1", createdAt: "2026-07-11T00:00:00.000Z", effect: state.pendingEffect, sourceCardId: challenge.id, success });
+      expect(result.state.sectors.find((sector) => sector.id === "ashen-chapel")?.tileChallenges).toContainEqual(challenge);
+      expect(result.state.players[0]?.character.trophyPile).toEqual([]);
+      expect(result.state.players[0]?.character.heldGear.some((item) => item.id === challenge.id)).toBe(false);
+    }
+
+    const state = createInitialSessionState("tile-challenge-order");
+    const chapel = state.sectors.find((sector) => sector.id === "ashen-chapel")!;
+    const second = { ...challenge, id: `${challenge.id}-second`, name: "Second Rift", authoredOrder: 1 };
+    chapel.tileChallenges = [second, challenge];
+    for (const player of state.players.slice(0, 2)) {
+      player.sectorId = "ashen-chapel";
+      player.character.currentSpaceId = "ashen-chapel";
+    }
+    const server = new GameRoomServer(state);
+    const start = (seatId: string) => (server as unknown as { startNextTileChallenge: (id: string) => boolean }).startNextTileChallenge(seatId);
+    expect(start("seat-1")).toBe(true);
+    expect(server.getState().pendingTileChallenge?.challengeId).toBe(challenge.id);
+    server.getState().pendingTileChallenge = null;
+    server.getState().tileChallengeProgress = { seatId: "seat-1", sectorId: "ashen-chapel", resolvedChallengeIds: [challenge.id] };
+    expect(start("seat-1")).toBe(true);
+    expect(server.getState().pendingTileChallenge?.challengeId).toBe(second.id);
+    server.getState().pendingTileChallenge = null;
+    server.getState().tileChallengeProgress = null;
+    expect(start("seat-1")).toBe(true);
+    expect(server.getState().pendingTileChallenge?.challengeId).toBe(challenge.id);
+    server.getState().pendingTileChallenge = null;
+    server.getState().tileChallengeProgress = null;
+    expect(start("seat-2")).toBe(true);
+    expect(server.getState().pendingTileChallenge).toMatchObject({ seatId: "seat-2", challengeId: challenge.id });
+  });
+
+  it("keeps challenge details public but the pending resolution id owner-private", () => {
+    const state = createInitialSessionState("tile-challenge-projection");
+    state.status = "active";
+    state.phase = "sector";
+    state.players[0]!.sectorId = "ashen-chapel";
+    state.players[0]!.character.currentSpaceId = "ashen-chapel";
+    const server = new GameRoomServer(state);
+    (server as unknown as { runAutomaticPhases: (seatId: string) => void }).runAutomaticPhases("seat-1");
+    const tv = createTvProjection(server.getState()) as unknown as PublicPatchPayload;
+    const owner = createPhoneProjection(server.getState(), "seat-1") as unknown as PhonePatchPayload;
+    const other = createPhoneProjection(server.getState(), "seat-2") as unknown as PhonePatchPayload;
+    expect(tv.sectors.find((sector) => sector.id === "ashen-chapel")?.tileChallenges?.[0]).toMatchObject({ challengeType: "anomaly", recurring: true });
+    expect(tv.pendingTileChallenge).toMatchObject({ challengeId: "rift-whispers-ashen-chapel", testStat: "signal" });
+    expect(JSON.stringify(tv)).not.toContain(server.getState().pendingTileChallenge?.id);
+    expect(owner.pendingTileChallengePrivate?.id).toBe(server.getState().pendingTileChallenge?.id);
+    expect(other.pendingTileChallengePrivate).toBeNull();
+  });
+
+  it("spends one exact Choir Lantern charge for only the pending anomaly Signal challenge", () => {
+    const state = createInitialSessionState("choir-light-lifecycle", "single-player");
+    state.status = "active";
+    state.phase = "sector";
+    state.players[0]!.sectorId = "ashen-chapel";
+    state.players[0]!.character.currentSpaceId = "ashen-chapel";
+    const lantern = { ...loadGear().get("choir-lantern")!, instanceId: "choir-instance", currentCharges: 2, maxCharges: 2 };
+    state.players[0]!.character.heldGear.push(lantern);
+    state.players[0]!.character.equippedGear.utility = "choir-lantern";
+    const server = new GameRoomServer(state);
+    (server as unknown as { runAutomaticPhases: (seatId: string) => void }).runAutomaticPhases("seat-1");
+    const pendingId = server.getState().pendingTileChallenge!.id;
+    const sent: Array<Record<string, unknown>> = [];
+    const client: ConnectedClient = { seatId: "seat-1", view: "phone", socket: { send: (payload: string) => sent.push(JSON.parse(payload)), close() {} } as unknown as ConnectedClient["socket"] };
+    server.handleIntent(client, { type: "USE_GEAR", seatId: "seat-1", gearId: "choir-lantern", instanceId: "choir-instance", pendingTileChallengeId: pendingId });
+    expect(sent.filter((message) => message.type === "INTENT_REJECTED")).toEqual([]);
+    const owned = server.getState().players[0]!.character.heldGear.find((item) => item.instanceId === "choir-instance");
+    expect(owned?.currentCharges).toBe(1);
+    expect(server.getState().pendingTileChallenge?.modifierSources).toEqual([expect.objectContaining({ label: "Choir Lantern", value: 2, sourceInstanceId: "choir-instance" })]);
+    server.handleIntent(client, { type: "USE_GEAR", seatId: "seat-1", gearId: "choir-lantern", instanceId: "choir-instance", pendingTileChallengeId: pendingId });
+    expect(server.getState().players[0]!.character.heldGear.find((item) => item.instanceId === "choir-instance")?.currentCharges).toBe(1);
+    expect(sent.some((message) => message.type === "INTENT_REJECTED" && /already committed/i.test(String(message.reason)))).toBe(true);
+
+    server.getState().pendingTileChallenge = { ...server.getState().pendingTileChallenge!, id: "signal-hazard", challengeType: "hazard", modifierSources: [] };
+    server.handleIntent(client, { type: "USE_GEAR", seatId: "seat-1", gearId: "choir-lantern", instanceId: "choir-instance", pendingTileChallengeId: "signal-hazard" });
+    expect(server.getState().players[0]!.character.heldGear.find((item) => item.instanceId === "choir-instance")?.currentCharges).toBe(1);
+  });
   it("creates one live sector for every board node and keeps ids aligned", () => {
     const sectors = createCanonicalSectorGraph();
 
@@ -26,7 +147,10 @@ describe("canonical sector graph", () => {
   it("keeps the live threat deck broad and every canonical threat reference resolvable", () => {
     const sectors = createCanonicalSectorGraph();
     const threats = loadThreatCards();
-    const referencedThreatIds = new Set(sectors.flatMap((sector) => sector.encounterDecks.threat));
+    const referencedThreatIds = new Set([
+      ...sectors.flatMap((sector) => sector.encounterDecks.threat),
+      ...[...loadTileChallenges().values()].map((challenge) => challenge.artCardId)
+    ]);
     const severities = new Set([...threats.values()].map((threat) => threat.severity));
 
     expect(threats.size).toBeGreaterThanOrEqual(40);

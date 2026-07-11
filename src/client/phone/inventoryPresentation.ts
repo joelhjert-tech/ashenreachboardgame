@@ -12,6 +12,7 @@ export type InventoryTimingWindow =
   | "startOfTurn"
   | "movement"
   | "movementRouteConfirmation"
+  | "beforeAnomalySignalTest"
   | "shop"
   | "action"
   | "anyTime";
@@ -114,6 +115,8 @@ export function formatTimingWindow(window: InventoryTimingWindow): string {
       return "Movement";
     case "movementRouteConfirmation":
       return "Movement route confirmation";
+    case "beforeAnomalySignalTest":
+      return "Before an anomaly Signal test";
     case "shop":
       return "Shop";
     case "action":

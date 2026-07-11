@@ -1489,6 +1489,18 @@ function HostContextPanel({
           </div>
         </div>
       )}
+      {(activeSector?.tileChallenges?.length ?? 0) > 0 && (
+        <section className="tv-tile-challenges" aria-label="Recurring tile challenges">
+          <div className="tv-host-context-kicker">Challenges</div>
+          {activeSector!.tileChallenges!.map((challenge) => (
+            <article key={challenge.id}>
+              <strong>{challenge.name}</strong>
+              <span>{toTitleCase(challenge.challengeType)} · {toTitleCase(challenge.testStat)} {challenge.difficulty} · Recurring</span>
+              <small>{challenge.failureSummary}</small>
+            </article>
+          ))}
+        </section>
+      )}
       <p>{activeSpace?.ruleText ?? "Select or activate a sector to bring its command brief online."}</p>
       <div className="tv-host-context-grid">
         <span>Reach <strong>{toTitleCase(activeSpace?.tier ?? activeSector?.regionTier ?? "Unknown")}</strong></span>

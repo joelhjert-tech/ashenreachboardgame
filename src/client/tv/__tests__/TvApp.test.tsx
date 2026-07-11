@@ -1094,6 +1094,19 @@ describe("TvApp", () => {
     expect(JSON.stringify(patch.payload)).not.toContain("Private agenda");
   });
 
+  it("separates recurring challenges from threats in the public sector brief", async () => {
+    window.localStorage.setItem("ashen-reach-tv-room-code", "RT7P4");
+    window.localStorage.setItem("ashen-reach-tv-host-token", "host:RT7P4:secret");
+    const patch = createPatch();
+    patch.payload.sectors[0]!.tileChallenges = [{ id: "rift-whispers-ashen-chapel", name: "Rift Whispers", challengeType: "anomaly", sectorId: "ashwake-crossing", testStat: "signal", difficulty: 8, trigger: "onArrival", authoredOrder: 0, recurring: true, tags: ["anomaly"], lore: "The signal repeats.", artCardId: "rift-whispers", successSummary: "The whisper recedes.", failureSummary: "Gain the authored Scar." }];
+    mockUseRoomSubscription.mockReturnValue({ patch, error: null, sendIntent: vi.fn(), status: "open", debugEvents: [], clearDebugEvents: vi.fn() });
+    render(<TvApp />);
+    const challenges = await screen.findByRole("region", { name: /recurring tile challenges/i });
+    expect(challenges).toHaveTextContent(/rift whispers/i);
+    expect(challenges).toHaveTextContent(/anomaly.*signal 8.*recurring/i);
+    expect(challenges).not.toHaveTextContent(/trophy|claim|inventory/i);
+  });
+
   it("renders battle setup through the host battle overlay without a duplicate card tray", async () => {
     window.localStorage.setItem("ashen-reach-tv-room-code", "RT7P4");
     window.localStorage.setItem("ashen-reach-tv-host-token", "host:RT7P4:secret");

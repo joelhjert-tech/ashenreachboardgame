@@ -4,12 +4,14 @@ import { loadAfflictionCards } from "../game/content/afflictions.js";
 import { loadContracts } from "../game/content/contracts.js";
 import { loadFollowers } from "../game/content/followers.js";
 import { loadGear } from "../game/content/gear.js";
+import { loadTileChallenges } from "../game/content/tileChallenges.js";
 import { createCanonicalSectorGraph, validateCanonicalSectorGraph } from "../game/data/canonicalSectorGraph.js";
 import { getScenarioDefinition, SCENARIOS } from "../game/data/scenarios.js";
 import { createInitialScenarioProgress } from "../game/rules/scenarioAmbient.js";
 import { applyStartingLoadout, createInitialSoloRerollCharges, type StartingLoadoutCatalogs } from "../game/rules/startingLoadout.js";
 import { getHeatThresholdForMode, getWoundThresholdForMode } from "../game/rules/soloTuning.js";
 import { createInitialAfflictionUsageState } from "../game/rules/afflictions.js";
+import { attachTileChallengesToSectors } from "../game/rules/tileChallenges.js";
 import type { Character } from "../game/schema/character.schema.js";
 import type { GameMode, GameState, InteractionMode, PlayerState, SessionMode } from "../game/schema/session.schema.js";
 import { createJoinToken } from "./auth.js";
@@ -100,6 +102,8 @@ export function createInitialSessionState(
 ): GameState {
   const characters = loadCharacters();
   const sectors = createCanonicalSectorGraph();
+  const tileChallenges = [...loadTileChallenges().values()];
+  const sectorsWithChallenges = attachTileChallengesToSectors(sectors, tileChallenges);
   const gear = loadGear();
   const followers = loadFollowers();
   const availableContracts = [...loadContracts().values()];
@@ -117,7 +121,7 @@ export function createInitialSessionState(
     return character;
   });
 
-  validateCanonicalSectorGraph(sectors);
+  validateCanonicalSectorGraph(sectorsWithChallenges);
 
   return {
     sessionId,
@@ -138,7 +142,7 @@ export function createInitialSessionState(
     woundThreshold: getWoundThresholdForMode(sessionMode),
     sequence: 0,
     escalationLevel: 0,
-    sectors,
+    sectors: sectorsWithChallenges,
     seats: configuredSeats.map(({ seatId, characterId }) => ({
       seatId,
       characterId,
@@ -156,7 +160,7 @@ export function createInitialSessionState(
       createPlayerState(
         seatId,
         selectedCharacters[index]!,
-        selectedCharacters[index]?.currentSpaceId ?? sectors[0]?.id ?? "ashwake-crossing",
+        selectedCharacters[index]?.currentSpaceId ?? sectorsWithChallenges[0]?.id ?? "ashwake-crossing",
         index,
         sessionMode,
         loadoutCatalogs
@@ -177,6 +181,8 @@ export function createInitialSessionState(
     pendingEnemyRoll: null,
     pendingEffect: null,
     pendingFailureReaction: null,
+    pendingTileChallenge: null,
+    tileChallengeProgress: null,
     activeResolution: null,
     lastOutcomeSummary: null
   };

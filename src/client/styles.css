@@ -16992,6 +16992,29 @@ body {
   white-space: nowrap;
 }
 
+.tv-tile-challenges {
+  display: grid;
+  gap: 0.45rem;
+  padding-block: 0.45rem;
+  border-block: 1px solid var(--ag-rule);
+}
+
+.tv-tile-challenges article {
+  display: grid;
+  gap: 0.15rem;
+  padding-left: 0.65rem;
+  border-left: 3px double var(--ag-brass);
+}
+
+.tv-tile-challenges article span {
+  color: var(--ag-brass-bright);
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.tv-tile-challenges article small { color: var(--ag-bone-200); }
+
 .tv-host-context-list {
   display: grid;
   gap: 0.25rem;

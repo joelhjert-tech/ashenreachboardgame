@@ -924,7 +924,7 @@ function consumeTemporaryAllStatBoost(state: GameState, seatId: string): GameSta
   }) };
 }
 
-function spendHeldGearCharge(state: GameState, seatId: string, gearId: string): GameState {
+function spendHeldGearCharge(state: GameState, seatId: string, gearId: string, instanceId?: string): GameState {
   return {
     ...state,
     players: updateActivePlayer(state, seatId, (entry) => ({
@@ -932,10 +932,11 @@ function spendHeldGearCharge(state: GameState, seatId: string, gearId: string): 
       character: {
         ...entry.character,
         heldGear: entry.character.heldGear.map((item) =>
-          item.id === gearId
+          item.id === gearId && (!instanceId || item.instanceId === instanceId)
             ? {
                 ...item,
-                charges: Math.max((item.charges ?? 0) - 1, 0),
+                currentCharges: Math.max((item.currentCharges ?? item.charges ?? 0) - 1, 0),
+                charges: Math.max((item.currentCharges ?? item.charges ?? 0) - 1, 0),
                 maxUses: item.maxUses ?? item.charges ?? 0
               }
             : item
@@ -1264,6 +1265,7 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
           } : null,
           movementRolls: clearMovementRollForSeat(state, movementAction.seatId),
           movementAdjustments: clearMovementAdjustmentForSeat(state, movementAction.seatId),
+          tileChallengeProgress: movementAction.success ? null : state.tileChallengeProgress,
           players: updateActivePlayer(state, movementAction.seatId, (entry) => ({
             ...entry,
             sectorId: destinationSectorId,
@@ -2265,7 +2267,7 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
         return reject(state, action, error instanceof Error ? error.message : "Gear use limit reached");
       }
 
-      if (item.useLimit === "charge" && (item.charges ?? 0) <= 0) {
+      if (item.useLimit === "charge" && (item.currentCharges ?? item.charges ?? 0) <= 0) {
         return reject(state, action, `${item.name} has no charges remaining`);
       }
 
@@ -2283,7 +2285,7 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
           (useGearAction.exhaustInstanceId ? owned.instanceId === useGearAction.exhaustInstanceId : owned === item) ? { ...owned, exhausted: true } : owned) } }))
       } : paidState;
       const chargedState = item.useLimit === "charge"
-        ? spendHeldGearCharge(exhaustedGearState, useGearAction.seatId, useGearAction.gearId)
+        ? spendHeldGearCharge(exhaustedGearState, useGearAction.seatId, useGearAction.gearId, useGearAction.chargeInstanceId)
         : exhaustedGearState;
       const finalState = useGearAction.discard
         ? discardHeldGear(chargedState, useGearAction.seatId, useGearAction.gearId)
@@ -2292,6 +2294,15 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
 
       return succeed({
         ...finalState,
+        pendingTileChallenge: useGearAction.pendingTileChallengeId && finalState.pendingTileChallenge?.id === useGearAction.pendingTileChallengeId && useGearAction.rollModifier
+          ? {
+              ...finalState.pendingTileChallenge,
+              modifierSources: [
+                ...finalState.pendingTileChallenge.modifierSources,
+                { label: useGearAction.rollModifier.label, value: useGearAction.rollModifier.value, sourceInstanceId: useGearAction.chargeInstanceId }
+              ]
+            }
+          : finalState.pendingTileChallenge,
         pendingEffect: useGearAction.suppressPendingFailure ? null : finalState.pendingEffect,
         pendingFailureReaction: useGearAction.suppressPendingFailure ? null : finalState.pendingFailureReaction,
         sequence: state.sequence + 1,
@@ -3983,6 +3994,7 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
         pendingEnemyRoll: leavingResolution ? null : state.pendingEnemyRoll,
         pendingEffect: leavingResolution ? null : state.pendingEffect,
         pendingFailureReaction: leavingResolution ? null : state.pendingFailureReaction,
+        pendingTileChallenge: leavingResolution ? null : state.pendingTileChallenge,
         activeResolution:
           action.toPhase === "broadcast" && state.activeResolution
             ? {

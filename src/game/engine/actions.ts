@@ -197,6 +197,8 @@ export interface UseGearAction extends BaseAction {
     stat: CheckStat;
     mode: "battle" | "check";
   };
+  chargeInstanceId?: string;
+  pendingTileChallengeId?: string;
 }
 
 export interface UseFollowerAction extends BaseAction {
@@ -670,6 +672,8 @@ export type ClientIntent =
       type: "USE_GEAR";
       seatId: string;
       gearId: string;
+      instanceId?: string;
+      pendingTileChallengeId?: string;
     }
   | {
       type: "USE_FOLLOWER";

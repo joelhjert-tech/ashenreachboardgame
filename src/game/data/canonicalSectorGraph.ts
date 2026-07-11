@@ -484,7 +484,7 @@ const encounterDecksBySpaceId: Partial<Record<string, EncounterDecks>> = {
     escalation: ["escalation-red-march-levy", "escalation-emberwatch"]
   },
   "ashen-chapel": {
-    threat: ["cracked-censer-novice", "choir-static-burst", "choir-wraith", "veil-censor", "rift-whispers", "bell-mask-pilgrim", "reliquary-judge"],
+    threat: ["cracked-censer-novice", "choir-static-burst", "choir-wraith", "veil-censor", "bell-mask-pilgrim", "reliquary-judge"],
     anomaly: ["anomaly-choir-static", "anomaly-saint-static-aperture", "anomaly-ashfall-murmur"],
     contract: ["umbral-shrine-confession", "choir-spindle-harmonics"],
     artifact: ["artifact-choir-static-censer", "artifact-heat-sink-prayer"],

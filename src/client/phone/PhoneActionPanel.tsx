@@ -2726,6 +2726,34 @@ export function PhoneActionPanel({
   }
 
   if (patch.phase === "action" && patch.encounter?.cardType === "hazard") {
+    const pendingTileChallenge = patch.pendingTileChallengePrivate;
+    const choirLantern = self.character.heldGear.find((item) => item.id === "choir-lantern");
+    if (pendingTileChallenge?.challengeType === "anomaly" && pendingTileChallenge.testStat === "signal" && !pendingTileChallenge.rolled) {
+      const equipped = choirLantern ? Object.values(self.character.equippedGear).includes(choirLantern.id) : false;
+      const charges = choirLantern?.currentCharges ?? choirLantern?.charges ?? 0;
+      const disabledReason = !choirLantern
+        ? "Choir Lantern is not owned."
+        : !equipped
+          ? "Choir Lantern must be equipped."
+          : charges < 1
+            ? "Choir Lantern is Depleted."
+            : undefined;
+      threatActions.push({
+        key: "choir-light",
+        label: "Use Choir Lantern",
+        detail: disabledReason ?? `Spend 1 charge for +2 Signal on this anomaly test. ${charges}/${choirLantern?.maxCharges ?? 2} charges.`,
+        tone: "secondary",
+        stat: "signal",
+        disabled: Boolean(disabledReason),
+        onClick: () => onIntent({
+          type: "USE_GEAR",
+          seatId: self.seatId,
+          gearId: "choir-lantern",
+          instanceId: choirLantern?.instanceId,
+          pendingTileChallengeId: pendingTileChallenge.id
+        })
+      });
+    }
     const checkIsStaged =
       activeResolution?.stage === "battle_setup" &&
       activeResolution.playerId === self.seatId &&
@@ -2734,7 +2762,9 @@ export function PhoneActionPanel({
     threatActions.push({
       key: "hazard-check",
       label: checkIsStaged ? "Roll check dice" : `Attempt ${statLabelById[patch.encounter.stat]} check`,
-      detail: patch.encounter.title,
+      detail: pendingTileChallenge
+        ? `Recurring ${pendingTileChallenge.challengeType} challenge ${pendingTileChallenge.authoredOrder + 1} of ${pendingTileChallenge.totalChallenges}. Remains on this sector.`
+        : patch.encounter.title,
       tone: "primary",
       stat: patch.encounter.stat,
       onClick: () =>

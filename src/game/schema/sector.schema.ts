@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { tileChallengeSchema } from "./tileChallenge.schema.js";
 
 export const regionTierSchema = z.enum([
   "borderlight",
@@ -24,6 +25,7 @@ export const sectorNodeSchema = z.object({
   neighbors: z.array(z.string().min(1)),
   danger: z.number().int().min(0).max(10),
   threatIcons: z.array(threatIconSchema).optional(),
+  tileChallenges: z.array(tileChallengeSchema).optional(),
   encounterDecks: encounterDecksSchema
 });
 

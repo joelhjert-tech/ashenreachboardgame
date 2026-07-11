@@ -12,6 +12,7 @@ export type GearTimingWindow =
   | "startOfTurn"
   | "movement"
   | "movementRouteConfirmation"
+  | "beforeAnomalySignalTest"
   | "shop"
   | "action"
   | "anyTime";
@@ -139,7 +140,7 @@ export interface GearItem {
   startingCharges?: number;
   chargeCost?: number;
   rechargeRule?: "none";
-  chargedEffect?: "personalGateOverride" | "movementAdjustment" | "saintSafeConduct" | "bonewayDetour";
+  chargedEffect?: "personalGateOverride" | "movementAdjustment" | "saintSafeConduct" | "bonewayDetour" | "choirLightSignalBonus";
   maxUses?: number;
   heatCost?: number;
   linkedFollowerRole?: FollowerRole;
@@ -393,6 +394,7 @@ export interface SectorNode {
   neighbors: string[];
   danger: number;
   threatIcons?: ThreatIcon[];
+  tileChallenges?: PublicTileChallenge[];
   encounterDecks: {
     threat: string[];
     anomaly: string[];
@@ -423,6 +425,35 @@ export interface ContractCard {
     | { type: "multiStopRoute"; ordered: boolean; targets: Array<{ id: string; type: "spaceId" | "tag"; value: string; label: string }> }
     | { type: "shopTransaction"; action: "buyEquipment" | "sellGear" | "repairGear" | "upgradeGear" | "trade"; requiredShopType?: string; requiredSectorId?: string; requiredCount: number; minimumSalvageSpent?: number; label: string };
   reward?: unknown;
+}
+
+export interface PublicTileChallenge {
+  id: string;
+  name: string;
+  challengeType: "hazard" | "anomaly";
+  sectorId: string;
+  testStat: Stat;
+  difficulty: number;
+  trigger: "onArrival" | "onEnter" | "startOfTurnAtSector" | "scenarioPrompt";
+  authoredOrder: number;
+  recurring: true;
+  tags: string[];
+  lore: string;
+  artCardId: string;
+  successSummary: string;
+  failureSummary: string;
+}
+
+export interface PublicPendingTileChallenge {
+  challengeId: string;
+  sectorId: string;
+  seatId: string;
+  challengeType: "hazard" | "anomaly";
+  testStat: Stat;
+  difficulty: number;
+  authoredOrder: number;
+  totalChallenges: number;
+  rolled: boolean;
 }
 
 export interface PendingEnemyRoll {
@@ -871,6 +902,7 @@ export interface PublicPatchPayload {
   availableContracts: ContractCard[];
   encounter: EncounterCard | null;
   pendingEnemyRoll: PendingEnemyRoll | null;
+  pendingTileChallenge?: PublicPendingTileChallenge | null;
   outcomeSummary: OutcomeSummary | null;
   rivalryAgendaCompletion?: PublicRivalryAgendaCompletion | null;
   rivalryAgendaReveal?: PublicRivalryAgendaReveal | null;
@@ -902,6 +934,7 @@ export interface PhonePatchPayload extends PublicPatchPayload {
   boundNemesis?: NemesisChampionSummary | null;
   crownKeyFragments?: number;
   eligibleNemesisAssistSeatIds?: string[];
+  pendingTileChallengePrivate?: (PublicPendingTileChallenge & { id: string }) | null;
 }
 
 export interface StatePatch<TPayload = PublicPatchPayload> {
@@ -1027,6 +1060,8 @@ export type ClientIntent =
       type: "USE_GEAR";
       seatId: string;
       gearId: string;
+      instanceId?: string;
+      pendingTileChallengeId?: string;
     }
   | {
       type: "USE_FOLLOWER";

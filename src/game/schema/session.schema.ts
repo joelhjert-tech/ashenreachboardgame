@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { pendingTileChallengeSchema } from "./tileChallenge.schema.js";
 import { characterSchema, statSchema } from "./character.schema.js";
 import { afflictionCardSchema, afflictionInstanceSchema, afflictionUsageStateSchema } from "./affliction.schema.js";
 import { effectSchema, threatCardSchema } from "./card.schema.js";
@@ -181,7 +182,7 @@ export const gameStateSchema = z.object({
   activeScenarioId: z.string().min(1),
   scenarioProgress: z.record(z.string(), z.number().int().min(0)),
   phase: phaseSchema,
-  resolutionSource: z.enum(["movement", "encounter", "contract"]).nullable(),
+  resolutionSource: z.enum(["movement", "encounter", "contract", "tileChallenge"]).nullable(),
   activeSeatIndex: z.number().int().min(0),
   turnOrder: z.array(z.string().min(1)).min(1),
   heatThreshold: z.number().int().min(1),
@@ -219,6 +220,12 @@ export const gameStateSchema = z.object({
     testType: z.enum(["movement", "hazard"]),
     sourceId: z.string().min(1),
     createdAt: z.string().min(1)
+  }).nullable().optional(),
+  pendingTileChallenge: pendingTileChallengeSchema.nullable().optional(),
+  tileChallengeProgress: z.object({
+    seatId: z.string().min(1),
+    sectorId: z.string().min(1),
+    resolvedChallengeIds: z.array(z.string().min(1))
   }).nullable().optional(),
   activeResolution: activeResolutionSchema.nullable().optional(),
   lastOutcomeSummary: z

@@ -1871,10 +1871,12 @@ export class GameRoomServer {
   private createGearUseAction(
     seatId: string,
     gearId: string,
-    createdAt: string
+    createdAt: string,
+    instanceId?: string,
+    pendingTileChallengeId?: string
   ): UseGearAction {
     const player = this.state.players.find((entry) => entry.seatId === seatId);
-    const item = player?.character.heldGear.find((entry) => entry.id === gearId);
+    const item = player?.character.heldGear.find((entry) => entry.id === gearId && (!instanceId || entry.instanceId === instanceId));
 
     if (!item) {
       throw new IntentRejectedError("USE_GEAR", `Gear ${gearId} is not held by this character`);
@@ -1892,9 +1894,22 @@ export class GameRoomServer {
       }
     }
 
+    if (item.chargedEffect === "choirLightSignalBonus") {
+      const pending = this.state.pendingTileChallenge;
+      if (!pending || pending.id !== pendingTileChallengeId || pending.seatId !== seatId || pending.challengeType !== "anomaly" || pending.testStat !== "signal" || pending.rolled) {
+        throw new IntentRejectedError("USE_GEAR", `${item.name} requires an unrolled anomaly Signal tile challenge.`);
+      }
+      if (!item.instanceId || item.instanceId !== instanceId) throw new IntentRejectedError("USE_GEAR", `${item.name} instance is stale.`);
+      if ((item.currentCharges ?? item.charges ?? 0) < (item.chargeCost ?? 1)) throw new IntentRejectedError("USE_GEAR", `${item.name} has no charges remaining.`);
+      if (player!.character.equippedGear.utility !== item.id) throw new IntentRejectedError("USE_GEAR", `${item.name} must be equipped.`);
+      if (pending.modifierSources.some((source) => source.label === "Choir Lantern")) throw new IntentRejectedError("USE_GEAR", "Choir Light is already committed to this test.");
+    }
+
     const itemName = item?.name ?? gearId;
     const discard = item?.consumeOnUse === true || item?.useLimit === "discard";
-    const rollModifier = this.createGearRollModifier(seatId, item);
+    const rollModifier = item.chargedEffect === "choirLightSignalBonus"
+      ? { label: "Choir Lantern", value: 2, stat: "signal" as const, mode: "check" as const }
+      : this.createGearRollModifier(seatId, item);
     const effect = this.resolveEffect(this.getGearUseEffect(gearId), seatId);
 
     return {
@@ -1909,6 +1924,8 @@ export class GameRoomServer {
       exhaustInstanceId: item.effectModel === "exhaust" ? item.instanceId : undefined,
       mirrorReroll: item.exhaustEffect === "mirrorReroll" ? { ...this.createSoloRerollAction({ type: "SOLO_REROLL_REQUESTED", seatId }, createdAt, true), artifactReroll: true } : undefined,
       rollModifier,
+      chargeInstanceId: item.effectModel === "charged" ? item.instanceId : undefined,
+      pendingTileChallengeId: item.chargedEffect === "choirLightSignalBonus" ? pendingTileChallengeId : undefined,
       summary: `${itemName} used. ${item?.activeText ?? "Its effect was recorded for the table."}`,
       createdAt
     } satisfies UseGearAction;
@@ -2684,7 +2701,7 @@ export class GameRoomServer {
           createdAt
         } satisfies UnequipGearAction;
       case "USE_GEAR":
-        return this.createGearUseAction(intent.seatId, intent.gearId, createdAt);
+        return this.createGearUseAction(intent.seatId, intent.gearId, createdAt, intent.instanceId, intent.pendingTileChallengeId);
       case "USE_FOLLOWER":
         return this.createFollowerUseAction(intent.seatId, intent.followerId, createdAt, intent.escalate === true);
       case "TABLE_INTERACTION":
@@ -4834,6 +4851,9 @@ export class GameRoomServer {
       }
 
       if (this.state.phase === "sector") {
+        if (this.startNextTileChallenge(seatId)) {
+          return;
+        }
         if (this.shouldDrawEncounterForCurrentSector(seatId)) {
           this.applyAction(this.createEncounterDrawnAction(seatId));
         } else {
@@ -4877,6 +4897,19 @@ export class GameRoomServer {
       }
 
       if (this.state.phase === "resolution" && !this.state.pendingEffect) {
+        if (this.state.resolutionSource === "tileChallenge" && this.state.pendingTileChallenge) {
+          const pending = this.state.pendingTileChallenge;
+          const progress = this.state.tileChallengeProgress;
+          this.state = {
+            ...this.state,
+            pendingTileChallenge: null,
+            tileChallengeProgress: {
+              seatId: pending.seatId,
+              sectorId: pending.sectorId,
+              resolvedChallengeIds: [...new Set([...(progress?.resolvedChallengeIds ?? []), pending.challengeId])]
+            }
+          };
+        }
         const nextPhase = this.getPhaseAfterResolution(seatId);
 
         this.applyAction({
@@ -4893,6 +4926,10 @@ export class GameRoomServer {
   private getPhaseAfterResolution(seatId: string): GameState["phase"] {
     const player = this.state.players.find((entry) => entry.seatId === seatId);
 
+    if (this.state.resolutionSource === "tileChallenge") {
+      return "sector";
+    }
+
     if (
       this.state.resolutionSource === "movement" &&
       player?.character.status === "active" &&
@@ -4908,6 +4945,83 @@ export class GameRoomServer {
     }
 
     return "broadcast";
+  }
+
+  private startNextTileChallenge(seatId: string): boolean {
+    const player = this.state.players.find((entry) => entry.seatId === seatId);
+    const sector = player ? this.state.sectors.find((entry) => entry.id === player.character.currentSpaceId) : null;
+
+    if (!player || !sector || player.character.status !== "active") return false;
+
+    const existingProgress = this.state.tileChallengeProgress;
+    const progress = existingProgress?.seatId === seatId && existingProgress.sectorId === sector.id
+      ? existingProgress
+      : { seatId, sectorId: sector.id, resolvedChallengeIds: [] };
+    const ordered = [...(sector.tileChallenges ?? [])]
+      .filter((challenge) => challenge.trigger === "onArrival")
+      .sort((a, b) => a.authoredOrder - b.authoredOrder);
+    const challenge = ordered.find((entry) => !progress.resolvedChallengeIds.includes(entry.id));
+
+    if (!challenge) {
+      if (this.state.tileChallengeProgress !== progress) this.state = { ...this.state, tileChallengeProgress: progress };
+      return false;
+    }
+
+    const createdAt = new Date().toISOString();
+    const encounter = {
+      id: challenge.id,
+      type: "threat" as const,
+      cardType: "hazard" as const,
+      title: challenge.name,
+      text: `Recurring ${challenge.challengeType} challenge at ${sector.name}.`,
+      flavor: challenge.lore,
+      severity: Math.max(1, Math.min(5, Math.ceil(challenge.difficulty / 3))),
+      stat: challenge.testStat,
+      difficulty: challenge.difficulty,
+      successEffect: challenge.successEffect,
+      failEffect: challenge.failureEffect,
+      enemyFamily: "hazard" as const,
+      threatLane: "blue" as const,
+      rarity: "common" as const,
+      tempo: "stall" as const
+    };
+
+    this.state = {
+      ...this.state,
+      sequence: this.state.sequence + 1,
+      phase: "action",
+      resolutionSource: "tileChallenge",
+      tileChallengeProgress: progress,
+      pendingTileChallenge: {
+        id: `tile-challenge:${sector.id}:${challenge.id}:${seatId}:${createdAt}`,
+        challengeId: challenge.id,
+        sectorId: sector.id,
+        seatId,
+        challengeType: challenge.challengeType,
+        testStat: challenge.testStat,
+        difficulty: challenge.difficulty,
+        sourceTags: challenge.tags,
+        successEffect: challenge.successEffect,
+        failureEffect: challenge.failureEffect,
+        authoredOrder: challenge.authoredOrder,
+        totalChallenges: ordered.length,
+        rolled: false,
+        modifierSources: [],
+        createdAt
+      },
+      currentEncounter: encounter,
+      activeResolution: {
+        id: `tile-challenge:${seatId}:${challenge.id}:${createdAt}`,
+        playerId: seatId,
+        source: challenge.challengeType === "anomaly" ? "anomaly" : "threat",
+        stage: "card_reveal",
+        card: { id: challenge.artCardId, title: challenge.name, type: challenge.challengeType, flavor: challenge.lore, artType: "threat" },
+        battle: { enemyName: challenge.name, stat: challenge.testStat, difficulty: challenge.difficulty, modifiers: [] },
+        outcome: { title: "Recurring tile challenge", text: `${challenge.name} remains on ${sector.name} after resolution.`, effects: [] }
+      },
+      eventLog: [...this.state.eventLog, { type: "TILE_CHALLENGE_STARTED", seatId, challengeId: challenge.id, sectorId: sector.id, createdAt }]
+    };
+    return true;
   }
 
   private shouldContinueClearedEncounterSector(seatId: string): boolean {
@@ -5316,10 +5430,13 @@ export class GameRoomServer {
 
     const escalationModifier = getEscalationModifier(this.state.escalationLevel);
     const keyedModifiers = this.resolveThreatEffectKeys(intent.seatId, encounter, encounter.combatEffectKeys, "beforeCombat");
-    const modifierSources = this.buildStatModifierSources(player, intent.stat, "check", {
+    const modifierSources = [
+      ...this.buildStatModifierSources(player, intent.stat, "check", {
       scenarioModifier: this.getScenarioSkillModifier(intent.seatId),
       keyedPlayerModifier: keyedModifiers.playerBonusModifier ?? 0
-    });
+      }),
+      ...(this.state.pendingTileChallenge?.modifierSources ?? []).map(({ label, value }) => ({ label, value }))
+    ];
     const roll = rollDice(2, 6, this.randomSource);
     const statBonus = this.sumModifierSources(modifierSources);
     const characterDifficultyModifier = this.getCharacterDifficultyModifier(player, encounter);
@@ -5497,6 +5614,12 @@ export class GameRoomServer {
       cardId: encounter.id,
       createdAt: new Date().toISOString()
     } satisfies DiceRollStartedAction);
+    if (this.state.pendingTileChallenge?.id && this.state.pendingTileChallenge.seatId === intent.seatId) {
+      this.state = {
+        ...this.state,
+        pendingTileChallenge: { ...this.state.pendingTileChallenge, rolled: true }
+      };
+    }
     this.broadcastPatch();
 
     const completeRoll = () => {
@@ -8729,6 +8852,18 @@ function isSeatCharacterSelectedForProjection(state: GameState, seat: GameState[
   return Boolean(seat.characterId) || playerSeatIds.has(seat.seatId);
 }
 
+function summarizeTileChallengeEffect(effect: EncounterEffect): string {
+  switch (effect.type) {
+    case "gain_note": return effect.text;
+    case "gain_scar": return "Gain the authored Scar.";
+    case "take_wound": return `Suffer ${effect.amount} Wound${effect.amount === 1 ? "" : "s"}.`;
+    case "heal_wound": return `Heal ${effect.amount} Wound${effect.amount === 1 ? "" : "s"}.`;
+    case "gain_salvage": return `Gain ${effect.amount} Salvage.`;
+    case "sequence": return effect.effects.map(summarizeTileChallengeEffect).join(" ");
+    default: return "Resolve the authored challenge effect.";
+  }
+}
+
 export function createTvProjection(
   state: GameState,
   movementPreviewBySeatId: ReadonlyMap<string, string> = new Map()
@@ -8875,7 +9010,16 @@ export function createTvProjection(
         kicked: seat.kicked
       };
     }),
-    sectors: state.sectors,
+    sectors: state.sectors.map((sector) => ({
+      ...sector,
+      tileChallenges: (sector.tileChallenges ?? []).map((challenge) => ({
+        id: challenge.id, name: challenge.name, challengeType: challenge.challengeType, sectorId: challenge.sectorId,
+        testStat: challenge.testStat, difficulty: challenge.difficulty, trigger: challenge.trigger,
+        authoredOrder: challenge.authoredOrder, recurring: true as const, tags: challenge.tags, lore: challenge.lore,
+        artCardId: challenge.artCardId, successSummary: summarizeTileChallengeEffect(challenge.successEffect),
+        failureSummary: summarizeTileChallengeEffect(challenge.failureEffect)
+      }))
+    })),
     players: visiblePlayers.map((player) => ({
       seatId: player.seatId,
       character: {
@@ -8928,6 +9072,17 @@ export function createTvProjection(
         }
       : null,
     pendingEnemyRoll: state.pendingEnemyRoll,
+    pendingTileChallenge: state.pendingTileChallenge ? {
+      challengeId: state.pendingTileChallenge.challengeId,
+      sectorId: state.pendingTileChallenge.sectorId,
+      seatId: state.pendingTileChallenge.seatId,
+      challengeType: state.pendingTileChallenge.challengeType,
+      testStat: state.pendingTileChallenge.testStat,
+      difficulty: state.pendingTileChallenge.difficulty,
+      authoredOrder: state.pendingTileChallenge.authoredOrder,
+      totalChallenges: state.pendingTileChallenge.totalChallenges,
+      rolled: state.pendingTileChallenge.rolled
+    } : null,
     outcomeSummary: state.lastOutcomeSummary,
     rivalryAgendaCompletion: buildPublicRivalryAgendaCompletion(state),
     rivalryAgendaReveal: buildPublicRivalryAgendaReveal(state),
@@ -8994,7 +9149,7 @@ export function createPhoneProjection(state: GameState, seatId: string, forcePri
     activeSeatIndex: state.activeSeatIndex,
     seats: publicProjection.seats,
     turnOrder: publicProjection.turnOrder,
-    sectors: state.sectors,
+    sectors: publicProjection.sectors,
     players: publicProjection.players,
     objectUseStates: buildPhoneObjectUseStates(state, player),
     escalationLevel: publicProjection.escalationLevel,
@@ -9003,6 +9158,19 @@ export function createPhoneProjection(state: GameState, seatId: string, forcePri
     availableContracts: state.availableContracts,
     encounter: state.currentEncounter,
     pendingEnemyRoll: state.pendingEnemyRoll,
+    pendingTileChallenge: publicProjection.pendingTileChallenge,
+    pendingTileChallengePrivate: state.pendingTileChallenge?.seatId === seatId ? {
+      id: state.pendingTileChallenge.id,
+      challengeId: state.pendingTileChallenge.challengeId,
+      sectorId: state.pendingTileChallenge.sectorId,
+      seatId: state.pendingTileChallenge.seatId,
+      challengeType: state.pendingTileChallenge.challengeType,
+      testStat: state.pendingTileChallenge.testStat,
+      difficulty: state.pendingTileChallenge.difficulty,
+      authoredOrder: state.pendingTileChallenge.authoredOrder,
+      totalChallenges: state.pendingTileChallenge.totalChallenges,
+      rolled: state.pendingTileChallenge.rolled
+    } : null,
     outcomeSummary: state.lastOutcomeSummary,
     rivalryAgendaCompletion: publicProjection.rivalryAgendaCompletion,
     rivalryAgendaReveal: publicProjection.rivalryAgendaReveal,

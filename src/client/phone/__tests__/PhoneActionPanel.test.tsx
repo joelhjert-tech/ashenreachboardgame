@@ -2657,6 +2657,18 @@ describe("PhoneActionPanel", () => {
     expect(screen.queryByTestId("phone-shop-panel")).not.toBeInTheDocument();
   });
 
+  it("offers Choir Lantern only for the owning unrolled anomaly Signal tile challenge", () => {
+    const onIntent = vi.fn();
+    const patch = createPatch();
+    patch.pendingTileChallengePrivate = { id: "pending-rift", challengeId: "rift-whispers-ashen-chapel", sectorId: "ashen-chapel", seatId: "seat-1", challengeType: "anomaly", testStat: "signal", difficulty: 8, authoredOrder: 0, totalChallenges: 1, rolled: false };
+    patch.self!.character.heldGear = [{ id: "choir-lantern", instanceId: "choir-1", name: "Choir Lantern", slot: "utility", tier: "artifact", category: "chargedRelic", statBonus: { stat: "signal", amount: 1 }, effectModel: "charged", useLimit: "charge", currentCharges: 2, maxCharges: 2, startingCharges: 2, chargeCost: 1, rechargeRule: "none", chargedEffect: "choirLightSignalBonus", activationTiming: ["beforeAnomalySignalTest"], requiresEquipped: true }];
+    patch.self!.character.equippedGear.utility = "choir-lantern";
+    render(<PhoneActionPanel characters={characters} onIntent={onIntent} patch={patch} />);
+    fireEvent.click(screen.getByRole("button", { name: /use choir lantern/i }));
+    expect(onIntent).toHaveBeenCalledWith(expect.objectContaining({ type: "USE_GEAR", instanceId: "choir-1", pendingTileChallengeId: "pending-rift" }));
+    expect(screen.getByText(/recurring anomaly challenge 1 of 1/i)).toBeInTheDocument();
+  });
+
   it("shows battle assist and opens usable combat cards during an enemy encounter", () => {
     const onIntent = vi.fn();
     const heldGear = [
