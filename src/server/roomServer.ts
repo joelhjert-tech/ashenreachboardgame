@@ -1770,7 +1770,8 @@ export class GameRoomServer {
     if (item.effectModel === "consumable") {
       if (item.consumableEffect === "ignoreFailedMovementOrHazard") {
         const reaction = this.state.phase === "resolution" && this.state.pendingEffect && this.state.activeResolution?.roll?.success === false &&
-          (this.state.activeResolution.source === "movement" || this.state.currentEncounter?.cardType === "hazard");
+          this.state.pendingFailureReaction?.seatId === seatId &&
+          (this.state.pendingFailureReaction.testType === "movement" || this.state.pendingFailureReaction.testType === "hazard");
         if (!reaction) throw new IntentRejectedError("USE_GEAR", `${item.name} can only be used after a failed movement or hazard test, before its effects resolve.`);
       } else if (this.state.phase !== "action") {
         throw new IntentRejectedError("USE_GEAR", `${item.name} can only be used during an action window.`);
@@ -1873,6 +1874,7 @@ export class GameRoomServer {
       effect,
       discard,
       suppressPendingFailure: item.consumableEffect === "ignoreFailedMovementOrHazard",
+      pendingFailureReactionId: item.consumableEffect === "ignoreFailedMovementOrHazard" ? this.state.pendingFailureReaction?.id : undefined,
       rollModifier,
       summary: `${itemName} used. ${item?.activeText ?? "Its effect was recorded for the table."}`,
       createdAt
@@ -1882,6 +1884,7 @@ export class GameRoomServer {
   private getGearUseEffect(gearId: string): EncounterEffect {
     switch (gearId) {
       case "blackstar-ampoule":
+      case "artifact-blackstar-ampoule":
         return { type: "gain_note", text: "Blackstar Ampoule discarded: failure effects ignored; the test remains failed." };
       case "artifact-bell-votive":
         return { type: "sequence", effects: [{ type: "gain_gear", gearId: "veil-hook" }, { type: "gain_note", text: "Bell votive cache opened. The yard watch left breach paths in the lining." }] };

@@ -1202,6 +1202,13 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
           phase: movementAction.effect ? "resolution" : "sector",
           resolutionSource: movementAction.effect ? "movement" : null,
           pendingEffect: movementAction.effect,
+          pendingFailureReaction: !movementAction.success && movementAction.effect ? {
+            id: `failure:movement:${movementAction.seatId}:${movementAction.createdAt}`,
+            seatId: movementAction.seatId,
+            testType: "movement",
+            sourceId: movementAction.toSectorId,
+            createdAt: movementAction.createdAt
+          } : null,
           movementRolls: clearMovementRollForSeat(state, movementAction.seatId),
           players: updateActivePlayer(state, movementAction.seatId, (entry) => ({
             ...entry,
@@ -1598,6 +1605,13 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
         resolutionSource: "encounter",
         pendingEnemyRoll: null,
         pendingEffect: action.effect,
+        pendingFailureReaction: !action.success && action.effect ? {
+          id: `failure:hazard:${action.seatId}:${action.createdAt}`,
+          seatId: action.seatId,
+          testType: "hazard",
+          sourceId: action.cardId,
+          createdAt: action.createdAt
+        } : null,
         activeResolution: buildRollResolution({
           seatId: action.seatId,
           source: "threat",
@@ -1842,6 +1856,7 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
         phase: "resolution",
         resolutionSource: state.resolutionSource,
         pendingEffect: null,
+        pendingFailureReaction: null,
         activeResolution: state.activeResolution
           ? {
               ...state.activeResolution,
@@ -2175,7 +2190,9 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
       try {
         if (useGearAction.suppressPendingFailure) {
           ensureSeatTurn(state, useGearAction.seatId);
-          if (state.phase !== "resolution" || !state.pendingEffect || state.activeResolution?.roll?.success !== false) throw new Error("No failed test is waiting for a reaction");
+          if (state.phase !== "resolution" || !state.pendingEffect || state.activeResolution?.roll?.success !== false ||
+              !state.pendingFailureReaction || state.pendingFailureReaction.id !== useGearAction.pendingFailureReactionId ||
+              state.pendingFailureReaction.seatId !== useGearAction.seatId) throw new Error("No matching failed test is waiting for a reaction");
         } else canManageGear(state, useGearAction.seatId);
       } catch (error) {
         return reject(state, action, error instanceof Error ? error.message : "Seat cannot use gear");
@@ -2212,6 +2229,7 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
       return succeed({
         ...finalState,
         pendingEffect: useGearAction.suppressPendingFailure ? null : finalState.pendingEffect,
+        pendingFailureReaction: useGearAction.suppressPendingFailure ? null : finalState.pendingFailureReaction,
         sequence: state.sequence + 1,
         activeResolution: appendPendingRollModifierToResolution(
           finalState.activeResolution,
@@ -3856,6 +3874,7 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
         currentEncounter: leavingResolution ? null : state.currentEncounter,
         pendingEnemyRoll: leavingResolution ? null : state.pendingEnemyRoll,
         pendingEffect: leavingResolution ? null : state.pendingEffect,
+        pendingFailureReaction: leavingResolution ? null : state.pendingFailureReaction,
         activeResolution:
           action.toPhase === "broadcast" && state.activeResolution
             ? {

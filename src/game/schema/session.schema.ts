@@ -211,6 +211,13 @@ export const gameStateSchema = z.object({
     })
     .nullable(),
   pendingEffect: effectSchema.nullable(),
+  pendingFailureReaction: z.object({
+    id: z.string().min(1),
+    seatId: z.string().min(1),
+    testType: z.enum(["movement", "hazard"]),
+    sourceId: z.string().min(1),
+    createdAt: z.string().min(1)
+  }).nullable().optional(),
   activeResolution: activeResolutionSchema.nullable().optional(),
   lastOutcomeSummary: z
     .object({

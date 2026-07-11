@@ -174,6 +174,7 @@ export function createInitialSessionState(
     currentEncounter: null,
     pendingEnemyRoll: null,
     pendingEffect: null,
+    pendingFailureReaction: null,
     activeResolution: null,
     lastOutcomeSummary: null
   };

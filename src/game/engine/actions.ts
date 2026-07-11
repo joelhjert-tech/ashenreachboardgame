@@ -184,6 +184,7 @@ export interface UseGearAction extends BaseAction {
   summary: string;
   discard?: boolean;
   suppressPendingFailure?: boolean;
+  pendingFailureReactionId?: string;
   rollModifier?: RollModifierSource & {
     stat: CheckStat;
     mode: "battle" | "check";

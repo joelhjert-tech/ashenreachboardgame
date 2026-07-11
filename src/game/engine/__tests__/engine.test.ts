@@ -1015,6 +1015,59 @@ describe("active resolution visibility state", () => {
     });
     expect(rolled.state.players[0]?.character.heat).toBe(0);
     expect(rolled.state.pendingEffect).toEqual({ type: "gain_heat", amount: 1 });
+    expect(rolled.state.pendingFailureReaction).toMatchObject({
+      seatId: "seat-1",
+      testType: "hazard",
+      sourceId: card.id
+    });
+
+    const reactionId = rolled.state.pendingFailureReaction?.id;
+    const ampoule: GearItem = {
+      id: "artifact-blackstar-ampoule",
+      name: "Blackstar Ampoule",
+      slot: "utility",
+      category: "consumable",
+      tier: "artifact",
+      statBonus: { stat: "guile", amount: 1 },
+      useLimit: "discard",
+      effectModel: "consumable",
+      activationTiming: ["afterFailedTest"],
+      consumeOnUse: true,
+      consumableEffect: "ignoreFailedMovementOrHazard",
+      requiresEquipped: false
+    };
+    const withAmpoule: GameState = {
+      ...rolled.state,
+      players: rolled.state.players.map((player) => player.seatId === "seat-1" ? {
+        ...player,
+        character: { ...player.character, heldGear: [...player.character.heldGear, ampoule] }
+      } : player)
+    };
+    const suppressed = reduceGameState(withAmpoule, {
+      type: "USE_GEAR",
+      seatId: "seat-1",
+      gearId: ampoule.id,
+      effect: { type: "gain_note", text: "Failure effects suppressed; test remains failed." },
+      summary: "Blackstar Ampoule used.",
+      discard: true,
+      suppressPendingFailure: true,
+      pendingFailureReactionId: reactionId,
+      createdAt: "2026-06-26T00:00:03.000Z"
+    });
+    expect(suppressed.ok).toBe(true);
+    if (!suppressed.ok) return;
+    expect(suppressed.state.pendingEffect).toBeNull();
+    expect(suppressed.state.pendingFailureReaction).toBeNull();
+    expect(suppressed.state.activeResolution?.roll?.success).toBe(false);
+    expect(suppressed.state.players[0]?.character.heat).toBe(0);
+    expect(suppressed.state.players[0]?.character.heldGear.some((item) => item.id === ampoule.id)).toBe(false);
+
+    const duplicate = reduceGameState(suppressed.state, {
+      type: "USE_GEAR", seatId: "seat-1", gearId: ampoule.id, effect: null, summary: "duplicate",
+      discard: true, suppressPendingFailure: true, pendingFailureReactionId: reactionId,
+      createdAt: "2026-06-26T00:00:04.000Z"
+    });
+    expect(duplicate.ok).toBe(false);
   });
 
   it("lets a single-player operative use one visible failed-check reroll per round", () => {
