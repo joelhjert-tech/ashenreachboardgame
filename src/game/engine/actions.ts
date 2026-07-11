@@ -183,6 +183,7 @@ export interface UseGearAction extends BaseAction {
   effect: EncounterEffect | null;
   summary: string;
   discard?: boolean;
+  suppressPendingFailure?: boolean;
   rollModifier?: RollModifierSource & {
     stat: CheckStat;
     mode: "battle" | "check";

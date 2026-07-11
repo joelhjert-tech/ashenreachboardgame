@@ -8,6 +8,7 @@ export const gearTimingWindowSchema = z.enum([
   "beforeThreatDraw",
   "beforeBattleRoll",
   "afterBattleRoll",
+  "afterFailedTest",
   "beforeTakingDamage",
   "startOfTurn",
   "movement",
@@ -31,8 +32,9 @@ export const shopCategorySchema = z.enum([
   "contract-broker"
 ]);
 export const gearUseLimitSchema = z.enum(["oncePerTurn", "oncePerRound", "discard", "charge"]);
-export const gearEffectModelSchema = z.enum(["permanent", "conditional"]);
+export const gearEffectModelSchema = z.enum(["permanent", "conditional", "consumable"]);
 export const gearConditionTypeSchema = z.enum(["battle"]);
+export const consumableEffectSchema = z.enum(["grantVeilHook", "ignoreFailedMovementOrHazard", "grantPaleCartelFixer", "healWound", "grantMarshalSeal"]);
 
 export const gearItemSchema = z.object({
   id: z.string().min(1),
@@ -66,12 +68,15 @@ export const gearItemSchema = z.object({
   effectModel: gearEffectModelSchema.optional(),
   requiresEquipped: z.boolean().optional(),
   conditionType: gearConditionTypeSchema.optional()
+  ,activationTiming: z.array(gearTimingWindowSchema).min(1).optional()
+  ,consumeOnUse: z.boolean().optional()
+  ,consumableEffect: consumableEffectSchema.optional()
 }).superRefine((item, context) => {
   if (item.tier !== "artifact" && (item.useLimit === "charge" || item.category === "chargedRelic")) {
     context.addIssue({ code: z.ZodIssueCode.custom, message: "normal Equipment cannot use Artifact charge mechanics", path: ["useLimit"] });
   }
   if (!item.effectModel) return;
-  if (item.requiresEquipped !== true) {
+  if (item.effectModel !== "consumable" && item.requiresEquipped !== true) {
     context.addIssue({ code: z.ZodIssueCode.custom, message: `${item.effectModel} passive items must require equipped state`, path: ["requiresEquipped"] });
   }
   if (item.effectModel === "conditional" && !item.conditionType) {
@@ -79,6 +84,12 @@ export const gearItemSchema = z.object({
   }
   if (item.effectModel === "permanent" && item.conditionType) {
     context.addIssue({ code: z.ZodIssueCode.custom, message: "permanent passive items cannot define a condition", path: ["conditionType"] });
+  }
+  if (item.effectModel === "consumable") {
+    if (!item.activationTiming?.length) context.addIssue({ code: z.ZodIssueCode.custom, message: "consumables require explicit activation timing", path: ["activationTiming"] });
+    if (item.consumeOnUse !== true) context.addIssue({ code: z.ZodIssueCode.custom, message: "consumables must consume on use", path: ["consumeOnUse"] });
+    if (!item.consumableEffect) context.addIssue({ code: z.ZodIssueCode.custom, message: "consumables require a typed effect", path: ["consumableEffect"] });
+    if (item.requiresEquipped === true || item.conditionType || item.useLimit === "charge") context.addIssue({ code: z.ZodIssueCode.custom, message: "consumables cannot declare passive or charged behavior", path: ["effectModel"] });
   }
 });
 

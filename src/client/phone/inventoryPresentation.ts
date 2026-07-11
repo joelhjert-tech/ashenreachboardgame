@@ -7,6 +7,7 @@ export type InventoryTimingWindow =
   | "beforeThreatDraw"
   | "beforeBattleRoll"
   | "afterBattleRoll"
+  | "afterFailedTest"
   | "beforeTakingDamage"
   | "startOfTurn"
   | "movement"
@@ -99,6 +100,8 @@ export function formatTimingWindow(window: InventoryTimingWindow): string {
       return "Before battle roll";
     case "afterBattleRoll":
       return "After battle roll";
+    case "afterFailedTest":
+      return "After failed movement or hazard test";
     case "beforeTakingDamage":
       return "Before taking damage";
     case "startOfTurn":
@@ -116,7 +119,7 @@ function getEquippedGearBonus(self: PhoneSelfState, stat: Stat, mode: "resting" 
   const equippedIds = new Set(Object.values(self.character.equippedGear).filter((value): value is string => Boolean(value)));
 
   const gearBonus = self.character.heldGear.reduce((sum, item) => {
-    if (!equippedIds.has(item.id) || item.statBonus.stat !== stat || (item.effectModel === "conditional" && mode !== "battle")) {
+    if (!equippedIds.has(item.id) || item.statBonus.stat !== stat || item.effectModel === "consumable" || (item.effectModel === "conditional" && mode !== "battle")) {
       return sum;
     }
 
@@ -207,7 +210,7 @@ export function getCurrentTimingWindow(patch: PhonePatchPayload): InventoryTimin
 }
 
 function serverAcceptsCardUse(patch: PhonePatchPayload): boolean {
-  return patch.phase === "action" || patch.phase === "sector";
+  return patch.phase === "action" || patch.phase === "sector" || (patch.phase === "resolution" && patch.activeResolution?.roll?.success === false);
 }
 
 function hasAny(text: string, words: string[]): boolean {
@@ -219,6 +222,7 @@ function uniqueWindows(windows: InventoryTimingWindow[]): InventoryTimingWindow[
 }
 
 function inferGearTimingWindows(item: GearItem): InventoryTimingWindow[] {
+  if (item.activationTiming?.length) return item.activationTiming;
   if (!item.activeText && !item.useLimit) {
     return [];
   }
@@ -433,7 +437,7 @@ function formatConditionalGearBonus(item: GearItem): string | null {
 
 function buildGearCard(item: GearItem, patch: PhonePatchPayload, self: PhoneSelfState): InventoryCardViewModel {
   const timingWindows = inferGearTimingWindows(item);
-  const active = item.effectModel ? false : Boolean(item.activeText || item.useLimit);
+  const active = item.effectModel === "consumable" || (!item.effectModel && Boolean(item.activeText || item.useLimit));
   const equippedIds = new Set(Object.values(self.character.equippedGear).filter((value): value is string => Boolean(value)));
   const isEquipped = equippedIds.has(item.id);
   const useState = getObjectUseState(patch, "gear", item.id);
@@ -466,7 +470,7 @@ function buildGearCard(item: GearItem, patch: PhonePatchPayload, self: PhoneSelf
     source: "gear",
     group: getGearGroup(item),
     name: item.name,
-    effectText: item.activeText ?? `Passive ${formatPassiveGearBonus(item)}.`,
+    effectText: item.effectModel === "consumable" ? `One Use — ${item.activeText ?? "Consume to resolve its effect."}` : item.activeText ?? `Passive ${formatPassiveGearBonus(item)}.`,
     timingText: timingWindows.length > 0 ? timingWindows.map(formatTimingWindow).join(", ") : "Passive",
     timingWindows,
     ...status,

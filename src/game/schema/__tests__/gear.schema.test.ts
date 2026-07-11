@@ -17,4 +17,10 @@ describe("gear effect model schema", () => {
     expect(gearItemSchema.safeParse({ ...base, effectModel: "conditional", requiresEquipped: true }).success).toBe(false);
     expect(gearItemSchema.safeParse({ ...base, useLimit: "charge", charges: 1 }).success).toBe(false);
   });
+
+  it("requires explicit timing, typed effect, and successful-use consumption for consumables", () => {
+    expect(gearItemSchema.safeParse({ ...base, category: "consumable", effectModel: "consumable", activationTiming: ["anyTime"], consumeOnUse: true, consumableEffect: "healWound", useLimit: "discard" }).success).toBe(true);
+    expect(gearItemSchema.safeParse({ ...base, effectModel: "consumable", consumeOnUse: true, consumableEffect: "healWound" }).success).toBe(false);
+    expect(gearItemSchema.safeParse({ ...base, effectModel: "consumable", activationTiming: ["anyTime"], consumeOnUse: false, consumableEffect: "healWound" }).success).toBe(false);
+  });
 });

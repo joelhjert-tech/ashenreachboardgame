@@ -1767,6 +1767,19 @@ export class GameRoomServer {
       throw new IntentRejectedError("USE_GEAR", `${item.name} is passive and applies automatically.`);
     }
 
+    if (item.effectModel === "consumable") {
+      if (item.consumableEffect === "ignoreFailedMovementOrHazard") {
+        const reaction = this.state.phase === "resolution" && this.state.pendingEffect && this.state.activeResolution?.roll?.success === false &&
+          (this.state.activeResolution.source === "movement" || this.state.currentEncounter?.cardType === "hazard");
+        if (!reaction) throw new IntentRejectedError("USE_GEAR", `${item.name} can only be used after a failed movement or hazard test, before its effects resolve.`);
+      } else if (this.state.phase !== "action") {
+        throw new IntentRejectedError("USE_GEAR", `${item.name} can only be used during an action window.`);
+      }
+      if (item.consumableEffect === "healWound" && (player.character.wounds ?? 0) <= 0) {
+        throw new IntentRejectedError("USE_GEAR", `${item.name} cannot resolve because this character has no wounds.`);
+      }
+    }
+
     const restrictions = getAfflictionRestrictions(player, getAfflictionCatalog(this.state));
 
     if (item.slot === "weapon" && restrictions.cannotUseWeapons) {
@@ -1849,7 +1862,7 @@ export class GameRoomServer {
     this.assertGearUseAllowed(seatId, item);
 
     const itemName = item?.name ?? gearId;
-    const discard = item?.useLimit === "discard";
+    const discard = item?.consumeOnUse === true || item?.useLimit === "discard";
     const rollModifier = this.createGearRollModifier(seatId, item);
     const effect = this.resolveEffect(this.getGearUseEffect(gearId), seatId);
 
@@ -1859,6 +1872,7 @@ export class GameRoomServer {
       gearId,
       effect,
       discard,
+      suppressPendingFailure: item.consumableEffect === "ignoreFailedMovementOrHazard",
       rollModifier,
       summary: `${itemName} used. ${item?.activeText ?? "Its effect was recorded for the table."}`,
       createdAt
@@ -1868,7 +1882,15 @@ export class GameRoomServer {
   private getGearUseEffect(gearId: string): EncounterEffect {
     switch (gearId) {
       case "blackstar-ampoule":
-        return { type: "gain_note", text: "Blackstar Ampoule spent: one failed movement or hazard penalty may be ignored." };
+        return { type: "gain_note", text: "Blackstar Ampoule discarded: failure effects ignored; the test remains failed." };
+      case "artifact-bell-votive":
+        return { type: "sequence", effects: [{ type: "gain_gear", gearId: "veil-hook" }, { type: "gain_note", text: "Bell votive cache opened. The yard watch left breach paths in the lining." }] };
+      case "artifact-pale-ledger-token":
+        return { type: "sequence", effects: [{ type: "gain_follower", followerId: "pale-cartel-fixer" }, { type: "gain_note", text: "Pale Ledger Token cashed for a fixer and a contract whisper." }] };
+      case "artifact-void-salt-poultice":
+        return { type: "sequence", effects: [{ type: "heal_wound", amount: 1 }, { type: "gain_note", text: "Void-Salt Poultice closed one wound." }] };
+      case "artifact-yard":
+        return { type: "sequence", effects: [{ type: "gain_gear", gearId: "marshal-seal" }, { type: "gain_note", text: "The Yard Bellframe Core released its Marshal Seal." }] };
       case "choir-static-censer":
         return { type: "gain_note", text: "Choir Static Censer spent: legacy pressure relief is deprecated; Scars remain the persistent harm track." };
       case LEGACY_SCAR_SINK_PRAYER_ID:

@@ -14,10 +14,10 @@ Recommended classification across the 60 canonical records:
 | Model | Equipment | Artifacts | Total |
 | --- | ---: | ---: | ---: |
 | Permanent passive | 8 | 2 | 10 |
-| Conditional passive | 21 | 7 | 28 |
-| Charged activation | 0 | 9 | 9 |
-| Exhaust activation | 0 | 5 | 5 |
-| Consumable | 1 | 7 | 8 |
+| Conditional passive | 21 | 6 | 27 |
+| Charged activation | 0 | 10 | 10 |
+| Exhaust activation | 0 | 6 | 6 |
+| Consumable | 1 | 6 | 7 |
 | Passive with expendable charge | 0 | 0 | 0 |
 | **Total** | **30** | **30** | **60** |
 
@@ -127,7 +127,13 @@ Artifact “current effect” includes what the card actually resolves, not only
 | `artifact-yard` — Yard Bellframe Core | unspecified cache | Grants Marshal Seal gear plus note | Acquisition only / Partial | Consumable | On opening; consume card; removed; No | `charge: 1` unused; granted Marshal Seal lacks a defined effect model. | H / Redesign |
 | `artifact-zoey-thorn-violet` — Zoey, Thorn-Violet | factionRelic | Grants follower; triad bonus with Rumi and Mira | Partial / Partial | Conditional passive | Continuous while Zoey+Mira follow Rumi; none; removed with follower | Complex condition needs authoritative modifier source and clear phone breakdown. | H / Implement |
 
-Artifact summary: nine charged activations, five exhaust activations, seven consumables, seven conditional passives, and two permanent burden/passive objects. Most are not end-to-end supported because the card layer frequently resolves into a different object or note.
+Artifact summary: ten charged activations, six exhaust activations, six consumables, six conditional passives, and two permanent burden/passive objects. Most are not end-to-end supported because the card layer frequently resolves into a different object or note.
+
+### Phase 2 consumable scope correction
+
+A direct recount of all table rows confirms 60 unique canonical IDs: 30 Equipment and 30 Artifacts, with no missing or duplicated row. The original executive summary overstated consumables and conditional passives by one each and understated charged and exhaust activations by one each. The corrected totals above are derived from the row classifications.
+
+Phase 2 excludes both Black Route Fuse records because their passive/activated value conflict remains explicitly deferred. The approved clear scope is therefore five Artifact consumables: `artifact-bell-votive`, `artifact-blackstar-ampoule`, `artifact-pale-ledger-token`, `artifact-void-salt-poultice`, and `artifact-yard`. Artifact Cinder Suture Kit, Artifact Last-Breath Rivet, and Artifact Saintwire Splint retain their existing audit classifications and are not reclassified.
 
 ## 5. Legacy/QA item notes
 

@@ -11,19 +11,7 @@
   "text": "A packet of black salt and pale gauze that closes wounds by making the body briefly forget them.",
   "flavor": "The pain returns later, but later is a tactical resource.",
   "artifactKind": "consumableSalvage",
-  "charge": 1,
-  "resolutionSummary": "Prepared a void-salt poultice and stabilized the worst bleeding.",
-  "resolveEffect": {
-    "type": "sequence",
-    "effects": [
-      {
-        "type": "heal_wound",
-        "amount": 1
-      },
-      {
-        "type": "gain_note",
-        "text": "Void-salt poultice ready for one ugly recovery window."
-      }
-    ]
-  }
+  "charge": 0,
+  "resolutionSummary": "Claimed a Void-Salt Poultice for a later recovery window.",
+  "resolveEffect": { "type": "gain_gear", "gearId": "artifact-void-salt-poultice" }
 }

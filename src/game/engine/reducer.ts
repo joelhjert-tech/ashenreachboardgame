@@ -2173,7 +2173,10 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
       const useGearAction = action as UseGearAction;
 
       try {
-        canManageGear(state, useGearAction.seatId);
+        if (useGearAction.suppressPendingFailure) {
+          ensureSeatTurn(state, useGearAction.seatId);
+          if (state.phase !== "resolution" || !state.pendingEffect || state.activeResolution?.roll?.success !== false) throw new Error("No failed test is waiting for a reaction");
+        } else canManageGear(state, useGearAction.seatId);
       } catch (error) {
         return reject(state, action, error instanceof Error ? error.message : "Seat cannot use gear");
       }
@@ -2208,6 +2211,7 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
 
       return succeed({
         ...finalState,
+        pendingEffect: useGearAction.suppressPendingFailure ? null : finalState.pendingEffect,
         sequence: state.sequence + 1,
         activeResolution: appendPendingRollModifierToResolution(
           finalState.activeResolution,

@@ -7,6 +7,7 @@ export type GearTimingWindow =
   | "beforeThreatDraw"
   | "beforeBattleRoll"
   | "afterBattleRoll"
+  | "afterFailedTest"
   | "beforeTakingDamage"
   | "startOfTurn"
   | "movement"
@@ -133,9 +134,12 @@ export interface GearItem {
   maxUses?: number;
   heatCost?: number;
   linkedFollowerRole?: FollowerRole;
-  effectModel?: "permanent" | "conditional";
+  effectModel?: "permanent" | "conditional" | "consumable";
   requiresEquipped?: boolean;
   conditionType?: "battle";
+  activationTiming?: GearTimingWindow[];
+  consumeOnUse?: boolean;
+  consumableEffect?: "grantVeilHook" | "ignoreFailedMovementOrHazard" | "grantPaleCartelFixer" | "healWound" | "grantMarshalSeal";
 }
 
 export type FollowerRole = "scout" | "medic" | "gunner" | "ritualist" | "porter" | "guide" | "informant" | "companion";

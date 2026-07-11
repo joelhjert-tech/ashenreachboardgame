@@ -40,6 +40,7 @@ export interface GearModifierContext {
 }
 
 export function isGearModifierActive(item: GearItem, context: GearModifierContext): boolean {
+  if (item.effectModel === "consumable") return false;
   return item.effectModel !== "conditional" || (item.conditionType === "battle" && context.mode === "battle");
 }
 
