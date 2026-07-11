@@ -1737,6 +1737,7 @@ function MovementPlanner({
   onSelectedSectorId: (sectorId: string | null) => void;
   onIntent: (intent: ClientIntent) => void;
 }): ReactElement | null {
+  const [pendingCompassAdjustment, setPendingCompassAdjustment] = useState<-1 | 1 | null>(null);
   if (!planner?.active) {
     if (!canRoll) return null;
     return (
@@ -1770,6 +1771,25 @@ function MovementPlanner({
 
   return (
     <section className="phone-movement-planner" aria-label="Movement planner" data-testid="movement-planner">
+      {planner.compassPrompt ? (
+        <div className="phone-movement-route-section" aria-label="Ashen Route Compass prompt">
+          <strong>Use Ashen Route Compass?</strong>
+          <p>Spend 1 charge to adjust movement by −1 or +1.</p>
+          {pendingCompassAdjustment ? (
+            <>
+              <p>Roll {planner.originalMovementValue} | Compass {pendingCompassAdjustment > 0 ? "+1" : "−1"} | Move {(planner.originalMovementValue ?? planner.movementValue) + pendingCompassAdjustment}</p>
+              <GameButton type="button" tone="move" onClick={() => { onIntent({ type: "ADJUST_MOVEMENT_REQUESTED", seatId, instanceId: planner.compassPrompt!.instanceId, adjustment: pendingCompassAdjustment }); setPendingCompassAdjustment(null); }}>Confirm — spend 1 charge</GameButton>
+              <GameButton type="button" tone="secondary" onClick={() => setPendingCompassAdjustment(null)}>Cancel</GameButton>
+            </>
+          ) : (
+            <>
+              <GameButton type="button" tone="secondary" disabled={!planner.compassPrompt.canDecrease} onClick={() => setPendingCompassAdjustment(-1)}>Move −1</GameButton>
+              <GameButton type="button" tone="secondary" disabled={!planner.compassPrompt.canIncrease} onClick={() => setPendingCompassAdjustment(1)}>Move +1</GameButton>
+              <GameButton type="button" tone="secondary">Keep original roll</GameButton>
+            </>
+          )}
+        </div>
+      ) : planner.movementAdjustment ? <p>Roll {planner.originalMovementValue} | Compass {planner.movementAdjustment > 0 ? "+1" : "−1"} | Move {planner.movementValue}</p> : null}
       {selected ? (
         <MovementDestinationDetail
           planner={planner}

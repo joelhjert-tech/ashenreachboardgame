@@ -32,8 +32,8 @@ export function hasMovementRollForSeat(state: GameState, seatId: string): boolea
 
 export function getMovementValueForSeat(state: GameState, seatId: string): number {
   const rolledValue = state.movementRolls?.[seatId];
-
-  return typeof rolledValue === "number" && Number.isInteger(rolledValue) && rolledValue > 0 ? Math.max(1, rolledValue) : 1;
+  const adjustment = state.movementAdjustments?.[seatId]?.adjustment ?? 0;
+  return typeof rolledValue === "number" && Number.isInteger(rolledValue) && rolledValue > 0 ? Math.max(1, rolledValue + adjustment) : 1;
 }
 
 function getSectorDisplayName(state: GameState, sectorId: string): string {

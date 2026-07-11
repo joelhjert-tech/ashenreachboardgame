@@ -293,6 +293,7 @@ type ClientMessage = ClientIntent | RejoinMessage | HostCommandMessage;
 const CLIENT_INTENT_TYPES = new Set<string>([
   "MOVEMENT_DESTINATION_PREVIEWED",
   "MOVE_REQUESTED",
+  "ADJUST_MOVEMENT_REQUESTED",
   "MOVEMENT_ROLL_REQUESTED",
   "PHASE_ADVANCED",
   "CHECK_REQUESTED",
@@ -1241,6 +1242,10 @@ export class GameRoomServer {
         requireStringField(message, "toSectorId", type);
         break;
       case "MOVEMENT_ROLL_REQUESTED":
+        break;
+      case "ADJUST_MOVEMENT_REQUESTED":
+        requireStringField(message, "instanceId", type);
+        if (message.adjustment !== -1 && message.adjustment !== 1) throw new IntentRejectedError(type, "Movement adjustment must be -1 or +1");
         break;
       case "PHASE_ADVANCED":
         requireEnumField(message, "toPhase", PHASE_VALUES, type);
@@ -2606,6 +2611,8 @@ export class GameRoomServer {
           seatId: intent.seatId,
           createdAt
         };
+      case "ADJUST_MOVEMENT_REQUESTED":
+        return { type: "ADJUST_MOVEMENT_REQUESTED", seatId: intent.seatId, instanceId: intent.instanceId, adjustment: intent.adjustment, createdAt };
       case "PHASE_ADVANCED":
         return {
           type: "PHASE_ADVANCED",
@@ -6967,6 +6974,9 @@ type PublicMoveDestination = {
 type PublicMovementPlannerState = {
   active: boolean;
   movementValue: number;
+  originalMovementValue?: number;
+  movementAdjustment?: -1 | 1 | null;
+  compassPrompt?: { instanceId: string; currentCharges: number; maxCharges: number; canDecrease: boolean; canIncrease: boolean } | null;
   currentSectorId: string;
   currentSectorName: string;
   destinations: PublicMoveDestination[];
@@ -7391,6 +7401,9 @@ function buildPublicMovementPlanner(state: GameState, seatId: string): PublicMov
   if (!plan) {
     return null;
   }
+  const compass = player.character.heldGear.find((item) => item.id === "ashen-route-compass" && player.character.equippedGear.utility === item.id && (item.currentCharges ?? item.charges ?? 0) > 0);
+  const adjustment = state.movementAdjustments?.[seatId]?.adjustment ?? null;
+  const originalMovementValue = state.movementRolls?.[seatId] ?? plan.movementValue;
 
   const routeEntries = [
     ...plan.routes.map((route) => ({ ...route, disabledReason: undefined })),
@@ -7465,6 +7478,9 @@ function buildPublicMovementPlanner(state: GameState, seatId: string): PublicMov
   return {
     active: true,
     movementValue: plan.movementValue,
+    originalMovementValue,
+    movementAdjustment: adjustment,
+    compassPrompt: !adjustment && compass ? { instanceId: compass.instanceId!, currentCharges: compass.currentCharges ?? compass.charges ?? 0, maxCharges: compass.maxCharges ?? 2, canDecrease: originalMovementValue > 1, canIncrease: true } : null,
     currentSectorId: currentSector.id,
     currentSectorName: currentSector.name,
     destinations

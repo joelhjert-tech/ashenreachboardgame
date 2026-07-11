@@ -139,7 +139,7 @@ export interface GearItem {
   startingCharges?: number;
   chargeCost?: number;
   rechargeRule?: "none";
-  chargedEffect?: "personalGateOverride";
+  chargedEffect?: "personalGateOverride" | "movementAdjustment";
   maxUses?: number;
   heatCost?: number;
   linkedFollowerRole?: FollowerRole;
@@ -641,6 +641,9 @@ export interface PublicMoveDestination {
 export interface PublicMovementPlannerState {
   active: boolean;
   movementValue: number;
+  originalMovementValue?: number;
+  movementAdjustment?: -1 | 1 | null;
+  compassPrompt?: { instanceId: string; currentCharges: number; maxCharges: number; canDecrease: boolean; canIncrease: boolean } | null;
   currentSectorId: string;
   currentSectorName: string;
   selectedDestinationId?: string | null;
@@ -959,6 +962,7 @@ export type ClientIntent =
       type: "MOVEMENT_ROLL_REQUESTED";
       seatId: string;
     }
+  | { type: "ADJUST_MOVEMENT_REQUESTED"; seatId: string; instanceId: string; adjustment: -1 | 1 }
   | {
       type: "PHASE_ADVANCED";
       seatId: string;

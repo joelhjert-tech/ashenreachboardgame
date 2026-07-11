@@ -30,4 +30,8 @@ describe("gear effect model schema", () => {
     expect(gearItemSchema.safeParse({ ...charged, tier: "standard" }).success).toBe(false);
     expect(gearItemSchema.safeParse({ ...charged, startingCharges: 3 }).success).toBe(false);
   });
+
+  it("accepts the Ashen Route Compass movement-adjustment charge model", () => {
+    expect(gearItemSchema.safeParse({ ...base, tier: "artifact", category: "chargedRelic", useLimit: "charge", effectModel: "charged", requiresEquipped: true, activationTiming: ["movement"], maxCharges: 2, startingCharges: 2, chargeCost: 1, rechargeRule: "none", chargedEffect: "movementAdjustment" }).success).toBe(true);
+  });
 });

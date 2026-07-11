@@ -1,5 +1,6 @@
 import type {
   AcceptContractAction,
+  AdjustMovementRequestedAction,
   AfflictionDrawnAction,
   CheckRequestedAction,
   CombatRequestedAction,
@@ -163,6 +164,10 @@ function clearMovementRollForSeat(state: GameState, seatId: string): GameState["
   const nextMovementRolls = { ...state.movementRolls };
   delete nextMovementRolls[seatId];
   return Object.keys(nextMovementRolls).length > 0 ? nextMovementRolls : undefined;
+}
+function clearMovementAdjustmentForSeat(state: GameState, seatId: string): GameState["movementAdjustments"] {
+  if (!state.movementAdjustments?.[seatId]) return state.movementAdjustments;
+  const next = { ...state.movementAdjustments }; delete next[seatId]; return Object.keys(next).length ? next : undefined;
 }
 
 function getCompletedRoundFromEventLog(state: GameState): number {
@@ -1127,6 +1132,18 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
         eventLog: [...state.eventLog, action]
       });
     }
+    case "ADJUST_MOVEMENT_REQUESTED": {
+      const adjust = action as AdjustMovementRequestedAction;
+      try { ensureSeatTurn(state, adjust.seatId); ensureSeatCanTakeNormalTurnAction(state, adjust.seatId); } catch (error) { return reject(state, action, error instanceof Error ? error.message : "Seat cannot adjust movement"); }
+      if (state.phase !== "navigation" || !state.movementRolls?.[adjust.seatId] || state.movementAdjustments?.[adjust.seatId]) return reject(state, action, "Movement cannot be adjusted now");
+      const player = requirePlayer(state, adjust.seatId);
+      const item = player.character.heldGear.find((gear) => gear.instanceId === adjust.instanceId && gear.id === "ashen-route-compass");
+      const charges = item?.currentCharges ?? item?.charges ?? 0;
+      const adjusted = state.movementRolls[adjust.seatId]! + adjust.adjustment;
+      if (!item || player.character.equippedGear.utility !== item.id || charges < 1 || adjusted < 1) return reject(state, action, "Ashen Route Compass cannot adjust this movement");
+      const next = { ...state, movementAdjustments: { ...(state.movementAdjustments ?? {}), [adjust.seatId]: { adjustment: adjust.adjustment, sourceInstanceId: adjust.instanceId } }, players: updateActivePlayer(state, adjust.seatId, (entry) => ({ ...entry, character: { ...entry.character, heldGear: entry.character.heldGear.map((gear) => gear.instanceId === adjust.instanceId ? { ...gear, currentCharges: charges - 1, maxCharges: gear.maxCharges ?? 2 } : gear) } })) };
+      return succeed({ ...next, sequence: state.sequence + 1, eventLog: [...state.eventLog, action] });
+    }
     case "MOVEMENT_ROLLED": {
       const movementRolledAction = action as MovementRolledAction;
 
@@ -1229,6 +1246,7 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
             createdAt: movementAction.createdAt
           } : null,
           movementRolls: clearMovementRollForSeat(state, movementAction.seatId),
+          movementAdjustments: clearMovementAdjustmentForSeat(state, movementAction.seatId),
           players: updateActivePlayer(state, movementAction.seatId, (entry) => ({
             ...entry,
             sectorId: destinationSectorId,
@@ -3902,6 +3920,7 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
         resolutionSource: null,
         lastOutcomeSummary: null,
         movementRolls: clearMovementRollForSeat(state, action.seatId),
+        movementAdjustments: clearMovementAdjustmentForSeat(state, action.seatId),
         eventLog: [...state.eventLog, action]
       });
     case "CONTINUE_RESOLUTION": {

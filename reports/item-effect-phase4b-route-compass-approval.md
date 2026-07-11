@@ -37,7 +37,7 @@ Option B is not recommended because it creates a route-editing subsystem, arbitr
 
 Recommended final text:
 
-> **Ashen Route Compass — Controlled Movement Adjustment**  
+> **Ashen Route Compass — Controlled Movement Adjustment**
 > After rolling movement, you may spend 1 charge to increase or decrease your movement total by 1 for this movement. Choose a destination and route legal at the adjusted total. All normal movement distance, adjacency, destination, gate, scenario, threat, blocker, and route requirements still apply.
 
 ## Route-engine impact of the recommendation

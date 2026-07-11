@@ -67,7 +67,7 @@ export const gearItemSchema = z.object({
   startingCharges: z.number().int().positive().optional(),
   chargeCost: z.number().int().positive().optional(),
   rechargeRule: z.enum(["none"]).optional(),
-  chargedEffect: z.enum(["personalGateOverride"]).optional(),
+  chargedEffect: z.enum(["personalGateOverride", "movementAdjustment"]).optional(),
   maxUses: z.number().int().min(0).optional(),
   heatCost: z.number().int().min(0).optional(),
   linkedFollowerRole: z.string().min(1).optional(),

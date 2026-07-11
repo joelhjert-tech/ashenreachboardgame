@@ -32,6 +32,7 @@ export interface MoveRequestedAction extends BaseAction {
 export interface MovementRollRequestedAction extends BaseAction {
   type: "MOVEMENT_ROLL_REQUESTED";
 }
+export interface AdjustMovementRequestedAction extends BaseAction { type: "ADJUST_MOVEMENT_REQUESTED"; instanceId: string; adjustment: -1 | 1 }
 
 export interface MovementRolledAction extends BaseAction {
   type: "MOVEMENT_ROLLED";
@@ -525,6 +526,7 @@ export type GameAction =
   | SessionStartedAction
   | MoveRequestedAction
   | MovementRollRequestedAction
+  | AdjustMovementRequestedAction
   | MovementRolledAction
   | MovedAction
   | MovementResolvedAction
@@ -599,6 +601,7 @@ export type ClientIntent =
       type: "MOVEMENT_ROLL_REQUESTED";
       seatId: string;
     }
+  | { type: "ADJUST_MOVEMENT_REQUESTED"; seatId: string; instanceId: string; adjustment: -1 | 1 }
   | {
       type: "PHASE_ADVANCED";
       seatId: string;
