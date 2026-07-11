@@ -3,7 +3,8 @@ import type { GameState } from "../game/schema/session.schema.js";
 
 export type PhaseOneQaFixture =
   | { kind: "route"; stage: "first" | "duplicate" | "ordered-wrong" | "final" | "completion-ready" }
-  | { kind: "shop"; stage: "wrong-shop" | "valid-first" | "valid-final" | "completion-ready" };
+  | { kind: "shop"; stage: "wrong-shop" | "valid-first" | "valid-final" | "completion-ready" }
+  | { kind: "relic-trade"; completedContracts: 0 | 1 | 2 | 3 };
 
 const routeContractId = "choir-echo-triangulation";
 const orderedRouteContractId = "compact-three-lantern-circuit";
@@ -46,6 +47,19 @@ export function applyPhaseOneQaFixture(state: GameState, seatId: string, fixture
   clearResolution(state);
   state.sequence += 1;
   state.activeSeatIndex = Math.max(0, state.turnOrder.indexOf(seatId));
+
+  if (fixture.kind === "relic-trade") {
+    const player = state.players.find((entry) => entry.seatId === seatId);
+    if (!player) throw new Error(`QA fixture cannot find ${seatId}`);
+    state.phase = "action";
+    state.movementRolls = undefined;
+    player.character.completedContracts = Array.from(
+      { length: fixture.completedContracts },
+      (_, index) => `qa-completed-contract-${index + 1}`
+    );
+    placePlayer(state, seatId, "outer_surgery_tent");
+    return;
+  }
 
   // Preserve legitimately earned progress while browser QA exits a movement
   // or shop prompt to exercise the normal mission-completion action.

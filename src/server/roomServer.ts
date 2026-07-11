@@ -782,6 +782,10 @@ export class GameRoomServer {
     return this.state;
   }
 
+  broadcastQaFixtureState(): void {
+    this.broadcastPatch();
+  }
+
   setHostToken(hostToken: string): void {
     this.hostToken = hostToken;
   }
