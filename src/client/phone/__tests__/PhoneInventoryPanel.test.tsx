@@ -736,12 +736,13 @@ describe("PhoneInventoryPanel", () => {
     expect(screen.getByText(/before threat draw/i)).toBeInTheDocument();
     expect(document.querySelector('img[src="/assets/cards/artifacts/artifact-fandiablos.png"]')).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: /use fandiablos/i }));
+    fireEvent.click(screen.getByRole("button", { name: /use.*1 wound/i }));
 
     expect(onIntent).toHaveBeenCalledWith({
       type: "USE_FOLLOWER",
       seatId: "seat-1",
-      followerId: "fandiablos"
+      followerId: "fandiablos",
+      escalate: false
     });
   });
 

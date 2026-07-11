@@ -33,7 +33,8 @@ export const shopCategorySchema = z.enum([
   "contract-broker"
 ]);
 export const gearUseLimitSchema = z.enum(["oncePerTurn", "oncePerRound", "discard", "charge"]);
-export const gearEffectModelSchema = z.enum(["permanent", "conditional", "consumable"]);
+export const gearEffectModelSchema = z.enum(["permanent", "conditional", "consumable", "exhaust"]);
+export const gearExhaustEffectSchema = z.enum(["mirrorReroll", "warbellCommand"]);
 export const gearConditionTypeSchema = z.enum(["battle"]);
 export const consumableEffectSchema = z.enum(["grantVeilHook", "ignoreFailedMovementOrHazard", "grantPaleCartelFixer", "healWound", "grantMarshalSeal"]);
 
@@ -56,6 +57,7 @@ export const gearItemSchema = z.object({
   flavor: z.string().min(1).optional(),
   timingWindows: z.array(gearTimingWindowSchema).optional(),
   exhausted: z.boolean().optional(),
+  instanceId: z.string().min(1).optional(),
   activeText: z.string().min(1).optional(),
   useLimit: gearUseLimitSchema.optional(),
   charges: z.number().int().min(0).optional(),
@@ -72,12 +74,15 @@ export const gearItemSchema = z.object({
   ,activationTiming: z.array(gearTimingWindowSchema).min(1).optional()
   ,consumeOnUse: z.boolean().optional()
   ,consumableEffect: consumableEffectSchema.optional()
+  ,resetWindow: z.enum(["round"]).optional()
+  ,exhaustEffect: gearExhaustEffectSchema.optional()
+  ,activationCost: z.object({ type: z.enum(["salvage", "wound"]), amount: z.number().int().positive() }).optional()
 }).superRefine((item, context) => {
   if (item.tier !== "artifact" && (item.useLimit === "charge" || item.category === "chargedRelic")) {
     context.addIssue({ code: z.ZodIssueCode.custom, message: "normal Equipment cannot use Artifact charge mechanics", path: ["useLimit"] });
   }
   if (!item.effectModel) return;
-  if (item.effectModel !== "consumable" && item.requiresEquipped !== true) {
+  if (item.effectModel !== "consumable" && item.effectModel !== "exhaust" && item.requiresEquipped !== true) {
     context.addIssue({ code: z.ZodIssueCode.custom, message: `${item.effectModel} passive items must require equipped state`, path: ["requiresEquipped"] });
   }
   if (item.effectModel === "conditional" && !item.conditionType) {
@@ -91,6 +96,10 @@ export const gearItemSchema = z.object({
     if (item.consumeOnUse !== true) context.addIssue({ code: z.ZodIssueCode.custom, message: "consumables must consume on use", path: ["consumeOnUse"] });
     if (!item.consumableEffect) context.addIssue({ code: z.ZodIssueCode.custom, message: "consumables require a typed effect", path: ["consumableEffect"] });
     if (item.requiresEquipped === true || item.conditionType || item.useLimit === "charge") context.addIssue({ code: z.ZodIssueCode.custom, message: "consumables cannot declare passive or charged behavior", path: ["effectModel"] });
+  }
+  if (item.effectModel === "exhaust") {
+    if (!item.activationTiming?.length || item.resetWindow !== "round" || !item.exhaustEffect || !item.activationCost) context.addIssue({ code: z.ZodIssueCode.custom, message: "exhaust items require timing, round reset, typed effect and cost", path: ["effectModel"] });
+    if (item.consumeOnUse || item.useLimit === "charge" || item.useLimit === "discard") context.addIssue({ code: z.ZodIssueCode.custom, message: "exhaust items cannot be charged or consumed", path: ["useLimit"] });
   }
 });
 

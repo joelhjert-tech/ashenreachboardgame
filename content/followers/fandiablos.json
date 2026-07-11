@@ -14,7 +14,12 @@
     "type": "gain_note",
     "text": "Fandiablos is awake: warning barks, tiny teeth, and cable biting support are committed to the current action window."
   },
-  "useLimit": "oncePerTurn",
+  "useLimit": "oncePerRound",
+  "effectModel": "exhaust",
+  "activationTiming": ["beforeThreatDraw", "beforeBattleRoll", "beforeTakingDamage", "anyTime"],
+  "resetWindow": "round",
+  "exhaustEffect": "fandiablosSupport",
+  "requiresEquipped": false,
   "loyalty": 5,
   "lossCondition": "choice",
   "acquisition": [

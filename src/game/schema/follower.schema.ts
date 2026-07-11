@@ -15,7 +15,7 @@ export const followerLossConditionSchema = z.enum(["wound", "heat", "combatLoss"
 export const followerTierSchema = z.enum(["standard", "legendary", "ultimate"]);
 export const followerEffectModelSchema = z.enum(["exhaust"]);
 export const followerResetWindowSchema = z.enum(["round"]);
-export const followerExhaustEffectSchema = z.enum(["recordEmberPupNote", "recordOmenNote", "recordRouteMemoryNote"]);
+export const followerExhaustEffectSchema = z.enum(["recordEmberPupNote", "recordOmenNote", "recordRouteMemoryNote", "fandiablosSupport"]);
 export const followerTimingWindowSchema = z.enum([
   "beforeThreatDraw",
   "beforeBattleRoll",

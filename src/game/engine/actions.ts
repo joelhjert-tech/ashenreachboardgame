@@ -117,6 +117,7 @@ export interface SoloRerollResolvedAction extends BaseAction {
   success: boolean;
   effect: EncounterEffect;
   cardId: string;
+  artifactReroll?: boolean;
 }
 
 export interface CombatResolvedAction extends BaseAction {
@@ -185,6 +186,9 @@ export interface UseGearAction extends BaseAction {
   discard?: boolean;
   suppressPendingFailure?: boolean;
   pendingFailureReactionId?: string;
+  salvageCost?: number;
+  exhaustInstanceId?: string;
+  mirrorReroll?: SoloRerollResolvedAction;
   rollModifier?: RollModifierSource & {
     stat: CheckStat;
     mode: "battle" | "check";
@@ -195,6 +199,8 @@ export interface UseFollowerAction extends BaseAction {
   type: "USE_FOLLOWER";
   followerId: string;
   followerInstanceId?: string;
+  woundCost?: number;
+  grantAllStatBoost?: boolean;
   effect: EncounterEffect | null;
   summary: string;
   discard?: boolean;
@@ -658,6 +664,7 @@ export type ClientIntent =
       type: "USE_FOLLOWER";
       seatId: string;
       followerId: string;
+      escalate?: boolean;
     }
   | {
       type: "USE_CHARACTER_ABILITY";

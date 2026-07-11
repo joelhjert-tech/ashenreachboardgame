@@ -908,6 +908,15 @@ function discardHeldGear(state: GameState, seatId: string, gearId: string): Game
   };
 }
 
+function consumeTemporaryAllStatBoost(state: GameState, seatId: string): GameState {
+  return { ...state, players: updateActivePlayer(state, seatId, (entry) => {
+    const boost = entry.character.temporaryAllStatBoost;
+    if (!boost) return entry;
+    const remaining = boost.remainingEligibleResolutions - 1;
+    return { ...entry, character: { ...entry.character, temporaryAllStatBoost: remaining > 0 ? { ...boost, remainingEligibleResolutions: remaining } : undefined } };
+  }) };
+}
+
 function spendHeldGearCharge(state: GameState, seatId: string, gearId: string): GameState {
   return {
     ...state,
@@ -1078,11 +1087,11 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
         return reject(state, action, error instanceof Error ? error.message : "Sector is not reachable");
       }
 
-      return succeed({
+      return succeed(consumeTemporaryAllStatBoost({
         ...state,
         sequence: state.sequence + 1,
         eventLog: [...state.eventLog, action]
-      });
+      }, action.seatId));
     }
     case "MOVEMENT_ROLL_REQUESTED": {
       const movementRollRequestedAction = action as MovementRollRequestedAction;
@@ -1598,7 +1607,7 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
         return reject(state, action, "No encounter is waiting for a check roll");
       }
 
-      return succeed({
+      return succeed(consumeTemporaryAllStatBoost({
         ...state,
         sequence: state.sequence + 1,
         phase: "resolution",
@@ -1647,7 +1656,7 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
             }
           : null,
         eventLog: [...state.eventLog, action]
-      });
+      }, action.seatId));
     case "SOLO_REROLL_RESOLVED": {
       const rerollAction = action as SoloRerollResolvedAction;
 
@@ -1658,13 +1667,13 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
         return reject(state, action, error instanceof Error ? error.message : "Seat cannot reroll");
       }
 
-      if (state.sessionMode !== "single-player") {
+      if (!rerollAction.artifactReroll && state.sessionMode !== "single-player") {
         return reject(state, action, "Solo emergency rerolls are only available in single-player");
       }
 
       const remainingCharge = state.soloRerollCharges?.[rerollAction.seatId] ?? 1;
 
-      if (remainingCharge <= 0) {
+      if (!rerollAction.artifactReroll && remainingCharge <= 0) {
         return reject(state, action, "Solo emergency reroll has already been used this round");
       }
 
@@ -1684,14 +1693,12 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
         return reject(state, action, "Solo emergency reroll requires a visible failed check");
       }
 
-      return succeed({
+      return succeed(consumeTemporaryAllStatBoost({
         ...state,
         sequence: state.sequence + 1,
         pendingEffect: rerollAction.effect,
-        soloRerollCharges: {
-          ...(state.soloRerollCharges ?? {}),
-          [rerollAction.seatId]: remainingCharge - 1
-        },
+        pendingFailureReaction: null,
+        soloRerollCharges: rerollAction.artifactReroll ? state.soloRerollCharges : { ...(state.soloRerollCharges ?? {}), [rerollAction.seatId]: remainingCharge - 1 },
         activeResolution: buildRollResolution({
           seatId: rerollAction.seatId,
           source: "threat",
@@ -1726,7 +1733,7 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
             }
           : null,
         eventLog: [...state.eventLog, action]
-      });
+      }, action.seatId));
     }
     case "COMBAT_RESOLVED":
       try {
@@ -2188,11 +2195,12 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
       const useGearAction = action as UseGearAction;
 
       try {
-        if (useGearAction.suppressPendingFailure) {
+        if (useGearAction.suppressPendingFailure || useGearAction.mirrorReroll) {
           ensureSeatTurn(state, useGearAction.seatId);
           if (state.phase !== "resolution" || !state.pendingEffect || state.activeResolution?.roll?.success !== false ||
+              (useGearAction.mirrorReroll ? false :
               !state.pendingFailureReaction || state.pendingFailureReaction.id !== useGearAction.pendingFailureReactionId ||
-              state.pendingFailureReaction.seatId !== useGearAction.seatId) throw new Error("No matching failed test is waiting for a reaction");
+              state.pendingFailureReaction.seatId !== useGearAction.seatId)) throw new Error("No matching failed test is waiting for a reaction");
         } else canManageGear(state, useGearAction.seatId);
       } catch (error) {
         return reject(state, action, error instanceof Error ? error.message : "Seat cannot use gear");
@@ -2204,6 +2212,7 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
       if (!item) {
         return reject(state, action, `Gear ${useGearAction.gearId} is not held by this character`);
       }
+      if (item.effectModel === "exhaust" && item.exhausted) return reject(state, action, `${item.name} is Exhausted. Refreshes next round.`);
 
       try {
         ensureUseLimitAvailable(state, useGearAction.seatId, item.id, item.name, "gearId", item.useLimit);
@@ -2215,12 +2224,22 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
         return reject(state, action, `${item.name} has no charges remaining`);
       }
 
-      const effectedState = useGearAction.effect
-        ? applyEffectToState(state, useGearAction.seatId, useGearAction.effect)
-        : state;
+      const rerolledState = useGearAction.mirrorReroll ? reduceGameState(state, useGearAction.mirrorReroll) : null;
+      if (rerolledState && !rerolledState.ok) return reject(state, action, rerolledState.rejection.reason);
+      const actionBaseState = rerolledState?.state ?? state;
+      const effectedState = useGearAction.effect ? applyEffectToState(actionBaseState, useGearAction.seatId, useGearAction.effect) : actionBaseState;
+      const paidState = useGearAction.salvageCost ? {
+        ...effectedState,
+        players: updateActivePlayer(effectedState, useGearAction.seatId, (entry) => ({ ...entry, character: { ...entry.character, salvage: (entry.character.salvage ?? 0) - useGearAction.salvageCost! } }))
+      } : effectedState;
+      const exhaustedGearState = useGearAction.exhaustInstanceId !== undefined || item.effectModel === "exhaust" ? {
+        ...paidState,
+        players: updateActivePlayer(paidState, useGearAction.seatId, (entry) => ({ ...entry, character: { ...entry.character, heldGear: entry.character.heldGear.map((owned) =>
+          (useGearAction.exhaustInstanceId ? owned.instanceId === useGearAction.exhaustInstanceId : owned === item) ? { ...owned, exhausted: true } : owned) } }))
+      } : paidState;
       const chargedState = item.useLimit === "charge"
-        ? spendHeldGearCharge(effectedState, useGearAction.seatId, useGearAction.gearId)
-        : effectedState;
+        ? spendHeldGearCharge(exhaustedGearState, useGearAction.seatId, useGearAction.gearId)
+        : exhaustedGearState;
       const finalState = useGearAction.discard
         ? discardHeldGear(chargedState, useGearAction.seatId, useGearAction.gearId)
         : chargedState;
@@ -2309,20 +2328,28 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
       const effectedState = useFollowerAction.effect
         ? applyEffectToState(state, useFollowerAction.seatId, useFollowerAction.effect)
         : state;
+      const paidFollowerState = useFollowerAction.woundCost ? {
+        ...effectedState,
+        players: updateActivePlayer(effectedState, useFollowerAction.seatId, (entry) => ({ ...entry, character: {
+          ...entry.character,
+          wounds: entry.character.wounds + useFollowerAction.woundCost!,
+          temporaryAllStatBoost: useFollowerAction.grantAllStatBoost ? { value: 2, remainingEligibleResolutions: 2 } : entry.character.temporaryAllStatBoost
+        } }))
+      } : effectedState;
       const exhaustedState = follower.effectModel === "exhaust"
         ? {
-            ...effectedState,
-            players: updateActivePlayer(effectedState, useFollowerAction.seatId, (entry) => ({
+            ...paidFollowerState,
+            players: updateActivePlayer(paidFollowerState, useFollowerAction.seatId, (entry) => ({
               ...entry,
               character: {
                 ...entry.character,
                 followers: (entry.character.followers ?? []).map((owned) =>
-                  (follower.instanceId ? owned.instanceId === follower.instanceId : owned === follower) ? { ...owned, exhausted: true } : owned
+                  (follower.instanceId ? owned.instanceId === follower.instanceId : owned.id === follower.id) ? { ...owned, exhausted: true } : owned
                 )
               }
             }))
           }
-        : effectedState;
+        : paidFollowerState;
       const finalState = useFollowerAction.discard
         ? discardFollower(exhaustedState, useFollowerAction.seatId, useFollowerAction.followerId)
         : exhaustedState;
@@ -3756,7 +3783,8 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
             ...player.character,
             followers: (player.character.followers ?? []).map((follower) =>
               follower.effectModel === "exhaust" && follower.resetWindow === "round" ? { ...follower, exhausted: false } : follower
-            )
+            ),
+            heldGear: player.character.heldGear.map((item) => item.effectModel === "exhaust" && item.resetWindow === "round" ? { ...item, exhausted: false } : item)
           }
         })),
         sequence: state.sequence + 1,

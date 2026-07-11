@@ -84,6 +84,7 @@ export interface PublicPlayerCharacter {
   trophies: number;
   trophyPile?: TrophyPileEntry[];
   salvage?: number;
+  temporaryAllStatBoost?: { value: number; remainingEligibleResolutions: number };
   heat: number;
   wounds: number;
   scars: string[];
@@ -135,12 +136,16 @@ export interface GearItem {
   maxUses?: number;
   heatCost?: number;
   linkedFollowerRole?: FollowerRole;
-  effectModel?: "permanent" | "conditional" | "consumable";
+  effectModel?: "permanent" | "conditional" | "consumable" | "exhaust";
+  instanceId?: string;
   requiresEquipped?: boolean;
   conditionType?: "battle";
   activationTiming?: GearTimingWindow[];
   consumeOnUse?: boolean;
   consumableEffect?: "grantVeilHook" | "ignoreFailedMovementOrHazard" | "grantPaleCartelFixer" | "healWound" | "grantMarshalSeal";
+  resetWindow?: "round";
+  exhaustEffect?: "mirrorReroll" | "warbellCommand";
+  activationCost?: { type: "salvage" | "wound"; amount: number };
 }
 
 export type FollowerRole = "scout" | "medic" | "gunner" | "ritualist" | "porter" | "guide" | "informant" | "companion";
@@ -162,7 +167,7 @@ export interface Follower {
   effectModel?: "exhaust";
   activationTiming?: FollowerTimingWindow[];
   resetWindow?: "round";
-  exhaustEffect?: "recordEmberPupNote" | "recordOmenNote" | "recordRouteMemoryNote";
+  exhaustEffect?: "recordEmberPupNote" | "recordOmenNote" | "recordRouteMemoryNote" | "fandiablosSupport";
   requiresEquipped?: boolean;
   artCardId?: string;
   acquisition?: string[];
@@ -232,6 +237,7 @@ export interface PrivateCharacter {
   trophies: number;
   trophyPile?: TrophyPileEntry[];
   salvage?: number;
+  temporaryAllStatBoost?: { value: number; remainingEligibleResolutions: number };
   heat: number;
   wounds: number;
   scars: string[];
@@ -1011,6 +1017,7 @@ export type ClientIntent =
       type: "USE_FOLLOWER";
       seatId: string;
       followerId: string;
+      escalate?: boolean;
     }
   | {
       type: "USE_CHARACTER_ABILITY";

@@ -250,7 +250,12 @@ function createFandiablos(): Follower {
     ultimateCompanion: true,
     timingWindows: ["beforeThreatDraw", "beforeBattleRoll", "beforeTakingDamage", "anyTime"],
     artCardId: "artifact-fandiablos",
-    useLimit: "oncePerTurn",
+    useLimit: "oncePerRound",
+    effectModel: "exhaust",
+    activationTiming: ["beforeThreatDraw", "beforeBattleRoll", "beforeTakingDamage", "anyTime"],
+    resetWindow: "round",
+    exhaustEffect: "fandiablosSupport",
+    requiresEquipped: false,
     loyalty: 5,
     lossCondition: "choice"
   };
@@ -3249,34 +3254,6 @@ describe("active objects and table interaction", () => {
     const player = server.getState().players.find((entry) => entry.seatId === "seat-1");
     expect(player?.character.wounds).toBe(0);
     expect(player?.private.notes.join(" ")).toContain("Fandiablos Unreasonable Courage rolled 4");
-  });
-
-  it("triggers Too Many Dogs safely as a legacy pressure no-op on a chaos roll of 1", () => {
-    const fandiablos = createFandiablos();
-    const state = createState({
-      players: createState().players.map((player) =>
-        player.seatId === "seat-1"
-          ? {
-              ...player,
-              character: {
-                ...player.character,
-                followers: [fandiablos]
-              }
-            }
-          : player
-      )
-    });
-    const server = new GameRoomServer(state, [], createSequenceRandomSource([0]), createThreats(), createCharacters(), createGear(), createContracts());
-
-    runIntent(server, {
-      type: "USE_FOLLOWER",
-      seatId: "seat-1",
-      followerId: "fandiablos"
-    });
-
-    const player = server.getState().players.find((entry) => entry.seatId === "seat-1");
-    expect(player?.character.heat).toBe(0);
-    expect(server.getState().lastOutcomeSummary?.summary).toContain("Too Many Dogs");
   });
 
   it("rejects repeated harmful rivalry pressure against the same target in one round", () => {

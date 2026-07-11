@@ -42,7 +42,8 @@ function toUseIntent(card: InventoryCardViewModel, seatId: string): ClientIntent
   return {
     type: "USE_FOLLOWER",
     seatId,
-    followerId: card.useIntent.followerId
+    followerId: card.useIntent.followerId,
+    escalate: card.useIntent.escalate
   };
 }
 
@@ -152,6 +153,7 @@ function InventoryCard({
               : `${card.charges} charge${card.charges === 1 ? "" : "s"}`
       }
       : null
+    ,card.activationCostText ? { key: "activation-cost", node: `Cost: ${card.activationCostText}` } : null
   ] as Array<{ key: string; node: ReactNode } | null>).filter((item): item is { key: string; node: ReactNode } => Boolean(item));
 
   return (
@@ -173,7 +175,10 @@ function InventoryCard({
           ))}
         </div>
       }
-      actions={card.canUseNow && useIntent ? (
+      actions={card.canUseNow && useIntent ? (card.id === "fandiablos" ? <>
+        <GameButton type="button" tone="action" className="phone-button" onClick={() => onIntent?.({ ...useIntent, escalate: false } as ClientIntent)}>Use — 1 Wound</GameButton>
+        <GameButton type="button" tone="action" className="phone-button" onClick={() => onIntent?.({ ...useIntent, escalate: true } as ClientIntent)}>Escalate — 2 Wounds</GameButton>
+      </> : (
         <GameButton
           type="button"
           tone="action"
@@ -186,7 +191,7 @@ function InventoryCard({
         >
           Use now
         </GameButton>
-      ) : null}
+      )) : null}
     />
   );
 }

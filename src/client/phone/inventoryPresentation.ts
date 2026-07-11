@@ -39,7 +39,7 @@ export interface InventoryCardViewModel {
   canUseNow: boolean;
   useIntent:
     | { type: "USE_GEAR"; gearId: string }
-    | { type: "USE_FOLLOWER"; followerId: string }
+    | { type: "USE_FOLLOWER"; followerId: string; escalate?: boolean }
     | null;
   statBonus?: { stat: Stat; amount: number } | null;
   useLimit?: GearItem["useLimit"] | Follower["useLimit"];
@@ -49,6 +49,7 @@ export interface InventoryCardViewModel {
   artCardId?: string | null;
   fallbackLabel: string;
   exhaustState?: "Ready" | "Exhausted";
+  activationCostText?: string;
 }
 
 export interface InventoryGroupViewModel {
@@ -334,6 +335,7 @@ function getGearLockReason(item: GearItem, self: PhoneSelfState): string | null 
   if (item.useLimit === "charge" && (item.charges ?? 0) <= 0) {
     return "No charges remain.";
   }
+  if (item.effectModel === "exhaust" && item.requiresEquipped && !Object.values(self.character.equippedGear).includes(item.id)) return "Equip this Artifact before using it.";
 
   if (hasAny(text, ["heal"]) && self.character.wounds <= 0 && !hasAny(text, ["prevent", "braced"])) {
     return "No wounds to heal.";
@@ -486,6 +488,7 @@ function buildGearCard(item: GearItem, patch: PhonePatchPayload, self: PhoneSelf
     artCardType: getGearCardArtType(item),
     artCardId: getGearCardArtId(item),
     fallbackLabel: getFallbackLabel(item.name)
+    ,activationCostText: item.activationCost ? `${item.activationCost.amount} ${item.activationCost.type === "salvage" ? "Salvage" : "Wound"}` : undefined
   };
 }
 
@@ -508,7 +511,7 @@ function buildFollowerCard(follower: Follower, patch: PhonePatchPayload): Invent
     source: "follower",
     group: "Followers",
     name: follower.name,
-    effectText: follower.text,
+    effectText: `${follower.text}${follower.id === "fandiablos" && patch.self?.character.temporaryAllStatBoost ? ` Too Many Dogs: +${patch.self.character.temporaryAllStatBoost.value} all stats for ${patch.self.character.temporaryAllStatBoost.remainingEligibleResolutions} more battle/hazard resolution(s).` : ""}`,
     timingText: `${timingWindows.length > 0 ? timingWindows.map(formatTimingWindow).join(", ") : "Passive"}${follower.effectModel === "exhaust" ? ". Refreshes next round" : ""}`,
     timingWindows,
     ...status,
@@ -520,6 +523,7 @@ function buildFollowerCard(follower: Follower, patch: PhonePatchPayload): Invent
     artCardType: follower.artCardId ? "artifact" : null,
     artCardId: follower.artCardId ?? null,
     fallbackLabel: getFallbackLabel(follower.name)
+    ,activationCostText: follower.id === "fandiablos" ? "1 Wound (or 2 Wounds for +2 all stats on next 2 battles/hazards)" : undefined
   };
 }
 

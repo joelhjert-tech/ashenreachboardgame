@@ -61,6 +61,7 @@ export const characterSchema = z.object({
   trophies: z.number().int().min(0),
   trophyPile: z.array(trophyPileEntrySchema).optional(),
   salvage: z.number().int().min(0).optional(),
+  temporaryAllStatBoost: z.object({ value: z.number().int().positive(), remainingEligibleResolutions: z.number().int().min(0) }).optional(),
   heat: z.number().int().min(0),
   wounds: z.number().int().min(0),
   scars: z.array(z.string()),

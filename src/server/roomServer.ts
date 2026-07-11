@@ -1609,6 +1609,7 @@ export class GameRoomServer {
     sources.push(...getEquippedGearModifierSources(player.character, stat, { mode }));
     sources.push(...getAfflictionModifierSources(player, stat, mode, getAfflictionCatalog(this.state)));
     sources.push(...this.getCharacterModifierSources(player, stat, mode));
+    if ((player.character.temporaryAllStatBoost?.remainingEligibleResolutions ?? 0) > 0) sources.push({ label: "Too Many Dogs", value: player.character.temporaryAllStatBoost!.value });
 
     if (options.scenarioModifier) {
       sources.push({ label: "Scenario", value: options.scenarioModifier });
@@ -1869,6 +1870,16 @@ export class GameRoomServer {
 
     this.assertGearUseAllowed(seatId, item);
 
+    if (item.effectModel === "exhaust") {
+      if (item.exhausted) throw new IntentRejectedError("USE_GEAR", `${item.name} is Exhausted. Refreshes next round.`);
+      if (item.requiresEquipped && !Object.values(player!.character.equippedGear).includes(item.id)) throw new IntentRejectedError("USE_GEAR", `${item.name} must be equipped.`);
+      if ((player!.character.salvage ?? 0) < (item.activationCost?.amount ?? 0)) throw new IntentRejectedError("USE_GEAR", `${item.name} requires 1 Salvage.`);
+      if (item.exhaustEffect === "mirrorReroll") {
+        const stat = this.state.lastOutcomeSummary?.checkStat;
+        if (!this.state.pendingFailureReaction || !["guile", "signal"].includes(stat ?? "") || this.state.activeResolution?.roll?.success !== false) throw new IntentRejectedError("USE_GEAR", `${item.name} requires a pending failed Guile or Signal test.`);
+      }
+    }
+
     const itemName = item?.name ?? gearId;
     const discard = item?.consumeOnUse === true || item?.useLimit === "discard";
     const rollModifier = this.createGearRollModifier(seatId, item);
@@ -1882,6 +1893,9 @@ export class GameRoomServer {
       discard,
       suppressPendingFailure: item.consumableEffect === "ignoreFailedMovementOrHazard",
       pendingFailureReactionId: item.consumableEffect === "ignoreFailedMovementOrHazard" ? this.state.pendingFailureReaction?.id : undefined,
+      salvageCost: item.effectModel === "exhaust" ? item.activationCost?.amount : undefined,
+      exhaustInstanceId: item.effectModel === "exhaust" ? item.instanceId : undefined,
+      mirrorReroll: item.exhaustEffect === "mirrorReroll" ? { ...this.createSoloRerollAction({ type: "SOLO_REROLL_REQUESTED", seatId }, createdAt, true), artifactReroll: true } : undefined,
       rollModifier,
       summary: `${itemName} used. ${item?.activeText ?? "Its effect was recorded for the table."}`,
       createdAt
@@ -1989,7 +2003,8 @@ export class GameRoomServer {
   private createFollowerUseAction(
     seatId: string,
     followerId: string,
-    createdAt: string
+    createdAt: string,
+    escalate = false
   ): UseFollowerAction {
     const player = this.state.players.find((entry) => entry.seatId === seatId);
     const follower = (player?.character.followers ?? []).find((entry) => entry.id === followerId);
@@ -2006,12 +2021,17 @@ export class GameRoomServer {
       if (follower.exhausted) throw new IntentRejectedError("USE_FOLLOWER", `${follower.name} is Exhausted. Refreshes next round.`);
       const timings = follower.activationTiming ?? [];
       const beforeBattle = this.state.phase === "action" && this.state.currentEncounter?.cardType === "enemy" && !this.state.activeResolution?.roll;
+      const beforeHazard = this.state.phase === "action" && this.state.currentEncounter?.cardType === "hazard" && !this.state.activeResolution?.roll;
       const beforeThreat = this.state.phase === "sector";
       const movement = this.state.phase === "navigation";
       const beforeDamage = this.state.phase === "resolution" && Boolean(this.state.pendingEffect && this.effectContainsWound(this.state.pendingEffect));
       const eligible = (timings.includes("beforeBattleRoll") && beforeBattle) || (timings.includes("beforeThreatDraw") && beforeThreat) ||
-        (timings.includes("movement") && movement) || (timings.includes("beforeTakingDamage") && beforeDamage);
+        (timings.includes("movement") && movement) || (timings.includes("beforeTakingDamage") && beforeDamage) || (follower.id === FANDIABLOS_ID && beforeHazard);
       if (!eligible) throw new IntentRejectedError("USE_FOLLOWER", `${follower.name} is not usable in this timing window.`);
+      if (follower.id === FANDIABLOS_ID) {
+        const cost = escalate ? 2 : 1;
+        if (player!.character.wounds + cost >= this.state.woundThreshold) throw new IntentRejectedError("USE_FOLLOWER", `Fandiablos requires capacity to suffer ${cost} Wound${cost === 1 ? "" : "s"}.`);
+      }
     }
 
     const fandiablosUse = follower?.id === FANDIABLOS_ID ? this.createFandiablosUseEffect(seatId) : null;
@@ -2023,6 +2043,8 @@ export class GameRoomServer {
       seatId,
       followerId,
       followerInstanceId: follower.instanceId,
+      woundCost: follower.id === FANDIABLOS_ID ? (escalate ? 2 : 1) : undefined,
+      grantAllStatBoost: follower.id === FANDIABLOS_ID && escalate,
       effect: fandiablosUse ? this.resolveEffect(fandiablosUse.effect, seatId) : effect,
       discard: follower?.useLimit === "discard",
       rollModifier,
@@ -2478,7 +2500,8 @@ export class GameRoomServer {
 
   private createSoloRerollAction(
     intent: Extract<ClientIntent, { type: "SOLO_REROLL_REQUESTED" }>,
-    createdAt: string
+    createdAt: string,
+    artifactReroll = false
   ): SoloRerollResolvedAction {
     const player = this.state.players.find((entry) => entry.seatId === intent.seatId);
 
@@ -2486,7 +2509,7 @@ export class GameRoomServer {
       throw new Error(`Missing player for seat ${intent.seatId}`);
     }
 
-    if (this.state.sessionMode !== "single-player") {
+    if (!artifactReroll && this.state.sessionMode !== "single-player") {
       throw new Error("Solo emergency rerolls are only available in single-player");
     }
 
@@ -2512,7 +2535,7 @@ export class GameRoomServer {
 
     const remainingCharge = this.state.soloRerollCharges?.[intent.seatId] ?? 1;
 
-    if (remainingCharge <= 0) {
+    if (!artifactReroll && remainingCharge <= 0) {
       throw new Error("Solo emergency reroll has already been used this round");
     }
 
@@ -2646,7 +2669,7 @@ export class GameRoomServer {
       case "USE_GEAR":
         return this.createGearUseAction(intent.seatId, intent.gearId, createdAt);
       case "USE_FOLLOWER":
-        return this.createFollowerUseAction(intent.seatId, intent.followerId, createdAt);
+        return this.createFollowerUseAction(intent.seatId, intent.followerId, createdAt, intent.escalate === true);
       case "TABLE_INTERACTION":
         return this.createTableInteractionAction(intent, createdAt);
       case "SHOP_SERVICE_REQUESTED":
@@ -6570,7 +6593,7 @@ export class GameRoomServer {
     if (effect.type === "gain_gear") {
       return {
         ...effect,
-        gear: this.gear.get(effect.gearId)
+        gear: this.gear.get(effect.gearId) ? { ...this.gear.get(effect.gearId)!, instanceId: `${effect.gearId}:${seatId ?? "table"}:${this.state.sequence}`, exhausted: false } : undefined
       };
     }
 
