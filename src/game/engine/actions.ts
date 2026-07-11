@@ -226,6 +226,7 @@ export type ShopServiceCost = {
   heat?: number;
   wounds?: number;
   trophies?: number;
+  completedContracts?: number;
 };
 
 export type ShopServiceResult = {

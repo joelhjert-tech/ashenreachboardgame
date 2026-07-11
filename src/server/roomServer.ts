@@ -2172,6 +2172,22 @@ export class GameRoomServer {
           },
           summary: `${actorName} used ${shopName}. Bought a boon and recorded steady footing.`
         };
+      case "trade-missions-for-artifact": {
+        const artifact = this.pickRelicDealerArtifact(player);
+
+        if (!artifact) {
+          throw new Error(SHOP_FAILURE_REASONS.itemUnavailable);
+        }
+
+        return {
+          ...base,
+          result: {
+            gainGear: artifact,
+            note: `${shopName}: exchanged three completed Missions for ${artifact.name}.`
+          },
+          summary: `${actorName} used ${shopName}. Exchanged three completed Missions for the Artifact ${artifact.name}.`
+        };
+      }
       case "risk-action": {
         const stockCategory = getShopStockCategoryForService(boardSpace, service.id);
 
@@ -2216,6 +2232,11 @@ export class GameRoomServer {
       includeQaGear: canUseQaShopGear(player.character),
       expensiveFirst: mode === "risk"
     });
+  }
+
+  private pickRelicDealerArtifact(player: PlayerState): GearItem | null {
+    return this.pickShopGearStock(player, 1, "risk", "relic-dealer")
+      .find((item) => item.tier === "artifact") ?? null;
   }
 
   private createShopPurchaseAction(
@@ -2836,10 +2857,7 @@ export class GameRoomServer {
   }
 
   private getCompletedContractCount(seatId: string, state: GameState = this.state): number {
-    return state.eventLog.filter((entry) => {
-      const event = entry as { type?: string; seatId?: string } | undefined;
-      return event?.type === "COMPLETE_CONTRACT" && event.seatId === seatId;
-    }).length;
+    return getCompletedContractCountForProjection(state, seatId);
   }
 
   private hasScenarioArtifact(player: PlayerState): boolean {
@@ -7104,6 +7122,8 @@ function buildPhoneObjectUseStates(state: GameState, player: PlayerState | undef
 }
 
 function getCompletedContractCountForProjection(state: GameState, seatId: string): number {
+  const character = state.players.find((entry) => entry.seatId === seatId)?.character;
+  if (character?.completedContracts !== undefined) return character.completedContracts.length;
   return state.eventLog.filter((entry) => {
     if (typeof entry !== "object" || entry === null || !("type" in entry) || !("seatId" in entry)) {
       return false;
@@ -7682,6 +7702,12 @@ function buildPublicShopServices(state: GameState, player: PlayerState): PublicS
 
   if (boardSpace.tags.includes("risk-shop")) {
     services.push(
+      createShopService(player, state, {
+        id: "trade-missions-for-artifact",
+        label: "Trade Missions for Artifact",
+        shopCategory: "relic-dealer",
+        cost: { completedContracts: 3 }
+      }),
       createShopService(player, state, {
         id: "risk-action",
         label: "Risk Action",
@@ -8728,6 +8754,7 @@ export function createTvProjection(
         trophies: player.character.trophies,
         trophyPile: player.character.trophyPile ?? [],
         salvage: player.character.salvage ?? 0,
+        completedContracts: getCompletedContractCountForProjection(state, player.seatId),
         heat: 0,
         wounds: player.character.wounds,
         scars: player.character.scars,
