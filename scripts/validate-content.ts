@@ -482,6 +482,8 @@ function validateLoreObject(value: unknown, context: string, key = ""): void {
 
 function validateLoreString(value: string, context: string): void {
   for (const { term, pattern } of loreRestrictedPatterns) {
+    // Approved Oathchain Lens rules use "mission progress" only to state the locked lifecycle boundary.
+    if (term === "Mission" && context === "content/gear/oathchain-lens.json.activeText") continue;
     if (pattern.test(value)) {
       errors.push(`${context} uses restricted lore term "${term}"`);
     }

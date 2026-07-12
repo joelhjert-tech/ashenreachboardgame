@@ -73,7 +73,9 @@ function toUseIntent(card: InventoryCardViewModel, seatId: string): ClientIntent
     return {
       type: "USE_GEAR",
       seatId,
-      gearId: card.useIntent.gearId
+      gearId: card.useIntent.gearId,
+      instanceId: card.useIntent.instanceId,
+      contractSignature: card.useIntent.contractSignature
     };
   }
 
@@ -160,6 +162,7 @@ function InventoryCard({
   onIntent: ((intent: ClientIntent) => void) | null;
   onUse?: () => void;
 }): ReactElement {
+  const [oathchainConfirming, setOathchainConfirming] = useState(false);
   const useIntent = toUseIntent(card, seatId);
   const statusLabel = card.exhaustState ?? getStatusLabel(card.status);
   const statusReason = card.canUseNow ? "Active in this timing window." : card.statusReason;
@@ -216,7 +219,11 @@ function InventoryCard({
       actions={card.canUseNow && useIntent ? (card.id === "fandiablos" ? <>
         <GameButton type="button" tone="action" className="phone-button" onClick={() => onIntent?.({ ...useIntent, escalate: false } as ClientIntent)}>Use — 1 Wound</GameButton>
         <GameButton type="button" tone="action" className="phone-button" onClick={() => onIntent?.({ ...useIntent, escalate: true } as ClientIntent)}>Escalate — 2 Wounds</GameButton>
-      </> : (
+      </> : card.id === "oathchain-lens" ? (oathchainConfirming ? <div className="phone-inventory-oathchain-confirm">
+        <p>Spend 1 charge to reveal current valid Contract targets.</p>
+        <GameButton type="button" tone="action" className="phone-button phone-button-primary" aria-label="Confirm Trace the Promise" onClick={() => { onIntent?.(useIntent); onUse?.(); setOathchainConfirming(false); }}>Trace the Promise — 1 charge</GameButton>
+        <GameButton type="button" tone="secondary" className="phone-button" onClick={() => setOathchainConfirming(false)}>Cancel</GameButton>
+      </div> : <GameButton type="button" tone="action" className="phone-button phone-button-primary" onClick={() => setOathchainConfirming(true)}>Preview Trace the Promise</GameButton>) : (
         <GameButton
           type="button"
           tone="action"
@@ -546,6 +553,15 @@ export function PhoneInventoryPanel({
         />
       )}
       {!onlyUsable && <InventoryProgressionSection patch={patch} onIntent={onIntent} />}
+      {!onlyUsable && patch.activeOathchainReveal ? (
+        <section className="phone-inventory-oathchain-reveal" aria-label="Private Lens Reading">
+          <span>Private Lens Reading</span>
+          <strong>{patch.activeOathchainReveal.contractName}</strong>
+          <p>{patch.activeOathchainReveal.objectiveProgress}</p>
+          <ul>{patch.activeOathchainReveal.revealedTargets.map((target) => <li key={`${target.kind}:${target.id}:${target.sectorId ?? "none"}`}><strong>{target.label}</strong><span>{target.detail}</span></li>)}</ul>
+          <small>Until end of turn</small>
+        </section>
+      ) : null}
       {!onlyUsable && <InventoryTimingGroups cards={allCards} />}
       {visibleGroups.length === 0 ? (
         <p className="phone-sheet-action-empty">

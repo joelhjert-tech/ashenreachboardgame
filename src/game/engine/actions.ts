@@ -3,7 +3,7 @@ import type { ThreatCard, EncounterEffect } from "../schema/card.schema.js";
 import type { ContractCard } from "../schema/contract.schema.js";
 import type { AfflictionCard } from "../schema/affliction.schema.js";
 import type { GearItem, GearSlot } from "../schema/gear.schema.js";
-import type { NemesisChampion, Phase } from "../schema/session.schema.js";
+import type { ActiveOathchainReveal, NemesisChampion, Phase } from "../schema/session.schema.js";
 import type { DiceRollResult } from "./dice.js";
 import type { ScarSourceEvent } from "../schema/scarTrigger.schema.js";
 
@@ -205,6 +205,7 @@ export interface UseGearAction extends BaseAction {
   scarConsequenceReactionId?: string;
   scarInstanceId?: string;
   pendingScarEffectId?: string;
+  oathchainReveal?: ActiveOathchainReveal;
 }
 
 export interface UseFollowerAction extends BaseAction {
@@ -702,6 +703,7 @@ export type ClientIntent =
       scarConsequenceReactionId?: string;
       scarInstanceId?: string;
       pendingScarEffectId?: string;
+      contractSignature?: string;
     }
   | {
       type: "USE_FOLLOWER";

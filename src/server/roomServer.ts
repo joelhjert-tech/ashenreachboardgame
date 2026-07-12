@@ -188,7 +188,7 @@ import { reduceGameState } from "../game/engine/reducer.js";
 import { CHALLENGE_LABELS } from "../game/ui/challengeTheme.js";
 import type { ActiveResolution, GameMode, GameState, InteractionMode, NemesisChampion, PlayerState, SessionMode } from "../game/schema/session.schema.js";
 import { validateHostToken, validateJoinToken } from "./auth.js";
-import { getBoardSpace, isScenarioConfrontationSpace, type BoardTier, type ThreatIcon } from "../game/data/boardSpaces.js";
+import { BOARD_SPACES, getBoardSpace, isScenarioConfrontationSpace, type BoardTier, type ThreatIcon } from "../game/data/boardSpaces.js";
 
 export const ESCALATION_FEEDERS = {
   woundTaken: 1,
@@ -1883,7 +1883,8 @@ export class GameRoomServer {
     pendingTileChallengeEffectId?: string,
     scarConsequenceReactionId?: string,
     scarInstanceId?: string,
-    pendingScarEffectId?: string
+    pendingScarEffectId?: string,
+    contractSignature?: string
   ): UseGearAction {
     const player = this.state.players.find((entry) => entry.seatId === seatId);
     const item = player?.character.heldGear.find((entry) => entry.id === gearId && (!instanceId || entry.instanceId === instanceId));
@@ -1955,12 +1956,28 @@ export class GameRoomServer {
       if (player!.character.equippedGear.utility !== item.id) throw new IntentRejectedError("USE_GEAR", `${item.name} must be equipped.`);
     }
 
+    let oathchainReveal: UseGearAction["oathchainReveal"];
+    if (item.chargedEffect === "traceThePromise") {
+      const contractId = player!.character.activeContract?.contractId;
+      const contract = contractId ? this.state.availableContracts.find((entry) => entry.id === contractId) : null;
+      if (this.state.phase !== "action" || this.state.turnOrder[this.state.activeSeatIndex] !== seatId || !contract) throw new IntentRejectedError("USE_GEAR", "Trace the Promise requires your action phase and an active Contract.");
+      if (!item.instanceId || item.instanceId !== instanceId) throw new IntentRejectedError("USE_GEAR", `${item.name} instance is stale.`);
+      if ((item.currentCharges ?? item.charges ?? 0) < 1) throw new IntentRejectedError("USE_GEAR", `${item.name} has no charges remaining.`);
+      if (player!.character.equippedGear.utility !== item.id) throw new IntentRejectedError("USE_GEAR", `${item.name} must be equipped.`);
+      const currentSignature = getOathchainContractSignature(player!, contract);
+      if (!contractSignature || contractSignature !== currentSignature) throw new IntentRejectedError("USE_GEAR", "The active Contract changed before the Lens was confirmed.");
+      if (player!.private.activeOathchainReveal?.contractSignature === currentSignature) throw new IntentRejectedError("USE_GEAR", "Trace the Promise is already active for this Contract and turn.");
+      const targets = deriveOathchainTargets(this.state, player!, contract);
+      if (targets.length === 0) throw new IntentRejectedError("USE_GEAR", "No currently visible target can advance this Contract.");
+      oathchainReveal = { revealId: `oathchain:${seatId}:${this.state.sequence + 1}`, ownerSeat: seatId, itemInstanceId: item.instanceId, contractId: contract.id, contractSignature: currentSignature, contractName: contract.name, objectiveProgress: formatContractObjectiveStatus(contract, player!.character.activeContract!.progress), revealedTargets: targets, createdTurn: this.state.sequence, expiresAtTurnEnd: true };
+    }
+
     const itemName = item?.name ?? gearId;
     const discard = item?.consumeOnUse === true || item?.useLimit === "discard";
     const rollModifier = item.chargedEffect === "choirLightSignalBonus"
       ? { label: "Choir Lantern", value: 2, stat: "signal" as const, mode: "check" as const }
       : this.createGearRollModifier(seatId, item);
-    const effect = item.chargedEffect === "staticIntercession" || item.chargedEffect === "scarSinkPrayer" ? null : this.resolveEffect(this.getGearUseEffect(gearId), seatId);
+    const effect = item.chargedEffect === "staticIntercession" || item.chargedEffect === "scarSinkPrayer" || item.chargedEffect === "traceThePromise" ? null : this.resolveEffect(this.getGearUseEffect(gearId), seatId);
 
     return {
       type: "USE_GEAR",
@@ -1981,8 +1998,10 @@ export class GameRoomServer {
       scarConsequenceReactionId: item.chargedEffect === "scarSinkPrayer" ? scarConsequenceReactionId : undefined,
       scarInstanceId: item.chargedEffect === "scarSinkPrayer" ? scarInstanceId : undefined,
       pendingScarEffectId: item.chargedEffect === "scarSinkPrayer" ? pendingScarEffectId : undefined,
+      oathchainReveal,
       summary: item.chargedEffect === "staticIntercession" ? "Static Intercession — One anomaly consequence suppressed."
         : item.chargedEffect === "scarSinkPrayer" ? "Scar-Sink Prayer — One Scar consequence suppressed."
+        : item.chargedEffect === "traceThePromise" ? "Oathchain Lens consulted."
         : `${itemName} used. ${item?.activeText ?? "Its effect was recorded for the table."}`,
       createdAt
     } satisfies UseGearAction;
@@ -2079,8 +2098,6 @@ export class GameRoomServer {
         return { type: "gain_note", text: "Route Star spent: a safer breach-marked path was recorded for the table." };
       case "void-key":
         return { type: "gain_note", text: "Void Key spent: a gate or final-approach route claim was recorded." };
-      case "oathchain-lens":
-        return { type: "gain_note", text: "Oathchain Lens spent: the bargain cost was recorded before the promise was sealed." };
       default:
         return { type: "gain_note", text: `${gearId} was used and its table effect was recorded.` };
     }
@@ -2756,7 +2773,7 @@ export class GameRoomServer {
           createdAt
         } satisfies UnequipGearAction;
       case "USE_GEAR":
-        return this.createGearUseAction(intent.seatId, intent.gearId, createdAt, intent.instanceId, intent.pendingTileChallengeId, intent.staticIntercessionReactionId, intent.pendingTileChallengeEffectId, intent.scarConsequenceReactionId, intent.scarInstanceId, intent.pendingScarEffectId);
+        return this.createGearUseAction(intent.seatId, intent.gearId, createdAt, intent.instanceId, intent.pendingTileChallengeId, intent.staticIntercessionReactionId, intent.pendingTileChallengeEffectId, intent.scarConsequenceReactionId, intent.scarInstanceId, intent.pendingScarEffectId, intent.contractSignature);
       case "USE_FOLLOWER":
         return this.createFollowerUseAction(intent.seatId, intent.followerId, createdAt, intent.escalate === true);
       case "TABLE_INTERACTION":
@@ -9198,6 +9215,34 @@ export function createTvProjection(
   };
 }
 
+export function getOathchainContractSignature(player: PlayerState, contract: ContractCard): string {
+  const active = player.character.activeContract!;
+  return JSON.stringify({ contractId: contract.id, objective: contract.objective, progress: active.progress, completedTargetIds: active.completedTargetIds ?? [], salvageSpent: active.salvageSpent ?? 0 });
+}
+
+export function deriveOathchainTargets(state: GameState, player: PlayerState, contract: ContractCard) {
+  const objective = contract.objective;
+  const completed = new Set(player.character.activeContract?.completedTargetIds ?? []);
+  if (objective.type === "defeatCount") {
+    return state.sectors.flatMap((sector) => getFaceUpThreatsForSector(state, sector.id).map((threat) => ({ kind: "threat" as const, id: threat.instanceId, label: threat.name, sectorId: sector.id, detail: `Visible Threat at ${sector.name}; ${player.character.activeContract?.progress ?? 0}/${objective.target} defeated.` })));
+  }
+  if (objective.type === "spaceTextResolved") {
+    return BOARD_SPACES.filter((space) => space.textBox.effectKey === objective.effectKey).map((space) => ({ kind: "sector" as const, id: space.id, label: space.name, sectorId: space.id, detail: `${objective.label}; ${player.character.activeContract?.progress ?? 0}/${objective.target} resolved.` }));
+  }
+  if (objective.type === "multiStopRoute") {
+    const remaining = objective.targets.filter((target) => !completed.has(target.id));
+    const visible = objective.ordered ? remaining.slice(0, 1) : remaining;
+    return visible.flatMap((target) => {
+      const spaces = target.type === "spaceId" ? BOARD_SPACES.filter((space) => space.id === target.value) : BOARD_SPACES.filter((space) => space.tags.includes(target.value as never));
+      return spaces.map((space) => ({ kind: "routeStop" as const, id: target.id, label: target.label, sectorId: space.id, detail: objective.ordered ? "Next required Contract stop." : "Remaining valid Contract stop." }));
+    });
+  }
+  if (objective.type === "shopTransaction") {
+    return BOARD_SPACES.filter((space) => (!objective.requiredSectorId || space.id === objective.requiredSectorId) && (!objective.requiredShopType || getBoardSpaceShopCategory(space) === objective.requiredShopType) && isBoardSpaceShopCapable(space)).map((space) => ({ kind: "shopAction" as const, id: `${objective.action}:${space.id}`, label: objective.label, sectorId: space.id, detail: `${objective.action} at ${getBoardSpaceShopTypeLabel(space)}; ${player.character.activeContract?.progress ?? 0}/${objective.requiredCount}, ${player.character.activeContract?.salvageSpent ?? 0} Salvage spent.` }));
+  }
+  return state.sectors.flatMap((sector) => (sector.tileChallenges ?? []).filter((challenge) => (!objective.challengeId || challenge.id === objective.challengeId) && (!objective.sectorId || sector.id === objective.sectorId) && (!objective.challengeType || challenge.challengeType === objective.challengeType) && (!objective.challengeTag || challenge.tags.includes(objective.challengeTag))).map((challenge) => ({ kind: "tileChallenge" as const, id: challenge.id, label: challenge.name, sectorId: sector.id, detail: `${objective.requireSuccess ? "Success required" : "Resolution required"}; ${player.character.activeContract?.progress ?? 0}/${objective.target}.` })));
+}
+
 export function createPhoneProjection(state: GameState, seatId: string, forcePrivate = false): Record<string, unknown> {
   const player = state.players.find((entry) => entry.seatId === seatId);
   const seat = state.seats.find((entry) => entry.seatId === seatId) ?? null;
@@ -9215,6 +9260,10 @@ export function createPhoneProjection(state: GameState, seatId: string, forcePri
       ? state.availableContracts.find((contract) => contract.id === player.character.activeContract?.contractId) ?? null
       : null;
   const readyDisabledReason = getReadyDisabledReasonForSeat(seat);
+  const oathchain = player?.character.heldGear.find((item) => item.id === "oathchain-lens" && item.chargedEffect === "traceThePromise" && item.instanceId && (item.currentCharges ?? item.charges ?? 0) > 0 && player.character.equippedGear.utility === item.id);
+  const oathchainSignature = player && activeContractCard && player.character.activeContract ? getOathchainContractSignature(player, activeContractCard) : null;
+  const oathchainTargets = player && activeContractCard ? deriveOathchainTargets(state, player, activeContractCard) : [];
+  const oathchainEligible = Boolean(oathchain && activeContractCard && oathchainSignature && state.phase === "action" && state.turnOrder[state.activeSeatIndex] === seatId && oathchainTargets.length > 0 && player?.private.activeOathchainReveal?.contractSignature !== oathchainSignature);
 
   return {
     phase: state.phase,
@@ -9305,6 +9354,8 @@ export function createPhoneProjection(state: GameState, seatId: string, forcePri
     startingContractOptions,
     selectedStartingContract,
     activeContractCard,
+    oathchainPrompt: oathchainEligible && oathchain && oathchainSignature ? { instanceId: oathchain.instanceId, contractId: activeContractCard!.id, contractSignature: oathchainSignature, currentCharges: oathchain.currentCharges ?? oathchain.charges ?? 0, maxCharges: oathchain.maxCharges ?? 2, chargeCost: 1, preview: "Spend 1 charge to reveal current valid Contract targets." } : null,
+    activeOathchainReveal: player?.private.activeOathchainReveal?.contractSignature === oathchainSignature && state.phase === "action" && state.turnOrder[state.activeSeatIndex] === seatId ? player.private.activeOathchainReveal : null,
     canReady: readyDisabledReason === null,
     readyDisabledReason,
     self: player && seat && isSeatCharacterSelectedForProjection(state, seat, new Set(state.players.map((entry) => entry.seatId))) ? sanitizePlayerForPhone(player) : null

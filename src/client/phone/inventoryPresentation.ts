@@ -41,7 +41,7 @@ export interface InventoryCardViewModel {
   statusReason: string;
   canUseNow: boolean;
   useIntent:
-    | { type: "USE_GEAR"; gearId: string }
+    | { type: "USE_GEAR"; gearId: string; instanceId?: string; contractSignature?: string }
     | { type: "USE_FOLLOWER"; followerId: string; escalate?: boolean }
     | null;
   statBonus?: { stat: Stat; amount: number } | null;
@@ -452,12 +452,13 @@ function formatConditionalGearBonus(item: GearItem): string | null {
 
 function buildGearCard(item: GearItem, patch: PhonePatchPayload, self: PhoneSelfState): InventoryCardViewModel {
   const timingWindows = inferGearTimingWindows(item);
-  const active = item.effectModel === "consumable" || (!item.effectModel && Boolean(item.activeText || item.useLimit));
+  const active = item.effectModel === "consumable" || item.chargedEffect === "traceThePromise" || (!item.effectModel && Boolean(item.activeText || item.useLimit));
   const equippedIds = new Set(Object.values(self.character.equippedGear).filter((value): value is string => Boolean(value)));
   const isEquipped = equippedIds.has(item.id);
   const useState = getObjectUseState(patch, "gear", item.id);
   const currentTimingWindow = timingWindows.includes("action") && patch.phase === "action" ? "action" : getCurrentTimingWindow(patch);
-  const lockedReason = useState?.disabledReason ?? getGearLockReason(item, self) ?? getStatMismatchReason(item, timingWindows, currentTimingWindow, patch);
+  const oathchainPrompt = item.chargedEffect === "traceThePromise" ? patch.oathchainPrompt : null;
+  const lockedReason = useState?.disabledReason ?? getGearLockReason(item, self) ?? (item.chargedEffect === "traceThePromise" && !oathchainPrompt ? "Trace the Promise requires your action phase, an active Contract, and a visible valid target." : null) ?? getStatMismatchReason(item, timingWindows, currentTimingWindow, patch);
   const status = active
     ? getStatus({
         timingWindows,
@@ -489,7 +490,7 @@ function buildGearCard(item: GearItem, patch: PhonePatchPayload, self: PhoneSelf
     timingText: timingWindows.length > 0 ? timingWindows.map(formatTimingWindow).join(", ") : "Passive",
     timingWindows,
     ...status,
-    useIntent: status.canUseNow ? { type: "USE_GEAR", gearId: item.id } : null,
+    useIntent: status.canUseNow ? { type: "USE_GEAR", gearId: item.id, instanceId: oathchainPrompt?.instanceId, contractSignature: oathchainPrompt?.contractSignature } : null,
     statBonus: item.effectModel === "consumable" ? null : item.statBonus,
     useLimit: item.useLimit,
     charges: remainingUses,
@@ -497,7 +498,9 @@ function buildGearCard(item: GearItem, patch: PhonePatchPayload, self: PhoneSelf
     artCardType: getGearCardArtType(item),
     artCardId: getGearCardArtId(item),
     fallbackLabel: getFallbackLabel(item.name)
-    ,activationCostText: item.activationCost
+    ,activationCostText: item.rechargeRule === "none"
+      ? "No Recharge"
+      : item.activationCost
       ? `Cost: ${item.activationCost.amount} ${item.activationCost.type === "salvage" ? "Salvage" : "Wound"}`
       : undefined
   };

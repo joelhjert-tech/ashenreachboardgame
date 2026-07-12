@@ -49,6 +49,21 @@ const importedRelic = {
   tier: "artifact" as const
 };
 
+const traceLens = {
+  ...importedRelic,
+  activeText: "Trace the Promise — During your action phase, spend 1 charge to identify currently visible Contract targets.",
+  currentCharges: 2,
+  maxCharges: 2,
+  startingCharges: 2,
+  chargeCost: 1,
+  rechargeRule: "none" as const,
+  effectModel: "charged" as const,
+  chargedEffect: "traceThePromise" as const,
+  activationTiming: ["action" as const],
+  requiresEquipped: true,
+  instanceId: "lens-a"
+};
+
 const activeUtility = {
   id: "ashen-route-compass",
   name: "Ashen Route Compass",
@@ -1669,5 +1684,21 @@ describe("PhoneInventoryPanel", () => {
 
     expect(within(inventory).getByText("Black Route Fuse")).toBeInTheDocument();
     expect(within(inventory).queryByText("Coffin Rig")).not.toBeInTheDocument();
+  });
+
+  it("confirms Trace the Promise and renders only the private authoritative reading", () => {
+    const onIntent = vi.fn();
+    const patch = createPatch({
+      oathchainPrompt: { instanceId: "lens-a", contractId: "lens-contract", contractSignature: "sig-1", currentCharges: 2, maxCharges: 2, chargeCost: 1, preview: "Spend 1 charge to reveal current valid Contract targets." },
+      activeOathchainReveal: { revealId: "reveal-1", contractId: "lens-contract", contractName: "Lens Contract", objectiveProgress: "0/1 resolved", revealedTargets: [{ kind: "sector", id: "votive-engine-room", sectorId: "votive-engine-room", label: "Votive Engine Room", detail: "Resolve the engine." }], expiresAtTurnEnd: true },
+      self: { ...createPatch().self!, character: { ...createPatch().self!.character, heldGear: [traceLens], equippedGear: { weapon: null, armor: null, utility: "oathchain-lens" }, activeContract: { contractId: "lens-contract", progress: 0 } } }
+    });
+    render(<PhoneInventoryPanel patch={patch} onIntent={onIntent} />);
+    fireEvent.click(screen.getByRole("button", { name: /preview trace the promise/i }));
+    expect(screen.getByRole("button", { name: /cancel/i })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /confirm trace the promise/i }));
+    expect(onIntent).toHaveBeenCalledWith({ type: "USE_GEAR", seatId: "seat-1", gearId: "oathchain-lens", instanceId: "lens-a", contractSignature: "sig-1" });
+    expect(screen.getByLabelText(/private lens reading/i)).toHaveTextContent(/votive engine room/i);
+    expect(screen.getByText(/until end of turn/i)).toBeInTheDocument();
   });
 });

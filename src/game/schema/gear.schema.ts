@@ -69,7 +69,7 @@ export const gearItemSchema = z.object({
   startingCharges: z.number().int().positive().optional(),
   chargeCost: z.number().int().positive().optional(),
   rechargeRule: z.enum(["none"]).optional(),
-  chargedEffect: z.enum(["personalGateOverride", "movementAdjustment", "saintSafeConduct", "bonewayDetour", "choirLightSignalBonus", "staticIntercession", "scarSinkPrayer"]).optional(),
+  chargedEffect: z.enum(["personalGateOverride", "movementAdjustment", "saintSafeConduct", "bonewayDetour", "choirLightSignalBonus", "staticIntercession", "scarSinkPrayer", "traceThePromise"]).optional(),
   maxUses: z.number().int().min(0).optional(),
   heatCost: z.number().int().min(0).optional(),
   linkedFollowerRole: z.string().min(1).optional(),
@@ -92,6 +92,10 @@ export const gearItemSchema = z.object({
     if (item.chargedEffect !== "scarSinkPrayer" || !item.activationTiming?.includes("pendingScarConsequence")) context.addIssue({ code: z.ZodIssueCode.custom, message: "Scar-Sink Prayer requires the typed pending Scar consequence reaction", path: ["chargedEffect"] });
     if (item.activationCost) context.addIssue({ code: z.ZodIssueCode.custom, message: "Scar-Sink Prayer has no additional activation cost", path: ["activationCost"] });
     if (/immun|remove\s+(?:a\s+)?scar/i.test(item.activeText ?? "")) context.addIssue({ code: z.ZodIssueCode.custom, message: "Scar-Sink Prayer cannot grant blanket immunity or remove Scars", path: ["activeText"] });
+  }
+  if (item.id === "oathchain-lens") {
+    if (item.chargedEffect !== "traceThePromise" || !item.activationTiming?.includes("action")) context.addIssue({ code: z.ZodIssueCode.custom, message: "Oathchain Lens requires the typed action-phase Trace the Promise effect", path: ["chargedEffect"] });
+    if (item.activationCost || item.rechargeRule !== "none") context.addIssue({ code: z.ZodIssueCode.custom, message: "Oathchain Lens has no additional cost or recharge", path: ["activationCost"] });
   }
   if (item.tier !== "artifact" && (item.useLimit === "charge" || item.category === "chargedRelic")) {
     context.addIssue({ code: z.ZodIssueCode.custom, message: "normal Equipment cannot use Artifact charge mechanics", path: ["useLimit"] });

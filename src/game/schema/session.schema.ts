@@ -93,11 +93,33 @@ export const seatSchema = z.object({
 
 export const noteResourceSchema = z.enum(["vow"]);
 
+export const oathchainTargetDescriptorSchema = z.object({
+  kind: z.enum(["threat", "sector", "routeStop", "shopAction", "tileChallenge"]),
+  id: z.string().min(1),
+  label: z.string().min(1),
+  sectorId: z.string().min(1).optional(),
+  detail: z.string().min(1)
+});
+
+export const activeOathchainRevealSchema = z.object({
+  revealId: z.string().min(1),
+  ownerSeat: z.string().min(1),
+  itemInstanceId: z.string().min(1),
+  contractId: z.string().min(1),
+  contractSignature: z.string().min(1),
+  contractName: z.string().min(1),
+  objectiveProgress: z.string().min(1),
+  revealedTargets: z.array(oathchainTargetDescriptorSchema).min(1),
+  createdTurn: z.number().int().min(0),
+  expiresAtTurnEnd: z.literal(true)
+});
+
 export const playerPrivateStateSchema = z.object({
   hand: z.array(z.string()),
   notes: z.array(z.string()).default([]),
   // Named notes only become counters when a rule can authoritatively spend them.
   noteResources: z.record(noteResourceSchema, z.number().int().min(0)).optional(),
+  activeOathchainReveal: activeOathchainRevealSchema.nullable().optional(),
   rivalryAgenda: z
     .object({
       revealState: z.enum(["hidden", "revealLocked", "revealAvailable", "revealed", "completed", "failed"]),
@@ -281,6 +303,8 @@ export type ActiveResolution = z.infer<typeof activeResolutionSchema>;
 export type Seat = z.infer<typeof seatSchema>;
 export type NoteResource = z.infer<typeof noteResourceSchema>;
 export type PlayerPrivateState = z.infer<typeof playerPrivateStateSchema>;
+export type OathchainTargetDescriptor = z.infer<typeof oathchainTargetDescriptorSchema>;
+export type ActiveOathchainReveal = z.infer<typeof activeOathchainRevealSchema>;
 export type PlayerState = z.infer<typeof playerStateSchema>;
 export type NemesisChampion = z.infer<typeof nemesisChampionSchema>;
 export type NemesisNexusCountdown = z.infer<typeof nemesisNexusCountdownSchema>;

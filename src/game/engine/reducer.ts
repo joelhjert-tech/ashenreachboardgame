@@ -2379,9 +2379,16 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
       const chargedState = item.useLimit === "charge"
         ? spendHeldGearCharge(exhaustedGearState, useGearAction.seatId, useGearAction.gearId, useGearAction.chargeInstanceId)
         : exhaustedGearState;
+      const revealedState = useGearAction.oathchainReveal ? {
+        ...chargedState,
+        players: updateActivePlayer(chargedState, useGearAction.seatId, (entry) => ({
+          ...entry,
+          private: { ...entry.private, activeOathchainReveal: useGearAction.oathchainReveal }
+        }))
+      } : chargedState;
       const finalState = useGearAction.discard
-        ? discardHeldGear(chargedState, useGearAction.seatId, useGearAction.gearId)
-        : chargedState;
+        ? discardHeldGear(revealedState, useGearAction.seatId, useGearAction.gearId)
+        : revealedState;
       const updatedPlayer = requirePlayer(finalState, useGearAction.seatId);
 
       return succeed({
@@ -2945,6 +2952,7 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
         sequence: state.sequence + 1,
         players: updateActivePlayer(state, acceptAction.seatId, (entry) => ({
           ...entry,
+          private: { ...entry.private, activeOathchainReveal: null },
           character: {
             ...entry.character,
             activeContract: {
@@ -3006,6 +3014,7 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
         ...state,
         players: updateActivePlayer(state, completeAction.seatId, (entry) => ({
           ...entry,
+          private: { ...entry.private, activeOathchainReveal: null },
           character: {
             ...entry.character,
             activeContract: null,
@@ -4040,6 +4049,7 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
         activeResolution: null,
         resolutionSource: null,
         lastOutcomeSummary: null,
+        players: state.players.map((entry) => entry.seatId === action.seatId ? { ...entry, private: { ...entry.private, activeOathchainReveal: null } } : entry),
         movementRolls: clearMovementRollForSeat(state, action.seatId),
         movementAdjustments: clearMovementAdjustmentForSeat(state, action.seatId),
         eventLog: [...state.eventLog, action]

@@ -141,7 +141,7 @@ export interface GearItem {
   startingCharges?: number;
   chargeCost?: number;
   rechargeRule?: "none";
-  chargedEffect?: "personalGateOverride" | "movementAdjustment" | "saintSafeConduct" | "bonewayDetour" | "choirLightSignalBonus" | "staticIntercession" | "scarSinkPrayer";
+  chargedEffect?: "personalGateOverride" | "movementAdjustment" | "saintSafeConduct" | "bonewayDetour" | "choirLightSignalBonus" | "staticIntercession" | "scarSinkPrayer" | "traceThePromise";
   maxUses?: number;
   heatCost?: number;
   linkedFollowerRole?: FollowerRole;
@@ -946,6 +946,23 @@ export interface PhonePatchPayload extends PublicPatchPayload {
     pendingEffects: Array<{ effectId: string; summary: string }>;
     rulesText: string;
   } | null;
+  oathchainPrompt?: {
+    instanceId: string;
+    contractId: string;
+    contractSignature: string;
+    currentCharges: number;
+    maxCharges: number;
+    chargeCost: 1;
+    preview: string;
+  } | null;
+  activeOathchainReveal?: {
+    revealId: string;
+    contractId: string;
+    contractName: string;
+    objectiveProgress: string;
+    revealedTargets: Array<{ kind: "threat" | "sector" | "routeStop" | "shopAction" | "tileChallenge"; id: string; label: string; sectorId?: string; detail: string }>;
+    expiresAtTurnEnd: true;
+  } | null;
 }
 
 export interface StatePatch<TPayload = PublicPatchPayload> {
@@ -1083,6 +1100,7 @@ export type ClientIntent =
       scarConsequenceReactionId?: string;
       scarInstanceId?: string;
       pendingScarEffectId?: string;
+      contractSignature?: string;
     }
   | {
       type: "USE_FOLLOWER";

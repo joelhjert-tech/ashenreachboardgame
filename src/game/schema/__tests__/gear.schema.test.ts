@@ -77,4 +77,11 @@ describe("gear effect model schema", () => {
     expect(gearItemSchema.safeParse({ ...prayer, rechargeRule: "round" }).success).toBe(false);
     expect(gearItemSchema.safeParse({ ...prayer, name: "Heat-Sink Prayer" }).success).toBe(false);
   });
+
+  it("accepts Oathchain Lens only as an action-phase information charged Artifact", () => {
+    const lens = { ...base, id: "oathchain-lens", tier: "artifact", category: "chargedRelic", useLimit: "charge", effectModel: "charged", requiresEquipped: true, activationTiming: ["action"], maxCharges: 2, startingCharges: 2, chargeCost: 1, rechargeRule: "none", chargedEffect: "traceThePromise", activeText: "Trace currently visible Contract targets without changing progress or legality." } as const;
+    expect(gearItemSchema.safeParse(lens).success).toBe(true);
+    expect(gearItemSchema.safeParse({ ...lens, activationTiming: ["shop"] }).success).toBe(false);
+    expect(gearItemSchema.safeParse({ ...lens, rechargeRule: undefined }).success).toBe(false);
+  });
 });
