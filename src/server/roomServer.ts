@@ -80,6 +80,7 @@ import {
 import {
   buildMovementRoutePlan,
   getLegalMovementRoute,
+  getLegalMovementRouteVariant,
   getMovementBlockReason,
   getVoidKeyMovementRoute
 } from "../game/rules/movementPlanner.js";
@@ -444,7 +445,7 @@ export class GameRoomServer {
   private hostToken: string | null = null;
   private enemyRollTimeout: ReturnType<typeof setTimeout> | null = null;
   private resolutionAutoContinueTimeout: ReturnType<typeof setTimeout> | null = null;
-  private readonly movementPreviewBySeatId = new Map<string, string>();
+  private readonly movementPreviewBySeatId = new Map<string, { destinationId: string; routeId: string }>();
 
   public constructor(
     private state: GameState,
@@ -564,7 +565,15 @@ export class GameRoomServer {
           if (!destination) {
             throw new Error("Movement preview must use a legal destination");
           }
-          this.movementPreviewBySeatId.set(intent.seatId, destination.sectorId);
+          if (intent.routeId !== undefined || intent.movementRevision !== undefined) {
+            if (!intent.routeId || intent.movementRevision === undefined || intent.movementRevision !== planner.movementRevision || !destination.routeVariants.some((variant) => variant.routeId === intent.routeId)) {
+              throw new Error("Movement preview route is stale or does not belong to this destination");
+            }
+          }
+          this.movementPreviewBySeatId.set(intent.seatId, {
+            destinationId: destination.sectorId,
+            routeId: intent.routeId ?? destination.defaultRouteId
+          });
         }
         this.broadcastPatch();
         return;
@@ -668,6 +677,9 @@ export class GameRoomServer {
         (intent.type === "CHECK_REQUESTED" || intent.type === "COMBAT_REQUESTED") &&
         this.state.activeResolution?.stage === "battle_setup" &&
         this.state.activeResolution.playerId === intent.seatId;
+      if (intent.type === "ADJUST_MOVEMENT_REQUESTED") {
+        this.movementPreviewBySeatId.delete(intent.seatId);
+      }
       const action = this.intentToAction(intent);
       this.applyAction(action);
 
@@ -1242,9 +1254,13 @@ export class GameRoomServer {
         if (message.toSectorId !== null) {
           requireStringField(message, "toSectorId", type);
         }
+        if (message.routeId !== undefined) requireStringField(message, "routeId", type);
+        if (message.movementRevision !== undefined && (!Number.isInteger(message.movementRevision) || Number(message.movementRevision) < 1)) throw new IntentRejectedError(type, "Movement revision must be a positive integer");
         break;
       case "MOVE_REQUESTED":
         requireStringField(message, "toSectorId", type);
+        if (message.routeId !== undefined) requireStringField(message, "routeId", type);
+        if (message.movementRevision !== undefined && (!Number.isInteger(message.movementRevision) || Number(message.movementRevision) < 1)) throw new IntentRejectedError(type, "Movement revision must be a positive integer");
         break;
       case "MOVEMENT_ROLL_REQUESTED":
         break;
@@ -2691,6 +2707,8 @@ export class GameRoomServer {
           seatId: intent.seatId,
           toSectorId: intent.toSectorId,
           voidKeyInstanceId: intent.voidKeyInstanceId,
+          routeId: intent.routeId,
+          movementRevision: intent.movementRevision,
           createdAt
         } satisfies MoveRequestedAction;
       case "MOVEMENT_ROLL_REQUESTED":
@@ -5754,7 +5772,7 @@ export class GameRoomServer {
   }
 
   resolveMoveIntent(intent: Extract<ClientIntent, { type: "MOVE_REQUESTED" }>): void {
-    const { player, fromSectorId, targetSector } = this.assertLegalMove(intent.seatId, intent.toSectorId, intent.voidKeyInstanceId, true);
+    const { player, fromSectorId, targetSector } = this.assertLegalMove(intent.seatId, intent.toSectorId, intent.voidKeyInstanceId, true, intent.routeId, intent.movementRevision);
 
     const escalationModifier = getEscalationModifier(this.state.escalationLevel);
     const roll = rollDice(2, 6, this.randomSource);
@@ -5815,7 +5833,9 @@ export class GameRoomServer {
     seatId: string,
     toSectorId: string,
     voidKeyInstanceId?: string,
-    chargeAlreadySpent = false
+    chargeAlreadySpent = false,
+    routeId?: string,
+    movementRevision?: number
   ): { player: PlayerState; fromSectorId: string; targetSector: GameState["sectors"][number] } {
     const player = this.state.players.find((entry) => entry.seatId === seatId);
 
@@ -5838,6 +5858,10 @@ export class GameRoomServer {
       const key = player.character.heldGear.find((item) => item.id === "void-key" && item.instanceId === voidKeyInstanceId);
       const charges = key?.currentCharges ?? key?.charges ?? 0;
       if (!key || (!chargeAlreadySpent && charges < 1) || player.character.equippedGear.utility !== key.id || !getVoidKeyMovementRoute(this.state, seatId, toSectorId)) throw new Error("Void Key cannot authorize this route");
+    } else if (routeId !== undefined || movementRevision !== undefined) {
+      if (!routeId || movementRevision === undefined || !getLegalMovementRouteVariant(this.state, seatId, toSectorId, routeId, movementRevision)) {
+        throw new Error("Movement route is stale, unknown, or belongs to another destination");
+      }
     } else if (!getLegalMovementRoute(this.state, seatId, toSectorId)) {
       throw new Error(getMovementBlockReason(this.state, seatId, toSectorId) ?? `${targetSector.name} is not reachable by the current movement value`);
     }
@@ -7167,6 +7191,9 @@ type PublicShopSellItem = {
 };
 
 type PublicMoveDestination = {
+  routeId: string;
+  defaultRouteId: string;
+  routeVariants: Array<{ routeId: string; destinationId: string; sectorIds: string[]; distance: number }>;
   sectorId: string;
   name: string;
   ring: "outer" | "middle" | "inner" | "core";
@@ -7215,6 +7242,7 @@ type PublicMovementPlannerState = {
   compassPrompt?: { instanceId: string; currentCharges: number; maxCharges: number; canDecrease: boolean; canIncrease: boolean } | null;
   currentSectorId: string;
   currentSectorName: string;
+  movementRevision: number;
   destinations: PublicMoveDestination[];
   selectedDestinationId?: string | null;
 };
@@ -7646,7 +7674,7 @@ function buildPublicMovementPlanner(state: GameState, seatId: string): PublicMov
     ...plan.blockedRoutes
   ];
 
-  const destinations = routeEntries.flatMap<PublicMoveDestination>((routeEntry) => {
+  const destinationEntries = routeEntries.flatMap<PublicMoveDestination>((routeEntry) => {
     const sector = state.sectors.find((entry) => entry.id === routeEntry.sectorId);
     const boardSpace = getBoardSpace(routeEntry.sectorId);
 
@@ -7675,6 +7703,9 @@ function buildPublicMovementPlanner(state: GameState, seatId: string): PublicMov
 
     return [
       {
+        routeId: routeEntry.routeId,
+        defaultRouteId: routeEntry.routeId,
+        routeVariants: [{ routeId: routeEntry.routeId, destinationId: routeEntry.sectorId, sectorIds: routeEntry.route, distance: routeEntry.distance }],
         sectorId: sector.id,
         name: sector.name,
         ring: getPublicRing(boardSpace.tier),
@@ -7711,6 +7742,16 @@ function buildPublicMovementPlanner(state: GameState, seatId: string): PublicMov
     ];
   });
 
+  const destinations = [...destinationEntries.reduce((byDestination, destination) => {
+    const existing = byDestination.get(destination.sectorId);
+    if (!existing || destination.disabledReason || existing.disabledReason) {
+      if (!existing) byDestination.set(destination.sectorId, destination);
+      return byDestination;
+    }
+    existing.routeVariants.push(...destination.routeVariants.filter((variant) => !existing.routeVariants.some((current) => current.routeId === variant.routeId)));
+    return byDestination;
+  }, new Map<string, PublicMoveDestination>()).values()];
+
   return {
     active: true,
     movementValue: plan.movementValue,
@@ -7719,6 +7760,7 @@ function buildPublicMovementPlanner(state: GameState, seatId: string): PublicMov
     compassPrompt: !adjustment && compass ? { instanceId: compass.instanceId!, currentCharges: compass.currentCharges ?? compass.charges ?? 0, maxCharges: compass.maxCharges ?? 2, canDecrease: originalMovementValue > 1, canIncrease: true } : null,
     currentSectorId: currentSector.id,
     currentSectorName: currentSector.name,
+    movementRevision: plan.revision,
     destinations
   };
 }
@@ -8965,7 +9007,7 @@ function getPendingFailureEffectChoices(state: GameState): Array<{ effectId: str
 
 export function createTvProjection(
   state: GameState,
-  movementPreviewBySeatId: ReadonlyMap<string, string> = new Map()
+  movementPreviewBySeatId: ReadonlyMap<string, { destinationId: string; routeId: string }> = new Map()
 ): Record<string, unknown> {
   const escalationThreshold = getEscalationCollapseLevel(state.sessionMode);
   const activeScenario = getScenarioDefinition(state.activeScenarioId);
@@ -9196,7 +9238,17 @@ export function createTvProjection(
     movementPlanner: activeSeatId
       ? (() => {
           const planner = buildPublicMovementPlanner(state, activeSeatId);
-          const selectedDestinationId = movementPreviewBySeatId.get(activeSeatId) ?? null;
+          const selectedPreview = movementPreviewBySeatId.get(activeSeatId) ?? null;
+          const selectedDestinationId = selectedPreview?.destinationId ?? null;
+          if (planner && selectedPreview) {
+            const destination = planner.destinations.find((entry) => entry.sectorId === selectedPreview.destinationId && !entry.disabledReason);
+            const variant = destination?.routeVariants.find((entry) => entry.routeId === selectedPreview.routeId);
+            if (destination && variant) {
+              destination.routeId = variant.routeId;
+              destination.route = [...variant.sectorIds];
+              destination.routeNames = variant.sectorIds.map((sectorId) => state.sectors.find((entry) => entry.id === sectorId)?.name ?? sectorId);
+            }
+          }
           return planner
             ? {
                 ...planner,

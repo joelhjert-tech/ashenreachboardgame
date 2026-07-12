@@ -64,7 +64,7 @@ import { buildPendingScarConsequences, getMatchingScarTriggers } from "../rules/
 import { applyLegacyHeatNoop, isLegacyHeatNoopEffect, summarizeLegacyHeatNoop } from "../rules/legacyHeatCompatibility.js";
 import type { ScarSourceEvent } from "../schema/scarTrigger.schema.js";
 import { getBoardSpace, isScenarioConfrontationSpace } from "../data/boardSpaces.js";
-import { getLegalMovementRoute, getMovementBlockReason, getVoidKeyMovementRoute, getMovementStepBlockReason } from "../rules/movementPlanner.js";
+import { getLegalMovementRoute, getLegalMovementRouteVariant, getMovementBlockReason, getVoidKeyMovementRoute, getMovementStepBlockReason } from "../rules/movementPlanner.js";
 import { isBoardSpaceShopCapable, SHOP_FAILURE_REASONS } from "../rules/shopAvailability.js";
 import {
   getStatUpgradeCost,
@@ -201,8 +201,13 @@ function getCompletedRoundFromEventLog(state: GameState): number {
   );
 }
 
-function ensureLegalMovementRoute(state: GameState, seatId: string, toSectorId: string): void {
-  const route = getLegalMovementRoute(state, seatId, toSectorId);
+function ensureLegalMovementRoute(state: GameState, seatId: string, toSectorId: string, routeId?: string, movementRevision?: number): void {
+  if ((routeId === undefined) !== (movementRevision === undefined)) {
+    throw new Error("Explicit movement route requires both route ID and movement revision");
+  }
+  const route = routeId && movementRevision !== undefined
+    ? getLegalMovementRouteVariant(state, seatId, toSectorId, routeId, movementRevision)
+    : getLegalMovementRoute(state, seatId, toSectorId);
 
   if (route) {
     return;
@@ -1109,7 +1114,7 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
         if (!voidKey || keyCharges < 1 || player.character.equippedGear.utility !== voidKey.id || !getVoidKeyMovementRoute(state, moveAction.seatId, moveAction.toSectorId)) return reject(state, action, "Void Key cannot authorize this route");
       } else {
         try {
-          ensureLegalMovementRoute(state, moveAction.seatId, moveAction.toSectorId);
+          ensureLegalMovementRoute(state, moveAction.seatId, moveAction.toSectorId, moveAction.routeId, moveAction.movementRevision);
         } catch (error) {
           return reject(state, action, error instanceof Error ? error.message : "Sector is not reachable");
         }
@@ -1156,7 +1161,7 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
       const charges = item?.currentCharges ?? item?.charges ?? 0;
       const adjusted = state.movementRolls[adjust.seatId]! + adjust.adjustment;
       if (!item || player.character.equippedGear.utility !== item.id || charges < 1 || adjusted < 1) return reject(state, action, "Ashen Route Compass cannot adjust this movement");
-      const next = { ...state, movementAdjustments: { ...(state.movementAdjustments ?? {}), [adjust.seatId]: { adjustment: adjust.adjustment, sourceInstanceId: adjust.instanceId } }, players: updateActivePlayer(state, adjust.seatId, (entry) => ({ ...entry, character: { ...entry.character, heldGear: entry.character.heldGear.map((gear) => gear.instanceId === adjust.instanceId ? { ...gear, currentCharges: charges - 1, maxCharges: gear.maxCharges ?? 2 } : gear) } })) };
+      const next = { ...state, movementAdjustments: { ...(state.movementAdjustments ?? {}), [adjust.seatId]: { adjustment: adjust.adjustment, sourceInstanceId: adjust.instanceId } }, movementRouteRevisions: { ...(state.movementRouteRevisions ?? {}), [adjust.seatId]: (state.movementRouteRevisions?.[adjust.seatId] ?? 0) + 1 }, players: updateActivePlayer(state, adjust.seatId, (entry) => ({ ...entry, character: { ...entry.character, heldGear: entry.character.heldGear.map((gear) => gear.instanceId === adjust.instanceId ? { ...gear, currentCharges: charges - 1, maxCharges: gear.maxCharges ?? 2 } : gear) } })) };
       return succeed({ ...next, sequence: state.sequence + 1, eventLog: [...state.eventLog, action] });
     }
     case "ACTIVATE_GATE_SAINT": {
@@ -1214,6 +1219,10 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
         movementRolls: {
           ...(state.movementRolls ?? {}),
           [movementRolledAction.seatId]: movementRolledAction.movementValue
+        },
+        movementRouteRevisions: {
+          ...(state.movementRouteRevisions ?? {}),
+          [movementRolledAction.seatId]: (state.movementRouteRevisions?.[movementRolledAction.seatId] ?? 0) + 1
         },
         eventLog: [...state.eventLog, action]
       });

@@ -28,6 +28,8 @@ export interface MoveRequestedAction extends BaseAction {
   type: "MOVE_REQUESTED";
   toSectorId: string;
   voidKeyInstanceId?: string;
+  routeId?: string;
+  movementRevision?: number;
 }
 
 export interface MovementRollRequestedAction extends BaseAction {
@@ -615,12 +617,16 @@ export type ClientIntent =
       type: "MOVEMENT_DESTINATION_PREVIEWED";
       seatId: string;
       toSectorId: string | null;
+      routeId?: string;
+      movementRevision?: number;
     }
   | {
       type: "MOVE_REQUESTED";
       seatId: string;
       toSectorId: string;
       voidKeyInstanceId?: string;
+      routeId?: string;
+      movementRevision?: number;
     }
   | {
       type: "MOVEMENT_ROLL_REQUESTED";

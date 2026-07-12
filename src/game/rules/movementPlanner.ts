@@ -4,6 +4,7 @@ import type { GameState, PlayerState } from "../schema/session.schema.js";
 import { hasCrownKeyFragment } from "./nemesisRelay.js";
 
 export type MovementRoute = {
+  routeId: string;
   sectorId: string;
   distance: number;
   route: string[];
@@ -14,11 +15,35 @@ export type BlockedMovementRoute = MovementRoute & {
 };
 
 export type MovementRoutePlan = {
+  revision: number;
   movementValue: number;
   currentSectorId: string;
   routes: MovementRoute[];
   blockedRoutes: BlockedMovementRoute[];
 };
+
+function hashRouteIdentity(value: string): string {
+  let hash = 0x811c9dc5;
+  for (let index = 0; index < value.length; index += 1) {
+    hash ^= value.charCodeAt(index);
+    hash = Math.imul(hash, 0x01000193);
+  }
+  return (hash >>> 0).toString(36);
+}
+
+function getMovementRevision(state: GameState, seatId: string): number {
+  return state.movementRouteRevisions?.[seatId] ?? 0;
+}
+
+function identifyRoute(state: GameState, seatId: string, route: Omit<MovementRoute, "routeId">): MovementRoute {
+  const revision = getMovementRevision(state, seatId);
+  const identity = [revision, seatId, route.route[0], route.sectorId, route.distance, ...route.route].join("|");
+  return { ...route, routeId: `route-${revision}-${hashRouteIdentity(identity)}` };
+}
+
+function identifyBlockedRoute(state: GameState, seatId: string, route: Omit<BlockedMovementRoute, "routeId">): BlockedMovementRoute {
+  return { ...identifyRoute(state, seatId, route), disabledReason: route.disabledReason };
+}
 
 function getPlayer(state: GameState, seatId: string): PlayerState | null {
   return state.players.find((entry) => entry.seatId === seatId) ?? null;
@@ -92,12 +117,13 @@ function isAuthoredTransitionEdge(fromSectorId: string, toSectorId: string): boo
 }
 
 function addMovementRoute(
-  routesByDestination: Map<string, MovementRoute>,
+  routesByPath: Map<string, MovementRoute>,
   route: MovementRoute,
   currentSectorId: string
 ): void {
-  if (route.sectorId !== currentSectorId && !routesByDestination.has(route.sectorId)) {
-    routesByDestination.set(route.sectorId, route);
+  const pathKey = route.route.join("\u001f");
+  if (route.sectorId !== currentSectorId && !routesByPath.has(pathKey)) {
+    routesByPath.set(pathKey, route);
   }
 }
 
@@ -131,30 +157,29 @@ function buildRingTrackRoute(
     const disabledReason = getMovementStepBlockReason(state, player, fromSectorId, neighborId);
 
     if (disabledReason) {
-      return {
+      return identifyBlockedRoute(state, player.seatId, {
         sectorId: neighborId,
         distance,
         route: nextRoute,
         disabledReason
-      };
+      });
     }
 
     route.push(neighborId);
     fromSectorId = neighborId;
   }
 
-  return {
+  return identifyRoute(state, player.seatId, {
     sectorId: fromSectorId,
     distance: movementValue,
     route
-  };
+  });
 }
 
 function buildGraphRoutePlan(state: GameState, player: PlayerState, currentSectorId: string, movementValue: number): MovementRoutePlan {
   const queue: Array<{ sectorId: string; route: string[] }> = [{ sectorId: currentSectorId, route: [currentSectorId] }];
   const routesByDestination = new Map<string, MovementRoute>();
   const blockedRoutesByDestination = new Map<string, BlockedMovementRoute>();
-  const visitedBySectorAndDistance = new Set<string>([`${currentSectorId}:0`]);
 
   while (queue.length > 0) {
     const current = queue.shift();
@@ -168,11 +193,11 @@ function buildGraphRoutePlan(state: GameState, player: PlayerState, currentSecto
     if (distance === movementValue) {
       addMovementRoute(
         routesByDestination,
-        {
+        identifyRoute(state, player.seatId, {
           sectorId: current.sectorId,
           distance,
           route: current.route
-        },
+        }),
         currentSectorId
       );
       continue;
@@ -190,22 +215,18 @@ function buildGraphRoutePlan(state: GameState, player: PlayerState, currentSecto
       const disabledReason = getMovementStepBlockReason(state, player, current.sectorId, neighborId);
 
       if (disabledReason) {
-        addBlockedMovementRoute(blockedRoutesByDestination, {
+        addBlockedMovementRoute(blockedRoutesByDestination, identifyBlockedRoute(state, player.seatId, {
           sectorId: neighborId,
           distance: nextDistance,
           route: nextRoute,
           disabledReason
-        });
+        }));
         continue;
       }
 
-      const visitKey = `${neighborId}:${nextDistance}`;
-
-      if (visitedBySectorAndDistance.has(visitKey)) {
+      if (current.route.includes(neighborId)) {
         continue;
       }
-
-      visitedBySectorAndDistance.add(visitKey);
       queue.push({
         sectorId: neighborId,
         route: nextRoute
@@ -214,6 +235,7 @@ function buildGraphRoutePlan(state: GameState, player: PlayerState, currentSecto
   }
 
   return {
+    revision: getMovementRevision(state, player.seatId),
     movementValue,
     currentSectorId,
     routes: [...routesByDestination.values()],
@@ -311,12 +333,12 @@ export function buildMovementRoutePlan(state: GameState, seatId: string): Moveme
       const disabledReason = getMovementStepBlockReason(state, player, currentSectorId, neighborId);
 
       if (disabledReason) {
-        addBlockedMovementRoute(blockedRoutesByDestination, {
+        addBlockedMovementRoute(blockedRoutesByDestination, identifyBlockedRoute(state, seatId, {
           sectorId: neighborId,
           distance: 1,
           route: nextRoute,
           disabledReason
-        });
+        }));
         continue;
       }
 
@@ -327,11 +349,11 @@ export function buildMovementRoutePlan(state: GameState, seatId: string): Moveme
       if (isSameRegionStep || isAuthoredTransitionEdge(currentSectorId, neighborId)) {
         addMovementRoute(
           routesByDestination,
-          {
+          identifyRoute(state, seatId, {
             sectorId: neighborId,
             distance: 1,
             route: nextRoute
-          },
+          }),
           currentSectorId
         );
       }
@@ -339,6 +361,7 @@ export function buildMovementRoutePlan(state: GameState, seatId: string): Moveme
   }
 
   return {
+    revision: getMovementRevision(state, seatId),
     movementValue,
     currentSectorId,
     routes: [...routesByDestination.values()],
@@ -348,6 +371,18 @@ export function buildMovementRoutePlan(state: GameState, seatId: string): Moveme
 
 export function getLegalMovementRoute(state: GameState, seatId: string, toSectorId: string): MovementRoute | null {
   return buildMovementRoutePlan(state, seatId)?.routes.find((route) => route.sectorId === toSectorId) ?? null;
+}
+
+export function getLegalMovementRouteVariant(
+  state: GameState,
+  seatId: string,
+  toSectorId: string,
+  routeId: string,
+  revision: number
+): MovementRoute | null {
+  const plan = buildMovementRoutePlan(state, seatId);
+  if (!plan || plan.revision !== revision) return null;
+  return plan.routes.find((route) => route.sectorId === toSectorId && route.routeId === routeId) ?? null;
 }
 
 export function getMovementBlockReason(state: GameState, seatId: string, toSectorId: string): string | null {
