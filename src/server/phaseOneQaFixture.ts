@@ -1,9 +1,11 @@
 import { getBoardSpace } from "../game/data/boardSpaces.js";
+import { loadGear } from "../game/content/gear.js";
 import type { GameState } from "../game/schema/session.schema.js";
 
 export type PhaseOneQaFixture =
   | { kind: "route"; stage: "first" | "duplicate" | "ordered-wrong" | "final" | "completion-ready" }
   | { kind: "shop"; stage: "wrong-shop" | "valid-first" | "valid-final" | "completion-ready" }
+  | { kind: "movement-journey"; stage: "ashen-chapel"; withChoirLantern?: boolean }
   | { kind: "relic-trade"; completedContracts: 0 | 1 | 2 | 3 };
 
 const routeContractId = "choir-echo-triangulation";
@@ -58,6 +60,24 @@ export function applyPhaseOneQaFixture(state: GameState, seatId: string, fixture
       (_, index) => `qa-completed-contract-${index + 1}`
     );
     placePlayer(state, seatId, "outer_surgery_tent");
+    return;
+  }
+
+  if (fixture.kind === "movement-journey") {
+    state.phase = "navigation";
+    state.movementRolls = { ...(state.movementRolls ?? {}), [seatId]: 2 };
+    state.pendingTileChallenge = null;
+    placePlayer(state, seatId, "scorched-road");
+    if (fixture.withChoirLantern) {
+      const player = state.players.find((entry) => entry.seatId === seatId);
+      const lantern = loadGear().get("choir-lantern");
+      if (!player || !lantern) throw new Error("QA fixture cannot equip Choir Lantern");
+      player.character.heldGear = [
+        ...player.character.heldGear.filter((item) => item.id !== lantern.id),
+        { ...lantern, instanceId: "qa-choir-lantern", currentCharges: 2, maxCharges: 2 }
+      ];
+      player.character.equippedGear.utility = lantern.id;
+    }
     return;
   }
 

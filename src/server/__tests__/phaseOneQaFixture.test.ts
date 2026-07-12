@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { createInitialSessionState } from "../sessionState.js";
 import { applyPhaseOneQaFixture } from "../phaseOneQaFixture.js";
+import { buildMovementRoutePlan } from "../../game/rules/movementPlanner.js";
 import { startAshenReachServer, type StartedAshenReachServer } from "../index.js";
 import { createPhoneProjection, createTvProjection } from "../roomServer.js";
 
@@ -33,6 +34,27 @@ describe("Phase 1 QA fixture", () => {
     applyPhaseOneQaFixture(state, "seat-1", { kind: "shop", stage: "completion-ready" });
     expect(state.phase).toBe("action");
     expect(state.players[0]?.character.activeContract?.progress).toBe(2);
+  });
+
+  it("prepares a normal authoritative two-step route to the recurring Ashen Chapel challenge", () => {
+    const state = createInitialSessionState("QA001", "single-player", "scenario_broken_seal", "co-op", "standard", 1);
+    state.status = "active";
+    state.phase = "action";
+
+    const chapelBefore = state.sectors.find((sector) => sector.id === "ashen-chapel");
+    const riftBefore = chapelBefore?.tileChallenges?.find((challenge) => challenge.id === "rift-whispers-ashen-chapel");
+    expect(riftBefore).toBeTruthy();
+
+    applyPhaseOneQaFixture(state, "seat-1", { kind: "movement-journey", stage: "ashen-chapel", withChoirLantern: true });
+
+    expect(state.players[0]?.sectorId).toBe("scorched-road");
+    expect(state.movementRolls?.["seat-1"]).toBe(2);
+    expect(state.pendingTileChallenge).toBeNull();
+    expect(state.players[0]?.character.heldGear).toContainEqual(expect.objectContaining({ id: "choir-lantern", instanceId: "qa-choir-lantern", currentCharges: 2 }));
+    expect(state.players[0]?.character.equippedGear.utility).toBe("choir-lantern");
+    const route = buildMovementRoutePlan(state, "seat-1")?.routes.find((entry) => entry.sectorId === "ashen-chapel");
+    expect(route).toEqual({ sectorId: "ashen-chapel", distance: 2, route: ["scorched-road", "blastworks", "ashen-chapel"] });
+    expect(state.sectors.find((sector) => sector.id === "ashen-chapel")?.tileChallenges).toContainEqual(riftBefore);
   });
 
   it("does not expose the QA endpoint unless explicitly enabled", async () => {
