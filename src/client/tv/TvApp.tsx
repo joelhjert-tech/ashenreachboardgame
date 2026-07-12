@@ -2082,18 +2082,11 @@ function TacticalMapPanel({
   const arrivalKey = arrival?.eventId ?? null;
   const [visualTravel, setVisualTravel] = useState<{ key: string; arrival: MovementArrivalModel; step: number; arrived: boolean } | null>(null);
   const completedTravelKeyRef = useRef<string | null>(null);
-  const challengeFocus = Boolean(patch?.payload.pendingTileChallenge);
-  const eventFocus = Boolean(patch?.payload.activeResolution || patch?.payload.encounter);
   useEffect(() => {
-    if (arrival && arrivalKey && completedTravelKeyRef.current !== arrivalKey && !battleMode && !shopMode && !challengeFocus && !eventFocus) {
+    if (arrival && arrivalKey && completedTravelKeyRef.current !== arrivalKey) {
       setVisualTravel((current) => current?.key === arrivalKey ? current : { key: arrivalKey, arrival, step: 0, arrived: false });
     }
-  }, [arrival, arrivalKey, battleMode, shopMode, challengeFocus, eventFocus]);
-  useEffect(() => {
-    if (battleMode || shopMode || challengeFocus || eventFocus) {
-      setVisualTravel(null);
-    }
-  }, [battleMode, shopMode, challengeFocus, eventFocus]);
+  }, [arrival, arrivalKey]);
   useEffect(() => {
     if (!visualTravel) return;
     const finalStep = Math.max(visualTravel.arrival.destination.route.length - 1, 1);
@@ -2132,7 +2125,7 @@ function TacticalMapPanel({
             previousPatch={previousPatch?.payload ?? null}
             phase={patch?.phase ?? "start"}
           />
-          {!movementFocusMode && <BoardLegend />}
+          {!movementFocusMode && !journey && <BoardLegend />}
         </div>
       )}
       {!focusBattleMode && <NemesisBanner nemesis={patch?.payload.nemesis ?? null} />}
@@ -2153,8 +2146,8 @@ function TacticalMapPanel({
           characterCatalog={characterCatalog}
         />
       )}
-      {focusBattleMode && <HostBattleOverlay patch={patch} activePlayer={battlePlayer} />}
-      {focusShopMode && <HostShopOverlay patch={patch} activePlayer={activePlayer} />}
+      {focusBattleMode && !journey && <HostBattleOverlay patch={patch} activePlayer={battlePlayer} />}
+      {focusShopMode && !journey && <HostShopOverlay patch={patch} activePlayer={activePlayer} />}
       {movementFocusMode && (
         !journey &&
         <MovementFocusHud

@@ -1012,6 +1012,14 @@ describe("TvApp", () => {
     movedPatch.phase = "action";
     movedPatch.payload.movementPlanner = null;
     movedPatch.payload.players[0]!.sectorId = "outer_anchor_market";
+    movedPatch.payload.activeResolution = {
+      id: "seat-1:movement:outer_anchor_market:test",
+      playerId: "seat-1",
+      source: "movement",
+      stage: "roll_result",
+      card: { id: "outer_anchor_market", title: "Anchor Market", type: "test", artType: "sector" },
+      battle: { stat: "guile", difficulty: 2, modifiers: [{ label: "Base Guile", value: 2 }] }
+    };
     mockUseRoomSubscription.mockReturnValue({
       patch: movedPatch,
       error: null,
@@ -1027,15 +1035,15 @@ describe("TvApp", () => {
     expect(within(journey).getByTestId("tile-art-ashwake-crossing")).toHaveAttribute("src", "/assets/map/tiles/map_tile_hollow_gate.png");
     expect(within(journey).getByTestId("tile-art-glassmere-spindle")).toHaveAttribute("src", "/assets/map/tiles/map_tile_ironbridge_span.png");
     expect(journey).toHaveFocus();
+    expect(screen.queryByTestId("host-battle-overlay")).not.toBeInTheDocument();
     expect(screen.queryByTestId("tv-movement-focus")).not.toBeInTheDocument();
-    expect(screen.getByText("Tactical map")).toBeInTheDocument();
+    expect(screen.queryByText("Tactical map")).not.toBeInTheDocument();
 
     await waitFor(() => expect(journey).toHaveTextContent(/arrived at anchor market/i), { timeout: 3_500 });
     await waitFor(() => expect(screen.queryByTestId("tv-movement-journey")).not.toBeInTheDocument(), { timeout: 4_500 });
     rerender(<TvApp />);
-    expect(screen.getByTestId("tv-command-main")).not.toHaveClass("tv-command-main--movement-focus");
-    expect(screen.getByRole("complementary", { name: /operatives/i })).toBeInTheDocument();
-    expect(document.querySelector(".tv-command-sidebar")).toBeInTheDocument();
+    expect(await screen.findByTestId("host-battle-overlay")).toBeInTheDocument();
+    expect(screen.queryByTestId("tv-movement-journey")).not.toBeInTheDocument();
   });
 
   it("shows sector exploration math in the sector brief without duplicating private data", async () => {
