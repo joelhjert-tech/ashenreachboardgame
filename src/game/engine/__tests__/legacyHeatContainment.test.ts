@@ -3,7 +3,7 @@ import { loadGear } from "../../content/gear.js";
 import { createInitialSessionState } from "../../../server/sessionState.js";
 import { gameStateSchema } from "../../schema/session.schema.js";
 import { reduceGameState } from "../reducer.js";
-import { formatLegacyRiskCost, getMirrorReflectionPressureThreshold } from "../../rules/legacyHeatCompatibility.js";
+import { getMirrorReflectionPressureThreshold, WITHDRAWN_LEGACY_HEAT_SERVICE_IDS } from "../../rules/legacyHeatCompatibility.js";
 import type { EncounterEffect } from "../../schema/card.schema.js";
 
 function resolve(effect: EncounterEffect) {
@@ -47,10 +47,10 @@ describe("Phase 1A legacy Heat compatibility", () => {
     expect(getMirrorReflectionPressureThreshold(restored)).toBe(7);
   });
 
-  it("keeps stable identifiers and temporary Risk formatting", () => {
+  it("keeps stable identifiers without active Heat costs", () => {
     const gear = loadGear();
-    expect(gear.get("black-route-fuse")?.heatCost).toBe(1);
+    expect(gear.get("black-route-fuse")?.heatCost).toBeUndefined();
+    expect(WITHDRAWN_LEGACY_HEAT_SERVICE_IDS.has("buy-boon")).toBe(true);
     expect(gear.has("heat-sink-prayer")).toBe(true);
-    expect(formatLegacyRiskCost(1)).toBe("Risk cost: 1");
   });
 });

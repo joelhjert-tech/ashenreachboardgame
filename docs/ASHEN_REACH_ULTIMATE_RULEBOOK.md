@@ -75,8 +75,6 @@ Other tracked values include:
 - **Win Progress:** progress toward the scenario objective.
 - **Loss Pressure:** progress toward session defeat.
 
-Heat is not a current player-facing resource. Some rare equipment or services may display a **Risk cost**. Risk is handled automatically by the game and is not a general resource gained through normal encounter effects.
-
 ## 8. Reading the host display
 
 The host display shows only public information. Its persistent board view identifies the round, phase, active operative, current sector, public objectives, pressure, and host controls. During accepted movement it may show a route journey. During battle it enters the dedicated battle chamber and suppresses the board. During a recurring challenge it shows the public challenge focus.
@@ -404,7 +402,7 @@ The proposed total hierarchy between all equal-priority exception types is not y
 
 **Can I reorder simultaneous effects?** Only if the current prompt offers that choice. Otherwise authored/server order applies.
 
-**What is Risk?** A temporary label shown by a few rare equipment or service costs. The game validates it automatically. Risk is not a general resource, and ordinary encounters do not grant spendable Risk.
+**Does Black Route Fuse have a hidden cost?** No. When its use is accepted, it grants +3 Grit for the matching battle roll, advances Global Escalation by 1, and is discarded.
 
 ## 41. Quick turn reference
 

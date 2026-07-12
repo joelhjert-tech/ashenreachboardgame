@@ -2,7 +2,6 @@ import type { CardImageType } from "../../game/assets/design/cardImageCatalog.js
 import type { ActiveResolution, Follower, GearItem, GearSlot, PhoneObjectUseState, PhonePatchPayload, PhoneSelfState, Stat } from "../shared/types.js";
 import { getGearCardArtId, getGearCardArtType } from "../shared/assetPaths.js";
 import { gearSlotLabelById, statLabelById } from "../shared/statLabels.js";
-import { formatLegacyRiskCost } from "../../game/rules/legacyHeatCompatibility.js";
 
 export type InventoryTimingWindow =
   | "beforeThreatDraw"
@@ -500,9 +499,7 @@ function buildGearCard(item: GearItem, patch: PhonePatchPayload, self: PhoneSelf
     fallbackLabel: getFallbackLabel(item.name)
     ,activationCostText: item.activationCost
       ? `Cost: ${item.activationCost.amount} ${item.activationCost.type === "salvage" ? "Salvage" : "Wound"}`
-      : item.heatCost
-        ? formatLegacyRiskCost(item.heatCost)
-        : undefined
+      : undefined
   };
 }
 

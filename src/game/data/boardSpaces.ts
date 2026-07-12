@@ -236,7 +236,7 @@ const RAW_BOARD_SPACES: AuthoredBoardSpaceDefinition[] = [
     threatIcons: ["blue"],
     textBox: {
       title: "Recharge the Votive",
-      text: "If the engine room is quiet, recharge 1 Gear or accept 1 Risk to force a stronger effect.",
+      text: "If the engine room is quiet, recharge 1 Gear or force the stronger effect shown by the current action.",
       effectKey: "outer_saltCrossing"
     },
     notes: "Outer salvage-shrine space that feeds gear and risk choices."
@@ -587,11 +587,11 @@ const RAW_BOARD_SPACES: AuthoredBoardSpaceDefinition[] = [
     index: 11,
     threatIcons: ["red", "blue"],
     textBox: {
-      title: "Risk Ammunition",
-      text: "If the shrine is quiet, gain a strong ammo blessing, then decide whether the Risk is worth it.",
+      title: "Dangerous Ammunition",
+      text: "If the shrine is quiet, gain a strong ammo blessing, then decide whether the danger is worth it.",
       effectKey: "middle_redMarchBargain"
     },
-    notes: "Risk shop that trades firepower for danger."
+    notes: "Dangerous shop that trades firepower for exposure."
   },
   {
     id: "scorched-road",
@@ -927,7 +927,7 @@ const BOARD_SPACE_PRESENTATION: Record<string, BoardSpacePresentation> = {
   },
   "votive-engine-room": {
     tags: ["salvage", "shrine", "risk-shop"],
-    ruleText: "If clear, recharge 1 Gear or accept 1 Risk for a stronger effect.",
+    ruleText: "If clear, recharge 1 Gear or force the stronger effect shown by the current action.",
     loreText: "The engine room burns prayers as fuel and answers only when the brass tanks are fed."
   },
   "kettleward-foundry": {
@@ -1002,7 +1002,7 @@ const BOARD_SPACE_PRESENTATION: Record<string, BoardSpacePresentation> = {
   },
   "weeping-ammunition-shrine": {
     tags: ["risk-shop", "shrine", "enemy"],
-    ruleText: "If clear, gain strong ammunition or a war boon at the cost of Risk.",
+    ruleText: "If clear, gain strong ammunition or a dangerous war boon.",
     loreText: "The shrine weeps live rounds into bowls of oil, and every blessing comes chambered."
   },
   "scorched-road": {

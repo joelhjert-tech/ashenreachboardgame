@@ -36,3 +36,12 @@ The first ten implementation-blocking decisions are HRD-001, 002, 003, 005, 006,
 - **HRD-020 clarified, not mechanically resolved:** real legacy costs use the temporary label `Risk cost: N`; Risk is not a new resource and generic no-op effects never create it.
 - **HRD-022 resolved:** Command, Grit, Signal, Guile, and Forge are the authoritative current attributes. The assumed Cunning/Strength/Understanding/Faith set is rejected as documentation drift.
 - HRD-001 through HRD-019 and HRD-023 through HRD-024 remain mechanically unresolved unless noted above.
+
+## Phase 1C implementation status
+
+- **HRD-005 implemented:** Black Route Fuse has no payment cost. Accepted use still discards it, grants +3 Grit to its matching battle roll, and advances Global Escalation by 1.
+- **HRD-006 implemented for active services:** `risk-action` is Deep Relic Search and authoritatively costs 1 Salvage. `buy-boon` retains its stable ID but is unavailable until it receives an enforceable design.
+- **HRD-007 implemented:** the cross-seat bound-Nemesis reward remains two trophies and no longer changes stored legacy Heat.
+- **HRD-011 implemented for ordinary play:** migrated paths omit Heat deltas; shared compatibility shapes remain readable.
+- **HRD-020 implemented:** the temporary Risk presentation is removed rather than promoted into a resource.
+- HRD-001 through HRD-004, HRD-008 through HRD-010, HRD-012 through HRD-019, and HRD-021 through HRD-024 retain their prior status except where explicitly clarified above.

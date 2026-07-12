@@ -123,4 +123,4 @@ The displayed result is authoritative. Do not import a tie rule from another gam
 - **Global Escalation:** round pressure and difficulty growth.
 - **Wounds:** immediate operative harm.
 - **Scars/Afflictions:** lasting conditions.
-- **Risk cost:** a rare, automatically validated compatibility cost; it is not a general resource gained from encounters.
+- **Deep Relic Search:** pay 1 Salvage at an eligible Relic Dealer to reveal four options.

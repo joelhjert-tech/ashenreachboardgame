@@ -171,6 +171,27 @@ describe("Nemesis Relay mode", () => {
     expect(server.getState().lastOutcomeSummary?.summary).toContain("All Nemesis Champions");
   });
 
+  it("grants two trophies without mutating stored legacy Heat for a cross-seat bound Nemesis", () => {
+    const server = startRelayServer(2);
+    const nemesis = server.getState().nemesisChampions.find((champion) => champion.boundPlayerId === "seat-2")!;
+
+    updateState(server, (state) => ({
+      ...state,
+      players: state.players.map((player) =>
+        player.seatId === "seat-1"
+          ? { ...player, character: { ...player.character, heat: 4, trophies: 0 } }
+          : player
+      )
+    }));
+
+    (server as any).defeatNemesis("seat-1", nemesis);
+
+    const attacker = server.getState().players.find((player) => player.seatId === "seat-1")!;
+    expect(attacker.character.trophies).toBe(2);
+    expect(attacker.character.heat).toBe(4);
+    expect(JSON.stringify(server.getState().eventLog)).not.toMatch(/"heatDelta"\s*:\s*-[1-9]/);
+  });
+
   it("adds valid co-op assist bonuses in Nemesis combat", () => {
     const server = startRelayServer(2, [2, 2, 2, 2]);
     const nemesis = getActiveNemesis(server);

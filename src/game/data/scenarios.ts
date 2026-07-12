@@ -293,14 +293,14 @@ export const SCENARIOS: ScenarioDefinition[] = [
     boardHooks: {
       redThreat: "Elite Red enemies can award Crown tokens.",
       yellowThreat: "Yellow political traps can make Crowned players drop tokens.",
-      shop: "Contract Spire and Black Vault style shops can sell Crown claims for Salvage plus Risk.",
+      shop: "Contract Spire and Black Vault style shops can sell Crown claims for Salvage.",
       salvage: "Salvage can buy authority, but every shortcut stains the claimant."
     },
     progressSources: [
       "Defeat an Elite enemy.",
       "Complete a Contract.",
       "Clear Choir Bastion, The Hollow Customs Gate, or Choir Execution Court.",
-      "Pay 4 Salvage at a Crown shop and accept 1 Risk."
+      "Pay 4 Salvage at a Crown shop."
     ],
     finalGateRequirement: "Attempt the Throne only while holding 1+ Crown or by spending 2 completed Contracts.",
     scenarioRewards: [
@@ -332,7 +332,7 @@ export const SCENARIOS: ScenarioDefinition[] = [
     ],
     nemesis: "Ash Regent",
     shopInteractions: [
-      "Contract Spire may sell 1 Crown for 4 Salvage and 1 Risk if a Crown remains unclaimed.",
+      "Contract Spire may sell 1 Crown for 4 Salvage if a Crown remains unclaimed.",
       "Black Vault may sell Crown abilities only to Crowned players.",
       "A Crowned player may discount one shop action by 1 Salvage through Ash-Crowned Authority."
     ],
@@ -350,7 +350,7 @@ export const SCENARIOS: ScenarioDefinition[] = [
       "Mark Choir Bastion, The Hollow Customs Gate, and Choir Execution Court as Crown sectors."
     ],
     specialRules: [
-      "A player may claim 1 Crown after defeating an Elite enemy, completing a Contract, clearing a Crown sector, or paying 4 Salvage plus 1 Risk at Contract Spire.",
+      "A player may claim 1 Crown after defeating an Elite enemy, completing a Contract, clearing a Crown sector, or paying 4 Salvage at Contract Spire.",
       "Each Crown gives +1 Grit during battles.",
       "Each Crown gives -1 Guile and -1 Signal during stat checks.",
       "At the end of each round, if all Crowns are held, increase Crown Hunger by 1.",
@@ -693,7 +693,7 @@ export const SCENARIOS: ScenarioDefinition[] = [
     },
     progressSources: [
       "Pass a stat check matching the active Engine mode.",
-      "Buy an Engine Key at Black Vault for 4 Salvage and 1 Risk.",
+      "Buy an Engine Key at Black Vault for 4 Salvage.",
       "Complete a Contract in a sector matching the active mode.",
       "Use a Modebreaker Implant to count your stat as matching the Engine."
     ],
@@ -729,7 +729,7 @@ export const SCENARIOS: ScenarioDefinition[] = [
     shopInteractions: [
       "Command mode makes shop actions cost +1 Salvage unless the player has a Contract.",
       "Forge mode makes Gear repairs and upgrades cost 1 less Salvage.",
-      "Black Vault can sell Engine Keys for 4 Salvage and 1 Risk."
+      "Black Vault can sell Engine Keys for 4 Salvage."
     ],
     tileEventHooks: [
       "Engine modes rotate command to grit to signal to guile to forge.",

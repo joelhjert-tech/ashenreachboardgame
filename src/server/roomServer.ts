@@ -2320,15 +2320,6 @@ export class GameRoomServer {
           },
           summary: `${actorName} used ${shopName}. Bought treatment and healed 1 Wound.`
         };
-      case "buy-boon":
-        return {
-          ...base,
-          result: {
-            heatDelta: -1,
-            note: `${shopName}: shrine boon held in reserve.`
-          },
-          summary: `${actorName} used ${shopName}. Bought a boon and recorded steady footing.`
-        };
       case "trade-missions-for-artifact": {
         const artifact = this.pickRelicDealerArtifact(player);
 
@@ -2367,7 +2358,7 @@ export class GameRoomServer {
           sectorId: player.character.currentSpaceId,
           cost: service.cost,
           stock,
-          summary: `${actorName} used ${shopName}. Took a risky refresh and revealed ${stock.length} Gear options.`,
+          summary: `${actorName} used ${shopName}. Paid 1 Salvage and revealed ${stock.length} Relic Dealer options.`,
           createdAt
         } satisfies ShopStockRevealedAction;
       }
@@ -6503,8 +6494,7 @@ export class GameRoomServer {
                 ...player,
                 character: {
                   ...player.character,
-                  trophies: player.character.trophies + 2,
-                  heat: Math.max(0, player.character.heat - 1)
+                  trophies: player.character.trophies + 2
                 }
               }
             : player
@@ -8046,17 +8036,6 @@ function buildPublicShopServices(state: GameState, player: PlayerState): PublicS
     );
   }
 
-  if (boardSpace.tags.includes("shrine")) {
-    services.push(
-      createShopService(player, state, {
-        id: "buy-boon",
-        label: "Buy Boon",
-        shopCategory: "medicae-shrine",
-        cost: { salvage: 2 }
-      })
-    );
-  }
-
   if (boardSpace.tags.includes("risk-shop")) {
     services.push(
       createShopService(player, state, {
@@ -8067,10 +8046,9 @@ function buildPublicShopServices(state: GameState, player: PlayerState): PublicS
       }),
       createShopService(player, state, {
         id: "risk-action",
-        label: "Risk Action",
+        label: "Deep Relic Search",
         shopCategory: getShopStockCategoryForService(boardSpace, "risk-action") ?? undefined,
-        cost: { heat: 1 },
-        risk: "Risk"
+        cost: { salvage: 1 }
       })
     );
   }

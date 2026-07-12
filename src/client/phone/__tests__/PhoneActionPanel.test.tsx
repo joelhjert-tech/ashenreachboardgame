@@ -856,7 +856,7 @@ describe("PhoneActionPanel", () => {
     });
     expect(screen.getAllByText(/chain-maul salvager/i).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/legal: exactly 1 step from pilgrim lock/i).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/risk: chain-maul salvager/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/danger: chain-maul salvager/i).length).toBeGreaterThan(0);
     expect(screen.getByText(/mira: signal witch/i)).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: /back/i }));
@@ -1167,9 +1167,8 @@ describe("PhoneActionPanel", () => {
               },
               {
                 id: "risk-action",
-                label: "Risk Action",
-                cost: { heat: 1 },
-                risk: "+1 Risk",
+                label: "Deep Relic Search",
+                cost: { salvage: 1 },
                 enabled: true
               }
             ],
@@ -1231,8 +1230,9 @@ describe("PhoneActionPanel", () => {
     expect(screen.getAllByText(/forge armoury/i).length).toBeGreaterThan(0);
     expect(screen.getByText(/salvage: 6/i)).toBeInTheDocument();
     expect(screen.getByText(/choose a market service/i)).toBeInTheDocument();
-    expect(screen.getByText(/Risk cost: 1/i)).toBeInTheDocument();
-    expect(screen.queryByText(/\bHeat\b/i)).not.toBeInTheDocument();
+    expect(screen.getByText(/Deep Relic Search/i)).toBeInTheDocument();
+    expect(screen.getByText(/1 Salvage/i)).toBeInTheDocument();
+    expect(screen.queryByText(/\b(?:Heat|Risk)\b/i)).not.toBeInTheDocument();
     expect(screen.getAllByTestId("phone-shop-category-icon").length).toBeGreaterThanOrEqual(2);
     expect(screen.getAllByTestId("phone-shop-category-icon")[0]).toHaveAttribute("src", "/assets/riftfall/ui/shop-category-forge-armoury.svg");
     expect(screen.getByRole("button", { name: /skip \/ continue/i })).toBeInTheDocument();

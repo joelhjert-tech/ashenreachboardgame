@@ -18,7 +18,6 @@
     "beforeBattleRoll"
   ],
   "useLimit": "discard",
-  "heatCost": 1,
   "shopCategories": [
     "forge-armoury",
     "market"

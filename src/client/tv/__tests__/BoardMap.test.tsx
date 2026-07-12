@@ -277,7 +277,7 @@ describe("BoardMap", () => {
     expect(screen.getByTestId("tv-route-preview")).toHaveTextContent(/legal: exactly 2 steps from ashwake crossing/i);
     expect(screen.getByTestId("tv-route-preview")).toHaveTextContent(/ashwake crossing -> mirecoil beacon -> emberwatch step/i);
     expect(screen.getByTestId("tv-route-preview")).toHaveTextContent(/hazard/i);
-    expect(screen.getByTestId("tv-route-preview")).toHaveTextContent(/risk: ash wolf/i);
+    expect(screen.getByTestId("tv-route-preview")).toHaveTextContent(/danger: ash wolf/i);
   });
 
   it("renders rectangular board tiles for the shared board-space layout and keeps live sector ids for active content", () => {

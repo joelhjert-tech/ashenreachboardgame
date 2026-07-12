@@ -2,7 +2,7 @@ export const APPROVED_LEGACY_HEAT_CONTENT_IDS = new Set([
   "anomaly-ashfall-murmur", "anomaly-bellrain-inversion", "anomaly-cinder-gate-echo", "anomaly-cinder-mirage-lane", "anomaly-glassmere",
   "anomaly-red-suture-field", "anomaly-saint-static-aperture", "anomaly-saltglass-fata-morgana", "anomaly-scar-tide-lattice", "anomaly-throne-shadow-jury", "anomaly-webglass-stutter",
   "artifact-cinder-suture-kit", "artifact-ember-burden-idol", "artifact-fandiablos", "artifact-heat-sink-prayer", "artifact-red-march-warbell", "artifact-throne-crown-fragment",
-  "ash-cinder-runt", "ashen-doppelganger", "ash-rat-skitter", "bell-mask-pilgrim", "bellwire-snare", "black-lantern-broker", "black-ledger-agent", "black-route-fuse",
+  "ash-cinder-runt", "ashen-doppelganger", "ash-rat-skitter", "bell-mask-pilgrim", "bellwire-snare", "black-lantern-broker", "black-ledger-agent",
   "breach-lens-overload", "bridge-toll-runt", "cartel-crossing-thread", "cartel-ledger-skim", "char_bjornis", "char_deepdale", "char_ker_von_ker", "char_kira_dog", "char_master_alpha", "char_popelord", "char_rumi",
   "choir-defector", "choir-echo-triangulation", "choir-hush-census", "choir-static-burst", "choir-well-canticle", "cinder-gate-backlash", "cinder-monk", "cinder-surgeon", "cinder-veil-stalker",
   "clan-salt-burial", "compact-equipment-requisition", "contract-beacon", "cracked-censer-novice", "crown-bell-baron", "crownless-advocate", "emberwatch-sparkfall",
@@ -20,7 +20,8 @@ const BLOCKED_CONSTRUCTS = [
   { name: "lose_heat", pattern: /"type"\s*:\s*"lose_heat"/i },
   { name: "heatCost", pattern: /"heatCost"\s*:/i },
   { name: "cost.heat or schema-like Heat field", pattern: /"heat"\s*:/i },
-  { name: "player-facing Heat text", pattern: /"(?:text|activeText|passiveText|penalty|trigger|summary|description)"\s*:\s*"[^"]*\bHeat\b/i }
+  { name: "player-facing Heat text", pattern: /"(?:text|activeText|passiveText|penalty|trigger|summary|description)"\s*:\s*"[^"]*\bHeat\b/i },
+  { name: "player-facing Risk resource text", pattern: /"(?:text|activeText|passiveText|penalty|trigger|summary|description)"\s*:\s*"[^"]*\bRisk(?: cost)?\b/i }
 ];
 
 export function validateLegacyHeatContentRecord(file: string, record: unknown): string[] {

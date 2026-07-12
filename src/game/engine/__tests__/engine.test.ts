@@ -2103,6 +2103,7 @@ describe("active resolution visibility state", () => {
       wounds?: number;
       heldGear?: GearItem[];
       currentEncounterId?: string;
+      gearCatalog?: Map<string, GearItem>;
     }) => {
       const baseState = createState({ sessionMode: "single-player" });
       const encounter = options.currentEncounterId ? createThreats().get(options.currentEncounterId) ?? null : null;
@@ -2139,7 +2140,7 @@ describe("active resolution visibility state", () => {
         createSequenceRandomSource([]),
         createThreats(),
         createCharacters(),
-        createGear(),
+        options.gearCatalog ?? createGear(),
         createContracts()
       );
 
@@ -2213,9 +2214,54 @@ describe("active resolution visibility state", () => {
       serviceId: "buy-boon"
     });
 
-    expect(blessed.sent.find((message) => message.type === "INTENT_REJECTED")).toBeUndefined();
-    expect(blessed.server.getState().players[0]?.character.salvage).toBe(2);
+    expect(blessed.sent.find((message) => message.type === "INTENT_REJECTED")).toMatchObject({ actionType: "SHOP_SERVICE_REQUESTED" });
+    expect(blessed.server.getState().players[0]?.character.salvage).toBe(4);
     expect(blessed.server.getState().players[0]?.character.heat).toBe(2);
+    expect(blessed.server.getState().players[0]?.private.notes).toEqual([]);
+
+    const relicCatalog = createGear();
+    const relicTemplate = [...relicCatalog.values()][0];
+    if (!relicTemplate) throw new Error("Missing gear fixture");
+    for (let index = 0; index <= 3; index += 1) {
+      const item = {
+        ...relicTemplate,
+        id: `test-relic-${index}`,
+        name: `Test Relic ${index}`,
+        tier: "artifact" as const,
+        normalShopCommon: false,
+        shopCategories: ["relic-dealer" as const]
+      };
+      relicCatalog.set(item.id, item);
+    }
+    const searched = createShopServer({ sectorId: "votive-engine-room", salvage: 2, heat: 7, gearCatalog: relicCatalog });
+    searched.server.handleIntent(searched.client, {
+      type: "SHOP_SERVICE_REQUESTED",
+      seatId: "seat-1",
+      serviceId: "risk-action"
+    });
+    expect(searched.sent.find((message) => message.type === "INTENT_REJECTED")).toBeUndefined();
+    expect(searched.server.getState().players[0]?.character.salvage).toBe(1);
+    expect(searched.server.getState().players[0]?.character.heat).toBe(7);
+    expect(searched.server.getState().shopStockReveals[0]?.serviceId).toBe("risk-action");
+    expect(searched.server.getState().shopStockReveals[0]?.stockIds).toHaveLength(4);
+    expect(searched.server.getState().shopStockReveals[0]?.revealCost).toEqual({ salvage: 1 });
+    searched.server.handleIntent(searched.client, {
+      type: "SHOP_SERVICE_REQUESTED",
+      seatId: "seat-1",
+      serviceId: "risk-action"
+    });
+    expect(searched.server.getState().players[0]?.character.salvage).toBe(0);
+    expect(searched.server.getState().eventLog.filter((entry) => (entry as { type?: string }).type === "SHOP_STOCK_REVEALED")).toHaveLength(2);
+
+    const blockedSearch = createShopServer({ sectorId: "votive-engine-room", salvage: 0, heat: 7 });
+    blockedSearch.server.handleIntent(blockedSearch.client, {
+      type: "SHOP_SERVICE_REQUESTED",
+      seatId: "seat-1",
+      serviceId: "risk-action"
+    });
+    expect(blockedSearch.sent.find((message) => message.type === "INTENT_REJECTED")).toMatchObject({ reason: "insufficientSalvage" });
+    expect(blockedSearch.server.getState().players[0]?.character.salvage).toBe(0);
+    expect(blockedSearch.server.getState().shopStockReveals).toEqual([]);
 
     const unaffordableService = createShopServer({ sectorId: "kettleward-foundry", salvage: 0 });
     unaffordableService.server.handleIntent(unaffordableService.client, {
@@ -2440,8 +2486,7 @@ describe("active objects and table interaction", () => {
       category: "dangerous",
       statBonus: { stat: "grit", amount: 1 },
       activeText: "Break for +3 Grit before the battle roll, then advance escalation by 1.",
-      useLimit: "discard",
-      heatCost: 1
+      useLimit: "discard"
     };
     const state = createState({
       currentEncounter: encounter,
@@ -2464,7 +2509,7 @@ describe("active objects and table interaction", () => {
               ...player,
               character: {
                 ...player.character,
-                heat: 1,
+                heat: 0,
                 heldGear: [blackRouteFuse],
                 equippedGear: { weapon: null, armor: null, utility: null }
               }
@@ -2484,6 +2529,8 @@ describe("active objects and table interaction", () => {
     expect(sent.some((message) => message.type === "INTENT_REJECTED")).toBe(false);
     expect(server.getState().activeResolution?.battle?.modifiers).toContainEqual({ label: "Black Route Fuse", value: 3 });
     expect(server.getState().players[0]?.character.heldGear.some((item) => item.id === "black-route-fuse")).toBe(false);
+    expect(server.getState().players[0]?.character.heat).toBe(0);
+    expect(server.getState().escalationLevel).toBe(1);
 
     runIntent(server, {
       type: "COMBAT_REQUESTED",
@@ -2553,8 +2600,7 @@ describe("active objects and table interaction", () => {
       category: "dangerous",
       statBonus: { stat: "grit", amount: 1 },
       activeText: "Break for +3 Grit before the battle roll, then advance escalation by 1.",
-      useLimit: "discard",
-      heatCost: 1
+      useLimit: "discard"
     };
     const state = createState({
       currentEncounter: null,
@@ -2565,7 +2611,7 @@ describe("active objects and table interaction", () => {
               ...player,
               character: {
                 ...player.character,
-                heat: 1,
+                heat: 0,
                 heldGear: [blackRouteFuse],
                 equippedGear: { weapon: null, armor: null, utility: null }
               }
@@ -2583,6 +2629,7 @@ describe("active objects and table interaction", () => {
 
     expect(sent.some((message) => message.type === "INTENT_REJECTED" && String(message.reason).includes("before a battle roll"))).toBe(true);
     expect(server.getState().players[0]?.character.heldGear.some((item) => item.id === "black-route-fuse")).toBe(true);
+    expect(server.getState().escalationLevel).toBe(0);
     expect(server.getState().eventLog.some((entry) => (entry as { type?: string }).type === "USE_GEAR")).toBe(false);
   });
 

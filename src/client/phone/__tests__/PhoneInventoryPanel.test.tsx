@@ -16,7 +16,6 @@ const combatWeapon = {
   statBonus: { stat: "grit" as const, amount: 1 },
   activeText: "Break for +3 Grit before the battle roll, then advance escalation by 1.",
   useLimit: "discard" as const,
-  heatCost: 1
 };
 
 const passiveArmor = {
@@ -538,8 +537,7 @@ describe("PhoneInventoryPanel", () => {
     expect(itemCard.querySelector(".phone-wrap-card__description")).toHaveClass("phone-wrap-card__description");
     expect(itemCard.querySelector(".phone-wrap-card__description")).toHaveTextContent(/break for \+3 grit/i);
     expect(itemCard.querySelector(".phone-wrap-card__details")).toHaveTextContent(/before battle roll/i);
-    expect(itemCard.querySelector(".phone-wrap-card__details")).toHaveTextContent(/Risk cost: 1/i);
-    expect(itemCard).not.toHaveTextContent(/\bHeat\b/i);
+    expect(itemCard.querySelector(".phone-wrap-card__details")).not.toHaveTextContent(/\b(?:Heat|Risk)\b/i);
     expect(itemCard.querySelector(".phone-wrap-card__details")).toHaveTextContent(/\+1 grit/i);
     expect((itemCard.querySelector(".phone-inventory-stat-bonus") as HTMLElement).style.getPropertyValue("--challenge-color")).toBe(
       getChallengeThemeStyle("grit")["--challenge-color"]

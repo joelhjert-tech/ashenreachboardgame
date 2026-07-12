@@ -63,10 +63,8 @@ describe("result delta formatting", () => {
     expect(publicResultDeltas([privateDelta])).toEqual([]);
   });
 
-  it("uses the temporary Risk alias for real compatibility deltas", () => {
-    expect(formatResultDelta(delta({ type: "heat", label: "Risk", value: 1, sign: "loss", publicText: "Risk reduced by 1." }))).toMatchObject({
-      label: "-1 Risk",
-      detail: "Risk reduced by 1."
-    });
+  it("keeps legacy Heat deltas out of player-visible result collections", () => {
+    const legacy = delta({ type: "heat", label: "legacy", value: 1, sign: "loss", publicText: "Legacy value changed." });
+    expect(publicResultDeltas([legacy])).toEqual([]);
   });
 });

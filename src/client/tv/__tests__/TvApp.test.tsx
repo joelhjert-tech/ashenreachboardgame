@@ -1477,9 +1477,8 @@ describe("TvApp", () => {
         },
         {
           id: "risk-action",
-          label: "Risk Action",
-          cost: { heat: 1 },
-          risk: "+1 Risk",
+          label: "Deep Relic Search",
+          cost: { salvage: 1 },
           enabled: true
         }
       ]
@@ -1544,8 +1543,9 @@ describe("TvApp", () => {
     expect(screen.getByTestId("host-shop-status-panel")).toHaveTextContent(/sellable/i);
     expect(screen.getByTestId("host-shop-status-panel")).toHaveTextContent("1");
     expect(overlay).toHaveTextContent(/buy equipment/i);
-    expect(overlay).toHaveTextContent(/Risk cost: 1/i);
-    expect(overlay).not.toHaveTextContent(/\bHeat\b/i);
+    expect(overlay).toHaveTextContent(/Deep Relic Search/i);
+    expect(overlay).toHaveTextContent(/1 Salvage/i);
+    expect(overlay).not.toHaveTextContent(/\b(?:Heat|Risk)\b/i);
     expect(overlay).not.toHaveTextContent(/buy supplies/i);
     expect(within(overlay).getByTestId("host-shop-card-backdrop")).toBeInTheDocument();
     expect(
