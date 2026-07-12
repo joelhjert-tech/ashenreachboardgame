@@ -386,8 +386,8 @@ function StatTotalFooter({
       </dl>
       {variant === "player" && side.modifierSources.length > 0 && (
         <div className="host-battle-modifiers" aria-label={`${side.name} modifier sources`}>
-          {side.modifierSources.map((modifier) => (
-            <span key={`${modifier.label}:${modifier.value}`}>
+          {side.modifierSources.map((modifier, index) => (
+            <span key={`${modifier.label}:${modifier.value}:${index}`}>
               {modifier.label} {formatModifier(modifier.value)}
             </span>
           ))}
