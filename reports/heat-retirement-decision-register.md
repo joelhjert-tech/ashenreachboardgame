@@ -45,3 +45,11 @@ The first ten implementation-blocking decisions are HRD-001, 002, 003, 005, 006,
 - **HRD-011 implemented for ordinary play:** migrated paths omit Heat deltas; shared compatibility shapes remain readable.
 - **HRD-020 implemented:** the temporary Risk presentation is removed rather than promoted into a resource.
 - HRD-001 through HRD-004, HRD-008 through HRD-010, HRD-012 through HRD-019, and HRD-021 through HRD-024 retain their prior status except where explicitly clarified above.
+# Phase 1D individual-content addendum
+
+Phase 1D reviews the 50 primary Heat-only IDs as 53 Heat-effect branches. Recommendations remain pending approval: five removals, four Wounds, one Scar, two Loss Pressure, two Global Escalation, nineteen Salvage treatments, two Equipment effects, six tests/challenges, eight bespoke rewrites, one retirement, and zero intentional deferrals. Exact decisions and batch gates are recorded in `heat-only-content-individual-decisions.md`, `heat-only-content-balance-model.md`, `heat-only-content-implementation-batches.md`, and `heat-only-content-decision-register.md`.
+
+Immediate approval candidates are the proven clause removals and bounded Contract rewards. Temporary modifier, shared-pressure, Wound, Scar, movement/gate, and retirement changes require their named design or engine gates. No content migration is implemented by this addendum.
+# Phase 1E Batch 1 implementation
+
+Phase 1E implements the five approved clause-removal decisions: `anomaly-ashfall-murmur`, `anomaly-glassmere`, `escalation-ashfall-curfew`, `escalation-ridge-suture`, and `escalation-webglass-afterimage`. Their obsolete `lose_heat` members are removed without replacement. Existing notes and escalation reductions remain. These IDs leave the compatibility allowlist, reducing it from 119 to 114; remaining content migration decisions are not implemented.

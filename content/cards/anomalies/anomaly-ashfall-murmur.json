@@ -6,18 +6,9 @@
   "flavor": "The ash remembers footprints that have not happened yet.",
   "instability": 1,
   "regionHint": "outer",
-  "resolutionSummary": "Listened long enough to catch a safe outer route before the murmur broke apart.",
+  "resolutionSummary": "The ash settled after tracing a route that never formed.",
   "resolveEffect": {
-    "type": "sequence",
-    "effects": [
-      {
-        "type": "lose_heat",
-        "amount": 1
-      },
-      {
-        "type": "gain_note",
-        "text": "Ashfall murmur mapped a cool outer route."
-      }
-    ]
+    "type": "gain_note",
+    "text": "Ashfall murmur mapped an outer route."
   }
 }
