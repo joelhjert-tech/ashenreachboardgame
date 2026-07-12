@@ -243,7 +243,12 @@ function buildBattleModel(
 
   const stat = battle?.stat ?? encounter?.stat ?? pendingEnemyRoll?.stat ?? "grit";
   const statLabel = statLabelById[stat];
-  const outcome = patch.payload.outcomeSummary;
+  const projectedOutcome = patch.payload.outcomeSummary;
+  const sourceCardId = card?.id ?? encounter?.id ?? pendingEnemyRoll?.encounterCardId ?? null;
+  const outcome = projectedOutcome && projectedOutcome.seatId === activePlayer.seatId && (
+    (sourceCardId !== null && projectedOutcome.encounterCardId === sourceCardId) ||
+    (resolution?.source === "movement" && projectedOutcome.movedToSectorId === card?.id)
+  ) ? projectedOutcome : null;
   const playerDice = resolution?.roll?.dice ?? [outcome?.die1, outcome?.die2].filter((die): die is number => typeof die === "number");
   const enemyDice = [outcome?.enemyDie1, outcome?.enemyDie2].filter((die): die is number => typeof die === "number");
   const playerRollTotal = sumDice(playerDice);

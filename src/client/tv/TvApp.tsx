@@ -52,7 +52,7 @@ import type {
   ContractCard
 } from "../shared/types.js";
 import { HostPlayerCard } from "./HostPlayerCard.js";
-import { HostBattleOverlay } from "./HostBattleOverlay.js";
+import { HostBattleChamber } from "./HostBattleChamber.js";
 import { HostMovementJourney, type HostMovementJourneyModel } from "./HostMovementJourney.js";
 import { isHostBattleActive } from "./hostBattleState.js";
 import { HostShopOverlay } from "./HostShopOverlay.js";
@@ -2116,19 +2116,22 @@ function TacticalMapPanel({
     destination: visualTravel.arrival.destination
   } satisfies HostMovementJourneyModel : null;
 
+  const battleChamber = focusBattleMode && !journey && patch && battlePlayer
+    ? <HostBattleChamber patch={patch} activePlayer={battlePlayer} />
+    : null;
+  const presentBattleChamber = Boolean(battleChamber);
+
   return (
-    <section className={`tv-command-stage${focusBattleMode ? " tv-command-stage-battle-mode" : ""}${focusShopMode ? " tv-command-stage-shop-mode" : ""}${movementFocusMode ? " tv-command-stage-movement-focus" : ""}`}>
-      {!focusBattleMode && (
-        <div className="tv-command-map-shell">
+    <section className={`tv-command-stage${presentBattleChamber ? " tv-command-stage-battle-mode" : ""}${focusShopMode ? " tv-command-stage-shop-mode" : ""}${movementFocusMode ? " tv-command-stage-movement-focus" : ""}`}>
+      {(!journey || presentBattleChamber) && <div className="tv-command-map-shell" aria-hidden={presentBattleChamber || undefined} inert={presentBattleChamber || undefined}>
           <TacticalMapBoard
             patch={patch?.payload ?? null}
             previousPatch={previousPatch?.payload ?? null}
             phase={patch?.phase ?? "start"}
           />
           {!movementFocusMode && !journey && <BoardLegend />}
-        </div>
-      )}
-      {!focusBattleMode && <NemesisBanner nemesis={patch?.payload.nemesis ?? null} />}
+      </div>}
+      {!presentBattleChamber && !journey && <NemesisBanner nemesis={patch?.payload.nemesis ?? null} />}
       {journey && (
         <HostMovementJourney
           model={journey}
@@ -2146,7 +2149,7 @@ function TacticalMapPanel({
           characterCatalog={characterCatalog}
         />
       )}
-      {focusBattleMode && !journey && <HostBattleOverlay patch={patch} activePlayer={battlePlayer} />}
+      {battleChamber}
       {focusShopMode && !journey && <HostShopOverlay patch={patch} activePlayer={activePlayer} />}
       {movementFocusMode && (
         !journey &&
@@ -2446,6 +2449,8 @@ export function TvApp(): ReactElement {
     hostToken
   });
   const previousPatchRef = useRef<StatePatch<PublicPatchPayload> | null>(null);
+  const commandMainRef = useRef<HTMLElement | null>(null);
+  const previousBattleModeRef = useRef(false);
 
   useEffect(() => {
     fetchCharacters()
@@ -2494,6 +2499,15 @@ export function TvApp(): ReactElement {
       previousPatchRef.current = publicPatch;
     }
   }, [publicPatch]);
+
+  useEffect(() => {
+    const wasInBattle = previousBattleModeRef.current;
+    previousBattleModeRef.current = battleMode;
+
+    if (wasInBattle && !battleMode) {
+      window.requestAnimationFrame(() => commandMainRef.current?.focus({ preventScroll: true }));
+    }
+  }, [battleMode]);
 
   useEffect(() => {
     if (typeof window === "undefined") {
@@ -2720,8 +2734,11 @@ export function TvApp(): ReactElement {
         <EndgameOverlay patch={publicPatch} />
 
         <section
+          ref={commandMainRef}
           className={`tv-command-main${isPreRoomLobby ? " tv-command-main--pre-room" : ""}${battleMode ? " tv-command-main--battle-focus" : ""}${shopMode ? " tv-command-main--shop-focus" : ""}${movementFocusMode ? " tv-command-main--movement-focus" : ""}`}
           data-testid="tv-command-main"
+          aria-label="Host command board"
+          tabIndex={-1}
         >
           {isPreRoomLobby ? (
             <section className="tv-pre-room-lobby-stage" aria-label="Host lobby setup">
