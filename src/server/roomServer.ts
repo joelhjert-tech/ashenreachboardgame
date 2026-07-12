@@ -1880,7 +1880,10 @@ export class GameRoomServer {
     instanceId?: string,
     pendingTileChallengeId?: string,
     staticIntercessionReactionId?: string,
-    pendingTileChallengeEffectId?: string
+    pendingTileChallengeEffectId?: string,
+    scarConsequenceReactionId?: string,
+    scarInstanceId?: string,
+    pendingScarEffectId?: string
   ): UseGearAction {
     const player = this.state.players.find((entry) => entry.seatId === seatId);
     const item = player?.character.heldGear.find((entry) => entry.id === gearId && (!instanceId || entry.instanceId === instanceId));
@@ -1936,12 +1939,28 @@ export class GameRoomServer {
       }
     }
 
+    if (item.chargedEffect === "scarSinkPrayer") {
+      const pending = this.state.pendingScarConsequence;
+      if (!pending || pending.seatId !== seatId || pending.status !== "pending" || pending.reactionId !== scarConsequenceReactionId || pending.scarInstanceId !== scarInstanceId) {
+        throw new IntentRejectedError("USE_GEAR", "The Scar-Sink Prayer reaction is stale or unavailable.");
+      }
+      if (!player!.character.scars.includes(pending.scarCardId)) {
+        throw new IntentRejectedError("USE_GEAR", "The Scar that created this consequence is no longer owned.");
+      }
+      if (!pendingScarEffectId || !pending.pendingEffects.some((choice) => choice.effectId === pendingScarEffectId)) {
+        throw new IntentRejectedError("USE_GEAR", "The selected Scar effect is stale or unavailable.");
+      }
+      if (!item.instanceId || item.instanceId !== instanceId) throw new IntentRejectedError("USE_GEAR", `${item.name} instance is stale.`);
+      if ((item.currentCharges ?? item.charges ?? 0) < (item.chargeCost ?? 1)) throw new IntentRejectedError("USE_GEAR", `${item.name} has no charges remaining.`);
+      if (player!.character.equippedGear.utility !== item.id) throw new IntentRejectedError("USE_GEAR", `${item.name} must be equipped.`);
+    }
+
     const itemName = item?.name ?? gearId;
     const discard = item?.consumeOnUse === true || item?.useLimit === "discard";
     const rollModifier = item.chargedEffect === "choirLightSignalBonus"
       ? { label: "Choir Lantern", value: 2, stat: "signal" as const, mode: "check" as const }
       : this.createGearRollModifier(seatId, item);
-    const effect = item.chargedEffect === "staticIntercession" ? null : this.resolveEffect(this.getGearUseEffect(gearId), seatId);
+    const effect = item.chargedEffect === "staticIntercession" || item.chargedEffect === "scarSinkPrayer" ? null : this.resolveEffect(this.getGearUseEffect(gearId), seatId);
 
     return {
       type: "USE_GEAR",
@@ -1959,7 +1978,12 @@ export class GameRoomServer {
       pendingTileChallengeId: item.chargedEffect === "choirLightSignalBonus" || item.chargedEffect === "staticIntercession" ? pendingTileChallengeId : undefined,
       staticIntercessionReactionId: item.chargedEffect === "staticIntercession" ? staticIntercessionReactionId : undefined,
       pendingTileChallengeEffectId: item.chargedEffect === "staticIntercession" ? pendingTileChallengeEffectId : undefined,
-      summary: item.chargedEffect === "staticIntercession" ? "Static Intercession — One anomaly consequence suppressed." : `${itemName} used. ${item?.activeText ?? "Its effect was recorded for the table."}`,
+      scarConsequenceReactionId: item.chargedEffect === "scarSinkPrayer" ? scarConsequenceReactionId : undefined,
+      scarInstanceId: item.chargedEffect === "scarSinkPrayer" ? scarInstanceId : undefined,
+      pendingScarEffectId: item.chargedEffect === "scarSinkPrayer" ? pendingScarEffectId : undefined,
+      summary: item.chargedEffect === "staticIntercession" ? "Static Intercession — One anomaly consequence suppressed."
+        : item.chargedEffect === "scarSinkPrayer" ? "Scar-Sink Prayer — One Scar consequence suppressed."
+        : `${itemName} used. ${item?.activeText ?? "Its effect was recorded for the table."}`,
       createdAt
     } satisfies UseGearAction;
   }
@@ -2741,7 +2765,7 @@ export class GameRoomServer {
           createdAt
         } satisfies UnequipGearAction;
       case "USE_GEAR":
-        return this.createGearUseAction(intent.seatId, intent.gearId, createdAt, intent.instanceId, intent.pendingTileChallengeId, intent.staticIntercessionReactionId, intent.pendingTileChallengeEffectId);
+        return this.createGearUseAction(intent.seatId, intent.gearId, createdAt, intent.instanceId, intent.pendingTileChallengeId, intent.staticIntercessionReactionId, intent.pendingTileChallengeEffectId, intent.scarConsequenceReactionId, intent.scarInstanceId, intent.pendingScarEffectId);
       case "USE_FOLLOWER":
         return this.createFollowerUseAction(intent.seatId, intent.followerId, createdAt, intent.escalate === true);
       case "TABLE_INTERACTION":
@@ -9264,6 +9288,7 @@ export function createPhoneProjection(state: GameState, seatId: string, forcePri
     } : null,
     pendingScarConsequence: state.pendingScarConsequence?.seatId === seatId ? {
       reactionId: state.pendingScarConsequence.reactionId,
+      scarInstanceId: state.pendingScarConsequence.scarInstanceId,
       scarCardId: state.pendingScarConsequence.scarCardId,
       scarTitle: state.pendingScarConsequence.scarTitle,
       triggerType: state.pendingScarConsequence.triggerType,

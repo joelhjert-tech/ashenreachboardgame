@@ -13,6 +13,7 @@ export type GearTimingWindow =
   | "movement"
   | "movementRouteConfirmation"
   | "beforeAnomalySignalTest"
+  | "pendingScarConsequence"
   | "shop"
   | "action"
   | "anyTime";
@@ -140,7 +141,7 @@ export interface GearItem {
   startingCharges?: number;
   chargeCost?: number;
   rechargeRule?: "none";
-  chargedEffect?: "personalGateOverride" | "movementAdjustment" | "saintSafeConduct" | "bonewayDetour" | "choirLightSignalBonus" | "staticIntercession";
+  chargedEffect?: "personalGateOverride" | "movementAdjustment" | "saintSafeConduct" | "bonewayDetour" | "choirLightSignalBonus" | "staticIntercession" | "scarSinkPrayer";
   maxUses?: number;
   heatCost?: number;
   linkedFollowerRole?: FollowerRole;
@@ -941,6 +942,7 @@ export interface PhonePatchPayload extends PublicPatchPayload {
     scarTitle: string;
     triggerType: string;
     sourceEventId: string;
+    scarInstanceId: string;
     pendingEffects: Array<{ effectId: string; summary: string }>;
     rulesText: string;
   } | null;
@@ -1078,6 +1080,9 @@ export type ClientIntent =
       pendingTileChallengeId?: string;
       staticIntercessionReactionId?: string;
       pendingTileChallengeEffectId?: string;
+      scarConsequenceReactionId?: string;
+      scarInstanceId?: string;
+      pendingScarEffectId?: string;
     }
   | {
       type: "USE_FOLLOWER";

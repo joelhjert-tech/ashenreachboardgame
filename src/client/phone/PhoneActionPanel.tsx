@@ -2699,9 +2699,37 @@ export function PhoneActionPanel({
   const advanceActions: ActionButtonDefinition[] = [];
 
   if (patch.pendingScarConsequence) {
+    const prayer = self.character.heldGear.find((item) => item.id === "heat-sink-prayer");
+    const prayerEquipped = prayer ? Object.values(self.character.equippedGear).includes(prayer.id) : false;
+    const prayerCharges = prayer?.currentCharges ?? prayer?.charges ?? 0;
+    const prayerDisabledReason = !prayer
+      ? "Scar-Sink Prayer is not owned."
+      : !prayerEquipped
+        ? "Scar-Sink Prayer must be equipped."
+        : prayerCharges < 1
+          ? "Scar-Sink Prayer is Depleted."
+          : undefined;
+    for (const effect of patch.pendingScarConsequence.pendingEffects) {
+      resolveActions.push({
+        key: `scar-sink-prayer-${patch.pendingScarConsequence.reactionId}-${effect.effectId}`,
+        label: "Ignore this effect — 1 charge",
+        detail: prayerDisabledReason ?? `${effect.summary} Spend 1 charge to ignore one pending Scar effect.`,
+        tone: "secondary",
+        disabled: Boolean(prayerDisabledReason),
+        onClick: () => onIntent({
+          type: "USE_GEAR",
+          seatId: self.seatId,
+          gearId: "heat-sink-prayer",
+          instanceId: prayer?.instanceId,
+          scarConsequenceReactionId: patch.pendingScarConsequence!.reactionId,
+          scarInstanceId: patch.pendingScarConsequence!.scarInstanceId,
+          pendingScarEffectId: effect.effectId
+        })
+      });
+    }
     resolveActions.push({
       key: `scar-consequence-${patch.pendingScarConsequence.reactionId}`,
-      label: `Continue: ${patch.pendingScarConsequence.scarTitle}`,
+      label: "Accept consequence",
       detail: patch.pendingScarConsequence.pendingEffects.map((entry) => entry.summary).join(" "),
       tone: "primary",
       onClick: () => onIntent({

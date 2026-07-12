@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { createInitialSessionState } from "../../../server/sessionState.js";
 import { createPhoneProjection, createTvProjection } from "../../../server/roomServer.js";
 import { loadScarCards } from "../../content/scars.js";
+import { loadGear } from "../../content/gear.js";
 import { gameStateSchema } from "../../schema/session.schema.js";
 import { reduceGameState } from "../reducer.js";
 import { SCAR_TRIGGER_DEFINITIONS, validateScarTriggerCatalog } from "../../rules/scarTriggers.js";
@@ -85,5 +86,84 @@ describe("authoritative Scar trigger lifecycle", () => {
     const recalled = reduceGameState(state, { type: "WOUND_THRESHOLD_REACHED", seatId, threshold: state.woundThreshold, newWoundTotal: state.woundThreshold, scar: "scar-wound-1", createdAt: "now" });
     expect(recalled.ok).toBe(true);
     if (recalled.ok) expect(recalled.state.players[0]!.character.scars).toEqual(["scar-wound-1"]);
+  });
+
+  it("Scar-Sink Prayer suppresses one typed effect, spends one exact-instance charge, and advances the queue", () => {
+    const state = stateWithScars(["scar-wound-2", "scar-wound-4"]);
+    const seatId = state.players[0]!.seatId;
+    const definition = loadGear().get("heat-sink-prayer")!;
+    state.players[0]!.character.heldGear.push({ ...definition, instanceId: "prayer-a", currentCharges: 2 });
+    state.players[0]!.character.heldGear.push({ ...definition, instanceId: "prayer-copy", currentCharges: 2 });
+    state.players[0]!.character.equippedGear.utility = "heat-sink-prayer";
+    const triggered = reduceGameState(state, { type: "SCAR_TRIGGER_EVENT", seatId, createdAt: "now", sourceEvent: { id: "prayer-source", type: "beforeTest", seatId, stat: "signal" } });
+    expect(triggered.ok).toBe(true);
+    if (!triggered.ok) return;
+    const pending = triggered.state.pendingScarConsequence!;
+    const nextReactionId = triggered.state.pendingScarConsequenceQueue![0]!.reactionId;
+    const effectId = pending.pendingEffects[0]!.effectId;
+    const used = reduceGameState(triggered.state, {
+      type: "USE_GEAR", seatId, gearId: "heat-sink-prayer", effect: null,
+      summary: "Scar-Sink Prayer — One Scar consequence suppressed.", chargeInstanceId: "prayer-a",
+      scarConsequenceReactionId: pending.reactionId, scarInstanceId: pending.scarInstanceId,
+      pendingScarEffectId: effectId, createdAt: "later"
+    });
+    expect(used.ok).toBe(true);
+    if (!used.ok) return;
+    expect(used.state.players[0]!.character.heldGear.find((item) => item.instanceId === "prayer-a")?.currentCharges).toBe(1);
+    expect(used.state.players[0]!.character.heldGear.find((item) => item.instanceId === "prayer-copy")?.currentCharges).toBe(2);
+    expect(used.state.pendingScarConsequence?.reactionId).toBe(nextReactionId);
+    expect(used.state.players[0]!.character.scars).toEqual(["scar-wound-2", "scar-wound-4"]);
+    const tv = createTvProjection(used.state);
+    expect(JSON.stringify(tv)).toContain("One Scar consequence suppressed");
+    expect(JSON.stringify(tv)).not.toContain("pendingScarEffectId");
+    expect(reduceGameState(used.state, {
+      type: "USE_GEAR", seatId, gearId: "heat-sink-prayer", effect: null, summary: "duplicate",
+      chargeInstanceId: "prayer-a", scarConsequenceReactionId: pending.reactionId,
+      scarInstanceId: pending.scarInstanceId, pendingScarEffectId: effectId, createdAt: "again"
+    }).ok).toBe(false);
+  });
+
+  it("rejects wrong-seat, wrong-Scar, and depleted Prayer requests without spending", () => {
+    const state = stateWithScars(["scar-wound-2"]);
+    const seatId = state.players[0]!.seatId;
+    const definition = loadGear().get("heat-sink-prayer")!;
+    state.players[0]!.character.heldGear.push({ ...definition, instanceId: "prayer-empty", currentCharges: 0, charges: 0 });
+    state.players[0]!.character.equippedGear.utility = "heat-sink-prayer";
+    const triggered = reduceGameState(state, { type: "SCAR_TRIGGER_EVENT", seatId, createdAt: "now", sourceEvent: { id: "reject-source", type: "beforeTest", seatId, stat: "signal" } });
+    expect(triggered.ok).toBe(true);
+    if (!triggered.ok) return;
+    const pending = triggered.state.pendingScarConsequence!;
+    const base = { type: "USE_GEAR" as const, gearId: "heat-sink-prayer", effect: null, summary: "used", chargeInstanceId: "prayer-empty",
+      scarConsequenceReactionId: pending.reactionId, scarInstanceId: pending.scarInstanceId, pendingScarEffectId: pending.pendingEffects[0]!.effectId, createdAt: "later" };
+    expect(reduceGameState(triggered.state, { ...base, seatId: "seat-2" }).ok).toBe(false);
+    expect(reduceGameState(triggered.state, { ...base, seatId, scarInstanceId: "wrong-scar" }).ok).toBe(false);
+    expect(reduceGameState(triggered.state, { ...base, seatId }).ok).toBe(false);
+    expect(triggered.state.players[0]!.character.heldGear.find((item) => item.instanceId === "prayer-empty")?.currentCharges).toBe(0);
+  });
+
+  it("Scar-Sink Prayer suppresses only the selected effect from a composite pending queue", () => {
+    const state = stateWithScars(["scar-wound-2"]);
+    const seatId = state.players[0]!.seatId;
+    const definition = loadGear().get("heat-sink-prayer")!;
+    state.players[0]!.character.heldGear.push({ ...definition, instanceId: "prayer-b", currentCharges: 1 });
+    state.players[0]!.character.equippedGear.utility = "heat-sink-prayer";
+    state.pendingScarConsequence = {
+      reactionId: "scar-reaction", seatId, scarInstanceId: `${seatId}:scar-wound-2:0`, scarCardId: "scar-wound-2",
+      scarTitle: "Static Burn", triggerType: "beforeTest", sourceEventId: "source", createdAt: "now", status: "pending",
+      pendingEffects: [
+        { effectId: "ignore-me", effect: { type: "gain_note", text: "ignored" } },
+        { effectId: "keep-me", effect: { type: "gain_note", text: "kept" } }
+      ]
+    };
+    const used = reduceGameState(state, {
+      type: "USE_GEAR", seatId, gearId: "heat-sink-prayer", effect: null, summary: "used",
+      chargeInstanceId: "prayer-b", scarConsequenceReactionId: "scar-reaction",
+      scarInstanceId: `${seatId}:scar-wound-2:0`, pendingScarEffectId: "ignore-me", createdAt: "later"
+    });
+    expect(used.ok).toBe(true);
+    if (!used.ok) return;
+    expect(used.state.players[0]!.private.notes).toContain("kept");
+    expect(used.state.players[0]!.private.notes).not.toContain("ignored");
+    expect(used.state.pendingScarConsequence).toBeNull();
   });
 });

@@ -2301,7 +2301,9 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
       const useGearAction = action as UseGearAction;
 
       try {
-        if (useGearAction.suppressPendingFailure || useGearAction.mirrorReroll || useGearAction.pendingTileChallengeEffectId !== undefined) {
+        if (useGearAction.pendingScarEffectId !== undefined) {
+          requirePlayer(state, useGearAction.seatId);
+        } else if (useGearAction.suppressPendingFailure || useGearAction.mirrorReroll || useGearAction.pendingTileChallengeEffectId !== undefined) {
           ensureSeatTurn(state, useGearAction.seatId);
           if (state.phase !== "resolution" || !state.pendingEffect || state.activeResolution?.roll?.success !== false ||
               (useGearAction.mirrorReroll || useGearAction.pendingTileChallengeEffectId !== undefined ? false :
@@ -2317,6 +2319,12 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
 
       if (!item) {
         return reject(state, action, `Gear ${useGearAction.gearId} is not held by this character`);
+      }
+      if (useGearAction.pendingScarEffectId !== undefined) {
+        const exactItem = player.character.heldGear.find((entry) => entry.instanceId === useGearAction.chargeInstanceId);
+        if (item.chargedEffect !== "scarSinkPrayer" || !exactItem || exactItem.id !== item.id) return reject(state, action, "Scar-Sink Prayer instance is stale");
+        if ((exactItem.currentCharges ?? exactItem.charges ?? 0) < (exactItem.chargeCost ?? 1)) return reject(state, action, `${item.name} has no charges remaining`);
+        if (!state.pendingScarConsequence || !player.character.scars.includes(state.pendingScarConsequence.scarCardId)) return reject(state, action, "The pending Scar is not owned by this seat");
       }
       if (item.effectModel === "exhaust" && item.exhausted) return reject(state, action, `${item.name} is Exhausted. Refreshes next round.`);
 
@@ -2341,7 +2349,24 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
       const intercessionState = intercessionMatches
         ? { ...actionBaseState, pendingEffect: null, pendingStaticIntercessionReaction: { ...intercession!, selectedEffectId: useGearAction.pendingTileChallengeEffectId! } }
         : actionBaseState;
-      const effectedState = useGearAction.effect ? applyEffectToState(intercessionState, useGearAction.seatId, useGearAction.effect) : intercessionState;
+      const scarPending = intercessionState.pendingScarConsequence;
+      const scarPrayerMatches = Boolean(useGearAction.pendingScarEffectId !== undefined && scarPending &&
+        scarPending.reactionId === useGearAction.scarConsequenceReactionId &&
+        scarPending.scarInstanceId === useGearAction.scarInstanceId && scarPending.seatId === useGearAction.seatId &&
+        scarPending.pendingEffects.some((choice) => choice.effectId === useGearAction.pendingScarEffectId));
+      if (useGearAction.pendingScarEffectId !== undefined && !scarPrayerMatches) return reject(state, action, "Scar-Sink Prayer reaction or effect is stale");
+      const scarResolvedState = scarPrayerMatches
+        ? scarPending!.pendingEffects
+            .filter((entry) => entry.effectId !== useGearAction.pendingScarEffectId)
+            .reduce((next, entry) => applyEffectToState(next, scarPending!.seatId, entry.effect), intercessionState)
+        : intercessionState;
+      const scarQueue = scarResolvedState.pendingScarConsequenceQueue ?? [];
+      const prayerState = scarPrayerMatches ? {
+        ...scarResolvedState,
+        pendingScarConsequence: scarQueue[0] ?? null,
+        pendingScarConsequenceQueue: scarQueue.slice(1)
+      } : scarResolvedState;
+      const effectedState = useGearAction.effect ? applyEffectToState(prayerState, useGearAction.seatId, useGearAction.effect) : prayerState;
       const paidState = useGearAction.salvageCost ? {
         ...effectedState,
         players: updateActivePlayer(effectedState, useGearAction.seatId, (entry) => ({ ...entry, character: { ...entry.character, salvage: (entry.character.salvage ?? 0) - useGearAction.salvageCost! } }))

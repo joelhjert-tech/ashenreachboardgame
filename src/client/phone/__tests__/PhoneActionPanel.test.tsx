@@ -2996,4 +2996,33 @@ describe("PhoneActionPanel", () => {
     expect(within(resolutionCard).getAllByText(/you found a loophole in a dead empire tariff/i)).toHaveLength(1);
     expect(within(resolutionCard).queryByRole("listitem", { name: /you found a loophole/i })).not.toBeInTheDocument();
   });
+
+  it("offers owner-safe Scar-Sink Prayer effect choices and Accept consequence", () => {
+    const onIntent = vi.fn();
+    const base = createPatch();
+    render(<PhoneActionPanel characters={characters} onIntent={onIntent} patch={createPatch({
+      phase: "action",
+      encounter: null,
+      activeResolution: null,
+      pendingScarConsequence: {
+        reactionId: "scar-reaction-1", scarInstanceId: "seat-1:scar-wound-2:0", scarCardId: "scar-wound-2",
+        scarTitle: "Static Burn", triggerType: "beforeTest", sourceEventId: "source-1",
+        pendingEffects: [{ effectId: "effect-1", summary: "Record the static warning." }], rulesText: "Continue to resolve this Scar consequence."
+      },
+      self: { ...base.self!, character: { ...base.self!.character,
+        equippedGear: { ...base.self!.character.equippedGear, utility: "heat-sink-prayer" },
+        heldGear: [{ id: "heat-sink-prayer", instanceId: "prayer-1", name: "Scar-Sink Prayer", slot: "utility", tier: "artifact",
+          category: "chargedRelic", statBonus: { stat: "signal", amount: 1 }, useLimit: "charge", charges: 2, currentCharges: 2, maxCharges: 2,
+          startingCharges: 2, chargeCost: 1, rechargeRule: "none", effectModel: "charged", requiresEquipped: true,
+          activationTiming: ["pendingScarConsequence"], chargedEffect: "scarSinkPrayer" }]
+      } }
+    })} />);
+    fireEvent.click(screen.getByRole("button", { name: /ignore this effect/i }));
+    expect(onIntent).toHaveBeenCalledWith({
+      type: "USE_GEAR", seatId: "seat-1", gearId: "heat-sink-prayer", instanceId: "prayer-1",
+      scarConsequenceReactionId: "scar-reaction-1", scarInstanceId: "seat-1:scar-wound-2:0", pendingScarEffectId: "effect-1"
+    });
+    expect(screen.getByRole("button", { name: /accept consequence/i })).toBeInTheDocument();
+    expect(screen.queryByText(/heat-sink prayer/i)).not.toBeInTheDocument();
+  });
 });

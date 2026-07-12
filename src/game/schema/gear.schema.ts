@@ -14,6 +14,7 @@ export const gearTimingWindowSchema = z.enum([
   "movement",
   "movementRouteConfirmation",
   "beforeAnomalySignalTest",
+  "pendingScarConsequence",
   "shop",
   "action",
   "anyTime"
@@ -68,7 +69,7 @@ export const gearItemSchema = z.object({
   startingCharges: z.number().int().positive().optional(),
   chargeCost: z.number().int().positive().optional(),
   rechargeRule: z.enum(["none"]).optional(),
-  chargedEffect: z.enum(["personalGateOverride", "movementAdjustment", "saintSafeConduct", "bonewayDetour", "choirLightSignalBonus", "staticIntercession"]).optional(),
+  chargedEffect: z.enum(["personalGateOverride", "movementAdjustment", "saintSafeConduct", "bonewayDetour", "choirLightSignalBonus", "staticIntercession", "scarSinkPrayer"]).optional(),
   maxUses: z.number().int().min(0).optional(),
   heatCost: z.number().int().min(0).optional(),
   linkedFollowerRole: z.string().min(1).optional(),
@@ -86,6 +87,12 @@ export const gearItemSchema = z.object({
   ,exhaustEffect: gearExhaustEffectSchema.optional()
   ,activationCost: z.object({ type: z.enum(["salvage", "wound"]), amount: z.number().int().positive() }).optional()
 }).superRefine((item, context) => {
+  if (item.id === "heat-sink-prayer") {
+    if (item.name !== "Scar-Sink Prayer") context.addIssue({ code: z.ZodIssueCode.custom, message: "legacy heat-sink-prayer ID must use player-facing name Scar-Sink Prayer", path: ["name"] });
+    if (item.chargedEffect !== "scarSinkPrayer" || !item.activationTiming?.includes("pendingScarConsequence")) context.addIssue({ code: z.ZodIssueCode.custom, message: "Scar-Sink Prayer requires the typed pending Scar consequence reaction", path: ["chargedEffect"] });
+    if (item.activationCost) context.addIssue({ code: z.ZodIssueCode.custom, message: "Scar-Sink Prayer has no additional activation cost", path: ["activationCost"] });
+    if (/immun|remove\s+(?:a\s+)?scar/i.test(item.activeText ?? "")) context.addIssue({ code: z.ZodIssueCode.custom, message: "Scar-Sink Prayer cannot grant blanket immunity or remove Scars", path: ["activeText"] });
+  }
   if (item.tier !== "artifact" && (item.useLimit === "charge" || item.category === "chargedRelic")) {
     context.addIssue({ code: z.ZodIssueCode.custom, message: "normal Equipment cannot use Artifact charge mechanics", path: ["useLimit"] });
   }

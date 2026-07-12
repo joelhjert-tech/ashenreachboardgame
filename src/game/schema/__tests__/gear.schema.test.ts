@@ -55,4 +55,26 @@ describe("gear effect model schema", () => {
     expect(gearItemSchema.safeParse({ ...censer, rechargeRule: "round" }).success).toBe(false);
     expect(gearItemSchema.safeParse({ ...censer, effectModel: "exhaust" }).success).toBe(false);
   });
+
+  it("accepts Scar-Sink Prayer only as a no-recharge pending-Scar charged Artifact", () => {
+    const prayer = {
+      ...base,
+      id: "heat-sink-prayer",
+      name: "Scar-Sink Prayer",
+      tier: "artifact",
+      category: "chargedRelic",
+      useLimit: "charge",
+      effectModel: "charged",
+      requiresEquipped: true,
+      activationTiming: ["pendingScarConsequence"],
+      maxCharges: 2,
+      startingCharges: 2,
+      chargeCost: 1,
+      rechargeRule: "none",
+      chargedEffect: "scarSinkPrayer"
+    } as const;
+    expect(gearItemSchema.safeParse(prayer).success).toBe(true);
+    expect(gearItemSchema.safeParse({ ...prayer, rechargeRule: "round" }).success).toBe(false);
+    expect(gearItemSchema.safeParse({ ...prayer, name: "Heat-Sink Prayer" }).success).toBe(false);
+  });
 });
