@@ -277,7 +277,7 @@ describe("Phase 2A shop mechanics foundation", () => {
     expect(getRejectedReason(blocked.sent)).toBe(SHOP_FAILURE_REASONS.shopBlockedByThreat);
   });
 
-  it("rejects insufficient salvage, non-shop sectors, unavailable items, and blocked shops", () => {
+  it("rejects a purchase when salvage is insufficient", () => {
     const insufficient = createShopServer({ sectorId: "outer_waymarket", salvage: 0 });
     insufficient.server.handleIntent(insufficient.client, {
       type: "SHOP_SERVICE_REQUESTED",
@@ -299,7 +299,9 @@ describe("Phase 2A shop mechanics foundation", () => {
 
     expect(getRejectedReason(insufficient.sent)).toBe(SHOP_FAILURE_REASONS.insufficientSalvage);
     expect(insufficient.server.getState().players[0]?.character.heldGear).toEqual([]);
+  });
 
+  it("rejects shop service outside a shop sector", () => {
     const notAtShop = createShopServer({ sectorId: "ashwake-crossing", salvage: 6 });
     notAtShop.server.handleIntent(notAtShop.client, {
       type: "SHOP_SERVICE_REQUESTED",
@@ -307,7 +309,9 @@ describe("Phase 2A shop mechanics foundation", () => {
       serviceId: "buy-gear"
     });
     expect(getRejectedReason(notAtShop.sent)).toBe(SHOP_FAILURE_REASONS.notAtShop);
+  });
 
+  it("rejects a purchase when the item is unavailable", () => {
     const unavailable = createShopServer({ sectorId: "outer_waymarket", salvage: 6 });
     unavailable.server.handleIntent(unavailable.client, {
       type: "SHOP_SERVICE_REQUESTED",
@@ -320,7 +324,9 @@ describe("Phase 2A shop mechanics foundation", () => {
       cardId: "coffin-rig"
     });
     expect(getRejectedReason(unavailable.sent)).toBe(SHOP_FAILURE_REASONS.itemUnavailable);
+  });
 
+  it("rejects shop service while the shop is blocked by a threat", () => {
     const blocked = createShopServer({
       sectorId: "outer_waymarket",
       salvage: 6,
