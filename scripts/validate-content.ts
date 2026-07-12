@@ -33,6 +33,7 @@ import {
 import { shopCategorySchema, type GearItem } from "../src/game/schema/gear.schema.js";
 import type { ContractCard } from "../src/game/schema/contract.schema.js";
 import { sectorGraphSchema, type SectorNode } from "../src/game/schema/sector.schema.js";
+import { validatePassiveEquipmentCatalog } from "./passive-equipment-validation.js";
 
 const sectorsRoot = join(process.cwd(), "content", "sectors");
 const contentRoot = join(process.cwd(), "content");
@@ -200,6 +201,7 @@ validateThreatRarityCurve();
 for (const item of gear.values()) {
   validateGearProgression(item);
 }
+errors.push(...validatePassiveEquipmentCatalog(gear));
 
 for (const contract of contracts.values()) {
   validateEffect(contract.reward, `${contract.id} reward`);
