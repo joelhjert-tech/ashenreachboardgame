@@ -53,6 +53,7 @@ import type {
 } from "../shared/types.js";
 import { HostPlayerCard } from "./HostPlayerCard.js";
 import { HostBattleOverlay } from "./HostBattleOverlay.js";
+import { HostMovementJourney, type HostMovementJourneyModel } from "./HostMovementJourney.js";
 import { isHostBattleActive } from "./hostBattleState.js";
 import { HostShopOverlay } from "./HostShopOverlay.js";
 import { isHostShopActive } from "./hostShopState.js";
@@ -1852,13 +1853,16 @@ interface TacticalMapPanelProps {
 }
 
 interface MovementArrivalModel {
+  eventId: string;
   destination: PublicMoveDestination;
   playerName: string;
+  originName: string;
 }
 
 function getMovementArrivalModel(
   patch: PublicPatchPayload | null | undefined,
-  previousPatch: PublicPatchPayload | null | undefined
+  previousPatch: PublicPatchPayload | null | undefined,
+  sequence = 0
 ): MovementArrivalModel | null {
   const planner = previousPatch?.movementPlanner?.active ? previousPatch.movementPlanner : null;
 
@@ -1870,7 +1874,12 @@ function getMovementArrivalModel(
   const movedPlayer = patch.players.find((player) => previousSectorBySeat.get(player.seatId) !== player.sectorId);
   const destination = movedPlayer ? planner.destinations.find((entry) => entry.sectorId === movedPlayer.sectorId) ?? null : null;
 
-  return movedPlayer && destination ? { destination, playerName: movedPlayer.character.name } : null;
+  return movedPlayer && destination ? {
+    eventId: `${sequence}:${movedPlayer.seatId}:${planner.currentSectorId}:${destination.sectorId}`,
+    destination,
+    playerName: movedPlayer.character.name,
+    originName: planner.currentSectorName
+  } : null;
 }
 
 function MovementFocusHud({
@@ -2069,31 +2078,35 @@ function TacticalMapPanel({
   const battleMode = isHostBattleActive(patch, battlePlayer);
   const shopMode = isHostShopActive(patch, activePlayer);
   const planner = patch?.payload.movementPlanner?.active ? patch.payload.movementPlanner : null;
-  const arrival = getMovementArrivalModel(patch?.payload, previousPatch?.payload);
-  const arrivalKey = arrival ? `${arrival.playerName}:${arrival.destination.sectorId}:${arrival.destination.route.join(">")}` : null;
-  const [visualTravel, setVisualTravel] = useState<{ key: string; arrival: MovementArrivalModel; step: number } | null>(null);
+  const arrival = getMovementArrivalModel(patch?.payload, previousPatch?.payload, patch?.sequence);
+  const arrivalKey = arrival?.eventId ?? null;
+  const [visualTravel, setVisualTravel] = useState<{ key: string; arrival: MovementArrivalModel; step: number; arrived: boolean } | null>(null);
   const completedTravelKeyRef = useRef<string | null>(null);
+  const challengeFocus = Boolean(patch?.payload.pendingTileChallenge);
+  const eventFocus = Boolean(patch?.payload.activeResolution || patch?.payload.encounter);
   useEffect(() => {
-    if (arrival && arrivalKey && completedTravelKeyRef.current !== arrivalKey && !battleMode && !shopMode) {
-      setVisualTravel((current) => current?.key === arrivalKey ? current : { key: arrivalKey, arrival, step: 1 });
+    if (arrival && arrivalKey && completedTravelKeyRef.current !== arrivalKey && !battleMode && !shopMode && !challengeFocus && !eventFocus) {
+      setVisualTravel((current) => current?.key === arrivalKey ? current : { key: arrivalKey, arrival, step: 0, arrived: false });
     }
-  }, [arrival, arrivalKey, battleMode, shopMode]);
+  }, [arrival, arrivalKey, battleMode, shopMode, challengeFocus, eventFocus]);
   useEffect(() => {
-    if (battleMode || shopMode) {
+    if (battleMode || shopMode || challengeFocus || eventFocus) {
       setVisualTravel(null);
     }
-  }, [battleMode, shopMode]);
+  }, [battleMode, shopMode, challengeFocus, eventFocus]);
   useEffect(() => {
     if (!visualTravel) return;
-    const stepTotal = Math.max(1, visualTravel.arrival.destination.route.length - 1);
+    const finalStep = Math.max(visualTravel.arrival.destination.route.length - 1, 1);
+    const reducedMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches === true;
     const timeout = window.setTimeout(() => {
       setVisualTravel((current) => {
         if (!current || current.key !== visualTravel.key) return current;
-        if (current.step < stepTotal) return { ...current, step: current.step + 1 };
+        if (current.step < finalStep) return { ...current, step: current.step + 1 };
+        if (!current.arrived) return { ...current, arrived: true };
         completedTravelKeyRef.current = current.key;
         return null;
       });
-    }, 720);
+    }, reducedMotion ? 120 : visualTravel.arrived ? 650 : 360);
     return () => window.clearTimeout(timeout);
   }, [visualTravel]);
   const focusBattleMode = battleMode;
@@ -2102,6 +2115,13 @@ function TacticalMapPanel({
   const projectedDestination = planner?.selectedDestinationId
     ? planner.destinations.find((destination) => destination.sectorId === planner.selectedDestinationId) ?? null
     : null;
+
+  const journey = visualTravel ? {
+    eventId: visualTravel.key,
+    operativeName: visualTravel.arrival.playerName,
+    originName: visualTravel.arrival.originName,
+    destination: visualTravel.arrival.destination
+  } satisfies HostMovementJourneyModel : null;
 
   return (
     <section className={`tv-command-stage${focusBattleMode ? " tv-command-stage-battle-mode" : ""}${focusShopMode ? " tv-command-stage-shop-mode" : ""}${movementFocusMode ? " tv-command-stage-movement-focus" : ""}`}>
@@ -2116,6 +2136,14 @@ function TacticalMapPanel({
         </div>
       )}
       {!focusBattleMode && <NemesisBanner nemesis={patch?.payload.nemesis ?? null} />}
+      {journey && (
+        <HostMovementJourney
+          model={journey}
+          step={visualTravel!.step}
+          arrived={visualTravel!.arrived}
+          challenges={patch?.payload.sectors.find((sector) => sector.id === journey.destination.sectorId)?.tileChallenges ?? []}
+        />
+      )}
       {!focusBattleMode && !focusShopMode && !movementFocusMode && (
         <ActiveOperativeOverlay
           patch={patch}
@@ -2128,6 +2156,7 @@ function TacticalMapPanel({
       {focusBattleMode && <HostBattleOverlay patch={patch} activePlayer={battlePlayer} />}
       {focusShopMode && <HostShopOverlay patch={patch} activePlayer={activePlayer} />}
       {movementFocusMode && (
+        !journey &&
         <MovementFocusHud
           planner={planner}
           selectedDestination={projectedDestination}
