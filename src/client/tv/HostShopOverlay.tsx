@@ -1,6 +1,7 @@
 import type { CSSProperties, ReactElement } from "react";
 import { getBoardSpace } from "../../game/data/boardSpaces.js";
 import { getChallengeThemeStyle } from "../../game/ui/challengeTheme.js";
+import { formatLegacyRiskCost } from "../../game/rules/legacyHeatCompatibility.js";
 import { ChallengeBadge } from "../shared/ChallengeBadge.js";
 import { CardArtImage } from "../shared/CardArtImage.js";
 import { ResultDeltaRow } from "../shared/ResultDeltaChips.js";
@@ -60,7 +61,7 @@ function toTitleCase(value: string): string {
 function formatCost(cost: PublicShopCost): string {
   const entries = [
     cost.salvage !== undefined ? `${cost.salvage} Salvage` : null,
-    cost.heat !== undefined ? `${cost.heat} Risk` : null,
+    cost.heat !== undefined ? formatLegacyRiskCost(cost.heat) : null,
     cost.wounds !== undefined ? `${cost.wounds} Wound${cost.wounds === 1 ? "" : "s"}` : null,
     cost.trophies !== undefined ? `${cost.trophies} Trophies` : null,
     cost.completedContracts !== undefined ? `${cost.completedContracts} Completed Missions` : null,
@@ -93,7 +94,7 @@ function servicePreview(service: PublicShopEncounterState["services"][number], c
       ? `${completedContracts}/${service.cost.completedContracts} Completed Missions`
       : formatCost(service.cost),
     summary: service.enabled ? "Confirm this service from the active player's phone." : (service.disabledReason ?? "Unavailable"),
-    footer: service.risk ?? (service.enabled ? "Phone confirms" : "Unavailable"),
+    footer: service.cost.heat !== undefined ? formatLegacyRiskCost(service.cost.heat) : service.risk ?? (service.enabled ? "Phone confirms" : "Unavailable"),
     tone: isSellService ? "sell" : service.risk || service.cost.heat ? "stock" : "service",
     enabled: service.enabled,
     icon

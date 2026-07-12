@@ -3388,7 +3388,8 @@ describe("threat effect keys", () => {
 
     expect(server.getState().currentEncounter?.id).toBe("keyed-rats");
     expect(server.getState().players.find((entry) => entry.seatId === "seat-1")?.character.heat).toBe(0);
-    expect(server.getState().lastOutcomeSummary?.summary).toContain("Legacy pressure");
+    expect(server.getState().lastOutcomeSummary?.summary).toContain("No additional status change");
+    expect(server.getState().lastOutcomeSummary?.summary).not.toContain("Heat");
   });
 
   it("applies table-wide and escalation reveal effect keys", () => {
@@ -3451,7 +3452,8 @@ describe("threat effect keys", () => {
     (heatedServer as any).runAutomaticPhases("seat-1");
 
     expect(heatedServer.getState().players.every((entry) => entry.character.heat === 0)).toBe(true);
-    expect(heatedServer.getState().lastOutcomeSummary?.summary).toContain("Legacy pressure");
+    expect(heatedServer.getState().lastOutcomeSummary?.summary).toContain("No additional status change");
+    expect(heatedServer.getState().lastOutcomeSummary?.summary).not.toContain("Heat");
 
     const escalatedThreats = createThreats();
     escalatedThreats.set("keyed-bell", {

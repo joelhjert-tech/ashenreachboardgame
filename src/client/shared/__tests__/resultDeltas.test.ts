@@ -62,4 +62,11 @@ describe("result delta formatting", () => {
     expect(formatResultDelta(privateDelta).detail).toBe("Private trigger: steal the relic.");
     expect(publicResultDeltas([privateDelta])).toEqual([]);
   });
+
+  it("uses the temporary Risk alias for real compatibility deltas", () => {
+    expect(formatResultDelta(delta({ type: "heat", label: "Risk", value: 1, sign: "loss", publicText: "Risk reduced by 1." }))).toMatchObject({
+      label: "-1 Risk",
+      detail: "Risk reduced by 1."
+    });
+  });
 });

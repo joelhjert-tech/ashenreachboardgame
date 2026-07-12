@@ -1231,6 +1231,8 @@ describe("PhoneActionPanel", () => {
     expect(screen.getAllByText(/forge armoury/i).length).toBeGreaterThan(0);
     expect(screen.getByText(/salvage: 6/i)).toBeInTheDocument();
     expect(screen.getByText(/choose a market service/i)).toBeInTheDocument();
+    expect(screen.getByText(/Risk cost: 1/i)).toBeInTheDocument();
+    expect(screen.queryByText(/\bHeat\b/i)).not.toBeInTheDocument();
     expect(screen.getAllByTestId("phone-shop-category-icon").length).toBeGreaterThanOrEqual(2);
     expect(screen.getAllByTestId("phone-shop-category-icon")[0]).toHaveAttribute("src", "/assets/riftfall/ui/shop-category-forge-armoury.svg");
     expect(screen.getByRole("button", { name: /skip \/ continue/i })).toBeInTheDocument();

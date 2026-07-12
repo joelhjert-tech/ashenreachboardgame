@@ -35,10 +35,27 @@ import type { ContractCard } from "../src/game/schema/contract.schema.js";
 import { sectorGraphSchema, type SectorNode } from "../src/game/schema/sector.schema.js";
 import { validatePassiveEquipmentCatalog } from "./passive-equipment-validation.js";
 import { validateScarTriggerCatalog } from "../src/game/rules/scarTriggers.js";
+import { validateLegacyHeatContentRecord } from "./legacy-heat-validation.js";
 
 const sectorsRoot = join(process.cwd(), "content", "sectors");
 const contentRoot = join(process.cwd(), "content");
 const errors: string[] = [];
+
+function validateLegacyHeatAuthoring(root: string): void {
+  const visit = (directory: string): void => {
+    for (const entry of readdirSync(directory, { withFileTypes: true })) {
+      const path = join(directory, entry.name);
+      if (entry.isDirectory()) visit(path);
+      else if (entry.isFile() && entry.name.endsWith(".json")) {
+        const record = JSON.parse(readFileSync(path, "utf8")) as unknown;
+        errors.push(...validateLegacyHeatContentRecord(path, record));
+      }
+    }
+  };
+  visit(root);
+}
+
+validateLegacyHeatAuthoring(contentRoot);
 const loreRestrictedTerms = [
   "Relic",
   "Talisman",

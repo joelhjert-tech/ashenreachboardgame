@@ -26,6 +26,7 @@ import { ResultDeltaRow } from "../shared/ResultDeltaChips.js";
 import { getBoardSpace, isScenarioConfrontationSpace } from "../../game/data/boardSpaces.js";
 import { describeContractObjective, formatContractObjectiveStatus, isContractObjectiveComplete } from "../../game/contracts/objectives.js";
 import { getChallengeThemeStyle } from "../../game/ui/challengeTheme.js";
+import { formatLegacyRiskCost } from "../../game/rules/legacyHeatCompatibility.js";
 import {
   describeActiveResolutionRoll,
   formatResolutionModifiers,
@@ -226,7 +227,7 @@ function getGearActionDetail(item: GearItem, useState?: PhoneObjectUseState | nu
 function formatShopCost(cost: PublicShopCost): string {
   const parts = [
     cost.salvage ? `${cost.salvage} Salvage` : null,
-    cost.heat ? `${cost.heat} Risk` : null,
+    cost.heat ? formatLegacyRiskCost(cost.heat) : null,
     cost.wounds ? `${cost.wounds} Wound${cost.wounds === 1 ? "" : "s"}` : null,
     cost.trophies ? `${cost.trophies} Trophies` : null,
     cost.completedContracts ? `${cost.completedContracts} Contract${cost.completedContracts === 1 ? "" : "s"}` : null,
@@ -1559,7 +1560,7 @@ function PhoneShopPanel({
                       <strong>{service.label}</strong>
                       {service.shopCategory ? <span>{formatShopCategory(service.shopCategory)}</span> : <span>{categoryLabel}</span>}
                       {completedMissionProgress ? <small>{completedMissionProgress}</small> : null}
-                      {service.risk ? <small>{service.risk}</small> : null}
+                      {service.cost.heat ? <small>{formatLegacyRiskCost(service.cost.heat)}</small> : service.risk ? <small>{service.risk}</small> : null}
                     </span>
                   </GameButton>
                 );

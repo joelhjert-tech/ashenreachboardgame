@@ -1544,6 +1544,8 @@ describe("TvApp", () => {
     expect(screen.getByTestId("host-shop-status-panel")).toHaveTextContent(/sellable/i);
     expect(screen.getByTestId("host-shop-status-panel")).toHaveTextContent("1");
     expect(overlay).toHaveTextContent(/buy equipment/i);
+    expect(overlay).toHaveTextContent(/Risk cost: 1/i);
+    expect(overlay).not.toHaveTextContent(/\bHeat\b/i);
     expect(overlay).not.toHaveTextContent(/buy supplies/i);
     expect(within(overlay).getByTestId("host-shop-card-backdrop")).toBeInTheDocument();
     expect(

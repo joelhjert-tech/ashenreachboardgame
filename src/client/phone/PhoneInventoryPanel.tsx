@@ -191,7 +191,7 @@ function InventoryCard({
               : `${card.charges} charge${card.charges === 1 ? "" : "s"}`
       }
       : null
-    ,card.activationCostText ? { key: "activation-cost", node: `Cost: ${card.activationCostText}` } : null
+    ,card.activationCostText ? { key: "activation-cost", node: card.activationCostText } : null
   ] as Array<{ key: string; node: ReactNode } | null>).filter((item): item is { key: string; node: ReactNode } => Boolean(item));
 
   return (

@@ -34,7 +34,7 @@ export function ResultDeltaRow({
   className?: string;
   emptyText?: string | null;
 }): ReactElement | null {
-  const visibleDeltas = (deltas ?? []).filter((delta) => delta.type !== "heat" && (!publicOnly || delta.visibility === "public")).slice(0, 8);
+  const visibleDeltas = (deltas ?? []).filter((delta) => !publicOnly || delta.visibility === "public").slice(0, 8);
 
   if (visibleDeltas.length === 0) {
     return emptyText ? <p className={`result-delta-empty ${className}`.trim()}>{emptyText}</p> : null;

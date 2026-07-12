@@ -46,6 +46,7 @@ import {
   type ScenarioAmbientResolution
 } from "../game/rules/scenarioAmbient.js";
 import { buildScenarioPressureState } from "../game/rules/scenarioPressure.js";
+import { getMirrorReflectionPressureThreshold } from "../game/rules/legacyHeatCompatibility.js";
 import {
   getAfflictionWoundPrevention,
   getAfflictionModifierSources,
@@ -1977,9 +1978,9 @@ export class GameRoomServer {
       case "artifact-yard":
         return { type: "sequence", effects: [{ type: "gain_gear", gearId: "marshal-seal" }, { type: "gain_note", text: "The Yard Bellframe Core released its Marshal Seal." }] };
       case "choir-static-censer":
-        return { type: "gain_note", text: "Choir Static Censer spent: legacy pressure relief is deprecated; Scars remain the persistent harm track." };
+        return { type: "gain_note", text: "Choir Static Censer spent. No additional status change." };
       case LEGACY_SCAR_SINK_PRAYER_ID:
-        return { type: "gain_note", text: "Scar-Sink Prayer steadied the operative; legacy pressure relief is deprecated." };
+        return { type: "gain_note", text: "Scar-Sink Prayer steadied the operative. No additional status change." };
       case "cinder-suture-kit":
         return {
           type: "sequence",
@@ -2017,7 +2018,7 @@ export class GameRoomServer {
           type: "sequence",
           effects: [
             { type: "heal_wound", amount: 1 },
-            { type: "gain_note", text: "Saintwire Splint steadied the body; legacy pressure relief is deprecated." }
+            { type: "gain_note", text: "Saintwire Splint steadied the body. No additional status change." }
           ]
         };
       case "mirror-reroll-token":
@@ -2128,7 +2129,7 @@ export class GameRoomServer {
         };
       case "ritualist":
       case "informant":
-        return { type: "gain_note", text: `${follower.name} steadied the operative; legacy pressure relief is deprecated.` };
+        return { type: "gain_note", text: `${follower.name} steadied the operative. No additional status change.` };
       case "gunner":
         return { type: "gain_note", text: `${follower.name} is covering the next combat exchange.` };
       case "guide":
@@ -5995,11 +5996,12 @@ export class GameRoomServer {
 
     const mirrorPressure = this.state.scenarioProgress.mirrorPressure ?? player.character.scars.length;
 
-    if (scenario.id === "scenario_mirror_of_false_heroes" && mirrorPressure >= this.state.heatThreshold) {
+    const reflectionPressureThreshold = getMirrorReflectionPressureThreshold(this.state);
+    if (scenario.id === "scenario_mirror_of_false_heroes" && mirrorPressure >= reflectionPressureThreshold) {
       this.applyAmbientScenarioMutation(
         intent.seatId,
         (state) => state,
-        `${player.character.name} cannot face the mirror while reflection pressure sits at ${mirrorPressure}/${this.state.heatThreshold}. The confrontation ends immediately.`
+        `${player.character.name} cannot face the mirror while reflection pressure sits at ${mirrorPressure}/${reflectionPressureThreshold}. The confrontation ends immediately.`
       );
       this.applyAction({
         type: "PHASE_ADVANCED",

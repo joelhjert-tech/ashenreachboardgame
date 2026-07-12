@@ -2,6 +2,7 @@ import type { CardImageType } from "../../game/assets/design/cardImageCatalog.js
 import type { ActiveResolution, Follower, GearItem, GearSlot, PhoneObjectUseState, PhonePatchPayload, PhoneSelfState, Stat } from "../shared/types.js";
 import { getGearCardArtId, getGearCardArtType } from "../shared/assetPaths.js";
 import { gearSlotLabelById, statLabelById } from "../shared/statLabels.js";
+import { formatLegacyRiskCost } from "../../game/rules/legacyHeatCompatibility.js";
 
 export type InventoryTimingWindow =
   | "beforeThreatDraw"
@@ -494,7 +495,11 @@ function buildGearCard(item: GearItem, patch: PhonePatchPayload, self: PhoneSelf
     artCardType: getGearCardArtType(item),
     artCardId: getGearCardArtId(item),
     fallbackLabel: getFallbackLabel(item.name)
-    ,activationCostText: item.activationCost ? `${item.activationCost.amount} ${item.activationCost.type === "salvage" ? "Salvage" : "Wound"}` : undefined
+    ,activationCostText: item.activationCost
+      ? `Cost: ${item.activationCost.amount} ${item.activationCost.type === "salvage" ? "Salvage" : "Wound"}`
+      : item.heatCost
+        ? formatLegacyRiskCost(item.heatCost)
+        : undefined
   };
 }
 
@@ -529,7 +534,7 @@ function buildFollowerCard(follower: Follower, patch: PhonePatchPayload): Invent
     artCardType: follower.artCardId ? "artifact" : null,
     artCardId: follower.artCardId ?? null,
     fallbackLabel: getFallbackLabel(follower.name)
-    ,activationCostText: follower.id === "fandiablos" ? "1 Wound (or 2 Wounds for +2 all stats on next 2 battles/hazards)" : undefined
+    ,activationCostText: follower.id === "fandiablos" ? "Cost: 1 Wound (or 2 Wounds for +2 all stats on next 2 battles/hazards)" : undefined
   };
 }
 

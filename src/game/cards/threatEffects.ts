@@ -34,7 +34,7 @@ type ThreatEffectDefinition = {
 };
 
 const note = (text: string): EncounterEffect => ({ type: "gain_note", text });
-const legacyPressure = (): EncounterEffect => ({ type: "gain_note", text: "Legacy pressure effect ignored; Scars are the persistent harm track." });
+const legacyPressure = (): EncounterEffect => ({ type: "gain_note", text: "No additional status change." });
 const heat = (_amount: number): EncounterEffect => legacyPressure();
 const heatAll = (_amount: number): EncounterEffect => legacyPressure();
 const wound = (amount: number): EncounterEffect => ({ type: "take_wound", amount });
@@ -54,11 +54,11 @@ function regionIsInner(ctx: ThreatEffectContext): boolean {
 export const THREAT_CARD_EFFECTS = {
   threat_heat_on_reveal: {
     timing: "onReveal",
-    resolve: () => ({ effect: heat(1), summary: "Reveal: legacy pressure flares without adding persistent status." })
+    resolve: () => ({ effect: heat(1), summary: "Reveal: no additional status change." })
   },
   threat_all_heat_on_reveal: {
     timing: "onReveal",
-    resolve: () => ({ effect: heatAll(1), summary: "Reveal: legacy table pressure flares without adding persistent status." })
+    resolve: () => ({ effect: heatAll(1), summary: "Reveal: no additional status change." })
   },
   threat_escalate_on_reveal: {
     timing: "onReveal",
@@ -74,11 +74,11 @@ export const THREAT_CARD_EFFECTS = {
   },
   threat_force_choose_heat_or_wound: {
     timing: "onReveal",
-    resolve: () => ({ effect: heat(1), summary: "Reveal choice uses legacy pressure compatibility with no persistent status change." })
+    resolve: () => ({ effect: heat(1), summary: "Reveal choice causes no additional status change." })
   },
   threat_force_discard_gear_or_gain_heat: {
     timing: "onReveal",
-    resolve: () => ({ effect: heat(1), summary: "Reveal choice uses legacy pressure compatibility instead of object loss." })
+    resolve: () => ({ effect: heat(1), summary: "Reveal choice causes no additional status change." })
   },
   threat_attach_to_space: {
     timing: "onReveal",
@@ -193,7 +193,7 @@ export const THREAT_CARD_EFFECTS = {
   },
   threat_defeat_reduce_heat: {
     timing: "onDefeat",
-    resolve: () => ({ effect: note("Legacy pressure relief ignored; Scars remain the persistent harm track.") })
+    resolve: () => ({ effect: note("No additional status change.") })
   },
   threat_defeat_heal_wound: {
     timing: "onDefeat",

@@ -61,6 +61,7 @@ import type { GearSlot } from "../schema/gear.schema.js";
 import type { TrophyPileEntry } from "../schema/character.schema.js";
 import { applyMovementDieAfflictions, resolveAfflictionDraw } from "../rules/afflictions.js";
 import { buildPendingScarConsequences, getMatchingScarTriggers } from "../rules/scarTriggers.js";
+import { applyLegacyHeatNoop, isLegacyHeatNoopEffect, summarizeLegacyHeatNoop } from "../rules/legacyHeatCompatibility.js";
 import type { ScarSourceEvent } from "../schema/scarTrigger.schema.js";
 import { getBoardSpace, isScenarioConfrontationSpace } from "../data/boardSpaces.js";
 import { getLegalMovementRoute, getMovementBlockReason, getVoidKeyMovementRoute, getMovementStepBlockReason } from "../rules/movementPlanner.js";
@@ -265,14 +266,9 @@ function succeed(state: GameState, emitted: GameAction[] = []): ReducerSuccess {
 
 function summarizeEffect(effect: EncounterEffect, success: boolean | null): string {
   const prefix = success === null ? "Resolution:" : success ? "Success:" : "Failure:";
+  if (isLegacyHeatNoopEffect(effect)) return summarizeLegacyHeatNoop(prefix);
 
   switch (effect.type) {
-    case "gain_heat":
-      return `${prefix} legacy pressure ignored; Scars are the persistent harm track.`;
-    case "gain_heat_all":
-      return `${prefix} legacy table pressure ignored; Scars are the persistent harm track.`;
-    case "lose_heat":
-      return `${prefix} legacy pressure relief has no status effect.`;
     case "take_wound":
       return `${prefix} take ${effect.amount} wound${effect.amount === 1 ? "" : "s"}.`;
     case "heal_wound":
@@ -311,10 +307,8 @@ function summarizeEffect(effect: EncounterEffect, success: boolean | null): stri
 }
 
 function applyEffectToPlayer(player: PlayerState, effect: EncounterEffect): PlayerState {
+  if (isLegacyHeatNoopEffect(effect)) return applyLegacyHeatNoop(player, effect);
   switch (effect.type) {
-    case "gain_heat":
-    case "lose_heat":
-      return player;
     case "take_wound":
       return {
         ...player,
@@ -370,7 +364,6 @@ function applyEffectToPlayer(player: PlayerState, effect: EncounterEffect): Play
           notes: [...player.private.notes, effect.text]
         }
       };
-    case "gain_heat_all":
     case "advance_escalation":
     case "advance_scenario":
     case "return_threat_to_space":
