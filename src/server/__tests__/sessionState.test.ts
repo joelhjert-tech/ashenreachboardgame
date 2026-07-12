@@ -137,6 +137,76 @@ describe("canonical sector graph", () => {
     expect(server.getState().players[0]!.character.heldGear.find((item) => item.instanceId === "choir-instance")?.currentCharges).toBe(1);
   });
 
+  it("suppresses exactly one pending anomaly failure effect with one exact Choir Static Censer charge", () => {
+    const state = createInitialSessionState("static-intercession", "single-player");
+    const challenge = state.sectors.find((sector) => sector.id === "ashen-chapel")!.tileChallenges![0]!;
+    state.status = "active";
+    state.phase = "resolution";
+    state.resolutionSource = "tileChallenge";
+    state.pendingTileChallenge = {
+      id: "pending-static-intercession",
+      challengeId: challenge.id,
+      sectorId: challenge.sectorId,
+      seatId: "seat-1",
+      challengeType: "anomaly",
+      testStat: challenge.testStat,
+      difficulty: challenge.difficulty,
+      sourceTags: challenge.tags,
+      successEffect: challenge.successEffect,
+      failureEffect: challenge.failureEffect,
+      authoredOrder: challenge.authoredOrder,
+      totalChallenges: 1,
+      rolled: true,
+      modifierSources: [],
+      createdAt: "2026-07-12T00:00:00.000Z"
+    };
+    state.activeResolution = {
+      id: "pending-static-intercession",
+      playerId: "seat-1",
+      source: "anomaly",
+      stage: "roll_result",
+      roll: { dice: [1, 1], baseTotal: 2, modifierTotal: 0, finalTotal: 2, target: 8, success: false }
+    };
+    state.pendingEffect = {
+      type: "sequence",
+      effects: [{ type: "gain_scar", scarId: "scar-wound-6" }, { type: "take_wound", amount: 1 }]
+    };
+    const definition = loadGear().get("choir-static-censer")!;
+    state.players[0]!.character.heldGear.push(
+      { ...definition, instanceId: "censer-a", currentCharges: 2, maxCharges: 2 },
+      { ...definition, instanceId: "censer-b", currentCharges: 2, maxCharges: 2 }
+    );
+    state.players[0]!.character.equippedGear.utility = "choir-static-censer";
+    const server = new GameRoomServer(state);
+    const sent: Array<Record<string, unknown>> = [];
+    const client: ConnectedClient = { seatId: "seat-1", view: "phone", socket: { send: (payload: string) => sent.push(JSON.parse(payload)), close() {} } as unknown as ConnectedClient["socket"] };
+
+    const owner = createPhoneProjection(server.getState(), "seat-1") as unknown as PhonePatchPayload;
+    expect(owner.pendingTileChallengePrivate?.pendingFailureEffects).toEqual([
+      expect.objectContaining({ index: 0 }),
+      expect.objectContaining({ index: 1 })
+    ]);
+    server.handleIntent(client, {
+      type: "USE_GEAR", seatId: "seat-1", gearId: "choir-static-censer", instanceId: "censer-a",
+      pendingTileChallengeId: "pending-static-intercession", pendingTileChallengeEffectIndex: 0
+    });
+
+    expect(sent.filter((message) => message.type === "INTENT_REJECTED")).toEqual([]);
+    expect(server.getState().pendingEffect).toEqual({ type: "take_wound", amount: 1 });
+    expect(server.getState().activeResolution?.roll?.success).toBe(false);
+    expect(server.getState().players[0]!.character.heldGear.find((item) => item.instanceId === "censer-a")?.currentCharges).toBe(1);
+    expect(server.getState().players[0]!.character.heldGear.find((item) => item.instanceId === "censer-b")?.currentCharges).toBe(2);
+    expect(server.getState().sectors.find((sector) => sector.id === "ashen-chapel")?.tileChallenges).toContainEqual(challenge);
+
+    server.handleIntent(client, {
+      type: "USE_GEAR", seatId: "seat-1", gearId: "choir-static-censer", instanceId: "censer-b",
+      pendingTileChallengeId: "pending-static-intercession", pendingTileChallengeEffectIndex: 0
+    });
+    expect(server.getState().pendingEffect).toEqual({ type: "take_wound", amount: 1 });
+    expect(server.getState().players[0]!.character.heldGear.find((item) => item.instanceId === "censer-b")?.currentCharges).toBe(2);
+    expect(sent.some((message) => message.type === "INTENT_REJECTED" && /already affected/i.test(String(message.reason)))).toBe(true);
+  });
+
   it("routes tile challenge mission completion through COMPLETE_CONTRACT exactly once", () => {
     const state = createInitialSessionState("tile-challenge-contract", "single-player");
     const mission: ContractCard = {

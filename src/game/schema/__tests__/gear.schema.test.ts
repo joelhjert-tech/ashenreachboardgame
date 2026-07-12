@@ -34,4 +34,25 @@ describe("gear effect model schema", () => {
   it("accepts the Ashen Route Compass movement-adjustment charge model", () => {
     expect(gearItemSchema.safeParse({ ...base, tier: "artifact", category: "chargedRelic", useLimit: "charge", effectModel: "charged", requiresEquipped: true, activationTiming: ["movement"], maxCharges: 2, startingCharges: 2, chargeCost: 1, rechargeRule: "none", chargedEffect: "movementAdjustment" }).success).toBe(true);
   });
+
+  it("accepts Static Intercession only as a no-recharge charged Artifact", () => {
+    const censer = {
+      ...base,
+      id: "choir-static-censer",
+      tier: "artifact",
+      category: "chargedRelic",
+      useLimit: "charge",
+      effectModel: "charged",
+      requiresEquipped: true,
+      activationTiming: ["afterFailedTest"],
+      maxCharges: 2,
+      startingCharges: 2,
+      chargeCost: 1,
+      rechargeRule: "none",
+      chargedEffect: "staticIntercession"
+    } as const;
+    expect(gearItemSchema.safeParse(censer).success).toBe(true);
+    expect(gearItemSchema.safeParse({ ...censer, rechargeRule: "round" }).success).toBe(false);
+    expect(gearItemSchema.safeParse({ ...censer, effectModel: "exhaust" }).success).toBe(false);
+  });
 });

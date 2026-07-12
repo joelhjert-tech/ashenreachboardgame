@@ -647,6 +647,16 @@ function applyEffectToState(state: GameState, seatId: string, effect: EncounterE
   };
 }
 
+function suppressPendingEffectAtIndex(effect: EncounterEffect | null, index: number | undefined): EncounterEffect | null {
+  if (effect === null || index === undefined || !Number.isInteger(index) || index < 0) return effect;
+  if (effect.type !== "sequence") return index === 0 ? null : effect;
+  if (index >= effect.effects.length) return effect;
+  const remaining = effect.effects.filter((_, effectIndex) => effectIndex !== index);
+  if (remaining.length === 0) return null;
+  if (remaining.length === 1) return remaining[0] ?? null;
+  return { type: "sequence", effects: remaining };
+}
+
 function createTrophyPileEntry(card: ThreatCard): TrophyPileEntry {
   return {
     cardId: card.id,
@@ -2242,10 +2252,10 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
       const useGearAction = action as UseGearAction;
 
       try {
-        if (useGearAction.suppressPendingFailure || useGearAction.mirrorReroll) {
+        if (useGearAction.suppressPendingFailure || useGearAction.mirrorReroll || useGearAction.pendingTileChallengeEffectIndex !== undefined) {
           ensureSeatTurn(state, useGearAction.seatId);
           if (state.phase !== "resolution" || !state.pendingEffect || state.activeResolution?.roll?.success !== false ||
-              (useGearAction.mirrorReroll ? false :
+              (useGearAction.mirrorReroll || useGearAction.pendingTileChallengeEffectIndex !== undefined ? false :
               !state.pendingFailureReaction || state.pendingFailureReaction.id !== useGearAction.pendingFailureReactionId ||
               state.pendingFailureReaction.seatId !== useGearAction.seatId)) throw new Error("No matching failed test is waiting for a reaction");
         } else canManageGear(state, useGearAction.seatId);
@@ -2274,7 +2284,11 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
       const rerolledState = useGearAction.mirrorReroll ? reduceGameState(state, useGearAction.mirrorReroll) : null;
       if (rerolledState && !rerolledState.ok) return reject(state, action, rerolledState.rejection.reason);
       const actionBaseState = rerolledState?.state ?? state;
-      const effectedState = useGearAction.effect ? applyEffectToState(actionBaseState, useGearAction.seatId, useGearAction.effect) : actionBaseState;
+      const pendingEffectAfterIntercession = suppressPendingEffectAtIndex(actionBaseState.pendingEffect, useGearAction.pendingTileChallengeEffectIndex);
+      const intercessionState = useGearAction.pendingTileChallengeEffectIndex === undefined
+        ? actionBaseState
+        : { ...actionBaseState, pendingEffect: pendingEffectAfterIntercession };
+      const effectedState = useGearAction.effect ? applyEffectToState(intercessionState, useGearAction.seatId, useGearAction.effect) : intercessionState;
       const paidState = useGearAction.salvageCost ? {
         ...effectedState,
         players: updateActivePlayer(effectedState, useGearAction.seatId, (entry) => ({ ...entry, character: { ...entry.character, salvage: (entry.character.salvage ?? 0) - useGearAction.salvageCost! } }))

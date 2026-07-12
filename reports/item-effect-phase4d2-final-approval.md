@@ -39,13 +39,15 @@ Every approved implementation must use exact owned-instance `currentCharges`, ca
 **Recommendation:** Option A. It preserves post-Signal-pressure identity, is distinct from Choir Lantern’s pre-roll +2, and does not remove or suppress the recurring challenge.
 
 Choir Static Censer:
-- Selected option: [UNAPPROVED]
-- Maximum charges: [UNAPPROVED]
-- Starting charges: [UNAPPROVED]
-- Cost per activation: [UNAPPROVED]
-- Additional cost: [NONE / SALVAGE / WOUND / UNAPPROVED]
+- Selected option: Option A — Static Intercession
+- Maximum charges: 2
+- Starting charges: 2
+- Cost per activation: 1 charge
+- Additional cost: None
 - Recharge: none
-- Final rule text: [UNAPPROVED]
+- Scope: owner only
+- Activation timing: after failing a recurring Anomaly Challenge, before failure effects resolve
+- Final rule text: “Static Intercession — Reaction: After you fail a recurring Anomaly Challenge, but before its failure effects resolve, spend 1 charge to ignore one pending failure effect from that challenge. The test still counts as failed, and any remaining failure effects resolve normally.”
 
 ## 2. Scar-Sink Prayer
 

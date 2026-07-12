@@ -2725,6 +2725,44 @@ export function PhoneActionPanel({
     });
   }
 
+  const pendingCenserChallenge = patch.pendingTileChallengePrivate;
+  if (patch.phase === "resolution" && pendingCenserChallenge?.challengeType === "anomaly" && pendingCenserChallenge.rolled && pendingCenserChallenge.pendingFailureEffects?.length) {
+    const censer = self.character.heldGear.find((item) => item.id === "choir-static-censer");
+    const equipped = censer ? Object.values(self.character.equippedGear).includes(censer.id) : false;
+    const charges = censer?.currentCharges ?? censer?.charges ?? 0;
+    const disabledReason = !censer
+      ? "Choir Static Censer is not owned."
+      : !equipped
+        ? "Choir Static Censer must be equipped."
+        : charges < 1
+          ? "Choir Static Censer is Depleted."
+          : undefined;
+    for (const choice of pendingCenserChallenge.pendingFailureEffects) {
+      threatActions.push({
+        key: `static-intercession-${choice.index}`,
+        label: "Ignore this effect — 1 charge",
+        detail: disabledReason ?? `${choice.summary} Static Intercession leaves the test failed. ${charges}/${censer?.maxCharges ?? 2} charges.`,
+        tone: "secondary",
+        disabled: Boolean(disabledReason),
+        onClick: () => onIntent({
+          type: "USE_GEAR",
+          seatId: self.seatId,
+          gearId: "choir-static-censer",
+          instanceId: censer?.instanceId,
+          pendingTileChallengeId: pendingCenserChallenge.id,
+          pendingTileChallengeEffectIndex: choice.index
+        })
+      });
+    }
+    threatActions.push({
+      key: "static-intercession-decline",
+      label: "Accept all failure effects",
+      detail: "Continue without spending a charge.",
+      tone: "secondary",
+      onClick: () => onIntent({ type: "CONTINUE_RESOLUTION", seatId: self.seatId })
+    });
+  }
+
   if (patch.phase === "action" && patch.encounter?.cardType === "hazard") {
     const pendingTileChallenge = patch.pendingTileChallengePrivate;
     const choirLantern = self.character.heldGear.find((item) => item.id === "choir-lantern");

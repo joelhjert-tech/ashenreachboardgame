@@ -2669,6 +2669,34 @@ describe("PhoneActionPanel", () => {
     expect(screen.getByText(/recurring anomaly challenge 1 of 1/i)).toBeInTheDocument();
   });
 
+  it("offers Static Intercession consequence choices only in the final failed anomaly window", () => {
+    const onIntent = vi.fn();
+    const patch = createPatch();
+    patch.phase = "resolution";
+    patch.pendingTileChallengePrivate = {
+      id: "pending-rift-failure", challengeId: "rift-whispers-ashen-chapel", sectorId: "ashen-chapel", seatId: "seat-1",
+      challengeType: "anomaly", testStat: "signal", difficulty: 8, authoredOrder: 0, totalChallenges: 1, rolled: true,
+      pendingFailureEffects: [{ index: 0, summary: "Gain 1 Scar" }, { index: 1, summary: "Suffer 1 Wound" }]
+    };
+    patch.self!.character.heldGear = [{
+      id: "choir-static-censer", instanceId: "censer-1", name: "Choir Static Censer", slot: "utility", tier: "artifact",
+      category: "chargedRelic", statBonus: { stat: "signal", amount: 1 }, effectModel: "charged", useLimit: "charge",
+      currentCharges: 2, maxCharges: 2, startingCharges: 2, chargeCost: 1, rechargeRule: "none",
+      chargedEffect: "staticIntercession", activationTiming: ["afterFailedTest"], requiresEquipped: true
+    }];
+    patch.self!.character.equippedGear.utility = "choir-static-censer";
+    render(<PhoneActionPanel characters={characters} onIntent={onIntent} patch={patch} />);
+
+    const choices = screen.getAllByRole("button", { name: /ignore this effect/i });
+    expect(choices).toHaveLength(2);
+    fireEvent.click(choices[1]!);
+    expect(onIntent).toHaveBeenCalledWith(expect.objectContaining({
+      type: "USE_GEAR", instanceId: "censer-1", pendingTileChallengeId: "pending-rift-failure", pendingTileChallengeEffectIndex: 1
+    }));
+    fireEvent.click(screen.getByRole("button", { name: /accept all failure effects/i }));
+    expect(onIntent).toHaveBeenCalledWith(expect.objectContaining({ type: "CONTINUE_RESOLUTION" }));
+  });
+
   it("shows battle assist and opens usable combat cards during an enemy encounter", () => {
     const onIntent = vi.fn();
     const heldGear = [

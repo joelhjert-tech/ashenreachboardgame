@@ -1783,7 +1783,7 @@ export class GameRoomServer {
 
     if (item.effectModel === "consumable") {
       if (item.consumableEffect === "ignoreFailedMovementOrHazard") {
-        const reaction = this.state.phase === "resolution" && this.state.pendingEffect && this.state.activeResolution?.roll?.success === false &&
+        const reaction = this.state.resolutionSource !== "tileChallenge" && this.state.phase === "resolution" && this.state.pendingEffect && this.state.activeResolution?.roll?.success === false &&
           this.state.pendingFailureReaction?.seatId === seatId &&
           (this.state.pendingFailureReaction.testType === "movement" || this.state.pendingFailureReaction.testType === "hazard");
         if (!reaction) throw new IntentRejectedError("USE_GEAR", `${item.name} can only be used after a failed movement or hazard test, before its effects resolve.`);
@@ -1874,7 +1874,8 @@ export class GameRoomServer {
     gearId: string,
     createdAt: string,
     instanceId?: string,
-    pendingTileChallengeId?: string
+    pendingTileChallengeId?: string,
+    pendingTileChallengeEffectIndex?: number
   ): UseGearAction {
     const player = this.state.players.find((entry) => entry.seatId === seatId);
     const item = player?.character.heldGear.find((entry) => entry.id === gearId && (!instanceId || entry.instanceId === instanceId));
@@ -1906,12 +1907,33 @@ export class GameRoomServer {
       if (pending.modifierSources.some((source) => source.label === "Choir Lantern")) throw new IntentRejectedError("USE_GEAR", "Choir Light is already committed to this test.");
     }
 
+    if (item.chargedEffect === "staticIntercession") {
+      const pending = this.state.pendingTileChallenge;
+      const effects = getPendingFailureEffectChoices(this.state.pendingEffect);
+      const finalFailure = this.state.activeResolution?.roll?.success === false;
+      if (!pending || pending.id !== pendingTileChallengeId || pending.seatId !== seatId || pending.challengeType !== "anomaly" || !pending.rolled || !finalFailure || this.state.phase !== "resolution") {
+        throw new IntentRejectedError("USE_GEAR", `${item.name} requires your failed recurring Anomaly Challenge before failure effects resolve.`);
+      }
+      if (!item.instanceId || item.instanceId !== instanceId) throw new IntentRejectedError("USE_GEAR", `${item.name} instance is stale.`);
+      if ((item.currentCharges ?? item.charges ?? 0) < (item.chargeCost ?? 1)) throw new IntentRejectedError("USE_GEAR", `${item.name} has no charges remaining.`);
+      if (player!.character.equippedGear.utility !== item.id) throw new IntentRejectedError("USE_GEAR", `${item.name} must be equipped.`);
+      if (pendingTileChallengeEffectIndex === undefined || !effects.some((choice) => choice.index === pendingTileChallengeEffectIndex)) {
+        throw new IntentRejectedError("USE_GEAR", "The selected anomaly failure effect is stale or unavailable.");
+      }
+      if (this.state.eventLog.some((event) => {
+        const action = event as Partial<UseGearAction>;
+        return action.type === "USE_GEAR" && action.gearId === item.id && action.pendingTileChallengeId === pending.id;
+      })) {
+        throw new IntentRejectedError("USE_GEAR", "Static Intercession has already affected this challenge resolution.");
+      }
+    }
+
     const itemName = item?.name ?? gearId;
     const discard = item?.consumeOnUse === true || item?.useLimit === "discard";
     const rollModifier = item.chargedEffect === "choirLightSignalBonus"
       ? { label: "Choir Lantern", value: 2, stat: "signal" as const, mode: "check" as const }
       : this.createGearRollModifier(seatId, item);
-    const effect = this.resolveEffect(this.getGearUseEffect(gearId), seatId);
+    const effect = item.chargedEffect === "staticIntercession" ? null : this.resolveEffect(this.getGearUseEffect(gearId), seatId);
 
     return {
       type: "USE_GEAR",
@@ -1926,8 +1948,9 @@ export class GameRoomServer {
       mirrorReroll: item.exhaustEffect === "mirrorReroll" ? { ...this.createSoloRerollAction({ type: "SOLO_REROLL_REQUESTED", seatId }, createdAt, true), artifactReroll: true } : undefined,
       rollModifier,
       chargeInstanceId: item.effectModel === "charged" ? item.instanceId : undefined,
-      pendingTileChallengeId: item.chargedEffect === "choirLightSignalBonus" ? pendingTileChallengeId : undefined,
-      summary: `${itemName} used. ${item?.activeText ?? "Its effect was recorded for the table."}`,
+      pendingTileChallengeId: item.chargedEffect === "choirLightSignalBonus" || item.chargedEffect === "staticIntercession" ? pendingTileChallengeId : undefined,
+      pendingTileChallengeEffectIndex: item.chargedEffect === "staticIntercession" ? pendingTileChallengeEffectIndex : undefined,
+      summary: item.chargedEffect === "staticIntercession" ? "Static Intercession — One anomaly consequence suppressed." : `${itemName} used. ${item?.activeText ?? "Its effect was recorded for the table."}`,
       createdAt
     } satisfies UseGearAction;
   }
@@ -2702,7 +2725,7 @@ export class GameRoomServer {
           createdAt
         } satisfies UnequipGearAction;
       case "USE_GEAR":
-        return this.createGearUseAction(intent.seatId, intent.gearId, createdAt, intent.instanceId, intent.pendingTileChallengeId);
+        return this.createGearUseAction(intent.seatId, intent.gearId, createdAt, intent.instanceId, intent.pendingTileChallengeId, intent.pendingTileChallengeEffectIndex);
       case "USE_FOLLOWER":
         return this.createFollowerUseAction(intent.seatId, intent.followerId, createdAt, intent.escalate === true);
       case "TABLE_INTERACTION":
@@ -8897,6 +8920,12 @@ function summarizeTileChallengeEffect(effect: EncounterEffect): string {
   }
 }
 
+function getPendingFailureEffectChoices(effect: EncounterEffect | null | undefined): Array<{ index: number; summary: string }> {
+  if (!effect) return [];
+  const effects = effect.type === "sequence" ? effect.effects : [effect];
+  return effects.map((entry, index) => ({ index, summary: summarizeTileChallengeEffect(entry) }));
+}
+
 export function createTvProjection(
   state: GameState,
   movementPreviewBySeatId: ReadonlyMap<string, string> = new Map()
@@ -9202,7 +9231,10 @@ export function createPhoneProjection(state: GameState, seatId: string, forcePri
       difficulty: state.pendingTileChallenge.difficulty,
       authoredOrder: state.pendingTileChallenge.authoredOrder,
       totalChallenges: state.pendingTileChallenge.totalChallenges,
-      rolled: state.pendingTileChallenge.rolled
+      rolled: state.pendingTileChallenge.rolled,
+      pendingFailureEffects: state.pendingTileChallenge.challengeType === "anomaly" && state.pendingTileChallenge.rolled && state.activeResolution?.roll?.success === false
+        ? getPendingFailureEffectChoices(state.pendingEffect)
+        : undefined
     } : null,
     outcomeSummary: state.lastOutcomeSummary,
     rivalryAgendaCompletion: publicProjection.rivalryAgendaCompletion,

@@ -199,6 +199,7 @@ export interface UseGearAction extends BaseAction {
   };
   chargeInstanceId?: string;
   pendingTileChallengeId?: string;
+  pendingTileChallengeEffectIndex?: number;
 }
 
 export interface UseFollowerAction extends BaseAction {
@@ -674,6 +675,7 @@ export type ClientIntent =
       gearId: string;
       instanceId?: string;
       pendingTileChallengeId?: string;
+      pendingTileChallengeEffectIndex?: number;
     }
   | {
       type: "USE_FOLLOWER";

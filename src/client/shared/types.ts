@@ -140,7 +140,7 @@ export interface GearItem {
   startingCharges?: number;
   chargeCost?: number;
   rechargeRule?: "none";
-  chargedEffect?: "personalGateOverride" | "movementAdjustment" | "saintSafeConduct" | "bonewayDetour" | "choirLightSignalBonus";
+  chargedEffect?: "personalGateOverride" | "movementAdjustment" | "saintSafeConduct" | "bonewayDetour" | "choirLightSignalBonus" | "staticIntercession";
   maxUses?: number;
   heatCost?: number;
   linkedFollowerRole?: FollowerRole;
@@ -934,7 +934,7 @@ export interface PhonePatchPayload extends PublicPatchPayload {
   boundNemesis?: NemesisChampionSummary | null;
   crownKeyFragments?: number;
   eligibleNemesisAssistSeatIds?: string[];
-  pendingTileChallengePrivate?: (PublicPendingTileChallenge & { id: string }) | null;
+  pendingTileChallengePrivate?: (PublicPendingTileChallenge & { id: string; pendingFailureEffects?: Array<{ index: number; summary: string }> }) | null;
 }
 
 export interface StatePatch<TPayload = PublicPatchPayload> {
@@ -1062,6 +1062,7 @@ export type ClientIntent =
       gearId: string;
       instanceId?: string;
       pendingTileChallengeId?: string;
+      pendingTileChallengeEffectIndex?: number;
     }
   | {
       type: "USE_FOLLOWER";
