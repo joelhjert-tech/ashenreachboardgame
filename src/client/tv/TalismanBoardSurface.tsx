@@ -97,7 +97,7 @@ function getTileSide(node: BoardNode): "horizontal" | "vertical" | "center" {
   return Math.abs(node.y - 0.5) > Math.abs(node.x - 0.5) ? "horizontal" : "vertical";
 }
 
-function BoardTileImage({ nodeId, label }: { nodeId: string; label: string }): ReactElement {
+export function BoardTileImage({ nodeId, label, className = "" }: { nodeId: string; label: string; className?: string }): ReactElement {
   const assetPath = getTileAssetPath(nodeId);
   const expectedPath = getExpectedTileAssetPath(nodeId);
   const [failed, setFailed] = useState(false);
@@ -112,7 +112,7 @@ function BoardTileImage({ nodeId, label }: { nodeId: string; label: string }): R
     }
 
     return (
-      <span className="talisman-board-missing-art" data-testid={`missing-tile-art-${nodeId}`}>
+      <span className={`talisman-board-missing-art ${className}`.trim()} data-testid={`missing-tile-art-${nodeId}`}>
         <strong>Missing tile art</strong>
         <small>{nodeId}</small>
         <small>{assetPath ?? expectedPath}</small>
@@ -122,7 +122,7 @@ function BoardTileImage({ nodeId, label }: { nodeId: string; label: string }): R
 
   return (
     <img
-      className="talisman-board-tile-art"
+      className={`talisman-board-tile-art ${className}`.trim()}
       src={assetPath}
       alt=""
       aria-hidden="true"

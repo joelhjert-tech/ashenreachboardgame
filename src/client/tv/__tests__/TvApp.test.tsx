@@ -1021,15 +1021,17 @@ describe("TvApp", () => {
       clearDebugEvents: vi.fn()
     });
     rerender(<TvApp />);
-    const arrivalFocus = await screen.findByTestId("tv-arrival-focus");
-    expect(arrivalFocus).toHaveTextContent(/arrived at anchor market/i);
-    expect(arrivalFocus).toHaveTextContent(/outer reach/i);
-    expect(arrivalFocus).toHaveTextContent(/trade if the sector is clear/i);
-    expect(arrivalFocus).toHaveTextContent(/printed challenge icons will resolve on arrival/i);
+    const journey = await screen.findByTestId("tv-movement-journey");
+    expect(journey).toHaveTextContent(/ashwake crossing to anchor market/i);
+    expect(journey).toHaveTextContent(/trade if the sector is clear/i);
+    expect(within(journey).getByTestId("tile-art-ashwake-crossing")).toHaveAttribute("src", "/assets/map/tiles/map_tile_hollow_gate.png");
+    expect(within(journey).getByTestId("tile-art-glassmere-spindle")).toHaveAttribute("src", "/assets/map/tiles/map_tile_ironbridge_span.png");
+    expect(journey).toHaveFocus();
     expect(screen.queryByTestId("tv-movement-focus")).not.toBeInTheDocument();
     expect(screen.getByText("Tactical map")).toBeInTheDocument();
 
-    await waitFor(() => expect(screen.queryByTestId("tv-arrival-focus")).not.toBeInTheDocument(), { timeout: 3_500 });
+    await waitFor(() => expect(journey).toHaveTextContent(/arrived at anchor market/i), { timeout: 3_500 });
+    await waitFor(() => expect(screen.queryByTestId("tv-movement-journey")).not.toBeInTheDocument(), { timeout: 4_500 });
     rerender(<TvApp />);
     expect(screen.getByTestId("tv-command-main")).not.toHaveClass("tv-command-main--movement-focus");
     expect(screen.getByRole("complementary", { name: /operatives/i })).toBeInTheDocument();
