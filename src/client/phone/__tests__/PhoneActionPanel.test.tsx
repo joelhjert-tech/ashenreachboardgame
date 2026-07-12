@@ -2676,7 +2676,8 @@ describe("PhoneActionPanel", () => {
     patch.pendingTileChallengePrivate = {
       id: "pending-rift-failure", challengeId: "rift-whispers-ashen-chapel", sectorId: "ashen-chapel", seatId: "seat-1",
       challengeType: "anomaly", testStat: "signal", difficulty: 8, authoredOrder: 0, totalChallenges: 1, rolled: true,
-      pendingFailureEffects: [{ index: 0, summary: "Gain 1 Scar" }, { index: 1, summary: "Suffer 1 Wound" }]
+      staticIntercessionReactionId: "pending-rift-failure:static-intercession",
+      pendingFailureEffects: [{ effectId: "pending-rift-failure:failure-effect", summary: "Gain 1 Scar, then suffer 1 Wound" }]
     };
     patch.self!.character.heldGear = [{
       id: "choir-static-censer", instanceId: "censer-1", name: "Choir Static Censer", slot: "utility", tier: "artifact",
@@ -2688,10 +2689,11 @@ describe("PhoneActionPanel", () => {
     render(<PhoneActionPanel characters={characters} onIntent={onIntent} patch={patch} />);
 
     const choices = screen.getAllByRole("button", { name: /ignore this effect/i });
-    expect(choices).toHaveLength(2);
-    fireEvent.click(choices[1]!);
+    expect(choices).toHaveLength(1);
+    fireEvent.click(choices[0]!);
     expect(onIntent).toHaveBeenCalledWith(expect.objectContaining({
-      type: "USE_GEAR", instanceId: "censer-1", pendingTileChallengeId: "pending-rift-failure", pendingTileChallengeEffectIndex: 1
+      type: "USE_GEAR", instanceId: "censer-1", pendingTileChallengeId: "pending-rift-failure",
+      staticIntercessionReactionId: "pending-rift-failure:static-intercession", pendingTileChallengeEffectId: "pending-rift-failure:failure-effect"
     }));
     fireEvent.click(screen.getByRole("button", { name: /accept all failure effects/i }));
     expect(onIntent).toHaveBeenCalledWith(expect.objectContaining({ type: "CONTINUE_RESOLUTION" }));

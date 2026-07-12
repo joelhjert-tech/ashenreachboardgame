@@ -647,16 +647,6 @@ function applyEffectToState(state: GameState, seatId: string, effect: EncounterE
   };
 }
 
-function suppressPendingEffectAtIndex(effect: EncounterEffect | null, index: number | undefined): EncounterEffect | null {
-  if (effect === null || index === undefined || !Number.isInteger(index) || index < 0) return effect;
-  if (effect.type !== "sequence") return index === 0 ? null : effect;
-  if (index >= effect.effects.length) return effect;
-  const remaining = effect.effects.filter((_, effectIndex) => effectIndex !== index);
-  if (remaining.length === 0) return null;
-  if (remaining.length === 1) return remaining[0] ?? null;
-  return { type: "sequence", effects: remaining };
-}
-
 function createTrophyPileEntry(card: ThreatCard): TrophyPileEntry {
   return {
     cardId: card.id,
@@ -1668,7 +1658,7 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
         ...state,
         sequence: state.sequence + 1,
         phase: "resolution",
-        resolutionSource: "encounter",
+        resolutionSource: state.pendingTileChallenge ? "tileChallenge" : "encounter",
         pendingEnemyRoll: null,
         pendingEffect: action.effect,
         pendingFailureReaction: !action.success && action.effect ? {
@@ -1676,6 +1666,14 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
           seatId: action.seatId,
           testType: "hazard",
           sourceId: action.cardId,
+          createdAt: action.createdAt
+        } : null,
+        pendingStaticIntercessionReaction: !action.success && action.effect && state.pendingTileChallenge?.challengeType === "anomaly" ? {
+          id: `${state.pendingTileChallenge.id}:static-intercession`,
+          seatId: action.seatId,
+          pendingTileChallengeId: state.pendingTileChallenge.id,
+          suppressibleEffects: [{ effectId: `${state.pendingTileChallenge.id}:failure-effect`, effect: action.effect }],
+          selectedEffectId: null,
           createdAt: action.createdAt
         } : null,
         activeResolution: buildRollResolution({
@@ -1755,6 +1753,14 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
         sequence: state.sequence + 1,
         pendingEffect: rerollAction.effect,
         pendingFailureReaction: null,
+        pendingStaticIntercessionReaction: !rerollAction.success && rerollAction.effect && state.pendingTileChallenge?.challengeType === "anomaly" ? {
+          id: `${state.pendingTileChallenge.id}:static-intercession`,
+          seatId: rerollAction.seatId,
+          pendingTileChallengeId: state.pendingTileChallenge.id,
+          suppressibleEffects: [{ effectId: `${state.pendingTileChallenge.id}:failure-effect`, effect: rerollAction.effect }],
+          selectedEffectId: null,
+          createdAt: rerollAction.createdAt
+        } : null,
         soloRerollCharges: rerollAction.artifactReroll ? state.soloRerollCharges : { ...(state.soloRerollCharges ?? {}), [rerollAction.seatId]: remainingCharge - 1 },
         activeResolution: buildRollResolution({
           seatId: rerollAction.seatId,
@@ -1921,6 +1927,7 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
         resolutionSource: state.resolutionSource,
         pendingEffect: null,
         pendingFailureReaction: null,
+        pendingStaticIntercessionReaction: null,
         activeResolution: state.activeResolution
           ? {
               ...state.activeResolution,
@@ -2252,10 +2259,10 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
       const useGearAction = action as UseGearAction;
 
       try {
-        if (useGearAction.suppressPendingFailure || useGearAction.mirrorReroll || useGearAction.pendingTileChallengeEffectIndex !== undefined) {
+        if (useGearAction.suppressPendingFailure || useGearAction.mirrorReroll || useGearAction.pendingTileChallengeEffectId !== undefined) {
           ensureSeatTurn(state, useGearAction.seatId);
           if (state.phase !== "resolution" || !state.pendingEffect || state.activeResolution?.roll?.success !== false ||
-              (useGearAction.mirrorReroll || useGearAction.pendingTileChallengeEffectIndex !== undefined ? false :
+              (useGearAction.mirrorReroll || useGearAction.pendingTileChallengeEffectId !== undefined ? false :
               !state.pendingFailureReaction || state.pendingFailureReaction.id !== useGearAction.pendingFailureReactionId ||
               state.pendingFailureReaction.seatId !== useGearAction.seatId)) throw new Error("No matching failed test is waiting for a reaction");
         } else canManageGear(state, useGearAction.seatId);
@@ -2284,10 +2291,14 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
       const rerolledState = useGearAction.mirrorReroll ? reduceGameState(state, useGearAction.mirrorReroll) : null;
       if (rerolledState && !rerolledState.ok) return reject(state, action, rerolledState.rejection.reason);
       const actionBaseState = rerolledState?.state ?? state;
-      const pendingEffectAfterIntercession = suppressPendingEffectAtIndex(actionBaseState.pendingEffect, useGearAction.pendingTileChallengeEffectIndex);
-      const intercessionState = useGearAction.pendingTileChallengeEffectIndex === undefined
-        ? actionBaseState
-        : { ...actionBaseState, pendingEffect: pendingEffectAfterIntercession };
+      const intercession = actionBaseState.pendingStaticIntercessionReaction;
+      const intercessionMatches = Boolean(useGearAction.pendingTileChallengeEffectId !== undefined && intercession &&
+        intercession.id === useGearAction.staticIntercessionReactionId &&
+        intercession.suppressibleEffects.some((choice) => choice.effectId === useGearAction.pendingTileChallengeEffectId));
+      if (useGearAction.pendingTileChallengeEffectId !== undefined && !intercessionMatches) return reject(state, action, "Static Intercession reaction or effect is stale");
+      const intercessionState = intercessionMatches
+        ? { ...actionBaseState, pendingEffect: null, pendingStaticIntercessionReaction: { ...intercession!, selectedEffectId: useGearAction.pendingTileChallengeEffectId! } }
+        : actionBaseState;
       const effectedState = useGearAction.effect ? applyEffectToState(intercessionState, useGearAction.seatId, useGearAction.effect) : intercessionState;
       const paidState = useGearAction.salvageCost ? {
         ...effectedState,

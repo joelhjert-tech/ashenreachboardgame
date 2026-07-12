@@ -181,6 +181,7 @@ export function createInitialSessionState(
     pendingEnemyRoll: null,
     pendingEffect: null,
     pendingFailureReaction: null,
+    pendingStaticIntercessionReaction: null,
     pendingTileChallenge: null,
     tileChallengeProgress: null,
     activeResolution: null,

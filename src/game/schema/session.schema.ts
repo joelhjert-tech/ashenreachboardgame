@@ -221,6 +221,14 @@ export const gameStateSchema = z.object({
     sourceId: z.string().min(1),
     createdAt: z.string().min(1)
   }).nullable().optional(),
+  pendingStaticIntercessionReaction: z.object({
+    id: z.string().min(1),
+    seatId: z.string().min(1),
+    pendingTileChallengeId: z.string().min(1),
+    suppressibleEffects: z.array(z.object({ effectId: z.string().min(1), effect: effectSchema })).min(1),
+    selectedEffectId: z.string().min(1).nullable(),
+    createdAt: z.string().min(1)
+  }).nullable().optional(),
   pendingTileChallenge: pendingTileChallengeSchema.nullable().optional(),
   tileChallengeProgress: z.object({
     seatId: z.string().min(1),

@@ -171,6 +171,14 @@ describe("canonical sector graph", () => {
       type: "sequence",
       effects: [{ type: "gain_scar", scarId: "scar-wound-6" }, { type: "take_wound", amount: 1 }]
     };
+    state.pendingStaticIntercessionReaction = {
+      id: "pending-static-intercession:static-intercession",
+      seatId: "seat-1",
+      pendingTileChallengeId: "pending-static-intercession",
+      suppressibleEffects: [{ effectId: "pending-static-intercession:failure-effect", effect: state.pendingEffect }],
+      selectedEffectId: null,
+      createdAt: "2026-07-12T00:00:00.000Z"
+    };
     const definition = loadGear().get("choir-static-censer")!;
     state.players[0]!.character.heldGear.push(
       { ...definition, instanceId: "censer-a", currentCharges: 2, maxCharges: 2 },
@@ -183,16 +191,17 @@ describe("canonical sector graph", () => {
 
     const owner = createPhoneProjection(server.getState(), "seat-1") as unknown as PhonePatchPayload;
     expect(owner.pendingTileChallengePrivate?.pendingFailureEffects).toEqual([
-      expect.objectContaining({ index: 0 }),
-      expect.objectContaining({ index: 1 })
+      expect.objectContaining({ effectId: "pending-static-intercession:failure-effect" })
     ]);
     server.handleIntent(client, {
       type: "USE_GEAR", seatId: "seat-1", gearId: "choir-static-censer", instanceId: "censer-a",
-      pendingTileChallengeId: "pending-static-intercession", pendingTileChallengeEffectIndex: 0
+      pendingTileChallengeId: "pending-static-intercession", staticIntercessionReactionId: "pending-static-intercession:static-intercession",
+      pendingTileChallengeEffectId: "pending-static-intercession:failure-effect"
     });
 
     expect(sent.filter((message) => message.type === "INTENT_REJECTED")).toEqual([]);
-    expect(server.getState().pendingEffect).toEqual({ type: "take_wound", amount: 1 });
+    expect(server.getState().pendingEffect).toBeNull();
+    expect(server.getState().pendingStaticIntercessionReaction?.selectedEffectId).toBe("pending-static-intercession:failure-effect");
     expect(server.getState().activeResolution?.roll?.success).toBe(false);
     expect(server.getState().players[0]!.character.heldGear.find((item) => item.instanceId === "censer-a")?.currentCharges).toBe(1);
     expect(server.getState().players[0]!.character.heldGear.find((item) => item.instanceId === "censer-b")?.currentCharges).toBe(2);
@@ -200,11 +209,12 @@ describe("canonical sector graph", () => {
 
     server.handleIntent(client, {
       type: "USE_GEAR", seatId: "seat-1", gearId: "choir-static-censer", instanceId: "censer-b",
-      pendingTileChallengeId: "pending-static-intercession", pendingTileChallengeEffectIndex: 0
+      pendingTileChallengeId: "pending-static-intercession", staticIntercessionReactionId: "pending-static-intercession:static-intercession",
+      pendingTileChallengeEffectId: "pending-static-intercession:failure-effect"
     });
-    expect(server.getState().pendingEffect).toEqual({ type: "take_wound", amount: 1 });
+    expect(server.getState().pendingEffect).toBeNull();
     expect(server.getState().players[0]!.character.heldGear.find((item) => item.instanceId === "censer-b")?.currentCharges).toBe(2);
-    expect(sent.some((message) => message.type === "INTENT_REJECTED" && /already affected/i.test(String(message.reason)))).toBe(true);
+    expect(sent.some((message) => message.type === "INTENT_REJECTED" && /stale|unavailable|already affected/i.test(String(message.reason)))).toBe(true);
   });
 
   it("routes tile challenge mission completion through COMPLETE_CONTRACT exactly once", () => {

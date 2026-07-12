@@ -934,7 +934,7 @@ export interface PhonePatchPayload extends PublicPatchPayload {
   boundNemesis?: NemesisChampionSummary | null;
   crownKeyFragments?: number;
   eligibleNemesisAssistSeatIds?: string[];
-  pendingTileChallengePrivate?: (PublicPendingTileChallenge & { id: string; pendingFailureEffects?: Array<{ index: number; summary: string }> }) | null;
+  pendingTileChallengePrivate?: (PublicPendingTileChallenge & { id: string; staticIntercessionReactionId?: string; pendingFailureEffects?: Array<{ effectId: string; summary: string }> }) | null;
 }
 
 export interface StatePatch<TPayload = PublicPatchPayload> {
@@ -1062,7 +1062,8 @@ export type ClientIntent =
       gearId: string;
       instanceId?: string;
       pendingTileChallengeId?: string;
-      pendingTileChallengeEffectIndex?: number;
+      staticIntercessionReactionId?: string;
+      pendingTileChallengeEffectId?: string;
     }
   | {
       type: "USE_FOLLOWER";

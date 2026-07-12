@@ -1875,7 +1875,8 @@ export class GameRoomServer {
     createdAt: string,
     instanceId?: string,
     pendingTileChallengeId?: string,
-    pendingTileChallengeEffectIndex?: number
+    staticIntercessionReactionId?: string,
+    pendingTileChallengeEffectId?: string
   ): UseGearAction {
     const player = this.state.players.find((entry) => entry.seatId === seatId);
     const item = player?.character.heldGear.find((entry) => entry.id === gearId && (!instanceId || entry.instanceId === instanceId));
@@ -1909,7 +1910,7 @@ export class GameRoomServer {
 
     if (item.chargedEffect === "staticIntercession") {
       const pending = this.state.pendingTileChallenge;
-      const effects = getPendingFailureEffectChoices(this.state.pendingEffect);
+      const reaction = this.state.pendingStaticIntercessionReaction;
       const finalFailure = this.state.activeResolution?.roll?.success === false;
       if (!pending || pending.id !== pendingTileChallengeId || pending.seatId !== seatId || pending.challengeType !== "anomaly" || !pending.rolled || !finalFailure || this.state.phase !== "resolution") {
         throw new IntentRejectedError("USE_GEAR", `${item.name} requires your failed recurring Anomaly Challenge before failure effects resolve.`);
@@ -1917,7 +1918,10 @@ export class GameRoomServer {
       if (!item.instanceId || item.instanceId !== instanceId) throw new IntentRejectedError("USE_GEAR", `${item.name} instance is stale.`);
       if ((item.currentCharges ?? item.charges ?? 0) < (item.chargeCost ?? 1)) throw new IntentRejectedError("USE_GEAR", `${item.name} has no charges remaining.`);
       if (player!.character.equippedGear.utility !== item.id) throw new IntentRejectedError("USE_GEAR", `${item.name} must be equipped.`);
-      if (pendingTileChallengeEffectIndex === undefined || !effects.some((choice) => choice.index === pendingTileChallengeEffectIndex)) {
+      if (!reaction || reaction.id !== staticIntercessionReactionId || reaction.pendingTileChallengeId !== pending.id || reaction.seatId !== seatId || reaction.selectedEffectId !== null) {
+        throw new IntentRejectedError("USE_GEAR", "The Static Intercession reaction is stale or unavailable.");
+      }
+      if (!pendingTileChallengeEffectId || !reaction.suppressibleEffects.some((choice) => choice.effectId === pendingTileChallengeEffectId)) {
         throw new IntentRejectedError("USE_GEAR", "The selected anomaly failure effect is stale or unavailable.");
       }
       if (this.state.eventLog.some((event) => {
@@ -1949,7 +1953,8 @@ export class GameRoomServer {
       rollModifier,
       chargeInstanceId: item.effectModel === "charged" ? item.instanceId : undefined,
       pendingTileChallengeId: item.chargedEffect === "choirLightSignalBonus" || item.chargedEffect === "staticIntercession" ? pendingTileChallengeId : undefined,
-      pendingTileChallengeEffectIndex: item.chargedEffect === "staticIntercession" ? pendingTileChallengeEffectIndex : undefined,
+      staticIntercessionReactionId: item.chargedEffect === "staticIntercession" ? staticIntercessionReactionId : undefined,
+      pendingTileChallengeEffectId: item.chargedEffect === "staticIntercession" ? pendingTileChallengeEffectId : undefined,
       summary: item.chargedEffect === "staticIntercession" ? "Static Intercession — One anomaly consequence suppressed." : `${itemName} used. ${item?.activeText ?? "Its effect was recorded for the table."}`,
       createdAt
     } satisfies UseGearAction;
@@ -2725,7 +2730,7 @@ export class GameRoomServer {
           createdAt
         } satisfies UnequipGearAction;
       case "USE_GEAR":
-        return this.createGearUseAction(intent.seatId, intent.gearId, createdAt, intent.instanceId, intent.pendingTileChallengeId, intent.pendingTileChallengeEffectIndex);
+        return this.createGearUseAction(intent.seatId, intent.gearId, createdAt, intent.instanceId, intent.pendingTileChallengeId, intent.staticIntercessionReactionId, intent.pendingTileChallengeEffectId);
       case "USE_FOLLOWER":
         return this.createFollowerUseAction(intent.seatId, intent.followerId, createdAt, intent.escalate === true);
       case "TABLE_INTERACTION":
@@ -4950,6 +4955,7 @@ export class GameRoomServer {
           this.state = {
             ...this.state,
             pendingTileChallenge: null,
+            pendingStaticIntercessionReaction: null,
             tileChallengeProgress: {
               seatId: pending.seatId,
               sectorId: pending.sectorId,
@@ -8920,10 +8926,10 @@ function summarizeTileChallengeEffect(effect: EncounterEffect): string {
   }
 }
 
-function getPendingFailureEffectChoices(effect: EncounterEffect | null | undefined): Array<{ index: number; summary: string }> {
-  if (!effect) return [];
-  const effects = effect.type === "sequence" ? effect.effects : [effect];
-  return effects.map((entry, index) => ({ index, summary: summarizeTileChallengeEffect(entry) }));
+function getPendingFailureEffectChoices(state: GameState): Array<{ effectId: string; summary: string }> {
+  const reaction = state.pendingStaticIntercessionReaction;
+  if (!reaction || reaction.selectedEffectId !== null) return [];
+  return reaction.suppressibleEffects.map(({ effectId, effect }) => ({ effectId, summary: summarizeTileChallengeEffect(effect) }));
 }
 
 export function createTvProjection(
@@ -9232,8 +9238,11 @@ export function createPhoneProjection(state: GameState, seatId: string, forcePri
       authoredOrder: state.pendingTileChallenge.authoredOrder,
       totalChallenges: state.pendingTileChallenge.totalChallenges,
       rolled: state.pendingTileChallenge.rolled,
+      staticIntercessionReactionId: state.pendingStaticIntercessionReaction?.pendingTileChallengeId === state.pendingTileChallenge.id
+        ? state.pendingStaticIntercessionReaction.id
+        : undefined,
       pendingFailureEffects: state.pendingTileChallenge.challengeType === "anomaly" && state.pendingTileChallenge.rolled && state.activeResolution?.roll?.success === false
-        ? getPendingFailureEffectChoices(state.pendingEffect)
+        ? getPendingFailureEffectChoices(state)
         : undefined
     } : null,
     outcomeSummary: state.lastOutcomeSummary,

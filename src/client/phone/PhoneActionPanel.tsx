@@ -2739,7 +2739,7 @@ export function PhoneActionPanel({
           : undefined;
     for (const choice of pendingCenserChallenge.pendingFailureEffects) {
       threatActions.push({
-        key: `static-intercession-${choice.index}`,
+        key: `static-intercession-${choice.effectId}`,
         label: "Ignore this effect — 1 charge",
         detail: disabledReason ?? `${choice.summary} Static Intercession leaves the test failed. ${charges}/${censer?.maxCharges ?? 2} charges.`,
         tone: "secondary",
@@ -2750,7 +2750,8 @@ export function PhoneActionPanel({
           gearId: "choir-static-censer",
           instanceId: censer?.instanceId,
           pendingTileChallengeId: pendingCenserChallenge.id,
-          pendingTileChallengeEffectIndex: choice.index
+          staticIntercessionReactionId: pendingCenserChallenge.staticIntercessionReactionId,
+          pendingTileChallengeEffectId: choice.effectId
         })
       });
     }

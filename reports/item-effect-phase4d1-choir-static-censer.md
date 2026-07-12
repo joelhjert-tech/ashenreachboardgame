@@ -13,7 +13,9 @@
 
 ## Authoritative lifecycle
 
-The owning phone receives server-derived, indexed choices for the still-pending top-level failure effects. A use request binds the seat, exact item instance, pending tile-challenge resolution ID, and selected effect index. The server revalidates the final failed anomaly state, ownership, equipped state, charge balance, resolution identity, and choice before dispatching one atomic `USE_GEAR` action. The reducer removes exactly the selected pending effect and spends exactly one charge. Invalid, stale, wrong-seat, depleted, or duplicate requests change neither effects nor charges.
+The owning phone receives only server-authored suppressible choices. Each choice has a stable typed effect ID persisted in a dedicated pending Static Intercession reaction. A use request binds the seat, exact item instance, reaction ID, pending tile-challenge resolution ID, and selected effect ID. The server revalidates the final failed anomaly state, ownership, equipped state, charge balance, reaction identity, and effect identity before dispatching one atomic `USE_GEAR` action.
+
+The current challenge schema authors one `failureEffect`. That complete typed payload is therefore one selectable consequence even when it is an atomic `sequence`; the server does not split arrays, parse prose, or infer independently suppressible sub-effects. A future challenge that needs separately selectable consequences must author those stable effect identities explicitly. An effect that cannot be independently suppressed without changing its authored meaning is unsupported rather than heuristically decomposed.
 
 The failure result remains false for mission and scenario progress. Suppression does not detach, defeat, transfer, or otherwise mutate the recurring tile challenge. A sequence retains all unselected effects; suppressing a single available effect leaves no pending failure effect.
 
@@ -41,7 +43,7 @@ TV presentation continues to use the existing tile-challenge focus. The public o
 
 - Charged catalog metadata, timing, typed effect, and no-recharge validation.
 - Owner-private failure-effect choices for a final failed anomaly.
-- Exact one-effect suppression with all remaining effects preserved.
+- Stable reaction/effect identity and atomic composite-effect suppression without heuristic sequence splitting.
 - Failed result and recurring anomaly persistence.
 - Atomic exact-instance charge spending and independent duplicate balances.
 - One Censer activation per challenge resolution.
