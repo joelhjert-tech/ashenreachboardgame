@@ -6053,6 +6053,58 @@ select {
   gap: 0.5rem;
 }
 
+.phone-inventory-group-toggle {
+  width: 100%;
+  min-height: 44px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto auto;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.5rem 0.6rem;
+  border: 1px solid rgba(143, 183, 218, 0.24);
+  border-radius: 0.35rem;
+  background: rgba(8, 12, 18, 0.76);
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.phone-inventory-group-toggle:focus-visible {
+  outline: 2px solid #d0b377;
+  outline-offset: 2px;
+}
+
+.phone-inventory-group-action {
+  color: #f0d49a;
+  font-size: 0.62rem;
+  line-height: 1.1;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.phone-inventory-group-indicator {
+  width: 0.65rem;
+  height: 0.65rem;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: rotate(45deg) translate(-0.1rem, -0.1rem);
+  transition: transform 120ms ease;
+}
+
+.phone-inventory-group.is-open .phone-inventory-group-indicator {
+  transform: rotate(225deg) translate(-0.05rem, -0.05rem);
+}
+
+.phone-inventory-group.has-action .phone-inventory-group-toggle {
+  border-left-color: #d0b377;
+  border-left-width: 3px;
+}
+
+.phone-inventory-group-content {
+  min-width: 0;
+}
+
 .phone-inventory-group-count {
   display: inline-grid;
   min-width: 1.35rem;
@@ -6064,6 +6116,23 @@ select {
   color: #d7dde2;
   font-size: 0.66rem;
   line-height: 1;
+}
+
+@media (max-width: 390px) {
+  .phone-inventory-group-toggle {
+    grid-template-columns: minmax(0, 1fr) auto auto;
+  }
+
+  .phone-inventory-group-action {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .phone-inventory-group-indicator {
+    transition: none;
+  }
 }
 
 .phone-inventory-card-list {

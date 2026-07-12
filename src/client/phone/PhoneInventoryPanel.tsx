@@ -1,4 +1,4 @@
-import type { CSSProperties, ReactElement, ReactNode } from "react";
+import { useId, useState, type CSSProperties, type ReactElement, type ReactNode } from "react";
 import { getChallengeThemeStyle } from "../../game/ui/challengeTheme.js";
 import {
   getStatUpgradeCost,
@@ -24,6 +24,44 @@ interface PhoneInventoryPanelProps {
   compact?: boolean;
   onlyUsable?: boolean;
   onUse?: () => void;
+}
+
+function InventoryDisclosure({
+  label,
+  count,
+  initiallyOpen,
+  actionAvailable,
+  children
+}: {
+  label: string;
+  count: number;
+  initiallyOpen: boolean;
+  actionAvailable: boolean;
+  children: ReactNode;
+}): ReactElement {
+  const [open, setOpen] = useState(initiallyOpen);
+  const reactId = useId();
+  const contentId = `phone-inventory-group-${reactId.replace(/:/g, "")}`;
+  const buttonId = `${contentId}-toggle`;
+
+  return (
+    <section className={`phone-inventory-group${open ? " is-open" : ""}${actionAvailable ? " has-action" : ""}`}>
+      <button
+        type="button"
+        id={buttonId}
+        className="phone-sheet-section-heading phone-inventory-group-toggle"
+        aria-expanded={open}
+        aria-controls={contentId}
+        onClick={() => setOpen((current) => !current)}
+      >
+        <span className="phone-inventory-group-label">{label}</span>
+        {actionAvailable ? <span className="phone-inventory-group-action">Action available</span> : null}
+        <span className="phone-inventory-group-count" aria-label={`${count} ${label} cards`}>{count}</span>
+        <span className="phone-inventory-group-indicator" aria-hidden="true" />
+      </button>
+      {open ? <div id={contentId} role="group" aria-labelledby={buttonId} className="phone-inventory-group-content">{children}</div> : null}
+    </section>
+  );
 }
 
 function toUseIntent(card: InventoryCardViewModel, seatId: string): ClientIntent | null {
@@ -514,21 +552,24 @@ export function PhoneInventoryPanel({
           {onlyUsable ? "No combat cards are usable in this timing window." : "No inventory cards, followers, or quest items yet."}
         </p>
       ) : (
-        visibleGroups.map((group) => (
-          <section key={group.group} className="phone-inventory-group">
-            <div className="phone-sheet-section-heading">
-              <span className="phone-inventory-group-label">{group.group}</span>
-              <span className="phone-inventory-group-count" aria-label={`${group.items.length} ${group.group} cards`}>
-                {group.items.length}
-              </span>
-            </div>
+        visibleGroups.map((group) => {
+          const actionAvailable = group.items.some((card) => card.canUseNow);
+          return (
+          <InventoryDisclosure
+            key={group.group}
+            label={group.group}
+            count={group.items.length}
+            initiallyOpen
+            actionAvailable={actionAvailable}
+          >
             <div className="phone-inventory-card-list">
               {group.items.map((card) => (
                 <InventoryCard key={`${card.source}-${card.id}`} card={card} seatId={self.seatId} onIntent={onIntent} onUse={onUse} />
               ))}
             </div>
-          </section>
-        ))
+          </InventoryDisclosure>
+          );
+        })
       )}
     </section>
   );

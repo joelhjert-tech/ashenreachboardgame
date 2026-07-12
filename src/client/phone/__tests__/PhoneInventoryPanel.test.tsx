@@ -585,6 +585,52 @@ describe("PhoneInventoryPanel", () => {
     expect(weaponsCount).toBeInTheDocument();
   });
 
+  it("uses accessible disclosure controls with stable unique relationships", () => {
+    render(<PhoneInventoryPanel patch={createPatch()} onIntent={vi.fn()} />);
+
+    const toggles = screen.getAllByRole("button", { name: /cards/i });
+    expect(toggles.length).toBeGreaterThan(1);
+    const controlledIds = toggles.map((toggle) => toggle.getAttribute("aria-controls"));
+    expect(new Set(controlledIds).size).toBe(controlledIds.length);
+
+    for (const toggle of toggles) {
+      expect(toggle).toHaveAttribute("aria-expanded", expect.stringMatching(/true|false/));
+      const controlledId = toggle.getAttribute("aria-controls");
+      expect(controlledId).toBeTruthy();
+      if (toggle.getAttribute("aria-expanded") === "true") {
+        expect(document.getElementById(controlledId as string)).toHaveAttribute("aria-labelledby", toggle.id);
+      }
+    }
+  });
+
+  it("collapses content so its item actions are no longer keyboard reachable, then restores them", () => {
+    render(<PhoneInventoryPanel patch={createPatch()} onIntent={vi.fn()} />);
+
+    const weaponsToggle = screen.getByRole("button", { name: /1 weapons cards/i });
+    const useButton = screen.getByRole("button", { name: /use black route fuse/i });
+    expect(weaponsToggle).toHaveAttribute("aria-expanded", "true");
+    expect(useButton).toBeInTheDocument();
+
+    fireEvent.click(weaponsToggle);
+    expect(weaponsToggle).toHaveAttribute("aria-expanded", "false");
+    expect(screen.queryByRole("button", { name: /use black route fuse/i })).not.toBeInTheDocument();
+    expect(document.getElementById(weaponsToggle.getAttribute("aria-controls") as string)).toBeNull();
+
+    fireEvent.keyDown(weaponsToggle, { key: "Enter" });
+    fireEvent.click(weaponsToggle);
+    expect(weaponsToggle).toHaveAttribute("aria-expanded", "true");
+    expect(screen.getByRole("button", { name: /use black route fuse/i })).toBeInTheDocument();
+  });
+
+  it("opens and marks groups that contain an immediately eligible action", () => {
+    render(<PhoneInventoryPanel patch={createPatch()} onIntent={vi.fn()} />);
+
+    const weaponsToggle = screen.getByRole("button", { name: /1 weapons cards/i });
+    expect(weaponsToggle).toHaveAttribute("aria-expanded", "true");
+    expect(weaponsToggle).toHaveTextContent(/action available/i);
+    expect(weaponsToggle.closest(".phone-inventory-group")).toHaveClass("has-action");
+  });
+
   it("makes usable, passive, and inactive item state explicit", () => {
     render(<PhoneInventoryPanel patch={createPatch()} onIntent={vi.fn()} />);
 
