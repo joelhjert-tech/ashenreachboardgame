@@ -5,6 +5,7 @@ import { afflictionCardSchema, afflictionInstanceSchema, afflictionUsageStateSch
 import { effectSchema, threatCardSchema } from "./card.schema.js";
 import { contractCardSchema } from "./contract.schema.js";
 import { sectorNodeSchema } from "./sector.schema.js";
+import { pendingScarConsequenceSchema } from "./scarTrigger.schema.js";
 
 export const phaseSchema = z.enum([
   "start",
@@ -229,6 +230,9 @@ export const gameStateSchema = z.object({
     selectedEffectId: z.string().min(1).nullable(),
     createdAt: z.string().min(1)
   }).nullable().optional(),
+  pendingScarConsequence: pendingScarConsequenceSchema.nullable().optional(),
+  pendingScarConsequenceQueue: z.array(pendingScarConsequenceSchema).optional(),
+  resolvedScarSourceEventIds: z.array(z.string().min(1)).optional(),
   pendingTileChallenge: pendingTileChallengeSchema.nullable().optional(),
   tileChallengeProgress: z.object({
     seatId: z.string().min(1),

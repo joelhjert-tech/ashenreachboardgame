@@ -34,6 +34,7 @@ import { shopCategorySchema, type GearItem } from "../src/game/schema/gear.schem
 import type { ContractCard } from "../src/game/schema/contract.schema.js";
 import { sectorGraphSchema, type SectorNode } from "../src/game/schema/sector.schema.js";
 import { validatePassiveEquipmentCatalog } from "./passive-equipment-validation.js";
+import { validateScarTriggerCatalog } from "../src/game/rules/scarTriggers.js";
 
 const sectorsRoot = join(process.cwd(), "content", "sectors");
 const contentRoot = join(process.cwd(), "content");
@@ -131,6 +132,7 @@ const anomalies = loadAnomalyCards();
 const artifacts = loadArtifactCards();
 const followers = loadFollowers();
 const scars = loadScarCards();
+errors.push(...validateScarTriggerCatalog(scars));
 const escalations = loadEscalationCards();
 const afflictions = loadAfflictionCards();
 const canonicalSectors = createCanonicalSectorGraph();

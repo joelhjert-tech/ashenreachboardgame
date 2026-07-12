@@ -935,6 +935,15 @@ export interface PhonePatchPayload extends PublicPatchPayload {
   crownKeyFragments?: number;
   eligibleNemesisAssistSeatIds?: string[];
   pendingTileChallengePrivate?: (PublicPendingTileChallenge & { id: string; staticIntercessionReactionId?: string; pendingFailureEffects?: Array<{ effectId: string; summary: string }> }) | null;
+  pendingScarConsequence?: {
+    reactionId: string;
+    scarCardId: string;
+    scarTitle: string;
+    triggerType: string;
+    sourceEventId: string;
+    pendingEffects: Array<{ effectId: string; summary: string }>;
+    rulesText: string;
+  } | null;
 }
 
 export interface StatePatch<TPayload = PublicPatchPayload> {
@@ -1024,6 +1033,11 @@ export type ClientIntent =
   | {
       type: "CONTINUE_RESOLUTION";
       seatId: string;
+    }
+  | {
+      type: "CONTINUE_SCAR_CONSEQUENCE";
+      seatId: string;
+      reactionId: string;
     }
   | {
       type: "SET_READY";

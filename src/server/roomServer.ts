@@ -304,6 +304,7 @@ const CLIENT_INTENT_TYPES = new Set<string>([
   "ENEMY_ROLL_REQUESTED",
   "SOLO_REROLL_REQUESTED",
   "CONTINUE_RESOLUTION",
+  "CONTINUE_SCAR_CONSEQUENCE",
   "SET_READY",
   "SELECT_CHARACTER",
   "SELECT_STARTING_CONTRACT",
@@ -1254,6 +1255,8 @@ export class GameRoomServer {
         requireStringField(message, "instanceId", type); break;
       case "USE_MARROW_DETOUR":
         requireStringField(message, "instanceId", type); requireStringField(message, "reactionId", type); requireStringField(message, "toSectorId", type); break;
+      case "CONTINUE_SCAR_CONSEQUENCE":
+        requireStringField(message, "reactionId", type); break;
       case "PHASE_ADVANCED":
         requireEnumField(message, "toPhase", PHASE_VALUES, type);
         break;
@@ -2702,6 +2705,13 @@ export class GameRoomServer {
           seatId: intent.seatId,
           createdAt
         } satisfies ResolutionContinuedAction;
+      case "CONTINUE_SCAR_CONSEQUENCE":
+        return {
+          type: "CONTINUE_SCAR_CONSEQUENCE",
+          seatId: intent.seatId,
+          reactionId: intent.reactionId,
+          createdAt
+        };
       case "SET_READY":
         throw new Error("Ready state is handled directly");
       case "SELECT_STARTING_CONTRACT":
@@ -8995,6 +9005,11 @@ export function createTvProjection(
 
   return {
     status: state.status,
+    scarTriggerStatus: state.pendingScarConsequence ? {
+      seatId: state.pendingScarConsequence.seatId,
+      scarTitle: state.pendingScarConsequence.scarTitle,
+      status: "waiting"
+    } : null,
     sessionMode: state.sessionMode,
     gameMode: state.gameMode,
     interactionMode: state.interactionMode ?? (state.sessionMode === "single-player" ? "co-op" : "rivalry"),
@@ -9244,6 +9259,18 @@ export function createPhoneProjection(state: GameState, seatId: string, forcePri
       pendingFailureEffects: state.pendingTileChallenge.challengeType === "anomaly" && state.pendingTileChallenge.rolled && state.activeResolution?.roll?.success === false
         ? getPendingFailureEffectChoices(state)
         : undefined
+    } : null,
+    pendingScarConsequence: state.pendingScarConsequence?.seatId === seatId ? {
+      reactionId: state.pendingScarConsequence.reactionId,
+      scarCardId: state.pendingScarConsequence.scarCardId,
+      scarTitle: state.pendingScarConsequence.scarTitle,
+      triggerType: state.pendingScarConsequence.triggerType,
+      sourceEventId: state.pendingScarConsequence.sourceEventId,
+      pendingEffects: state.pendingScarConsequence.pendingEffects.map((entry) => ({
+        effectId: entry.effectId,
+        summary: summarizeTileChallengeEffect(entry.effect)
+      })),
+      rulesText: "Continue to resolve this Scar consequence."
     } : null,
     outcomeSummary: state.lastOutcomeSummary,
     rivalryAgendaCompletion: publicProjection.rivalryAgendaCompletion,

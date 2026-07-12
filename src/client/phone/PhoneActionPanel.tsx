@@ -2697,6 +2697,20 @@ export function PhoneActionPanel({
   const contractActions: ActionButtonDefinition[] = [];
   const advanceActions: ActionButtonDefinition[] = [];
 
+  if (patch.pendingScarConsequence) {
+    resolveActions.push({
+      key: `scar-consequence-${patch.pendingScarConsequence.reactionId}`,
+      label: `Continue: ${patch.pendingScarConsequence.scarTitle}`,
+      detail: patch.pendingScarConsequence.pendingEffects.map((entry) => entry.summary).join(" "),
+      tone: "primary",
+      onClick: () => onIntent({
+        type: "CONTINUE_SCAR_CONSEQUENCE",
+        seatId: self.seatId,
+        reactionId: patch.pendingScarConsequence!.reactionId
+      })
+    });
+  }
+
   if (patch.soloReroll?.available) {
     resolveActions.push({
       key: "solo-emergency-reroll",

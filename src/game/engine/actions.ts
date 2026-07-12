@@ -5,6 +5,7 @@ import type { AfflictionCard } from "../schema/affliction.schema.js";
 import type { GearItem, GearSlot } from "../schema/gear.schema.js";
 import type { NemesisChampion, Phase } from "../schema/session.schema.js";
 import type { DiceRollResult } from "./dice.js";
+import type { ScarSourceEvent } from "../schema/scarTrigger.schema.js";
 
 export type CheckStat = Stat;
 
@@ -528,6 +529,16 @@ export interface CoopDefeatTriggeredAction extends BaseAction {
   summary: string;
 }
 
+export interface ScarTriggerEventAction extends BaseAction {
+  type: "SCAR_TRIGGER_EVENT";
+  sourceEvent: ScarSourceEvent;
+}
+
+export interface ContinueScarConsequenceAction extends BaseAction {
+  type: "CONTINUE_SCAR_CONSEQUENCE";
+  reactionId: string;
+}
+
 export type GameAction =
   | SessionStartedAction
   | MoveRequestedAction
@@ -591,7 +602,9 @@ export type GameAction =
   | NexusTestResolvedAction
   | NemesisNexusCountdownStartedAction
   | CoopVictoryTriggeredAction
-  | CoopDefeatTriggeredAction;
+  | CoopDefeatTriggeredAction
+  | ScarTriggerEventAction
+  | ContinueScarConsequenceAction;
 
 export type ClientIntent =
   | {
@@ -638,6 +651,11 @@ export type ClientIntent =
   | {
       type: "CONTINUE_RESOLUTION";
       seatId: string;
+    }
+  | {
+      type: "CONTINUE_SCAR_CONSEQUENCE";
+      seatId: string;
+      reactionId: string;
     }
   | {
       type: "SET_READY";

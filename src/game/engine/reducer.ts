@@ -60,6 +60,8 @@ import type { ActiveResolution, GameState, PlayerState } from "../schema/session
 import type { GearSlot } from "../schema/gear.schema.js";
 import type { TrophyPileEntry } from "../schema/character.schema.js";
 import { applyMovementDieAfflictions, resolveAfflictionDraw } from "../rules/afflictions.js";
+import { buildPendingScarConsequences, getMatchingScarTriggers } from "../rules/scarTriggers.js";
+import type { ScarSourceEvent } from "../schema/scarTrigger.schema.js";
 import { getBoardSpace, isScenarioConfrontationSpace } from "../data/boardSpaces.js";
 import { getLegalMovementRoute, getMovementBlockReason, getVoidKeyMovementRoute, getMovementStepBlockReason } from "../rules/movementPlanner.js";
 import { isBoardSpaceShopCapable, SHOP_FAILURE_REASONS } from "../rules/shopAvailability.js";
@@ -107,6 +109,23 @@ function recordRecentEncounterCardId(state: GameState, cardId: string | null | u
 
   const existing = state.recentEncounterCardIds ?? [];
   return [...existing.filter((entry) => entry !== cardId), cardId].slice(-RECENT_ENCOUNTER_LIMIT);
+}
+
+function beginScarTriggerEvent(state: GameState, event: ScarSourceEvent, createdAt: string): GameState {
+  if ((state.resolvedScarSourceEventIds ?? []).includes(event.id)) return state;
+  const matches = getMatchingScarTriggers(state, event);
+  const immediate = matches.filter((entry) => !entry.reactionRequired);
+  const pending = buildPendingScarConsequences(state, event, createdAt);
+  const afterImmediate = immediate.reduce((next, entry) => applyEffectToState(next, event.seatId, entry.effect), state);
+  return {
+    ...afterImmediate,
+    pendingScarConsequence: afterImmediate.pendingScarConsequence ?? pending[0] ?? null,
+    pendingScarConsequenceQueue: [
+      ...(afterImmediate.pendingScarConsequenceQueue ?? []),
+      ...(afterImmediate.pendingScarConsequence ? pending : pending.slice(1))
+    ],
+    resolvedScarSourceEventIds: [...(afterImmediate.resolvedScarSourceEventIds ?? []), event.id]
+  };
 }
 
 function getActiveSeatId(state: GameState): string {
@@ -1942,6 +1961,30 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
         eventLog: [...state.eventLog, action]
       });
     }
+    case "SCAR_TRIGGER_EVENT": {
+      if (action.sourceEvent.seatId !== action.seatId) return reject(state, action, "Scar trigger seat does not match its source event");
+      if ((state.resolvedScarSourceEventIds ?? []).includes(action.sourceEvent.id)) return reject(state, action, "Scar source event was already processed");
+      return succeed({
+        ...beginScarTriggerEvent(state, action.sourceEvent, action.createdAt),
+        sequence: state.sequence + 1,
+        eventLog: [...state.eventLog, action]
+      });
+    }
+    case "CONTINUE_SCAR_CONSEQUENCE": {
+      const pending = state.pendingScarConsequence;
+      if (!pending) return reject(state, action, "No Scar consequence is waiting");
+      if (pending.seatId !== action.seatId) return reject(state, action, "Scar consequence belongs to another seat");
+      if (pending.reactionId !== action.reactionId) return reject(state, action, "Scar consequence reaction is stale");
+      const resolved = pending.pendingEffects.reduce((next, entry) => applyEffectToState(next, pending.seatId, entry.effect), state);
+      const queue = resolved.pendingScarConsequenceQueue ?? [];
+      return succeed({
+        ...resolved,
+        pendingScarConsequence: queue[0] ?? null,
+        pendingScarConsequenceQueue: queue.slice(1),
+        sequence: state.sequence + 1,
+        eventLog: [...state.eventLog, action]
+      });
+    }
     case "HEAT_THRESHOLD_REACHED": {
       try {
         ensureSeatTurn(state, action.seatId);
@@ -2016,7 +2059,7 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
         });
       }
 
-      return succeed({
+      const scarredState: GameState = {
         ...state,
         sequence: state.sequence + 1,
         resolutionSource: state.resolutionSource,
@@ -2035,7 +2078,13 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
             }
           : null,
         eventLog: [...state.eventLog, action]
-      });
+      };
+      return succeed(beginScarTriggerEvent(scarredState, {
+        id: `${woundAction.createdAt}:${woundAction.seatId}:scar-gained:${woundAction.scar}`,
+        type: "onScarGained",
+        seatId: woundAction.seatId,
+        sourceId: woundAction.scar
+      }, woundAction.createdAt));
     }
     case "RECRUIT_REPLACEMENT": {
       const recruitAction = action as RecruitReplacementAction;
