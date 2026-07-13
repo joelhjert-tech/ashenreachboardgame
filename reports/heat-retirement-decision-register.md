@@ -74,3 +74,10 @@ Phase 1I implements the narrow persisted `encounter_payment` architecture and mi
 Phase 1J removes 34 generic Heat no-ops from sequences that retain enforced typed siblings. Twenty-eight IDs leave the explicit compatibility allowlist; six remain approved because they carry a separate Heat-only branch or stable Heat-shaped effect key. Surviving effects retain exact order, values, targets, and branches. No replacement mechanic, runtime behavior, schema, save field, or session state is introduced.
 
 Current inspection corrects `anomaly-red-suture-field` from the Phase 1D Heat-only population: its sequence has an enforced `gain_note` sibling, so its obsolete Heat member is removed here and its proposed Wound replacement is superseded. The corrected remaining Heat-only population is 29 IDs / 32 branches. Rust Choir Peddlers, authored defaults, stored `character.heat`, Mirror `heatThreshold`, and generic compatibility discriminators remain preserved or unresolved as previously recorded.
+
+# Phase 1L authored-default quarantine
+
+- **HRD-013 implemented for authoring quarantine only:** exactly 17 canonical character IDs may retain required integer `heat: 0`; new, copied, renamed, QA, missing-approval, or nonzero authored defaults are rejected.
+- **HRD-023 implemented for validation separation:** 40 construct-specific Heat-effect IDs, 17 character-default IDs, and 14 other compatibility IDs are disjoint validation classes with zero overlap and 71 combined unique IDs.
+- Runtime, schema, character content, serialization, reconnect, projection, Mirror, generic no-op behavior, and old nonzero value preservation are unchanged.
+- **Not implemented:** removal of the 17 JSON fields, compatibility construction, optional `character.heat`, new-save omission, versioned migration, projection retirement, support-window closure, schema deletion, and Mirror-key migration.
