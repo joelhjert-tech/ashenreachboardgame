@@ -18,10 +18,6 @@
       {
         "type": "take_wound",
         "amount": 1
-      },
-      {
-        "type": "gain_heat",
-        "amount": 2
       }
     ]
   },
@@ -31,7 +27,6 @@
   "rarity": "uncommon",
   "tempo": "push",
   "resourceTags": [
-    "heat",
     "loot",
     "wound"
   ]

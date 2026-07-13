@@ -17,10 +17,6 @@
       {
         "type": "gain_note",
         "text": "You silenced the zealot before the full formation answered."
-      },
-      {
-        "type": "gain_heat",
-        "amount": 1
       }
     ]
   },

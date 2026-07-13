@@ -25,10 +25,6 @@
       {
         "type": "take_wound",
         "amount": 1
-      },
-      {
-        "type": "gain_heat",
-        "amount": 1
       }
     ]
   },

@@ -3,7 +3,7 @@ import { APPROVED_LEGACY_HEAT_CONTENT_IDS, validateLegacyHeatContentRecord } fro
 
 describe("legacy Heat authoring guard", () => {
   it("accepts explicitly approved compatibility content", () => {
-    expect(APPROVED_LEGACY_HEAT_CONTENT_IDS.size).toBe(119);
+    expect(APPROVED_LEGACY_HEAT_CONTENT_IDS.size).toBe(71);
     expect(APPROVED_LEGACY_HEAT_CONTENT_IDS.has("black-route-fuse")).toBe(false);
     expect(validateLegacyHeatContentRecord("content/cards/threats/ash-cinder-runt.json", { id: "ash-cinder-runt", effect: { type: "gain_heat", amount: 1 } })).toEqual([]);
     expect(validateLegacyHeatContentRecord("content/gear/black-route-fuse.json", { id: "black-route-fuse", text: "Discard after use." })).toEqual([]);

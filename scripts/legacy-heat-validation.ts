@@ -1,17 +1,13 @@
 export const APPROVED_LEGACY_HEAT_CONTENT_IDS = new Set([
-  "anomaly-bellrain-inversion", "anomaly-cinder-gate-echo", "anomaly-cinder-mirage-lane",
-  "anomaly-red-suture-field", "anomaly-saint-static-aperture", "anomaly-saltglass-fata-morgana", "anomaly-scar-tide-lattice", "anomaly-throne-shadow-jury", "anomaly-webglass-stutter",
-  "artifact-cinder-suture-kit", "artifact-ember-burden-idol", "artifact-fandiablos", "artifact-heat-sink-prayer", "artifact-red-march-warbell", "artifact-throne-crown-fragment",
-  "ash-cinder-runt", "ashen-doppelganger", "bell-mask-pilgrim", "bellwire-snare", "black-lantern-broker", "black-ledger-agent",
-  "breach-lens-overload", "cartel-ledger-skim", "char_bjornis", "char_deepdale", "char_ker_von_ker", "char_kira_dog", "char_master_alpha", "char_popelord", "char_rumi",
-  "choir-defector", "choir-static-burst", "cinder-gate-backlash", "cinder-monk", "cinder-surgeon", "cinder-veil-stalker",
-  "compact-equipment-requisition", "cracked-censer-novice", "crown-bell-baron", "crownless-advocate", "emberwatch-sparkfall",
-  "escalation-blackstar-hunger", "escalation-choir-feedback", "escalation-marrow-surgery-debt", "escalation-saltwind-lockdown",
-  "false-route-procession", "fandiablos", "fleet-elder", "gateblind-pulse", "gate-choir-executioner", "gate-saint-acolyte", "glass-chime-swarm", "glass-mire-stalker", "glasswing-midge-cloud",
-  "grave-engineer", "grave-lattice-reclaimer", "grave-silt-press", "heat-sink-prayer", "hymn-scarred-zealot", "iron-lung-grenadier", "iron-synod-chirurgeon", "lalla-bubu-crownling", "lantern-moth-swarm", "latchspire-raider", "lucy-hell-puppy",
-  "marrow-tax-auditors", "memory-tax-gate", "mirror-lord-envoy", "mirror-mite-bloom", "mirror-rot-interference", "oathbroken-prince", "pale-cartel-shakedown", "pale-contract-collector", "pale-marshal",
-  "relay-husk", "relay-pilgrim-riot", "reliquary-judge", "rift-cartographer", "roadside-bone-oracle", "rust-choir-peddlers", "saint-of-ashes-echo", "saltflat-bone-reader", "salvage-warden", "shardvine-ambushers", "shardwind-front", "siege-medic",
-  "signal-rotted-engineer", "signal-witch", "siren-relay-echo", "soot-stained-cutpurse", "spindle-static-squall", "starless-taxation", "static-censer-acolyte", "suture-storm", "void-marshal", "void-salt-sickness", "webglass-echo-trap", "webglass-snarefield", "yard-rivet-brute"
+  "anomaly-bellrain-inversion", "anomaly-cinder-mirage-lane", "artifact-cinder-suture-kit", "artifact-fandiablos", "artifact-heat-sink-prayer", "ash-cinder-runt", "ashen-doppelganger", "bell-mask-pilgrim",
+  "black-lantern-broker", "black-ledger-agent", "char_bjornis", "char_deepdale", "char_ker_von_ker", "char_kira_dog", "char_master_alpha", "char_popelord",
+  "char_rumi", "choir-defector", "choir-static-burst", "cinder-gate-backlash", "cinder-monk", "compact-equipment-requisition", "cracked-censer-novice", "crown-bell-baron",
+  "crownless-advocate", "escalation-blackstar-hunger", "escalation-choir-feedback", "escalation-marrow-surgery-debt", "escalation-saltwind-lockdown", "false-route-procession", "fandiablos", "fleet-elder",
+  "gateblind-pulse", "gate-saint-acolyte", "glass-chime-swarm", "glasswing-midge-cloud", "grave-engineer", "grave-lattice-reclaimer", "grave-silt-press", "heat-sink-prayer",
+  "hymn-scarred-zealot", "iron-lung-grenadier", "lantern-moth-swarm", "latchspire-raider", "lucy-hell-puppy", "marrow-tax-auditors", "memory-tax-gate", "mirror-lord-envoy",
+  "mirror-mite-bloom", "mirror-rot-interference", "oathbroken-prince", "pale-contract-collector", "pale-marshal", "relay-husk", "relay-pilgrim-riot", "reliquary-judge",
+  "rift-cartographer", "roadside-bone-oracle", "rust-choir-peddlers", "saltflat-bone-reader", "salvage-warden", "siege-medic", "signal-rotted-engineer", "signal-witch",
+  "siren-relay-echo", "soot-stained-cutpurse", "spindle-static-squall", "void-marshal", "void-salt-sickness", "webglass-snarefield", "yard-rivet-brute"
 ]);
 
 export const APPROVED_AUTOMATIC_SALVAGE_LOSS_IDS = new Set([

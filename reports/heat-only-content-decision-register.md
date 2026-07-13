@@ -41,4 +41,14 @@ Alternatives rejected globally: blanket Heat-to-Wound, random Scar distribution,
 | H1I-002 | `gate-tax-collectors` | Is the post-loss levy enforceable without inventing gate behavior? | Required 1-Salvage payment when affordable; zero Salvage creates no debt; enemy remains; encounter continues | Low | H1I-001 | Implemented |
 | H1I-003 | `rust-choir-peddlers` | Is the proposed paid healing benefit approved? | Content, Heat clause, allowlist entry, text, and behavior remain unchanged | Medium | explicit benefit approval | Blocked |
 
+## Phase 1J mixed-clause cleanup
+
+| Decision ID | Content IDs | Question | Current result | Risk | Dependency | Status |
+|---|---|---|---|---|---|---|
+| H1J-001 | 34 exact mixed-branch IDs | Can a no-op Heat sibling be removed without changing active siblings? | All 34 no-ops removed; exact surviving values and order preserved; no replacement added | Low | focused 34-ID manifest | Implemented |
+| H1J-002 | `anomaly-red-suture-field` | Is its current outcome Heat-only? | No. Current content includes an enforced route-note sibling; the old Wound recommendation is superseded by this cleanup | Low | current content inspection | Superseded |
+| H1J-003 | six retained target approvals | May approval be removed when another Heat branch or stable Heat-shaped key remains? | No. Three Heat-only branches and three stable effect keys remain explicitly approved | Low | later compatibility batches | Recommended |
+
+The older estimate of 39 mixed IDs reconciles to 34 current branch-level candidates plus five stale estimate-only records. Rust Choir Peddlers and all remaining Heat-only decisions are unchanged.
+
 Phase 1D's “pay up to 1, floor 0” wording is superseded as payment semantics: payment is full or absent, never partial. Phase 1H itself made no mechanics changes; Phase 1I implements only the approved shared boundary and Gate Tax decision above.

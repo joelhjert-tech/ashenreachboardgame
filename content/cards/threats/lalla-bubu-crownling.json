@@ -21,10 +21,6 @@
       {
         "type": "take_wound",
         "amount": 1
-      },
-      {
-        "type": "gain_heat",
-        "amount": 1
       }
     ]
   },
@@ -34,7 +30,6 @@
   "tempo": "stall",
   "resourceTags": [
     "wound",
-    "heat",
     "trophy",
     "movement"
   ],

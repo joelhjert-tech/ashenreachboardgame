@@ -13,10 +13,6 @@
       {
         "type": "gain_note",
         "text": "Red Suture Field opened: route crews can pass once."
-      },
-      {
-        "type": "gain_heat",
-        "amount": 1
       }
     ]
   }

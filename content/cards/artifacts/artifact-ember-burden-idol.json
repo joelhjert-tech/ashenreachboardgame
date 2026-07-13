@@ -12,16 +12,12 @@
   "flavor": "Worth hauling. Terrible to carry.",
   "artifactKind": "burdenRelic",
   "charge": 0,
-  "resolutionSummary": "Lifted the Ember Burden Idol and accepted the heat it drags behind it.",
+  "resolutionSummary": "Lifted the Ember Burden Idol and claimed its trophy leverage.",
   "resolveEffect": {
     "type": "sequence",
     "effects": [
       {
         "type": "gain_trophy",
-        "amount": 1
-      },
-      {
-        "type": "gain_heat",
         "amount": 1
       },
       {

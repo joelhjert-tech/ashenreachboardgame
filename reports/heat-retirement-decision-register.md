@@ -68,3 +68,9 @@ Phase 1H recommends a narrow persisted `encounter_payment` decision rather than 
 # Phase 1I encounter payment implementation
 
 Phase 1I implements the narrow persisted `encounter_payment` architecture and migrates only `gate-tax-collectors`. A lost confrontation requires an authoritative 1-Salvage payment when affordable; at zero Salvage no debt or false delta is created, the enemy remains unresolved, and the encounter continues. Payment is distinct from automatic `lose_salvage`, owner-scoped, atomic, versioned, reconnect-safe, and replay-protected. Gate Tax leaves the Heat allowlist, reducing it from 100 to 99. `rust-choir-peddlers` remains unchanged, allowlisted, and blocked pending approval of its proposed benefit. No other content migration decision is implemented.
+
+# Phase 1J mixed-clause cleanup
+
+Phase 1J removes 34 generic Heat no-ops from sequences that retain enforced typed siblings. Twenty-eight IDs leave the explicit compatibility allowlist; six remain approved because they carry a separate Heat-only branch or stable Heat-shaped effect key. Surviving effects retain exact order, values, targets, and branches. No replacement mechanic, runtime behavior, schema, save field, or session state is introduced.
+
+Current inspection corrects `anomaly-red-suture-field` from the Phase 1D Heat-only population: its sequence has an enforced `gain_note` sibling, so its obsolete Heat member is removed here and its proposed Wound replacement is superseded. The corrected remaining Heat-only population is 29 IDs / 32 branches. Rust Choir Peddlers, authored defaults, stored `character.heat`, Mirror `heatThreshold`, and generic compatibility discriminators remain preserved or unresolved as previously recorded.

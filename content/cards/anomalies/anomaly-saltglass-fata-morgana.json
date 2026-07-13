@@ -13,10 +13,6 @@
       {
         "type": "gain_gear",
         "gearId": "blackstar-ampoule"
-      },
-      {
-        "type": "gain_heat",
-        "amount": 1
       }
     ]
   }
