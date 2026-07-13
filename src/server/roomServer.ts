@@ -2162,7 +2162,7 @@ export class GameRoomServer {
           ]
         };
       case "ashen-route-compass":
-        return { type: "gain_note", text: "Ashen Route Compass fixed a reroll route for a failed movement or anomaly check." };
+        return { type: "gain_note", text: "Ashen Route Compass adjusted the exact required movement distance." };
       case "choir-lantern":
         return { type: "gain_note", text: "Choir Lantern spent: a warded route note was recorded from the cold choir flame." };
       case "route-star":

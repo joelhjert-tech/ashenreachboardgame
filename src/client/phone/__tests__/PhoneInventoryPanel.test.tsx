@@ -68,10 +68,21 @@ const activeUtility = {
   id: "ashen-route-compass",
   name: "Ashen Route Compass",
   slot: "utility" as const,
-  category: "active" as const,
+  category: "chargedRelic" as const,
+  tier: "artifact" as const,
   statBonus: { stat: "signal" as const, amount: 1 },
-  activeText: "Once per round, reroll a failed movement or anomaly check.",
-  useLimit: "oncePerRound" as const
+  activeText: "After rolling for movement, you may spend 1 charge and choose −1 or +1. The adjusted value becomes your exact required movement distance for this movement. All normal route, adjacency, gate, scenario, threat, blocker, and destination rules still apply.",
+  useLimit: "charge" as const,
+  currentCharges: 2,
+  maxCharges: 2,
+  startingCharges: 2,
+  chargeCost: 1,
+  rechargeRule: "none" as const,
+  effectModel: "charged" as const,
+  chargedEffect: "movementAdjustment" as const,
+  activationTiming: ["movement" as const],
+  requiresEquipped: true,
+  instanceId: "route-compass-a"
 };
 
 const consumable = {
@@ -293,7 +304,6 @@ describe("PhoneInventoryPanel", () => {
 
     expect(screen.getAllByText("Weapons").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Armor").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("Equipment").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Consumables").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Artifacts / Relics").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Followers").length).toBeGreaterThan(0);
@@ -341,6 +351,16 @@ describe("PhoneInventoryPanel", () => {
       "/assets/cards/artifacts/artifact-oathchain-lens.png"
     );
     expect(relicCard).toHaveTextContent(/2\/2 uses/i);
+  });
+
+  it("presents Ashen Route Compass as a charged exact-distance adjustment without obsolete anomaly wording", () => {
+    render(<PhoneInventoryPanel patch={createPatch()} onIntent={vi.fn()} />);
+
+    const compassCard = screen.getByLabelText(/ashen route compass:/i);
+    expect(compassCard).toHaveTextContent(/spend 1 charge and choose −1 or \+1/i);
+    expect(compassCard).toHaveTextContent(/exact required movement distance/i);
+    expect(compassCard).toHaveTextContent(/2\/2 uses/i);
+    expect(compassCard).not.toHaveTextContent(/anomaly|reroll|soften/i);
   });
 
   it("shows persistent scar cards and their effects in Inventory status", () => {
