@@ -81,3 +81,10 @@ Current inspection corrects `anomaly-red-suture-field` from the Phase 1D Heat-on
 - **HRD-023 implemented for validation separation:** 40 construct-specific Heat-effect IDs, 17 character-default IDs, and 14 other compatibility IDs are disjoint validation classes with zero overlap and 71 combined unique IDs.
 - Runtime, schema, character content, serialization, reconnect, projection, Mirror, generic no-op behavior, and old nonzero value preservation are unchanged.
 - **Not implemented:** removal of the 17 JSON fields, compatibility construction, optional `character.heat`, new-save omission, versioned migration, projection retirement, support-window closure, schema deletion, and Mirror-key migration.
+
+# Phase 1M compatibility-construction boundary
+
+- **HRD-001 implemented for new-character construction only:** one named compatibility helper now supplies exactly `heat: 0` to all four authoritative new-character paths. Initial sessions, selection, fresh replacement/setup construction, and recalled-character replacement no longer derive Heat from authored character data.
+- **HRD-002 preserved:** loaded and reconnected nonzero values remain exact and mechanically inactive; no constructor runs over existing state and no value is converted.
+- Two immutable shop copies continue preserving stored Heat, and the two zero-valued phone/TV compatibility projection keys remain unchanged.
+- **Not implemented:** removal of the 17 JSON fields, authoring omission support, optional `character.heat`, new-save omission, save versioning, projection retirement, old-value support-window closure, schema deletion, Mirror-key migration, Heat-only outcomes, Rust Choir Peddlers, or discriminator removal.

@@ -66,7 +66,7 @@ import type { GearSlot } from "../schema/gear.schema.js";
 import type { TrophyPileEntry } from "../schema/character.schema.js";
 import { applyMovementDieAfflictions, resolveAfflictionDraw } from "../rules/afflictions.js";
 import { buildPendingScarConsequences, getMatchingScarTriggers } from "../rules/scarTriggers.js";
-import { applyLegacyHeatNoop, isLegacyHeatNoopEffect, summarizeLegacyHeatNoop } from "../rules/legacyHeatCompatibility.js";
+import { applyLegacyHeatNoop, createLegacyCharacterCompatibilityState, isLegacyHeatNoopEffect, summarizeLegacyHeatNoop } from "../rules/legacyHeatCompatibility.js";
 import type { ScarSourceEvent } from "../schema/scarTrigger.schema.js";
 import { getBoardSpace, isScenarioConfrontationSpace } from "../data/boardSpaces.js";
 import { getForcedDisplacementDestination, getLegalMovementRoute, getLegalMovementRouteVariant, getMovementBlockReason, getVoidKeyMovementRoute, getMovementStepBlockReason } from "../rules/movementPlanner.js";
@@ -2409,10 +2409,10 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
           ...entry,
           character: {
             ...recruitAction.replacementCharacter!,
+            ...createLegacyCharacterCompatibilityState(),
             currentSpaceId: entry.sectorId,
             trophies: 0,
             trophyPile: [],
-            heat: 0,
             wounds: 0,
             status: "active",
             heldGear: [...recruitAction.replacementCharacter!.heldGear],

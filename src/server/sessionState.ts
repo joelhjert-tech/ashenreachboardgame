@@ -11,6 +11,7 @@ import { createInitialScenarioProgress } from "../game/rules/scenarioAmbient.js"
 import { applyStartingLoadout, createInitialSoloRerollCharges, type StartingLoadoutCatalogs } from "../game/rules/startingLoadout.js";
 import { getHeatThresholdForMode, getWoundThresholdForMode } from "../game/rules/soloTuning.js";
 import { createInitialAfflictionUsageState } from "../game/rules/afflictions.js";
+import { createLegacyCharacterCompatibilityState } from "../game/rules/legacyHeatCompatibility.js";
 import { attachTileChallengesToSectors } from "../game/rules/tileChallenges.js";
 import type { Character } from "../game/schema/character.schema.js";
 import type { GameMode, GameState, InteractionMode, PlayerState, SessionMode } from "../game/schema/session.schema.js";
@@ -48,6 +49,7 @@ export function getSeatCountForSession(
 function cloneCharacter(character: Character, currentSpaceId: string): Character {
   return {
     ...character,
+    ...createLegacyCharacterCompatibilityState(),
     currentSpaceId,
     activeContract: character.activeContract ? { ...character.activeContract } : null,
     heldGear: [...character.heldGear],
