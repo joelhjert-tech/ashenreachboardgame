@@ -71,7 +71,7 @@ describe("Phase 1J mixed Heat clause cleanup", () => {
   });
 
   it("removes only IDs with no remaining Heat construct from the allowlist", () => {
-    expect(APPROVED_LEGACY_HEAT_CONTENT_IDS.size).toBe(54);
+    expect(APPROVED_LEGACY_HEAT_CONTENT_IDS.size).toBe(53);
     for (const entry of TARGETS) {
       expect(APPROVED_LEGACY_HEAT_CONTENT_IDS.has(entry.id)).toBe(Boolean(entry.retainedCompatibility));
       expect(validateLegacyHeatContentRecord(entry.file, read(entry))).toEqual([]);
@@ -80,8 +80,8 @@ describe("Phase 1J mixed Heat clause cleanup", () => {
 
   it("preserves the deferred and compatibility boundaries", () => {
     const peddlers = JSON.parse(readFileSync(join(process.cwd(), "content/cards/threats/rust-choir-peddlers.json"), "utf8"));
-    expect(JSON.stringify(peddlers)).toContain('"type":"gain_heat"');
-    expect(APPROVED_LEGACY_HEAT_CONTENT_IDS.has("rust-choir-peddlers")).toBe(true);
+    expect(JSON.stringify(peddlers)).toContain('"mode":"optional"');
+    expect(APPROVED_LEGACY_HEAT_CONTENT_IDS.has("rust-choir-peddlers")).toBe(false);
     expect(validateLegacyHeatContentRecord("new.json", { id: "new-heat", failEffect: { type: "gain_heat", amount: 1 } })[0]).toMatch(/blocked legacy Heat construct/);
   });
 });

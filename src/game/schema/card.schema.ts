@@ -315,7 +315,15 @@ export const enemyThreatCardSchema = threatBaseSchema.extend({
   enemyName: z.string().min(1),
   trophyValue: z.number().int().min(0),
   defeatReward: effectSchema,
-  woundOnLoss: effectSchema
+  woundOnLoss: effectSchema.optional()
+}).superRefine((card, context) => {
+  if (!card.woundOnLoss && card.id !== "rust-choir-peddlers") {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Enemy threats require a loss effect unless explicitly retired",
+      path: ["woundOnLoss"]
+    });
+  }
 });
 
 export const threatCardSchema = z.union([

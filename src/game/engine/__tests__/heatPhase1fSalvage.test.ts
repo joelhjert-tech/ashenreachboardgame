@@ -22,7 +22,6 @@ const BLOCKED_LOW_SEVERITY_IDS = [
   "gate-tax-collectors",
   "gutter-bell-mite",
   "pale-toll-enforcer",
-  "rust-choir-peddlers",
   "rust-mote-drone",
   "toll-scrip-urchins"
 ] as const;
@@ -73,14 +72,14 @@ describe("Phase 1F low-severity Salvage rewards", () => {
   });
 
   it("tracks the later low-severity migrations without reopening the Phase 1F reward set", () => {
-    expect(BLOCKED_LOW_SEVERITY_IDS).toHaveLength(9);
+    expect(BLOCKED_LOW_SEVERITY_IDS).toHaveLength(8);
     for (const id of PHASE_1G_AUTOMATIC_LOSS_IDS) expect(APPROVED_LEGACY_HEAT_CONTENT_IDS.has(id)).toBe(false);
     expect(APPROVED_LEGACY_HEAT_CONTENT_IDS.has("gate-tax-collectors")).toBe(false);
-    expect(APPROVED_LEGACY_HEAT_CONTENT_IDS.has("rust-choir-peddlers")).toBe(true);
+    expect(APPROVED_LEGACY_HEAT_CONTENT_IDS.has("rust-choir-peddlers")).toBe(false);
   });
 
   it("shrinks only completed approvals while continuing to reject new Heat constructs", () => {
-    expect(APPROVED_LEGACY_HEAT_CONTENT_IDS.size).toBe(54);
+    expect(APPROVED_LEGACY_HEAT_CONTENT_IDS.size).toBe(53);
     for (const id of COMPLETED_IDS) expect(APPROVED_LEGACY_HEAT_CONTENT_IDS.has(id)).toBe(false);
     expect(validateLegacyHeatContentRecord("new.json", { id: "new-heat", reward: { type: "lose_heat", amount: 1 } })[0]).toMatch(/blocked legacy Heat construct/);
     expect(validateLegacyHeatContentRecord("salvage.json", { id: "new-salvage", reward: { type: "gain_salvage", amount: 1 } })).toEqual([]);

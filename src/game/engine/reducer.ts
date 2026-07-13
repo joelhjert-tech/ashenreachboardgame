@@ -2112,14 +2112,43 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
         });
       }
 
-      if (state.pendingEffect.type === "encounter_payment") {
-        const pending = createPendingEncounterDecision(state, resolutionAction, state.pendingEffect);
+      const trailingPayment =
+        state.pendingEffect.type === "sequence" &&
+        state.pendingEffect.effects.length > 0 &&
+        state.pendingEffect.effects[state.pendingEffect.effects.length - 1]?.type === "encounter_payment"
+          ? (state.pendingEffect.effects[state.pendingEffect.effects.length - 1] as EncounterPaymentEffect)
+          : state.pendingEffect.type === "encounter_payment"
+            ? state.pendingEffect
+            : null;
+
+      if (trailingPayment) {
+        const leadingEffects =
+          state.pendingEffect.type === "sequence" ? state.pendingEffect.effects.slice(0, -1) : [];
+        const leadingEffect: EncounterEffect | null =
+          leadingEffects.length === 0
+            ? null
+            : leadingEffects.length === 1
+              ? leadingEffects[0]!
+              : { type: "sequence", effects: leadingEffects };
+        const stateAfterLeadingEffects = leadingEffect
+          ? applyEffectToState(state, resolutionAction.seatId, leadingEffect)
+          : state;
+        const leadingSummaries = leadingEffect
+          ? summarizeAppliedEffects(
+              leadingEffect,
+              resolutionAction.success,
+              requirePlayer(state, resolutionAction.seatId).character.salvage ?? 0
+            )
+          : [];
+        const pending = createPendingEncounterDecision(stateAfterLeadingEffects, resolutionAction, trailingPayment);
         if ((state.resolvedEncounterDecisionIds ?? []).includes(pending.decisionId)) {
           return reject(state, action, "Encounter payment decision was already resolved");
         }
-        const player = requirePlayer(state, resolutionAction.seatId);
-        if (pending.mode === "required" && (player.character.salvage ?? 0) < pending.salvageCost) {
-          const unavailableState = applyEncounterPaymentResult(state, resolutionAction.seatId, pending.unavailableEffect);
+        const player = requirePlayer(stateAfterLeadingEffects, resolutionAction.seatId);
+        const affordable = (player.character.salvage ?? 0) >= pending.salvageCost;
+        const paidEffectCanResolve = pending.paidEffect.type !== "heal_wound" || player.character.wounds >= pending.paidEffect.amount;
+        if ((pending.mode === "required" && !affordable) || (pending.mode === "optional" && (!affordable || !paidEffectCanResolve))) {
+          const unavailableState = applyEncounterPaymentResult(stateAfterLeadingEffects, resolutionAction.seatId, pending.unavailableEffect);
           const summary = summarizeEncounterPaymentResult(pending.unavailableEffect);
           return succeed({
             ...unavailableState,
@@ -2127,17 +2156,18 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
             pendingEffect: null,
             pendingEncounterDecision: null,
             resolvedEncounterDecisionIds: [...(state.resolvedEncounterDecisionIds ?? []), pending.decisionId],
-            activeResolution: state.activeResolution ? { ...state.activeResolution, stage: "outcome_summary", outcome: { title: "Unable to pay", text: summary, effects: [summary] } } : null,
-            lastOutcomeSummary: state.lastOutcomeSummary ? { ...state.lastOutcomeSummary, summary: `${state.lastOutcomeSummary.summary} ${summary}` } : null,
+            activeResolution: state.activeResolution ? { ...state.activeResolution, stage: "outcome_summary", outcome: { title: pending.mode === "optional" ? "Recovery offer skipped" : "Unable to pay", text: [...leadingSummaries, summary].join(" "), effects: [...leadingSummaries, summary] } } : null,
+            lastOutcomeSummary: state.lastOutcomeSummary ? { ...state.lastOutcomeSummary, summary: `${state.lastOutcomeSummary.summary} ${[...leadingSummaries, summary].join(" ")}` } : null,
             eventLog: [...state.eventLog, action]
           });
         }
         return succeed({
-          ...state,
+          ...stateAfterLeadingEffects,
           sequence: state.sequence + 1,
           pendingEffect: null,
           pendingEncounterDecision: pending,
-          activeResolution: state.activeResolution ? { ...state.activeResolution, stage: "outcome_summary", outcome: { title: "Payment required", text: pending.prompt, effects: [pending.prompt] } } : null,
+          activeResolution: state.activeResolution ? { ...state.activeResolution, stage: "outcome_summary", outcome: { title: pending.mode === "optional" ? "Recovery offer" : "Payment required", text: [...leadingSummaries, pending.prompt].join(" "), effects: [...leadingSummaries, pending.prompt] } } : null,
+          lastOutcomeSummary: state.lastOutcomeSummary && leadingSummaries.length > 0 ? { ...state.lastOutcomeSummary, summary: `${state.lastOutcomeSummary.summary} ${leadingSummaries.join(" ")}` } : state.lastOutcomeSummary,
           eventLog: [...state.eventLog, action]
         });
       }
@@ -2200,13 +2230,15 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
         ? { ...state, players: updateActivePlayer(state, decisionAction.seatId, (entry) => ({ ...entry, character: { ...entry.character, salvage: (entry.character.salvage ?? 0) - pending.salvageCost } })) }
         : state;
       const resolvedState = applyEncounterPaymentResult(paidState, decisionAction.seatId, result);
-      const resultSummary = isPaid ? `Paid ${pending.salvageCost} Salvage. ${summarizeEncounterPaymentResult(result)}` : summarizeEncounterPaymentResult(result);
+      const effectSummary = summarizeEncounterPaymentResult(result);
+      const paymentSummary = `Paid ${pending.salvageCost} Salvage.`;
+      const resultSummary = isPaid ? `${paymentSummary} ${effectSummary}` : effectSummary;
       return succeed({
         ...resolvedState,
         sequence: state.sequence + 1,
         pendingEncounterDecision: null,
         resolvedEncounterDecisionIds: [...(state.resolvedEncounterDecisionIds ?? []), pending.decisionId],
-        activeResolution: state.activeResolution ? { ...state.activeResolution, stage: "outcome_summary", outcome: { title: isPaid ? "Payment accepted" : "Offer declined", text: resultSummary, effects: [resultSummary] } } : null,
+        activeResolution: state.activeResolution ? { ...state.activeResolution, stage: "outcome_summary", outcome: { title: isPaid ? "Payment accepted" : "Offer declined", text: resultSummary, effects: isPaid ? [paymentSummary, effectSummary] : [resultSummary] } } : null,
         lastOutcomeSummary: state.lastOutcomeSummary ? { ...state.lastOutcomeSummary, summary: `${state.lastOutcomeSummary.summary} ${resultSummary}` } : null,
         eventLog: [...state.eventLog, { ...action, salvageCost: isPaid ? pending.salvageCost : 0, paid: isPaid, summary: resultSummary }]
       });

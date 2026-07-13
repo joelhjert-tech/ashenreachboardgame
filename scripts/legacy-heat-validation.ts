@@ -59,7 +59,6 @@ export const LEGACY_HEAT_EFFECT_APPROVALS: readonly LegacyHeatEffectApproval[] =
   { id: "relay-husk", constructs: ["gain_heat"] },
   { id: "relay-pilgrim-riot", constructs: ["gain_heat"] },
   { id: "roadside-bone-oracle", constructs: ["gain_heat"] },
-  { id: "rust-choir-peddlers", constructs: ["gain_heat"] },
   { id: "saltflat-bone-reader", constructs: ["lose_heat"] },
   { id: "signal-rotted-engineer", constructs: ["gain_heat"] },
   { id: "siren-relay-echo", constructs: ["gain_heat", "lose_heat"] },

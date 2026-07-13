@@ -49,6 +49,17 @@ Alternatives rejected globally: blanket Heat-to-Wound, random Scar distribution,
 | H1J-002 | `anomaly-red-suture-field` | Is its current outcome Heat-only? | No. Current content includes an enforced route-note sibling; the old Wound recommendation is superseded by this cleanup | Low | current content inspection | Superseded |
 | H1J-003 | six retained target approvals | May approval be removed when another Heat branch or stable Heat-shaped key remains? | No. Three Heat-only branches and three stable effect keys remain explicitly approved | Low | later compatibility batches | Recommended |
 
+## Phase 1U Rust Choir Peddlers recovery
+
+| Decision ID | Content ID | Question | Implemented result | Risk | Evidence | Status |
+|---|---|---|---|---|---|---|
+| H1U-001 | `rust-choir-peddlers` loss | What replaces the obsolete loss-branch Heat no-op? | Nothing. `woundOnLoss` is omitted for this explicitly approved ID; combat-loss state is otherwise unchanged and no recovery offer opens | Low | content schema boundary plus focused loss test | Implemented |
+| H1U-002 | `rust-choir-peddlers` victory | When does recovery occur? | Existing note resolves first; then an actionable optional payment offers 1 Salvage for exactly 1 Wound; decline is free | Low | ordered sequence and focused tests | Implemented |
+| H1U-003 | optional eligibility | Should an impossible or meaningless offer pause play? | No. Zero Salvage or zero Wounds continues without a prompt, payment, or healing | Low | focused zero-resource tests | Implemented |
+| H1U-004 | severity | Does recovery change encounter severity? | No. Severity remains the authoritative value 2 | None | current content and Git history | Implemented |
+
+These decisions supersede H1G-003, H1H-003, and H1I-003 for Rust Choir Peddlers only. The ID leaves the legacy Heat-effect approval set. No other Heat-only recommendation changes status.
+
 The older estimate of 39 mixed IDs reconciles to 34 current branch-level candidates plus five stale estimate-only records. Rust Choir Peddlers and all remaining Heat-only decisions are unchanged.
 
 Phase 1D's “pay up to 1, floor 0” wording is superseded as payment semantics: payment is full or absent, never partial. Phase 1H itself made no mechanics changes; Phase 1I implements only the approved shared boundary and Gate Tax decision above.

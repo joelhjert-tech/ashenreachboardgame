@@ -159,3 +159,12 @@ Current inspection corrects `anomaly-red-suture-field` from the Phase 1D Heat-on
 - **Conflict boundary implemented:** old/new both-key, missing-key, malformed-threshold, and unknown-version inputs fail closed under their strict schemas/dispatcher.
 - **Reconnect and projections preserved:** reconnect does not invoke snapshot migration or reconstruct scenario state; neither threshold key is transmitted to phone or TV clients.
 - **Still open:** legacy v0 parser retirement, legacy v1 parser retirement, archival metadata support-window closure, remaining Heat-only outcomes, Rust Choir Peddlers, and generic Heat discriminator removal.
+
+# Phase 1U Rust Choir Peddlers optional recovery
+
+- **Rust Choir implemented:** `rust-choir-peddlers` preserves severity 2 and its existing note. Its obsolete loss-branch `gain_heat 1` is removed without replacement.
+- **Ordered victory implemented:** the note resolves exactly once before the optional recovery decision. Paying deducts 1 Salvage and heals 1 Wound atomically; decline is free.
+- **Eligibility implemented:** zero Salvage or zero Wounds creates no prompt, mutation, or false result delta.
+- **Compatibility approval retired:** totals are now 39 Heat-effect approvals plus 14 other compatibility approvals, 53 unique approved IDs.
+- **Architecture preserved:** Phase 1I schema, intent, pending state, reconnect, and replay guards are reused. No new discriminator, action, intent, or session field is added.
+- **Still open:** 28 Heat-only IDs / 31 branches / 40 effects, legacy v0/v1 parser retirement, archival metadata closure, and stable discriminator cleanup.

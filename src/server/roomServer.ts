@@ -6861,11 +6861,12 @@ export class GameRoomServer {
     const total = playerRoll.total + statBonus;
     const enemyTotal = enemyRoll.total + enemyBonus + scenarioEnemyBonus + keyedEnemyBonus;
     const success = total >= enemyTotal;
+    const authoredOutcomeEffect = success ? encounter.defeatReward : encounter.woundOnLoss;
     const baseOutcomeEffect = this.combineEffects(
       [keyedModifiers.effect, success ? encounter.defeatReward : encounter.woundOnLoss].filter(
         (effect): effect is EncounterEffect => Boolean(effect)
       )
-    ) ?? (success ? encounter.defeatReward : encounter.woundOnLoss);
+    ) ?? authoredOutcomeEffect ?? { type: "sequence", effects: [] };
     const resolvedOutcomeEffect = this.resolveThreatOutcomeEffect(
       fighterSeatId,
       encounter,
@@ -8422,14 +8423,16 @@ function getShopResultDeltas(shopEncounter: Record<string, unknown> | null): Res
 
 function parseResolutionEffectDelta(effect: string, seatId: string | null): ResultDelta | null {
   const lower = effect.toLowerCase();
+  if (lower.includes("?")) return null;
   const salvageLoss = lower.match(/lost (\d+) salvage/);
+  const salvagePaid = lower.match(/paid (\d+) salvage/);
   const wound = lower.match(/take (\d+) wound/);
-  const heal = lower.match(/heal (\d+) wound/);
+  const heal = lower.match(/heal(?:ed)? (\d+) wound/);
   const trophy = lower.match(/\+(\d+) trophies?|gain (\d+) trophies?/);
   const scar = lower.match(/gain scar ([\w-]+)/);
 
-  if (salvageLoss) {
-    const amount = Number(salvageLoss[1]);
+  if (salvageLoss || salvagePaid) {
+    const amount = Number((salvageLoss ?? salvagePaid)![1]);
     return createResultDelta({
       type: "salvage",
       label: "Salvage",

@@ -16,7 +16,7 @@ if (!peddlersCandidate || peddlersCandidate.cardType !== "enemy") throw new Erro
 const gate = gateCandidate;
 const peddlers = peddlersCandidate;
 
-function paymentState(salvage: number, effect: EncounterEffect = gate.woundOnLoss) {
+function paymentState(salvage: number, effect: EncounterEffect = gate.woundOnLoss!) {
   const state = createInitialSessionState(`phase-1i-${salvage}`, "single-player");
   const seatId = state.players[0]!.seatId;
   state.status = "active";
@@ -24,6 +24,7 @@ function paymentState(salvage: number, effect: EncounterEffect = gate.woundOnLos
   state.currentEncounter = gate;
   state.pendingEffect = effect;
   state.players[0]!.character.salvage = salvage;
+  state.players[0]!.character.wounds = 1;
   state.activeResolution = { id: `gate-loss-${salvage}`, playerId: seatId, source: "threat", stage: "roll_result", roll: { dice: [1, 1], baseTotal: 2, modifierTotal: 0, finalTotal: 2, target: 5, success: false } };
   state.lastOutcomeSummary = { seatId, movedToSectorId: state.players[0]!.sectorId, encounterCardId: gate.id, encounterTitle: gate.title, encounterCardType: "enemy", checkStat: "command", die1: 1, die2: 1, statBonus: 0, checkTotal: 2, difficulty: 5, success: false, summary: "Gate-Tax Collectors defeated the operative." };
   return state;
@@ -96,7 +97,7 @@ describe("Phase 1I encounter payments", () => {
     expect(opened.state.players[0]!.character.salvage).toBe(2);
   });
 
-  it("supports a free optional decline without production content", () => {
+  it("supports a free optional decline", () => {
     const optional: EncounterEffect = { type: "encounter_payment", decisionKey: "synthetic-offer", mode: "optional", prompt: "Synthetic offer", salvageCost: 1, paidOptionId: "pay", paidLabel: "Pay", paidEffect: { type: "heal_wound", amount: 1 }, declineOptionId: "decline", declineLabel: "Decline", declineEffect: { type: "none", summary: "Declined." }, unavailableEffect: { type: "none", summary: "Unavailable." } };
     const opened = openPayment(2, optional);
     expect(opened.ok).toBe(true);
@@ -136,11 +137,12 @@ describe("Phase 1I encounter payments", () => {
     expect(sent.some((message) => message.type === "INTENT_REJECTED")).toBe(true);
   });
 
-  it("migrates only Gate Tax and keeps Rust Choir Peddlers blocked", () => {
+  it("keeps Gate Tax required while Rust Choir uses the production optional mode", () => {
     expect(JSON.stringify(gate.woundOnLoss)).toContain("encounter_payment");
     expect(APPROVED_LEGACY_HEAT_CONTENT_IDS.has(gate.id)).toBe(false);
-    expect(JSON.stringify(peddlers)).toContain("gain_heat");
-    expect(APPROVED_LEGACY_HEAT_CONTENT_IDS.has(peddlers.id)).toBe(true);
+    expect(JSON.stringify(peddlers)).toContain('"mode":"optional"');
+    expect(JSON.stringify(peddlers)).not.toContain("gain_heat");
+    expect(APPROVED_LEGACY_HEAT_CONTENT_IDS.has(peddlers.id)).toBe(false);
     expect(validateLegacyHeatContentRecord("gate.json", gate)).toEqual([]);
   });
 });

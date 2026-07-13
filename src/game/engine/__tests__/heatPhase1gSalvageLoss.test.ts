@@ -20,8 +20,6 @@ const AUTOMATIC_LOSS_IDS = [
   "toll-scrip-urchins"
 ] as const;
 
-const DEFERRED_PAYMENT_OR_CHOICE_IDS = ["rust-choir-peddlers"] as const;
-
 function applyLoss(startingSalvage: number, amount: number, effect: EncounterEffect = { type: "lose_salvage", amount }) {
   const state = createInitialSessionState(`phase-1g-${startingSalvage}-${amount}`, "single-player");
   const seatId = state.players[0]!.seatId;
@@ -80,7 +78,7 @@ describe("Phase 1G floor-zero Salvage loss", () => {
     if (result.ok) expect(result.state.activeResolution?.outcome?.effects).toEqual(["Failure: note added: First.", "Lost 1 Salvage.", "Failure: note added: Last."]);
   });
 
-  it("migrates exactly seven automatic consequences while keeping the remaining choice entry deferred", () => {
+  it("retains exactly seven automatic consequences without treating Rust Choir recovery as automatic loss", () => {
     expect([...APPROVED_AUTOMATIC_SALVAGE_LOSS_IDS].sort()).toEqual([...AUTOMATIC_LOSS_IDS].sort());
     const threats = loadThreatCards();
     const escalations = loadEscalationCards();
@@ -91,11 +89,10 @@ describe("Phase 1G floor-zero Salvage loss", () => {
       expect(JSON.stringify(card)).not.toMatch(/gain_heat|gain_heat_all|lose_heat|\bHeat\b|\bRisk\b/i);
       expect(APPROVED_LEGACY_HEAT_CONTENT_IDS.has(id)).toBe(false);
     }
-    for (const id of DEFERRED_PAYMENT_OR_CHOICE_IDS) {
-      const card = threats.get(id)!;
-      expect(JSON.stringify(card)).toContain('"type":"gain_heat"');
-      expect(APPROVED_LEGACY_HEAT_CONTENT_IDS.has(id)).toBe(true);
-    }
+    const peddlers = threats.get("rust-choir-peddlers")!;
+    expect(JSON.stringify(peddlers)).toContain('"mode":"optional"');
+    expect(JSON.stringify(peddlers)).not.toContain('"type":"gain_heat"');
+    expect(APPROVED_LEGACY_HEAT_CONTENT_IDS.has(peddlers.id)).toBe(false);
   });
 
   it("keeps automatic loss behind an explicit authoring boundary", () => {
