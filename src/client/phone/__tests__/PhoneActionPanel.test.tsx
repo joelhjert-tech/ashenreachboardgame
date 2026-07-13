@@ -880,6 +880,29 @@ describe("PhoneActionPanel", () => {
     expect(onIntent).toHaveBeenCalledTimes(1);
   });
 
+  it("previews authoritative Route Star variants and charges only on alternate confirmation", () => {
+    const onIntent = vi.fn<(intent: ClientIntent) => void>();
+    render(<PhoneActionPanel characters={characters} onIntent={onIntent} patch={createPatch({ phase: "navigation", encounter: null, movementPlanner: {
+      active: true, movementValue: 2, movementRevision: 9, currentSectorId: "origin", currentSectorName: "Origin", destinations: [{
+        sectorId: "destination", name: "Ashen Chapel", ring: "outer", distance: 2,
+        routeId: "route-default", defaultRouteId: "route-default", route: ["origin", "left", "destination"], routeNames: ["Origin", "Scorched Road", "Ashen Chapel"],
+        routeVariants: [
+          { routeId: "route-default", destinationId: "destination", sectorIds: ["origin", "left", "destination"], sectorNames: ["Origin", "Scorched Road", "Ashen Chapel"], distance: 2 },
+          { routeId: "route-alternate", destinationId: "destination", sectorIds: ["origin", "right", "destination"], sectorNames: ["Origin", "Blastworks", "Ashen Chapel"], distance: 2 }
+        ],
+        tags: [], threatIcons: [], ruleText: "Arrive normally.", faceUpThreats: [], occupants: [], strategicTags: ["safe"],
+        routeStarPrompt: { instanceId: "star-a", currentCharges: 2, maxCharges: 2, chargeCost: 1 }
+      }]
+    } })} />);
+    fireEvent.click(screen.getByRole("button", { name: /ashen chapel/i }));
+    expect(screen.getByTestId("route-star-prompt")).toHaveTextContent("Scorched Road");
+    expect(screen.getByTestId("route-star-prompt")).toHaveTextContent("Blastworks");
+    fireEvent.click(screen.getByRole("button", { name: /preview route/i }));
+    expect(onIntent).not.toHaveBeenCalledWith(expect.objectContaining({ type: "SELECT_ROUTE_STAR_VARIANT" }));
+    fireEvent.click(screen.getByRole("button", { name: /choose this route/i }));
+    expect(onIntent).toHaveBeenCalledWith({ type: "SELECT_ROUTE_STAR_VARIANT", seatId: "seat-1", instanceId: "star-a", destinationId: "destination", routeId: "route-alternate", movementRevision: 9 });
+  });
+
   it("shows compact movement feedback after a confirmed move outcome", async () => {
     vi.useFakeTimers();
 

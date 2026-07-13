@@ -629,6 +629,9 @@ export interface PublicShopEncounterState {
 export type PublicMoveStrategicTag = "safe" | "shop" | "locked" | "danger" | "reward" | "nemesis" | "gate";
 
 export interface PublicMoveDestination {
+  routeId?: string;
+  defaultRouteId?: string;
+  routeVariants?: Array<{ routeId: string; destinationId: string; sectorIds: string[]; sectorNames?: string[]; distance: number }>;
   sectorId: string;
   name: string;
   ring: "outer" | "middle" | "inner" | "core";
@@ -668,6 +671,7 @@ export interface PublicMoveDestination {
   strategicTags: PublicMoveStrategicTag[];
   disabledReason?: string;
   voidKeyPrompt?: { instanceId: string; currentCharges: number; maxCharges: number; chargeCost: 1 };
+  routeStarPrompt?: { instanceId: string; currentCharges: number; maxCharges: number; chargeCost: 1 };
 }
 
 export interface PublicMovementPlannerState {
@@ -679,6 +683,9 @@ export interface PublicMovementPlannerState {
   currentSectorId: string;
   currentSectorName: string;
   selectedDestinationId?: string | null;
+  selectedRouteId?: string | null;
+  routeStarCommitted?: boolean;
+  movementRevision?: number;
   destinations: PublicMoveDestination[];
 }
 
@@ -1012,13 +1019,18 @@ export type ClientIntent =
       type: "MOVEMENT_DESTINATION_PREVIEWED";
       seatId: string;
       toSectorId: string | null;
+      routeId?: string;
+      movementRevision?: number;
     }
   | {
       type: "MOVE_REQUESTED";
       seatId: string;
       toSectorId: string;
       voidKeyInstanceId?: string;
+      routeId?: string;
+      movementRevision?: number;
     }
+  | { type: "SELECT_ROUTE_STAR_VARIANT"; seatId: string; instanceId: string; destinationId: string; routeId: string; movementRevision: number }
   | {
       type: "MOVEMENT_ROLL_REQUESTED";
       seatId: string;

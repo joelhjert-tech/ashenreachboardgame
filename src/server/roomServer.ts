@@ -297,6 +297,7 @@ const CLIENT_INTENT_TYPES = new Set<string>([
   "MOVEMENT_DESTINATION_PREVIEWED",
   "MOVE_REQUESTED",
   "ADJUST_MOVEMENT_REQUESTED",
+  "SELECT_ROUTE_STAR_VARIANT",
   "ACTIVATE_GATE_SAINT",
   "USE_MARROW_DETOUR",
   "MOVEMENT_ROLL_REQUESTED",
@@ -557,6 +558,7 @@ export class GameRoomServer {
           throw new Error("Movement preview is unavailable outside destination selection");
         }
         if (intent.toSectorId === null) {
+          if (this.state.routeStarChoices?.[intent.seatId]) this.applyAction({ type: "CLEAR_ROUTE_STAR_CHOICE", seatId: intent.seatId, createdAt: new Date().toISOString() });
           this.movementPreviewBySeatId.delete(intent.seatId);
         } else {
           const destination = planner.destinations.find(
@@ -565,6 +567,8 @@ export class GameRoomServer {
           if (!destination) {
             throw new Error("Movement preview must use a legal destination");
           }
+          const committed = this.state.routeStarChoices?.[intent.seatId];
+          if (committed && committed.destinationId !== intent.toSectorId) this.applyAction({ type: "CLEAR_ROUTE_STAR_CHOICE", seatId: intent.seatId, createdAt: new Date().toISOString() });
           if (intent.routeId !== undefined || intent.movementRevision !== undefined) {
             if (!intent.routeId || intent.movementRevision === undefined || intent.movementRevision !== planner.movementRevision || !destination.routeVariants.some((variant) => variant.routeId === intent.routeId)) {
               throw new Error("Movement preview route is stale or does not belong to this destination");
@@ -575,6 +579,19 @@ export class GameRoomServer {
             routeId: intent.routeId ?? destination.defaultRouteId
           });
         }
+        this.broadcastPatch();
+        return;
+      }
+
+      if (intent.type === "SELECT_ROUTE_STAR_VARIANT") {
+        const planner = buildPhoneMovementPlanner(this.state, intent.seatId);
+        const destination = planner?.destinations.find((entry) => entry.sectorId === intent.destinationId && !entry.disabledReason);
+        const variant = destination?.routeVariants.find((entry) => entry.routeId === intent.routeId);
+        if (!planner?.active || !destination?.routeStarPrompt || !variant || intent.movementRevision !== planner.movementRevision) throw new IntentRejectedError(intent.type, "Route Star route is stale or unavailable");
+        this.applyAction({ ...intent, createdAt: new Date().toISOString() });
+        const choice = this.state.routeStarChoices?.[intent.seatId];
+        if (!choice || choice.routeId !== intent.routeId) throw new IntentRejectedError(intent.type, "Route Star selection was rejected");
+        this.movementPreviewBySeatId.set(intent.seatId, { destinationId: intent.destinationId, routeId: intent.routeId });
         this.broadcastPatch();
         return;
       }
@@ -1267,6 +1284,10 @@ export class GameRoomServer {
       case "ADJUST_MOVEMENT_REQUESTED":
         requireStringField(message, "instanceId", type);
         if (message.adjustment !== -1 && message.adjustment !== 1) throw new IntentRejectedError(type, "Movement adjustment must be -1 or +1");
+        break;
+      case "SELECT_ROUTE_STAR_VARIANT":
+        requireStringField(message, "instanceId", type); requireStringField(message, "destinationId", type); requireStringField(message, "routeId", type);
+        if (!Number.isInteger(message.movementRevision) || Number(message.movementRevision) < 1) throw new IntentRejectedError(type, "Movement revision must be a positive integer");
         break;
       case "ACTIVATE_GATE_SAINT":
         requireStringField(message, "instanceId", type); break;
@@ -2719,6 +2740,8 @@ export class GameRoomServer {
         };
       case "ADJUST_MOVEMENT_REQUESTED":
         return { type: "ADJUST_MOVEMENT_REQUESTED", seatId: intent.seatId, instanceId: intent.instanceId, adjustment: intent.adjustment, createdAt };
+      case "SELECT_ROUTE_STAR_VARIANT":
+        return { type: "SELECT_ROUTE_STAR_VARIANT", seatId: intent.seatId, instanceId: intent.instanceId, destinationId: intent.destinationId, routeId: intent.routeId, movementRevision: intent.movementRevision, createdAt };
       case "ACTIVATE_GATE_SAINT": return { type: "ACTIVATE_GATE_SAINT", seatId: intent.seatId, instanceId: intent.instanceId, createdAt };
       case "USE_MARROW_DETOUR": return { type: "USE_MARROW_DETOUR", seatId: intent.seatId, instanceId: intent.instanceId, reactionId: intent.reactionId, toSectorId: intent.toSectorId, createdAt };
       case "PHASE_ADVANCED":
@@ -5772,7 +5795,10 @@ export class GameRoomServer {
   }
 
   resolveMoveIntent(intent: Extract<ClientIntent, { type: "MOVE_REQUESTED" }>): void {
-    const { player, fromSectorId, targetSector } = this.assertLegalMove(intent.seatId, intent.toSectorId, intent.voidKeyInstanceId, true, intent.routeId, intent.movementRevision);
+    const routeStarChoice = this.state.routeStarChoices?.[intent.seatId];
+    const routeId = routeStarChoice?.destinationId === intent.toSectorId ? routeStarChoice.routeId : intent.routeId;
+    const movementRevision = routeStarChoice?.destinationId === intent.toSectorId ? routeStarChoice.movementRevision : intent.movementRevision;
+    const { player, fromSectorId, targetSector } = this.assertLegalMove(intent.seatId, intent.toSectorId, intent.voidKeyInstanceId, true, routeId, movementRevision);
 
     const escalationModifier = getEscalationModifier(this.state.escalationLevel);
     const roll = rollDice(2, 6, this.randomSource);
@@ -7193,7 +7219,7 @@ type PublicShopSellItem = {
 type PublicMoveDestination = {
   routeId: string;
   defaultRouteId: string;
-  routeVariants: Array<{ routeId: string; destinationId: string; sectorIds: string[]; distance: number }>;
+  routeVariants: Array<{ routeId: string; destinationId: string; sectorIds: string[]; sectorNames: string[]; distance: number }>;
   sectorId: string;
   name: string;
   ring: "outer" | "middle" | "inner" | "core";
@@ -7232,6 +7258,8 @@ type PublicMoveDestination = {
   scenarioMarkers?: string[];
   strategicTags: Array<"safe" | "shop" | "locked" | "danger" | "reward" | "nemesis" | "gate">;
   disabledReason?: string;
+  voidKeyPrompt?: { instanceId: string; currentCharges: number; maxCharges: number; chargeCost: 1 };
+  routeStarPrompt?: { instanceId: string; currentCharges: number; maxCharges: number; chargeCost: 1 };
 };
 
 type PublicMovementPlannerState = {
@@ -7245,6 +7273,8 @@ type PublicMovementPlannerState = {
   movementRevision: number;
   destinations: PublicMoveDestination[];
   selectedDestinationId?: string | null;
+  selectedRouteId?: string | null;
+  routeStarCommitted?: boolean;
 };
 
 type PublicSectorExplorationSummary = {
@@ -7705,7 +7735,7 @@ function buildPublicMovementPlanner(state: GameState, seatId: string): PublicMov
       {
         routeId: routeEntry.routeId,
         defaultRouteId: routeEntry.routeId,
-        routeVariants: [{ routeId: routeEntry.routeId, destinationId: routeEntry.sectorId, sectorIds: routeEntry.route, distance: routeEntry.distance }],
+        routeVariants: [{ routeId: routeEntry.routeId, destinationId: routeEntry.sectorId, sectorIds: routeEntry.route, sectorNames: routeNames, distance: routeEntry.distance }],
         sectorId: sector.id,
         name: sector.name,
         ring: getPublicRing(boardSpace.tier),
@@ -7762,6 +7792,33 @@ function buildPublicMovementPlanner(state: GameState, seatId: string): PublicMov
     currentSectorName: currentSector.name,
     movementRevision: plan.revision,
     destinations
+  };
+}
+
+function buildPhoneMovementPlanner(state: GameState, seatId: string): PublicMovementPlannerState | null {
+  const planner = buildPublicMovementPlanner(state, seatId);
+  const player = state.players.find((entry) => entry.seatId === seatId);
+  if (!planner || !player) return planner;
+  const choice = state.routeStarChoices?.[seatId];
+  const star = player.character.heldGear.find((item) => item.id === "route-star" && player.character.equippedGear.utility === item.id);
+  const charges = star?.currentCharges ?? star?.charges ?? 0;
+  return {
+    ...planner,
+    selectedDestinationId: choice?.destinationId ?? planner.selectedDestinationId,
+    selectedRouteId: choice?.routeId ?? null,
+    routeStarCommitted: Boolean(choice),
+    destinations: planner.destinations.map((destination) => {
+      const chosenVariant = choice?.destinationId === destination.sectorId ? destination.routeVariants.find((variant) => variant.routeId === choice.routeId) : null;
+      return {
+        ...destination,
+        routeId: chosenVariant?.routeId ?? destination.routeId,
+        route: chosenVariant ? [...chosenVariant.sectorIds] : destination.route,
+        routeNames: chosenVariant ? [...chosenVariant.sectorNames] : destination.routeNames,
+        routeStarPrompt: !choice && star && charges > 0 && !destination.disabledReason && destination.routeVariants.length > 1
+          ? { instanceId: star.instanceId!, currentCharges: charges, maxCharges: star.maxCharges ?? 2, chargeCost: 1 as const }
+          : undefined
+      };
+    })
   };
 }
 
@@ -9238,7 +9295,8 @@ export function createTvProjection(
     movementPlanner: activeSeatId
       ? (() => {
           const planner = buildPublicMovementPlanner(state, activeSeatId);
-          const selectedPreview = movementPreviewBySeatId.get(activeSeatId) ?? null;
+          const committedChoice = state.routeStarChoices?.[activeSeatId];
+          const selectedPreview = committedChoice ? { destinationId: committedChoice.destinationId, routeId: committedChoice.routeId } : movementPreviewBySeatId.get(activeSeatId) ?? null;
           const selectedDestinationId = selectedPreview?.destinationId ?? null;
           if (planner && selectedPreview) {
             const destination = planner.destinations.find((entry) => entry.sectorId === selectedPreview.destinationId && !entry.disabledReason);
@@ -9392,7 +9450,7 @@ export function createPhoneProjection(state: GameState, seatId: string, forcePri
     shopEncounter: publicProjection.shopEncounter,
     recentAbilityTriggers: publicProjection.recentAbilityTriggers,
     nemesis: publicProjection.nemesis,
-    movementPlanner: buildPublicMovementPlanner(state, seatId),
+    movementPlanner: buildPhoneMovementPlanner(state, seatId),
     sectorExplorationSummary: buildPublicSectorExplorationSummary(state, seatId),
     privateRivalry: buildPrivateRivalryProjection(state, player),
     soloReroll: buildSoloRerollProjection(state, seatId),

@@ -2057,6 +2057,9 @@ function MovementDestinationDetail({
   });
   const detailRef = useRef<HTMLElement | null>(null);
   const [moveSubmitted, setMoveSubmitted] = useState(false);
+  const [previewRouteId, setPreviewRouteId] = useState<string | null>(null);
+  const routeVariants = selected.routeVariants ?? [];
+  const routeStarPrompt = selected.routeStarPrompt;
 
   useLayoutEffect(() => {
     const scrollContainer = detailRef.current?.closest<HTMLElement>(".phone-action-content-root");
@@ -2073,6 +2076,7 @@ function MovementDestinationDetail({
       phoneScrollContainer.scrollTop = 0;
       phoneScrollContainer.scrollLeft = 0;
     }
+    setPreviewRouteId(null);
   }, [selected.sectorId]);
 
   useEffect(() => {
@@ -2142,7 +2146,9 @@ function MovementDestinationDetail({
                     type: "MOVE_REQUESTED",
                     seatId,
                     toSectorId: selected.sectorId
-                    ,voidKeyInstanceId: voidKeyPrompt?.instanceId
+                    ,voidKeyInstanceId: voidKeyPrompt?.instanceId,
+                    routeId: planner.routeStarCommitted ? selected.routeId : undefined,
+                    movementRevision: planner.routeStarCommitted ? planner.movementRevision : undefined
                   });
                 }}
               >
@@ -2156,6 +2162,32 @@ function MovementDestinationDetail({
           <span>Route</span>
           <MovementRouteSteps destination={selected} currentSectorId={planner.currentSectorId} />
         </section>
+
+        {routeStarPrompt && routeVariants.length > 1 ? (
+          <section className="phone-movement-detail-section" aria-label="Route Star choices" data-testid="route-star-prompt">
+            <span>Use Route Star?</span>
+            <p>Spend 1 charge to choose an alternate legal route.</p>
+            {routeVariants.map((variant) => {
+              const isDefault = variant.routeId === selected.defaultRouteId;
+              const names = variant.sectorNames ?? variant.sectorIds;
+              return (
+                <div key={variant.routeId} className="phone-movement-route-summary">
+                  <strong>{names.join(" → ")}</strong>
+                  <small>{variant.distance} sectors{isDefault ? " · Default" : ""}</small>
+                  {!isDefault ? <GameButton type="button" tone="secondary" onClick={() => setPreviewRouteId(variant.routeId)}>Preview route</GameButton> : null}
+                  {!isDefault && previewRouteId === variant.routeId ? (
+                    <GameButton type="button" tone="move" onClick={() => onIntent({ type: "SELECT_ROUTE_STAR_VARIANT", seatId, instanceId: routeStarPrompt.instanceId, destinationId: selected.sectorId, routeId: variant.routeId, movementRevision: planner.movementRevision! })}>
+                      Choose this route — 1 charge
+                    </GameButton>
+                  ) : null}
+                </div>
+              );
+            })}
+            <GameButton type="button" tone="secondary" onClick={() => setPreviewRouteId(null)}>Keep default route</GameButton>
+          </section>
+        ) : null}
+
+        {planner.routeStarCommitted && planner.selectedRouteId === selected.routeId ? <p data-testid="route-star-confirmation">Route Star: alternate route selected</p> : null}
 
         <footer className="phone-movement-confirm-footer" data-testid="movement-confirm-footer">
           <p>{canUseVoidKey ? `Use Void Key? Spend 1 charge to ignore this gate for this movement. ${voidKeyPrompt!.currentCharges - 1}/${voidKeyPrompt!.maxCharges} charges will remain.` : routeUnavailable ? "This route is blocked by a scenario effect or sealed sector." : "This will end your movement."}</p>

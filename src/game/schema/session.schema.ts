@@ -221,6 +221,7 @@ export const gameStateSchema = z.object({
   shopStockReveals: z.array(shopStockRevealSchema).default([]),
   movementRolls: z.record(z.string(), z.number().int().min(1)).optional(),
   movementRouteRevisions: z.record(z.string(), z.number().int().min(1)).optional(),
+  routeStarChoices: z.record(z.string(), z.object({ instanceId: z.string().min(1), destinationId: z.string().min(1), routeId: z.string().min(1), movementRevision: z.number().int().min(1) })).optional(),
   movementAdjustments: z.record(z.string(), z.object({ adjustment: z.union([z.literal(-1), z.literal(1)]), sourceInstanceId: z.string().min(1) })).optional(),
   gateSaintSafeConduct: z.object({ id: z.string(), sourceInstanceId: z.string(), usedSeatIds: z.array(z.string()) }).nullable().optional(),
   soloRerollCharges: z.record(z.string(), z.number().int().min(0)).optional(),

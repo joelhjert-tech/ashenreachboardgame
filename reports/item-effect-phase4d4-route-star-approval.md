@@ -1,6 +1,8 @@
 # Route Star Phase 4D4 approval gate
 
-Status: **BLOCKED — approval incomplete; no mechanics implemented**
+> Final status: **APPROVED AND IMPLEMENTED.** The historical blocker text below records the pre-`0100482` state and is superseded by the finalized approval at the end of this report.
+
+Historical status before `0100482`: **BLOCKED — prerequisite absent**
 
 Artifact: `artifact-route-star` — Route Star
 Recommended concept reviewed: Least-Hungry Road
@@ -86,7 +88,7 @@ Option A remains the strongest identity because it is distinct from distance adj
 
 That foundation is outside this Artifact approval and must not be smuggled into its implementation. Option B is the lowest-engine-surface fallback but is not approved because current destination presentation already exposes much of its value. Option C remains blocked.
 
-## Approval block
+## Historical approval block
 
 Route Star:
 - Selected option: [UNAPPROVED — Option A blocked by route deduplication]
@@ -101,6 +103,23 @@ Route Star:
 - Stale-route behavior: [UNAPPROVED; requires stable route ID and planner revision]
 - Final rule text: [UNAPPROVED]
 
-## Implementation safety verdict
+## Historical implementation safety verdict
 
 Implementation is **not safe**. No content, schema, engine, server, phone, TV, validation, or test mechanics were changed. Route Star remains deferred. Rift Anchor Spike remains last due to its separate migration and forced-movement risk.
+
+## Final approval after route-variant foundation
+
+Route Star:
+- Selected option: Option A — Least-Hungry Road
+- Maximum charges: 2
+- Starting charges: 2
+- Cost per activation: 1 charge
+- Additional cost: NONE
+- Recharge: none
+- Scope: owner only
+- Activation timing: after selecting a legal destination with multiple authoritative route variants, before confirming movement
+- Exact route information or choice: ordered public sector names for server-issued route variants to the selected destination
+- Stale-route behavior: changed route revision, destination, legality, seat, or movement state rejects without spending
+- Final rule text: “Least-Hungry Road — After selecting a legal destination with more than one authoritative route of the required distance, spend 1 charge to choose which route you will travel. Movement distance and all gate, scenario, threat, blocker, adjacency, and destination rules remain unchanged.”
+
+The final approval is safe because `0100482` preserves deterministic server-issued route IDs and movement revisions. The implementation selects only a non-default issued route, spends atomically, and leaves destination-only movement unchanged. Rift Anchor Spike remains deferred.

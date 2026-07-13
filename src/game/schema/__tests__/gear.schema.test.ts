@@ -84,4 +84,11 @@ describe("gear effect model schema", () => {
     expect(gearItemSchema.safeParse({ ...lens, activationTiming: ["shop"] }).success).toBe(false);
     expect(gearItemSchema.safeParse({ ...lens, rechargeRule: undefined }).success).toBe(false);
   });
+
+  it("accepts Route Star only as a no-recharge authoritative route selector", () => {
+    const star = { ...base, id: "route-star", tier: "artifact", category: "chargedRelic", useLimit: "charge", effectModel: "charged", requiresEquipped: true, activationTiming: ["movementRouteConfirmation"], maxCharges: 2, startingCharges: 2, chargeCost: 1, rechargeRule: "none", chargedEffect: "selectAuthoritativeRouteVariant", activeText: "Choose one server-authorized route variant without changing movement distance or legality." } as const;
+    expect(gearItemSchema.safeParse(star).success).toBe(true);
+    expect(gearItemSchema.safeParse({ ...star, activationTiming: ["movement"] }).success).toBe(false);
+    expect(gearItemSchema.safeParse({ ...star, rechargeRule: undefined }).success).toBe(false);
+  });
 });

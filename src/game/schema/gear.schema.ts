@@ -69,7 +69,7 @@ export const gearItemSchema = z.object({
   startingCharges: z.number().int().positive().optional(),
   chargeCost: z.number().int().positive().optional(),
   rechargeRule: z.enum(["none"]).optional(),
-  chargedEffect: z.enum(["personalGateOverride", "movementAdjustment", "saintSafeConduct", "bonewayDetour", "choirLightSignalBonus", "staticIntercession", "scarSinkPrayer", "traceThePromise"]).optional(),
+  chargedEffect: z.enum(["personalGateOverride", "movementAdjustment", "saintSafeConduct", "bonewayDetour", "choirLightSignalBonus", "staticIntercession", "scarSinkPrayer", "traceThePromise", "selectAuthoritativeRouteVariant"]).optional(),
   maxUses: z.number().int().min(0).optional(),
   heatCost: z.number().int().min(0).optional(),
   linkedFollowerRole: z.string().min(1).optional(),
@@ -96,6 +96,10 @@ export const gearItemSchema = z.object({
   if (item.id === "oathchain-lens") {
     if (item.chargedEffect !== "traceThePromise" || !item.activationTiming?.includes("action")) context.addIssue({ code: z.ZodIssueCode.custom, message: "Oathchain Lens requires the typed action-phase Trace the Promise effect", path: ["chargedEffect"] });
     if (item.activationCost || item.rechargeRule !== "none") context.addIssue({ code: z.ZodIssueCode.custom, message: "Oathchain Lens has no additional cost or recharge", path: ["activationCost"] });
+  }
+  if (item.id === "route-star") {
+    if (item.chargedEffect !== "selectAuthoritativeRouteVariant" || !item.activationTiming?.includes("movementRouteConfirmation")) context.addIssue({ code: z.ZodIssueCode.custom, message: "Route Star requires the typed authoritative route-selection effect before movement confirmation", path: ["chargedEffect"] });
+    if (item.activationCost || item.rechargeRule !== "none") context.addIssue({ code: z.ZodIssueCode.custom, message: "Route Star has no additional cost or recharge", path: ["activationCost"] });
   }
   if (item.tier !== "artifact" && (item.useLimit === "charge" || item.category === "chargedRelic")) {
     context.addIssue({ code: z.ZodIssueCode.custom, message: "normal Equipment cannot use Artifact charge mechanics", path: ["useLimit"] });

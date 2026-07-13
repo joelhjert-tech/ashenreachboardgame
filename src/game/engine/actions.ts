@@ -36,6 +36,8 @@ export interface MovementRollRequestedAction extends BaseAction {
   type: "MOVEMENT_ROLL_REQUESTED";
 }
 export interface AdjustMovementRequestedAction extends BaseAction { type: "ADJUST_MOVEMENT_REQUESTED"; instanceId: string; adjustment: -1 | 1 }
+export interface SelectRouteStarVariantAction extends BaseAction { type: "SELECT_ROUTE_STAR_VARIANT"; instanceId: string; destinationId: string; routeId: string; movementRevision: number }
+export interface ClearRouteStarChoiceAction extends BaseAction { type: "CLEAR_ROUTE_STAR_CHOICE" }
 export interface ActivateGateSaintAction extends BaseAction { type: "ACTIVATE_GATE_SAINT"; instanceId: string }
 export interface UseMarrowDetourAction extends BaseAction { type: "USE_MARROW_DETOUR"; instanceId: string; reactionId: string; toSectorId: string }
 
@@ -550,6 +552,8 @@ export type GameAction =
   | MoveRequestedAction
   | MovementRollRequestedAction
   | AdjustMovementRequestedAction
+  | SelectRouteStarVariantAction
+  | ClearRouteStarChoiceAction
   | ActivateGateSaintAction
   | UseMarrowDetourAction
   | MovementRolledAction
@@ -633,6 +637,7 @@ export type ClientIntent =
       seatId: string;
     }
   | { type: "ADJUST_MOVEMENT_REQUESTED"; seatId: string; instanceId: string; adjustment: -1 | 1 }
+  | { type: "SELECT_ROUTE_STAR_VARIANT"; seatId: string; instanceId: string; destinationId: string; routeId: string; movementRevision: number }
   | { type: "ACTIVATE_GATE_SAINT"; seatId: string; instanceId: string }
   | { type: "USE_MARROW_DETOUR"; seatId: string; instanceId: string; reactionId: string; toSectorId: string }
   | {

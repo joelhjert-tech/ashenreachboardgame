@@ -1,6 +1,8 @@
 import type {
   AcceptContractAction,
   AdjustMovementRequestedAction,
+  SelectRouteStarVariantAction,
+  ClearRouteStarChoiceAction,
   ActivateGateSaintAction,
   UseMarrowDetourAction,
   AfflictionDrawnAction,
@@ -1161,8 +1163,30 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
       const charges = item?.currentCharges ?? item?.charges ?? 0;
       const adjusted = state.movementRolls[adjust.seatId]! + adjust.adjustment;
       if (!item || player.character.equippedGear.utility !== item.id || charges < 1 || adjusted < 1) return reject(state, action, "Ashen Route Compass cannot adjust this movement");
-      const next = { ...state, movementAdjustments: { ...(state.movementAdjustments ?? {}), [adjust.seatId]: { adjustment: adjust.adjustment, sourceInstanceId: adjust.instanceId } }, movementRouteRevisions: { ...(state.movementRouteRevisions ?? {}), [adjust.seatId]: (state.movementRouteRevisions?.[adjust.seatId] ?? 0) + 1 }, players: updateActivePlayer(state, adjust.seatId, (entry) => ({ ...entry, character: { ...entry.character, heldGear: entry.character.heldGear.map((gear) => gear.instanceId === adjust.instanceId ? { ...gear, currentCharges: charges - 1, maxCharges: gear.maxCharges ?? 2 } : gear) } })) };
+      const routeStarChoices = { ...(state.routeStarChoices ?? {}) }; delete routeStarChoices[adjust.seatId];
+      const next = { ...state, movementAdjustments: { ...(state.movementAdjustments ?? {}), [adjust.seatId]: { adjustment: adjust.adjustment, sourceInstanceId: adjust.instanceId } }, movementRouteRevisions: { ...(state.movementRouteRevisions ?? {}), [adjust.seatId]: (state.movementRouteRevisions?.[adjust.seatId] ?? 0) + 1 }, routeStarChoices: Object.keys(routeStarChoices).length ? routeStarChoices : undefined, players: updateActivePlayer(state, adjust.seatId, (entry) => ({ ...entry, character: { ...entry.character, heldGear: entry.character.heldGear.map((gear) => gear.instanceId === adjust.instanceId ? { ...gear, currentCharges: charges - 1, maxCharges: gear.maxCharges ?? 2 } : gear) } })) };
       return succeed({ ...next, sequence: state.sequence + 1, eventLog: [...state.eventLog, action] });
+    }
+    case "SELECT_ROUTE_STAR_VARIANT": {
+      const select = action as SelectRouteStarVariantAction;
+      try { ensureSeatTurn(state, select.seatId); ensureSeatCanTakeNormalTurnAction(state, select.seatId); } catch (error) { return reject(state, action, error instanceof Error ? error.message : "Seat cannot select a route"); }
+      if (state.phase !== "navigation" || !state.movementRolls?.[select.seatId] || state.routeStarChoices?.[select.seatId]) return reject(state, action, "Route Star cannot select a route now");
+      const player = requirePlayer(state, select.seatId);
+      const item = player.character.heldGear.find((gear) => gear.id === "route-star" && gear.instanceId === select.instanceId);
+      const charges = item?.currentCharges ?? item?.charges ?? 0;
+      if (!item || player.character.equippedGear.utility !== item.id || charges < 1) return reject(state, action, "Route Star is unavailable or depleted");
+      const route = getLegalMovementRouteVariant(state, select.seatId, select.destinationId, select.routeId, select.movementRevision);
+      const defaultRoute = getLegalMovementRoute(state, select.seatId, select.destinationId);
+      if (!route || !defaultRoute || route.routeId === defaultRoute.routeId) return reject(state, action, "Route Star requires a current non-default authoritative route");
+      const next = updateActivePlayer(state, select.seatId, (entry) => ({ ...entry, character: { ...entry.character, heldGear: entry.character.heldGear.map((gear) => gear.instanceId === select.instanceId ? { ...gear, currentCharges: charges - 1, charges: charges - 1, maxCharges: gear.maxCharges ?? 2 } : gear) } }));
+      return succeed({ ...state, players: next, routeStarChoices: { ...(state.routeStarChoices ?? {}), [select.seatId]: { instanceId: select.instanceId, destinationId: select.destinationId, routeId: select.routeId, movementRevision: select.movementRevision } }, sequence: state.sequence + 1, lastOutcomeSummary: { seatId: select.seatId, movedToSectorId: select.destinationId, encounterCardId: null, encounterTitle: "Route Star", encounterCardType: null, checkStat: null, die1: null, die2: null, statBonus: null, checkTotal: null, difficulty: null, enemyRollerSeatId: null, enemyDie1: null, enemyDie2: null, enemyBonus: null, enemyTotal: null, success: true, summary: "Route Star consulted." }, eventLog: [...state.eventLog, action] });
+    }
+    case "CLEAR_ROUTE_STAR_CHOICE": {
+      const clear = action as ClearRouteStarChoiceAction;
+      const choices = { ...(state.routeStarChoices ?? {}) };
+      if (!choices[clear.seatId]) return succeed(state);
+      delete choices[clear.seatId];
+      return succeed({ ...state, routeStarChoices: Object.keys(choices).length ? choices : undefined, sequence: state.sequence + 1, eventLog: [...state.eventLog, action] });
     }
     case "ACTIVATE_GATE_SAINT": {
       const activate = action as ActivateGateSaintAction; const player = requirePlayer(state, activate.seatId);
@@ -1224,6 +1248,7 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
           ...(state.movementRouteRevisions ?? {}),
           [movementRolledAction.seatId]: (state.movementRouteRevisions?.[movementRolledAction.seatId] ?? 0) + 1
         },
+        routeStarChoices: state.routeStarChoices ? Object.fromEntries(Object.entries(state.routeStarChoices).filter(([seatId]) => seatId !== movementRolledAction.seatId)) : undefined,
         eventLog: [...state.eventLog, action]
       });
     }
@@ -1286,6 +1311,7 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
           } : null,
           movementRolls: clearMovementRollForSeat(state, movementAction.seatId),
           movementAdjustments: clearMovementAdjustmentForSeat(state, movementAction.seatId),
+          routeStarChoices: state.routeStarChoices ? Object.fromEntries(Object.entries(state.routeStarChoices).filter(([seatId]) => seatId !== movementAction.seatId)) : undefined,
           tileChallengeProgress: movementAction.success ? null : state.tileChallengeProgress,
           players: updateActivePlayer(state, movementAction.seatId, (entry) => ({
             ...entry,
@@ -4061,6 +4087,7 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
         players: state.players.map((entry) => entry.seatId === action.seatId ? { ...entry, private: { ...entry.private, activeOathchainReveal: null } } : entry),
         movementRolls: clearMovementRollForSeat(state, action.seatId),
         movementAdjustments: clearMovementAdjustmentForSeat(state, action.seatId),
+        routeStarChoices: state.routeStarChoices ? Object.fromEntries(Object.entries(state.routeStarChoices).filter(([seatId]) => seatId !== action.seatId)) : undefined,
         eventLog: [...state.eventLog, action]
       });
     case "CONTINUE_RESOLUTION": {
