@@ -308,6 +308,7 @@ const CLIENT_INTENT_TYPES = new Set<string>([
   "SOLO_REROLL_REQUESTED",
   "CONTINUE_RESOLUTION",
   "ENCOUNTER_DECISION_REQUESTED",
+  "FORCED_DISPLACEMENT_ACCEPTED",
   "CONTINUE_SCAR_CONSEQUENCE",
   "SET_READY",
   "SELECT_CHARACTER",
@@ -1299,6 +1300,9 @@ export class GameRoomServer {
       case "ENCOUNTER_DECISION_REQUESTED":
         requireStringField(message, "decisionId", type); requireStringField(message, "optionId", type);
         if (!Number.isInteger(message.decisionVersion) || Number(message.decisionVersion) < 1) throw new IntentRejectedError(type, "Encounter decision version must be a positive integer");
+        break;
+      case "FORCED_DISPLACEMENT_ACCEPTED":
+        requireStringField(message, "reactionId", type);
         break;
       case "PHASE_ADVANCED":
         requireEnumField(message, "toPhase", PHASE_VALUES, type);
@@ -2793,6 +2797,8 @@ export class GameRoomServer {
         };
       case "ENCOUNTER_DECISION_REQUESTED":
         return { type: "ENCOUNTER_DECISION_RESOLVED", seatId: intent.seatId, decisionId: intent.decisionId, decisionVersion: intent.decisionVersion, optionId: intent.optionId, createdAt };
+      case "FORCED_DISPLACEMENT_ACCEPTED":
+        return { type: "FORCED_DISPLACEMENT_RESOLVED", seatId: intent.seatId, reactionId: intent.reactionId, createdAt };
       case "SET_READY":
         throw new Error("Ready state is handled directly");
       case "SELECT_STARTING_CONTRACT":
@@ -4991,6 +4997,10 @@ export class GameRoomServer {
         return;
       }
 
+      if (this.state.pendingDisplacement) {
+        return;
+      }
+
       if (this.completeSatisfiedContract(seatId)) {
         progressMade = true;
         continue;
@@ -5082,6 +5092,10 @@ export class GameRoomServer {
 
   private getPhaseAfterResolution(seatId: string): GameState["phase"] {
     const player = this.state.players.find((entry) => entry.seatId === seatId);
+
+    if (this.state.pendingDisplacementArrival?.seatId === seatId) {
+      return "sector";
+    }
 
     if (this.state.resolutionSource === "tileChallenge") {
       return "sector";
@@ -9180,6 +9194,14 @@ export function createTvProjection(
       sourceTitle: state.currentEncounter?.title ?? "Encounter payment",
       status: "waiting"
     } : null,
+    pendingDisplacement: state.pendingDisplacement ? {
+      seatId: state.pendingDisplacement.seatId,
+      sourceId: state.pendingDisplacement.sourceId,
+      sourceTitle: state.currentEncounter?.title ?? "Forced displacement",
+      originSectorId: state.pendingDisplacement.originSectorId,
+      destinationSectorId: state.pendingDisplacement.destinationSectorId,
+      status: "waiting"
+    } : null,
     scarTriggerStatus: state.pendingScarConsequence ? {
       seatId: state.pendingScarConsequence.seatId,
       scarTitle: state.pendingScarConsequence.scarTitle,
@@ -9510,6 +9532,16 @@ export function createPhoneProjection(state: GameState, seatId: string, forcePri
           disabledReason: enabled ? undefined : `Requires ${state.pendingEncounterDecision!.salvageCost} Salvage`
         };
       })
+    } : null,
+    pendingDisplacement: publicProjection.pendingDisplacement,
+    pendingDisplacementPrivate: state.pendingDisplacement?.seatId === seatId ? {
+      reactionId: state.pendingDisplacement.reactionId,
+      sourceTitle: state.currentEncounter?.title ?? "Forced displacement",
+      originSectorId: state.pendingDisplacement.originSectorId,
+      originSectorName: state.sectors.find((sector) => sector.id === state.pendingDisplacement!.originSectorId)?.name ?? state.pendingDisplacement.originSectorId,
+      destinationSectorId: state.pendingDisplacement.destinationSectorId,
+      destinationSectorName: state.sectors.find((sector) => sector.id === state.pendingDisplacement!.destinationSectorId)?.name ?? state.pendingDisplacement.destinationSectorId,
+      prompt: "Accept the authoritative forced displacement."
     } : null,
     outcomeSummary: state.lastOutcomeSummary,
     rivalryAgendaCompletion: publicProjection.rivalryAgendaCompletion,

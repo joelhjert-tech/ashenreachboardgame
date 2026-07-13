@@ -2516,6 +2516,7 @@ export function PhoneActionPanel({
     isActiveSeat &&
     !!activeResolution &&
     !patch.pendingEncounterDecisionPrivate &&
+    !patch.pendingDisplacementPrivate &&
     ["roll_result", "outcome_summary", "awaiting_continue"].includes(activeResolution.stage);
   const continueResolution = () =>
     onIntent({
@@ -2747,6 +2748,21 @@ export function PhoneActionPanel({
         })
       });
     }
+  }
+
+  if (patch.pendingDisplacementPrivate) {
+    const displacement = patch.pendingDisplacementPrivate;
+    resolveActions.push({
+      key: `forced-displacement-${displacement.reactionId}`,
+      label: "Accept displacement",
+      detail: `${displacement.sourceTitle}: ${displacement.originSectorName} → ${displacement.destinationSectorName}. The failed test still counts.`,
+      tone: "primary",
+      onClick: () => onIntent({
+        type: "FORCED_DISPLACEMENT_ACCEPTED",
+        seatId: self.seatId,
+        reactionId: displacement.reactionId
+      })
+    });
   }
 
   if (patch.pendingScarConsequence) {

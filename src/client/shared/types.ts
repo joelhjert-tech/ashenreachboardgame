@@ -912,6 +912,7 @@ export interface PublicPatchPayload {
   pendingEnemyRoll: PendingEnemyRoll | null;
   pendingTileChallenge?: PublicPendingTileChallenge | null;
   pendingEncounterDecision?: { seatId: string; sourceCardId: string; sourceTitle: string; status: "waiting" } | null;
+  pendingDisplacement?: { seatId: string; sourceId: string; sourceTitle: string; originSectorId: string; destinationSectorId: string; status: "waiting" } | null;
   outcomeSummary: OutcomeSummary | null;
   rivalryAgendaCompletion?: PublicRivalryAgendaCompletion | null;
   rivalryAgendaReveal?: PublicRivalryAgendaReveal | null;
@@ -963,6 +964,15 @@ export interface PhonePatchPayload extends PublicPatchPayload {
     salvageCost: number;
     currentSalvage: number;
     options: Array<{ optionId: string; label: string; enabled: boolean; disabledReason?: string }>;
+  } | null;
+  pendingDisplacementPrivate?: {
+    reactionId: string;
+    sourceTitle: string;
+    originSectorId: string;
+    originSectorName: string;
+    destinationSectorId: string;
+    destinationSectorName: string;
+    prompt: string;
   } | null;
   oathchainPrompt?: {
     instanceId: string;
@@ -1077,6 +1087,7 @@ export type ClientIntent =
       seatId: string;
     }
   | { type: "ENCOUNTER_DECISION_REQUESTED"; seatId: string; decisionId: string; decisionVersion: number; optionId: string }
+  | { type: "FORCED_DISPLACEMENT_ACCEPTED"; seatId: string; reactionId: string }
   | {
       type: "CONTINUE_SCAR_CONSEQUENCE";
       seatId: string;

@@ -28,6 +28,7 @@ import type {
   RecruitReplacementAction,
   ResolutionAppliedAction,
   EncounterDecisionResolvedAction,
+  ForcedDisplacementResolvedAction,
   ResolutionContinuedAction,
   RivalryAgendaRevealedAction,
   RivalryAgendaProgressTriggeredAction,
@@ -68,7 +69,7 @@ import { buildPendingScarConsequences, getMatchingScarTriggers } from "../rules/
 import { applyLegacyHeatNoop, isLegacyHeatNoopEffect, summarizeLegacyHeatNoop } from "../rules/legacyHeatCompatibility.js";
 import type { ScarSourceEvent } from "../schema/scarTrigger.schema.js";
 import { getBoardSpace, isScenarioConfrontationSpace } from "../data/boardSpaces.js";
-import { getLegalMovementRoute, getLegalMovementRouteVariant, getMovementBlockReason, getVoidKeyMovementRoute, getMovementStepBlockReason } from "../rules/movementPlanner.js";
+import { getForcedDisplacementDestination, getLegalMovementRoute, getLegalMovementRouteVariant, getMovementBlockReason, getVoidKeyMovementRoute, getMovementStepBlockReason } from "../rules/movementPlanner.js";
 import { isBoardSpaceShopCapable, SHOP_FAILURE_REASONS } from "../rules/shopAvailability.js";
 import {
   getStatUpgradeCost,
@@ -310,6 +311,8 @@ function summarizeEffect(effect: EncounterEffect, success: boolean | null): stri
         : `${prefix} the threat remains on this space.`;
     case "encounter_payment":
       return `${prefix} ${effect.prompt}`;
+    case "forcedDisplacement":
+      return `${prefix} forced displacement pending.`;
     case "sequence":
       return effect.effects.map((entry: EncounterEffect) => summarizeEffect(entry, success)).join(" ");
     default: {
@@ -323,6 +326,7 @@ function applyEffectToPlayer(player: PlayerState, effect: EncounterEffect): Play
   if (isLegacyHeatNoopEffect(effect)) return applyLegacyHeatNoop(player, effect);
   switch (effect.type) {
     case "encounter_payment":
+    case "forcedDisplacement":
       return player;
     case "take_wound":
       return {
@@ -477,6 +481,34 @@ function createPendingEncounterDecision(
     declineEffect: effect.declineEffect ?? null,
     unavailableEffect: effect.unavailableEffect,
     legalOptionIds,
+    createdAt: action.createdAt,
+    status: "pending"
+  };
+}
+
+function createPendingDisplacement(
+  state: GameState,
+  action: ResolutionAppliedAction,
+  effect: Extract<EncounterEffect, { type: "forcedDisplacement" }>,
+  destinationSectorId: string
+): NonNullable<GameState["pendingDisplacement"]> {
+  const player = requirePlayer(state, action.seatId);
+  const sourceResolutionId = state.activeResolution?.id ?? `${action.seatId}:${action.sourceCardId ?? "encounter"}:${state.sequence}`;
+  const sourceEventId = `${sourceResolutionId}:forced-displacement`;
+  return {
+    reactionId: `displacement:${sourceEventId}`,
+    seatId: action.seatId,
+    sourceType: "threat",
+    sourceId: action.sourceCardId ?? state.currentEncounter?.id ?? "unknown-encounter",
+    sourceEventId,
+    sourceResolutionId,
+    originSectorId: player.character.currentSpaceId,
+    destinationSectorId,
+    direction: effect.direction,
+    distance: effect.distance,
+    sameRing: effect.sameRing,
+    fallbackEffect: effect.fallbackEffect ?? null,
+    failureStillCounts: effect.failureStillCounts,
     createdAt: action.createdAt,
     status: "pending"
   };
@@ -2046,6 +2078,42 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
         return reject(state, action, "No pending effect is available to apply");
       }
 
+      if (state.pendingEffect.type === "forcedDisplacement") {
+        if (resolutionAction.success !== false) return reject(state, action, "Forced displacement requires a confirmed failed test");
+        const effect = state.pendingEffect;
+        const destinationSectorId = getForcedDisplacementDestination(state, resolutionAction.seatId, effect.direction);
+        const sourceResolutionId = state.activeResolution?.id ?? `${resolutionAction.seatId}:${resolutionAction.sourceCardId ?? "encounter"}:${state.sequence}`;
+        const sourceEventId = `${sourceResolutionId}:forced-displacement`;
+        if ((state.resolvedDisplacementSourceEventIds ?? []).includes(sourceEventId)) return reject(state, action, "Forced displacement source was already resolved");
+
+        if (!destinationSectorId) {
+          const fallbackState = effect.fallbackEffect ? applyEffectToState(state, resolutionAction.seatId, effect.fallbackEffect) : state;
+          const summary = effect.fallbackEffect ? `No legal ${effect.direction} destination. Suffered 1 Wound instead.` : "No legal displacement destination. The operative remained in place.";
+          return succeed({
+            ...fallbackState,
+            sequence: state.sequence + 1,
+            pendingEffect: null,
+            pendingFailureReaction: null,
+            pendingStaticIntercessionReaction: null,
+            resolvedDisplacementSourceEventIds: [...(state.resolvedDisplacementSourceEventIds ?? []), sourceEventId],
+            activeResolution: state.activeResolution ? { ...state.activeResolution, stage: "outcome_summary", outcome: { title: "Displacement blocked", text: summary, effects: [summary] } } : null,
+            eventLog: [...state.eventLog, action]
+          });
+        }
+
+        const pendingDisplacement = createPendingDisplacement(state, resolutionAction, effect, destinationSectorId);
+        return succeed({
+          ...state,
+          sequence: state.sequence + 1,
+          pendingEffect: null,
+          pendingFailureReaction: null,
+          pendingStaticIntercessionReaction: null,
+          pendingDisplacement,
+          activeResolution: state.activeResolution ? { ...state.activeResolution, stage: "outcome_summary", outcome: { title: "Forced displacement pending", text: `${state.currentEncounter?.title ?? "The encounter"} twisted the road.`, effects: ["Forced displacement pending."] } } : null,
+          eventLog: [...state.eventLog, action]
+        });
+      }
+
       if (state.pendingEffect.type === "encounter_payment") {
         const pending = createPendingEncounterDecision(state, resolutionAction, state.pendingEffect);
         if ((state.resolvedEncounterDecisionIds ?? []).includes(pending.decisionId)) {
@@ -2085,6 +2153,8 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
         phase: "resolution",
         resolutionSource: state.resolutionSource,
         pendingEffect: null,
+        pendingDisplacement: null,
+        pendingDisplacementArrival: null,
         pendingFailureReaction: null,
         pendingStaticIntercessionReaction: null,
         lastOutcomeSummary: containsSalvageLoss && state.lastOutcomeSummary ? { ...state.lastOutcomeSummary, summary: `${state.lastOutcomeSummary.encounterTitle ?? "Outcome"}. ${appliedEffectSummaries.join(" ")}` } : state.lastOutcomeSummary,
@@ -2141,6 +2211,49 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
         activeResolution: state.activeResolution ? { ...state.activeResolution, stage: "outcome_summary", outcome: { title: isPaid ? "Payment accepted" : "Offer declined", text: resultSummary, effects: [resultSummary] } } : null,
         lastOutcomeSummary: state.lastOutcomeSummary ? { ...state.lastOutcomeSummary, summary: `${state.lastOutcomeSummary.summary} ${resultSummary}` } : null,
         eventLog: [...state.eventLog, { ...action, salvageCost: isPaid ? pending.salvageCost : 0, paid: isPaid, summary: resultSummary }]
+      });
+    }
+    case "FORCED_DISPLACEMENT_RESOLVED": {
+      const displacementAction = action as ForcedDisplacementResolvedAction;
+      try { ensureSeatTurn(state, displacementAction.seatId); } catch (error) { return reject(state, action, error instanceof Error ? error.message : "Seat cannot act"); }
+      if (state.phase !== "resolution") return reject(state, action, `Cannot resolve forced displacement during phase ${state.phase}`);
+      const pending = state.pendingDisplacement;
+      if (!pending) return reject(state, action, "No forced displacement is pending");
+      if (pending.seatId !== displacementAction.seatId) return reject(state, action, "Forced displacement belongs to another seat");
+      if (pending.reactionId !== displacementAction.reactionId) return reject(state, action, "Forced displacement reaction is stale");
+      if ((state.resolvedDisplacementSourceEventIds ?? []).includes(pending.sourceEventId)) return reject(state, action, "Forced displacement source was already resolved");
+      if (state.currentEncounter?.id !== pending.sourceId || state.activeResolution?.id !== pending.sourceResolutionId) return reject(state, action, "Forced displacement source is stale");
+      const player = requirePlayer(state, displacementAction.seatId);
+      if (player.character.currentSpaceId !== pending.originSectorId || player.sectorId !== pending.originSectorId) return reject(state, action, "Forced displacement origin is stale");
+
+      const legalDestination = getForcedDisplacementDestination(state, displacementAction.seatId, pending.direction);
+      const canDisplace = legalDestination === pending.destinationSectorId;
+      const destinationName = state.sectors.find((sector) => sector.id === pending.destinationSectorId)?.name ?? pending.destinationSectorId;
+      const displacedState = canDisplace
+        ? {
+            ...state,
+            players: updateActivePlayer(state, displacementAction.seatId, (entry) => ({
+              ...entry,
+              sectorId: pending.destinationSectorId,
+              character: { ...entry.character, currentSpaceId: pending.destinationSectorId }
+            }))
+          }
+        : pending.fallbackEffect
+          ? applyEffectToState(state, displacementAction.seatId, pending.fallbackEffect)
+          : state;
+      const summary = canDisplace
+        ? `Forced displacement resolved to ${destinationName}.`
+        : pending.fallbackEffect
+          ? "The displacement route became illegal. Suffered 1 Wound instead."
+          : "The displacement route became illegal. The operative remained in place.";
+      return succeed({
+        ...displacedState,
+        sequence: state.sequence + 1,
+        pendingDisplacement: null,
+        pendingDisplacementArrival: canDisplace ? { seatId: pending.seatId, sectorId: pending.destinationSectorId, sourceEventId: pending.sourceEventId } : null,
+        resolvedDisplacementSourceEventIds: [...(state.resolvedDisplacementSourceEventIds ?? []), pending.sourceEventId],
+        activeResolution: state.activeResolution ? { ...state.activeResolution, stage: "outcome_summary", outcome: { title: canDisplace ? "Forced displacement" : "Displacement blocked", text: summary, effects: [summary] } } : null,
+        eventLog: [...state.eventLog, { ...action, sourceId: pending.sourceId, originSectorId: pending.originSectorId, destinationSectorId: canDisplace ? pending.destinationSectorId : null, displaced: canDisplace, summary }]
       });
     }
     case "CONTINUE_SCAR_CONSEQUENCE": {
@@ -4250,6 +4363,9 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
       if (state.pendingEncounterDecision) {
         return reject(state, action, "Encounter payment must be resolved before continuing");
       }
+      if (state.pendingDisplacement) {
+        return reject(state, action, "Forced displacement must be resolved before continuing");
+      }
 
       return succeed({
         ...state,
@@ -4279,6 +4395,8 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
         currentEncounter: leavingResolution ? null : state.currentEncounter,
         pendingEnemyRoll: leavingResolution ? null : state.pendingEnemyRoll,
         pendingEffect: leavingResolution ? null : state.pendingEffect,
+        pendingDisplacement: leavingResolution ? null : state.pendingDisplacement,
+        pendingDisplacementArrival: leavingResolution ? null : state.pendingDisplacementArrival,
         pendingFailureReaction: leavingResolution ? null : state.pendingFailureReaction,
         pendingTileChallenge: leavingResolution ? null : state.pendingTileChallenge,
         activeResolution:

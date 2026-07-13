@@ -164,6 +164,11 @@ export interface EncounterDecisionResolvedAction extends BaseAction {
   optionId: string;
 }
 
+export interface ForcedDisplacementResolvedAction extends BaseAction {
+  type: "FORCED_DISPLACEMENT_RESOLVED";
+  reactionId: string;
+}
+
 export interface HeatThresholdReachedAction extends BaseAction {
   type: "HEAT_THRESHOLD_REACHED";
   threshold: number;
@@ -578,6 +583,7 @@ export type GameAction =
   | ResolutionAppliedAction
   | ResolutionContinuedAction
   | EncounterDecisionResolvedAction
+  | ForcedDisplacementResolvedAction
   | HeatThresholdReachedAction
   | WoundThresholdReachedAction
   | RecruitReplacementAction
@@ -676,6 +682,7 @@ export type ClientIntent =
       seatId: string;
     }
   | { type: "ENCOUNTER_DECISION_REQUESTED"; seatId: string; decisionId: string; decisionVersion: number; optionId: string }
+  | { type: "FORCED_DISPLACEMENT_ACCEPTED"; seatId: string; reactionId: string }
   | {
       type: "CONTINUE_SCAR_CONSEQUENCE";
       seatId: string;

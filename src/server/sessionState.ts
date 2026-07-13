@@ -188,6 +188,9 @@ export function createInitialSessionState(
     pendingTileChallenge: null,
     pendingEncounterDecision: null,
     resolvedEncounterDecisionIds: [],
+    pendingDisplacement: null,
+    pendingDisplacementArrival: null,
+    resolvedDisplacementSourceEventIds: [],
     tileChallengeProgress: null,
     activeResolution: null,
     lastOutcomeSummary: null

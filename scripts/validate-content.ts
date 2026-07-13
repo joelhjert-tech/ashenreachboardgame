@@ -36,6 +36,7 @@ import { sectorGraphSchema, type SectorNode } from "../src/game/schema/sector.sc
 import { validatePassiveEquipmentCatalog } from "./passive-equipment-validation.js";
 import { validateScarTriggerCatalog } from "../src/game/rules/scarTriggers.js";
 import { validateLegacyHeatContentRecord } from "./legacy-heat-validation.js";
+import { validateForcedDisplacementContentRecord } from "./forced-displacement-validation.js";
 
 const sectorsRoot = join(process.cwd(), "content", "sectors");
 const contentRoot = join(process.cwd(), "content");
@@ -49,6 +50,7 @@ function validateLegacyHeatAuthoring(root: string): void {
       else if (entry.isFile() && entry.name.endsWith(".json")) {
         const record = JSON.parse(readFileSync(path, "utf8")) as unknown;
         errors.push(...validateLegacyHeatContentRecord(path, record));
+        errors.push(...validateForcedDisplacementContentRecord(path, record));
       }
     }
   };

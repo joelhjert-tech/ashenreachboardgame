@@ -532,6 +532,29 @@ describe("TvApp", () => {
     expect(screen.queryByRole("button", { name: /pay 1 salvage/i })).not.toBeInTheDocument();
   });
 
+  it("shows a public non-actionable forced-displacement waiting status", async () => {
+    window.localStorage.setItem("ashen-reach-tv-room-code", "RT7P4");
+    window.localStorage.setItem("ashen-reach-tv-host-token", "host:RT7P4:secret");
+    const patch = createPatch();
+    patch.phase = "resolution";
+    patch.payload.pendingDisplacement = {
+      seatId: "seat-1",
+      sourceId: "route-splice",
+      sourceTitle: "Route Splice",
+      originSectorId: "middle_red_march_outpost",
+      destinationSectorId: "middle_anomaly_well",
+      status: "waiting"
+    };
+    mockUseRoomSubscription.mockReturnValue({ patch, error: null, sendIntent: vi.fn(), status: "open", debugEvents: [], clearDebugEvents: vi.fn() });
+
+    render(<TvApp />);
+
+    const banner = await screen.findByTestId("host-live-status");
+    expect(banner).toHaveTextContent(/waiting for .* to resolve route splice/i);
+    expect(screen.queryByRole("button", { name: /accept displacement/i })).not.toBeInTheDocument();
+    expect(banner).not.toHaveTextContent(/rift anchor spike/i);
+  });
+
   it("places live status inside the command header instead of an absolute board overlay", () => {
     const styles = readFileSync("src/client/styles.css", "utf8");
     const bannerRule = styles.match(/\.tv-command-live-status\s*\{([^}]*)\}/)?.[1] ?? "";

@@ -629,6 +629,17 @@ function getHostStateBannerModel({ patch, roomCode }: HostStateBannerProps): Hos
     };
   }
 
+  if (patch.payload.pendingDisplacement) {
+    const seatLabels = getSeatLabelMap(patch);
+    const ownerLabel = seatLabels[patch.payload.pendingDisplacement.seatId] ?? "Active operative";
+    return {
+      label: "Displacement pending",
+      detail: `Waiting for ${ownerLabel} to resolve ${patch.payload.pendingDisplacement.sourceTitle}.`,
+      meta: "Authoritative route locked",
+      tone: "active"
+    };
+  }
+
   const prompt = buildCurrentTablePrompt(patch);
   return {
     label: prompt.phaseLabel,

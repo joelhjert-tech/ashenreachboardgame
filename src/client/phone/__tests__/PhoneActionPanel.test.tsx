@@ -136,6 +136,27 @@ function createPatch(overrides: Partial<PhonePatchPayload> = {}): PhonePatchPayl
 }
 
 describe("PhoneActionPanel", () => {
+  it("shows only the authoritative forced-displacement acknowledgement", () => {
+    const onIntent = vi.fn();
+    const patch = createPatch({
+      phase: "resolution",
+      pendingDisplacementPrivate: {
+        reactionId: "displacement:route-splice-failure",
+        sourceTitle: "Route Splice",
+        originSectorId: "middle_red_march_outpost",
+        originSectorName: "Choir Bastion",
+        destinationSectorId: "middle_anomaly_well",
+        destinationSectorName: "Static Chapel",
+        prompt: "Accept the authoritative forced displacement."
+      }
+    });
+    render(<PhoneActionPanel characters={characters} onIntent={onIntent} patch={patch} />);
+    fireEvent.click(screen.getByRole("button", { name: /^Accept displacement/ }));
+    expect(screen.getByText(/Choir Bastion → Static Chapel/)).toBeInTheDocument();
+    expect(screen.queryByText(/Rift Anchor Spike/i)).not.toBeInTheDocument();
+    expect(onIntent).toHaveBeenCalledWith({ type: "FORCED_DISPLACEMENT_ACCEPTED", seatId: "seat-1", reactionId: "displacement:route-splice-failure" });
+  });
+
   it("shows the owner-only authoritative encounter payment action", () => {
     const onIntent = vi.fn();
     const patch = createPatch({

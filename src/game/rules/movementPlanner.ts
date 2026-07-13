@@ -87,7 +87,7 @@ function getRingTrack(ring: BoardNode["ring"]): BoardNode[] {
   return RIFTFALL_BOARD_NODES.filter((node) => node.ring === ring);
 }
 
-function getRingTrackNeighbor(sectorId: string, direction: -1 | 1): string | null {
+export function getRingTrackNeighbor(sectorId: string, direction: -1 | 1): string | null {
   const node = RIFTFALL_BOARD_NODE_INDEX.get(sectorId);
 
   if (!node || node.ring === "center") {
@@ -371,6 +371,19 @@ export function buildMovementRoutePlan(state: GameState, seatId: string): Moveme
 
 export function getLegalMovementRoute(state: GameState, seatId: string, toSectorId: string): MovementRoute | null {
   return buildMovementRoutePlan(state, seatId)?.routes.find((route) => route.sectorId === toSectorId) ?? null;
+}
+
+export function getForcedDisplacementDestination(
+  state: GameState,
+  seatId: string,
+  direction: "clockwise" | "counterclockwise"
+): string | null {
+  const player = getPlayer(state, seatId);
+  if (!player) return null;
+  const originSectorId = player.character.currentSpaceId;
+  const destinationSectorId = getRingTrackNeighbor(originSectorId, direction === "clockwise" ? 1 : -1);
+  if (!destinationSectorId) return null;
+  return getMovementStepBlockReason(state, player, originSectorId, destinationSectorId) ? null : destinationSectorId;
 }
 
 export function getLegalMovementRouteVariant(

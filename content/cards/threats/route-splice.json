@@ -13,8 +13,15 @@
     "text": "You mapped the splice before it could close behind you."
   },
   "failEffect": {
-    "type": "take_wound",
-    "amount": 1
+    "type": "forcedDisplacement",
+    "direction": "clockwise",
+    "distance": 1,
+    "sameRing": true,
+    "fallbackEffect": {
+      "type": "take_wound",
+      "amount": 1
+    },
+    "failureStillCounts": true
   },
   "enemyFamily": "hazard",
   "threatLane": "yellow",
