@@ -203,3 +203,12 @@ Current inspection corrects `anomaly-red-suture-field` from the Phase 1D Heat-on
 - **Compatibility cleanup:** four exact Heat approvals were retired. Remaining totals are 28 IDs / 30 branches / 30 Heat effects; discriminator split is 17 `gain_heat`, 3 `gain_heat_all`, and 10 `lose_heat`; compatibility approvals total 44.
 - **Stable boundaries:** severity, IDs, art, rewards, graph/catalog placement, snapshots v0/v1/v2, archival metadata, Mirror reflection pressure, Heat-free runtime/projections, and every non-target Heat outcome remain unchanged.
 - **Still pending:** Choir Static Burst, Lantern-Moth Swarm, Mirror-Rot Interference, Ashen Doppelganger, all non-Wound recommendations, legacy parser/support-window decisions, archival metadata closure, and stable discriminator cleanup.
+
+# Heat-to-Salvage reward Batch 1 — implemented
+
+- **Three exact reward conversions:** Bellrain Inversion `resolveEffect`, Equipment Requisition Contract `reward`, and Latchspire Raider `defeatReward` now use existing `gain_salvage 1` in place of `lose_heat 1` compatibility no-ops.
+- **Contract authority preserved:** Equipment Requisition pays only through `COMPLETE_CONTRACT`; objective progress cannot pay early, duplicate completion rejects, the completed ledger updates once, and no Equipment is added.
+- **Encounter authority preserved:** Bellrain and Latchspire rewards apply once, reconnect preserves the result, and Latchspire loss still applies its existing Wound without Salvage.
+- **Compatibility cleanup:** three exact Heat approvals were retired. Remaining totals are 25 IDs / 27 branches / 27 effects; discriminator split is 17 `gain_heat`, 3 `gain_heat_all`, and 7 `lose_heat`; compatibility approvals total 41.
+- **Stable boundaries:** prices, sales, Deep Relic Search, Salvage Ledger, starting currency, mission progress, completed-contract spending, snapshots v0/v1/v2, archival metadata, Mirror, and projections are unchanged.
+- **Still pending:** five automatic floor-zero Salvage-loss candidates, all non-economic redesigns, legacy parser/support-window decisions, archival metadata closure, and stable discriminator cleanup.

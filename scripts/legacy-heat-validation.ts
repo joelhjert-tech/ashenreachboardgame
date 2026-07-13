@@ -27,13 +27,11 @@ export type OtherLegacyHeatCompatibilityApproval = {
 // Phase 1A compatibility effects. Approval is construct-specific: it does not
 // authorize character defaults, costs, thresholds, deltas, or arbitrary text.
 export const LEGACY_HEAT_EFFECT_APPROVALS: readonly LegacyHeatEffectApproval[] = [
-  { id: "anomaly-bellrain-inversion", constructs: ["lose_heat"] },
   { id: "anomaly-cinder-mirage-lane", constructs: ["player-facing Heat text", "player-facing Risk resource text"] },
   { id: "artifact-cinder-suture-kit", constructs: ["player-facing Heat text"] },
   { id: "ashen-doppelganger", constructs: ["gain_heat"] },
   { id: "choir-static-burst", constructs: ["gain_heat"] },
   { id: "cinder-gate-backlash", constructs: ["lose_heat"] },
-  { id: "compact-equipment-requisition", constructs: ["lose_heat"] },
   { id: "crown-bell-baron", constructs: ["gain_heat"] },
   { id: "crownless-advocate", constructs: ["lose_heat"] },
   { id: "escalation-blackstar-hunger", constructs: ["gain_heat_all"] },
@@ -45,7 +43,6 @@ export const LEGACY_HEAT_EFFECT_APPROVALS: readonly LegacyHeatEffectApproval[] =
   { id: "glass-chime-swarm", constructs: ["gain_heat"] },
   { id: "hymn-scarred-zealot", constructs: ["gain_heat"] },
   { id: "lantern-moth-swarm", constructs: ["gain_heat", "lose_heat"] },
-  { id: "latchspire-raider", constructs: ["lose_heat"] },
   { id: "marrow-tax-auditors", constructs: ["gain_heat"] },
   { id: "memory-tax-gate", constructs: ["gain_heat"] },
   { id: "mirror-rot-interference", constructs: ["lose_heat"] },

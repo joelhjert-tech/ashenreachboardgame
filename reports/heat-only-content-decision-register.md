@@ -109,6 +109,16 @@ All four use authoritative Wound prevention and recall handling. Exactly four He
 
 Each conversion uses existing prevention, actual-delta reporting, threshold recall, Scar-on-recall, continuation, and reconnect behavior. Severity, identity, art, rewards, lane/deck, and graph placement remain unchanged. Four exact Heat approvals were removed; current counts are 28 Heat-only IDs / 30 branches / 30 effects and 44 compatibility approvals. Choir Static Burst, Lantern-Moth Swarm, Mirror-Rot Interference, Ashen Doppelganger, unsuitable-for-Wounds IDs, and individual-redesign branches remain pending and unchanged.
 
+## Heat-to-Salvage reward Batch 1 — implemented
+
+| Decision ID | Content ID | Branch | Implemented rule | Status |
+|---|---|---|---|---|
+| HSB1-001 | `anomaly-bellrain-inversion` | `resolveEffect` | Replace `lose_heat 1` with authoritative `gain_salvage 1` | Implemented |
+| HSB1-002 | `compact-equipment-requisition` | Contract `reward` | Replace `lose_heat 1` with `gain_salvage 1`, paid only by canonical `COMPLETE_CONTRACT` | Implemented |
+| HSB1-003 | `latchspire-raider` | `defeatReward` | Replace `lose_heat 1` with authoritative `gain_salvage 1`; loss remains `take_wound 1` | Implemented |
+
+The three rewards are immediate, owner-scoped, replay-safe, and add no shop transaction, Equipment grant, payment, or Salvage Ledger trigger. Three exact Heat approvals were removed. Counts are now 25 Heat-only IDs / 27 branches / 27 effects and 41 compatibility approvals. The five automatic Salvage-loss candidates and all other Phase 1W decisions remain pending and unchanged.
+
 The older estimate of 39 mixed IDs reconciles to 34 current branch-level candidates plus five stale estimate-only records. Rust Choir Peddlers and all remaining Heat-only decisions are unchanged.
 
 Phase 1D's “pay up to 1, floor 0” wording is superseded as payment semantics: payment is full or absent, never partial. Phase 1H itself made no mechanics changes; Phase 1I implements only the approved shared boundary and Gate Tax decision above.
