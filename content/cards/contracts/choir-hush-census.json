@@ -8,7 +8,7 @@
     "target": 2
   },
   "reward": {
-    "type": "lose_heat",
+    "type": "gain_salvage",
     "amount": 1
   }
 }

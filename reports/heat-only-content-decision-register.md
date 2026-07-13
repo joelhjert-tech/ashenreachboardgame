@@ -5,7 +5,8 @@ All decisions are pending approval.
 | Decision | Content IDs | Question | Preferred decision | Risk | Dependency | Status |
 |---|---|---|---|---|---|---|
 | H1D-001 | five removal candidates | Are empty recovery clauses valuable? | Implemented in Phase 1E with no replacement; existing note/escalation behavior preserved | Low | completed | Superseded |
-| H1D-002 | eight bounded rewards | What replaces absent recovery rewards? | 1 Salvage or the specified bounded test reward | Medium | economy review | Recommended |
+| H1D-002 | seven Contract rewards | What replaces absent Contract recovery rewards? | Implemented as exactly 1 Salvage through `COMPLETE_CONTRACT` in Phase 1F | Low | completed | Superseded |
+| H1D-002A | anomaly-bellrain-inversion | Should the anomaly recovery become a bounded test reward? | Retain for the test/challenge batch | Medium | test design | Recommended |
 | H1D-003 | sixteen economy/equipment entries | How are tolls, theft, and requisitions enforced? | Exact Salvage floors or deterministic Equipment choice | High | authoritative transaction tests | Recommended |
 | H1D-004 | eight test/temporary entries | Can current modifier state express expiry? | Use specified tests/modifiers only when existing infrastructure supports them | High | modifier audit | Still unresolved |
 | H1D-005 | four shared-track entries | Should personal no-ops become shared setbacks? | Two Loss Pressure and two Global Escalation increments | Critical | mode/frequency approval | Still unresolved |

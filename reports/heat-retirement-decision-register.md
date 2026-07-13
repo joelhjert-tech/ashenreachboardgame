@@ -53,3 +53,6 @@ Immediate approval candidates are the proven clause removals and bounded Contrac
 # Phase 1E Batch 1 implementation
 
 Phase 1E implements the five approved clause-removal decisions: `anomaly-ashfall-murmur`, `anomaly-glassmere`, `escalation-ashfall-curfew`, `escalation-ridge-suture`, and `escalation-webglass-afterimage`. Their obsolete `lose_heat` members are removed without replacement. Existing notes and escalation reductions remain. These IDs leave the compatibility allowlist, reducing it from 119 to 114; remaining content migration decisions are not implemented.
+# Phase 1F low-risk Salvage implementation
+
+Phase 1F migrates seven implementation-ready Contract rewards to the existing `gain_salvage 1` effect: `cartel-crossing-thread`, `choir-echo-triangulation`, `choir-hush-census`, `choir-well-canticle`, `clan-salt-burial`, `contract-beacon`, and `warden-span-vigil`. Nine Severity-1 loss/payment recommendations remain blocked because no typed floor-zero loss effect or authoritative content-choice transaction exists. The allowlist decreases from 114 to 107; no other recommendation is implemented.
