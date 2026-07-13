@@ -60,3 +60,11 @@ Phase 1F migrates seven implementation-ready Contract rewards to the existing `g
 # Phase 1G floor-zero Salvage loss implementation
 
 Phase 1G implements the seven automatic-loss blockers with the typed `lose_salvage 1` consequence: `escalation-crownfall-writ`, `ash-rat-skitter`, `bridge-toll-runt`, `gutter-bell-mite`, `pale-toll-enforcer`, `rust-mote-drone`, and `toll-scrip-urchins`. Loss is automatic, permits partial resolution, clamps at zero, reports only actual mutation, and opens no payment prompt. `gate-tax-collectors` and `rust-choir-peddlers` remain blocked on authoritative payment/choice state. The allowlist decreases from 107 to 100; no higher-severity or non-Salvage recommendation is implemented.
+
+# Phase 1H payment/choice design status
+
+Phase 1H recommends a narrow persisted `encounter_payment` decision rather than reusing `lose_salvage`, shop-only services, or content-specific actions. Gate-Tax Collectors is recommended as a required 1-Salvage post-loss levy with a zero-Salvage no-debt alternative and no movement effect. Rust Choir Peddlers receives an exact proposed post-victory offer—pay 1 Salvage to heal 1 Wound—but remains blocked until that newly authored benefit is explicitly approved. Both IDs remain unchanged and allowlisted; no decision is implemented.
+
+# Phase 1I encounter payment implementation
+
+Phase 1I implements the narrow persisted `encounter_payment` architecture and migrates only `gate-tax-collectors`. A lost confrontation requires an authoritative 1-Salvage payment when affordable; at zero Salvage no debt or false delta is created, the enemy remains unresolved, and the encounter continues. Payment is distinct from automatic `lose_salvage`, owner-scoped, atomic, versioned, reconnect-safe, and replay-protected. Gate Tax leaves the Heat allowlist, reducing it from 100 to 99. `rust-choir-peddlers` remains unchanged, allowlisted, and blocked pending approval of its proposed benefit. No other content migration decision is implemented.

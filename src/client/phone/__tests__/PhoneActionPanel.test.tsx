@@ -136,6 +136,26 @@ function createPatch(overrides: Partial<PhonePatchPayload> = {}): PhonePatchPayl
 }
 
 describe("PhoneActionPanel", () => {
+  it("shows the owner-only authoritative encounter payment action", () => {
+    const onIntent = vi.fn();
+    const patch = createPatch({
+      phase: "resolution",
+      pendingEncounterDecisionPrivate: {
+        decisionId: "gate-loss:collectors-levy",
+        decisionVersion: 4,
+        sourceTitle: "Gate-Tax Collectors",
+        prompt: "The Collectors demand 1 Salvage after your defeat.",
+        mode: "required",
+        salvageCost: 1,
+        currentSalvage: 2,
+        options: [{ optionId: "pay-levy", label: "Pay 1 Salvage", enabled: true }]
+      }
+    });
+    render(<PhoneActionPanel characters={characters} onIntent={onIntent} patch={patch} />);
+    fireEvent.click(screen.getByRole("button", { name: /^Pay 1 Salvage/ }));
+    expect(screen.getByText(/Current Salvage: 2/)).toBeInTheDocument();
+    expect(onIntent).toHaveBeenCalledWith({ type: "ENCOUNTER_DECISION_REQUESTED", seatId: "seat-1", decisionId: "gate-loss:collectors-levy", decisionVersion: 4, optionId: "pay-levy" });
+  });
   afterEach(() => {
     cleanup();
   });

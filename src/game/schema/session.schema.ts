@@ -6,6 +6,7 @@ import { effectSchema, threatCardSchema } from "./card.schema.js";
 import { contractCardSchema } from "./contract.schema.js";
 import { sectorNodeSchema } from "./sector.schema.js";
 import { pendingScarConsequenceSchema } from "./scarTrigger.schema.js";
+import { pendingEncounterDecisionSchema } from "./encounterDecision.schema.js";
 
 export const phaseSchema = z.enum([
   "start",
@@ -239,6 +240,8 @@ export const gameStateSchema = z.object({
     })
     .nullable(),
   pendingEffect: effectSchema.nullable(),
+  pendingEncounterDecision: pendingEncounterDecisionSchema.nullable().optional(),
+  resolvedEncounterDecisionIds: z.array(z.string().min(1)).optional(),
   pendingFailureReaction: z.object({
     id: z.string().min(1),
     seatId: z.string().min(1),

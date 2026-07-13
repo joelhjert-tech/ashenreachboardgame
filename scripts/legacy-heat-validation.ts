@@ -7,7 +7,7 @@ export const APPROVED_LEGACY_HEAT_CONTENT_IDS = new Set([
   "choir-defector", "choir-static-burst", "cinder-gate-backlash", "cinder-monk", "cinder-surgeon", "cinder-veil-stalker",
   "compact-equipment-requisition", "cracked-censer-novice", "crown-bell-baron", "crownless-advocate", "emberwatch-sparkfall",
   "escalation-blackstar-hunger", "escalation-choir-feedback", "escalation-marrow-surgery-debt", "escalation-saltwind-lockdown",
-  "false-route-procession", "fandiablos", "fleet-elder", "gateblind-pulse", "gate-choir-executioner", "gate-saint-acolyte", "gate-tax-collectors", "glass-chime-swarm", "glass-mire-stalker", "glasswing-midge-cloud",
+  "false-route-procession", "fandiablos", "fleet-elder", "gateblind-pulse", "gate-choir-executioner", "gate-saint-acolyte", "glass-chime-swarm", "glass-mire-stalker", "glasswing-midge-cloud",
   "grave-engineer", "grave-lattice-reclaimer", "grave-silt-press", "heat-sink-prayer", "hymn-scarred-zealot", "iron-lung-grenadier", "iron-synod-chirurgeon", "lalla-bubu-crownling", "lantern-moth-swarm", "latchspire-raider", "lucy-hell-puppy",
   "marrow-tax-auditors", "memory-tax-gate", "mirror-lord-envoy", "mirror-mite-bloom", "mirror-rot-interference", "oathbroken-prince", "pale-cartel-shakedown", "pale-contract-collector", "pale-marshal",
   "relay-husk", "relay-pilgrim-riot", "reliquary-judge", "rift-cartographer", "roadside-bone-oracle", "rust-choir-peddlers", "saint-of-ashes-echo", "saltflat-bone-reader", "salvage-warden", "shardvine-ambushers", "shardwind-front", "siege-medic",
@@ -34,6 +34,7 @@ export function validateLegacyHeatContentRecord(file: string, record: unknown): 
   const serialized = JSON.stringify(record);
   const errors: string[] = [];
   if (serialized.includes('"type":"lose_salvage"') && !APPROVED_AUTOMATIC_SALVAGE_LOSS_IDS.has(id)) errors.push(`${file} (${id}) uses lose_salvage outside the approved automatic floor-zero consequence set. Payments, tolls, fees, purchases, and choices require authoritative affordability or choice handling.`);
+  if (serialized.includes('"type":"encounter_payment"') && /\b(?:Heat|Risk)\b/i.test(serialized)) errors.push(`${file} (${id}) exposes Heat or Risk in an encounter payment. Payments must use the approved current resource named by their typed cost.`);
   const constructs = BLOCKED_CONSTRUCTS.filter((entry) => entry.pattern.test(serialized));
   if (constructs.length > 0 && !APPROVED_LEGACY_HEAT_CONTENT_IDS.has(id)) errors.push(...constructs.map((entry) => `${file} (${id}) introduces blocked legacy Heat construct ${entry.name}. New mechanics must use an approved current system or receive an explicit design decision.`));
   return errors;

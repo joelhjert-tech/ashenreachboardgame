@@ -64,6 +64,8 @@ The displayed result is authoritative. Do not import a tie rule from another gam
 
 Automatic Salvage loss is not payment: lose up to the stated amount, minimum 0, and continue resolving the outcome.
 
+**Lose:** automatic, floor 0, and the encounter continues. **Pay:** the full amount is required for the paid result; no partial payment or paid benefit occurs when the cost cannot be met.
+
 ## Mission sequence
 
 1. Accept one available contract when no active contract is held.

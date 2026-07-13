@@ -2515,6 +2515,7 @@ export function PhoneActionPanel({
   const canContinueResolution =
     isActiveSeat &&
     !!activeResolution &&
+    !patch.pendingEncounterDecisionPrivate &&
     ["roll_result", "outcome_summary", "awaiting_continue"].includes(activeResolution.stage);
   const continueResolution = () =>
     onIntent({
@@ -2727,6 +2728,26 @@ export function PhoneActionPanel({
   const tableActions: ActionButtonDefinition[] = [];
   const contractActions: ActionButtonDefinition[] = [];
   const advanceActions: ActionButtonDefinition[] = [];
+
+  if (patch.pendingEncounterDecisionPrivate) {
+    const decision = patch.pendingEncounterDecisionPrivate;
+    for (const option of decision.options) {
+      resolveActions.push({
+        key: `encounter-payment-${decision.decisionId}-${option.optionId}`,
+        label: option.label,
+        detail: option.disabledReason ?? `${decision.prompt} Current Salvage: ${decision.currentSalvage}.`,
+        tone: "primary",
+        disabled: !option.enabled,
+        onClick: () => onIntent({
+          type: "ENCOUNTER_DECISION_REQUESTED",
+          seatId: self.seatId,
+          decisionId: decision.decisionId,
+          decisionVersion: decision.decisionVersion,
+          optionId: option.optionId
+        })
+      });
+    }
+  }
 
   if (patch.pendingScarConsequence) {
     const prayer = self.character.heldGear.find((item) => item.id === "heat-sink-prayer");

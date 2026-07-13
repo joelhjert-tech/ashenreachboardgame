@@ -911,6 +911,7 @@ export interface PublicPatchPayload {
   encounter: EncounterCard | null;
   pendingEnemyRoll: PendingEnemyRoll | null;
   pendingTileChallenge?: PublicPendingTileChallenge | null;
+  pendingEncounterDecision?: { seatId: string; sourceCardId: string; sourceTitle: string; status: "waiting" } | null;
   outcomeSummary: OutcomeSummary | null;
   rivalryAgendaCompletion?: PublicRivalryAgendaCompletion | null;
   rivalryAgendaReveal?: PublicRivalryAgendaReveal | null;
@@ -952,6 +953,16 @@ export interface PhonePatchPayload extends PublicPatchPayload {
     scarInstanceId: string;
     pendingEffects: Array<{ effectId: string; summary: string }>;
     rulesText: string;
+  } | null;
+  pendingEncounterDecisionPrivate?: {
+    decisionId: string;
+    decisionVersion: number;
+    sourceTitle: string;
+    prompt: string;
+    mode: "required" | "optional";
+    salvageCost: number;
+    currentSalvage: number;
+    options: Array<{ optionId: string; label: string; enabled: boolean; disabledReason?: string }>;
   } | null;
   oathchainPrompt?: {
     instanceId: string;
@@ -1065,6 +1076,7 @@ export type ClientIntent =
       type: "CONTINUE_RESOLUTION";
       seatId: string;
     }
+  | { type: "ENCOUNTER_DECISION_REQUESTED"; seatId: string; decisionId: string; decisionVersion: number; optionId: string }
   | {
       type: "CONTINUE_SCAR_CONSEQUENCE";
       seatId: string;

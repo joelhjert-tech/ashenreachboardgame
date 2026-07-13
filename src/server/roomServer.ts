@@ -307,6 +307,7 @@ const CLIENT_INTENT_TYPES = new Set<string>([
   "ENEMY_ROLL_REQUESTED",
   "SOLO_REROLL_REQUESTED",
   "CONTINUE_RESOLUTION",
+  "ENCOUNTER_DECISION_REQUESTED",
   "CONTINUE_SCAR_CONSEQUENCE",
   "SET_READY",
   "SELECT_CHARACTER",
@@ -1295,6 +1296,10 @@ export class GameRoomServer {
         requireStringField(message, "instanceId", type); requireStringField(message, "reactionId", type); requireStringField(message, "toSectorId", type); break;
       case "CONTINUE_SCAR_CONSEQUENCE":
         requireStringField(message, "reactionId", type); break;
+      case "ENCOUNTER_DECISION_REQUESTED":
+        requireStringField(message, "decisionId", type); requireStringField(message, "optionId", type);
+        if (!Number.isInteger(message.decisionVersion) || Number(message.decisionVersion) < 1) throw new IntentRejectedError(type, "Encounter decision version must be a positive integer");
+        break;
       case "PHASE_ADVANCED":
         requireEnumField(message, "toPhase", PHASE_VALUES, type);
         break;
@@ -2786,6 +2791,8 @@ export class GameRoomServer {
           reactionId: intent.reactionId,
           createdAt
         };
+      case "ENCOUNTER_DECISION_REQUESTED":
+        return { type: "ENCOUNTER_DECISION_RESOLVED", seatId: intent.seatId, decisionId: intent.decisionId, decisionVersion: intent.decisionVersion, optionId: intent.optionId, createdAt };
       case "SET_READY":
         throw new Error("Ready state is handled directly");
       case "SELECT_STARTING_CONTRACT":
@@ -4977,6 +4984,10 @@ export class GameRoomServer {
           this.state.activeResolution.stage
         )
       ) {
+        return;
+      }
+
+      if (this.state.pendingEncounterDecision) {
         return;
       }
 
@@ -8594,6 +8605,25 @@ function getEventLogResultDeltas(state: GameState, ownerSeatId?: string | null):
       }));
     }
 
+    if (type === "ENCOUNTER_DECISION_RESOLVED" && entry.paid === true && typeof entry.salvageCost === "number") {
+      const amount = entry.salvageCost;
+      const playerName = seatId ? state.players.find((player) => player.seatId === seatId)?.character.name ?? "An operative" : "An operative";
+      deltas.push(createResultDelta({
+        id: `encounter-payment:${source}`,
+        type: "salvage",
+        label: "Salvage payment",
+        value: amount,
+        sign: "loss",
+        targetScope: "personal",
+        targetSeatId: seatId,
+        visibility: "public",
+        source,
+        reason: "Encounter payment",
+        publicText: `${playerName} paid ${amount} Salvage.`,
+        severity: "loss"
+      }));
+    }
+
     if (type === "AFFLICTION_DRAWN") {
       const affliction = entry.affliction as { name?: unknown; flipFacedownAfterResolve?: unknown } | undefined;
       const afflictionName =
@@ -9144,6 +9174,12 @@ export function createTvProjection(
 
   return {
     status: state.status,
+    pendingEncounterDecision: state.pendingEncounterDecision ? {
+      seatId: state.pendingEncounterDecision.seatId,
+      sourceCardId: state.pendingEncounterDecision.sourceCardId,
+      sourceTitle: state.currentEncounter?.title ?? "Encounter payment",
+      status: "waiting"
+    } : null,
     scarTriggerStatus: state.pendingScarConsequence ? {
       seatId: state.pendingScarConsequence.seatId,
       scarTitle: state.pendingScarConsequence.scarTitle,
@@ -9454,6 +9490,26 @@ export function createPhoneProjection(state: GameState, seatId: string, forcePri
         summary: summarizeTileChallengeEffect(entry.effect)
       })),
       rulesText: "Continue to resolve this Scar consequence."
+    } : null,
+    pendingEncounterDecision: publicProjection.pendingEncounterDecision,
+    pendingEncounterDecisionPrivate: state.pendingEncounterDecision?.seatId === seatId ? {
+      decisionId: state.pendingEncounterDecision.decisionId,
+      decisionVersion: state.pendingEncounterDecision.decisionVersion,
+      sourceTitle: state.currentEncounter?.title ?? "Encounter payment",
+      prompt: state.pendingEncounterDecision.prompt,
+      mode: state.pendingEncounterDecision.mode,
+      salvageCost: state.pendingEncounterDecision.salvageCost,
+      currentSalvage: player?.character.salvage ?? 0,
+      options: state.pendingEncounterDecision.legalOptionIds.map((optionId) => {
+        const isPaid = optionId === state.pendingEncounterDecision!.paidOptionId;
+        const enabled = !isPaid || (player?.character.salvage ?? 0) >= state.pendingEncounterDecision!.salvageCost;
+        return {
+          optionId,
+          label: isPaid ? state.pendingEncounterDecision!.paidLabel : state.pendingEncounterDecision!.declineLabel ?? "Continue",
+          enabled,
+          disabledReason: enabled ? undefined : `Requires ${state.pendingEncounterDecision!.salvageCost} Salvage`
+        };
+      })
     } : null,
     outcomeSummary: state.lastOutcomeSummary,
     rivalryAgendaCompletion: publicProjection.rivalryAgendaCompletion,

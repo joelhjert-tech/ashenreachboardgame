@@ -186,6 +186,8 @@ export function createInitialSessionState(
     pendingScarConsequenceQueue: [],
     resolvedScarSourceEventIds: [],
     pendingTileChallenge: null,
+    pendingEncounterDecision: null,
+    resolvedEncounterDecisionIds: [],
     tileChallengeProgress: null,
     activeResolution: null,
     lastOutcomeSummary: null

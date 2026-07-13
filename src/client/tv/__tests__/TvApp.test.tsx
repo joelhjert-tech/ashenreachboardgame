@@ -505,6 +505,33 @@ describe("TvApp", () => {
     expect(screen.queryByText(/global escalation/i)).not.toBeInTheDocument();
   });
 
+  it("shows a public non-actionable encounter-payment waiting status", async () => {
+    window.localStorage.setItem("ashen-reach-tv-room-code", "RT7P4");
+    window.localStorage.setItem("ashen-reach-tv-host-token", "host:RT7P4:secret");
+    const patch = createPatch();
+    patch.phase = "resolution";
+    patch.payload.pendingEncounterDecision = {
+      seatId: "seat-1",
+      sourceCardId: "gate-tax-collectors",
+      sourceTitle: "Gate-Tax Collectors",
+      status: "waiting"
+    };
+    mockUseRoomSubscription.mockReturnValue({
+      patch,
+      error: null,
+      sendIntent: vi.fn(),
+      status: "open",
+      debugEvents: [],
+      clearDebugEvents: vi.fn()
+    });
+
+    render(<TvApp />);
+
+    const banner = await screen.findByTestId("host-live-status");
+    expect(banner).toHaveTextContent(/waiting for .* to resolve gate-tax collectors/i);
+    expect(screen.queryByRole("button", { name: /pay 1 salvage/i })).not.toBeInTheDocument();
+  });
+
   it("places live status inside the command header instead of an absolute board overlay", () => {
     const styles = readFileSync("src/client/styles.css", "utf8");
     const bannerRule = styles.match(/\.tv-command-live-status\s*\{([^}]*)\}/)?.[1] ?? "";

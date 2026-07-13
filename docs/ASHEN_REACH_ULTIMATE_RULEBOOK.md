@@ -242,6 +242,8 @@ Salvage is currency. A shop is available only at a shop-capable sector and only 
 
 When an automatic consequence says to lose Salvage, lose up to the stated amount; Salvage cannot fall below 0. This is not a payment, so the consequence still resolves when you have less Salvage than the stated loss.
 
+When an encounter says to pay Salvage, the full amount is a prerequisite for the paid result. Payment is checked and deducted authoritatively before that result resolves; there is no partial payment and no paid benefit without payment. A required payment that cannot be afforded follows its authored unpaid result instead. If an encounter pauses for its owner to resolve a payment, that pending decision survives reconnect.
+
 Shop sequence:
 
 1. Resolve blockers first.

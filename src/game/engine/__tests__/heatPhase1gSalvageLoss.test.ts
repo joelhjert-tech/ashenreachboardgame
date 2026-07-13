@@ -20,7 +20,7 @@ const AUTOMATIC_LOSS_IDS = [
   "toll-scrip-urchins"
 ] as const;
 
-const DEFERRED_PAYMENT_OR_CHOICE_IDS = ["gate-tax-collectors", "rust-choir-peddlers"] as const;
+const DEFERRED_PAYMENT_OR_CHOICE_IDS = ["rust-choir-peddlers"] as const;
 
 function applyLoss(startingSalvage: number, amount: number, effect: EncounterEffect = { type: "lose_salvage", amount }) {
   const state = createInitialSessionState(`phase-1g-${startingSalvage}-${amount}`, "single-player");
@@ -82,7 +82,7 @@ describe("Phase 1G floor-zero Salvage loss", () => {
     if (result.ok) expect(result.state.activeResolution?.outcome?.effects).toEqual(["Failure: note added: First.", "Lost 1 Salvage.", "Failure: note added: Last."]);
   });
 
-  it("migrates exactly seven automatic consequences and defers payment and choice entries", () => {
+  it("migrates exactly seven automatic consequences while keeping the remaining choice entry deferred", () => {
     expect([...APPROVED_AUTOMATIC_SALVAGE_LOSS_IDS].sort()).toEqual([...AUTOMATIC_LOSS_IDS].sort());
     const threats = loadThreatCards();
     const escalations = loadEscalationCards();

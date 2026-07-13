@@ -3,6 +3,7 @@ import { statSchema } from "./character.schema.js";
 import { gearItemSchema } from "./gear.schema.js";
 import type { GearItem } from "./gear.schema.js";
 import { followerSchema } from "./follower.schema.js";
+import { encounterPaymentEffectSchema, type EncounterPaymentEffect } from "./encounterDecision.schema.js";
 
 const legacyFollowerGrantSchema = z.object({
   id: z.string().min(1),
@@ -155,7 +156,8 @@ type SimpleEncounterEffect =
   | GainNoteEffect
   | AdvanceScenarioEffect
   | AdvanceEscalationEffect
-  | ReturnThreatToSpaceEffect;
+  | ReturnThreatToSpaceEffect
+  | EncounterPaymentEffect;
 
 export type EncounterEffect = SimpleEncounterEffect | { type: "sequence"; effects: EncounterEffect[] };
 
@@ -232,7 +234,8 @@ const simpleEffectSchema: z.ZodType<SimpleEncounterEffect> = z.union([
     type: z.literal("return_threat_to_space"),
     threatId: z.string().min(1).optional(),
     sourceSectorId: z.string().min(1).optional()
-  })
+  }),
+  encounterPaymentEffectSchema
 ]);
 
 export const effectSchema: z.ZodType<EncounterEffect> = z.lazy(() =>

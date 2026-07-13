@@ -618,6 +618,17 @@ function getHostStateBannerModel({ patch, roomCode }: HostStateBannerProps): Hos
     };
   }
 
+  if (patch.payload.pendingEncounterDecision) {
+    const seatLabels = getSeatLabelMap(patch);
+    const ownerLabel = seatLabels[patch.payload.pendingEncounterDecision.seatId] ?? "Active operative";
+    return {
+      label: "Encounter payment",
+      detail: `Waiting for ${ownerLabel} to resolve ${patch.payload.pendingEncounterDecision.sourceTitle}.`,
+      meta: "Owner phone must answer",
+      tone: "active"
+    };
+  }
+
   const prompt = buildCurrentTablePrompt(patch);
   return {
     label: prompt.phaseLabel,
@@ -2178,6 +2189,9 @@ function HostBottomStatusStrip({
   const activeLabel = activeSeatId ? seatLabels[activeSeatId] ?? "Active operative" : "Awaiting active operative";
   const scenarioLabel = patch?.payload.activeScenario?.name ?? "Scenario pending";
   const latestLog = [
+    patch?.payload.pendingEncounterDecision
+      ? `Waiting for ${activeLabel} to resolve ${patch.payload.pendingEncounterDecision.sourceTitle}.`
+      : null,
     patch?.payload.rivalryAgendaCompletion?.summary,
     patch?.payload.rivalryAgendaReveal?.summary,
     patch?.payload.activeResolution?.outcome?.text,

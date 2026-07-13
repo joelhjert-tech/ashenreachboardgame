@@ -157,6 +157,13 @@ export interface ResolutionContinuedAction extends BaseAction {
   type: "CONTINUE_RESOLUTION";
 }
 
+export interface EncounterDecisionResolvedAction extends BaseAction {
+  type: "ENCOUNTER_DECISION_RESOLVED";
+  decisionId: string;
+  decisionVersion: number;
+  optionId: string;
+}
+
 export interface HeatThresholdReachedAction extends BaseAction {
   type: "HEAT_THRESHOLD_REACHED";
   threshold: number;
@@ -570,6 +577,7 @@ export type GameAction =
   | CombatResolvedAction
   | ResolutionAppliedAction
   | ResolutionContinuedAction
+  | EncounterDecisionResolvedAction
   | HeatThresholdReachedAction
   | WoundThresholdReachedAction
   | RecruitReplacementAction
@@ -667,6 +675,7 @@ export type ClientIntent =
       type: "CONTINUE_RESOLUTION";
       seatId: string;
     }
+  | { type: "ENCOUNTER_DECISION_REQUESTED"; seatId: string; decisionId: string; decisionVersion: number; optionId: string }
   | {
       type: "CONTINUE_SCAR_CONSEQUENCE";
       seatId: string;

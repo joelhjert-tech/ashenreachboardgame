@@ -27,6 +27,7 @@ import type {
   NemesisSpawnedAction,
   RecruitReplacementAction,
   ResolutionAppliedAction,
+  EncounterDecisionResolvedAction,
   ResolutionContinuedAction,
   RivalryAgendaRevealedAction,
   RivalryAgendaProgressTriggeredAction,
@@ -57,6 +58,7 @@ import type {
 import { getHeldGearItem } from "./gear.js";
 import { canAdvancePhase, canResolveMovement } from "./phases.js";
 import type { EncounterEffect, ThreatCard } from "../schema/card.schema.js";
+import type { EncounterPaymentEffect, EncounterPaymentResult } from "../schema/encounterDecision.schema.js";
 import type { ContractCard } from "../schema/contract.schema.js";
 import type { ActiveResolution, GameState, PlayerState } from "../schema/session.schema.js";
 import type { GearSlot } from "../schema/gear.schema.js";
@@ -306,6 +308,8 @@ function summarizeEffect(effect: EncounterEffect, success: boolean | null): stri
       return effect.threatId
         ? `${prefix} ${effect.threatId} remains on ${effect.sourceSectorId ?? "this space"}.`
         : `${prefix} the threat remains on this space.`;
+    case "encounter_payment":
+      return `${prefix} ${effect.prompt}`;
     case "sequence":
       return effect.effects.map((entry: EncounterEffect) => summarizeEffect(entry, success)).join(" ");
     default: {
@@ -318,6 +322,8 @@ function summarizeEffect(effect: EncounterEffect, success: boolean | null): stri
 function applyEffectToPlayer(player: PlayerState, effect: EncounterEffect): PlayerState {
   if (isLegacyHeatNoopEffect(effect)) return applyLegacyHeatNoop(player, effect);
   switch (effect.type) {
+    case "encounter_payment":
+      return player;
     case "take_wound":
       return {
         ...player,
@@ -425,6 +431,54 @@ function addHeldGearToPlayer(
       ...player.character,
       heldGear: [...player.character.heldGear, effect.gear]
     }
+  };
+}
+
+function applyEncounterPaymentResult(state: GameState, seatId: string, result: EncounterPaymentResult): GameState {
+  if (result.type === "none") return state;
+  return applyEffectToState(state, seatId, result);
+}
+
+function summarizeEncounterPaymentResult(result: EncounterPaymentResult): string {
+  if (result.type === "none") return result.summary ?? "The encounter continues.";
+  if (result.type === "heal_wound") return "Healed 1 Wound.";
+  return result.text;
+}
+
+function createPendingEncounterDecision(
+  state: GameState,
+  action: ResolutionAppliedAction,
+  effect: EncounterPaymentEffect
+): NonNullable<GameState["pendingEncounterDecision"]> {
+  const sourceResolutionId = state.activeResolution?.id ?? `${action.seatId}:${action.sourceCardId ?? "encounter"}:${state.sequence}`;
+  const decisionId = `${sourceResolutionId}:${effect.decisionKey}`;
+  const affordable = (requirePlayer(state, action.seatId).character.salvage ?? 0) >= effect.salvageCost;
+  const legalOptionIds = affordable
+    ? [effect.paidOptionId, ...(effect.mode === "optional" && effect.declineOptionId ? [effect.declineOptionId] : [])]
+    : effect.mode === "optional" && effect.declineOptionId
+      ? [effect.declineOptionId]
+      : ["unavailable"];
+  return {
+    decisionId,
+    decisionVersion: state.sequence + 1,
+    seatId: action.seatId,
+    sourceCardId: action.sourceCardId ?? state.currentEncounter?.id ?? "unknown-encounter",
+    sourceResolutionId,
+    sourceBranch: action.success === true ? "defeatReward" : "woundOnLoss",
+    decisionKey: effect.decisionKey,
+    mode: effect.mode,
+    prompt: effect.prompt,
+    salvageCost: effect.salvageCost,
+    paidOptionId: effect.paidOptionId,
+    paidLabel: effect.paidLabel,
+    paidEffect: effect.paidEffect,
+    declineOptionId: effect.declineOptionId ?? null,
+    declineLabel: effect.declineLabel ?? null,
+    declineEffect: effect.declineEffect ?? null,
+    unavailableEffect: effect.unavailableEffect,
+    legalOptionIds,
+    createdAt: action.createdAt,
+    status: "pending"
   };
 }
 
@@ -1992,6 +2046,36 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
         return reject(state, action, "No pending effect is available to apply");
       }
 
+      if (state.pendingEffect.type === "encounter_payment") {
+        const pending = createPendingEncounterDecision(state, resolutionAction, state.pendingEffect);
+        if ((state.resolvedEncounterDecisionIds ?? []).includes(pending.decisionId)) {
+          return reject(state, action, "Encounter payment decision was already resolved");
+        }
+        const player = requirePlayer(state, resolutionAction.seatId);
+        if (pending.mode === "required" && (player.character.salvage ?? 0) < pending.salvageCost) {
+          const unavailableState = applyEncounterPaymentResult(state, resolutionAction.seatId, pending.unavailableEffect);
+          const summary = summarizeEncounterPaymentResult(pending.unavailableEffect);
+          return succeed({
+            ...unavailableState,
+            sequence: state.sequence + 1,
+            pendingEffect: null,
+            pendingEncounterDecision: null,
+            resolvedEncounterDecisionIds: [...(state.resolvedEncounterDecisionIds ?? []), pending.decisionId],
+            activeResolution: state.activeResolution ? { ...state.activeResolution, stage: "outcome_summary", outcome: { title: "Unable to pay", text: summary, effects: [summary] } } : null,
+            lastOutcomeSummary: state.lastOutcomeSummary ? { ...state.lastOutcomeSummary, summary: `${state.lastOutcomeSummary.summary} ${summary}` } : null,
+            eventLog: [...state.eventLog, action]
+          });
+        }
+        return succeed({
+          ...state,
+          sequence: state.sequence + 1,
+          pendingEffect: null,
+          pendingEncounterDecision: pending,
+          activeResolution: state.activeResolution ? { ...state.activeResolution, stage: "outcome_summary", outcome: { title: "Payment required", text: pending.prompt, effects: [pending.prompt] } } : null,
+          eventLog: [...state.eventLog, action]
+        });
+      }
+
       const appliedEffectSummaries = summarizeAppliedEffects(state.pendingEffect as EncounterEffect, resolutionAction.success, requirePlayer(state, resolutionAction.seatId).character.salvage ?? 0);
       const containsSalvageLoss = JSON.stringify(state.pendingEffect).includes('"lose_salvage"');
 
@@ -2025,6 +2109,38 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
         ...beginScarTriggerEvent(state, action.sourceEvent, action.createdAt),
         sequence: state.sequence + 1,
         eventLog: [...state.eventLog, action]
+      });
+    }
+    case "ENCOUNTER_DECISION_RESOLVED": {
+      const decisionAction = action as EncounterDecisionResolvedAction;
+      try { ensureSeatTurn(state, decisionAction.seatId); } catch (error) { return reject(state, action, error instanceof Error ? error.message : "Seat cannot act"); }
+      if (state.phase !== "resolution") return reject(state, action, `Cannot resolve encounter payment during phase ${state.phase}`);
+      const pending = state.pendingEncounterDecision;
+      if (!pending) return reject(state, action, "No encounter payment decision is pending");
+      if (pending.seatId !== decisionAction.seatId) return reject(state, action, "Encounter payment belongs to another seat");
+      if (pending.decisionId !== decisionAction.decisionId || pending.decisionVersion !== decisionAction.decisionVersion) return reject(state, action, "Encounter payment decision is stale");
+      if ((state.resolvedEncounterDecisionIds ?? []).includes(pending.decisionId)) return reject(state, action, "Encounter payment decision was already resolved");
+      if (!pending.legalOptionIds.includes(decisionAction.optionId)) return reject(state, action, "Encounter payment option is not authoritative");
+      if (state.activeResolution?.id !== pending.sourceResolutionId || state.currentEncounter?.id !== pending.sourceCardId) return reject(state, action, "Encounter payment source is stale");
+      const isPaid = decisionAction.optionId === pending.paidOptionId;
+      const player = requirePlayer(state, decisionAction.seatId);
+      if (isPaid && (player.character.salvage ?? 0) < pending.salvageCost) return reject(state, action, "Insufficient Salvage for encounter payment");
+      const result = isPaid ? pending.paidEffect : pending.declineEffect;
+      if (!result) return reject(state, action, "Encounter payment option has no authoritative result");
+      if (result.type === "heal_wound" && player.character.wounds < result.amount) return reject(state, action, "Encounter payment result cannot currently resolve");
+      const paidState = isPaid
+        ? { ...state, players: updateActivePlayer(state, decisionAction.seatId, (entry) => ({ ...entry, character: { ...entry.character, salvage: (entry.character.salvage ?? 0) - pending.salvageCost } })) }
+        : state;
+      const resolvedState = applyEncounterPaymentResult(paidState, decisionAction.seatId, result);
+      const resultSummary = isPaid ? `Paid ${pending.salvageCost} Salvage. ${summarizeEncounterPaymentResult(result)}` : summarizeEncounterPaymentResult(result);
+      return succeed({
+        ...resolvedState,
+        sequence: state.sequence + 1,
+        pendingEncounterDecision: null,
+        resolvedEncounterDecisionIds: [...(state.resolvedEncounterDecisionIds ?? []), pending.decisionId],
+        activeResolution: state.activeResolution ? { ...state.activeResolution, stage: "outcome_summary", outcome: { title: isPaid ? "Payment accepted" : "Offer declined", text: resultSummary, effects: [resultSummary] } } : null,
+        lastOutcomeSummary: state.lastOutcomeSummary ? { ...state.lastOutcomeSummary, summary: `${state.lastOutcomeSummary.summary} ${resultSummary}` } : null,
+        eventLog: [...state.eventLog, { ...action, salvageCost: isPaid ? pending.salvageCost : 0, paid: isPaid, summary: resultSummary }]
       });
     }
     case "CONTINUE_SCAR_CONSEQUENCE": {
@@ -4130,6 +4246,9 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
 
       if (!state.activeResolution) {
         return reject(state, action, "No active resolution is waiting to continue");
+      }
+      if (state.pendingEncounterDecision) {
+        return reject(state, action, "Encounter payment must be resolved before continuing");
       }
 
       return succeed({

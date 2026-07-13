@@ -24,3 +24,21 @@ Alternatives rejected globally: blanket Heat-to-Wound, random Scar distribution,
 | H1G-001 | `escalation-crownfall-writ`, `ash-rat-skitter`, `bridge-toll-runt`, `gutter-bell-mite`, `pale-toll-enforcer`, `rust-mote-drone`, `toll-scrip-urchins` | Can unavoidable economic damage use a typed floor-zero consequence? | Implemented as automatic `lose_salvage 1`, with partial loss and no affordability gate | Low | completed | Superseded |
 | H1G-002 | `gate-tax-collectors` | Can the fee resolve without a payment window? | No; preserve the Heat no-op until authoritative affordability and transaction timing exist | High | payment lifecycle | Blocked |
 | H1G-003 | `rust-choir-peddlers` | Can an optional offer use automatic loss? | No; preserve the Heat no-op until an authoritative choice/payment window exists | High | choice lifecycle | Blocked |
+
+## Phase 1H payment/choice design
+
+| Decision | Content IDs | Question | Preferred decision | Risk | Dependency | Status |
+|---|---|---|---|---|---|---|
+| H1H-001 | shared architecture | How should encounter payments pause and resume? | Narrow typed `encounter_payment`, persisted owner decision, bounded results, one atomic request | Medium | explicit architecture approval | Recommended |
+| H1H-002 | `gate-tax-collectors` | What is the exact required payment? | After combat loss, pay exactly 1 Salvage if able; at zero, record no debt and continue; enemy remains; no movement effect | Low | H1H-001 | Recommended |
+| H1H-003 | `rust-choir-peddlers` | What enforceable benefit replaces the undefined offer? | After victory, optionally pay 1 Salvage to heal 1 Wound; decline/free unavailable path; trophy/note cleanup unchanged | Medium | explicit benefit approval plus H1H-001 | Blocked |
+
+## Phase 1I encounter payment implementation
+
+| Decision ID | Content ID | Question | Current result | Risk | Dependency | Status |
+|---|---|---|---|---|---|---|
+| H1I-001 | shared encounter payment | Can encounter payment pause, persist, validate, and resume atomically? | Typed required/optional payment, owner-scoped pending state, authoritative intent, atomic deduction/result, and replay protection implemented | Low | focused schema/server/projection/reconnect tests | Implemented |
+| H1I-002 | `gate-tax-collectors` | Is the post-loss levy enforceable without inventing gate behavior? | Required 1-Salvage payment when affordable; zero Salvage creates no debt; enemy remains; encounter continues | Low | H1I-001 | Implemented |
+| H1I-003 | `rust-choir-peddlers` | Is the proposed paid healing benefit approved? | Content, Heat clause, allowlist entry, text, and behavior remain unchanged | Medium | explicit benefit approval | Blocked |
+
+Phase 1D's “pay up to 1, floor 0” wording is superseded as payment semantics: payment is full or absent, never partial. Phase 1H itself made no mechanics changes; Phase 1I implements only the approved shared boundary and Gate Tax decision above.

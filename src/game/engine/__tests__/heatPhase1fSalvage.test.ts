@@ -74,15 +74,15 @@ describe("Phase 1F low-severity Salvage rewards", () => {
     expect(result.state.scenarioProgress).toEqual({ lossPressure: 4 });
   });
 
-  it("leaves the Phase 1F blocked population recorded while Phase 1G removes only automatic losses from the Heat boundary", () => {
+  it("tracks the later low-severity migrations without reopening the Phase 1F reward set", () => {
     expect(BLOCKED_LOW_SEVERITY_IDS).toHaveLength(9);
     for (const id of PHASE_1G_AUTOMATIC_LOSS_IDS) expect(APPROVED_LEGACY_HEAT_CONTENT_IDS.has(id)).toBe(false);
-    expect(APPROVED_LEGACY_HEAT_CONTENT_IDS.has("gate-tax-collectors")).toBe(true);
+    expect(APPROVED_LEGACY_HEAT_CONTENT_IDS.has("gate-tax-collectors")).toBe(false);
     expect(APPROVED_LEGACY_HEAT_CONTENT_IDS.has("rust-choir-peddlers")).toBe(true);
   });
 
   it("shrinks only completed approvals while continuing to reject new Heat constructs", () => {
-    expect(APPROVED_LEGACY_HEAT_CONTENT_IDS.size).toBe(100);
+    expect(APPROVED_LEGACY_HEAT_CONTENT_IDS.size).toBe(99);
     for (const id of COMPLETED_IDS) expect(APPROVED_LEGACY_HEAT_CONTENT_IDS.has(id)).toBe(false);
     expect(validateLegacyHeatContentRecord("new.json", { id: "new-heat", reward: { type: "lose_heat", amount: 1 } })[0]).toMatch(/blocked legacy Heat construct/);
     expect(validateLegacyHeatContentRecord("salvage.json", { id: "new-salvage", reward: { type: "gain_salvage", amount: 1 } })).toEqual([]);
