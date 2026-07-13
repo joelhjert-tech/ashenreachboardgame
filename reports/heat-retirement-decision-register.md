@@ -136,3 +136,26 @@ Current inspection corrects `anomaly-red-suture-field` from the Phase 1D Heat-on
 - **Coordinated network cleanup implemented:** server producers, shared client types, current fixtures, and focused compatibility guards land together. No network version, optional transition field, capability negotiation, state normalizer, refresh flow, or service worker is added.
 - **Mixed-version evidence preserved:** old clients have no consumer for omitted fields; current clients tolerate old extra fields as inert JSON; full `STATE_PATCH` replacement prevents merge retention.
 - **Not implemented:** historical metadata support-window closure, legacy v0 parser retirement, Mirror-key migration, Heat-only outcome migration, Rust Choir Peddlers, or generic discriminator removal.
+
+# Phase 1S Mirror threshold semantic design (pending approval)
+
+- **HRD-009 semantic finding:** `heatThreshold` is not character Heat. Its only production gameplay read gates `scenario_mirror_of_false_heroes` confrontation against Reflection Pressure. It defaults to 8 in single-player and 6 otherwise, uses `>=`, is immutable after construction, and is persisted only because it is a required `GameState` field.
+- **Canonical field recommendation:** rename the current runtime/persisted field to `reflectionPressureThreshold`. Keep the threshold mode-derived; scenario content currently does not author it, and `pressureTrack.max: 8` is a distinct public-track maximum.
+- **Runtime rename recommendation:** current `GameState`, construction, mode tuning, Mirror comparison, fixtures, and guards should use only the canonical name. Do not retain dual runtime reads or writes.
+- **Content recommendation:** no content-field migration is required. Retire `heatThreshold` as a current authoring compatibility construct after strict snapshot compatibility owns the old key.
+- **Snapshot recommendation:** introduce strict `saveVersion: 2`. Freeze v1 with `heatThreshold`, define v2 with `reflectionPressureThreshold`, keep Phase 1P v0-to-v1 behavior unchanged, and chain v0-to-v1-to-v2.
+- **Migration recommendation:** add a pure non-mutating v1-to-v2 exact-key rename that preserves archival character-Heat metadata and all other session state. Current serialization writes v2 only.
+- **Conflict recommendation:** reject both-key, missing-key, malformed-value, and wrong-version shapes. Never choose one threshold silently.
+- **Reconnect/projection recommendation:** reconnect remains an in-memory attachment with no migration; phone/TV remain unchanged because neither threshold key is projected.
+- **Old-key compatibility recommendation:** after Phase 1T, allow `heatThreshold` only in strict v0/v1 schemas, v1 migration, and focused legacy tests. Complete removal requires an explicit later closure of v0/v1 snapshot support.
+- These are report-only recommendations. Runtime/content/schema renaming, save version 2, migration, serializer changes, tests, and validation changes remain unimplemented.
+
+# Phase 1T Mirror threshold semantic migration
+
+- **HRD-009 implemented:** current runtime state now owns `reflectionPressureThreshold`; the old `heatThreshold` name has no current declaration, read, write, alias, fallback, or authoring approval.
+- **Strict snapshot v2 implemented:** current snapshots require `saveVersion: 2` and the canonical threshold key. Strict unversioned v0 and strict v1 retain the old key only as frozen compatibility contracts.
+- **Migration chain implemented:** the Phase 1P v0-to-v1 character-Heat migration remains separate and unchanged; a pure v1-to-v2 exact-key rename is added, and unversioned input dispatches through v0-to-v1-to-v2.
+- **Current serializer implemented:** current serialization emits v2 with the exact runtime threshold and preserves archival character-Heat metadata without exposing it to gameplay.
+- **Conflict boundary implemented:** old/new both-key, missing-key, malformed-threshold, and unknown-version inputs fail closed under their strict schemas/dispatcher.
+- **Reconnect and projections preserved:** reconnect does not invoke snapshot migration or reconstruct scenario state; neither threshold key is transmitted to phone or TV clients.
+- **Still open:** legacy v0 parser retirement, legacy v1 parser retirement, archival metadata support-window closure, remaining Heat-only outcomes, Rust Choir Peddlers, and generic Heat discriminator removal.

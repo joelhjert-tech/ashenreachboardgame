@@ -295,7 +295,7 @@ function createState(overrides: Partial<GameState> = {}): GameState {
     resolutionSource: null,
     activeSeatIndex: 0,
     turnOrder: ["seat-1", "seat-2", "seat-3"],
-    heatThreshold: 2,
+    reflectionPressureThreshold: 2,
     woundThreshold: 3,
     sequence: 0,
     escalationLevel: 0,

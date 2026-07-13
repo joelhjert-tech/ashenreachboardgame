@@ -389,7 +389,7 @@ describe("canonical sector graph", () => {
     expect(state.seats.map((seat) => seat.seatId)).toEqual(["seat-1"]);
     expect(state.players.map((player) => player.seatId)).toEqual(["seat-1"]);
     expect(state.turnOrder).toEqual(["seat-1"]);
-    expect(state.heatThreshold).toBe(8);
+    expect(state.reflectionPressureThreshold).toBe(8);
     expect(state.woundThreshold).toBe(4);
     expect(state.scenarioProgress).toEqual({ sealTokens: 8 });
     expect(state.soloRerollCharges).toEqual({ "seat-1": 1 });
@@ -403,6 +403,14 @@ describe("canonical sector graph", () => {
     expect(tvProjection.escalationThreshold).toBe(8);
     expect(tvProjection.seats).toHaveLength(1);
     expect(tvProjection.players).toHaveLength(0);
+  });
+
+  it.each([
+    ["cooperative", "co-op"],
+    ["rivalry", "rivalry"]
+  ] as const)("initializes the Mirror reflection-pressure cutoff to 6 in %s multiplayer", (_label, interactionMode) => {
+    const state = createInitialSessionState(`session-${_label}`, "multiplayer", "scenario_mirror_of_false_heroes", interactionMode, "standard", 2);
+    expect(state.reflectionPressureThreshold).toBe(6);
   });
 
   it("lets character starting-loadout overrides replace solo mode defaults", () => {

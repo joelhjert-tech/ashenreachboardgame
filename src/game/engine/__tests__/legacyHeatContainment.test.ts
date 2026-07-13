@@ -3,7 +3,8 @@ import { loadGear } from "../../content/gear.js";
 import { createInitialSessionState } from "../../../server/sessionState.js";
 import { gameStateSchema } from "../../schema/session.schema.js";
 import { reduceGameState } from "../reducer.js";
-import { getMirrorReflectionPressureThreshold, WITHDRAWN_LEGACY_HEAT_SERVICE_IDS } from "../../rules/legacyHeatCompatibility.js";
+import { WITHDRAWN_LEGACY_HEAT_SERVICE_IDS } from "../../rules/legacyHeatCompatibility.js";
+import { getReflectionPressureThreshold } from "../../rules/reflectionPressure.js";
 import type { EncounterEffect } from "../../schema/card.schema.js";
 
 function resolve(effect: EncounterEffect) {
@@ -37,10 +38,10 @@ describe("Phase 1A legacy Heat compatibility", () => {
 
   it("preserves the unrelated Mirror threshold through serialization", () => {
     const state = createInitialSessionState("legacy-save", "single-player");
-    state.heatThreshold = 7;
+    state.reflectionPressureThreshold = 7;
     const restored = gameStateSchema.parse(JSON.parse(JSON.stringify(state)));
-    expect(restored.heatThreshold).toBe(7);
-    expect(getMirrorReflectionPressureThreshold(restored)).toBe(7);
+    expect(restored.reflectionPressureThreshold).toBe(7);
+    expect(getReflectionPressureThreshold(restored)).toBe(7);
   });
 
   it("keeps stable identifiers without active Heat costs", () => {

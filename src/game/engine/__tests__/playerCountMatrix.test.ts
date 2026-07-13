@@ -155,7 +155,7 @@ function createMatrixState(playerCount: number, overrides: Partial<GameState> = 
     resolutionSource: null,
     activeSeatIndex: 0,
     turnOrder: seats.map((seat) => seat.seatId),
-    heatThreshold: 6,
+    reflectionPressureThreshold: 6,
     woundThreshold: 3,
     sequence: 0,
     escalationLevel: 0,

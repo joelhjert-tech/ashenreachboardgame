@@ -1,5 +1,5 @@
 import type { EncounterEffect } from "../schema/card.schema.js";
-import type { GameState, PlayerState } from "../schema/session.schema.js";
+import type { PlayerState } from "../schema/session.schema.js";
 
 export type LegacyHeatEffect = Extract<EncounterEffect, { type: "gain_heat" | "gain_heat_all" | "lose_heat" }>;
 
@@ -17,9 +17,4 @@ export function applyLegacyHeatNoop(player: PlayerState, _effect: LegacyHeatEffe
 
 export function summarizeLegacyHeatNoop(prefix: string): string {
   return `${prefix} no additional status change.`;
-}
-
-export function getMirrorReflectionPressureThreshold(state: Pick<GameState, "heatThreshold">): number {
-  // Serialized as heatThreshold for compatibility; Mirror interprets it as reflection pressure.
-  return state.heatThreshold;
 }

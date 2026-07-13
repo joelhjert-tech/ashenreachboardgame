@@ -46,7 +46,7 @@ import {
   type ScenarioAmbientResolution
 } from "../game/rules/scenarioAmbient.js";
 import { buildScenarioPressureState } from "../game/rules/scenarioPressure.js";
-import { getMirrorReflectionPressureThreshold } from "../game/rules/legacyHeatCompatibility.js";
+import { getReflectionPressureThreshold } from "../game/rules/reflectionPressure.js";
 import {
   getAfflictionWoundPrevention,
   getAfflictionModifierSources,
@@ -6126,7 +6126,7 @@ export class GameRoomServer {
 
     const mirrorPressure = this.state.scenarioProgress.mirrorPressure ?? player.character.scars.length;
 
-    const reflectionPressureThreshold = getMirrorReflectionPressureThreshold(this.state);
+    const reflectionPressureThreshold = getReflectionPressureThreshold(this.state);
     if (scenario.id === "scenario_mirror_of_false_heroes" && mirrorPressure >= reflectionPressureThreshold) {
       this.applyAmbientScenarioMutation(
         intent.seatId,

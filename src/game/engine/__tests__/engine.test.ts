@@ -777,7 +777,7 @@ function createState(overrides: Partial<GameState> = {}): GameState {
     resolutionSource: null,
     activeSeatIndex: 0,
     turnOrder: ["seat-1", "seat-2", "seat-3"],
-    heatThreshold: 6,
+    reflectionPressureThreshold: 6,
     woundThreshold: 3,
     sequence: 0,
     sectors: [
@@ -3932,7 +3932,7 @@ describe("movement rolls", () => {
     const server = new GameRoomServer(
       createState({
         phase: "navigation",
-        heatThreshold: 2,
+        reflectionPressureThreshold: 2,
         sectors: baseState.sectors.map((sector) =>
           sector.id === "sector-b"
             ? {

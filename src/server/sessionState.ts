@@ -9,7 +9,7 @@ import { createCanonicalSectorGraph, validateCanonicalSectorGraph } from "../gam
 import { getScenarioDefinition, SCENARIOS } from "../game/data/scenarios.js";
 import { createInitialScenarioProgress } from "../game/rules/scenarioAmbient.js";
 import { applyStartingLoadout, createInitialSoloRerollCharges, type StartingLoadoutCatalogs } from "../game/rules/startingLoadout.js";
-import { getHeatThresholdForMode, getWoundThresholdForMode } from "../game/rules/soloTuning.js";
+import { getReflectionPressureThresholdForMode, getWoundThresholdForMode } from "../game/rules/soloTuning.js";
 import { createInitialAfflictionUsageState } from "../game/rules/afflictions.js";
 import { attachTileChallengesToSectors } from "../game/rules/tileChallenges.js";
 import type { AuthoredCharacter, Character } from "../game/schema/character.schema.js";
@@ -138,7 +138,7 @@ export function createInitialSessionState(
     resolutionSource: null,
     activeSeatIndex: 0,
     turnOrder: configuredSeats.map(({ seatId }) => seatId),
-    heatThreshold: getHeatThresholdForMode(sessionMode),
+    reflectionPressureThreshold: getReflectionPressureThresholdForMode(sessionMode),
     woundThreshold: getWoundThresholdForMode(sessionMode),
     sequence: 0,
     escalationLevel: 0,

@@ -72,7 +72,7 @@ function createState(): GameState {
     resolutionSource: null,
     activeSeatIndex: 0,
     turnOrder: [seatId],
-    heatThreshold: 6,
+    reflectionPressureThreshold: 6,
     woundThreshold: 3,
     sequence: 0,
     escalationLevel: 0,
@@ -276,5 +276,7 @@ describe("reconnect flapping regression", () => {
     expect(statuses.length).toBe(settledStatusCount);
     expect(statuses).toContain("closed");
     expect(statuses.at(-1)).toBe("open");
+    expect(harness.roomServer.getState().reflectionPressureThreshold).toBe(6);
+    expect(JSON.stringify(patches)).not.toMatch(/heatThreshold|reflectionPressureThreshold/);
   }, 15000);
 });

@@ -2,7 +2,7 @@ import type { SessionMode } from "../schema/session.schema.js";
 
 export type SoloDifficultyTier = "outer" | "middle" | "inner" | "center" | "unknown";
 
-export const SOLO_HEAT_THRESHOLD = 8;
+export const SOLO_REFLECTION_PRESSURE_THRESHOLD = 8;
 export const SOLO_WOUND_THRESHOLD = 4;
 export const SOLO_BROKEN_SEAL_TOKENS = 8;
 export const MULTIPLAYER_BROKEN_SEAL_TOKENS = 6;
@@ -19,8 +19,8 @@ export function isSinglePlayerMode(sessionMode: SessionMode): boolean {
   return sessionMode === "single-player";
 }
 
-export function getHeatThresholdForMode(sessionMode: SessionMode): number {
-  return isSinglePlayerMode(sessionMode) ? SOLO_HEAT_THRESHOLD : 6;
+export function getReflectionPressureThresholdForMode(sessionMode: SessionMode): number {
+  return isSinglePlayerMode(sessionMode) ? SOLO_REFLECTION_PRESSURE_THRESHOLD : 6;
 }
 
 export function getWoundThresholdForMode(sessionMode: SessionMode): number {

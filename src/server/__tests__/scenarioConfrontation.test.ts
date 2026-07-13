@@ -549,12 +549,12 @@ describe("scenario confrontation flow", () => {
     expect(roomServer.getState().scenarioProgress.ignitionMarks).toBe(4);
   });
 
-  it("ends a Mirror confrontation attempt immediately when reflection pressure is already at threshold", () => {
+  it.each([3, 4])("ends a Mirror confrontation attempt immediately at/above the reflection-pressure threshold (%i)", (mirrorPressure) => {
     const roomServer = new GameRoomServer(
       createScenarioState({
         activeScenarioId: "scenario_mirror_of_false_heroes",
-        heatThreshold: 3,
-        scenarioProgress: { mirrorPressure: 3 },
+        reflectionPressureThreshold: 3,
+        scenarioProgress: { mirrorPressure, lossPressure: 2 },
         players: createScenarioState().players.map((player) =>
           player.seatId === "seat-1"
             ? {
@@ -585,6 +585,9 @@ describe("scenario confrontation flow", () => {
     expect(roomServer.getState().phase).toBe("navigation");
     expect(roomServer.getState().activeResolution).toBeNull();
     expect(roomServer.getState().scenarioProgress.mirrorBreaks).toBeUndefined();
+    expect(roomServer.getState().reflectionPressureThreshold).toBe(3);
+    expect(roomServer.getState().scenarioProgress.lossPressure).toBe(2);
+    expect(roomServer.getState().escalationLevel).toBe(0);
   });
 
   it("weakens the Broken Seal at turn start from its ambient roll", () => {

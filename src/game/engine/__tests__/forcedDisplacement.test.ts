@@ -123,7 +123,7 @@ describe("authoritative forced displacement foundation", () => {
       failureStillCounts: true
     });
     expect(result.state.lastOutcomeSummary?.success).toBe(false);
-    expect(sessionSnapshotSchema.safeParse({ saveVersion: 1, sessionId: result.state.sessionId, sequence: result.state.sequence, state: result.state }).success).toBe(true);
+    expect(sessionSnapshotSchema.safeParse({ saveVersion: 2, sessionId: result.state.sessionId, sequence: result.state.sequence, state: result.state }).success).toBe(true);
   });
 
   it("accepts the authoritative displacement once and schedules one arrival pipeline", () => {
@@ -339,7 +339,7 @@ describe("authoritative forced displacement foundation", () => {
         character: { ...entry.character, heldGear: [...entry.character.heldGear, instance], equippedGear: { ...entry.character.equippedGear, utility: "rift-anchor-spike" } }
       } : entry)
     };
-    expect(sessionSnapshotSchema.safeParse({ saveVersion: 1, sessionId: reconnectState.sessionId, sequence: reconnectState.sequence, state: reconnectState }).success).toBe(true);
+    expect(sessionSnapshotSchema.safeParse({ saveVersion: 2, sessionId: reconnectState.sessionId, sequence: reconnectState.sequence, state: reconnectState }).success).toBe(true);
     const restored = new GameRoomServer(reconnectState);
     const ownerProjection = createPhoneProjection(restored.getState(), "seat-1") as unknown as PhonePatchPayload;
     const otherProjection = createPhoneProjection(restored.getState(), "seat-2") as unknown as PhonePatchPayload;

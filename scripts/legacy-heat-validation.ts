@@ -4,7 +4,6 @@ export type LegacyHeatConstruct =
   | "lose_heat"
   | "heatCost"
   | "heatDelta"
-  | "heatThreshold"
   | "cost.heat"
   | "player-facing Heat text"
   | "player-facing Risk resource text"
@@ -192,7 +191,6 @@ function findLegacyHeatConstructs(value: unknown): LegacyHeatConstruct[] {
     for (const [key, nested] of Object.entries(current)) {
       if (key === "heatCost") found.add("heatCost");
       else if (key === "heatDelta") found.add("heatDelta");
-      else if (key === "heatThreshold") found.add("heatThreshold");
       else if (key === "heat" && parentKey === "cost") found.add("cost.heat");
       else if (key === "heat") {
         // Canonical character.heat and cost.heat are validated separately.

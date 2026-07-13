@@ -55,4 +55,23 @@ describe("Phase 1P Heat-free runtime character construction", () => {
     expect(accesses).toEqual([]);
     expect(projectionZeros).toEqual([]);
   });
+
+  it("confines the old Mirror threshold key to strict snapshot compatibility and migration", () => {
+    const files = [...productionFiles(join(ROOT, "src", "game")), ...productionFiles(join(ROOT, "src", "server"))];
+    const allowed = new Set([
+      "src/game/schema/session.schema.ts",
+      "src/game/persistence/sessionSnapshot.ts"
+    ]);
+    const violations: string[] = [];
+
+    for (const file of files) {
+      const relativePath = relative(ROOT, file).replaceAll("\\", "/");
+      if (allowed.has(relativePath)) continue;
+      readFileSync(file, "utf8").split(/\r?\n/).forEach((line, index) => {
+        if (/\bheatThreshold\b/.test(line)) violations.push(`${relativePath}:${index + 1}`);
+      });
+    }
+
+    expect(violations).toEqual([]);
+  });
 });

@@ -214,7 +214,7 @@ export const gameStateSchema = z.object({
   resolutionSource: z.enum(["movement", "encounter", "contract", "tileChallenge"]).nullable(),
   activeSeatIndex: z.number().int().min(0),
   turnOrder: z.array(z.string().min(1)).min(1),
-  heatThreshold: z.number().int().min(1),
+  reflectionPressureThreshold: z.number().int().min(1),
   woundThreshold: z.number().int().min(1),
   sequence: z.number().int().min(0),
   sectors: z.array(sectorNodeSchema),
@@ -298,9 +298,14 @@ export const gameStateSchema = z.object({
       summary: z.string().min(1)
     })
     .nullable()
-});
+}).strict();
 
-export const legacyGameStateSchemaV0 = gameStateSchema.extend({
+const legacyThresholdGameStateSchema = gameStateSchema
+  .omit({ reflectionPressureThreshold: true })
+  .extend({ heatThreshold: z.number().int().min(1) })
+  .strict();
+
+export const legacyGameStateSchemaV0 = legacyThresholdGameStateSchema.extend({
   players: z.array(legacyPlayerStateSchemaV0)
 }).strict();
 
@@ -329,20 +334,33 @@ export const legacyCompatibilityMetadataSchema = z.object({
   });
 });
 
-export const sessionSnapshotSchema = z.object({
-  saveVersion: z.literal(1),
-  sessionId: z.string().min(1),
-  sequence: z.number().int().min(0),
-  state: gameStateSchema,
-  legacyCompatibility: legacyCompatibilityMetadataSchema.optional()
-}).strict().superRefine((snapshot, context) => {
+function validateLegacyCompatibilityOwners(
+  snapshot: { state: { players: PlayerState[] }; legacyCompatibility?: LegacyCompatibilityMetadata },
+  context: z.RefinementCtx
+): void {
   snapshot.legacyCompatibility?.characterHeat.forEach((record, index) => {
     const owner = snapshot.state.players.find((player) => player.seatId === record.seatId);
     if (!owner) {
       context.addIssue({ code: z.ZodIssueCode.custom, path: ["legacyCompatibility", "characterHeat", index], message: `Legacy character Heat owner ${record.seatId} does not exist in the snapshot` });
     }
   });
-});
+}
+
+export const sessionSnapshotSchemaV1 = z.object({
+  saveVersion: z.literal(1),
+  sessionId: z.string().min(1),
+  sequence: z.number().int().min(0),
+  state: legacyThresholdGameStateSchema,
+  legacyCompatibility: legacyCompatibilityMetadataSchema.optional()
+}).strict().superRefine(validateLegacyCompatibilityOwners);
+
+export const sessionSnapshotSchema = z.object({
+  saveVersion: z.literal(2),
+  sessionId: z.string().min(1),
+  sequence: z.number().int().min(0),
+  state: gameStateSchema,
+  legacyCompatibility: legacyCompatibilityMetadataSchema.optional()
+}).strict().superRefine(validateLegacyCompatibilityOwners);
 
 export type Phase = z.infer<typeof phaseSchema>;
 export type SessionStatus = z.infer<typeof sessionStatusSchema>;
@@ -362,5 +380,6 @@ export type NemesisNexusCountdown = z.infer<typeof nemesisNexusCountdownSchema>;
 export type ShopStockReveal = z.infer<typeof shopStockRevealSchema>;
 export type GameState = z.infer<typeof gameStateSchema>;
 export type SessionSnapshot = z.infer<typeof sessionSnapshotSchema>;
+export type SessionSnapshotV1 = z.infer<typeof sessionSnapshotSchemaV1>;
 export type LegacySessionSnapshotV0 = z.infer<typeof legacySessionSnapshotSchemaV0>;
 export type LegacyCompatibilityMetadata = z.infer<typeof legacyCompatibilityMetadataSchema>;

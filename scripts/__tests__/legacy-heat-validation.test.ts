@@ -95,7 +95,7 @@ describe("legacy Heat authoring guard", () => {
     [{ id: "new-card", effect: { type: "gain_heat", amount: 1 } }, "gain_heat"],
     [{ id: "new-card", heatCost: 1 }, "heatCost"],
     [{ id: "new-card", heatDelta: 1 }, "heatDelta"],
-    [{ id: "new-card", heatThreshold: 3 }, "heatThreshold"],
+    [{ id: "new-card", heatThreshold: 3 }, "other Heat-shaped field"],
     [{ id: "new-card", cost: { heat: 1 } }, "cost.heat"],
     [{ id: "new-card", text: "Gain 1 Heat." }, "player-facing Heat text"],
     [{ id: "new-card", text: "Pay 1 Risk." }, "player-facing Risk resource text"]
