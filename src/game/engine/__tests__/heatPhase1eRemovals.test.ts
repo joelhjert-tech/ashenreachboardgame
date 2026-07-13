@@ -42,7 +42,7 @@ describe("Phase 1E Heat-only clause removals", () => {
   });
 
   it("removes only completed IDs from the explicit compatibility boundary", () => {
-    expect(APPROVED_LEGACY_HEAT_CONTENT_IDS.size).toBe(48);
+    expect(APPROVED_LEGACY_HEAT_CONTENT_IDS.size).toBe(44);
     for (const id of REMOVAL_IDS) {
       expect(APPROVED_LEGACY_HEAT_CONTENT_IDS.has(id)).toBe(false);
     }

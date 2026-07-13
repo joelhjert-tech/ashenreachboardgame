@@ -13,10 +13,10 @@ function readJson(file: string): unknown {
 }
 
 describe("legacy Heat authoring guard", () => {
-  it("retains only the 48 effect and other compatibility approval IDs", () => {
-    expect(LEGACY_HEAT_EFFECT_APPROVALS).toHaveLength(34);
+  it("retains only the 44 effect and other compatibility approval IDs", () => {
+    expect(LEGACY_HEAT_EFFECT_APPROVALS).toHaveLength(30);
     expect(OTHER_LEGACY_HEAT_COMPATIBILITY_APPROVALS).toHaveLength(14);
-    expect(APPROVED_LEGACY_HEAT_CONTENT_IDS.size).toBe(48);
+    expect(APPROVED_LEGACY_HEAT_CONTENT_IDS.size).toBe(44);
     expect(APPROVED_LEGACY_HEAT_CONTENT_IDS.has("black-route-fuse")).toBe(false);
 
     const allIds = [
@@ -78,16 +78,16 @@ describe("legacy Heat authoring guard", () => {
       expect(validateLegacyHeatContentRecord(file, { ...character, ...mutation }).length).toBeGreaterThan(0);
     }
 
-    const effectApprovedCharacter = { id: "ash-cinder-runt", heat: 0, effect: { type: "gain_heat", amount: 1 } };
-    expect(validateLegacyHeatContentRecord("content/characters/ash-cinder-runt.json", effectApprovedCharacter).join(" ")).toContain("must omit Heat");
+    const effectApprovedCharacter = { id: "choir-static-burst", heat: 0, effect: { type: "gain_heat", amount: 1 } };
+    expect(validateLegacyHeatContentRecord("content/characters/choir-static-burst.json", effectApprovedCharacter).join(" ")).toContain("must omit Heat");
 
     const stableIdCharacter = { id: "heat-sink-prayer", heat: 0 };
     expect(validateLegacyHeatContentRecord("content/characters/heat-sink-prayer.json", stableIdCharacter).join(" ")).toContain("must omit Heat");
   });
 
   it("accepts only the constructs explicitly approved for legacy effect IDs", () => {
-    expect(validateLegacyHeatContentRecord("content/cards/threats/ash-cinder-runt.json", { id: "ash-cinder-runt", effect: { type: "gain_heat", amount: 1 } })).toEqual([]);
-    expect(validateLegacyHeatContentRecord("content/cards/threats/ash-cinder-runt.json", { id: "ash-cinder-runt", effect: { type: "lose_heat", amount: 1 } })[0]).toContain("lose_heat");
+    expect(validateLegacyHeatContentRecord("content/cards/threats/choir-static-burst.json", { id: "choir-static-burst", effect: { type: "gain_heat", amount: 1 } })).toEqual([]);
+    expect(validateLegacyHeatContentRecord("content/cards/threats/choir-static-burst.json", { id: "choir-static-burst", effect: { type: "lose_heat", amount: 1 } })[0]).toContain("lose_heat");
     expect(validateLegacyHeatContentRecord("content/gear/black-route-fuse.json", { id: "black-route-fuse", text: "Discard after use." })).toEqual([]);
   });
 

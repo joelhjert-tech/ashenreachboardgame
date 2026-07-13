@@ -15,7 +15,7 @@
     "text": "You dispersed the pilgrims without turning the road into a grave."
   },
   "woundOnLoss": {
-    "type": "gain_heat",
+    "type": "take_wound",
     "amount": 1
   },
   "enemyFamily": "human",
@@ -25,7 +25,7 @@
   "tempo": "push",
   "resourceTags": [
     "gear",
-    "heat",
+    "wound",
     "loot",
     "trophy"
   ]

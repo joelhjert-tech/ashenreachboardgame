@@ -195,3 +195,11 @@ Current inspection corrects `anomaly-red-suture-field` from the Phase 1D Heat-on
 - **Authoritative health rules:** existing prevention, actual-delta reporting, threshold recall, Scar-on-recall behavior, continuation, and reconnect replay protection apply unchanged.
 - **Compatibility cleanup:** four exact `gain_heat` approvals are retired. Counts are now 32 IDs / 34 branches / 34 effects and 48 approvals; discriminator split is 21 `gain_heat`, 3 `gain_heat_all`, and 10 `lose_heat`.
 - **Boundaries preserved:** severity, stable IDs, availability, art, snapshots v0/v1/v2, archival metadata, Mirror threshold, Heat-free runtime/projections, and every other Phase 1W recommendation remain unchanged.
+
+# Heat-to-Wound Batch 1 physical losses — implemented
+
+- **Four content conversions:** Ash-Cinder Runt, Grave-Silt Press, Mirror-Mite Bloom, and Relay Pilgrim Riot now use existing `take_wound 1` in their exact former `gain_heat 1` branches.
+- **Authoritative health behavior:** existing prevention, actual result deltas, threshold recall, Scar creation through recall, continuation, and reconnect replay protection apply without new state or prompts.
+- **Compatibility cleanup:** four exact Heat approvals were retired. Remaining totals are 28 IDs / 30 branches / 30 Heat effects; discriminator split is 17 `gain_heat`, 3 `gain_heat_all`, and 10 `lose_heat`; compatibility approvals total 44.
+- **Stable boundaries:** severity, IDs, art, rewards, graph/catalog placement, snapshots v0/v1/v2, archival metadata, Mirror reflection pressure, Heat-free runtime/projections, and every non-target Heat outcome remain unchanged.
+- **Still pending:** Choir Static Burst, Lantern-Moth Swarm, Mirror-Rot Interference, Ashen Doppelganger, all non-Wound recommendations, legacy parser/support-window decisions, archival metadata closure, and stable discriminator cleanup.
