@@ -417,8 +417,7 @@ function createState(overrides: Partial<GameState> = {}): GameState {
         private: { hand: ["choir-token"], notes: ["Take the Choir's contract when the path opens."] },
         character: {
           ...cloneCharacter(characters.get("grave-engineer")),
-          currentSpaceId: "seat-3-start",
-          heat: 1
+          currentSpaceId: "seat-3-start"
         }
       }
     ],
@@ -877,7 +876,6 @@ function getSelfCharacterFromPatch(message: Extract<ServerEnvelope, { type: "STA
   return self.character as {
     id: string;
     name: string;
-    heat: number;
     activeContract: { contractId: string; progress: number } | null;
     heldGear: Array<{ id: string }>;
     equippedGear: { weapon: string | null; armor: string | null; utility: string | null };
@@ -2053,7 +2051,6 @@ describe("roomServer websocket integration", () => {
       .getState()
       .players.find((player) => player.seatId === "seat-1");
     expect(postCheckSeatOne?.character.status).toBe("active");
-    expect(postCheckSeatOne?.character.heat).toBe(0);
 
     await requestMovementRoll(phone2, tv, "seat-2", 1);
     marker = tv.mark();
@@ -2146,7 +2143,6 @@ describe("roomServer websocket integration", () => {
       .getState()
       .players.find((player) => player.seatId === "seat-1");
     expect(seatOneAfterAdvance?.character.status).toBe("active");
-    expect(seatOneAfterAdvance?.character.heat).toBe(0);
 
     await requestMovementRoll(phone2, tv, "seat-2", 1);
     marker = tv.mark();
@@ -2667,7 +2663,7 @@ describe("roomServer websocket integration", () => {
     const seat3Character = getSelfCharacterFromPatch(seat3Snapshot);
     expect(seat3Snapshot.phase).toBe("action");
     expect(Number(seat3Snapshot.payload.activeSeatIndex)).toBe(2);
-    expect(seat3Character?.heat).toBe(1);
+    expect(seat3Character).not.toHaveProperty("heat");
     expect(seat3Character?.activeContract).toEqual({ contractId: "choir-quietus", progress: 0 });
       step = "seat3 reconnect presence true";
       await waitForServerTick();
@@ -2798,7 +2794,6 @@ describe("roomServer websocket integration", () => {
               character: {
                 ...player.character,
                 currentSpaceId: "enemy-yard",
-                heat: 3,
                 wounds: 2,
                 activeContract: { contractId: "choir-quietus", progress: 1 },
                 heldGear: [],
@@ -2830,7 +2825,7 @@ describe("roomServer websocket integration", () => {
     expect(harness.roomServer.getState().phase).toBe("start");
     expect(harness.roomServer.getState().turnOrder).toEqual(["seat-1", "seat-2"]);
     expect(restartedSeat1?.character.currentSpaceId).toBe("seat-1-start");
-    expect(restartedSeat1?.character.heat).toBe(0);
+    expect(restartedSeat1?.character).not.toHaveProperty("heat");
     expect(restartedSeat1?.character.wounds).toBe(0);
     expect(restartedSeat1?.character.activeContract).toBeNull();
     expect(restartedSeat1?.character.equippedGear.utility).toBe("marshal-seal");

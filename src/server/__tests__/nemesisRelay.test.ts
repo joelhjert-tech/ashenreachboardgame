@@ -188,7 +188,6 @@ describe("Nemesis Relay mode", () => {
 
     const attacker = server.getState().players.find((player) => player.seatId === "seat-1")!;
     expect(attacker.character.trophies).toBe(2);
-    expect(attacker.character.heat).toBe(4);
     expect(JSON.stringify(server.getState().eventLog)).not.toMatch(/"heatDelta"\s*:\s*-[1-9]/);
   });
 

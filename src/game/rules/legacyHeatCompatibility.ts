@@ -3,19 +3,6 @@ import type { GameState, PlayerState } from "../schema/session.schema.js";
 
 export type LegacyHeatEffect = Extract<EncounterEffect, { type: "gain_heat" | "gain_heat_all" | "lose_heat" }>;
 
-export type LegacyCharacterCompatibilityState = {
-  heat: 0;
-};
-
-/**
- * Supplies the required persisted Heat field for genuinely new character state.
- * Heat is compatibility-only: this performs no gameplay calculation and must
- * never be applied over loaded or reconnected character state.
- */
-export function createLegacyCharacterCompatibilityState(): LegacyCharacterCompatibilityState {
-  return { heat: 0 };
-}
-
 /** Stable historical identifier retained so old logs and stale requests remain parseable. */
 export const WITHDRAWN_LEGACY_HEAT_SERVICE_IDS = new Set(["buy-boon"] as const);
 

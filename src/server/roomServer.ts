@@ -46,7 +46,7 @@ import {
   type ScenarioAmbientResolution
 } from "../game/rules/scenarioAmbient.js";
 import { buildScenarioPressureState } from "../game/rules/scenarioPressure.js";
-import { createLegacyCharacterCompatibilityState, getMirrorReflectionPressureThreshold } from "../game/rules/legacyHeatCompatibility.js";
+import { getMirrorReflectionPressureThreshold } from "../game/rules/legacyHeatCompatibility.js";
 import {
   getAfflictionWoundPrevention,
   getAfflictionModifierSources,
@@ -977,7 +977,6 @@ export class GameRoomServer {
               ...player,
               character: {
                 ...loadedCharacter,
-                ...createLegacyCharacterCompatibilityState(),
                 currentSpaceId: player.sectorId,
                 wounds: 0,
                 status: "active",
@@ -3023,7 +3022,6 @@ export class GameRoomServer {
 
     return {
       ...loadedCharacter,
-      ...createLegacyCharacterCompatibilityState(),
       currentSpaceId,
       trophies: 0,
       trophyPile: [],

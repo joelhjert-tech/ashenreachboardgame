@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { pendingTileChallengeSchema } from "./tileChallenge.schema.js";
-import { characterSchema, statSchema } from "./character.schema.js";
+import { characterSchema, legacyCharacterSchemaV0, statSchema } from "./character.schema.js";
 import { afflictionCardSchema, afflictionInstanceSchema, afflictionUsageStateSchema } from "./affliction.schema.js";
 import { effectSchema, threatCardSchema } from "./card.schema.js";
 import { contractCardSchema } from "./contract.schema.js";
@@ -153,6 +153,10 @@ export const playerStateSchema = z.object({
   afflictionDrawHistory: z.array(z.string().min(1)).optional()
 });
 
+export const legacyPlayerStateSchemaV0 = playerStateSchema.extend({
+  character: legacyCharacterSchemaV0
+}).strict();
+
 export const nemesisChampionSchema = z.object({
   id: z.string().min(1),
   name: z.string().min(1),
@@ -296,10 +300,48 @@ export const gameStateSchema = z.object({
     .nullable()
 });
 
-export const sessionSnapshotSchema = z.object({
+export const legacyGameStateSchemaV0 = gameStateSchema.extend({
+  players: z.array(legacyPlayerStateSchemaV0)
+}).strict();
+
+export const legacySessionSnapshotSchemaV0 = z.object({
   sessionId: z.string().min(1),
   sequence: z.number().int().min(0),
-  state: gameStateSchema
+  state: legacyGameStateSchemaV0
+}).strict();
+
+export const legacyCharacterHeatRecordSchema = z.object({
+  seatId: z.string().min(1),
+  characterId: z.string().min(1),
+  value: z.number().int().positive()
+}).strict();
+
+export const legacyCompatibilityMetadataSchema = z.object({
+  characterHeat: z.array(legacyCharacterHeatRecordSchema).min(1)
+}).strict().superRefine((metadata, context) => {
+  const identities = new Set<string>();
+  metadata.characterHeat.forEach((record, index) => {
+    const identity = `${record.seatId}\u0000${record.characterId}`;
+    if (identities.has(identity)) {
+      context.addIssue({ code: z.ZodIssueCode.custom, path: ["characterHeat", index], message: `Duplicate legacy character Heat identity ${record.seatId}/${record.characterId}` });
+    }
+    identities.add(identity);
+  });
+});
+
+export const sessionSnapshotSchema = z.object({
+  saveVersion: z.literal(1),
+  sessionId: z.string().min(1),
+  sequence: z.number().int().min(0),
+  state: gameStateSchema,
+  legacyCompatibility: legacyCompatibilityMetadataSchema.optional()
+}).strict().superRefine((snapshot, context) => {
+  snapshot.legacyCompatibility?.characterHeat.forEach((record, index) => {
+    const owner = snapshot.state.players.find((player) => player.seatId === record.seatId);
+    if (!owner) {
+      context.addIssue({ code: z.ZodIssueCode.custom, path: ["legacyCompatibility", "characterHeat", index], message: `Legacy character Heat owner ${record.seatId} does not exist in the snapshot` });
+    }
+  });
 });
 
 export type Phase = z.infer<typeof phaseSchema>;
@@ -320,3 +362,5 @@ export type NemesisNexusCountdown = z.infer<typeof nemesisNexusCountdownSchema>;
 export type ShopStockReveal = z.infer<typeof shopStockRevealSchema>;
 export type GameState = z.infer<typeof gameStateSchema>;
 export type SessionSnapshot = z.infer<typeof sessionSnapshotSchema>;
+export type LegacySessionSnapshotV0 = z.infer<typeof legacySessionSnapshotSchemaV0>;
+export type LegacyCompatibilityMetadata = z.infer<typeof legacyCompatibilityMetadataSchema>;

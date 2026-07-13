@@ -11,7 +11,6 @@ function resolve(effect: EncounterEffect) {
   state.status = "active";
   state.phase = "resolution";
   state.pendingEffect = effect;
-  state.players[0]!.character.heat = 3;
   state.players[0]!.character.wounds = 1;
   state.players[0]!.character.scars = ["scar-wound-1"];
   state.escalationLevel = 2;
@@ -29,7 +28,6 @@ describe("Phase 1A legacy Heat compatibility", () => {
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     const player = result.state.players[0]!;
-    expect(player.character.heat).toBe(3);
     expect(player.character.wounds).toBe(1);
     expect(player.character.scars).toEqual(["scar-wound-1"]);
     expect(result.state.escalationLevel).toBe(2);
@@ -37,12 +35,10 @@ describe("Phase 1A legacy Heat compatibility", () => {
     expect(result.state.lastOutcomeSummary?.summary ?? "").not.toMatch(/Heat|Risk|Scar|Wound/i);
   });
 
-  it("preserves persisted Heat and threshold values through serialization", () => {
+  it("preserves the unrelated Mirror threshold through serialization", () => {
     const state = createInitialSessionState("legacy-save", "single-player");
-    state.players[0]!.character.heat = 3;
     state.heatThreshold = 7;
     const restored = gameStateSchema.parse(JSON.parse(JSON.stringify(state)));
-    expect(restored.players[0]!.character.heat).toBe(3);
     expect(restored.heatThreshold).toBe(7);
     expect(getMirrorReflectionPressureThreshold(restored)).toBe(7);
   });

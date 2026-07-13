@@ -158,7 +158,7 @@ describe("shop encounter public projection", () => {
     state.players[0] = {
       ...state.players[0]!,
       sectorId: "votive-engine-room",
-      character: { ...state.players[0]!.character, currentSpaceId: "votive-engine-room", salvage: 1, heat: 9 }
+      character: { ...state.players[0]!.character, currentSpaceId: "votive-engine-room", salvage: 1 }
     };
     const projection = createTvProjection(state) as { shopEncounter: { services: Array<{ id: string; label: string; cost: unknown; enabled: boolean }> } | null };
     expect(projection.shopEncounter?.services).toContainEqual(expect.objectContaining({

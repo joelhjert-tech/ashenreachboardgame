@@ -49,7 +49,7 @@ export const equippedGearSchema = z.object({
   utility: z.string().min(1).nullable()
 });
 
-export const characterSchema = z.object({
+const characterFields = {
   id: z.string().min(1),
   name: z.string().min(1),
   archetype: z.string().min(1),
@@ -62,7 +62,6 @@ export const characterSchema = z.object({
   trophyPile: z.array(trophyPileEntrySchema).optional(),
   salvage: z.number().int().min(0).optional(),
   temporaryAllStatBoost: z.object({ value: z.number().int().positive(), remainingEligibleResolutions: z.number().int().min(0) }).optional(),
-  heat: z.number().int().min(0),
   wounds: z.number().int().min(0),
   scars: z.array(z.string()),
   activeContract: activeContractSchema,
@@ -75,11 +74,20 @@ export const characterSchema = z.object({
   startingContract: z.string().min(1).optional(),
   startingFollower: z.array(z.string().min(1)).optional(),
   abilities: z.array(abilitySchema)
-});
+};
+
+/** Current authoritative runtime characters are deliberately Heat-free. */
+export const characterSchema = z.object(characterFields).strict();
+
+/** Strict parser for unversioned persisted snapshots created before Phase 1P. */
+export const legacyCharacterSchemaV0 = z.object({
+  ...characterFields,
+  heat: z.number().int().min(0)
+}).strict();
 
 // Canonical content definitions deliberately exclude persisted compatibility
 // state. Runtime/session characters continue to use characterSchema below.
-export const authoredCharacterSchema = characterSchema.omit({ heat: true }).strict();
+export const authoredCharacterSchema = z.object(characterFields).strict();
 
 export type Stat = z.infer<typeof statSchema>;
 export type StatBlock = z.infer<typeof statBlockSchema>;
@@ -90,4 +98,5 @@ export type CharacterStatus = z.infer<typeof characterStatusSchema>;
 export type ActiveContract = z.infer<typeof activeContractSchema>;
 export type EquippedGear = z.infer<typeof equippedGearSchema>;
 export type Character = z.infer<typeof characterSchema>;
+export type LegacyCharacterV0 = z.infer<typeof legacyCharacterSchemaV0>;
 export type AuthoredCharacter = z.infer<typeof authoredCharacterSchema>;

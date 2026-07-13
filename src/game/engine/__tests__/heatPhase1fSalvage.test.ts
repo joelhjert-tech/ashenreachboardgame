@@ -56,7 +56,6 @@ describe("Phase 1F low-severity Salvage rewards", () => {
     state.phase = "resolution";
     state.pendingEffect = effect;
     state.players[0]!.character.salvage = 2;
-    state.players[0]!.character.heat = 3;
     state.players[0]!.character.wounds = 1;
     state.players[0]!.character.scars = ["scar-wound-1"];
     state.escalationLevel = 2;
@@ -67,7 +66,6 @@ describe("Phase 1F low-severity Salvage rewards", () => {
     if (!result.ok) return;
     const player = result.state.players[0]!;
     expect(player.character.salvage).toBe(3);
-    expect(player.character.heat).toBe(3);
     expect(player.character.wounds).toBe(1);
     expect(player.character.scars).toEqual(["scar-wound-1"]);
     expect(result.state.escalationLevel).toBe(2);

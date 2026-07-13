@@ -124,7 +124,7 @@ describe("Phase 1I encounter payments", () => {
     const opened = openPayment(2);
     expect(opened.ok).toBe(true);
     if (!opened.ok) return;
-    expect(sessionSnapshotSchema.safeParse({ sessionId: opened.state.sessionId, sequence: opened.state.sequence, state: opened.state }).success).toBe(true);
+    expect(sessionSnapshotSchema.safeParse({ saveVersion: 1, sessionId: opened.state.sessionId, sequence: opened.state.sequence, state: opened.state }).success).toBe(true);
     const server = new GameRoomServer(opened.state);
     const sent: Array<Record<string, unknown>> = [];
     const client: ConnectedClient = { seatId: "seat-1", view: "phone", socket: { send: (payload: string) => sent.push(JSON.parse(payload)), close() {} } as unknown as ConnectedClient["socket"] };

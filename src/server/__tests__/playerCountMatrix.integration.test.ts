@@ -237,7 +237,6 @@ function seedBattleInventoryWindow(harness: Harness): void {
     fuse,
     ...player.character.heldGear.filter((item) => item.id !== fuse.id)
   ];
-  player.character.heat = Math.max(player.character.heat, fuse.heatCost ?? 0);
   state.phase = "action";
   state.currentEncounter = matrixBattleThreat;
   state.pendingEnemyRoll = null;

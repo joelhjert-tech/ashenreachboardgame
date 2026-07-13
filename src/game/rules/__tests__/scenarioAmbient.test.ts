@@ -79,7 +79,6 @@ describe("scenario ambient rules", () => {
     expect(surge?.summary).toContain("rouses a local threat");
     expect(surge?.followUp?.type).toBe("draw_sector_threat");
     const surgedState = surge?.updater(state) ?? state;
-    expect(surgedState.players[0]?.character.heat).toBe(0);
 
     const restored = resolveScenarioEnemyDefeat(createContext(weakenedState));
     expect(restored?.summary).toContain("6 seal tokens now stand");
@@ -121,7 +120,6 @@ describe("scenario ambient rules", () => {
     const weakenedState = weakening?.updater(state) ?? state;
     expect(weakenedState.scenarioProgress.sealTokens).toBe(3);
     expect(weakenedState.scenarioProgress.sealCollapses).toBe(1);
-    expect(weakenedState.players[0]?.character.heat).toBe(0);
     expect(weakenedState.players[0]?.character.scars).toEqual([]);
   });
 
@@ -162,7 +160,6 @@ describe("scenario ambient rules", () => {
     const resolution = resolveScenarioContractCompleted(createContext(state));
     expect(resolution?.summary).toContain("mirror feeds on selfish praise");
     const nextState = resolution?.updater(state) ?? state;
-    expect(nextState.players[0]?.character.heat).toBe(0);
     expect(nextState.scenarioProgress.mirrorPressure).toBe(1);
 
     const gearResolution = resolveScenarioGearGained({
@@ -171,7 +168,6 @@ describe("scenario ambient rules", () => {
     });
     expect(gearResolution?.summary).toContain("fresh artifact power");
     const gearState = gearResolution?.updater(nextState) ?? nextState;
-    expect(gearState.players[0]?.character.heat).toBe(0);
     expect(gearState.scenarioProgress.mirrorPressure).toBe(2);
   });
 
@@ -309,7 +305,6 @@ describe("scenario ambient rules", () => {
         }
       }))
     }) ?? afterEngine;
-    expect(cooledState.players[0]?.character.heat).toBe(2);
 
     const skillFailure = resolveScenarioSkillResolved({
       ...createContext(afterEngine),
@@ -318,7 +313,6 @@ describe("scenario ambient rules", () => {
     });
     expect(skillFailure?.summary).toContain("gains 1 instability");
     const heatedState = skillFailure?.updater(afterEngine) ?? afterEngine;
-    expect(heatedState.players[0]?.character.heat).toBe(0);
 
     const starState = createScenarioState({
       activeScenarioId: "scenario_dying_star",
@@ -329,7 +323,6 @@ describe("scenario ambient rules", () => {
     const afterStar = starResolution?.updater(starState) ?? starState;
     expect(afterStar.scenarioProgress.starTokens).toBe(5);
     expect(afterStar.players[0]?.character.wounds).toBe(1);
-    expect(afterStar.players[0]?.character.heat).toBe(0);
 
     const woundResolution = resolveScenarioWoundsTaken({
       ...createContext(afterStar),

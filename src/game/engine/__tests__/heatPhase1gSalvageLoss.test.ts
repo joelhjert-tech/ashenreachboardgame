@@ -29,7 +29,6 @@ function applyLoss(startingSalvage: number, amount: number, effect: EncounterEff
   state.phase = "resolution";
   state.pendingEffect = effect;
   state.players[0]!.character.salvage = startingSalvage;
-  state.players[0]!.character.heat = 4;
   state.players[0]!.character.wounds = 1;
   state.players[0]!.character.scars = ["scar-wound-1"];
   state.escalationLevel = 2;
@@ -65,7 +64,6 @@ describe("Phase 1G floor-zero Salvage loss", () => {
     if (!result.ok) return;
     expect(result.state.players[0]!.character.salvage).toBe(expected);
     expect(result.state.activeResolution?.outcome?.effects).toEqual([summary]);
-    expect(result.state.players[0]!.character.heat).toBe(4);
     expect(result.state.players[0]!.character.wounds).toBe(1);
     expect(result.state.players[0]!.character.scars).toEqual(["scar-wound-1"]);
     expect(result.state.escalationLevel).toBe(2);

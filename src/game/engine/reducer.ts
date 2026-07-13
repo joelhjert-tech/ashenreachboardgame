@@ -66,7 +66,7 @@ import type { GearSlot } from "../schema/gear.schema.js";
 import type { TrophyPileEntry } from "../schema/character.schema.js";
 import { applyMovementDieAfflictions, resolveAfflictionDraw } from "../rules/afflictions.js";
 import { buildPendingScarConsequences, getMatchingScarTriggers } from "../rules/scarTriggers.js";
-import { applyLegacyHeatNoop, createLegacyCharacterCompatibilityState, isLegacyHeatNoopEffect, summarizeLegacyHeatNoop } from "../rules/legacyHeatCompatibility.js";
+import { applyLegacyHeatNoop, isLegacyHeatNoopEffect, summarizeLegacyHeatNoop } from "../rules/legacyHeatCompatibility.js";
 import type { ScarSourceEvent } from "../schema/scarTrigger.schema.js";
 import { getBoardSpace, isScenarioConfrontationSpace } from "../data/boardSpaces.js";
 import { getForcedDisplacementDestination, getLegalMovementRoute, getLegalMovementRouteVariant, getMovementBlockReason, getVoidKeyMovementRoute, getMovementStepBlockReason } from "../rules/movementPlanner.js";
@@ -543,7 +543,6 @@ function applyShopServiceToPlayer(player: PlayerState, action: ShopServiceResolv
           (action.cost.salvage ?? 0) +
           (action.result.salvageDelta ?? 0)
       ),
-      heat: player.character.heat,
       wounds: Math.max(0, player.character.wounds + (action.cost.wounds ?? 0) + (action.result.woundDelta ?? 0)),
       trophies: Math.max(
         0,
@@ -581,7 +580,6 @@ function applyShopCostOnlyToPlayer(player: PlayerState, cost: ShopServiceCost): 
     character: {
       ...player.character,
       salvage: Math.max(0, (player.character.salvage ?? 0) - (cost.salvage ?? 0)),
-      heat: player.character.heat,
       wounds: Math.max(0, player.character.wounds + (cost.wounds ?? 0)),
       trophies: Math.max(0, player.character.trophies - (cost.trophies ?? 0)),
       completedContracts: (player.character.completedContracts ?? []).slice(cost.completedContracts ?? 0)
@@ -2409,7 +2407,6 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
           ...entry,
           character: {
             ...recruitAction.replacementCharacter!,
-            ...createLegacyCharacterCompatibilityState(),
             currentSpaceId: entry.sectorId,
             trophies: 0,
             trophyPile: [],

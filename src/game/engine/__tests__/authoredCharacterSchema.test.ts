@@ -45,12 +45,12 @@ describe("Phase 1N authored character boundary", () => {
     expect(authoredCharacterSchema.safeParse(missingId).success).toBe(false);
   });
 
-  it("keeps the persisted runtime schema strict about required Heat and preserves nonzero values", () => {
+  it("uses the same strict Heat-free shape for authored and current runtime characters", () => {
     const definition = loadCharacters().get("void-marshal");
     expect(definition).toBeDefined();
-    expect(characterSchema.safeParse(definition).success).toBe(false);
-    expect(characterSchema.parse({ ...definition, heat: 0 }).heat).toBe(0);
-    expect(characterSchema.parse({ ...definition, heat: 7 }).heat).toBe(7);
+    expect(characterSchema.safeParse(definition).success).toBe(true);
+    expect(characterSchema.safeParse({ ...definition, heat: 0 }).success).toBe(false);
+    expect(characterSchema.safeParse({ ...definition, heat: 7 }).success).toBe(false);
   });
 
   it.each([
@@ -59,7 +59,7 @@ describe("Phase 1N authored character boundary", () => {
     ["rivalry", "multiplayer", "rivalry"]
   ] as const)("composes authored definitions into valid %s runtime characters", (label, sessionMode, interactionMode) => {
     const state = createInitialSessionState(`phase-1n-${label}`, sessionMode, undefined, interactionMode, "standard", sessionMode === "multiplayer" ? 2 : 1);
-    expect(state.players.every((player) => player.character.heat === 0)).toBe(true);
+    expect(state.players.every((player) => !("heat" in player.character))).toBe(true);
     expect(state.players.every((player) => characterSchema.safeParse(player.character).success)).toBe(true);
   });
 });

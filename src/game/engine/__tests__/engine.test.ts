@@ -599,7 +599,6 @@ function createAbilityCharacters(): Map<string, Character> {
     status: "active",
     stats: { command: 1, grit: 1, signal: 2, guile: 3, forge: 2 },
     trophies: 0,
-    heat: 0,
     wounds: 0,
     scars: [],
     activeContract: null,
@@ -621,7 +620,6 @@ function createAbilityCharacters(): Map<string, Character> {
     status: "active",
     stats: { command: 1, grit: 3, signal: 2, guile: 1, forge: 2 },
     trophies: 0,
-    heat: 0,
     wounds: 0,
     scars: [],
     activeContract: null,
@@ -643,7 +641,6 @@ function createAbilityCharacters(): Map<string, Character> {
     status: "active",
     stats: { command: 3, grit: 1, signal: 2, guile: 1, forge: 2 },
     trophies: 0,
-    heat: 0,
     wounds: 0,
     scars: [],
     activeContract: null,
@@ -665,7 +662,6 @@ function createAbilityCharacters(): Map<string, Character> {
     status: "active",
     stats: { command: 2, grit: 1, signal: 1, guile: 3, forge: 2 },
     trophies: 0,
-    heat: 0,
     wounds: 0,
     scars: [],
     activeContract: null,
@@ -687,7 +683,6 @@ function createAbilityCharacters(): Map<string, Character> {
     status: "active",
     stats: { command: 1, grit: 1, signal: 2, guile: 3, forge: 2 },
     trophies: 0,
-    heat: 0,
     wounds: 0,
     scars: [],
     activeContract: null,
@@ -709,7 +704,6 @@ function createAbilityCharacters(): Map<string, Character> {
     status: "active",
     stats: { command: 2, grit: 3, signal: 1, guile: 1, forge: 2 },
     trophies: 0,
-    heat: 0,
     wounds: 0,
     scars: [],
     activeContract: null,
@@ -731,7 +725,6 @@ function createAbilityCharacters(): Map<string, Character> {
     status: "active",
     stats: { command: 1, grit: 2, signal: 1, guile: 2, forge: 3 },
     trophies: 0,
-    heat: 0,
     wounds: 0,
     scars: [],
     activeContract: null,
@@ -753,7 +746,6 @@ function createAbilityCharacters(): Map<string, Character> {
     status: "active",
     stats: { command: 1, grit: 2, signal: 1, guile: 2, forge: 3 },
     trophies: 0,
-    heat: 0,
     wounds: 0,
     scars: [],
     activeContract: null,
@@ -1176,7 +1168,6 @@ describe("active resolution visibility state", () => {
       target: 7,
       success: false
     });
-    expect(rolled.state.players[0]?.character.heat).toBe(0);
     expect(rolled.state.pendingEffect).toEqual({ type: "gain_heat", amount: 1 });
     expect(rolled.state.pendingFailureReaction).toMatchObject({
       seatId: "seat-1",
@@ -1222,7 +1213,6 @@ describe("active resolution visibility state", () => {
     expect(suppressed.state.pendingEffect).toBeNull();
     expect(suppressed.state.pendingFailureReaction).toBeNull();
     expect(suppressed.state.activeResolution?.roll?.success).toBe(false);
-    expect(suppressed.state.players[0]?.character.heat).toBe(0);
     expect(suppressed.state.players[0]?.character.heldGear.some((item) => item.id === ampoule.id)).toBe(false);
 
     const duplicate = reduceGameState(suppressed.state, {
@@ -1448,7 +1438,6 @@ describe("active resolution visibility state", () => {
     expect(server.getState().phase).toBe("resolution");
     expect(server.getState().activeResolution?.stage).toBe("outcome_summary");
     expect(server.getState().pendingEffect).toEqual({ type: "gain_heat", amount: 1 });
-    expect(server.getState().players.find((entry) => entry.seatId === "seat-1")?.character.heat).toBe(0);
   });
 
   it("recovers an orphaned resolution state when the player continues", () => {
@@ -2216,7 +2205,6 @@ describe("active resolution visibility state", () => {
 
     expect(blessed.sent.find((message) => message.type === "INTENT_REJECTED")).toMatchObject({ actionType: "SHOP_SERVICE_REQUESTED" });
     expect(blessed.server.getState().players[0]?.character.salvage).toBe(4);
-    expect(blessed.server.getState().players[0]?.character.heat).toBe(2);
     expect(blessed.server.getState().players[0]?.private.notes).toEqual([]);
 
     const relicCatalog = createGear();
@@ -2241,7 +2229,6 @@ describe("active resolution visibility state", () => {
     });
     expect(searched.sent.find((message) => message.type === "INTENT_REJECTED")).toBeUndefined();
     expect(searched.server.getState().players[0]?.character.salvage).toBe(1);
-    expect(searched.server.getState().players[0]?.character.heat).toBe(7);
     expect(searched.server.getState().shopStockReveals[0]?.serviceId).toBe("risk-action");
     expect(searched.server.getState().shopStockReveals[0]?.stockIds).toHaveLength(4);
     expect(searched.server.getState().shopStockReveals[0]?.revealCost).toEqual({ salvage: 1 });
@@ -2529,7 +2516,6 @@ describe("active objects and table interaction", () => {
     expect(sent.some((message) => message.type === "INTENT_REJECTED")).toBe(false);
     expect(server.getState().activeResolution?.battle?.modifiers).toContainEqual({ label: "Black Route Fuse", value: 3 });
     expect(server.getState().players[0]?.character.heldGear.some((item) => item.id === "black-route-fuse")).toBe(false);
-    expect(server.getState().players[0]?.character.heat).toBe(0);
     expect(server.getState().escalationLevel).toBe(1);
 
     runIntent(server, {
@@ -2692,7 +2678,6 @@ describe("active objects and table interaction", () => {
       stats: { command: 1, grit: 1, signal: 4, guile: 1, forge: 1 },
       statUpgrades: { signal: 1 },
       trophies: 0,
-      heat: 0,
       wounds: 0,
       scars: [],
       activeContract: null,
@@ -2803,7 +2788,6 @@ describe("active objects and table interaction", () => {
 
     const player = server.getState().players.find((entry) => entry.seatId === "seat-1");
     expect(player?.character.wounds).toBe(0);
-    expect(player?.character.heat).toBe(0);
     expect(player?.character.heldGear).toHaveLength(0);
     expect(server.getState().lastOutcomeSummary?.summary).toContain("Cinder Suture Kit used");
   });
@@ -2873,7 +2857,6 @@ describe("active objects and table interaction", () => {
     });
 
     const player = server.getState().players.find((entry) => entry.seatId === "seat-1");
-    expect(player?.character.heat).toBe(0);
     expect(server.getState().activeResolution?.battle?.modifiers).toContainEqual({ label: "Red March Warbell", value: 2 });
     expect(sent.some((message) => message.type === "INTENT_REJECTED" && String(message.reason).includes("already been used this turn"))).toBe(true);
 
@@ -2989,7 +2972,6 @@ describe("active objects and table interaction", () => {
       playerResultDeltas?: Array<{ type: string; privateText?: string }>;
     };
     const censerUseState = phoneProjection.objectUseStates?.find((entry) => entry.source === "gear" && entry.id === "choir-static-censer");
-    expect(player?.character.heat).toBe(2);
     expect(censer?.charges).toBe(0);
     expect(censerUseState).toMatchObject({
       remainingUses: 0,
@@ -3034,7 +3016,6 @@ describe("active objects and table interaction", () => {
     });
 
     const player = server.getState().players.find((entry) => entry.seatId === "seat-1");
-    expect(player?.character.heat).toBe(2);
     expect(player?.character.followers).toHaveLength(1);
     expect(server.getState().lastOutcomeSummary?.summary).toContain("Crownless Advocate used");
   });
@@ -3073,7 +3054,6 @@ describe("active objects and table interaction", () => {
 
     expect(sent.some((message) => message.type === "INTENT_REJECTED" && String(message.reason).includes("passive and applies automatically"))).toBe(true);
     expect(server.getState().eventLog.some((entry) => (entry as { type?: string }).type === "USE_FOLLOWER")).toBe(false);
-    expect(server.getState().players.find((entry) => entry.seatId === "seat-1")?.character.heat).toBe(2);
   });
 
   it("keeps Fandiablos unique across the whole game", () => {
@@ -3329,7 +3309,6 @@ describe("active objects and table interaction", () => {
       interactionKind: "interfere"
     });
 
-    expect(server.getState().players.find((entry) => entry.seatId === "seat-2")?.character.heat).toBe(0);
     expect(sent.some((message) => message.type === "INTENT_REJECTED")).toBe(true);
   });
 
@@ -3434,7 +3413,6 @@ describe("threat effect keys", () => {
     (server as any).runAutomaticPhases("seat-1");
 
     expect(server.getState().currentEncounter?.id).toBe("keyed-rats");
-    expect(server.getState().players.find((entry) => entry.seatId === "seat-1")?.character.heat).toBe(0);
     expect(server.getState().lastOutcomeSummary?.summary).toContain("No additional status change");
     expect(server.getState().lastOutcomeSummary?.summary).not.toContain("Heat");
   });
@@ -3498,7 +3476,6 @@ describe("threat effect keys", () => {
 
     (heatedServer as any).runAutomaticPhases("seat-1");
 
-    expect(heatedServer.getState().players.every((entry) => entry.character.heat === 0)).toBe(true);
     expect(heatedServer.getState().lastOutcomeSummary?.summary).toContain("No additional status change");
     expect(heatedServer.getState().lastOutcomeSummary?.summary).not.toContain("Heat");
 
@@ -3584,7 +3561,6 @@ describe("threat effect keys", () => {
     });
 
     const player = server.getState().players.find((entry) => entry.seatId === "seat-1");
-    expect(player?.character.heat).toBe(0);
     expect(player?.character.wounds).toBe(1);
   });
 });
@@ -3773,7 +3749,6 @@ describe("movement rolls", () => {
     const summary = server.getState().lastOutcomeSummary;
 
     expect(player?.character.currentSpaceId).toBe("sector-b");
-    expect(player?.character.heat).toBe(0);
     expect(summary?.checkStat).toBe("guile");
     expect(summary?.difficulty).toBe(1);
     expect(summary?.success).toBe(true);
@@ -3817,7 +3792,6 @@ describe("movement rolls", () => {
 
     expect(player?.character.currentSpaceId).toBe("sector-a");
     expect(player?.sectorId).toBe("sector-a");
-    expect(player?.character.heat).toBe(0);
     expect(summary?.movedToSectorId).toBe("sector-a");
     expect(summary?.success).toBe(false);
     expect(summary?.difficulty).toBe(8);
@@ -3861,7 +3835,6 @@ describe("movement rolls", () => {
 
     expect(player?.character.currentSpaceId).toBe("sector-b");
     expect(player?.sectorId).toBe("sector-b");
-    expect(player?.character.heat).toBe(0);
     expect(summary?.success).toBe(true);
     expect(summary?.movedToSectorId).toBe("sector-b");
     expect(summary?.summary).toContain("Moved into");
@@ -3906,7 +3879,6 @@ describe("movement rolls", () => {
     const summary = server.getState().lastOutcomeSummary;
 
     expect(player?.character.currentSpaceId).toBe("sector-b");
-    expect(player?.character.heat).toBe(0);
     expect(summary?.success).toBe(true);
     expect(summary?.difficulty).toBe(summary?.checkTotal);
   });
@@ -4002,7 +3974,6 @@ describe("movement rolls", () => {
     const seat1 = server.getState().players.find((entry) => entry.seatId === "seat-1");
 
     expect(seat1?.character.currentSpaceId).toBe("sector-a");
-    expect(seat1?.character.heat).toBe(1);
     expect(seat1?.character.status).toBe("active");
     expect(server.getState().activeSeatIndex).toBe(1);
     expect(server.getState().phase).toBe("navigation");
@@ -4173,7 +4144,6 @@ describe("wound recall flow", () => {
 
     const player = server.getState().players.find((entry) => entry.seatId === "seat-1");
     expect(player?.character.status).toBe("active");
-    expect(player?.character.heat).toBe(0);
     expect(player?.character.wounds).toBe(0);
     expect(player?.character.scars).toContain("scar-wound-1");
     expect(player?.character.id).toBe("signal-witch");
@@ -4445,7 +4415,6 @@ describe("escalation flow", () => {
       seatId: "seat-1"
     });
 
-    expect(server.getState().players.find((entry) => entry.seatId === "seat-1")?.character.heat).toBe(1);
     expect(server.getState().players.find((entry) => entry.seatId === "seat-1")?.private.notes).toContain(
       "Ash Psalm hardened the cleared line into a disciplined hold."
     );
@@ -4469,7 +4438,6 @@ describe("escalation flow", () => {
               character: {
                 ...cloneCharacter(characters.get("cinder-monk")),
                 currentSpaceId: "sector-c",
-                heat: 1
               }
             }
           ]
@@ -4490,7 +4458,6 @@ describe("escalation flow", () => {
       toPhase: "resolution"
     });
 
-    expect(server.getState().players[0]?.character.heat).toBe(1);
     expect(server.getState().players[0]?.character.wounds).toBe(1);
     expect(server.getState().players[0]?.private.notes).toContain(
       "Ember Vigil kept the dangerous sector from dictating the tempo."
@@ -4513,7 +4480,6 @@ describe("escalation flow", () => {
               character: {
                 ...cloneCharacter(characters.get("signal-witch")),
                 currentSpaceId: "sector-a",
-                heat: 1
               }
             }
           ]
@@ -4535,7 +4501,6 @@ describe("escalation flow", () => {
     });
 
     expect(server.getState().escalationLevel).toBe(1);
-    expect(server.getState().players.find((entry) => entry.seatId === "seat-1")?.character.heat).toBe(1);
     expect(server.getState().players.find((entry) => entry.seatId === "seat-1")?.private.notes).toContain(
       "Choir Lash bled the breach spike into a controlled pulse."
     );
@@ -4826,7 +4791,6 @@ describe("escalation flow", () => {
     });
 
     expect(server.getState().players[0]?.private.notes).not.toContain("Ashwake crossing cleared. The convoy lane is charted.");
-    expect(server.getState().players[0]?.character.heat).toBe(0);
     expect(server.getState().players[0]?.private.notes).toContain("Void Command marked the cleared lane for allied movement.");
   });
 
@@ -4920,7 +4884,6 @@ describe("escalation flow", () => {
       choiceId: "stock"
     });
 
-    expect(server.getState().players[0]?.character.heat).toBe(2);
     expect(server.getState().players[0]?.private.notes).toContain(
       "Shard Sprawl passage stock secured for the next route push."
     );
@@ -5085,7 +5048,6 @@ describe("escalation flow", () => {
       seatId: "seat-1"
     });
 
-    expect(server.getState().players[0]?.character.heat).toBe(2);
     expect(server.getState().players[0]?.private.notes).toContain(
       "Glassmere anomaly contained. The spindle now answers the relay choir cleanly."
     );
@@ -5407,7 +5369,6 @@ describe("escalation flow", () => {
     });
 
     expect(server.getState().escalationLevel).toBe(1);
-    expect(server.getState().players[0]?.character.heat).toBe(2);
     expect(server.getState().players[0]?.private.notes).toContain(
       "Ridge suture anchored. The watch posts can still hold for one more convoy."
     );
@@ -5726,7 +5687,6 @@ describe("escalation flow", () => {
       choiceId: "anchor-surge"
     });
 
-    expect(server.getState().players[0]?.character.heat).toBe(2);
     expect(server.getState().players[0]?.private.notes).toContain(
       "Veil Rift surge anchored for deeper breach timing."
     );
@@ -6437,7 +6397,6 @@ describe("trophy progression", () => {
       stat: "command"
     });
 
-    expect(baselineServer.getState().players.find((entry) => entry.seatId === "seat-1")?.character.heat).toBe(0);
 
     const boostedServer = new GameRoomServer(
       createCommandState(true, "action"),
@@ -6486,7 +6445,6 @@ describe("trophy progression", () => {
     expect(boostedPlayer?.character.stats.command).toBe(4);
     expect(boostedPlayer?.character.equippedGear.utility).toBe("marshal-seal");
     expect(boostedPlayer ? getEquippedGearBonus(boostedPlayer.character, "command") : null).toBe(1);
-    expect(boostedServer.getState().players.find((entry) => entry.seatId === "seat-1")?.character.heat).toBe(0);
   });
 });
 
@@ -6753,7 +6711,6 @@ describe("contracts", () => {
       stat: "signal"
     });
 
-    expect(server.getState().players.find((entry) => entry.seatId === "seat-1")?.character.heat).toBe(1);
     expect(server.getState().players.find((entry) => entry.seatId === "seat-1")?.private.notes).toContain(
       "Witchglass choir mapped the live signal into a stable route note."
     );
@@ -6808,7 +6765,6 @@ describe("contracts", () => {
       seatId: "seat-1"
     });
 
-    expect(server.getState().players.find((entry) => entry.seatId === "seat-1")?.character.heat).toBe(3);
     expect(server.getState().players.find((entry) => entry.seatId === "seat-1")?.private.notes).toContain(
       "Hush Static drowned the local anomaly in controlled noise."
     );
@@ -7030,7 +6986,6 @@ describe("contracts", () => {
       seatId: "seat-1"
     });
 
-    expect(server.getState().players.find((entry) => entry.seatId === "seat-1")?.character.heat).toBe(1);
     expect(server.getState().players.find((entry) => entry.seatId === "seat-1")?.private.notes).toContain(
       "Breach Atlas logged a safer approach through the mapped lane."
     );
@@ -7097,7 +7052,6 @@ describe("contracts", () => {
               character: {
                 ...cloneCharacter(characters.get("fleet-elder")),
                 currentSpaceId: "sector-c",
-                heat: 1
               }
             }
           ]
@@ -7118,7 +7072,6 @@ describe("contracts", () => {
       toPhase: "resolution"
     });
 
-    expect(server.getState().players.find((entry) => entry.seatId === "seat-1")?.character.heat).toBe(1);
     expect(server.getState().players.find((entry) => entry.seatId === "seat-1")?.private.notes).toContain(
       "Fleet Memory read the pressure pattern before the convoy line could panic."
     );
@@ -7159,7 +7112,6 @@ describe("contracts", () => {
       contractId: "choir-hush-census"
     });
 
-    expect(server.getState().players[0]?.character.heat).toBe(1);
     expect(server.getState().players[0]?.private.notes).toContain(
       "Old Oaths made the frightened route crews fall into line at once."
     );
@@ -7211,7 +7163,6 @@ describe("contracts", () => {
       seatId: "seat-1"
     });
 
-    expect(server.getState().players.find((entry) => entry.seatId === "seat-1")?.character.heat).toBe(1);
     expect(server.getState().players.find((entry) => entry.seatId === "seat-1")?.private.notes).toContain(
       "Chain Signal fixed the route into a convoy-safe sequence for the next push."
     );
@@ -7240,7 +7191,6 @@ describe("contracts", () => {
               character: {
                 ...cloneCharacter(characters.get("void-marshal")),
                 currentSpaceId: "sector-a",
-                heat: 1
               }
             }
           ]
@@ -7261,7 +7211,6 @@ describe("contracts", () => {
       toPhase: "resolution"
     });
 
-    expect(server.getState().players[0]?.character.heat).toBe(1);
     expect(server.getState().players[0]?.private.notes).toContain(
       "Ashwake Step marked the opening lane before anyone else had to test it."
     );
@@ -7310,7 +7259,6 @@ describe("contracts", () => {
       seatId: "seat-1"
     });
 
-    expect(server.getState().players[0]?.character.heat).toBe(1);
     expect(server.getState().players[0]?.private.notes).toContain(
       "Void Command marked the cleared lane for allied movement."
     );
@@ -7361,7 +7309,6 @@ describe("contracts", () => {
       stat: "grit"
     });
 
-    expect(server.getState().players[0]?.character.heat).toBe(1);
     expect(server.getState().players[0]?.private.notes).toContain(
       "Signal Relay amplified allied pressure in the Marshal's sector."
     );
@@ -7413,7 +7360,6 @@ describe("contracts", () => {
       seatId: "seat-1"
     });
 
-    expect(server.getState().players[0]?.character.heat).toBe(1);
     expect(server.getState().players[0]?.private.notes).toContain(
       "Silent Audit extracted sharper route intelligence from the cleared sector."
     );
@@ -7502,7 +7448,6 @@ describe("contracts", () => {
       contractId: "choir-hush-census"
     });
 
-    expect(server.getState().players[0]?.character.heat).toBe(1);
     expect(server.getState().escalationLevel).toBe(0);
     expect(server.getState().players[0]?.private.notes).toContain(
       "Black file leverage extracted from the finished contract."
@@ -7653,7 +7598,6 @@ describe("contracts", () => {
       stat: "forge"
     });
 
-    expect(server.getState().players[0]?.character.heat).toBe(1);
     expect(server.getState().players[0]?.private.notes).toContain(
       "Grave Spark turned the dead system into one more workable machine."
     );
@@ -7720,7 +7664,6 @@ describe("contracts", () => {
               character: {
                 ...cloneCharacter(characters.get("cinder-monk")),
                 currentSpaceId: "center_cinder_gate",
-                heat: 1
               }
             }
           ],
@@ -7791,7 +7734,6 @@ describe("contracts", () => {
       seatId: "seat-1"
     });
 
-    expect(server.getState().players[0]?.character.heat).toBe(1);
     const confrontation = [...server.getState().eventLog].reverse().find((entry) => {
       return (entry as { type?: string }).type === "SCENARIO_PROGRESS_ADVANCED";
     }) as { summary?: string } | undefined;
@@ -7838,7 +7780,6 @@ describe("contracts", () => {
       contractId: "choir-hush-census"
     });
 
-    expect(server.getState().players[0]?.character.heat).toBe(1);
     expect(server.getState().players[0]?.private.notes).toContain(
       "Ash Tithe skimmed tribute off the quiet victory before the route closed."
     );
@@ -7857,7 +7798,6 @@ describe("contracts", () => {
               character: {
                 ...cloneCharacter(characters.get("oathbroken-prince")),
                 currentSpaceId: "sector-b",
-                heat: 1,
                 activeContract: {
                   contractId: "compact-cleanse-ledger",
                   progress: 0
@@ -7882,7 +7822,6 @@ describe("contracts", () => {
       stat: "grit"
     });
 
-    expect(server.getState().players[0]?.character.heat).toBe(1);
     expect(server.getState().players[0]?.private.notes).toContain(
       "Crown Debt pressed the kill into service as collected obligation."
     );
@@ -7926,7 +7865,6 @@ describe("contracts", () => {
       toSectorId: "sector-b"
     });
 
-    expect(server.getState().players[0]?.character.heat).toBe(1);
     expect(server.getState().players[0]?.private.notes).toContain(
       "Ruin Courtesy made the shattered approach feel like a hall already claimed."
     );
@@ -8010,7 +7948,6 @@ describe("contracts", () => {
       toSectorId: "sector-b"
     });
 
-    expect(server.getState().players[0]?.character.heat).toBe(1);
     expect(server.getState().players[0]?.private.notes).toContain(
       "Ghost Mile stripped the false path out of the approach before it could set in."
     );
@@ -8115,7 +8052,6 @@ describe("contracts", () => {
       choiceId: "hidden-lane"
     });
 
-    expect(server.getState().players[0]?.character.heat).toBe(1);
     expect(server.getState().players[0]?.private.notes).toContain(
       "Webglass hidden lane mapped through shifting lanes."
     );
@@ -8141,7 +8077,6 @@ describe("contracts", () => {
               character: {
                 ...cloneCharacter(characters.get("siege-medic")),
                 currentSpaceId: "sector-a",
-                heat: 1
               }
             }
           ]
@@ -8162,7 +8097,6 @@ describe("contracts", () => {
       toPhase: "resolution"
     });
 
-    expect(server.getState().players[0]?.character.heat).toBe(1);
     expect(server.getState().players[0]?.private.notes).toContain(
       "Siege Discipline turned long pressure into a steady working rhythm."
     );
@@ -8261,7 +8195,6 @@ describe("contracts", () => {
       contractId: "choir-hush-census"
     });
 
-    expect(server.getState().players[0]?.character.heat).toBe(1);
     expect(server.getState().players[0]?.private.notes).toContain(
       "Scar Ledger filed the surviving harm into something the crew could carry."
     );
@@ -8321,7 +8254,6 @@ describe("contracts", () => {
       stat: "forge"
     });
 
-    expect(server.getState().players[0]?.character.heat).toBe(1);
     expect(server.getState().players[0]?.private.notes).toContain(
       "Scrap Bastion converted damaged cover into a workable defensive shell."
     );
@@ -8393,7 +8325,6 @@ describe("contracts", () => {
 
     const player = readyServer.getState().players.find((entry) => entry.seatId === "seat-1");
     expect(player?.character.activeContract).toBeNull();
-    expect(player?.character.heat).toBe(2);
   });
 
   it("accepts a contract, wins two combats across turns, completes it, and receives the reward", () => {

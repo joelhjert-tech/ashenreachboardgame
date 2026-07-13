@@ -357,7 +357,6 @@ describe("scenario confrontation flow", () => {
                 ...player,
                 character: {
                   ...player.character,
-                  heat: 2,
                   heldGear: [
                     {
                       id: "choir-static-censer",
@@ -612,7 +611,6 @@ describe("scenario confrontation flow", () => {
 
     expect(roomServer.getState().scenarioProgress.sealTokens).toBe(3);
     expect(roomServer.getState().scenarioProgress.sealCollapses).toBe(1);
-    expect(roomServer.getState().players.every((player) => player.character.heat === 0)).toBe(true);
     expect(roomServer.getState().lastOutcomeSummary?.summary ?? "").toContain("last seal broke");
   });
 
@@ -749,7 +747,6 @@ describe("scenario confrontation flow", () => {
 
     expect(roomServer.getState().scenarioProgress.starTokens).toBe(5);
     expect(roomServer.getState().players[0]?.character.wounds).toBe(2);
-    expect(roomServer.getState().players[0]?.character.heat).toBe(0);
   });
 
   it("rotates the Labyrinth Engine mode at turn start", () => {
@@ -819,7 +816,6 @@ describe("scenario confrontation flow", () => {
     } satisfies ClientIntent);
     continueVisibleResolution(roomServer);
 
-    expect(roomServer.getState().players[0]?.character.heat).toBe(0);
   });
 
   it("leaves legacy heat unchanged on a successful matching Labyrinth Engine signal check", () => {
@@ -849,7 +845,6 @@ describe("scenario confrontation flow", () => {
             ...player,
             character: {
               ...player.character,
-              heat: 1,
               stats: {
                 ...player.character.stats,
                 signal: 2
@@ -868,7 +863,6 @@ describe("scenario confrontation flow", () => {
       stat: "signal"
     } satisfies ClientIntent);
 
-    expect(roomServer.getState().players[0]?.character.heat).toBe(1);
   });
 
   it("resolves a Devourer clash when an operative moves onto the roaming sector and can reduce doom", () => {
