@@ -240,6 +240,8 @@ No general follower limit is currently verified.
 
 Salvage is currency. A shop is available only at a shop-capable sector and only when the authoritative state permits it.
 
+When an automatic consequence says to lose Salvage, lose up to the stated amount; Salvage cannot fall below 0. This is not a payment, so the consequence still resolves when you have less Salvage than the stated loss.
+
 Shop sequence:
 
 1. Resolve blockers first.

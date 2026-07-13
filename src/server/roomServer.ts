@@ -8375,10 +8375,28 @@ function getShopResultDeltas(shopEncounter: Record<string, unknown> | null): Res
 
 function parseResolutionEffectDelta(effect: string, seatId: string | null): ResultDelta | null {
   const lower = effect.toLowerCase();
+  const salvageLoss = lower.match(/lost (\d+) salvage/);
   const wound = lower.match(/take (\d+) wound/);
   const heal = lower.match(/heal (\d+) wound/);
   const trophy = lower.match(/\+(\d+) trophies?|gain (\d+) trophies?/);
   const scar = lower.match(/gain scar ([\w-]+)/);
+
+  if (salvageLoss) {
+    const amount = Number(salvageLoss[1]);
+    return createResultDelta({
+      type: "salvage",
+      label: "Salvage",
+      value: amount,
+      sign: "loss",
+      targetScope: "personal",
+      targetSeatId: seatId,
+      visibility: "public",
+      source: "resolution-effect",
+      reason: effect,
+      publicText: effect,
+      severity: "loss"
+    });
+  }
 
   if (wound) {
     const amount = Number(wound[1]);
@@ -9051,6 +9069,7 @@ function summarizeTileChallengeEffect(effect: EncounterEffect): string {
     case "take_wound": return `Suffer ${effect.amount} Wound${effect.amount === 1 ? "" : "s"}.`;
     case "heal_wound": return `Heal ${effect.amount} Wound${effect.amount === 1 ? "" : "s"}.`;
     case "gain_salvage": return `Gain ${effect.amount} Salvage.`;
+    case "lose_salvage": return `Lose up to ${effect.amount} Salvage (minimum 0).`;
     case "sequence": return effect.effects.map(summarizeTileChallengeEffect).join(" ");
     default: return "Resolve the authored challenge effect.";
   }

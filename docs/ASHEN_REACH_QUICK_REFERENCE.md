@@ -62,6 +62,8 @@ The displayed result is authoritative. Do not import a tie rule from another gam
 4. Server revalidates location, stock, ownership, cost, and timing.
 5. Accepted transaction changes Salvage and inventory atomically.
 
+Automatic Salvage loss is not payment: lose up to the stated amount, minimum 0, and continue resolving the outcome.
+
 ## Mission sequence
 
 1. Accept one available contract when no active contract is held.

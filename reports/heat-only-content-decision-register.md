@@ -16,3 +16,11 @@ All decisions are pending approval.
 | H1D-009 | void-salt-sickness | Can polarity be repaired coherently? | Retire normal availability, retain ID alias | Medium | catalog compatibility | Recommended |
 
 Alternatives rejected globally: blanket Heat-to-Wound, random Scar distribution, generic pressure conversion, new Risk resource, negative Salvage, prose parsing, and client-authoritative resolution.
+
+## Phase 1G floor-zero Salvage loss
+
+| Decision | Content IDs | Question | Preferred decision | Risk | Dependency | Status |
+|---|---|---|---|---|---|---|
+| H1G-001 | `escalation-crownfall-writ`, `ash-rat-skitter`, `bridge-toll-runt`, `gutter-bell-mite`, `pale-toll-enforcer`, `rust-mote-drone`, `toll-scrip-urchins` | Can unavoidable economic damage use a typed floor-zero consequence? | Implemented as automatic `lose_salvage 1`, with partial loss and no affordability gate | Low | completed | Superseded |
+| H1G-002 | `gate-tax-collectors` | Can the fee resolve without a payment window? | No; preserve the Heat no-op until authoritative affordability and transaction timing exist | High | payment lifecycle | Blocked |
+| H1G-003 | `rust-choir-peddlers` | Can an optional offer use automatic loss? | No; preserve the Heat no-op until an authoritative choice/payment window exists | High | choice lifecycle | Blocked |

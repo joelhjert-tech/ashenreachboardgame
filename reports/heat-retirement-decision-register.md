@@ -56,3 +56,7 @@ Phase 1E implements the five approved clause-removal decisions: `anomaly-ashfall
 # Phase 1F low-risk Salvage implementation
 
 Phase 1F migrates seven implementation-ready Contract rewards to the existing `gain_salvage 1` effect: `cartel-crossing-thread`, `choir-echo-triangulation`, `choir-hush-census`, `choir-well-canticle`, `clan-salt-burial`, `contract-beacon`, and `warden-span-vigil`. Nine Severity-1 loss/payment recommendations remain blocked because no typed floor-zero loss effect or authoritative content-choice transaction exists. The allowlist decreases from 114 to 107; no other recommendation is implemented.
+
+# Phase 1G floor-zero Salvage loss implementation
+
+Phase 1G implements the seven automatic-loss blockers with the typed `lose_salvage 1` consequence: `escalation-crownfall-writ`, `ash-rat-skitter`, `bridge-toll-runt`, `gutter-bell-mite`, `pale-toll-enforcer`, `rust-mote-drone`, and `toll-scrip-urchins`. Loss is automatic, permits partial resolution, clamps at zero, reports only actual mutation, and opens no payment prompt. `gate-tax-collectors` and `rust-choir-peddlers` remain blocked on authoritative payment/choice state. The allowlist decreases from 107 to 100; no higher-severity or non-Salvage recommendation is implemented.

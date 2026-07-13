@@ -4,7 +4,7 @@
   "cardType": "enemy",
   "title": "Toll-Scrip Urchins",
   "enemyName": "Toll-Scrip Urchins",
-  "text": "A knot of soot-faced lane children flashes counterfeit toll charms and tries to cut your salvage straps.",
+  "text": "A knot of soot-faced lane children cuts your salvage straps. On a loss, lose up to 1 Salvage.",
   "flavor": "The smallest gangs know which pockets matter.",
   "severity": 1,
   "region": "outer",
@@ -16,7 +16,7 @@
     "text": "You spot the false toll mark and learn which stalls are running the trick."
   },
   "woundOnLoss": {
-    "type": "gain_heat",
+    "type": "lose_salvage",
     "amount": 1
   },
   "enemyFamily": "human",
@@ -24,7 +24,7 @@
   "rarity": "common",
   "tempo": "neutral",
   "resourceTags": [
-    "heat",
+    "salvage",
     "salvage",
     "trophy"
   ],

@@ -4,7 +4,7 @@
   "cardType": "enemy",
   "title": "Gutter-Bell Mite",
   "enemyName": "Gutter-Bell Mite",
-  "text": "A palm-sized brass mite clings to a signal gutter, ringing a tiny alarm whenever shadows move.",
+  "text": "A palm-sized brass mite ruins exposed salvage. On a loss, lose up to 1 Salvage.",
   "flavor": "A small bell can still wake the wrong thing.",
   "severity": 1,
   "region": "outer",
@@ -16,7 +16,7 @@
     "text": "You mute the mite before the alarm spreads down the gutter."
   },
   "woundOnLoss": {
-    "type": "gain_heat",
+    "type": "lose_salvage",
     "amount": 1
   },
   "enemyFamily": "vermin",
@@ -24,7 +24,7 @@
   "rarity": "common",
   "tempo": "push",
   "resourceTags": [
-    "heat",
+    "salvage",
     "trophy"
   ],
   "imagePrompt": "A tiny brass insect-like bell mite on a rain-dark signal gutter, glowing blue eye-lens, gothic industrial street detail, cute but unsettling"

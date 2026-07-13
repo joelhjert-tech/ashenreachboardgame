@@ -284,6 +284,8 @@ function summarizeEffect(effect: EncounterEffect, success: boolean | null): stri
       return `${prefix} gain ${effect.amount} Troph${effect.amount === 1 ? "y" : "ies"}.`;
     case "gain_salvage":
       return `${prefix} gain ${effect.amount} Salvage.`;
+    case "lose_salvage":
+      return `${prefix} lose up to ${effect.amount} Salvage (minimum 0).`;
     case "gain_scar":
       return `${prefix} gain scar ${effect.scarId}.`;
     case "gain_gear":
@@ -346,6 +348,14 @@ function applyEffectToPlayer(player: PlayerState, effect: EncounterEffect): Play
         character: {
           ...player.character,
           salvage: (player.character.salvage ?? 0) + effect.amount
+        }
+      };
+    case "lose_salvage":
+      return {
+        ...player,
+        character: {
+          ...player.character,
+          salvage: Math.max(0, (player.character.salvage ?? 0) - effect.amount)
         }
       };
     case "gain_scar":
@@ -726,6 +736,21 @@ function summarizeEffects(effect: EncounterEffect | null, success: boolean | nul
   }
 
   return [summarizeEffect(effect, success)];
+}
+
+function summarizeAppliedEffects(effect: EncounterEffect, success: boolean | null, startingSalvage: number): string[] {
+  let salvage = Math.max(0, startingSalvage);
+  const visit = (entry: EncounterEffect): string[] => {
+    if (entry.type === "sequence") return entry.effects.flatMap(visit);
+    if (entry.type === "lose_salvage") {
+      const actualLoss = Math.min(salvage, entry.amount);
+      salvage -= actualLoss;
+      return [actualLoss > 0 ? `Lost ${actualLoss} Salvage.` : "No Salvage was lost."];
+    }
+    if (entry.type === "gain_salvage") salvage += entry.amount;
+    return [summarizeEffect(entry, success)];
+  };
+  return visit(effect);
 }
 
 function createResolutionId(seatId: string, source: ActiveResolution["source"], createdAt: string, suffix: string): string {
@@ -1967,6 +1992,9 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
         return reject(state, action, "No pending effect is available to apply");
       }
 
+      const appliedEffectSummaries = summarizeAppliedEffects(state.pendingEffect as EncounterEffect, resolutionAction.success, requirePlayer(state, resolutionAction.seatId).character.salvage ?? 0);
+      const containsSalvageLoss = JSON.stringify(state.pendingEffect).includes('"lose_salvage"');
+
       return succeed({
         ...applyEffectToState(state, resolutionAction.seatId, state.pendingEffect as EncounterEffect),
         sequence: state.sequence + 1,
@@ -1975,14 +2003,15 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
         pendingEffect: null,
         pendingFailureReaction: null,
         pendingStaticIntercessionReaction: null,
+        lastOutcomeSummary: containsSalvageLoss && state.lastOutcomeSummary ? { ...state.lastOutcomeSummary, summary: `${state.lastOutcomeSummary.encounterTitle ?? "Outcome"}. ${appliedEffectSummaries.join(" ")}` } : state.lastOutcomeSummary,
         activeResolution: state.activeResolution
           ? {
               ...state.activeResolution,
               stage: "outcome_summary",
               outcome: {
                 title: resolutionAction.success === false ? "Failure applied" : "Outcome applied",
-                text: state.lastOutcomeSummary?.summary ?? summarizeEffect(state.pendingEffect as EncounterEffect, resolutionAction.success),
-                effects: summarizeEffects(state.pendingEffect as EncounterEffect, resolutionAction.success)
+                text: appliedEffectSummaries.join(" "),
+                effects: appliedEffectSummaries
               }
             }
           : state.activeResolution,

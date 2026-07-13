@@ -4,7 +4,7 @@
   "cardType": "enemy",
   "title": "Pale Toll Enforcer",
   "enemyName": "Pale Toll Enforcer",
-  "text": "A ledger-armored collector bars the route with a brass cudgel and a writ signed by no living office.",
+  "text": "A ledger-armored collector confiscates loose salvage. On a loss, lose up to 1 Salvage.",
   "flavor": "The stamp falls. The debt wakes.",
   "severity": 2,
   "region": "outer",
@@ -16,7 +16,7 @@
     "text": "You tore the false writ from the enforcer's ledger harness."
   },
   "woundOnLoss": {
-    "type": "gain_heat",
+    "type": "lose_salvage",
     "amount": 1
   },
   "enemyFamily": "bureaucracy",
@@ -24,7 +24,7 @@
   "rarity": "common",
   "tempo": "stall",
   "resourceTags": [
-    "heat",
+    "salvage",
     "trophy"
   ]
 }
