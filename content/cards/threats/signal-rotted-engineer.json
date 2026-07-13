@@ -1,0 +1,36 @@
+{
+  "id": "signal-rotted-engineer",
+  "type": "threat",
+  "cardType": "enemy",
+  "title": "Signal-Rotted Engineer",
+  "enemyName": "Signal-Rotted Engineer",
+  "text": "A reactor-yard engineer staggers forward, tools still working under someone else's signal. Weapons misread its approach.",
+  "flavor": "The hands remember repairs. The signal remembers harm.",
+  "severity": 2,
+  "region": "outer",
+  "stat": "forge",
+  "difficulty": 4,
+  "trophyValue": 2,
+  "combatEffectKeys": [
+    "threat_disable_weapon_bonus"
+  ],
+  "failEffectKey": "threat_fail_drop_gear",
+  "defeatReward": {
+    "type": "gain_note",
+    "text": "You stripped the bad signal out of its tool rig."
+  },
+  "woundOnLoss": {
+    "type": "gain_heat",
+    "amount": 1
+  },
+  "enemyFamily": "machine",
+  "threatLane": "yellow",
+  "rarity": "common",
+  "tempo": "push",
+  "resourceTags": [
+    "heat",
+    "loot",
+    "scenario",
+    "trophy"
+  ]
+}

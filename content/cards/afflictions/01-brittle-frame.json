@@ -1,0 +1,14 @@
+{
+  "id": "brittle-frame",
+  "name": "Brittle Frame",
+  "severity": 3,
+  "category": "restriction",
+  "duration": "ongoing",
+  "trigger": "While faceup.",
+  "rulesText": "You cannot use armor.",
+  "effectKind": "restriction",
+  "effectPayload": { "cannotUseArmor": true },
+  "flipFacedownAfterResolve": false,
+  "isFaceupOngoing": true,
+  "implementationNotes": "Blocks armor use validation."
+}

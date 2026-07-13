@@ -1,0 +1,32 @@
+{
+  "id": "fandiablos",
+  "name": "Fandiablos",
+  "role": "companion",
+  "tier": "ultimate",
+  "tags": ["companion", "beast-flock", "breach-touched", "mayhem", "support"],
+  "unique": true,
+  "artifactTier": true,
+  "ultimateCompanion": true,
+  "timingWindows": ["beforeThreatDraw", "beforeBattleRoll", "beforeTakingDamage", "anyTime"],
+  "artCardId": "artifact-fandiablos",
+  "text": "Warning Barks: before drawing threats, reveal one local threat and record whether it stays or gets driven under the deck. Swarm of Tiny Teeth: during a Grit battle, use Fandiablos to gain +3 Grit for that battle. Unreasonable Courage: the first wound each round may be prevented on 4+. Cable Biters: gain +2 on Forge or Guile tests involving machines, locks, traps, or salvage. Too Many Dogs: after use, on a mayhem roll of 1 the action becomes unstable.",
+  "activeEffect": {
+    "type": "gain_note",
+    "text": "Fandiablos is awake: warning barks, tiny teeth, and cable biting support are committed to the current action window."
+  },
+  "useLimit": "oncePerRound",
+  "effectModel": "exhaust",
+  "activationTiming": ["beforeThreatDraw", "beforeBattleRoll", "beforeTakingDamage", "anyTime"],
+  "resetWindow": "round",
+  "exhaustEffect": "fandiablosSupport",
+  "requiresEquipped": false,
+  "loyalty": 5,
+  "lossCondition": "choice",
+  "acquisition": [
+    "Complete 3 Contracts and draw Fandiablos from the Artifact/Ultimate deck.",
+    "Win a special Shrine or Companion event.",
+    "Defeat a named nemesis tied to beast-flock lore."
+  ],
+  "flavor": "They came through the breach barking. The enemy line broke before command understood why.",
+  "imagePrompt": "A grimdark fantasy-sci-fi character card showing a heroic operative surrounded by a chaotic flock of tiny armored Chihuahuas, each wearing miniature ward collars, goggles, scraps of black-gold armor, and tiny glowing sigils. The dogs are cute but fierce, barking into smoke and sparks inside a ruined gothic-industrial battlefield. Cinematic lighting, dark brass, red heat-glow, blue breach light, ornate Ashenreach card style, no text."
+}

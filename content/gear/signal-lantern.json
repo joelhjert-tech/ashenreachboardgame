@@ -1,0 +1,24 @@
+{
+  "id": "signal-lantern",
+  "name": "Signal Lantern",
+  "slot": "utility",
+  "subtype": "utility",
+  "category": "passive",
+  "statBonus": {
+    "stat": "signal",
+    "amount": 1
+  },
+  "cost": 3,
+  "sellValue": 1,
+  "sellable": true,
+  "tier": "standard",
+  "progressionWeight": 1,
+  "flavor": "A hooded lane lamp that adds +1 Signal in unstable sectors.",
+  "activeText": "A hooded lane lamp that adds +1 Signal in unstable sectors.",
+  "shopCategories": [
+    "market"
+  ],
+  "startingEligible": true,
+  "normalShopCommon": true,
+  "allowedFallbackArt": true
+}

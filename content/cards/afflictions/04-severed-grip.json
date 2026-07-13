@@ -1,0 +1,13 @@
+{
+  "id": "severed-grip",
+  "name": "Severed Grip",
+  "severity": 3,
+  "category": "restriction",
+  "duration": "ongoing",
+  "trigger": "While faceup.",
+  "rulesText": "You cannot use weapons.",
+  "effectKind": "restriction",
+  "effectPayload": { "cannotUseWeapons": true },
+  "flipFacedownAfterResolve": false,
+  "isFaceupOngoing": true
+}

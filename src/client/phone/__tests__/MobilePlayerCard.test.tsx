@@ -3,6 +3,7 @@
 import "@testing-library/jest-dom/vitest";
 import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
+import { getChallengeThemeStyle } from "../../../game/ui/challengeTheme.js";
 import { MobilePlayerCard } from "../MobilePlayerCard.js";
 import type { PhoneSelfState } from "../../shared/types.js";
 
@@ -34,6 +35,204 @@ const self: PhoneSelfState = {
 };
 
 describe("MobilePlayerCard", () => {
+  it("shows projected character role and complexity on the player card", () => {
+    render(
+      <MobilePlayerCard
+        self={{
+          ...self,
+          character: {
+            ...self.character,
+            presentation: {
+              role: "Commander",
+              complexity: "beginner",
+              playstyleSummary: "A clear first-game leader.",
+              recommendedForFirstGame: true,
+              strengths: ["Command"],
+              weaknesses: ["Low Signal"],
+              usefulStats: ["command", "grit"],
+              signatureItemSummary: "Cinder Suture Kit.",
+              startingContractSummary: "Warbell recovery."
+            }
+          }
+        }}
+        activeContractCard={null}
+        roomCode="RT7P4"
+        displayName="Joel"
+        connectionStatus="open"
+        sessionStatus="active"
+        winnerSeatId={null}
+        phase="action"
+        activeSeatId="seat-1"
+        activeNemesis={null}
+        activeScenario={null}
+        scenarioTelemetry={[]}
+        escalationLevel={0}
+        escalationThreshold={6}
+        escalationModifier={0}
+        encounter={null}
+        outcomeSummary={null}
+        onLeave={() => {}}
+      />
+    );
+
+    expect(screen.getByText(/commander \| beginner/i)).toBeInTheDocument();
+    expect(screen.getByText(/global escalation 0\/6, \+0/i)).toBeInTheDocument();
+    expect((document.querySelector(".phone-sheet-stat-card-command") as HTMLElement).style.getPropertyValue("--challenge-color")).toBe(
+      getChallengeThemeStyle("command")["--challenge-color"]
+    );
+    expect((document.querySelector(".phone-sheet-stat-card-guile") as HTMLElement).style.getPropertyValue("--challenge-color")).toBe(
+      getChallengeThemeStyle("guile")["--challenge-color"]
+    );
+    expect((document.querySelector(".phone-sheet-stat-card-guile") as HTMLElement).style.getPropertyValue("--challenge-color")).not.toBe(
+      "#E3B341"
+    );
+  });
+
+  it("shows compact stat bonuses without merging permanent or gear sources into base", () => {
+    render(
+      <MobilePlayerCard
+        self={{
+          ...self,
+          character: {
+            ...self.character,
+            stats: { ...self.character.stats, command: 4 },
+            statUpgrades: { command: 1 },
+            heldGear: [
+              {
+                id: "marshal-seal",
+                name: "Marshal Seal",
+                slot: "utility",
+                statBonus: { stat: "command", amount: 1 }
+              }
+            ],
+            equippedGear: { weapon: null, armor: null, utility: "marshal-seal" }
+          }
+        }}
+        activeContractCard={null}
+        roomCode="RT7P4"
+        displayName="Joel"
+        connectionStatus="open"
+        sessionStatus="active"
+        winnerSeatId={null}
+        phase="action"
+        activeSeatId="seat-1"
+        activeNemesis={null}
+        activeScenario={null}
+        scenarioTelemetry={[]}
+        escalationLevel={0}
+        escalationThreshold={6}
+        escalationModifier={0}
+        encounter={null}
+        outcomeSummary={null}
+        onLeave={() => {}}
+      />
+    );
+
+    expect(screen.getByText(/base 3 \| permanent \+1 \| gear\/follower \+1/i)).toBeInTheDocument();
+    expect(screen.getByText("(+1)")).toBeInTheDocument();
+    expect(document.querySelector(".phone-sheet-stat-card-command")).toHaveTextContent(/5/);
+  });
+
+  it("shows active Afflictions and facedown Affliction count without renaming wounds", () => {
+    render(
+      <MobilePlayerCard
+        self={{
+          ...self,
+          character: {
+            ...self.character,
+            afflictions: {
+              faceup: [
+                {
+                  id: "brittle-frame",
+                  name: "Brittle Frame",
+                  severity: 3,
+                  category: "restriction",
+                  duration: "ongoing",
+                  trigger: "While faceup.",
+                  rulesText: "You cannot use armor.",
+                  effectKind: "restriction",
+                  effectPayload: { cannotUseArmor: true },
+                  isFaceupOngoing: true
+                }
+              ],
+              facedownCount: 2
+            }
+          }
+        }}
+        activeContractCard={null}
+        roomCode="RT7P4"
+        displayName="Joel"
+        connectionStatus="open"
+        sessionStatus="active"
+        winnerSeatId={null}
+        phase="action"
+        activeSeatId="seat-1"
+        activeNemesis={null}
+        activeScenario={null}
+        scenarioTelemetry={[]}
+        escalationLevel={0}
+        escalationThreshold={6}
+        escalationModifier={0}
+        encounter={null}
+        outcomeSummary={null}
+        onLeave={() => {}}
+      />
+    );
+
+    expect(screen.getByTestId("phone-afflictions-section")).toHaveTextContent("Afflictions");
+    expect(screen.getByText("Brittle Frame")).toBeInTheDocument();
+    expect(screen.getByText(/blocks armor/i)).toBeInTheDocument();
+    expect(screen.getByText("Facedown Afflictions")).toBeInTheDocument();
+    expect(screen.getByText(/resolved corruption remains/i)).toBeInTheDocument();
+  });
+
+  it("shows scar cards as inspectable player status effects", () => {
+    render(
+      <MobilePlayerCard
+        self={{
+          ...self,
+          character: {
+            ...self.character,
+            scars: ["scar-wound-1"],
+            scarCards: [
+              {
+                id: "scar-wound-1",
+                title: "Ash-Lanced",
+                text: "A furnace-raked wound that never fully seals.",
+                trigger: "Your first failed Grit test each session.",
+                penalty: "Gain 1 scar after the failure resolves.",
+                relief: "At a surgery or shrine space, spend 1 trophy after a passed Forge check to suppress this scar."
+              }
+            ]
+          }
+        }}
+        activeContractCard={null}
+        roomCode="RT7P4"
+        displayName="Joel"
+        connectionStatus="open"
+        sessionStatus="active"
+        winnerSeatId={null}
+        phase="action"
+        activeSeatId="seat-1"
+        activeNemesis={null}
+        activeScenario={null}
+        scenarioTelemetry={[]}
+        escalationLevel={0}
+        escalationThreshold={6}
+        escalationModifier={0}
+        encounter={null}
+        outcomeSummary={null}
+        onLeave={() => {}}
+      />
+    );
+
+    const scars = screen.getByTestId("phone-scars-section");
+
+    expect(scars).toHaveTextContent(/ash-lanced/i);
+    expect(scars).toHaveTextContent(/furnace-raked wound/i);
+    expect(scars.querySelector(".phone-sheet-scar-art")).toBeInTheDocument();
+  });
+
   it("surfaces scenario victory messaging for the winner", () => {
     render(
       <MobilePlayerCard
@@ -162,7 +361,8 @@ describe("MobilePlayerCard", () => {
       />
     );
 
-    expect(screen.getByText(/crossing thread \| clear the ashwake convoy lane \(1\/1 clears\)/i)).toBeInTheDocument();
+    expect(screen.getByText(/crossing thread/i)).toBeInTheDocument();
+    expect(screen.getByText(/clear the ashwake convoy lane \(1\/1 clears\)/i)).toBeInTheDocument();
     expect(screen.getAllByText(/clear the ashwake convoy lane/i).length).toBeGreaterThan(0);
   });
 });

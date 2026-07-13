@@ -1,0 +1,29 @@
+{
+  "id": "shattered-barricade",
+  "type": "threat",
+  "cardType": "hazard",
+  "title": "Shattered Barricade",
+  "text": "A barricade collapses outward in a cough of teeth, rebar, and old warning plates.",
+  "flavor": "Someone built it to keep danger out. The danger learned carpentry.",
+  "severity": 2,
+  "stat": "forge",
+  "difficulty": 7,
+  "successEffect": {
+    "type": "gain_note",
+    "text": "You marked a clear breach through the shattered barricade."
+  },
+  "failEffect": {
+    "type": "take_wound",
+    "amount": 1
+  },
+  "enemyFamily": "hazard",
+  "threatLane": "red",
+  "resolutionType": "encounter",
+  "region": "outer",
+  "rarity": "common",
+  "tempo": "stall",
+  "resourceTags": [
+    "movement",
+    "wound"
+  ]
+}

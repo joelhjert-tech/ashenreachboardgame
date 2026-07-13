@@ -1,0 +1,36 @@
+{
+  "id": "static-censer-acolyte",
+  "type": "threat",
+  "cardType": "enemy",
+  "title": "Static-Censer Acolyte",
+  "enemyName": "Static-Censer Acolyte",
+  "text": "A hooded acolyte swings a relay censer, filling the air with blue-white sparks and forbidden hymn noise.",
+  "flavor": "The incense is not smoke. It is instruction.",
+  "severity": 2,
+  "region": "middle",
+  "stat": "signal",
+  "difficulty": 6,
+  "trophyValue": 2,
+  "defeatReward": {
+    "type": "gain_note",
+    "text": "You cracked the censer and kept the cleanest signal shard."
+  },
+  "woundOnLoss": {
+    "type": "sequence",
+    "effects": [
+      {
+        "type": "take_wound",
+        "amount": 1
+      }
+    ]
+  },
+  "enemyFamily": "choir",
+  "threatLane": "blue",
+  "rarity": "common",
+  "tempo": "stall",
+  "resourceTags": [
+    "loot",
+    "trophy",
+    "wound"
+  ]
+}

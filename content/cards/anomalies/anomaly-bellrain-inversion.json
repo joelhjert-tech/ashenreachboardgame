@@ -1,0 +1,14 @@
+{
+  "id": "anomaly-bellrain-inversion",
+  "type": "anomaly",
+  "regionHint": "outer",
+  "title": "Bellrain Inversion",
+  "text": "A weather pocket rains brass sound upward, shaking loose everything not strapped down.",
+  "flavor": "The storm rings before it falls.",
+  "instability": 1,
+  "resolutionSummary": "Timed the inversion and harvested a clean bell pattern.",
+  "resolveEffect": {
+    "type": "lose_heat",
+    "amount": 1
+  }
+}

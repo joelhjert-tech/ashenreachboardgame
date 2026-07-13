@@ -5,11 +5,11 @@
   "currentSpaceId": "hollow-veil-yard",
   "status": "active",
   "stats": {
-    "command": 1,
+    "command": 3,
     "grit": 1,
-    "signal": 2,
-    "guile": 3,
-    "forge": 2
+    "signal": 3,
+    "guile": 5,
+    "forge": 3
   },
   "trophies": 0,
   "heat": 0,
@@ -26,22 +26,27 @@
     {
       "id": "ledger-broker",
       "name": "Ledger Broker",
-      "text": "The first contract you accept each session comes with hidden leverage already worked into the terms."
+      "text": "Once per session, when you accept your first Contract, set its progress to at least 1."
     },
     {
       "id": "silent-audit",
       "name": "Silent Audit",
-      "text": "Clear sectors yield sharper intelligence when you are the one left standing in them."
+      "text": "Once per round, after you clear a sector with no unresolved blockers, record a private leverage entry."
     },
     {
       "id": "debt-knife",
       "name": "Debt Knife",
-      "text": "Enemies tied to a route objective feel the weight of your mark before the strike lands."
+      "text": "Once per round, after you defeat an enemy while you have an active Contract, advance that Contract by 1 valid progress step."
     },
     {
       "id": "black-file",
       "name": "Black File",
-      "text": "Once per round, a finished job can be turned into leverage instead of mere survival."
+      "text": "Once per round, after you complete a Contract, record a private leverage entry and reduce scenario pressure by 1 if it is above 0."
     }
-  ]
+  ],
+  "startingGear": [
+    "salvage-ledger",
+    "lockjaw-kit"
+  ],
+  "startingContract": "cartel-ledger-skim"
 }

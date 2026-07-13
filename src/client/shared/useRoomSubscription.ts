@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type Dispatch, type SetStateAction } from "react";
-import { getWebSocketOrigin } from "./network.js";
+import { getConnectionDiagnostics, getWebSocketOrigin } from "./network.js";
 import type {
   ClientIntent,
   DebugEvent,
@@ -91,7 +91,8 @@ export function useRoomSubscription(
         detail: config.view === "tv" ? "Opening TV subscription" : "Opening phone subscription",
         payload: {
           view: config.view,
-          roomCode: config.view === "phone" ? config.auth?.roomCode ?? null : null
+          roomCode: config.view === "phone" ? config.auth?.roomCode ?? null : null,
+          diagnostics: getConnectionDiagnostics()
         }
       });
       const wsUrl =

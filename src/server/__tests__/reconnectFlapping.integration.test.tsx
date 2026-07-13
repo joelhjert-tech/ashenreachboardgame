@@ -28,6 +28,13 @@ class TestWebSocket extends NodeWebSocket {
 }
 
 vi.mock("../../client/shared/network.js", () => ({
+  getConnectionDiagnostics: () => ({
+    pageUrl: "http://127.0.0.1:5173/",
+    apiOrigin: "http://127.0.0.1:8080",
+    webSocketOrigin: mockedWebSocketOrigin,
+    publicClientOrigin: null,
+    isLocalhostPage: true
+  }),
   getWebSocketOrigin: () => mockedWebSocketOrigin
 }));
 
@@ -57,6 +64,7 @@ function createState(): GameState {
     sessionId,
     status: "active",
     sessionMode: "single-player",
+    gameMode: "standard",
     winnerSeatId: null,
     activeScenarioId: "scenario_broken_seal",
     scenarioProgress: {},
@@ -83,7 +91,10 @@ function createState(): GameState {
         seatId,
         characterId: "void-marshal",
         displayName: "Seat One",
+        startingContractOptions: [],
+        selectedStartingContractId: null,
         connected: false,
+        ready: false,
         kicked: false,
         joinToken: createJoinToken({ sessionId, seatId })
       }
@@ -100,6 +111,9 @@ function createState(): GameState {
       }
     ],
     availableContracts: [],
+    shopStockReveals: [],
+    nemesisChampions: [],
+    nemesisNexusCountdowns: [],
     eventLog: [],
     currentEncounter: null,
     pendingEnemyRoll: null,

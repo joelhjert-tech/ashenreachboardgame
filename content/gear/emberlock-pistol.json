@@ -1,0 +1,28 @@
+{
+  "id": "emberlock-pistol",
+  "name": "Emberlock Pistol",
+  "slot": "weapon",
+  "subtype": "weapon",
+  "category": "passive",
+  "statBonus": {
+    "stat": "command",
+    "amount": 1
+  },
+  "cost": 3,
+  "sellValue": 1,
+  "sellable": true,
+  "tier": "standard",
+  "progressionWeight": 1,
+  "flavor": "A disciplined sidearm that adds +1 Command in battle.",
+  "activeText": "A disciplined sidearm that adds +1 Command in battle.",
+  "effectModel": "conditional",
+  "requiresEquipped": true,
+  "conditionType": "battle",
+  "shopCategories": [
+    "forge-armoury",
+    "market"
+  ],
+  "startingEligible": true,
+  "normalShopCommon": true,
+  "allowedFallbackArt": true
+}

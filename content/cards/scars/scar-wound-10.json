@@ -1,0 +1,15 @@
+{
+  "id": "scar-wound-10",
+  "type": "scar",
+  "title": "Marrow Debt",
+  "text": "Someone stitched you back together with credit you did not sign for.",
+  "flavor": "The sutures tighten whenever coin changes hands.",
+  "trigger": "When you gain trophies from an enemy or contract.",
+  "penalty": "Gain 1 fewer trophy, then record a debt note.",
+  "effect": {
+    "type": "gain_note",
+    "text": "Marrow Debt collected: reduce the next trophy gain by 1."
+  },
+  "relief": "At a surgery space, spend 2 trophies to clear one debt note and suppress this scar for the session.",
+  "upside": "When you pay the debt, heal 1 wound."
+}

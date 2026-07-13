@@ -1,0 +1,1006 @@
+{
+  "roomCode": "37D8O",
+  "folder": "reports\\product-design-player-experience-audit-20260706-111149",
+  "stepCount": 12,
+  "consoleErrors": [],
+  "pageErrors": [],
+  "steps": [
+    {
+      "step": 1,
+      "file": "01-tv-create-room.png",
+      "description": "TV command board before room creation",
+      "health": "healthy but visually dense",
+      "note": "Strong world tone and clear Create actions, but first-time players may scan multiple panels before understanding the primary host task.",
+      "pngSize": [
+        1920,
+        1080
+      ],
+      "metrics": {
+        "url": "http://127.0.0.1:5173/tv",
+        "title": "Ashen Reach Playtest",
+        "viewport": {
+          "width": 1920,
+          "height": 1080
+        },
+        "horizontalOverflow": 0,
+        "canvasCount": 0,
+        "headings": [
+          "Ashen Reach",
+          "Scan to Join",
+          "Operatives",
+          "Open Seat",
+          "Open Seat",
+          "Open Seat",
+          "Open Seat",
+          "Active operative"
+        ],
+        "buttons": [
+          {
+            "text": "Off",
+            "disabled": false
+          },
+          {
+            "text": "BorderlightNorth Dock Bastion\u25c6Yellow Guile",
+            "disabled": false
+          },
+          {
+            "text": "BorderlightAnchor Market\u25c6Yellow Guile",
+            "disabled": false
+          },
+          {
+            "text": "BorderlightColdwind Wharf\u25c9Blue Signal",
+            "disabled": false
+          },
+          {
+            "text": "BorderlightDock Nine Wreckage\u25c6Yellow Guile\u2694Red Grit",
+            "disabled": false
+          },
+          {
+            "text": "BorderlightEmber Stair\u2694Red Grit\u25c9Blue Signal",
+            "disabled": false
+          },
+          {
+            "text": "BorderlightCinder Fields\u2694Red Grit",
+            "disabled": false
+          },
+          {
+            "text": "BorderlightGlass Signal Pier\u25c9Blue Signal",
+            "disabled": false
+          },
+          {
+            "text": "BorderlightPilgrim Lock Gate",
+            "disabled": false
+          },
+          {
+            "text": "BorderlightRusted Transit Gate\u25c6Yellow Guile\u25c9Blue Signal",
+            "disabled": false
+          },
+          {
+            "text": "BorderlightBroken Census Hall\u2694Red Grit",
+            "disabled": false
+          },
+          {
+            "text": "BorderlightColony Outskirts\u25c6Yellow Guile",
+            "disabled": false
+          },
+          {
+            "text": "BorderlightDeadwater Marsh\u25c9Blue Signal",
+            "disabled": false
+          },
+          {
+            "text": "BorderlightVotive Engine Room\u25c9Blue Signal",
+            "disabled": false
+          },
+          {
+            "text": "BorderlightAshwalk Bridge\u25c6Yellow Guile",
+            "disabled": false
+          },
+          {
+            "text": "BorderlightOld Mercy Bay\u2694Red Grit",
+            "disabled": false
+          },
+          {
+            "text": "BorderlightMire Vent Colony\u25c9Blue Signal",
+            "disabled": false
+          },
+          {
+            "text": "BorderlightRustveil Yard\u25c6Yellow Guile",
+            "disabled": false
+          }
+        ],
+        "visibleTabs": []
+      }
+    },
+    {
+      "step": 2,
+      "file": "02-tv-lobby-room-created.png",
+      "description": "TV lobby after creating a single-player room",
+      "health": "mostly healthy",
+      "note": "Room code and join affordance are visible; setup status is present, but readiness details compete with map/scenario panels.",
+      "pngSize": [
+        1920,
+        1080
+      ],
+      "metrics": {
+        "url": "http://127.0.0.1:5173/tv",
+        "title": "Ashen Reach Playtest",
+        "viewport": {
+          "width": 1920,
+          "height": 1080
+        },
+        "horizontalOverflow": 0,
+        "canvasCount": 0,
+        "headings": [
+          "Ashen Reach",
+          "Scan to Join",
+          "Operatives",
+          "Open Seat",
+          "Open Seat",
+          "Awaiting deployment",
+          "Scenario",
+          "The Broken Seal"
+        ],
+        "buttons": [
+          {
+            "text": "Playing",
+            "disabled": false
+          },
+          {
+            "text": "BorderlightNorth Dock Bastion\u25c6Yellow Guile",
+            "disabled": false
+          },
+          {
+            "text": "BorderlightAnchor Market\u25c6Yellow Guile!",
+            "disabled": false
+          },
+          {
+            "text": "BorderlightColdwind Wharf\u25c9Blue Signal",
+            "disabled": false
+          },
+          {
+            "text": "BorderlightDock Nine Wreckage\u25c6Yellow Guile\u2694Red Grit",
+            "disabled": false
+          },
+          {
+            "text": "BorderlightEmber Stair\u2694Red Grit\u25c9Blue Signal",
+            "disabled": false
+          },
+          {
+            "text": "BorderlightCinder Fields\u2694Red Grit",
+            "disabled": false
+          },
+          {
+            "text": "BorderlightGlass Signal Pier\u25c9Blue Signal",
+            "disabled": false
+          },
+          {
+            "text": "BorderlightPilgrim Lock Gate",
+            "disabled": false
+          },
+          {
+            "text": "BorderlightRusted Transit Gate\u25c6Yellow Guile\u25c9Blue Signal",
+            "disabled": false
+          },
+          {
+            "text": "BorderlightBroken Census Hall\u2694Red Grit",
+            "disabled": false
+          },
+          {
+            "text": "BorderlightColony Outskirts\u25c6Yellow Guile",
+            "disabled": false
+          },
+          {
+            "text": "BorderlightDeadwater Marsh\u25c9Blue Signal",
+            "disabled": false
+          },
+          {
+            "text": "BorderlightVotive Engine Room\u25c9Blue Signal",
+            "disabled": false
+          },
+          {
+            "text": "BorderlightAshwalk Bridge\u25c6Yellow Guile",
+            "disabled": false
+          },
+          {
+            "text": "BorderlightOld Mercy Bay\u2694Red Grit!",
+            "disabled": false
+          },
+          {
+            "text": "BorderlightMire Vent Colony\u25c9Blue Signal",
+            "disabled": false
+          },
+          {
+            "text": "BorderlightRustveil Yard\u25c6Yellow Guile",
+            "disabled": false
+          }
+        ],
+        "visibleTabs": []
+      }
+    },
+    {
+      "step": 3,
+      "file": "03-phone-join-empty.png",
+      "description": "Phone join screen without room prefill",
+      "health": "healthy",
+      "note": "The screen is focused on room code and player name, which is good for staged onboarding. The panel still feels heavy for a simple two-field task.",
+      "pngSize": [
+        390,
+        844
+      ],
+      "metrics": {
+        "url": "http://127.0.0.1:5173/",
+        "title": "Ashen Reach Playtest",
+        "viewport": {
+          "width": 390,
+          "height": 844
+        },
+        "horizontalOverflow": 0,
+        "canvasCount": 0,
+        "headings": [
+          "Join room",
+          "Join Room"
+        ],
+        "buttons": [
+          {
+            "text": "Join / Continue",
+            "disabled": false
+          }
+        ],
+        "visibleTabs": []
+      }
+    },
+    {
+      "step": 4,
+      "file": "04-phone-character-select.png",
+      "description": "Phone character selection",
+      "health": "mixed",
+      "note": "The single top header helps, and role information is useful. The cards are information-rich enough that players may still have to read a lot before making a confident first pick.",
+      "pngSize": [
+        390,
+        844
+      ],
+      "metrics": {
+        "url": "http://127.0.0.1:5173/?room=37D8O",
+        "title": "Ashen Reach Playtest",
+        "viewport": {
+          "width": 390,
+          "height": 844
+        },
+        "horizontalOverflow": 0,
+        "canvasCount": 0,
+        "headings": [
+          "Select Character"
+        ],
+        "buttons": [
+          {
+            "text": "Recommended",
+            "disabled": false
+          },
+          {
+            "text": "All Operatives",
+            "disabled": false
+          },
+          {
+            "text": "Advanced",
+            "disabled": false
+          },
+          {
+            "text": "BjornisFirebreak ConquerorBruiserStandardFirst-game pickWins fights and forges pressure into progress, but draws heat when overextended.GearRed-March Warbell: combat-first gear for loud turns.ContractSalvage tithe: clear objectives through force and recovery.Good atGrit battles, Forge rewardsWatch outWeak Signal, Limited subtletyCommand 2Grit 5Signal 1Guile 2Forge 5Select character",
+            "disabled": false
+          },
+          {
+            "text": "Brask OdeSalvage WardenSalvagerStandardFirst-game pickTurns spare gear and shop timing into table resources.GearTuning Spines: practical gear for repair and salvage.ContractSalt burial: rewards salvage discipline.Good atForge value, Shop turnsWatch outNeeds market access, Moderate combatCommand 2Grit 3Signal 1Guile 4Forge 5Select character",
+            "disabled": false
+          },
+          {
+            "text": "DeepdaleDeep Route DelverRoutefinderStandardFirst-game pickReads dangerous paths and converts careful movement into forge-side progress.GearGrave Lens: improves inspection and route decisions.ContractBone-road guide: rewards careful route planning.Good atForge checks, Signal routesWatch outLow Command, Needs planned destinationsCommand 1Grit 3Signal 4Guile 2Forge 5Select character",
+            "disabled": false
+          },
+          {
+            "text": "Dessa KorrGrave EngineerEngineerStandardFirst-game pickSolves Forge problems and turns gear timing into reliable sector clears.GearCoffin Rig: gear-first utility for hard work.ContractCleanse ledger: rewards solving sector problems.Good atForge checks, Gear economyWatch outLow Signal, Needs tools onlineCommand 1Grit 3Signal 2Guile 4Forge 5Select character",
+            "disabled": false
+          },
+          {
+            "text": "Dr. Yuna CastellSiege MedicMedicBeginnerFirst-game pickKeeps wounds under control and makes danger easier for new tables.GearSaintwire Splint: wound-focused recovery gear.ContractSurgery bond: rewards keeping operatives alive.Good atHealing, Grit survivalWatch outLow Signal, Needs wounded targetsCommand 3Grit 3Signal 2Guile 2Forge 5Select character",
+            "disabled": false
+          },
+          {
+            "text": "Ker Von KerIron BulwarkTankBeginnerFirst-game pickAbsorbs danger and holds contested sectors while the table catches up.GearLast-Breath Rivet: defensive gear for survival windows.ContractGuardian span vigil: protects key lanes.Good atDurability, Grit checksWatch outLow finesse, Can become slowCommand 2Grit 5Signal 1Guile 2Forge 5Select character",
+            "disabled": false
+          },
+          {
+            "text": "Kira DogHoundblade HeroScoutBeginnerFirst-game pickFinds safe lines quickly and makes movement choices easier to read.GearVeil Hook: mobility utility for route turns.ContractLantern run: rewards reaching and reporting key spaces.Good atRoute reads, Fast decisionsWatch outLimited heavy combat, Needs clear objectivesCommand 3Grit 5Signal 1Guile 4Forge 2Select character",
+            "disabled": false
+          },
+          {
+            "text": "LaneSignal WitchMysticStandardFirst-game pickExcels at Signal tests and anomaly-facing turns with clear risk control.GearChoir-Static Censer: Signal utility for strange sectors.ContractSpindle harmonics: rewards anomaly and Signal play.Good atSignal checks, Anomaly handlingWatch outLow Grit, Avoids prolonged fightsCommand 1Grit 2Signal 5Guile 4Forge 3Select character",
+            "disabled": false
+          },
+          {
+            "text": "MiraCinder MonkSupportStandardFirst-game pickStabilizes heat and supports the table through controlled risk.GearHeat-Sink Prayer: stabilizes pressure before it spikes.ContractShrine confession: rewards cleansing and recovery.Good atHeat control, Grit resilienceWatch outLower Guile, Needs table awarenessCommand 2Grit 4Signal 3Guile 3Forge 3Select character",
+            "disabled": false
+          },
+          {
+            "text": "Orenna TashFleet ElderSupportStandardFirst-game pickUses Command to keep the table organized and objectives moving.GearMarshal Seal: improves command-side table plays.ContractBeacon duty: rewards steady table progress.Good atCommand, Team tempoWatch outLow Grit, Poor solo brawlingCommand 5Grit 1Signal 4Guile 2Forge 3Select character",
+            "disabled": false
+          },
+          {
+            "text": "Senna PellRift CartographerRoutefinderBeginnerFirst-game pickMakes movement choices explicit and helps the table understand routes.GearAshen Route Compass: route gear for movement decisions.ContractQuiet route: rewards reaching planned sectors.Good atMovement planning, Guile routesWatch outWeak brawling, Needs map attentionCommand 1Grit 2Signal 5Guile 5Forge 2Select character",
+            "disabled": false
+          },
+          {
+            "text": "Tarek VossVoid MarshalCommanderBeginnerFirst-game pickA clear first-game leader with Command pressure and safe recovery tools.GearCinder Suture Kit: emergency recovery for rough turns.ContractWarbell recovery: rewards direct table leadership.Good atCommand, Team directionWatch outLow Signal, Needs support in weird sectorsCommand 5Grit 3Signal 2Guile 2Forge 3Select character",
+            "disabled": false
+          },
+          {
+            "text": "Joss VarBlack Ledger AgentControllerAdvancedTurns table knowledge and black-market timing into safer contract progress.GearBlackstar Ampoule: risky utility for pressure-heavy turns.ContractLedger skim: rewards contract-aware route choices.Good atPrivate economy, Guile checksWatch outLow direct combat, Needs timing disciplineCommand 3Grit 1Signal 3Guile 5Forge 3Select character",
+            "disabled": false
+          },
+          {
+            "text": "PopelordMire SovereignMysticAdvancedUses mire pressure and strange relic timing to turn bad sectors into leverage.GearBlack Route Fuse: volatile utility for route and anomaly turns.ContractSalvage tithe: turns resource pressure into progress.Good atSignal spikes, Mire controlWatch outComplex triggers, Fragile if corneredCommand 3Grit 5Signal 1Guile 2Forge 4Select character",
+            "disabled": false
+          },
+          {
+            "text": "Reskin HaleOathbroken PrinceDuelistAdvancedLeans on Guile and oath timing to spike decisive turns.GearOath-Chain Ledger: contract-linked timing gear.ContractGate tithe: rewards committed objective routes.Good atGuile plays, Duel pressureWatch outFragile stat spread, Punishes mistimingCommand 4Grit 2Signal 1Guile 5Forge 3Select character",
+            "disabled": false
+          }
+        ],
+        "visibleTabs": [
+          {
+            "text": "Recommended",
+            "selected": "false",
+            "disabled": false
+          },
+          {
+            "text": "All Operatives",
+            "selected": "true",
+            "disabled": false
+          },
+          {
+            "text": "Advanced",
+            "selected": "false",
+            "disabled": false
+          }
+        ]
+      }
+    },
+    {
+      "step": 5,
+      "file": "05-phone-starting-mission.png",
+      "description": "Phone starting mission selection after character choice",
+      "health": "healthy with hierarchy risk",
+      "note": "Mission choice correctly appears before Ready. The player goal is clearer, but the ready state and mission list share a lot of framed space.",
+      "pngSize": [
+        390,
+        844
+      ],
+      "metrics": {
+        "url": "http://127.0.0.1:5173/?room=37D8O",
+        "title": "Ashen Reach Playtest",
+        "viewport": {
+          "width": 390,
+          "height": 844
+        },
+        "horizontalOverflow": 0,
+        "canvasCount": 0,
+        "headings": [
+          "Choose Starting Mission",
+          "Special Abilities",
+          "Starting Equipment"
+        ],
+        "buttons": [
+          {
+            "text": "Select Mission",
+            "disabled": false
+          },
+          {
+            "text": "Select Mission",
+            "disabled": false
+          },
+          {
+            "text": "Select Mission",
+            "disabled": false
+          },
+          {
+            "text": "Ready",
+            "disabled": true
+          },
+          {
+            "text": "Back",
+            "disabled": false
+          }
+        ],
+        "visibleTabs": []
+      }
+    },
+    {
+      "step": 6,
+      "file": "06-phone-ready-summary.png",
+      "description": "Phone ready summary after mission selection",
+      "health": "healthy",
+      "note": "Character and mission are visible before Ready, which builds trust. The next action is clear.",
+      "pngSize": [
+        390,
+        844
+      ],
+      "metrics": {
+        "url": "http://127.0.0.1:5173/?room=37D8O",
+        "title": "Ashen Reach Playtest",
+        "viewport": {
+          "width": 390,
+          "height": 844
+        },
+        "horizontalOverflow": 0,
+        "canvasCount": 0,
+        "headings": [
+          "Selected Starting Mission",
+          "Special Abilities",
+          "Starting Equipment"
+        ],
+        "buttons": [
+          {
+            "text": "Ready",
+            "disabled": false
+          },
+          {
+            "text": "Back",
+            "disabled": false
+          }
+        ],
+        "visibleTabs": []
+      }
+    },
+    {
+      "step": 7,
+      "file": "07-phone-active-player-card.png",
+      "description": "Active phone controller on Player Card",
+      "health": "mostly healthy",
+      "note": "The controller structure is understandable and the bottom tabs are clear. The main weakness is density: player status, card content, and chrome all compete for the first viewport.",
+      "pngSize": [
+        390,
+        844
+      ],
+      "metrics": {
+        "url": "http://127.0.0.1:5173/?room=37D8O",
+        "title": "Ashen Reach Playtest",
+        "viewport": {
+          "width": 390,
+          "height": 844
+        },
+        "horizontalOverflow": 0,
+        "canvasCount": 0,
+        "headings": [
+          "Bjornis",
+          "Bjornis"
+        ],
+        "buttons": [
+          {
+            "text": "Hide UI",
+            "disabled": false
+          },
+          {
+            "text": "Leave",
+            "disabled": false
+          },
+          {
+            "text": "Player Card",
+            "disabled": false
+          },
+          {
+            "text": "Inventory",
+            "disabled": false
+          },
+          {
+            "text": "Quest",
+            "disabled": false
+          },
+          {
+            "text": "Move",
+            "disabled": false
+          },
+          {
+            "text": "BattleUnavailable",
+            "disabled": true
+          },
+          {
+            "text": "ShopUnavailable",
+            "disabled": true
+          },
+          {
+            "text": "Action",
+            "disabled": false
+          }
+        ],
+        "visibleTabs": [
+          {
+            "text": "Player Card",
+            "selected": "true",
+            "disabled": false
+          },
+          {
+            "text": "Inventory",
+            "selected": "false",
+            "disabled": false
+          },
+          {
+            "text": "Quest",
+            "selected": "false",
+            "disabled": false
+          },
+          {
+            "text": "Move",
+            "selected": "false",
+            "disabled": false
+          },
+          {
+            "text": "BattleUnavailable",
+            "selected": "false",
+            "disabled": true
+          },
+          {
+            "text": "ShopUnavailable",
+            "selected": "false",
+            "disabled": true
+          },
+          {
+            "text": "Action",
+            "selected": "false",
+            "disabled": false
+          }
+        ]
+      }
+    },
+    {
+      "step": 8,
+      "file": "08-phone-inventory.png",
+      "description": "Phone Inventory tab",
+      "health": "mixed",
+      "note": "Inventory groups communicate timing states, but item cards are dense. Players need fast answers: what can I use now, why not, and what changes if I tap it.",
+      "pngSize": [
+        390,
+        844
+      ],
+      "metrics": {
+        "url": "http://127.0.0.1:5173/?room=37D8O",
+        "title": "Ashen Reach Playtest",
+        "viewport": {
+          "width": 390,
+          "height": 844
+        },
+        "horizontalOverflow": 0,
+        "canvasCount": 0,
+        "headings": [
+          "Bjornis",
+          "Red March Warbell",
+          "Grave Scribe"
+        ],
+        "buttons": [
+          {
+            "text": "Hide UI",
+            "disabled": false
+          },
+          {
+            "text": "Leave",
+            "disabled": false
+          },
+          {
+            "text": "Player Card",
+            "disabled": false
+          },
+          {
+            "text": "Inventory",
+            "disabled": false
+          },
+          {
+            "text": "Quest",
+            "disabled": false
+          },
+          {
+            "text": "Move",
+            "disabled": false
+          },
+          {
+            "text": "BattleUnavailable",
+            "disabled": true
+          },
+          {
+            "text": "ShopUnavailable",
+            "disabled": true
+          },
+          {
+            "text": "Action",
+            "disabled": false
+          }
+        ],
+        "visibleTabs": [
+          {
+            "text": "Player Card",
+            "selected": "false",
+            "disabled": false
+          },
+          {
+            "text": "Inventory",
+            "selected": "true",
+            "disabled": false
+          },
+          {
+            "text": "Quest",
+            "selected": "false",
+            "disabled": false
+          },
+          {
+            "text": "Move",
+            "selected": "false",
+            "disabled": false
+          },
+          {
+            "text": "BattleUnavailable",
+            "selected": "false",
+            "disabled": true
+          },
+          {
+            "text": "ShopUnavailable",
+            "selected": "false",
+            "disabled": true
+          },
+          {
+            "text": "Action",
+            "selected": "false",
+            "disabled": false
+          }
+        ]
+      }
+    },
+    {
+      "step": 9,
+      "file": "09-phone-action.png",
+      "description": "Phone Action tab",
+      "health": "mixed",
+      "note": "The Action tab keeps the command surface private and reachable. The main player risk is knowing whether Action is the required next step or just a secondary tab.",
+      "pngSize": [
+        390,
+        844
+      ],
+      "metrics": {
+        "url": "http://127.0.0.1:5173/?room=37D8O",
+        "title": "Ashen Reach Playtest",
+        "viewport": {
+          "width": 390,
+          "height": 844
+        },
+        "horizontalOverflow": 0,
+        "canvasCount": 0,
+        "headings": [
+          "Bjornis"
+        ],
+        "buttons": [
+          {
+            "text": "Hide UI",
+            "disabled": false
+          },
+          {
+            "text": "Leave",
+            "disabled": false
+          },
+          {
+            "text": "Open Move",
+            "disabled": false
+          },
+          {
+            "text": "Player Card",
+            "disabled": false
+          },
+          {
+            "text": "Inventory",
+            "disabled": false
+          },
+          {
+            "text": "Quest",
+            "disabled": false
+          },
+          {
+            "text": "Move",
+            "disabled": false
+          },
+          {
+            "text": "BattleUnavailable",
+            "disabled": true
+          },
+          {
+            "text": "ShopUnavailable",
+            "disabled": true
+          },
+          {
+            "text": "Action",
+            "disabled": false
+          }
+        ],
+        "visibleTabs": [
+          {
+            "text": "Player Card",
+            "selected": "false",
+            "disabled": false
+          },
+          {
+            "text": "Inventory",
+            "selected": "false",
+            "disabled": false
+          },
+          {
+            "text": "Quest",
+            "selected": "false",
+            "disabled": false
+          },
+          {
+            "text": "Move",
+            "selected": "false",
+            "disabled": false
+          },
+          {
+            "text": "BattleUnavailable",
+            "selected": "false",
+            "disabled": true
+          },
+          {
+            "text": "ShopUnavailable",
+            "selected": "false",
+            "disabled": true
+          },
+          {
+            "text": "Action",
+            "selected": "true",
+            "disabled": false
+          }
+        ]
+      }
+    },
+    {
+      "step": 10,
+      "file": "10-phone-battle-or-empty.png",
+      "description": "Phone Battle tab or empty battle state",
+      "health": "limited evidence",
+      "note": "This run did not guarantee an active battle. The empty or inactive battle state still needs to explain why the tab is present and when it matters.",
+      "pngSize": [
+        390,
+        844
+      ],
+      "metrics": {
+        "url": "http://127.0.0.1:5173/?room=37D8O",
+        "title": "Ashen Reach Playtest",
+        "viewport": {
+          "width": 390,
+          "height": 844
+        },
+        "horizontalOverflow": 0,
+        "canvasCount": 0,
+        "headings": [
+          "Bjornis"
+        ],
+        "buttons": [
+          {
+            "text": "Hide UI",
+            "disabled": false
+          },
+          {
+            "text": "Leave",
+            "disabled": false
+          },
+          {
+            "text": "Open Move",
+            "disabled": false
+          },
+          {
+            "text": "Player Card",
+            "disabled": false
+          },
+          {
+            "text": "Inventory",
+            "disabled": false
+          },
+          {
+            "text": "Quest",
+            "disabled": false
+          },
+          {
+            "text": "Move",
+            "disabled": false
+          },
+          {
+            "text": "BattleUnavailable",
+            "disabled": true
+          },
+          {
+            "text": "ShopUnavailable",
+            "disabled": true
+          },
+          {
+            "text": "Action",
+            "disabled": false
+          }
+        ],
+        "visibleTabs": [
+          {
+            "text": "Player Card",
+            "selected": "false",
+            "disabled": false
+          },
+          {
+            "text": "Inventory",
+            "selected": "false",
+            "disabled": false
+          },
+          {
+            "text": "Quest",
+            "selected": "false",
+            "disabled": false
+          },
+          {
+            "text": "Move",
+            "selected": "false",
+            "disabled": false
+          },
+          {
+            "text": "BattleUnavailable",
+            "selected": "false",
+            "disabled": true
+          },
+          {
+            "text": "ShopUnavailable",
+            "selected": "false",
+            "disabled": true
+          },
+          {
+            "text": "Action",
+            "selected": "true",
+            "disabled": false
+          }
+        ]
+      }
+    },
+    {
+      "step": 11,
+      "file": "11-phone-shop-or-locked.png",
+      "description": "Phone Shop tab or locked shop state",
+      "health": "limited evidence",
+      "note": "This run did not guarantee an open shop. The disabled tab state is still important: players need the lock reason to explain why a tab exists but cannot be used.",
+      "pngSize": [
+        390,
+        844
+      ],
+      "metrics": {
+        "url": "http://127.0.0.1:5173/?room=37D8O",
+        "title": "Ashen Reach Playtest",
+        "viewport": {
+          "width": 390,
+          "height": 844
+        },
+        "horizontalOverflow": 0,
+        "canvasCount": 0,
+        "headings": [
+          "Bjornis"
+        ],
+        "buttons": [
+          {
+            "text": "Hide UI",
+            "disabled": false
+          },
+          {
+            "text": "Leave",
+            "disabled": false
+          },
+          {
+            "text": "Open Move",
+            "disabled": false
+          },
+          {
+            "text": "Player Card",
+            "disabled": false
+          },
+          {
+            "text": "Inventory",
+            "disabled": false
+          },
+          {
+            "text": "Quest",
+            "disabled": false
+          },
+          {
+            "text": "Move",
+            "disabled": false
+          },
+          {
+            "text": "BattleUnavailable",
+            "disabled": true
+          },
+          {
+            "text": "ShopUnavailable",
+            "disabled": true
+          },
+          {
+            "text": "Action",
+            "disabled": false
+          }
+        ],
+        "visibleTabs": [
+          {
+            "text": "Player Card",
+            "selected": "false",
+            "disabled": false
+          },
+          {
+            "text": "Inventory",
+            "selected": "false",
+            "disabled": false
+          },
+          {
+            "text": "Quest",
+            "selected": "false",
+            "disabled": false
+          },
+          {
+            "text": "Move",
+            "selected": "false",
+            "disabled": false
+          },
+          {
+            "text": "BattleUnavailable",
+            "selected": "false",
+            "disabled": true
+          },
+          {
+            "text": "ShopUnavailable",
+            "selected": "false",
+            "disabled": true
+          },
+          {
+            "text": "Action",
+            "selected": "true",
+            "disabled": false
+          }
+        ]
+      }
+    },
+    {
+      "step": 12,
+      "file": "12-phone-immersive-inventory.png",
+      "description": "Phone immersive hidden UI on Inventory",
+      "health": "healthy",
+      "note": "Hidden mode gives space back and keeps a compact status strip plus summon control. This is a strong direction for repeated play.",
+      "pngSize": [
+        390,
+        844
+      ],
+      "metrics": {
+        "url": "http://127.0.0.1:5173/?room=37D8O",
+        "title": "Ashen Reach Playtest",
+        "viewport": {
+          "width": 390,
+          "height": 844
+        },
+        "horizontalOverflow": 0,
+        "canvasCount": 0,
+        "headings": [
+          "Red March Warbell",
+          "Grave Scribe"
+        ],
+        "buttons": [
+          {
+            "text": "Inventory",
+            "disabled": false
+          },
+          {
+            "text": "Show Tabs",
+            "disabled": false
+          }
+        ],
+        "visibleTabs": [
+          {
+            "text": "Inventory",
+            "selected": "true",
+            "disabled": false
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -6,14 +6,14 @@ const style =
 
 export const cardTemplatePrompts: ImagePromptSpec[] = [
   {
-    id: "card_back_mission",
-    fileName: "card_back_mission.png",
-    outputPath: "/assets/riftfall/cards/missions/card_back_mission.png",
+    id: "card_back_contract",
+    fileName: "card_back_contract.png",
+    outputPath: "/assets/riftfall/cards/contracts/card_back_contract.png",
     assetType: "cardBack",
     size: "card",
-    prompt: `${style}; card back for mission deck, bronze route sigils, folded star map motif, no text`,
+    prompt: `${style}; card back for contract deck, bronze route sigils, folded star map motif, no text`,
     negativePrompt: sharedNegativePrompt,
-    usage: "Mission deck back."
+    usage: "Contract deck back."
   },
   {
     id: "card_back_threat_red",
@@ -46,34 +46,34 @@ export const cardTemplatePrompts: ImagePromptSpec[] = [
     usage: "Yellow threat deck back."
   },
   {
-    id: "card_back_power",
-    fileName: "card_back_power.png",
-    outputPath: "/assets/riftfall/cards/power/card_back_power.png",
+    id: "card_back_route_note",
+    fileName: "card_back_route_note.png",
+    outputPath: "/assets/riftfall/cards/route-notes/card_back_route_note.png",
     assetType: "cardBack",
     size: "card",
-    prompt: `${style}; card back for power deck, charged star symbol, white-blue energy lines, no text`,
+    prompt: `${style}; card back for route-note deck, charged star symbol, white-blue energy lines, no text`,
     negativePrompt: sharedNegativePrompt,
-    usage: "Power deck back."
+    usage: "Route-note deck back."
   },
   {
-    id: "card_back_corruption",
-    fileName: "card_back_corruption.png",
-    outputPath: "/assets/riftfall/cards/corruption/card_back_corruption.png",
+    id: "card_back_heat",
+    fileName: "card_back_heat.png",
+    outputPath: "/assets/riftfall/cards/heat/card_back_heat.png",
     assetType: "cardBack",
     size: "card",
-    prompt: `${style}; card back for corruption deck, violet rift scar symbol, dark cracked lacquer, no text`,
+    prompt: `${style}; card back for Heat deck, violet rift scar symbol, dark cracked lacquer, no text`,
     negativePrompt: sharedNegativePrompt,
-    usage: "Corruption deck back."
+    usage: "Heat deck back."
   },
   {
-    id: "card_back_relic",
-    fileName: "card_back_relic.png",
-    outputPath: "/assets/riftfall/cards/relics/card_back_relic.png",
+    id: "card_back_artifact",
+    fileName: "card_back_artifact.png",
+    outputPath: "/assets/riftfall/cards/artifacts/card_back_artifact.png",
     assetType: "cardBack",
     size: "card",
-    prompt: `${style}; card back for relic deck, saint-star icon, gold enamel, sacred blue core light, no text`,
+    prompt: `${style}; card back for artifact deck, route-star icon, gold enamel, sacred blue core light, no text`,
     negativePrompt: sharedNegativePrompt,
-    usage: "Relic deck back."
+    usage: "Artifact deck back."
   },
   {
     id: "card_back_wargear",

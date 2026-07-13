@@ -1,0 +1,14 @@
+{
+  "id": "anomaly-marrow-clock-drift",
+  "type": "anomaly",
+  "regionHint": "middle",
+  "title": "Marrow Clock Drift",
+  "text": "Old bones tick in disagreement, making one minute repeat until somebody pays for the exit.",
+  "flavor": "The clocks hate witnesses.",
+  "instability": 3,
+  "resolutionSummary": "Set the marrow clocks in phase and bought time for the crew.",
+  "resolveEffect": {
+    "type": "gain_follower",
+    "followerId": "grave-scribe"
+  }
+}

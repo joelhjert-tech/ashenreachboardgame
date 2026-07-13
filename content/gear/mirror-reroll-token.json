@@ -1,0 +1,27 @@
+{
+  "id": "mirror-reroll-token",
+  "name": "Mirror Reroll Token",
+  "slot": "utility",
+  "category": "active",
+  "statBonus": {
+    "stat": "guile",
+    "amount": 1
+  },
+  "activeText": "Reaction — After you fail a Guile or Signal test, but before failure effects resolve, spend 1 Salvage and exhaust this Artifact to reroll that test. You must accept the second result.",
+  "useLimit": "oncePerRound",
+  "effectModel": "exhaust",
+  "activationTiming": ["afterFailedTest"],
+  "resetWindow": "round",
+  "exhaustEffect": "mirrorReroll",
+  "activationCost": { "type": "salvage", "amount": 1 },
+  "requiresEquipped": true,
+  "flavor": "One side shows your face. The other shows the version that got away.",
+  "tier": "artifact",
+  "startingEligible": false,
+  "normalShopCommon": false,
+  "progressionWeight": 1.25,
+  "shopCategories": [
+    "market",
+    "relic-dealer"
+  ]
+}

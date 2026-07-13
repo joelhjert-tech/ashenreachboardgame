@@ -1,0 +1,29 @@
+{
+  "id": "wireghost-key",
+  "type": "threat",
+  "cardType": "hazard",
+  "title": "Wireghost Key",
+  "text": "A wireghost key clicks through invisible locks, opening little doors in the skin of the world.",
+  "flavor": "It remembers every lock as a wound.",
+  "severity": 2,
+  "stat": "guile",
+  "difficulty": 6,
+  "successEffect": {
+    "type": "gain_note",
+    "text": "You learned one wireghost turn and kept it as a lock note."
+  },
+  "failEffect": {
+    "type": "take_wound",
+    "amount": 1
+  },
+  "enemyFamily": "machine",
+  "threatLane": "yellow",
+  "resolutionType": "asset",
+  "region": "outer",
+  "rarity": "uncommon",
+  "tempo": "push",
+  "resourceTags": [
+    "loot",
+    "wound"
+  ]
+}

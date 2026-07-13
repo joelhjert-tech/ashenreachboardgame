@@ -1,0 +1,146 @@
+{
+  "generatedAt": "2026-06-26T04:25:48.324Z",
+  "requestedType": "contractCardArt",
+  "generated": 17,
+  "byType": {
+    "contractCardArt": 17
+  },
+  "results": [
+    {
+      "id": "contract_art_cartel-exposed-object",
+      "assetType": "contractCardArt",
+      "outputPath": "/assets/cards/contracts/cartel-exposed-object.png",
+      "width": 1024,
+      "height": 1536,
+      "bytes": 202417
+    },
+    {
+      "id": "contract_art_cartel-ledger-skim",
+      "assetType": "contractCardArt",
+      "outputPath": "/assets/cards/contracts/cartel-ledger-skim.png",
+      "width": 1024,
+      "height": 1536,
+      "bytes": 210875
+    },
+    {
+      "id": "contract_art_cartel-quiet-route",
+      "assetType": "contractCardArt",
+      "outputPath": "/assets/cards/contracts/cartel-quiet-route.png",
+      "width": 1024,
+      "height": 1536,
+      "bytes": 223194
+    },
+    {
+      "id": "contract_art_choir-hush-census",
+      "assetType": "contractCardArt",
+      "outputPath": "/assets/cards/contracts/choir-hush-census.png",
+      "width": 1024,
+      "height": 1536,
+      "bytes": 235534
+    },
+    {
+      "id": "contract_art_choir-well-canticle",
+      "assetType": "contractCardArt",
+      "outputPath": "/assets/cards/contracts/choir-well-canticle.png",
+      "width": 1024,
+      "height": 1536,
+      "bytes": 241907
+    },
+    {
+      "id": "contract_art_clan-bone-road-guide",
+      "assetType": "contractCardArt",
+      "outputPath": "/assets/cards/contracts/clan-bone-road-guide.png",
+      "width": 1024,
+      "height": 1536,
+      "bytes": 242457
+    },
+    {
+      "id": "contract_art_clan-salt-burial",
+      "assetType": "contractCardArt",
+      "outputPath": "/assets/cards/contracts/clan-salt-burial.png",
+      "width": 1024,
+      "height": 1536,
+      "bytes": 262092
+    },
+    {
+      "id": "contract_art_clan-salvage-tithe",
+      "assetType": "contractCardArt",
+      "outputPath": "/assets/cards/contracts/clan-salvage-tithe.png",
+      "width": 1024,
+      "height": 1536,
+      "bytes": 259379
+    },
+    {
+      "id": "contract_art_compact-ember-courier",
+      "assetType": "contractCardArt",
+      "outputPath": "/assets/cards/contracts/compact-ember-courier.png",
+      "width": 1024,
+      "height": 1536,
+      "bytes": 214906
+    },
+    {
+      "id": "contract_art_compact-surgery-bond",
+      "assetType": "contractCardArt",
+      "outputPath": "/assets/cards/contracts/compact-surgery-bond.png",
+      "width": 1024,
+      "height": 1536,
+      "bytes": 212102
+    },
+    {
+      "id": "contract_art_contract-beacon",
+      "assetType": "contractCardArt",
+      "outputPath": "/assets/cards/contracts/contract-beacon.png",
+      "width": 1024,
+      "height": 1536,
+      "bytes": 196340
+    },
+    {
+      "id": "contract_art_contract-lantern-run",
+      "assetType": "contractCardArt",
+      "outputPath": "/assets/cards/contracts/contract-lantern-run.png",
+      "width": 1024,
+      "height": 1536,
+      "bytes": 214748
+    },
+    {
+      "id": "contract_art_dominion-gate-tithe",
+      "assetType": "contractCardArt",
+      "outputPath": "/assets/cards/contracts/dominion-gate-tithe.png",
+      "width": 1024,
+      "height": 1536,
+      "bytes": 214353
+    },
+    {
+      "id": "contract_art_umbral-blackstar-sample",
+      "assetType": "contractCardArt",
+      "outputPath": "/assets/cards/contracts/umbral-blackstar-sample.png",
+      "width": 1024,
+      "height": 1536,
+      "bytes": 221468
+    },
+    {
+      "id": "contract_art_umbral-bloom-reaping-right",
+      "assetType": "contractCardArt",
+      "outputPath": "/assets/cards/contracts/umbral-bloom-reaping-right.png",
+      "width": 1024,
+      "height": 1536,
+      "bytes": 242702
+    },
+    {
+      "id": "contract_art_umbral-shrine-confession",
+      "assetType": "contractCardArt",
+      "outputPath": "/assets/cards/contracts/umbral-shrine-confession.png",
+      "width": 1024,
+      "height": 1536,
+      "bytes": 212615
+    },
+    {
+      "id": "contract_art_warden-span-vigil",
+      "assetType": "contractCardArt",
+      "outputPath": "/assets/cards/contracts/warden-span-vigil.png",
+      "width": 1024,
+      "height": 1536,
+      "bytes": 252256
+    }
+  ]
+}

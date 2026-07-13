@@ -2,6 +2,46 @@ import { z } from "zod";
 import { statSchema } from "./character.schema.js";
 import { gearItemSchema } from "./gear.schema.js";
 import type { GearItem } from "./gear.schema.js";
+import { followerSchema } from "./follower.schema.js";
+import { encounterPaymentEffectSchema, type EncounterPaymentEffect } from "./encounterDecision.schema.js";
+import { forcedDisplacementEffectSchema, type ForcedDisplacementEffect } from "./displacement.schema.js";
+
+const legacyFollowerGrantSchema = z.object({
+  id: z.string().min(1),
+  name: z.string().min(1),
+  role: z.enum(["scout", "medic", "gunner", "ritualist", "porter", "guide", "informant", "companion"]),
+  text: z.string().min(1),
+  tier: z.enum(["standard", "legendary", "ultimate"]).optional(),
+  tags: z.array(z.string().min(1)).optional(),
+  unique: z.boolean().optional(),
+  artifactTier: z.boolean().optional(),
+  ultimateCompanion: z.boolean().optional(),
+  timingWindows: z
+    .array(
+      z.enum([
+        "beforeThreatDraw",
+        "beforeBattleRoll",
+        "afterBattleRoll",
+        "beforeTakingDamage",
+        "startOfTurn",
+        "movement",
+        "shop",
+        "anyTime"
+      ])
+    )
+    .optional(),
+  exhausted: z.boolean().optional(),
+  artCardId: z.string().min(1).optional(),
+  acquisition: z.array(z.string().min(1)).optional(),
+  flavor: z.string().min(1).optional(),
+  imagePrompt: z.string().min(1).optional(),
+  loyalty: z.number().int().min(0).max(5).optional(),
+  lossCondition: z.enum(["wound", "heat", "combatLoss", "choice"]).optional()
+});
+
+const followerGrantSchema = followerSchema.or(legacyFollowerGrantSchema);
+
+type FollowerGrant = z.infer<typeof followerGrantSchema>;
 
 const cardBaseSchema = z.object({
   id: z.string().min(1),
@@ -12,6 +52,11 @@ const cardBaseSchema = z.object({
 
 type GainHeatEffect = {
   type: "gain_heat";
+  amount: number;
+};
+
+type GainHeatAllEffect = {
+  type: "gain_heat_all";
   amount: number;
 };
 
@@ -30,6 +75,21 @@ type HealWoundEffect = {
   amount: number;
 };
 
+type GainTrophyEffect = {
+  type: "gain_trophy";
+  amount: number;
+};
+
+type GainSalvageEffect = {
+  type: "gain_salvage";
+  amount: number;
+};
+
+type LoseSalvageEffect = {
+  type: "lose_salvage";
+  amount: number;
+};
+
 type GainScarEffect = {
   type: "gain_scar";
   scarId: string;
@@ -39,6 +99,22 @@ type GainGearEffect = {
   type: "gain_gear";
   gearId: string;
   gear?: GearItem;
+};
+
+type DrawArtifactEffect = {
+  type: "draw_artifact";
+};
+
+type ConsumeArtifactEffect = {
+  type: "consume_artifact";
+  artifactId: string;
+  sourceSectorId?: string;
+};
+
+type GainFollowerEffect = {
+  type: "gain_follower";
+  followerId: string;
+  follower?: FollowerGrant;
 };
 
 type GainNoteEffect = {
@@ -53,21 +129,47 @@ type AdvanceScenarioEffect = {
   summary?: string;
 };
 
+type AdvanceEscalationEffect = {
+  type: "advance_escalation";
+  amount: number;
+};
+
+type ReturnThreatToSpaceEffect = {
+  type: "return_threat_to_space";
+  threatId?: string;
+  sourceSectorId?: string;
+};
+
 type SimpleEncounterEffect =
   | GainHeatEffect
+  | GainHeatAllEffect
   | LoseHeatEffect
   | TakeWoundEffect
   | HealWoundEffect
+  | GainTrophyEffect
+  | GainSalvageEffect
+  | LoseSalvageEffect
   | GainScarEffect
   | GainGearEffect
+  | DrawArtifactEffect
+  | ConsumeArtifactEffect
+  | GainFollowerEffect
   | GainNoteEffect
-  | AdvanceScenarioEffect;
+  | AdvanceScenarioEffect
+  | AdvanceEscalationEffect
+  | ReturnThreatToSpaceEffect
+  | EncounterPaymentEffect
+  | ForcedDisplacementEffect;
 
 export type EncounterEffect = SimpleEncounterEffect | { type: "sequence"; effects: EncounterEffect[] };
 
 const simpleEffectSchema: z.ZodType<SimpleEncounterEffect> = z.union([
   z.object({
     type: z.literal("gain_heat"),
+    amount: z.number().int().positive()
+  }),
+  z.object({
+    type: z.literal("gain_heat_all"),
     amount: z.number().int().positive()
   }),
   z.object({
@@ -83,6 +185,18 @@ const simpleEffectSchema: z.ZodType<SimpleEncounterEffect> = z.union([
     amount: z.number().int().positive()
   }),
   z.object({
+    type: z.literal("gain_trophy"),
+    amount: z.number().int().positive()
+  }),
+  z.object({
+    type: z.literal("gain_salvage"),
+    amount: z.number().int().positive()
+  }),
+  z.object({
+    type: z.literal("lose_salvage"),
+    amount: z.number().int().positive()
+  }),
+  z.object({
     type: z.literal("gain_scar"),
     scarId: z.string().min(1)
   }),
@@ -90,6 +204,19 @@ const simpleEffectSchema: z.ZodType<SimpleEncounterEffect> = z.union([
     type: z.literal("gain_gear"),
     gearId: z.string().min(1),
     gear: gearItemSchema.optional()
+  }),
+  z.object({
+    type: z.literal("draw_artifact")
+  }),
+  z.object({
+    type: z.literal("consume_artifact"),
+    artifactId: z.string().min(1),
+    sourceSectorId: z.string().min(1).optional()
+  }),
+  z.object({
+    type: z.literal("gain_follower"),
+    followerId: z.string().min(1),
+    follower: followerGrantSchema.optional()
   }),
   z.object({
     type: z.literal("gain_note"),
@@ -100,7 +227,18 @@ const simpleEffectSchema: z.ZodType<SimpleEncounterEffect> = z.union([
     progressKey: z.string().min(1),
     amount: z.number().int().positive(),
     summary: z.string().min(1).optional()
-  })
+  }),
+  z.object({
+    type: z.literal("advance_escalation"),
+    amount: z.number().int()
+  }),
+  z.object({
+    type: z.literal("return_threat_to_space"),
+    threatId: z.string().min(1).optional(),
+    sourceSectorId: z.string().min(1).optional()
+  }),
+  encounterPaymentEffectSchema,
+  forcedDisplacementEffectSchema
 ]);
 
 export const effectSchema: z.ZodType<EncounterEffect> = z.lazy(() =>
@@ -113,11 +251,57 @@ export const effectSchema: z.ZodType<EncounterEffect> = z.lazy(() =>
   ])
 );
 
+export const threatFamilySchema = z.enum([
+  "human",
+  "choir",
+  "cartel",
+  "machine",
+  "beast",
+  "vermin",
+  "breachborn",
+  "revenant",
+  "bureaucracy",
+  "hazard"
+]);
+
+export const threatLaneSchema = z.enum(["red", "blue", "yellow"]);
+export const threatResolutionTypeSchema = z.enum(["event", "enemy", "encounter", "asset", "nemesis"]);
+export const cardRaritySchema = z.enum(["common", "uncommon", "rare"]);
+export const cardTempoSchema = z.enum(["stall", "neutral", "push"]);
+export const cardResourceTagSchema = z.enum([
+  "loot",
+  "wound",
+  "heat",
+  "scar",
+  "salvage",
+  "gear",
+  "artifact",
+  "contract",
+  "trophy",
+  "movement",
+  "boon",
+  "follower",
+  "scenario"
+]);
+
 const threatBaseSchema = cardBaseSchema.extend({
   type: z.literal("threat"),
   severity: z.number().int().min(1).max(5),
+  enemyFamily: threatFamilySchema.optional(),
+  threatLane: threatLaneSchema.optional(),
+  resolutionType: threatResolutionTypeSchema.optional(),
+  rarity: cardRaritySchema.optional(),
+  tempo: cardTempoSchema.optional(),
+  resourceTags: z.array(cardResourceTagSchema).optional(),
+  region: z.enum(["outer", "middle", "inner", "center", "global"]).optional(),
   stat: statSchema,
-  difficulty: z.number().int().min(2).max(12)
+  difficulty: z.number().int().min(2).max(12),
+  effectKey: z.string().min(1).optional(),
+  revealEffectKey: z.string().min(1).optional(),
+  combatEffectKeys: z.array(z.string().min(1)).optional(),
+  successEffectKey: z.string().min(1).optional(),
+  defeatEffectKey: z.string().min(1).optional(),
+  failEffectKey: z.string().min(1).optional()
 });
 
 export const hazardThreatCardSchema = threatBaseSchema.extend({
@@ -142,12 +326,29 @@ export const threatCardSchema = z.union([
 export const anomalyCardSchema = cardBaseSchema.extend({
   type: z.literal("anomaly"),
   instability: z.number().int().min(1).max(5),
+  regionHint: z.enum(["outer", "middle", "inner", "global"]).optional(),
   resolutionSummary: z.string().min(1),
   resolveEffect: effectSchema
 });
 
+export const artifactKindSchema = z.enum([
+  "chargedRelic",
+  "gateRelic",
+  "cursedRelic",
+  "factionRelic",
+  "consumableSalvage",
+  "burdenRelic"
+]);
+
 export const artifactCardSchema = cardBaseSchema.extend({
   type: z.literal("artifact"),
+  artifactKind: artifactKindSchema.optional(),
+  missionRewardEligible: z.boolean().optional(),
+  eliteThreatRewardEligible: z.boolean().optional(),
+  rareShopEligible: z.boolean().optional(),
+  scenarioRewardEligible: z.boolean().optional(),
+  startingEligible: z.literal(false).optional(),
+  normalShopCommon: z.literal(false).optional(),
   charge: z.number().int().min(0),
   resolutionSummary: z.string().min(1),
   resolveEffect: effectSchema
@@ -155,7 +356,11 @@ export const artifactCardSchema = cardBaseSchema.extend({
 
 export const scarCardSchema = cardBaseSchema.extend({
   type: z.literal("scar"),
-  penalty: z.string().min(1)
+  trigger: z.string().min(1),
+  penalty: z.string().min(1),
+  effect: effectSchema,
+  relief: z.string().min(1),
+  upside: z.string().min(1).optional()
 });
 
 export const escalationCardSchema = cardBaseSchema.extend({
@@ -175,6 +380,12 @@ export const cardSchema = z.union([
 ]);
 
 export type ThreatCard = z.infer<typeof threatCardSchema>;
+export type ThreatFamily = z.infer<typeof threatFamilySchema>;
+export type ThreatLane = z.infer<typeof threatLaneSchema>;
+export type ThreatResolutionType = z.infer<typeof threatResolutionTypeSchema>;
+export type CardRarity = z.infer<typeof cardRaritySchema>;
+export type CardTempo = z.infer<typeof cardTempoSchema>;
+export type CardResourceTag = z.infer<typeof cardResourceTagSchema>;
 export type HazardThreatCard = z.infer<typeof hazardThreatCardSchema>;
 export type EnemyThreatCard = z.infer<typeof enemyThreatCardSchema>;
 export type AnomalyCard = z.infer<typeof anomalyCardSchema>;

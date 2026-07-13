@@ -1,0 +1,13 @@
+{
+  "id": "soul-rot",
+  "name": "Soul Rot",
+  "severity": 3,
+  "category": "drawTrigger",
+  "duration": "ongoing",
+  "trigger": "Each time you draw an Affliction.",
+  "rulesText": "Lose 1 Command.",
+  "effectKind": "drawTrigger",
+  "effectPayload": { "stat": "command", "amount": -1, "trigger": "drawAffliction" },
+  "flipFacedownAfterResolve": false,
+  "isFaceupOngoing": true
+}

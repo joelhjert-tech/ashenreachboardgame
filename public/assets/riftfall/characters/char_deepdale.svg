@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 768 1152" role="img" aria-label="Deepdale character portrait">
+  <defs>
+    <radialGradient id="lantern" cx="44%" cy="28%" r="55%">
+      <stop offset="0" stop-color="#e7f5ff"/>
+      <stop offset="0.28" stop-color="#83c7ef"/>
+      <stop offset="0.72" stop-color="#1c3341"/>
+      <stop offset="1" stop-color="#07090b"/>
+    </radialGradient>
+    <linearGradient id="coat" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0" stop-color="#2d2117"/>
+      <stop offset="0.5" stop-color="#121719"/>
+      <stop offset="1" stop-color="#070809"/>
+    </linearGradient>
+    <linearGradient id="metal" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0" stop-color="#d6b26e"/>
+      <stop offset="0.46" stop-color="#6f5134"/>
+      <stop offset="1" stop-color="#17110d"/>
+    </linearGradient>
+    <filter id="glow" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="16" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  <rect width="768" height="1152" fill="#050608"/>
+  <rect x="26" y="24" width="716" height="1104" fill="none" stroke="#6f5134" stroke-width="4"/>
+  <path d="M70 1030 C210 930 232 750 210 590 C190 444 240 302 384 260 C540 306 594 456 568 616 C544 766 570 932 700 1030 Z" fill="url(#coat)"/>
+  <path d="M178 1032 C204 770 252 560 384 472 C518 564 568 776 590 1032 Z" fill="#101619" stroke="#5d4430" stroke-width="5"/>
+  <path d="M278 282 C282 196 322 136 392 122 C464 146 498 204 490 286 C462 334 318 332 278 282 Z" fill="#15191b" stroke="#7c603d" stroke-width="6"/>
+  <path d="M286 282 C314 338 458 340 488 282 L514 404 C464 468 314 468 254 404 Z" fill="#1d2528" stroke="#392a1d" stroke-width="4"/>
+  <path d="M326 238 C350 214 424 214 448 238 C432 262 348 262 326 238 Z" fill="#9ecfed" opacity="0.72" filter="url(#glow)"/>
+  <circle cx="236" cy="514" r="84" fill="url(#lantern)" opacity="0.88" filter="url(#glow)"/>
+  <rect x="208" y="468" width="56" height="92" rx="10" fill="none" stroke="#d6b26e" stroke-width="8"/>
+  <path d="M520 340 L586 918" stroke="url(#metal)" stroke-width="18" stroke-linecap="round"/>
+  <path d="M486 410 L612 384 M492 446 L620 472 M504 518 L628 552" stroke="#9e7c4f" stroke-width="9" stroke-linecap="round"/>
+  <path d="M296 596 C348 630 420 630 474 596 L492 1032 L278 1032 Z" fill="#1a120c" opacity="0.74"/>
+  <path d="M310 650 H464 M298 734 H480 M286 822 H492" stroke="#6f5134" stroke-width="4" opacity="0.58"/>
+  <path d="M120 1060 C220 1008 552 1008 648 1060" stroke="#83c7ef" stroke-width="7" opacity="0.28" filter="url(#glow)"/>
+  <g opacity="0.2">
+    <circle cx="98" cy="172" r="3" fill="#d6b26e"/>
+    <circle cx="662" cy="232" r="4" fill="#83c7ef"/>
+    <circle cx="130" cy="824" r="3" fill="#83c7ef"/>
+    <circle cx="622" cy="846" r="3" fill="#d6b26e"/>
+    <circle cx="572" cy="132" r="2" fill="#e7f5ff"/>
+  </g>
+</svg>

@@ -1,0 +1,32 @@
+{
+  "id": "null-drone",
+  "type": "threat",
+  "cardType": "enemy",
+  "title": "Null Drone",
+  "enemyName": "Null Drone",
+  "text": "A null drone polices the route for impossible cargo and confiscates anything that casts the wrong shadow.",
+  "flavor": "It was built to detect contraband. It expanded the definition.",
+  "severity": 2,
+  "stat": "signal",
+  "difficulty": 6,
+  "trophyValue": 3,
+  "defeatReward": {
+    "type": "gain_note",
+    "text": "You copied the null drone's contraband index."
+  },
+  "woundOnLoss": {
+    "type": "take_wound",
+    "amount": 1
+  },
+  "enemyFamily": "machine",
+  "threatLane": "yellow",
+  "resolutionType": "enemy",
+  "region": "outer",
+  "rarity": "common",
+  "tempo": "push",
+  "resourceTags": [
+    "loot",
+    "trophy",
+    "wound"
+  ]
+}

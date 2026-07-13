@@ -1,0 +1,25 @@
+{
+  "id": "chainhook-blade",
+  "name": "Chainhook Blade",
+  "slot": "weapon",
+  "subtype": "weapon",
+  "category": "passive",
+  "statBonus": {
+    "stat": "guile",
+    "amount": 1
+  },
+  "cost": 3,
+  "sellValue": 1,
+  "sellable": true,
+  "tier": "standard",
+  "progressionWeight": 1,
+  "flavor": "A hooked cutter that adds +1 Guile when fighting for position.",
+  "activeText": "A hooked cutter that adds +1 Guile when fighting for position.",
+  "shopCategories": [
+    "forge-armoury",
+    "market"
+  ],
+  "startingEligible": true,
+  "normalShopCommon": true,
+  "allowedFallbackArt": true
+}

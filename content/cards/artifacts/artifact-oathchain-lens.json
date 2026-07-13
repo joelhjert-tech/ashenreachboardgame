@@ -1,0 +1,20 @@
+{
+  "id": "artifact-oathchain-lens",
+  "type": "artifact",
+  "missionRewardEligible": true,
+  "eliteThreatRewardEligible": true,
+  "rareShopEligible": true,
+  "scenarioRewardEligible": true,
+  "startingEligible": false,
+  "normalShopCommon": false,
+  "artifactKind": "factionRelic",
+  "title": "Oathchain Lens",
+  "text": "A cracked ledger-lens that shows the cost of every promise before the promise is made.",
+  "flavor": "Some debts prefer to be seen.",
+  "charge": 2,
+  "resolutionSummary": "Recovered the Oathchain Lens and chained its bargain-sight to the operative.",
+  "resolveEffect": {
+    "type": "gain_gear",
+    "gearId": "oathchain-lens"
+  }
+}

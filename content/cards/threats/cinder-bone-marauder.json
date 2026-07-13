@@ -1,0 +1,30 @@
+{
+  "id": "cinder-bone-marauder",
+  "type": "threat",
+  "cardType": "enemy",
+  "title": "Cinder-Bone Marauder",
+  "enemyName": "Cinder-Bone Marauder",
+  "text": "A soot-armored raider with bone rivets and a furnace axe charges from a collapsed shrine road.",
+  "flavor": "The dead do not forgive theft. The living forgive it less.",
+  "severity": 2,
+  "region": "outer",
+  "stat": "grit",
+  "difficulty": 6,
+  "trophyValue": 2,
+  "defeatReward": {
+    "type": "gain_note",
+    "text": "You broke the marauder's furnace axe and kept its cinder-stamped grip."
+  },
+  "woundOnLoss": {
+    "type": "take_wound",
+    "amount": 1
+  },
+  "enemyFamily": "human",
+  "threatLane": "red",
+  "rarity": "common",
+  "tempo": "push",
+  "resourceTags": [
+    "trophy",
+    "wound"
+  ]
+}

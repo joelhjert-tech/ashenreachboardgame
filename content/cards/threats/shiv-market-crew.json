@@ -1,0 +1,32 @@
+{
+  "id": "shiv-market-crew",
+  "type": "threat",
+  "cardType": "enemy",
+  "title": "Shiv-Market Crew",
+  "enemyName": "Shiv-Market Crew",
+  "text": "Market cutters circle with polite offers, prewritten receipts, and knives already priced for resale.",
+  "flavor": "They sell the wound before making it.",
+  "severity": 3,
+  "stat": "guile",
+  "difficulty": 7,
+  "trophyValue": 4,
+  "defeatReward": {
+    "type": "gain_note",
+    "text": "You kept a marked receipt from the shiv-market crew."
+  },
+  "woundOnLoss": {
+    "type": "take_wound",
+    "amount": 1
+  },
+  "enemyFamily": "cartel",
+  "threatLane": "yellow",
+  "resolutionType": "enemy",
+  "region": "middle",
+  "rarity": "uncommon",
+  "tempo": "push",
+  "resourceTags": [
+    "loot",
+    "trophy",
+    "wound"
+  ]
+}

@@ -1,0 +1,31 @@
+{
+  "id": "lantern-ash-ghoul",
+  "type": "threat",
+  "cardType": "enemy",
+  "title": "Lantern-Ash Ghoul",
+  "enemyName": "Lantern-Ash Ghoul",
+  "text": "A thin ash-ghoul follows the warmth of your lamp, reaching more from need than malice.",
+  "flavor": "It was a person once. The Reach is full of once.",
+  "severity": 1,
+  "region": "outer",
+  "stat": "grit",
+  "difficulty": 3,
+  "trophyValue": 1,
+  "defeatReward": {
+    "type": "gain_note",
+    "text": "You end the ghoul quietly and keep the lamp burning."
+  },
+  "woundOnLoss": {
+    "type": "take_wound",
+    "amount": 1
+  },
+  "enemyFamily": "revenant",
+  "threatLane": "red",
+  "rarity": "common",
+  "tempo": "stall",
+  "resourceTags": [
+    "trophy",
+    "wound"
+  ],
+  "imagePrompt": "A thin ash-covered revenant reaching toward a blue lantern in a ruined medical lane, tragic grimdark figure, low-tier enemy composition"
+}

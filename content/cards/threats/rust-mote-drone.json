@@ -1,0 +1,32 @@
+{
+  "id": "rust-mote-drone",
+  "type": "threat",
+  "cardType": "enemy",
+  "title": "Rust-Mote Drone",
+  "enemyName": "Rust-Mote Drone",
+  "text": "A maintenance mote consumes loose parts. On a loss, lose up to 1 Salvage.",
+  "flavor": "It remembers repair. It has forgotten permission.",
+  "severity": 1,
+  "region": "outer",
+  "stat": "forge",
+  "difficulty": 3,
+  "trophyValue": 1,
+  "defeatReward": {
+    "type": "gain_note",
+    "text": "You pin the mote and salvage its still-warm route bearing."
+  },
+  "woundOnLoss": {
+    "type": "lose_salvage",
+    "amount": 1
+  },
+  "enemyFamily": "machine",
+  "threatLane": "yellow",
+  "rarity": "common",
+  "tempo": "neutral",
+  "resourceTags": [
+    "gear",
+    "salvage",
+    "trophy"
+  ],
+  "imagePrompt": "Tiny malfunctioning brass repair drone spraying orange welding sparks near a cracked transit gate, low-tier machine enemy, dark industrial board-game card art"
+}

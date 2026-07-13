@@ -1,0 +1,27 @@
+{
+  "id": "cinder-stim-ampoule",
+  "name": "Cinder-Stim Ampoule",
+  "slot": "utility",
+  "category": "consumable",
+  "statBonus": {
+    "stat": "grit",
+    "amount": 1
+  },
+  "activeText": "Discard to heal 1 wound with a brutal cinder-stim burn.",
+  "useLimit": "discard",
+  "timingWindows": [
+    "beforeTakingDamage",
+    "anyTime"
+  ],
+  "flavor": "A sealed red ampoule that burns the blood clean for a few terrible seconds.",
+  "tier": "standard",
+  "startingEligible": false,
+  "normalShopCommon": false,
+  "cost": 3,
+  "sellValue": 1,
+  "progressionWeight": 0.75,
+  "shopCategories": [
+    "medicae-shrine",
+    "market"
+  ]
+}

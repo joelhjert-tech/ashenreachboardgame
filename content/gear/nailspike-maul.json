@@ -1,0 +1,28 @@
+{
+  "id": "nailspike-maul",
+  "name": "Nailspike Maul",
+  "slot": "weapon",
+  "subtype": "weapon",
+  "category": "passive",
+  "statBonus": {
+    "stat": "grit",
+    "amount": 1
+  },
+  "cost": 3,
+  "sellValue": 1,
+  "sellable": true,
+  "tier": "standard",
+  "progressionWeight": 1,
+  "flavor": "A brutal salvage maul that adds +1 Grit in battle.",
+  "activeText": "A brutal salvage maul that adds +1 Grit in battle.",
+  "effectModel": "conditional",
+  "requiresEquipped": true,
+  "conditionType": "battle",
+  "shopCategories": [
+    "forge-armoury",
+    "market"
+  ],
+  "startingEligible": true,
+  "normalShopCommon": true,
+  "allowedFallbackArt": true
+}

@@ -1,0 +1,130 @@
+{
+  "generatedAt": "2026-06-26T04:25:29.849Z",
+  "requestedType": "threatCardArt",
+  "generated": 15,
+  "byType": {
+    "threatCardArt": 15
+  },
+  "results": [
+    {
+      "id": "threat_art_scrap-toll-gangers",
+      "assetType": "threatCardArt",
+      "outputPath": "/assets/cards/threats/scrap-toll-gangers.png",
+      "width": 1024,
+      "height": 1536,
+      "bytes": 208532
+    },
+    {
+      "id": "threat_art_shardvine-ambushers",
+      "assetType": "threatCardArt",
+      "outputPath": "/assets/cards/threats/shardvine-ambushers.png",
+      "width": 1024,
+      "height": 1536,
+      "bytes": 276859
+    },
+    {
+      "id": "threat_art_shardwind-front",
+      "assetType": "threatCardArt",
+      "outputPath": "/assets/cards/threats/shardwind-front.png",
+      "width": 1024,
+      "height": 1536,
+      "bytes": 306251
+    },
+    {
+      "id": "threat_art_siren-relay-echo",
+      "assetType": "threatCardArt",
+      "outputPath": "/assets/cards/threats/siren-relay-echo.png",
+      "width": 1024,
+      "height": 1536,
+      "bytes": 299023
+    },
+    {
+      "id": "threat_art_slag-drone",
+      "assetType": "threatCardArt",
+      "outputPath": "/assets/cards/threats/slag-drone.png",
+      "width": 1024,
+      "height": 1536,
+      "bytes": 262495
+    },
+    {
+      "id": "threat_art_smoke-leech-clutch",
+      "assetType": "threatCardArt",
+      "outputPath": "/assets/cards/threats/smoke-leech-clutch.png",
+      "width": 1024,
+      "height": 1536,
+      "bytes": 269783
+    },
+    {
+      "id": "threat_art_specimen-null-arrives",
+      "assetType": "threatCardArt",
+      "outputPath": "/assets/cards/threats/specimen-null-arrives.png",
+      "width": 1024,
+      "height": 1536,
+      "bytes": 190851
+    },
+    {
+      "id": "threat_art_spindle-static-squall",
+      "assetType": "threatCardArt",
+      "outputPath": "/assets/cards/threats/spindle-static-squall.png",
+      "width": 1024,
+      "height": 1536,
+      "bytes": 266503
+    },
+    {
+      "id": "threat_art_starless-taxation",
+      "assetType": "threatCardArt",
+      "outputPath": "/assets/cards/threats/starless-taxation.png",
+      "width": 1024,
+      "height": 1536,
+      "bytes": 247506
+    },
+    {
+      "id": "threat_art_suture-storm",
+      "assetType": "threatCardArt",
+      "outputPath": "/assets/cards/threats/suture-storm.png",
+      "width": 1024,
+      "height": 1536,
+      "bytes": 278638
+    },
+    {
+      "id": "threat_art_veil-rift-judicator",
+      "assetType": "threatCardArt",
+      "outputPath": "/assets/cards/threats/veil-rift-judicator.png",
+      "width": 1024,
+      "height": 1536,
+      "bytes": 224460
+    },
+    {
+      "id": "threat_art_void-salt-sickness",
+      "assetType": "threatCardArt",
+      "outputPath": "/assets/cards/threats/void-salt-sickness.png",
+      "width": 1024,
+      "height": 1536,
+      "bytes": 304008
+    },
+    {
+      "id": "threat_art_webglass-echo-trap",
+      "assetType": "threatCardArt",
+      "outputPath": "/assets/cards/threats/webglass-echo-trap.png",
+      "width": 1024,
+      "height": 1536,
+      "bytes": 261185
+    },
+    {
+      "id": "threat_art_webglass-snarefield",
+      "assetType": "threatCardArt",
+      "outputPath": "/assets/cards/threats/webglass-snarefield.png",
+      "width": 1024,
+      "height": 1536,
+      "bytes": 307488
+    },
+    {
+      "id": "threat_art_yard-ghoul-welders",
+      "assetType": "threatCardArt",
+      "outputPath": "/assets/cards/threats/yard-ghoul-welders.png",
+      "width": 1024,
+      "height": 1536,
+      "bytes": 222648
+    }
+  ]
+}

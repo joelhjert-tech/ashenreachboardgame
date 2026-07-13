@@ -1,0 +1,13 @@
+{
+  "id": "blood-fury",
+  "name": "Blood Fury",
+  "severity": 5,
+  "category": "rerollRisk",
+  "duration": "ongoing",
+  "trigger": "Once per battle.",
+  "rulesText": "You may reroll one battle die. If the rerolled die matches the original result, suffer 1 wound.",
+  "effectKind": "rerollRisk",
+  "effectPayload": { "trigger": "oncePerBattleReroll", "wound": 1 },
+  "flipFacedownAfterResolve": false,
+  "isFaceupOngoing": true
+}

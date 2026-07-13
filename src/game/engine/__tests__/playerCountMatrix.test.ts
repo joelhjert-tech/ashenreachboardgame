@@ -121,7 +121,10 @@ function createMatrixState(playerCount: number, overrides: Partial<GameState> = 
       seatId: `seat-${seatNumber}`,
       characterId: roster[index % roster.length],
       displayName: `Seat ${seatNumber}`,
+      startingContractOptions: [],
+      selectedStartingContractId: null,
       connected: true,
+      ready: true,
       kicked: false,
       joinToken: `seat:matrix:${seatNumber}`
     };
@@ -141,6 +144,7 @@ function createMatrixState(playerCount: number, overrides: Partial<GameState> = 
     sessionId: `matrix-${playerCount}`,
     status: "active",
     sessionMode: playerCount === 1 ? "single-player" : "multiplayer",
+    gameMode: overrides.gameMode ?? "standard",
     winnerSeatId: null,
     activeScenarioId: "scenario_broken_seal",
     scenarioProgress: {
@@ -159,6 +163,9 @@ function createMatrixState(playerCount: number, overrides: Partial<GameState> = 
     seats,
     players,
     availableContracts: contracts,
+    shopStockReveals: [],
+    nemesisChampions: overrides.nemesisChampions ?? [],
+    nemesisNexusCountdowns: overrides.nemesisNexusCountdowns ?? [],
     eventLog: [],
     currentEncounter: null,
     pendingEnemyRoll: null,
@@ -194,6 +201,24 @@ function createCapturingClient(seatId: string, sent: Array<Record<string, unknow
 
 function runIntent(server: GameRoomServer, intent: ClientIntent, sent: Array<Record<string, unknown>> = []): Array<Record<string, unknown>> {
   server.handleIntent(createCapturingClient(intent.seatId, sent), intent);
+
+  for (let index = 0; index < 4; index += 1) {
+    const activeResolution = server.getState().activeResolution;
+
+    if (
+      !activeResolution ||
+      !["roll_result", "outcome_summary", "awaiting_continue"].includes(activeResolution.stage)
+    ) {
+      return sent;
+    }
+
+    const continuingSeatId = server.getState().turnOrder[server.getState().activeSeatIndex] ?? intent.seatId;
+    server.handleIntent(createCapturingClient(continuingSeatId, sent), {
+      type: "CONTINUE_RESOLUTION",
+      seatId: continuingSeatId
+    });
+  }
+
   return sent;
 }
 
@@ -222,13 +247,17 @@ function withoutThreats(state: GameState): GameState {
 
 describe.each([1, 2, 3, 4, 5, 6])("player count matrix (%i players)", (playerCount) => {
   it("rotates turns across the full table and advances escalation once per round", () => {
+    const movementRolls = Object.fromEntries(
+      Array.from({ length: playerCount }, (_, index) => [`seat-${index + 1}`, 1])
+    );
     const server = new GameRoomServer(
       withoutThreats(
         createMatrixState(playerCount, {
           phase: "navigation",
           currentEncounter: null,
           pendingEnemyRoll: null,
-          pendingEffect: null
+          pendingEffect: null,
+          movementRolls
         })
       ),
       [],

@@ -1,0 +1,16 @@
+{
+  "id": "pilgrim-convoy",
+  "name": "Pilgrim Convoy",
+  "factionGiver": "Pale Cartels",
+  "text": "Escort the pilgrims through roads that charge passage in blood, breath, and witness names.",
+  "objective": {
+    "type": "spaceTextResolved",
+    "effectKey": "middle_guardianSpanThreshold",
+    "label": "Pilgrim convoy escorted",
+    "target": 1
+  },
+  "reward": {
+    "type": "gain_note",
+    "text": "The convoy survived the span and left a quiet toll credit under your mark."
+  }
+}

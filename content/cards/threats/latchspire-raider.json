@@ -17,5 +17,15 @@
   "woundOnLoss": {
     "type": "take_wound",
     "amount": 1
-  }
+  },
+  "enemyFamily": "human",
+  "threatLane": "yellow",
+  "region": "outer",
+  "rarity": "common",
+  "tempo": "stall",
+  "resourceTags": [
+    "heat",
+    "trophy",
+    "wound"
+  ]
 }

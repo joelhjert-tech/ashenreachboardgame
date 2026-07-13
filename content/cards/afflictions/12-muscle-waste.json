@@ -1,0 +1,13 @@
+{
+  "id": "muscle-waste",
+  "name": "Muscle Waste",
+  "severity": 1,
+  "category": "immediateStatLoss",
+  "duration": "immediate",
+  "trigger": "When revealed.",
+  "rulesText": "Lose 1 Grit. Then flip facedown.",
+  "effectKind": "immediateStatLoss",
+  "effectPayload": { "stat": "grit", "amount": -1 },
+  "flipFacedownAfterResolve": true,
+  "isFaceupOngoing": false
+}

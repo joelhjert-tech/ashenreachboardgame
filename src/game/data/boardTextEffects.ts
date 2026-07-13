@@ -37,7 +37,7 @@ export interface BoardTextValidationResult {
 export const BOARD_TEXT_EFFECTS: Record<string, BoardTextEffectDefinition> = {
   outer_emberSanctumRest: {
     effectKey: "outer_emberSanctumRest",
-    summary: "Recovered 1 wound and cooled 1 Heat at Ember Sanctum.",
+    summary: "Recovered 1 wound and stabilized lingering scar pressure at Ember Sanctum.",
     effect: {
       type: "sequence",
       effects: [
@@ -109,9 +109,9 @@ export const BOARD_TEXT_EFFECTS: Record<string, BoardTextEffectDefinition> = {
       type: "gain_gear",
       gearId: "coffin-rig"
     },
-    failureSummary: "The Hollow Veil stacks shifted mid-sweep and forced you to abandon the cleaner salvage pass.",
+    failureSummary: "The Hollow Veil stacks shifted mid-sweep and dropped a scaffold of rust across your ribs.",
     failureEffect: {
-      type: "gain_heat",
+      type: "take_wound",
       amount: 1
     },
     sectorDeck: {
@@ -127,13 +127,298 @@ export const BOARD_TEXT_EFFECTS: Record<string, BoardTextEffectDefinition> = {
       type: "gain_note",
       text: "Emberwatch ridge braced. Safe route marker set."
     },
-    failureSummary: "The Emberwatch ridge kicked back hard and the line only held long enough to scorch your position.",
+    failureSummary: "The Emberwatch ridge kicked back hard and left command logging the burn as a live escalation.",
+    failureEffect: {
+      type: "advance_escalation",
+      amount: 1
+    },
+    sectorDeck: {
+      kind: "escalation"
+    }
+  },
+  outer_waymarketExchange: {
+    effectKey: "outer_waymarketExchange",
+    summary: "Worked the Waymarket exchange and secured a practical table favor.",
+    stat: "guile",
+    difficulty: 6,
+    effect: {
+      type: "sequence",
+      effects: [
+        { type: "lose_heat", amount: 1 },
+        { type: "gain_note", text: "Waymarket favor banked for trade, aid, or a safer route." }
+      ]
+    },
+    failureSummary: "The Waymarket deal soured and every stall seemed to know your scar tally.",
     failureEffect: {
       type: "gain_heat",
       amount: 1
     },
     sectorDeck: {
+      kind: "contract"
+    }
+  },
+  outer_relayCrew: {
+    effectKey: "outer_relayCrew",
+    summary: "Recruited a relay-camp contact and recorded the route crew.",
+    stat: "command",
+    difficulty: 6,
+    effect: {
+      type: "sequence",
+      effects: [
+        { type: "gain_follower", followerId: "grave-scribe" },
+        { type: "gain_note", text: "Relay camp contact: a route crew owes you one clean signal." }
+      ]
+    },
+    failureSummary: "The relay camp would not commit a crew while your line looked this unstable.",
+    failureEffect: {
+      type: "gain_heat",
+      amount: 1
+    },
+    sectorDeck: {
+      kind: "contract"
+    }
+  },
+  outer_saltCrossing: {
+    effectKey: "outer_saltCrossing",
+    summary: "Harvested void-salt and bottled it as a bargaining chip.",
+    stat: "forge",
+    difficulty: 7,
+    effect: {
+      type: "sequence",
+      effects: [
+        { type: "lose_heat", amount: 1 },
+        { type: "gain_note", text: "Void-salt vial: useful for scar treatment or gate bargaining." }
+      ]
+    },
+    failureSummary: "The salt bloom bit through the gloves and left a white nerve-mark under the skin.",
+    failureEffect: {
+      type: "take_wound",
+      amount: 1
+    },
+    sectorDeck: {
+      kind: "anomaly"
+    }
+  },
+  outer_surgeryTreatment: {
+    effectKey: "outer_surgeryTreatment",
+    summary: "Accepted rough cinder surgery and walked away patched but marked.",
+    stat: "forge",
+    difficulty: 7,
+    effect: {
+      type: "sequence",
+      effects: [
+        { type: "heal_wound", amount: 1 },
+        { type: "gain_heat", amount: 1 },
+        { type: "gain_follower", followerId: "cinder-surgeon" },
+        { type: "gain_note", text: "Cinder surgery receipt: scar treatment logged." }
+      ]
+    },
+    failureSummary: "The surgery tent ran out of anesthetic and the patch job became a liability.",
+    failureEffect: {
+      type: "take_wound",
+      amount: 1
+    },
+    sectorDeck: {
+      kind: "artifact"
+    }
+  },
+  outer_oathpostWrit: {
+    effectKey: "outer_oathpostWrit",
+    summary: "Claimed a faction writ from the Oathpost.",
+    stat: "command",
+    difficulty: 7,
+    effect: {
+      type: "gain_note",
+      text: "Faction writ: can be cashed for bounded rivalry, aid, or a contract lead."
+    },
+    failureSummary: "The Oathpost refused your claim and marked the attempt as unpaid scar debt.",
+    failureEffect: {
+      type: "gain_heat",
+      amount: 1
+    },
+    sectorDeck: {
+      kind: "contract"
+    }
+  },
+  outer_brokenCausewayShortcut: {
+    effectKey: "outer_brokenCausewayShortcut",
+    summary: "Marked the Broken Causeway shortcut toward Guardian Span.",
+    stat: "grit",
+    difficulty: 8,
+    effect: {
+      type: "gain_note",
+      text: "Broken Causeway shortcut marked. The fast route is dangerous but real."
+    },
+    failureSummary: "The causeway cracked under the attempt and threw cinder pressure through the line.",
+    failureEffect: {
+      type: "sequence",
+      effects: [
+        { type: "gain_heat", amount: 1 },
+        { type: "take_wound", amount: 1 }
+      ]
+    },
+    sectorDeck: {
       kind: "escalation"
+    }
+  },
+  middle_relicCache: {
+    effectKey: "middle_relicCache",
+    summary: "Cracked the Red March artifact cache.",
+    stat: "guile",
+    difficulty: 8,
+    effect: {
+      type: "gain_note",
+      text: "Artifact cache cracked. One artifact has a claim tag in your name."
+    },
+    failureSummary: "The cache lock punished the wrong pressure point and marked you as a thief in the archive glass.",
+    failureEffect: {
+      type: "gain_scar",
+      scarId: "scar-wound-1"
+    },
+    sectorDeck: {
+      kind: "artifact"
+    }
+  },
+  middle_scarSurgery: {
+    effectKey: "middle_scarSurgery",
+    summary: "Survived field surgery in the Red March.",
+    stat: "forge",
+    difficulty: 9,
+    effect: {
+      type: "sequence",
+      effects: [
+        { type: "heal_wound", amount: 1 },
+        { type: "gain_heat", amount: 1 },
+        { type: "gain_note", text: "Field surgery completed. The scar holds for now." }
+      ]
+    },
+    failureSummary: "The surgery pit made the wound quieter, not safer.",
+    failureEffect: {
+      type: "gain_scar",
+      scarId: "scar-wound-1"
+    },
+    sectorDeck: {
+      kind: "escalation"
+    }
+  },
+  middle_rivalryClaim: {
+    effectKey: "middle_rivalryClaim",
+    summary: "Marked a bounded rivalry claim in the pit.",
+    stat: "command",
+    difficulty: 8,
+    effect: {
+      type: "sequence",
+      effects: [
+        { type: "gain_follower", followerId: "pale-cartel-fixer" },
+        { type: "gain_note", text: "Rivalry claim: trade, aid, duel, or steal one exposed object if the table permits rivalry." }
+      ]
+    },
+    failureSummary: "The pit crowd rejected your claim and turned the table against your next negotiation.",
+    failureEffect: {
+      type: "gain_note",
+      text: "Rivalry pit embarrassment: the next table bargain starts under suspicion."
+    },
+    sectorDeck: {
+      kind: "contract"
+    }
+  },
+  middle_redMarchBargain: {
+    effectKey: "middle_redMarchBargain",
+    summary: "Secured a Red March outpost bargain.",
+    stat: "command",
+    difficulty: 9,
+    effect: {
+      type: "sequence",
+      effects: [
+        { type: "gain_follower", followerId: "votive-gunner" },
+        { type: "gain_note", text: "Red March outpost favor: gunner, guide, or hard military passage promised." }
+      ]
+    },
+    failureSummary: "The outpost commander liked your nerve but not your credentials.",
+    failureEffect: {
+      type: "gain_heat",
+      amount: 1
+    },
+    sectorDeck: {
+      kind: "contract"
+    }
+  },
+  middle_anomalyWell: {
+    effectKey: "middle_anomalyWell",
+    summary: "Read the Anomaly Well and bottled a breach clue.",
+    stat: "signal",
+    difficulty: 9,
+    effect: {
+      type: "sequence",
+      effects: [
+        { type: "gain_follower", followerId: "choir-defector" },
+        { type: "gain_note", text: "Anomaly well reading: one breach clue hums in a sealed vial." }
+      ]
+    },
+    failureSummary: "The well answered too loudly and forced the breach sirens into the round clock.",
+    failureEffect: {
+      type: "advance_escalation",
+      amount: 1
+    },
+    sectorDeck: {
+      kind: "anomaly"
+    }
+  },
+  inner_tombGateTrial: {
+    effectKey: "inner_tombGateTrial",
+    summary: "Passed the Tomb Gate trial and earned a grave-route answer.",
+    stat: "command",
+    difficulty: 10,
+    effect: {
+      type: "gain_note",
+      text: "Tomb Gate answer recorded for the final approach."
+    },
+    failureSummary: "The Tomb Gate kept the answer and collected pain instead.",
+    failureEffect: {
+      type: "take_wound",
+      amount: 1
+    }
+  },
+  inner_blackstarShortcut: {
+    effectKey: "inner_blackstarShortcut",
+    summary: "Crossed the Blackstar shortcut and kept your nerve.",
+    stat: "guile",
+    difficulty: 11,
+    effect: {
+      type: "sequence",
+      effects: [
+        { type: "gain_note", text: "Blackstar shortcut survived. The route is ugly but fast." },
+        { type: "gain_heat", amount: 1 }
+      ]
+    },
+    failureSummary: "The Blackstar cut folded wrong and made the shortcut cost blood.",
+    failureEffect: {
+      type: "take_wound",
+      amount: 1
+    },
+    sectorDeck: {
+      kind: "artifact"
+    }
+  },
+  inner_choirShrine: {
+    effectKey: "inner_choirShrine",
+    summary: "Petitioned the corrupted Choir shrine and carried away a dangerous blessing.",
+    stat: "signal",
+    difficulty: 11,
+    effect: {
+      type: "sequence",
+      effects: [
+        { type: "gain_follower", followerId: "choir-defector" },
+        { type: "gain_note", text: "Choir shrine omen: a gate artifact may answer, but the blessing is not clean." }
+      ]
+    },
+    failureSummary: "The shrine blessed the wrong part of you.",
+    failureEffect: {
+      type: "gain_scar",
+      scarId: "scar-wound-2"
+    },
+    sectorDeck: {
+      kind: "artifact"
     }
   },
   middle_shardSprawlBargain: {
@@ -313,7 +598,7 @@ export const BOARD_TEXT_EFFECTS: Record<string, BoardTextEffectDefinition> = {
           type: "gain_note",
           text: "Cinder lattice ember pulse traced into a stable core approach."
         },
-        failureSummary: "The ember trace slipped its rhythm and the lattice answered with rising heat.",
+        failureSummary: "The ember trace slipped its rhythm and the lattice answered with rising scar pressure.",
         failureEffect: {
           type: "gain_heat",
           amount: 1
@@ -374,7 +659,7 @@ export const BOARD_TEXT_EFFECTS: Record<string, BoardTextEffectDefinition> = {
             { type: "gain_note", text: "Gate of Cinders relay pulse timed cleanly for the core breach." }
           ]
         },
-        failureSummary: "The relay timing slipped and the gate answered with a surge of static heat.",
+        failureSummary: "The relay timing slipped and the gate answered with a surge of static scar pressure.",
         failureEffect: {
           type: "gain_heat",
           amount: 1

@@ -15,5 +15,15 @@
   "failEffect": {
     "type": "take_wound",
     "amount": 1
-  }
+  },
+  "enemyFamily": "vermin",
+  "threatLane": "red",
+  "region": "outer",
+  "rarity": "common",
+  "tempo": "push",
+  "resourceTags": [
+    "loot",
+    "scenario",
+    "wound"
+  ]
 }

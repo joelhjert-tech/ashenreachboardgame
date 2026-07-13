@@ -1,6 +1,9 @@
-import type { ReactElement, ReactNode } from "react";
+import type { CSSProperties, ReactElement, ReactNode } from "react";
 import { describeContractObjective, formatContractObjectiveStatus } from "../../game/contracts/objectives.js";
-import { getCharacterPortraitPath, getPhoneSheetFramePath } from "../shared/assetPaths.js";
+import { getChallengeThemeStyle } from "../../game/ui/challengeTheme.js";
+import { CardArtImage } from "../shared/CardArtImage.js";
+import { ChallengeBadge } from "../shared/ChallengeBadge.js";
+import { getCharacterPortraitPath } from "../shared/assetPaths.js";
 import type { AbilityChangeItem } from "../shared/abilityTelemetry.js";
 import {
   buildScenarioOutcomeSummary,
@@ -19,7 +22,16 @@ import type {
   SessionStatus,
   Stat
 } from "../shared/types.js";
+import {
+  formatSeatLabel,
+  gearSlotLabelById,
+  statAbbreviationById,
+  statLabelById,
+  statOrder
+} from "../shared/statLabels.js";
 import { formatEscalation } from "./formatEscalation.js";
+import { getAfflictionEffectChips, getAfflictionStatusLabel } from "./afflictionPresentation.js";
+import { formatSignedStatBonus, getPhoneStatBreakdown } from "./statBreakdown.js";
 
 interface MobilePlayerCardProps {
   self: PhoneSelfState;
@@ -47,17 +59,8 @@ interface MobilePlayerCardProps {
   className?: string;
 }
 
-const statOrder = ["command", "grit", "signal", "guile", "forge"] as const;
 const gearOrder = ["weapon", "armor", "utility"] as const;
 const resourceTrackSlots = 5;
-
-const statIconById: Record<Stat, string> = {
-  command: "Cmd",
-  grit: "Grit",
-  signal: "Sig",
-  guile: "Gui",
-  forge: "Forg"
-};
 
 function toTitleCase(value: string): string {
   return value.replace(/[_-]+/g, " ").replace(/\b\w/g, (character) => character.toUpperCase());
@@ -93,8 +96,7 @@ export function MobilePlayerCard({
   className
 }: MobilePlayerCardProps): ReactElement {
   const portraitPath = getCharacterPortraitPath(self.character.id);
-  const framePath = getPhoneSheetFramePath();
-  const heatTrack = buildTrack(self.character.heat);
+  const scarTrack = buildTrack(self.character.scars.length);
   const woundTrack = buildTrack(self.character.wounds);
   const latestOutcome = outcomeSummary?.seatId === self.seatId ? outcomeSummary.summary : null;
   const scenarioRuleDigest = buildScenarioRuleDigest(activeScenario, scenarioTelemetry, {
@@ -110,27 +112,32 @@ export function MobilePlayerCard({
     seatLabelById: { [self.seatId]: displayName || self.character.name }
   });
   const contractCopy = activeContractCard
-    ? `${activeContractCard.name} | ${formatContractObjectiveStatus(activeContractCard, self.character.activeContract?.progress ?? 0)}`
+    ? activeContractCard.name
     : "No active contract";
+  const contractStatusCopy = activeContractCard
+    ? formatContractObjectiveStatus(activeContractCard, self.character.activeContract?.progress ?? 0)
+    : null;
   const contractObjectiveCopy = activeContractCard
     ? describeContractObjective(activeContractCard)
     : null;
   const encounterCopy = encounter
-    ? `${encounter.title} | ${toTitleCase(encounter.cardType)} | ${toTitleCase(encounter.stat)} ${encounter.difficulty}`
+    ? `${encounter.title} - ${toTitleCase(encounter.cardType)}, ${toTitleCase(encounter.stat)} ${encounter.difficulty}`
     : `Phase ${toTitleCase(phase)}`;
   const scenarioCopy = formatScenarioSummaryCopy(activeScenario);
   const scenarioTelemetryCopy = formatScenarioTelemetryInline(scenarioTelemetry);
   const escalationCopy = formatEscalation({ escalationLevel, escalationThreshold, escalationModifier });
   const nemesisRemaining = activeNemesis ? Math.max(0, activeNemesis.life - activeNemesis.damageDealt) : 0;
   const nemesisProgressPercent = activeNemesis ? Math.min(100, (activeNemesis.damageDealt / Math.max(activeNemesis.life, 1)) * 100) : 0;
+  const scarCards = self.character.scarCards ?? [];
+  const afflictions = self.character.afflictions ?? { faceup: [], facedownCount: 0 };
+  const scarEffectSummary = scarCards.map((scar) => scar.title).join(", ") || self.character.scars.join(", ");
+  const gearNameById = new Map(self.character.heldGear.map((item) => [item.id, item.name] as const));
 
   return (
     <section
       className={`mobile-player-card phone-sheet-card${className ? ` ${className}` : ""}`}
       aria-label={`${self.character.name} player card`}
     >
-      <img className="mobile-player-card-frame phone-sheet-frame" src={framePath} alt="" aria-hidden="true" />
-
       <div className="phone-sheet-topbar" aria-label="Controller status">
         <div className="phone-sheet-identity-chip">
           <span>{roomCode}</span>
@@ -140,11 +147,11 @@ export function MobilePlayerCard({
         <div className="phone-sheet-medallion-row">
           <div className="phone-sheet-medallion">
             <span>Seat</span>
-            <strong>{self.seatId}</strong>
+            <strong>{formatSeatLabel(self.seatId)}</strong>
           </div>
           <div className="phone-sheet-medallion">
             <span>Active</span>
-            <strong>{activeSeatId ?? "Standby"}</strong>
+            <strong>{activeSeatId ? formatSeatLabel(activeSeatId) : "Standby"}</strong>
           </div>
           <div className="phone-sheet-medallion">
             <span>Phase</span>
@@ -162,10 +169,10 @@ export function MobilePlayerCard({
 
         <div className="phone-sheet-resource-stack">
           <div className="phone-sheet-track">
-            <span>Heat</span>
+            <span>Scars</span>
             <div className="phone-sheet-track-pips">
-              {heatTrack.map((filled, index) => (
-                <span key={`heat-${index}`} className={filled ? "phone-sheet-pip phone-sheet-pip-filled" : "phone-sheet-pip"} />
+              {scarTrack.map((filled, index) => (
+                <span key={`scar-${index}`} className={filled ? "phone-sheet-pip phone-sheet-pip-filled" : "phone-sheet-pip"} />
               ))}
             </div>
           </div>
@@ -194,13 +201,18 @@ export function MobilePlayerCard({
           <div className="mobile-player-card-title phone-sheet-title">
             <p className="mobile-player-card-kicker">{self.character.archetype}</p>
             <h2>{self.character.name}</h2>
+            {self.character.presentation && (
+              <p className="phone-sheet-role-line">
+                {self.character.presentation.role} | {toTitleCase(self.character.presentation.complexity)}
+              </p>
+            )}
             <p className="mobile-player-card-subtitle">Sector {toTitleCase(self.sectorId)}</p>
           </div>
 
           <div className="phone-sheet-vitals">
             <div className="phone-sheet-vital-card">
-              <span>Heat</span>
-              <strong>{self.character.heat}</strong>
+              <span>Scars</span>
+              <strong>{self.character.scars.length}</strong>
             </div>
             <div className="phone-sheet-vital-card">
               <span>Wounds</span>
@@ -215,13 +227,30 @@ export function MobilePlayerCard({
           <div className="phone-sheet-section">
             <div className="phone-sheet-section-heading">Attributes</div>
             <div className="mobile-player-card-stats phone-sheet-stat-grid">
-              {statOrder.map((stat) => (
-                <div key={stat} className="mobile-player-stat phone-sheet-stat-card">
-                  <span>{statIconById[stat]}</span>
-                  <strong>{self.character.stats[stat]}</strong>
-                  <p>{toTitleCase(stat)}</p>
-                </div>
-              ))}
+              {statOrder.map((stat) => {
+                const breakdown = getPhoneStatBreakdown(self, stat);
+                return (
+                  <div
+                    key={stat}
+                    className={`mobile-player-stat phone-sheet-stat-card phone-sheet-stat-card-${stat}`}
+                    style={getChallengeThemeStyle(stat) as CSSProperties}
+                  >
+                    <ChallengeBadge stat={stat} value={breakdown.final} label={statAbbreviationById[stat]} active={encounter?.stat === stat} />
+                    {breakdown.gearFollower !== 0 && (
+                      <strong className="phone-stat-bonus">({formatSignedStatBonus(breakdown.gearFollower)})</strong>
+                    )}
+                    <p>{statLabelById[stat]}</p>
+                    <small className="phone-stat-breakdown">
+                      Base {breakdown.base} | Permanent {formatSignedStatBonus(breakdown.permanent)} | Gear/Follower{" "}
+                      {formatSignedStatBonus(breakdown.gearFollower)}
+                      {breakdown.gearFollowerSources.length > 0
+                        ? ` (${breakdown.gearFollowerSources.map((source) => `${source.label} ${formatSignedStatBonus(source.value)}`).join(", ")})`
+                        : ""}
+                      {" | "}Final {breakdown.final}
+                    </small>
+                  </div>
+                );
+              })}
             </div>
           </div>
 
@@ -266,9 +295,18 @@ export function MobilePlayerCard({
               <div className="phone-sheet-section-heading">Scenario Rules</div>
               <p className="phone-sheet-scenario-theme">{activeScenario.theme}</p>
               <p className="phone-sheet-scenario-rule">{scenarioRuleDigest?.pressureSummary ?? activeScenario.pressureSummary}</p>
+              {scenarioRuleDigest?.pressureTrack && <p className="phone-sheet-scenario-rule">{scenarioRuleDigest.pressureTrack}</p>}
+              {scenarioRuleDigest?.finalGateRequirement && (
+                <p className="phone-sheet-scenario-rule">Final gate: {scenarioRuleDigest.finalGateRequirement}</p>
+              )}
               {(scenarioRuleDigest?.telemetry ?? []).map((entry) => (
                 <p key={entry} className="phone-sheet-scenario-rule">
                   {entry}
+                </p>
+              ))}
+              {(scenarioRuleDigest?.boardHooks ?? []).map((hook) => (
+                <p key={hook} className="phone-sheet-scenario-rule">
+                  {hook}
                 </p>
               ))}
               {(scenarioRuleDigest?.specialRules ?? activeScenario.specialRules.slice(0, 2)).map((rule) => (
@@ -281,6 +319,11 @@ export function MobilePlayerCard({
                   {step}
                 </p>
               ))}
+              {(scenarioRuleDigest?.rewards ?? []).map((reward) => (
+                <p key={reward} className="phone-sheet-scenario-rule">
+                  Reward: {reward}
+                </p>
+              ))}
               <p className="phone-sheet-scenario-rule">{scenarioRuleDigest?.victoryText ?? activeScenario.victoryText}</p>
             </div>
           )}
@@ -290,9 +333,8 @@ export function MobilePlayerCard({
               <div className="phone-sheet-nemesis-header">
                 <div>
                   <span>Nemesis at the Gate</span>
-                  <strong>
-                    {activeNemesis.name} | {activeNemesis.title}
-                  </strong>
+                  <strong>{activeNemesis.name}</strong>
+                  <small>{activeNemesis.title}</small>
                 </div>
                 <div className="phone-sheet-nemesis-life">
                   <span>
@@ -333,8 +375,12 @@ export function MobilePlayerCard({
             <div className="phone-sheet-gear-grid">
               {gearOrder.map((slot) => (
                 <article key={slot} className="phone-sheet-gear-slot">
-                  <span>{toTitleCase(slot)}</span>
-                  <strong>{self.character.equippedGear[slot] ?? "Empty"}</strong>
+                  <span>{gearSlotLabelById[slot]}</span>
+                  <strong>
+                    {self.character.equippedGear[slot]
+                      ? gearNameById.get(self.character.equippedGear[slot]!) ?? "Equipped gear"
+                      : "Empty"}
+                  </strong>
                 </article>
               ))}
               <article className="phone-sheet-gear-slot">
@@ -343,10 +389,91 @@ export function MobilePlayerCard({
               </article>
               <article className="phone-sheet-gear-slot">
                 <span>Effects</span>
-                <strong>{self.character.scars.join(", ") || self.notes.join(", ") || "Stable"}</strong>
+                <strong>{scarEffectSummary || self.notes.join(", ") || "Stable"}</strong>
               </article>
             </div>
           </div>
+
+          {(afflictions.faceup.length > 0 || afflictions.facedownCount > 0) && (
+            <div className="phone-sheet-section" data-testid="phone-afflictions-section">
+              <div className="phone-sheet-section-heading">Afflictions</div>
+              <div className="phone-sheet-ability-list">
+                {afflictions.faceup.map((affliction) => (
+                  <article key={affliction.id} className="phone-sheet-ability-card phone-affliction-card">
+                    <div className="phone-sheet-ability-icon">S{affliction.severity}</div>
+                    <div className="phone-sheet-ability-copy">
+                      <h3>{affliction.name}</h3>
+                      <p>
+                        <strong>{getAfflictionStatusLabel(affliction)}</strong> {affliction.trigger}
+                      </p>
+                      <p>{affliction.rulesText}</p>
+                      {getAfflictionEffectChips(affliction).length > 0 && (
+                        <div className="phone-status-effect-chip-row">
+                          {getAfflictionEffectChips(affliction).map((chip) => (
+                            <span key={chip}>{chip}</span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </article>
+                ))}
+                {afflictions.facedownCount > 0 && (
+                  <article className="phone-sheet-ability-card phone-affliction-card phone-affliction-card-facedown">
+                    <div className="phone-sheet-ability-icon">{afflictions.facedownCount}</div>
+                    <div className="phone-sheet-ability-copy">
+                      <h3>Facedown Afflictions</h3>
+                      <p>Resolved corruption remains in your Affliction area.</p>
+                    </div>
+                  </article>
+                )}
+              </div>
+            </div>
+          )}
+
+          {scarCards.length > 0 && (
+            <div className="phone-sheet-section" data-testid="phone-scars-section">
+              <div className="phone-sheet-section-heading">Scars</div>
+              <div className="phone-sheet-ability-list">
+                {scarCards.map((scar) => (
+                  <article key={scar.id} className="phone-sheet-ability-card phone-sheet-scar-card">
+                    <CardArtImage
+                      cardType="scar"
+                      cardId={scar.id}
+                      alt=""
+                      aria-hidden="true"
+                      className="phone-sheet-scar-art"
+                    />
+                    <div className="phone-sheet-ability-copy">
+                      <h3>{scar.title}</h3>
+                      <p>{scar.text}</p>
+                      <p>
+                        <strong>{scar.trigger}</strong> {scar.penalty}
+                      </p>
+                      <p>{scar.relief}</p>
+                      {scar.upside && <p>{scar.upside}</p>}
+                    </div>
+                  </article>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {(self.character.followers?.length ?? 0) > 0 && (
+            <div className="phone-sheet-section">
+              <div className="phone-sheet-section-heading">Followers</div>
+              <div className="phone-sheet-ability-list phone-sheet-follower-list">
+                {(self.character.followers ?? []).map((follower) => (
+                  <article key={follower.id} className="phone-sheet-ability-card phone-sheet-follower-card">
+                    <div className="phone-sheet-ability-icon">{toTitleCase(follower.role).slice(0, 3)}</div>
+                    <div className="phone-sheet-ability-copy">
+                      <h3>{follower.name}</h3>
+                      <p>{follower.text}</p>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            </div>
+          )}
         </section>
 
         <aside className="phone-sheet-right">
@@ -380,9 +507,19 @@ export function MobilePlayerCard({
           <div className="phone-sheet-section phone-sheet-contract-section">
             <div className="phone-sheet-section-heading">Active Contract</div>
             <div className="phone-sheet-contract-card">
-              <p>{contractCopy}</p>
-              {contractObjectiveCopy && <strong>{contractObjectiveCopy}</strong>}
-              {activeContractCard && <span>{activeContractCard.text}</span>}
+              <CardArtImage
+                cardType="contract"
+                cardId={activeContractCard?.id}
+                alt=""
+                aria-hidden="true"
+                className="phone-sheet-contract-art"
+              />
+              <div className="phone-sheet-contract-copy">
+                <p>{contractCopy}</p>
+                {contractStatusCopy && <em>{contractStatusCopy}</em>}
+                {contractObjectiveCopy && <strong>{contractObjectiveCopy}</strong>}
+                {activeContractCard && <span>{activeContractCard.text}</span>}
+              </div>
             </div>
           </div>
         </aside>

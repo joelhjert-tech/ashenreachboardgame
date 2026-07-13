@@ -1,0 +1,20 @@
+{
+  "id": "qa_alpha_weapon_01",
+  "name": "Void-Cleaver Command Blade",
+  "slot": "weapon",
+  "category": "passive",
+  "statBonus": {
+    "stat": "grit",
+    "amount": 4
+  },
+  "activeText": "QA only: add +4 Grit in battle.",
+  "timingWindows": [
+    "beforeBattleRoll"
+  ],
+  "tier": "artifact",
+  "cost": 0,
+  "progressionWeight": 0.01,
+  "shopCategories": [
+    "forge-armoury"
+  ]
+}

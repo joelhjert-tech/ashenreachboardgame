@@ -11,7 +11,7 @@ import type { ContractCard } from "../../game/schema/contract.schema.js";
 import type { GearItem } from "../../game/schema/gear.schema.js";
 import type { GameState } from "../../game/schema/session.schema.js";
 import { createHostToken, createJoinToken } from "../auth.js";
-import { GameRoomServer } from "../roomServer.js";
+import { GameRoomServer, type ConnectedClient } from "../roomServer.js";
 import { createInitialSessionState } from "../sessionState.js";
 
 type ServerEnvelope =
@@ -146,7 +146,7 @@ function createThreats(): Map<string, ThreatCard> {
         flavor: "Even the warning lights lie here.",
         severity: 1,
         stat: "signal",
-        difficulty: 7,
+        difficulty: 20,
         successEffect: {
           type: "gain_note",
           text: "You caught the false cadence and marked a safer route."
@@ -220,6 +220,50 @@ function createContracts(): Map<string, ContractCard> {
         objective: { type: "defeatCount", target: 1 },
         reward: { type: "lose_heat", amount: 1 }
       }
+    ],
+    [
+      "cartel-crossing-thread",
+      {
+        id: "cartel-crossing-thread",
+        name: "Crossing Thread",
+        factionGiver: "Pale Cartels",
+        text: "Carry a route marker through hostile ground and report a safe crossing.",
+        objective: { type: "defeatCount", target: 1 },
+        reward: { type: "gain_note", text: "You banked a safer crossing for the table." }
+      }
+    ],
+    [
+      "clan-salt-burial",
+      {
+        id: "clan-salt-burial",
+        name: "Salt Burial",
+        factionGiver: "Veyr Clans",
+        text: "Put down a marked threat before it drags another caravan into the dust.",
+        objective: { type: "defeatCount", target: 2 },
+        reward: { type: "lose_heat", amount: 1 }
+      }
+    ],
+    [
+      "compact-ember-courier",
+      {
+        id: "compact-ember-courier",
+        name: "Ember Courier",
+        factionGiver: "Meridian Compact",
+        text: "Deliver a sealed ember message to the borderlight before the ash eats the wax.",
+        objective: { type: "defeatCount", target: 1 },
+        reward: { type: "gain_note", text: "The Compact owes you a clean favor." }
+      }
+    ],
+    [
+      "warden-span-vigil",
+      {
+        id: "warden-span-vigil",
+        name: "Span Vigil",
+        factionGiver: "Kaldr Dominion",
+        text: "Hold the line at a broken span long enough for the wardens to pass.",
+        objective: { type: "defeatCount", target: 2 },
+        reward: { type: "gain_note", text: "The span holds for one more route." }
+      }
     ]
   ]);
 }
@@ -243,6 +287,7 @@ function createState(overrides: Partial<GameState> = {}): GameState {
     sessionId: "session-alpha",
     status: "active",
     sessionMode: "multiplayer",
+    gameMode: "standard",
     winnerSeatId: null,
     activeScenarioId: "scenario_broken_seal",
     scenarioProgress: {},
@@ -317,7 +362,10 @@ function createState(overrides: Partial<GameState> = {}): GameState {
         seatId: "seat-1",
         characterId: "void-marshal",
         displayName: "Seat One",
+        startingContractOptions: [],
+        selectedStartingContractId: null,
         connected: false,
+        ready: false,
         kicked: false,
         joinToken: createJoinToken({ sessionId: "session-alpha", seatId: "seat-1" })
       },
@@ -325,7 +373,10 @@ function createState(overrides: Partial<GameState> = {}): GameState {
         seatId: "seat-2",
         characterId: "signal-witch",
         displayName: "Seat Two",
+        startingContractOptions: [],
+        selectedStartingContractId: null,
         connected: false,
+        ready: false,
         kicked: false,
         joinToken: createJoinToken({ sessionId: "session-alpha", seatId: "seat-2" })
       },
@@ -333,7 +384,10 @@ function createState(overrides: Partial<GameState> = {}): GameState {
         seatId: "seat-3",
         characterId: "grave-engineer",
         displayName: "Seat Three",
+        startingContractOptions: [],
+        selectedStartingContractId: null,
         connected: false,
+        ready: false,
         kicked: false,
         joinToken: createJoinToken({ sessionId: "session-alpha", seatId: "seat-3" })
       }
@@ -369,6 +423,9 @@ function createState(overrides: Partial<GameState> = {}): GameState {
       }
     ],
     availableContracts,
+    shopStockReveals: [],
+    nemesisChampions: [],
+    nemesisNexusCountdowns: [],
     eventLog: [],
     currentEncounter: null,
     pendingEnemyRoll: null,
@@ -412,6 +469,17 @@ function createSoloScenarioLiveState(options: {
       character: {
         ...player.character,
         currentSpaceId: "center_cinder_gate",
+        heldGear: [
+          {
+            id: "choir-static-censer",
+            name: "Choir Static Censer",
+            slot: "utility",
+            category: "chargedRelic",
+            tier: "artifact",
+            progressionWeight: 2.5,
+            statBonus: { stat: "signal", amount: 1 }
+          }
+        ],
         stats: {
           ...player.character.stats,
           ...options.stats
@@ -453,6 +521,7 @@ class SocketProbe {
     predicate: (message: ServerEnvelope, index: number) => boolean,
     timeoutMs = 4000
   ): Promise<ServerEnvelope> {
+    const waitStack = new Error("Socket wait call site").stack;
     const existingIndex = this.messages.findIndex((message, index) => predicate(message, index));
 
     if (existingIndex >= 0) {
@@ -462,7 +531,19 @@ class SocketProbe {
     return await new Promise<ServerEnvelope>((resolve, reject) => {
       const timer = setTimeout(() => {
         this.waiters.delete(waiter);
-        reject(new Error("Timed out waiting for socket message"));
+        const recentMessages = this.messages
+          .slice(-5)
+          .map((message) =>
+            isStatePatch(message)
+              ? `${message.type}:${message.phase}:${String(message.payload.activeSeatIndex ?? "?")}`
+              : message.type
+          )
+          .join(", ");
+        reject(
+          new Error(
+            `Timed out waiting for socket message. Recent messages: ${recentMessages || "none"}\n${waitStack ?? ""}`
+          )
+        );
       }, timeoutMs);
 
       const waiter = { predicate, resolve, reject, timer };
@@ -494,6 +575,8 @@ interface Harness {
   hostToken: string;
 }
 
+let activeHarness: Harness | null = null;
+
 async function startHarness(
   randomSequence: number[] = [0, 0, 0, 0, 5, 5, 0, 0, 0, 0, 5, 5],
   state: GameState = createState()
@@ -514,12 +597,14 @@ async function startHarness(
   roomServer.attach(server);
   await once(server, "listening");
 
-  return {
+  activeHarness = {
     roomServer,
     server,
     port: (server.address() as AddressInfo).port,
     hostToken
   };
+
+  return activeHarness;
 }
 
 async function connectClient(url: string): Promise<SocketProbe> {
@@ -591,6 +676,118 @@ function statePatchForPhase(
     isStatePatch(message) &&
     message.phase === phase &&
     (activeSeatIndex === undefined || Number(message.payload.activeSeatIndex) === activeSeatIndex);
+}
+
+function statePatchWithMovementPlanner(activeSeatIndex?: number): (message: ServerEnvelope) => boolean {
+  return (message) => {
+    if (!isStatePatch(message) || message.phase !== "navigation") {
+      return false;
+    }
+
+    if (activeSeatIndex !== undefined && Number(message.payload.activeSeatIndex) !== activeSeatIndex) {
+      return false;
+    }
+
+    return (
+      typeof message.payload.movementPlanner === "object" &&
+      message.payload.movementPlanner !== null &&
+      (message.payload.movementPlanner as { active?: boolean }).active === true
+    );
+  };
+}
+
+function statePatchWithResolutionStage(stage: string): (message: ServerEnvelope) => boolean {
+  return (message) => {
+    if (!isStatePatch(message)) {
+      return false;
+    }
+
+    const activeResolution = message.payload.activeResolution;
+
+    return (
+      typeof activeResolution === "object" &&
+      activeResolution !== null &&
+      "stage" in activeResolution &&
+      activeResolution.stage === stage
+    );
+  };
+}
+
+async function sendVisibleCheck(probe: SocketProbe, seatId: string, stat: "command" | "grit" | "signal" | "guile" | "forge"): Promise<void> {
+  const setupMarker = probe.mark();
+  probe.send({
+    type: "CHECK_REQUESTED",
+    seatId,
+    stat
+  });
+  await probe.waitForSince(setupMarker, statePatchWithResolutionStage("battle_setup"));
+
+  probe.send({
+    type: "CHECK_REQUESTED",
+    seatId,
+    stat
+  });
+}
+
+async function sendVisibleCombat(probe: SocketProbe, seatId: string, stat: "command" | "grit" | "signal" | "guile" | "forge"): Promise<void> {
+  const setupMarker = probe.mark();
+  probe.send({
+    type: "COMBAT_REQUESTED",
+    seatId,
+    stat
+  });
+  await probe.waitForSince(setupMarker, statePatchWithResolutionStage("battle_setup"));
+
+  probe.send({
+    type: "COMBAT_REQUESTED",
+    seatId,
+    stat
+  });
+}
+
+async function requestMovementRoll(
+  probe: SocketProbe,
+  observer: SocketProbe,
+  seatId: string,
+  activeSeatIndex?: number
+): Promise<void> {
+  const marker = observer.mark();
+  probe.send({
+    type: "MOVEMENT_ROLL_REQUESTED",
+    seatId
+  });
+  await observer.waitForSince(marker, statePatchWithMovementPlanner(activeSeatIndex));
+}
+
+async function endBroadcastTurn(
+  probe: SocketProbe,
+  observer: SocketProbe,
+  seatId: string,
+  nextActiveSeatIndex: number
+): Promise<void> {
+  await waitForServerTick();
+  if (
+    activeHarness?.roomServer.getState().phase === "navigation" &&
+    activeHarness.roomServer.getState().activeSeatIndex === nextActiveSeatIndex
+  ) {
+    return;
+  }
+
+  const marker = observer.mark();
+  probe.send({
+    type: "PHASE_ADVANCED",
+    seatId,
+    toPhase: "start"
+  });
+  await waitForServerTick();
+  if (
+    activeHarness?.roomServer.getState().phase === "navigation" &&
+    activeHarness.roomServer.getState().activeSeatIndex === nextActiveSeatIndex
+  ) {
+    return;
+  }
+
+  await observer.waitForSince(marker, statePatchForPhase("navigation", nextActiveSeatIndex));
 }
 
 function statePatchWithSeatConnection(seatId: string, connected: boolean): (message: ServerEnvelope) => boolean {
@@ -679,6 +876,7 @@ function getSelfCharacterFromPatch(message: Extract<ServerEnvelope, { type: "STA
 
   return self.character as {
     id: string;
+    name: string;
     heat: number;
     activeContract: { contractId: string; progress: number } | null;
     heldGear: Array<{ id: string }>;
@@ -699,8 +897,20 @@ function getSeatFromPatch(message: Extract<ServerEnvelope, { type: "STATE_PATCH"
         characterId: string;
         displayName: string | null;
         connected: boolean;
+        ready: boolean;
       }
     | undefined;
+}
+
+function selectFirstStartingContract(roomServer: GameRoomServer, seatId: string): string {
+  const contractId = roomServer.getState().seats.find((seat) => seat.seatId === seatId)?.startingContractOptions[0];
+
+  if (!contractId) {
+    throw new Error(`Missing starting contract option for ${seatId}`);
+  }
+
+  roomServer.selectStartingContract(seatId, contractId);
+  return contractId;
 }
 
 describe("roomServer websocket integration", () => {
@@ -710,7 +920,45 @@ describe("roomServer websocket integration", () => {
   afterEach(async () => {
     await stopHarness(harness, probes);
     harness = null;
+    activeHarness = null;
     probes.length = 0;
+  });
+
+  it("assigns the first joined phone as setup host and restricts lobby configuration to that phone", async () => {
+    const state = createInitialSessionState("session-alpha", "multiplayer", undefined, "rivalry", "standard", undefined, {
+      lobbyConfigured: false
+    });
+    harness = await startHarness([0, 0, 0, 0], state);
+
+    const hostJoin = harness.roomServer.joinSeat("Joel");
+    expect(hostJoin.isHostPhone).toBe(true);
+    expect(harness.roomServer.getState().setupHostSeatId).toBe(hostJoin.seatId);
+    expect(harness.roomServer.getState().lobbyConfigured).toBe(false);
+
+    const secondJoin = harness.roomServer.joinSeat("Anna");
+    expect(secondJoin.isHostPhone).toBe(false);
+    expect(() =>
+      harness!.roomServer.configureLobbyFromHostPhone(secondJoin.seatId, {
+        sessionMode: "single-player",
+        interactionMode: "co-op",
+        gameMode: "standard",
+        playerCount: 1
+      })
+    ).toThrow("Only the Host Phone can configure the lobby");
+
+    harness.roomServer.configureLobbyFromHostPhone(hostJoin.seatId, {
+      sessionMode: "single-player",
+      interactionMode: "co-op",
+      gameMode: "standard",
+      playerCount: 1
+    });
+
+    const configuredState = harness.roomServer.getState();
+    expect(configuredState.lobbyConfigured).toBe(true);
+    expect(configuredState.sessionMode).toBe("single-player");
+    expect(configuredState.setupHostSeatId).toBe(hostJoin.seatId);
+    expect(configuredState.seats[0]?.displayName).toBe("Joel");
+    expect(configuredState.seats[0]?.characterSelected).toBe(false);
   });
 
   it("rejects missing and invalid join tokens before session state changes", async () => {
@@ -731,16 +979,32 @@ describe("roomServer websocket integration", () => {
     expect(harness.roomServer.getState().sequence).toBe(0);
   }, 10000);
 
+  it("rejects a forged deterministic seat token for production-created sessions", async () => {
+    harness = await startHarness([0, 0, 0, 0], createInitialSessionState("session-alpha", "single-player"));
+
+    const forgedSocket = new WebSocket(`ws://127.0.0.1:${harness.port}/?view=phone&token=seat:session-alpha:seat-1`);
+    const [code, reason] = await waitForClose(forgedSocket);
+
+    expect(code).toBe(4002);
+    expect(String(reason)).toContain("Invalid join token");
+  });
+
   it("keeps the chosen character aligned between seat state, player state, and phone snapshots after joining", async () => {
     harness = await startHarness([0, 0, 0, 0], createInitialSessionState("session-alpha"));
 
-    const joinResult = harness.roomServer.joinSeat("Joel", "signal-witch");
+    const joinResult = harness.roomServer.joinSeat("Deepdale", "char_deepdale");
     const joinedSeat = harness.roomServer.getState().seats.find((seat) => seat.seatId === joinResult.seatId);
     const joinedPlayer = harness.roomServer.getState().players.find((player) => player.seatId === joinResult.seatId);
 
-    expect(joinedSeat?.characterId).toBe("signal-witch");
-    expect(joinedSeat?.displayName).toBe("Joel");
-    expect(joinedPlayer?.character.id).toBe("signal-witch");
+    expect(joinedSeat?.characterId).toBe("char_deepdale");
+    expect(joinedSeat?.displayName).toBe("Deepdale");
+    expect(joinedSeat?.ready).toBe(false);
+    expect(joinedSeat?.startingContractOptions).toHaveLength(3);
+    expect(joinedSeat?.selectedStartingContractId).toBeNull();
+    expect(joinedPlayer?.character.id).toBe("char_deepdale");
+    expect(joinedPlayer?.character.name).toBe("Deepdale");
+    expect(joinedPlayer?.character.archetype).toBe("Deep Route Delver");
+    expect(joinedPlayer?.character.activeContract).toBeNull();
 
     const phone = await connectClient(`ws://127.0.0.1:${harness.port}/?view=phone&token=${joinResult.seatToken}`);
     probes.push(phone);
@@ -752,9 +1016,227 @@ describe("roomServer websocket integration", () => {
     const snapshotSeat = getSeatFromPatch(snapshot, joinResult.seatId);
     const snapshotSelf = getSelfCharacterFromPatch(snapshot);
 
-    expect(snapshotSeat?.characterId).toBe("signal-witch");
-    expect(snapshotSeat?.displayName).toBe("Joel");
-    expect(snapshotSelf?.id).toBe("signal-witch");
+    expect(snapshotSeat?.characterId).toBe("char_deepdale");
+    expect(snapshotSeat?.displayName).toBe("Deepdale");
+    expect(snapshotSeat?.ready).toBe(false);
+    expect(snapshotSelf?.id).toBe("char_deepdale");
+    expect(snapshotSelf?.name).toBe("Deepdale");
+  });
+
+  it("stores a selected starting mission and blocks invalid setup timing", async () => {
+    const activeHarness = (harness = await startHarness([0, 0, 0, 0], createInitialSessionState("session-alpha", "single-player")));
+    const joinResult = activeHarness.roomServer.joinSeat("Solo", "signal-witch");
+    const seat = activeHarness.roomServer.getState().seats.find((entry) => entry.seatId === joinResult.seatId);
+    const offeredContractId = seat?.startingContractOptions[0];
+    const unofferedContract = [...createContracts().values()].find((contract) => !seat?.startingContractOptions.includes(contract.id));
+
+    if (unofferedContract) {
+      activeHarness.roomServer.getState().availableContracts.push(unofferedContract);
+    }
+
+    expect(seat?.startingContractOptions).toHaveLength(3);
+    expect(offeredContractId).toBeTruthy();
+    expect(unofferedContract).toBeTruthy();
+    expect(() => activeHarness.roomServer.setSeatReady(joinResult.seatId, true)).toThrow("Choose a starting mission before Ready");
+    expect(() => activeHarness.roomServer.selectStartingContract(joinResult.seatId, unofferedContract!.id)).toThrow(
+      "Starting mission was not offered to this player"
+    );
+
+    activeHarness.roomServer.selectStartingContract(joinResult.seatId, offeredContractId!);
+
+    const updatedSeat = activeHarness.roomServer.getState().seats.find((entry) => entry.seatId === joinResult.seatId);
+    expect(updatedSeat?.selectedStartingContractId).toBe(offeredContractId);
+    expect(updatedSeat?.missionSelectedAt).toBeTruthy();
+    expect(activeHarness.roomServer.getState().players.find((player) => player.seatId === joinResult.seatId)?.character.activeContract).toBeNull();
+  });
+
+  it("rejects spoofed starting mission selection from another phone seat", async () => {
+    const activeHarness = (harness = await startHarness([0, 0, 0, 0], createInitialSessionState("session-alpha", "multiplayer")));
+    const firstJoin = activeHarness.roomServer.joinSeat("One", "void-marshal");
+    const secondJoin = activeHarness.roomServer.joinSeat("Two", "signal-witch");
+    const contractId = activeHarness.roomServer.getState().seats.find((seat) => seat.seatId === secondJoin.seatId)?.startingContractOptions[0];
+    const sent: Array<Record<string, unknown>> = [];
+    const client: ConnectedClient = {
+      seatId: firstJoin.seatId,
+      view: "phone",
+      socket: {
+        send(payload: string) {
+          sent.push(JSON.parse(payload) as Record<string, unknown>);
+        },
+        close() {}
+      } as unknown as ConnectedClient["socket"]
+    };
+
+    expect(contractId).toBeTruthy();
+
+    activeHarness.roomServer.handleIntent(client, {
+      type: "SELECT_STARTING_CONTRACT",
+      seatId: secondJoin.seatId,
+      contractId: contractId!
+    });
+
+    expect(sent).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          type: "INTENT_REJECTED",
+          actionType: "SELECT_STARTING_CONTRACT",
+          reason: "Seat mismatch between token and submitted intent"
+        })
+      ])
+    );
+    expect(activeHarness.roomServer.getState().seats.find((seat) => seat.seatId === secondJoin.seatId)?.selectedStartingContractId).toBeNull();
+  });
+
+  it("rejects duplicate character reservations and releases a seat before start", async () => {
+    const activeHarness = (harness = await startHarness([0, 0, 0, 0], createInitialSessionState("session-alpha")));
+
+    const joinResult = activeHarness.roomServer.joinSeat("Solo", "signal-witch");
+
+    expect(() => activeHarness.roomServer.joinSeat("Second", "signal-witch")).toThrow("Character already taken");
+
+    activeHarness.roomServer.releaseSeatByToken(joinResult.seatToken);
+
+    const releasedSeat = activeHarness.roomServer.getState().seats.find((seat) => seat.seatId === joinResult.seatId);
+
+    expect(releasedSeat?.displayName).toBeNull();
+    expect(releasedSeat?.ready).toBe(false);
+    expect(() => activeHarness.roomServer.joinSeat("Second", "signal-witch")).not.toThrow();
+  });
+
+  it("blocks single-player start until the joined seat is ready", async () => {
+    const activeHarness = (harness = await startHarness([0, 0, 0, 0], createInitialSessionState("session-alpha", "single-player")));
+
+    const joinResult = activeHarness.roomServer.joinSeat("Solo", "signal-witch");
+    activeHarness.roomServer.setSeatReady(joinResult.seatId, false);
+
+    expect(activeHarness.roomServer.getState().seats.find((seat) => seat.seatId === joinResult.seatId)?.ready).toBe(false);
+    expect(() => activeHarness.roomServer.startSession()).toThrow("Waiting for Solo to choose a starting mission");
+
+    selectFirstStartingContract(activeHarness.roomServer, joinResult.seatId);
+    expect(() => activeHarness.roomServer.startSession()).toThrow("Waiting for Solo to press Ready");
+    activeHarness.roomServer.setSeatReady(joinResult.seatId, true);
+    activeHarness.roomServer.startSession();
+
+    expect(activeHarness.roomServer.getState().status).toBe("active");
+    expect(activeHarness.roomServer.getState().turnOrder).toEqual([joinResult.seatId]);
+    expect(activeHarness.roomServer.getState().players.find((player) => player.seatId === joinResult.seatId)?.character.activeContract).toEqual({
+      contractId: activeHarness.roomServer.getState().seats.find((seat) => seat.seatId === joinResult.seatId)?.selectedStartingContractId,
+      progress: 0
+    });
+    expect(() => activeHarness.roomServer.selectStartingContract(joinResult.seatId, "choir-quietus")).toThrow(
+      "Starting mission can only be selected before the session starts"
+    );
+  });
+
+  it("keeps single-player ready in setup until the Host Phone explicitly starts", async () => {
+    const activeHarness = (harness = await startHarness([0, 0, 0, 0], createInitialSessionState("session-alpha", "single-player")));
+    const joinResult = activeHarness.roomServer.joinSeat("Solo", "signal-witch");
+    const phone = await connectClient(`ws://127.0.0.1:${activeHarness.port}/?view=phone&token=${joinResult.seatToken}`);
+    probes.push(phone);
+
+    await phone.waitFor((message) => isStatePatch(message) && Object.hasOwn(message.payload, "self"));
+
+    const contractId = selectFirstStartingContract(activeHarness.roomServer, joinResult.seatId);
+    phone.send({
+      type: "SET_READY",
+      seatId: joinResult.seatId,
+      ready: true
+    });
+
+    const readySnapshot = (await phone.waitFor(
+      (message) =>
+        isStatePatch(message) &&
+        message.payload.status === "lobby" &&
+        message.phase === "start" &&
+        Array.isArray(message.payload.seats) &&
+        message.payload.seats.some((seat) => typeof seat === "object" && seat && "seatId" in seat && seat.seatId === joinResult.seatId && "ready" in seat && seat.ready === true)
+    )) as Extract<ServerEnvelope, { type: "STATE_PATCH" }>;
+
+    expect(readySnapshot.payload.status).toBe("lobby");
+    expect(activeHarness.roomServer.getState().status).toBe("lobby");
+
+    activeHarness.roomServer.startSession();
+
+    const startedSnapshot = (await phone.waitFor(
+      (message) =>
+        isStatePatch(message) &&
+        message.payload.status === "active" &&
+        message.phase === "navigation" &&
+        Array.isArray(message.payload.turnOrder) &&
+        message.payload.turnOrder.length === 1
+    )) as Extract<ServerEnvelope, { type: "STATE_PATCH" }>;
+
+    expect(startedSnapshot.payload.status).toBe("active");
+    expect(startedSnapshot.payload.sessionMode).toBe("single-player");
+    expect(startedSnapshot.payload.turnOrder).toEqual([joinResult.seatId]);
+    expect(activeHarness.roomServer.getState().status).toBe("active");
+    expect(activeHarness.roomServer.getState().players.find((player) => player.seatId === joinResult.seatId)?.character.activeContract?.contractId).toBe(
+      contractId
+    );
+  });
+
+  it("blocks single-player start when the occupied seat has no selected character", async () => {
+    const state = createInitialSessionState("session-alpha", "single-player");
+    state.seats[0] = {
+      ...state.seats[0]!,
+      characterId: "",
+      displayName: "Solo",
+      connected: true,
+      ready: true
+    };
+    const activeHarness = (harness = await startHarness([0, 0, 0, 0], state));
+
+    expect(() => activeHarness.roomServer.startSession()).toThrow("Waiting for Solo to choose a character");
+  });
+
+  it("starts multiplayer with enough ready occupied seats while ignoring empty seats", async () => {
+    const activeHarness = (harness = await startHarness([0, 0, 0, 0], createInitialSessionState("session-alpha", "multiplayer")));
+
+    const firstJoin = activeHarness.roomServer.joinSeat("One", "void-marshal");
+    const secondJoin = activeHarness.roomServer.joinSeat("Two", "signal-witch");
+    selectFirstStartingContract(activeHarness.roomServer, firstJoin.seatId);
+    selectFirstStartingContract(activeHarness.roomServer, secondJoin.seatId);
+    activeHarness.roomServer.setSeatReady(firstJoin.seatId, true);
+    activeHarness.roomServer.setSeatReady(secondJoin.seatId, true);
+    activeHarness.roomServer.startSession();
+
+    expect(activeHarness.roomServer.getState().status).toBe("active");
+    expect(activeHarness.roomServer.getState().turnOrder).toEqual(["seat-1", "seat-2"]);
+  });
+
+  it("keeps completed multiplayer setup ready after a phone disconnect so the host can still start", async () => {
+    const activeHarness = (harness = await startHarness([0, 0, 0, 0], createInitialSessionState("session-alpha", "multiplayer")));
+
+    const firstJoin = activeHarness.roomServer.joinSeat("One", "void-marshal");
+    const secondJoin = activeHarness.roomServer.joinSeat("Two", "signal-witch");
+    const phone1 = await connectClient(`ws://127.0.0.1:${activeHarness.port}/?view=phone&token=${firstJoin.seatToken}`);
+    const phone2 = await connectClient(`ws://127.0.0.1:${activeHarness.port}/?view=phone&token=${secondJoin.seatToken}`);
+
+    probes.push(phone1, phone2);
+    await waitForServerTick();
+    selectFirstStartingContract(activeHarness.roomServer, firstJoin.seatId);
+    selectFirstStartingContract(activeHarness.roomServer, secondJoin.seatId);
+    activeHarness.roomServer.setSeatReady(firstJoin.seatId, true);
+    activeHarness.roomServer.setSeatReady(secondJoin.seatId, true);
+
+    phone2.socket.terminate();
+    await waitForServerTick();
+
+    const secondSeat = activeHarness.roomServer.getState().seats.find((seat) => seat.seatId === secondJoin.seatId);
+
+    expect(secondSeat?.connected).toBe(false);
+    expect(secondSeat?.ready).toBe(true);
+    activeHarness.roomServer.startSession();
+    expect(activeHarness.roomServer.getState().status).toBe("active");
+    expect(activeHarness.roomServer.getState().turnOrder).toEqual(["seat-1", "seat-2"]);
+  });
+
+  it("blocks multiplayer start below the minimum occupied player count", async () => {
+    const activeHarness = (harness = await startHarness([0, 0, 0, 0], createInitialSessionState("session-alpha", "multiplayer")));
+
+    activeHarness.roomServer.joinSeat("Solo", "void-marshal");
+
+    expect(() => activeHarness.roomServer.startSession()).toThrow("Need at least 2 players");
   });
 
   it("starts a single-player session with one joined seat", async () => {
@@ -767,6 +1249,8 @@ describe("roomServer websocket integration", () => {
 
     await phone.waitFor((message) => isStatePatch(message) && Object.hasOwn(message.payload, "self"));
 
+    selectFirstStartingContract(activeHarness.roomServer, joinResult.seatId);
+    activeHarness.roomServer.setSeatReady(joinResult.seatId, true);
     activeHarness.roomServer.startSession();
 
     const startedSnapshot = (await phone.waitFor(
@@ -783,6 +1267,168 @@ describe("roomServer websocket integration", () => {
     expect(startedSnapshot.payload.turnOrder).toEqual(["seat-1"]);
     expect(Number(startedSnapshot.payload.activeSeatIndex)).toBe(0);
     expect(startedSnapshot.payload.players).toHaveLength(1);
+  });
+
+  it("continues from a resolved battle awaiting acknowledgement into the next action state", async () => {
+    const state = createState({
+      phase: "resolution",
+      resolutionSource: "encounter",
+      activeSeatIndex: 0,
+      turnOrder: ["seat-1"],
+      currentEncounter: null,
+      pendingEnemyRoll: null,
+      pendingEffect: null,
+      activeResolution: {
+        id: "seat-1:threat:awaiting:test",
+        playerId: "seat-1",
+        source: "threat",
+        stage: "awaiting_continue",
+        outcome: {
+          title: "Threat defeated",
+          text: "Seat One defeated the threat.",
+          effects: ["+1 Trophy"]
+        }
+      },
+      lastOutcomeSummary: {
+        seatId: "seat-1",
+        movedToSectorId: "seat-1-start",
+        encounterCardId: "hook-runner",
+        encounterTitle: "Hook Runner",
+        encounterCardType: "enemy",
+        checkStat: "grit",
+        die1: 4,
+        die2: 2,
+        statBonus: 3,
+        checkTotal: 9,
+        difficulty: 6,
+        enemyRollerSeatId: null,
+        enemyDie1: null,
+        enemyDie2: null,
+        enemyBonus: null,
+        enemyTotal: null,
+        success: true,
+        summary: "Seat One defeated Hook Runner."
+      }
+    });
+    const activeHarness = (harness = await startHarness([0, 0, 0, 0], state));
+    const sent: Array<Record<string, unknown>> = [];
+    const client: ConnectedClient = {
+      seatId: "seat-1",
+      view: "phone",
+      socket: {
+        send(payload: string) {
+          sent.push(JSON.parse(payload) as Record<string, unknown>);
+        },
+        close() {}
+      } as unknown as ConnectedClient["socket"]
+    };
+
+    activeHarness.roomServer.handleIntent(client, {
+      type: "CONTINUE_RESOLUTION",
+      seatId: "seat-1"
+    });
+
+    expect(sent.find((message) => message.type === "INTENT_REJECTED")).toBeUndefined();
+    expect(activeHarness.roomServer.getState().phase).not.toBe("resolution");
+    expect(activeHarness.roomServer.getState().activeResolution).toBeNull();
+  });
+
+  it("writes the live movement roll into state and projects exact-distance movement", async () => {
+    const activeHarness = (harness = await startHarness([0, 2, 0, 0], createInitialSessionState("session-alpha", "single-player")));
+
+    const joinResult = activeHarness.roomServer.joinSeat("Solo", "void-marshal");
+    const tv = await connectClient(`ws://127.0.0.1:${activeHarness.port}/?view=tv`);
+    const phone = await connectClient(`ws://127.0.0.1:${activeHarness.port}/?view=phone&token=${joinResult.seatToken}`);
+    probes.push(tv, phone);
+
+    await phone.waitFor((message) => isStatePatch(message) && Object.hasOwn(message.payload, "self"));
+
+    selectFirstStartingContract(activeHarness.roomServer, joinResult.seatId);
+    activeHarness.roomServer.setSeatReady(joinResult.seatId, true);
+    activeHarness.roomServer.startSession();
+
+    await tv.waitFor(
+      (message) =>
+        isStatePatch(message) &&
+        message.payload.status === "active" &&
+        message.phase === "navigation" &&
+        (message.payload.movementPlanner as unknown) === null
+    );
+    await phone.waitFor(
+      (message) =>
+        isStatePatch(message) &&
+        Object.hasOwn(message.payload, "self") &&
+        (message.payload.movementPlanner as unknown) === null
+    );
+
+    phone.send({
+      type: "MOVEMENT_ROLL_REQUESTED",
+      seatId: joinResult.seatId
+    });
+
+    const tvStarted = (await tv.waitFor(
+      (message) =>
+        isStatePatch(message) &&
+        message.payload.status === "active" &&
+        message.phase === "navigation" &&
+        (message.payload.movementPlanner as { movementValue?: number } | null | undefined)?.movementValue === 3
+    )) as Extract<ServerEnvelope, { type: "STATE_PATCH" }>;
+    const phoneStarted = (await phone.waitFor(
+      (message) =>
+        isStatePatch(message) &&
+        Object.hasOwn(message.payload, "self") &&
+        (message.payload.movementPlanner as { movementValue?: number } | null | undefined)?.movementValue === 3
+    )) as Extract<ServerEnvelope, { type: "STATE_PATCH" }>;
+
+    expect(activeHarness.roomServer.getState().movementRolls?.[joinResult.seatId]).toBe(3);
+    expect((tvStarted.payload.movementPlanner as { movementValue: number }).movementValue).toBe(3);
+    expect((phoneStarted.payload.movementPlanner as { movementValue: number }).movementValue).toBe(3);
+    expect(
+      ((tvStarted.payload.movementPlanner as { destinations: Array<{ distance: number; route: string[] }> }).destinations ?? []).some(
+        (destination) => destination.distance === 3 && destination.route.length === 4
+      )
+    ).toBe(true);
+
+    const destinations = (tvStarted.payload.movementPlanner as { destinations: Array<{ sectorId: string; disabledReason?: string }> }).destinations;
+    const destination = destinations.find((entry) => !entry.disabledReason);
+    expect(destination).toBeDefined();
+
+    const selectedMark = tv.mark();
+    phone.send({
+      type: "MOVEMENT_DESTINATION_PREVIEWED",
+      seatId: joinResult.seatId,
+      toSectorId: destination!.sectorId
+    });
+    const selectedPatch = (await tv.waitFor(
+      (message, index) =>
+        index >= selectedMark &&
+        isStatePatch(message) &&
+        (message.payload.movementPlanner as { selectedDestinationId?: string } | null)?.selectedDestinationId === destination!.sectorId
+    )) as Extract<ServerEnvelope, { type: "STATE_PATCH" }>;
+    expect((selectedPatch.payload.movementPlanner as { selectedDestinationId: string }).selectedDestinationId).toBe(destination!.sectorId);
+
+    const rejectedMark = phone.mark();
+    phone.send({
+      type: "MOVEMENT_DESTINATION_PREVIEWED",
+      seatId: joinResult.seatId,
+      toSectorId: "not-a-legal-sector"
+    });
+    await phone.waitFor(
+      (message, index) => index >= rejectedMark && message.type === "INTENT_REJECTED"
+    );
+
+    const clearedMark = tv.mark();
+    phone.send({
+      type: "MOVEMENT_DESTINATION_PREVIEWED",
+      seatId: joinResult.seatId,
+      toSectorId: null
+    });
+    await tv.waitFor(
+      (message, index) =>
+        index >= clearedMark &&
+        isStatePatch(message) &&
+        (message.payload.movementPlanner as { selectedDestinationId?: string | null } | null)?.selectedDestinationId === null
+    );
   });
 
   it("fires a real linked-nemesis scenario victory over the live phone socket path", async () => {
@@ -878,7 +1524,17 @@ describe("roomServer websocket integration", () => {
             signal: 0,
             guile: 0
           },
-          heldGear: []
+          heldGear: [
+            {
+              id: "choir-static-censer",
+              name: "Choir Static Censer",
+              slot: "utility",
+              category: "chargedRelic",
+              tier: "artifact",
+              progressionWeight: 2.5,
+              statBonus: { stat: "signal", amount: 1 }
+            }
+          ]
         }
       }))
     };
@@ -1003,7 +1659,8 @@ describe("roomServer websocket integration", () => {
       label: "Throne of Ash",
       scenarioId: "scenario_throne_of_ash" as const,
       scenarioProgress: {
-        crownClaims: 0,
+        crownClaims: 1,
+        "crownClaim:seat-1": 1,
         throneClaims: 0
       } as Record<string, number>
     },
@@ -1073,14 +1730,152 @@ describe("roomServer websocket integration", () => {
     expect(Number(collapseSnapshot.payload.escalationLevel)).toBeGreaterThanOrEqual(8);
   });
 
+  it("rejects raw server-generated action spoofing from phone clients", async () => {
+    harness = await startHarness([0, 0, 0, 0, 0, 0]);
+
+    const phone = await connectClient(
+      `ws://127.0.0.1:${harness.port}/?view=phone&token=${createJoinToken({ sessionId: "session-alpha", seatId: "seat-1" })}`
+    );
+    probes.push(phone);
+    await phone.waitFor(statePatchForPhase("navigation", 0));
+
+    const spoofedActions = [
+      "SCENARIO_VICTORY_ACHIEVED",
+      "SECTOR_COLLAPSED",
+      "ESCALATION_ADVANCED",
+      "MOVEMENT_RESOLVED",
+      "SCENARIO_PROGRESS_ADVANCED",
+      "RESOLUTION_APPLIED",
+      "CHECK_ROLLED",
+      "COMBAT_RESOLVED"
+    ];
+
+    for (const actionType of spoofedActions) {
+      const before = harness.roomServer.getState();
+      const marker = phone.mark();
+      phone.socket.send(
+        JSON.stringify({
+          type: actionType,
+          seatId: "seat-1",
+          createdAt: new Date().toISOString(),
+          amount: 99,
+          newLevel: 99,
+          winnerSeatId: "seat-1",
+          summary: "forged"
+        })
+      );
+      await waitForServerTick();
+      const rejection = phone.messages.slice(marker).find((message) => message.type === "INTENT_REJECTED");
+
+      expect(rejection, `messages after spoof ${actionType}: ${JSON.stringify(phone.messages.slice(marker))}`).toBeTruthy();
+      if (!rejection || !isIntentRejected(rejection)) {
+        throw new Error(`Expected ${actionType} to be rejected`);
+      }
+      expect(rejection.actionType).toBe(actionType);
+      expect(rejection.reason).toContain("Client cannot submit server action");
+      expect(harness.roomServer.getState().sequence).toBe(before.sequence);
+      expect(harness.roomServer.getState().status).toBe(before.status);
+      expect(harness.roomServer.getState().winnerSeatId).toBe(before.winnerSeatId);
+      expect(harness.roomServer.getState().escalationLevel).toBe(before.escalationLevel);
+    }
+  });
+
+  it("broadcasts battle setup before rolling a visible hazard check", async () => {
+    harness = await startHarness([5, 5, 0, 0, 0, 0], createState());
+
+    const phone = await connectClient(
+      `ws://127.0.0.1:${harness.port}/?view=phone&token=${createJoinToken({ sessionId: "session-alpha", seatId: "seat-1" })}`
+    );
+    probes.push(phone);
+
+    await phone.waitFor(statePatchForPhase("navigation", 0));
+
+    harness.roomServer.getState().movementRolls = { "seat-1": 1 };
+
+    phone.send({
+      type: "MOVE_REQUESTED",
+      seatId: "seat-1",
+      toSectorId: "hazard-east"
+    });
+
+    await phone.waitFor(
+      (message) =>
+        isStatePatch(message) &&
+        message.phase === "action" &&
+        statePatchWithResolutionStage("card_reveal")(message)
+    );
+
+    const setupMarker = phone.mark();
+    phone.send({
+      type: "CHECK_REQUESTED",
+      seatId: "seat-1",
+      stat: "signal"
+    });
+
+    const setupPatch = await phone.waitForSince(
+      setupMarker,
+      statePatchWithResolutionStage("battle_setup")
+    );
+
+    expect(isStatePatch(setupPatch) && setupPatch.payload.activeResolution).toMatchObject({
+      stage: "battle_setup",
+      card: {
+        id: "ash-static-1",
+        title: "Ash Static"
+      }
+    });
+
+    const rollMarker = phone.mark();
+    phone.send({
+      type: "CHECK_REQUESTED",
+      seatId: "seat-1",
+      stat: "signal"
+    });
+
+    const rollPatch = await phone.waitForSince(
+      rollMarker,
+      statePatchWithResolutionStage("roll_result")
+    );
+
+    expect(isStatePatch(rollPatch) && rollPatch.payload.activeResolution).toMatchObject({
+      stage: "roll_result",
+      roll: expect.objectContaining({
+        dice: expect.any(Array),
+        finalTotal: expect.any(Number),
+        target: expect.any(Number),
+        success: expect.any(Boolean)
+      })
+    });
+  });
+
   it("drives a full multi-seat session through real socket intents and public/private patches", async () => {
-    harness = await startHarness([
-      0, 0, 0, 0, 0,
-      5, 5, 5, 5, 5, 5, 5,
-      0, 0, 0, 0, 0, 0, 0, 0,
-      5, 5, 5, 5, 5, 5, 5, 5,
-      0, 0, 0, 0, 0, 0
-    ]);
+    const baseState = createState();
+    harness = await startHarness(
+      [
+        0, 0, 0, 0, 0,
+        5, 5, 5, 5, 5, 5, 5,
+        0, 0, 0, 0, 0, 0, 0, 0,
+        5, 5, 5, 5, 5, 5, 5, 5,
+        0, 0, 0, 0, 0, 0
+      ],
+      {
+        ...baseState,
+        players: baseState.players.map((player) =>
+          player.seatId === "seat-3"
+            ? {
+                ...player,
+                character: {
+                  ...player.character,
+                  stats: {
+                    ...player.character.stats,
+                    grit: 8
+                  }
+                }
+              }
+            : player
+        )
+      }
+    );
 
     const tv = await connectClient(`ws://127.0.0.1:${harness.port}/?view=tv`);
     const phone1 = await connectClient(
@@ -1115,6 +1910,7 @@ describe("roomServer websocket integration", () => {
     );
     expect(isIntentRejected(rejection) && rejection.reason).toContain("outside its turn");
 
+    await requestMovementRoll(phone1, tv, "seat-1", 0);
     let marker = tv.mark();
     phone1.send({
       type: "MOVE_REQUESTED",
@@ -1127,12 +1923,9 @@ describe("roomServer websocket integration", () => {
     const phone1CheckMarker = phone1.mark();
     const phone2CheckMarker = phone2.mark();
     const phone3CheckMarker = phone3.mark();
-    phone1.send({
-      type: "CHECK_REQUESTED",
-      seatId: "seat-1",
-      stat: "signal"
-    });
-    await tv.waitForSince(marker, statePatchForPhase("navigation", 1));
+    await sendVisibleCheck(phone1, "seat-1", "signal");
+    await tv.waitForSince(marker, statePatchForPhase("broadcast", 0));
+    await endBroadcastTurn(phone1, tv, "seat-1", 1);
 
     const phone1PostCheck = phone1.messages
       .slice(phone1CheckMarker)
@@ -1160,6 +1953,7 @@ describe("roomServer websocket integration", () => {
         )
     ).toBe(true);
 
+    await requestMovementRoll(phone2, tv, "seat-2", 1);
     marker = tv.mark();
     phone2.send({
       type: "MOVE_REQUESTED",
@@ -1172,11 +1966,7 @@ describe("roomServer websocket integration", () => {
     const phone2CombatMarker = phone2.mark();
     const phone1CombatMarker = phone1.mark();
     const phone3CombatMarker = phone3.mark();
-    phone2.send({
-      type: "COMBAT_REQUESTED",
-      seatId: "seat-2",
-      stat: "grit"
-    });
+    await sendVisibleCombat(phone2, "seat-2", "grit");
     await tv.waitForSince(marker, statePatchWithPendingEnemyRoll("seat-2"));
     const assignedSeat2EnemyRoller = harness.roomServer.getState().pendingEnemyRoll?.assignedRollerSeatId;
     const assignedSeat2Probe =
@@ -1195,8 +1985,9 @@ describe("roomServer websocket integration", () => {
       throw new Error(`Assigned enemy roller was rejected: ${assignedSeat2Result.reason}`);
     }
     await waitForServerTick();
-    expect(harness.roomServer.getState().activeSeatIndex).toBe(2);
-    expect(harness.roomServer.getState().phase).toBe("navigation");
+    expect(harness.roomServer.getState().activeSeatIndex).toBe(1);
+    expect(harness.roomServer.getState().phase).toBe("broadcast");
+    await endBroadcastTurn(phone2, tv, "seat-2", 2);
 
     const phone2CombatPatch = phone2.messages
       .slice(phone2CombatMarker)
@@ -1223,6 +2014,7 @@ describe("roomServer websocket integration", () => {
         )
     ).toBe(true);
 
+    await requestMovementRoll(phone3, tv, "seat-3", 2);
     marker = tv.mark();
     phone3.send({
       type: "MOVE_REQUESTED",
@@ -1244,6 +2036,7 @@ describe("roomServer websocket integration", () => {
     });
     await tv.waitForSince(marker, statePatchForPhase("navigation", 0));
 
+    await requestMovementRoll(phone1, tv, "seat-1", 0);
     marker = tv.mark();
     phone1.send({
       type: "MOVE_REQUESTED",
@@ -1253,18 +2046,16 @@ describe("roomServer websocket integration", () => {
     await tv.waitForSince(marker, statePatchForPhase("action", 0));
 
     marker = tv.mark();
-    phone1.send({
-      type: "CHECK_REQUESTED",
-      seatId: "seat-1",
-      stat: "signal"
-    });
-    await tv.waitForSince(marker, statePatchForPhase("navigation", 1));
+    await sendVisibleCheck(phone1, "seat-1", "signal");
+    await tv.waitForSince(marker, statePatchForPhase("broadcast", 0));
+    await endBroadcastTurn(phone1, tv, "seat-1", 1);
     const postCheckSeatOne = harness.roomServer
       .getState()
       .players.find((player) => player.seatId === "seat-1");
     expect(postCheckSeatOne?.character.status).toBe("active");
-    expect(postCheckSeatOne?.character.heat).toBe(1);
+    expect(postCheckSeatOne?.character.heat).toBe(0);
 
+    await requestMovementRoll(phone2, tv, "seat-2", 1);
     marker = tv.mark();
     phone2.send({
       type: "MOVE_REQUESTED",
@@ -1284,22 +2075,30 @@ describe("roomServer websocket integration", () => {
       seatId: "seat-2",
       toPhase: "resolution"
     });
-    await tv.waitForSince(marker, statePatchForPhase("navigation", 2));
+    await tv.waitForSince(marker, statePatchForPhase("broadcast", 1));
+    await endBroadcastTurn(phone2, tv, "seat-2", 2);
 
+    await requestMovementRoll(phone3, tv, "seat-3", 2);
     marker = tv.mark();
+    const phone3ContractMoveMarker = phone3.mark();
     phone3.send({
       type: "MOVE_REQUESTED",
       seatId: "seat-3",
       toSectorId: "contract-hunt"
     });
+    await waitForServerTick();
+    const phone3ContractMoveRejection = phone3.messages
+      .slice(phone3ContractMoveMarker)
+      .find(isIntentRejected);
+    if (phone3ContractMoveRejection) {
+      throw new Error(`Seat 3 contract move was rejected: ${phone3ContractMoveRejection.reason}`);
+    }
+    expect(harness.roomServer.getState().activeSeatIndex).toBe(2);
     await tv.waitForSince(marker, statePatchForPhase("action", 2));
+    expect(harness.roomServer.getState().phase).toBe("action");
 
     marker = tv.mark();
-    phone3.send({
-      type: "COMBAT_REQUESTED",
-      seatId: "seat-3",
-      stat: "grit"
-    });
+    await sendVisibleCombat(phone3, "seat-3", "grit");
     await tv.waitForSince(marker, statePatchWithPendingEnemyRoll("seat-3"));
     const assignedSeat3EnemyRoller = harness.roomServer.getState().pendingEnemyRoll?.assignedRollerSeatId;
     const assignedSeat3Probe =
@@ -1318,8 +2117,9 @@ describe("roomServer websocket integration", () => {
       throw new Error(`Assigned enemy roller was rejected: ${assignedSeat3Result.reason}`);
     }
     await waitForServerTick();
-    expect(harness.roomServer.getState().activeSeatIndex).toBe(0);
-    expect(harness.roomServer.getState().phase).toBe("navigation");
+    expect(harness.roomServer.getState().activeSeatIndex).toBe(2);
+    expect(harness.roomServer.getState().phase).toBe("broadcast");
+    await endBroadcastTurn(phone3, tv, "seat-3", 0);
     const contractProgress = harness.roomServer
       .getState()
       .players.find((player) => player.seatId === "seat-3")
@@ -1340,13 +2140,15 @@ describe("roomServer websocket integration", () => {
       seatId: "seat-1",
       toPhase: "resolution"
     });
-    await tv.waitForSince(marker, statePatchForPhase("navigation", 1));
+    await tv.waitForSince(marker, statePatchForPhase("broadcast", 0));
+    await endBroadcastTurn(phone1, tv, "seat-1", 1);
     const seatOneAfterAdvance = harness.roomServer
       .getState()
       .players.find((player) => player.seatId === "seat-1");
     expect(seatOneAfterAdvance?.character.status).toBe("active");
     expect(seatOneAfterAdvance?.character.heat).toBe(0);
 
+    await requestMovementRoll(phone2, tv, "seat-2", 1);
     marker = tv.mark();
     phone2.send({
       type: "MOVE_REQUESTED",
@@ -1360,8 +2162,10 @@ describe("roomServer websocket integration", () => {
       seatId: "seat-2",
       toPhase: "resolution"
     });
-    await tv.waitForSince(marker, statePatchForPhase("navigation", 2));
+    await tv.waitForSince(marker, statePatchForPhase("broadcast", 1));
+    await endBroadcastTurn(phone2, tv, "seat-2", 2);
 
+    await requestMovementRoll(phone3, tv, "seat-3", 2);
     marker = tv.mark();
     phone3.send({
       type: "MOVE_REQUESTED",
@@ -1376,7 +2180,8 @@ describe("roomServer websocket integration", () => {
       seatId: "seat-3",
       contractId: "choir-quietus"
     });
-    await tv.waitForSince(marker, statePatchForPhase("navigation", 0));
+    await tv.waitForSince(marker, statePatchForPhase("broadcast", 2));
+    await endBroadcastTurn(phone3, tv, "seat-3", 0);
 
     const finalState = harness.roomServer.getState();
     const seat2State = finalState.players.find((player) => player.seatId === "seat-2");
@@ -1385,7 +2190,6 @@ describe("roomServer websocket integration", () => {
     expect(seat2State?.character.equippedGear.weapon).toBe("veil-hook");
     expect(seat2State?.character.heldGear.some((item) => item.id === "veil-hook")).toBe(true);
     expect(seat3State?.character.activeContract).toBeNull();
-    expect(seat3State?.character.heat).toBe(0);
     expect(tv.messages.every((message) => !isStatePatch(message) || !Object.hasOwn(message.payload, "self"))).toBe(true);
   }, 15000);
 
@@ -1439,11 +2243,7 @@ describe("roomServer websocket integration", () => {
     const phone1Marker = phone1.mark();
     const phone2Marker = phone2.mark();
     const phone3Marker = phone3.mark();
-    phone1.send({
-      type: "COMBAT_REQUESTED",
-      seatId: "seat-1",
-      stat: "grit"
-    });
+    await sendVisibleCombat(phone1, "seat-1", "grit");
 
     const pendingPatch = (await tv.waitForSince(marker, statePatchWithPendingEnemyRoll("seat-1"))) as Extract<
       ServerEnvelope,
@@ -1530,6 +2330,82 @@ describe("roomServer websocket integration", () => {
     ).toBe(true);
   }, 15000);
 
+  it("reassigns a pending enemy roll when the assigned roller disconnects", async () => {
+    harness = await startHarness(
+      [0, 0, 5, 5, 0, 0],
+      createState({
+        phase: "action",
+        activeSeatIndex: 0,
+        turnOrder: ["seat-1", "seat-2", "seat-3"],
+        currentEncounter: createThreats().get("hook-runner") ?? null,
+        lastOutcomeSummary: {
+          seatId: "seat-1",
+          movedToSectorId: "enemy-yard",
+          encounterCardId: "hook-runner",
+          encounterTitle: "Hook Runner",
+          encounterCardType: "enemy",
+          checkStat: "grit",
+          die1: null,
+          die2: null,
+          statBonus: null,
+          checkTotal: null,
+          difficulty: 6,
+          enemyRollerSeatId: null,
+          enemyDie1: null,
+          enemyDie2: null,
+          enemyBonus: null,
+          enemyTotal: null,
+          success: null,
+          summary: "Hook Runner closes the lane."
+        }
+      })
+    );
+
+    const tv = await connectClient(`ws://127.0.0.1:${harness.port}/?view=tv`);
+    const phone1 = await connectClient(
+      `ws://127.0.0.1:${harness.port}/?view=phone&token=${createJoinToken({ sessionId: "session-alpha", seatId: "seat-1" })}`
+    );
+    const phone2 = await connectClient(
+      `ws://127.0.0.1:${harness.port}/?view=phone&token=${createJoinToken({ sessionId: "session-alpha", seatId: "seat-2" })}`
+    );
+    const phone3 = await connectClient(
+      `ws://127.0.0.1:${harness.port}/?view=phone&token=${createJoinToken({ sessionId: "session-alpha", seatId: "seat-3" })}`
+    );
+
+    probes.push(tv, phone1, phone2, phone3);
+    await tv.waitFor(statePatchForPhase("action", 0));
+
+    const pendingMarker = tv.mark();
+    await sendVisibleCombat(phone1, "seat-1", "grit");
+    const pendingPatch = (await tv.waitForSince(pendingMarker, statePatchWithPendingEnemyRoll("seat-1"))) as Extract<
+      ServerEnvelope,
+      { type: "STATE_PATCH" }
+    >;
+    const assignedRollerSeatId = String(
+      (pendingPatch.payload.pendingEnemyRoll as { assignedRollerSeatId: string }).assignedRollerSeatId
+    );
+    const assignedProbe = assignedRollerSeatId === "seat-2" ? phone2 : phone3;
+    const replacementSeatId = assignedRollerSeatId === "seat-2" ? "seat-3" : "seat-2";
+    const recoveryMarker = tv.mark();
+
+    assignedProbe.close();
+
+    const recoveryPatch = (await tv.waitForSince(
+      recoveryMarker,
+      (message) =>
+        isStatePatch(message) &&
+        typeof message.payload.pendingEnemyRoll === "object" &&
+        message.payload.pendingEnemyRoll !== null &&
+        (message.payload.pendingEnemyRoll as { assignedRollerSeatId?: string }).assignedRollerSeatId === replacementSeatId
+    )) as Extract<ServerEnvelope, { type: "STATE_PATCH" }>;
+    const summary = recoveryPatch.payload.outcomeSummary as { summary?: string } | undefined;
+
+    expect((recoveryPatch.payload.pendingEnemyRoll as { assignedRollerSeatId: string }).assignedRollerSeatId).toBe(
+      replacementSeatId
+    );
+    expect(summary?.summary).toContain("Enemy roll reassigned");
+  }, 15000);
+
   it("preserves seat state across disconnect and restores it on rejoin", async () => {
     harness = await startHarness([
       0, 0, 0, 0, 0,
@@ -1557,39 +2433,34 @@ describe("roomServer websocket integration", () => {
       expect(isStatePatch(initialTvPatch) ? getSeatConnectionFromPatch(initialTvPatch, "seat-2") : null).toBe(true);
       expect(isStatePatch(initialTvPatch) ? getSeatConnectionFromPatch(initialTvPatch, "seat-3") : null).toBe(true);
 
+      await requestMovementRoll(phone1, tv, "seat-1", 0);
       let marker = tv.mark();
-    phone1.send({
-      type: "MOVE_REQUESTED",
-      seatId: "seat-1",
-      toSectorId: "hazard-east"
-    });
+      phone1.send({
+        type: "MOVE_REQUESTED",
+        seatId: "seat-1",
+        toSectorId: "hazard-east"
+      });
       step = "seat1 move";
       await tv.waitForSince(marker, statePatchForPhase("action", 0));
 
       marker = tv.mark();
-    phone1.send({
-      type: "CHECK_REQUESTED",
-      seatId: "seat-1",
-      stat: "signal"
-    });
+      await sendVisibleCheck(phone1, "seat-1", "signal");
       step = "seat1 resolve";
-      await tv.waitForSince(marker, statePatchForPhase("navigation", 1));
+      await tv.waitForSince(marker, statePatchForPhase("broadcast", 0));
+      await endBroadcastTurn(phone1, tv, "seat-1", 1);
 
+      await requestMovementRoll(phone2, tv, "seat-2", 1);
       marker = tv.mark();
-    phone2.send({
-      type: "MOVE_REQUESTED",
-      seatId: "seat-2",
-      toSectorId: "enemy-yard"
-    });
+      phone2.send({
+        type: "MOVE_REQUESTED",
+        seatId: "seat-2",
+        toSectorId: "enemy-yard"
+      });
       step = "seat2 move to enemy";
       await tv.waitForSince(marker, statePatchForPhase("action", 1));
 
       marker = tv.mark();
-    phone2.send({
-      type: "COMBAT_REQUESTED",
-      seatId: "seat-2",
-      stat: "grit"
-    });
+      await sendVisibleCombat(phone2, "seat-2", "grit");
       await tv.waitForSince(marker, statePatchWithPendingEnemyRoll("seat-2"));
       const reconnectAssignedSeat2Roller = harness.roomServer.getState().pendingEnemyRoll?.assignedRollerSeatId;
       const reconnectAssignedSeat2Probe =
@@ -1611,15 +2482,17 @@ describe("roomServer websocket integration", () => {
       }
       await waitForServerTick();
       step = "seat2 combat";
-      expect(harness.roomServer.getState().activeSeatIndex).toBe(2);
-      expect(harness.roomServer.getState().phase).toBe("navigation");
+      expect(harness.roomServer.getState().activeSeatIndex).toBe(1);
+      expect(harness.roomServer.getState().phase).toBe("broadcast");
+      await endBroadcastTurn(phone2, tv, "seat-2", 2);
 
+      await requestMovementRoll(phone3, tv, "seat-3", 2);
       marker = tv.mark();
-    phone3.send({
-      type: "MOVE_REQUESTED",
-      seatId: "seat-3",
-      toSectorId: "seat-1-start"
-    });
+      phone3.send({
+        type: "MOVE_REQUESTED",
+        seatId: "seat-3",
+        toSectorId: "seat-1-start"
+      });
       step = "seat3 move to contract accept setup";
       await tv.waitForSince(marker, statePatchForPhase("action", 2));
 
@@ -1637,12 +2510,13 @@ describe("roomServer websocket integration", () => {
       step = "seat3 end turn";
       await tv.waitForSince(marker, statePatchForPhase("navigation", 0));
 
+      await requestMovementRoll(phone1, tv, "seat-1", 0);
       marker = tv.mark();
-    phone1.send({
-      type: "MOVE_REQUESTED",
-      seatId: "seat-1",
-      toSectorId: "seat-1-start"
-    });
+      phone1.send({
+        type: "MOVE_REQUESTED",
+        seatId: "seat-1",
+        toSectorId: "seat-1-start"
+      });
       step = "seat1 empty move";
       await tv.waitForSince(marker, statePatchForPhase("action", 0));
 
@@ -1655,12 +2529,13 @@ describe("roomServer websocket integration", () => {
       step = "seat1 empty resolve";
       await tv.waitForSince(marker, statePatchForPhase("navigation", 1));
 
+      await requestMovementRoll(phone2, tv, "seat-2", 1);
       marker = tv.mark();
-    phone2.send({
-      type: "MOVE_REQUESTED",
-      seatId: "seat-2",
-      toSectorId: "seat-2-start"
-    });
+      phone2.send({
+        type: "MOVE_REQUESTED",
+        seatId: "seat-2",
+        toSectorId: "seat-2-start"
+      });
       step = "seat2 move to equip";
       await tv.waitForSince(marker, statePatchForPhase("action", 1));
     phone2.send({
@@ -1752,12 +2627,13 @@ describe("roomServer websocket integration", () => {
     expect(staleCode).toBe(4003);
     expect(String(staleReason)).toContain("Replaced by newer connection");
 
+      await requestMovementRoll(phone3, tv, "seat-3", 2);
       marker = tv.mark();
-    phone3.send({
-      type: "MOVE_REQUESTED",
-      seatId: "seat-3",
-      toSectorId: "contract-hunt"
-    });
+      phone3.send({
+        type: "MOVE_REQUESTED",
+        seatId: "seat-3",
+        toSectorId: "contract-hunt"
+      });
       step = "seat3 move to active disconnect";
       await tv.waitForSince(marker, statePatchForPhase("action", 2));
 
@@ -1800,11 +2676,7 @@ describe("roomServer websocket integration", () => {
 
       marker = tv.mark();
       const seat3PostRejoinCombatMarker = seat3Rejoin.mark();
-    seat3Rejoin.send({
-      type: "COMBAT_REQUESTED",
-      seatId: "seat-3",
-      stat: "grit"
-    });
+      await sendVisibleCombat(seat3Rejoin, "seat-3", "grit");
       const postRejoinCombat = await seat3Rejoin.waitForSince(
         seat3PostRejoinCombatMarker,
         (message) =>

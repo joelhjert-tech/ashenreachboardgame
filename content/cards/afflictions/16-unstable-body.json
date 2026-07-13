@@ -1,0 +1,19 @@
+{
+  "id": "unstable-body",
+  "name": "Unstable Body",
+  "severity": 2,
+  "category": "immediateStatLoss",
+  "duration": "immediate",
+  "trigger": "When revealed.",
+  "rulesText": "Roll 1 die. 1-2 lose 1 Guile, 3-4 lose 1 Command, 5-6 lose 1 Grit. Then flip facedown.",
+  "effectKind": "immediateRollTable",
+  "effectPayload": {
+    "rollTable": [
+      { "min": 1, "max": 2, "stat": "guile", "amount": -1 },
+      { "min": 3, "max": 4, "stat": "command", "amount": -1 },
+      { "min": 5, "max": 6, "stat": "grit", "amount": -1 }
+    ]
+  },
+  "flipFacedownAfterResolve": true,
+  "isFaceupOngoing": false
+}

@@ -1,0 +1,29 @@
+{
+  "id": "locked-vault",
+  "type": "threat",
+  "cardType": "hazard",
+  "title": "Locked Vault",
+  "text": "The vault defends its contents with old law, newer teeth, and a lock that dislikes being observed.",
+  "flavor": "Every safe wants to be a shrine.",
+  "severity": 2,
+  "stat": "forge",
+  "difficulty": 7,
+  "successEffect": {
+    "type": "gain_note",
+    "text": "You opened the vault long enough to copy its route cipher."
+  },
+  "failEffect": {
+    "type": "take_wound",
+    "amount": 1
+  },
+  "enemyFamily": "bureaucracy",
+  "threatLane": "yellow",
+  "resolutionType": "encounter",
+  "region": "outer",
+  "rarity": "common",
+  "tempo": "neutral",
+  "resourceTags": [
+    "loot",
+    "wound"
+  ]
+}

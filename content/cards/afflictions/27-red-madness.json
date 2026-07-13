@@ -1,0 +1,13 @@
+{
+  "id": "red-madness",
+  "name": "Red Madness",
+  "severity": 2,
+  "category": "restriction",
+  "duration": "ongoing",
+  "trigger": "While faceup.",
+  "rulesText": "You cannot evade enemies.",
+  "effectKind": "restriction",
+  "effectPayload": { "cannotEvadeEnemies": true },
+  "flipFacedownAfterResolve": false,
+  "isFaceupOngoing": true
+}

@@ -1,0 +1,13 @@
+{
+  "id": "runaway-growth",
+  "name": "Runaway Growth",
+  "severity": 5,
+  "category": "drawTrigger",
+  "duration": "ongoing",
+  "trigger": "Each time you draw an Affliction.",
+  "rulesText": "Gain +1 to one base stat of your choice.",
+  "effectKind": "drawTrigger",
+  "effectPayload": { "choices": ["command", "grit", "signal", "guile", "forge"], "amount": 1, "trigger": "drawAffliction" },
+  "flipFacedownAfterResolve": false,
+  "isFaceupOngoing": true
+}

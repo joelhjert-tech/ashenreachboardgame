@@ -1,0 +1,23 @@
+{
+  "id": "anomaly-relay-ghost-loop",
+  "type": "anomaly",
+  "title": "Relay Ghost Loop",
+  "text": "A dead courier signal repeats every choice the table made last round.",
+  "flavor": "It sounds like a friend until it starts predicting your breathing.",
+  "instability": 2,
+  "regionHint": "outer",
+  "resolutionSummary": "Broke the relay loop and turned the repeating signal into a usable contact route.",
+  "resolveEffect": {
+    "type": "sequence",
+    "effects": [
+      {
+        "type": "gain_follower",
+        "followerId": "grave-scribe"
+      },
+      {
+        "type": "gain_note",
+        "text": "Relay ghost loop archived as a route note."
+      }
+    ]
+  }
+}

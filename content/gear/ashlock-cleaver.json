@@ -1,0 +1,21 @@
+{
+  "id": "ashlock-cleaver",
+  "name": "Ashlock Cleaver",
+  "slot": "weapon",
+  "category": "passive",
+  "statBonus": {
+    "stat": "grit",
+    "amount": 1
+  },
+  "flavor": "A soot-bitten boarding cleaver with an oath notch cut into the spine.",
+  "tier": "standard",
+  "startingEligible": false,
+  "normalShopCommon": false,
+  "cost": 4,
+  "sellValue": 2,
+  "progressionWeight": 1,
+  "shopCategories": [
+    "forge-armoury",
+    "market"
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "id": "artifact-route-star",
+  "type": "artifact",
+  "missionRewardEligible": true,
+  "eliteThreatRewardEligible": true,
+  "rareShopEligible": true,
+  "scenarioRewardEligible": true,
+  "startingEligible": false,
+  "normalShopCommon": false,
+  "artifactKind": "chargedRelic",
+  "title": "Route Star",
+  "text": "A dead-glass navigation star that points toward the route least hungry for blood.",
+  "flavor": "North is for maps. The Reach prefers bargains.",
+  "charge": 2,
+  "resolutionSummary": "Recovered the Route Star and set its surviving route charges.",
+  "resolveEffect": {
+    "type": "gain_gear",
+    "gearId": "route-star"
+  }
+}

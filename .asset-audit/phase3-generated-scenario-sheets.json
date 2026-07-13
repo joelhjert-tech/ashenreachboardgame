@@ -1,0 +1,42 @@
+{
+  "generatedAt": "2026-06-26T04:26:29.958Z",
+  "requestedType": "scenarioSheetArt",
+  "generated": 4,
+  "byType": {
+    "scenarioSheetArt": 4
+  },
+  "results": [
+    {
+      "id": "scenario_sheet_mirror_of_false_heroes",
+      "assetType": "scenarioSheetArt",
+      "outputPath": "/assets/riftfall/scenarios/scenario_mirror_of_false_heroes.png",
+      "width": 1536,
+      "height": 1024,
+      "bytes": 349839
+    },
+    {
+      "id": "scenario_sheet_devourer_beneath",
+      "assetType": "scenarioSheetArt",
+      "outputPath": "/assets/riftfall/scenarios/scenario_devourer_beneath.png",
+      "width": 1536,
+      "height": 1024,
+      "bytes": 318240
+    },
+    {
+      "id": "scenario_sheet_labyrinth_engine",
+      "assetType": "scenarioSheetArt",
+      "outputPath": "/assets/riftfall/scenarios/scenario_labyrinth_engine.png",
+      "width": 1536,
+      "height": 1024,
+      "bytes": 328154
+    },
+    {
+      "id": "scenario_sheet_dying_star",
+      "assetType": "scenarioSheetArt",
+      "outputPath": "/assets/riftfall/scenarios/scenario_dying_star.png",
+      "width": 1536,
+      "height": 1024,
+      "bytes": 315201
+    }
+  ]
+}

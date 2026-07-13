@@ -4,7 +4,7 @@
   pressure and forcing tradeoffs.
 - Wandering operatives: characters are mobile specialists who survive through
   timing, improvisation, and scarce resources.
-- Relic-hunting: discoveries should matter, with artifacts acting as pivotal
+- Artifact-hunting: discoveries should matter, with artifacts acting as pivotal
   goals rather than filler rewards.
 - Tactical checks: conflict and obstacles should resolve through deliberate
   stat-based checks with meaningful consequences.

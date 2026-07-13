@@ -5,11 +5,11 @@
   "currentSpaceId": "ashwake-crossing",
   "status": "active",
   "stats": {
-    "command": 3,
-    "grit": 2,
-    "signal": 1,
-    "guile": 1,
-    "forge": 2
+    "command": 5,
+    "grit": 3,
+    "signal": 2,
+    "guile": 2,
+    "forge": 3
   },
   "trophies": 0,
   "heat": 0,
@@ -26,22 +26,27 @@
     {
       "id": "void-command",
       "name": "Void Command",
-      "text": "Once per round, when you complete a contract or clear a sector, record a command note and steady the line."
+      "text": "Once per round, after you clear a sector or complete a Contract, record a private command briefing."
     },
     {
       "id": "ashwake-step",
       "name": "Ashwake Step",
-      "text": "When you start a turn in a clear sector, you may treat the first route decision as if the lane was already scouted."
+      "text": "At the start of your turn in a clear sector, record a private command briefing."
     },
     {
       "id": "signal-relay",
       "name": "Signal Relay",
-      "text": "When another operative fights in your sector, your command presence counts as live field support."
+      "text": "Once per round, after you win a battle with another operative in your sector, record how the command relay held the line."
     },
     {
       "id": "marshal-presence",
       "name": "Marshal's Presence",
-      "text": "Once per round, reduce local Heat pressure by 1 after a successful objective push."
+      "text": "Once per round, after a successful objective push, reduce scenario pressure by 1 if it is above 0."
     }
-  ]
+  ],
+  "startingGear": [
+    "rustknife-carbine",
+    "chapel-guard-harness"
+  ],
+  "startingContract": "dominion-warbell-recovery"
 }

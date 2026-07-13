@@ -1,0 +1,13 @@
+{
+  "id": "fading-strength",
+  "name": "Fading Grit",
+  "severity": 3,
+  "category": "drawTrigger",
+  "duration": "ongoing",
+  "trigger": "Each time you draw an Affliction.",
+  "rulesText": "Lose 1 Grit.",
+  "effectKind": "drawTrigger",
+  "effectPayload": { "stat": "grit", "amount": -1, "trigger": "drawAffliction" },
+  "flipFacedownAfterResolve": false,
+  "isFaceupOngoing": true
+}

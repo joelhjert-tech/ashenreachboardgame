@@ -1,0 +1,20 @@
+{
+  "id": "qa_alpha_armor_01",
+  "name": "Titanplate Exo-Rig",
+  "slot": "armor",
+  "category": "passive",
+  "statBonus": {
+    "stat": "grit",
+    "amount": 3
+  },
+  "activeText": "QA only: prevent 2 wounds after battle while testing damage and armor UI.",
+  "timingWindows": [
+    "beforeTakingDamage"
+  ],
+  "tier": "artifact",
+  "cost": 0,
+  "progressionWeight": 0.01,
+  "shopCategories": [
+    "forge-armoury"
+  ]
+}

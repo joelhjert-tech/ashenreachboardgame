@@ -1,0 +1,14 @@
+{
+  "id": "escalation-choir-feedback",
+  "type": "escalation",
+  "title": "Choir Feedback",
+  "text": "The relay choir overcorrects and turns every stable signal into a shriek.",
+  "flavor": "Silence would be mercy. The Choir prefers documentation.",
+  "step": 2,
+  "resolutionSummary": "Feedback rattled the relay lines and raised the signal burden.",
+  "resolveEffect": {
+    "type": "gain_heat_all",
+    "amount": 1
+  },
+  "escalationDelta": 1
+}

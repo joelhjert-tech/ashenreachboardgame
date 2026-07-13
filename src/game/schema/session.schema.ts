@@ -1,8 +1,13 @@
 import { z } from "zod";
+import { pendingTileChallengeSchema } from "./tileChallenge.schema.js";
 import { characterSchema, statSchema } from "./character.schema.js";
+import { afflictionCardSchema, afflictionInstanceSchema, afflictionUsageStateSchema } from "./affliction.schema.js";
 import { effectSchema, threatCardSchema } from "./card.schema.js";
 import { contractCardSchema } from "./contract.schema.js";
 import { sectorNodeSchema } from "./sector.schema.js";
+import { pendingScarConsequenceSchema } from "./scarTrigger.schema.js";
+import { pendingEncounterDecisionSchema } from "./encounterDecision.schema.js";
+import { pendingDisplacementArrivalSchema, pendingDisplacementSchema } from "./displacement.schema.js";
 
 export const phaseSchema = z.enum([
   "start",
@@ -15,37 +20,194 @@ export const phaseSchema = z.enum([
 
 export const sessionStatusSchema = z.enum(["lobby", "active", "ended"]);
 export const sessionModeSchema = z.enum(["multiplayer", "single-player"]);
+export const gameModeSchema = z.enum(["standard", "nemesis_relay"]);
+export const interactionModeSchema = z.enum(["co-op", "rivalry", "ruthless"]);
+
+export const resolutionStageSchema = z.enum([
+  "idle",
+  "card_reveal",
+  "battle_setup",
+  "dice_roll",
+  "roll_result",
+  "outcome_summary",
+  "awaiting_continue"
+]);
+
+export const activeResolutionSchema = z.object({
+  id: z.string().min(1),
+  playerId: z.string().min(1),
+  source: z.enum(["movement", "threat", "contract", "anomaly", "artifact", "scenario"]),
+  stage: resolutionStageSchema,
+  card: z
+    .object({
+      id: z.string().min(1),
+      title: z.string().min(1),
+      type: z.string().min(1),
+      flavor: z.string().nullable().optional(),
+      artType: z.string().min(1).optional()
+    })
+    .optional(),
+  battle: z
+    .object({
+      enemyName: z.string().min(1).optional(),
+      stat: statSchema,
+      difficulty: z.number().int(),
+      modifiers: z.array(
+        z.object({
+          label: z.string().min(1),
+          value: z.number().int()
+        })
+      )
+    })
+    .optional(),
+  roll: z
+    .object({
+      dice: z.array(z.number().int().min(1).max(6)),
+      baseTotal: z.number().int(),
+      modifierTotal: z.number().int(),
+      finalTotal: z.number().int(),
+      target: z.number().int(),
+      success: z.boolean()
+    })
+    .optional(),
+  outcome: z
+    .object({
+      title: z.string().min(1),
+      text: z.string().min(1),
+      effects: z.array(z.string())
+    })
+    .optional()
+});
 
 export const seatSchema = z.object({
   seatId: z.string().min(1),
   characterId: z.string().min(1),
+  characterSelected: z.boolean().optional(),
   displayName: z.string().min(1).nullable().optional(),
+  startingContractOptions: z.array(z.string().min(1)).default([]),
+  selectedStartingContractId: z.string().min(1).nullable().default(null),
+  missionSelectedAt: z.string().min(1).nullable().optional(),
   connected: z.boolean(),
+  ready: z.boolean(),
   kicked: z.boolean(),
   joinToken: z.string().min(1)
 });
 
+export const noteResourceSchema = z.enum(["vow"]);
+
+export const oathchainTargetDescriptorSchema = z.object({
+  kind: z.enum(["threat", "sector", "routeStop", "shopAction", "tileChallenge"]),
+  id: z.string().min(1),
+  label: z.string().min(1),
+  sectorId: z.string().min(1).optional(),
+  detail: z.string().min(1)
+});
+
+export const activeOathchainRevealSchema = z.object({
+  revealId: z.string().min(1),
+  ownerSeat: z.string().min(1),
+  itemInstanceId: z.string().min(1),
+  contractId: z.string().min(1),
+  contractSignature: z.string().min(1),
+  contractName: z.string().min(1),
+  objectiveProgress: z.string().min(1),
+  revealedTargets: z.array(oathchainTargetDescriptorSchema).min(1),
+  createdTurn: z.number().int().min(0),
+  expiresAtTurnEnd: z.literal(true)
+});
+
 export const playerPrivateStateSchema = z.object({
   hand: z.array(z.string()),
-  notes: z.array(z.string()).default([])
+  notes: z.array(z.string()).default([]),
+  // Named notes only become counters when a rule can authoritatively spend them.
+  noteResources: z.record(noteResourceSchema, z.number().int().min(0)).optional(),
+  activeOathchainReveal: activeOathchainRevealSchema.nullable().optional(),
+  rivalryAgenda: z
+    .object({
+      revealState: z.enum(["hidden", "revealLocked", "revealAvailable", "revealed", "completed", "failed"]),
+      revealedAtRound: z.number().int().min(0).nullable().optional(),
+      revealedBySeatId: z.string().min(1).nullable().optional(),
+      publicRevealTitle: z.string().min(1).optional(),
+      publicRevealSummary: z.string().min(1).optional(),
+      progressCurrent: z.number().int().min(0).optional(),
+      progressRequired: z.number().int().min(1).optional(),
+      progressLabel: z.string().min(1).optional(),
+      pointsAwarded: z.number().int().min(0).optional(),
+      completedAtRound: z.number().int().min(0).nullable().optional(),
+      completedBySeatId: z.string().min(1).nullable().optional(),
+      publicCompletionTitle: z.string().min(1).optional(),
+      publicCompletionSummary: z.string().min(1).optional(),
+      privateCompletionSummary: z.string().min(1).optional()
+    })
+    .optional()
 });
 
 export const playerStateSchema = z.object({
   seatId: z.string().min(1),
   character: characterSchema,
   sectorId: z.string().min(1),
-  private: playerPrivateStateSchema
+  private: playerPrivateStateSchema,
+  faceupAfflictions: z.array(afflictionInstanceSchema).optional(),
+  facedownAfflictions: z.array(afflictionInstanceSchema).optional(),
+  afflictionUsageState: afflictionUsageStateSchema.optional(),
+  afflictionDrawHistory: z.array(z.string().min(1)).optional()
+});
+
+export const nemesisChampionSchema = z.object({
+  id: z.string().min(1),
+  name: z.string().min(1),
+  type: z.string().min(1),
+  boundPlayerId: z.string().min(1),
+  sectorId: z.string().min(1),
+  strength: z.number().int().min(0),
+  craft: z.number().int().min(0).optional(),
+  tech: z.number().int().min(0).optional(),
+  will: z.number().int().min(0).optional(),
+  health: z.number().int().min(0),
+  maxHealth: z.number().int().min(1),
+  trophies: z.number().int().min(0),
+  movementProfile: z.enum(["center_path", "hunt_wounded", "slow_brute", "anomaly_shortcut"]),
+  combatProfile: z.enum(["strength", "craft", "tech", "will", "choice"]),
+  specialRuleId: z.string().min(1),
+  defeated: z.boolean(),
+  shield: z.number().int().min(0).optional()
+});
+
+export const nemesisNexusCountdownSchema = z.object({
+  nemesisId: z.string().min(1),
+  remainingTurns: z.number().int().min(0)
+});
+
+export const shopStockRevealSchema = z.object({
+  seatId: z.string().min(1),
+  sectorId: z.string().min(1),
+  serviceId: z.string().min(1),
+  shopName: z.string().min(1),
+  stockIds: z.array(z.string().min(1)),
+  revealCost: z
+    .object({
+      salvage: z.number().int().min(0).optional(),
+      heat: z.number().int().min(0).optional(),
+      wounds: z.number().int().min(0).optional(),
+      trophies: z.number().int().min(0).optional()
+    })
+    .optional(),
+  createdAt: z.string().min(1)
 });
 
 export const gameStateSchema = z.object({
   sessionId: z.string().min(1),
   status: sessionStatusSchema,
   sessionMode: sessionModeSchema,
+  gameMode: gameModeSchema.default("standard"),
+  interactionMode: interactionModeSchema.optional(),
+  setupHostSeatId: z.string().min(1).nullable().optional(),
+  lobbyConfigured: z.boolean().optional(),
   winnerSeatId: z.string().min(1).nullable(),
   activeScenarioId: z.string().min(1),
   scenarioProgress: z.record(z.string(), z.number().int().min(0)),
   phase: phaseSchema,
-  resolutionSource: z.enum(["movement", "encounter", "contract"]).nullable(),
+  resolutionSource: z.enum(["movement", "encounter", "contract", "tileChallenge"]).nullable(),
   activeSeatIndex: z.number().int().min(0),
   turnOrder: z.array(z.string().min(1)).min(1),
   heatThreshold: z.number().int().min(1),
@@ -55,7 +217,18 @@ export const gameStateSchema = z.object({
   seats: z.array(seatSchema),
   players: z.array(playerStateSchema),
   availableContracts: z.array(contractCardSchema),
+  availableAfflictions: z.array(afflictionCardSchema).optional(),
+  nemesisChampions: z.array(nemesisChampionSchema).default([]),
+  nemesisNexusCountdowns: z.array(nemesisNexusCountdownSchema).default([]),
+  shopStockReveals: z.array(shopStockRevealSchema).default([]),
+  movementRolls: z.record(z.string(), z.number().int().min(1)).optional(),
+  movementRouteRevisions: z.record(z.string(), z.number().int().min(1)).optional(),
+  routeStarChoices: z.record(z.string(), z.object({ instanceId: z.string().min(1), destinationId: z.string().min(1), routeId: z.string().min(1), movementRevision: z.number().int().min(1) })).optional(),
+  movementAdjustments: z.record(z.string(), z.object({ adjustment: z.union([z.literal(-1), z.literal(1)]), sourceInstanceId: z.string().min(1) })).optional(),
+  gateSaintSafeConduct: z.object({ id: z.string(), sourceInstanceId: z.string(), usedSeatIds: z.array(z.string()) }).nullable().optional(),
+  soloRerollCharges: z.record(z.string(), z.number().int().min(0)).optional(),
   eventLog: z.array(z.unknown()),
+  recentEncounterCardIds: z.array(z.string().min(1)).optional(),
   escalationLevel: z.number().int().min(0),
   currentEncounter: threatCardSchema.nullable(),
   pendingEnemyRoll: z
@@ -68,6 +241,36 @@ export const gameStateSchema = z.object({
     })
     .nullable(),
   pendingEffect: effectSchema.nullable(),
+  pendingEncounterDecision: pendingEncounterDecisionSchema.nullable().optional(),
+  resolvedEncounterDecisionIds: z.array(z.string().min(1)).optional(),
+  pendingDisplacement: pendingDisplacementSchema.nullable().optional(),
+  pendingDisplacementArrival: pendingDisplacementArrivalSchema.nullable().optional(),
+  resolvedDisplacementSourceEventIds: z.array(z.string().min(1)).optional(),
+  pendingFailureReaction: z.object({
+    id: z.string().min(1),
+    seatId: z.string().min(1),
+    testType: z.enum(["movement", "hazard"]),
+    sourceId: z.string().min(1),
+    createdAt: z.string().min(1)
+  }).nullable().optional(),
+  pendingStaticIntercessionReaction: z.object({
+    id: z.string().min(1),
+    seatId: z.string().min(1),
+    pendingTileChallengeId: z.string().min(1),
+    suppressibleEffects: z.array(z.object({ effectId: z.string().min(1), effect: effectSchema })).min(1),
+    selectedEffectId: z.string().min(1).nullable(),
+    createdAt: z.string().min(1)
+  }).nullable().optional(),
+  pendingScarConsequence: pendingScarConsequenceSchema.nullable().optional(),
+  pendingScarConsequenceQueue: z.array(pendingScarConsequenceSchema).optional(),
+  resolvedScarSourceEventIds: z.array(z.string().min(1)).optional(),
+  pendingTileChallenge: pendingTileChallengeSchema.nullable().optional(),
+  tileChallengeProgress: z.object({
+    seatId: z.string().min(1),
+    sectorId: z.string().min(1),
+    resolvedChallengeIds: z.array(z.string().min(1))
+  }).nullable().optional(),
+  activeResolution: activeResolutionSchema.nullable().optional(),
   lastOutcomeSummary: z
     .object({
       seatId: z.string().min(1),
@@ -102,8 +305,18 @@ export const sessionSnapshotSchema = z.object({
 export type Phase = z.infer<typeof phaseSchema>;
 export type SessionStatus = z.infer<typeof sessionStatusSchema>;
 export type SessionMode = z.infer<typeof sessionModeSchema>;
+export type GameMode = z.infer<typeof gameModeSchema>;
+export type InteractionMode = z.infer<typeof interactionModeSchema>;
+export type ResolutionStage = z.infer<typeof resolutionStageSchema>;
+export type ActiveResolution = z.infer<typeof activeResolutionSchema>;
 export type Seat = z.infer<typeof seatSchema>;
+export type NoteResource = z.infer<typeof noteResourceSchema>;
 export type PlayerPrivateState = z.infer<typeof playerPrivateStateSchema>;
+export type OathchainTargetDescriptor = z.infer<typeof oathchainTargetDescriptorSchema>;
+export type ActiveOathchainReveal = z.infer<typeof activeOathchainRevealSchema>;
 export type PlayerState = z.infer<typeof playerStateSchema>;
+export type NemesisChampion = z.infer<typeof nemesisChampionSchema>;
+export type NemesisNexusCountdown = z.infer<typeof nemesisNexusCountdownSchema>;
+export type ShopStockReveal = z.infer<typeof shopStockRevealSchema>;
 export type GameState = z.infer<typeof gameStateSchema>;
 export type SessionSnapshot = z.infer<typeof sessionSnapshotSchema>;

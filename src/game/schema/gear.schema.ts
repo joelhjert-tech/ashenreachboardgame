@@ -1,17 +1,148 @@
 import { z } from "zod";
 
 export const gearSlotSchema = z.enum(["weapon", "armor", "utility"]);
+export const equipmentSubtypeSchema = z.enum(["weapon", "armour", "tool", "medical", "supply", "utility"]);
 export const gearBonusStatSchema = z.enum(["command", "grit", "signal", "guile", "forge"]);
+export const gearTierSchema = z.enum(["starter", "standard", "advanced", "artifact"]);
+export const gearTimingWindowSchema = z.enum([
+  "beforeThreatDraw",
+  "beforeBattleRoll",
+  "afterBattleRoll",
+  "afterFailedTest",
+  "beforeTakingDamage",
+  "startOfTurn",
+  "movement",
+  "movementRouteConfirmation",
+  "beforeAnomalySignalTest",
+  "pendingScarConsequence",
+  "pendingForcedDisplacement",
+  "shop",
+  "action",
+  "anyTime"
+]);
+export const gearCategorySchema = z.enum([
+  "passive",
+  "active",
+  "consumable",
+  "chargedRelic",
+  "dangerous",
+  "contractObject",
+  "followerLinked"
+]);
+export const shopCategorySchema = z.enum([
+  "forge-armoury",
+  "market",
+  "medicae-shrine",
+  "relic-dealer",
+  "contract-broker"
+]);
+export const gearUseLimitSchema = z.enum(["oncePerTurn", "oncePerRound", "discard", "charge"]);
+export const gearEffectModelSchema = z.enum(["permanent", "conditional", "consumable", "exhaust", "charged"]);
+export const gearExhaustEffectSchema = z.enum(["mirrorReroll", "warbellCommand"]);
+export const gearConditionTypeSchema = z.enum(["battle"]);
+export const consumableEffectSchema = z.enum(["grantVeilHook", "ignoreFailedMovementOrHazard", "grantPaleCartelFixer", "healWound", "grantMarshalSeal"]);
 
 export const gearItemSchema = z.object({
   id: z.string().min(1),
   name: z.string().min(1),
   slot: gearSlotSchema,
+  subtype: equipmentSubtypeSchema.optional(),
+  category: gearCategorySchema.optional(),
+  shopCategories: z.array(shopCategorySchema).min(1).optional(),
   statBonus: z.object({
     stat: gearBonusStatSchema,
     amount: z.number().int().positive()
-  })
+  }),
+  cost: z.number().int().min(0).optional(),
+  sellValue: z.number().int().min(0).optional(),
+  sellable: z.boolean().optional(),
+  tier: gearTierSchema.optional(),
+  progressionWeight: z.number().min(0).optional(),
+  flavor: z.string().min(1).optional(),
+  timingWindows: z.array(gearTimingWindowSchema).optional(),
+  exhausted: z.boolean().optional(),
+  instanceId: z.string().min(1).optional(),
+  activeText: z.string().min(1).optional(),
+  useLimit: gearUseLimitSchema.optional(),
+  charges: z.number().int().min(0).optional(),
+  currentCharges: z.number().int().min(0).optional(),
+  maxCharges: z.number().int().positive().optional(),
+  startingCharges: z.number().int().positive().optional(),
+  chargeCost: z.number().int().positive().optional(),
+  rechargeRule: z.enum(["none"]).optional(),
+  chargedEffect: z.enum(["personalGateOverride", "movementAdjustment", "saintSafeConduct", "bonewayDetour", "choirLightSignalBonus", "staticIntercession", "scarSinkPrayer", "traceThePromise", "selectAuthoritativeRouteVariant", "suppressForcedDisplacement"]).optional(),
+  maxUses: z.number().int().min(0).optional(),
+  heatCost: z.number().int().min(0).optional(),
+  linkedFollowerRole: z.string().min(1).optional(),
+  startingEligible: z.boolean().optional(),
+  normalShopCommon: z.boolean().optional(),
+  allowedFallbackArt: z.boolean().optional(),
+  qaOnly: z.boolean().optional(),
+  effectModel: gearEffectModelSchema.optional(),
+  requiresEquipped: z.boolean().optional(),
+  conditionType: gearConditionTypeSchema.optional()
+  ,activationTiming: z.array(gearTimingWindowSchema).min(1).optional()
+  ,consumeOnUse: z.boolean().optional()
+  ,consumableEffect: consumableEffectSchema.optional()
+  ,resetWindow: z.enum(["round"]).optional()
+  ,exhaustEffect: gearExhaustEffectSchema.optional()
+  ,activationCost: z.object({ type: z.enum(["salvage", "wound"]), amount: z.number().int().positive() }).optional()
+}).superRefine((item, context) => {
+  if (item.id === "heat-sink-prayer") {
+    if (item.name !== "Scar-Sink Prayer") context.addIssue({ code: z.ZodIssueCode.custom, message: "legacy heat-sink-prayer ID must use player-facing name Scar-Sink Prayer", path: ["name"] });
+    if (item.chargedEffect !== "scarSinkPrayer" || !item.activationTiming?.includes("pendingScarConsequence")) context.addIssue({ code: z.ZodIssueCode.custom, message: "Scar-Sink Prayer requires the typed pending Scar consequence reaction", path: ["chargedEffect"] });
+    if (item.activationCost) context.addIssue({ code: z.ZodIssueCode.custom, message: "Scar-Sink Prayer has no additional activation cost", path: ["activationCost"] });
+    if (/immun|remove\s+(?:a\s+)?scar/i.test(item.activeText ?? "")) context.addIssue({ code: z.ZodIssueCode.custom, message: "Scar-Sink Prayer cannot grant blanket immunity or remove Scars", path: ["activeText"] });
+  }
+  if (item.id === "oathchain-lens") {
+    if (item.chargedEffect !== "traceThePromise" || !item.activationTiming?.includes("action")) context.addIssue({ code: z.ZodIssueCode.custom, message: "Oathchain Lens requires the typed action-phase Trace the Promise effect", path: ["chargedEffect"] });
+    if (item.activationCost || item.rechargeRule !== "none") context.addIssue({ code: z.ZodIssueCode.custom, message: "Oathchain Lens has no additional cost or recharge", path: ["activationCost"] });
+  }
+  if (item.id === "route-star") {
+    if (item.chargedEffect !== "selectAuthoritativeRouteVariant" || !item.activationTiming?.includes("movementRouteConfirmation")) context.addIssue({ code: z.ZodIssueCode.custom, message: "Route Star requires the typed authoritative route-selection effect before movement confirmation", path: ["chargedEffect"] });
+    if (item.activationCost || item.rechargeRule !== "none") context.addIssue({ code: z.ZodIssueCode.custom, message: "Route Star has no additional cost or recharge", path: ["activationCost"] });
+  }
+  if (item.id === "rift-anchor-spike") {
+    if (item.effectModel !== "charged" || item.useLimit !== "charge" || item.maxCharges !== 2 || item.startingCharges !== 2 || item.chargeCost !== 1 || item.requiresEquipped !== true) context.addIssue({ code: z.ZodIssueCode.custom, message: "Rift Anchor Spike requires exact-instance 2/2 charges, cost 1, and owner-equipped activation", path: ["effectModel"] });
+    if (item.chargedEffect !== "suppressForcedDisplacement" || !item.activationTiming?.includes("pendingForcedDisplacement")) context.addIssue({ code: z.ZodIssueCode.custom, message: "Rift Anchor Spike requires the typed pending forced-displacement reaction", path: ["chargedEffect"] });
+    if (item.activationCost || item.rechargeRule !== "none") context.addIssue({ code: z.ZodIssueCode.custom, message: "Rift Anchor Spike has no additional cost or recharge", path: ["activationCost"] });
+    if (/immun|permanent|anchor(?:ed|ing)?\s+(?:the\s+)?sector|rollback/i.test(item.activeText ?? "")) context.addIssue({ code: z.ZodIssueCode.custom, message: "Rift Anchor Spike suppresses one pending displacement and cannot grant immunity, rollback, or a permanent anchor", path: ["activeText"] });
+  }
+  if (item.tier !== "artifact" && (item.useLimit === "charge" || item.category === "chargedRelic")) {
+    context.addIssue({ code: z.ZodIssueCode.custom, message: "normal Equipment cannot use Artifact charge mechanics", path: ["useLimit"] });
+  }
+  if (!item.effectModel) return;
+  if (item.effectModel !== "consumable" && item.effectModel !== "exhaust" && item.requiresEquipped !== true) {
+    context.addIssue({ code: z.ZodIssueCode.custom, message: `${item.effectModel} passive items must require equipped state`, path: ["requiresEquipped"] });
+  }
+  if (item.effectModel === "conditional" && !item.conditionType) {
+    context.addIssue({ code: z.ZodIssueCode.custom, message: "conditional passive items must define a condition", path: ["conditionType"] });
+  }
+  if (item.effectModel === "permanent" && item.conditionType) {
+    context.addIssue({ code: z.ZodIssueCode.custom, message: "permanent passive items cannot define a condition", path: ["conditionType"] });
+  }
+  if (item.effectModel === "consumable") {
+    if (!item.activationTiming?.length) context.addIssue({ code: z.ZodIssueCode.custom, message: "consumables require explicit activation timing", path: ["activationTiming"] });
+    if (item.consumeOnUse !== true) context.addIssue({ code: z.ZodIssueCode.custom, message: "consumables must consume on use", path: ["consumeOnUse"] });
+    if (!item.consumableEffect) context.addIssue({ code: z.ZodIssueCode.custom, message: "consumables require a typed effect", path: ["consumableEffect"] });
+    if (item.requiresEquipped === true || item.conditionType || item.useLimit === "charge") context.addIssue({ code: z.ZodIssueCode.custom, message: "consumables cannot declare passive or charged behavior", path: ["effectModel"] });
+  }
+  if (item.effectModel === "exhaust") {
+    if (!item.activationTiming?.length || item.resetWindow !== "round" || !item.exhaustEffect || !item.activationCost) context.addIssue({ code: z.ZodIssueCode.custom, message: "exhaust items require timing, round reset, typed effect and cost", path: ["effectModel"] });
+    if (item.consumeOnUse || item.useLimit === "charge" || item.useLimit === "discard") context.addIssue({ code: z.ZodIssueCode.custom, message: "exhaust items cannot be charged or consumed", path: ["useLimit"] });
+  }
+  if (item.effectModel === "charged") {
+    if (!item.maxCharges || !item.startingCharges || item.startingCharges > item.maxCharges || !item.chargeCost || item.chargeCost > item.maxCharges || item.rechargeRule !== "none" || !item.activationTiming?.length || !item.chargedEffect || item.requiresEquipped !== true) context.addIssue({ code: z.ZodIssueCode.custom, message: "charged items require bounded charges, no recharge, timing, typed effect, and equipped state", path: ["effectModel"] });
+    if (item.consumeOnUse || item.resetWindow || item.exhaustEffect) context.addIssue({ code: z.ZodIssueCode.custom, message: "charged items cannot be consumable or exhaust items", path: ["effectModel"] });
+  }
 });
 
 export type GearSlot = z.infer<typeof gearSlotSchema>;
+export type EquipmentSubtype = z.infer<typeof equipmentSubtypeSchema>;
+export type GearCategory = z.infer<typeof gearCategorySchema>;
+export type ShopCategory = z.infer<typeof shopCategorySchema>;
+export type GearTier = z.infer<typeof gearTierSchema>;
+export type GearTimingWindow = z.infer<typeof gearTimingWindowSchema>;
 export type GearItem = z.infer<typeof gearItemSchema>;
+export type GearEffectModel = z.infer<typeof gearEffectModelSchema>;
+export type GearConditionType = z.infer<typeof gearConditionTypeSchema>;

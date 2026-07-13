@@ -5,11 +5,11 @@
   "currentSpaceId": "mirecoil-beacon",
   "status": "active",
   "stats": {
-    "command": 1,
-    "grit": 2,
+    "command": 2,
+    "grit": 3,
     "signal": 1,
-    "guile": 2,
-    "forge": 3
+    "guile": 4,
+    "forge": 5
   },
   "trophies": 0,
   "heat": 0,
@@ -26,22 +26,27 @@
     {
       "id": "salvage-right",
       "name": "Salvage Right",
-      "text": "When a yard, cache, or broken lane pays out gear, you know how to make the haul count."
+      "text": "Once per round, after you clear a yellow threat or salvage sector, gain 1 Salvage or buy 1 revealed Equipment for 1 less Salvage."
     },
     {
       "id": "scrap-bastion",
       "name": "Scrap Bastion",
-      "text": "Forge-heavy route checks through damaged ground count as practical work instead of desperate improvisation."
+      "text": "Passive. Add +1 Forge on tests in sectors with salvage, machine, or hazard tags."
     },
     {
       "id": "yard-warden",
       "name": "Yard Warden",
-      "text": "A cleared salvage site stays useful longer when you are the one who locked it down."
+      "text": "After you clear a salvage site, record the yard's cleanest sale route in your private notes."
     },
     {
       "id": "last-haul",
       "name": "Last Haul",
-      "text": "When the run is nearly breaking, you can still turn one more ruined sector into something worth carrying out."
+      "text": "When you would lose Gear, you may discard 1 Salvage instead. Weakness: Salvage Right cannot be used on blue Anomaly sectors."
     }
-  ]
+  ],
+  "startingGear": [
+    "salvage-guard-mask",
+    "salvage-ledger"
+  ],
+  "startingContract": "clan-salt-burial"
 }

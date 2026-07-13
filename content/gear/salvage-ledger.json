@@ -1,0 +1,24 @@
+{
+  "id": "salvage-ledger",
+  "name": "Salvage Ledger",
+  "slot": "utility",
+  "subtype": "utility",
+  "category": "passive",
+  "statBonus": {
+    "stat": "guile",
+    "amount": 1
+  },
+  "cost": 3,
+  "sellValue": 1,
+  "sellable": true,
+  "tier": "standard",
+  "progressionWeight": 1,
+  "flavor": "A trade ledger that adds +1 Guile during shop dealings.",
+  "activeText": "A trade ledger that adds +1 Guile during shop dealings.",
+  "shopCategories": [
+    "market"
+  ],
+  "startingEligible": true,
+  "normalShopCommon": true,
+  "allowedFallbackArt": true
+}

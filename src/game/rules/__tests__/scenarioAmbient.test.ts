@@ -56,6 +56,7 @@ function createContext(
 describe("scenario ambient rules", () => {
   it("seeds initial progress for each authored scenario", () => {
     expect(createInitialScenarioProgress("scenario_broken_seal")).toEqual({ sealTokens: 6 });
+    expect(createInitialScenarioProgress("scenario_broken_seal", "single-player")).toEqual({ sealTokens: 8 });
     expect(createInitialScenarioProgress("scenario_throne_of_ash")).toEqual({ crownClaims: 0 });
     expect(createInitialScenarioProgress("scenario_mirror_of_false_heroes")).toEqual({});
     expect(createInitialScenarioProgress("scenario_devourer_beneath")).toEqual({ doomTokens: 0, devourerIndex: 0 });
@@ -86,17 +87,42 @@ describe("scenario ambient rules", () => {
     expect(restoredState.scenarioProgress.sealTokens).toBe(6);
   });
 
-  it("spikes every operative heat when the Broken Seal loses its final ward token", () => {
+  it("softens Broken Seal turn-start pressure and restoration cap in single-player", () => {
+    const state = createScenarioState({
+      sessionMode: "single-player",
+      activeScenarioId: "scenario_broken_seal",
+      scenarioProgress: { sealTokens: 8 }
+    });
+
+    const weakening = resolveScenarioTurnStart(createContext(state, { roll: 1 }));
+    expect(weakening?.summary).toContain("7 seal tokens remain");
+    const weakenedState = weakening?.updater(state) ?? state;
+    expect(weakenedState.scenarioProgress.sealTokens).toBe(7);
+
+    const surge = resolveScenarioTurnStart(createContext(state, { roll: 2 }));
+    expect(surge?.summary).toContain("rouses a local threat");
+    expect(surge?.followUp?.type).toBe("draw_sector_threat");
+
+    expect(resolveScenarioTurnStart(createContext(state, { roll: 4 }))).toBeNull();
+
+    const restored = resolveScenarioEnemyDefeat(createContext(state));
+    const restoredState = restored?.updater(state) ?? state;
+    expect(restoredState.scenarioProgress.sealTokens).toBe(8);
+  });
+
+  it("resets the Broken Seal without adding deprecated heat when the final ward token breaks", () => {
     const state = createScenarioState({
       activeScenarioId: "scenario_broken_seal",
       scenarioProgress: { sealTokens: 1 }
     });
 
     const weakening = resolveScenarioTurnStart(createContext(state, { roll: 1 }));
-    expect(weakening?.summary).toContain("Every operative gained 1 Heat");
+    expect(weakening?.summary).toContain("The last seal broke");
     const weakenedState = weakening?.updater(state) ?? state;
-    expect(weakenedState.scenarioProgress.sealTokens).toBe(0);
-    expect(weakenedState.players[0]?.character.heat).toBe(1);
+    expect(weakenedState.scenarioProgress.sealTokens).toBe(3);
+    expect(weakenedState.scenarioProgress.sealCollapses).toBe(1);
+    expect(weakenedState.players[0]?.character.heat).toBe(0);
+    expect(weakenedState.players[0]?.character.scars).toEqual([]);
   });
 
   it("applies Throne of Ash claim gains from defeats and contracts", () => {
@@ -134,17 +160,19 @@ describe("scenario ambient rules", () => {
     });
 
     const resolution = resolveScenarioContractCompleted(createContext(state));
-    expect(resolution?.summary).toContain("mirror feeds on praise");
+    expect(resolution?.summary).toContain("mirror feeds on selfish praise");
     const nextState = resolution?.updater(state) ?? state;
-    expect(nextState.players[0]?.character.heat).toBe(1);
+    expect(nextState.players[0]?.character.heat).toBe(0);
+    expect(nextState.scenarioProgress.mirrorPressure).toBe(1);
 
     const gearResolution = resolveScenarioGearGained({
       ...createContext(nextState),
       gainedGearCount: 1
     });
-    expect(gearResolution?.summary).toContain("fresh relic power");
+    expect(gearResolution?.summary).toContain("fresh artifact power");
     const gearState = gearResolution?.updater(nextState) ?? nextState;
-    expect(gearState.players[0]?.character.heat).toBe(2);
+    expect(gearState.players[0]?.character.heat).toBe(0);
+    expect(gearState.scenarioProgress.mirrorPressure).toBe(2);
   });
 
   it("moves the Devourer, consumes threats, and can erupt", () => {
@@ -252,7 +280,7 @@ describe("scenario ambient rules", () => {
       scenarioProgress: { engineModeIndex: 0 }
     });
     const engineResolution = resolveScenarioTurnStart(createContext(engineState));
-    expect(engineResolution?.summary).toContain("mode 1");
+    expect(engineResolution?.summary).toContain("Grit mode");
     const afterEngine = engineResolution?.updater(engineState) ?? engineState;
     expect(afterEngine.scenarioProgress.engineModeIndex).toBe(1);
 
@@ -267,10 +295,10 @@ describe("scenario ambient rules", () => {
           }
         }))
       }),
-      stat: "signal",
+      stat: "grit",
       success: true
     });
-    expect(skillSuccess?.summary).toContain("bleeds off 1 Heat");
+    expect(skillSuccess?.summary).toContain("stabilizes without changing persistent status");
     const cooledState = skillSuccess?.updater({
       ...afterEngine,
       players: afterEngine.players.map((player) => ({
@@ -281,16 +309,16 @@ describe("scenario ambient rules", () => {
         }
       }))
     }) ?? afterEngine;
-    expect(cooledState.players[0]?.character.heat).toBe(1);
+    expect(cooledState.players[0]?.character.heat).toBe(2);
 
     const skillFailure = resolveScenarioSkillResolved({
       ...createContext(afterEngine),
-      stat: "signal",
+      stat: "grit",
       success: false
     });
-    expect(skillFailure?.summary).toContain("adds 1 Heat");
+    expect(skillFailure?.summary).toContain("gains 1 instability");
     const heatedState = skillFailure?.updater(afterEngine) ?? afterEngine;
-    expect(heatedState.players[0]?.character.heat).toBe(1);
+    expect(heatedState.players[0]?.character.heat).toBe(0);
 
     const starState = createScenarioState({
       activeScenarioId: "scenario_dying_star",
@@ -307,7 +335,7 @@ describe("scenario ambient rules", () => {
       ...createContext(afterStar),
       woundDelta: 2
     });
-    expect(woundResolution?.summary).toContain("strip 2 additional star tokens");
+    expect(woundResolution?.summary).toContain("strip 2 additional Starfire tokens");
     const afterWounds = woundResolution?.updater(afterStar) ?? afterStar;
     expect(afterWounds.scenarioProgress.starTokens).toBe(3);
 
@@ -328,8 +356,8 @@ describe("scenario ambient rules", () => {
     const mirrorPressure = describeScenarioPressure(mirrorState);
     const mirrorTelemetry = buildScenarioTelemetry(mirrorState);
 
-    expect(mirrorPressure).toContain("Heat is acting as mirror pressure");
-    expect(mirrorTelemetry.map((entry) => entry.label)).toEqual(["Mirror Breaks", "Heat Proxy", "Reflection Feed"]);
+    expect(mirrorPressure).toContain("Scars act as mirror pressure");
+    expect(mirrorTelemetry.map((entry) => entry.label)).toEqual(["Mirror Breaks", "Scar Pressure", "Reflection Feed"]);
 
     const throneState = createScenarioState({
       activeScenarioId: "scenario_throne_of_ash",

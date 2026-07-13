@@ -15,5 +15,15 @@
   "failEffect": {
     "type": "take_wound",
     "amount": 1
-  }
+  },
+  "enemyFamily": "machine",
+  "threatLane": "yellow",
+  "region": "outer",
+  "rarity": "common",
+  "tempo": "push",
+  "resourceTags": [
+    "gear",
+    "loot",
+    "wound"
+  ]
 }

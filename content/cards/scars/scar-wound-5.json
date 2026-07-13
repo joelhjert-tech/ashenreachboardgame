@@ -1,0 +1,15 @@
+{
+  "id": "scar-wound-5",
+  "type": "scar",
+  "title": "Glasslung",
+  "text": "Your breath rasps through crystal dust and old ward smoke.",
+  "flavor": "Cold air leaves a violet frost on your teeth.",
+  "trigger": "When you enter an inner space or a space with anomaly text.",
+  "penalty": "Gain a glasslung note from the bad air.",
+  "effect": {
+    "type": "gain_note",
+    "text": "Glasslung marked the bad air for later treatment."
+  },
+  "relief": "Discard a consumable salvage item to treat the breath and ignore this trigger once.",
+  "upside": "After resolving the space without a failed check, mark the breath as controlled for the scene."
+}

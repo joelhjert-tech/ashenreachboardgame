@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useState, type ReactElement } from "react";
+import { CombatDiceAnimation } from "./CombatDiceAnimation.js";
+import { ChallengeBadge, isStat } from "./ChallengeBadge.js";
 import type { OutcomeSummary } from "./types.js";
 
 interface RollOutcomePanelProps {
@@ -16,21 +18,11 @@ const pipLayout: Record<number, number[]> = {
   6: [0, 2, 3, 5, 6, 8]
 };
 
-function buildAnimationFrames(die1: number, die2: number): Array<[number, number]> {
-  return [
-    [((die1 + 1) % 6) + 1, ((die2 + 3) % 6) + 1],
-    [((die1 + 3) % 6) + 1, ((die2 + 5) % 6) + 1],
-    [((die1 + 5) % 6) + 1, ((die2 + 1) % 6) + 1],
-    [die2, die1],
-    [die1, die2]
-  ];
-}
-
 function DieFace({ value }: { value: number }): ReactElement {
   const activePips = new Set(pipLayout[value] ?? []);
 
   return (
-    <div className="roll-die" data-face={value}>
+    <div className="roll-die" data-face={value} data-testid="roll-die">
       <div className="roll-die-grid">
         {Array.from({ length: 9 }, (_, index) => (
           <span
@@ -88,6 +80,7 @@ export function RollOutcomePanel({
   ]);
   const [isAnimating, setIsAnimating] = useState(false);
   const animationKey = `${summary.seatId}:${summary.encounterCardId ?? "none"}:${summary.die1 ?? "x"}:${summary.die2 ?? "x"}:${summary.checkTotal ?? "x"}:${summary.success ?? "x"}:${summary.enemyDie1 ?? "x"}:${summary.enemyDie2 ?? "x"}:${summary.enemyTotal ?? "x"}`;
+  const challengeStat = isStat(summary.checkStat) ? summary.checkStat : "grit";
 
   useEffect(() => {
     if (finalDie1 === null || finalDie2 === null || total === null || difficulty === null || statBonus === null || success === null) {
@@ -105,34 +98,17 @@ export function RollOutcomePanel({
       return;
     }
 
-    const playerFrames = buildAnimationFrames(finalDie1, finalDie2);
-    const enemyFrames = buildAnimationFrames(finalEnemyDie1 ?? finalDie1, finalEnemyDie2 ?? finalDie2);
-    let frameIndex = 0;
     setIsAnimating(true);
-    setDisplayFaces(playerFrames[0] ?? [finalDie1, finalDie2]);
-    setDisplayEnemyFaces(enemyFrames[0] ?? [finalEnemyDie1 ?? 1, finalEnemyDie2 ?? 1]);
-
-    const intervalId = window.setInterval(() => {
-      frameIndex += 1;
-
-      if (frameIndex >= playerFrames.length) {
-        window.clearInterval(intervalId);
-        return;
-      }
-
-      setDisplayFaces(playerFrames[frameIndex] ?? [finalDie1, finalDie2]);
-      setDisplayEnemyFaces(enemyFrames[frameIndex] ?? [finalEnemyDie1 ?? 1, finalEnemyDie2 ?? 1]);
-    }, 95);
+    setDisplayFaces([finalDie1, finalDie2]);
+    setDisplayEnemyFaces([finalEnemyDie1 ?? 1, finalEnemyDie2 ?? 1]);
 
     const settleId = window.setTimeout(() => {
-      window.clearInterval(intervalId);
       setDisplayFaces([finalDie1, finalDie2]);
       setDisplayEnemyFaces([finalEnemyDie1 ?? 1, finalEnemyDie2 ?? 1]);
       setIsAnimating(false);
     }, 520);
 
     return () => {
-      window.clearInterval(intervalId);
       window.clearTimeout(settleId);
       setDisplayFaces([finalDie1, finalDie2]);
       setDisplayEnemyFaces([finalEnemyDie1 ?? 1, finalEnemyDie2 ?? 1]);
@@ -180,16 +156,28 @@ export function RollOutcomePanel({
   }
 
   return (
-    <section className="panel nested-panel roll-panel" data-testid="roll-outcome-panel">
+    <section className={`panel nested-panel roll-panel roll-panel-${challengeStat}`} data-testid="roll-outcome-panel">
       <div className="row-between">
         <div>
           <h2>{title}</h2>
+          <ChallengeBadge stat={challengeStat} label={`${summary.checkStat ? "" : "Challenge "}${isOpposed ? "Battle" : "Check"}`} value={difficulty} />
           <p>{summary.summary}</p>
         </div>
         <div className={`roll-state ${state.className}`} data-testid="roll-state">
           <span>{state.label}</span>
         </div>
       </div>
+      <CombatDiceAnimation
+        attackValue={total}
+        defenseValue={isOpposed ? enemyTotal : difficulty}
+        modifierValue={statBonus}
+        attackDieFace={finalDie1}
+        defenseDieFace={isOpposed ? finalEnemyDie1 : finalDie2}
+        attackSuccess={success === true}
+        defenseSuccess={success === false}
+        hasModifier={statBonus !== 0}
+        challengeStat={challengeStat}
+      />
       <div className={`roll-display ${isOpposed ? "roll-display-opposed" : ""}`}>
         <DicePair label={isOpposed ? "Player" : "Roll"} faces={displayFaces} animating={isAnimating} />
         {isOpposed && <DicePair label="Enemy" faces={displayEnemyFaces} animating={isAnimating} />}
@@ -216,13 +204,13 @@ export function RollOutcomePanel({
                 <strong>{enemyBonus}</strong>
               </p>
               <p>
-                Using <strong>{summary.checkStat ?? "n/a"}</strong> against{" "}
-                <strong>{summary.encounterTitle ?? "the current encounter"}</strong>. Ties hold for the player.
+              Using <ChallengeBadge stat={challengeStat} size="compact" /> against{" "}
+              <strong>{summary.encounterTitle ?? "the current encounter"}</strong>. Ties hold for the player.
               </p>
             </>
           ) : (
             <p>
-              Using <strong>{summary.checkStat ?? "n/a"}</strong> against{" "}
+              Using <ChallengeBadge stat={challengeStat} size="compact" /> against{" "}
               <strong>{summary.encounterTitle ?? "the current encounter"}</strong>
             </p>
           )}

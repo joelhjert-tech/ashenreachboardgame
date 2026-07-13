@@ -1,0 +1,753 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Ashen Reach Stat Color Theming Mockup</title>
+    <style>
+      :root {
+        --command: #9B6CFF;
+        --command-soft: rgba(155, 108, 255, 0.16);
+        --command-border: rgba(155, 108, 255, 0.62);
+        --grit: #D84A32;
+        --grit-soft: rgba(216, 74, 50, 0.16);
+        --grit-border: rgba(216, 74, 50, 0.68);
+        --signal: #39A9FF;
+        --signal-soft: rgba(57, 169, 255, 0.16);
+        --signal-border: rgba(57, 169, 255, 0.66);
+        --guile: #E3B341;
+        --guile-soft: rgba(227, 179, 65, 0.17);
+        --guile-border: rgba(227, 179, 65, 0.68);
+        --forge: #D8792A;
+        --forge-soft: rgba(216, 121, 42, 0.17);
+        --forge-border: rgba(216, 121, 42, 0.66);
+        --ink: #05080c;
+        --panel: rgba(8, 11, 16, 0.96);
+        --panel-2: rgba(13, 18, 24, 0.92);
+        --line: rgba(157, 132, 98, 0.22);
+        --line-cold: rgba(90, 111, 136, 0.28);
+        --text: #f7ead1;
+        --muted: rgba(236, 228, 210, 0.72);
+        --gold: #d1b07a;
+        --blue-note: #5faaf7;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        background:
+          radial-gradient(circle at 20% 0%, rgba(216, 74, 50, 0.12), transparent 34%),
+          radial-gradient(circle at 82% 8%, rgba(57, 169, 255, 0.1), transparent 30%),
+          linear-gradient(180deg, #080a0d, #030507 70%);
+        color: var(--text);
+        font-family: Inter, "Segoe UI", Arial, sans-serif;
+      }
+
+      .page {
+        max-width: 1180px;
+        margin: 0 auto;
+        padding: 28px;
+        display: grid;
+        gap: 22px;
+      }
+
+      .header {
+        display: grid;
+        gap: 7px;
+      }
+
+      .kicker {
+        margin: 0;
+        color: var(--gold);
+        font-size: 12px;
+        font-weight: 900;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+      }
+
+      h1,
+      h2,
+      h3,
+      p {
+        margin: 0;
+      }
+
+      h1 {
+        font-family: Georgia, "Times New Roman", serif;
+        font-size: clamp(28px, 4vw, 48px);
+        line-height: 0.98;
+        letter-spacing: 0.02em;
+        text-transform: uppercase;
+      }
+
+      .subtitle {
+        max-width: 820px;
+        color: var(--muted);
+        line-height: 1.45;
+      }
+
+      .board {
+        display: grid;
+        grid-template-columns: 390px minmax(0, 1fr);
+        gap: 22px;
+        align-items: start;
+      }
+
+      .phone-frame,
+      .tv-frame,
+      .reference-frame {
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        background:
+          linear-gradient(180deg, rgba(13, 18, 24, 0.94), rgba(5, 8, 12, 0.97)),
+          var(--panel);
+        box-shadow:
+          inset 0 0 0 1px rgba(255, 255, 255, 0.035),
+          0 18px 60px rgba(0, 0, 0, 0.36);
+      }
+
+      .phone-frame {
+        width: 390px;
+        height: 844px;
+        padding: 14px;
+        display: grid;
+        grid-template-rows: auto minmax(0, 1fr) auto;
+        gap: 12px;
+      }
+
+      .phone-top {
+        display: grid;
+        gap: 8px;
+        padding: 12px;
+        border: 1px solid rgba(157, 132, 98, 0.18);
+        border-radius: 8px;
+        background: rgba(7, 10, 14, 0.72);
+      }
+
+      .phone-top-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+      }
+
+      .room-chip,
+      .small-chip {
+        min-width: 0;
+        padding: 5px 8px;
+        border: 1px solid rgba(143, 183, 218, 0.22);
+        border-radius: 999px;
+        background: rgba(9, 14, 20, 0.58);
+        color: #ead7b5;
+        font-size: 11px;
+        font-weight: 850;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      .phone-title {
+        display: grid;
+        gap: 2px;
+      }
+
+      .phone-title span {
+        color: var(--gold);
+        font-size: 10px;
+        font-weight: 900;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+      }
+
+      .phone-title strong {
+        font-family: Georgia, "Times New Roman", serif;
+        font-size: 24px;
+        line-height: 1;
+        text-transform: uppercase;
+      }
+
+      .phone-title small {
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .phone-scroll {
+        min-height: 0;
+        display: grid;
+        gap: 12px;
+        overflow-y: auto;
+        padding-right: 2px;
+      }
+
+      .section {
+        display: grid;
+        gap: 9px;
+      }
+
+      .section-title {
+        min-height: 30px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        padding: 7px 9px;
+        border: 1px solid rgba(157, 132, 98, 0.18);
+        border-radius: 7px;
+        background: rgba(7, 10, 14, 0.72);
+        color: var(--gold);
+        font-size: 11px;
+        font-weight: 900;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+      }
+
+      .stat-list {
+        display: grid;
+        gap: 8px;
+      }
+
+      .stat-row {
+        --stat-color: var(--signal);
+        --stat-soft: var(--signal-soft);
+        --stat-border: var(--signal-border);
+        min-height: 54px;
+        display: grid;
+        grid-template-columns: 6px minmax(0, 1fr) auto;
+        align-items: center;
+        gap: 10px;
+        padding: 8px 10px 8px 0;
+        border: 1px solid color-mix(in srgb, var(--stat-color) 36%, var(--line-cold));
+        border-radius: 7px;
+        background:
+          linear-gradient(90deg, var(--stat-soft), transparent 62%),
+          linear-gradient(180deg, var(--panel-2), rgba(7, 10, 15, 0.98));
+      }
+
+      .stat-row::before {
+        content: "";
+        width: 6px;
+        height: 100%;
+        border-radius: 6px 0 0 6px;
+        background: var(--stat-color);
+        box-shadow: 0 0 14px color-mix(in srgb, var(--stat-color) 42%, transparent);
+      }
+
+      .stat-copy {
+        min-width: 0;
+        display: grid;
+        gap: 2px;
+      }
+
+      .stat-copy strong {
+        color: var(--text);
+        font-size: 13px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      .stat-copy span {
+        color: var(--muted);
+        font-size: 11px;
+      }
+
+      .stat-value {
+        color: var(--stat-color);
+        font-family: Georgia, "Times New Roman", serif;
+        font-size: 28px;
+        font-weight: 900;
+        line-height: 1;
+      }
+
+      .stat-chip-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+      }
+
+      .stat-chip {
+        --stat-color: var(--signal);
+        --stat-soft: var(--signal-soft);
+        --stat-border: var(--signal-border);
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        min-width: 0;
+        padding: 5px 7px;
+        border: 1px solid var(--stat-border);
+        border-left-width: 4px;
+        border-radius: 999px;
+        background: var(--stat-soft);
+        color: var(--text);
+        font-size: 11px;
+        font-weight: 850;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+      }
+
+      .stat-chip b {
+        color: var(--stat-color);
+      }
+
+      .stat-command {
+        --stat-color: var(--command);
+        --stat-soft: var(--command-soft);
+        --stat-border: var(--command-border);
+      }
+
+      .stat-grit {
+        --stat-color: var(--grit);
+        --stat-soft: var(--grit-soft);
+        --stat-border: var(--grit-border);
+      }
+
+      .stat-signal {
+        --stat-color: var(--signal);
+        --stat-soft: var(--signal-soft);
+        --stat-border: var(--signal-border);
+      }
+
+      .stat-guile {
+        --stat-color: var(--guile);
+        --stat-soft: var(--guile-soft);
+        --stat-border: var(--guile-border);
+      }
+
+      .stat-forge {
+        --stat-color: var(--forge);
+        --stat-soft: var(--forge-soft);
+        --stat-border: var(--forge-border);
+      }
+
+      .vitals {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 6px;
+      }
+
+      .vital {
+        min-width: 0;
+        display: grid;
+        gap: 3px;
+        padding: 8px 6px;
+        border: 1px solid rgba(157, 132, 98, 0.18);
+        border-radius: 7px;
+        background: rgba(8, 12, 18, 0.46);
+        text-align: center;
+      }
+
+      .vital span {
+        color: var(--gold);
+        font-size: 9px;
+        font-weight: 900;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+      }
+
+      .vital strong {
+        color: var(--text);
+        font-size: 17px;
+      }
+
+      .note {
+        padding: 9px 10px;
+        border: 1px solid rgba(227, 179, 65, 0.26);
+        border-left-color: rgba(227, 179, 65, 0.68);
+        border-radius: 7px;
+        background: rgba(227, 179, 65, 0.08);
+        color: var(--muted);
+        font-size: 12px;
+        line-height: 1.35;
+      }
+
+      .phone-bottom {
+        display: flex;
+        gap: 8px;
+      }
+
+      .tab {
+        flex: 1 1 0;
+        padding: 9px 6px;
+        border: 1px solid rgba(143, 183, 218, 0.22);
+        border-radius: 7px;
+        background: rgba(9, 14, 20, 0.58);
+        color: var(--muted);
+        font-size: 10px;
+        font-weight: 900;
+        text-align: center;
+        text-transform: uppercase;
+      }
+
+      .tab.active {
+        border-color: rgba(216, 74, 50, 0.44);
+        color: var(--text);
+        box-shadow: inset 0 0 0.7rem rgba(216, 74, 50, 0.12);
+      }
+
+      .right-stack {
+        display: grid;
+        gap: 22px;
+      }
+
+      .reference-frame,
+      .tv-frame {
+        padding: 16px;
+      }
+
+      .reference-frame {
+        display: grid;
+        gap: 13px;
+      }
+
+      .compare {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 14px;
+      }
+
+      .mini-panel {
+        min-width: 0;
+        display: grid;
+        gap: 8px;
+        padding: 12px;
+        border: 1px solid rgba(157, 132, 98, 0.18);
+        border-radius: 8px;
+        background: rgba(7, 10, 14, 0.72);
+      }
+
+      .flat-stat {
+        display: flex;
+        justify-content: space-between;
+        gap: 8px;
+        padding: 8px;
+        border: 1px solid rgba(143, 183, 218, 0.2);
+        border-radius: 6px;
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .tv-frame {
+        display: grid;
+        gap: 14px;
+      }
+
+      .tv-roster {
+        display: grid;
+        gap: 8px;
+      }
+
+      .tv-row {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 14px;
+        align-items: center;
+        padding: 10px;
+        border: 1px solid rgba(157, 132, 98, 0.18);
+        border-radius: 8px;
+        background: rgba(7, 10, 14, 0.72);
+      }
+
+      .tv-row h3 {
+        font-size: 15px;
+        text-transform: uppercase;
+      }
+
+      .tv-row p {
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .stat-circles {
+        display: flex;
+        gap: 6px;
+      }
+
+      .circle {
+        --stat-color: var(--signal);
+        --stat-soft: var(--signal-soft);
+        width: 31px;
+        aspect-ratio: 1;
+        display: grid;
+        place-items: center;
+        border: 1px solid var(--stat-color);
+        border-radius: 999px;
+        background:
+          radial-gradient(circle at 34% 24%, rgba(255, 255, 255, 0.22), transparent 28%),
+          color-mix(in srgb, var(--stat-color) 24%, rgba(9, 10, 12, 0.88));
+        color: #fff4dc;
+        font-family: Georgia, "Times New Roman", serif;
+        font-weight: 900;
+      }
+
+      .battle {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+        gap: 12px;
+      }
+
+      .battle-card {
+        --stat-color: var(--signal);
+        --stat-soft: var(--signal-soft);
+        --stat-border: var(--signal-border);
+        display: grid;
+        gap: 10px;
+        padding: 12px;
+        border: 1px solid var(--stat-border);
+        border-radius: 8px;
+        background:
+          linear-gradient(135deg, var(--stat-soft), transparent 46%),
+          rgba(7, 10, 14, 0.72);
+      }
+
+      .battle-card h3 {
+        font-size: 15px;
+        text-transform: uppercase;
+      }
+
+      .battle-math {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 6px;
+      }
+
+      .math-cell {
+        display: grid;
+        gap: 3px;
+        padding: 8px;
+        border: 1px solid color-mix(in srgb, var(--stat-color) 34%, rgba(231, 210, 176, 0.16));
+        border-radius: 6px;
+        background: rgba(5, 8, 12, 0.58);
+      }
+
+      .math-cell span {
+        color: var(--muted);
+        font-size: 10px;
+        text-transform: uppercase;
+      }
+
+      .math-cell strong {
+        color: var(--stat-color);
+        font-size: 20px;
+      }
+
+      .formula {
+        color: var(--text);
+        font-size: 13px;
+        line-height: 1.35;
+      }
+
+      .formula b {
+        color: var(--stat-color);
+      }
+
+      @media (max-width: 900px) {
+        .board,
+        .compare,
+        .battle {
+          grid-template-columns: 1fr;
+        }
+
+        .phone-frame {
+          width: min(390px, 100%);
+          justify-self: center;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="page">
+      <header class="header">
+        <p class="kicker">Ashen Reach mockup</p>
+        <h1>Stat color consistency pass</h1>
+        <p class="subtitle">
+          Proposed visual rule: reuse the existing challenge theme as a small accent, badge, and numeric emphasis.
+          Do not flood cards with full-color backgrounds. Vitals remain neutral here because no shared vital token source was found.
+        </p>
+      </header>
+
+      <section class="board" aria-label="Mockup board">
+        <article class="phone-frame" aria-label="Phone mockup">
+          <header class="phone-top">
+            <div class="phone-top-row">
+              <span class="room-chip">TEST1</span>
+              <span class="small-chip">Bjornis</span>
+            </div>
+            <div class="phone-title">
+              <span>Ashen Reach Controller</span>
+              <strong>Player Card</strong>
+              <small>Stat colors now match the challenge language everywhere.</small>
+            </div>
+          </header>
+
+          <div class="phone-scroll">
+            <section class="section" aria-label="Character stats">
+              <div class="section-title">
+                <span>Stats</span>
+                <span>Base + bonuses</span>
+              </div>
+              <div class="stat-list">
+                <div class="stat-row stat-command">
+                  <div class="stat-copy">
+                    <strong>Command</strong>
+                    <span>Orders, leadership, tactics</span>
+                  </div>
+                  <span class="stat-value">3</span>
+                </div>
+                <div class="stat-row stat-grit">
+                  <div class="stat-copy">
+                    <strong>Grit</strong>
+                    <span>Combat, wounds, force</span>
+                  </div>
+                  <span class="stat-value">4</span>
+                </div>
+                <div class="stat-row stat-signal">
+                  <div class="stat-copy">
+                    <strong>Signal</strong>
+                    <span>Anomaly, void, relic signal</span>
+                  </div>
+                  <span class="stat-value">2</span>
+                </div>
+                <div class="stat-row stat-guile">
+                  <div class="stat-copy">
+                    <strong>Guile</strong>
+                    <span>Traps, trade, salvage tricks</span>
+                  </div>
+                  <span class="stat-value">2</span>
+                </div>
+                <div class="stat-row stat-forge">
+                  <div class="stat-copy">
+                    <strong>Forge</strong>
+                    <span>Crafting, repairs, machines, armor</span>
+                  </div>
+                  <span class="stat-value">1</span>
+                </div>
+              </div>
+            </section>
+
+            <section class="section" aria-label="Character select stat chips">
+              <div class="section-title">
+                <span>Character select chips</span>
+                <span>Same mapping</span>
+              </div>
+              <div class="stat-chip-row">
+                <span class="stat-chip stat-command">Command <b>3</b></span>
+                <span class="stat-chip stat-grit">Grit <b>4</b></span>
+                <span class="stat-chip stat-signal">Signal <b>2</b></span>
+                <span class="stat-chip stat-guile">Guile <b>2</b></span>
+                <span class="stat-chip stat-forge">Forge <b>1</b></span>
+              </div>
+            </section>
+
+            <section class="section" aria-label="Vitals">
+              <div class="section-title">
+                <span>Vitals</span>
+                <span>Hold neutral</span>
+              </div>
+              <div class="vitals">
+                <div class="vital"><span>Heat</span><strong>1</strong></div>
+                <div class="vital"><span>Wounds</span><strong>0</strong></div>
+                <div class="vital"><span>Trophy</span><strong>2</strong></div>
+                <div class="vital"><span>Gear</span><strong>4</strong></div>
+              </div>
+              <p class="note">Mockup keeps vitals neutral until a canonical vital theme exists. No new vital colors invented.</p>
+            </section>
+          </div>
+
+          <footer class="phone-bottom">
+            <span class="tab active">Player</span>
+            <span class="tab">Move</span>
+            <span class="tab">Battle</span>
+            <span class="tab">Action</span>
+          </footer>
+        </article>
+
+        <div class="right-stack">
+          <section class="reference-frame" aria-label="Before and after comparison">
+            <div class="section-title">
+              <span>Target correction</span>
+              <span>Flat to themed</span>
+            </div>
+            <div class="compare">
+              <div class="mini-panel">
+                <p class="kicker">Current flat pattern</p>
+                <div class="flat-stat"><span>Command</span><strong>3</strong></div>
+                <div class="flat-stat"><span>Grit</span><strong>4</strong></div>
+                <div class="flat-stat"><span>Signal</span><strong>2</strong></div>
+                <div class="flat-stat"><span>Guile</span><strong>2</strong></div>
+                <div class="flat-stat"><span>Forge</span><strong>1</strong></div>
+              </div>
+              <div class="mini-panel">
+                <p class="kicker">Proposed token pattern</p>
+                <span class="stat-chip stat-command">Command <b>3</b></span>
+                <span class="stat-chip stat-grit">Grit <b>4</b></span>
+                <span class="stat-chip stat-signal">Signal <b>2</b></span>
+                <span class="stat-chip stat-guile">Guile <b>2</b></span>
+                <span class="stat-chip stat-forge">Forge <b>1</b></span>
+              </div>
+            </div>
+          </section>
+
+          <section class="tv-frame" aria-label="TV mockup">
+            <div class="section-title">
+              <span>TV consistency sample</span>
+              <span>Roster + battle</span>
+            </div>
+            <div class="tv-roster">
+              <article class="tv-row">
+                <div>
+                  <h3>Bjornis</h3>
+                  <p>Void Marshal | Mission selected | Ready</p>
+                </div>
+                <div class="stat-circles">
+                  <span class="circle stat-command">3</span>
+                  <span class="circle stat-grit">4</span>
+                  <span class="circle stat-signal">2</span>
+                  <span class="circle stat-guile">2</span>
+                  <span class="circle stat-forge">1</span>
+                </div>
+              </article>
+              <article class="tv-row">
+                <div>
+                  <h3>Rumi</h3>
+                  <p>Signal Witch | Choosing mission</p>
+                </div>
+                <div class="stat-circles">
+                  <span class="circle stat-command">1</span>
+                  <span class="circle stat-grit">1</span>
+                  <span class="circle stat-signal">4</span>
+                  <span class="circle stat-guile">2</span>
+                  <span class="circle stat-forge">1</span>
+                </div>
+              </article>
+            </div>
+
+            <div class="battle">
+              <article class="battle-card stat-grit">
+                <h3>Battle math</h3>
+                <div class="battle-math">
+                  <div class="math-cell"><span>Grit</span><strong>4</strong></div>
+                  <div class="math-cell"><span>Roll</span><strong>5</strong></div>
+                  <div class="math-cell"><span>Mod</span><strong>+1</strong></div>
+                  <div class="math-cell"><span>Total</span><strong>10</strong></div>
+                </div>
+                <p class="formula"><b>Grit</b> 4 + roll 5 + weapon 1 = total 10</p>
+              </article>
+              <article class="battle-card stat-forge">
+                <h3>Action check</h3>
+                <div class="battle-math">
+                  <div class="math-cell"><span>Forge</span><strong>1</strong></div>
+                  <div class="math-cell"><span>Roll</span><strong>6</strong></div>
+                  <div class="math-cell"><span>Mod</span><strong>+2</strong></div>
+                  <div class="math-cell"><span>Total</span><strong>9</strong></div>
+                </div>
+                <p class="formula"><b>Forge</b> 1 + roll 6 + gear 2 = total 9</p>
+              </article>
+            </div>
+          </section>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>

@@ -1,0 +1,294 @@
+export type LegacyHeatConstruct =
+  | "gain_heat"
+  | "gain_heat_all"
+  | "lose_heat"
+  | "heatCost"
+  | "heatDelta"
+  | "heatThreshold"
+  | "cost.heat"
+  | "player-facing Heat text"
+  | "player-facing Risk resource text"
+  | "other Heat-shaped field";
+
+export type LegacyHeatContentRecord = {
+  file: string;
+  record: unknown;
+};
+
+export type LegacyHeatEffectApproval = {
+  id: string;
+  constructs: readonly LegacyHeatConstruct[];
+};
+
+export type LegacyCharacterHeatDefaultApproval = {
+  id: string;
+  file: string;
+  field: "heat";
+  value: 0;
+};
+
+export type OtherLegacyHeatCompatibilityApproval = {
+  id: string;
+  purpose: string;
+};
+
+// Phase 1A compatibility effects. Approval is construct-specific: it does not
+// authorize character defaults, costs, thresholds, deltas, or arbitrary text.
+export const LEGACY_HEAT_EFFECT_APPROVALS: readonly LegacyHeatEffectApproval[] = [
+  { id: "anomaly-bellrain-inversion", constructs: ["lose_heat"] },
+  { id: "anomaly-cinder-mirage-lane", constructs: ["player-facing Heat text", "player-facing Risk resource text"] },
+  { id: "artifact-cinder-suture-kit", constructs: ["player-facing Heat text"] },
+  { id: "ash-cinder-runt", constructs: ["gain_heat"] },
+  { id: "ashen-doppelganger", constructs: ["gain_heat"] },
+  { id: "bell-mask-pilgrim", constructs: ["gain_heat"] },
+  { id: "choir-static-burst", constructs: ["gain_heat"] },
+  { id: "cinder-gate-backlash", constructs: ["lose_heat"] },
+  { id: "compact-equipment-requisition", constructs: ["lose_heat"] },
+  { id: "cracked-censer-novice", constructs: ["gain_heat"] },
+  { id: "crown-bell-baron", constructs: ["gain_heat"] },
+  { id: "crownless-advocate", constructs: ["lose_heat"] },
+  { id: "escalation-blackstar-hunger", constructs: ["gain_heat_all"] },
+  { id: "escalation-choir-feedback", constructs: ["gain_heat_all"] },
+  { id: "escalation-marrow-surgery-debt", constructs: ["gain_heat"] },
+  { id: "escalation-saltwind-lockdown", constructs: ["gain_heat_all"] },
+  { id: "false-route-procession", constructs: ["gain_heat"] },
+  { id: "gateblind-pulse", constructs: ["gain_heat"] },
+  { id: "glass-chime-swarm", constructs: ["gain_heat"] },
+  { id: "glasswing-midge-cloud", constructs: ["gain_heat"] },
+  { id: "grave-silt-press", constructs: ["gain_heat"] },
+  { id: "hymn-scarred-zealot", constructs: ["gain_heat"] },
+  { id: "lantern-moth-swarm", constructs: ["gain_heat", "lose_heat"] },
+  { id: "latchspire-raider", constructs: ["lose_heat"] },
+  { id: "marrow-tax-auditors", constructs: ["gain_heat"] },
+  { id: "memory-tax-gate", constructs: ["gain_heat"] },
+  { id: "mirror-mite-bloom", constructs: ["gain_heat"] },
+  { id: "mirror-rot-interference", constructs: ["lose_heat"] },
+  { id: "pale-contract-collector", constructs: ["gain_heat"] },
+  { id: "relay-husk", constructs: ["gain_heat"] },
+  { id: "relay-pilgrim-riot", constructs: ["gain_heat"] },
+  { id: "roadside-bone-oracle", constructs: ["gain_heat"] },
+  { id: "rust-choir-peddlers", constructs: ["gain_heat"] },
+  { id: "saltflat-bone-reader", constructs: ["lose_heat"] },
+  { id: "signal-rotted-engineer", constructs: ["gain_heat"] },
+  { id: "siren-relay-echo", constructs: ["gain_heat", "lose_heat"] },
+  { id: "soot-stained-cutpurse", constructs: ["gain_heat"] },
+  { id: "spindle-static-squall", constructs: ["gain_heat"] },
+  { id: "void-salt-sickness", constructs: ["gain_heat", "lose_heat"] },
+  { id: "webglass-snarefield", constructs: ["lose_heat"] }
+];
+
+// Phase 1L quarantine. These are the only canonical character definitions that
+// may author the required compatibility field, and only at integer zero.
+export const LEGACY_CHARACTER_HEAT_DEFAULT_APPROVALS: readonly LegacyCharacterHeatDefaultApproval[] = [
+  { id: "black-ledger-agent", file: "content/characters/black-ledger-agent.json", field: "heat", value: 0 },
+  { id: "char_bjornis", file: "content/characters/char_bjornis.json", field: "heat", value: 0 },
+  { id: "char_deepdale", file: "content/characters/char_deepdale.json", field: "heat", value: 0 },
+  { id: "char_ker_von_ker", file: "content/characters/char_ker_von_ker.json", field: "heat", value: 0 },
+  { id: "char_kira_dog", file: "content/characters/char_kira_dog.json", field: "heat", value: 0 },
+  { id: "char_master_alpha", file: "content/characters/char_master_alpha.json", field: "heat", value: 0 },
+  { id: "char_popelord", file: "content/characters/char_popelord.json", field: "heat", value: 0 },
+  { id: "char_rumi", file: "content/characters/char_rumi.json", field: "heat", value: 0 },
+  { id: "cinder-monk", file: "content/characters/cinder-monk.json", field: "heat", value: 0 },
+  { id: "fleet-elder", file: "content/characters/fleet-elder.json", field: "heat", value: 0 },
+  { id: "grave-engineer", file: "content/characters/grave-engineer.json", field: "heat", value: 0 },
+  { id: "oathbroken-prince", file: "content/characters/oathbroken-prince.json", field: "heat", value: 0 },
+  { id: "rift-cartographer", file: "content/characters/rift-cartographer.json", field: "heat", value: 0 },
+  { id: "salvage-warden", file: "content/characters/salvage-warden.json", field: "heat", value: 0 },
+  { id: "siege-medic", file: "content/characters/siege-medic.json", field: "heat", value: 0 },
+  { id: "signal-witch", file: "content/characters/signal-witch.json", field: "heat", value: 0 },
+  { id: "void-marshal", file: "content/characters/void-marshal.json", field: "heat", value: 0 }
+];
+
+// Compatibility IDs that remain tracked separately from effect/default
+// authorization. Their presence grants no permission to author a Heat field.
+export const OTHER_LEGACY_HEAT_COMPATIBILITY_APPROVALS: readonly OtherLegacyHeatCompatibilityApproval[] = [
+  { id: "artifact-fandiablos", purpose: "stable Artifact/follower compatibility pair" },
+  { id: "artifact-heat-sink-prayer", purpose: "stable serialized Scar-Sink Prayer card ID" },
+  { id: "black-lantern-broker", purpose: "legacy follower loss-condition value" },
+  { id: "choir-defector", purpose: "legacy follower loss-condition value" },
+  { id: "fandiablos", purpose: "stable Artifact/follower compatibility pair" },
+  { id: "gate-saint-acolyte", purpose: "legacy follower loss-condition value" },
+  { id: "grave-lattice-reclaimer", purpose: "stable Heat-shaped threat effect key" },
+  { id: "heat-sink-prayer", purpose: "stable serialized Scar-Sink Prayer gear ID" },
+  { id: "iron-lung-grenadier", purpose: "stable Heat-shaped threat effect key" },
+  { id: "lucy-hell-puppy", purpose: "legacy follower resource tag" },
+  { id: "mirror-lord-envoy", purpose: "stable Heat-shaped threat effect key" },
+  { id: "pale-marshal", purpose: "stable Heat-shaped threat effect key" },
+  { id: "reliquary-judge", purpose: "stable Heat-shaped threat effect key" },
+  { id: "yard-rivet-brute", purpose: "transitional explicit compatibility ID retained from Phase 1A" }
+];
+
+const effectApprovalsById = new Map(LEGACY_HEAT_EFFECT_APPROVALS.map((approval) => [approval.id, new Set(approval.constructs)]));
+const characterDefaultsById = new Map(LEGACY_CHARACTER_HEAT_DEFAULT_APPROVALS.map((approval) => [approval.id, approval]));
+
+// Compatibility export retained for existing count/inclusion tests. Validation
+// uses the separated manifests above and never treats this union as authority.
+export const APPROVED_LEGACY_HEAT_CONTENT_IDS = new Set([
+  ...LEGACY_HEAT_EFFECT_APPROVALS.map((approval) => approval.id),
+  ...LEGACY_CHARACTER_HEAT_DEFAULT_APPROVALS.map((approval) => approval.id),
+  ...OTHER_LEGACY_HEAT_COMPATIBILITY_APPROVALS.map((approval) => approval.id)
+]);
+
+export const APPROVED_AUTOMATIC_SALVAGE_LOSS_IDS = new Set([
+  "escalation-crownfall-writ", "ash-rat-skitter", "bridge-toll-runt", "gutter-bell-mite", "pale-toll-enforcer", "rust-mote-drone", "toll-scrip-urchins"
+]);
+
+const visibleTextKeys = new Set(["text", "activeText", "passiveText", "penalty", "trigger", "summary", "description"]);
+
+export function validateLegacyHeatContentRecord(file: string, record: unknown): string[] {
+  if (!isRecord(record)) return [];
+  const id = typeof record.id === "string" ? record.id : "<missing-id>";
+  const normalizedFile = normalizeFile(file);
+  const contentType = isCharacterFile(normalizedFile) ? "character" : typeof record.type === "string" ? record.type : "content";
+  const errors: string[] = [];
+
+  if (JSON.stringify(record).includes('"type":"lose_salvage"') && !APPROVED_AUTOMATIC_SALVAGE_LOSS_IDS.has(id)) {
+    errors.push(`${file} (${id}, ${contentType}) uses lose_salvage outside the approved automatic floor-zero consequence set. Payments, tolls, fees, purchases, and choices require authoritative affordability or choice handling.`);
+  }
+
+  const constructs = findLegacyHeatConstructs(record);
+  const approvedEffects = effectApprovalsById.get(id) ?? new Set<LegacyHeatConstruct>();
+  const defaultApproval = characterDefaultsById.get(id);
+
+  if (Object.prototype.hasOwnProperty.call(record, "heat")) {
+    const actual = record.heat;
+    const exactDefault = contentType === "character" && defaultApproval?.file === normalizedFile && actual === 0 && Number.isInteger(actual);
+    if (!exactDefault) {
+      const approvalDetail = defaultApproval
+        ? `Approval requires ${defaultApproval.file} character.heat to equal integer 0; found ${formatValue(actual)}.`
+        : `The ID is not approved in LEGACY_CHARACTER_HEAT_DEFAULT_APPROVALS.`;
+      errors.push(`${file} (${id}, ${contentType}) authors compatibility-only field character.heat with value ${formatValue(actual)}. ${approvalDetail} New characters must not introduce Heat defaults; request a field-specific compatibility decision instead.`);
+    }
+  }
+
+  for (const construct of constructs) {
+    if (!approvedEffects.has(construct)) {
+      errors.push(`${file} (${id}, ${contentType}) introduces blocked legacy Heat construct ${construct}. This requires a construct-specific legacy Heat-effect approval; character-default, stable-ID, and threshold approvals do not authorize it.`);
+    }
+  }
+
+  return errors;
+}
+
+export function validateLegacyHeatApprovalManifest(
+  records: readonly LegacyHeatContentRecord[],
+  manifests: {
+    effects?: readonly LegacyHeatEffectApproval[];
+    defaults?: readonly LegacyCharacterHeatDefaultApproval[];
+    other?: readonly OtherLegacyHeatCompatibilityApproval[];
+  } = {}
+): string[] {
+  const effects = manifests.effects ?? LEGACY_HEAT_EFFECT_APPROVALS;
+  const defaults = manifests.defaults ?? LEGACY_CHARACTER_HEAT_DEFAULT_APPROVALS;
+  const other = manifests.other ?? OTHER_LEGACY_HEAT_COMPATIBILITY_APPROVALS;
+  const errors: string[] = [];
+  const byId = new Map<string, LegacyHeatContentRecord[]>();
+
+  for (const entry of records) {
+    if (!isRecord(entry.record) || typeof entry.record.id !== "string") continue;
+    byId.set(entry.record.id, [...(byId.get(entry.record.id) ?? []), entry]);
+  }
+
+  errors.push(...duplicateApprovalErrors("Heat-effect", effects.map((entry) => entry.id)));
+  errors.push(...duplicateApprovalErrors("character-default", defaults.map((entry) => entry.id)));
+  errors.push(...duplicateApprovalErrors("other compatibility", other.map((entry) => entry.id)));
+
+  const classMembership = new Map<string, string[]>();
+  for (const [label, ids] of [["Heat-effect", effects.map((entry) => entry.id)], ["character-default", defaults.map((entry) => entry.id)], ["other compatibility", other.map((entry) => entry.id)]] as const) {
+    for (const id of ids) classMembership.set(id, [...(classMembership.get(id) ?? []), label]);
+  }
+  for (const [id, classes] of classMembership) {
+    if (classes.length > 1) errors.push(`Legacy Heat approval ${id} appears in multiple approval classes (${classes.join(", ")}). Effect, default, and stable compatibility approvals must remain isolated.`);
+  }
+
+  for (const approval of defaults) {
+    const matches = byId.get(approval.id) ?? [];
+    if (matches.length !== 1) {
+      errors.push(`Character-default approval ${approval.id} expected exactly one canonical character record; found ${matches.length}. Remove stale or duplicate approval data.`);
+      continue;
+    }
+    const match = matches[0]!;
+    const normalizedFile = normalizeFile(match.file);
+    if (!isCharacterFile(normalizedFile) || normalizedFile !== approval.file) errors.push(`Character-default approval ${approval.id} points to ${normalizedFile}, not canonical character path ${approval.file}.`);
+    if (!isRecord(match.record) || !Object.prototype.hasOwnProperty.call(match.record, approval.field)) errors.push(`Character-default approval ${approval.id} is stale: canonical field ${approval.field} is missing.`);
+    else if (match.record[approval.field] !== approval.value || !Number.isInteger(match.record[approval.field])) errors.push(`Character-default approval ${approval.id} requires integer ${approval.field}: 0; found ${formatValue(match.record[approval.field])}.`);
+  }
+
+  for (const approval of effects) {
+    const matches = byId.get(approval.id) ?? [];
+    if (matches.length !== 1) {
+      errors.push(`Heat-effect approval ${approval.id} expected exactly one content record; found ${matches.length}. Remove stale or duplicate approval data.`);
+      continue;
+    }
+    const found = new Set(findLegacyHeatConstructs(matches[0]!.record));
+    for (const construct of approval.constructs) if (!found.has(construct)) errors.push(`Heat-effect approval ${approval.id} is stale: approved construct ${construct} is absent from ${matches[0]!.file}.`);
+    if (isCharacterFile(normalizeFile(matches[0]!.file))) errors.push(`Heat-effect approval ${approval.id} points to a character record. Character defaults require the separate field-level manifest.`);
+  }
+
+  for (const approval of other) {
+    const matches = byId.get(approval.id) ?? [];
+    if (matches.length !== 1) errors.push(`Other compatibility approval ${approval.id} expected exactly one content record; found ${matches.length}. Purpose: ${approval.purpose}.`);
+    else if (isCharacterFile(normalizeFile(matches[0]!.file))) errors.push(`Other compatibility approval ${approval.id} points to a character record and cannot authorize character.heat.`);
+  }
+
+  return errors;
+}
+
+function findLegacyHeatConstructs(value: unknown): LegacyHeatConstruct[] {
+  const found = new Set<LegacyHeatConstruct>();
+  const visit = (current: unknown, parentKey = ""): void => {
+    if (Array.isArray(current)) {
+      current.forEach((entry) => visit(entry, parentKey));
+      return;
+    }
+    if (!isRecord(current)) return;
+
+    if (current.type === "gain_heat" || current.type === "gain_heat_all" || current.type === "lose_heat") found.add(current.type);
+    for (const [key, nested] of Object.entries(current)) {
+      if (key === "heatCost") found.add("heatCost");
+      else if (key === "heatDelta") found.add("heatDelta");
+      else if (key === "heatThreshold") found.add("heatThreshold");
+      else if (key === "heat" && parentKey === "cost") found.add("cost.heat");
+      else if (key === "heat") {
+        // Canonical character.heat and cost.heat are validated separately.
+      }
+      else if (/heat/i.test(key)) found.add("other Heat-shaped field");
+
+      if (visibleTextKeys.has(key) && typeof nested === "string" && /\bHeat\b/i.test(nested)) found.add("player-facing Heat text");
+      if (visibleTextKeys.has(key) && typeof nested === "string" && /\bRisk(?: cost)?\b/i.test(nested)) found.add("player-facing Risk resource text");
+      visit(nested, key);
+    }
+  };
+  visit(value);
+  return [...found];
+}
+
+function duplicateApprovalErrors(label: string, ids: readonly string[]): string[] {
+  const seen = new Set<string>();
+  const errors: string[] = [];
+  for (const id of ids) {
+    if (seen.has(id)) errors.push(`${label} approval ${id} is duplicated. Approval manifests must contain unique IDs.`);
+    seen.add(id);
+  }
+  return errors;
+}
+
+function normalizeFile(file: string): string {
+  return file.replaceAll("\\", "/").replace(/^.*?content\//, "content/");
+}
+
+function isCharacterFile(file: string): boolean {
+  return file.startsWith("content/characters/");
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+}
+
+function formatValue(value: unknown): string {
+  try {
+    return JSON.stringify(value);
+  } catch {
+    return String(value);
+  }
+}
