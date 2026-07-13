@@ -221,6 +221,8 @@ export interface UseGearAction extends BaseAction {
   scarConsequenceReactionId?: string;
   scarInstanceId?: string;
   pendingScarEffectId?: string;
+  forcedDisplacementReactionId?: string;
+  forcedDisplacementSourceEventId?: string;
   oathchainReveal?: ActiveOathchainReveal;
 }
 
@@ -731,6 +733,8 @@ export type ClientIntent =
       scarInstanceId?: string;
       pendingScarEffectId?: string;
       contractSignature?: string;
+      forcedDisplacementReactionId?: string;
+      forcedDisplacementSourceEventId?: string;
     }
   | {
       type: "USE_FOLLOWER";

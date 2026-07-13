@@ -967,12 +967,21 @@ export interface PhonePatchPayload extends PublicPatchPayload {
   } | null;
   pendingDisplacementPrivate?: {
     reactionId: string;
+    sourceEventId: string;
     sourceTitle: string;
     originSectorId: string;
     originSectorName: string;
     destinationSectorId: string;
     destinationSectorName: string;
     prompt: string;
+    riftAnchorSpike: {
+      instanceId: string;
+      currentCharges: number;
+      maxCharges: number;
+      chargeCost: 1;
+      enabled: boolean;
+      disabledReason?: string;
+    } | null;
   } | null;
   oathchainPrompt?: {
     instanceId: string;
@@ -1135,6 +1144,8 @@ export type ClientIntent =
       scarConsequenceReactionId?: string;
       scarInstanceId?: string;
       pendingScarEffectId?: string;
+      forcedDisplacementReactionId?: string;
+      forcedDisplacementSourceEventId?: string;
       contractSignature?: string;
     }
   | {

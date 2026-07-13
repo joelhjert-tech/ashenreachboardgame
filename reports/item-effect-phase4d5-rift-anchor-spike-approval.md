@@ -2,7 +2,7 @@
 
 ## Outcome
 
-**Implementation is blocked.** The recommended identity, **Refuse Displacement**, is coherent, but the repository currently has no typed operative forced-displacement effect, no pending displacement reaction, no stable reaction ID, no reconnectable displacement state, and no authoritative source against which eligibility can be tested. Implementing the Artifact now would require inventing eligibility from prose or rolling back movement after it resolves.
+**Approved for implementation.** The authoritative forced-displacement foundation now provides persisted pending state, stable reaction and source-event identities, deterministic legality revalidation, and Route Splice as the first bounded source. **Refuse Displacement** can therefore be implemented without rollback or broad movement immunity.
 
 This pass changes no content, schema, engine, server, phone, TV, tests, assets, or save state. Rift Anchor Spike remains unimplemented.
 
@@ -151,21 +151,21 @@ The proposed presentation is not implementable until `pendingDisplacement` exist
 
 Rift Anchor Spike:
 
-- Selected option: **[UNAPPROVED — Refuse Displacement recommended]**
-- Maximum charges: **[UNAPPROVED — 2 recommended]**
-- Starting charges: **[UNAPPROVED — 2 recommended]**
-- Cost per activation: **[UNAPPROVED — 1 charge recommended]**
-- Additional cost: **[UNAPPROVED — None recommended]**
+- Selected option: **Refuse Displacement**
+- Maximum charges: **2**
+- Starting charges: **2**
+- Cost per activation: **1 charge**
+- Additional cost: **None**
 - Recharge: none
 - Scope: owner only
-- Activation timing: **[UNAPPROVED — before one typed pending forced displacement resolves]**
-- Eligible displacement sources: **[UNAPPROVED — current authoritative source set is empty]**
-- Final rule text: **[UNAPPROVED — recommended text above]**
+- Activation timing: **after an authoritative `pendingDisplacement` opens, before displacement resolves**
+- Eligible displacement sources: **approved typed sources; currently Route Splice (`route-splice`)**
+- Final rule text: **“Refuse Displacement — Reaction: When an effect would forcibly move or relocate you, but before that displacement resolves, spend 1 charge to remain in your current sector. The source event still counts as having occurred, and all non-displacement effects resolve normally.”**
 
 The block cannot be finalized because the exact eligible source set and authoritative lifecycle do not exist. No provisional interpretation is approved.
 
 ## Implementation readiness
 
-**Not ready.** Required next slice: implement and validate a typed, server-authoritative, reconnectable forced-displacement lifecycle against explicitly approved authored sources, without Rift Anchor Spike mechanics. After that foundation lands, return to this approval block, enumerate the concrete supported source IDs/types, approve the migration behavior, and only then implement charges and presentation.
+**Ready and approved.** Implementation is limited to exact-instance 2/2 charges, the existing authoritative pending-displacement lifecycle, and non-destructive replacement of the old Spike-to-Veil-Hook acquisition behavior. Existing Veil Hooks remain untouched.
 
 No mechanics changed, no rollback was introduced, Veil Hook remains separate, and the three unrelated Phase 1D reports remain untracked.

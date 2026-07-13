@@ -142,12 +142,14 @@ describe("PhoneActionPanel", () => {
       phase: "resolution",
       pendingDisplacementPrivate: {
         reactionId: "displacement:route-splice-failure",
+        sourceEventId: "route-splice-failure",
         sourceTitle: "Route Splice",
         originSectorId: "middle_red_march_outpost",
         originSectorName: "Choir Bastion",
         destinationSectorId: "middle_anomaly_well",
         destinationSectorName: "Static Chapel",
-        prompt: "Accept the authoritative forced displacement."
+        prompt: "Accept the authoritative forced displacement.",
+        riftAnchorSpike: null
       }
     });
     render(<PhoneActionPanel characters={characters} onIntent={onIntent} patch={patch} />);
@@ -155,6 +157,31 @@ describe("PhoneActionPanel", () => {
     expect(screen.getByText(/Choir Bastion → Static Chapel/)).toBeInTheDocument();
     expect(screen.queryByText(/Rift Anchor Spike/i)).not.toBeInTheDocument();
     expect(onIntent).toHaveBeenCalledWith({ type: "FORCED_DISPLACEMENT_ACCEPTED", seatId: "seat-1", reactionId: "displacement:route-splice-failure" });
+  });
+
+  it("offers the owner-authoritative Rift Anchor Spike reaction and sends no mechanical values", () => {
+    const onIntent = vi.fn();
+    const patch = createPatch({
+      phase: "resolution",
+      pendingDisplacementPrivate: {
+        reactionId: "displacement:route-splice-failure",
+        sourceEventId: "route-splice-failure",
+        sourceTitle: "Route Splice",
+        originSectorId: "middle_red_march_outpost",
+        originSectorName: "Choir Bastion",
+        destinationSectorId: "middle_anomaly_well",
+        destinationSectorName: "Static Chapel",
+        prompt: "Accept the authoritative forced displacement.",
+        riftAnchorSpike: { instanceId: "spike-1", currentCharges: 2, maxCharges: 2, chargeCost: 1, enabled: true }
+      }
+    });
+    render(<PhoneActionPanel characters={characters} onIntent={onIntent} patch={patch} />);
+    fireEvent.click(screen.getByRole("button", { name: /Refuse displacement.*1 charge/i }));
+    expect(screen.getByText(/Spend 1 charge to remain in Choir Bastion/i)).toBeInTheDocument();
+    expect(onIntent).toHaveBeenCalledWith({
+      type: "USE_GEAR", seatId: "seat-1", gearId: "rift-anchor-spike", instanceId: "spike-1",
+      forcedDisplacementReactionId: "displacement:route-splice-failure", forcedDisplacementSourceEventId: "route-splice-failure"
+    });
   });
 
   it("shows the owner-only authoritative encounter payment action", () => {

@@ -79,6 +79,7 @@ import {
 } from "../game/rules/nemesisRelay.js";
 import {
   buildMovementRoutePlan,
+  getForcedDisplacementDestination,
   getLegalMovementRoute,
   getLegalMovementRouteVariant,
   getMovementBlockReason,
@@ -1333,6 +1334,11 @@ export class GameRoomServer {
         break;
       case "USE_GEAR":
         requireStringField(message, "gearId", type);
+        if (message.gearId === "rift-anchor-spike") {
+          requireStringField(message, "instanceId", type);
+          requireStringField(message, "forcedDisplacementReactionId", type);
+          requireStringField(message, "forcedDisplacementSourceEventId", type);
+        }
         break;
       case "USE_FOLLOWER":
         requireStringField(message, "followerId", type);
@@ -1930,7 +1936,9 @@ export class GameRoomServer {
     scarConsequenceReactionId?: string,
     scarInstanceId?: string,
     pendingScarEffectId?: string,
-    contractSignature?: string
+    contractSignature?: string,
+    forcedDisplacementReactionId?: string,
+    forcedDisplacementSourceEventId?: string
   ): UseGearAction {
     const player = this.state.players.find((entry) => entry.seatId === seatId);
     const item = player?.character.heldGear.find((entry) => entry.id === gearId && (!instanceId || entry.instanceId === instanceId));
@@ -2018,12 +2026,26 @@ export class GameRoomServer {
       oathchainReveal = { revealId: `oathchain:${seatId}:${this.state.sequence + 1}`, ownerSeat: seatId, itemInstanceId: item.instanceId, contractId: contract.id, contractSignature: currentSignature, contractName: contract.name, objectiveProgress: formatContractObjectiveStatus(contract, player!.character.activeContract!.progress), revealedTargets: targets, createdTurn: this.state.sequence, expiresAtTurnEnd: true };
     }
 
+    if (item.chargedEffect === "suppressForcedDisplacement") {
+      const pending = this.state.pendingDisplacement;
+      if (this.state.phase !== "resolution" || !pending || pending.status !== "pending" || pending.seatId !== seatId || pending.reactionId !== forcedDisplacementReactionId || pending.sourceEventId !== forcedDisplacementSourceEventId) {
+        throw new IntentRejectedError("USE_GEAR", "The Rift Anchor Spike displacement reaction is stale or unavailable.");
+      }
+      if (pending.sourceType !== "threat" || pending.sourceId !== "route-splice") throw new IntentRejectedError("USE_GEAR", "This displacement source cannot be suppressed by Rift Anchor Spike.");
+      if (!item.instanceId || item.instanceId !== instanceId) throw new IntentRejectedError("USE_GEAR", `${item.name} instance is stale.`);
+      if ((item.currentCharges ?? item.charges ?? item.startingCharges ?? 0) < (item.chargeCost ?? 1)) throw new IntentRejectedError("USE_GEAR", `${item.name} has no charges remaining.`);
+      if (player!.character.equippedGear.utility !== item.id) throw new IntentRejectedError("USE_GEAR", `${item.name} must be equipped.`);
+      if (player!.character.currentSpaceId !== pending.originSectorId || player!.sectorId !== pending.originSectorId) throw new IntentRejectedError("USE_GEAR", "The forced-displacement origin is stale.");
+      if ((this.state.resolvedDisplacementSourceEventIds ?? []).includes(pending.sourceEventId)) throw new IntentRejectedError("USE_GEAR", "This forced displacement was already resolved.");
+      if (getForcedDisplacementDestination(this.state, seatId, pending.direction) !== pending.destinationSectorId) throw new IntentRejectedError("USE_GEAR", "The forced-displacement destination is no longer legal.");
+    }
+
     const itemName = item?.name ?? gearId;
     const discard = item?.consumeOnUse === true || item?.useLimit === "discard";
     const rollModifier = item.chargedEffect === "choirLightSignalBonus"
       ? { label: "Choir Lantern", value: 2, stat: "signal" as const, mode: "check" as const }
       : this.createGearRollModifier(seatId, item);
-    const effect = item.chargedEffect === "staticIntercession" || item.chargedEffect === "scarSinkPrayer" || item.chargedEffect === "traceThePromise" ? null : this.resolveEffect(this.getGearUseEffect(gearId), seatId);
+    const effect = item.chargedEffect === "staticIntercession" || item.chargedEffect === "scarSinkPrayer" || item.chargedEffect === "traceThePromise" || item.chargedEffect === "suppressForcedDisplacement" ? null : this.resolveEffect(this.getGearUseEffect(gearId), seatId);
 
     return {
       type: "USE_GEAR",
@@ -2044,10 +2066,13 @@ export class GameRoomServer {
       scarConsequenceReactionId: item.chargedEffect === "scarSinkPrayer" ? scarConsequenceReactionId : undefined,
       scarInstanceId: item.chargedEffect === "scarSinkPrayer" ? scarInstanceId : undefined,
       pendingScarEffectId: item.chargedEffect === "scarSinkPrayer" ? pendingScarEffectId : undefined,
+      forcedDisplacementReactionId: item.chargedEffect === "suppressForcedDisplacement" ? forcedDisplacementReactionId : undefined,
+      forcedDisplacementSourceEventId: item.chargedEffect === "suppressForcedDisplacement" ? forcedDisplacementSourceEventId : undefined,
       oathchainReveal,
       summary: item.chargedEffect === "staticIntercession" ? "Static Intercession — One anomaly consequence suppressed."
         : item.chargedEffect === "scarSinkPrayer" ? "Scar-Sink Prayer — One Scar consequence suppressed."
         : item.chargedEffect === "traceThePromise" ? "Oathchain Lens consulted."
+        : item.chargedEffect === "suppressForcedDisplacement" ? "Rift Anchor Spike deployed — Forced displacement prevented."
         : `${itemName} used. ${item?.activeText ?? "Its effect was recorded for the table."}`,
       createdAt
     } satisfies UseGearAction;
@@ -2827,7 +2852,7 @@ export class GameRoomServer {
           createdAt
         } satisfies UnequipGearAction;
       case "USE_GEAR":
-        return this.createGearUseAction(intent.seatId, intent.gearId, createdAt, intent.instanceId, intent.pendingTileChallengeId, intent.staticIntercessionReactionId, intent.pendingTileChallengeEffectId, intent.scarConsequenceReactionId, intent.scarInstanceId, intent.pendingScarEffectId, intent.contractSignature);
+        return this.createGearUseAction(intent.seatId, intent.gearId, createdAt, intent.instanceId, intent.pendingTileChallengeId, intent.staticIntercessionReactionId, intent.pendingTileChallengeEffectId, intent.scarConsequenceReactionId, intent.scarInstanceId, intent.pendingScarEffectId, intent.contractSignature, intent.forcedDisplacementReactionId, intent.forcedDisplacementSourceEventId);
       case "USE_FOLLOWER":
         return this.createFollowerUseAction(intent.seatId, intent.followerId, createdAt, intent.escalate === true);
       case "TABLE_INTERACTION":
@@ -9536,12 +9561,28 @@ export function createPhoneProjection(state: GameState, seatId: string, forcePri
     pendingDisplacement: publicProjection.pendingDisplacement,
     pendingDisplacementPrivate: state.pendingDisplacement?.seatId === seatId ? {
       reactionId: state.pendingDisplacement.reactionId,
+      sourceEventId: state.pendingDisplacement.sourceEventId,
       sourceTitle: state.currentEncounter?.title ?? "Forced displacement",
       originSectorId: state.pendingDisplacement.originSectorId,
       originSectorName: state.sectors.find((sector) => sector.id === state.pendingDisplacement!.originSectorId)?.name ?? state.pendingDisplacement.originSectorId,
       destinationSectorId: state.pendingDisplacement.destinationSectorId,
       destinationSectorName: state.sectors.find((sector) => sector.id === state.pendingDisplacement!.destinationSectorId)?.name ?? state.pendingDisplacement.destinationSectorId,
-      prompt: "Accept the authoritative forced displacement."
+      prompt: "Accept the authoritative forced displacement or use an eligible reaction.",
+      riftAnchorSpike: (() => {
+        const spikes = (player?.character.heldGear ?? []).filter((item) => item.id === "rift-anchor-spike" && item.chargedEffect === "suppressForcedDisplacement" && item.instanceId);
+        const spike = spikes.find((item) => (item.currentCharges ?? item.charges ?? item.startingCharges ?? 0) > 0) ?? spikes[0];
+        if (!spike?.instanceId) return null;
+        const charges = spike.currentCharges ?? spike.charges ?? spike.startingCharges ?? 0;
+        const equipped = player?.character.equippedGear.utility === spike.id;
+        return {
+          instanceId: spike.instanceId,
+          currentCharges: charges,
+          maxCharges: spike.maxCharges ?? 2,
+          chargeCost: 1 as const,
+          enabled: charges > 0 && equipped,
+          disabledReason: charges <= 0 ? "Rift Anchor Spike is Depleted." : !equipped ? "Rift Anchor Spike must be equipped." : undefined
+        };
+      })()
     } : null,
     outcomeSummary: state.lastOutcomeSummary,
     rivalryAgendaCompletion: publicProjection.rivalryAgendaCompletion,

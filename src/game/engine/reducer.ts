@@ -1065,9 +1065,9 @@ function spendHeldGearCharge(state: GameState, seatId: string, gearId: string, i
           item.id === gearId && (!instanceId || item.instanceId === instanceId)
             ? {
                 ...item,
-                currentCharges: Math.max((item.currentCharges ?? item.charges ?? 0) - 1, 0),
-                charges: Math.max((item.currentCharges ?? item.charges ?? 0) - 1, 0),
-                maxUses: item.maxUses ?? item.charges ?? 0
+                currentCharges: Math.max((item.currentCharges ?? item.charges ?? item.startingCharges ?? 0) - 1, 0),
+                charges: Math.max((item.currentCharges ?? item.charges ?? item.startingCharges ?? 0) - 1, 0),
+                maxUses: item.maxUses ?? item.maxCharges ?? item.charges ?? item.startingCharges ?? 0
               }
             : item
         )
@@ -2594,7 +2594,7 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
       const useGearAction = action as UseGearAction;
 
       try {
-        if (useGearAction.pendingScarEffectId !== undefined) {
+        if (useGearAction.pendingScarEffectId !== undefined || useGearAction.forcedDisplacementReactionId !== undefined) {
           requirePlayer(state, useGearAction.seatId);
         } else if (useGearAction.suppressPendingFailure || useGearAction.mirrorReroll || useGearAction.pendingTileChallengeEffectId !== undefined) {
           ensureSeatTurn(state, useGearAction.seatId);
@@ -2619,6 +2619,16 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
         if ((exactItem.currentCharges ?? exactItem.charges ?? 0) < (exactItem.chargeCost ?? 1)) return reject(state, action, `${item.name} has no charges remaining`);
         if (!state.pendingScarConsequence || !player.character.scars.includes(state.pendingScarConsequence.scarCardId)) return reject(state, action, "The pending Scar is not owned by this seat");
       }
+      if (useGearAction.forcedDisplacementReactionId !== undefined) {
+        const exactItem = player.character.heldGear.find((entry) => entry.instanceId === useGearAction.chargeInstanceId);
+        const pending = state.pendingDisplacement;
+        if (item.chargedEffect !== "suppressForcedDisplacement" || !exactItem || exactItem.id !== "rift-anchor-spike") return reject(state, action, "Rift Anchor Spike instance is stale");
+        if ((exactItem.currentCharges ?? exactItem.charges ?? exactItem.startingCharges ?? 0) < (exactItem.chargeCost ?? 1)) return reject(state, action, `${item.name} has no charges remaining`);
+        if (!pending || pending.status !== "pending" || pending.seatId !== useGearAction.seatId || pending.reactionId !== useGearAction.forcedDisplacementReactionId || pending.sourceEventId !== useGearAction.forcedDisplacementSourceEventId) return reject(state, action, "Rift Anchor Spike reaction or source event is stale");
+        if (pending.sourceType !== "threat" || pending.sourceId !== "route-splice") return reject(state, action, "Rift Anchor Spike cannot suppress this displacement source");
+        if (player.character.currentSpaceId !== pending.originSectorId || player.sectorId !== pending.originSectorId) return reject(state, action, "Forced displacement origin is stale");
+        if ((state.resolvedDisplacementSourceEventIds ?? []).includes(pending.sourceEventId)) return reject(state, action, "Forced displacement source was already resolved");
+      }
       if (item.effectModel === "exhaust" && item.exhausted) return reject(state, action, `${item.name} is Exhausted. Refreshes next round.`);
 
       try {
@@ -2627,7 +2637,8 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
         return reject(state, action, error instanceof Error ? error.message : "Gear use limit reached");
       }
 
-      if (item.useLimit === "charge" && (item.currentCharges ?? item.charges ?? 0) <= 0) {
+      const selectedChargeItem = useGearAction.chargeInstanceId ? player.character.heldGear.find((entry) => entry.instanceId === useGearAction.chargeInstanceId) ?? item : item;
+      if (item.useLimit === "charge" && (selectedChargeItem.currentCharges ?? selectedChargeItem.charges ?? selectedChargeItem.startingCharges ?? 0) <= 0) {
         return reject(state, action, `${item.name} has no charges remaining`);
       }
 
@@ -2659,7 +2670,28 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
         pendingScarConsequence: scarQueue[0] ?? null,
         pendingScarConsequenceQueue: scarQueue.slice(1)
       } : scarResolvedState;
-      const effectedState = useGearAction.effect ? applyEffectToState(prayerState, useGearAction.seatId, useGearAction.effect) : prayerState;
+      const displacementPending = prayerState.pendingDisplacement;
+      const currentDisplacementDestination = displacementPending
+        ? getForcedDisplacementDestination(prayerState, displacementPending.seatId, displacementPending.direction)
+        : null;
+      const spikeMatches = Boolean(useGearAction.forcedDisplacementReactionId !== undefined && displacementPending &&
+        displacementPending.reactionId === useGearAction.forcedDisplacementReactionId &&
+        displacementPending.sourceEventId === useGearAction.forcedDisplacementSourceEventId &&
+        displacementPending.seatId === useGearAction.seatId &&
+        currentDisplacementDestination === displacementPending.destinationSectorId);
+      if (useGearAction.forcedDisplacementReactionId !== undefined && !spikeMatches) return reject(state, action, "Rift Anchor Spike reaction is stale");
+      const spikeState = spikeMatches ? {
+        ...prayerState,
+        pendingDisplacement: null,
+        pendingDisplacementArrival: null,
+        resolvedDisplacementSourceEventIds: [...(prayerState.resolvedDisplacementSourceEventIds ?? []), displacementPending!.sourceEventId],
+        activeResolution: prayerState.activeResolution ? {
+          ...prayerState.activeResolution,
+          stage: "outcome_summary" as const,
+          outcome: { title: "Rift Anchor Spike deployed", text: "Forced displacement prevented.", effects: ["Forced displacement prevented."] }
+        } : null
+      } : prayerState;
+      const effectedState = useGearAction.effect ? applyEffectToState(spikeState, useGearAction.seatId, useGearAction.effect) : spikeState;
       const paidState = useGearAction.salvageCost ? {
         ...effectedState,
         players: updateActivePlayer(effectedState, useGearAction.seatId, (entry) => ({ ...entry, character: { ...entry.character, salvage: (entry.character.salvage ?? 0) - useGearAction.salvageCost! } }))
@@ -2703,7 +2735,12 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
           finalState.currentEncounter,
           useGearAction.rollModifier
         ),
-        lastOutcomeSummary: {
+        lastOutcomeSummary: spikeMatches && finalState.lastOutcomeSummary ? {
+          ...finalState.lastOutcomeSummary,
+          movedToSectorId: updatedPlayer.sectorId,
+          success: false,
+          summary: `${updatedPlayer.character.name} resisted forced displacement.`
+        } : {
           seatId: useGearAction.seatId,
           movedToSectorId: updatedPlayer.sectorId,
           encounterCardId: null,

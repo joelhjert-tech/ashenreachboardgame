@@ -2752,6 +2752,24 @@ export function PhoneActionPanel({
 
   if (patch.pendingDisplacementPrivate) {
     const displacement = patch.pendingDisplacementPrivate;
+    const spike = displacement.riftAnchorSpike;
+    if (spike) {
+      resolveActions.push({
+        key: `rift-anchor-spike-${displacement.reactionId}-${spike.instanceId}`,
+        label: "Refuse displacement — 1 charge",
+        detail: spike.disabledReason ?? `Spend 1 charge to remain in ${displacement.originSectorName}. ${displacement.sourceTitle} would move you to ${displacement.destinationSectorName}.`,
+        tone: "secondary",
+        disabled: !spike.enabled,
+        onClick: () => onIntent({
+          type: "USE_GEAR",
+          seatId: self.seatId,
+          gearId: "rift-anchor-spike",
+          instanceId: spike.instanceId,
+          forcedDisplacementReactionId: displacement.reactionId,
+          forcedDisplacementSourceEventId: displacement.sourceEventId
+        })
+      });
+    }
     resolveActions.push({
       key: `forced-displacement-${displacement.reactionId}`,
       label: "Accept displacement",

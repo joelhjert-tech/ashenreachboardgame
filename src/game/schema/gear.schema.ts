@@ -15,6 +15,7 @@ export const gearTimingWindowSchema = z.enum([
   "movementRouteConfirmation",
   "beforeAnomalySignalTest",
   "pendingScarConsequence",
+  "pendingForcedDisplacement",
   "shop",
   "action",
   "anyTime"
@@ -69,7 +70,7 @@ export const gearItemSchema = z.object({
   startingCharges: z.number().int().positive().optional(),
   chargeCost: z.number().int().positive().optional(),
   rechargeRule: z.enum(["none"]).optional(),
-  chargedEffect: z.enum(["personalGateOverride", "movementAdjustment", "saintSafeConduct", "bonewayDetour", "choirLightSignalBonus", "staticIntercession", "scarSinkPrayer", "traceThePromise", "selectAuthoritativeRouteVariant"]).optional(),
+  chargedEffect: z.enum(["personalGateOverride", "movementAdjustment", "saintSafeConduct", "bonewayDetour", "choirLightSignalBonus", "staticIntercession", "scarSinkPrayer", "traceThePromise", "selectAuthoritativeRouteVariant", "suppressForcedDisplacement"]).optional(),
   maxUses: z.number().int().min(0).optional(),
   heatCost: z.number().int().min(0).optional(),
   linkedFollowerRole: z.string().min(1).optional(),
@@ -100,6 +101,12 @@ export const gearItemSchema = z.object({
   if (item.id === "route-star") {
     if (item.chargedEffect !== "selectAuthoritativeRouteVariant" || !item.activationTiming?.includes("movementRouteConfirmation")) context.addIssue({ code: z.ZodIssueCode.custom, message: "Route Star requires the typed authoritative route-selection effect before movement confirmation", path: ["chargedEffect"] });
     if (item.activationCost || item.rechargeRule !== "none") context.addIssue({ code: z.ZodIssueCode.custom, message: "Route Star has no additional cost or recharge", path: ["activationCost"] });
+  }
+  if (item.id === "rift-anchor-spike") {
+    if (item.effectModel !== "charged" || item.useLimit !== "charge" || item.maxCharges !== 2 || item.startingCharges !== 2 || item.chargeCost !== 1 || item.requiresEquipped !== true) context.addIssue({ code: z.ZodIssueCode.custom, message: "Rift Anchor Spike requires exact-instance 2/2 charges, cost 1, and owner-equipped activation", path: ["effectModel"] });
+    if (item.chargedEffect !== "suppressForcedDisplacement" || !item.activationTiming?.includes("pendingForcedDisplacement")) context.addIssue({ code: z.ZodIssueCode.custom, message: "Rift Anchor Spike requires the typed pending forced-displacement reaction", path: ["chargedEffect"] });
+    if (item.activationCost || item.rechargeRule !== "none") context.addIssue({ code: z.ZodIssueCode.custom, message: "Rift Anchor Spike has no additional cost or recharge", path: ["activationCost"] });
+    if (/immun|permanent|anchor(?:ed|ing)?\s+(?:the\s+)?sector|rollback/i.test(item.activeText ?? "")) context.addIssue({ code: z.ZodIssueCode.custom, message: "Rift Anchor Spike suppresses one pending displacement and cannot grant immunity, rollback, or a permanent anchor", path: ["activeText"] });
   }
   if (item.tier !== "artifact" && (item.useLimit === "charge" || item.category === "chargedRelic")) {
     context.addIssue({ code: z.ZodIssueCode.custom, message: "normal Equipment cannot use Artifact charge mechanics", path: ["useLimit"] });
