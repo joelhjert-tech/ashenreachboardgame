@@ -2094,8 +2094,8 @@ describe("roomServer websocket integration", () => {
       throw new Error(`Seat 3 contract move was rejected: ${phone3ContractMoveRejection.reason}`);
     }
     expect(harness.roomServer.getState().activeSeatIndex).toBe(2);
-    expect(harness.roomServer.getState().phase).toBe("action");
     await tv.waitForSince(marker, statePatchForPhase("action", 2));
+    expect(harness.roomServer.getState().phase).toBe("action");
 
     marker = tv.mark();
     await sendVisibleCombat(phone3, "seat-3", "grit");
