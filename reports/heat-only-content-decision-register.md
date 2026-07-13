@@ -60,6 +60,16 @@ Alternatives rejected globally: blanket Heat-to-Wound, random Scar distribution,
 
 These decisions supersede H1G-003, H1H-003, and H1I-003 for Rust Choir Peddlers only. The ID leaves the legacy Heat-effect approval set. No other Heat-only recommendation changes status.
 
+## Phase 1V Void-Salt Sickness Wound conversion
+
+| Decision ID | Content ID | Question | Implemented result | Risk | Evidence | Status |
+|---|---|---|---|---|---|---|
+| H1V-001 | `void-salt-sickness` | Does the Phase 1D retirement recommendation remain authoritative? | No. The explicit Phase 1V decision supersedes H1D-009; the card remains active in Borderlight and all normal draw paths | Medium | current content, graph, and explicit approval | Superseded |
+| H1V-002 | `void-salt-sickness` success | What replaces `lose_heat 1`? | Existing `heal_wound 1`, bounded at zero with no compensation or false healing summary | Medium | focused reducer/server tests | Implemented |
+| H1V-003 | `void-salt-sickness` failure | What replaces `gain_heat 1`? | Existing `take_wound 1`, using current prevention, threshold, Scar, and recall handling | Medium | focused prevention and recall tests | Implemented |
+
+Severity remains 1. Stable identity, art, Borderlight membership, Forge 5 check, and cleanup are unchanged. The ID leaves the legacy Heat approval set; no other recommendation changes status.
+
 The older estimate of 39 mixed IDs reconciles to 34 current branch-level candidates plus five stale estimate-only records. Rust Choir Peddlers and all remaining Heat-only decisions are unchanged.
 
 Phase 1D's “pay up to 1, floor 0” wording is superseded as payment semantics: payment is full or absent, never partial. Phase 1H itself made no mechanics changes; Phase 1I implements only the approved shared boundary and Gate Tax decision above.

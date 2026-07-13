@@ -168,3 +168,12 @@ Current inspection corrects `anomaly-red-suture-field` from the Phase 1D Heat-on
 - **Compatibility approval retired:** totals are now 39 Heat-effect approvals plus 14 other compatibility approvals, 53 unique approved IDs.
 - **Architecture preserved:** Phase 1I schema, intent, pending state, reconnect, and replay guards are reused. No new discriminator, action, intent, or session field is added.
 - **Still open:** 28 Heat-only IDs / 31 branches / 40 effects, legacy v0/v1 parser retirement, archival metadata closure, and stable discriminator cleanup.
+
+# Phase 1V Void-Salt Sickness Wound conversion
+
+- **Retirement superseded:** `void-salt-sickness` remains active; no retired-content mechanism or catalog exclusion is introduced.
+- **Success implemented:** the obsolete `lose_heat 1` branch is now bounded `heal_wound 1`, with no compensation or false result when already unwounded.
+- **Failure implemented:** the obsolete `gain_heat 1` branch is now `take_wound 1`, resolved through existing prevention, Wound-threshold, Scar, and recall rules.
+- **Compatibility approval retired:** totals are now 38 Heat-effect approvals plus 14 other compatibility approvals, 52 unique approved IDs.
+- **Boundaries preserved:** severity 1, stable ID, active Borderlight membership, art, snapshots v0/v1/v2, archival metadata, Mirror threshold, and Heat-free projections remain unchanged.
+- **Still open:** 27 Heat-only IDs / 29 branches / 38 effects, legacy v0/v1 parser retirement, archival metadata closure, and stable discriminator cleanup.

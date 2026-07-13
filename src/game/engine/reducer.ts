@@ -822,8 +822,9 @@ function summarizeEffects(effect: EncounterEffect | null, success: boolean | nul
   return [summarizeEffect(effect, success)];
 }
 
-function summarizeAppliedEffects(effect: EncounterEffect, success: boolean | null, startingSalvage: number): string[] {
+function summarizeAppliedEffects(effect: EncounterEffect, success: boolean | null, startingSalvage: number, startingWounds: number): string[] {
   let salvage = Math.max(0, startingSalvage);
+  let wounds = Math.max(0, startingWounds);
   const visit = (entry: EncounterEffect): string[] => {
     if (entry.type === "sequence") return entry.effects.flatMap(visit);
     if (entry.type === "lose_salvage") {
@@ -832,6 +833,12 @@ function summarizeAppliedEffects(effect: EncounterEffect, success: boolean | nul
       return [actualLoss > 0 ? `Lost ${actualLoss} Salvage.` : "No Salvage was lost."];
     }
     if (entry.type === "gain_salvage") salvage += entry.amount;
+    if (entry.type === "take_wound") wounds += entry.amount;
+    if (entry.type === "heal_wound") {
+      const actualHealing = Math.min(wounds, entry.amount);
+      wounds -= actualHealing;
+      return actualHealing > 0 ? [`Healed ${actualHealing} Wound${actualHealing === 1 ? "" : "s"}.`] : [];
+    }
     return [summarizeEffect(entry, success)];
   };
   return visit(effect);
@@ -2137,7 +2144,8 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
           ? summarizeAppliedEffects(
               leadingEffect,
               resolutionAction.success,
-              requirePlayer(state, resolutionAction.seatId).character.salvage ?? 0
+              requirePlayer(state, resolutionAction.seatId).character.salvage ?? 0,
+              requirePlayer(state, resolutionAction.seatId).character.wounds
             )
           : [];
         const pending = createPendingEncounterDecision(stateAfterLeadingEffects, resolutionAction, trailingPayment);
@@ -2172,7 +2180,13 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
         });
       }
 
-      const appliedEffectSummaries = summarizeAppliedEffects(state.pendingEffect as EncounterEffect, resolutionAction.success, requirePlayer(state, resolutionAction.seatId).character.salvage ?? 0);
+      const resolutionPlayer = requirePlayer(state, resolutionAction.seatId);
+      const appliedEffectSummaries = summarizeAppliedEffects(
+        state.pendingEffect as EncounterEffect,
+        resolutionAction.success,
+        resolutionPlayer.character.salvage ?? 0,
+        resolutionPlayer.character.wounds
+      );
       const containsSalvageLoss = JSON.stringify(state.pendingEffect).includes('"lose_salvage"');
 
       return succeed({
