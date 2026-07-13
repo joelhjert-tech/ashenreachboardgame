@@ -179,7 +179,7 @@ import type {
 import { getEquippedGearModifierSources } from "../game/engine/gear.js";
 import { getMovementProfile } from "../game/rules/movementPhase.js";
 import type { AnomalyCard, ArtifactCard, EncounterEffect, EscalationCard, ScarCard, ThreatCard } from "../game/schema/card.schema.js";
-import type { Character } from "../game/schema/character.schema.js";
+import type { AuthoredCharacter, Character } from "../game/schema/character.schema.js";
 import type { Stat } from "../game/schema/character.schema.js";
 import type { ContractCard } from "../game/schema/contract.schema.js";
 import type { Follower } from "../game/schema/follower.schema.js";
@@ -438,7 +438,7 @@ function stableSetupHash(value: string): number {
 
 export class GameRoomServer {
   private readonly clients = new Set<ConnectedClient>();
-  private readonly characters: Map<string, Character>;
+  private readonly characters: Map<string, AuthoredCharacter>;
   private readonly contracts: Map<string, ContractCard>;
   private readonly followers: Map<string, Follower>;
   private readonly gear: Map<string, GearItem>;
@@ -456,7 +456,7 @@ export class GameRoomServer {
     private readonly events: GameAction[] = [],
     private readonly randomSource: RandomSource = defaultRandomSource,
     threats?: Map<string, ThreatCard>,
-    characters?: Map<string, Character>,
+    characters?: Map<string, AuthoredCharacter>,
     gear?: Map<string, GearItem>,
     contracts?: Map<string, ContractCard>,
     anomalies?: Map<string, AnomalyCard>,
@@ -829,7 +829,7 @@ export class GameRoomServer {
     this.hostToken = hostToken;
   }
 
-  getCharacterCatalog(options: { includeQa?: boolean } = {}): Array<Character & { presentation?: CharacterPresentation }> {
+  getCharacterCatalog(options: { includeQa?: boolean } = {}): Array<AuthoredCharacter & { presentation?: CharacterPresentation }> {
     return [...this.characters.values()].filter((character) => options.includeQa || !character.qaOnly).map((character) => {
       const presentation = getCharacterPresentation(character.id);
 
@@ -2953,7 +2953,7 @@ export class GameRoomServer {
     return this.state.sectors[0]?.id ?? "ashwake-crossing";
   }
 
-  private resolveStartingContractOptions(character: Character, seatIndex: number): string[] {
+  private resolveStartingContractOptions(character: AuthoredCharacter, seatIndex: number): string[] {
     const availableIds = this.state.availableContracts
       .map((contract) => contract.id)
       .filter((contractId) => this.contracts.has(contractId));

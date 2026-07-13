@@ -20,6 +20,7 @@ describe("MASTER ALPHA QA hooks", () => {
               ...player,
               character: {
                 ...masterAlpha!,
+                heat: player.character.heat,
                 currentSpaceId: player.character.currentSpaceId,
                 wounds: state.woundThreshold
               }

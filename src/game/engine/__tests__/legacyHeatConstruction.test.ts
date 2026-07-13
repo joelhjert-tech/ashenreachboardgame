@@ -4,7 +4,7 @@ import ts from "typescript";
 import { describe, expect, it } from "vitest";
 import { loadCharacters } from "../../content/characters.js";
 import { createLegacyCharacterCompatibilityState } from "../../rules/legacyHeatCompatibility.js";
-import { characterSchema, type Character } from "../../schema/character.schema.js";
+import { characterSchema, type AuthoredCharacter } from "../../schema/character.schema.js";
 import { gameStateSchema } from "../../schema/session.schema.js";
 import { reduceGameState } from "../reducer.js";
 import { GameRoomServer } from "../../../server/roomServer.js";
@@ -30,10 +30,10 @@ function enclosingFunctionName(node: ts.Node): string {
 }
 
 function mutateServerCharacterTemplate(server: GameRoomServer, characterId: string, heat: number): void {
-  const catalogs = server as unknown as { characters: Map<string, Character> };
+  const catalogs = server as unknown as { characters: Map<string, AuthoredCharacter> };
   const template = catalogs.characters.get(characterId);
   if (!template) throw new Error(`Missing character ${characterId}`);
-  catalogs.characters.set(characterId, { ...template, heat });
+  catalogs.characters.set(characterId, { ...template, heat } as unknown as AuthoredCharacter);
 }
 
 describe("Phase 1M legacy character compatibility construction", () => {
@@ -76,7 +76,7 @@ describe("Phase 1M legacy character compatibility construction", () => {
     if (!replacement) throw new Error("Missing signal-witch");
     const result = reduceGameState(state, {
       type: "RECRUIT_REPLACEMENT", seatId: player.seatId, replacementCharacterId: replacement.id,
-      replacementCharacter: { ...replacement, heat: 7 }, createdAt: "phase-1m"
+      replacementCharacter: replacement, createdAt: "phase-1m"
     });
     expect(result.ok).toBe(true);
     if (!result.ok) return;
@@ -103,8 +103,7 @@ describe("Phase 1M legacy character compatibility construction", () => {
     const character = loadCharacters().get("void-marshal");
     if (!character) throw new Error("Missing void-marshal");
     expect(characterSchema.parse({ ...character, heat: 7 }).heat).toBe(7);
-    const { heat: _heat, ...missingHeat } = character;
-    expect(characterSchema.safeParse(missingHeat).success).toBe(false);
+    expect(characterSchema.safeParse(character).success).toBe(false);
   });
 
   it("guards the one constructor, four call sites, two projection zeros, and two preservation copies", () => {

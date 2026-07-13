@@ -2,12 +2,10 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import {
   APPROVED_LEGACY_HEAT_CONTENT_IDS,
-  LEGACY_CHARACTER_HEAT_DEFAULT_APPROVALS,
   LEGACY_HEAT_EFFECT_APPROVALS,
   OTHER_LEGACY_HEAT_COMPATIBILITY_APPROVALS,
   validateLegacyHeatApprovalManifest,
-  validateLegacyHeatContentRecord,
-  type LegacyCharacterHeatDefaultApproval
+  validateLegacyHeatContentRecord
 } from "../legacy-heat-validation.js";
 
 function readJson(file: string): unknown {
@@ -15,28 +13,31 @@ function readJson(file: string): unknown {
 }
 
 describe("legacy Heat authoring guard", () => {
-  it("separates the 71-ID compatibility boundary into disjoint approval classes", () => {
-    expect(LEGACY_CHARACTER_HEAT_DEFAULT_APPROVALS).toHaveLength(17);
+  it("retains only the 54 effect and other compatibility approval IDs", () => {
     expect(LEGACY_HEAT_EFFECT_APPROVALS).toHaveLength(40);
     expect(OTHER_LEGACY_HEAT_COMPATIBILITY_APPROVALS).toHaveLength(14);
-    expect(APPROVED_LEGACY_HEAT_CONTENT_IDS.size).toBe(71);
+    expect(APPROVED_LEGACY_HEAT_CONTENT_IDS.size).toBe(54);
     expect(APPROVED_LEGACY_HEAT_CONTENT_IDS.has("black-route-fuse")).toBe(false);
 
     const allIds = [
-      ...LEGACY_CHARACTER_HEAT_DEFAULT_APPROVALS.map((entry) => entry.id),
       ...LEGACY_HEAT_EFFECT_APPROVALS.map((entry) => entry.id),
       ...OTHER_LEGACY_HEAT_COMPATIBILITY_APPROVALS.map((entry) => entry.id)
     ];
     expect(new Set(allIds).size).toBe(allIds.length);
   });
 
-  it("accepts all 17 canonical character defaults unchanged at exactly zero", () => {
-    for (const approval of LEGACY_CHARACTER_HEAT_DEFAULT_APPROVALS) {
-      const record = readJson(approval.file) as { id: string; heat: number };
-      expect(record.id).toBe(approval.id);
-      expect(record.heat).toBe(0);
-      expect(Number.isInteger(record.heat)).toBe(true);
-      expect(validateLegacyHeatContentRecord(approval.file, record)).toEqual([]);
+  it("accepts all 17 canonical characters only after authored Heat omission", () => {
+    const files = [
+      "black-ledger-agent", "char_bjornis", "char_deepdale", "char_ker_von_ker", "char_kira_dog",
+      "char_master_alpha", "char_popelord", "char_rumi", "cinder-monk", "fleet-elder", "grave-engineer",
+      "oathbroken-prince", "rift-cartographer", "salvage-warden", "siege-medic", "signal-witch", "void-marshal"
+    ];
+    for (const id of files) {
+      const file = `content/characters/${id}.json`;
+      const record = readJson(file) as Record<string, unknown>;
+      expect(record.id).toBe(id);
+      expect(Object.prototype.hasOwnProperty.call(record, "heat")).toBe(false);
+      expect(validateLegacyHeatContentRecord(file, record)).toEqual([]);
     }
   });
 
@@ -44,27 +45,27 @@ describe("legacy Heat authoring guard", () => {
     ["content/characters/new-operative.json", { id: "new-operative", heat: 0 }],
     ["content/characters/copied-operative.json", { id: "copied-operative", heat: 0 }],
     ["content/characters/qa-new-operative.json", { id: "qa-new-operative", qaOnly: true, heat: 0 }]
-  ])("rejects an unapproved character default with a field-specific error", (file, record) => {
+  ])("rejects any authored character Heat with a field-specific error", (file, record) => {
     const message = validateLegacyHeatContentRecord(file, record).join(" ");
     expect(message).toContain(file);
     expect(message).toContain(record.id);
     expect(message).toContain("character.heat");
-    expect(message).toContain("LEGACY_CHARACTER_HEAT_DEFAULT_APPROVALS");
-    expect(message).toContain("New characters must not introduce Heat defaults");
+    expect(message).toContain("must omit Heat");
+    expect(message).toContain("createLegacyCharacterCompatibilityState");
   });
 
-  it.each([1, 7, -1, 1.5])("rejects approved character Heat value %s", (heat) => {
-    const approval = LEGACY_CHARACTER_HEAT_DEFAULT_APPROVALS[0]!;
-    const record = { ...(readJson(approval.file) as Record<string, unknown>), heat };
-    const message = validateLegacyHeatContentRecord(approval.file, record).join(" ");
-    expect(message).toContain(approval.id);
-    expect(message).toContain("integer 0");
+  it.each([0, 1, 7, -1, 1.5])("rejects canonical authored character Heat value %s", (heat) => {
+    const file = "content/characters/black-ledger-agent.json";
+    const record = { ...(readJson(file) as Record<string, unknown>), heat };
+    const message = validateLegacyHeatContentRecord(file, record).join(" ");
+    expect(message).toContain("black-ledger-agent");
+    expect(message).toContain("forbidden compatibility field character.heat");
     expect(message).toContain(JSON.stringify(heat));
   });
 
-  it("keeps effect and default approvals isolated", () => {
-    const approvedCharacter = LEGACY_CHARACTER_HEAT_DEFAULT_APPROVALS[0]!;
-    const character = readJson(approvedCharacter.file) as Record<string, unknown>;
+  it("keeps effect and other compatibility approvals isolated from authored characters", () => {
+    const file = "content/characters/black-ledger-agent.json";
+    const character = readJson(file) as Record<string, unknown>;
     for (const mutation of [
       { effect: { type: "gain_heat", amount: 1 } },
       { effect: { type: "lose_heat", amount: 1 } },
@@ -74,14 +75,14 @@ describe("legacy Heat authoring guard", () => {
       { text: "Gain 1 Heat." },
       { hiddenHeatReserve: 0 }
     ]) {
-      expect(validateLegacyHeatContentRecord(approvedCharacter.file, { ...character, ...mutation }).length).toBeGreaterThan(0);
+      expect(validateLegacyHeatContentRecord(file, { ...character, ...mutation }).length).toBeGreaterThan(0);
     }
 
     const effectApprovedCharacter = { id: "ash-cinder-runt", heat: 0, effect: { type: "gain_heat", amount: 1 } };
-    expect(validateLegacyHeatContentRecord("content/characters/ash-cinder-runt.json", effectApprovedCharacter).join(" ")).toContain("not approved in LEGACY_CHARACTER_HEAT_DEFAULT_APPROVALS");
+    expect(validateLegacyHeatContentRecord("content/characters/ash-cinder-runt.json", effectApprovedCharacter).join(" ")).toContain("must omit Heat");
 
     const stableIdCharacter = { id: "heat-sink-prayer", heat: 0 };
-    expect(validateLegacyHeatContentRecord("content/characters/heat-sink-prayer.json", stableIdCharacter).join(" ")).toContain("not approved in LEGACY_CHARACTER_HEAT_DEFAULT_APPROVALS");
+    expect(validateLegacyHeatContentRecord("content/characters/heat-sink-prayer.json", stableIdCharacter).join(" ")).toContain("must omit Heat");
   });
 
   it("accepts only the constructs explicitly approved for legacy effect IDs", () => {
@@ -105,21 +106,17 @@ describe("legacy Heat authoring guard", () => {
     expect(errors.join(" ")).toContain("construct-specific");
   });
 
-  it("detects stale, malformed, duplicate, and wrong-type default approvals", () => {
-    const approval: LegacyCharacterHeatDefaultApproval = { id: "approved", file: "content/characters/approved.json", field: "heat", value: 0 };
-    const manifests = { effects: [], other: [] } as const;
-
-    expect(validateLegacyHeatApprovalManifest([], { ...manifests, defaults: [approval] }).join(" ")).toContain("found 0");
-    expect(validateLegacyHeatApprovalManifest([{ file: approval.file, record: { id: "approved" } }], { ...manifests, defaults: [approval] }).join(" ")).toContain("field heat is missing");
-    expect(validateLegacyHeatApprovalManifest([{ file: approval.file, record: { id: "approved", heat: 1 } }], { ...manifests, defaults: [approval] }).join(" ")).toContain("found 1");
-    expect(validateLegacyHeatApprovalManifest([{ file: approval.file, record: { id: "approved", heat: 0 } }], { ...manifests, defaults: [approval, approval] }).join(" ")).toContain("duplicated");
-    expect(validateLegacyHeatApprovalManifest([{ file: "content/cards/threats/approved.json", record: { id: "approved", heat: 0 } }], { ...manifests, defaults: [approval] }).join(" ")).toContain("not canonical character path");
+  it("has no character-default manifest or stale default approvals", () => {
+    const source = readFileSync("scripts/legacy-heat-validation.ts", "utf8");
+    expect(source).not.toContain("LEGACY_CHARACTER_HEAT_DEFAULT_APPROVALS");
+    expect(source).not.toContain("LegacyCharacterHeatDefaultApproval");
+    expect(validateLegacyHeatApprovalManifest([], { effects: [], other: [] })).toEqual([]);
   });
 
   it("detects stale effect approvals and approval-class overlap", () => {
     const records = [{ file: "content/cards/threats/approved.json", record: { id: "approved", effect: { type: "gain_heat", amount: 1 } } }];
-    expect(validateLegacyHeatApprovalManifest(records, { effects: [{ id: "approved", constructs: ["lose_heat"] }], defaults: [], other: [] }).join(" ")).toContain("approved construct lose_heat is absent");
-    expect(validateLegacyHeatApprovalManifest(records, { effects: [{ id: "approved", constructs: ["gain_heat"] }], defaults: [], other: [{ id: "approved", purpose: "test" }] }).join(" ")).toContain("multiple approval classes");
+    expect(validateLegacyHeatApprovalManifest(records, { effects: [{ id: "approved", constructs: ["lose_heat"] }], other: [] }).join(" ")).toContain("approved construct lose_heat is absent");
+    expect(validateLegacyHeatApprovalManifest(records, { effects: [{ id: "approved", constructs: ["gain_heat"] }], other: [{ id: "approved", purpose: "test" }] }).join(" ")).toContain("multiple approval classes");
   });
 
   it("allows current consequence systems", () => {

@@ -1242,4 +1242,4 @@ export interface PhoneSessionAuth {
   lastConnectedAt?: string;
 }
 
-export interface CharacterCatalogEntry extends PrivateCharacter {}
+export type CharacterCatalogEntry = Omit<PrivateCharacter, "heat"> & { heat?: number };

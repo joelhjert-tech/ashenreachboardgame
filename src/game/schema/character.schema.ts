@@ -77,6 +77,10 @@ export const characterSchema = z.object({
   abilities: z.array(abilitySchema)
 });
 
+// Canonical content definitions deliberately exclude persisted compatibility
+// state. Runtime/session characters continue to use characterSchema below.
+export const authoredCharacterSchema = characterSchema.omit({ heat: true }).strict();
+
 export type Stat = z.infer<typeof statSchema>;
 export type StatBlock = z.infer<typeof statBlockSchema>;
 export type StatUpgrades = z.infer<typeof statUpgradeSchema>;
@@ -86,3 +90,4 @@ export type CharacterStatus = z.infer<typeof characterStatusSchema>;
 export type ActiveContract = z.infer<typeof activeContractSchema>;
 export type EquippedGear = z.infer<typeof equippedGearSchema>;
 export type Character = z.infer<typeof characterSchema>;
+export type AuthoredCharacter = z.infer<typeof authoredCharacterSchema>;

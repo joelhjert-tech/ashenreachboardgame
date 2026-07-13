@@ -20,13 +20,6 @@ export type LegacyHeatEffectApproval = {
   constructs: readonly LegacyHeatConstruct[];
 };
 
-export type LegacyCharacterHeatDefaultApproval = {
-  id: string;
-  file: string;
-  field: "heat";
-  value: 0;
-};
-
 export type OtherLegacyHeatCompatibilityApproval = {
   id: string;
   purpose: string;
@@ -77,28 +70,6 @@ export const LEGACY_HEAT_EFFECT_APPROVALS: readonly LegacyHeatEffectApproval[] =
   { id: "webglass-snarefield", constructs: ["lose_heat"] }
 ];
 
-// Phase 1L quarantine. These are the only canonical character definitions that
-// may author the required compatibility field, and only at integer zero.
-export const LEGACY_CHARACTER_HEAT_DEFAULT_APPROVALS: readonly LegacyCharacterHeatDefaultApproval[] = [
-  { id: "black-ledger-agent", file: "content/characters/black-ledger-agent.json", field: "heat", value: 0 },
-  { id: "char_bjornis", file: "content/characters/char_bjornis.json", field: "heat", value: 0 },
-  { id: "char_deepdale", file: "content/characters/char_deepdale.json", field: "heat", value: 0 },
-  { id: "char_ker_von_ker", file: "content/characters/char_ker_von_ker.json", field: "heat", value: 0 },
-  { id: "char_kira_dog", file: "content/characters/char_kira_dog.json", field: "heat", value: 0 },
-  { id: "char_master_alpha", file: "content/characters/char_master_alpha.json", field: "heat", value: 0 },
-  { id: "char_popelord", file: "content/characters/char_popelord.json", field: "heat", value: 0 },
-  { id: "char_rumi", file: "content/characters/char_rumi.json", field: "heat", value: 0 },
-  { id: "cinder-monk", file: "content/characters/cinder-monk.json", field: "heat", value: 0 },
-  { id: "fleet-elder", file: "content/characters/fleet-elder.json", field: "heat", value: 0 },
-  { id: "grave-engineer", file: "content/characters/grave-engineer.json", field: "heat", value: 0 },
-  { id: "oathbroken-prince", file: "content/characters/oathbroken-prince.json", field: "heat", value: 0 },
-  { id: "rift-cartographer", file: "content/characters/rift-cartographer.json", field: "heat", value: 0 },
-  { id: "salvage-warden", file: "content/characters/salvage-warden.json", field: "heat", value: 0 },
-  { id: "siege-medic", file: "content/characters/siege-medic.json", field: "heat", value: 0 },
-  { id: "signal-witch", file: "content/characters/signal-witch.json", field: "heat", value: 0 },
-  { id: "void-marshal", file: "content/characters/void-marshal.json", field: "heat", value: 0 }
-];
-
 // Compatibility IDs that remain tracked separately from effect/default
 // authorization. Their presence grants no permission to author a Heat field.
 export const OTHER_LEGACY_HEAT_COMPATIBILITY_APPROVALS: readonly OtherLegacyHeatCompatibilityApproval[] = [
@@ -119,13 +90,10 @@ export const OTHER_LEGACY_HEAT_COMPATIBILITY_APPROVALS: readonly OtherLegacyHeat
 ];
 
 const effectApprovalsById = new Map(LEGACY_HEAT_EFFECT_APPROVALS.map((approval) => [approval.id, new Set(approval.constructs)]));
-const characterDefaultsById = new Map(LEGACY_CHARACTER_HEAT_DEFAULT_APPROVALS.map((approval) => [approval.id, approval]));
-
 // Compatibility export retained for existing count/inclusion tests. Validation
 // uses the separated manifests above and never treats this union as authority.
 export const APPROVED_LEGACY_HEAT_CONTENT_IDS = new Set([
   ...LEGACY_HEAT_EFFECT_APPROVALS.map((approval) => approval.id),
-  ...LEGACY_CHARACTER_HEAT_DEFAULT_APPROVALS.map((approval) => approval.id),
   ...OTHER_LEGACY_HEAT_COMPATIBILITY_APPROVALS.map((approval) => approval.id)
 ]);
 
@@ -148,17 +116,10 @@ export function validateLegacyHeatContentRecord(file: string, record: unknown): 
 
   const constructs = findLegacyHeatConstructs(record);
   const approvedEffects = effectApprovalsById.get(id) ?? new Set<LegacyHeatConstruct>();
-  const defaultApproval = characterDefaultsById.get(id);
 
   if (Object.prototype.hasOwnProperty.call(record, "heat")) {
     const actual = record.heat;
-    const exactDefault = contentType === "character" && defaultApproval?.file === normalizedFile && actual === 0 && Number.isInteger(actual);
-    if (!exactDefault) {
-      const approvalDetail = defaultApproval
-        ? `Approval requires ${defaultApproval.file} character.heat to equal integer 0; found ${formatValue(actual)}.`
-        : `The ID is not approved in LEGACY_CHARACTER_HEAT_DEFAULT_APPROVALS.`;
-      errors.push(`${file} (${id}, ${contentType}) authors compatibility-only field character.heat with value ${formatValue(actual)}. ${approvalDetail} New characters must not introduce Heat defaults; request a field-specific compatibility decision instead.`);
-    }
+    errors.push(`${file} (${id}, ${contentType}) authors forbidden compatibility field character.heat with value ${formatValue(actual)}. Canonical authored characters must omit Heat; runtime character.heat is supplied only by createLegacyCharacterCompatibilityState().`);
   }
 
   for (const construct of constructs) {
@@ -174,12 +135,10 @@ export function validateLegacyHeatApprovalManifest(
   records: readonly LegacyHeatContentRecord[],
   manifests: {
     effects?: readonly LegacyHeatEffectApproval[];
-    defaults?: readonly LegacyCharacterHeatDefaultApproval[];
     other?: readonly OtherLegacyHeatCompatibilityApproval[];
   } = {}
 ): string[] {
   const effects = manifests.effects ?? LEGACY_HEAT_EFFECT_APPROVALS;
-  const defaults = manifests.defaults ?? LEGACY_CHARACTER_HEAT_DEFAULT_APPROVALS;
   const other = manifests.other ?? OTHER_LEGACY_HEAT_COMPATIBILITY_APPROVALS;
   const errors: string[] = [];
   const byId = new Map<string, LegacyHeatContentRecord[]>();
@@ -190,28 +149,14 @@ export function validateLegacyHeatApprovalManifest(
   }
 
   errors.push(...duplicateApprovalErrors("Heat-effect", effects.map((entry) => entry.id)));
-  errors.push(...duplicateApprovalErrors("character-default", defaults.map((entry) => entry.id)));
   errors.push(...duplicateApprovalErrors("other compatibility", other.map((entry) => entry.id)));
 
   const classMembership = new Map<string, string[]>();
-  for (const [label, ids] of [["Heat-effect", effects.map((entry) => entry.id)], ["character-default", defaults.map((entry) => entry.id)], ["other compatibility", other.map((entry) => entry.id)]] as const) {
+  for (const [label, ids] of [["Heat-effect", effects.map((entry) => entry.id)], ["other compatibility", other.map((entry) => entry.id)]] as const) {
     for (const id of ids) classMembership.set(id, [...(classMembership.get(id) ?? []), label]);
   }
   for (const [id, classes] of classMembership) {
     if (classes.length > 1) errors.push(`Legacy Heat approval ${id} appears in multiple approval classes (${classes.join(", ")}). Effect, default, and stable compatibility approvals must remain isolated.`);
-  }
-
-  for (const approval of defaults) {
-    const matches = byId.get(approval.id) ?? [];
-    if (matches.length !== 1) {
-      errors.push(`Character-default approval ${approval.id} expected exactly one canonical character record; found ${matches.length}. Remove stale or duplicate approval data.`);
-      continue;
-    }
-    const match = matches[0]!;
-    const normalizedFile = normalizeFile(match.file);
-    if (!isCharacterFile(normalizedFile) || normalizedFile !== approval.file) errors.push(`Character-default approval ${approval.id} points to ${normalizedFile}, not canonical character path ${approval.file}.`);
-    if (!isRecord(match.record) || !Object.prototype.hasOwnProperty.call(match.record, approval.field)) errors.push(`Character-default approval ${approval.id} is stale: canonical field ${approval.field} is missing.`);
-    else if (match.record[approval.field] !== approval.value || !Number.isInteger(match.record[approval.field])) errors.push(`Character-default approval ${approval.id} requires integer ${approval.field}: 0; found ${formatValue(match.record[approval.field])}.`);
   }
 
   for (const approval of effects) {

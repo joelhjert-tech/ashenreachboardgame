@@ -88,3 +88,10 @@ Current inspection corrects `anomaly-red-suture-field` from the Phase 1D Heat-on
 - **HRD-002 preserved:** loaded and reconnected nonzero values remain exact and mechanically inactive; no constructor runs over existing state and no value is converted.
 - Two immutable shop copies continue preserving stored Heat, and the two zero-valued phone/TV compatibility projection keys remain unchanged.
 - **Not implemented:** removal of the 17 JSON fields, authoring omission support, optional `character.heat`, new-save omission, save versioning, projection retirement, old-value support-window closure, schema deletion, Mirror-key migration, Heat-only outcomes, Rust Choir Peddlers, or discriminator removal.
+
+# Phase 1N authored-character omission boundary
+
+- **HRD-001 implemented for authored content only:** canonical character definitions use a distinct strict schema that excludes Heat; all 17 top-level `heat: 0` members are removed, and new authored Heat is rejected rather than stripped.
+- **HRD-013 implemented for canonical authoring cleanup:** the 17 Phase 1L character-default approvals are retired. The compatibility union now contains only 40 Heat-effect IDs and 14 other compatibility IDs, with zero overlap and 54 combined unique IDs.
+- **HRD-002 preserved:** the persisted/runtime character schema still requires Heat, accepts historical nonzero values, serializes them exactly, and reconnects without normalization or conversion. New runtime characters still receive zero from the Phase 1M constructor.
+- **Not implemented:** optional runtime `character.heat`, new-save omission, versioned migration, projection-key retirement, old-value support-window closure, runtime-field removal, Mirror-key migration, Heat-only outcome migration, Rust Choir Peddlers, or discriminator removal.

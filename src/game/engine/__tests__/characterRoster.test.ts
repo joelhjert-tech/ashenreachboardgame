@@ -18,7 +18,7 @@ describe("character roster content", () => {
       expect(totalStats).toBe(15);
       expect(Math.min(...Object.values(character.stats))).toBeGreaterThan(0);
       expect(Math.max(...Object.values(character.stats))).toBeLessThanOrEqual(5);
-      expect(character.heat).toBe(0);
+      expect(Object.prototype.hasOwnProperty.call(character, "heat")).toBe(false);
       expect(character.wounds).toBe(0);
       expect(character.status).toBe("active");
       expect(character.activeContract).toBeNull();

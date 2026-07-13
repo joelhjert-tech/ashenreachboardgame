@@ -60,6 +60,7 @@ function loadMasterAlpha(): PrivateCharacter {
 
   return {
     ...loaded,
+    heat: 0,
     heldGear,
     followers
   };

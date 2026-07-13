@@ -13,7 +13,7 @@ import { getHeatThresholdForMode, getWoundThresholdForMode } from "../game/rules
 import { createInitialAfflictionUsageState } from "../game/rules/afflictions.js";
 import { createLegacyCharacterCompatibilityState } from "../game/rules/legacyHeatCompatibility.js";
 import { attachTileChallengesToSectors } from "../game/rules/tileChallenges.js";
-import type { Character } from "../game/schema/character.schema.js";
+import type { AuthoredCharacter, Character } from "../game/schema/character.schema.js";
 import type { GameMode, GameState, InteractionMode, PlayerState, SessionMode } from "../game/schema/session.schema.js";
 import { createJoinToken } from "./auth.js";
 
@@ -46,7 +46,7 @@ export function getSeatCountForSession(
   return Math.max(2, Math.min(sessionSeatLayouts.multiplayer.length, playerCount));
 }
 
-function cloneCharacter(character: Character, currentSpaceId: string): Character {
+function cloneCharacter(character: AuthoredCharacter, currentSpaceId: string): Character {
   return {
     ...character,
     ...createLegacyCharacterCompatibilityState(),
@@ -65,7 +65,7 @@ function cloneCharacter(character: Character, currentSpaceId: string): Character
 
 function createPlayerState(
   seatId: string,
-  character: Character,
+  character: AuthoredCharacter,
   currentSpaceId: string,
   seatIndex: number,
   sessionMode: SessionMode,

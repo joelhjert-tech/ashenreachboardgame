@@ -14,12 +14,14 @@ const VIOLET_TRIAD_TEAM_BONUS: Partial<Record<Stat, number>> = {
   guile: 1
 };
 
-export function getHeldGearItem(character: Character, gearId: string): GearItem | undefined {
+type GearBearingCharacter = Pick<Character, "id" | "heldGear" | "equippedGear" | "followers">;
+
+export function getHeldGearItem(character: GearBearingCharacter, gearId: string): GearItem | undefined {
   return character.heldGear.find((item) => item.id === gearId);
 }
 
 export function getEquippedGearItem(
-  character: Character,
+  character: GearBearingCharacter,
   slot: GearSlot
 ): GearItem | undefined {
   const gearId = character.equippedGear[slot];
@@ -27,11 +29,11 @@ export function getEquippedGearItem(
   return gearId ? getHeldGearItem(character, gearId) : undefined;
 }
 
-export function getEquippedGearBonus(character: Character, stat: Stat): number {
+export function getEquippedGearBonus(character: GearBearingCharacter, stat: Stat): number {
   return getEquippedGearModifierSources(character, stat).reduce((sum, source) => sum + source.value, 0);
 }
 
-export function getCompanionStatBonus(character: Character, stat: Stat): number {
+export function getCompanionStatBonus(character: Pick<GearBearingCharacter, "id" | "followers">, stat: Stat): number {
   return getCompanionStatModifierSources(character, stat).reduce((sum, source) => sum + source.value, 0);
 }
 
@@ -45,7 +47,7 @@ export function isGearModifierActive(item: GearItem, context: GearModifierContex
 }
 
 export function getEquippedGearModifierSources(
-  character: Character,
+  character: GearBearingCharacter,
   stat: Stat,
   context: GearModifierContext = { mode: "resting" }
 ): Array<{ label: string; value: number }> {
@@ -60,7 +62,7 @@ export function getEquippedGearModifierSources(
   return [...gearSources, ...getCompanionStatModifierSources(character, stat)];
 }
 
-export function getCompanionStatModifierSources(character: Character, stat: Stat): Array<{ label: string; value: number }> {
+export function getCompanionStatModifierSources(character: Pick<GearBearingCharacter, "id" | "followers">, stat: Stat): Array<{ label: string; value: number }> {
   if (character.id !== RUMI_CHARACTER_ID) {
     return [];
   }

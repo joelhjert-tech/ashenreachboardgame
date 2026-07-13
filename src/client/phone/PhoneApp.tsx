@@ -484,7 +484,10 @@ export function PhoneApp(): ReactElement {
           sectorId: selectedCharacter.currentSpaceId,
           hand: [],
           notes: [],
-          character: selectedCharacter
+          character: {
+            ...selectedCharacter,
+            heat: selectedCharacter.heat ?? 0
+          }
         }
       : null;
   const self = phonePatch?.payload.self ?? fallbackLobbySelf;

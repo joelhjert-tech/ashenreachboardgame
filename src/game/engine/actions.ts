@@ -1,4 +1,4 @@
-import type { Character, Stat } from "../schema/character.schema.js";
+import type { AuthoredCharacter, Stat } from "../schema/character.schema.js";
 import type { ThreatCard, EncounterEffect } from "../schema/card.schema.js";
 import type { ContractCard } from "../schema/contract.schema.js";
 import type { AfflictionCard } from "../schema/affliction.schema.js";
@@ -185,7 +185,7 @@ export interface WoundThresholdReachedAction extends BaseAction {
 export interface RecruitReplacementAction extends BaseAction {
   type: "RECRUIT_REPLACEMENT";
   replacementCharacterId: string;
-  replacementCharacter?: Character;
+  replacementCharacter?: AuthoredCharacter;
 }
 
 export interface EquipGearAction extends BaseAction {
