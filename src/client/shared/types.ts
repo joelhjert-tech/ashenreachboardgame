@@ -88,7 +88,6 @@ export interface PublicPlayerCharacter {
   trophyPile?: TrophyPileEntry[];
   salvage?: number;
   temporaryAllStatBoost?: { value: number; remainingEligibleResolutions: number };
-  heat: number;
   wounds: number;
   scars: string[];
   afflictions?: PlayerAfflictionSummary;
@@ -247,7 +246,6 @@ export interface PrivateCharacter {
   trophyPile?: TrophyPileEntry[];
   salvage?: number;
   temporaryAllStatBoost?: { value: number; remainingEligibleResolutions: number };
-  heat: number;
   wounds: number;
   scars: string[];
   afflictions?: PlayerAfflictionSummary;
@@ -558,7 +556,6 @@ export interface PublicShopEncounterState {
     name: string;
     characterName: string;
     salvage: number;
-    heat: number;
     wounds: {
       current: number;
       max: number;
@@ -1242,4 +1239,4 @@ export interface PhoneSessionAuth {
   lastConnectedAt?: string;
 }
 
-export type CharacterCatalogEntry = Omit<PrivateCharacter, "heat"> & { heat?: number };
+export type CharacterCatalogEntry = PrivateCharacter;

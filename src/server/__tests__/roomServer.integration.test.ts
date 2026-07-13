@@ -2601,6 +2601,9 @@ describe("roomServer websocket integration", () => {
     const seat2Character = getSelfCharacterFromPatch(seat2Snapshot);
     expect(seat2Character?.equippedGear.weapon).toBe("veil-hook");
     expect(seat2Character?.heldGear.some((item) => item.id === "veil-hook")).toBe(true);
+    expect(seat2Character).not.toHaveProperty("heat");
+    const rejoinedPublicPlayers = seat2Snapshot.payload.players as Array<{ character: Record<string, unknown> }>;
+    expect(rejoinedPublicPlayers.every((player) => !("heat" in player.character))).toBe(true);
       step = "seat2 reconnect presence true";
       await tv.waitForSince(reconnectTvMarker, statePatchWithSeatConnection("seat-2", true));
       await phone1.waitForSince(reconnectPhone1Marker, statePatchWithSeatConnection("seat-2", true));

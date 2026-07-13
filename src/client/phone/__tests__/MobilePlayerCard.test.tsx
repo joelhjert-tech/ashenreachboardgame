@@ -24,7 +24,6 @@ const self: PhoneSelfState = {
     status: "active",
     stats: { command: 3, grit: 2, signal: 1, guile: 1, forge: 2 },
     trophies: 0,
-    heat: 0,
     wounds: 0,
     scars: [],
     activeContract: null,

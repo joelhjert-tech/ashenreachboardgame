@@ -24,7 +24,7 @@ describe("shop encounter public projection", () => {
       shopEncounter: {
         shopName: string;
         status: string;
-        activePlayer: { salvage: number; heat: number; wounds: { current: number; max: number } };
+        activePlayer: { salvage: number; wounds: { current: number; max: number } };
         blockingThreats: unknown[];
         services: Array<{ id: string; enabled: boolean; disabledReason?: string; cost: { salvage?: number; heat?: number } }>;
         revealedStock?: unknown[];
@@ -37,7 +37,6 @@ describe("shop encounter public projection", () => {
       status: "open",
       activePlayer: {
         salvage: 6,
-        heat: 0,
         wounds: { current: 0, max: state.woundThreshold }
       },
       blockingThreats: []

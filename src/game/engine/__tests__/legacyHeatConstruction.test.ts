@@ -38,7 +38,7 @@ describe("Phase 1P Heat-free runtime character construction", () => {
     expect(result.state.players[0]!.character.scars).toContain("scar-wound-1");
   });
 
-  it("forbids gameplay character Heat access and retains exactly two server projection zeros", () => {
+  it("forbids gameplay character Heat access and current server projection Heat", () => {
     const files = [...productionFiles(join(ROOT, "src", "game")), ...productionFiles(join(ROOT, "src", "server"))];
     const accesses: string[] = [];
     const projectionZeros: string[] = [];
@@ -53,6 +53,6 @@ describe("Phase 1P Heat-free runtime character construction", () => {
       visit(source);
     }
     expect(accesses).toEqual([]);
-    expect(projectionZeros).toHaveLength(2);
+    expect(projectionZeros).toEqual([]);
   });
 });

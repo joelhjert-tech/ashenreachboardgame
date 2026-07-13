@@ -60,7 +60,6 @@ function loadMasterAlpha(): PrivateCharacter {
 
   return {
     ...loaded,
-    heat: 0,
     heldGear,
     followers
   };
@@ -82,7 +81,6 @@ function createMasterAlphaPhonePatch(overrides: Partial<PhonePatchPayload> = {})
       trophies: masterAlpha.trophies,
       trophyPile: masterAlpha.trophyPile,
       salvage: masterAlpha.salvage,
-      heat: masterAlpha.heat,
       wounds: masterAlpha.wounds,
       scars: masterAlpha.scars,
       heldGearCount: masterAlpha.heldGear.length,
@@ -230,7 +228,6 @@ function createMasterAlphaPhonePatch(overrides: Partial<PhonePatchPayload> = {})
         name: "QA",
         characterName: "MASTER ALPHA",
         salvage: 99,
-        heat: 0,
         wounds: { current: 0, max: 12 },
         trophies: 99,
         completedContracts: 0
@@ -300,6 +297,22 @@ function catalogFromMasterAlpha(): CharacterCatalogEntry[] {
 }
 
 describe("Ashen Reach UI validation stress states", () => {
+  it("tolerates pre-retirement payload extras without rendering Heat or changing shop affordability", () => {
+    const oldPhonePayload = structuredClone(createMasterAlphaPhonePatch()) as PhonePatchPayload & any;
+    oldPhonePayload.players[0]!.character.heat = 0;
+    oldPhonePayload.shopEncounter!.activePlayer.heat = 0;
+
+    const { rerender } = render(<PhoneActionPanel characters={catalogFromMasterAlpha()} patch={oldPhonePayload} onIntent={vi.fn()} />);
+    expect(screen.getByRole("tablist", { name: /turn actions/i })).toBeInTheDocument();
+    expect(document.body).not.toHaveTextContent(/\b(?:Heat|Risk)\b/);
+
+    const currentPhonePayload = createMasterAlphaPhonePatch();
+    rerender(<PhoneActionPanel characters={catalogFromMasterAlpha()} patch={currentPhonePayload} onIntent={vi.fn()} />);
+    expect(currentPhonePayload.players[0]!.character).not.toHaveProperty("heat");
+    expect(currentPhonePayload.shopEncounter?.activePlayer).not.toHaveProperty("heat");
+    expect(currentPhonePayload.shopEncounter?.services[0]?.cost).toEqual({ salvage: 3 });
+  });
+
   it("renders MASTER ALPHA full inventory without dropping long gear or follower names", () => {
     render(<PhoneInventoryPanel patch={createMasterAlphaPhonePatch()} onIntent={vi.fn()} />);
 
@@ -496,6 +509,8 @@ describe("Ashen Reach UI validation stress states", () => {
       pendingEnemyRoll: null
     });
     const patch = createHostPatch(phonePatch);
+    (patch.payload.players[0]!.character as any).heat = 0;
+    (patch.payload.shopEncounter!.activePlayer as any).heat = 0;
     const activePlayer = patch.payload.players[0]!;
 
     render(<HostShopOverlay patch={patch} activePlayer={activePlayer} />);
@@ -505,5 +520,6 @@ describe("Ashen Reach UI validation stress states", () => {
     expect(screen.getByTestId("host-shop-overlay")).toHaveTextContent(/shop blocked by threat/i);
     expect(screen.getByTestId("host-shop-overlay")).not.toHaveTextContent(/^vs$/i);
     expect(screen.queryByText("Void-Cleaver Command Blade")).not.toBeInTheDocument();
+    expect(screen.getByTestId("host-shop-overlay")).not.toHaveTextContent(/\b(?:Heat|Risk)\b/);
   });
 });

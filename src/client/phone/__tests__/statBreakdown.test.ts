@@ -8,7 +8,7 @@ function selfWith(item: PhoneSelfState["character"]["heldGear"][number]): PhoneS
     character: {
       id: "void-marshal", name: "Tarek", archetype: "Marshal", status: "active",
       stats: { command: 3, grit: 3, signal: 2, guile: 2, forge: 2 }, statUpgrades: {}, trophies: 0,
-      trophyPile: [], heat: 0, wounds: 0, scars: [], activeContract: null,
+      trophyPile: [], wounds: 0, scars: [], activeContract: null,
       heldGear: [item], equippedGear: { weapon: item.slot === "weapon" ? item.id : null, armor: item.slot === "armor" ? item.id : null, utility: item.slot === "utility" ? item.id : null },
       followers: [], abilities: [], currentSpaceId: "ashwake-crossing"
     }

@@ -8279,7 +8279,6 @@ function buildPublicShopEncounter(state: GameState, visiblePlayers: PlayerState[
       name: activePlayer.character.name,
       characterName: activePlayer.character.name,
       salvage,
-      heat: 0,
       wounds: {
         current: activePlayer.character.wounds,
         max: state.woundThreshold
@@ -9338,7 +9337,6 @@ export function createTvProjection(
         trophyPile: player.character.trophyPile ?? [],
         salvage: player.character.salvage ?? 0,
         completedContracts: getCompletedContractCountForProjection(state, player.seatId),
-        heat: 0,
         wounds: player.character.wounds,
         scars: player.character.scars,
         afflictions: summarizeAfflictions(player, getAfflictionCatalog(state)),

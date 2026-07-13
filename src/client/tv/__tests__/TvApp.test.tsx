@@ -72,7 +72,6 @@ const characters: CharacterCatalogEntry[] = [
     status: "active",
     stats: { command: 3, grit: 2, signal: 1, guile: 1, forge: 2 },
     trophies: 0,
-    heat: 0,
     wounds: 0,
     scars: [],
     activeContract: null,
@@ -247,7 +246,6 @@ function createPatch(roomCode = "RT7P4"): StatePatch<PublicPatchPayload> {
             },
             stats: { command: 3, grit: 2, signal: 1, guile: 1, forge: 2 },
             trophies: 0,
-            heat: 0,
             wounds: 0,
             scars: [],
             heldGearCount: 0,
@@ -366,6 +364,19 @@ describe("TvApp", () => {
         hostToken: "host:RT7P4:secret"
       })
     );
+  });
+
+  it("tolerates an old public payload with an extra Heat field without rendering it", async () => {
+    window.localStorage.setItem("ashen-reach-tv-room-code", "RT7P4");
+    window.localStorage.setItem("ashen-reach-tv-host-token", "host:RT7P4:secret");
+    const oldPatch = createPatch() as StatePatch<PublicPatchPayload> & any;
+    oldPatch.payload.players[0].character.heat = 0;
+    mockUseRoomSubscription.mockReturnValue({ patch: oldPatch, error: null, sendIntent: vi.fn(), status: "open", debugEvents: [], clearDebugEvents: vi.fn() });
+
+    render(<TvApp />);
+
+    expect(await screen.findByTestId("host-live-status")).toHaveTextContent(/tarek voss/i);
+    expect(document.body).not.toHaveTextContent(/\b(?:Heat|Risk)\b/);
   });
 
   it("keeps the active header QR tile free of visible join copy", async () => {
@@ -1476,7 +1487,6 @@ describe("TvApp", () => {
         ...patch.payload.players[0].character,
         salvage: 6,
         trophies: 3,
-        heat: 1,
         wounds: 2,
         heldGearCount: 1
       }
@@ -1501,7 +1511,6 @@ describe("TvApp", () => {
         name: "Tarek Voss",
         characterName: "Tarek Voss",
         salvage: 6,
-        heat: 1,
         wounds: { current: 2, max: 6 },
         trophies: 3,
         completedContracts: 1
@@ -1659,7 +1668,6 @@ describe("TvApp", () => {
         name: "Tarek Voss",
         characterName: "Tarek Voss",
         salvage: 6,
-        heat: 0,
         wounds: { current: 0, max: 6 }
       },
       blockingThreats: [
@@ -1719,7 +1727,6 @@ describe("TvApp", () => {
         name: "Tarek Voss",
         characterName: "Tarek Voss",
         salvage: 4,
-        heat: 0,
         wounds: { current: 1, max: 6 }
       },
       blockingThreats: [],
@@ -1898,7 +1905,6 @@ describe("TvApp", () => {
         activeContract: null,
         stats: { command: 1, grit: 1, signal: 4, guile: 2, forge: 1 },
         trophies: 0,
-        heat: 0,
         wounds: 0,
         scars: [],
         heldGearCount: 0,
@@ -2032,7 +2038,6 @@ describe("TvApp", () => {
         activeContract: null,
         stats: { command: 1, grit: 1, signal: 4, guile: 2, forge: 1 },
         trophies: 0,
-        heat: 0,
         wounds: 0,
         scars: [],
         heldGearCount: 0,

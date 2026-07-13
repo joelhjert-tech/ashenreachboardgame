@@ -115,3 +115,24 @@ Current inspection corrects `anomaly-red-suture-field` from the Phase 1D Heat-on
 - The Phase 1M compatibility constructor and its four call sites are retired; current construction, selection, setup, and replacement produce Heat-free characters.
 - The two hardcoded zero projection compatibility keys remain unchanged. Projection-key retirement and network protocol versioning remain unimplemented.
 - **Not implemented:** historical metadata removal, legacy v0 parser removal, Mirror-key migration, Heat-only outcome migration, Rust Choir Peddlers, or generic discriminator removal.
+
+# Phase 1Q projection/network contract audit (pending approval)
+
+- **Phone/TV public-player key:** `players[].character.heat` is produced once as literal zero for TV and inherited phone/host-phone payloads. It has zero production consumers and is recommended for direct removal in Phase 1R.
+- **Shop projection key:** `shopEncounter.activePlayer.heat` is produced once as literal zero for the shared public shop projection. It has zero production consumers and is recommended for direct removal in Phase 1R.
+- **Network protocol decision:** do not add protocol versioning for these two inert omissions. Incoming projections have no strict runtime parser, updates replace rather than merge state, and both old-client/new-server and new-client/old-server combinations are code-proven tolerant.
+- **Client tolerance decision:** no staged optional-field normalizer is recommended. Updated clients should ignore old-server extra fields and never normalize them into current state.
+- **Server omission decision:** remove both literal producers, corresponding shared fields, and stale private/catalog compatibility typing in one coordinated commit.
+- **Final type cleanup:** reconcile `PrivateCharacter` and `CharacterCatalogEntry` with the already-Heat-free private projection; update only affected fixtures and add a projection boundary guard.
+- **Compatibility window:** mixed loaded bundles are tolerated naturally, but closure of any broader network-support window remains an explicit later decision. No automatic expiry is approved.
+- These are report-only recommendations. Projection retirement, type cleanup, client fallback removal, guards, tests, and any general network version remain unimplemented.
+
+# Phase 1R projection contract retirement
+
+- **Public-player projection implemented:** `players[].character.heat` and its literal-zero producer are removed; every current public character projection is Heat-free.
+- **Shop active-player projection implemented:** `shopEncounter.activePlayer.heat` and its literal-zero producer are removed without changing Salvage affordability, services, inventory privacy, or shop transactions.
+- **Private phone type implemented:** the stale required `PrivateCharacter.heat` field is removed; owner-private inventory, abilities, contracts, Wounds, Scars, and Rivalry privacy are unchanged.
+- **Catalog fallback implemented:** `CharacterCatalogEntry` is Heat-free and `PhoneApp` no longer reads or manufactures a catalog Heat zero.
+- **Coordinated network cleanup implemented:** server producers, shared client types, current fixtures, and focused compatibility guards land together. No network version, optional transition field, capability negotiation, state normalizer, refresh flow, or service worker is added.
+- **Mixed-version evidence preserved:** old clients have no consumer for omitted fields; current clients tolerate old extra fields as inert JSON; full `STATE_PATCH` replacement prevents merge retention.
+- **Not implemented:** historical metadata support-window closure, legacy v0 parser retirement, Mirror-key migration, Heat-only outcome migration, Rust Choir Peddlers, or generic discriminator removal.
