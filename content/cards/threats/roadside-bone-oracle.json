@@ -13,7 +13,7 @@
     "text": "The oracle traded a clean route omen for your patience."
   },
   "failEffect": {
-    "type": "gain_heat",
+    "type": "take_wound",
     "amount": 1
   },
   "enemyFamily": "revenant",
@@ -22,7 +22,7 @@
   "rarity": "common",
   "tempo": "push",
   "resourceTags": [
-    "heat",
+    "wound",
     "loot"
   ]
 }

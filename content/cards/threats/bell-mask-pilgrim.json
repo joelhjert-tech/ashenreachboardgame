@@ -16,7 +16,7 @@
     "text": "You silenced the bell and recovered its route-scratched clapper."
   },
   "woundOnLoss": {
-    "type": "gain_heat",
+    "type": "take_wound",
     "amount": 1
   },
   "enemyFamily": "choir",
@@ -24,7 +24,7 @@
   "rarity": "common",
   "tempo": "stall",
   "resourceTags": [
-    "heat",
+    "wound",
     "loot",
     "trophy"
   ]

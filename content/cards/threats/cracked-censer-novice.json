@@ -16,7 +16,7 @@
     "text": "You still the cracked censer and mark its harmless frequency."
   },
   "woundOnLoss": {
-    "type": "gain_heat",
+    "type": "take_wound",
     "amount": 1
   },
   "enemyFamily": "choir",
@@ -24,7 +24,7 @@
   "rarity": "common",
   "tempo": "neutral",
   "resourceTags": [
-    "heat",
+    "wound",
     "trophy"
   ],
   "imagePrompt": "A frail choir novice in smoke-stained robes holding a cracked brass censer with weak blue signal light, ruined chapel walkway, sympathetic but eerie"

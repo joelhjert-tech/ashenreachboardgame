@@ -177,3 +177,21 @@ Current inspection corrects `anomaly-red-suture-field` from the Phase 1D Heat-on
 - **Compatibility approval retired:** totals are now 38 Heat-effect approvals plus 14 other compatibility approvals, 52 unique approved IDs.
 - **Boundaries preserved:** severity 1, stable ID, active Borderlight membership, art, snapshots v0/v1/v2, archival metadata, Mirror threshold, and Heat-free projections remain unchanged.
 - **Still open:** 27 Heat-only IDs / 29 branches / 38 effects, legacy v0/v1 parser retirement, archival metadata closure, and stable discriminator cleanup.
+
+# Phase 1W remaining-content reconstruction (pending approval)
+
+- **Population corrected:** current canonical content contains 36 IDs / 38 explicit branches / 38 Heat effects. The inherited 27/29 estimate is not reproducible and is superseded; exact discriminators remain 25 `gain_heat`, 3 `gain_heat_all`, and 10 `lose_heat`.
+- **Decision map rebuilt:** every ID has one preferred primary treatment, exact mechanics/edge cases, readiness, balance severity, and implementation batch in the five Phase 1W reports.
+- **Safest next phase recommended:** remove the four blank clauses on Bell-Mask Pilgrim, Cracked-Censer Novice, Glasswing Midge Cloud, and Roadside Bone Oracle without replacement.
+- **Approval boundaries preserved:** economy, Wounds, shared pressure, Equipment choice, Scar, temporary modifiers, and bespoke outcomes remain pending approval and unimplemented.
+- **Compatibility unchanged:** 52 approvals, zero active Heat reads/writes, zero projection Heat keys, strict v0/v1 compatibility, current v2, archival metadata, and stable IDs remain unchanged.
+- **No implementation:** Phase 1W changes reports only. Legacy parser/support-window and discriminator cleanup remain separate future decisions.
+
+# Phase 1X four Heat losses converted to Wounds — implemented
+
+- **Superseding decision:** pure deletion was blocked by strict required branches; the intermediate `none` proposal was superseded and is absent. The approved implementation uses the existing `take_wound 1` effect.
+- **Enemy losses:** Bell-Mask Pilgrim, Cracked-Censer Novice, and Glasswing Midge Cloud each suffer exactly 1 Wound through `woundOnLoss` while preserving enemy persistence and every other value.
+- **Hazard failure:** Roadside Bone Oracle suffers exactly 1 Wound through `failEffect`; its success note and continuation remain unchanged.
+- **Authoritative health rules:** existing prevention, actual-delta reporting, threshold recall, Scar-on-recall behavior, continuation, and reconnect replay protection apply unchanged.
+- **Compatibility cleanup:** four exact `gain_heat` approvals are retired. Counts are now 32 IDs / 34 branches / 34 effects and 48 approvals; discriminator split is 21 `gain_heat`, 3 `gain_heat_all`, and 10 `lose_heat`.
+- **Boundaries preserved:** severity, stable IDs, availability, art, snapshots v0/v1/v2, archival metadata, Mirror threshold, Heat-free runtime/projections, and every other Phase 1W recommendation remain unchanged.

@@ -16,7 +16,7 @@
     "text": "You disperse the midges and tune the route lens back to true north."
   },
   "woundOnLoss": {
-    "type": "gain_heat",
+    "type": "take_wound",
     "amount": 1
   },
   "enemyFamily": "vermin",
@@ -24,7 +24,7 @@
   "rarity": "common",
   "tempo": "neutral",
   "resourceTags": [
-    "heat",
+    "wound",
     "movement",
     "trophy"
   ],

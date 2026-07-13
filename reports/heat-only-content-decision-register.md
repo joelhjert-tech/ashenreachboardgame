@@ -70,6 +70,34 @@ These decisions supersede H1G-003, H1H-003, and H1I-003 for Rust Choir Peddlers 
 
 Severity remains 1. Stable identity, art, Borderlight membership, Forge 5 check, and cleanup are unchanged. The ID leaves the legacy Heat approval set; no other recommendation changes status.
 
+## Phase 1W reconstructed decision map (pending approval)
+
+The missing Phase 1D population is superseded by a reproducible scan of current canonical content. Phase 1W finds 36 IDs / 38 explicit Heat-only branches / 38 effects, not the inherited 27/29 estimate. The exact split is 25 `gain_heat`, 3 `gain_heat_all`, and 10 `lose_heat`; compatibility approvals remain 52.
+
+| Decision | IDs | Recommendation | Status |
+|---|---:|---|---|
+| H1W-001 | 4 | Remove blank clauses without replacement | Pending approval |
+| H1W-002 | 7 | Two `gain_salvage 1` and five automatic floor-zero `lose_salvage 1` outcomes | Pending balance approval |
+| H1W-003 | 10 | Bounded Wound/healing family including paired Lantern; isolate two-Wound Doppelganger | Pending balance approval |
+| H1W-004 | 4 | One Signal 7 anomaly test and three turn-expiring stat modifiers | Pending infrastructure approval |
+| H1W-005 | 4 | Two Loss Pressure and two Global Escalation steps | Pending high-risk approval |
+| H1W-006 | 2 | Owner-private equipped normal Equipment loss | Pending infrastructure approval |
+| H1W-007 | 1 | Existing Bell-Deafened Scar; duplicate fallback 1 Wound | Pending high-risk approval |
+| H1W-008 | 4 | Forced displacement, note choice, required-payment discount, and public adjacent-sector scouting | Pending bespoke approval |
+
+Normative per-ID rules and batches are recorded in the Phase 1W reports. No recommendation is implemented. H1D-002A through H1D-008 remain historical summaries only where Phase 1W now supplies exact current decisions.
+
+## Phase 1X four Wound conversions — implemented
+
+The removal-only preflight and later `none` proposal are superseded by explicit approval to use the existing Wound system.
+
+| Decision ID | Content IDs | Implemented rule | Status |
+|---|---|---|---|
+| H1X-001 | `bell-mask-pilgrim`, `cracked-censer-novice`, `glasswing-midge-cloud` | Replace each `woundOnLoss` `gain_heat 1` with `take_wound 1`; retain enemy persistence, severity, rewards, identity, art, and availability | Implemented |
+| H1X-002 | `roadside-bone-oracle` | Replace `failEffect` `gain_heat 1` with `take_wound 1`; retain success note, severity, identity, art, availability, and failure continuation | Implemented |
+
+All four use authoritative Wound prevention and recall handling. Exactly four Heat approvals were removed. Counts are now 32 Heat-only IDs / 34 branches / 34 effects and 48 compatibility approvals. No `none` effect or schema exception was added. Other Phase 1W decisions remain pending.
+
 The older estimate of 39 mixed IDs reconciles to 34 current branch-level candidates plus five stale estimate-only records. Rust Choir Peddlers and all remaining Heat-only decisions are unchanged.
 
 Phase 1D's “pay up to 1, floor 0” wording is superseded as payment semantics: payment is full or absent, never partial. Phase 1H itself made no mechanics changes; Phase 1I implements only the approved shared boundary and Gate Tax decision above.
