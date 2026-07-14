@@ -42,7 +42,7 @@ const TARGETS: Entry[] = [
   { id: "shardwind-front", file: "cards/threats/shardwind-front.json", branch: "failEffect.effects", survivingEffects: [{ type: "take_wound", amount: 1 }] },
   { id: "starless-taxation", file: "cards/threats/starless-taxation.json", branch: "failEffect.effects", survivingEffects: [{ type: "gain_scar", scarId: "scar-wound-3" }] },
   { id: "static-censer-acolyte", file: "cards/threats/static-censer-acolyte.json", branch: "woundOnLoss.effects", survivingEffects: [{ type: "take_wound", amount: 1 }] },
-  { id: "suture-storm", file: "cards/threats/suture-storm.json", branch: "failEffect.effects", survivingEffects: [{ type: "take_wound", amount: 1 }] },
+  { id: "suture-storm", file: "cards/threats/suture-storm.json", branch: "failEffect.effects", survivingEffects: [{ type: "take_wound", amount: 1 }, { type: "forcedDisplacement", direction: "counterclockwise", distance: 1, sameRing: true, fallbackEffect: { type: "take_wound", amount: 1 }, failureStillCounts: true }] },
   { id: "webglass-echo-trap", file: "cards/threats/webglass-echo-trap.json", branch: "failEffect.effects", survivingEffects: [{ type: "take_wound", amount: 1 }] },
   { id: "webglass-snarefield", file: "cards/threats/webglass-snarefield.json", branch: "failEffect.effects", survivingEffects: [{ type: "take_wound", amount: 1 }], retainedCompatibility: "separate Heat-only success branch" },
   { id: "cinder-surgeon", file: "followers/cinder-surgeon.json", branch: "activeEffect.effects", survivingEffects: [{ type: "heal_wound", amount: 1 }] }

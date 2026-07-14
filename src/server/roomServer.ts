@@ -5075,6 +5075,43 @@ export class GameRoomServer {
         return;
       }
 
+      if (this.state.pendingSutureStormConsequence?.stage === "afterInitialWound") {
+        if (this.shouldTriggerWoundThreshold(seatId)) {
+          const player = this.state.players.find((entry) => entry.seatId === seatId);
+          this.applyAction({
+            type: "WOUND_THRESHOLD_REACHED",
+            seatId,
+            threshold: this.state.woundThreshold,
+            newWoundTotal: player?.character.wounds ?? 0,
+            scar: this.createWoundScar(seatId),
+            createdAt: new Date().toISOString()
+          });
+          progressMade = true;
+          continue;
+        }
+        this.applyAction({ type: "SUTURE_STORM_CONTINUED", seatId, createdAt: new Date().toISOString() });
+        progressMade = true;
+        continue;
+      }
+
+      if (this.state.pendingSutureStormConsequence?.stage === "fallbackWound" && this.state.pendingEffect) {
+        const protectedFallback = this.maybeApplyKerWoundPrevention(
+          seatId,
+          this.maybeApplyFandiablosWoundPrevention(seatId, this.state.pendingEffect)
+        );
+        this.state = { ...this.state, pendingEffect: protectedFallback };
+        this.applyAction({
+          type: "RESOLUTION_APPLIED",
+          seatId,
+          effect: protectedFallback,
+          sourceCardId: "suture-storm",
+          success: false,
+          createdAt: new Date().toISOString()
+        });
+        progressMade = true;
+        continue;
+      }
+
       if (this.completeSatisfiedContract(seatId)) {
         progressMade = true;
         continue;
@@ -9393,6 +9430,16 @@ export function createTvProjection(
       sourceTitle: state.currentEncounter?.title ?? "Forced displacement",
       originSectorId: state.pendingDisplacement.originSectorId,
       destinationSectorId: state.pendingDisplacement.destinationSectorId,
+      status: "waiting"
+    } : null,
+    pendingOrderedConsequence: state.pendingSutureStormConsequence ? {
+      seatId: state.pendingSutureStormConsequence.seatId,
+      sourceId: state.pendingSutureStormConsequence.sourceCardId,
+      requestedWounds: state.pendingSutureStormConsequence.requestedWounds,
+      preventedWounds: state.pendingSutureStormConsequence.preventedWounds,
+      actualWounds: state.pendingSutureStormConsequence.actualWounds,
+      resultingWounds: state.pendingSutureStormConsequence.resultingWounds,
+      resultingStatus: state.pendingSutureStormConsequence.resultingStatus,
       status: "waiting"
     } : null,
     scarTriggerStatus: state.pendingScarConsequence ? {

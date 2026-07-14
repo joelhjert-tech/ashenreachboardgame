@@ -1,6 +1,7 @@
 export const APPROVED_FORCED_DISPLACEMENT_SOURCE_IDS = new Set([
   "breach-halberd",
   "mudglass-sinkhole",
+  "suture-storm",
   "route-splice"
 ]);
 

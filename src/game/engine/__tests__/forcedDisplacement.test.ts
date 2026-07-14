@@ -79,7 +79,7 @@ describe("authoritative forced displacement foundation", () => {
     expect(effectSchema.safeParse({ ...routeSplice.failEffect, sameRing: false }).success).toBe(false);
     expect(effectSchema.safeParse({ ...routeSplice.failEffect, failureStillCounts: false }).success).toBe(false);
     expect(effectSchema.safeParse({ ...routeSplice.failEffect, fallbackEffect: { type: "gain_salvage", amount: 1 } }).success).toBe(false);
-    expect(APPROVED_FORCED_DISPLACEMENT_SOURCE_IDS).toEqual(new Set(["breach-halberd", "mudglass-sinkhole", "route-splice"]));
+    expect(APPROVED_FORCED_DISPLACEMENT_SOURCE_IDS).toEqual(new Set(["breach-halberd", "mudglass-sinkhole", "suture-storm", "route-splice"]));
     expect(validateForcedDisplacementContentRecord("route-splice.json", routeSplice)).toEqual([]);
     expect(validateForcedDisplacementContentRecord("new.json", { id: "new-source", failEffect: routeSplice.failEffect })[0]).toMatch(/unapproved forced-displacement source/);
   });

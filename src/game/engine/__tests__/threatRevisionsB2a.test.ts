@@ -98,7 +98,7 @@ function applyFailure(state: GameState, card: ReturnType<typeof requireHazard>) 
 describe("Phase B2A threat revision content", () => {
   it("preserves all four stable IDs, lanes, tests, counts, and exact approved effects", () => {
     expect(THREAT_REVISION_SALVAGE_LOSS_SOURCE_IDS).toEqual(new Set(salvageCards));
-    expect(APPROVED_FORCED_DISPLACEMENT_SOURCE_IDS).toEqual(new Set(["breach-halberd", "mudglass-sinkhole", "route-splice"]));
+    expect(APPROVED_FORCED_DISPLACEMENT_SOURCE_IDS).toEqual(new Set(["breach-halberd", "mudglass-sinkhole", "suture-storm", "route-splice"]));
     expect(RIFT_ANCHOR_SPIKE_ELIGIBLE_SOURCE_IDS).toEqual(APPROVED_FORCED_DISPLACEMENT_SOURCE_IDS);
     for (const id of salvageCards) expect(APPROVED_AUTOMATIC_SALVAGE_LOSS_IDS.has(id)).toBe(true);
 

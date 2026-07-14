@@ -201,6 +201,7 @@ export function createInitialSessionState(
     resolvedEncounterDecisionIds: [],
     pendingDisplacement: null,
     pendingDisplacementArrival: null,
+    pendingSutureStormConsequence: null,
     resolvedDisplacementSourceEventIds: [],
     resolvedSalvageLossSourceEventIds: [],
     tileChallengeProgress: null,

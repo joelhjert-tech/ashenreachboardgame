@@ -29,6 +29,7 @@ import type {
   ResolutionAppliedAction,
   EncounterDecisionResolvedAction,
   ForcedDisplacementResolvedAction,
+  SutureStormContinuedAction,
   ResolutionContinuedAction,
   RivalryAgendaRevealedAction,
   RivalryAgendaProgressTriggeredAction,
@@ -497,10 +498,11 @@ function createPendingDisplacement(
   state: GameState,
   action: ResolutionAppliedAction,
   effect: Extract<EncounterEffect, { type: "forcedDisplacement" }>,
-  destinationSectorId: string
+  destinationSectorId: string,
+  sourceResolutionIdOverride?: string
 ): NonNullable<GameState["pendingDisplacement"]> {
   const player = requirePlayer(state, action.seatId);
-  const sourceResolutionId = state.activeResolution?.id ?? `${action.seatId}:${action.sourceCardId ?? "encounter"}:${state.sequence}`;
+  const sourceResolutionId = sourceResolutionIdOverride ?? state.activeResolution?.id ?? `${action.seatId}:${action.sourceCardId ?? "encounter"}:${state.sequence}`;
   const sourceEventId = `${sourceResolutionId}:forced-displacement`;
   return {
     reactionId: `displacement:${sourceEventId}`,
@@ -519,6 +521,45 @@ function createPendingDisplacement(
     createdAt: action.createdAt,
     status: "pending"
   };
+}
+
+function extractSutureStormDisplacement(effect: EncounterEffect): {
+  remainingEffect: EncounterEffect | null;
+  displacement: Extract<EncounterEffect, { type: "forcedDisplacement" }> | null;
+} {
+  if (effect.type === "forcedDisplacement") {
+    return { remainingEffect: null, displacement: effect };
+  }
+  if (effect.type !== "sequence") {
+    return { remainingEffect: effect, displacement: null };
+  }
+
+  let displacement: Extract<EncounterEffect, { type: "forcedDisplacement" }> | null = null;
+  const remaining: EncounterEffect[] = [];
+  for (const entry of effect.effects) {
+    const extracted = extractSutureStormDisplacement(entry);
+    if (extracted.displacement) {
+      if (displacement) return { remainingEffect: effect, displacement: null };
+      displacement = extracted.displacement;
+    }
+    if (extracted.remainingEffect) remaining.push(extracted.remainingEffect);
+  }
+  return {
+    remainingEffect: remaining.length === 0 ? null : remaining.length === 1 ? remaining[0]! : { type: "sequence", effects: remaining },
+    displacement
+  };
+}
+
+function getThreatResolutionSourceId(state: GameState, seatId: string, cardId: string): string {
+  if (state.activeResolution?.id) return state.activeResolution.id;
+  const source = [...state.eventLog].reverse().find((entry) => {
+    const candidate = entry as { type?: string; seatId?: string; cardId?: string; success?: boolean; createdAt?: string };
+    return ["CHECK_ROLLED", "SOLO_REROLL_RESOLVED", "COMBAT_RESOLVED"].includes(candidate.type ?? "") &&
+      candidate.seatId === seatId && candidate.cardId === cardId && candidate.success === false && typeof candidate.createdAt === "string";
+  }) as { createdAt?: string } | undefined;
+  return typeof source?.createdAt === "string"
+    ? `${seatId}:threat:${cardId}:${source.createdAt}`
+    : `${seatId}:${cardId}:${state.sequence}`;
 }
 
 function removeHeldGearFromPlayer(player: PlayerState, gearId: string): PlayerState {
@@ -2104,6 +2145,70 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
           return reject(state, action, "Shattered Barricade escalation amount must be exactly 1");
         }
       }
+      const sutureStormEffect = authoritativeSourceCardId === "suture-storm"
+        ? extractSutureStormDisplacement(state.pendingEffect)
+        : null;
+      if (sutureStormEffect?.displacement) {
+        if (state.pendingSutureStormConsequence) {
+          return reject(state, action, "Suture Storm consequence is already in progress");
+        }
+        if (resolutionAction.sourceCardId && resolutionAction.sourceCardId !== authoritativeSourceCardId) {
+          return reject(state, action, "Resolution source is stale");
+        }
+        if (resolutionAction.success !== false || state.lastOutcomeSummary?.success !== false) {
+          return reject(state, action, "Suture Storm continuation requires its authoritative failed check");
+        }
+        const displacement = sutureStormEffect.displacement;
+        if (
+          displacement.direction !== "counterclockwise" || displacement.distance !== 1 ||
+          displacement.sameRing !== true || displacement.failureStillCounts !== true ||
+          displacement.fallbackEffect?.type !== "take_wound" || displacement.fallbackEffect.amount !== 1
+        ) {
+          return reject(state, action, "Suture Storm displacement does not match its approved consequence");
+        }
+        const sourceResolutionId = getThreatResolutionSourceId(state, resolutionAction.seatId, authoritativeSourceCardId);
+        const sourceEventId = `${sourceResolutionId}:suture-storm-ordered-consequence`;
+        const displacementSourceEventId = `${sourceResolutionId}:forced-displacement`;
+        if ((state.resolvedDisplacementSourceEventIds ?? []).includes(displacementSourceEventId)) {
+          return reject(state, action, "Suture Storm consequence was already resolved");
+        }
+        const startingWounds = requirePlayer(state, resolutionAction.seatId).character.wounds;
+        const stateAfterInitialWound = sutureStormEffect.remainingEffect
+          ? applyEffectToState(state, resolutionAction.seatId, sutureStormEffect.remainingEffect)
+          : state;
+        const resultingWounds = requirePlayer(stateAfterInitialWound, resolutionAction.seatId).character.wounds;
+        const actualWounds = Math.min(1, Math.max(0, resultingWounds - startingWounds));
+        const summary = actualWounds === 1
+          ? "Suture Storm dealt 1 Wound. Forced displacement follows if the operative remains active."
+          : "Suture Storm's initial Wound was prevented. Forced displacement still follows.";
+        return succeed({
+          ...stateAfterInitialWound,
+          sequence: state.sequence + 1,
+          pendingEffect: null,
+          pendingFailureReaction: null,
+          pendingStaticIntercessionReaction: null,
+          pendingSutureStormConsequence: {
+            seatId: resolutionAction.seatId,
+            sourceCardId: "suture-storm",
+            sourceResolutionId,
+            sourceEventId,
+            stage: "afterInitialWound",
+            requestedWounds: 1,
+            preventedWounds: 1 - actualWounds,
+            actualWounds,
+            resultingWounds,
+            resultingStatus: requirePlayer(stateAfterInitialWound, resolutionAction.seatId).character.status,
+            displacement,
+            createdAt: resolutionAction.createdAt
+          },
+          activeResolution: state.activeResolution ? {
+            ...state.activeResolution,
+            stage: "outcome_summary",
+            outcome: { title: "Stitched off course", text: summary, effects: [summary] }
+          } : null,
+          eventLog: [...state.eventLog, action]
+        });
+      }
       const requiresAuthoritativeSource = state.pendingEffect.type === "lose_salvage" || state.pendingEffect.type === "forcedDisplacement";
       if (requiresAuthoritativeSource && resolutionAction.sourceCardId && resolutionAction.sourceCardId !== authoritativeSourceCardId) {
         return reject(state, action, "Resolution source is stale");
@@ -2248,6 +2353,12 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
         pendingDisplacementArrival: null,
         pendingFailureReaction: null,
         pendingStaticIntercessionReaction: null,
+        pendingSutureStormConsequence: state.pendingSutureStormConsequence?.stage === "fallbackWound"
+          ? null
+          : state.pendingSutureStormConsequence,
+        resolvedDisplacementSourceEventIds: state.pendingSutureStormConsequence?.stage === "fallbackWound"
+          ? [...(state.resolvedDisplacementSourceEventIds ?? []), `${state.pendingSutureStormConsequence.sourceResolutionId}:forced-displacement`]
+          : state.resolvedDisplacementSourceEventIds,
         resolvedSalvageLossSourceEventIds: salvageLossSourceEventId
           ? [...(state.resolvedSalvageLossSourceEventIds ?? []), salvageLossSourceEventId]
           : state.resolvedSalvageLossSourceEventIds,
@@ -2310,6 +2421,55 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
         eventLog: [...state.eventLog, { ...action, salvageCost: isPaid ? pending.salvageCost : 0, paid: isPaid, summary: resultSummary }]
       });
     }
+    case "SUTURE_STORM_CONTINUED": {
+      const continuedAction = action as SutureStormContinuedAction;
+      try { ensureSeatTurn(state, continuedAction.seatId); } catch (error) { return reject(state, action, error instanceof Error ? error.message : "Seat cannot act"); }
+      if (state.phase !== "resolution") return reject(state, action, `Cannot continue Suture Storm during phase ${state.phase}`);
+      const pending = state.pendingSutureStormConsequence;
+      if (!pending || pending.stage !== "afterInitialWound") return reject(state, action, "No initial Suture Storm Wound is waiting to continue");
+      if (pending.seatId !== continuedAction.seatId) return reject(state, action, "Suture Storm consequence belongs to another seat");
+      if (state.currentEncounter?.id !== pending.sourceCardId) return reject(state, action, "Suture Storm source is stale");
+      const displacementSourceEventId = `${pending.sourceResolutionId}:forced-displacement`;
+      if ((state.resolvedDisplacementSourceEventIds ?? []).includes(displacementSourceEventId)) return reject(state, action, "Suture Storm displacement source was already resolved");
+      const player = requirePlayer(state, continuedAction.seatId);
+      if (player.character.status !== "active") {
+        const summary = "The operative was recalled before forced displacement could begin.";
+        return succeed({
+          ...state,
+          sequence: state.sequence + 1,
+          pendingSutureStormConsequence: null,
+          resolvedDisplacementSourceEventIds: [...(state.resolvedDisplacementSourceEventIds ?? []), displacementSourceEventId],
+          lastOutcomeSummary: state.lastOutcomeSummary ? { ...state.lastOutcomeSummary, summary: `${state.lastOutcomeSummary.summary} ${summary}` } : null,
+          eventLog: [...state.eventLog, { ...action, sourceEventId: pending.sourceEventId, continued: false, summary }]
+        });
+      }
+      const destinationSectorId = getForcedDisplacementDestination(state, continuedAction.seatId, pending.displacement.direction);
+      if (!destinationSectorId) {
+        const summary = "No legal counterclockwise destination. The fallback Wound is pending prevention.";
+        return succeed({
+          ...state,
+          sequence: state.sequence + 1,
+          pendingEffect: pending.displacement.fallbackEffect ?? { type: "take_wound", amount: 1 },
+          pendingSutureStormConsequence: { ...pending, stage: "fallbackWound" },
+          lastOutcomeSummary: state.lastOutcomeSummary ? { ...state.lastOutcomeSummary, summary: `${state.lastOutcomeSummary.summary} ${summary}` } : null,
+          eventLog: [...state.eventLog, { ...action, sourceEventId: pending.sourceEventId, continued: true, fallbackPending: true, summary }]
+        });
+      }
+      const pendingDisplacement = createPendingDisplacement(
+        state,
+        { type: "RESOLUTION_APPLIED", seatId: continuedAction.seatId, effect: pending.displacement, sourceCardId: pending.sourceCardId, success: false, createdAt: continuedAction.createdAt },
+        pending.displacement,
+        destinationSectorId,
+        pending.sourceResolutionId
+      );
+      return succeed({
+        ...state,
+        sequence: state.sequence + 1,
+        pendingDisplacement,
+        pendingSutureStormConsequence: { ...pending, stage: "displacement" },
+        eventLog: [...state.eventLog, { ...action, sourceEventId: pending.sourceEventId, continued: true }]
+      });
+    }
     case "FORCED_DISPLACEMENT_RESOLVED": {
       const displacementAction = action as ForcedDisplacementResolvedAction;
       try { ensureSeatTurn(state, displacementAction.seatId); } catch (error) { return reject(state, action, error instanceof Error ? error.message : "Seat cannot act"); }
@@ -2326,6 +2486,20 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
       const legalDestination = getForcedDisplacementDestination(state, displacementAction.seatId, pending.direction);
       const canDisplace = legalDestination === pending.destinationSectorId;
       const destinationName = state.sectors.find((sector) => sector.id === pending.destinationSectorId)?.name ?? pending.destinationSectorId;
+      const isSutureStorm = pending.sourceId === "suture-storm" && state.pendingSutureStormConsequence?.stage === "displacement";
+      if (!canDisplace && isSutureStorm && pending.fallbackEffect) {
+        const summary = "The displacement route became illegal. The fallback Wound is pending prevention.";
+        return succeed({
+          ...state,
+          sequence: state.sequence + 1,
+          pendingEffect: pending.fallbackEffect,
+          pendingDisplacement: null,
+          pendingDisplacementArrival: null,
+          pendingSutureStormConsequence: { ...state.pendingSutureStormConsequence!, stage: "fallbackWound" },
+          lastOutcomeSummary: state.lastOutcomeSummary ? { ...state.lastOutcomeSummary, summary: `${state.lastOutcomeSummary.summary} ${summary}` } : null,
+          eventLog: [...state.eventLog, { ...action, sourceId: pending.sourceId, originSectorId: pending.originSectorId, destinationSectorId: null, displaced: false, fallbackPending: true, summary }]
+        });
+      }
       const displacedState = canDisplace
         ? {
             ...state,
@@ -2347,6 +2521,7 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
         ...displacedState,
         sequence: state.sequence + 1,
         pendingDisplacement: null,
+        pendingSutureStormConsequence: isSutureStorm ? null : state.pendingSutureStormConsequence,
         pendingDisplacementArrival: canDisplace ? { seatId: pending.seatId, sectorId: pending.destinationSectorId, sourceEventId: pending.sourceEventId } : null,
         resolvedDisplacementSourceEventIds: [...(state.resolvedDisplacementSourceEventIds ?? []), pending.sourceEventId],
         activeResolution: state.activeResolution ? { ...state.activeResolution, stage: "outcome_summary", outcome: { title: canDisplace ? "Forced displacement" : "Displacement blocked", text: summary, effects: [summary] } } : null,
@@ -2462,6 +2637,12 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
           : null,
         eventLog: [...state.eventLog, action]
       };
+      if (scarredState.pendingSutureStormConsequence?.seatId === woundAction.seatId) {
+        scarredState.pendingSutureStormConsequence = {
+          ...scarredState.pendingSutureStormConsequence,
+          resultingStatus: "recalled"
+        };
+      }
       return succeed(beginScarTriggerEvent(scarredState, {
         id: `${woundAction.createdAt}:${woundAction.seatId}:scar-gained:${woundAction.scar}`,
         type: "onScarGained",
@@ -2780,6 +2961,7 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
         ...prayerState,
         pendingDisplacement: null,
         pendingDisplacementArrival: null,
+        pendingSutureStormConsequence: displacementPending?.sourceId === "suture-storm" ? null : prayerState.pendingSutureStormConsequence,
         resolvedDisplacementSourceEventIds: [...(prayerState.resolvedDisplacementSourceEventIds ?? []), displacementPending!.sourceEventId],
         activeResolution: prayerState.activeResolution ? {
           ...prayerState.activeResolution,
@@ -4792,6 +4974,7 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
         pendingEffect: leavingResolution ? null : state.pendingEffect,
         pendingDisplacement: leavingResolution ? null : state.pendingDisplacement,
         pendingDisplacementArrival: leavingResolution ? null : state.pendingDisplacementArrival,
+        pendingSutureStormConsequence: leavingResolution ? null : state.pendingSutureStormConsequence,
         pendingFailureReaction: leavingResolution ? null : state.pendingFailureReaction,
         pendingTileChallenge: leavingResolution ? null : state.pendingTileChallenge,
         activeResolution:

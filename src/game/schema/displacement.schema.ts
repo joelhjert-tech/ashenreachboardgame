@@ -38,5 +38,21 @@ export const pendingDisplacementArrivalSchema = z.object({
   sourceEventId: z.string().min(1)
 });
 
+export const pendingSutureStormConsequenceSchema = z.object({
+  seatId: z.string().min(1),
+  sourceCardId: z.literal("suture-storm"),
+  sourceResolutionId: z.string().min(1),
+  sourceEventId: z.string().min(1),
+  stage: z.enum(["afterInitialWound", "displacement", "fallbackWound"]),
+  requestedWounds: z.literal(1),
+  preventedWounds: z.number().int().min(0).max(1),
+  actualWounds: z.number().int().min(0).max(1),
+  resultingWounds: z.number().int().min(0),
+  resultingStatus: z.enum(["active", "recalled"]),
+  displacement: forcedDisplacementEffectSchema,
+  createdAt: z.string().min(1)
+});
+
 export type ForcedDisplacementEffect = z.infer<typeof forcedDisplacementEffectSchema>;
 export type PendingDisplacement = z.infer<typeof pendingDisplacementSchema>;
+export type PendingSutureStormConsequence = z.infer<typeof pendingSutureStormConsequenceSchema>;

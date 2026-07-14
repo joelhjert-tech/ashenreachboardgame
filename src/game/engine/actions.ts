@@ -169,6 +169,10 @@ export interface ForcedDisplacementResolvedAction extends BaseAction {
   reactionId: string;
 }
 
+export interface SutureStormContinuedAction extends BaseAction {
+  type: "SUTURE_STORM_CONTINUED";
+}
+
 export interface HeatThresholdReachedAction extends BaseAction {
   type: "HEAT_THRESHOLD_REACHED";
   threshold: number;
@@ -634,6 +638,7 @@ export type GameAction =
   | ResolutionContinuedAction
   | EncounterDecisionResolvedAction
   | ForcedDisplacementResolvedAction
+  | SutureStormContinuedAction
   | HeatThresholdReachedAction
   | WoundThresholdReachedAction
   | RecruitReplacementAction
