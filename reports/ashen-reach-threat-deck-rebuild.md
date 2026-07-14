@@ -76,6 +76,17 @@ No new card may create universal Salvage income, positive buy/sell cycles, dupli
 
 ## Implementation phases and commits
 
+Phase B1 supersedes the earlier exemplar order below for duplicate-pattern work. The approved contained groups are:
+
+1. `glass-tick-cloud`, `locked-vault` — existing floor-zero Salvage loss; low-medium risk.
+2. `breach-halberd`, `mudglass-sinkhole` — existing forced-displacement lifecycle; medium risk.
+3. `shattered-barricade`, `suture-storm` — shared escalation and ordered Wound/displacement; medium-high risk.
+4. `glass-chime-swarm` and provisional baseline `spindle-static-squall` remain blocked behind individual Heat-retirement decisions.
+
+The exact rules, alternatives, tests, and evidence gates are in `reports/ashen-reach-threat-duplicate-pattern-approval.md`. No group changes totals or authorizes the +116-card expansion.
+
+### Earlier Phase A long-range sequence
+
 1. Red duplicate-cluster exemplar — one stable-ID revision; low-medium risk.
 2. Blue information exemplar — one hazard plus projection tests; medium risk.
 3. Yellow bargain exemplar — existing optional payment only; medium risk.
