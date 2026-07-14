@@ -2,9 +2,9 @@
 
 ## Decision status and boundary
 
-Phase B1 is a report-only review of the twelve stable IDs named by Phase A. No card, schema, resolver, validation rule, projection, asset, or count changes in this phase. Preferred rules below are implementation specifications, not current gameplay.
+Phase B1 began as a report-only review of the twelve stable IDs named by Phase A. B2A, B2B, and B2C have since implemented the first six approved revisions. This report update approves the two remaining Family C Heat retirements as implementation specifications; it changes no card, schema, resolver, validation rule, projection, asset, or count.
 
-The review found five duplicate families. Five cards are retained as family baselines and seven are candidates for revision. Two reviewed cards, `glass-chime-swarm` and `spindle-static-squall`, still contain legacy Heat. They are discussed because they belong to a duplicate family, but neither is authorized for implementation. `glass-chime-swarm` is therefore BLOCKED, while `spindle-static-squall` remains the provisional family baseline pending its Heat decision.
+The review found five duplicate families. Four cards remain family baselines and eight cards now have approved revisions. `glass-chime-swarm` and `spindle-static-squall` still contain legacy Heat in current content, but their explicit retirement designs are now approved. They remain unimplemented until their separate typed lifecycle commits land.
 
 ## Canonical twelve-card inventory
 
@@ -17,8 +17,8 @@ All twelve are active canonical Threats. They are immediate hazards, do not pers
 | `glass-tick-cloud` | Glass Tick Cloud | Yellow / hazard | Forge | 6 | route note | 1 Wound | note only | immediate on draw | A | Same test, band, note/Wound pair as Family A; gear-chewing fiction has no equipment/economy consequence |
 | `furnace-ditch-collapse` | Furnace-Ditch Collapse | Red / hazard | Grit | 6 | route note | 1 Wound | note only | immediate on draw | B | Exact skeleton with `mudglass-sinkhole`; retained as the clearest physical-attrition baseline |
 | `mudglass-sinkhole` | Mudglass Sinkhole | Red / hazard | Grit | 6 | route note | 1 Wound | note only | immediate on draw | B | Same test and result as Furnace-Ditch; sinking terrain does not currently affect route position |
-| `glass-chime-swarm` | Glass-Chime Swarm | Blue / hazard | Signal | 6 | route note | legacy `gain_heat 1` no-op | note only | immediate on draw | C | Exact skeleton with `spindle-static-squall`; also Heat-blocked |
-| `spindle-static-squall` | Spindle Static Squall | Blue / hazard | Signal | 6 | route note | legacy `gain_heat 1` no-op | note only | immediate on draw | C | Exact skeleton with Glass-Chime; provisional baseline for its clearer Signal/bearing identity, but Heat-blocked |
+| `glass-chime-swarm` | Glass-Chime Swarm | Blue / hazard | Signal | 6 | route note | legacy `gain_heat 1` no-op | note only | immediate on draw | C | Exact current skeleton with `spindle-static-squall`; next-test retirement approved but unimplemented |
+| `spindle-static-squall` | Spindle Static Squall | Blue / hazard | Signal | 6 | route note | legacy `gain_heat 1` no-op | note only | immediate on draw | C | Exact current skeleton with Glass-Chime; next-movement retirement approved but unimplemented |
 | `locked-vault` | Locked Vault | Yellow / hazard | Forge | 7 | route note | 1 Wound | note only | immediate encounter | D | Same Forge-7 injury structure as `shattered-barricade`; current failure does not express economic loss |
 | `shattered-barricade` | Shattered Barricade | Red / hazard | Forge | 7 | route note | 1 Wound | note only | immediate encounter | D | Same Forge-7 note/Wound structure; stall tempo and breached-route fiction are not expressed |
 | `slag-drone` | Slag Drone | Yellow / hazard | Forge | 7 | gain `coffin-rig` | 1 Wound | exact Gear | immediate on draw | D | Shares test/failure but already has a distinct exact-Gear success; retained baseline |
@@ -29,13 +29,13 @@ The introduction history supports duplication as accumulated content rather than
 
 ## Heat retirement boundary
 
-### BLOCKED — HEAT RETIREMENT DECISION REQUIRED
+### OTHER 17 IDS BLOCKED — INDIVIDUAL HEAT RETIREMENT DECISIONS REQUIRED
 
 The seventeen additional Phase A IDs are:
 
 `ashen-doppelganger`, `choir-static-burst`, `cinder-gate-backlash`, `crown-bell-baron`, `false-route-procession`, `gateblind-pulse`, `hymn-scarred-zealot`, `lantern-moth-swarm`, `marrow-tax-auditors`, `memory-tax-gate`, `mirror-rot-interference`, `pale-contract-collector`, `relay-husk`, `signal-rotted-engineer`, `siren-relay-echo`, `soot-stained-cutpurse`, `webglass-snarefield`.
 
-They are not reviewed or revised here. The twelve-card set additionally overlaps the Heat boundary at `glass-chime-swarm` and `spindle-static-squall`. That overlap does not increase the Phase A “17 additional IDs” count, but it prevents the Blue Family C revision from entering an implementation group. Phase B1 does not remove, translate, rename, or restore Heat on any ID.
+They are not reviewed or revised here and remain BLOCKED. The twelve-card set additionally overlaps the Heat boundary at `glass-chime-swarm` and `spindle-static-squall`. That overlap does not increase the Phase A “17 additional IDs” count. The dedicated retirement approval now resolves only those two Family C designs; it does not remove, translate, rename, or restore Heat on any ID during this report-only pass.
 
 ## Duplicate families and retained baselines
 
@@ -57,8 +57,8 @@ They are not reviewed or revised here. The twelve-card set additionally overlaps
 
 - Cards: `glass-chime-swarm`, `spindle-static-squall`.
 - Duplication: exact test/result duplication and mechanically blank failures.
-- Provisional baseline retained: `spindle-static-squall`, because tuning a squall into a bearing is the stronger Blue information/control identity.
-- Revision: Glass-Chime should become a distinct perception/control hazard, but both cards remain blocked until individual Heat decisions are approved.
+- Baseline decision: neither blank Heat-no-op failure remains the final baseline. Both stable IDs keep their Hazard/Signal 6 identity but receive distinct delayed interference.
+- Revisions: Glass-Chime creates owner-scoped next-test pressure; Spindle creates owner-scoped next-normal-movement pressure.
 
 ### Family D — Forge 7, injury on failure
 
@@ -98,9 +98,15 @@ Options are alternatives, not cumulative effects. “Existing schema” means th
 
 ### `glass-chime-swarm`
 
-1. **Preferred direction, blocked — scattering route.** Blue hazard, Signal 6. Success keeps the information note. Failure proposes clockwise same-ring displacement with one-Wound fallback. Complexity 2/5, risk 2/5. Existing displacement can express it, but selecting it would decide the legacy Heat replacement.
-2. **Signal suppression.** Failure gives -1 Signal to the owner’s next non-battle test, then expires. Complexity 4/5, risk 2/5; needs typed temporary-modifier lifecycle and reconnect-safe expiry.
+1. **Rejected — scattering route.** Blue hazard, Signal 6. Clockwise same-ring displacement is legible but would become a fourth reviewed forced-movement card and does not match the audit’s concentration intent.
+2. **Approved — broken concentration.** Failure subtracts 1 from the owner’s next eligible test; battles are excluded. It persists across reconnect, never stacks above -1, and clears on consumption, recall, replacement, or session end. Complexity 3/5, risk 2/5; needs a narrow typed next-test modifier lifecycle.
 3. **False chorus.** Failure publicly reveals the next Blue Threat and returns it to the top. Complexity 4/5, risk 2/5; needs authoritative deck-peek and privacy projection.
+
+### `spindle-static-squall`
+
+1. **Remove without replacement.** Matches current no-op runtime but leaves a common severity-2 Threat mechanically blank at three graph placements. Complexity 1/5, risk 1/5; rejected as too weak and indistinct.
+2. **Approved — corrupted bearing.** Failure reduces the owner’s next normal movement roll by 1, minimum 1. It does not affect forced displacement or topology, persists across reconnect, never stacks above -1, and clears on consumption, recall, replacement, or session end. Complexity 3/5, risk 2/5; needs a narrow typed next-movement modifier lifecycle.
+3. **Utility suppression.** Temporarily disable an equipped Utility bonus. Complexity 4/5, risk 3/5; rejected because no-Utility operatives trivialize it and exact-instance timed disable is broader than the authored navigation intent.
 
 ### `locked-vault`
 
@@ -208,31 +214,59 @@ Options are alternatives, not cumulative effects. “Existing schema” means th
 
 ### `glass-chime-swarm`
 
-- Current disposition: Revise, Heat-blocked
+- Current disposition: Heat retirement approved; implementation pending
 - Duplicate family: C — Signal 6 note/Heat-no-op
-- Baseline card retained: `spindle-static-squall` provisionally
-- Selected option: Scattering route
+- Baseline card retained: None; both Family C cards receive distinct interference
+- Selected option: Broken concentration
 - Card type: Hazard
 - Lane: Blue
 - Test/battle stat: Signal
 - Difficulty: 6
-- Timing: Proposed failure after test
-- Persistence: Proposed pending displacement only
+- Timing: Confirmed failure creates a modifier after the current test; consume on the next eligible test
+- Persistence: Owner-scoped across turns/reconnect; non-stacking replace/refresh; clear on consumption, recall, replacement, or session end
 - Success: Preserve current note
-- Failure: Proposed clockwise same-ring displacement with one-Wound fallback
+- Failure: Subtract 1 from the owner’s next eligible test total; battles excluded
 - Reward: Existing note only
-- Wound handling: Proposed fallback through normal pipeline
-- Scar interaction: Existing Wound-triggered lifecycle only
+- Wound handling: None
+- Scar interaction: Grants no Scar; existing owned-Scar triggers on the later test remain independent
 - Salvage interaction: None
-- Equipment interaction: Existing Rift Anchor Spike reaction only
-- Movement interaction: Typed forced displacement
-- Multiplayer interaction: Acting operative only
-- Requires typed extension: No union extension; Heat decision mandatory first
-- Duplicate source protection: Existing source IDs
-- Final player-facing rule: Proposed: “The chimes scatter your sense of direction. Move 1 sector clockwise on this ring. If no legal sector is available, suffer 1 Wound.”
-- Implementation complexity: 2/5
-- Balance risk: 2/5 plus unresolved Heat balance
-- Approval status: BLOCKED
+- Equipment interaction: None; Equipment values are not rewritten
+- Movement interaction: None; movement rolls are not eligible tests
+- Multiplayer interaction: Acting operative only; public-safe pending/result summary
+- Requires typed extension: Narrow typed pending next-test modifier and authoritative consumption ledger
+- Duplicate source protection: Encounter resolution ID plus consumed-modifier source ID; same-card pending effects do not stack
+- Final player-facing rule: “The swarm breaks your concentration. On failure, subtract 1 from your next test. This penalty does not affect battles.”
+- Implementation complexity: 3/5
+- Balance risk: 2/5
+- Approval status: APPROVED
+
+### `spindle-static-squall`
+
+- Current disposition: Heat retirement approved; implementation pending
+- Duplicate family: C — Signal 6 note/Heat-no-op
+- Baseline card retained: None; both Family C cards receive distinct interference
+- Selected option: Corrupted bearing
+- Card type: Hazard
+- Lane: Blue
+- Test/battle stat: Signal
+- Difficulty: 6
+- Timing: Confirmed failure creates a modifier after encounter resolution; consume on the next normal movement roll
+- Persistence: Owner-scoped across turns/reconnect; non-stacking replace/refresh; clear on consumption, recall, replacement, or session end
+- Success: Preserve current note
+- Failure: Reduce the owner’s next normal movement roll by 1, minimum 1
+- Reward: Existing note only
+- Wound handling: None
+- Scar interaction: Grants no Scar and opens no pending Scar state
+- Salvage interaction: None
+- Equipment interaction: Existing legal post-roll movement adjustments remain available; no Equipment is disabled or discarded
+- Movement interaction: Normal movement-roll value only; no forced displacement, topology change, or extra tile entry
+- Multiplayer interaction: Acting operative only; cannot target another seat
+- Requires typed extension: Narrow typed pending next-movement modifier integrated with authoritative movement rolls
+- Duplicate source protection: Encounter resolution ID plus consumed-modifier source ID; same-card pending effects do not stack
+- Final player-facing rule: “The squall corrupts your bearing. On failure, reduce your next movement roll by 1, to a minimum of 1.”
+- Implementation complexity: 3/5
+- Balance risk: 2/5
+- Approval status: APPROVED
 
 ### `locked-vault`
 
@@ -320,7 +354,7 @@ Options are alternatives, not cumulative effects. “Existing schema” means th
 
 ## Retained baselines
 
-`beacon-cable-snare`, `furnace-ditch-collapse`, `slag-drone`, and `shardwind-front` retain current mechanics. `spindle-static-squall` is only provisional: its duplicate role is retained, but its Heat failure remains blocked and is not endorsed as final design. Any baseline clarity edit belongs in a separate text/runtime-parity pass.
+`beacon-cable-snare`, `furnace-ditch-collapse`, `slag-drone`, and `shardwind-front` retain current mechanics. Family C no longer has a provisional blank-failure baseline: both stable IDs have approved, distinct delayed-interference revisions.
 
 ## Four-seat critique
 
@@ -329,7 +363,8 @@ Options are alternatives, not cumulative effects. “Existing schema” means th
 | `breach-halberd` | Direction, fallback, and Red aggression are visible | No reward loop; Anchor changes only movement | One familiar reaction pause | Owner, ring, legality, fallback, source ID explicit |
 | `glass-tick-cloud` | “Up to 1” clearly floors at zero | Zero Salvage avoids loss but grants nothing | Immediate, no bookkeeping | Automatic loss is not spend/pay |
 | `mudglass-sinkhole` | Sinking visibly changes position | Illegal destination cannot be selected | Existing reaction is the only pause | Fallback and reconnect ownership explicit |
-| `glass-chime-swarm` | Proposed effect is legible | No farm identified | Short if approved later | Correctly BLOCKED; Phase B1 cannot decide Heat |
+| `glass-chime-swarm` | “Next test, not battle” is explicit | Cannot stack or create benefit; battle routes may postpone it | One delayed -1 reminder | Eligible tests, reroll reuse, recall clearing, reconnect, and source consumption explicit |
+| `spindle-static-squall` | “Next movement roll, minimum 1” matches bearing loss | Legal gear adjustment can offset it at normal opportunity cost | Resolves on the next familiar movement roll | Die face, modifier order, forced-movement exclusion, clearing, reconnect, and dedupe explicit |
 | `locked-vault` | Failure describes economic damage | Floor-zero creates no debt or loop | Immediate | Loss differs from payment |
 | `shattered-barricade` | Shared consequence is clear | Rivalry griefing is the watch item | Public track handles memory | Exact +1, cap behavior, dedupe need tests |
 | `suture-storm` | Two consequences justify severity | Prevention and Anchor have separate windows | Slightly longer but familiar | Recall must terminate continuation; no duplicate fallback |
@@ -340,7 +375,7 @@ No preferred rule creates a buy/sell loop, repeatable Salvage reward, universal 
 
 No approved revision changes lane, type, stat, difficulty, severity, availability, or card count.
 
-| Measure | Current | After six APPROVED revisions | Change |
+| Measure | Current | After eight APPROVED revisions | Change |
 |---|---:|---:|---:|
 | Red / Blue / Yellow | 26 / 35 / 48 | 26 / 35 / 48 | 0 |
 | Overall Threats | 109 | 109 | 0 |
@@ -352,11 +387,13 @@ No approved revision changes lane, type, stat, difficulty, severity, availabilit
 | Reviewed cards with automatic Salvage pressure | 0 | 2 | +2 |
 | Reviewed cards with Global Escalation pressure | 0 | 1 | +1 |
 | Reviewed cards with explicit choice | 0 | 0 | 0 |
-| Reviewed cards with persistent effect beyond pending resolution | 0 | 0 | 0 |
+| Reviewed cards with persistent effect beyond pending resolution | 0 | 2 | +2 |
+| Reviewed cards with next-test pressure | 0 | 1 | +1 |
+| Reviewed cards with next-normal-movement pressure | 0 | 1 | +1 |
 | Reviewed cards with equipment interaction | 0 | 3 via existing Rift Anchor reaction | +3 contextual |
 | Reviewed cards with shared consequence | 0 | 1 | +1 |
 
-The blocked Glass-Chime proposal is excluded. Suture Storm retains one direct Wound; Breach Halberd and Mudglass replace direct Wounds with movement whose illegal-route fallback can still Wound. This improves diversity without claiming the +116 gap is closed.
+The approved Family C rules add no Wounds, Scars, Salvage changes, forced displacement, or Global Escalation. Suture Storm retains one direct Wound; Breach Halberd and Mudglass replace direct Wounds with movement whose illegal-route fallback can still Wound. This improves diversity without claiming the +116 gap is closed.
 
 ## Future implementation groups
 
@@ -384,13 +421,29 @@ The blocked Glass-Chime proposal is excluded. Suture Storm retains one direct Wo
 - Risk: medium-high.
 - Commit: `feat: diversify high-pressure route hazards`.
 
+### Family C.1 — next-test interference (1)
+
+- ID: `glass-chime-swarm`.
+- Work: narrow owner-scoped next-test -1 modifier, non-stacking, reconnect-safe, consumed once.
+- Tests: eligible contexts, battle exclusion, reroll reuse, Scar-trigger ordering, recall/replacement clearing, privacy, dedupe.
+- Risk: medium.
+- Commit: `feat: retire glass chime swarm heat`.
+
+### Family C.2 — next-movement interference (1)
+
+- ID: `spindle-static-squall`.
+- Work: narrow owner-scoped next-normal-movement -1 modifier with minimum 1 and authoritative ordering.
+- Tests: normal roll, floor, post-roll gear adjustment, forced-displacement exclusion, recall/replacement clearing, reconnect, dedupe.
+- Risk: medium.
+- Commit: `feat: retire spindle static squall heat`.
+
 ### Heat-blocked — no implementation
 
-- IDs: `glass-chime-swarm`, `spindle-static-squall`, and the seventeen additional Heat IDs.
-- Entry: individual Heat-retirement decisions approved first.
+- IDs: the seventeen additional Heat-linked Threats listed above.
+- Entry: individual or small-group Heat-retirement decisions approved first.
 
 ## Evidence gates and next step
 
 Exact Relic reward, failure, choice, persistence, and multiplayer frequencies remain image-only evidence gates. They are not claimed here and must not become validation quotas. No +116-card expansion is authorized.
 
-The safest next implementation is B1.1: two Yellow hazards using authoritative floor-zero Salvage loss. It requires no new state, prompt, movement lifecycle, shared-track ownership, or Heat decision.
+The next implementation is `glass-chime-swarm` alone, followed by `spindle-static-squall`. They use different authoritative consumption events and should not share one implementation commit.
