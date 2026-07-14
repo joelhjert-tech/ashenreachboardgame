@@ -42,6 +42,10 @@ import type {
   ShopServiceCost,
   ShopStockRevealedAction,
   ScenarioProgressAdvancedAction,
+  ScenarioPreparationGainedAction,
+  ScenarioPreparationSpentAction,
+  ScenarioConfrontationStartedAction,
+  ScenarioConfrontationProgressGainedAction,
   ScenarioObjectiveCompletedAction,
   ScenarioObjectiveProgressTriggeredAction,
   ScenarioConfrontationRequestedAction,
@@ -3587,6 +3591,159 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
         eventLog: [...withDiscoveredContracts.eventLog, action]
       });
     }
+    case "SCENARIO_PREPARATION_GAINED": {
+      const scenarioAction = action as ScenarioPreparationGainedAction;
+      if (state.status !== "active" || state.activeScenarioId !== scenarioAction.scenarioId) {
+        return reject(state, action, "Scenario preparation can only change for the active scenario");
+      }
+      if (scenarioAction.amount <= 0 || !scenarioAction.resourceKey || !scenarioAction.sourceEventId) {
+        return reject(state, action, "Scenario preparation gain is malformed");
+      }
+      if (state.scenarioPreparation.processedSourceEventIds.includes(scenarioAction.sourceEventId)) {
+        return reject(state, action, `Scenario preparation source ${scenarioAction.sourceEventId} already resolved`);
+      }
+      if (Object.hasOwn(state.scenarioConfrontation.progress, scenarioAction.resourceKey)) {
+        return reject(state, action, `Scenario key ${scenarioAction.resourceKey} cannot own preparation and confrontation progress`);
+      }
+
+      return succeed({
+        ...state,
+        sequence: state.sequence + 1,
+        scenarioPreparation: {
+          resources: {
+            ...state.scenarioPreparation.resources,
+            [scenarioAction.resourceKey]:
+              (state.scenarioPreparation.resources[scenarioAction.resourceKey] ?? 0) + scenarioAction.amount
+          },
+          completedObjectiveIds: scenarioAction.objectiveId && !state.scenarioPreparation.completedObjectiveIds.includes(scenarioAction.objectiveId)
+            ? [...state.scenarioPreparation.completedObjectiveIds, scenarioAction.objectiveId]
+            : state.scenarioPreparation.completedObjectiveIds,
+          processedSourceEventIds: [...state.scenarioPreparation.processedSourceEventIds, scenarioAction.sourceEventId]
+        },
+        eventLog: [...state.eventLog, action]
+      });
+    }
+    case "SCENARIO_PREPARATION_SPENT": {
+      const scenarioAction = action as ScenarioPreparationSpentAction;
+      if (state.status !== "active" || state.activeScenarioId !== scenarioAction.scenarioId) {
+        return reject(state, action, "Scenario preparation can only be spent for the active scenario");
+      }
+      if (scenarioAction.amount <= 0 || !scenarioAction.resourceKey || !scenarioAction.sourceEventId) {
+        return reject(state, action, "Scenario preparation spend is malformed");
+      }
+      if (state.scenarioPreparation.processedSourceEventIds.includes(scenarioAction.sourceEventId)) {
+        return reject(state, action, `Scenario preparation source ${scenarioAction.sourceEventId} already resolved`);
+      }
+      const available = state.scenarioPreparation.resources[scenarioAction.resourceKey] ?? 0;
+      if (available < scenarioAction.amount) {
+        return reject(state, action, `Insufficient ${scenarioAction.resourceKey}: ${available}/${scenarioAction.amount}`);
+      }
+
+      return succeed({
+        ...state,
+        sequence: state.sequence + 1,
+        scenarioPreparation: {
+          ...state.scenarioPreparation,
+          resources: {
+            ...state.scenarioPreparation.resources,
+            [scenarioAction.resourceKey]: available - scenarioAction.amount
+          },
+          processedSourceEventIds: [...state.scenarioPreparation.processedSourceEventIds, scenarioAction.sourceEventId]
+        },
+        eventLog: [...state.eventLog, action]
+      });
+    }
+    case "SCENARIO_CONFRONTATION_STARTED": {
+      const scenarioAction = action as ScenarioConfrontationStartedAction;
+      if (state.status !== "active" || state.activeScenarioId !== scenarioAction.scenarioId) {
+        return reject(state, action, "Scenario confrontation can only start for the active scenario");
+      }
+      if (state.scenarioResult.status !== "unresolved") {
+        return reject(state, action, "Scenario confrontation cannot start after the scenario resolves");
+      }
+      if (state.scenarioConfrontation.processedSourceEventIds.includes(scenarioAction.sourceEventId)) {
+        return reject(state, action, `Scenario confrontation source ${scenarioAction.sourceEventId} already resolved`);
+      }
+
+      return succeed({
+        ...state,
+        sequence: state.sequence + 1,
+        scenarioConfrontation: {
+          ...state.scenarioConfrontation,
+          active: true,
+          confrontationId: scenarioAction.confrontationId,
+          stage: scenarioAction.stage,
+          processedSourceEventIds: [...state.scenarioConfrontation.processedSourceEventIds, scenarioAction.sourceEventId]
+        },
+        eventLog: [...state.eventLog, action]
+      });
+    }
+    case "SCENARIO_CONFRONTATION_PROGRESS_GAINED": {
+      const scenarioAction = action as ScenarioConfrontationProgressGainedAction;
+      if (state.status !== "active" || state.activeScenarioId !== scenarioAction.scenarioId) {
+        return reject(state, action, "Scenario confrontation progress can only change for the active scenario");
+      }
+      if (
+        !state.scenarioConfrontation.active ||
+        state.scenarioConfrontation.confrontationId !== scenarioAction.confrontationId
+      ) {
+        return reject(state, action, "Scenario confrontation progress requires the active confrontation");
+      }
+      if (scenarioAction.amount < 0 || !scenarioAction.progressKey || !scenarioAction.sourceEventId) {
+        return reject(state, action, "Scenario confrontation progress is malformed");
+      }
+      if (state.scenarioConfrontation.processedSourceEventIds.includes(scenarioAction.sourceEventId)) {
+        return reject(state, action, `Scenario confrontation source ${scenarioAction.sourceEventId} already resolved`);
+      }
+      if (Object.hasOwn(state.scenarioPreparation.resources, scenarioAction.progressKey)) {
+        return reject(state, action, `Scenario key ${scenarioAction.progressKey} cannot own preparation and confrontation progress`);
+      }
+      const nextState = scenarioAction.effect
+        ? applyEffectToState(state, scenarioAction.seatId, scenarioAction.effect)
+        : state;
+
+      return succeed({
+        ...nextState,
+        sequence: state.sequence + 1,
+        phase: "broadcast",
+        resolutionSource: null,
+        currentEncounter: null,
+        pendingEnemyRoll: null,
+        pendingEffect: null,
+        scenarioConfrontation: {
+          ...nextState.scenarioConfrontation,
+          active: false,
+          progress: {
+            ...nextState.scenarioConfrontation.progress,
+            [scenarioAction.progressKey]:
+              (nextState.scenarioConfrontation.progress[scenarioAction.progressKey] ?? 0) + scenarioAction.amount
+          },
+          stage: scenarioAction.stage,
+          processedSourceEventIds: [...nextState.scenarioConfrontation.processedSourceEventIds, scenarioAction.sourceEventId]
+        },
+        lastOutcomeSummary: {
+          seatId: scenarioAction.seatId,
+          movedToSectorId: "center_cinder_gate",
+          encounterCardId: null,
+          encounterTitle: "The Cinder Gate",
+          encounterCardType: null,
+          checkStat: null,
+          die1: null,
+          die2: null,
+          statBonus: null,
+          checkTotal: null,
+          difficulty: null,
+          enemyRollerSeatId: null,
+          enemyDie1: null,
+          enemyDie2: null,
+          enemyBonus: null,
+          enemyTotal: null,
+          success: scenarioAction.amount > 0,
+          summary: scenarioAction.summary
+        },
+        eventLog: [...nextState.eventLog, action]
+      });
+    }
     case "SCENARIO_PROGRESS_ADVANCED": {
       const scenarioAction = action as ScenarioProgressAdvancedAction;
 
@@ -3726,6 +3883,21 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
       if (state.status !== "active") {
         return reject(state, action, "Scenario victory can only be claimed during an active session");
       }
+      if (state.activeScenarioId !== scenarioAction.scenarioId) {
+        return reject(state, action, `Scenario ${scenarioAction.scenarioId} is not active`);
+      }
+      if (state.scenarioResult.status !== "unresolved") {
+        return reject(state, action, "Scenario result has already been recorded");
+      }
+      if (
+        scenarioAction.sourceType === "confrontation" &&
+        scenarioAction.sourceId &&
+        !state.scenarioConfrontation.processedSourceEventIds.includes(scenarioAction.sourceId)
+      ) {
+        return reject(state, action, `Scenario victory source ${scenarioAction.sourceId} is not a resolved confrontation action`);
+      }
+
+      const sourceId = scenarioAction.sourceId ?? `${scenarioAction.scenarioId}:legacy-victory:${state.sequence}`;
 
       return succeed({
         ...state,
@@ -3737,6 +3909,15 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
         currentEncounter: null,
         pendingEnemyRoll: null,
         pendingEffect: null,
+        scenarioResult: {
+          status: "victory",
+          victoryConditionId: scenarioAction.victoryConditionId ?? `${scenarioAction.scenarioId}:victory`,
+          sourceType: scenarioAction.sourceType ?? "confrontation",
+          sourceId,
+          winningSeatId: scenarioAction.seatId,
+          shared: scenarioAction.shared ?? state.interactionMode !== "rivalry",
+          achievedAtSequence: state.sequence + 1
+        },
         lastOutcomeSummary: state.lastOutcomeSummary
           ? {
               ...state.lastOutcomeSummary,

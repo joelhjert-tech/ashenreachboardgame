@@ -199,6 +199,50 @@ export const shopStockRevealSchema = z.object({
   createdAt: z.string().min(1)
 });
 
+export const scenarioPreparationStateSchema = z.object({
+  resources: z.record(z.string().min(1), z.number().int().min(0)),
+  completedObjectiveIds: z.array(z.string().min(1)),
+  processedSourceEventIds: z.array(z.string().min(1))
+}).strict();
+
+export const scenarioConfrontationStateSchema = z.object({
+  active: z.boolean(),
+  confrontationId: z.string().min(1).nullable(),
+  progress: z.record(z.string().min(1), z.number().int().min(0)),
+  stage: z.string().min(1).nullable(),
+  processedSourceEventIds: z.array(z.string().min(1))
+}).strict();
+
+export const scenarioResultStateSchema = z.object({
+  status: z.enum(["unresolved", "victory", "loss"]),
+  victoryConditionId: z.string().min(1).nullable(),
+  sourceType: z.enum(["confrontation", "scenarioAction"]).nullable(),
+  sourceId: z.string().min(1).nullable(),
+  winningSeatId: z.string().min(1).nullable(),
+  shared: z.boolean().nullable(),
+  achievedAtSequence: z.number().int().min(0).nullable()
+}).strict();
+
+export function createEmptyScenarioPreparationState() {
+  return { resources: {}, completedObjectiveIds: [], processedSourceEventIds: [] };
+}
+
+export function createEmptyScenarioConfrontationState() {
+  return { active: false, confrontationId: null, progress: {}, stage: null, processedSourceEventIds: [] };
+}
+
+export function createEmptyScenarioResultState() {
+  return {
+    status: "unresolved" as const,
+    victoryConditionId: null,
+    sourceType: null,
+    sourceId: null,
+    winningSeatId: null,
+    shared: null,
+    achievedAtSequence: null
+  };
+}
+
 export const gameStateSchema = z.object({
   sessionId: z.string().min(1),
   status: sessionStatusSchema,
@@ -210,6 +254,9 @@ export const gameStateSchema = z.object({
   winnerSeatId: z.string().min(1).nullable(),
   activeScenarioId: z.string().min(1),
   scenarioProgress: z.record(z.string(), z.number().int().min(0)),
+  scenarioPreparation: scenarioPreparationStateSchema.default(createEmptyScenarioPreparationState),
+  scenarioConfrontation: scenarioConfrontationStateSchema.default(createEmptyScenarioConfrontationState),
+  scenarioResult: scenarioResultStateSchema.default(createEmptyScenarioResultState),
   phase: phaseSchema,
   resolutionSource: z.enum(["movement", "encounter", "contract", "tileChallenge"]).nullable(),
   activeSeatIndex: z.number().int().min(0),
@@ -378,6 +425,9 @@ export type PlayerState = z.infer<typeof playerStateSchema>;
 export type NemesisChampion = z.infer<typeof nemesisChampionSchema>;
 export type NemesisNexusCountdown = z.infer<typeof nemesisNexusCountdownSchema>;
 export type ShopStockReveal = z.infer<typeof shopStockRevealSchema>;
+export type ScenarioPreparationState = z.infer<typeof scenarioPreparationStateSchema>;
+export type ScenarioConfrontationState = z.infer<typeof scenarioConfrontationStateSchema>;
+export type ScenarioResultState = z.infer<typeof scenarioResultStateSchema>;
 export type GameState = z.infer<typeof gameStateSchema>;
 export type SessionSnapshot = z.infer<typeof sessionSnapshotSchema>;
 export type SessionSnapshotV1 = z.infer<typeof sessionSnapshotSchemaV1>;

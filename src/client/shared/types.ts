@@ -881,6 +881,29 @@ export interface ScenarioPressureState {
   modeSpecific: ScenarioModeSpecificPublicState;
 }
 
+export interface ScenarioOwnershipState {
+  scenarioId: string;
+  preparation: {
+    resources: Record<string, number>;
+    completedObjectiveIds: string[];
+  };
+  confrontation: {
+    active: boolean;
+    confrontationId: string | null;
+    progress: Record<string, number>;
+    stage: string | null;
+    locationSectorId: string;
+    locked: boolean | null;
+  };
+  result: {
+    status: "unresolved" | "victory" | "loss";
+    victoryConditionId: string | null;
+    sourceType: "confrontation" | "scenarioAction" | null;
+    winningSeatId: string | null;
+    shared: boolean | null;
+  };
+}
+
 export interface PublicPatchPayload {
   status: SessionStatus;
   sessionMode: SessionMode;
@@ -893,6 +916,7 @@ export interface PublicPatchPayload {
   activeScenario: ActiveScenarioSummary | null;
   scenarioTelemetry: ScenarioTelemetryItem[];
   scenarioPressure?: ScenarioPressureState | null;
+  scenarioState?: ScenarioOwnershipState;
   scenarioProgress: Record<string, number>;
   nemesisChampions?: NemesisChampionSummary[];
   nemesisNexusCountdowns?: NemesisNexusCountdownSummary[];

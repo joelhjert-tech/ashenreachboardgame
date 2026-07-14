@@ -13,7 +13,16 @@ import { getReflectionPressureThresholdForMode, getWoundThresholdForMode } from 
 import { createInitialAfflictionUsageState } from "../game/rules/afflictions.js";
 import { attachTileChallengesToSectors } from "../game/rules/tileChallenges.js";
 import type { AuthoredCharacter, Character } from "../game/schema/character.schema.js";
-import type { GameMode, GameState, InteractionMode, PlayerState, SessionMode } from "../game/schema/session.schema.js";
+import {
+  createEmptyScenarioConfrontationState,
+  createEmptyScenarioPreparationState,
+  createEmptyScenarioResultState,
+  type GameMode,
+  type GameState,
+  type InteractionMode,
+  type PlayerState,
+  type SessionMode
+} from "../game/schema/session.schema.js";
 import { createJoinToken } from "./auth.js";
 
 const sessionSeatLayouts = {
@@ -134,6 +143,9 @@ export function createInitialSessionState(
     winnerSeatId: null,
     activeScenarioId: defaultScenario?.id ?? "scenario_broken_seal",
     scenarioProgress: createInitialScenarioProgress(defaultScenario?.id ?? "scenario_broken_seal", sessionMode),
+    scenarioPreparation: createEmptyScenarioPreparationState(),
+    scenarioConfrontation: createEmptyScenarioConfrontationState(),
+    scenarioResult: createEmptyScenarioResultState(),
     phase: "start",
     resolutionSource: null,
     activeSeatIndex: 0,

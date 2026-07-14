@@ -188,7 +188,18 @@ import type { AfflictionCard } from "../game/schema/affliction.schema.js";
 import { rollDice, type RandomSource, defaultRandomSource } from "../game/engine/dice.js";
 import { reduceGameState } from "../game/engine/reducer.js";
 import { CHALLENGE_LABELS } from "../game/ui/challengeTheme.js";
-import type { ActiveResolution, GameMode, GameState, InteractionMode, NemesisChampion, PlayerState, SessionMode } from "../game/schema/session.schema.js";
+import {
+  createEmptyScenarioConfrontationState,
+  createEmptyScenarioPreparationState,
+  createEmptyScenarioResultState,
+  type ActiveResolution,
+  type GameMode,
+  type GameState,
+  type InteractionMode,
+  type NemesisChampion,
+  type PlayerState,
+  type SessionMode
+} from "../game/schema/session.schema.js";
 import { validateHostToken, validateJoinToken } from "./auth.js";
 import { BOARD_SPACES, getBoardSpace, isScenarioConfrontationSpace, type BoardTier, type ThreatIcon } from "../game/data/boardSpaces.js";
 
@@ -4837,6 +4848,9 @@ export class GameRoomServer {
       activeSeatIndex: 0,
       turnOrder: connectedTurnOrder,
       scenarioProgress: createInitialScenarioProgress(this.state.activeScenarioId, this.state.sessionMode),
+      scenarioPreparation: createEmptyScenarioPreparationState(),
+      scenarioConfrontation: createEmptyScenarioConfrontationState(),
+      scenarioResult: createEmptyScenarioResultState(),
       nemesisChampions: [],
       nemesisNexusCountdowns: [],
       sequence: this.state.sequence + 1,
@@ -9163,6 +9177,34 @@ export function createTvProjection(
   const scenarioPressureSummary = describeScenarioPressure(state) ?? "Scenario pressure will appear once the room is active.";
   const scenarioTelemetry = buildScenarioTelemetry(state);
   const scenarioPressure = buildScenarioPressureState(state, scenarioPressureSummary);
+  const activePlayer = state.players.find((player) => player.seatId === state.turnOrder[state.activeSeatIndex]) ?? null;
+  const brokenSealUnlocked = activePlayer && state.activeScenarioId === "scenario_broken_seal"
+    ? (state.scenarioPreparation.resources.sealIntegrity ?? 0) >= 4 ||
+      activePlayer.character.heldGear.some((item) => item.tier === "artifact" || item.id.startsWith("artifact-")) ||
+      getCompletedContractCountForProjection(state, activePlayer.seatId) >= 3
+    : null;
+  const scenarioState = {
+    scenarioId: state.activeScenarioId,
+    preparation: {
+      resources: state.scenarioPreparation.resources,
+      completedObjectiveIds: state.scenarioPreparation.completedObjectiveIds
+    },
+    confrontation: {
+      active: state.scenarioConfrontation.active,
+      confrontationId: state.scenarioConfrontation.confrontationId,
+      progress: state.scenarioConfrontation.progress,
+      stage: state.scenarioConfrontation.stage,
+      locationSectorId: "center_cinder_gate",
+      locked: brokenSealUnlocked === null ? null : !brokenSealUnlocked
+    },
+    result: {
+      status: state.scenarioResult.status,
+      victoryConditionId: state.scenarioResult.victoryConditionId,
+      sourceType: state.scenarioResult.sourceType,
+      winningSeatId: state.scenarioResult.winningSeatId,
+      shared: state.scenarioResult.shared
+    }
+  };
 
   const playerSeatIds = new Set(state.players.map((player) => player.seatId));
   const visibleSeatIds = new Set(
@@ -9270,6 +9312,7 @@ export function createTvProjection(
       : null,
     scenarioTelemetry,
     scenarioPressure,
+    scenarioState,
     scenarioProgress: state.scenarioProgress,
     nemesisChampions: state.nemesisChampions.map((champion) => {
       const sector = state.sectors.find((entry) => entry.id === champion.sectorId);
@@ -9490,6 +9533,7 @@ export function createPhoneProjection(state: GameState, seatId: string, forcePri
     activeScenario: publicProjection.activeScenario,
     scenarioTelemetry: publicProjection.scenarioTelemetry,
     scenarioPressure: publicProjection.scenarioPressure,
+    scenarioState: publicProjection.scenarioState,
     scenarioProgress: publicProjection.scenarioProgress,
     nemesisChampions: publicProjection.nemesisChampions,
     nemesisNexusCountdowns: publicProjection.nemesisNexusCountdowns,

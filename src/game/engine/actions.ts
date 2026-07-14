@@ -376,6 +376,46 @@ export interface ScenarioProgressAdvancedAction extends BaseAction {
   effect?: EncounterEffect | null;
 }
 
+export interface ScenarioPreparationGainedAction extends BaseAction {
+  type: "SCENARIO_PREPARATION_GAINED";
+  scenarioId: string;
+  resourceKey: string;
+  amount: number;
+  sourceEventId: string;
+  objectiveId?: string;
+  summary: string;
+}
+
+export interface ScenarioPreparationSpentAction extends BaseAction {
+  type: "SCENARIO_PREPARATION_SPENT";
+  scenarioId: string;
+  resourceKey: string;
+  amount: number;
+  sourceEventId: string;
+  summary: string;
+}
+
+export interface ScenarioConfrontationStartedAction extends BaseAction {
+  type: "SCENARIO_CONFRONTATION_STARTED";
+  scenarioId: string;
+  confrontationId: string;
+  sourceEventId: string;
+  stage: string;
+  summary: string;
+}
+
+export interface ScenarioConfrontationProgressGainedAction extends BaseAction {
+  type: "SCENARIO_CONFRONTATION_PROGRESS_GAINED";
+  scenarioId: string;
+  confrontationId: string;
+  progressKey: string;
+  amount: number;
+  sourceEventId: string;
+  stage: string;
+  summary: string;
+  effect?: EncounterEffect | null;
+}
+
 export interface ScenarioObjectiveProgressTriggeredAction extends BaseAction {
   type: "SCENARIO_OBJECTIVE_PROGRESS_TRIGGERED";
   scenarioId: string;
@@ -389,6 +429,10 @@ export interface ScenarioObjectiveProgressTriggeredAction extends BaseAction {
 export interface ScenarioVictoryAchievedAction extends BaseAction {
   type: "SCENARIO_VICTORY_ACHIEVED";
   scenarioId: string;
+  victoryConditionId?: string;
+  sourceType?: "confrontation" | "scenarioAction";
+  sourceId?: string;
+  shared?: boolean;
   summary: string;
 }
 
@@ -605,6 +649,10 @@ export type GameAction =
   | ScenarioConfrontationRequestedAction
   | SpaceTextResolvedAction
   | ScenarioProgressAdvancedAction
+  | ScenarioPreparationGainedAction
+  | ScenarioPreparationSpentAction
+  | ScenarioConfrontationStartedAction
+  | ScenarioConfrontationProgressGainedAction
   | ScenarioObjectiveProgressTriggeredAction
   | ScenarioVictoryAchievedAction
   | ScenarioObjectiveCompletedAction

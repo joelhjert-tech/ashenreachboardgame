@@ -171,7 +171,10 @@ function createMatrixState(playerCount: number, overrides: Partial<GameState> = 
     pendingEnemyRoll: null,
     pendingEffect: null,
     lastOutcomeSummary: null,
-    ...overrides
+    ...overrides,
+    scenarioPreparation: overrides.scenarioPreparation ?? { resources: {}, completedObjectiveIds: [], processedSourceEventIds: [] },
+    scenarioConfrontation: overrides.scenarioConfrontation ?? { active: false, confrontationId: null, progress: {}, stage: null, processedSourceEventIds: [] },
+    scenarioResult: overrides.scenarioResult ?? { status: "unresolved", victoryConditionId: null, sourceType: null, sourceId: null, winningSeatId: null, shared: null, achievedAtSequence: null }
   };
 }
 
