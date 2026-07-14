@@ -143,13 +143,13 @@ export const SCENARIOS: ScenarioDefinition[] = [
       hiddenAgendaReveal: "not-implemented",
       notes: "Tutorial scenario keeps all objective progress public."
     },
-    victoryCondition: "Earn 2 restoration marks during one Ashen Reach Core confrontation.",
+    victoryCondition: "Earn 2 restoration marks during one final confrontation at the Cinder Gate center tile.",
     lossCondition: "Escalation loss or repeated Seal Integrity collapse overwhelms the operatives.",
     pressureTrack: {
       name: "Seal Integrity",
       start: 6,
       max: 8,
-      tickTiming: "End of each round, with solo pressure slowed by mode tuning.",
+      tickTiming: "Start of each operative turn, with solo pressure slowed by mode tuning.",
       collapseRule: "At 0 Seal Integrity, the ward buckles without adding a second harm track. On the second collapse, each operative gains 1 Scar."
     },
     boardHooks: {
@@ -164,7 +164,7 @@ export const SCENARIOS: ScenarioDefinition[] = [
       "Use Pilgrim Lock or a shrine boon to restore 1 Seal Integrity.",
       "Spend an Artifact charge to restore 2 Seal Integrity."
     ],
-    finalGateRequirement: "Attempt the Core only with 4+ Seal Integrity, 1 Artifact, or 3 completed Contracts.",
+    finalGateRequirement: "At the Cinder Gate center tile, attempt the finale only with 4+ Seal Integrity, 1 Artifact, or 3 completed Contracts.",
     scenarioRewards: [
       {
         id: "sealwrights-mark",
@@ -212,7 +212,7 @@ export const SCENARIOS: ScenarioDefinition[] = [
       "Place 1 shrine boon token on Pilgrim Lock or Static Chapel."
     ],
     specialRules: [
-      "At the end of each round, roll 1 die. On 1-2 remove 1 Seal token, on 3-4 place 1 Blue threat on the nearest anomaly sector, on 5-6 the ward holds.",
+      "At the start of each operative turn, roll 1 die. On 1-2 remove 1 Seal Integrity, on 3-4 place 1 Blue threat on the nearest anomaly sector, on 5-6 the ward holds.",
       "Whenever a player clears a Blue threat or completes a Contract, restore 1 Seal token.",
       "A player may pay 2 Salvage at a clear shrine to restore 1 Seal token.",
       "A player may spend an Artifact charge to restore 2 Seal tokens.",
@@ -220,7 +220,7 @@ export const SCENARIOS: ScenarioDefinition[] = [
     ],
     confrontationTitle: "Reseal the Prison",
     confrontationSteps: [
-      "Final gate: 4+ Seal tokens, 1 Artifact, or 3 completed Contracts.",
+      "Final gate at the Cinder Gate center tile: 4+ Seal Integrity, 1 Artifact, or 3 completed Contracts.",
       "Test Grit 10 to hold the breached ward shut.",
       "Test Signal 10 to realign the broken sigils.",
       "Test Guile 12 to resist the mind behind the breach.",
@@ -231,7 +231,7 @@ export const SCENARIOS: ScenarioDefinition[] = [
     difficulty: "easy-medium",
     recommendedRolloutOrder: 1,
     confrontationText:
-      "At the Ashen Reach Core, test grit 10, signal 10, and guile 12 in order. Each passed test records one restoration mark. At two restoration marks in one confrontation, you win.",
+      "At the Cinder Gate center tile, test grit 10, signal 10, and guile 12 in order. Each passed test records one final restoration mark. At two restoration marks in one confrontation, you win.",
     winConditionKey: "sealRestorationMarks",
     victoryThreshold: 2,
     failureEffectKey: "scenario_gainCorruption",

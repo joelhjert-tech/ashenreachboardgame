@@ -7,7 +7,7 @@ import { loadGear } from "../game/content/gear.js";
 import { loadTileChallenges } from "../game/content/tileChallenges.js";
 import { createCanonicalSectorGraph, validateCanonicalSectorGraph } from "../game/data/canonicalSectorGraph.js";
 import { getScenarioDefinition, SCENARIOS } from "../game/data/scenarios.js";
-import { createInitialScenarioProgress } from "../game/rules/scenarioAmbient.js";
+import { createInitialScenarioPreparation, createInitialScenarioProgress } from "../game/rules/scenarioAmbient.js";
 import { applyStartingLoadout, createInitialSoloRerollCharges, type StartingLoadoutCatalogs } from "../game/rules/startingLoadout.js";
 import { getReflectionPressureThresholdForMode, getWoundThresholdForMode } from "../game/rules/soloTuning.js";
 import { createInitialAfflictionUsageState } from "../game/rules/afflictions.js";
@@ -15,7 +15,6 @@ import { attachTileChallengesToSectors } from "../game/rules/tileChallenges.js";
 import type { AuthoredCharacter, Character } from "../game/schema/character.schema.js";
 import {
   createEmptyScenarioConfrontationState,
-  createEmptyScenarioPreparationState,
   createEmptyScenarioResultState,
   type GameMode,
   type GameState,
@@ -143,7 +142,7 @@ export function createInitialSessionState(
     winnerSeatId: null,
     activeScenarioId: defaultScenario?.id ?? "scenario_broken_seal",
     scenarioProgress: createInitialScenarioProgress(defaultScenario?.id ?? "scenario_broken_seal", sessionMode),
-    scenarioPreparation: createEmptyScenarioPreparationState(),
+    scenarioPreparation: createInitialScenarioPreparation(defaultScenario?.id ?? "scenario_broken_seal", sessionMode),
     scenarioConfrontation: createEmptyScenarioConfrontationState(),
     scenarioResult: createEmptyScenarioResultState(),
     phase: "start",

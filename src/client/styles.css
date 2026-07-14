@@ -459,6 +459,14 @@
   .host-shop-card-backdrop > div { animation: none; }
 }
 
+.phone-scenario-summary-art {
+  display: block;
+  width: 100%;
+  max-height: 9rem;
+  object-fit: cover;
+  border-radius: 0.65rem;
+}
+
 * {
   box-sizing: border-box;
 }

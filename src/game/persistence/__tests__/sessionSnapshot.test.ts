@@ -145,6 +145,24 @@ describe("versioned session snapshot migration", () => {
     expect(afterReplacement.legacyCompatibility).toEqual(first.legacyCompatibility);
   });
 
+  it("normalizes legacy Broken Seal progress into preparation without changing save versions", () => {
+    const current = serializeSessionSnapshotV2(createInitialSessionState("legacy-broken-seal", "multiplayer"));
+    const { scenarioPreparation, scenarioConfrontation, scenarioResult, ...legacyState } = current.state;
+    const legacyV2 = {
+      ...current,
+      state: {
+        ...legacyState,
+        scenarioProgress: { ...legacyState.scenarioProgress, sealTokens: 4 }
+      }
+    };
+
+    const normalized = parseAndMigrateSessionSnapshot(legacyV2);
+    expect(normalized.saveVersion).toBe(2);
+    expect(normalized.state.scenarioPreparation.resources.sealIntegrity).toBe(4);
+    expect(normalized.state.scenarioConfrontation.progress).toEqual({});
+    expect(normalized.state.scenarioResult.status).toBe("unresolved");
+  });
+
   it("creates Heat-free new snapshots and omits empty compatibility metadata", () => {
     const snapshot = serializeSessionSnapshotV2(createInitialSessionState("new-room", "single-player"));
     expect(snapshot.saveVersion).toBe(CURRENT_SAVE_VERSION);

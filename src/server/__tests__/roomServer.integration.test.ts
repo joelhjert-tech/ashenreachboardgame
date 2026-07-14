@@ -1570,7 +1570,7 @@ describe("roomServer websocket integration", () => {
       label: "Broken Seal",
       scenarioId: "scenario_broken_seal" as const,
       scenarioProgress: { sealRestorationMarks: 1 } as Record<string, number>,
-      expectedProgress: 4,
+      expectedProgress: 3,
       expectedThreshold: 2
     },
     {

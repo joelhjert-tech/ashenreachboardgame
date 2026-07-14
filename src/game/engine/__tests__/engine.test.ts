@@ -5795,7 +5795,12 @@ describe("trophy progression", () => {
         createState({
           sessionMode: "single-player",
           phase: "action",
-          scenarioProgress: { sealTokens: 4 },
+          scenarioProgress: {},
+          scenarioPreparation: {
+            resources: { sealIntegrity: 4 },
+            completedObjectiveIds: [],
+            processedSourceEventIds: []
+          },
           turnOrder: ["seat-1"],
           seats: [{ ...createState().seats[0]!, characterId: "void-marshal" }],
         players: [
@@ -7732,16 +7737,7 @@ describe("contracts", () => {
       reason: "Cinder Oath has already been prepared this round."
     });
 
-    runIntent(server, {
-      type: "SCENARIO_CONFRONTATION_REQUESTED",
-      seatId: "seat-1"
-    });
-
-    const confrontation = [...server.getState().eventLog].reverse().find((entry) => {
-      return (entry as { type?: string }).type === "SCENARIO_PROGRESS_ADVANCED";
-    }) as { summary?: string } | undefined;
-
-    expect(confrontation?.summary).toContain("Cinder Oath +2 applied to each test.");
+    expect(server.getState().players[0]?.private.noteResources?.vow).toBe(0);
   });
 
   it("lets Ash Tithe pay the Oathbroken Prince when a contract closes", () => {

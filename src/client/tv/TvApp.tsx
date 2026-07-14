@@ -363,7 +363,8 @@ function getScenarioStatus(patch: StatePatch<PublicPatchPayload> | null) {
       confrontationSteps: [] as string[],
       victoryText: "Create a room to load the active scenario.",
       telemetry: [] as ScenarioTelemetryItem[],
-      nemesis: null as ActiveNemesisSummary | null
+      nemesis: null as ActiveNemesisSummary | null,
+      ownership: null
     };
   }
 
@@ -397,7 +398,8 @@ function getScenarioStatus(patch: StatePatch<PublicPatchPayload> | null) {
     confrontationSteps: scenario.confrontationSteps,
     victoryText: scenario.victoryText,
     telemetry: patch?.payload.scenarioTelemetry ?? [],
-    nemesis
+    nemesis,
+    ownership: patch?.payload.scenarioState ?? null
   };
 }
 
@@ -1569,6 +1571,13 @@ function ScenarioStatusCard({
       )}
       <p className="tv-empty-copy">{scenarioRuleDigest?.pressureSummary ?? scenarioStatus.pressureSummary}</p>
       {scenarioStatus.finalGateRequirement && <p className="tv-empty-copy">Final gate: {scenarioStatus.finalGateRequirement}</p>}
+      {scenarioStatus.ownership ? (
+        <div className="board-sidebar-meta" aria-label="Scenario preparation, confrontation, and result">
+          <span>Preparation {Object.values(scenarioStatus.ownership.preparation.resources).reduce((sum, value) => sum + value, 0)}</span>
+          <span>Final {scenarioStatus.ownership.confrontation.locked === true ? "Locked" : scenarioStatus.ownership.confrontation.active ? "Active" : "Unlocked"}</span>
+          <span>Result {scenarioStatus.ownership.result.status}</span>
+        </div>
+      ) : null}
       {scenarioStatus.scenarioRewards.length > 0 && (
         <div className="board-sidebar-meta">
           {scenarioStatus.scenarioRewards.slice(0, 3).map((reward) => (

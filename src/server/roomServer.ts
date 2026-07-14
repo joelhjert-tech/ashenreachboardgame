@@ -33,6 +33,7 @@ import {
 import { getEscalationCollapseLevel, getEscalationModifier } from "../game/engine/escalation.js";
 import {
   buildScenarioTelemetry,
+  createInitialScenarioPreparation,
   createInitialScenarioProgress,
   describeScenarioPressure,
   resolveScenarioContractCompleted,
@@ -56,6 +57,7 @@ import {
 } from "../game/rules/afflictions.js";
 import { getSessionStartReadiness } from "../game/rules/sessionStart.js";
 import {
+  getBrokenSealTokenLimit,
   getDevourerTrophyGate,
   getDyingStarContractGate,
   getDyingStarTokenGate,
@@ -163,6 +165,9 @@ import type {
   ShopSkippedAction,
   ShopStockRevealedAction,
   ScenarioConfrontationRequestedAction,
+  ScenarioPreparationGainedAction,
+  ScenarioConfrontationStartedAction,
+  ScenarioConfrontationProgressGainedAction,
   ScenarioObjectiveCompletedAction,
   ScenarioObjectiveProgressTriggeredAction,
   ScenarioProgressAdvancedAction,
@@ -190,7 +195,6 @@ import { reduceGameState } from "../game/engine/reducer.js";
 import { CHALLENGE_LABELS } from "../game/ui/challengeTheme.js";
 import {
   createEmptyScenarioConfrontationState,
-  createEmptyScenarioPreparationState,
   createEmptyScenarioResultState,
   type ActiveResolution,
   type GameMode,
@@ -3148,13 +3152,13 @@ export class GameRoomServer {
     const starTokenGate = getDyingStarTokenGate(this.state.sessionMode);
     const starContractGate = getDyingStarContractGate(this.state.sessionMode);
 
-    if ((progress[scenario.winConditionKey] ?? 0) > 0) {
+    if (scenario.id !== "scenario_broken_seal" && (progress[scenario.winConditionKey] ?? 0) > 0) {
       return null;
     }
 
     switch (scenario.id) {
       case "scenario_broken_seal":
-        return (progress.sealTokens ?? 0) >= 4 || hasArtifact || completedContracts >= 3
+        return (this.state.scenarioPreparation.resources.sealIntegrity ?? 0) >= 4 || hasArtifact || completedContracts >= 3
           ? null
           : "Final gate locked: restore 4+ Seal Integrity, hold an Artifact, or complete 3 Contracts.";
       case "scenario_throne_of_ash":
@@ -4597,6 +4601,27 @@ export class GameRoomServer {
       return;
     }
 
+    if (result.scenarioId === "scenario_broken_seal") {
+      const sourceIdentity = event.type === "contractCompleted"
+        ? event.contractId
+        : event.type === "threatDefeated"
+          ? event.threatId
+          : event.effectKey;
+      this.applyAction({
+        type: "SCENARIO_PREPARATION_GAINED",
+        seatId,
+        scenarioId: result.scenarioId,
+        resourceKey: "sealIntegrity",
+        amount: result.amount,
+        maximum: getBrokenSealTokenLimit(this.state.sessionMode),
+        sourceEventId: `${result.scenarioId}:${event.type}:${sourceIdentity}:${this.state.sequence}`,
+        objectiveId: `${event.type}:${sourceIdentity}`,
+        summary: `The Broken Seal preparation advanced. Seal Integrity restored by ${result.amount}.`,
+        createdAt: new Date().toISOString()
+      } satisfies ScenarioPreparationGainedAction);
+      return;
+    }
+
     this.applyAction({
       type: "SCENARIO_OBJECTIVE_PROGRESS_TRIGGERED",
       seatId,
@@ -4848,7 +4873,7 @@ export class GameRoomServer {
       activeSeatIndex: 0,
       turnOrder: connectedTurnOrder,
       scenarioProgress: createInitialScenarioProgress(this.state.activeScenarioId, this.state.sessionMode),
-      scenarioPreparation: createEmptyScenarioPreparationState(),
+      scenarioPreparation: createInitialScenarioPreparation(this.state.activeScenarioId, this.state.sessionMode),
       scenarioConfrontation: createEmptyScenarioConfrontationState(),
       scenarioResult: createEmptyScenarioResultState(),
       nemesisChampions: [],
@@ -6162,6 +6187,20 @@ export class GameRoomServer {
       throw new IntentRejectedError(intent.type, gateBlockReason);
     }
 
+    const confrontationId = `${scenario.id}:confrontation:${this.state.sequence + 1}`;
+    if (scenario.id === "scenario_broken_seal") {
+      this.applyAction({
+        type: "SCENARIO_CONFRONTATION_STARTED",
+        seatId: intent.seatId,
+        scenarioId: scenario.id,
+        confrontationId,
+        sourceEventId: `${confrontationId}:started`,
+        stage: "resolving",
+        summary: `${scenario.confrontationTitle} began at the Cinder Gate.`,
+        createdAt: new Date().toISOString()
+      } satisfies ScenarioConfrontationStartedAction);
+    }
+
     const plan = this.buildScenarioPlan(player);
     const nemesis = this.getActiveNemesis();
     const confrontationModifier = getEscalationModifier(this.state.escalationLevel);
@@ -6188,7 +6227,9 @@ export class GameRoomServer {
     const marksEarned = results.filter((result) => result.success).length;
     const failedChecks = results.length - marksEarned;
     const progressKey = scenario.winConditionKey;
-    const currentProgress = this.state.scenarioProgress[progressKey] ?? 0;
+    const currentProgress = scenario.id === "scenario_broken_seal"
+      ? 0
+      : this.state.scenarioProgress[progressKey] ?? 0;
     const nextProgress = currentProgress + marksEarned;
     const effectiveThreshold = nemesis?.stats.life ?? scenario.victoryThreshold;
     const willWin = nextProgress >= effectiveThreshold;
@@ -6239,7 +6280,13 @@ export class GameRoomServer {
         : effectParts.length === 1
           ? effectParts[0]!
           : ({ type: "sequence", effects: effectParts } satisfies EncounterEffect);
-    const appliedEffect = nemesis && willWin ? plan.effect : combinedEffect;
+    const rawAppliedEffect = nemesis && willWin ? plan.effect : combinedEffect;
+    const appliedEffect = scenario.id === "scenario_broken_seal" && rawAppliedEffect
+      ? this.maybeApplyKerWoundPrevention(
+          intent.seatId,
+          this.maybeApplyFandiablosWoundPrevention(intent.seatId, rawAppliedEffect)
+        )
+      : rawAppliedEffect;
     const backlashSummary =
       nemesis && willWin && failedChecks > 0
         ? `Backlash ${failedChecks} denied by the killing blow.`
@@ -6256,22 +6303,48 @@ export class GameRoomServer {
       `Progress ${nextProgress}/${effectiveThreshold}.`
     ].join(" ");
 
-    this.applyAction({
-      type: "SCENARIO_PROGRESS_ADVANCED",
-      seatId: intent.seatId,
-      scenarioId: scenario.id,
-      progressKey,
-      amount: marksEarned,
-      effect: appliedEffect,
-      summary,
-      createdAt: new Date().toISOString()
-    } satisfies ScenarioProgressAdvancedAction);
+    const confrontationResolutionSourceId = `${confrontationId}:resolved`;
+    if (scenario.id === "scenario_broken_seal") {
+      this.applyAction({
+        type: "SCENARIO_CONFRONTATION_PROGRESS_GAINED",
+        seatId: intent.seatId,
+        scenarioId: scenario.id,
+        confrontationId,
+        progressKey: "restorationMarks",
+        amount: marksEarned,
+        progressMode: "replace",
+        sourceEventId: confrontationResolutionSourceId,
+        stage: willWin ? "completed" : "attempt-resolved",
+        effect: appliedEffect,
+        summary,
+        createdAt: new Date().toISOString()
+      } satisfies ScenarioConfrontationProgressGainedAction);
+    } else {
+      this.applyAction({
+        type: "SCENARIO_PROGRESS_ADVANCED",
+        seatId: intent.seatId,
+        scenarioId: scenario.id,
+        progressKey,
+        amount: marksEarned,
+        effect: appliedEffect,
+        summary,
+        createdAt: new Date().toISOString()
+      } satisfies ScenarioProgressAdvancedAction);
+    }
 
     if (willWin && this.state.status === "active") {
       this.applyAction({
         type: "SCENARIO_VICTORY_ACHIEVED",
         seatId: intent.seatId,
         scenarioId: scenario.id,
+        ...(scenario.id === "scenario_broken_seal"
+          ? {
+              victoryConditionId: "broken-seal:resealed",
+              sourceType: "confrontation" as const,
+              sourceId: confrontationResolutionSourceId,
+              shared: true
+            }
+          : {}),
         summary: `${scenario.name} completed. ${plan.victorySummary}`,
         createdAt: new Date().toISOString()
       } satisfies ScenarioVictoryAchievedAction);
@@ -6293,6 +6366,14 @@ export class GameRoomServer {
         type: "SCENARIO_VICTORY_ACHIEVED",
         seatId: intent.seatId,
         scenarioId: scenario.id,
+        ...(scenario.id === "scenario_broken_seal"
+          ? {
+              victoryConditionId: "broken-seal:resealed",
+              sourceType: "confrontation" as const,
+              sourceId: confrontationResolutionSourceId,
+              shared: true
+            }
+          : {}),
         summary: `${scenario.name} completed. ${plan.victorySummary}`,
         createdAt: new Date().toISOString()
       } satisfies ScenarioVictoryAchievedAction);
@@ -9170,7 +9251,11 @@ export function createTvProjection(
 ): Record<string, unknown> {
   const escalationThreshold = getEscalationCollapseLevel(state.sessionMode);
   const activeScenario = getScenarioDefinition(state.activeScenarioId);
-  const activeScenarioProgress = activeScenario ? (state.scenarioProgress[activeScenario.winConditionKey] ?? 0) : 0;
+  const activeScenarioProgress = activeScenario
+    ? activeScenario.id === "scenario_broken_seal"
+      ? state.scenarioConfrontation.progress.restorationMarks ?? 0
+      : state.scenarioProgress[activeScenario.winConditionKey] ?? 0
+    : 0;
   const activeNemesis = getLinkedNemesis(state.activeScenarioId);
   const activeScenarioThreshold = getScenarioProgressThreshold(state.activeScenarioId, activeScenario?.victoryThreshold ?? 0);
   const escalationModifier = getEscalationModifier(state.escalationLevel);

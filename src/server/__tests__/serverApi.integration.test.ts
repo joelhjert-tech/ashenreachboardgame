@@ -313,7 +313,8 @@ describe("server API scenario flow", () => {
     expect(response.status).toBe(200);
     expect(response.payload.scenarioId).toBe("scenario_broken_seal");
     expect(harness.roomServer.getState().activeScenarioId).toBe("scenario_broken_seal");
-    expect(harness.roomServer.getState().scenarioProgress).toEqual({ sealTokens: 6 });
+    expect(harness.roomServer.getState().scenarioProgress).toEqual({});
+    expect(harness.roomServer.getState().scenarioPreparation.resources).toEqual({ sealIntegrity: 6 });
   });
 
   it("rejects multiplayer session creation until the host selects an interaction mode", async () => {
@@ -781,7 +782,7 @@ describe("server API scenario flow", () => {
       scenarioId: "scenario_broken_seal",
       scenarioProgress: { sealRestorationMarks: 1 } as Record<string, number>,
       stats: { command: 20, grit: 20, signal: 20, guile: 20, forge: 20 },
-      expectedProgress: 4,
+      expectedProgress: 3,
       expectedThreshold: 2
     },
     {
@@ -903,9 +904,10 @@ describe("server API scenario flow", () => {
       expect(harness.roomServer.getState().winnerSeatId).toBe(joined.payload.seatId);
       expect(harness.roomServer.getState().status).toBe("ended");
       expect(scenarioDefinition).not.toBeNull();
-      expect(
-        (harness.roomServer.getState().scenarioProgress as Record<string, number>)[scenarioDefinition!.winConditionKey]
-      ).toBe(expectedProgress);
+      const authoritativeProgress = scenarioId === "scenario_broken_seal"
+        ? harness.roomServer.getState().scenarioConfrontation.progress.restorationMarks
+        : (harness.roomServer.getState().scenarioProgress as Record<string, number>)[scenarioDefinition!.winConditionKey];
+      expect(authoritativeProgress).toBe(expectedProgress);
       expect(endedPatch.payload.activeScenario?.id).toBe(scenarioId);
       expect(endedPatch.payload.activeScenario?.progress).toBe(expectedProgress);
       expect(endedPatch.payload.activeScenario?.threshold).toBe(expectedThreshold);

@@ -31,6 +31,8 @@ interface TalismanBoardSurfaceProps {
   movingSeatIds?: Set<string>;
   movementAnimations?: TileMovementAnimation[];
   nemesisSectorIds?: Set<string>;
+  centerTileArtPath?: string | null;
+  centerConfrontationState?: "locked" | "unlocked" | "active" | "completed";
   onSelectNode?: (nodeId: string) => void;
   debugEnabled?: boolean;
 }
@@ -97,16 +99,19 @@ function getTileSide(node: BoardNode): "horizontal" | "vertical" | "center" {
   return Math.abs(node.y - 0.5) > Math.abs(node.x - 0.5) ? "horizontal" : "vertical";
 }
 
-export function BoardTileImage({ nodeId, label, className = "" }: { nodeId: string; label: string; className?: string }): ReactElement {
-  const assetPath = getTileAssetPath(nodeId);
+export function BoardTileImage({ nodeId, label, className = "", overridePath = null }: { nodeId: string; label: string; className?: string; overridePath?: string | null }): ReactElement {
+  const fallbackPath = getTileAssetPath(nodeId);
   const expectedPath = getExpectedTileAssetPath(nodeId);
-  const [failed, setFailed] = useState(false);
+  const [overrideFailed, setOverrideFailed] = useState(false);
+  const [fallbackFailed, setFallbackFailed] = useState(false);
+  const assetPath = overridePath && !overrideFailed ? overridePath : fallbackPath;
 
   useEffect(() => {
-    setFailed(false);
-  }, [assetPath, nodeId]);
+    setOverrideFailed(false);
+    setFallbackFailed(false);
+  }, [overridePath, nodeId]);
 
-  if (!assetPath || failed) {
+  if (!assetPath || fallbackFailed) {
     if (typeof console !== "undefined") {
       console.warn(`[Ashen Reach] Missing board tile art for ${nodeId}. Expected ${assetPath ?? expectedPath}`);
     }
@@ -128,7 +133,14 @@ export function BoardTileImage({ nodeId, label, className = "" }: { nodeId: stri
       aria-hidden="true"
       loading="eager"
       draggable={false}
-      onError={() => setFailed(true)}
+      onError={() => {
+        if (overridePath && !overrideFailed) {
+          console.warn(`[Ashen Reach] Missing scenario art for ${nodeId}. Falling back to ${fallbackPath ?? expectedPath}`);
+          setOverrideFailed(true);
+        } else {
+          setFallbackFailed(true);
+        }
+      }}
       data-testid={`tile-art-${nodeId}`}
       title={label}
     />
@@ -147,6 +159,8 @@ export function TalismanBoardSurface({
   movingSeatIds,
   movementAnimations = [],
   nemesisSectorIds,
+  centerTileArtPath = null,
+  centerConfrontationState = "locked",
   onSelectNode,
   debugEnabled = false
 }: TalismanBoardSurfaceProps): ReactElement {
@@ -239,10 +253,15 @@ export function TalismanBoardSurface({
             aria-pressed={isSelected}
             onClick={() => onSelectNode?.(node.id)}
           >
-            <BoardTileImage nodeId={node.id} label={node.label} />
+            <BoardTileImage nodeId={node.id} label={node.label} overridePath={node.id === "center_cinder_gate" ? centerTileArtPath : null} />
             <div className="talisman-board-tile-scrim" />
             <span className="talisman-board-tile-region">{node.ring === "center" ? "Final" : tileLabelByRing[node.ring]}</span>
             <span className="talisman-board-tile-label">{node.label}</span>
+            {node.id === "center_cinder_gate" ? (
+              <span className="talisman-board-mission-badge" data-testid="final-confrontation-marker">
+                Final Confrontation · {centerConfrontationState}
+              </span>
+            ) : null}
             {threatIcons.length > 0 && (
               <span className="talisman-board-tile-icons" aria-hidden="true">
                 {threatIcons.slice(0, 3).map((icon, index) => (

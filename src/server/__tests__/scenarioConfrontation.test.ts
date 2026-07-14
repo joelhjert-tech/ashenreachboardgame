@@ -125,7 +125,7 @@ describe("scenario confrontation flow", () => {
 
     expect(roomServer.getState().status).toBe("active");
     expect(roomServer.getState().winnerSeatId).toBeNull();
-    expect(roomServer.getState().scenarioProgress.sealRestorationMarks).toBe(1);
+    expect(roomServer.getState().scenarioConfrontation.progress.restorationMarks).toBe(1);
     expect(roomServer.getState().players.find((entry) => entry.seatId === "seat-1")?.character.wounds).toBe(2);
     expect(roomServer.getState().activeResolution).toMatchObject({
       source: "scenario",
@@ -138,13 +138,9 @@ describe("scenario confrontation flow", () => {
 
   it("ends the game when a confrontation pushes scenario progress to threshold", () => {
     const roomServer = new GameRoomServer(
-      createScenarioState({
-        scenarioProgress: {
-          sealRestorationMarks: 1
-        }
-      }),
+      createScenarioState(),
       [],
-      createSequenceRandomSource([5, 5, 0, 0, 0, 0])
+      createSequenceRandomSource([5, 5, 5, 5, 5, 5])
     );
     const client = createPhoneClient("seat-1");
 
@@ -156,7 +152,7 @@ describe("scenario confrontation flow", () => {
     expect(roomServer.getState().status).toBe("ended");
     expect(roomServer.getState().winnerSeatId).toBe("seat-1");
     expect(roomServer.getState().phase).toBe("broadcast");
-    expect(roomServer.getState().scenarioProgress.sealRestorationMarks).toBe(2);
+    expect(roomServer.getState().scenarioConfrontation.progress.restorationMarks).toBe(3);
   });
 
   it("rejects confrontation attempts from non-active seats", () => {
@@ -172,7 +168,7 @@ describe("scenario confrontation flow", () => {
       seatId: "seat-2"
     } satisfies ClientIntent);
 
-    expect(roomServer.getState().scenarioProgress.sealRestorationMarks).toBeUndefined();
+    expect(roomServer.getState().scenarioConfrontation.progress.restorationMarks).toBeUndefined();
     expect(client.socket.send).toHaveBeenCalled();
     expect(String(client.socket.send.mock.calls[0]?.[0] ?? "")).toContain("INTENT_REJECTED");
   });
@@ -599,12 +595,15 @@ describe("scenario confrontation flow", () => {
     roomServer.setSeatReady("seat-1", true);
     roomServer.startSession();
 
-    expect(roomServer.getState().scenarioProgress.sealTokens).toBe(7);
+    expect(roomServer.getState().scenarioPreparation.resources.sealIntegrity).toBe(7);
   });
 
   it("does not heat operatives when the Broken Seal loses its final token at turn start", () => {
     const state = createInitialSessionState("session-alpha", "single-player");
-    state.scenarioProgress = { sealTokens: 1 };
+    state.scenarioPreparation = {
+      ...state.scenarioPreparation,
+      resources: { sealIntegrity: 1 }
+    };
     const roomServer = new GameRoomServer(state, [], createSequenceRandomSource([0]));
 
     roomServer.joinSeat("Solo", "signal-witch");
@@ -612,8 +611,8 @@ describe("scenario confrontation flow", () => {
     roomServer.setSeatReady("seat-1", true);
     roomServer.startSession();
 
-    expect(roomServer.getState().scenarioProgress.sealTokens).toBe(3);
-    expect(roomServer.getState().scenarioProgress.sealCollapses).toBe(1);
+    expect(roomServer.getState().scenarioPreparation.resources.sealIntegrity).toBe(3);
+    expect(roomServer.getState().scenarioPreparation.resources.sealCollapses).toBe(1);
     expect(roomServer.getState().lastOutcomeSummary?.summary ?? "").toContain("last seal broke");
   });
 

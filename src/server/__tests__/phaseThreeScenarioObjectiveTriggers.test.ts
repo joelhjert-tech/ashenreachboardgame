@@ -64,9 +64,9 @@ describe("Phase 3B scenario objective progress triggers", () => {
       contractId: "cartel-crossing-thread"
     });
 
-    expect(server.getState().scenarioProgress.sealRestorationMarks).toBe(1);
-    expect(server.getState().eventLog.some((entry) => (entry as { type?: string }).type === "SCENARIO_OBJECTIVE_PROGRESS_TRIGGERED")).toBe(true);
-    expect(server.getState().lastOutcomeSummary?.summary).toContain("The Broken Seal objective advanced");
+    expect(server.getState().scenarioPreparation.resources.sealIntegrity).toBe(6);
+    expect(server.getState().scenarioConfrontation.progress.restorationMarks).toBeUndefined();
+    expect(server.getState().eventLog.some((entry) => (entry as { type?: string }).type === "SCENARIO_PREPARATION_GAINED")).toBe(true);
   });
 
   it("advances objective progress from a matching defeated threat and ignores non-matching threats", () => {
@@ -86,7 +86,8 @@ describe("Phase 3B scenario objective progress triggers", () => {
       null
     );
 
-    expect(server.getState().scenarioProgress.sealRestorationMarks).toBe(1);
+    expect(server.getState().scenarioPreparation.resources.sealIntegrity).toBe(6);
+    expect(server.getState().scenarioConfrontation.progress.restorationMarks).toBeUndefined();
 
     const missServer = new GameRoomServer(
       createActiveState("scenario_broken_seal", { currentEncounter: redThreat }),
@@ -100,7 +101,7 @@ describe("Phase 3B scenario objective progress triggers", () => {
       null
     );
 
-    expect(missServer.getState().scenarioProgress.sealRestorationMarks).toBeUndefined();
+    expect(missServer.getState().scenarioConfrontation.progress.restorationMarks).toBeUndefined();
   });
 
   it("advances objective progress from a matching sector action", () => {
@@ -137,9 +138,12 @@ describe("Phase 3B scenario objective progress triggers", () => {
     expect(server.getState().scenarioProgress.shutdownMarks).toBe(1);
   });
 
-  it("clamps progress, completes the scenario at threshold, and projects updated public pressure", () => {
+  it("clamps preparation without allowing a side objective to own victory", () => {
     const state = createActiveState("scenario_broken_seal", {
-      scenarioProgress: { sealTokens: 6, sealRestorationMarks: 1 },
+      scenarioPreparation: {
+        ...createActiveState("scenario_broken_seal").scenarioPreparation,
+        resources: { sealIntegrity: 5 }
+      },
       players: createActiveState("scenario_broken_seal").players.slice(0, 2).map((player) =>
         player.seatId === "seat-1"
           ? {
@@ -164,15 +168,16 @@ describe("Phase 3B scenario objective progress triggers", () => {
       scenarioPressure: { scenarioStatus: string; objectiveProgress: { current: number; required: number; completed: boolean } } | null;
     };
 
-    expect(server.getState().status).toBe("ended");
-    expect(server.getState().winnerSeatId).toBe("seat-1");
-    expect(server.getState().scenarioProgress.sealRestorationMarks).toBe(2);
+    expect(server.getState().status).toBe("active");
+    expect(server.getState().winnerSeatId).toBeNull();
+    expect(server.getState().scenarioPreparation.resources.sealIntegrity).toBe(6);
+    expect(server.getState().scenarioConfrontation.progress.restorationMarks).toBeUndefined();
     expect(tvProjection.scenarioPressure).toMatchObject({
-      scenarioStatus: "completed",
+      scenarioStatus: "active",
       objectiveProgress: {
-        current: 2,
+        current: 0,
         required: 2,
-        completed: true
+        completed: false
       }
     });
   });

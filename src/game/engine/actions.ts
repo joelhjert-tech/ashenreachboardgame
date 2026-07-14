@@ -381,6 +381,7 @@ export interface ScenarioPreparationGainedAction extends BaseAction {
   scenarioId: string;
   resourceKey: string;
   amount: number;
+  maximum?: number;
   sourceEventId: string;
   objectiveId?: string;
   summary: string;
@@ -410,6 +411,7 @@ export interface ScenarioConfrontationProgressGainedAction extends BaseAction {
   confrontationId: string;
   progressKey: string;
   amount: number;
+  progressMode?: "accumulate" | "replace";
   sourceEventId: string;
   stage: string;
   summary: string;

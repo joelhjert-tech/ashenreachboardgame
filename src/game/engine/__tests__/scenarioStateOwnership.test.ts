@@ -3,6 +3,8 @@ import { createInitialSessionState } from "../../../server/sessionState.js";
 import { createPhoneProjection, createTvProjection } from "../../../server/roomServer.js";
 import { reduceGameState } from "../reducer.js";
 import type { GameAction } from "../actions.js";
+import { SCENARIOS } from "../../data/scenarios.js";
+import { getBoardSpace, isScenarioConfrontationSpace } from "../../data/boardSpaces.js";
 
 function activeBrokenSealState() {
   const state = createInitialSessionState("scenario-ownership", "single-player", "scenario_broken_seal");
@@ -23,6 +25,13 @@ function apply(state: ReturnType<typeof activeBrokenSealState>, action: GameActi
 }
 
 describe("scenario state ownership", () => {
+  it("uses the canonical center sector as the final location for every scenario", () => {
+    expect(SCENARIOS).toHaveLength(6);
+    expect(getBoardSpace("center_cinder_gate")?.id).toBe("center_cinder_gate");
+    for (const scenario of SCENARIOS) {
+      expect(isScenarioConfrontationSpace("center_cinder_gate"), scenario.id).toBe(true);
+    }
+  });
   it("keeps preparation resources separate and rejects duplicate source events", () => {
     const state = activeBrokenSealState();
     const action = {
@@ -38,13 +47,13 @@ describe("scenario state ownership", () => {
     } satisfies GameAction;
 
     const gained = apply(state, action);
-    expect(gained.scenarioPreparation.resources.sealIntegrity).toBe(1);
+    expect(gained.scenarioPreparation.resources.sealIntegrity).toBe(9);
     expect(gained.scenarioConfrontation.progress).toEqual({});
     expect(gained.scenarioResult.status).toBe("unresolved");
 
     const replay = reduceGameState(gained, action);
     expect(replay.ok).toBe(false);
-    expect(replay.state.scenarioPreparation.resources.sealIntegrity).toBe(1);
+    expect(replay.state.scenarioPreparation.resources.sealIntegrity).toBe(9);
   });
 
   it("spends preparation atomically and rejects insufficient or replayed spends", () => {
@@ -104,7 +113,7 @@ describe("scenario state ownership", () => {
     const advanced = reduceGameState(started, progress);
     expect(advanced.ok).toBe(true);
     expect(advanced.state.scenarioConfrontation.progress.restorationMarks).toBe(1);
-    expect(advanced.state.scenarioPreparation.resources).toEqual({});
+    expect(advanced.state.scenarioPreparation.resources).toEqual({ sealIntegrity: 8 });
     expect(advanced.state.scenarioConfrontation.active).toBe(false);
   });
 

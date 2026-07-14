@@ -19,6 +19,7 @@ function createPatch(): PublicPatchPayload {
     activeScenario: {
       id: "scenario_broken_seal",
       name: "The Broken Seal",
+      sheetArtPath: "/assets/scenarios/broken-seal.png",
       theme: "The last ward around the Cinder Gate is splitting.",
       difficulty: "easy-medium",
       pressureSummary: "6 seals remain. Each turn start, 1-2 weakens the ward and 3-4 heats the active operative.",
@@ -540,6 +541,34 @@ describe("BoardMap", () => {
     render(<BoardMap patch={createPatch()} phase="action" />);
 
     expect(screen.getByTestId("scenario-aura-broken-seal-aura")).toHaveAttribute("data-sector-id", "center_cinder_gate");
+    expect(screen.getByTestId("tile-art-center_cinder_gate")).toHaveAttribute("src", "/assets/scenarios/broken-seal.png");
+    expect(screen.getByTestId("sector-node-center_cinder_gate")).toHaveAttribute("data-sector-id", "center_cinder_gate");
+    expect(screen.getByTestId("sector-node-center_cinder_gate")).toHaveTextContent("Final Confrontation");
+  });
+
+  it("uses the selected scenario art without changing the center-sector identity", () => {
+    const patch = createPatch();
+    patch.activeScenario = {
+      ...patch.activeScenario!,
+      id: "scenario_devourer_beneath",
+      name: "The Devourer Beneath",
+      sheetArtPath: "/assets/scenarios/ashwalk-breach.png"
+    };
+
+    render(<BoardMap patch={patch} phase="action" />);
+
+    expect(screen.getByTestId("tile-art-center_cinder_gate")).toHaveAttribute("src", "/assets/scenarios/ashwalk-breach.png");
+    expect(screen.getByTestId("sector-node-center_cinder_gate")).toHaveAttribute("data-sector-id", "center_cinder_gate");
+  });
+
+  it("falls back to canonical center art when selected scenario art is missing", () => {
+    render(<BoardMap patch={createPatch()} phase="action" />);
+    const art = screen.getByTestId("tile-art-center_cinder_gate");
+
+    fireEvent.error(art);
+
+    expect(art).toHaveAttribute("src", expect.stringContaining("/assets/map/tiles/"));
+    expect(screen.getByTestId("sector-node-center_cinder_gate")).toHaveTextContent("Final Confrontation");
   });
 
   it("renders the escalation spine marker for the live breach track", () => {

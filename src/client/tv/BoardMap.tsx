@@ -533,6 +533,16 @@ export function BoardMap({ patch, previousPatch = null, phase, showHeader = true
                   movingSeatIds={movingSeatIds}
                   movementAnimations={movementAnimations}
                   nemesisSectorIds={nemesisSectorIds}
+                  centerTileArtPath={patch.activeScenario?.sheetArtPath ?? null}
+                  centerConfrontationState={
+                    patch.scenarioState?.result.status === "victory" || patch.scenarioState?.result.status === "loss"
+                      ? "completed"
+                      : patch.scenarioState?.confrontation.active
+                        ? "active"
+                        : patch.scenarioState?.confrontation.locked === false
+                          ? "unlocked"
+                          : "locked"
+                  }
                   onSelectNode={setSelectedNodeId}
                   debugEnabled={boardDebugEnabled}
                 />

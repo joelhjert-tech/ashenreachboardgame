@@ -112,13 +112,28 @@ describe("scenario pressure foundation", () => {
     const completed = createScenarioState({
       status: "ended",
       winnerSeatId: "seat-1",
-      scenarioProgress: { sealRestorationMarks: 2, sealTokens: 4 }
+      scenarioConfrontation: {
+        ...createScenarioState().scenarioConfrontation,
+        progress: { restorationMarks: 2 }
+      },
+      scenarioResult: {
+        status: "victory",
+        victoryConditionId: "broken-seal:resealed",
+        sourceType: "confrontation",
+        sourceId: "test-resolution",
+        winningSeatId: "seat-1",
+        shared: true,
+        achievedAtSequence: 1
+      }
     });
     const failed = createScenarioState({
       status: "ended",
       winnerSeatId: null,
       escalationLevel: 6,
-      scenarioProgress: { sealTokens: 1 }
+      scenarioPreparation: {
+        ...createScenarioState().scenarioPreparation,
+        resources: { sealIntegrity: 1 }
+      }
     });
 
     expect(buildScenarioPressureState(completed, "Scenario completed")?.scenarioStatus).toBe("completed");

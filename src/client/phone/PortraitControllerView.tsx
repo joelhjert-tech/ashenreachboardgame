@@ -43,6 +43,14 @@ type PortraitTab = "player" | "inventory" | "quests" | TurnActionTab;
 
 const turnActionTabs: TurnActionTab[] = ["move", "battle", "shop", "action"];
 const phoneChromeStorageKey = "ashenreach.phoneChromeVisible";
+
+function PhoneScenarioArt({ path, title }: { path?: string | null; title: string }): ReactElement | null {
+  const [failed, setFailed] = useState(false);
+  useEffect(() => setFailed(false), [path]);
+  if (!path || failed) return null;
+  return <img className="phone-scenario-summary-art" src={path} alt={`${title} scenario artwork`} onError={() => setFailed(true)} />;
+}
+
 const portraitTabLabels: Record<PortraitTab, string> = {
   player: "Player Card",
   inventory: "Inventory",
@@ -1030,9 +1038,29 @@ export function PortraitControllerView({
               <section className="phone-portrait-section">
                 <div className="phone-sheet-section-heading">Scenario</div>
                 <article className="phone-portrait-info-card phone-scenario-quest-card" data-testid="phone-scenario-sheet-summary">
+                  <PhoneScenarioArt path={activeScenario?.sheetArtPath} title={activeScenario?.name ?? "Selected scenario"} />
                   <strong>{activeScenario?.name ?? "No active scenario"}</strong>
                   <span>{scenarioPressure?.modeSpecific.label ?? activeScenario?.publicDisplay?.modeLabel ?? "Awaiting scenario"}</span>
                   <p>{activeScenario?.publicDisplay?.objective ?? activeScenario?.victoryText ?? "Scenario pressure appears here once the host starts the room."}</p>
+                  {patch?.scenarioState ? (
+                    <div className="phone-scenario-progress-grid" aria-label="Scenario preparation, final confrontation, and result">
+                      <div>
+                        <span>Preparation</span>
+                        <strong>{Object.values(patch.scenarioState.preparation.resources).reduce((sum, value) => sum + value, 0)}</strong>
+                        <small>{activeScenario?.id === "scenario_broken_seal" ? "Seal Integrity" : "Scenario resources"}</small>
+                      </div>
+                      <div>
+                        <span>Final Confrontation</span>
+                        <strong>{patch.scenarioState.confrontation.locked === true ? "Locked" : patch.scenarioState.confrontation.active ? "Active" : "Unlocked"}</strong>
+                        <small>The Cinder Gate</small>
+                      </div>
+                      <div>
+                        <span>Scenario Result</span>
+                        <strong>{patch.scenarioState.result.status}</strong>
+                        <small>Server authoritative</small>
+                      </div>
+                    </div>
+                  ) : null}
                   <div className="phone-scenario-progress-grid" aria-label="Scenario progress and pressure">
                     <div>
                       <span>Win Progress</span>

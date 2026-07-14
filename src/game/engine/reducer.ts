@@ -3613,7 +3613,12 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
           resources: {
             ...state.scenarioPreparation.resources,
             [scenarioAction.resourceKey]:
-              (state.scenarioPreparation.resources[scenarioAction.resourceKey] ?? 0) + scenarioAction.amount
+              scenarioAction.maximum === undefined
+                ? (state.scenarioPreparation.resources[scenarioAction.resourceKey] ?? 0) + scenarioAction.amount
+                : Math.min(
+                    scenarioAction.maximum,
+                    (state.scenarioPreparation.resources[scenarioAction.resourceKey] ?? 0) + scenarioAction.amount
+                  )
           },
           completedObjectiveIds: scenarioAction.objectiveId && !state.scenarioPreparation.completedObjectiveIds.includes(scenarioAction.objectiveId)
             ? [...state.scenarioPreparation.completedObjectiveIds, scenarioAction.objectiveId]
@@ -3655,6 +3660,11 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
     }
     case "SCENARIO_CONFRONTATION_STARTED": {
       const scenarioAction = action as ScenarioConfrontationStartedAction;
+      try {
+        canResolveScenarioConfrontation(state, scenarioAction.seatId);
+      } catch (error) {
+        return reject(state, action, error instanceof Error ? error.message : "Scenario confrontation cannot start");
+      }
       if (state.status !== "active" || state.activeScenarioId !== scenarioAction.scenarioId) {
         return reject(state, action, "Scenario confrontation can only start for the active scenario");
       }
@@ -3716,7 +3726,9 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
           progress: {
             ...nextState.scenarioConfrontation.progress,
             [scenarioAction.progressKey]:
-              (nextState.scenarioConfrontation.progress[scenarioAction.progressKey] ?? 0) + scenarioAction.amount
+              scenarioAction.progressMode === "replace"
+                ? scenarioAction.amount
+                : (nextState.scenarioConfrontation.progress[scenarioAction.progressKey] ?? 0) + scenarioAction.amount
           },
           stage: scenarioAction.stage,
           processedSourceEventIds: [...nextState.scenarioConfrontation.processedSourceEventIds, scenarioAction.sourceEventId]
@@ -3817,6 +3829,9 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
 
       if (state.activeScenarioId !== scenarioAction.scenarioId) {
         return reject(state, action, `Scenario ${scenarioAction.scenarioId} is not active`);
+      }
+      if (scenarioAction.scenarioId === "scenario_broken_seal") {
+        return reject(state, action, "Broken Seal side objectives prepare the Cinder Gate confrontation and cannot own victory");
       }
 
       const player = requirePlayer(state, scenarioAction.seatId);

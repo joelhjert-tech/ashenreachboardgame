@@ -340,7 +340,8 @@ describe("canonical sector graph", () => {
     expect(state.players).toHaveLength(6);
     expect(state.turnOrder).toEqual(["seat-1", "seat-2", "seat-3", "seat-4", "seat-5", "seat-6"]);
     expect(state.activeScenarioId).toBe("scenario_broken_seal");
-    expect(state.scenarioProgress).toEqual({ sealTokens: 6 });
+    expect(state.scenarioProgress).toEqual({});
+    expect(state.scenarioPreparation.resources).toEqual({ sealIntegrity: 6 });
     expect(state.woundThreshold).toBe(3);
 
     for (const player of state.players) {
@@ -391,7 +392,8 @@ describe("canonical sector graph", () => {
     expect(state.turnOrder).toEqual(["seat-1"]);
     expect(state.reflectionPressureThreshold).toBe(8);
     expect(state.woundThreshold).toBe(4);
-    expect(state.scenarioProgress).toEqual({ sealTokens: 8 });
+    expect(state.scenarioProgress).toEqual({});
+    expect(state.scenarioPreparation.resources).toEqual({ sealIntegrity: 8 });
     expect(state.soloRerollCharges).toEqual({ "seat-1": 1 });
     expect(state.players[0]?.character.salvage).toBe(4);
     expect(state.players[0]?.character.activeContract).toBeNull();
@@ -490,6 +492,7 @@ describe("canonical sector graph", () => {
         modeSpecific: { privateAgenda: string };
       } | null;
       scenarioProgress: Record<string, number>;
+      scenarioState: { preparation: { resources: Record<string, number> } };
       nemesis: { id: string } | null;
     };
     const phoneProjection = createPhoneProjection(state, "seat-1") as {
@@ -500,6 +503,7 @@ describe("canonical sector graph", () => {
         objectiveProgress: { current: number; required: number };
       } | null;
       scenarioProgress: Record<string, number>;
+      scenarioState: { preparation: { resources: Record<string, number> } };
       nemesis: { id: string } | null;
     };
 
@@ -555,8 +559,10 @@ describe("canonical sector graph", () => {
         required: 2
       }
     });
-    expect(tvProjection.scenarioProgress).toEqual({ sealTokens: 6 });
-    expect(phoneProjection.scenarioProgress).toEqual({ sealTokens: 6 });
+    expect(tvProjection.scenarioProgress).toEqual({});
+    expect(phoneProjection.scenarioProgress).toEqual({});
+    expect(tvProjection.scenarioState.preparation.resources).toEqual({ sealIntegrity: 6 });
+    expect(phoneProjection.scenarioState.preparation.resources).toEqual({ sealIntegrity: 6 });
     expect(tvProjection.nemesis).toBeNull();
     expect(phoneProjection.nemesis).toBeNull();
   });
@@ -1165,7 +1171,7 @@ describe("canonical sector graph", () => {
 
   it("builds scenario telemetry for all six authored scenarios with live, scenario-specific readouts", () => {
     const expectations: Record<string, string[]> = {
-      scenario_broken_seal: ["Seal Tokens", "Turn Pressure", "Collapses", "Restoration"],
+      scenario_broken_seal: ["Seal Integrity", "Turn Pressure", "Collapses", "Final Restoration"],
       scenario_throne_of_ash: ["Crown Claims", "Crown Holders", "Active Crowns"],
       scenario_mirror_of_false_heroes: ["Mirror Breaks", "Scar Pressure", "Reflection Feed"],
       scenario_devourer_beneath: ["Doom Tokens", "Devourer", "Collapse Pulse"],
