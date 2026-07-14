@@ -37,6 +37,8 @@ These form five exact type/stat/difficulty/effect clusters. Preserve stable IDs 
 
 `ashen-doppelganger`, `choir-static-burst`, `cinder-gate-backlash`, `crown-bell-baron`, `false-route-procession`, `gateblind-pulse`, `hymn-scarred-zealot`, `lantern-moth-swarm`, `marrow-tax-auditors`, `memory-tax-gate`, `mirror-rot-interference`, `pale-contract-collector`, `relay-husk`, `signal-rotted-engineer`, `siren-relay-echo`, `soot-stained-cutpurse`, `webglass-snarefield`.
 
+Final triage approves eight IDs in three contained groups: removal-only (`cinder-gate-backlash`, `mirror-rot-interference`, `webglass-snarefield`), normal Wound pressure (`choir-static-burst`, `lantern-moth-swarm`), and bounded Salvage pressure (`crown-bell-baron`, `pale-contract-collector`, `soot-stained-cutpurse`). The other nine IDs remain blocked: `ashen-doppelganger`, `false-route-procession`, `gateblind-pulse`, `hymn-scarred-zealot`, `marrow-tax-auditors`, `memory-tax-gate`, `relay-husk`, `signal-rotted-engineer`, and `siren-relay-echo`.
+
 `glass-chime-swarm` and `spindle-static-squall` are already in the duplicate group. Both now implement their approved typed delayed modifiers and no longer carry player-facing legacy Heat failures.
 
 ### Retain with clarity/parity review (80)
@@ -86,7 +88,16 @@ Phase B1 supersedes the earlier exemplar order below for duplicate-pattern work.
 
 The exact rules, alternatives, tests, and evidence gates are in `reports/ashen-reach-threat-duplicate-pattern-approval.md`. No group changes totals or authorizes the +116-card expansion.
 
-Implementation status: all eight approved duplicate-pattern revisions are complete. Phase B2A covers `glass-tick-cloud`, `locked-vault`, `breach-halberd`, and `mudglass-sinkhole`; B2B covers `shattered-barricade`; B2C covers `suture-storm`; the final isolated Heat-retirement slices cover `glass-chime-swarm` and `spindle-static-squall`. All 17 additional Heat-linked IDs remain blocked and unchanged. The +116-card expansion remains unapproved.
+Implementation status: all eight approved duplicate-pattern revisions are complete. Phase B2A covers `glass-tick-cloud`, `locked-vault`, `breach-halberd`, and `mudglass-sinkhole`; B2B covers `shattered-barricade`; B2C covers `suture-storm`; the final isolated duplicate-pattern Heat-retirement slices cover `glass-chime-swarm` and `spindle-static-squall`.
+
+The remaining Heat-retirement sequence is:
+
+1. H1: `cinder-gate-backlash`, `mirror-rot-interference`, `webglass-snarefield` — remove obsolete success branches; low risk.
+2. H2: `choir-static-burst`, `lantern-moth-swarm` — existing normal Wound pipeline; medium risk.
+3. H3: `crown-bell-baron`, `pale-contract-collector`, `soot-stained-cutpurse` — existing floor-zero Salvage loss; medium economy risk.
+4. Keep `ashen-doppelganger`, `false-route-procession`, `gateblind-pulse`, `hymn-scarred-zealot`, `marrow-tax-auditors`, `memory-tax-gate`, `relay-husk`, `signal-rotted-engineer`, and `siren-relay-echo` blocked until their prerequisites in `reports/heat-retirement-implementation-plan.md` are approved.
+
+The +116-card expansion remains unapproved.
 
 ### Earlier Phase A long-range sequence
 

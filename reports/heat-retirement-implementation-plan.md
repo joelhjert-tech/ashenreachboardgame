@@ -1,0 +1,95 @@
+# Remaining Heat-linked Threat implementation plan
+
+Status: report-only plan at `2946c96`. It sequences the eight approvals in `reports/heat-retirement-remaining-17-triage.md`; it does not authorize or change the nine blocked cards.
+
+## Approved implementation groups
+
+### Group H1 — remove obsolete success branches (3)
+
+- Stable IDs: `cinder-gate-backlash`, `mirror-rot-interference`, `webglass-snarefield`.
+- Exact change: remove each compatibility-only `lose_heat` success branch. A success has no additional effect. Existing failure branches remain byte-for-byte unchanged.
+- Shared lifecycle: none; ordinary hazard success closes normally.
+- Schema changes: none.
+- Resolver changes: none.
+- Projection needs: no new state or projection; existing success summary must not mention Heat.
+- Focused tests: exact three-card content; success closes without a pending effect; existing 2/1/1-Wound failures remain unchanged; stable IDs, lane, type, stat, difficulty, severity, graph, catalog, and art; legacy Heat population decrement; no Heat/Risk wording.
+- Implementation risk: low. These branches are already runtime no-ops and their removal creates no replacement effect.
+- Recommended commit subject: `feat: remove obsolete heat success branches`.
+
+This is the recommended first implementation group.
+
+### Group H2 — normal signal-hazard Wounds (2)
+
+- Stable IDs: `choir-static-burst`, `lantern-moth-swarm`.
+- Exact change: Choir failure becomes `take_wound 1`; Lantern failure becomes `take_wound 1` and its success `lose_heat 1` branch is removed.
+- Shared lifecycle: existing normal preventable Wound pipeline, including requested/prevented/actual delta, recall threshold, pending Scar behavior, and authoritative source deduplication.
+- Schema changes: none.
+- Resolver changes: none.
+- Projection needs: existing public outcome and owner prevention/reaction projections only.
+- Focused tests: exact content branches; `0 -> 1`; threshold-minus-one to recall; at least one established prevention path; pending prevention reconnect; duplicate/replay rejection; Choir scenario-success progress unchanged; Lantern success closes with no extra effect; graph references 4 and 2; no group Wound.
+- Implementation risk: medium. Both add real attrition where Heat was a no-op; Choir’s four graph references deserve an isolated balance checkpoint.
+- Recommended commit subject: `feat: retire signal hazard heat as wounds`.
+
+### Group H3 — bounded Yellow Salvage pressure (3)
+
+- Stable IDs: `crown-bell-baron`, `pale-contract-collector`, `soot-stained-cutpurse`.
+- Exact change: each enemy loss becomes `lose_salvage 1`, described as “lose up to 1 Salvage.”
+- Shared lifecycle: existing owner-scoped floor-zero Salvage loss with actual-delta outcome reporting.
+- Schema changes: none.
+- Resolver changes: none.
+- Projection needs: existing owner balance and public result summary; no opponent balance targeting or transfer.
+- Focused tests: funded `1 -> 0`; zero remains zero and resolution continues; actual delta summary; wrong/stale/duplicate source rejection; no `encounter_payment`; no `shopTransaction`, Salvage Ledger, mission, or completed-contract event; rewards/trophies unchanged; exact one/two/two graph references.
+- Implementation risk: medium. The three losses are thematically direct and bounded, but the economy is tight; land only after H2’s checkpoint and review combined draw exposure.
+- Recommended commit subject: `feat: convert collector heat losses to salvage pressure`.
+
+## Blocked prerequisite register
+
+| Stable ID | Preferred direction | Blocking prerequisite | Re-entry evidence |
+|---|---|---|---|
+| `ashen-doppelganger` | 2 preventable Wounds | explicit acceptance of recall-rate jump from a former no-op | solo/multiplayer loss simulations or focused playtest; confirm 2 versus 1 Wound |
+| `false-route-procession` | movement consequence | exact authoritative destination/direction and topology fallback | rule specifying prior-sector, server-offered target, or deterministic direction; reconnect target behavior |
+| `gateblind-pulse` | Global Escalation | solo/multiplayer cap and threshold timing; duplicate-pattern check against Shattered Barricade | threshold matrix and source-order approval |
+| `hymn-scarred-zealot` | lasting broadcast/Scar | loss-versus-defeat trigger conflict and disproportionate routine Scar | corrected authored trigger plus named Scar/severity decision |
+| `marrow-tax-auditors` | lose up to 1 Salvage | four-reference starvation risk in tight economy | post-H3 telemetry/playtest or an approved frequency/amount mitigation |
+| `memory-tax-gate` | private player choice | two competitive options, private ownership, projection, cancellation, reset | exact prompt/options and server-authoritative choice lifecycle |
+| `relay-husk` | temporary Equipment disable | eligible exact instances, no-item fallback, duration, reset | schema/lifecycle proposal with reconnect and duplicate-instance tests |
+| `signal-rotted-engineer` | post-loss Weapon pressure | avoid double-dipping current battle suppression; select disable/discard/duration | exact rule and target/reset specification |
+| `siren-relay-echo` | paired next-Command modifier | positive/stat-specific schema, stacking/precedence, eligible contexts, recall clear | narrow typed lifecycle approval and modifier-order matrix |
+
+Blocked IDs are not assigned to implementation groups. A later approval should form new 2–4 card groups only when cards genuinely share a settled lifecycle; it must not combine unrelated high-risk rules to satisfy a batch size.
+
+## Recommended sequence
+
+1. **H1 — removal/clarity only.** Benefit: eliminates six legacy Heat amount points across three success branches without introducing a replacement. Risk: low. Prerequisites: none beyond the report approval. Coverage: exact content plus unchanged Wound failures and full regressions.
+2. **H2 — existing Wound resolver.** Benefit: restores clear physical consequences to two signal hazards. Risk: medium because these are new real Wounds. Prerequisites: H1 clean checkpoint; review Choir’s four graph references. Coverage: prevention, actual delta, recall, reconnect, duplicate source, scenario-success preservation.
+3. **H3 — existing floor-zero Salvage resolver.** Benefit: gives three Yellow enemies distinct economic identity. Risk: medium economy pressure. Prerequisites: H2 checkpoint and confirmation no cumulative economy regression. Coverage: floor zero, actual delta, no payment/ledger loops, reward preservation, mode ownership.
+4. **Movement and shared-pressure design gates.** IDs: `false-route-procession`, `gateblind-pulse`. Benefit: preserves route/gate identity. Risk: medium-high. Prerequisites: destination and escalation threshold specifications.
+5. **Equipment and temporary-modifier design gates.** IDs: `relay-husk`, `signal-rotted-engineer`, `siren-relay-echo`. Benefit: Yellow/Signal variety. Risk: medium-high. Prerequisites: exact-instance disable and stat-specific modifier lifecycles.
+6. **Choice and economy-frequency gates.** IDs: `memory-tax-gate`, `marrow-tax-auditors`. Benefit: distinct Yellow tension. Risk: high if choice is dominant or economy starves. Prerequisites: choice contract and H3 playtest evidence.
+7. **Scar/high-severity gates last.** IDs: `hymn-scarred-zealot`, `ashen-doppelganger`. Benefit: preserves lasting-injury fiction. Risk: high. Prerequisites: exact Scar trigger and explicit 2-Wound recall-rate approval.
+
+## Per-group verification contract
+
+Each implementation commit must run the smallest focused test first, then:
+
+- `npm.cmd run validate:content`
+- `npm.cmd run typecheck`
+- the group’s focused Threat/content test file
+- `npm.cmd run test:engine`
+- `npm.cmd run test`
+- `git diff --check`
+- `git diff --cached --check`
+
+Before each commit, inspect the complete staged diff and confirm stable IDs, totals (Red 26 / Blue 35 / Yellow 48 / overall 109), lane/type/stat/difficulty/severity, graph membership, completed duplicate revisions, unrelated mechanics, and the unapproved +116 expansion are unchanged. Heat compatibility may remain only where a card is still explicitly blocked; no new player-facing Heat or Risk wording is allowed.
+
+## Distribution checkpoint after all three approved groups
+
+- Removed without replacement: 3 success branches.
+- Added normal Wound consequences: 2 cards.
+- Added floor-zero Salvage losses: 3 cards.
+- Added Scar, Global Escalation, movement, Equipment disable, persistent, choice, temporary modifier, or multiplayer effects: 0.
+- Approved severity: four at 1, four at 2, none at 3–5.
+- Lane implementation impact: Blue 5, Yellow 3, Red 0.
+- Card totals: unchanged at 26 / 35 / 48 / 109.
+
+No exact Relic-frequency parity is asserted. No expansion work is authorized.
