@@ -17,6 +17,13 @@ import { reduceGameState } from "../reducer.js";
 
 const threats = loadThreatCards();
 const salvageCards = ["glass-tick-cloud", "locked-vault"] as const;
+const allApprovedThreatRevisionSalvageCards = [
+  "crown-bell-baron",
+  "glass-tick-cloud",
+  "locked-vault",
+  "pale-contract-collector",
+  "soot-stained-cutpurse"
+] as const;
 const displacementCards = [
   ["breach-halberd", "clockwise"],
   ["mudglass-sinkhole", "counterclockwise"]
@@ -26,17 +33,14 @@ const untouchedHeatLinkedHashes = new Map([
   ["glass-chime-swarm", "745affe8619bc5c0cae105c60aff8acd8792e27aac3a26b76588ed3893e876f2"],
   ["spindle-static-squall", "79792aba83a13ca9ac1193ce984919474e02dfca2d05b7c21a40da896032cb33"],
   ["ashen-doppelganger", "cb9b7c7d37419b9d91ee02624659a4828f0624ec507c2f6468c66be1593818c0"],
-  ["crown-bell-baron", "c98e467269599e74371578d25c2b9e257214b463631829284ca19b77df3f96e2"],
   ["false-route-procession", "032bf4e5795ab98fa8e8def052dcf28190c2295f70582530e59f32b3592377ae"],
   ["gateblind-pulse", "d495be86b7b4a37acffa451fde6121293673a83a84f9aba8471336e314662618"],
   ["hymn-scarred-zealot", "a3664813d86849b47a1fbe2fdd8b2b831f91b9f93fe334ce36c21aca58df4256"],
   ["marrow-tax-auditors", "bdf79951c64c0ea1e8322d8ba812db714fcc19cbae7d4dc6e4fca145fbfeeb9b"],
   ["memory-tax-gate", "dbeabc6a8d5b1654fd1f5a3c04ad8100fee6e47763bee51112a2d05ed407783e"],
-  ["pale-contract-collector", "ef2f293db6747e0ed24b7b6c00a2df0801e1d8bd3db223c1724b5d3fd80360ae"],
   ["relay-husk", "e3f1f24646c937cd646f862c1314fb8f458145d0e1944dc6afb1e8a977564a91"],
   ["signal-rotted-engineer", "80446cb61e7acfe4e6613b134487e48a959764fc02ff53198f04e2abfb145c01"],
-  ["siren-relay-echo", "c206dbd889f7aafaa69d50196f9c76076fafd40dd71015e7f0bcd05c7ef8de3b"],
-  ["soot-stained-cutpurse", "c82891af35a78b7c6f9f8a7c41fe681cb6e6b3ffa46213bcab3ca7e1f6d3e179"]
+  ["siren-relay-echo", "c206dbd889f7aafaa69d50196f9c76076fafd40dd71015e7f0bcd05c7ef8de3b"]
 ]);
 
 function requireHazard(id: string) {
@@ -92,7 +96,7 @@ function applyFailure(state: GameState, card: ReturnType<typeof requireHazard>) 
 
 describe("Phase B2A threat revision content", () => {
   it("preserves all four stable IDs, lanes, tests, counts, and exact approved effects", () => {
-    expect(THREAT_REVISION_SALVAGE_LOSS_SOURCE_IDS).toEqual(new Set(salvageCards));
+    expect(THREAT_REVISION_SALVAGE_LOSS_SOURCE_IDS).toEqual(new Set(allApprovedThreatRevisionSalvageCards));
     expect(APPROVED_FORCED_DISPLACEMENT_SOURCE_IDS).toEqual(new Set(["breach-halberd", "mudglass-sinkhole", "suture-storm", "route-splice"]));
     expect(RIFT_ANCHOR_SPIKE_ELIGIBLE_SOURCE_IDS).toEqual(APPROVED_FORCED_DISPLACEMENT_SOURCE_IDS);
     for (const id of salvageCards) expect(APPROVED_AUTOMATIC_SALVAGE_LOSS_IDS.has(id)).toBe(true);
@@ -110,7 +114,7 @@ describe("Phase B2A threat revision content", () => {
     expect(laneCounts).toEqual({ red: 26, blue: 35, yellow: 48 });
   });
 
-  it("pins implemented Glass-Chime and Spindle plus the twelve Heat-linked IDs outside H1 and H2", () => {
+  it("pins implemented Glass-Chime and Spindle plus the nine blocked Heat-linked IDs", () => {
     for (const [id, expectedHash] of untouchedHeatLinkedHashes) {
       const authoredCard = JSON.parse(readFileSync(join(process.cwd(), "content", "cards", "threats", `${id}.json`), "utf8"));
       expect(createHash("sha256").update(JSON.stringify(authoredCard)).digest("hex"), id).toBe(expectedHash);

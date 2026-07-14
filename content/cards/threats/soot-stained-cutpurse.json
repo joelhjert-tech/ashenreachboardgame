@@ -4,7 +4,7 @@
   "cardType": "enemy",
   "title": "Soot-Stained Cutpurse",
   "enemyName": "Soot-Stained Cutpurse",
-  "text": "A lone market thief trails you through lantern smoke, more hungry than brave and far too quick with a strap knife.",
+  "text": "A lone market thief trails you through lantern smoke, more hungry than brave and far too quick with a strap knife. If you lose, lose up to 1 Salvage.",
   "flavor": "In Ashen Reach, poverty learns ambush first.",
   "severity": 1,
   "region": "outer",
@@ -16,7 +16,7 @@
     "text": "You catch the cutpurse and recover a useful market rumor."
   },
   "woundOnLoss": {
-    "type": "gain_heat",
+    "type": "lose_salvage",
     "amount": 1
   },
   "enemyFamily": "human",
@@ -24,7 +24,6 @@
   "rarity": "common",
   "tempo": "neutral",
   "resourceTags": [
-    "heat",
     "salvage",
     "trophy"
   ],

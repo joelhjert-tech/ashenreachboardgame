@@ -30,7 +30,6 @@ export const LEGACY_HEAT_EFFECT_APPROVALS: readonly LegacyHeatEffectApproval[] =
   { id: "anomaly-cinder-mirage-lane", constructs: ["player-facing Heat text", "player-facing Risk resource text"] },
   { id: "artifact-cinder-suture-kit", constructs: ["player-facing Heat text"] },
   { id: "ashen-doppelganger", constructs: ["gain_heat"] },
-  { id: "crown-bell-baron", constructs: ["gain_heat"] },
   { id: "crownless-advocate", constructs: ["lose_heat"] },
   { id: "escalation-blackstar-hunger", constructs: ["gain_heat_all"] },
   { id: "escalation-choir-feedback", constructs: ["gain_heat_all"] },
@@ -41,12 +40,10 @@ export const LEGACY_HEAT_EFFECT_APPROVALS: readonly LegacyHeatEffectApproval[] =
   { id: "hymn-scarred-zealot", constructs: ["gain_heat"] },
   { id: "marrow-tax-auditors", constructs: ["gain_heat"] },
   { id: "memory-tax-gate", constructs: ["gain_heat"] },
-  { id: "pale-contract-collector", constructs: ["gain_heat"] },
   { id: "relay-husk", constructs: ["gain_heat"] },
   { id: "saltflat-bone-reader", constructs: ["lose_heat"] },
   { id: "signal-rotted-engineer", constructs: ["gain_heat"] },
-  { id: "siren-relay-echo", constructs: ["gain_heat", "lose_heat"] },
-  { id: "soot-stained-cutpurse", constructs: ["gain_heat"] }
+  { id: "siren-relay-echo", constructs: ["gain_heat", "lose_heat"] }
 ];
 
 // Compatibility IDs that remain tracked separately from effect/default
@@ -77,7 +74,7 @@ export const APPROVED_LEGACY_HEAT_CONTENT_IDS = new Set([
 ]);
 
 export const APPROVED_AUTOMATIC_SALVAGE_LOSS_IDS = new Set([
-  "escalation-crownfall-writ", "ash-rat-skitter", "bridge-toll-runt", "glass-tick-cloud", "gutter-bell-mite", "locked-vault", "pale-toll-enforcer", "rust-mote-drone", "toll-scrip-urchins"
+  "escalation-crownfall-writ", "ash-rat-skitter", "bridge-toll-runt", "crown-bell-baron", "glass-tick-cloud", "gutter-bell-mite", "locked-vault", "pale-contract-collector", "pale-toll-enforcer", "rust-mote-drone", "soot-stained-cutpurse", "toll-scrip-urchins"
 ]);
 
 const visibleTextKeys = new Set(["text", "activeText", "passiveText", "penalty", "trigger", "summary", "description"]);

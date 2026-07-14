@@ -1,6 +1,9 @@
 export const THREAT_REVISION_SALVAGE_LOSS_SOURCE_IDS = new Set([
+  "crown-bell-baron",
   "glass-tick-cloud",
-  "locked-vault"
+  "locked-vault",
+  "pale-contract-collector",
+  "soot-stained-cutpurse"
 ]);
 
 export interface SalvageLossResult {

@@ -37,7 +37,7 @@ These form five exact type/stat/difficulty/effect clusters. Preserve stable IDs 
 
 `ashen-doppelganger`, `choir-static-burst`, `cinder-gate-backlash`, `crown-bell-baron`, `false-route-procession`, `gateblind-pulse`, `hymn-scarred-zealot`, `lantern-moth-swarm`, `marrow-tax-auditors`, `memory-tax-gate`, `mirror-rot-interference`, `pale-contract-collector`, `relay-husk`, `signal-rotted-engineer`, `siren-relay-echo`, `soot-stained-cutpurse`, `webglass-snarefield`.
 
-Final triage approves eight IDs in three contained groups. H1 removal-only is implemented for `cinder-gate-backlash`, `mirror-rot-interference`, and `webglass-snarefield`. H2 normal Wound pressure is implemented for `choir-static-burst` and `lantern-moth-swarm`. H3 bounded Salvage pressure remains approved but unimplemented for `crown-bell-baron`, `pale-contract-collector`, and `soot-stained-cutpurse`. The other nine IDs remain blocked: `ashen-doppelganger`, `false-route-procession`, `gateblind-pulse`, `hymn-scarred-zealot`, `marrow-tax-auditors`, `memory-tax-gate`, `relay-husk`, `signal-rotted-engineer`, and `siren-relay-echo`.
+Final triage approves eight IDs in three contained groups, and all eight are implemented. H1 removal-only covers `cinder-gate-backlash`, `mirror-rot-interference`, and `webglass-snarefield`. H2 normal Wound pressure covers `choir-static-burst` and `lantern-moth-swarm`. H3 bounded floor-zero Salvage pressure covers `crown-bell-baron`, `pale-contract-collector`, and `soot-stained-cutpurse`. The other nine IDs remain blocked: `ashen-doppelganger`, `false-route-procession`, `gateblind-pulse`, `hymn-scarred-zealot`, `marrow-tax-auditors`, `memory-tax-gate`, `relay-husk`, `signal-rotted-engineer`, and `siren-relay-echo`.
 
 `glass-chime-swarm` and `spindle-static-squall` are already in the duplicate group. Both now implement their approved typed delayed modifiers and no longer carry player-facing legacy Heat failures.
 
@@ -94,7 +94,7 @@ The remaining Heat-retirement sequence is:
 
 1. H1: `cinder-gate-backlash`, `mirror-rot-interference`, `webglass-snarefield` — IMPLEMENTED removal of obsolete success branches without replacement.
 2. H2: `choir-static-burst`, `lantern-moth-swarm` — IMPLEMENTED through the existing normal preventable Wound pipeline.
-3. H3: `crown-bell-baron`, `pale-contract-collector`, `soot-stained-cutpurse` — NEXT APPROVED existing floor-zero Salvage loss; explicitly excludes Salvage Ledger and shop-transaction hooks.
+3. H3: `crown-bell-baron`, `pale-contract-collector`, `soot-stained-cutpurse` — IMPLEMENTED existing floor-zero Salvage loss; explicitly excludes Salvage Ledger and shop-transaction hooks.
 4. Keep `ashen-doppelganger`, `false-route-procession`, `gateblind-pulse`, `hymn-scarred-zealot`, `marrow-tax-auditors`, `memory-tax-gate`, `relay-husk`, `signal-rotted-engineer`, and `siren-relay-echo` blocked until their prerequisites in `reports/heat-retirement-implementation-plan.md` are approved.
 
 The +116-card expansion remains unapproved.

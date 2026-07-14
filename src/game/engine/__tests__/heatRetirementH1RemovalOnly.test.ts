@@ -58,17 +58,14 @@ const TARGETS = [
 
 const REMAINING_HEAT_THREAT_IDS = [
   "ashen-doppelganger",
-  "crown-bell-baron",
   "false-route-procession",
   "gateblind-pulse",
   "hymn-scarred-zealot",
   "marrow-tax-auditors",
   "memory-tax-gate",
-  "pale-contract-collector",
   "relay-husk",
   "signal-rotted-engineer",
-  "siren-relay-echo",
-  "soot-stained-cutpurse"
+  "siren-relay-echo"
 ] as const;
 
 const threats = loadThreatCards();
@@ -256,10 +253,10 @@ describe("Heat Retirement H1 removal-only Threats", () => {
     })).not.toMatch(/\bHeat\b|\bRisk\b/i);
   });
 
-  it("leaves the twelve post-H2 Heat-linked Threats and completed duplicate revisions unchanged", () => {
+  it("leaves the nine blocked Heat-linked Threats and completed duplicate revisions unchanged", () => {
     expect(collectHeatThreatIds()).toEqual([...REMAINING_HEAT_THREAT_IDS].sort());
-    expect(LEGACY_HEAT_EFFECT_APPROVALS).toHaveLength(20);
-    expect(APPROVED_LEGACY_HEAT_CONTENT_IDS.size).toBe(34);
+    expect(LEGACY_HEAT_EFFECT_APPROVALS).toHaveLength(17);
+    expect(APPROVED_LEGACY_HEAT_CONTENT_IDS.size).toBe(31);
     expect(requireTarget("glass-chime-swarm").failEffect).toEqual({
       type: "next_non_battle_test_modifier",
       amount: -1,

@@ -1,6 +1,6 @@
 # Remaining Heat-linked Threat implementation plan
 
-Status: H1 and H2 implemented. H3 remains approved but unimplemented; the nine blocked cards remain blocked.
+Status: H1, H2, and H3 implemented. All eight approved retirements are complete; the nine blocked cards remain blocked.
 
 ## Approved implementation groups
 
@@ -32,7 +32,7 @@ Implemented as `feat: remove obsolete heat threat effects`. No replacement effec
 
 Implemented as `feat: replace heat threats with wound pressure`. Both failures use the existing authoritative `take_wound 1` lifecycle; Choir's success remains scenario progress and Lantern's success has no additional effect.
 
-### Group H3 — bounded Yellow Salvage pressure (3)
+### Group H3 — bounded Yellow Salvage pressure (3) — IMPLEMENTED
 
 - Stable IDs: `crown-bell-baron`, `pale-contract-collector`, `soot-stained-cutpurse`.
 - Exact change: each enemy loss becomes `lose_salvage 1`, described as “lose up to 1 Salvage.”
@@ -43,6 +43,8 @@ Implemented as `feat: replace heat threats with wound pressure`. Both failures u
 - Focused tests: funded `1 -> 0`; zero remains zero and resolution continues; actual delta summary; wrong/stale/duplicate source rejection; no `encounter_payment`; no `shopTransaction`, Salvage Ledger, mission, or completed-contract event; rewards/trophies unchanged; exact one/two/two graph references.
 - Implementation risk: medium. The three losses are thematically direct and bounded, but the economy is tight; land only after H2’s checkpoint and review combined draw exposure.
 - Recommended commit subject: `feat: convert collector heat losses to salvage pressure`.
+
+Implemented as `feat: replace heat threats with salvage pressure`. All three losses reuse the existing authoritative floor-zero resolver, report requested/actual/resulting values, and remain isolated from payment, Salvage Ledger, shop, mission, Contract, and relic-trade lifecycles.
 
 ## Blocked prerequisite register
 
@@ -64,7 +66,7 @@ Blocked IDs are not assigned to implementation groups. A later approval should f
 
 1. **H1 — removal/clarity only — COMPLETE.** Implemented for `cinder-gate-backlash`, `mirror-rot-interference`, and `webglass-snarefield` without replacement.
 2. **H2 — existing Wound resolver — COMPLETE.** Implemented for `choir-static-burst` and `lantern-moth-swarm` through the normal preventable Wound lifecycle.
-3. **H3 — existing floor-zero Salvage resolver — NEXT APPROVED CANDIDATE.** Benefit: gives three Yellow enemies distinct economic identity. Risk: medium economy pressure. Prerequisites: H2 checkpoint and confirmation no cumulative economy regression. Coverage: floor zero, actual delta, reward preservation, mode ownership, and explicit exclusion of Salvage Ledger, shop-transaction, mission, Contract, and completed-contract hooks.
+3. **H3 — existing floor-zero Salvage resolver — COMPLETE.** Implemented for `crown-bell-baron`, `pale-contract-collector`, and `soot-stained-cutpurse`; floor zero, actual delta, reward preservation, mode ownership, and explicit exclusion of Salvage Ledger, shop-transaction, mission, Contract, and completed-contract hooks are covered.
 4. **Movement and shared-pressure design gates.** IDs: `false-route-procession`, `gateblind-pulse`. Benefit: preserves route/gate identity. Risk: medium-high. Prerequisites: destination and escalation threshold specifications.
 5. **Equipment and temporary-modifier design gates.** IDs: `relay-husk`, `signal-rotted-engineer`, `siren-relay-echo`. Benefit: Yellow/Signal variety. Risk: medium-high. Prerequisites: exact-instance disable and stat-specific modifier lifecycles.
 6. **Choice and economy-frequency gates.** IDs: `memory-tax-gate`, `marrow-tax-auditors`. Benefit: distinct Yellow tension. Risk: high if choice is dominant or economy starves. Prerequisites: choice contract and H3 playtest evidence.
