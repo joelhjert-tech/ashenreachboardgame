@@ -1,12 +1,12 @@
 # Remaining 17 Heat-linked Threat retirement triage
 
-Status: final triage approved at `d877574`; Groups H1, H2, and H3 are implemented. Phase H4A approves three additional IDs for later implementation; six IDs remain blocked.
+Status: final triage approved at `d877574`; Groups H1, H2, H3, H4B, and H4C are implemented. Six IDs remain blocked.
 
 ## Decision summary
 
-The two existing Heat audits and current canonical Threat content reconcile to exactly **17 unique stable IDs**. Eight IDs are **APPROVED AND IMPLEMENTED** in three completed implementation groups. Phase H4A gives three more IDs complete, bounded rules and marks them **APPROVED FOR LATER IMPLEMENTATION**. Six remain **BLOCKED** because a severity, target, ownership, persistence, or reset decision is unresolved.
+The two existing Heat audits and current canonical Threat content reconcile to exactly **17 unique stable IDs**. Eleven IDs are **APPROVED AND IMPLEMENTED** across H1 through H4C. Six remain **BLOCKED** because a severity, target, ownership, persistence, or reset decision is unresolved.
 
-- Approved: 11 (8 implemented, 3 awaiting implementation)
+- Approved: 11 (11 implemented)
 - Blocked: 6
 - Approved retirement models: remove without replacement (3), normal Wound pressure (2), floor-zero Salvage pressure (3), exact-instance Equipment suppression (2), stat-specific temporary modifier (1)
 - Player-facing Heat remains obsolete. Every still-active Heat branch below is parsed only for compatibility and resolves as a no-op with a “no additional status change” summary.
@@ -31,7 +31,7 @@ The two existing Heat audits and current canonical Threat content reconcile to e
 | `pale-contract-collector` | Pale Contract Collector | Yellow / enemy | N/A | Command 8 | Defeat | lose up to 1 Salvage on loss | 2 Trophies | `woundOnLoss` | implemented floor-zero automatic loss | `content/cards/threats/pale-contract-collector.json` | `crown-bell-baron`, `pale-toll-enforcer`, `ash-court-duelist` |
 | `relay-husk` | Relay Husk | Yellow / hazard | N/A | Guile 6 | gain Marshal Seal | suppress exact equipped normal Equipment through next owner Threat | none | `failEffect` | implemented typed H4B suppression | `content/cards/threats/relay-husk.json` | `wireghost-key`, `pale-cartel-shakedown`, `signal-rotted-engineer` |
 | `signal-rotted-engineer` | Signal-Rotted Engineer | Yellow / enemy | N/A | Forge 4 | Defeat | suppress exact equipped normal Equipment during next owner battle | tool-rig note | `woundOnLoss` | implemented typed H4B suppression; current combat still disables Weapon bonus | `content/cards/threats/signal-rotted-engineer.json` | `rust-mote-drone`, `wire-chewer-pack`, `relay-husk` |
-| `siren-relay-echo` | Siren Relay Echo | Yellow / hazard | N/A | Command 6 | `lose_heat 1` | `gain_heat 2` | none | `successEffect`, `failEffect` | two compatibility-only no-ops | `content/cards/threats/siren-relay-echo.json` | `false-route-procession`, `memory-tax-gate`, `relay-husk` |
+| `siren-relay-echo` | Siren Relay Echo | Yellow / hazard | N/A | Command 6 | next non-battle Command test `+1` | next non-battle Command test `-1` | none | `successEffect`, `failEffect` | implemented typed H4C replacement modifier | `content/cards/threats/siren-relay-echo.json` | `false-route-procession`, `memory-tax-gate`, `relay-husk` |
 | `soot-stained-cutpurse` | Soot-Stained Cutpurse | Yellow / enemy | N/A | Guile 3 | Defeat | lose up to 1 Salvage on loss | market-rumor note | `woundOnLoss` | implemented floor-zero automatic loss | `content/cards/threats/soot-stained-cutpurse.json` | `toll-scrip-urchins`, `scrap-toll-gangers`, `bridge-toll-runt` |
 | `webglass-snarefield` | Webglass Snarefield | Blue / hazard | N/A | Guile 9 | no additional effect | 1 Wound | none | retired H1 `successEffect` | implemented removal; failure remains active | `content/cards/threats/webglass-snarefield.json` | `mirror-rot-interference`, `bellwire-snare`, `starless-taxation` |
 
@@ -55,7 +55,7 @@ Canonical graph references, used only as a frequency warning, are respectively 3
 | `pale-contract-collector` | resource pressure through debt collection | lose up to 1 Salvage | implemented H3 | 2 | APPROVED — IMPLEMENTED H3 |
 | `relay-husk` | Equipment pressure from false instructions | suppress chosen exact equipped normal Equipment through next owner Threat | implemented typed H4B lifecycle | 2 | APPROVED — IMPLEMENTED H4B |
 | `signal-rotted-engineer` | Equipment interference | suppress chosen exact equipped normal Equipment during next owner battle | implemented typed H4B lifecycle | 2 | APPROVED — IMPLEMENTED H4B |
-| `siren-relay-echo` | paired temporary Command interference | next non-battle Command test gets `+1` on success or `-1` on failure | approved typed lifecycle; implementation pending | 2 | APPROVED — H4A |
+| `siren-relay-echo` | paired temporary Command interference | next non-battle Command test gets `+1` on success or `-1` on failure | implemented typed H4C lifecycle | 2 | APPROVED — IMPLEMENTED H4C |
 | `soot-stained-cutpurse` | minor resource theft | lose up to 1 Salvage | implemented H3 | 1 | APPROVED — IMPLEMENTED H3 |
 | `webglass-snarefield` | obsolete success-side recovery bookkeeping | remove success branch without replacement | implemented H1 | 1 | APPROVED — IMPLEMENTED H1 |
 
@@ -537,7 +537,7 @@ The screen deliberately rejects automatic Scar, Global Escalation, and generic o
 - Severity: 2.
 - Implementation complexity: medium.
 - Balance risk: medium-low; one pending paired modifier cannot queue, and the stat/context is narrow.
-- Approval status: APPROVED — H4A; implementation pending.
+- Approval status: APPROVED — IMPLEMENTED H4C.
 
 ### `soot-stained-cutpurse`
 
@@ -632,7 +632,7 @@ Counts below are unique cards, not individual branches. “Approved proposal” 
 | Salvage pressure | 0 | 3 | Baron, Collector, Cutpurse; all floor-zero owner losses |
 | Equipment effects | 3 | 3 | Existing Engineer battle Weapon suppression plus two implemented bounded exact-instance suppressions |
 | Movement effects | 0 | 0 | False-Route remains blocked |
-| Temporary modifiers | 0 | 1 | Siren paired next non-battle Command modifier approved; implementation pending |
+| Temporary modifiers | 0 | 1 | Siren paired next non-battle Command modifier implemented in H4C |
 | Persistent effects | 0 | 3 | two event-bounded suppressions and one until-consumed modifier; all owner-scoped with explicit cleanup |
 | Player-choice cards | 0 | 2 | Relay and Engineer exact-instance Equipment choices approved; Memory Tax remains blocked |
 | Multiplayer effects | 0 | 0 | no approved group-wide effect |
@@ -645,4 +645,4 @@ Lane impact remains conservative: Blue approves five of seven cards and blocks t
 
 ## Approval boundary
 
-This report records the three completed H1–H3 groups and the three additional H4A approvals defined in `reports/heat-retirement-h4a-equipment-modifier-approval.md`. H4A is approval-only and does not claim implementation. The six blocked cards must receive a later exact rule approval and may not be folded into a convenient implementation batch. The +116-card expansion remains unapproved, and no exact Relic-frequency parity is claimed.
+This report records the completed H1–H4C groups and the approvals defined in `reports/heat-retirement-h4a-equipment-modifier-approval.md`. The six blocked cards must receive later report-only exact-rule approvals grouped by unresolved lifecycle, not lane. The +116-card expansion remains unapproved, and no exact Relic-frequency parity is claimed.

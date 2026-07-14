@@ -81,8 +81,14 @@ import {
   clearAllNextNonBattleTestModifiers,
   clearNextNonBattleTestModifierForSeat,
   consumeNextNonBattleTestModifier,
+  consumeReservedSirenRelayEchoModifier,
   createOrReplaceNextNonBattleTestModifier,
-  getPendingNextNonBattleTestModifier
+  createOrReplaceSirenRelayEchoModifier,
+  getPendingNextNonBattleTestModifier,
+  getPendingSirenRelayEchoModifier,
+  reserveSirenRelayEchoModifier,
+  SIREN_RELAY_ECHO_ID,
+  SIREN_RELAY_ECHO_MODIFIER_LABEL
 } from "../rules/nextNonBattleTestModifier.js";
 import {
   SPINDLE_STATIC_SQUALL_ID,
@@ -363,7 +369,9 @@ function summarizeEffect(effect: EncounterEffect | null, success: boolean | null
         ? `${prefix} ${effect.threatId} remains on ${effect.sourceSectorId ?? "this space"}.`
         : `${prefix} the threat remains on this space.`;
     case "next_non_battle_test_modifier":
-      return `${prefix} the swarm breaks your concentration. Your next non-battle test is ${effect.amount}.`;
+      return effect.sourceCardId === SIREN_RELAY_ECHO_ID
+        ? `${prefix} your next non-battle Command test is ${effect.amount > 0 ? "+" : ""}${effect.amount}.`
+        : `${prefix} the swarm breaks your concentration. Your next non-battle test is ${effect.amount}.`;
     case "next_normal_movement_roll_modifier":
       return `${prefix} the squall corrupts your bearing. Your next normal movement roll is ${effect.amount}, minimum ${effect.minimumResult}.`;
     case "equipment_suppression":
@@ -805,6 +813,15 @@ function applyEffectToState(state: GameState, seatId: string, effect: EncounterE
   if (effect.type === "next_non_battle_test_modifier") {
     const sourceResolutionId = getThreatResolutionSourceId(state, seatId, effect.sourceCardId);
     const sourceEventId = `${sourceResolutionId}:next-non-battle-test`;
+    if (effect.sourceCardId === SIREN_RELAY_ECHO_ID) {
+      return createOrReplaceSirenRelayEchoModifier(
+        state,
+        seatId,
+        effect.amount,
+        sourceEventId,
+        state.pendingFailureReaction?.createdAt ?? sourceEventId
+      );
+    }
     return createOrReplaceNextNonBattleTestModifier(
       state,
       seatId,
@@ -1986,6 +2003,7 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
 
       {
         const pendingNextTestModifier = getPendingNextNonBattleTestModifier(state, action.seatId);
+        const pendingSirenModifier = getPendingSirenRelayEchoModifier(state, action.seatId);
         const authoritativeModifierSourceCount = action.modifierSources?.filter(
           (source) => source.label === GLASS_CHIME_SWARM_MODIFIER_LABEL && source.value === GLASS_CHIME_SWARM_MODIFIER_AMOUNT
         ).length ?? 0;
@@ -1994,6 +2012,16 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
         }
         if (!pendingNextTestModifier && authoritativeModifierSourceCount > 0) {
           return reject(state, action, "Glass-Chime Swarm modifier has no pending authoritative source");
+        }
+        const sirenSourceCount = action.modifierSources?.filter(
+          (source) => source.label === SIREN_RELAY_ECHO_MODIFIER_LABEL && source.value === pendingSirenModifier?.amount
+        ).length ?? 0;
+        const sirenEligible = Boolean(pendingSirenModifier && !pendingSirenModifier.boundTestResolutionId && action.stat === "command");
+        if (sirenEligible && sirenSourceCount !== 1) {
+          return reject(state, action, "Pending Siren Relay Echo modifier is missing from the Command check");
+        }
+        if (!sirenEligible && sirenSourceCount > 0) {
+          return reject(state, action, "Siren Relay Echo modifier has no eligible pending authoritative source");
         }
       }
 
@@ -2056,8 +2084,13 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
           : null,
         eventLog: [...state.eventLog, action]
         }, action.seatId);
+        const testResolutionId = createResolutionId(action.seatId, "threat", action.createdAt, action.cardId);
         const testEventId = `${state.activeResolution?.id ?? `${action.seatId}:${action.cardId}:${action.createdAt}`}:check`;
-        return succeed(consumeNextNonBattleTestModifier(resolvedCheckState, action.seatId, testEventId));
+        return succeed(reserveSirenRelayEchoModifier(
+          consumeNextNonBattleTestModifier(resolvedCheckState, action.seatId, testEventId),
+          action.seatId,
+          testResolutionId
+        ));
       }
     case "SOLO_REROLL_RESOLVED": {
       const rerollAction = action as SoloRerollResolvedAction;
@@ -2269,23 +2302,33 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
 
       const authoritativeSourceCardId = state.currentEncounter?.id ?? state.activeResolution?.card?.id ?? resolutionAction.sourceCardId ?? "unknown-encounter";
       if (state.pendingEffect.type === "next_non_battle_test_modifier") {
-        if (authoritativeSourceCardId !== GLASS_CHIME_SWARM_ID || resolutionAction.sourceCardId !== GLASS_CHIME_SWARM_ID) {
-          return reject(state, action, "Glass-Chime Swarm modifier requires its authoritative source");
+        const isSiren = state.pendingEffect.sourceCardId === SIREN_RELAY_ECHO_ID;
+        const expectedSourceId = isSiren ? SIREN_RELAY_ECHO_ID : GLASS_CHIME_SWARM_ID;
+        if (authoritativeSourceCardId !== expectedSourceId || resolutionAction.sourceCardId !== expectedSourceId) {
+          return reject(state, action, `${isSiren ? "Siren Relay Echo" : "Glass-Chime Swarm"} modifier requires its authoritative source`);
         }
         if (
           state.activeResolution?.playerId !== resolutionAction.seatId ||
           state.lastOutcomeSummary?.seatId !== resolutionAction.seatId
         ) {
-          return reject(state, action, "Glass-Chime Swarm modifier owner does not match the failed check");
+          return reject(state, action, `${isSiren ? "Siren Relay Echo" : "Glass-Chime Swarm"} modifier owner does not match the check`);
         }
-        if (resolutionAction.success !== false || state.lastOutcomeSummary?.success !== false) {
+        if (!isSiren && (resolutionAction.success !== false || state.lastOutcomeSummary?.success !== false)) {
           return reject(state, action, "Glass-Chime Swarm modifier requires a confirmed failed check");
         }
-        if (
+        if (isSiren && (resolutionAction.success !== state.lastOutcomeSummary?.success || state.pendingEffect.amount !== (resolutionAction.success ? 1 : -1))) {
+          return reject(state, action, "Siren Relay Echo modifier does not match its confirmed result");
+        }
+        if (!isSiren && (
           state.pendingEffect.amount !== GLASS_CHIME_SWARM_MODIFIER_AMOUNT ||
           state.pendingEffect.sourceCardId !== GLASS_CHIME_SWARM_ID
-        ) {
+        )) {
           return reject(state, action, "Glass-Chime Swarm modifier does not match its approved rule");
+        }
+        if (state.pendingEffect.sourceCardId === SIREN_RELAY_ECHO_ID && (
+          state.pendingEffect.stat !== "command" || state.pendingEffect.context !== "nonBattleTest"
+        )) {
+          return reject(state, action, "Siren Relay Echo modifier does not match its approved context");
         }
       }
       if (state.pendingEffect.type === "next_normal_movement_roll_modifier") {
@@ -5231,7 +5274,10 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
 
       const leavingResolution = state.phase === "resolution" && action.toPhase !== "resolution";
       const lifecycleCompletedState = leavingResolution
-        ? completeEquipmentSuppressionLifecycle(state, state.activeResolution?.id)
+        ? consumeReservedSirenRelayEchoModifier(
+            completeEquipmentSuppressionLifecycle(state, state.activeResolution?.id),
+            action.seatId
+          )
         : state;
 
       return succeed({

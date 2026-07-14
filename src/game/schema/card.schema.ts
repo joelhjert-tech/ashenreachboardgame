@@ -144,6 +144,12 @@ type NextNonBattleTestModifierEffect = {
   type: "next_non_battle_test_modifier";
   amount: -1;
   sourceCardId: "glass-chime-swarm";
+} | {
+  type: "next_non_battle_test_modifier";
+  amount: -1 | 1;
+  sourceCardId: "siren-relay-echo";
+  stat: "command";
+  context: "nonBattleTest";
 };
 
 type NextNormalMovementRollModifierEffect = {
@@ -263,6 +269,13 @@ const simpleEffectSchema: z.ZodType<SimpleEncounterEffect> = z.union([
     type: z.literal("next_non_battle_test_modifier"),
     amount: z.literal(-1),
     sourceCardId: z.literal("glass-chime-swarm")
+  }),
+  z.object({
+    type: z.literal("next_non_battle_test_modifier"),
+    amount: z.union([z.literal(-1), z.literal(1)]),
+    sourceCardId: z.literal("siren-relay-echo"),
+    stat: z.literal("command"),
+    context: z.literal("nonBattleTest")
   }),
   z.object({
     type: z.literal("next_normal_movement_roll_modifier"),

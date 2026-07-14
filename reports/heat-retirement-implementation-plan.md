@@ -1,6 +1,6 @@
 # Remaining Heat-linked Threat implementation plan
 
-Status: H1, H2, and H3 implemented. Phase H4A approves three additional retirements for later implementation; six cards remain blocked.
+Status: H1 through H4C implemented. Six cards remain blocked.
 
 ## Approved implementation groups
 
@@ -57,7 +57,7 @@ Implemented as `feat: replace heat threats with salvage pressure`. All three los
 - Implementation risk: medium-high. The rules are bounded, but exact instance identity must be fixed at the equipped-state boundary before suppression is wired.
 - Recommended commit subject: `feat: retire equipment pressure heat threats`.
 
-### Group H4A-2 — paired Command modifier (1) — APPROVED, NOT IMPLEMENTED
+### Group H4C — paired Command modifier (1) — IMPLEMENTED
 
 - Stable ID: `siren-relay-echo`.
 - Exact change: after final Siren success create `+1`, or after final failure create `-1`, for the owner's next authoritative rolled non-battle Command test.
@@ -87,7 +87,7 @@ The six blocked IDs are not assigned to implementation groups. A later approval 
 2. **H2 — existing Wound resolver — COMPLETE.** Implemented for `choir-static-burst` and `lantern-moth-swarm` through the normal preventable Wound lifecycle.
 3. **H3 — existing floor-zero Salvage resolver — COMPLETE.** Implemented for `crown-bell-baron`, `pale-contract-collector`, and `soot-stained-cutpurse`; floor zero, actual delta, reward preservation, mode ownership, and explicit exclusion of Salvage Ledger, shop-transaction, mission, Contract, and completed-contract hooks are covered.
 4. **H4B — exact-instance Equipment pressure — COMPLETE.** IDs: `relay-husk`, `signal-rotted-engineer`. Shared equipped-instance identity, private choice, suppression gates, reconnect persistence, and full cleanup are implemented.
-5. **H4 modifier group — paired Command modifier — APPROVED NEXT.** ID: `siren-relay-echo`. Keep separate from Equipment state and preserve Glass-Chime behavior.
+5. **H4C — paired Command modifier — COMPLETE.** ID: `siren-relay-echo`. Typed Command-only eligibility, signed replacement, authoritative resolution reservation, Glass-Chime composition, reconnect, privacy, and cleanup are implemented separately from Equipment state.
 6. **Movement and shared-pressure design gates.** IDs: `false-route-procession`, `gateblind-pulse`. Benefit: preserves route/gate identity. Risk: medium-high. Prerequisites: destination and escalation threshold specifications.
 7. **Choice and economy-frequency gates.** IDs: `memory-tax-gate`, `marrow-tax-auditors`. Benefit: distinct Yellow tension. Risk: high if choice is dominant or economy starves. Prerequisites: choice contract and H3 playtest evidence.
 8. **Scar/high-severity gates last.** IDs: `hymn-scarred-zealot`, `ashen-doppelganger`. Benefit: preserves lasting-injury fiction. Risk: high. Prerequisites: exact Scar trigger and explicit 2-Wound recall-rate approval.
@@ -112,9 +112,9 @@ Before each commit, inspect the complete staged diff and confirm stable IDs, tot
 - Added normal Wound consequences: 2 cards.
 - Added floor-zero Salvage losses: 3 cards.
 - Implemented H1–H3 adds no Scar, Global Escalation, movement, Equipment disable, persistent, choice, temporary modifier, or multiplayer effect.
-- H4A approves, but does not yet implement, two exact-instance Equipment suppressions, two private target choices, and one paired Command modifier.
-- Approved severity: four at 1, seven at 2, none at 3–5. Implemented severity remains four at 1 and four at 2.
-- Lane implementation impact remains Blue 5, Yellow 3, Red 0; approved pending H4A adds three Yellow IDs.
+- H4B and H4C implement two exact-instance Equipment suppressions, two private target choices, and one paired Command modifier.
+- Approved and implemented severity: four at 1, seven at 2, none at 3–5.
+- Lane implementation impact is Blue 5, Yellow 6, Red 0.
 - Card totals: unchanged at 26 / 35 / 48 / 109.
 
 No exact Relic-frequency parity is asserted. No expansion work is authorized.

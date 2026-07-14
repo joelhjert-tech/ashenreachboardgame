@@ -221,6 +221,7 @@ for (const card of threats.values()) {
   validateThreatMetadata(card);
   validateThreatEffectKeys(card);
   validateGlassChimeSwarmRetirement(card);
+  validateSirenRelayEchoRetirement(card);
   validateSpindleStaticSquallRetirement(card);
 }
 
@@ -607,6 +608,23 @@ function validateGlassChimeSwarmRetirement(card: ThreatCard): void {
   }
   if (card.text !== "The swarm breaks your concentration. On failure, subtract 1 from your next test. This penalty does not affect battles.") {
     errors.push("glass-chime-swarm must use the approved final player-facing wording");
+  }
+}
+
+function validateSirenRelayEchoRetirement(card: ThreatCard): void {
+  if (card.id !== "siren-relay-echo") return;
+  const expectedText = "If you succeed, gain +1 on your next non-battle Command test. If you fail, suffer -1 on your next non-battle Command test.";
+  const validEffect = (effect: unknown, amount: -1 | 1) => {
+    const candidate = effect as Record<string, unknown>;
+    return candidate.type === "next_non_battle_test_modifier" && candidate.amount === amount &&
+      candidate.sourceCardId === "siren-relay-echo" && candidate.stat === "command" && candidate.context === "nonBattleTest";
+  };
+  if (card.cardType !== "hazard" || card.stat !== "command" || !validEffect(card.successEffect, 1) || !validEffect(card.failEffect, -1)) {
+    errors.push("siren-relay-echo must use the approved signed owner-only non-battle Command modifier");
+  }
+  if (card.text !== expectedText) errors.push("siren-relay-echo must use the approved final player-facing wording");
+  if (JSON.stringify(card).match(/gain_heat|lose_heat|\bHeat\b/)) {
+    errors.push("siren-relay-echo must not expose a legacy Heat effect or player-facing Heat text");
   }
 }
 

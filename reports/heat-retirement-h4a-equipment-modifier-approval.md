@@ -10,7 +10,7 @@ Phase H4A resolves the three temporary owner-pressure design gates without trans
 |---|---|---|---:|---|
 | `relay-husk` | APPROVED — IMPLEMENTED H4B | owner chooses one exact equipped normal Equipment instance; suppress it through the owner's next Threat resolution | 2 | shared Equipment suppression |
 | `signal-rotted-engineer` | APPROVED — IMPLEMENTED H4B | after a combat loss, owner chooses one exact equipped normal Equipment instance; suppress it during the owner's next battle | 2 | shared Equipment suppression |
-| `siren-relay-echo` | APPROVED | next eligible non-battle Command test gets `+1` after success or `-1` after failure | 2 | separate Command modifier |
+| `siren-relay-echo` | APPROVED — IMPLEMENTED H4C | next eligible non-battle Command test gets `+1` after success or `-1` after failure | 2 | separate Command modifier |
 
 The remaining six IDs stay BLOCKED and unchanged: `ashen-doppelganger`, `false-route-procession`, `gateblind-pulse`, `hymn-scarred-zealot`, `marrow-tax-auditors`, and `memory-tax-gate`.
 
@@ -174,7 +174,7 @@ The modifier is attached to one test-resolution ID. It is shown on every authori
 - Severity: 2/5. Frequency: three graph references. Avoidability: pass Command 6 for a benefit. Recovery cost: one bounded test. Persistence: until consumed/cleanup. Item dependency: none. Multiplayer impact: owner-only. Bookkeeping: low once projected.
 - Complexity: medium.
 - Balance risk: medium-low; paired outcome is legible, the bonus cannot queue, and the narrow Command scope prevents generic bonus farming.
-- Approval status: APPROVED.
+- Approval status: APPROVED — IMPLEMENTED H4C.
 
 ## Cleanup matrix
 

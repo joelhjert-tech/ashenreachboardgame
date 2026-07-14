@@ -273,9 +273,9 @@ describe("Glass-Chime Swarm Heat retirement", () => {
     expect(sessionSnapshotSchema.safeParse({
       saveVersion: 2, sessionId: restored.sessionId, sequence: restored.sequence, state: restored
     }).success).toBe(true);
-    expect(getNextNonBattleTestModifierSource(restored, "seat-1")).toEqual({
+    expect(getNextNonBattleTestModifierSource(restored, "seat-1", "signal")).toEqual([{
       label: GLASS_CHIME_SWARM_MODIFIER_LABEL, value: -1
-    });
+    }]);
     const restoredDuringCheck = prepareHazardCheck(restored);
     expect(sessionSnapshotSchema.safeParse({
       saveVersion: 2,

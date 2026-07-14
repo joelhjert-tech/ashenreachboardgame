@@ -3,25 +3,31 @@
   "type": "threat",
   "cardType": "hazard",
   "title": "Siren Relay Echo",
-  "text": "A dead command channel issues perfect orders in a voice your crew almost trusts.",
+  "text": "If you succeed, gain +1 on your next non-battle Command test. If you fail, suffer -1 on your next non-battle Command test.",
   "flavor": "The route lies most beautifully when it uses your own call signs.",
   "severity": 2,
   "region": "outer",
   "stat": "command",
   "difficulty": 6,
   "successEffect": {
-    "type": "lose_heat",
-    "amount": 1
+    "type": "next_non_battle_test_modifier",
+    "amount": 1,
+    "sourceCardId": "siren-relay-echo",
+    "stat": "command",
+    "context": "nonBattleTest"
   },
   "failEffect": {
-    "type": "gain_heat",
-    "amount": 2
+    "type": "next_non_battle_test_modifier",
+    "amount": -1,
+    "sourceCardId": "siren-relay-echo",
+    "stat": "command",
+    "context": "nonBattleTest"
   },
   "enemyFamily": "machine",
   "threatLane": "yellow",
   "rarity": "common",
   "tempo": "stall",
   "resourceTags": [
-    "heat"
+    "boon"
   ]
 }

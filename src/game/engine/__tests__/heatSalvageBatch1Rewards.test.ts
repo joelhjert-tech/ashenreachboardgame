@@ -124,12 +124,12 @@ describe("Heat-to-Salvage reward batch 1", () => {
     const gainHeatAll = collectEffects("gain_heat_all");
     const loseHeat = collectEffects("lose_heat");
     const heatIds = new Set([...gainHeat, ...gainHeatAll, ...loseHeat]);
-    expect(heatIds.size).toBe(13);
-    expect(gainHeat).toHaveLength(8);
+    expect(heatIds.size).toBe(12);
+    expect(gainHeat).toHaveLength(7);
     expect(gainHeatAll).toHaveLength(3);
-    expect(loseHeat).toHaveLength(3);
-    expect(LEGACY_HEAT_EFFECT_APPROVALS).toHaveLength(15);
-    expect(APPROVED_LEGACY_HEAT_CONTENT_IDS.size).toBe(29);
+    expect(loseHeat).toHaveLength(2);
+    expect(LEGACY_HEAT_EFFECT_APPROVALS).toHaveLength(14);
+    expect(APPROVED_LEGACY_HEAT_CONTENT_IDS.size).toBe(28);
     expect(collectEffects("gain_salvage")).toHaveLength(10);
     expect(TARGET_IDS.every((id) => !heatIds.has(id))).toBe(true);
   });

@@ -40,8 +40,7 @@ export const LEGACY_HEAT_EFFECT_APPROVALS: readonly LegacyHeatEffectApproval[] =
   { id: "hymn-scarred-zealot", constructs: ["gain_heat"] },
   { id: "marrow-tax-auditors", constructs: ["gain_heat"] },
   { id: "memory-tax-gate", constructs: ["gain_heat"] },
-  { id: "saltflat-bone-reader", constructs: ["lose_heat"] },
-  { id: "siren-relay-echo", constructs: ["gain_heat", "lose_heat"] }
+  { id: "saltflat-bone-reader", constructs: ["lose_heat"] }
 ];
 
 // Compatibility IDs that remain tracked separately from effect/default

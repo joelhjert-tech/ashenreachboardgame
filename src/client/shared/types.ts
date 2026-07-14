@@ -979,11 +979,11 @@ export interface PhonePatchPayload extends PublicPatchPayload {
   pendingTileChallengePrivate?: (PublicPendingTileChallenge & { id: string; staticIntercessionReactionId?: string; pendingFailureEffects?: Array<{ effectId: string; summary: string }> }) | null;
   pendingTestModifiers?: Array<{
     type: "nextNonBattleTest" | "nextNormalMovementRoll";
-    sourceCardId: "glass-chime-swarm" | "spindle-static-squall";
+    sourceCardId: "glass-chime-swarm" | "siren-relay-echo" | "spindle-static-squall";
     label: string;
     summary: string;
     detail?: string;
-    amount: -1;
+    amount: -1 | 1;
   }>;
   pendingScarConsequence?: {
     reactionId: string;

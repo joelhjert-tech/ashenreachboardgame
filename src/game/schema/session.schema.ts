@@ -23,14 +23,27 @@ export const sessionModeSchema = z.enum(["multiplayer", "single-player"]);
 export const gameModeSchema = z.enum(["standard", "nemesis_relay"]);
 export const interactionModeSchema = z.enum(["co-op", "rivalry", "ruthless"]);
 
-export const pendingNextNonBattleTestModifierSchema = z.object({
-  type: z.literal("nextNonBattleTest"),
-  ownerSeatId: z.string().min(1),
-  amount: z.literal(-1),
-  sourceCardId: z.literal("glass-chime-swarm"),
-  sourceEventId: z.string().min(1),
-  createdAt: z.string().min(1)
-});
+export const pendingNextNonBattleTestModifierSchema = z.discriminatedUnion("sourceCardId", [
+  z.object({
+    type: z.literal("nextNonBattleTest"),
+    ownerSeatId: z.string().min(1),
+    amount: z.literal(-1),
+    sourceCardId: z.literal("glass-chime-swarm"),
+    sourceEventId: z.string().min(1),
+    createdAt: z.string().min(1)
+  }),
+  z.object({
+    type: z.literal("nextNonBattleTest"),
+    ownerSeatId: z.string().min(1),
+    amount: z.union([z.literal(-1), z.literal(1)]),
+    sourceCardId: z.literal("siren-relay-echo"),
+    stat: z.literal("command"),
+    context: z.literal("nonBattleTest"),
+    sourceEventId: z.string().min(1),
+    boundTestResolutionId: z.string().min(1).nullable(),
+    createdAt: z.string().min(1)
+  })
+]);
 
 export const pendingNextNormalMovementRollModifierSchema = z.object({
   type: z.literal("nextNormalMovementRoll"),

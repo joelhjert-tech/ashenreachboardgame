@@ -37,8 +37,7 @@ const untouchedHeatLinkedHashes = new Map([
   ["gateblind-pulse", "d495be86b7b4a37acffa451fde6121293673a83a84f9aba8471336e314662618"],
   ["hymn-scarred-zealot", "a3664813d86849b47a1fbe2fdd8b2b831f91b9f93fe334ce36c21aca58df4256"],
   ["marrow-tax-auditors", "bdf79951c64c0ea1e8322d8ba812db714fcc19cbae7d4dc6e4fca145fbfeeb9b"],
-  ["memory-tax-gate", "dbeabc6a8d5b1654fd1f5a3c04ad8100fee6e47763bee51112a2d05ed407783e"],
-  ["siren-relay-echo", "c206dbd889f7aafaa69d50196f9c76076fafd40dd71015e7f0bcd05c7ef8de3b"]
+  ["memory-tax-gate", "dbeabc6a8d5b1654fd1f5a3c04ad8100fee6e47763bee51112a2d05ed407783e"]
 ]);
 
 function requireHazard(id: string) {

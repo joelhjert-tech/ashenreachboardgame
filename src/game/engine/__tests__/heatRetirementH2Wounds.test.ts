@@ -53,8 +53,7 @@ const REMAINING_HEAT_THREAT_IDS = [
   "gateblind-pulse",
   "hymn-scarred-zealot",
   "marrow-tax-auditors",
-  "memory-tax-gate",
-  "siren-relay-echo"
+  "memory-tax-gate"
 ] as const;
 
 const threats = loadThreatCards();
@@ -324,8 +323,8 @@ describe("Heat Retirement H2 normal Wound Threats", () => {
 
   it("removes exactly the H2 Heat approvals and leaves every out-of-scope Threat pinned", () => {
     expect(collectHeatThreatIds()).toEqual([...REMAINING_HEAT_THREAT_IDS].sort());
-    expect(LEGACY_HEAT_EFFECT_APPROVALS).toHaveLength(15);
-    expect(APPROVED_LEGACY_HEAT_CONTENT_IDS.size).toBe(29);
+    expect(LEGACY_HEAT_EFFECT_APPROVALS).toHaveLength(14);
+    expect(APPROVED_LEGACY_HEAT_CONTENT_IDS.size).toBe(28);
     for (const id of ["cinder-gate-backlash", "mirror-rot-interference", "webglass-snarefield"]) {
       expect(requireTarget(id).successEffect).toBeUndefined();
     }

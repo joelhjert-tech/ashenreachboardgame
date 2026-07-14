@@ -5792,14 +5792,14 @@ export class GameRoomServer {
 
     const escalationModifier = getEscalationModifier(this.state.escalationLevel);
     const keyedModifiers = this.resolveThreatEffectKeys(intent.seatId, encounter, encounter.combatEffectKeys, "beforeCombat");
-    const nextNonBattleTestModifier = getNextNonBattleTestModifierSource(this.state, intent.seatId);
+    const nextNonBattleTestModifiers = getNextNonBattleTestModifierSource(this.state, intent.seatId, intent.stat);
     const modifierSources = [
       ...this.buildStatModifierSources(player, intent.stat, "check", {
       scenarioModifier: this.getScenarioSkillModifier(intent.seatId),
       keyedPlayerModifier: keyedModifiers.playerBonusModifier ?? 0
       }),
       ...(this.state.pendingTileChallenge?.modifierSources ?? []).map(({ label, value }) => ({ label, value })),
-      ...(nextNonBattleTestModifier ? [nextNonBattleTestModifier] : [])
+      ...nextNonBattleTestModifiers
     ];
     const roll = rollDice(2, 6, this.randomSource);
     const statBonus = this.sumModifierSources(modifierSources);
@@ -9838,8 +9838,11 @@ export function createPhoneProjection(state: GameState, seatId: string, forcePri
         .map((entry) => ({
         type: entry.type,
         sourceCardId: entry.sourceCardId,
-        label: "Glass-Chime Swarm",
-        summary: "Next non-battle test: -1",
+        label: entry.sourceCardId === "glass-chime-swarm" ? "Glass-Chime Swarm" : "Siren Relay Echo",
+        summary: entry.sourceCardId === "glass-chime-swarm"
+          ? "Next non-battle test: -1"
+          : `Next non-battle Command test: ${entry.amount > 0 ? "+" : ""}${entry.amount}`,
+        detail: entry.sourceCardId === "siren-relay-echo" && entry.boundTestResolutionId ? "In resolution" : undefined,
         amount: entry.amount
         })),
       ...(state.pendingNextNormalMovementRollModifiers ?? [])

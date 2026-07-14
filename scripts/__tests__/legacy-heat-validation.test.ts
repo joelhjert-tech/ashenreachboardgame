@@ -13,10 +13,10 @@ function readJson(file: string): unknown {
 }
 
 describe("legacy Heat authoring guard", () => {
-  it("retains only the 31 effect and other compatibility approval IDs", () => {
-    expect(LEGACY_HEAT_EFFECT_APPROVALS).toHaveLength(17);
+  it("retains only the 28 effect and other compatibility approval IDs", () => {
+    expect(LEGACY_HEAT_EFFECT_APPROVALS).toHaveLength(14);
     expect(OTHER_LEGACY_HEAT_COMPATIBILITY_APPROVALS).toHaveLength(14);
-    expect(APPROVED_LEGACY_HEAT_CONTENT_IDS.size).toBe(31);
+    expect(APPROVED_LEGACY_HEAT_CONTENT_IDS.size).toBe(28);
     expect(APPROVED_LEGACY_HEAT_CONTENT_IDS.has("black-route-fuse")).toBe(false);
 
     const allIds = [
