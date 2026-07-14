@@ -34,7 +34,7 @@ const TARGETS: Entry[] = [
   { id: "iron-synod-chirurgeon", file: "cards/threats/iron-synod-chirurgeon.json", branch: "woundOnLoss.effects", survivingEffects: [{ type: "take_wound", amount: 2 }] },
   { id: "lalla-bubu-crownling", file: "cards/threats/lalla-bubu-crownling.json", branch: "woundOnLoss.effects", survivingEffects: [{ type: "take_wound", amount: 1 }] },
   { id: "mirror-lord-envoy", file: "cards/threats/mirror-lord-envoy.json", branch: "woundOnLoss.effects", survivingEffects: [{ type: "take_wound", amount: 1 }], retainedCompatibility: "stable Heat-shaped combat effect key" },
-  { id: "mirror-rot-interference", file: "cards/threats/mirror-rot-interference.json", branch: "failEffect.effects", survivingEffects: [{ type: "take_wound", amount: 1 }], retainedCompatibility: "separate Heat-only success branch" },
+  { id: "mirror-rot-interference", file: "cards/threats/mirror-rot-interference.json", branch: "failEffect.effects", survivingEffects: [{ type: "take_wound", amount: 1 }] },
   { id: "pale-cartel-shakedown", file: "cards/threats/pale-cartel-shakedown.json", branch: "woundOnLoss.effects", survivingEffects: [{ type: "take_wound", amount: 1 }] },
   { id: "reliquary-judge", file: "cards/threats/reliquary-judge.json", branch: "woundOnLoss.effects", survivingEffects: [{ type: "take_wound", amount: 1 }], retainedCompatibility: "stable Heat-shaped reveal effect key" },
   { id: "saint-of-ashes-echo", file: "cards/threats/saint-of-ashes-echo.json", branch: "failEffect.effects", survivingEffects: [{ type: "gain_scar", scarId: "scar-wound-1" }] },
@@ -44,7 +44,7 @@ const TARGETS: Entry[] = [
   { id: "static-censer-acolyte", file: "cards/threats/static-censer-acolyte.json", branch: "woundOnLoss.effects", survivingEffects: [{ type: "take_wound", amount: 1 }] },
   { id: "suture-storm", file: "cards/threats/suture-storm.json", branch: "failEffect.effects", survivingEffects: [{ type: "take_wound", amount: 1 }, { type: "forcedDisplacement", direction: "counterclockwise", distance: 1, sameRing: true, fallbackEffect: { type: "take_wound", amount: 1 }, failureStillCounts: true }] },
   { id: "webglass-echo-trap", file: "cards/threats/webglass-echo-trap.json", branch: "failEffect.effects", survivingEffects: [{ type: "take_wound", amount: 1 }] },
-  { id: "webglass-snarefield", file: "cards/threats/webglass-snarefield.json", branch: "failEffect.effects", survivingEffects: [{ type: "take_wound", amount: 1 }], retainedCompatibility: "separate Heat-only success branch" },
+  { id: "webglass-snarefield", file: "cards/threats/webglass-snarefield.json", branch: "failEffect.effects", survivingEffects: [{ type: "take_wound", amount: 1 }] },
   { id: "cinder-surgeon", file: "followers/cinder-surgeon.json", branch: "activeEffect.effects", survivingEffects: [{ type: "heal_wound", amount: 1 }] }
 ];
 
@@ -71,7 +71,7 @@ describe("Phase 1J mixed Heat clause cleanup", () => {
   });
 
   it("removes only IDs with no remaining Heat construct from the allowlist", () => {
-    expect(APPROVED_LEGACY_HEAT_CONTENT_IDS.size).toBe(39);
+    expect(APPROVED_LEGACY_HEAT_CONTENT_IDS.size).toBe(36);
     for (const entry of TARGETS) {
       expect(APPROVED_LEGACY_HEAT_CONTENT_IDS.has(entry.id)).toBe(Boolean(entry.retainedCompatibility));
       expect(validateLegacyHeatContentRecord(entry.file, read(entry))).toEqual([]);

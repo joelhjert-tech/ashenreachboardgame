@@ -90,10 +90,10 @@ describe("Phase B2C Suture Storm", () => {
 
   it("resolves the approved success note without a Wound or displacement", () => {
     const state = setup();
-    state.pendingEffect = card.successEffect;
+    state.pendingEffect = card.successEffect!;
     state.lastOutcomeSummary = { ...state.lastOutcomeSummary!, success: true };
     const success = reduceGameState(state, {
-      type: "RESOLUTION_APPLIED", seatId: "seat-1", effect: card.successEffect,
+      type: "RESOLUTION_APPLIED", seatId: "seat-1", effect: card.successEffect!,
       sourceCardId: card.id, success: true, createdAt: "success"
     });
     expect(success.ok).toBe(true);

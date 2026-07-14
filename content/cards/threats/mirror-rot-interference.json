@@ -9,10 +9,6 @@
   "region": "middle",
   "stat": "guile",
   "difficulty": 11,
-  "successEffect": {
-    "type": "lose_heat",
-    "amount": 1
-  },
   "failEffect": {
     "type": "sequence",
     "effects": [
@@ -27,7 +23,6 @@
   "rarity": "uncommon",
   "tempo": "stall",
   "resourceTags": [
-    "heat",
     "wound"
   ]
 }

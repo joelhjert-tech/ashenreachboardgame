@@ -213,7 +213,8 @@ for (const character of characters.values()) {
 }
 
 for (const card of threats.values()) {
-  validateEffect(card.cardType === "enemy" ? card.defeatReward : card.successEffect, `${card.id} reward`);
+  const rewardEffect = card.cardType === "enemy" ? card.defeatReward : card.successEffect;
+  if (rewardEffect) validateEffect(rewardEffect, `${card.id} reward`);
   const failureEffect = card.cardType === "enemy" ? card.woundOnLoss : card.failEffect;
   if (failureEffect) validateEffect(failureEffect, `${card.id} failure`);
   validateThreatFamily(card);

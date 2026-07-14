@@ -1,6 +1,6 @@
 # Remaining 17 Heat-linked Threat retirement triage
 
-Status: report-only approval gate at `2946c96` (`feat: retire spindle static squall heat effect`). No gameplay, content, schema, validation, engine, UI, asset, economy, scenario, mission, or expansion change is included.
+Status: final triage approved at `d877574`; Group H1 removal-only is now implemented. The other five approved IDs remain unimplemented and all nine blocked IDs remain blocked.
 
 ## Decision summary
 
@@ -19,7 +19,7 @@ The two existing Heat audits and current canonical Threat content reconcile to e
 |---|---|---|---|---|---|---|---|---|---|---|---|
 | `ashen-doppelganger` | Ashen Doppelganger | Blue / enemy | N/A | Guile 11 | Defeat | `gain_heat 2` on loss | 3 Trophies | `woundOnLoss` | compatibility-only no-op | `content/cards/threats/ashen-doppelganger.json` | `mirror-lord-envoy`, `glass-mire-stalker`, `mirror-rot-interference` |
 | `choir-static-burst` | Choir-Static Burst | Blue / hazard | N/A | Signal 9 | scenario progress `choirStaticContained +1` | `gain_heat 2` | none | `failEffect` | compatibility-only no-op | `content/cards/threats/choir-static-burst.json` | `gateblind-pulse`, `rift-whispers`, `webglass-echo-trap` |
-| `cinder-gate-backlash` | Cinder Gate Backlash | Blue / hazard | N/A | Signal 12 | `lose_heat 2` | 2 Wounds | none | `successEffect` | compatibility-only no-op; failure is active | `content/cards/threats/cinder-gate-backlash.json` | `gateblind-pulse`, `emberwatch-sparkfall`, `spindle-static-squall` |
+| `cinder-gate-backlash` | Cinder Gate Backlash | Blue / hazard | N/A | Signal 12 | no additional effect | 2 Wounds | none | retired H1 `successEffect` | implemented removal; failure remains active | `content/cards/threats/cinder-gate-backlash.json` | `gateblind-pulse`, `emberwatch-sparkfall`, `spindle-static-squall` |
 | `crown-bell-baron` | Crown-Bell Baron | Yellow / enemy | N/A | Command 7 | Defeat | `gain_heat 2` on loss | route-fee fraud note | `woundOnLoss` | compatibility-only no-op | `content/cards/threats/crown-bell-baron.json` | `pale-toll-enforcer`, `bridge-toll-runt`, `pale-contract-collector` |
 | `false-route-procession` | False-Route Procession | Yellow / hazard | N/A | Command 7 | false-road note | `gain_heat 2` | none | `failEffect` | compatibility-only no-op | `content/cards/threats/false-route-procession.json` | `memory-tax-gate`, `route-splice`, `siren-relay-echo` |
 | `gateblind-pulse` | Gateblind Pulse | Blue / hazard | N/A | Signal 10 | scenario progress `gateblindPulsesRead +1` | `gain_heat 2` | none | `failEffect` | compatibility-only no-op | `content/cards/threats/gateblind-pulse.json` | `choir-static-burst`, `cinder-gate-backlash`, `saint-of-ashes-echo` |
@@ -27,13 +27,13 @@ The two existing Heat audits and current canonical Threat content reconcile to e
 | `lantern-moth-swarm` | Lantern-Moth Swarm | Blue / hazard | N/A | Signal 5 | `lose_heat 1` | `gain_heat 1` | none | `successEffect`, `failEffect` | two compatibility-only no-ops | `content/cards/threats/lantern-moth-swarm.json` | `glass-chime-swarm`, `spindle-static-squall`, `roadside-bone-oracle` |
 | `marrow-tax-auditors` | Marrow-Tax Auditors | Yellow / hazard | N/A | Guile 7 | tariff-loophole note | `gain_heat 2` | none | `failEffect` | compatibility-only no-op | `content/cards/threats/marrow-tax-auditors.json` | `locked-vault`, `false-route-procession`, `wireghost-key` |
 | `memory-tax-gate` | Memory Tax Gate | Yellow / hazard | N/A | Command 8 | harmless-memory note | `gain_heat 2` | none | `failEffect` | compatibility-only no-op | `content/cards/threats/memory-tax-gate.json` | `false-route-procession`, `route-splice`, `crown-bell-baron` |
-| `mirror-rot-interference` | Mirror-Rot Interference | Blue / hazard | N/A | Guile 11 | `lose_heat 1` | 1 Wound | none | `successEffect` | compatibility-only success; failure is active | `content/cards/threats/mirror-rot-interference.json` | `webglass-snarefield`, `bellwire-snare`, `webglass-echo-trap` |
+| `mirror-rot-interference` | Mirror-Rot Interference | Blue / hazard | N/A | Guile 11 | no additional effect | 1 Wound | none | retired H1 `successEffect` | implemented removal; failure remains active | `content/cards/threats/mirror-rot-interference.json` | `webglass-snarefield`, `bellwire-snare`, `webglass-echo-trap` |
 | `pale-contract-collector` | Pale Contract Collector | Yellow / enemy | N/A | Command 8 | Defeat | `gain_heat 2` on loss | 2 Trophies | `woundOnLoss` | compatibility-only no-op | `content/cards/threats/pale-contract-collector.json` | `crown-bell-baron`, `pale-toll-enforcer`, `ash-court-duelist` |
 | `relay-husk` | Relay Husk | Yellow / hazard | N/A | Guile 6 | gain Marshal Seal | `gain_heat 1` | none | `failEffect` | compatibility-only no-op | `content/cards/threats/relay-husk.json` | `wireghost-key`, `pale-cartel-shakedown`, `signal-rotted-engineer` |
 | `signal-rotted-engineer` | Signal-Rotted Engineer | Yellow / enemy | N/A | Forge 4 | Defeat | `gain_heat 1` on loss | tool-rig note | `woundOnLoss` | compatibility-only no-op; current combat already disables Weapon bonus | `content/cards/threats/signal-rotted-engineer.json` | `rust-mote-drone`, `wire-chewer-pack`, `relay-husk` |
 | `siren-relay-echo` | Siren Relay Echo | Yellow / hazard | N/A | Command 6 | `lose_heat 1` | `gain_heat 2` | none | `successEffect`, `failEffect` | two compatibility-only no-ops | `content/cards/threats/siren-relay-echo.json` | `false-route-procession`, `memory-tax-gate`, `relay-husk` |
 | `soot-stained-cutpurse` | Soot-Stained Cutpurse | Yellow / enemy | N/A | Guile 3 | Defeat | `gain_heat 1` on loss | market-rumor note | `woundOnLoss` | compatibility-only no-op | `content/cards/threats/soot-stained-cutpurse.json` | `toll-scrip-urchins`, `scrap-toll-gangers`, `bridge-toll-runt` |
-| `webglass-snarefield` | Webglass Snarefield | Blue / hazard | N/A | Guile 9 | `lose_heat 1` | 1 Wound | none | `successEffect` | compatibility-only success; failure is active | `content/cards/threats/webglass-snarefield.json` | `mirror-rot-interference`, `bellwire-snare`, `starless-taxation` |
+| `webglass-snarefield` | Webglass Snarefield | Blue / hazard | N/A | Guile 9 | no additional effect | 1 Wound | none | retired H1 `successEffect` | implemented removal; failure remains active | `content/cards/threats/webglass-snarefield.json` | `mirror-rot-interference`, `bellwire-snare`, `starless-taxation` |
 
 Canonical graph references, used only as a frequency warning, are respectively 3, 4, 3, 1, 5, 3, 1, 2, 4, 3, 2, 2, 1, 2, 3, 2, and 3. These counts are not activation numbers or draw probabilities.
 
@@ -43,7 +43,7 @@ Canonical graph references, used only as a frequency warning, are respectively 3
 |---|---|---|---|---:|---|
 | `ashen-doppelganger` | severe lasting mirrored injury | conditional 2-Wound candidate | existing Wound pipeline, but balance unresolved | 4 | BLOCKED |
 | `choir-static-burst` | accumulating attrition from violent signal feedback | normal Wound pressure: 1 preventable Wound | ready with existing systems | 2 | APPROVED |
-| `cinder-gate-backlash` | obsolete success-side recovery bookkeeping | remove success branch without replacement | ready; content-only | 1 | APPROVED |
+| `cinder-gate-backlash` | obsolete success-side recovery bookkeeping | remove success branch without replacement | implemented H1 | 1 | APPROVED — IMPLEMENTED H1 |
 | `crown-bell-baron` | resource pressure through extortion | lose up to 1 Salvage | ready with existing systems | 2 | APPROVED |
 | `false-route-procession` | movement misdirection | forced displacement or delayed relocation | requires unresolved destination rule | 2 provisional | BLOCKED |
 | `gateblind-pulse` | shared gate/scenario pressure | Global Escalation candidate | existing track, but cap/threshold impact unresolved | 3 provisional | BLOCKED |
@@ -51,13 +51,13 @@ Canonical graph references, used only as a frequency warning, are respectively 3
 | `lantern-moth-swarm` | risk/reward prevention plus immediate fire injury | remove success branch; failure becomes 1 preventable Wound | ready with existing systems | 2 | APPROVED |
 | `marrow-tax-auditors` | repeated resource taxation | lose up to 1 Salvage candidate | mechanically ready; frequency balance unresolved | 2 provisional | BLOCKED |
 | `memory-tax-gate` | risk/reward choice paid with private memory | player-choice/private-note lifecycle | requires new lifecycle | 3 provisional | BLOCKED |
-| `mirror-rot-interference` | obsolete success-side recovery bookkeeping | remove success branch without replacement | ready; content-only | 1 | APPROVED |
+| `mirror-rot-interference` | obsolete success-side recovery bookkeeping | remove success branch without replacement | implemented H1 | 1 | APPROVED — IMPLEMENTED H1 |
 | `pale-contract-collector` | resource pressure through debt collection | lose up to 1 Salvage | ready with existing systems | 2 | APPROVED |
 | `relay-husk` | Equipment pressure from false instructions | choose exact Equipment to disable temporarily | requires target and cleanup lifecycle | 2 provisional | BLOCKED |
 | `signal-rotted-engineer` | Equipment interference | exact-instance Weapon pressure | requires duration/target decision | 2 provisional | BLOCKED |
 | `siren-relay-echo` | paired temporary Command interference | next-Command-test modifier candidate | requires schema, precedence, and reset decision | 2 provisional | BLOCKED |
 | `soot-stained-cutpurse` | minor resource theft | lose up to 1 Salvage | ready with existing systems | 1 | APPROVED |
-| `webglass-snarefield` | obsolete success-side recovery bookkeeping | remove success branch without replacement | ready; content-only | 1 | APPROVED |
+| `webglass-snarefield` | obsolete success-side recovery bookkeeping | remove success branch without replacement | implemented H1 | 1 | APPROVED — IMPLEMENTED H1 |
 
 No approved card grants a Scar, advances Global Escalation, displaces a player, destroys Equipment, creates a persistent object, or opens a choice prompt. Those outcomes remain behind their explicit design gates rather than being used as automatic Heat substitutes.
 
@@ -151,9 +151,9 @@ The screen deliberately rejects automatic Scar, Global Escalation, and generic o
 
 ### `cinder-gate-backlash`
 
-- Current Heat behavior: successful Signal test `lose_heat 2`, compatibility-only no-op.
+- Current Heat behavior: former successful Signal test `lose_heat 2`, removed in H1.
 - Original gameplay intent: obsolete bookkeeping that once rewarded surviving an extreme gate pulse.
-- Selected retirement model: remove without replacement.
+- Selected retirement model: remove without replacement, implemented H1.
 - Card type: hazard.
 - Lane: Blue.
 - Test/battle stat: Signal.
@@ -177,7 +177,7 @@ The screen deliberately rejects automatic Scar, Global Escalation, and generic o
 - Severity: 1 for the retirement rule; base card remains severity 5.
 - Implementation complexity: very low.
 - Balance risk: low because the removed branch already has no runtime effect.
-- Approval status: APPROVED.
+- Approval status: APPROVED — IMPLEMENTED H1.
 
 ### `crown-bell-baron`
 
@@ -391,9 +391,9 @@ The screen deliberately rejects automatic Scar, Global Escalation, and generic o
 
 ### `mirror-rot-interference`
 
-- Current Heat behavior: successful Guile test `lose_heat 1`, compatibility-only no-op.
+- Current Heat behavior: former successful Guile test `lose_heat 1`, removed in H1.
 - Original gameplay intent: obsolete success-side recovery bookkeeping.
-- Selected retirement model: remove without replacement.
+- Selected retirement model: remove without replacement, implemented H1.
 - Card type: hazard.
 - Lane: Blue.
 - Test/battle stat: Guile.
@@ -417,7 +417,7 @@ The screen deliberately rejects automatic Scar, Global Escalation, and generic o
 - Severity: 1 for the retirement rule; base card remains severity 4.
 - Implementation complexity: very low.
 - Balance risk: low; avoids adding a farmable heal.
-- Approval status: APPROVED.
+- Approval status: APPROVED — IMPLEMENTED H1.
 
 ### `pale-contract-collector`
 
@@ -571,9 +571,9 @@ The screen deliberately rejects automatic Scar, Global Escalation, and generic o
 
 ### `webglass-snarefield`
 
-- Current Heat behavior: successful Guile test `lose_heat 1`, compatibility-only no-op.
+- Current Heat behavior: former successful Guile test `lose_heat 1`, removed in H1.
 - Original gameplay intent: obsolete success-side recovery bookkeeping.
-- Selected retirement model: remove without replacement.
+- Selected retirement model: remove without replacement, implemented H1.
 - Card type: hazard.
 - Lane: Blue.
 - Test/battle stat: Guile.
@@ -597,7 +597,7 @@ The screen deliberately rejects automatic Scar, Global Escalation, and generic o
 - Severity: 1 for the retirement rule; base card remains severity 3.
 - Implementation complexity: very low.
 - Balance risk: low; avoids adding a farmable heal.
-- Approval status: APPROVED.
+- Approval status: APPROVED — IMPLEMENTED H1.
 
 ## Four-seat critique
 
@@ -637,7 +637,7 @@ Counts below are unique cards, not individual branches. “Approved proposal” 
 | Player-choice cards | 0 | 0 | Memory Tax remains blocked |
 | Multiplayer effects | 0 | 0 | no approved group-wide effect |
 | Global Escalation | 0 | 0 | Gateblind remains blocked |
-| Removal without replacement | 0 | 3 | Cinder, Mirror-Rot, Webglass success branches |
+| Removal without replacement | 3 | 3 | Cinder, Mirror-Rot, Webglass success branches implemented in H1 |
 
 Approved severity distribution is severity 1: four cards (`cinder-gate-backlash`, `mirror-rot-interference`, `soot-stained-cutpurse`, `webglass-snarefield`); severity 2: four cards (`choir-static-burst`, `crown-bell-baron`, `lantern-moth-swarm`, `pale-contract-collector`); severity 3–5: none. Blocked provisional candidates span severity 2 (five), 3 (two), and 4 (two).
 

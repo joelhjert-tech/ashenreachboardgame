@@ -113,7 +113,7 @@ export interface CheckRolledAction extends BaseAction {
   modifierSources?: RollModifierSource[];
   total: number;
   success: boolean;
-  effect: EncounterEffect;
+  effect: EncounterEffect | null;
   cardId: string;
 }
 
@@ -126,7 +126,7 @@ export interface SoloRerollResolvedAction extends BaseAction {
   modifierSources?: RollModifierSource[];
   total: number;
   success: boolean;
-  effect: EncounterEffect;
+  effect: EncounterEffect | null;
   cardId: string;
   artifactReroll?: boolean;
 }

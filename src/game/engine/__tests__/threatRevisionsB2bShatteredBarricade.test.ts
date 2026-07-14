@@ -46,7 +46,7 @@ function createResolutionState(options: {
   state.turnOrder = [player.seatId, ...state.turnOrder.filter((seatId) => seatId !== player.seatId)];
   state.escalationLevel = options.escalationLevel ?? 0;
   state.currentEncounter = card;
-  state.pendingEffect = success ? card.successEffect : card.failEffect;
+  state.pendingEffect = success ? card.successEffect! : card.failEffect;
   state.seats = state.seats.map((seat) => ({
     ...seat,
     characterSelected: true,

@@ -315,8 +315,9 @@ function succeed(state: GameState, emitted: GameAction[] = []): ReducerSuccess {
   };
 }
 
-function summarizeEffect(effect: EncounterEffect, success: boolean | null): string {
+function summarizeEffect(effect: EncounterEffect | null, success: boolean | null): string {
   const prefix = success === null ? "Resolution:" : success ? "Success:" : "Failure:";
+  if (!effect) return `${prefix} no additional effect.`;
   if (isLegacyHeatNoopEffect(effect)) return summarizeLegacyHeatNoop(prefix);
 
   switch (effect.type) {

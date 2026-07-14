@@ -1527,7 +1527,11 @@ export class GameRoomServer {
     return false;
   }
 
-  private maybeApplyFandiablosWoundPrevention(seatId: string, effect: EncounterEffect): EncounterEffect {
+  private maybeApplyFandiablosWoundPrevention(seatId: string, effect: EncounterEffect): EncounterEffect;
+  private maybeApplyFandiablosWoundPrevention(seatId: string, effect: null): null;
+  private maybeApplyFandiablosWoundPrevention(seatId: string, effect: EncounterEffect | null): EncounterEffect | null;
+  private maybeApplyFandiablosWoundPrevention(seatId: string, effect: EncounterEffect | null): EncounterEffect | null {
+    if (!effect) return null;
     const player = this.state.players.find((entry) => entry.seatId === seatId);
 
     if (!this.hasFollower(player, FANDIABLOS_ID) || !this.effectContainsWound(effect) || this.hasFandiablosPreventedWoundThisRound(seatId)) {
@@ -1565,7 +1569,11 @@ export class GameRoomServer {
     return false;
   }
 
-  private maybeApplyKerWoundPrevention(seatId: string, effect: EncounterEffect): EncounterEffect {
+  private maybeApplyKerWoundPrevention(seatId: string, effect: EncounterEffect): EncounterEffect;
+  private maybeApplyKerWoundPrevention(seatId: string, effect: null): null;
+  private maybeApplyKerWoundPrevention(seatId: string, effect: EncounterEffect | null): EncounterEffect | null;
+  private maybeApplyKerWoundPrevention(seatId: string, effect: EncounterEffect | null): EncounterEffect | null {
+    if (!effect) return null;
     const player = this.state.players.find((entry) => entry.seatId === seatId);
 
     if (player?.character.id !== "char_ker_von_ker" || !this.effectContainsWound(effect) || this.hasKerPreventedWoundThisRound(seatId)) {
@@ -2734,9 +2742,7 @@ export class GameRoomServer {
         : activeResolution.roll.target;
     const total = roll.total + statBonus;
     const success = total >= difficulty;
-    const baseOutcomeEffect =
-      (success ? encounter.successEffect : encounter.failEffect) ??
-      ({ type: "gain_note", text: "Solo emergency reroll resolved with no additional effect." } satisfies EncounterEffect);
+    const baseOutcomeEffect = success ? encounter.successEffect : encounter.failEffect;
     const resolvedOutcomeEffect = this.resolveThreatOutcomeEffect(
       intent.seatId,
       encounter,
@@ -5045,13 +5051,26 @@ export class GameRoomServer {
     baseEffect: EncounterEffect,
     effectKey: string | undefined,
     timing: "onSuccess" | "onFailure" | "onDefeat"
-  ): EncounterEffect {
+  ): EncounterEffect;
+  private resolveThreatOutcomeEffect(
+    seatId: string,
+    card: ThreatCard,
+    baseEffect: EncounterEffect | undefined,
+    effectKey: string | undefined,
+    timing: "onSuccess" | "onFailure" | "onDefeat"
+  ): EncounterEffect | null;
+  private resolveThreatOutcomeEffect(
+    seatId: string,
+    card: ThreatCard,
+    baseEffect: EncounterEffect | undefined,
+    effectKey: string | undefined,
+    timing: "onSuccess" | "onFailure" | "onDefeat"
+  ): EncounterEffect | null {
     const keyedEffect = this.resolveThreatEffectKey(seatId, card, effectKey, timing)?.effect ?? null;
-    return this.resolveEffect(
-      this.combineEffects([baseEffect, keyedEffect].filter((effect): effect is EncounterEffect => Boolean(effect))) ?? baseEffect,
-      seatId,
-      card.id
+    const combinedEffect = this.combineEffects(
+      [baseEffect, keyedEffect].filter((effect): effect is EncounterEffect => Boolean(effect))
     );
+    return combinedEffect ? this.resolveEffect(combinedEffect, seatId, card.id) : null;
   }
 
   private runAutomaticPhases(seatId: string): void {

@@ -1,10 +1,10 @@
 # Remaining Heat-linked Threat implementation plan
 
-Status: report-only plan at `2946c96`. It sequences the eight approvals in `reports/heat-retirement-remaining-17-triage.md`; it does not authorize or change the nine blocked cards.
+Status: H1 implemented. H2 and H3 remain approved but unimplemented; the nine blocked cards remain blocked.
 
 ## Approved implementation groups
 
-### Group H1 — remove obsolete success branches (3)
+### Group H1 — remove obsolete success branches (3) — IMPLEMENTED
 
 - Stable IDs: `cinder-gate-backlash`, `mirror-rot-interference`, `webglass-snarefield`.
 - Exact change: remove each compatibility-only `lose_heat` success branch. A success has no additional effect. Existing failure branches remain byte-for-byte unchanged.
@@ -16,7 +16,7 @@ Status: report-only plan at `2946c96`. It sequences the eight approvals in `repo
 - Implementation risk: low. These branches are already runtime no-ops and their removal creates no replacement effect.
 - Recommended commit subject: `feat: remove obsolete heat success branches`.
 
-This is the recommended first implementation group.
+Implemented as `feat: remove obsolete heat threat effects`. No replacement effect was added.
 
 ### Group H2 — normal signal-hazard Wounds (2)
 
@@ -60,8 +60,8 @@ Blocked IDs are not assigned to implementation groups. A later approval should f
 
 ## Recommended sequence
 
-1. **H1 — removal/clarity only.** Benefit: eliminates six legacy Heat amount points across three success branches without introducing a replacement. Risk: low. Prerequisites: none beyond the report approval. Coverage: exact content plus unchanged Wound failures and full regressions.
-2. **H2 — existing Wound resolver.** Benefit: restores clear physical consequences to two signal hazards. Risk: medium because these are new real Wounds. Prerequisites: H1 clean checkpoint; review Choir’s four graph references. Coverage: prevention, actual delta, recall, reconnect, duplicate source, scenario-success preservation.
+1. **H1 — removal/clarity only — COMPLETE.** Implemented for `cinder-gate-backlash`, `mirror-rot-interference`, and `webglass-snarefield` without replacement.
+2. **H2 — existing Wound resolver — NEXT APPROVED CANDIDATE.** Benefit: restores clear physical consequences to two signal hazards. Risk: medium because these are new real Wounds. Prerequisites: H1 clean checkpoint; review Choir’s four graph references; both cards must remain on the existing normal Wound pipeline without sequencing differences. Coverage: prevention, actual delta, recall, reconnect, duplicate source, scenario-success preservation.
 3. **H3 — existing floor-zero Salvage resolver.** Benefit: gives three Yellow enemies distinct economic identity. Risk: medium economy pressure. Prerequisites: H2 checkpoint and confirmation no cumulative economy regression. Coverage: floor zero, actual delta, no payment/ledger loops, reward preservation, mode ownership.
 4. **Movement and shared-pressure design gates.** IDs: `false-route-procession`, `gateblind-pulse`. Benefit: preserves route/gate identity. Risk: medium-high. Prerequisites: destination and escalation threshold specifications.
 5. **Equipment and temporary-modifier design gates.** IDs: `relay-husk`, `signal-rotted-engineer`, `siren-relay-echo`. Benefit: Yellow/Signal variety. Risk: medium-high. Prerequisites: exact-instance disable and stat-specific modifier lifecycles.

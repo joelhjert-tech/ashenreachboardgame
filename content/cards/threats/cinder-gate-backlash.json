@@ -9,10 +9,6 @@
   "region": "inner",
   "stat": "signal",
   "difficulty": 12,
-  "successEffect": {
-    "type": "lose_heat",
-    "amount": 2
-  },
   "failEffect": {
     "type": "take_wound",
     "amount": 2
@@ -23,7 +19,6 @@
   "tempo": "stall",
   "resourceTags": [
     "artifact",
-    "heat",
     "wound"
   ]
 }

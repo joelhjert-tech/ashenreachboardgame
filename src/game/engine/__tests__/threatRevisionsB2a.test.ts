@@ -27,7 +27,6 @@ const untouchedHeatLinkedHashes = new Map([
   ["spindle-static-squall", "79792aba83a13ca9ac1193ce984919474e02dfca2d05b7c21a40da896032cb33"],
   ["ashen-doppelganger", "cb9b7c7d37419b9d91ee02624659a4828f0624ec507c2f6468c66be1593818c0"],
   ["choir-static-burst", "adc041f646810e467300df1b36313874de7e8c50018710eb5d309e8fdabb1d00"],
-  ["cinder-gate-backlash", "bc8702c3657912a425ff1520bb3c809e31a8dd225cda7d405a912ee0fb47c3b9"],
   ["crown-bell-baron", "c98e467269599e74371578d25c2b9e257214b463631829284ca19b77df3f96e2"],
   ["false-route-procession", "032bf4e5795ab98fa8e8def052dcf28190c2295f70582530e59f32b3592377ae"],
   ["gateblind-pulse", "d495be86b7b4a37acffa451fde6121293673a83a84f9aba8471336e314662618"],
@@ -35,13 +34,11 @@ const untouchedHeatLinkedHashes = new Map([
   ["lantern-moth-swarm", "bd7943adf1d10c3ddc94f639516bebe8c0df94b279bd0e6b0b2b06dcc2215304"],
   ["marrow-tax-auditors", "bdf79951c64c0ea1e8322d8ba812db714fcc19cbae7d4dc6e4fca145fbfeeb9b"],
   ["memory-tax-gate", "dbeabc6a8d5b1654fd1f5a3c04ad8100fee6e47763bee51112a2d05ed407783e"],
-  ["mirror-rot-interference", "61b285424173b082fa2055e9232d64aaa5ad6178776269aff491d33ff6ca7e85"],
   ["pale-contract-collector", "ef2f293db6747e0ed24b7b6c00a2df0801e1d8bd3db223c1724b5d3fd80360ae"],
   ["relay-husk", "e3f1f24646c937cd646f862c1314fb8f458145d0e1944dc6afb1e8a977564a91"],
   ["signal-rotted-engineer", "80446cb61e7acfe4e6613b134487e48a959764fc02ff53198f04e2abfb145c01"],
   ["siren-relay-echo", "c206dbd889f7aafaa69d50196f9c76076fafd40dd71015e7f0bcd05c7ef8de3b"],
-  ["soot-stained-cutpurse", "c82891af35a78b7c6f9f8a7c41fe681cb6e6b3ffa46213bcab3ca7e1f6d3e179"],
-  ["webglass-snarefield", "8e3228a402000e7766bf442ac1e14af2024091f5b3d3f0f6bc446e8c814f5ba5"]
+  ["soot-stained-cutpurse", "c82891af35a78b7c6f9f8a7c41fe681cb6e6b3ffa46213bcab3ca7e1f6d3e179"]
 ]);
 
 function requireHazard(id: string) {
@@ -115,7 +112,7 @@ describe("Phase B2A threat revision content", () => {
     expect(laneCounts).toEqual({ red: 26, blue: 35, yellow: 48 });
   });
 
-  it("pins implemented Glass-Chime and Spindle plus all 17 unchanged blocked Heat-linked IDs", () => {
+  it("pins implemented Glass-Chime and Spindle plus the fourteen Heat-linked IDs outside H1", () => {
     for (const [id, expectedHash] of untouchedHeatLinkedHashes) {
       const authoredCard = JSON.parse(readFileSync(join(process.cwd(), "content", "cards", "threats", `${id}.json`), "utf8"));
       expect(createHash("sha256").update(JSON.stringify(authoredCard)).digest("hex"), id).toBe(expectedHash);

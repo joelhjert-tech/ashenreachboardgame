@@ -331,10 +331,26 @@ const threatBaseSchema = cardBaseSchema.extend({
   failEffectKey: z.string().min(1).optional()
 });
 
+export const HAZARD_SUCCESS_EFFECT_RETIREMENT_IDS = [
+  "cinder-gate-backlash",
+  "mirror-rot-interference",
+  "webglass-snarefield"
+] as const;
+
+const hazardSuccessEffectRetirementIds = new Set<string>(HAZARD_SUCCESS_EFFECT_RETIREMENT_IDS);
+
 export const hazardThreatCardSchema = threatBaseSchema.extend({
   cardType: z.literal("hazard"),
-  successEffect: effectSchema,
+  successEffect: effectSchema.optional(),
   failEffect: effectSchema
+}).superRefine((card, context) => {
+  if (!card.successEffect && !hazardSuccessEffectRetirementIds.has(card.id)) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Hazard threats require a success effect unless explicitly retired",
+      path: ["successEffect"]
+    });
+  }
 });
 
 export const enemyThreatCardSchema = threatBaseSchema.extend({

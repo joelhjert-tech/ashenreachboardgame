@@ -31,7 +31,6 @@ export const LEGACY_HEAT_EFFECT_APPROVALS: readonly LegacyHeatEffectApproval[] =
   { id: "artifact-cinder-suture-kit", constructs: ["player-facing Heat text"] },
   { id: "ashen-doppelganger", constructs: ["gain_heat"] },
   { id: "choir-static-burst", constructs: ["gain_heat"] },
-  { id: "cinder-gate-backlash", constructs: ["lose_heat"] },
   { id: "crown-bell-baron", constructs: ["gain_heat"] },
   { id: "crownless-advocate", constructs: ["lose_heat"] },
   { id: "escalation-blackstar-hunger", constructs: ["gain_heat_all"] },
@@ -44,14 +43,12 @@ export const LEGACY_HEAT_EFFECT_APPROVALS: readonly LegacyHeatEffectApproval[] =
   { id: "lantern-moth-swarm", constructs: ["gain_heat", "lose_heat"] },
   { id: "marrow-tax-auditors", constructs: ["gain_heat"] },
   { id: "memory-tax-gate", constructs: ["gain_heat"] },
-  { id: "mirror-rot-interference", constructs: ["lose_heat"] },
   { id: "pale-contract-collector", constructs: ["gain_heat"] },
   { id: "relay-husk", constructs: ["gain_heat"] },
   { id: "saltflat-bone-reader", constructs: ["lose_heat"] },
   { id: "signal-rotted-engineer", constructs: ["gain_heat"] },
   { id: "siren-relay-echo", constructs: ["gain_heat", "lose_heat"] },
-  { id: "soot-stained-cutpurse", constructs: ["gain_heat"] },
-  { id: "webglass-snarefield", constructs: ["lose_heat"] }
+  { id: "soot-stained-cutpurse", constructs: ["gain_heat"] }
 ];
 
 // Compatibility IDs that remain tracked separately from effect/default
