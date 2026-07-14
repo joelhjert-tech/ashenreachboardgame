@@ -1,6 +1,6 @@
 # Remaining Heat-linked Threat implementation plan
 
-Status: H1 implemented. H2 and H3 remain approved but unimplemented; the nine blocked cards remain blocked.
+Status: H1 and H2 implemented. H3 remains approved but unimplemented; the nine blocked cards remain blocked.
 
 ## Approved implementation groups
 
@@ -18,7 +18,7 @@ Status: H1 implemented. H2 and H3 remain approved but unimplemented; the nine bl
 
 Implemented as `feat: remove obsolete heat threat effects`. No replacement effect was added.
 
-### Group H2 — normal signal-hazard Wounds (2)
+### Group H2 — normal signal-hazard Wounds (2) — IMPLEMENTED
 
 - Stable IDs: `choir-static-burst`, `lantern-moth-swarm`.
 - Exact change: Choir failure becomes `take_wound 1`; Lantern failure becomes `take_wound 1` and its success `lose_heat 1` branch is removed.
@@ -29,6 +29,8 @@ Implemented as `feat: remove obsolete heat threat effects`. No replacement effec
 - Focused tests: exact content branches; `0 -> 1`; threshold-minus-one to recall; at least one established prevention path; pending prevention reconnect; duplicate/replay rejection; Choir scenario-success progress unchanged; Lantern success closes with no extra effect; graph references 4 and 2; no group Wound.
 - Implementation risk: medium. Both add real attrition where Heat was a no-op; Choir’s four graph references deserve an isolated balance checkpoint.
 - Recommended commit subject: `feat: retire signal hazard heat as wounds`.
+
+Implemented as `feat: replace heat threats with wound pressure`. Both failures use the existing authoritative `take_wound 1` lifecycle; Choir's success remains scenario progress and Lantern's success has no additional effect.
 
 ### Group H3 — bounded Yellow Salvage pressure (3)
 
@@ -61,8 +63,8 @@ Blocked IDs are not assigned to implementation groups. A later approval should f
 ## Recommended sequence
 
 1. **H1 — removal/clarity only — COMPLETE.** Implemented for `cinder-gate-backlash`, `mirror-rot-interference`, and `webglass-snarefield` without replacement.
-2. **H2 — existing Wound resolver — NEXT APPROVED CANDIDATE.** Benefit: restores clear physical consequences to two signal hazards. Risk: medium because these are new real Wounds. Prerequisites: H1 clean checkpoint; review Choir’s four graph references; both cards must remain on the existing normal Wound pipeline without sequencing differences. Coverage: prevention, actual delta, recall, reconnect, duplicate source, scenario-success preservation.
-3. **H3 — existing floor-zero Salvage resolver.** Benefit: gives three Yellow enemies distinct economic identity. Risk: medium economy pressure. Prerequisites: H2 checkpoint and confirmation no cumulative economy regression. Coverage: floor zero, actual delta, no payment/ledger loops, reward preservation, mode ownership.
+2. **H2 — existing Wound resolver — COMPLETE.** Implemented for `choir-static-burst` and `lantern-moth-swarm` through the normal preventable Wound lifecycle.
+3. **H3 — existing floor-zero Salvage resolver — NEXT APPROVED CANDIDATE.** Benefit: gives three Yellow enemies distinct economic identity. Risk: medium economy pressure. Prerequisites: H2 checkpoint and confirmation no cumulative economy regression. Coverage: floor zero, actual delta, reward preservation, mode ownership, and explicit exclusion of Salvage Ledger, shop-transaction, mission, Contract, and completed-contract hooks.
 4. **Movement and shared-pressure design gates.** IDs: `false-route-procession`, `gateblind-pulse`. Benefit: preserves route/gate identity. Risk: medium-high. Prerequisites: destination and escalation threshold specifications.
 5. **Equipment and temporary-modifier design gates.** IDs: `relay-husk`, `signal-rotted-engineer`, `siren-relay-echo`. Benefit: Yellow/Signal variety. Risk: medium-high. Prerequisites: exact-instance disable and stat-specific modifier lifecycles.
 6. **Choice and economy-frequency gates.** IDs: `memory-tax-gate`, `marrow-tax-auditors`. Benefit: distinct Yellow tension. Risk: high if choice is dominant or economy starves. Prerequisites: choice contract and H3 playtest evidence.

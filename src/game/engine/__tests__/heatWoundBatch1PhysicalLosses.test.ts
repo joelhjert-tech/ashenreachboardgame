@@ -130,13 +130,13 @@ describe("Heat-to-Wound batch 1 physical losses", () => {
 
   it("removes precisely four Heat effects and approvals without changing remaining discriminators", () => {
     const effects = collectHeatEffects();
-    expect(new Set(effects.map((entry) => entry.id)).size).toBe(20);
-    expect(effects).toHaveLength(22);
-    expect(effects.filter((entry) => entry.effect === "gain_heat")).toHaveLength(15);
+    expect(new Set(effects.map((entry) => entry.id)).size).toBe(18);
+    expect(effects).toHaveLength(19);
+    expect(effects.filter((entry) => entry.effect === "gain_heat")).toHaveLength(13);
     expect(effects.filter((entry) => entry.effect === "gain_heat_all")).toHaveLength(3);
-    expect(effects.filter((entry) => entry.effect === "lose_heat")).toHaveLength(4);
-    expect(LEGACY_HEAT_EFFECT_APPROVALS).toHaveLength(22);
-    expect(APPROVED_LEGACY_HEAT_CONTENT_IDS.size).toBe(36);
+    expect(effects.filter((entry) => entry.effect === "lose_heat")).toHaveLength(3);
+    expect(LEGACY_HEAT_EFFECT_APPROVALS).toHaveLength(20);
+    expect(APPROVED_LEGACY_HEAT_CONTENT_IDS.size).toBe(34);
     expect(TARGETS.every((target) => !effects.some((entry) => entry.id === target.id))).toBe(true);
   });
 

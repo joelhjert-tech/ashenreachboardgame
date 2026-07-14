@@ -333,6 +333,7 @@ const threatBaseSchema = cardBaseSchema.extend({
 
 export const HAZARD_SUCCESS_EFFECT_RETIREMENT_IDS = [
   "cinder-gate-backlash",
+  "lantern-moth-swarm",
   "mirror-rot-interference",
   "webglass-snarefield"
 ] as const;

@@ -1,6 +1,6 @@
 # Remaining 17 Heat-linked Threat retirement triage
 
-Status: final triage approved at `d877574`; Group H1 removal-only is now implemented. The other five approved IDs remain unimplemented and all nine blocked IDs remain blocked.
+Status: final triage approved at `d877574`; Groups H1 and H2 are implemented. The three H3 IDs remain approved but unimplemented, and all nine blocked IDs remain blocked.
 
 ## Decision summary
 
@@ -9,7 +9,7 @@ The two existing Heat audits and current canonical Threat content reconcile to e
 - Approved: 8
 - Blocked: 9
 - Approved retirement models: remove without replacement (3), normal Wound pressure (2), floor-zero Salvage pressure (3)
-- Player-facing Heat remains obsolete. Every current Heat branch below is parsed only for compatibility and resolves as a no-op with a “no additional status change” summary.
+- Player-facing Heat remains obsolete. Every still-active Heat branch below is parsed only for compatibility and resolves as a no-op with a “no additional status change” summary.
 - Canonical Threats do not define an activation-number field. Every record therefore reports `N/A`; difficulty and canonical graph frequency are recorded separately and are not relabelled as activation.
 - The 17-card population is Red 1 / Blue 7 / Yellow 9. Card totals remain Red 26 / Blue 35 / Yellow 48 / overall 109.
 
@@ -18,13 +18,13 @@ The two existing Heat audits and current canonical Threat content reconcile to e
 | Stable ID | Display name | Lane / type | Activation | Stat / difficulty | Current success | Current failure | Reward | Exact Heat branch | Runtime state | Source | Closest overlaps |
 |---|---|---|---|---|---|---|---|---|---|---|---|
 | `ashen-doppelganger` | Ashen Doppelganger | Blue / enemy | N/A | Guile 11 | Defeat | `gain_heat 2` on loss | 3 Trophies | `woundOnLoss` | compatibility-only no-op | `content/cards/threats/ashen-doppelganger.json` | `mirror-lord-envoy`, `glass-mire-stalker`, `mirror-rot-interference` |
-| `choir-static-burst` | Choir-Static Burst | Blue / hazard | N/A | Signal 9 | scenario progress `choirStaticContained +1` | `gain_heat 2` | none | `failEffect` | compatibility-only no-op | `content/cards/threats/choir-static-burst.json` | `gateblind-pulse`, `rift-whispers`, `webglass-echo-trap` |
+| `choir-static-burst` | Choir-Static Burst | Blue / hazard | N/A | Signal 9 | scenario progress `choirStaticContained +1` | 1 preventable Wound | none | retired H2 `failEffect` | implemented normal Wound | `content/cards/threats/choir-static-burst.json` | `gateblind-pulse`, `rift-whispers`, `webglass-echo-trap` |
 | `cinder-gate-backlash` | Cinder Gate Backlash | Blue / hazard | N/A | Signal 12 | no additional effect | 2 Wounds | none | retired H1 `successEffect` | implemented removal; failure remains active | `content/cards/threats/cinder-gate-backlash.json` | `gateblind-pulse`, `emberwatch-sparkfall`, `spindle-static-squall` |
 | `crown-bell-baron` | Crown-Bell Baron | Yellow / enemy | N/A | Command 7 | Defeat | `gain_heat 2` on loss | route-fee fraud note | `woundOnLoss` | compatibility-only no-op | `content/cards/threats/crown-bell-baron.json` | `pale-toll-enforcer`, `bridge-toll-runt`, `pale-contract-collector` |
 | `false-route-procession` | False-Route Procession | Yellow / hazard | N/A | Command 7 | false-road note | `gain_heat 2` | none | `failEffect` | compatibility-only no-op | `content/cards/threats/false-route-procession.json` | `memory-tax-gate`, `route-splice`, `siren-relay-echo` |
 | `gateblind-pulse` | Gateblind Pulse | Blue / hazard | N/A | Signal 10 | scenario progress `gateblindPulsesRead +1` | `gain_heat 2` | none | `failEffect` | compatibility-only no-op | `content/cards/threats/gateblind-pulse.json` | `choir-static-burst`, `cinder-gate-backlash`, `saint-of-ashes-echo` |
 | `hymn-scarred-zealot` | Hymn-Scarred Zealot | Red / enemy | N/A | Grit 3 | Defeat | `gain_heat 1` on loss | silencing note | `woundOnLoss` | compatibility-only no-op | `content/cards/threats/hymn-scarred-zealot.json` | `lantern-ash-ghoul`, `moth-carrier-husk`, `ash-cinder-runt` |
-| `lantern-moth-swarm` | Lantern-Moth Swarm | Blue / hazard | N/A | Signal 5 | `lose_heat 1` | `gain_heat 1` | none | `successEffect`, `failEffect` | two compatibility-only no-ops | `content/cards/threats/lantern-moth-swarm.json` | `glass-chime-swarm`, `spindle-static-squall`, `roadside-bone-oracle` |
+| `lantern-moth-swarm` | Lantern-Moth Swarm | Blue / hazard | N/A | Signal 5 | no additional effect | 1 preventable Wound | none | retired H2 success and failure | implemented removal plus normal Wound | `content/cards/threats/lantern-moth-swarm.json` | `glass-chime-swarm`, `spindle-static-squall`, `roadside-bone-oracle` |
 | `marrow-tax-auditors` | Marrow-Tax Auditors | Yellow / hazard | N/A | Guile 7 | tariff-loophole note | `gain_heat 2` | none | `failEffect` | compatibility-only no-op | `content/cards/threats/marrow-tax-auditors.json` | `locked-vault`, `false-route-procession`, `wireghost-key` |
 | `memory-tax-gate` | Memory Tax Gate | Yellow / hazard | N/A | Command 8 | harmless-memory note | `gain_heat 2` | none | `failEffect` | compatibility-only no-op | `content/cards/threats/memory-tax-gate.json` | `false-route-procession`, `route-splice`, `crown-bell-baron` |
 | `mirror-rot-interference` | Mirror-Rot Interference | Blue / hazard | N/A | Guile 11 | no additional effect | 1 Wound | none | retired H1 `successEffect` | implemented removal; failure remains active | `content/cards/threats/mirror-rot-interference.json` | `webglass-snarefield`, `bellwire-snare`, `webglass-echo-trap` |
@@ -42,13 +42,13 @@ Canonical graph references, used only as a frequency warning, are respectively 3
 | ID | Original intent | Selected model | Runtime readiness | Severity | Status |
 |---|---|---|---|---:|---|
 | `ashen-doppelganger` | severe lasting mirrored injury | conditional 2-Wound candidate | existing Wound pipeline, but balance unresolved | 4 | BLOCKED |
-| `choir-static-burst` | accumulating attrition from violent signal feedback | normal Wound pressure: 1 preventable Wound | ready with existing systems | 2 | APPROVED |
+| `choir-static-burst` | accumulating attrition from violent signal feedback | normal Wound pressure: 1 preventable Wound | implemented H2 | 2 | APPROVED — IMPLEMENTED H2 |
 | `cinder-gate-backlash` | obsolete success-side recovery bookkeeping | remove success branch without replacement | implemented H1 | 1 | APPROVED — IMPLEMENTED H1 |
 | `crown-bell-baron` | resource pressure through extortion | lose up to 1 Salvage | ready with existing systems | 2 | APPROVED |
 | `false-route-procession` | movement misdirection | forced displacement or delayed relocation | requires unresolved destination rule | 2 provisional | BLOCKED |
 | `gateblind-pulse` | shared gate/scenario pressure | Global Escalation candidate | existing track, but cap/threshold impact unresolved | 3 provisional | BLOCKED |
 | `hymn-scarred-zealot` | delayed or lasting broadcast consequence | conditional Scar candidate | Scar severity and branch timing unresolved | 4 provisional | BLOCKED |
-| `lantern-moth-swarm` | risk/reward prevention plus immediate fire injury | remove success branch; failure becomes 1 preventable Wound | ready with existing systems | 2 | APPROVED |
+| `lantern-moth-swarm` | risk/reward prevention plus immediate fire injury | remove success branch; failure becomes 1 preventable Wound | implemented H2 | 2 | APPROVED — IMPLEMENTED H2 |
 | `marrow-tax-auditors` | repeated resource taxation | lose up to 1 Salvage candidate | mechanically ready; frequency balance unresolved | 2 provisional | BLOCKED |
 | `memory-tax-gate` | risk/reward choice paid with private memory | player-choice/private-note lifecycle | requires new lifecycle | 3 provisional | BLOCKED |
 | `mirror-rot-interference` | obsolete success-side recovery bookkeeping | remove success branch without replacement | implemented H1 | 1 | APPROVED — IMPLEMENTED H1 |
@@ -121,9 +121,9 @@ The screen deliberately rejects automatic Scar, Global Escalation, and generic o
 
 ### `choir-static-burst`
 
-- Current Heat behavior: failed Signal test `gain_heat 2`, compatibility-only no-op.
+- Current Heat behavior: former failed Signal test `gain_heat 2`, replaced in H2.
 - Original gameplay intent: accumulating attrition from violent signal feedback.
-- Selected retirement model: normal Wound pressure.
+- Selected retirement model: normal Wound pressure, implemented H2.
 - Card type: hazard.
 - Lane: Blue.
 - Test/battle stat: Signal.
@@ -147,7 +147,7 @@ The screen deliberately rejects automatic Scar, Global Escalation, and generic o
 - Severity: 2, moderate turn pressure; graph frequency requires focused regression.
 - Implementation complexity: low.
 - Balance risk: medium because it adds real attrition to a four-reference card.
-- Approval status: APPROVED.
+- Approval status: APPROVED — IMPLEMENTED H2.
 
 ### `cinder-gate-backlash`
 
@@ -301,9 +301,9 @@ The screen deliberately rejects automatic Scar, Global Escalation, and generic o
 
 ### `lantern-moth-swarm`
 
-- Current Heat behavior: success `lose_heat 1`; failure `gain_heat 1`; both compatibility-only no-ops.
+- Current Heat behavior: former success `lose_heat 1` and failure `gain_heat 1`, retired in H2.
 - Original gameplay intent: success prevents harm; failure is immediate fire exposure.
-- Selected retirement model: remove success without replacement; failure becomes normal Wound pressure.
+- Selected retirement model: remove success without replacement; failure becomes normal Wound pressure, implemented H2.
 - Card type: hazard.
 - Lane: Blue.
 - Test/battle stat: Signal.
@@ -327,7 +327,7 @@ The screen deliberately rejects automatic Scar, Global Escalation, and generic o
 - Severity: 2.
 - Implementation complexity: low.
 - Balance risk: low-medium; physical fiction is explicit and graph frequency is two.
-- Approval status: APPROVED.
+- Approval status: APPROVED — IMPLEMENTED H2.
 
 ### `marrow-tax-auditors`
 
@@ -627,7 +627,7 @@ Counts below are unique cards, not individual branches. “Approved proposal” 
 
 | Effect family | Current 17 | Approved proposal | Notes |
 |---|---:|---:|---|
-| Wound effects | 3 | 5 | existing Cinder/Mirror/Webglass plus approved Choir/Lantern |
+| Wound effects | 5 | 5 | Cinder/Mirror/Webglass plus implemented Choir/Lantern |
 | Scar effects | 0 | 0 | Zealot and Doppelganger direct-Scar routes remain blocked |
 | Salvage pressure | 0 | 3 | Baron, Collector, Cutpurse; all floor-zero owner losses |
 | Equipment effects | 1 | 1 | Engineer’s existing battle Weapon suppression only; no new persistent disable |

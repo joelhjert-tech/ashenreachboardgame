@@ -58,12 +58,10 @@ const TARGETS = [
 
 const REMAINING_HEAT_THREAT_IDS = [
   "ashen-doppelganger",
-  "choir-static-burst",
   "crown-bell-baron",
   "false-route-procession",
   "gateblind-pulse",
   "hymn-scarred-zealot",
-  "lantern-moth-swarm",
   "marrow-tax-auditors",
   "memory-tax-gate",
   "pale-contract-collector",
@@ -133,8 +131,7 @@ function collectHeatThreatIds(): string[] {
 
 describe("Heat Retirement H1 removal-only Threats", () => {
   it("preserves the three approved identities while omitting only their success effects", () => {
-    expect(HAZARD_SUCCESS_EFFECT_RETIREMENT_IDS).toEqual(TARGETS.map((target) => target.id));
-    expect(new Set(HAZARD_SUCCESS_EFFECT_RETIREMENT_IDS).size).toBe(3);
+    expect(HAZARD_SUCCESS_EFFECT_RETIREMENT_IDS).toEqual(expect.arrayContaining(TARGETS.map((target) => target.id)));
 
     for (const target of TARGETS) {
       const card = requireTarget(target.id);
@@ -259,10 +256,10 @@ describe("Heat Retirement H1 removal-only Threats", () => {
     })).not.toMatch(/\bHeat\b|\bRisk\b/i);
   });
 
-  it("leaves the fourteen other Heat-linked Threats and completed duplicate revisions unchanged", () => {
+  it("leaves the twelve post-H2 Heat-linked Threats and completed duplicate revisions unchanged", () => {
     expect(collectHeatThreatIds()).toEqual([...REMAINING_HEAT_THREAT_IDS].sort());
-    expect(LEGACY_HEAT_EFFECT_APPROVALS).toHaveLength(22);
-    expect(APPROVED_LEGACY_HEAT_CONTENT_IDS.size).toBe(36);
+    expect(LEGACY_HEAT_EFFECT_APPROVALS).toHaveLength(20);
+    expect(APPROVED_LEGACY_HEAT_CONTENT_IDS.size).toBe(34);
     expect(requireTarget("glass-chime-swarm").failEffect).toEqual({
       type: "next_non_battle_test_modifier",
       amount: -1,
