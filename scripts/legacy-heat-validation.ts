@@ -40,7 +40,6 @@ export const LEGACY_HEAT_EFFECT_APPROVALS: readonly LegacyHeatEffectApproval[] =
   { id: "escalation-saltwind-lockdown", constructs: ["gain_heat_all"] },
   { id: "false-route-procession", constructs: ["gain_heat"] },
   { id: "gateblind-pulse", constructs: ["gain_heat"] },
-  { id: "glass-chime-swarm", constructs: ["gain_heat"] },
   { id: "hymn-scarred-zealot", constructs: ["gain_heat"] },
   { id: "lantern-moth-swarm", constructs: ["gain_heat", "lose_heat"] },
   { id: "marrow-tax-auditors", constructs: ["gain_heat"] },

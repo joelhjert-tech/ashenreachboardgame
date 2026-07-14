@@ -219,6 +219,7 @@ for (const card of threats.values()) {
   validateThreatFamily(card);
   validateThreatMetadata(card);
   validateThreatEffectKeys(card);
+  validateGlassChimeSwarmRetirement(card);
 }
 
 validateThreatRarityCurve();
@@ -583,6 +584,27 @@ function validateThreatEffectKeys(card: ThreatCard): void {
 
   for (const [index, key] of (card.combatEffectKeys ?? []).entries()) {
     validateThreatKey(key, "beforeCombat", `${card.id} combatEffectKeys[${index}]`);
+  }
+}
+
+function validateGlassChimeSwarmRetirement(card: ThreatCard): void {
+  if (card.id !== "glass-chime-swarm") return;
+  if (card.cardType !== "hazard") {
+    errors.push("glass-chime-swarm must remain a hazard");
+    return;
+  }
+  if (
+    card.failEffect.type !== "next_non_battle_test_modifier" ||
+    card.failEffect.amount !== -1 ||
+    card.failEffect.sourceCardId !== "glass-chime-swarm"
+  ) {
+    errors.push("glass-chime-swarm must use the approved owner-only next non-battle test -1 modifier");
+  }
+  if (JSON.stringify(card).match(/gain_heat|\bHeat\b/)) {
+    errors.push("glass-chime-swarm must not expose a legacy Heat effect or player-facing Heat text");
+  }
+  if (card.text !== "The swarm breaks your concentration. On failure, subtract 1 from your next test. This penalty does not affect battles.") {
+    errors.push("glass-chime-swarm must use the approved final player-facing wording");
   }
 }
 

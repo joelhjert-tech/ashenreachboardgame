@@ -140,6 +140,12 @@ type ReturnThreatToSpaceEffect = {
   sourceSectorId?: string;
 };
 
+type NextNonBattleTestModifierEffect = {
+  type: "next_non_battle_test_modifier";
+  amount: -1;
+  sourceCardId: "glass-chime-swarm";
+};
+
 type SimpleEncounterEffect =
   | GainHeatEffect
   | GainHeatAllEffect
@@ -158,6 +164,7 @@ type SimpleEncounterEffect =
   | AdvanceScenarioEffect
   | AdvanceEscalationEffect
   | ReturnThreatToSpaceEffect
+  | NextNonBattleTestModifierEffect
   | EncounterPaymentEffect
   | ForcedDisplacementEffect;
 
@@ -236,6 +243,11 @@ const simpleEffectSchema: z.ZodType<SimpleEncounterEffect> = z.union([
     type: z.literal("return_threat_to_space"),
     threatId: z.string().min(1).optional(),
     sourceSectorId: z.string().min(1).optional()
+  }),
+  z.object({
+    type: z.literal("next_non_battle_test_modifier"),
+    amount: z.literal(-1),
+    sourceCardId: z.literal("glass-chime-swarm")
   }),
   encounterPaymentEffectSchema,
   forcedDisplacementEffectSchema

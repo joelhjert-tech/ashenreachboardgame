@@ -204,6 +204,9 @@ export function createInitialSessionState(
     pendingSutureStormConsequence: null,
     resolvedDisplacementSourceEventIds: [],
     resolvedSalvageLossSourceEventIds: [],
+    pendingNextNonBattleTestModifiers: [],
+    resolvedNextNonBattleTestModifierSourceEventIds: [],
+    consumedNextNonBattleTestModifierTestEventIds: [],
     tileChallengeProgress: null,
     activeResolution: null,
     lastOutcomeSummary: null

@@ -147,7 +147,9 @@ describe("Phase B2B Shattered Barricade content", () => {
     expect(requireHazard("breach-halberd").failEffect).toMatchObject({ type: "forcedDisplacement", direction: "clockwise" });
     expect(requireHazard("mudglass-sinkhole").failEffect).toMatchObject({ type: "forcedDisplacement", direction: "counterclockwise" });
     expect(requireHazard("suture-storm").failEffect).toMatchObject({ type: "sequence" });
-    expect(requireHazard("glass-chime-swarm").failEffect).toEqual({ type: "gain_heat", amount: 1 });
+    expect(requireHazard("glass-chime-swarm").failEffect).toEqual({
+      type: "next_non_battle_test_modifier", amount: -1, sourceCardId: "glass-chime-swarm"
+    });
     expect(requireHazard("spindle-static-squall").failEffect).toEqual({ type: "gain_heat", amount: 1 });
   });
 });

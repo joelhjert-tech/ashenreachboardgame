@@ -2,15 +2,15 @@
 
 Date: 2026-07-14
 
-Status: report-only design approval. No content, schema, runtime, validation, UI, asset, or count change is authorized by this commit.
+Status: design approval plus implementation tracking. `glass-chime-swarm` is implemented in its isolated Heat-retirement slice; `spindle-static-squall` remains approved but unimplemented.
 
 ## Decision summary
 
-Both remaining Family C cards are approved for separate implementation. Their legacy `gain_heat 1` failures are compatibility no-ops today. Neither failure represents bodily injury severe enough for a Wound or permanent Scar, and neither represents shared pressure, material loss, or forced displacement.
+Both Family C cards were approved for separate implementation. Glass-Chime now uses its approved typed next-test interference; Spindle still has its legacy compatibility no-op. Neither failure represents bodily injury severe enough for a Wound or permanent Scar, and neither represents shared pressure, material loss, or forced displacement.
 
 | Stable ID | Selected retirement | Runtime readiness | Approval |
 |---|---|---|---|
-| `glass-chime-swarm` | On failure, subtract 1 from the owner’s next test; battles are excluded | Ready with a narrow typed next-test modifier | APPROVED |
+| `glass-chime-swarm` | On failure, subtract 1 from the owner’s next test; battles are excluded | Narrow typed next-test lifecycle implemented | APPROVED / IMPLEMENTED |
 | `spindle-static-squall` | On failure, reduce the owner’s next normal movement roll by 1, minimum 1 | Ready with a narrow typed next-movement modifier | APPROVED |
 
 The two effects are delayed Blue interference, but they consume on different authoritative events and have materially different test matrices. They should be implemented separately.
@@ -25,9 +25,9 @@ The two effects are delayed Blue interference, but they consume on different aut
 - Test: Signal 6
 - Region / rarity / graph exposure: outer, common, one canonical graph placement
 - Current success: gain the existing note, “You isolated the true tone and mapped the swarm's blind gap.”
-- Current failure: `gain_heat 1`
+- Current failure: typed owner-scoped `next_non_battle_test_modifier -1`; legacy `gain_heat 1` retired
 - Reward: the success note only; no trophy or item reward
-- Runtime behavior: generic Heat effects are parsed for compatibility but `applyLegacyHeatNoop` performs no mutation. The visible result is “Failure: no additional status change.”
+- Runtime behavior: a confirmed failure creates one reconnect-safe, non-stacking owner modifier consumed by the next accepted Threat or tile-challenge test; battle and movement paths are excluded
 - Duplicate family: Family C, exact Signal 6 note/Heat-no-op duplicate with `spindle-static-squall`
 - Intended Blue identity: perception and concentration interference
 - Closest overlaps: `spindle-static-squall` is the exact current duplicate; `siren-relay-echo` is separately audited for temporary Command interference; `sanctifier-beads` and `hushed-chapel` are nearby Signal hazards but use disproportionate direct Scar outcomes that must not be copied here
@@ -100,7 +100,8 @@ These are two narrow discriminated pending states or variants, not a generic sta
 
 ### `glass-chime-swarm`
 
-- Current Heat behavior: `gain_heat 1`; compatibility-only no-op with “no additional status change” runtime summary
+- Former Heat behavior: `gain_heat 1`; compatibility-only no-op with “no additional status change” runtime summary
+- Current implementation: exact approved next-non-battle-test `-1` lifecycle, owner projection, public result source, source/consumption ledgers, and focused tests
 - Original gameplay intent: minor accumulating concentration and signal pressure
 - Selected retirement model: Option F, delayed next-test interference
 - Card type: Hazard
@@ -118,12 +119,12 @@ These are two narrow discriminated pending states or variants, not a generic sta
 - Equipment interaction: none; does not disable or rewrite Equipment bonuses
 - Movement interaction: none; movement rolls are not eligible tests
 - Multiplayer interaction: acting operative only; public-safe pending/result summary, no private inventory or source IDs
-- Typed runtime support: ready with a narrow typed pending next-test modifier and existing authoritative modifier-source/result projection paths
+- Typed runtime support: implemented with a narrow typed pending next-test modifier and existing authoritative modifier-source/result projection paths
 - Duplicate-source protection: encounter resolution ID plus one consumed-modifier source ID; same-card pending effects do not stack
 - Final player-facing rule: “The swarm breaks your concentration. On failure, subtract 1 from your next test. This penalty does not affect battles.”
 - Implementation complexity: 3/5
 - Balance risk: 2/5
-- Approval status: APPROVED
+- Approval status: APPROVED / IMPLEMENTED
 
 ### `spindle-static-squall`
 
@@ -173,7 +174,7 @@ Neither card may directly grant a Scar. Both are common outer severity-2 Hazards
 
 Recommended implementation order:
 
-1. `glass-chime-swarm` alone — add the narrow next-test modifier lifecycle, result source, reconnect projection, expiry, non-stacking rule, and focused tests. Commit: `feat: retire glass chime swarm heat`.
+1. `glass-chime-swarm` alone — IMPLEMENTED with the narrow next-test lifecycle, result source, reconnect projection, clearing, non-stacking rule, and focused tests. Commit: `feat: retire glass chime swarm heat effect`.
 2. `spindle-static-squall` alone — add the narrow next-movement modifier lifecycle to normal movement rolls, modifier ordering, reconnect projection, expiry, and focused tests. Commit: `feat: retire spindle static squall heat`.
 
 They may share naming conventions and source-ledger helpers, but should not share a single implementation commit. Glass-Chime consumes on test resolution and must cover rerolls/Scar test triggers; Spindle consumes on movement roll and must cover movement adjustments/topology exclusions.

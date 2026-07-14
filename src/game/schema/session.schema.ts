@@ -23,6 +23,15 @@ export const sessionModeSchema = z.enum(["multiplayer", "single-player"]);
 export const gameModeSchema = z.enum(["standard", "nemesis_relay"]);
 export const interactionModeSchema = z.enum(["co-op", "rivalry", "ruthless"]);
 
+export const pendingNextNonBattleTestModifierSchema = z.object({
+  type: z.literal("nextNonBattleTest"),
+  ownerSeatId: z.string().min(1),
+  amount: z.literal(-1),
+  sourceCardId: z.literal("glass-chime-swarm"),
+  sourceEventId: z.string().min(1),
+  createdAt: z.string().min(1)
+});
+
 export const resolutionStageSchema = z.enum([
   "idle",
   "card_reveal",
@@ -306,6 +315,9 @@ export const gameStateSchema = z.object({
   pendingSutureStormConsequence: pendingSutureStormConsequenceSchema.nullable().optional(),
   resolvedDisplacementSourceEventIds: z.array(z.string().min(1)).optional(),
   resolvedSalvageLossSourceEventIds: z.array(z.string().min(1)).optional(),
+  pendingNextNonBattleTestModifiers: z.array(pendingNextNonBattleTestModifierSchema).optional(),
+  resolvedNextNonBattleTestModifierSourceEventIds: z.array(z.string().min(1)).optional(),
+  consumedNextNonBattleTestModifierTestEventIds: z.array(z.string().min(1)).optional(),
   pendingFailureReaction: z.object({
     id: z.string().min(1),
     seatId: z.string().min(1),
@@ -423,6 +435,7 @@ export type SessionStatus = z.infer<typeof sessionStatusSchema>;
 export type SessionMode = z.infer<typeof sessionModeSchema>;
 export type GameMode = z.infer<typeof gameModeSchema>;
 export type InteractionMode = z.infer<typeof interactionModeSchema>;
+export type PendingNextNonBattleTestModifier = z.infer<typeof pendingNextNonBattleTestModifierSchema>;
 export type ResolutionStage = z.infer<typeof resolutionStageSchema>;
 export type ActiveResolution = z.infer<typeof activeResolutionSchema>;
 export type Seat = z.infer<typeof seatSchema>;

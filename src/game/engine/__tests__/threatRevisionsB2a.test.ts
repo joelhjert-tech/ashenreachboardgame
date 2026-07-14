@@ -23,7 +23,7 @@ const displacementCards = [
 ] as const;
 
 const untouchedHeatLinkedHashes = new Map([
-  ["glass-chime-swarm", "b249d5b948a6660a141a2ff43cfc7526f5e37f4200dc928700bf9bbf88e83665"],
+  ["glass-chime-swarm", "745affe8619bc5c0cae105c60aff8acd8792e27aac3a26b76588ed3893e876f2"],
   ["spindle-static-squall", "7187462b4fe81390a7a70626b083641a59ffe7c245c9bc741d4b8a7e297efb8d"],
   ["ashen-doppelganger", "cb9b7c7d37419b9d91ee02624659a4828f0624ec507c2f6468c66be1593818c0"],
   ["choir-static-burst", "adc041f646810e467300df1b36313874de7e8c50018710eb5d309e8fdabb1d00"],
@@ -115,7 +115,7 @@ describe("Phase B2A threat revision content", () => {
     expect(laneCounts).toEqual({ red: 26, blue: 35, yellow: 48 });
   });
 
-  it("keeps the two blocked duplicate cards and all 17 additional Heat-linked IDs byte-semantically unchanged", () => {
+  it("pins implemented Glass-Chime plus unchanged Spindle and all 17 blocked Heat-linked IDs", () => {
     for (const [id, expectedHash] of untouchedHeatLinkedHashes) {
       const authoredCard = JSON.parse(readFileSync(join(process.cwd(), "content", "cards", "threats", `${id}.json`), "utf8"));
       expect(createHash("sha256").update(JSON.stringify(authoredCard)).digest("hex"), id).toBe(expectedHash);

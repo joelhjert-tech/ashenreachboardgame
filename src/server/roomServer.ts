@@ -88,6 +88,7 @@ import {
   getVoidKeyMovementRoute
 } from "../game/rules/movementPlanner.js";
 import { canRiftAnchorSpikeSuppress } from "../game/rules/forcedDisplacement.js";
+import { getNextNonBattleTestModifierSource } from "../game/rules/nextNonBattleTestModifier.js";
 import { createInitialSessionState } from "./sessionState.js";
 import { resolveBoardSpaceEvent } from "../game/tileResolver.js";
 import {
@@ -2722,11 +2723,7 @@ export class GameRoomServer {
     const outcomeStat = this.state.lastOutcomeSummary?.seatId === intent.seatId ? this.state.lastOutcomeSummary.checkStat : null;
     const stat = typeof outcomeStat === "string" && STAT_VALUES.has(outcomeStat) ? (outcomeStat as Stat) : encounter.stat;
     const roll = rollDice(2, 6, this.randomSource);
-    const statBonus =
-      this.state.lastOutcomeSummary?.seatId === intent.seatId && typeof this.state.lastOutcomeSummary.statBonus === "number"
-        ? this.state.lastOutcomeSummary.statBonus
-        : player.character.stats[stat] +
-          getEquippedGearModifierSources(player.character, stat).reduce((sum, source) => sum + source.value, 0);
+    const statBonus = activeResolution.roll.modifierTotal;
     const difficulty =
       this.state.lastOutcomeSummary?.seatId === intent.seatId && typeof this.state.lastOutcomeSummary.difficulty === "number"
         ? this.state.lastOutcomeSummary.difficulty
@@ -2755,6 +2752,7 @@ export class GameRoomServer {
       difficulty,
       roll,
       statBonus,
+      modifierSources: activeResolution.battle?.modifiers,
       total,
       success,
       effect: outcomeEffect,
@@ -5741,12 +5739,14 @@ export class GameRoomServer {
 
     const escalationModifier = getEscalationModifier(this.state.escalationLevel);
     const keyedModifiers = this.resolveThreatEffectKeys(intent.seatId, encounter, encounter.combatEffectKeys, "beforeCombat");
+    const nextNonBattleTestModifier = getNextNonBattleTestModifierSource(this.state, intent.seatId);
     const modifierSources = [
       ...this.buildStatModifierSources(player, intent.stat, "check", {
       scenarioModifier: this.getScenarioSkillModifier(intent.seatId),
       keyedPlayerModifier: keyedModifiers.playerBonusModifier ?? 0
       }),
-      ...(this.state.pendingTileChallenge?.modifierSources ?? []).map(({ label, value }) => ({ label, value }))
+      ...(this.state.pendingTileChallenge?.modifierSources ?? []).map(({ label, value }) => ({ label, value })),
+      ...(nextNonBattleTestModifier ? [nextNonBattleTestModifier] : [])
     ];
     const roll = rollDice(2, 6, this.randomSource);
     const statBonus = this.sumModifierSources(modifierSources);
@@ -9723,6 +9723,15 @@ export function createPhoneProjection(state: GameState, seatId: string, forcePri
     encounter: state.currentEncounter,
     pendingEnemyRoll: state.pendingEnemyRoll,
     pendingTileChallenge: publicProjection.pendingTileChallenge,
+    pendingTestModifiers: (state.pendingNextNonBattleTestModifiers ?? [])
+      .filter((entry) => entry.ownerSeatId === seatId)
+      .map((entry) => ({
+        type: entry.type,
+        sourceCardId: entry.sourceCardId,
+        label: "Glass-Chime Swarm",
+        summary: "Next non-battle test: -1",
+        amount: entry.amount
+      })),
     pendingTileChallengePrivate: state.pendingTileChallenge?.seatId === seatId ? {
       id: state.pendingTileChallenge.id,
       challengeId: state.pendingTileChallenge.challengeId,

@@ -2,9 +2,9 @@
 
 ## Decision status and boundary
 
-Phase B1 began as a report-only review of the twelve stable IDs named by Phase A. B2A, B2B, and B2C have since implemented the first six approved revisions. This report update approves the two remaining Family C Heat retirements as implementation specifications; it changes no card, schema, resolver, validation rule, projection, asset, or count.
+Phase B1 began as a report-only review of the twelve stable IDs named by Phase A. B2A, B2B, and B2C implemented the first six approved revisions. The first Family C retirement is now implemented for `glass-chime-swarm`; `spindle-static-squall` remains the final approved but unimplemented duplicate-pattern revision.
 
-The review found five duplicate families. Four cards remain family baselines and eight cards now have approved revisions. `glass-chime-swarm` and `spindle-static-squall` still contain legacy Heat in current content, but their explicit retirement designs are now approved. They remain unimplemented until their separate typed lifecycle commits land.
+The review found five duplicate families. Four cards remain family baselines and eight cards have approved revisions. `glass-chime-swarm` now uses its approved typed next-test interference and no longer contains legacy Heat. `spindle-static-squall` still contains its compatibility-only Heat failure and remains approved but unimplemented.
 
 ## Canonical twelve-card inventory
 
@@ -17,7 +17,7 @@ All twelve are active canonical Threats. They are immediate hazards, do not pers
 | `glass-tick-cloud` | Glass Tick Cloud | Yellow / hazard | Forge | 6 | route note | 1 Wound | note only | immediate on draw | A | Same test, band, note/Wound pair as Family A; gear-chewing fiction has no equipment/economy consequence |
 | `furnace-ditch-collapse` | Furnace-Ditch Collapse | Red / hazard | Grit | 6 | route note | 1 Wound | note only | immediate on draw | B | Exact skeleton with `mudglass-sinkhole`; retained as the clearest physical-attrition baseline |
 | `mudglass-sinkhole` | Mudglass Sinkhole | Red / hazard | Grit | 6 | route note | 1 Wound | note only | immediate on draw | B | Same test and result as Furnace-Ditch; sinking terrain does not currently affect route position |
-| `glass-chime-swarm` | Glass-Chime Swarm | Blue / hazard | Signal | 6 | route note | legacy `gain_heat 1` no-op | note only | immediate on draw | C | Exact current skeleton with `spindle-static-squall`; next-test retirement approved but unimplemented |
+| `glass-chime-swarm` | Glass-Chime Swarm | Blue / hazard | Signal | 6 | route note | owner’s next eligible non-battle test `-1` | note only | delayed until next eligible check | C | Approved next-test retirement implemented with a typed, reconnect-safe, non-stacking lifecycle |
 | `spindle-static-squall` | Spindle Static Squall | Blue / hazard | Signal | 6 | route note | legacy `gain_heat 1` no-op | note only | immediate on draw | C | Exact current skeleton with Glass-Chime; next-movement retirement approved but unimplemented |
 | `locked-vault` | Locked Vault | Yellow / hazard | Forge | 7 | route note | 1 Wound | note only | immediate encounter | D | Same Forge-7 injury structure as `shattered-barricade`; current failure does not express economic loss |
 | `shattered-barricade` | Shattered Barricade | Red / hazard | Forge | 7 | route note | 1 Wound | note only | immediate encounter | D | Same Forge-7 note/Wound structure; stall tempo and breached-route fiction are not expressed |
@@ -35,7 +35,7 @@ The seventeen additional Phase A IDs are:
 
 `ashen-doppelganger`, `choir-static-burst`, `cinder-gate-backlash`, `crown-bell-baron`, `false-route-procession`, `gateblind-pulse`, `hymn-scarred-zealot`, `lantern-moth-swarm`, `marrow-tax-auditors`, `memory-tax-gate`, `mirror-rot-interference`, `pale-contract-collector`, `relay-husk`, `signal-rotted-engineer`, `siren-relay-echo`, `soot-stained-cutpurse`, `webglass-snarefield`.
 
-They are not reviewed or revised here and remain BLOCKED. The twelve-card set additionally overlaps the Heat boundary at `glass-chime-swarm` and `spindle-static-squall`. That overlap does not increase the Phase A “17 additional IDs” count. The dedicated retirement approval now resolves only those two Family C designs; it does not remove, translate, rename, or restore Heat on any ID during this report-only pass.
+They are not reviewed or revised here and remain BLOCKED. The twelve-card set additionally overlaps the Heat boundary at `glass-chime-swarm` and `spindle-static-squall`. That overlap does not increase the Phase A “17 additional IDs” count. The dedicated approval covers only those two Family C designs, and the current implementation retires Heat only for `glass-chime-swarm`.
 
 ## Duplicate families and retained baselines
 
@@ -214,7 +214,7 @@ Options are alternatives, not cumulative effects. “Existing schema” means th
 
 ### `glass-chime-swarm`
 
-- Current disposition: Heat retirement approved; implementation pending
+- Current disposition: Heat retirement implemented
 - Duplicate family: C — Signal 6 note/Heat-no-op
 - Baseline card retained: None; both Family C cards receive distinct interference
 - Selected option: Broken concentration
@@ -424,6 +424,7 @@ The approved Family C rules add no Wounds, Scars, Salvage changes, forced displa
 ### Family C.1 — next-test interference (1)
 
 - ID: `glass-chime-swarm`.
+- Status: IMPLEMENTED in the isolated Glass-Chime Heat-retirement slice.
 - Work: narrow owner-scoped next-test -1 modifier, non-stacking, reconnect-safe, consumed once.
 - Tests: eligible contexts, battle exclusion, reroll reuse, Scar-trigger ordering, recall/replacement clearing, privacy, dedupe.
 - Risk: medium.
@@ -446,4 +447,4 @@ The approved Family C rules add no Wounds, Scars, Salvage changes, forced displa
 
 Exact Relic reward, failure, choice, persistence, and multiplayer frequencies remain image-only evidence gates. They are not claimed here and must not become validation quotas. No +116-card expansion is authorized.
 
-The next implementation is `glass-chime-swarm` alone, followed by `spindle-static-squall`. They use different authoritative consumption events and should not share one implementation commit.
+The next implementation is `spindle-static-squall` alone. Its movement-roll consumption event remains separate from Glass-Chime's completed check lifecycle and must land in its own commit.

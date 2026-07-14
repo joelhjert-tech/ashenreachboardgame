@@ -872,6 +872,39 @@ describe("PhoneInventoryPanel", () => {
     expect(screen.queryByText(/turn console/i)).not.toBeInTheDocument();
   });
 
+  it("shows the owner-only Glass-Chime Swarm penalty as passive status with no controls", () => {
+    const patch = createPatch({
+      pendingTestModifiers: [{
+        type: "nextNonBattleTest",
+        sourceCardId: "glass-chime-swarm",
+        label: "Glass-Chime Swarm",
+        summary: "Next non-battle test: -1",
+        amount: -1
+      }]
+    });
+    render(
+      <PortraitControllerView
+        self={patch.self}
+        roomCode="RT7P4"
+        displayName="Lane"
+        connectionStatus="open"
+        activeSeatId="seat-1"
+        activeContractCard={null}
+        patch={patch}
+        characters={characters}
+        onIntent={vi.fn()}
+        onLeave={vi.fn()}
+      />
+    );
+
+    const status = screen.getByText("Glass-Chime Swarm").closest("article");
+    expect(status).toHaveTextContent(/next non-battle test: -1/i);
+    expect(status).toHaveTextContent(/no battle or movement effect/i);
+    expect(within(status as HTMLElement).queryByRole("button")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /use glass-chime/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /cancel glass-chime/i })).not.toBeInTheDocument();
+  });
+
   it("keeps top chrome and bottom tab dock visibility independent", async () => {
     const onIntent = vi.fn();
 

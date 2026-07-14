@@ -972,6 +972,13 @@ export interface PhonePatchPayload extends PublicPatchPayload {
   crownKeyFragments?: number;
   eligibleNemesisAssistSeatIds?: string[];
   pendingTileChallengePrivate?: (PublicPendingTileChallenge & { id: string; staticIntercessionReactionId?: string; pendingFailureEffects?: Array<{ effectId: string; summary: string }> }) | null;
+  pendingTestModifiers?: Array<{
+    type: "nextNonBattleTest";
+    sourceCardId: "glass-chime-swarm";
+    label: string;
+    summary: string;
+    amount: -1;
+  }>;
   pendingScarConsequence?: {
     reactionId: string;
     scarCardId: string;

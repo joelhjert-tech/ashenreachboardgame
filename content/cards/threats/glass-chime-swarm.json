@@ -3,7 +3,7 @@
   "type": "threat",
   "cardType": "hazard",
   "title": "Glass-Chime Swarm",
-  "text": "Needle-wing scavengers whirl through the rafters, ringing sharp tones that scramble concentration.",
+  "text": "The swarm breaks your concentration. On failure, subtract 1 from your next test. This penalty does not affect battles.",
   "flavor": "Every wingbeat sounds like a cracked bell in your skull.",
   "severity": 2,
   "stat": "signal",
@@ -13,8 +13,9 @@
     "text": "You isolated the true tone and mapped the swarm's blind gap."
   },
   "failEffect": {
-    "type": "gain_heat",
-    "amount": 1
+    "type": "next_non_battle_test_modifier",
+    "amount": -1,
+    "sourceCardId": "glass-chime-swarm"
   },
   "enemyFamily": "vermin",
   "threatLane": "blue",
@@ -22,7 +23,6 @@
   "rarity": "common",
   "tempo": "push",
   "resourceTags": [
-    "heat",
     "loot"
   ]
 }

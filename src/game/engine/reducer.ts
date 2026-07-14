@@ -73,6 +73,16 @@ import type { TrophyPileEntry } from "../schema/character.schema.js";
 import { applyMovementDieAfflictions, resolveAfflictionDraw } from "../rules/afflictions.js";
 import { buildPendingScarConsequences, getMatchingScarTriggers } from "../rules/scarTriggers.js";
 import { applyLegacyHeatNoop, isLegacyHeatNoopEffect, summarizeLegacyHeatNoop } from "../rules/legacyHeatCompatibility.js";
+import {
+  GLASS_CHIME_SWARM_ID,
+  GLASS_CHIME_SWARM_MODIFIER_AMOUNT,
+  GLASS_CHIME_SWARM_MODIFIER_LABEL,
+  clearAllNextNonBattleTestModifiers,
+  clearNextNonBattleTestModifierForSeat,
+  consumeNextNonBattleTestModifier,
+  createOrReplaceNextNonBattleTestModifier,
+  getPendingNextNonBattleTestModifier
+} from "../rules/nextNonBattleTestModifier.js";
 import type { ScarSourceEvent } from "../schema/scarTrigger.schema.js";
 import { getBoardSpace, isScenarioConfrontationSpace } from "../data/boardSpaces.js";
 import { getForcedDisplacementDestination, getLegalMovementRoute, getLegalMovementRouteVariant, getMovementBlockReason, getVoidKeyMovementRoute, getMovementStepBlockReason } from "../rules/movementPlanner.js";
@@ -275,9 +285,17 @@ function reject(state: GameState, action: GameAction, reason: string): ReducerFa
 }
 
 function succeed(state: GameState, emitted: GameAction[] = []): ReducerSuccess {
+  const activeState = state.status === "ended"
+    ? clearAllNextNonBattleTestModifiers(state)
+    : state.players
+        .filter((player) => player.character.status === "recalled")
+        .reduce(
+          (nextState, player) => clearNextNonBattleTestModifierForSeat(nextState, player.seatId),
+          state
+        );
   return {
     ok: true,
-    state,
+    state: activeState,
     emitted
   };
 }
@@ -317,6 +335,8 @@ function summarizeEffect(effect: EncounterEffect, success: boolean | null): stri
       return effect.threatId
         ? `${prefix} ${effect.threatId} remains on ${effect.sourceSectorId ?? "this space"}.`
         : `${prefix} the threat remains on this space.`;
+    case "next_non_battle_test_modifier":
+      return `${prefix} the swarm breaks your concentration. Your next non-battle test is ${effect.amount}.`;
     case "encounter_payment":
       return `${prefix} ${effect.prompt}`;
     case "forcedDisplacement":
@@ -402,6 +422,7 @@ function applyEffectToPlayer(player: PlayerState, effect: EncounterEffect): Play
     case "advance_escalation":
     case "advance_scenario":
     case "return_threat_to_space":
+    case "next_non_battle_test_modifier":
       return player;
     case "sequence":
       return effect.effects.reduce(
@@ -735,6 +756,17 @@ function applyEffectToState(state: GameState, seatId: string, effect: EncounterE
           }
         : state.lastOutcomeSummary
     };
+  }
+
+  if (effect.type === "next_non_battle_test_modifier") {
+    const sourceResolutionId = getThreatResolutionSourceId(state, seatId, effect.sourceCardId);
+    const sourceEventId = `${sourceResolutionId}:next-non-battle-test`;
+    return createOrReplaceNextNonBattleTestModifier(
+      state,
+      seatId,
+      sourceEventId,
+      state.pendingFailureReaction?.createdAt ?? sourceEventId
+    );
   }
 
   if (effect.type === "gain_heat_all") {
@@ -1865,7 +1897,25 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
         return reject(state, action, "No encounter is waiting for a check roll");
       }
 
-      return succeed(consumeTemporaryAllStatBoost({
+      if (state.currentEncounter.id !== action.cardId) {
+        return reject(state, action, "Check source is stale");
+      }
+
+      {
+        const pendingNextTestModifier = getPendingNextNonBattleTestModifier(state, action.seatId);
+        const authoritativeModifierSourceCount = action.modifierSources?.filter(
+          (source) => source.label === GLASS_CHIME_SWARM_MODIFIER_LABEL && source.value === GLASS_CHIME_SWARM_MODIFIER_AMOUNT
+        ).length ?? 0;
+        if (pendingNextTestModifier && authoritativeModifierSourceCount !== 1) {
+          return reject(state, action, "Pending Glass-Chime Swarm modifier is missing from the check");
+        }
+        if (!pendingNextTestModifier && authoritativeModifierSourceCount > 0) {
+          return reject(state, action, "Glass-Chime Swarm modifier has no pending authoritative source");
+        }
+      }
+
+      {
+        const resolvedCheckState = consumeTemporaryAllStatBoost({
         ...state,
         sequence: state.sequence + 1,
         phase: "resolution",
@@ -1922,7 +1972,10 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
             }
           : null,
         eventLog: [...state.eventLog, action]
-      }, action.seatId));
+        }, action.seatId);
+        const testEventId = `${state.activeResolution?.id ?? `${action.seatId}:${action.cardId}:${action.createdAt}`}:check`;
+        return succeed(consumeNextNonBattleTestModifier(resolvedCheckState, action.seatId, testEventId));
+      }
     case "SOLO_REROLL_RESOLVED": {
       const rerollAction = action as SoloRerollResolvedAction;
 
@@ -2132,6 +2185,26 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
       }
 
       const authoritativeSourceCardId = state.currentEncounter?.id ?? state.activeResolution?.card?.id ?? resolutionAction.sourceCardId ?? "unknown-encounter";
+      if (state.pendingEffect.type === "next_non_battle_test_modifier") {
+        if (authoritativeSourceCardId !== GLASS_CHIME_SWARM_ID || resolutionAction.sourceCardId !== GLASS_CHIME_SWARM_ID) {
+          return reject(state, action, "Glass-Chime Swarm modifier requires its authoritative source");
+        }
+        if (
+          state.activeResolution?.playerId !== resolutionAction.seatId ||
+          state.lastOutcomeSummary?.seatId !== resolutionAction.seatId
+        ) {
+          return reject(state, action, "Glass-Chime Swarm modifier owner does not match the failed check");
+        }
+        if (resolutionAction.success !== false || state.lastOutcomeSummary?.success !== false) {
+          return reject(state, action, "Glass-Chime Swarm modifier requires a confirmed failed check");
+        }
+        if (
+          state.pendingEffect.amount !== GLASS_CHIME_SWARM_MODIFIER_AMOUNT ||
+          state.pendingEffect.sourceCardId !== GLASS_CHIME_SWARM_ID
+        ) {
+          return reject(state, action, "Glass-Chime Swarm modifier does not match its approved rule");
+        }
+      }
       const isShatteredBarricadeEscalation =
         authoritativeSourceCardId === "shattered-barricade" && state.pendingEffect.type === "advance_escalation";
       if (isShatteredBarricadeEscalation) {
@@ -2209,7 +2282,7 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
           eventLog: [...state.eventLog, action]
         });
       }
-      const requiresAuthoritativeSource = state.pendingEffect.type === "lose_salvage" || state.pendingEffect.type === "forcedDisplacement";
+      const requiresAuthoritativeSource = state.pendingEffect.type === "lose_salvage" || state.pendingEffect.type === "forcedDisplacement" || state.pendingEffect.type === "next_non_battle_test_modifier";
       if (requiresAuthoritativeSource && resolutionAction.sourceCardId && resolutionAction.sourceCardId !== authoritativeSourceCardId) {
         return reject(state, action, "Resolution source is stale");
       }
@@ -2617,7 +2690,7 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
         });
       }
 
-      const scarredState: GameState = {
+      const scarredState: GameState = clearNextNonBattleTestModifierForSeat({
         ...state,
         sequence: state.sequence + 1,
         resolutionSource: state.resolutionSource,
@@ -2636,7 +2709,7 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
             }
           : null,
         eventLog: [...state.eventLog, action]
-      };
+      }, action.seatId);
       if (scarredState.pendingSutureStormConsequence?.seatId === woundAction.seatId) {
         scarredState.pendingSutureStormConsequence = {
           ...scarredState.pendingSutureStormConsequence,
@@ -2669,7 +2742,7 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
         return reject(state, action, `Unknown replacement character ${recruitAction.replacementCharacterId}`);
       }
 
-      return succeed({
+      return succeed(clearNextNonBattleTestModifierForSeat({
         ...state,
         sequence: state.sequence + 1,
         phase: "broadcast",
@@ -2720,7 +2793,7 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
           summary: `${recruitAction.replacementCharacter.name} enters the field as a fresh replacement.`
         },
         eventLog: [...state.eventLog, action]
-      });
+      }, recruitAction.seatId));
     }
     case "STAT_RAISED": {
       const statRaisedAction = action as StatRaisedAction;

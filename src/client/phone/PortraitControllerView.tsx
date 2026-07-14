@@ -840,6 +840,7 @@ export function PortraitControllerView({
   const compactStatusDetail = `${scarCount} scar${scarCount === 1 ? "" : "s"}`;
   const scarCards = self.character.scarCards ?? [];
   const afflictions = self.character.afflictions ?? { faceup: [], facedownCount: 0 };
+  const pendingTestModifiers = patch?.pendingTestModifiers ?? [];
 
   return (
     <section
@@ -933,10 +934,21 @@ export function PortraitControllerView({
                 </div>
               </section>
 
-              {(scarCards.length > 0 || afflictions.faceup.length > 0 || afflictions.facedownCount > 0) && (
+              {(pendingTestModifiers.length > 0 || scarCards.length > 0 || afflictions.faceup.length > 0 || afflictions.facedownCount > 0) && (
                 <section className="phone-portrait-section" data-testid="phone-portrait-status-effects">
-                  <div className="phone-sheet-section-heading">Scars / Afflictions</div>
+                  <div className="phone-sheet-section-heading">Status effects</div>
                   <div className="phone-status-effect-list">
+                    {pendingTestModifiers.map((modifier) => (
+                      <article key={modifier.sourceCardId} className="phone-portrait-info-card phone-status-effect-card">
+                        <div className="phone-status-effect-severity">-1</div>
+                        <div className="phone-status-effect-copy">
+                          <span>Temporary | Until next eligible test</span>
+                          <strong>{modifier.label}</strong>
+                          <p>{modifier.summary}</p>
+                          <small>No battle or movement effect</small>
+                        </div>
+                      </article>
+                    ))}
                     {scarCards.map((scar) => (
                       <article key={scar.id} className="phone-portrait-info-card phone-status-effect-card phone-status-effect-card-scar">
                         <CardArtImage
