@@ -38,8 +38,6 @@ const untouchedHeatLinkedHashes = new Map([
   ["hymn-scarred-zealot", "a3664813d86849b47a1fbe2fdd8b2b831f91b9f93fe334ce36c21aca58df4256"],
   ["marrow-tax-auditors", "bdf79951c64c0ea1e8322d8ba812db714fcc19cbae7d4dc6e4fca145fbfeeb9b"],
   ["memory-tax-gate", "dbeabc6a8d5b1654fd1f5a3c04ad8100fee6e47763bee51112a2d05ed407783e"],
-  ["relay-husk", "e3f1f24646c937cd646f862c1314fb8f458145d0e1944dc6afb1e8a977564a91"],
-  ["signal-rotted-engineer", "80446cb61e7acfe4e6613b134487e48a959764fc02ff53198f04e2abfb145c01"],
   ["siren-relay-echo", "c206dbd889f7aafaa69d50196f9c76076fafd40dd71015e7f0bcd05c7ef8de3b"]
 ]);
 
@@ -114,7 +112,7 @@ describe("Phase B2A threat revision content", () => {
     expect(laneCounts).toEqual({ red: 26, blue: 35, yellow: 48 });
   });
 
-  it("pins implemented Glass-Chime and Spindle plus the nine blocked Heat-linked IDs", () => {
+  it("pins implemented Glass-Chime and Spindle plus Siren and the six blocked Heat-linked IDs", () => {
     for (const [id, expectedHash] of untouchedHeatLinkedHashes) {
       const authoredCard = JSON.parse(readFileSync(join(process.cwd(), "content", "cards", "threats", `${id}.json`), "utf8"));
       expect(createHash("sha256").update(JSON.stringify(authoredCard)).digest("hex"), id).toBe(expectedHash);

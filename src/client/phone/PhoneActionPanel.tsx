@@ -1399,7 +1399,8 @@ function PhoneShopPanel({
   const revealedStock = shopEncounter?.revealedStock ?? [];
   const sellInventory = shopEncounter?.sellInventory ?? [];
   const confirmingItem = revealedStock.find((item) => item.cardId === confirmingCardId) ?? null;
-  const confirmingSellItem = sellInventory.find((item) => item.gearId === confirmingSellGearId) ?? null;
+  const sellItemKey = (item: (typeof sellInventory)[number]) => item.instanceId ?? item.gearId;
+  const confirmingSellItem = sellInventory.find((item) => sellItemKey(item) === confirmingSellGearId) ?? null;
 
   useEffect(() => {
     if (!confirmingCardId || revealedStock.some((item) => item.cardId === confirmingCardId)) {
@@ -1418,7 +1419,7 @@ function PhoneShopPanel({
   }, [pendingCardId, revealedStock, shopEncounter?.recentOutcome]);
 
   useEffect(() => {
-    if (!confirmingSellGearId || sellInventory.some((item) => item.gearId === confirmingSellGearId)) {
+    if (!confirmingSellGearId || sellInventory.some((item) => sellItemKey(item) === confirmingSellGearId)) {
       return;
     }
     setConfirmingSellGearId(null);
@@ -1428,7 +1429,7 @@ function PhoneShopPanel({
     if (!pendingSellGearId) {
       return;
     }
-    if (shopEncounter?.recentOutcome || !sellInventory.some((item) => item.gearId === pendingSellGearId)) {
+    if (shopEncounter?.recentOutcome || !sellInventory.some((item) => sellItemKey(item) === pendingSellGearId)) {
       setPendingSellGearId(null);
     }
   }, [pendingSellGearId, sellInventory, shopEncounter?.recentOutcome]);
@@ -1458,13 +1459,14 @@ function PhoneShopPanel({
     });
   }
 
-  function confirmSale(gearId: string): void {
-    setPendingSellGearId(gearId);
+  function confirmSale(gearId: string, instanceId?: string): void {
+    setPendingSellGearId(instanceId ?? gearId);
     setConfirmingSellGearId(null);
     onIntent({
       type: "SHOP_SELL_REQUESTED",
       seatId,
-      gearId
+      gearId,
+      instanceId
     });
   }
 
@@ -1620,11 +1622,12 @@ function PhoneShopPanel({
               <div className="phone-shop-stock-list">
                 {sellInventory.map((item) => {
                   const disabledReason = formatShopDisabledReason(item.disabledReason);
-                  const isPending = pendingSellGearId === item.gearId;
+                  const itemKey = sellItemKey(item);
+                  const isPending = pendingSellGearId === itemKey;
                   const isSold = soldItemName === item.name;
                   return (
                     <PhoneWrappedMediaCard
-                      key={item.gearId}
+                      key={itemKey}
                       variant="shop"
                       className={`phone-shop-stock-card phone-shop-panel__stock-card phone-shop-sell-card${
                         item.sellable ? "" : " phone-shop-stock-card-disabled"
@@ -1643,7 +1646,7 @@ function PhoneShopPanel({
                           className="phone-button phone-button-primary"
                           disabled={!item.sellable || isPending || isSold}
                           disabledReason={disabledReason ?? (isPending ? "Selling..." : isSold ? "Sold" : undefined)}
-                          onClick={() => setConfirmingSellGearId(item.gearId)}
+                          onClick={() => setConfirmingSellGearId(itemKey)}
                         >
                           {isPending ? "Selling..." : isSold ? "Sold" : "Sell"}
                         </GameButton>
@@ -1686,7 +1689,7 @@ function PhoneShopPanel({
                 <GameButton type="button" tone="secondary" onClick={() => setConfirmingSellGearId(null)}>
                   Cancel
                 </GameButton>
-                <GameButton type="button" tone="shop" onClick={() => confirmSale(confirmingSellItem.gearId)}>
+                <GameButton type="button" tone="shop" onClick={() => confirmSale(confirmingSellItem.gearId, confirmingSellItem.instanceId)}>
                   Confirm Sale
                 </GameButton>
               </div>
@@ -2735,6 +2738,24 @@ export function PhoneActionPanel({
   const contractActions: ActionButtonDefinition[] = [];
   const advanceActions: ActionButtonDefinition[] = [];
 
+  if (patch.pendingEquipmentSuppressionChoice) {
+    const choice = patch.pendingEquipmentSuppressionChoice;
+    for (const option of choice.options) {
+      resolveActions.push({
+        key: `equipment-suppression-${choice.choiceId}-${option.instanceId}`,
+        label: option.name,
+        detail: `${choice.sourceTitle}: suppress this equipped ${toTitleCase(option.slot)}.`,
+        tone: "primary",
+        onClick: () => onIntent({
+          type: "SELECT_EQUIPMENT_SUPPRESSION_TARGET",
+          seatId: self.seatId,
+          choiceId: choice.choiceId,
+          itemInstanceId: option.instanceId
+        })
+      });
+    }
+  }
+
   if (patch.pendingEncounterDecisionPrivate) {
     const decision = patch.pendingEncounterDecisionPrivate;
     for (const option of decision.options) {
@@ -3020,13 +3041,15 @@ export function PhoneActionPanel({
     }
 
     self.character.heldGear.forEach((item) => {
-      const useState = getObjectUseState(patch, "gear", item.id);
+      const useState = patch.objectUseStates?.find((state) => state.source === "gear" && state.id === item.id && (!item.instanceId || state.instanceId === item.instanceId)) ?? null;
       const useDisabledReason =
         useState?.disabledReason ?? (item.useLimit === "charge" && (item.charges ?? 0) <= 0 ? `${item.name} has no charges remaining.` : null);
-      if (equippedIds.has(item.id)) {
+      const equippedInstanceIds = new Set(Object.values(self.character.equippedGearInstances ?? {}).filter((value): value is string => Boolean(value)));
+      const isEquipped = item.instanceId ? equippedInstanceIds.has(item.instanceId) : equippedIds.has(item.id);
+      if (isEquipped) {
         if (item.activeText || item.useLimit) {
           objectActions.push({
-            key: `use-${item.id}`,
+            key: `use-${item.instanceId ?? item.id}`,
             label: `Use ${item.name}`,
             detail: useDisabledReason ?? getGearActionDetail(item, useState),
             tone: item.useLimit === "discard" ? "primary" : "secondary",
@@ -3036,7 +3059,8 @@ export function PhoneActionPanel({
               onIntent({
                 type: "USE_GEAR",
                 seatId: self.seatId,
-                gearId: item.id
+                gearId: item.id,
+                instanceId: item.instanceId
               })
           });
         }
@@ -3045,7 +3069,7 @@ export function PhoneActionPanel({
       }
 
       gearActions.push({
-        key: `equip-${item.id}`,
+        key: `equip-${item.instanceId ?? item.id}`,
         label: `Equip ${item.name}`,
         detail: `${toTitleCase(item.slot)}: +${item.statBonus.amount} ${statLabelById[item.statBonus.stat]}`,
         tone: "secondary",
@@ -3055,13 +3079,14 @@ export function PhoneActionPanel({
             type: "EQUIP_GEAR",
             seatId: self.seatId,
             gearId: item.id,
+            instanceId: item.instanceId,
             slot: item.slot
           })
       });
 
       if (item.activeText || item.useLimit) {
         objectActions.push({
-          key: `use-${item.id}`,
+          key: `use-${item.instanceId ?? item.id}`,
           label: `Use ${item.name}`,
           detail: useDisabledReason ?? getGearActionDetail(item, useState),
           tone: item.useLimit === "discard" ? "primary" : "secondary",
@@ -3071,7 +3096,8 @@ export function PhoneActionPanel({
             onIntent({
               type: "USE_GEAR",
               seatId: self.seatId,
-              gearId: item.id
+              gearId: item.id,
+              instanceId: item.instanceId
             })
         });
       }

@@ -153,6 +153,12 @@ type NextNormalMovementRollModifierEffect = {
   sourceCardId: "spindle-static-squall";
 };
 
+type EquipmentSuppressionEffect = {
+  type: "equipment_suppression";
+  sourceCardId: "relay-husk" | "signal-rotted-engineer";
+  mode: "throughNextThreat" | "duringNextBattle";
+};
+
 type SimpleEncounterEffect =
   | GainHeatEffect
   | GainHeatAllEffect
@@ -173,6 +179,7 @@ type SimpleEncounterEffect =
   | ReturnThreatToSpaceEffect
   | NextNonBattleTestModifierEffect
   | NextNormalMovementRollModifierEffect
+  | EquipmentSuppressionEffect
   | EncounterPaymentEffect
   | ForcedDisplacementEffect;
 
@@ -262,6 +269,11 @@ const simpleEffectSchema: z.ZodType<SimpleEncounterEffect> = z.union([
     amount: z.literal(-1),
     minimumResult: z.literal(1),
     sourceCardId: z.literal("spindle-static-squall")
+  }),
+  z.object({
+    type: z.literal("equipment_suppression"),
+    sourceCardId: z.enum(["relay-husk", "signal-rotted-engineer"]),
+    mode: z.enum(["throughNextThreat", "duringNextBattle"])
   }),
   encounterPaymentEffectSchema,
   forcedDisplacementEffectSchema

@@ -37,7 +37,7 @@ These form five exact type/stat/difficulty/effect clusters. Preserve stable IDs 
 
 `ashen-doppelganger`, `choir-static-burst`, `cinder-gate-backlash`, `crown-bell-baron`, `false-route-procession`, `gateblind-pulse`, `hymn-scarred-zealot`, `lantern-moth-swarm`, `marrow-tax-auditors`, `memory-tax-gate`, `mirror-rot-interference`, `pale-contract-collector`, `relay-husk`, `signal-rotted-engineer`, `siren-relay-echo`, `soot-stained-cutpurse`, `webglass-snarefield`.
 
-Final triage plus H4A approves eleven IDs. Eight are implemented: H1 removal-only covers `cinder-gate-backlash`, `mirror-rot-interference`, and `webglass-snarefield`; H2 normal Wound pressure covers `choir-static-burst` and `lantern-moth-swarm`; H3 bounded floor-zero Salvage pressure covers `crown-bell-baron`, `pale-contract-collector`, and `soot-stained-cutpurse`. H4A approves `relay-husk` and `signal-rotted-engineer` for exact-instance Equipment suppression and `siren-relay-echo` for a paired next non-battle Command modifier; these three are not implemented yet. The other six IDs remain blocked: `ashen-doppelganger`, `false-route-procession`, `gateblind-pulse`, `hymn-scarred-zealot`, `marrow-tax-auditors`, and `memory-tax-gate`.
+Final triage plus H4A approves eleven IDs. Ten are implemented: H1 removal-only covers `cinder-gate-backlash`, `mirror-rot-interference`, and `webglass-snarefield`; H2 normal Wound pressure covers `choir-static-burst` and `lantern-moth-swarm`; H3 bounded floor-zero Salvage pressure covers `crown-bell-baron`, `pale-contract-collector`, and `soot-stained-cutpurse`; H4B exact-instance Equipment suppression covers `relay-husk` and `signal-rotted-engineer`. `siren-relay-echo` remains approved and unimplemented for a separate paired next non-battle Command modifier. The other six IDs remain blocked: `ashen-doppelganger`, `false-route-procession`, `gateblind-pulse`, `hymn-scarred-zealot`, `marrow-tax-auditors`, and `memory-tax-gate`.
 
 `glass-chime-swarm` and `spindle-static-squall` are already in the duplicate group. Both now implement their approved typed delayed modifiers and no longer carry player-facing legacy Heat failures.
 
@@ -95,7 +95,7 @@ The remaining Heat-retirement sequence is:
 1. H1: `cinder-gate-backlash`, `mirror-rot-interference`, `webglass-snarefield` — IMPLEMENTED removal of obsolete success branches without replacement.
 2. H2: `choir-static-burst`, `lantern-moth-swarm` — IMPLEMENTED through the existing normal preventable Wound pipeline.
 3. H3: `crown-bell-baron`, `pale-contract-collector`, `soot-stained-cutpurse` — IMPLEMENTED existing floor-zero Salvage loss; explicitly excludes Salvage Ledger and shop-transaction hooks.
-4. H4 Equipment group: `relay-husk`, `signal-rotted-engineer` — APPROVED in `reports/heat-retirement-h4a-equipment-modifier-approval.md`, not implemented; share exact-instance choice/suppression infrastructure with typed next-Threat versus next-battle expiry.
+4. H4B Equipment group: `relay-husk`, `signal-rotted-engineer` — IMPLEMENTED with shared exact-instance choice/suppression infrastructure and typed next-Threat versus next-battle expiry.
 5. H4 modifier group: `siren-relay-echo` — APPROVED in the H4A report, not implemented; separate paired next non-battle Command modifier lifecycle.
 6. Keep `ashen-doppelganger`, `false-route-procession`, `gateblind-pulse`, `hymn-scarred-zealot`, `marrow-tax-auditors`, and `memory-tax-gate` blocked until their prerequisites in `reports/heat-retirement-implementation-plan.md` are approved.
 

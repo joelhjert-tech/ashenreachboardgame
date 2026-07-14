@@ -2,6 +2,7 @@ import type {
   AcceptContractAction,
   AdjustMovementRequestedAction,
   SelectRouteStarVariantAction,
+  SelectEquipmentSuppressionTargetAction,
   ClearRouteStarChoiceAction,
   ActivateGateSaintAction,
   UseMarrowDetourAction,
@@ -61,7 +62,7 @@ import type {
   UseGearAction,
   RollModifierSource
 } from "./actions.js";
-import { getHeldGearItem } from "./gear.js";
+import { getHeldGearInstance, getHeldGearItem } from "./gear.js";
 import { canAdvancePhase, canResolveMovement } from "./phases.js";
 import { getEscalationCollapseLevel, getEscalationModifier } from "./escalation.js";
 import type { EncounterEffect, ThreatCard } from "../schema/card.schema.js";
@@ -114,6 +115,15 @@ import {
   describeContractObjective,
   isContractObjectiveComplete
 } from "../contracts/objectives.js";
+import {
+  applyEquipmentSuppressionChoice,
+  completeEquipmentSuppressionLifecycle,
+  createPendingEquipmentSuppressionChoice,
+  ensureOwnedGearInstanceIds,
+  getEligibleEquipmentSuppressionTargets,
+  normalizeEquipmentSuppressionState,
+  reserveEquipmentSuppressions
+} from "../rules/equipmentSuppression.js";
 
 export interface ReducerRejection {
   reason: string;
@@ -297,16 +307,17 @@ function reject(state: GameState, action: GameAction, reason: string): ReducerFa
 }
 
 function succeed(state: GameState, emitted: GameAction[] = []): ReducerSuccess {
-  const activeState = state.status === "ended"
-    ? clearAllNextNormalMovementRollModifiers(clearAllNextNonBattleTestModifiers(state))
-    : state.players
+  const normalizedState = normalizeEquipmentSuppressionState(state);
+  const activeState = normalizedState.status === "ended"
+    ? clearAllNextNormalMovementRollModifiers(clearAllNextNonBattleTestModifiers(normalizedState))
+    : normalizedState.players
         .filter((player) => player.character.status === "recalled")
         .reduce(
           (nextState, player) => clearNextNormalMovementRollModifierForSeat(
             clearNextNonBattleTestModifierForSeat(nextState, player.seatId),
             player.seatId
           ),
-          state
+          normalizedState
         );
   return {
     ok: true,
@@ -355,6 +366,10 @@ function summarizeEffect(effect: EncounterEffect | null, success: boolean | null
       return `${prefix} the swarm breaks your concentration. Your next non-battle test is ${effect.amount}.`;
     case "next_normal_movement_roll_modifier":
       return `${prefix} the squall corrupts your bearing. Your next normal movement roll is ${effect.amount}, minimum ${effect.minimumResult}.`;
+    case "equipment_suppression":
+      return effect.mode === "throughNextThreat"
+        ? `${prefix} choose one equipped normal Equipment. It provides no effects through your next Threat.`
+        : `${prefix} choose one equipped normal Equipment. It provides no effects during your next battle.`;
     case "encounter_payment":
       return `${prefix} ${effect.prompt}`;
     case "forcedDisplacement":
@@ -373,6 +388,7 @@ function applyEffectToPlayer(player: PlayerState, effect: EncounterEffect): Play
   switch (effect.type) {
     case "encounter_payment":
     case "forcedDisplacement":
+    case "equipment_suppression":
       return player;
     case "take_wound":
       return {
@@ -602,8 +618,9 @@ function getThreatResolutionSourceId(state: GameState, seatId: string, cardId: s
     : `${seatId}:${cardId}:${state.sequence}`;
 }
 
-function removeHeldGearFromPlayer(player: PlayerState, gearId: string): PlayerState {
-  const nextHeldGear = player.character.heldGear.filter((item) => item.id !== gearId);
+function removeHeldGearFromPlayer(player: PlayerState, gearId: string, instanceId?: string): PlayerState {
+  const removing = (item: PlayerState["character"]["heldGear"][number]) => item.id === gearId && (!instanceId || item.instanceId === instanceId);
+  const nextHeldGear = player.character.heldGear.filter((item) => !removing(item));
 
   return {
     ...player,
@@ -613,9 +630,17 @@ function removeHeldGearFromPlayer(player: PlayerState, gearId: string): PlayerSt
       equippedGear: Object.fromEntries(
         Object.entries(player.character.equippedGear).map(([slot, equippedId]) => [
           slot,
-          equippedId === gearId ? null : equippedId
+          equippedId === gearId && (!instanceId || player.character.equippedGearInstances?.[slot as GearSlot] === instanceId) ? null : equippedId
         ])
-      ) as PlayerState["character"]["equippedGear"]
+      ) as PlayerState["character"]["equippedGear"],
+      equippedGearInstances: player.character.equippedGearInstances
+        ? Object.fromEntries(
+            Object.entries(player.character.equippedGearInstances).map(([slot, equippedInstanceId]) => [
+              slot,
+              instanceId ? equippedInstanceId === instanceId ? null : equippedInstanceId : player.character.equippedGear[slot as GearSlot] === gearId ? null : equippedInstanceId
+            ])
+          ) as PlayerState["character"]["equippedGearInstances"]
+        : undefined
     }
   };
 }
@@ -694,7 +719,7 @@ function applyShopSellToPlayer(player: PlayerState, action: ShopSellResolvedActi
     }
   };
 
-  return removeHeldGearFromPlayer(afterSale, action.gearId);
+  return removeHeldGearFromPlayer(afterSale, action.gearId, action.instanceId);
 }
 
 function canPayShopActionCost(player: PlayerState, cost: ShopServiceCost): string | null {
@@ -1141,22 +1166,10 @@ function canManageGear(state: GameState, seatId: string): void {
   }
 }
 
-function discardHeldGear(state: GameState, seatId: string, gearId: string): GameState {
+function discardHeldGear(state: GameState, seatId: string, gearId: string, instanceId?: string): GameState {
   return {
     ...state,
-    players: updateActivePlayer(state, seatId, (entry) => ({
-      ...entry,
-      character: {
-        ...entry.character,
-        heldGear: entry.character.heldGear.filter((item) => item.id !== gearId),
-        equippedGear: Object.fromEntries(
-          Object.entries(entry.character.equippedGear).map(([slot, equippedId]) => [
-            slot,
-            equippedId === gearId ? null : equippedId
-          ])
-        ) as PlayerState["character"]["equippedGear"]
-      }
-    }))
+    players: updateActivePlayer(state, seatId, (entry) => removeHeldGearFromPlayer(entry, gearId, instanceId))
   };
 }
 
@@ -1656,9 +1669,13 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
       const revealedState = drawnAction.revealEffect
         ? applyEffectToState(state, drawnAction.seatId, drawnAction.revealEffect)
         : state;
+      const threatResolutionId = createResolutionId(drawnAction.seatId, "threat", drawnAction.createdAt, drawnAction.card?.id ?? drawnAction.sectorId);
+      const suppressionReadyState = drawnAction.card
+        ? reserveEquipmentSuppressions(revealedState, drawnAction.seatId, threatResolutionId, "threat")
+        : revealedState;
 
       return succeed({
-        ...revealedState,
+        ...suppressionReadyState,
         sequence: state.sequence + 1,
         phase: "action",
         resolutionSource: null,
@@ -1666,7 +1683,7 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
         recentEncounterCardIds: recordRecentEncounterCardId(revealedState, drawnAction.card?.id),
         activeResolution: drawnAction.card
           ? {
-              id: createResolutionId(drawnAction.seatId, "threat", drawnAction.createdAt, drawnAction.card.id),
+              id: threatResolutionId,
               playerId: drawnAction.seatId,
               source: "threat",
               stage: "card_reveal",
@@ -1681,7 +1698,7 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
               }
             }
           : {
-              id: createResolutionId(drawnAction.seatId, "threat", drawnAction.createdAt, drawnAction.sectorId),
+              id: threatResolutionId,
               playerId: drawnAction.seatId,
               source: "threat",
               stage: "outcome_summary",
@@ -1691,7 +1708,7 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
                 effects: []
               }
             },
-        sectors: revealedState.sectors.map((sector) =>
+        sectors: suppressionReadyState.sectors.map((sector) =>
           sector.id === drawnAction.sectorId && drawnAction.card
             ? {
                 ...sector,
@@ -1715,7 +1732,7 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
                 : `Moved into ${drawnAction.sectorId}, but the local threat deck was empty.`
             }
           : state.lastOutcomeSummary,
-        eventLog: [...revealedState.eventLog, action]
+        eventLog: [...suppressionReadyState.eventLog, action]
       });
     }
     case "CHECK_REQUESTED": {
@@ -1800,13 +1817,15 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
         );
       }
 
+      const battleResolutionId = state.activeResolution?.id ?? createResolutionId(combatRequest.seatId, "threat", combatRequest.createdAt, state.currentEncounter.id);
+      const suppressionReadyState = reserveEquipmentSuppressions(state, combatRequest.seatId, battleResolutionId, "battle");
       return succeed({
-        ...state,
+        ...suppressionReadyState,
         sequence: state.sequence + 1,
         resolutionSource: state.resolutionSource,
         activeResolution: {
           ...(state.activeResolution ?? {
-            id: createResolutionId(combatRequest.seatId, "threat", combatRequest.createdAt, state.currentEncounter.id),
+            id: battleResolutionId,
             playerId: combatRequest.seatId,
             source: "threat" as const
           }),
@@ -1819,7 +1838,7 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
             effects: []
           }
         },
-        eventLog: [...state.eventLog, action]
+        eventLog: [...suppressionReadyState.eventLog, action]
       });
     }
     case "ENEMY_ROLL_ASSIGNED": {
@@ -2289,6 +2308,58 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
         ) {
           return reject(state, action, "Spindle Static Squall modifier does not match its approved rule");
         }
+      }
+      if (state.pendingEffect.type === "equipment_suppression") {
+        const effect = state.pendingEffect;
+        if (effect.sourceCardId !== authoritativeSourceCardId || resolutionAction.sourceCardId !== authoritativeSourceCardId) {
+          return reject(state, action, "Equipment suppression requires its authoritative Threat source");
+        }
+        if (resolutionAction.success !== false || state.lastOutcomeSummary?.success !== false || state.activeResolution?.playerId !== resolutionAction.seatId) {
+          return reject(state, action, "Equipment suppression requires the owner's confirmed failed Threat result");
+        }
+        const approvedMode = authoritativeSourceCardId === "relay-husk"
+          ? "throughNextThreat"
+          : authoritativeSourceCardId === "signal-rotted-engineer"
+            ? "duringNextBattle"
+            : null;
+        if (!approvedMode || effect.mode !== approvedMode) return reject(state, action, "Equipment suppression does not match its approved lifecycle");
+        const sourceResolutionId = state.activeResolution?.id ?? `${resolutionAction.seatId}:threat:${authoritativeSourceCardId}:${state.sequence}`;
+        const sourceEventId = `${sourceResolutionId}:equipment-suppression`;
+        if ((state.resolvedEquipmentSuppressionSourceEventIds ?? []).includes(sourceEventId) || state.pendingEquipmentSuppressionChoice?.sourceEventId === sourceEventId || (state.equipmentSuppressions ?? []).some((entry) => entry.sourceEventId === sourceEventId)) {
+          return reject(state, action, "Equipment suppression source was already resolved");
+        }
+        const eligible = getEligibleEquipmentSuppressionTargets(state, resolutionAction.seatId);
+        if (eligible.length === 0) {
+          const summary = "No eligible Equipment to suppress.";
+          return succeed({
+            ...state,
+            sequence: state.sequence + 1,
+            pendingEffect: null,
+            pendingFailureReaction: null,
+            pendingStaticIntercessionReaction: null,
+            resolvedEquipmentSuppressionSourceEventIds: [...(state.resolvedEquipmentSuppressionSourceEventIds ?? []), sourceEventId],
+            activeResolution: state.activeResolution ? { ...state.activeResolution, stage: "outcome_summary", outcome: { title: "No Equipment disrupted", text: summary, effects: [summary] } } : null,
+            eventLog: [...state.eventLog, action]
+          });
+        }
+        const pendingEquipmentSuppressionChoice = createPendingEquipmentSuppressionChoice(
+          state,
+          resolutionAction.seatId,
+          effect.sourceCardId,
+          sourceResolutionId,
+          resolutionAction.createdAt
+        );
+        if (!pendingEquipmentSuppressionChoice) return reject(state, action, "Equipment suppression choice could not be created");
+        return succeed({
+          ...state,
+          sequence: state.sequence + 1,
+          pendingEffect: null,
+          pendingFailureReaction: null,
+          pendingStaticIntercessionReaction: null,
+          pendingEquipmentSuppressionChoice,
+          activeResolution: state.activeResolution ? { ...state.activeResolution, stage: "outcome_summary", outcome: { title: "Choose Equipment to suppress", text: "The operative must choose one eligible equipped normal Equipment.", effects: ["Equipment suppression target pending."] } } : null,
+          eventLog: [...state.eventLog, action]
+        });
       }
       const isShatteredBarricadeEscalation =
         authoritativeSourceCardId === "shattered-barricade" && state.pendingEffect.type === "advance_escalation";
@@ -2843,7 +2914,7 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
         ),
         players: updateActivePlayer(state, recruitAction.seatId, (entry) => ({
           ...entry,
-          character: {
+          character: ensureOwnedGearInstanceIds({
             ...recruitAction.replacementCharacter!,
             currentSpaceId: entry.sectorId,
             trophies: 0,
@@ -2851,10 +2922,9 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
             wounds: 0,
             status: "active",
             heldGear: [...recruitAction.replacementCharacter!.heldGear],
-            equippedGear: { ...recruitAction.replacementCharacter!.equippedGear }
-            ,
+            equippedGear: { ...recruitAction.replacementCharacter!.equippedGear },
             scars: [...entry.character.scars, ...recruitAction.replacementCharacter!.scars]
-          }
+          }, recruitAction.seatId)
         })),
         lastOutcomeSummary: {
           seatId: recruitAction.seatId,
@@ -2879,6 +2949,30 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
         },
         eventLog: [...state.eventLog, action]
       }, recruitAction.seatId), recruitAction.seatId));
+    }
+    case "SELECT_EQUIPMENT_SUPPRESSION_TARGET": {
+      const selectAction = action as SelectEquipmentSuppressionTargetAction;
+      const pending = state.pendingEquipmentSuppressionChoice;
+      if (!pending || pending.choiceId !== selectAction.choiceId) return reject(state, action, "Equipment suppression choice is stale");
+      if (pending.ownerSeatId !== selectAction.seatId) return reject(state, action, "Equipment suppression choice belongs to another seat");
+      if ((state.resolvedEquipmentSuppressionSourceEventIds ?? []).includes(pending.sourceEventId)) return reject(state, action, "Equipment suppression choice was already resolved");
+      const eligible = getEligibleEquipmentSuppressionTargets(state, selectAction.seatId);
+      const item = eligible.find((entry) => entry.instanceId === selectAction.itemInstanceId);
+      if (!item || !pending.eligibleInstanceIds.includes(selectAction.itemInstanceId)) return reject(state, action, "Equipment suppression target is stale or ineligible");
+      const suppression = applyEquipmentSuppressionChoice(state, pending, item);
+      const summary = `${requirePlayer(state, selectAction.seatId).character.name}'s Equipment was disrupted.`;
+      return succeed({
+        ...state,
+        sequence: state.sequence + 1,
+        pendingEquipmentSuppressionChoice: null,
+        equipmentSuppressions: [
+          ...(state.equipmentSuppressions ?? []).filter((entry) => entry.sourceEventId !== pending.sourceEventId),
+          suppression
+        ],
+        resolvedEquipmentSuppressionSourceEventIds: [...(state.resolvedEquipmentSuppressionSourceEventIds ?? []), pending.sourceEventId],
+        activeResolution: state.activeResolution ? { ...state.activeResolution, stage: "outcome_summary", outcome: { title: "Equipment disrupted", text: summary, effects: [summary] } } : null,
+        eventLog: [...state.eventLog, action]
+      });
     }
     case "STAT_RAISED": {
       const statRaisedAction = action as StatRaisedAction;
@@ -2968,9 +3062,11 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
       }
 
       const player = requirePlayer(state, equipAction.seatId);
-      const item = getHeldGearItem(player.character, equipAction.gearId);
+      const item = equipAction.instanceId
+        ? getHeldGearInstance(player.character, equipAction.instanceId)
+        : getHeldGearItem(player.character, equipAction.gearId);
 
-      if (!item) {
+      if (!item || item.id !== equipAction.gearId) {
         return reject(state, action, `Gear ${equipAction.gearId} is not held by this character`);
       }
 
@@ -2988,6 +3084,10 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
             equippedGear: {
               ...entry.character.equippedGear,
               [equipAction.slot]: equipAction.gearId
+            },
+            equippedGearInstances: {
+              ...(entry.character.equippedGearInstances ?? { weapon: null, armor: null, utility: null }),
+              [equipAction.slot]: item.instanceId ?? null
             }
           }
         })),
@@ -3019,6 +3119,10 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
             equippedGear: {
               ...entry.character.equippedGear,
               [unequipAction.slot]: null
+            },
+            equippedGearInstances: {
+              ...(entry.character.equippedGearInstances ?? { weapon: null, armor: null, utility: null }),
+              [unequipAction.slot]: null
             }
           }
         })),
@@ -3043,9 +3147,11 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
       }
 
       const player = requirePlayer(state, useGearAction.seatId);
-      const item = getHeldGearItem(player.character, useGearAction.gearId);
+      const item = useGearAction.instanceId
+        ? getHeldGearInstance(player.character, useGearAction.instanceId)
+        : getHeldGearItem(player.character, useGearAction.gearId);
 
-      if (!item) {
+      if (!item || item.id !== useGearAction.gearId) {
         return reject(state, action, `Gear ${useGearAction.gearId} is not held by this character`);
       }
       if (useGearAction.pendingScarEffectId !== undefined) {
@@ -3148,7 +3254,7 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
         }))
       } : chargedState;
       const finalState = useGearAction.discard
-        ? discardHeldGear(revealedState, useGearAction.seatId, useGearAction.gearId)
+        ? discardHeldGear(revealedState, useGearAction.seatId, useGearAction.gearId, useGearAction.instanceId)
         : revealedState;
       const updatedPlayer = requirePlayer(finalState, useGearAction.seatId);
 
@@ -3628,7 +3734,7 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
         return reject(state, action, SHOP_FAILURE_REASONS.notAtShop);
       }
 
-      if (!player.character.heldGear.some((item) => item.id === sellAction.gearId)) {
+      if (!player.character.heldGear.some((item) => item.id === sellAction.gearId && (!sellAction.instanceId || item.instanceId === sellAction.instanceId))) {
         return reject(state, action, SHOP_FAILURE_REASONS.itemNotHeld);
       }
 
@@ -5101,6 +5207,9 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
       if (state.pendingDisplacement) {
         return reject(state, action, "Forced displacement must be resolved before continuing");
       }
+      if (state.pendingEquipmentSuppressionChoice) {
+        return reject(state, action, "Equipment suppression target must be selected before continuing");
+      }
 
       return succeed({
         ...state,
@@ -5121,20 +5230,23 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
       }
 
       const leavingResolution = state.phase === "resolution" && action.toPhase !== "resolution";
+      const lifecycleCompletedState = leavingResolution
+        ? completeEquipmentSuppressionLifecycle(state, state.activeResolution?.id)
+        : state;
 
       return succeed({
-        ...state,
+        ...lifecycleCompletedState,
         phase: action.toPhase,
         sequence: state.sequence + 1,
         resolutionSource: action.toPhase === "resolution" ? state.resolutionSource : null,
-        currentEncounter: leavingResolution ? null : state.currentEncounter,
-        pendingEnemyRoll: leavingResolution ? null : state.pendingEnemyRoll,
-        pendingEffect: leavingResolution ? null : state.pendingEffect,
-        pendingDisplacement: leavingResolution ? null : state.pendingDisplacement,
-        pendingDisplacementArrival: leavingResolution ? null : state.pendingDisplacementArrival,
-        pendingSutureStormConsequence: leavingResolution ? null : state.pendingSutureStormConsequence,
-        pendingFailureReaction: leavingResolution ? null : state.pendingFailureReaction,
-        pendingTileChallenge: leavingResolution ? null : state.pendingTileChallenge,
+        currentEncounter: leavingResolution ? null : lifecycleCompletedState.currentEncounter,
+        pendingEnemyRoll: leavingResolution ? null : lifecycleCompletedState.pendingEnemyRoll,
+        pendingEffect: leavingResolution ? null : lifecycleCompletedState.pendingEffect,
+        pendingDisplacement: leavingResolution ? null : lifecycleCompletedState.pendingDisplacement,
+        pendingDisplacementArrival: leavingResolution ? null : lifecycleCompletedState.pendingDisplacementArrival,
+        pendingSutureStormConsequence: leavingResolution ? null : lifecycleCompletedState.pendingSutureStormConsequence,
+        pendingFailureReaction: leavingResolution ? null : lifecycleCompletedState.pendingFailureReaction,
+        pendingTileChallenge: leavingResolution ? null : lifecycleCompletedState.pendingTileChallenge,
         activeResolution:
           action.toPhase === "broadcast" && state.activeResolution
             ? {

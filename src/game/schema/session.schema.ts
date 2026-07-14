@@ -42,6 +42,34 @@ export const pendingNextNormalMovementRollModifierSchema = z.object({
   createdAt: z.string().min(1)
 });
 
+export const equipmentSuppressionModeSchema = z.enum(["throughNextThreat", "duringNextBattle"]);
+
+export const pendingEquipmentSuppressionChoiceSchema = z.object({
+  choiceId: z.string().min(1),
+  ownerSeatId: z.string().min(1),
+  sourceThreatId: z.enum(["relay-husk", "signal-rotted-engineer"]),
+  sourceEventId: z.string().min(1),
+  sourceResolutionId: z.string().min(1),
+  mode: equipmentSuppressionModeSchema,
+  eligibleInstanceIds: z.array(z.string().min(1)).min(1),
+  createdSequence: z.number().int().min(0),
+  createdAt: z.string().min(1)
+});
+
+export const equipmentSuppressionSchema = z.object({
+  ownerSeatId: z.string().min(1),
+  sourceThreatId: z.enum(["relay-husk", "signal-rotted-engineer"]),
+  sourceEventId: z.string().min(1),
+  sourceResolutionId: z.string().min(1),
+  itemInstanceId: z.string().min(1),
+  itemCatalogId: z.string().min(1),
+  mode: equipmentSuppressionModeSchema,
+  qualifyingLifecycleId: z.string().min(1).nullable(),
+  status: z.literal("active"),
+  createdSequence: z.number().int().min(0),
+  createdAt: z.string().min(1)
+});
+
 export const normalMovementRollDetailSchema = z.object({
   resolutionId: z.string().min(1),
   rolledValue: z.number().int().min(1),
@@ -333,6 +361,9 @@ export const gameStateSchema = z.object({
   pendingSutureStormConsequence: pendingSutureStormConsequenceSchema.nullable().optional(),
   resolvedDisplacementSourceEventIds: z.array(z.string().min(1)).optional(),
   resolvedSalvageLossSourceEventIds: z.array(z.string().min(1)).optional(),
+  pendingEquipmentSuppressionChoice: pendingEquipmentSuppressionChoiceSchema.nullable().optional(),
+  equipmentSuppressions: z.array(equipmentSuppressionSchema).optional(),
+  resolvedEquipmentSuppressionSourceEventIds: z.array(z.string().min(1)).optional(),
   pendingNextNonBattleTestModifiers: z.array(pendingNextNonBattleTestModifierSchema).optional(),
   resolvedNextNonBattleTestModifierSourceEventIds: z.array(z.string().min(1)).optional(),
   consumedNextNonBattleTestModifierTestEventIds: z.array(z.string().min(1)).optional(),
@@ -458,6 +489,9 @@ export type GameMode = z.infer<typeof gameModeSchema>;
 export type InteractionMode = z.infer<typeof interactionModeSchema>;
 export type PendingNextNonBattleTestModifier = z.infer<typeof pendingNextNonBattleTestModifierSchema>;
 export type PendingNextNormalMovementRollModifier = z.infer<typeof pendingNextNormalMovementRollModifierSchema>;
+export type EquipmentSuppressionMode = z.infer<typeof equipmentSuppressionModeSchema>;
+export type PendingEquipmentSuppressionChoice = z.infer<typeof pendingEquipmentSuppressionChoiceSchema>;
+export type EquipmentSuppression = z.infer<typeof equipmentSuppressionSchema>;
 export type NormalMovementRollDetail = z.infer<typeof normalMovementRollDetailSchema>;
 export type ResolutionStage = z.infer<typeof resolutionStageSchema>;
 export type ActiveResolution = z.infer<typeof activeResolutionSchema>;

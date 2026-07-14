@@ -3,7 +3,7 @@
   "type": "threat",
   "cardType": "hazard",
   "title": "Relay Husk",
-  "text": "A dead communications frame twitches awake and projects false instructions into the fog.",
+  "text": "If you fail, choose one equipped normal Equipment. It provides no effects through your next Threat.",
   "flavor": "Its voice is all static courtesy and buried malice.",
   "severity": 2,
   "stat": "guile",
@@ -13,8 +13,9 @@
     "gearId": "marshal-seal"
   },
   "failEffect": {
-    "type": "gain_heat",
-    "amount": 1
+    "type": "equipment_suppression",
+    "sourceCardId": "relay-husk",
+    "mode": "throughNextThreat"
   },
   "enemyFamily": "machine",
   "threatLane": "yellow",
@@ -22,7 +23,6 @@
   "rarity": "common",
   "tempo": "push",
   "resourceTags": [
-    "gear",
-    "heat"
+    "gear"
   ]
 }

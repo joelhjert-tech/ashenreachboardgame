@@ -29,8 +29,8 @@ The two existing Heat audits and current canonical Threat content reconcile to e
 | `memory-tax-gate` | Memory Tax Gate | Yellow / hazard | N/A | Command 8 | harmless-memory note | `gain_heat 2` | none | `failEffect` | compatibility-only no-op | `content/cards/threats/memory-tax-gate.json` | `false-route-procession`, `route-splice`, `crown-bell-baron` |
 | `mirror-rot-interference` | Mirror-Rot Interference | Blue / hazard | N/A | Guile 11 | no additional effect | 1 Wound | none | retired H1 `successEffect` | implemented removal; failure remains active | `content/cards/threats/mirror-rot-interference.json` | `webglass-snarefield`, `bellwire-snare`, `webglass-echo-trap` |
 | `pale-contract-collector` | Pale Contract Collector | Yellow / enemy | N/A | Command 8 | Defeat | lose up to 1 Salvage on loss | 2 Trophies | `woundOnLoss` | implemented floor-zero automatic loss | `content/cards/threats/pale-contract-collector.json` | `crown-bell-baron`, `pale-toll-enforcer`, `ash-court-duelist` |
-| `relay-husk` | Relay Husk | Yellow / hazard | N/A | Guile 6 | gain Marshal Seal | `gain_heat 1` | none | `failEffect` | compatibility-only no-op | `content/cards/threats/relay-husk.json` | `wireghost-key`, `pale-cartel-shakedown`, `signal-rotted-engineer` |
-| `signal-rotted-engineer` | Signal-Rotted Engineer | Yellow / enemy | N/A | Forge 4 | Defeat | `gain_heat 1` on loss | tool-rig note | `woundOnLoss` | compatibility-only no-op; current combat already disables Weapon bonus | `content/cards/threats/signal-rotted-engineer.json` | `rust-mote-drone`, `wire-chewer-pack`, `relay-husk` |
+| `relay-husk` | Relay Husk | Yellow / hazard | N/A | Guile 6 | gain Marshal Seal | suppress exact equipped normal Equipment through next owner Threat | none | `failEffect` | implemented typed H4B suppression | `content/cards/threats/relay-husk.json` | `wireghost-key`, `pale-cartel-shakedown`, `signal-rotted-engineer` |
+| `signal-rotted-engineer` | Signal-Rotted Engineer | Yellow / enemy | N/A | Forge 4 | Defeat | suppress exact equipped normal Equipment during next owner battle | tool-rig note | `woundOnLoss` | implemented typed H4B suppression; current combat still disables Weapon bonus | `content/cards/threats/signal-rotted-engineer.json` | `rust-mote-drone`, `wire-chewer-pack`, `relay-husk` |
 | `siren-relay-echo` | Siren Relay Echo | Yellow / hazard | N/A | Command 6 | `lose_heat 1` | `gain_heat 2` | none | `successEffect`, `failEffect` | two compatibility-only no-ops | `content/cards/threats/siren-relay-echo.json` | `false-route-procession`, `memory-tax-gate`, `relay-husk` |
 | `soot-stained-cutpurse` | Soot-Stained Cutpurse | Yellow / enemy | N/A | Guile 3 | Defeat | lose up to 1 Salvage on loss | market-rumor note | `woundOnLoss` | implemented floor-zero automatic loss | `content/cards/threats/soot-stained-cutpurse.json` | `toll-scrip-urchins`, `scrap-toll-gangers`, `bridge-toll-runt` |
 | `webglass-snarefield` | Webglass Snarefield | Blue / hazard | N/A | Guile 9 | no additional effect | 1 Wound | none | retired H1 `successEffect` | implemented removal; failure remains active | `content/cards/threats/webglass-snarefield.json` | `mirror-rot-interference`, `bellwire-snare`, `starless-taxation` |
@@ -53,8 +53,8 @@ Canonical graph references, used only as a frequency warning, are respectively 3
 | `memory-tax-gate` | risk/reward choice paid with private memory | player-choice/private-note lifecycle | requires new lifecycle | 3 provisional | BLOCKED |
 | `mirror-rot-interference` | obsolete success-side recovery bookkeeping | remove success branch without replacement | implemented H1 | 1 | APPROVED — IMPLEMENTED H1 |
 | `pale-contract-collector` | resource pressure through debt collection | lose up to 1 Salvage | implemented H3 | 2 | APPROVED — IMPLEMENTED H3 |
-| `relay-husk` | Equipment pressure from false instructions | suppress chosen exact equipped normal Equipment through next owner Threat | approved typed lifecycle; implementation pending | 2 | APPROVED — H4A |
-| `signal-rotted-engineer` | Equipment interference | suppress chosen exact equipped normal Equipment during next owner battle | approved typed lifecycle; implementation pending | 2 | APPROVED — H4A |
+| `relay-husk` | Equipment pressure from false instructions | suppress chosen exact equipped normal Equipment through next owner Threat | implemented typed H4B lifecycle | 2 | APPROVED — IMPLEMENTED H4B |
+| `signal-rotted-engineer` | Equipment interference | suppress chosen exact equipped normal Equipment during next owner battle | implemented typed H4B lifecycle | 2 | APPROVED — IMPLEMENTED H4B |
 | `siren-relay-echo` | paired temporary Command interference | next non-battle Command test gets `+1` on success or `-1` on failure | approved typed lifecycle; implementation pending | 2 | APPROVED — H4A |
 | `soot-stained-cutpurse` | minor resource theft | lose up to 1 Salvage | implemented H3 | 1 | APPROVED — IMPLEMENTED H3 |
 | `webglass-snarefield` | obsolete success-side recovery bookkeeping | remove success branch without replacement | implemented H1 | 1 | APPROVED — IMPLEMENTED H1 |
@@ -477,7 +477,7 @@ The screen deliberately rejects automatic Scar, Global Escalation, and generic o
 - Severity: 2.
 - Implementation complexity: medium-high.
 - Balance risk: medium; bounded owner choice and Artifact exclusion prevent routine permanent or disproportionate loss.
-- Approval status: APPROVED — H4A; implementation pending.
+- Approval status: APPROVED — IMPLEMENTED H4B.
 
 ### `signal-rotted-engineer`
 
@@ -507,7 +507,7 @@ The screen deliberately rejects automatic Scar, Global Escalation, and generic o
 - Severity: 2.
 - Implementation complexity: medium-high.
 - Balance risk: medium; owner can choose the least useful eligible item, but the effect is bounded and never destroys it.
-- Approval status: APPROVED — H4A; implementation pending.
+- Approval status: APPROVED — IMPLEMENTED H4B.
 
 ### `siren-relay-echo`
 
@@ -630,7 +630,7 @@ Counts below are unique cards, not individual branches. “Approved proposal” 
 | Wound effects | 5 | 5 | Cinder/Mirror/Webglass plus implemented Choir/Lantern |
 | Scar effects | 0 | 0 | Zealot and Doppelganger direct-Scar routes remain blocked |
 | Salvage pressure | 0 | 3 | Baron, Collector, Cutpurse; all floor-zero owner losses |
-| Equipment effects | 1 | 3 | Existing Engineer battle Weapon suppression plus two approved bounded exact-instance suppressions; H4A implementation pending |
+| Equipment effects | 3 | 3 | Existing Engineer battle Weapon suppression plus two implemented bounded exact-instance suppressions |
 | Movement effects | 0 | 0 | False-Route remains blocked |
 | Temporary modifiers | 0 | 1 | Siren paired next non-battle Command modifier approved; implementation pending |
 | Persistent effects | 0 | 3 | two event-bounded suppressions and one until-consumed modifier; all owner-scoped with explicit cleanup |

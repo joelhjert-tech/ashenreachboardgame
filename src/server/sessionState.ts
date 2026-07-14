@@ -12,6 +12,7 @@ import { applyStartingLoadout, createInitialSoloRerollCharges, type StartingLoad
 import { getReflectionPressureThresholdForMode, getWoundThresholdForMode } from "../game/rules/soloTuning.js";
 import { createInitialAfflictionUsageState } from "../game/rules/afflictions.js";
 import { attachTileChallengesToSectors } from "../game/rules/tileChallenges.js";
+import { ensureOwnedGearInstanceIds } from "../game/rules/equipmentSuppression.js";
 import type { AuthoredCharacter, Character } from "../game/schema/character.schema.js";
 import {
   createEmptyScenarioConfrontationState,
@@ -53,8 +54,8 @@ export function getSeatCountForSession(
   return Math.max(2, Math.min(sessionSeatLayouts.multiplayer.length, playerCount));
 }
 
-function cloneCharacter(character: AuthoredCharacter, currentSpaceId: string): Character {
-  return {
+function cloneCharacter(character: AuthoredCharacter, currentSpaceId: string, seatId: string): Character {
+  return ensureOwnedGearInstanceIds({
     ...character,
     currentSpaceId,
     activeContract: character.activeContract ? { ...character.activeContract } : null,
@@ -66,7 +67,7 @@ function cloneCharacter(character: AuthoredCharacter, currentSpaceId: string): C
     statUpgrades: character.statUpgrades ? { ...character.statUpgrades } : undefined,
     trophies: character.trophies,
     trophyPile: [...(character.trophyPile ?? [])]
-  };
+  }, seatId);
 }
 
 function createPlayerState(
@@ -95,7 +96,7 @@ function createPlayerState(
     facedownAfflictions: [],
     afflictionUsageState: createInitialAfflictionUsageState(),
     afflictionDrawHistory: [],
-    character: cloneCharacter(loadedCharacter, currentSpaceId)
+    character: cloneCharacter(loadedCharacter, currentSpaceId, seatId)
   };
 }
 
@@ -205,6 +206,9 @@ export function createInitialSessionState(
     pendingSutureStormConsequence: null,
     resolvedDisplacementSourceEventIds: [],
     resolvedSalvageLossSourceEventIds: [],
+    pendingEquipmentSuppressionChoice: null,
+    equipmentSuppressions: [],
+    resolvedEquipmentSuppressionSourceEventIds: [],
     pendingNextNonBattleTestModifiers: [],
     resolvedNextNonBattleTestModifierSourceEventIds: [],
     consumedNextNonBattleTestModifierTestEventIds: [],

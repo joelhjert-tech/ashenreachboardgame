@@ -8,8 +8,8 @@ Phase H4A resolves the three temporary owner-pressure design gates without trans
 
 | Stable ID | Decision | Approved model | Severity | Implementation group |
 |---|---|---|---:|---|
-| `relay-husk` | APPROVED | owner chooses one exact equipped normal Equipment instance; suppress it through the owner's next Threat resolution | 2 | shared Equipment suppression |
-| `signal-rotted-engineer` | APPROVED | after a combat loss, owner chooses one exact equipped normal Equipment instance; suppress it during the owner's next battle | 2 | shared Equipment suppression |
+| `relay-husk` | APPROVED — IMPLEMENTED H4B | owner chooses one exact equipped normal Equipment instance; suppress it through the owner's next Threat resolution | 2 | shared Equipment suppression |
+| `signal-rotted-engineer` | APPROVED — IMPLEMENTED H4B | after a combat loss, owner chooses one exact equipped normal Equipment instance; suppress it during the owner's next battle | 2 | shared Equipment suppression |
 | `siren-relay-echo` | APPROVED | next eligible non-battle Command test gets `+1` after success or `-1` after failure | 2 | separate Command modifier |
 
 The remaining six IDs stay BLOCKED and unchanged: `ashen-doppelganger`, `false-route-procession`, `gateblind-pulse`, `hymn-scarred-zealot`, `marrow-tax-auditors`, and `memory-tax-gate`.
@@ -96,7 +96,7 @@ There is no cancel action and no automatic timeout target. The normal game waits
 - Severity: 2/5. Frequency: one graph reference. Avoidability: pass Guile 6 or have no eligible item. Recovery cost: one Threat without the item. Persistence: event-bounded, possibly across turns. Item dependency: medium. Multiplayer impact: none beyond public status. Bookkeeping: medium.
 - Complexity: medium-high implementation, low ongoing table load once status is visible.
 - Balance risk: medium; no-target loadouts nullify it, but they also forgo equipped normal Equipment. Exact-instance choice prevents duplicate-copy spillover.
-- Approval status: APPROVED.
+- Approval status: APPROVED — IMPLEMENTED H4B.
 
 ## `signal-rotted-engineer` option review
 
@@ -131,7 +131,7 @@ There is no cancel action and no automatic timeout target. The normal game waits
 - Severity: 2/5. Frequency: two graph references. Avoidability: win Forge battle or have no eligible item. Recovery cost: one battle without one chosen item. Persistence: event-bounded. Item dependency: medium. Multiplayer impact: owner-only. Bookkeeping: medium.
 - Complexity: medium-high implementation, low-medium player interaction.
 - Balance risk: medium; selection lets an optimizer choose the least valuable eligible item, which is preferable to routine random destruction and is bounded to one battle.
-- Approval status: APPROVED.
+- Approval status: APPROVED — IMPLEMENTED H4B.
 
 ## `siren-relay-echo` option review
 

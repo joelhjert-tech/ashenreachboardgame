@@ -54,8 +54,6 @@ const REMAINING_HEAT_THREAT_IDS = [
   "hymn-scarred-zealot",
   "marrow-tax-auditors",
   "memory-tax-gate",
-  "relay-husk",
-  "signal-rotted-engineer",
   "siren-relay-echo"
 ] as const;
 
@@ -326,8 +324,8 @@ describe("Heat Retirement H2 normal Wound Threats", () => {
 
   it("removes exactly the H2 Heat approvals and leaves every out-of-scope Threat pinned", () => {
     expect(collectHeatThreatIds()).toEqual([...REMAINING_HEAT_THREAT_IDS].sort());
-    expect(LEGACY_HEAT_EFFECT_APPROVALS).toHaveLength(17);
-    expect(APPROVED_LEGACY_HEAT_CONTENT_IDS.size).toBe(31);
+    expect(LEGACY_HEAT_EFFECT_APPROVALS).toHaveLength(15);
+    expect(APPROVED_LEGACY_HEAT_CONTENT_IDS.size).toBe(29);
     for (const id of ["cinder-gate-backlash", "mirror-rot-interference", "webglass-snarefield"]) {
       expect(requireTarget(id).successEffect).toBeUndefined();
     }

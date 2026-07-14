@@ -14,16 +14,22 @@ const VIOLET_TRIAD_TEAM_BONUS: Partial<Record<Stat, number>> = {
   guile: 1
 };
 
-type GearBearingCharacter = Pick<Character, "id" | "heldGear" | "equippedGear" | "followers">;
+type GearBearingCharacter = Pick<Character, "id" | "heldGear" | "equippedGear" | "equippedGearInstances" | "followers">;
 
 export function getHeldGearItem(character: GearBearingCharacter, gearId: string): GearItem | undefined {
   return character.heldGear.find((item) => item.id === gearId);
+}
+
+export function getHeldGearInstance(character: GearBearingCharacter, instanceId: string): GearItem | undefined {
+  return character.heldGear.find((item) => item.instanceId === instanceId);
 }
 
 export function getEquippedGearItem(
   character: GearBearingCharacter,
   slot: GearSlot
 ): GearItem | undefined {
+  const instanceId = character.equippedGearInstances?.[slot];
+  if (instanceId) return getHeldGearInstance(character, instanceId);
   const gearId = character.equippedGear[slot];
 
   return gearId ? getHeldGearItem(character, gearId) : undefined;
@@ -39,6 +45,7 @@ export function getCompanionStatBonus(character: Pick<GearBearingCharacter, "id"
 
 export interface GearModifierContext {
   mode: "resting" | "battle" | "check";
+  suppressedInstanceIds?: ReadonlySet<string>;
 }
 
 export function isGearModifierActive(item: GearItem, context: GearModifierContext): boolean {
@@ -53,7 +60,7 @@ export function getEquippedGearModifierSources(
 ): Array<{ label: string; value: number }> {
   const gearSources = (Object.keys(character.equippedGear) as GearSlot[])
     .map((slot) => getEquippedGearItem(character, slot))
-    .filter((item): item is GearItem => item !== undefined && item.statBonus.stat === stat && isGearModifierActive(item, context))
+    .filter((item): item is GearItem => item !== undefined && !context.suppressedInstanceIds?.has(item.instanceId ?? "") && item.statBonus.stat === stat && isGearModifierActive(item, context))
     .map((item) => ({
       label: item.name,
       value: item.statBonus.amount

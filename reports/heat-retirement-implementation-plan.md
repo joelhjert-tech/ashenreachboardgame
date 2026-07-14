@@ -46,7 +46,7 @@ Implemented as `feat: replace heat threats with wound pressure`. Both failures u
 
 Implemented as `feat: replace heat threats with salvage pressure`. All three losses reuse the existing authoritative floor-zero resolver, report requested/actual/resulting values, and remain isolated from payment, Salvage Ledger, shop, mission, Contract, and relic-trade lifecycles.
 
-### Group H4A-1 — exact-instance Equipment pressure (2) — APPROVED, NOT IMPLEMENTED
+### Group H4B — exact-instance Equipment pressure (2) — IMPLEMENTED
 
 - Stable IDs: `relay-husk`, `signal-rotted-engineer`.
 - Exact changes: Relay failure suppresses one owner-chosen exact equipped normal Equipment instance through the owner's next Threat; Engineer combat loss suppresses one owner-chosen exact equipped normal Equipment instance during the owner's next battle.
@@ -86,8 +86,8 @@ The six blocked IDs are not assigned to implementation groups. A later approval 
 1. **H1 — removal/clarity only — COMPLETE.** Implemented for `cinder-gate-backlash`, `mirror-rot-interference`, and `webglass-snarefield` without replacement.
 2. **H2 — existing Wound resolver — COMPLETE.** Implemented for `choir-static-burst` and `lantern-moth-swarm` through the normal preventable Wound lifecycle.
 3. **H3 — existing floor-zero Salvage resolver — COMPLETE.** Implemented for `crown-bell-baron`, `pale-contract-collector`, and `soot-stained-cutpurse`; floor zero, actual delta, reward preservation, mode ownership, and explicit exclusion of Salvage Ledger, shop-transaction, mission, Contract, and completed-contract hooks are covered.
-4. **H4 implementation group 1 — exact-instance Equipment pressure — APPROVED NEXT.** IDs: `relay-husk`, `signal-rotted-engineer`. Implement only the shared contract in the H4A approval report, including equipped-instance migration, private choice, suppression gates, and full cleanup.
-5. **H4 implementation group 2 — paired Command modifier — APPROVED AFTER GROUP 1.** ID: `siren-relay-echo`. Keep separate from Equipment state and preserve Glass-Chime behavior.
+4. **H4B — exact-instance Equipment pressure — COMPLETE.** IDs: `relay-husk`, `signal-rotted-engineer`. Shared equipped-instance identity, private choice, suppression gates, reconnect persistence, and full cleanup are implemented.
+5. **H4 modifier group — paired Command modifier — APPROVED NEXT.** ID: `siren-relay-echo`. Keep separate from Equipment state and preserve Glass-Chime behavior.
 6. **Movement and shared-pressure design gates.** IDs: `false-route-procession`, `gateblind-pulse`. Benefit: preserves route/gate identity. Risk: medium-high. Prerequisites: destination and escalation threshold specifications.
 7. **Choice and economy-frequency gates.** IDs: `memory-tax-gate`, `marrow-tax-auditors`. Benefit: distinct Yellow tension. Risk: high if choice is dominant or economy starves. Prerequisites: choice contract and H3 playtest evidence.
 8. **Scar/high-severity gates last.** IDs: `hymn-scarred-zealot`, `ashen-doppelganger`. Benefit: preserves lasting-injury fiction. Risk: high. Prerequisites: exact Scar trigger and explicit 2-Wound recall-rate approval.

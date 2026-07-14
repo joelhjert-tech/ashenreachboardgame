@@ -252,6 +252,7 @@ export interface PrivateCharacter {
   activeContract: { contractId: string; progress: number } | null;
   heldGear: GearItem[];
   equippedGear: Record<GearSlot, string | null>;
+  equippedGearInstances?: Record<GearSlot, string | null>;
   followers?: Follower[];
   scarCards?: ScarSummary[];
   abilities: Array<{ id: string; name: string; text: string }>;
@@ -269,6 +270,7 @@ export interface PhoneSelfState {
 export interface PhoneObjectUseState {
   source: "gear" | "follower";
   id: string;
+  instanceId?: string;
   usedThisTurn: boolean;
   usedThisRound: boolean;
   remainingUses?: number | null;
@@ -604,6 +606,7 @@ export interface PublicShopEncounterState {
   }>;
   sellInventory?: Array<{
     gearId: string;
+    instanceId?: string;
     name: string;
     type: "gear" | "artifact";
     category?: GearCategory;
@@ -1002,6 +1005,20 @@ export interface PhonePatchPayload extends PublicPatchPayload {
     currentSalvage: number;
     options: Array<{ optionId: string; label: string; enabled: boolean; disabledReason?: string }>;
   } | null;
+  pendingEquipmentSuppressionChoice?: {
+    choiceId: string;
+    sourceTitle: string;
+    prompt: "Choose Equipment to suppress";
+    mode: "throughNextThreat" | "duringNextBattle";
+    options: Array<{ instanceId: string; catalogId: string; name: string; slot: GearSlot; equipped: true }>;
+  } | null;
+  equipmentSuppressions?: Array<{
+    sourceThreatId: "relay-husk" | "signal-rotted-engineer";
+    itemInstanceId: string;
+    itemCatalogId: string;
+    mode: "throughNextThreat" | "duringNextBattle";
+    active: true;
+  }>;
   pendingDisplacementPrivate?: {
     reactionId: string;
     sourceEventId: string;
@@ -1163,8 +1180,10 @@ export type ClientIntent =
       type: "EQUIP_GEAR";
       seatId: string;
       gearId: string;
+      instanceId?: string;
       slot: GearSlot;
     }
+  | { type: "SELECT_EQUIPMENT_SUPPRESSION_TARGET"; seatId: string; choiceId: string; itemInstanceId: string }
   | {
       type: "UNEQUIP_GEAR";
       seatId: string;
@@ -1216,6 +1235,7 @@ export type ClientIntent =
       type: "SHOP_SELL_REQUESTED";
       seatId: string;
       gearId: string;
+      instanceId?: string;
     }
   | {
       type: "SHOP_SKIP_REQUESTED";

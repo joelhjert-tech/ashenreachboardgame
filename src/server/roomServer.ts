@@ -200,6 +200,13 @@ import { rollDice, type RandomSource, defaultRandomSource } from "../game/engine
 import { reduceGameState } from "../game/engine/reducer.js";
 import { CHALLENGE_LABELS } from "../game/ui/challengeTheme.js";
 import {
+  completeEquipmentSuppressionLifecycle,
+  getEligibleEquipmentSuppressionTargets,
+  getSuppressedEquipmentInstanceIds,
+  isOwnedItemEffectActive,
+  reserveEquipmentSuppressions
+} from "../game/rules/equipmentSuppression.js";
+import {
   createEmptyScenarioConfrontationState,
   createEmptyScenarioResultState,
   type ActiveResolution,
@@ -329,6 +336,7 @@ const CLIENT_INTENT_TYPES = new Set<string>([
   "ENEMY_ROLL_REQUESTED",
   "SOLO_REROLL_REQUESTED",
   "CONTINUE_RESOLUTION",
+  "SELECT_EQUIPMENT_SUPPRESSION_TARGET",
   "ENCOUNTER_DECISION_REQUESTED",
   "FORCED_DISPLACEMENT_ACCEPTED",
   "CONTINUE_SCAR_CONSEQUENCE",
@@ -1318,6 +1326,8 @@ export class GameRoomServer {
         requireStringField(message, "instanceId", type); requireStringField(message, "reactionId", type); requireStringField(message, "toSectorId", type); break;
       case "CONTINUE_SCAR_CONSEQUENCE":
         requireStringField(message, "reactionId", type); break;
+      case "SELECT_EQUIPMENT_SUPPRESSION_TARGET":
+        requireStringField(message, "choiceId", type); requireStringField(message, "itemInstanceId", type); break;
       case "ENCOUNTER_DECISION_REQUESTED":
         requireStringField(message, "decisionId", type); requireStringField(message, "optionId", type);
         if (!Number.isInteger(message.decisionVersion) || Number(message.decisionVersion) < 1) throw new IntentRejectedError(type, "Encounter decision version must be a positive integer");
@@ -1347,6 +1357,7 @@ export class GameRoomServer {
         break;
       case "EQUIP_GEAR":
         requireStringField(message, "gearId", type);
+        if (message.instanceId !== undefined) requireStringField(message, "instanceId", type);
         requireEnumField(message, "slot", GEAR_SLOT_VALUES, type);
         break;
       case "UNEQUIP_GEAR":
@@ -1378,6 +1389,7 @@ export class GameRoomServer {
         break;
       case "SHOP_SELL_REQUESTED":
         requireStringField(message, "gearId", type);
+        if (message.instanceId !== undefined && typeof message.instanceId !== "string") throw new IntentRejectedError(type, "Malformed intent: instanceId must be a string");
         break;
       case "ACCEPT_CONTRACT":
       case "SELECT_STARTING_CONTRACT":
@@ -1703,7 +1715,10 @@ export class GameRoomServer {
       sources.push({ label: `Permanent ${CHALLENGE_LABELS[stat]}`, value: permanent });
     }
 
-    sources.push(...getEquippedGearModifierSources(player.character, stat, { mode }));
+    sources.push(...getEquippedGearModifierSources(player.character, stat, {
+      mode,
+      suppressedInstanceIds: getSuppressedEquipmentInstanceIds(this.state, player.seatId, this.state.activeResolution?.id)
+    }));
     sources.push(...getAfflictionModifierSources(player, stat, mode, getAfflictionCatalog(this.state)));
     sources.push(...this.getCharacterModifierSources(player, stat, mode));
     if ((player.character.temporaryAllStatBoost?.remainingEligibleResolutions ?? 0) > 0) sources.push({ label: "Too Many Dogs", value: player.character.temporaryAllStatBoost!.value });
@@ -1975,6 +1990,10 @@ export class GameRoomServer {
       throw new IntentRejectedError("USE_GEAR", `Gear ${gearId} is not held by this character`);
     }
 
+    if (!isOwnedItemEffectActive(this.state, seatId, item.instanceId, this.state.activeResolution?.id)) {
+      throw new IntentRejectedError("USE_GEAR", `${item.name} is Suppressed for this ${this.state.currentEncounter?.cardType === "enemy" ? "battle" : "Threat"}.`);
+    }
+
     this.assertGearUseAllowed(seatId, item);
 
     if (item.effectModel === "exhaust") {
@@ -2079,6 +2098,7 @@ export class GameRoomServer {
       type: "USE_GEAR",
       seatId,
       gearId,
+      instanceId: item.instanceId,
       effect,
       discard,
       suppressPendingFailure: item.consumableEffect === "ignoreFailedMovementOrHazard",
@@ -2599,7 +2619,7 @@ export class GameRoomServer {
       throw new Error(SHOP_FAILURE_REASONS.shopBlockedByThreat);
     }
 
-    const gear = player.character.heldGear.find((item) => item.id === intent.gearId);
+    const gear = player.character.heldGear.find((item) => item.id === intent.gearId && (!intent.instanceId || item.instanceId === intent.instanceId));
 
     if (!gear) {
       throw new Error(SHOP_FAILURE_REASONS.itemNotHeld);
@@ -2623,6 +2643,7 @@ export class GameRoomServer {
       shopName: boardSpace.name,
       sectorId: player.character.currentSpaceId,
       gearId: gear.id,
+      instanceId: gear.instanceId,
       soldGear: gear,
       salvageDelta: sellValue,
       summary: `${player.character.name} used ${boardSpace.name}. Sold ${gear.name} for ${sellValue} Salvage.`,
@@ -2864,9 +2885,12 @@ export class GameRoomServer {
           type: "EQUIP_GEAR",
           seatId: intent.seatId,
           gearId: intent.gearId,
+          instanceId: intent.instanceId,
           slot: intent.slot,
           createdAt
         } satisfies EquipGearAction;
+      case "SELECT_EQUIPMENT_SUPPRESSION_TARGET":
+        return { type: "SELECT_EQUIPMENT_SUPPRESSION_TARGET", seatId: intent.seatId, choiceId: intent.choiceId, itemInstanceId: intent.itemInstanceId, createdAt };
       case "UNEQUIP_GEAR":
         return {
           type: "UNEQUIP_GEAR",
@@ -6687,24 +6711,28 @@ export class GameRoomServer {
       throw new Error(`${invalidAssist} cannot assist this Nemesis combat`);
     }
 
+    const createdAt = new Date().toISOString();
+    const battleLifecycleId = `${intent.seatId}:threat:${nemesis.id}:${createdAt}`;
+    this.state = reserveEquipmentSuppressions(this.state, intent.seatId, battleLifecycleId, "battle");
+    const battlePlayer = this.state.players.find((entry) => entry.seatId === intent.seatId)!;
     const stat = getNemesisCombatStat(nemesis, intent.stat);
     const roll = rollDice(2, 6, this.randomSource);
     const nemesisRoll = rollDice(2, 6, this.randomSource);
     const assistBonus = getAssistBonus(this.state, intent.seatId, nemesis, requestedAssistSeatIds);
     const statBonus =
-      player.character.stats[stat] +
-      getEquippedGearModifierSources(player.character, stat, { mode: "battle" }).reduce((sum, source) => sum + source.value, 0) +
+      battlePlayer.character.stats[stat] +
+      getEquippedGearModifierSources(battlePlayer.character, stat, { mode: "battle", suppressedInstanceIds: getSuppressedEquipmentInstanceIds(this.state, intent.seatId, battleLifecycleId) }).reduce((sum, source) => sum + source.value, 0) +
       this.getScenarioBattleModifier(intent.seatId) +
       assistBonus +
-      getMasterAlphaBattleBonus(player);
+      getMasterAlphaBattleBonus(battlePlayer);
     const nemesisBonus = getNemesisCombatValue(nemesis, stat);
     const attackerTotal = roll.total + statBonus;
     const nemesisTotal = nemesisRoll.total + nemesisBonus;
     const success = attackerTotal >= nemesisTotal;
     const damage = success ? 1 : 0;
     const summary = success
-      ? `${player.character.name} struck ${nemesis.name} for ${damage} damage.`
-      : `${nemesis.name} beat ${player.character.name}; the lead operative suffers 1 wound.`;
+      ? `${battlePlayer.character.name} struck ${nemesis.name} for ${damage} damage.`
+      : `${nemesis.name} beat ${battlePlayer.character.name}; the lead operative suffers 1 wound.`;
 
     this.applyAction({
       type: "NEMESIS_COMBAT_RESOLVED",
@@ -6720,7 +6748,7 @@ export class GameRoomServer {
       success,
       damage,
       summary,
-      createdAt: new Date().toISOString()
+      createdAt
     } satisfies NemesisCombatResolvedAction);
 
     if (!success) {
@@ -6741,6 +6769,7 @@ export class GameRoomServer {
         createdAt: new Date().toISOString()
       });
     }
+    this.state = completeEquipmentSuppressionLifecycle(this.state, battleLifecycleId);
   }
 
   private applyNemesisCombatFailure(leadSeatId: string, nemesis: NemesisChampion, assistSeatIds: string[]): void {
@@ -6941,6 +6970,7 @@ export class GameRoomServer {
   private shouldAutoContinueResolution(): boolean {
     return Boolean(
       this.state.activeResolution &&
+        !this.state.pendingEquipmentSuppressionChoice &&
         ["roll_result", "outcome_summary", "awaiting_continue"].includes(this.state.activeResolution.stage)
     );
   }
@@ -7458,6 +7488,7 @@ type PublicShopStockItem = {
 
 type PublicShopSellItem = {
   gearId: string;
+  instanceId?: string;
   name: string;
   type: "gear" | "artifact";
   category?: GearItem["category"];
@@ -7596,6 +7627,7 @@ type ResultDelta = {
 type PhoneObjectUseState = {
   source: "gear" | "follower";
   id: string;
+  instanceId?: string;
   usedThisTurn: boolean;
   usedThisRound: boolean;
   remainingUses?: number | null;
@@ -7751,13 +7783,27 @@ function buildPhoneObjectUseStates(state: GameState, player: PlayerState | undef
                   ? "Pale Cartel Fixer is already attached."
                   : null
       : null;
+    const lifecycleId = state.activeResolution?.id ?? null;
+    const suppression = item.instanceId
+      ? (state.equipmentSuppressions ?? []).find((entry) =>
+          entry.ownerSeatId === player.seatId &&
+          entry.itemInstanceId === item.instanceId &&
+          entry.qualifyingLifecycleId === lifecycleId
+        )
+      : null;
+    const suppressionDisabledReason = suppression
+      ? suppression.mode === "throughNextThreat"
+        ? `${item.name} is suppressed through this Threat.`
+        : `${item.name} is suppressed during this battle.`
+      : null;
     return {
       source: "gear" as const,
       id: item.id,
+      instanceId: item.instanceId,
       usedThisTurn,
       usedThisRound,
       ...projectedLimit,
-      disabledReason: consumableDisabledReason ?? projectedLimit.disabledReason,
+      disabledReason: suppressionDisabledReason ?? consumableDisabledReason ?? projectedLimit.disabledReason,
       activeModifier: getPendingObjectRollModifier(state, player.seatId, "gear", item.id)
     };
   });
@@ -8318,6 +8364,7 @@ function buildPublicShopSellInventory(player: PlayerState): PublicShopSellItem[]
 
     return {
       gearId: item.id,
+      instanceId: item.instanceId,
       name: item.name,
       type: item.tier === "artifact" ? "artifact" : "gear",
       category: item.category,
@@ -9725,6 +9772,12 @@ export function createPhoneProjection(state: GameState, seatId: string, forcePri
   const oathchainSignature = player && activeContractCard && player.character.activeContract ? getOathchainContractSignature(player, activeContractCard) : null;
   const oathchainTargets = player && activeContractCard ? deriveOathchainTargets(state, player, activeContractCard) : [];
   const oathchainEligible = Boolean(oathchain && activeContractCard && oathchainSignature && state.phase === "action" && state.turnOrder[state.activeSeatIndex] === seatId && oathchainTargets.length > 0 && player?.private.activeOathchainReveal?.contractSignature !== oathchainSignature);
+  const pendingSuppression = state.pendingEquipmentSuppressionChoice?.ownerSeatId === seatId
+    ? state.pendingEquipmentSuppressionChoice
+    : null;
+  const eligibleSuppressionTargets = pendingSuppression
+    ? getEligibleEquipmentSuppressionTargets(state, seatId).filter((item) => pendingSuppression.eligibleInstanceIds.includes(item.instanceId!))
+    : [];
 
   return {
     phase: state.phase,
@@ -9750,6 +9803,28 @@ export function createPhoneProjection(state: GameState, seatId: string, forcePri
     sectors: publicProjection.sectors,
     players: publicProjection.players,
     objectUseStates: buildPhoneObjectUseStates(state, player),
+    pendingEquipmentSuppressionChoice: pendingSuppression ? {
+      choiceId: pendingSuppression.choiceId,
+      sourceTitle: pendingSuppression.sourceThreatId === "relay-husk" ? "Relay Husk" : "Signal-Rotted Engineer",
+      prompt: "Choose Equipment to suppress" as const,
+      mode: pendingSuppression.mode,
+      options: eligibleSuppressionTargets.map((item) => ({
+        instanceId: item.instanceId!,
+        catalogId: item.id,
+        name: item.name,
+        slot: item.slot,
+        equipped: true as const
+      }))
+    } : null,
+    equipmentSuppressions: (state.equipmentSuppressions ?? [])
+      .filter((entry) => entry.ownerSeatId === seatId)
+      .map((entry) => ({
+        sourceThreatId: entry.sourceThreatId,
+        itemInstanceId: entry.itemInstanceId,
+        itemCatalogId: entry.itemCatalogId,
+        mode: entry.mode,
+        active: true as const
+      })),
     escalationLevel: publicProjection.escalationLevel,
     escalationThreshold: publicProjection.escalationThreshold,
     escalationModifier: publicProjection.escalationModifier,

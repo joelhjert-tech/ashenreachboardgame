@@ -49,6 +49,12 @@ export const equippedGearSchema = z.object({
   utility: z.string().min(1).nullable()
 });
 
+export const equippedGearInstancesSchema = z.object({
+  weapon: z.string().min(1).nullable(),
+  armor: z.string().min(1).nullable(),
+  utility: z.string().min(1).nullable()
+});
+
 const characterFields = {
   id: z.string().min(1),
   name: z.string().min(1),
@@ -68,6 +74,7 @@ const characterFields = {
   completedContracts: z.array(z.string().min(1)).optional(),
   heldGear: z.array(gearItemSchema),
   equippedGear: equippedGearSchema,
+  equippedGearInstances: equippedGearInstancesSchema.optional(),
   followers: z.array(followerSchema).optional(),
   startingSalvage: z.number().int().min(0).optional(),
   startingGear: z.array(z.string().min(1)).optional(),
@@ -97,6 +104,7 @@ export type TrophyPileEntry = z.infer<typeof trophyPileEntrySchema>;
 export type CharacterStatus = z.infer<typeof characterStatusSchema>;
 export type ActiveContract = z.infer<typeof activeContractSchema>;
 export type EquippedGear = z.infer<typeof equippedGearSchema>;
+export type EquippedGearInstances = z.infer<typeof equippedGearInstancesSchema>;
 export type Character = z.infer<typeof characterSchema>;
 export type LegacyCharacterV0 = z.infer<typeof legacyCharacterSchemaV0>;
 export type AuthoredCharacter = z.infer<typeof authoredCharacterSchema>;

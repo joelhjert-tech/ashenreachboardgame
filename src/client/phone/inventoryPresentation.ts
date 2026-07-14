@@ -27,7 +27,7 @@ export type InventoryGroupLabel =
   | "Artifacts / Relics"
   | "Quest Items";
 
-export type InventoryUsabilityStatus = "Usable now" | "Ready but not usable now" | "Passive" | "Locked / condition not met";
+export type InventoryUsabilityStatus = "Usable now" | "Ready but not usable now" | "Passive" | "Locked / condition not met" | "Suppressed";
 
 export interface InventoryCardViewModel {
   id: string;
@@ -360,9 +360,10 @@ function getGearLockReason(item: GearItem, self: PhoneSelfState): string | null 
 function getObjectUseState(
   patch: PhonePatchPayload,
   source: PhoneObjectUseState["source"],
-  id: string
+  id: string,
+  instanceId?: string
 ): PhoneObjectUseState | null {
-  return patch.objectUseStates?.find((state) => state.source === source && state.id === id) ?? null;
+  return patch.objectUseStates?.find((state) => state.source === source && state.id === id && (!instanceId || state.instanceId === instanceId)) ?? null;
 }
 
 function isBattleRollTiming(timingWindows: InventoryTimingWindow[], currentTimingWindow: InventoryTimingWindow): boolean {
@@ -453,13 +454,21 @@ function formatConditionalGearBonus(item: GearItem): string | null {
 function buildGearCard(item: GearItem, patch: PhonePatchPayload, self: PhoneSelfState): InventoryCardViewModel {
   const timingWindows = inferGearTimingWindows(item);
   const active = item.effectModel === "consumable" || item.chargedEffect === "traceThePromise" || (!item.effectModel && Boolean(item.activeText || item.useLimit));
+  const equippedInstanceIds = new Set(Object.values(self.character.equippedGearInstances ?? {}).filter((value): value is string => Boolean(value)));
   const equippedIds = new Set(Object.values(self.character.equippedGear).filter((value): value is string => Boolean(value)));
-  const isEquipped = equippedIds.has(item.id);
-  const useState = getObjectUseState(patch, "gear", item.id);
+  const isEquipped = item.instanceId ? equippedInstanceIds.has(item.instanceId) : equippedIds.has(item.id);
+  const useState = getObjectUseState(patch, "gear", item.id, item.instanceId);
   const currentTimingWindow = timingWindows.includes("action") && patch.phase === "action" ? "action" : getCurrentTimingWindow(patch);
   const oathchainPrompt = item.chargedEffect === "traceThePromise" ? patch.oathchainPrompt : null;
   const lockedReason = useState?.disabledReason ?? getGearLockReason(item, self) ?? (item.chargedEffect === "traceThePromise" && !oathchainPrompt ? "Trace the Promise requires your action phase, an active Contract, and a visible valid target." : null) ?? getStatMismatchReason(item, timingWindows, currentTimingWindow, patch);
-  const status = active
+  const suppression = item.instanceId ? patch.equipmentSuppressions?.find((entry) => entry.itemInstanceId === item.instanceId) : null;
+  const status = suppression && useState?.disabledReason
+    ? {
+        status: "Suppressed" as const,
+        statusReason: useState.disabledReason,
+        canUseNow: false
+      }
+    : active
     ? getStatus({
         timingWindows,
         currentTimingWindow,
@@ -490,7 +499,7 @@ function buildGearCard(item: GearItem, patch: PhonePatchPayload, self: PhoneSelf
     timingText: timingWindows.length > 0 ? timingWindows.map(formatTimingWindow).join(", ") : "Passive",
     timingWindows,
     ...status,
-    useIntent: status.canUseNow ? { type: "USE_GEAR", gearId: item.id, instanceId: oathchainPrompt?.instanceId, contractSignature: oathchainPrompt?.contractSignature } : null,
+    useIntent: status.canUseNow ? { type: "USE_GEAR", gearId: item.id, instanceId: oathchainPrompt?.instanceId ?? item.instanceId, contractSignature: oathchainPrompt?.contractSignature } : null,
     statBonus: item.effectModel === "consumable" ? null : item.statBonus,
     useLimit: item.useLimit,
     charges: remainingUses,

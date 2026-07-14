@@ -197,7 +197,14 @@ export interface RecruitReplacementAction extends BaseAction {
 export interface EquipGearAction extends BaseAction {
   type: "EQUIP_GEAR";
   gearId: string;
+  instanceId?: string;
   slot: GearSlot;
+}
+
+export interface SelectEquipmentSuppressionTargetAction extends BaseAction {
+  type: "SELECT_EQUIPMENT_SUPPRESSION_TARGET";
+  choiceId: string;
+  itemInstanceId: string;
 }
 
 export interface UnequipGearAction extends BaseAction {
@@ -208,6 +215,7 @@ export interface UnequipGearAction extends BaseAction {
 export interface UseGearAction extends BaseAction {
   type: "USE_GEAR";
   gearId: string;
+  instanceId?: string;
   effect: EncounterEffect | null;
   summary: string;
   discard?: boolean;
@@ -324,6 +332,7 @@ export interface ShopSellResolvedAction extends BaseAction {
   shopName: string;
   sectorId: string;
   gearId: string;
+  instanceId?: string;
   soldGear: GearItem;
   salvageDelta: number;
   summary: string;
@@ -645,6 +654,7 @@ export type GameAction =
   | WoundThresholdReachedAction
   | RecruitReplacementAction
   | EquipGearAction
+  | SelectEquipmentSuppressionTargetAction
   | UnequipGearAction
   | UseGearAction
   | UseFollowerAction
@@ -773,7 +783,14 @@ export type ClientIntent =
       type: "EQUIP_GEAR";
       seatId: string;
       gearId: string;
+      instanceId?: string;
       slot: GearSlot;
+    }
+  | {
+      type: "SELECT_EQUIPMENT_SUPPRESSION_TARGET";
+      seatId: string;
+      choiceId: string;
+      itemInstanceId: string;
     }
   | {
       type: "UNEQUIP_GEAR";
@@ -826,6 +843,7 @@ export type ClientIntent =
       type: "SHOP_SELL_REQUESTED";
       seatId: string;
       gearId: string;
+      instanceId?: string;
     }
   | {
       type: "SHOP_SKIP_REQUESTED";
