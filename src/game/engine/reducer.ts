@@ -62,6 +62,7 @@ import type {
 } from "./actions.js";
 import { getHeldGearItem } from "./gear.js";
 import { canAdvancePhase, canResolveMovement } from "./phases.js";
+import { getEscalationCollapseLevel, getEscalationModifier } from "./escalation.js";
 import type { EncounterEffect, ThreatCard } from "../schema/card.schema.js";
 import type { EncounterPaymentEffect, EncounterPaymentResult } from "../schema/encounterDecision.schema.js";
 import type { ContractCard } from "../schema/contract.schema.js";
@@ -2090,6 +2091,19 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
       }
 
       const authoritativeSourceCardId = state.currentEncounter?.id ?? state.activeResolution?.card?.id ?? resolutionAction.sourceCardId ?? "unknown-encounter";
+      const isShatteredBarricadeEscalation =
+        authoritativeSourceCardId === "shattered-barricade" && state.pendingEffect.type === "advance_escalation";
+      if (isShatteredBarricadeEscalation) {
+        if (resolutionAction.sourceCardId && resolutionAction.sourceCardId !== authoritativeSourceCardId) {
+          return reject(state, action, "Resolution source is stale");
+        }
+        if (resolutionAction.success !== false || state.lastOutcomeSummary?.success !== false) {
+          return reject(state, action, "Shattered Barricade escalation requires its authoritative failed check");
+        }
+        if (state.pendingEffect.type !== "advance_escalation" || state.pendingEffect.amount !== 1) {
+          return reject(state, action, "Shattered Barricade escalation amount must be exactly 1");
+        }
+      }
       const requiresAuthoritativeSource = state.pendingEffect.type === "lose_salvage" || state.pendingEffect.type === "forcedDisplacement";
       if (requiresAuthoritativeSource && resolutionAction.sourceCardId && resolutionAction.sourceCardId !== authoritativeSourceCardId) {
         return reject(state, action, "Resolution source is stale");
@@ -2220,8 +2234,12 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
       }
       const containsSalvageLoss = JSON.stringify(state.pendingEffect).includes('"lose_salvage"');
 
+      const stateAfterEffect = isShatteredBarricadeEscalation
+        ? state
+        : applyEffectToState(state, resolutionAction.seatId, state.pendingEffect as EncounterEffect);
+
       return succeed({
-        ...applyEffectToState(state, resolutionAction.seatId, state.pendingEffect as EncounterEffect),
+        ...stateAfterEffect,
         sequence: state.sequence + 1,
         phase: "resolution",
         resolutionSource: state.resolutionSource,
@@ -4560,30 +4578,100 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
         return reject(state, action, "Escalation can only advance during an active session");
       }
 
+      if (Boolean(escalationAction.sourceCardId) !== Boolean(escalationAction.sourceEventId)) {
+        return reject(state, action, "Sourced escalation requires both source card and source event IDs");
+      }
+
+      if (
+        escalationAction.sourceEventId &&
+        (state.resolvedEscalationSourceEventIds ?? []).includes(escalationAction.sourceEventId)
+      ) {
+        return reject(state, action, "Escalation source event was already processed");
+      }
+
+      if (escalationAction.sourceCardId === "shattered-barricade") {
+        const failedCheckSource = [...state.eventLog].reverse().find((entry) => {
+          const candidate = entry as { type?: string; seatId?: string; cardId?: string; success?: boolean };
+          return candidate.type === "CHECK_ROLLED" && candidate.seatId === escalationAction.seatId && candidate.cardId === escalationAction.sourceCardId && candidate.success === false;
+        }) as { createdAt?: unknown } | undefined;
+        const expectedSourceEventId = typeof failedCheckSource?.createdAt === "string"
+          ? `${escalationAction.seatId}:threat:${escalationAction.sourceCardId}:${failedCheckSource.createdAt}:global-escalation`
+          : state.activeResolution
+            ? `${state.activeResolution.id}:global-escalation`
+            : null;
+        if (
+          state.currentEncounter?.id !== escalationAction.sourceCardId ||
+          state.lastOutcomeSummary?.encounterCardId !== escalationAction.sourceCardId ||
+          state.lastOutcomeSummary.success !== false ||
+          escalationAction.sourceEventId !== expectedSourceEventId
+        ) {
+          return reject(state, action, "Shattered Barricade escalation source does not match the authoritative failed resolution");
+        }
+      }
+
+      const collapseLevel = getEscalationCollapseLevel(state.sessionMode);
+      if (
+        escalationAction.sourceCardId === "shattered-barricade" &&
+        escalationAction.amount !== Math.min(1, Math.max(0, collapseLevel - state.escalationLevel))
+      ) {
+        return reject(state, action, "Shattered Barricade must apply its approved bounded escalation of exactly 1");
+      }
+      const expectedNewLevel = Math.max(0, Math.min(collapseLevel, state.escalationLevel + escalationAction.amount));
+      const actualDelta = expectedNewLevel - state.escalationLevel;
+      if (escalationAction.newLevel !== expectedNewLevel || escalationAction.amount !== actualDelta) {
+        return reject(state, action, "Escalation result does not match the authoritative bounded value");
+      }
+      if (escalationAction.modifier !== getEscalationModifier(expectedNewLevel)) {
+        return reject(state, action, "Escalation modifier does not match the authoritative level");
+      }
+
+      const escalationSummary = `Global Escalation ${escalationAction.amount >= 0 ? "+" : ""}${escalationAction.amount}. Global Escalation is now ${escalationAction.newLevel}.`;
+      const preservesThreatOutcome =
+        Boolean(escalationAction.sourceCardId) &&
+        state.lastOutcomeSummary?.encounterCardId === escalationAction.sourceCardId;
+
       return succeed({
         ...state,
         escalationLevel: escalationAction.newLevel,
+        resolvedEscalationSourceEventIds: escalationAction.sourceEventId
+          ? [...(state.resolvedEscalationSourceEventIds ?? []), escalationAction.sourceEventId]
+          : state.resolvedEscalationSourceEventIds,
         sequence: state.sequence + 1,
-        lastOutcomeSummary: {
-          seatId: escalationAction.seatId,
-          movedToSectorId: requirePlayer(state, escalationAction.seatId).sectorId,
-          encounterCardId: null,
-          encounterTitle: "Escalation",
-          encounterCardType: null,
-          checkStat: null,
-          die1: null,
-          die2: null,
-          statBonus: null,
-          checkTotal: null,
-          difficulty: null,
-          enemyRollerSeatId: null,
-          enemyDie1: null,
-          enemyDie2: null,
-          enemyBonus: null,
-          enemyTotal: null,
-          success: null,
-          summary: `Escalation ${escalationAction.amount >= 0 ? "+" : ""}${escalationAction.amount} (${escalationAction.reason ?? "pressure"}). Now ${escalationAction.newLevel}. Difficulty modifier +${escalationAction.modifier}.`
-        },
+        activeResolution: preservesThreatOutcome && state.activeResolution?.outcome
+          ? {
+              ...state.activeResolution,
+              outcome: {
+                ...state.activeResolution.outcome,
+                text: `${state.activeResolution.outcome.text} ${escalationSummary}`,
+                effects: [...state.activeResolution.outcome.effects, escalationSummary]
+              }
+            }
+          : state.activeResolution,
+        lastOutcomeSummary: preservesThreatOutcome && state.lastOutcomeSummary
+          ? {
+              ...state.lastOutcomeSummary,
+              summary: `${state.lastOutcomeSummary.summary} ${escalationSummary}`
+            }
+          : {
+              seatId: escalationAction.seatId,
+              movedToSectorId: requirePlayer(state, escalationAction.seatId).sectorId,
+              encounterCardId: null,
+              encounterTitle: "Escalation",
+              encounterCardType: null,
+              checkStat: null,
+              die1: null,
+              die2: null,
+              statBonus: null,
+              checkTotal: null,
+              difficulty: null,
+              enemyRollerSeatId: null,
+              enemyDie1: null,
+              enemyDie2: null,
+              enemyBonus: null,
+              enemyTotal: null,
+              success: null,
+              summary: `${escalationSummary} ${escalationAction.reason ?? "Pressure resolved"}. Difficulty modifier +${escalationAction.modifier}.`
+            },
         eventLog: [...state.eventLog, action]
       });
     }

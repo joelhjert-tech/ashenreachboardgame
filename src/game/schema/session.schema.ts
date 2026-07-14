@@ -287,6 +287,7 @@ export const gameStateSchema = z.object({
   eventLog: z.array(z.unknown()),
   recentEncounterCardIds: z.array(z.string().min(1)).optional(),
   escalationLevel: z.number().int().min(0),
+  resolvedEscalationSourceEventIds: z.array(z.string().min(1)).optional(),
   currentEncounter: threatCardSchema.nullable(),
   pendingEnemyRoll: z
     .object({

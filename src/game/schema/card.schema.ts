@@ -281,7 +281,8 @@ export const cardResourceTagSchema = z.enum([
   "movement",
   "boon",
   "follower",
-  "scenario"
+  "scenario",
+  "escalation"
 ]);
 
 const threatBaseSchema = cardBaseSchema.extend({

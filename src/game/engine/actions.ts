@@ -496,6 +496,8 @@ export interface EscalationAdvancedAction extends BaseAction {
   newLevel: number;
   modifier: number;
   reason?: string;
+  sourceCardId?: string;
+  sourceEventId?: string;
 }
 
 export interface SectorCollapsedAction extends BaseAction {

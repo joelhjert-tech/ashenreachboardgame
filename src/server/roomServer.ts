@@ -4328,26 +4328,37 @@ export class GameRoomServer {
     this.feedEscalation(seatId, -1, "Bone Bell");
   }
 
-  private feedEscalation(seatId: string, delta: number, reason: string): void {
+  private feedEscalation(
+    seatId: string,
+    delta: number,
+    reason: string,
+    source?: { cardId: string; eventId: string }
+  ): void {
     if (this.state.status !== "active" || delta === 0) {
       return;
     }
 
+    if (source && (this.state.resolvedEscalationSourceEventIds ?? []).includes(source.eventId)) {
+      return;
+    }
+
     const collapseLevel = getEscalationCollapseLevel(this.state.sessionMode);
-    const nextLevel = Math.max(0, this.state.escalationLevel + delta);
+    const nextLevel = Math.max(0, Math.min(collapseLevel, this.state.escalationLevel + delta));
+    const actualDelta = nextLevel - this.state.escalationLevel;
     const modifier = getEscalationModifier(nextLevel);
 
     this.applyAction({
       type: "ESCALATION_ADVANCED",
       seatId,
-      amount: delta,
+      amount: actualDelta,
       newLevel: nextLevel,
       modifier,
       reason,
+      ...(source ? { sourceCardId: source.cardId, sourceEventId: source.eventId } : {}),
       createdAt: new Date().toISOString()
     } satisfies EscalationAdvancedAction);
 
-    this.maybeTriggerEscalationAbility(seatId, delta, reason);
+    this.maybeTriggerEscalationAbility(seatId, actualDelta, reason);
 
     const currentLevel = this.state.escalationLevel;
     const currentModifier = getEscalationModifier(currentLevel);
@@ -5088,14 +5099,43 @@ export class GameRoomServer {
       }
 
       if (this.state.phase === "resolution" && this.state.pendingEffect) {
+        const pendingEffect = this.state.pendingEffect;
+        const pendingEncounter = this.state.currentEncounter;
+        const pendingResolution = this.state.activeResolution;
+        const failedCheckSource = [...this.state.eventLog].reverse().find((entry) => {
+          const candidate = entry as { type?: string; seatId?: string; cardId?: string; success?: boolean };
+          return candidate.type === "CHECK_ROLLED" && candidate.seatId === seatId && candidate.cardId === pendingEncounter?.id && candidate.success === false;
+        }) as { createdAt?: unknown } | undefined;
+        const sourceResolutionId =
+          typeof failedCheckSource?.createdAt === "string"
+            ? `${seatId}:threat:${pendingEncounter?.id}:${failedCheckSource.createdAt}`
+            : pendingResolution?.id ?? null;
+        const shatteredBarricadeEscalation =
+          pendingEncounter?.id === "shattered-barricade" &&
+          pendingEffect.type === "advance_escalation" &&
+          pendingEffect.amount === 1 &&
+          this.state.lastOutcomeSummary?.success === false &&
+          Boolean(sourceResolutionId)
+            ? {
+                cardId: pendingEncounter.id,
+                eventId: `${sourceResolutionId}:global-escalation`,
+                amount: pendingEffect.amount
+              }
+            : null;
         this.applyAction({
           type: "RESOLUTION_APPLIED",
           seatId,
-          effect: this.state.pendingEffect,
-          sourceCardId: this.state.currentEncounter?.id ?? null,
+          effect: pendingEffect,
+          sourceCardId: pendingEncounter?.id ?? null,
           success: this.state.lastOutcomeSummary?.success ?? null,
           createdAt: new Date().toISOString()
         });
+        if (shatteredBarricadeEscalation) {
+          this.feedEscalation(seatId, shatteredBarricadeEscalation.amount, "Shattered Barricade", {
+            cardId: shatteredBarricadeEscalation.cardId,
+            eventId: shatteredBarricadeEscalation.eventId
+          });
+        }
         progressMade = true;
         continue;
       }
