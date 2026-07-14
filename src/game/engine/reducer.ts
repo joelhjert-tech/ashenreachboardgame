@@ -83,6 +83,18 @@ import {
   createOrReplaceNextNonBattleTestModifier,
   getPendingNextNonBattleTestModifier
 } from "../rules/nextNonBattleTestModifier.js";
+import {
+  SPINDLE_STATIC_SQUALL_ID,
+  SPINDLE_STATIC_SQUALL_MINIMUM_RESULT,
+  SPINDLE_STATIC_SQUALL_MODIFIER_AMOUNT,
+  SPINDLE_STATIC_SQUALL_MODIFIER_LABEL,
+  clearAllNextNormalMovementRollModifiers,
+  clearNextNormalMovementRollModifierForSeat,
+  consumeNextNormalMovementRollModifier,
+  createOrReplaceNextNormalMovementRollModifier,
+  getPendingNextNormalMovementRollModifier,
+  resolveNormalMovementAllowance
+} from "../rules/nextNormalMovementRollModifier.js";
 import type { ScarSourceEvent } from "../schema/scarTrigger.schema.js";
 import { getBoardSpace, isScenarioConfrontationSpace } from "../data/boardSpaces.js";
 import { getForcedDisplacementDestination, getLegalMovementRoute, getLegalMovementRouteVariant, getMovementBlockReason, getVoidKeyMovementRoute, getMovementStepBlockReason } from "../rules/movementPlanner.js";
@@ -286,11 +298,14 @@ function reject(state: GameState, action: GameAction, reason: string): ReducerFa
 
 function succeed(state: GameState, emitted: GameAction[] = []): ReducerSuccess {
   const activeState = state.status === "ended"
-    ? clearAllNextNonBattleTestModifiers(state)
+    ? clearAllNextNormalMovementRollModifiers(clearAllNextNonBattleTestModifiers(state))
     : state.players
         .filter((player) => player.character.status === "recalled")
         .reduce(
-          (nextState, player) => clearNextNonBattleTestModifierForSeat(nextState, player.seatId),
+          (nextState, player) => clearNextNormalMovementRollModifierForSeat(
+            clearNextNonBattleTestModifierForSeat(nextState, player.seatId),
+            player.seatId
+          ),
           state
         );
   return {
@@ -337,6 +352,8 @@ function summarizeEffect(effect: EncounterEffect, success: boolean | null): stri
         : `${prefix} the threat remains on this space.`;
     case "next_non_battle_test_modifier":
       return `${prefix} the swarm breaks your concentration. Your next non-battle test is ${effect.amount}.`;
+    case "next_normal_movement_roll_modifier":
+      return `${prefix} the squall corrupts your bearing. Your next normal movement roll is ${effect.amount}, minimum ${effect.minimumResult}.`;
     case "encounter_payment":
       return `${prefix} ${effect.prompt}`;
     case "forcedDisplacement":
@@ -423,6 +440,7 @@ function applyEffectToPlayer(player: PlayerState, effect: EncounterEffect): Play
     case "advance_scenario":
     case "return_threat_to_space":
     case "next_non_battle_test_modifier":
+    case "next_normal_movement_roll_modifier":
       return player;
     case "sequence":
       return effect.effects.reduce(
@@ -762,6 +780,17 @@ function applyEffectToState(state: GameState, seatId: string, effect: EncounterE
     const sourceResolutionId = getThreatResolutionSourceId(state, seatId, effect.sourceCardId);
     const sourceEventId = `${sourceResolutionId}:next-non-battle-test`;
     return createOrReplaceNextNonBattleTestModifier(
+      state,
+      seatId,
+      sourceEventId,
+      state.pendingFailureReaction?.createdAt ?? sourceEventId
+    );
+  }
+
+  if (effect.type === "next_normal_movement_roll_modifier") {
+    const sourceResolutionId = getThreatResolutionSourceId(state, seatId, effect.sourceCardId);
+    const sourceEventId = `${sourceResolutionId}:next-normal-movement-roll`;
+    return createOrReplaceNextNormalMovementRollModifier(
       state,
       seatId,
       sourceEventId,
@@ -1421,24 +1450,53 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
         return reject(state, action, "Movement roll must be at least 1");
       }
 
+      const pendingSpindleModifier = getPendingNextNormalMovementRollModifier(state, movementRolledAction.seatId);
+      const modifierSources = movementRolledAction.modifierSources ?? [];
+      const spindleSourceCount = modifierSources.filter(
+        (source) => source.label === SPINDLE_STATIC_SQUALL_MODIFIER_LABEL && source.value === SPINDLE_STATIC_SQUALL_MODIFIER_AMOUNT
+      ).length;
+      if (pendingSpindleModifier && (spindleSourceCount !== 1 || !movementRolledAction.resolutionId)) {
+        return reject(state, action, "Pending Spindle Static Squall modifier is missing from the movement roll");
+      }
+      if (!pendingSpindleModifier && spindleSourceCount > 0) {
+        return reject(state, action, "Spindle Static Squall modifier has no pending authoritative source");
+      }
+      if (modifierSources.length !== spindleSourceCount) {
+        return reject(state, action, "Movement roll contains an unsupported modifier source");
+      }
+      const expectedMovementValue = resolveNormalMovementAllowance(movementRolledAction.roll.total, modifierSources);
+      if (movementRolledAction.movementValue !== expectedMovementValue) {
+        return reject(state, action, "Movement allowance does not match its authoritative roll and modifiers");
+      }
+
       const afflictionCatalog = new Map((state.availableAfflictions ?? []).map((entry) => [entry.id, entry]));
-      const movedState = movementRolledAction.movementValue === 6
+      const movedState = movementRolledAction.roll.total === 6
         ? {
             ...state,
             players: state.players.map((entry) =>
               entry.seatId === movementRolledAction.seatId
-                ? applyMovementDieAfflictions(entry, movementRolledAction.movementValue, afflictionCatalog)
+                ? applyMovementDieAfflictions(entry, movementRolledAction.roll.total, afflictionCatalog)
                 : entry
             )
           }
         : state;
 
-      return succeed({
+      const movementRollResolutionId = movementRolledAction.resolutionId ?? `${movementRolledAction.seatId}:${movementRolledAction.createdAt}:movement-roll`;
+      const committedState = {
         ...movedState,
         sequence: state.sequence + 1,
         movementRolls: {
           ...(state.movementRolls ?? {}),
           [movementRolledAction.seatId]: movementRolledAction.movementValue
+        },
+        normalMovementRollDetails: {
+          ...(state.normalMovementRollDetails ?? {}),
+          [movementRolledAction.seatId]: {
+            resolutionId: movementRollResolutionId,
+            rolledValue: movementRolledAction.roll.total,
+            modifierSources,
+            finalValue: movementRolledAction.movementValue
+          }
         },
         movementRouteRevisions: {
           ...(state.movementRouteRevisions ?? {}),
@@ -1446,7 +1504,12 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
         },
         routeStarChoices: state.routeStarChoices ? Object.fromEntries(Object.entries(state.routeStarChoices).filter(([seatId]) => seatId !== movementRolledAction.seatId)) : undefined,
         eventLog: [...state.eventLog, action]
-      });
+      };
+      return succeed(consumeNextNormalMovementRollModifier(
+        committedState,
+        movementRolledAction.seatId,
+        movementRollResolutionId
+      ));
     }
     case "MOVEMENT_RESOLVED": {
       const movementAction = action as MovementResolvedAction;
@@ -2205,6 +2268,27 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
           return reject(state, action, "Glass-Chime Swarm modifier does not match its approved rule");
         }
       }
+      if (state.pendingEffect.type === "next_normal_movement_roll_modifier") {
+        if (authoritativeSourceCardId !== SPINDLE_STATIC_SQUALL_ID || resolutionAction.sourceCardId !== SPINDLE_STATIC_SQUALL_ID) {
+          return reject(state, action, "Spindle Static Squall modifier requires its authoritative source");
+        }
+        if (
+          state.activeResolution?.playerId !== resolutionAction.seatId ||
+          state.lastOutcomeSummary?.seatId !== resolutionAction.seatId
+        ) {
+          return reject(state, action, "Spindle Static Squall modifier owner does not match the failed check");
+        }
+        if (resolutionAction.success !== false || state.lastOutcomeSummary?.success !== false) {
+          return reject(state, action, "Spindle Static Squall modifier requires a confirmed failed check");
+        }
+        if (
+          state.pendingEffect.amount !== SPINDLE_STATIC_SQUALL_MODIFIER_AMOUNT ||
+          state.pendingEffect.minimumResult !== SPINDLE_STATIC_SQUALL_MINIMUM_RESULT ||
+          state.pendingEffect.sourceCardId !== SPINDLE_STATIC_SQUALL_ID
+        ) {
+          return reject(state, action, "Spindle Static Squall modifier does not match its approved rule");
+        }
+      }
       const isShatteredBarricadeEscalation =
         authoritativeSourceCardId === "shattered-barricade" && state.pendingEffect.type === "advance_escalation";
       if (isShatteredBarricadeEscalation) {
@@ -2282,7 +2366,7 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
           eventLog: [...state.eventLog, action]
         });
       }
-      const requiresAuthoritativeSource = state.pendingEffect.type === "lose_salvage" || state.pendingEffect.type === "forcedDisplacement" || state.pendingEffect.type === "next_non_battle_test_modifier";
+      const requiresAuthoritativeSource = state.pendingEffect.type === "lose_salvage" || state.pendingEffect.type === "forcedDisplacement" || state.pendingEffect.type === "next_non_battle_test_modifier" || state.pendingEffect.type === "next_normal_movement_roll_modifier";
       if (requiresAuthoritativeSource && resolutionAction.sourceCardId && resolutionAction.sourceCardId !== authoritativeSourceCardId) {
         return reject(state, action, "Resolution source is stale");
       }
@@ -2690,7 +2774,7 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
         });
       }
 
-      const scarredState: GameState = clearNextNonBattleTestModifierForSeat({
+      const scarredState: GameState = clearNextNormalMovementRollModifierForSeat(clearNextNonBattleTestModifierForSeat({
         ...state,
         sequence: state.sequence + 1,
         resolutionSource: state.resolutionSource,
@@ -2709,7 +2793,7 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
             }
           : null,
         eventLog: [...state.eventLog, action]
-      }, action.seatId);
+      }, action.seatId), action.seatId);
       if (scarredState.pendingSutureStormConsequence?.seatId === woundAction.seatId) {
         scarredState.pendingSutureStormConsequence = {
           ...scarredState.pendingSutureStormConsequence,
@@ -2742,7 +2826,7 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
         return reject(state, action, `Unknown replacement character ${recruitAction.replacementCharacterId}`);
       }
 
-      return succeed(clearNextNonBattleTestModifierForSeat({
+      return succeed(clearNextNormalMovementRollModifierForSeat(clearNextNonBattleTestModifierForSeat({
         ...state,
         sequence: state.sequence + 1,
         phase: "broadcast",
@@ -2793,7 +2877,7 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
           summary: `${recruitAction.replacementCharacter.name} enters the field as a fresh replacement.`
         },
         eventLog: [...state.eventLog, action]
-      }, recruitAction.seatId));
+      }, recruitAction.seatId), recruitAction.seatId));
     }
     case "STAT_RAISED": {
       const statRaisedAction = action as StatRaisedAction;

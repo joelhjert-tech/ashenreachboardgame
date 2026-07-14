@@ -89,6 +89,10 @@ import {
 } from "../game/rules/movementPlanner.js";
 import { canRiftAnchorSpikeSuppress } from "../game/rules/forcedDisplacement.js";
 import { getNextNonBattleTestModifierSource } from "../game/rules/nextNonBattleTestModifier.js";
+import {
+  getNextNormalMovementRollModifierSource,
+  resolveNormalMovementAllowance
+} from "../game/rules/nextNormalMovementRollModifier.js";
 import { createInitialSessionState } from "./sessionState.js";
 import { resolveBoardSpaceEvent } from "../game/tileResolver.js";
 import {
@@ -5471,12 +5475,18 @@ export class GameRoomServer {
       throw new IntentRejectedError("MOVEMENT_ROLL_REQUESTED", "Movement is not available from this sector");
     }
 
+    const createdAt = new Date().toISOString();
+    const spindleModifier = getNextNormalMovementRollModifierSource(this.state, activeSeatId);
+    const modifierSources = spindleModifier ? [spindleModifier] : [];
+    const movementValue = resolveNormalMovementAllowance(roll.total, modifierSources);
     this.applyAction({
       type: "MOVEMENT_ROLLED",
       seatId: activeSeatId,
-      movementValue: roll.total,
+      movementValue,
       roll,
-      createdAt: new Date().toISOString()
+      resolutionId: `movement-roll:${activeSeatId}:${this.state.sequence + 1}:${createdAt}`,
+      modifierSources,
+      createdAt
     } satisfies MovementRolledAction);
   }
 
@@ -7487,6 +7497,8 @@ type PublicMoveDestination = {
 type PublicMovementPlannerState = {
   active: boolean;
   movementValue: number;
+  rolledValue?: number;
+  modifierSources?: Array<{ label: string; value: number }>;
   originalMovementValue?: number;
   movementAdjustment?: -1 | 1 | null;
   compassPrompt?: { instanceId: string; currentCharges: number; maxCharges: number; canDecrease: boolean; canIncrease: boolean } | null;
@@ -7920,6 +7932,7 @@ function buildPublicMovementPlanner(state: GameState, seatId: string): PublicMov
   const compass = player.character.heldGear.find((item) => item.id === "ashen-route-compass" && player.character.equippedGear.utility === item.id && (item.currentCharges ?? item.charges ?? 0) > 0);
   const adjustment = state.movementAdjustments?.[seatId]?.adjustment ?? null;
   const originalMovementValue = state.movementRolls?.[seatId] ?? plan.movementValue;
+  const rollDetail = state.normalMovementRollDetails?.[seatId];
 
   const routeEntries = [
     ...plan.routes.map((route) => ({ ...route, disabledReason: undefined })),
@@ -8007,6 +8020,8 @@ function buildPublicMovementPlanner(state: GameState, seatId: string): PublicMov
   return {
     active: true,
     movementValue: plan.movementValue,
+    rolledValue: rollDetail?.rolledValue,
+    modifierSources: rollDetail?.modifierSources,
     originalMovementValue,
     movementAdjustment: adjustment,
     compassPrompt: !adjustment && compass ? { instanceId: compass.instanceId!, currentCharges: compass.currentCharges ?? compass.charges ?? 0, maxCharges: compass.maxCharges ?? 2, canDecrease: originalMovementValue > 1, canIncrease: true } : null,
@@ -9723,15 +9738,27 @@ export function createPhoneProjection(state: GameState, seatId: string, forcePri
     encounter: state.currentEncounter,
     pendingEnemyRoll: state.pendingEnemyRoll,
     pendingTileChallenge: publicProjection.pendingTileChallenge,
-    pendingTestModifiers: (state.pendingNextNonBattleTestModifiers ?? [])
-      .filter((entry) => entry.ownerSeatId === seatId)
-      .map((entry) => ({
+    pendingTestModifiers: [
+      ...(state.pendingNextNonBattleTestModifiers ?? [])
+        .filter((entry) => entry.ownerSeatId === seatId)
+        .map((entry) => ({
         type: entry.type,
         sourceCardId: entry.sourceCardId,
         label: "Glass-Chime Swarm",
         summary: "Next non-battle test: -1",
         amount: entry.amount
-      })),
+        })),
+      ...(state.pendingNextNormalMovementRollModifiers ?? [])
+        .filter((entry) => entry.ownerSeatId === seatId)
+        .map((entry) => ({
+          type: entry.type,
+          sourceCardId: entry.sourceCardId,
+          label: "Spindle Static Squall",
+          summary: "Next normal movement roll: -1",
+          detail: "Minimum result: 1",
+          amount: entry.amount
+        }))
+    ],
     pendingTileChallengePrivate: state.pendingTileChallenge?.seatId === seatId ? {
       id: state.pendingTileChallenge.id,
       challengeId: state.pendingTileChallenge.challengeId,

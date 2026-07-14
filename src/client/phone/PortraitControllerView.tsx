@@ -942,10 +942,10 @@ export function PortraitControllerView({
                       <article key={modifier.sourceCardId} className="phone-portrait-info-card phone-status-effect-card">
                         <div className="phone-status-effect-severity">-1</div>
                         <div className="phone-status-effect-copy">
-                          <span>Temporary | Until next eligible test</span>
+                          <span>{modifier.type === "nextNormalMovementRoll" ? "Temporary | Until next normal movement roll" : "Temporary | Until next eligible test"}</span>
                           <strong>{modifier.label}</strong>
                           <p>{modifier.summary}</p>
-                          <small>No battle or movement effect</small>
+                          <small>{modifier.detail ?? "No battle or movement effect"}</small>
                         </div>
                       </article>
                     ))}

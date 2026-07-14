@@ -184,6 +184,7 @@ export function createInitialSessionState(
     shopStockReveals: [],
     movementRolls: undefined,
     movementAdjustments: undefined,
+    normalMovementRollDetails: undefined,
     gateSaintSafeConduct: null,
     soloRerollCharges: createInitialSoloRerollCharges(sessionMode, configuredSeats.map(({ seatId }) => seatId)),
     eventLog: [],
@@ -207,6 +208,9 @@ export function createInitialSessionState(
     pendingNextNonBattleTestModifiers: [],
     resolvedNextNonBattleTestModifierSourceEventIds: [],
     consumedNextNonBattleTestModifierTestEventIds: [],
+    pendingNextNormalMovementRollModifiers: [],
+    resolvedNextNormalMovementRollModifierSourceEventIds: [],
+    consumedNextNormalMovementRollResolutionIds: [],
     tileChallengeProgress: null,
     activeResolution: null,
     lastOutcomeSummary: null

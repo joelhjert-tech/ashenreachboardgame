@@ -146,6 +146,13 @@ type NextNonBattleTestModifierEffect = {
   sourceCardId: "glass-chime-swarm";
 };
 
+type NextNormalMovementRollModifierEffect = {
+  type: "next_normal_movement_roll_modifier";
+  amount: -1;
+  minimumResult: 1;
+  sourceCardId: "spindle-static-squall";
+};
+
 type SimpleEncounterEffect =
   | GainHeatEffect
   | GainHeatAllEffect
@@ -165,6 +172,7 @@ type SimpleEncounterEffect =
   | AdvanceEscalationEffect
   | ReturnThreatToSpaceEffect
   | NextNonBattleTestModifierEffect
+  | NextNormalMovementRollModifierEffect
   | EncounterPaymentEffect
   | ForcedDisplacementEffect;
 
@@ -248,6 +256,12 @@ const simpleEffectSchema: z.ZodType<SimpleEncounterEffect> = z.union([
     type: z.literal("next_non_battle_test_modifier"),
     amount: z.literal(-1),
     sourceCardId: z.literal("glass-chime-swarm")
+  }),
+  z.object({
+    type: z.literal("next_normal_movement_roll_modifier"),
+    amount: z.literal(-1),
+    minimumResult: z.literal(1),
+    sourceCardId: z.literal("spindle-static-squall")
   }),
   encounterPaymentEffectSchema,
   forcedDisplacementEffectSchema

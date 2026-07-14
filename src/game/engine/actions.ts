@@ -45,6 +45,8 @@ export interface MovementRolledAction extends BaseAction {
   type: "MOVEMENT_ROLLED";
   movementValue: number;
   roll: DiceRollResult;
+  resolutionId?: string;
+  modifierSources?: RollModifierSource[];
 }
 
 export interface MovedAction extends BaseAction {

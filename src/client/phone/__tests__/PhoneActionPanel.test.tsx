@@ -942,6 +942,28 @@ describe("PhoneActionPanel", () => {
     expect(onIntent).toHaveBeenCalledTimes(1);
   });
 
+  it("shows the accepted Spindle movement breakdown without adding controls", () => {
+    render(<PhoneActionPanel characters={characters} onIntent={vi.fn()} patch={createPatch({
+      phase: "navigation",
+      encounter: null,
+      movementPlanner: {
+        active: true,
+        movementValue: 5,
+        rolledValue: 6,
+        modifierSources: [{ label: "Spindle Static Squall", value: -1 }],
+        currentSectorId: "pilgrim-lock",
+        currentSectorName: "Pilgrim Lock",
+        destinations: []
+      }
+    })} />);
+
+    const summary = screen.getByTestId("movement-summary");
+    expect(summary).toHaveTextContent(/rolled 6/i);
+    expect(summary).toHaveTextContent(/spindle static squall -1/i);
+    expect(summary).toHaveTextContent(/final allowance 5/i);
+    expect(screen.queryByRole("button", { name: /use spindle/i })).not.toBeInTheDocument();
+  });
+
   it("previews authoritative Route Star variants and charges only on alternate confirmation", () => {
     const onIntent = vi.fn<(intent: ClientIntent) => void>();
     render(<PhoneActionPanel characters={characters} onIntent={onIntent} patch={createPatch({ phase: "navigation", encounter: null, movementPlanner: {

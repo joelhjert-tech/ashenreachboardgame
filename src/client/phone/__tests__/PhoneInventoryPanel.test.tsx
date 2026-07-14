@@ -905,6 +905,38 @@ describe("PhoneInventoryPanel", () => {
     expect(screen.queryByRole("button", { name: /cancel glass-chime/i })).not.toBeInTheDocument();
   });
 
+  it("shows the owner-only Spindle penalty and minimum as passive status with no controls", () => {
+    const patch = createPatch({
+      pendingTestModifiers: [{
+        type: "nextNormalMovementRoll",
+        sourceCardId: "spindle-static-squall",
+        label: "Spindle Static Squall",
+        summary: "Next normal movement roll: -1",
+        detail: "Minimum result: 1",
+        amount: -1
+      }]
+    });
+    render(
+      <PortraitControllerView
+        self={patch.self}
+        roomCode="RT7P4"
+        displayName="Lane"
+        connectionStatus="open"
+        activeSeatId="seat-1"
+        activeContractCard={null}
+        patch={patch}
+        characters={characters}
+        onIntent={vi.fn()}
+        onLeave={vi.fn()}
+      />
+    );
+
+    const status = screen.getByText("Spindle Static Squall").closest("article");
+    expect(status).toHaveTextContent(/next normal movement roll: -1/i);
+    expect(status).toHaveTextContent(/minimum result: 1/i);
+    expect(within(status as HTMLElement).queryByRole("button")).not.toBeInTheDocument();
+  });
+
   it("keeps top chrome and bottom tab dock visibility independent", async () => {
     const onIntent = vi.fn();
 

@@ -37,7 +37,7 @@ These form five exact type/stat/difficulty/effect clusters. Preserve stable IDs 
 
 `ashen-doppelganger`, `choir-static-burst`, `cinder-gate-backlash`, `crown-bell-baron`, `false-route-procession`, `gateblind-pulse`, `hymn-scarred-zealot`, `lantern-moth-swarm`, `marrow-tax-auditors`, `memory-tax-gate`, `mirror-rot-interference`, `pale-contract-collector`, `relay-husk`, `signal-rotted-engineer`, `siren-relay-echo`, `soot-stained-cutpurse`, `webglass-snarefield`.
 
-`glass-chime-swarm` and `spindle-static-squall` are already in the duplicate group. Glass-Chime now implements its approved next-test retirement and no longer carries a legacy Heat failure. Spindle Static Squall remains approved but unimplemented with its compatibility-only Heat effect intact.
+`glass-chime-swarm` and `spindle-static-squall` are already in the duplicate group. Both now implement their approved typed delayed modifiers and no longer carry player-facing legacy Heat failures.
 
 ### Retain with clarity/parity review (80)
 
@@ -82,11 +82,11 @@ Phase B1 supersedes the earlier exemplar order below for duplicate-pattern work.
 2. `breach-halberd`, `mudglass-sinkhole` — existing forced-displacement lifecycle; medium risk.
 3. `shattered-barricade`, `suture-storm` — shared escalation and ordered Wound/displacement; medium-high risk.
 4. `glass-chime-swarm` — IMPLEMENTED next-test interference with a narrow typed lifecycle.
-5. `spindle-static-squall` — approved next-normal-movement interference; implement alone after Glass-Chime.
+5. `spindle-static-squall` — IMPLEMENTED next-normal-movement interference with minimum-one handling and a narrow typed lifecycle.
 
 The exact rules, alternatives, tests, and evidence gates are in `reports/ashen-reach-threat-duplicate-pattern-approval.md`. No group changes totals or authorizes the +116-card expansion.
 
-Implementation status: Phase B2A is complete for `glass-tick-cloud`, `locked-vault`, `breach-halberd`, and `mudglass-sinkhole`. The first two use approved typed floor-zero Salvage loss; the latter two use approved clockwise/counterclockwise same-ring forced displacement with the existing one-Wound no-destination fallback. Phase B2B is complete for `shattered-barricade`: its failed Forge 7 check advances shared Global Escalation exactly 1. Phase B2C is complete for `suture-storm`: its failed Grit 8 check resolves one preventable Wound, then the approved displacement if the operative remains active. `glass-chime-swarm` now implements its approved owner-scoped next-non-battle-test `-1` and retires its legacy Heat failure. `spindle-static-squall` remains approved but unimplemented. All 17 additional Heat-linked IDs remain blocked and unchanged. The +116-card expansion remains unapproved.
+Implementation status: all eight approved duplicate-pattern revisions are complete. Phase B2A covers `glass-tick-cloud`, `locked-vault`, `breach-halberd`, and `mudglass-sinkhole`; B2B covers `shattered-barricade`; B2C covers `suture-storm`; the final isolated Heat-retirement slices cover `glass-chime-swarm` and `spindle-static-squall`. All 17 additional Heat-linked IDs remain blocked and unchanged. The +116-card expansion remains unapproved.
 
 ### Earlier Phase A long-range sequence
 

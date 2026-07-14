@@ -112,7 +112,9 @@ describe("Glass-Chime Swarm Heat retirement", () => {
       counts[card.threatLane ?? "missing"] = (counts[card.threatLane ?? "missing"] ?? 0) + 1;
       return counts;
     }, {})).toEqual({ red: 26, blue: 35, yellow: 48 });
-    expect(spindleStatic.failEffect).toEqual({ type: "gain_heat", amount: 1 });
+    expect(spindleStatic.failEffect).toEqual({
+      type: "next_normal_movement_roll_modifier", amount: -1, minimumResult: 1, sourceCardId: "spindle-static-squall"
+    });
   });
 
   it("creates the modifier only after a confirmed failed resolution and deduplicates or replaces sources", () => {

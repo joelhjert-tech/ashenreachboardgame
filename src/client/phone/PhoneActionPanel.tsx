@@ -1806,6 +1806,8 @@ function MovementPlanner({
 }
 
 function MovementSummaryHeader({ planner }: { planner: PublicMovementPlannerState }): ReactElement {
+  const movementModifiers = planner.modifierSources ?? [];
+  const movementModifierTotal = movementModifiers.reduce((total, source) => total + source.value, 0);
   return (
     <div className="phone-movement-summary" aria-label="Movement summary" data-testid="movement-summary">
       <span className="sr-only">Move {planner.movementValue}</span>
@@ -1815,17 +1817,20 @@ function MovementSummaryHeader({ planner }: { planner: PublicMovementPlannerStat
         aria-label={`Movement die result ${planner.movementValue}`}
       >
         <CombatDiceAnimation
-          attackValue={planner.movementValue}
+          attackValue={planner.rolledValue ?? planner.movementValue}
           defenseValue={null}
-          modifierValue={0}
-          attackDieFace={planner.movementValue}
+          modifierValue={movementModifierTotal}
+          attackDieFace={planner.rolledValue ?? planner.movementValue}
           defenseDieFace={null}
-          showModifierDie={false}
+          showModifierDie={movementModifiers.length > 0}
           compact
           challengeStat="signal"
         />
       </div>
       <div className="phone-movement-summary-chips">
+        {planner.rolledValue !== undefined ? <span>Rolled {planner.rolledValue}</span> : null}
+        {movementModifiers.map((source) => <span key={`${source.label}:${source.value}`}>{source.label} {source.value > 0 ? `+${source.value}` : source.value}</span>)}
+        {movementModifiers.length > 0 ? <span>Final allowance {planner.movementValue}</span> : null}
         <div className="phone-movement-summary-chip">
           <span>Move Value</span>
           <strong>{planner.movementValue}</strong>

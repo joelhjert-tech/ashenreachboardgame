@@ -269,7 +269,11 @@ function getCurrentStepCopy(
 
   if (publicPatch.phase === "navigation") {
     if (publicPatch.payload.movementPlanner?.active) {
-      return `${activePlayer?.character.name ?? "The active operative"} rolled ${publicPatch.payload.movementPlanner.movementValue} and is choosing a legal destination.`;
+      const planner = publicPatch.payload.movementPlanner;
+      const spindle = planner.modifierSources?.find((source) => source.label === "Spindle Static Squall");
+      return spindle && planner.rolledValue !== undefined
+        ? `${activePlayer?.character.name ?? "The active operative"} rolled ${planner.rolledValue}; Spindle Static Squall ${spindle.value}; final movement allowance ${planner.movementValue}. Choose a legal destination.`
+        : `${activePlayer?.character.name ?? "The active operative"} rolled ${planner.movementValue} and is choosing a legal destination.`;
     }
 
     return `Waiting on ${activePlayer?.character.name ?? "the active operative"} to roll movement.`;

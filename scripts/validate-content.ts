@@ -220,6 +220,7 @@ for (const card of threats.values()) {
   validateThreatMetadata(card);
   validateThreatEffectKeys(card);
   validateGlassChimeSwarmRetirement(card);
+  validateSpindleStaticSquallRetirement(card);
 }
 
 validateThreatRarityCurve();
@@ -605,6 +606,28 @@ function validateGlassChimeSwarmRetirement(card: ThreatCard): void {
   }
   if (card.text !== "The swarm breaks your concentration. On failure, subtract 1 from your next test. This penalty does not affect battles.") {
     errors.push("glass-chime-swarm must use the approved final player-facing wording");
+  }
+}
+
+function validateSpindleStaticSquallRetirement(card: ThreatCard): void {
+  if (card.id !== "spindle-static-squall") return;
+  if (card.cardType !== "hazard") {
+    errors.push("spindle-static-squall must remain a hazard");
+    return;
+  }
+  if (
+    card.failEffect.type !== "next_normal_movement_roll_modifier" ||
+    card.failEffect.amount !== -1 ||
+    card.failEffect.minimumResult !== 1 ||
+    card.failEffect.sourceCardId !== "spindle-static-squall"
+  ) {
+    errors.push("spindle-static-squall must use the approved owner-only next normal movement roll -1 modifier with minimum 1");
+  }
+  if (JSON.stringify(card).match(/gain_heat|\bHeat\b/)) {
+    errors.push("spindle-static-squall must not expose a legacy Heat effect or player-facing Heat text");
+  }
+  if (card.text !== "The squall corrupts your bearing. On failure, reduce your next movement roll by 1, to a minimum of 1.") {
+    errors.push("spindle-static-squall must use the approved final player-facing wording");
   }
 }
 

@@ -51,7 +51,6 @@ export const LEGACY_HEAT_EFFECT_APPROVALS: readonly LegacyHeatEffectApproval[] =
   { id: "signal-rotted-engineer", constructs: ["gain_heat"] },
   { id: "siren-relay-echo", constructs: ["gain_heat", "lose_heat"] },
   { id: "soot-stained-cutpurse", constructs: ["gain_heat"] },
-  { id: "spindle-static-squall", constructs: ["gain_heat"] },
   { id: "webglass-snarefield", constructs: ["lose_heat"] }
 ];
 

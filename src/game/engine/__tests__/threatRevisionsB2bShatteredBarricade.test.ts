@@ -150,7 +150,9 @@ describe("Phase B2B Shattered Barricade content", () => {
     expect(requireHazard("glass-chime-swarm").failEffect).toEqual({
       type: "next_non_battle_test_modifier", amount: -1, sourceCardId: "glass-chime-swarm"
     });
-    expect(requireHazard("spindle-static-squall").failEffect).toEqual({ type: "gain_heat", amount: 1 });
+    expect(requireHazard("spindle-static-squall").failEffect).toEqual({
+      type: "next_normal_movement_roll_modifier", amount: -1, minimumResult: 1, sourceCardId: "spindle-static-squall"
+    });
   });
 });
 

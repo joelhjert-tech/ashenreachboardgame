@@ -32,6 +32,23 @@ export const pendingNextNonBattleTestModifierSchema = z.object({
   createdAt: z.string().min(1)
 });
 
+export const pendingNextNormalMovementRollModifierSchema = z.object({
+  type: z.literal("nextNormalMovementRoll"),
+  ownerSeatId: z.string().min(1),
+  amount: z.literal(-1),
+  minimumResult: z.literal(1),
+  sourceCardId: z.literal("spindle-static-squall"),
+  sourceEventId: z.string().min(1),
+  createdAt: z.string().min(1)
+});
+
+export const normalMovementRollDetailSchema = z.object({
+  resolutionId: z.string().min(1),
+  rolledValue: z.number().int().min(1),
+  modifierSources: z.array(z.object({ label: z.string().min(1), value: z.number().int() })),
+  finalValue: z.number().int().min(1)
+});
+
 export const resolutionStageSchema = z.enum([
   "idle",
   "card_reveal",
@@ -288,6 +305,7 @@ export const gameStateSchema = z.object({
   nemesisNexusCountdowns: z.array(nemesisNexusCountdownSchema).default([]),
   shopStockReveals: z.array(shopStockRevealSchema).default([]),
   movementRolls: z.record(z.string(), z.number().int().min(1)).optional(),
+  normalMovementRollDetails: z.record(z.string(), normalMovementRollDetailSchema).optional(),
   movementRouteRevisions: z.record(z.string(), z.number().int().min(1)).optional(),
   routeStarChoices: z.record(z.string(), z.object({ instanceId: z.string().min(1), destinationId: z.string().min(1), routeId: z.string().min(1), movementRevision: z.number().int().min(1) })).optional(),
   movementAdjustments: z.record(z.string(), z.object({ adjustment: z.union([z.literal(-1), z.literal(1)]), sourceInstanceId: z.string().min(1) })).optional(),
@@ -318,6 +336,9 @@ export const gameStateSchema = z.object({
   pendingNextNonBattleTestModifiers: z.array(pendingNextNonBattleTestModifierSchema).optional(),
   resolvedNextNonBattleTestModifierSourceEventIds: z.array(z.string().min(1)).optional(),
   consumedNextNonBattleTestModifierTestEventIds: z.array(z.string().min(1)).optional(),
+  pendingNextNormalMovementRollModifiers: z.array(pendingNextNormalMovementRollModifierSchema).optional(),
+  resolvedNextNormalMovementRollModifierSourceEventIds: z.array(z.string().min(1)).optional(),
+  consumedNextNormalMovementRollResolutionIds: z.array(z.string().min(1)).optional(),
   pendingFailureReaction: z.object({
     id: z.string().min(1),
     seatId: z.string().min(1),
@@ -436,6 +457,8 @@ export type SessionMode = z.infer<typeof sessionModeSchema>;
 export type GameMode = z.infer<typeof gameModeSchema>;
 export type InteractionMode = z.infer<typeof interactionModeSchema>;
 export type PendingNextNonBattleTestModifier = z.infer<typeof pendingNextNonBattleTestModifierSchema>;
+export type PendingNextNormalMovementRollModifier = z.infer<typeof pendingNextNormalMovementRollModifierSchema>;
+export type NormalMovementRollDetail = z.infer<typeof normalMovementRollDetailSchema>;
 export type ResolutionStage = z.infer<typeof resolutionStageSchema>;
 export type ActiveResolution = z.infer<typeof activeResolutionSchema>;
 export type Seat = z.infer<typeof seatSchema>;

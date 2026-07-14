@@ -680,6 +680,8 @@ export interface PublicMoveDestination {
 export interface PublicMovementPlannerState {
   active: boolean;
   movementValue: number;
+  rolledValue?: number;
+  modifierSources?: Array<{ label: string; value: number }>;
   originalMovementValue?: number;
   movementAdjustment?: -1 | 1 | null;
   compassPrompt?: { instanceId: string; currentCharges: number; maxCharges: number; canDecrease: boolean; canIncrease: boolean } | null;
@@ -973,10 +975,11 @@ export interface PhonePatchPayload extends PublicPatchPayload {
   eligibleNemesisAssistSeatIds?: string[];
   pendingTileChallengePrivate?: (PublicPendingTileChallenge & { id: string; staticIntercessionReactionId?: string; pendingFailureEffects?: Array<{ effectId: string; summary: string }> }) | null;
   pendingTestModifiers?: Array<{
-    type: "nextNonBattleTest";
-    sourceCardId: "glass-chime-swarm";
+    type: "nextNonBattleTest" | "nextNormalMovementRoll";
+    sourceCardId: "glass-chime-swarm" | "spindle-static-squall";
     label: string;
     summary: string;
+    detail?: string;
     amount: -1;
   }>;
   pendingScarConsequence?: {

@@ -2,7 +2,7 @@
 
 Date: 2026-07-14
 
-Status: design approval plus implementation tracking. `glass-chime-swarm` is implemented in its isolated Heat-retirement slice; `spindle-static-squall` remains approved but unimplemented.
+Status: implementation complete. Both approved Family C Heat retirements are implemented as isolated typed lifecycles.
 
 ## Decision summary
 
@@ -11,7 +11,7 @@ Both Family C cards were approved for separate implementation. Glass-Chime now u
 | Stable ID | Selected retirement | Runtime readiness | Approval |
 |---|---|---|---|
 | `glass-chime-swarm` | On failure, subtract 1 from the owner’s next test; battles are excluded | Narrow typed next-test lifecycle implemented | APPROVED / IMPLEMENTED |
-| `spindle-static-squall` | On failure, reduce the owner’s next normal movement roll by 1, minimum 1 | Ready with a narrow typed next-movement modifier | APPROVED |
+| `spindle-static-squall` | On failure, reduce the owner’s next normal movement roll by 1, minimum 1 | Narrow typed next-movement lifecycle implemented | APPROVED / IMPLEMENTED |
 
 The two effects are delayed Blue interference, but they consume on different authoritative events and have materially different test matrices. They should be implemented separately.
 
@@ -128,7 +128,7 @@ These are two narrow discriminated pending states or variants, not a generic sta
 
 ### `spindle-static-squall`
 
-- Current Heat behavior: `gain_heat 1`; compatibility-only no-op with “no additional status change” runtime summary
+- Former Heat behavior: `gain_heat 1`; retired from this card
 - Original gameplay intent: minor accumulating navigation and signal pressure
 - Selected retirement model: Option F, delayed next-normal-movement interference
 - Card type: Hazard
@@ -146,12 +146,12 @@ These are two narrow discriminated pending states or variants, not a generic sta
 - Equipment interaction: existing legal post-roll movement adjustments remain available after the penalty; no Equipment is disabled or discarded
 - Movement interaction: normal movement roll value only; no forced displacement, topology change, route-selection bypass, or extra tile entry
 - Multiplayer interaction: acting operative only; cannot target another seat
-- Typed runtime support: ready with a narrow typed pending next-movement modifier integrated with the existing authoritative movement-roll path
+- Typed runtime support: implemented with a narrow typed pending next-movement modifier integrated with the existing authoritative movement-roll path
 - Duplicate-source protection: encounter resolution ID plus one consumed-modifier source ID; same-card pending effects do not stack
 - Final player-facing rule: “The squall corrupts your bearing. On failure, reduce your next movement roll by 1, to a minimum of 1.”
 - Implementation complexity: 3/5
 - Balance risk: 2/5
-- Approval status: APPROVED
+- Approval status: APPROVED / IMPLEMENTED
 
 ## Scar severity gate
 
@@ -175,7 +175,7 @@ Neither card may directly grant a Scar. Both are common outer severity-2 Hazards
 Recommended implementation order:
 
 1. `glass-chime-swarm` alone — IMPLEMENTED with the narrow next-test lifecycle, result source, reconnect projection, clearing, non-stacking rule, and focused tests. Commit: `feat: retire glass chime swarm heat effect`.
-2. `spindle-static-squall` alone — add the narrow next-movement modifier lifecycle to normal movement rolls, modifier ordering, reconnect projection, expiry, and focused tests. Commit: `feat: retire spindle static squall heat`.
+2. `spindle-static-squall` alone — IMPLEMENTED with the narrow next-movement modifier lifecycle, minimum-one ordering, reconnect projection, cleanup, public result breakdown, and focused tests. Commit: `feat: retire spindle static squall heat effect`.
 
 They may share naming conventions and source-ledger helpers, but should not share a single implementation commit. Glass-Chime consumes on test resolution and must cover rerolls/Scar test triggers; Spindle consumes on movement roll and must cover movement adjustments/topology exclusions.
 
