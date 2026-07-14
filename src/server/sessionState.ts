@@ -202,6 +202,7 @@ export function createInitialSessionState(
     pendingDisplacement: null,
     pendingDisplacementArrival: null,
     resolvedDisplacementSourceEventIds: [],
+    resolvedSalvageLossSourceEventIds: [],
     tileChallengeProgress: null,
     activeResolution: null,
     lastOutcomeSummary: null

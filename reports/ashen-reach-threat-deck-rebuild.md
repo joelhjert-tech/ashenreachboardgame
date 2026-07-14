@@ -85,6 +85,8 @@ Phase B1 supersedes the earlier exemplar order below for duplicate-pattern work.
 
 The exact rules, alternatives, tests, and evidence gates are in `reports/ashen-reach-threat-duplicate-pattern-approval.md`. No group changes totals or authorizes the +116-card expansion.
 
+Implementation status: Phase B2A is complete for `glass-tick-cloud`, `locked-vault`, `breach-halberd`, and `mudglass-sinkhole`. The first two now use approved typed floor-zero Salvage loss; the latter two use approved clockwise/counterclockwise same-ring forced displacement with the existing one-Wound no-destination fallback. No other duplicate or Heat-linked approval status changes in this phase.
+
 ### Earlier Phase A long-range sequence
 
 1. Red duplicate-cluster exemplar — one stable-ID revision; low-medium risk.

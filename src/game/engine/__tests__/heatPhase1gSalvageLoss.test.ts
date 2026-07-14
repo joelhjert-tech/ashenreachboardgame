@@ -14,7 +14,9 @@ const AUTOMATIC_LOSS_IDS = [
   "escalation-crownfall-writ",
   "ash-rat-skitter",
   "bridge-toll-runt",
+  "glass-tick-cloud",
   "gutter-bell-mite",
+  "locked-vault",
   "pale-toll-enforcer",
   "rust-mote-drone",
   "toll-scrip-urchins"
@@ -78,7 +80,7 @@ describe("Phase 1G floor-zero Salvage loss", () => {
     if (result.ok) expect(result.state.activeResolution?.outcome?.effects).toEqual(["Failure: note added: First.", "Lost 1 Salvage.", "Failure: note added: Last."]);
   });
 
-  it("retains exactly seven automatic consequences without treating Rust Choir recovery as automatic loss", () => {
+  it("retains exactly nine approved automatic consequences without treating Rust Choir recovery as automatic loss", () => {
     expect([...APPROVED_AUTOMATIC_SALVAGE_LOSS_IDS].sort()).toEqual([...AUTOMATIC_LOSS_IDS].sort());
     const threats = loadThreatCards();
     const escalations = loadEscalationCards();

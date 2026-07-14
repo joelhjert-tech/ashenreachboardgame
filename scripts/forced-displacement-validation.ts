@@ -1,4 +1,8 @@
-export const APPROVED_FORCED_DISPLACEMENT_SOURCE_IDS = new Set(["route-splice"]);
+export const APPROVED_FORCED_DISPLACEMENT_SOURCE_IDS = new Set([
+  "breach-halberd",
+  "mudglass-sinkhole",
+  "route-splice"
+]);
 
 export function validateForcedDisplacementContentRecord(file: string, record: unknown): string[] {
   if (!record || typeof record !== "object") return [];

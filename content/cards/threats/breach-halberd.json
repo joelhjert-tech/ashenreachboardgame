@@ -3,7 +3,7 @@
   "type": "threat",
   "cardType": "hazard",
   "title": "Breach Halberd",
-  "text": "A breach-rusted halberd hangs from a shrine hook, still twitching toward warm hands.",
+  "text": "The halberd sweeps you off the breach. Move 1 sector clockwise on this ring. If no legal sector is available, suffer 1 Wound.",
   "flavor": "It remembers the last charge better than the soldier did.",
   "severity": 2,
   "stat": "forge",
@@ -13,8 +13,15 @@
     "text": "You stripped a breach-halberd for a brutal route note."
   },
   "failEffect": {
-    "type": "take_wound",
-    "amount": 1
+    "type": "forcedDisplacement",
+    "direction": "clockwise",
+    "distance": 1,
+    "sameRing": true,
+    "fallbackEffect": {
+      "type": "take_wound",
+      "amount": 1
+    },
+    "failureStillCounts": true
   },
   "enemyFamily": "hazard",
   "threatLane": "red",
@@ -23,7 +30,7 @@
   "rarity": "uncommon",
   "tempo": "push",
   "resourceTags": [
-    "loot",
+    "movement",
     "wound"
   ]
 }

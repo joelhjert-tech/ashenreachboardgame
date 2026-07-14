@@ -74,6 +74,8 @@ import { applyLegacyHeatNoop, isLegacyHeatNoopEffect, summarizeLegacyHeatNoop } 
 import type { ScarSourceEvent } from "../schema/scarTrigger.schema.js";
 import { getBoardSpace, isScenarioConfrontationSpace } from "../data/boardSpaces.js";
 import { getForcedDisplacementDestination, getLegalMovementRoute, getLegalMovementRouteVariant, getMovementBlockReason, getVoidKeyMovementRoute, getMovementStepBlockReason } from "../rules/movementPlanner.js";
+import { canRiftAnchorSpikeSuppress } from "../rules/forcedDisplacement.js";
+import { resolveFloorZeroSalvageLoss, THREAT_REVISION_SALVAGE_LOSS_SOURCE_IDS } from "../rules/salvageLoss.js";
 import { isBoardSpaceShopCapable, SHOP_FAILURE_REASONS } from "../rules/shopAvailability.js";
 import {
   getStatUpgradeCost,
@@ -2087,6 +2089,25 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
         return reject(state, action, "No pending effect is available to apply");
       }
 
+      const authoritativeSourceCardId = state.currentEncounter?.id ?? state.activeResolution?.card?.id ?? resolutionAction.sourceCardId ?? "unknown-encounter";
+      const requiresAuthoritativeSource = state.pendingEffect.type === "lose_salvage" || state.pendingEffect.type === "forcedDisplacement";
+      if (requiresAuthoritativeSource && resolutionAction.sourceCardId && resolutionAction.sourceCardId !== authoritativeSourceCardId) {
+        return reject(state, action, "Resolution source is stale");
+      }
+      const salvageLossResult = state.pendingEffect.type === "lose_salvage"
+        ? resolveFloorZeroSalvageLoss(
+            requirePlayer(state, resolutionAction.seatId).character.salvage ?? 0,
+            state.pendingEffect.amount,
+            authoritativeSourceCardId
+          )
+        : null;
+      const salvageLossSourceEventId = salvageLossResult
+        ? `${state.activeResolution?.id ?? `${resolutionAction.seatId}:${authoritativeSourceCardId}:${state.sequence}`}:salvage-loss`
+        : null;
+      if (salvageLossSourceEventId && (state.resolvedSalvageLossSourceEventIds ?? []).includes(salvageLossSourceEventId)) {
+        return reject(state, action, "Salvage loss source was already resolved");
+      }
+
       if (state.pendingEffect.type === "forcedDisplacement") {
         if (resolutionAction.success !== false) return reject(state, action, "Forced displacement requires a confirmed failed test");
         const effect = state.pendingEffect;
@@ -2191,6 +2212,12 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
         resolutionPlayer.character.salvage ?? 0,
         resolutionPlayer.character.wounds
       );
+      if (
+        salvageLossResult?.actualLoss === 0 &&
+        THREAT_REVISION_SALVAGE_LOSS_SOURCE_IDS.has(salvageLossResult.sourceCardId)
+      ) {
+        appliedEffectSummaries.splice(0, appliedEffectSummaries.length, "No Salvage to lose.");
+      }
       const containsSalvageLoss = JSON.stringify(state.pendingEffect).includes('"lose_salvage"');
 
       return succeed({
@@ -2203,6 +2230,9 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
         pendingDisplacementArrival: null,
         pendingFailureReaction: null,
         pendingStaticIntercessionReaction: null,
+        resolvedSalvageLossSourceEventIds: salvageLossSourceEventId
+          ? [...(state.resolvedSalvageLossSourceEventIds ?? []), salvageLossSourceEventId]
+          : state.resolvedSalvageLossSourceEventIds,
         lastOutcomeSummary: containsSalvageLoss && state.lastOutcomeSummary ? { ...state.lastOutcomeSummary, summary: `${state.lastOutcomeSummary.encounterTitle ?? "Outcome"}. ${appliedEffectSummaries.join(" ")}` } : state.lastOutcomeSummary,
         activeResolution: state.activeResolution
           ? {
@@ -2211,7 +2241,8 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
               outcome: {
                 title: resolutionAction.success === false ? "Failure applied" : "Outcome applied",
                 text: appliedEffectSummaries.join(" "),
-                effects: appliedEffectSummaries
+                effects: appliedEffectSummaries,
+                ...(salvageLossResult ? { salvageLoss: salvageLossResult } : {})
               }
             }
           : state.activeResolution,
@@ -2672,7 +2703,7 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
         if (item.chargedEffect !== "suppressForcedDisplacement" || !exactItem || exactItem.id !== "rift-anchor-spike") return reject(state, action, "Rift Anchor Spike instance is stale");
         if ((exactItem.currentCharges ?? exactItem.charges ?? exactItem.startingCharges ?? 0) < (exactItem.chargeCost ?? 1)) return reject(state, action, `${item.name} has no charges remaining`);
         if (!pending || pending.status !== "pending" || pending.seatId !== useGearAction.seatId || pending.reactionId !== useGearAction.forcedDisplacementReactionId || pending.sourceEventId !== useGearAction.forcedDisplacementSourceEventId) return reject(state, action, "Rift Anchor Spike reaction or source event is stale");
-        if (pending.sourceType !== "threat" || pending.sourceId !== "route-splice") return reject(state, action, "Rift Anchor Spike cannot suppress this displacement source");
+        if (!canRiftAnchorSpikeSuppress(pending.sourceType, pending.sourceId)) return reject(state, action, "Rift Anchor Spike cannot suppress this displacement source");
         if (player.character.currentSpaceId !== pending.originSectorId || player.sectorId !== pending.originSectorId) return reject(state, action, "Forced displacement origin is stale");
         if ((state.resolvedDisplacementSourceEventIds ?? []).includes(pending.sourceEventId)) return reject(state, action, "Forced displacement source was already resolved");
       }

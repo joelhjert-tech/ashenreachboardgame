@@ -87,6 +87,7 @@ import {
   getMovementBlockReason,
   getVoidKeyMovementRoute
 } from "../game/rules/movementPlanner.js";
+import { canRiftAnchorSpikeSuppress } from "../game/rules/forcedDisplacement.js";
 import { createInitialSessionState } from "./sessionState.js";
 import { resolveBoardSpaceEvent } from "../game/tileResolver.js";
 import {
@@ -2045,7 +2046,7 @@ export class GameRoomServer {
       if (this.state.phase !== "resolution" || !pending || pending.status !== "pending" || pending.seatId !== seatId || pending.reactionId !== forcedDisplacementReactionId || pending.sourceEventId !== forcedDisplacementSourceEventId) {
         throw new IntentRejectedError("USE_GEAR", "The Rift Anchor Spike displacement reaction is stale or unavailable.");
       }
-      if (pending.sourceType !== "threat" || pending.sourceId !== "route-splice") throw new IntentRejectedError("USE_GEAR", "This displacement source cannot be suppressed by Rift Anchor Spike.");
+      if (!canRiftAnchorSpikeSuppress(pending.sourceType, pending.sourceId)) throw new IntentRejectedError("USE_GEAR", "This displacement source cannot be suppressed by Rift Anchor Spike.");
       if (!item.instanceId || item.instanceId !== instanceId) throw new IntentRejectedError("USE_GEAR", `${item.name} instance is stale.`);
       if ((item.currentCharges ?? item.charges ?? item.startingCharges ?? 0) < (item.chargeCost ?? 1)) throw new IntentRejectedError("USE_GEAR", `${item.name} has no charges remaining.`);
       if (player!.character.equippedGear.utility !== item.id) throw new IntentRejectedError("USE_GEAR", `${item.name} must be equipped.`);

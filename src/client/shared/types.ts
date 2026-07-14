@@ -524,6 +524,12 @@ export interface ActiveResolution {
     title: string;
     text: string;
     effects: string[];
+    salvageLoss?: {
+      requestedLoss: number;
+      actualLoss: number;
+      resultingSalvage: number;
+      sourceCardId: string;
+    };
   };
 }
 

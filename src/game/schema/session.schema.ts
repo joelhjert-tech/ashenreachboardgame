@@ -74,7 +74,13 @@ export const activeResolutionSchema = z.object({
     .object({
       title: z.string().min(1),
       text: z.string().min(1),
-      effects: z.array(z.string())
+      effects: z.array(z.string()),
+      salvageLoss: z.object({
+        requestedLoss: z.number().int().positive(),
+        actualLoss: z.number().int().nonnegative(),
+        resultingSalvage: z.number().int().nonnegative(),
+        sourceCardId: z.string().min(1)
+      }).optional()
     })
     .optional()
 });
@@ -297,6 +303,7 @@ export const gameStateSchema = z.object({
   pendingDisplacement: pendingDisplacementSchema.nullable().optional(),
   pendingDisplacementArrival: pendingDisplacementArrivalSchema.nullable().optional(),
   resolvedDisplacementSourceEventIds: z.array(z.string().min(1)).optional(),
+  resolvedSalvageLossSourceEventIds: z.array(z.string().min(1)).optional(),
   pendingFailureReaction: z.object({
     id: z.string().min(1),
     seatId: z.string().min(1),
