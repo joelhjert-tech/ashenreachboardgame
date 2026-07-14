@@ -1,6 +1,6 @@
 # Remaining Heat-linked Threat implementation plan
 
-Status: H1, H2, and H3 implemented. All eight approved retirements are complete; the nine blocked cards remain blocked.
+Status: H1, H2, and H3 implemented. Phase H4A approves three additional retirements for later implementation; six cards remain blocked.
 
 ## Approved implementation groups
 
@@ -46,6 +46,28 @@ Implemented as `feat: replace heat threats with wound pressure`. Both failures u
 
 Implemented as `feat: replace heat threats with salvage pressure`. All three losses reuse the existing authoritative floor-zero resolver, report requested/actual/resulting values, and remain isolated from payment, Salvage Ledger, shop, mission, Contract, and relic-trade lifecycles.
 
+### Group H4A-1 — exact-instance Equipment pressure (2) — APPROVED, NOT IMPLEMENTED
+
+- Stable IDs: `relay-husk`, `signal-rotted-engineer`.
+- Exact changes: Relay failure suppresses one owner-chosen exact equipped normal Equipment instance through the owner's next Threat; Engineer combat loss suppresses one owner-chosen exact equipped normal Equipment instance during the owner's next battle.
+- Shared lifecycle: mandatory owner-private exact-instance choice; normal equipped non-QA `starter`/`standard`/`advanced` Equipment with a meaningful effect; Artifact/carried/consumable/depleted charged/inert items excluded; no-target fallback; suppression of all contributions without item mutation; source/instance dedup; reconnect persistence; item-leave and owner lifecycle cleanup.
+- Typed differences: Relay uses `nextOwnerThreatResolved` and excludes its own resolution. Engineer uses `nextOwnerBattleResolved`, is created after final loss, and excludes the just-completed battle.
+- Schema/runtime prerequisites: exact equipped-instance identity rather than catalog IDs, pending choice state, suppression records with a typed expiry enum, contribution/activation gates, source events, private/public projections, and centralized cleanup.
+- Focused tests: duplicate catalog copies; exact instance selection; stale/duplicate/wrong-owner submission; no target; private projection; reconnect during choice and suppression; passive/conditional/exhaust/activation blocking; no charge/use/state mutation; each expiry; item sale/discard/consumption; unequip/re-equip; recall/replacement/session cleanup; reward/trophy isolation.
+- Implementation risk: medium-high. The rules are bounded, but exact instance identity must be fixed at the equipped-state boundary before suppression is wired.
+- Recommended commit subject: `feat: retire equipment pressure heat threats`.
+
+### Group H4A-2 — paired Command modifier (1) — APPROVED, NOT IMPLEMENTED
+
+- Stable ID: `siren-relay-echo`.
+- Exact change: after final Siren success create `+1`, or after final failure create `-1`, for the owner's next authoritative rolled non-battle Command test.
+- Eligible contexts: Command Hazard, tile challenge, Anomaly, scenario, or mission checks that enter the typed check pipeline. Battles, movement, automatic effects, previews, payments, and other seats are excluded.
+- Shared lifecycle: one pending Siren source per owner; later Siren result replaces it rather than queues; source appears once per roll breakdown, is reserved to one test-resolution ID, survives its rerolls, and consumes only after the final result/reaction window. Turns and rounds do not expire it; recall/replacement/session/room cleanup does.
+- Schema/runtime prerequisites: generalize the source-locked Glass-Chime pending record to typed source ID, label, amount, stat/context eligibility, and resolution reservation while preserving Glass-Chime behavior.
+- Focused tests: both branches; replacement/dedup; eligible/excluded contexts; other-seat isolation; normal stacking including Glass-Chime; source breakdown once; existing final clamp; reroll reuse; invalid/stale request; reconnect before/during resolution; recall/replacement/session cleanup.
+- Implementation risk: medium. Existing modifier and reroll patterns are close, but Siren must not broaden or regress Glass-Chime eligibility.
+- Recommended commit subject: `feat: retire siren relay echo heat effect`.
+
 ## Blocked prerequisite register
 
 | Stable ID | Preferred direction | Blocking prerequisite | Re-entry evidence |
@@ -56,21 +78,19 @@ Implemented as `feat: replace heat threats with salvage pressure`. All three los
 | `hymn-scarred-zealot` | lasting broadcast/Scar | loss-versus-defeat trigger conflict and disproportionate routine Scar | corrected authored trigger plus named Scar/severity decision |
 | `marrow-tax-auditors` | lose up to 1 Salvage | four-reference starvation risk in tight economy | post-H3 telemetry/playtest or an approved frequency/amount mitigation |
 | `memory-tax-gate` | private player choice | two competitive options, private ownership, projection, cancellation, reset | exact prompt/options and server-authoritative choice lifecycle |
-| `relay-husk` | temporary Equipment disable | eligible exact instances, no-item fallback, duration, reset | schema/lifecycle proposal with reconnect and duplicate-instance tests |
-| `signal-rotted-engineer` | post-loss Weapon pressure | avoid double-dipping current battle suppression; select disable/discard/duration | exact rule and target/reset specification |
-| `siren-relay-echo` | paired next-Command modifier | positive/stat-specific schema, stacking/precedence, eligible contexts, recall clear | narrow typed lifecycle approval and modifier-order matrix |
 
-Blocked IDs are not assigned to implementation groups. A later approval should form new 2–4 card groups only when cards genuinely share a settled lifecycle; it must not combine unrelated high-risk rules to satisfy a batch size.
+The six blocked IDs are not assigned to implementation groups. A later approval should form new 2–4 card groups only when cards genuinely share a settled lifecycle; it must not combine unrelated high-risk rules to satisfy a batch size.
 
 ## Recommended sequence
 
 1. **H1 — removal/clarity only — COMPLETE.** Implemented for `cinder-gate-backlash`, `mirror-rot-interference`, and `webglass-snarefield` without replacement.
 2. **H2 — existing Wound resolver — COMPLETE.** Implemented for `choir-static-burst` and `lantern-moth-swarm` through the normal preventable Wound lifecycle.
 3. **H3 — existing floor-zero Salvage resolver — COMPLETE.** Implemented for `crown-bell-baron`, `pale-contract-collector`, and `soot-stained-cutpurse`; floor zero, actual delta, reward preservation, mode ownership, and explicit exclusion of Salvage Ledger, shop-transaction, mission, Contract, and completed-contract hooks are covered.
-4. **Movement and shared-pressure design gates.** IDs: `false-route-procession`, `gateblind-pulse`. Benefit: preserves route/gate identity. Risk: medium-high. Prerequisites: destination and escalation threshold specifications.
-5. **Equipment and temporary-modifier design gates.** IDs: `relay-husk`, `signal-rotted-engineer`, `siren-relay-echo`. Benefit: Yellow/Signal variety. Risk: medium-high. Prerequisites: exact-instance disable and stat-specific modifier lifecycles.
-6. **Choice and economy-frequency gates.** IDs: `memory-tax-gate`, `marrow-tax-auditors`. Benefit: distinct Yellow tension. Risk: high if choice is dominant or economy starves. Prerequisites: choice contract and H3 playtest evidence.
-7. **Scar/high-severity gates last.** IDs: `hymn-scarred-zealot`, `ashen-doppelganger`. Benefit: preserves lasting-injury fiction. Risk: high. Prerequisites: exact Scar trigger and explicit 2-Wound recall-rate approval.
+4. **H4 implementation group 1 — exact-instance Equipment pressure — APPROVED NEXT.** IDs: `relay-husk`, `signal-rotted-engineer`. Implement only the shared contract in the H4A approval report, including equipped-instance migration, private choice, suppression gates, and full cleanup.
+5. **H4 implementation group 2 — paired Command modifier — APPROVED AFTER GROUP 1.** ID: `siren-relay-echo`. Keep separate from Equipment state and preserve Glass-Chime behavior.
+6. **Movement and shared-pressure design gates.** IDs: `false-route-procession`, `gateblind-pulse`. Benefit: preserves route/gate identity. Risk: medium-high. Prerequisites: destination and escalation threshold specifications.
+7. **Choice and economy-frequency gates.** IDs: `memory-tax-gate`, `marrow-tax-auditors`. Benefit: distinct Yellow tension. Risk: high if choice is dominant or economy starves. Prerequisites: choice contract and H3 playtest evidence.
+8. **Scar/high-severity gates last.** IDs: `hymn-scarred-zealot`, `ashen-doppelganger`. Benefit: preserves lasting-injury fiction. Risk: high. Prerequisites: exact Scar trigger and explicit 2-Wound recall-rate approval.
 
 ## Per-group verification contract
 
@@ -86,14 +106,15 @@ Each implementation commit must run the smallest focused test first, then:
 
 Before each commit, inspect the complete staged diff and confirm stable IDs, totals (Red 26 / Blue 35 / Yellow 48 / overall 109), lane/type/stat/difficulty/severity, graph membership, completed duplicate revisions, unrelated mechanics, and the unapproved +116 expansion are unchanged. Heat compatibility may remain only where a card is still explicitly blocked; no new player-facing Heat or Risk wording is allowed.
 
-## Distribution checkpoint after all three approved groups
+## Distribution checkpoint
 
 - Removed without replacement: 3 success branches.
 - Added normal Wound consequences: 2 cards.
 - Added floor-zero Salvage losses: 3 cards.
-- Added Scar, Global Escalation, movement, Equipment disable, persistent, choice, temporary modifier, or multiplayer effects: 0.
-- Approved severity: four at 1, four at 2, none at 3–5.
-- Lane implementation impact: Blue 5, Yellow 3, Red 0.
+- Implemented H1–H3 adds no Scar, Global Escalation, movement, Equipment disable, persistent, choice, temporary modifier, or multiplayer effect.
+- H4A approves, but does not yet implement, two exact-instance Equipment suppressions, two private target choices, and one paired Command modifier.
+- Approved severity: four at 1, seven at 2, none at 3–5. Implemented severity remains four at 1 and four at 2.
+- Lane implementation impact remains Blue 5, Yellow 3, Red 0; approved pending H4A adds three Yellow IDs.
 - Card totals: unchanged at 26 / 35 / 48 / 109.
 
 No exact Relic-frequency parity is asserted. No expansion work is authorized.

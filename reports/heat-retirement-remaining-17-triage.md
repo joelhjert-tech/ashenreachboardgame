@@ -1,14 +1,14 @@
 # Remaining 17 Heat-linked Threat retirement triage
 
-Status: final triage approved at `d877574`; Groups H1, H2, and H3 are implemented. All eight approved IDs are complete, and all nine blocked IDs remain blocked.
+Status: final triage approved at `d877574`; Groups H1, H2, and H3 are implemented. Phase H4A approves three additional IDs for later implementation; six IDs remain blocked.
 
 ## Decision summary
 
-The two existing Heat audits and current canonical Threat content reconcile to exactly **17 unique stable IDs**. Eight IDs have complete, bounded retirement rules and are **APPROVED AND IMPLEMENTED** in three implementation groups. Nine remain **BLOCKED** because a severity, target, ownership, persistence, or reset decision is unresolved.
+The two existing Heat audits and current canonical Threat content reconcile to exactly **17 unique stable IDs**. Eight IDs are **APPROVED AND IMPLEMENTED** in three completed implementation groups. Phase H4A gives three more IDs complete, bounded rules and marks them **APPROVED FOR LATER IMPLEMENTATION**. Six remain **BLOCKED** because a severity, target, ownership, persistence, or reset decision is unresolved.
 
-- Approved: 8
-- Blocked: 9
-- Approved retirement models: remove without replacement (3), normal Wound pressure (2), floor-zero Salvage pressure (3)
+- Approved: 11 (8 implemented, 3 awaiting implementation)
+- Blocked: 6
+- Approved retirement models: remove without replacement (3), normal Wound pressure (2), floor-zero Salvage pressure (3), exact-instance Equipment suppression (2), stat-specific temporary modifier (1)
 - Player-facing Heat remains obsolete. Every still-active Heat branch below is parsed only for compatibility and resolves as a no-op with a “no additional status change” summary.
 - Canonical Threats do not define an activation-number field. Every record therefore reports `N/A`; difficulty and canonical graph frequency are recorded separately and are not relabelled as activation.
 - The 17-card population is Red 1 / Blue 7 / Yellow 9. Card totals remain Red 26 / Blue 35 / Yellow 48 / overall 109.
@@ -53,13 +53,13 @@ Canonical graph references, used only as a frequency warning, are respectively 3
 | `memory-tax-gate` | risk/reward choice paid with private memory | player-choice/private-note lifecycle | requires new lifecycle | 3 provisional | BLOCKED |
 | `mirror-rot-interference` | obsolete success-side recovery bookkeeping | remove success branch without replacement | implemented H1 | 1 | APPROVED — IMPLEMENTED H1 |
 | `pale-contract-collector` | resource pressure through debt collection | lose up to 1 Salvage | implemented H3 | 2 | APPROVED — IMPLEMENTED H3 |
-| `relay-husk` | Equipment pressure from false instructions | choose exact Equipment to disable temporarily | requires target and cleanup lifecycle | 2 provisional | BLOCKED |
-| `signal-rotted-engineer` | Equipment interference | exact-instance Weapon pressure | requires duration/target decision | 2 provisional | BLOCKED |
-| `siren-relay-echo` | paired temporary Command interference | next-Command-test modifier candidate | requires schema, precedence, and reset decision | 2 provisional | BLOCKED |
+| `relay-husk` | Equipment pressure from false instructions | suppress chosen exact equipped normal Equipment through next owner Threat | approved typed lifecycle; implementation pending | 2 | APPROVED — H4A |
+| `signal-rotted-engineer` | Equipment interference | suppress chosen exact equipped normal Equipment during next owner battle | approved typed lifecycle; implementation pending | 2 | APPROVED — H4A |
+| `siren-relay-echo` | paired temporary Command interference | next non-battle Command test gets `+1` on success or `-1` on failure | approved typed lifecycle; implementation pending | 2 | APPROVED — H4A |
 | `soot-stained-cutpurse` | minor resource theft | lose up to 1 Salvage | implemented H3 | 1 | APPROVED — IMPLEMENTED H3 |
 | `webglass-snarefield` | obsolete success-side recovery bookkeeping | remove success branch without replacement | implemented H1 | 1 | APPROVED — IMPLEMENTED H1 |
 
-No approved card grants a Scar, advances Global Escalation, displaces a player, destroys Equipment, creates a persistent object, or opens a choice prompt. Those outcomes remain behind their explicit design gates rather than being used as automatic Heat substitutes.
+No approved card grants a Scar, advances Global Escalation, displaces a player, destroys Equipment, or creates a sector-persistent object. H4A authorizes two bounded owner-private exact-instance choices; those choices suppress owned state temporarily and never delete or transfer it.
 
 ### Per-ID model screen
 
@@ -79,9 +79,9 @@ Codes: A remove; B temporary owner modifier; C normal Wound; D conditional Scar;
 | `memory-tax-gate` | NO | NO | NO | NO | NO | NO | NO | POSSIBLE | POSSIBLE | CANDIDATE |
 | `mirror-rot-interference` | SELECT on success | NO | existing failure only | NO | NO | NO | NO | NO | NO | NO |
 | `pale-contract-collector` | NO | NO | NO | NO | NO | SELECT | NO | NO | NO | POSSIBLE but unnecessary |
-| `relay-husk` | NO | NO | NO | NO | NO | NO | CANDIDATE | NO | NO | POSSIBLE |
-| `signal-rotted-engineer` | NO | NO | NO | NO | NO | NO | CANDIDATE | NO | NO | NO |
-| `siren-relay-echo` | POSSIBLE | CANDIDATE | NO | NO | NO | NO | NO | NO | NO | NO |
+| `relay-husk` | NO | NO | NO | NO | NO | NO | SELECT | NO | NO | SELECT for exact target |
+| `signal-rotted-engineer` | NO | NO | NO | NO | NO | NO | SELECT | NO | NO | SELECT for exact target |
+| `siren-relay-echo` | NO | SELECT | NO | NO | NO | NO | NO | NO | NO | NO |
 | `soot-stained-cutpurse` | NO | NO | NO | NO | NO | SELECT | NO | NO | NO | POSSIBLE but unnecessary |
 | `webglass-snarefield` | SELECT on success | NO | existing failure only | NO | NO | NO | NO | NO | NO | NO |
 
@@ -453,91 +453,91 @@ The screen deliberately rejects automatic Scar, Global Escalation, and generic o
 
 - Current Heat behavior: failed Guile test `gain_heat 1`, compatibility-only no-op.
 - Original gameplay intent: Equipment pressure from false instructions.
-- Selected retirement model: choose one eligible exact Equipment instance to disable temporarily, unresolved.
+- Selected retirement model: choose one eligible exact Equipment instance and suppress it through the owner's next Threat resolution.
 - Card type: hazard.
 - Lane: Yellow.
 - Test/battle stat: Guile.
 - Difficulty: 6; severity 2; outer common; 1 graph reference.
 - Timing: after failed hazard result.
 - Success: gain Marshal Seal, unchanged.
-- Failure: target eligibility, no-item fallback, and duration unresolved.
+- Failure: server opens a mandatory private exact-instance choice after the final failed result; no eligible target means no additional effect.
 - Reward: success-side Equipment.
-- Persistence: exact-instance disabled state if approved.
+- Persistence: exact-instance owner state with typed `nextOwnerThreatResolved` expiry; Relay Husk itself does not count.
 - Wound handling: none proposed.
 - Scar interaction: none.
 - Salvage interaction: none.
-- Equipment interaction: must distinguish equipped/held, slot, Artifact/normal gear, duplicate instances, and owner choice.
+- Equipment interaction: currently equipped, non-QA, meaningful-effect `starter`/`standard`/`advanced` Equipment only; Artifacts, carried items, consumables, depleted charged items, and inert items are excluded. Suppression blocks every contribution but preserves owned state.
 - Movement interaction: none.
 - Multiplayer interaction: owner chooses only their own eligible item; private inventory details stay private.
-- Typed runtime support: exact-instance ownership exists, but generic timed disable does not.
-- Duplicate-source protection: source event plus instance ID required.
-- Reconnect behavior: disabled instance and remaining duration must persist.
-- Cleanup/reset: exact owner-turn or resolution count not selected.
-- Final player-facing rule: unresolved.
-- Severity: 2 provisional.
-- Implementation complexity: high.
-- Balance risk: medium-high; no-item players could trivialize it and a broad disable could hit Artifacts disproportionately.
-- Approval status: BLOCKED.
+- Typed runtime support: later implementation must add exact equipped-instance identity, pending private choice, generic suppression state/gates, and typed expiry; current catalog-ID equipped state is insufficient for duplicate copies.
+- Duplicate-source protection: unique server source event plus exact instance ID; same source/item refreshes one record, and one instance is only Boolean-disabled.
+- Reconnect behavior: pending choice and active suppression serialize unchanged; reconnect cannot clear or duplicate either.
+- Cleanup/reset: consume after the owner's next Threat finalizes; also clear when the item leaves inventory, or on recall, operative replacement, session end, or room reset. Turn/round boundaries and unequip/re-equip do not clear it.
+- Final player-facing rule: “If you fail, choose one equipped normal Equipment. It provides no effects through your next Threat.”
+- Severity: 2.
+- Implementation complexity: medium-high.
+- Balance risk: medium; bounded owner choice and Artifact exclusion prevent routine permanent or disproportionate loss.
+- Approval status: APPROVED — H4A; implementation pending.
 
 ### `signal-rotted-engineer`
 
 - Current Heat behavior: combat loss `gain_heat 1`, compatibility-only no-op.
 - Original gameplay intent: Equipment interference; the battle already suppresses Weapon bonus and the auxiliary failure key only records exposed gear.
-- Selected retirement model: exact-instance Weapon pressure, unresolved.
+- Selected retirement model: after a loss, choose one eligible exact equipped normal Equipment instance; it provides no effects during the owner's next battle.
 - Card type: enemy.
 - Lane: Yellow.
 - Test/battle stat: Forge.
 - Difficulty: 4; severity 2; outer common; 2 graph references.
 - Timing: current combat suppression is immediate; the Heat branch is on loss.
 - Success: defeat.
-- Failure: duration and whether the weapon is disabled, discarded, or merely remains suppressed are unresolved.
+- Failure: after final combat loss, open the same private exact-instance choice as Relay Husk; no eligible target means no additional effect.
 - Reward: tool-rig note.
-- Persistence: possible exact-instance disable.
+- Persistence: exact-instance owner state with typed `nextOwnerBattleResolved` expiry; the Engineer battle does not count.
 - Wound handling: none proposed.
 - Scar interaction: none.
 - Salvage interaction: none.
-- Equipment interaction: permanent discard is excessive; repeating current battle suppression adds no consequence after the loss.
+- Equipment interaction: same eligibility as Relay Husk. Suppression preserves the instance, charges, exhaustion, and uses while blocking all contributions; permanent discard is rejected.
 - Movement interaction: none.
 - Multiplayer interaction: owner-only inventory.
-- Typed runtime support: battle-scoped slot suppression exists; post-battle exact-instance suppression does not.
-- Duplicate-source protection: source event plus instance ID required for persistence.
-- Reconnect behavior: any disable must serialize and project.
-- Cleanup/reset: unresolved.
-- Final player-facing rule: unresolved.
-- Severity: 2 provisional.
+- Typed runtime support: shares Relay's later exact-instance choice/suppression infrastructure with a different typed expiry; existing battle-scoped slot suppression is not reused as persistence.
+- Duplicate-source protection: source event plus exact instance ID; no queued identical next-battle penalties.
+- Reconnect behavior: pending choice and active suppression serialize unchanged.
+- Cleanup/reset: consume after the owner's next battle finalizes whether or not the instance remains equipped; also clear on item leaving inventory, recall, operative replacement, session end, or room reset. Turns, rounds, unrelated Threats, and unequip/re-equip do not clear it.
+- Final player-facing rule: “If you lose, choose one equipped normal Equipment. It provides no effects during your next battle.”
+- Severity: 2.
 - Implementation complexity: medium-high.
-- Balance risk: medium; targetless players and duplicate Equipment need explicit behavior.
-- Approval status: BLOCKED.
+- Balance risk: medium; owner can choose the least useful eligible item, but the effect is bounded and never destroys it.
+- Approval status: APPROVED — H4A; implementation pending.
 
 ### `siren-relay-echo`
 
 - Current Heat behavior: success `lose_heat 1`; failure `gain_heat 2`; both compatibility-only no-ops.
 - Original gameplay intent: paired temporary Command reinforcement/interference.
-- Selected retirement model: owner’s next eligible non-battle Command test gets `+1` on success or `-1` on failure, candidate only.
+- Selected retirement model: owner's next eligible non-battle Command test gets `+1` on success or `-1` on failure.
 - Card type: hazard.
 - Lane: Yellow.
 - Test/battle stat: Command.
 - Difficulty: 6; severity 2; outer common; 3 graph references.
-- Timing: create after final result; consume after the next eligible Command test and its reroll window.
-- Success: candidate `+1` next Command test.
-- Failure: candidate `-1` next Command test.
+- Timing: create after final result; reserve for the next eligible Command test and consume after that resolution's reroll/reaction window.
+- Success: `+1` on the next eligible non-battle Command test.
+- Failure: `-1` on the next eligible non-battle Command test.
 - Reward: none.
 - Persistence: one owner-scoped pending modifier.
 - Wound handling: none.
-- Scar interaction: Scar-triggered tests need an explicit inclusion/exclusion decision.
+- Scar interaction: a Scar event is excluded unless it explicitly initiates an authoritative rolled non-battle Command test.
 - Salvage interaction: none.
-- Equipment interaction: modifier ordering with Equipment and temporary boosts is unresolved.
-- Movement interaction: exclude movement tests unless explicitly typed as eligible.
+- Equipment interaction: applies once in the normal source arithmetic after permanent/conditional sources and before the existing final minimum/clamp; does not mutate any stored stat.
+- Movement interaction: movement rolls are excluded.
 - Multiplayer interaction: owner-only; public result may show source without private alternatives.
-- Typed runtime support: Glass-Chime proves a negative generic next-test lifecycle, but current schema is source-locked and has no positive/stat-specific variant.
-- Duplicate-source protection: source resolution ID required; refresh/replace/queue precedence unresolved.
-- Reconnect behavior: modifier must persist and consume once.
-- Cleanup/reset: recall/replacement clearing and same-source overwrite rule unresolved.
-- Final player-facing rule: candidate wording above, not approved.
-- Severity: 2 provisional.
+- Typed runtime support: later implementation generalizes Glass-Chime's source-locked schema with typed source, amount, stat/context eligibility, and test-resolution reservation.
+- Duplicate-source protection: one pending Siren modifier per owner; a later Siren result replaces amount/source and never queues `+2/-2`. Differently named eligible modifiers stack normally.
+- Reconnect behavior: pending/reserved state persists and completes once for the same resolution ID.
+- Cleanup/reset: eligible-test consumption, recall, operative replacement, session end, or room reset. Turns, rounds, battles, movement, and ineligible tests retain it.
+- Final player-facing rule: “If you succeed, gain +1 on your next non-battle Command test. If you fail, suffer -1 on your next non-battle Command test.”
+- Severity: 2.
 - Implementation complexity: medium.
-- Balance risk: medium; a success bonus may be farmed and modifier precedence is unsettled.
-- Approval status: BLOCKED.
+- Balance risk: medium-low; one pending paired modifier cannot queue, and the stat/context is narrow.
+- Approval status: APPROVED — H4A; implementation pending.
 
 ### `soot-stained-cutpurse`
 
@@ -615,9 +615,9 @@ The screen deliberately rejects automatic Scar, Global Escalation, and generic o
 | `memory-tax-gate` | No approved choice to explain | One arm may dominate | Private-memory bookkeeping risks drag | Ownership, privacy, resolution, and reset are unresolved |
 | `mirror-rot-interference` | Passing avoids the Wound | No repeatable healing loop | Fast | Existing failure lifecycle is unchanged |
 | `pale-contract-collector` | Debt means Salvage loss | Trophy reward still requires victory | Quick and thematic | Automatic loss, not payment; owner only |
-| `relay-husk` | “Which item and for how long?” is unanswered | No-item loadouts could trivialize it | Inventory choice may slow play | Exact instance, fallback, projection, and reset missing |
-| `signal-rotted-engineer` | Weapon suppression already reads clearly | Post-loss penalty could double-dip | Extra item state risks bookkeeping | Immediate versus persistent suppression unresolved |
-| `siren-relay-echo` | Paired `+1/-1` is learnable | Success could be farmed or overwritten | One token is manageable | Eligibility, precedence, stacking, recall clear are unresolved |
+| `relay-husk` | Owner phone names the item and “through next Threat” expiry | A low-value item can absorb it, but must be equipped; reconnect/unequip cannot clear it | One picker and one visible event boundary | Exact instance, no-target fallback, next-Threat consumption, and cleanup are defined |
+| `signal-rotted-engineer` | Post-loss choice is visibly separate from current battle Weapon suppression | Owner may choose the least useful item; the next battle consumes the effect regardless of equip state | One picker and one battle boundary | Loss-only trigger, post-finalization creation, exact target, reward isolation, and cleanup are defined |
+| `siren-relay-echo` | Paired `+1/-1` and Command-only scope are learnable | Identical Siren effects replace rather than queue | One projected modifier token | Eligible contexts, arithmetic, rerolls, Glass-Chime stacking, reconnect, and cleanup are defined |
 | `soot-stained-cutpurse` | Theft maps directly to 1 Salvage | Zero balance is safe, not profitable | Fast and familiar | Owner-only floor-zero actual delta is defined |
 | `webglass-snarefield` | Passing avoids the Wound | No repeatable healing loop | Fast | Existing failure lifecycle is unchanged |
 
@@ -630,19 +630,19 @@ Counts below are unique cards, not individual branches. “Approved proposal” 
 | Wound effects | 5 | 5 | Cinder/Mirror/Webglass plus implemented Choir/Lantern |
 | Scar effects | 0 | 0 | Zealot and Doppelganger direct-Scar routes remain blocked |
 | Salvage pressure | 0 | 3 | Baron, Collector, Cutpurse; all floor-zero owner losses |
-| Equipment effects | 1 | 1 | Engineer’s existing battle Weapon suppression only; no new persistent disable |
+| Equipment effects | 1 | 3 | Existing Engineer battle Weapon suppression plus two approved bounded exact-instance suppressions; H4A implementation pending |
 | Movement effects | 0 | 0 | False-Route remains blocked |
-| Temporary modifiers | 0 | 0 | Siren remains blocked |
-| Persistent effects | 0 | 0 | none approved |
-| Player-choice cards | 0 | 0 | Memory Tax remains blocked |
+| Temporary modifiers | 0 | 1 | Siren paired next non-battle Command modifier approved; implementation pending |
+| Persistent effects | 0 | 3 | two event-bounded suppressions and one until-consumed modifier; all owner-scoped with explicit cleanup |
+| Player-choice cards | 0 | 2 | Relay and Engineer exact-instance Equipment choices approved; Memory Tax remains blocked |
 | Multiplayer effects | 0 | 0 | no approved group-wide effect |
 | Global Escalation | 0 | 0 | Gateblind remains blocked |
 | Removal without replacement | 3 | 3 | Cinder, Mirror-Rot, Webglass success branches implemented in H1 |
 
-Approved severity distribution is severity 1: four cards (`cinder-gate-backlash`, `mirror-rot-interference`, `soot-stained-cutpurse`, `webglass-snarefield`); severity 2: four cards (`choir-static-burst`, `crown-bell-baron`, `lantern-moth-swarm`, `pale-contract-collector`); severity 3–5: none. Blocked provisional candidates span severity 2 (five), 3 (two), and 4 (two).
+Approved severity distribution is severity 1: four cards (`cinder-gate-backlash`, `mirror-rot-interference`, `soot-stained-cutpurse`, `webglass-snarefield`); severity 2: seven cards (`choir-static-burst`, `crown-bell-baron`, `lantern-moth-swarm`, `pale-contract-collector`, `relay-husk`, `signal-rotted-engineer`, `siren-relay-echo`); severity 3–5: none. The six blocked provisional candidates span severity 2–4.
 
-Lane impact is deliberately conservative: Blue approves five of seven cards and blocks two; Yellow approves three of nine and blocks six; Red’s only card remains blocked. No stable ID, lane, role, difficulty, graph placement, art reference, or card total changes in this report.
+Lane impact remains conservative: Blue approves five of seven cards and blocks two; Yellow approves six of nine and blocks three; Red's only card remains blocked. No stable ID, lane, role, difficulty, graph placement, art reference, or card total changes in this report.
 
 ## Approval boundary
 
-This report authorizes only the three groups in `reports/heat-retirement-implementation-plan.md`; all three groups are now implemented. Blocked cards must receive a later exact rule approval and may not be folded into a convenient implementation batch. The +116-card expansion remains unapproved, and no exact Relic-frequency parity is claimed.
+This report records the three completed H1–H3 groups and the three additional H4A approvals defined in `reports/heat-retirement-h4a-equipment-modifier-approval.md`. H4A is approval-only and does not claim implementation. The six blocked cards must receive a later exact rule approval and may not be folded into a convenient implementation batch. The +116-card expansion remains unapproved, and no exact Relic-frequency parity is claimed.
