@@ -42,12 +42,13 @@ describe("Phase 1E Heat-only clause removals", () => {
   });
 
   it("removes only completed IDs from the explicit compatibility boundary", () => {
-    expect(APPROVED_LEGACY_HEAT_CONTENT_IDS.size).toBe(22);
+    expect(APPROVED_LEGACY_HEAT_CONTENT_IDS.size).toBe(19);
     for (const id of REMOVAL_IDS) {
       expect(APPROVED_LEGACY_HEAT_CONTENT_IDS.has(id)).toBe(false);
     }
     expect(APPROVED_LEGACY_HEAT_CONTENT_IDS.has("anomaly-bellrain-inversion")).toBe(false);
-    expect(APPROVED_LEGACY_HEAT_CONTENT_IDS.has("escalation-blackstar-hunger")).toBe(true);
+    expect(APPROVED_LEGACY_HEAT_CONTENT_IDS.has("escalation-blackstar-hunger")).toBe(false);
+    expect(APPROVED_LEGACY_HEAT_CONTENT_IDS.has("escalation-marrow-surgery-debt")).toBe(true);
     expect(validateLegacyHeatContentRecord("new.json", { id: "new-heat", type: "gain_heat", amount: 1 })[0]).toMatch(/blocked legacy Heat construct/);
   });
 });

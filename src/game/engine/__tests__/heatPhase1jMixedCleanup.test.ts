@@ -71,7 +71,7 @@ describe("Phase 1J mixed Heat clause cleanup", () => {
   });
 
   it("removes only IDs with no remaining Heat construct from the allowlist", () => {
-    expect(APPROVED_LEGACY_HEAT_CONTENT_IDS.size).toBe(22);
+    expect(APPROVED_LEGACY_HEAT_CONTENT_IDS.size).toBe(19);
     for (const entry of TARGETS) {
       expect(APPROVED_LEGACY_HEAT_CONTENT_IDS.has(entry.id)).toBe(Boolean(entry.retainedCompatibility));
       expect(validateLegacyHeatContentRecord(entry.file, read(entry))).toEqual([]);

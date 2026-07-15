@@ -6,9 +6,5 @@
   "flavor": "Every shortcut has a mouth.",
   "step": 4,
   "resolutionSummary": "The blackstar tugged the board one mark closer to collapse.",
-  "resolveEffect": {
-    "type": "gain_heat_all",
-    "amount": 1
-  },
   "escalationDelta": 1
 }

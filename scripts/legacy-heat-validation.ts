@@ -35,10 +35,7 @@ export const LEGACY_HEAT_EFFECT_APPROVALS: readonly LegacyHeatEffectApproval[] =
   { id: "anomaly-cinder-mirage-lane", constructs: ["player-facing Heat text", "player-facing Risk resource text"] },
   { id: "artifact-cinder-suture-kit", constructs: ["player-facing Heat text"] },
   { id: "crownless-advocate", constructs: ["lose_heat"] },
-  { id: "escalation-blackstar-hunger", constructs: ["gain_heat_all"] },
-  { id: "escalation-choir-feedback", constructs: ["gain_heat_all"] },
   { id: "escalation-marrow-surgery-debt", constructs: ["gain_heat"] },
-  { id: "escalation-saltwind-lockdown", constructs: ["gain_heat_all"] },
   { id: "saltflat-bone-reader", constructs: ["lose_heat"] }
 ];
 

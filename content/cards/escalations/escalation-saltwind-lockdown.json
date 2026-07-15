@@ -6,9 +6,5 @@
   "flavor": "The road is still open. It just hates you now.",
   "step": 2,
   "resolutionSummary": "Saltwind closed the comfortable routes and tightened pressure around the party.",
-  "resolveEffect": {
-    "type": "gain_heat_all",
-    "amount": 1
-  },
   "escalationDelta": 1
 }

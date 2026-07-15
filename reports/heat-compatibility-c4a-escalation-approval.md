@@ -323,7 +323,7 @@ The card represents environmental route pressure, not an actual topology mutatio
 
 ## Implementation grouping
 
-### Group 1 - shared-target Heat leaves
+### Group 1 - shared-target Heat leaves - **IMPLEMENTED C4B1**
 
 - Stable IDs: `escalation-blackstar-hunger`, `escalation-choir-feedback`, `escalation-saltwind-lockdown`.
 - Exact content change: delete each sole `gain_heat_all 1` `resolveEffect` property.
@@ -333,6 +333,7 @@ The card represents environmental route pressure, not an actual topology mutatio
 - Browser QA: not required for approval; implementation may use existing automated public-summary/projection tests because no interaction is added.
 - Risk: Low.
 - Recommended commit subject: `feat: remove shared escalation heat effects`.
+- Implementation status: Complete in C4B1. All three `resolveEffect` leaves are absent; each `escalationDelta: 1` and surrounding card identity remain exact. See `heat-compatibility-c4b1-shared-escalation-implementation.md`.
 
 ### Group 2 - active-seat Heat leaf
 
@@ -385,6 +386,8 @@ After both approved escalation implementation groups:
 - follower-authored Heat: 2 occurrences across 2 IDs;
 - total authored Heat: **2 occurrences across 2 IDs**;
 - audit verdict remains **FAIL** until follower approval and implementation.
+
+After C4B1 specifically, authored Heat is **3 occurrences across 3 IDs**: `escalation-marrow-surgery-debt`, `crownless-advocate`, and `saltflat-bone-reader`. Group 2 remains approved but unimplemented.
 
 No gameplay, content definition, schema, validation, test, runtime, UI, projection, asset, follower, Threat, scenario, board, mission, item, or economy value changed in C4A.
 

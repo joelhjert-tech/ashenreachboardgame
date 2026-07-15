@@ -488,6 +488,23 @@ C4A changes no authored definition. Current evidence therefore remains:
 
 After both approved escalation implementation groups, the projected authored population is **2 occurrences across 2 follower IDs**. See `heat-compatibility-c4a-escalation-approval.md` for individual approvals, frequency, severity, rejected alternatives, and the two implementation groups.
 
+## Phase C4B1 shared escalation implementation update
+
+C4B1 removed the exact `gain_heat_all 1` `resolveEffect` leaves from `escalation-blackstar-hunger`, `escalation-choir-feedback`, and `escalation-saltwind-lockdown` without replacement. Each card retains `escalationDelta: 1`, so the authoritative sector-card path still advances Global Escalation exactly once with existing solo/multiplayer caps, difficulty thresholds, collapse behavior, local-deck consumption, replay protection, reconnect, and public projections.
+
+Updated evidence counts:
+
+- board-authored typed Heat effects: **0 across 0 IDs**;
+- scenario-authored typed Heat effects: **0 across 0 IDs**;
+- escalation-authored typed Heat effects: **1 across 1 approved-but-unimplemented ID**;
+- follower-authored typed Heat effects: **2 across 2 blocked IDs**;
+- total authored typed Heat effects: **3 across 3 IDs**;
+- current Heat-state mechanical reads/writes: **0**;
+- observed/guarded phone and TV Heat fields or labels: **0**;
+- current verdict: **FAIL**.
+
+The remaining IDs are `escalation-marrow-surgery-debt`, `crownless-advocate`, and `saltflat-bone-reader`. See `heat-compatibility-c4b1-shared-escalation-implementation.md` for the exact content diff and server-authoritative player-count, threshold, collapse, replay, reconnect, and projection evidence.
+
 ## Verification record
 
 Passed:

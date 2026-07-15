@@ -344,7 +344,7 @@ describe("Heat Retirement H5B severe Wound Threats", () => {
 
   it("preserves H5B and hash-pins the sole still-blocked definition after H8B", () => {
     expect(collectHeatThreatIds()).toEqual([...BLOCKED_HASHES.keys()].sort());
-    expect(LEGACY_HEAT_EFFECT_APPROVALS).toHaveLength(8);
-    expect(APPROVED_LEGACY_HEAT_CONTENT_IDS.size).toBe(22);
+    expect(LEGACY_HEAT_EFFECT_APPROVALS).toHaveLength(5);
+    expect(APPROVED_LEGACY_HEAT_CONTENT_IDS.size).toBe(19);
   });
 });
