@@ -1,6 +1,6 @@
 # Remaining Heat-linked Threat implementation plan
 
-Status: H1 through H4C implemented. Six cards remain blocked.
+Status: H1 through H4C implemented. H5A approves two Wound conversions for later implementation; four cards remain blocked.
 
 ## Approved implementation groups
 
@@ -68,18 +68,30 @@ Implemented as `feat: replace heat threats with salvage pressure`. All three los
 - Implementation risk: medium. Existing modifier and reroll patterns are close, but Siren must not broaden or regress Glass-Chime eligibility.
 - Recommended commit subject: `feat: retire siren relay echo heat effect`.
 
+### Group H5B — severe Wound consequences (2) — APPROVED, NOT IMPLEMENTED
+
+- Stable IDs: `ashen-doppelganger`, `hymn-scarred-zealot`.
+- Exact changes: Ashen combat loss becomes one atomic `take_wound 2`; Hymn combat loss becomes `take_wound 1` and defeat retains its silencing note. Existing automatic and authored trophy awards remain unchanged; Ashen's current 6-point runtime reward is recorded for separate balance approval.
+- Shared lifecycle: existing authoritative owner-scoped preventable-Wound pipeline, including requested/prevented/actual delta, threshold recall, one normal threshold Scar, source deduplication, and reconnect persistence.
+- Scar guard: neither card directly grants, selects, schedules, or names a Scar. No `pendingScarConsequence` extension is approved.
+- Schema changes: none expected.
+- Resolver changes: none expected.
+- Projection needs: existing owner prevention/reaction projection and public result summary only.
+- Focused tests: Ashen atomic amount and partial prevention; threshold-adjacent starting states; recall once/Scar once; no doubled request; Hymn full prevention and threshold handling; reward/trophy preservation; reconnect and replay rejection; owner isolation; no direct Scar/shared hymn/escalation state; four blocked raw blobs unchanged.
+- Implementation risk: high for Ashen balance and moderate for Hymn; runtime complexity is low because both reuse the normal resolver.
+- Approval source: `reports/heat-retirement-h5a-wound-scar-approval.md`.
+- Recommended commit subject: `feat: retire severe heat threats with wound consequences`.
+
 ## Blocked prerequisite register
 
 | Stable ID | Preferred direction | Blocking prerequisite | Re-entry evidence |
 |---|---|---|---|
-| `ashen-doppelganger` | 2 preventable Wounds | explicit acceptance of recall-rate jump from a former no-op | solo/multiplayer loss simulations or focused playtest; confirm 2 versus 1 Wound |
 | `false-route-procession` | movement consequence | exact authoritative destination/direction and topology fallback | rule specifying prior-sector, server-offered target, or deterministic direction; reconnect target behavior |
 | `gateblind-pulse` | Global Escalation | solo/multiplayer cap and threshold timing; duplicate-pattern check against Shattered Barricade | threshold matrix and source-order approval |
-| `hymn-scarred-zealot` | lasting broadcast/Scar | loss-versus-defeat trigger conflict and disproportionate routine Scar | corrected authored trigger plus named Scar/severity decision |
 | `marrow-tax-auditors` | lose up to 1 Salvage | four-reference starvation risk in tight economy | post-H3 telemetry/playtest or an approved frequency/amount mitigation |
 | `memory-tax-gate` | private player choice | two competitive options, private ownership, projection, cancellation, reset | exact prompt/options and server-authoritative choice lifecycle |
 
-The six blocked IDs are not assigned to implementation groups. A later approval should form new 2–4 card groups only when cards genuinely share a settled lifecycle; it must not combine unrelated high-risk rules to satisfy a batch size.
+The four blocked IDs are not assigned to implementation groups. A later approval should form new 2–4 card groups only when cards genuinely share a settled lifecycle; it must not combine unrelated high-risk rules to satisfy a batch size.
 
 ## Recommended sequence
 
@@ -88,9 +100,9 @@ The six blocked IDs are not assigned to implementation groups. A later approval 
 3. **H3 — existing floor-zero Salvage resolver — COMPLETE.** Implemented for `crown-bell-baron`, `pale-contract-collector`, and `soot-stained-cutpurse`; floor zero, actual delta, reward preservation, mode ownership, and explicit exclusion of Salvage Ledger, shop-transaction, mission, Contract, and completed-contract hooks are covered.
 4. **H4B — exact-instance Equipment pressure — COMPLETE.** IDs: `relay-husk`, `signal-rotted-engineer`. Shared equipped-instance identity, private choice, suppression gates, reconnect persistence, and full cleanup are implemented.
 5. **H4C — paired Command modifier — COMPLETE.** ID: `siren-relay-echo`. Typed Command-only eligibility, signed replacement, authoritative resolution reservation, Glass-Chime composition, reconnect, privacy, and cleanup are implemented separately from Equipment state.
-6. **Movement and shared-pressure design gates.** IDs: `false-route-procession`, `gateblind-pulse`. Benefit: preserves route/gate identity. Risk: medium-high. Prerequisites: destination and escalation threshold specifications.
-7. **Choice and economy-frequency gates.** IDs: `memory-tax-gate`, `marrow-tax-auditors`. Benefit: distinct Yellow tension. Risk: high if choice is dominant or economy starves. Prerequisites: choice contract and H3 playtest evidence.
-8. **Scar/high-severity gates last.** IDs: `hymn-scarred-zealot`, `ashen-doppelganger`. Benefit: preserves lasting-injury fiction. Risk: high. Prerequisites: exact Scar trigger and explicit 2-Wound recall-rate approval.
+6. **H5B — severe Wound consequences — APPROVED NEXT.** IDs: `ashen-doppelganger`, `hymn-scarred-zealot`. Both reuse the existing Wound path; direct Scar routes are rejected. Ashen's 2-Wound recall-rate jump is explicitly accepted, subject to the focused verification contract.
+7. **Movement and shared-pressure design gates.** IDs: `false-route-procession`, `gateblind-pulse`. Benefit: preserves route/gate identity. Risk: medium-high. Prerequisites: destination and escalation threshold specifications.
+8. **Choice and economy-frequency gates.** IDs: `memory-tax-gate`, `marrow-tax-auditors`. Benefit: distinct Yellow tension. Risk: high if choice is dominant or economy starves. Prerequisites: choice contract and H3 playtest evidence.
 
 ## Per-group verification contract
 
@@ -109,12 +121,12 @@ Before each commit, inspect the complete staged diff and confirm stable IDs, tot
 ## Distribution checkpoint
 
 - Removed without replacement: 3 success branches.
-- Added normal Wound consequences: 2 cards.
+- Implemented normal Wound consequences: 2 cards; H5A approves 2 more for H5B.
 - Added floor-zero Salvage losses: 3 cards.
 - Implemented H1–H3 adds no Scar, Global Escalation, movement, Equipment disable, persistent, choice, temporary modifier, or multiplayer effect.
 - H4B and H4C implement two exact-instance Equipment suppressions, two private target choices, and one paired Command modifier.
-- Approved and implemented severity: four at 1, seven at 2, none at 3–5.
-- Lane implementation impact is Blue 5, Yellow 6, Red 0.
+- Approved severity: four at 1, eight at 2, none at 3, one at 4, none at 5; eleven of these thirteen are implemented.
+- Lane approval impact is Blue 6, Yellow 6, Red 1; implementation remains Blue 5, Yellow 6, Red 0 until H5B lands.
 - Card totals: unchanged at 26 / 35 / 48 / 109.
 
 No exact Relic-frequency parity is asserted. No expansion work is authorized.

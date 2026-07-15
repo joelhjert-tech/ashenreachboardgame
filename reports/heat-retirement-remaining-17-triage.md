@@ -1,14 +1,14 @@
 # Remaining 17 Heat-linked Threat retirement triage
 
-Status: final triage approved at `d877574`; Groups H1, H2, H3, H4B, and H4C are implemented. Six IDs remain blocked.
+Status: final triage approved at `d877574`; Groups H1, H2, H3, H4B, and H4C are implemented. H5A approves two Wound conversions for later implementation; four IDs remain blocked.
 
 ## Decision summary
 
-The two existing Heat audits and current canonical Threat content reconcile to exactly **17 unique stable IDs**. Eleven IDs are **APPROVED AND IMPLEMENTED** across H1 through H4C. Six remain **BLOCKED** because a severity, target, ownership, persistence, or reset decision is unresolved.
+The two existing Heat audits and current canonical Threat content reconcile to exactly **17 unique stable IDs**. Eleven IDs are **APPROVED AND IMPLEMENTED** across H1 through H4C, and two more are **APPROVED, AWAITING IMPLEMENTATION** in H5A. Four remain **BLOCKED** because a target, ownership, persistence, reset, or balance decision is unresolved.
 
-- Approved: 11 (11 implemented)
-- Blocked: 6
-- Approved retirement models: remove without replacement (3), normal Wound pressure (2), floor-zero Salvage pressure (3), exact-instance Equipment suppression (2), stat-specific temporary modifier (1)
+- Approved: 13 (11 implemented, 2 awaiting implementation)
+- Blocked: 4
+- Approved retirement models: remove without replacement (3), normal Wound pressure (4), floor-zero Salvage pressure (3), exact-instance Equipment suppression (2), stat-specific temporary modifier (1)
 - Player-facing Heat remains obsolete. Every still-active Heat branch below is parsed only for compatibility and resolves as a no-op with a “no additional status change” summary.
 - Canonical Threats do not define an activation-number field. Every record therefore reports `N/A`; difficulty and canonical graph frequency are recorded separately and are not relabelled as activation.
 - The 17-card population is Red 1 / Blue 7 / Yellow 9. Card totals remain Red 26 / Blue 35 / Yellow 48 / overall 109.
@@ -17,13 +17,13 @@ The two existing Heat audits and current canonical Threat content reconcile to e
 
 | Stable ID | Display name | Lane / type | Activation | Stat / difficulty | Current success | Current failure | Reward | Exact Heat branch | Runtime state | Source | Closest overlaps |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| `ashen-doppelganger` | Ashen Doppelganger | Blue / enemy | N/A | Guile 11 | Defeat | `gain_heat 2` on loss | 3 Trophies | `woundOnLoss` | compatibility-only no-op | `content/cards/threats/ashen-doppelganger.json` | `mirror-lord-envoy`, `glass-mire-stalker`, `mirror-rot-interference` |
+| `ashen-doppelganger` | Ashen Doppelganger | Blue / enemy | N/A | Guile 11 | Defeat | `gain_heat 2` on loss | automatic 3 Trophy points and 3-value pile entry, then authored `gain_trophy 3`; 6 points total | `woundOnLoss` | compatibility-only no-op | `content/cards/threats/ashen-doppelganger.json` | `mirror-lord-envoy`, `glass-mire-stalker`, `mirror-rot-interference` |
 | `choir-static-burst` | Choir-Static Burst | Blue / hazard | N/A | Signal 9 | scenario progress `choirStaticContained +1` | 1 preventable Wound | none | retired H2 `failEffect` | implemented normal Wound | `content/cards/threats/choir-static-burst.json` | `gateblind-pulse`, `rift-whispers`, `webglass-echo-trap` |
 | `cinder-gate-backlash` | Cinder Gate Backlash | Blue / hazard | N/A | Signal 12 | no additional effect | 2 Wounds | none | retired H1 `successEffect` | implemented removal; failure remains active | `content/cards/threats/cinder-gate-backlash.json` | `gateblind-pulse`, `emberwatch-sparkfall`, `spindle-static-squall` |
 | `crown-bell-baron` | Crown-Bell Baron | Yellow / enemy | N/A | Command 7 | Defeat | lose up to 1 Salvage on loss | route-fee fraud note | `woundOnLoss` | implemented floor-zero automatic loss | `content/cards/threats/crown-bell-baron.json` | `pale-toll-enforcer`, `bridge-toll-runt`, `pale-contract-collector` |
 | `false-route-procession` | False-Route Procession | Yellow / hazard | N/A | Command 7 | false-road note | `gain_heat 2` | none | `failEffect` | compatibility-only no-op | `content/cards/threats/false-route-procession.json` | `memory-tax-gate`, `route-splice`, `siren-relay-echo` |
 | `gateblind-pulse` | Gateblind Pulse | Blue / hazard | N/A | Signal 10 | scenario progress `gateblindPulsesRead +1` | `gain_heat 2` | none | `failEffect` | compatibility-only no-op | `content/cards/threats/gateblind-pulse.json` | `choir-static-burst`, `cinder-gate-backlash`, `saint-of-ashes-echo` |
-| `hymn-scarred-zealot` | Hymn-Scarred Zealot | Red / enemy | N/A | Grit 3 | Defeat | `gain_heat 1` on loss | silencing note | `woundOnLoss` | compatibility-only no-op | `content/cards/threats/hymn-scarred-zealot.json` | `lantern-ash-ghoul`, `moth-carrier-husk`, `ash-cinder-runt` |
+| `hymn-scarred-zealot` | Hymn-Scarred Zealot | Red / enemy | N/A | Grit 3 | Defeat | `gain_heat 1` on loss | automatic 1 Trophy point and 1-value pile entry; authored silencing note | `woundOnLoss` | compatibility-only no-op | `content/cards/threats/hymn-scarred-zealot.json` | `lantern-ash-ghoul`, `moth-carrier-husk`, `ash-cinder-runt` |
 | `lantern-moth-swarm` | Lantern-Moth Swarm | Blue / hazard | N/A | Signal 5 | no additional effect | 1 preventable Wound | none | retired H2 success and failure | implemented removal plus normal Wound | `content/cards/threats/lantern-moth-swarm.json` | `glass-chime-swarm`, `spindle-static-squall`, `roadside-bone-oracle` |
 | `marrow-tax-auditors` | Marrow-Tax Auditors | Yellow / hazard | N/A | Guile 7 | tariff-loophole note | `gain_heat 2` | none | `failEffect` | compatibility-only no-op | `content/cards/threats/marrow-tax-auditors.json` | `locked-vault`, `false-route-procession`, `wireghost-key` |
 | `memory-tax-gate` | Memory Tax Gate | Yellow / hazard | N/A | Command 8 | harmless-memory note | `gain_heat 2` | none | `failEffect` | compatibility-only no-op | `content/cards/threats/memory-tax-gate.json` | `false-route-procession`, `route-splice`, `crown-bell-baron` |
@@ -41,13 +41,13 @@ Canonical graph references, used only as a frequency warning, are respectively 3
 
 | ID | Original intent | Selected model | Runtime readiness | Severity | Status |
 |---|---|---|---|---:|---|
-| `ashen-doppelganger` | severe lasting mirrored injury | conditional 2-Wound candidate | existing Wound pipeline, but balance unresolved | 4 | BLOCKED |
+| `ashen-doppelganger` | severe lasting mirrored injury | 2 preventable Wounds on combat loss | existing normal Wound pipeline | 4 | APPROVED — H5A, AWAITING IMPLEMENTATION |
 | `choir-static-burst` | accumulating attrition from violent signal feedback | normal Wound pressure: 1 preventable Wound | implemented H2 | 2 | APPROVED — IMPLEMENTED H2 |
 | `cinder-gate-backlash` | obsolete success-side recovery bookkeeping | remove success branch without replacement | implemented H1 | 1 | APPROVED — IMPLEMENTED H1 |
 | `crown-bell-baron` | resource pressure through extortion | lose up to 1 Salvage | implemented H3 | 2 | APPROVED — IMPLEMENTED H3 |
 | `false-route-procession` | movement misdirection | forced displacement or delayed relocation | requires unresolved destination rule | 2 provisional | BLOCKED |
 | `gateblind-pulse` | shared gate/scenario pressure | Global Escalation candidate | existing track, but cap/threshold impact unresolved | 3 provisional | BLOCKED |
-| `hymn-scarred-zealot` | delayed or lasting broadcast consequence | conditional Scar candidate | Scar severity and branch timing unresolved | 4 provisional | BLOCKED |
+| `hymn-scarred-zealot` | ordinary physical loss; defeat silences the hymn | 1 preventable Wound on combat loss | existing normal Wound pipeline | 2 | APPROVED — H5A, AWAITING IMPLEMENTATION |
 | `lantern-moth-swarm` | risk/reward prevention plus immediate fire injury | remove success branch; failure becomes 1 preventable Wound | implemented H2 | 2 | APPROVED — IMPLEMENTED H2 |
 | `marrow-tax-auditors` | repeated resource taxation | lose up to 1 Salvage candidate | mechanically ready; frequency balance unresolved | 2 provisional | BLOCKED |
 | `memory-tax-gate` | risk/reward choice paid with private memory | player-choice/private-note lifecycle | requires new lifecycle | 3 provisional | BLOCKED |
@@ -67,13 +67,13 @@ Codes: A remove; B temporary owner modifier; C normal Wound; D conditional Scar;
 
 | ID | A | B | C | D | E | F | G | H | I | J |
 |---|---|---|---|---|---|---|---|---|---|---|
-| `ashen-doppelganger` | NO | NO | CANDIDATE | NO | NO | NO | NO | NO | NO | NO |
+| `ashen-doppelganger` | NO | NO | SELECT | NO | NO | NO | NO | NO | NO | NO |
 | `choir-static-burst` | NO | POSSIBLE | SELECT | NO | NO | NO | NO | NO | NO | NO |
 | `cinder-gate-backlash` | SELECT | NO | NO; failure already owns 2 | NO | NO | NO | NO | NO | NO | NO |
 | `crown-bell-baron` | NO | NO | NO | NO | NO | SELECT | NO | NO | NO | POSSIBLE but unnecessary |
 | `false-route-procession` | NO | NO; duplicates Spindle | NO | NO | NO | NO | NO | CANDIDATE | POSSIBLE | POSSIBLE |
 | `gateblind-pulse` | NO | POSSIBLE | NO | NO | CANDIDATE | NO | NO | POSSIBLE | POSSIBLE | NO |
-| `hymn-scarred-zealot` | POSSIBLE | NO | POSSIBLE | CANDIDATE | POSSIBLE | NO | NO | NO | POSSIBLE | NO |
+| `hymn-scarred-zealot` | NO | NO | SELECT | NO | NO | NO | NO | NO | NO | NO |
 | `lantern-moth-swarm` | SELECT on success | NO | SELECT on failure | NO | NO | NO | NO | NO | NO | NO |
 | `marrow-tax-auditors` | NO | NO | NO | NO | NO | CANDIDATE | NO | NO | NO | POSSIBLE but unnecessary |
 | `memory-tax-gate` | NO | NO | NO | NO | NO | NO | NO | POSSIBLE | POSSIBLE | CANDIDATE |
@@ -93,31 +93,31 @@ The screen deliberately rejects automatic Scar, Global Escalation, and generic o
 
 - Current Heat behavior: combat loss `gain_heat 2`, compatibility-only no-op.
 - Original gameplay intent: severe lasting injury from a rare inner mirrored enemy.
-- Selected retirement model: candidate 2 preventable Wounds; not approved until recall-rate impact is accepted.
+- Selected retirement model: 2 preventable Wounds, approved in H5A for later implementation.
 - Card type: enemy.
 - Lane: Blue.
 - Test/battle stat: Guile.
 - Difficulty: 11; severity 4; inner uncommon; 3 graph references.
 - Timing: after authoritative combat loss.
-- Success: defeat and gain 3 Trophies.
-- Failure: unresolved candidate 2 Wounds.
-- Reward: 3 Trophies.
+- Success: defeat, automatically gain 3 Trophy points and a 3-value Trophy Pile entry, then resolve the authored `gain_trophy 3` reward.
+- Failure: one atomic `take_wound 2` request.
+- Reward: 6 Trophy points in current runtime plus a 3-value Trophy Pile entry. The automatic and authored awards are preserved here and flagged for separate balance review.
 - Persistence: none beyond normal Wound/recall state.
-- Wound handling: must use requested/prevented/actual Wound processing and normal recall threshold.
+- Wound handling: one normal prevention/reaction pass, requested/prevented/actual Wound processing, then the normal recall threshold check.
 - Scar interaction: only the normal recall/Scar lifecycle; no direct card Scar.
 - Salvage interaction: none.
 - Equipment interaction: normal prevention only.
 - Movement interaction: none.
-- Multiplayer interaction: owner-scoped, but 2 Wounds can recall from 1 Wound at the multiplayer threshold.
+- Multiplayer interaction: owner-scoped; any recall or all-players-recalled defeat comes only from existing lifecycle rules.
 - Typed runtime support: existing Wound pipeline.
 - Duplicate-source protection: existing encounter source/result guard required.
 - Reconnect behavior: pending prevention and committed Wounds must persist exactly once.
 - Cleanup/reset: normal resolution close; Wounds persist normally.
-- Final player-facing rule: unresolved; candidate “If you lose, suffer 2 Wounds.”
+- Final player-facing rule: “If you lose this battle, suffer 2 Wounds.”
 - Severity: 4, potentially recall-causing.
 - Implementation complexity: low code / high balance.
-- Balance risk: high; the current branch is a no-op and three graph references amplify the jump.
-- Approval status: BLOCKED.
+- Balance risk: high; H5A explicitly accepts the jump from a no-op and three graph references amplify it.
+- Approval status: APPROVED — H5A, AWAITING IMPLEMENTATION.
 
 ### `choir-static-burst`
 
@@ -272,32 +272,32 @@ The screen deliberately rejects automatic Scar, Global Escalation, and generic o
 ### `hymn-scarred-zealot`
 
 - Current Heat behavior: combat loss `gain_heat 1`, compatibility-only no-op.
-- Original gameplay intent: a delayed or lasting broadcast consequence.
-- Selected retirement model: conditional Scar candidate, but current branch and severity do not justify it.
+- Original gameplay intent: ordinary physical combat pressure; defeating the Zealot silences the hymn.
+- Selected retirement model: 1 preventable Wound on combat loss, approved in H5A for later implementation.
 - Card type: enemy.
 - Lane: Red.
 - Test/battle stat: Grit.
 - Difficulty: 3; severity 1; outer common; 1 graph reference.
-- Timing: current Heat is on loss, while the text says defeating it broadcasts the hymn; branch ownership conflicts.
+- Timing: after authoritative combat loss; success retains the silencing note.
 - Success: defeat and silencing note.
-- Failure: unresolved.
-- Reward: silencing note.
-- Persistence: would require pending Scar state if approved.
-- Wound handling: a routine Wound is possible but would be another generic Red combat loss.
-- Scar interaction: direct routine Scar is disproportionate; exact trigger and authored Scar are unresolved.
+- Failure: `take_wound 1`.
+- Reward: automatic 1 Trophy point plus a 1-value Trophy Pile entry; authored reward remains the silencing note.
+- Persistence: none beyond normal Wound/recall state.
+- Wound handling: normal prevention/reaction, requested/prevented/actual delta, and threshold processing.
+- Scar interaction: only the normal recall/Scar lifecycle; direct, conditional, exceptional, or named card Scars are rejected.
 - Salvage interaction: none.
-- Equipment interaction: possible prevention only if converted to Wound.
+- Equipment interaction: normal prevention only.
 - Movement interaction: none.
-- Multiplayer interaction: owner-scoped unless the broadcast is deliberately shared.
-- Typed runtime support: pending Scar exists, but this card’s trigger is not designed.
-- Duplicate-source protection: would require exact source-event protection.
-- Reconnect behavior: pending choice/consequence must persist.
-- Cleanup/reset: unresolved.
-- Final player-facing rule: unresolved.
-- Severity: 4 provisional for a Scar, disproportionate to the base card.
-- Implementation complexity: medium.
-- Balance risk: high due to text/branch mismatch and routine direct-Scar risk.
-- Approval status: BLOCKED.
+- Multiplayer interaction: owner-scoped; no shared hymn state or Global Escalation.
+- Typed runtime support: existing Wound pipeline.
+- Duplicate-source protection: existing encounter source/result guard required.
+- Reconnect behavior: pending prevention and committed Wounds must persist exactly once.
+- Cleanup/reset: normal resolution close; Wounds persist normally.
+- Final player-facing rule: “If you lose this battle, suffer 1 Wound.”
+- Severity: 2 for the retirement rule; base card remains severity 1.
+- Implementation complexity: low.
+- Balance risk: moderate; a no-op becomes attrition, but the card has one graph reference and matches common peers.
+- Approval status: APPROVED — H5A, AWAITING IMPLEMENTATION.
 
 ### `lantern-moth-swarm`
 
@@ -603,13 +603,13 @@ The screen deliberately rejects automatic Scar, Global Escalation, and generic o
 
 | ID | New player | Optimizer | Family/casual | Rules lawyer |
 |---|---|---|---|---|
-| `ashen-doppelganger` | Two Wounds is clear but abrupt | Can jump directly to recall | Fast but punishing | Prevention and threshold work; amount still unapproved |
+| `ashen-doppelganger` | Two Wounds is clear but intentionally severe | Prevention remains valuable; one atomic request prevents split-stage exploits | Fast resolution even when it recalls | One prevention pass, actual delta, one threshold check; no direct Scar |
 | `choir-static-burst` | One Wound is immediate | No benefit loop; prevention remains valuable | One familiar consequence | Owner, final failure, actual delta, and recall are defined |
 | `cinder-gate-backlash` | Passing simply avoids harm | No farmable success reward | Fastest resolution | No success state, reset, or replay question |
 | `crown-bell-baron` | “Lose up to 1” is legible | Zero Salvage nullifies loss but grants nothing | Quick and thematic | Loss is not payment; floors at zero; owner only |
 | `false-route-procession` | Direction is currently unknowable | Route value depends on endpoint | Could be fun once destination is clear | Topology, fallback, and reconnect target are unresolved |
 | `gateblind-pulse` | Shared escalation is understandable | Threshold timing may be manipulated | Fast but table-wide | Cap and source threshold ordering remain unresolved |
-| `hymn-scarred-zealot` | Scar would feel disproportionate | Branch mismatch can be exploited | Lasting state is too heavy for this small enemy | Loss versus defeat trigger is contradictory |
+| `hymn-scarred-zealot` | One Wound matches ordinary combat | No success-side consequence or persistent hymn state to exploit | Fast physical consequence for a common enemy | Loss owns the Wound; defeat owns silencing; threshold recall is the only Scar route |
 | `lantern-moth-swarm` | Pass safe / fail 1 Wound | Cannot farm a heal | One clear physical consequence | Standard prevention, recall, and dedup rules apply |
 | `marrow-tax-auditors` | Salvage tax is clear | Zero balance nullifies it | Repeated losses may feel mean | Semantics are defined; frequency balance is not |
 | `memory-tax-gate` | No approved choice to explain | One arm may dominate | Private-memory bookkeeping risks drag | Ownership, privacy, resolution, and reset are unresolved |
@@ -623,12 +623,12 @@ The screen deliberately rejects automatic Scar, Global Escalation, and generic o
 
 ## Distribution impact
 
-Counts below are unique cards, not individual branches. “Approved proposal” includes unchanged active effects on the same 17 cards and excludes blocked candidates.
+Counts below are unique cards, not individual branches. “Approved proposal” includes unchanged active effects plus H5A's two approved Wound conversions on the same 17 cards and excludes blocked candidates.
 
 | Effect family | Current 17 | Approved proposal | Notes |
 |---|---:|---:|---|
-| Wound effects | 5 | 5 | Cinder/Mirror/Webglass plus implemented Choir/Lantern |
-| Scar effects | 0 | 0 | Zealot and Doppelganger direct-Scar routes remain blocked |
+| Wound effects | 5 | 7 | Cinder/Mirror/Webglass, implemented Choir/Lantern, plus H5A Doppelganger/Zealot |
+| Scar effects | 0 | 0 | H5A expressly rejects direct card Scars; normal threshold Scars remain lifecycle outcomes |
 | Salvage pressure | 0 | 3 | Baron, Collector, Cutpurse; all floor-zero owner losses |
 | Equipment effects | 3 | 3 | Existing Engineer battle Weapon suppression plus two implemented bounded exact-instance suppressions |
 | Movement effects | 0 | 0 | False-Route remains blocked |
@@ -639,10 +639,10 @@ Counts below are unique cards, not individual branches. “Approved proposal” 
 | Global Escalation | 0 | 0 | Gateblind remains blocked |
 | Removal without replacement | 3 | 3 | Cinder, Mirror-Rot, Webglass success branches implemented in H1 |
 
-Approved severity distribution is severity 1: four cards (`cinder-gate-backlash`, `mirror-rot-interference`, `soot-stained-cutpurse`, `webglass-snarefield`); severity 2: seven cards (`choir-static-burst`, `crown-bell-baron`, `lantern-moth-swarm`, `pale-contract-collector`, `relay-husk`, `signal-rotted-engineer`, `siren-relay-echo`); severity 3–5: none. The six blocked provisional candidates span severity 2–4.
+Approved severity distribution is severity 1: four cards (`cinder-gate-backlash`, `mirror-rot-interference`, `soot-stained-cutpurse`, `webglass-snarefield`); severity 2: eight cards (`choir-static-burst`, `crown-bell-baron`, `hymn-scarred-zealot`, `lantern-moth-swarm`, `pale-contract-collector`, `relay-husk`, `signal-rotted-engineer`, `siren-relay-echo`); severity 3: none; severity 4: one card (`ashen-doppelganger`); severity 5: none. The four blocked provisional candidates span severity 2–3.
 
-Lane impact remains conservative: Blue approves five of seven cards and blocks two; Yellow approves six of nine and blocks three; Red's only card remains blocked. No stable ID, lane, role, difficulty, graph placement, art reference, or card total changes in this report.
+Lane impact remains conservative: Blue approves six of seven cards and blocks one; Yellow approves six of nine and blocks three; Red's only card is approved. No stable ID, lane, role, difficulty, graph placement, art reference, or card total changes in this report.
 
 ## Approval boundary
 
-This report records the completed H1–H4C groups and the approvals defined in `reports/heat-retirement-h4a-equipment-modifier-approval.md`. The six blocked cards must receive later report-only exact-rule approvals grouped by unresolved lifecycle, not lane. The +116-card expansion remains unapproved, and no exact Relic-frequency parity is claimed.
+This report records the completed H1–H4C groups, the approvals defined in `reports/heat-retirement-h4a-equipment-modifier-approval.md`, and H5A's two Wound approvals in `reports/heat-retirement-h5a-wound-scar-approval.md`. The four blocked cards must receive later report-only exact-rule approvals grouped by unresolved lifecycle, not lane. The +116-card expansion remains unapproved, and no exact Relic-frequency parity is claimed.
