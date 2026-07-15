@@ -1,6 +1,6 @@
 # Remaining Heat-linked Threat implementation plan
 
-Status: H1 through H6B implemented. Three cards remain blocked.
+Status: H1 through H6B implemented. H7A approves `gateblind-pulse` for later implementation. Two cards remain blocked.
 
 ## Approved implementation groups
 
@@ -98,15 +98,24 @@ Implemented as `feat: retire severe wound heat threats`. Both cards use the pre-
 
 Implemented in H6B with one narrow persisted owner-choice state feeding the existing forced-displacement reaction, arrival, and resolved-source lifecycle. No topology metadata, Wound fallback, Contract hook, or broad movement/UI redesign was added.
 
+### Group H7B — bounded Gateblind shared pressure (1) — APPROVED, NOT IMPLEMENTED
+
+- Stable ID: `gateblind-pulse`.
+- Exact change: after final Signal failure, request Global Escalation +1 only when the pre-effect value is below `getEscalationCollapseLevel(sessionMode) - 1`. Multiplayer can move 0–4 to 1–5; solo can move 0–6 to 1–7. At the one-before-collapse boundary, record a sourced 0 result and apply no substitute penalty.
+- Shared lifecycle: existing bounded `ESCALATION_ADVANCED`, derived difficulty modifier, public projection, character positive-spike reactions, source ledger, reconnect, and Threat finalization. Gateblind cannot create `SECTOR_COLLAPSED`.
+- Narrow prerequisite: typed Gateblind conditional effect/source validation and exact zero-request completion at the guard. No new shared pending state or scenario branch.
+- Focused tests: full solo/multiplayer value matrix, modifier crossings, no-collapse guard, ability timing, wrong/forged/stale/duplicate source, reconnect, public parity, unchanged success progress, unchanged Shattered behavior, and two blocked-card hashes.
+- Approval source: `reports/heat-retirement-h7a-gateblind-pulse-approval.md`.
+- Recommended commit subject: `feat: retire gateblind pulse heat effect`.
+
 ## Blocked prerequisite register
 
 | Stable ID | Preferred direction | Blocking prerequisite | Re-entry evidence |
 |---|---|---|---|
-| `gateblind-pulse` | Global Escalation | solo/multiplayer cap and threshold timing; duplicate-pattern check against Shattered Barricade | threshold matrix and source-order approval |
 | `marrow-tax-auditors` | lose up to 1 Salvage | four-reference starvation risk in tight economy | post-H3 telemetry/playtest or an approved frequency/amount mitigation |
 | `memory-tax-gate` | private player choice | two competitive options, private ownership, projection, cancellation, reset | exact prompt/options and server-authoritative choice lifecycle |
 
-The three blocked IDs are not assigned to implementation groups. A later approval should form new 2–4 card groups only when cards genuinely share a settled lifecycle; it must not combine unrelated high-risk rules to satisfy a batch size.
+The two blocked IDs are not assigned to implementation groups. Their economy-frequency and private-choice prerequisites remain separate.
 
 ## Recommended sequence
 
@@ -117,7 +126,7 @@ The three blocked IDs are not assigned to implementation groups. A later approva
 5. **H4C — paired Command modifier — COMPLETE.** ID: `siren-relay-echo`. Typed Command-only eligibility, signed replacement, authoritative resolution reservation, Glass-Chime composition, reconnect, privacy, and cleanup are implemented separately from Equipment state.
 6. **H5B — severe Wound consequences — COMPLETE.** IDs: `ashen-doppelganger`, `hymn-scarred-zealot`. Both reuse the existing Wound path; direct Scar routes remain rejected. Ashen's 2-Wound recall-rate jump is covered by focused partial/full prevention, threshold, replay, reconnect, and reward-regression tests.
 7. **H6B — false-route destination choice — COMPLETE.** ID: `false-route-procession`. The H6A server-generated owner choice is implemented as a narrow forced-displacement extension, separately from `gateblind-pulse`.
-8. **Shared-pressure design gate.** ID: `gateblind-pulse`. Benefit: preserves gate identity. Risk: medium-high. Prerequisite: escalation cap, threshold, ordering, and mode-scaling specification.
+8. **H7B — bounded Gateblind shared pressure — APPROVED, NOT IMPLEMENTED.** ID: `gateblind-pulse`. Conditional +1 stops one step before collapse and requires only narrow typed/source validation over the existing escalation lifecycle.
 9. **Choice and economy-frequency gates.** IDs: `memory-tax-gate`, `marrow-tax-auditors`. Benefit: distinct Yellow tension. Risk: high if choice is dominant or economy starves. Prerequisites: choice contract and H3 playtest evidence.
 
 ## Per-group verification contract
@@ -141,8 +150,8 @@ Before each commit, inspect the complete staged diff and confirm stable IDs, tot
 - Added floor-zero Salvage losses: 3 cards.
 - Implemented H1–H3 adds no Scar, Global Escalation, movement, Equipment disable, persistent, choice, temporary modifier, or multiplayer effect.
 - H4B and H4C implement two exact-instance Equipment suppressions, two private target choices, and one paired Command modifier.
-- Approved severity: four at 1, nine at 2, none at 3, one at 4, none at 5; all fourteen approvals are implemented through H6B.
-- Lane approval impact is Blue 6, Yellow 7, Red 1; implemented impact remains Blue 6, Yellow 6, Red 1.
+- Approved severity: four at 1, nine at 2, one at 3, one at 4, none at 5; fourteen approvals are implemented through H6B and Gateblind is approved H7A but not implemented.
+- Lane approval impact is Blue 7, Yellow 7, Red 1; implemented impact remains Blue 6, Yellow 6, Red 1.
 - Card totals: unchanged at 26 / 35 / 48 / 109.
 
 No exact Relic-frequency parity is asserted. No expansion work is authorized.

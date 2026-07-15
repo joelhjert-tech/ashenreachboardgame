@@ -1,14 +1,14 @@
 # Remaining 17 Heat-linked Threat retirement triage
 
-Status: final triage approved at `d877574`; Groups H1 through H6B are implemented. Three IDs remain blocked.
+Status: Groups H1 through H6B are implemented. H7A approves `gateblind-pulse` for later implementation. Two IDs remain blocked.
 
 ## Decision summary
 
-The two existing Heat audits and current canonical Threat content reconcile to exactly **17 unique stable IDs**. Fourteen IDs are **APPROVED AND IMPLEMENTED** across H1 through H6B. Three remain **BLOCKED** because a target, ownership, persistence, reset, or balance decision is unresolved.
+The two existing Heat audits and current canonical Threat content reconcile to exactly **17 unique stable IDs**. Fourteen IDs are **APPROVED AND IMPLEMENTED** across H1 through H6B, and H7A approves one additional ID without implementation. Two remain **BLOCKED** because ownership, persistence, reset, or balance evidence is unresolved.
 
 - Approved and implemented: 14
-- Approved, not implemented: 0
-- Blocked: 3
+- Approved, not implemented: 1
+- Blocked: 2
 - Approved retirement models: remove without replacement (3), normal Wound pressure (4), floor-zero Salvage pressure (3), exact-instance Equipment suppression (2), stat-specific temporary modifier (1), owner-choice forced displacement (1)
 - Player-facing Heat remains obsolete. Every still-active Heat branch below is parsed only for compatibility and resolves as a no-op with a “no additional status change” summary.
 - Canonical Threats do not define an activation-number field. Every record therefore reports `N/A`; difficulty and canonical graph frequency are recorded separately and are not relabelled as activation.
@@ -47,7 +47,7 @@ Canonical graph references, used only as a frequency warning, are respectively 3
 | `cinder-gate-backlash` | obsolete success-side recovery bookkeeping | remove success branch without replacement | implemented H1 | 1 | APPROVED — IMPLEMENTED H1 |
 | `crown-bell-baron` | resource pressure through extortion | lose up to 1 Salvage | implemented H3 | 2 | APPROVED — IMPLEMENTED H3 |
 | `false-route-procession` | owner-selected bad route | choose one server-generated legal clockwise/counterclockwise adjacent destination on the current ring | implemented H6B narrow persisted choice plus existing displacement reaction/arrival | 2 | APPROVED H6A — IMPLEMENTED H6B |
-| `gateblind-pulse` | shared gate/scenario pressure | Global Escalation candidate | existing track, but cap/threshold impact unresolved | 3 provisional | BLOCKED |
+| `gateblind-pulse` | shared gate/scenario pressure | conditional Global Escalation +1 only while at least two below collapse | ready with narrow typed/source extension | 3 | APPROVED H7A — NOT IMPLEMENTED |
 | `hymn-scarred-zealot` | ordinary physical loss; defeat silences the hymn | 1 preventable Wound on combat loss | implemented H5B normal Wound pipeline | 2 | APPROVED H5A — IMPLEMENTED H5B |
 | `lantern-moth-swarm` | risk/reward prevention plus immediate fire injury | remove success branch; failure becomes 1 preventable Wound | implemented H2 | 2 | APPROVED — IMPLEMENTED H2 |
 | `marrow-tax-auditors` | repeated resource taxation | lose up to 1 Salvage candidate | mechanically ready; frequency balance unresolved | 2 provisional | BLOCKED |
@@ -60,7 +60,7 @@ Canonical graph references, used only as a frequency warning, are respectively 3
 | `soot-stained-cutpurse` | minor resource theft | lose up to 1 Salvage | implemented H3 | 1 | APPROVED — IMPLEMENTED H3 |
 | `webglass-snarefield` | obsolete success-side recovery bookkeeping | remove success branch without replacement | implemented H1 | 1 | APPROVED — IMPLEMENTED H1 |
 
-No approved card grants a direct Scar, advances Global Escalation, destroys Equipment, or creates a sector-persistent object. H6B implements one bounded same-ring forced displacement with an owner-private destination choice; it cannot cross rings or enter center. H4A authorizes two bounded owner-private exact-instance choices; those choices suppress owned state temporarily and never delete or transfer it.
+No approved card grants a direct Scar, destroys Equipment, or creates a sector-persistent object. H7A approves one conditional shared escalation effect that may raise difficulty but cannot itself reach collapse. H6B implements one bounded same-ring forced displacement with an owner-private destination choice; it cannot cross rings or enter center. H4A authorizes two bounded owner-private exact-instance choices; those choices suppress owned state temporarily and never delete or transfer it.
 
 ### Per-ID model screen
 
@@ -73,7 +73,7 @@ Codes: A remove; B temporary owner modifier; C normal Wound; D conditional Scar;
 | `cinder-gate-backlash` | SELECT | NO | NO; failure already owns 2 | NO | NO | NO | NO | NO | NO | NO |
 | `crown-bell-baron` | NO | NO | NO | NO | NO | SELECT | NO | NO | NO | POSSIBLE but unnecessary |
 | `false-route-procession` | NO | NO; duplicates Spindle | NO | NO | NO | NO | NO | SELECT | NO | SELECT for destination |
-| `gateblind-pulse` | NO | POSSIBLE | NO | NO | CANDIDATE | NO | NO | POSSIBLE | POSSIBLE | NO |
+| `gateblind-pulse` | NO | POSSIBLE | NO | NO | SELECT | NO | NO | NO | NO | NO |
 | `hymn-scarred-zealot` | NO | NO | SELECT | NO | NO | NO | NO | NO | NO | NO |
 | `lantern-moth-swarm` | SELECT on success | NO | SELECT on failure | NO | NO | NO | NO | NO | NO | NO |
 | `marrow-tax-auditors` | NO | NO | NO | NO | NO | CANDIDATE | NO | NO | NO | POSSIBLE but unnecessary |
@@ -244,31 +244,31 @@ The screen deliberately rejects automatic Scar, Global Escalation, and generic o
 
 - Current Heat behavior: failed Signal test `gain_heat 2`, compatibility-only no-op.
 - Original gameplay intent: shared scenario/gate pressure.
-- Selected retirement model: Global Escalation candidate.
+- Selected retirement model: conditional Global Escalation +1 while the pre-effect value is at least two below the mode collapse level.
 - Card type: hazard.
 - Lane: Blue.
 - Test/battle stat: Signal.
 - Difficulty: 10; severity 4; inner uncommon; 3 graph references.
 - Timing: after failed hazard result.
 - Success: advance `gateblindPulsesRead` by 1, unchanged.
-- Failure: candidate `Global Escalation +1`, not approved.
+- Failure: request Global Escalation +1 at multiplayer 0–4 or solo 0–6; at multiplayer 5 or solo 7, request 0 and apply no substitute penalty.
 - Reward: success-side scenario leverage.
-- Persistence: shared escalation track if approved.
+- Persistence: shared escalation track when the condition passes.
 - Wound handling: none proposed.
 - Scar interaction: none proposed.
 - Salvage interaction: none.
 - Equipment interaction: none.
 - Movement interaction: fiction implies navigation, but no map legality changes are proposed.
-- Multiplayer interaction: shared effect would scale differently from the old owner no-op.
-- Typed runtime support: `advance_escalation` exists.
-- Duplicate-source protection: source-event guard exists for approved authored escalation effects.
-- Reconnect behavior: committed escalation persists; no replay.
-- Cleanup/reset: normal escalation lifecycle.
-- Final player-facing rule: unresolved pending cap and threshold analysis.
-- Severity: 3 provisional.
+- Multiplayer interaction: one public shared increment regardless of player count; cannot move 5 to the multiplayer collapse value 6.
+- Typed runtime support: existing escalation action/reducer/projection plus narrow Gateblind conditional/source authority; no shared pending state.
+- Duplicate-source protection: record one authoritative failure source even when the guard yields 0.
+- Reconnect behavior: committed value and completed source persist; the condition is not re-evaluated.
+- Cleanup/reset: normal escalation lifecycle; Gateblind cannot create collapse.
+- Final player-facing rule: “On failure, if Global Escalation is not already one step from collapse, advance Global Escalation by 1.”
+- Severity: 3.
 - Implementation complexity: low code / medium systems.
-- Balance risk: high until solo/multiplayer cap and threshold interaction are measured; also risks repeating Shattered Barricade’s pattern.
-- Approval status: BLOCKED.
+- Balance risk: medium; three references raise shared difficulty, bounded by a one-before-collapse guard and no per-player multiplication.
+- Approval status: APPROVED H7A — NOT IMPLEMENTED. Exact cap, threshold, source, ability, and reconnect rules are in `reports/heat-retirement-h7a-gateblind-pulse-approval.md`.
 
 ### `hymn-scarred-zealot`
 
@@ -609,7 +609,7 @@ The screen deliberately rejects automatic Scar, Global Escalation, and generic o
 | `cinder-gate-backlash` | Passing simply avoids harm | No farmable success reward | Fastest resolution | No success state, reset, or replay question |
 | `crown-bell-baron` | “Lose up to 1” is legible | Zero Salvage nullifies loss but grants nothing | Quick and thematic | Loss is not payment; floors at zero; owner only |
 | `false-route-procession` | Two named same-ring destinations make the forced choice clear | Position can improve the options, but no stay/cross-ring/progress exploit exists | At most two buttons; one and zero candidates are fast | Owner, candidates, legality, center, reaction, entry, stale choice, dedup, and reconnect are defined |
-| `gateblind-pulse` | Shared escalation is understandable | Threshold timing may be manipulated | Fast but table-wide | Cap and source threshold ordering remain unresolved |
+| `gateblind-pulse` | Shared escalation and the visible one-before-collapse guard are understandable | Failure becomes free at the guard, but the table is already at maximum nonterminal pressure | One public conditional increment; no nested collapse | Pre-effect trigger, requested/actual delta, modifier thresholds, ability timing, dedup, and reconnect are defined in H7A |
 | `hymn-scarred-zealot` | One Wound matches ordinary combat | No success-side consequence or persistent hymn state to exploit | Fast physical consequence for a common enemy | Loss owns the Wound; defeat owns silencing; threshold recall is the only Scar route |
 | `lantern-moth-swarm` | Pass safe / fail 1 Wound | Cannot farm a heal | One clear physical consequence | Standard prevention, recall, and dedup rules apply |
 | `marrow-tax-auditors` | Salvage tax is clear | Zero balance nullifies it | Repeated losses may feel mean | Semantics are defined; frequency balance is not |
@@ -624,7 +624,7 @@ The screen deliberately rejects automatic Scar, Global Escalation, and generic o
 
 ## Distribution impact
 
-Counts below are unique cards, not individual branches. “Approved proposal” includes unchanged active effects, H5A's two approved Wound conversions, and H6A's approved movement choice on the same 17 cards; it excludes the three blocked candidates.
+Counts below are unique cards, not individual branches. “Approved proposal” includes unchanged active effects plus all H1–H7A approvals on the same 17 cards; it excludes the two blocked candidates.
 
 | Effect family | Current 17 | Approved proposal | Notes |
 |---|---:|---:|---|
@@ -636,14 +636,14 @@ Counts below are unique cards, not individual branches. “Approved proposal” 
 | Temporary modifiers | 0 | 1 | Siren paired next non-battle Command modifier implemented in H4C |
 | Persistent effects | 0 | 3 | two event-bounded suppressions and one until-consumed modifier; all owner-scoped with explicit cleanup |
 | Player-choice cards | 0 | 3 | Relay and Engineer exact-instance Equipment choices are implemented; False-Route destination choice is approved; Memory Tax remains blocked |
-| Multiplayer effects | 0 | 0 | no approved group-wide effect |
-| Global Escalation | 0 | 0 | Gateblind remains blocked |
+| Multiplayer effects | 0 | 1 | Gateblind conditional shared escalation is approved H7A, not implemented |
+| Global Escalation | 0 | 1 | Gateblind may advance 1 but cannot itself reach collapse |
 | Removal without replacement | 3 | 3 | Cinder, Mirror-Rot, Webglass success branches implemented in H1 |
 
-Approved severity distribution is severity 1: four cards (`cinder-gate-backlash`, `mirror-rot-interference`, `soot-stained-cutpurse`, `webglass-snarefield`); severity 2: nine cards (`choir-static-burst`, `crown-bell-baron`, `false-route-procession`, `hymn-scarred-zealot`, `lantern-moth-swarm`, `pale-contract-collector`, `relay-husk`, `signal-rotted-engineer`, `siren-relay-echo`); severity 3: none; severity 4: one card (`ashen-doppelganger`); severity 5: none. The three blocked provisional candidates span severity 2–3.
+Approved severity distribution is severity 1: four cards (`cinder-gate-backlash`, `mirror-rot-interference`, `soot-stained-cutpurse`, `webglass-snarefield`); severity 2: nine cards (`choir-static-burst`, `crown-bell-baron`, `false-route-procession`, `hymn-scarred-zealot`, `lantern-moth-swarm`, `pale-contract-collector`, `relay-husk`, `signal-rotted-engineer`, `siren-relay-echo`); severity 3: one card (`gateblind-pulse`); severity 4: one card (`ashen-doppelganger`); severity 5: none. The two blocked provisional candidates span severity 2–3.
 
-Lane impact remains conservative: Blue approves six of seven cards and blocks one; Yellow approves seven of nine and blocks two; Red's only card is approved. No stable ID, lane, role, difficulty, graph placement, art reference, or card total changes in this report.
+Lane impact remains conservative: Blue approves all seven cards; Yellow approves seven of nine and blocks two; Red's only card is approved. No stable ID, lane, role, difficulty, graph placement, art reference, or card total changes in this report.
 
 ## Approval boundary
 
-This report records the completed H1–H6B groups, including H6A's approval and H6B's implementation in `reports/heat-retirement-h6b-false-route-implementation.md`. The three blocked cards must receive later report-only exact-rule approvals grouped by unresolved lifecycle, not lane. The +116-card expansion remains unapproved, and no exact Relic-frequency parity is claimed.
+This report records the completed H1–H6B groups and H7A's report-only Gateblind approval. `marrow-tax-auditors` and `memory-tax-gate` remain blocked for separate economy-frequency and private-choice approvals. The +116-card expansion remains unapproved, and no exact Relic-frequency parity is claimed.
