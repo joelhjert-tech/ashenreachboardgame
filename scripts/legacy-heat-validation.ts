@@ -14,6 +14,11 @@ export type LegacyHeatContentRecord = {
   record: unknown;
 };
 
+export type BlockedRuntimeHeatEffect = {
+  id: string;
+  type: "gain_heat" | "gain_heat_all" | "lose_heat";
+};
+
 export type LegacyHeatEffectApproval = {
   id: string;
   constructs: readonly LegacyHeatConstruct[];
@@ -36,6 +41,32 @@ export const LEGACY_HEAT_EFFECT_APPROVALS: readonly LegacyHeatEffectApproval[] =
   { id: "escalation-saltwind-lockdown", constructs: ["gain_heat_all"] },
   { id: "saltflat-bone-reader", constructs: ["lose_heat"] }
 ];
+
+// C1 does not approve gameplay replacements for these imported board/scenario
+// definitions. This exact manifest freezes the unresolved population and
+// rejects additions until a dedicated C2 content approval retires each entry.
+export const C1_BLOCKED_RUNTIME_HEAT_EFFECT_SIGNATURES = new Map<string, readonly BlockedRuntimeHeatEffect["type"][]>([
+  ["outer_emberSanctumRest", ["lose_heat"]],
+  ["outer_ashwakeClearLane", ["gain_heat"]],
+  ["outer_glassmereChorus", ["gain_heat", "lose_heat"]],
+  ["outer_mirecoilTraffic", ["gain_heat"]],
+  ["outer_waymarketExchange", ["gain_heat", "lose_heat"]],
+  ["outer_relayCrew", ["gain_heat"]],
+  ["outer_saltCrossing", ["lose_heat"]],
+  ["outer_surgeryTreatment", ["gain_heat"]],
+  ["outer_oathpostWrit", ["gain_heat"]],
+  ["outer_brokenCausewayShortcut", ["gain_heat"]],
+  ["middle_scarSurgery", ["gain_heat"]],
+  ["middle_redMarchBargain", ["gain_heat"]],
+  ["inner_blackstarShortcut", ["gain_heat"]],
+  ["middle_shardSprawlBargain", ["gain_heat", "gain_heat", "lose_heat"]],
+  ["middle_guardianSpanThreshold", ["gain_heat", "gain_heat"]],
+  ["middle_webglassFracture", ["gain_heat", "gain_heat", "lose_heat"]],
+  ["inner_veilRiftEntry", ["gain_heat", "gain_heat", "lose_heat"]],
+  ["inner_cinderLatticeTrial", ["gain_heat", "gain_heat", "lose_heat"]],
+  ["inner_gateOfCindersTrial", ["gain_heat", "gain_heat", "gain_heat"]],
+  ["scenario_mirror_of_false_heroes", ["gain_heat"]]
+]);
 
 // Compatibility IDs that remain tracked separately from effect/default
 // authorization. Their presence grants no permission to author a Heat field.
@@ -143,6 +174,26 @@ export function validateLegacyHeatApprovalManifest(
     else if (isCharacterFile(normalizeFile(matches[0]!.file))) errors.push(`Other compatibility approval ${approval.id} points to a character record and cannot authorize character.heat.`);
   }
 
+  return errors;
+}
+
+export function validateC1BlockedRuntimeHeatEffects(effects: readonly BlockedRuntimeHeatEffect[]): string[] {
+  const errors: string[] = [];
+  const actual = new Map<string, BlockedRuntimeHeatEffect["type"][]>();
+  for (const effect of effects) actual.set(effect.id, [...(actual.get(effect.id) ?? []), effect.type]);
+
+  for (const [id, types] of actual) {
+    if (!C1_BLOCKED_RUNTIME_HEAT_EFFECT_SIGNATURES.has(id)) {
+      errors.push(`Runtime-authored content ${id} introduces blocked legacy Heat effect(s): ${types.sort().join(", ")}. C1 permits only the exact unresolved manifest pending C2 design approval.`);
+    }
+  }
+  for (const [id, expectedTypes] of C1_BLOCKED_RUNTIME_HEAT_EFFECT_SIGNATURES) {
+    const actualTypes = [...(actual.get(id) ?? [])].sort();
+    const expected = [...expectedTypes].sort();
+    if (JSON.stringify(actualTypes) !== JSON.stringify(expected)) {
+      errors.push(`C1 blocked Heat signature changed for ${id}: expected [${expected.join(", ")}], found [${actualTypes.join(", ")}]. Update only through a dedicated content approval.`);
+    }
+  }
   return errors;
 }
 

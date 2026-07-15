@@ -317,6 +317,28 @@ Live UI is consistent around Wounds and Scars. Stale rules documents and old Hea
 
 **Final verdict: FAIL.** Heat is retired from the 17 authored Threats and absent from observed live presentation, but it is not yet retired from all authored gameplay and the runtime compatibility boundary contains one non-inert reducer action. No gameplay or compatibility code was changed in this audit.
 
+## Phase C1 containment update
+
+Phase C1 was implemented after this audit. The exact 39 authored occurrences were reconciled to 26 stable IDs and all remain blocked because this report/removal plan supplied no approved removal or replacement gameplay rule. Their definitions and wording are unchanged.
+
+C1 changed the compatibility boundary as follows:
+
+- `HEAT_THRESHOLD_REACHED` remains parsable but is now an exact reducer no-op. It cannot recall, create a Scar, change sequence/logs, or mutate gameplay.
+- the unused always-false server threshold method was removed;
+- phone and TV projections now pass through one server-side compatibility stripper;
+- validation manifest-pins the 33 imported board/scenario occurrences and rejects additions or signature drift;
+- focused tests prove legacy Heat values do not affect gameplay or Scars and that duplicate threshold replay is inert.
+
+Updated mechanical counts:
+
+- current Heat-state mechanical reads: **0**;
+- current Heat-state writes/emitters: **0**;
+- Heat actions with gameplay mutation: **0**;
+- observed/guarded active projection Heat fields or labels: **0**;
+- authored typed Heat effects: **39**.
+
+Updated verdict: **FAIL remains**, now because of the 39 blocked authored effects only. A future C2 content-approval sequence is required before CONDITIONAL PASS. See `heat-compatibility-c1-containment-implementation.md` for implementation evidence.
+
 ## Verification record
 
 Passed:

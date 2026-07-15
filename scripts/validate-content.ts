@@ -13,7 +13,7 @@ import { loadThreatCards } from "../src/game/content/threats.js";
 import { loadTileChallenges } from "../src/game/content/tileChallenges.js";
 import { getThreatEffectTiming, isThreatEffectKey } from "../src/game/cards/threatEffects.js";
 import { BOARD_SPACES } from "../src/game/data/boardSpaces.js";
-import { validateBoardTextEffectCoverage } from "../src/game/data/boardTextEffects.js";
+import { BOARD_TEXT_EFFECTS, validateBoardTextEffectCoverage } from "../src/game/data/boardTextEffects.js";
 import { createCanonicalSectorGraph, validateCanonicalSectorGraph } from "../src/game/data/canonicalSectorGraph.js";
 import { ashenReachCharacters } from "../src/game/data/characters.js";
 import { missions } from "../src/game/data/missions.js";
@@ -35,12 +35,46 @@ import type { ContractCard } from "../src/game/schema/contract.schema.js";
 import { sectorGraphSchema, type SectorNode } from "../src/game/schema/sector.schema.js";
 import { validatePassiveEquipmentCatalog } from "./passive-equipment-validation.js";
 import { validateScarTriggerCatalog } from "../src/game/rules/scarTriggers.js";
-import { validateLegacyHeatApprovalManifest, validateLegacyHeatContentRecord, type LegacyHeatContentRecord } from "./legacy-heat-validation.js";
+import {
+  validateC1BlockedRuntimeHeatEffects,
+  validateLegacyHeatApprovalManifest,
+  validateLegacyHeatContentRecord,
+  type BlockedRuntimeHeatEffect,
+  type LegacyHeatContentRecord
+} from "./legacy-heat-validation.js";
 import { validateForcedDisplacementContentRecord } from "./forced-displacement-validation.js";
 
 const sectorsRoot = join(process.cwd(), "content", "sectors");
 const contentRoot = join(process.cwd(), "content");
 const errors: string[] = [];
+
+function collectBlockedRuntimeHeatEffects(): BlockedRuntimeHeatEffect[] {
+  const output: BlockedRuntimeHeatEffect[] = [];
+  const visit = (value: unknown, id: string): void => {
+    if (Array.isArray(value)) return value.forEach((entry) => visit(entry, id));
+    if (!value || typeof value !== "object") return;
+    const record = value as Record<string, unknown>;
+    if (record.type === "gain_heat" || record.type === "gain_heat_all" || record.type === "lose_heat") {
+      output.push({ id, type: record.type });
+    }
+    Object.values(record).forEach((entry) => visit(entry, id));
+  };
+
+  for (const [id, definition] of Object.entries(BOARD_TEXT_EFFECTS)) visit(definition, id);
+  const context = {
+    playerName: "Content validator",
+    sessionMode: "single-player" as const,
+    crownClaims: 0,
+    mirrorPressure: 6,
+    salvageLeverage: 0,
+    engineModeIndex: 0,
+    heldGearCount: 0
+  };
+  for (const scenario of SCENARIOS) visit(scenario.buildConfrontationPlan(context), scenario.id);
+  return output;
+}
+
+errors.push(...validateC1BlockedRuntimeHeatEffects(collectBlockedRuntimeHeatEffects()));
 
 function validateLegacyHeatAuthoring(root: string): void {
   const records: LegacyHeatContentRecord[] = [];

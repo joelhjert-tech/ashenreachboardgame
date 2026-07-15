@@ -2,8 +2,10 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import {
   APPROVED_LEGACY_HEAT_CONTENT_IDS,
+  C1_BLOCKED_RUNTIME_HEAT_EFFECT_SIGNATURES,
   LEGACY_HEAT_EFFECT_APPROVALS,
   OTHER_LEGACY_HEAT_COMPATIBILITY_APPROVALS,
+  validateC1BlockedRuntimeHeatEffects,
   validateLegacyHeatApprovalManifest,
   validateLegacyHeatContentRecord
 } from "../legacy-heat-validation.js";
@@ -24,6 +26,14 @@ describe("legacy Heat authoring guard", () => {
       ...OTHER_LEGACY_HEAT_COMPATIBILITY_APPROVALS.map((entry) => entry.id)
     ];
     expect(new Set(allIds).size).toBe(allIds.length);
+  });
+
+  it("freezes the 33 imported board/scenario Heat effects as blocked and rejects additions", () => {
+    const exact = [...C1_BLOCKED_RUNTIME_HEAT_EFFECT_SIGNATURES].flatMap(([id, types]) => types.map((type) => ({ id, type })));
+    expect(exact).toHaveLength(33);
+    expect(validateC1BlockedRuntimeHeatEffects(exact)).toEqual([]);
+    expect(validateC1BlockedRuntimeHeatEffects([...exact, { id: "new-board-rule", type: "gain_heat" }]).join(" ")).toContain("new-board-rule");
+    expect(validateC1BlockedRuntimeHeatEffects(exact.slice(1)).join(" ")).toContain("signature changed");
   });
 
   it("accepts all 17 canonical characters only after authored Heat omission", () => {
