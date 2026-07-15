@@ -464,6 +464,30 @@ Updated evidence counts:
 
 The verdict does not advance while the four escalation and two follower effects remain authored. See `heat-compatibility-c3b-mirror-scenario-implementation.md` for exact content, validation, scenario-isolation, and verification evidence.
 
+## Phase C4A escalation approval update
+
+C4A reviewed the four remaining escalation-family Heat leaves against their complete content records and the authoritative sector-card resolution path. All four are **APPROVED for removal without replacement**:
+
+- `escalation-blackstar-hunger`: delete `gain_heat_all 1`;
+- `escalation-choir-feedback`: delete `gain_heat_all 1`;
+- `escalation-marrow-surgery-debt`: delete `gain_heat 1`;
+- `escalation-saltwind-lockdown`: delete `gain_heat_all 1`.
+
+Every card already has active `escalationDelta: 1`. The server applies that field through Global Escalation, including ordinary modifier thresholds, solo/multiplayer caps, and existing collapse handling. The Heat leaf is a separate inert compatibility effect. Adding Global Escalation, Loss Pressure, Salvage loss, Wounds, movement, or a modifier would create a second penalty rather than retire the obsolete leaf.
+
+C4A changes no authored definition. Current evidence therefore remains:
+
+- board-authored typed Heat effects: **0 across 0 IDs**;
+- scenario-authored typed Heat effects: **0 across 0 IDs**;
+- escalation-authored typed Heat effects: **4 across 4 approved-but-unimplemented IDs**;
+- follower-authored typed Heat effects: **2 across 2 separately blocked IDs**;
+- total authored typed Heat effects: **6 across 6 IDs**;
+- current Heat-state mechanical reads/writes: **0**;
+- observed/guarded phone and TV Heat fields or labels: **0**;
+- current verdict: **FAIL**.
+
+After both approved escalation implementation groups, the projected authored population is **2 occurrences across 2 follower IDs**. See `heat-compatibility-c4a-escalation-approval.md` for individual approvals, frequency, severity, rejected alternatives, and the two implementation groups.
+
 ## Verification record
 
 Passed:

@@ -153,10 +153,10 @@ Phase C1 reviewed the authoritative imported definitions rather than deriving sc
 | `inner_cinderLatticeTrial` | board text / `src/game/data/boardTextEffects.ts` | choice 1 failure: `gain_heat 1`; choice 2 success: `lose_heat 1`; choice 2 failure: `gain_heat 1` | Decoded the Cinder Lattice and marked a viable core approach. | **IMPLEMENTED C2B5: removed without replacement** | Yes, false Scar-pressure implication removed | No replacement |
 | `inner_gateOfCindersTrial` | board text / `src/game/data/boardTextEffects.ts` | choices 1-3 failure: `gain_heat 1` | Forced the Gate of Cinders and prepared the final breach. | **IMPLEMENTED C2B5: removed without replacement** | False Scar-pressure implication removed | No replacement |
 | `scenario_mirror_of_false_heroes` | scenario / `src/game/data/scenarios.ts` | high-pressure confrontation: `gain_heat 1` | Face Yourself confrontation plan. | **IMPLEMENTED C3B: removed without replacement** | No | No replacement |
-| `escalation-blackstar-hunger` | escalation / `content/cards/escalations/escalation-blackstar-hunger.json` | resolve: `gain_heat_all 1` | The dark star pulls metal, courage, and breath into its gravity. | D. Blocked | No | No |
-| `escalation-choir-feedback` | escalation / `content/cards/escalations/escalation-choir-feedback.json` | resolve: `gain_heat_all 1` | The relay choir turns every stable signal into a shriek. | D. Blocked | No | No |
-| `escalation-marrow-surgery-debt` | escalation / `content/cards/escalations/escalation-marrow-surgery-debt.json` | resolve: `gain_heat 1` | Every healed Wound starts billing the future. | D. Blocked | No | No |
-| `escalation-saltwind-lockdown` | escalation / `content/cards/escalations/escalation-saltwind-lockdown.json` | resolve: `gain_heat_all 1` | Void-salt wind makes every easy crossing abrasive. | D. Blocked | No | No |
+| `escalation-blackstar-hunger` | escalation / `content/cards/escalations/escalation-blackstar-hunger.json` | resolve: `gain_heat_all 1` | The dark star pulls metal, courage, and breath into its gravity. | **APPROVED C4A: remove without replacement** | No | Preserve existing `escalationDelta: 1`; no additional effect |
+| `escalation-choir-feedback` | escalation / `content/cards/escalations/escalation-choir-feedback.json` | resolve: `gain_heat_all 1` | The relay choir turns every stable signal into a shriek. | **APPROVED C4A: remove without replacement** | No | Preserve existing `escalationDelta: 1`; no additional effect |
+| `escalation-marrow-surgery-debt` | escalation / `content/cards/escalations/escalation-marrow-surgery-debt.json` | resolve: `gain_heat 1` | Every healed Wound starts billing the future. | **APPROVED C4A: remove without replacement** | No | Preserve existing `escalationDelta: 1`; no Salvage or other replacement |
+| `escalation-saltwind-lockdown` | escalation / `content/cards/escalations/escalation-saltwind-lockdown.json` | resolve: `gain_heat_all 1` | Void-salt wind makes every easy crossing abrasive. | **APPROVED C4A: remove without replacement** | No | Preserve existing `escalationDelta: 1`; no movement or other replacement |
 | `crownless-advocate` | follower / `content/followers/crownless-advocate.json` | active: `lose_heat 1` | Soften a faction demand or cancel one unstable rivalry cost. | D. Blocked | No | No |
 | `saltflat-bone-reader` | follower / `content/followers/saltflat-bone-reader.json` | active: `lose_heat 1` | Turn a Scar, omen, or void-salt bargain into a safer route note. | D. Blocked | No | No |
 
@@ -215,6 +215,17 @@ Implementation status: **complete for runtime containment and C2A board retireme
 At C3A approval time, the effect remained authored until implementation, so the population was **7 occurrences across 7 IDs** and the audit verdict remained **FAIL**. After the approved implementation, the projected population was **6 occurrences across 6 IDs**: four escalations and two followers. The broader Mirror preparation/confrontation contract remains separate scenario-foundation work and is not a prerequisite for this narrow removal.
 
 Implementation status: **complete in C3B**. The Mirror plan effect is `null`, the imported board/scenario Heat manifest is empty, and repository-backed authored Heat is now **6 occurrences across 6 IDs**. The four escalation and two follower IDs remain blocked; audit verdict **FAIL** remains.
+
+### Phase C4A - escalation approval
+
+The four remaining escalation-family Heat leaves are **APPROVED** for content-only removal without replacement. Each card already applies `escalationDelta: 1` through the authoritative shared Global Escalation lifecycle; the additional `gain_heat` or `gain_heat_all` leaf is inert. Implementation deletes only `resolveEffect` and preserves the card's stable identity, step, prose, summary, distribution, local-deck consumption, shared +1, caps, thresholds, and existing collapse behavior.
+
+Implementation groups:
+
+1. `escalation-blackstar-hunger`, `escalation-choir-feedback`, `escalation-saltwind-lockdown`: remove the three shared-target `gain_heat_all 1` leaves.
+2. `escalation-marrow-surgery-debt`: remove the active-seat `gain_heat 1` leaf separately, proving no historical Salvage recommendation or other personal penalty is added.
+
+C4A is report-only. Current authored Heat remains **6 occurrences across 6 IDs** and verdict **FAIL**. After both approved groups are implemented, projected authored Heat is **2 occurrences across 2 follower IDs**: `crownless-advocate` and `saltflat-bone-reader`. See `heat-compatibility-c4a-escalation-approval.md`.
 
 ### Phase C2 — Remaining authored content retirement
 
