@@ -488,6 +488,7 @@ The acting owner resolves the current server-authored location choice. The serve
 ### Group 5 — clearance/final-approach cleanup
 
 - IDs: `middle_guardianSpanThreshold`, `inner_cinderLatticeTrial`, `inner_gateOfCindersTrial`.
+- Implementation status: **IMPLEMENTED in C2B5**. Eight approved Heat leaves were removed without replacement; exact clearance notes, tests, option ordering, route requirements, and center-confrontation gates remain unchanged.
 - Shared resolver: existing board choice, note grant, movement requirement, and scenario-boundary validation.
 - Content: remove failure/relief Heat leaves and clean false Scar wording.
 - Validation/UI: manifest update only; no scenario or movement changes.
@@ -544,3 +545,9 @@ Current authored typed Heat population: **24 occurrences across 13 IDs**. This c
 Group 4 is implemented. `middle_shardSprawlBargain`, `middle_webglassFracture`, and `inner_veilRiftEntry` each retain two ordered choices with their exact stats, difficulties, labels, and selected-note behavior. Failures now add no consequence, while Melted Gate entry and center-tile gating remain unchanged. Group 5 remains unimplemented and unchanged.
 
 Current authored typed Heat population: **15 occurrences across 10 IDs**. This comprises eight occurrences across the three remaining Group 5 board IDs plus seven separately blocked scenario, escalation, and follower occurrences. The audit verdict remains **FAIL**.
+
+## Phase C2B5 implementation update
+
+Group 5 is implemented. `middle_guardianSpanThreshold`, `inner_cinderLatticeTrial`, and `inner_gateOfCindersTrial` retain their exact choices, checks, success note sequences, failed-clearance behavior, movement requirements, and scenario boundary. The two approved false Scar implications now read “rising interference” and “static backlash.”
+
+All 19 C2A board IDs are implemented. Board-authored typed Heat is **zero**. Current authored typed Heat population is **7 occurrences across 7 separately gated IDs**: one scenario, four escalations, and two followers. The audit verdict remains **FAIL**.

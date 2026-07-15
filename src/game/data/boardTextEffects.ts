@@ -419,11 +419,7 @@ export const BOARD_TEXT_EFFECTS: Record<string, BoardTextEffectDefinition> = {
             { type: "gain_note", text: "Guardian Span threshold aligned for breach entry." }
           ]
         },
-        failureSummary: "The threshold seals resisted alignment and the span lashed back with pressure.",
-        failureEffect: {
-          type: "gain_heat",
-          amount: 1
-        }
+        failureSummary: "The threshold seals resisted alignment and the span lashed back with pressure."
       },
       {
         id: "ghost-marker",
@@ -437,11 +433,7 @@ export const BOARD_TEXT_EFFECTS: Record<string, BoardTextEffectDefinition> = {
             { type: "gain_note", text: "Guardian Span route marker held long enough to chart the breach." }
           ]
         },
-        failureSummary: "The ghost marker bled out across the span and left you exposed to the threshold wash.",
-        failureEffect: {
-          type: "gain_heat",
-          amount: 1
-        }
+        failureSummary: "The ghost marker bled out across the span and left you exposed to the threshold wash."
       }
     ]
   },
@@ -517,11 +509,7 @@ export const BOARD_TEXT_EFFECTS: Record<string, BoardTextEffectDefinition> = {
           type: "gain_note",
           text: "Cinder lattice ember pulse traced into a stable core approach."
         },
-        failureSummary: "The ember trace slipped its rhythm and the lattice answered with rising scar pressure.",
-        failureEffect: {
-          type: "gain_heat",
-          amount: 1
-        }
+        failureSummary: "The ember trace slipped its rhythm and the lattice answered with rising interference."
       },
       {
         id: "ghost-angles",
@@ -529,17 +517,10 @@ export const BOARD_TEXT_EFFECTS: Record<string, BoardTextEffectDefinition> = {
         difficulty: 10,
         summary: "Read the ghost angles in the lattice and cut a covert line toward the final gate.",
         effect: {
-          type: "sequence",
-          effects: [
-            { type: "lose_heat", amount: 1 },
-            { type: "gain_note", text: "Cinder lattice ghost angles mapped a covert final-gate route." }
-          ]
+          type: "gain_note",
+          text: "Cinder lattice ghost angles mapped a covert final-gate route."
         },
-        failureSummary: "The ghost angles misaligned and the lattice fed your position back into the fireline.",
-        failureEffect: {
-          type: "gain_heat",
-          amount: 1
-        }
+        failureSummary: "The ghost angles misaligned and the lattice fed your position back into the fireline."
       }
     ]
   },
@@ -560,11 +541,7 @@ export const BOARD_TEXT_EFFECTS: Record<string, BoardTextEffectDefinition> = {
             { type: "gain_note", text: "Gate of Cinders forced open under brute brace pressure." }
           ]
         },
-        failureSummary: "The cinder locks held under the strain and burned the operative back.",
-        failureEffect: {
-          type: "gain_heat",
-          amount: 1
-        }
+        failureSummary: "The cinder locks held under the strain and burned the operative back."
       },
       {
         id: "time-relays",
@@ -578,11 +555,7 @@ export const BOARD_TEXT_EFFECTS: Record<string, BoardTextEffectDefinition> = {
             { type: "gain_note", text: "Gate of Cinders relay pulse timed cleanly for the core breach." }
           ]
         },
-        failureSummary: "The relay timing slipped and the gate answered with a surge of static scar pressure.",
-        failureEffect: {
-          type: "gain_heat",
-          amount: 1
-        }
+        failureSummary: "The relay timing slipped and the gate answered with a surge of static backlash."
       },
       {
         id: "ghost-path",
@@ -596,11 +569,7 @@ export const BOARD_TEXT_EFFECTS: Record<string, BoardTextEffectDefinition> = {
             { type: "gain_note", text: "Gate of Cinders ghost-path fixed long enough to reach the core." }
           ]
         },
-        failureSummary: "The ghost-path collapsed underfoot and left the approach running hot.",
-        failureEffect: {
-          type: "gain_heat",
-          amount: 1
-        }
+        failureSummary: "The ghost-path collapsed underfoot and left the approach running hot."
       }
     ]
   },

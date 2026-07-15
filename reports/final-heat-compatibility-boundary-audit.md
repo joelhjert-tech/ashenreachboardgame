@@ -414,6 +414,21 @@ Updated evidence counts:
 
 See `heat-compatibility-c2b4-board-route-choice-cleanups.md` for the choice, note, and route-gate preservation evidence.
 
+## Phase C2B5 final board approach update
+
+C2B5 implemented C2A Group 5: `middle_guardianSpanThreshold`, `inner_cinderLatticeTrial`, and `inner_gateOfCindersTrial`. Eight inert Heat leaves were removed without replacement. Clearance notes, selected approach notes, option order, test difficulty, route restrictions, center entry requirements, and scenario-confrontation ownership remain unchanged.
+
+Updated evidence counts:
+
+- authored typed Heat effects: **7 across 7 IDs**;
+- board-authored typed Heat effects: **0 across 0 IDs**;
+- separately gated scenario/escalation/follower effects: **7 across 7 IDs**;
+- current Heat-state mechanical reads/writes: **0**;
+- observed/guarded phone and TV Heat fields or labels: **0**;
+- current verdict: **FAIL**.
+
+All 19 C2A board IDs are implemented. See `heat-compatibility-c2b5-board-final-approach-cleanups.md` for clearance, topology, center-gate, and scenario-isolation evidence.
+
 ## Verification record
 
 Passed:
