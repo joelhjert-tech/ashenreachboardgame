@@ -29,7 +29,6 @@ export type OtherLegacyHeatCompatibilityApproval = {
 export const LEGACY_HEAT_EFFECT_APPROVALS: readonly LegacyHeatEffectApproval[] = [
   { id: "anomaly-cinder-mirage-lane", constructs: ["player-facing Heat text", "player-facing Risk resource text"] },
   { id: "artifact-cinder-suture-kit", constructs: ["player-facing Heat text"] },
-  { id: "ashen-doppelganger", constructs: ["gain_heat"] },
   { id: "crownless-advocate", constructs: ["lose_heat"] },
   { id: "escalation-blackstar-hunger", constructs: ["gain_heat_all"] },
   { id: "escalation-choir-feedback", constructs: ["gain_heat_all"] },
@@ -37,7 +36,6 @@ export const LEGACY_HEAT_EFFECT_APPROVALS: readonly LegacyHeatEffectApproval[] =
   { id: "escalation-saltwind-lockdown", constructs: ["gain_heat_all"] },
   { id: "false-route-procession", constructs: ["gain_heat"] },
   { id: "gateblind-pulse", constructs: ["gain_heat"] },
-  { id: "hymn-scarred-zealot", constructs: ["gain_heat"] },
   { id: "marrow-tax-auditors", constructs: ["gain_heat"] },
   { id: "memory-tax-gate", constructs: ["gain_heat"] },
   { id: "saltflat-bone-reader", constructs: ["lose_heat"] }

@@ -57,10 +57,8 @@ const TARGETS = [
 ] as const;
 
 const BLOCKED_HEAT_THREAT_IDS = [
-  "ashen-doppelganger",
   "false-route-procession",
   "gateblind-pulse",
-  "hymn-scarred-zealot",
   "marrow-tax-auditors",
   "memory-tax-gate"
 ] as const;
@@ -348,10 +346,10 @@ describe("Heat Retirement H3 floor-zero Salvage Threats", () => {
     expect(restoredComplete.players[0]!.character.salvage).toBe(1);
   });
 
-  it("preserves B2A, H1, H2, Glass-Chime, Spindle, Siren, and the six blocked cards after H4B", () => {
+  it("preserves B2A, H1, H2, Glass-Chime, Spindle, Siren, and the four blocked cards after H5B", () => {
     expect(collectHeatThreatIds()).toEqual([...BLOCKED_HEAT_THREAT_IDS].sort());
-    expect(LEGACY_HEAT_EFFECT_APPROVALS).toHaveLength(14);
-    expect(APPROVED_LEGACY_HEAT_CONTENT_IDS.size).toBe(28);
+    expect(LEGACY_HEAT_EFFECT_APPROVALS).toHaveLength(12);
+    expect(APPROVED_LEGACY_HEAT_CONTENT_IDS.size).toBe(26);
     expect(requireEnemy("crown-bell-baron").woundOnLoss).toEqual({ type: "lose_salvage", amount: 1 });
     expect(requireHazard("glass-tick-cloud").failEffect).toEqual({ type: "lose_salvage", amount: 1 });
     expect(requireHazard("locked-vault").failEffect).toEqual({ type: "lose_salvage", amount: 1 });

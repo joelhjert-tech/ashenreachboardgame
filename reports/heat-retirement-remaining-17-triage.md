@@ -1,12 +1,12 @@
 # Remaining 17 Heat-linked Threat retirement triage
 
-Status: final triage approved at `d877574`; Groups H1, H2, H3, H4B, and H4C are implemented. H5A approves two Wound conversions for later implementation; four IDs remain blocked.
+Status: final triage approved at `d877574`; Groups H1 through H5B are implemented. Four IDs remain blocked.
 
 ## Decision summary
 
-The two existing Heat audits and current canonical Threat content reconcile to exactly **17 unique stable IDs**. Eleven IDs are **APPROVED AND IMPLEMENTED** across H1 through H4C, and two more are **APPROVED, AWAITING IMPLEMENTATION** in H5A. Four remain **BLOCKED** because a target, ownership, persistence, reset, or balance decision is unresolved.
+The two existing Heat audits and current canonical Threat content reconcile to exactly **17 unique stable IDs**. Thirteen IDs are **APPROVED AND IMPLEMENTED** across H1 through H5B. Four remain **BLOCKED** because a target, ownership, persistence, reset, or balance decision is unresolved.
 
-- Approved: 13 (11 implemented, 2 awaiting implementation)
+- Approved and implemented: 13
 - Blocked: 4
 - Approved retirement models: remove without replacement (3), normal Wound pressure (4), floor-zero Salvage pressure (3), exact-instance Equipment suppression (2), stat-specific temporary modifier (1)
 - Player-facing Heat remains obsolete. Every still-active Heat branch below is parsed only for compatibility and resolves as a no-op with a “no additional status change” summary.
@@ -17,13 +17,13 @@ The two existing Heat audits and current canonical Threat content reconcile to e
 
 | Stable ID | Display name | Lane / type | Activation | Stat / difficulty | Current success | Current failure | Reward | Exact Heat branch | Runtime state | Source | Closest overlaps |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| `ashen-doppelganger` | Ashen Doppelganger | Blue / enemy | N/A | Guile 11 | Defeat | `gain_heat 2` on loss | automatic 3 Trophy points and 3-value pile entry, then authored `gain_trophy 3`; 6 points total | `woundOnLoss` | compatibility-only no-op | `content/cards/threats/ashen-doppelganger.json` | `mirror-lord-envoy`, `glass-mire-stalker`, `mirror-rot-interference` |
+| `ashen-doppelganger` | Ashen Doppelganger | Blue / enemy | N/A | Guile 11 | Defeat | 2 preventable Wounds on loss | automatic 3 Trophy points and 3-value pile entry, then authored `gain_trophy 3`; 6 points total | retired H5B `woundOnLoss` | implemented atomic normal Wound request | `content/cards/threats/ashen-doppelganger.json` | `mirror-lord-envoy`, `glass-mire-stalker`, `mirror-rot-interference` |
 | `choir-static-burst` | Choir-Static Burst | Blue / hazard | N/A | Signal 9 | scenario progress `choirStaticContained +1` | 1 preventable Wound | none | retired H2 `failEffect` | implemented normal Wound | `content/cards/threats/choir-static-burst.json` | `gateblind-pulse`, `rift-whispers`, `webglass-echo-trap` |
 | `cinder-gate-backlash` | Cinder Gate Backlash | Blue / hazard | N/A | Signal 12 | no additional effect | 2 Wounds | none | retired H1 `successEffect` | implemented removal; failure remains active | `content/cards/threats/cinder-gate-backlash.json` | `gateblind-pulse`, `emberwatch-sparkfall`, `spindle-static-squall` |
 | `crown-bell-baron` | Crown-Bell Baron | Yellow / enemy | N/A | Command 7 | Defeat | lose up to 1 Salvage on loss | route-fee fraud note | `woundOnLoss` | implemented floor-zero automatic loss | `content/cards/threats/crown-bell-baron.json` | `pale-toll-enforcer`, `bridge-toll-runt`, `pale-contract-collector` |
 | `false-route-procession` | False-Route Procession | Yellow / hazard | N/A | Command 7 | false-road note | `gain_heat 2` | none | `failEffect` | compatibility-only no-op | `content/cards/threats/false-route-procession.json` | `memory-tax-gate`, `route-splice`, `siren-relay-echo` |
 | `gateblind-pulse` | Gateblind Pulse | Blue / hazard | N/A | Signal 10 | scenario progress `gateblindPulsesRead +1` | `gain_heat 2` | none | `failEffect` | compatibility-only no-op | `content/cards/threats/gateblind-pulse.json` | `choir-static-burst`, `cinder-gate-backlash`, `saint-of-ashes-echo` |
-| `hymn-scarred-zealot` | Hymn-Scarred Zealot | Red / enemy | N/A | Grit 3 | Defeat | `gain_heat 1` on loss | automatic 1 Trophy point and 1-value pile entry; authored silencing note | `woundOnLoss` | compatibility-only no-op | `content/cards/threats/hymn-scarred-zealot.json` | `lantern-ash-ghoul`, `moth-carrier-husk`, `ash-cinder-runt` |
+| `hymn-scarred-zealot` | Hymn-Scarred Zealot | Red / enemy | N/A | Grit 3 | Defeat | 1 preventable Wound on loss | automatic 1 Trophy point and 1-value pile entry; authored silencing note | retired H5B `woundOnLoss` | implemented normal Wound request | `content/cards/threats/hymn-scarred-zealot.json` | `lantern-ash-ghoul`, `moth-carrier-husk`, `ash-cinder-runt` |
 | `lantern-moth-swarm` | Lantern-Moth Swarm | Blue / hazard | N/A | Signal 5 | no additional effect | 1 preventable Wound | none | retired H2 success and failure | implemented removal plus normal Wound | `content/cards/threats/lantern-moth-swarm.json` | `glass-chime-swarm`, `spindle-static-squall`, `roadside-bone-oracle` |
 | `marrow-tax-auditors` | Marrow-Tax Auditors | Yellow / hazard | N/A | Guile 7 | tariff-loophole note | `gain_heat 2` | none | `failEffect` | compatibility-only no-op | `content/cards/threats/marrow-tax-auditors.json` | `locked-vault`, `false-route-procession`, `wireghost-key` |
 | `memory-tax-gate` | Memory Tax Gate | Yellow / hazard | N/A | Command 8 | harmless-memory note | `gain_heat 2` | none | `failEffect` | compatibility-only no-op | `content/cards/threats/memory-tax-gate.json` | `false-route-procession`, `route-splice`, `crown-bell-baron` |
@@ -41,13 +41,13 @@ Canonical graph references, used only as a frequency warning, are respectively 3
 
 | ID | Original intent | Selected model | Runtime readiness | Severity | Status |
 |---|---|---|---|---:|---|
-| `ashen-doppelganger` | severe lasting mirrored injury | 2 preventable Wounds on combat loss | existing normal Wound pipeline | 4 | APPROVED — H5A, AWAITING IMPLEMENTATION |
+| `ashen-doppelganger` | severe lasting mirrored injury | 2 preventable Wounds on combat loss | implemented H5B normal Wound pipeline | 4 | APPROVED H5A — IMPLEMENTED H5B |
 | `choir-static-burst` | accumulating attrition from violent signal feedback | normal Wound pressure: 1 preventable Wound | implemented H2 | 2 | APPROVED — IMPLEMENTED H2 |
 | `cinder-gate-backlash` | obsolete success-side recovery bookkeeping | remove success branch without replacement | implemented H1 | 1 | APPROVED — IMPLEMENTED H1 |
 | `crown-bell-baron` | resource pressure through extortion | lose up to 1 Salvage | implemented H3 | 2 | APPROVED — IMPLEMENTED H3 |
 | `false-route-procession` | movement misdirection | forced displacement or delayed relocation | requires unresolved destination rule | 2 provisional | BLOCKED |
 | `gateblind-pulse` | shared gate/scenario pressure | Global Escalation candidate | existing track, but cap/threshold impact unresolved | 3 provisional | BLOCKED |
-| `hymn-scarred-zealot` | ordinary physical loss; defeat silences the hymn | 1 preventable Wound on combat loss | existing normal Wound pipeline | 2 | APPROVED — H5A, AWAITING IMPLEMENTATION |
+| `hymn-scarred-zealot` | ordinary physical loss; defeat silences the hymn | 1 preventable Wound on combat loss | implemented H5B normal Wound pipeline | 2 | APPROVED H5A — IMPLEMENTED H5B |
 | `lantern-moth-swarm` | risk/reward prevention plus immediate fire injury | remove success branch; failure becomes 1 preventable Wound | implemented H2 | 2 | APPROVED — IMPLEMENTED H2 |
 | `marrow-tax-auditors` | repeated resource taxation | lose up to 1 Salvage candidate | mechanically ready; frequency balance unresolved | 2 provisional | BLOCKED |
 | `memory-tax-gate` | risk/reward choice paid with private memory | player-choice/private-note lifecycle | requires new lifecycle | 3 provisional | BLOCKED |
@@ -91,9 +91,9 @@ The screen deliberately rejects automatic Scar, Global Escalation, and generic o
 
 ### `ashen-doppelganger`
 
-- Current Heat behavior: combat loss `gain_heat 2`, compatibility-only no-op.
+- Current Heat behavior: retired in H5B; former combat loss `gain_heat 2` was a compatibility-only no-op.
 - Original gameplay intent: severe lasting injury from a rare inner mirrored enemy.
-- Selected retirement model: 2 preventable Wounds, approved in H5A for later implementation.
+- Selected retirement model: 2 preventable Wounds, approved in H5A and implemented in H5B.
 - Card type: enemy.
 - Lane: Blue.
 - Test/battle stat: Guile.
@@ -117,7 +117,7 @@ The screen deliberately rejects automatic Scar, Global Escalation, and generic o
 - Severity: 4, potentially recall-causing.
 - Implementation complexity: low code / high balance.
 - Balance risk: high; H5A explicitly accepts the jump from a no-op and three graph references amplify it.
-- Approval status: APPROVED — H5A, AWAITING IMPLEMENTATION.
+- Approval status: APPROVED H5A — IMPLEMENTED H5B.
 
 ### `choir-static-burst`
 
@@ -271,9 +271,9 @@ The screen deliberately rejects automatic Scar, Global Escalation, and generic o
 
 ### `hymn-scarred-zealot`
 
-- Current Heat behavior: combat loss `gain_heat 1`, compatibility-only no-op.
+- Current Heat behavior: retired in H5B; former combat loss `gain_heat 1` was a compatibility-only no-op.
 - Original gameplay intent: ordinary physical combat pressure; defeating the Zealot silences the hymn.
-- Selected retirement model: 1 preventable Wound on combat loss, approved in H5A for later implementation.
+- Selected retirement model: 1 preventable Wound on combat loss, approved in H5A and implemented in H5B.
 - Card type: enemy.
 - Lane: Red.
 - Test/battle stat: Grit.
@@ -297,7 +297,7 @@ The screen deliberately rejects automatic Scar, Global Escalation, and generic o
 - Severity: 2 for the retirement rule; base card remains severity 1.
 - Implementation complexity: low.
 - Balance risk: moderate; a no-op becomes attrition, but the card has one graph reference and matches common peers.
-- Approval status: APPROVED — H5A, AWAITING IMPLEMENTATION.
+- Approval status: APPROVED H5A — IMPLEMENTED H5B.
 
 ### `lantern-moth-swarm`
 

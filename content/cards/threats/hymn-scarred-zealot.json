@@ -4,7 +4,7 @@
   "cardType": "enemy",
   "title": "Hymn-Scarred Zealot",
   "enemyName": "Hymn-Scarred Zealot",
-  "text": "A burned Choir footsoldier drags a warbell through the dust. Defeating it breaks the body but broadcasts the hymn.",
+  "text": "A burned Choir footsoldier drags a warbell through the dust, broadcasting the hymn until its body breaks. If you lose this battle, suffer 1 Wound.",
   "flavor": "The smallest bell still knows the alarm.",
   "severity": 1,
   "region": "outer",
@@ -21,7 +21,7 @@
     ]
   },
   "woundOnLoss": {
-    "type": "gain_heat",
+    "type": "take_wound",
     "amount": 1
   },
   "enemyFamily": "choir",
@@ -29,7 +29,7 @@
   "rarity": "common",
   "tempo": "push",
   "resourceTags": [
-    "heat",
+    "wound",
     "loot",
     "scar",
     "trophy"

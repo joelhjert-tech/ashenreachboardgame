@@ -13,10 +13,10 @@ function readJson(file: string): unknown {
 }
 
 describe("legacy Heat authoring guard", () => {
-  it("retains only the 28 effect and other compatibility approval IDs", () => {
-    expect(LEGACY_HEAT_EFFECT_APPROVALS).toHaveLength(14);
+  it("retains only the 26 effect and other compatibility approval IDs", () => {
+    expect(LEGACY_HEAT_EFFECT_APPROVALS).toHaveLength(12);
     expect(OTHER_LEGACY_HEAT_COMPATIBILITY_APPROVALS).toHaveLength(14);
-    expect(APPROVED_LEGACY_HEAT_CONTENT_IDS.size).toBe(28);
+    expect(APPROVED_LEGACY_HEAT_CONTENT_IDS.size).toBe(26);
     expect(APPROVED_LEGACY_HEAT_CONTENT_IDS.has("black-route-fuse")).toBe(false);
 
     const allIds = [
@@ -86,8 +86,8 @@ describe("legacy Heat authoring guard", () => {
   });
 
   it("accepts only the constructs explicitly approved for legacy effect IDs", () => {
-    expect(validateLegacyHeatContentRecord("content/cards/threats/ashen-doppelganger.json", { id: "ashen-doppelganger", effect: { type: "gain_heat", amount: 1 } })).toEqual([]);
-    expect(validateLegacyHeatContentRecord("content/cards/threats/ashen-doppelganger.json", { id: "ashen-doppelganger", effect: { type: "lose_heat", amount: 1 } })[0]).toContain("lose_heat");
+    expect(validateLegacyHeatContentRecord("content/cards/threats/false-route-procession.json", { id: "false-route-procession", effect: { type: "gain_heat", amount: 1 } })).toEqual([]);
+    expect(validateLegacyHeatContentRecord("content/cards/threats/false-route-procession.json", { id: "false-route-procession", effect: { type: "lose_heat", amount: 1 } })[0]).toContain("lose_heat");
     expect(validateLegacyHeatContentRecord("content/gear/black-route-fuse.json", { id: "black-route-fuse", text: "Discard after use." })).toEqual([]);
   });
 

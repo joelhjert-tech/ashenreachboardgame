@@ -29,7 +29,7 @@ const TARGETS: Entry[] = [
   { id: "emberwatch-sparkfall", file: "cards/threats/emberwatch-sparkfall.json", branch: "failEffect.effects", survivingEffects: [{ type: "take_wound", amount: 1 }] },
   { id: "gate-choir-executioner", file: "cards/threats/gate-choir-executioner.json", branch: "woundOnLoss.effects", survivingEffects: [{ type: "take_wound", amount: 2 }] },
   { id: "glass-mire-stalker", file: "cards/threats/glass-mire-stalker.json", branch: "woundOnLoss.effects", survivingEffects: [{ type: "take_wound", amount: 1 }] },
-  { id: "hymn-scarred-zealot", file: "cards/threats/hymn-scarred-zealot.json", branch: "defeatReward.effects", survivingEffects: [{ type: "gain_note", text: "You silenced the zealot before the full formation answered." }], retainedCompatibility: "separate Heat-only loss branch" },
+  { id: "hymn-scarred-zealot", file: "cards/threats/hymn-scarred-zealot.json", branch: "defeatReward.effects", survivingEffects: [{ type: "gain_note", text: "You silenced the zealot before the full formation answered." }] },
   { id: "iron-lung-grenadier", file: "cards/threats/iron-lung-grenadier.json", branch: "woundOnLoss.effects", survivingEffects: [{ type: "take_wound", amount: 1 }], retainedCompatibility: "stable Heat-shaped reveal effect key" },
   { id: "iron-synod-chirurgeon", file: "cards/threats/iron-synod-chirurgeon.json", branch: "woundOnLoss.effects", survivingEffects: [{ type: "take_wound", amount: 2 }] },
   { id: "lalla-bubu-crownling", file: "cards/threats/lalla-bubu-crownling.json", branch: "woundOnLoss.effects", survivingEffects: [{ type: "take_wound", amount: 1 }] },
@@ -71,7 +71,7 @@ describe("Phase 1J mixed Heat clause cleanup", () => {
   });
 
   it("removes only IDs with no remaining Heat construct from the allowlist", () => {
-    expect(APPROVED_LEGACY_HEAT_CONTENT_IDS.size).toBe(28);
+    expect(APPROVED_LEGACY_HEAT_CONTENT_IDS.size).toBe(26);
     for (const entry of TARGETS) {
       expect(APPROVED_LEGACY_HEAT_CONTENT_IDS.has(entry.id)).toBe(Boolean(entry.retainedCompatibility));
       expect(validateLegacyHeatContentRecord(entry.file, read(entry))).toEqual([]);

@@ -1,10 +1,10 @@
 # Heat retirement H5A: severe Wound and Scar approval
 
-Status: APPROVED FOR LATER IMPLEMENTATION. This is a report-only severity decision for `ashen-doppelganger` and `hymn-scarred-zealot`; it changes no runtime content.
+Status: APPROVED in H5A and IMPLEMENTED in H5B. The sealed severity decision remains the authority for `ashen-doppelganger` and `hymn-scarred-zealot`; implementation evidence is recorded in `reports/heat-retirement-h5b-severe-wounds.md`.
 
 ## Decision summary
 
-H5A approves both cards as one future implementation group because both can use the existing authoritative, owner-scoped, preventable-Wound lifecycle without schema or resolver work.
+H5A approved both cards as one implementation group because both use the existing authoritative, owner-scoped, preventable-Wound lifecycle without schema or resolver work. H5B has now implemented that shared group.
 
 - `ashen-doppelganger`: on combat loss, suffer **2 Wounds**.
 - `hymn-scarred-zealot`: on combat loss, suffer **1 Wound**.
@@ -105,7 +105,7 @@ If the conditional-second-Wound option were ever reconsidered, it would require 
 - Severity: 4. The possibility of an immediate recall is accepted.
 - Complexity: low runtime complexity; high focused-test burden.
 - Balance risk: high, because a former no-op becomes a 2-Wound loss and appears in three canonical graph references.
-- Approval status: **APPROVED — H5A, awaiting implementation**.
+- Approval status: **APPROVED H5A — IMPLEMENTED H5B**.
 
 ## Option analysis: `hymn-scarred-zealot`
 
@@ -146,7 +146,7 @@ No exceptional Scar trigger survives review: the card authors no failure-margin 
 - Severity: 2 for the replacement consequence; the base card remains severity 1.
 - Complexity: low.
 - Balance risk: moderate. This changes a no-op into normal attrition, but the card has one graph reference and matches common peers.
-- Approval status: **APPROVED — H5A, awaiting implementation**.
+- Approval status: **APPROVED H5A — IMPLEMENTED H5B**.
 
 ## Scar guard
 
