@@ -133,25 +133,25 @@ Phase C1 reviewed the authoritative imported definitions rather than deriving sc
 
 | Stable ID | Family / source | Current typed Heat effect path(s) | Current authored wording | C1 disposition | Wording change? | Approved replacement? |
 |---|---|---|---|---|---|---|
-| `outer_emberSanctumRest` | board text / `src/game/data/boardTextEffects.ts` | effect sequence: `lose_heat 1` | Recovered 1 Wound and stabilized lingering Scar pressure. | D. Blocked | No | No |
-| `outer_ashwakeClearLane` | board text / `src/game/data/boardTextEffects.ts` | failure: `gain_heat 1` | Marked a clean lane through Ashwake Crossing. | D. Blocked | No | No |
-| `outer_glassmereChorus` | board text / `src/game/data/boardTextEffects.ts` | success: `lose_heat 1`; failure: `gain_heat 1` | Tuned the Glassmere spindle and secured a stable relay note. | D. Blocked | No | No |
-| `outer_mirecoilTraffic` | board text / `src/game/data/boardTextEffects.ts` | failure: `gain_heat 1` | Pulled a fresh Contract lead from Mirecoil Beacon traffic. | D. Blocked | No | No |
-| `outer_waymarketExchange` | board text / `src/game/data/boardTextEffects.ts` | success: `lose_heat 1`; failure: `gain_heat 1` | Worked the Waymarket exchange and secured a practical table favor. | D. Blocked | No | No |
-| `outer_relayCrew` | board text / `src/game/data/boardTextEffects.ts` | failure: `gain_heat 1` | Recruited a relay-camp contact and recorded the route crew. | D. Blocked | No | No |
-| `outer_saltCrossing` | board text / `src/game/data/boardTextEffects.ts` | success: `lose_heat 1` | Harvested void-salt and bottled it as a bargaining chip. | D. Blocked | No | No |
-| `outer_surgeryTreatment` | board text / `src/game/data/boardTextEffects.ts` | success sequence: `gain_heat 1` | Accepted rough cinder surgery and walked away patched but marked. | D. Blocked | No | No |
-| `outer_oathpostWrit` | board text / `src/game/data/boardTextEffects.ts` | failure: `gain_heat 1` | Claimed a faction writ from the Oathpost. | D. Blocked | No | No |
-| `outer_brokenCausewayShortcut` | board text / `src/game/data/boardTextEffects.ts` | failure sequence: `gain_heat 1` | Marked the Broken Causeway shortcut toward Guardian Span. | D. Blocked | No | No |
-| `middle_scarSurgery` | board text / `src/game/data/boardTextEffects.ts` | success sequence: `gain_heat 1` | Survived field surgery in the Red March. | D. Blocked | No | No |
-| `middle_redMarchBargain` | board text / `src/game/data/boardTextEffects.ts` | failure: `gain_heat 1` | Secured a Red March outpost bargain. | D. Blocked | No | No |
-| `inner_blackstarShortcut` | board text / `src/game/data/boardTextEffects.ts` | success sequence: `gain_heat 1` | Crossed the Blackstar shortcut and kept your nerve. | D. Blocked | No | No |
-| `middle_shardSprawlBargain` | board text / `src/game/data/boardTextEffects.ts` | choice 1 success: `lose_heat 1`; choices 1-2 failure: `gain_heat 1` | Cut a hard bargain in the Shard Sprawl. | D. Blocked | No | No |
-| `middle_guardianSpanThreshold` | board text / `src/game/data/boardTextEffects.ts` | choices 1-2 failure: `gain_heat 1` | Aligned the Guardian Span threshold and opened the inner breach. | D. Blocked | No | No |
-| `middle_webglassFracture` | board text / `src/game/data/boardTextEffects.ts` | choice 1 success: `lose_heat 1`; choices 1-2 failure: `gain_heat 1` | Threaded the Webglass fracture path and logged a breach route. | D. Blocked | No | No |
-| `inner_veilRiftEntry` | board text / `src/game/data/boardTextEffects.ts` | choice 1 success: `lose_heat 1`; choices 1-2 failure: `gain_heat 1` | Stabilized the Veil Rift entry and charted the deeper breach. | D. Blocked | No | No |
-| `inner_cinderLatticeTrial` | board text / `src/game/data/boardTextEffects.ts` | choice 1 failure: `gain_heat 1`; choice 2 success: `lose_heat 1`; choice 2 failure: `gain_heat 1` | Decoded the Cinder Lattice and marked a viable core approach. | D. Blocked | No | No |
-| `inner_gateOfCindersTrial` | board text / `src/game/data/boardTextEffects.ts` | choices 1-3 failure: `gain_heat 1` | Forced the Gate of Cinders and prepared the final breach. | D. Blocked | No | No |
+| `outer_emberSanctumRest` | board text / `src/game/data/boardTextEffects.ts` | effect sequence: `lose_heat 1` | Recovered 1 Wound and stabilized lingering Scar pressure. | **APPROVED C2A: remove without replacement** | Yes, remove false Scar-pressure implication | No replacement |
+| `outer_ashwakeClearLane` | board text / `src/game/data/boardTextEffects.ts` | failure: `gain_heat 1` | Marked a clean lane through Ashwake Crossing. | **APPROVED C2A: remove without replacement** | No | No replacement |
+| `outer_glassmereChorus` | board text / `src/game/data/boardTextEffects.ts` | success: `lose_heat 1`; failure: `gain_heat 1` | Tuned the Glassmere spindle and secured a stable relay note. | **APPROVED C2A: remove without replacement** | Narrow failure clarification | No replacement |
+| `outer_mirecoilTraffic` | board text / `src/game/data/boardTextEffects.ts` | failure: `gain_heat 1` | Pulled a fresh Contract lead from Mirecoil Beacon traffic. | **APPROVED C2A: remove without replacement** | No | No replacement |
+| `outer_waymarketExchange` | board text / `src/game/data/boardTextEffects.ts` | success: `lose_heat 1`; failure: `gain_heat 1` | Worked the Waymarket exchange and secured a practical table favor. | **APPROVED C2A: remove without replacement** | No | No replacement |
+| `outer_relayCrew` | board text / `src/game/data/boardTextEffects.ts` | failure: `gain_heat 1` | Recruited a relay-camp contact and recorded the route crew. | **APPROVED C2A: remove without replacement** | No | No replacement |
+| `outer_saltCrossing` | board text / `src/game/data/boardTextEffects.ts` | success: `lose_heat 1` | Harvested void-salt and bottled it as a bargaining chip. | **APPROVED C2A: remove without replacement** | No | No replacement |
+| `outer_surgeryTreatment` | board text / `src/game/data/boardTextEffects.ts` | success sequence: `gain_heat 1` | Accepted rough cinder surgery and walked away patched but marked. | **APPROVED C2A: remove without replacement** | Yes, remove false mark implication | No replacement |
+| `outer_oathpostWrit` | board text / `src/game/data/boardTextEffects.ts` | failure: `gain_heat 1` | Claimed a faction writ from the Oathpost. | **APPROVED C2A: remove without replacement** | No | No replacement |
+| `outer_brokenCausewayShortcut` | board text / `src/game/data/boardTextEffects.ts` | failure sequence: `gain_heat 1` | Marked the Broken Causeway shortcut toward Guardian Span. | **APPROVED C2A: remove without replacement** | No | No replacement |
+| `middle_scarSurgery` | board text / `src/game/data/boardTextEffects.ts` | success sequence: `gain_heat 1` | Survived field surgery in the Red March. | **APPROVED C2A: remove without replacement** | No | No replacement |
+| `middle_redMarchBargain` | board text / `src/game/data/boardTextEffects.ts` | failure: `gain_heat 1` | Secured a Red March outpost bargain. | **APPROVED C2A: remove without replacement** | No | No replacement |
+| `inner_blackstarShortcut` | board text / `src/game/data/boardTextEffects.ts` | success sequence: `gain_heat 1` | Crossed the Blackstar shortcut and kept your nerve. | **APPROVED C2A: remove without replacement** | No | No replacement |
+| `middle_shardSprawlBargain` | board text / `src/game/data/boardTextEffects.ts` | choice 1 success: `lose_heat 1`; choices 1-2 failure: `gain_heat 1` | Cut a hard bargain in the Shard Sprawl. | **APPROVED C2A: remove without replacement** | No | No replacement |
+| `middle_guardianSpanThreshold` | board text / `src/game/data/boardTextEffects.ts` | choices 1-2 failure: `gain_heat 1` | Aligned the Guardian Span threshold and opened the inner breach. | **APPROVED C2A: remove without replacement** | No | No replacement |
+| `middle_webglassFracture` | board text / `src/game/data/boardTextEffects.ts` | choice 1 success: `lose_heat 1`; choices 1-2 failure: `gain_heat 1` | Threaded the Webglass fracture path and logged a breach route. | **APPROVED C2A: remove without replacement** | No | No replacement |
+| `inner_veilRiftEntry` | board text / `src/game/data/boardTextEffects.ts` | choice 1 success: `lose_heat 1`; choices 1-2 failure: `gain_heat 1` | Stabilized the Veil Rift entry and charted the deeper breach. | **APPROVED C2A: remove without replacement** | No | No replacement |
+| `inner_cinderLatticeTrial` | board text / `src/game/data/boardTextEffects.ts` | choice 1 failure: `gain_heat 1`; choice 2 success: `lose_heat 1`; choice 2 failure: `gain_heat 1` | Decoded the Cinder Lattice and marked a viable core approach. | **APPROVED C2A: remove without replacement** | Yes, remove false Scar-pressure implication | No replacement |
+| `inner_gateOfCindersTrial` | board text / `src/game/data/boardTextEffects.ts` | choices 1-3 failure: `gain_heat 1` | Forced the Gate of Cinders and prepared the final breach. | **APPROVED C2A: remove without replacement** | Narrow false Scar-pressure clarification | No replacement |
 | `scenario_mirror_of_false_heroes` | scenario / `src/game/data/scenarios.ts` | high-pressure confrontation: `gain_heat 1` | Face Yourself confrontation plan. | D. Blocked | No | No |
 | `escalation-blackstar-hunger` | escalation / `content/cards/escalations/escalation-blackstar-hunger.json` | resolve: `gain_heat_all 1` | The dark star pulls metal, courage, and breath into its gravity. | D. Blocked | No | No |
 | `escalation-choir-feedback` | escalation / `content/cards/escalations/escalation-choir-feedback.json` | resolve: `gain_heat_all 1` | The relay choir turns every stable signal into a shriek. | D. Blocked | No | No |
@@ -160,7 +160,17 @@ Phase C1 reviewed the authoritative imported definitions rather than deriving sc
 | `crownless-advocate` | follower / `content/followers/crownless-advocate.json` | active: `lose_heat 1` | Soften a faction demand or cancel one unstable rivalry cost. | D. Blocked | No | No |
 | `saltflat-bone-reader` | follower / `content/followers/saltflat-bone-reader.json` | active: `lose_heat 1` | Turn a Scar, omen, or void-salt bargain into a safer route note. | D. Blocked | No | No |
 
-Count check: 32 board-text occurrences + 1 scenario + 4 escalations + 2 followers = **39**. C1 content changes authorized by this ledger: **zero**.
+Count check: 32 board-text occurrences + 1 scenario + 4 escalations + 2 followers = **39**. C2A approves all 32 board-text occurrences for removal without replacement; none is implemented in this report-only pass.
+
+### C2A implementation order and projected count
+
+1. Simple failure-only: `outer_ashwakeClearLane`, `outer_mirecoilTraffic`, `outer_relayCrew`, `outer_oathpostWrit`, `middle_redMarchBargain`.
+2. Success-sequence cleanup: `outer_emberSanctumRest`, `outer_glassmereChorus`, `outer_waymarketExchange`, `outer_saltCrossing`, `outer_surgeryTreatment`.
+3. Existing severe consequence cleanup: `outer_brokenCausewayShortcut`, `middle_scarSurgery`, `inner_blackstarShortcut`.
+4. Two-choice route notes: `middle_shardSprawlBargain`, `middle_webglassFracture`, `inner_veilRiftEntry`.
+5. Clearance/final approach: `middle_guardianSpanThreshold`, `inner_cinderLatticeTrial`, `inner_gateOfCindersTrial`.
+
+After all five groups are implemented, the authored typed Heat population is projected to fall from 39 to **7 occurrences across 7 IDs**: one scenario, four escalations, and two followers. The current audit verdict remains FAIL until implementation and later approval passes provide evidence otherwise.
 
 ## Test prerequisites
 
@@ -196,7 +206,7 @@ Before removing compatibility code, add:
 - Establish a server-side Heat stripping boundary.
 - No content rebalance.
 
-Implementation status: **complete for runtime containment**. `HEAT_THRESHOLD_REACHED` is an exact no-op, phone/TV use the server stripping boundary, and focused validation/projection/replay/Scar tests are present. The 39 authored effects remain unchanged and blocked because their dispositions belong to C2.
+Implementation status: **complete for runtime containment**. `HEAT_THRESHOLD_REACHED` is an exact no-op, phone/TV use the server stripping boundary, and focused validation/projection/replay/Scar tests are present. C2A now approves the 32 board-text occurrences for later removal without replacement; they remain authored until implementation. The other seven occurrences remain blocked behind separate approvals.
 
 ### Phase C2 — Remaining authored content retirement
 
@@ -234,6 +244,6 @@ Re-run the full tracked search and require:
 
 ## Risk summary
 
-The highest risk is deleting parsers or stable IDs before deciding save support. The second-highest risk is treating the 39 authored no-op effects as harmless compatibility: they keep Heat authorable and obscure missing intended consequences. The safest sequence is tests, content retirement, current-model narrowing, documentation/assets, and only then an optional save-version removal.
+The highest risk is deleting parsers or stable IDs before deciding save support. The second-highest risk is leaving the 32 C2A-approved board effects unimplemented or treating the seven still-unapproved no-op effects as harmless compatibility: they keep Heat authorable and obscure missing intended consequences. The safest sequence is tests, content retirement, current-model narrowing, documentation/assets, and only then an optional save-version removal.
 
 **No compatibility field, action, schema, content definition, UI path, asset, or test was removed or modified in this audit pass.**

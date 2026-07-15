@@ -339,6 +339,21 @@ Updated mechanical counts:
 
 Updated verdict: **FAIL remains**, now because of the 39 blocked authored effects only. A future C2 content-approval sequence is required before CONDITIONAL PASS. See `heat-compatibility-c1-containment-implementation.md` for implementation evidence.
 
+## Phase C2A board-text approval update
+
+C2A completed a report-only review of the exact 19 board-text stable IDs and 32 typed Heat occurrences manifest-pinned by C1. All 19 IDs are **APPROVED for removal without replacement**. No Wound, Scar, Salvage, movement, modifier, escalation, payment, or persistent replacement is approved.
+
+The approval is grounded in current runtime behavior: every board Heat effect is already an inert generic compatibility no-op, while the surviving test, note, follower, local-deck, Wound, Scar, or route-clearance behavior remains complete. Five summaries receive narrow clarification, including four false status/Scar implications; ordinary furnace, burning, and signal-temperature lore remains.
+
+No authored definition changed in C2A. Therefore the evidence counts and verdict do not change yet:
+
+- authored typed Heat effects currently present: **39**;
+- approved board-text effects awaiting implementation: **32 across 19 IDs**;
+- projected authored effects after all C2A groups are implemented: **7 across 7 out-of-scope IDs**;
+- current verdict: **FAIL**.
+
+The seven projected remaining occurrences are `scenario_mirror_of_false_heroes`, four escalation IDs, `crownless-advocate`, and `saltflat-bone-reader`. They require separate approvals. See `heat-compatibility-c2a-board-text-approval.md` for exact rules, severity, and implementation grouping.
+
 ## Verification record
 
 Passed:
