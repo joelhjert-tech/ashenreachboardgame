@@ -44,7 +44,6 @@ const TARGETS = [
 
 const REMAINING_AUTHORED_IDS = [
   "crownless-advocate",
-  "escalation-marrow-surgery-debt",
   "saltflat-bone-reader"
 ] as const;
 
@@ -148,7 +147,7 @@ describe("Heat Compatibility C4B1 shared escalation retirement", () => {
     }
   });
 
-  it("narrows the authored compatibility manifest to the exact three remaining IDs", () => {
+  it("retains only the exact two post-C4B2 follower approvals", () => {
     expect(LEGACY_HEAT_EFFECT_APPROVALS.map(({ id }) => id)).toEqual(expect.arrayContaining([...REMAINING_AUTHORED_IDS]));
     for (const { id } of TARGETS) {
       expect(LEGACY_HEAT_EFFECT_APPROVALS.some((approval) => approval.id === id)).toBe(false);

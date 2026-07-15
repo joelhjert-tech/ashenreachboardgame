@@ -505,6 +505,23 @@ Updated evidence counts:
 
 The remaining IDs are `escalation-marrow-surgery-debt`, `crownless-advocate`, and `saltflat-bone-reader`. See `heat-compatibility-c4b1-shared-escalation-implementation.md` for the exact content diff and server-authoritative player-count, threshold, collapse, replay, reconnect, and projection evidence.
 
+## Phase C4B2 Marrow escalation implementation update
+
+C4B2 removed the sole `gain_heat 1` `resolveEffect` from `escalation-marrow-surgery-debt` without replacement. The definition retains `escalationDelta: 1`, so the existing server-authoritative sector-card path continues to advance Global Escalation once in solo and every multiplayer player count. No historical `lose_salvage 1` proposal, payment, debt status, Wound, Scar, choice, or other personal consequence was introduced.
+
+Updated evidence counts:
+
+- board-authored typed Heat effects: **0 across 0 IDs**;
+- scenario-authored typed Heat effects: **0 across 0 IDs**;
+- escalation-authored typed Heat effects: **0 across 0 IDs**;
+- follower-authored typed Heat effects: **2 across 2 blocked IDs**;
+- total authored typed Heat effects: **2 across 2 IDs**;
+- current Heat-state mechanical reads/writes: **0**;
+- observed/guarded phone and TV Heat fields or labels: **0**;
+- current verdict: **FAIL**.
+
+The remaining authored IDs are `crownless-advocate` and `saltflat-bone-reader`. See `heat-compatibility-c4b2-marrow-escalation-implementation.md` for content identity, economy isolation, threshold/collapse, replay/reconnect, and projection evidence.
+
 ## Verification record
 
 Passed:

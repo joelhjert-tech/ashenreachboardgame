@@ -335,7 +335,7 @@ The card represents environmental route pressure, not an actual topology mutatio
 - Recommended commit subject: `feat: remove shared escalation heat effects`.
 - Implementation status: Complete in C4B1. All three `resolveEffect` leaves are absent; each `escalationDelta: 1` and surrounding card identity remain exact. See `heat-compatibility-c4b1-shared-escalation-implementation.md`.
 
-### Group 2 - active-seat Heat leaf
+### Group 2 - active-seat Heat leaf - **IMPLEMENTED C4B2**
 
 - Stable ID: `escalation-marrow-surgery-debt`.
 - Exact content change: delete the sole `gain_heat 1` `resolveEffect` property.
@@ -345,6 +345,7 @@ The card represents environmental route pressure, not an actual topology mutatio
 - Browser QA: not required; no interaction or private state is added.
 - Risk: Low, but isolated to make the rejection of the historical Salvage proposal auditable.
 - Recommended commit subject: `feat: remove marrow escalation heat effect`.
+- Implementation status: Complete in C4B2. The sole `gain_heat 1` `resolveEffect` is absent, `escalationDelta: 1` remains exact, and no Salvage loss, payment, debt state, or other replacement was introduced. See `heat-compatibility-c4b2-marrow-escalation-implementation.md`.
 
 Implement Group 1 first as the lowest-risk homogeneous batch. Group 2 follows separately.
 
@@ -388,6 +389,8 @@ After both approved escalation implementation groups:
 - audit verdict remains **FAIL** until follower approval and implementation.
 
 After C4B1 specifically, authored Heat is **3 occurrences across 3 IDs**: `escalation-marrow-surgery-debt`, `crownless-advocate`, and `saltflat-bone-reader`. Group 2 remains approved but unimplemented.
+
+After C4B2, all four C4A escalation retirements are implemented. Escalation-authored Heat is **0**, and authored Heat is **2 occurrences across 2 follower IDs**: `crownless-advocate` and `saltflat-bone-reader`. The audit remains **FAIL** pending their separate follower approval and implementation.
 
 No gameplay, content definition, schema, validation, test, runtime, UI, projection, asset, follower, Threat, scenario, board, mission, item, or economy value changed in C4A.
 

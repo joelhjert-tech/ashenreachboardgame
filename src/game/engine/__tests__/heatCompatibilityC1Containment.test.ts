@@ -13,7 +13,6 @@ import { reduceGameState } from "../reducer.js";
 
 const BLOCKED_AUTHORED_IDS = [
   "crownless-advocate",
-  "escalation-marrow-surgery-debt",
   "saltflat-bone-reader"
 ] as const;
 
@@ -71,11 +70,11 @@ function productionFiles(directory: string): string[] {
 }
 
 describe("Heat Compatibility C1 containment", () => {
-  it("keeps the exact 3 post-C4B1 escalation/follower effects blocked without silently changing content", () => {
+  it("keeps the exact 2 post-C4B2 follower effects blocked without silently changing content", () => {
     const effects = authoredHeatEffects();
-    expect(effects).toHaveLength(3);
+    expect(effects).toHaveLength(2);
     expect([...new Set(effects.map((entry) => entry.id))].sort()).toEqual([...BLOCKED_AUTHORED_IDS].sort());
-    expect(effects.filter((entry) => entry.type === "gain_heat")).toHaveLength(1);
+    expect(effects.filter((entry) => entry.type === "gain_heat")).toHaveLength(0);
     expect(effects.filter((entry) => entry.type === "gain_heat_all")).toHaveLength(0);
     expect(effects.filter((entry) => entry.type === "lose_heat")).toHaveLength(2);
   });

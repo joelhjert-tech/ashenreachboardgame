@@ -18,7 +18,6 @@ import {
 const TARGET_ID = "scenario_mirror_of_false_heroes";
 const REMAINING_IDS = [
   "crownless-advocate",
-  "escalation-marrow-surgery-debt",
   "saltflat-bone-reader"
 ] as const;
 
@@ -142,7 +141,7 @@ describe("Heat Compatibility C3B Mirror scenario retirement", () => {
     for (const [id, hash] of OTHER_SCENARIO_HASHES) expect(hashScenario(id)).toBe(hash);
   });
 
-  it("reconciles the authored Heat population to the exact three post-C4B1 escalation/follower IDs", () => {
+  it("reconciles the authored Heat population to the exact two post-C4B2 follower IDs", () => {
     const effects: Array<{ id: string; type: string }> = [];
     for (const card of loadEscalationCards().values()) {
       collectTypedEffects(card).filter(({ type }) => HEAT_EFFECT_TYPES.has(type)).forEach(({ type }) => effects.push({ id: card.id, type }));
@@ -156,9 +155,9 @@ describe("Heat Compatibility C3B Mirror scenario retirement", () => {
         .forEach(({ type }) => effects.push({ id: scenario.id, type }));
     }
 
-    expect(effects).toHaveLength(3);
+    expect(effects).toHaveLength(2);
     expect([...new Set(effects.map(({ id }) => id))].sort()).toEqual([...REMAINING_IDS].sort());
-    expect(effects.filter(({ type }) => type === "gain_heat")).toHaveLength(1);
+    expect(effects.filter(({ type }) => type === "gain_heat")).toHaveLength(0);
     expect(effects.filter(({ type }) => type === "gain_heat_all")).toHaveLength(0);
     expect(effects.filter(({ type }) => type === "lose_heat")).toHaveLength(2);
     expect(C1_BLOCKED_RUNTIME_HEAT_EFFECT_SIGNATURES.size).toBe(0);
