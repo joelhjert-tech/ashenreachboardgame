@@ -8,6 +8,8 @@ Scope: report-only approval for `scenario_mirror_of_false_heroes`
 
 `scenario_mirror_of_false_heroes` is **APPROVED** to remove its conditional `gain_heat 1` confrontation effect without replacement.
 
+Implementation status: **IMPLEMENTED C3B**. The confrontation plan now returns `effect: null`; see `heat-compatibility-c3b-mirror-scenario-implementation.md`.
+
 The approved implementation changes only the confrontation plan's conditional effect to `null`. It does not add a Wound, Scar, Global Escalation, Mirror Pressure, preparation, confrontation-progress, loss-pressure, or temporary-modifier consequence. The existing confrontation copy, checks, gate, pressure cutoff, backlash note, progress, victory handling, center-tile rule, and scenario art remain unchanged.
 
 This is ready as a content-only change and does not depend on the unfinished general scenario-state foundation. That foundation is still required to reconcile Mirror's broader authored/runtime contradictions, but those contradictions do not justify retaining or replacing an inert legacy Heat effect.
@@ -151,7 +153,7 @@ The exact removal is unconditional `effect: null` in the Mirror scenario plan. I
 - Multiplayer severity: 1 for the retirement; no active delta.
 - Complexity: Low.
 - Balance risk: Low for this removal; broader Mirror alignment risk remains high and out of scope.
-- Approval status: **APPROVED**.
+- Approval status: **APPROVED — IMPLEMENTED C3B**.
 
 ## Implementation readiness
 

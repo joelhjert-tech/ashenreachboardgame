@@ -42,12 +42,10 @@ export const LEGACY_HEAT_EFFECT_APPROVALS: readonly LegacyHeatEffectApproval[] =
   { id: "saltflat-bone-reader", constructs: ["lose_heat"] }
 ];
 
-// C1 does not approve gameplay replacements for these imported board/scenario
-// definitions. This exact manifest freezes the unresolved population and
-// rejects additions until a dedicated C2 content approval retires each entry.
-export const C1_BLOCKED_RUNTIME_HEAT_EFFECT_SIGNATURES = new Map<string, readonly BlockedRuntimeHeatEffect["type"][]>([
-  ["scenario_mirror_of_false_heroes", ["gain_heat"]]
-]);
+// C1 originally froze unresolved imported board/scenario effects here. C2B1-C2B5
+// retired all board effects and C3B retired the final scenario effect. Keep the
+// empty exact manifest so validation rejects any new runtime-authored Heat leaf.
+export const C1_BLOCKED_RUNTIME_HEAT_EFFECT_SIGNATURES = new Map<string, readonly BlockedRuntimeHeatEffect["type"][]>();
 
 // Compatibility IDs that remain tracked separately from effect/default
 // authorization. Their presence grants no permission to author a Heat field.

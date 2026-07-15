@@ -28,12 +28,11 @@ describe("legacy Heat authoring guard", () => {
     expect(new Set(allIds).size).toBe(allIds.length);
   });
 
-  it("freezes the sole post-C2B5 imported scenario Heat effect as blocked and rejects additions", () => {
+  it("permits no imported board/scenario Heat effects after C3B and rejects additions", () => {
     const exact = [...C1_BLOCKED_RUNTIME_HEAT_EFFECT_SIGNATURES].flatMap(([id, types]) => types.map((type) => ({ id, type })));
-    expect(exact).toHaveLength(1);
+    expect(exact).toEqual([]);
     expect(validateC1BlockedRuntimeHeatEffects(exact)).toEqual([]);
     expect(validateC1BlockedRuntimeHeatEffects([...exact, { id: "new-board-rule", type: "gain_heat" }]).join(" ")).toContain("new-board-rule");
-    expect(validateC1BlockedRuntimeHeatEffects(exact.slice(1)).join(" ")).toContain("signature changed");
   });
 
   it("accepts all 17 canonical characters only after authored Heat omission", () => {

@@ -72,6 +72,10 @@ The conditional high-pressure `gain_heat 1` leaf in `scenario_mirror_of_false_he
 
 Implementation must change only that plan effect to `null`. Mirror Pressure, the mode-sensitive cutoff, final gate, three checks, backlash, `mirrorBreaks`, victory/loss handling, rewards, `center_cinder_gate`, and `/assets/scenarios/mirror-of-false-heroes.png` remain unchanged. This narrow approval does not resolve the separate P0 work for shared pressure ownership, non-center objective completion, preparation/confrontation separation, or False Hero threshold behavior.
 
+#### C3B implementation
+
+The approved removal is implemented: `buildConfrontationPlan` now retains its full check/progress structure with `effect: null`. Scenario-authored Heat is zero. Focused hashes pin the other five scenarios, and center-sector/art tests pin `center_cinder_gate`, its existing neighbors, and the Mirror sheet-art mapping. The separate P0 Mirror alignment work remains deferred and unchanged.
+
 ### Throne of Ash
 
 - Reuse: Crown Hunger, Crown claims, Rivalry presentation, current rewards/art.

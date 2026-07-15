@@ -519,7 +519,7 @@ export const SCENARIOS: ScenarioDefinition[] = [
         { stat: "grit", difficulty: 10 + context.mirrorPressure, label: "Break the final reflection" }
       ],
       markLabel: "mirror break",
-      effect: context.mirrorPressure >= 6 ? { type: "gain_heat", amount: 1 } : null,
+      effect: null,
       victorySummary: `${context.playerName} shattered the false hero and walked free of the mirror.`
     }),
     sheetArtAssetId: "scenario_sheet_mirror_of_false_heroes",

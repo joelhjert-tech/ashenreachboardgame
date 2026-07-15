@@ -447,6 +447,23 @@ No authored definition changed in C3A. Evidence counts therefore remain:
 
 Implementation of the approved content-only removal is projected to reduce authored Heat to **6 occurrences across 6 IDs**. See `heat-compatibility-c3a-mirror-scenario-approval.md` for the exact architecture map, option analysis, and implementation prerequisites.
 
+## Phase C3B Mirror scenario implementation update
+
+C3B implemented the approved content-only retirement for `scenario_mirror_of_false_heroes`. Its confrontation plan remains present but now returns `effect: null` at every pressure value. No replacement consequence was added, and Mirror setup, pressure, gate, checks, progress, victory/loss, center-tile, topology, and art behavior remain unchanged.
+
+Updated evidence counts:
+
+- board-authored typed Heat effects: **0 across 0 IDs**;
+- scenario-authored typed Heat effects: **0 across 0 IDs**;
+- escalation/follower typed Heat effects: **6 across 6 blocked IDs**;
+- total authored typed Heat effects: **6 across 6 IDs**;
+- imported board/scenario Heat validation exceptions: **0**;
+- current Heat-state mechanical reads/writes: **0**;
+- observed/guarded phone and TV Heat fields or labels: **0**;
+- current verdict: **FAIL**.
+
+The verdict does not advance while the four escalation and two follower effects remain authored. See `heat-compatibility-c3b-mirror-scenario-implementation.md` for exact content, validation, scenario-isolation, and verification evidence.
+
 ## Verification record
 
 Passed:
