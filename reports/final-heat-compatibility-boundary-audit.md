@@ -399,6 +399,21 @@ Updated evidence counts:
 
 See `heat-compatibility-c2b3-board-severe-cleanups.md` for the severe-consequence preservation evidence.
 
+## Phase C2B4 route-choice board update
+
+C2B4 implemented only C2A Group 4: `middle_shardSprawlBargain`, `middle_webglassFracture`, and `inner_veilRiftEntry`. Nine inert Heat leaves were removed without replacement. Both options, exact selected notes, owner note storage, option order, route gates, movement authority, and runtime/projection compatibility boundaries remain unchanged.
+
+Updated evidence counts:
+
+- authored typed Heat effects: **15 across 10 IDs**;
+- remaining approved board-text effects awaiting Group 5: **8 across 3 IDs**;
+- separately blocked scenario/escalation/follower effects: **7 across 7 IDs**;
+- current Heat-state mechanical reads/writes: **0**;
+- observed/guarded phone and TV Heat fields or labels: **0**;
+- current verdict: **FAIL**.
+
+See `heat-compatibility-c2b4-board-route-choice-cleanups.md` for the choice, note, and route-gate preservation evidence.
+
 ## Verification record
 
 Passed:

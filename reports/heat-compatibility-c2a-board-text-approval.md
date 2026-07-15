@@ -478,6 +478,7 @@ The acting owner resolves the current server-authored location choice. The serve
 ### Group 4 — two-choice route-note cleanup
 
 - IDs: `middle_shardSprawlBargain`, `middle_webglassFracture`, `inner_veilRiftEntry`.
+- Implementation status: **IMPLEMENTED in C2B4**. Nine approved Heat leaves were removed without replacement; all six choices, note identities, option ordering, and route gates remain unchanged.
 - Shared resolver: existing server-authored board choice and test lifecycle.
 - Content: remove success relief and both failure Heat leaves per ID.
 - Validation/UI: manifest update only; existing choices remain.
@@ -537,3 +538,9 @@ Current authored typed Heat population: **27 occurrences across 16 IDs**. This c
 Group 3 is implemented. `outer_brokenCausewayShortcut` and `inner_blackstarShortcut` retain their existing one-Wound failures, while `middle_scarSurgery` retains its existing direct `scar-wound-1` failure. The surviving heal/note and route-note success sequences retain order. Groups 4–5 remain unimplemented and unchanged.
 
 Current authored typed Heat population: **24 occurrences across 13 IDs**. This comprises 17 occurrences across the six remaining C2A board IDs plus seven separately blocked scenario, escalation, and follower occurrences. The audit verdict remains **FAIL**.
+
+## Phase C2B4 implementation update
+
+Group 4 is implemented. `middle_shardSprawlBargain`, `middle_webglassFracture`, and `inner_veilRiftEntry` each retain two ordered choices with their exact stats, difficulties, labels, and selected-note behavior. Failures now add no consequence, while Melted Gate entry and center-tile gating remain unchanged. Group 5 remains unimplemented and unchanged.
+
+Current authored typed Heat population: **15 occurrences across 10 IDs**. This comprises eight occurrences across the three remaining Group 5 board IDs plus seven separately blocked scenario, escalation, and follower occurrences. The audit verdict remains **FAIL**.

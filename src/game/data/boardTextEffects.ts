@@ -384,17 +384,10 @@ export const BOARD_TEXT_EFFECTS: Record<string, BoardTextEffectDefinition> = {
         difficulty: 8,
         summary: "Pressed the Shard Sprawl for passage stock and secured a calmer route cache.",
         effect: {
-          type: "sequence",
-          effects: [
-            { type: "lose_heat", amount: 1 },
-            { type: "gain_note", text: "Shard Sprawl passage stock secured for the next route push." }
-          ]
+          type: "gain_note",
+          text: "Shard Sprawl passage stock secured for the next route push."
         },
-        failureSummary: "The Shard Sprawl stock deal turned sour and the route crew pushed back.",
-        failureEffect: {
-          type: "gain_heat",
-          amount: 1
-        }
+        failureSummary: "The Shard Sprawl stock deal turned sour and the route crew pushed back."
       },
       {
         id: "gossip",
@@ -405,11 +398,7 @@ export const BOARD_TEXT_EFFECTS: Record<string, BoardTextEffectDefinition> = {
           type: "gain_note",
           text: "Shard Sprawl gossip mapped a safer approach through the middle lanes."
         },
-        failureSummary: "The Shard Sprawl gossip line collapsed into rumor and cost you breathing room.",
-        failureEffect: {
-          type: "gain_heat",
-          amount: 1
-        }
+        failureSummary: "The Shard Sprawl gossip line collapsed into rumor and cost you breathing room."
       }
     ]
   },
@@ -467,17 +456,10 @@ export const BOARD_TEXT_EFFECTS: Record<string, BoardTextEffectDefinition> = {
         difficulty: 9,
         summary: "Slipped through the hidden Webglass lane and logged a safer breach route.",
         effect: {
-          type: "sequence",
-          effects: [
-            { type: "lose_heat", amount: 1 },
-            { type: "gain_note", text: "Webglass hidden lane mapped through shifting lanes." }
-          ]
+          type: "gain_note",
+          text: "Webglass hidden lane mapped through shifting lanes."
         },
-        failureSummary: "The hidden Webglass lane buckled and dumped you back into the live fracture.",
-        failureEffect: {
-          type: "gain_heat",
-          amount: 1
-        }
+        failureSummary: "The hidden Webglass lane buckled and dumped you back into the live fracture."
       },
       {
         id: "relay-splice",
@@ -488,11 +470,7 @@ export const BOARD_TEXT_EFFECTS: Record<string, BoardTextEffectDefinition> = {
           type: "gain_note",
           text: "Webglass relay splice stabilized a mapped breach route."
         },
-        failureSummary: "The relay splice flared too hot and the Webglass seam answered with static.",
-        failureEffect: {
-          type: "gain_heat",
-          amount: 1
-        }
+        failureSummary: "The relay splice flared too hot and the Webglass seam answered with static."
       }
     ]
   },
@@ -507,17 +485,10 @@ export const BOARD_TEXT_EFFECTS: Record<string, BoardTextEffectDefinition> = {
         difficulty: 10,
         summary: "Anchored the Veil Rift surge and fixed a stable breach rhythm for the deeper push.",
         effect: {
-          type: "sequence",
-          effects: [
-            { type: "lose_heat", amount: 1 },
-            { type: "gain_note", text: "Veil Rift surge anchored for deeper breach timing." }
-          ]
+          type: "gain_note",
+          text: "Veil Rift surge anchored for deeper breach timing."
         },
-        failureSummary: "The Veil Rift surge broke loose and left the approach running dangerously hot.",
-        failureEffect: {
-          type: "gain_heat",
-          amount: 1
-        }
+        failureSummary: "The Veil Rift surge broke loose and left the approach running dangerously hot."
       },
       {
         id: "slip-fold",
@@ -528,11 +499,7 @@ export const BOARD_TEXT_EFFECTS: Record<string, BoardTextEffectDefinition> = {
           type: "gain_note",
           text: "Veil Rift fold slipped cleanly for a quieter inner-breach route."
         },
-        failureSummary: "The fold snapped shut at the wrong moment and threw you back into the breach wash.",
-        failureEffect: {
-          type: "gain_heat",
-          amount: 1
-        }
+        failureSummary: "The fold snapped shut at the wrong moment and threw you back into the breach wash."
       }
     ]
   },
