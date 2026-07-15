@@ -3074,31 +3074,10 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
       });
     }
     case "HEAT_THRESHOLD_REACHED": {
-      try {
-        ensureSeatTurn(state, action.seatId);
-      } catch (error) {
-        return reject(state, action, error instanceof Error ? error.message : "Seat cannot act");
-      }
-
-      return succeed({
-        ...state,
-        sequence: state.sequence + 1,
-        resolutionSource: state.resolutionSource,
-        players: updateActivePlayer(state, action.seatId, (player) => ({
-          ...player,
-          character: {
-            ...player.character,
-            status: "recalled"
-          }
-        })),
-        lastOutcomeSummary: state.lastOutcomeSummary
-          ? {
-              ...state.lastOutcomeSummary,
-              summary: `${state.lastOutcomeSummary.summary} Legacy pressure threshold reached. Operative recalled.`
-            }
-          : null,
-        eventLog: [...state.eventLog, action]
-      });
+      // Compatibility-only action retained so historical serialized events
+      // remain parseable. It is deliberately an exact no-op: no sequence,
+      // log, projection, recall, Scar, or other gameplay mutation is allowed.
+      return { ok: true, state, emitted: [] };
     }
     case "WOUND_THRESHOLD_REACHED": {
       const woundAction = action as WoundThresholdReachedAction;

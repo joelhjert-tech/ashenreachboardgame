@@ -94,6 +94,7 @@ import {
   resolveNormalMovementAllowance
 } from "../game/rules/nextNormalMovementRollModifier.js";
 import { createInitialSessionState } from "./sessionState.js";
+import { stripLegacyHeatProjection } from "./legacyHeatProjection.js";
 import { resolveBoardSpaceEvent } from "../game/tileResolver.js";
 import {
   calculateExplorationDraws,
@@ -5727,11 +5728,6 @@ export class GameRoomServer {
     return this.state.phase !== "broadcast";
   }
 
-  private shouldTriggerHeatThreshold(seatId: string): boolean {
-    void seatId;
-    return false;
-  }
-
   private shouldTriggerWoundThreshold(seatId: string): boolean {
     const player = this.state.players.find((entry) => entry.seatId === seatId);
 
@@ -9560,7 +9556,7 @@ export function createTvProjection(
       }
     : null;
 
-  return {
+  return stripLegacyHeatProjection({
     status: state.status,
     pendingEncounterDecision: state.pendingEncounterDecision ? {
       seatId: state.pendingEncounterDecision.seatId,
@@ -9797,7 +9793,7 @@ export function createTvProjection(
     sectorExplorationSummary: buildPublicSectorExplorationSummary(state, activeSeatId),
     recentAbilityTriggers,
     nemesis: nemesisSummary
-  };
+  });
 }
 
 export function getOathchainContractSignature(player: PlayerState, contract: ContractCard): string {
@@ -9859,7 +9855,7 @@ export function createPhoneProjection(state: GameState, seatId: string, forcePri
     ? state.pendingMemoryTaxChoice
     : null;
 
-  return {
+  return stripLegacyHeatProjection({
     phase: state.phase,
     status: state.status,
     sessionMode: state.sessionMode,
@@ -10078,7 +10074,7 @@ export function createPhoneProjection(state: GameState, seatId: string, forcePri
     canReady: readyDisabledReason === null,
     readyDisabledReason,
     self: player && seat && isSeatCharacterSelectedForProjection(state, seat, new Set(state.players.map((entry) => entry.seatId))) ? sanitizePlayerForPhone(player) : null
-  };
+  });
 }
 
 function getReadyDisabledReasonForSeat(seat: GameState["seats"][number] | null): string | null {
