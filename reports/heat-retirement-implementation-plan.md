@@ -1,6 +1,6 @@
 # Remaining Heat-linked Threat implementation plan
 
-Status: H1 through H8B implemented. One card remains blocked.
+Status: H1 through H8B implemented. H9A approves the final retirement; H9B remains unimplemented.
 
 ## Approved implementation groups
 
@@ -123,13 +123,18 @@ Implemented in H7B with one typed guarded-escalation effect over the existing au
 
 Implemented in H8B by revising the card in place, adding its stable ID to the existing two Salvage-loss authorization registries, retiring its legacy Heat approval, and adding focused authority/isolation/reconnect coverage. No reducer, schema, shop, Contract, Ledger, projection, or UI implementation changed.
 
-## Blocked prerequisite register
+### Group H9B — Memory Tax private immediate-versus-delayed choice (1) — APPROVED, NOT IMPLEMENTED
 
-| Stable ID | Preferred direction | Blocking prerequisite | Re-entry evidence |
-|---|---|---|---|
-| `memory-tax-gate` | private player choice | two competitive options, private ownership, projection, cancellation, reset | exact prompt/options and server-authoritative choice lifecycle |
+- Stable ID: `memory-tax-gate`.
+- Exact change: replace failed Command test `gain_heat 2` with “On failure, choose one: lose 1 Salvage (available only if you have at least 1 Salvage); or suffer -1 on your next non-battle test.”
+- Choice eligibility: exact loss appears only while owner Salvage is at least 1; the modifier is the automatic sole arm at zero. A funded choice is mandatory and owner-private with no Cancel or random timeout fallback.
+- Consequence reuse: selected loss uses authoritative `lose_salvage 1` without payment/shop/progress semantics; selected modifier uses amount `-1` on the next rolled non-battle test, self-replaces by source, survives same-test rerolls, and clears on consumption or owner lifecycle cleanup.
+- Narrow prerequisite: one persisted source-locked pending choice, one legal-option selection action, owner-private/public-safe projections, completed source ledger, and `memory-tax-gate` extension of the next-non-battle-test modifier union. Existing payment choice must not be generalized or misused.
+- Focused tests: funded/zero option generation; exact loss and isolation; eligible/excluded modifier contexts, reroll, replacement, composition, cleanup; stale/forged/wrong/duplicate submissions; reconnect/private projection; one finalization; identity, graph, totals, prior phases, compatibility quarantine, and expansion boundary.
+- Approval source: `reports/heat-retirement-h9a-memory-tax-gate-approval.md`.
+- Proposed commit: `feat: retire memory tax gate heat effect`.
 
-The one blocked ID is not assigned to an implementation group. Its private-choice prerequisite remains separate. H8A resolves the Marrow Tax economy-frequency gate without implementing it.
+H9A resolves every design prerequisite. H9B must implement this card alone, then a separate authored-Heat and compatibility-boundary audit must determine whether any global compatibility infrastructure can be retired.
 
 ## Recommended sequence
 
@@ -142,7 +147,7 @@ The one blocked ID is not assigned to an implementation group. Its private-choic
 7. **H6B — false-route destination choice — COMPLETE.** ID: `false-route-procession`. The H6A server-generated owner choice is implemented as a narrow forced-displacement extension, separately from `gateblind-pulse`.
 8. **H7B — bounded Gateblind shared pressure — COMPLETE.** ID: `gateblind-pulse`. Conditional +1 stops one step before collapse through narrow typed/source validation over the existing escalation lifecycle.
 9. **H8B — bounded Marrow Tax economy pressure — COMPLETE.** ID: `marrow-tax-auditors`. The approved automatic amount-1 floor-zero loss reuses the existing resolver and remains isolated from commerce and progression events.
-10. **Private-choice gate.** ID: `memory-tax-gate`. Benefit: distinct Yellow tension. Risk: high if one choice dominates or private state is not reconnect-safe. Prerequisite: dedicated choice contract.
+10. **H9B — Memory Tax private choice — APPROVED, NOT IMPLEMENTED.** ID: `memory-tax-gate`. Funded owners choose exact 1 Salvage loss or next non-battle test `-1`; zero Salvage automatically receives the modifier. Implement through one narrow persisted owner choice over existing consequence lifecycles.
 
 ## Per-group verification contract
 
@@ -156,7 +161,7 @@ Each implementation commit must run the smallest focused test first, then:
 - `git diff --check`
 - `git diff --cached --check`
 
-Before each commit, inspect the complete staged diff and confirm stable IDs, totals (Red 26 / Blue 35 / Yellow 48 / overall 109), lane/type/stat/difficulty/severity, graph membership, completed duplicate revisions, unrelated mechanics, and the unapproved +116 expansion are unchanged. Heat compatibility may remain only where a card is still explicitly blocked; no new player-facing Heat or Risk wording is allowed.
+Before each commit, inspect the complete staged diff and confirm stable IDs, totals (Red 26 / Blue 35 / Yellow 48 / overall 109), lane/type/stat/difficulty/severity, graph membership, completed duplicate revisions, unrelated mechanics, and the unapproved +116 expansion are unchanged. Heat compatibility may remain for the sole approved-but-unimplemented Memory Tax branch until H9B; no new player-facing Heat or Risk wording is allowed.
 
 ## Distribution checkpoint
 
@@ -165,8 +170,8 @@ Before each commit, inspect the complete staged diff and confirm stable IDs, tot
 - Implemented floor-zero Salvage losses: 4 cards.
 - Implemented H1–H3 adds no Scar, Global Escalation, movement, Equipment disable, persistent, choice, temporary modifier, or multiplayer effect.
 - H4B and H4C implement two exact-instance Equipment suppressions, two private target choices, and one paired Command modifier.
-- Approved and implemented severity: four at 1, ten at 2, one at 3, one at 4, none at 5.
-- Lane approval and implemented impact is Blue 7, Yellow 8, Red 1.
+- Approved severity: four at 1, eleven at 2, one at 3, one at 4, none at 5. Implemented severity remains four at 1, ten at 2, one at 3, and one at 4 until H9B.
+- Lane approval is Blue 7, Yellow 9, Red 1; implemented impact remains Blue 7, Yellow 8, Red 1 until H9B.
 - Card totals: unchanged at 26 / 35 / 48 / 109.
 
 No exact Relic-frequency parity is asserted. No expansion work is authorized.

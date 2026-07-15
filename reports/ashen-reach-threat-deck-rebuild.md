@@ -37,7 +37,7 @@ These form five exact type/stat/difficulty/effect clusters. Preserve stable IDs 
 
 `ashen-doppelganger`, `choir-static-burst`, `cinder-gate-backlash`, `crown-bell-baron`, `false-route-procession`, `gateblind-pulse`, `hymn-scarred-zealot`, `lantern-moth-swarm`, `marrow-tax-auditors`, `memory-tax-gate`, `mirror-rot-interference`, `pale-contract-collector`, `relay-husk`, `signal-rotted-engineer`, `siren-relay-echo`, `soot-stained-cutpurse`, `webglass-snarefield`.
 
-Sixteen IDs are approved and implemented through H8B. H1 removal-only covers `cinder-gate-backlash`, `mirror-rot-interference`, and `webglass-snarefield`; H2 normal Wound pressure covers `choir-static-burst` and `lantern-moth-swarm`; H3 bounded floor-zero Salvage pressure covers `crown-bell-baron`, `pale-contract-collector`, and `soot-stained-cutpurse`; H4B exact-instance Equipment suppression covers `relay-husk` and `signal-rotted-engineer`; H4C covers `siren-relay-echo`; H5B covers `ashen-doppelganger` and `hymn-scarred-zealot`; H6B covers `false-route-procession`; H7B covers guarded Global Escalation for `gateblind-pulse`; H8B covers the same floor-zero Salvage model for `marrow-tax-auditors`. One ID remains blocked: `memory-tax-gate`.
+Sixteen IDs are approved and implemented through H8B. H1 removal-only covers `cinder-gate-backlash`, `mirror-rot-interference`, and `webglass-snarefield`; H2 normal Wound pressure covers `choir-static-burst` and `lantern-moth-swarm`; H3 bounded floor-zero Salvage pressure covers `crown-bell-baron`, `pale-contract-collector`, and `soot-stained-cutpurse`; H4B exact-instance Equipment suppression covers `relay-husk` and `signal-rotted-engineer`; H4C covers `siren-relay-echo`; H5B covers `ashen-doppelganger` and `hymn-scarred-zealot`; H6B covers `false-route-procession`; H7B covers guarded Global Escalation for `gateblind-pulse`; H8B covers the same floor-zero Salvage model for `marrow-tax-auditors`. H9A approves the final ID, `memory-tax-gate`, for a funded exact-Salvage-loss versus delayed non-battle-test penalty choice. It is the sole approved retirement awaiting implementation.
 
 `glass-chime-swarm` and `spindle-static-squall` are already in the duplicate group. Both now implement their approved typed delayed modifiers and no longer carry player-facing legacy Heat failures.
 
@@ -101,7 +101,7 @@ The remaining Heat-retirement sequence is:
 7. H6B: `false-route-procession` — IMPLEMENTED using the exact H6A destination-choice, reaction, entry, and reconnect rules.
 8. H7B: `gateblind-pulse` — IMPLEMENTED. Failure conditionally advances Global Escalation by 1 only below the one-before-collapse boundary; it may raise difficulty but cannot itself cause collapse.
 9. H8B: `marrow-tax-auditors` — IMPLEMENTED. On failure, lose up to 1 Salvage through the existing automatic floor-zero resolver; no payment, Ledger, shop, mission, Contract, or fallback interaction.
-10. Keep `memory-tax-gate` blocked until its separate private-choice lifecycle is approved.
+10. H9B: `memory-tax-gate` — APPROVED, NOT IMPLEMENTED. When funded, the owner privately chooses exact 1 Salvage loss or next non-battle test `-1`; at zero Salvage the modifier applies automatically. Implement with one narrow persisted choice over the existing consequence lifecycles.
 
 The +116-card expansion remains unapproved.
 
