@@ -354,6 +354,21 @@ No authored definition changed in C2A. Therefore the evidence counts and verdict
 
 The seven projected remaining occurrences are `scenario_mirror_of_false_heroes`, four escalation IDs, `crownless-advocate`, and `saltflat-bone-reader`. They require separate approvals. See `heat-compatibility-c2a-board-text-approval.md` for exact rules, severity, and implementation grouping.
 
+## Phase C2B1 board failure-removal update
+
+C2B1 implemented only C2A Group 1: `outer_ashwakeClearLane`, `outer_mirecoilTraffic`, `outer_relayCrew`, `outer_oathpostWrit`, and `middle_redMarchBargain`. Each definition lost exactly one inert failure `gain_heat 1` clause without replacement. Existing stats, difficulties, success effects, failure summaries, local-deck behavior, board references, and projection/runtime compatibility boundaries remain unchanged.
+
+Updated evidence counts:
+
+- authored typed Heat effects: **34 across 21 IDs**;
+- remaining approved board-text effects awaiting Groups 2–5: **27 across 14 IDs**;
+- separately blocked scenario/escalation/follower effects: **7 across 7 IDs**;
+- current Heat-state mechanical reads/writes: **0**;
+- observed/guarded phone and TV Heat fields or labels: **0**;
+- current verdict: **FAIL**.
+
+The verdict does not advance because active authored Heat remains. See `heat-compatibility-c2b1-board-failure-removals.md` for the exact removals and verification evidence.
+
 ## Verification record
 
 Passed:

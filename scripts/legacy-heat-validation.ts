@@ -47,17 +47,12 @@ export const LEGACY_HEAT_EFFECT_APPROVALS: readonly LegacyHeatEffectApproval[] =
 // rejects additions until a dedicated C2 content approval retires each entry.
 export const C1_BLOCKED_RUNTIME_HEAT_EFFECT_SIGNATURES = new Map<string, readonly BlockedRuntimeHeatEffect["type"][]>([
   ["outer_emberSanctumRest", ["lose_heat"]],
-  ["outer_ashwakeClearLane", ["gain_heat"]],
   ["outer_glassmereChorus", ["gain_heat", "lose_heat"]],
-  ["outer_mirecoilTraffic", ["gain_heat"]],
   ["outer_waymarketExchange", ["gain_heat", "lose_heat"]],
-  ["outer_relayCrew", ["gain_heat"]],
   ["outer_saltCrossing", ["lose_heat"]],
   ["outer_surgeryTreatment", ["gain_heat"]],
-  ["outer_oathpostWrit", ["gain_heat"]],
   ["outer_brokenCausewayShortcut", ["gain_heat"]],
   ["middle_scarSurgery", ["gain_heat"]],
-  ["middle_redMarchBargain", ["gain_heat"]],
   ["inner_blackstarShortcut", ["gain_heat"]],
   ["middle_shardSprawlBargain", ["gain_heat", "gain_heat", "lose_heat"]],
   ["middle_guardianSpanThreshold", ["gain_heat", "gain_heat"]],

@@ -447,6 +447,7 @@ The acting owner resolves the current server-authored location choice. The serve
 ### Group 1 — simple failure-only removals
 
 - IDs: `outer_ashwakeClearLane`, `outer_mirecoilTraffic`, `outer_relayCrew`, `outer_oathpostWrit`, `middle_redMarchBargain`.
+- Implementation status: **IMPLEMENTED in C2B1**. Five failure `gain_heat 1` clauses were removed without replacement; all approved success, local-deck, summary, and identity fields were preserved.
 - Shared resolver: existing board-text test and null-failure path.
 - Content: delete one `gain_heat 1` failure effect per ID; preserve summaries, difficulties, rewards, local decks, and notes.
 - Validation: remove these five signatures from the C1 blocked manifest; no schema change.
@@ -516,3 +517,9 @@ After all five approved implementation groups land, authored typed Heat falls fr
 - named followers: `crownless-advocate`, `saltflat-bone-reader` — active ability/loss-condition identity requires separate named-content approvals.
 
 The audit verdict remains **FAIL** until approved content changes are implemented and the remaining seven effects are retired. No gameplay changed in C2A.
+
+## Phase C2B1 implementation update
+
+Group 1 is implemented. The five simple failure-only `gain_heat 1` clauses are absent, and focused content, resolution, projection, replay, and manifest guards preserve the approved null-failure behavior. Groups 2–5 remain unimplemented and unchanged.
+
+Current authored typed Heat population: **34 occurrences across 21 IDs**. This comprises 27 occurrences across the 14 remaining C2A board IDs plus seven separately blocked scenario, escalation, and follower occurrences. The audit verdict remains **FAIL**.

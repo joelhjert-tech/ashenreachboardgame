@@ -134,17 +134,17 @@ Phase C1 reviewed the authoritative imported definitions rather than deriving sc
 | Stable ID | Family / source | Current typed Heat effect path(s) | Current authored wording | C1 disposition | Wording change? | Approved replacement? |
 |---|---|---|---|---|---|---|
 | `outer_emberSanctumRest` | board text / `src/game/data/boardTextEffects.ts` | effect sequence: `lose_heat 1` | Recovered 1 Wound and stabilized lingering Scar pressure. | **APPROVED C2A: remove without replacement** | Yes, remove false Scar-pressure implication | No replacement |
-| `outer_ashwakeClearLane` | board text / `src/game/data/boardTextEffects.ts` | failure: `gain_heat 1` | Marked a clean lane through Ashwake Crossing. | **APPROVED C2A: remove without replacement** | No | No replacement |
+| `outer_ashwakeClearLane` | board text / `src/game/data/boardTextEffects.ts` | failure: `gain_heat 1` | Marked a clean lane through Ashwake Crossing. | **IMPLEMENTED C2B1: removed without replacement** | No | No replacement |
 | `outer_glassmereChorus` | board text / `src/game/data/boardTextEffects.ts` | success: `lose_heat 1`; failure: `gain_heat 1` | Tuned the Glassmere spindle and secured a stable relay note. | **APPROVED C2A: remove without replacement** | Narrow failure clarification | No replacement |
-| `outer_mirecoilTraffic` | board text / `src/game/data/boardTextEffects.ts` | failure: `gain_heat 1` | Pulled a fresh Contract lead from Mirecoil Beacon traffic. | **APPROVED C2A: remove without replacement** | No | No replacement |
+| `outer_mirecoilTraffic` | board text / `src/game/data/boardTextEffects.ts` | failure: `gain_heat 1` | Pulled a fresh Contract lead from Mirecoil Beacon traffic. | **IMPLEMENTED C2B1: removed without replacement** | No | No replacement |
 | `outer_waymarketExchange` | board text / `src/game/data/boardTextEffects.ts` | success: `lose_heat 1`; failure: `gain_heat 1` | Worked the Waymarket exchange and secured a practical table favor. | **APPROVED C2A: remove without replacement** | No | No replacement |
-| `outer_relayCrew` | board text / `src/game/data/boardTextEffects.ts` | failure: `gain_heat 1` | Recruited a relay-camp contact and recorded the route crew. | **APPROVED C2A: remove without replacement** | No | No replacement |
+| `outer_relayCrew` | board text / `src/game/data/boardTextEffects.ts` | failure: `gain_heat 1` | Recruited a relay-camp contact and recorded the route crew. | **IMPLEMENTED C2B1: removed without replacement** | No | No replacement |
 | `outer_saltCrossing` | board text / `src/game/data/boardTextEffects.ts` | success: `lose_heat 1` | Harvested void-salt and bottled it as a bargaining chip. | **APPROVED C2A: remove without replacement** | No | No replacement |
 | `outer_surgeryTreatment` | board text / `src/game/data/boardTextEffects.ts` | success sequence: `gain_heat 1` | Accepted rough cinder surgery and walked away patched but marked. | **APPROVED C2A: remove without replacement** | Yes, remove false mark implication | No replacement |
-| `outer_oathpostWrit` | board text / `src/game/data/boardTextEffects.ts` | failure: `gain_heat 1` | Claimed a faction writ from the Oathpost. | **APPROVED C2A: remove without replacement** | No | No replacement |
+| `outer_oathpostWrit` | board text / `src/game/data/boardTextEffects.ts` | failure: `gain_heat 1` | Claimed a faction writ from the Oathpost. | **IMPLEMENTED C2B1: removed without replacement** | No | No replacement |
 | `outer_brokenCausewayShortcut` | board text / `src/game/data/boardTextEffects.ts` | failure sequence: `gain_heat 1` | Marked the Broken Causeway shortcut toward Guardian Span. | **APPROVED C2A: remove without replacement** | No | No replacement |
 | `middle_scarSurgery` | board text / `src/game/data/boardTextEffects.ts` | success sequence: `gain_heat 1` | Survived field surgery in the Red March. | **APPROVED C2A: remove without replacement** | No | No replacement |
-| `middle_redMarchBargain` | board text / `src/game/data/boardTextEffects.ts` | failure: `gain_heat 1` | Secured a Red March outpost bargain. | **APPROVED C2A: remove without replacement** | No | No replacement |
+| `middle_redMarchBargain` | board text / `src/game/data/boardTextEffects.ts` | failure: `gain_heat 1` | Secured a Red March outpost bargain. | **IMPLEMENTED C2B1: removed without replacement** | No | No replacement |
 | `inner_blackstarShortcut` | board text / `src/game/data/boardTextEffects.ts` | success sequence: `gain_heat 1` | Crossed the Blackstar shortcut and kept your nerve. | **APPROVED C2A: remove without replacement** | No | No replacement |
 | `middle_shardSprawlBargain` | board text / `src/game/data/boardTextEffects.ts` | choice 1 success: `lose_heat 1`; choices 1-2 failure: `gain_heat 1` | Cut a hard bargain in the Shard Sprawl. | **APPROVED C2A: remove without replacement** | No | No replacement |
 | `middle_guardianSpanThreshold` | board text / `src/game/data/boardTextEffects.ts` | choices 1-2 failure: `gain_heat 1` | Aligned the Guardian Span threshold and opened the inner breach. | **APPROVED C2A: remove without replacement** | No | No replacement |
@@ -160,11 +160,11 @@ Phase C1 reviewed the authoritative imported definitions rather than deriving sc
 | `crownless-advocate` | follower / `content/followers/crownless-advocate.json` | active: `lose_heat 1` | Soften a faction demand or cancel one unstable rivalry cost. | D. Blocked | No | No |
 | `saltflat-bone-reader` | follower / `content/followers/saltflat-bone-reader.json` | active: `lose_heat 1` | Turn a Scar, omen, or void-salt bargain into a safer route note. | D. Blocked | No | No |
 
-Count check: 32 board-text occurrences + 1 scenario + 4 escalations + 2 followers = **39**. C2A approves all 32 board-text occurrences for removal without replacement; none is implemented in this report-only pass.
+Current count after C2B1: 27 board-text occurrences + 1 scenario + 4 escalations + 2 followers = **34 occurrences across 21 IDs**. C2B1 implemented the five simple failure-only removals; Groups 2–5 remain approved but unimplemented.
 
 ### C2A implementation order and projected count
 
-1. Simple failure-only: `outer_ashwakeClearLane`, `outer_mirecoilTraffic`, `outer_relayCrew`, `outer_oathpostWrit`, `middle_redMarchBargain`.
+1. Simple failure-only: `outer_ashwakeClearLane`, `outer_mirecoilTraffic`, `outer_relayCrew`, `outer_oathpostWrit`, `middle_redMarchBargain` — **implemented C2B1**.
 2. Success-sequence cleanup: `outer_emberSanctumRest`, `outer_glassmereChorus`, `outer_waymarketExchange`, `outer_saltCrossing`, `outer_surgeryTreatment`.
 3. Existing severe consequence cleanup: `outer_brokenCausewayShortcut`, `middle_scarSurgery`, `inner_blackstarShortcut`.
 4. Two-choice route notes: `middle_shardSprawlBargain`, `middle_webglassFracture`, `inner_veilRiftEntry`.
@@ -206,7 +206,7 @@ Before removing compatibility code, add:
 - Establish a server-side Heat stripping boundary.
 - No content rebalance.
 
-Implementation status: **complete for runtime containment**. `HEAT_THRESHOLD_REACHED` is an exact no-op, phone/TV use the server stripping boundary, and focused validation/projection/replay/Scar tests are present. C2A now approves the 32 board-text occurrences for later removal without replacement; they remain authored until implementation. The other seven occurrences remain blocked behind separate approvals.
+Implementation status: **complete for runtime containment**. `HEAT_THRESHOLD_REACHED` is an exact no-op, phone/TV use the server stripping boundary, and focused validation/projection/replay/Scar tests are present. C2A approved 32 board-text occurrences for removal without replacement; C2B1 has removed the five Group 1 occurrences. The other 27 approved board occurrences and seven separately blocked occurrences remain authored.
 
 ### Phase C2 — Remaining authored content retirement
 

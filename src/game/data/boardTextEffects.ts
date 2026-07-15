@@ -55,11 +55,7 @@ export const BOARD_TEXT_EFFECTS: Record<string, BoardTextEffectDefinition> = {
       type: "gain_note",
       text: "Ashwake crossing cleared. The convoy lane is charted."
     },
-    failureSummary: "The Ashwake lane looked clear until the crossing ghosts forced you back under pressure.",
-    failureEffect: {
-      type: "gain_heat",
-      amount: 1
-    }
+    failureSummary: "The Ashwake lane looked clear until the crossing ghosts forced you back under pressure."
   },
   outer_glassmereChorus: {
     effectKey: "outer_glassmereChorus",
@@ -92,10 +88,6 @@ export const BOARD_TEXT_EFFECTS: Record<string, BoardTextEffectDefinition> = {
       text: "Mirecoil contract lead secured from mast traffic."
     },
     failureSummary: "The Mirecoil traffic lanes broke into static and the contract lead dissolved into noise.",
-    failureEffect: {
-      type: "gain_heat",
-      amount: 1
-    },
     sectorDeck: {
       kind: "contract"
     }
@@ -170,10 +162,6 @@ export const BOARD_TEXT_EFFECTS: Record<string, BoardTextEffectDefinition> = {
       ]
     },
     failureSummary: "The relay camp would not commit a crew while your line looked this unstable.",
-    failureEffect: {
-      type: "gain_heat",
-      amount: 1
-    },
     sectorDeck: {
       kind: "contract"
     }
@@ -232,10 +220,6 @@ export const BOARD_TEXT_EFFECTS: Record<string, BoardTextEffectDefinition> = {
       text: "Faction writ: can be cashed for bounded rivalry, aid, or a contract lead."
     },
     failureSummary: "The Oathpost refused your claim and marked the attempt as unpaid scar debt.",
-    failureEffect: {
-      type: "gain_heat",
-      amount: 1
-    },
     sectorDeck: {
       kind: "contract"
     }
@@ -335,10 +319,6 @@ export const BOARD_TEXT_EFFECTS: Record<string, BoardTextEffectDefinition> = {
       ]
     },
     failureSummary: "The outpost commander liked your nerve but not your credentials.",
-    failureEffect: {
-      type: "gain_heat",
-      amount: 1
-    },
     sectorDeck: {
       kind: "contract"
     }

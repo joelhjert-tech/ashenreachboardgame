@@ -22,17 +22,12 @@ const BLOCKED_AUTHORED_IDS = [
   "inner_gateOfCindersTrial",
   "inner_veilRiftEntry",
   "middle_guardianSpanThreshold",
-  "middle_redMarchBargain",
   "middle_scarSurgery",
   "middle_shardSprawlBargain",
   "middle_webglassFracture",
-  "outer_ashwakeClearLane",
   "outer_brokenCausewayShortcut",
   "outer_emberSanctumRest",
   "outer_glassmereChorus",
-  "outer_mirecoilTraffic",
-  "outer_oathpostWrit",
-  "outer_relayCrew",
   "outer_saltCrossing",
   "outer_surgeryTreatment",
   "outer_waymarketExchange",
@@ -94,11 +89,11 @@ function productionFiles(directory: string): string[] {
 }
 
 describe("Heat Compatibility C1 containment", () => {
-  it("keeps the exact 39 unresolved authored effects blocked without silently changing content", () => {
+  it("keeps the exact 34 post-C2B1 authored effects blocked without silently changing content", () => {
     const effects = authoredHeatEffects();
-    expect(effects).toHaveLength(39);
+    expect(effects).toHaveLength(34);
     expect([...new Set(effects.map((entry) => entry.id))].sort()).toEqual([...BLOCKED_AUTHORED_IDS].sort());
-    expect(effects.filter((entry) => entry.type === "gain_heat")).toHaveLength(26);
+    expect(effects.filter((entry) => entry.type === "gain_heat")).toHaveLength(21);
     expect(effects.filter((entry) => entry.type === "gain_heat_all")).toHaveLength(3);
     expect(effects.filter((entry) => entry.type === "lose_heat")).toHaveLength(10);
   });
