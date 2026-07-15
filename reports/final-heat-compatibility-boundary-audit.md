@@ -522,6 +522,28 @@ Updated evidence counts:
 
 The remaining authored IDs are `crownless-advocate` and `saltflat-bone-reader`. See `heat-compatibility-c4b2-marrow-escalation-implementation.md` for content identity, economy isolation, threshold/collapse, replay/reconnect, and projection evidence.
 
+## Phase C5A final follower approval update
+
+C5A reviewed the two remaining follower Heat leaves against the authoritative follower-use, ownership, once-per-round, private-note, replay, reconnect, and projection lifecycles. Both are **APPROVED** to replace their inert `lose_heat 1` active effect with an exact existing canonical owner-private `gain_note`:
+
+- `crownless-advocate`: record that one faction demand or rivalry bargain was softened;
+- `saltflat-bone-reader`: record that one scar, omen, or void-salt bargain became a safer route note.
+
+The approval retains each stable ID, role, loyalty, `oncePerRound` use limit, ownership, and compatibility metadata. It adds no Wound, Scar, Salvage cost, payment, Global Escalation, movement, modifier, follower discard, follower exhaustion, typed faction/Rivalry mutation, or route/topology mutation. No canonical acquisition source currently references either follower, and the accepted effect remains a bounded owner action if a legacy save or future approved source supplies one.
+
+C5A is report-only, so current evidence remains:
+
+- board-authored typed Heat effects: **0 across 0 IDs**;
+- scenario-authored typed Heat effects: **0 across 0 IDs**;
+- escalation-authored typed Heat effects: **0 across 0 IDs**;
+- follower-authored typed Heat effects: **2 across 2 approved-but-unimplemented IDs**;
+- total authored typed Heat effects: **2 across 2 IDs**;
+- current Heat-state mechanical reads/writes: **0**;
+- observed/guarded phone and TV Heat fields or labels: **0**;
+- current verdict: **FAIL**.
+
+After implementation and a complete boundary rerun, the projected authored typed Heat count is **0** and the projected verdict is **CONDITIONAL PASS**. Compatibility-only save fields, follower `lossCondition: "heat"` metadata, protocol/types, historical documentation, and dead residue are not approved for deletion in C5A. See `heat-compatibility-c5a-follower-approval.md` for exact rules, lifecycle findings, privacy, power, tests, and implementation grouping.
+
 ## Verification record
 
 Passed:

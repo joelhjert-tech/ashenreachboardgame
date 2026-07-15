@@ -270,3 +270,14 @@ Re-run the full tracked search and require:
 The highest risk is deleting parsers or stable IDs before deciding save support. The second-highest risk is leaving the 32 C2A-approved board effects unimplemented or treating the seven still-unapproved no-op effects as harmless compatibility: they keep Heat authorable and obscure missing intended consequences. The safest sequence is tests, content retirement, current-model narrowing, documentation/assets, and only then an optional save-version removal.
 
 **No compatibility field, action, schema, content definition, UI path, asset, or test was removed or modified in this audit pass.**
+
+## Phase C5A - final follower approval
+
+The two remaining follower Heat effects are **APPROVED** for replacement with exact existing canonical owner-private `gain_note` effects:
+
+1. `crownless-advocate`: replace `lose_heat 1` with `Crownless Advocate: one faction demand or rivalry bargain was softened.` Final rule: `Once per round, record that the Crownless Advocate softened one faction demand or stabilized one rivalry bargain.`
+2. `saltflat-bone-reader`: replace `lose_heat 1` with `Saltflat Bone-Reader: one scar, omen, or void-salt bargain became a safer route note.` Final rule: `Once per round, record a safer route note from one scar, omen, or void-salt bargain.`
+
+Implementation grouping: one content group using the existing `gain_note` resolver and current `USE_FOLLOWER` once-per-round lifecycle. Preserve stable IDs, roles, loyalty, ownership, use limits, and compatibility metadata. Add no Wound, Scar, Salvage, payment, Global Escalation, movement, modifier, discard, exhaustion, route mutation, or Rivalry inspection.
+
+C5A is report-only. Current authored typed Heat remains **2 occurrences across 2 approved-but-unimplemented follower IDs**, and verdict **FAIL** remains. After implementation, projected authored typed Heat is **0 occurrences across 0 IDs**. A complete boundary rerun may then advance the verdict to **CONDITIONAL PASS** while legacy save fields, inert follower loss-condition metadata, compatibility types, historical documentation, and dead residue remain contained for later cleanup. See `heat-compatibility-c5a-follower-approval.md`.
