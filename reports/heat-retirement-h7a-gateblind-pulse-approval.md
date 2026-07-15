@@ -1,6 +1,6 @@
 # Heat Retirement H7A — Gateblind Pulse cap-and-threshold approval
 
-Status: **APPROVED H7A — REPORT ONLY**. No content definition or gameplay implementation changes are made in this pass.
+Status: **APPROVED H7A — IMPLEMENTED H7B**. The approved rule is implemented in `reports/heat-retirement-h7b-gateblind-pulse-implementation.md`.
 
 Checkpoint: `68d800e feat: retire false route heat effect` on `phase/heat-retirement-1x`.
 
@@ -16,7 +16,7 @@ The authoritative trigger is exact: let `collapseLevel` be the existing mode cap
 
 This is intentionally distinct from `shattered-barricade`, whose unconditional failure gain may reach the cap and end the session. Gateblind is more difficult, appears in three inner-ring graph references rather than one outer-ring reference, and already has scenario-progress upside on success. Its bounded failure raises later difficulty without becoming a frequent direct loss source.
 
-Implementation readiness: **Ready with narrow typed/source extension**. Reuse the existing `ESCALATION_ADVANCED` reducer, mode caps, derived difficulty modifier, public projections, source ledger, reconnect, and session-collapse machinery. Add only the authoritative Gateblind trigger/source validation required to represent a sourced zero-request result at the one-before-collapse boundary. No new shared pending state or scenario-specific branch is approved.
+Implementation readiness: **Implemented H7B with the approved narrow typed/source extension**. The existing `ESCALATION_ADVANCED` reducer, mode caps, derived difficulty modifier, public projections, source ledger, reconnect, and session-collapse machinery are reused. The implementation adds only authoritative Gateblind trigger/source validation and sourced zero-request completion at the one-before-collapse boundary; it adds no new shared pending state or scenario-specific branch.
 
 ## 1. Current card inspection
 
@@ -194,7 +194,7 @@ Phone and TV show the same public outcome. When applied: `Global Escalation +1. 
 - Complexity: low player resolution / medium implementation authority.
 - Balance risk: medium; three inner references can raise shared difficulty, bounded by no-collapse guard and no per-player multiplication.
 - Distinctness from Shattered Barricade: conditional terminal guard, higher difficulty, inner Blue identity, three references, and success-side scenario progress versus Shattered's unconditional collapse-capable outer Red failure.
-- Approval status: **APPROVED H7A**.
+- Approval status: **APPROVED H7A — IMPLEMENTED H7B**.
 
 ## 11. Implementation prerequisites and focused tests
 

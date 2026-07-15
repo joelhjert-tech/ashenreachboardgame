@@ -55,7 +55,6 @@ const TARGETS = [
 ] as const;
 
 const BLOCKED_HASHES = new Map([
-  ["gateblind-pulse", "8f3840ded7732635432917a92162f96cced763a3161a2c243dde14f1f02d8cb2"],
   ["marrow-tax-auditors", "70862bdfbc75105d239c5926822bbe75fd5f073827c67c8878ac5918f01fe1ee"],
   ["memory-tax-gate", "8b7d60e7fdf354131df2a0f3f5f1c701e2ab657a369b1c53cbe095b8d356ae80"]
 ]);
@@ -351,8 +350,8 @@ describe("Heat Retirement H5B severe Wound Threats", () => {
 
   it("removes exactly the H5B approvals and hash-pins the three still-blocked definitions after H6B", () => {
     expect(collectHeatThreatIds()).toEqual([...BLOCKED_HASHES.keys()].sort());
-    expect(LEGACY_HEAT_EFFECT_APPROVALS).toHaveLength(11);
-    expect(APPROVED_LEGACY_HEAT_CONTENT_IDS.size).toBe(25);
+    expect(LEGACY_HEAT_EFFECT_APPROVALS).toHaveLength(10);
+    expect(APPROVED_LEGACY_HEAT_CONTENT_IDS.size).toBe(24);
     for (const [id, hash] of BLOCKED_HASHES) {
       const bytes = readFileSync(join(process.cwd(), "content", "cards", "threats", `${id}.json`));
       expect(createHash("sha256").update(bytes).digest("hex")).toBe(hash);

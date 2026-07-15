@@ -134,6 +134,13 @@ type AdvanceEscalationEffect = {
   amount: number;
 };
 
+type GuardedEscalationEffect = {
+  type: "gain_global_escalation_guarded";
+  sourceCardId: "gateblind-pulse";
+  amount: 1;
+  guard: "oneBeforeCollapse";
+};
+
 type ReturnThreatToSpaceEffect = {
   type: "return_threat_to_space";
   threatId?: string;
@@ -182,6 +189,7 @@ type SimpleEncounterEffect =
   | GainNoteEffect
   | AdvanceScenarioEffect
   | AdvanceEscalationEffect
+  | GuardedEscalationEffect
   | ReturnThreatToSpaceEffect
   | NextNonBattleTestModifierEffect
   | NextNormalMovementRollModifierEffect
@@ -260,6 +268,12 @@ const simpleEffectSchema: z.ZodType<SimpleEncounterEffect> = z.union([
   z.object({
     type: z.literal("advance_escalation"),
     amount: z.number().int()
+  }),
+  z.object({
+    type: z.literal("gain_global_escalation_guarded"),
+    sourceCardId: z.literal("gateblind-pulse"),
+    amount: z.literal(1),
+    guard: z.literal("oneBeforeCollapse")
   }),
   z.object({
     type: z.literal("return_threat_to_space"),
@@ -372,6 +386,20 @@ export const hazardThreatCardSchema = threatBaseSchema.extend({
   successEffect: effectSchema.optional(),
   failEffect: effectSchema
 }).superRefine((card, context) => {
+  if (card.id === "gateblind-pulse" && card.failEffect.type !== "gain_global_escalation_guarded") {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Gateblind Pulse requires its approved guarded Global Escalation failure",
+      path: ["failEffect"]
+    });
+  }
+  if (card.failEffect.type === "gain_global_escalation_guarded" && card.id !== card.failEffect.sourceCardId) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Guarded Global Escalation must remain scoped to Gateblind Pulse",
+      path: ["failEffect", "sourceCardId"]
+    });
+  }
   if (!card.successEffect && !hazardSuccessEffectRetirementIds.has(card.id)) {
     context.addIssue({
       code: z.ZodIssueCode.custom,

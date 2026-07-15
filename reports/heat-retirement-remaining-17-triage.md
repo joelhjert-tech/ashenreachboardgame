@@ -1,15 +1,15 @@
 # Remaining 17 Heat-linked Threat retirement triage
 
-Status: Groups H1 through H6B are implemented. H7A approves `gateblind-pulse` for later implementation. Two IDs remain blocked.
+Status: Groups H1 through H7B are implemented. Two IDs remain blocked.
 
 ## Decision summary
 
-The two existing Heat audits and current canonical Threat content reconcile to exactly **17 unique stable IDs**. Fourteen IDs are **APPROVED AND IMPLEMENTED** across H1 through H6B, and H7A approves one additional ID without implementation. Two remain **BLOCKED** because ownership, persistence, reset, or balance evidence is unresolved.
+The two existing Heat audits and current canonical Threat content reconcile to exactly **17 unique stable IDs**. Fifteen IDs are **APPROVED AND IMPLEMENTED** across H1 through H7B. Two remain **BLOCKED** because ownership, persistence, reset, or balance evidence is unresolved.
 
-- Approved and implemented: 14
-- Approved, not implemented: 1
+- Approved and implemented: 15
+- Approved, not implemented: 0
 - Blocked: 2
-- Approved retirement models: remove without replacement (3), normal Wound pressure (4), floor-zero Salvage pressure (3), exact-instance Equipment suppression (2), stat-specific temporary modifier (1), owner-choice forced displacement (1)
+- Approved retirement models: remove without replacement (3), normal Wound pressure (4), floor-zero Salvage pressure (3), exact-instance Equipment suppression (2), stat-specific temporary modifier (1), owner-choice forced displacement (1), guarded shared escalation (1)
 - Player-facing Heat remains obsolete. Every still-active Heat branch below is parsed only for compatibility and resolves as a no-op with a “no additional status change” summary.
 - Canonical Threats do not define an activation-number field. Every record therefore reports `N/A`; difficulty and canonical graph frequency are recorded separately and are not relabelled as activation.
 - The 17-card population is Red 1 / Blue 7 / Yellow 9. Card totals remain Red 26 / Blue 35 / Yellow 48 / overall 109.
@@ -23,7 +23,7 @@ The two existing Heat audits and current canonical Threat content reconcile to e
 | `cinder-gate-backlash` | Cinder Gate Backlash | Blue / hazard | N/A | Signal 12 | no additional effect | 2 Wounds | none | retired H1 `successEffect` | implemented removal; failure remains active | `content/cards/threats/cinder-gate-backlash.json` | `gateblind-pulse`, `emberwatch-sparkfall`, `spindle-static-squall` |
 | `crown-bell-baron` | Crown-Bell Baron | Yellow / enemy | N/A | Command 7 | Defeat | lose up to 1 Salvage on loss | route-fee fraud note | `woundOnLoss` | implemented floor-zero automatic loss | `content/cards/threats/crown-bell-baron.json` | `pale-toll-enforcer`, `bridge-toll-runt`, `pale-contract-collector` |
 | `false-route-procession` | False-Route Procession | Yellow / hazard | N/A | Command 7 | false-road note | owner-selected distance-1 same-ring forced displacement | none | retired H6B `failEffect` | implemented typed owner choice into normal forced displacement | `content/cards/threats/false-route-procession.json` | `memory-tax-gate`, `route-splice`, `siren-relay-echo` |
-| `gateblind-pulse` | Gateblind Pulse | Blue / hazard | N/A | Signal 10 | scenario progress `gateblindPulsesRead +1` | `gain_heat 2` | none | `failEffect` | compatibility-only no-op | `content/cards/threats/gateblind-pulse.json` | `choir-static-burst`, `cinder-gate-backlash`, `saint-of-ashes-echo` |
+| `gateblind-pulse` | Gateblind Pulse | Blue / hazard | N/A | Signal 10 | scenario progress `gateblindPulsesRead +1` | guarded Global Escalation +1 below one-before-collapse | none | retired H7B `failEffect` | implemented typed guarded escalation | `content/cards/threats/gateblind-pulse.json` | `choir-static-burst`, `cinder-gate-backlash`, `saint-of-ashes-echo` |
 | `hymn-scarred-zealot` | Hymn-Scarred Zealot | Red / enemy | N/A | Grit 3 | Defeat | 1 preventable Wound on loss | automatic 1 Trophy point and 1-value pile entry; authored silencing note | retired H5B `woundOnLoss` | implemented normal Wound request | `content/cards/threats/hymn-scarred-zealot.json` | `lantern-ash-ghoul`, `moth-carrier-husk`, `ash-cinder-runt` |
 | `lantern-moth-swarm` | Lantern-Moth Swarm | Blue / hazard | N/A | Signal 5 | no additional effect | 1 preventable Wound | none | retired H2 success and failure | implemented removal plus normal Wound | `content/cards/threats/lantern-moth-swarm.json` | `glass-chime-swarm`, `spindle-static-squall`, `roadside-bone-oracle` |
 | `marrow-tax-auditors` | Marrow-Tax Auditors | Yellow / hazard | N/A | Guile 7 | tariff-loophole note | `gain_heat 2` | none | `failEffect` | compatibility-only no-op | `content/cards/threats/marrow-tax-auditors.json` | `locked-vault`, `false-route-procession`, `wireghost-key` |
@@ -47,7 +47,7 @@ Canonical graph references, used only as a frequency warning, are respectively 3
 | `cinder-gate-backlash` | obsolete success-side recovery bookkeeping | remove success branch without replacement | implemented H1 | 1 | APPROVED — IMPLEMENTED H1 |
 | `crown-bell-baron` | resource pressure through extortion | lose up to 1 Salvage | implemented H3 | 2 | APPROVED — IMPLEMENTED H3 |
 | `false-route-procession` | owner-selected bad route | choose one server-generated legal clockwise/counterclockwise adjacent destination on the current ring | implemented H6B narrow persisted choice plus existing displacement reaction/arrival | 2 | APPROVED H6A — IMPLEMENTED H6B |
-| `gateblind-pulse` | shared gate/scenario pressure | conditional Global Escalation +1 only while at least two below collapse | ready with narrow typed/source extension | 3 | APPROVED H7A — NOT IMPLEMENTED |
+| `gateblind-pulse` | shared gate/scenario pressure | conditional Global Escalation +1 only while at least two below collapse | implemented H7B narrow typed/source extension | 3 | APPROVED H7A — IMPLEMENTED H7B |
 | `hymn-scarred-zealot` | ordinary physical loss; defeat silences the hymn | 1 preventable Wound on combat loss | implemented H5B normal Wound pipeline | 2 | APPROVED H5A — IMPLEMENTED H5B |
 | `lantern-moth-swarm` | risk/reward prevention plus immediate fire injury | remove success branch; failure becomes 1 preventable Wound | implemented H2 | 2 | APPROVED — IMPLEMENTED H2 |
 | `marrow-tax-auditors` | repeated resource taxation | lose up to 1 Salvage candidate | mechanically ready; frequency balance unresolved | 2 provisional | BLOCKED |
@@ -60,7 +60,7 @@ Canonical graph references, used only as a frequency warning, are respectively 3
 | `soot-stained-cutpurse` | minor resource theft | lose up to 1 Salvage | implemented H3 | 1 | APPROVED — IMPLEMENTED H3 |
 | `webglass-snarefield` | obsolete success-side recovery bookkeeping | remove success branch without replacement | implemented H1 | 1 | APPROVED — IMPLEMENTED H1 |
 
-No approved card grants a direct Scar, destroys Equipment, or creates a sector-persistent object. H7A approves one conditional shared escalation effect that may raise difficulty but cannot itself reach collapse. H6B implements one bounded same-ring forced displacement with an owner-private destination choice; it cannot cross rings or enter center. H4A authorizes two bounded owner-private exact-instance choices; those choices suppress owned state temporarily and never delete or transfer it.
+No approved card grants a direct Scar, destroys Equipment, or creates a sector-persistent object. H7B implements one conditional shared escalation effect that may raise difficulty but cannot itself reach collapse. H6B implements one bounded same-ring forced displacement with an owner-private destination choice; it cannot cross rings or enter center. H4A authorizes two bounded owner-private exact-instance choices; those choices suppress owned state temporarily and never delete or transfer it.
 
 ### Per-ID model screen
 
@@ -268,7 +268,7 @@ The screen deliberately rejects automatic Scar, Global Escalation, and generic o
 - Severity: 3.
 - Implementation complexity: low code / medium systems.
 - Balance risk: medium; three references raise shared difficulty, bounded by a one-before-collapse guard and no per-player multiplication.
-- Approval status: APPROVED H7A — NOT IMPLEMENTED. Exact cap, threshold, source, ability, and reconnect rules are in `reports/heat-retirement-h7a-gateblind-pulse-approval.md`.
+- Approval status: APPROVED H7A — IMPLEMENTED H7B. Exact implementation, cap, threshold, source, ability, and reconnect evidence is in `reports/heat-retirement-h7b-gateblind-pulse-implementation.md`.
 
 ### `hymn-scarred-zealot`
 
@@ -636,7 +636,7 @@ Counts below are unique cards, not individual branches. “Approved proposal” 
 | Temporary modifiers | 0 | 1 | Siren paired next non-battle Command modifier implemented in H4C |
 | Persistent effects | 0 | 3 | two event-bounded suppressions and one until-consumed modifier; all owner-scoped with explicit cleanup |
 | Player-choice cards | 0 | 3 | Relay and Engineer exact-instance Equipment choices are implemented; False-Route destination choice is approved; Memory Tax remains blocked |
-| Multiplayer effects | 0 | 1 | Gateblind conditional shared escalation is approved H7A, not implemented |
+| Multiplayer effects | 0 | 1 | Gateblind conditional shared escalation is implemented H7B |
 | Global Escalation | 0 | 1 | Gateblind may advance 1 but cannot itself reach collapse |
 | Removal without replacement | 3 | 3 | Cinder, Mirror-Rot, Webglass success branches implemented in H1 |
 
@@ -646,4 +646,4 @@ Lane impact remains conservative: Blue approves all seven cards; Yellow approves
 
 ## Approval boundary
 
-This report records the completed H1–H6B groups and H7A's report-only Gateblind approval. `marrow-tax-auditors` and `memory-tax-gate` remain blocked for separate economy-frequency and private-choice approvals. The +116-card expansion remains unapproved, and no exact Relic-frequency parity is claimed.
+This report records the completed H1–H7B groups. `marrow-tax-auditors` and `memory-tax-gate` remain blocked for separate economy-frequency and private-choice approvals. The +116-card expansion remains unapproved, and no exact Relic-frequency parity is claimed.

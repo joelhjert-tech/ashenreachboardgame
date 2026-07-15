@@ -3,7 +3,7 @@
   "type": "threat",
   "cardType": "hazard",
   "title": "Gateblind Pulse",
-  "text": "The inner gate flashes black and every instrument forgets which direction is forward.",
+  "text": "On failure, if Global Escalation is not already one step from collapse, advance Global Escalation by 1.",
   "flavor": "Blindness is a command when the gate gives it.",
   "severity": 4,
   "region": "inner",
@@ -16,15 +16,17 @@
     "summary": "Gateblind pulse translated into final-route leverage."
   },
   "failEffect": {
-    "type": "gain_heat",
-    "amount": 2
+    "type": "gain_global_escalation_guarded",
+    "sourceCardId": "gateblind-pulse",
+    "amount": 1,
+    "guard": "oneBeforeCollapse"
   },
   "enemyFamily": "hazard",
   "threatLane": "blue",
   "rarity": "uncommon",
   "tempo": "stall",
   "resourceTags": [
-    "heat",
+    "escalation",
     "scenario"
   ]
 }

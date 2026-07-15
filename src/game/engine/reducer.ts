@@ -366,6 +366,8 @@ function summarizeEffect(effect: EncounterEffect | null, success: boolean | null
       return `${prefix} advance scenario progress ${effect.progressKey} by ${effect.amount}.`;
     case "advance_escalation":
       return `${prefix} advance escalation by ${effect.amount}.`;
+    case "gain_global_escalation_guarded":
+      return `${prefix} advance Global Escalation by 1 unless it is already one step from collapse.`;
     case "return_threat_to_space":
       return effect.threatId
         ? `${prefix} ${effect.threatId} remains on ${effect.sourceSectorId ?? "this space"}.`
@@ -467,6 +469,7 @@ function applyEffectToPlayer(player: PlayerState, effect: EncounterEffect): Play
         }
       };
     case "advance_escalation":
+    case "gain_global_escalation_guarded":
     case "advance_scenario":
     case "return_threat_to_space":
     case "next_non_battle_test_modifier":
@@ -802,6 +805,10 @@ function applyEffectToState(state: GameState, seatId: string, effect: EncounterE
           }
         : state.lastOutcomeSummary
     };
+  }
+
+  if (effect.type === "gain_global_escalation_guarded") {
+    return state;
   }
 
   if (effect.type === "advance_escalation") {
@@ -2424,6 +2431,24 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
           return reject(state, action, "Shattered Barricade escalation amount must be exactly 1");
         }
       }
+      const isGateblindPulseEscalation =
+        authoritativeSourceCardId === "gateblind-pulse" && state.pendingEffect.type === "gain_global_escalation_guarded";
+      if (isGateblindPulseEscalation) {
+        if (resolutionAction.sourceCardId && resolutionAction.sourceCardId !== authoritativeSourceCardId) {
+          return reject(state, action, "Resolution source is stale");
+        }
+        if (resolutionAction.success !== false || state.lastOutcomeSummary?.success !== false) {
+          return reject(state, action, "Gateblind Pulse escalation requires its authoritative failed check");
+        }
+        if (
+          state.pendingEffect.type !== "gain_global_escalation_guarded" ||
+          state.pendingEffect.sourceCardId !== "gateblind-pulse" ||
+          state.pendingEffect.amount !== 1 ||
+          state.pendingEffect.guard !== "oneBeforeCollapse"
+        ) {
+          return reject(state, action, "Gateblind Pulse escalation does not match its approved guarded effect");
+        }
+      }
       const sutureStormEffect = authoritativeSourceCardId === "suture-storm"
         ? extractSutureStormDisplacement(state.pendingEffect)
         : null;
@@ -2488,7 +2513,7 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
           eventLog: [...state.eventLog, action]
         });
       }
-      const requiresAuthoritativeSource = state.pendingEffect.type === "lose_salvage" || state.pendingEffect.type === "forcedDisplacement" || state.pendingEffect.type === "ownerSelectedForcedDisplacement" || state.pendingEffect.type === "next_non_battle_test_modifier" || state.pendingEffect.type === "next_normal_movement_roll_modifier";
+      const requiresAuthoritativeSource = state.pendingEffect.type === "lose_salvage" || state.pendingEffect.type === "forcedDisplacement" || state.pendingEffect.type === "ownerSelectedForcedDisplacement" || state.pendingEffect.type === "gain_global_escalation_guarded" || state.pendingEffect.type === "next_non_battle_test_modifier" || state.pendingEffect.type === "next_normal_movement_roll_modifier";
       if (requiresAuthoritativeSource && resolutionAction.sourceCardId && resolutionAction.sourceCardId !== authoritativeSourceCardId) {
         return reject(state, action, "Resolution source is stale");
       }
@@ -2672,7 +2697,7 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
       }
       const containsSalvageLoss = JSON.stringify(state.pendingEffect).includes('"lose_salvage"');
 
-      const stateAfterEffect = isShatteredBarricadeEscalation
+      const stateAfterEffect = isShatteredBarricadeEscalation || isGateblindPulseEscalation
         ? state
         : applyEffectToState(state, resolutionAction.seatId, state.pendingEffect as EncounterEffect);
 
@@ -5223,12 +5248,47 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
         }
       }
 
+      if (escalationAction.sourceCardId === "gateblind-pulse") {
+        const failedCheckSource = [...state.eventLog].reverse().find((entry) => {
+          const candidate = entry as { type?: string; seatId?: string; cardId?: string; success?: boolean };
+          return candidate.type === "CHECK_ROLLED" && candidate.seatId === escalationAction.seatId && candidate.cardId === escalationAction.sourceCardId && candidate.success === false;
+        }) as { createdAt?: unknown } | undefined;
+        const expectedSourceEventId = typeof failedCheckSource?.createdAt === "string"
+          ? `${escalationAction.seatId}:threat:${escalationAction.sourceCardId}:${failedCheckSource.createdAt}:global-escalation`
+          : state.activeResolution
+            ? `${state.activeResolution.id}:global-escalation`
+            : null;
+        if (
+          state.currentEncounter?.id !== escalationAction.sourceCardId ||
+          state.lastOutcomeSummary?.encounterCardId !== escalationAction.sourceCardId ||
+          state.lastOutcomeSummary.success !== false ||
+          escalationAction.sourceEventId !== expectedSourceEventId
+        ) {
+          return reject(state, action, "Gateblind Pulse escalation source does not match the authoritative failed resolution");
+        }
+      }
+
       const collapseLevel = getEscalationCollapseLevel(state.sessionMode);
       if (
         escalationAction.sourceCardId === "shattered-barricade" &&
         escalationAction.amount !== Math.min(1, Math.max(0, collapseLevel - state.escalationLevel))
       ) {
         return reject(state, action, "Shattered Barricade must apply its approved bounded escalation of exactly 1");
+      }
+      if (escalationAction.sourceCardId === "gateblind-pulse") {
+        const expectedRequestedAmount = state.escalationLevel < collapseLevel - 1 ? 1 : 0;
+        const expectedGuardedReason = expectedRequestedAmount === 0 ? "oneBeforeCollapseGuard" : undefined;
+        if (
+          escalationAction.previousLevel !== state.escalationLevel ||
+          escalationAction.requestedAmount !== expectedRequestedAmount ||
+          escalationAction.amount !== expectedRequestedAmount ||
+          escalationAction.guardedReason !== expectedGuardedReason
+        ) {
+          return reject(state, action, "Gateblind Pulse escalation result does not match its authoritative one-before-collapse guard");
+        }
+        if (state.escalationLevel + escalationAction.amount >= collapseLevel) {
+          return reject(state, action, "Gateblind Pulse cannot reach the collapse value");
+        }
       }
       const expectedNewLevel = Math.max(0, Math.min(collapseLevel, state.escalationLevel + escalationAction.amount));
       const actualDelta = expectedNewLevel - state.escalationLevel;
@@ -5239,7 +5299,9 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
         return reject(state, action, "Escalation modifier does not match the authoritative level");
       }
 
-      const escalationSummary = `Global Escalation ${escalationAction.amount >= 0 ? "+" : ""}${escalationAction.amount}. Global Escalation is now ${escalationAction.newLevel}.`;
+      const escalationSummary = escalationAction.guardedReason === "oneBeforeCollapseGuard"
+        ? `Gateblind Pulse cannot advance Global Escalation closer to collapse. Global Escalation remains ${escalationAction.newLevel}.`
+        : `Global Escalation ${escalationAction.amount >= 0 ? "+" : ""}${escalationAction.amount}. Global Escalation is now ${escalationAction.newLevel}.`;
       const preservesThreatOutcome =
         Boolean(escalationAction.sourceCardId) &&
         state.lastOutcomeSummary?.encounterCardId === escalationAction.sourceCardId;

@@ -4371,9 +4371,9 @@ export class GameRoomServer {
     seatId: string,
     delta: number,
     reason: string,
-    source?: { cardId: string; eventId: string }
+    source?: { cardId: string; eventId: string; guard?: "oneBeforeCollapse" }
   ): void {
-    if (this.state.status !== "active" || delta === 0) {
+    if (this.state.status !== "active" || (delta === 0 && source?.guard !== "oneBeforeCollapse")) {
       return;
     }
 
@@ -4382,9 +4382,16 @@ export class GameRoomServer {
     }
 
     const collapseLevel = getEscalationCollapseLevel(this.state.sessionMode);
-    const nextLevel = Math.max(0, Math.min(collapseLevel, this.state.escalationLevel + delta));
-    const actualDelta = nextLevel - this.state.escalationLevel;
+    const previousLevel = this.state.escalationLevel;
+    const requestedDelta = source?.guard === "oneBeforeCollapse"
+      ? previousLevel < collapseLevel - 1 ? delta : 0
+      : delta;
+    const nextLevel = Math.max(0, Math.min(collapseLevel, previousLevel + requestedDelta));
+    const actualDelta = nextLevel - previousLevel;
     const modifier = getEscalationModifier(nextLevel);
+    const guardedReason = source?.guard === "oneBeforeCollapse" && requestedDelta === 0
+      ? "oneBeforeCollapseGuard" as const
+      : undefined;
 
     this.applyAction({
       type: "ESCALATION_ADVANCED",
@@ -4392,12 +4399,17 @@ export class GameRoomServer {
       amount: actualDelta,
       newLevel: nextLevel,
       modifier,
+      ...(source?.guard === "oneBeforeCollapse" ? { previousLevel, requestedAmount: requestedDelta, guardedReason } : {}),
       reason,
       ...(source ? { sourceCardId: source.cardId, sourceEventId: source.eventId } : {}),
       createdAt: new Date().toISOString()
     } satisfies EscalationAdvancedAction);
 
     this.maybeTriggerEscalationAbility(seatId, actualDelta, reason);
+
+    if (source?.guard === "oneBeforeCollapse") {
+      return;
+    }
 
     const currentLevel = this.state.escalationLevel;
     const currentModifier = getEscalationModifier(currentLevel);
@@ -5215,6 +5227,21 @@ export class GameRoomServer {
                 amount: pendingEffect.amount
               }
             : null;
+        const gateblindPulseEscalation =
+          pendingEncounter?.id === "gateblind-pulse" &&
+          pendingEffect.type === "gain_global_escalation_guarded" &&
+          pendingEffect.sourceCardId === "gateblind-pulse" &&
+          pendingEffect.amount === 1 &&
+          pendingEffect.guard === "oneBeforeCollapse" &&
+          this.state.lastOutcomeSummary?.success === false &&
+          Boolean(sourceResolutionId)
+            ? {
+                cardId: pendingEncounter.id,
+                eventId: `${sourceResolutionId}:global-escalation`,
+                amount: pendingEffect.amount,
+                guard: pendingEffect.guard
+              }
+            : null;
         this.applyAction({
           type: "RESOLUTION_APPLIED",
           seatId,
@@ -5227,6 +5254,13 @@ export class GameRoomServer {
           this.feedEscalation(seatId, shatteredBarricadeEscalation.amount, "Shattered Barricade", {
             cardId: shatteredBarricadeEscalation.cardId,
             eventId: shatteredBarricadeEscalation.eventId
+          });
+        }
+        if (gateblindPulseEscalation) {
+          this.feedEscalation(seatId, gateblindPulseEscalation.amount, "Gateblind Pulse", {
+            cardId: gateblindPulseEscalation.cardId,
+            eventId: gateblindPulseEscalation.eventId,
+            guard: gateblindPulseEscalation.guard
           });
         }
         progressMade = true;
@@ -9099,6 +9133,7 @@ function getEventLogResultDeltas(state: GameState, ownerSeatId?: string | null):
 
     if (type === "ESCALATION_ADVANCED") {
       const amount = typeof entry.amount === "number" ? entry.amount : 0;
+      const guarded = entry.guardedReason === "oneBeforeCollapseGuard";
       deltas.push(createResultDelta({
         id: `escalation:${source}`,
         type: "scenarioPressure",
@@ -9110,7 +9145,9 @@ function getEventLogResultDeltas(state: GameState, ownerSeatId?: string | null):
         visibility: "public",
         source,
         reason: typeof entry.reason === "string" ? entry.reason : "pressure",
-        publicText: `Global Escalation ${amount >= 0 ? "+" : ""}${amount}: ${typeof entry.reason === "string" ? entry.reason : "pressure"}.`,
+        publicText: guarded
+          ? "Gateblind Pulse cannot advance Global Escalation closer to collapse."
+          : `Global Escalation ${amount >= 0 ? "+" : ""}${amount}: ${typeof entry.reason === "string" ? entry.reason : "pressure"}.`,
         severity: "scenario"
       }));
     }

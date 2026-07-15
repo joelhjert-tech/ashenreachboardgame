@@ -57,7 +57,6 @@ const TARGETS = [
 ] as const;
 
 const REMAINING_HEAT_THREAT_IDS = [
-  "gateblind-pulse",
   "marrow-tax-auditors",
   "memory-tax-gate"
 ] as const;
@@ -249,8 +248,8 @@ describe("Heat Retirement H1 removal-only Threats", () => {
 
   it("leaves Siren plus the three blocked Heat-linked Threats and completed duplicate revisions unchanged", () => {
     expect(collectHeatThreatIds()).toEqual([...REMAINING_HEAT_THREAT_IDS].sort());
-    expect(LEGACY_HEAT_EFFECT_APPROVALS).toHaveLength(11);
-    expect(APPROVED_LEGACY_HEAT_CONTENT_IDS.size).toBe(25);
+    expect(LEGACY_HEAT_EFFECT_APPROVALS).toHaveLength(10);
+    expect(APPROVED_LEGACY_HEAT_CONTENT_IDS.size).toBe(24);
     expect(requireTarget("glass-chime-swarm").failEffect).toEqual({
       type: "next_non_battle_test_modifier",
       amount: -1,

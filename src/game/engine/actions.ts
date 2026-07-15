@@ -516,6 +516,9 @@ export interface EscalationAdvancedAction extends BaseAction {
   amount: number;
   newLevel: number;
   modifier: number;
+  previousLevel?: number;
+  requestedAmount?: number;
+  guardedReason?: "oneBeforeCollapseGuard";
   reason?: string;
   sourceCardId?: string;
   sourceEventId?: string;
