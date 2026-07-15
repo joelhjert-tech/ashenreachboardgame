@@ -1,14 +1,15 @@
 # Remaining 17 Heat-linked Threat retirement triage
 
-Status: final triage approved at `d877574`; Groups H1 through H5B are implemented. Four IDs remain blocked.
+Status: final triage approved at `d877574`; Groups H1 through H5B are implemented. H6A approves `false-route-procession` for later implementation. Three IDs remain blocked.
 
 ## Decision summary
 
-The two existing Heat audits and current canonical Threat content reconcile to exactly **17 unique stable IDs**. Thirteen IDs are **APPROVED AND IMPLEMENTED** across H1 through H5B. Four remain **BLOCKED** because a target, ownership, persistence, reset, or balance decision is unresolved.
+The two existing Heat audits and current canonical Threat content reconcile to exactly **17 unique stable IDs**. Thirteen IDs are **APPROVED AND IMPLEMENTED** across H1 through H5B. `false-route-procession` is **APPROVED H6A — NOT IMPLEMENTED**. Three remain **BLOCKED** because a target, ownership, persistence, reset, or balance decision is unresolved.
 
 - Approved and implemented: 13
-- Blocked: 4
-- Approved retirement models: remove without replacement (3), normal Wound pressure (4), floor-zero Salvage pressure (3), exact-instance Equipment suppression (2), stat-specific temporary modifier (1)
+- Approved, not implemented: 1
+- Blocked: 3
+- Approved retirement models: remove without replacement (3), normal Wound pressure (4), floor-zero Salvage pressure (3), exact-instance Equipment suppression (2), stat-specific temporary modifier (1), owner-choice forced displacement (1, not implemented)
 - Player-facing Heat remains obsolete. Every still-active Heat branch below is parsed only for compatibility and resolves as a no-op with a “no additional status change” summary.
 - Canonical Threats do not define an activation-number field. Every record therefore reports `N/A`; difficulty and canonical graph frequency are recorded separately and are not relabelled as activation.
 - The 17-card population is Red 1 / Blue 7 / Yellow 9. Card totals remain Red 26 / Blue 35 / Yellow 48 / overall 109.
@@ -45,7 +46,7 @@ Canonical graph references, used only as a frequency warning, are respectively 3
 | `choir-static-burst` | accumulating attrition from violent signal feedback | normal Wound pressure: 1 preventable Wound | implemented H2 | 2 | APPROVED — IMPLEMENTED H2 |
 | `cinder-gate-backlash` | obsolete success-side recovery bookkeeping | remove success branch without replacement | implemented H1 | 1 | APPROVED — IMPLEMENTED H1 |
 | `crown-bell-baron` | resource pressure through extortion | lose up to 1 Salvage | implemented H3 | 2 | APPROVED — IMPLEMENTED H3 |
-| `false-route-procession` | movement misdirection | forced displacement or delayed relocation | requires unresolved destination rule | 2 provisional | BLOCKED |
+| `false-route-procession` | owner-selected bad route | choose one server-generated legal clockwise/counterclockwise adjacent destination on the current ring | requires narrow persisted forced-displacement destination-choice lifecycle; existing arrival/reaction systems reusable | 2 | APPROVED H6A — NOT IMPLEMENTED |
 | `gateblind-pulse` | shared gate/scenario pressure | Global Escalation candidate | existing track, but cap/threshold impact unresolved | 3 provisional | BLOCKED |
 | `hymn-scarred-zealot` | ordinary physical loss; defeat silences the hymn | 1 preventable Wound on combat loss | implemented H5B normal Wound pipeline | 2 | APPROVED H5A — IMPLEMENTED H5B |
 | `lantern-moth-swarm` | risk/reward prevention plus immediate fire injury | remove success branch; failure becomes 1 preventable Wound | implemented H2 | 2 | APPROVED — IMPLEMENTED H2 |
@@ -59,7 +60,7 @@ Canonical graph references, used only as a frequency warning, are respectively 3
 | `soot-stained-cutpurse` | minor resource theft | lose up to 1 Salvage | implemented H3 | 1 | APPROVED — IMPLEMENTED H3 |
 | `webglass-snarefield` | obsolete success-side recovery bookkeeping | remove success branch without replacement | implemented H1 | 1 | APPROVED — IMPLEMENTED H1 |
 
-No approved card grants a Scar, advances Global Escalation, displaces a player, destroys Equipment, or creates a sector-persistent object. H4A authorizes two bounded owner-private exact-instance choices; those choices suppress owned state temporarily and never delete or transfer it.
+No approved card grants a direct Scar, advances Global Escalation, destroys Equipment, or creates a sector-persistent object. H6A approves one bounded same-ring forced displacement with an owner-private destination choice; it cannot cross rings or enter center and remains unimplemented. H4A authorizes two bounded owner-private exact-instance choices; those choices suppress owned state temporarily and never delete or transfer it.
 
 ### Per-ID model screen
 
@@ -71,7 +72,7 @@ Codes: A remove; B temporary owner modifier; C normal Wound; D conditional Scar;
 | `choir-static-burst` | NO | POSSIBLE | SELECT | NO | NO | NO | NO | NO | NO | NO |
 | `cinder-gate-backlash` | SELECT | NO | NO; failure already owns 2 | NO | NO | NO | NO | NO | NO | NO |
 | `crown-bell-baron` | NO | NO | NO | NO | NO | SELECT | NO | NO | NO | POSSIBLE but unnecessary |
-| `false-route-procession` | NO | NO; duplicates Spindle | NO | NO | NO | NO | NO | CANDIDATE | POSSIBLE | POSSIBLE |
+| `false-route-procession` | NO | NO; duplicates Spindle | NO | NO | NO | NO | NO | SELECT | NO | SELECT for destination |
 | `gateblind-pulse` | NO | POSSIBLE | NO | NO | CANDIDATE | NO | NO | POSSIBLE | POSSIBLE | NO |
 | `hymn-scarred-zealot` | NO | NO | SELECT | NO | NO | NO | NO | NO | NO | NO |
 | `lantern-moth-swarm` | SELECT on success | NO | SELECT on failure | NO | NO | NO | NO | NO | NO | NO |
@@ -212,32 +213,32 @@ The screen deliberately rejects automatic Scar, Global Escalation, and generic o
 ### `false-route-procession`
 
 - Current Heat behavior: failed Command test `gain_heat 2`, compatibility-only no-op.
-- Original gameplay intent: movement misdirection and delayed relocation.
-- Selected retirement model: forced displacement or return toward the prior route, unresolved.
+- Original gameplay intent: navigation control loss through a tempting false route.
+- Selected retirement model: owner chooses one server-generated legal clockwise/counterclockwise adjacent destination on the operative's current ring.
 - Card type: hazard.
 - Lane: Yellow.
 - Test/battle stat: Command.
 - Difficulty: 7; severity 2; outer common; 5 graph references.
-- Timing: after failed hazard result.
+- Timing: after the final authoritative failed hazard result; candidates persist before any reaction or choice.
 - Success: false-road note, unchanged.
-- Failure: no approved endpoint, direction, or fallback.
+- Failure: forced displacement exactly 1 sector to one chosen legal same-ring neighbor.
 - Reward: none.
-- Persistence: candidate is immediate, but not settled.
-- Wound handling: only a topology fallback if explicitly approved; amount unresolved.
-- Scar interaction: none proposed.
+- Persistence: one owner-private pending candidate/reaction record until prevented, chosen, or resolved; one public-safe wait.
+- Wound handling: none; zero candidates means remain in place without a replacement penalty.
+- Scar interaction: none.
 - Salvage interaction: none.
-- Equipment interaction: possible normal displacement suppression only if the final effect is eligible.
-- Movement interaction: must use authoritative topology; may not duplicate same-ring clockwise/counterclockwise cards without distinct routing.
-- Multiplayer interaction: owner-scoped.
-- Typed runtime support: forced displacement exists, but “false shortcut” lacks a canonical direction/target rule.
-- Duplicate-source protection: existing displacement source IDs could apply after design approval.
-- Reconnect behavior: a pending destination/reaction must persist.
-- Cleanup/reset: close after exactly one displacement or fallback.
-- Final player-facing rule: unresolved.
-- Severity: 2 provisional.
-- Implementation complexity: medium.
-- Balance risk: medium-high because five graph references magnify route disruption.
-- Approval status: BLOCKED.
+- Equipment interaction: Rift Anchor Spike may prevent the whole forced displacement after candidates are determined; no other untyped item window.
+- Movement interaction: canonical same-ring `+1/-1` neighbors only; movement-step legality omits blocked candidates without skipping; no allowance, roll, reroll, cross-ring edge, center entry, or voluntary movement progress.
+- Multiplayer interaction: the acting operative's owner chooses in every mode; no rival or timeout fallback.
+- Typed runtime support: requires a narrow persisted destination-choice extension; existing ring helper, legality predicate, reaction, arrival, and resolved-source systems are reusable.
+- Duplicate-source protection: one source event creates one candidate set, choice, displacement, arrival, and completion; stale/duplicate/wrong-seat submissions reject.
+- Reconnect behavior: source, ordered candidates, reaction, chosen destination/arrival, and completion state persist without replay.
+- Cleanup/reset: prevention closes the whole consequence; a legal confirmation moves once and schedules one arrival; zero candidates closes in place.
+- Final player-facing rule: “If you lose, move 1 sector clockwise or counterclockwise on your current ring. Choose from the legal destinations. If only one is legal, move there. If neither is legal, remain in place.”
+- Severity: 2.
+- Implementation complexity: medium-high code / low player resolution.
+- Balance risk: medium; five references and occasionally beneficial redirection are bounded by one same-ring edge, owner choice, Rift Anchor, and no movement-linked Contract credit.
+- Approval status: APPROVED H6A — NOT IMPLEMENTED.
 
 ### `gateblind-pulse`
 
@@ -607,7 +608,7 @@ The screen deliberately rejects automatic Scar, Global Escalation, and generic o
 | `choir-static-burst` | One Wound is immediate | No benefit loop; prevention remains valuable | One familiar consequence | Owner, final failure, actual delta, and recall are defined |
 | `cinder-gate-backlash` | Passing simply avoids harm | No farmable success reward | Fastest resolution | No success state, reset, or replay question |
 | `crown-bell-baron` | “Lose up to 1” is legible | Zero Salvage nullifies loss but grants nothing | Quick and thematic | Loss is not payment; floors at zero; owner only |
-| `false-route-procession` | Direction is currently unknowable | Route value depends on endpoint | Could be fun once destination is clear | Topology, fallback, and reconnect target are unresolved |
+| `false-route-procession` | Two named same-ring destinations make the forced choice clear | Position can improve the options, but no stay/cross-ring/progress exploit exists | At most two buttons; one and zero candidates are fast | Owner, candidates, legality, center, reaction, entry, stale choice, dedup, and reconnect are defined |
 | `gateblind-pulse` | Shared escalation is understandable | Threshold timing may be manipulated | Fast but table-wide | Cap and source threshold ordering remain unresolved |
 | `hymn-scarred-zealot` | One Wound matches ordinary combat | No success-side consequence or persistent hymn state to exploit | Fast physical consequence for a common enemy | Loss owns the Wound; defeat owns silencing; threshold recall is the only Scar route |
 | `lantern-moth-swarm` | Pass safe / fail 1 Wound | Cannot farm a heal | One clear physical consequence | Standard prevention, recall, and dedup rules apply |
@@ -623,7 +624,7 @@ The screen deliberately rejects automatic Scar, Global Escalation, and generic o
 
 ## Distribution impact
 
-Counts below are unique cards, not individual branches. “Approved proposal” includes unchanged active effects plus H5A's two approved Wound conversions on the same 17 cards and excludes blocked candidates.
+Counts below are unique cards, not individual branches. “Approved proposal” includes unchanged active effects, H5A's two approved Wound conversions, and H6A's approved movement choice on the same 17 cards; it excludes the three blocked candidates.
 
 | Effect family | Current 17 | Approved proposal | Notes |
 |---|---:|---:|---|
@@ -631,18 +632,18 @@ Counts below are unique cards, not individual branches. “Approved proposal” 
 | Scar effects | 0 | 0 | H5A expressly rejects direct card Scars; normal threshold Scars remain lifecycle outcomes |
 | Salvage pressure | 0 | 3 | Baron, Collector, Cutpurse; all floor-zero owner losses |
 | Equipment effects | 3 | 3 | Existing Engineer battle Weapon suppression plus two implemented bounded exact-instance suppressions |
-| Movement effects | 0 | 0 | False-Route remains blocked |
+| Movement effects | 0 | 1 | False-Route owner-choice forced displacement approved H6A; not yet implemented |
 | Temporary modifiers | 0 | 1 | Siren paired next non-battle Command modifier implemented in H4C |
 | Persistent effects | 0 | 3 | two event-bounded suppressions and one until-consumed modifier; all owner-scoped with explicit cleanup |
-| Player-choice cards | 0 | 2 | Relay and Engineer exact-instance Equipment choices approved; Memory Tax remains blocked |
+| Player-choice cards | 0 | 3 | Relay and Engineer exact-instance Equipment choices are implemented; False-Route destination choice is approved; Memory Tax remains blocked |
 | Multiplayer effects | 0 | 0 | no approved group-wide effect |
 | Global Escalation | 0 | 0 | Gateblind remains blocked |
 | Removal without replacement | 3 | 3 | Cinder, Mirror-Rot, Webglass success branches implemented in H1 |
 
-Approved severity distribution is severity 1: four cards (`cinder-gate-backlash`, `mirror-rot-interference`, `soot-stained-cutpurse`, `webglass-snarefield`); severity 2: eight cards (`choir-static-burst`, `crown-bell-baron`, `hymn-scarred-zealot`, `lantern-moth-swarm`, `pale-contract-collector`, `relay-husk`, `signal-rotted-engineer`, `siren-relay-echo`); severity 3: none; severity 4: one card (`ashen-doppelganger`); severity 5: none. The four blocked provisional candidates span severity 2–3.
+Approved severity distribution is severity 1: four cards (`cinder-gate-backlash`, `mirror-rot-interference`, `soot-stained-cutpurse`, `webglass-snarefield`); severity 2: nine cards (`choir-static-burst`, `crown-bell-baron`, `false-route-procession`, `hymn-scarred-zealot`, `lantern-moth-swarm`, `pale-contract-collector`, `relay-husk`, `signal-rotted-engineer`, `siren-relay-echo`); severity 3: none; severity 4: one card (`ashen-doppelganger`); severity 5: none. The three blocked provisional candidates span severity 2–3.
 
-Lane impact remains conservative: Blue approves six of seven cards and blocks one; Yellow approves six of nine and blocks three; Red's only card is approved. No stable ID, lane, role, difficulty, graph placement, art reference, or card total changes in this report.
+Lane impact remains conservative: Blue approves six of seven cards and blocks one; Yellow approves seven of nine and blocks two; Red's only card is approved. No stable ID, lane, role, difficulty, graph placement, art reference, or card total changes in this report.
 
 ## Approval boundary
 
-This report records the completed H1–H4C groups, the approvals defined in `reports/heat-retirement-h4a-equipment-modifier-approval.md`, and H5A's two Wound approvals in `reports/heat-retirement-h5a-wound-scar-approval.md`. The four blocked cards must receive later report-only exact-rule approvals grouped by unresolved lifecycle, not lane. The +116-card expansion remains unapproved, and no exact Relic-frequency parity is claimed.
+This report records the completed H1–H4C groups, the approvals defined in `reports/heat-retirement-h4a-equipment-modifier-approval.md`, H5A's two Wound approvals in `reports/heat-retirement-h5a-wound-scar-approval.md`, and H6A's report-only `false-route-procession` approval in `reports/heat-retirement-h6a-false-route-approval.md`. The three blocked cards must receive later report-only exact-rule approvals grouped by unresolved lifecycle, not lane. The +116-card expansion remains unapproved, and no exact Relic-frequency parity is claimed.
