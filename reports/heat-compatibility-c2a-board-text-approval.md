@@ -468,6 +468,7 @@ The acting owner resolves the current server-authored location choice. The serve
 ### Group 3 — existing severe consequence cleanup
 
 - IDs: `outer_brokenCausewayShortcut`, `middle_scarSurgery`, `inner_blackstarShortcut`.
+- Implementation status: **IMPLEMENTED in C2B3**. Three approved `gain_heat 1` leaves were removed without replacement; both one-Wound failures and the direct Ash-Lanced Scar failure remain exact and occur once.
 - Shared resolver: sequence pruning plus existing Wound/Scar/local-deck behavior.
 - Content: remove only Heat leaves.
 - Validation/UI: manifest update only; no UI work.
@@ -530,3 +531,9 @@ Current authored typed Heat population: **34 occurrences across 21 IDs**. This c
 Group 2 is implemented. The five success sequences contain no typed Heat, surgery retains heal → follower → note order, Salt Crossing and Surgery retain their existing one-Wound failures, and the approved Ember/Glassmere/Surgery wording clarifications are applied. Groups 3–5 remain unimplemented and unchanged.
 
 Current authored typed Heat population: **27 occurrences across 16 IDs**. This comprises 20 occurrences across the nine remaining C2A board IDs plus seven separately blocked scenario, escalation, and follower occurrences. The audit verdict remains **FAIL**.
+
+## Phase C2B3 implementation update
+
+Group 3 is implemented. `outer_brokenCausewayShortcut` and `inner_blackstarShortcut` retain their existing one-Wound failures, while `middle_scarSurgery` retains its existing direct `scar-wound-1` failure. The surviving heal/note and route-note success sequences retain order. Groups 4–5 remain unimplemented and unchanged.
+
+Current authored typed Heat population: **24 occurrences across 13 IDs**. This comprises 17 occurrences across the six remaining C2A board IDs plus seven separately blocked scenario, escalation, and follower occurrences. The audit verdict remains **FAIL**.

@@ -17,15 +17,12 @@ const BLOCKED_AUTHORED_IDS = [
   "escalation-choir-feedback",
   "escalation-marrow-surgery-debt",
   "escalation-saltwind-lockdown",
-  "inner_blackstarShortcut",
   "inner_cinderLatticeTrial",
   "inner_gateOfCindersTrial",
   "inner_veilRiftEntry",
   "middle_guardianSpanThreshold",
-  "middle_scarSurgery",
   "middle_shardSprawlBargain",
   "middle_webglassFracture",
-  "outer_brokenCausewayShortcut",
   "saltflat-bone-reader",
   "scenario_mirror_of_false_heroes"
 ] as const;
@@ -84,11 +81,11 @@ function productionFiles(directory: string): string[] {
 }
 
 describe("Heat Compatibility C1 containment", () => {
-  it("keeps the exact 27 post-C2B2 authored effects blocked without silently changing content", () => {
+  it("keeps the exact 24 post-C2B3 authored effects blocked without silently changing content", () => {
     const effects = authoredHeatEffects();
-    expect(effects).toHaveLength(27);
+    expect(effects).toHaveLength(24);
     expect([...new Set(effects.map((entry) => entry.id))].sort()).toEqual([...BLOCKED_AUTHORED_IDS].sort());
-    expect(effects.filter((entry) => entry.type === "gain_heat")).toHaveLength(18);
+    expect(effects.filter((entry) => entry.type === "gain_heat")).toHaveLength(15);
     expect(effects.filter((entry) => entry.type === "gain_heat_all")).toHaveLength(3);
     expect(effects.filter((entry) => entry.type === "lose_heat")).toHaveLength(6);
   });

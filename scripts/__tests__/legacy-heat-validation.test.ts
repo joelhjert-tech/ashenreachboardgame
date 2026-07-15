@@ -28,9 +28,9 @@ describe("legacy Heat authoring guard", () => {
     expect(new Set(allIds).size).toBe(allIds.length);
   });
 
-  it("freezes the 21 post-C2B2 imported board/scenario Heat effects as blocked and rejects additions", () => {
+  it("freezes the 18 post-C2B3 imported board/scenario Heat effects as blocked and rejects additions", () => {
     const exact = [...C1_BLOCKED_RUNTIME_HEAT_EFFECT_SIGNATURES].flatMap(([id, types]) => types.map((type) => ({ id, type })));
-    expect(exact).toHaveLength(21);
+    expect(exact).toHaveLength(18);
     expect(validateC1BlockedRuntimeHeatEffects(exact)).toEqual([]);
     expect(validateC1BlockedRuntimeHeatEffects([...exact, { id: "new-board-rule", type: "gain_heat" }]).join(" ")).toContain("new-board-rule");
     expect(validateC1BlockedRuntimeHeatEffects(exact.slice(1)).join(" ")).toContain("signature changed");

@@ -214,11 +214,8 @@ export const BOARD_TEXT_EFFECTS: Record<string, BoardTextEffectDefinition> = {
     },
     failureSummary: "The causeway cracked under the attempt and threw cinder pressure through the line.",
     failureEffect: {
-      type: "sequence",
-      effects: [
-        { type: "gain_heat", amount: 1 },
-        { type: "take_wound", amount: 1 }
-      ]
+      type: "take_wound",
+      amount: 1
     },
     sectorDeck: {
       kind: "escalation"
@@ -251,7 +248,6 @@ export const BOARD_TEXT_EFFECTS: Record<string, BoardTextEffectDefinition> = {
       type: "sequence",
       effects: [
         { type: "heal_wound", amount: 1 },
-        { type: "gain_heat", amount: 1 },
         { type: "gain_note", text: "Field surgery completed. The scar holds for now." }
       ]
     },
@@ -344,11 +340,8 @@ export const BOARD_TEXT_EFFECTS: Record<string, BoardTextEffectDefinition> = {
     stat: "guile",
     difficulty: 11,
     effect: {
-      type: "sequence",
-      effects: [
-        { type: "gain_note", text: "Blackstar shortcut survived. The route is ugly but fast." },
-        { type: "gain_heat", amount: 1 }
-      ]
+      type: "gain_note",
+      text: "Blackstar shortcut survived. The route is ugly but fast."
     },
     failureSummary: "The Blackstar cut folded wrong and made the shortcut cost blood.",
     failureEffect: {

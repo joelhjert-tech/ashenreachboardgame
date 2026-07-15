@@ -384,6 +384,21 @@ Updated evidence counts:
 
 See `heat-compatibility-c2b2-board-success-cleanups.md` for exact before/after sequences and verification evidence.
 
+## Phase C2B3 severe board-consequence update
+
+C2B3 implemented only C2A Group 3: `outer_brokenCausewayShortcut`, `middle_scarSurgery`, and `inner_blackstarShortcut`. Three inert `gain_heat 1` leaves were removed without replacement. The two existing one-Wound failures, the direct Ash-Lanced Scar failure, surviving notes, local deck associations, and runtime/projection compatibility boundaries remain unchanged.
+
+Updated evidence counts:
+
+- authored typed Heat effects: **24 across 13 IDs**;
+- remaining approved board-text effects awaiting Groups 4–5: **17 across 6 IDs**;
+- separately blocked scenario/escalation/follower effects: **7 across 7 IDs**;
+- current Heat-state mechanical reads/writes: **0**;
+- observed/guarded phone and TV Heat fields or labels: **0**;
+- current verdict: **FAIL**.
+
+See `heat-compatibility-c2b3-board-severe-cleanups.md` for the severe-consequence preservation evidence.
+
 ## Verification record
 
 Passed:

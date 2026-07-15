@@ -142,10 +142,10 @@ Phase C1 reviewed the authoritative imported definitions rather than deriving sc
 | `outer_saltCrossing` | board text / `src/game/data/boardTextEffects.ts` | success: `lose_heat 1` | Harvested void-salt and bottled it as a bargaining chip. | **IMPLEMENTED C2B2: removed without replacement** | No | No replacement |
 | `outer_surgeryTreatment` | board text / `src/game/data/boardTextEffects.ts` | success sequence: `gain_heat 1` | Accepted rough cinder surgery and walked away patched but marked. | **IMPLEMENTED C2B2: removed without replacement** | Yes, false mark implication removed | No replacement |
 | `outer_oathpostWrit` | board text / `src/game/data/boardTextEffects.ts` | failure: `gain_heat 1` | Claimed a faction writ from the Oathpost. | **IMPLEMENTED C2B1: removed without replacement** | No | No replacement |
-| `outer_brokenCausewayShortcut` | board text / `src/game/data/boardTextEffects.ts` | failure sequence: `gain_heat 1` | Marked the Broken Causeway shortcut toward Guardian Span. | **APPROVED C2A: remove without replacement** | No | No replacement |
-| `middle_scarSurgery` | board text / `src/game/data/boardTextEffects.ts` | success sequence: `gain_heat 1` | Survived field surgery in the Red March. | **APPROVED C2A: remove without replacement** | No | No replacement |
+| `outer_brokenCausewayShortcut` | board text / `src/game/data/boardTextEffects.ts` | failure sequence: `gain_heat 1` | Marked the Broken Causeway shortcut toward Guardian Span. | **IMPLEMENTED C2B3: removed without replacement** | No | No replacement |
+| `middle_scarSurgery` | board text / `src/game/data/boardTextEffects.ts` | success sequence: `gain_heat 1` | Survived field surgery in the Red March. | **IMPLEMENTED C2B3: removed without replacement** | No | No replacement |
 | `middle_redMarchBargain` | board text / `src/game/data/boardTextEffects.ts` | failure: `gain_heat 1` | Secured a Red March outpost bargain. | **IMPLEMENTED C2B1: removed without replacement** | No | No replacement |
-| `inner_blackstarShortcut` | board text / `src/game/data/boardTextEffects.ts` | success sequence: `gain_heat 1` | Crossed the Blackstar shortcut and kept your nerve. | **APPROVED C2A: remove without replacement** | No | No replacement |
+| `inner_blackstarShortcut` | board text / `src/game/data/boardTextEffects.ts` | success sequence: `gain_heat 1` | Crossed the Blackstar shortcut and kept your nerve. | **IMPLEMENTED C2B3: removed without replacement** | No | No replacement |
 | `middle_shardSprawlBargain` | board text / `src/game/data/boardTextEffects.ts` | choice 1 success: `lose_heat 1`; choices 1-2 failure: `gain_heat 1` | Cut a hard bargain in the Shard Sprawl. | **APPROVED C2A: remove without replacement** | No | No replacement |
 | `middle_guardianSpanThreshold` | board text / `src/game/data/boardTextEffects.ts` | choices 1-2 failure: `gain_heat 1` | Aligned the Guardian Span threshold and opened the inner breach. | **APPROVED C2A: remove without replacement** | No | No replacement |
 | `middle_webglassFracture` | board text / `src/game/data/boardTextEffects.ts` | choice 1 success: `lose_heat 1`; choices 1-2 failure: `gain_heat 1` | Threaded the Webglass fracture path and logged a breach route. | **APPROVED C2A: remove without replacement** | No | No replacement |
@@ -160,13 +160,13 @@ Phase C1 reviewed the authoritative imported definitions rather than deriving sc
 | `crownless-advocate` | follower / `content/followers/crownless-advocate.json` | active: `lose_heat 1` | Soften a faction demand or cancel one unstable rivalry cost. | D. Blocked | No | No |
 | `saltflat-bone-reader` | follower / `content/followers/saltflat-bone-reader.json` | active: `lose_heat 1` | Turn a Scar, omen, or void-salt bargain into a safer route note. | D. Blocked | No | No |
 
-Current count after C2B2: 20 board-text occurrences + 1 scenario + 4 escalations + 2 followers = **27 occurrences across 16 IDs**. Groups 1–2 are implemented; Groups 3–5 remain approved but unimplemented.
+Current count after C2B3: 17 board-text occurrences + 1 scenario + 4 escalations + 2 followers = **24 occurrences across 13 IDs**. Groups 1–3 are implemented; Groups 4–5 remain approved but unimplemented.
 
 ### C2A implementation order and projected count
 
 1. Simple failure-only: `outer_ashwakeClearLane`, `outer_mirecoilTraffic`, `outer_relayCrew`, `outer_oathpostWrit`, `middle_redMarchBargain` — **implemented C2B1**.
 2. Success-sequence cleanup: `outer_emberSanctumRest`, `outer_glassmereChorus`, `outer_waymarketExchange`, `outer_saltCrossing`, `outer_surgeryTreatment` — **implemented C2B2**.
-3. Existing severe consequence cleanup: `outer_brokenCausewayShortcut`, `middle_scarSurgery`, `inner_blackstarShortcut`.
+3. Existing severe consequence cleanup: `outer_brokenCausewayShortcut`, `middle_scarSurgery`, `inner_blackstarShortcut` — **implemented C2B3**.
 4. Two-choice route notes: `middle_shardSprawlBargain`, `middle_webglassFracture`, `inner_veilRiftEntry`.
 5. Clearance/final approach: `middle_guardianSpanThreshold`, `inner_cinderLatticeTrial`, `inner_gateOfCindersTrial`.
 
@@ -206,7 +206,7 @@ Before removing compatibility code, add:
 - Establish a server-side Heat stripping boundary.
 - No content rebalance.
 
-Implementation status: **complete for runtime containment**. `HEAT_THRESHOLD_REACHED` is an exact no-op, phone/TV use the server stripping boundary, and focused validation/projection/replay/Scar tests are present. C2A approved 32 board-text occurrences for removal without replacement; C2B1–C2B2 have removed 12 occurrences across Groups 1–2. The other 20 approved board occurrences and seven separately blocked occurrences remain authored.
+Implementation status: **complete for runtime containment**. `HEAT_THRESHOLD_REACHED` is an exact no-op, phone/TV use the server stripping boundary, and focused validation/projection/replay/Scar tests are present. C2A approved 32 board-text occurrences for removal without replacement; C2B1–C2B3 have removed 15 occurrences across Groups 1–3. The other 17 approved board occurrences and seven separately blocked occurrences remain authored.
 
 ### Phase C2 — Remaining authored content retirement
 
