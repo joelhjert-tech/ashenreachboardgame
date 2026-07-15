@@ -429,6 +429,24 @@ Updated evidence counts:
 
 All 19 C2A board IDs are implemented. See `heat-compatibility-c2b5-board-final-approach-cleanups.md` for clearance, topology, center-gate, and scenario-isolation evidence.
 
+## Phase C3A Mirror scenario approval update
+
+C3A completed a report-only review of the exact remaining scenario Heat occurrence. `scenario_mirror_of_false_heroes` is **APPROVED for removal without replacement**: its `buildConfrontationPlan` effect becomes `null` rather than a Wound, Scar, Global Escalation, preparation loss, loss-pressure mark, or temporary modifier.
+
+The approval preserves the current Mirror Pressure sources and cutoff, final gate, three checks, backlash, progress/victory behavior, center-only confrontation, and scenario-art mapping. It also records—but does not repair—the broader Mirror contract gaps: shared pressure versus Scar-based plan context, objective progress capable of completing outside the center, authored/runtime threshold differences, and incomplete preparation/confrontation separation.
+
+No authored definition changed in C3A. Evidence counts therefore remain:
+
+- board-authored typed Heat effects: **0 across 0 IDs**;
+- scenario-authored typed Heat effects: **1 across 1 approved-but-unimplemented ID**;
+- escalation/follower typed Heat effects: **6 across 6 separately blocked IDs**;
+- total authored typed Heat effects: **7 across 7 IDs**;
+- current Heat-state mechanical reads/writes: **0**;
+- observed/guarded phone and TV Heat fields or labels: **0**;
+- current verdict: **FAIL**.
+
+Implementation of the approved content-only removal is projected to reduce authored Heat to **6 occurrences across 6 IDs**. See `heat-compatibility-c3a-mirror-scenario-approval.md` for the exact architecture map, option analysis, and implementation prerequisites.
+
 ## Verification record
 
 Passed:

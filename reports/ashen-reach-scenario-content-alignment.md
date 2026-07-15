@@ -66,6 +66,12 @@ This template is a consistency envelope, not identical scenario mechanics.
 - Ownership: eligible final confrontation action.
 - New package need: 2 reflection anomalies and 1 conditional elite after privacy review.
 
+#### C3A Heat-retirement approval
+
+The conditional high-pressure `gain_heat 1` leaf in `scenario_mirror_of_false_heroes.buildConfrontationPlan` is **APPROVED for removal without replacement**. It is inert compatibility residue, is counter-mismatched with the live shared-pressure admission check, and does not own preparation, confrontation progress, victory, loss, center access, or scenario art.
+
+Implementation must change only that plan effect to `null`. Mirror Pressure, the mode-sensitive cutoff, final gate, three checks, backlash, `mirrorBreaks`, victory/loss handling, rewards, `center_cinder_gate`, and `/assets/scenarios/mirror-of-false-heroes.png` remain unchanged. This narrow approval does not resolve the separate P0 work for shared pressure ownership, non-center objective completion, preparation/confrontation separation, or False Hero threshold behavior.
+
 ### Throne of Ash
 
 - Reuse: Crown Hunger, Crown claims, Rivalry presentation, current rewards/art.
