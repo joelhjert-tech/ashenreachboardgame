@@ -1,15 +1,15 @@
 # Remaining 17 Heat-linked Threat retirement triage
 
-Status: Groups H1 through H7B are implemented. H8A approves `marrow-tax-auditors` for a later implementation pass. One ID remains blocked.
+Status: Groups H1 through H8B are implemented. One ID remains blocked.
 
 ## Decision summary
 
-The two existing Heat audits and current canonical Threat content reconcile to exactly **17 unique stable IDs**. Fifteen IDs are **APPROVED AND IMPLEMENTED** across H1 through H7B. H8A makes one further ID **APPROVED, NOT IMPLEMENTED** after resolving its economy-frequency boundary. One remains **BLOCKED** because its private-choice ownership, persistence, and reset contract is unresolved.
+The two existing Heat audits and current canonical Threat content reconcile to exactly **17 unique stable IDs**. Sixteen IDs are **APPROVED AND IMPLEMENTED** across H1 through H8B. One remains **BLOCKED** because its private-choice ownership, persistence, and reset contract is unresolved.
 
-- Approved and implemented: 15
-- Approved, not implemented: 1
+- Approved and implemented: 16
+- Approved, not implemented: 0
 - Blocked: 1
-- Approved retirement models: remove without replacement (3), normal Wound pressure (4), floor-zero Salvage pressure (4; three implemented and one approved for H8B), exact-instance Equipment suppression (2), stat-specific temporary modifier (1), owner-choice forced displacement (1), guarded shared escalation (1)
+- Approved retirement models: remove without replacement (3), normal Wound pressure (4), floor-zero Salvage pressure (4, all implemented), exact-instance Equipment suppression (2), stat-specific temporary modifier (1), owner-choice forced displacement (1), guarded shared escalation (1)
 - Player-facing Heat remains obsolete. Every still-active Heat branch below is parsed only for compatibility and resolves as a no-op with a “no additional status change” summary.
 - Canonical Threats do not define an activation-number field. Every record therefore reports `N/A`; difficulty and canonical graph frequency are recorded separately and are not relabelled as activation.
 - The 17-card population is Red 1 / Blue 7 / Yellow 9. Card totals remain Red 26 / Blue 35 / Yellow 48 / overall 109.
@@ -26,7 +26,7 @@ The two existing Heat audits and current canonical Threat content reconcile to e
 | `gateblind-pulse` | Gateblind Pulse | Blue / hazard | N/A | Signal 10 | scenario progress `gateblindPulsesRead +1` | guarded Global Escalation +1 below one-before-collapse | none | retired H7B `failEffect` | implemented typed guarded escalation | `content/cards/threats/gateblind-pulse.json` | `choir-static-burst`, `cinder-gate-backlash`, `saint-of-ashes-echo` |
 | `hymn-scarred-zealot` | Hymn-Scarred Zealot | Red / enemy | N/A | Grit 3 | Defeat | 1 preventable Wound on loss | automatic 1 Trophy point and 1-value pile entry; authored silencing note | retired H5B `woundOnLoss` | implemented normal Wound request | `content/cards/threats/hymn-scarred-zealot.json` | `lantern-ash-ghoul`, `moth-carrier-husk`, `ash-cinder-runt` |
 | `lantern-moth-swarm` | Lantern-Moth Swarm | Blue / hazard | N/A | Signal 5 | no additional effect | 1 preventable Wound | none | retired H2 success and failure | implemented removal plus normal Wound | `content/cards/threats/lantern-moth-swarm.json` | `glass-chime-swarm`, `spindle-static-squall`, `roadside-bone-oracle` |
-| `marrow-tax-auditors` | Marrow-Tax Auditors | Yellow / hazard | N/A | Guile 7 | tariff-loophole note | `gain_heat 2` | none | `failEffect` | compatibility-only no-op | `content/cards/threats/marrow-tax-auditors.json` | `locked-vault`, `false-route-procession`, `wireghost-key` |
+| `marrow-tax-auditors` | Marrow-Tax Auditors | Yellow / hazard | N/A | Guile 7 | tariff-loophole note | lose up to 1 Salvage | none | retired H8B `failEffect` | implemented floor-zero automatic loss | `content/cards/threats/marrow-tax-auditors.json` | `locked-vault`, `false-route-procession`, `wireghost-key` |
 | `memory-tax-gate` | Memory Tax Gate | Yellow / hazard | N/A | Command 8 | harmless-memory note | `gain_heat 2` | none | `failEffect` | compatibility-only no-op | `content/cards/threats/memory-tax-gate.json` | `false-route-procession`, `route-splice`, `crown-bell-baron` |
 | `mirror-rot-interference` | Mirror-Rot Interference | Blue / hazard | N/A | Guile 11 | no additional effect | 1 Wound | none | retired H1 `successEffect` | implemented removal; failure remains active | `content/cards/threats/mirror-rot-interference.json` | `webglass-snarefield`, `bellwire-snare`, `webglass-echo-trap` |
 | `pale-contract-collector` | Pale Contract Collector | Yellow / enemy | N/A | Command 8 | Defeat | lose up to 1 Salvage on loss | 2 Trophies | `woundOnLoss` | implemented floor-zero automatic loss | `content/cards/threats/pale-contract-collector.json` | `crown-bell-baron`, `pale-toll-enforcer`, `ash-court-duelist` |
@@ -50,7 +50,7 @@ Canonical graph references, used only as a frequency warning, are respectively 3
 | `gateblind-pulse` | shared gate/scenario pressure | conditional Global Escalation +1 only while at least two below collapse | implemented H7B narrow typed/source extension | 3 | APPROVED H7A — IMPLEMENTED H7B |
 | `hymn-scarred-zealot` | ordinary physical loss; defeat silences the hymn | 1 preventable Wound on combat loss | implemented H5B normal Wound pipeline | 2 | APPROVED H5A — IMPLEMENTED H5B |
 | `lantern-moth-swarm` | risk/reward prevention plus immediate fire injury | remove success branch; failure becomes 1 preventable Wound | implemented H2 | 2 | APPROVED — IMPLEMENTED H2 |
-| `marrow-tax-auditors` | repeated resource taxation | lose up to 1 Salvage | approved for the existing floor-zero resolver; implementation deferred to H8B | 2 | APPROVED H8A — NOT IMPLEMENTED |
+| `marrow-tax-auditors` | repeated resource taxation | lose up to 1 Salvage | implemented H8B through the existing floor-zero resolver | 2 | APPROVED H8A — IMPLEMENTED H8B |
 | `memory-tax-gate` | risk/reward choice paid with private memory | player-choice/private-note lifecycle | requires new lifecycle | 3 provisional | BLOCKED |
 | `mirror-rot-interference` | obsolete success-side recovery bookkeeping | remove success branch without replacement | implemented H1 | 1 | APPROVED — IMPLEMENTED H1 |
 | `pale-contract-collector` | resource pressure through debt collection | lose up to 1 Salvage | implemented H3 | 2 | APPROVED — IMPLEMENTED H3 |
@@ -358,7 +358,7 @@ The screen deliberately rejects automatic Scar, Global Escalation, and generic o
 - Severity: 2.
 - Implementation complexity: low.
 - Balance risk: medium. One loss delays a modal 3-Salvage Equipment purchase but cannot create debt or a fallback; finite non-reshuffling local decks bound repeat attrition.
-- Approval status: APPROVED H8A — NOT IMPLEMENTED. Exact economy, frequency, isolation, and test evidence is in `reports/heat-retirement-h8a-marrow-tax-approval.md`.
+- Approval status: APPROVED H8A — IMPLEMENTED H8B. Exact implementation and verification evidence is in `reports/heat-retirement-h8b-marrow-tax-implementation.md`.
 
 ### `memory-tax-gate`
 
@@ -630,7 +630,7 @@ Counts below are unique cards, not individual branches. “Approved proposal” 
 |---|---:|---:|---|
 | Wound effects | 5 | 7 | Cinder/Mirror/Webglass, implemented Choir/Lantern, plus H5A Doppelganger/Zealot |
 | Scar effects | 0 | 0 | H5A expressly rejects direct card Scars; normal threshold Scars remain lifecycle outcomes |
-| Salvage pressure | 0 | 4 | Baron, Collector, and Cutpurse are implemented; Marrow Tax is H8A-approved but not implemented. All are floor-zero owner losses |
+| Salvage pressure | 0 | 4 | Baron, Collector, Cutpurse, and Marrow Tax are implemented floor-zero owner losses |
 | Equipment effects | 3 | 3 | Existing Engineer battle Weapon suppression plus two implemented bounded exact-instance suppressions |
 | Movement effects | 0 | 1 | False-Route owner-choice forced displacement implemented H6B |
 | Temporary modifiers | 0 | 1 | Siren paired next non-battle Command modifier implemented in H4C |
@@ -642,8 +642,8 @@ Counts below are unique cards, not individual branches. “Approved proposal” 
 
 Approved severity distribution is severity 1: four cards (`cinder-gate-backlash`, `mirror-rot-interference`, `soot-stained-cutpurse`, `webglass-snarefield`); severity 2: ten cards (`choir-static-burst`, `crown-bell-baron`, `false-route-procession`, `hymn-scarred-zealot`, `lantern-moth-swarm`, `marrow-tax-auditors`, `pale-contract-collector`, `relay-husk`, `signal-rotted-engineer`, `siren-relay-echo`); severity 3: one card (`gateblind-pulse`); severity 4: one card (`ashen-doppelganger`); severity 5: none. The one blocked provisional candidate is severity 3.
 
-Lane impact remains conservative: Blue approves all seven cards; Yellow approves eight of nine and blocks one; Red's only card is approved. Fifteen approvals are implemented; the Yellow H8A approval is not. No stable ID, lane, role, difficulty, graph placement, art reference, or card total changes in this report.
+Lane impact remains conservative: Blue implements all seven approved cards; Yellow implements eight of nine and blocks one; Red's only card is implemented. No stable ID, lane, role, difficulty, graph placement, art reference, or card total changes in this report.
 
 ## Approval boundary
 
-This report records the completed H1–H7B groups and the report-only H8A approval of `marrow-tax-auditors`. That card remains unchanged until H8B implementation. `memory-tax-gate` remains blocked for its separate private-choice lifecycle approval. The +116-card expansion remains unapproved, and no exact Relic-frequency parity is claimed.
+This report records the completed H1–H8B groups. `memory-tax-gate` is the sole remaining blocked Heat-linked Threat and requires its separate private-choice lifecycle approval. The +116-card expansion remains unapproved, and no exact Relic-frequency parity is claimed.

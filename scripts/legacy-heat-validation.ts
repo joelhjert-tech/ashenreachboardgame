@@ -34,7 +34,6 @@ export const LEGACY_HEAT_EFFECT_APPROVALS: readonly LegacyHeatEffectApproval[] =
   { id: "escalation-choir-feedback", constructs: ["gain_heat_all"] },
   { id: "escalation-marrow-surgery-debt", constructs: ["gain_heat"] },
   { id: "escalation-saltwind-lockdown", constructs: ["gain_heat_all"] },
-  { id: "marrow-tax-auditors", constructs: ["gain_heat"] },
   { id: "memory-tax-gate", constructs: ["gain_heat"] },
   { id: "saltflat-bone-reader", constructs: ["lose_heat"] }
 ];
@@ -67,7 +66,7 @@ export const APPROVED_LEGACY_HEAT_CONTENT_IDS = new Set([
 ]);
 
 export const APPROVED_AUTOMATIC_SALVAGE_LOSS_IDS = new Set([
-  "escalation-crownfall-writ", "ash-rat-skitter", "bridge-toll-runt", "crown-bell-baron", "glass-tick-cloud", "gutter-bell-mite", "locked-vault", "pale-contract-collector", "pale-toll-enforcer", "rust-mote-drone", "soot-stained-cutpurse", "toll-scrip-urchins"
+  "escalation-crownfall-writ", "ash-rat-skitter", "bridge-toll-runt", "crown-bell-baron", "glass-tick-cloud", "gutter-bell-mite", "locked-vault", "marrow-tax-auditors", "pale-contract-collector", "pale-toll-enforcer", "rust-mote-drone", "soot-stained-cutpurse", "toll-scrip-urchins"
 ]);
 
 const visibleTextKeys = new Set(["text", "activeText", "passiveText", "penalty", "trigger", "summary", "description"]);

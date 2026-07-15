@@ -1,6 +1,6 @@
 # Remaining Heat-linked Threat implementation plan
 
-Status: H1 through H7B implemented. H8A approves `marrow-tax-auditors` for H8B implementation. One card remains blocked.
+Status: H1 through H8B implemented. One card remains blocked.
 
 ## Approved implementation groups
 
@@ -110,7 +110,7 @@ Implemented in H6B with one narrow persisted owner-choice state feeding the exis
 
 Implemented in H7B with one typed guarded-escalation effect over the existing authoritative escalation action, mode cap, difficulty-band selector, public projection, source ledger, and reconnect reconstruction. A guarded failure commits a sourced requested/actual zero result before any positive-gain modifier can run, and Gateblind cannot enter collapse processing.
 
-### Group H8B — bounded Marrow Tax economy pressure (1) — APPROVED, NOT IMPLEMENTED
+### Group H8B — bounded Marrow Tax economy pressure (1) — IMPLEMENTED
 
 - Stable ID: `marrow-tax-auditors`.
 - Exact change: replace the failed Guile test's compatibility-only `gain_heat 2` with `{ "type": "lose_salvage", "amount": 1 }`; player wording is “On failure, lose up to 1 Salvage.”
@@ -120,6 +120,8 @@ Implemented in H7B with one typed guarded-escalation effect over the existing au
 - Focused tests: exact content and preserved identity; balances 0 and 1+; requested/actual/resulting breakdown; duplicate and reconnect rejection; no Ledger/shop/mission/Contract reactions; unchanged reward and deck references; `memory-tax-gate` hash pin.
 - Approval source: `reports/heat-retirement-h8a-marrow-tax-approval.md`.
 - Proposed commit: `feat: retire marrow tax heat effect`.
+
+Implemented in H8B by revising the card in place, adding its stable ID to the existing two Salvage-loss authorization registries, retiring its legacy Heat approval, and adding focused authority/isolation/reconnect coverage. No reducer, schema, shop, Contract, Ledger, projection, or UI implementation changed.
 
 ## Blocked prerequisite register
 
@@ -139,7 +141,7 @@ The one blocked ID is not assigned to an implementation group. Its private-choic
 6. **H5B — severe Wound consequences — COMPLETE.** IDs: `ashen-doppelganger`, `hymn-scarred-zealot`. Both reuse the existing Wound path; direct Scar routes remain rejected. Ashen's 2-Wound recall-rate jump is covered by focused partial/full prevention, threshold, replay, reconnect, and reward-regression tests.
 7. **H6B — false-route destination choice — COMPLETE.** ID: `false-route-procession`. The H6A server-generated owner choice is implemented as a narrow forced-displacement extension, separately from `gateblind-pulse`.
 8. **H7B — bounded Gateblind shared pressure — COMPLETE.** ID: `gateblind-pulse`. Conditional +1 stops one step before collapse through narrow typed/source validation over the existing escalation lifecycle.
-9. **H8B — bounded Marrow Tax economy pressure — APPROVED, NOT IMPLEMENTED.** ID: `marrow-tax-auditors`. Benefit: distinct common Guile hazard attrition. Risk: medium and frequency-bound. Prerequisite: implement only the approved floor-zero loss through the existing resolver.
+9. **H8B — bounded Marrow Tax economy pressure — COMPLETE.** ID: `marrow-tax-auditors`. The approved automatic amount-1 floor-zero loss reuses the existing resolver and remains isolated from commerce and progression events.
 10. **Private-choice gate.** ID: `memory-tax-gate`. Benefit: distinct Yellow tension. Risk: high if one choice dominates or private state is not reconnect-safe. Prerequisite: dedicated choice contract.
 
 ## Per-group verification contract
@@ -160,11 +162,11 @@ Before each commit, inspect the complete staged diff and confirm stable IDs, tot
 
 - Removed without replacement: 3 success branches.
 - Implemented normal Wound consequences: 4 cards, including both H5B enemies.
-- Implemented floor-zero Salvage losses: 3 cards; H8A approves a fourth for H8B.
+- Implemented floor-zero Salvage losses: 4 cards.
 - Implemented H1–H3 adds no Scar, Global Escalation, movement, Equipment disable, persistent, choice, temporary modifier, or multiplayer effect.
 - H4B and H4C implement two exact-instance Equipment suppressions, two private target choices, and one paired Command modifier.
-- Approved severity: four at 1, ten at 2, one at 3, one at 4, none at 5; fifteen approvals are implemented through H7B and one is approved for H8B.
-- Lane approval impact is Blue 7, Yellow 8, Red 1; implemented impact remains Blue 7, Yellow 7, Red 1.
+- Approved and implemented severity: four at 1, ten at 2, one at 3, one at 4, none at 5.
+- Lane approval and implemented impact is Blue 7, Yellow 8, Red 1.
 - Card totals: unchanged at 26 / 35 / 48 / 109.
 
 No exact Relic-frequency parity is asserted. No expansion work is authorized.

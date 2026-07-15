@@ -301,9 +301,8 @@ describe("Heat Retirement H7B authority, reactions, and replay", () => {
     expect(collapseEvents(server.getState())).toHaveLength(1);
   });
 
-  it("hash-pins both remaining blocked definitions", () => {
+  it("hash-pins the sole remaining blocked definition", () => {
     const expected = new Map([
-      ["marrow-tax-auditors", "70862bdfbc75105d239c5926822bbe75fd5f073827c67c8878ac5918f01fe1ee"],
       ["memory-tax-gate", "8b7d60e7fdf354131df2a0f3f5f1c701e2ab657a369b1c53cbe095b8d356ae80"]
     ]);
     for (const [id, hash] of expected) {

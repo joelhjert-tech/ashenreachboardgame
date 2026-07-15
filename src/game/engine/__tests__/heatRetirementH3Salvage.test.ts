@@ -57,7 +57,6 @@ const TARGETS = [
 ] as const;
 
 const BLOCKED_HEAT_THREAT_IDS = [
-  "marrow-tax-auditors",
   "memory-tax-gate"
 ] as const;
 
@@ -144,6 +143,7 @@ describe("Heat Retirement H3 floor-zero Salvage Threats", () => {
       "crown-bell-baron",
       "glass-tick-cloud",
       "locked-vault",
+      "marrow-tax-auditors",
       "pale-contract-collector",
       "soot-stained-cutpurse"
     ]));
@@ -346,8 +346,8 @@ describe("Heat Retirement H3 floor-zero Salvage Threats", () => {
 
   it("preserves B2A, H1, H2, Glass-Chime, Spindle, Siren, and the three blocked cards after H6B", () => {
     expect(collectHeatThreatIds()).toEqual([...BLOCKED_HEAT_THREAT_IDS].sort());
-    expect(LEGACY_HEAT_EFFECT_APPROVALS).toHaveLength(10);
-    expect(APPROVED_LEGACY_HEAT_CONTENT_IDS.size).toBe(24);
+    expect(LEGACY_HEAT_EFFECT_APPROVALS).toHaveLength(9);
+    expect(APPROVED_LEGACY_HEAT_CONTENT_IDS.size).toBe(23);
     expect(requireEnemy("crown-bell-baron").woundOnLoss).toEqual({ type: "lose_salvage", amount: 1 });
     expect(requireHazard("glass-tick-cloud").failEffect).toEqual({ type: "lose_salvage", amount: 1 });
     expect(requireHazard("locked-vault").failEffect).toEqual({ type: "lose_salvage", amount: 1 });

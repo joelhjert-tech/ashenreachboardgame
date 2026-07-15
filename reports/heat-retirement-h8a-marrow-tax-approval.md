@@ -1,6 +1,6 @@
 # Heat Retirement H8A — Marrow-Tax Auditors economy-frequency approval
 
-Status: **APPROVED H8A — REPORT ONLY**. No Threat definition, gameplay, economy, schema, validation, server, client, asset, or card-count change is made in this pass.
+Status: **APPROVED H8A — IMPLEMENTED H8B**. H8A itself was report-only; the approved rule is now implemented in H8B.
 
 Checkpoint: `06d8a28 feat: retire gateblind pulse heat effect` on `phase/heat-retirement-1x`.
 
@@ -209,21 +209,21 @@ Neither surface shows Heat, payment language, affordability controls, `lose_salv
 - Complexity: low.
 - Balance risk: medium; clustered Yellow attrition and one-seat concentration require playtest observation.
 - Distinctness from existing Salvage-loss Threats: Guile 7 common hazard in middle/special audit pools; finite four-pool exposure, unlike Forge hazards or battle/Trophy enemies.
-- Approval status: **APPROVED H8A — NOT IMPLEMENTED**.
+- Approval status: **APPROVED H8A — IMPLEMENTED H8B**.
 
 ## 12. Implementation prerequisites
 
-H8B may:
+H8B implemented the approved boundary:
 
-1. Replace only `marrow-tax-auditors`' legacy failure with `{ type: "lose_salvage", amount: 1 }` and exact approved wording.
-2. Replace only its `heat` resource tag with `salvage` if required by existing content conventions.
-3. Add the stable ID to the existing approved automatic-loss and H3/B2A source registries.
-4. Remove only its legacy Heat authoring approval.
-5. Update legacy population counts and focused reports/tests.
+1. Replaced only `marrow-tax-auditors`' legacy failure with `{ type: "lose_salvage", amount: 1 }` and exact approved wording.
+2. Replaced only its `heat` resource tag with `salvage`.
+3. Added the stable ID to the existing approved automatic-loss and Threat-revision source registries.
+4. Removed only its legacy Heat authoring approval.
+5. Updated legacy population counts and focused reports/tests.
 
-No resolver, schema, pending state, shop, mission, Contract, Ledger, projection component, price, reward, or UI extension is expected.
+No resolver, schema, pending state, shop, mission, Contract, Ledger, projection component, price, reward, or UI extension was added.
 
-Focused H8B tests must cover exact identity/text/effect; `3 → 2`, `1 → 0`, and `0 → 0`; requested/actual/resulting metadata; final failed trigger only; client amount/source authority; wrong/stale/duplicate/replay; reconnect pending/completed; public-safe phone/TV results; no payment or choice; no Ledger/shop/mission/Contract/completed-contract/relic event; unchanged success note; finite graph count four; current totals; all H1–H7B definitions; and byte-pinned `memory-tax-gate` plus both quarantined audit hashes.
+Focused H8B tests cover exact identity/text/effect; `3 → 2`, `1 → 0`, and `0 → 0`; requested/actual/resulting metadata; final failed trigger only; client amount/source authority; wrong/stale/duplicate/replay; reconnect pending/completed; public-safe phone/TV results; no payment or choice; no Ledger/shop/mission/Contract/completed-contract/relic event; unchanged success note; finite graph count four; current totals; all H1–H7B definitions; and byte-pinned `memory-tax-gate` plus both quarantined audit hashes.
 
 Recommended commit subject: `feat: retire marrow tax heat effect`.
 
@@ -231,9 +231,9 @@ Recommended commit subject: `feat: retire marrow tax heat effect`.
 
 `memory-tax-gate` remains **BLOCKED**. Its unresolved issue is the existing private-choice lifecycle: exact competitive options, owner-only prompt/projection, insufficient-resource and no-note behavior, mandatory resolution/cancellation, persistence/reset, and source deduplication. H8A does not redesign it.
 
-The +116-card expansion remains unapproved.
+The +116-card expansion remains unapproved. Implementation and verification evidence is recorded in `reports/heat-retirement-h8b-marrow-tax-implementation.md`.
 
-## 14. Verification
+## 14. H8A approval-time verification (historical)
 
 Verification at the H8A report-only checkpoint:
 
