@@ -32,7 +32,6 @@ const displacementCards = [
 const untouchedHeatLinkedHashes = new Map([
   ["glass-chime-swarm", "745affe8619bc5c0cae105c60aff8acd8792e27aac3a26b76588ed3893e876f2"],
   ["spindle-static-squall", "79792aba83a13ca9ac1193ce984919474e02dfca2d05b7c21a40da896032cb33"],
-  ["false-route-procession", "032bf4e5795ab98fa8e8def052dcf28190c2295f70582530e59f32b3592377ae"],
   ["gateblind-pulse", "d495be86b7b4a37acffa451fde6121293673a83a84f9aba8471336e314662618"],
   ["marrow-tax-auditors", "bdf79951c64c0ea1e8322d8ba812db714fcc19cbae7d4dc6e4fca145fbfeeb9b"],
   ["memory-tax-gate", "dbeabc6a8d5b1654fd1f5a3c04ad8100fee6e47763bee51112a2d05ed407783e"]
@@ -92,7 +91,7 @@ function applyFailure(state: GameState, card: ReturnType<typeof requireHazard>) 
 describe("Phase B2A threat revision content", () => {
   it("preserves all four stable IDs, lanes, tests, counts, and exact approved effects", () => {
     expect(THREAT_REVISION_SALVAGE_LOSS_SOURCE_IDS).toEqual(new Set(allApprovedThreatRevisionSalvageCards));
-    expect(APPROVED_FORCED_DISPLACEMENT_SOURCE_IDS).toEqual(new Set(["breach-halberd", "mudglass-sinkhole", "suture-storm", "route-splice"]));
+    expect(APPROVED_FORCED_DISPLACEMENT_SOURCE_IDS).toEqual(new Set(["breach-halberd", "mudglass-sinkhole", "suture-storm", "route-splice", "false-route-procession"]));
     expect(RIFT_ANCHOR_SPIKE_ELIGIBLE_SOURCE_IDS).toEqual(APPROVED_FORCED_DISPLACEMENT_SOURCE_IDS);
     for (const id of salvageCards) expect(APPROVED_AUTOMATIC_SALVAGE_LOSS_IDS.has(id)).toBe(true);
 
@@ -109,7 +108,7 @@ describe("Phase B2A threat revision content", () => {
     expect(laneCounts).toEqual({ red: 26, blue: 35, yellow: 48 });
   });
 
-  it("pins implemented Glass-Chime, Spindle, and Siren plus the four blocked Heat-linked IDs", () => {
+  it("pins implemented Glass-Chime and Spindle plus the three remaining blocked Heat-linked IDs", () => {
     for (const [id, expectedHash] of untouchedHeatLinkedHashes) {
       const authoredCard = JSON.parse(readFileSync(join(process.cwd(), "content", "cards", "threats", `${id}.json`), "utf8"));
       expect(createHash("sha256").update(JSON.stringify(authoredCard)).digest("hex"), id).toBe(expectedHash);

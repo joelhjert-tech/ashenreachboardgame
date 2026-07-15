@@ -554,6 +554,8 @@ describe("TvApp", () => {
       sourceTitle: "Route Splice",
       originSectorId: "middle_red_march_outpost",
       destinationSectorId: "middle_anomaly_well",
+      destinationSectorName: "Static Chapel",
+      direction: "clockwise",
       status: "waiting"
     };
     mockUseRoomSubscription.mockReturnValue({ patch, error: null, sendIntent: vi.fn(), status: "open", debugEvents: [], clearDebugEvents: vi.fn() });
@@ -564,6 +566,27 @@ describe("TvApp", () => {
     expect(banner).toHaveTextContent(/waiting for .* to resolve route splice/i);
     expect(screen.queryByRole("button", { name: /accept displacement/i })).not.toBeInTheDocument();
     expect(banner).not.toHaveTextContent(/rift anchor spike/i);
+  });
+
+  it("waits for the False Route owner without exposing unconfirmed candidates", async () => {
+    window.localStorage.setItem("ashen-reach-tv-room-code", "RT7P4");
+    window.localStorage.setItem("ashen-reach-tv-host-token", "host:RT7P4:secret");
+    const patch = createPatch();
+    patch.phase = "resolution";
+    patch.payload.pendingForcedDestinationChoice = {
+      ownerSeatId: "seat-1",
+      sourceId: "false-route-procession",
+      sourceTitle: "False-Route Procession",
+      status: "waiting"
+    };
+    mockUseRoomSubscription.mockReturnValue({ patch, error: null, sendIntent: vi.fn(), status: "open", debugEvents: [], clearDebugEvents: vi.fn() });
+
+    render(<TvApp />);
+
+    const banner = await screen.findByTestId("host-live-status");
+    expect(banner).toHaveTextContent(/choose the false route/i);
+    expect(banner).toHaveTextContent(/owner phone must answer/i);
+    expect(banner).not.toHaveTextContent(/clockwise|counterclockwise|static chapel|chain-maul yard/i);
   });
 
   it("places live status inside the command header instead of an absolute board overlay", () => {

@@ -7,7 +7,7 @@ import { contractCardSchema } from "./contract.schema.js";
 import { sectorNodeSchema } from "./sector.schema.js";
 import { pendingScarConsequenceSchema } from "./scarTrigger.schema.js";
 import { pendingEncounterDecisionSchema } from "./encounterDecision.schema.js";
-import { pendingDisplacementArrivalSchema, pendingDisplacementSchema, pendingSutureStormConsequenceSchema } from "./displacement.schema.js";
+import { pendingDisplacementArrivalSchema, pendingDisplacementSchema, pendingForcedDestinationChoiceSchema, pendingSutureStormConsequenceSchema } from "./displacement.schema.js";
 
 export const phaseSchema = z.enum([
   "start",
@@ -369,6 +369,7 @@ export const gameStateSchema = z.object({
   pendingEffect: effectSchema.nullable(),
   pendingEncounterDecision: pendingEncounterDecisionSchema.nullable().optional(),
   resolvedEncounterDecisionIds: z.array(z.string().min(1)).optional(),
+  pendingForcedDestinationChoice: pendingForcedDestinationChoiceSchema.nullable().optional(),
   pendingDisplacement: pendingDisplacementSchema.nullable().optional(),
   pendingDisplacementArrival: pendingDisplacementArrivalSchema.nullable().optional(),
   pendingSutureStormConsequence: pendingSutureStormConsequenceSchema.nullable().optional(),

@@ -171,6 +171,12 @@ export interface ForcedDisplacementResolvedAction extends BaseAction {
   reactionId: string;
 }
 
+export interface ForcedDestinationSelectedAction extends BaseAction {
+  type: "FORCED_DESTINATION_SELECTED";
+  choiceId: string;
+  destinationSectorId: string;
+}
+
 export interface SutureStormContinuedAction extends BaseAction {
   type: "SUTURE_STORM_CONTINUED";
 }
@@ -648,6 +654,7 @@ export type GameAction =
   | ResolutionAppliedAction
   | ResolutionContinuedAction
   | EncounterDecisionResolvedAction
+  | ForcedDestinationSelectedAction
   | ForcedDisplacementResolvedAction
   | SutureStormContinuedAction
   | HeatThresholdReachedAction
@@ -753,6 +760,7 @@ export type ClientIntent =
       seatId: string;
     }
   | { type: "ENCOUNTER_DECISION_REQUESTED"; seatId: string; decisionId: string; decisionVersion: number; optionId: string }
+  | { type: "FORCED_DESTINATION_SELECTED"; seatId: string; choiceId: string; destinationSectorId: string }
   | { type: "FORCED_DISPLACEMENT_ACCEPTED"; seatId: string; reactionId: string }
   | {
       type: "CONTINUE_SCAR_CONSEQUENCE";

@@ -133,6 +133,32 @@ function createPatch(overrides: Partial<PhonePatchPayload> = {}): PhonePatchPayl
 }
 
 describe("PhoneActionPanel", () => {
+  it("shows only server-generated False Route destinations and submits the immutable choice identity", () => {
+    const onIntent = vi.fn();
+    const patch = createPatch({
+      phase: "resolution",
+      pendingForcedDestinationChoicePrivate: {
+        choiceId: "false-route-choice:failure",
+        sourceTitle: "False-Route Procession",
+        sourceSectorId: "middle_red_march_outpost",
+        candidates: [
+          { sectorId: "middle_anomaly_well", sectorName: "Static Chapel", direction: "clockwise", ring: "middle" },
+          { sectorId: "middle_shard_sprawl", sectorName: "Chain-Maul Yard", direction: "counterclockwise", ring: "middle" }
+        ]
+      }
+    });
+    render(<PhoneActionPanel characters={characters} onIntent={onIntent} patch={patch} />);
+    expect(screen.getAllByText(/Choose the false route/i)).toHaveLength(2);
+    fireEvent.click(screen.getByRole("button", { name: /Clockwise: Static Chapel/i }));
+    expect(onIntent).toHaveBeenCalledWith({
+      type: "FORCED_DESTINATION_SELECTED",
+      seatId: "seat-1",
+      choiceId: "false-route-choice:failure",
+      destinationSectorId: "middle_anomaly_well"
+    });
+    expect(screen.queryByRole("button", { name: /Accept displacement/i })).not.toBeInTheDocument();
+  });
+
   it("shows only the authoritative forced-displacement acknowledgement", () => {
     const onIntent = vi.fn();
     const patch = createPatch({

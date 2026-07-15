@@ -29,6 +29,7 @@ import type {
   RecruitReplacementAction,
   ResolutionAppliedAction,
   EncounterDecisionResolvedAction,
+  ForcedDestinationSelectedAction,
   ForcedDisplacementResolvedAction,
   SutureStormContinuedAction,
   ResolutionContinuedAction,
@@ -104,7 +105,8 @@ import {
 } from "../rules/nextNormalMovementRollModifier.js";
 import type { ScarSourceEvent } from "../schema/scarTrigger.schema.js";
 import { getBoardSpace, isScenarioConfrontationSpace } from "../data/boardSpaces.js";
-import { getForcedDisplacementDestination, getLegalMovementRoute, getLegalMovementRouteVariant, getMovementBlockReason, getVoidKeyMovementRoute, getMovementStepBlockReason } from "../rules/movementPlanner.js";
+import { getForcedDisplacementDestination, getOwnerSelectedForcedDisplacementCandidates, getLegalMovementRoute, getLegalMovementRouteVariant, getMovementBlockReason, getVoidKeyMovementRoute, getMovementStepBlockReason } from "../rules/movementPlanner.js";
+import { RIFTFALL_BOARD_NODE_INDEX } from "../../data/riftfallBoardNodes.js";
 import { canRiftAnchorSpikeSuppress } from "../rules/forcedDisplacement.js";
 import { resolveFloorZeroSalvageLoss, THREAT_REVISION_SALVAGE_LOSS_SOURCE_IDS } from "../rules/salvageLoss.js";
 import { isBoardSpaceShopCapable, SHOP_FAILURE_REASONS } from "../rules/shopAvailability.js";
@@ -382,6 +384,8 @@ function summarizeEffect(effect: EncounterEffect | null, success: boolean | null
       return `${prefix} ${effect.prompt}`;
     case "forcedDisplacement":
       return `${prefix} forced displacement pending.`;
+    case "ownerSelectedForcedDisplacement":
+      return `${prefix} choose a legal false route.`;
     case "sequence":
       return effect.effects.map((entry: EncounterEffect) => summarizeEffect(entry, success)).join(" ");
     default: {
@@ -396,6 +400,7 @@ function applyEffectToPlayer(player: PlayerState, effect: EncounterEffect): Play
   switch (effect.type) {
     case "encounter_payment":
     case "forcedDisplacement":
+    case "ownerSelectedForcedDisplacement":
     case "equipment_suppression":
       return player;
     case "take_wound":
@@ -563,7 +568,8 @@ function createPendingDisplacement(
   action: ResolutionAppliedAction,
   effect: Extract<EncounterEffect, { type: "forcedDisplacement" }>,
   destinationSectorId: string,
-  sourceResolutionIdOverride?: string
+  sourceResolutionIdOverride?: string,
+  sourceChoiceId?: string
 ): NonNullable<GameState["pendingDisplacement"]> {
   const player = requirePlayer(state, action.seatId);
   const sourceResolutionId = sourceResolutionIdOverride ?? state.activeResolution?.id ?? `${action.seatId}:${action.sourceCardId ?? "encounter"}:${state.sequence}`;
@@ -575,6 +581,7 @@ function createPendingDisplacement(
     sourceId: action.sourceCardId ?? state.currentEncounter?.id ?? "unknown-encounter",
     sourceEventId,
     sourceResolutionId,
+    sourceChoiceId,
     originSectorId: player.character.currentSpaceId,
     destinationSectorId,
     direction: effect.direction,
@@ -2481,7 +2488,7 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
           eventLog: [...state.eventLog, action]
         });
       }
-      const requiresAuthoritativeSource = state.pendingEffect.type === "lose_salvage" || state.pendingEffect.type === "forcedDisplacement" || state.pendingEffect.type === "next_non_battle_test_modifier" || state.pendingEffect.type === "next_normal_movement_roll_modifier";
+      const requiresAuthoritativeSource = state.pendingEffect.type === "lose_salvage" || state.pendingEffect.type === "forcedDisplacement" || state.pendingEffect.type === "ownerSelectedForcedDisplacement" || state.pendingEffect.type === "next_non_battle_test_modifier" || state.pendingEffect.type === "next_normal_movement_roll_modifier";
       if (requiresAuthoritativeSource && resolutionAction.sourceCardId && resolutionAction.sourceCardId !== authoritativeSourceCardId) {
         return reject(state, action, "Resolution source is stale");
       }
@@ -2497,6 +2504,60 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
         : null;
       if (salvageLossSourceEventId && (state.resolvedSalvageLossSourceEventIds ?? []).includes(salvageLossSourceEventId)) {
         return reject(state, action, "Salvage loss source was already resolved");
+      }
+
+      if (state.pendingEffect.type === "ownerSelectedForcedDisplacement") {
+        if (resolutionAction.success !== false) return reject(state, action, "False Route Procession displacement requires a confirmed failed test");
+        if (authoritativeSourceCardId !== "false-route-procession" || state.pendingEffect.sourceCardId !== authoritativeSourceCardId) {
+          return reject(state, action, "False Route Procession source is stale");
+        }
+        const player = requirePlayer(state, resolutionAction.seatId);
+        const sourceSectorId = player.character.currentSpaceId;
+        const sourceNode = RIFTFALL_BOARD_NODE_INDEX.get(sourceSectorId);
+        const sourceResolutionId = state.activeResolution?.id ?? `${resolutionAction.seatId}:${authoritativeSourceCardId}:${state.sequence}`;
+        const sourceEventId = `${sourceResolutionId}:forced-displacement`;
+        if ((state.resolvedDisplacementSourceEventIds ?? []).includes(sourceEventId) || state.pendingForcedDestinationChoice?.sourceEventId === sourceEventId || state.pendingDisplacement?.sourceEventId === sourceEventId) {
+          return reject(state, action, "False route source was already resolved");
+        }
+        const candidates = getOwnerSelectedForcedDisplacementCandidates(state, resolutionAction.seatId, sourceSectorId);
+        if (!sourceNode || sourceNode.ring === "center" || candidates.length === 0) {
+          const summary = "No false route was available.";
+          return succeed({
+            ...state,
+            sequence: state.sequence + 1,
+            pendingEffect: null,
+            pendingFailureReaction: null,
+            pendingStaticIntercessionReaction: null,
+            resolvedDisplacementSourceEventIds: [...(state.resolvedDisplacementSourceEventIds ?? []), sourceEventId],
+            activeResolution: state.activeResolution ? { ...state.activeResolution, stage: "outcome_summary", outcome: { title: "False route unavailable", text: summary, effects: [summary] } } : null,
+            eventLog: [...state.eventLog, { ...action, sourceEventId, candidates: [], summary }]
+          });
+        }
+        const choiceId = `false-route-choice:${sourceEventId}`;
+        return succeed({
+          ...state,
+          sequence: state.sequence + 1,
+          pendingEffect: null,
+          pendingFailureReaction: null,
+          pendingStaticIntercessionReaction: null,
+          pendingForcedDestinationChoice: {
+            choiceId,
+            ownerSeatId: resolutionAction.seatId,
+            sourceId: "false-route-procession",
+            sourceEventId,
+            sourceResolutionId,
+            sourceSectorId,
+            ring: sourceNode.ring,
+            candidates,
+            distance: 1,
+            ringPolicy: "sameRing",
+            destinationOwner: "affectedSeat",
+            createdAt: resolutionAction.createdAt,
+            status: "awaitingChoice"
+          },
+          activeResolution: state.activeResolution ? { ...state.activeResolution, stage: "outcome_summary", outcome: { title: "Choose the false route", text: "Choose one legal destination on your current ring.", effects: ["Owner route choice pending."] } } : null,
+          eventLog: [...state.eventLog, { ...action, sourceEventId, candidateCount: candidates.length }]
+        });
       }
 
       if (state.pendingEffect.type === "forcedDisplacement") {
@@ -2740,6 +2801,70 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
         pendingDisplacement,
         pendingSutureStormConsequence: { ...pending, stage: "displacement" },
         eventLog: [...state.eventLog, { ...action, sourceEventId: pending.sourceEventId, continued: true }]
+      });
+    }
+    case "FORCED_DESTINATION_SELECTED": {
+      const destinationAction = action as ForcedDestinationSelectedAction;
+      try { ensureSeatTurn(state, destinationAction.seatId); } catch (error) { return reject(state, action, error instanceof Error ? error.message : "Seat cannot act"); }
+      if (state.phase !== "resolution") return reject(state, action, `Cannot select a forced destination during phase ${state.phase}`);
+      const pending = state.pendingForcedDestinationChoice;
+      if (!pending) return reject(state, action, "No forced destination choice is pending");
+      if (pending.ownerSeatId !== destinationAction.seatId) return reject(state, action, "Forced destination choice belongs to another seat");
+      if (pending.choiceId !== destinationAction.choiceId) return reject(state, action, "Forced destination choice is stale");
+      if ((state.resolvedDisplacementSourceEventIds ?? []).includes(pending.sourceEventId)) return reject(state, action, "False route source was already resolved");
+
+      const player = requirePlayer(state, destinationAction.seatId);
+      if (player.character.currentSpaceId !== pending.sourceSectorId || player.sectorId !== pending.sourceSectorId || player.character.status !== "active") {
+        const summary = "The false route expired because the operative was no longer at its source sector.";
+        return succeed({
+          ...state,
+          sequence: state.sequence + 1,
+          pendingForcedDestinationChoice: null,
+          resolvedDisplacementSourceEventIds: [...(state.resolvedDisplacementSourceEventIds ?? []), pending.sourceEventId],
+          activeResolution: state.activeResolution ? { ...state.activeResolution, stage: "outcome_summary", outcome: { title: "False route expired", text: summary, effects: [summary] } } : null,
+          eventLog: [...state.eventLog, { ...action, sourceEventId: pending.sourceEventId, cancelled: true, summary }]
+        });
+      }
+      if (state.currentEncounter?.id !== pending.sourceId || state.activeResolution?.id !== pending.sourceResolutionId) {
+        return reject(state, action, "False route source is stale");
+      }
+      const storedCandidate = pending.candidates.find((candidate) => candidate.sectorId === destinationAction.destinationSectorId);
+      if (!storedCandidate) return reject(state, action, "Destination was not offered by the server");
+      const authoritativeCandidates = getOwnerSelectedForcedDisplacementCandidates(state, destinationAction.seatId, pending.sourceSectorId);
+      const authoritativeCandidate = authoritativeCandidates.find((candidate) => candidate.sectorId === storedCandidate.sectorId && candidate.direction === storedCandidate.direction);
+      if (!authoritativeCandidate) return reject(state, action, "False route destination is no longer legal");
+
+      const displacementEffect: Extract<EncounterEffect, { type: "forcedDisplacement" }> = {
+        type: "forcedDisplacement",
+        direction: storedCandidate.direction,
+        distance: 1,
+        sameRing: true,
+        failureStillCounts: true
+      };
+      const resolutionAction: ResolutionAppliedAction = {
+        type: "RESOLUTION_APPLIED",
+        seatId: destinationAction.seatId,
+        effect: displacementEffect,
+        sourceCardId: pending.sourceId,
+        success: false,
+        createdAt: destinationAction.createdAt
+      };
+      const pendingDisplacement = createPendingDisplacement(
+        state,
+        resolutionAction,
+        displacementEffect,
+        storedCandidate.sectorId,
+        pending.sourceResolutionId,
+        pending.choiceId
+      );
+      const destinationName = state.sectors.find((sector) => sector.id === storedCandidate.sectorId)?.name ?? storedCandidate.sectorId;
+      return succeed({
+        ...state,
+        sequence: state.sequence + 1,
+        pendingForcedDestinationChoice: null,
+        pendingDisplacement,
+        activeResolution: state.activeResolution ? { ...state.activeResolution, stage: "outcome_summary", outcome: { title: "False route selected", text: `${storedCandidate.direction === "clockwise" ? "Clockwise" : "Counterclockwise"} to ${destinationName}.`, effects: ["Forced displacement reaction pending."] } } : null,
+        eventLog: [...state.eventLog, { ...action, sourceEventId: pending.sourceEventId, direction: storedCandidate.direction }]
       });
     }
     case "FORCED_DISPLACEMENT_RESOLVED": {
@@ -5247,6 +5372,9 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
       if (state.pendingEncounterDecision) {
         return reject(state, action, "Encounter payment must be resolved before continuing");
       }
+      if (state.pendingForcedDestinationChoice) {
+        return reject(state, action, "False route destination must be selected before continuing");
+      }
       if (state.pendingDisplacement) {
         return reject(state, action, "Forced displacement must be resolved before continuing");
       }
@@ -5288,6 +5416,7 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
         currentEncounter: leavingResolution ? null : lifecycleCompletedState.currentEncounter,
         pendingEnemyRoll: leavingResolution ? null : lifecycleCompletedState.pendingEnemyRoll,
         pendingEffect: leavingResolution ? null : lifecycleCompletedState.pendingEffect,
+        pendingForcedDestinationChoice: leavingResolution ? null : lifecycleCompletedState.pendingForcedDestinationChoice,
         pendingDisplacement: leavingResolution ? null : lifecycleCompletedState.pendingDisplacement,
         pendingDisplacementArrival: leavingResolution ? null : lifecycleCompletedState.pendingDisplacementArrival,
         pendingSutureStormConsequence: leavingResolution ? null : lifecycleCompletedState.pendingSutureStormConsequence,

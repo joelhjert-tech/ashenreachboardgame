@@ -55,7 +55,6 @@ const TARGETS = [
 ] as const;
 
 const BLOCKED_HASHES = new Map([
-  ["false-route-procession", "af761248355457c5409c2aab378330f5504bb91b135fa876e8b44e342b98f754"],
   ["gateblind-pulse", "8f3840ded7732635432917a92162f96cced763a3161a2c243dde14f1f02d8cb2"],
   ["marrow-tax-auditors", "70862bdfbc75105d239c5926822bbe75fd5f073827c67c8878ac5918f01fe1ee"],
   ["memory-tax-gate", "8b7d60e7fdf354131df2a0f3f5f1c701e2ab657a369b1c53cbe095b8d356ae80"]
@@ -350,10 +349,10 @@ describe("Heat Retirement H5B severe Wound Threats", () => {
       .not.toMatch(/\bHeat\b|gain_heat|lose_heat|sourceEventId|consequenceId/i);
   });
 
-  it("removes exactly the H5B approvals and hash-pins the four still-blocked definitions", () => {
+  it("removes exactly the H5B approvals and hash-pins the three still-blocked definitions after H6B", () => {
     expect(collectHeatThreatIds()).toEqual([...BLOCKED_HASHES.keys()].sort());
-    expect(LEGACY_HEAT_EFFECT_APPROVALS).toHaveLength(12);
-    expect(APPROVED_LEGACY_HEAT_CONTENT_IDS.size).toBe(26);
+    expect(LEGACY_HEAT_EFFECT_APPROVALS).toHaveLength(11);
+    expect(APPROVED_LEGACY_HEAT_CONTENT_IDS.size).toBe(25);
     for (const [id, hash] of BLOCKED_HASHES) {
       const bytes = readFileSync(join(process.cwd(), "content", "cards", "threats", `${id}.json`));
       expect(createHash("sha256").update(bytes).digest("hex")).toBe(hash);

@@ -3,7 +3,7 @@
   "type": "threat",
   "cardType": "hazard",
   "title": "False-Route Procession",
-  "text": "A procession of route ghosts walks the exact shortcut you wanted to believe was real.",
+  "text": "If you lose, move 1 sector clockwise or counterclockwise on your current ring. Choose from the legal destinations. If only one is legal, move there. If neither is legal, remain in place.",
   "flavor": "They wave for you to follow with hands turned backward.",
   "severity": 2,
   "stat": "command",
@@ -13,8 +13,13 @@
     "text": "You named the false road aloud and broke the procession."
   },
   "failEffect": {
-    "type": "gain_heat",
-    "amount": 2
+    "type": "ownerSelectedForcedDisplacement",
+    "sourceCardId": "false-route-procession",
+    "distance": 1,
+    "ringPolicy": "sameRing",
+    "destinationOwner": "affectedSeat",
+    "noDestinationFallback": "remainInPlace",
+    "failureStillCounts": true
   },
   "enemyFamily": "revenant",
   "threatLane": "yellow",
@@ -22,7 +27,7 @@
   "rarity": "common",
   "tempo": "push",
   "resourceTags": [
-    "heat",
+    "movement",
     "loot"
   ]
 }

@@ -944,7 +944,8 @@ export interface PublicPatchPayload {
   pendingEnemyRoll: PendingEnemyRoll | null;
   pendingTileChallenge?: PublicPendingTileChallenge | null;
   pendingEncounterDecision?: { seatId: string; sourceCardId: string; sourceTitle: string; status: "waiting" } | null;
-  pendingDisplacement?: { seatId: string; sourceId: string; sourceTitle: string; originSectorId: string; destinationSectorId: string; status: "waiting" } | null;
+  pendingForcedDestinationChoice?: { ownerSeatId: string; sourceId: "false-route-procession"; sourceTitle: string; status: "waiting" } | null;
+  pendingDisplacement?: { seatId: string; sourceId: string; sourceTitle: string; originSectorId: string; destinationSectorId: string; destinationSectorName?: string; direction?: "clockwise" | "counterclockwise"; status: "waiting" } | null;
   outcomeSummary: OutcomeSummary | null;
   rivalryAgendaCompletion?: PublicRivalryAgendaCompletion | null;
   rivalryAgendaReveal?: PublicRivalryAgendaReveal | null;
@@ -1011,6 +1012,17 @@ export interface PhonePatchPayload extends PublicPatchPayload {
     prompt: "Choose Equipment to suppress";
     mode: "throughNextThreat" | "duringNextBattle";
     options: Array<{ instanceId: string; catalogId: string; name: string; slot: GearSlot; equipped: true }>;
+  } | null;
+  pendingForcedDestinationChoicePrivate?: {
+    choiceId: string;
+    sourceTitle: string;
+    sourceSectorId: string;
+    candidates: Array<{
+      sectorId: string;
+      sectorName: string;
+      direction: "clockwise" | "counterclockwise";
+      ring: "outer" | "middle" | "inner";
+    }>;
   } | null;
   equipmentSuppressions?: Array<{
     sourceThreatId: "relay-husk" | "signal-rotted-engineer";
@@ -1150,6 +1162,7 @@ export type ClientIntent =
       seatId: string;
     }
   | { type: "ENCOUNTER_DECISION_REQUESTED"; seatId: string; decisionId: string; decisionVersion: number; optionId: string }
+  | { type: "FORCED_DESTINATION_SELECTED"; seatId: string; choiceId: string; destinationSectorId: string }
   | { type: "FORCED_DISPLACEMENT_ACCEPTED"; seatId: string; reactionId: string }
   | {
       type: "CONTINUE_SCAR_CONSEQUENCE";

@@ -4,7 +4,7 @@ import { gearItemSchema } from "./gear.schema.js";
 import type { GearItem } from "./gear.schema.js";
 import { followerSchema } from "./follower.schema.js";
 import { encounterPaymentEffectSchema, type EncounterPaymentEffect } from "./encounterDecision.schema.js";
-import { forcedDisplacementEffectSchema, type ForcedDisplacementEffect } from "./displacement.schema.js";
+import { forcedDisplacementEffectSchema, ownerSelectedForcedDisplacementEffectSchema, type ForcedDisplacementEffect, type OwnerSelectedForcedDisplacementEffect } from "./displacement.schema.js";
 
 const legacyFollowerGrantSchema = z.object({
   id: z.string().min(1),
@@ -187,7 +187,8 @@ type SimpleEncounterEffect =
   | NextNormalMovementRollModifierEffect
   | EquipmentSuppressionEffect
   | EncounterPaymentEffect
-  | ForcedDisplacementEffect;
+  | ForcedDisplacementEffect
+  | OwnerSelectedForcedDisplacementEffect;
 
 export type EncounterEffect = SimpleEncounterEffect | { type: "sequence"; effects: EncounterEffect[] };
 
@@ -289,7 +290,8 @@ const simpleEffectSchema: z.ZodType<SimpleEncounterEffect> = z.union([
     mode: z.enum(["throughNextThreat", "duringNextBattle"])
   }),
   encounterPaymentEffectSchema,
-  forcedDisplacementEffectSchema
+  forcedDisplacementEffectSchema,
+  ownerSelectedForcedDisplacementEffectSchema
 ]);
 
 export const effectSchema: z.ZodType<EncounterEffect> = z.lazy(() =>

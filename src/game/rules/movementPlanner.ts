@@ -386,6 +386,46 @@ export function getForcedDisplacementDestination(
   return getMovementStepBlockReason(state, player, originSectorId, destinationSectorId) ? null : destinationSectorId;
 }
 
+export type OwnerSelectedForcedDestinationCandidate = {
+  sectorId: string;
+  direction: "clockwise" | "counterclockwise";
+};
+
+export function getOwnerSelectedForcedDisplacementCandidates(
+  state: GameState,
+  seatId: string,
+  sourceSectorId: string
+): OwnerSelectedForcedDestinationCandidate[] {
+  const player = getPlayer(state, seatId);
+  const sourceNode = RIFTFALL_BOARD_NODE_INDEX.get(sourceSectorId);
+  if (!player || !sourceNode || sourceNode.ring === "center") return [];
+
+  const candidates: OwnerSelectedForcedDestinationCandidate[] = [];
+  const seen = new Set<string>();
+  for (const entry of [
+    { direction: "clockwise" as const, step: 1 as const },
+    { direction: "counterclockwise" as const, step: -1 as const }
+  ]) {
+    const sectorId = getRingTrackNeighbor(sourceSectorId, entry.step);
+    const destinationNode = sectorId ? RIFTFALL_BOARD_NODE_INDEX.get(sectorId) : null;
+    if (
+      !sectorId ||
+      sectorId === sourceSectorId ||
+      seen.has(sectorId) ||
+      !destinationNode ||
+      destinationNode.ring === "center" ||
+      destinationNode.ring !== sourceNode.ring ||
+      !sourceNode.connections.includes(sectorId) ||
+      getMovementStepBlockReason(state, player, sourceSectorId, sectorId)
+    ) {
+      continue;
+    }
+    seen.add(sectorId);
+    candidates.push({ sectorId, direction: entry.direction });
+  }
+  return candidates;
+}
+
 export function getLegalMovementRouteVariant(
   state: GameState,
   seatId: string,

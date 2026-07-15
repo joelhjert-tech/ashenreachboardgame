@@ -2524,6 +2524,7 @@ export function PhoneActionPanel({
     isActiveSeat &&
     !!activeResolution &&
     !patch.pendingEncounterDecisionPrivate &&
+    !patch.pendingForcedDestinationChoicePrivate &&
     !patch.pendingDisplacementPrivate &&
     ["roll_result", "outcome_summary", "awaiting_continue"].includes(activeResolution.stage);
   const continueResolution = () =>
@@ -2771,6 +2772,25 @@ export function PhoneActionPanel({
           decisionId: decision.decisionId,
           decisionVersion: decision.decisionVersion,
           optionId: option.optionId
+        })
+      });
+    }
+  }
+
+  if (patch.pendingForcedDestinationChoicePrivate) {
+    const choice = patch.pendingForcedDestinationChoicePrivate;
+    for (const candidate of choice.candidates) {
+      const directionLabel = candidate.direction === "clockwise" ? "Clockwise" : "Counterclockwise";
+      resolveActions.push({
+        key: `false-route-${choice.choiceId}-${candidate.sectorId}`,
+        label: `${directionLabel}: ${candidate.sectorName}`,
+        detail: `Choose the false route. Confirm forced displacement 1 sector ${candidate.direction} on the ${candidate.ring} ring.`,
+        tone: "primary",
+        onClick: () => onIntent({
+          type: "FORCED_DESTINATION_SELECTED",
+          seatId: self.seatId,
+          choiceId: choice.choiceId,
+          destinationSectorId: candidate.sectorId
         })
       });
     }

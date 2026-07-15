@@ -2,13 +2,15 @@
 
 Status: report-only approval. No gameplay or content definition changes are made in H6A.
 
+H6B implementation status: **IMPLEMENTED**. The approved rule is now live through a narrow persisted owner destination-choice stage followed by the existing forced-displacement reaction and arrival lifecycle. See `reports/heat-retirement-h6b-false-route-implementation.md`.
+
 Checkpoint: `56af999 feat: retire severe wound heat threats` on `phase/heat-retirement-1x`.
 
 ## Decision
 
 `false-route-procession` is **APPROVED** as an owner-chosen forced displacement between the legal clockwise and counterclockwise adjacent sectors on the operative's current ring.
 
-On final failure, the server derives the two distance-1 same-ring candidates from the canonical board graph, applies current movement-step legality, removes blocked candidates without skipping past them, removes duplicates, and persists the ordered candidate set. The owner must confirm one surviving candidate. One surviving candidate is still presented for confirmation so the normal forced-displacement reaction window remains available. With no surviving candidate, the operative remains in place and the consequence completes without a Wound or other substitute penalty.
+On final failure, the server derives the two distance-1 same-ring candidates from the canonical board graph, applies current movement-step legality, removes blocked candidates without skipping past them, removes duplicates, and persists the ordered candidate set. The owner must confirm one surviving candidate. One surviving candidate is still presented for confirmation; after selection locks the destination, the normal forced-displacement reaction window remains available. With no surviving candidate, the operative remains in place and the consequence completes without a Wound or other substitute penalty.
 
 The approved player-facing rule is:
 
@@ -16,7 +18,7 @@ The approved player-facing rule is:
 
 This is forced displacement, not voluntary movement, relocation, a movement-roll modifier, a route restriction, or a direct teleport. It spends no movement allowance and cannot enter another ring or the center.
 
-Implementation readiness: **Requires new destination-choice lifecycle**. The existing forced-displacement destination, reaction, arrival, and replay systems are reusable, but the current typed effect and pending state encode exactly one deterministic direction and accept no destination choice. H6A approves a narrow owner-choice extension; it does not approve map metadata or topology changes.
+Implementation readiness: **IMPLEMENTED WITH NARROW TYPED EXTENSION**. H6B added the approved owner-choice state and reused the existing forced-displacement reaction, arrival, and replay systems without map metadata or topology changes.
 
 ## 1. Current card inspection
 
@@ -117,7 +119,7 @@ The selected model cannot force center confrontation, cannot cross rings, cannot
 5. Test each derived neighbor with the existing authoritative movement-step legality rules at creation time. A blocked neighbor is omitted; it is not skipped over to reach the next legal sector.
 6. Scenario-tagged and shop sectors remain eligible if they are otherwise legal; no special beneficial/dangerous-sector filter is introduced.
 7. Remove duplicate destination IDs while retaining deterministic order: clockwise first, counterclockwise second.
-8. Persist the source sector, ordered candidates, acting seat, source resolution, source event, reaction identity, and state revision needed for revalidation.
+8. Persist the source sector, ordered candidates, acting seat, source resolution, source event, and state needed for revalidation. After selection, persist the existing displacement reaction identity with the locked destination.
 9. Before commitment, revalidate source ownership/origin and the submitted destination against the current authoritative candidate rule. The phone cannot submit any destination absent from the projected list.
 
 Topology cases:
@@ -128,7 +130,7 @@ Topology cases:
 - Center: no same-ring neighbor exists, so remain in place with no additional penalty.
 - Adjacent to center: the center connection is ignored because it is cross-ring; only same-ring candidates qualify.
 - Branch or asymmetric connector: ignore cross-ring/shortcut branches; canonical ring neighbors still define the candidate set.
-- One legal neighbor: present that one destination and require confirmation after the reaction opportunity.
+- One legal neighbor: present that one destination and require confirmation before the existing forced-displacement reaction opportunity.
 - No legal neighbor: create no choice/reaction window; remain in place and complete the failed Threat once.
 
 The current graph has 24 outer, 16 middle, 8 inner, and 1 center node. Every current outer and middle node has two canonical same-ring neighbors. Current movement requirements can reduce an inner candidate set to one; the center always produces zero. H6A relies on existing ring metadata and needs no new topology metadata.
@@ -144,7 +146,7 @@ The current graph has 24 outer, 16 middle, 8 inner, and 1 center node. Every cur
 - Voluntary movement: no. It does not trigger voluntary-movement items or abilities and does not count as voluntarily choosing the destination.
 - Rift Anchor Spike: eligible against the whole displacement consequence. It prevents the move, spends one valid charge once, closes the candidate choice, and marks the source event resolved.
 - Other reactions: only reactions already typed for pending forced displacement may be offered. No general item or character-action window is created.
-- Timing: derive and persist candidates first; if candidates exist, open the forced-displacement reaction window; choosing a destination is the owner's decision not to prevent and closes that window; revalidate; move once; schedule one arrival.
+- Timing: derive and persist candidates first; the owner selects one candidate; lock and revalidate that destination; open the existing forced-displacement reaction window; then prevent the entire displacement or move once and schedule one arrival.
 - No timeout: existing local-game pending-choice behavior waits for the owner. Reconnect restores it. No host, rival, or random fallback chooses for an absent owner.
 
 If a submitted destination becomes stale, reject it without moving or spending a reaction. Reproject the currently valid authoritative candidates for the same pending source. If revalidation finds none, close the consequence with the operative in place. If the source sector or active Threat is stale, reject the action and do not manufacture a new consequence.
@@ -179,7 +181,7 @@ Phone state:
 
 - only the owning phone receives candidate controls and eligible private reactions;
 - show “Move 1 sector on your current ring” plus the one or two server-generated destination names, ring/lane context already safe to expose, and one mandatory confirm action;
-- the owner may use Rift Anchor Spike before confirming;
+- after confirmation locks the destination, the owner may use Rift Anchor Spike before displacement resolves;
 - candidate IDs, source-event IDs, reaction internals, arbitrary map selection, and client-calculated routes remain hidden;
 - a stale confirm is rejected and the projected choices refresh; completed actions disappear immediately.
 
@@ -241,7 +243,7 @@ Justification: Command 7 and five graph references make the card relatively visi
 - Mission/Contract interaction: no `sector-visited` or voluntary-movement progress; later challenge/Threat outcomes may progress their own objectives normally.
 - Center-tile behavior: center is never a candidate; if the source is center, remain in place with no additional penalty.
 - No-destination fallback: remain in place, no Wound or replacement effect, and complete the failed Threat once.
-- Reaction eligibility: Rift Anchor Spike and only other already-typed forced-displacement prevention; window opens after candidates persist and closes on prevention or destination confirmation.
+- Reaction eligibility: Rift Anchor Spike and only other already-typed forced-displacement prevention; H6B opens the existing reaction window after the destination is selected and locked.
 - Multiplayer behavior: identical owner choice in all modes; no rival or timeout fallback.
 - Duplicate-source protection: one persisted source-event identity; one choice, move, arrival, encounter handoff, and completion; all stale/duplicate submissions reject.
 - Reconnect behavior: pending candidates/reaction/selection/arrival and completed source-event state reconstruct; no stage replays.
@@ -252,14 +254,14 @@ Justification: Command 7 and five graph references make the card relatively visi
 - Severity: 2.
 - Complexity: medium-high implementation, low player resolution.
 - Balance risk: medium; five references and beneficial redirection require focused playtest, bounded by one same-ring edge and no movement progress.
-- Approval status: **APPROVED H6A**.
+- Approval status: **APPROVED H6A — IMPLEMENTED H6B**.
 
 ## 12. Implementation prerequisites and focused tests
 
 Exact prerequisites:
 
 1. A narrow typed forced-displacement destination-choice effect limited to `false-route-procession`, distance 1, same-ring, owner choice, remain-in-place fallback, and failure-still-counts semantics.
-2. A persisted pending choice containing owner, source/resolution/event identities, origin, ordered candidate IDs, reaction identity, creation/revision data, and status.
+2. A persisted pending choice containing owner, source/resolution/event identities, origin, ordered candidate IDs, creation data, and status; selection transitions atomically into the existing pending displacement/reaction record.
 3. Server candidate generation using canonical ring order plus current movement-step legality; no client-derived legality.
 4. Authenticated owner intent carrying only a server-issued pending identity plus one issued destination; submission-time revalidation and stale rejection.
 5. Rift Anchor Spike source eligibility against the whole choice consequence.
@@ -272,7 +274,7 @@ Focused implementation tests should cover:
 - canonical clockwise/counterclockwise candidate generation on outer/middle/inner rings, branches, wrap points, center, one candidate, and zero candidates;
 - movement requirements/blocked neighbor omission without skipping, duplicate removal, and deterministic order;
 - owner choice, wrong seat, arbitrary destination, stale choice, stale origin, two phones, duplicate confirm, reducer replay, and repeated source event;
-- Rift Anchor available after candidates, prevention of the whole consequence, exact one charge, stale/duplicate reaction rejection, and reconnect during the window;
+- Rift Anchor available after destination selection, prevention of the whole consequence, exact one charge, stale/duplicate reaction rejection, and reconnect during the window;
 - one move and one arrival, tile challenges and ordinary encounter draw once, no voluntary movement allowance/roll/reroll/ability, no `sector-visited` Contract progress, no scenario-entry hook, and no center entry;
 - owner-only candidates/reactions, public-safe TV wait/result, no internal IDs, no Heat row, and completed controls disappearing;
 - reconnect before choice, after selection commitment, during arrival, and after completion with no replay;

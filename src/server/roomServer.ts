@@ -338,6 +338,7 @@ const CLIENT_INTENT_TYPES = new Set<string>([
   "CONTINUE_RESOLUTION",
   "SELECT_EQUIPMENT_SUPPRESSION_TARGET",
   "ENCOUNTER_DECISION_REQUESTED",
+  "FORCED_DESTINATION_SELECTED",
   "FORCED_DISPLACEMENT_ACCEPTED",
   "CONTINUE_SCAR_CONSEQUENCE",
   "SET_READY",
@@ -1334,6 +1335,10 @@ export class GameRoomServer {
         break;
       case "FORCED_DISPLACEMENT_ACCEPTED":
         requireStringField(message, "reactionId", type);
+        break;
+      case "FORCED_DESTINATION_SELECTED":
+        requireStringField(message, "choiceId", type);
+        requireStringField(message, "destinationSectorId", type);
         break;
       case "PHASE_ADVANCED":
         requireEnumField(message, "toPhase", PHASE_VALUES, type);
@@ -2866,6 +2871,8 @@ export class GameRoomServer {
         };
       case "ENCOUNTER_DECISION_REQUESTED":
         return { type: "ENCOUNTER_DECISION_RESOLVED", seatId: intent.seatId, decisionId: intent.decisionId, decisionVersion: intent.decisionVersion, optionId: intent.optionId, createdAt };
+      case "FORCED_DESTINATION_SELECTED":
+        return { type: "FORCED_DESTINATION_SELECTED", seatId: intent.seatId, choiceId: intent.choiceId, destinationSectorId: intent.destinationSectorId, createdAt };
       case "FORCED_DISPLACEMENT_ACCEPTED":
         return { type: "FORCED_DISPLACEMENT_RESOLVED", seatId: intent.seatId, reactionId: intent.reactionId, createdAt };
       case "SET_READY":
@@ -5116,6 +5123,10 @@ export class GameRoomServer {
         return;
       }
 
+      if (this.state.pendingForcedDestinationChoice) {
+        return;
+      }
+
       if (this.state.pendingDisplacement) {
         return;
       }
@@ -6971,6 +6982,8 @@ export class GameRoomServer {
     return Boolean(
       this.state.activeResolution &&
         !this.state.pendingEquipmentSuppressionChoice &&
+        !this.state.pendingForcedDestinationChoice &&
+        !this.state.pendingDisplacement &&
         ["roll_result", "outcome_summary", "awaiting_continue"].includes(this.state.activeResolution.stage)
     );
   }
@@ -9505,12 +9518,20 @@ export function createTvProjection(
       sourceTitle: state.currentEncounter?.title ?? "Encounter payment",
       status: "waiting"
     } : null,
+    pendingForcedDestinationChoice: state.pendingForcedDestinationChoice ? {
+      ownerSeatId: state.pendingForcedDestinationChoice.ownerSeatId,
+      sourceId: state.pendingForcedDestinationChoice.sourceId,
+      sourceTitle: state.currentEncounter?.title ?? "False-Route Procession",
+      status: "waiting"
+    } : null,
     pendingDisplacement: state.pendingDisplacement ? {
       seatId: state.pendingDisplacement.seatId,
       sourceId: state.pendingDisplacement.sourceId,
       sourceTitle: state.currentEncounter?.title ?? "Forced displacement",
       originSectorId: state.pendingDisplacement.originSectorId,
       destinationSectorId: state.pendingDisplacement.destinationSectorId,
+      destinationSectorName: state.sectors.find((sector) => sector.id === state.pendingDisplacement!.destinationSectorId)?.name ?? state.pendingDisplacement.destinationSectorId,
+      direction: state.pendingDisplacement.direction,
       status: "waiting"
     } : null,
     pendingOrderedConsequence: state.pendingSutureStormConsequence ? {
@@ -9908,6 +9929,18 @@ export function createPhoneProjection(state: GameState, seatId: string, forcePri
       })
     } : null,
     pendingDisplacement: publicProjection.pendingDisplacement,
+    pendingForcedDestinationChoice: publicProjection.pendingForcedDestinationChoice,
+    pendingForcedDestinationChoicePrivate: state.pendingForcedDestinationChoice?.ownerSeatId === seatId ? {
+      choiceId: state.pendingForcedDestinationChoice.choiceId,
+      sourceTitle: state.currentEncounter?.title ?? "False-Route Procession",
+      sourceSectorId: state.pendingForcedDestinationChoice.sourceSectorId,
+      candidates: state.pendingForcedDestinationChoice.candidates.map((candidate) => ({
+        sectorId: candidate.sectorId,
+        sectorName: state.sectors.find((sector) => sector.id === candidate.sectorId)?.name ?? candidate.sectorId,
+        direction: candidate.direction,
+        ring: state.pendingForcedDestinationChoice!.ring
+      }))
+    } : null,
     pendingDisplacementPrivate: state.pendingDisplacement?.seatId === seatId ? {
       reactionId: state.pendingDisplacement.reactionId,
       sourceEventId: state.pendingDisplacement.sourceEventId,

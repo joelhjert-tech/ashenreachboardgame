@@ -635,13 +635,26 @@ function getHostStateBannerModel({ patch, roomCode }: HostStateBannerProps): Hos
     };
   }
 
+  if (patch.payload.pendingForcedDestinationChoice) {
+    const seatLabels = getSeatLabelMap(patch);
+    const ownerLabel = seatLabels[patch.payload.pendingForcedDestinationChoice.ownerSeatId] ?? "Active operative";
+    return {
+      label: "Choose the false route",
+      detail: `Waiting for ${ownerLabel} to choose a route for ${patch.payload.pendingForcedDestinationChoice.sourceTitle}.`,
+      meta: "Owner phone must answer",
+      tone: "active"
+    };
+  }
+
   if (patch.payload.pendingDisplacement) {
     const seatLabels = getSeatLabelMap(patch);
     const ownerLabel = seatLabels[patch.payload.pendingDisplacement.seatId] ?? "Active operative";
     return {
       label: "Displacement pending",
-      detail: `Waiting for ${ownerLabel} to resolve ${patch.payload.pendingDisplacement.sourceTitle}.`,
-      meta: "Authoritative route locked",
+      detail: patch.payload.pendingDisplacement.direction && patch.payload.pendingDisplacement.destinationSectorName
+        ? `Waiting for ${ownerLabel} to resolve ${patch.payload.pendingDisplacement.sourceTitle}: ${patch.payload.pendingDisplacement.direction} to ${patch.payload.pendingDisplacement.destinationSectorName}.`
+        : `Waiting for ${ownerLabel} to resolve ${patch.payload.pendingDisplacement.sourceTitle}.`,
+      meta: "Selected route locked",
       tone: "active"
     };
   }

@@ -1,6 +1,6 @@
 # Remaining Heat-linked Threat implementation plan
 
-Status: H1 through H5B implemented. H6A approves `false-route-procession` for later implementation. Three cards remain blocked.
+Status: H1 through H6B implemented. Three cards remain blocked.
 
 ## Approved implementation groups
 
@@ -84,10 +84,10 @@ Implemented as `feat: replace heat threats with salvage pressure`. All three los
 
 Implemented as `feat: retire severe wound heat threats`. Both cards use the pre-existing `take_wound` path. Ashen creates one atomic amount-2 request; Hymn creates one amount-1 request. Neither creates direct recall or Scar state, and no schema, resolver, projection, or client lifecycle was added.
 
-### Group H6B — owner-chosen false-route displacement (1) — APPROVED, NOT IMPLEMENTED
+### Group H6B — owner-chosen false-route displacement (1) — IMPLEMENTED
 
 - Stable ID: `false-route-procession`.
-- Exact change: on final Command failure, create one forced-displacement choice between the legal distance-1 clockwise and counterclockwise adjacent destinations on the operative's current ring. The server derives and revalidates candidates. Blocked candidates are omitted without skipping; one candidate remains mandatory after the reaction opportunity; zero candidates means remain in place with no additional penalty.
+- Exact change: on final Command failure, create one forced-displacement choice between the legal distance-1 clockwise and counterclockwise adjacent destinations on the operative's current ring. The server derives and revalidates candidates. Blocked candidates are omitted without skipping; one candidate remains mandatory; zero candidates means remain in place with no additional penalty. The existing reaction window opens after selection locks the destination.
 - Shared lifecycle: reuse current forced-displacement reaction, Rift Anchor Spike prevention, source-event deduplication, arrival handoff, and sector-entry pipeline. The owner choice itself requires a narrow persisted destination-choice lifecycle because the current displacement state encodes one deterministic endpoint.
 - Schema/runtime prerequisites: typed owner-choice displacement effect and pending state; authoritative ordered candidate generation; owner-only destination intent; stale-choice revalidation; private candidate/public waiting projections; reconnect persistence. No topology metadata or movement-planner redesign is approved.
 - Entry semantics: spends no movement allowance, never crosses rings or enters center, does not invoke voluntary movement/Contract/scenario-entry hooks, and schedules the existing on-arrival tile challenge plus ordinary encounter pipeline once.
@@ -95,6 +95,8 @@ Implemented as `feat: retire severe wound heat threats`. Both cards use the pre-
 - Implementation risk: medium-high code / medium balance. The one-edge owner choice is player-simple and severity 2, but five graph references and occasionally beneficial redirection require focused playtest.
 - Approval source: `reports/heat-retirement-h6a-false-route-approval.md`.
 - Recommended commit subject: `feat: retire false route heat threat`.
+
+Implemented in H6B with one narrow persisted owner-choice state feeding the existing forced-displacement reaction, arrival, and resolved-source lifecycle. No topology metadata, Wound fallback, Contract hook, or broad movement/UI redesign was added.
 
 ## Blocked prerequisite register
 
@@ -114,7 +116,7 @@ The three blocked IDs are not assigned to implementation groups. A later approva
 4. **H4B — exact-instance Equipment pressure — COMPLETE.** IDs: `relay-husk`, `signal-rotted-engineer`. Shared equipped-instance identity, private choice, suppression gates, reconnect persistence, and full cleanup are implemented.
 5. **H4C — paired Command modifier — COMPLETE.** ID: `siren-relay-echo`. Typed Command-only eligibility, signed replacement, authoritative resolution reservation, Glass-Chime composition, reconnect, privacy, and cleanup are implemented separately from Equipment state.
 6. **H5B — severe Wound consequences — COMPLETE.** IDs: `ashen-doppelganger`, `hymn-scarred-zealot`. Both reuse the existing Wound path; direct Scar routes remain rejected. Ashen's 2-Wound recall-rate jump is covered by focused partial/full prevention, threshold, replay, reconnect, and reward-regression tests.
-7. **H6B — false-route destination choice — APPROVED, NOT IMPLEMENTED.** ID: `false-route-procession`. Implement the H6A server-generated owner choice as a narrow forced-displacement extension; do not combine it with `gateblind-pulse`.
+7. **H6B — false-route destination choice — COMPLETE.** ID: `false-route-procession`. The H6A server-generated owner choice is implemented as a narrow forced-displacement extension, separately from `gateblind-pulse`.
 8. **Shared-pressure design gate.** ID: `gateblind-pulse`. Benefit: preserves gate identity. Risk: medium-high. Prerequisite: escalation cap, threshold, ordering, and mode-scaling specification.
 9. **Choice and economy-frequency gates.** IDs: `memory-tax-gate`, `marrow-tax-auditors`. Benefit: distinct Yellow tension. Risk: high if choice is dominant or economy starves. Prerequisites: choice contract and H3 playtest evidence.
 
@@ -139,7 +141,7 @@ Before each commit, inspect the complete staged diff and confirm stable IDs, tot
 - Added floor-zero Salvage losses: 3 cards.
 - Implemented H1–H3 adds no Scar, Global Escalation, movement, Equipment disable, persistent, choice, temporary modifier, or multiplayer effect.
 - H4B and H4C implement two exact-instance Equipment suppressions, two private target choices, and one paired Command modifier.
-- Approved severity: four at 1, nine at 2, none at 3, one at 4, none at 5; thirteen are implemented and `false-route-procession` awaits H6B.
+- Approved severity: four at 1, nine at 2, none at 3, one at 4, none at 5; all fourteen approvals are implemented through H6B.
 - Lane approval impact is Blue 6, Yellow 7, Red 1; implemented impact remains Blue 6, Yellow 6, Red 1.
 - Card totals: unchanged at 26 / 35 / 48 / 109.
 
