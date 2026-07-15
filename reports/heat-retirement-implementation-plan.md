@@ -1,6 +1,6 @@
 # Remaining Heat-linked Threat implementation plan
 
-Status: H1 through H7B implemented. Two cards remain blocked.
+Status: H1 through H7B implemented. H8A approves `marrow-tax-auditors` for H8B implementation. One card remains blocked.
 
 ## Approved implementation groups
 
@@ -110,14 +110,24 @@ Implemented in H6B with one narrow persisted owner-choice state feeding the exis
 
 Implemented in H7B with one typed guarded-escalation effect over the existing authoritative escalation action, mode cap, difficulty-band selector, public projection, source ledger, and reconnect reconstruction. A guarded failure commits a sourced requested/actual zero result before any positive-gain modifier can run, and Gateblind cannot enter collapse processing.
 
+### Group H8B — bounded Marrow Tax economy pressure (1) — APPROVED, NOT IMPLEMENTED
+
+- Stable ID: `marrow-tax-auditors`.
+- Exact change: replace the failed Guile test's compatibility-only `gain_heat 2` with `{ "type": "lose_salvage", "amount": 1 }`; player wording is “On failure, lose up to 1 Salvage.”
+- Shared lifecycle: existing authoritative floor-zero Salvage-loss resolver; requested 1, actual `min(current Salvage, 1)`, no substitute at zero.
+- Schema/resolver/projection changes: none expected. Reuse the existing typed effect, source-event guard, actual-delta summary, and public-safe presentation.
+- Isolation: automatic loss is not payment, spend, purchase, sale, reward reduction, or shop transaction. It must not touch Salvage Ledger, `shopTransaction`, mission/Contract progress, completed contracts, or relic trades.
+- Focused tests: exact content and preserved identity; balances 0 and 1+; requested/actual/resulting breakdown; duplicate and reconnect rejection; no Ledger/shop/mission/Contract reactions; unchanged reward and deck references; `memory-tax-gate` hash pin.
+- Approval source: `reports/heat-retirement-h8a-marrow-tax-approval.md`.
+- Proposed commit: `feat: retire marrow tax heat effect`.
+
 ## Blocked prerequisite register
 
 | Stable ID | Preferred direction | Blocking prerequisite | Re-entry evidence |
 |---|---|---|---|
-| `marrow-tax-auditors` | lose up to 1 Salvage | four-reference starvation risk in tight economy | post-H3 telemetry/playtest or an approved frequency/amount mitigation |
 | `memory-tax-gate` | private player choice | two competitive options, private ownership, projection, cancellation, reset | exact prompt/options and server-authoritative choice lifecycle |
 
-The two blocked IDs are not assigned to implementation groups. Their economy-frequency and private-choice prerequisites remain separate.
+The one blocked ID is not assigned to an implementation group. Its private-choice prerequisite remains separate. H8A resolves the Marrow Tax economy-frequency gate without implementing it.
 
 ## Recommended sequence
 
@@ -129,7 +139,8 @@ The two blocked IDs are not assigned to implementation groups. Their economy-fre
 6. **H5B — severe Wound consequences — COMPLETE.** IDs: `ashen-doppelganger`, `hymn-scarred-zealot`. Both reuse the existing Wound path; direct Scar routes remain rejected. Ashen's 2-Wound recall-rate jump is covered by focused partial/full prevention, threshold, replay, reconnect, and reward-regression tests.
 7. **H6B — false-route destination choice — COMPLETE.** ID: `false-route-procession`. The H6A server-generated owner choice is implemented as a narrow forced-displacement extension, separately from `gateblind-pulse`.
 8. **H7B — bounded Gateblind shared pressure — COMPLETE.** ID: `gateblind-pulse`. Conditional +1 stops one step before collapse through narrow typed/source validation over the existing escalation lifecycle.
-9. **Choice and economy-frequency gates.** IDs: `memory-tax-gate`, `marrow-tax-auditors`. Benefit: distinct Yellow tension. Risk: high if choice is dominant or economy starves. Prerequisites: choice contract and H3 playtest evidence.
+9. **H8B — bounded Marrow Tax economy pressure — APPROVED, NOT IMPLEMENTED.** ID: `marrow-tax-auditors`. Benefit: distinct common Guile hazard attrition. Risk: medium and frequency-bound. Prerequisite: implement only the approved floor-zero loss through the existing resolver.
+10. **Private-choice gate.** ID: `memory-tax-gate`. Benefit: distinct Yellow tension. Risk: high if one choice dominates or private state is not reconnect-safe. Prerequisite: dedicated choice contract.
 
 ## Per-group verification contract
 
@@ -149,11 +160,11 @@ Before each commit, inspect the complete staged diff and confirm stable IDs, tot
 
 - Removed without replacement: 3 success branches.
 - Implemented normal Wound consequences: 4 cards, including both H5B enemies.
-- Added floor-zero Salvage losses: 3 cards.
+- Implemented floor-zero Salvage losses: 3 cards; H8A approves a fourth for H8B.
 - Implemented H1–H3 adds no Scar, Global Escalation, movement, Equipment disable, persistent, choice, temporary modifier, or multiplayer effect.
 - H4B and H4C implement two exact-instance Equipment suppressions, two private target choices, and one paired Command modifier.
-- Approved severity: four at 1, nine at 2, one at 3, one at 4, none at 5; all fifteen approvals are implemented through H7B.
-- Lane approval and implemented impact is Blue 7, Yellow 7, Red 1.
+- Approved severity: four at 1, ten at 2, one at 3, one at 4, none at 5; fifteen approvals are implemented through H7B and one is approved for H8B.
+- Lane approval impact is Blue 7, Yellow 8, Red 1; implemented impact remains Blue 7, Yellow 7, Red 1.
 - Card totals: unchanged at 26 / 35 / 48 / 109.
 
 No exact Relic-frequency parity is asserted. No expansion work is authorized.
