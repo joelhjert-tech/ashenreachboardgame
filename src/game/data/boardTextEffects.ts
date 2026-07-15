@@ -37,13 +37,10 @@ export interface BoardTextValidationResult {
 export const BOARD_TEXT_EFFECTS: Record<string, BoardTextEffectDefinition> = {
   outer_emberSanctumRest: {
     effectKey: "outer_emberSanctumRest",
-    summary: "Recovered 1 wound and stabilized lingering scar pressure at Ember Sanctum.",
+    summary: "Heal 1 Wound.",
     effect: {
-      type: "sequence",
-      effects: [
-        { type: "heal_wound", amount: 1 },
-        { type: "lose_heat", amount: 1 }
-      ]
+      type: "heal_wound",
+      amount: 1
     }
   },
   outer_ashwakeClearLane: {
@@ -63,17 +60,10 @@ export const BOARD_TEXT_EFFECTS: Record<string, BoardTextEffectDefinition> = {
     stat: "signal",
     difficulty: 7,
     effect: {
-      type: "sequence",
-      effects: [
-        { type: "lose_heat", amount: 1 },
-        { type: "gain_note", text: "Glassmere spindle tuned. Relay chorus remains stable." }
-      ]
+      type: "gain_note",
+      text: "Glassmere spindle tuned. Relay chorus remains stable."
     },
-    failureSummary: "The Glassmere chorus slipped sharp and left the relay line humming too hot to trust.",
-    failureEffect: {
-      type: "gain_heat",
-      amount: 1
-    },
+    failureSummary: "The Glassmere chorus slipped sharp and left the relay line unstable.",
     sectorDeck: {
       kind: "anomaly"
     }
@@ -134,17 +124,10 @@ export const BOARD_TEXT_EFFECTS: Record<string, BoardTextEffectDefinition> = {
     stat: "guile",
     difficulty: 6,
     effect: {
-      type: "sequence",
-      effects: [
-        { type: "lose_heat", amount: 1 },
-        { type: "gain_note", text: "Waymarket favor banked for trade, aid, or a safer route." }
-      ]
+      type: "gain_note",
+      text: "Waymarket favor banked for trade, aid, or a safer route."
     },
     failureSummary: "The Waymarket deal soured and every stall seemed to know your scar tally.",
-    failureEffect: {
-      type: "gain_heat",
-      amount: 1
-    },
     sectorDeck: {
       kind: "contract"
     }
@@ -172,11 +155,8 @@ export const BOARD_TEXT_EFFECTS: Record<string, BoardTextEffectDefinition> = {
     stat: "forge",
     difficulty: 7,
     effect: {
-      type: "sequence",
-      effects: [
-        { type: "lose_heat", amount: 1 },
-        { type: "gain_note", text: "Void-salt vial: useful for scar treatment or gate bargaining." }
-      ]
+      type: "gain_note",
+      text: "Void-salt vial: useful for scar treatment or gate bargaining."
     },
     failureSummary: "The salt bloom bit through the gloves and left a white nerve-mark under the skin.",
     failureEffect: {
@@ -189,14 +169,13 @@ export const BOARD_TEXT_EFFECTS: Record<string, BoardTextEffectDefinition> = {
   },
   outer_surgeryTreatment: {
     effectKey: "outer_surgeryTreatment",
-    summary: "Accepted rough cinder surgery and walked away patched but marked.",
+    summary: "Accepted rough cinder surgery and walked away patched.",
     stat: "forge",
     difficulty: 7,
     effect: {
       type: "sequence",
       effects: [
         { type: "heal_wound", amount: 1 },
-        { type: "gain_heat", amount: 1 },
         { type: "gain_follower", followerId: "cinder-surgeon" },
         { type: "gain_note", text: "Cinder surgery receipt: scar treatment logged." }
       ]

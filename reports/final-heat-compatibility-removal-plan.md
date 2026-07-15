@@ -133,14 +133,14 @@ Phase C1 reviewed the authoritative imported definitions rather than deriving sc
 
 | Stable ID | Family / source | Current typed Heat effect path(s) | Current authored wording | C1 disposition | Wording change? | Approved replacement? |
 |---|---|---|---|---|---|---|
-| `outer_emberSanctumRest` | board text / `src/game/data/boardTextEffects.ts` | effect sequence: `lose_heat 1` | Recovered 1 Wound and stabilized lingering Scar pressure. | **APPROVED C2A: remove without replacement** | Yes, remove false Scar-pressure implication | No replacement |
+| `outer_emberSanctumRest` | board text / `src/game/data/boardTextEffects.ts` | effect sequence: `lose_heat 1` | Recovered 1 Wound and stabilized lingering Scar pressure. | **IMPLEMENTED C2B2: removed without replacement** | Yes, false Scar-pressure implication removed | No replacement |
 | `outer_ashwakeClearLane` | board text / `src/game/data/boardTextEffects.ts` | failure: `gain_heat 1` | Marked a clean lane through Ashwake Crossing. | **IMPLEMENTED C2B1: removed without replacement** | No | No replacement |
-| `outer_glassmereChorus` | board text / `src/game/data/boardTextEffects.ts` | success: `lose_heat 1`; failure: `gain_heat 1` | Tuned the Glassmere spindle and secured a stable relay note. | **APPROVED C2A: remove without replacement** | Narrow failure clarification | No replacement |
+| `outer_glassmereChorus` | board text / `src/game/data/boardTextEffects.ts` | success: `lose_heat 1`; failure: `gain_heat 1` | Tuned the Glassmere spindle and secured a stable relay note. | **IMPLEMENTED C2B2: removed without replacement** | Failure clarification applied | No replacement |
 | `outer_mirecoilTraffic` | board text / `src/game/data/boardTextEffects.ts` | failure: `gain_heat 1` | Pulled a fresh Contract lead from Mirecoil Beacon traffic. | **IMPLEMENTED C2B1: removed without replacement** | No | No replacement |
-| `outer_waymarketExchange` | board text / `src/game/data/boardTextEffects.ts` | success: `lose_heat 1`; failure: `gain_heat 1` | Worked the Waymarket exchange and secured a practical table favor. | **APPROVED C2A: remove without replacement** | No | No replacement |
+| `outer_waymarketExchange` | board text / `src/game/data/boardTextEffects.ts` | success: `lose_heat 1`; failure: `gain_heat 1` | Worked the Waymarket exchange and secured a practical table favor. | **IMPLEMENTED C2B2: removed without replacement** | No | No replacement |
 | `outer_relayCrew` | board text / `src/game/data/boardTextEffects.ts` | failure: `gain_heat 1` | Recruited a relay-camp contact and recorded the route crew. | **IMPLEMENTED C2B1: removed without replacement** | No | No replacement |
-| `outer_saltCrossing` | board text / `src/game/data/boardTextEffects.ts` | success: `lose_heat 1` | Harvested void-salt and bottled it as a bargaining chip. | **APPROVED C2A: remove without replacement** | No | No replacement |
-| `outer_surgeryTreatment` | board text / `src/game/data/boardTextEffects.ts` | success sequence: `gain_heat 1` | Accepted rough cinder surgery and walked away patched but marked. | **APPROVED C2A: remove without replacement** | Yes, remove false mark implication | No replacement |
+| `outer_saltCrossing` | board text / `src/game/data/boardTextEffects.ts` | success: `lose_heat 1` | Harvested void-salt and bottled it as a bargaining chip. | **IMPLEMENTED C2B2: removed without replacement** | No | No replacement |
+| `outer_surgeryTreatment` | board text / `src/game/data/boardTextEffects.ts` | success sequence: `gain_heat 1` | Accepted rough cinder surgery and walked away patched but marked. | **IMPLEMENTED C2B2: removed without replacement** | Yes, false mark implication removed | No replacement |
 | `outer_oathpostWrit` | board text / `src/game/data/boardTextEffects.ts` | failure: `gain_heat 1` | Claimed a faction writ from the Oathpost. | **IMPLEMENTED C2B1: removed without replacement** | No | No replacement |
 | `outer_brokenCausewayShortcut` | board text / `src/game/data/boardTextEffects.ts` | failure sequence: `gain_heat 1` | Marked the Broken Causeway shortcut toward Guardian Span. | **APPROVED C2A: remove without replacement** | No | No replacement |
 | `middle_scarSurgery` | board text / `src/game/data/boardTextEffects.ts` | success sequence: `gain_heat 1` | Survived field surgery in the Red March. | **APPROVED C2A: remove without replacement** | No | No replacement |
@@ -160,12 +160,12 @@ Phase C1 reviewed the authoritative imported definitions rather than deriving sc
 | `crownless-advocate` | follower / `content/followers/crownless-advocate.json` | active: `lose_heat 1` | Soften a faction demand or cancel one unstable rivalry cost. | D. Blocked | No | No |
 | `saltflat-bone-reader` | follower / `content/followers/saltflat-bone-reader.json` | active: `lose_heat 1` | Turn a Scar, omen, or void-salt bargain into a safer route note. | D. Blocked | No | No |
 
-Current count after C2B1: 27 board-text occurrences + 1 scenario + 4 escalations + 2 followers = **34 occurrences across 21 IDs**. C2B1 implemented the five simple failure-only removals; Groups 2–5 remain approved but unimplemented.
+Current count after C2B2: 20 board-text occurrences + 1 scenario + 4 escalations + 2 followers = **27 occurrences across 16 IDs**. Groups 1–2 are implemented; Groups 3–5 remain approved but unimplemented.
 
 ### C2A implementation order and projected count
 
 1. Simple failure-only: `outer_ashwakeClearLane`, `outer_mirecoilTraffic`, `outer_relayCrew`, `outer_oathpostWrit`, `middle_redMarchBargain` — **implemented C2B1**.
-2. Success-sequence cleanup: `outer_emberSanctumRest`, `outer_glassmereChorus`, `outer_waymarketExchange`, `outer_saltCrossing`, `outer_surgeryTreatment`.
+2. Success-sequence cleanup: `outer_emberSanctumRest`, `outer_glassmereChorus`, `outer_waymarketExchange`, `outer_saltCrossing`, `outer_surgeryTreatment` — **implemented C2B2**.
 3. Existing severe consequence cleanup: `outer_brokenCausewayShortcut`, `middle_scarSurgery`, `inner_blackstarShortcut`.
 4. Two-choice route notes: `middle_shardSprawlBargain`, `middle_webglassFracture`, `inner_veilRiftEntry`.
 5. Clearance/final approach: `middle_guardianSpanThreshold`, `inner_cinderLatticeTrial`, `inner_gateOfCindersTrial`.
@@ -206,7 +206,7 @@ Before removing compatibility code, add:
 - Establish a server-side Heat stripping boundary.
 - No content rebalance.
 
-Implementation status: **complete for runtime containment**. `HEAT_THRESHOLD_REACHED` is an exact no-op, phone/TV use the server stripping boundary, and focused validation/projection/replay/Scar tests are present. C2A approved 32 board-text occurrences for removal without replacement; C2B1 has removed the five Group 1 occurrences. The other 27 approved board occurrences and seven separately blocked occurrences remain authored.
+Implementation status: **complete for runtime containment**. `HEAT_THRESHOLD_REACHED` is an exact no-op, phone/TV use the server stripping boundary, and focused validation/projection/replay/Scar tests are present. C2A approved 32 board-text occurrences for removal without replacement; C2B1–C2B2 have removed 12 occurrences across Groups 1–2. The other 20 approved board occurrences and seven separately blocked occurrences remain authored.
 
 ### Phase C2 — Remaining authored content retirement
 

@@ -458,6 +458,7 @@ The acting owner resolves the current server-authored location choice. The serve
 ### Group 2 — success-sequence cleanup
 
 - IDs: `outer_emberSanctumRest`, `outer_glassmereChorus`, `outer_waymarketExchange`, `outer_saltCrossing`, `outer_surgeryTreatment`.
+- Implementation status: **IMPLEMENTED in C2B2**. Seven approved Heat leaves were removed without replacement; all surviving effects retain their original order, and the three approved summaries were narrowed.
 - Shared resolver: existing sequence pruning while preserving order.
 - Content: remove `lose_heat`/`gain_heat` leaves; narrow three ambiguous summaries where applicable.
 - Validation/UI: manifest update only; no UI work.
@@ -523,3 +524,9 @@ The audit verdict remains **FAIL** until approved content changes are implemente
 Group 1 is implemented. The five simple failure-only `gain_heat 1` clauses are absent, and focused content, resolution, projection, replay, and manifest guards preserve the approved null-failure behavior. Groups 2–5 remain unimplemented and unchanged.
 
 Current authored typed Heat population: **34 occurrences across 21 IDs**. This comprises 27 occurrences across the 14 remaining C2A board IDs plus seven separately blocked scenario, escalation, and follower occurrences. The audit verdict remains **FAIL**.
+
+## Phase C2B2 implementation update
+
+Group 2 is implemented. The five success sequences contain no typed Heat, surgery retains heal → follower → note order, Salt Crossing and Surgery retain their existing one-Wound failures, and the approved Ember/Glassmere/Surgery wording clarifications are applied. Groups 3–5 remain unimplemented and unchanged.
+
+Current authored typed Heat population: **27 occurrences across 16 IDs**. This comprises 20 occurrences across the nine remaining C2A board IDs plus seven separately blocked scenario, escalation, and follower occurrences. The audit verdict remains **FAIL**.

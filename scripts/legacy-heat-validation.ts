@@ -46,11 +46,6 @@ export const LEGACY_HEAT_EFFECT_APPROVALS: readonly LegacyHeatEffectApproval[] =
 // definitions. This exact manifest freezes the unresolved population and
 // rejects additions until a dedicated C2 content approval retires each entry.
 export const C1_BLOCKED_RUNTIME_HEAT_EFFECT_SIGNATURES = new Map<string, readonly BlockedRuntimeHeatEffect["type"][]>([
-  ["outer_emberSanctumRest", ["lose_heat"]],
-  ["outer_glassmereChorus", ["gain_heat", "lose_heat"]],
-  ["outer_waymarketExchange", ["gain_heat", "lose_heat"]],
-  ["outer_saltCrossing", ["lose_heat"]],
-  ["outer_surgeryTreatment", ["gain_heat"]],
   ["outer_brokenCausewayShortcut", ["gain_heat"]],
   ["middle_scarSurgery", ["gain_heat"]],
   ["inner_blackstarShortcut", ["gain_heat"]],

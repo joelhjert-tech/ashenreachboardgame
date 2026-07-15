@@ -369,6 +369,21 @@ Updated evidence counts:
 
 The verdict does not advance because active authored Heat remains. See `heat-compatibility-c2b1-board-failure-removals.md` for the exact removals and verification evidence.
 
+## Phase C2B2 board success-cleanup update
+
+C2B2 implemented only C2A Group 2: `outer_emberSanctumRest`, `outer_glassmereChorus`, `outer_waymarketExchange`, `outer_saltCrossing`, and `outer_surgeryTreatment`. Seven inert Heat leaves were removed without replacement. All surviving success effects retain order; existing failure Wounds, deck behavior, locations, and runtime/projection compatibility boundaries remain unchanged.
+
+Updated evidence counts:
+
+- authored typed Heat effects: **27 across 16 IDs**;
+- remaining approved board-text effects awaiting Groups 3–5: **20 across 9 IDs**;
+- separately blocked scenario/escalation/follower effects: **7 across 7 IDs**;
+- current Heat-state mechanical reads/writes: **0**;
+- observed/guarded phone and TV Heat fields or labels: **0**;
+- current verdict: **FAIL**.
+
+See `heat-compatibility-c2b2-board-success-cleanups.md` for exact before/after sequences and verification evidence.
+
 ## Verification record
 
 Passed:
