@@ -944,6 +944,7 @@ export interface PublicPatchPayload {
   pendingEnemyRoll: PendingEnemyRoll | null;
   pendingTileChallenge?: PublicPendingTileChallenge | null;
   pendingEncounterDecision?: { seatId: string; sourceCardId: string; sourceTitle: string; status: "waiting" } | null;
+  pendingMemoryTaxChoice?: { ownerSeatId: string; sourceId: "memory-tax-gate"; sourceTitle: string; status: "waiting" } | null;
   pendingForcedDestinationChoice?: { ownerSeatId: string; sourceId: "false-route-procession"; sourceTitle: string; status: "waiting" } | null;
   pendingDisplacement?: { seatId: string; sourceId: string; sourceTitle: string; originSectorId: string; destinationSectorId: string; destinationSectorName?: string; direction?: "clockwise" | "counterclockwise"; status: "waiting" } | null;
   outcomeSummary: OutcomeSummary | null;
@@ -980,7 +981,7 @@ export interface PhonePatchPayload extends PublicPatchPayload {
   pendingTileChallengePrivate?: (PublicPendingTileChallenge & { id: string; staticIntercessionReactionId?: string; pendingFailureEffects?: Array<{ effectId: string; summary: string }> }) | null;
   pendingTestModifiers?: Array<{
     type: "nextNonBattleTest" | "nextNormalMovementRoll";
-    sourceCardId: "glass-chime-swarm" | "siren-relay-echo" | "spindle-static-squall";
+    sourceCardId: "glass-chime-swarm" | "siren-relay-echo" | "memory-tax-gate" | "spindle-static-squall";
     label: string;
     summary: string;
     detail?: string;
@@ -1005,6 +1006,17 @@ export interface PhonePatchPayload extends PublicPatchPayload {
     salvageCost: number;
     currentSalvage: number;
     options: Array<{ optionId: string; label: string; enabled: boolean; disabledReason?: string }>;
+  } | null;
+  pendingMemoryTaxChoicePrivate?: {
+    choiceId: string;
+    choiceVersion: number;
+    sourceTitle: "Memory Tax Gate";
+    prompt: "Choose what the gate takes";
+    options: Array<{
+      optionId: "lose-salvage-1" | "next-non-battle-test-minus-1";
+      label: string;
+      detail: string;
+    }>;
   } | null;
   pendingEquipmentSuppressionChoice?: {
     choiceId: string;
@@ -1162,6 +1174,7 @@ export type ClientIntent =
       seatId: string;
     }
   | { type: "ENCOUNTER_DECISION_REQUESTED"; seatId: string; decisionId: string; decisionVersion: number; optionId: string }
+  | { type: "MEMORY_TAX_CHOICE_REQUESTED"; seatId: string; choiceId: string; choiceVersion: number; optionId: "lose-salvage-1" | "next-non-battle-test-minus-1" }
   | { type: "FORCED_DESTINATION_SELECTED"; seatId: string; choiceId: string; destinationSectorId: string }
   | { type: "FORCED_DISPLACEMENT_ACCEPTED"; seatId: string; reactionId: string }
   | {

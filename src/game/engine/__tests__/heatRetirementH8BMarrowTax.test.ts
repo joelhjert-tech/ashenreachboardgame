@@ -1,6 +1,3 @@
-import { createHash } from "node:crypto";
-import { readFileSync } from "node:fs";
-import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import {
   APPROVED_AUTOMATIC_SALVAGE_LOSS_IDS,
@@ -21,7 +18,6 @@ import { createSequenceRandomSource } from "../dice.js";
 import { reduceGameState } from "../reducer.js";
 
 const TARGET_ID = "marrow-tax-auditors";
-const MEMORY_TAX_HASH = "8b7d60e7fdf354131df2a0f3f5f1c701e2ab657a369b1c53cbe095b8d356ae80";
 const EXPECTED_SECTORS = [
   "middle_relic_cache",
   "middle_scar_surgery",
@@ -298,11 +294,13 @@ describe("Heat Retirement H8B Marrow Tax Auditors", () => {
     expect(restoredComplete.players[0]!.character.salvage).toBe(0);
   });
 
-  it("leaves one Heat-linked Threat blocked and preserves its exact authored bytes", () => {
-    expect(collectHeatThreatIds()).toEqual(["memory-tax-gate"]);
-    expect(LEGACY_HEAT_EFFECT_APPROVALS).toHaveLength(9);
-    expect(APPROVED_LEGACY_HEAT_CONTENT_IDS.size).toBe(23);
-    const memoryBytes = readFileSync(join(process.cwd(), "content", "cards", "threats", "memory-tax-gate.json"));
-    expect(createHash("sha256").update(memoryBytes).digest("hex")).toBe(MEMORY_TAX_HASH);
+  it("leaves no authored Heat-linked Threat and preserves the final typed retirement", () => {
+    expect(collectHeatThreatIds()).toEqual([]);
+    expect(LEGACY_HEAT_EFFECT_APPROVALS).toHaveLength(8);
+    expect(APPROVED_LEGACY_HEAT_CONTENT_IDS.size).toBe(22);
+    expect((threats.get("memory-tax-gate") as HazardThreatCard | undefined)?.failEffect).toEqual({
+      type: "memory_tax_choice",
+      sourceCardId: "memory-tax-gate"
+    });
   });
 });

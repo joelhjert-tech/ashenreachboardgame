@@ -2498,6 +2498,10 @@ export function PhoneActionPanel({
   const self = patch.self;
   const previousSectorRef = useRef<{ sectorId: string; sectorName: string } | null>(null);
   const [movementTravel, setMovementTravel] = useState<PhoneMovementTravelState | null>(null);
+  const [memoryTaxSelection, setMemoryTaxSelection] = useState<{
+    choiceId: string;
+    optionId: "lose-salvage-1" | "next-non-battle-test-minus-1";
+  } | null>(null);
 
   if (!self) {
     return (
@@ -2524,6 +2528,7 @@ export function PhoneActionPanel({
     isActiveSeat &&
     !!activeResolution &&
     !patch.pendingEncounterDecisionPrivate &&
+    !patch.pendingMemoryTaxChoicePrivate &&
     !patch.pendingForcedDestinationChoicePrivate &&
     !patch.pendingDisplacementPrivate &&
     ["roll_result", "outcome_summary", "awaiting_continue"].includes(activeResolution.stage);
@@ -2775,6 +2780,41 @@ export function PhoneActionPanel({
         })
       });
     }
+  }
+
+  if (patch.pendingMemoryTaxChoicePrivate) {
+    const choice = patch.pendingMemoryTaxChoicePrivate;
+    const selectedOptionId = memoryTaxSelection?.choiceId === choice.choiceId
+      ? memoryTaxSelection.optionId
+      : null;
+    for (const option of choice.options) {
+      const selected = selectedOptionId === option.optionId;
+      resolveActions.push({
+        key: `memory-tax-${choice.choiceId}-${option.optionId}`,
+        label: `${selected ? "Selected: " : ""}${option.label}`,
+        detail: option.detail,
+        tone: selected ? "primary" : "secondary",
+        onClick: () => setMemoryTaxSelection({ choiceId: choice.choiceId, optionId: option.optionId })
+      });
+    }
+    resolveActions.push({
+      key: `memory-tax-confirm-${choice.choiceId}`,
+      label: "Confirm memory tax",
+      detail: selectedOptionId ? "Confirm the selected consequence." : "Choose one consequence first.",
+      tone: "primary",
+      disabled: selectedOptionId === null,
+      onClick: () => {
+        if (!selectedOptionId) return;
+        onIntent({
+          type: "MEMORY_TAX_CHOICE_REQUESTED",
+          seatId: self.seatId,
+          choiceId: choice.choiceId,
+          choiceVersion: choice.choiceVersion,
+          optionId: selectedOptionId
+        });
+        setMemoryTaxSelection(null);
+      }
+    });
   }
 
   if (patch.pendingForcedDestinationChoicePrivate) {

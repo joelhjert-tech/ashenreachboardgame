@@ -172,6 +172,11 @@ type EquipmentSuppressionEffect = {
   mode: "throughNextThreat" | "duringNextBattle";
 };
 
+type MemoryTaxChoiceEffect = {
+  type: "memory_tax_choice";
+  sourceCardId: "memory-tax-gate";
+};
+
 type SimpleEncounterEffect =
   | GainHeatEffect
   | GainHeatAllEffect
@@ -194,6 +199,7 @@ type SimpleEncounterEffect =
   | NextNonBattleTestModifierEffect
   | NextNormalMovementRollModifierEffect
   | EquipmentSuppressionEffect
+  | MemoryTaxChoiceEffect
   | EncounterPaymentEffect
   | ForcedDisplacementEffect
   | OwnerSelectedForcedDisplacementEffect;
@@ -303,6 +309,10 @@ const simpleEffectSchema: z.ZodType<SimpleEncounterEffect> = z.union([
     sourceCardId: z.enum(["relay-husk", "signal-rotted-engineer"]),
     mode: z.enum(["throughNextThreat", "duringNextBattle"])
   }),
+  z.object({
+    type: z.literal("memory_tax_choice"),
+    sourceCardId: z.literal("memory-tax-gate")
+  }),
   encounterPaymentEffectSchema,
   forcedDisplacementEffectSchema,
   ownerSelectedForcedDisplacementEffectSchema
@@ -391,6 +401,20 @@ export const hazardThreatCardSchema = threatBaseSchema.extend({
       code: z.ZodIssueCode.custom,
       message: "Gateblind Pulse requires its approved guarded Global Escalation failure",
       path: ["failEffect"]
+    });
+  }
+  if (card.id === "memory-tax-gate" && card.failEffect.type !== "memory_tax_choice") {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Memory Tax Gate requires its approved private choice failure",
+      path: ["failEffect"]
+    });
+  }
+  if (card.failEffect.type === "memory_tax_choice" && card.id !== card.failEffect.sourceCardId) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Memory Tax choice must remain scoped to Memory Tax Gate",
+      path: ["failEffect", "sourceCardId"]
     });
   }
   if (card.failEffect.type === "gain_global_escalation_guarded" && card.id !== card.failEffect.sourceCardId) {

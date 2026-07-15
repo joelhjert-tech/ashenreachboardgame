@@ -8,6 +8,7 @@ import { sectorNodeSchema } from "./sector.schema.js";
 import { pendingScarConsequenceSchema } from "./scarTrigger.schema.js";
 import { pendingEncounterDecisionSchema } from "./encounterDecision.schema.js";
 import { pendingDisplacementArrivalSchema, pendingDisplacementSchema, pendingForcedDestinationChoiceSchema, pendingSutureStormConsequenceSchema } from "./displacement.schema.js";
+import { pendingMemoryTaxChoiceSchema } from "./memoryTax.schema.js";
 
 export const phaseSchema = z.enum([
   "start",
@@ -38,6 +39,16 @@ export const pendingNextNonBattleTestModifierSchema = z.discriminatedUnion("sour
     amount: z.union([z.literal(-1), z.literal(1)]),
     sourceCardId: z.literal("siren-relay-echo"),
     stat: z.literal("command"),
+    context: z.literal("nonBattleTest"),
+    sourceEventId: z.string().min(1),
+    boundTestResolutionId: z.string().min(1).nullable(),
+    createdAt: z.string().min(1)
+  }),
+  z.object({
+    type: z.literal("nextNonBattleTest"),
+    ownerSeatId: z.string().min(1),
+    amount: z.literal(-1),
+    sourceCardId: z.literal("memory-tax-gate"),
     context: z.literal("nonBattleTest"),
     sourceEventId: z.string().min(1),
     boundTestResolutionId: z.string().min(1).nullable(),
@@ -369,6 +380,8 @@ export const gameStateSchema = z.object({
   pendingEffect: effectSchema.nullable(),
   pendingEncounterDecision: pendingEncounterDecisionSchema.nullable().optional(),
   resolvedEncounterDecisionIds: z.array(z.string().min(1)).optional(),
+  pendingMemoryTaxChoice: pendingMemoryTaxChoiceSchema.nullable().optional(),
+  resolvedMemoryTaxChoiceSourceEventIds: z.array(z.string().min(1)).optional(),
   pendingForcedDestinationChoice: pendingForcedDestinationChoiceSchema.nullable().optional(),
   pendingDisplacement: pendingDisplacementSchema.nullable().optional(),
   pendingDisplacementArrival: pendingDisplacementArrivalSchema.nullable().optional(),

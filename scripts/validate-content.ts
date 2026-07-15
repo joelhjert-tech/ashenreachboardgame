@@ -223,6 +223,7 @@ for (const card of threats.values()) {
   validateGlassChimeSwarmRetirement(card);
   validateSirenRelayEchoRetirement(card);
   validateSpindleStaticSquallRetirement(card);
+  validateMemoryTaxGateRetirement(card);
 }
 
 validateThreatRarityCurve();
@@ -647,6 +648,22 @@ function validateSpindleStaticSquallRetirement(card: ThreatCard): void {
   }
   if (card.text !== "The squall corrupts your bearing. On failure, reduce your next movement roll by 1, to a minimum of 1.") {
     errors.push("spindle-static-squall must use the approved final player-facing wording");
+  }
+}
+
+function validateMemoryTaxGateRetirement(card: ThreatCard): void {
+  if (card.id !== "memory-tax-gate") return;
+  const expectedText = "A toll gate opens only after demanding a name the operative would rather keep buried. On failure, choose one: lose 1 Salvage (available only if you have at least 1 Salvage); or suffer -1 on your next non-battle test.";
+  if (
+    card.cardType !== "hazard" ||
+    card.failEffect.type !== "memory_tax_choice" ||
+    card.failEffect.sourceCardId !== "memory-tax-gate"
+  ) {
+    errors.push("memory-tax-gate must use the approved owner-private Salvage-or-next-test modifier choice");
+  }
+  if (card.text !== expectedText) errors.push("memory-tax-gate must use the approved final player-facing wording");
+  if (JSON.stringify(card).match(/gain_heat|lose_heat|\bHeat\b/)) {
+    errors.push("memory-tax-gate must not expose a legacy Heat effect or player-facing Heat text");
   }
 }
 

@@ -6,6 +6,7 @@ import type { GearItem, GearSlot } from "../schema/gear.schema.js";
 import type { ActiveOathchainReveal, NemesisChampion, Phase } from "../schema/session.schema.js";
 import type { DiceRollResult } from "./dice.js";
 import type { ScarSourceEvent } from "../schema/scarTrigger.schema.js";
+import type { MemoryTaxOptionId } from "../schema/memoryTax.schema.js";
 
 export type CheckStat = Stat;
 
@@ -164,6 +165,13 @@ export interface EncounterDecisionResolvedAction extends BaseAction {
   decisionId: string;
   decisionVersion: number;
   optionId: string;
+}
+
+export interface MemoryTaxChoiceResolvedAction extends BaseAction {
+  type: "MEMORY_TAX_CHOICE_RESOLVED";
+  choiceId: string;
+  choiceVersion: number;
+  optionId: MemoryTaxOptionId;
 }
 
 export interface ForcedDisplacementResolvedAction extends BaseAction {
@@ -657,6 +665,7 @@ export type GameAction =
   | ResolutionAppliedAction
   | ResolutionContinuedAction
   | EncounterDecisionResolvedAction
+  | MemoryTaxChoiceResolvedAction
   | ForcedDestinationSelectedAction
   | ForcedDisplacementResolvedAction
   | SutureStormContinuedAction
@@ -763,6 +772,7 @@ export type ClientIntent =
       seatId: string;
     }
   | { type: "ENCOUNTER_DECISION_REQUESTED"; seatId: string; decisionId: string; decisionVersion: number; optionId: string }
+  | { type: "MEMORY_TAX_CHOICE_REQUESTED"; seatId: string; choiceId: string; choiceVersion: number; optionId: MemoryTaxOptionId }
   | { type: "FORCED_DESTINATION_SELECTED"; seatId: string; choiceId: string; destinationSectorId: string }
   | { type: "FORCED_DISPLACEMENT_ACCEPTED"; seatId: string; reactionId: string }
   | {

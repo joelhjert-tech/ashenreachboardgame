@@ -133,6 +133,37 @@ function createPatch(overrides: Partial<PhonePatchPayload> = {}): PhonePatchPayl
 }
 
 describe("PhoneActionPanel", () => {
+  it("requires one explicit confirmation for the server-generated Memory Tax choice", () => {
+    const onIntent = vi.fn();
+    const patch = createPatch({
+      phase: "resolution",
+      pendingMemoryTaxChoicePrivate: {
+        choiceId: "memory-tax-choice:failure",
+        choiceVersion: 1,
+        sourceTitle: "Memory Tax Gate",
+        prompt: "Choose what the gate takes",
+        options: [
+          { optionId: "lose-salvage-1", label: "Lose 1 Salvage", detail: "Lose exactly 1 Salvage now." },
+          { optionId: "next-non-battle-test-minus-1", label: "Next non-battle test: -1", detail: "Suffer -1 on your next non-battle test." }
+        ]
+      }
+    });
+    render(<PhoneActionPanel characters={characters} onIntent={onIntent} patch={patch} />);
+    const confirm = screen.getByRole("button", { name: /Confirm memory tax/i });
+    expect(confirm).toBeDisabled();
+    fireEvent.click(screen.getByRole("button", { name: /Lose 1 Salvage/i }));
+    expect(onIntent).not.toHaveBeenCalled();
+    expect(confirm).toBeEnabled();
+    fireEvent.click(confirm);
+    expect(onIntent).toHaveBeenCalledWith({
+      type: "MEMORY_TAX_CHOICE_REQUESTED",
+      seatId: "seat-1",
+      choiceId: "memory-tax-choice:failure",
+      choiceVersion: 1,
+      optionId: "lose-salvage-1"
+    });
+  });
+
   it("shows only server-generated False Route destinations and submits the immutable choice identity", () => {
     const onIntent = vi.fn();
     const patch = createPatch({

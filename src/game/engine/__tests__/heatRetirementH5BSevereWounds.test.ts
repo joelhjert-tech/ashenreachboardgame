@@ -1,6 +1,3 @@
-import { createHash } from "node:crypto";
-import { readFileSync } from "node:fs";
-import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import {
   APPROVED_LEGACY_HEAT_CONTENT_IDS,
@@ -54,9 +51,7 @@ const TARGETS = [
   }
 ] as const;
 
-const BLOCKED_HASHES = new Map([
-  ["memory-tax-gate", "8b7d60e7fdf354131df2a0f3f5f1c701e2ab657a369b1c53cbe095b8d356ae80"]
-]);
+const BLOCKED_HASHES = new Map<string, string>();
 
 const threats = loadThreatCards();
 
@@ -349,11 +344,7 @@ describe("Heat Retirement H5B severe Wound Threats", () => {
 
   it("preserves H5B and hash-pins the sole still-blocked definition after H8B", () => {
     expect(collectHeatThreatIds()).toEqual([...BLOCKED_HASHES.keys()].sort());
-    expect(LEGACY_HEAT_EFFECT_APPROVALS).toHaveLength(9);
-    expect(APPROVED_LEGACY_HEAT_CONTENT_IDS.size).toBe(23);
-    for (const [id, hash] of BLOCKED_HASHES) {
-      const bytes = readFileSync(join(process.cwd(), "content", "cards", "threats", `${id}.json`));
-      expect(createHash("sha256").update(bytes).digest("hex")).toBe(hash);
-    }
+    expect(LEGACY_HEAT_EFFECT_APPROVALS).toHaveLength(8);
+    expect(APPROVED_LEGACY_HEAT_CONTENT_IDS.size).toBe(22);
   });
 });

@@ -29,6 +29,7 @@ import type {
   RecruitReplacementAction,
   ResolutionAppliedAction,
   EncounterDecisionResolvedAction,
+  MemoryTaxChoiceResolvedAction,
   ForcedDestinationSelectedAction,
   ForcedDisplacementResolvedAction,
   SutureStormContinuedAction,
@@ -83,11 +84,15 @@ import {
   clearNextNonBattleTestModifierForSeat,
   consumeNextNonBattleTestModifier,
   consumeReservedSirenRelayEchoModifier,
+  consumeReservedMemoryTaxGateModifier,
+  createOrReplaceMemoryTaxGateModifier,
   createOrReplaceNextNonBattleTestModifier,
   createOrReplaceSirenRelayEchoModifier,
   getPendingNextNonBattleTestModifier,
   getPendingSirenRelayEchoModifier,
   reserveSirenRelayEchoModifier,
+  reserveMemoryTaxGateModifier,
+  MEMORY_TAX_GATE_ID,
   SIREN_RELAY_ECHO_ID,
   SIREN_RELAY_ECHO_MODIFIER_LABEL
 } from "../rules/nextNonBattleTestModifier.js";
@@ -316,9 +321,24 @@ function reject(state: GameState, action: GameAction, reason: string): ReducerFa
 
 function succeed(state: GameState, emitted: GameAction[] = []): ReducerSuccess {
   const normalizedState = normalizeEquipmentSuppressionState(state);
-  const activeState = normalizedState.status === "ended"
-    ? clearAllNextNormalMovementRollModifiers(clearAllNextNonBattleTestModifiers(normalizedState))
-    : normalizedState.players
+  const choiceOwnerActive = normalizedState.pendingMemoryTaxChoice
+    ? normalizedState.players.some((player) =>
+        player.seatId === normalizedState.pendingMemoryTaxChoice!.ownerSeatId && player.character.status === "active"
+      )
+    : true;
+  const choiceNormalizedState = normalizedState.pendingMemoryTaxChoice && (!choiceOwnerActive || normalizedState.status === "ended")
+    ? {
+        ...normalizedState,
+        resolvedMemoryTaxChoiceSourceEventIds: [
+          ...(normalizedState.resolvedMemoryTaxChoiceSourceEventIds ?? []),
+          normalizedState.pendingMemoryTaxChoice.sourceEventId
+        ],
+        pendingMemoryTaxChoice: null
+      }
+    : normalizedState;
+  const activeState = choiceNormalizedState.status === "ended"
+    ? clearAllNextNormalMovementRollModifiers(clearAllNextNonBattleTestModifiers(choiceNormalizedState))
+    : choiceNormalizedState.players
         .filter((player) => player.character.status === "recalled")
         .reduce(
           (nextState, player) => clearNextNormalMovementRollModifierForSeat(
@@ -382,6 +402,8 @@ function summarizeEffect(effect: EncounterEffect | null, success: boolean | null
       return effect.mode === "throughNextThreat"
         ? `${prefix} choose one equipped normal Equipment. It provides no effects through your next Threat.`
         : `${prefix} choose one equipped normal Equipment. It provides no effects during your next battle.`;
+    case "memory_tax_choice":
+      return `${prefix} choose to lose 1 Salvage or suffer -1 on your next non-battle test.`;
     case "encounter_payment":
       return `${prefix} ${effect.prompt}`;
     case "forcedDisplacement":
@@ -404,6 +426,7 @@ function applyEffectToPlayer(player: PlayerState, effect: EncounterEffect): Play
     case "forcedDisplacement":
     case "ownerSelectedForcedDisplacement":
     case "equipment_suppression":
+    case "memory_tax_choice":
       return player;
     case "take_wound":
       return {
@@ -808,6 +831,10 @@ function applyEffectToState(state: GameState, seatId: string, effect: EncounterE
   }
 
   if (effect.type === "gain_global_escalation_guarded") {
+    return state;
+  }
+
+  if (effect.type === "memory_tax_choice") {
     return state;
   }
 
@@ -2100,8 +2127,12 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
         }, action.seatId);
         const testResolutionId = createResolutionId(action.seatId, "threat", action.createdAt, action.cardId);
         const testEventId = `${state.activeResolution?.id ?? `${action.seatId}:${action.cardId}:${action.createdAt}`}:check`;
-        return succeed(reserveSirenRelayEchoModifier(
-          consumeNextNonBattleTestModifier(resolvedCheckState, action.seatId, testEventId),
+        return succeed(reserveMemoryTaxGateModifier(
+          reserveSirenRelayEchoModifier(
+            consumeNextNonBattleTestModifier(resolvedCheckState, action.seatId, testEventId),
+            action.seatId,
+            testResolutionId
+          ),
           action.seatId,
           testResolutionId
         ));
@@ -2315,6 +2346,83 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
       }
 
       const authoritativeSourceCardId = state.currentEncounter?.id ?? state.activeResolution?.card?.id ?? resolutionAction.sourceCardId ?? "unknown-encounter";
+      if (state.pendingEffect.type === "memory_tax_choice") {
+        if (
+          authoritativeSourceCardId !== MEMORY_TAX_GATE_ID ||
+          resolutionAction.sourceCardId !== MEMORY_TAX_GATE_ID ||
+          state.pendingEffect.sourceCardId !== MEMORY_TAX_GATE_ID
+        ) {
+          return reject(state, action, "Memory Tax choice requires its authoritative Threat source");
+        }
+        if (
+          resolutionAction.success !== false ||
+          state.lastOutcomeSummary?.success !== false ||
+          state.activeResolution?.playerId !== resolutionAction.seatId ||
+          state.lastOutcomeSummary?.seatId !== resolutionAction.seatId
+        ) {
+          return reject(state, action, "Memory Tax choice requires the owner's confirmed failed Threat result");
+        }
+        const sourceResolutionId = state.activeResolution.id;
+        const sourceEventId = `${sourceResolutionId}:memory-tax-choice`;
+        if (
+          (state.resolvedMemoryTaxChoiceSourceEventIds ?? []).includes(sourceEventId) ||
+          state.pendingMemoryTaxChoice?.sourceEventId === sourceEventId
+        ) {
+          return reject(state, action, "Memory Tax source was already resolved");
+        }
+        const player = requirePlayer(state, resolutionAction.seatId);
+        if ((player.character.salvage ?? 0) === 0) {
+          const modifierState = createOrReplaceMemoryTaxGateModifier(
+            state,
+            resolutionAction.seatId,
+            `${sourceEventId}:modifier`,
+            resolutionAction.createdAt
+          );
+          const summary = "Memory Tax Gate was resolved.";
+          return succeed({
+            ...modifierState,
+            sequence: state.sequence + 1,
+            pendingEffect: null,
+            pendingFailureReaction: null,
+            pendingStaticIntercessionReaction: null,
+            resolvedMemoryTaxChoiceSourceEventIds: [...(state.resolvedMemoryTaxChoiceSourceEventIds ?? []), sourceEventId],
+            activeResolution: state.activeResolution ? {
+              ...state.activeResolution,
+              stage: "outcome_summary",
+              outcome: { title: "Memory tax resolved", text: summary, effects: [summary] }
+            } : null,
+            eventLog: [...state.eventLog, { ...action, sourceEventId, automaticFallback: true }]
+          });
+        }
+        return succeed({
+          ...state,
+          sequence: state.sequence + 1,
+          pendingEffect: null,
+          pendingFailureReaction: null,
+          pendingStaticIntercessionReaction: null,
+          pendingMemoryTaxChoice: {
+            choiceId: `memory-tax-choice:${sourceEventId}`,
+            choiceVersion: 1,
+            ownerSeatId: resolutionAction.seatId,
+            sourceCardId: MEMORY_TAX_GATE_ID,
+            sourceEventId,
+            sourceResolutionId,
+            legalOptionIds: ["lose-salvage-1", "next-non-battle-test-minus-1"],
+            createdAt: resolutionAction.createdAt,
+            status: "pending"
+          },
+          activeResolution: state.activeResolution ? {
+            ...state.activeResolution,
+            stage: "outcome_summary",
+            outcome: {
+              title: "Memory tax pending",
+              text: "The operative is choosing what the gate takes.",
+              effects: ["Owner choice pending."]
+            }
+          } : null,
+          eventLog: [...state.eventLog, { ...action, sourceEventId, optionCount: 2 }]
+        });
+      }
       if (state.pendingEffect.type === "next_non_battle_test_modifier") {
         const isSiren = state.pendingEffect.sourceCardId === SIREN_RELAY_ECHO_ID;
         const expectedSourceId = isSiren ? SIREN_RELAY_ECHO_ID : GLASS_CHIME_SWARM_ID;
@@ -3142,6 +3250,90 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
         },
         eventLog: [...state.eventLog, action]
       }, recruitAction.seatId), recruitAction.seatId));
+    }
+    case "MEMORY_TAX_CHOICE_RESOLVED": {
+      const choiceAction = action as MemoryTaxChoiceResolvedAction;
+      try {
+        ensureSeatTurn(state, choiceAction.seatId);
+      } catch (error) {
+        return reject(state, action, error instanceof Error ? error.message : "Seat cannot act");
+      }
+      if (state.phase !== "resolution") return reject(state, action, `Cannot resolve Memory Tax during phase ${state.phase}`);
+      const pending = state.pendingMemoryTaxChoice;
+      if (!pending) return reject(state, action, "No Memory Tax choice is pending");
+      if (pending.ownerSeatId !== choiceAction.seatId) return reject(state, action, "Memory Tax choice belongs to another seat");
+      if (pending.choiceId !== choiceAction.choiceId || pending.choiceVersion !== choiceAction.choiceVersion) {
+        return reject(state, action, "Memory Tax choice is stale");
+      }
+      if ((state.resolvedMemoryTaxChoiceSourceEventIds ?? []).includes(pending.sourceEventId)) {
+        return reject(state, action, "Memory Tax choice was already resolved");
+      }
+      if (!pending.legalOptionIds.includes(choiceAction.optionId)) {
+        return reject(state, action, "Memory Tax option was not offered by the server");
+      }
+      if (state.currentEncounter?.id !== MEMORY_TAX_GATE_ID || state.activeResolution?.id !== pending.sourceResolutionId) {
+        return reject(state, action, "Memory Tax source is stale");
+      }
+      const player = requirePlayer(state, choiceAction.seatId);
+      if (player.character.status !== "active") {
+        return succeed({
+          ...state,
+          sequence: state.sequence + 1,
+          pendingMemoryTaxChoice: null,
+          resolvedMemoryTaxChoiceSourceEventIds: [...(state.resolvedMemoryTaxChoiceSourceEventIds ?? []), pending.sourceEventId],
+          eventLog: [...state.eventLog, { type: action.type, seatId: action.seatId, createdAt: action.createdAt, cancelled: true }]
+        });
+      }
+
+      const salvageAvailable = (player.character.salvage ?? 0) >= 1;
+      const resolvedOption = choiceAction.optionId === "lose-salvage-1" && !salvageAvailable
+        ? "next-non-battle-test-minus-1"
+        : choiceAction.optionId;
+      let consequenceState = state;
+      if (resolvedOption === "lose-salvage-1") {
+        const salvageLoss = resolveFloorZeroSalvageLoss(
+          player.character.salvage ?? 0,
+          1,
+          MEMORY_TAX_GATE_ID
+        );
+        consequenceState = salvageLoss.actualLoss > 0
+          ? applyEffectToState(state, choiceAction.seatId, { type: "lose_salvage", amount: salvageLoss.actualLoss })
+          : state;
+        consequenceState = {
+          ...consequenceState,
+          resolvedSalvageLossSourceEventIds: [
+            ...(state.resolvedSalvageLossSourceEventIds ?? []),
+            `${pending.sourceEventId}:salvage-loss`
+          ]
+        };
+      } else {
+        consequenceState = createOrReplaceMemoryTaxGateModifier(
+          state,
+          choiceAction.seatId,
+          `${pending.sourceEventId}:modifier`,
+          choiceAction.createdAt
+        );
+      }
+      const summary = "Memory Tax Gate was resolved.";
+      return succeed({
+        ...consequenceState,
+        sequence: state.sequence + 1,
+        pendingMemoryTaxChoice: null,
+        resolvedMemoryTaxChoiceSourceEventIds: [...(state.resolvedMemoryTaxChoiceSourceEventIds ?? []), pending.sourceEventId],
+        activeResolution: state.activeResolution ? {
+          ...state.activeResolution,
+          stage: "outcome_summary",
+          outcome: { title: "Memory tax resolved", text: summary, effects: [summary] }
+        } : null,
+        eventLog: [...state.eventLog, {
+          type: action.type,
+          seatId: action.seatId,
+          createdAt: action.createdAt,
+          choiceId: choiceAction.choiceId,
+          resolved: true,
+          fallbackApplied: resolvedOption !== choiceAction.optionId
+        }]
+      });
     }
     case "SELECT_EQUIPMENT_SUPPRESSION_TARGET": {
       const selectAction = action as SelectEquipmentSuppressionTargetAction;
@@ -5443,6 +5635,9 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
       if (state.pendingEquipmentSuppressionChoice) {
         return reject(state, action, "Equipment suppression target must be selected before continuing");
       }
+      if (state.pendingMemoryTaxChoice) {
+        return reject(state, action, "Memory Tax choice must be resolved before continuing");
+      }
 
       return succeed({
         ...state,
@@ -5458,14 +5653,21 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
         return reject(state, action, error instanceof Error ? error.message : "Seat cannot act");
       }
 
+      if (state.pendingMemoryTaxChoice) {
+        return reject(state, action, "Memory Tax choice must be resolved before advancing");
+      }
+
       if (!canAdvancePhase(state.phase, action.toPhase)) {
         return reject(state, action, `Illegal phase transition ${state.phase} -> ${action.toPhase}`);
       }
 
       const leavingResolution = state.phase === "resolution" && action.toPhase !== "resolution";
       const lifecycleCompletedState = leavingResolution
-        ? consumeReservedSirenRelayEchoModifier(
-            completeEquipmentSuppressionLifecycle(state, state.activeResolution?.id),
+        ? consumeReservedMemoryTaxGateModifier(
+            consumeReservedSirenRelayEchoModifier(
+              completeEquipmentSuppressionLifecycle(state, state.activeResolution?.id),
+              action.seatId
+            ),
             action.seatId
           )
         : state;
@@ -5478,6 +5680,7 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
         currentEncounter: leavingResolution ? null : lifecycleCompletedState.currentEncounter,
         pendingEnemyRoll: leavingResolution ? null : lifecycleCompletedState.pendingEnemyRoll,
         pendingEffect: leavingResolution ? null : lifecycleCompletedState.pendingEffect,
+        pendingMemoryTaxChoice: leavingResolution ? null : lifecycleCompletedState.pendingMemoryTaxChoice,
         pendingForcedDestinationChoice: leavingResolution ? null : lifecycleCompletedState.pendingForcedDestinationChoice,
         pendingDisplacement: leavingResolution ? null : lifecycleCompletedState.pendingDisplacement,
         pendingDisplacementArrival: leavingResolution ? null : lifecycleCompletedState.pendingDisplacementArrival,

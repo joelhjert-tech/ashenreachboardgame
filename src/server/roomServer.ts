@@ -338,6 +338,7 @@ const CLIENT_INTENT_TYPES = new Set<string>([
   "CONTINUE_RESOLUTION",
   "SELECT_EQUIPMENT_SUPPRESSION_TARGET",
   "ENCOUNTER_DECISION_REQUESTED",
+  "MEMORY_TAX_CHOICE_REQUESTED",
   "FORCED_DESTINATION_SELECTED",
   "FORCED_DISPLACEMENT_ACCEPTED",
   "CONTINUE_SCAR_CONSEQUENCE",
@@ -1332,6 +1333,12 @@ export class GameRoomServer {
       case "ENCOUNTER_DECISION_REQUESTED":
         requireStringField(message, "decisionId", type); requireStringField(message, "optionId", type);
         if (!Number.isInteger(message.decisionVersion) || Number(message.decisionVersion) < 1) throw new IntentRejectedError(type, "Encounter decision version must be a positive integer");
+        break;
+      case "MEMORY_TAX_CHOICE_REQUESTED":
+        requireStringField(message, "choiceId", type);
+        requireStringField(message, "optionId", type);
+        if (!Number.isInteger(message.choiceVersion) || Number(message.choiceVersion) < 1) throw new IntentRejectedError(type, "Memory Tax choice version must be a positive integer");
+        if (message.optionId !== "lose-salvage-1" && message.optionId !== "next-non-battle-test-minus-1") throw new IntentRejectedError(type, "Unknown Memory Tax option");
         break;
       case "FORCED_DISPLACEMENT_ACCEPTED":
         requireStringField(message, "reactionId", type);
@@ -2871,6 +2878,8 @@ export class GameRoomServer {
         };
       case "ENCOUNTER_DECISION_REQUESTED":
         return { type: "ENCOUNTER_DECISION_RESOLVED", seatId: intent.seatId, decisionId: intent.decisionId, decisionVersion: intent.decisionVersion, optionId: intent.optionId, createdAt };
+      case "MEMORY_TAX_CHOICE_REQUESTED":
+        return { type: "MEMORY_TAX_CHOICE_RESOLVED", seatId: intent.seatId, choiceId: intent.choiceId, choiceVersion: intent.choiceVersion, optionId: intent.optionId, createdAt };
       case "FORCED_DESTINATION_SELECTED":
         return { type: "FORCED_DESTINATION_SELECTED", seatId: intent.seatId, choiceId: intent.choiceId, destinationSectorId: intent.destinationSectorId, createdAt };
       case "FORCED_DISPLACEMENT_ACCEPTED":
@@ -5132,6 +5141,10 @@ export class GameRoomServer {
       }
 
       if (this.state.pendingEncounterDecision) {
+        return;
+      }
+
+      if (this.state.pendingMemoryTaxChoice) {
         return;
       }
 
@@ -9555,6 +9568,12 @@ export function createTvProjection(
       sourceTitle: state.currentEncounter?.title ?? "Encounter payment",
       status: "waiting"
     } : null,
+    pendingMemoryTaxChoice: state.pendingMemoryTaxChoice ? {
+      ownerSeatId: state.pendingMemoryTaxChoice.ownerSeatId,
+      sourceId: state.pendingMemoryTaxChoice.sourceCardId,
+      sourceTitle: state.currentEncounter?.title ?? "Memory Tax Gate",
+      status: "waiting"
+    } : null,
     pendingForcedDestinationChoice: state.pendingForcedDestinationChoice ? {
       ownerSeatId: state.pendingForcedDestinationChoice.ownerSeatId,
       sourceId: state.pendingForcedDestinationChoice.sourceId,
@@ -9836,6 +9855,9 @@ export function createPhoneProjection(state: GameState, seatId: string, forcePri
   const eligibleSuppressionTargets = pendingSuppression
     ? getEligibleEquipmentSuppressionTargets(state, seatId).filter((item) => pendingSuppression.eligibleInstanceIds.includes(item.instanceId!))
     : [];
+  const pendingMemoryTaxChoice = state.pendingMemoryTaxChoice?.ownerSeatId === seatId
+    ? state.pendingMemoryTaxChoice
+    : null;
 
   return {
     phase: state.phase,
@@ -9874,6 +9896,20 @@ export function createPhoneProjection(state: GameState, seatId: string, forcePri
         equipped: true as const
       }))
     } : null,
+    pendingMemoryTaxChoice: publicProjection.pendingMemoryTaxChoice,
+    pendingMemoryTaxChoicePrivate: pendingMemoryTaxChoice ? {
+      choiceId: pendingMemoryTaxChoice.choiceId,
+      choiceVersion: pendingMemoryTaxChoice.choiceVersion,
+      sourceTitle: "Memory Tax Gate",
+      prompt: "Choose what the gate takes",
+      options: pendingMemoryTaxChoice.legalOptionIds.map((optionId) => ({
+        optionId,
+        label: optionId === "lose-salvage-1" ? "Lose 1 Salvage" : "Next non-battle test: -1",
+        detail: optionId === "lose-salvage-1"
+          ? "Lose exactly 1 Salvage now."
+          : "Suffer -1 on your next non-battle test."
+      }))
+    } : null,
     equipmentSuppressions: (state.equipmentSuppressions ?? [])
       .filter((entry) => entry.ownerSeatId === seatId)
       .map((entry) => ({
@@ -9896,11 +9932,17 @@ export function createPhoneProjection(state: GameState, seatId: string, forcePri
         .map((entry) => ({
         type: entry.type,
         sourceCardId: entry.sourceCardId,
-        label: entry.sourceCardId === "glass-chime-swarm" ? "Glass-Chime Swarm" : "Siren Relay Echo",
+        label: entry.sourceCardId === "glass-chime-swarm"
+          ? "Glass-Chime Swarm"
+          : entry.sourceCardId === "memory-tax-gate"
+            ? "Memory Tax Gate"
+            : "Siren Relay Echo",
         summary: entry.sourceCardId === "glass-chime-swarm"
           ? "Next non-battle test: -1"
+          : entry.sourceCardId === "memory-tax-gate"
+            ? "Next non-battle test: -1"
           : `Next non-battle Command test: ${entry.amount > 0 ? "+" : ""}${entry.amount}`,
-        detail: entry.sourceCardId === "siren-relay-echo" && entry.boundTestResolutionId ? "In resolution" : undefined,
+        detail: entry.sourceCardId !== "glass-chime-swarm" && entry.boundTestResolutionId ? "In resolution" : undefined,
         amount: entry.amount
         })),
       ...(state.pendingNextNormalMovementRollModifiers ?? [])

@@ -7,6 +7,8 @@ export const GLASS_CHIME_SWARM_MODIFIER_LABEL = "Glass-Chime Swarm";
 export const GLASS_CHIME_SWARM_MODIFIER_AMOUNT = -1 as const;
 export const SIREN_RELAY_ECHO_ID = "siren-relay-echo" as const;
 export const SIREN_RELAY_ECHO_MODIFIER_LABEL = "Siren Relay Echo";
+export const MEMORY_TAX_GATE_ID = "memory-tax-gate" as const;
+export const MEMORY_TAX_GATE_MODIFIER_LABEL = "Memory Tax Gate";
 
 export function getPendingNextNonBattleTestModifier(
   state: Pick<GameState, "pendingNextNonBattleTestModifiers">,
@@ -28,6 +30,16 @@ export function getPendingSirenRelayEchoModifier(
   ) ?? null;
 }
 
+export function getPendingMemoryTaxGateModifier(
+  state: Pick<GameState, "pendingNextNonBattleTestModifiers">,
+  ownerSeatId: string
+): Extract<PendingNextNonBattleTestModifier, { sourceCardId: "memory-tax-gate" }> | null {
+  return state.pendingNextNonBattleTestModifiers?.find(
+    (entry): entry is Extract<PendingNextNonBattleTestModifier, { sourceCardId: "memory-tax-gate" }> =>
+      entry.ownerSeatId === ownerSeatId && entry.sourceCardId === MEMORY_TAX_GATE_ID
+  ) ?? null;
+}
+
 export function getNextNonBattleTestModifierSource(
   state: Pick<GameState, "pendingNextNonBattleTestModifiers">,
   ownerSeatId: string,
@@ -35,9 +47,16 @@ export function getNextNonBattleTestModifierSource(
 ): RollModifierSource[] {
   return (state.pendingNextNonBattleTestModifiers ?? [])
     .filter((entry) => entry.ownerSeatId === ownerSeatId)
-    .filter((entry) => entry.sourceCardId === GLASS_CHIME_SWARM_ID || (entry.stat === stat && entry.boundTestResolutionId === null))
+    .filter((entry) => entry.sourceCardId === GLASS_CHIME_SWARM_ID || (
+      entry.boundTestResolutionId === null &&
+      (entry.sourceCardId === MEMORY_TAX_GATE_ID || entry.stat === stat)
+    ))
     .map((entry) => ({
-      label: entry.sourceCardId === GLASS_CHIME_SWARM_ID ? GLASS_CHIME_SWARM_MODIFIER_LABEL : SIREN_RELAY_ECHO_MODIFIER_LABEL,
+      label: entry.sourceCardId === GLASS_CHIME_SWARM_ID
+        ? GLASS_CHIME_SWARM_MODIFIER_LABEL
+        : entry.sourceCardId === MEMORY_TAX_GATE_ID
+          ? MEMORY_TAX_GATE_MODIFIER_LABEL
+          : SIREN_RELAY_ECHO_MODIFIER_LABEL,
       value: entry.amount
     }));
 }
@@ -119,6 +138,46 @@ export function createOrReplaceSirenRelayEchoModifier(
   };
 }
 
+export function createOrReplaceMemoryTaxGateModifier(
+  state: GameState,
+  ownerSeatId: string,
+  sourceEventId: string,
+  createdAt: string
+): GameState {
+  if (state.resolvedNextNonBattleTestModifierSourceEventIds?.includes(sourceEventId)) return state;
+  const replaced = getPendingMemoryTaxGateModifier(state, ownerSeatId);
+  const consumedReplacedResolutionId = replaced?.boundTestResolutionId &&
+    !state.consumedNextNonBattleTestModifierTestEventIds?.includes(replaced.boundTestResolutionId)
+      ? replaced.boundTestResolutionId
+      : null;
+  const pending: PendingNextNonBattleTestModifier = {
+    type: "nextNonBattleTest",
+    ownerSeatId,
+    amount: -1,
+    sourceCardId: MEMORY_TAX_GATE_ID,
+    context: "nonBattleTest",
+    sourceEventId,
+    boundTestResolutionId: null,
+    createdAt
+  };
+  return {
+    ...state,
+    pendingNextNonBattleTestModifiers: [
+      ...(state.pendingNextNonBattleTestModifiers ?? []).filter(
+        (entry) => entry.ownerSeatId !== ownerSeatId || entry.sourceCardId !== MEMORY_TAX_GATE_ID
+      ),
+      pending
+    ],
+    resolvedNextNonBattleTestModifierSourceEventIds: [
+      ...(state.resolvedNextNonBattleTestModifierSourceEventIds ?? []),
+      sourceEventId
+    ],
+    consumedNextNonBattleTestModifierTestEventIds: consumedReplacedResolutionId
+      ? [...(state.consumedNextNonBattleTestModifierTestEventIds ?? []), consumedReplacedResolutionId]
+      : state.consumedNextNonBattleTestModifierTestEventIds
+  };
+}
+
 export function reserveSirenRelayEchoModifier(
   state: GameState,
   ownerSeatId: string,
@@ -134,8 +193,37 @@ export function reserveSirenRelayEchoModifier(
   };
 }
 
+export function reserveMemoryTaxGateModifier(
+  state: GameState,
+  ownerSeatId: string,
+  testResolutionId: string
+): GameState {
+  const pending = getPendingMemoryTaxGateModifier(state, ownerSeatId);
+  if (!pending || pending.boundTestResolutionId) return state;
+  return {
+    ...state,
+    pendingNextNonBattleTestModifiers: (state.pendingNextNonBattleTestModifiers ?? []).map((entry) =>
+      entry === pending ? { ...pending, boundTestResolutionId: testResolutionId } : entry
+    )
+  };
+}
+
 export function consumeReservedSirenRelayEchoModifier(state: GameState, ownerSeatId: string): GameState {
   const pending = getPendingSirenRelayEchoModifier(state, ownerSeatId);
+  if (!pending?.boundTestResolutionId) return state;
+  if (state.consumedNextNonBattleTestModifierTestEventIds?.includes(pending.boundTestResolutionId)) return state;
+  return {
+    ...state,
+    pendingNextNonBattleTestModifiers: (state.pendingNextNonBattleTestModifiers ?? []).filter((entry) => entry !== pending),
+    consumedNextNonBattleTestModifierTestEventIds: [
+      ...(state.consumedNextNonBattleTestModifierTestEventIds ?? []),
+      pending.boundTestResolutionId
+    ]
+  };
+}
+
+export function consumeReservedMemoryTaxGateModifier(state: GameState, ownerSeatId: string): GameState {
+  const pending = getPendingMemoryTaxGateModifier(state, ownerSeatId);
   if (!pending?.boundTestResolutionId) return state;
   if (state.consumedNextNonBattleTestModifierTestEventIds?.includes(pending.boundTestResolutionId)) return state;
   return {

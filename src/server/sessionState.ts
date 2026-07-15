@@ -201,6 +201,8 @@ export function createInitialSessionState(
     pendingTileChallenge: null,
     pendingEncounterDecision: null,
     resolvedEncounterDecisionIds: [],
+    pendingMemoryTaxChoice: null,
+    resolvedMemoryTaxChoiceSourceEventIds: [],
     pendingForcedDestinationChoice: null,
     pendingDisplacement: null,
     pendingDisplacementArrival: null,

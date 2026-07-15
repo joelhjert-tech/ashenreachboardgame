@@ -1,6 +1,6 @@
 # Heat Retirement H9A — Memory Tax Gate private-choice approval
 
-Status: **APPROVED H9A — REPORT ONLY**.
+Status: **APPROVED H9A — IMPLEMENTED H9B**.
 
 Checkpoint: `aadb5c1 feat: retire marrow tax heat effect` on `phase/heat-retirement-1x`.
 
@@ -264,7 +264,11 @@ Recommended implementation commit subject: `feat: retire memory tax gate heat ef
 
 ## 12. Final Heat-retirement status
 
-All Heat-linked Threats now have approved retirement rules. Sixteen of the seventeen additional Heat-linked Threats are implemented; `memory-tax-gate` is the only unimplemented approved retirement. H9B implementation will complete the authored Threat Heat-retirement track.
+All Heat-linked Threats now have approved and implemented retirement rules. H9B completed `memory-tax-gate` through the approved narrow private-choice lifecycle. A separate authored-Heat removal and compatibility-boundary audit remains required.
+
+## H9B implementation seal
+
+H9B implements the approved wording and behavior in place: funded owners receive the two server-generated private options; zero Salvage installs the delayed modifier automatically; a stale Salvage choice falls back to that modifier; exact loss uses the existing floor-zero resolver semantics; and the modifier binds to one final non-battle test resolution across rerolls. The choice, modifier, completed-source ledgers, projections, and reconnect behavior are typed and source-locked to `memory-tax-gate`.
 
 Global legacy compatibility infrastructure is not approved for removal in H9A or H9B. A separate authored-Heat removal and compatibility-boundary audit must follow implementation.
 

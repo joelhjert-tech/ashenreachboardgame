@@ -1,6 +1,3 @@
-import { createHash } from "node:crypto";
-import { readFileSync } from "node:fs";
-import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import type { PhonePatchPayload, PublicPatchPayload } from "../../../client/shared/types.js";
 import type { ConnectedClient } from "../../../server/roomServer.js";
@@ -301,13 +298,10 @@ describe("Heat Retirement H7B authority, reactions, and replay", () => {
     expect(collapseEvents(server.getState())).toHaveLength(1);
   });
 
-  it("hash-pins the sole remaining blocked definition", () => {
-    const expected = new Map([
-      ["memory-tax-gate", "8b7d60e7fdf354131df2a0f3f5f1c701e2ab657a369b1c53cbe095b8d356ae80"]
-    ]);
-    for (const [id, hash] of expected) {
-      const bytes = readFileSync(join(process.cwd(), "content", "cards", "threats", `${id}.json`));
-      expect(createHash("sha256").update(bytes).digest("hex"), id).toBe(hash);
-    }
+  it("preserves the final authored retirement", () => {
+    expect(requireHazard("memory-tax-gate").failEffect).toEqual({
+      type: "memory_tax_choice",
+      sourceCardId: "memory-tax-gate"
+    });
   });
 });

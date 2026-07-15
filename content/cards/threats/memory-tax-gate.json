@@ -3,7 +3,7 @@
   "type": "threat",
   "cardType": "hazard",
   "title": "Memory Tax Gate",
-  "text": "A toll gate opens only after demanding a name the operative would rather keep buried.",
+  "text": "A toll gate opens only after demanding a name the operative would rather keep buried. On failure, choose one: lose 1 Salvage (available only if you have at least 1 Salvage); or suffer -1 on your next non-battle test.",
   "flavor": "Some prices are paid in autobiography.",
   "severity": 3,
   "region": "middle",
@@ -14,15 +14,15 @@
     "text": "You paid the gate with a harmless memory and kept the real name hidden."
   },
   "failEffect": {
-    "type": "gain_heat",
-    "amount": 2
+    "type": "memory_tax_choice",
+    "sourceCardId": "memory-tax-gate"
   },
   "enemyFamily": "bureaucracy",
   "threatLane": "yellow",
   "rarity": "uncommon",
   "tempo": "push",
   "resourceTags": [
-    "heat",
+    "salvage",
     "loot"
   ]
 }
