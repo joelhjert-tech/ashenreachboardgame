@@ -33,9 +33,7 @@ export type OtherLegacyHeatCompatibilityApproval = {
 // authorize character defaults, costs, thresholds, deltas, or arbitrary text.
 export const LEGACY_HEAT_EFFECT_APPROVALS: readonly LegacyHeatEffectApproval[] = [
   { id: "anomaly-cinder-mirage-lane", constructs: ["player-facing Heat text", "player-facing Risk resource text"] },
-  { id: "artifact-cinder-suture-kit", constructs: ["player-facing Heat text"] },
-  { id: "crownless-advocate", constructs: ["lose_heat"] },
-  { id: "saltflat-bone-reader", constructs: ["lose_heat"] }
+  { id: "artifact-cinder-suture-kit", constructs: ["player-facing Heat text"] }
 ];
 
 // C1 originally froze unresolved imported board/scenario effects here. C2B1-C2B5

@@ -16,11 +16,6 @@ import {
 } from "../../data/scenarios.js";
 
 const TARGET_ID = "scenario_mirror_of_false_heroes";
-const REMAINING_IDS = [
-  "crownless-advocate",
-  "saltflat-bone-reader"
-] as const;
-
 const OTHER_SCENARIO_HASHES = new Map([
   ["scenario_broken_seal", "2bf67c801579ecad442cccd0a224dee2bc18bea78526ad97f27c5526a2e426de"],
   ["scenario_throne_of_ash", "31e9db76844bd9d7d9d3f0683ba72d6ff4e40ca0508a807414e3d869b108e27b"],
@@ -155,11 +150,11 @@ describe("Heat Compatibility C3B Mirror scenario retirement", () => {
         .forEach(({ type }) => effects.push({ id: scenario.id, type }));
     }
 
-    expect(effects).toHaveLength(2);
-    expect([...new Set(effects.map(({ id }) => id))].sort()).toEqual([...REMAINING_IDS].sort());
+    expect(effects).toHaveLength(0);
+    expect([...new Set(effects.map(({ id }) => id))].sort()).toEqual([]);
     expect(effects.filter(({ type }) => type === "gain_heat")).toHaveLength(0);
     expect(effects.filter(({ type }) => type === "gain_heat_all")).toHaveLength(0);
-    expect(effects.filter(({ type }) => type === "lose_heat")).toHaveLength(2);
+    expect(effects.filter(({ type }) => type === "lose_heat")).toHaveLength(0);
     expect(C1_BLOCKED_RUNTIME_HEAT_EFFECT_SIGNATURES.size).toBe(0);
     expect(validateC1BlockedRuntimeHeatEffects([])).toEqual([]);
     expect(validateC1BlockedRuntimeHeatEffects([{ id: TARGET_ID, type: "gain_heat" }]).join(" ")).toContain(TARGET_ID);

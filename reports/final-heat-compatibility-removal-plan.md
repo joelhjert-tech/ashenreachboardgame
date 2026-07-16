@@ -281,3 +281,9 @@ The two remaining follower Heat effects are **APPROVED** for replacement with ex
 Implementation grouping: one content group using the existing `gain_note` resolver and current `USE_FOLLOWER` once-per-round lifecycle. Preserve stable IDs, roles, loyalty, ownership, use limits, and compatibility metadata. Add no Wound, Scar, Salvage, payment, Global Escalation, movement, modifier, discard, exhaustion, route mutation, or Rivalry inspection.
 
 C5A is report-only. Current authored typed Heat remains **2 occurrences across 2 approved-but-unimplemented follower IDs**, and verdict **FAIL** remains. After implementation, projected authored typed Heat is **0 occurrences across 0 IDs**. A complete boundary rerun may then advance the verdict to **CONDITIONAL PASS** while legacy save fields, inert follower loss-condition metadata, compatibility types, historical documentation, and dead residue remain contained for later cleanup. See `heat-compatibility-c5a-follower-approval.md`.
+
+### Phase C5B - final follower implementation
+
+Implementation status: **complete**. `crownless-advocate` and `saltflat-bone-reader` now use the exact approved explicit `gain_note` effects and retain their shared stable-ID `oncePerRound` lifecycle. Both IDs were removed from `LEGACY_HEAT_EFFECT_APPROVALS`.
+
+Current authored typed Heat is **0 occurrences across 0 IDs**. Compatibility-only save fields, `lossCondition: "heat"` metadata, parser/action types, projection stripping, historical reports, and dead residue remain retained and inert. The current verdict advances to **CONDITIONAL PASS**, pending the final compatibility cleanup/deletion audit. See `heat-compatibility-c5b-final-follower-implementation.md`.

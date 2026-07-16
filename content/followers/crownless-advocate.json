@@ -2,10 +2,10 @@
   "id": "crownless-advocate",
   "name": "Crownless Advocate",
   "role": "informant",
-  "text": "Once per round, soften a faction demand or cancel one unstable cost from a rivalry bargain.",
+  "text": "Once per round, record that the Crownless Advocate softened one faction demand or stabilized one rivalry bargain.",
   "activeEffect": {
-    "type": "lose_heat",
-    "amount": 1
+    "type": "gain_note",
+    "text": "Crownless Advocate: one faction demand or rivalry bargain was softened."
   },
   "useLimit": "oncePerRound",
   "loyalty": 3,

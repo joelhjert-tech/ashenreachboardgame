@@ -246,8 +246,8 @@ describe("Heat Retirement H1 removal-only Threats", () => {
 
   it("leaves Siren plus the three blocked Heat-linked Threats and completed duplicate revisions unchanged", () => {
     expect(collectHeatThreatIds()).toEqual([...REMAINING_HEAT_THREAT_IDS].sort());
-    expect(LEGACY_HEAT_EFFECT_APPROVALS).toHaveLength(4);
-    expect(APPROVED_LEGACY_HEAT_CONTENT_IDS.size).toBe(18);
+    expect(LEGACY_HEAT_EFFECT_APPROVALS).toHaveLength(2);
+    expect(APPROVED_LEGACY_HEAT_CONTENT_IDS.size).toBe(16);
     expect(requireTarget("glass-chime-swarm").failEffect).toEqual({
       type: "next_non_battle_test_modifier",
       amount: -1,

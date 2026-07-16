@@ -11,11 +11,6 @@ import type { GameState } from "../../schema/session.schema.js";
 import { createInitialSessionState } from "../../../server/sessionState.js";
 import { reduceGameState } from "../reducer.js";
 
-const BLOCKED_AUTHORED_IDS = [
-  "crownless-advocate",
-  "saltflat-bone-reader"
-] as const;
-
 const HEAT_EFFECT_TYPES = new Set(["gain_heat", "gain_heat_all", "lose_heat"]);
 
 function collectHeatEffects(value: unknown, id: string, output: Array<{ id: string; type: string }>): void {
@@ -70,13 +65,12 @@ function productionFiles(directory: string): string[] {
 }
 
 describe("Heat Compatibility C1 containment", () => {
-  it("keeps the exact 2 post-C4B2 follower effects blocked without silently changing content", () => {
+  it("contains zero active authored Heat effects after the final follower retirements", () => {
     const effects = authoredHeatEffects();
-    expect(effects).toHaveLength(2);
-    expect([...new Set(effects.map((entry) => entry.id))].sort()).toEqual([...BLOCKED_AUTHORED_IDS].sort());
+    expect(effects).toEqual([]);
     expect(effects.filter((entry) => entry.type === "gain_heat")).toHaveLength(0);
     expect(effects.filter((entry) => entry.type === "gain_heat_all")).toHaveLength(0);
-    expect(effects.filter((entry) => entry.type === "lose_heat")).toHaveLength(2);
+    expect(effects.filter((entry) => entry.type === "lose_heat")).toHaveLength(0);
   });
 
   it("makes HEAT_THRESHOLD_REACHED an exact compatibility no-op", () => {

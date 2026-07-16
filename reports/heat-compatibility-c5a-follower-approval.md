@@ -275,3 +275,9 @@ Successful verification proves this approval pass changed no gameplay; it does n
 ## Scope conclusion
 
 The intended commit contains only this report and the two exact planning-report updates. Both follower definitions, all schemas, validation, tests, runtime, clients, assets, board content, scenarios, escalations, Threats, missions, Contracts, items, economy values, compatibility code, and the +116 expansion remain unchanged. The two quarantined audits remain untracked and hash-unchanged.
+
+## C5B implementation status
+
+**IMPLEMENTED.** Both approved followers now author their exact explicit owner-private `gain_note` effect. Neither `activeEffect` was deleted, so the generic role fallback is not involved. Stable IDs, role, loyalty, `oncePerRound`, catalog membership, ownership, and legacy metadata remain unchanged.
+
+Repository-backed active authored typed Heat is now **0 occurrences across 0 IDs**. See `heat-compatibility-c5b-final-follower-implementation.md` for lifecycle, privacy, replay, reconnect, projection, and verification evidence.

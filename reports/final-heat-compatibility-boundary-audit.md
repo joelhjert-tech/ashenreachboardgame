@@ -544,6 +544,29 @@ C5A is report-only, so current evidence remains:
 
 After implementation and a complete boundary rerun, the projected authored typed Heat count is **0** and the projected verdict is **CONDITIONAL PASS**. Compatibility-only save fields, follower `lossCondition: "heat"` metadata, protocol/types, historical documentation, and dead residue are not approved for deletion in C5A. See `heat-compatibility-c5a-follower-approval.md` for exact rules, lifecycle findings, privacy, power, tests, and implementation grouping.
 
+## Phase C5B final follower implementation update
+
+C5B replaced the last two authored `lose_heat 1` leaves with the exact approved owner-private notes:
+
+- `crownless-advocate`: `Crownless Advocate: one faction demand or rivalry bargain was softened.`
+- `saltflat-bone-reader`: `Saltflat Bone-Reader: one scar, omen, or void-salt bargain became a safer route note.`
+
+Both followers retain their stable identity, role, loyalty, `oncePerRound` stable-ID use boundary, ownership, catalog membership, and compatibility metadata. Explicit effects remain authored, so the undocumented role fallback cannot select the result. No Wound, Scar, Salvage, movement, Global Escalation, modifier, discard, exhaustion, route, mission, Contract, or Rivalry mechanic was added.
+
+Updated evidence:
+
+- board-authored typed Heat effects: **0 across 0 IDs**;
+- scenario-authored typed Heat effects: **0 across 0 IDs**;
+- escalation-authored typed Heat effects: **0 across 0 IDs**;
+- follower-authored typed Heat effects: **0 across 0 IDs**;
+- total active authored typed Heat effects: **0 across 0 IDs**;
+- current Heat-state mechanical reads/writes: **0**;
+- gameplay-mutating `HEAT_THRESHOLD_REACHED`: **0**;
+- Heat-to-Scar conversion: **0**;
+- observed/guarded phone and TV Heat fields or labels: **0**.
+
+**Updated verdict: CONDITIONAL PASS.** The active authored and player-facing boundary is contained, legacy metadata remains inert and parseable, and reconnect/replay coverage passes. PASS remains deferred until dead code/assets/docs, compatibility types, and save-version deletion dependencies are re-audited. See `heat-compatibility-c5b-final-follower-implementation.md`.
+
 ## Verification record
 
 Passed:

@@ -17,8 +17,6 @@ import {
 import { createInitialSessionState } from "../../../server/sessionState.js";
 
 const TARGET_ID = "escalation-marrow-surgery-debt" as const;
-const FOLLOWER_HEAT_IDS = ["crownless-advocate", "saltflat-bone-reader"] as const;
-
 function client(seatId: string): ConnectedClient {
   return {
     seatId,
@@ -137,10 +135,10 @@ describe("Heat Compatibility C4B2 Marrow escalation retirement", () => {
     );
   });
 
-  it("removes the exact validation exception while retaining only the two follower Heat approvals", () => {
+  it("keeps the escalation and final follower IDs outside the Heat-effect approval manifest", () => {
     expect(LEGACY_HEAT_EFFECT_APPROVALS.some(({ id }) => id === TARGET_ID)).toBe(false);
-    for (const id of FOLLOWER_HEAT_IDS) {
-      expect(LEGACY_HEAT_EFFECT_APPROVALS.some((approval) => approval.id === id)).toBe(true);
+    for (const id of ["crownless-advocate", "saltflat-bone-reader"]) {
+      expect(LEGACY_HEAT_EFFECT_APPROVALS.some((approval) => approval.id === id)).toBe(false);
     }
     expect(validateLegacyHeatContentRecord(`${TARGET_ID}.json`, loadEscalationCards().get(TARGET_ID))).toEqual([]);
     expect(validateLegacyHeatContentRecord(`${TARGET_ID}.json`, {

@@ -2991,7 +2991,7 @@ describe("active objects and table interaction", () => {
       name: "Crownless Advocate",
       role: "informant",
       text: "Soften a faction demand.",
-      activeEffect: { type: "lose_heat", amount: 1 },
+      activeEffect: { type: "gain_note", text: "Crownless Advocate: one faction demand or rivalry bargain was softened." },
       useLimit: "oncePerRound",
       loyalty: 3,
       lossCondition: "choice"
@@ -3020,6 +3020,7 @@ describe("active objects and table interaction", () => {
 
     const player = server.getState().players.find((entry) => entry.seatId === "seat-1");
     expect(player?.character.followers).toHaveLength(1);
+    expect(player?.private.notes).toContain("Crownless Advocate: one faction demand or rivalry bargain was softened.");
     expect(server.getState().lastOutcomeSummary?.summary).toContain("Crownless Advocate used");
   });
 

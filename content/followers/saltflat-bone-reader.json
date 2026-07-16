@@ -2,10 +2,10 @@
   "id": "saltflat-bone-reader",
   "name": "Saltflat Bone-Reader",
   "role": "ritualist",
-  "text": "Once per round, turn a scar, omen, or void-salt bargain into a safer route note.",
+  "text": "Once per round, record a safer route note from one scar, omen, or void-salt bargain.",
   "activeEffect": {
-    "type": "lose_heat",
-    "amount": 1
+    "type": "gain_note",
+    "text": "Saltflat Bone-Reader: one scar, omen, or void-salt bargain became a safer route note."
   },
   "useLimit": "oncePerRound",
   "loyalty": 2,

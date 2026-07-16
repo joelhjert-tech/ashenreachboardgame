@@ -296,8 +296,8 @@ describe("Heat Retirement H8B Marrow Tax Auditors", () => {
 
   it("leaves no authored Heat-linked Threat and preserves the final typed retirement", () => {
     expect(collectHeatThreatIds()).toEqual([]);
-    expect(LEGACY_HEAT_EFFECT_APPROVALS).toHaveLength(4);
-    expect(APPROVED_LEGACY_HEAT_CONTENT_IDS.size).toBe(18);
+    expect(LEGACY_HEAT_EFFECT_APPROVALS).toHaveLength(2);
+    expect(APPROVED_LEGACY_HEAT_CONTENT_IDS.size).toBe(16);
     expect((threats.get("memory-tax-gate") as HazardThreatCard | undefined)?.failEffect).toEqual({
       type: "memory_tax_choice",
       sourceCardId: "memory-tax-gate"

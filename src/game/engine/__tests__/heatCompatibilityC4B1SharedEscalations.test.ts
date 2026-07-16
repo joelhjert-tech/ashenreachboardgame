@@ -42,11 +42,6 @@ const TARGETS = [
   }
 ] as const;
 
-const REMAINING_AUTHORED_IDS = [
-  "crownless-advocate",
-  "saltflat-bone-reader"
-] as const;
-
 function client(seatId: string): ConnectedClient {
   return {
     seatId,
@@ -147,8 +142,11 @@ describe("Heat Compatibility C4B1 shared escalation retirement", () => {
     }
   });
 
-  it("retains only the exact two post-C4B2 follower approvals", () => {
-    expect(LEGACY_HEAT_EFFECT_APPROVALS.map(({ id }) => id)).toEqual(expect.arrayContaining([...REMAINING_AUTHORED_IDS]));
+  it("keeps all retired escalation and follower IDs outside the Heat-effect approval manifest", () => {
+    expect(LEGACY_HEAT_EFFECT_APPROVALS.map(({ id }) => id)).not.toEqual(expect.arrayContaining([
+      "crownless-advocate",
+      "saltflat-bone-reader"
+    ]));
     for (const { id } of TARGETS) {
       expect(LEGACY_HEAT_EFFECT_APPROVALS.some((approval) => approval.id === id)).toBe(false);
       expect(validateLegacyHeatContentRecord(`${id}.json`, loadEscalationCards().get(id))).toEqual([]);
