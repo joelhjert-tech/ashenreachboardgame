@@ -589,15 +589,14 @@ describe("PhoneActionPanel", () => {
       />
     );
 
-    expect(screen.getByTestId("phone-current-prompt")).toHaveTextContent(/roll battle/i);
-    expect(screen.getByTestId("phone-current-prompt")).toHaveTextContent(/cinder-veil stalker/i);
-    expect(screen.getByTestId("phone-battle-subject-card")).toHaveTextContent(/cinder-veil stalker/i);
-    expect(screen.getByTestId("phone-battle-subject-card")).toHaveTextContent(/enemy/i);
-    expect(screen.getByTestId("phone-battle-subject-card")).toHaveTextContent(/battle/i);
-    expect(screen.getByTestId("phone-battle-subject-card")).toHaveTextContent(/threat/i);
-    expect(screen.getByTestId("phone-battle-subject-details")).toHaveTextContent(/grit/i);
-    expect(screen.getByTestId("phone-battle-subject-details")).toHaveTextContent(/opponent 6/i);
-    expect(screen.getByRole("button", { name: /enter combat.*cinder-veil stalker/i })).toBeInTheDocument();
+    expect(screen.getByTestId("phone-battle-shell")).toHaveTextContent(/sable vey/i);
+    expect(screen.getByTestId("phone-battle-shell")).toHaveTextContent(/cinder-veil stalker/i);
+    expect(screen.getByLabelText(/battle totals/i)).toHaveTextContent(/grit/i);
+    expect(screen.getByLabelText(/battle totals/i)).toHaveTextContent(/opponent\s*6/i);
+    expect(screen.getByRole("button", { name: /enter combat/i })).toBeInTheDocument();
+    expect(screen.queryByTestId("phone-current-prompt")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("phone-battle-subject-card")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("phone-battle-assist")).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /attempt grit check/i })).not.toBeInTheDocument();
     expect(screen.queryByTestId("movement-planner")).not.toBeInTheDocument();
     expect(screen.queryByTestId("phone-shop-panel")).not.toBeInTheDocument();
@@ -1571,14 +1570,9 @@ describe("PhoneActionPanel", () => {
       />
     );
 
-    expect(screen.getByTestId("phone-action-panel-root")).toHaveClass("phone-action-panel--shop");
-    expect(screen.getByTestId("phone-action-active-panel")).toHaveClass("phone-shop-command-panel");
-    expect(screen.getByTestId("phone-turn-tab-reason")).toHaveTextContent(/shop locked/i);
-    expect(screen.getByTestId("phone-turn-tab-reason")).toHaveTextContent(/resolve battle first/i);
-    expect(within(screen.getByTestId("phone-action-active-panel")).getByRole("status")).toHaveTextContent(/shop locked/i);
-    expect(screen.getAllByText(/shop locked: resolve battle first/i).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/ignore shop until the encounter is cleared/i).length).toBeGreaterThan(0);
-    expect(screen.queryByRole("button", { name: /enter combat/i })).not.toBeInTheDocument();
+    expect(screen.getByTestId("phone-battle-shell")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /enter combat/i })).toBeInTheDocument();
+    expect(screen.queryByTestId("phone-shop-panel")).not.toBeInTheDocument();
     expect(screen.queryByTestId("phone-battle-assist")).not.toBeInTheDocument();
   });
 
@@ -1602,13 +1596,8 @@ describe("PhoneActionPanel", () => {
       />
     );
 
-    expect(screen.getByTestId("phone-action-panel-root")).toHaveClass("phone-action-panel--action");
-    expect(screen.getByTestId("phone-action-active-panel")).toHaveClass("phone-sector-action-panel");
-    expect(screen.getByTestId("phone-turn-tab-reason")).toHaveTextContent(/action locked/i);
-    expect(screen.getByTestId("phone-turn-tab-reason")).toHaveTextContent(/resolve battle first/i);
-    expect(within(screen.getByTestId("phone-action-active-panel")).getByText(/action locked: resolve battle first/i)).toBeInTheDocument();
-    expect(within(screen.getByTestId("phone-action-active-panel")).getByText(/ignore sector actions until the battle tab is cleared/i)).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /enter combat/i })).not.toBeInTheDocument();
+    expect(screen.getByTestId("phone-battle-shell")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /enter combat/i })).toBeInTheDocument();
     expect(screen.queryByTestId("phone-battle-assist")).not.toBeInTheDocument();
     expect(screen.queryByText(/sector math/i)).not.toBeInTheDocument();
   });
@@ -1700,8 +1689,8 @@ describe("PhoneActionPanel", () => {
     expect(screen.queryByTestId("movement-planner")).not.toBeInTheDocument();
 
     rerender(<PhoneActionPanel characters={characters} onIntent={vi.fn()} selectedTurnTab="battle" patch={battlePatch} />);
-    expect(screen.getByTestId("phone-action-active-panel")).toHaveClass("phone-battle-panel");
-    expect(screen.getByRole("button", { name: /enter combat.*cinder-veil stalker/i })).toBeInTheDocument();
+    expect(screen.getByTestId("phone-battle-shell")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /enter combat/i })).toBeInTheDocument();
     expect(screen.queryByTestId("phone-shop-panel")).not.toBeInTheDocument();
 
     rerender(<PhoneActionPanel characters={characters} onIntent={vi.fn()} selectedTurnTab="action" patch={actionPatch} />);
@@ -2521,8 +2510,8 @@ describe("PhoneActionPanel", () => {
       />
     );
 
-    expect(screen.getByRole("button", { name: /roll for the enemy/i })).toBeInTheDocument();
-    expect(screen.getAllByText(/seat-2 is engaged|mira is engaged/i).length).toBeGreaterThan(0);
+    expect(screen.getByRole("button", { name: /roll for enemy/i })).toBeInTheDocument();
+    expect(screen.getByTestId("phone-battle-shell")).toHaveTextContent(/enemy roll/i);
   });
 
   it("shows a waiting state for seats that are neither the fighter nor the assigned roller", () => {
@@ -2549,8 +2538,8 @@ describe("PhoneActionPanel", () => {
       />
     );
 
-    expect(screen.getByText(/waiting on pax to roll for the enemy/i)).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /roll for the enemy/i })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /waiting on pax/i })).toBeDisabled();
+    expect(screen.queryByRole("button", { name: /roll for enemy/i })).not.toBeInTheDocument();
   });
 
   it("renders active roll result and sends continue intent", () => {
@@ -2660,9 +2649,9 @@ describe("PhoneActionPanel", () => {
       />
     );
 
-    expect(screen.getByTestId("phone-action-active-panel")).toHaveClass("phone-battle-panel");
+    expect(screen.getByTestId("phone-battle-shell")).toBeInTheDocument();
     expect(screen.queryByTestId("phone-movement-transition")).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /enter combat.*cinder-veil stalker/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /enter combat/i })).toBeInTheDocument();
   });
 
   it("renders a recovery continue button for orphaned movement roll summaries", () => {
@@ -2750,14 +2739,164 @@ describe("PhoneActionPanel", () => {
       />
     );
 
-    expect(screen.getByTestId("phone-resolution-card")).toHaveTextContent(/battle setup/i);
-    expect(screen.getByTestId("phone-battle-subject-card")).toHaveTextContent(/cinder-veil stalker/i);
-    expect(screen.getByTestId("phone-battle-subject-card")).toHaveTextContent(/ash around it boils/i);
-    expect(screen.getByTestId("phone-battle-subject-art")).toHaveAttribute("src", expect.stringMatching(/\/assets\/cards\/(threats|fallbacks)\//));
-    expect(screen.getByTestId("phone-battle-panel")).toHaveTextContent(/cinder-veil stalker/i);
-    expect(screen.getByTestId("phone-battle-panel")).toHaveTextContent(/grit vs 8/i);
-    expect(screen.getByTestId("phone-battle-panel")).toHaveTextContent(/base grit \+2/i);
-    expect(screen.getByTestId("phone-battle-panel")).toHaveTextContent(/black route fuse \+3/i);
+    expect(screen.getByTestId("phone-battle-shell")).toHaveTextContent(/roll required/i);
+    expect(screen.getByLabelText(/sable vey versus cinder-veil stalker/i)).toBeInTheDocument();
+    expect(screen.getByRole("img", { name: /cinder-veil stalker/i })).toHaveAttribute("src", expect.stringMatching(/\/assets\/cards\/(threats|fallbacks)\//));
+    expect(screen.getByLabelText(/battle totals/i)).toHaveTextContent(/opponent\s*8/i);
+    fireEvent.click(screen.getByRole("button", { name: /view details/i }));
+    expect(screen.getByLabelText(/battle details/i)).toHaveTextContent(/base grit \+2/i);
+    expect(screen.getByLabelText(/battle details/i)).toHaveTextContent(/black route fuse \+3/i);
+  });
+
+  it("consolidates a successful opposed battle into one outcome and one primary action", () => {
+    render(
+      <PhoneActionPanel
+        characters={characters}
+        onIntent={vi.fn()}
+        patch={createPatch({
+          encounter: null,
+          activeResolution: {
+            id: "seat-1:threat:lantern-ash-ghoul:test",
+            playerId: "seat-1",
+            source: "threat",
+            stage: "outcome_summary",
+            card: {
+              id: "lantern-ash-ghoul",
+              title: "Lantern-Ash Ghoul",
+              type: "enemy",
+              flavor: "The lamp burns behind its teeth.",
+              artType: "threat"
+            },
+            battle: {
+              enemyName: "Lantern-Ash Ghoul",
+              stat: "grit",
+              difficulty: 12,
+              modifiers: [{ label: "Equipped", value: 2 }]
+            },
+            roll: {
+              dice: [6, 4],
+              baseTotal: 10,
+              modifierTotal: 2,
+              finalTotal: 12,
+              target: 12,
+              success: true
+            },
+            outcome: {
+              title: "Threat defeated",
+              text: "You keep the lamp burning.",
+              effects: ["Lantern-Ash Ghoul added to the Trophy Pile."]
+            }
+          },
+          playerResultDeltas: [
+            {
+              id: "defeated-ghoul",
+              type: "threatDefeated",
+              label: "Threat defeated",
+              value: "Lantern-Ash Ghoul",
+              sign: "gain",
+              targetScope: "table",
+              visibility: "public",
+              source: "combat",
+              publicText: "Lantern-Ash Ghoul was defeated.",
+              severity: "reward"
+            },
+            {
+              id: "ghoul-trophy",
+              type: "trophy",
+              label: "Trophy added",
+              value: 1,
+              sign: "gain",
+              targetScope: "personal",
+              targetSeatId: "seat-1",
+              visibility: "public",
+              source: "combat",
+              publicText: "Lantern-Ash Ghoul added to the Trophy Pile.",
+              severity: "reward"
+            }
+          ]
+        })}
+      />
+    );
+
+    expect(screen.getByLabelText(/sable vey versus lantern-ash ghoul/i)).toBeInTheDocument();
+    expect(screen.getByTestId("phone-battle-total-comparison")).toHaveTextContent(/12.*12/i);
+    expect(screen.getByText(/tie succeeds against this threat/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/^threat defeated$/i)).toHaveLength(1);
+    expect(screen.getByTestId("phone-battle-consequence-trophy")).toBeInTheDocument();
+    expect(screen.queryByText(/BattleThreatGrit/i)).not.toBeInTheDocument();
+    expect(screen.queryByTestId("phone-current-prompt")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("phone-battle-assist")).not.toBeInTheDocument();
+    const actionDock = screen.getByTestId("phone-battle-action-dock");
+    expect(within(actionDock).getAllByRole("button")).toHaveLength(1);
+    expect(within(actionDock).getByRole("button", { name: /continue/i })).toBeEnabled();
+    expect(screen.queryByLabelText(/battle details/i)).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /view details/i }));
+    expect(screen.getByLabelText(/battle details/i)).toHaveTextContent(/equipped \+2/i);
+  });
+
+  it("presents defeat and penalties without duplicating the old battle panels", () => {
+    render(
+      <PhoneActionPanel
+        characters={characters}
+        onIntent={vi.fn()}
+        patch={createPatch({
+          encounter: null,
+          activeResolution: {
+            id: "seat-1:threat:lantern-ash-ghoul:defeat",
+            playerId: "seat-1",
+            source: "threat",
+            stage: "outcome_summary",
+            card: {
+              id: "lantern-ash-ghoul",
+              title: "Lantern-Ash Ghoul",
+              type: "enemy",
+              artType: "threat"
+            },
+            battle: {
+              enemyName: "Lantern-Ash Ghoul",
+              stat: "grit",
+              difficulty: 12,
+              modifiers: []
+            },
+            roll: {
+              dice: [2, 3],
+              baseTotal: 5,
+              modifierTotal: 0,
+              finalTotal: 5,
+              target: 12,
+              success: false
+            },
+            outcome: {
+              title: "Operative defeated",
+              text: "The ghoul drives you back.",
+              effects: ["Suffer 1 Wound."]
+            }
+          },
+          playerResultDeltas: [
+            {
+              id: "ghoul-wound",
+              type: "wound",
+              label: "Wound",
+              value: 1,
+              sign: "loss",
+              targetScope: "personal",
+              targetSeatId: "seat-1",
+              visibility: "ownerPrivate",
+              source: "combat",
+              publicText: "Sable Vey suffered a Wound.",
+              privateText: "You suffered 1 Wound.",
+              severity: "loss"
+            }
+          ]
+        })}
+      />
+    );
+
+    expect(screen.getByText(/^operative defeated$/i)).toBeInTheDocument();
+    expect(screen.getByTestId("phone-battle-consequence-wound")).toBeInTheDocument();
+    expect(screen.getByTestId("phone-battle-shell")).toHaveClass("phone-battle-shell--defeat");
+    expect(screen.queryByTestId("phone-resolution-card")).not.toBeInTheDocument();
+    expect(screen.queryByText(/no quick actions available/i)).not.toBeInTheDocument();
   });
 
   it("renders active anomaly test cards with fallback art and battle controls", () => {
@@ -2895,15 +3034,11 @@ describe("PhoneActionPanel", () => {
       />
     );
 
-    expect(screen.getByTestId("phone-battle-assist")).toHaveTextContent(/cinder-veil stalker/i);
-    expect(screen.getByTestId("phone-battle-assist")).toHaveTextContent(/you have 1 card that can help/i);
-
-    fireEvent.click(screen.getByRole("button", { name: /open combat cards/i }));
-
-    expect(screen.getByTestId("phone-combat-card-drawer")).toHaveTextContent(/black route fuse/i);
-    expect(screen.getByTestId("phone-combat-card-drawer")).not.toHaveTextContent(/coffin rig/i);
-
-    fireEvent.click(within(screen.getByTestId("phone-combat-card-drawer")).getByRole("button", { name: /use black route fuse/i }));
+    expect(screen.queryByTestId("phone-battle-assist")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /^gear$/i }));
+    expect(screen.getByLabelText(/gear battle context/i)).toHaveTextContent(/black route fuse/i);
+    expect(screen.getByLabelText(/gear battle context/i)).not.toHaveTextContent(/coffin rig/i);
+    fireEvent.click(screen.getByRole("button", { name: /use black route fuse/i }));
 
     expect(onIntent).toHaveBeenCalledWith({
       type: "USE_GEAR",
@@ -2951,8 +3086,9 @@ describe("PhoneActionPanel", () => {
       />
     );
 
-    expect(screen.getByTestId("phone-battle-assist")).toHaveTextContent(/no combat cards are usable/i);
-    expect(screen.queryByRole("button", { name: /open combat cards/i })).not.toBeInTheDocument();
+    expect(screen.queryByTestId("phone-battle-assist")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /^gear$/i }));
+    expect(screen.getByLabelText(/gear battle context/i)).toHaveTextContent(/no gear is eligible/i);
     expect(screen.queryByRole("button", { name: /use red march warbell/i })).not.toBeInTheDocument();
   });
 
@@ -2990,8 +3126,9 @@ describe("PhoneActionPanel", () => {
       />
     );
 
-    expect(screen.getByTestId("phone-battle-assist")).toHaveTextContent(/no combat cards are usable/i);
-    expect(screen.queryByRole("button", { name: /open combat cards/i })).not.toBeInTheDocument();
+    expect(screen.queryByTestId("phone-battle-assist")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /^gear$/i }));
+    expect(screen.getByLabelText(/gear battle context/i)).toHaveTextContent(/no gear is eligible/i);
   });
 
   it("keeps trophies and stat upgrades out of the sector action tab", () => {

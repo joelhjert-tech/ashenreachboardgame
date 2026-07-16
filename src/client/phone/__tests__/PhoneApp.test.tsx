@@ -178,6 +178,87 @@ function createLobbyPhonePatch(overrides: Partial<PhonePatchPayload> = {}): Stat
   };
 }
 
+function storeControllerAuth(): void {
+  window.localStorage.setItem(
+    "ashenreach.controllerSession",
+    JSON.stringify({
+      roomCode: "RT7P4",
+      seatId: "seat-1",
+      seatToken: "seat:RT7P4:seat-1",
+      displayName: "Joel"
+    })
+  );
+}
+
+function createConfirmedCharacterPatch(characterId: string): StatePatch<PhonePatchPayload> {
+  const character = characters.find((entry) => entry.id === characterId);
+
+  if (!character) {
+    throw new Error(`Missing character ${characterId}`);
+  }
+
+  return createLobbyPhonePatch({
+    seats: [
+      {
+        seatId: "seat-1",
+        characterId,
+        characterSelected: true,
+        displayName: "Joel",
+        connected: true,
+        ready: false,
+        kicked: false,
+        startingMissionSelected: false,
+        startingMissionTitle: null
+      }
+    ],
+    players: [
+      {
+        seatId: "seat-1",
+        sectorId: character.currentSpaceId,
+        character: {
+          id: character.id,
+          name: character.name,
+          archetype: character.archetype,
+          status: character.status,
+          activeContract: null,
+          stats: character.stats,
+          statUpgrades: {},
+          trophies: 0,
+          trophyPile: [],
+          salvage: 0,
+          wounds: 0,
+          scars: [],
+          afflictions: { faceup: [], facedownCount: 0 },
+          heldGearCount: 0,
+          followerCount: 0,
+          companionBadges: [],
+          equippedGear: character.equippedGear
+        }
+      }
+    ],
+    startingContractOptions: [
+      {
+        id: "choir-quietus",
+        name: "Quietus Ledger",
+        factionGiver: "Glass Choir",
+        text: "Silence one hunter on the listening road.",
+        objective: { type: "defeatCount", target: 1 },
+        reward: { type: "gain_note", text: "The Choir owes you a clean favor." }
+      }
+    ],
+    selectedStartingContract: null,
+    canReady: false,
+    readyDisabledReason: "Choose a starting mission before Ready",
+    self: {
+      seatId: "seat-1",
+      sectorId: character.currentSpaceId,
+      hand: [],
+      notes: [],
+      character
+    }
+  });
+}
+
 describe("PhoneApp", () => {
   afterEach(() => {
     cleanup();
@@ -372,6 +453,145 @@ describe("PhoneApp", () => {
         characterId: "char_deepdale"
       });
     });
+  });
+
+  it("reopens authoritative character selection after a New Game restart patch", async () => {
+    storeControllerAuth();
+    vi.mocked(useRoomSubscription).mockReturnValue({
+      patch: createConfirmedCharacterPatch("void-marshal"),
+      error: null,
+      sendIntent: vi.fn(),
+      status: "open",
+      debugEvents: [],
+      clearDebugEvents: vi.fn()
+    });
+
+    const view = render(<PhoneApp />);
+    expect(await screen.findByText(/tarek voss/i)).toBeInTheDocument();
+
+    vi.mocked(useRoomSubscription).mockReturnValue({
+      patch: createLobbyPhonePatch(),
+      error: null,
+      sendIntent: vi.fn(),
+      status: "open",
+      debugEvents: [],
+      clearDebugEvents: vi.fn()
+    });
+    view.rerender(<PhoneApp />);
+
+    const picker = await screen.findByRole("list", { name: /character/i });
+    expect(screen.getByRole("heading", { name: /select operative/i })).toBeInTheDocument();
+    expect(picker.querySelector(".phone-character-option-selected")).toBeNull();
+    expect(screen.queryByText(/selected starting mission/i)).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /^ready$/i })).not.toBeInTheDocument();
+  });
+
+  it("waits for a matching server confirmation before leaving character selection", async () => {
+    storeControllerAuth();
+    const sendIntent = vi.fn();
+    vi.mocked(useRoomSubscription).mockReturnValue({
+      patch: createLobbyPhonePatch(),
+      error: null,
+      sendIntent,
+      status: "open",
+      debugEvents: [],
+      clearDebugEvents: vi.fn()
+    });
+
+    const view = render(<PhoneApp />);
+    const deepdale = await screen.findByRole("button", { name: /deepdale.*deep route delver/i });
+    fireEvent.click(deepdale);
+
+    expect(sendIntent).toHaveBeenCalledTimes(1);
+    expect(sendIntent).toHaveBeenCalledWith({
+      type: "SELECT_CHARACTER",
+      seatId: "seat-1",
+      characterId: "char_deepdale"
+    });
+    expect(screen.getByRole("list", { name: /character/i })).toBeInTheDocument();
+    expect(deepdale).toBeDisabled();
+    expect(deepdale).toHaveTextContent(/selecting/i);
+    for (const option of within(screen.getByRole("list", { name: /character/i })).getAllByRole("button")) {
+      expect(option).toBeDisabled();
+    }
+
+    vi.mocked(useRoomSubscription).mockReturnValue({
+      patch: createConfirmedCharacterPatch("char_deepdale"),
+      error: null,
+      sendIntent,
+      status: "open",
+      debugEvents: [],
+      clearDebugEvents: vi.fn()
+    });
+    view.rerender(<PhoneApp />);
+
+    expect(await screen.findByRole("heading", { name: /choose starting mission/i })).toBeInTheDocument();
+    expect(screen.queryByRole("list", { name: /character/i })).not.toBeInTheDocument();
+    expect(screen.getAllByText(/deepdale/i).length).toBeGreaterThan(0);
+    expect(screen.getByText(/quietus ledger/i)).toBeInTheDocument();
+  });
+
+  it("restores the picker with a useful error when character selection is rejected", async () => {
+    storeControllerAuth();
+    const sendIntent = vi.fn();
+    vi.mocked(useRoomSubscription).mockReturnValue({
+      patch: createLobbyPhonePatch(),
+      error: null,
+      sendIntent,
+      status: "open",
+      debugEvents: [],
+      clearDebugEvents: vi.fn()
+    });
+
+    const view = render(<PhoneApp />);
+    fireEvent.click(await screen.findByRole("button", { name: /deepdale.*deep route delver/i }));
+
+    vi.mocked(useRoomSubscription).mockReturnValue({
+      patch: createLobbyPhonePatch(),
+      error: "Character already taken",
+      sendIntent,
+      status: "open",
+      debugEvents: [],
+      clearDebugEvents: vi.fn()
+    });
+    view.rerender(<PhoneApp />);
+
+    expect(await screen.findByText(/character already taken/i)).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /deepdale.*deep route delver/i })).toBeEnabled();
+    });
+    expect(screen.getByRole("list", { name: /character/i }).querySelector(".phone-character-option-selected")).toBeNull();
+  });
+
+  it("does not leave the picker when the room confirms a different character", async () => {
+    storeControllerAuth();
+    const sendIntent = vi.fn();
+    vi.mocked(useRoomSubscription).mockReturnValue({
+      patch: createLobbyPhonePatch(),
+      error: null,
+      sendIntent,
+      status: "open",
+      debugEvents: [],
+      clearDebugEvents: vi.fn()
+    });
+
+    const view = render(<PhoneApp />);
+    fireEvent.click(await screen.findByRole("button", { name: /deepdale.*deep route delver/i }));
+
+    vi.mocked(useRoomSubscription).mockReturnValue({
+      patch: createConfirmedCharacterPatch("void-marshal"),
+      error: null,
+      sendIntent,
+      status: "open",
+      debugEvents: [],
+      clearDebugEvents: vi.fn()
+    });
+    view.rerender(<PhoneApp />);
+
+    expect(await screen.findByText(/room confirmed a different operative/i)).toBeInTheDocument();
+    expect(screen.getByRole("list", { name: /character/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /deepdale.*deep route delver/i })).toBeEnabled();
+    expect(screen.queryByRole("heading", { name: /choose starting mission/i })).not.toBeInTheDocument();
   });
 
   it("shows actionable connection guidance when the phone cannot reach the host", async () => {

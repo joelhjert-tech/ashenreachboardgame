@@ -9,7 +9,7 @@ import {
   leaveSession,
   startSession
 } from "../shared/network.js";
-import type { CharacterCatalogEntry, PhonePatchPayload, PhoneSelfState, PhoneSessionAuth, StatePatch } from "../shared/types.js";
+import type { CharacterCatalogEntry, PhonePatchPayload, PhoneSessionAuth, StatePatch } from "../shared/types.js";
 import { useRoomSubscription } from "../shared/useRoomSubscription.js";
 import { getCharacterPortraitPath } from "../shared/assetPaths.js";
 import { statLabelById, statOrder } from "../shared/statLabels.js";
@@ -234,9 +234,11 @@ export function PhoneApp(): ReactElement {
   const [formState, setFormState] = useState(() => ({
     roomCode: readInitialRoomCode(),
     displayName: "",
-    characterId: "void-marshal",
+    characterId: "",
     requestedSeatId: readRequestedSeatId()
   }));
+  const [pendingCharacterId, setPendingCharacterId] = useState<string | null>(null);
+  const [characterSelectionRetryRequired, setCharacterSelectionRetryRequired] = useState(false);
   const [auth, setAuth] = useState<PhoneSessionAuth | null>(() => readStoredAuth());
   const [joinError, setJoinError] = useState<string | null>(null);
   const isLandscape = useLandscapeMode();
@@ -248,13 +250,6 @@ export function PhoneApp(): ReactElement {
   useEffect(() => {
     fetchCharacters().then((loadedCharacters) => {
       setCharacters(loadedCharacters);
-
-      if (loadedCharacters[0] && !formState.characterId) {
-        setFormState((current) => ({
-          ...current,
-          characterId: loadedCharacters[0]?.id ?? current.characterId
-        }));
-      }
     });
   }, []);
 
@@ -321,7 +316,11 @@ export function PhoneApp(): ReactElement {
   };
 
   const handleCharacterSelected = (characterId: string) => {
+    if (pendingCharacterId) {
+      return;
+    }
     setJoinError(null);
+    setPendingCharacterId(characterId);
     setFormState((current) => ({ ...current, characterId }));
     sendIntent({ type: "SELECT_CHARACTER", seatId: auth?.seatId ?? "", characterId });
   };
@@ -392,14 +391,72 @@ export function PhoneApp(): ReactElement {
     () => sortedCharacters.filter((character) => matchesCharacterFilter(character, characterFilter)),
     [characterFilter, sortedCharacters]
   );
-  const selectedCharacter = characters.find((character) => character.id === formState.characterId);
-  const portraitPlayerName = auth?.displayName || selectedCharacter?.name || "Ashen Reach Controller";
+  const portraitPlayerName = auth?.displayName || "Ashen Reach Controller";
   const portraitRoomCode = auth?.roomCode || formState.roomCode || "Awaiting room";
   const portraitPhaseStatus = phonePatch
     ? `${toTitleCase(phonePatch.phase)} - ${toTitleCase(phonePatch.payload.status)}`
     : auth
       ? "Rejoining session"
       : "Join screen";
+  const self = phonePatch?.payload.self ?? null;
+  const activeSeatId = phonePatch?.payload.turnOrder[phonePatch.payload.activeSeatIndex] ?? null;
+  const canSendLobbyIntent = Boolean(phonePatch) || (Boolean(auth) && status === "open");
+  const activeContractCard = phonePatch?.payload.activeContractCard ?? null;
+  const ownSeat = phonePatch?.payload.seats.find((seat) => seat.seatId === auth?.seatId) ?? null;
+  const isSetupHost = Boolean(phonePatch?.payload.selfIsSetupHost);
+
+  useEffect(() => {
+    if (!ownSeat || phonePatch?.payload.status !== "lobby") {
+      return;
+    }
+
+    if (ownSeat.characterSelected === false) {
+      setCharacterSelectionRetryRequired(false);
+      if (!pendingCharacterId && formState.characterId) {
+        setFormState((current) => ({ ...current, characterId: "" }));
+      }
+      return;
+    }
+
+    if (pendingCharacterId && ownSeat.characterId !== pendingCharacterId) {
+      setPendingCharacterId(null);
+      setCharacterSelectionRetryRequired(true);
+      setFormState((current) => ({ ...current, characterId: "" }));
+      setJoinError("The room confirmed a different operative. Choose again.");
+      return;
+    }
+
+    if (characterSelectionRetryRequired && !pendingCharacterId) {
+      return;
+    }
+
+    if (ownSeat.characterId) {
+      setFormState((current) =>
+        current.characterId === ownSeat.characterId
+          ? current
+          : { ...current, characterId: ownSeat.characterId }
+      );
+    }
+    setPendingCharacterId(null);
+    setCharacterSelectionRetryRequired(false);
+  }, [
+    characterSelectionRetryRequired,
+    formState.characterId,
+    ownSeat?.characterId,
+    ownSeat?.characterSelected,
+    pendingCharacterId,
+    phonePatch?.payload.status
+  ]);
+
+  useEffect(() => {
+    if (!pendingCharacterId || !error) {
+      return;
+    }
+
+    setPendingCharacterId(null);
+    setFormState((current) => ({ ...current, characterId: "" }));
+    setJoinError(error);
+  }, [error, pendingCharacterId]);
 
   if (!auth) {
     return (
@@ -477,22 +534,29 @@ export function PhoneApp(): ReactElement {
     );
   }
 
-  const fallbackLobbySelf: PhoneSelfState | null =
-    selectedCharacter && (!phonePatch || phonePatch.payload.status === "lobby")
-      ? {
-          seatId: auth.seatId,
-          sectorId: selectedCharacter.currentSpaceId,
-          hand: [],
-          notes: [],
-          character: selectedCharacter
-        }
-      : null;
-  const self = phonePatch?.payload.self ?? fallbackLobbySelf;
-  const activeSeatId = phonePatch?.payload.turnOrder[phonePatch.payload.activeSeatIndex] ?? null;
-  const canSendLobbyIntent = Boolean(phonePatch) || (Boolean(auth) && status === "open");
-  const activeContractCard = phonePatch?.payload.activeContractCard ?? null;
-  const ownSeat = phonePatch?.payload.seats.find((seat) => seat.seatId === auth.seatId) ?? null;
-  const isSetupHost = Boolean(phonePatch?.payload.selfIsSetupHost);
+  if (auth && !phonePatch) {
+    return (
+      <main className="phone-page phone-page-controller">
+        <section className="phone-portrait-controller phone-portrait-controller-empty">
+          <div className="phone-portrait-panel phone-portrait-lobby-panel">
+            <main className="phone-portrait-scroll phone-lobby-waiting-scroll" aria-label="Rejoining room">
+              <section className="phone-lobby-ready-panel phone-character-waiting-panel">
+                <div className="phone-character-waiting-topline">
+                  <span>{auth.roomCode}</span>
+                  <span>{auth.displayName}</span>
+                  <span>{status}</span>
+                </div>
+                <p className="phone-panel-kicker">Rejoining</p>
+                <h1>Restoring your seat.</h1>
+                <p className="phone-muted-copy">Waiting for the authoritative room state.</p>
+                {(joinError || error) && <p className="error">{joinError ?? error}</p>}
+              </section>
+            </main>
+          </div>
+        </section>
+      </main>
+    );
+  }
 
   if (auth && phonePatch?.payload.status === "lobby" && isSetupHost && phonePatch.payload.lobbyConfigured === false) {
     return (
@@ -558,7 +622,12 @@ export function PhoneApp(): ReactElement {
     );
   }
 
-  if (auth && phonePatch?.payload.status === "lobby" && ownSeat && ownSeat.characterSelected === false) {
+  if (
+    auth &&
+    phonePatch?.payload.status === "lobby" &&
+    ownSeat &&
+    (ownSeat.characterSelected === false || characterSelectionRetryRequired)
+  ) {
     return (
       <main className="phone-page phone-page-controller">
         <section className="phone-portrait-controller phone-portrait-controller-empty">
@@ -595,7 +664,9 @@ export function PhoneApp(): ReactElement {
                     <button
                       key={character.id}
                       type="button"
-                      className={`phone-character-option${formState.characterId === character.id ? " phone-character-option-selected" : ""}`}
+                      className={`phone-character-option${pendingCharacterId === character.id ? " phone-character-option-selected" : ""}`}
+                      disabled={pendingCharacterId !== null}
+                      aria-busy={pendingCharacterId === character.id ? "true" : undefined}
                       onClick={() => handleCharacterSelected(character.id)}
                     >
                       <img src={getCharacterPortraitPath(character.id)} alt="" />
@@ -619,7 +690,9 @@ export function PhoneApp(): ReactElement {
                             </small>
                           ))}
                         </span>
-                        <small className="phone-character-select-label">Select character</small>
+                        <small className="phone-character-select-label">
+                          {pendingCharacterId === character.id ? "Selecting..." : "Select character"}
+                        </small>
                       </span>
                     </button>
                   ))}

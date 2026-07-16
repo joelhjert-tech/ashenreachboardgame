@@ -2191,6 +2191,49 @@ select {
   justify-items: stretch;
 }
 
+@media (max-width: 400px) {
+  .phone-portrait-header {
+    grid-template-columns: 3.2rem minmax(0, 1fr) auto;
+    grid-template-rows: auto auto;
+    column-gap: 0.5rem;
+    row-gap: 0.3rem;
+  }
+
+  .phone-portrait-header-art {
+    grid-column: 1;
+    grid-row: 1 / span 2;
+    width: 3.1rem;
+    height: 3.1rem;
+  }
+
+  .phone-portrait-header-copy {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .phone-portrait-header-copy h1,
+  .phone-portrait-header-copy p {
+    overflow-wrap: normal;
+  }
+
+  .phone-portrait-header-vitals {
+    grid-column: 2;
+    grid-row: 2;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    gap: 0.15rem 0.45rem;
+    padding-left: 0;
+    border-left: 0;
+    text-align: left;
+  }
+
+  .phone-portrait-header-actions {
+    grid-column: 3;
+    grid-row: 1 / span 2;
+  }
+}
+
 .phone-chrome-toggle {
   min-width: 3.25rem;
   min-height: 1.95rem;
@@ -2526,6 +2569,63 @@ select {
   font-size: 0.62rem;
   font-weight: 760;
   text-align: right;
+}
+
+.phone-player-equipped-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.4rem;
+}
+
+.phone-player-equipped-card {
+  min-width: 0;
+  display: grid;
+  align-content: start;
+  gap: 0.24rem;
+  padding: 0.5rem;
+  border: 1px solid rgba(169, 137, 87, 0.26);
+  background:
+    linear-gradient(180deg, rgba(46, 34, 20, 0.2), transparent 60%),
+    rgba(7, 10, 15, 0.86);
+}
+
+.phone-player-equipped-card > span {
+  color: #9faab2;
+  font-size: 0.56rem;
+  font-weight: 900;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+}
+
+.phone-player-equipped-card > strong {
+  color: #f0debd;
+  font-size: 0.72rem;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+.phone-player-equipped-card > small,
+.phone-player-equipped-card > em {
+  color: #b9c3ca;
+  font-size: 0.6rem;
+  font-style: normal;
+  line-height: 1.28;
+  overflow-wrap: anywhere;
+}
+
+.phone-player-equipped-card > em {
+  color: #d8b36e;
+  font-weight: 900;
+}
+
+.phone-player-equipped-card.is-suppressed {
+  border-color: rgba(166, 66, 55, 0.5);
+  background: rgba(42, 17, 17, 0.52);
+}
+
+.phone-player-equipped-card.is-suppressed > small,
+.phone-player-equipped-card.is-suppressed > em {
+  color: #d58a7d;
 }
 
 .phone-portrait-chip-row,
@@ -3565,6 +3665,12 @@ select {
   transform: scale(1.03);
 }
 
+@media (max-width: 370px) {
+  .phone-player-equipped-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 .phone-character-select-scroll {
   overflow: hidden;
   padding-bottom: max(0.35rem, env(safe-area-inset-bottom));
@@ -4022,14 +4128,26 @@ select {
   border-color: rgba(113, 205, 166, 0.55);
 }
 
-.phone-starting-mission-art {
+.phone-starting-mission-art-frame {
   width: 100%;
   aspect-ratio: 16 / 9;
-  display: block;
+  min-width: 0;
+  overflow: hidden;
   border: 1px solid rgba(234, 177, 94, 0.24);
   border-radius: 7px;
-  object-fit: cover;
   background: rgba(5, 8, 12, 0.82);
+}
+
+.phone-starting-mission-art-frame .phone-card-inspect-trigger {
+  width: 100%;
+  height: 100%;
+}
+
+.phone-starting-mission-art {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
 }
 
 .phone-starting-mission-card-top {
@@ -4097,6 +4215,7 @@ select {
 .phone-starting-mission-footer .phone-button {
   width: 100%;
   min-width: 0;
+  min-height: 44px;
 }
 
 .phone-character-waiting-gear {
@@ -4895,6 +5014,31 @@ select {
   color: #e2e6ea;
   font-size: clamp(0.58rem, 0.9vw, 0.76rem);
   line-height: 1.28;
+}
+
+.phone-sheet-gear-slot small,
+.phone-sheet-gear-slot em {
+  color: #aeb9c2;
+  font-size: clamp(0.48rem, 0.72vw, 0.64rem);
+  font-style: normal;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
+.phone-sheet-gear-slot em {
+  color: #d7b77c;
+  font-weight: 850;
+  letter-spacing: 0.04em;
+}
+
+.phone-sheet-gear-slot.is-suppressed {
+  border-color: rgba(143, 70, 63, 0.52);
+  background: rgba(42, 17, 17, 0.46);
+}
+
+.phone-sheet-gear-slot.is-suppressed small,
+.phone-sheet-gear-slot.is-suppressed em {
+  color: #d58a7d;
 }
 
 .phone-sheet-right {
@@ -6476,6 +6620,146 @@ select {
   font-weight: 850;
 }
 
+.phone-inventory-effect-sections {
+  display: grid;
+  gap: 0.42rem;
+}
+
+.phone-inventory-effect-section {
+  display: grid;
+  gap: 0.18rem;
+  padding: 0.45rem 0.52rem;
+  border: 1px solid rgba(143, 183, 218, 0.18);
+  background: rgba(7, 11, 16, 0.72);
+  min-width: 0;
+}
+
+.phone-inventory-effect-section > span {
+  color: #93a4b2;
+  font-size: 0.56rem;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.phone-inventory-effect-section > strong {
+  color: #e7dcc7;
+  font-size: 0.72rem;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+
+.phone-inventory-effect-section > small {
+  color: #aeb9c2;
+  font-size: 0.62rem;
+  line-height: 1.3;
+}
+
+.phone-inventory-passive-section {
+  border-left: 3px solid rgba(207, 170, 104, 0.78);
+}
+
+.phone-inventory-passive-section.is-active strong {
+  color: #e9d29e;
+}
+
+.phone-inventory-passive-section.is-conditional {
+  border-left-color: rgba(107, 153, 184, 0.82);
+}
+
+.phone-inventory-passive-section.is-unequipped {
+  border-left-color: rgba(126, 139, 149, 0.48);
+  opacity: 0.82;
+}
+
+.phone-inventory-passive-section.is-suppressed {
+  border-color: rgba(143, 70, 63, 0.48);
+  border-left: 3px solid rgba(181, 72, 58, 0.82);
+  background: rgba(42, 17, 17, 0.52);
+}
+
+.phone-inventory-active-section {
+  border-left: 3px solid rgba(101, 161, 199, 0.72);
+}
+
+.phone-inventory-charge-meter {
+  display: grid;
+  gap: 0.38rem;
+  padding: 0.48rem 0.54rem;
+  border: 1px solid rgba(194, 153, 82, 0.36);
+  background:
+    linear-gradient(90deg, rgba(85, 55, 22, 0.32), transparent 72%),
+    rgba(7, 10, 14, 0.76);
+}
+
+.phone-inventory-charge-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.45rem;
+}
+
+.phone-inventory-charge-heading strong {
+  color: #ead6a7;
+  font-size: 0.72rem;
+  letter-spacing: 0.07em;
+}
+
+.phone-inventory-charge-heading span {
+  color: #b7c0c6;
+  font-size: 0.58rem;
+  font-weight: 850;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.phone-inventory-charge-pips {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(1rem, 1fr));
+  gap: 0.3rem;
+  min-width: 0;
+}
+
+.phone-inventory-charge-pips span {
+  min-width: 0;
+  height: 0.42rem;
+  border: 1px solid rgba(183, 156, 111, 0.38);
+  background: rgba(25, 29, 32, 0.92);
+}
+
+.phone-inventory-charge-pips span.is-filled {
+  border-color: rgba(230, 190, 115, 0.78);
+  background: linear-gradient(90deg, #8f632e, #dfb96f);
+  box-shadow: 0 0 0.45rem rgba(208, 157, 71, 0.25);
+}
+
+.phone-inventory-charge-meter.is-depleted {
+  border-color: rgba(143, 70, 63, 0.52);
+  background: rgba(42, 17, 17, 0.48);
+}
+
+.phone-inventory-charge-meter.is-depleted .phone-inventory-charge-heading strong,
+.phone-inventory-charge-meter.is-depleted .phone-inventory-charge-heading span {
+  color: #d58a7d;
+}
+
+.phone-inventory-exhaust-state {
+  min-height: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.36rem 0.5rem;
+  border: 1px solid rgba(113, 157, 122, 0.34);
+  color: #c4ddc1;
+  font-size: 0.62rem;
+}
+
+.phone-inventory-exhaust-state.is-exhausted {
+  border-color: rgba(143, 70, 63, 0.48);
+  color: #d58a7d;
+}
+
 .phone-inventory-use-button {
   min-height: 2.55rem;
   min-width: 4.25rem;
@@ -6553,6 +6837,642 @@ select {
 .phone-inventory-panel-compact .phone-inventory-card {
   grid-template-columns: 2.7rem minmax(0, 1fr) minmax(3.6rem, auto);
   padding: 0.42rem;
+}
+
+/* Opposed combat is a dedicated phone command surface. */
+.phone-page:has(.phone-shell--battle-active) {
+  padding: 0;
+}
+
+.phone-shell--battle-active .phone-portrait-panel {
+  grid-template-rows: auto minmax(0, 1fr);
+  border-color: rgba(193, 71, 49, 0.46);
+  background:
+    radial-gradient(circle at 50% 18%, rgba(159, 48, 31, 0.13), transparent 42%),
+    linear-gradient(180deg, rgba(12, 13, 16, 0.98), rgba(5, 7, 10, 0.99));
+}
+
+.phone-shell--battle-active .phone-portrait-header {
+  min-height: 3.15rem;
+  display: block;
+  padding:
+    max(0.36rem, env(safe-area-inset-top))
+    max(0.58rem, env(safe-area-inset-right))
+    0.36rem
+    max(0.58rem, env(safe-area-inset-left));
+  border-bottom-color: rgba(218, 82, 55, 0.34);
+  background:
+    linear-gradient(90deg, rgba(37, 17, 14, 0.98), rgba(7, 10, 14, 0.98) 58%),
+    #080a0d;
+}
+
+.phone-battle-topbar {
+  min-width: 0;
+  min-height: 2.35rem;
+  display: grid;
+  grid-template-columns: 2.35rem minmax(0, 1fr) auto;
+  gap: 0.48rem;
+  align-items: center;
+}
+
+.phone-battle-topbar img {
+  width: 2.35rem;
+  height: 2.35rem;
+  object-fit: cover;
+  object-position: center top;
+  border: 1px solid rgba(222, 177, 94, 0.5);
+  background: #080a0d;
+}
+
+.phone-battle-topbar div {
+  min-width: 0;
+  display: grid;
+  gap: 0.08rem;
+}
+
+.phone-battle-topbar span {
+  color: #d36a4d;
+  font-size: 0.54rem;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.phone-battle-topbar strong {
+  min-width: 0;
+  color: #f1dfbd;
+  font-size: 0.86rem;
+  line-height: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.phone-battle-topbar p {
+  margin: 0;
+  color: #c6d0d7;
+  font-size: 0.62rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.phone-portrait-scroll.phone-battle-content {
+  display: flex;
+  min-height: 0;
+  overflow: hidden;
+  padding: 0;
+}
+
+.phone-portrait-screen-battle {
+  width: 100%;
+  min-height: 0;
+  flex: 1 1 auto;
+}
+
+.phone-battle-shell {
+  --battle-danger: #d8583f;
+  --battle-bone: #e4c98f;
+  --battle-signal: #8499aa;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto auto;
+  overflow: hidden;
+  background:
+    linear-gradient(90deg, rgba(104, 28, 20, 0.11), transparent 22%, transparent 78%, rgba(104, 28, 20, 0.11)),
+    #07090c;
+}
+
+.phone-battle-shell__scroll {
+  min-width: 0;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  padding: 0.5rem 0.55rem 0.75rem;
+  scrollbar-gutter: stable;
+  -webkit-overflow-scrolling: touch;
+}
+
+.phone-battle-state {
+  min-width: 0;
+  min-height: 2.05rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  padding: 0.32rem 0.48rem;
+  border-block: 1px solid rgba(205, 74, 51, 0.46);
+  background:
+    linear-gradient(90deg, rgba(112, 29, 20, 0.42), rgba(8, 10, 13, 0.2)),
+    rgba(10, 12, 15, 0.88);
+}
+
+.phone-battle-state span,
+.phone-battle-state strong {
+  font-size: clamp(0.6rem, 2.35vw, 0.7rem);
+  font-weight: 950;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.phone-battle-state span {
+  color: #d6b888;
+}
+
+.phone-battle-state strong {
+  color: #e86c4f;
+  text-align: right;
+}
+
+.phone-battle-shell--success .phone-battle-state strong {
+  color: #7ed39b;
+}
+
+.phone-battle-shell--defeat .phone-battle-state strong {
+  color: #ef6a61;
+}
+
+.phone-battle-arena {
+  position: relative;
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 1.8rem minmax(0, 1fr);
+  gap: 0.25rem;
+  align-items: center;
+  margin-top: 0.42rem;
+}
+
+.phone-battle-combatant {
+  min-width: 0;
+  display: grid;
+  grid-template-rows: 5.15rem auto;
+  border: 1px solid rgba(136, 153, 166, 0.3);
+  background: rgba(8, 11, 14, 0.94);
+  overflow: hidden;
+}
+
+.phone-battle-combatant--operative {
+  border-color: rgba(220, 178, 94, 0.5);
+  box-shadow: inset 3px 0 0 rgba(220, 178, 94, 0.34);
+}
+
+.phone-battle-combatant--enemy {
+  border-color: rgba(218, 82, 55, 0.56);
+  box-shadow: inset -3px 0 0 rgba(218, 82, 55, 0.38);
+}
+
+.phone-battle-combatant > img {
+  width: 100%;
+  height: 5.15rem;
+  object-fit: cover;
+  object-position: center 24%;
+  filter: saturate(0.86) contrast(1.07);
+}
+
+.phone-battle-combatant > div {
+  min-width: 0;
+  display: grid;
+  gap: 0.08rem;
+  padding: 0.3rem 0.38rem 0.36rem;
+}
+
+.phone-battle-combatant span,
+.phone-battle-combatant small {
+  color: #91a4b2;
+  font-size: 0.5rem;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  line-height: 1.05;
+  text-transform: uppercase;
+}
+
+.phone-battle-combatant strong {
+  min-width: 0;
+  color: #f0dfbd;
+  font-size: clamp(0.72rem, 3vw, 0.88rem);
+  line-height: 1.05;
+  overflow-wrap: anywhere;
+}
+
+.phone-battle-combatant--operative small {
+  color: #dfbf7b;
+}
+
+.phone-battle-combatant--enemy small {
+  color: #e67b60;
+}
+
+.phone-battle-arena__versus {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  width: 1.8rem;
+  height: 1.8rem;
+  border: 1px solid rgba(220, 178, 94, 0.48);
+  rotate: -5deg;
+  background: #111014;
+  color: #f0d7a3;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 0.7rem;
+  font-weight: 900;
+}
+
+.phone-battle-equation {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin-top: 0.42rem;
+  border-block: 1px solid rgba(126, 147, 162, 0.25);
+  background: rgba(12, 16, 20, 0.76);
+}
+
+.phone-battle-equation > div {
+  min-width: 0;
+  display: grid;
+  gap: 0.06rem;
+  padding: 0.3rem 0.2rem;
+  border-right: 1px solid rgba(126, 147, 162, 0.16);
+  text-align: center;
+}
+
+.phone-battle-equation > div:last-of-type {
+  border-right: 0;
+}
+
+.phone-battle-equation span,
+.phone-battle-equation small {
+  color: #8798a4;
+  font-size: 0.48rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.phone-battle-equation strong {
+  color: #f0dbb0;
+  font-size: 0.9rem;
+  line-height: 1;
+}
+
+.phone-battle-equation p {
+  grid-column: 1 / -1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  margin: 0;
+  padding: 0.35rem;
+  border-top: 1px solid rgba(220, 178, 94, 0.28);
+  background: rgba(52, 31, 19, 0.4);
+}
+
+.phone-battle-equation p span {
+  color: #d4b97f;
+}
+
+.phone-battle-equation p strong {
+  font-size: 1.1rem;
+}
+
+.phone-battle-equation p i {
+  color: #9ba8b0;
+  font-style: normal;
+  font-weight: 500;
+}
+
+.phone-battle-equation > small {
+  grid-column: 1 / -1;
+  padding: 0.26rem;
+  color: #8fd0a4;
+  text-align: center;
+}
+
+.phone-battle-outcome {
+  min-width: 0;
+  display: grid;
+  gap: 0.32rem;
+  margin-top: 0.42rem;
+  padding: 0.44rem 0.5rem;
+  border: 1px solid rgba(119, 194, 145, 0.42);
+  border-left-width: 3px;
+  background:
+    linear-gradient(90deg, rgba(42, 92, 62, 0.28), transparent 74%),
+    rgba(7, 12, 11, 0.86);
+}
+
+.phone-battle-outcome--defeat {
+  border-color: rgba(205, 74, 67, 0.56);
+  background:
+    linear-gradient(90deg, rgba(112, 29, 27, 0.33), transparent 74%),
+    rgba(13, 8, 9, 0.9);
+}
+
+.phone-battle-outcome > span {
+  color: #8bd6a5;
+  font-size: 0.7rem;
+  font-weight: 950;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+}
+
+.phone-battle-outcome--defeat > span {
+  color: #ef756c;
+}
+
+.phone-battle-outcome blockquote {
+  margin: 0.08rem 0 0;
+  color: #b5b8b8;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 0.66rem;
+  font-style: italic;
+  line-height: 1.25;
+}
+
+.phone-battle-shell__consequences {
+  display: grid;
+  gap: 0.24rem;
+}
+
+.phone-battle-consequence {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 1.45rem minmax(0, 1fr);
+  gap: 0.35rem;
+  align-items: center;
+  padding: 0.25rem 0;
+  border-top: 1px solid rgba(142, 159, 168, 0.13);
+}
+
+.phone-battle-consequence > span {
+  display: grid;
+  place-items: center;
+  width: 1.35rem;
+  height: 1.35rem;
+  border: 1px solid rgba(205, 176, 111, 0.38);
+  color: #e1c47e;
+  font-size: 0.66rem;
+  font-weight: 900;
+}
+
+.phone-battle-consequence--danger > span,
+.phone-battle-consequence--loss > span {
+  border-color: rgba(216, 82, 70, 0.5);
+  color: #ef756c;
+}
+
+.phone-battle-consequence > div {
+  min-width: 0;
+  display: grid;
+  gap: 0.04rem;
+}
+
+.phone-battle-consequence strong {
+  color: #eadbbd;
+  font-size: 0.68rem;
+  line-height: 1.15;
+  overflow-wrap: anywhere;
+}
+
+.phone-battle-consequence small {
+  color: #98a6ae;
+  font-size: 0.56rem;
+  line-height: 1.18;
+  overflow-wrap: anywhere;
+}
+
+.phone-battle-shell__choices {
+  display: grid;
+  gap: 0.35rem;
+  margin-top: 0.42rem;
+  padding: 0.45rem;
+  border: 1px solid rgba(213, 168, 86, 0.4);
+  background: rgba(46, 29, 15, 0.34);
+}
+
+.phone-battle-shell__choices > span {
+  color: #e2bd72;
+  font-size: 0.58rem;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.phone-battle-shell__choices .game-button {
+  min-height: 44px;
+}
+
+.phone-battle-shell__choices--optional {
+  border-color: rgba(126, 153, 174, 0.3);
+  background: rgba(16, 25, 32, 0.42);
+}
+
+.phone-battle-details-toggle,
+.phone-battle-context__back {
+  width: 100%;
+  min-height: 44px;
+  margin-top: 0.42rem;
+  padding: 0.45rem;
+  border: 1px solid rgba(126, 147, 162, 0.34);
+  border-radius: 0;
+  background: rgba(11, 15, 19, 0.88);
+  color: #aebbc4;
+  font-size: 0.6rem;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.phone-battle-details {
+  min-width: 0;
+  display: grid;
+  gap: 0.34rem;
+  padding: 0.42rem;
+  border: 1px solid rgba(126, 147, 162, 0.24);
+  border-top: 0;
+  background: rgba(7, 10, 13, 0.86);
+}
+
+.phone-battle-details > div {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 5.3rem minmax(0, 1fr);
+  gap: 0.4rem;
+}
+
+.phone-battle-details span,
+.phone-battle-context > span {
+  color: #8194a2;
+  font-size: 0.55rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.phone-battle-details strong {
+  color: #d9d3c5;
+  font-size: 0.64rem;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+.phone-battle-details p {
+  margin: 0;
+  color: #9ca8ae;
+  font-size: 0.62rem;
+  line-height: 1.3;
+}
+
+.phone-battle-shell__action {
+  position: relative;
+  z-index: 4;
+  min-width: 0;
+  padding: 0.42rem 0.55rem;
+  border-top: 1px solid rgba(218, 82, 55, 0.42);
+  background:
+    linear-gradient(180deg, rgba(20, 10, 9, 0.96), rgba(7, 9, 12, 0.99)),
+    #090a0d;
+  box-shadow: 0 -0.45rem 1rem rgba(0, 0, 0, 0.38);
+}
+
+.phone-battle-shell__action .game-button {
+  width: 100%;
+  min-height: 48px;
+  border-radius: 1px;
+  font-size: 0.76rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.phone-battle-shell__nav {
+  position: relative;
+  z-index: 5;
+  min-width: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  padding:
+    0
+    max(0.25rem, env(safe-area-inset-right))
+    max(0.25rem, env(safe-area-inset-bottom))
+    max(0.25rem, env(safe-area-inset-left));
+  border-top: 1px solid rgba(126, 147, 162, 0.24);
+  background: #06080b;
+}
+
+.phone-battle-shell__nav button {
+  min-width: 0;
+  min-height: 44px;
+  padding: 0.35rem 0.2rem;
+  border: 0;
+  border-right: 1px solid rgba(126, 147, 162, 0.18);
+  border-radius: 0;
+  background: transparent;
+  color: #a8b4bc;
+  font-size: clamp(0.54rem, 2.2vw, 0.64rem);
+  font-weight: 900;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.phone-battle-shell__nav button:last-child {
+  border-right: 0;
+}
+
+.phone-battle-shell__nav button:focus-visible,
+.phone-battle-details-toggle:focus-visible,
+.phone-battle-context__back:focus-visible {
+  outline: 2px solid #e2bd72;
+  outline-offset: -2px;
+}
+
+.phone-battle-context {
+  min-width: 0;
+  display: grid;
+  gap: 0.55rem;
+}
+
+.phone-battle-context__back {
+  margin-top: 0;
+  border-color: rgba(218, 82, 55, 0.44);
+  color: #e6c58b;
+}
+
+.phone-battle-context > img {
+  width: min(9rem, 45vw);
+  aspect-ratio: 4 / 5;
+  object-fit: cover;
+  object-position: center top;
+  border: 1px solid rgba(220, 178, 94, 0.44);
+}
+
+.phone-battle-context > strong {
+  color: #f0dfbd;
+  font-size: 1rem;
+}
+
+.phone-battle-context > p {
+  margin: 0;
+  color: #a7b2b9;
+  font-size: 0.72rem;
+  line-height: 1.3;
+}
+
+.phone-battle-context dl {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.35rem;
+  margin: 0;
+}
+
+.phone-battle-context dl div {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.42rem;
+  border: 1px solid rgba(126, 147, 162, 0.22);
+}
+
+.phone-battle-context dt {
+  color: #8fa0aa;
+  font-size: 0.6rem;
+  text-transform: uppercase;
+}
+
+.phone-battle-context dd {
+  margin: 0;
+  color: #ead6ab;
+  font-weight: 900;
+}
+
+.phone-battle-details--log {
+  border-top: 1px solid rgba(126, 147, 162, 0.24);
+}
+
+@media (max-height: 820px) {
+  .phone-battle-combatant {
+    grid-template-rows: 4.35rem auto;
+  }
+
+  .phone-battle-combatant > img {
+    height: 4.35rem;
+  }
+
+  .phone-battle-shell__scroll {
+    padding-top: 0.38rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .phone-battle-shell *,
+  .phone-battle-shell *::before,
+  .phone-battle-shell *::after {
+    scroll-behavior: auto !important;
+    transition: none !important;
+    animation: none !important;
+  }
 }
 
 .phone-inventory-panel-compact .phone-inventory-card-art,

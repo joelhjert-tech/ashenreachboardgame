@@ -2789,6 +2789,9 @@ describe("roomServer websocket integration", () => {
 
   it("restarts from active and ended states, resetting connected non-kicked seats while keeping kicked seats excluded", async () => {
     const mutatedState = createState({
+      setupHostSeatId: "seat-1",
+      lobbyConfigured: true,
+      interactionMode: "rivalry",
       players: createState().players.map((player) =>
         player.seatId === "seat-1"
           ? {
@@ -2825,9 +2828,26 @@ describe("roomServer websocket integration", () => {
     hostTv.send({ type: "RESTART_SESSION" });
     await hostTv.waitForSince(restartMarker, statePatchWithStatus("lobby", null));
 
+    const restartedState = harness.roomServer.getState();
     const restartedSeat1 = harness.roomServer.getState().players.find((player) => player.seatId === "seat-1");
-    expect(harness.roomServer.getState().phase).toBe("start");
-    expect(harness.roomServer.getState().turnOrder).toEqual(["seat-1", "seat-2"]);
+    const restartedSeatState1 = restartedState.seats.find((seat) => seat.seatId === "seat-1");
+    const restartedSeatState2 = restartedState.seats.find((seat) => seat.seatId === "seat-2");
+    expect(restartedState.phase).toBe("start");
+    expect(restartedState.turnOrder).toEqual(["seat-1", "seat-2"]);
+    expect(restartedState.setupHostSeatId).toBe("seat-1");
+    expect(restartedState.sessionMode).toBe("multiplayer");
+    expect(restartedState.interactionMode).toBe("rivalry");
+    expect(restartedSeatState1?.displayName).toBe("Seat One");
+    expect(restartedSeatState1?.joinToken).toBe(mutatedState.seats[0]?.joinToken);
+    expect(restartedSeatState1?.connected).toBe(true);
+    expect(restartedSeatState1?.characterSelected).toBe(false);
+    expect(restartedSeatState1?.startingContractOptions).toEqual([]);
+    expect(restartedSeatState1?.selectedStartingContractId).toBeNull();
+    expect(restartedSeatState1?.ready).toBe(false);
+    expect(restartedSeatState2?.characterSelected).toBe(false);
+    expect(restartedSeatState2?.startingContractOptions).toEqual([]);
+    harness.roomServer.selectSeatCharacter("seat-2", "void-marshal");
+    expect(harness.roomServer.getState().seats.find((seat) => seat.seatId === "seat-2")?.characterId).toBe("void-marshal");
     expect(restartedSeat1?.character.currentSpaceId).toBe("seat-1-start");
     expect(restartedSeat1?.character).not.toHaveProperty("heat");
     expect(restartedSeat1?.character.wounds).toBe(0);
@@ -2849,5 +2869,85 @@ describe("roomServer websocket integration", () => {
     expect(harness.roomServer.getState().turnOrder).toEqual(["seat-1"]);
     expect(harness.roomServer.getState().seats.find((seat) => seat.seatId === "seat-2")?.kicked).toBe(true);
     expect(harness.roomServer.getState().seats.find((seat) => seat.seatId === "seat-3")?.kicked).toBe(true);
+  }, 20000);
+
+  it("requires a fresh operative and mission after restart and starts with the newly confirmed character", async () => {
+    const state = createInitialSessionState("session-alpha", "single-player", "scenario_throne_of_ash", "co-op", "standard", 1, {
+      lobbyConfigured: true,
+      setupHostSeatId: "seat-1"
+    });
+    const seat = state.seats[0]!;
+    state.status = "active";
+    state.phase = "action";
+    state.turnOrder = ["seat-1"];
+    state.seats[0] = {
+      ...seat,
+      displayName: "Solo",
+      connected: true,
+      characterSelected: true,
+      ready: true,
+      selectedStartingContractId: state.availableContracts[0]?.id ?? null
+    };
+    state.players[0] = {
+      ...state.players[0]!,
+      private: { hand: ["old-card"], notes: ["old-note"] },
+      character: {
+        ...state.players[0]!.character,
+        wounds: 2,
+        trophies: 2,
+        trophyPile: [{ name: "Old Trophy", cardId: "old-trophy", trophyValue: 2 }],
+        activeContract: state.availableContracts[0]
+          ? { contractId: state.availableContracts[0].id, progress: 1 }
+          : null
+      }
+    };
+
+    harness = await startHarness([0, 0, 0, 0], state);
+    const hostTv = await connectClient(`ws://127.0.0.1:${harness.port}/?view=tv&hostToken=${encodeURIComponent(harness.hostToken)}`);
+    const phone = await connectClient(`ws://127.0.0.1:${harness.port}/?view=phone&token=${seat.joinToken}`);
+    probes.push(hostTv, phone);
+
+    const restartMarker = hostTv.mark();
+    hostTv.send({ type: "RESTART_SESSION" });
+    await hostTv.waitForSince(restartMarker, statePatchWithStatus("lobby", null));
+
+    const restartedSeat = harness.roomServer.getState().seats[0]!;
+    expect(restartedSeat.characterSelected).toBe(false);
+    expect(restartedSeat.startingContractOptions).toEqual([]);
+    expect(restartedSeat.selectedStartingContractId).toBeNull();
+    expect(restartedSeat.ready).toBe(false);
+    expect(() => harness!.roomServer.setSeatReady("seat-1", true)).toThrow("Choose a character before Ready");
+
+    harness.roomServer.selectSeatCharacter("seat-1", "char_deepdale");
+    const selectedSeat = harness.roomServer.getState().seats[0]!;
+    const selectedPlayer = harness.roomServer.getState().players[0]!;
+    expect(selectedSeat.characterId).toBe("char_deepdale");
+    expect(selectedSeat.characterSelected).toBe(true);
+    expect(selectedSeat.startingContractOptions).toHaveLength(3);
+    expect(selectedPlayer.character.id).toBe("char_deepdale");
+    expect(selectedPlayer.character.name).toBe("Deepdale");
+    expect(selectedPlayer.character.wounds).toBe(0);
+    expect(selectedPlayer.character.trophies).toBe(0);
+    expect(selectedPlayer.character.trophyPile).toEqual([]);
+    expect(selectedPlayer.character.activeContract).toBeNull();
+    expect(selectedPlayer.private).toEqual({ hand: [], notes: [] });
+
+    const selectedContractId = selectedSeat.startingContractOptions[0]!;
+    harness.roomServer.selectStartingContract("seat-1", selectedContractId);
+    harness.roomServer.setSeatReady("seat-1", true);
+    harness.roomServer.startSession();
+
+    const startedPlayer = harness.roomServer.getState().players[0]!;
+    expect(harness.roomServer.getState().status).toBe("active");
+    expect(startedPlayer.character.id).toBe("char_deepdale");
+    expect(startedPlayer.character.activeContract?.contractId).toBe(selectedContractId);
+
+    phone.close();
+    const reconnected = await connectClient(`ws://127.0.0.1:${harness.port}/?view=phone&token=${seat.joinToken}`);
+    probes.push(reconnected);
+    const snapshot = (await reconnected.waitFor(
+      (message) => isStatePatch(message) && Object.hasOwn(message.payload, "self")
+    )) as Extract<ServerEnvelope, { type: "STATE_PATCH" }>;
+    expect(getSelfCharacterFromPatch(snapshot)?.id).toBe("char_deepdale");
   }, 20000);
 });

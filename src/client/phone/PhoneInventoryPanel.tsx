@@ -119,6 +119,10 @@ function getStatusLabel(status: InventoryCardViewModel["status"]): string {
 }
 
 function getInventoryConsequence(card: InventoryCardViewModel): string {
+  if (card.source === "gear" && (card.passiveBonus || card.activeAbility)) {
+    return "";
+  }
+
   if (card.effectText && card.status !== "Passive") {
     return card.effectText;
   }
@@ -136,7 +140,76 @@ function getInventoryConsequence(card: InventoryCardViewModel): string {
   return card.effectText;
 }
 
+function ChargeMeter({ card }: { card: InventoryCardViewModel }): ReactElement | null {
+  const charge = card.chargeState;
+  if (!charge) return null;
+
+  return (
+    <div
+      className={`phone-inventory-charge-meter${charge.depleted ? " is-depleted" : charge.current === charge.maximum ? " is-full" : " is-partial"}`}
+      role="meter"
+      aria-label={`${charge.current} of ${charge.maximum} charges remaining`}
+      aria-valuemin={0}
+      aria-valuemax={charge.maximum}
+      aria-valuenow={charge.current}
+    >
+      <div className="phone-inventory-charge-heading">
+        <strong>{charge.current} / {charge.maximum} CHARGES</strong>
+        {charge.depleted ? <span>Depleted</span> : <span>Cost {charge.cost}</span>}
+      </div>
+      <div className="phone-inventory-charge-pips" aria-hidden="true">
+        {Array.from({ length: charge.maximum }, (_, index) => (
+          <span key={index} className={index < charge.current ? "is-filled" : ""} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function InventoryAbilitySections({ card }: { card: InventoryCardViewModel }): ReactElement {
+  const consequence = getInventoryConsequence(card);
+
+  if (card.source !== "gear" || (!card.passiveBonus && !card.activeAbility)) {
+    return <p className="phone-wrap-card__consequence">{consequence}</p>;
+  }
+
+  return (
+    <div className="phone-inventory-effect-sections">
+      {card.passiveBonus ? (
+        <section
+          className={`phone-inventory-effect-section phone-inventory-passive-section is-${card.passiveBonus.state}`}
+          aria-label={`Passive bonus: ${card.passiveBonus.text}`}
+        >
+          <span>Passive bonus</span>
+          <strong>{card.passiveBonus.text}</strong>
+        </section>
+      ) : null}
+      <ChargeMeter card={card} />
+      {card.activeAbility ? (
+        <section className="phone-inventory-effect-section phone-inventory-active-section" aria-label="Active ability">
+          <span>Active ability</span>
+          <strong>{card.activeAbility.text}</strong>
+          <small>
+            {card.activeAbility.timingText}
+            {card.activeAbility.contextualControl ? " · Use from its game prompt" : ""}
+          </small>
+        </section>
+      ) : null}
+      {card.exhaustState ? (
+        <div className={`phone-inventory-exhaust-state is-${card.exhaustState.status.toLowerCase()}`}>
+          <strong>{card.exhaustState.status}</strong>
+          <span>{card.exhaustState.resetText}</span>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 function shouldShowRawEffectMeta(card: InventoryCardViewModel, consequence: string): boolean {
+  if (card.source === "gear" && (card.passiveBonus || card.activeAbility)) {
+    return false;
+  }
+
   if (consequence === card.effectText) {
     return false;
   }
@@ -164,7 +237,7 @@ function InventoryCard({
 }): ReactElement {
   const [oathchainConfirming, setOathchainConfirming] = useState(false);
   const useIntent = toUseIntent(card, seatId);
-  const statusLabel = card.exhaustState ?? getStatusLabel(card.status);
+  const statusLabel = card.exhaustState?.status ?? getStatusLabel(card.status);
   const statusReason = card.canUseNow ? "Active in this timing window." : card.statusReason;
   const stateLabel = card.canUseNow ? "active" : card.status === "Passive" ? "applied" : "inactive";
   const consequence = getInventoryConsequence(card);
@@ -185,7 +258,7 @@ function InventoryCard({
           )
         }
       : null,
-    card.charges !== null && card.charges !== undefined
+    !card.chargeState && card.charges !== null && card.charges !== undefined
       ? {
           key: "charges",
           node:
@@ -207,7 +280,7 @@ function InventoryCard({
       title={card.name}
       eyebrow={card.group}
       status={<span className="phone-inventory-card-status">{statusLabel}</span>}
-      description={<p className="phone-wrap-card__consequence">{consequence}</p>}
+      description={<InventoryAbilitySections card={card} />}
       disabledReason={<small className="phone-inventory-card-status-reason">{statusReason}</small>}
       meta={
         <div className="phone-inventory-card-meta">
@@ -234,7 +307,7 @@ function InventoryCard({
             onUse?.();
           }}
         >
-          Use now
+          {card.chargeState ? `Use now — ${card.chargeState.cost} charge${card.chargeState.cost === 1 ? "" : "s"}` : "Use now"}
         </GameButton>
       )) : null}
     />

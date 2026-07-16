@@ -244,6 +244,7 @@ export function useRoomSubscription(
       setDebugEvents([]);
     },
     sendIntent(intent) {
+      setError(null);
       if (socketRef.current?.readyState === WebSocket.OPEN) {
         socketRef.current.send(JSON.stringify(intent));
         appendDebugEvent(setDebugEvents, {

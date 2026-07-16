@@ -101,6 +101,40 @@ describe("Phase 1 QA fixture", () => {
     expect(tvTrade?.enabled).toBe(count === 3);
   });
 
+  it.each([
+    "encounter",
+    "battle-setup",
+    "pending-enemy-roll",
+    "rolled-result",
+    "success",
+    "defeat"
+  ] as const)("seeds deterministic phone battle stage %s", (stage) => {
+    const state = createInitialSessionState("QA001", "single-player", "scenario_broken_seal", "co-op", "standard", 1);
+    state.status = "active";
+    state.seats[0] = { ...state.seats[0]!, displayName: "QA Operative", characterSelected: true, connected: true, ready: true };
+
+    applyPhaseOneQaFixture(state, "seat-1", { kind: "phone-battle", stage });
+
+    expect(state.currentEncounter?.id).toBe("lantern-ash-ghoul");
+    expect(state.phase).toBe(["rolled-result", "success", "defeat"].includes(stage) ? "resolution" : "action");
+
+    if (stage === "encounter") {
+      expect(state.activeResolution).toBeNull();
+      return;
+    }
+
+    expect(state.activeResolution).toMatchObject({
+      id: "qa-phone-battle:seat-1:lantern-ash-ghoul",
+      playerId: "seat-1",
+      source: "threat",
+      card: { id: "lantern-ash-ghoul", artType: "threat" },
+      battle: { stat: "grit", difficulty: 12 }
+    });
+    expect(Boolean(state.pendingEnemyRoll)).toBe(stage === "pending-enemy-roll");
+    expect(Boolean(state.activeResolution?.roll)).toBe(["rolled-result", "success", "defeat"].includes(stage));
+    expect(state.lastOutcomeSummary?.success ?? null).toBe(stage === "success" ? true : stage === "defeat" ? false : null);
+  });
+
   it("requires the current room and a valid signed seat token", async () => {
     const qa = await startAshenReachServer({ port: 18180, host: "127.0.0.1", maxPortAttempts: 5, logUrls: false, qaFixturesEnabled: true });
     started.push(qa);

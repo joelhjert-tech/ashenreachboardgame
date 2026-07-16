@@ -1,16 +1,19 @@
 import { useEffect, useState, type CSSProperties, type ReactElement } from "react";
 import { getChallengeThemeStyle } from "../../game/ui/challengeTheme.js";
 import { describeContractObjective as describeObjective, formatContractProgress } from "../../game/contracts/objectives.js";
+import { getEquippedGearItem } from "../../game/engine/gear.js";
 import { getCharacterPortraitPath } from "../shared/assetPaths.js";
 import { CardArtImage } from "../shared/CardArtImage.js";
 import { GameButton } from "../shared/GameButton.js";
 import { ResultDeltaRow } from "../shared/ResultDeltaChips.js";
 import { getMissionTargetClue } from "../shared/missionRelevance.js";
-import { formatSeatLabel, statLabelById, statOrder } from "../shared/statLabels.js";
+import { formatSeatLabel, gearSlotLabelById, statLabelById, statOrder } from "../shared/statLabels.js";
 import type {
   CharacterCatalogEntry,
   ClientIntent,
   ContractCard,
+  GearItem,
+  GearSlot,
   Stat,
   NemesisChampionSummary,
   PhonePatchPayload,
@@ -20,6 +23,7 @@ import type {
 } from "../shared/types.js";
 import { PhoneInventoryPanel } from "./PhoneInventoryPanel.js";
 import { PhoneActionPanel, type TurnActionTab } from "./PhoneActionPanel.js";
+import { isOpposedPhoneBattleActive } from "./PhoneBattleView.js";
 import { getAfflictionEffectChips, getAfflictionStatusLabel } from "./afflictionPresentation.js";
 import { formatSignedStatBonus, getPhoneStatBreakdown } from "./statBreakdown.js";
 import { PhoneInspectableCardArt } from "./PhoneInspectableCardArt.js";
@@ -42,6 +46,7 @@ interface PortraitControllerViewProps {
 type PortraitTab = "player" | "inventory" | "quests" | TurnActionTab;
 
 const turnActionTabs: TurnActionTab[] = ["move", "battle", "shop", "action"];
+const gearSlots: GearSlot[] = ["weapon", "armor", "utility"];
 const phoneChromeStorageKey = "ashenreach.phoneChromeVisible";
 
 function PhoneScenarioArt({ path, title }: { path?: string | null; title: string }): ReactElement | null {
@@ -90,12 +95,10 @@ function writeStoredPhoneChromeVisible(visible: boolean): void {
   }
 }
 
-function getCompactStatSummary(self: PhoneSelfState, stat: Stat): string {
-  const breakdown = getPhoneStatBreakdown(self, stat);
-  const modifierTotal = breakdown.permanent + breakdown.gearFollower;
-  const statusTotal = breakdown.scarAfflictionSources
-    .filter((source) => source.scope === "test")
-    .reduce((sum, source) => sum + source.value, 0);
+function getCompactStatSummary(self: PhoneSelfState, stat: Stat, suppressedInstanceIds: ReadonlySet<string>): string {
+  const breakdown = getPhoneStatBreakdown(self, stat, { suppressedInstanceIds });
+  const modifierTotal = breakdown.upgrades + breakdown.equipped + breakdown.companion;
+  const statusTotal = breakdown.temporaryStatus;
   const additions = modifierTotal !== 0
     ? [`Bonus ${formatSignedStatBonus(modifierTotal)}`]
     : [];
@@ -104,21 +107,43 @@ function getCompactStatSummary(self: PhoneSelfState, stat: Stat): string {
   return [`Base ${breakdown.base}`, ...additions, ...status].join(" ");
 }
 
+function formatEquippedPassiveBonus(item: GearItem): string {
+  const amount = formatSignedStatBonus(item.statBonus.amount);
+  const stat = statLabelById[item.statBonus.stat].toUpperCase();
+  return item.effectModel === "conditional" && item.conditionType === "battle"
+    ? `${amount} ${stat} IN BATTLES`
+    : `${amount} ${stat} · ALWAYS ACTIVE`;
+}
+
+function getEquipmentAbilityState(item: GearItem): string | null {
+  if (item.useLimit === "charge" || item.effectModel === "charged") {
+    const current = item.currentCharges ?? item.charges ?? item.startingCharges ?? 0;
+    const maximum = item.maxCharges ?? item.charges ?? item.startingCharges ?? current;
+    return `${current} / ${maximum} CHARGES${current <= 0 ? " · DEPLETED" : ""}`;
+  }
+  if (item.effectModel === "exhaust") {
+    return `${item.exhausted ? "EXHAUSTED" : "READY"} · REFRESHES NEXT ROUND`;
+  }
+  return null;
+}
+
 function PortraitStatCard({
   self,
   stat,
+  suppressedInstanceIds,
   expanded,
   onToggle
 }: {
   self: PhoneSelfState;
   stat: Stat;
+  suppressedInstanceIds: ReadonlySet<string>;
   expanded: boolean;
   onToggle: () => void;
 }): ReactElement {
-  const breakdown = getPhoneStatBreakdown(self, stat);
+  const breakdown = getPhoneStatBreakdown(self, stat, { suppressedInstanceIds });
   const label = statLabelById[stat];
   const displayLabel = label.toUpperCase();
-  const modifierTotal = breakdown.permanent + breakdown.gearFollower;
+  const modifierTotal = breakdown.upgrades + breakdown.equipped + breakdown.companion;
 
   return (
     <button
@@ -144,7 +169,7 @@ function PortraitStatCard({
         </span>
       </span>
       {" "}
-      <span className="phone-stat-card-summary">{getCompactStatSummary(self, stat)}</span>
+      <span className="phone-stat-card-summary">{getCompactStatSummary(self, stat, suppressedInstanceIds)}</span>
       {expanded && (
         <dl className="phone-stat-card-details" aria-label={`${label} stat details`}>
           <div>
@@ -152,16 +177,31 @@ function PortraitStatCard({
             <dd>{breakdown.base}</dd>
           </div>
           <div>
-            <dt>Permanent</dt>
-            <dd>{formatSignedStatBonus(breakdown.permanent)}</dd>
+            <dt>Upgrades</dt>
+            <dd>{formatSignedStatBonus(breakdown.upgrades)}</dd>
           </div>
           <div>
-            <dt>Gear/Follower</dt>
+            <dt>Equipped</dt>
             <dd>
-              {formatSignedStatBonus(breakdown.gearFollower)}
-              {breakdown.gearFollowerSources.length > 0 ? (
+              {formatSignedStatBonus(breakdown.equipped)}
+              {breakdown.equippedSources.length > 0 ? (
                 <small className="phone-stat-card-source-list">
-                  {breakdown.gearFollowerSources.map((source) => (
+                  {breakdown.equippedSources.map((source) => (
+                    <span key={`${source.catalogId}-${source.instanceId ?? source.label}`}>
+                      {source.label} {formatSignedStatBonus(source.value)}
+                    </span>
+                  ))}
+                </small>
+              ) : null}
+            </dd>
+          </div>
+          <div>
+            <dt>Companion</dt>
+            <dd>
+              {formatSignedStatBonus(breakdown.companion)}
+              {breakdown.companionSources.length > 0 ? (
+                <small className="phone-stat-card-source-list">
+                  {breakdown.companionSources.map((source) => (
                     <span key={`${source.sourceType}-${source.label}`}>
                       {source.label} {formatSignedStatBonus(source.value)}
                     </span>
@@ -171,23 +211,20 @@ function PortraitStatCard({
             </dd>
           </div>
           <div>
-            <dt>Temporary</dt>
-            <dd>+0</dd>
-          </div>
-          {breakdown.scarAfflictionSources.length > 0 && (
-            <div>
-              <dt>Scars/Afflictions</dt>
-              <dd>
+            <dt>Temporary / Status</dt>
+            <dd>
+              {formatSignedStatBonus(breakdown.temporaryStatus)}
+              {breakdown.contextualSources.length > 0 ? (
                 <small className="phone-stat-card-source-list">
-                  {breakdown.scarAfflictionSources.map((source) => (
-                    <span key={`${source.scope}-${source.label}`}>
-                      {source.label} {source.scope} {formatSignedStatBonus(source.value)}
+                  {breakdown.contextualSources.map((source) => (
+                    <span key={`${source.sourceType}-${source.scope}-${source.label}`}>
+                      {source.label} {source.scope === "battle/check" ? "battle/check" : source.scope} {formatSignedStatBonus(source.value)}
                     </span>
                   ))}
                 </small>
-              </dd>
-            </div>
-          )}
+              ) : null}
+            </dd>
+          </div>
           <div>
             <dt>Final</dt>
             <dd>{breakdown.final}</dd>
@@ -305,15 +342,17 @@ function ContractMissionCard({
 }): ReactElement {
   return (
     <article className="phone-starting-mission-card" data-selected={selected ? "true" : "false"}>
-      <PhoneInspectableCardArt
-        cardType="contract"
-        cardId={contract.id}
-        title={contract.name}
-        lore={contract.text}
-        rules={`${describeContractObjective(contract)} ${describeContractProgress(contract)}`}
-        className="phone-starting-mission-art"
-        testId="phone-starting-mission-art"
-      />
+      <div className="phone-starting-mission-art-frame">
+        <PhoneInspectableCardArt
+          cardType="contract"
+          cardId={contract.id}
+          title={contract.name}
+          lore={contract.text}
+          rules={`${describeContractObjective(contract)} ${describeContractProgress(contract)}`}
+          className="phone-starting-mission-art"
+          testId="phone-starting-mission-art"
+        />
+      </div>
       <div className="phone-starting-mission-card-top">
         <span>{recommended ? "Recommended Mission" : contract.factionGiver}</span>
         <strong>{contract.name}</strong>
@@ -651,6 +690,12 @@ export function PortraitControllerView({
   const localUnboundNemeses = (patch?.nemesisChampions ?? []).filter(
     (nemesis) => nemesis.boundPlayerId !== self.seatId && nemesis.sectorId === self.character.currentSpaceId && !nemesis.defeated
   );
+  const opposedBattleActive = isOpposedPhoneBattleActive(patch);
+  const suppressedEquipmentInstanceIds = new Set(
+    (patch?.equipmentSuppressions ?? [])
+      .filter((suppression) => suppression.active)
+      .map((suppression) => suppression.itemInstanceId)
+  );
 
   if (isLobbyWaiting) {
     const isReady = ownSeat?.ready ?? false;
@@ -698,6 +743,7 @@ export function PortraitControllerView({
                     key={stat}
                     self={self}
                     stat={stat}
+                    suppressedInstanceIds={suppressedEquipmentInstanceIds}
                     expanded={expandedStat === stat}
                     onToggle={() => setExpandedStat((current) => (current === stat ? null : stat))}
                   />
@@ -812,7 +858,8 @@ export function PortraitControllerView({
   const rootClassName = [
     "phone-portrait-controller",
     phoneChromeVisible ? "phone-shell--chrome-visible" : "phone-shell--immersive",
-    bottomDockExpanded ? "phone-shell--bottomdock-expanded" : "phone-shell--bottomdock-compact"
+    bottomDockExpanded ? "phone-shell--bottomdock-expanded" : "phone-shell--bottomdock-compact",
+    opposedBattleActive ? "phone-shell--battle-active" : ""
   ]
     .filter(Boolean)
     .join(" ");
@@ -828,7 +875,8 @@ export function PortraitControllerView({
     .join(" ");
   const contentClassName = [
     "phone-portrait-scroll",
-    phoneChromeHidden ? "phone-content--expanded" : ""
+    phoneChromeHidden ? "phone-content--expanded" : "",
+    opposedBattleActive ? "phone-battle-content" : ""
   ]
     .filter(Boolean)
     .join(" ");
@@ -846,7 +894,16 @@ export function PortraitControllerView({
     >
       <div className="phone-portrait-panel">
         <header className={topbarClassName}>
-          {phoneChromeVisible ? (
+          {opposedBattleActive ? (
+            <div className="phone-battle-topbar" aria-label="Battle operative status">
+              <img src={getCharacterPortraitPath(self.character.id)} alt="" />
+              <div>
+                <span>{formatSeatLabel(self.seatId)}</span>
+                <strong>{self.character.name}</strong>
+              </div>
+              <p>{self.character.wounds} wounds · {self.character.salvage ?? 0} Salvage</p>
+            </div>
+          ) : phoneChromeVisible ? (
             <>
               <div className="phone-portrait-header-art">
                 <img src={getCharacterPortraitPath(self.character.id)} alt="" />
@@ -885,7 +942,19 @@ export function PortraitControllerView({
         </header>
 
         <main className={contentClassName} aria-label="Phone content">
-          {activeTab === "player" && (
+          {opposedBattleActive && patch && onIntent ? (
+            <div className="phone-portrait-screen phone-portrait-screen-command phone-portrait-screen-battle" data-testid="phone-action-screen">
+              <PhoneActionPanel
+                characters={characters}
+                onIntent={onIntent}
+                patch={patch}
+                selectedTurnTab="battle"
+                hideTurnTabs
+              />
+            </div>
+          ) : null}
+
+          {!opposedBattleActive && activeTab === "player" && (
             <div className="phone-portrait-screen">
               <section className="phone-portrait-hero-card">
                 <div className="phone-portrait-art">
@@ -912,10 +981,32 @@ export function PortraitControllerView({
                       key={stat}
                       self={self}
                       stat={stat}
+                      suppressedInstanceIds={suppressedEquipmentInstanceIds}
                       expanded={expandedStat === stat}
                       onToggle={() => setExpandedStat((current) => (current === stat ? null : stat))}
                     />
                   ))}
+                </div>
+              </section>
+
+              <section className="phone-portrait-section" aria-label="Equipped gear bonuses">
+                <div className="phone-sheet-section-heading">Equipped Gear</div>
+                <div className="phone-player-equipped-grid">
+                  {gearSlots.map((slot) => {
+                    const item = getEquippedGearItem(self.character, slot);
+                    const suppressed = Boolean(item?.instanceId && suppressedEquipmentInstanceIds.has(item.instanceId));
+                    const abilityState = item ? getEquipmentAbilityState(item) : null;
+                    return (
+                      <article key={slot} className={`phone-player-equipped-card${suppressed ? " is-suppressed" : ""}`}>
+                        <span>{gearSlotLabelById[slot]}</span>
+                        <strong>{item?.name ?? "Empty"}</strong>
+                        {item ? (
+                          <small>{suppressed ? `${formatEquippedPassiveBonus(item)} · SUPPRESSED` : formatEquippedPassiveBonus(item)}</small>
+                        ) : null}
+                        {abilityState ? <em aria-label={abilityState.toLowerCase()}>{abilityState}</em> : null}
+                      </article>
+                    );
+                  })}
                 </div>
               </section>
 
@@ -1023,7 +1114,7 @@ export function PortraitControllerView({
             </div>
           )}
 
-          {activeTab === "inventory" && (
+          {!opposedBattleActive && activeTab === "inventory" && (
             <div className="phone-portrait-screen">
               <section className="phone-portrait-section">
                 <div className="phone-sheet-section-heading">Inventory</div>
@@ -1036,7 +1127,7 @@ export function PortraitControllerView({
             </div>
           )}
 
-          {activeTab === "quests" && (
+          {!opposedBattleActive && activeTab === "quests" && (
             <div className="phone-portrait-screen">
               {patch?.privateRivalry ? <RivalryQuestPanel rivalry={patch.privateRivalry} seatId={self.seatId} onIntent={onIntent} /> : null}
               <section className="phone-portrait-section">
@@ -1102,7 +1193,7 @@ export function PortraitControllerView({
             </div>
           )}
 
-          {isTurnActionTab(activeTab) && (
+          {!opposedBattleActive && isTurnActionTab(activeTab) && (
             <div className="phone-portrait-screen phone-portrait-screen-command" data-testid="phone-action-screen">
               {patch && onIntent ? (
                 <PhoneActionPanel
@@ -1123,7 +1214,7 @@ export function PortraitControllerView({
           )}
         </main>
 
-        <nav className={bottomNavClassName} role="tablist" aria-label="Phone navigation">
+        {!opposedBattleActive ? <nav className={bottomNavClassName} role="tablist" aria-label="Phone navigation">
           {bottomDockExpanded ? (
             <>
               {[
@@ -1202,7 +1293,7 @@ export function PortraitControllerView({
               </button>
             </div>
           )}
-        </nav>
+        </nav> : null}
       </div>
     </section>
   );

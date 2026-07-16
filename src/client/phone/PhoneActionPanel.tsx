@@ -44,6 +44,11 @@ import { CardArtImage } from "../shared/CardArtImage.js";
 import { getGearCardArtId, getGearCardArtType, getShopCategoryIconPath } from "../shared/assetPaths.js";
 import { statLabelById } from "../shared/statLabels.js";
 import { PhoneInventoryPanel } from "./PhoneInventoryPanel.js";
+import {
+  PhoneBattleView,
+  isOpposedPhoneBattleActive,
+  type PhoneBattleChoiceAction
+} from "./PhoneBattleView.js";
 import { PhoneWrappedMediaCard } from "./PhoneWrappedMediaCard.js";
 import { PhoneInspectableCardArt } from "./PhoneInspectableCardArt.js";
 import { getTileAssetPath } from "../tv/tileAssetManifest.js";
@@ -2565,6 +2570,7 @@ export function PhoneActionPanel({
     patch.seats.find((seat) => seat.seatId === pendingEnemyRoll?.fighterSeatId)?.displayName ??
     pendingEnemyRoll?.fighterSeatId ??
     "the active seat";
+  const opposedBattleActive = isOpposedPhoneBattleActive(patch);
   const sectorOpportunityItems = getSectorOpportunityItems(sector);
   const isScenarioConfrontation = isScenarioConfrontationSpace(self.sectorId);
   const movementPlanner = patch.movementPlanner ?? null;
@@ -2624,6 +2630,16 @@ export function PhoneActionPanel({
     );
   }
 
+  if (opposedBattleActive && pendingEnemyRoll) {
+    return (
+      <PhoneBattleView
+        patch={patch}
+        self={self}
+        onIntent={onIntent}
+      />
+    );
+  }
+
   if (patch.phase === "action" && pendingEnemyRoll) {
     if (isAssignedEnemyRoller) {
       return (
@@ -2674,6 +2690,16 @@ export function PhoneActionPanel({
         <p className="phone-sheet-action-copy">Trophies: {self.character.trophies}</p>
         <p className="phone-sheet-action-copy">Waiting on {pendingRollerName} to roll for the enemy.</p>
       </section>
+    );
+  }
+
+  if (opposedBattleActive && !isActiveSeat) {
+    return (
+      <PhoneBattleView
+        patch={patch}
+        self={self}
+        onIntent={onIntent}
+      />
     );
   }
 
@@ -3324,6 +3350,32 @@ export function PhoneActionPanel({
           toPhase: "start"
         })
     });
+  }
+
+  if (opposedBattleActive) {
+    const hasRequiredChoice = Boolean(
+      patch.pendingEquipmentSuppressionChoice ||
+      patch.pendingEncounterDecisionPrivate ||
+      patch.pendingMemoryTaxChoicePrivate ||
+      patch.pendingForcedDestinationChoicePrivate ||
+      patch.pendingDisplacementPrivate ||
+      patch.pendingScarConsequence ||
+      patch.pendingTileChallengePrivate?.pendingFailureEffects?.length
+    );
+    const requiredChoiceActions: PhoneBattleChoiceAction[] = hasRequiredChoice ? resolveActions : [];
+    const optionalBattleActions: PhoneBattleChoiceAction[] = hasRequiredChoice
+      ? []
+      : resolveActions.filter((action) => action.key === "solo-emergency-reroll");
+
+    return (
+      <PhoneBattleView
+        patch={patch}
+        self={self}
+        onIntent={onIntent}
+        choiceActions={requiredChoiceActions}
+        optionalActions={optionalBattleActions}
+      />
+    );
   }
 
   const copy =

@@ -127,9 +127,74 @@ describe("MobilePlayerCard", () => {
       />
     );
 
-    expect(screen.getByText(/base 3 \| permanent \+1 \| gear\/follower \+1/i)).toBeInTheDocument();
+    expect(screen.getByText(/base 3 \| upgrades \+1 \| equipped \+1 \(marshal seal \+1\) \| companion \+0 \| temporary \/ status \+0 \| final 5/i)).toBeInTheDocument();
     expect(screen.getByText("(+1)")).toBeInTheDocument();
     expect(document.querySelector(".phone-sheet-stat-card-command")).toHaveTextContent(/5/);
+  });
+
+  it("resolves exact equipped instances and separates passive bonuses from charges", () => {
+    render(
+      <MobilePlayerCard
+        self={{
+          ...self,
+          character: {
+            ...self.character,
+            heldGear: [
+              {
+                id: "choir-lantern",
+                instanceId: "lantern-empty",
+                name: "Spent Choir Lantern",
+                slot: "utility",
+                statBonus: { stat: "signal", amount: 1 },
+                effectModel: "charged",
+                useLimit: "charge",
+                currentCharges: 0,
+                maxCharges: 2,
+                chargeCost: 1,
+                requiresEquipped: true
+              },
+              {
+                id: "choir-lantern",
+                instanceId: "lantern-ready",
+                name: "Choir Lantern",
+                slot: "utility",
+                statBonus: { stat: "signal", amount: 1 },
+                effectModel: "charged",
+                useLimit: "charge",
+                currentCharges: 2,
+                maxCharges: 2,
+                chargeCost: 1,
+                requiresEquipped: true
+              }
+            ],
+            equippedGear: { weapon: null, armor: null, utility: "choir-lantern" },
+            equippedGearInstances: { weapon: null, armor: null, utility: "lantern-empty" }
+          }
+        }}
+        activeContractCard={null}
+        roomCode="RT7P4"
+        displayName="Joel"
+        connectionStatus="open"
+        sessionStatus="active"
+        winnerSeatId={null}
+        phase="action"
+        activeSeatId="seat-1"
+        activeNemesis={null}
+        activeScenario={null}
+        scenarioTelemetry={[]}
+        escalationLevel={0}
+        escalationThreshold={6}
+        escalationModifier={0}
+        encounter={null}
+        outcomeSummary={null}
+        onLeave={() => {}}
+      />
+    );
+
+    const utility = screen.getByText("Spent Choir Lantern").closest(".phone-sheet-gear-slot");
+    expect(utility).toHaveTextContent(/\+1 signal · always active/i);
+    expect(utility).toHaveTextContent(/0 \/ 2 charges · depleted/i);
+    expect(screen.queryByText(/^Choir Lantern$/)).not.toBeInTheDocument();
   });
 
   it("shows active Afflictions and facedown Affliction count without renaming wounds", () => {

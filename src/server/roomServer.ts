@@ -4970,13 +4970,8 @@ export class GameRoomServer {
           ? seat
           : {
               ...seat,
-              startingContractOptions:
-                seat.displayName && seat.characterSelected !== false && this.characters.has(seat.characterId)
-                  ? this.resolveStartingContractOptions(
-                      this.characters.get(seat.characterId)!,
-                      Math.max(0, this.state.seats.findIndex((entry) => entry.seatId === seat.seatId))
-                    )
-                  : [],
+              characterSelected: false,
+              startingContractOptions: [],
               selectedStartingContractId: null,
               missionSelectedAt: null,
               ready: false
