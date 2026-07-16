@@ -14,23 +14,16 @@ This file exists so future agents do not revive older directions that conflict w
 
 ## Deprecated Or Historical Docs
 
-These files may contain useful design notes, but they are not the current source of truth:
-
-- `docs/ASHENREACH_RULE_SPINE.md`: older rule-spine language; use `docs/CURRENT_PROJECT_STRUCTURE.md`, `docs/UI_DIRECTION.md`, and `docs/MVP_RULES.md` for implementation direction.
-- `docs/ASHENREACH_RULES_SKELETON.md`: future-facing rules skeleton, not current implementation guidance.
-- `docs/ASHENREACH_CARD_ECONOMY_SPINE.md`: economy design notes, not current content schema.
-- `docs/CARD_IMAGE_PROMPTS.md`: large generated prompt dump; active prompt source is TypeScript under `src/game/assets/design/`.
-- `design-qa.md`: historical phone-sheet QA note.
-- `.asset-audit/`: historical asset audit work products.
-- `qa-artifacts/`: historical QA screenshots.
-
-Do not delete or move these in bulk without first preserving still-useful notes in the current docs and proving no scripts/tests depend on them.
+The superseded rule spines, generated prompt dump, historical design QA note,
+tracked asset-audit output, and tracked QA screenshots were removed in the
+July 2026 repository cleanup. Git history remains the recovery path.
 
 ## Deprecated Asset Areas
 
-- Root `generated/` files are generated prompt/report outputs, not runtime source.
+- Root `generated/` files are ignored, reproducible prompt/report outputs, not runtime source.
 - `artifacts/`, `.tmp-playtest/`, `dist/`, `tmp-*.log`, and `node_modules/` are local generated output and should stay ignored.
-- Older generated board/prompt contact sheets should be archived, not mixed into runtime asset folders.
+- `.asset-audit/`, `qa-artifacts/`, and `_archive/` are local-only ignored folders.
+- Older generated board/prompt contact sheets must stay outside runtime asset folders and version control.
 
 ## Current Preferred Direction
 

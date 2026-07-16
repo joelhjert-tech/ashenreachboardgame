@@ -8,3 +8,10 @@ tmp-*.log
 tmp-*.out.log
 tmp-*.err.log
 artifacts/
+.asset-audit/
+qa-artifacts/
+generated/
+_archive/
+reports/**/*.png
+reports/**/*.jpg
+reports/**/*.jpeg

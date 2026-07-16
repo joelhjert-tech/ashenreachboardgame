@@ -19,8 +19,8 @@
     "analyze:play-feel": "tsx scripts/analyze-play-feel.ts",
     "audit:assets": "tsx scripts/audit-assets.ts",
     "audit:assets:release": "tsx scripts/audit-assets.ts --release",
-    "generate:card-images:gemini": "tsx scripts/generate-card-images-gemini.ts",
-    "generate:card-images:openai": "tsx scripts/generate-card-images-openai.ts",
+    "generate:card-images:gemini": "npm run export:image-prompts && tsx scripts/generate-card-images-gemini.ts",
+    "generate:card-images:openai": "npm run export:image-prompts && tsx scripts/generate-card-images-openai.ts",
     "export:image-prompts": "tsx scripts/export-image-prompts.ts"
   },
   "dependencies": {

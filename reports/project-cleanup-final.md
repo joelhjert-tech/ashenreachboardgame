@@ -1,22 +1,46 @@
 # Project Cleanup Final Report
 
-This pass was intentionally audit-first. It created current source-of-truth documentation and a cleanup plan, but did not delete or archive tracked project files.
+The audit-first pass established the source-of-truth boundaries. The July 2026
+follow-up applied the proven-safe cleanup and removed reproducible or duplicate
+historical material from version control.
 
 ## Files Deleted
 
-None.
+- Historical `.asset-audit/` outputs and contact sheets.
+- Tracked `qa-artifacts/` captures and dated report screenshot folders.
+- Reproducible `generated/` prompt/report output.
+- Superseded rule-spine, economy-spine, prompt-dump, and design-QA documents.
+- Verified duplicate promoted-card archives under `_archive/`.
+- Duplicate active-folder artifact and wargear backs; their legacy templates
+  remain under `public/assets/riftfall/cards/`.
+- Two untracked quarantined Heat conversion audits.
 
 ## Files Archived
 
-None.
+None. Historical material remains recoverable through Git history rather than a
+second tracked archive copy.
 
 ## Files Kept
 
-All existing source, content, and asset files were kept. See `reports/project-cleanup-audit.md` for keep/archive/uncertain classifications.
+All runtime source, canonical content, manifests, active assets, legacy
+compatibility code, and unresolved/uncertain source candidates were kept.
 
 ## Dependencies Removed
 
-None. `package.json` does not include Three.js, `@react-three/fiber`, drei, Framer Motion, or obvious obsolete animation dependencies.
+None. `package.json` does not include Three.js, `@react-three/fiber`, drei,
+Framer Motion, or obvious obsolete animation dependencies. Existing dependency
+ranges were refreshed with `npm update`; the resulting install reports zero
+known vulnerabilities.
+
+## Assets Refreshed
+
+- Added the six contract illustrations that the current 36-card Contract catalog
+  required: Black Route Exchange, Crosswind Ledger, Echo Triangulation,
+  Equipment Requisition, Three Lantern Circuit, and Foundry Proof Marks.
+- Regenerated the deterministic TypeScript prompt catalog from current content.
+- Updated the runtime art catalog to include only files that exist under
+  `public/`.
+- Asset audit baseline is now 422/422, including 36/36 Contract illustrations.
 
 ## Docs Consolidated
 
@@ -48,22 +72,26 @@ Short version:
 
 - `npm run validate:content`: passed.
 - `npm run typecheck`: passed.
-- `npm run test:client`: passed, 14 test files and 110 tests.
-- `npm run build`: passed. Vite reported the existing large chunk warning for the main JS bundle.
-- `npm run audit:assets`: passed in development mode with 10 pre-existing missing threat card PNGs.
+- Focused prompt/runtime/Contract catalog tests: 20 passed.
+- `npm run test:engine`: 706 passed.
+- `npm run test:integration`: 233 passed.
+- `npm run test:client`: 260 passed.
+- `npm run test`: 1,199 passed.
+- `npm run audit:assets`: passed at 422/422.
+- `npm run audit:assets:release`: passed with zero release blockers.
+- `npm run build`: passed.
+- `git diff --check` and `git diff --cached --check`: passed.
 
 ## Known Remaining Cleanup Risks
 
-- Existing uncommitted host-board changes predated this cleanup branch; they were preserved.
-- `src/client/tv/boardTileLayout.ts` and `src/client/tv/tileAssetManifest.ts` were untracked before this pass but are active dependencies of the current board work.
-- Some old-looking assets are still referenced by prompt manifests or fallback paths.
-- `.asset-audit/`, `qa-artifacts/`, and `generated/` contain tracked historical outputs; archive them only after preserving useful notes and confirming generation scripts no longer rely on their exact paths.
-- Asset audit has 10 missing release-required threat card PNGs.
+- Some old-looking assets remain because manifests or fallback paths still use
+  them; they were not deleted based on static imports alone.
+- Zero-reference TypeScript candidates remain intentionally untouched pending
+  dedicated runtime and product review.
+- Legacy Heat save fields remain compatibility-owned and mechanically inert.
 
 ## Recommended Next Cleanup Pass
 
-1. Add or commit the current board files so the cleanup has a stable base.
-2. Move old docs/prompts into `_archive/` in small batches.
-3. Review uncertain zero-reference TypeScript files individually.
-4. Generate missing threat card art.
-5. Run `npm run validate:content`, `npm run typecheck`, `npm run test:client`, `npm run build`, and `npm run audit:assets`.
+1. Review uncertain zero-reference TypeScript files individually.
+2. Keep generated evidence in ignored local folders.
+3. Run the complete validation stack after future cleanup batches.

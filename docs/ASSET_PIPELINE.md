@@ -46,7 +46,7 @@ Remaining legacy files:
   - `mission_span_of_the_last_seal.png`
 - Deferred artifact:
   - `relic_choir_route_orb.png`
-- Card backs: active contract, threat, generated character, and generated artifact backs live under `public/assets/cards/backs/`; legacy artifact and wargear sources remain reference/template material.
+- Card backs: active contract, threat, generated character, and generated artifact backs live under `public/assets/cards/backs/`; legacy artifact and wargear templates remain only under `public/assets/riftfall/cards/`.
 - Map tile reverse: the generated square tile back lives at `public/assets/map/tiles/map_tile_back.png` and is registered by `src/client/tv/mapAssetRegistry.ts`.
 
 ## Manifests And Lookups
@@ -76,15 +76,15 @@ Run:
 npm run audit:assets
 ```
 
-Current baseline after the promoted-card archive loop:
+Current baseline after the July 2026 repository cleanup and contract-art refresh:
 
-- 404 expected assets
-- 404 present
+- 422 expected assets
+- 422 present
 - 0 missing card PNGs
 - 0 invalid assets
 - 0 placeholder violations
 
-Contract card art is 30/30 present. Threat, Equipment, Artifact/Relic, and Contract assets promoted from legacy sources now live under active `public/assets/cards/` roots.
+Contract card art is 36/36 present. Threat, Equipment, Artifact/Relic, and Contract assets live under active `public/assets/cards/` roots; duplicate promoted archives are recoverable through Git history.
 
 ## Cleanup Rules
 
@@ -94,5 +94,6 @@ Contract card art is 30/30 present. Threat, Equipment, Artifact/Relic, and Contr
 - Do not create active Heat card paths. Scars/Afflictions are the persistent harm/status card system.
 - Treat `public/assets/riftfall/board/tiles/` as fallback/design-pipeline material until `mapAssetRegistry.ts` and `imagePrompts.ts` no longer reference it.
 - Move mockups/reference images out of runtime asset folders only after confirming no manifest or content JSON references them.
-- Archive useful prompt/contact-sheet history under `_archive/old-generated-content/` if it is no longer part of the active pipeline.
+- Keep historical prompt/contact-sheet output outside the tracked repository. Git history preserves deleted tracked evidence when it is needed later.
+- Delete verified duplicate promotion archives once every archived file has an identical active runtime copy.
 - Delete disposable local output only when it is ignored and reproducible.

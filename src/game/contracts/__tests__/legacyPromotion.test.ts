@@ -30,8 +30,8 @@ function effectContainsHeat(effect: EncounterEffect): boolean {
 describe("legacy contract promotion", () => {
   const contracts = loadContracts();
 
-  it("promotes exactly the selected legacy contract candidates under the current cap", () => {
-    expect(contracts.size).toBe(30);
+  it("keeps the promoted legacy candidates in the current 36-card contract catalog", () => {
+    expect(contracts.size).toBe(36);
 
     promotedContractIds.forEach((contractId) => {
       expect(contracts.has(contractId)).toBe(true);
