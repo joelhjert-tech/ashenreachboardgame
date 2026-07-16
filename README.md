@@ -112,7 +112,7 @@ npm run audit:assets
 - `content/cards/contracts` contract objectives
 - `content/cards/anomalies` anomaly encounters
 - `content/cards/artifacts` artifact rewards
-- `content/cards/scars` persistent wound / Heat scars
+- `content/cards/scars` persistent consequences of the Wound and Scar lifecycle
 - `content/cards/escalations` breach pressure events
 - `content/sectors` authored sector deck references
 

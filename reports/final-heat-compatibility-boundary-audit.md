@@ -638,3 +638,13 @@ The two semantic Threat-key renames retain their existing authoritative behavior
 Updated comparable classification: **4,104 Heat substrings across 242 files** — A 0, B 13, C 297, D 971, E 2,822, F 1, G 0. Canonical follower/Threat Heat metadata is zero. The stable Nemesis identifier `heat_on_threat_defeat` remains the single Category F reference deferred to C6F.
 
 **Verdict remains CONDITIONAL PASS.** C6E must correct the six misleading current-documentation statements, and C6F must decide the final save-version/compatibility deletion boundary. See `heat-compatibility-c6d-metadata-migration.md`.
+
+## Phase C6E current-documentation cleanup
+
+C6E corrected exactly six statements in the three current guidance documents: one catalog description in `README.md`, four movement/Threat/lifecycle statements in `docs/MVP_RULES.md`, and one battle-impact result-chip statement in `docs/MOTION_BIBLE.md`. Current documentation no longer teaches Heat as an active player resource, consequence, threshold/lifecycle, or renderable result.
+
+Historical audits, approvals, implementation reports, and migration records remain unchanged. Required v0–v2 compatibility documentation continues to describe Heat only as retired, inert parser input.
+
+Updated comparable classification: **4,098 Heat substrings across 240 files** — A 0, B 13, C 297, D 971, E 2,816, F 1, G 0. Current misleading documentation statements are zero.
+
+**Verdict remains CONDITIONAL PASS.** C6F must decide whether to retain or retire the isolated legacy compatibility boundary and must dispose of the single deferred Category F identifier. No gameplay or compatibility behavior changed. See `heat-compatibility-c6e-documentation-cleanup.md`.

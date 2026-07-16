@@ -381,3 +381,11 @@ Current follower and Threat loaders now use canonical schemas only. Historical v
 Canonical follower/Threat Heat metadata is now zero. Follower count remains 24; Threat count remains 109 with Red 26 / Blue 35 / Yellow 48. Save version remains 2. Projection stripping remains in place.
 
 Comparable reclassification: **4,104 occurrences across 242 files** — A 0, B 13, C 297, D 971, E 2,822, F 1, G 0. The verdict remains **CONDITIONAL PASS** because C6E documentation cleanup and C6F's final compatibility/version decision remain outstanding. See `heat-compatibility-c6d-metadata-migration.md`.
+
+## C6E current-documentation update
+
+C6E corrected exactly six misleading statements in `README.md`, `docs/MVP_RULES.md`, and `docs/MOTION_BIBLE.md`. Current rules no longer present Heat as an active resource, consequence, lifecycle, or result chip. Historical and compatibility documentation remains intact.
+
+The comparable classification is now **4,098 occurrences across 240 files** — A 0, B 13, C 297, D 971, E 2,816, F 1, G 0. Current misleading documentation statements are zero. The single Category F identifier and the release/save-version decision remain assigned to C6F.
+
+**Verdict remains CONDITIONAL PASS.** No gameplay, canonical content, schema, migration, validation, test, UI, asset, save, replay, reconnect, or compatibility behavior changed. See `heat-compatibility-c6e-documentation-cleanup.md`.

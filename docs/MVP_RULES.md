@@ -48,7 +48,7 @@ During play, a seat can:
 ## Movement
 
 - Moving into a sector triggers a movement check based on local danger.
-- Failure still moves the operative, but usually adds Heat.
+- Failure still moves the operative.
 - Threat cards in the destination sector can be drawn and resolved.
 
 ## Threats
@@ -60,15 +60,13 @@ Threat cards are either:
 
 Threat outcomes can:
 
-- add Heat
 - deal Wounds
 - grant Gear
 - add Notes
 - advance scenario progress
 
-## Heat and Wounds
+## Wounds, Recall, and Scars
 
-- Heat represents mounting exposure and instability.
 - Wounds represent direct harm.
 - If wounds hit the wound threshold, the operative is recalled and gains a scar.
 - Recalled operatives must recruit a replacement before acting again.

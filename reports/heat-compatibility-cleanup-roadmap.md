@@ -245,3 +245,11 @@ Compatibility field deletion remains deferred to C6F and requires an explicit sa
 Save version remains 2. Follower behavior, Threat distribution and resolution, projections, replay, and reconnect remain unchanged. The stable Nemesis ID `heat_on_threat_defeat` remains deferred to C6F rather than being misclassified as follower/Threat-card metadata.
 
 Next phase: **C6E documentation cleanup**.
+
+## C6E implementation status
+
+**Implemented.** Exactly six current statements were corrected across `README.md`, `docs/MVP_RULES.md`, and `docs/MOTION_BIBLE.md`. The current rules and developer guidance no longer teach Heat as an active resource, consequence, lifecycle, result type, or authoring option. Historical retirement reports and compatibility documentation remain available and unchanged.
+
+Comparable classification after C6E: **4,098 occurrences across 240 files** — A 0, B 13, C 297, D 971, E 2,816, F 1, G 0. The remaining Category F stable identifier and all compatibility deletion/version decisions remain deferred.
+
+Next phase: **C6F compatibility deletion/version decision**.
