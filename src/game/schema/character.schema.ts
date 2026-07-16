@@ -1,6 +1,14 @@
 import { z } from "zod";
-import { gearItemSchema } from "./gear.schema.js";
-import { followerSchema } from "./follower.schema.js";
+import {
+  gearItemSchema,
+  legacyCompatibleGearItemSchema,
+  normalizeLegacyGearItem
+} from "./gear.schema.js";
+import {
+  followerSchema,
+  legacyCompatibleFollowerSchema,
+  normalizeLegacyFollowerMetadata
+} from "./follower.schema.js";
 
 export const statSchema = z.enum(["command", "grit", "signal", "guile", "forge"]);
 
@@ -89,8 +97,28 @@ export const characterSchema = z.object(characterFields).strict();
 /** Strict parser for unversioned persisted snapshots created before Phase 1P. */
 export const legacyCharacterSchemaV0 = z.object({
   ...characterFields,
+  heldGear: z.array(legacyCompatibleGearItemSchema),
+  followers: z.array(legacyCompatibleFollowerSchema).optional(),
   heat: z.number().int().min(0)
 }).strict();
+
+export const legacyCompatibleCharacterSchema = z.object({
+  ...characterFields,
+  heldGear: z.array(legacyCompatibleGearItemSchema),
+  followers: z.array(legacyCompatibleFollowerSchema).optional(),
+  heat: z.number().int().min(0).optional()
+}).strict();
+
+export function normalizeLegacyCharacter(
+  character: z.infer<typeof legacyCompatibleCharacterSchema>
+): z.infer<typeof characterSchema> {
+  const { heat: _retiredHeat, ...current } = character;
+  return characterSchema.parse({
+    ...current,
+    heldGear: current.heldGear.map(normalizeLegacyGearItem),
+    followers: current.followers?.map(normalizeLegacyFollowerMetadata)
+  });
+}
 
 // Canonical content definitions deliberately exclude persisted compatibility
 // state. Runtime/session characters continue to use characterSchema below.
@@ -107,4 +135,5 @@ export type EquippedGear = z.infer<typeof equippedGearSchema>;
 export type EquippedGearInstances = z.infer<typeof equippedGearInstancesSchema>;
 export type Character = z.infer<typeof characterSchema>;
 export type LegacyCharacterV0 = z.infer<typeof legacyCharacterSchemaV0>;
+export type LegacyCompatibleCharacter = z.infer<typeof legacyCompatibleCharacterSchema>;
 export type AuthoredCharacter = z.infer<typeof authoredCharacterSchema>;

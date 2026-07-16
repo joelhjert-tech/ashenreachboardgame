@@ -44,9 +44,9 @@ export function formatResultDelta(delta: ResultDelta, options: { publicOnly?: bo
 }
 
 export function publicResultDeltas(deltas: ResultDelta[] | null | undefined): ResultDelta[] {
-  return (deltas ?? []).filter((delta) => delta.type !== "heat" && delta.visibility === "public");
+  return (deltas ?? []).filter((delta) => delta.visibility === "public");
 }
 
 export function ownerVisibleResultDeltas(deltas: ResultDelta[] | null | undefined): ResultDelta[] {
-  return (deltas ?? []).filter((delta) => delta.type !== "heat" && delta.visibility !== "hidden");
+  return (deltas ?? []).filter((delta) => delta.visibility !== "hidden");
 }

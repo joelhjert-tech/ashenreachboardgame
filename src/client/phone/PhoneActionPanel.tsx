@@ -1299,7 +1299,7 @@ function TurnActionDock({
 function shopResultDeltas(deltas: ResultDelta[] | null | undefined): ResultDelta[] {
   const shopTypes = new Set<ResultDelta["type"]>(["itemBought", "itemSold", "salvage", "wound", "scarGained", "shopUnlocked"]);
 
-  return (deltas ?? []).filter((delta) => delta.type !== "heat" && (delta.source?.startsWith("shop:") || shopTypes.has(delta.type)));
+  return (deltas ?? []).filter((delta) => delta.source?.startsWith("shop:") || shopTypes.has(delta.type));
 }
 
 function battleResultDeltas(deltas: ResultDelta[] | null | undefined): ResultDelta[] {

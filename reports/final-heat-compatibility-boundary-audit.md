@@ -1,5 +1,7 @@
 # Final Heat compatibility-boundary audit
 
+> C6C update (2026-07-16): current schemas and TypeScript models have been separated from legacy Heat-compatible input models. Current gameplay types cannot author or emit Heat; legacy parsing and reconnect remain supported through explicit normalization. Verdict remains **CONDITIONAL PASS** pending C6D, C6E, and C6F.
+
 Date: 2026-07-15
 
 Checkpoint: `3a7f232 feat: retire memory tax gate heat effect`

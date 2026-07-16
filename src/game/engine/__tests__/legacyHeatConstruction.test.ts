@@ -40,13 +40,21 @@ describe("Phase 1P Heat-free runtime character construction", () => {
 
   it("forbids gameplay character Heat access and current server projection Heat", () => {
     const files = [...productionFiles(join(ROOT, "src", "game")), ...productionFiles(join(ROOT, "src", "server"))];
+    const compatibilityAccessFiles = new Set([
+      "src/game/persistence/sessionSnapshot.ts"
+    ]);
     const accesses: string[] = [];
     const projectionZeros: string[] = [];
     for (const file of files) {
       const source = ts.createSourceFile(file, readFileSync(file, "utf8"), ts.ScriptTarget.Latest, true);
       const visit = (node: ts.Node): void => {
         const location = `${relative(ROOT, file).replaceAll("\\", "/")}:${source.getLineAndCharacterOfPosition(node.getStart(source)).line + 1}`;
-        if (ts.isPropertyAccessExpression(node) && node.getText(source).endsWith("character.heat")) accesses.push(location);
+        const relativePath = relative(ROOT, file).replaceAll("\\", "/");
+        if (
+          ts.isPropertyAccessExpression(node)
+          && node.getText(source).endsWith("character.heat")
+          && !compatibilityAccessFiles.has(relativePath)
+        ) accesses.push(location);
         if (ts.isPropertyAssignment(node) && node.name.getText(source) === "heat" && file.replaceAll("\\", "/").endsWith("src/server/roomServer.ts")) projectionZeros.push(location);
         ts.forEachChild(node, visit);
       };

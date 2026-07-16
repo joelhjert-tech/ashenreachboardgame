@@ -1555,7 +1555,7 @@ describe("PhoneInventoryPanel", () => {
       factionGiver: "Glass Choir",
       text: "Record the quiet names before the hall notices.",
       objective: { type: "defeatCount" as const, target: 2 },
-      reward: { type: "lose_heat" as const, amount: 1 }
+      reward: { type: "gain_salvage" as const, amount: 1 }
     };
 
     render(
@@ -1582,7 +1582,7 @@ describe("PhoneInventoryPanel", () => {
     expect(within(mission).getByTestId("phone-active-mission-target")).toHaveTextContent(/target: any sector with a threat or enemy/i);
     expect(within(mission).getByText("Defeat 2 threats.")).toBeInTheDocument();
     expect(within(mission).getByText("Progress 1/2 defeated")).toBeInTheDocument();
-    expect(within(mission).getByText("Scar relief")).toBeInTheDocument();
+    expect(within(mission).getByText("Gain Salvage")).toBeInTheDocument();
   });
 
   it("shows public scenario sheet progress and pressure on the Quest tab without private agenda data", () => {

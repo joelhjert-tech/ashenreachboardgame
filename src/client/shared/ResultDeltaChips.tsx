@@ -35,7 +35,6 @@ export function ResultDeltaRow({
   emptyText?: string | null;
 }): ReactElement | null {
   const visibleDeltas = (deltas ?? [])
-    .filter((delta) => delta.type !== "heat")
     .filter((delta) => !publicOnly || delta.visibility === "public")
     .slice(0, 8);
 

@@ -1,5 +1,6 @@
 import type { AuthoredCharacter, Stat } from "../schema/character.schema.js";
 import type { ThreatCard, EncounterEffect } from "../schema/card.schema.js";
+import type { LegacyCompatibleEncounterEffect } from "../schema/card.schema.js";
 import type { ContractCard } from "../schema/contract.schema.js";
 import type { AfflictionCard } from "../schema/affliction.schema.js";
 import type { GearItem, GearSlot } from "../schema/gear.schema.js";
@@ -291,7 +292,6 @@ export interface TableInteractionAction extends BaseAction {
 
 export type ShopServiceCost = {
   salvage?: number;
-  heat?: number;
   wounds?: number;
   trophies?: number;
   completedContracts?: number;
@@ -299,7 +299,6 @@ export type ShopServiceCost = {
 
 export type ShopServiceResult = {
   salvageDelta?: number;
-  heatDelta?: number;
   woundDelta?: number;
   trophyDelta?: number;
   gainGear?: GearItem;
@@ -504,7 +503,7 @@ export interface RivalryAgendaProgressTriggeredAction extends BaseAction {
 
 export interface StabilizeResolvedAction extends BaseAction {
   type: "STABILIZE_RESOLVED";
-  cost: { kind: "heat" | "trophy" | "action"; amount: number };
+  cost: { kind: "trophy" | "action"; amount: number };
 }
 
 export interface StatRaisedAction extends BaseAction {
@@ -669,7 +668,6 @@ export type GameAction =
   | ForcedDestinationSelectedAction
   | ForcedDisplacementResolvedAction
   | SutureStormContinuedAction
-  | HeatThresholdReachedAction
   | WoundThresholdReachedAction
   | RecruitReplacementAction
   | EquipGearAction
@@ -719,6 +717,48 @@ export type GameAction =
   | CoopDefeatTriggeredAction
   | ScarTriggerEventAction
   | ContinueScarConsequenceAction;
+
+export type LegacyCompatibleShopServiceCost = ShopServiceCost & {
+  heat?: number;
+};
+
+export type LegacyCompatibleShopServiceResult = ShopServiceResult & {
+  heatDelta?: number;
+};
+
+type LegacyEffectAction =
+  | (Omit<MovementResolvedAction, "effect"> & { effect: LegacyCompatibleEncounterEffect | null })
+  | (Omit<EncounterDrawnAction, "revealEffect"> & { revealEffect?: LegacyCompatibleEncounterEffect | null })
+  | (Omit<CheckRolledAction, "effect"> & { effect: LegacyCompatibleEncounterEffect | null })
+  | (Omit<SoloRerollResolvedAction, "effect"> & { effect: LegacyCompatibleEncounterEffect | null })
+  | (Omit<CombatResolvedAction, "effect"> & { effect: LegacyCompatibleEncounterEffect })
+  | (Omit<ResolutionAppliedAction, "effect"> & { effect: LegacyCompatibleEncounterEffect })
+  | (Omit<UseGearAction, "effect"> & { effect: LegacyCompatibleEncounterEffect | null })
+  | (Omit<UseFollowerAction, "effect"> & { effect: LegacyCompatibleEncounterEffect | null })
+  | (Omit<TableInteractionAction, "effect" | "targetEffect"> & {
+      effect: LegacyCompatibleEncounterEffect | null;
+      targetEffect?: LegacyCompatibleEncounterEffect | null;
+    })
+  | (Omit<SpaceTextResolvedAction, "effect"> & { effect?: LegacyCompatibleEncounterEffect | null })
+  | (Omit<ScenarioProgressAdvancedAction, "effect"> & { effect?: LegacyCompatibleEncounterEffect | null })
+  | (Omit<ScenarioConfrontationProgressGainedAction, "effect"> & { effect?: LegacyCompatibleEncounterEffect | null });
+
+type LegacyShopAction =
+  | (Omit<ShopServiceResolvedAction, "cost" | "result"> & {
+      cost: LegacyCompatibleShopServiceCost;
+      result: LegacyCompatibleShopServiceResult;
+    })
+  | (Omit<ShopStockRevealedAction, "cost"> & { cost: LegacyCompatibleShopServiceCost })
+  | (Omit<ShopPurchaseResolvedAction, "cost"> & { cost: LegacyCompatibleShopServiceCost });
+
+export type LegacyCompatibleGameAction =
+  | GameAction
+  | HeatThresholdReachedAction
+  | LegacyEffectAction
+  | LegacyShopAction
+  | (Omit<StabilizeResolvedAction, "cost"> & {
+      cost: { kind: "heat" | "trophy" | "action"; amount: number };
+    });
 
 export type ClientIntent =
   | {

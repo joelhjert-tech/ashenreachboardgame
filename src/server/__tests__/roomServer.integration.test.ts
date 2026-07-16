@@ -130,8 +130,7 @@ function createThreats(): Map<string, ThreatCard> {
           text: "You tagged the clean band before the static folded back in."
         },
         failEffect: {
-          type: "gain_heat",
-          amount: 1
+          type: "legacy_compatibility_noop"
         }
       }
     ],
@@ -152,8 +151,7 @@ function createThreats(): Map<string, ThreatCard> {
           text: "You caught the false cadence and marked a safer route."
         },
         failEffect: {
-          type: "gain_heat",
-          amount: 1
+          type: "legacy_compatibility_noop"
         }
       }
     ],
@@ -218,7 +216,7 @@ function createContracts(): Map<string, ContractCard> {
         factionGiver: "Glass Choir",
         text: "The Choir will scrub one mark from your trail if you silence a single hunter on their listening road.",
         objective: { type: "defeatCount", target: 1 },
-        reward: { type: "lose_heat", amount: 1 }
+        reward: { type: "gain_note", text: "Legacy contract reward retired." }
       }
     ],
     [
@@ -240,7 +238,7 @@ function createContracts(): Map<string, ContractCard> {
         factionGiver: "Veyr Clans",
         text: "Put down a marked threat before it drags another caravan into the dust.",
         objective: { type: "defeatCount", target: 2 },
-        reward: { type: "lose_heat", amount: 1 }
+        reward: { type: "gain_note", text: "Legacy contract reward retired." }
       }
     ],
     [

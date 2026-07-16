@@ -104,8 +104,6 @@ function formatContractRewardSummary(contract: ContractCard): string {
       return "Reward: follower";
     case "gain_trophy":
       return `Reward: ${(reward as { amount?: number }).amount ?? 1} trophy`;
-    case "lose_heat":
-      return "Reward: scar relief";
     case "heal_wound":
       return `Reward: heal ${(reward as { amount?: number }).amount ?? 1} wound`;
     case "gain_note":

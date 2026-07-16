@@ -75,7 +75,11 @@ import type { GearSlot } from "../schema/gear.schema.js";
 import type { TrophyPileEntry } from "../schema/character.schema.js";
 import { applyMovementDieAfflictions, resolveAfflictionDraw } from "../rules/afflictions.js";
 import { buildPendingScarConsequences, getMatchingScarTriggers } from "../rules/scarTriggers.js";
-import { applyLegacyHeatNoop, isLegacyHeatNoopEffect, summarizeLegacyHeatNoop } from "../rules/legacyHeatCompatibility.js";
+import {
+  applyLegacyCompatibilityNoop,
+  isLegacyCompatibilityNoopEffect,
+  summarizeLegacyCompatibilityNoop
+} from "../rules/legacyHeatCompatibility.js";
 import {
   GLASS_CHIME_SWARM_ID,
   GLASS_CHIME_SWARM_MODIFIER_AMOUNT,
@@ -357,7 +361,7 @@ function succeed(state: GameState, emitted: GameAction[] = []): ReducerSuccess {
 function summarizeEffect(effect: EncounterEffect | null, success: boolean | null): string {
   const prefix = success === null ? "Resolution:" : success ? "Success:" : "Failure:";
   if (!effect) return `${prefix} no additional effect.`;
-  if (isLegacyHeatNoopEffect(effect)) return summarizeLegacyHeatNoop(prefix);
+  if (isLegacyCompatibilityNoopEffect(effect)) return summarizeLegacyCompatibilityNoop(prefix);
 
   switch (effect.type) {
     case "take_wound":
@@ -420,7 +424,7 @@ function summarizeEffect(effect: EncounterEffect | null, success: boolean | null
 }
 
 function applyEffectToPlayer(player: PlayerState, effect: EncounterEffect): PlayerState {
-  if (isLegacyHeatNoopEffect(effect)) return applyLegacyHeatNoop(player, effect);
+  if (isLegacyCompatibilityNoopEffect(effect)) return applyLegacyCompatibilityNoop(player, effect);
   switch (effect.type) {
     case "encounter_payment":
     case "forcedDisplacement":
@@ -880,13 +884,6 @@ function applyEffectToState(state: GameState, seatId: string, effect: EncounterE
       sourceEventId,
       state.pendingFailureReaction?.createdAt ?? sourceEventId
     );
-  }
-
-  if (effect.type === "gain_heat_all") {
-    return {
-      ...state,
-      players: state.players.map((player) => applyEffectToPlayer(player, { type: "gain_heat", amount: effect.amount }))
-    };
   }
 
   if (effect.type === "return_threat_to_space") {
@@ -3072,12 +3069,6 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
         sequence: state.sequence + 1,
         eventLog: [...state.eventLog, action]
       });
-    }
-    case "HEAT_THRESHOLD_REACHED": {
-      // Compatibility-only action retained so historical serialized events
-      // remain parseable. It is deliberately an exact no-op: no sequence,
-      // log, projection, recall, Scar, or other gameplay mutation is allowed.
-      return { ok: true, state, emitted: [] };
     }
     case "WOUND_THRESHOLD_REACHED": {
       const woundAction = action as WoundThresholdReachedAction;

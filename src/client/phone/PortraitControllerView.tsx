@@ -281,10 +281,6 @@ function describeContractReward(contract: ContractCard): string {
   }
 
   if ("type" in reward && typeof reward.type === "string") {
-    if (reward.type === "lose_heat") {
-      return "Scar relief";
-    }
-
     return reward.type
       .replace(/_/g, " ")
       .replace(/([a-z])([A-Z])/g, "$1 $2")

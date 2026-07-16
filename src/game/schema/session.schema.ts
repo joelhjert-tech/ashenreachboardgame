@@ -1,10 +1,29 @@
 import { z } from "zod";
-import { pendingTileChallengeSchema } from "./tileChallenge.schema.js";
-import { characterSchema, legacyCharacterSchemaV0, statSchema } from "./character.schema.js";
+import {
+  legacyCompatiblePendingTileChallengeSchema,
+  pendingTileChallengeSchema
+} from "./tileChallenge.schema.js";
+import {
+  characterSchema,
+  legacyCharacterSchemaV0,
+  legacyCompatibleCharacterSchema,
+  statSchema
+} from "./character.schema.js";
 import { afflictionCardSchema, afflictionInstanceSchema, afflictionUsageStateSchema } from "./affliction.schema.js";
-import { effectSchema, threatCardSchema } from "./card.schema.js";
-import { contractCardSchema } from "./contract.schema.js";
-import { sectorNodeSchema } from "./sector.schema.js";
+import {
+  effectSchema,
+  legacyCompatibleEffectSchema,
+  legacyCompatibleThreatCardSchema,
+  runtimeThreatCardSchema
+} from "./card.schema.js";
+import {
+  contractCardSchema,
+  legacyCompatibleContractCardSchema
+} from "./contract.schema.js";
+import {
+  legacyCompatibleSectorNodeSchema,
+  sectorNodeSchema
+} from "./sector.schema.js";
 import { pendingScarConsequenceSchema } from "./scarTrigger.schema.js";
 import { pendingEncounterDecisionSchema } from "./encounterDecision.schema.js";
 import { pendingDisplacementArrivalSchema, pendingDisplacementSchema, pendingForcedDestinationChoiceSchema, pendingSutureStormConsequenceSchema } from "./displacement.schema.js";
@@ -275,12 +294,22 @@ export const shopStockRevealSchema = z.object({
   revealCost: z
     .object({
       salvage: z.number().int().min(0).optional(),
-      heat: z.number().int().min(0).optional(),
       wounds: z.number().int().min(0).optional(),
       trophies: z.number().int().min(0).optional()
     })
     .optional(),
   createdAt: z.string().min(1)
+});
+
+export const legacyCompatibleShopStockRevealSchema = shopStockRevealSchema.extend({
+  revealCost: z
+    .object({
+      salvage: z.number().int().min(0).optional(),
+      heat: z.number().int().min(0).optional(),
+      wounds: z.number().int().min(0).optional(),
+      trophies: z.number().int().min(0).optional()
+    })
+    .optional()
 });
 
 export const scenarioPreparationStateSchema = z.object({
@@ -367,7 +396,7 @@ export const gameStateSchema = z.object({
   recentEncounterCardIds: z.array(z.string().min(1)).optional(),
   escalationLevel: z.number().int().min(0),
   resolvedEscalationSourceEventIds: z.array(z.string().min(1)).optional(),
-  currentEncounter: threatCardSchema.nullable(),
+  currentEncounter: runtimeThreatCardSchema.nullable(),
   pendingEnemyRoll: z
     .object({
       fighterSeatId: z.string().min(1),
@@ -447,7 +476,32 @@ export const gameStateSchema = z.object({
     .nullable()
 }).strict();
 
-const legacyThresholdGameStateSchema = gameStateSchema
+export const legacyCompatiblePlayerStateSchema = playerStateSchema.extend({
+  character: legacyCompatibleCharacterSchema
+}).strict();
+
+export const legacyCompatibleGameStateSchema = gameStateSchema.extend({
+  players: z.array(legacyCompatiblePlayerStateSchema),
+  sectors: z.array(legacyCompatibleSectorNodeSchema),
+  availableContracts: z.array(legacyCompatibleContractCardSchema),
+  shopStockReveals: z.array(legacyCompatibleShopStockRevealSchema).default([]),
+  currentEncounter: legacyCompatibleThreatCardSchema.nullable(),
+  pendingEffect: legacyCompatibleEffectSchema.nullable(),
+  pendingTileChallenge: legacyCompatiblePendingTileChallengeSchema.nullable().optional(),
+  pendingStaticIntercessionReaction: z.object({
+    id: z.string().min(1),
+    seatId: z.string().min(1),
+    pendingTileChallengeId: z.string().min(1),
+    suppressibleEffects: z.array(z.object({
+      effectId: z.string().min(1),
+      effect: legacyCompatibleEffectSchema
+    })).min(1),
+    selectedEffectId: z.string().min(1).nullable(),
+    createdAt: z.string().min(1)
+  }).nullable().optional()
+}).strict();
+
+const legacyThresholdGameStateSchema = legacyCompatibleGameStateSchema
   .omit({ reflectionPressureThreshold: true })
   .extend({ heatThreshold: z.number().int().min(1) })
   .strict();
@@ -482,7 +536,10 @@ export const legacyCompatibilityMetadataSchema = z.object({
 });
 
 function validateLegacyCompatibilityOwners(
-  snapshot: { state: { players: PlayerState[] }; legacyCompatibility?: LegacyCompatibilityMetadata },
+  snapshot: {
+    state: { players: Array<{ seatId: string; character: { id: string } }> };
+    legacyCompatibility?: LegacyCompatibilityMetadata;
+  },
   context: z.RefinementCtx
 ): void {
   snapshot.legacyCompatibility?.characterHeat.forEach((record, index) => {
@@ -508,6 +565,14 @@ export const sessionSnapshotSchema = z.object({
   state: gameStateSchema,
   legacyCompatibility: legacyCompatibilityMetadataSchema.optional()
 }).strict().superRefine(validateLegacyCompatibilityOwners);
+
+export const legacyCompatibleSessionSnapshotSchemaV2 = z.object({
+  saveVersion: z.literal(2),
+  sessionId: z.string().min(1),
+  sequence: z.number().int().min(0),
+  state: legacyCompatibleGameStateSchema,
+  legacyCompatibility: legacyCompatibilityMetadataSchema.optional()
+}).strict();
 
 export type Phase = z.infer<typeof phaseSchema>;
 export type SessionStatus = z.infer<typeof sessionStatusSchema>;
@@ -535,7 +600,9 @@ export type ScenarioPreparationState = z.infer<typeof scenarioPreparationStateSc
 export type ScenarioConfrontationState = z.infer<typeof scenarioConfrontationStateSchema>;
 export type ScenarioResultState = z.infer<typeof scenarioResultStateSchema>;
 export type GameState = z.infer<typeof gameStateSchema>;
+export type LegacyCompatibleGameState = z.infer<typeof legacyCompatibleGameStateSchema>;
 export type SessionSnapshot = z.infer<typeof sessionSnapshotSchema>;
+export type LegacyCompatibleSessionSnapshotV2 = z.infer<typeof legacyCompatibleSessionSnapshotSchemaV2>;
 export type SessionSnapshotV1 = z.infer<typeof sessionSnapshotSchemaV1>;
 export type LegacySessionSnapshotV0 = z.infer<typeof legacySessionSnapshotSchemaV0>;
 export type LegacyCompatibilityMetadata = z.infer<typeof legacyCompatibilityMetadataSchema>;

@@ -1,7 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { loadEscalationCards } from "../../content/escalations.js";
 import { loadThreatCards } from "../../content/threats.js";
-import { effectSchema, type EncounterEffect } from "../../schema/card.schema.js";
+import {
+  effectSchema,
+  legacyCompatibleEffectSchema,
+  type EncounterEffect
+} from "../../schema/card.schema.js";
 import { createInitialSessionState } from "../../../server/sessionState.js";
 import {
   APPROVED_AUTOMATIC_SALVAGE_LOSS_IDS,
@@ -53,7 +57,8 @@ describe("Phase 1G floor-zero Salvage loss", () => {
     for (const invalid of [{ type: "lose_salvage" }, { type: "lose_salvage", amount: 0 }, { type: "lose_salvage", amount: -1 }, { type: "lose_salvage", amount: 1.5 }]) {
       expect(effectSchema.safeParse(invalid).success).toBe(false);
     }
-    expect(effectSchema.safeParse({ type: "gain_heat", amount: 1 }).success).toBe(true);
+    expect(effectSchema.safeParse({ type: "gain_heat", amount: 1 }).success).toBe(false);
+    expect(legacyCompatibleEffectSchema.safeParse({ type: "gain_heat", amount: 1 }).success).toBe(true);
     expect(effectSchema.safeParse({ type: "gain_salvage", amount: 1 }).success).toBe(true);
   });
 

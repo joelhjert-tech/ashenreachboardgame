@@ -1,11 +1,15 @@
 import { z } from "zod";
-import { effectSchema } from "./card.schema.js";
+import {
+  authoredEffectSchema,
+  effectSchema,
+  legacyCompatibleEffectSchema
+} from "./card.schema.js";
 import { statSchema } from "./character.schema.js";
 
 export const tileChallengeTypeSchema = z.enum(["hazard", "anomaly"]);
 export const tileChallengeTriggerSchema = z.enum(["onArrival", "onEnter", "startOfTurnAtSector", "scenarioPrompt"]);
 
-export const tileChallengeSchema = z.object({
+const tileChallengeBaseSchema = z.object({
   id: z.string().min(1),
   name: z.string().min(1),
   challengeType: tileChallengeTypeSchema,
@@ -14,15 +18,28 @@ export const tileChallengeSchema = z.object({
   difficulty: z.number().int().min(1),
   trigger: tileChallengeTriggerSchema,
   authoredOrder: z.number().int().min(0),
-  successEffect: effectSchema,
-  failureEffect: effectSchema,
   recurring: z.literal(true),
   tags: z.array(z.string().min(1)),
   lore: z.string().min(1),
   artCardId: z.string().min(1)
 });
 
-export const pendingTileChallengeSchema = z.object({
+export const authoredTileChallengeSchema = tileChallengeBaseSchema.extend({
+  successEffect: authoredEffectSchema,
+  failureEffect: authoredEffectSchema
+});
+
+export const tileChallengeSchema = tileChallengeBaseSchema.extend({
+  successEffect: effectSchema,
+  failureEffect: effectSchema
+});
+
+export const legacyCompatibleTileChallengeSchema = tileChallengeBaseSchema.extend({
+  successEffect: legacyCompatibleEffectSchema,
+  failureEffect: legacyCompatibleEffectSchema
+});
+
+const pendingTileChallengeBaseSchema = z.object({
   id: z.string().min(1),
   challengeId: z.string().min(1),
   sectorId: z.string().min(1),
@@ -31,13 +48,21 @@ export const pendingTileChallengeSchema = z.object({
   testStat: statSchema,
   difficulty: z.number().int().min(1),
   sourceTags: z.array(z.string()),
-  successEffect: effectSchema,
-  failureEffect: effectSchema,
   authoredOrder: z.number().int().min(0),
   totalChallenges: z.number().int().min(1),
   rolled: z.boolean(),
   modifierSources: z.array(z.object({ label: z.string(), value: z.number().int(), sourceInstanceId: z.string().optional() })).default([]),
   createdAt: z.string().min(1)
+});
+
+export const pendingTileChallengeSchema = pendingTileChallengeBaseSchema.extend({
+  successEffect: effectSchema,
+  failureEffect: effectSchema
+});
+
+export const legacyCompatiblePendingTileChallengeSchema = pendingTileChallengeBaseSchema.extend({
+  successEffect: legacyCompatibleEffectSchema,
+  failureEffect: legacyCompatibleEffectSchema
 });
 
 export type TileChallenge = z.infer<typeof tileChallengeSchema>;

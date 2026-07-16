@@ -274,11 +274,8 @@ function createAnomalies(): Map<string, AnomalyCard> {
         instability: 2,
         resolutionSummary: "Contained the Glassmere Echo Bloom and harvested a usable signal pattern.",
         resolveEffect: {
-          type: "sequence",
-          effects: [
-            { type: "lose_heat", amount: 1 },
-            { type: "gain_note", text: "Glassmere anomaly contained. The spindle now answers the relay choir cleanly." }
-          ]
+          type: "gain_note",
+          text: "Glassmere anomaly contained. The spindle now answers the relay choir cleanly."
         }
       }
     ],
@@ -377,11 +374,8 @@ function createEscalations(): Map<string, EscalationCard> {
         step: 1,
         resolutionSummary: "Walked the Ridge Suture Litany, sealed the worst fracture, and cooled the operative under pressure.",
         resolveEffect: {
-          type: "sequence",
-          effects: [
-            { type: "lose_heat", amount: 1 },
-            { type: "gain_note", text: "Ridge suture anchored. The watch posts can still hold for one more convoy." }
-          ]
+          type: "gain_note",
+          text: "Ridge suture anchored. The watch posts can still hold for one more convoy."
         },
         escalationDelta: -1
       }
@@ -399,7 +393,7 @@ function createContracts(): Map<string, ContractCard> {
         factionGiver: "Glass Choir",
         text: "The Choir demands two clean removals so a listening chamber can return to its proper silence.",
         objective: { type: "defeatCount", target: 2 },
-        reward: { type: "lose_heat", amount: 1 }
+        reward: { type: "gain_note", text: "Legacy contract reward retired." }
       }
     ],
     [
@@ -422,11 +416,8 @@ function createContracts(): Map<string, ContractCard> {
         text: "Silence the hostile signal growth around Mirecoil Beacon before it spills into the convoy lattice.",
         objective: { type: "defeatCount", target: 1 },
         reward: {
-          type: "sequence",
-          effects: [
-            { type: "lose_heat", amount: 1 },
-            { type: "gain_note", text: "The beacon routes were stabilized for one clean cycle." }
-          ]
+          type: "gain_note",
+          text: "The beacon routes were stabilized for one clean cycle."
         }
       }
     ],
@@ -461,11 +452,8 @@ function createContracts(): Map<string, ContractCard> {
           target: 1
         },
         reward: {
-          type: "sequence",
-          effects: [
-            { type: "lose_heat", amount: 1 },
-            { type: "gain_note", text: "The Cartels opened a clean crossing thread for one black-lantern run." }
-          ]
+          type: "gain_note",
+          text: "The Cartels opened a clean crossing thread for one black-lantern run."
         }
       }
     ]
@@ -542,8 +530,7 @@ function createThreats(): Map<string, ThreatCard> {
           text: "You mapped the strongest band before it decayed."
         },
         failEffect: {
-          type: "gain_heat",
-          amount: 1
+          type: "legacy_compatibility_noop"
         }
       }
     ],
@@ -565,8 +552,7 @@ function createThreats(): Map<string, ThreatCard> {
           text: "You pinned the false carrier and marked its pulse drift."
         },
         failEffect: {
-          type: "gain_heat",
-          amount: 1
+          type: "legacy_compatibility_noop"
         }
       }
     ]
@@ -1038,7 +1024,7 @@ describe("first eligible character timing", () => {
     difficulty: 6,
     ...(threatLane ? { threatLane } : {}),
     successEffect: { type: "gain_note" as const, text: "Passed." },
-    failEffect: { type: "gain_heat" as const, amount: 1 }
+    failEffect: { type: "legacy_compatibility_noop" as const }
   });
 
   const timingServer = (characterId: string, stats: Character["stats"], encounter: ThreatCard) => {
@@ -1156,7 +1142,7 @@ describe("active resolution visibility state", () => {
       statBonus: 1,
       total: 6,
       success: false,
-      effect: { type: "gain_heat", amount: 1 },
+      effect: { type: "legacy_compatibility_noop" },
       cardId: card.id,
       createdAt: "2026-06-26T00:00:02.000Z"
     });
@@ -1171,7 +1157,7 @@ describe("active resolution visibility state", () => {
       target: 7,
       success: false
     });
-    expect(rolled.state.pendingEffect).toEqual({ type: "gain_heat", amount: 1 });
+    expect(rolled.state.pendingEffect).toEqual({ type: "legacy_compatibility_noop" });
     expect(rolled.state.pendingFailureReaction).toMatchObject({
       seatId: "seat-1",
       testType: "hazard",
@@ -1406,7 +1392,7 @@ describe("active resolution visibility state", () => {
             effects: ["Failure: legacy pressure."]
           }
         },
-        pendingEffect: { type: "gain_heat", amount: 1 },
+        pendingEffect: { type: "legacy_compatibility_noop" },
         lastOutcomeSummary: {
           seatId: "seat-1",
           movedToSectorId: "sector-b",
@@ -1440,7 +1426,7 @@ describe("active resolution visibility state", () => {
 
     expect(server.getState().phase).toBe("resolution");
     expect(server.getState().activeResolution?.stage).toBe("outcome_summary");
-    expect(server.getState().pendingEffect).toEqual({ type: "gain_heat", amount: 1 });
+    expect(server.getState().pendingEffect).toEqual({ type: "legacy_compatibility_noop" });
   });
 
   it("recovers an orphaned resolution state when the player continues", () => {
@@ -3205,7 +3191,7 @@ describe("active objects and table interaction", () => {
       stat: "forge",
       difficulty: 4,
       successEffect: { type: "gain_note", text: "Machine lock opened." },
-      failEffect: { type: "gain_heat", amount: 1 }
+      failEffect: { type: "legacy_compatibility_noop" }
     });
     const state = createState({
       currentEncounter: threats.get("machine-lock") ?? null,
@@ -3298,7 +3284,7 @@ describe("active objects and table interaction", () => {
           targetSeatId: "seat-2",
           interactionKind: "duel",
           effect: null,
-          targetEffect: { type: "gain_heat", amount: 1 },
+          targetEffect: { type: "legacy_compatibility_noop" },
           summary: "Prior bounded duel.",
           createdAt: new Date().toISOString()
         }
@@ -3379,7 +3365,7 @@ describe("threat effect keys", () => {
       stat: "grit",
       difficulty: 4,
       successEffect: { type: "gain_note", text: "Safe." },
-      failEffect: { type: "gain_heat", amount: 1 }
+      failEffect: { type: "legacy_compatibility_noop" }
     });
     const state = createState({
       phase: "sector",
@@ -3435,7 +3421,7 @@ describe("threat effect keys", () => {
       stat: "signal",
       difficulty: 6,
       successEffect: { type: "gain_note", text: "Safe." },
-      failEffect: { type: "gain_heat", amount: 1 }
+      failEffect: { type: "legacy_compatibility_noop" }
     });
     const heatedState = createState({
       phase: "sector",
@@ -3496,7 +3482,7 @@ describe("threat effect keys", () => {
       stat: "signal",
       difficulty: 7,
       successEffect: { type: "gain_note", text: "Safe." },
-      failEffect: { type: "gain_heat", amount: 1 }
+      failEffect: { type: "legacy_compatibility_noop" }
     });
     const escalatedState = createState({
       phase: "sector",
@@ -3540,7 +3526,7 @@ describe("threat effect keys", () => {
       difficulty: 12,
       successEffect: { type: "gain_note", text: "Safe." },
       failEffectKey: "threat_fail_take_wound",
-      failEffect: { type: "gain_heat", amount: 1 }
+      failEffect: { type: "legacy_compatibility_noop" }
     });
     const state = createState({
       currentEncounter: threats.get("keyed-snare") ?? null,
@@ -5875,7 +5861,7 @@ describe("trophy progression", () => {
       stat: "command",
       difficulty: 15,
       successEffect: { type: "gain_note", text: "The command lock opened cleanly." },
-      failEffect: { type: "gain_heat", amount: 1 }
+      failEffect: { type: "legacy_compatibility_noop" }
     });
 
     const baseCharacter = cloneCharacter(createCharacters().get("void-marshal"));
@@ -6324,7 +6310,7 @@ describe("trophy progression", () => {
       stat: "command",
       difficulty: 17,
       successEffect: { type: "gain_note", text: "You locked the command cipher in place." },
-      failEffect: { type: "gain_heat", amount: 1 }
+      failEffect: { type: "legacy_compatibility_noop" }
     });
 
     const createCommandState = (withBoost: boolean, phase: GameState["phase"]): GameState =>
@@ -7575,7 +7561,7 @@ describe("contracts", () => {
           stat: "forge",
           difficulty: 4,
           successEffect: { type: "gain_note", text: "You made the dead grid answer." },
-          failEffect: { type: "gain_heat", amount: 1 }
+          failEffect: { type: "legacy_compatibility_noop" }
         },
         seats: createState().seats.map((seat) =>
           seat.seatId === "seat-1" ? { ...seat, characterId: "grave-engineer" } : seat
@@ -7969,7 +7955,7 @@ describe("contracts", () => {
           stat: "guile",
           difficulty: 4,
           successEffect: { type: "gain_note", text: "You annotated the moving lane." },
-          failEffect: { type: "gain_heat", amount: 1 }
+          failEffect: { type: "legacy_compatibility_noop" }
         },
         seats: createState().seats.map((seat) =>
           seat.seatId === "seat-1" ? { ...seat, characterId: "rift-cartographer" } : seat
@@ -8220,8 +8206,7 @@ describe("contracts", () => {
             text: "The salvage frame held."
           },
           failEffect: {
-            type: "gain_heat",
-            amount: 1
+            type: "legacy_compatibility_noop"
           }
         },
         seats: createState().seats.map((seat) =>

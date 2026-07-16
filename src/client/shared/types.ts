@@ -142,7 +142,6 @@ export interface GearItem {
   rechargeRule?: "none";
   chargedEffect?: "personalGateOverride" | "movementAdjustment" | "saintSafeConduct" | "bonewayDetour" | "choirLightSignalBonus" | "staticIntercession" | "scarSinkPrayer" | "traceThePromise";
   maxUses?: number;
-  heatCost?: number;
   linkedFollowerRole?: FollowerRole;
   effectModel?: "permanent" | "conditional" | "consumable" | "exhaust" | "charged";
   instanceId?: string;
@@ -183,7 +182,7 @@ export interface Follower {
   imagePrompt?: string;
   useLimit?: "oncePerTurn" | "oncePerRound" | "discard";
   loyalty?: number;
-  lossCondition?: "wound" | "heat" | "combatLoss" | "choice";
+  lossCondition?: "wound" | "combatLoss" | "choice";
 }
 
 export interface ScarSummary {
@@ -342,7 +341,6 @@ export interface PublicRivalryAgendaCompletion {
 
 export type ResultDeltaType =
   | "wound"
-  | "heat"
   | "salvage"
   | "trophy"
   | "gearGained"
@@ -539,7 +537,6 @@ export type PublicShopStatus = "open" | "locked" | "exhausted" | "dangerous";
 
 export interface PublicShopCost {
   salvage?: number;
-  heat?: number;
   wounds?: number;
   trophies?: number;
   completedContracts?: number;
@@ -597,7 +594,6 @@ export interface PublicShopEncounterState {
     shopCategories?: ShopCategory[];
     cost: {
       salvage?: number;
-      heat?: number;
       completedContracts?: number;
     };
     summary: string;
@@ -622,7 +618,6 @@ export interface PublicShopEncounterState {
     gained?: string;
     costPaid?: PublicShopCost;
     remainingSalvage?: number;
-    heatDelta?: number;
     woundDelta?: number;
     scarDelta?: number;
     discarded?: string[];

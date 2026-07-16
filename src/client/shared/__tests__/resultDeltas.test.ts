@@ -63,8 +63,4 @@ describe("result delta formatting", () => {
     expect(publicResultDeltas([privateDelta])).toEqual([]);
   });
 
-  it("keeps legacy Heat deltas out of player-visible result collections", () => {
-    const legacy = delta({ type: "heat", label: "legacy", value: 1, sign: "loss", publicText: "Legacy value changed." });
-    expect(publicResultDeltas([legacy])).toEqual([]);
-  });
 });

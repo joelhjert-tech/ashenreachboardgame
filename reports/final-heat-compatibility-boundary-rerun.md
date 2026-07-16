@@ -1,5 +1,7 @@
 # Final Heat compatibility boundary rerun
 
+> C6C update (2026-07-16): current canonical schemas, actions, state effects, result types, shop payloads, and client models now exclude Heat. Supported v0/v1/v2 Heat shapes are accepted only through dedicated legacy schemas and normalization adapters. The verdict remains **CONDITIONAL PASS** pending C6D metadata work, C6E documentation cleanup, and the C6F save-version/deletion decision. See `reports/heat-compatibility-c6c-schema-type-narrowing.md`.
+
 Date: 2026-07-16
 
 Checkpoint: `91acd7f feat: retire final follower heat effects`

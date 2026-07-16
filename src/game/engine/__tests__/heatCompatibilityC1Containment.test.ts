@@ -5,11 +5,15 @@ import { loadEscalationCards } from "../../content/escalations.js";
 import { loadFollowers } from "../../content/followers.js";
 import { BOARD_TEXT_EFFECTS } from "../../data/boardTextEffects.js";
 import { SCENARIOS, type ScenarioConfrontationContext } from "../../data/scenarios.js";
+import {
+  normalizeLegacyGameAction,
+  type LegacyCompatibilityEventRecord
+} from "../../persistence/legacyGameActionCompatibility.js";
 import { parseAndMigrateSessionSnapshot } from "../../persistence/sessionSnapshot.js";
+import type { LegacyCompatibleGameAction } from "../actions.js";
 import type { EncounterEffect } from "../../schema/card.schema.js";
 import type { GameState } from "../../schema/session.schema.js";
 import { createInitialSessionState } from "../../../server/sessionState.js";
-import { reduceGameState } from "../reducer.js";
 
 const HEAT_EFFECT_TYPES = new Set(["gain_heat", "gain_heat_all", "lose_heat"]);
 
@@ -82,8 +86,7 @@ describe("Heat Compatibility C1 containment", () => {
     state.players[0]!.character.salvage = 7;
     state.escalationLevel = 4;
     state.scenarioProgress = { lossPressure: 3 };
-    const before = structuredClone(state);
-    const action = {
+    const action: LegacyCompatibleGameAction = {
       type: "HEAT_THRESHOLD_REACHED" as const,
       seatId: state.players[0]!.seatId,
       threshold: 6,
@@ -91,20 +94,21 @@ describe("Heat Compatibility C1 containment", () => {
       createdAt: "legacy-event"
     };
 
-    const first = reduceGameState(state, action);
-    expect(first.ok).toBe(true);
-    if (!first.ok) return;
-    expect(first.state).toBe(state);
-    expect(first.state).toEqual(before);
-    expect(first.state.players[0]!.character.status).toBe("active");
-    expect(first.state.eventLog).toEqual(before.eventLog);
-    expect(first.emitted).toEqual([]);
-
-    const duplicate = reduceGameState(first.state, action);
-    expect(duplicate.ok).toBe(true);
-    if (!duplicate.ok) return;
-    expect(duplicate.state).toBe(state);
-    expect(duplicate.state).toEqual(before);
+    const first = normalizeLegacyGameAction(action);
+    const duplicate = normalizeLegacyGameAction(action);
+    const expected: LegacyCompatibilityEventRecord = {
+      type: "LEGACY_COMPATIBILITY_EVENT",
+      legacyType: "HEAT_THRESHOLD_REACHED",
+      seatId: state.players[0]!.seatId,
+      createdAt: "legacy-event"
+    };
+    expect(first).toEqual(expected);
+    expect(duplicate).toEqual(expected);
+    expect(state.players[0]!.character.status).toBe("active");
+    expect(state.players[0]!.character.wounds).toBe(2);
+    expect(state.players[0]!.character.scars).toEqual(["scar-wound-1"]);
+    expect(state.players[0]!.character.salvage).toBe(7);
+    expect(state.eventLog).toEqual([]);
   });
 
   it("keeps legacy Heat values mechanically identical and separate from Scars", () => {
@@ -118,35 +122,36 @@ describe("Heat Compatibility C1 containment", () => {
     expect(zero.legacyCompatibility).toBeUndefined();
     expect(seven.legacyCompatibility?.characterHeat[0]?.value).toBe(7);
 
-    const replay = reduceGameState(seven.state, {
+    const replay = normalizeLegacyGameAction({
       type: "HEAT_THRESHOLD_REACHED",
       seatId: seven.state.players[0]!.seatId,
       threshold: 6,
       newHeatTotal: 7,
       createdAt: "legacy-replay"
     });
-    expect(replay.ok).toBe(true);
-    if (!replay.ok) return;
-    expect(replay.state.players[0]!.character.status).toBe("active");
-    expect(replay.state.players[0]!.character.scars).toEqual([]);
-    expect(replay.state.pendingScarConsequence).toBeNull();
+    expect(replay).toEqual({
+      type: "LEGACY_COMPATIBILITY_EVENT",
+      legacyType: "HEAT_THRESHOLD_REACHED",
+      seatId: seven.state.players[0]!.seatId,
+      createdAt: "legacy-replay"
+    });
+    expect(seven.state.players[0]!.character.status).toBe("active");
+    expect(seven.state.players[0]!.character.scars).toEqual([]);
+    expect(seven.state.pendingScarConsequence).toBeNull();
   });
 
   it("confines Heat resolution and threshold symbols to an exact compatibility allowlist", () => {
     const root = process.cwd();
     const files = [...productionFiles(join(root, "src", "game")), ...productionFiles(join(root, "src", "server"))];
     const heatEffectAllowlist = new Set([
-      "src/game/cards/threatEffects.ts",
-      "src/game/data/boardTextEffects.ts",
-      "src/game/data/scenarios.ts",
-      "src/game/engine/reducer.ts",
+      "src/game/persistence/legacyGameActionCompatibility.ts",
       "src/game/rules/legacyHeatCompatibility.ts",
       "src/game/schema/card.schema.ts",
       "src/server/legacyHeatProjection.ts"
     ]);
     const thresholdAllowlist = new Set([
       "src/game/engine/actions.ts",
-      "src/game/engine/reducer.ts"
+      "src/game/persistence/legacyGameActionCompatibility.ts"
     ]);
     const effectViolations: string[] = [];
     const thresholdViolations: string[] = [];
@@ -160,6 +165,11 @@ describe("Heat Compatibility C1 containment", () => {
 
     expect(effectViolations).toEqual([]);
     expect(thresholdViolations).toEqual([]);
-    expect(readFileSync(join(root, "src/game/engine/reducer.ts"), "utf8")).toMatch(/case "HEAT_THRESHOLD_REACHED"[\s\S]*return \{ ok: true, state, emitted: \[\] \}/);
+    expect(readFileSync(join(root, "src/game/engine/reducer.ts"), "utf8")).not.toContain("HEAT_THRESHOLD_REACHED");
+    const actionSource = readFileSync(join(root, "src/game/engine/actions.ts"), "utf8");
+    expect(actionSource).toMatch(/export type LegacyCompatibleGameAction[\s\S]*\| HeatThresholdReachedAction/);
+    expect(actionSource.match(/export type GameAction[\s\S]*?export type LegacyCompatibleShopServiceCost/)?.[0]).not.toContain(
+      "HeatThresholdReachedAction"
+    );
   });
 });

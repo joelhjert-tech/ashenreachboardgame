@@ -1,5 +1,8 @@
 import { z } from "zod";
-import { tileChallengeSchema } from "./tileChallenge.schema.js";
+import {
+  legacyCompatibleTileChallengeSchema,
+  tileChallengeSchema
+} from "./tileChallenge.schema.js";
 
 export const regionTierSchema = z.enum([
   "borderlight",
@@ -18,15 +21,22 @@ export const encounterDecksSchema = z.object({
 
 export const threatIconSchema = z.enum(["red", "blue", "yellow"]);
 
-export const sectorNodeSchema = z.object({
+const sectorNodeBaseSchema = z.object({
   id: z.string().min(1),
   name: z.string().min(1),
   regionTier: regionTierSchema,
   neighbors: z.array(z.string().min(1)),
   danger: z.number().int().min(0).max(10),
   threatIcons: z.array(threatIconSchema).optional(),
-  tileChallenges: z.array(tileChallengeSchema).optional(),
   encounterDecks: encounterDecksSchema
+});
+
+export const sectorNodeSchema = sectorNodeBaseSchema.extend({
+  tileChallenges: z.array(tileChallengeSchema).optional()
+});
+
+export const legacyCompatibleSectorNodeSchema = sectorNodeBaseSchema.extend({
+  tileChallenges: z.array(legacyCompatibleTileChallengeSchema).optional()
 });
 
 export const sectorGraphSchema = z.object({

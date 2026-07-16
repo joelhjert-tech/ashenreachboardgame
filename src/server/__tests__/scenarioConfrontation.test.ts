@@ -785,7 +785,7 @@ describe("scenario confrontation flow", () => {
           enemyName: "Test Enemy",
           trophyValue: 0,
           defeatReward: { type: "gain_note", text: "Victory" },
-          woundOnLoss: { type: "gain_heat", amount: 1 }
+          woundOnLoss: { type: "legacy_compatibility_noop" }
         },
         phase: "action"
         ,
@@ -838,7 +838,7 @@ describe("scenario confrontation flow", () => {
           stat: "signal",
           difficulty: 2,
           successEffect: { type: "gain_note", text: "Signal mode passed." },
-          failEffect: { type: "gain_heat", amount: 1 }
+          failEffect: { type: "legacy_compatibility_noop" }
         },
         phase: "action",
         players: createScenarioState().players

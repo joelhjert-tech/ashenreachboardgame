@@ -111,7 +111,9 @@ describe("Heat Compatibility C5B final follower retirements", () => {
         activeEffect: { type: "gain_note", text: expected.note },
         useLimit: "oncePerRound",
         loyalty: expected.loyalty,
-        lossCondition: expected.lossCondition
+        ...(expected.lossCondition === "heat"
+          ? {}
+          : { lossCondition: expected.lossCondition })
       });
       expect(validateLegacyHeatContentRecord(`content/followers/${expected.id}.json`, follower)).toEqual([]);
       expect(JSON.stringify(follower)).not.toMatch(/gain_heat|gain_heat_all|lose_heat/i);

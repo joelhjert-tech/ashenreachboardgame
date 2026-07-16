@@ -3,9 +3,15 @@ import { loadGear } from "../../content/gear.js";
 import { createInitialSessionState } from "../../../server/sessionState.js";
 import { gameStateSchema } from "../../schema/session.schema.js";
 import { reduceGameState } from "../reducer.js";
-import { WITHDRAWN_LEGACY_HEAT_SERVICE_IDS } from "../../rules/legacyHeatCompatibility.js";
+import {
+  normalizeLegacyEncounterEffect,
+  WITHDRAWN_LEGACY_HEAT_SERVICE_IDS
+} from "../../rules/legacyHeatCompatibility.js";
 import { getReflectionPressureThreshold } from "../../rules/reflectionPressure.js";
-import type { EncounterEffect } from "../../schema/card.schema.js";
+import type {
+  EncounterEffect,
+  LegacyCompatibleEncounterEffect
+} from "../../schema/card.schema.js";
 
 function resolve(effect: EncounterEffect) {
   const state = createInitialSessionState("legacy-heat-containment", "single-player");
@@ -20,12 +26,14 @@ function resolve(effect: EncounterEffect) {
 }
 
 describe("Phase 1A legacy Heat compatibility", () => {
-  it.each<EncounterEffect>([
+  const legacyEffects: LegacyCompatibleEncounterEffect[] = [
     { type: "gain_heat", amount: 1 },
     { type: "gain_heat_all", amount: 1 },
     { type: "lose_heat", amount: 1 }
-  ])("keeps $type a contained no-op without mutating current systems", (effect) => {
-    const result = resolve(effect);
+  ];
+
+  it.each(legacyEffects)("keeps $type a contained no-op without mutating current systems", (effect) => {
+    const result = resolve(normalizeLegacyEncounterEffect(effect));
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     const player = result.state.players[0]!;
@@ -46,7 +54,7 @@ describe("Phase 1A legacy Heat compatibility", () => {
 
   it("keeps stable identifiers without active Heat costs", () => {
     const gear = loadGear();
-    expect(gear.get("black-route-fuse")?.heatCost).toBeUndefined();
+    expect(gear.get("black-route-fuse")).not.toHaveProperty("heatCost");
     expect(WITHDRAWN_LEGACY_HEAT_SERVICE_IDS.has("buy-boon")).toBe(true);
     expect(gear.has("heat-sink-prayer")).toBe(true);
   });

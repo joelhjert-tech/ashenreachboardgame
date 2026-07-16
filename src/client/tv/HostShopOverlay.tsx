@@ -176,7 +176,7 @@ function buildShopType(shopEncounter: PublicShopEncounterState): string {
 function shopResultDeltas(deltas: ResultDelta[] | null | undefined): ResultDelta[] {
   const shopTypes = new Set<ResultDelta["type"]>(["itemBought", "itemSold", "salvage", "wound", "scarGained", "shopUnlocked"]);
 
-  return (deltas ?? []).filter((delta) => delta.type !== "heat" && (delta.source?.startsWith("shop:") || shopTypes.has(delta.type)));
+  return (deltas ?? []).filter((delta) => delta.source?.startsWith("shop:") || shopTypes.has(delta.type));
 }
 
 function buildFromPayload(shopEncounter: PublicShopEncounterState, resultDeltas: ResultDelta[]): HostShopDisplayModel {
@@ -216,7 +216,7 @@ function buildFromPayload(shopEncounter: PublicShopEncounterState, resultDeltas:
     blockingLanes,
     previewCards: isBlocked ? [blockedPreview({ blockedReasonText, blockingLanes })] : baseCards.length > 0 ? baseCards : [emptyPreview()],
     stockRevealed: stockCount > 0,
-    riskActive: shopEncounter.status === "dangerous" || shopEncounter.services.some((service) => Boolean(service.risk || service.cost.heat)),
+    riskActive: shopEncounter.status === "dangerous" || shopEncounter.services.some((service) => Boolean(service.risk)),
     transactionComplete: Boolean(shopEncounter.recentOutcome),
     outcome: shopEncounter.recentOutcome?.summary ?? null,
     guidance: isBlocked ? "Clear the threat lock before trade resumes." : "Choose on player phone",

@@ -24,7 +24,8 @@ function effectContainsHeat(effect: EncounterEffect): boolean {
     return effect.effects.some(effectContainsHeat);
   }
 
-  return effect.type === "gain_heat" || effect.type === "gain_heat_all" || effect.type === "lose_heat";
+  const type = effect.type as string;
+  return type === "gain_heat" || type === "gain_heat_all" || type === "lose_heat";
 }
 
 describe("legacy contract promotion", () => {

@@ -1,5 +1,7 @@
 # Heat compatibility cleanup roadmap
 
+> C6C status (2026-07-16): implemented. Canonical authoring/runtime/client models are Heat-free; legacy v0/v1/v2 inputs normalize through dedicated compatibility schemas and adapters. Remaining phases are C6D metadata migration, C6E documentation cleanup, and C6F compatibility deletion/version decision.
+
 Date: 2026-07-16
 
 Based on: `reports/final-heat-compatibility-boundary-rerun.md`

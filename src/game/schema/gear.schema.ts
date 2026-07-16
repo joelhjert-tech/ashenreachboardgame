@@ -42,7 +42,7 @@ export const gearExhaustEffectSchema = z.enum(["mirrorReroll", "warbellCommand"]
 export const gearConditionTypeSchema = z.enum(["battle"]);
 export const consumableEffectSchema = z.enum(["grantVeilHook", "ignoreFailedMovementOrHazard", "grantPaleCartelFixer", "healWound", "grantMarshalSeal"]);
 
-export const gearItemSchema = z.object({
+const gearItemFields = {
   id: z.string().min(1),
   name: z.string().min(1),
   slot: gearSlotSchema,
@@ -72,7 +72,6 @@ export const gearItemSchema = z.object({
   rechargeRule: z.enum(["none"]).optional(),
   chargedEffect: z.enum(["personalGateOverride", "movementAdjustment", "saintSafeConduct", "bonewayDetour", "choirLightSignalBonus", "staticIntercession", "scarSinkPrayer", "traceThePromise", "selectAuthoritativeRouteVariant", "suppressForcedDisplacement"]).optional(),
   maxUses: z.number().int().min(0).optional(),
-  heatCost: z.number().int().min(0).optional(),
   linkedFollowerRole: z.string().min(1).optional(),
   startingEligible: z.boolean().optional(),
   normalShopCommon: z.boolean().optional(),
@@ -87,7 +86,9 @@ export const gearItemSchema = z.object({
   ,resetWindow: z.enum(["round"]).optional()
   ,exhaustEffect: gearExhaustEffectSchema.optional()
   ,activationCost: z.object({ type: z.enum(["salvage", "wound"]), amount: z.number().int().positive() }).optional()
-}).superRefine((item, context) => {
+};
+
+function validateGearItem(item: z.infer<z.ZodObject<typeof gearItemFields>>, context: z.RefinementCtx): void {
   if (item.id === "heat-sink-prayer") {
     if (item.name !== "Scar-Sink Prayer") context.addIssue({ code: z.ZodIssueCode.custom, message: "legacy heat-sink-prayer ID must use player-facing name Scar-Sink Prayer", path: ["name"] });
     if (item.chargedEffect !== "scarSinkPrayer" || !item.activationTiming?.includes("pendingScarConsequence")) context.addIssue({ code: z.ZodIssueCode.custom, message: "Scar-Sink Prayer requires the typed pending Scar consequence reaction", path: ["chargedEffect"] });
@@ -135,7 +136,20 @@ export const gearItemSchema = z.object({
     if (!item.maxCharges || !item.startingCharges || item.startingCharges > item.maxCharges || !item.chargeCost || item.chargeCost > item.maxCharges || item.rechargeRule !== "none" || !item.activationTiming?.length || !item.chargedEffect || item.requiresEquipped !== true) context.addIssue({ code: z.ZodIssueCode.custom, message: "charged items require bounded charges, no recharge, timing, typed effect, and equipped state", path: ["effectModel"] });
     if (item.consumeOnUse || item.resetWindow || item.exhaustEffect) context.addIssue({ code: z.ZodIssueCode.custom, message: "charged items cannot be consumable or exhaust items", path: ["effectModel"] });
   }
-});
+}
+
+export const gearItemSchema = z.object(gearItemFields).strict().superRefine(validateGearItem);
+export const legacyCompatibleGearItemSchema = z.object({
+  ...gearItemFields,
+  heatCost: z.number().int().min(0).optional()
+}).strict().superRefine(validateGearItem);
+
+export function normalizeLegacyGearItem(
+  item: z.infer<typeof legacyCompatibleGearItemSchema>
+): z.infer<typeof gearItemSchema> {
+  const { heatCost: _retiredHeatCost, ...current } = item;
+  return gearItemSchema.parse(current);
+}
 
 export type GearSlot = z.infer<typeof gearSlotSchema>;
 export type EquipmentSubtype = z.infer<typeof equipmentSubtypeSchema>;
@@ -144,5 +158,6 @@ export type ShopCategory = z.infer<typeof shopCategorySchema>;
 export type GearTier = z.infer<typeof gearTierSchema>;
 export type GearTimingWindow = z.infer<typeof gearTimingWindowSchema>;
 export type GearItem = z.infer<typeof gearItemSchema>;
+export type LegacyCompatibleGearItem = z.infer<typeof legacyCompatibleGearItemSchema>;
 export type GearEffectModel = z.infer<typeof gearEffectModelSchema>;
 export type GearConditionType = z.infer<typeof gearConditionTypeSchema>;

@@ -33,7 +33,7 @@ function createContracts(): Map<string, ContractCard> {
         factionGiver: "Glass Choir",
         text: "Defeat two enemies to restore a listening chamber.",
         objective: { type: "defeatCount", target: 2 },
-        reward: { type: "lose_heat", amount: 1 }
+        reward: { type: "gain_note", text: "Legacy contract reward retired." }
       }
     ]
   ]);

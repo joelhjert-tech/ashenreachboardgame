@@ -189,7 +189,15 @@ import type {
 } from "../game/engine/actions.js";
 import { getEquippedGearModifierSources } from "../game/engine/gear.js";
 import { getMovementProfile } from "../game/rules/movementPhase.js";
-import type { AnomalyCard, ArtifactCard, EncounterEffect, EscalationCard, ScarCard, ThreatCard } from "../game/schema/card.schema.js";
+import type {
+  AnomalyCard,
+  ArtifactCard,
+  AuthoredEncounterEffect,
+  EncounterEffect,
+  EscalationCard,
+  ScarCard,
+  ThreatCard
+} from "../game/schema/card.schema.js";
 import type { AuthoredCharacter, Character } from "../game/schema/character.schema.js";
 import type { Stat } from "../game/schema/character.schema.js";
 import type { ContractCard } from "../game/schema/contract.schema.js";
@@ -7226,6 +7234,8 @@ export class GameRoomServer {
     this.runAutomaticPhases(fighterSeatId);
   }
 
+  private resolveEffect(effect: AuthoredEncounterEffect, seatId?: string, sourceCardId?: string): AuthoredEncounterEffect;
+  private resolveEffect(effect: EncounterEffect, seatId?: string, sourceCardId?: string): EncounterEffect;
   private resolveEffect(effect: EncounterEffect, seatId?: string, sourceCardId?: string): EncounterEffect {
     if (effect.type === "gain_gear") {
       return {
@@ -7514,7 +7524,6 @@ type PublicShopService = {
   shopCategory?: ShopCategory;
   cost: {
     salvage?: number;
-    heat?: number;
     wounds?: number;
     trophies?: number;
     completedContracts?: number;
@@ -7532,7 +7541,6 @@ type PublicShopStockItem = {
   shopCategories: ShopCategory[];
   cost: {
     salvage?: number;
-    heat?: number;
     wounds?: number;
     trophies?: number;
   };
@@ -7642,7 +7650,6 @@ type ResultDelta = {
   id: string;
   type:
     | "wound"
-    | "heat"
     | "salvage"
     | "trophy"
     | "gearGained"
@@ -8630,9 +8637,8 @@ function getShopResultDeltas(shopEncounter: Record<string, unknown> | null): Res
     action?: string;
     gained?: string;
     sold?: string;
-    costPaid?: { salvage?: number; heat?: number; wounds?: number; trophies?: number };
+    costPaid?: { salvage?: number; wounds?: number; trophies?: number };
     salvageDelta?: number;
-    heatDelta?: number;
     woundDelta?: number;
     scarDelta?: number;
     summary?: string;
