@@ -648,3 +648,13 @@ Historical audits, approvals, implementation reports, and migration records rema
 Updated comparable classification: **4,098 Heat substrings across 240 files** — A 0, B 13, C 297, D 971, E 2,816, F 1, G 0. Current misleading documentation statements are zero.
 
 **Verdict remains CONDITIONAL PASS.** C6F must decide whether to retain or retire the isolated legacy compatibility boundary and must dispose of the single deferred Category F identifier. No gameplay or compatibility behavior changed. See `heat-compatibility-c6e-documentation-cleanup.md`.
+
+## Phase C6F compatibility and release decision
+
+C6F selects **Decision B**. Unversioned v0, v1, and legacy-compatible v2 snapshot import is formally supported through the save-version-2 line. Compatibility may be removed or materially narrowed only at an explicit future v3 release boundary with migration, malformed-input, reconnect, event-history, projection, and release-note coverage.
+
+Clean new v2 snapshots emit no retired gameplay fields or metadata. Migrated state may preserve positive historical values only in the optional archival `legacyCompatibility.characterHeat` bag. Legacy effects and threshold actions normalize inertly; current runtime, current actions/results, and client projections remain Heat-free.
+
+Required, isolated, intentional compatibility is allowed to coexist with PASS. The sole remaining condition is the Category F Dying Star `specialRuleId` value `heat_on_threat_defeat`, which has no behavior reader and is approved for a separate current-definition rename to `no_additional_effect`. Old snapshots already accept arbitrary nonempty special-rule IDs and remain parseable without a compatibility alias.
+
+**Verdict remains CONDITIONAL PASS** at the report-only checkpoint. After the narrow identifier rename and a final zero-boundary rerun, PASS is permitted without deleting v0–v2 compatibility. See `heat-compatibility-c6f-release-decision.md` and `legacy-save-support-policy.md`.

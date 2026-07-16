@@ -253,3 +253,19 @@ Next phase: **C6E documentation cleanup**.
 Comparable classification after C6E: **4,098 occurrences across 240 files** — A 0, B 13, C 297, D 971, E 2,816, F 1, G 0. The remaining Category F stable identifier and all compatibility deletion/version decisions remain deferred.
 
 Next phase: **C6F compatibility deletion/version decision**.
+
+## C6F release-decision status
+
+**Decision complete; implementation pending.** C6F selects retention through a defined cutoff: v0, v1, and legacy-compatible v2 input remains supported for the lifetime of save version 2. A future v3 boundary must be an explicit product/release decision with migration and reconnect proof.
+
+Retained compatibility is frozen, inert, and permitted to coexist with PASS. No broad schema, parser, adapter, fixture, or projection deletion is approved.
+
+Approved next implementation group:
+
+- rename the current Dying Star `specialRuleId` from `heat_on_threat_defeat` to `no_additional_effect`;
+- retain old snapshot acceptance without an alias or new handler;
+- rerun the complete boundary and assign PASS if all zero conditions remain proven.
+
+Recommended implementation commit: `refactor: retire final heat-named nemesis id`.
+
+Optional v3 migration remains deferred until a future release decision.

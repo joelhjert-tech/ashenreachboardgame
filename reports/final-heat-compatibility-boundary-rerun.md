@@ -389,3 +389,13 @@ C6E corrected exactly six misleading statements in `README.md`, `docs/MVP_RULES.
 The comparable classification is now **4,098 occurrences across 240 files** — A 0, B 13, C 297, D 971, E 2,816, F 1, G 0. Current misleading documentation statements are zero. The single Category F identifier and the release/save-version decision remain assigned to C6F.
 
 **Verdict remains CONDITIONAL PASS.** No gameplay, canonical content, schema, migration, validation, test, UI, asset, save, replay, reconnect, or compatibility behavior changed. See `heat-compatibility-c6e-documentation-cleanup.md`.
+
+## C6F release-policy decision
+
+C6F selects **Decision B**: unversioned v0, v1, and legacy-compatible v2 snapshot input remains supported for the lifetime of the save-version-2 line. Compatibility removal requires an explicit future v3 release boundary. Clean new v2 snapshots emit no retired gameplay state or metadata; migrated snapshots may retain only the optional archival `legacyCompatibility.characterHeat` bag and inert normalized history.
+
+Intentional, isolated, required, documented, and tested compatibility is allowed to coexist with PASS. Historical reports and fixtures do not prevent PASS.
+
+The sole remaining condition is the current Dying Star `specialRuleId` value `heat_on_threat_defeat`. It has no behavior reader and is approved for a separate neutral rename to `no_additional_effect`; old snapshots remain parseable because the field accepts any nonempty string.
+
+**Verdict remains CONDITIONAL PASS** until that narrow Group 1 implementation lands and the final boundary is rerun. No broad compatibility deletion or save-version change is approved. See `heat-compatibility-c6f-release-decision.md` and `legacy-save-support-policy.md`.
