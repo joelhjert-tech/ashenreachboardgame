@@ -44,25 +44,25 @@ legacy snapshot fields and protocol support
   -> C6F deletion decision
 ```
 
-## C6B — Safe dead-code cleanup
+## C6B — Safe dead-code cleanup — implemented
 
-Goal: remove only Category F residue proven unrelated to save parsing.
+Result: 28 Category F references removed without changing the 299 required compatibility references.
 
 ### Exact candidates
 
 | File/symbol | Proposed action | Save risk | Reconnect risk | Required proof |
 |---|---|---:|---:|---|
-| `src/game/rules/shopCategories.ts` consumable regex `heal|heat|wound|scar` | Remove `heat` from the active text classifier | None found | None | Shop category/catalog tests |
-| `src/game/rules/nemesisRelay.ts#getGlobalHeatLevel` | Rename to a Scar/escalation pressure name without behavior change | None | Low | Nemesis movement matrix and snapshot tests |
-| `src/server/roomServer.ts` unused `getGlobalHeatLevel` import | Delete after rename/call-site audit | None | None | Typecheck and Nemesis integration |
-| `src/client/phone/PortraitControllerView.tsx` `lose_heat` reward label | Remove if stale contract payload fixture confirms server stripping | Old client payload only | Low | Contract reward projection fixture |
-| `src/client/tv/TvApp.tsx` `lose_heat` reward label | Remove under the same protocol proof | Old client payload only | Low | TV reward fixture |
-| `src/client/tv/HostShopOverlay.tsx` `service.cost.heat` risk inference | Remove after old shop projection is proven stripped | Old client payload only | Low | Shop projection/privacy tests |
-| old Heat card/template/icon prompt entries | Delete only unreferenced prompt definitions and generated assets | None | None | Asset reference and generation audit |
+| `src/game/rules/shopCategories.ts` consumable regex | Implemented: obsolete lexical alternative removed | None | None | Shop category/catalog tests passed |
+| `src/game/rules/nemesisRelay.ts#getGlobalHeatLevel` | Implemented: renamed `getNemesisPressureLevel` without behavior change | None | None | Nemesis pressure/movement tests passed |
+| `src/server/roomServer.ts` unused helper import | Implemented: removed | None | None | Typecheck and Nemesis integration passed |
+| `src/client/phone/PortraitControllerView.tsx` defensive reward label | Deferred to C6C | Old client payload only | Low | Narrow shared current payload type first |
+| `src/client/tv/TvApp.tsx` defensive reward label | Deferred to C6C | Old client payload only | Low | Narrow shared current payload type first |
+| `src/client/tv/HostShopOverlay.tsx` defensive legacy cost inference | Deferred to C6C | Old client payload only | Low | Narrow shared current payload type first |
+| retired card/template/icon prompt entries and four legacy PNGs | Implemented: deleted after exact reference and asset audit | None | None | Runtime boundary and asset audit passed |
 
 The stable `heat_on_threat_defeat` Nemesis rule ID must not be renamed in C6B unless serialization inventory proves it is not persisted. A behavior-preserving display/helper rename is safe; stable ID migration belongs in C6D or C6F.
 
-Browser QA: smoke-check phone contract rewards, TV rewards, shop overlays, and Nemesis movement presentation.
+The stable `heat_on_threat_defeat` ID remains deferred to C6D/C6F. No browser-facing branch changed in C6B, so focused automated projection coverage was sufficient.
 
 Recommended commit: `chore: remove safe heat residue`
 
@@ -232,6 +232,6 @@ Recommended commit: `refactor: retire legacy heat compatibility`
 
 ## Recommended next action
 
-Proceed with **C6B only**, after a report or issue pins the exact safe-deletion list. Do not start schema/type narrowing or follower/Threat metadata migration in the same change.
+Proceed with **C6C current schema/type narrowing** as a separate change. Do not combine it with follower/Threat metadata migration.
 
 Compatibility field deletion remains deferred to C6F and requires an explicit save-version/release decision.

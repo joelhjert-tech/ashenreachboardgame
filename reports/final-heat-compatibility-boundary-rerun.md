@@ -46,7 +46,7 @@ This case-insensitive substring search deliberately includes:
 
 Each physical substring occurrence was counted once. Targeted symbol searches then inspected typed effects, thresholds, actions, tags, follower loss conditions, result types, projections, migration fields, save fields, and UI branches. Binary files were excluded by `git grep -I`; tracked textual asset paths and prompt catalogs were included.
 
-Result at the audited `91acd7f` checkpoint, before adding the self-referential C6A reports: **4,365 tracked Heat substrings across 261 tracked files**.
+Result after the C6B safe-residue cleanup, using the same corpus rules and excluding the self-referential C6A/C6B reports: **4,337 tracked Heat substrings across 255 tracked files**. The C6A baseline was 4,365 across 261 files.
 
 The earlier audit reported matching lines. C6A reports substring occurrences, so the totals are intentionally not comparable. The two new reports and two report updates are excluded from the corpus so their own wording cannot change the result they document.
 
@@ -59,10 +59,10 @@ The earlier audit reported matching lines. C6A reports substring occurrences, so
 | C — Required runtime compatibility | 299 | 34 | Parsers, no-op effects/actions, projection stripping, validation guards, stable IDs/keys, legacy metadata, and broad protocol/schema shapes. |
 | D — Tests and fixtures | 915 | 65 | Boundary, migration, no-op, projection, follower, scenario, and historical regression coverage. |
 | E — Documentation and history | 3,106 | 144 | Reports, current/deprecated docs, comments, and historical plans. Six current statements are misleading and need C6E cleanup. |
-| F — Dead or obsolete residue | 32 | 11 | Dead UI branches, obsolete Heat art/prompt entries, misleading names, and a stale text classifier. |
+| F — Dead or obsolete residue | 4 | 4 | Three defensive client compatibility branches and one stable serialized Nemesis rule ID remain deferred. |
 | G — Ambiguous | 0 | 0 | Every tracked occurrence received an evidence-backed classification. |
 
-Category file counts overlap where a file contains more than one category. Occurrence counts are mutually exclusive and sum to 4,365.
+Category file counts overlap where a file contains more than one category. Occurrence counts are mutually exclusive and sum to 4,337.
 
 ### Classification ledger
 
@@ -79,9 +79,9 @@ The following rules assign every tracked occurrence:
 | Legacy Threat resolver aliases | 19 | C | Stable keys resolve inertly; stale pending-state deletion needs migration tests. |
 | Ordinary environmental content/art language | 13 | B | No resource semantics or Heat UI. |
 | Current-code boundary comments outside docs | 3 | E | Historical/deprecation explanation only. |
-| Dead client branches, obsolete art prompts, stale naming/classification | 32 | F | No supported save parser depends on these exact presentation/naming branches. |
+| Deferred client branches and stable Nemesis rule ID | 4 | F | Client shapes remain until C6C; the stable ID remains until C6D/C6F. |
 
-The C totals are 126 + 17 + 156 = 299. Category F is not deleted in this pass.
+The C totals are 126 + 17 + 156 = 299. C6B did not delete or reclassify any Category C reference.
 
 ## Canonical content proof
 
@@ -146,14 +146,14 @@ Repeated and reconnected legacy actions remain the same exact no-op. No secondar
 
 ### Misleading non-Heat runtime names
 
-`getGlobalHeatLevel` in `src/game/rules/nemesisRelay.ts` is reachable through Nemesis movement logic but reads only:
+`getNemesisPressureLevel` in `src/game/rules/nemesisRelay.ts` is reachable through Nemesis movement logic and reads only:
 
 - maximum current Scar count; and
 - `state.escalationLevel`.
 
-It never reads legacy Heat metadata. Its name and the stable `heat_on_threat_defeat` special-rule ID are Category F cleanup candidates, not Heat mechanics.
+It never reads legacy Heat metadata. C6B corrected the helper name and removed its unused server import. The stable `heat_on_threat_defeat` special-rule ID remains deferred because it may be serialized.
 
-`src/game/rules/shopCategories.ts` still includes `heat` in a text-classification regex for consumable categorization. No current authored item relies on it. It is a reachable but obsolete lexical classifier, not a read of Heat state; remove it in C6B with shop-category regression coverage.
+`src/game/rules/shopCategories.ts` no longer includes the retired resource in its consumable text classifier. Canonical catalog categories are unchanged, and a retired-resource-only synthetic consumable now falls back to `market`.
 
 ## Heat-to-Scar boundary
 
@@ -285,16 +285,16 @@ Four corresponding Threat records retain `heat` tags. The current resolver alias
 
 ## Dead and obsolete residue
 
-The 32 Category F occurrences are grouped as:
+The 32 Category F occurrences were resolved as:
 
 | Group | Occurrences | Disposition |
 |---|---:|---|
-| Deprecated Heat card/deck/template/icon prompts | 24 | Safe after reference audit; no save dependency |
-| Dead phone/TV reward/shop formatting branches | 3 | Safe after stale payload fixtures and projection tests |
-| Misnamed Nemesis helper/import and stable unused special rule | 4 | Behavior-preserving rename/alias decision; keep save ID if serialized |
-| Obsolete shop text classifier | 1 | Safe with shop-category tests |
+| Deprecated card/deck/template/icon prompts and four reference PNGs | 24 | Removed after reference and asset audit |
+| Dead phone/TV reward/shop formatting branches | 3 | Deferred to C6C shared-type narrowing |
+| Misnamed Nemesis helper/import and stable unused special rule | 4 | Three naming/import occurrences removed; stable ID deferred |
+| Obsolete shop text classifier | 1 | Removed with shop-category coverage |
 
-No Category F item was deleted in C6A.
+C6B removed 28 Category F references. Four remain intentionally deferred.
 
 ## Documentation findings
 
@@ -324,7 +324,7 @@ These do not affect runtime correctness but prevent PASS. C6E should update curr
 | Legacy save parsing failures | 0 | 0 | v0/v1/v2 migration tests | PASS |
 | Reconnect Heat replays | 0 | 0 | threshold, effect, follower, and reconnect tests | PASS |
 | Required compatibility references | report count | 299 occurrences / 34 files | C ledger | CONTAINED |
-| Dead/obsolete references | report count | 32 occurrences / 11 files | F ledger | CONDITION |
+| Dead/obsolete references | report count | 4 occurrences / 4 files | C6B ledger | CONDITION |
 | Ambiguous references | 0 preferred | 0 | Full occurrence assignment | PASS |
 
 ## Four critique seats
@@ -349,20 +349,20 @@ New authored Heat fails validation, but broad shared schemas still technically r
 
 Passed:
 
-- tracked repository classification: 4,365 occurrences / 261 files;
+- comparable tracked repository classification after C6B: 4,337 occurrences / 255 files;
 - `npm.cmd run validate:content`: 17 characters, 71 gear, 109 Threats, 36 Contracts, 20 anomalies, 30 Artifacts, 24 followers, 15 Scars, 16 escalations, 30 afflictions;
 - `npm.cmd run typecheck`;
-- focused compatibility, migration, follower, projection, and Nemesis set: 8 files / 69 tests;
-- focused Wound/Scar, scenario, escalation, and reconnect set: 11 files / 125 tests;
+- focused C6B Nemesis, shop, and asset set: 3 files / 16 tests;
+- focused compatibility, migration, follower, projection, shop, Nemesis, result-delta, and asset-boundary set: 10 files / 59 tests;
 - `npm.cmd run test:engine`: 60 files / 712 tests;
-- `npm.cmd run test:integration`: 27 files / 233 tests;
-- `npm.cmd run test:client`: 26 files / 260 tests;
-- `npm.cmd run test`: 113 files / 1,205 tests;
-- reconnect timing regression passed in focused, integration, and aggregate runs without retry;
-- `npm.cmd run audit:assets`: 422 / 422 present, zero missing/invalid/placeholders/release blockers;
+- `npm.cmd run test:integration`: 27 files / 234 tests;
+- `npm.cmd run test:client`: 26 files / 261 tests;
+- `npm.cmd run test`: 113 files / 1,207 tests;
+- reconnect timing regression passed in integration and aggregate runs without retry;
+- `npm.cmd run audit:assets`: 418 / 418 present, zero missing/invalid/placeholders/release blockers;
 - `npm.cmd run build`.
 
-Existing test-only missing-art fallback diagnostics remained non-failing. They are unrelated to Heat and the asset audit passed.
+An initial wildcard-focused Wound/Scar/reconnect command matched no files because Vitest did not expand the shell patterns. The exact Wound/Scar coverage passed in the complete engine suite, and reconnect passed in the complete integration and aggregate suites. Existing test-only missing-art fallback diagnostics remained non-failing and the asset audit passed.
 
 ## Scope conclusion
 

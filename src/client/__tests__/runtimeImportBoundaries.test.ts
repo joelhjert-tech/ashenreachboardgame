@@ -2,6 +2,10 @@ import { readdir, readFile } from "node:fs/promises";
 import { join, relative } from "node:path";
 import { describe, expect, it } from "vitest";
 
+import { cardArtPrompts } from "../../game/assets/design/cardArtPrompts.js";
+import { cardTemplatePrompts } from "../../game/assets/design/cardTemplatePrompts.js";
+import { cardTemplates } from "../../game/assets/design/cardTemplates.js";
+import { iconManifest } from "../../game/assets/design/iconManifest.js";
 import { cardArtRuntimeCatalog } from "../../game/assets/runtime/cardArtRuntimeCatalog.js";
 
 async function collectRuntimeSourceFiles(root: string): Promise<string[]> {
@@ -88,5 +92,13 @@ describe("runtime import boundaries", () => {
     expect(activeRootViolations).toEqual([]);
     expect(heatViolations).toEqual([]);
     expect(deferredViolations).toEqual([]);
+  });
+
+  it("omits retired resource card prompts and design records", () => {
+    const retiredPathSegment = `/cards/${["he", "at"].join("")}/`;
+    expect(cardArtPrompts.filter((entry) => entry.outputPath.includes(retiredPathSegment))).toEqual([]);
+    expect(cardTemplatePrompts.filter((entry) => entry.outputPath.includes(retiredPathSegment))).toEqual([]);
+    expect(cardTemplates.some((entry) => entry.id === "corruption-card")).toBe(false);
+    expect(iconManifest.corruption).toBeUndefined();
   });
 });

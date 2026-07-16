@@ -42,13 +42,6 @@ export const iconManifest: Record<string, IconDefinition> = {
     use: "Currency, leverage, recruitment",
     uiNotes: "Make this coin-like but irregular, with worn seal edges."
   },
-  corruption: {
-    id: "corruption",
-    color: "violet",
-    symbol: "rift scar",
-    use: "Heat marks, activation state, breach taint",
-    uiNotes: "Keep it asymmetric and organic, not demonic rune language."
-  },
   artifact: {
     id: "artifact",
     color: "gold",

@@ -583,6 +583,18 @@ The zero gameplay boundary passes: no authored typed effects, Heat-state reads/w
 
 **Verdict remains CONDITIONAL PASS.** Broad shared schemas/types still admit legacy Heat shapes, four followers retain compatibility loss-condition metadata, stable Heat-shaped Threat keys/tags remain pending migration, dead UI/assets/names remain, and six current documentation statements still teach Heat. See `final-heat-compatibility-boundary-rerun.md` and `heat-compatibility-cleanup-roadmap.md`.
 
+## Phase C6B safe dead-residue cleanup
+
+C6B removed 28 of the 32 Category F references:
+
+- retired card/deck/template/icon prompt records and four unreferenced legacy PNGs;
+- the misleading Nemesis pressure helper name and unused server import;
+- the obsolete shop text-classification alternative.
+
+The comparable classification is now **4,337 occurrences across 255 files**: A 0, B 13, C 299, D 915, E 3,106, F 4, G 0. The remaining four Category F occurrences are three defensive client legacy-payload branches and the stable serialized Nemesis rule ID. They remain assigned to C6C and C6D/C6F respectively.
+
+**Verdict remains CONDITIONAL PASS.** No gameplay, content definition, schema, compatibility field, migration, reconnect adapter, validation guard, or projection boundary changed. See `heat-compatibility-c6b-dead-residue-cleanup.md`.
+
 ## Verification record
 
 Passed:

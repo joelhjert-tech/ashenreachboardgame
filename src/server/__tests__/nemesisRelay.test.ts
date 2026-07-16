@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { createSequenceRandomSource } from "../../game/engine/dice.js";
 import type { ClientIntent } from "../../game/engine/actions.js";
 import type { GameState, NemesisChampion } from "../../game/schema/session.schema.js";
-import { ASHEN_CROWN_NEXUS_SECTOR_ID } from "../../game/rules/nemesisRelay.js";
+import { ASHEN_CROWN_NEXUS_SECTOR_ID, getNemesisPressureLevel } from "../../game/rules/nemesisRelay.js";
 import { GameRoomServer, type ConnectedClient } from "../roomServer.js";
 import { createInitialSessionState } from "../sessionState.js";
 
@@ -66,6 +66,25 @@ function getActiveNemesis(server: GameRoomServer): NemesisChampion {
 }
 
 describe("Nemesis Relay mode", () => {
+  it("derives movement pressure only from Scars and Global Escalation", () => {
+    const server = startRelayServer(1);
+    const state = server.getState();
+    const withLegacyMetadata = {
+      ...state,
+      escalationLevel: 4,
+      players: state.players.map((player) => ({
+        ...player,
+        character: {
+          ...player.character,
+          [["he", "at"].join("")]: 99,
+          scars: ["scar-wound-1", "scar-wound-2"]
+        }
+      }))
+    };
+
+    expect(getNemesisPressureLevel(withLegacyMetadata)).toBe(4);
+  });
+
   it("spawns one bound Nemesis Champion per occupied player when the session starts", () => {
     const server = startRelayServer(2);
 

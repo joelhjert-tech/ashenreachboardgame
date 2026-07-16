@@ -73,7 +73,6 @@ import {
   getCrownKeyFragmentCount,
   getDistanceToNexus,
   getEligibleAssistSeatIds,
-  getGlobalHeatLevel,
   getNemesisCombatStat,
   getNemesisCombatValue,
   getNemesisMovementStepCount,

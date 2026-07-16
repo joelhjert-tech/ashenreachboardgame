@@ -31,11 +31,5 @@ export const cardTemplates: CardTemplateDefinition[] = [
     title: "Threat Card",
     sections: ["title", "art-window", "type-line", "rules-text", "trophy-or-pressure-value"],
     uiNotes: "Frame color must carry deck identity immediately from sofa distance."
-  },
-  {
-    id: "corruption-card",
-    title: "Heat Card",
-    sections: ["title", "activation-number", "active-state", "rules-text"],
-    uiNotes: "Activation number needs oversized corner treatment for fast scanning."
   }
 ];

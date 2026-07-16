@@ -50,10 +50,10 @@ export const requiredImageGenerationChecklist = [
   "8 inner/center tile images",
   "6 character portraits",
   "6 nemesis portraits",
-  "8 card backs",
+  "7 card backs",
   "12 contract card art images",
   "15 threat card art images",
-  "12 route-note/Heat/artifact/wargear sample card images",
+  "9 route-note/artifact/wargear sample card images",
   "4 tokens",
   "4 UI frames/backgrounds",
   "6 printable scenario sheet illustrations"
