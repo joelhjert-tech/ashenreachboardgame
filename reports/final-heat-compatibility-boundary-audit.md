@@ -567,6 +567,22 @@ Updated evidence:
 
 **Updated verdict: CONDITIONAL PASS.** The active authored and player-facing boundary is contained, legacy metadata remains inert and parseable, and reconnect/replay coverage passes. PASS remains deferred until dead code/assets/docs, compatibility types, and save-version deletion dependencies are re-audited. See `heat-compatibility-c5b-final-follower-implementation.md`.
 
+## Phase C6A complete boundary rerun
+
+C6A performed a new occurrence-based classification over every tracked textual `heat` substring after authored retirement. The repository contains **4,365 occurrences across 261 tracked files**:
+
+- A — active authored gameplay: **0**;
+- B — player-facing/presentation lexical matches: **13**, all ordinary environmental or art language; retired-resource presentation remains **0**;
+- C — required compatibility: **299**;
+- D — tests and fixtures: **915**;
+- E — documentation and history: **3,106**;
+- F — dead or obsolete residue: **32**;
+- G — ambiguous: **0**.
+
+The zero gameplay boundary passes: no authored typed effects, Heat-state reads/writes, threshold mutations, Heat-to-Scar paths, phone/TV Heat results, save parsing failures, or reconnect replays were found. `HEAT_THRESHOLD_REACHED` remains an exact state-identity no-op.
+
+**Verdict remains CONDITIONAL PASS.** Broad shared schemas/types still admit legacy Heat shapes, four followers retain compatibility loss-condition metadata, stable Heat-shaped Threat keys/tags remain pending migration, dead UI/assets/names remain, and six current documentation statements still teach Heat. See `final-heat-compatibility-boundary-rerun.md` and `heat-compatibility-cleanup-roadmap.md`.
+
 ## Verification record
 
 Passed:

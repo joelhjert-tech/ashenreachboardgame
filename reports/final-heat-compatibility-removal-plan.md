@@ -287,3 +287,21 @@ C5A is report-only. Current authored typed Heat remains **2 occurrences across 2
 Implementation status: **complete**. `crownless-advocate` and `saltflat-bone-reader` now use the exact approved explicit `gain_note` effects and retain their shared stable-ID `oncePerRound` lifecycle. Both IDs were removed from `LEGACY_HEAT_EFFECT_APPROVALS`.
 
 Current authored typed Heat is **0 occurrences across 0 IDs**. Compatibility-only save fields, `lossCondition: "heat"` metadata, parser/action types, projection stripping, historical reports, and dead residue remain retained and inert. The current verdict advances to **CONDITIONAL PASS**, pending the final compatibility cleanup/deletion audit. See `heat-compatibility-c5b-final-follower-implementation.md`.
+
+### Phase C6A — final boundary rerun
+
+Status: **complete, report-only**.
+
+The occurrence-based rerun classified 4,365 tracked Heat substrings across 261 files with zero active authored effects, zero gameplay Heat reads/writes, zero threshold mutations, zero Heat-to-Scar paths, zero live phone/TV Heat, zero legacy parsing failures, and zero reconnect replays.
+
+The verdict is **CONDITIONAL PASS**, not PASS, because compatibility remains mixed into broad current schemas/types, four follower loss conditions and stable Threat keys/tags remain canonical compatibility metadata, 32 dead/obsolete references remain, and six current documentation statements can still mislead.
+
+The safe-next order is now:
+
+1. C6B safe dead-code cleanup;
+2. C6C current schema/type narrowing with migration-only legacy types;
+3. C6D follower and Threat metadata migration;
+4. C6E documentation/test-name/asset cleanup;
+5. C6F save-version compatibility deletion decision.
+
+No compatibility deletion occurred. See `final-heat-compatibility-boundary-rerun.md` and `heat-compatibility-cleanup-roadmap.md`.

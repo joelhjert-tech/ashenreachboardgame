@@ -1,0 +1,237 @@
+# Heat compatibility cleanup roadmap
+
+Date: 2026-07-16
+
+Based on: `reports/final-heat-compatibility-boundary-rerun.md`
+
+Current verdict: **CONDITIONAL PASS**
+
+This is a planning document. No compatibility removal occurred in C6A.
+
+## Cleanup principles
+
+- Preserve supported v0/v1/v2 saves until a release decision changes that support boundary.
+- Never map Heat into Wounds, Scars, recall, Global Escalation, or another consequence.
+- Separate current canonical authoring types from migration-only legacy types before deleting parsers.
+- Preserve stable serialized IDs until an explicit ID migration exists.
+- Keep phone and TV projections Heat-free throughout every phase.
+- Use exact-file or exact-symbol compatibility allowlists, never broad directories.
+
+## Dependency overview
+
+```text
+safe dead residue
+  -> focused reference and projection tests
+  -> C6B deletion
+
+shared current Heat types
+  -> migration-only effect/action schemas
+  -> stale payload fixtures
+  -> C6C current schema/type narrowing
+
+follower/Threat metadata
+  -> exact old-state fixtures
+  -> canonical metadata decision
+  -> C6D migration
+
+misleading docs and prompt assets
+  -> historical/current classification
+  -> C6E cleanup
+
+legacy snapshot fields and protocol support
+  -> supported-save release decision
+  -> versioned importer/migration
+  -> C6F deletion decision
+```
+
+## C6B — Safe dead-code cleanup
+
+Goal: remove only Category F residue proven unrelated to save parsing.
+
+### Exact candidates
+
+| File/symbol | Proposed action | Save risk | Reconnect risk | Required proof |
+|---|---|---:|---:|---|
+| `src/game/rules/shopCategories.ts` consumable regex `heal|heat|wound|scar` | Remove `heat` from the active text classifier | None found | None | Shop category/catalog tests |
+| `src/game/rules/nemesisRelay.ts#getGlobalHeatLevel` | Rename to a Scar/escalation pressure name without behavior change | None | Low | Nemesis movement matrix and snapshot tests |
+| `src/server/roomServer.ts` unused `getGlobalHeatLevel` import | Delete after rename/call-site audit | None | None | Typecheck and Nemesis integration |
+| `src/client/phone/PortraitControllerView.tsx` `lose_heat` reward label | Remove if stale contract payload fixture confirms server stripping | Old client payload only | Low | Contract reward projection fixture |
+| `src/client/tv/TvApp.tsx` `lose_heat` reward label | Remove under the same protocol proof | Old client payload only | Low | TV reward fixture |
+| `src/client/tv/HostShopOverlay.tsx` `service.cost.heat` risk inference | Remove after old shop projection is proven stripped | Old client payload only | Low | Shop projection/privacy tests |
+| old Heat card/template/icon prompt entries | Delete only unreferenced prompt definitions and generated assets | None | None | Asset reference and generation audit |
+
+The stable `heat_on_threat_defeat` Nemesis rule ID must not be renamed in C6B unless serialization inventory proves it is not persisted. A behavior-preserving display/helper rename is safe; stable ID migration belongs in C6D or C6F.
+
+Browser QA: smoke-check phone contract rewards, TV rewards, shop overlays, and Nemesis movement presentation.
+
+Recommended commit: `chore: remove safe heat residue`
+
+## C6C — Current schema and type narrowing
+
+Goal: remove Heat from canonical authoring and current client/server models while retaining dedicated legacy import types.
+
+### Exact surfaces
+
+- `src/game/schema/card.schema.ts`
+  - split `gain_heat`, `gain_heat_all`, and `lose_heat` from current `EncounterEffect`;
+  - retain a legacy effect schema/type in a migration/compatibility module;
+  - remove current `heat` resource tags after Threat/follower metadata migration.
+- `src/game/schema/follower.schema.ts`
+  - remove `heat` from the current loss-condition enum after C6D migration;
+  - retain a legacy follower schema for old saves.
+- `src/game/schema/gear.schema.ts`
+  - remove current `heatCost`;
+  - preserve Scar-Sink Prayer stable-ID validation.
+- `src/game/engine/actions.ts`, `src/client/shared/types.ts`, and `src/server/roomServer.ts`
+  - move Heat cost/delta/result/action shapes into explicit compatibility input types;
+  - remove them from current projected/public interfaces.
+- `scripts/legacy-heat-validation.ts`
+  - retain the authoring ban;
+  - remove the two ordinary-prose approvals by distinguishing retired-resource phrasing from environmental lowercase prose.
+
+Save risk: medium. Old serialized pending effects and stale network payloads may use the removed discriminators.
+
+Reconnect risk: medium until legacy pending-effect fixtures use the compatibility importer.
+
+Tests:
+
+- current schemas reject every Heat construct directly;
+- legacy importer accepts old effect/action/card shapes;
+- equivalent current state is produced for Heat 0 and Heat N;
+- deep phone/TV key scans;
+- stale shop/result payload fixtures;
+- no-op event replay.
+
+Browser QA: phone/TV reconnect from a migrated fixture and shop/result rendering.
+
+Recommended commit: `refactor: isolate legacy heat types`
+
+## C6D — Legacy follower and Threat metadata migration
+
+Goal: remove Heat-shaped canonical metadata without breaking old follower or pending-Threat state.
+
+### Followers
+
+Migrate or explicitly retain:
+
+- `black-lantern-broker.lossCondition`;
+- `choir-defector.lossCondition`;
+- `gate-saint-acolyte.lossCondition`;
+- `saltflat-bone-reader.lossCondition`;
+- `lucy-hell-puppy` `heat` tag.
+
+The replacement must be a metadata decision only. It must not add follower loss, Wounds, Scars, costs, or fallback effects.
+
+### Threats
+
+Provide migration aliases for:
+
+- `threat_force_choose_heat_or_wound`;
+- `threat_force_discard_gear_or_gain_heat`;
+- `threat_combat_plus_one_if_player_has_heat`;
+- `threat_pay_heat_or_enemy_plus_two`;
+- `threat_defeat_reduce_heat`.
+
+Then remove deprecated canonical `heat` tags and retire unused sibling handlers only after old pending-Threat fixtures reconnect and finish without a consequence.
+
+Save risk: high for held followers and pending Threat resolution keys.
+
+Reconnect risk: high without exact fixtures.
+
+Tests:
+
+- old follower instance parses with unchanged ownership;
+- C5B notes remain exact and once-per-round;
+- old pending Threat key resumes as inert and completes once;
+- no role fallback;
+- no Heat tag/loss condition reaches projections;
+- current canonical records are Heat-free.
+
+Browser QA: owner follower activation/reconnect and pending Threat reconnect.
+
+Recommended commit: `refactor: migrate legacy heat metadata`
+
+## C6E — Documentation, test naming, and asset cleanup
+
+Goal: stop current developer/player guidance from teaching Heat while retaining clearly historical reports.
+
+### Current documentation
+
+Update:
+
+- `README.md`;
+- `docs/MVP_RULES.md`;
+- `docs/MOTION_BIBLE.md`;
+- active art-direction/prompt documentation that describes a Heat deck or Heat result icon.
+
+Do not edit historical retirement reports merely to reduce search totals.
+
+### Tests
+
+Rename misleading test descriptions such as “before heat is assigned” only when no fixture semantics depend on the wording. Keep explicit legacy-compatibility test names.
+
+### Assets and prompts
+
+Remove deprecated Heat deck/card-back/icon samples only after `audit:assets`, prompt export, and runtime catalog searches prove they are unreferenced. Retain stable Scar-Sink Prayer art paths unless an ID migration is approved.
+
+Save risk: none for docs; low for asset catalogs.
+
+Reconnect risk: none.
+
+Browser QA: current rules surfaces and visual smoke test for missing asset fallback.
+
+Recommended commit: `docs: remove current heat guidance`
+
+## C6F — Compatibility deletion decision
+
+Goal: decide whether to retain legacy compatibility indefinitely or remove it at a declared save/protocol boundary.
+
+### Decision inputs
+
+- supported lifetime of unversioned v0 and v1 saves;
+- whether persisted event logs are replayed or only archived;
+- whether older phone/TV clients are supported against the current server;
+- whether `legacyCompatibility.characterHeat` has archival product value;
+- whether stable IDs can be migrated without invalidating held inventory or art references.
+
+### If deleting
+
+Introduce a new snapshot boundary that:
+
+1. imports v0/v1/v2 through a dedicated legacy module;
+2. writes a new current snapshot with no Heat metadata;
+3. consumes or discards old Heat actions deterministically;
+4. validates ownership and pending-state identity;
+5. never converts Heat into Scars or another system.
+
+Then consider removing:
+
+- v0 `character.heat`;
+- v0/v1 `heatThreshold`;
+- `legacyCompatibility.characterHeat`;
+- legacy Heat action/effect discriminators;
+- Heat result/shop protocol fields and defensive filters;
+- legacy follower/Threat aliases already migrated in C6D.
+
+Save risk: highest.
+
+Reconnect risk: highest.
+
+Tests:
+
+- golden v0/v1/v2 fixtures;
+- mid-resolution event/pending-state fixtures;
+- current snapshot round trip;
+- mixed client/server protocol decision;
+- identical gameplay between old Heat 0 and Heat N;
+- full engine/integration/client/build/asset validation.
+
+Browser QA: migrated reconnect across lobby, movement, Threat, shop, scenario, and follower activation.
+
+Recommended commit: `refactor: retire legacy heat compatibility`
+
+## Recommended next action
+
+Proceed with **C6B only**, after a report or issue pins the exact safe-deletion list. Do not start schema/type narrowing or follower/Threat metadata migration in the same change.
+
+Compatibility field deletion remains deferred to C6F and requires an explicit save-version/release decision.
