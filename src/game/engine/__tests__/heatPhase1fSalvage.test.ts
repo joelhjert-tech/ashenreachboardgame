@@ -79,7 +79,7 @@ describe("Phase 1F low-severity Salvage rewards", () => {
   });
 
   it("shrinks only completed approvals while continuing to reject new Heat constructs", () => {
-    expect(APPROVED_LEGACY_HEAT_CONTENT_IDS.size).toBe(16);
+    expect(APPROVED_LEGACY_HEAT_CONTENT_IDS.size).toBe(7);
     for (const id of COMPLETED_IDS) expect(APPROVED_LEGACY_HEAT_CONTENT_IDS.has(id)).toBe(false);
     expect(validateLegacyHeatContentRecord("new.json", { id: "new-heat", reward: { type: "lose_heat", amount: 1 } })[0]).toMatch(/blocked legacy Heat construct/);
     expect(validateLegacyHeatContentRecord("salvage.json", { id: "new-salvage", reward: { type: "gain_salvage", amount: 1 } })).toEqual([]);

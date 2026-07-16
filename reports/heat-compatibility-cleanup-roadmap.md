@@ -237,3 +237,11 @@ Recommended commit: `refactor: retire legacy heat compatibility`
 Proceed with **C6C current schema/type narrowing** as a separate change. Do not combine it with follower/Threat metadata migration.
 
 Compatibility field deletion remains deferred to C6F and requires an explicit save-version/release decision.
+
+## C6D implementation status
+
+**Implemented.** Canonical content no longer contains the five follower or nine Threat metadata occurrences. Current schemas admit only canonical follower metadata and 33 canonical Threat keys. Legacy v0/v1/v2 schemas retain the historical follower fields/tags and ten exact Threat keys; normalization strips retired metadata, preserves two existing modifier behaviors, preserves the Wound half of the mixed failure key, and omits seven no-effect keys.
+
+Save version remains 2. Follower behavior, Threat distribution and resolution, projections, replay, and reconnect remain unchanged. The stable Nemesis ID `heat_on_threat_defeat` remains deferred to C6F rather than being misclassified as follower/Threat-card metadata.
+
+Next phase: **C6E documentation cleanup**.

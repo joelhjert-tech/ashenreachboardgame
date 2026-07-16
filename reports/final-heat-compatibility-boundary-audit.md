@@ -621,3 +621,20 @@ Pre-commit checks confirmed:
 - the +116 expansion remains unapproved;
 - the two quarantined audit files remain untracked;
 - quarantined SHA-256 hashes remain `2AD4637AB78F5E369ED85D5D81EB2F76C45592A94E0D48116FCC9A6D443E6EF8` and `608F0B5F664C7257009054C10A4FB8CB81A26E9EF5B4031588FB5CB15D6FC776`.
+
+## Phase C6D legacy metadata migration
+
+C6D removed the final retired Heat-shaped metadata from canonical follower and Threat definitions:
+
+- four follower `lossCondition: "heat"` fields;
+- Lucy's deprecated `heat` tag;
+- five canonical Threat Heat-shaped keys;
+- four canonical Threat `heat` resource tags.
+
+Current follower and Threat schemas reject those forms. Legacy v0/v1/v2 schemas still accept them and normalize them before current runtime. No metadata becomes Wounds, Scars, follower loss, Salvage, escalation, movement, notes, rewards, or another consequence.
+
+The two semantic Threat-key renames retain their existing authoritative behavior; the mixed historical failure retains exactly one Wound; obsolete keys resolve as omission/no additional effect. Follower count remains 24. Threat count remains 109 with Red 26 / Blue 35 / Yellow 48. Save version remains 2, and projection stripping remains active.
+
+Updated comparable classification: **4,104 Heat substrings across 242 files** — A 0, B 13, C 297, D 971, E 2,822, F 1, G 0. Canonical follower/Threat Heat metadata is zero. The stable Nemesis identifier `heat_on_threat_defeat` remains the single Category F reference deferred to C6F.
+
+**Verdict remains CONDITIONAL PASS.** C6E must correct the six misleading current-documentation statements, and C6F must decide the final save-version/compatibility deletion boundary. See `heat-compatibility-c6d-metadata-migration.md`.

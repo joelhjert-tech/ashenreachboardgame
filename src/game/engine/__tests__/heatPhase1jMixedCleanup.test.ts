@@ -8,7 +8,6 @@ type Entry = {
   file: string;
   branch: string;
   survivingEffects: unknown[];
-  retainedCompatibility?: string;
 };
 
 const TARGETS: Entry[] = [
@@ -30,13 +29,13 @@ const TARGETS: Entry[] = [
   { id: "gate-choir-executioner", file: "cards/threats/gate-choir-executioner.json", branch: "woundOnLoss.effects", survivingEffects: [{ type: "take_wound", amount: 2 }] },
   { id: "glass-mire-stalker", file: "cards/threats/glass-mire-stalker.json", branch: "woundOnLoss.effects", survivingEffects: [{ type: "take_wound", amount: 1 }] },
   { id: "hymn-scarred-zealot", file: "cards/threats/hymn-scarred-zealot.json", branch: "defeatReward.effects", survivingEffects: [{ type: "gain_note", text: "You silenced the zealot before the full formation answered." }] },
-  { id: "iron-lung-grenadier", file: "cards/threats/iron-lung-grenadier.json", branch: "woundOnLoss.effects", survivingEffects: [{ type: "take_wound", amount: 1 }], retainedCompatibility: "stable Heat-shaped reveal effect key" },
+  { id: "iron-lung-grenadier", file: "cards/threats/iron-lung-grenadier.json", branch: "woundOnLoss.effects", survivingEffects: [{ type: "take_wound", amount: 1 }] },
   { id: "iron-synod-chirurgeon", file: "cards/threats/iron-synod-chirurgeon.json", branch: "woundOnLoss.effects", survivingEffects: [{ type: "take_wound", amount: 2 }] },
   { id: "lalla-bubu-crownling", file: "cards/threats/lalla-bubu-crownling.json", branch: "woundOnLoss.effects", survivingEffects: [{ type: "take_wound", amount: 1 }] },
-  { id: "mirror-lord-envoy", file: "cards/threats/mirror-lord-envoy.json", branch: "woundOnLoss.effects", survivingEffects: [{ type: "take_wound", amount: 1 }], retainedCompatibility: "stable Heat-shaped combat effect key" },
+  { id: "mirror-lord-envoy", file: "cards/threats/mirror-lord-envoy.json", branch: "woundOnLoss.effects", survivingEffects: [{ type: "take_wound", amount: 1 }] },
   { id: "mirror-rot-interference", file: "cards/threats/mirror-rot-interference.json", branch: "failEffect.effects", survivingEffects: [{ type: "take_wound", amount: 1 }] },
   { id: "pale-cartel-shakedown", file: "cards/threats/pale-cartel-shakedown.json", branch: "woundOnLoss.effects", survivingEffects: [{ type: "take_wound", amount: 1 }] },
-  { id: "reliquary-judge", file: "cards/threats/reliquary-judge.json", branch: "woundOnLoss.effects", survivingEffects: [{ type: "take_wound", amount: 1 }], retainedCompatibility: "stable Heat-shaped reveal effect key" },
+  { id: "reliquary-judge", file: "cards/threats/reliquary-judge.json", branch: "woundOnLoss.effects", survivingEffects: [{ type: "take_wound", amount: 1 }] },
   { id: "saint-of-ashes-echo", file: "cards/threats/saint-of-ashes-echo.json", branch: "failEffect.effects", survivingEffects: [{ type: "gain_scar", scarId: "scar-wound-1" }] },
   { id: "shardvine-ambushers", file: "cards/threats/shardvine-ambushers.json", branch: "woundOnLoss.effects", survivingEffects: [{ type: "take_wound", amount: 1 }] },
   { id: "shardwind-front", file: "cards/threats/shardwind-front.json", branch: "failEffect.effects", survivingEffects: [{ type: "take_wound", amount: 1 }] },
@@ -71,9 +70,9 @@ describe("Phase 1J mixed Heat clause cleanup", () => {
   });
 
   it("removes only IDs with no remaining Heat construct from the allowlist", () => {
-    expect(APPROVED_LEGACY_HEAT_CONTENT_IDS.size).toBe(16);
+    expect(APPROVED_LEGACY_HEAT_CONTENT_IDS.size).toBe(7);
     for (const entry of TARGETS) {
-      expect(APPROVED_LEGACY_HEAT_CONTENT_IDS.has(entry.id)).toBe(Boolean(entry.retainedCompatibility));
+      expect(APPROVED_LEGACY_HEAT_CONTENT_IDS.has(entry.id)).toBe(false);
       expect(validateLegacyHeatContentRecord(entry.file, read(entry))).toEqual([]);
     }
   });

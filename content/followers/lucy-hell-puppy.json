@@ -3,7 +3,7 @@
   "name": "Lucy, Hell Puppy",
   "role": "companion",
   "tier": "legendary",
-  "tags": ["companion", "hell-puppy", "ember", "battle", "heat"],
+  "tags": ["companion", "hell-puppy", "ember", "battle"],
   "unique": true,
   "timingWindows": ["beforeBattleRoll", "beforeTakingDamage", "movement", "anyTime"],
   "artCardId": "artifact-lucy-hell-puppy",

@@ -8,6 +8,5 @@
     "text": "Gate-Saint acolyte omen: final-gate pressure can be answered with a prepared rite."
   },
   "useLimit": "oncePerRound",
-  "loyalty": 2,
-  "lossCondition": "heat"
+  "loyalty": 2
 }

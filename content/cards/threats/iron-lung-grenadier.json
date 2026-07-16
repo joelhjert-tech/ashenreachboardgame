@@ -11,7 +11,6 @@
   "stat": "forge",
   "difficulty": 6,
   "trophyValue": 4,
-  "revealEffectKey": "threat_force_choose_heat_or_wound",
   "combatEffectKeys": [
     "threat_force_enemy_roll_advantage"
   ],
@@ -33,7 +32,6 @@
   "rarity": "common",
   "tempo": "push",
   "resourceTags": [
-    "heat",
     "loot",
     "trophy",
     "wound"

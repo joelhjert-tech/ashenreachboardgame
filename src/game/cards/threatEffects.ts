@@ -1,6 +1,10 @@
 import type { EncounterEffect, ThreatCard } from "../schema/card.schema.js";
 import type { GameState, PlayerState } from "../schema/session.schema.js";
 import type { GearSlot } from "../schema/gear.schema.js";
+import {
+  isCanonicalThreatEffectKey,
+  type CanonicalThreatEffectKey
+} from "./threatEffectKeys.js";
 
 export type ThreatEffectTiming =
   | "onReveal"
@@ -34,12 +38,8 @@ type ThreatEffectDefinition = {
 };
 
 const note = (text: string): EncounterEffect => ({ type: "gain_note", text });
-const legacyPressure = (): EncounterEffect => ({ type: "gain_note", text: "No additional status change." });
-const heat = (_amount: number): EncounterEffect => legacyPressure();
-const heatAll = (_amount: number): EncounterEffect => legacyPressure();
 const wound = (amount: number): EncounterEffect => ({ type: "take_wound", amount });
 const trophy = (amount: number): EncounterEffect => ({ type: "gain_trophy", amount });
-const sequence = (...effects: EncounterEffect[]): EncounterEffect => ({ type: "sequence", effects });
 
 function slotBonus(ctx: ThreatEffectContext, slot: GearSlot): number {
   const gearId = ctx.player.character.equippedGear[slot];
@@ -52,14 +52,6 @@ function regionIsInner(ctx: ThreatEffectContext): boolean {
 }
 
 export const THREAT_CARD_EFFECTS = {
-  threat_heat_on_reveal: {
-    timing: "onReveal",
-    resolve: () => ({ effect: heat(1), summary: "Reveal: no additional status change." })
-  },
-  threat_all_heat_on_reveal: {
-    timing: "onReveal",
-    resolve: () => ({ effect: heatAll(1), summary: "Reveal: no additional status change." })
-  },
   threat_escalate_on_reveal: {
     timing: "onReveal",
     resolve: () => ({ effect: { type: "advance_escalation", amount: 1 }, summary: "Reveal: escalation pressure rises." })
@@ -71,14 +63,6 @@ export const THREAT_CARD_EFFECTS = {
   threat_force_immediate_combat: {
     timing: "onReveal",
     resolve: (ctx) => ({ effect: note(`${ctx.card.title} forces immediate combat.`) })
-  },
-  threat_force_choose_heat_or_wound: {
-    timing: "onReveal",
-    resolve: () => ({ effect: heat(1), summary: "Reveal choice causes no additional status change." })
-  },
-  threat_force_discard_gear_or_gain_heat: {
-    timing: "onReveal",
-    resolve: () => ({ effect: heat(1), summary: "Reveal choice causes no additional status change." })
   },
   threat_attach_to_space: {
     timing: "onReveal",
@@ -93,7 +77,7 @@ export const THREAT_CARD_EFFECTS = {
     resolve: (ctx) => ({ effect: note(`${ctx.spaceId ?? "This space"} is locked until ${ctx.card.title} is cleared.`) })
   },
 
-  threat_combat_plus_one_if_player_has_heat: {
+  threat_combat_plus_one_if_player_has_scar: {
     timing: "beforeCombat",
     resolve: (ctx) => ({ enemyBonusModifier: ctx.player.character.scars.length > 0 ? 1 : 0 })
   },
@@ -109,7 +93,7 @@ export const THREAT_CARD_EFFECTS = {
     timing: "beforeCombat",
     resolve: (ctx) => ({ playerBonusModifier: -slotBonus(ctx, "armor"), disabledSlots: ["armor"] })
   },
-  threat_pay_heat_or_enemy_plus_two: {
+  threat_enemy_plus_two: {
     timing: "beforeCombat",
     resolve: () => ({ enemyBonusModifier: 2, summary: "No legacy pressure payment is available; enemy difficulty increased by 2." })
   },
@@ -137,18 +121,6 @@ export const THREAT_CARD_EFFECTS = {
   threat_fail_take_two_wounds: {
     timing: "onFailure",
     resolve: () => ({ effect: wound(2) })
-  },
-  threat_fail_gain_heat: {
-    timing: "onFailure",
-    resolve: () => ({ effect: heat(1) })
-  },
-  threat_fail_gain_two_heat: {
-    timing: "onFailure",
-    resolve: () => ({ effect: heat(2) })
-  },
-  threat_fail_wound_and_heat: {
-    timing: "onFailure",
-    resolve: () => ({ effect: sequence(wound(1), heat(1)) })
   },
   threat_fail_gain_scar: {
     timing: "onFailure",
@@ -191,10 +163,6 @@ export const THREAT_CARD_EFFECTS = {
     timing: "onDefeat",
     resolve: () => ({ effect: note("Draw or claim one local artifact after defeating this threat.") })
   },
-  threat_defeat_reduce_heat: {
-    timing: "onDefeat",
-    resolve: () => ({ effect: note("No additional status change.") })
-  },
   threat_defeat_heal_wound: {
     timing: "onDefeat",
     resolve: () => ({ effect: { type: "heal_wound", amount: 1 } })
@@ -220,12 +188,12 @@ export const THREAT_CARD_EFFECTS = {
     timing: "beforeCombat",
     resolve: (ctx) => ({ difficultyModifier: ctx.escalationLevel >= 4 ? 2 : ctx.escalationLevel >= 2 ? 1 : 0 })
   }
-} satisfies Record<string, ThreatEffectDefinition>;
+} satisfies Record<CanonicalThreatEffectKey, ThreatEffectDefinition>;
 
-export type ThreatEffectKey = keyof typeof THREAT_CARD_EFFECTS;
+export type ThreatEffectKey = CanonicalThreatEffectKey;
 
 export function isThreatEffectKey(value: string): value is ThreatEffectKey {
-  return Object.hasOwn(THREAT_CARD_EFFECTS, value);
+  return isCanonicalThreatEffectKey(value);
 }
 
 export function getThreatEffectTiming(value: ThreatEffectKey): ThreatEffectTiming {

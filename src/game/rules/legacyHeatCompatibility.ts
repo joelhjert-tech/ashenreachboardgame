@@ -8,6 +8,10 @@ import { effectSchema, runtimeThreatCardSchema } from "../schema/card.schema.js"
 import { normalizeLegacyFollowerMetadata } from "../schema/follower.schema.js";
 import { normalizeLegacyGearItem } from "../schema/gear.schema.js";
 import type { PlayerState } from "../schema/session.schema.js";
+import {
+  normalizeLegacyThreatEffectKey,
+  type LegacyCompatibleThreatEffectKey
+} from "../cards/threatEffectKeys.js";
 
 export type LegacyHeatEffect = Extract<
   LegacyCompatibleEncounterEffect,
@@ -69,9 +73,39 @@ export function normalizeLegacyEncounterEffect(
 export function normalizeLegacyThreatCard(
   card: import("../schema/card.schema.js").LegacyCompatibleThreatCard
 ): ThreatCard {
+  const normalizeKey = (
+    key: LegacyCompatibleThreatEffectKey | undefined
+  ): import("../cards/threatEffectKeys.js").CanonicalThreatEffectKey | undefined => {
+    if (!key) return undefined;
+    return normalizeLegacyThreatEffectKey(key) ?? undefined;
+  };
+  const combatEffectKeys = card.combatEffectKeys
+    ?.map(normalizeLegacyThreatEffectKey)
+    .filter((key): key is NonNullable<typeof key> => key !== null);
+  const effectKey = normalizeKey(card.effectKey);
+  const revealEffectKey = normalizeKey(card.revealEffectKey);
+  const successEffectKey = normalizeKey(card.successEffectKey);
+  const defeatEffectKey = normalizeKey(card.defeatEffectKey);
+  const failEffectKey = normalizeKey(card.failEffectKey);
+  const {
+    effectKey: _legacyEffectKey,
+    revealEffectKey: _legacyRevealEffectKey,
+    combatEffectKeys: _legacyCombatEffectKeys,
+    successEffectKey: _legacySuccessEffectKey,
+    defeatEffectKey: _legacyDefeatEffectKey,
+    failEffectKey: _legacyFailEffectKey,
+    ...cardWithoutEffectKeys
+  } = card;
+
   return runtimeThreatCardSchema.parse({
-    ...card,
+    ...cardWithoutEffectKeys,
     resourceTags: card.resourceTags?.filter((tag) => tag !== "heat"),
+    ...(effectKey ? { effectKey } : {}),
+    ...(revealEffectKey ? { revealEffectKey } : {}),
+    ...(combatEffectKeys?.length ? { combatEffectKeys } : {}),
+    ...(successEffectKey ? { successEffectKey } : {}),
+    ...(defeatEffectKey ? { defeatEffectKey } : {}),
+    ...(failEffectKey ? { failEffectKey } : {}),
     ...(card.cardType === "hazard"
       ? {
           successEffect: card.successEffect

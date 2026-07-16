@@ -46,17 +46,8 @@ export const C1_BLOCKED_RUNTIME_HEAT_EFFECT_SIGNATURES = new Map<string, readonl
 export const OTHER_LEGACY_HEAT_COMPATIBILITY_APPROVALS: readonly OtherLegacyHeatCompatibilityApproval[] = [
   { id: "artifact-fandiablos", purpose: "stable Artifact/follower compatibility pair" },
   { id: "artifact-heat-sink-prayer", purpose: "stable serialized Scar-Sink Prayer card ID" },
-  { id: "black-lantern-broker", purpose: "legacy follower loss-condition value" },
-  { id: "choir-defector", purpose: "legacy follower loss-condition value" },
   { id: "fandiablos", purpose: "stable Artifact/follower compatibility pair" },
-  { id: "gate-saint-acolyte", purpose: "legacy follower loss-condition value" },
-  { id: "grave-lattice-reclaimer", purpose: "stable Heat-shaped threat effect key" },
   { id: "heat-sink-prayer", purpose: "stable serialized Scar-Sink Prayer gear ID" },
-  { id: "iron-lung-grenadier", purpose: "stable Heat-shaped threat effect key" },
-  { id: "lucy-hell-puppy", purpose: "legacy follower resource tag" },
-  { id: "mirror-lord-envoy", purpose: "stable Heat-shaped threat effect key" },
-  { id: "pale-marshal", purpose: "stable Heat-shaped threat effect key" },
-  { id: "reliquary-judge", purpose: "stable Heat-shaped threat effect key" },
   { id: "yard-rivet-brute", purpose: "transitional explicit compatibility ID retained from Phase 1A" }
 ];
 

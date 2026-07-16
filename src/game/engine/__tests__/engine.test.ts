@@ -14,6 +14,7 @@ import { getEquippedGearBonus } from "../gear.js";
 import { loadGear } from "../../content/gear.js";
 import { loadArtifactCards } from "../../content/artifacts.js";
 import { loadFollowers } from "../../content/followers.js";
+import { normalizeLegacyThreatCard } from "../../rules/legacyHeatCompatibility.js";
 
 function createGear(): Map<string, GearItem> {
   return new Map<string, GearItem>([
@@ -3353,7 +3354,7 @@ describe("active objects and table interaction", () => {
 describe("threat effect keys", () => {
   it("applies a reveal effect key when a threat is drawn", () => {
     const threats = createThreats();
-    threats.set("keyed-rats", {
+    threats.set("keyed-rats", normalizeLegacyThreatCard({
       id: "keyed-rats",
       type: "threat",
       cardType: "hazard",
@@ -3366,7 +3367,7 @@ describe("threat effect keys", () => {
       difficulty: 4,
       successEffect: { type: "gain_note", text: "Safe." },
       failEffect: { type: "legacy_compatibility_noop" }
-    });
+    }));
     const state = createState({
       phase: "sector",
       sectors: createState().sectors.map((sector) =>
@@ -3403,13 +3404,12 @@ describe("threat effect keys", () => {
     (server as any).runAutomaticPhases("seat-1");
 
     expect(server.getState().currentEncounter?.id).toBe("keyed-rats");
-    expect(server.getState().lastOutcomeSummary?.summary).toContain("No additional status change");
     expect(server.getState().lastOutcomeSummary?.summary).not.toContain("Heat");
   });
 
   it("applies table-wide and escalation reveal effect keys", () => {
     const heatedThreats = createThreats();
-    heatedThreats.set("keyed-broadcast", {
+    heatedThreats.set("keyed-broadcast", normalizeLegacyThreatCard({
       id: "keyed-broadcast",
       type: "threat",
       cardType: "hazard",
@@ -3422,7 +3422,7 @@ describe("threat effect keys", () => {
       difficulty: 6,
       successEffect: { type: "gain_note", text: "Safe." },
       failEffect: { type: "legacy_compatibility_noop" }
-    });
+    }));
     const heatedState = createState({
       phase: "sector",
       sectors: createState().sectors.map((sector) =>
@@ -3466,7 +3466,6 @@ describe("threat effect keys", () => {
 
     (heatedServer as any).runAutomaticPhases("seat-1");
 
-    expect(heatedServer.getState().lastOutcomeSummary?.summary).toContain("No additional status change");
     expect(heatedServer.getState().lastOutcomeSummary?.summary).not.toContain("Heat");
 
     const escalatedThreats = createThreats();

@@ -11,7 +11,6 @@
   "stat": "signal",
   "difficulty": 7,
   "trophyValue": 4,
-  "revealEffectKey": "threat_force_discard_gear_or_gain_heat",
   "combatEffectKeys": [
     "threat_disable_weapon_bonus"
   ],
@@ -34,7 +33,6 @@
   "tempo": "push",
   "resourceTags": [
     "gear",
-    "heat",
     "loot",
     "trophy",
     "wound"

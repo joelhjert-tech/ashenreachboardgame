@@ -371,3 +371,13 @@ An initial wildcard-focused Wound/Scar/reconnect command matched no files becaus
 C6A changes reports only. Authored typed Heat remains zero. Crownless Advocate and Saltflat Bone-Reader retain their exact approved notes. No gameplay, content, schema, migration, compatibility field, validation rule, test, phone/TV code, asset, save format, reconnect behavior, or expansion status changed.
 
 The previously recorded quarantined-audit hashes remain the historical baseline. No quarantined report was present as a stageable worktree file in this checkout, and the ignored research tree was not modified.
+
+## C6D metadata migration update
+
+C6D removed 14 retired metadata occurrences from canonical follower and Threat content: four follower Heat loss conditions, one follower Heat tag, five Threat Heat-shaped effect keys, and four Threat Heat resource tags.
+
+Current follower and Threat loaders now use canonical schemas only. Historical v0/v1/v2 objects continue through legacy-compatible schemas and exhaustive normalization. Two historical Threat keys map to their already-authoritative canonical behavior, `threat_fail_wound_and_heat` retains exactly its existing Wound, and seven obsolete keys are omitted without replacement.
+
+Canonical follower/Threat Heat metadata is now zero. Follower count remains 24; Threat count remains 109 with Red 26 / Blue 35 / Yellow 48. Save version remains 2. Projection stripping remains in place.
+
+Comparable reclassification: **4,104 occurrences across 242 files** — A 0, B 13, C 297, D 971, E 2,822, F 1, G 0. The verdict remains **CONDITIONAL PASS** because C6E documentation cleanup and C6F's final compatibility/version decision remain outstanding. See `heat-compatibility-c6d-metadata-migration.md`.

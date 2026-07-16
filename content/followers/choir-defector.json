@@ -4,6 +4,5 @@
   "role": "ritualist",
   "text": "Once per round, reduce an anomaly instability or signal difficulty by 1 before rolling.",
   "useLimit": "oncePerRound",
-  "loyalty": 3,
-  "lossCondition": "heat"
+  "loyalty": 3
 }

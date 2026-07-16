@@ -129,7 +129,7 @@ describe("Heat-to-Salvage reward batch 1", () => {
     expect(gainHeatAll).toHaveLength(0);
     expect(loseHeat).toHaveLength(0);
     expect(LEGACY_HEAT_EFFECT_APPROVALS).toHaveLength(2);
-    expect(APPROVED_LEGACY_HEAT_CONTENT_IDS.size).toBe(16);
+    expect(APPROVED_LEGACY_HEAT_CONTENT_IDS.size).toBe(7);
     expect(collectEffects("gain_salvage")).toHaveLength(10);
     expect(TARGET_IDS.every((id) => !heatIds.has(id))).toBe(true);
   });

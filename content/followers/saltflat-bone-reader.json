@@ -8,6 +8,5 @@
     "text": "Saltflat Bone-Reader: one scar, omen, or void-salt bargain became a safer route note."
   },
   "useLimit": "oncePerRound",
-  "loyalty": 2,
-  "lossCondition": "heat"
+  "loyalty": 2
 }

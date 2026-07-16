@@ -136,7 +136,7 @@ describe("Heat-to-Wound batch 1 physical losses", () => {
     expect(effects.filter((entry) => entry.effect === "gain_heat_all")).toHaveLength(0);
     expect(effects.filter((entry) => entry.effect === "lose_heat")).toHaveLength(0);
     expect(LEGACY_HEAT_EFFECT_APPROVALS).toHaveLength(2);
-    expect(APPROVED_LEGACY_HEAT_CONTENT_IDS.size).toBe(16);
+    expect(APPROVED_LEGACY_HEAT_CONTENT_IDS.size).toBe(7);
     expect(TARGETS.every((target) => !effects.some((entry) => entry.id === target.id))).toBe(true);
   });
 

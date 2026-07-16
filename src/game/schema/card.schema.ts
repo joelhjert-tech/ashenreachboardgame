@@ -5,6 +5,10 @@ import type { GearItem } from "./gear.schema.js";
 import { followerSchema, legacyCompatibleFollowerSchema } from "./follower.schema.js";
 import { encounterPaymentEffectSchema, type EncounterPaymentEffect } from "./encounterDecision.schema.js";
 import { forcedDisplacementEffectSchema, ownerSelectedForcedDisplacementEffectSchema, type ForcedDisplacementEffect, type OwnerSelectedForcedDisplacementEffect } from "./displacement.schema.js";
+import {
+  CANONICAL_THREAT_EFFECT_KEYS,
+  LEGACY_HEAT_THREAT_EFFECT_KEYS
+} from "../cards/threatEffectKeys.js";
 
 const followerGrantSchema = followerSchema;
 const legacyCompatibleFollowerGrantSchema = legacyCompatibleFollowerSchema;
@@ -395,6 +399,11 @@ export const cardResourceTagSchema = z.enum([
   "escalation"
 ]);
 export const legacyCompatibleCardResourceTagSchema = z.union([cardResourceTagSchema, z.literal("heat")]);
+export const threatEffectKeySchema = z.enum(CANONICAL_THREAT_EFFECT_KEYS);
+export const legacyCompatibleThreatEffectKeySchema = z.enum([
+  ...CANONICAL_THREAT_EFFECT_KEYS,
+  ...LEGACY_HEAT_THREAT_EFFECT_KEYS
+]);
 
 const threatBaseSchema = cardBaseSchema.extend({
   type: z.literal("threat"),
@@ -408,16 +417,22 @@ const threatBaseSchema = cardBaseSchema.extend({
   region: z.enum(["outer", "middle", "inner", "center", "global"]).optional(),
   stat: statSchema,
   difficulty: z.number().int().min(2).max(12),
-  effectKey: z.string().min(1).optional(),
-  revealEffectKey: z.string().min(1).optional(),
-  combatEffectKeys: z.array(z.string().min(1)).optional(),
-  successEffectKey: z.string().min(1).optional(),
-  defeatEffectKey: z.string().min(1).optional(),
-  failEffectKey: z.string().min(1).optional()
+  effectKey: threatEffectKeySchema.optional(),
+  revealEffectKey: threatEffectKeySchema.optional(),
+  combatEffectKeys: z.array(threatEffectKeySchema).optional(),
+  successEffectKey: threatEffectKeySchema.optional(),
+  defeatEffectKey: threatEffectKeySchema.optional(),
+  failEffectKey: threatEffectKeySchema.optional()
 });
 
 const legacyCompatibleThreatBaseSchema = threatBaseSchema.extend({
-  resourceTags: z.array(legacyCompatibleCardResourceTagSchema).optional()
+  resourceTags: z.array(legacyCompatibleCardResourceTagSchema).optional(),
+  effectKey: legacyCompatibleThreatEffectKeySchema.optional(),
+  revealEffectKey: legacyCompatibleThreatEffectKeySchema.optional(),
+  combatEffectKeys: z.array(legacyCompatibleThreatEffectKeySchema).optional(),
+  successEffectKey: legacyCompatibleThreatEffectKeySchema.optional(),
+  defeatEffectKey: legacyCompatibleThreatEffectKeySchema.optional(),
+  failEffectKey: legacyCompatibleThreatEffectKeySchema.optional()
 });
 
 export const HAZARD_SUCCESS_EFFECT_RETIREMENT_IDS = [
