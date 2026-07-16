@@ -6,9 +6,15 @@ import { afterEach, describe, expect, it } from "vitest";
 import { BOARD_SPACES } from "../../../game/data/boardSpaces.js";
 import type { PublicPatchPayload } from "../../shared/types.js";
 import { BoardMap } from "../BoardMap.js";
+import { getBoardMapRuntimeAssetPaths, getMapTileBackAssetPath } from "../mapAssetRegistry.js";
 
 afterEach(() => {
   cleanup();
+});
+
+it("registers the canonical map tile back as a runtime asset", () => {
+  expect(getMapTileBackAssetPath()).toBe("/assets/map/tiles/map_tile_back.png");
+  expect(getBoardMapRuntimeAssetPaths()).toContain("/assets/map/tiles/map_tile_back.png");
 });
 
 function createPatch(): PublicPatchPayload {

@@ -7,6 +7,7 @@ Assets are runtime data. Do not delete an asset just because TypeScript does not
 - Current board tiles: `public/assets/map/tiles/`
 - Current board base/region/corner assets: `public/assets/map/board/`, `public/assets/map/corners/`
 - Current generated card art: `public/assets/cards/`
+- Active card backs: `public/assets/cards/backs/`
 - Legacy/reference card art source: `public/assets/riftfall/cards/`
 - Runtime portraits, nemeses, tokens, UI frames: `public/assets/riftfall/`
 - Fallback card art: `public/assets/cards/fallbacks/`
@@ -27,6 +28,7 @@ Active card roots:
 - `public/assets/cards/scars/`
 - `public/assets/cards/escalations/`
 - `public/assets/cards/fallbacks/`
+- `public/assets/cards/backs/`
 
 Reference/deferred legacy root:
 
@@ -44,7 +46,8 @@ Remaining legacy files:
   - `mission_span_of_the_last_seal.png`
 - Deferred artifact:
   - `relic_choir_route_orb.png`
-- Card backs: contract, threat, artifact, and wargear backs remain reference/template material.
+- Card backs: active contract, threat, generated character, and generated artifact backs live under `public/assets/cards/backs/`; legacy artifact and wargear sources remain reference/template material.
+- Map tile reverse: the generated square tile back lives at `public/assets/map/tiles/map_tile_back.png` and is registered by `src/client/tv/mapAssetRegistry.ts`.
 
 ## Manifests And Lookups
 

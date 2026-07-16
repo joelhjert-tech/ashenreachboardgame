@@ -12,11 +12,13 @@ import {
   getCardFallbackArtPath,
   getCharacterPortraitPath,
   getEncounterFramePath,
+  getEncounterBattleCardBackPath,
   getEquipmentCardArtPath,
   getGearCardArtId,
   getGearCardArtPath,
   getGearCardArtType,
   getNemesisPortraitPath,
+  getOperativeBattleCardBackPath,
   getRuntimeAssetPaths
 } from "../assetPaths.js";
 
@@ -28,6 +30,25 @@ describe("card art paths", () => {
     );
     expect(getCardArtPath("threat", "cinder-veil-stalker")).toBe("/assets/cards/threats/red/cinder-veil-stalker.png");
     expect(getCardArtPath("anomaly", "anomaly-ashfall-murmur")).toBe("/assets/cards/anomalies/anomaly-ashfall-murmur.png");
+  });
+
+  it("selects active battle card backs from encounter lane and card family", () => {
+    expect(getOperativeBattleCardBackPath()).toBe("/assets/cards/backs/card_back_character.png");
+    expect(getEncounterBattleCardBackPath("threat", "cinder-veil-stalker")).toBe(
+      "/assets/cards/backs/card_back_threat_red.png"
+    );
+    expect(getEncounterBattleCardBackPath("threat", "glass-mire-stalker")).toBe(
+      "/assets/cards/backs/card_back_threat_blue.png"
+    );
+    expect(getEncounterBattleCardBackPath("threat", "soot-stained-cutpurse")).toBe(
+      "/assets/cards/backs/card_back_threat_yellow.png"
+    );
+    expect(getEncounterBattleCardBackPath("contract", "choir-quietus")).toBe(
+      "/assets/cards/backs/card_back_contract.png"
+    );
+    expect(getEncounterBattleCardBackPath("artifact", "artifact-yard")).toBe(
+      "/assets/cards/backs/card_back_artifact_v2.png"
+    );
   });
 
   it("treats equipment as a first-class card art type", () => {

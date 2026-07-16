@@ -1267,6 +1267,12 @@ describe("TvApp", () => {
     expect(within(overlay).getByTestId("host-battle-vs-block")).toHaveTextContent(/vs/i);
     expect(within(overlay).getByTestId("host-battle-vs-block")).toHaveTextContent(/battle resolving/i);
     expect(within(overlay).getByTestId("host-battle-vs-block")).toHaveTextContent(/cinder-veil stalker/i);
+    expect(within(overlay).getByTestId("host-battle-player-reveal")).toContainElement(within(overlay).getByTestId("host-battle-player"));
+    expect(within(overlay).getByTestId("host-battle-enemy-reveal")).toContainElement(within(overlay).getByTestId("host-battle-enemy"));
+    expect(within(overlay).getByTestId("host-battle-player-reveal").querySelector(".host-battle-card-back")).toHaveAttribute("aria-hidden", "true");
+    expect(within(overlay).getByTestId("host-battle-enemy-reveal").querySelector(".host-battle-card-back")).toHaveAttribute("aria-hidden", "true");
+    expect(within(overlay).getByTestId("host-battle-player-reveal").querySelector(".host-battle-card-back img")).toHaveAttribute("src", "/assets/cards/backs/card_back_character.png");
+    expect(within(overlay).getByTestId("host-battle-enemy-reveal").querySelector(".host-battle-card-back img")).toHaveAttribute("src", "/assets/cards/backs/card_back_threat_red.png");
     expect(within(overlay).getByTestId("host-battle-result-banner")).toHaveTextContent(/resolving/i);
     expect(overlay).toHaveTextContent(/base grit\s*\+2/i);
     expect(overlay).toHaveTextContent(/black route fuse\s*\+3/i);

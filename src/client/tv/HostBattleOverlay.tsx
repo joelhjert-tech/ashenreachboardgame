@@ -1,6 +1,10 @@
 import type { ReactElement } from "react";
 import { CardArtImage } from "../shared/CardArtImage.js";
-import { getCharacterPortraitPath } from "../shared/assetPaths.js";
+import {
+  getCharacterPortraitPath,
+  getEncounterBattleCardBackPath,
+  getOperativeBattleCardBackPath
+} from "../shared/assetPaths.js";
 import { ChallengeBadge } from "../shared/ChallengeBadge.js";
 import { getChallengeThemeStyle } from "../../game/ui/challengeTheme.js";
 import { statLabelById } from "../shared/statLabels.js";
@@ -14,6 +18,7 @@ interface ResolutionSideModel {
   eyebrow: string;
   detail: string;
   artUrl?: string | null;
+  cardBackUrl: string;
   cardId?: string | null;
   cardType?: "threat" | "anomaly" | "contract" | "artifact" | "scar" | "escalation" | null;
   stat: Stat;
@@ -245,6 +250,7 @@ function buildBattleModel(
   const statLabel = statLabelById[stat];
   const projectedOutcome = patch.payload.outcomeSummary;
   const sourceCardId = card?.id ?? encounter?.id ?? pendingEnemyRoll?.encounterCardId ?? null;
+  const opponentCardType = getOpponentCardType(resolution);
   const outcome = projectedOutcome && projectedOutcome.seatId === activePlayer.seatId && (
     (sourceCardId !== null && projectedOutcome.encounterCardId === sourceCardId) ||
     (resolution?.source === "movement" && projectedOutcome.movedToSectorId === card?.id)
@@ -297,6 +303,7 @@ function buildBattleModel(
       eyebrow: "Active operative",
       detail: activePlayer.character.archetype,
       artUrl: getCharacterPortraitPath(activePlayer.character.id),
+      cardBackUrl: getOperativeBattleCardBackPath(),
       stat,
       statLabel,
       statValue: playerBattleValue,
@@ -317,7 +324,8 @@ function buildBattleModel(
       eyebrow: card?.type ?? encounter?.cardType ?? "Opposition",
       detail: card?.flavor ?? encounter?.flavor ?? "Resolve the revealed threat or event.",
       cardId: card?.id ?? encounter?.id ?? pendingEnemyRoll?.encounterCardId ?? null,
-      cardType: getOpponentCardType(resolution),
+      cardType: opponentCardType,
+      cardBackUrl: getEncounterBattleCardBackPath(opponentCardType ?? "threat", sourceCardId ?? ""),
       stat,
       statLabel: opponentStatLabel,
       statValue: enemyBattleValue,
@@ -427,6 +435,32 @@ function HostBattleCard({ side, variant, dice }: { side: ResolutionSideModel; va
   );
 }
 
+function HostBattleCardReveal({
+  side,
+  variant,
+  dice
+}: {
+  side: ResolutionSideModel;
+  variant: "player" | "opponent";
+  dice: number[];
+}): ReactElement {
+  const sideClass = variant === "opponent" ? "enemy" : "player";
+
+  return (
+    <div
+      className={`host-battle-reveal-slot host-battle-reveal-slot-${sideClass}`}
+      data-testid={`host-battle-${sideClass}-reveal`}
+    >
+      <div className="host-battle-reveal-inner">
+        <div className={`host-battle-card-back host-battle-card-back-${sideClass}`} aria-hidden="true">
+          <img src={side.cardBackUrl} alt="" />
+        </div>
+        <HostBattleCard side={side} variant={variant} dice={dice} />
+      </div>
+    </div>
+  );
+}
+
 function HostBattleVsCore({ model }: { model: HostBattleDisplayModel }): ReactElement {
   const comparisonSymbol = getComparisonSymbol(model.playerTotal, model.enemyTotal);
 
@@ -495,11 +529,11 @@ export function HostBattleOverlay({
           testId="host-battle-fx-layer"
         />
 
-        <HostBattleCard side={model.player} variant="player" dice={model.playerDice} />
+        <HostBattleCardReveal side={model.player} variant="player" dice={model.playerDice} />
 
         <HostBattleVsCore model={model} />
 
-        <HostBattleCard side={model.opponent} variant="opponent" dice={model.enemyDice} />
+        <HostBattleCardReveal side={model.opponent} variant="opponent" dice={model.enemyDice} />
       </div>
     </section>
   );
