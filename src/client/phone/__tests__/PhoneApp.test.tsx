@@ -273,6 +273,11 @@ describe("PhoneApp", () => {
     });
 
     expect(picker).toBeInTheDocument();
+    expect(picker).toHaveClass("phone-character-snap-list");
+    expect(picker.parentElement?.parentElement).toHaveClass("phone-character-select-scroll");
+    for (const option of within(picker).getAllByRole("button")) {
+      expect(option).toHaveClass("phone-character-option");
+    }
     expect(screen.getAllByRole("heading", { name: /select operative/i })).toHaveLength(1);
     expect(screen.queryByRole("heading", { name: /choose character/i })).not.toBeInTheDocument();
     expect(screen.queryByText(/step 2/i)).not.toBeInTheDocument();

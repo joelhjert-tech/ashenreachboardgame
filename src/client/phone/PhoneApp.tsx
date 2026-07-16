@@ -563,7 +563,7 @@ export function PhoneApp(): ReactElement {
       <main className="phone-page phone-page-controller">
         <section className="phone-portrait-controller phone-portrait-controller-empty">
           <div className="phone-portrait-panel phone-portrait-lobby-panel">
-            <main className="phone-portrait-scroll phone-lobby-waiting-scroll" aria-label="Choose character">
+            <main className="phone-portrait-scroll phone-lobby-waiting-scroll phone-character-select-scroll" aria-label="Choose character">
               <section className="phone-lobby-ready-panel phone-character-waiting-panel phone-character-select-surface">
                 <div className="phone-character-waiting-topline">
                   <span>{auth.roomCode}</span>
@@ -590,7 +590,7 @@ export function PhoneApp(): ReactElement {
                     </button>
                   ))}
                 </div>
-                <div className="phone-character-grid" role="list" aria-label="Character">
+                <div className="phone-character-grid phone-character-snap-list" role="list" aria-label="Character">
                   {displayCharacters.map((character) => (
                     <button
                       key={character.id}

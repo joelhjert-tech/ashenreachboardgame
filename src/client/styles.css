@@ -3497,7 +3497,7 @@ select {
     transform 140ms ease;
 }
 
-.phone-character-option span {
+.phone-character-option > span {
   position: relative;
   z-index: 1;
   display: grid;
@@ -3563,6 +3563,160 @@ select {
 .phone-character-option-selected img {
   opacity: 1;
   transform: scale(1.03);
+}
+
+.phone-character-select-scroll {
+  overflow: hidden;
+  padding-bottom: max(0.35rem, env(safe-area-inset-bottom));
+}
+
+.phone-character-select-surface {
+  height: 100%;
+  min-height: 0;
+  grid-template-rows: auto auto auto auto minmax(0, 1fr) auto;
+  gap: 0.7rem;
+}
+
+.phone-character-select-surface .phone-character-filter-row {
+  margin-bottom: 0;
+}
+
+.phone-character-snap-list {
+  min-height: 0;
+  max-height: none;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.85rem;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  padding: 0.1rem 0.18rem 0.8rem 0;
+  scroll-padding-block: 0.1rem 0.8rem;
+  scroll-snap-type: y mandatory;
+  scrollbar-gutter: stable;
+  -webkit-overflow-scrolling: touch;
+}
+
+.phone-character-select-surface .phone-character-option {
+  min-height: clamp(22rem, 58dvh, 32rem);
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+  border-color: rgba(151, 172, 188, 0.38);
+  background: #070a0e;
+  box-shadow:
+    inset 0 0 0 1px rgba(236, 225, 203, 0.035),
+    0 0.75rem 1.8rem rgba(0, 0, 0, 0.28);
+}
+
+.phone-character-select-surface .phone-character-option img {
+  opacity: 0.9;
+}
+
+.phone-character-select-surface .phone-character-option > span {
+  gap: 0.28rem;
+  padding: 7.5rem 0.85rem 0.85rem;
+  background:
+    linear-gradient(180deg, transparent 0%, rgba(4, 7, 10, 0.12) 24%, rgba(4, 7, 10, 0.88) 57%, rgba(4, 7, 10, 0.98) 100%);
+}
+
+.phone-character-select-surface .phone-character-option > span > strong {
+  color: #fff5e4;
+  font-size: clamp(1.22rem, 5.3vw, 1.55rem);
+  line-height: 1.05;
+  text-shadow: 0 0.15rem 0.5rem rgba(0, 0, 0, 0.95);
+}
+
+.phone-character-select-surface .phone-character-option > span > small {
+  color: #d7dde2;
+  font-size: clamp(0.78rem, 3.2vw, 0.92rem);
+}
+
+.phone-character-select-surface .phone-character-presentation {
+  gap: 0.32rem;
+  margin-top: 0.18rem;
+}
+
+.phone-character-select-surface .phone-character-presentation > small {
+  color: rgba(230, 234, 236, 0.86);
+  font-size: 0.72rem;
+  line-height: 1.32;
+}
+
+.phone-character-select-surface .phone-character-role-row,
+.phone-character-select-surface .phone-character-stat-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+}
+
+.phone-character-select-surface .phone-character-role-row small,
+.phone-character-select-surface .phone-character-role-row em {
+  width: max-content;
+  max-width: 100%;
+  padding: 0.16rem 0.38rem;
+  border: 1px solid rgba(203, 176, 121, 0.3);
+  background: rgba(5, 7, 11, 0.72);
+  color: #d9e3e9;
+  font-size: 0.58rem;
+  font-style: normal;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  line-height: 1.1;
+  text-transform: uppercase;
+}
+
+.phone-character-select-surface .phone-character-role-row em {
+  border-color: rgba(113, 205, 166, 0.46);
+  color: #bce8cd;
+}
+
+.phone-character-select-surface .phone-character-stat-row {
+  margin-top: 0.3rem;
+}
+
+.phone-character-select-surface .phone-character-stat-row small {
+  padding: 0.23rem 0.38rem;
+  border: 1px solid color-mix(in srgb, var(--challenge-color, #8fb7da) 38%, rgba(143, 183, 218, 0.22));
+  background:
+    radial-gradient(circle at 0 50%, var(--challenge-soft, rgba(143, 183, 218, 0.12)), transparent 46%),
+    rgba(5, 9, 13, 0.76);
+  color: #dce3e8;
+  font-size: 0.64rem;
+  line-height: 1.1;
+  box-shadow: inset 0.14rem 0 0 var(--challenge-color, #8fb7da);
+}
+
+.phone-character-select-surface .phone-character-stat-row small strong {
+  display: inline;
+  color: var(--challenge-color, #f2ead9);
+}
+
+.phone-character-select-surface .phone-character-select-label {
+  width: max-content;
+  max-width: 100%;
+  margin-top: 0.2rem;
+  padding: 0.32rem 0.52rem;
+  border: 1px solid rgba(126, 183, 239, 0.42);
+  border-radius: 6px;
+  background: rgba(12, 24, 34, 0.84);
+  color: #e1efff;
+  font-size: 0.66rem;
+  font-weight: 850;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+@media (max-height: 700px) {
+  .phone-character-select-surface {
+    gap: 0.5rem;
+  }
+
+  .phone-character-select-surface .phone-character-option {
+    min-height: clamp(20rem, 56dvh, 25rem);
+  }
+
+  .phone-character-select-surface .phone-character-option > span {
+    padding-top: 5rem;
+  }
 }
 
 .phone-join-layout-characterSelect .phone-character-grid {
