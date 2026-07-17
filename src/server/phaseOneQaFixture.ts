@@ -11,6 +11,7 @@ export type PhaseOneQaFixture =
   | { kind: "map-transition"; stage: "guardian-locked" | "guardian-cleared" | "core-locked" | "core-cleared" }
   | { kind: "relic-trade"; completedContracts: 0 | 1 | 2 | 3 }
   | { kind: "follower"; stage: "acquired" | "used" | "reconnected" }
+  | { kind: "host-state"; stage: "scenario-preparation" | "disconnected" | "victory" | "loss" }
   | {
       kind: "phone-battle";
       stage: "encounter" | "battle-setup" | "pending-enemy-roll" | "rolled-result" | "success" | "defeat";
@@ -161,13 +162,37 @@ function setPhoneBattleFixture(
 }
 
 export function applyPhaseOneQaFixture(state: GameState, seatId: string, fixture: PhaseOneQaFixture): void {
-  if (state.status !== "active") throw new Error("QA fixture requires an active session");
+  if (state.status !== "active" && fixture.kind !== "host-state") throw new Error("QA fixture requires an active session");
   clearResolution(state);
   state.sequence += 1;
   state.activeSeatIndex = Math.max(0, state.turnOrder.indexOf(seatId));
 
   if (fixture.kind === "phone-battle") {
     setPhoneBattleFixture(state, seatId, fixture.stage);
+    return;
+  }
+
+  if (fixture.kind === "host-state") {
+    const player = state.players.find((entry) => entry.seatId === seatId);
+    const seat = state.seats.find((entry) => entry.seatId === seatId);
+    if (!player || !seat) throw new Error(`QA fixture cannot find ${seatId}`);
+    state.phase = "action";
+    state.status = fixture.stage === "victory" || fixture.stage === "loss" ? "ended" : "active";
+    seat.connected = fixture.stage !== "disconnected";
+    state.scenarioPreparation.resources = fixture.stage === "scenario-preparation" ? { seals: 2, wards: 1 } : {};
+    state.scenarioPreparation.completedObjectiveIds = fixture.stage === "scenario-preparation" ? ["qa-ward-restored"] : [];
+    if (fixture.stage === "victory" || fixture.stage === "loss") {
+      state.winnerSeatId = fixture.stage === "victory" ? seatId : null;
+      state.scenarioResult = {
+        status: fixture.stage,
+        victoryConditionId: fixture.stage === "victory" ? "qa-final-confrontation" : null,
+        sourceType: "confrontation",
+        sourceId: "qa-host-endgame",
+        winningSeatId: fixture.stage === "victory" ? seatId : null,
+        shared: fixture.stage === "victory",
+        achievedAtSequence: state.sequence
+      };
+    }
     return;
   }
 
