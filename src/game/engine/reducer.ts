@@ -2769,7 +2769,13 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
           ...entry,
           character: {
             ...entry.character,
-            activeContract: null
+            activeContract: null,
+            // Store the card itself as durable progression currency.  The event log
+            // remains historical, but never decides what can be spent.
+            completedContracts: [
+              ...(entry.character.completedContracts ?? []),
+              { contractId: contract.id, name: contract.name, completedAt: completeAction.createdAt }
+            ]
           }
         })),
         lastOutcomeSummary: {

@@ -2592,7 +2592,7 @@ export class GameRoomServer {
           type: "ACCEPT_CONTRACT",
           seatId: intent.seatId,
           contractId: intent.contractId,
-          contract: this.resolveContract(this.contracts.get(intent.contractId)),
+          contract: this.resolveContract(this.contracts.get(intent.contractId), intent.seatId),
           createdAt
         } satisfies AcceptContractAction;
       case "COMPLETE_CONTRACT":
@@ -2600,7 +2600,7 @@ export class GameRoomServer {
           type: "COMPLETE_CONTRACT",
           seatId: intent.seatId,
           contractId: intent.contractId,
-          contract: this.resolveContract(this.contracts.get(intent.contractId)),
+          contract: this.resolveContract(this.contracts.get(intent.contractId), intent.seatId),
           createdAt
         } satisfies CompleteContractAction;
       case "SCENARIO_CONFRONTATION_REQUESTED":
@@ -2836,10 +2836,7 @@ export class GameRoomServer {
   }
 
   private getCompletedContractCount(seatId: string, state: GameState = this.state): number {
-    return state.eventLog.filter((entry) => {
-      const event = entry as { type?: string; seatId?: string } | undefined;
-      return event?.type === "COMPLETE_CONTRACT" && event.seatId === seatId;
-    }).length;
+    return state.players.find((player) => player.seatId === seatId)?.character.completedContracts?.length ?? 0;
   }
 
   private hasScenarioArtifact(player: PlayerState): boolean {
@@ -6511,18 +6508,20 @@ export class GameRoomServer {
       const player = seatId ? this.state.players.find((entry) => entry.seatId === seatId) : null;
       const sourceSectorId = player?.sectorId;
       const sector = sourceSectorId ? this.state.sectors.find((entry) => entry.id === sourceSectorId) : null;
-      const artifactId = sector?.encounterDecks.artifact[0] ?? undefined;
-      const artifact = artifactId ? this.artifacts.get(artifactId) : null;
+      const localArtifactId = sector?.encounterDecks.artifact[0] ?? undefined;
+      const localArtifact = localArtifactId ? this.artifacts.get(localArtifactId) : null;
+      const artifact = localArtifact ?? [...this.artifacts.values()].find((entry) => entry.missionRewardEligible) ?? null;
+      const artifactId = artifact?.id;
 
-      if (!sourceSectorId || !artifactId || !artifact) {
-        return { type: "gain_note", text: "No local artifact was available to reclaim." };
+      if (!artifactId || !artifact) {
+        return { type: "gain_note", text: "No mission-eligible artifact was available to claim." };
       }
 
       return this.resolveEffect(
         this.combineEffects([
           artifact.resolveEffect,
-          { type: "consume_artifact", artifactId, sourceSectorId }
-        ]) ?? { type: "consume_artifact", artifactId, sourceSectorId },
+          ...(localArtifact && sourceSectorId ? [{ type: "consume_artifact" as const, artifactId, sourceSectorId }] : [])
+        ]) ?? artifact.resolveEffect,
         seatId,
         sourceCardId
       );
@@ -6650,11 +6649,11 @@ export class GameRoomServer {
     return deck[this.randomSource.nextInt(deck.length)] ?? null;
   }
 
-  private resolveContract(contract: ContractCard | undefined): ContractCard | undefined {
+  private resolveContract(contract: ContractCard | undefined, seatId?: string): ContractCard | undefined {
     return contract
       ? {
           ...contract,
-          reward: this.resolveEffect(contract.reward)
+          reward: this.resolveEffect(contract.reward, seatId)
         }
       : undefined;
   }
@@ -7104,13 +7103,7 @@ function buildPhoneObjectUseStates(state: GameState, player: PlayerState | undef
 }
 
 function getCompletedContractCountForProjection(state: GameState, seatId: string): number {
-  return state.eventLog.filter((entry) => {
-    if (typeof entry !== "object" || entry === null || !("type" in entry) || !("seatId" in entry)) {
-      return false;
-    }
-
-    return (entry as { type?: string; seatId?: string }).type === "COMPLETE_CONTRACT" && (entry as { seatId?: string }).seatId === seatId;
-  }).length;
+  return state.players.find((player) => player.seatId === seatId)?.character.completedContracts?.length ?? 0;
 }
 
 function getPublicShopStatus(state: GameState, player: PlayerState): "open" | "locked" | "exhausted" | "dangerous" {
@@ -8723,6 +8716,7 @@ export function createTvProjection(
         ...(getCharacterPresentation(player.character.id) ? { presentation: getCharacterPresentation(player.character.id) } : {}),
         status: player.character.status,
         activeContract: player.character.activeContract,
+        completedContracts: player.character.completedContracts?.length ?? 0,
         stats: player.character.stats,
         statUpgrades: player.character.statUpgrades ?? {},
         trophies: player.character.trophies,

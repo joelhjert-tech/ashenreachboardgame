@@ -34,6 +34,12 @@ export const activeContractSchema = z
   })
   .nullable();
 
+export const completedContractSchema = z.object({
+  contractId: z.string().min(1),
+  name: z.string().min(1),
+  completedAt: z.string().min(1)
+});
+
 export const trophyPileEntrySchema = z.object({
   cardId: z.string().min(1),
   name: z.string().min(1),
@@ -65,6 +71,7 @@ export const characterSchema = z.object({
   wounds: z.number().int().min(0),
   scars: z.array(z.string()),
   activeContract: activeContractSchema,
+  completedContracts: z.array(completedContractSchema).optional(),
   heldGear: z.array(gearItemSchema),
   equippedGear: equippedGearSchema,
   followers: z.array(followerSchema).optional(),
@@ -82,5 +89,6 @@ export type Ability = z.infer<typeof abilitySchema>;
 export type TrophyPileEntry = z.infer<typeof trophyPileEntrySchema>;
 export type CharacterStatus = z.infer<typeof characterStatusSchema>;
 export type ActiveContract = z.infer<typeof activeContractSchema>;
+export type CompletedContract = z.infer<typeof completedContractSchema>;
 export type EquippedGear = z.infer<typeof equippedGearSchema>;
 export type Character = z.infer<typeof characterSchema>;

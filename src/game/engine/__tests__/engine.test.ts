@@ -8145,6 +8145,14 @@ describe("contracts", () => {
     const player = readyServer.getState().players.find((entry) => entry.seatId === "seat-1");
     expect(player?.character.activeContract).toBeNull();
     expect(player?.character.heat).toBe(2);
+    expect(player?.character.completedContracts?.map((contract) => contract.contractId)).toEqual(["choir-hush-census"]);
+
+    runIntent(readyServer, {
+      type: "COMPLETE_CONTRACT",
+      seatId: "seat-1",
+      contractId: "choir-hush-census"
+    });
+    expect(readyServer.getState().players.find((entry) => entry.seatId === "seat-1")?.character.completedContracts).toHaveLength(1);
   });
 
   it("accepts a contract, wins two combats across turns, completes it, and receives the reward", () => {
@@ -8267,6 +8275,7 @@ describe("contracts", () => {
     const player = server.getState().players.find((entry) => entry.seatId === "seat-1");
     expect(player?.character.activeContract).toBeNull();
     expect(player?.character.heldGear.some((item) => item.id === "veil-hook")).toBe(true);
+    expect(player?.character.completedContracts?.map((contract) => contract.contractId)).toContain("compact-cleanse-ledger");
   });
 });
 
