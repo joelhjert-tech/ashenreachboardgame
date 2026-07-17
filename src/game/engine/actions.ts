@@ -339,6 +339,7 @@ export interface ShopPurchaseResolvedAction extends BaseAction {
   cost: ShopServiceCost;
   gainedGear: GearItem;
   discardedStockIds: string[];
+  spentCompletedContractIds?: string[];
   summary: string;
 }
 

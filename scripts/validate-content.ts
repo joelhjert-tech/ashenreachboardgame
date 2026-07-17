@@ -44,6 +44,12 @@ import {
   type LegacyHeatContentRecord
 } from "./legacy-heat-validation.js";
 import { validateForcedDisplacementContentRecord } from "./forced-displacement-validation.js";
+import { getShopGearCost, getShopGearSellValue } from "../src/game/rules/shopAvailability.js";
+import {
+  ARTIFACT_EXCHANGE_CONTRACT_COST,
+  NORMAL_STARTING_SALVAGE,
+  SOLO_STARTING_SALVAGE
+} from "../src/game/rules/startingLoadout.js";
 
 const sectorsRoot = join(process.cwd(), "content", "sectors");
 const contentRoot = join(process.cwd(), "content");
@@ -200,6 +206,7 @@ validateScenarioCoverage();
 validateCanonicalDecks();
 validateFollowerAcquisitionCoverage();
 validateLoreLanguage();
+validateCanonicalEconomy();
 
 const sectorFiles = readdirSync(sectorsRoot).filter((entry) => entry.endsWith(".json"));
 
@@ -249,6 +256,12 @@ for (const character of characters.values()) {
 }
 
 for (const card of threats.values()) {
+  if (card.cardType === "enemy" && (!Number.isInteger(card.trophyValue) || card.trophyValue <= 0)) {
+    errors.push(`${card.id} must define a positive integer Trophy value`);
+  }
+  if (card.cardType !== "enemy" && "trophyValue" in card) {
+    errors.push(`${card.id} is not an enemy and cannot define a Trophy value`);
+  }
   const rewardEffect = card.cardType === "enemy" ? card.defeatReward : card.successEffect;
   if (rewardEffect) validateEffect(rewardEffect, `${card.id} reward`);
   const failureEffect = card.cardType === "enemy" ? card.woundOnLoss : card.failEffect;
@@ -337,6 +350,37 @@ if (errors.length > 0) {
 console.log(
   `Content validation passed (${characters.size} characters, ${gear.size} gear, ${threats.size} threats, ${contracts.size} contracts, ${anomalies.size} anomalies, ${artifacts.size} artifacts, ${followers.size} followers, ${scars.size} scars, ${escalations.size} escalations, ${afflictions.size} afflictions)`
 );
+
+function validateCanonicalEconomy(): void {
+  if (NORMAL_STARTING_SALVAGE !== 3 || SOLO_STARTING_SALVAGE !== 4) {
+    errors.push("Canonical starting Salvage must remain 3 in multiplayer and 4 in solo play");
+  }
+  if (ARTIFACT_EXCHANGE_CONTRACT_COST !== 3) {
+    errors.push("Artifact exchange must cost exactly three completed Contracts");
+  }
+
+  const artifactGear = [...gear.values()].filter((item) => item.tier === "artifact" && !item.id.startsWith("qa_"));
+  const normalShopGear = [...gear.values()].filter((item) => item.tier !== "artifact" && item.normalShopCommon === true);
+  if (artifacts.size !== 30) errors.push(`Canonical Artifact card count must be 30; found ${artifacts.size}`);
+  if (artifactGear.length === 0) errors.push("Artifact exchange has no eligible Artifact gear definitions");
+  if (normalShopGear.length !== 30) errors.push(`Canonical normal shop Equipment count must be 30; found ${normalShopGear.length}`);
+
+  for (const character of characters.values()) {
+    if (character.qaOnly) continue;
+    for (const gearId of character.startingGear ?? []) {
+      if (gear.get(gearId)?.tier === "artifact") {
+        errors.push(`Character ${character.id} cannot start with Artifact ${gearId}`);
+      }
+    }
+  }
+
+  for (const item of normalShopGear) {
+    const price = getShopGearCost(item);
+    const sellValue = getShopGearSellValue(item);
+    if (!Number.isInteger(price) || price <= 0) errors.push(`Shop Equipment ${item.id} has invalid price ${price}`);
+    if (sellValue !== null && sellValue > price) errors.push(`Shop Equipment ${item.id} sells for more than its price`);
+  }
+}
 
 function validateContentFloors(): void {
   const contentTargets = [

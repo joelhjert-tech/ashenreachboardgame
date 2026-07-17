@@ -746,9 +746,23 @@ function applyShopCostOnlyToPlayer(player: PlayerState, cost: ShopServiceCost): 
 }
 
 function applyShopPurchaseToPlayer(player: PlayerState, action: ShopPurchaseResolvedAction): PlayerState {
-  const afterCost = applyShopCostOnlyToPlayer(player, action.cost);
+  const afterCost = applyShopCostOnlyToPlayer(player, {
+    ...action.cost,
+    completedContracts: action.spentCompletedContractIds ? 0 : action.cost.completedContracts
+  });
+  const afterExactContractSpend = action.spentCompletedContractIds
+    ? {
+        ...afterCost,
+        character: {
+          ...afterCost.character,
+          completedContracts: (afterCost.character.completedContracts ?? []).filter(
+            (contractId) => !action.spentCompletedContractIds!.includes(contractId)
+          )
+        }
+      }
+    : afterCost;
 
-  return addHeldGearToPlayer(afterCost, {
+  return addHeldGearToPlayer(afterExactContractSpend, {
     type: "gain_gear",
     gearId: action.gainedGear.id,
     gear: action.gainedGear
@@ -776,7 +790,7 @@ function canPayShopActionCost(player: PlayerState, cost: ShopServiceCost): strin
     return "Not enough Trophies";
   }
   if ((player.character.completedContracts ?? []).length < (cost.completedContracts ?? 0)) {
-    return "Need completed Missions";
+    return "Need completed Contracts";
   }
 
   return null;
@@ -4055,6 +4069,20 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
 
       if (costError) {
         return reject(state, action, costError);
+      }
+
+      if (purchaseAction.serviceId === "trade-missions-for-artifact") {
+        const spentIds = purchaseAction.spentCompletedContractIds ?? [];
+        const currentIds = new Set(player.character.completedContracts ?? []);
+        if (
+          purchaseAction.gainedGear.tier !== "artifact" ||
+          purchaseAction.cost.completedContracts !== 3 ||
+          spentIds.length !== 3 ||
+          new Set(spentIds).size !== 3 ||
+          spentIds.some((contractId) => !currentIds.has(contractId))
+        ) {
+          return reject(state, action, "Artifact exchanges require three exact completed Contracts");
+        }
       }
 
       const nextPlayers = updateActivePlayer(state, purchaseAction.seatId, (entry) => applyShopPurchaseToPlayer(entry, purchaseAction));

@@ -27,7 +27,7 @@ export const SHOP_FAILURE_LABELS: Record<ShopFailureReason, string> = {
   invalidItem: "That item cannot be sold here."
 };
 
-export type ShopStockServiceId = "buy-gear" | "risk-action";
+export type ShopStockServiceId = "buy-gear" | "trade-missions-for-artifact";
 
 const shopCapableTags = new Set(["shop", "risk-shop", "salvage", "recovery", "shrine"]);
 
@@ -63,7 +63,7 @@ export function getShopStockCategoryForService(
   boardSpace: BoardSpaceDefinition,
   serviceId: string
 ): ShopCategory | null {
-  if (serviceId === "risk-action") {
+  if (serviceId === "trade-missions-for-artifact") {
     return "relic-dealer";
   }
 
@@ -122,6 +122,10 @@ export function getGearSellRestriction(
   item: GearItem,
   character: Pick<Character, "id" | "qaOnly">
 ): ShopFailureReason | undefined {
+  if (item.tier === "artifact") {
+    return SHOP_FAILURE_REASONS.itemNotSellable;
+  }
+
   if (isQaShopGear(item) && !canUseQaShopGear(character)) {
     return SHOP_FAILURE_REASONS.itemNotSellable;
   }
