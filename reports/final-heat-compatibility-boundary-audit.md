@@ -1,5 +1,7 @@
 # Final Heat compatibility-boundary audit
 
+> C6G closure (2026-07-17): the final obsolete canonical Nemesis identifier has been renamed without behavior, Category F and ambiguity are zero, and the complete boundary now passes. Required v0–v2 imports remain supported under the declared save-version-2 policy. Final verdict: **PASS**.
+
 > C6C update (2026-07-16): current schemas and TypeScript models have been separated from legacy Heat-compatible input models. Current gameplay types cannot author or emit Heat; legacy parsing and reconnect remain supported through explicit normalization. Verdict remains **CONDITIONAL PASS** pending C6D, C6E, and C6F.
 
 Date: 2026-07-15
@@ -658,3 +660,13 @@ Clean new v2 snapshots emit no retired gameplay fields or metadata. Migrated sta
 Required, isolated, intentional compatibility is allowed to coexist with PASS. The sole remaining condition is the Category F Dying Star `specialRuleId` value `heat_on_threat_defeat`, which has no behavior reader and is approved for a separate current-definition rename to `no_additional_effect`. Old snapshots already accept arbitrary nonempty special-rule IDs and remain parseable without a compatibility alias.
 
 **Verdict remains CONDITIONAL PASS** at the report-only checkpoint. After the narrow identifier rename and a final zero-boundary rerun, PASS is permitted without deleting v0–v2 compatibility. See `heat-compatibility-c6f-release-decision.md` and `legacy-save-support-policy.md`.
+
+## Phase C6G final closure
+
+C6G renamed the inert current Relay metadata value from `heat_on_threat_defeat` to `no_additional_effect`. No behavioral reader exists for either value: the only `specialRuleId` gameplay branch is the independent `cleave` rule. No handler or replacement consequence was introduced.
+
+Historical version-2 input carrying the old string remains parseable because `specialRuleId` accepts any nonempty legacy string. Focused tests prove the neutral current value produces no Wound, Scar, Salvage, escalation, pending decision, post-spawn result text, or additional event; normal Nemesis reward and completion behavior remains intact.
+
+Final comparable classification: **4,099 Heat substrings across 239 files** — A 0, B 13, C 297, D 973, E 2,816, F 0, G 0. All active/mechanical zero boundaries pass, current misleading documentation is zero, required compatibility is isolated and policy-approved, and future deletion requires an explicit v3 boundary.
+
+**Final verdict: PASS.** C6B through C6G are complete. See `heat-compatibility-c6g-final-closure.md`.

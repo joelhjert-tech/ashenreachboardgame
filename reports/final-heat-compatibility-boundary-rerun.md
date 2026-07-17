@@ -1,5 +1,7 @@
 # Final Heat compatibility boundary rerun
 
+> C6G closure (2026-07-17): the final obsolete canonical Nemesis identifier is now neutral, Category F is zero, and every final zero-boundary item passes. Required v0–v2 import compatibility remains isolated under the C6F save-version-2 policy. Final verdict: **PASS**. See `reports/heat-compatibility-c6g-final-closure.md`.
+
 > C6C update (2026-07-16): current canonical schemas, actions, state effects, result types, shop payloads, and client models now exclude Heat. Supported v0/v1/v2 Heat shapes are accepted only through dedicated legacy schemas and normalization adapters. The verdict remains **CONDITIONAL PASS** pending C6D metadata work, C6E documentation cleanup, and the C6F save-version/deletion decision. See `reports/heat-compatibility-c6c-schema-type-narrowing.md`.
 
 Date: 2026-07-16
@@ -399,3 +401,15 @@ Intentional, isolated, required, documented, and tested compatibility is allowed
 The sole remaining condition is the current Dying Star `specialRuleId` value `heat_on_threat_defeat`. It has no behavior reader and is approved for a separate neutral rename to `no_additional_effect`; old snapshots remain parseable because the field accepts any nonempty string.
 
 **Verdict remains CONDITIONAL PASS** until that narrow Group 1 implementation lands and the final boundary is rerun. No broad compatibility deletion or save-version change is approved. See `heat-compatibility-c6f-release-decision.md` and `legacy-save-support-policy.md`.
+
+## C6G final closure
+
+C6G changed the current `nemesis_iron_vicar_orm` Relay template's inert `specialRuleId` from `heat_on_threat_defeat` to `no_additional_effect`. The only gameplay reader of `specialRuleId` checks for `cleave`; no handler exists or was added for either the old or new value. Stable IDs, triggers, rewards, Rivalry privacy, projections, replay, reconnect, and save version remain unchanged.
+
+A version-2 historical snapshot containing the old identifier parses and reserializes successfully. The schema continues accepting nonempty legacy strings, so no alias, migration branch, or version increment is needed.
+
+Final comparable classification: **4,099 occurrences across 239 files** — A 0, B 13, C 297, D 973, E 2,816, F 0, G 0. The two additional Category D occurrences are narrow historical snapshot assertions; the sole Category F current-model occurrence is gone. Authored Heat, canonical Heat metadata, runtime reads/writes, threshold mutations, Heat-to-Scar paths, mechanical client presentation, parsing failures, reconnect replays, misleading current guidance, dead residue, and ambiguity are all zero.
+
+Required v0–v2 compatibility remains intentional under the C6F policy and may coexist with PASS. Compatibility deletion remains a future explicit v3 release decision, not unfinished retirement work.
+
+**Final verdict: PASS.** See `heat-compatibility-c6g-final-closure.md`.

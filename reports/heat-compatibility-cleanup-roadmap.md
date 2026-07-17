@@ -6,7 +6,7 @@ Date: 2026-07-16
 
 Based on: `reports/final-heat-compatibility-boundary-rerun.md`
 
-Current verdict: **CONDITIONAL PASS**
+Current verdict: **PASS** (C6G closure, 2026-07-17)
 
 This is a planning document. No compatibility removal occurred in C6A.
 
@@ -269,3 +269,11 @@ Approved next implementation group:
 Recommended implementation commit: `refactor: retire final heat-named nemesis id`.
 
 Optional v3 migration remains deferred until a future release decision.
+
+## C6G final-closure status
+
+**Implemented and verified.** The current `nemesis_iron_vicar_orm` Relay template now uses neutral descriptive metadata `specialRuleId: "no_additional_effect"`. The previous Heat-named value remains accepted only when present in historical snapshot input. No alias or handler was added because no behavioral reader exists.
+
+Final comparable classification: **4,099 occurrences across 239 files** — A 0, B 13, C 297, D 973, E 2,816, F 0, G 0. The final zero-boundary matrix passes, and the retirement verdict is **PASS**.
+
+C6B, C6C, C6D, C6E, C6F, and C6G are complete. The only future work is an optional product/release decision to introduce a v3 save boundary. Until then, v0/v1/legacy-compatible-v2 import support remains frozen, inert, tested, and intentional; it is not an open retirement blocker.
