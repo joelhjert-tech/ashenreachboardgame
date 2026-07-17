@@ -75,6 +75,17 @@ Phase 1J removes 34 generic Heat no-ops from sequences that retain enforced type
 
 Current inspection corrects `anomaly-red-suture-field` from the Phase 1D Heat-only population: its sequence has an enforced `gain_note` sibling, so its obsolete Heat member is removed here and its proposed Wound replacement is superseded. The corrected remaining Heat-only population is 29 IDs / 32 branches. Rust Choir Peddlers, authored defaults, stored `character.heat`, Mirror `heatThreshold`, and generic compatibility discriminators remain preserved or unresolved as previously recorded.
 
+# Phase 1K authored-default audit
+
+- **HRD-001 — Recommended, not implemented:** preserve persisted `character.heat` until optional parsing and a versioned save migration exist. Do not remove the field with content cleanup.
+- **HRD-002 — Recommended, not implemented:** explicit old nonzero values remain exact and inert; no conversion or overwrite is permitted.
+- **HRD-012 — Still unresolved:** missing Heat currently fails game-state parsing and no general save-version dispatcher exists.
+- **HRD-013 — Recommended, not implemented:** the exact authored population is 17 character JSON records at zero, including QA-only MASTER ALPHA. Quarantine these as field-level legacy defaults, then move zero injection to a named compatibility constructor before deleting content members.
+- **HRD-023 — Recommended, not implemented:** split effect approvals from default approvals. Default approval must be ID-, field-, and value-specific and must not authorize Heat effects, costs, or text.
+- **HRD-024 — Still unresolved:** final optional-field/schema removal depends on an explicit compatibility support window.
+
+No authored default is stale or safely removable as a content-only edit today. The safest next implementation is validation-only quarantine of the exact 17 IDs; it requires no runtime, schema, content, save, projection, or reconnect change.
+
 # Phase 1L authored-default quarantine
 
 - **HRD-013 implemented for authoring quarantine only:** exactly 17 canonical character IDs may retain required integer `heat: 0`; new, copied, renamed, QA, missing-approval, or nonzero authored defaults are rejected.
