@@ -1,0 +1,1458 @@
+{
+  "generatedFrom": [
+    "src/data/riftfallBoardNodes.ts",
+    "src/game/data/boardSpaces.ts",
+    "src/game/data/boardTransitions.ts"
+  ],
+  "authority": "Movement remains authoritative in src/game/rules/movementPlanner.ts.",
+  "generatedAt": "deterministic-source-build",
+  "sectorCounts": {
+    "outer": 24,
+    "middle": 16,
+    "inner": 8,
+    "center": 1
+  },
+  "sectors": [
+    {
+      "id": "north-dock-bastion",
+      "displayName": "North Dock Bastion",
+      "ring": "outer",
+      "position": {
+        "x": 0.06,
+        "y": 0.08
+      },
+      "connections": [
+        "outer_waymarket",
+        "hollow-veil-yard"
+      ],
+      "threatIcons": [
+        "yellow"
+      ],
+      "tileFunction": "Bastion Watch",
+      "effectKey": "outer_relayCrew",
+      "movementRule": null,
+      "movementRequirements": []
+    },
+    {
+      "id": "outer_waymarket",
+      "displayName": "Anchor Market",
+      "ring": "outer",
+      "position": {
+        "x": 0.1857,
+        "y": 0.08
+      },
+      "connections": [
+        "north-dock-bastion",
+        "coldwind-wharf",
+        "outer_ember_sanctum"
+      ],
+      "threatIcons": [
+        "yellow"
+      ],
+      "tileFunction": "Market Exchange",
+      "effectKey": "outer_waymarketExchange",
+      "movementRule": null,
+      "movementRequirements": []
+    },
+    {
+      "id": "coldwind-wharf",
+      "displayName": "Coldwind Wharf",
+      "ring": "outer",
+      "position": {
+        "x": 0.3114,
+        "y": 0.08
+      },
+      "connections": [
+        "outer_waymarket",
+        "outer_broken_causeway"
+      ],
+      "threatIcons": [
+        "blue"
+      ],
+      "tileFunction": "Cold Dock Signal",
+      "effectKey": "outer_glassmereChorus",
+      "movementRule": null,
+      "movementRequirements": []
+    },
+    {
+      "id": "outer_broken_causeway",
+      "displayName": "Dock Nine Wreckage",
+      "ring": "outer",
+      "position": {
+        "x": 0.4371,
+        "y": 0.08
+      },
+      "connections": [
+        "coldwind-wharf",
+        "emberwatch-step"
+      ],
+      "threatIcons": [
+        "yellow",
+        "red"
+      ],
+      "tileFunction": "Wreckage Sweep",
+      "effectKey": "outer_brokenCausewayShortcut",
+      "movementRule": "This shortcut can reach the middle ring quickly, but entering it always ends movement.",
+      "movementRequirements": []
+    },
+    {
+      "id": "emberwatch-step",
+      "displayName": "Ember Stair",
+      "ring": "outer",
+      "position": {
+        "x": 0.5629,
+        "y": 0.08
+      },
+      "connections": [
+        "outer_broken_causeway",
+        "cinder-fields"
+      ],
+      "threatIcons": [
+        "red",
+        "blue"
+      ],
+      "tileFunction": "Climb the Stair",
+      "effectKey": "outer_emberwatchBrace",
+      "movementRule": null,
+      "movementRequirements": []
+    },
+    {
+      "id": "cinder-fields",
+      "displayName": "Cinder Fields",
+      "ring": "outer",
+      "position": {
+        "x": 0.6886,
+        "y": 0.08
+      },
+      "connections": [
+        "emberwatch-step",
+        "glassmere-spindle"
+      ],
+      "threatIcons": [
+        "red"
+      ],
+      "tileFunction": "Cinder Sweep",
+      "effectKey": "outer_emberwatchBrace",
+      "movementRule": null,
+      "movementRequirements": []
+    },
+    {
+      "id": "glassmere-spindle",
+      "displayName": "Glass Signal Pier",
+      "ring": "outer",
+      "position": {
+        "x": 0.8143,
+        "y": 0.08
+      },
+      "connections": [
+        "cinder-fields",
+        "outer_ember_sanctum",
+        "black-relay-spire",
+        "ashwake-crossing"
+      ],
+      "threatIcons": [
+        "blue"
+      ],
+      "tileFunction": "Signal Chorus",
+      "effectKey": "outer_glassmereChorus",
+      "movementRule": null,
+      "movementRequirements": []
+    },
+    {
+      "id": "outer_ember_sanctum",
+      "displayName": "Pilgrim Lock Gate",
+      "ring": "outer",
+      "position": {
+        "x": 0.94,
+        "y": 0.08
+      },
+      "connections": [
+        "glassmere-spindle",
+        "mirecoil-beacon",
+        "outer_waymarket",
+        "middle_red_march_outpost",
+        "ashwake-crossing"
+      ],
+      "threatIcons": [],
+      "tileFunction": "Pilgrim Rest",
+      "effectKey": "outer_emberSanctumRest",
+      "movementRule": null,
+      "movementRequirements": []
+    },
+    {
+      "id": "mirecoil-beacon",
+      "displayName": "Rusted Transit Gate",
+      "ring": "outer",
+      "position": {
+        "x": 0.94,
+        "y": 0.185
+      },
+      "connections": [
+        "outer_ember_sanctum",
+        "outer_oathpost",
+        "middle_webglass_breach"
+      ],
+      "threatIcons": [
+        "yellow",
+        "blue"
+      ],
+      "tileFunction": "Transit Traffic",
+      "effectKey": "outer_mirecoilTraffic",
+      "movementRule": "When you start movement here, you may reroute through a marked outer lane. Entering a new tier ends movement immediately.",
+      "movementRequirements": []
+    },
+    {
+      "id": "outer_oathpost",
+      "displayName": "Broken Census Hall",
+      "ring": "outer",
+      "position": {
+        "x": 0.94,
+        "y": 0.395
+      },
+      "connections": [
+        "mirecoil-beacon",
+        "colony-outskirts",
+        "the-salt-archive"
+      ],
+      "threatIcons": [
+        "red"
+      ],
+      "tileFunction": "Census Writ",
+      "effectKey": "outer_oathpostWrit",
+      "movementRule": null,
+      "movementRequirements": []
+    },
+    {
+      "id": "colony-outskirts",
+      "displayName": "Colony Outskirts",
+      "ring": "outer",
+      "position": {
+        "x": 0.94,
+        "y": 0.605
+      },
+      "connections": [
+        "outer_oathpost",
+        "deadwater-marsh"
+      ],
+      "threatIcons": [
+        "yellow"
+      ],
+      "tileFunction": "Outskirts Sweep",
+      "effectKey": "outer_hollowVeilSweep",
+      "movementRule": null,
+      "movementRequirements": []
+    },
+    {
+      "id": "deadwater-marsh",
+      "displayName": "Deadwater Marsh",
+      "ring": "outer",
+      "position": {
+        "x": 0.94,
+        "y": 0.815
+      },
+      "connections": [
+        "colony-outskirts",
+        "votive-engine-room"
+      ],
+      "threatIcons": [
+        "blue"
+      ],
+      "tileFunction": "Deadwater Reading",
+      "effectKey": "outer_saltCrossing",
+      "movementRule": null,
+      "movementRequirements": []
+    },
+    {
+      "id": "votive-engine-room",
+      "displayName": "Votive Engine Room",
+      "ring": "outer",
+      "position": {
+        "x": 0.94,
+        "y": 0.92
+      },
+      "connections": [
+        "deadwater-marsh",
+        "ashwake-crossing",
+        "weeping-ammunition-shrine"
+      ],
+      "threatIcons": [
+        "blue"
+      ],
+      "tileFunction": "Recharge the Votive",
+      "effectKey": "outer_saltCrossing",
+      "movementRule": null,
+      "movementRequirements": []
+    },
+    {
+      "id": "ashwake-crossing",
+      "displayName": "Ashwalk Bridge",
+      "ring": "outer",
+      "position": {
+        "x": 0.8143,
+        "y": 0.92
+      },
+      "connections": [
+        "votive-engine-room",
+        "outer_surgery_tent",
+        "glassmere-spindle",
+        "outer_ember_sanctum"
+      ],
+      "threatIcons": [
+        "yellow"
+      ],
+      "tileFunction": "Hold the Bridge",
+      "effectKey": "outer_ashwakeClearLane",
+      "movementRule": null,
+      "movementRequirements": []
+    },
+    {
+      "id": "outer_surgery_tent",
+      "displayName": "Old Mercy Bay",
+      "ring": "outer",
+      "position": {
+        "x": 0.6886,
+        "y": 0.92
+      },
+      "connections": [
+        "ashwake-crossing",
+        "outer_salt_flats"
+      ],
+      "threatIcons": [
+        "red"
+      ],
+      "tileFunction": "Rough Treatment",
+      "effectKey": "outer_surgeryTreatment",
+      "movementRule": null,
+      "movementRequirements": []
+    },
+    {
+      "id": "outer_salt_flats",
+      "displayName": "Mire Vent Colony",
+      "ring": "outer",
+      "position": {
+        "x": 0.5629,
+        "y": 0.92
+      },
+      "connections": [
+        "outer_surgery_tent",
+        "rustveil-yard"
+      ],
+      "threatIcons": [
+        "blue"
+      ],
+      "tileFunction": "Vent Harvest",
+      "effectKey": "outer_saltCrossing",
+      "movementRule": null,
+      "movementRequirements": []
+    },
+    {
+      "id": "rustveil-yard",
+      "displayName": "Rustveil Yard",
+      "ring": "outer",
+      "position": {
+        "x": 0.4371,
+        "y": 0.92
+      },
+      "connections": [
+        "outer_salt_flats",
+        "sunken-pier"
+      ],
+      "threatIcons": [
+        "yellow"
+      ],
+      "tileFunction": "Rustveil Salvage",
+      "effectKey": "outer_hollowVeilSweep",
+      "movementRule": null,
+      "movementRequirements": []
+    },
+    {
+      "id": "sunken-pier",
+      "displayName": "Sunken Pier",
+      "ring": "outer",
+      "position": {
+        "x": 0.3114,
+        "y": 0.92
+      },
+      "connections": [
+        "rustveil-yard",
+        "shattered-causeway"
+      ],
+      "threatIcons": [
+        "blue"
+      ],
+      "tileFunction": "Sunken Signal",
+      "effectKey": "outer_relayCrew",
+      "movementRule": null,
+      "movementRequirements": []
+    },
+    {
+      "id": "shattered-causeway",
+      "displayName": "Shattered Causeway",
+      "ring": "outer",
+      "position": {
+        "x": 0.1857,
+        "y": 0.92
+      },
+      "connections": [
+        "sunken-pier",
+        "kettleward-foundry"
+      ],
+      "threatIcons": [
+        "yellow"
+      ],
+      "tileFunction": "Causeway Thread",
+      "effectKey": "outer_brokenCausewayShortcut",
+      "movementRule": "This causeway can bend movement around the perimeter, but entering a new tier ends movement immediately.",
+      "movementRequirements": []
+    },
+    {
+      "id": "kettleward-foundry",
+      "displayName": "Kettleward Foundry",
+      "ring": "outer",
+      "position": {
+        "x": 0.06,
+        "y": 0.92
+      },
+      "connections": [
+        "shattered-causeway",
+        "flooded-locks",
+        "middle_shard_sprawl"
+      ],
+      "threatIcons": [
+        "yellow"
+      ],
+      "tileFunction": "Foundry Repair",
+      "effectKey": "outer_waymarketExchange",
+      "movementRule": null,
+      "movementRequirements": []
+    },
+    {
+      "id": "flooded-locks",
+      "displayName": "Flooded Locks",
+      "ring": "outer",
+      "position": {
+        "x": 0.06,
+        "y": 0.815
+      },
+      "connections": [
+        "kettleward-foundry",
+        "transit-gate"
+      ],
+      "threatIcons": [
+        "blue"
+      ],
+      "tileFunction": "Flooded Lockwork",
+      "effectKey": "outer_glassmereChorus",
+      "movementRule": null,
+      "movementRequirements": []
+    },
+    {
+      "id": "transit-gate",
+      "displayName": "Transit Gate",
+      "ring": "outer",
+      "position": {
+        "x": 0.06,
+        "y": 0.605
+      },
+      "connections": [
+        "flooded-locks",
+        "outer_relay_camp",
+        "middle_guardian_span"
+      ],
+      "threatIcons": [
+        "blue"
+      ],
+      "tileFunction": "Gate Dispatch",
+      "effectKey": "outer_mirecoilTraffic",
+      "movementRule": "When you start movement here, you may route toward the Customs Gate. Entering a new tier ends movement immediately.",
+      "movementRequirements": []
+    },
+    {
+      "id": "outer_relay_camp",
+      "displayName": "Lantern Post 47",
+      "ring": "outer",
+      "position": {
+        "x": 0.06,
+        "y": 0.395
+      },
+      "connections": [
+        "transit-gate",
+        "hollow-veil-yard"
+      ],
+      "threatIcons": [
+        "blue"
+      ],
+      "tileFunction": "Lantern Watch",
+      "effectKey": "outer_relayCrew",
+      "movementRule": null,
+      "movementRequirements": []
+    },
+    {
+      "id": "hollow-veil-yard",
+      "displayName": "Fallen Hab-Stack",
+      "ring": "outer",
+      "position": {
+        "x": 0.06,
+        "y": 0.185
+      },
+      "connections": [
+        "outer_relay_camp",
+        "north-dock-bastion"
+      ],
+      "threatIcons": [
+        "red",
+        "yellow"
+      ],
+      "tileFunction": "Hab-Stack Sweep",
+      "effectKey": "outer_hollowVeilSweep",
+      "movementRule": null,
+      "movementRequirements": []
+    },
+    {
+      "id": "middle_red_march_outpost",
+      "displayName": "Choir Bastion",
+      "ring": "middle",
+      "position": {
+        "x": 0.22,
+        "y": 0.29
+      },
+      "connections": [
+        "middle_anomaly_well",
+        "reavers-den",
+        "outer_ember_sanctum",
+        "choir-execution-court"
+      ],
+      "threatIcons": [
+        "red"
+      ],
+      "tileFunction": "Bastion Bargain",
+      "effectKey": "middle_redMarchBargain",
+      "movementRule": null,
+      "movementRequirements": []
+    },
+    {
+      "id": "middle_anomaly_well",
+      "displayName": "Static Chapel",
+      "ring": "middle",
+      "position": {
+        "x": 0.332,
+        "y": 0.29
+      },
+      "connections": [
+        "middle_red_march_outpost",
+        "middle_shard_sprawl",
+        "inner_cinder_lattice"
+      ],
+      "threatIcons": [
+        "blue",
+        "yellow"
+      ],
+      "tileFunction": "Read the Chapel",
+      "effectKey": "middle_anomalyWell",
+      "movementRule": null,
+      "movementRequirements": []
+    },
+    {
+      "id": "middle_shard_sprawl",
+      "displayName": "Chain-Maul Yard",
+      "ring": "middle",
+      "position": {
+        "x": 0.444,
+        "y": 0.29
+      },
+      "connections": [
+        "middle_anomaly_well",
+        "middle_rivalry_pit",
+        "kettleward-foundry"
+      ],
+      "threatIcons": [
+        "red",
+        "yellow"
+      ],
+      "tileFunction": "Yard Bargain",
+      "effectKey": "middle_shardSprawlBargain",
+      "movementRule": null,
+      "movementRequirements": []
+    },
+    {
+      "id": "middle_rivalry_pit",
+      "displayName": "Mirror Barracks",
+      "ring": "middle",
+      "position": {
+        "x": 0.556,
+        "y": 0.29
+      },
+      "connections": [
+        "middle_shard_sprawl",
+        "black-relay-spire",
+        "choir-execution-court"
+      ],
+      "threatIcons": [
+        "red",
+        "yellow"
+      ],
+      "tileFunction": "Mirror Drill",
+      "effectKey": "middle_rivalryClaim",
+      "movementRule": null,
+      "movementRequirements": []
+    },
+    {
+      "id": "black-relay-spire",
+      "displayName": "Black Relay Spire",
+      "ring": "middle",
+      "position": {
+        "x": 0.668,
+        "y": 0.29
+      },
+      "connections": [
+        "middle_rivalry_pit",
+        "middle_relic_cache",
+        "glassmere-spindle"
+      ],
+      "threatIcons": [
+        "blue",
+        "yellow"
+      ],
+      "tileFunction": "Stabilize the Relay",
+      "effectKey": "middle_anomalyWell",
+      "movementRule": null,
+      "movementRequirements": []
+    },
+    {
+      "id": "middle_relic_cache",
+      "displayName": "Crucible of Names",
+      "ring": "middle",
+      "position": {
+        "x": 0.78,
+        "y": 0.29
+      },
+      "connections": [
+        "black-relay-spire",
+        "the-salt-archive"
+      ],
+      "threatIcons": [
+        "yellow"
+      ],
+      "tileFunction": "Name the Trophy",
+      "effectKey": "middle_relicCache",
+      "movementRule": null,
+      "movementRequirements": []
+    },
+    {
+      "id": "the-salt-archive",
+      "displayName": "The Salt Archive",
+      "ring": "middle",
+      "position": {
+        "x": 0.78,
+        "y": 0.395
+      },
+      "connections": [
+        "middle_relic_cache",
+        "middle_webglass_breach",
+        "outer_oathpost"
+      ],
+      "threatIcons": [
+        "yellow"
+      ],
+      "tileFunction": "Archive Contract",
+      "effectKey": "middle_shardSprawlBargain",
+      "movementRule": null,
+      "movementRequirements": []
+    },
+    {
+      "id": "middle_webglass_breach",
+      "displayName": "Grave-Rail Junction",
+      "ring": "middle",
+      "position": {
+        "x": 0.78,
+        "y": 0.605
+      },
+      "connections": [
+        "the-salt-archive",
+        "middle_scar_surgery",
+        "mirecoil-beacon"
+      ],
+      "threatIcons": [
+        "yellow",
+        "blue"
+      ],
+      "tileFunction": "Rail Fracture",
+      "effectKey": "middle_webglassFracture",
+      "movementRule": null,
+      "movementRequirements": []
+    },
+    {
+      "id": "middle_scar_surgery",
+      "displayName": "Sable Machine Choir",
+      "ring": "middle",
+      "position": {
+        "x": 0.78,
+        "y": 0.71
+      },
+      "connections": [
+        "middle_webglass_breach",
+        "weeping-ammunition-shrine"
+      ],
+      "threatIcons": [
+        "red",
+        "blue"
+      ],
+      "tileFunction": "Machine Hymn",
+      "effectKey": "middle_scarSurgery",
+      "movementRule": null,
+      "movementRequirements": []
+    },
+    {
+      "id": "weeping-ammunition-shrine",
+      "displayName": "Weeping Ammunition Shrine",
+      "ring": "middle",
+      "position": {
+        "x": 0.668,
+        "y": 0.71
+      },
+      "connections": [
+        "middle_scar_surgery",
+        "middle_guardian_span",
+        "votive-engine-room"
+      ],
+      "threatIcons": [
+        "red",
+        "blue"
+      ],
+      "tileFunction": "Dangerous Ammunition",
+      "effectKey": "middle_redMarchBargain",
+      "movementRule": null,
+      "movementRequirements": []
+    },
+    {
+      "id": "middle_guardian_span",
+      "displayName": "Customs Gate",
+      "ring": "middle",
+      "position": {
+        "x": 0.556,
+        "y": 0.71
+      },
+      "connections": [
+        "weeping-ammunition-shrine",
+        "red-lantern-trenches",
+        "transit-gate",
+        "inner_veil_rift"
+      ],
+      "threatIcons": [
+        "red",
+        "blue",
+        "yellow"
+      ],
+      "tileFunction": "Customs Threshold",
+      "effectKey": "middle_guardianSpanThreshold",
+      "movementRule": "When you enter this span, movement ends immediately.",
+      "movementRequirements": []
+    },
+    {
+      "id": "red-lantern-trenches",
+      "displayName": "Red Lantern Trenches",
+      "ring": "middle",
+      "position": {
+        "x": 0.444,
+        "y": 0.71
+      },
+      "connections": [
+        "middle_guardian_span",
+        "scorched-road"
+      ],
+      "threatIcons": [
+        "red",
+        "yellow"
+      ],
+      "tileFunction": "Trench Ambush",
+      "effectKey": "middle_rivalryClaim",
+      "movementRule": null,
+      "movementRequirements": []
+    },
+    {
+      "id": "scorched-road",
+      "displayName": "Scorched Road",
+      "ring": "middle",
+      "position": {
+        "x": 0.332,
+        "y": 0.71
+      },
+      "connections": [
+        "red-lantern-trenches",
+        "blastworks"
+      ],
+      "threatIcons": [
+        "yellow"
+      ],
+      "tileFunction": "Scorched Passage",
+      "effectKey": "outer_ashwakeClearLane",
+      "movementRule": null,
+      "movementRequirements": []
+    },
+    {
+      "id": "blastworks",
+      "displayName": "Blastworks",
+      "ring": "middle",
+      "position": {
+        "x": 0.22,
+        "y": 0.71
+      },
+      "connections": [
+        "scorched-road",
+        "ashen-chapel"
+      ],
+      "threatIcons": [
+        "red"
+      ],
+      "tileFunction": "Blastworks Toll",
+      "effectKey": "middle_shardSprawlBargain",
+      "movementRule": null,
+      "movementRequirements": []
+    },
+    {
+      "id": "ashen-chapel",
+      "displayName": "Ashen Chapel",
+      "ring": "middle",
+      "position": {
+        "x": 0.22,
+        "y": 0.605
+      },
+      "connections": [
+        "blastworks",
+        "reavers-den"
+      ],
+      "threatIcons": [
+        "blue"
+      ],
+      "tileFunction": "Ashen Rite",
+      "effectKey": "middle_anomalyWell",
+      "movementRule": null,
+      "movementRequirements": []
+    },
+    {
+      "id": "reavers-den",
+      "displayName": "Reaver's Den",
+      "ring": "middle",
+      "position": {
+        "x": 0.22,
+        "y": 0.395
+      },
+      "connections": [
+        "ashen-chapel",
+        "middle_red_march_outpost"
+      ],
+      "threatIcons": [
+        "red"
+      ],
+      "tileFunction": "Den Challenge",
+      "effectKey": "middle_redMarchBargain",
+      "movementRule": null,
+      "movementRequirements": []
+    },
+    {
+      "id": "inner_gate_of_cinders",
+      "displayName": "The Last Signal Well",
+      "ring": "inner",
+      "position": {
+        "x": 0.34,
+        "y": 0.4
+      },
+      "connections": [
+        "inner_choir_shrine",
+        "the-bone-meridian",
+        "center_cinder_gate"
+      ],
+      "threatIcons": [],
+      "tileFunction": "Last Signal",
+      "effectKey": "inner_gateOfCindersTrial",
+      "movementRule": null,
+      "movementRequirements": []
+    },
+    {
+      "id": "inner_choir_shrine",
+      "displayName": "Saint Engine Crypt",
+      "ring": "inner",
+      "position": {
+        "x": 0.66,
+        "y": 0.4
+      },
+      "connections": [
+        "inner_gate_of_cinders",
+        "inner_cinder_lattice"
+      ],
+      "threatIcons": [],
+      "tileFunction": "Crypt Petition",
+      "effectKey": "inner_choirShrine",
+      "movementRule": null,
+      "movementRequirements": []
+    },
+    {
+      "id": "inner_cinder_lattice",
+      "displayName": "The Crownless Observatory",
+      "ring": "inner",
+      "position": {
+        "x": 0.66,
+        "y": 0.45
+      },
+      "connections": [
+        "inner_choir_shrine",
+        "choir-execution-court",
+        "middle_anomaly_well"
+      ],
+      "threatIcons": [],
+      "tileFunction": "Observatory Trial",
+      "effectKey": "inner_cinderLatticeTrial",
+      "movementRule": null,
+      "movementRequirements": []
+    },
+    {
+      "id": "choir-execution-court",
+      "displayName": "Hollow Court",
+      "ring": "inner",
+      "position": {
+        "x": 0.66,
+        "y": 0.55
+      },
+      "connections": [
+        "inner_cinder_lattice",
+        "inner_veil_rift",
+        "middle_red_march_outpost",
+        "middle_rivalry_pit"
+      ],
+      "threatIcons": [
+        "red",
+        "red",
+        "yellow"
+      ],
+      "tileFunction": "Elite Sentence",
+      "effectKey": "inner_choirShrine",
+      "movementRule": null,
+      "movementRequirements": []
+    },
+    {
+      "id": "inner_veil_rift",
+      "displayName": "Melted Gate",
+      "ring": "inner",
+      "position": {
+        "x": 0.66,
+        "y": 0.6
+      },
+      "connections": [
+        "choir-execution-court",
+        "inner_tomb_gate",
+        "middle_guardian_span"
+      ],
+      "threatIcons": [],
+      "tileFunction": "Three-Ash Entry",
+      "effectKey": "inner_veilRiftEntry",
+      "movementRule": null,
+      "movementRequirements": [
+        {
+          "allowedFrom": [
+            "middle_guardian_span"
+          ],
+          "requiredNotes": [
+            "guardian-span-clearance"
+          ],
+          "errorMessage": "Requires Guardian Span Clearance"
+        }
+      ]
+    },
+    {
+      "id": "inner_tomb_gate",
+      "displayName": "Rifted Approach",
+      "ring": "inner",
+      "position": {
+        "x": 0.34,
+        "y": 0.6
+      },
+      "connections": [
+        "inner_veil_rift",
+        "inner_blackstar_shortcut"
+      ],
+      "threatIcons": [],
+      "tileFunction": "Marshal's Road",
+      "effectKey": "inner_tombGateTrial",
+      "movementRule": null,
+      "movementRequirements": []
+    },
+    {
+      "id": "inner_blackstar_shortcut",
+      "displayName": "Dead Star Reliquary",
+      "ring": "inner",
+      "position": {
+        "x": 0.34,
+        "y": 0.55
+      },
+      "connections": [
+        "inner_tomb_gate",
+        "the-bone-meridian",
+        "center_cinder_gate"
+      ],
+      "threatIcons": [],
+      "tileFunction": "Dead Star Claim",
+      "effectKey": "inner_blackstarShortcut",
+      "movementRule": null,
+      "movementRequirements": []
+    },
+    {
+      "id": "the-bone-meridian",
+      "displayName": "The Bone Meridian",
+      "ring": "inner",
+      "position": {
+        "x": 0.34,
+        "y": 0.45
+      },
+      "connections": [
+        "inner_blackstar_shortcut",
+        "inner_gate_of_cinders"
+      ],
+      "threatIcons": [
+        "red",
+        "yellow"
+      ],
+      "tileFunction": "Meridian Toll",
+      "effectKey": "inner_tombGateTrial",
+      "movementRule": null,
+      "movementRequirements": []
+    },
+    {
+      "id": "center_cinder_gate",
+      "displayName": "The Ashen Reach Core",
+      "ring": "center",
+      "position": {
+        "x": 0.5,
+        "y": 0.5
+      },
+      "connections": [
+        "inner_gate_of_cinders",
+        "inner_blackstar_shortcut"
+      ],
+      "threatIcons": [],
+      "tileFunction": "Final Scenario",
+      "effectKey": "center_resolveScenarioConfrontation",
+      "movementRule": null,
+      "movementRequirements": [
+        {
+          "allowedFrom": [
+            "inner_gate_of_cinders",
+            "inner_blackstar_shortcut"
+          ],
+          "errorMessage": "Enter the Core from the Last Signal Well or Dead Star Reliquary"
+        },
+        {
+          "requiredNotes": [
+            "gate-of-cinders-breached"
+          ],
+          "errorMessage": "Breach the Gate of Cinders first"
+        }
+      ]
+    }
+  ],
+  "transitions": [
+    {
+      "edgeId": "glassmere-spindle--black-relay-spire",
+      "sourceSectorId": "glassmere-spindle",
+      "destinationSectorId": "black-relay-spire",
+      "sourceRing": "outer",
+      "destinationRing": "middle",
+      "direction": "inward",
+      "edgeCost": 1,
+      "exactMovementRequired": 1,
+      "endsMovement": true,
+      "requiredNotes": [],
+      "allowedFrom": [],
+      "lockedReason": null,
+      "uiLabel": "Enter middle ring"
+    },
+    {
+      "edgeId": "outer_ember_sanctum--middle_red_march_outpost",
+      "sourceSectorId": "outer_ember_sanctum",
+      "destinationSectorId": "middle_red_march_outpost",
+      "sourceRing": "outer",
+      "destinationRing": "middle",
+      "direction": "inward",
+      "edgeCost": 1,
+      "exactMovementRequired": 1,
+      "endsMovement": true,
+      "requiredNotes": [],
+      "allowedFrom": [],
+      "lockedReason": null,
+      "uiLabel": "Enter middle ring"
+    },
+    {
+      "edgeId": "mirecoil-beacon--middle_webglass_breach",
+      "sourceSectorId": "mirecoil-beacon",
+      "destinationSectorId": "middle_webglass_breach",
+      "sourceRing": "outer",
+      "destinationRing": "middle",
+      "direction": "inward",
+      "edgeCost": 1,
+      "exactMovementRequired": 1,
+      "endsMovement": true,
+      "requiredNotes": [],
+      "allowedFrom": [],
+      "lockedReason": null,
+      "uiLabel": "Enter middle ring"
+    },
+    {
+      "edgeId": "outer_oathpost--the-salt-archive",
+      "sourceSectorId": "outer_oathpost",
+      "destinationSectorId": "the-salt-archive",
+      "sourceRing": "outer",
+      "destinationRing": "middle",
+      "direction": "inward",
+      "edgeCost": 1,
+      "exactMovementRequired": 1,
+      "endsMovement": true,
+      "requiredNotes": [],
+      "allowedFrom": [],
+      "lockedReason": null,
+      "uiLabel": "Enter middle ring"
+    },
+    {
+      "edgeId": "votive-engine-room--weeping-ammunition-shrine",
+      "sourceSectorId": "votive-engine-room",
+      "destinationSectorId": "weeping-ammunition-shrine",
+      "sourceRing": "outer",
+      "destinationRing": "middle",
+      "direction": "inward",
+      "edgeCost": 1,
+      "exactMovementRequired": 1,
+      "endsMovement": true,
+      "requiredNotes": [],
+      "allowedFrom": [],
+      "lockedReason": null,
+      "uiLabel": "Enter middle ring"
+    },
+    {
+      "edgeId": "kettleward-foundry--middle_shard_sprawl",
+      "sourceSectorId": "kettleward-foundry",
+      "destinationSectorId": "middle_shard_sprawl",
+      "sourceRing": "outer",
+      "destinationRing": "middle",
+      "direction": "inward",
+      "edgeCost": 1,
+      "exactMovementRequired": 1,
+      "endsMovement": true,
+      "requiredNotes": [],
+      "allowedFrom": [],
+      "lockedReason": null,
+      "uiLabel": "Enter middle ring"
+    },
+    {
+      "edgeId": "transit-gate--middle_guardian_span",
+      "sourceSectorId": "transit-gate",
+      "destinationSectorId": "middle_guardian_span",
+      "sourceRing": "outer",
+      "destinationRing": "middle",
+      "direction": "inward",
+      "edgeCost": 1,
+      "exactMovementRequired": 1,
+      "endsMovement": true,
+      "requiredNotes": [],
+      "allowedFrom": [],
+      "lockedReason": null,
+      "uiLabel": "Enter middle ring"
+    },
+    {
+      "edgeId": "middle_red_march_outpost--outer_ember_sanctum",
+      "sourceSectorId": "middle_red_march_outpost",
+      "destinationSectorId": "outer_ember_sanctum",
+      "sourceRing": "middle",
+      "destinationRing": "outer",
+      "direction": "outward",
+      "edgeCost": 1,
+      "exactMovementRequired": 1,
+      "endsMovement": true,
+      "requiredNotes": [],
+      "allowedFrom": [],
+      "lockedReason": null,
+      "uiLabel": "Return to outer ring"
+    },
+    {
+      "edgeId": "middle_red_march_outpost--choir-execution-court",
+      "sourceSectorId": "middle_red_march_outpost",
+      "destinationSectorId": "choir-execution-court",
+      "sourceRing": "middle",
+      "destinationRing": "inner",
+      "direction": "inward",
+      "edgeCost": 1,
+      "exactMovementRequired": 1,
+      "endsMovement": true,
+      "requiredNotes": [],
+      "allowedFrom": [],
+      "lockedReason": null,
+      "uiLabel": "Enter inner ring"
+    },
+    {
+      "edgeId": "middle_anomaly_well--inner_cinder_lattice",
+      "sourceSectorId": "middle_anomaly_well",
+      "destinationSectorId": "inner_cinder_lattice",
+      "sourceRing": "middle",
+      "destinationRing": "inner",
+      "direction": "inward",
+      "edgeCost": 1,
+      "exactMovementRequired": 1,
+      "endsMovement": true,
+      "requiredNotes": [],
+      "allowedFrom": [],
+      "lockedReason": null,
+      "uiLabel": "Enter inner ring"
+    },
+    {
+      "edgeId": "middle_shard_sprawl--kettleward-foundry",
+      "sourceSectorId": "middle_shard_sprawl",
+      "destinationSectorId": "kettleward-foundry",
+      "sourceRing": "middle",
+      "destinationRing": "outer",
+      "direction": "outward",
+      "edgeCost": 1,
+      "exactMovementRequired": 1,
+      "endsMovement": true,
+      "requiredNotes": [],
+      "allowedFrom": [],
+      "lockedReason": null,
+      "uiLabel": "Return to outer ring"
+    },
+    {
+      "edgeId": "middle_rivalry_pit--choir-execution-court",
+      "sourceSectorId": "middle_rivalry_pit",
+      "destinationSectorId": "choir-execution-court",
+      "sourceRing": "middle",
+      "destinationRing": "inner",
+      "direction": "inward",
+      "edgeCost": 1,
+      "exactMovementRequired": 1,
+      "endsMovement": true,
+      "requiredNotes": [],
+      "allowedFrom": [],
+      "lockedReason": null,
+      "uiLabel": "Enter inner ring"
+    },
+    {
+      "edgeId": "black-relay-spire--glassmere-spindle",
+      "sourceSectorId": "black-relay-spire",
+      "destinationSectorId": "glassmere-spindle",
+      "sourceRing": "middle",
+      "destinationRing": "outer",
+      "direction": "outward",
+      "edgeCost": 1,
+      "exactMovementRequired": 1,
+      "endsMovement": true,
+      "requiredNotes": [],
+      "allowedFrom": [],
+      "lockedReason": null,
+      "uiLabel": "Return to outer ring"
+    },
+    {
+      "edgeId": "the-salt-archive--outer_oathpost",
+      "sourceSectorId": "the-salt-archive",
+      "destinationSectorId": "outer_oathpost",
+      "sourceRing": "middle",
+      "destinationRing": "outer",
+      "direction": "outward",
+      "edgeCost": 1,
+      "exactMovementRequired": 1,
+      "endsMovement": true,
+      "requiredNotes": [],
+      "allowedFrom": [],
+      "lockedReason": null,
+      "uiLabel": "Return to outer ring"
+    },
+    {
+      "edgeId": "middle_webglass_breach--mirecoil-beacon",
+      "sourceSectorId": "middle_webglass_breach",
+      "destinationSectorId": "mirecoil-beacon",
+      "sourceRing": "middle",
+      "destinationRing": "outer",
+      "direction": "outward",
+      "edgeCost": 1,
+      "exactMovementRequired": 1,
+      "endsMovement": true,
+      "requiredNotes": [],
+      "allowedFrom": [],
+      "lockedReason": null,
+      "uiLabel": "Return to outer ring"
+    },
+    {
+      "edgeId": "weeping-ammunition-shrine--votive-engine-room",
+      "sourceSectorId": "weeping-ammunition-shrine",
+      "destinationSectorId": "votive-engine-room",
+      "sourceRing": "middle",
+      "destinationRing": "outer",
+      "direction": "outward",
+      "edgeCost": 1,
+      "exactMovementRequired": 1,
+      "endsMovement": true,
+      "requiredNotes": [],
+      "allowedFrom": [],
+      "lockedReason": null,
+      "uiLabel": "Return to outer ring"
+    },
+    {
+      "edgeId": "middle_guardian_span--transit-gate",
+      "sourceSectorId": "middle_guardian_span",
+      "destinationSectorId": "transit-gate",
+      "sourceRing": "middle",
+      "destinationRing": "outer",
+      "direction": "outward",
+      "edgeCost": 1,
+      "exactMovementRequired": 1,
+      "endsMovement": true,
+      "requiredNotes": [],
+      "allowedFrom": [],
+      "lockedReason": null,
+      "uiLabel": "Return to outer ring"
+    },
+    {
+      "edgeId": "middle_guardian_span--inner_veil_rift",
+      "sourceSectorId": "middle_guardian_span",
+      "destinationSectorId": "inner_veil_rift",
+      "sourceRing": "middle",
+      "destinationRing": "inner",
+      "direction": "inward",
+      "edgeCost": 1,
+      "exactMovementRequired": 1,
+      "endsMovement": true,
+      "requiredNotes": [
+        "guardian-span-clearance"
+      ],
+      "allowedFrom": [
+        "middle_guardian_span"
+      ],
+      "lockedReason": "Requires Guardian Span Clearance",
+      "uiLabel": "Enter inner ring"
+    },
+    {
+      "edgeId": "inner_gate_of_cinders--center_cinder_gate",
+      "sourceSectorId": "inner_gate_of_cinders",
+      "destinationSectorId": "center_cinder_gate",
+      "sourceRing": "inner",
+      "destinationRing": "center",
+      "direction": "inward",
+      "edgeCost": 1,
+      "exactMovementRequired": 1,
+      "endsMovement": true,
+      "requiredNotes": [
+        "gate-of-cinders-breached"
+      ],
+      "allowedFrom": [
+        "inner_gate_of_cinders",
+        "inner_blackstar_shortcut"
+      ],
+      "lockedReason": "Enter the Core from the Last Signal Well or Dead Star Reliquary",
+      "uiLabel": "Enter center ring"
+    },
+    {
+      "edgeId": "inner_cinder_lattice--middle_anomaly_well",
+      "sourceSectorId": "inner_cinder_lattice",
+      "destinationSectorId": "middle_anomaly_well",
+      "sourceRing": "inner",
+      "destinationRing": "middle",
+      "direction": "outward",
+      "edgeCost": 1,
+      "exactMovementRequired": 1,
+      "endsMovement": true,
+      "requiredNotes": [],
+      "allowedFrom": [],
+      "lockedReason": null,
+      "uiLabel": "Return to middle ring"
+    },
+    {
+      "edgeId": "choir-execution-court--middle_red_march_outpost",
+      "sourceSectorId": "choir-execution-court",
+      "destinationSectorId": "middle_red_march_outpost",
+      "sourceRing": "inner",
+      "destinationRing": "middle",
+      "direction": "outward",
+      "edgeCost": 1,
+      "exactMovementRequired": 1,
+      "endsMovement": true,
+      "requiredNotes": [],
+      "allowedFrom": [],
+      "lockedReason": null,
+      "uiLabel": "Return to middle ring"
+    },
+    {
+      "edgeId": "choir-execution-court--middle_rivalry_pit",
+      "sourceSectorId": "choir-execution-court",
+      "destinationSectorId": "middle_rivalry_pit",
+      "sourceRing": "inner",
+      "destinationRing": "middle",
+      "direction": "outward",
+      "edgeCost": 1,
+      "exactMovementRequired": 1,
+      "endsMovement": true,
+      "requiredNotes": [],
+      "allowedFrom": [],
+      "lockedReason": null,
+      "uiLabel": "Return to middle ring"
+    },
+    {
+      "edgeId": "inner_veil_rift--middle_guardian_span",
+      "sourceSectorId": "inner_veil_rift",
+      "destinationSectorId": "middle_guardian_span",
+      "sourceRing": "inner",
+      "destinationRing": "middle",
+      "direction": "outward",
+      "edgeCost": 1,
+      "exactMovementRequired": 1,
+      "endsMovement": true,
+      "requiredNotes": [],
+      "allowedFrom": [],
+      "lockedReason": null,
+      "uiLabel": "Return to middle ring"
+    },
+    {
+      "edgeId": "inner_blackstar_shortcut--center_cinder_gate",
+      "sourceSectorId": "inner_blackstar_shortcut",
+      "destinationSectorId": "center_cinder_gate",
+      "sourceRing": "inner",
+      "destinationRing": "center",
+      "direction": "inward",
+      "edgeCost": 1,
+      "exactMovementRequired": 1,
+      "endsMovement": true,
+      "requiredNotes": [
+        "gate-of-cinders-breached"
+      ],
+      "allowedFrom": [
+        "inner_gate_of_cinders",
+        "inner_blackstar_shortcut"
+      ],
+      "lockedReason": "Enter the Core from the Last Signal Well or Dead Star Reliquary",
+      "uiLabel": "Enter center ring"
+    },
+    {
+      "edgeId": "center_cinder_gate--inner_gate_of_cinders",
+      "sourceSectorId": "center_cinder_gate",
+      "destinationSectorId": "inner_gate_of_cinders",
+      "sourceRing": "center",
+      "destinationRing": "inner",
+      "direction": "outward",
+      "edgeCost": 1,
+      "exactMovementRequired": 1,
+      "endsMovement": true,
+      "requiredNotes": [],
+      "allowedFrom": [],
+      "lockedReason": null,
+      "uiLabel": "Return to inner ring"
+    },
+    {
+      "edgeId": "center_cinder_gate--inner_blackstar_shortcut",
+      "sourceSectorId": "center_cinder_gate",
+      "destinationSectorId": "inner_blackstar_shortcut",
+      "sourceRing": "center",
+      "destinationRing": "inner",
+      "direction": "outward",
+      "edgeCost": 1,
+      "exactMovementRequired": 1,
+      "endsMovement": true,
+      "requiredNotes": [],
+      "allowedFrom": [],
+      "lockedReason": null,
+      "uiLabel": "Return to inner ring"
+    }
+  ]
+}
