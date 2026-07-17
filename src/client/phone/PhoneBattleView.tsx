@@ -254,6 +254,7 @@ export function PhoneBattleView({
   const assist = getBattleAssistViewModel(patch);
   const activeSeatId = patch.turnOrder[patch.activeSeatIndex] ?? null;
   const isActiveSeat = activeSeatId === self.seatId;
+  const playerName = patch.seats.find((seat) => seat.seatId === self.seatId)?.displayName ?? self.character.name;
   const isAssignedEnemyRoller = pendingRoll?.assignedRollerSeatId === self.seatId;
   const assignedRollerName =
     patch.seats.find((seat) => seat.seatId === pendingRoll?.assignedRollerSeatId)?.displayName ??
@@ -339,12 +340,12 @@ export function PhoneBattleView({
   ]);
 
   const combatantArena = (
-    <section className="phone-battle-arena" aria-label={`${self.character.name} versus ${enemyName}`}>
+    <section className="phone-battle-arena" aria-label={`${playerName} versus ${enemyName}`}>
       <article className="phone-battle-combatant phone-battle-combatant--operative">
         <img src={getCharacterPortraitPath(self.character.id)} alt={self.character.name} />
         <div>
-          <span>Operative</span>
-          <strong>{self.character.name}</strong>
+          <span>{self.character.name}</span>
+          <strong>{playerName}</strong>
           <small>{statLabel} {operativeValue}</small>
         </div>
       </article>
@@ -465,8 +466,8 @@ export function PhoneBattleView({
               <>
                 <span>Operative status</span>
                 <img src={getCharacterPortraitPath(self.character.id)} alt="" />
-                <strong>{self.character.name}</strong>
-                <p>{self.character.archetype}</p>
+                <strong>{playerName}</strong>
+                <p>{self.character.name} · {self.character.archetype}</p>
                 <dl>
                   <div><dt>{statLabel}</dt><dd>{operativeValue}</dd></div>
                   <div><dt>Wounds</dt><dd>{self.character.wounds}</dd></div>

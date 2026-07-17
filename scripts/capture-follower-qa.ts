@@ -16,7 +16,7 @@ async function startPhone(page: Page, apiOrigin: string, clientOrigin: string): 
   await page.goto(`${clientOrigin}/?room=${session.roomCode}&resetAuth=1`);
   await page.waitForLoadState("networkidle");
   await page.getByLabel("Player name").fill("Follower QA");
-  await page.getByRole("button", { name: "Join as Host Phone" }).click();
+  await page.getByRole("button", { name: "Join Game" }).click();
   await page.getByRole("heading", { name: "Select operative" }).waitFor();
   await page.getByRole("button", { name: /Bjornis/i }).click();
   await page.getByRole("heading", { name: "Choose Starting Mission" }).waitFor();

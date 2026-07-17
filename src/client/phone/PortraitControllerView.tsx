@@ -664,6 +664,45 @@ export function PortraitControllerView({
     setBottomDockExpanded(false);
   };
 
+  useEffect(() => {
+    if (!patch || !self || patch.status !== "active") {
+      return;
+    }
+
+    const isActiveSeat = patch.turnOrder[patch.activeSeatIndex] === self.seatId;
+    const battleForSeat = isOpposedPhoneBattleActive(patch) && (
+      patch.activeResolution?.playerId === self.seatId ||
+      patch.pendingEnemyRoll?.fighterSeatId === self.seatId ||
+      isActiveSeat
+    );
+    const nextTab: PortraitTab | null = battleForSeat
+      ? "battle"
+      : !isActiveSeat
+        ? null
+        : patch.movementPlanner?.active || patch.phase === "navigation"
+          ? "move"
+          : patch.shopEncounter
+            ? "shop"
+            : patch.phase === "action" || patch.phase === "resolution"
+              ? "action"
+              : null;
+
+    if (nextTab) {
+      setActiveTab(nextTab);
+    }
+  }, [
+    patch?.activeResolution?.id,
+    patch?.activeResolution?.stage,
+    patch?.activeSeatIndex,
+    patch?.encounter?.id,
+    patch?.movementPlanner?.active,
+    patch?.pendingEnemyRoll?.encounterCardId,
+    patch?.phase,
+    patch?.shopEncounter?.shopId,
+    patch?.status,
+    self?.seatId
+  ]);
+
   const handleLeave = () => {
     writeStoredPhoneChromeVisible(true);
     setPhoneChromeVisible(true);
@@ -686,11 +725,17 @@ export function PortraitControllerView({
   const scenarioPressure = patch?.scenarioPressure ?? null;
   const scenarioDeltas = scenarioQuestDeltas(patch?.playerResultDeltas ?? patch?.publicResultDeltas);
   const ownSeat = patch?.seats.find((seat) => seat.seatId === self.seatId) ?? null;
-  const isLobbyWaiting = patch?.status === "lobby" || (!patch && Boolean(onLobbyBack));
+  const isLateJoinPending = patch?.lateJoinPending === true;
+  const isLobbyWaiting = patch?.status === "lobby" || isLateJoinPending || (!patch && Boolean(onLobbyBack));
   const localUnboundNemeses = (patch?.nemesisChampions ?? []).filter(
     (nemesis) => nemesis.boundPlayerId !== self.seatId && nemesis.sectorId === self.character.currentSpaceId && !nemesis.defeated
   );
-  const opposedBattleActive = isOpposedPhoneBattleActive(patch);
+  const selfIsActiveSeat = patch?.turnOrder[patch.activeSeatIndex] === self.seatId;
+  const opposedBattleActive = isOpposedPhoneBattleActive(patch) && Boolean(
+    patch?.activeResolution?.playerId === self.seatId ||
+    patch?.pendingEnemyRoll?.fighterSeatId === self.seatId ||
+    selfIsActiveSeat
+  );
   const suppressedEquipmentInstanceIds = new Set(
     (patch?.equipmentSuppressions ?? [])
       .filter((suppression) => suppression.active)
@@ -706,6 +751,7 @@ export function PortraitControllerView({
     const canReady = Boolean(patch?.canReady && selectedStartingContract && onIntent && !isReady);
     const joinedSeats = patch?.seats.filter((seat) => seat.displayName && !seat.kicked) ?? [];
     const canHostStart = Boolean(
+      !isLateJoinPending &&
       onStartSession &&
         patch?.selfIsSetupHost &&
         patch.lobbyConfigured &&
@@ -730,10 +776,10 @@ export function PortraitControllerView({
               <div className="phone-character-waiting-hero">
                 <img src={getCharacterPortraitPath(self.character.id)} alt="" />
                 <div>
-                  <p className="phone-panel-kicker">Character locked</p>
+                  <p className="phone-panel-kicker">{isLateJoinPending ? "Joining Game" : "Character locked"}</p>
                   <strong>{self.character.name}</strong>
                   <span>{self.character.archetype}</span>
-                  <small>{isReady ? "You are ready. Watch the TV." : selectedStartingContract ? "Mission selected" : "Choose starting mission"}</small>
+                  <small>{isLateJoinPending ? (selectedStartingContract ? "Ready to enter play" : "Choose starting mission") : isReady ? "You are ready. Watch the TV." : selectedStartingContract ? "Mission selected" : "Choose starting mission"}</small>
                 </div>
               </div>
 
@@ -779,7 +825,7 @@ export function PortraitControllerView({
 
               <p className="phone-lobby-ready-state">
                 {isReady
-                  ? "You are ready. Watch the TV."
+                  ? isLateJoinPending ? "You have joined the turn order." : "You are ready. Watch the TV."
                   : selectedStartingContract
                     ? "Mission locked. Press Ready when set."
                     : readyDisabledReason}
@@ -792,7 +838,7 @@ export function PortraitControllerView({
                   disabled={!canReady}
                   onClick={() => onIntent?.({ type: "SET_READY", seatId: self.seatId, ready: true })}
                 >
-                  Ready
+                  {isLateJoinPending ? "Join Game" : "Ready"}
                 </button>
                 {onLobbyBack ? (
                   <button type="button" className="phone-button phone-button-secondary phone-lobby-ready-button" onClick={onLobbyBack}>
@@ -898,8 +944,8 @@ export function PortraitControllerView({
             <div className="phone-battle-topbar" aria-label="Battle operative status">
               <img src={getCharacterPortraitPath(self.character.id)} alt="" />
               <div>
-                <span>{formatSeatLabel(self.seatId)}</span>
-                <strong>{self.character.name}</strong>
+                <span>{self.character.name}</span>
+                <strong>{displayName}</strong>
               </div>
               <p>{self.character.wounds} wounds · {self.character.salvage ?? 0} Salvage</p>
             </div>
@@ -909,9 +955,9 @@ export function PortraitControllerView({
                 <img src={getCharacterPortraitPath(self.character.id)} alt="" />
               </div>
               <div className="phone-portrait-header-copy">
-                <span>{formatSeatLabel(self.seatId)}</span>
-                <h1>{self.character.name}</h1>
-                <p>{self.character.archetype}</p>
+                <span>{self.character.name}</span>
+                <h1>{displayName}</h1>
+                <p>{self.character.archetype} · {formatSeatLabel(self.seatId)}</p>
               </div>
               <div className="phone-portrait-header-vitals" aria-label="Character vitals">
                 <span>Health</span>
@@ -933,9 +979,9 @@ export function PortraitControllerView({
             </>
           ) : (
             <div className="phone-compact-status-strip" aria-label="Compact player status">
-              <strong>{self.character.name}</strong>
+              <strong>{displayName}</strong>
               <span>
-                {self.character.wounds} wounds | {self.character.salvage ?? 0} Salvage | {compactStatusDetail}
+                {self.character.name} | {self.character.wounds} wounds | {self.character.salvage ?? 0} Salvage | {compactStatusDetail}
               </span>
             </div>
           )}
@@ -962,8 +1008,8 @@ export function PortraitControllerView({
                 </div>
                 <div className="phone-portrait-hero-copy">
                   <p className="phone-panel-kicker">{activeSeatId === self.seatId ? "Active turn" : "Standby"}</p>
-                  <h2>{self.character.name}</h2>
-                  <p>{self.character.archetype}</p>
+                  <h2>{displayName}</h2>
+                  <p>{self.character.name} · {self.character.archetype}</p>
                   <div className="phone-portrait-chip-row">
                     <span>{roomCode}</span>
                     <span>{displayName}</span>

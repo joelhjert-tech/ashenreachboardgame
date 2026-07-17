@@ -46,6 +46,7 @@ interface HostShopDisplayModel {
   stockRevealed: boolean;
   riskActive: boolean;
   transactionComplete: boolean;
+  transactionTitle: string | null;
   outcome: string | null;
   guidance: string;
   resultDeltas: ResultDelta[];
@@ -218,13 +219,18 @@ function buildFromPayload(shopEncounter: PublicShopEncounterState, resultDeltas:
     stockRevealed: stockCount > 0,
     riskActive: shopEncounter.status === "dangerous" || shopEncounter.services.some((service) => Boolean(service.risk)),
     transactionComplete: Boolean(shopEncounter.recentOutcome),
+    transactionTitle: shopEncounter.recentOutcome?.gained
+      ? `Bought ${shopEncounter.recentOutcome.gained}`
+      : shopEncounter.recentOutcome?.sold
+        ? `Sold ${shopEncounter.recentOutcome.sold}`
+        : shopEncounter.recentOutcome ? "Shop action complete" : null,
     outcome: shopEncounter.recentOutcome?.summary ?? null,
     guidance: isBlocked ? "Clear the threat lock before trade resumes." : "Choose on player phone",
     resultDeltas
   };
 }
 
-function buildFallbackModel(activePlayer: PublicPlayer): HostShopDisplayModel | null {
+function buildFallbackModel(activePlayer: PublicPlayer, playerName: string): HostShopDisplayModel | null {
   const space = getBoardSpace(activePlayer.sectorId);
 
   if (!space || !space.tags.some((tag) => tag === "shop" || tag === "risk-shop")) {
@@ -235,14 +241,14 @@ function buildFallbackModel(activePlayer: PublicPlayer): HostShopDisplayModel | 
   const status: ShopStatus = space.tags.includes("risk-shop") ? "DANGEROUS" : "OPEN";
 
   return {
-    playerName: activePlayer.character.name,
+    playerName,
     salvage: activePlayer.character.salvage ?? null,
     shopName: space.name,
     sectorName: space.name,
     shopType: serviceTags.map(toTitleCase).join(" / ") || toTitleCase(space.tier),
     shopCategory: "Public Shop",
     status,
-    statusCopy: `Waiting on ${activePlayer.character.name} to choose a shop service.`,
+    statusCopy: `Waiting on ${playerName} to choose a shop service.`,
     stockCount: 0,
     sellableCount: 0,
     threatLockCount: 0,
@@ -252,6 +258,7 @@ function buildFallbackModel(activePlayer: PublicPlayer): HostShopDisplayModel | 
     stockRevealed: false,
     riskActive: status === "DANGEROUS",
     transactionComplete: false,
+    transactionTitle: null,
     outcome: null,
     guidance: "Choose on player phone",
     resultDeltas: []
@@ -264,7 +271,10 @@ function buildShopModel(
 ): HostShopDisplayModel | null {
   return patch.payload.shopEncounter
     ? buildFromPayload(patch.payload.shopEncounter, shopResultDeltas(patch.payload.publicResultDeltas))
-    : buildFallbackModel(activePlayer);
+    : buildFallbackModel(
+        activePlayer,
+        patch.payload.seats.find((seat) => seat.seatId === activePlayer.seatId)?.displayName ?? activePlayer.character.name
+      );
 }
 
 function HostShopPreviewCard({ card, index }: { card: ShopPreviewCard; index: number }): ReactElement {
@@ -409,6 +419,15 @@ export function HostShopOverlay({
             ))}
           </section>
 
+          {model.transactionComplete && (
+            <section className="host-shop-transaction-focus" role="status" aria-live="polite" data-testid="host-shop-transaction-focus">
+              <span>Transaction complete</span>
+              <strong>{model.transactionTitle}</strong>
+              <p>{model.outcome}</p>
+              <ResultDeltaRow deltas={model.resultDeltas} publicOnly className="host-shop-delta-row" />
+            </section>
+          )}
+
           {model.status === "BLOCKED" && (
             <section className="host-shop-threat-list" aria-label="Blocking threats">
               {model.blockingLanes.length > 0 ? (
@@ -433,7 +452,7 @@ export function HostShopOverlay({
 
         <HostShopStatusPanel model={model} />
 
-        {(model.outcome || model.resultDeltas.length > 0 || model.status === "BLOCKED") && (
+        {!model.transactionComplete && (model.outcome || model.resultDeltas.length > 0 || model.status === "BLOCKED") && (
           <section className="host-shop-outcome" aria-label="Market result" data-testid="host-shop-outcome">
             <p>{model.outcome ?? model.blockedReasonText ?? "Trade is suspended."}</p>
             <ResultDeltaRow deltas={model.resultDeltas} publicOnly className="host-shop-delta-row" />

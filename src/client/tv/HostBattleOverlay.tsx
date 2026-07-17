@@ -265,6 +265,7 @@ function buildBattleModel(
 
   const stat = battle?.stat ?? encounter?.stat ?? pendingEnemyRoll?.stat ?? "grit";
   const statLabel = statLabelById[stat];
+  const playerName = patch.payload.seats.find((seat) => seat.seatId === activePlayer.seatId)?.displayName ?? activePlayer.character.name;
   const projectedOutcome = patch.payload.outcomeSummary;
   const sourceCardId = card?.id ?? encounter?.id ?? pendingEnemyRoll?.encounterCardId ?? null;
   const opponentCardType = getOpponentCardType(resolution);
@@ -308,18 +309,18 @@ function buildBattleModel(
   const outcomeCopy =
     outcomeText ??
     (outcomeLabel === "SUCCESS"
-      ? `${activePlayer.character.name} wins the resolution.`
+      ? `${playerName} wins the resolution.`
       : outcomeLabel === "DEFEAT"
-        ? `${activePlayer.character.name} fails the resolution.`
+        ? `${playerName} fails the resolution.`
         : "Resolution pending.");
   const statusTitle = outcomeLabel === "RESOLVING" ? "Waiting for roll" : outcomeLabel === "SUCCESS" ? "Applying success outcome" : outcomeLabel === "DEFEAT" ? "Applying failure outcome" : "Resolving draw";
   const statusCopy = outcomeLabel === "RESOLVING"
-    ? `Waiting for ${activePlayer.character.name} to roll on phone.`
-    : `Waiting for ${activePlayer.character.name} to continue on phone.`;
+    ? `Waiting for ${playerName} to roll on phone.`
+    : `Waiting for ${playerName} to continue on phone.`;
   return {
     player: {
-      name: activePlayer.character.name,
-      eyebrow: "Active operative",
+      name: playerName,
+      eyebrow: activePlayer.character.name,
       detail: activePlayer.character.archetype,
       artUrl: getCharacterPortraitPath(activePlayer.character.id),
       cardBackUrl: getOperativeBattleCardBackPath(),
@@ -482,6 +483,13 @@ function HostBattleCardReveal({
 
 function HostBattleVsCore({ model }: { model: HostBattleDisplayModel }): ReactElement {
   const comparisonSymbol = getComparisonSymbol(model.playerTotal, model.enemyTotal);
+  const decisiveResult = model.outcomeLabel === "SUCCESS"
+    ? `${model.player.name} wins`
+    : model.outcomeLabel === "DEFEAT"
+      ? `${model.opponent.name} wins`
+      : model.outcomeLabel === "DRAW"
+        ? "Totals tied"
+        : "Roll in progress";
 
   return (
     <section className="host-battle-vs-block" aria-label="Resolution comparison" data-testid="host-battle-vs-block">
@@ -491,6 +499,7 @@ function HostBattleVsCore({ model }: { model: HostBattleDisplayModel }): ReactEl
       <strong>VS</strong>
       <div className={`host-battle-result-banner host-battle-result-${model.outcomeLabel.toLowerCase()}`} data-testid="host-battle-result-banner">
         <b>{model.outcomeLabel}</b>
+        <strong>{decisiveResult}</strong>
         <span>{model.marginText}</span>
       </div>
       <div className="host-battle-test-label" data-testid="host-battle-test-label">

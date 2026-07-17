@@ -1790,9 +1790,9 @@ describe("PhoneActionPanel", () => {
       />
     );
 
-    expect(screen.getAllByText(/no equipment available/i)).toHaveLength(1);
+    expect(screen.getAllByText(/stock has not been revealed/i)).toHaveLength(1);
     expect(screen.getAllByText(/no sellable items/i)).toHaveLength(1);
-    expect(screen.getByText(/use a buy service to reveal market stock/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/choose browse equipment/i).length).toBeGreaterThan(0);
     expect(screen.getByText(/only sellable carried gear appears here/i)).toBeInTheDocument();
     expect(screen.getByTestId("phone-shop-category-icon")).toHaveAttribute("src", "/assets/riftfall/ui/shop-category-market.svg");
     expect(screen.getByText(/purchased: ashlock carbine/i)).toBeInTheDocument();
@@ -2733,7 +2733,7 @@ describe("PhoneActionPanel", () => {
     );
 
     expect(screen.getByTestId("phone-battle-shell")).toHaveTextContent(/roll required/i);
-    expect(screen.getByLabelText(/sable vey versus cinder-veil stalker/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/lane versus cinder-veil stalker/i)).toBeInTheDocument();
     expect(screen.getByRole("img", { name: /cinder-veil stalker/i })).toHaveAttribute("src", expect.stringMatching(/\/assets\/cards\/(threats|fallbacks)\//));
     expect(screen.getByLabelText(/battle totals/i)).toHaveTextContent(/opponent\s*8/i);
     fireEvent.click(screen.getByRole("button", { name: /view details/i }));
@@ -2811,7 +2811,7 @@ describe("PhoneActionPanel", () => {
       />
     );
 
-    expect(screen.getByLabelText(/sable vey versus lantern-ash ghoul/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/lane versus lantern-ash ghoul/i)).toBeInTheDocument();
     expect(screen.getByTestId("phone-battle-total-comparison")).toHaveTextContent(/12.*12/i);
     expect(screen.getByText(/tie succeeds against this threat/i)).toBeInTheDocument();
     expect(screen.getAllByText(/^threat defeated$/i)).toHaveLength(1);

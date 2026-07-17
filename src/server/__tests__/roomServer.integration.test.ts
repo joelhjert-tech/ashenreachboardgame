@@ -1966,24 +1966,9 @@ describe("roomServer websocket integration", () => {
     const phone1CombatMarker = phone1.mark();
     const phone3CombatMarker = phone3.mark();
     await sendVisibleCombat(phone2, "seat-2", "grit");
-    await tv.waitForSince(marker, statePatchWithPendingEnemyRoll("seat-2"));
-    const assignedSeat2EnemyRoller = harness.roomServer.getState().pendingEnemyRoll?.assignedRollerSeatId;
-    const assignedSeat2Probe =
-      assignedSeat2EnemyRoller === "seat-1" ? phone1 : assignedSeat2EnemyRoller === "seat-3" ? phone3 : null;
-    expect(assignedSeat2Probe).not.toBeNull();
-    const assignedSeat2Marker = assignedSeat2Probe!.mark();
-    assignedSeat2Probe!.send({
-      type: "ENEMY_ROLL_REQUESTED",
-      seatId: assignedSeat2EnemyRoller!
-    });
-    const assignedSeat2Result = await assignedSeat2Probe!.waitForSince(
-      assignedSeat2Marker,
-      (message) => isIntentRejected(message) || statePatchWithOpposedOutcome("seat-2")(message)
-    );
-    if (isIntentRejected(assignedSeat2Result)) {
-      throw new Error(`Assigned enemy roller was rejected: ${assignedSeat2Result.reason}`);
-    }
+    await tv.waitForSince(marker, statePatchWithOpposedOutcome("seat-2"));
     await waitForServerTick();
+    expect(harness.roomServer.getState().pendingEnemyRoll).toBeNull();
     expect(harness.roomServer.getState().activeSeatIndex).toBe(1);
     expect(harness.roomServer.getState().phase).toBe("broadcast");
     await endBroadcastTurn(phone2, tv, "seat-2", 2);
@@ -2097,24 +2082,9 @@ describe("roomServer websocket integration", () => {
 
     marker = tv.mark();
     await sendVisibleCombat(phone3, "seat-3", "grit");
-    await tv.waitForSince(marker, statePatchWithPendingEnemyRoll("seat-3"));
-    const assignedSeat3EnemyRoller = harness.roomServer.getState().pendingEnemyRoll?.assignedRollerSeatId;
-    const assignedSeat3Probe =
-      assignedSeat3EnemyRoller === "seat-1" ? phone1 : assignedSeat3EnemyRoller === "seat-2" ? phone2 : null;
-    expect(assignedSeat3Probe).not.toBeNull();
-    const assignedSeat3Marker = assignedSeat3Probe!.mark();
-    assignedSeat3Probe!.send({
-      type: "ENEMY_ROLL_REQUESTED",
-      seatId: assignedSeat3EnemyRoller!
-    });
-    const assignedSeat3Result = await assignedSeat3Probe!.waitForSince(
-      assignedSeat3Marker,
-      (message) => isIntentRejected(message) || statePatchWithOpposedOutcome("seat-3")(message)
-    );
-    if (isIntentRejected(assignedSeat3Result)) {
-      throw new Error(`Assigned enemy roller was rejected: ${assignedSeat3Result.reason}`);
-    }
+    await tv.waitForSince(marker, statePatchWithOpposedOutcome("seat-3"));
     await waitForServerTick();
+    expect(harness.roomServer.getState().pendingEnemyRoll).toBeNull();
     expect(harness.roomServer.getState().activeSeatIndex).toBe(2);
     expect(harness.roomServer.getState().phase).toBe("broadcast");
     await endBroadcastTurn(phone3, tv, "seat-3", 0);
@@ -2190,7 +2160,7 @@ describe("roomServer websocket integration", () => {
     expect(tv.messages.every((message) => !isStatePatch(message) || !Object.hasOwn(message.payload, "self"))).toBe(true);
   }, 15000);
 
-  it("assigns an enemy roller over the wire and broadcasts dual-dice combat data to the table", async () => {
+  it("rolls for enemies automatically and broadcasts dual-dice combat data to the table", async () => {
     harness = await startHarness(
       [0, 5, 5, 0, 0],
       createState({
@@ -2242,42 +2212,6 @@ describe("roomServer websocket integration", () => {
     const phone3Marker = phone3.mark();
     await sendVisibleCombat(phone1, "seat-1", "grit");
 
-    const pendingPatch = (await tv.waitForSince(marker, statePatchWithPendingEnemyRoll("seat-1"))) as Extract<
-      ServerEnvelope,
-      { type: "STATE_PATCH" }
-    >;
-    const pendingEnemyRoll = pendingPatch.payload.pendingEnemyRoll as
-      | { assignedRollerSeatId: string }
-      | null
-      | undefined;
-    const assignedRollerSeatId =
-      pendingEnemyRoll
-        ? String(pendingEnemyRoll.assignedRollerSeatId)
-        : null;
-
-    expect(assignedRollerSeatId).not.toBe("seat-1");
-    expect(assignedRollerSeatId === "seat-2" || assignedRollerSeatId === "seat-3").toBe(true);
-
-    const wrongSeatProbe = assignedRollerSeatId === "seat-2" ? phone3 : phone2;
-    const wrongSeatId = assignedRollerSeatId === "seat-2" ? "seat-3" : "seat-2";
-    const wrongSeatMarker = wrongSeatProbe.mark();
-    wrongSeatProbe.send({
-      type: "ENEMY_ROLL_REQUESTED",
-      seatId: wrongSeatId
-    });
-    const rejection = await wrongSeatProbe.waitForSince(
-      wrongSeatMarker,
-      (message) => message.type === "INTENT_REJECTED" && message.actionType === "ENEMY_ROLL_REQUESTED"
-    );
-    expect(isIntentRejected(rejection) && rejection.reason).toContain("assigned enemy roller");
-
-    const assignedProbe = assignedRollerSeatId === "seat-2" ? phone2 : phone3;
-    const assignedProbeMarker = assignedProbe.mark();
-    assignedProbe.send({
-      type: "ENEMY_ROLL_REQUESTED",
-      seatId: assignedRollerSeatId!
-    });
-
     const tvOutcome = (await tv.waitForSince(marker, statePatchWithOpposedOutcome("seat-1"))) as Extract<
       ServerEnvelope,
       { type: "STATE_PATCH" }
@@ -2286,8 +2220,8 @@ describe("roomServer websocket integration", () => {
       ServerEnvelope,
       { type: "STATE_PATCH" }
     >;
-    const assignedOutcome = (await assignedProbe.waitForSince(
-      assignedProbeMarker,
+    const phone2Outcome = (await phone2.waitForSince(
+      phone2Marker,
       statePatchWithOpposedOutcome("seat-1")
     )) as Extract<ServerEnvelope, { type: "STATE_PATCH" }>;
     const tvOutcomeSummary = tvOutcome.payload.outcomeSummary as
@@ -2296,7 +2230,7 @@ describe("roomServer websocket integration", () => {
     const phone1OutcomeSummary = phone1Outcome.payload.outcomeSummary as
       | { enemyRollerSeatId: string | null }
       | undefined;
-    const assignedOutcomeSummary = assignedOutcome.payload.outcomeSummary as
+    const phone2OutcomeSummary = phone2Outcome.payload.outcomeSummary as
       | { enemyTotal: number | null }
       | undefined;
 
@@ -2305,8 +2239,9 @@ describe("roomServer websocket integration", () => {
     expect(tvOutcomeSummary?.enemyDie1).not.toBeNull();
     expect(tvOutcomeSummary?.enemyDie2).not.toBeNull();
     expect(tvOutcomeSummary?.enemyTotal).not.toBeNull();
-    expect(phone1OutcomeSummary?.enemyRollerSeatId).toBe(assignedRollerSeatId);
-    expect(assignedOutcomeSummary?.enemyTotal).not.toBeNull();
+    expect(phone1OutcomeSummary?.enemyRollerSeatId).toBeNull();
+    expect(phone2OutcomeSummary?.enemyTotal).not.toBeNull();
+    expect(harness.roomServer.getState().pendingEnemyRoll).toBeNull();
     expect(
       phone2.messages
         .slice(phone2Marker)
@@ -2327,7 +2262,7 @@ describe("roomServer websocket integration", () => {
     ).toBe(true);
   }, 15000);
 
-  it("reassigns a pending enemy roll when the assigned roller disconnects", async () => {
+  it("resolves the enemy roll automatically when another operative disconnects", async () => {
     harness = await startHarness(
       [0, 0, 5, 5, 0, 0],
       createState({
@@ -2372,35 +2307,22 @@ describe("roomServer websocket integration", () => {
     probes.push(tv, phone1, phone2, phone3);
     await tv.waitFor(statePatchForPhase("action", 0));
 
-    const pendingMarker = tv.mark();
+    phone2.close();
+    await waitForServerTick();
+
+    const outcomeMarker = tv.mark();
     await sendVisibleCombat(phone1, "seat-1", "grit");
-    const pendingPatch = (await tv.waitForSince(pendingMarker, statePatchWithPendingEnemyRoll("seat-1"))) as Extract<
-      ServerEnvelope,
-      { type: "STATE_PATCH" }
-    >;
-    const assignedRollerSeatId = String(
-      (pendingPatch.payload.pendingEnemyRoll as { assignedRollerSeatId: string }).assignedRollerSeatId
-    );
-    const assignedProbe = assignedRollerSeatId === "seat-2" ? phone2 : phone3;
-    const replacementSeatId = assignedRollerSeatId === "seat-2" ? "seat-3" : "seat-2";
-    const recoveryMarker = tv.mark();
-
-    assignedProbe.close();
-
-    const recoveryPatch = (await tv.waitForSince(
-      recoveryMarker,
-      (message) =>
-        isStatePatch(message) &&
-        typeof message.payload.pendingEnemyRoll === "object" &&
-        message.payload.pendingEnemyRoll !== null &&
-        (message.payload.pendingEnemyRoll as { assignedRollerSeatId?: string }).assignedRollerSeatId === replacementSeatId
+    const outcome = (await tv.waitForSince(
+      outcomeMarker,
+      statePatchWithOpposedOutcome("seat-1")
     )) as Extract<ServerEnvelope, { type: "STATE_PATCH" }>;
-    const summary = recoveryPatch.payload.outcomeSummary as { summary?: string } | undefined;
+    const summary = outcome.payload.outcomeSummary as
+      | { enemyRollerSeatId?: string | null; enemyTotal?: number | null }
+      | undefined;
 
-    expect((recoveryPatch.payload.pendingEnemyRoll as { assignedRollerSeatId: string }).assignedRollerSeatId).toBe(
-      replacementSeatId
-    );
-    expect(summary?.summary).toContain("Enemy roll reassigned");
+    expect(summary?.enemyRollerSeatId).toBeNull();
+    expect(summary?.enemyTotal).not.toBeNull();
+    expect(harness.roomServer.getState().pendingEnemyRoll).toBeNull();
   }, 15000);
 
   it("preserves seat state across disconnect and restores it on rejoin", async () => {
@@ -2458,27 +2380,10 @@ describe("roomServer websocket integration", () => {
 
       marker = tv.mark();
       await sendVisibleCombat(phone2, "seat-2", "grit");
-      await tv.waitForSince(marker, statePatchWithPendingEnemyRoll("seat-2"));
-      const reconnectAssignedSeat2Roller = harness.roomServer.getState().pendingEnemyRoll?.assignedRollerSeatId;
-      const reconnectAssignedSeat2Probe =
-        reconnectAssignedSeat2Roller === "seat-1" ? phone1 : reconnectAssignedSeat2Roller === "seat-3" ? phone3 : null;
-      if (!reconnectAssignedSeat2Probe) {
-        throw new Error("Assigned enemy roller probe was not available");
-      }
-      const reconnectAssignedSeat2Marker = reconnectAssignedSeat2Probe.mark();
-      reconnectAssignedSeat2Probe.send({
-        type: "ENEMY_ROLL_REQUESTED",
-        seatId: reconnectAssignedSeat2Roller!
-      });
-      const reconnectAssignedSeat2Result = await reconnectAssignedSeat2Probe.waitForSince(
-        reconnectAssignedSeat2Marker,
-        (message) => isIntentRejected(message) || statePatchWithOpposedOutcome("seat-2")(message)
-      );
-      if (isIntentRejected(reconnectAssignedSeat2Result)) {
-        throw new Error(`Assigned enemy roller was rejected: ${reconnectAssignedSeat2Result.reason}`);
-      }
+      await tv.waitForSince(marker, statePatchWithOpposedOutcome("seat-2"));
       await waitForServerTick();
       step = "seat2 combat";
+      expect(harness.roomServer.getState().pendingEnemyRoll).toBeNull();
       expect(harness.roomServer.getState().activeSeatIndex).toBe(1);
       expect(harness.roomServer.getState().phase).toBe("broadcast");
       await endBroadcastTurn(phone2, tv, "seat-2", 2);
@@ -2681,22 +2586,17 @@ describe("roomServer websocket integration", () => {
         seat3PostRejoinCombatMarker,
         (message) =>
           isIntentRejected(message) ||
-          statePatchWithPendingEnemyRoll("seat-3")(message) ||
           statePatchWithOpposedOutcome("seat-3")(message)
       );
       if (isIntentRejected(postRejoinCombat)) {
         throw new Error(`Seat 3 combat was rejected after rejoin: ${postRejoinCombat.reason}`);
       }
-      if (statePatchWithPendingEnemyRoll("seat-3")(postRejoinCombat)) {
-        await tv.waitForSince(marker, statePatchWithPendingEnemyRoll("seat-3"));
-        const reconnectAssignedSeat3Roller = harness.roomServer.getState().pendingEnemyRoll?.assignedRollerSeatId ?? null;
-        expect(reconnectAssignedSeat3Roller === "seat-1" || reconnectAssignedSeat3Roller === "seat-2").toBe(true);
-      }
+      await tv.waitForSince(marker, statePatchWithOpposedOutcome("seat-3"));
       await waitForServerTick();
       step = "seat3 resume combat";
       expect(harness.roomServer.getState().activeSeatIndex).toBe(2);
-      expect(harness.roomServer.getState().phase).toBe("action");
-      expect(harness.roomServer.getState().pendingEnemyRoll?.fighterSeatId).toBe("seat-3");
+      expect(harness.roomServer.getState().phase).toBe("broadcast");
+      expect(harness.roomServer.getState().pendingEnemyRoll).toBeNull();
       expect(harness.roomServer.getState().players.find((player) => player.seatId === "seat-3")?.character.activeContract).toEqual({
         contractId: "choir-quietus",
         progress: 0

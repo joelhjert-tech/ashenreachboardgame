@@ -1224,21 +1224,16 @@ describe("TvApp", () => {
       clearDebugEvents: vi.fn()
     });
     rerender(<TvApp />);
-    const journey = await screen.findByTestId("tv-movement-journey");
-    expect(journey).toHaveTextContent(/ashwake crossing to anchor market/i);
-    expect(journey).toHaveTextContent(/trade if the sector is clear/i);
-    expect(within(journey).getByTestId("tile-art-ashwake-crossing")).toHaveAttribute("src", "/assets/map/tiles/map_tile_hollow_gate.png");
-    expect(within(journey).getByTestId("tile-art-glassmere-spindle")).toHaveAttribute("src", "/assets/map/tiles/map_tile_ironbridge_span.png");
-    expect(journey).toHaveFocus();
+    const arrivalFocus = await screen.findByTestId("tv-arrival-focus");
+    expect(arrivalFocus).toHaveTextContent(/arrived at anchor market/i);
+    expect(arrivalFocus).not.toHaveTextContent(/combat|battle/i);
     expect(screen.queryByTestId("host-battle-overlay")).not.toBeInTheDocument();
-    expect(screen.queryByTestId("tv-movement-focus")).not.toBeInTheDocument();
-    expect(screen.queryByText("Tactical map")).not.toBeInTheDocument();
+    expect(screen.getByText("Tactical map")).toBeInTheDocument();
 
-    await waitFor(() => expect(journey).toHaveTextContent(/arrived at anchor market/i), { timeout: 3_500 });
-    await waitFor(() => expect(screen.queryByTestId("tv-movement-journey")).not.toBeInTheDocument(), { timeout: 4_500 });
+    await waitFor(() => expect(screen.queryByTestId("tv-arrival-focus")).not.toBeInTheDocument(), { timeout: 4_500 });
     rerender(<TvApp />);
     expect(await screen.findByTestId("host-battle-overlay")).toBeInTheDocument();
-    expect(screen.queryByTestId("tv-movement-journey")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("tv-arrival-focus")).not.toBeInTheDocument();
   });
 
   it("shows sector exploration math in the sector brief without duplicating private data", async () => {
@@ -1600,7 +1595,7 @@ describe("TvApp", () => {
     expect(screen.getByTestId("host-battle-enemy-dice")).toHaveTextContent(/roll -/i);
     expect(screen.getByTestId("host-battle-result-banner")).toHaveTextContent(/success/i);
     expect(screen.getByTestId("host-battle-result-banner")).toHaveTextContent(/wins by 1/i);
-    expect(screen.getByTestId("host-battle-rolls")).toHaveTextContent(/Tarek Voss\s*8\s*>\s*7\s*Difficulty/i);
+    expect(screen.getByTestId("host-battle-rolls")).toHaveTextContent(/Joel\s*8\s*>\s*7\s*Difficulty/i);
     expect(screen.getByTestId("host-battle-player-math")).toHaveTextContent(/Signal 1 \+ Roll 7 = Total 8/i);
     expect(screen.getByTestId("host-battle-enemy-math")).toHaveTextContent(/Difficulty 7 = Total 7/i);
     expect(within(screen.getByTestId("host-battle-vs-block")).getByTestId("result-delta-row")).toHaveTextContent(/\+1 Trophy/i);
@@ -1953,7 +1948,9 @@ describe("TvApp", () => {
     render(<TvApp />);
 
     const purchaseOverlay = await screen.findByTestId("host-shop-overlay");
-    expect(screen.getByTestId("host-shop-outcome")).toHaveTextContent(/bought ashlock carbine for 3 salvage/i);
+    expect(screen.getByTestId("host-shop-transaction-focus")).toHaveTextContent(/bought ashlock carbine/i);
+    expect(screen.getByTestId("host-shop-transaction-focus")).toHaveTextContent(/bought ashlock carbine for 3 salvage/i);
+    expect(screen.queryByTestId("host-shop-outcome")).not.toBeInTheDocument();
     expect(purchaseOverlay).toHaveTextContent(/ashlock carbine/i);
     expect(purchaseOverlay).not.toHaveTextContent(/battle resolving/i);
     expect(screen.queryByTestId("host-battle-overlay")).not.toBeInTheDocument();
@@ -1986,7 +1983,9 @@ describe("TvApp", () => {
     render(<TvApp />);
 
     expect(await screen.findByTestId("host-shop-overlay")).toBeInTheDocument();
-    expect(screen.getByTestId("host-shop-outcome")).toHaveTextContent(/sold veil hook for 1 salvage/i);
+    expect(screen.getByTestId("host-shop-transaction-focus")).toHaveTextContent(/sold veil hook/i);
+    expect(screen.getByTestId("host-shop-transaction-focus")).toHaveTextContent(/sold veil hook for 1 salvage/i);
+    expect(screen.queryByTestId("host-shop-outcome")).not.toBeInTheDocument();
     expect(JSON.stringify(patch.payload.shopEncounter)).not.toContain("Private agenda");
   });
 
@@ -2144,12 +2143,13 @@ describe("TvApp", () => {
     expect(screen.getByTestId("host-battle-result-banner")).toHaveTextContent(/success/i);
     expect(screen.getByTestId("host-battle-result-banner")).toHaveTextContent(/wins by 3/i);
     expect(screen.getByTestId("host-battle-phase-status")).toHaveTextContent(/applying success outcome/i);
-    expect(screen.getByTestId("host-battle-phase-status")).toHaveTextContent(/waiting for tarek voss to continue on phone/i);
+    expect(screen.getByTestId("host-battle-phase-status")).toHaveTextContent(/waiting for joel to continue on phone/i);
     expect(screen.getByTestId("host-battle-test-label")).toHaveTextContent(/grit test/i);
     expect(overlay).toHaveTextContent(/base grit\s*\+2/i);
     expect(overlay).toHaveTextContent(/black route fuse\s*\+3/i);
     expect(overlay).toHaveTextContent(/fandiablos\s*\+1/i);
-    expect(screen.getByTestId("host-battle-rolls")).toHaveTextContent(/Tarek Voss\s*11\s*>\s*8\s*Enemy/i);
+    expect(screen.getByTestId("host-battle-rolls")).toHaveTextContent(/Joel\s*11\s*>\s*8\s*Enemy/i);
+    expect(screen.getByTestId("host-battle-result-banner")).toHaveTextContent(/joel wins/i);
     expect(screen.getByTestId("host-battle-rolls")).not.toHaveTextContent(/player total/i);
     expect(screen.getByTestId("host-battle-player-math")).toHaveTextContent(/Grit 6 \+ Roll 5 = Total 11/i);
     expect(screen.getByTestId("host-battle-rolls")).not.toHaveTextContent(/opposition total/i);
@@ -2269,7 +2269,7 @@ describe("TvApp", () => {
 
     expect(overlay).toHaveTextContent(/tarek voss/i);
     expect(overlay).toHaveTextContent(/cinder-veil stalker/i);
-    expect(screen.getByTestId("host-battle-rolls")).toHaveTextContent(/Tarek Voss\s*11\s*>\s*8\s*Enemy/i);
+    expect(screen.getByTestId("host-battle-rolls")).toHaveTextContent(/Joel\s*11\s*>\s*8\s*Enemy/i);
     expect(screen.getByTestId("host-battle-player-math")).toHaveTextContent(/Grit 6 \+ Roll 5 = Total 11/i);
     expect(screen.getByTestId("host-battle-enemy-math")).toHaveTextContent(/Battle 0 \+ Roll 8 = Total 8/i);
     expect(screen.queryByTestId("tv-card-reveal")).not.toBeInTheDocument();

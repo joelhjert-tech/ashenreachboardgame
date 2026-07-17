@@ -8465,13 +8465,13 @@ describe("contract lifecycle ledger", () => {
 });
 
 describe("opposed combat", () => {
-  it("assigns a non-active connected non-kicked seat as enemy roller and rejects other seats", () => {
+  it("rolls enemy dice automatically without assigning a phone roller", () => {
     const server = new GameRoomServer(
       createState({
         currentEncounter: createThreats().get("cinder-veil-stalker") ?? null
       }),
       [],
-      createSequenceRandomSource([0, 5, 5, 0, 0]),
+      createSequenceRandomSource([5, 5, 0, 0]),
       createThreats(),
       createCharacters(),
       createGear(),
@@ -8484,23 +8484,11 @@ describe("opposed combat", () => {
       stat: "grit"
     });
 
-    expect(server.getState().pendingEnemyRoll?.assignedRollerSeatId).toBe("seat-2");
-
-    runIntent(server, {
-      type: "ENEMY_ROLL_REQUESTED",
-      seatId: "seat-3"
-    });
-
-    expect(server.getState().pendingEnemyRoll?.assignedRollerSeatId).toBe("seat-2");
-
-    runIntent(server, {
-      type: "ENEMY_ROLL_REQUESTED",
-      seatId: "seat-2"
-    });
-
     const player = server.getState().players.find((entry) => entry.seatId === "seat-1");
     expect(server.getState().pendingEnemyRoll).toBeNull();
     expect(player?.character.heldGear.some((item) => item.id === "tuning-spines")).toBe(true);
+    expect(server.getState().eventLog.some((entry: unknown) => (entry as { type?: string }).type === "ENEMY_ROLL_ASSIGNED")).toBe(false);
+    expect(server.getState().eventLog.some((entry: unknown) => (entry as { type?: string }).type === "ENEMY_ROLL_REQUESTED")).toBe(false);
   });
 
   it("falls back to automatic server resolution when no eligible enemy roller exists", () => {

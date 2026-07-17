@@ -40,7 +40,7 @@ async function joinPlayer(
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto(`${clientOrigin}/?room=${session.roomCode}&resetAuth=1`);
   await page.getByLabel("Player name").fill(displayName);
-  await page.getByRole("button", { name: /Join as Host Phone/i }).click();
+  await page.getByRole("button", { name: /Join Game/i }).click();
   await page.getByRole("heading", { name: "Select operative" }).waitFor();
   await page.getByRole("button", { name: new RegExp(operativeName, "i") }).click();
   await page.getByRole("heading", { name: "Choose Starting Mission" }).waitFor();

@@ -53,7 +53,6 @@ import type {
 } from "../shared/types.js";
 import { HostPlayerCard } from "./HostPlayerCard.js";
 import { HostBattleChamber } from "./HostBattleChamber.js";
-import { HostMovementJourney, type HostMovementJourneyModel } from "./HostMovementJourney.js";
 import { isHostBattleActive } from "./hostBattleState.js";
 import { HostShopOverlay } from "./HostShopOverlay.js";
 import { isHostShopActive } from "./hostShopState.js";
@@ -783,6 +782,7 @@ function ActiveOperativeOverlay({
         seatId={activeSeat.seatId}
         isOpen={!activeSeat.displayName || activeSeat.kicked}
         isConnected={activeSeat.connected}
+        playerName={activeSeat.displayName}
         characterName={activePlayer?.character.name ?? activeSeat.displayName}
         characterTitle={activePlayer?.character.archetype ?? null}
         characterRole={activePresentation?.role ?? null}
@@ -868,7 +868,8 @@ function OperativesRail({ patch, characterCatalog, activeSeatId, sessionMode, ba
           const catalogCharacter = characterCatalog.find((entry) => entry.id === seat.characterId) ?? null;
           const isOccupied = Boolean(player || seat.displayName);
           const isOpen = !isOccupied || seat.kicked;
-          const characterName = isOpen ? "Open Seat" : player?.character.name ?? seat.displayName ?? catalogCharacter?.name ?? "Open Seat";
+          const playerName = isOpen ? "Open Seat" : seat.displayName ?? player?.character.name ?? "Open Seat";
+          const characterName = isOpen ? "" : player?.character.name ?? catalogCharacter?.name ?? "Awaiting operative";
           const characterTitle = isOpen ? "-" : player?.character.archetype ?? catalogCharacter?.archetype ?? "Awaiting operative";
           const characterPresentation = player?.character.presentation ?? catalogCharacter?.presentation;
           const isActive = seat.seatId === activeSeatId;
@@ -901,20 +902,20 @@ function OperativesRail({ patch, characterCatalog, activeSeatId, sessionMode, ba
           return (
             <article
               key={seat.seatId}
-              className={`tv-operative-card${isActive ? " tv-operative-card-active" : ""}${isOpen ? " tv-operative-card-open" : ""}`}
+              className={`tv-operative-card${isActive ? " tv-operative-card-active" : " tv-operative-card-inactive"}${isOpen ? " tv-operative-card-open" : ""}`}
             >
               <div className="tv-operative-seat" aria-label={`Seat ${seatNumber}`}>{seatNumber}</div>
               <div className="tv-operative-portrait">
-                {portraitUrl ? <img src={portraitUrl} alt={characterName} /> : <span aria-hidden="true">+</span>}
+                {portraitUrl ? <img src={portraitUrl} alt={characterName || playerName} /> : <span aria-hidden="true">+</span>}
               </div>
               <div className="tv-operative-copy">
                 <div className="tv-operative-name-row">
-                  <h3>{characterName}</h3>
+                  <h3>{playerName}</h3>
                   <span className={`tv-operative-link tv-operative-link-${seat.connected && !isOpen ? "online" : "offline"}`}>
                     {statusLabel.toUpperCase()}
                   </span>
                 </div>
-                <p>{characterTitle}</p>
+                <p>{characterName ? `${characterName} · ${characterTitle}` : characterTitle}</p>
                 {characterPresentation && (
                   <p className="tv-operative-role-row">
                     {characterPresentation.role} | {toTitleCase(characterPresentation.complexity)}
@@ -2024,7 +2025,7 @@ function getMovementArrivalModel(
   return movedPlayer && destination ? {
     eventId: `${sequence}:${movedPlayer.seatId}:${planner.currentSectorId}:${destination.sectorId}`,
     destination,
-    playerName: movedPlayer.character.name,
+    playerName: patch.seats.find((seat) => seat.seatId === movedPlayer.seatId)?.displayName ?? movedPlayer.character.name,
     originName: planner.currentSectorName
   } : null;
 }
@@ -2063,44 +2064,17 @@ function MovementFocusHud({
 
   if (arrival && destination) {
     const threats = destination.faceUpThreats ?? [];
-    const occupants = destination.occupants ?? [];
 
     return (
-      <section className="tv-arrival-focus" aria-label="Arrival sector brief" data-testid="tv-arrival-focus">
-        <header>
+      <section className="tv-arrival-summary" aria-label="Movement arrival" data-testid="tv-arrival-focus">
+        <header className="tv-arrival-summary__identity">
           <span>Movement complete</span>
           <strong>Arrived at {destination.name}</strong>
-          <p>{threats.length > 0 ? "Threat present" : destination.threatIcons.length > 0 ? "Challenge detected" : "Sector reached"}</p>
+          <p>{playerName} · {toTitleCase(destination.ring)} Reach</p>
         </header>
-        <div className="tv-arrival-focus-meta">
-          <span>{toTitleCase(destination.ring)} Reach</span>
-          {destination.tags.map((tag) => <span key={tag}>{toTitleCase(tag)}</span>)}
-          {destination.threatIcons.map((icon, index) => <span key={`${icon}-${index}`}>{toTitleCase(icon)} challenge</span>)}
-        </div>
-        <div className="tv-arrival-focus-grid">
-          <article>
-            <span>Sector rule</span>
-            <strong>{destination.ruleText || "No special sector rule."}</strong>
-            {destination.loreText ? <p>{destination.loreText}</p> : null}
-          </article>
-          <article>
-            <span>Challenges and threats</span>
-            {threats.length > 0 ? (
-              <ul>
-                {threats.map((threat) => (
-                  <li key={threat.instanceId}>
-                    <strong>{threat.name}</strong>
-                    <small>{threat.challenge ? `${toTitleCase(threat.challenge.stat)} ${threat.challenge.value}` : toTitleCase(threat.type)}</small>
-                  </li>
-                ))}
-              </ul>
-            ) : <strong>{destination.threatIcons.length > 0 ? "Printed challenge icons will resolve on arrival." : "No visible threat."}</strong>}
-          </article>
-          <article>
-            <span>Occupants</span>
-            <strong>{occupants.length > 0 ? occupants.map((occupant) => occupant.characterName).join(", ") : "No other operatives"}</strong>
-            <p>{destination.strategicTags.length > 0 ? destination.strategicTags.map(toTitleCase).join(" ? ") : "Awaiting sector resolution"}</p>
-          </article>
+        <div className="tv-arrival-summary__next">
+          <span>Next</span>
+          <strong>{threats.length > 0 ? `Resolve ${threats[0]!.name}` : destination.threatIcons.length > 0 ? "Resolve the arrival challenge" : destination.ruleText || "Continue the turn"}</strong>
         </div>
       </section>
     );
@@ -2229,17 +2203,30 @@ function TacticalMapPanel({
   const planner = focusEnabled && !rareStateModel && patch?.payload.movementPlanner?.active ? patch.payload.movementPlanner : null;
   const arrival = focusEnabled && !rareStateModel ? getMovementArrivalModel(patch?.payload, previousPatch?.payload, patch?.sequence) : null;
   const arrivalKey = arrival?.eventId ?? null;
-  const [visualTravel, setVisualTravel] = useState<{ key: string; arrival: MovementArrivalModel; step: number; arrived: boolean } | null>(null);
+  const [visualTravel, setVisualTravel] = useState<{
+    key: string;
+    arrival: MovementArrivalModel;
+    previousPatch: PublicPatchPayload;
+    step: number;
+    arrived: boolean;
+  } | null>(null);
   const completedTravelKeyRef = useRef<string | null>(null);
+  const arrivalPending = Boolean(arrival && arrivalKey && completedTravelKeyRef.current !== arrivalKey);
   useEffect(() => {
     if (!focusEnabled) {
       setVisualTravel(null);
       return;
     }
-    if (arrival && arrivalKey && completedTravelKeyRef.current !== arrivalKey) {
-      setVisualTravel((current) => current?.key === arrivalKey ? current : { key: arrivalKey, arrival, step: 0, arrived: false });
+    if (arrival && arrivalKey && previousPatch?.payload && completedTravelKeyRef.current !== arrivalKey) {
+      setVisualTravel((current) => current?.key === arrivalKey ? current : {
+        key: arrivalKey,
+        arrival,
+        previousPatch: previousPatch.payload,
+        step: 0,
+        arrived: false
+      });
     }
-  }, [arrival, arrivalKey, focusEnabled]);
+  }, [arrival, arrivalKey, focusEnabled, previousPatch]);
   useEffect(() => {
     if (!visualTravel) return;
     const finalStep = Math.max(visualTravel.arrival.destination.route.length - 1, 1);
@@ -2255,36 +2242,32 @@ function TacticalMapPanel({
     }, reducedMotion ? 120 : visualTravel.arrived ? 650 : 360);
     return () => window.clearTimeout(timeout);
   }, [visualTravel]);
-  const focusBattleMode = battleMode;
+  // A newly arrived authoritative patch may already contain the encounter that
+  // follows movement. Preserve the movement presentation first; the battle
+  // chamber opens only after the local, non-authoritative journey has settled.
+  const focusBattleMode = battleMode && !arrivalPending && !visualTravel;
   const focusShopMode = !focusBattleMode && shopMode;
-  const movementFocusMode = !focusBattleMode && !focusShopMode && Boolean(planner || visualTravel);
+  const movementFocusMode = !focusBattleMode && !focusShopMode && Boolean(planner || arrivalPending || visualTravel);
   const projectedDestination = planner?.selectedDestinationId
     ? planner.destinations.find((destination) => destination.sectorId === planner.selectedDestinationId) ?? null
     : null;
 
-  const journey = visualTravel ? {
-    eventId: visualTravel.key,
-    operativeName: visualTravel.arrival.playerName,
-    originName: visualTravel.arrival.originName,
-    destination: visualTravel.arrival.destination
-  } satisfies HostMovementJourneyModel : null;
-
-  const battleChamber = focusBattleMode && !journey && patch && battlePlayer
+  const battleChamber = focusBattleMode && !arrivalPending && !visualTravel && patch && battlePlayer
     ? <HostBattleChamber patch={patch} activePlayer={battlePlayer} />
     : null;
   const presentBattleChamber = Boolean(battleChamber);
 
   return (
     <section className={`tv-command-stage${presentBattleChamber ? " tv-command-stage-battle-mode" : ""}${focusShopMode ? " tv-command-stage-shop-mode" : ""}${movementFocusMode ? " tv-command-stage-movement-focus" : ""}`}>
-      {(!journey || presentBattleChamber) && <div className="tv-command-map-shell" aria-hidden={presentBattleChamber || undefined} inert={presentBattleChamber || undefined}>
+      <div className="tv-command-map-shell" aria-hidden={presentBattleChamber || undefined} inert={presentBattleChamber || undefined}>
           <TacticalMapBoard
             patch={patch?.payload ?? null}
-            previousPatch={previousPatch?.payload ?? null}
+            previousPatch={visualTravel?.previousPatch ?? previousPatch?.payload ?? null}
             phase={patch?.phase ?? "start"}
           />
-          {!movementFocusMode && !journey && <BoardLegend />}
-      </div>}
-      {!presentBattleChamber && !journey && <NemesisBanner nemesis={patch?.payload.nemesis ?? null} />}
+          {!movementFocusMode && <BoardLegend />}
+      </div>
+      {!presentBattleChamber && <NemesisBanner nemesis={patch?.payload.nemesis ?? null} />}
       {rareStateModel && (
         <section className={`tv-rare-state-panel tv-rare-state-panel--${rareStateModel.tone}`} role="status" aria-live="polite" data-testid="tv-rare-state-panel">
           <span>Current table state</span>
@@ -2292,14 +2275,6 @@ function TacticalMapPanel({
           <p>{rareStateModel.detail}</p>
           <em>{rareStateModel.meta}</em>
         </section>
-      )}
-      {journey && (
-        <HostMovementJourney
-          model={journey}
-          step={visualTravel!.step}
-          arrived={visualTravel!.arrived}
-          challenges={patch?.payload.sectors.find((sector) => sector.id === journey.destination.sectorId)?.tileChallenges ?? []}
-        />
       )}
       {!focusBattleMode && !focusShopMode && !movementFocusMode && (
         <ActiveOperativeOverlay
@@ -2311,15 +2286,14 @@ function TacticalMapPanel({
         />
       )}
       {battleChamber}
-      {focusShopMode && !journey && <HostShopOverlay patch={patch} activePlayer={activePlayer} />}
+      {focusShopMode && !visualTravel && <HostShopOverlay patch={patch} activePlayer={activePlayer} />}
       {movementFocusMode && (
-        !journey &&
         <MovementFocusHud
           planner={planner}
           selectedDestination={projectedDestination}
           arrival={visualTravel?.arrival ?? null}
           travelStep={visualTravel?.step}
-          activePlayerName={activePlayer?.character.name ?? "Active operative"}
+          activePlayerName={activeSeat?.displayName ?? activePlayer?.character.name ?? "Active operative"}
         />
       )}
     </section>
@@ -2662,9 +2636,9 @@ export function TvApp(): ReactElement {
     activePlayer?.character.status === "recalled" ||
     publicPatch?.payload.outcomeSummary?.encounterCardId === "suture-storm"
   );
-  const battleMode = authoritativePresentationReady && !rareStateActive && isHostBattleActive(publicPatch, battlePlayer);
-  const shopMode = authoritativePresentationReady && !rareStateActive && activePlayer?.character.status !== "recalled" && activeSeat?.connected !== false && isHostShopActive(publicPatch, activePlayer);
   const movementArrival = authoritativePresentationReady ? getMovementArrivalModel(publicPatch?.payload, previousPatchRef.current?.payload) : null;
+  const battleMode = authoritativePresentationReady && !rareStateActive && !movementArrival && isHostBattleActive(publicPatch, battlePlayer);
+  const shopMode = authoritativePresentationReady && !rareStateActive && !movementArrival && activePlayer?.character.status !== "recalled" && activeSeat?.connected !== false && isHostShopActive(publicPatch, activePlayer);
   const movementFocusMode = !battleMode && !shopMode && Boolean(publicPatch?.payload.movementPlanner?.active || movementArrival);
 
   useEffect(() => {

@@ -988,6 +988,7 @@ export interface PublicPatchPayload {
 export interface PhonePatchPayload extends PublicPatchPayload {
   phase: Phase;
   self: PhoneSelfState | null;
+  lateJoinPending?: boolean;
   selfIsSetupHost?: boolean;
   objectUseStates?: PhoneObjectUseState[];
   startingContractOptions?: ContractCard[];

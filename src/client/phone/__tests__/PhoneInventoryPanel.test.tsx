@@ -491,7 +491,7 @@ describe("PhoneInventoryPanel", () => {
   });
 
   it("shows scar and affliction effects on the Player Card tab with stat breakdown sources", () => {
-    const patch = createPatch({ encounter: null });
+    const patch = createPatch({ encounter: null, phase: "broadcast" });
     const self = {
       ...patch.self!,
       character: {
@@ -928,7 +928,7 @@ describe("PhoneInventoryPanel", () => {
       />
     );
 
-    expect(screen.getByLabelText(/compact phone navigation/i)).toHaveTextContent(/player card/i);
+    expect(screen.getByLabelText(/compact phone navigation/i)).toHaveTextContent(/action/i);
     openPhoneTabs();
 
     expect(screen.getByRole("tab", { name: /player card/i })).toBeInTheDocument();
@@ -963,6 +963,7 @@ describe("PhoneInventoryPanel", () => {
   it("shows the owner-only Glass-Chime Swarm penalty as passive status with no controls", () => {
     const patch = createPatch({
       encounter: null,
+      phase: "broadcast",
       pendingTestModifiers: [{
         type: "nextNonBattleTest",
         sourceCardId: "glass-chime-swarm",
@@ -997,6 +998,7 @@ describe("PhoneInventoryPanel", () => {
   it("shows the owner-only Spindle penalty and minimum as passive status with no controls", () => {
     const patch = createPatch({
       encounter: null,
+      phase: "broadcast",
       pendingTestModifiers: [{
         type: "nextNormalMovementRoll",
         sourceCardId: "spindle-static-squall",
@@ -1050,7 +1052,8 @@ describe("PhoneInventoryPanel", () => {
 
     expect(shell).toHaveClass("phone-shell--chrome-visible");
     expect(shell).toHaveClass("phone-shell--bottomdock-compact");
-    expect(within(screen.getByRole("banner")).getByRole("heading", { name: /sable vey/i })).toBeInTheDocument();
+    expect(within(screen.getByRole("banner")).getByRole("heading", { name: /lane/i })).toBeInTheDocument();
+    expect(screen.getByRole("banner")).toHaveTextContent(/sable vey/i);
     expect(tablist).toHaveClass("phone-portrait-bottom-nav");
     expect(tablist).toHaveClass("phone-bottomdock--compact");
     expect(shell).toHaveAttribute("data-phone-bottom-dock-expanded", "false");
@@ -1280,7 +1283,7 @@ describe("PhoneInventoryPanel", () => {
     );
 
     openPhoneTabs();
-    fireEvent.click(screen.getByRole("tab", { name: /move/i }));
+    expect(screen.getByRole("tab", { name: /move/i })).toHaveAttribute("aria-selected", "true");
     fireEvent.click(screen.getByRole("button", { name: /hide ui/i }));
     expect(screen.getByTestId("movement-planner")).toBeInTheDocument();
 
@@ -1342,7 +1345,7 @@ describe("PhoneInventoryPanel", () => {
     );
 
     openPhoneTabs();
-    fireEvent.click(screen.getByRole("tab", { name: /shop/i }));
+    expect(screen.getByRole("tab", { name: /shop/i })).toHaveAttribute("aria-selected", "true");
     fireEvent.click(screen.getByRole("button", { name: /hide ui/i }));
     expect(screen.getByTestId("phone-shop-panel")).toBeInTheDocument();
 

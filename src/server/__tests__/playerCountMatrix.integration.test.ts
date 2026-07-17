@@ -526,20 +526,7 @@ describe("player count integration matrix", () => {
 
       expect(getBattleAssistViewModel(combatPayload)?.enemyName).toBe(matrixBattleThreat.enemyName);
 
-      if (playerCount > 1) {
-        const pendingEnemyRoll = combatPayload.pendingEnemyRoll ?? harness.roomServer.getState().pendingEnemyRoll;
-
-        expect(pendingEnemyRoll?.fighterSeatId).toBe("seat-1");
-        expect(pendingEnemyRoll?.assignedRollerSeatId).not.toBe("seat-1");
-
-        const rollerIndex = joinResults.findIndex((joinResult) => joinResult.seatId === pendingEnemyRoll?.assignedRollerSeatId);
-        phones[rollerIndex]!.socket.send(
-          JSON.stringify({
-            type: "ENEMY_ROLL_REQUESTED",
-            seatId: pendingEnemyRoll!.assignedRollerSeatId
-          })
-        );
-      }
+      expect(combatPayload.pendingEnemyRoll ?? harness.roomServer.getState().pendingEnemyRoll).toBeNull();
 
       const rolledPatch = await phones[0]!.waitFor((message) => {
         if (!isPhonePatch(message)) {

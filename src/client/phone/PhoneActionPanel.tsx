@@ -1590,7 +1590,7 @@ function PhoneShopPanel({
                 ? revealedStock.some((item) => item.cost.completedContracts !== undefined)
                   ? "Choose one Artifact. Three completed Contracts are spent only after confirmation."
                   : "Tap Buy to review the purchase before spending Salvage."
-                : "Use a buy service to reveal market stock."}</small>
+                : "Choose Browse Equipment above to reveal this shop's stock."}</small>
             </div>
             {revealedStock.length > 0 ? (
               <div className="phone-shop-stock-list">
@@ -1631,7 +1631,7 @@ function PhoneShopPanel({
                 })}
               </div>
             ) : (
-              <p className="phone-shop-empty-stock">No equipment available.</p>
+              <p className="phone-shop-empty-stock">Stock has not been revealed. Choose Browse Equipment above.</p>
             )}
           </div>
 

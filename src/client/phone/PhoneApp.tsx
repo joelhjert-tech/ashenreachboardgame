@@ -3,13 +3,14 @@ import { getChallengeThemeStyle } from "../../game/ui/challengeTheme.js";
 import {
   configureSessionFromPhone,
   fetchCharacters,
+  fetchScenarios,
   fetchSessionSummary,
   getConnectionDiagnostics,
   joinSession,
   leaveSession,
   startSession
 } from "../shared/network.js";
-import type { CharacterCatalogEntry, PhonePatchPayload, PhoneSessionAuth, StatePatch } from "../shared/types.js";
+import type { CharacterCatalogEntry, PhonePatchPayload, PhoneSessionAuth, ScenarioCatalogEntry, StatePatch } from "../shared/types.js";
 import { useRoomSubscription } from "../shared/useRoomSubscription.js";
 import { getCharacterPortraitPath } from "../shared/assetPaths.js";
 import { statLabelById, statOrder } from "../shared/statLabels.js";
@@ -228,6 +229,8 @@ function useLandscapeMode(): boolean {
 
 export function PhoneApp(): ReactElement {
   const [characters, setCharacters] = useState<CharacterCatalogEntry[]>([]);
+  const [scenarios, setScenarios] = useState<ScenarioCatalogEntry[]>([]);
+  const [selectedScenarioId, setSelectedScenarioId] = useState("");
   const [debugOpen, setDebugOpen] = useState(() => new URLSearchParams(window.location.search).has("debug"));
   const [characterFilter, setCharacterFilter] = useState<CharacterSelectionFilter>("all");
   const [joiningRoom, setJoiningRoom] = useState(false);
@@ -251,6 +254,14 @@ export function PhoneApp(): ReactElement {
     fetchCharacters().then((loadedCharacters) => {
       setCharacters(loadedCharacters);
     });
+    fetchScenarios()
+      .then((loadedScenarios) => {
+        setScenarios(loadedScenarios);
+        setSelectedScenarioId((current) => current || loadedScenarios[0]?.id || "");
+      })
+      .catch(() => {
+        setScenarios([]);
+      });
   }, []);
 
   useEffect(() => {
@@ -333,7 +344,11 @@ export function PhoneApp(): ReactElement {
     setJoinError(null);
 
     try {
-      await configureSessionFromPhone(auth, { mode, playerCount: mode === "single-player" ? 1 : 4 });
+      await configureSessionFromPhone(auth, {
+        mode,
+        playerCount: mode === "single-player" ? 1 : 4,
+        ...(selectedScenarioId ? { scenarioId: selectedScenarioId } : {})
+      });
     } catch (configureFailure) {
       setJoinError(configureFailure instanceof Error ? configureFailure.message : "Could not configure lobby");
     }
@@ -406,7 +421,7 @@ export function PhoneApp(): ReactElement {
   const isSetupHost = Boolean(phonePatch?.payload.selfIsSetupHost);
 
   useEffect(() => {
-    if (!ownSeat || phonePatch?.payload.status !== "lobby") {
+    if (!ownSeat) {
       return;
     }
 
@@ -482,7 +497,7 @@ export function PhoneApp(): ReactElement {
                 <div className="phone-panel-header">
                   <div>
                     <h2>Join Room</h2>
-                    <p className="phone-muted-copy">Enter room code and player name. First phone becomes Host Phone.</p>
+                    <p className="phone-muted-copy">Enter room code and player name. The server assigns Host Phone control to the first connected player.</p>
                   </div>
                 </div>
                 <form className="phone-join-form" onSubmit={handleNameSubmit}>
@@ -522,7 +537,7 @@ export function PhoneApp(): ReactElement {
                   {(joinError || error) && <p className="error">{joinError ?? error}</p>}
                   <div className="phone-join-actions">
                     <button className="phone-button phone-button-primary" type="submit" disabled={joiningRoom}>
-                      {joiningRoom ? "Joining..." : "Join as Host Phone"}
+                      {joiningRoom ? "Joining..." : "Join Game"}
                     </button>
                     {debugOpen && <MobileDebugDrawer events={debugEvents} onClear={clearDebugEvents} />}
                   </div>
@@ -572,7 +587,22 @@ export function PhoneApp(): ReactElement {
                 </div>
                 <p className="phone-panel-kicker">Choose Game Type</p>
                 <h1>Host Phone</h1>
-                <p className="phone-muted-copy">The TV is waiting. Choose the game shape, then continue setup here.</p>
+                <p className="phone-muted-copy">The TV is waiting. Choose the scenario and game shape, then continue setup here.</p>
+                <label className="field phone-host-scenario-picker">
+                  <span>Scenario</span>
+                  <select
+                    aria-label="Scenario"
+                    value={selectedScenarioId}
+                    disabled={scenarios.length === 0}
+                    onChange={(event) => setSelectedScenarioId(event.target.value)}
+                  >
+                    {scenarios.map((scenario) => (
+                      <option key={scenario.id} value={scenario.id}>
+                        {scenario.name} | {scenario.difficulty}
+                      </option>
+                    ))}
+                  </select>
+                </label>
                 <div className="phone-host-mode-grid">
                   <button type="button" className="phone-button phone-button-primary" onClick={() => void handleConfigureLobby("single-player")}>
                     Single Player
@@ -624,7 +654,7 @@ export function PhoneApp(): ReactElement {
 
   if (
     auth &&
-    phonePatch?.payload.status === "lobby" &&
+    (phonePatch?.payload.status === "lobby" || phonePatch?.payload.lateJoinPending === true) &&
     ownSeat &&
     (ownSeat.characterSelected === false || characterSelectionRetryRequired)
   ) {
@@ -639,8 +669,11 @@ export function PhoneApp(): ReactElement {
                   <span>{auth.displayName}</span>
                   <span>{isSetupHost ? "Host Phone" : "Player"}</span>
                 </div>
-                <p className="phone-panel-kicker">Choose Character</p>
+                <p className="phone-panel-kicker">{phonePatch.payload.lateJoinPending ? "Join Game In Progress" : "Choose Character"}</p>
                 <h1>Select operative</h1>
+                {phonePatch.payload.lateJoinPending ? (
+                  <p className="phone-muted-copy">Choose an available operative, select a starting mission, then join the end of the current turn order.</p>
+                ) : null}
                 <div className="phone-character-filter-row" role="tablist" aria-label="Character filters">
                   {[
                     ["recommended", "Recommended"],

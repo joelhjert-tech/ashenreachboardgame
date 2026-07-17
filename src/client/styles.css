@@ -12837,6 +12837,54 @@ body {
   pointer-events: none;
 }
 
+.host-shop-transaction-focus {
+  position: absolute;
+  inset: 50% auto auto 50%;
+  z-index: 12;
+  width: min(38rem, calc(100% - 2rem));
+  display: grid;
+  justify-items: center;
+  gap: 0.4rem;
+  padding: clamp(1rem, 2vw, 1.6rem);
+  border: 1px solid rgba(222, 174, 86, 0.72);
+  border-radius: 0;
+  background: linear-gradient(180deg, rgba(26, 21, 14, 0.98), rgba(7, 9, 11, 0.98));
+  box-shadow: 0 1.2rem 4rem rgba(0, 0, 0, 0.7), 0 0 2rem rgba(199, 137, 49, 0.2);
+  text-align: center;
+  transform: translate(-50%, -50%);
+}
+
+.host-shop-transaction-focus > span {
+  color: #d8ad64;
+  font-size: 0.7rem;
+  font-weight: 900;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.host-shop-transaction-focus > strong {
+  color: #fff0cc;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(1.5rem, 2.4vw, 2.8rem);
+}
+
+.host-shop-transaction-focus > p {
+  margin: 0;
+  color: #d6d0c2;
+  font-size: clamp(0.8rem, 1vw, 1.1rem);
+}
+
+.host-battle-result-banner > strong {
+  max-width: 100%;
+  color: #fff1d4;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(0.86rem, 1.15vw, 1.35rem);
+  line-height: 1.05;
+  text-align: center;
+  text-transform: uppercase;
+  overflow-wrap: anywhere;
+}
+
 .talisman-board-player-marker-active {
   z-index: 2;
   border-color: #f3c86d;
@@ -19358,6 +19406,85 @@ body {
   visibility: visible;
   opacity: 1;
   filter: none;
+}
+
+.tv-operative-card-inactive:not(.tv-operative-card-open) {
+  min-height: 3.1rem;
+  grid-template-columns: 2.35rem minmax(0, 1fr);
+  opacity: 0.72;
+  border-color: rgba(124, 96, 58, 0.46);
+  background: linear-gradient(90deg, rgba(21, 18, 16, 0.94), rgba(8, 9, 11, 0.94));
+}
+
+.tv-operative-card-inactive:not(.tv-operative-card-open) .tv-operative-portrait {
+  height: 2.65rem;
+}
+
+.tv-operative-card-inactive .tv-operative-role-row,
+.tv-operative-card-inactive .tv-operative-setup-row,
+.tv-operative-card-inactive .tv-operative-followers,
+.tv-operative-card-inactive .tv-operative-challenge-stats {
+  display: none;
+}
+
+.tv-operative-card-inactive .tv-operative-stats {
+  margin-top: 0.12rem;
+}
+
+.tv-arrival-summary {
+  position: absolute;
+  left: 50%;
+  bottom: clamp(0.6rem, 1.5vh, 1.2rem);
+  z-index: 12;
+  width: min(48rem, calc(100% - 2rem));
+  min-height: 4.5rem;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(15rem, 0.75fr);
+  gap: 1rem;
+  align-items: center;
+  padding: 0.7rem 1rem;
+  border: 1px solid rgba(211, 173, 104, 0.48);
+  border-radius: 0;
+  background: linear-gradient(90deg, rgba(9, 12, 14, 0.97), rgba(19, 22, 23, 0.94));
+  box-shadow: 0 0.7rem 2rem rgba(0, 0, 0, 0.5);
+  transform: translateX(-50%);
+}
+
+.tv-arrival-summary span {
+  color: #d3ad68;
+  font-size: 0.64rem;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.tv-arrival-summary strong,
+.tv-arrival-summary p {
+  margin: 0;
+}
+
+.tv-arrival-summary__identity,
+.tv-arrival-summary__next {
+  min-width: 0;
+  display: grid;
+  gap: 0.18rem;
+}
+
+.tv-arrival-summary__identity strong {
+  color: #f5e7cc;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(1.2rem, 1.7vw, 2rem);
+}
+
+.tv-arrival-summary__identity p,
+.tv-arrival-summary__next strong {
+  color: #c9d1d5;
+  font-size: clamp(0.72rem, 0.9vw, 1rem);
+}
+
+.tv-arrival-summary__next {
+  padding-left: 1rem;
+  border-left: 1px solid rgba(211, 173, 104, 0.28);
 }
 
 .tv-command-dashboard--movement-focus .tv-movement-focus-heading,

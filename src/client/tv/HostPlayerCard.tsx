@@ -16,6 +16,7 @@ export interface HostPlayerCardProps {
   seatId: string;
   isOpen: boolean;
   isConnected: boolean;
+  playerName?: string | null;
   characterName: string | null;
   characterTitle: string | null;
   characterRole?: string | null;
@@ -59,6 +60,7 @@ export function HostPlayerCard({
   seatId,
   isOpen,
   isConnected,
+  playerName = null,
   characterName,
   characterTitle,
   characterRole = null,
@@ -86,7 +88,7 @@ export function HostPlayerCard({
       className={`host-player-card${isOpen ? " host-player-card-open" : ""}${isActiveTurn ? " host-player-card-active" : ""}${
         className ? ` ${className}` : ""
       }`}
-      aria-label={`${seatLabel} ${characterName ?? "open seat"}`}
+      aria-label={`${seatLabel} ${playerName ?? characterName ?? "open seat"}`}
     >
       <div className="host-player-card-corner host-player-card-corner-nw" aria-hidden="true" />
       <div className="host-player-card-corner host-player-card-corner-ne" aria-hidden="true" />
@@ -113,8 +115,10 @@ export function HostPlayerCard({
         <div className="host-player-card-identity">
           <div className="host-player-card-nameblock">
             <p className="host-player-card-seat">{seatLabel}</p>
-            <h3>{characterName ?? "Open Seat"}</h3>
-            <p className="host-player-card-title">{characterTitle ?? "Unclaimed operative frame"}</p>
+            <h3>{playerName ?? characterName ?? "Open Seat"}</h3>
+            <p className="host-player-card-title">
+              {characterName && playerName ? `${characterName} · ${characterTitle ?? "Operative"}` : characterTitle ?? "Unclaimed operative frame"}
+            </p>
             {(characterRole || characterComplexity) && (
               <p className="host-player-card-role">
                 {[characterRole, characterComplexity].filter(Boolean).join(" | ")}

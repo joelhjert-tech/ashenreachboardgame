@@ -146,7 +146,6 @@ import type {
   ClientIntent,
   CombatResolvedAction,
   EncounterDrawnAction,
-  EnemyRollAssignedAction,
   EnemyRollRequestedAction,
   EquipGearAction,
   GameAction,
@@ -902,8 +901,15 @@ export class GameRoomServer {
   }
 
   joinSeat(displayName: string, characterId?: string, requestedSeatId?: string): JoinSeatResult {
-    if (this.state.status !== "lobby" || this.state.phase !== "start") {
-      throw new Error("Session already started");
+    const lobbyJoin = this.state.status === "lobby" && this.state.phase === "start";
+    const activeLateJoin = this.state.status === "active" && this.state.sessionMode === "multiplayer";
+
+    if (!lobbyJoin && !activeLateJoin) {
+      throw new Error(this.state.status === "ended" ? "Session has ended" : "This session is not accepting new players");
+    }
+
+    if (activeLateJoin && this.state.gameMode === "nemesis_relay") {
+      throw new Error("Nemesis Relay does not support joining after the game starts");
     }
 
     const seat = requestedSeatId
@@ -918,12 +924,12 @@ export class GameRoomServer {
       throw new Error(`Requested seat ${seat.seatId} is already occupied`);
     }
 
-    const isFirstHostPhone = !this.state.setupHostSeatId;
+    const isFirstHostPhone = lobbyJoin && !this.state.setupHostSeatId;
 
     this.state = {
       ...this.state,
       sequence: this.state.sequence + 1,
-      setupHostSeatId: this.state.setupHostSeatId ?? seat.seatId,
+      setupHostSeatId: lobbyJoin ? (this.state.setupHostSeatId ?? seat.seatId) : this.state.setupHostSeatId,
       seats: this.state.seats.map((entry) =>
         entry.seatId === seat.seatId
           ? {
@@ -954,11 +960,19 @@ export class GameRoomServer {
   }
 
   selectSeatCharacter(seatId: string, characterId: string, options: { suppressBroadcast?: boolean } = {}): void {
-    if (this.state.status !== "lobby" || this.state.phase !== "start") {
+    const seat = this.state.seats.find((entry) => entry.seatId === seatId);
+
+    const lobbySelection = this.state.status === "lobby" && this.state.phase === "start";
+    const lateJoinSelection =
+      this.state.status === "active" &&
+      this.state.sessionMode === "multiplayer" &&
+      this.state.gameMode !== "nemesis_relay" &&
+      Boolean(seat?.displayName) &&
+      !this.state.turnOrder.includes(seatId);
+
+    if (!lobbySelection && !lateJoinSelection) {
       throw new Error("Character can only be selected before the session starts");
     }
-
-    const seat = this.state.seats.find((entry) => entry.seatId === seatId);
 
     if (!seat || seat.kicked) {
       throw new Error(`Unknown seat ${seatId}`);
@@ -995,6 +1009,10 @@ export class GameRoomServer {
     });
     const startingContractOptions = this.resolveStartingContractOptions(selectedCharacter, seatIndex);
 
+    const startingSectorId = lateJoinSelection
+      ? selectedCharacter.currentSpaceId
+      : this.state.players.find((player) => player.seatId === seatId)?.sectorId ?? selectedCharacter.currentSpaceId;
+
     this.state = {
       ...this.state,
       sequence: this.state.sequence + 1,
@@ -1015,9 +1033,10 @@ export class GameRoomServer {
         player.seatId === seatId
           ? {
               ...player,
+              sectorId: startingSectorId,
               character: {
                 ...loadedCharacter,
-                currentSpaceId: player.sectorId,
+                currentSpaceId: startingSectorId,
                 wounds: 0,
                 status: "active",
                 trophyPile: [],
@@ -1087,11 +1106,19 @@ export class GameRoomServer {
   }
 
   selectStartingContract(seatId: string, contractId: string): void {
-    if (this.state.status !== "lobby" || this.state.phase !== "start") {
+    const seat = this.state.seats.find((entry) => entry.seatId === seatId);
+
+    const lobbySelection = this.state.status === "lobby" && this.state.phase === "start";
+    const lateJoinSelection =
+      this.state.status === "active" &&
+      this.state.sessionMode === "multiplayer" &&
+      this.state.gameMode !== "nemesis_relay" &&
+      Boolean(seat?.displayName) &&
+      !this.state.turnOrder.includes(seatId);
+
+    if (!lobbySelection && !lateJoinSelection) {
       throw new Error("Starting mission can only be selected before the session starts");
     }
-
-    const seat = this.state.seats.find((entry) => entry.seatId === seatId);
 
     if (!seat || seat.kicked) {
       throw new Error(`Unknown seat ${seatId}`);
@@ -1134,11 +1161,19 @@ export class GameRoomServer {
   }
 
   setSeatReady(seatId: string, ready: boolean): void {
-    if (this.state.status !== "lobby" || this.state.phase !== "start") {
+    const seat = this.state.seats.find((entry) => entry.seatId === seatId);
+
+    const lobbyReady = this.state.status === "lobby" && this.state.phase === "start";
+    const lateJoinReady =
+      this.state.status === "active" &&
+      this.state.sessionMode === "multiplayer" &&
+      this.state.gameMode !== "nemesis_relay" &&
+      Boolean(seat?.displayName) &&
+      !this.state.turnOrder.includes(seatId);
+
+    if (!lobbyReady && !lateJoinReady) {
       throw new Error("Ready state can only be changed before the session starts");
     }
-
-    const seat = this.state.seats.find((entry) => entry.seatId === seatId);
 
     if (!seat || seat.kicked) {
       throw new Error(`Unknown seat ${seatId}`);
@@ -1156,7 +1191,37 @@ export class GameRoomServer {
       throw new Error("Choose a starting mission before Ready");
     }
 
-    if (seat.ready === ready) {
+    if (seat.ready === ready && !lateJoinReady) {
+      return;
+    }
+
+    if (lateJoinReady && !ready) {
+      return;
+    }
+
+    if (lateJoinReady) {
+      this.state = {
+        ...this.state,
+        sequence: this.state.sequence + 1,
+        turnOrder: [...this.state.turnOrder, seatId],
+        seats: this.state.seats.map((entry) =>
+          entry.seatId === seatId ? { ...entry, ready: true } : entry
+        ),
+        players: this.state.players.map((player) =>
+          player.seatId === seatId
+            ? {
+                ...player,
+                character: {
+                  ...player.character,
+                  activeContract: {
+                    contractId: seat.selectedStartingContractId!,
+                    progress: 0
+                  }
+                }
+              }
+            : player
+        )
+      };
       return;
     }
 
@@ -1175,11 +1240,17 @@ export class GameRoomServer {
   }
 
   releaseSeat(seatId: string): void {
-    if (this.state.status !== "lobby" || this.state.phase !== "start") {
-      throw new Error("Seats can only be released before the session starts");
-    }
-
     const seat = this.state.seats.find((entry) => entry.seatId === seatId);
+
+    const lobbyRelease = this.state.status === "lobby" && this.state.phase === "start";
+    const pendingLateJoinRelease =
+      this.state.status === "active" &&
+      Boolean(seat?.displayName) &&
+      !this.state.turnOrder.includes(seatId);
+
+    if (!lobbyRelease && !pendingLateJoinRelease) {
+      throw new Error("Only lobby seats or unfinished late joins can be released");
+    }
 
     if (!seat || seat.kicked) {
       throw new Error(`Unknown seat ${seatId}`);
@@ -6729,24 +6800,10 @@ export class GameRoomServer {
       throw new Error("Combat is already waiting on an assigned enemy roller");
     }
 
-    const assignedRollerSeatId = this.chooseEnemyRollerSeatId(intent.seatId);
-
-    if (!assignedRollerSeatId) {
-      this.resolveOpposedCombat(intent.seatId, intent.stat, encounter, null);
-      return;
-    }
-
-    this.applyAction({
-      type: "ENEMY_ROLL_ASSIGNED",
-      seatId: intent.seatId,
-      fighterSeatId: intent.seatId,
-      assignedRollerSeatId,
-      stat: intent.stat,
-      cardId: encounter.id,
-      encounterTitle: encounter.title,
-      createdAt: new Date().toISOString()
-    } satisfies EnemyRollAssignedAction);
-    this.scheduleEnemyRollTimeout();
+    // Enemy dice are authoritative and automatic. Historical pending enemy-roll
+    // records remain supported for v0-v2 reconnect/import, but current combat no
+    // longer asks another phone to trigger the enemy roll.
+    this.resolveOpposedCombat(intent.seatId, intent.stat, encounter, null);
   }
 
   resolveNemesisCombatIntent(intent: Extract<ClientIntent, { type: "NEMESIS_COMBAT_REQUESTED" }>): void {
@@ -8563,7 +8620,7 @@ function buildPublicShopServices(state: GameState, player: PlayerState): PublicS
     services.push(
       createShopService(player, state, {
         id: "buy-gear",
-        label: "Buy Gear",
+        label: "Browse Equipment",
         shopCategory: getShopStockCategoryForService(boardSpace, "buy-gear") ?? undefined,
         cost: {}
       }),
@@ -8639,6 +8696,7 @@ function buildPublicShopEncounter(
   }
 
   const salvage = getPublicSalvage(activePlayer);
+  const playerDisplayName = state.seats.find((seat) => seat.seatId === activePlayer.seatId)?.displayName ?? activePlayer.character.name;
   const completedContracts = getCompletedContractCountForProjection(state, activePlayer.seatId);
   const blockingThreats = buildPublicBlockingThreats(state);
   const services = buildPublicShopServices(state, activePlayer);
@@ -8680,7 +8738,7 @@ function buildPublicShopEncounter(
     status: blockedReason ? "locked" : getPublicShopStatus(state, activePlayer),
     activePlayer: {
       playerId: activePlayer.seatId,
-      name: activePlayer.character.name,
+      name: playerDisplayName,
       characterName: activePlayer.character.name,
       salvage,
       wounds: {
@@ -8696,7 +8754,7 @@ function buildPublicShopEncounter(
     sellInventory,
     recentOutcome: latest
       ? {
-          operativeName: activePlayer.character.name,
+          operativeName: playerDisplayName,
           shopName: boardSpace.name,
           action: latestSale
             ? "sell"
@@ -9532,8 +9590,8 @@ function buildPrivateRivalryProjection(state: GameState, player: PlayerState | u
 }
 
 function isSeatCharacterSelectedForProjection(state: GameState, seat: GameState["seats"][number], playerSeatIds: Set<string>): boolean {
-  if (state.status !== "lobby" && playerSeatIds.has(seat.seatId)) {
-    return true;
+  if (state.status !== "lobby") {
+    return playerSeatIds.has(seat.seatId) && state.turnOrder.includes(seat.seatId);
   }
 
   if (typeof seat.characterSelected === "boolean") {
@@ -9944,6 +10002,12 @@ export function createPhoneProjection(state: GameState, seatId: string, forcePri
       ? state.availableContracts.find((contract) => contract.id === player.character.activeContract?.contractId) ?? null
       : null;
   const readyDisabledReason = getReadyDisabledReasonForSeat(seat);
+  const lateJoinPending = Boolean(
+    state.status === "active" &&
+    seat?.displayName &&
+    !seat.kicked &&
+    !state.turnOrder.includes(seatId)
+  );
   const oathchain = player?.character.heldGear.find((item) => item.id === "oathchain-lens" && item.chargedEffect === "traceThePromise" && item.instanceId && (item.currentCharges ?? item.charges ?? 0) > 0 && player.character.equippedGear.utility === item.id);
   const oathchainSignature = player && activeContractCard && player.character.activeContract ? getOathchainContractSignature(player, activeContractCard) : null;
   const oathchainTargets = player && activeContractCard ? deriveOathchainTargets(state, player, activeContractCard) : [];
@@ -9977,7 +10041,11 @@ export function createPhoneProjection(state: GameState, seatId: string, forcePri
     nemesisChampions: publicProjection.nemesisChampions,
     nemesisNexusCountdowns: publicProjection.nemesisNexusCountdowns,
     activeSeatIndex: state.activeSeatIndex,
-    seats: publicProjection.seats,
+    seats: (publicProjection.seats as Array<Record<string, unknown>>).map((projectedSeat) =>
+      projectedSeat.seatId === seatId && seat
+        ? { ...projectedSeat, characterSelected: seat.characterSelected ?? Boolean(seat.characterId) }
+        : projectedSeat
+    ),
     turnOrder: publicProjection.turnOrder,
     sectors: publicProjection.sectors,
     players: publicProjection.players,
@@ -10174,9 +10242,15 @@ export function createPhoneProjection(state: GameState, seatId: string, forcePri
     activeContractCard,
     oathchainPrompt: oathchainEligible && oathchain && oathchainSignature ? { instanceId: oathchain.instanceId, contractId: activeContractCard!.id, contractSignature: oathchainSignature, currentCharges: oathchain.currentCharges ?? oathchain.charges ?? 0, maxCharges: oathchain.maxCharges ?? 2, chargeCost: 1, preview: "Spend 1 charge to reveal current valid Contract targets." } : null,
     activeOathchainReveal: player?.private.activeOathchainReveal?.contractSignature === oathchainSignature && state.phase === "action" && state.turnOrder[state.activeSeatIndex] === seatId ? player.private.activeOathchainReveal : null,
+    lateJoinPending,
     canReady: readyDisabledReason === null,
     readyDisabledReason,
-    self: player && seat && isSeatCharacterSelectedForProjection(state, seat, new Set(state.players.map((entry) => entry.seatId))) ? sanitizePlayerForPhone(player) : null
+    self:
+      player &&
+      seat &&
+      (seat.characterSelected !== false || (state.status === "active" && state.turnOrder.includes(seatId)))
+        ? sanitizePlayerForPhone(player)
+        : null
   });
 }
 
