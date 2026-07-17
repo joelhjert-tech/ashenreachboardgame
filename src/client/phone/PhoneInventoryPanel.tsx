@@ -268,6 +268,8 @@ function InventoryCard({
       }
       : null
     ,card.activationCostText ? { key: "activation-cost", node: card.activationCostText } : null
+    ,card.followerRoleText ? { key: "follower-role", node: card.followerRoleText } : null
+    ,card.acquisitionText ? { key: "acquisition", node: `Found at: ${card.acquisitionText}` } : null
   ] as Array<{ key: string; node: ReactNode } | null>).filter((item): item is { key: string; node: ReactNode } => Boolean(item));
 
   return (

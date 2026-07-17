@@ -12,6 +12,17 @@ afterEach(async () => {
 });
 
 describe("Phase 1 QA fixture", () => {
+  it("provides deterministic acquired and used follower states without changing ownership", () => {
+    const state = createInitialSessionState("QA-FOLLOWER", "single-player", "scenario_broken_seal", "co-op", "standard", 1);
+    state.status = "active";
+    applyPhaseOneQaFixture(state, "seat-1", { kind: "follower", stage: "acquired" });
+    expect(state.players[0]?.character.followers?.map((follower) => follower.id)).toEqual(["lucy-hell-puppy"]);
+    expect(state.lastOutcomeSummary?.summary).toContain("joined");
+
+    applyPhaseOneQaFixture(state, "seat-1", { kind: "follower", stage: "used" });
+    expect(state.players[0]?.character.followers?.[0]?.exhausted).toBe(true);
+    expect(state.players[0]?.character.followers?.[0]?.instanceId).toBe("qa-follower:lucy-hell-puppy");
+  });
   it("sets deterministic route and shop states without changing their rules", () => {
     const state = createInitialSessionState("QA001", "single-player", "scenario_broken_seal", "co-op", "standard", 1);
     state.status = "active";

@@ -840,6 +840,12 @@ function OperativesRail({ patch, characterCatalog, activeSeatId, sessionMode, ba
                 ) : null}
                 {player && (
                   <>
+                    {(player.character.companionBadges ?? []).length > 0 && (
+                      <div className="tv-operative-followers" aria-label={`${characterName} followers`}>
+                        <span>Follower</span>
+                        <strong>{(player.character.companionBadges ?? []).map((follower) => follower.name).join(", ")}</strong>
+                      </div>
+                    )}
                     <div className="tv-operative-stats" aria-label={`${characterName} vitals`}>
                       <span>W {player.character.wounds ?? 0}</span>
                       <span>S {player.character.scars.length ?? 0}</span>

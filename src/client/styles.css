@@ -14117,6 +14117,30 @@ body {
   margin: 0;
 }
 
+.tv-operative-followers {
+  display: flex;
+  min-width: 0;
+  gap: 0.3rem;
+  align-items: center;
+  margin-top: 0.18rem;
+  color: #d8c39a;
+  font-size: 0.56rem;
+  line-height: 1.15;
+}
+
+.tv-operative-followers span {
+  color: #79a9ca;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.tv-operative-followers strong {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .tv-operative-card h3 {
   color: #f1e4ca;
   font-family: Georgia, "Times New Roman", serif;

@@ -366,6 +366,26 @@ describe("TvApp", () => {
     );
   });
 
+  it("shows public follower identity in the compact operative rail without private rules", async () => {
+    window.localStorage.setItem("ashen-reach-tv-room-code", "RT7P4");
+    window.localStorage.setItem("ashen-reach-tv-host-token", "host:RT7P4:secret");
+    const patch = createPatch();
+    patch.payload.players[0]!.character.companionBadges = [{
+      id: "lucy-hell-puppy",
+      name: "Lucy, Hell Puppy",
+      tier: "legendary",
+      ultimateCompanion: true,
+      exhausted: false
+    }];
+    mockUseRoomSubscription.mockReturnValue({ patch, error: null, sendIntent: vi.fn(), status: "open", debugEvents: [], clearDebugEvents: vi.fn() });
+
+    render(<TvApp />);
+
+    const followers = await screen.findByLabelText("Tarek Voss followers");
+    expect(followers).toHaveTextContent("Lucy, Hell Puppy");
+    expect(document.body).not.toHaveTextContent(/ember-pup note/i);
+  });
+
   it("tolerates an old public payload with an extra Heat field without rendering it", async () => {
     window.localStorage.setItem("ashen-reach-tv-room-code", "RT7P4");
     window.localStorage.setItem("ashen-reach-tv-host-token", "host:RT7P4:secret");

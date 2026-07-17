@@ -1,6 +1,7 @@
 import { getBoardSpace } from "../game/data/boardSpaces.js";
 import { loadGear } from "../game/content/gear.js";
 import { loadThreatCards } from "../game/content/threats.js";
+import { loadFollowers } from "../game/content/followers.js";
 import type { GameState } from "../game/schema/session.schema.js";
 
 export type PhaseOneQaFixture =
@@ -8,6 +9,7 @@ export type PhaseOneQaFixture =
   | { kind: "shop"; stage: "wrong-shop" | "valid-first" | "valid-final" | "completion-ready" }
   | { kind: "movement-journey"; stage: "ashen-chapel"; withChoirLantern?: boolean }
   | { kind: "relic-trade"; completedContracts: 0 | 1 | 2 | 3 }
+  | { kind: "follower"; stage: "acquired" | "used" | "reconnected" }
   | {
       kind: "phone-battle";
       stage: "encounter" | "battle-setup" | "pending-enemy-roll" | "rolled-result" | "success" | "defeat";
@@ -165,6 +167,39 @@ export function applyPhaseOneQaFixture(state: GameState, seatId: string, fixture
 
   if (fixture.kind === "phone-battle") {
     setPhoneBattleFixture(state, seatId, fixture.stage);
+    return;
+  }
+
+  if (fixture.kind === "follower") {
+    const player = state.players.find((entry) => entry.seatId === seatId);
+    const follower = loadFollowers().get("lucy-hell-puppy");
+    if (!player || !follower) throw new Error("QA fixture cannot attach Lucy");
+    state.phase = "action";
+    player.character.followers = [{
+      ...follower,
+      instanceId: "qa-follower:lucy-hell-puppy",
+      exhausted: fixture.stage === "used"
+    }];
+    state.lastOutcomeSummary = fixture.stage === "acquired" ? {
+      seatId,
+      movedToSectorId: player.character.currentSpaceId,
+      encounterCardId: "artifact-lucy-hell-puppy",
+      encounterTitle: "Lucy, Hell Puppy",
+      encounterCardType: null,
+      checkStat: null,
+      die1: null,
+      die2: null,
+      statBonus: null,
+      checkTotal: null,
+      difficulty: null,
+      enemyRollerSeatId: null,
+      enemyDie1: null,
+      enemyDie2: null,
+      enemyBonus: null,
+      enemyTotal: null,
+      success: true,
+      summary: "Lucy, Hell Puppy joined the active operative as a legendary follower."
+    } : null;
     return;
   }
 

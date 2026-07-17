@@ -166,7 +166,7 @@ export function HostPlayerCard({
         </div>
 
         {companionBadges.length > 0 && (
-          <div className="host-player-card-companion-row" aria-label="Ultimate companions">
+          <div className="host-player-card-companion-row" aria-label="Followers">
             {companionBadges.map((companion) => (
               <span
                 key={companion.id}

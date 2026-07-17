@@ -6,6 +6,7 @@ import {
 import type { ActiveResolution, Follower, GearItem, GearSlot, PhoneObjectUseState, PhonePatchPayload, PhoneSelfState, Stat } from "../shared/types.js";
 import { getGearCardArtId, getGearCardArtType } from "../shared/assetPaths.js";
 import { gearSlotLabelById, statLabelById } from "../shared/statLabels.js";
+import { getFollowerAcquisitionSources } from "../../game/data/followerAcquisition.js";
 
 export type InventoryTimingWindow =
   | "beforeThreatDraw"
@@ -86,6 +87,8 @@ export interface InventoryCardViewModel {
   chargeState?: InventoryChargePresentation | null;
   exhaustState?: InventoryExhaustPresentation | null;
   activationCostText?: string;
+  followerRoleText?: string;
+  acquisitionText?: string;
 }
 
 export interface InventoryGroupViewModel {
@@ -629,7 +632,9 @@ function buildFollowerCard(follower: Follower, patch: PhonePatchPayload): Invent
     artCardType: follower.artCardId ? "artifact" : null,
     artCardId: follower.artCardId ?? null,
     fallbackLabel: getFallbackLabel(follower.name),
-    activationCostText: follower.id === "fandiablos" ? "Cost: 1 Wound (or 2 Wounds for +2 all stats on next 2 battles/hazards)" : undefined
+    activationCostText: follower.id === "fandiablos" ? "Cost: 1 Wound (or 2 Wounds for +2 all stats on next 2 battles/hazards)" : undefined,
+    followerRoleText: `${toTitleCase(follower.role)}${follower.tier ? ` · ${toTitleCase(follower.tier)}` : ""}`,
+    acquisitionText: getFollowerAcquisitionSources(follower.id).map((source) => source.label).join(" · ") || undefined
   };
 }
 

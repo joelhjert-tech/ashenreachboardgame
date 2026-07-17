@@ -44,8 +44,8 @@ describe("HostPlayerCard", () => {
       />
     );
 
-    expect(screen.getByLabelText("Ultimate companions")).toHaveTextContent("Fandiablos");
-    expect(screen.getByLabelText("Ultimate companions")).toHaveTextContent("ultimate");
+    expect(screen.getByLabelText("Followers")).toHaveTextContent("Fandiablos");
+    expect(screen.getByLabelText("Followers")).toHaveTextContent("ultimate");
     expect(screen.getByText(/commander \| beginner/i)).toBeInTheDocument();
     expect(screen.queryByText(/black route fuse/i)).not.toBeInTheDocument();
     expect((document.querySelector(".host-player-card-attribute-command") as HTMLElement).style.getPropertyValue("--challenge-color")).toBe(
