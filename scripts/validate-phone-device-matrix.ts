@@ -161,7 +161,7 @@ async function collectMetrics(page: import("playwright").Page, viewport: Viewpor
       const hasPortraitLeaveButton = Boolean(document.querySelector(".phone-portrait-leave-button, .phone-sheet-leave-button"));
       const hasWaitingBackButton = Boolean(document.querySelector(".phone-lobby-ready-button"));
       const hasWaitingMessage = Array.from(document.querySelectorAll("p, span, strong")).some((element) =>
-        /waiting for host to start/i.test(element.textContent ?? "")
+        /ready for host|you are ready\. watch the tv/i.test(element.textContent ?? "")
       );
       const hasPortraitRotateHint = Boolean(document.querySelector(".phone-portrait-rotate-hint"));
       const hasRotateWarning = Boolean(document.querySelector(selectors.rotateWarning));
@@ -290,7 +290,7 @@ async function main(): Promise<void> {
           const sessionResponse = await fetch(`${getApiBaseUrl()}/api/session/create`, {
             method: "POST",
             headers: { "content-type": "application/json" },
-            body: JSON.stringify({})
+            body: JSON.stringify({ sessionMode: "multiplayer", interactionMode: "co-op", playerCount: 2 })
           });
 
           if (!sessionResponse.ok) {
@@ -311,8 +311,13 @@ async function main(): Promise<void> {
             await page.goto(`${getBaseUrl()}/`, { waitUntil: "domcontentloaded" });
             await page.getByRole("textbox", { name: "Room code" }).fill(roomCode);
             await page.getByRole("textbox", { name: "Player name" }).fill("QA");
-            await page.getByRole("button", { name: "Continue" }).click();
+            await page.getByRole("button", { name: "Join Game" }).click();
             await page.getByRole("button", { name: /signal witch/i }).click();
+            await page.getByRole("button", { name: "Select Mission" }).first().click();
+            const readyButton = page.getByRole("button", { name: "Ready", exact: true });
+            await readyButton.waitFor({ state: "visible", timeout: 10000 });
+            await readyButton.click();
+            await page.getByText(/ready for host/i).waitFor({ state: "visible", timeout: 10000 });
             await page.locator(".phone-character-waiting-panel").waitFor({ state: "visible", timeout: 10000 });
             await page.waitForTimeout(350);
 
