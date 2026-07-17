@@ -86,6 +86,7 @@ function enemyArtType(patch: PhonePatchPayload): CardImageType {
 export function isOpposedPhoneBattleActive(patch: PhonePatchPayload | null | undefined): boolean {
   return Boolean(
     patch?.pendingEnemyRoll ||
+      (patch?.activeResolution?.battle && patch.activeResolution.card?.type === "threat") ||
       patch?.encounter?.cardType === "enemy" ||
       patch?.activeResolution?.card?.type === "enemy"
   );

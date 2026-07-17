@@ -1890,7 +1890,7 @@ describe("PhoneInventoryPanel", () => {
 
     expect(onIntent).not.toHaveBeenCalledWith({ type: "SET_READY", seatId: "seat-1", ready: true });
 
-    fireEvent.click(screen.getByRole("button", { name: /^back$/i }));
+    fireEvent.click(screen.getByRole("button", { name: /^leave room$/i }));
 
     expect(onLobbyBack).toHaveBeenCalledOnce();
   });

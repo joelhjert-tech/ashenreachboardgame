@@ -3358,6 +3358,48 @@ select {
   padding-bottom: 0.5rem;
 }
 
+.phone-join-layout-nameEntry {
+  position: relative;
+  isolation: isolate;
+  padding: max(0.75rem, env(safe-area-inset-top)) 0.65rem max(0.75rem, env(safe-area-inset-bottom));
+  background:
+    linear-gradient(180deg, rgba(3, 5, 8, 0.42), rgba(3, 5, 8, 0.88)),
+    radial-gradient(circle at 52% 26%, rgba(190, 78, 42, 0.18), transparent 38%),
+    url("/assets/riftfall/board/full-board/ashen_reach_board_main.png") center / cover no-repeat;
+}
+
+.phone-join-layout-nameEntry::before {
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  content: "";
+  background:
+    linear-gradient(90deg, rgba(3, 5, 8, 0.72), transparent 28%, transparent 72%, rgba(3, 5, 8, 0.72)),
+    repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.018) 0 1px, transparent 1px 4px);
+  pointer-events: none;
+}
+
+.phone-join-layout-nameEntry .phone-join-hero,
+.phone-join-layout-nameEntry .phone-join-panel {
+  border-color: rgba(177, 131, 78, 0.48);
+  background:
+    linear-gradient(180deg, rgba(18, 18, 19, 0.9), rgba(6, 9, 13, 0.96)),
+    rgba(7, 10, 14, 0.92);
+  backdrop-filter: blur(4px);
+}
+
+.phone-portrait-controller:has(.phone-lobby-panel) {
+  background:
+    linear-gradient(180deg, rgba(3, 5, 8, 0.56), rgba(3, 5, 8, 0.93)),
+    radial-gradient(circle at 50% 22%, rgba(190, 78, 42, 0.14), transparent 40%),
+    url("/assets/riftfall/board/full-board/ashen_reach_board_main.png") center / cover no-repeat;
+}
+
+.phone-portrait-controller:has(.phone-lobby-panel) .phone-lobby-panel {
+  background: rgba(5, 8, 12, 0.72);
+  backdrop-filter: blur(3px);
+}
+
 .phone-join-layout .phone-panel {
   overflow: visible;
 }
@@ -3569,7 +3611,7 @@ select {
 
 .phone-character-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(8.5rem, 1fr));
+  grid-template-columns: minmax(0, 1fr);
   gap: 0.55rem;
   max-height: min(43vh, 22rem);
   overflow: auto;
@@ -14021,7 +14063,7 @@ body {
 }
 
 .tv-audio-popover {
-  width: min(21rem, 28vw);
+  width: min(25rem, 34vw);
   padding: 0.68rem;
   border: 1px solid rgba(166, 119, 58, 0.62);
   border-radius: 0.4rem;
@@ -14103,6 +14145,71 @@ body {
 .tv-audio-enable {
   width: 100%;
   margin-top: 0.55rem;
+}
+
+.tv-audio-soundtrack {
+  display: grid;
+  gap: 0.42rem;
+  margin-top: 0.65rem;
+  padding-top: 0.58rem;
+  border-top: 1px solid rgba(246, 215, 156, 0.18);
+}
+
+.tv-audio-soundtrack > div:first-child {
+  display: grid;
+  gap: 0.12rem;
+}
+
+.tv-audio-soundtrack span {
+  color: #f0d5a5;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.tv-audio-soundtrack small {
+  color: rgba(225, 228, 226, 0.68);
+  font-size: 0.64rem;
+  line-height: 1.3;
+}
+
+.tv-audio-soundtrack label {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.tv-audio-soundtrack input {
+  width: 100%;
+  min-height: 2.25rem;
+  padding: 0.42rem 0.5rem;
+  border: 1px solid rgba(166, 119, 58, 0.48);
+  background: rgba(2, 4, 7, 0.84);
+  color: #f5ead5;
+  font: inherit;
+  font-size: 0.68rem;
+}
+
+.tv-audio-soundtrack p {
+  margin: 0;
+  color: #ff9d87;
+  font-size: 0.66rem;
+}
+
+.tv-audio-soundtrack-actions {
+  display: flex;
+  gap: 0.42rem;
+}
+
+.tv-audio-soundtrack-actions button:first-child {
+  flex: 1 1 auto;
+}
+
+.tv-audio-youtube-player {
+  width: 100%;
+  height: 7.5rem;
+  border: 1px solid rgba(166, 119, 58, 0.42);
+  background: #030405;
 }
 
 .tv-audio-close {

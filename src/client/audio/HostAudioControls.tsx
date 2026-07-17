@@ -8,6 +8,35 @@ const mixerLabels: Array<{ id: AshenReachMixer; label: string }> = [
   { id: "ambient", label: "Ambient" }
 ];
 
+const soundtrackStorageKey = "ashenreach.hostSoundtrackUrl";
+
+export function getYouTubeVideoId(value: string): string | null {
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+
+  try {
+    const url = new URL(trimmed.startsWith("http") ? trimmed : `https://${trimmed}`);
+    const host = url.hostname.toLowerCase().replace(/^www\./, "");
+    let candidate: string | null = null;
+
+    if (host === "youtu.be") {
+      candidate = url.pathname.split("/").filter(Boolean)[0] ?? null;
+    } else if (host === "youtube.com" || host === "m.youtube.com" || host === "music.youtube.com" || host === "youtube-nocookie.com") {
+      candidate = url.searchParams.get("v");
+      if (!candidate) {
+        const segments = url.pathname.split("/").filter(Boolean);
+        if (["embed", "shorts", "live"].includes(segments[0] ?? "")) {
+          candidate = segments[1] ?? null;
+        }
+      }
+    }
+
+    return candidate && /^[A-Za-z0-9_-]{11}$/.test(candidate) ? candidate : null;
+  } catch {
+    return null;
+  }
+}
+
 function AudioIcon(): ReactElement {
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
@@ -21,6 +50,11 @@ function AudioIcon(): ReactElement {
 export function HostAudioControls({ audio }: { audio: AshenReachAudioController }): ReactElement {
   const [open, setOpen] = useState(false);
   const controlsRef = useRef<HTMLElement | null>(null);
+  const [soundtrackUrl, setSoundtrackUrl] = useState(() =>
+    typeof window === "undefined" ? "" : window.localStorage.getItem(soundtrackStorageKey) ?? ""
+  );
+  const [connectedVideoId, setConnectedVideoId] = useState<string | null>(null);
+  const [soundtrackError, setSoundtrackError] = useState<string | null>(null);
   const mixers = mixerLabels.map((mixer) => audio.settings[mixer.id]);
   const allMuted = mixers.every((setting) => setting.muted);
   const masterVolume = useMemo(() => mixers.reduce((sum, setting) => sum + setting.volume, 0) / mixers.length, [mixers]);
@@ -59,6 +93,23 @@ export function HostAudioControls({ audio }: { audio: AshenReachAudioController 
         audio.toggleMute(mixer.id);
       }
     }
+  };
+
+  const connectSoundtrack = () => {
+    const videoId = getYouTubeVideoId(soundtrackUrl);
+    if (!videoId) {
+      setSoundtrackError("Enter a valid YouTube video link.");
+      return;
+    }
+
+    window.localStorage.setItem(soundtrackStorageKey, soundtrackUrl.trim());
+    setSoundtrackError(null);
+    setConnectedVideoId(videoId);
+  };
+
+  const disconnectSoundtrack = () => {
+    setConnectedVideoId(null);
+    setSoundtrackError(null);
   };
 
   return (
@@ -129,6 +180,41 @@ export function HostAudioControls({ audio }: { audio: AshenReachAudioController 
               );
             })}
           </div>
+
+          <section className="tv-audio-soundtrack" aria-label="YouTube background ambience">
+            <div>
+              <span>Table soundtrack</span>
+              <small>Paste a YouTube link chosen by the players. Playback stays on this host display.</small>
+            </div>
+            <label>
+              <span>YouTube link</span>
+              <input
+                type="url"
+                value={soundtrackUrl}
+                placeholder="https://youtube.com/watch?v=..."
+                onChange={(event) => {
+                  setSoundtrackUrl(event.currentTarget.value);
+                  setSoundtrackError(null);
+                }}
+              />
+            </label>
+            {soundtrackError ? <p role="alert">{soundtrackError}</p> : null}
+            <div className="tv-audio-soundtrack-actions">
+              <button type="button" onClick={connectSoundtrack}>
+                {connectedVideoId ? "Change soundtrack" : "Connect soundtrack"}
+              </button>
+              {connectedVideoId ? <button type="button" onClick={disconnectSoundtrack}>Stop</button> : null}
+            </div>
+            {connectedVideoId ? (
+              <iframe
+                className="tv-audio-youtube-player"
+                title="Ashen Reach table soundtrack"
+                src={`https://www.youtube-nocookie.com/embed/${connectedVideoId}?autoplay=1&loop=1&playlist=${connectedVideoId}`}
+                allow="autoplay; encrypted-media"
+                referrerPolicy="strict-origin-when-cross-origin"
+              />
+            ) : null}
+          </section>
 
           <button type="button" className="tv-audio-enable" onClick={audio.unlock} disabled={!audio.available || audio.unlocked}>
             {!audio.available ? "Audio unavailable" : audio.unlocked ? "Audio ready" : "Enable audio"}

@@ -1,4 +1,4 @@
-import { useEffect, useState, type CSSProperties, type ReactElement } from "react";
+import { useEffect, useRef, useState, type CSSProperties, type ReactElement } from "react";
 import { getChallengeThemeStyle } from "../../game/ui/challengeTheme.js";
 import { describeContractObjective as describeObjective, formatContractProgress } from "../../game/contracts/objectives.js";
 import { getEquippedGearItem } from "../../game/engine/gear.js";
@@ -626,6 +626,8 @@ export function PortraitControllerView({
   const [phoneChromeVisible, setPhoneChromeVisible] = useState(readStoredPhoneChromeVisible);
   const [bottomDockExpanded, setBottomDockExpanded] = useState(false);
   const [expandedStat, setExpandedStat] = useState<Stat | null>(null);
+  const [choosingStartingMission, setChoosingStartingMission] = useState(false);
+  const startingMissionSectionRef = useRef<HTMLElement | null>(null);
   const phoneChromeHidden = !phoneChromeVisible;
 
   useEffect(() => {
@@ -748,7 +750,7 @@ export function PortraitControllerView({
     const startingGear = self.character.heldGear;
     const startingContractOptions = patch?.startingContractOptions ?? [];
     const selectedStartingContract = patch?.selectedStartingContract ?? null;
-    const canReady = Boolean(patch?.canReady && selectedStartingContract && onIntent && !isReady);
+    const canReady = Boolean(patch?.canReady && selectedStartingContract && onIntent && !isReady && !choosingStartingMission);
     const joinedSeats = patch?.seats.filter((seat) => seat.displayName && !seat.kicked) ?? [];
     const canHostStart = Boolean(
       !isLateJoinPending &&
@@ -796,9 +798,13 @@ export function PortraitControllerView({
                 ))}
               </div>
 
-              <section className="phone-character-waiting-section phone-starting-mission-section" aria-label="Starting Mission">
-                <h3>{selectedStartingContract ? "Selected Starting Mission" : "Choose Starting Mission"}</h3>
-                {selectedStartingContract ? (
+              <section
+                ref={startingMissionSectionRef}
+                className="phone-character-waiting-section phone-starting-mission-section"
+                aria-label="Starting Mission"
+              >
+                <h3>{selectedStartingContract && !choosingStartingMission ? "Selected Starting Mission" : "Choose Starting Mission"}</h3>
+                {selectedStartingContract && !choosingStartingMission ? (
                   <ContractMissionCard contract={selectedStartingContract} selected />
                 ) : startingContractOptions.length > 0 ? (
                   <div className="phone-starting-mission-list">
@@ -808,13 +814,15 @@ export function PortraitControllerView({
                         contract={contract}
                         recommended={index === 0}
                         disabled={!onIntent}
-                        onSelect={() =>
+                        selected={contract.id === selectedStartingContract?.id}
+                        onSelect={() => {
+                          setChoosingStartingMission(false);
                           onIntent?.({
                             type: "SELECT_STARTING_CONTRACT",
                             seatId: self.seatId,
                             contractId: contract.id
-                          })
-                        }
+                          });
+                        }}
                       />
                     ))}
                   </div>
@@ -840,9 +848,23 @@ export function PortraitControllerView({
                 >
                   {isLateJoinPending ? "Join Game" : "Ready"}
                 </button>
-                {onLobbyBack ? (
+                {selectedStartingContract && !isReady ? (
+                  <button
+                    type="button"
+                    className="phone-button phone-button-secondary phone-lobby-ready-button"
+                    onClick={() => {
+                      const next = !choosingStartingMission;
+                      setChoosingStartingMission(next);
+                      if (next) {
+                        window.setTimeout(() => startingMissionSectionRef.current?.scrollIntoView?.({ block: "start" }), 0);
+                      }
+                    }}
+                  >
+                    {choosingStartingMission ? "Keep Current Mission" : "Change Mission"}
+                  </button>
+                ) : onLobbyBack ? (
                   <button type="button" className="phone-button phone-button-secondary phone-lobby-ready-button" onClick={onLobbyBack}>
-                    Back
+                    Leave Room
                   </button>
                 ) : null}
                 {patch?.selfIsSetupHost ? (
