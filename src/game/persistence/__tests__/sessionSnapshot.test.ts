@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { createInitialSessionState } from "../../../server/sessionState.js";
+import { createNemesisChampionsForSeats } from "../../rules/nemesisRelay.js";
 import { legacySessionSnapshotSchemaV0, sessionSnapshotSchema, sessionSnapshotSchemaV1 } from "../../schema/session.schema.js";
 import {
   CURRENT_SAVE_VERSION,
@@ -168,5 +169,25 @@ describe("versioned session snapshot migration", () => {
     expect(snapshot.saveVersion).toBe(CURRENT_SAVE_VERSION);
     expect(snapshot.legacyCompatibility).toBeUndefined();
     expect(snapshot.state.players.every((player) => !("heat" in player.character))).toBe(true);
+  });
+
+  it("accepts the historical inert Nemesis special-rule identifier without changing save version", () => {
+    const state = createInitialSessionState("legacy-nemesis-rule", "single-player", undefined, "co-op", "nemesis_relay");
+    const champion = createNemesisChampionsForSeats(state, ["seat-1"])[0]!;
+    const snapshot = serializeSessionSnapshotV2({
+      ...state,
+      nemesisChampions: [{ ...champion, specialRuleId: "heat_on_threat_defeat" }]
+    });
+
+    const migrated = parseAndMigrateSessionSnapshot(snapshot);
+
+    expect(migrated.saveVersion).toBe(2);
+    expect(migrated.state.nemesisChampions[0]).toMatchObject({
+      id: "nemesis_iron_vicar_orm_seat-1",
+      specialRuleId: "heat_on_threat_defeat",
+      defeated: false
+    });
+    expect(migrated.state.pendingEncounterDecision).toBeNull();
+    expect(serializeSessionSnapshotV2(migrated.state).saveVersion).toBe(2);
   });
 });

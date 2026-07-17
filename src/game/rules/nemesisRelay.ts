@@ -17,7 +17,7 @@ const NEMESIS_TEMPLATES: NemesisTemplate[] = [
     maxHealth: 5,
     movementProfile: "center_path",
     combatProfile: "choice",
-    specialRuleId: "heat_on_threat_defeat"
+    specialRuleId: "no_additional_effect"
   },
   {
     id: "nemesis_pale_huntress",

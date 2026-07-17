@@ -93,6 +93,48 @@ describe("Nemesis Relay mode", () => {
     expect(server.getState().nemesisChampions.map((champion) => champion.boundPlayerId)).toEqual(["seat-1", "seat-2"]);
   });
 
+  it("uses the inert canonical special-rule identifier without adding a consequence", () => {
+    const server = startRelayServer(1, [5, 5, 0, 0]);
+    const nemesis = getActiveNemesis(server);
+
+    expect(nemesis.id).toBe("nemesis_iron_vicar_orm_seat-1");
+    expect(nemesis.specialRuleId).toBe("no_additional_effect");
+
+    const playerSectorId = server.getState().players[0]!.character.currentSpaceId;
+    const before = server.getState();
+    const playerBefore = before.players[0]!.character;
+
+    updateState(server, (state) => ({
+      ...state,
+      phase: "action",
+      nemesisChampions: state.nemesisChampions.map((champion) =>
+        champion.id === nemesis.id ? { ...champion, sectorId: playerSectorId, health: 1, maxHealth: 1 } : champion
+      ),
+      players: state.players.map((player) =>
+        player.seatId === "seat-1"
+          ? { ...player, character: { ...player.character, stats: { ...player.character.stats, grit: 12 } } }
+          : player
+      )
+    }));
+
+    server.handleIntent(createClient("seat-1"), {
+      type: "NEMESIS_COMBAT_REQUESTED",
+      seatId: "seat-1",
+      nemesisId: nemesis.id,
+      stat: "grit"
+    } satisfies ClientIntent);
+
+    const after = server.getState();
+    const playerAfter = after.players[0]!.character;
+    expect(playerAfter.wounds).toBe(playerBefore.wounds);
+    expect(playerAfter.scars).toEqual(playerBefore.scars);
+    expect(playerAfter.salvage).toBe(playerBefore.salvage);
+    expect(after.escalationLevel).toBe(before.escalationLevel);
+    expect(after.pendingEncounterDecision).toBeNull();
+    expect(JSON.stringify(after.eventLog.slice(before.eventLog.length))).not.toContain("no_additional_effect");
+    expect(JSON.stringify(after.lastOutcomeSummary)).not.toContain("no_additional_effect");
+  });
+
   it("activates the bound Nemesis after its player's turn", () => {
     const server = startRelayServer(1);
     const nemesis = getActiveNemesis(server);
