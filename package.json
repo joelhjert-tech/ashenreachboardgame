@@ -19,6 +19,8 @@
     "validate:content": "tsx scripts/validate-content.ts",
     "analyze:play-feel": "tsx scripts/analyze-play-feel.ts",
     "analyze:economy": "tsx scripts/analyze-economy.ts",
+    "calibrate:economy": "tsx scripts/calibrate-economy.ts",
+    "test:economy-calibration": "vitest run scripts/__tests__/economy-calibration.test.ts",
     "qa:economy": "tsx scripts/capture-economy-qa.ts",
     "audit:assets": "tsx scripts/audit-assets.ts",
     "audit:assets:release": "tsx scripts/audit-assets.ts --release",
