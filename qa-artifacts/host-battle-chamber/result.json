@@ -1,0 +1,30 @@
+{
+  "roomCode": "WRMWA",
+  "fixture": {
+    "ok": true,
+    "fixture": {
+      "kind": "movement-journey",
+      "stage": "ashen-chapel",
+      "withChoirLantern": true
+    },
+    "sequence": 8
+  },
+  "state": {
+    "chamber": true,
+    "boardHidden": true,
+    "boardInert": true,
+    "operativesRail": false,
+    "rightRail": false,
+    "journey": false,
+    "shop": false,
+    "overflowX": false,
+    "overflowY": false,
+    "canvas": 0,
+    "focus": "tv-host-battle-chamber"
+  },
+  "errors": [],
+  "limitations": [
+    "The authenticated fixture provides an arrival test and recurring anomaly challenge, not a deterministic enemy Threat failure.",
+    "Success or failure is the authoritative random result; the fixture does not force dice."
+  ]
+}
