@@ -10,10 +10,13 @@ import { reduceGameState } from "../reducer.js";
 
 const GROUP_3 = {
   outer_brokenCausewayShortcut: {
-    summary: "Marked the Broken Causeway shortcut toward Guardian Span.",
+    summary: "Marked the Broken Causeway shortcut with an Ash Porter at your side.",
     stat: "grit",
     difficulty: 8,
-    effect: { type: "gain_note", text: "Broken Causeway shortcut marked. The fast route is dangerous but real." },
+    effect: { type: "sequence", effects: [
+      { type: "gain_follower", followerId: "ash-porter" },
+      { type: "gain_note", text: "Broken Causeway shortcut marked. The fast route is dangerous but real." }
+    ] },
     failureSummary: "The causeway cracked under the attempt and threw cinder pressure through the line.",
     failureEffect: { type: "take_wound", amount: 1 },
     sectorDeck: { kind: "escalation" },

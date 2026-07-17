@@ -18,7 +18,10 @@ const GROUP_1 = {
   outer_mirecoilTraffic: {
     stat: "signal",
     difficulty: 8,
-    effect: { type: "gain_note", text: "Mirecoil contract lead secured from mast traffic." },
+    effect: { type: "sequence", effects: [
+      { type: "gain_follower", followerId: "mirecoil-saboteur" },
+      { type: "gain_note", text: "Mirecoil contract lead secured from mast traffic." }
+    ] },
     failureSummary: "The Mirecoil traffic lanes broke into static and the contract lead dissolved into noise.",
     sectorDeck: { kind: "contract" }
   },
@@ -38,7 +41,10 @@ const GROUP_1 = {
   outer_oathpostWrit: {
     stat: "command",
     difficulty: 7,
-    effect: { type: "gain_note", text: "Faction writ: can be cashed for bounded rivalry, aid, or a contract lead." },
+    effect: { type: "sequence", effects: [
+      { type: "gain_follower", followerId: "gate-saint-acolyte" },
+      { type: "gain_note", text: "Faction writ: can be cashed for bounded rivalry, aid, or a contract lead." }
+    ] },
     failureSummary: "The Oathpost refused your claim and marked the attempt as unpaid scar debt.",
     sectorDeck: { kind: "contract" }
   },

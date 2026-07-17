@@ -217,7 +217,8 @@ const encounterDecksBySpaceId: Partial<Record<string, EncounterDecks>> = {
       "artifact-bell-votive",
       "artifact-ashen-route-compass",
       "artifact-oath-chain-ledger",
-      "artifact-ember-burden-idol"
+      "artifact-ember-burden-idol",
+      "artifact-murkclaw-gravecrow"
     ],
     escalation: []
   },
@@ -236,7 +237,7 @@ const encounterDecksBySpaceId: Partial<Record<string, EncounterDecks>> = {
     ],
     anomaly: [],
     contract: ["compact-surgery-bond"],
-    artifact: ["artifact-yard", "artifact-cinder-suture-kit", "artifact-void-salt-poultice", "artifact-last-breath-rivet", "artifact-saintwire-splint"],
+    artifact: ["artifact-yard", "artifact-cinder-suture-kit", "artifact-void-salt-poultice", "artifact-last-breath-rivet", "artifact-saintwire-splint", "artifact-lucy-hell-puppy"],
     escalation: []
   },
   "emberwatch-step": {
@@ -320,7 +321,9 @@ const encounterDecksBySpaceId: Partial<Record<string, EncounterDecks>> = {
       "artifact-red-march-warbell",
       "artifact-pale-ledger-token",
       "artifact-ember-burden-idol",
-      "artifact-rift-anchor-spike"
+      "artifact-rift-anchor-spike",
+      "artifact-mira-rift-twin",
+      "artifact-zoey-thorn-violet"
     ],
     escalation: ["escalation-artifact-wake"]
   },
@@ -563,7 +566,8 @@ const encounterDecksBySpaceId: Partial<Record<string, EncounterDecks>> = {
       "artifact-ember-burden-idol",
       "artifact-heat-sink-prayer",
       "artifact-mirror-reroll-token",
-      "artifact-black-route-fuse"
+      "artifact-black-route-fuse",
+      "artifact-fandiablos"
     ],
     escalation: ["escalation-ridge-suture", "escalation-crownfall-writ", "escalation-gate-saint-wake", "escalation-blackstar-hunger"]
   },
@@ -579,7 +583,7 @@ const encounterDecksBySpaceId: Partial<Record<string, EncounterDecks>> = {
     ],
     anomaly: ["anomaly-choir-static", "anomaly-crownfall-echo-court", "anomaly-saint-static-aperture", "anomaly-cinder-gate-echo"],
     contract: ["umbral-shrine-confession"],
-    artifact: ["artifact-bell-votive", "artifact-choir-static-censer", "artifact-gate-saint-key", "artifact-pale-ledger-token", "artifact-marrow-route-key"],
+    artifact: ["artifact-bell-votive", "artifact-choir-static-censer", "artifact-gate-saint-key", "artifact-pale-ledger-token", "artifact-marrow-route-key", "artifact-rune-eye-raven"],
     escalation: ["escalation-gate-saint-wake", "escalation-choir-feedback", "escalation-throne-shadow"]
   },
   inner_gate_of_cinders: {

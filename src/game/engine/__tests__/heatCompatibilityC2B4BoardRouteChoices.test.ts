@@ -32,7 +32,10 @@ const GROUP_4 = {
         stat: "guile",
         difficulty: 8,
         summary: "Cut a quieter bargain in the Shard Sprawl and took field gossip instead of supply stock.",
-        effect: { type: "gain_note", text: "Shard Sprawl gossip mapped a safer approach through the middle lanes." },
+        effect: { type: "sequence", effects: [
+          { type: "gain_follower", followerId: "crownless-advocate" },
+          { type: "gain_note", text: "Shard Sprawl gossip mapped a safer approach through the middle lanes." }
+        ] },
         failureSummary: "The Shard Sprawl gossip line collapsed into rumor and cost you breathing room."
       }
     ]
@@ -47,7 +50,10 @@ const GROUP_4 = {
         stat: "guile",
         difficulty: 9,
         summary: "Slipped through the hidden Webglass lane and logged a safer breach route.",
-        effect: { type: "gain_note", text: "Webglass hidden lane mapped through shifting lanes." },
+        effect: { type: "sequence", effects: [
+          { type: "gain_follower", followerId: "webglass-runner" },
+          { type: "gain_note", text: "Webglass hidden lane mapped through shifting lanes." }
+        ] },
         failureSummary: "The hidden Webglass lane buckled and dumped you back into the live fracture."
       },
       {
@@ -56,7 +62,10 @@ const GROUP_4 = {
         stat: "signal",
         difficulty: 9,
         summary: "Spliced the relay seam into a stable Webglass route before the breach could shift.",
-        effect: { type: "gain_note", text: "Webglass relay splice stabilized a mapped breach route." },
+        effect: { type: "sequence", effects: [
+          { type: "gain_follower", followerId: "webglass-runner" },
+          { type: "gain_note", text: "Webglass relay splice stabilized a mapped breach route." }
+        ] },
         failureSummary: "The relay splice flared too hot and the Webglass seam answered with static."
       }
     ]
@@ -88,6 +97,15 @@ const GROUP_4 = {
 } as const;
 
 const GROUP_4_IDS = Object.keys(GROUP_4) as Array<keyof typeof GROUP_4>;
+
+function noteText(effect: { type: string; text?: string; effects?: readonly { type: string; text?: string }[] }): string {
+  if (effect.type === "gain_note" && effect.text) return effect.text;
+  if (effect.type === "sequence") {
+    const note = effect.effects?.find((entry) => entry.type === "gain_note");
+    if (note?.text) return note.text;
+  }
+  throw new Error("Expected board choice to retain its private note effect");
+}
 const HEAT_OR_REPLACEMENT = /gain_heat|lose_heat|gain_heat_all|take_wound|gain_scar|lose_salvage|advance_escalation|forced_displacement|temporary_modifier|equipment_suppression/i;
 
 function stateAtEffect(effectKey: keyof typeof GROUP_4): GameState {
@@ -210,12 +228,13 @@ describe("Heat Compatibility C2B4 board route-choice cleanup", () => {
 
       const selected = GROUP_4[id].choices[optionIndex];
       const unselected = GROUP_4[id].choices[optionIndex === 0 ? 1 : 0];
-      expect(result.state.players[0]!.private.notes).toContain(selected.effect.text);
-      expect(result.state.players[0]!.private.notes).not.toContain(unselected.effect.text);
+      const selectedNote = noteText(selected.effect);
+      expect(result.state.players[0]!.private.notes).toContain(selectedNote);
+      expect(result.state.players[0]!.private.notes).not.toContain(noteText(unselected.effect));
       expect(result.state.players[0]!.sectorId).toBe(startingSector);
       expect(result.state.players[0]!.character.currentSpaceId).toBe(startingSector);
       expect(result.state.movementRolls).toEqual(startingMovement);
-      expect(result.state.activeResolution?.outcome?.effects).toEqual([`Success: note added: ${selected.effect.text}`]);
+      expect(result.state.activeResolution?.outcome?.effects).toContain(`Success: note added: ${selectedNote}`);
     }
   });
 
@@ -244,7 +263,7 @@ describe("Heat Compatibility C2B4 board route-choice cleanup", () => {
     const completed = resolveChoice(preselection, id, 0, true, `c2b4-${id}-complete`);
     expect(completed.ok).toBe(true);
     if (!completed.ok) return;
-    const selectedNote = GROUP_4[id].choices[0].effect.text;
+    const selectedNote = noteText(GROUP_4[id].choices[0].effect);
 
     const owner = createPhoneProjection(completed.state, "seat-1", true);
     const other = createPhoneProjection(completed.state, "seat-2", true);

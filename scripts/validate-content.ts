@@ -12,6 +12,7 @@ import { loadScarCards } from "../src/game/content/scars.js";
 import { loadThreatCards } from "../src/game/content/threats.js";
 import { loadTileChallenges } from "../src/game/content/tileChallenges.js";
 import { getThreatEffectTiming, isThreatEffectKey } from "../src/game/cards/threatEffects.js";
+import { FOLLOWER_ACQUISITION_SOURCES, QA_FOLLOWER_IDS } from "../src/game/data/followerAcquisition.js";
 import { BOARD_SPACES } from "../src/game/data/boardSpaces.js";
 import { BOARD_TEXT_EFFECTS, validateBoardTextEffectCoverage } from "../src/game/data/boardTextEffects.js";
 import { createCanonicalSectorGraph, validateCanonicalSectorGraph } from "../src/game/data/canonicalSectorGraph.js";
@@ -197,6 +198,7 @@ validateContentFloors();
 validateBoardCoverage();
 validateScenarioCoverage();
 validateCanonicalDecks();
+validateFollowerAcquisitionCoverage();
 validateLoreLanguage();
 
 const sectorFiles = readdirSync(sectorsRoot).filter((entry) => entry.endsWith(".json"));
@@ -369,6 +371,56 @@ function validateContentFloors(): void {
   const severeThreats = (severityCounts.get(5) ?? 0) / Math.max(threats.size, 1);
   if (severeThreats > 0.2) {
     errors.push(`Severity 5 threats should remain rare; found ${severityCounts.get(5)} of ${threats.size}`);
+  }
+}
+
+function effectGrantsFollower(effect: EncounterEffect | null | undefined, followerId: string): boolean {
+  if (!effect) return false;
+  if (effect.type === "gain_follower") return effect.followerId === followerId;
+  return effect.type === "sequence" && effect.effects.some((entry) => effectGrantsFollower(entry, followerId));
+}
+
+function validateFollowerAcquisitionCoverage(): void {
+  if (followers.size !== 24) errors.push(`Follower catalog must contain exactly 24 definitions; found ${followers.size}`);
+  const normalFollowers = [...followers.values()].filter((follower) => !follower.qaOnly);
+  const qaFollowers = [...followers.values()].filter((follower) => follower.qaOnly);
+  if (normalFollowers.length !== 21 || qaFollowers.length !== 3) {
+    errors.push(`Follower catalog must contain 21 normal and 3 QA-only followers; found ${normalFollowers.length}/${qaFollowers.length}`);
+  }
+
+  for (const follower of normalFollowers) {
+    const sources = FOLLOWER_ACQUISITION_SOURCES.filter((source) => source.followerId === follower.id);
+    if (sources.length === 0) errors.push(`Follower ${follower.id} has no canonical normal-game acquisition source`);
+    if (!follower.activeEffect && !follower.passiveEffect) errors.push(`Follower ${follower.id} has no explicit active or passive ability`);
+  }
+
+  for (const follower of qaFollowers) {
+    if (!QA_FOLLOWER_IDS.has(follower.id)) errors.push(`Unexpected QA-only follower ${follower.id}`);
+  }
+
+  for (const source of FOLLOWER_ACQUISITION_SOURCES) {
+    const follower = followers.get(source.followerId);
+    if (!follower || follower.qaOnly) {
+      errors.push(`Acquisition source ${source.sourceId} references invalid normal follower ${source.followerId}`);
+      continue;
+    }
+    if (source.sourceType === "board") {
+      const [effectKey, choiceId] = source.sourceId.split(":");
+      const definition = BOARD_TEXT_EFFECTS[effectKey!];
+      const grants = choiceId
+        ? effectGrantsFollower(definition?.choices?.find((choice) => choice.id === choiceId)?.effect, source.followerId)
+        : effectGrantsFollower(definition?.effect, source.followerId) || Boolean(definition?.choices?.some((choice) => effectGrantsFollower(choice.effect, source.followerId)));
+      if (!grants) errors.push(`Board source ${source.sourceId} does not grant ${source.followerId}`);
+    }
+    if (source.sourceType === "artifact") {
+      const artifact = artifacts.get(source.sourceId);
+      if (!artifact || !effectGrantsFollower(artifact.resolveEffect, source.followerId)) errors.push(`Artifact source ${source.sourceId} does not grant ${source.followerId}`);
+      if (!canonicalSectors.some((sector) => sector.encounterDecks.artifact.includes(source.sourceId))) errors.push(`Artifact source ${source.sourceId} is absent from every canonical sector deck`);
+    }
+    if (source.sourceType === "anomaly") {
+      const anomaly = anomalies.get(source.sourceId);
+      if (!anomaly || !effectGrantsFollower(anomaly.resolveEffect, source.followerId)) errors.push(`Anomaly source ${source.sourceId} does not grant ${source.followerId}`);
+    }
   }
 }
 

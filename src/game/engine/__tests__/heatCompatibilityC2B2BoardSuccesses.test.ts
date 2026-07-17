@@ -21,30 +21,39 @@ const GROUP_2 = {
     spaces: ["outer_ember_sanctum"]
   },
   outer_glassmereChorus: {
-    summary: "Tuned the Glassmere spindle and secured a stable relay note.",
+    summary: "Tuned the Glassmere spindle and recruited the mapper who held its stable line.",
     stat: "signal",
     difficulty: 7,
-    effect: { type: "gain_note", text: "Glassmere spindle tuned. Relay chorus remains stable." },
+    effect: { type: "sequence", effects: [
+      { type: "gain_follower", followerId: "glassmere-mapper" },
+      { type: "gain_note", text: "Glassmere spindle tuned. Relay chorus remains stable." }
+    ] },
     failureSummary: "The Glassmere chorus slipped sharp and left the relay line unstable.",
     failureEffect: undefined,
     sectorDeck: { kind: "anomaly" },
     spaces: ["coldwind-wharf", "flooded-locks", "glassmere-spindle"]
   },
   outer_waymarketExchange: {
-    summary: "Worked the Waymarket exchange and secured a practical table favor.",
+    summary: "Worked the Waymarket exchange and recruited a Black Lantern broker.",
     stat: "guile",
     difficulty: 6,
-    effect: { type: "gain_note", text: "Waymarket favor banked for trade, aid, or a safer route." },
+    effect: { type: "sequence", effects: [
+      { type: "gain_follower", followerId: "black-lantern-broker" },
+      { type: "gain_note", text: "Waymarket favor banked for trade, aid, or a safer route." }
+    ] },
     failureSummary: "The Waymarket deal soured and every stall seemed to know your scar tally.",
     failureEffect: undefined,
     sectorDeck: { kind: "contract" },
     spaces: ["kettleward-foundry", "outer_waymarket"]
   },
   outer_saltCrossing: {
-    summary: "Harvested void-salt and bottled it as a bargaining chip.",
+    summary: "Harvested void-salt and recruited the bone-reader who interpreted it.",
     stat: "forge",
     difficulty: 7,
-    effect: { type: "gain_note", text: "Void-salt vial: useful for scar treatment or gate bargaining." },
+    effect: { type: "sequence", effects: [
+      { type: "gain_follower", followerId: "saltflat-bone-reader" },
+      { type: "gain_note", text: "Void-salt vial: useful for scar treatment or gate bargaining." }
+    ] },
     failureSummary: "The salt bloom bit through the gloves and left a white nerve-mark under the skin.",
     failureEffect: { type: "take_wound", amount: 1 },
     sectorDeck: { kind: "anomaly" },
