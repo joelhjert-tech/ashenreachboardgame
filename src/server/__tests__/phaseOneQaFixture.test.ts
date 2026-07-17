@@ -146,6 +146,36 @@ describe("Phase 1 QA fixture", () => {
     expect(state.lastOutcomeSummary?.success ?? null).toBe(stage === "success" ? true : stage === "defeat" ? false : null);
   });
 
+  it("projects public-safe host rare states without private reaction identifiers", () => {
+    const state = createInitialSessionState("QA-RARE", "multiplayer", "scenario_broken_seal", "co-op", "standard", 4);
+    state.status = "active";
+    for (const seat of state.seats.slice(0, 4)) {
+      seat.displayName = seat.seatId;
+      seat.connected = true;
+      seat.characterSelected = true;
+      seat.ready = true;
+    }
+
+    applyPhaseOneQaFixture(state, "seat-1", { kind: "host-rare", stage: "stacked-operatives" });
+    expect(new Set(state.players.slice(0, 4).map((player) => player.sectorId))).toEqual(new Set(["outer_waymarket"]));
+
+    applyPhaseOneQaFixture(state, "seat-1", { kind: "host-rare", stage: "reaction-pending" });
+    const reactionTv = createTvProjection(state) as Record<string, unknown>;
+    expect(reactionTv.pendingOrderedConsequence).toMatchObject({ seatId: "seat-1", sourceId: "suture-storm", status: "waiting" });
+    expect(JSON.stringify(reactionTv)).not.toMatch(/qa:suture-storm:ordered-consequence|reactionId/);
+
+    applyPhaseOneQaFixture(state, "seat-1", { kind: "host-rare", stage: "scar-pending" });
+    const scarTv = createTvProjection(state) as Record<string, unknown>;
+    const scarPhone = createPhoneProjection(state, "seat-1", true) as Record<string, unknown>;
+    expect(scarTv.scarTriggerStatus).toEqual({ seatId: "seat-1", scarTitle: "Static Burn", status: "waiting" });
+    expect(JSON.stringify(scarTv)).not.toMatch(/qa-scar-trigger:seat-1|pendingEffects/);
+    expect(scarPhone.pendingScarConsequence).toBeTruthy();
+
+    applyPhaseOneQaFixture(state, "seat-1", { kind: "host-rare", stage: "recall-triggered" });
+    expect(state.players[0]?.character).toMatchObject({ status: "recalled", wounds: state.woundThreshold });
+    expect(state.players[0]?.character.scars).toContain("scar-wound-1");
+  });
+
   it("requires the current room and a valid signed seat token", async () => {
     const qa = await startAshenReachServer({ port: 18180, host: "127.0.0.1", maxPortAttempts: 5, logUrls: false, qaFixturesEnabled: true });
     started.push(qa);

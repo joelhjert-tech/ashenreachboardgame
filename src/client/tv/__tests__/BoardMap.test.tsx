@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import "@testing-library/jest-dom/vitest";
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 import { BOARD_SPACES } from "../../../game/data/boardSpaces.js";
 import type { PublicPatchPayload } from "../../shared/types.js";
@@ -154,6 +154,36 @@ function createPatch(): PublicPatchPayload {
 }
 
 describe("BoardMap", () => {
+  it("renders four co-located operatives in stable seat order with the active marker prioritized", () => {
+    const patch = createPatch();
+    const template = { ...patch.players[0]!, sectorId: "outer_waymarket" };
+    patch.seats = [
+      ...patch.seats,
+      { seatId: "seat-3", characterId: "third", displayName: "Third", connected: true, ready: true, kicked: false },
+      { seatId: "seat-4", characterId: "fourth", displayName: "Fourth", connected: true, ready: true, kicked: false }
+    ];
+    patch.players = [
+      { ...template, seatId: "seat-4", character: { ...template.character, id: "fourth", name: "Fourth" } },
+      { ...template, seatId: "seat-2", character: { ...template.character, id: "second", name: "Second" } },
+      { ...template, seatId: "seat-3", character: { ...template.character, id: "third", name: "Third" } },
+      template
+    ];
+    patch.turnOrder = ["seat-1", "seat-2", "seat-3", "seat-4"];
+    patch.activeSeatIndex = 2;
+
+    render(<BoardMap patch={patch} phase="navigation" />);
+
+    const cluster = screen.getByLabelText(/4 operatives on Anchor Market/i);
+    expect(within(cluster).getAllByTestId(/^token-seat-/).map((marker) => marker.dataset.testid)).toEqual([
+      "token-seat-1",
+      "token-seat-2",
+      "token-seat-3",
+      "token-seat-4"
+    ]);
+    expect(screen.getByTestId("token-seat-3")).toHaveClass("talisman-board-player-marker-active");
+    expect(screen.queryByText("+1")).not.toBeInTheDocument();
+  });
+
   it("does not highlight legal targets before movement is rolled", () => {
     render(<BoardMap patch={createPatch()} phase="navigation" />);
 

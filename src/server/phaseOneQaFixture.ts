@@ -13,6 +13,10 @@ export type PhaseOneQaFixture =
   | { kind: "follower"; stage: "acquired" | "used" | "reconnected" }
   | { kind: "host-state"; stage: "scenario-preparation" | "disconnected" | "victory" | "loss" }
   | {
+      kind: "host-rare";
+      stage: "stacked-operatives" | "reaction-pending" | "reaction-final" | "recall-triggered" | "scar-pending" | "scar-resolved";
+    }
+  | {
       kind: "phone-battle";
       stage: "encounter" | "battle-setup" | "pending-enemy-roll" | "rolled-result" | "success" | "defeat";
     };
@@ -166,6 +170,134 @@ export function applyPhaseOneQaFixture(state: GameState, seatId: string, fixture
   clearResolution(state);
   state.sequence += 1;
   state.activeSeatIndex = Math.max(0, state.turnOrder.indexOf(seatId));
+
+  if (fixture.kind === "host-rare") {
+    const player = state.players.find((entry) => entry.seatId === seatId);
+    if (!player) throw new Error(`QA fixture cannot find ${seatId}`);
+    state.phase = "action";
+    state.pendingSutureStormConsequence = null;
+    state.pendingDisplacement = null;
+    state.pendingScarConsequence = null;
+    state.pendingScarConsequenceQueue = [];
+
+    if (fixture.stage === "stacked-operatives") {
+      for (const operative of state.players) {
+        placePlayer(state, operative.seatId, "outer_waymarket");
+      }
+      state.phase = "navigation";
+      state.movementRolls = { ...(state.movementRolls ?? {}), [seatId]: 2 };
+      return;
+    }
+
+    if (fixture.stage === "reaction-pending") {
+      player.character.wounds = 1;
+      state.pendingSutureStormConsequence = {
+        seatId,
+        sourceCardId: "suture-storm",
+        sourceResolutionId: "qa:suture-storm:failed-check",
+        sourceEventId: "qa:suture-storm:ordered-consequence",
+        stage: "afterInitialWound",
+        requestedWounds: 1,
+        preventedWounds: 0,
+        actualWounds: 1,
+        resultingWounds: 1,
+        resultingStatus: "active",
+        displacement: {
+          type: "forcedDisplacement",
+          direction: "counterclockwise",
+          distance: 1,
+          sameRing: true,
+          failureStillCounts: true,
+          fallbackEffect: { type: "take_wound", amount: 1 }
+        },
+        createdAt: "qa-host-rare-reaction"
+      };
+      return;
+    }
+
+    if (fixture.stage === "reaction-final") {
+      player.character.wounds = 1;
+      state.lastOutcomeSummary = {
+        seatId,
+        movedToSectorId: player.sectorId,
+        encounterCardId: "suture-storm",
+        encounterTitle: "Suture Storm",
+        encounterCardType: "hazard",
+        checkStat: "signal",
+        die1: 2,
+        die2: 2,
+        statBonus: 2,
+        checkTotal: 6,
+        difficulty: 9,
+        enemyRollerSeatId: null,
+        enemyDie1: null,
+        enemyDie2: null,
+        enemyBonus: null,
+        enemyTotal: null,
+        success: false,
+        summary: "Suture Storm resolved. The operative suffered 1 Wound."
+      };
+      return;
+    }
+
+    if (fixture.stage === "recall-triggered") {
+      player.character.wounds = state.woundThreshold;
+      player.character.status = "recalled";
+      player.character.scars = [...player.character.scars.filter((id) => id !== "scar-wound-1"), "scar-wound-1"];
+      state.lastOutcomeSummary = {
+        seatId,
+        movedToSectorId: player.sectorId,
+        encounterCardId: "qa-wound-threshold",
+        encounterTitle: "Wound threshold",
+        encounterCardType: null,
+        checkStat: null,
+        die1: null,
+        die2: null,
+        statBonus: null,
+        checkTotal: null,
+        difficulty: null,
+        enemyRollerSeatId: null,
+        enemyDie1: null,
+        enemyDie2: null,
+        enemyBonus: null,
+        enemyTotal: null,
+        success: false,
+        summary: "Wound threshold reached. Operative recalled and Ash-Lanced Scar gained."
+      };
+      return;
+    }
+
+    player.character.status = "active";
+    player.character.scars = [...player.character.scars.filter((id) => id !== "scar-wound-2"), "scar-wound-2"];
+    if (fixture.stage === "scar-pending") {
+      state.pendingScarConsequence = {
+        reactionId: "qa-scar-trigger:seat-1:scar-wound-2:0",
+        seatId,
+        scarInstanceId: `${seatId}:scar-wound-2:0`,
+        scarCardId: "scar-wound-2",
+        scarTitle: "Static Burn",
+        triggerType: "beforeTest",
+        sourceEventId: "qa-scar-trigger",
+        pendingEffects: [{ effectId: "qa-scar-trigger:0", effect: { type: "gain_note", text: "Static Burn broadcast a warning through the operative." } }],
+        createdAt: "qa-host-rare-scar",
+        status: "pending"
+      };
+      return;
+    }
+
+    player.private.notes = [...player.private.notes, "Static Burn broadcast a warning through the operative."];
+    state.resolvedScarSourceEventIds = [...(state.resolvedScarSourceEventIds ?? []), "qa-scar-trigger"];
+    state.eventLog = [...state.eventLog, {
+      type: "CONTINUE_SCAR_CONSEQUENCE",
+      seatId,
+      reactionId: "qa-scar-trigger:seat-1:scar-wound-2:0",
+      createdAt: "qa-host-rare-scar-resolved",
+      scarTitle: "Static Burn",
+      sourceEventId: "qa-scar-trigger",
+      summary: "Static Burn consequence resolved."
+    }];
+    return;
+  }
 
   if (fixture.kind === "phone-battle") {
     setPhoneBattleFixture(state, seatId, fixture.stage);

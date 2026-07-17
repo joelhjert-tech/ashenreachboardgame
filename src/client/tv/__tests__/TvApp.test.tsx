@@ -1000,6 +1000,82 @@ describe("TvApp", () => {
     expect(screen.queryByTestId("host-shop-overlay")).not.toBeInTheDocument();
   });
 
+  it("shows only the public ordered-reaction stage and withholds an early outcome", async () => {
+    window.localStorage.setItem("ashenreach-tv-room-code", "RT7P4");
+    const patch = createPatch();
+    patch.payload.pendingOrderedConsequence = {
+      seatId: "seat-1",
+      sourceId: "suture-storm",
+      requestedWounds: 1,
+      preventedWounds: 0,
+      actualWounds: 1,
+      resultingWounds: 1,
+      resultingStatus: "active",
+      status: "waiting"
+    };
+    patch.payload.outcomeSummary = { ...patch.payload.outcomeSummary!, success: false, summary: "Stale final outcome" };
+    mockUseRoomSubscription.mockReturnValue({ patch, error: null, sendIntent: vi.fn(), status: "open", synchronized: true, debugEvents: [], clearDebugEvents: vi.fn() });
+
+    render(<TvApp />);
+
+    const liveStatus = await screen.findByTestId("host-live-status");
+    expect(liveStatus).toHaveTextContent(/reaction pending/i);
+    expect(liveStatus).toHaveTextContent(/waiting for Joel to resolve suture storm/i);
+    expect(liveStatus).toHaveTextContent(/1 Wound applied/i);
+    expect(liveStatus).not.toHaveTextContent(/stale final outcome/i);
+    expect(document.body.textContent).not.toMatch(/reactionId|sourceEventId|pendingEffects/i);
+  });
+
+  it("labels a public Scar consequence as already acquired without exposing private choices", async () => {
+    window.localStorage.setItem("ashenreach-tv-room-code", "RT7P4");
+    const patch = createPatch();
+    patch.payload.scarTriggerStatus = { seatId: "seat-1", scarTitle: "Static Burn", status: "waiting" };
+    mockUseRoomSubscription.mockReturnValue({ patch, error: null, sendIntent: vi.fn(), status: "open", synchronized: true, debugEvents: [], clearDebugEvents: vi.fn() });
+
+    render(<TvApp />);
+
+    const liveStatus = await screen.findByTestId("host-live-status");
+    expect(liveStatus).toHaveTextContent(/Scar consequence pending/i);
+    expect(liveStatus).toHaveTextContent(/Scar already acquired/i);
+    expect(liveStatus).toHaveTextContent(/Static Burn/i);
+    expect(document.body.textContent).not.toMatch(/reactionId|sourceEventId|pendingEffects|Heat/i);
+  });
+
+  it("suppresses stale focused overlays until a fresh authoritative patch arrives", async () => {
+    window.localStorage.setItem("ashenreach-tv-room-code", "RT7P4");
+    const patch = createPatch();
+    patch.payload.players[0] = { ...patch.payload.players[0]!, sectorId: "outer_waymarket" };
+    patch.payload.shopEncounter = {
+      sectorId: "outer_waymarket",
+      sectorName: "Anchor Market",
+      shopId: "outer_waymarket",
+      shopName: "Anchor Market",
+      shopType: "Forge Market",
+      stockCategory: "forge-armoury",
+      status: "open",
+      activePlayer: {
+        playerId: "seat-1",
+        name: "Joel",
+        characterName: "Tarek Voss",
+        salvage: 6,
+        wounds: { current: 0, max: 6 },
+        trophies: 0,
+        completedContracts: 0
+      },
+      blockingThreats: [],
+      sellInventory: [],
+      services: []
+    };
+    mockUseRoomSubscription.mockReturnValue({ patch, error: null, sendIntent: vi.fn(), status: "closed", synchronized: false, debugEvents: [], clearDebugEvents: vi.fn() });
+
+    render(<TvApp />);
+
+    expect(await screen.findByTestId("tv-network-overlay")).toHaveTextContent(/host connection lost/i);
+    expect(screen.getByTestId("host-live-status")).toHaveTextContent(/last safe board position/i);
+    expect(screen.queryByTestId("host-shop-overlay")).not.toBeInTheDocument();
+    expect(screen.getByText(/Tactical map/i)).toBeInTheDocument();
+  });
+
   it("keeps setup mode labels off the TV until the Host Phone chooses them", async () => {
     render(<TvApp />);
 

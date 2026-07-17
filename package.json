@@ -26,6 +26,7 @@
     "qa:economy": "tsx scripts/capture-economy-qa.ts",
     "qa:map-progression": "tsx scripts/capture-map-progression-qa.ts",
     "qa:host-ui": "tsx scripts/capture-host-ui-qa.ts",
+    "qa:host-ui:rare": "tsx scripts/capture-host-ui-rare-states.ts",
     "audit:assets": "tsx scripts/audit-assets.ts",
     "audit:assets:release": "tsx scripts/audit-assets.ts --release",
     "generate:card-images:gemini": "npm run export:image-prompts && tsx scripts/generate-card-images-gemini.ts",
