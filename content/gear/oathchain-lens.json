@@ -1,0 +1,28 @@
+{
+  "id": "oathchain-lens",
+  "name": "Oathchain Lens",
+  "slot": "utility",
+  "category": "chargedRelic",
+  "statBonus": {
+    "stat": "command",
+    "amount": 1
+  },
+  "activeText": "Trace the Promise — During your action phase, spend 1 charge to identify every currently visible sector, Threat, or shop action that can advance your active Contract. If the Contract has an ordered objective, identify its next required target. This effect does not reveal hidden cards or agendas and does not change Contract progress, rewards, or legality.",
+  "useLimit": "charge",
+  "effectModel": "charged",
+  "maxCharges": 2,
+  "startingCharges": 2,
+  "chargeCost": 1,
+  "rechargeRule": "none",
+  "activationTiming": ["action"],
+  "chargedEffect": "traceThePromise",
+  "requiresEquipped": true,
+  "flavor": "A cracked lens bound in ledger-chain, showing the cost of every promise.",
+  "tier": "artifact",
+  "progressionWeight": 2.5,
+  "cost": 6,
+  "sellValue": 3,
+  "shopCategories": [
+    "relic-dealer"
+  ]
+}

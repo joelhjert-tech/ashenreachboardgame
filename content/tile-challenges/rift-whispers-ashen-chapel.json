@@ -1,0 +1,22 @@
+{
+  "id": "rift-whispers-ashen-chapel",
+  "name": "Rift Whispers",
+  "challengeType": "anomaly",
+  "sectorId": "ashen-chapel",
+  "testStat": "signal",
+  "difficulty": 8,
+  "trigger": "onArrival",
+  "authoredOrder": 0,
+  "successEffect": {
+    "type": "gain_note",
+    "text": "You pinned one true whisper to the route ledger."
+  },
+  "failureEffect": {
+    "type": "gain_scar",
+    "scarId": "scar-wound-6"
+  },
+  "recurring": true,
+  "tags": ["anomaly", "movement", "scar"],
+  "lore": "A map is just a rumor with better posture.",
+  "artCardId": "rift-whispers"
+}

@@ -1,0 +1,10 @@
+{
+  "id": "ash-porter",
+  "name": "Ash Porter",
+  "role": "porter",
+  "text": "Discard the porter to prevent one pending Equipment suppression, item loss, or object break.",
+  "abilityId": "prevent_equipment_loss",
+  "activeEffect": { "type": "gain_note", "text": "Ash Porter intercepted an equipment loss or break." },
+  "useLimit": "discard",
+  "loyalty": 2
+}

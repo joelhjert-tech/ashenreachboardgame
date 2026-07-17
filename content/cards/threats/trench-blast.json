@@ -1,0 +1,29 @@
+{
+  "id": "trench-blast",
+  "type": "threat",
+  "cardType": "hazard",
+  "title": "Trench Blast",
+  "text": "The trench inhales, then spits fire through every old firing step at once.",
+  "flavor": "Some wars end. Their trenches keep practicing.",
+  "severity": 3,
+  "stat": "grit",
+  "difficulty": 8,
+  "successEffect": {
+    "type": "gain_note",
+    "text": "You timed the blast cycle and kept the count."
+  },
+  "failEffect": {
+    "type": "take_wound",
+    "amount": 1
+  },
+  "enemyFamily": "hazard",
+  "threatLane": "red",
+  "resolutionType": "event",
+  "region": "middle",
+  "rarity": "uncommon",
+  "tempo": "stall",
+  "resourceTags": [
+    "movement",
+    "wound"
+  ]
+}

@@ -1,0 +1,24 @@
+{
+  "id": "field-lens",
+  "name": "Field Lens",
+  "slot": "utility",
+  "subtype": "tool",
+  "category": "passive",
+  "statBonus": {
+    "stat": "signal",
+    "amount": 1
+  },
+  "cost": 3,
+  "sellValue": 1,
+  "sellable": true,
+  "tier": "standard",
+  "progressionWeight": 1,
+  "flavor": "A folding optic that adds +1 Signal while inspecting hazards.",
+  "activeText": "A folding optic that adds +1 Signal while inspecting hazards.",
+  "shopCategories": [
+    "market"
+  ],
+  "startingEligible": true,
+  "normalShopCommon": true,
+  "allowedFallbackArt": true
+}

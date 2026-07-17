@@ -1,0 +1,23 @@
+{
+  "id": "hunt-breachborn",
+  "name": "Hunt the Breachborn",
+  "factionGiver": "Veyr Clans",
+  "text": "The clans mark a thing born from a split road and pay for proof that it can still die.",
+  "objective": {
+    "type": "defeatCount",
+    "target": 2
+  },
+  "reward": {
+    "type": "sequence",
+    "effects": [
+      {
+        "type": "gain_trophy",
+        "amount": 1
+      },
+      {
+        "type": "gain_note",
+        "text": "The breachborn trail is cut clean enough for the clans to follow without vanishing."
+      }
+    ]
+  }
+}

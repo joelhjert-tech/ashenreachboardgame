@@ -1,0 +1,29 @@
+{
+  "id": "murkclaw-gravecrow",
+  "name": "Murkclaw & Gravecrow",
+  "role": "companion",
+  "tier": "legendary",
+  "tags": ["companion", "beast-pair", "breach-touched", "omen", "support"],
+  "unique": true,
+  "timingWindows": ["beforeThreatDraw", "beforeBattleRoll", "movement", "anyTime"],
+  "artCardId": "artifact-murkclaw-gravecrow",
+  "text": "A breach-eyed warcat and its hat-wearing gravecrow travel as one bad omen. Before danger, the crow scouts the route. During battle, the cat hisses hard enough to shake courage loose. Use once per round to record an omen note for the current threat, route, or battle window.",
+  "activeEffect": {
+    "type": "gain_note",
+    "text": "Murkclaw & Gravecrow read the ash: record an omen note for this threat, route, or battle."
+  },
+  "useLimit": "oncePerRound",
+  "effectModel": "exhaust",
+  "activationTiming": ["beforeThreatDraw", "beforeBattleRoll", "movement"],
+  "resetWindow": "round",
+  "exhaustEffect": "recordOmenNote",
+  "requiresEquipped": false,
+  "loyalty": 3,
+  "acquisition": [
+    "Drawn from the Artifact deck as a legendary companion bond.",
+    "Awarded by a shrine or omen event that calls for a beast companion.",
+    "Recovered after clearing a Hollow Court or breachborn threat from a shop sector."
+  ],
+  "flavor": "The cat sees what wants to eat you. The crow tells it where to wait.",
+  "imagePrompt": "A grimdark fantasy-sci-fi companion card showing a huge blue-black breach-touched cat with glowing orange eyes, tiny fangs, spiked black armor, red gem ward harness, and a small black-and-white gravecrow wearing a little top hat perched between its ears. They stand together in a ruined gothic-industrial battlefield under red ember skies, cute but dangerous, dark brass, violet shadow light, cinematic Ashen Reach card art, no text."
+}

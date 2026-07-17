@@ -1,0 +1,13 @@
+{
+  "id": "hollow-belly",
+  "name": "Hollow Belly",
+  "severity": 1,
+  "category": "testPenalty",
+  "duration": "ongoing",
+  "trigger": "When testing Grit.",
+  "rulesText": "Subtract 2 from Grit tests, minimum 1.",
+  "effectKind": "testModifier",
+  "effectPayload": { "stat": "grit", "amount": -2, "floor": 1 },
+  "flipFacedownAfterResolve": false,
+  "isFaceupOngoing": true
+}

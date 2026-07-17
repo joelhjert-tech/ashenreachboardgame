@@ -1,0 +1,24 @@
+{
+  "id": "mira-rift-twin",
+  "name": "Mira, Rift-Twin",
+  "role": "companion",
+  "tier": "legendary",
+  "tags": ["companion", "riftblade", "team-rumi", "signal", "guile"],
+  "unique": true,
+  "timingWindows": ["beforeBattleRoll", "afterBattleRoll", "movement", "anyTime"],
+  "artCardId": "artifact-mira-rift-twin",
+  "text": "Mira is Rumi's battle-sister, mirror duelist, and second blade in the violet breach. Passive team bond: if the operative is Rumi, gain +1 Signal and +1 Guile while Mira is following.",
+  "activeEffect": {
+    "type": "gain_note",
+    "text": "Mira reads the second angle: record a violet-route note for this duel, test, or movement choice."
+  },
+  "useLimit": "oncePerRound",
+  "loyalty": 4,
+  "acquisition": [
+    "Drawn from the Artifact deck as Rumi's legendary companion bond.",
+    "Awarded by a Hollow Court duel or violet breach event.",
+    "Recovered after Rumi clears a Signal or Guile threat without taking a wound."
+  ],
+  "flavor": "Rumi cuts the first future. Mira waits in the second.",
+  "imagePrompt": "A grimdark fantasy-sci-fi companion card showing a violet-haired riftblade duelist in black thorn armor, pink-violet breach flame in one hand, jagged magenta signal sword in the other, standing in a ruined gothic-industrial battlefield under burning towers. She feels like the battle-sister and mirror partner of Rumi, elegant and dangerous, dark brass, violet rift light, cinematic Ashen Reach card art, no text."
+}

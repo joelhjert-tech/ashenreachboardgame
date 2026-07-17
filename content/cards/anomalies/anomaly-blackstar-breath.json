@@ -1,0 +1,27 @@
+{
+  "id": "anomaly-blackstar-breath",
+  "type": "anomaly",
+  "title": "Blackstar Breath",
+  "text": "The dark between stars exhales across the inner ring and freezes decisions in place.",
+  "flavor": "The cold has opinions.",
+  "instability": 5,
+  "regionHint": "inner",
+  "resolutionSummary": "Took the blackstar breath into a warded vial before it smothered the gate route.",
+  "resolveEffect": {
+    "type": "sequence",
+    "effects": [
+      {
+        "type": "gain_gear",
+        "gearId": "blackstar-ampoule"
+      },
+      {
+        "type": "advance_escalation",
+        "amount": 1
+      },
+      {
+        "type": "take_wound",
+        "amount": 1
+      }
+    ]
+  }
+}

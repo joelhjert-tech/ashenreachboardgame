@@ -1,0 +1,29 @@
+{
+  "id": "sanctifier-beads",
+  "type": "threat",
+  "cardType": "hazard",
+  "title": "Sanctifier Beads",
+  "text": "Prayer beads circle a live signal shard, tightening whenever anyone lies nearby.",
+  "flavor": "Each bead has heard enough confessions to become judgmental.",
+  "severity": 2,
+  "stat": "signal",
+  "difficulty": 6,
+  "successEffect": {
+    "type": "gain_note",
+    "text": "You tuned the sanctifier beads into a clean signal note."
+  },
+  "failEffect": {
+    "type": "gain_scar",
+    "scarId": "scar-wound-3"
+  },
+  "enemyFamily": "choir",
+  "threatLane": "blue",
+  "resolutionType": "asset",
+  "region": "outer",
+  "rarity": "uncommon",
+  "tempo": "neutral",
+  "resourceTags": [
+    "boon",
+    "scar"
+  ]
+}

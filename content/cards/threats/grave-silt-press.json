@@ -13,7 +13,16 @@
     "text": "You forced a path through the sink line and marked it for later."
   },
   "failEffect": {
-    "type": "gain_heat",
+    "type": "take_wound",
     "amount": 1
-  }
+  },
+  "enemyFamily": "hazard",
+  "threatLane": "blue",
+  "region": "outer",
+  "rarity": "common",
+  "tempo": "push",
+  "resourceTags": [
+    "wound",
+    "loot"
+  ]
 }

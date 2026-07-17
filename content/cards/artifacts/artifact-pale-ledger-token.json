@@ -1,0 +1,17 @@
+{
+  "id": "artifact-pale-ledger-token",
+  "type": "artifact",
+  "missionRewardEligible": true,
+  "eliteThreatRewardEligible": true,
+  "rareShopEligible": true,
+  "scenarioRewardEligible": true,
+  "startingEligible": false,
+  "normalShopCommon": false,
+  "title": "Pale Ledger Token",
+  "text": "A cartel debt marker stamped with a saint's broken accounting seal.",
+  "flavor": "Some doors open faster when they know you owe someone worse.",
+  "artifactKind": "factionRelic",
+  "charge": 0,
+  "resolutionSummary": "Claimed a Pale Ledger Token for a later bargain.",
+  "resolveEffect": { "type": "gain_gear", "gearId": "artifact-pale-ledger-token" }
+}

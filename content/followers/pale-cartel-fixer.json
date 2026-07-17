@@ -1,0 +1,9 @@
+{
+  "id": "pale-cartel-fixer",
+  "name": "Pale Cartel Fixer",
+  "role": "informant",
+  "text": "Once per round, record a safer route through one completed contract reward or faction debt.",
+  "activeEffect": { "type": "gain_note", "text": "Pale Cartel Fixer recorded a safer contract reward route." },
+  "useLimit": "oncePerRound",
+  "loyalty": 1
+}

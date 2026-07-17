@@ -1,0 +1,29 @@
+{
+  "id": "hushed-chapel",
+  "type": "threat",
+  "cardType": "hazard",
+  "title": "Hushed Chapel",
+  "text": "The chapel takes sound as an offering, leaving orders, prayers, and screams equally empty.",
+  "flavor": "Silence is easier to worship when it answers back.",
+  "severity": 2,
+  "stat": "signal",
+  "difficulty": 7,
+  "successEffect": {
+    "type": "gain_note",
+    "text": "You recovered one quiet chord from the chapel walls."
+  },
+  "failEffect": {
+    "type": "gain_scar",
+    "scarId": "scar-wound-5"
+  },
+  "enemyFamily": "choir",
+  "threatLane": "blue",
+  "resolutionType": "encounter",
+  "region": "outer",
+  "rarity": "common",
+  "tempo": "stall",
+  "resourceTags": [
+    "scar",
+    "boon"
+  ]
+}

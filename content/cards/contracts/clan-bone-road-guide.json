@@ -1,0 +1,16 @@
+{
+  "id": "clan-bone-road-guide",
+  "name": "Bone Road Guide",
+  "factionGiver": "Veyr Clans",
+  "text": "Secure a guide through the broken middle routes without letting the clan map fall into cartel hands.",
+  "objective": {
+    "type": "spaceTextResolved",
+    "effectKey": "middle_webglassFracture",
+    "label": "Webglass fracture resolved",
+    "target": 1
+  },
+  "reward": {
+    "type": "gain_follower",
+    "followerId": "red-march-guide"
+  }
+}

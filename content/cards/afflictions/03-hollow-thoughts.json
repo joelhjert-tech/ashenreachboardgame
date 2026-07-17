@@ -1,0 +1,13 @@
+{
+  "id": "hollow-thoughts",
+  "name": "Hollow Thoughts",
+  "severity": 3,
+  "category": "drawTrigger",
+  "duration": "ongoing",
+  "trigger": "Each time you draw an Affliction.",
+  "rulesText": "Lose 1 Guile.",
+  "effectKind": "drawTrigger",
+  "effectPayload": { "stat": "guile", "amount": -1, "trigger": "drawAffliction" },
+  "flipFacedownAfterResolve": false,
+  "isFaceupOngoing": true
+}

@@ -1,22 +1,16 @@
 {
   "id": "artifact-yard",
   "type": "artifact",
+  "missionRewardEligible": true,
+  "eliteThreatRewardEligible": true,
+  "rareShopEligible": true,
+  "scenarioRewardEligible": true,
+  "startingEligible": false,
+  "normalShopCommon": false,
   "title": "Yard Bellframe Core",
   "text": "A choir-grade salvage heart that still hums with route memory and old sanctifier charge.",
   "flavor": "It remembers every convoy that died under its watch.",
-  "charge": 1,
-  "resolutionSummary": "Recovered the Yard Bellframe Core and pulled a Marshal Seal out of its locked relay housing.",
-  "resolveEffect": {
-    "type": "sequence",
-    "effects": [
-      {
-        "type": "gain_gear",
-        "gearId": "marshal-seal"
-      },
-      {
-        "type": "gain_note",
-        "text": "The Yard Bellframe Core still carries convoy route memory."
-      }
-    ]
-  }
+  "charge": 0,
+  "resolutionSummary": "Recovered the sealed Yard Bellframe Core for later use.",
+  "resolveEffect": { "type": "gain_gear", "gearId": "artifact-yard" }
 }

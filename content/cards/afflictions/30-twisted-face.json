@@ -1,0 +1,13 @@
+{
+  "id": "twisted-face",
+  "name": "Twisted Face",
+  "severity": 1,
+  "category": "testPenalty",
+  "duration": "ongoing",
+  "trigger": "When testing Guile.",
+  "rulesText": "Subtract 2 from Guile tests, minimum 1.",
+  "effectKind": "testModifier",
+  "effectPayload": { "stat": "guile", "amount": -2, "floor": 1 },
+  "flipFacedownAfterResolve": false,
+  "isFaceupOngoing": true
+}

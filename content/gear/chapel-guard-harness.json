@@ -1,0 +1,27 @@
+{
+  "id": "chapel-guard-harness",
+  "name": "Chapel Guard Harness",
+  "slot": "armor",
+  "subtype": "armour",
+  "category": "passive",
+  "statBonus": {
+    "stat": "command",
+    "amount": 1
+  },
+  "cost": 4,
+  "sellValue": 2,
+  "sellable": true,
+  "tier": "advanced",
+  "progressionWeight": 1,
+  "flavor": "A warded harness that adds +1 Command while equipped.",
+  "activeText": "A warded harness that adds +1 Command while equipped.",
+  "effectModel": "permanent",
+  "requiresEquipped": true,
+  "shopCategories": [
+    "forge-armoury",
+    "market"
+  ],
+  "startingEligible": true,
+  "normalShopCommon": true,
+  "allowedFallbackArt": true
+}

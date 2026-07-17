@@ -1,0 +1,13 @@
+{
+  "id": "oath-to-the-breach",
+  "name": "Oath to the Breach",
+  "severity": 5,
+  "category": "immediateDraw",
+  "duration": "immediate",
+  "trigger": "When revealed.",
+  "rulesText": "Flip this card facedown and draw 1 Affliction.",
+  "effectKind": "immediateDraw",
+  "effectPayload": { "drawAffliction": 1 },
+  "flipFacedownAfterResolve": true,
+  "isFaceupOngoing": false
+}

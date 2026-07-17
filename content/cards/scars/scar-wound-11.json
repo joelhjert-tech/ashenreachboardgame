@@ -1,0 +1,15 @@
+{
+  "id": "scar-wound-11",
+  "type": "scar",
+  "title": "Cinder Nerve",
+  "text": "A burned nerve warns you of danger by inventing pain first.",
+  "flavor": "It never lies, but it loves being early.",
+  "trigger": "When a hazard would deal a wound or lasting harm.",
+  "penalty": "Gain a cinder warning before the hazard resolves.",
+  "effect": {
+    "type": "gain_note",
+    "text": "Cinder Nerve warned early."
+  },
+  "relief": "Discard a medkit or exhaust a medic follower to cancel this trigger.",
+  "upside": "If the hazard is avoided, mark the warning as useful."
+}

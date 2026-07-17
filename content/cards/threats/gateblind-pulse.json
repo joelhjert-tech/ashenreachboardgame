@@ -1,0 +1,32 @@
+{
+  "id": "gateblind-pulse",
+  "type": "threat",
+  "cardType": "hazard",
+  "title": "Gateblind Pulse",
+  "text": "On failure, if Global Escalation is not already one step from collapse, advance Global Escalation by 1.",
+  "flavor": "Blindness is a command when the gate gives it.",
+  "severity": 4,
+  "region": "inner",
+  "stat": "signal",
+  "difficulty": 10,
+  "successEffect": {
+    "type": "advance_scenario",
+    "progressKey": "gateblindPulsesRead",
+    "amount": 1,
+    "summary": "Gateblind pulse translated into final-route leverage."
+  },
+  "failEffect": {
+    "type": "gain_global_escalation_guarded",
+    "sourceCardId": "gateblind-pulse",
+    "amount": 1,
+    "guard": "oneBeforeCollapse"
+  },
+  "enemyFamily": "hazard",
+  "threatLane": "blue",
+  "rarity": "uncommon",
+  "tempo": "stall",
+  "resourceTags": [
+    "escalation",
+    "scenario"
+  ]
+}

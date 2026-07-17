@@ -1,0 +1,10 @@
+{
+  "name": "Ashen Reach Controller",
+  "short_name": "Ashen Reach",
+  "description": "Private phone controller for Ashen Reach playtests.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#080b0f",
+  "theme_color": "#080b0f"
+}

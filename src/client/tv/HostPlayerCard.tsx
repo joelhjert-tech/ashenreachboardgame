@@ -1,5 +1,8 @@
-import type { ReactElement } from "react";
+import type { CSSProperties, ReactElement } from "react";
+import { getChallengeThemeStyle } from "../../game/ui/challengeTheme.js";
 import type { AbilityChangeItem } from "../shared/abilityTelemetry.js";
+import { ChallengeBadge } from "../shared/ChallengeBadge.js";
+import type { Stat } from "../shared/types.js";
 
 interface HostPlayerCardAttributes {
   cmd: number | null;
@@ -13,18 +16,27 @@ export interface HostPlayerCardProps {
   seatId: string;
   isOpen: boolean;
   isConnected: boolean;
+  playerName?: string | null;
   characterName: string | null;
   characterTitle: string | null;
+  characterRole?: string | null;
+  characterComplexity?: string | null;
   portraitUrl: string | null;
   locationName: string;
   fieldStatus: string;
-  heat: number | null;
   wounds: number | null;
   scars: number | null;
   attributes: HostPlayerCardAttributes;
   gearSummary: string;
   contractSummary: string;
   specialAbilitySummary: string;
+  companionBadges?: Array<{
+    id: string;
+    name: string;
+    tier?: string;
+    ultimateCompanion?: boolean;
+    exhausted?: boolean;
+  }>;
   latestAbilityTriggerSummary?: string | null;
   abilityChangeItems?: AbilityChangeItem[];
   isActiveTurn: boolean;
@@ -32,12 +44,12 @@ export interface HostPlayerCardProps {
   className?: string;
 }
 
-const attributeOrder: Array<{ key: keyof HostPlayerCardAttributes; label: string }> = [
-  { key: "cmd", label: "CMD" },
-  { key: "grit", label: "GRIT" },
-  { key: "signal", label: "SIGNAL" },
-  { key: "guile", label: "GUILE" },
-  { key: "forge", label: "FORGE" }
+const attributeOrder: Array<{ key: keyof HostPlayerCardAttributes; stat: Stat; label: string }> = [
+  { key: "cmd", stat: "command", label: "CMD" },
+  { key: "grit", stat: "grit", label: "GRIT" },
+  { key: "signal", stat: "signal", label: "SIGNAL" },
+  { key: "guile", stat: "guile", label: "GUILE" },
+  { key: "forge", stat: "forge", label: "FORGE" }
 ];
 
 function renderValue(value: number | null): string {
@@ -48,18 +60,21 @@ export function HostPlayerCard({
   seatId,
   isOpen,
   isConnected,
+  playerName = null,
   characterName,
   characterTitle,
+  characterRole = null,
+  characterComplexity = null,
   portraitUrl,
   locationName,
   fieldStatus,
-  heat,
   wounds,
   scars,
   attributes,
   gearSummary,
   contractSummary,
   specialAbilitySummary,
+  companionBadges = [],
   latestAbilityTriggerSummary = null,
   abilityChangeItems = [],
   isActiveTurn,
@@ -73,7 +88,7 @@ export function HostPlayerCard({
       className={`host-player-card${isOpen ? " host-player-card-open" : ""}${isActiveTurn ? " host-player-card-active" : ""}${
         className ? ` ${className}` : ""
       }`}
-      aria-label={`${seatLabel} ${characterName ?? "open seat"}`}
+      aria-label={`${seatLabel} ${playerName ?? characterName ?? "open seat"}`}
     >
       <div className="host-player-card-corner host-player-card-corner-nw" aria-hidden="true" />
       <div className="host-player-card-corner host-player-card-corner-ne" aria-hidden="true" />
@@ -100,8 +115,15 @@ export function HostPlayerCard({
         <div className="host-player-card-identity">
           <div className="host-player-card-nameblock">
             <p className="host-player-card-seat">{seatLabel}</p>
-            <h3>{characterName ?? "Open Seat"}</h3>
-            <p className="host-player-card-title">{characterTitle ?? "Unclaimed operative frame"}</p>
+            <h3>{playerName ?? characterName ?? "Open Seat"}</h3>
+            <p className="host-player-card-title">
+              {characterName && playerName ? `${characterName} · ${characterTitle ?? "Operative"}` : characterTitle ?? "Unclaimed operative frame"}
+            </p>
+            {(characterRole || characterComplexity) && (
+              <p className="host-player-card-role">
+                {[characterRole, characterComplexity].filter(Boolean).join(" | ")}
+              </p>
+            )}
           </div>
 
           <div className="host-player-card-status-row">
@@ -115,16 +137,18 @@ export function HostPlayerCard({
 
         <div className="host-player-card-midline">
           <div className="host-player-card-vitals">
-            <span className="host-player-card-chip host-player-card-chip-vital">Heat {renderValue(heat)}</span>
             <span className="host-player-card-chip host-player-card-chip-vital">Wounds {renderValue(wounds)}</span>
             <span className="host-player-card-chip host-player-card-chip-vital">Scars {renderValue(scars)}</span>
           </div>
 
           <div className="host-player-card-attributes">
             {attributeOrder.map((attribute) => (
-              <div key={attribute.key} className="host-player-card-attribute">
-                <span>{attribute.label}</span>
-                <strong>{renderValue(attributes[attribute.key])}</strong>
+              <div
+                key={attribute.key}
+                className={`host-player-card-attribute host-player-card-attribute-${attribute.stat}`}
+                style={getChallengeThemeStyle(attribute.stat) as CSSProperties}
+              >
+                <ChallengeBadge stat={attribute.stat} value={renderValue(attributes[attribute.key])} label={attribute.label} size="compact" />
               </div>
             ))}
           </div>
@@ -144,6 +168,20 @@ export function HostPlayerCard({
             <span>{specialAbilitySummary}</span>
           </p>
         </div>
+
+        {companionBadges.length > 0 && (
+          <div className="host-player-card-companion-row" aria-label="Followers">
+            {companionBadges.map((companion) => (
+              <span
+                key={companion.id}
+                className={`host-player-card-companion-badge${companion.ultimateCompanion ? " host-player-card-companion-badge-ultimate" : ""}`}
+              >
+                <strong>{companion.name}</strong>
+                <small>{companion.exhausted ? "Exhausted" : companion.tier ?? "Companion"}</small>
+              </span>
+            ))}
+          </div>
+        )}
 
         {latestAbilityTriggerSummary && (
           <div className="host-player-card-trigger-band">

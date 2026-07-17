@@ -1,0 +1,29 @@
+{
+  "id": "rift-whispers",
+  "type": "threat",
+  "cardType": "hazard",
+  "title": "Rift Whispers",
+  "text": "Whispering routes argue over which one is real, and every answer points somewhere hungry.",
+  "flavor": "A map is just a rumor with better posture.",
+  "severity": 3,
+  "stat": "signal",
+  "difficulty": 8,
+  "successEffect": {
+    "type": "gain_note",
+    "text": "You pinned one true whisper to the route ledger."
+  },
+  "failEffect": {
+    "type": "gain_scar",
+    "scarId": "scar-wound-6"
+  },
+  "enemyFamily": "breachborn",
+  "threatLane": "blue",
+  "resolutionType": "event",
+  "region": "middle",
+  "rarity": "uncommon",
+  "tempo": "stall",
+  "resourceTags": [
+    "movement",
+    "scar"
+  ]
+}

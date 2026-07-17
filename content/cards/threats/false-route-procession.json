@@ -1,0 +1,33 @@
+{
+  "id": "false-route-procession",
+  "type": "threat",
+  "cardType": "hazard",
+  "title": "False-Route Procession",
+  "text": "If you lose, move 1 sector clockwise or counterclockwise on your current ring. Choose from the legal destinations. If only one is legal, move there. If neither is legal, remain in place.",
+  "flavor": "They wave for you to follow with hands turned backward.",
+  "severity": 2,
+  "stat": "command",
+  "difficulty": 7,
+  "successEffect": {
+    "type": "gain_note",
+    "text": "You named the false road aloud and broke the procession."
+  },
+  "failEffect": {
+    "type": "ownerSelectedForcedDisplacement",
+    "sourceCardId": "false-route-procession",
+    "distance": 1,
+    "ringPolicy": "sameRing",
+    "destinationOwner": "affectedSeat",
+    "noDestinationFallback": "remainInPlace",
+    "failureStillCounts": true
+  },
+  "enemyFamily": "revenant",
+  "threatLane": "yellow",
+  "region": "outer",
+  "rarity": "common",
+  "tempo": "push",
+  "resourceTags": [
+    "movement",
+    "loot"
+  ]
+}

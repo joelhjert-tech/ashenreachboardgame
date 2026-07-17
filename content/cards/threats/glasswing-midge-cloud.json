@@ -1,0 +1,32 @@
+{
+  "id": "glasswing-midge-cloud",
+  "type": "threat",
+  "cardType": "enemy",
+  "title": "Glasswing Midge Cloud",
+  "enemyName": "Glasswing Midge Cloud",
+  "text": "A glittering cloud of glasswing midges gathers around signal lenses, scattering false reflections across the route.",
+  "flavor": "The swarm bites light before it bites skin.",
+  "severity": 1,
+  "region": "outer",
+  "stat": "signal",
+  "difficulty": 4,
+  "trophyValue": 1,
+  "defeatReward": {
+    "type": "gain_note",
+    "text": "You disperse the midges and tune the route lens back to true north."
+  },
+  "woundOnLoss": {
+    "type": "take_wound",
+    "amount": 1
+  },
+  "enemyFamily": "vermin",
+  "threatLane": "blue",
+  "rarity": "common",
+  "tempo": "neutral",
+  "resourceTags": [
+    "wound",
+    "movement",
+    "trophy"
+  ],
+  "imagePrompt": "A cloud of tiny glass-winged insects around blue route lenses and cold signal lamps, shimmering reflections over black basalt, low-tier anomaly vermin"
+}

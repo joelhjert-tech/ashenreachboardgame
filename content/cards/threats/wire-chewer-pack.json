@@ -1,0 +1,32 @@
+{
+  "id": "wire-chewer-pack",
+  "type": "threat",
+  "cardType": "enemy",
+  "title": "Wire-Chewer Pack",
+  "enemyName": "Wire-Chewer Pack",
+  "text": "A pack of cable-fed tunnel beasts gnaws at live conduit, twitching with stolen charge and bad decisions.",
+  "flavor": "They do not know what the wires do. They only know the wires sing.",
+  "severity": 1,
+  "region": "outer",
+  "stat": "forge",
+  "difficulty": 3,
+  "trophyValue": 1,
+  "defeatReward": {
+    "type": "gain_note",
+    "text": "You chase the pack off and salvage a clean stretch of conductor."
+  },
+  "woundOnLoss": {
+    "type": "take_wound",
+    "amount": 1
+  },
+  "enemyFamily": "beast",
+  "threatLane": "yellow",
+  "rarity": "common",
+  "tempo": "push",
+  "resourceTags": [
+    "gear",
+    "trophy",
+    "wound"
+  ],
+  "imagePrompt": "Small lean tunnel beasts chewing glowing cables in a broken machine trench, orange sparks and black iron walls, readable low-tier pack enemy"
+}

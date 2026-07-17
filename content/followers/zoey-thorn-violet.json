@@ -1,0 +1,24 @@
+{
+  "id": "zoey-thorn-violet",
+  "name": "Zoey, Thorn-Violet",
+  "role": "companion",
+  "tier": "legendary",
+  "tags": ["companion", "riftblade", "team-rumi", "team-mira", "violet-triad"],
+  "unique": true,
+  "timingWindows": ["beforeBattleRoll", "afterBattleRoll", "movement", "anyTime"],
+  "artCardId": "artifact-zoey-thorn-violet",
+  "text": "Zoey is the third point of Rumi's violet war-triangle: calm where Rumi burns, cruel where Mira smiles. Passive team bond: if the operative is Rumi and Mira is also following, the Violet Triad grants additional battle and signal mastery.",
+  "activeEffect": {
+    "type": "gain_note",
+    "text": "Zoey marks the third angle: record a violet-triad note for this battle, test, or movement choice."
+  },
+  "useLimit": "oncePerRound",
+  "loyalty": 4,
+  "acquisition": [
+    "Drawn from the Artifact deck as the third Violet Triad companion bond.",
+    "Awarded after Rumi and Mira clear a middle or inner threat without taking a wound.",
+    "Recovered from a Hollow Court signal duel or violet breach event."
+  ],
+  "flavor": "Rumi opens the wound. Mira holds the mirror. Zoey decides what survives.",
+  "imagePrompt": "A grimdark fantasy-sci-fi companion card showing a purple-haired violet war-mage duelist in black thorn armor, holding pink-violet breach lightning in one hand and a jagged magenta signal sword in the other, standing before burning gothic-industrial towers and battle standards. She feels like the third member of Rumi and Mira's elite riftblade team, calm, elegant, dangerous, dark brass, violet storm light, cinematic Ashen Reach card art, no text."
+}

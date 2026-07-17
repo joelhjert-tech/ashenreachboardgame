@@ -1,0 +1,28 @@
+{
+  "id": "void-key",
+  "name": "Void Key",
+  "slot": "utility",
+  "category": "chargedRelic",
+  "statBonus": {
+    "stat": "command",
+    "amount": 1
+  },
+  "activeText": "After selecting a movement route that would be legal except for one gate restriction, you may spend 1 charge before confirming the route. Ignore that gate restriction for this movement only. Movement distance and all other route, destination, scenario, threat, and blocker requirements still apply. The gate remains locked after you pass.",
+  "useLimit": "charge",
+  "effectModel": "charged",
+  "maxCharges": 2,
+  "startingCharges": 2,
+  "chargeCost": 1,
+  "rechargeRule": "none",
+  "activationTiming": ["movementRouteConfirmation"],
+  "chargedEffect": "personalGateOverride",
+  "requiresEquipped": true,
+  "flavor": "A black key that turns in locks which are not yet built.",
+  "tier": "artifact",
+  "progressionWeight": 3,
+  "cost": 7,
+  "sellValue": 3,
+  "shopCategories": [
+    "relic-dealer"
+  ]
+}

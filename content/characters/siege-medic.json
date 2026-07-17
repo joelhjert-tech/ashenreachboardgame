@@ -5,14 +5,13 @@
   "currentSpaceId": "ashwake-crossing",
   "status": "active",
   "stats": {
-    "command": 2,
+    "command": 3,
     "grit": 3,
-    "signal": 1,
-    "guile": 1,
-    "forge": 2
+    "signal": 2,
+    "guile": 2,
+    "forge": 5
   },
   "trophies": 0,
-  "heat": 0,
   "wounds": 0,
   "scars": [],
   "activeContract": null,
@@ -26,22 +25,27 @@
     {
       "id": "field-triage",
       "name": "Field Triage",
-      "text": "Once per round, when you stabilize the breach or recover in a sanctuary, you can clear 1 wound and turn panic into procedure."
+      "text": "Once per round, after you resolve a sanctuary, clinic, or stabilization action, heal 1 Wound from yourself or an operative in your sector."
     },
     {
       "id": "scar-ledger",
       "name": "Scar Ledger",
-      "text": "You keep a practical account of harm and treat every survivor like a problem that can still be solved."
+      "text": "When a Scar would block your Gear or action, reveal it and reduce its penalty by 1 for this roll only."
     },
     {
       "id": "siege-discipline",
       "name": "Siege Discipline",
-      "text": "Long pressure does not break your pace; it sharpens it."
+      "text": "At the start of your turn, if you have at least 1 Wound, record a private triage entry."
     },
     {
       "id": "amber-draught",
       "name": "Amber Draught",
-      "text": "Relief arrives from your kit in precise doses, never by miracle."
+      "text": "Once per round, after you pass a Grit test, heal 1 Wound. Weakness: Field Triage cannot be used during battle."
     }
-  ]
+  ],
+  "startingGear": [
+    "cinder-suture-kit",
+    "saintwire-splint"
+  ],
+  "startingContract": "compact-surgery-bond"
 }

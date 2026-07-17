@@ -1,0 +1,23 @@
+{
+  "id": "qa_alpha_consumable_01",
+  "name": "Emergency Med-Stim x5",
+  "slot": "utility",
+  "category": "consumable",
+  "statBonus": {
+    "stat": "command",
+    "amount": 1
+  },
+  "activeText": "QA only: discard one charge to heal 4 wounds.",
+  "useLimit": "discard",
+  "charges": 5,
+  "timingWindows": [
+    "beforeTakingDamage",
+    "anyTime"
+  ],
+  "tier": "advanced",
+  "cost": 0,
+  "progressionWeight": 0.01,
+  "shopCategories": [
+    "medicae-shrine"
+  ]
+}

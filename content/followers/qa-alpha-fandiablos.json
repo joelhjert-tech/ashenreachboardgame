@@ -1,0 +1,16 @@
+{
+  "id": "qa_alpha_follower_01",
+  "qaOnly": true,
+  "name": "Fandiablos",
+  "role": "companion",
+  "text": "QA only ultimate companion: a shrieking flock of armored chihuahuas that swarms enemies, scouts routes, and terrifies the void. Counts as +2 Grit, +2 Guile, and may cancel one enemy attack per battle.",
+  "tier": "ultimate",
+  "tags": ["qa", "ultimate", "companion", "beast-flock", "support"],
+  "unique": true,
+  "artifactTier": true,
+  "ultimateCompanion": true,
+  "timingWindows": ["beforeThreatDraw", "beforeBattleRoll", "beforeTakingDamage", "movement"],
+  "useLimit": "oncePerRound",
+  "loyalty": 5,
+  "flavor": "They came through the breach barking. The enemy line broke before command understood why."
+}

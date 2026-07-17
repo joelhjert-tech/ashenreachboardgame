@@ -1,0 +1,13 @@
+{
+  "id": "condemned-echoes",
+  "name": "Condemned Echoes",
+  "severity": 3,
+  "category": "replacementEffect",
+  "duration": "immediate",
+  "trigger": "When revealed.",
+  "rulesText": "Discard each facedown Affliction you have. Then draw that many new Afflictions one at a time. Then flip this card facedown.",
+  "effectKind": "replacementEffect",
+  "effectPayload": { "replacement": "facedownAfflictions" },
+  "flipFacedownAfterResolve": true,
+  "isFaceupOngoing": false
+}

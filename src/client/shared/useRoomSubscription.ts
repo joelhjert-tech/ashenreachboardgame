@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type Dispatch, type SetStateAction } from "react";
-import { getWebSocketOrigin } from "./network.js";
+import { getConnectionDiagnostics, getWebSocketOrigin } from "./network.js";
 import type {
   ClientIntent,
   DebugEvent,
@@ -50,21 +50,25 @@ export function useRoomSubscription(
   error: string | null;
   sendIntent: (intent: ClientIntent | HostCommand) => void;
   status: ConnectionStatus;
+  synchronized?: boolean;
   debugEvents: DebugEvent[];
   clearDebugEvents: () => void;
 } {
   const [patch, setPatch] = useState<StatePatch<PublicPatchPayload | PhonePatchPayload> | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [status, setStatus] = useState<ConnectionStatus>("idle");
+  const [synchronized, setSynchronized] = useState(false);
   const [debugEvents, setDebugEvents] = useState<DebugEvent[]>([]);
   const socketRef = useRef<WebSocket | null>(null);
   const reconnectTimerRef = useRef<number | null>(null);
   const manualCloseRef = useRef(false);
   const connectionGenerationRef = useRef(0);
+  const qaReconnectSynchronizationPendingRef = useRef(false);
 
   useEffect(() => {
     if ((config.view === "tv" && !config.enabled) || (config.view === "phone" && !config.auth)) {
       setStatus("idle");
+      setSynchronized(false);
       setError(null);
       setPatch(null);
       return;
@@ -85,13 +89,15 @@ export function useRoomSubscription(
       }
 
       setStatus("connecting");
+      setSynchronized(false);
       setError(null);
       appendDebugEvent(setDebugEvents, {
         label: "Socket connecting",
         detail: config.view === "tv" ? "Opening TV subscription" : "Opening phone subscription",
         payload: {
           view: config.view,
-          roomCode: config.view === "phone" ? config.auth?.roomCode ?? null : null
+          roomCode: config.view === "phone" ? config.auth?.roomCode ?? null : null,
+          diagnostics: getConnectionDiagnostics()
         }
       });
       const wsUrl =
@@ -151,7 +157,17 @@ export function useRoomSubscription(
         });
 
         if (message.type === "STATE_PATCH") {
-          setPatch(message);
+          const applyPatch = () => {
+            if (!isCurrentSocket()) return;
+            setPatch(message);
+            setSynchronized(true);
+          };
+          if (qaReconnectSynchronizationPendingRef.current) {
+            qaReconnectSynchronizationPendingRef.current = false;
+            window.setTimeout(applyPatch, 900);
+          } else {
+            applyPatch();
+          }
           return;
         }
 
@@ -167,6 +183,7 @@ export function useRoomSubscription(
 
         socketRef.current = null;
         setStatus("closed");
+        setSynchronized(false);
         appendDebugEvent(setDebugEvents, {
           label: "Socket closed",
           detail: event.reason || (manualCloseRef.current ? "Closed by client" : "Closed by server"),
@@ -193,7 +210,20 @@ export function useRoomSubscription(
 
     connect();
 
+    const qaNetworkControlEnabled = import.meta.env.DEV && typeof window !== "undefined" && new URLSearchParams(window.location.search).has("qaNetworkControls");
+    const interruptQaTransport = () => {
+      if (!qaNetworkControlEnabled) return;
+      qaReconnectSynchronizationPendingRef.current = true;
+      socketRef.current?.close(4001, "QA transport interruption");
+    };
+    if (qaNetworkControlEnabled) {
+      window.addEventListener("ashenreach:qa-disconnect", interruptQaTransport);
+    }
+
     return () => {
+      if (qaNetworkControlEnabled) {
+        window.removeEventListener("ashenreach:qa-disconnect", interruptQaTransport);
+      }
       manualCloseRef.current = true;
       connectionGenerationRef.current += 1;
 
@@ -238,11 +268,13 @@ export function useRoomSubscription(
     patch,
     error,
     status,
+    synchronized,
     debugEvents,
     clearDebugEvents() {
       setDebugEvents([]);
     },
     sendIntent(intent) {
+      setError(null);
       if (socketRef.current?.readyState === WebSocket.OPEN) {
         socketRef.current.send(JSON.stringify(intent));
         appendDebugEvent(setDebugEvents, {

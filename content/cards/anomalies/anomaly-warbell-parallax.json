@@ -1,0 +1,23 @@
+{
+  "id": "anomaly-warbell-parallax",
+  "type": "anomaly",
+  "title": "Warbell Parallax",
+  "text": "Every bell strike arrives from a different future battlefield.",
+  "flavor": "The Red March does not echo. It calls artillery.",
+  "instability": 3,
+  "regionHint": "middle",
+  "resolutionSummary": "Timed the parallax bells and marked the safest cannon gap.",
+  "resolveEffect": {
+    "type": "sequence",
+    "effects": [
+      {
+        "type": "gain_gear",
+        "gearId": "red-march-warbell"
+      },
+      {
+        "type": "advance_escalation",
+        "amount": 1
+      }
+    ]
+  }
+}

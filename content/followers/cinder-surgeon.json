@@ -1,0 +1,14 @@
+{
+  "id": "cinder-surgeon",
+  "name": "Cinder Surgeon",
+  "role": "medic",
+  "text": "Heal 1 Wound, then discard the Cinder Surgeon.",
+  "activeEffect": {
+    "type": "sequence",
+    "effects": [
+      { "type": "heal_wound", "amount": 1 }
+    ]
+  },
+  "useLimit": "discard",
+  "loyalty": 2
+}

@@ -1,0 +1,28 @@
+{
+  "id": "rustknife-carbine",
+  "name": "Rustknife Carbine",
+  "slot": "weapon",
+  "subtype": "weapon",
+  "category": "passive",
+  "statBonus": {
+    "stat": "guile",
+    "amount": 1
+  },
+  "cost": 3,
+  "sellValue": 1,
+  "sellable": true,
+  "tier": "standard",
+  "progressionWeight": 1,
+  "flavor": "A compact carbine that adds +1 Guile in close, dirty engagements.",
+  "activeText": "A compact carbine that adds +1 Guile in close, dirty engagements.",
+  "effectModel": "conditional",
+  "requiresEquipped": true,
+  "conditionType": "battle",
+  "shopCategories": [
+    "forge-armoury",
+    "market"
+  ],
+  "startingEligible": true,
+  "normalShopCommon": true,
+  "allowedFallbackArt": true
+}

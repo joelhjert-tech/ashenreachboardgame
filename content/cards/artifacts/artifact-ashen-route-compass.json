@@ -1,0 +1,29 @@
+{
+  "id": "artifact-ashen-route-compass",
+  "type": "artifact",
+  "missionRewardEligible": true,
+  "eliteThreatRewardEligible": true,
+  "rareShopEligible": true,
+  "scenarioRewardEligible": true,
+  "startingEligible": false,
+  "normalShopCommon": false,
+  "artifactKind": "chargedRelic",
+  "title": "Ashen Route Compass",
+  "text": "A cracked surveyor compass that points toward survivable routes instead of north.",
+  "flavor": "It prefers roads that still remember names.",
+  "charge": 2,
+  "resolutionSummary": "Recovered the Ashen Route Compass as an active navigation artifact.",
+  "resolveEffect": {
+    "type": "sequence",
+    "effects": [
+      {
+        "type": "gain_gear",
+        "gearId": "ashen-route-compass"
+      },
+      {
+        "type": "gain_note",
+        "text": "Ashen Route Compass acquired. Spend 1 charge after rolling movement to adjust the exact movement distance by −1 or +1."
+      }
+    ]
+  }
+}

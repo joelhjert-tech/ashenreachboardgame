@@ -22,7 +22,7 @@ export const cardTemplates: CardTemplateDefinition[] = [
   },
   {
     id: "mission-card",
-    title: "Mission Card",
+    title: "Contract Card",
     sections: ["title", "flavor-line", "objective", "reward", "tier-corner-mark"],
     uiNotes: "Keep reward block visually distinct from objective to avoid mid-turn misreads."
   },
@@ -31,11 +31,5 @@ export const cardTemplates: CardTemplateDefinition[] = [
     title: "Threat Card",
     sections: ["title", "art-window", "type-line", "rules-text", "trophy-or-pressure-value"],
     uiNotes: "Frame color must carry deck identity immediately from sofa distance."
-  },
-  {
-    id: "corruption-card",
-    title: "Corruption Card",
-    sections: ["title", "activation-number", "active-state", "rules-text"],
-    uiNotes: "Activation number needs oversized corner treatment for fast scanning."
   }
 ];

@@ -1,0 +1,21 @@
+{
+  "id": "signal-pike",
+  "name": "Signal Pike",
+  "slot": "weapon",
+  "category": "passive",
+  "statBonus": {
+    "stat": "signal",
+    "amount": 1
+  },
+  "flavor": "A long conductor-blade used to pin unstable signals before they become voices.",
+  "tier": "standard",
+  "startingEligible": false,
+  "normalShopCommon": false,
+  "cost": 4,
+  "sellValue": 2,
+  "progressionWeight": 1,
+  "shopCategories": [
+    "forge-armoury",
+    "market"
+  ]
+}

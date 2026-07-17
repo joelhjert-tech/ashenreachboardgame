@@ -1,0 +1,32 @@
+{
+  "id": "rust-plate-strider",
+  "type": "threat",
+  "cardType": "enemy",
+  "title": "Rust-Plate Strider",
+  "enemyName": "Rust-Plate Strider",
+  "text": "A four-jointed salvage walker picks through the lane on blade legs, boiler plates glowing dull orange.",
+  "flavor": "It was built to clear roads. Now it clears witnesses.",
+  "severity": 3,
+  "region": "middle",
+  "stat": "forge",
+  "difficulty": 7,
+  "trophyValue": 2,
+  "defeatReward": {
+    "type": "gain_note",
+    "text": "You tore a working brass actuator from the strider's chest."
+  },
+  "woundOnLoss": {
+    "type": "take_wound",
+    "amount": 1
+  },
+  "enemyFamily": "machine",
+  "threatLane": "red",
+  "rarity": "uncommon",
+  "tempo": "push",
+  "resourceTags": [
+    "gear",
+    "loot",
+    "trophy",
+    "wound"
+  ]
+}

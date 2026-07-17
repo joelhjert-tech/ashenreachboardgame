@@ -1,0 +1,29 @@
+{
+  "id": "choir-lantern",
+  "name": "Choir Lantern",
+  "slot": "utility",
+  "category": "chargedRelic",
+  "statBonus": {
+    "stat": "signal",
+    "amount": 1
+  },
+  "activeText": "Before you roll an anomaly Signal test, you may spend 1 charge to gain +2 Signal for that test. All other modifiers and consequences apply normally.",
+  "useLimit": "charge",
+  "charges": 2,
+  "effectModel": "charged",
+  "maxCharges": 2,
+  "startingCharges": 2,
+  "chargeCost": 1,
+  "rechargeRule": "none",
+  "activationTiming": ["beforeAnomalySignalTest"],
+  "chargedEffect": "choirLightSignalBonus",
+  "requiresEquipped": true,
+  "flavor": "A lantern that burns without flame when the choir is near.",
+  "tier": "artifact",
+  "progressionWeight": 2.5,
+  "cost": 6,
+  "sellValue": 3,
+  "shopCategories": [
+    "relic-dealer"
+  ]
+}

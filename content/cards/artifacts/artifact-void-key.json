@@ -1,0 +1,20 @@
+{
+  "id": "artifact-void-key",
+  "type": "artifact",
+  "missionRewardEligible": true,
+  "eliteThreatRewardEligible": true,
+  "rareShopEligible": true,
+  "scenarioRewardEligible": true,
+  "startingEligible": false,
+  "normalShopCommon": false,
+  "artifactKind": "gateRelic",
+  "title": "Void Key",
+  "text": "A black key with teeth shaped for gates that have not finished existing.",
+  "flavor": "It opens the lock by teaching the lock what fear is.",
+  "charge": 2,
+  "resolutionSummary": "Recovered the Void Key as a final-approach gate artifact.",
+  "resolveEffect": {
+    "type": "gain_gear",
+    "gearId": "void-key"
+  }
+}

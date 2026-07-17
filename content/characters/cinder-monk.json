@@ -5,14 +5,13 @@
   "currentSpaceId": "emberwatch-step",
   "status": "active",
   "stats": {
-    "command": 1,
-    "grit": 3,
-    "signal": 2,
-    "guile": 1,
-    "forge": 2
+    "command": 2,
+    "grit": 4,
+    "signal": 3,
+    "guile": 3,
+    "forge": 3
   },
   "trophies": 0,
-  "heat": 0,
   "wounds": 0,
   "scars": [],
   "activeContract": null,
@@ -26,22 +25,27 @@
     {
       "id": "ember-vigil",
       "name": "Ember Vigil",
-      "text": "You hold steady in dangerous sectors where other operatives would let the pressure own the pace."
+      "text": "Once per round, at the start of your turn in danger 3+ or while scenario pressure is above 0, take 1 Wound. If pressure is above 0, reduce it by 1."
     },
     {
       "id": "ash-psalm",
       "name": "Ash Psalm",
-      "text": "When the line is clear, your rites turn the moment into discipline instead of relief."
+      "text": "Once per round, after resolving Emberwatch Brace or Ember Sanctum Rest, record 1 Vow Note."
     },
     {
       "id": "bone-bell",
       "name": "Bone Bell",
-      "text": "The first time escalation spikes on your turn, answer it with a prayer that keeps the breach honest."
+      "text": "Once per round, when scenario pressure first rises on your turn, record 1 Vow Note and reduce that increase by 1."
     },
     {
       "id": "cinder-oath",
       "name": "Cinder Oath",
-      "text": "Core-ward confrontations never feel routine, but your vows make them survivable."
+      "text": "At the Cinder Gate during your action phase, spend 1 Vow Note before a scenario confrontation to add +2 to each confrontation test. Weakness: Vow Notes cannot be used for shop, salvage, or Contract rewards."
     }
-  ]
+  ],
+  "startingGear": [
+    "oath-chain",
+    "ember-poultice"
+  ],
+  "startingContract": "umbral-shrine-confession"
 }

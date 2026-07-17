@@ -1,0 +1,14 @@
+{
+  "id": "escalation-artifact-wake",
+  "type": "escalation",
+  "title": "Artifact Wake",
+  "text": "Old artifacts wake in sequence and demand to know who moved them.",
+  "flavor": "An artifact is history with a trigger discipline problem.",
+  "step": 4,
+  "resolutionSummary": "The artifact wake stirred the inner ring and made every possession louder.",
+  "resolveEffect": {
+    "type": "gain_note",
+    "text": "Artifact Wake: artifacts now draw attention until the breach cools."
+  },
+  "escalationDelta": 1
+}

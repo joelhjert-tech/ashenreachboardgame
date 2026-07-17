@@ -1,0 +1,13 @@
+{
+  "id": "weeping-cysts",
+  "name": "Weeping Cysts",
+  "severity": 1,
+  "category": "drawTrigger",
+  "duration": "ongoing",
+  "trigger": "Each time you draw an Affliction.",
+  "rulesText": "Suffer 1 wound.",
+  "effectKind": "drawTrigger",
+  "effectPayload": { "wound": 1, "trigger": "drawAffliction" },
+  "flipFacedownAfterResolve": false,
+  "isFaceupOngoing": true
+}

@@ -1,0 +1,13 @@
+{
+  "id": "mind-fog",
+  "name": "Mind Fog",
+  "severity": 1,
+  "category": "immediateStatLoss",
+  "duration": "immediate",
+  "trigger": "When revealed.",
+  "rulesText": "Lose 1 Guile. Then flip facedown.",
+  "effectKind": "immediateStatLoss",
+  "effectPayload": { "stat": "guile", "amount": -1 },
+  "flipFacedownAfterResolve": true,
+  "isFaceupOngoing": false
+}

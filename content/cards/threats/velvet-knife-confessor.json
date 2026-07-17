@@ -1,0 +1,44 @@
+{
+  "id": "velvet-knife-confessor",
+  "type": "threat",
+  "cardType": "enemy",
+  "title": "Velvet Knife Confessor",
+  "enemyName": "Velvet Knife Confessor",
+  "text": "A Hollow Court interrogator bows with a soft blade in each sleeve. This duel is decided by lies, not muscle.",
+  "flavor": "It forgives nothing it can weaponize.",
+  "severity": 2,
+  "region": "middle",
+  "stat": "guile",
+  "difficulty": 7,
+  "trophyValue": 4,
+  "combatEffectKeys": [
+    "threat_block_rerolls"
+  ],
+  "defeatReward": {
+    "type": "gain_note",
+    "text": "You took the confession knife and left the question unanswered."
+  },
+  "woundOnLoss": {
+    "type": "sequence",
+    "effects": [
+      {
+        "type": "take_wound",
+        "amount": 1
+      },
+      {
+        "type": "gain_scar",
+        "scarId": "scar-wound-3"
+      }
+    ]
+  },
+  "enemyFamily": "human",
+  "threatLane": "yellow",
+  "rarity": "common",
+  "tempo": "push",
+  "resourceTags": [
+    "loot",
+    "scar",
+    "trophy",
+    "wound"
+  ]
+}

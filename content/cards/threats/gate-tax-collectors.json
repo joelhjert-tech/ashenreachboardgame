@@ -1,0 +1,44 @@
+{
+  "id": "gate-tax-collectors",
+  "type": "threat",
+  "cardType": "enemy",
+  "title": "Gate-Tax Collectors",
+  "enemyName": "Gate-Tax Collectors",
+  "text": "Uniformed gate collectors demand your route writ, your scar tally, and one impossible fee.",
+  "flavor": "They call extortion civic maintenance.",
+  "severity": 2,
+  "stat": "command",
+  "difficulty": 5,
+  "trophyValue": 4,
+  "defeatReward": {
+    "type": "gain_note",
+    "text": "You forced the collectors to stamp a false transit chit."
+  },
+  "woundOnLoss": {
+    "type": "encounter_payment",
+    "decisionKey": "collectors-levy",
+    "mode": "required",
+    "prompt": "The Collectors demand 1 Salvage after your defeat.",
+    "salvageCost": 1,
+    "paidOptionId": "pay-levy",
+    "paidLabel": "Pay 1 Salvage",
+    "paidEffect": {
+      "type": "none",
+      "summary": "The levy was paid. The Collectors remain unresolved."
+    },
+    "unavailableEffect": {
+      "type": "none",
+      "summary": "The levy could not be paid. No debt was created. The Collectors remain unresolved."
+    }
+  },
+  "enemyFamily": "bureaucracy",
+  "threatLane": "yellow",
+  "region": "outer",
+  "rarity": "common",
+  "tempo": "push",
+  "resourceTags": [
+    "salvage",
+    "loot",
+    "trophy"
+  ]
+}

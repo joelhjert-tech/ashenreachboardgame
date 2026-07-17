@@ -1,0 +1,25 @@
+{
+  "id": "saintwire-splint",
+  "name": "Saintwire Splint",
+  "slot": "armor",
+  "subtype": "medical",
+  "category": "passive",
+  "statBonus": {
+    "stat": "forge",
+    "amount": 1
+  },
+  "cost": 3,
+  "sellValue": 1,
+  "sellable": true,
+  "tier": "standard",
+  "progressionWeight": 1,
+  "flavor": "A reusable brace that adds +1 Forge while holding together.",
+  "activeText": "A reusable brace that adds +1 Forge while holding together.",
+  "shopCategories": [
+    "medicae-shrine",
+    "market"
+  ],
+  "startingEligible": true,
+  "normalShopCommon": true,
+  "allowedFallbackArt": true
+}

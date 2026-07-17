@@ -1,0 +1,35 @@
+{
+  "id": "mudglass-sinkhole",
+  "type": "threat",
+  "cardType": "hazard",
+  "title": "Mudglass Sinkhole",
+  "text": "The mudglass carries you off route. Move 1 sector counterclockwise on this ring. If no legal sector is available, suffer 1 Wound.",
+  "flavor": "The surface reflects a sky that is not above you.",
+  "severity": 2,
+  "stat": "grit",
+  "difficulty": 6,
+  "successEffect": {
+    "type": "gain_note",
+    "text": "You mapped the sinkhole lip before it sealed again."
+  },
+  "failEffect": {
+    "type": "forcedDisplacement",
+    "direction": "counterclockwise",
+    "distance": 1,
+    "sameRing": true,
+    "fallbackEffect": {
+      "type": "take_wound",
+      "amount": 1
+    },
+    "failureStillCounts": true
+  },
+  "enemyFamily": "hazard",
+  "threatLane": "red",
+  "region": "outer",
+  "rarity": "common",
+  "tempo": "push",
+  "resourceTags": [
+    "movement",
+    "wound"
+  ]
+}

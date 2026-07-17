@@ -1,0 +1,30 @@
+{
+  "id": "yard-rivet-brute",
+  "type": "threat",
+  "cardType": "enemy",
+  "title": "Yard-Rivet Brute",
+  "enemyName": "Yard-Rivet Brute",
+  "text": "A hulking yard fighter wrapped in riveted scrap blocks the forge road, dragging a heated anchor chain.",
+  "flavor": "The yard taught him one prayer: hit until the world opens.",
+  "severity": 3,
+  "region": "middle",
+  "stat": "forge",
+  "difficulty": 8,
+  "trophyValue": 3,
+  "defeatReward": {
+    "type": "gain_note",
+    "text": "You cut the anchor chain loose and kept the stamped yard hook."
+  },
+  "woundOnLoss": {
+    "type": "take_wound",
+    "amount": 1
+  },
+  "enemyFamily": "human",
+  "threatLane": "yellow",
+  "rarity": "uncommon",
+  "tempo": "push",
+  "resourceTags": [
+    "trophy",
+    "wound"
+  ]
+}

@@ -40,7 +40,7 @@ export function resolveBoardSpaceEvent(
     movementBox: space.movementBox ?? null,
     textBox: space.textBox,
     exploration: {
-      skipped: space.tier === "inner" || space.tier === "center",
+      skipped: space.tier === "center",
       drawCounts: calculateExplorationDraws(space, containedThreatCards)
     },
     engagement: {
