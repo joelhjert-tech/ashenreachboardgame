@@ -79,7 +79,7 @@ describe("Heat Compatibility C6D follower and Threat metadata migration", () => 
     expect(threats).toHaveLength(109);
 
     for (const follower of followers.values()) {
-      expect(follower.lossCondition).not.toBe("heat");
+      expect(follower).not.toHaveProperty("lossCondition");
       expect(follower.tags?.map((tag) => tag.toLowerCase()) ?? []).not.toContain("heat");
       expect(followerSchema.parse(follower)).toEqual(follower);
     }

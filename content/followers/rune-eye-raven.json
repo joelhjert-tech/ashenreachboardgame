@@ -19,7 +19,6 @@
   "exhaustEffect": "recordRouteMemoryNote",
   "requiresEquipped": false,
   "loyalty": 4,
-  "lossCondition": "choice",
   "acquisition": [
     "Drawn from the Artifact deck as a legendary omen companion.",
     "Awarded by a shrine, route-memory, or battlefield-carrion event.",

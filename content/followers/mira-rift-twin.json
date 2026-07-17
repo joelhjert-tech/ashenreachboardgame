@@ -14,7 +14,6 @@
   },
   "useLimit": "oncePerRound",
   "loyalty": 4,
-  "lossCondition": "choice",
   "acquisition": [
     "Drawn from the Artifact deck as Rumi's legendary companion bond.",
     "Awarded by a Hollow Court duel or violet breach event.",

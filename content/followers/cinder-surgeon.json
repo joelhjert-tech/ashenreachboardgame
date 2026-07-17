@@ -10,6 +10,5 @@
     ]
   },
   "useLimit": "discard",
-  "loyalty": 2,
-  "lossCondition": "choice"
+  "loyalty": 2
 }

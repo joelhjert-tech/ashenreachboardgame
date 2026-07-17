@@ -258,7 +258,6 @@ function createFandiablos(): Follower {
     exhaustEffect: "fandiablosSupport",
     requiresEquipped: false,
     loyalty: 5,
-    lossCondition: "choice"
   };
 }
 
@@ -2981,7 +2980,6 @@ describe("active objects and table interaction", () => {
       activeEffect: { type: "gain_note", text: "Crownless Advocate: one faction demand or rivalry bargain was softened." },
       useLimit: "oncePerRound",
       loyalty: 3,
-      lossCondition: "choice"
     };
     const state = createState({
       players: createState().players.map((player) =>
@@ -3019,7 +3017,6 @@ describe("active objects and table interaction", () => {
       role: "medic",
       text: "Passive: patch wounds after the dust settles.",
       loyalty: 2,
-      lossCondition: "choice"
     };
     const state = createState({
       players: createState().players.map((player) =>

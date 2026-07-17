@@ -3,6 +3,8 @@
   "name": "Choir Defector",
   "role": "ritualist",
   "text": "Once per round, reduce an anomaly instability or signal difficulty by 1 before rolling.",
+  "abilityId": "signal_anomaly_support",
+  "activeEffect": { "type": "gain_note", "text": "Choir Defector tuned the current Signal or anomaly test." },
   "useLimit": "oncePerRound",
   "loyalty": 3
 }

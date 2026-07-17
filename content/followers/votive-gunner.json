@@ -2,8 +2,9 @@
   "id": "votive-gunner",
   "name": "Votive Gunner",
   "role": "gunner",
-  "text": "Add +1 to enemy combat. On a failed combat, the gunner may die instead of adding a wound.",
-  "useLimit": "oncePerTurn",
-  "loyalty": 2,
-  "lossCondition": "combatLoss"
+  "text": "Add +1 to your battle total. On a failed battle, the gunner may be discarded to prevent one pending Wound.",
+  "abilityId": "battle_support",
+  "activeEffect": { "type": "gain_note", "text": "Votive Gunner covered the current battle exchange." },
+  "useLimit": "oncePerRound",
+  "loyalty": 2
 }

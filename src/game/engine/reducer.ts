@@ -3668,7 +3668,12 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
       );
 
       try {
-        if (follower?.effectModel === "exhaust") {
+        if (useFollowerAction.suppressPendingFailure) {
+          ensureSeatTurn(state, useFollowerAction.seatId);
+          if (state.phase !== "resolution" || !state.pendingEffect || state.activeResolution?.roll?.success !== false ||
+              !state.pendingFailureReaction || state.pendingFailureReaction.id !== useFollowerAction.pendingFailureReactionId ||
+              state.pendingFailureReaction.seatId !== useFollowerAction.seatId) throw new Error("No matching failed test is waiting for a follower reaction");
+        } else if (follower?.effectModel === "exhaust") {
           ensureSeatTurn(state, useFollowerAction.seatId);
           ensureSeatCanTakeNormalTurnAction(state, useFollowerAction.seatId);
           if (!["action", "sector", "navigation", "resolution"].includes(state.phase)) throw new Error(`Cannot use ${follower.name} during phase ${state.phase}`);
@@ -3739,6 +3744,8 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
 
       return succeed({
         ...finalState,
+        pendingEffect: useFollowerAction.suppressPendingFailure ? null : finalState.pendingEffect,
+        pendingFailureReaction: useFollowerAction.suppressPendingFailure ? null : finalState.pendingFailureReaction,
         sequence: state.sequence + 1,
         activeResolution: appendPendingRollModifierToResolution(
           finalState.activeResolution,

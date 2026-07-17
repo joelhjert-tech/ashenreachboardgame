@@ -16,6 +16,14 @@ export const legacyFollowerLossConditionSchema = z.enum(["wound", "heat", "comba
 export const followerTierSchema = z.enum(["standard", "legendary", "ultimate"]);
 export const followerEffectModelSchema = z.enum(["exhaust"]);
 export const followerResetWindowSchema = z.enum(["round"]);
+export const followerAbilityIdSchema = z.enum([
+  "prevent_equipment_loss",
+  "prevent_salvage_loss",
+  "signal_anomaly_support",
+  "ignore_middle_route_failure",
+  "ignore_route_failure",
+  "battle_support"
+]);
 export const followerExhaustEffectSchema = z.enum(["recordEmberPupNote", "recordOmenNote", "recordRouteMemoryNote", "fandiablosSupport"]);
 export const followerTimingWindowSchema = z.enum([
   "beforeThreatDraw",
@@ -30,6 +38,7 @@ export const followerTimingWindowSchema = z.enum([
 
 const followerFields = {
   id: z.string().min(1),
+  qaOnly: z.boolean().optional(),
   instanceId: z.string().min(1).optional(),
   name: z.string().min(1),
   role: followerRoleSchema,
@@ -50,11 +59,11 @@ const followerFields = {
   acquisition: z.array(z.string().min(1)).optional(),
   flavor: z.string().min(1).optional(),
   imagePrompt: z.string().min(1).optional(),
+  abilityId: followerAbilityIdSchema.optional(),
   passiveEffect: z.unknown().optional(),
   activeEffect: z.unknown().optional(),
   useLimit: followerUseLimitSchema.optional(),
-  loyalty: z.number().int().min(0).max(5).optional(),
-  lossCondition: followerLossConditionSchema.optional()
+  loyalty: z.number().int().min(0).max(5).optional()
 };
 
 function validateFollowerLifecycle(
@@ -99,9 +108,8 @@ export function normalizeLegacyFollowerMetadata(
     ...(legacyTags
       ? { tags: legacyTags.filter((tag) => tag.toLowerCase() !== "heat") }
       : {}),
-    ...(legacyLossCondition && legacyLossCondition !== "heat"
-      ? { lossCondition: legacyLossCondition }
-      : {})
+    // Historical loss conditions were never authoritative. They remain
+    // parseable above but normalize out of the canonical follower model.
   };
   return followerSchema.parse(normalized);
 }

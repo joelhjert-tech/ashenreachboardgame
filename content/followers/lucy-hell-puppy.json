@@ -19,7 +19,6 @@
   "exhaustEffect": "recordEmberPupNote",
   "requiresEquipped": false,
   "loyalty": 5,
-  "lossCondition": "choice",
   "acquisition": [
     "Drawn from the Artifact deck as a legendary companion bond.",
     "Awarded by an ember shrine, rescue event, or firebreak route.",

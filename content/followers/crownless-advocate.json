@@ -8,6 +8,5 @@
     "text": "Crownless Advocate: one faction demand or rivalry bargain was softened."
   },
   "useLimit": "oncePerRound",
-  "loyalty": 3,
-  "lossCondition": "choice"
+  "loyalty": 3
 }

@@ -1,5 +1,6 @@
 {
   "id": "qa_alpha_follower_02",
+  "qaOnly": true,
   "name": "Servo-Scribe Null",
   "role": "informant",
   "text": "QA only: draw one extra card when searching, looting, or shopping so inventory and shop overflow can be tested quickly.",
@@ -7,6 +8,5 @@
   "tags": ["qa", "support", "shopping", "loot"],
   "timingWindows": ["shop", "anyTime"],
   "useLimit": "oncePerTurn",
-  "loyalty": 4,
-  "lossCondition": "choice"
+  "loyalty": 4
 }

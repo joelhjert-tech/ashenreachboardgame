@@ -8,6 +8,5 @@
     "text": "Glassmere mapper: a clean route angle is recorded."
   },
   "useLimit": "oncePerTurn",
-  "loyalty": 3,
-  "lossCondition": "wound"
+  "loyalty": 3
 }

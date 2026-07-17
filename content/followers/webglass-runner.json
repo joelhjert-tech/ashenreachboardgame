@@ -8,6 +8,5 @@
     "text": "Webglass runner: a shortcut through unstable ground is marked."
   },
   "useLimit": "oncePerTurn",
-  "loyalty": 2,
-  "lossCondition": "combatLoss"
+  "loyalty": 2
 }

@@ -3,7 +3,8 @@
   "name": "Red March Guide",
   "role": "guide",
   "text": "Once per round, ignore one failed movement check or route penalty in a middle space.",
+  "abilityId": "ignore_middle_route_failure",
+  "activeEffect": { "type": "gain_note", "text": "Red March Guide found a safe middle-route detour." },
   "useLimit": "oncePerRound",
-  "loyalty": 2,
-  "lossCondition": "combatLoss"
+  "loyalty": 2
 }

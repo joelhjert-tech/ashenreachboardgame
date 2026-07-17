@@ -21,7 +21,6 @@
   "exhaustEffect": "fandiablosSupport",
   "requiresEquipped": false,
   "loyalty": 5,
-  "lossCondition": "choice",
   "acquisition": [
     "Complete 3 Contracts and draw Fandiablos from the Artifact/Ultimate deck.",
     "Win a special Shrine or Companion event.",

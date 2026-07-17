@@ -14,7 +14,6 @@
   },
   "useLimit": "oncePerRound",
   "loyalty": 4,
-  "lossCondition": "choice",
   "acquisition": [
     "Drawn from the Artifact deck as the third Violet Triad companion bond.",
     "Awarded after Rumi and Mira clear a middle or inner threat without taking a wound.",

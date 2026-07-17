@@ -1518,6 +1518,11 @@ export class GameRoomServer {
     return false;
   }
 
+  private effectContainsType(effect: EncounterEffect, type: EncounterEffect["type"]): boolean {
+    if (effect.type === type) return true;
+    return effect.type === "sequence" && effect.effects.some((entry) => this.effectContainsType(entry, type));
+  }
+
   private reduceFirstWound(effect: EncounterEffect): EncounterEffect | null {
     if (effect.type === "take_wound") {
       const nextAmount = effect.amount - 1;
@@ -1858,7 +1863,7 @@ export class GameRoomServer {
   }
 
   private createFollowerRollModifier(seatId: string, follower: Follower): PendingRollModifier | undefined {
-    if (follower.id !== FANDIABLOS_ID || this.hasPendingRoll(seatId)) {
+    if (this.hasPendingRoll(seatId)) {
       return undefined;
     }
 
@@ -1868,7 +1873,7 @@ export class GameRoomServer {
       return undefined;
     }
 
-    if (encounter.cardType === "enemy" && encounter.stat === "grit") {
+    if (follower.id === FANDIABLOS_ID && encounter.cardType === "enemy" && encounter.stat === "grit") {
       return {
         label: "Fandiablos",
         value: 3,
@@ -1877,13 +1882,17 @@ export class GameRoomServer {
       };
     }
 
-    if (encounter.cardType === "hazard" && (encounter.stat === "forge" || encounter.stat === "guile")) {
+    if (follower.id === FANDIABLOS_ID && encounter.cardType === "hazard" && (encounter.stat === "forge" || encounter.stat === "guile")) {
       return {
         label: "Fandiablos",
         value: 2,
         stat: encounter.stat,
         mode: "check"
       };
+    }
+
+    if (follower.abilityId === "signal_anomaly_support" && encounter.cardType === "hazard" && (encounter.stat === "signal" || encounter.threatLane === "blue")) {
+      return { label: follower.name, value: 1, stat: encounter.stat, mode: "check" };
     }
 
     return undefined;
@@ -2276,8 +2285,25 @@ export class GameRoomServer {
       }
     }
 
+    const pendingFailure = this.state.pendingFailureReaction;
+    const pendingEffect = this.state.pendingEffect;
+    const isFailedReaction = this.state.phase === "resolution" && Boolean(
+      pendingFailure && pendingFailure.seatId === seatId && pendingEffect && this.state.activeResolution?.roll?.success === false
+    );
+    const middleRoute = getBoardSpace(player!.character.currentSpaceId)?.tier === "middle";
+    const suppressPendingFailure =
+      (follower.abilityId === "ignore_route_failure" && isFailedReaction && pendingFailure?.testType === "movement") ||
+      (follower.abilityId === "ignore_middle_route_failure" && isFailedReaction && pendingFailure?.testType === "movement" && middleRoute) ||
+      (follower.abilityId === "prevent_equipment_loss" && isFailedReaction && this.effectContainsType(pendingEffect!, "equipment_suppression")) ||
+      (follower.abilityId === "prevent_salvage_loss" && isFailedReaction && this.effectContainsType(pendingEffect!, "lose_salvage")) ||
+      (follower.abilityId === "battle_support" && isFailedReaction && this.effectContainsWound(pendingEffect!));
+
+    if (["ignore_route_failure", "ignore_middle_route_failure", "prevent_equipment_loss", "prevent_salvage_loss", "battle_support"].includes(follower.abilityId ?? "") && !suppressPendingFailure) {
+      throw new IntentRejectedError("USE_FOLLOWER", `${follower.name} requires its matching pending failure consequence.`);
+    }
+
     const fandiablosUse = follower?.id === FANDIABLOS_ID ? this.createFandiablosUseEffect(seatId) : null;
-    const effect = this.resolveEffect((follower?.activeEffect as EncounterEffect | undefined) ?? this.getFollowerRoleEffect(follower), seatId);
+    const effect = follower.activeEffect ? this.resolveEffect(follower.activeEffect as EncounterEffect, seatId) : null;
     const rollModifier = this.createFollowerRollModifier(seatId, follower);
 
     return {
@@ -2288,36 +2314,15 @@ export class GameRoomServer {
       woundCost: follower.id === FANDIABLOS_ID ? (escalate ? 2 : 1) : undefined,
       grantAllStatBoost: follower.id === FANDIABLOS_ID && escalate,
       effect: fandiablosUse ? this.resolveEffect(fandiablosUse.effect, seatId) : effect,
-      discard: follower?.useLimit === "discard",
+      discard: follower?.useLimit === "discard" || follower?.abilityId === "battle_support",
+      suppressPendingFailure,
+      pendingFailureReactionId: suppressPendingFailure ? pendingFailure?.id : undefined,
       rollModifier,
       summary: (fandiablosUse ?? follower)
         ? `${follower?.name ?? followerId} used. ${fandiablosUse?.summary ?? follower?.text ?? "Their table effect was recorded."}`
         : `${followerId} used. Their table effect was recorded.`,
       createdAt
     } satisfies UseFollowerAction;
-  }
-
-  private getFollowerRoleEffect(follower: Follower | undefined): EncounterEffect {
-    switch (follower?.role) {
-      case "medic":
-        return {
-          type: "sequence",
-          effects: [
-            { type: "heal_wound", amount: 1 },
-            { type: "gain_note", text: `${follower.name} treated the wound without adding persistent harm.` }
-          ]
-        };
-      case "ritualist":
-      case "informant":
-        return { type: "gain_note", text: `${follower.name} steadied the operative. No additional status change.` };
-      case "gunner":
-        return { type: "gain_note", text: `${follower.name} is covering the next combat exchange.` };
-      case "guide":
-      case "scout":
-      case "porter":
-      default:
-        return { type: "gain_note", text: `${follower?.name ?? "Follower"} support recorded for this route.` };
-    }
   }
 
   private createTableInteractionAction(
@@ -7140,6 +7145,9 @@ export class GameRoomServer {
       keyedPlayerModifier: keyedModifiers.playerBonusModifier ?? 0,
       masterAlphaModifier: getMasterAlphaBattleBonus(player)
     });
+    if (player.character.followers?.some((follower) => follower.abilityId === "battle_support")) {
+      modifierSources.push({ label: "Votive Gunner", value: 1 });
+    }
     const statBonus = this.sumModifierSources(modifierSources);
     const easedEncounterDifficulty = Math.max(
       0,
@@ -7243,7 +7251,15 @@ export class GameRoomServer {
       const player = seatId ? this.state.players.find((entry) => entry.seatId === seatId) : null;
       const sourceSectorId = player?.sectorId;
       const sector = sourceSectorId ? this.state.sectors.find((entry) => entry.id === sourceSectorId) : null;
-      const artifactId = sector?.encounterDecks.artifact[0] ?? undefined;
+      const eligibleArtifactIds = (sector?.encounterDecks.artifact ?? []).filter((candidateId) => {
+        const candidate = this.artifacts.get(candidateId);
+        if (!candidate) return false;
+        const followerIds = this.collectFollowerIds(candidate.resolveEffect);
+        return followerIds.every((followerId) => this.isFollowerAvailableForSeat(followerId, seatId));
+      });
+      const artifactId = eligibleArtifactIds.length > 0
+        ? eligibleArtifactIds[this.randomSource.nextInt(eligibleArtifactIds.length)]
+        : undefined;
       const artifact = artifactId ? this.artifacts.get(artifactId) : null;
 
       if (!sourceSectorId || !artifactId || !artifact) {
@@ -7271,11 +7287,19 @@ export class GameRoomServer {
     }
 
     if (effect.type === "gain_follower") {
+      const definition = this.followers.get(effect.followerId);
+
+      if (!definition) {
+        return { type: "gain_note", text: "No eligible follower was available." };
+      }
+
+      if (!this.isFollowerAvailableForSeat(effect.followerId, seatId)) {
+        return { type: "gain_note", text: `${definition.name} is already committed and no additional follower is gained.` };
+      }
+
       return {
         ...effect,
-        follower: this.followers.get(effect.followerId)
-          ? { ...this.followers.get(effect.followerId)!, instanceId: `${effect.followerId}:${seatId ?? "table"}:${this.state.sequence}`, exhausted: false }
-          : undefined
+        follower: { ...definition, instanceId: `${effect.followerId}:${seatId ?? "table"}:${this.state.sequence}`, exhausted: false }
       };
     }
 
@@ -7287,6 +7311,21 @@ export class GameRoomServer {
     }
 
     return effect;
+  }
+
+  private collectFollowerIds(effect: AuthoredEncounterEffect): string[] {
+    if (effect.type === "gain_follower") return [effect.followerId];
+    if (effect.type === "sequence") return effect.effects.flatMap((entry) => this.collectFollowerIds(entry));
+    return [];
+  }
+
+  private isFollowerAvailableForSeat(followerId: string, seatId?: string): boolean {
+    const definition = this.followers.get(followerId);
+    if (!definition || !seatId) return Boolean(definition);
+    const owner = this.state.players.find((entry) => entry.seatId === seatId);
+    if (owner?.character.followers?.some((follower) => follower.id === followerId)) return false;
+    if (!definition.unique) return true;
+    return !this.state.players.some((player) => player.character.followers?.some((follower) => follower.id === followerId));
   }
 
   private combineEffects(effects: EncounterEffect[]): EncounterEffect | null {
@@ -7807,6 +7846,10 @@ function projectedEffectContainsWound(effect: EncounterEffect | null | undefined
   return Boolean(effect && (effect.type === "take_wound" ? effect.amount > 0 : effect.type === "sequence" && effect.effects.some(projectedEffectContainsWound)));
 }
 
+function projectedEffectContainsType(effect: EncounterEffect | null | undefined, type: EncounterEffect["type"]): boolean {
+  return Boolean(effect && (effect.type === type || (effect.type === "sequence" && effect.effects.some((entry) => projectedEffectContainsType(entry, type)))));
+}
+
 function buildPhoneObjectUseStates(state: GameState, player: PlayerState | undefined): PhoneObjectUseState[] {
   if (!player) {
     return [];
@@ -7876,13 +7919,25 @@ function buildPhoneObjectUseStates(state: GameState, player: PlayerState | undef
     const exhaustDisabledReason = follower.effectModel === "exhaust"
       ? follower.exhausted ? `${follower.name} is Exhausted. Refreshes next round.` : timingEligible ? null : `${follower.name} is Ready, but not usable in this timing window.`
       : null;
+    const pending = state.pendingFailureReaction?.seatId === player.seatId && state.phase === "resolution" && state.activeResolution?.roll?.success === false;
+    const abilityDisabledReason = follower.abilityId === "ignore_route_failure"
+      ? pending && state.pendingFailureReaction?.testType === "movement" ? null : "Use after a failed route check."
+      : follower.abilityId === "ignore_middle_route_failure"
+        ? pending && state.pendingFailureReaction?.testType === "movement" && getBoardSpace(player.character.currentSpaceId)?.tier === "middle" ? null : "Use after a failed movement check in the middle ring."
+        : follower.abilityId === "prevent_equipment_loss"
+          ? pending && projectedEffectContainsType(state.pendingEffect, "equipment_suppression") ? null : "Use when an Equipment loss or suppression is pending."
+          : follower.abilityId === "prevent_salvage_loss"
+            ? pending && projectedEffectContainsType(state.pendingEffect, "lose_salvage") ? null : "Use when a failed route or Contract would lose Salvage."
+            : follower.abilityId === "battle_support"
+              ? pending && projectedEffectContainsWound(state.pendingEffect) ? null : "The +1 battle bonus is always active. Discard only when a failed battle would add a Wound."
+              : null;
     return {
       source: "follower" as const,
       id: follower.id,
       usedThisTurn,
       usedThisRound,
       ...projectedLimit,
-      disabledReason: exhaustDisabledReason ?? projectedLimit.disabledReason,
+      disabledReason: exhaustDisabledReason ?? abilityDisabledReason ?? projectedLimit.disabledReason,
       activeModifier: getPendingObjectRollModifier(state, player.seatId, "follower", follower.id)
     };
   });
@@ -9716,7 +9771,6 @@ export function createTvProjection(
         heldGearCount: player.character.heldGear.length,
         followerCount: player.character.followers?.length ?? 0,
         companionBadges: (player.character.followers ?? [])
-          .filter((follower) => follower.ultimateCompanion || follower.role === "companion")
           .map((follower) => ({
             id: follower.id,
             name: follower.name,

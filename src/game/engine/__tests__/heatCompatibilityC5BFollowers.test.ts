@@ -20,16 +20,14 @@ const TARGETS = [
     text: "Once per round, record that the Crownless Advocate softened one faction demand or stabilized one rivalry bargain.",
     note: "Crownless Advocate: one faction demand or rivalry bargain was softened.",
     role: "informant",
-    loyalty: 3,
-    lossCondition: "choice"
+    loyalty: 3
   },
   {
     id: "saltflat-bone-reader",
     text: "Once per round, record a safer route note from one scar, omen, or void-salt bargain.",
     note: "Saltflat Bone-Reader: one scar, omen, or void-salt bargain became a safer route note.",
     role: "ritualist",
-    loyalty: 2,
-    lossCondition: "heat"
+    loyalty: 2
   }
 ] as const;
 
@@ -110,10 +108,7 @@ describe("Heat Compatibility C5B final follower retirements", () => {
         text: expected.text,
         activeEffect: { type: "gain_note", text: expected.note },
         useLimit: "oncePerRound",
-        loyalty: expected.loyalty,
-        ...(expected.lossCondition === "heat"
-          ? {}
-          : { lossCondition: expected.lossCondition })
+        loyalty: expected.loyalty
       });
       expect(validateLegacyHeatContentRecord(`content/followers/${expected.id}.json`, follower)).toEqual([]);
       expect(JSON.stringify(follower)).not.toMatch(/gain_heat|gain_heat_all|lose_heat/i);

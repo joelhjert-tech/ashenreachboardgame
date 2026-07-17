@@ -160,6 +160,7 @@ export type FollowerTimingWindow = GearTimingWindow;
 
 export interface Follower {
   id: string;
+  qaOnly?: boolean;
   instanceId?: string;
   name: string;
   role: FollowerRole;
@@ -180,6 +181,7 @@ export interface Follower {
   acquisition?: string[];
   flavor?: string;
   imagePrompt?: string;
+  abilityId?: "prevent_equipment_loss" | "prevent_salvage_loss" | "signal_anomaly_support" | "ignore_middle_route_failure" | "ignore_route_failure" | "battle_support";
   useLimit?: "oncePerTurn" | "oncePerRound" | "discard";
   loyalty?: number;
   lossCondition?: "wound" | "combatLoss" | "choice";

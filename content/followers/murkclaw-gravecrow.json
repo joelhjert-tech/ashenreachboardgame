@@ -19,7 +19,6 @@
   "exhaustEffect": "recordOmenNote",
   "requiresEquipped": false,
   "loyalty": 3,
-  "lossCondition": "choice",
   "acquisition": [
     "Drawn from the Artifact deck as a legendary companion bond.",
     "Awarded by a shrine or omen event that calls for a beast companion.",
