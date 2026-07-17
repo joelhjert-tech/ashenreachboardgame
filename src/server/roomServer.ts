@@ -227,6 +227,7 @@ import {
 } from "../game/schema/session.schema.js";
 import { validateHostToken, validateJoinToken } from "./auth.js";
 import { BOARD_SPACES, getBoardSpace, isScenarioConfrontationSpace, type BoardTier, type ThreatIcon } from "../game/data/boardSpaces.js";
+import { getBoardRingTransition } from "../game/data/boardTransitions.js";
 
 export const ESCALATION_FEEDERS = {
   woundTaken: 1,
@@ -7644,6 +7645,14 @@ type PublicMoveDestination = {
   nemesisPresent?: boolean;
   scenarioMarkers?: string[];
   strategicTags: Array<"safe" | "shop" | "locked" | "danger" | "reward" | "nemesis" | "gate">;
+  ringTransition?: {
+    direction: "inward" | "outward";
+    fromRing: "outer" | "middle" | "inner" | "core";
+    toRing: "outer" | "middle" | "inner" | "core";
+    label: string;
+    exactMovementRequired: 1;
+    endsMovement: true;
+  };
   disabledReason?: string;
   voidKeyPrompt?: { instanceId: string; currentCharges: number; maxCharges: number; chargeCost: 1 };
   routeStarPrompt?: { instanceId: string; currentCharges: number; maxCharges: number; chargeCost: 1 };
@@ -8150,6 +8159,7 @@ function buildPublicMovementPlanner(state: GameState, seatId: string): PublicMov
     const shopStatus =
       faceUpThreats.length > 0 ? "locked" : boardSpace.tags.includes("risk-shop") ? "dangerous" : "open";
     const routeNames = routeEntry.route.map((sectorId) => state.sectors.find((entry) => entry.id === sectorId)?.name ?? sectorId);
+    const ringTransition = getBoardRingTransition(routeEntry.route[0] ?? currentSector.id, routeEntry.sectorId);
 
     return [
       {
@@ -8186,6 +8196,16 @@ function buildPublicMovementPlanner(state: GameState, seatId: string): PublicMov
           disabledReason,
           nemesisPresent
         }),
+        ringTransition: ringTransition
+          ? {
+              direction: ringTransition.direction,
+              fromRing: getPublicRing(ringTransition.sourceRing),
+              toRing: getPublicRing(ringTransition.destinationRing),
+              label: ringTransition.uiLabel,
+              exactMovementRequired: 1,
+              endsMovement: true
+            }
+          : undefined,
         disabledReason,
         voidKeyPrompt: voidKeyEligible && voidKey ? { instanceId: voidKey.instanceId!, currentCharges: voidKey.currentCharges ?? voidKey.charges ?? 0, maxCharges: voidKey.maxCharges ?? 2, chargeCost: 1 as const } : undefined
       }

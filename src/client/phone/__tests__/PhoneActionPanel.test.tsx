@@ -1272,7 +1272,7 @@ describe("PhoneActionPanel", () => {
                 faceUpThreats: [],
                 occupants: [],
                 strategicTags: ["gate"],
-                disabledReason: "Resolve Guardian Span before entering the inner breach"
+                disabledReason: "Requires Guardian Span Clearance"
               }
             ]
           }
@@ -1280,12 +1280,10 @@ describe("PhoneActionPanel", () => {
       />
     );
 
-    expect(screen.getAllByText(/resolve guardian span before entering the inner breach/i).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/ignore this route for now/i).length).toBeGreaterThan(0);
-    fireEvent.click(screen.getByRole("button", { name: /gate of three ashes/i }));
-    await waitFor(() => expect(screen.getByRole("button", { name: /confirm move/i })).toBeDisabled());
-    expect(screen.getByRole("button", { name: /confirm move/i })).toBeDisabled();
-    fireEvent.click(screen.getByRole("button", { name: /confirm move/i }));
+    expect(screen.getAllByText(/requires guardian span clearance/i).length).toBeGreaterThan(0);
+    expect(screen.queryByText(/ignore this route for now/i)).toBeNull();
+    const lockedSelect = screen.getAllByRole("button").find((button) => button.textContent?.includes("Select") && button.hasAttribute("disabled"));
+    expect(lockedSelect).toBeDefined();
     expect(onIntent).not.toHaveBeenCalled();
   });
 

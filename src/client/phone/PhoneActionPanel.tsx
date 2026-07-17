@@ -1991,7 +1991,7 @@ function MovementDestinationRow({
         className="phone-movement-row-button"
         media={<MovementTileMedia destination={destination} />}
         title={destination.name}
-        eyebrow={movementTagLabel[primaryTag]}
+        eyebrow={destination.ringTransition?.label ?? movementTagLabel[primaryTag]}
         status={
           <>
             <MovementRouteConfidence items={confidenceItems} testId="movement-route-confidence" />
@@ -2011,13 +2011,15 @@ function MovementDestinationRow({
             </span>
           </details>
         }
-        disabledReason={destination.disabledReason ? <span className="phone-movement-disabled-reason">{destination.disabledReason}. Ignore this route for now.</span> : null}
+        disabledReason={destination.disabledReason ? <span className="phone-movement-disabled-reason">{destination.disabledReason}.</span> : null}
         actions={
           <GameButton
             type="button"
             tone={primaryTag === "danger" || primaryTag === "locked" ? "battle" : primaryTag === "shop" ? "shop" : "move"}
             className="phone-button phone-button-primary phone-movement-select-button"
             aria-label={`${primaryTag === "locked" ? "Locked " : "Select "}${destination.name}`}
+            disabled={isLocked}
+            disabledReason={destination.disabledReason}
             onClick={() => onSelected(destination.sectorId)}
           >
             Select
@@ -2126,11 +2128,16 @@ function MovementDestinationDetail({
           className="phone-movement-detail-hero"
           media={<MovementTileMedia destination={selected} />}
           title={selected.name}
-          eyebrow="Destination"
+          eyebrow={selected.ringTransition?.label ?? "Destination"}
           status={<MovementRouteConfidence items={confidenceItems} testId="movement-detail-route-confidence" />}
           description={
             <>
               <p className="phone-movement-row-lore" data-testid="movement-detail-lore">{identityLine}</p>
+              {selected.ringTransition ? (
+                <p className="phone-movement-transition-note" data-testid="movement-transition-note">
+                  Exact movement 1 · movement ends after crossing
+                </p>
+              ) : null}
               <p>{routeUnavailable ? (canUseVoidKey ? "Route requires Void Key." : "Route unavailable.") : `${routePreview.statusLabel}: ${routePreview.statusReason}`}</p>
               {missionRelevance ? (
                 <p className="phone-mission-callout" data-testid="movement-detail-mission">
@@ -2154,7 +2161,7 @@ function MovementDestinationDetail({
               </details>
             </>
           }
-          disabledReason={routeUnavailable && !canUseVoidKey ? <span className="phone-movement-disabled-reason">{selected.disabledReason}. Ignore this route for now.</span> : null}
+          disabledReason={routeUnavailable && !canUseVoidKey ? <span className="phone-movement-disabled-reason">{selected.disabledReason}.</span> : null}
           actions={
             <>
               <GameButton type="button" tone="secondary" className="phone-button phone-button-secondary phone-movement-back" onClick={onBack}>

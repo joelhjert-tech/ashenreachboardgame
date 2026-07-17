@@ -673,6 +673,14 @@ export interface PublicMoveDestination {
   nemesisPresent?: boolean;
   scenarioMarkers?: string[];
   strategicTags: PublicMoveStrategicTag[];
+  ringTransition?: {
+    direction: "inward" | "outward";
+    fromRing: "outer" | "middle" | "inner" | "core";
+    toRing: "outer" | "middle" | "inner" | "core";
+    label: string;
+    exactMovementRequired: 1;
+    endsMovement: true;
+  };
   disabledReason?: string;
   voidKeyPrompt?: { instanceId: string; currentCharges: number; maxCharges: number; chargeCost: 1 };
   routeStarPrompt?: { instanceId: string; currentCharges: number; maxCharges: number; chargeCost: 1 };

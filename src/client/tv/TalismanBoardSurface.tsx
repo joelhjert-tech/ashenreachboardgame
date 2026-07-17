@@ -1,6 +1,7 @@
 import { useEffect, useState, type CSSProperties, type ReactElement } from "react";
 import { RIFTFALL_BOARD_NODE_INDEX, RIFTFALL_BOARD_NODES, type BoardNode } from "../../data/riftfallBoardNodes.js";
 import { getBoardSpace } from "../../game/data/boardSpaces.js";
+import { getUndirectedBoardRingTransitions } from "../../game/data/boardTransitions.js";
 import { ThreatIconBadge } from "../shared/ChallengeBadge.js";
 import type { SectorNode } from "../shared/types.js";
 import type { BoardRect } from "./boardGeometry.js";
@@ -164,6 +165,13 @@ export function TalismanBoardSurface({
   onSelectNode,
   debugEnabled = false
 }: TalismanBoardSurfaceProps): ReactElement {
+  const ringTransitions = getUndirectedBoardRingTransitions();
+  const transitionSectorIds = new Set(ringTransitions.flatMap((transition) => [transition.sourceSectorId, transition.destinationSectorId]));
+  const highlightedTransitionRoutes = ringTransitions.filter((transition) =>
+    [transition.sourceSectorId, transition.destinationSectorId].some(
+      (sectorId) => sectorId === activeNodeId || sectorId === selectedNodeId || legalTargetIds?.has(sectorId)
+    )
+  );
   return (
     <div
       className="talisman-board-surface"
@@ -176,6 +184,27 @@ export function TalismanBoardSurface({
       }}
     >
       <div className="talisman-board-backdrop" />
+
+      <svg className="talisman-board-transition-routes" aria-label="Public cross-ring routes">
+        {highlightedTransitionRoutes.map((transition) => {
+          const source = getBoardTileRouteAnchor(RIFTFALL_BOARD_NODE_INDEX.get(transition.sourceSectorId)!);
+          const destination = getBoardTileRouteAnchor(RIFTFALL_BOARD_NODE_INDEX.get(transition.destinationSectorId)!);
+          const locked = transition.requiredNotes.length > 0;
+          return (
+            <line
+              key={transition.edgeId}
+              data-testid={`ring-transition-${transition.edgeId}`}
+              data-source-sector-id={transition.sourceSectorId}
+              data-destination-sector-id={transition.destinationSectorId}
+              className={`talisman-board-transition-route${locked ? " talisman-board-transition-route-gated" : ""}`}
+              x1={source.x * imageRect.width}
+              y1={source.y * imageRect.height}
+              x2={destination.x * imageRect.width}
+              y2={destination.y * imageRect.height}
+            />
+          );
+        })}
+      </svg>
 
       {RIFTFALL_BOARD_NODES.map((node) => {
         const side = getTileSide(node);
@@ -260,6 +289,11 @@ export function TalismanBoardSurface({
             {node.id === "center_cinder_gate" ? (
               <span className="talisman-board-mission-badge" data-testid="final-confrontation-marker">
                 Final Confrontation · {centerConfrontationState}
+              </span>
+            ) : null}
+            {transitionSectorIds.has(node.id) ? (
+              <span className="talisman-board-transition-badge" data-testid={`ring-transition-marker-${node.id}`}>
+                Route
               </span>
             ) : null}
             {threatIcons.length > 0 && (
