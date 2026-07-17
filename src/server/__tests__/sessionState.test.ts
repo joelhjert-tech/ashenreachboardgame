@@ -1131,7 +1131,7 @@ describe("canonical sector graph", () => {
     };
     const innerGate = phoneProjection.movementPlanner?.destinations.find((destination) => destination.sectorId === "inner_veil_rift");
 
-    expect(innerGate?.disabledReason).toBe("Resolve Guardian Span before entering the inner breach");
+    expect(innerGate?.disabledReason).toBe("Requires Guardian Span Clearance");
     expect(innerGate?.strategicTags).toContain("gate");
     expect(innerGate?.voidKeyPrompt).toMatchObject({ instanceId: "void-key:test", currentCharges: 2, maxCharges: 2 });
 

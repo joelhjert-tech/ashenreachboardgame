@@ -5461,7 +5461,7 @@ describe("escalation flow", () => {
       toSectorId: "center_cinder_gate"
     });
 
-    expect(String(client.socket.send.mock.calls[0]?.[0] ?? "")).toContain("Resolve the Last Signal Well");
+    expect(String(client.socket.send.mock.calls[0]?.[0] ?? "")).toContain("Breach the Gate of Cinders first");
   });
 
   it("lets Guardian Span board text earn the clearance note and then opens the inner breach move", () => {

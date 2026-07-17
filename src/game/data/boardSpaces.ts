@@ -450,7 +450,7 @@ const RAW_BOARD_SPACES: AuthoredBoardSpaceDefinition[] = [
     threatIcons: ["red", "blue", "yellow"],
     textBox: {
       title: "Customs Threshold",
-      text: "This is the legal staging point into the inner breach. Pay salvage, test Guile, or ghost a route marker through the gate.",
+      text: "This is the legal staging point into the inner breach. Align the threshold seals with Command or ghost a route marker with Signal.",
       effectKey: "middle_guardianSpanThreshold",
       choices: [
         {
@@ -665,7 +665,7 @@ const RAW_BOARD_SPACES: AuthoredBoardSpaceDefinition[] = [
       {
         allowedFrom: ["middle_guardian_span"],
         requiredNotes: ["guardian-span-clearance"],
-        errorMessage: "Resolve Guardian Span before entering the inner breach"
+        errorMessage: "Requires Guardian Span Clearance"
       }
     ],
     textBox: {
@@ -807,11 +807,11 @@ const RAW_BOARD_SPACES: AuthoredBoardSpaceDefinition[] = [
     movementRequirements: [
       {
         allowedFrom: ["inner_gate_of_cinders", "inner_blackstar_shortcut"],
-        errorMessage: "Only the Last Signal Well or Dead Star Reliquary opens the final route into the core chamber"
+        errorMessage: "Enter the Core from the Last Signal Well or Dead Star Reliquary"
       },
       {
         requiredNotes: ["gate-of-cinders-breached"],
-        errorMessage: "Resolve the Last Signal Well before entering the Ashen Reach Core"
+        errorMessage: "Breach the Gate of Cinders first"
       }
     ],
     textBox: {

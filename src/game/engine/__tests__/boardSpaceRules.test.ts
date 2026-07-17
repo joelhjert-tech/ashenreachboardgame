@@ -101,17 +101,17 @@ describe("board space data", () => {
       {
         allowedFrom: ["middle_guardian_span"],
         requiredNotes: ["guardian-span-clearance"],
-        errorMessage: "Resolve Guardian Span before entering the inner breach"
+        errorMessage: "Requires Guardian Span Clearance"
       }
     ]);
     expect(cinderGate?.movementRequirements).toEqual([
       {
         allowedFrom: ["inner_gate_of_cinders", "inner_blackstar_shortcut"],
-        errorMessage: "Only the Last Signal Well or Dead Star Reliquary opens the final route into the core chamber"
+        errorMessage: "Enter the Core from the Last Signal Well or Dead Star Reliquary"
       },
       {
         requiredNotes: ["gate-of-cinders-breached"],
-        errorMessage: "Resolve the Last Signal Well before entering the Ashen Reach Core"
+        errorMessage: "Breach the Gate of Cinders first"
       }
     ]);
   });
