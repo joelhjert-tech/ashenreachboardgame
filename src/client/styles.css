@@ -12830,10 +12830,21 @@ body {
   left: clamp(0.14rem, 0.22vw, 0.24rem);
   bottom: clamp(0.14rem, 0.22vw, 0.24rem);
   z-index: 3;
-  display: flex;
-  align-items: center;
+  display: grid;
+  grid-template-columns: repeat(2, max-content);
+  align-items: end;
   gap: 0.08rem;
   pointer-events: none;
+}
+
+.talisman-board-player-marker-active {
+  z-index: 2;
+  border-color: #f3c86d;
+  box-shadow:
+    0 0 0 1px rgba(28, 17, 7, 0.9),
+    0 0 0.7rem rgba(230, 151, 50, 0.86),
+    0 0.22rem 0.46rem rgba(0, 0, 0, 0.58);
+  transform: scale(1.12);
 }
 
 .talisman-board-player-marker,
@@ -12865,6 +12876,102 @@ body {
 
 .talisman-board-player-marker-moving {
   animation: board-token-step-settle 720ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.tv-network-overlay {
+  position: fixed;
+  inset: 50% auto auto 50%;
+  z-index: 70;
+  width: min(38rem, calc(100vw - 4rem));
+  transform: translate(-50%, -50%);
+  padding: clamp(1.25rem, 2vw, 2rem);
+  border: 1px solid rgba(204, 91, 48, 0.72);
+  border-inline-start: 0.36rem solid #c85c32;
+  background: linear-gradient(145deg, rgba(10, 12, 14, 0.97), rgba(28, 18, 15, 0.96));
+  color: #f4ead7;
+  box-shadow: 0 1.4rem 4rem rgba(0, 0, 0, 0.72);
+  text-align: left;
+}
+
+.tv-network-overlay span,
+.tv-network-overlay strong {
+  display: block;
+  text-transform: uppercase;
+  letter-spacing: 0.13em;
+}
+
+.tv-network-overlay span {
+  color: #cfa88e;
+  font-size: clamp(0.72rem, 0.85vw, 0.95rem);
+}
+
+.tv-network-overlay strong {
+  margin-top: 0.45rem;
+  font-family: var(--font-display);
+  font-size: clamp(1.5rem, 2.35vw, 2.7rem);
+}
+
+.tv-network-overlay p {
+  max-width: 46ch;
+  margin: 0.7rem 0 0;
+  color: #c8c2b7;
+  font-size: clamp(0.9rem, 1.05vw, 1.15rem);
+  line-height: 1.45;
+}
+
+.tv-rare-state-panel {
+  position: absolute;
+  inset: 50% auto auto 50%;
+  z-index: 24;
+  width: min(39rem, calc(100% - 4rem));
+  transform: translate(-50%, -50%);
+  padding: clamp(1.2rem, 2vw, 2rem);
+  border: 1px solid rgba(202, 123, 68, 0.72);
+  border-inline-start: 0.34rem solid #ca7542;
+  background: linear-gradient(145deg, rgba(8, 11, 14, 0.97), rgba(27, 17, 14, 0.96));
+  box-shadow: 0 1.4rem 4rem rgba(0, 0, 0, 0.72);
+  color: #f3ead8;
+}
+
+.tv-rare-state-panel > span,
+.tv-rare-state-panel > strong,
+.tv-rare-state-panel > em {
+  display: block;
+}
+
+.tv-rare-state-panel > span,
+.tv-rare-state-panel > em {
+  color: #cba992;
+  font-size: clamp(0.72rem, 0.82vw, 0.92rem);
+  font-style: normal;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.tv-rare-state-panel > strong {
+  margin-top: 0.45rem;
+  font-family: var(--font-display);
+  font-size: clamp(1.65rem, 2.45vw, 2.8rem);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.tv-rare-state-panel > p {
+  margin: 0.75rem 0;
+  color: #e0d8c8;
+  font-size: clamp(0.95rem, 1.12vw, 1.25rem);
+  line-height: 1.45;
+}
+
+.tv-rare-state-panel--danger {
+  border-color: rgba(190, 67, 47, 0.78);
+  border-inline-start-color: #bf4937;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tv-network-overlay {
+    transition: none;
+  }
 }
 
 .talisman-board-travel {

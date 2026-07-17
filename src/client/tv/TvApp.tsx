@@ -587,6 +587,8 @@ interface HostStateBannerProps {
   readyCount: number;
   battleMode: boolean;
   shopMode: boolean;
+  connectionStatus: "idle" | "connecting" | "open" | "closed";
+  synchronized: boolean;
 }
 
 interface HostStateBannerModel {
@@ -612,7 +614,16 @@ function promptToneToHostTone(tone: ExplainabilityTone): HostStateBannerModel["t
   return tone;
 }
 
-function getHostStateBannerModel({ patch, roomCode }: HostStateBannerProps): HostStateBannerModel {
+function getHostStateBannerModel({ patch, roomCode, activePlayer, connectionStatus, synchronized }: HostStateBannerProps): HostStateBannerModel {
+  if (patch && (connectionStatus === "closed" || connectionStatus === "connecting" || !synchronized)) {
+    return {
+      label: connectionStatus === "closed" ? "Host connection lost" : "Reconnecting to game server",
+      detail: "The last safe board position is preserved while authoritative state is restored.",
+      meta: "Player actions are not shown until synchronization completes",
+      tone: "danger"
+    };
+  }
+
   if (!roomCode || !patch) {
     return {
       label: "Host setup",
@@ -668,6 +679,58 @@ function getHostStateBannerModel({ patch, roomCode }: HostStateBannerProps): Hos
     };
   }
 
+  if (patch.payload.pendingOrderedConsequence) {
+    const seatLabels = getSeatLabelMap(patch);
+    const ownerLabel = seatLabels[patch.payload.pendingOrderedConsequence.seatId] ?? "Active operative";
+    const consequence = patch.payload.pendingOrderedConsequence;
+    return {
+      label: "Reaction pending",
+      detail: `Waiting for ${ownerLabel} to resolve ${consequence.sourceId.replaceAll("-", " ")}.`,
+      meta: `${consequence.actualWounds} Wound${consequence.actualWounds === 1 ? "" : "s"} applied${consequence.preventedWounds > 0 ? ` · ${consequence.preventedWounds} prevented` : ""}`,
+      tone: "danger"
+    };
+  }
+
+  if (patch.payload.scarTriggerStatus) {
+    const seatLabels = getSeatLabelMap(patch);
+    const ownerLabel = seatLabels[patch.payload.scarTriggerStatus.seatId] ?? "Active operative";
+    return {
+      label: "Scar consequence pending",
+      detail: `Waiting for ${ownerLabel} to resolve ${patch.payload.scarTriggerStatus.scarTitle}.`,
+      meta: "Owner phone must continue · Scar already acquired",
+      tone: "danger"
+    };
+  }
+
+  if (patch.payload.scarResolutionStatus) {
+    const seatLabels = getSeatLabelMap(patch);
+    const ownerLabel = seatLabels[patch.payload.scarResolutionStatus.seatId] ?? "Active operative";
+    return {
+      label: "Scar consequence resolved",
+      detail: `${ownerLabel} resolved ${patch.payload.scarResolutionStatus.scarTitle}.`,
+      meta: "Authoritative consequence complete",
+      tone: "active"
+    };
+  }
+
+  if (activePlayer?.character.status === "recalled") {
+    return {
+      label: "Operative recalled",
+      detail: patch.payload.outcomeSummary?.summary ?? `${activePlayer.character.name} reached the Wound threshold and left the field.`,
+      meta: "Recall is not defeat · replacement continues on player phone",
+      tone: "danger"
+    };
+  }
+
+  if (patch.payload.outcomeSummary?.encounterCardId === "suture-storm") {
+    return {
+      label: "Reaction sequence complete",
+      detail: patch.payload.outcomeSummary.summary,
+      meta: "Authoritative consequence resolved once",
+      tone: patch.payload.outcomeSummary.success ? "active" : "danger"
+    };
+  }
+
   const prompt = buildCurrentTablePrompt(patch);
   return {
     label: prompt.phaseLabel,
@@ -675,6 +738,21 @@ function getHostStateBannerModel({ patch, roomCode }: HostStateBannerProps): Hos
     meta: prompt.lockedReason ?? prompt.availableActionSummary ?? prompt.phaseReason,
     tone: patch.payload.status === "ended" ? "ended" : promptToneToHostTone(prompt.tone)
   };
+}
+
+function HostNetworkOverlay({ status, synchronized }: { status: "idle" | "connecting" | "open" | "closed"; synchronized: boolean }): ReactElement | null {
+  if (status === "open" && synchronized) {
+    return null;
+  }
+
+  const lost = status === "closed";
+  return (
+    <section className="tv-network-overlay" role="status" aria-live="polite" data-testid="tv-network-overlay">
+      <span>{lost ? "Connection interrupted" : "Restoring command link"}</span>
+      <strong>{lost ? "Host connection lost" : "Reconnecting to game server"}</strong>
+      <p>The last safe board position remains visible. Current actions resume only after authoritative state returns.</p>
+    </section>
+  );
 }
 
 function ActiveOperativeOverlay({
@@ -964,6 +1042,10 @@ function TvStartupScreen({
   const lobbyConfigured = patch?.payload.lobbyConfigured === true;
   const waitingCopy = !roomCode
     ? "Creating room..."
+    : status === "closed"
+      ? "Game server unavailable"
+      : status === "connecting" && !patch
+        ? "Reconnecting to game server"
     : !patch
       ? "Connecting to room..."
       : !hostConnected
@@ -1017,7 +1099,7 @@ function TvStartupScreen({
             )}
           </div>
         )}
-        {(error || status === "closed") && <p className="tv-startup-error">{error ?? "Connection closed"}</p>}
+        {(error || status === "closed") && <p className="tv-startup-error">{error ?? "The host cannot reach the game server. Retrying automatically."}</p>}
       </section>
     </main>
   );
@@ -1913,6 +1995,8 @@ interface TacticalMapPanelProps {
   activePlayer: PublicPlayer | null;
   battlePlayer: PublicPlayer | null;
   characterCatalog: CharacterCatalogEntry[];
+  focusEnabled: boolean;
+  rareStateModel: HostStateBannerModel | null;
 }
 
 interface MovementArrivalModel {
@@ -2136,20 +2220,26 @@ function TacticalMapPanel({
   activeSeat,
   activePlayer,
   battlePlayer,
-  characterCatalog
+  characterCatalog,
+  focusEnabled,
+  rareStateModel
 }: TacticalMapPanelProps): ReactElement {
-  const battleMode = isHostBattleActive(patch, battlePlayer);
-  const shopMode = activeSeat?.connected !== false && isHostShopActive(patch, activePlayer);
-  const planner = patch?.payload.movementPlanner?.active ? patch.payload.movementPlanner : null;
-  const arrival = getMovementArrivalModel(patch?.payload, previousPatch?.payload, patch?.sequence);
+  const battleMode = focusEnabled && !rareStateModel && isHostBattleActive(patch, battlePlayer);
+  const shopMode = focusEnabled && !rareStateModel && activePlayer?.character.status !== "recalled" && activeSeat?.connected !== false && isHostShopActive(patch, activePlayer);
+  const planner = focusEnabled && !rareStateModel && patch?.payload.movementPlanner?.active ? patch.payload.movementPlanner : null;
+  const arrival = focusEnabled && !rareStateModel ? getMovementArrivalModel(patch?.payload, previousPatch?.payload, patch?.sequence) : null;
   const arrivalKey = arrival?.eventId ?? null;
   const [visualTravel, setVisualTravel] = useState<{ key: string; arrival: MovementArrivalModel; step: number; arrived: boolean } | null>(null);
   const completedTravelKeyRef = useRef<string | null>(null);
   useEffect(() => {
+    if (!focusEnabled) {
+      setVisualTravel(null);
+      return;
+    }
     if (arrival && arrivalKey && completedTravelKeyRef.current !== arrivalKey) {
       setVisualTravel((current) => current?.key === arrivalKey ? current : { key: arrivalKey, arrival, step: 0, arrived: false });
     }
-  }, [arrival, arrivalKey]);
+  }, [arrival, arrivalKey, focusEnabled]);
   useEffect(() => {
     if (!visualTravel) return;
     const finalStep = Math.max(visualTravel.arrival.destination.route.length - 1, 1);
@@ -2195,6 +2285,14 @@ function TacticalMapPanel({
           {!movementFocusMode && !journey && <BoardLegend />}
       </div>}
       {!presentBattleChamber && !journey && <NemesisBanner nemesis={patch?.payload.nemesis ?? null} />}
+      {rareStateModel && (
+        <section className={`tv-rare-state-panel tv-rare-state-panel--${rareStateModel.tone}`} role="status" aria-live="polite" data-testid="tv-rare-state-panel">
+          <span>Current table state</span>
+          <strong>{rareStateModel.label}</strong>
+          <p>{rareStateModel.detail}</p>
+          <em>{rareStateModel.meta}</em>
+        </section>
+      )}
       {journey && (
         <HostMovementJourney
           model={journey}
@@ -2509,7 +2607,7 @@ export function TvApp(): ReactElement {
   const [sessionNotice, setSessionNotice] = useState<string | null>(null);
   const [debugOpen, setDebugOpen] = useState(() => new URLSearchParams(window.location.search).has("debug"));
   const restoreValidatedRef = useRef(false);
-  const { patch, error, status, debugEvents, clearDebugEvents, sendIntent } = useRoomSubscription({
+  const { patch, error, status, synchronized: subscriptionSynchronized, debugEvents, clearDebugEvents, sendIntent } = useRoomSubscription({
     view: "tv",
     enabled: Boolean(roomCode),
     hostToken
@@ -2532,6 +2630,8 @@ export function TvApp(): ReactElement {
   }, []);
 
   const publicPatch = patch as StatePatch<PublicPatchPayload> | null;
+  const synchronized = subscriptionSynchronized ?? status === "open";
+  const authoritativePresentationReady = status === "open" && synchronized;
   const audio = useAshenReachAudio(publicPatch);
   const effectiveRoomCode = roomCode ?? publicPatch?.sessionId ?? null;
   const joinedSeats = publicPatch?.payload.seats.filter((seat) => seat.displayName && !seat.kicked) ?? [];
@@ -2555,9 +2655,16 @@ export function TvApp(): ReactElement {
       ? scenarioCatalog.find((scenario) => scenario.id === publicPatch.payload.activeScenario?.id) ?? null
       : scenarioCatalog.find((scenario) => scenario.id === selectedScenarioId) ?? null) ?? null;
   const scenarioStatus = useMemo(() => getScenarioStatus(publicPatch), [publicPatch]);
-  const battleMode = isHostBattleActive(publicPatch, battlePlayer);
-  const shopMode = activeSeat?.connected !== false && isHostShopActive(publicPatch, activePlayer);
-  const movementArrival = getMovementArrivalModel(publicPatch?.payload, previousPatchRef.current?.payload);
+  const rareStateActive = Boolean(
+    publicPatch?.payload.pendingOrderedConsequence ||
+    publicPatch?.payload.scarTriggerStatus ||
+    publicPatch?.payload.scarResolutionStatus ||
+    activePlayer?.character.status === "recalled" ||
+    publicPatch?.payload.outcomeSummary?.encounterCardId === "suture-storm"
+  );
+  const battleMode = authoritativePresentationReady && !rareStateActive && isHostBattleActive(publicPatch, battlePlayer);
+  const shopMode = authoritativePresentationReady && !rareStateActive && activePlayer?.character.status !== "recalled" && activeSeat?.connected !== false && isHostShopActive(publicPatch, activePlayer);
+  const movementArrival = authoritativePresentationReady ? getMovementArrivalModel(publicPatch?.payload, previousPatchRef.current?.payload) : null;
   const movementFocusMode = !battleMode && !shopMode && Boolean(publicPatch?.payload.movementPlanner?.active || movementArrival);
 
   useEffect(() => {
@@ -2766,8 +2873,11 @@ export function TvApp(): ReactElement {
     joinedCount: joinedSeats.length,
     readyCount: readySeats.length,
     battleMode,
-    shopMode
+    shopMode,
+    connectionStatus: status,
+    synchronized
   });
+  const rareStateModel = authoritativePresentationReady && rareStateActive ? liveStatus : null;
   const isPreRoomLobby = !effectiveRoomCode && !publicPatch;
 
   const gameUiReady =
@@ -2798,6 +2908,7 @@ export function TvApp(): ReactElement {
         {sessionNotice && <div className="tv-banner">{sessionNotice}</div>}
         <HostAudioControls audio={audio} />
         <EndgameOverlay patch={publicPatch} />
+        {!authoritativePresentationReady && <HostNetworkOverlay status={status} synchronized={synchronized} />}
 
         <section
           ref={commandMainRef}
@@ -2865,9 +2976,11 @@ export function TvApp(): ReactElement {
                 activePlayer={activePlayer}
                 battlePlayer={battlePlayer}
                 characterCatalog={characterCatalog}
+                focusEnabled={authoritativePresentationReady}
+                rareStateModel={rareStateModel}
               />
 
-              {!battleMode && !shopMode && !movementFocusMode && <RightSidebar
+              {authoritativePresentationReady && !battleMode && !shopMode && !movementFocusMode && !rareStateActive && <RightSidebar
                 roomCode={effectiveRoomCode}
                 scenarioStatus={scenarioStatus}
                 publicPatch={publicPatch}

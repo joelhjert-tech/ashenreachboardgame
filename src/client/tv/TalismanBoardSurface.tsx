@@ -42,6 +42,8 @@ export interface TilePlayerMarker {
   seatId: string;
   label: string;
   color: string;
+  seatIndex: number;
+  active: boolean;
 }
 
 export interface TileMissionMarker {
@@ -314,20 +316,20 @@ export function TalismanBoardSurface({
             )}
             {playerMarkers.length > 0 && (
               <span className="talisman-board-tile-players" aria-label={`${playerMarkers.length} operative${playerMarkers.length === 1 ? "" : "s"} on ${node.label}`}>
-                {playerMarkers.slice(0, 3).map((marker) => (
+                {playerMarkers.map((marker) => (
                   <span
                     key={marker.seatId}
                     data-testid={`token-${marker.seatId}`}
                     data-sector-id={node.id}
                     data-moving={movingSeatIds?.has(marker.seatId) ? "true" : "false"}
-                    className={`talisman-board-player-marker${movingSeatIds?.has(marker.seatId) ? " talisman-board-player-marker-moving" : ""}`}
+                    className={`talisman-board-player-marker${marker.active ? " talisman-board-player-marker-active" : ""}${movingSeatIds?.has(marker.seatId) ? " talisman-board-player-marker-moving" : ""}`}
+                    aria-label={`${marker.label}${marker.active ? ", active operative" : ""}`}
                     title={marker.label}
                     style={{ ["--token-fill" as string]: marker.color }}
                   >
                     {marker.label.slice(0, 1).toUpperCase()}
                   </span>
                 ))}
-                {playerMarkers.length > 3 && <span className="talisman-board-player-overflow">+{playerMarkers.length - 3}</span>}
               </span>
             )}
             <span className="talisman-board-tile-status" aria-hidden="true">

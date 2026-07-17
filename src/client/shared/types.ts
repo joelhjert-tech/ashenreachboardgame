@@ -953,6 +953,26 @@ export interface PublicPatchPayload {
   pendingMemoryTaxChoice?: { ownerSeatId: string; sourceId: "memory-tax-gate"; sourceTitle: string; status: "waiting" } | null;
   pendingForcedDestinationChoice?: { ownerSeatId: string; sourceId: "false-route-procession"; sourceTitle: string; status: "waiting" } | null;
   pendingDisplacement?: { seatId: string; sourceId: string; sourceTitle: string; originSectorId: string; destinationSectorId: string; destinationSectorName?: string; direction?: "clockwise" | "counterclockwise"; status: "waiting" } | null;
+  pendingOrderedConsequence?: {
+    seatId: string;
+    sourceId: string;
+    requestedWounds: number;
+    preventedWounds: number;
+    actualWounds: number;
+    resultingWounds: number;
+    resultingStatus: "active" | "recalled";
+    status: "waiting";
+  } | null;
+  scarTriggerStatus?: {
+    seatId: string;
+    scarTitle: string;
+    status: "waiting";
+  } | null;
+  scarResolutionStatus?: {
+    seatId: string;
+    scarTitle: string;
+    status: "resolved";
+  } | null;
   outcomeSummary: OutcomeSummary | null;
   rivalryAgendaCompletion?: PublicRivalryAgendaCompletion | null;
   rivalryAgendaReveal?: PublicRivalryAgendaReveal | null;

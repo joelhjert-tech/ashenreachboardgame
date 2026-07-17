@@ -58,6 +58,7 @@ function outcomeText(outcome: OutcomeSummary | null): string | null {
 
 function buildPlayerMarkersByNodeId(patch: PublicPatchPayload): Map<string, TilePlayerMarker[]> {
   const seatIndex = new Map(patch.seats.map((seat, index) => [seat.seatId, index] as const));
+  const activeSeatId = patch.turnOrder[patch.activeSeatIndex] ?? null;
   const markersByNodeId = new Map<string, TilePlayerMarker[]>();
 
   patch.players.forEach((player) => {
@@ -70,10 +71,14 @@ function buildPlayerMarkersByNodeId(patch: PublicPatchPayload): Map<string, Tile
     existing.push({
       color: getSeatColor(seatIndex.get(player.seatId) ?? existing.length),
       label: seat?.displayName ?? player.character.name,
-      seatId: player.seatId
+      seatId: player.seatId,
+      seatIndex: seatIndex.get(player.seatId) ?? patch.seats.length,
+      active: player.seatId === activeSeatId
     });
     markersByNodeId.set(player.sectorId, existing);
   });
+
+  markersByNodeId.forEach((markers) => markers.sort((left, right) => left.seatIndex - right.seatIndex));
 
   return markersByNodeId;
 }

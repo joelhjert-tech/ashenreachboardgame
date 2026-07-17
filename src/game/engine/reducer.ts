@@ -3081,7 +3081,12 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
         pendingScarConsequence: queue[0] ?? null,
         pendingScarConsequenceQueue: queue.slice(1),
         sequence: state.sequence + 1,
-        eventLog: [...state.eventLog, action]
+        eventLog: [...state.eventLog, {
+          ...action,
+          scarTitle: pending.scarTitle,
+          sourceEventId: pending.sourceEventId,
+          summary: `${pending.scarTitle} consequence resolved.`
+        }]
       });
     }
     case "WOUND_THRESHOLD_REACHED": {

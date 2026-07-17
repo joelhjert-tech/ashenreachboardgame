@@ -9640,6 +9640,10 @@ export function createTvProjection(
     )
     .slice(-8)
     .reverse();
+  const latestEvent = state.eventLog.at(-1) as { type?: string; seatId?: string; scarTitle?: string } | undefined;
+  const scarResolutionStatus = latestEvent?.type === "CONTINUE_SCAR_CONSEQUENCE" && latestEvent.seatId && latestEvent.scarTitle
+    ? { seatId: latestEvent.seatId, scarTitle: latestEvent.scarTitle, status: "resolved" as const }
+    : null;
   const nemesisSummary = activeNemesis
     ? {
         id: activeNemesis.id,
@@ -9700,6 +9704,7 @@ export function createTvProjection(
       scarTitle: state.pendingScarConsequence.scarTitle,
       status: "waiting"
     } : null,
+    scarResolutionStatus,
     sessionMode: state.sessionMode,
     gameMode: state.gameMode,
     interactionMode: state.interactionMode ?? (state.sessionMode === "single-player" ? "co-op" : "rivalry"),
