@@ -7,7 +7,7 @@
     "stat": "command",
     "amount": 1
   },
-  "activeText": "Trace the Promise — During your action phase, spend 1 charge to identify every currently visible sector, Threat, or shop action that can advance your active Contract. If the Contract has an ordered objective, identify its next required target. This effect does not reveal hidden cards or agendas and does not change mission progress, rewards, or legality.",
+  "activeText": "Trace the Promise — During your action phase, spend 1 charge to identify every currently visible sector, Threat, or shop action that can advance your active Contract. If the Contract has an ordered objective, identify its next required target. This effect does not reveal hidden cards or agendas and does not change Contract progress, rewards, or legality.",
   "useLimit": "charge",
   "effectModel": "charged",
   "maxCharges": 2,
