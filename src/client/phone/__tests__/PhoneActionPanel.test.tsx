@@ -2741,6 +2741,40 @@ describe("PhoneActionPanel", () => {
     expect(screen.getByLabelText(/battle details/i)).toHaveTextContent(/black route fuse \+3/i);
   });
 
+  it("uses the focused battle shell when live battle data has a generic projected card type", () => {
+    render(
+      <PhoneActionPanel
+        characters={characters}
+        onIntent={vi.fn()}
+        patch={createPatch({
+          encounter: null,
+          activeResolution: {
+            id: "seat-1:threat:projection-shape:test",
+            playerId: "seat-1",
+            source: "threat",
+            stage: "battle_setup",
+            card: {
+              id: "cinder-veil-stalker",
+              title: "Cinder-Veil Stalker",
+              type: "threat",
+              artType: "threat"
+            },
+            battle: {
+              enemyName: "Cinder-Veil Stalker",
+              stat: "grit",
+              difficulty: 8,
+              modifiers: []
+            }
+          }
+        })}
+      />
+    );
+
+    expect(screen.getByTestId("phone-battle-shell")).toBeInTheDocument();
+    expect(screen.queryByTestId("phone-battle-subject-card")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /roll grit/i })).toBeInTheDocument();
+  });
+
   it("consolidates a successful opposed battle into one outcome and one primary action", () => {
     render(
       <PhoneActionPanel

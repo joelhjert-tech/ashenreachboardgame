@@ -374,7 +374,7 @@ describe("Ashen Reach UI validation stress states", () => {
     expect(screen.getByText(longGearName)).toBeInTheDocument();
     expect(screen.queryByRole("tab", { name: /inventory/i })).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: /^ready$/i })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /^back$/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /^leave room$/i })).toBeInTheDocument();
   });
 
   it("renders contextual battle navigation instead of persistent global navigation during combat", () => {

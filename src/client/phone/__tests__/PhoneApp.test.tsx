@@ -3,7 +3,6 @@
 import "@testing-library/jest-dom/vitest";
 import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { getChallengeThemeStyle } from "../../../game/ui/challengeTheme.js";
 import { PhoneApp } from "../PhoneApp.js";
 import { useRoomSubscription } from "../../shared/useRoomSubscription.js";
 import type { CharacterCatalogEntry, PhonePatchPayload, StatePatch } from "../../shared/types.js";
@@ -344,6 +343,7 @@ describe("PhoneApp", () => {
     expect(screen.getByRole("button", { name: /join game/i })).toBeInTheDocument();
     expect(screen.getByText(/ashen reach controller/i)).toBeInTheDocument();
     expect(screen.queryByRole("list", { name: /character/i })).not.toBeInTheDocument();
+    expect(screen.queryByText(/assigns host phone/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/tarek voss/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/void marshal/i)).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /^ready$/i })).not.toBeInTheDocument();
@@ -405,10 +405,7 @@ describe("PhoneApp", () => {
     expect(screen.getByRole("tab", { name: /advanced/i })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /tarek voss.*void marshal/i })).toBeInTheDocument();
     const tarekCard = screen.getByRole("button", { name: /tarek voss.*void marshal/i });
-    const tarekStats = within(tarekCard).getByLabelText(/tarek voss stats/i);
-    expect((within(tarekStats).getByText(/command/i).closest("small") as HTMLElement).style.getPropertyValue("--challenge-color")).toBe(
-      getChallengeThemeStyle("command")["--challenge-color"]
-    );
+    expect(within(tarekCard).queryByLabelText(/tarek voss stats/i)).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: /mira.*cinder monk/i })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /orenna tash.*fleet elder/i })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /deepdale.*deep route delver/i })).toBeInTheDocument();
@@ -437,7 +434,7 @@ describe("PhoneApp", () => {
     expect(firstGamePresentation!).toHaveTextContent(/first-game pick/i);
 
     const marshalCard = screen.getByRole("button", { name: /tarek voss.*void marshal/i });
-    expect(within(marshalCard).getByLabelText(/tarek voss stats/i)).toBeInTheDocument();
+    expect(within(marshalCard).queryByLabelText(/tarek voss stats/i)).not.toBeInTheDocument();
     expect(within(marshalCard).getByText(/select character/i)).toBeInTheDocument();
   });
 
@@ -491,6 +488,45 @@ describe("PhoneApp", () => {
         characterId: "char_deepdale"
       });
     });
+  });
+
+  it("vibrates once when authoritative turn ownership changes to this phone", async () => {
+    storeControllerAuth();
+    const vibrate = vi.fn(() => true);
+    Object.defineProperty(navigator, "vibrate", { configurable: true, value: vibrate });
+    const waitingPatch = createConfirmedCharacterPatch("char_deepdale");
+    waitingPatch.payload.status = "active";
+    waitingPatch.phase = "action";
+    waitingPatch.payload.turnOrder = ["seat-2", "seat-1"];
+    waitingPatch.payload.activeSeatIndex = 0;
+    vi.mocked(useRoomSubscription).mockReturnValue({
+      patch: waitingPatch,
+      error: null,
+      sendIntent: vi.fn(),
+      status: "open",
+      debugEvents: [],
+      clearDebugEvents: vi.fn()
+    });
+
+    const view = render(<PhoneApp />);
+    expect(vibrate).not.toHaveBeenCalled();
+
+    const activePatch = structuredClone(waitingPatch);
+    activePatch.sequence += 1;
+    activePatch.payload.activeSeatIndex = 1;
+    vi.mocked(useRoomSubscription).mockReturnValue({
+      patch: activePatch,
+      error: null,
+      sendIntent: vi.fn(),
+      status: "open",
+      debugEvents: [],
+      clearDebugEvents: vi.fn()
+    });
+    view.rerender(<PhoneApp />);
+
+    await waitFor(() => expect(vibrate).toHaveBeenCalledWith([160, 70, 160]));
+    view.rerender(<PhoneApp />);
+    expect(vibrate).toHaveBeenCalledTimes(1);
   });
 
   it("opens private operative selection for a player joining an active game", async () => {
@@ -612,6 +648,48 @@ describe("PhoneApp", () => {
     fireEvent.click(screen.getByRole("button", { name: /close quietus ledger inspection/i }));
     expect(screen.queryByRole("dialog", { name: /quietus ledger/i })).not.toBeInTheDocument();
     expect(screen.getAllByRole("button", { name: /select mission/i })).toHaveLength(2);
+  });
+
+  it("changes a confirmed starting mission without leaving the joined room", async () => {
+    storeControllerAuth();
+    const sendIntent = vi.fn();
+    const patch = createLateJoinPatch("char_deepdale");
+    patch.payload.startingContractOptions = [
+      ...(patch.payload.startingContractOptions ?? []),
+      {
+        id: "ember-courier",
+        name: "Ember Courier",
+        factionGiver: "Cinder Ward",
+        text: "Carry the sealed route spark through the ash lanes.",
+        objective: { type: "shopTransaction", action: "buyEquipment", requiredCount: 1, label: "Buy equipment at a shop" },
+        reward: { type: "gain_salvage", amount: 1 }
+      }
+    ];
+    patch.payload.selectedStartingContract = patch.payload.startingContractOptions[0] ?? null;
+    patch.payload.canReady = true;
+    patch.payload.readyDisabledReason = null;
+    vi.mocked(useRoomSubscription).mockReturnValue({
+      patch,
+      error: null,
+      sendIntent,
+      status: "open",
+      debugEvents: [],
+      clearDebugEvents: vi.fn()
+    });
+
+    render(<PhoneApp />);
+
+    fireEvent.click(await screen.findByRole("button", { name: /change mission/i }));
+    expect(screen.getAllByRole("button", { name: /select mission|selected/i })).toHaveLength(2);
+    expect(screen.queryByRole("button", { name: /leave room/i })).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /select mission/i }));
+    expect(sendIntent).toHaveBeenCalledWith({
+      type: "SELECT_STARTING_CONTRACT",
+      seatId: "seat-1",
+      contractId: "ember-courier"
+    });
+    expect(networkMocks.leaveSession).not.toHaveBeenCalled();
   });
 
   it("reopens authoritative character selection after a New Game restart patch", async () => {

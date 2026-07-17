@@ -521,9 +521,17 @@ function buildGearCard(item: GearItem, patch: PhonePatchPayload, self: PhoneSelf
           statusReason: `Equip to apply ${formatConditionalGearBonus(item) ?? formatPassiveGearBonus(item)}.`,
           canUseNow: false
         };
-  const remainingUses = useState?.remainingUses ?? item.currentCharges ?? item.charges ?? null;
-  const maxUses = useState?.maxUses ?? item.maxCharges ?? item.maxUses ?? (item.useLimit === "charge" ? item.charges ?? null : null);
-  const chargeState = item.useLimit === "charge" || item.effectModel === "charged"
+  // Charge state belongs to the exact projected item instance. A generic
+  // object-use record still owns turn/round limits, but must not override a
+  // freshly spent charge on the inventory object.
+  const isChargedItem = item.useLimit === "charge" || item.effectModel === "charged";
+  const remainingUses = isChargedItem
+    ? item.currentCharges ?? useState?.remainingUses ?? item.charges ?? null
+    : useState?.remainingUses ?? null;
+  const maxUses = isChargedItem
+    ? item.maxCharges ?? useState?.maxUses ?? item.startingCharges ?? item.charges ?? null
+    : useState?.maxUses ?? item.maxUses ?? null;
+  const chargeState = isChargedItem
     ? {
         current: Math.max(0, remainingUses ?? 0),
         maximum: Math.max(1, maxUses ?? item.maxCharges ?? item.startingCharges ?? 1),

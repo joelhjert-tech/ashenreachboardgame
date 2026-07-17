@@ -1,5 +1,4 @@
-import { useEffect, useMemo, useState, type CSSProperties, type FormEvent, type ReactElement } from "react";
-import { getChallengeThemeStyle } from "../../game/ui/challengeTheme.js";
+import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactElement } from "react";
 import {
   configureSessionFromPhone,
   fetchCharacters,
@@ -13,7 +12,6 @@ import {
 import type { CharacterCatalogEntry, PhonePatchPayload, PhoneSessionAuth, ScenarioCatalogEntry, StatePatch } from "../shared/types.js";
 import { useRoomSubscription } from "../shared/useRoomSubscription.js";
 import { getCharacterPortraitPath } from "../shared/assetPaths.js";
-import { statLabelById, statOrder } from "../shared/statLabels.js";
 import { MobileDebugDrawer } from "./MobileDebugDrawer.js";
 import { PortraitControllerView } from "./PortraitControllerView.js";
 
@@ -418,6 +416,28 @@ export function PhoneApp(): ReactElement {
   const activeContractCard = phonePatch?.payload.activeContractCard ?? null;
   const ownSeat = phonePatch?.payload.seats.find((seat) => seat.seatId === auth?.seatId) ?? null;
   const isSetupHost = Boolean(phonePatch?.payload.selfIsSetupHost);
+  const previousTurnRef = useRef<{ activeSeatId: string | null; status: PhonePatchPayload["status"] } | null>(null);
+
+  useEffect(() => {
+    const current = { activeSeatId, status: phonePatch?.payload.status ?? "lobby" as const };
+    const previous = previousTurnRef.current;
+    previousTurnRef.current = current;
+
+    if (
+      !auth ||
+      !phonePatch ||
+      current.status !== "active" ||
+      current.activeSeatId !== auth.seatId ||
+      !previous ||
+      (previous.activeSeatId === current.activeSeatId && previous.status === current.status)
+    ) {
+      return;
+    }
+
+    if (typeof navigator.vibrate === "function" && document.visibilityState !== "hidden") {
+      navigator.vibrate([160, 70, 160]);
+    }
+  }, [activeSeatId, auth, phonePatch?.payload.status]);
 
   useEffect(() => {
     if (!ownSeat) {
@@ -496,7 +516,7 @@ export function PhoneApp(): ReactElement {
                 <div className="phone-panel-header">
                   <div>
                     <h2>Join Room</h2>
-                    <p className="phone-muted-copy">Enter room code and player name. The server assigns Host Phone control to the first connected player.</p>
+                    <p className="phone-muted-copy">Enter the room code and your player name to join the table.</p>
                   </div>
                 </div>
                 <form className="phone-join-form" onSubmit={handleNameSubmit}>
@@ -721,13 +741,6 @@ export function PhoneApp(): ReactElement {
                             <small>{character.presentation.playstyleSummary}</small>
                           </span>
                         )}
-                        <span className="phone-character-stat-row" aria-label={`${character.name} stats`}>
-                          {statOrder.map((stat) => (
-                            <small key={stat} style={getChallengeThemeStyle(stat) as CSSProperties}>
-                              {statLabelById[stat]} <strong>{character.stats[stat]}</strong>
-                            </small>
-                          ))}
-                        </span>
                         <small className="phone-character-select-label">
                           {pendingCharacterId === character.id ? "Selecting..." : "Select character"}
                         </small>

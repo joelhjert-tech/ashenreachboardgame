@@ -101,6 +101,20 @@ export interface PublicPlayerCharacter {
     exhausted?: boolean;
   }>;
   equippedGear: Record<GearSlot, string | null>;
+  equippedGearDetails?: PublicEquippedGearSummary[];
+}
+
+export interface PublicEquippedGearSummary {
+  slot: GearSlot;
+  id: string;
+  instanceId?: string;
+  name: string;
+  statBonus: { stat: Stat; amount: number };
+  effectModel?: GearItem["effectModel"];
+  conditionType?: GearItem["conditionType"];
+  currentCharges?: number;
+  maxCharges?: number;
+  exhausted?: boolean;
 }
 
 export interface TrophyPileEntry {
