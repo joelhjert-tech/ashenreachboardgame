@@ -1392,18 +1392,13 @@ describe("PhoneActionPanel", () => {
     expect(screen.getAllByText(/forge armoury/i).length).toBeGreaterThan(0);
     expect(screen.getByText(/salvage: 6/i)).toBeInTheDocument();
     expect(screen.getByText(/choose a market service/i)).toBeInTheDocument();
-    expect(screen.getByText(/Deep Relic Search/i)).toBeInTheDocument();
-    expect(screen.getByText(/1 Salvage/i)).toBeInTheDocument();
+    expect(screen.queryByText(/Deep Relic Search/i)).not.toBeInTheDocument();
+    expect(screen.getByText(/Tap Buy to review the purchase before spending Salvage/i)).toBeInTheDocument();
     expect(screen.queryByText(/\b(?:Heat|Risk)\b/i)).not.toBeInTheDocument();
-    expect(screen.getAllByTestId("phone-shop-category-icon").length).toBeGreaterThanOrEqual(2);
+    expect(screen.getAllByTestId("phone-shop-category-icon").length).toBeGreaterThanOrEqual(1);
     expect(screen.getAllByTestId("phone-shop-category-icon")[0]).toHaveAttribute("src", "/assets/riftfall/ui/shop-category-forge-armoury.svg");
     expect(screen.getByRole("button", { name: /skip \/ continue/i })).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: /buy gear/i }));
-    expect(onIntent).toHaveBeenCalledWith({
-      type: "SHOP_SERVICE_REQUESTED",
-      seatId: "seat-1",
-      serviceId: "buy-gear"
-    });
+    expect(screen.queryByRole("button", { name: /buy gear/i })).not.toBeInTheDocument();
 
     expect(screen.getByText(/coffin rig/i)).toBeInTheDocument();
     expect(screen.getByText(/forge \+1 while bracing wounds/i)).toBeInTheDocument();

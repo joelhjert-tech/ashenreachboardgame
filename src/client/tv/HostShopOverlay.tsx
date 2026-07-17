@@ -62,7 +62,7 @@ function formatCost(cost: PublicShopCost): string {
     cost.salvage !== undefined ? `${cost.salvage} Salvage` : null,
     cost.wounds !== undefined ? `${cost.wounds} Wound${cost.wounds === 1 ? "" : "s"}` : null,
     cost.trophies !== undefined ? `${cost.trophies} Trophies` : null,
-    cost.completedContracts !== undefined ? `${cost.completedContracts} Completed Missions` : null,
+    cost.completedContracts !== undefined ? `${cost.completedContracts} Completed Contracts` : null,
     cost.scars !== undefined ? `${cost.scars} Scars` : null
   ].filter((entry): entry is string => Boolean(entry));
 
@@ -89,7 +89,7 @@ function servicePreview(service: PublicShopEncounterState["services"][number], c
     eyebrow: service.shopCategory ? formatShopCategory(service.shopCategory) : isSellService ? "Sell" : "Service",
     title: service.label,
     cost: service.cost.completedContracts !== undefined
-      ? `${completedContracts}/${service.cost.completedContracts} Completed Missions`
+      ? `${completedContracts}/${service.cost.completedContracts} Completed Contracts`
       : formatCost(service.cost),
     summary: service.enabled ? "Confirm this service from the active player's phone." : (service.disabledReason ?? "Unavailable"),
     footer: service.risk ?? (service.enabled ? "Phone confirms" : "Unavailable"),
