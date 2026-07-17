@@ -83,3 +83,7 @@ The browser archive is deterministic QA evidence, not a human playtest. Several 
 - `git diff --check`: passed.
 
 The initial combined engine/rules wrapper exceeded its five-minute command budget. Both suites were then run independently and passed; the later full aggregate suite also passed. All background Ashen Reach dev servers used or discovered during QA were stopped after capture.
+
+## Rare-state closure addendum
+
+The follow-up closure integrated the audit on `ui/host-rare-state-closure` and added deterministic evidence for four stacked operatives, an existing multi-stage Suture Storm reaction, Wound/recall/Scar states, and real Host WebSocket loss/recovery. The corrective visual pass gave these states precedence over stale shop/battle framing, required a fresh server patch before declaring recovery, and retained a stable public board underneath connection status. See `reports/host-ui-rare-state-closure.md` and `reports/host-ui-qa/rare-states/`.

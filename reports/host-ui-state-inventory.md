@@ -63,3 +63,13 @@ The indexed baseline archive contains 37 images across 19 states. The final arch
 ## Privacy boundary
 
 The capture runner fails if it finds `Choose one Artifact`, `Confirm Artifact`, `Private agenda`, or `Rivalry target` on TV. It also asserts zero canvas elements and no horizontal overflow. Owner-only follower notes, Artifact choices, Contract objectives, route candidates, and Rivalry data remain phone-only.
+
+## Rare-state closure addendum
+
+| State | Trigger | TV component | Reachability | Final status | Evidence | Closure |
+|---|---|---|---|---|---|---|
+| Four operatives stacked | Four occupied seats share one projected sector | `BoardMap` / `TalismanBoardSurface` | Normal | Complete | `rare-states/stacked-operatives-*` | Stable seat ordering, four markers, active-seat priority, no overflow. |
+| Ordered reaction pending | Public pending ordered consequence | `TvApp` rare-state panel | Normal when authored | Complete | `rare-states/reaction-stage-pending-*` | Current owner and stage dominate; private reaction data absent. |
+| Ordered reaction settled | Completed Suture Storm sequence | `TvApp` rare-state panel | Normal when authored | Complete | `rare-states/reaction-stage-final-*` | Settled consequence appears once; reconnect does not reopen it. |
+| Recall / pending Scar / resolved Scar | Wound threshold and Scar continuation | `TvApp` rare-state panel + operative rail | Normal | Complete | `rare-states/recall-*`, `scar-*` | Recall is distinct from defeat; Scar is not shown before authority. |
+| Server unavailable / recovering | Real TV WebSocket interruption | `HostNetworkOverlay` | Normal network failure | Complete | `rare-states/server-*` | Last safe board remains, stale actions are suppressed, restored state requires a patch. |

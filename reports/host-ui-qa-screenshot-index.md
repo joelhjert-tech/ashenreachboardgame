@@ -45,3 +45,22 @@ Every gameplay filename is emitted at 1920x1080 and 1366x768 unless noted.
 - Reduced-motion battle entry has no animation.
 
 The archive intentionally excludes fabricated UI for mechanics that have no deterministic QA fixture. Those gaps are listed in the state inventory.
+
+## Rare-state closure captures
+
+| Filename | State | Viewport / motion | Finding |
+|---|---|---|---|
+| `stacked-operatives-1920x1080.png` | Four markers on one sector | 1920x1080 | Stable seat order and active-seat priority. |
+| `stacked-operatives-1366x768.png` | Four markers on one sector | 1366x768 | No marker or movement-HUD clipping. |
+| `reaction-stage-pending-1920x1080.png` | Ordered consequence pending | 1920x1080 | One dominant public reaction state; no private choice. |
+| `reaction-stage-final-1920x1080.png` | Ordered consequence settled | 1920x1080 | Consequence appears once without stale pending copy. |
+| `reaction-reconnect-1920x1080.png` | Reconnect during reaction | 1920x1080 | Correct pending stage restored without replay. |
+| `reduced-motion-reaction-1920x1080.png` | Pending reaction | 1920x1080 reduced motion | Same information without motion dependence. |
+| `recall-triggered-1920x1080.png` | Wound threshold recall | 1920x1080 | Explicitly distinguishes recall from defeat. |
+| `scar-pending-1920x1080.png` | Scar consequence pending | 1920x1080 | Scar appears only after authoritative pending state. |
+| `scar-resolved-1920x1080.png` | Scar consequence settled | 1920x1080 | Public result appears once with no effect details. |
+| `server-unavailable-1920x1080.png` | Socket lost | 1920x1080 | Lost-server state suppresses stale focused overlays. |
+| `server-recovering-1920x1080.png` | Socket open, patch pending | 1920x1080 | Last safe board retained until synchronization. |
+| `server-restored-1920x1080.png` | Fresh patch received | 1920x1080 | Authoritative host state restored cleanly. |
+
+The rare-state runner reported zero horizontal overflow, canvas usage, console/page errors, or representative private-string leakage.
