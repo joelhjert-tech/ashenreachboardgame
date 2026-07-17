@@ -1,0 +1,74 @@
+[
+  {
+    "name": "departure-1440x900.png",
+    "w": 1440,
+    "h": 900,
+    "overflow": {
+      "x": false,
+      "y": false,
+      "journey": true
+    },
+    "errors": []
+  },
+  {
+    "name": "intermediate-1440x900.png",
+    "w": 1440,
+    "h": 900,
+    "overflow": {
+      "x": false,
+      "y": false,
+      "journey": true
+    },
+    "errors": []
+  },
+  {
+    "name": "arrival-1440x900.png",
+    "w": 1440,
+    "h": 900,
+    "overflow": {
+      "x": false,
+      "y": false,
+      "journey": true
+    },
+    "errors": []
+  },
+  {
+    "name": "compact-1280x720.png",
+    "w": 1280,
+    "h": 720,
+    "overflow": {
+      "x": false,
+      "y": false,
+      "journey": true
+    },
+    "errors": []
+  },
+  {
+    "name": "wide-1920x1080.png",
+    "w": 1920,
+    "h": 1080,
+    "overflow": {
+      "x": false,
+      "y": false,
+      "journey": true
+    },
+    "errors": []
+  },
+  {
+    "name": "long-route-1440x900.png",
+    "w": 1440,
+    "h": 900,
+    "overflow": {
+      "x": false,
+      "y": false,
+      "journey": true
+    },
+    "errors": []
+  },
+  {
+    "name": "reduced-motion-1440x900.png",
+    "w": 1440,
+    "h": 900,
+    "reducedMotion": true
+  }
+]
