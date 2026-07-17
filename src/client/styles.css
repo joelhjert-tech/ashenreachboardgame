@@ -19225,3 +19225,95 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .tv-movement-journey__route li { transition: opacity 80ms linear; }
 }
+
+/* Host QA closure: keep the movement HUD inside the command stage. Earlier
+   absolute-position rules remain for legacy layouts, so this final cascade is
+   intentionally scoped to the active TV movement mode. */
+.tv-command-dashboard--movement-focus .tv-command-stage-movement-focus > .tv-movement-focus {
+  position: absolute;
+  inset: clamp(0.45rem, 0.8vw, 0.8rem);
+  display: grid;
+  grid-template-columns: minmax(12rem, 17rem) minmax(16rem, 24rem);
+  grid-template-areas:
+    "heading heading"
+    "roll destination"
+    "travel travel"
+    "timeline timeline";
+  justify-content: center;
+  align-content: center;
+  gap: clamp(0.45rem, 0.75vw, 0.8rem);
+  background: transparent;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+.tv-command-dashboard--movement-focus .tv-command-stage-movement-focus > .tv-command-map-shell {
+  visibility: visible;
+  opacity: 1;
+  filter: none;
+}
+
+.tv-command-dashboard--movement-focus .tv-movement-focus-heading,
+.tv-command-dashboard--movement-focus .tv-movement-focus-roll,
+.tv-command-dashboard--movement-focus .tv-movement-focus-destination,
+.tv-command-dashboard--movement-focus .tv-movement-focus-travel,
+.tv-command-dashboard--movement-focus .tv-movement-focus-timeline {
+  position: static;
+  inset: auto;
+  width: auto;
+  min-width: 0;
+  margin: 0;
+  transform: none;
+}
+
+.tv-command-dashboard--movement-focus .tv-movement-focus-heading {
+  grid-area: heading;
+  justify-self: center;
+  width: min(30rem, 100%);
+}
+
+.tv-command-dashboard--movement-focus .tv-movement-focus-roll { grid-area: roll; }
+.tv-command-dashboard--movement-focus .tv-movement-focus-destination { grid-area: destination; }
+.tv-command-dashboard--movement-focus .tv-movement-focus-travel {
+  grid-area: travel;
+  width: min(42rem, 100%);
+  justify-self: center;
+}
+.tv-command-dashboard--movement-focus .tv-movement-focus-timeline {
+  grid-area: timeline;
+  width: min(44rem, 100%);
+  justify-self: center;
+}
+
+.tv-command-dashboard--shop-focus .host-shop-panel-stage {
+  grid-template-rows: clamp(2.6rem, 5.5svh, 4rem) minmax(0, 1fr) auto;
+}
+
+.tv-command-dashboard--shop-focus .host-shop-status-panel > div:first-child {
+  grid-column: 1 / -1;
+}
+
+.tv-host-battle-chamber .host-battle-vs-block .result-delta-chip {
+  max-width: 100%;
+  white-space: normal;
+  text-align: center;
+}
+
+.tv-startup-room .join-link {
+  display: none;
+}
+
+@media (max-width: 1500px), (max-height: 850px) {
+  .tv-command-dashboard--movement-focus .tv-command-stage-movement-focus > .tv-movement-focus {
+    grid-template-columns: minmax(11.5rem, 15rem) minmax(15rem, 22rem);
+    gap: 0.42rem 0.58rem;
+  }
+
+  .tv-command-dashboard--movement-focus .tv-movement-focus-heading,
+  .tv-command-dashboard--movement-focus .tv-movement-focus-roll,
+  .tv-command-dashboard--movement-focus .tv-movement-focus-destination,
+  .tv-command-dashboard--movement-focus .tv-movement-focus-travel,
+  .tv-command-dashboard--movement-focus .tv-movement-focus-timeline {
+    padding-block: 0.42rem;
+  }
+}

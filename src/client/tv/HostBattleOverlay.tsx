@@ -185,6 +185,14 @@ function getMarginText(outcomeLabel: HostBattleDisplayModel["outcomeLabel"], pla
 
   const margin = Math.abs(playerTotal - enemyTotal);
 
+  if (margin === 0 && outcomeLabel === "SUCCESS") {
+    return "Tie succeeds";
+  }
+
+  if (margin === 0 && outcomeLabel === "DEFEAT") {
+    return "Tie fails";
+  }
+
   if (outcomeLabel === "DRAW" || margin === 0) {
     return "No margin";
   }
@@ -224,11 +232,20 @@ function battleResultDeltas(deltas: ResultDelta[] | null | undefined): ResultDel
     "modifierApplied"
   ]);
 
-  return (deltas ?? []).filter((delta) =>
+  const filtered = (deltas ?? []).filter((delta) =>
     delta.source === "combat" ||
     delta.source === "resolution-effect" ||
     battleTypes.has(delta.type)
   );
+
+  const seenEncounterStates = new Set<string>();
+  return filtered.filter((delta) => {
+    if (delta.type !== "threatDefeated" && delta.type !== "threatRemains") return true;
+    const key = `${delta.type}:${delta.targetSeatId ?? "table"}`;
+    if (seenEncounterStates.has(key)) return false;
+    seenEncounterStates.add(key);
+    return true;
+  });
 }
 
 function buildBattleModel(
@@ -296,7 +313,9 @@ function buildBattleModel(
         ? `${activePlayer.character.name} fails the resolution.`
         : "Resolution pending.");
   const statusTitle = outcomeLabel === "RESOLVING" ? "Waiting for roll" : outcomeLabel === "SUCCESS" ? "Applying success outcome" : outcomeLabel === "DEFEAT" ? "Applying failure outcome" : "Resolving draw";
-  const statusCopy = outcomeLabel === "RESOLVING" ? "Waiting for the active player..." : "Preparing next phase...";
+  const statusCopy = outcomeLabel === "RESOLVING"
+    ? `Waiting for ${activePlayer.character.name} to roll on phone.`
+    : `Waiting for ${activePlayer.character.name} to continue on phone.`;
   return {
     player: {
       name: activePlayer.character.name,
@@ -467,7 +486,7 @@ function HostBattleVsCore({ model }: { model: HostBattleDisplayModel }): ReactEl
   return (
     <section className="host-battle-vs-block" aria-label="Resolution comparison" data-testid="host-battle-vs-block">
       <span className="host-battle-focus-label">{model.focusLabel}</span>
-      <h2 className="host-battle-encounter-title">{model.encounterTitle}</h2>
+      <h2 className="host-battle-encounter-title">Battle resolution</h2>
       <p className="host-battle-resolution-type">{model.resolutionType}</p>
       <strong>VS</strong>
       <div className={`host-battle-result-banner host-battle-result-${model.outcomeLabel.toLowerCase()}`} data-testid="host-battle-result-banner">

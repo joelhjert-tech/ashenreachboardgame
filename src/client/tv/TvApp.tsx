@@ -622,6 +622,17 @@ function getHostStateBannerModel({ patch, roomCode }: HostStateBannerProps): Hos
     };
   }
 
+  const activeSeatId = patch.payload.turnOrder[patch.payload.activeSeatIndex] ?? null;
+  const activeSeat = patch.payload.seats.find((seat) => seat.seatId === activeSeatId) ?? null;
+  if (patch.payload.status === "active" && activeSeat?.displayName && activeSeat.connected === false) {
+    return {
+      label: "Operative disconnected",
+      detail: `Reconnecting ${activeSeat.displayName}. The board remains paused at the authoritative state.`,
+      meta: "Waiting for player phone to reconnect",
+      tone: "danger"
+    };
+  }
+
   if (patch.payload.pendingEncounterDecision) {
     const seatLabels = getSeatLabelMap(patch);
     const ownerLabel = seatLabels[patch.payload.pendingEncounterDecision.seatId] ?? "Active operative";
@@ -2128,7 +2139,7 @@ function TacticalMapPanel({
   characterCatalog
 }: TacticalMapPanelProps): ReactElement {
   const battleMode = isHostBattleActive(patch, battlePlayer);
-  const shopMode = isHostShopActive(patch, activePlayer);
+  const shopMode = activeSeat?.connected !== false && isHostShopActive(patch, activePlayer);
   const planner = patch?.payload.movementPlanner?.active ? patch.payload.movementPlanner : null;
   const arrival = getMovementArrivalModel(patch?.payload, previousPatch?.payload, patch?.sequence);
   const arrivalKey = arrival?.eventId ?? null;
@@ -2545,7 +2556,7 @@ export function TvApp(): ReactElement {
       : scenarioCatalog.find((scenario) => scenario.id === selectedScenarioId) ?? null) ?? null;
   const scenarioStatus = useMemo(() => getScenarioStatus(publicPatch), [publicPatch]);
   const battleMode = isHostBattleActive(publicPatch, battlePlayer);
-  const shopMode = isHostShopActive(publicPatch, activePlayer);
+  const shopMode = activeSeat?.connected !== false && isHostShopActive(publicPatch, activePlayer);
   const movementArrival = getMovementArrivalModel(publicPatch?.payload, previousPatchRef.current?.payload);
   const movementFocusMode = !battleMode && !shopMode && Boolean(publicPatch?.payload.movementPlanner?.active || movementArrival);
 

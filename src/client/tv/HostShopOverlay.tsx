@@ -433,15 +433,12 @@ export function HostShopOverlay({
 
         <HostShopStatusPanel model={model} />
 
-        <section className="host-shop-outcome" aria-label="Market result" data-testid="host-shop-outcome">
-          <p>{model.outcome ?? `${model.playerName} is using ${model.shopName}.`}</p>
-          {model.resultDeltas.length > 0 ? (
+        {(model.outcome || model.resultDeltas.length > 0 || model.status === "BLOCKED") && (
+          <section className="host-shop-outcome" aria-label="Market result" data-testid="host-shop-outcome">
+            <p>{model.outcome ?? model.blockedReasonText ?? "Trade is suspended."}</p>
             <ResultDeltaRow deltas={model.resultDeltas} publicOnly className="host-shop-delta-row" />
-          ) : (
-            <p>{model.stockRevealed ? "Equipment stock is revealed." : model.status === "BLOCKED" ? "Trade is suspended." : "No equipment available until the phone reveals stock."}</p>
-          )}
-          <p>{model.guidance}</p>
-        </section>
+          </section>
+        )}
       </div>
     </section>
   );

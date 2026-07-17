@@ -985,6 +985,21 @@ describe("TvApp", () => {
     expect(operatives).toHaveTextContent(/ready/i);
   });
 
+  it("prioritizes active-operative reconnect guidance over stale shop framing", async () => {
+    window.localStorage.setItem("ashenreach-tv-room-code", "RT7P4");
+    const patch = createPatch();
+    patch.payload.seats[0] = { ...patch.payload.seats[0]!, connected: false };
+    patch.payload.players[0] = { ...patch.payload.players[0]!, sectorId: "outer_waymarket" };
+    mockUseRoomSubscription.mockReturnValue({ patch, error: null, sendIntent: vi.fn(), status: "open", debugEvents: [], clearDebugEvents: vi.fn() });
+
+    render(<TvApp />);
+
+    const liveStatus = await screen.findByTestId("host-live-status");
+    expect(liveStatus).toHaveTextContent(/operative disconnected/i);
+    expect(liveStatus).toHaveTextContent(/waiting for player phone to reconnect/i);
+    expect(screen.queryByTestId("host-shop-overlay")).not.toBeInTheDocument();
+  });
+
   it("keeps setup mode labels off the TV until the Host Phone chooses them", async () => {
     render(<TvApp />);
 
@@ -1286,7 +1301,8 @@ describe("TvApp", () => {
     expect(overlay).toHaveTextContent(/cinder-veil stalker/i);
     expect(within(overlay).getByTestId("host-battle-vs-block")).toHaveTextContent(/vs/i);
     expect(within(overlay).getByTestId("host-battle-vs-block")).toHaveTextContent(/battle resolving/i);
-    expect(within(overlay).getByTestId("host-battle-vs-block")).toHaveTextContent(/cinder-veil stalker/i);
+    expect(within(overlay).getByTestId("host-battle-vs-block")).toHaveTextContent(/battle resolution/i);
+    expect(within(overlay).getByTestId("host-battle-enemy")).toHaveTextContent(/cinder-veil stalker/i);
     expect(within(overlay).getByTestId("host-battle-player-reveal")).toContainElement(within(overlay).getByTestId("host-battle-player"));
     expect(within(overlay).getByTestId("host-battle-enemy-reveal")).toContainElement(within(overlay).getByTestId("host-battle-enemy"));
     expect(within(overlay).getByTestId("host-battle-player-reveal").querySelector(".host-battle-card-back")).toHaveAttribute("aria-hidden", "true");
@@ -1336,7 +1352,8 @@ describe("TvApp", () => {
     const chamber = await screen.findByTestId("tv-host-battle-chamber");
     expect(chamber).toHaveAttribute("data-battle-stage", stage);
     expect(within(chamber).getByTestId("host-battle-player")).toHaveTextContent(/tarek voss/i);
-    expect(within(chamber).getByTestId("host-battle-vs-block")).toHaveTextContent(/cinder-veil stalker/i);
+    expect(within(chamber).getByTestId("host-battle-vs-block")).toHaveTextContent(/battle resolution/i);
+    expect(within(chamber).getByTestId("host-battle-enemy")).toHaveTextContent(/cinder-veil stalker/i);
     expect(within(chamber).getByTestId("host-battle-enemy")).toHaveTextContent(/difficulty/i);
     expect(within(chamber).getByTestId("host-battle-player-math")).toHaveTextContent(/base.*roll.*mod.*total/i);
     expect(within(chamber).getByTestId("host-battle-enemy-math")).toHaveTextContent(/base.*roll.*mod.*total/i);
@@ -1463,6 +1480,18 @@ describe("TvApp", () => {
         severity: "reward"
       },
       {
+        id: "battle-threat-duplicate",
+        type: "threatDefeated",
+        label: "Threat defeated",
+        sign: "gain",
+        targetScope: "sector",
+        targetSeatId: "seat-1",
+        visibility: "public",
+        source: "resolution-effect",
+        publicText: "Signal Static defeated.",
+        severity: "reward"
+      },
+      {
         id: "private-rivalry-battle-note",
         type: "modifierApplied",
         label: "Secret rivalry edge",
@@ -1500,6 +1529,7 @@ describe("TvApp", () => {
     expect(screen.getByTestId("host-battle-enemy-math")).toHaveTextContent(/Difficulty 7 = Total 7/i);
     expect(within(screen.getByTestId("host-battle-vs-block")).getByTestId("result-delta-row")).toHaveTextContent(/\+1 Trophy/i);
     expect(within(screen.getByTestId("host-battle-vs-block")).getByTestId("result-delta-row")).toHaveTextContent(/Threat defeated/i);
+    expect(within(screen.getByTestId("host-battle-vs-block")).getAllByTestId("result-delta-threatDefeated")).toHaveLength(1);
     expect(overlay).not.toHaveTextContent(/private rivalry agenda/i);
     expect(overlay).not.toHaveTextContent(/secret rivalry edge/i);
     expect(screen.queryByTestId("roll-outcome-panel")).not.toBeInTheDocument();
@@ -2038,7 +2068,7 @@ describe("TvApp", () => {
     expect(screen.getByTestId("host-battle-result-banner")).toHaveTextContent(/success/i);
     expect(screen.getByTestId("host-battle-result-banner")).toHaveTextContent(/wins by 3/i);
     expect(screen.getByTestId("host-battle-phase-status")).toHaveTextContent(/applying success outcome/i);
-    expect(screen.getByTestId("host-battle-phase-status")).toHaveTextContent(/preparing next phase/i);
+    expect(screen.getByTestId("host-battle-phase-status")).toHaveTextContent(/waiting for tarek voss to continue on phone/i);
     expect(screen.getByTestId("host-battle-test-label")).toHaveTextContent(/grit test/i);
     expect(overlay).toHaveTextContent(/base grit\s*\+2/i);
     expect(overlay).toHaveTextContent(/black route fuse\s*\+3/i);
