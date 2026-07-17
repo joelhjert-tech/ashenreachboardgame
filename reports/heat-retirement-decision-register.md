@@ -95,3 +95,13 @@ Current inspection corrects `anomaly-red-suture-field` from the Phase 1D Heat-on
 - **HRD-013 implemented for canonical authoring cleanup:** the 17 Phase 1L character-default approvals are retired. The compatibility union now contains only 40 Heat-effect IDs and 14 other compatibility IDs, with zero overlap and 54 combined unique IDs.
 - **HRD-002 preserved:** the persisted/runtime character schema still requires Heat, accepts historical nonzero values, serializes them exactly, and reconnects without normalization or conversion. New runtime characters still receive zero from the Phase 1M constructor.
 - **Not implemented:** optional runtime `character.heat`, new-save omission, versioned migration, projection-key retirement, old-value support-window closure, runtime-field removal, Mirror-key migration, Heat-only outcome migration, Rust Choir Peddlers, or discriminator removal.
+
+# Phase 1O runtime-persistence design (pending approval)
+
+- **HRD-001 preferred decision:** normalize at a versioned session-snapshot boundary into a current Heat-free runtime character shape. Do not spread `heat?: number` through gameplay consumers.
+- **HRD-002 preferred decision:** valid legacy nonzero values receive no gameplay conversion and move to an envelope-level, non-projected legacy compatibility record; zero values are omitted. Fresh saves never create the record.
+- **HRD-012 preferred decision:** add monotonic integer `saveVersion`; missing version means strict legacy v0, current format is v1, and unknown future versions fail safely. Migration is pure, deterministic, idempotent, and runs before room creation—not during reconnect.
+- **HRD-024 preferred decision:** retain v0 parsing and nonzero legacy metadata until a separately approved support-window closure gate. No calendar deadline is inferred without persistence-distribution evidence.
+- **Constructor retirement preferred decision:** Phase 1P removes all four current-runtime helper call sites, changes the boundary guard to forbid runtime Heat construction, and deletes the helper after zero call sites remain.
+- **Projection timing preferred decision:** retain both constant-zero phone/TV compatibility keys during Phase 1P; network projection retirement requires a separate protocol/deployment decision and must not reuse the save version.
+- These are design recommendations only. Runtime optionality, save versioning, migration, new-save omission, constructor retirement, and projection changes remain unimplemented.
