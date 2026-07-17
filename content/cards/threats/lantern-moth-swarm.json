@@ -1,0 +1,23 @@
+{
+  "id": "lantern-moth-swarm",
+  "type": "threat",
+  "cardType": "hazard",
+  "title": "Lantern-Moth Swarm",
+  "text": "Soft gold insects gather around every warm surface until their wings begin to spark.",
+  "flavor": "They are beautiful right up until the air catches fire.",
+  "severity": 1,
+  "stat": "signal",
+  "difficulty": 5,
+  "failEffect": {
+    "type": "take_wound",
+    "amount": 1
+  },
+  "enemyFamily": "vermin",
+  "threatLane": "blue",
+  "region": "outer",
+  "rarity": "common",
+  "tempo": "stall",
+  "resourceTags": [
+    "wound"
+  ]
+}

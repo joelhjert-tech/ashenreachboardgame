@@ -1,0 +1,21 @@
+{
+  "id": "scrap-drone",
+  "name": "Scrap Drone",
+  "slot": "utility",
+  "category": "passive",
+  "statBonus": {
+    "stat": "signal",
+    "amount": 1
+  },
+  "flavor": "A scavenger drone that remembers every battlefield it stole from.",
+  "tier": "standard",
+  "startingEligible": false,
+  "normalShopCommon": false,
+  "cost": 4,
+  "sellValue": 2,
+  "progressionWeight": 1,
+  "shopCategories": [
+    "market",
+    "forge-armoury"
+  ]
+}

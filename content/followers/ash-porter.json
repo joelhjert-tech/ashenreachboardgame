@@ -1,0 +1,9 @@
+{
+  "id": "ash-porter",
+  "name": "Ash Porter",
+  "role": "porter",
+  "text": "Carry one extra artifact burden. Discard the porter to prevent one item loss or object break.",
+  "useLimit": "discard",
+  "loyalty": 2,
+  "lossCondition": "choice"
+}

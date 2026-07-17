@@ -1,0 +1,13 @@
+{
+  "id": "bone-blades",
+  "name": "Bone Blades",
+  "severity": 4,
+  "category": "battleBonus",
+  "duration": "ongoing",
+  "trigger": "During battle.",
+  "rulesText": "This Affliction gives +2 battle bonus.",
+  "effectKind": "battleBonus",
+  "effectPayload": { "innateBattleBonus": 2, "sourceType": "affliction" },
+  "flipFacedownAfterResolve": false,
+  "isFaceupOngoing": true
+}

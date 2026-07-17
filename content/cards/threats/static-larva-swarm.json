@@ -1,0 +1,43 @@
+{
+  "id": "static-larva-swarm",
+  "type": "threat",
+  "cardType": "enemy",
+  "title": "Static Larva Swarm",
+  "enemyName": "Static Larva Swarm",
+  "text": "Thumb-sized signal larvae flood from a cracked relay nest. Easy to crush, disastrous to let under your seals.",
+  "flavor": "Small mouths make a system-wide prayer.",
+  "severity": 1,
+  "region": "outer",
+  "stat": "guile",
+  "difficulty": 2,
+  "trophyValue": 1,
+  "failEffectKey": "threat_fail_gain_scar",
+  "defeatReward": {
+    "type": "gain_note",
+    "text": "You sealed the larval nest before it learned your pulse."
+  },
+  "woundOnLoss": {
+    "type": "sequence",
+    "effects": [
+      {
+        "type": "take_wound",
+        "amount": 1
+      },
+      {
+        "type": "gain_scar",
+        "scarId": "scar-wound-2"
+      }
+    ]
+  },
+  "enemyFamily": "vermin",
+  "threatLane": "yellow",
+  "rarity": "common",
+  "tempo": "push",
+  "resourceTags": [
+    "loot",
+    "scar",
+    "scenario",
+    "trophy",
+    "wound"
+  ]
+}

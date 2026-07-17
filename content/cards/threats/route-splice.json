@@ -1,0 +1,36 @@
+{
+  "id": "route-splice",
+  "type": "threat",
+  "cardType": "hazard",
+  "title": "Route Splice",
+  "text": "Two wrong streets join at the cut, each insisting the other one led you here.",
+  "flavor": "The road is lying, but at least it is specific.",
+  "severity": 3,
+  "stat": "guile",
+  "difficulty": 8,
+  "successEffect": {
+    "type": "gain_note",
+    "text": "You mapped the splice before it could close behind you."
+  },
+  "failEffect": {
+    "type": "forcedDisplacement",
+    "direction": "clockwise",
+    "distance": 1,
+    "sameRing": true,
+    "fallbackEffect": {
+      "type": "take_wound",
+      "amount": 1
+    },
+    "failureStillCounts": true
+  },
+  "enemyFamily": "hazard",
+  "threatLane": "yellow",
+  "resolutionType": "event",
+  "region": "middle",
+  "rarity": "uncommon",
+  "tempo": "stall",
+  "resourceTags": [
+    "movement",
+    "wound"
+  ]
+}

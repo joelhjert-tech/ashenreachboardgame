@@ -1,0 +1,40 @@
+{
+  "id": "reliquary-judge",
+  "type": "threat",
+  "cardType": "enemy",
+  "title": "Reliquary Judge",
+  "enemyName": "Reliquary Judge",
+  "text": "A masked adjudicator weighs your kit against a dead saint's inventory. Gear-heavy operatives draw its sentence first.",
+  "flavor": "Every borrowed tool is evidence.",
+  "severity": 2,
+  "region": "middle",
+  "stat": "signal",
+  "difficulty": 7,
+  "trophyValue": 4,
+  "combatEffectKeys": [
+    "threat_disable_weapon_bonus"
+  ],
+  "defeatReward": {
+    "type": "gain_note",
+    "text": "You overturned a reliquary sentence and kept the seal as leverage."
+  },
+  "woundOnLoss": {
+    "type": "sequence",
+    "effects": [
+      {
+        "type": "take_wound",
+        "amount": 1
+      }
+    ]
+  },
+  "enemyFamily": "choir",
+  "threatLane": "blue",
+  "rarity": "common",
+  "tempo": "push",
+  "resourceTags": [
+    "gear",
+    "loot",
+    "trophy",
+    "wound"
+  ]
+}

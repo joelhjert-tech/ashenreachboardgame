@@ -1,0 +1,29 @@
+{
+  "id": "artifact-ember-burden-idol",
+  "type": "artifact",
+  "missionRewardEligible": true,
+  "eliteThreatRewardEligible": true,
+  "rareShopEligible": true,
+  "scenarioRewardEligible": true,
+  "startingEligible": false,
+  "normalShopCommon": false,
+  "title": "Ember Burden Idol",
+  "text": "A squat iron idol that grows warmer whenever the bearer tries to leave it behind.",
+  "flavor": "Worth hauling. Terrible to carry.",
+  "artifactKind": "burdenRelic",
+  "charge": 0,
+  "resolutionSummary": "Lifted the Ember Burden Idol and claimed its trophy leverage.",
+  "resolveEffect": {
+    "type": "sequence",
+    "effects": [
+      {
+        "type": "gain_trophy",
+        "amount": 1
+      },
+      {
+        "type": "gain_note",
+        "text": "Ember Burden Idol: valuable, heavy, and politically loud."
+      }
+    ]
+  }
+}

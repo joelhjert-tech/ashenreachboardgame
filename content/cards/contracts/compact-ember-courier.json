@@ -1,0 +1,16 @@
+{
+  "id": "compact-ember-courier",
+  "name": "Ember Courier",
+  "factionGiver": "Meridian Compact",
+  "text": "Carry a sealed writ through a cleared outer lane before the seal burns through its case.",
+  "objective": {
+    "type": "spaceTextResolved",
+    "effectKey": "outer_ashwakeClearLane",
+    "label": "Ashwake lane cleared",
+    "target": 1
+  },
+  "reward": {
+    "type": "gain_gear",
+    "gearId": "marshal-seal"
+  }
+}

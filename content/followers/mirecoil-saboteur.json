@@ -1,0 +1,13 @@
+{
+  "id": "mirecoil-saboteur",
+  "name": "Mirecoil Saboteur",
+  "role": "guide",
+  "text": "Discard to ignore one relay, gate, or shortcut movement penalty after a failed route check.",
+  "activeEffect": {
+    "type": "gain_note",
+    "text": "Mirecoil saboteur: a failed route can be converted into a scorched shortcut."
+  },
+  "useLimit": "discard",
+  "loyalty": 1,
+  "lossCondition": "choice"
+}

@@ -13,7 +13,7 @@
     "type": "sequence",
     "effects": [
       {
-        "type": "lose_heat",
+        "type": "gain_salvage",
         "amount": 1
       },
       {

@@ -147,7 +147,9 @@ export function buildScenarioMarkers(patch: PublicPatchPayload): ScenarioMarker[
     return [];
   }
 
-  const value = patch.scenarioProgress[spec.progressKey] ?? 0;
+  const value = scenarioId === "scenario_broken_seal"
+    ? patch.scenarioState?.preparation.resources.sealIntegrity ?? 0
+    : patch.scenarioProgress[spec.progressKey] ?? 0;
 
   return [
     {
@@ -184,7 +186,7 @@ export function buildScenarioAuras(patch: PublicPatchPayload): ScenarioAuraEffec
     scenario_broken_seal: {
       id: "broken-seal-aura",
       nodeId: "center_cinder_gate",
-      tone: (patch.scenarioProgress.sealTokens ?? 0) <= 2 ? "critical" : "warning",
+      tone: (patch.scenarioState?.preparation.resources.sealIntegrity ?? 0) <= 2 ? "critical" : "warning",
       variant: "seal"
     },
     scenario_dying_star: {

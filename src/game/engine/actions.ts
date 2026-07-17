@@ -1,11 +1,20 @@
-import type { Character, Stat } from "../schema/character.schema.js";
+import type { AuthoredCharacter, Stat } from "../schema/character.schema.js";
 import type { ThreatCard, EncounterEffect } from "../schema/card.schema.js";
+import type { LegacyCompatibleEncounterEffect } from "../schema/card.schema.js";
 import type { ContractCard } from "../schema/contract.schema.js";
-import type { GearSlot } from "../schema/gear.schema.js";
-import type { Phase } from "../schema/session.schema.js";
+import type { AfflictionCard } from "../schema/affliction.schema.js";
+import type { GearItem, GearSlot } from "../schema/gear.schema.js";
+import type { ActiveOathchainReveal, NemesisChampion, Phase } from "../schema/session.schema.js";
 import type { DiceRollResult } from "./dice.js";
+import type { ScarSourceEvent } from "../schema/scarTrigger.schema.js";
+import type { MemoryTaxOptionId } from "../schema/memoryTax.schema.js";
 
 export type CheckStat = Stat;
+
+export interface RollModifierSource {
+  label: string;
+  value: number;
+}
 
 export interface BaseAction {
   type: string;
@@ -20,6 +29,26 @@ export interface SessionStartedAction extends BaseAction {
 export interface MoveRequestedAction extends BaseAction {
   type: "MOVE_REQUESTED";
   toSectorId: string;
+  voidKeyInstanceId?: string;
+  routeId?: string;
+  movementRevision?: number;
+}
+
+export interface MovementRollRequestedAction extends BaseAction {
+  type: "MOVEMENT_ROLL_REQUESTED";
+}
+export interface AdjustMovementRequestedAction extends BaseAction { type: "ADJUST_MOVEMENT_REQUESTED"; instanceId: string; adjustment: -1 | 1 }
+export interface SelectRouteStarVariantAction extends BaseAction { type: "SELECT_ROUTE_STAR_VARIANT"; instanceId: string; destinationId: string; routeId: string; movementRevision: number }
+export interface ClearRouteStarChoiceAction extends BaseAction { type: "CLEAR_ROUTE_STAR_CHOICE" }
+export interface ActivateGateSaintAction extends BaseAction { type: "ACTIVATE_GATE_SAINT"; instanceId: string }
+export interface UseMarrowDetourAction extends BaseAction { type: "USE_MARROW_DETOUR"; instanceId: string; reactionId: string; toSectorId: string }
+
+export interface MovementRolledAction extends BaseAction {
+  type: "MOVEMENT_ROLLED";
+  movementValue: number;
+  roll: DiceRollResult;
+  resolutionId?: string;
+  modifierSources?: RollModifierSource[];
 }
 
 export interface MovedAction extends BaseAction {
@@ -45,6 +74,7 @@ export interface EncounterDrawnAction extends BaseAction {
   type: "ENCOUNTER_DRAWN";
   sectorId: string;
   card: ThreatCard | null;
+  revealEffect?: EncounterEffect | null;
 }
 
 export interface CheckRequestedAction extends BaseAction {
@@ -70,16 +100,37 @@ export interface EnemyRollRequestedAction extends BaseAction {
   type: "ENEMY_ROLL_REQUESTED";
 }
 
+export interface DiceRollStartedAction extends BaseAction {
+  type: "DICE_ROLL_STARTED";
+  stat: CheckStat;
+  cardId: string;
+}
+
 export interface CheckRolledAction extends BaseAction {
   type: "CHECK_ROLLED";
   stat: CheckStat;
   difficulty: number;
   roll: DiceRollResult;
   statBonus: number;
+  modifierSources?: RollModifierSource[];
   total: number;
   success: boolean;
-  effect: EncounterEffect;
+  effect: EncounterEffect | null;
   cardId: string;
+}
+
+export interface SoloRerollResolvedAction extends BaseAction {
+  type: "SOLO_REROLL_RESOLVED";
+  stat: CheckStat;
+  difficulty: number;
+  roll: DiceRollResult;
+  statBonus: number;
+  modifierSources?: RollModifierSource[];
+  total: number;
+  success: boolean;
+  effect: EncounterEffect | null;
+  cardId: string;
+  artifactReroll?: boolean;
 }
 
 export interface CombatResolvedAction extends BaseAction {
@@ -89,6 +140,7 @@ export interface CombatResolvedAction extends BaseAction {
   roll: DiceRollResult;
   enemyRoll: DiceRollResult;
   statBonus: number;
+  modifierSources?: RollModifierSource[];
   enemyBonus: number;
   total: number;
   enemyTotal: number;
@@ -103,6 +155,39 @@ export interface ResolutionAppliedAction extends BaseAction {
   effect: EncounterEffect;
   sourceCardId: string | null;
   success: boolean | null;
+}
+
+export interface ResolutionContinuedAction extends BaseAction {
+  type: "CONTINUE_RESOLUTION";
+}
+
+export interface EncounterDecisionResolvedAction extends BaseAction {
+  type: "ENCOUNTER_DECISION_RESOLVED";
+  decisionId: string;
+  decisionVersion: number;
+  optionId: string;
+}
+
+export interface MemoryTaxChoiceResolvedAction extends BaseAction {
+  type: "MEMORY_TAX_CHOICE_RESOLVED";
+  choiceId: string;
+  choiceVersion: number;
+  optionId: MemoryTaxOptionId;
+}
+
+export interface ForcedDisplacementResolvedAction extends BaseAction {
+  type: "FORCED_DISPLACEMENT_RESOLVED";
+  reactionId: string;
+}
+
+export interface ForcedDestinationSelectedAction extends BaseAction {
+  type: "FORCED_DESTINATION_SELECTED";
+  choiceId: string;
+  destinationSectorId: string;
+}
+
+export interface SutureStormContinuedAction extends BaseAction {
+  type: "SUTURE_STORM_CONTINUED";
 }
 
 export interface HeatThresholdReachedAction extends BaseAction {
@@ -121,18 +206,156 @@ export interface WoundThresholdReachedAction extends BaseAction {
 export interface RecruitReplacementAction extends BaseAction {
   type: "RECRUIT_REPLACEMENT";
   replacementCharacterId: string;
-  replacementCharacter?: Character;
+  replacementCharacter?: AuthoredCharacter;
 }
 
 export interface EquipGearAction extends BaseAction {
   type: "EQUIP_GEAR";
   gearId: string;
+  instanceId?: string;
   slot: GearSlot;
+}
+
+export interface SelectEquipmentSuppressionTargetAction extends BaseAction {
+  type: "SELECT_EQUIPMENT_SUPPRESSION_TARGET";
+  choiceId: string;
+  itemInstanceId: string;
 }
 
 export interface UnequipGearAction extends BaseAction {
   type: "UNEQUIP_GEAR";
   slot: GearSlot;
+}
+
+export interface UseGearAction extends BaseAction {
+  type: "USE_GEAR";
+  gearId: string;
+  instanceId?: string;
+  effect: EncounterEffect | null;
+  summary: string;
+  discard?: boolean;
+  suppressPendingFailure?: boolean;
+  pendingFailureReactionId?: string;
+  salvageCost?: number;
+  exhaustInstanceId?: string;
+  mirrorReroll?: SoloRerollResolvedAction;
+  rollModifier?: RollModifierSource & {
+    stat: CheckStat;
+    mode: "battle" | "check";
+  };
+  chargeInstanceId?: string;
+  pendingTileChallengeId?: string;
+  staticIntercessionReactionId?: string;
+  pendingTileChallengeEffectId?: string;
+  scarConsequenceReactionId?: string;
+  scarInstanceId?: string;
+  pendingScarEffectId?: string;
+  forcedDisplacementReactionId?: string;
+  forcedDisplacementSourceEventId?: string;
+  oathchainReveal?: ActiveOathchainReveal;
+}
+
+export interface UseFollowerAction extends BaseAction {
+  type: "USE_FOLLOWER";
+  followerId: string;
+  followerInstanceId?: string;
+  woundCost?: number;
+  grantAllStatBoost?: boolean;
+  effect: EncounterEffect | null;
+  summary: string;
+  discard?: boolean;
+  rollModifier?: RollModifierSource & {
+    stat: CheckStat;
+    mode: "battle" | "check";
+  };
+}
+
+export interface AfflictionDrawnAction extends BaseAction {
+  type: "AFFLICTION_DRAWN";
+  afflictionId: string;
+  affliction?: AfflictionCard;
+  die?: number;
+  chosenStat?: Stat;
+  publicSummary?: string;
+  privateSummary?: string;
+  deltas?: string[];
+}
+
+export interface TableInteractionAction extends BaseAction {
+  type: "TABLE_INTERACTION";
+  interactionKind: "trade" | "aid" | "duel" | "interfere";
+  targetSeatId: string;
+  effect: EncounterEffect | null;
+  targetEffect?: EncounterEffect | null;
+  summary: string;
+}
+
+export type ShopServiceCost = {
+  salvage?: number;
+  wounds?: number;
+  trophies?: number;
+  completedContracts?: number;
+};
+
+export type ShopServiceResult = {
+  salvageDelta?: number;
+  woundDelta?: number;
+  trophyDelta?: number;
+  gainGear?: GearItem;
+  discardGearId?: string;
+  note?: string;
+};
+
+export interface ShopServiceResolvedAction extends BaseAction {
+  type: "SHOP_SERVICE_RESOLVED";
+  serviceId: string;
+  serviceLabel: string;
+  shopName: string;
+  sectorId: string;
+  cost: ShopServiceCost;
+  result: ShopServiceResult;
+  summary: string;
+}
+
+export interface ShopStockRevealedAction extends BaseAction {
+  type: "SHOP_STOCK_REVEALED";
+  serviceId: string;
+  serviceLabel: string;
+  shopName: string;
+  sectorId: string;
+  cost: ShopServiceCost;
+  stock: GearItem[];
+  summary: string;
+}
+
+export interface ShopPurchaseResolvedAction extends BaseAction {
+  type: "SHOP_PURCHASE_RESOLVED";
+  serviceId: string;
+  shopName: string;
+  sectorId: string;
+  cardId: string;
+  cost: ShopServiceCost;
+  gainedGear: GearItem;
+  discardedStockIds: string[];
+  summary: string;
+}
+
+export interface ShopSellResolvedAction extends BaseAction {
+  type: "SHOP_SELL_RESOLVED";
+  shopName: string;
+  sectorId: string;
+  gearId: string;
+  instanceId?: string;
+  soldGear: GearItem;
+  salvageDelta: number;
+  summary: string;
+}
+
+export interface ShopSkippedAction extends BaseAction {
+  type: "SHOP_SKIPPED";
+  shopName: string;
+  sectorId: string;
+  summary: string;
 }
 
 export interface AcceptContractAction extends BaseAction {
@@ -181,21 +404,114 @@ export interface ScenarioProgressAdvancedAction extends BaseAction {
   effect?: EncounterEffect | null;
 }
 
+export interface ScenarioPreparationGainedAction extends BaseAction {
+  type: "SCENARIO_PREPARATION_GAINED";
+  scenarioId: string;
+  resourceKey: string;
+  amount: number;
+  maximum?: number;
+  sourceEventId: string;
+  objectiveId?: string;
+  summary: string;
+}
+
+export interface ScenarioPreparationSpentAction extends BaseAction {
+  type: "SCENARIO_PREPARATION_SPENT";
+  scenarioId: string;
+  resourceKey: string;
+  amount: number;
+  sourceEventId: string;
+  summary: string;
+}
+
+export interface ScenarioConfrontationStartedAction extends BaseAction {
+  type: "SCENARIO_CONFRONTATION_STARTED";
+  scenarioId: string;
+  confrontationId: string;
+  sourceEventId: string;
+  stage: string;
+  summary: string;
+}
+
+export interface ScenarioConfrontationProgressGainedAction extends BaseAction {
+  type: "SCENARIO_CONFRONTATION_PROGRESS_GAINED";
+  scenarioId: string;
+  confrontationId: string;
+  progressKey: string;
+  amount: number;
+  progressMode?: "accumulate" | "replace";
+  sourceEventId: string;
+  stage: string;
+  summary: string;
+  effect?: EncounterEffect | null;
+}
+
+export interface ScenarioObjectiveProgressTriggeredAction extends BaseAction {
+  type: "SCENARIO_OBJECTIVE_PROGRESS_TRIGGERED";
+  scenarioId: string;
+  progressKey: string;
+  amount: number;
+  required: number;
+  triggerType: "contractCompleted" | "threatDefeated" | "sectorActionCompleted";
+  summary: string;
+}
+
 export interface ScenarioVictoryAchievedAction extends BaseAction {
   type: "SCENARIO_VICTORY_ACHIEVED";
   scenarioId: string;
+  victoryConditionId?: string;
+  sourceType?: "confrontation" | "scenarioAction";
+  sourceId?: string;
+  shared?: boolean;
+  summary: string;
+}
+
+export interface ScenarioObjectiveCompletedAction extends BaseAction {
+  type: "SCENARIO_OBJECTIVE_COMPLETED";
+  scenarioId: string;
+  summary: string;
+}
+
+export interface RivalryAgendaRevealedAction extends BaseAction {
+  type: "RIVALRY_AGENDA_REVEALED";
+  publicRevealTitle: string;
+  publicRevealSummary: string;
+  revealedAtRound: number;
+}
+
+export interface RivalryAgendaProgressTriggeredAction extends BaseAction {
+  type: "RIVALRY_AGENDA_PROGRESS_TRIGGERED";
+  agendaId: string;
+  triggerType:
+    | "contractCompleted"
+    | "threatDefeated"
+    | "sectorActionCompleted"
+    | "shopPurchaseCompleted"
+    | "shopSaleCompleted"
+    | "itemAcquired"
+    | "scenarioObjectiveProgressed";
+  progressLabel: string;
+  amount: number;
+  required: number;
+  completed: boolean;
+  pointsAwarded: number;
+  publicCompletionTitle: string;
+  publicCompletionSummary: string;
+  privateCompletionSummary: string;
   summary: string;
 }
 
 export interface StabilizeResolvedAction extends BaseAction {
   type: "STABILIZE_RESOLVED";
-  cost: { kind: "heat" | "trophy" | "action"; amount: number };
+  cost: { kind: "trophy" | "action"; amount: number };
 }
 
 export interface StatRaisedAction extends BaseAction {
   type: "STAT_RAISED";
   stat: Stat;
   cost: number;
+  previousValue: number;
+  nextValue: number;
 }
 
 export interface RoundCompletedAction extends BaseAction {
@@ -207,7 +523,12 @@ export interface EscalationAdvancedAction extends BaseAction {
   amount: number;
   newLevel: number;
   modifier: number;
+  previousLevel?: number;
+  requestedAmount?: number;
+  guardedReason?: "oneBeforeCollapseGuard";
   reason?: string;
+  sourceCardId?: string;
+  sourceEventId?: string;
 }
 
 export interface SectorCollapsedAction extends BaseAction {
@@ -226,9 +547,109 @@ export interface PhaseAdvancedAction extends BaseAction {
   toPhase: Phase;
 }
 
+export interface NemesisSpawnedAction extends BaseAction {
+  type: "NEMESIS_SPAWNED";
+  champions: NemesisChampion[];
+}
+
+export interface NemesisMovedAction extends BaseAction {
+  type: "NEMESIS_MOVED";
+  nemesisId: string;
+  fromSectorId: string;
+  toSectorId: string;
+  path: string[];
+  distanceToNexus: number;
+}
+
+export interface NemesisEncounterResolvedAction extends BaseAction {
+  type: "NEMESIS_ENCOUNTER_RESOLVED";
+  nemesisId: string;
+  summary: string;
+}
+
+export interface NemesisCombatStartedAction extends BaseAction {
+  type: "NEMESIS_COMBAT_STARTED";
+  nemesisId: string;
+}
+
+export interface NemesisCombatResolvedAction extends BaseAction {
+  type: "NEMESIS_COMBAT_RESOLVED";
+  nemesisId: string;
+  attackerSeatId: string;
+  assistSeatIds: string[];
+  stat: CheckStat;
+  roll: DiceRollResult;
+  nemesisRoll: DiceRollResult;
+  attackerTotal: number;
+  nemesisTotal: number;
+  success: boolean;
+  damage: number;
+  summary: string;
+}
+
+export interface NemesisDefeatedAction extends BaseAction {
+  type: "NEMESIS_DEFEATED";
+  nemesisId: string;
+  attackerSeatId: string;
+  boundSeatId: string;
+  summary: string;
+}
+
+export interface CrownKeyFragmentGainedAction extends BaseAction {
+  type: "CROWN_KEY_FRAGMENT_GAINED";
+  targetSeatId: string;
+  sourceNemesisId: string;
+}
+
+export interface NexusTestStartedAction extends BaseAction {
+  type: "NEXUS_TEST_STARTED";
+}
+
+export interface NexusTestResolvedAction extends BaseAction {
+  type: "NEXUS_TEST_RESOLVED";
+  stat: CheckStat;
+  difficulty: number;
+  roll: DiceRollResult;
+  total: number;
+  success: boolean;
+}
+
+export interface NemesisNexusCountdownStartedAction extends BaseAction {
+  type: "NEMESIS_NEXUS_COUNTDOWN_STARTED";
+  nemesisId: string;
+  remainingTurns: number;
+}
+
+export interface CoopVictoryTriggeredAction extends BaseAction {
+  type: "COOP_VICTORY_TRIGGERED";
+  summary: string;
+}
+
+export interface CoopDefeatTriggeredAction extends BaseAction {
+  type: "COOP_DEFEAT_TRIGGERED";
+  summary: string;
+}
+
+export interface ScarTriggerEventAction extends BaseAction {
+  type: "SCAR_TRIGGER_EVENT";
+  sourceEvent: ScarSourceEvent;
+}
+
+export interface ContinueScarConsequenceAction extends BaseAction {
+  type: "CONTINUE_SCAR_CONSEQUENCE";
+  reactionId: string;
+}
+
 export type GameAction =
   | SessionStartedAction
   | MoveRequestedAction
+  | MovementRollRequestedAction
+  | AdjustMovementRequestedAction
+  | SelectRouteStarVariantAction
+  | ClearRouteStarChoiceAction
+  | ActivateGateSaintAction
+  | UseMarrowDetourAction
+  | MovementRolledAction
   | MovedAction
   | MovementResolvedAction
   | EncounterDrawnAction
@@ -236,34 +657,133 @@ export type GameAction =
   | CombatRequestedAction
   | EnemyRollAssignedAction
   | EnemyRollRequestedAction
+  | DiceRollStartedAction
   | CheckRolledAction
+  | SoloRerollResolvedAction
   | CombatResolvedAction
   | ResolutionAppliedAction
-  | HeatThresholdReachedAction
+  | ResolutionContinuedAction
+  | EncounterDecisionResolvedAction
+  | MemoryTaxChoiceResolvedAction
+  | ForcedDestinationSelectedAction
+  | ForcedDisplacementResolvedAction
+  | SutureStormContinuedAction
   | WoundThresholdReachedAction
   | RecruitReplacementAction
   | EquipGearAction
+  | SelectEquipmentSuppressionTargetAction
   | UnequipGearAction
+  | UseGearAction
+  | UseFollowerAction
+  | AfflictionDrawnAction
+  | TableInteractionAction
+  | ShopServiceResolvedAction
+  | ShopStockRevealedAction
+  | ShopPurchaseResolvedAction
+  | ShopSellResolvedAction
+  | ShopSkippedAction
   | AcceptContractAction
   | CompleteContractAction
   | ScenarioConfrontationRequestedAction
   | SpaceTextResolvedAction
   | ScenarioProgressAdvancedAction
+  | ScenarioPreparationGainedAction
+  | ScenarioPreparationSpentAction
+  | ScenarioConfrontationStartedAction
+  | ScenarioConfrontationProgressGainedAction
+  | ScenarioObjectiveProgressTriggeredAction
   | ScenarioVictoryAchievedAction
+  | ScenarioObjectiveCompletedAction
+  | RivalryAgendaRevealedAction
+  | RivalryAgendaProgressTriggeredAction
   | StabilizeResolvedAction
   | StatRaisedAction
   | RoundCompletedAction
   | EscalationAdvancedAction
   | SectorCollapsedAction
   | TurnCompletedAction
-  | PhaseAdvancedAction;
+  | PhaseAdvancedAction
+  | NemesisSpawnedAction
+  | NemesisMovedAction
+  | NemesisEncounterResolvedAction
+  | NemesisCombatStartedAction
+  | NemesisCombatResolvedAction
+  | NemesisDefeatedAction
+  | CrownKeyFragmentGainedAction
+  | NexusTestStartedAction
+  | NexusTestResolvedAction
+  | NemesisNexusCountdownStartedAction
+  | CoopVictoryTriggeredAction
+  | CoopDefeatTriggeredAction
+  | ScarTriggerEventAction
+  | ContinueScarConsequenceAction;
+
+export type LegacyCompatibleShopServiceCost = ShopServiceCost & {
+  heat?: number;
+};
+
+export type LegacyCompatibleShopServiceResult = ShopServiceResult & {
+  heatDelta?: number;
+};
+
+type LegacyEffectAction =
+  | (Omit<MovementResolvedAction, "effect"> & { effect: LegacyCompatibleEncounterEffect | null })
+  | (Omit<EncounterDrawnAction, "revealEffect"> & { revealEffect?: LegacyCompatibleEncounterEffect | null })
+  | (Omit<CheckRolledAction, "effect"> & { effect: LegacyCompatibleEncounterEffect | null })
+  | (Omit<SoloRerollResolvedAction, "effect"> & { effect: LegacyCompatibleEncounterEffect | null })
+  | (Omit<CombatResolvedAction, "effect"> & { effect: LegacyCompatibleEncounterEffect })
+  | (Omit<ResolutionAppliedAction, "effect"> & { effect: LegacyCompatibleEncounterEffect })
+  | (Omit<UseGearAction, "effect"> & { effect: LegacyCompatibleEncounterEffect | null })
+  | (Omit<UseFollowerAction, "effect"> & { effect: LegacyCompatibleEncounterEffect | null })
+  | (Omit<TableInteractionAction, "effect" | "targetEffect"> & {
+      effect: LegacyCompatibleEncounterEffect | null;
+      targetEffect?: LegacyCompatibleEncounterEffect | null;
+    })
+  | (Omit<SpaceTextResolvedAction, "effect"> & { effect?: LegacyCompatibleEncounterEffect | null })
+  | (Omit<ScenarioProgressAdvancedAction, "effect"> & { effect?: LegacyCompatibleEncounterEffect | null })
+  | (Omit<ScenarioConfrontationProgressGainedAction, "effect"> & { effect?: LegacyCompatibleEncounterEffect | null });
+
+type LegacyShopAction =
+  | (Omit<ShopServiceResolvedAction, "cost" | "result"> & {
+      cost: LegacyCompatibleShopServiceCost;
+      result: LegacyCompatibleShopServiceResult;
+    })
+  | (Omit<ShopStockRevealedAction, "cost"> & { cost: LegacyCompatibleShopServiceCost })
+  | (Omit<ShopPurchaseResolvedAction, "cost"> & { cost: LegacyCompatibleShopServiceCost });
+
+export type LegacyCompatibleGameAction =
+  | GameAction
+  | HeatThresholdReachedAction
+  | LegacyEffectAction
+  | LegacyShopAction
+  | (Omit<StabilizeResolvedAction, "cost"> & {
+      cost: { kind: "heat" | "trophy" | "action"; amount: number };
+    });
 
 export type ClientIntent =
+  | {
+      type: "MOVEMENT_DESTINATION_PREVIEWED";
+      seatId: string;
+      toSectorId: string | null;
+      routeId?: string;
+      movementRevision?: number;
+    }
   | {
       type: "MOVE_REQUESTED";
       seatId: string;
       toSectorId: string;
+      voidKeyInstanceId?: string;
+      routeId?: string;
+      movementRevision?: number;
     }
+  | {
+      type: "MOVEMENT_ROLL_REQUESTED";
+      seatId: string;
+    }
+  | { type: "ADJUST_MOVEMENT_REQUESTED"; seatId: string; instanceId: string; adjustment: -1 | 1 }
+  | { type: "SELECT_ROUTE_STAR_VARIANT"; seatId: string; instanceId: string; destinationId: string; routeId: string; movementRevision: number }
+  | { type: "ACTIVATE_GATE_SAINT"; seatId: string; instanceId: string }
+  | { type: "USE_MARROW_DETOUR"; seatId: string; instanceId: string; reactionId: string; toSectorId: string }
   | {
       type: "PHASE_ADVANCED";
       seatId: string;
@@ -284,6 +804,38 @@ export type ClientIntent =
       seatId: string;
     }
   | {
+      type: "SOLO_REROLL_REQUESTED";
+      seatId: string;
+    }
+  | {
+      type: "CONTINUE_RESOLUTION";
+      seatId: string;
+    }
+  | { type: "ENCOUNTER_DECISION_REQUESTED"; seatId: string; decisionId: string; decisionVersion: number; optionId: string }
+  | { type: "MEMORY_TAX_CHOICE_REQUESTED"; seatId: string; choiceId: string; choiceVersion: number; optionId: MemoryTaxOptionId }
+  | { type: "FORCED_DESTINATION_SELECTED"; seatId: string; choiceId: string; destinationSectorId: string }
+  | { type: "FORCED_DISPLACEMENT_ACCEPTED"; seatId: string; reactionId: string }
+  | {
+      type: "CONTINUE_SCAR_CONSEQUENCE";
+      seatId: string;
+      reactionId: string;
+    }
+  | {
+      type: "SET_READY";
+      seatId: string;
+      ready: boolean;
+    }
+  | {
+      type: "SELECT_CHARACTER";
+      seatId: string;
+      characterId: string;
+    }
+  | {
+      type: "SELECT_STARTING_CONTRACT";
+      seatId: string;
+      contractId: string;
+    }
+  | {
       type: "RECRUIT_REPLACEMENT";
       seatId: string;
       replacementCharacterId: string;
@@ -292,12 +844,71 @@ export type ClientIntent =
       type: "EQUIP_GEAR";
       seatId: string;
       gearId: string;
+      instanceId?: string;
       slot: GearSlot;
+    }
+  | {
+      type: "SELECT_EQUIPMENT_SUPPRESSION_TARGET";
+      seatId: string;
+      choiceId: string;
+      itemInstanceId: string;
     }
   | {
       type: "UNEQUIP_GEAR";
       seatId: string;
       slot: GearSlot;
+    }
+  | {
+      type: "USE_GEAR";
+      seatId: string;
+      gearId: string;
+      instanceId?: string;
+      pendingTileChallengeId?: string;
+      staticIntercessionReactionId?: string;
+      pendingTileChallengeEffectId?: string;
+      scarConsequenceReactionId?: string;
+      scarInstanceId?: string;
+      pendingScarEffectId?: string;
+      contractSignature?: string;
+      forcedDisplacementReactionId?: string;
+      forcedDisplacementSourceEventId?: string;
+    }
+  | {
+      type: "USE_FOLLOWER";
+      seatId: string;
+      followerId: string;
+      escalate?: boolean;
+    }
+  | {
+      type: "USE_CHARACTER_ABILITY";
+      seatId: string;
+      abilityId: string;
+    }
+  | {
+      type: "TABLE_INTERACTION";
+      seatId: string;
+      targetSeatId: string;
+      interactionKind: "trade" | "aid" | "duel" | "interfere";
+    }
+  | {
+      type: "SHOP_SERVICE_REQUESTED";
+      seatId: string;
+      serviceId: string;
+    }
+  | {
+      type: "SHOP_PURCHASE_REQUESTED";
+      seatId: string;
+      cardId: string;
+    }
+  | {
+      type: "SHOP_SELL_REQUESTED";
+      seatId: string;
+      gearId: string;
+      instanceId?: string;
+    }
+  | {
+      type: "SHOP_SKIP_REQUESTED";
+      seatId: string;
     }
   | {
       type: "ACCEPT_CONTRACT";
@@ -314,6 +925,10 @@ export type ClientIntent =
       seatId: string;
     }
   | {
+      type: "RIVALRY_AGENDA_REVEAL_REQUESTED";
+      seatId: string;
+    }
+  | {
       type: "RESOLVE_SPACE_TEXT";
       seatId: string;
       choiceId?: string;
@@ -326,4 +941,11 @@ export type ClientIntent =
       type: "RAISE_STAT_REQUESTED";
       seatId: string;
       stat: Stat;
+    }
+  | {
+      type: "NEMESIS_COMBAT_REQUESTED";
+      seatId: string;
+      nemesisId: string;
+      stat?: CheckStat;
+      assistSeatIds?: string[];
     };

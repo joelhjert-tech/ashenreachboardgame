@@ -1,0 +1,31 @@
+{
+  "id": "cinder-hounds",
+  "type": "threat",
+  "cardType": "enemy",
+  "title": "Cinder Hounds",
+  "enemyName": "Cinder Hounds",
+  "text": "Furnace hounds nose through the ash, hunting the warm breath between armor plates.",
+  "flavor": "They do not bark. They vent.",
+  "severity": 2,
+  "stat": "grit",
+  "difficulty": 6,
+  "trophyValue": 3,
+  "defeatReward": {
+    "type": "gain_note",
+    "text": "You learned the hounds' ember-scent and marked a safer approach."
+  },
+  "woundOnLoss": {
+    "type": "take_wound",
+    "amount": 1
+  },
+  "enemyFamily": "beast",
+  "threatLane": "red",
+  "resolutionType": "enemy",
+  "region": "outer",
+  "rarity": "common",
+  "tempo": "push",
+  "resourceTags": [
+    "trophy",
+    "wound"
+  ]
+}

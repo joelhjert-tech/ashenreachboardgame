@@ -1,0 +1,16 @@
+{
+  "id": "dominion-warbell-recovery",
+  "name": "Warbell Recovery",
+  "factionGiver": "Kaldr Dominion",
+  "text": "Recover a Red March warbell before the artillery crews teach it a new song.",
+  "objective": {
+    "type": "spaceTextResolved",
+    "effectKey": "middle_redMarchBargain",
+    "label": "Red March bargain secured",
+    "target": 1
+  },
+  "reward": {
+    "type": "gain_gear",
+    "gearId": "red-march-warbell"
+  }
+}

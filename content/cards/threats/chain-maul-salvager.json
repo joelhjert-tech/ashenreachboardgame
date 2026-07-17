@@ -1,0 +1,32 @@
+{
+  "id": "chain-maul-salvager",
+  "type": "threat",
+  "cardType": "enemy",
+  "title": "Chain-Maul Salvager",
+  "enemyName": "Chain-Maul Salvager",
+  "text": "A Rusted Host breaker drags a chained maul through shell grit, trading tactics for brutal reach.",
+  "flavor": "Anything still standing is merely unclaimed scrap.",
+  "severity": 2,
+  "region": "outer",
+  "stat": "grit",
+  "difficulty": 5,
+  "trophyValue": 3,
+  "defeatEffectKey": "threat_defeat_gain_salvage",
+  "defeatReward": {
+    "type": "gain_note",
+    "text": "You claimed usable chain links and a salvage mark from the breaker."
+  },
+  "woundOnLoss": {
+    "type": "take_wound",
+    "amount": 1
+  },
+  "enemyFamily": "machine",
+  "threatLane": "red",
+  "rarity": "common",
+  "tempo": "push",
+  "resourceTags": [
+    "loot",
+    "trophy",
+    "wound"
+  ]
+}

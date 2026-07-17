@@ -1,0 +1,33 @@
+{
+  "id": "emberwatch-sparkfall",
+  "type": "threat",
+  "cardType": "hazard",
+  "title": "Emberwatch Sparkfall",
+  "text": "The watch ridge sheds a rain of white sparks that hunts movement and exposed metal.",
+  "flavor": "Every spark lands like a verdict.",
+  "severity": 2,
+  "stat": "signal",
+  "difficulty": 7,
+  "successEffect": {
+    "type": "gain_note",
+    "text": "You timed the sparkfall and found a quiet count between bursts."
+  },
+  "failEffect": {
+    "type": "sequence",
+    "effects": [
+      {
+        "type": "take_wound",
+        "amount": 1
+      }
+    ]
+  },
+  "enemyFamily": "hazard",
+  "threatLane": "blue",
+  "region": "outer",
+  "rarity": "common",
+  "tempo": "push",
+  "resourceTags": [
+    "loot",
+    "wound"
+  ]
+}

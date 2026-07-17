@@ -1,0 +1,20 @@
+{
+  "id": "artifact-rift-anchor-spike",
+  "type": "artifact",
+  "missionRewardEligible": true,
+  "eliteThreatRewardEligible": true,
+  "rareShopEligible": true,
+  "scenarioRewardEligible": true,
+  "startingEligible": false,
+  "normalShopCommon": false,
+  "title": "Rift Anchor Spike",
+  "text": "A scorched brass spike that pins one impossible route to the board for a few breaths.",
+  "flavor": "Hammer it in and the world has to admit you were there.",
+  "artifactKind": "chargedRelic",
+  "charge": 2,
+  "resolutionSummary": "Recovered the Rift Anchor Spike and its two surviving charges.",
+  "resolveEffect": {
+    "type": "gain_gear",
+    "gearId": "rift-anchor-spike"
+  }
+}

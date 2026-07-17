@@ -1,0 +1,28 @@
+{
+  "id": "choir-static-censer",
+  "name": "Choir Static Censer",
+  "slot": "utility",
+  "category": "chargedRelic",
+  "statBonus": {
+    "stat": "signal",
+    "amount": 1
+  },
+  "activeText": "Static Intercession — Reaction: After you fail a recurring Anomaly Challenge, but before its failure effects resolve, spend 1 charge to ignore one pending failure effect from that challenge. The test still counts as failed, and any remaining failure effects resolve normally.",
+  "useLimit": "charge",
+  "charges": 2,
+  "effectModel": "charged",
+  "requiresEquipped": true,
+  "activationTiming": ["afterFailedTest"],
+  "maxCharges": 2,
+  "startingCharges": 2,
+  "chargeCost": 1,
+  "rechargeRule": "none",
+  "chargedEffect": "staticIntercession",
+  "flavor": "It sings only when the air is already wrong.",
+  "tier": "artifact",
+  "progressionWeight": 2.5,
+  "shopCategories": [
+    "relic-dealer",
+    "medicae-shrine"
+  ]
+}

@@ -38,15 +38,33 @@ describe("board space data", () => {
   it("includes the engine-critical original Ashen Reach anchor spaces", () => {
     const spaceIds = new Set(BOARD_SPACES.map((space) => space.id));
 
+    expect(BOARD_SPACES).toHaveLength(49);
     expect(spaceIds.has("outer_ember_sanctum")).toBe(true);
     expect(spaceIds.has("middle_guardian_span")).toBe(true);
     expect(spaceIds.has("inner_veil_rift")).toBe(true);
     expect(spaceIds.has("center_cinder_gate")).toBe(true);
+    expect(spaceIds.has("north-dock-bastion")).toBe(true);
+    expect(spaceIds.has("votive-engine-room")).toBe(true);
+    expect(spaceIds.has("kettleward-foundry")).toBe(true);
+    expect(BOARD_SPACES.filter((space) => space.tier === "outer")).toHaveLength(24);
+    expect(BOARD_SPACES.filter((space) => space.tier === "middle")).toHaveLength(16);
+    expect(BOARD_SPACES.filter((space) => space.tier === "inner")).toHaveLength(8);
+    expect(BOARD_SPACES.filter((space) => space.tier === "center")).toHaveLength(1);
+  });
+
+  it("gives every sector board-game presentation metadata", () => {
+    expect(
+      BOARD_SPACES.every(
+        (space) => space.tags.length > 0 && space.ruleText.trim().length > 0 && space.loreText.trim().length > 0
+      )
+    ).toBe(true);
+    expect(getBoardSpace("outer_waymarket")?.tags).toEqual(expect.arrayContaining(["shop", "crossroads"]));
+    expect(getBoardSpace("center_cinder_gate")?.ruleText).toMatch(/scenario directive/i);
   });
 
   it("surfaces movement boxes through the dedicated data file", () => {
     expect(MOVEMENT_BOXES.map((entry) => entry.spaceId).sort()).toEqual(
-      ["mirecoil-beacon", "middle_guardian_span"].sort()
+      ["mirecoil-beacon", "middle_guardian_span", "outer_broken_causeway", "shattered-causeway", "transit-gate"].sort()
     );
   });
 
@@ -88,12 +106,12 @@ describe("board space data", () => {
     ]);
     expect(cinderGate?.movementRequirements).toEqual([
       {
-        allowedFrom: ["inner_gate_of_cinders"],
-        errorMessage: "Only the Gate of Cinders opens the final route into the core chamber"
+        allowedFrom: ["inner_gate_of_cinders", "inner_blackstar_shortcut"],
+        errorMessage: "Only the Last Signal Well or Dead Star Reliquary opens the final route into the core chamber"
       },
       {
         requiredNotes: ["gate-of-cinders-breached"],
-        errorMessage: "Resolve the Gate of Cinders before entering the Cinder Gate"
+        errorMessage: "Resolve the Last Signal Well before entering the Ashen Reach Core"
       }
     ]);
   });
@@ -106,7 +124,7 @@ describe("board space data", () => {
 });
 
 describe("exploration and engagement rules", () => {
-  it("calculates draw counts from printed icons, card icons, and existing cards", () => {
+  it("calculates draw counts from printed icons, occupied lanes, and additional card pressure", () => {
     const space = getBoardSpace("ashwake-crossing");
 
     if (!space) {
@@ -129,19 +147,56 @@ describe("exploration and engagement rules", () => {
     expect(calculateExplorationDraws(space, cards)).toEqual({
       red: 0,
       blue: 0,
-      yellow: 2
+      yellow: 1
     });
   });
 
-  it("orders engagement resolution event, enemy, encounter, asset", () => {
+  it("does not redraw a printed threat lane while a matching blocker remains", () => {
+    const space = getBoardSpace("ashwake-crossing");
+
+    if (!space) {
+      throw new Error("Missing board space fixture");
+    }
+
+    expect(
+      calculateExplorationDraws(space, [
+        {
+          id: "marrow-tax-auditors",
+          category: "enemy",
+          icons: ["yellow"]
+        }
+      ])
+    ).toEqual({
+      red: 0,
+      blue: 0,
+      yellow: 0
+    });
+  });
+
+  it("does not draw automatic threats for service spaces with no printed icons", () => {
+    const space = getBoardSpace("outer_ember_sanctum");
+
+    if (!space) {
+      throw new Error("Missing service board space fixture");
+    }
+
+    expect(calculateExplorationDraws(space, [])).toEqual({
+      red: 0,
+      blue: 0,
+      yellow: 0
+    });
+  });
+
+  it("orders engagement resolution event, enemy, nemesis, encounter, asset", () => {
     const queue = buildEngagementQueue([
       { id: "asset-a", category: "asset", icons: [] },
       { id: "enemy-a", category: "enemy", icons: ["red"] },
+      { id: "nemesis-a", category: "nemesis", icons: ["red", "blue"] },
       { id: "event-a", category: "event", icons: ["blue"] },
       { id: "encounter-a", category: "encounter", icons: ["yellow"] }
     ]);
 
-    expect(queue.map((entry) => entry.category)).toEqual(["event", "enemy", "encounter", "asset"]);
+    expect(queue.map((entry) => entry.category)).toEqual(["event", "enemy", "nemesis", "encounter", "asset"]);
   });
 
   it("only resolves space text in outer and middle tiers when no threat cards remain", () => {
@@ -154,7 +209,21 @@ describe("exploration and engagement rules", () => {
 
     expect(shouldResolveSpaceText(outer, [])).toBe(true);
     expect(shouldResolveSpaceText(outer, [{ id: "enemy-a", category: "enemy", icons: ["red"] }])).toBe(false);
-    expect(shouldResolveSpaceText(inner, [{ id: "enemy-a", category: "enemy", icons: ["red"] }])).toBe(true);
+    expect(shouldResolveSpaceText(inner, [{ id: "enemy-a", category: "enemy", icons: ["red"] }])).toBe(false);
+  });
+
+  it("calculates inner-ring printed threat draws instead of skipping exploration", () => {
+    const space = getBoardSpace("the-bone-meridian");
+
+    if (!space) {
+      throw new Error("Missing inner board space fixture");
+    }
+
+    expect(calculateExplorationDraws(space, [])).toEqual({
+      red: 1,
+      blue: 0,
+      yellow: 1
+    });
   });
 });
 
@@ -169,6 +238,7 @@ describe("board space resolver", () => {
     const event = resolveBoardSpaceEvent(samplePlayer, space, []);
 
     expect(event.spaceId).toBe("mirecoil-beacon");
+    expect(event.printedThreatIcons).toEqual(["yellow", "blue"]);
     expect(event.exploration.skipped).toBe(false);
     expect(event.engagement.shouldResolveTextBox).toBe(true);
     expect(event.textBox.effectKey).toBe("outer_mirecoilTraffic");
@@ -177,14 +247,14 @@ describe("board space resolver", () => {
 });
 
 describe("movement and scenario helpers", () => {
-  it("forces inner-tier movement to exactly one step with exploration skipped", () => {
+  it("forces inner-tier movement to exactly one step while preserving exploration", () => {
     expect(getMovementProfile("inner")).toEqual({
       tier: "inner",
       movementRollAllowed: false,
       movementAmount: 1,
       movementModifiersAllowed: false,
-      skipsExploration: true,
-      resolveTextBoxAlways: true
+      skipsExploration: false,
+      resolveTextBoxAlways: false
     });
   });
 

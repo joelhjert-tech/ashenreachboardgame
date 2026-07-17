@@ -17,3 +17,8 @@
 - Tyranid
 - Necron
 - Crown of Command
+- Heresy
+- Psychic
+- Psyker
+- Medicae
+- Hive

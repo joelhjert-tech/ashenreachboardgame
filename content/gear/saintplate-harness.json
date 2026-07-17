@@ -1,0 +1,20 @@
+{
+  "id": "saintplate-harness",
+  "name": "Saintplate Harness",
+  "slot": "armor",
+  "category": "passive",
+  "statBonus": {
+    "stat": "forge",
+    "amount": 1
+  },
+  "flavor": "Chapel plate scavenged from a saint-engine and rebuilt for a living back.",
+  "tier": "advanced",
+  "startingEligible": false,
+  "normalShopCommon": false,
+  "cost": 6,
+  "sellValue": 3,
+  "progressionWeight": 1.5,
+  "shopCategories": [
+    "forge-armoury"
+  ]
+}

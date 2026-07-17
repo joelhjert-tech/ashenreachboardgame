@@ -2,6 +2,7 @@ import { boardTilePrompts } from "./boardTilePrompts.js";
 import { cardArtPrompts } from "./cardArtPrompts.js";
 import { cardTemplatePrompts } from "./cardTemplatePrompts.js";
 import { characterPortraitPrompts } from "./characterPortraitPrompts.js";
+import { generatedCardImagePrompts } from "./generatedCardImagePrompts.js";
 import { baseNegativePrompt } from "./negativePrompt.js";
 import { scenarioSheetPrompts } from "./scenarioSheetPrompts.js";
 import { uiPrompts } from "./uiPrompts.js";
@@ -17,6 +18,12 @@ export type ImagePromptSpec = {
     | "nemesisPortrait"
     | "missionCardArt"
     | "threatCardArt"
+    | "contractCardArt"
+    | "anomalyCardArt"
+    | "artifactCardArt"
+    | "equipmentCardArt"
+    | "scarCardArt"
+    | "escalationCardArt"
     | "powerCardArt"
     | "corruptionCardArt"
     | "relicCardArt"
@@ -31,6 +38,9 @@ export type ImagePromptSpec = {
   prompt: string;
   negativePrompt: string;
   usage: string;
+  priority?: number;
+  releaseRequired?: boolean;
+  placeholderAllowed?: boolean;
 };
 
 export const requiredImageGenerationChecklist = [
@@ -39,14 +49,13 @@ export const requiredImageGenerationChecklist = [
   "18 middle tier tile images",
   "8 inner/center tile images",
   "6 character portraits",
-  "5 nemesis portraits",
-  "8 card backs",
-  "12 mission card art images",
+  "6 nemesis portraits",
+  "7 card backs",
+  "12 contract card art images",
   "15 threat card art images",
-  "12 power/corruption/relic/wargear sample card images",
-  "8 icons",
+  "9 route-note/artifact/wargear sample card images",
   "4 tokens",
-  "7 UI frames/backgrounds",
+  "4 UI frames/backgrounds",
   "6 printable scenario sheet illustrations"
 ] as const;
 
@@ -55,6 +64,16 @@ export const imagePrompts: ImagePromptSpec[] = [
   ...characterPortraitPrompts,
   ...cardTemplatePrompts,
   ...cardArtPrompts,
+  ...generatedCardImagePrompts.map((prompt) => ({
+    id: prompt.assetId,
+    fileName: prompt.fileName,
+    outputPath: prompt.outputPath,
+    assetType: prompt.assetType,
+    size: "card" as const,
+    prompt: prompt.prompt,
+    negativePrompt: prompt.negativePrompt,
+    usage: prompt.usage
+  })),
   ...scenarioSheetPrompts,
   ...uiPrompts
 ];

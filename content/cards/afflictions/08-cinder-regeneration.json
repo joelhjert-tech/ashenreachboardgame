@@ -1,0 +1,13 @@
+{
+  "id": "cinder-regeneration",
+  "name": "Cinder Regeneration",
+  "severity": 1,
+  "category": "movementReaction",
+  "duration": "ongoing",
+  "trigger": "Each time one of your movement dice shows 6.",
+  "rulesText": "Heal 1 wound, up to your starting wound limit.",
+  "effectKind": "movementReaction",
+  "effectPayload": { "trigger": "movementDie6", "heal": 1, "cap": "startingHealth" },
+  "flipFacedownAfterResolve": false,
+  "isFaceupOngoing": true
+}

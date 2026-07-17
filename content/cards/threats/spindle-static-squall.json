@@ -1,0 +1,29 @@
+{
+  "id": "spindle-static-squall",
+  "type": "threat",
+  "cardType": "hazard",
+  "title": "Spindle Static Squall",
+  "text": "The squall corrupts your bearing. On failure, reduce your next movement roll by 1, to a minimum of 1.",
+  "flavor": "Even the silence points north.",
+  "severity": 2,
+  "stat": "signal",
+  "difficulty": 6,
+  "successEffect": {
+    "type": "gain_note",
+    "text": "You tuned the squall into a stable bearing."
+  },
+  "failEffect": {
+    "type": "next_normal_movement_roll_modifier",
+    "amount": -1,
+    "minimumResult": 1,
+    "sourceCardId": "spindle-static-squall"
+  },
+  "enemyFamily": "hazard",
+  "threatLane": "blue",
+  "region": "outer",
+  "rarity": "common",
+  "tempo": "push",
+  "resourceTags": [
+    "loot"
+  ]
+}

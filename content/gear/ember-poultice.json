@@ -1,0 +1,24 @@
+{
+  "id": "ember-poultice",
+  "name": "Ember Poultice",
+  "slot": "utility",
+  "subtype": "supply",
+  "category": "passive",
+  "statBonus": {
+    "stat": "forge",
+    "amount": 1
+  },
+  "cost": 2,
+  "sellValue": 1,
+  "sellable": true,
+  "tier": "starter",
+  "progressionWeight": 1,
+  "flavor": "A warming field pack that adds +1 Forge during recovery.",
+  "activeText": "A warming field pack that adds +1 Forge during recovery.",
+  "shopCategories": [
+    "market"
+  ],
+  "startingEligible": true,
+  "normalShopCommon": true,
+  "allowedFallbackArt": true
+}

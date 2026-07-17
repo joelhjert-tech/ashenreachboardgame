@@ -1,0 +1,24 @@
+{
+  "id": "bridge-spike",
+  "name": "Bridge Spike",
+  "slot": "utility",
+  "subtype": "tool",
+  "category": "passive",
+  "statBonus": {
+    "stat": "forge",
+    "amount": 1
+  },
+  "cost": 3,
+  "sellValue": 1,
+  "sellable": true,
+  "tier": "standard",
+  "progressionWeight": 1,
+  "flavor": "A load-bearing anchor that adds +1 Forge on route work.",
+  "activeText": "A load-bearing anchor that adds +1 Forge on route work.",
+  "shopCategories": [
+    "market"
+  ],
+  "startingEligible": true,
+  "normalShopCommon": true,
+  "allowedFallbackArt": true
+}

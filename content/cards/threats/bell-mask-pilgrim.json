@@ -1,0 +1,31 @@
+{
+  "id": "bell-mask-pilgrim",
+  "type": "threat",
+  "cardType": "enemy",
+  "title": "Bell-Mask Pilgrim",
+  "enemyName": "Bell-Mask Pilgrim",
+  "text": "A lone pilgrim rings a cracked brass mask until the signal in your teeth begins ringing back.",
+  "flavor": "He never speaks. The bell does all the begging.",
+  "severity": 1,
+  "region": "outer",
+  "stat": "signal",
+  "difficulty": 5,
+  "trophyValue": 1,
+  "defeatReward": {
+    "type": "gain_note",
+    "text": "You silenced the bell and recovered its route-scratched clapper."
+  },
+  "woundOnLoss": {
+    "type": "take_wound",
+    "amount": 1
+  },
+  "enemyFamily": "choir",
+  "threatLane": "blue",
+  "rarity": "common",
+  "tempo": "stall",
+  "resourceTags": [
+    "wound",
+    "loot",
+    "trophy"
+  ]
+}

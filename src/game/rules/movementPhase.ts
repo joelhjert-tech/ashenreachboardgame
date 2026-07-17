@@ -16,8 +16,8 @@ export function getMovementProfile(tier: BoardTier): MovementProfile {
       movementRollAllowed: false,
       movementAmount: 1,
       movementModifiersAllowed: false,
-      skipsExploration: true,
-      resolveTextBoxAlways: true
+      skipsExploration: false,
+      resolveTextBoxAlways: false
     };
   }
 

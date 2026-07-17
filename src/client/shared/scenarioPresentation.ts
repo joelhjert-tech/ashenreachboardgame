@@ -3,6 +3,10 @@ import type { ActiveScenarioSummary, ScenarioTelemetryItem } from "./types.js";
 export interface ScenarioRuleDigest {
   pressureSummary: string;
   telemetry: string[];
+  pressureTrack: string | null;
+  finalGateRequirement: string | null;
+  boardHooks: string[];
+  rewards: string[];
   specialRules: string[];
   confrontationSteps: string[];
   victoryText: string;
@@ -46,6 +50,16 @@ export function buildScenarioRuleDigest(
   return {
     pressureSummary: activeScenario.pressureSummary,
     telemetry: scenarioTelemetry.slice(0, limits.telemetry ?? 4).map((entry) => `${entry.label}: ${entry.value}`),
+    pressureTrack: activeScenario.pressureTrack
+      ? `${activeScenario.pressureTrack.name}: ${activeScenario.pressureTrack.start}/${activeScenario.pressureTrack.max} | ${activeScenario.pressureTrack.tickTiming}`
+      : null,
+    finalGateRequirement: activeScenario.finalGateRequirement ?? null,
+    boardHooks: Object.entries(activeScenario.boardHooks ?? {})
+      .slice(0, 3)
+      .map(([label, text]) => `${label}: ${text}`),
+    rewards: (activeScenario.scenarioRewards ?? [])
+      .slice(0, 3)
+      .map((reward) => `${reward.name}: ${reward.text}`),
     specialRules: activeScenario.specialRules.slice(0, limits.specialRules ?? 2),
     confrontationSteps: activeScenario.confrontationSteps.slice(0, limits.confrontationSteps ?? 2),
     victoryText: activeScenario.victoryText

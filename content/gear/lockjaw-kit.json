@@ -1,0 +1,24 @@
+{
+  "id": "lockjaw-kit",
+  "name": "Lockjaw Kit",
+  "slot": "utility",
+  "subtype": "tool",
+  "category": "passive",
+  "statBonus": {
+    "stat": "guile",
+    "amount": 1
+  },
+  "cost": 3,
+  "sellValue": 1,
+  "sellable": true,
+  "tier": "standard",
+  "progressionWeight": 1,
+  "flavor": "Quiet breach tools that add +1 Guile on locks and bargains.",
+  "activeText": "Quiet breach tools that add +1 Guile on locks and bargains.",
+  "shopCategories": [
+    "market"
+  ],
+  "startingEligible": true,
+  "normalShopCommon": true,
+  "allowedFallbackArt": true
+}

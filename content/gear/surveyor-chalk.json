@@ -1,0 +1,24 @@
+{
+  "id": "surveyor-chalk",
+  "name": "Surveyor Chalk",
+  "slot": "utility",
+  "subtype": "tool",
+  "category": "passive",
+  "statBonus": {
+    "stat": "command",
+    "amount": 1
+  },
+  "cost": 2,
+  "sellValue": 1,
+  "sellable": true,
+  "tier": "starter",
+  "progressionWeight": 1,
+  "flavor": "Route marks that add +1 Command when coordinating movement.",
+  "activeText": "Route marks that add +1 Command when coordinating movement.",
+  "shopCategories": [
+    "market"
+  ],
+  "startingEligible": true,
+  "normalShopCommon": true,
+  "allowedFallbackArt": true
+}

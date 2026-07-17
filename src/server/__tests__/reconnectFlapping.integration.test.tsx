@@ -28,6 +28,13 @@ class TestWebSocket extends NodeWebSocket {
 }
 
 vi.mock("../../client/shared/network.js", () => ({
+  getConnectionDiagnostics: () => ({
+    pageUrl: "http://127.0.0.1:5173/",
+    apiOrigin: "http://127.0.0.1:8080",
+    webSocketOrigin: mockedWebSocketOrigin,
+    publicClientOrigin: null,
+    isLocalhostPage: true
+  }),
   getWebSocketOrigin: () => mockedWebSocketOrigin
 }));
 
@@ -57,14 +64,18 @@ function createState(): GameState {
     sessionId,
     status: "active",
     sessionMode: "single-player",
+    gameMode: "standard",
     winnerSeatId: null,
     activeScenarioId: "scenario_broken_seal",
     scenarioProgress: {},
+    scenarioPreparation: { resources: {}, completedObjectiveIds: [], processedSourceEventIds: [] },
+    scenarioConfrontation: { active: false, confrontationId: null, progress: {}, stage: null, processedSourceEventIds: [] },
+    scenarioResult: { status: "unresolved", victoryConditionId: null, sourceType: null, sourceId: null, winningSeatId: null, shared: null, achievedAtSequence: null },
     phase: "navigation",
     resolutionSource: null,
     activeSeatIndex: 0,
     turnOrder: [seatId],
-    heatThreshold: 6,
+    reflectionPressureThreshold: 6,
     woundThreshold: 3,
     sequence: 0,
     escalationLevel: 0,
@@ -83,7 +94,10 @@ function createState(): GameState {
         seatId,
         characterId: "void-marshal",
         displayName: "Seat One",
+        startingContractOptions: [],
+        selectedStartingContractId: null,
         connected: false,
+        ready: false,
         kicked: false,
         joinToken: createJoinToken({ sessionId, seatId })
       }
@@ -100,6 +114,9 @@ function createState(): GameState {
       }
     ],
     availableContracts: [],
+    shopStockReveals: [],
+    nemesisChampions: [],
+    nemesisNexusCountdowns: [],
     eventLog: [],
     currentEncounter: null,
     pendingEnemyRoll: null,
@@ -262,5 +279,7 @@ describe("reconnect flapping regression", () => {
     expect(statuses.length).toBe(settledStatusCount);
     expect(statuses).toContain("closed");
     expect(statuses.at(-1)).toBe("open");
+    expect(harness.roomServer.getState().reflectionPressureThreshold).toBe(6);
+    expect(JSON.stringify(patches)).not.toMatch(/heatThreshold|reflectionPressureThreshold/);
   }, 15000);
 });

@@ -1,0 +1,27 @@
+{
+  "id": "red-march-warbell",
+  "name": "Red March Warbell",
+  "slot": "weapon",
+  "category": "dangerous",
+  "statBonus": {
+    "stat": "grit",
+    "amount": 2
+  },
+  "activeText": "Before your battle roll, spend 1 Salvage and exhaust the Red March Warbell to add +2 Grit to that battle.",
+  "useLimit": "oncePerRound",
+  "effectModel": "exhaust",
+  "activationTiming": ["beforeBattleRoll"],
+  "resetWindow": "round",
+  "exhaustEffect": "warbellCommand",
+  "activationCost": { "type": "salvage", "amount": 1 },
+  "requiresEquipped": true,
+  "flavor": "It wins arguments by making the whole district listen.",
+  "tier": "artifact",
+  "startingEligible": false,
+  "normalShopCommon": false,
+  "progressionWeight": 2.25,
+  "shopCategories": [
+    "forge-armoury",
+    "relic-dealer"
+  ]
+}

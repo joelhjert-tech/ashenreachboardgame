@@ -1,0 +1,36 @@
+{
+  "id": "breach-halberd",
+  "type": "threat",
+  "cardType": "hazard",
+  "title": "Breach Halberd",
+  "text": "The halberd sweeps you off the breach. Move 1 sector clockwise on this ring. If no legal sector is available, suffer 1 Wound.",
+  "flavor": "It remembers the last charge better than the soldier did.",
+  "severity": 2,
+  "stat": "forge",
+  "difficulty": 6,
+  "successEffect": {
+    "type": "gain_note",
+    "text": "You stripped a breach-halberd for a brutal route note."
+  },
+  "failEffect": {
+    "type": "forcedDisplacement",
+    "direction": "clockwise",
+    "distance": 1,
+    "sameRing": true,
+    "fallbackEffect": {
+      "type": "take_wound",
+      "amount": 1
+    },
+    "failureStillCounts": true
+  },
+  "enemyFamily": "hazard",
+  "threatLane": "red",
+  "resolutionType": "asset",
+  "region": "outer",
+  "rarity": "uncommon",
+  "tempo": "push",
+  "resourceTags": [
+    "movement",
+    "wound"
+  ]
+}

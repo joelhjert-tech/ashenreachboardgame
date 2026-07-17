@@ -1,0 +1,32 @@
+{
+  "id": "red-maw-raiders",
+  "type": "threat",
+  "cardType": "enemy",
+  "title": "Red-Maw Raiders",
+  "enemyName": "Red-Maw Raiders",
+  "text": "Raiders in wide-grinning masks close the toll road with hooks, rifles, and rehearsed hunger.",
+  "flavor": "The mask smiles so the raider does not have to.",
+  "severity": 3,
+  "stat": "command",
+  "difficulty": 7,
+  "trophyValue": 4,
+  "defeatReward": {
+    "type": "gain_note",
+    "text": "You broke the raider signal chain and kept their false toll call."
+  },
+  "woundOnLoss": {
+    "type": "take_wound",
+    "amount": 1
+  },
+  "enemyFamily": "human",
+  "threatLane": "red",
+  "resolutionType": "enemy",
+  "region": "middle",
+  "rarity": "uncommon",
+  "tempo": "push",
+  "resourceTags": [
+    "loot",
+    "trophy",
+    "wound"
+  ]
+}

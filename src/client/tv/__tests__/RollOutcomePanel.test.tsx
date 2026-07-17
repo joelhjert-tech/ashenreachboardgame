@@ -36,6 +36,7 @@ describe("RollOutcomePanel", () => {
     expect(container.querySelector("[data-testid='roll-state']")).toHaveTextContent(/success/i);
     expect(container.querySelector("[data-testid='roll-total']")).toHaveTextContent("10");
     expect(container.querySelector("[data-testid='roll-difficulty']")).toHaveTextContent("9");
+    expect(container.querySelector("[data-testid='combat-dice-animation']")).toHaveTextContent("A 10 / D 9 / +2");
   });
 
   it("renders the failure state when the roll does not beat difficulty", () => {
@@ -82,5 +83,6 @@ describe("RollOutcomePanel", () => {
     expect(container.querySelector("[data-testid='roll-total']")).toHaveTextContent("13");
     expect(container.querySelector("[data-testid='roll-enemy-total']")).toHaveTextContent("9");
     expect(container.querySelector("[data-testid='roll-state']")).toHaveTextContent(/victory/i);
+    expect(container.querySelector("[data-testid='combat-result-token']")).toHaveTextContent("A 13 / D 9 / +2");
   });
 });

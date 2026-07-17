@@ -1,0 +1,16 @@
+{
+  "id": "salvage-the-bellframe",
+  "name": "Salvage the Bellframe",
+  "factionGiver": "Veyr Clans",
+  "text": "Recover the bellframe before the clans melt it down into debt tokens and warning chimes.",
+  "objective": {
+    "type": "spaceTextResolved",
+    "effectKey": "middle_shardSprawlBargain",
+    "label": "Bellframe salvage claimed",
+    "target": 1
+  },
+  "reward": {
+    "type": "gain_gear",
+    "gearId": "scrap-drone"
+  }
+}

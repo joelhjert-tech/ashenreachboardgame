@@ -1,0 +1,36 @@
+{
+  "id": "signal-rotted-engineer",
+  "type": "threat",
+  "cardType": "enemy",
+  "title": "Signal-Rotted Engineer",
+  "enemyName": "Signal-Rotted Engineer",
+  "text": "If you lose, choose one equipped normal Equipment. It provides no effects during your next battle.",
+  "flavor": "The hands remember repairs. The signal remembers harm.",
+  "severity": 2,
+  "region": "outer",
+  "stat": "forge",
+  "difficulty": 4,
+  "trophyValue": 2,
+  "combatEffectKeys": [
+    "threat_disable_weapon_bonus"
+  ],
+  "failEffectKey": "threat_fail_drop_gear",
+  "defeatReward": {
+    "type": "gain_note",
+    "text": "You stripped the bad signal out of its tool rig."
+  },
+  "woundOnLoss": {
+    "type": "equipment_suppression",
+    "sourceCardId": "signal-rotted-engineer",
+    "mode": "duringNextBattle"
+  },
+  "enemyFamily": "machine",
+  "threatLane": "yellow",
+  "rarity": "common",
+  "tempo": "push",
+  "resourceTags": [
+    "loot",
+    "scenario",
+    "trophy"
+  ]
+}

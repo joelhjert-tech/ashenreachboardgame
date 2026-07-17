@@ -56,7 +56,6 @@ function buildCharacterChanges(
 
   const changes: AbilityChangeItem[] = [];
 
-  pushSignedChange(changes, "Heat", currentCharacter.heat - previousCharacter.heat, "warn", "good");
   pushSignedChange(changes, "Wounds", currentCharacter.wounds - previousCharacter.wounds, "warn", "good");
   pushSignedChange(changes, "Scars", currentCharacter.scars.length - previousCharacter.scars.length, "warn", "good");
 

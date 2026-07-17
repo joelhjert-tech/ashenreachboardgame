@@ -11,11 +11,21 @@
   "difficulty": 6,
   "trophyValue": 6,
   "defeatReward": {
-    "type": "lose_heat",
+    "type": "gain_salvage",
     "amount": 1
   },
   "woundOnLoss": {
     "type": "take_wound",
     "amount": 1
-  }
+  },
+  "enemyFamily": "human",
+  "threatLane": "yellow",
+  "region": "outer",
+  "rarity": "common",
+  "tempo": "stall",
+  "resourceTags": [
+    "salvage",
+    "trophy",
+    "wound"
+  ]
 }

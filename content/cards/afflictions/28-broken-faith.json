@@ -1,0 +1,13 @@
+{
+  "id": "broken-faith",
+  "name": "Broken Faith",
+  "severity": 1,
+  "category": "immediateStatLoss",
+  "duration": "immediate",
+  "trigger": "When revealed.",
+  "rulesText": "Lose 1 Command. Then flip facedown.",
+  "effectKind": "immediateStatLoss",
+  "effectPayload": { "stat": "command", "amount": -1 },
+  "flipFacedownAfterResolve": true,
+  "isFaceupOngoing": false
+}

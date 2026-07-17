@@ -1,0 +1,25 @@
+{
+  "id": "cinder-suture-kit",
+  "name": "Cinder Suture Kit",
+  "slot": "utility",
+  "subtype": "medical",
+  "category": "passive",
+  "statBonus": {
+    "stat": "forge",
+    "amount": 1
+  },
+  "cost": 3,
+  "sellValue": 1,
+  "sellable": true,
+  "tier": "standard",
+  "progressionWeight": 1,
+  "flavor": "Field sutures that add +1 Forge during recovery work.",
+  "activeText": "Field sutures that add +1 Forge during recovery work.",
+  "shopCategories": [
+    "medicae-shrine",
+    "market"
+  ],
+  "startingEligible": true,
+  "normalShopCommon": true,
+  "allowedFallbackArt": true
+}

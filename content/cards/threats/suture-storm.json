@@ -1,0 +1,44 @@
+{
+  "id": "suture-storm",
+  "type": "threat",
+  "cardType": "hazard",
+  "title": "Suture Storm",
+  "text": "The storm stitches flesh to road. Suffer 1 Wound, then move 1 sector counterclockwise on this ring. If no legal sector is available, suffer 1 Wound instead of moving.",
+  "flavor": "The clouds have thread. The ground has needles.",
+  "severity": 4,
+  "stat": "grit",
+  "difficulty": 8,
+  "successEffect": {
+    "type": "gain_note",
+    "text": "You crossed the storm on the beat between stitches."
+  },
+  "failEffect": {
+    "type": "sequence",
+    "effects": [
+      {
+        "type": "take_wound",
+        "amount": 1
+      },
+      {
+        "type": "forcedDisplacement",
+        "direction": "counterclockwise",
+        "distance": 1,
+        "sameRing": true,
+        "fallbackEffect": {
+          "type": "take_wound",
+          "amount": 1
+        },
+        "failureStillCounts": true
+      }
+    ]
+  },
+  "enemyFamily": "hazard",
+  "threatLane": "red",
+  "region": "middle",
+  "rarity": "uncommon",
+  "tempo": "push",
+  "resourceTags": [
+    "loot",
+    "wound"
+  ]
+}

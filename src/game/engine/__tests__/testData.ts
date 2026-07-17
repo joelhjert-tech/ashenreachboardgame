@@ -12,7 +12,6 @@ export function createCharacters(): Map<string, Character> {
         status: "active",
         stats: { command: 3, grit: 2, signal: 1, guile: 2, forge: 1 },
         trophies: 0,
-        heat: 0,
         wounds: 0,
         scars: [],
         activeContract: null,
@@ -38,7 +37,6 @@ export function createCharacters(): Map<string, Character> {
         status: "active",
         stats: { command: 1, grit: 1, signal: 4, guile: 2, forge: 1 },
         trophies: 0,
-        heat: 0,
         wounds: 0,
         scars: [],
         activeContract: null,
@@ -64,7 +62,6 @@ export function createCharacters(): Map<string, Character> {
         status: "active",
         stats: { command: 1, grit: 2, signal: 1, guile: 1, forge: 4 },
         trophies: 0,
-        heat: 0,
         wounds: 0,
         scars: [],
         activeContract: null,
@@ -78,6 +75,24 @@ export function createCharacters(): Map<string, Character> {
         ],
         equippedGear: { weapon: null, armor: "coffin-rig", utility: null },
         abilities: [{ id: "cold-repair", name: "Cold Repair", text: "Restore spent gear when you finish resolution in a safe sector." }]
+      }
+    ],
+    [
+      "char_deepdale",
+      {
+        id: "char_deepdale",
+        name: "Deepdale",
+        archetype: "Deep Route Delver",
+        currentSpaceId: "sector-b",
+        status: "active",
+        stats: { command: 1, grit: 2, signal: 2, guile: 1, forge: 3 },
+        trophies: 0,
+        wounds: 0,
+        scars: [],
+        activeContract: null,
+        heldGear: [],
+        equippedGear: { weapon: null, armor: null, utility: null },
+        abilities: [{ id: "underway-ear", name: "Underway Ear", text: "Read pressure changes before a route fails." }]
       }
     ]
   ]);

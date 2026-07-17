@@ -29,6 +29,9 @@ jobs:
       - name: Validate content
         run: npm run validate:content
 
+      - name: Audit assets
+        run: npm run audit:assets
+
       - name: Client tests
         run: npm run test:client
 
@@ -37,3 +40,41 @@ jobs:
 
       - name: Integration tests
         run: npm run test:integration
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium firefox webkit
+
+      - name: Start local UI stack
+        run: |
+          CLIENT_PORT=5173 PORT=8080 nohup npm run dev > /tmp/ashen-reach-dev.log 2>&1 &
+          echo $! > /tmp/ashen-reach-dev.pid
+          node -e "
+          const targets = ['http://127.0.0.1:5173', 'http://127.0.0.1:8080/api/session'];
+          const deadline = Date.now() + 90000;
+          async function waitFor(url) {
+            while (Date.now() < deadline) {
+              try {
+                const response = await fetch(url);
+                if (response.ok) return;
+              } catch {}
+              await new Promise((resolve) => setTimeout(resolve, 1000));
+            }
+            throw new Error('Timed out waiting for ' + url);
+          }
+          Promise.all(targets.map(waitFor)).catch((error) => {
+            console.error(error);
+            process.exit(1);
+          });
+          "
+
+      - name: Phone device matrix
+        run: npm run test:phone-matrix
+        env:
+          PHONE_UI_BASE_URL: http://127.0.0.1:5173
+          PHONE_UI_API_URL: http://127.0.0.1:8080
+
+      - name: Six-scenario E2E
+        run: npm run test:e2e:scenarios
+        env:
+          SCENARIO_E2E_CLIENT_URL: http://127.0.0.1:5173
+          SCENARIO_E2E_API_URL: http://127.0.0.1:8080

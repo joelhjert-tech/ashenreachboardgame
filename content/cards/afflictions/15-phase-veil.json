@@ -1,0 +1,13 @@
+{
+  "id": "phase-veil",
+  "name": "Phase Veil",
+  "severity": 5,
+  "category": "mutationBoon",
+  "duration": "ongoing",
+  "trigger": "While faceup.",
+  "rulesText": "You may evade enemies unless another effect says you cannot evade.",
+  "effectKind": "mutationBoon",
+  "effectPayload": { "canEvadeEnemies": true },
+  "flipFacedownAfterResolve": false,
+  "isFaceupOngoing": true
+}

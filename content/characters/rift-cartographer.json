@@ -6,13 +6,12 @@
   "status": "active",
   "stats": {
     "command": 1,
-    "grit": 1,
-    "signal": 2,
-    "guile": 3,
+    "grit": 2,
+    "signal": 5,
+    "guile": 5,
     "forge": 2
   },
   "trophies": 0,
-  "heat": 0,
   "wounds": 0,
   "scars": [],
   "activeContract": null,
@@ -26,22 +25,27 @@
     {
       "id": "breach-atlas",
       "name": "Breach Atlas",
-      "text": "Once per round, when you finish mapping a live lane, you can record a safer route note and shed 1 Heat from the effort."
+      "text": "Once per round, after you enter or clear a movement/anomaly sector, record a private route insight."
     },
     {
       "id": "ghost-mile",
       "name": "Ghost Mile",
-      "text": "False routes stand out to you because you have already drawn them all in your head."
+      "text": "Descriptive only. A failed movement or route test leaves Senna with a revised route insight for a later decision."
     },
     {
       "id": "surveyor-cut",
       "name": "Surveyor's Cut",
-      "text": "A clean path is never just a path to you; it is stored future leverage."
+      "text": "Once per round, when you accept a route Contract, set its progress to at least 1."
     },
     {
       "id": "rift-script",
       "name": "Rift Script",
-      "text": "You annotate hostile ground fast enough that other operatives can use your work before it fades."
+      "text": "Descriptive only. After a clean Signal or Guile read, Senna shares route intelligence with the sector."
     }
-  ]
+  ],
+  "startingGear": [
+    "route-compass",
+    "surveyor-chalk"
+  ],
+  "startingContract": "cartel-quiet-route"
 }

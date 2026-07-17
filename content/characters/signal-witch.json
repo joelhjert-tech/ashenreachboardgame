@@ -6,13 +6,12 @@
   "status": "active",
   "stats": {
     "command": 1,
-    "grit": 1,
-    "signal": 4,
-    "guile": 2,
-    "forge": 1
+    "grit": 2,
+    "signal": 5,
+    "guile": 4,
+    "forge": 3
   },
   "trophies": 0,
-  "heat": 0,
   "wounds": 0,
   "scars": [],
   "activeContract": null,
@@ -26,22 +25,27 @@
     {
       "id": "witchglass-choir",
       "name": "Witchglass Choir",
-      "text": "Signal tests in tuned sectors draw on your private relay chorus and read cleaner than they should."
+      "text": "Once per round, after you pass a Signal test, record a private route insight."
     },
     {
       "id": "route-burn",
       "name": "Route Burn",
-      "text": "After you map a lane, leave behind a note that other operatives can use as a safer approach."
+      "text": "Descriptive only. After clearing blue or movement ground, Lane leaves route intelligence for the table."
     },
     {
       "id": "hush-static",
       "name": "Hush Static",
-      "text": "The first anomaly you confront each round loses some of its edge as you drown it in controlled noise."
+      "text": "Once per round, the first blue Anomaly you face has -1 difficulty."
     },
     {
       "id": "choir-lash",
       "name": "Choir Lash",
-      "text": "When the breach surges, you can answer with a signal spike that keeps the lane from breaking all at once."
+      "text": "Once per round, when scenario pressure rises on your turn, record a private route insight."
     }
-  ]
+  ],
+  "startingGear": [
+    "static-probe",
+    "signal-lantern"
+  ],
+  "startingContract": "choir-spindle-harmonics"
 }

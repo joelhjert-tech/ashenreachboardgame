@@ -1,0 +1,24 @@
+{
+  "id": "qa_alpha_consumable_02",
+  "name": "Void Charge x5",
+  "slot": "utility",
+  "category": "consumable",
+  "statBonus": {
+    "stat": "grit",
+    "amount": 5
+  },
+  "activeText": "QA only: discard one charge to add +5 to one battle roll.",
+  "useLimit": "discard",
+  "charges": 5,
+  "timingWindows": [
+    "beforeBattleRoll",
+    "afterBattleRoll"
+  ],
+  "tier": "advanced",
+  "cost": 0,
+  "progressionWeight": 0.01,
+  "shopCategories": [
+    "forge-armoury",
+    "market"
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "id": "restart-void-relay",
+  "name": "Restart the Void Relay",
+  "factionGiver": "Meridian Compact",
+  "text": "Restart a dead relay without letting it learn a new voice from the dark between signals.",
+  "objective": {
+    "type": "spaceTextResolved",
+    "effectKey": "outer_relayCrew",
+    "label": "Void relay restarted",
+    "target": 1
+  },
+  "reward": {
+    "type": "gain_gear",
+    "gearId": "signal-pike"
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "id": "escalation-pit-blood-claim",
+  "type": "escalation",
+  "title": "Pit Blood Claim",
+  "text": "The rivalry pit names an unpaid challenge and the whole table hears it.",
+  "flavor": "A duel refused can still leave a stain.",
+  "step": 3,
+  "resolutionSummary": "A bounded rivalry claim became table pressure.",
+  "resolveEffect": {
+    "type": "gain_note",
+    "text": "Pit Blood Claim: the next duel or aid offer carries public pressure."
+  },
+  "escalationDelta": 1
+}

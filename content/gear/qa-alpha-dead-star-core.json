@@ -1,0 +1,23 @@
+{
+  "id": "qa_alpha_relic_02",
+  "name": "Dead Star Core",
+  "slot": "utility",
+  "category": "chargedRelic",
+  "statBonus": {
+    "stat": "signal",
+    "amount": 2
+  },
+  "activeText": "QA only: once per turn, auto-pass one non-battle challenge when testing scenario and tile checks.",
+  "useLimit": "oncePerTurn",
+  "charges": 5,
+  "timingWindows": [
+    "afterBattleRoll",
+    "anyTime"
+  ],
+  "tier": "artifact",
+  "cost": 0,
+  "progressionWeight": 0.01,
+  "shopCategories": [
+    "relic-dealer"
+  ]
+}

@@ -1,0 +1,24 @@
+{
+  "id": "oath-chain",
+  "name": "Oath Chain",
+  "slot": "utility",
+  "subtype": "utility",
+  "category": "passive",
+  "statBonus": {
+    "stat": "command",
+    "amount": 1
+  },
+  "cost": 3,
+  "sellValue": 1,
+  "sellable": true,
+  "tier": "standard",
+  "progressionWeight": 1,
+  "flavor": "A witnessed chain that adds +1 Command when holding a vow.",
+  "activeText": "A witnessed chain that adds +1 Command when holding a vow.",
+  "shopCategories": [
+    "market"
+  ],
+  "startingEligible": true,
+  "normalShopCommon": true,
+  "allowedFallbackArt": true
+}

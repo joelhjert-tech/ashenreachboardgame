@@ -1,0 +1,16 @@
+{
+  "id": "umbral-blackstar-sample",
+  "name": "Blackstar Sample",
+  "factionGiver": "Umbral Bloom",
+  "text": "Bring back a living sample from the blackstar cut without letting it learn your name.",
+  "objective": {
+    "type": "spaceTextResolved",
+    "effectKey": "inner_blackstarShortcut",
+    "label": "Blackstar shortcut survived",
+    "target": 1
+  },
+  "reward": {
+    "type": "gain_gear",
+    "gearId": "blackstar-ampoule"
+  }
+}

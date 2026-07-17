@@ -1,27 +1,37 @@
 import type { AddressInfo } from "node:net";
 import { createServer as createViteServer, type InlineConfig } from "vite";
 import { startAshenReachServer } from "../src/server/index.js";
+import { createPortAvailabilityCheck, findAvailablePort } from "../src/server/ports.js";
 
 async function main(): Promise<void> {
   const requestedClientPort = Number(process.env.CLIENT_PORT ?? 5173);
+  const resolvedClientPort = await findAvailablePort(requestedClientPort, {
+    isPortFree: createPortAvailabilityCheck("0.0.0.0")
+  });
   const server = await startAshenReachServer({
-    clientPort: requestedClientPort,
-    logUrls: false
+    clientPort: resolvedClientPort,
+    logUrls: false,
+    qaFixturesEnabled: process.env.ASHEN_REACH_QA_FIXTURES === "1"
   });
 
   const apiOrigin = `http://${server.lanHost}:${server.port}`;
   const wsOrigin = `ws://${server.lanHost}:${server.port}`;
+  const publicClientOrigin =
+    process.env.PUBLIC_CLIENT_ORIGIN || `http://${server.lanHost}:${resolvedClientPort}`;
 
   delete process.env.VITE_API_ORIGIN;
   delete process.env.VITE_WS_ORIGIN;
   process.env.VITE_API_PORT = String(server.port);
   process.env.VITE_WS_PORT = String(server.port);
+  process.env.VITE_PUBLIC_CLIENT_ORIGIN = publicClientOrigin;
 
   const viteConfig: InlineConfig = {
     clearScreen: false,
     server: {
       host: "0.0.0.0",
-      port: requestedClientPort
+      port: resolvedClientPort,
+      strictPort: true,
+      allowedHosts: true
     }
   };
 
@@ -30,8 +40,8 @@ async function main(): Promise<void> {
   await viteServer.listen();
 
   const clientAddress = viteServer.httpServer?.address() as AddressInfo | null;
-  const resolvedClientPort = clientAddress?.port ?? requestedClientPort;
-  const clientOrigin = `http://${server.lanHost}:${resolvedClientPort}`;
+  const listeningClientPort = clientAddress?.port ?? resolvedClientPort;
+  const clientOrigin = process.env.PUBLIC_CLIENT_ORIGIN || `http://${server.lanHost}:${listeningClientPort}`;
   const tvUrl = `${clientOrigin}/tv`;
   const phoneUrl = `${clientOrigin}/`;
 
