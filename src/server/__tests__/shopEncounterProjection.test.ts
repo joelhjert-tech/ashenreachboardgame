@@ -143,7 +143,7 @@ describe("shop encounter public projection", () => {
     expect(tvProjection.shopEncounter?.services).not.toEqual(expect.arrayContaining([expect.objectContaining({ id: "buy-boon" })]));
   });
 
-  it("projects Deep Relic Search with an authoritative one-Salvage cost", () => {
+  it("keeps Artifacts outside Salvage purchasing and projects the three-Contract exchange", () => {
     const state = createInitialSessionState("session-deep-relic-search");
     state.status = "active";
     state.phase = "action";
@@ -161,11 +161,14 @@ describe("shop encounter public projection", () => {
     };
     const projection = createTvProjection(state) as { shopEncounter: { services: Array<{ id: string; label: string; cost: unknown; enabled: boolean }> } | null };
     expect(projection.shopEncounter?.services).toContainEqual(expect.objectContaining({
-      id: "risk-action",
-      label: "Deep Relic Search",
-      cost: { salvage: 1 },
-      enabled: true
+      id: "trade-missions-for-artifact",
+      label: "Exchange Contracts for Artifact",
+      cost: { completedContracts: 3 },
+      enabled: false
     }));
+    expect(projection.shopEncounter?.services).not.toEqual(
+      expect.arrayContaining([expect.objectContaining({ id: "risk-action" })])
+    );
     expect(JSON.stringify(projection.shopEncounter)).not.toMatch(/\b(?:Heat|Risk)\b/);
   });
 });

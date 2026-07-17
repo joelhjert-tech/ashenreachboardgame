@@ -129,7 +129,7 @@ import {
   type ShopFailureReason
 } from "../game/rules/shopAvailability.js";
 import { resolveSpaceText } from "../game/rules/tileTextResolver.js";
-import { applyStartingLoadout } from "../game/rules/startingLoadout.js";
+import { applyStartingLoadout, ARTIFACT_EXCHANGE_CONTRACT_COST } from "../game/rules/startingLoadout.js";
 import {
   getStatUpgradeCost,
   getStatUpgradeDisabledReason,
@@ -2482,29 +2482,7 @@ export class GameRoomServer {
           summary: `${actorName} used ${shopName}. Bought treatment and healed 1 Wound.`
         };
       case "trade-missions-for-artifact": {
-        const artifact = this.pickRelicDealerArtifact(player);
-
-        if (!artifact) {
-          throw new Error(SHOP_FAILURE_REASONS.itemUnavailable);
-        }
-
-        return {
-          ...base,
-          result: {
-            gainGear: artifact,
-            note: `${shopName}: exchanged three completed Missions for ${artifact.name}.`
-          },
-          summary: `${actorName} used ${shopName}. Exchanged three completed Missions for the Artifact ${artifact.name}.`
-        };
-      }
-      case "risk-action": {
-        const stockCategory = getShopStockCategoryForService(boardSpace, service.id);
-
-        if (!stockCategory) {
-          throw new Error(SHOP_FAILURE_REASONS.itemUnavailable);
-        }
-
-        const stock = this.pickShopGearStock(player, 4, "risk", stockCategory);
+        const stock = this.pickRelicDealerArtifactOptions(player);
 
         if (stock.length === 0) {
           throw new Error(SHOP_FAILURE_REASONS.itemUnavailable);
@@ -2517,9 +2495,9 @@ export class GameRoomServer {
           serviceLabel: service.label,
           shopName,
           sectorId: player.character.currentSpaceId,
-          cost: service.cost,
+          cost: {},
           stock,
-          summary: `${actorName} used ${shopName}. Paid 1 Salvage and revealed ${stock.length} Relic Dealer options.`,
+          summary: `${actorName} consulted ${shopName}. Artifact choices are held privately until one is selected.`,
           createdAt
         } satisfies ShopStockRevealedAction;
       }
@@ -2543,9 +2521,24 @@ export class GameRoomServer {
     });
   }
 
-  private pickRelicDealerArtifact(player: PlayerState): GearItem | null {
-    return this.pickShopGearStock(player, 1, "risk", "relic-dealer")
-      .find((item) => item.tier === "artifact") ?? null;
+  private pickRelicDealerArtifactOptions(player: PlayerState): GearItem[] {
+    const ownedArtifactIds = new Set(
+      this.state.players.flatMap((entry) => [
+        ...entry.character.heldGear,
+        ...Object.values(entry.character.equippedGear)
+          .filter((id): id is string => Boolean(id))
+          .map((id) => this.gear.get(id))
+          .filter((item): item is GearItem => Boolean(item))
+      ]).filter((item) => item.tier === "artifact").map((item) => item.id)
+    );
+
+    return getAvailableShopStockForCategory(this.gear.values(), "relic-dealer", {
+      count: 2,
+      ownedGearIds: ownedArtifactIds,
+      includeArtifacts: true,
+      includeQaGear: canUseQaShopGear(player.character),
+      expensiveFirst: false
+    }).filter((item) => item.tier === "artifact");
   }
 
   private createShopPurchaseAction(
@@ -2599,10 +2592,22 @@ export class GameRoomServer {
       throw new Error(SHOP_FAILURE_REASONS.itemUnavailable);
     }
 
-    const cost = { salvage: getShopGearCost(gear) };
+    const isArtifactExchange = reveal.serviceId === "trade-missions-for-artifact";
+    const cost = isArtifactExchange
+      ? { completedContracts: ARTIFACT_EXCHANGE_CONTRACT_COST }
+      : { salvage: getShopGearCost(gear) };
 
-    if ((player.character.salvage ?? 0) < cost.salvage) {
+    if (isArtifactExchange && gear.tier !== "artifact") {
+      throw new Error(SHOP_FAILURE_REASONS.itemUnavailable);
+    }
+    if (!isArtifactExchange && (player.character.salvage ?? 0) < (cost.salvage ?? 0)) {
       throw new Error(SHOP_FAILURE_REASONS.insufficientSalvage);
+    }
+    const spentCompletedContractIds = isArtifactExchange
+      ? (player.character.completedContracts ?? []).slice(0, ARTIFACT_EXCHANGE_CONTRACT_COST)
+      : undefined;
+    if (isArtifactExchange && (spentCompletedContractIds?.length ?? 0) !== ARTIFACT_EXCHANGE_CONTRACT_COST) {
+      throw new Error("Need three completed Contracts");
     }
 
     const discardedStockIds = reveal.stockIds.filter((cardId) => cardId !== gear.id);
@@ -2617,7 +2622,10 @@ export class GameRoomServer {
       cost,
       gainedGear: gear,
       discardedStockIds,
-      summary: `${player.character.name} used ${reveal.shopName}. Bought ${gear.name} for ${cost.salvage} Salvage.`,
+      spentCompletedContractIds,
+      summary: isArtifactExchange
+        ? `${player.character.name} exchanged three completed Contracts for the Artifact ${gear.name}.`
+        : `${player.character.name} used ${reveal.shopName}. Bought ${gear.name} for ${cost.salvage} Salvage.`,
       createdAt
     } satisfies ShopPurchaseResolvedAction;
   }
@@ -8434,12 +8442,21 @@ function getGearSummary(item: GearItem): string {
   return `${CHALLENGE_LABELS[item.statBonus.stat]} +${item.statBonus.amount}.`;
 }
 
-function buildPublicShopStock(state: GameState, player: PlayerState): PublicShopStockItem[] | undefined {
+function buildPublicShopStock(
+  state: GameState,
+  player: PlayerState,
+  privateArtifactSeatId?: string
+): PublicShopStockItem[] | undefined {
   const reveal = (state.shopStockReveals ?? []).find(
     (entry) => entry.seatId === player.seatId && entry.sectorId === player.character.currentSpaceId
   );
 
   if (!reveal) {
+    return undefined;
+  }
+
+  const artifactExchange = reveal.serviceId === "trade-missions-for-artifact";
+  if (artifactExchange && privateArtifactSeatId !== player.seatId) {
     return undefined;
   }
 
@@ -8452,7 +8469,9 @@ function buildPublicShopStock(state: GameState, player: PlayerState): PublicShop
     .map((cardId) => PROJECTION_GEAR_CATALOG.get(cardId))
     .filter((item): item is GearItem => Boolean(item))
     .map((item) => {
-      const cost = { salvage: getPublicGearShopCost(item) };
+      const cost = artifactExchange
+        ? { completedContracts: ARTIFACT_EXCHANGE_CONTRACT_COST }
+        : { salvage: getPublicGearShopCost(item) };
       const payment = canPayShopCost(player, state, cost);
       const alreadyOwned = ownedGearIds.has(item.id);
 
@@ -8571,15 +8590,9 @@ function buildPublicShopServices(state: GameState, player: PlayerState): PublicS
     services.push(
       createShopService(player, state, {
         id: "trade-missions-for-artifact",
-        label: "Trade Missions for Artifact",
+        label: "Exchange Contracts for Artifact",
         shopCategory: "relic-dealer",
-        cost: { completedContracts: 3 }
-      }),
-      createShopService(player, state, {
-        id: "risk-action",
-        label: "Deep Relic Search",
-        shopCategory: getShopStockCategoryForService(boardSpace, "risk-action") ?? undefined,
-        cost: { salvage: 1 }
+        cost: { completedContracts: ARTIFACT_EXCHANGE_CONTRACT_COST }
       })
     );
   }
@@ -8587,7 +8600,11 @@ function buildPublicShopServices(state: GameState, player: PlayerState): PublicS
   return services.slice(0, 6);
 }
 
-function buildPublicShopEncounter(state: GameState, visiblePlayers: PlayerState[]): Record<string, unknown> | null {
+function buildPublicShopEncounter(
+  state: GameState,
+  visiblePlayers: PlayerState[],
+  privateArtifactSeatId?: string
+): Record<string, unknown> | null {
   if (state.status !== "active" || state.phase !== "action" || state.activeResolution || state.pendingEnemyRoll) {
     return null;
   }
@@ -8605,7 +8622,7 @@ function buildPublicShopEncounter(state: GameState, visiblePlayers: PlayerState[
   const completedContracts = getCompletedContractCountForProjection(state, activePlayer.seatId);
   const blockingThreats = buildPublicBlockingThreats(state);
   const services = buildPublicShopServices(state, activePlayer);
-  const revealedStock = buildPublicShopStock(state, activePlayer);
+  const revealedStock = buildPublicShopStock(state, activePlayer, privateArtifactSeatId);
   const sellInventory = buildPublicShopSellInventory(activePlayer);
   const latest = state.lastOutcomeSummary?.seatId === activePlayer.seatId ? state.lastOutcomeSummary : null;
   const latestAction = state.eventLog.at(-1) as GameAction | undefined;
@@ -8621,7 +8638,7 @@ function buildPublicShopEncounter(state: GameState, visiblePlayers: PlayerState[
   const shopCategory = getBoardSpaceShopCategory(boardSpace);
   const stockCategory =
     services.find((service) => service.id === "buy-gear")?.shopCategory ??
-    services.find((service) => service.id === "risk-action")?.shopCategory ??
+    services.find((service) => service.id === "trade-missions-for-artifact")?.shopCategory ??
     shopCategory;
 
   if (services.length === 0 && blockingThreats.length === 0) {
@@ -8661,7 +8678,11 @@ function buildPublicShopEncounter(state: GameState, visiblePlayers: PlayerState[
       ? {
           operativeName: activePlayer.character.name,
           shopName: boardSpace.name,
-          action: latestSale ? "sell" : latestPurchase ? "buy" : "Recent outcome",
+          action: latestSale
+            ? "sell"
+            : latestPurchase?.serviceId === "trade-missions-for-artifact"
+              ? "artifactExchange"
+              : latestPurchase ? "buy" : "Recent outcome",
           gained: latestPurchase?.gainedGear.name,
           sold: latestSale?.soldGear.name,
           salvageDelta: latestSale?.salvageDelta,
@@ -8687,7 +8708,7 @@ function getShopResultDeltas(shopEncounter: Record<string, unknown> | null): Res
     action?: string;
     gained?: string;
     sold?: string;
-    costPaid?: { salvage?: number; wounds?: number; trophies?: number };
+    costPaid?: { salvage?: number; wounds?: number; trophies?: number; completedContracts?: number };
     salvageDelta?: number;
     woundDelta?: number;
     scarDelta?: number;
@@ -8704,9 +8725,10 @@ function getShopResultDeltas(shopEncounter: Record<string, unknown> | null): Res
   const deltas: ResultDelta[] = [];
 
   if (recentOutcome.gained) {
+    const artifactExchange = recentOutcome.costPaid?.completedContracts !== undefined;
     deltas.push(createResultDelta({
-      type: "itemBought",
-      label: "Item bought",
+      type: artifactExchange ? "gearGained" : "itemBought",
+      label: artifactExchange ? "Artifact gained" : "Item bought",
       value: recentOutcome.gained,
       sign: "gain",
       targetScope: "personal",
@@ -8714,7 +8736,9 @@ function getShopResultDeltas(shopEncounter: Record<string, unknown> | null): Res
       visibility: "public",
       source,
       reason: recentOutcome.shopName,
-      publicText: `${recentOutcome.operativeName ?? "Operative"} bought ${recentOutcome.gained}.`,
+      publicText: artifactExchange
+        ? `${recentOutcome.operativeName ?? "Operative"} completed an Artifact exchange and gained ${recentOutcome.gained}.`
+        : `${recentOutcome.operativeName ?? "Operative"} bought ${recentOutcome.gained}.`,
       severity: "reward"
     }));
   }
@@ -10106,7 +10130,7 @@ export function createPhoneProjection(state: GameState, seatId: string, forcePri
       publicProjection.shopEncounter as Record<string, unknown> | null
     ),
     activeResolution: state.activeResolution ?? null,
-    shopEncounter: publicProjection.shopEncounter,
+    shopEncounter: buildPublicShopEncounter(state, state.players, seatId),
     recentAbilityTriggers: publicProjection.recentAbilityTriggers,
     nemesis: publicProjection.nemesis,
     movementPlanner: buildPhoneMovementPlanner(state, seatId),

@@ -251,6 +251,7 @@ export interface PrivateCharacter {
   scars: string[];
   afflictions?: PlayerAfflictionSummary;
   activeContract: { contractId: string; progress: number } | null;
+  completedContracts?: string[];
   heldGear: GearItem[];
   equippedGear: Record<GearSlot, string | null>;
   equippedGearInstances?: Record<GearSlot, string | null>;

@@ -2196,48 +2196,15 @@ describe("active resolution visibility state", () => {
     expect(blessed.server.getState().players[0]?.character.salvage).toBe(4);
     expect(blessed.server.getState().players[0]?.private.notes).toEqual([]);
 
-    const relicCatalog = createGear();
-    const relicTemplate = [...relicCatalog.values()][0];
-    if (!relicTemplate) throw new Error("Missing gear fixture");
-    for (let index = 0; index <= 3; index += 1) {
-      const item = {
-        ...relicTemplate,
-        id: `test-relic-${index}`,
-        name: `Test Relic ${index}`,
-        tier: "artifact" as const,
-        normalShopCommon: false,
-        shopCategories: ["relic-dealer" as const]
-      };
-      relicCatalog.set(item.id, item);
-    }
-    const searched = createShopServer({ sectorId: "votive-engine-room", salvage: 2, heat: 7, gearCatalog: relicCatalog });
+    const searched = createShopServer({ sectorId: "votive-engine-room", salvage: 2, heat: 7 });
     searched.server.handleIntent(searched.client, {
       type: "SHOP_SERVICE_REQUESTED",
       seatId: "seat-1",
       serviceId: "risk-action"
     });
-    expect(searched.sent.find((message) => message.type === "INTENT_REJECTED")).toBeUndefined();
-    expect(searched.server.getState().players[0]?.character.salvage).toBe(1);
-    expect(searched.server.getState().shopStockReveals[0]?.serviceId).toBe("risk-action");
-    expect(searched.server.getState().shopStockReveals[0]?.stockIds).toHaveLength(4);
-    expect(searched.server.getState().shopStockReveals[0]?.revealCost).toEqual({ salvage: 1 });
-    searched.server.handleIntent(searched.client, {
-      type: "SHOP_SERVICE_REQUESTED",
-      seatId: "seat-1",
-      serviceId: "risk-action"
-    });
-    expect(searched.server.getState().players[0]?.character.salvage).toBe(0);
-    expect(searched.server.getState().eventLog.filter((entry) => (entry as { type?: string }).type === "SHOP_STOCK_REVEALED")).toHaveLength(2);
-
-    const blockedSearch = createShopServer({ sectorId: "votive-engine-room", salvage: 0, heat: 7 });
-    blockedSearch.server.handleIntent(blockedSearch.client, {
-      type: "SHOP_SERVICE_REQUESTED",
-      seatId: "seat-1",
-      serviceId: "risk-action"
-    });
-    expect(blockedSearch.sent.find((message) => message.type === "INTENT_REJECTED")).toMatchObject({ reason: "insufficientSalvage" });
-    expect(blockedSearch.server.getState().players[0]?.character.salvage).toBe(0);
-    expect(blockedSearch.server.getState().shopStockReveals).toEqual([]);
+    expect(searched.sent.find((message) => message.type === "INTENT_REJECTED")).toMatchObject({ reason: "Unknown shop service risk-action" });
+    expect(searched.server.getState().players[0]?.character.salvage).toBe(2);
+    expect(searched.server.getState().shopStockReveals).toEqual([]);
 
     const unaffordableService = createShopServer({ sectorId: "kettleward-foundry", salvage: 0 });
     unaffordableService.server.handleIntent(unaffordableService.client, {
@@ -8435,6 +8402,12 @@ describe("contract lifecycle ledger", () => {
   it("makes completedContracts authoritative for projections and relic-dealer spending", () => {
     const server = new GameRoomServer(
       createState({
+        status: "active",
+        phase: "action",
+        activeResolution: null,
+        pendingEnemyRoll: null,
+        pendingEffect: null,
+        currentEncounter: null,
         players: createState().players.map((entry) => entry.seatId === "seat-1" ? {
           ...entry,
           sectorId: "outer_surgery_tent",
@@ -8450,16 +8423,28 @@ describe("contract lifecycle ledger", () => {
     );
 
     runIntent(server, { type: "SHOP_SERVICE_REQUESTED", seatId: "seat-1", serviceId: "trade-missions-for-artifact" });
-    const traded = server.getState().players.find((entry) => entry.seatId === "seat-1")!;
+    const pending = server.getState().players.find((entry) => entry.seatId === "seat-1")!;
+    const reveal = server.getState().shopStockReveals.find((entry) => entry.seatId === "seat-1")!;
+    expect(reveal.stockIds.length).toBeGreaterThanOrEqual(1);
+    expect(reveal.stockIds.length).toBeLessThanOrEqual(2);
+    expect(pending.character.completedContracts).toEqual(["contract-a", "contract-b", "contract-c"]);
+    expect(pending.character.heldGear.filter((item) => item.tier === "artifact")).toHaveLength(0);
+
+    const reconnected = new GameRoomServer(
+      structuredClone(server.getState()),
+      [], createSequenceRandomSource([0]), createThreats(), createCharacters(), createGear(), createContracts()
+    );
+    runIntent(reconnected, { type: "SHOP_PURCHASE_REQUESTED", seatId: "seat-1", cardId: reveal.stockIds[0]! });
+    const traded = reconnected.getState().players.find((entry) => entry.seatId === "seat-1")!;
     expect(traded.character.completedContracts).toEqual([]);
     expect(traded.character.activeContract).toEqual({ contractId: "choir-hush-census", progress: 1 });
     expect(traded.character.heldGear.filter((item) => item.tier === "artifact")).toHaveLength(1);
 
-    runIntent(server, { type: "SHOP_SERVICE_REQUESTED", seatId: "seat-1", serviceId: "trade-missions-for-artifact" });
-    expect(server.getState().players.find((entry) => entry.seatId === "seat-1")?.character.heldGear.filter((item) => item.tier === "artifact")).toHaveLength(1);
+    runIntent(reconnected, { type: "SHOP_PURCHASE_REQUESTED", seatId: "seat-1", cardId: reveal.stockIds[0]! });
+    expect(reconnected.getState().players.find((entry) => entry.seatId === "seat-1")?.character.heldGear.filter((item) => item.tier === "artifact")).toHaveLength(1);
 
-    const phone = createPhoneProjection(server.getState(), "seat-1", true) as { self: { character: { completedContracts: string[] } } };
-    const tv = createTvProjection(server.getState()) as { players: Array<{ character: { completedContracts: number } }> };
+    const phone = createPhoneProjection(reconnected.getState(), "seat-1", true) as { self: { character: { completedContracts: string[] } } };
+    const tv = createTvProjection(reconnected.getState()) as { players: Array<{ character: { completedContracts: number } }> };
     expect(phone.self.character.completedContracts).toEqual([]);
     expect(tv.players[0]?.character.completedContracts).toBe(0);
   });

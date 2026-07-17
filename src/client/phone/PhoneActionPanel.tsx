@@ -1450,7 +1450,10 @@ function PhoneShopPanel({
   const recentOutcome = shopEncounter.recentOutcome ?? null;
   const purchasedItemName = recentOutcome?.gained;
   const soldItemName = recentOutcome?.sold;
-  const serviceActions = shopEncounter.services.filter((service) => service.id !== "sell-gear");
+  const serviceActions = shopEncounter.services
+    .filter((service) => service.id !== "sell-gear")
+    .sort((left, right) => Number(right.cost.completedContracts !== undefined) - Number(left.cost.completedContracts !== undefined));
+  const artifactChoiceActive = revealedStock.some((item) => item.cost.completedContracts !== undefined);
   const visibleShopDeltas = shopResultDeltas(resultDeltas);
   const showRecentOutcome = Boolean(recentOutcome && (purchasedItemName || soldItemName || visibleShopDeltas.length > 0));
 
@@ -1488,7 +1491,13 @@ function PhoneShopPanel({
 
   return (
     <section className={`phone-shop-panel phone-shop-panel-${shopEncounter.status}`} aria-label="Shop encounter" data-testid="phone-shop-panel">
-      <div className="phone-shop-header">
+      {artifactChoiceActive ? (
+        <div className="phone-shop-artifact-exchange-header" role="status">
+          <span>Artifact Exchange</span>
+          <strong>Choose one of {revealedStock.length}</strong>
+          <small>Three completed Contracts remain yours until confirmation.</small>
+        </div>
+      ) : <><div className="phone-shop-header">
         <ShopCategoryIcon category={shopEncounter.stockCategory ?? shopEncounter.shopCategory} label={categoryLabel} className="phone-shop-header-icon" />
         <div>
           <span>{shopTypeLabel}</span>
@@ -1516,6 +1525,7 @@ function PhoneShopPanel({
         </span>
         <span>Trophies {shopEncounter.activePlayer.trophies ?? 0}</span>
       </div>
+      </>}
 
       {isLocked ? (
         <div className="phone-shop-locked" role="status">
@@ -1530,7 +1540,7 @@ function PhoneShopPanel({
         </div>
       ) : (
         <>
-          {serviceActions.length > 0 ? (
+          {serviceActions.length > 0 && revealedStock.length === 0 ? (
             <div className="phone-shop-services" aria-label="Shop services">
               <div className="phone-shop-section-heading">
                 <span>Services</span>
@@ -1539,7 +1549,7 @@ function PhoneShopPanel({
               {serviceActions.map((service) => {
                 const disabledReason = formatShopDisabledReason(service.disabledReason);
                 const completedMissionProgress = service.cost.completedContracts !== undefined
-                  ? `${shopEncounter.activePlayer.completedContracts ?? 0}/${service.cost.completedContracts} completed Missions`
+                  ? `${shopEncounter.activePlayer.completedContracts ?? 0}/${service.cost.completedContracts} completed Contracts`
                   : null;
                 return (
                   <GameButton
@@ -1576,13 +1586,20 @@ function PhoneShopPanel({
           <div className="phone-shop-stock" aria-label="Revealed shop stock">
             <div className="phone-shop-section-heading">
               <span>Stock</span>
-              <small>{revealedStock.length > 0 ? "Tap Buy to review the purchase before spending Salvage." : "Use a buy service to reveal market stock."}</small>
+              <small>{revealedStock.length > 0
+                ? revealedStock.some((item) => item.cost.completedContracts !== undefined)
+                  ? "Choose one Artifact. Three completed Contracts are spent only after confirmation."
+                  : "Tap Buy to review the purchase before spending Salvage."
+                : "Use a buy service to reveal market stock."}</small>
             </div>
             {revealedStock.length > 0 ? (
               <div className="phone-shop-stock-list">
                 {revealedStock.map((item) => {
+                  const isArtifactChoice = item.cost.completedContracts !== undefined;
                   const itemCategory = item.shopCategories?.map(formatShopCategory).join(" / ") ?? toTitleCase(item.type);
-                  const disabledReason = formatShopDisabledReason(item.disabledReason) ?? (!item.affordable ? "Not enough Salvage" : undefined);
+                  const disabledReason = formatShopDisabledReason(item.disabledReason) ?? (!item.affordable
+                    ? isArtifactChoice ? "Need three completed Contracts" : "Not enough Salvage"
+                    : undefined);
                   const isPending = pendingCardId === item.cardId;
                   const isPurchased = purchasedItemName === item.name;
                   return (
@@ -1603,10 +1620,10 @@ function PhoneShopPanel({
                           tone="shop"
                           className="phone-button phone-button-primary"
                           disabled={!item.affordable || isPending || isPurchased}
-                          disabledReason={disabledReason ?? (isPending ? "Buying..." : isPurchased ? "Purchased" : undefined)}
+                          disabledReason={disabledReason ?? (isPending ? (isArtifactChoice ? "Choosing..." : "Buying...") : isPurchased ? "Acquired" : undefined)}
                           onClick={() => setConfirmingCardId(item.cardId)}
                         >
-                          {isPending ? "Buying..." : isPurchased ? "Purchased" : "Buy"}
+                          {isPending ? (isArtifactChoice ? "Choosing..." : "Buying...") : isPurchased ? "Acquired" : isArtifactChoice ? "Choose" : "Buy"}
                         </GameButton>
                       }
                     />
@@ -1666,10 +1683,10 @@ function PhoneShopPanel({
           </div>
 
           {confirmingItem ? (
-            <div className="phone-shop-confirm phone-shop-panel__confirm" role="dialog" aria-label="Confirm purchase">
-              <span>Confirm Purchase</span>
+            <div className="phone-shop-confirm phone-shop-panel__confirm" role="dialog" aria-label={confirmingItem.cost.completedContracts ? "Confirm Artifact" : "Confirm purchase"}>
+              <span>{confirmingItem.cost.completedContracts ? "Confirm Artifact" : "Confirm Purchase"}</span>
               <strong>
-                Buy {confirmingItem.name} for {formatShopCost(confirmingItem.cost)}?
+                {confirmingItem.cost.completedContracts ? "Choose" : "Buy"} {confirmingItem.name} for {formatShopCost(confirmingItem.cost)}?
               </strong>
               <p>{confirmingItem.summary}</p>
               <div className="phone-shop-confirm-actions">
@@ -1677,7 +1694,7 @@ function PhoneShopPanel({
                   Cancel
                 </GameButton>
                 <GameButton type="button" tone="shop" onClick={() => confirmPurchase(confirmingItem.cardId)}>
-                  Confirm Purchase
+                  {confirmingItem.cost.completedContracts ? "Confirm Artifact" : "Confirm Purchase"}
                 </GameButton>
               </div>
             </div>

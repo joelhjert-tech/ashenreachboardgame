@@ -519,6 +519,12 @@ function InventoryProgressionSection({
         <small>{pileAvailableValue} from defeated enemies</small>
       </div>
 
+      <div className="phone-inventory-contract-ledger" aria-label="Completed Contract ledger">
+        <span>Completed Contracts</span>
+        <strong>{self.character.completedContracts?.length ?? 0}</strong>
+        <small>Exchange exactly 3 at a Relic Dealer to choose 1 of 2 Artifacts.</small>
+      </div>
+
       <div className="phone-inventory-trophy-list" aria-label="Trophy source summary">
         {trophyPile.length > 0 ? (
           trophyPile.slice(0, 3).map((entry) => {

@@ -7,7 +7,8 @@ import { isSinglePlayerMode } from "./soloTuning.js";
 
 export const NORMAL_STARTING_SALVAGE = 3;
 export const SOLO_STARTING_SALVAGE = 4;
-export const SOLO_DEFAULT_STARTING_GEAR_ID = "veil-hook";
+export const ARTIFACT_EXCHANGE_CONTRACT_COST = 3;
+export const SOLO_DEFAULT_STARTING_GEAR_ID = "field-lens";
 export const SOLO_DEFAULT_STARTING_FOLLOWER_ID = "grave-scribe";
 
 export type StartingLoadoutCatalogs = {
