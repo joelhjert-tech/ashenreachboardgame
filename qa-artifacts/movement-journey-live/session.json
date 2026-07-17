@@ -1,0 +1,18 @@
+{
+  "session": {
+    "roomCode": "4NM5N",
+    "sessionMode": "single-player",
+    "gameMode": "standard",
+    "interactionMode": "co-op",
+    "scenarioId": "scenario_broken_seal",
+    "playerCount": 1,
+    "hostToken": "host:4NM5N:SPJ6P"
+  },
+  "join": {
+    "roomCode": "4NM5N",
+    "seatId": "seat-1",
+    "seatToken": "seat:4NM5N:seat-1:3df9dc6b-c20f-4ae2-92bb-b27f4c4533f3",
+    "isHostPhone": true
+  },
+  "roll": 4
+}

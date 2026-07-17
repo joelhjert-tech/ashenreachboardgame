@@ -1,0 +1,9 @@
+
+> ashen-reach@0.1.0 dev
+> tsx scripts/dev.ts
+
+Ashen Reach local dev
+  API:    http://192.168.50.238:8081
+  WS:     ws://192.168.50.238:8081
+  TV:     http://192.168.50.238:5174/tv
+  Phone:  http://192.168.50.238:5174/

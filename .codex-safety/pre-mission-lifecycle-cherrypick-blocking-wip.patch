@@ -1,0 +1,167 @@
+﻿diff --git a/src/client/shared/types.ts b/src/client/shared/types.ts
+index 490a4bb..7f224bc 100644
+--- a/src/client/shared/types.ts
++++ b/src/client/shared/types.ts
+@@ -77,6 +77,7 @@ export interface PublicPlayerCharacter {
+   presentation?: CharacterPresentation;
+   status: "active" | "recalled";
+   activeContract: { contractId: string; progress: number; completedTargetIds?: string[]; salvageSpent?: number } | null;
++  completedContracts?: number;
+   stats: Record<Stat, number>;
+   statUpgrades?: Partial<Record<Stat, number>>;
+   trophies: number;
+@@ -223,6 +224,7 @@ export interface PrivateCharacter {
+   scars: string[];
+   afflictions?: PlayerAfflictionSummary;
+   activeContract: { contractId: string; progress: number } | null;
++  completedContracts?: string[];
+   heldGear: GearItem[];
+   equippedGear: Record<GearSlot, string | null>;
+   followers?: Follower[];
+diff --git a/src/game/engine/__tests__/engine.test.ts b/src/game/engine/__tests__/engine.test.ts
+index dd4b48f..4a1f7bd 100644
+--- a/src/game/engine/__tests__/engine.test.ts
++++ b/src/game/engine/__tests__/engine.test.ts
+@@ -8144,7 +8144,17 @@ describe("contracts", () => {
+ 
+     const player = readyServer.getState().players.find((entry) => entry.seatId === "seat-1");
+     expect(player?.character.activeContract).toBeNull();
++    expect(player?.character.completedContracts).toEqual(["choir-hush-census"]);
+     expect(player?.character.heat).toBe(2);
++
++    runIntent(readyServer, {
++      type: "COMPLETE_CONTRACT",
++      seatId: "seat-1",
++      contractId: "choir-hush-census"
++    });
++    expect(readyServer.getState().players.find((entry) => entry.seatId === "seat-1")?.character.completedContracts).toEqual([
++      "choir-hush-census"
++    ]);
+   });
+ 
+   it("accepts a contract, wins two combats across turns, completes it, and receives the reward", () => {
+diff --git a/src/game/engine/reducer.ts b/src/game/engine/reducer.ts
+index a4f8cda..a4b909c 100644
+--- a/src/game/engine/reducer.ts
++++ b/src/game/engine/reducer.ts
+@@ -2767,9 +2767,10 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
+         pendingEffect: contract.reward,
+         players: updateActivePlayer(state, completeAction.seatId, (entry) => ({
+           ...entry,
+-          character: {
+-            ...entry.character,
+-            activeContract: null
++          character: {
++            ...entry.character,
++            activeContract: null,
++            completedContracts: [...(entry.character.completedContracts ?? []), completeAction.contractId]
+           }
+         })),
+         lastOutcomeSummary: {
+diff --git a/src/game/schema/character.schema.ts b/src/game/schema/character.schema.ts
+index 2d052d6..ac44ea2 100644
+--- a/src/game/schema/character.schema.ts
++++ b/src/game/schema/character.schema.ts
+@@ -65,6 +65,7 @@ export const characterSchema = z.object({
+   wounds: z.number().int().min(0),
+   scars: z.array(z.string()),
+   activeContract: activeContractSchema,
++  completedContracts: z.array(z.string().min(1)).optional(),
+   heldGear: z.array(gearItemSchema),
+   equippedGear: equippedGearSchema,
+   followers: z.array(followerSchema).optional(),
+diff --git a/src/server/roomServer.ts b/src/server/roomServer.ts
+index 6443b48..64b82c3 100644
+--- a/src/server/roomServer.ts
++++ b/src/server/roomServer.ts
+@@ -676,6 +676,9 @@ export class GameRoomServer {
+           type: "shop-transaction", action: "sellGear", sectorId: action.sectorId, shopTypes: space?.tags ?? []
+         }, `Sold gear at ${action.shopName}.`);
+       } else if (action.type === "SHOP_SERVICE_RESOLVED") {
++        if (action.serviceId === "trade-missions-for-artifact") {
++          this.consumeCompletedContracts(intent.seatId, 3);
++        }
+         const space = getBoardSpace(action.sectorId);
+         const missionAction = action.serviceId === "repair-gear" ? "repairGear"
+           : action.serviceId === "trade-missions-for-artifact" ? "trade"
+@@ -2172,6 +2175,11 @@ export class GameRoomServer {
+           },
+           summary: `${actorName} used ${shopName}. Bought a boon and recorded steady footing.`
+         };
++      case "trade-missions-for-artifact": {
++        const artifact = this.pickShopGearStock(player, 6, "risk", "relic-dealer").find((item) => item.tier === "artifact");
++        if (!artifact) throw new Error("No Artifact is available for mission trade");
++        return { ...base, result: { gainGear: artifact, note: `${shopName}: traded three completed Missions for ${artifact.name}.` }, summary: `${actorName} traded three completed Missions for ${artifact.name}.` };
++      }
+       case "risk-action": {
+         const stockCategory = getShopStockCategoryForService(boardSpace, service.id);
+ 
+@@ -2836,12 +2844,28 @@ export class GameRoomServer {
+   }
+ 
+   private getCompletedContractCount(seatId: string, state: GameState = this.state): number {
++    const player = state.players.find((entry) => entry.seatId === seatId);
++    if (player?.character.completedContracts) {
++      return player.character.completedContracts.length;
++    }
+     return state.eventLog.filter((entry) => {
+       const event = entry as { type?: string; seatId?: string } | undefined;
+       return event?.type === "COMPLETE_CONTRACT" && event.seatId === seatId;
+     }).length;
+   }
+ 
++  private consumeCompletedContracts(seatId: string, count: number): void {
++    this.state = {
++      ...this.state,
++      sequence: this.state.sequence + 1,
++      players: this.state.players.map((player) =>
++        player.seatId === seatId
++          ? { ...player, character: { ...player.character, completedContracts: (player.character.completedContracts ?? []).slice(count) } }
++          : player
++      )
++    };
++  }
++
+   private hasScenarioArtifact(player: PlayerState): boolean {
+     return player.character.heldGear.some(
+       (item) => item.tier === "artifact" || item.category === "chargedRelic" || item.id.startsWith("artifact-")
+@@ -7104,6 +7128,10 @@ function buildPhoneObjectUseStates(state: GameState, player: PlayerState | undef
+ }
+ 
+ function getCompletedContractCountForProjection(state: GameState, seatId: string): number {
++  const player = state.players.find((entry) => entry.seatId === seatId);
++  if (player?.character.completedContracts) {
++    return player.character.completedContracts.length;
++  }
+   return state.eventLog.filter((entry) => {
+     if (typeof entry !== "object" || entry === null || !("type" in entry) || !("seatId" in entry)) {
+       return false;
+@@ -7682,6 +7710,12 @@ function buildPublicShopServices(state: GameState, player: PlayerState): PublicS
+ 
+   if (boardSpace.tags.includes("risk-shop")) {
+     services.push(
++      createShopService(player, state, {
++        id: "trade-missions-for-artifact",
++        label: "Trade 3 Missions for Artifact",
++        shopCategory: "relic-dealer",
++        cost: { completedContracts: 3 }
++      }),
+       createShopService(player, state, {
+         id: "risk-action",
+         label: "Risk Action",
+@@ -8716,13 +8750,14 @@ export function createTvProjection(
+     sectors: state.sectors,
+     players: visiblePlayers.map((player) => ({
+       seatId: player.seatId,
+-      character: {
++      character: {
+         id: player.character.id,
+         name: player.character.name,
+         archetype: player.character.archetype,
+         ...(getCharacterPresentation(player.character.id) ? { presentation: getCharacterPresentation(player.character.id) } : {}),
+         status: player.character.status,
+         activeContract: player.character.activeContract,
++        completedContracts: player.character.completedContracts?.length ?? getCompletedContractCountForProjection(state, player.seatId),
+         stats: player.character.stats,
+         statUpgrades: player.character.statUpgrades ?? {},
+         trophies: player.character.trophies,

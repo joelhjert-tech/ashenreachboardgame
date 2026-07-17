@@ -1,0 +1,10 @@
+
+> ashen-reach@0.1.0 dev
+> tsx scripts/dev.ts
+
+[2m16:28:31[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m Re-optimizing dependencies because vite config has changed
+Ashen Reach local dev
+  API:    http://192.168.50.238:8081
+  WS:     ws://192.168.50.238:8081
+  TV:     http://192.168.50.238:5174/tv
+  Phone:  http://192.168.50.238:5174/

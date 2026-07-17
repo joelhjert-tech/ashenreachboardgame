@@ -1,0 +1,113 @@
+{
+  "results": [
+    {
+      "state": "board-before",
+      "path": "C:\\tmp\\ashenreach-mission-lifecycle\\qa-artifacts\\final-visual-qa\\dedicated-battle\\same-session\\host-transition-01-board-before.png",
+      "dimensions": [
+        1440,
+        900
+      ],
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "document": {
+        "scrollWidth": 1440,
+        "scrollHeight": 900,
+        "clientWidth": 1440,
+        "clientHeight": 900
+      },
+      "boardCount": 1,
+      "battleCount": 0,
+      "focused": "BODY",
+      "privateTextPresent": false
+    },
+    {
+      "state": "battle-active",
+      "path": "C:\\tmp\\ashenreach-mission-lifecycle\\qa-artifacts\\final-visual-qa\\dedicated-battle\\same-session\\host-transition-02-battle-active.png",
+      "dimensions": [
+        1440,
+        900
+      ],
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "document": {
+        "scrollWidth": 1440,
+        "scrollHeight": 900,
+        "clientWidth": 1440,
+        "clientHeight": 900
+      },
+      "boardCount": 0,
+      "battleCount": 1,
+      "focused": "tv-dedicated-battle-stage",
+      "privateTextPresent": false
+    },
+    {
+      "state": "battle-resolved",
+      "path": "C:\\tmp\\ashenreach-mission-lifecycle\\qa-artifacts\\final-visual-qa\\dedicated-battle\\same-session\\host-transition-03-battle-resolved.png",
+      "dimensions": [
+        1440,
+        900
+      ],
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "document": {
+        "scrollWidth": 1440,
+        "scrollHeight": 900,
+        "clientWidth": 1440,
+        "clientHeight": 900
+      },
+      "boardCount": 0,
+      "battleCount": 1,
+      "focused": "tv-dedicated-battle-stage",
+      "privateTextPresent": false
+    },
+    {
+      "state": "board-restored",
+      "path": "C:\\tmp\\ashenreach-mission-lifecycle\\qa-artifacts\\final-visual-qa\\dedicated-battle\\same-session\\host-transition-04-board-restored.png",
+      "dimensions": [
+        1440,
+        900
+      ],
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "document": {
+        "scrollWidth": 1440,
+        "scrollHeight": 900,
+        "clientWidth": 1440,
+        "clientHeight": 900
+      },
+      "boardCount": 1,
+      "battleCount": 0,
+      "focused": "tv-command-main",
+      "privateTextPresent": false
+    }
+  ],
+  "continuity": {
+    "boardAdds": 1,
+    "battleAdds": 1,
+    "appRenderCount": 1,
+    "finalFocus": "tv-command-main"
+  },
+  "console": [
+    {
+      "type": "debug",
+      "text": "[vite] connecting..."
+    },
+    {
+      "type": "debug",
+      "text": "[vite] connected."
+    },
+    {
+      "type": "info",
+      "text": "%cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold"
+    }
+  ],
+  "pageErrors": []
+}

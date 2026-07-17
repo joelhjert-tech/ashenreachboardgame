@@ -1,0 +1,264 @@
+{
+  "captures": [
+    {
+      "state": "board before",
+      "path": "qa-artifacts\\final-visual-qa\\movement-journey\\host-movement-01-board-before.png",
+      "viewport": "1440x900",
+      "dimensions": [
+        1440,
+        900
+      ],
+      "projectionBuilder": "createMovementPatch",
+      "movementEventId": "22:seat-1:ashen-chapel",
+      "origin": "ashwake-crossing",
+      "route": [
+        "ashwake-crossing",
+        "outer_ember_sanctum",
+        "middle_red_march_outpost",
+        "reavers-den",
+        "ashen-chapel"
+      ],
+      "destination": "ashen-chapel",
+      "challengeSource": "public sectors.tileChallenges",
+      "classification": "public",
+      "reducedMotion": false,
+      "result": "passed",
+      "metrics": {
+        "w": 1440,
+        "h": 900,
+        "cw": 1440,
+        "ch": 900,
+        "board": 1,
+        "journey": 0,
+        "battle": 0,
+        "focus": "BODY",
+        "private": false
+      }
+    },
+    {
+      "state": "departure",
+      "path": "qa-artifacts\\final-visual-qa\\movement-journey\\host-movement-02-departure.png",
+      "viewport": "1440x900",
+      "dimensions": [
+        1440,
+        900
+      ],
+      "projectionBuilder": "createMovementPatch",
+      "movementEventId": "22:seat-1:ashen-chapel",
+      "origin": "ashwake-crossing",
+      "route": [
+        "ashwake-crossing",
+        "outer_ember_sanctum",
+        "middle_red_march_outpost",
+        "reavers-den",
+        "ashen-chapel"
+      ],
+      "destination": "ashen-chapel",
+      "challengeSource": "public sectors.tileChallenges",
+      "classification": "public",
+      "reducedMotion": false,
+      "result": "passed",
+      "metrics": {
+        "w": 1440,
+        "h": 900,
+        "cw": 1440,
+        "ch": 900,
+        "board": 0,
+        "journey": 1,
+        "battle": 0,
+        "focus": "tv-movement-journey",
+        "private": false
+      }
+    },
+    {
+      "state": "mid route",
+      "path": "qa-artifacts\\final-visual-qa\\movement-journey\\host-movement-03-mid-route.png",
+      "viewport": "1440x900",
+      "dimensions": [
+        1440,
+        900
+      ],
+      "projectionBuilder": "createMovementPatch",
+      "movementEventId": "22:seat-1:ashen-chapel",
+      "origin": "ashwake-crossing",
+      "route": [
+        "ashwake-crossing",
+        "outer_ember_sanctum",
+        "middle_red_march_outpost",
+        "reavers-den",
+        "ashen-chapel"
+      ],
+      "destination": "ashen-chapel",
+      "challengeSource": "public sectors.tileChallenges",
+      "classification": "public",
+      "reducedMotion": false,
+      "result": "passed",
+      "metrics": {
+        "w": 1440,
+        "h": 900,
+        "cw": 1440,
+        "ch": 900,
+        "board": 0,
+        "journey": 1,
+        "battle": 0,
+        "focus": "tv-movement-journey",
+        "private": false
+      }
+    },
+    {
+      "state": "arrival",
+      "path": "qa-artifacts\\final-visual-qa\\movement-journey\\host-movement-04-arrival.png",
+      "viewport": "1440x900",
+      "dimensions": [
+        1440,
+        900
+      ],
+      "projectionBuilder": "createMovementPatch",
+      "movementEventId": "22:seat-1:ashen-chapel",
+      "origin": "ashwake-crossing",
+      "route": [
+        "ashwake-crossing",
+        "outer_ember_sanctum",
+        "middle_red_march_outpost",
+        "reavers-den",
+        "ashen-chapel"
+      ],
+      "destination": "ashen-chapel",
+      "challengeSource": "public sectors.tileChallenges",
+      "classification": "public",
+      "reducedMotion": false,
+      "result": "passed",
+      "metrics": {
+        "w": 1440,
+        "h": 900,
+        "cw": 1440,
+        "ch": 900,
+        "board": 0,
+        "journey": 1,
+        "battle": 0,
+        "focus": "tv-movement-journey",
+        "private": false
+      }
+    },
+    {
+      "state": "destination challenges",
+      "path": "qa-artifacts\\final-visual-qa\\movement-journey\\host-movement-05-destination-challenges.png",
+      "viewport": "1440x900",
+      "dimensions": [
+        1440,
+        900
+      ],
+      "projectionBuilder": "createMovementPatch",
+      "movementEventId": "22:seat-1:ashen-chapel",
+      "origin": "ashwake-crossing",
+      "route": [
+        "ashwake-crossing",
+        "outer_ember_sanctum",
+        "middle_red_march_outpost",
+        "reavers-den",
+        "ashen-chapel"
+      ],
+      "destination": "ashen-chapel",
+      "challengeSource": "public sectors.tileChallenges",
+      "classification": "public",
+      "reducedMotion": false,
+      "result": "passed",
+      "metrics": {
+        "w": 1440,
+        "h": 900,
+        "cw": 1440,
+        "ch": 900,
+        "board": 1,
+        "journey": 0,
+        "battle": 0,
+        "focus": "tv-command-main",
+        "private": false
+      }
+    },
+    {
+      "state": "battle next state",
+      "path": "qa-artifacts\\final-visual-qa\\movement-journey\\host-movement-06-next-state.png",
+      "viewport": "1440x900",
+      "dimensions": [
+        1440,
+        900
+      ],
+      "projectionBuilder": "createMovementPatch",
+      "movementEventId": "22:seat-1:ashen-chapel",
+      "origin": "ashwake-crossing",
+      "route": [
+        "ashwake-crossing",
+        "outer_ember_sanctum",
+        "middle_red_march_outpost",
+        "reavers-den",
+        "ashen-chapel"
+      ],
+      "destination": "ashen-chapel",
+      "challengeSource": "public sectors.tileChallenges",
+      "classification": "public",
+      "reducedMotion": false,
+      "result": "passed",
+      "metrics": {
+        "w": 1440,
+        "h": 900,
+        "cw": 1440,
+        "ch": 900,
+        "board": 0,
+        "journey": 0,
+        "battle": 1,
+        "focus": "tv-dedicated-battle-stage",
+        "private": false
+      }
+    },
+    {
+      "state": "board restored",
+      "path": "qa-artifacts\\final-visual-qa\\movement-journey\\host-movement-07-board-restored.png",
+      "viewport": "1440x900",
+      "dimensions": [
+        1440,
+        900
+      ],
+      "projectionBuilder": "createMovementPatch",
+      "movementEventId": "22:seat-1:ashen-chapel",
+      "origin": "ashwake-crossing",
+      "route": [
+        "ashwake-crossing",
+        "outer_ember_sanctum",
+        "middle_red_march_outpost",
+        "reavers-den",
+        "ashen-chapel"
+      ],
+      "destination": "ashen-chapel",
+      "challengeSource": "public sectors.tileChallenges",
+      "classification": "public",
+      "reducedMotion": false,
+      "result": "passed",
+      "metrics": {
+        "w": 1440,
+        "h": 900,
+        "cw": 1440,
+        "ch": 900,
+        "board": 1,
+        "journey": 0,
+        "battle": 0,
+        "focus": "tv-command-main",
+        "private": false
+      }
+    }
+  ],
+  "errors": [],
+  "console": [
+    {
+      "type": "debug",
+      "text": "[vite] connecting..."
+    },
+    {
+      "type": "debug",
+      "text": "[vite] connected."
+    },
+    {
+      "type": "info",
+      "text": "%cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold"
+    }
+  ]
+}

@@ -1,0 +1,21 @@
+
+> ashen-reach@0.1.0 dev
+> tsx scripts/dev.ts
+
+[2m09:46:55[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m Re-optimizing dependencies because vite config has changed
+Ashen Reach local dev
+  API:    http://192.168.50.238:8080
+  WS:     ws://192.168.50.238:8080
+  TV:     http://192.168.50.238:5188/tv
+  Phone:  http://192.168.50.238:5188/
+[2m09:50:22[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32m✨ new dependencies optimized: [33mreact-dom/client[32m[39m
+[2m09:50:22[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32m✨ optimized dependencies changed. reloading[39m
+[2m09:51:13[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32m✨ new dependencies optimized: [33mqrcode[32m[39m
+[2m09:51:13[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32m✨ optimized dependencies changed. reloading[39m
+[2m10:03:04[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/client/tv/TvApp.tsx[22m
+[2m10:07:12[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/client/tv/TvApp.tsx[22m
+[2m11:14:32[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/client/tv/TvApp.tsx[22m
+[2m11:14:32[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/client/tv/TvApp.tsx[22m
+[2m11:14:32[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/client/tv/TvApp.tsx[22m
+[2m11:16:21[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/client/tv/TvApp.tsx[22m
+[2m11:35:00[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/client/tv/HostBattleOverlay.tsx[22m

@@ -1,0 +1,926 @@
+diff --git a/src/client/styles.css b/src/client/styles.css
+index 06fe445..b1276db 100644
+--- a/src/client/styles.css
++++ b/src/client/styles.css
+@@ -16992,29 +16992,6 @@ body {
+   white-space: nowrap;
+ }
+ 
+-.tv-tile-challenges {
+-  display: grid;
+-  gap: 0.45rem;
+-  padding-block: 0.45rem;
+-  border-block: 1px solid var(--ag-rule);
+-}
+-
+-.tv-tile-challenges article {
+-  display: grid;
+-  gap: 0.15rem;
+-  padding-left: 0.65rem;
+-  border-left: 3px double var(--ag-brass);
+-}
+-
+-.tv-tile-challenges article span {
+-  color: var(--ag-brass-bright);
+-  font-size: 0.72rem;
+-  letter-spacing: 0.08em;
+-  text-transform: uppercase;
+-}
+-
+-.tv-tile-challenges article small { color: var(--ag-bone-200); }
+-
+ .tv-host-context-list {
+   display: grid;
+   gap: 0.25rem;
+@@ -17581,3 +17558,532 @@ body {
+ }
+ .phone-movement-summary .combat-die-label { color: rgba(4, 16, 23, 0.82); text-shadow: 0 1px 0 rgba(255, 255, 255, 0.46); }
+ .phone-move-panel--resolving .phone-movement-empty { min-height: 5rem; border-style: solid; border-color: rgba(90, 185, 225, 0.42); }
++/* Ashengate approved hybrid: Ash War Table + Cinder Instrument */
++:root {
++  --ag-iron-950: #07090a;
++  --ag-iron-900: #0d1113;
++  --ag-iron-800: #151b1e;
++  --ag-iron-700: #222a2d;
++  --ag-bone-100: #d8d0bd;
++  --ag-bone-200: #bcb29d;
++  --ag-bone-300: #948975;
++  --ag-brass: #a88852;
++  --ag-brass-bright: #d0b377;
++  --ag-signal: #76a9c9;
++  --ag-danger: #a74f42;
++  --ag-ready: #7d9b78;
++  --ag-rule: rgba(190, 169, 126, .28);
++  --ag-rule-strong: rgba(208, 179, 119, .58);
++  --ag-touch: 44px;
++  --ag-fast: 140ms;
++  --ag-normal: 240ms;
++  --ag-slow: 420ms;
++}
++
++@keyframes ag-instrument-enter {
++  from { opacity: 0; transform: translateX(12px); }
++  to { opacity: 1; transform: translateX(0); }
++}
++
++@keyframes ag-status-turn {
++  to { transform: rotate(1turn); }
++}
++
++/* Host: persistent war table */
++.tv-command-dashboard {
++  background:
++    linear-gradient(90deg, rgba(168,136,82,.035) 1px, transparent 1px) 0 0 / 96px 100%,
++    radial-gradient(circle at 50% 40%, #171d1f 0, #090c0e 68%);
++}
++
++.tv-command-header,
++.tv-host-bottom-strip,
++.tv-command-sidebar,
++.tv-operatives-rail {
++  background: linear-gradient(180deg, rgba(25,30,31,.98), rgba(8,11,12,.98));
++  border-color: var(--ag-rule-strong);
++  box-shadow: inset 0 1px rgba(255,255,255,.035);
++}
++
++.tv-command-header-chip,
++.tv-card,
++.tv-sidebar-card,
++.tv-operative-card {
++  border-radius: 2px;
++  border-color: var(--ag-rule);
++  box-shadow: none;
++}
++
++.tv-command-main {
++  gap: clamp(8px, .8vw, 14px);
++}
++
++.tv-command-stage {
++  isolation: isolate;
++  background: var(--ag-iron-950);
++  border: 1px solid var(--ag-rule-strong);
++  box-shadow: 0 12px 32px rgba(0,0,0,.38), inset 0 0 0 3px rgba(0,0,0,.35);
++}
++
++.tv-command-map-shell {
++  min-width: 0;
++  min-height: 0;
++}
++
++.tv-command-stage-battle-mode {
++  display: grid;
++  grid-template-columns: minmax(44%, .92fr) minmax(52%, 1.08fr);
++  gap: 10px;
++  padding: 10px;
++}
++
++.tv-command-map-shell--battle-context {
++  position: relative;
++  overflow: hidden;
++  border: 1px solid var(--ag-rule-strong);
++  filter: saturate(.72) brightness(.72);
++}
++
++.tv-command-map-shell--battle-context::after {
++  content: "Battle location";
++  position: absolute;
++  inset: 14px auto auto 14px;
++  padding: 7px 11px;
++  color: var(--ag-bone-100);
++  background: rgba(7,9,10,.86);
++  border-left: 3px solid var(--ag-danger);
++  font: 700 12px/1.2 system-ui, sans-serif;
++  letter-spacing: .14em;
++  text-transform: uppercase;
++}
++
++.tv-command-battle-instrument {
++  min-width: 0;
++  min-height: 0;
++  overflow: hidden;
++  border: 1px solid var(--ag-rule-strong);
++  background: var(--ag-iron-900);
++  animation: ag-instrument-enter var(--ag-normal) ease-out both;
++}
++
++.tv-command-battle-instrument .host-battle-overlay {
++  position: relative;
++  inset: auto;
++  width: 100%;
++  height: 100%;
++  padding: 0;
++  background: transparent;
++  backdrop-filter: none;
++}
++
++.tv-command-battle-instrument .host-battle-panel {
++  width: 100%;
++  height: 100%;
++  max-width: none;
++  border: 0;
++  border-radius: 0;
++}
++
++.tv-host-context-battle {
++  position: relative;
++  overflow: visible;
++  border-left: 2px solid var(--ag-brass);
++}
++
++.tv-host-context-battle::before {
++  content: "";
++  position: absolute;
++  top: 42px;
++  right: 100%;
++  width: clamp(26px, 3vw, 58px);
++  border-top: 1px solid var(--ag-brass-bright);
++  box-shadow: 0 0 8px rgba(208,179,119,.24);
++}
++
++.tv-host-context-kicker,
++.tv-panel-title,
++.phone-sheet-section-heading,
++.phone-panel-kicker {
++  letter-spacing: .13em;
++  text-transform: uppercase;
++}
++
++.talisman-board-tile-active,
++.talisman-board-tile-selected,
++.board-node-active {
++  outline: 2px solid var(--ag-brass-bright);
++  outline-offset: 2px;
++}
++
++.board-route-movement,
++.talisman-board-travel-route {
++  filter: drop-shadow(0 0 4px rgba(208,179,119,.65));
++}
++
++.tv-button,
++.phone-button,
++.game-button {
++  min-height: var(--ag-touch);
++}
++
++.tv-button:focus-visible,
++.phone-button:focus-visible,
++.game-button:focus-visible,
++.phone-portrait-tab:focus-visible,
++.phone-inventory-group-toggle:focus-visible {
++  outline: 3px solid var(--ag-brass-bright);
++  outline-offset: 3px;
++}
++
++/* Phone: private cinder instrument */
++.phone-page,
++.phone-portrait-controller {
++  background:
++    linear-gradient(180deg, rgba(255,255,255,.018), transparent 18%),
++    #080b0d;
++}
++
++.phone-portrait-panel {
++  background: linear-gradient(180deg, #121719, #090c0e);
++  border-color: var(--ag-rule-strong);
++}
++
++.phone-portrait-topbar,
++.phone-compact-status-strip {
++  background: linear-gradient(180deg, #1b2021, #0f1315);
++  border-bottom: 1px solid var(--ag-rule-strong);
++}
++
++.phone-portrait-scroll {
++  min-height: 0;
++  scrollbar-color: var(--ag-brass) transparent;
++}
++
++.phone-portrait-screen {
++  color: var(--ag-bone-100);
++}
++
++.phone-portrait-section,
++.phone-portrait-hero-card,
++.phone-portrait-info-card {
++  background: transparent;
++  border-radius: 2px;
++  border-color: var(--ag-rule);
++  box-shadow: none;
++}
++
++.phone-portrait-section {
++  padding-inline: 0;
++}
++
++.phone-sheet-section-heading {
++  color: var(--ag-brass-bright);
++  border-bottom: 1px solid var(--ag-rule);
++}
++
++.phone-stat-card {
++  background: linear-gradient(100deg, rgba(216,208,189,.07), rgba(216,208,189,.025));
++  border-color: var(--ag-rule);
++}
++
++.phone-inventory-panel {
++  display: grid;
++  gap: 12px;
++}
++
++.phone-inventory-timing-groups {
++  order: -3;
++}
++
++.phone-inventory-group {
++  margin: 0;
++  border: 0;
++  border-top: 1px solid var(--ag-rule);
++  background: transparent;
++}
++
++.phone-inventory-group-toggle {
++  min-height: var(--ag-touch);
++  display: flex;
++  align-items: center;
++  justify-content: space-between;
++  cursor: pointer;
++  list-style: none;
++  padding: 10px 4px;
++}
++
++.phone-inventory-group-toggle::after {
++  content: "+";
++  color: var(--ag-brass-bright);
++  font: 700 20px/1 system-ui, sans-serif;
++}
++.phone-inventory-group.is-open .phone-inventory-group-toggle::after { content: "−"; }
++
++.phone-inventory-card-list {
++  gap: 0;
++}
++
++.phone-inventory-card {
++  border: 0;
++  border-bottom: 1px solid var(--ag-rule);
++  border-radius: 0;
++  background: linear-gradient(90deg, rgba(216,208,189,.055), transparent 75%);
++  box-shadow: none;
++}
++
++.phone-inventory-card-useful-now,
++.phone-inventory-card-usable-now {
++  background: linear-gradient(90deg, rgba(125,155,120,.16), rgba(125,155,120,.03));
++  border-left: 3px solid var(--ag-ready);
++}
++
++.phone-inventory-card-exhausted,
++.phone-inventory-card-locked,
++.phone-inventory-card-not-usable-now {
++  opacity: .76;
++}
++
++.phone-inventory-card-status,
++.phone-inventory-card-meta,
++.phone-inventory-stat-bonus {
++  font-family: system-ui, sans-serif;
++  letter-spacing: .045em;
++}
++
++.phone-bottomdock,
++.phone-portrait-tabs,
++.phone-compact-tab-dock {
++  background: linear-gradient(180deg, #151a1c, #080b0d);
++  border-top: 1px solid var(--ag-rule-strong);
++  padding-bottom: max(8px, env(safe-area-inset-bottom));
++}
++
++.phone-portrait-tab {
++  min-height: var(--ag-touch);
++  border-radius: 0;
++}
++
++.phone-portrait-tab-active {
++  color: var(--ag-brass-bright);
++  box-shadow: inset 0 3px var(--ag-brass-bright);
++}
++
++/* Shared semantic states, expressed without color dependence. */
++.phone-muted-copy[aria-busy="true"],
++.phone-character-waiting-status,
++.tv-command-live-status {
++  position: relative;
++  padding-left: 24px;
++}
++
++.phone-character-waiting-status::before,
++.tv-command-live-status::before {
++  content: "⌛";
++  position: absolute;
++  left: 0;
++  color: var(--ag-brass-bright);
++}
++
++.phone-button:disabled,
++.phone-portrait-tab:disabled {
++  opacity: .58;
++  filter: grayscale(.5);
++  border-style: dashed;
++}
++
++@media (max-width: 1500px), (max-height: 820px) {
++  .tv-command-stage-battle-mode { grid-template-columns: minmax(38%, .75fr) minmax(58%, 1.25fr); }
++  .tv-command-header-chip { padding-block: 5px; }
++}
++
++@media (max-width: 1300px), (max-height: 760px) {
++  .tv-startup-room .join-qr-card-full {
++    grid-template-columns: minmax(0, 1fr);
++  }
++  .tv-startup-room .join-qr-frame {
++    width: 8rem;
++    min-height: 8rem;
++  }
++  .tv-startup-room .join-link {
++    overflow-wrap: anywhere;
++  }
++}
++
++@media (max-width: 430px) {
++  .phone-portrait-panel { border-inline: 0; }
++  .phone-portrait-header-vitals small { font-size: 11px; }
++  .phone-inventory-card { min-width: 0; }
++  .phone-inventory-card h3,
++  .phone-inventory-card p { overflow-wrap: anywhere; }
++}
++
++@media (prefers-reduced-motion: reduce) {
++  *, *::before, *::after {
++    scroll-behavior: auto !important;
++    animation-duration: .01ms !important;
++    animation-iteration-count: 1 !important;
++    transition-duration: .01ms !important;
++  }
++}
++
++.tv-tile-challenges {
++  display: grid;
++  gap: 0.45rem;
++  padding-block: 0.45rem;
++  border-block: 1px solid var(--ag-rule);
++}
++
++.tv-tile-challenges article {
++  display: grid;
++  gap: 0.15rem;
++  padding-left: 0.65rem;
++  border-left: 3px double var(--ag-brass);
++}
++
++.tv-tile-challenges article span {
++  color: var(--ag-brass-bright);
++  font-size: 0.72rem;
++  letter-spacing: 0.08em;
++  text-transform: uppercase;
++}
++
++.tv-tile-challenges article small { color: var(--ag-bone-200); }
++
++.tv-movement-journey {
++  min-width: 0; min-height: 0; height: 100%; overflow: hidden; outline: none;
++  display: grid; grid-template-rows: auto auto minmax(9rem, 1fr) auto; gap: clamp(.55rem, 1vw, 1rem);
++  padding: clamp(.65rem, 1.2vw, 1.2rem); border: 1px solid var(--ag-rule-strong);
++  background: radial-gradient(circle at 50% 48%, rgba(126,77,35,.18), transparent 34rem), linear-gradient(180deg,#111517,#060809);
++}
++.tv-movement-journey__header { display:grid; grid-template-columns:1fr auto 1fr; align-items:end; border-bottom:1px solid var(--ag-rule); padding-bottom:.5rem; text-transform:uppercase; letter-spacing:.1em; }
++.tv-movement-journey__header strong { color:var(--ag-bone-100); font-size:clamp(1.25rem,2vw,2rem); text-align:center; }
++.tv-movement-journey__header p { text-align:right; margin:0; color:var(--ag-brass-bright); }
++.tv-movement-journey__status { display:flex; justify-content:space-between; align-items:center; color:var(--ag-bone-100); }
++.tv-movement-journey__route { list-style:none; margin:0; padding:clamp(.5rem,1vw,1rem); display:flex; align-items:center; justify-content:center; gap:clamp(.35rem,.8vw,.8rem); overflow:hidden; }
++.tv-movement-journey__route li { position:relative; flex:0 1 clamp(9rem,16vw,15rem); min-width:0; display:grid; gap:.45rem; padding:.4rem; border:1px solid var(--ag-rule); background:rgba(8,11,12,.9); text-align:center; transition:flex-basis 180ms ease, opacity 180ms ease, border-color 180ms ease; }
++.tv-movement-journey__route li:not(:last-child)::after { content:"→"; position:absolute; right:calc(-.8rem - 8px); top:50%; color:var(--ag-brass); z-index:2; }
++.tv-movement-journey__tile-art { position:relative; aspect-ratio:4/3; overflow:hidden; background:#080b0c; }
++.tv-movement-journey__tile-image { width:100%; height:100%; object-fit:cover; object-position:center; }
++.tv-movement-journey__tile-art > span { position:absolute; top:.4rem; left:.4rem; padding:.22rem .4rem; background:rgba(5,7,8,.82); border:1px solid rgba(201,158,83,.42); }
++.tv-movement-journey__route li span { color:var(--ag-bone-100); font-size:.7rem; letter-spacing:.1em; text-transform:uppercase; }
++.tv-movement-journey__route li strong { overflow-wrap:anywhere; font-size:clamp(.85rem,1.25vw,1.2rem); }
++.tv-movement-journey__route li.is-current { flex-basis:clamp(12rem,22vw,20rem); border-color:var(--ag-brass-bright); box-shadow:inset 0 0 0 2px rgba(180,133,63,.25); }
++.tv-movement-journey__route li.is-complete { opacity:.62; }
++.tv-movement-journey__route li.is-upcoming { opacity:.78; }
++.tv-movement-journey__route li i, .tv-movement-journey__destination-art i { position:absolute; right:.55rem; bottom:.45rem; display:grid; place-items:center; width:2rem; height:2rem; border:2px solid var(--ag-bone-100); border-radius:50%; background:var(--ag-iron-900); color:var(--ag-brass-bright); box-shadow:0 0 0 3px rgba(6,8,9,.72); font-size:1.15rem; font-style:normal; }
++.tv-movement-journey__arrival { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1.2fr); gap:.75rem; }
++.tv-movement-journey__arrival > div { display:grid; gap:.3rem; padding:.65rem .8rem; border-top:1px solid var(--ag-rule); background:rgba(11,14,15,.78); }
++.tv-movement-journey__destination { grid-template-columns:minmax(8rem,11rem) minmax(0,1fr); grid-template-rows:auto auto 1fr; align-items:start; }
++.tv-movement-journey__destination-art { position:relative; grid-row:1 / 4; aspect-ratio:4/3; overflow:hidden; margin-right:.35rem; border:1px solid var(--ag-brass); }
++.tv-movement-journey__arrival span { color:var(--ag-brass-bright); text-transform:uppercase; letter-spacing:.1em; font-size:.7rem; }
++.tv-movement-journey__arrival article { display:flex; justify-content:space-between; gap:.7rem; }
++@media (max-width: 1300px), (max-height: 760px) { .tv-movement-journey { gap:.4rem; padding:.5rem; } .tv-movement-journey__route { padding:.35rem; } .tv-movement-journey__route li { flex-basis:clamp(7rem,15vw,11rem); padding:.25rem; } .tv-movement-journey__route li.is-current { flex-basis:clamp(10rem,21vw,15rem); } .tv-movement-journey__destination { grid-template-columns:minmax(7rem,9rem) minmax(0,1fr); } }
++@media (prefers-reduced-motion: reduce) { .tv-movement-journey__route li { transition:none !important; animation:none !important; } }
++
++/* Dedicated host battle chamber: authoritative combat replaces the board view. */
++.tv-dedicated-battle-stage {
++  position: relative;
++  min-width: 0;
++  min-height: 0;
++  height: 100%;
++  display: grid;
++  grid-template-rows: auto minmax(0, 1fr);
++  gap: clamp(0.45rem, 0.7vw, 0.8rem);
++  padding: clamp(0.45rem, 0.8vw, 0.9rem);
++  overflow: hidden;
++  outline: none;
++  isolation: isolate;
++  background:
++    linear-gradient(90deg, rgba(168, 136, 82, 0.045) 1px, transparent 1px) 0 0 / 7rem 100%,
++    radial-gradient(circle at 50% 44%, rgba(116, 67, 42, 0.2), transparent 31rem),
++    linear-gradient(180deg, #111517, #060809 76%);
++  animation: ag-battle-chamber-enter var(--ag-normal) ease-out both;
++}
++
++.tv-dedicated-battle-stage::before {
++  content: "";
++  position: absolute;
++  inset: 0;
++  pointer-events: none;
++  border: 1px solid var(--ag-rule-strong);
++  box-shadow: inset 0 0 0 3px rgba(0, 0, 0, 0.38), inset 0 0 5rem rgba(0, 0, 0, 0.28);
++}
++
++@keyframes ag-battle-chamber-enter {
++  from { opacity: 0; clip-path: inset(0 48%); }
++  to { opacity: 1; clip-path: inset(0); }
++}
++
++.tv-dedicated-battle-context {
++  position: relative;
++  z-index: 2;
++  min-width: 0;
++  min-height: 2.7rem;
++  display: grid;
++  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
++  align-items: center;
++  gap: 0.8rem;
++  padding: 0.42rem clamp(0.7rem, 1.2vw, 1.25rem);
++  border-block: 1px solid var(--ag-rule);
++  color: var(--ag-bone-200);
++  background: linear-gradient(90deg, rgba(8, 11, 12, 0.5), rgba(29, 25, 21, 0.84), rgba(8, 11, 12, 0.5));
++  font: 700 clamp(0.7rem, 0.82vw, 0.9rem)/1.2 system-ui, sans-serif;
++  letter-spacing: 0.11em;
++  text-transform: uppercase;
++}
++
++.tv-dedicated-battle-context span,
++.tv-dedicated-battle-context small {
++  overflow: hidden;
++  text-overflow: ellipsis;
++  white-space: nowrap;
++}
++
++.tv-dedicated-battle-context strong {
++  color: var(--ag-brass-bright);
++  font-family: Georgia, "Times New Roman", serif;
++  font-size: clamp(0.9rem, 1.15vw, 1.3rem);
++  text-align: center;
++}
++
++.tv-dedicated-battle-context small { text-align: right; }
++
++.tv-dedicated-battle-stage .tv-command-battle-instrument {
++  position: relative;
++  width: min(100%, 105rem);
++  height: 100%;
++  min-height: 0;
++  justify-self: center;
++  border: 1px solid var(--ag-rule-strong);
++  background: radial-gradient(circle at 50% 42%, rgba(168, 136, 82, 0.08), transparent 38%), var(--ag-iron-900);
++}
++
++.tv-dedicated-battle-stage .host-battle-overlay {
++  position: absolute;
++  inset: 0;
++  padding: clamp(0.25rem, 0.55vw, 0.65rem);
++}
++
++.tv-dedicated-battle-stage .host-battle-panel {
++  width: 100%;
++  height: 100%;
++  max-width: 104rem;
++}
++
++@media (max-width: 1300px), (max-height: 760px) {
++  .tv-dedicated-battle-stage { padding: 0.35rem; gap: 0.35rem; }
++  .tv-dedicated-battle-context { min-height: 2.15rem; padding-block: 0.25rem; }
++  .tv-dedicated-battle-stage .host-battle-overlay { padding: 0.25rem; }
++  .tv-dedicated-battle-stage .host-battle-combatant {
++    grid-template-rows: clamp(3.3rem, 8svh, 4.2rem) minmax(0, 1fr) clamp(7.2rem, 19svh, 8.5rem);
++  }
++  .tv-dedicated-battle-stage .host-battle-vs-block { padding-block: 0.35rem; gap: 0.2rem; }
++  .tv-dedicated-battle-stage .host-battle-vs-block > strong { font-size: clamp(2.25rem, 4.4vw, 3.8rem); }
++}
++
++@media (prefers-reduced-motion: reduce) {
++  .tv-dedicated-battle-stage {
++    animation-name: ag-instrument-enter;
++    clip-path: none;
++  }
++}
+diff --git a/src/client/tv/TalismanBoardSurface.tsx b/src/client/tv/TalismanBoardSurface.tsx
+index 380d8a8..42cb39e 100644
+--- a/src/client/tv/TalismanBoardSurface.tsx
++++ b/src/client/tv/TalismanBoardSurface.tsx
+@@ -97,7 +97,7 @@ function getTileSide(node: BoardNode): "horizontal" | "vertical" | "center" {
+   return Math.abs(node.y - 0.5) > Math.abs(node.x - 0.5) ? "horizontal" : "vertical";
+ }
+ 
+-function BoardTileImage({ nodeId, label }: { nodeId: string; label: string }): ReactElement {
++export function BoardTileImage({ nodeId, label, className = "" }: { nodeId: string; label: string; className?: string }): ReactElement {
+   const assetPath = getTileAssetPath(nodeId);
+   const expectedPath = getExpectedTileAssetPath(nodeId);
+   const [failed, setFailed] = useState(false);
+@@ -112,7 +112,7 @@ function BoardTileImage({ nodeId, label }: { nodeId: string; label: string }): R
+     }
+ 
+     return (
+-      <span className="talisman-board-missing-art" data-testid={`missing-tile-art-${nodeId}`}>
++      <span className={`talisman-board-missing-art ${className}`.trim()} data-testid={`missing-tile-art-${nodeId}`}>
+         <strong>Missing tile art</strong>
+         <small>{nodeId}</small>
+         <small>{assetPath ?? expectedPath}</small>
+@@ -122,7 +122,7 @@ function BoardTileImage({ nodeId, label }: { nodeId: string; label: string }): R
+ 
+   return (
+     <img
+-      className="talisman-board-tile-art"
++      className={`talisman-board-tile-art ${className}`.trim()}
+       src={assetPath}
+       alt=""
+       aria-hidden="true"
+diff --git a/src/client/tv/TvApp.tsx b/src/client/tv/TvApp.tsx
+index c3ba416..6544a79 100644
+--- a/src/client/tv/TvApp.tsx
++++ b/src/client/tv/TvApp.tsx
+@@ -53,6 +53,7 @@ import type {
+ } from "../shared/types.js";
+ import { HostPlayerCard } from "./HostPlayerCard.js";
+ import { HostBattleOverlay } from "./HostBattleOverlay.js";
++import { HostMovementJourney, type HostMovementJourneyModel } from "./HostMovementJourney.js";
+ import { isHostBattleActive } from "./hostBattleState.js";
+ import { HostShopOverlay } from "./HostShopOverlay.js";
+ import { isHostShopActive } from "./hostShopState.js";
+@@ -1849,16 +1850,20 @@ interface TacticalMapPanelProps {
+   activePlayer: PublicPlayer | null;
+   battlePlayer: PublicPlayer | null;
+   characterCatalog: CharacterCatalogEntry[];
++  onJourneyComplete?: () => void;
+ }
+ 
+ interface MovementArrivalModel {
++  eventId: string;
+   destination: PublicMoveDestination;
+   playerName: string;
++  originName: string;
+ }
+ 
+ function getMovementArrivalModel(
+   patch: PublicPatchPayload | null | undefined,
+-  previousPatch: PublicPatchPayload | null | undefined
++  previousPatch: PublicPatchPayload | null | undefined,
++  eventSequence = 0
+ ): MovementArrivalModel | null {
+   const planner = previousPatch?.movementPlanner?.active ? previousPatch.movementPlanner : null;
+ 
+@@ -1870,7 +1875,7 @@ function getMovementArrivalModel(
+   const movedPlayer = patch.players.find((player) => previousSectorBySeat.get(player.seatId) !== player.sectorId);
+   const destination = movedPlayer ? planner.destinations.find((entry) => entry.sectorId === movedPlayer.sectorId) ?? null : null;
+ 
+-  return movedPlayer && destination ? { destination, playerName: movedPlayer.character.name } : null;
++  return movedPlayer && destination ? { eventId: `${eventSequence}:${movedPlayer.seatId}:${destination.sectorId}`, destination, playerName: movedPlayer.character.name, originName: planner.currentSectorName } : null;
+ }
+ 
+ function MovementFocusHud({
+@@ -2058,44 +2063,70 @@ function BoardLegend(): ReactElement {
+   );
+ }
+ 
++function DedicatedBattleStage({ patch, activePlayer }: {
++  patch: StatePatch<PublicPatchPayload>;
++  activePlayer: PublicPlayer;
++}): ReactElement {
++  const stageRef = useRef<HTMLElement>(null);
++  const space = getBoardSpace(activePlayer.sectorId);
++  const sector = patch.payload.sectors.find((entry) => entry.id === activePlayer.sectorId) ?? null;
++  const locationName = space?.name ?? sector?.name ?? "Current sector";
++  const region = space?.tier ?? sector?.regionTier ?? null;
++
++  useEffect(() => {
++    stageRef.current?.focus({ preventScroll: true });
++  }, [patch.payload.activeResolution?.id]);
++
++  return (
++    <section ref={stageRef} className="tv-dedicated-battle-stage" aria-label="Dedicated battle view" data-testid="tv-dedicated-battle-stage" tabIndex={-1}>
++      <header className="tv-dedicated-battle-context">
++        <span>Battle at {locationName}</span>
++        <strong>{activePlayer.character.name}</strong>
++        {region ? <small>{toTitleCase(region)} reach</small> : null}
++      </header>
++      <div className="tv-command-battle-instrument" aria-label="Battle command surface">
++        <HostBattleOverlay patch={patch} activePlayer={activePlayer} />
++      </div>
++    </section>
++  );
++}
++
+ function TacticalMapPanel({
+   patch,
+   previousPatch,
+   activeSeat,
+   activePlayer,
+   battlePlayer,
+-  characterCatalog
++  characterCatalog,
++  onJourneyComplete
+ }: TacticalMapPanelProps): ReactElement {
+   const battleMode = isHostBattleActive(patch, battlePlayer);
+   const shopMode = isHostShopActive(patch, activePlayer);
+   const planner = patch?.payload.movementPlanner?.active ? patch.payload.movementPlanner : null;
+-  const arrival = getMovementArrivalModel(patch?.payload, previousPatch?.payload);
+-  const arrivalKey = arrival ? `${arrival.playerName}:${arrival.destination.sectorId}:${arrival.destination.route.join(">")}` : null;
+-  const [visualTravel, setVisualTravel] = useState<{ key: string; arrival: MovementArrivalModel; step: number } | null>(null);
++  const arrival = getMovementArrivalModel(patch?.payload, previousPatch?.payload, patch?.sequence);
++  const arrivalKey = arrival?.eventId ?? null;
++  const [visualTravel, setVisualTravel] = useState<{ key: string; arrival: MovementArrivalModel; step: number; arrived: boolean } | null>(null);
+   const completedTravelKeyRef = useRef<string | null>(null);
+   useEffect(() => {
+-    if (arrival && arrivalKey && completedTravelKeyRef.current !== arrivalKey && !battleMode && !shopMode) {
+-      setVisualTravel((current) => current?.key === arrivalKey ? current : { key: arrivalKey, arrival, step: 1 });
++    if (arrival && arrivalKey && completedTravelKeyRef.current !== arrivalKey && !shopMode) {
++      setVisualTravel((current) => current?.key === arrivalKey ? current : { key: arrivalKey, arrival, step: 0, arrived: false });
+     }
+   }, [arrival, arrivalKey, battleMode, shopMode]);
+-  useEffect(() => {
+-    if (battleMode || shopMode) {
+-      setVisualTravel(null);
+-    }
+-  }, [battleMode, shopMode]);
+   useEffect(() => {
+     if (!visualTravel) return;
+-    const stepTotal = Math.max(1, visualTravel.arrival.destination.route.length - 1);
++    const finalStep = Math.max(visualTravel.arrival.destination.route.length - 1, 1);
+     const timeout = window.setTimeout(() => {
+       setVisualTravel((current) => {
+         if (!current || current.key !== visualTravel.key) return current;
+-        if (current.step < stepTotal) return { ...current, step: current.step + 1 };
++        if (current.step < finalStep) return { ...current, step: current.step + 1 };
++        if (!current.arrived) return { ...current, arrived: true };
+         completedTravelKeyRef.current = current.key;
++        if (!battleMode) window.requestAnimationFrame(() => onJourneyComplete?.());
+         return null;
+       });
+-    }, 720);
++    }, visualTravel.arrived ? 650 : 360);
+     return () => window.clearTimeout(timeout);
+-  }, [visualTravel]);
++  }, [visualTravel, battleMode, onJourneyComplete]);
+   const focusBattleMode = battleMode;
+   const focusShopMode = !focusBattleMode && shopMode;
+   const movementFocusMode = !focusBattleMode && !focusShopMode && Boolean(planner || visualTravel);
+@@ -2103,18 +2134,26 @@ function TacticalMapPanel({
+     ? planner.destinations.find((destination) => destination.sectorId === planner.selectedDestinationId) ?? null
+     : null;
+ 
++  if (visualTravel) {
++    const challenges = patch?.payload.sectors.find((sector) => sector.id === visualTravel.arrival.destination.sectorId)?.tileChallenges ?? [];
++    const model: HostMovementJourneyModel = { eventId: visualTravel.key, operativeName: visualTravel.arrival.playerName, originName: visualTravel.arrival.originName, destination: visualTravel.arrival.destination };
++    return <HostMovementJourney model={model} step={visualTravel.step} arrived={visualTravel.arrived} challenges={challenges} />;
++  }
++
++  if (focusBattleMode && patch && battlePlayer) {
++    return <DedicatedBattleStage patch={patch} activePlayer={battlePlayer} />;
++  }
++
+   return (
+-    <section className={`tv-command-stage${focusBattleMode ? " tv-command-stage-battle-mode" : ""}${focusShopMode ? " tv-command-stage-shop-mode" : ""}${movementFocusMode ? " tv-command-stage-movement-focus" : ""}`}>
+-      {!focusBattleMode && (
+-        <div className="tv-command-map-shell">
++    <section className={`tv-command-stage${focusShopMode ? " tv-command-stage-shop-mode" : ""}${movementFocusMode ? " tv-command-stage-movement-focus" : ""}`}>
++      <div className="tv-command-map-shell">
+           <TacticalMapBoard
+             patch={patch?.payload ?? null}
+             previousPatch={previousPatch?.payload ?? null}
+             phase={patch?.phase ?? "start"}
+           />
+           {!movementFocusMode && <BoardLegend />}
+-        </div>
+-      )}
++      </div>
+       {!focusBattleMode && <NemesisBanner nemesis={patch?.payload.nemesis ?? null} />}
+       {!focusBattleMode && !focusShopMode && !movementFocusMode && (
+         <ActiveOperativeOverlay
+@@ -2125,14 +2164,12 @@ function TacticalMapPanel({
+           characterCatalog={characterCatalog}
+         />
+       )}
+-      {focusBattleMode && <HostBattleOverlay patch={patch} activePlayer={battlePlayer} />}
+       {focusShopMode && <HostShopOverlay patch={patch} activePlayer={activePlayer} />}
+       {movementFocusMode && (
+         <MovementFocusHud
+           planner={planner}
+           selectedDestination={projectedDestination}
+-          arrival={visualTravel?.arrival ?? null}
+-          travelStep={visualTravel?.step}
++          arrival={null}
+           activePlayerName={activePlayer?.character.name ?? "Active operative"}
+         />
+       )}
+@@ -2424,6 +2461,8 @@ export function TvApp(): ReactElement {
+     hostToken
+   });
+   const previousPatchRef = useRef<StatePatch<PublicPatchPayload> | null>(null);
++  const commandMainRef = useRef<HTMLElement | null>(null);
++  const previousBattleModeRef = useRef(false);
+ 
+   useEffect(() => {
+     fetchCharacters()
+@@ -2473,6 +2512,14 @@ export function TvApp(): ReactElement {
+     }
+   }, [publicPatch]);
+ 
++  useEffect(() => {
++    const wasInBattle = previousBattleModeRef.current;
++    previousBattleModeRef.current = battleMode;
++    if (wasInBattle && !battleMode) {
++      window.requestAnimationFrame(() => commandMainRef.current?.focus({ preventScroll: true }));
++    }
++  }, [battleMode]);
++
+   useEffect(() => {
+     if (typeof window === "undefined") {
+       return;
+@@ -2698,8 +2745,11 @@ export function TvApp(): ReactElement {
+         <EndgameOverlay patch={publicPatch} />
+ 
+         <section
++          ref={commandMainRef}
+           className={`tv-command-main${isPreRoomLobby ? " tv-command-main--pre-room" : ""}${battleMode ? " tv-command-main--battle-focus" : ""}${shopMode ? " tv-command-main--shop-focus" : ""}${movementFocusMode ? " tv-command-main--movement-focus" : ""}`}
+           data-testid="tv-command-main"
++          aria-label="Host command board"
++          tabIndex={-1}
+         >
+           {isPreRoomLobby ? (
+             <section className="tv-pre-room-lobby-stage" aria-label="Host lobby setup">
+@@ -2760,6 +2810,7 @@ export function TvApp(): ReactElement {
+                 activePlayer={activePlayer}
+                 battlePlayer={battlePlayer}
+                 characterCatalog={characterCatalog}
++                onJourneyComplete={() => commandMainRef.current?.focus({ preventScroll: true })}
+               />
+ 
+               {!battleMode && !shopMode && !movementFocusMode && <RightSidebar
+diff --git a/src/client/tv/__tests__/TvApp.test.tsx b/src/client/tv/__tests__/TvApp.test.tsx
+index 3629ad1..401ef97 100644
+--- a/src/client/tv/__tests__/TvApp.test.tsx
++++ b/src/client/tv/__tests__/TvApp.test.tsx
+@@ -1021,15 +1021,18 @@ describe("TvApp", () => {
+       clearDebugEvents: vi.fn()
+     });
+     rerender(<TvApp />);
+-    const arrivalFocus = await screen.findByTestId("tv-arrival-focus");
+-    expect(arrivalFocus).toHaveTextContent(/arrived at anchor market/i);
+-    expect(arrivalFocus).toHaveTextContent(/outer reach/i);
+-    expect(arrivalFocus).toHaveTextContent(/trade if the sector is clear/i);
+-    expect(arrivalFocus).toHaveTextContent(/printed challenge icons will resolve on arrival/i);
++    const journey = await screen.findByTestId("tv-movement-journey");
++    expect(journey).toHaveTextContent(/ashwake crossing.*anchor market/i);
++    expect(journey).toHaveTextContent(/trade if the sector is clear/i);
++    expect(within(journey).getByTestId("tile-art-ashwake-crossing")).toHaveAttribute("src", "/assets/map/tiles/map_tile_hollow_gate.png");
++    expect(within(journey).getByTestId("tile-art-glassmere-spindle")).toHaveAttribute("src", "/assets/map/tiles/map_tile_ironbridge_span.png");
++    expect(within(journey).getAllByTestId("missing-tile-art-outer_anchor_market")).toHaveLength(2);
++    expect(journey).toHaveFocus();
+     expect(screen.queryByTestId("tv-movement-focus")).not.toBeInTheDocument();
+-    expect(screen.getByText("Tactical map")).toBeInTheDocument();
++    expect(screen.queryByText("Tactical map")).not.toBeInTheDocument();
+ 
+-    await waitFor(() => expect(screen.queryByTestId("tv-arrival-focus")).not.toBeInTheDocument(), { timeout: 3_500 });
++    await waitFor(() => expect(journey).toHaveTextContent(/arrived at anchor market/i), { timeout: 3_500 });
++    await waitFor(() => expect(screen.queryByTestId("tv-movement-journey")).not.toBeInTheDocument(), { timeout: 4_500 });
+     rerender(<TvApp />);
+     expect(screen.getByTestId("tv-command-main")).not.toHaveClass("tv-command-main--movement-focus");
+     expect(screen.getByRole("complementary", { name: /operatives/i })).toBeInTheDocument();
+@@ -1094,19 +1097,6 @@ describe("TvApp", () => {
+     expect(JSON.stringify(patch.payload)).not.toContain("Private agenda");
+   });
+ 
+-  it("separates recurring challenges from threats in the public sector brief", async () => {
+-    window.localStorage.setItem("ashen-reach-tv-room-code", "RT7P4");
+-    window.localStorage.setItem("ashen-reach-tv-host-token", "host:RT7P4:secret");
+-    const patch = createPatch();
+-    patch.payload.sectors[0]!.tileChallenges = [{ id: "rift-whispers-ashen-chapel", name: "Rift Whispers", challengeType: "anomaly", sectorId: "ashwake-crossing", testStat: "signal", difficulty: 8, trigger: "onArrival", authoredOrder: 0, recurring: true, tags: ["anomaly"], lore: "The signal repeats.", artCardId: "rift-whispers", successSummary: "The whisper recedes.", failureSummary: "Gain the authored Scar." }];
+-    mockUseRoomSubscription.mockReturnValue({ patch, error: null, sendIntent: vi.fn(), status: "open", debugEvents: [], clearDebugEvents: vi.fn() });
+-    render(<TvApp />);
+-    const challenges = await screen.findByRole("region", { name: /recurring tile challenges/i });
+-    expect(challenges).toHaveTextContent(/rift whispers/i);
+-    expect(challenges).toHaveTextContent(/anomaly.*signal 8.*recurring/i);
+-    expect(challenges).not.toHaveTextContent(/trophy|claim|inventory/i);
+-  });
+-
+   it("renders battle setup through the host battle overlay without a duplicate card tray", async () => {
+     window.localStorage.setItem("ashen-reach-tv-room-code", "RT7P4");
+     window.localStorage.setItem("ashen-reach-tv-host-token", "host:RT7P4:secret");
+@@ -1159,6 +1149,10 @@ describe("TvApp", () => {
+     expect(screen.queryByTestId("host-state-banner")).not.toBeInTheDocument();
+     expect(within(screen.getByLabelText(/host status bar/i)).getByTestId("host-live-status")).toBeInTheDocument();
+     expect(screen.queryByText("Tactical map")).not.toBeInTheDocument();
++    expect(screen.queryByLabelText("Board legend")).not.toBeInTheDocument();
++    expect(screen.getByTestId("tv-dedicated-battle-stage")).toHaveFocus();
++    expect(screen.getByTestId("tv-dedicated-battle-stage")).toHaveTextContent(/battle at ashwalk bridge/i);
++    expect(screen.getByLabelText("Battle command surface")).toBeInTheDocument();
+     expect(screen.queryByRole("complementary", { name: /operatives/i })).not.toBeInTheDocument();
+     expect(document.querySelector(".tv-command-sidebar")).not.toBeInTheDocument();
+     expect(overlay).toHaveTextContent(/tarek voss/i);
+@@ -1179,6 +1173,45 @@ describe("TvApp", () => {
+     expect(screen.queryByTestId("tv-movement-focus")).not.toBeInTheDocument();
+   });
+ 
++  it("returns focus to the host command board when an active battle projection closes", async () => {
++    window.localStorage.setItem("ashen-reach-tv-room-code", "RT7P4");
++    window.localStorage.setItem("ashen-reach-tv-host-token", "host:RT7P4:secret");
++    const battlePatch = createPatch();
++    battlePatch.phase = "resolution";
++    battlePatch.payload.activeResolution = {
++      id: "seat-1:threat:cinder-veil-stalker:test",
++      playerId: "seat-1",
++      source: "threat",
++      stage: "battle_setup",
++      card: { id: "cinder-veil-stalker", title: "Cinder-Veil Stalker", type: "enemy", artType: "threat" },
++      battle: { enemyName: "Cinder-Veil Stalker", stat: "grit", difficulty: 8, modifiers: [{ label: "Base Grit", value: 2 }] }
++    };
++    mockUseRoomSubscription.mockReturnValue({
++      patch: battlePatch,
++      error: null,
++      sendIntent: vi.fn(),
++      status: "open",
++      debugEvents: [],
++      clearDebugEvents: vi.fn()
++    });
++    const view = render(<TvApp />);
++    expect(await screen.findByTestId("tv-dedicated-battle-stage")).toHaveFocus();
++
++    mockUseRoomSubscription.mockReturnValue({
++      patch: createPatch(),
++      error: null,
++      sendIntent: vi.fn(),
++      status: "open",
++      debugEvents: [],
++      clearDebugEvents: vi.fn()
++    });
++    view.rerender(<TvApp />);
++
++    await waitFor(() => expect(screen.getByTestId("tv-command-main")).toHaveFocus());
++    expect(screen.queryByTestId("tv-dedicated-battle-stage")).not.toBeInTheDocument();
++    expect(screen.getByText("Tactical map")).toBeInTheDocument();
++  });
++
+   it("renders active dice faces and roll totals from activeResolution", async () => {
+     window.localStorage.setItem("ashen-reach-tv-room-code", "RT7P4");
+     window.localStorage.setItem("ashen-reach-tv-host-token", "host:RT7P4:secret");

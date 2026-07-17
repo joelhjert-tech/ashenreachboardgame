@@ -1,0 +1,50 @@
+[31m(!) Failed to run dependency scan. Skipping dependency pre-bundling. Error: [31m  Failed to scan for dependencies from entries:
+  C:/tmp/ashenreach-mission-lifecycle/qa-artifacts/final-visual-qa/battle-harness/index.html
+
+  [31m[31mX [41;31m[[41;97mERROR[41;31m][0m [1mNo matching export in "qa-artifacts/final-visual-qa/battle-harness/network.mock.ts" for import "getConnectionDiagnostics"[0m
+
+    src/client/tv/JoinQrCard.tsx:3:9:
+[37m      3 │ import { [32mgetConnectionDiagnostics[37m, getPhoneJoinUrl } from "../share...
+        ╵          [32m~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mNo matching export in "qa-artifacts/final-visual-qa/battle-harness/network.mock.ts" for import "getPhoneJoinUrl"[0m
+
+    src/client/tv/JoinQrCard.tsx:3:35:
+[37m      3 │ ...etConnectionDiagnostics, [32mgetPhoneJoinUrl[37m } from "../shared/netwo...
+        ╵                             [32m~~~~~~~~~~~~~~~[0m
+
+
+    at failureErrorWithLog (C:\Users\Joel_\Documents\Ashenboardgame\ashen-reach-codex-task-01-repository\node_modules\vite\node_modules\esbuild\lib\main.js:1748:15)
+    at C:\Users\Joel_\Documents\Ashenboardgame\ashen-reach-codex-task-01-repository\node_modules\vite\node_modules\esbuild\lib\main.js:1207:25
+    at runOnEndCallbacks (C:\Users\Joel_\Documents\Ashenboardgame\ashen-reach-codex-task-01-repository\node_modules\vite\node_modules\esbuild\lib\main.js:1588:45)
+    at buildResponseToResult (C:\Users\Joel_\Documents\Ashenboardgame\ashen-reach-codex-task-01-repository\node_modules\vite\node_modules\esbuild\lib\main.js:1205:7)
+    at C:\Users\Joel_\Documents\Ashenboardgame\ashen-reach-codex-task-01-repository\node_modules\vite\node_modules\esbuild\lib\main.js:1217:9
+    at new Promise (<anonymous>)
+    at requestCallbacks.on-end (C:\Users\Joel_\Documents\Ashenboardgame\ashen-reach-codex-task-01-repository\node_modules\vite\node_modules\esbuild\lib\main.js:1216:54)
+    at handleRequest (C:\Users\Joel_\Documents\Ashenboardgame\ashen-reach-codex-task-01-repository\node_modules\vite\node_modules\esbuild\lib\main.js:909:17)
+    at handleIncomingPacket (C:\Users\Joel_\Documents\Ashenboardgame\ashen-reach-codex-task-01-repository\node_modules\vite\node_modules\esbuild\lib\main.js:934:7)
+    at Socket.readFromStdout (C:\Users\Joel_\Documents\Ashenboardgame\ashen-reach-codex-task-01-repository\node_modules\vite\node_modules\esbuild\lib\main.js:862:7)[39m
+node:internal/fs/watchers:321
+    const error = new UVException({
+                  ^
+
+Error: EBUSY: resource busy or locked, watch 'C:\tmp\ashenreach-mission-lifecycle\tmp\pdfs\relic-nemesis.pdf'
+    at FSWatcher.<computed> (node:internal/fs/watchers:321:19)
+    at Object.watch (node:fs:2548:36)
+    at createFsWatchInstance (file:///C:/Users/Joel_/Documents/Ashenboardgame/ashen-reach-codex-task-01-repository/node_modules/vite/dist/node/chunks/config.js:12958:16)
+    at setFsWatchListener (file:///C:/Users/Joel_/Documents/Ashenboardgame/ashen-reach-codex-task-01-repository/node_modules/vite/dist/node/chunks/config.js:13000:14)
+    at NodeFsHandler$1._watchWithNodeFs (file:///C:/Users/Joel_/Documents/Ashenboardgame/ashen-reach-codex-task-01-repository/node_modules/vite/dist/node/chunks/config.js:13114:20)
+    at NodeFsHandler$1._handleFile (file:///C:/Users/Joel_/Documents/Ashenboardgame/ashen-reach-codex-task-01-repository/node_modules/vite/dist/node/chunks/config.js:13158:24)
+    at NodeFsHandler$1._addToNodeFs (file:///C:/Users/Joel_/Documents/Ashenboardgame/ashen-reach-codex-task-01-repository/node_modules/vite/dist/node/chunks/config.js:13332:26)
+Emitted 'error' event on FSWatcher instance at:
+    at FSWatcher._handleError (file:///C:/Users/Joel_/Documents/Ashenboardgame/ashen-reach-codex-task-01-repository/node_modules/vite/dist/node/chunks/config.js:14133:148)
+    at NodeFsHandler$1._addToNodeFs (file:///C:/Users/Joel_/Documents/Ashenboardgame/ashen-reach-codex-task-01-repository/node_modules/vite/dist/node/chunks/config.js:13337:18) {
+  errno: -4082,
+  syscall: 'watch',
+  code: 'EBUSY',
+  path: 'C:\\tmp\\ashenreach-mission-lifecycle\\tmp\\pdfs\\relic-nemesis.pdf',
+  filename: 'C:\\tmp\\ashenreach-mission-lifecycle\\tmp\\pdfs\\relic-nemesis.pdf'
+}
+
+Node.js v24.16.0

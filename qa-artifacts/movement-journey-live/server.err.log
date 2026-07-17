@@ -1,0 +1,31 @@
+[31m(!) Failed to run dependency scan. Skipping dependency pre-bundling. Error: [31m  Failed to scan for dependencies from entries:
+  C:/tmp/ashenreach-mission-lifecycle/index.html
+C:/tmp/ashenreach-mission-lifecycle/reports/phone-bottom-tabs-mockup-20260706.html
+C:/tmp/ashenreach-mission-lifecycle/reports/stat-color-theming-mockup-20260706.html
+C:/tmp/ashenreach-mission-lifecycle/qa-artifacts/final-visual-qa/battle-harness/index.html
+C:/tmp/ashenreach-mission-lifecycle/qa-artifacts/final-visual-qa/battle-harness/movement.html
+
+  [31m[31mX [41;31m[[41;97mERROR[41;31m][0m [1mNo matching export in "src/client/shared/useRoomSubscription.ts" for import "setHarnessPatch"[0m
+
+    qa-artifacts/final-visual-qa/battle-harness/main.tsx:5:9:
+[37m      5 │ import { [32msetHarnessPatch[37m } from "/src/client/shared/useRoomSubscrip...
+        ╵          [32m~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mNo matching export in "src/client/shared/useRoomSubscription.ts" for import "setHarnessPatch"[0m
+
+    qa-artifacts/final-visual-qa/battle-harness/movement-main.tsx:5:9:
+[37m      5 │ import { [32msetHarnessPatch[37m } from "/src/client/shared/useRoomSubscrip...
+        ╵          [32m~~~~~~~~~~~~~~~[0m
+
+
+    at failureErrorWithLog (C:\Users\Joel_\Documents\Ashenboardgame\ashen-reach-codex-task-01-repository\node_modules\vite\node_modules\esbuild\lib\main.js:1748:15)
+    at C:\Users\Joel_\Documents\Ashenboardgame\ashen-reach-codex-task-01-repository\node_modules\vite\node_modules\esbuild\lib\main.js:1207:25
+    at runOnEndCallbacks (C:\Users\Joel_\Documents\Ashenboardgame\ashen-reach-codex-task-01-repository\node_modules\vite\node_modules\esbuild\lib\main.js:1588:45)
+    at buildResponseToResult (C:\Users\Joel_\Documents\Ashenboardgame\ashen-reach-codex-task-01-repository\node_modules\vite\node_modules\esbuild\lib\main.js:1205:7)
+    at C:\Users\Joel_\Documents\Ashenboardgame\ashen-reach-codex-task-01-repository\node_modules\vite\node_modules\esbuild\lib\main.js:1217:9
+    at new Promise (<anonymous>)
+    at requestCallbacks.on-end (C:\Users\Joel_\Documents\Ashenboardgame\ashen-reach-codex-task-01-repository\node_modules\vite\node_modules\esbuild\lib\main.js:1216:54)
+    at handleRequest (C:\Users\Joel_\Documents\Ashenboardgame\ashen-reach-codex-task-01-repository\node_modules\vite\node_modules\esbuild\lib\main.js:909:17)
+    at handleIncomingPacket (C:\Users\Joel_\Documents\Ashenboardgame\ashen-reach-codex-task-01-repository\node_modules\vite\node_modules\esbuild\lib\main.js:934:7)
+    at Socket.readFromStdout (C:\Users\Joel_\Documents\Ashenboardgame\ashen-reach-codex-task-01-repository\node_modules\vite\node_modules\esbuild\lib\main.js:862:7)[39m

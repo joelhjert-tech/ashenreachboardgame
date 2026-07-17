@@ -1,0 +1,47 @@
+{
+  "created": {
+    "roomCode": "C9VVG",
+    "sessionMode": "single-player",
+    "gameMode": "standard",
+    "interactionMode": "co-op",
+    "scenarioId": "scenario_broken_seal",
+    "playerCount": 1,
+    "hostToken": "host:C9VVG:CV0EI"
+  },
+  "joined": {
+    "seatId": "seat-1"
+  },
+  "fixture": {
+    "ok": true,
+    "fixture": {
+      "kind": "movement-journey",
+      "stage": "ashen-chapel",
+      "withChoirLantern": true
+    },
+    "sequence": 8
+  },
+  "route": [
+    "scorched-road",
+    "blastworks",
+    "ashen-chapel"
+  ],
+  "routeLength": 2,
+  "lanternVisibleBeforeRoll": true,
+  "beforeRoll": {
+    "phoneText": "SEAT 1\nTarek Voss\n\nVoid Marshal\n\nHEALTH\n0 wounds\n4 SALVAGE · 0 SCARS\nHide UI\nLeave\nRESOLUTION\nRoll battle\n\nRift Whispers is waiting for the relevant roll. Last change: Rift Whispers remains on Ashen Chapel after resolution.\n\nRift Whispers: Signal.\nBATTLE\nRift Whispers\nINSPECT\nRift Whispers\nHAZARD\n◉\nSIGNAL\n8\nTARGET 8\n\nA map is just a rumor with better posture.\n\nSignal testAnomalySignal\nCARD REVEAL\nRift Whispers\nRift Whispers\n◉\nSIGNAL\n8\nSignal vs 8\nModifiers\nNo modifiers\n\nRift Whispers remains on Ashen Chapel after resolution.\n\nTHREAT\nRift Whispers\nUSE CHOIR LANTERN\nSpend 1 charge for +2 Signal on this anomaly test. 2/2 charges.\nATTEMPT SIGNAL CHECK\nRecurring anomaly challenge 1 of 1. Remains on this sector.\nBATTLE ASSIST\nRift Whispers\nBEFORE ROLL\nENEMY\nHazard 8\nPLAYER\n◉\nSIGNAL\n3\nHEALTH\n0 wounds\nTIMING\nBefore battle roll\n\nNo combat cards are usable in this timing window.\n\nBATTLE\nUseful now: Signal\nSIGNAL\nBattle\nResolve the active enemy, event, or roll.\nPLAYER CARD\nINVENTORY\nQUEST\nMOVE\nBATTLE\nSHOP\nACTION\nHIDE TABS",
+    "tvText": "ASHEN REACH\n\nHOST COMMAND BOARD\nASHEN REACH TV\n\nROOM CODE\nC9VVG\nMODE\nSolo\n✦\nWIN PROGRESS\nSeal Restoration Marks\n0/2\n☠\nLOSS PRESSURE\nCollapse\n0/8\nLIVE STATUS\nBATTLE RESOLVING\n\nWaiting on Tarek Voss to resolve Rift Whispers. — Card Reveal\n\nOFF\nBATTLE AT ASHEN CHAPEL\nTAREK VOSS\nMIDDLE REACH\nACTIVE OPERATIVE\nTAREK VOSS\n\nVoid Marshal\n\nRELEVANT STAT\n◉\nSIGNAL\n2\n4\n3\nROLL 7\nBASE\n2\nROLL\n7\nMOD\n+0\nTOTAL\n9\n\nSignal 2 + Roll 7 = Total 9\n\nBATTLE RESOLVING\nRIFT WHISPERS\n\nENGAGEMENT\n\nVS\nSUCCESS\nWINS BY 1\n◉\nSIGNAL\nSIGNAL TEST\nTAREK VOSS\n9\n>\n8\nDIFFICULTY\n\nRift Whispers remains on Ashen Chapel after resolution.\n\nAPPLYING SUCCESS OUTCOME\nPreparing next phase...\nANOMALY\nRIFT WHISPERS\n\nA map is just a rumor with better posture.\n\nOPPOSING VALUE\n◉\nDIFFICULTY\n8\n-\nROLL -\nBASE\n8\nROLL\n-\nMOD\n+0\nTOTAL\n8\n\nDifficulty 8 = Total 8",
+    "journey": false,
+    "overflowX": false,
+    "overflowY": false,
+    "canvas": 0
+  },
+  "riftWhispersStillProjectedAfterResolution": true,
+  "afterReload": {
+    "journey": false,
+    "riftWhispers": true,
+    "overflowX": false,
+    "overflowY": false,
+    "canvas": 0
+  },
+  "errors": []
+}

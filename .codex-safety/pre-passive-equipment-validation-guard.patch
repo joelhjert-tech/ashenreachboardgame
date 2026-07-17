@@ -1,0 +1,27 @@
+diff --git a/scripts/validate-content.ts b/scripts/validate-content.ts
+index 3d7ece6..81fb0e5 100644
+--- a/scripts/validate-content.ts
++++ b/scripts/validate-content.ts
+@@ -37,6 +37,11 @@ import { sectorGraphSchema, type SectorNode } from "../src/game/schema/sector.sc
+ const sectorsRoot = join(process.cwd(), "content", "sectors");
+ const contentRoot = join(process.cwd(), "content");
+ const errors: string[] = [];
++const PHASE_ONE_DEFERRED_PASSIVE_EQUIPMENT = new Set([
++  "chainhook-blade", "route-compass", "field-lens", "lockjaw-kit", "bridge-spike", "static-probe", "surveyor-chalk",
++  "cinder-suture-kit", "saintwire-splint", "salt-gauze-wrap", "ember-poultice", "salvage-ledger", "mirror-token",
++  "oath-chain", "red-march-bell", "signal-lantern"
++]);
+ const loreRestrictedTerms = [
+   "Relic",
+   "Talisman",
+@@ -642,6 +647,10 @@ function validateGearProgression(item: GearItem): void {
+       errors.push(`${item.id} has invalid shop category ${category}`);
+     }
+   }
++
++  if (item.normalShopCommon === true && item.category === "passive" && !item.effectModel && !PHASE_ONE_DEFERRED_PASSIVE_EQUIPMENT.has(item.id)) {
++    errors.push(`${item.id} passive Equipment must declare an effectModel and requiresEquipped`);
++  }
+ }
+ 
+ function validateContractObjective(contract: ContractCard): void {

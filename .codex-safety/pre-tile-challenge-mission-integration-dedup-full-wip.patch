@@ -1,0 +1,1838 @@
+diff --git a/content/gear/choir-lantern.json b/content/gear/choir-lantern.json
+index a003ad5..d4b98b1 100644
+--- a/content/gear/choir-lantern.json
++++ b/content/gear/choir-lantern.json
+@@ -7,9 +7,17 @@
+     "stat": "signal",
+     "amount": 1
+   },
+-  "activeText": "Spend 1 charge after a Signal check or anomaly reveal to record a warded route note.",
++  "activeText": "Before you roll an anomaly Signal test, you may spend 1 charge to gain +2 Signal for that test. All other modifiers and consequences apply normally.",
+   "useLimit": "charge",
+   "charges": 2,
++  "effectModel": "charged",
++  "maxCharges": 2,
++  "startingCharges": 2,
++  "chargeCost": 1,
++  "rechargeRule": "none",
++  "activationTiming": ["beforeAnomalySignalTest"],
++  "chargedEffect": "choirLightSignalBonus",
++  "requiresEquipped": true,
+   "flavor": "A lantern that burns without flame when the choir is near.",
+   "tier": "artifact",
+   "progressionWeight": 2.5,
+diff --git a/scripts/validate-content.ts b/scripts/validate-content.ts
+index 6d05340..8d74a2b 100644
+--- a/scripts/validate-content.ts
++++ b/scripts/validate-content.ts
+@@ -36,6 +36,11 @@ import { sectorGraphSchema, type SectorNode } from "../src/game/schema/sector.sc
+ const sectorsRoot = join(process.cwd(), "content", "sectors");
+ const contentRoot = join(process.cwd(), "content");
+ const errors: string[] = [];
++const PHASE_ONE_DEFERRED_PASSIVE_EQUIPMENT = new Set([
++  "chainhook-blade", "route-compass", "field-lens", "lockjaw-kit", "bridge-spike", "static-probe", "surveyor-chalk",
++  "cinder-suture-kit", "saintwire-splint", "salt-gauze-wrap", "ember-poultice", "salvage-ledger", "mirror-token",
++  "oath-chain", "red-march-bell", "signal-lantern"
++]);
+ const loreRestrictedTerms = [
+   "Relic",
+   "Talisman",
+@@ -640,6 +645,10 @@ function validateGearProgression(item: GearItem): void {
+       errors.push(`${item.id} has invalid shop category ${category}`);
+     }
+   }
++
++  if (item.normalShopCommon === true && item.category === "passive" && !item.effectModel && !PHASE_ONE_DEFERRED_PASSIVE_EQUIPMENT.has(item.id)) {
++    errors.push(`${item.id} passive Equipment must declare an effectModel and requiresEquipped`);
++  }
+ }
+ 
+ function validateContractObjective(contract: ContractCard): void {
+diff --git a/src/client/phone/PhoneActionPanel.tsx b/src/client/phone/PhoneActionPanel.tsx
+index 86329c3..492772b 100644
+--- a/src/client/phone/PhoneActionPanel.tsx
++++ b/src/client/phone/PhoneActionPanel.tsx
+@@ -2726,6 +2726,34 @@ export function PhoneActionPanel({
+   }
+ 
+   if (patch.phase === "action" && patch.encounter?.cardType === "hazard") {
++    const pendingTileChallenge = patch.pendingTileChallengePrivate;
++    const choirLantern = self.character.heldGear.find((item) => item.id === "choir-lantern");
++    if (pendingTileChallenge?.challengeType === "anomaly" && pendingTileChallenge.testStat === "signal" && !pendingTileChallenge.rolled) {
++      const equipped = choirLantern ? Object.values(self.character.equippedGear).includes(choirLantern.id) : false;
++      const charges = choirLantern?.currentCharges ?? choirLantern?.charges ?? 0;
++      const disabledReason = !choirLantern
++        ? "Choir Lantern is not owned."
++        : !equipped
++          ? "Choir Lantern must be equipped."
++          : charges < 1
++            ? "Choir Lantern is Depleted."
++            : undefined;
++      threatActions.push({
++        key: "choir-light",
++        label: "Use Choir Lantern",
++        detail: disabledReason ?? `Spend 1 charge for +2 Signal on this anomaly test. ${charges}/${choirLantern?.maxCharges ?? 2} charges.`,
++        tone: "secondary",
++        stat: "signal",
++        disabled: Boolean(disabledReason),
++        onClick: () => onIntent({
++          type: "USE_GEAR",
++          seatId: self.seatId,
++          gearId: "choir-lantern",
++          instanceId: choirLantern?.instanceId,
++          pendingTileChallengeId: pendingTileChallenge.id
++        })
++      });
++    }
+     const checkIsStaged =
+       activeResolution?.stage === "battle_setup" &&
+       activeResolution.playerId === self.seatId &&
+@@ -2734,7 +2762,9 @@ export function PhoneActionPanel({
+     threatActions.push({
+       key: "hazard-check",
+       label: checkIsStaged ? "Roll check dice" : `Attempt ${statLabelById[patch.encounter.stat]} check`,
+-      detail: patch.encounter.title,
++      detail: pendingTileChallenge
++        ? `Recurring ${pendingTileChallenge.challengeType} challenge ${pendingTileChallenge.authoredOrder + 1} of ${pendingTileChallenge.totalChallenges}. Remains on this sector.`
++        : patch.encounter.title,
+       tone: "primary",
+       stat: patch.encounter.stat,
+       onClick: () =>
+diff --git a/src/client/phone/PhoneInventoryPanel.tsx b/src/client/phone/PhoneInventoryPanel.tsx
+index a2288cc..8b38ae0 100644
+--- a/src/client/phone/PhoneInventoryPanel.tsx
++++ b/src/client/phone/PhoneInventoryPanel.tsx
+@@ -1,4 +1,4 @@
+-import type { CSSProperties, ReactElement, ReactNode } from "react";
++import { useState, type CSSProperties, type ReactElement, type ReactNode } from "react";
+ import { getChallengeThemeStyle } from "../../game/ui/challengeTheme.js";
+ import {
+   getStatUpgradeCost,
+@@ -26,6 +26,34 @@ interface PhoneInventoryPanelProps {
+   onUse?: () => void;
+ }
+ 
++function InventoryDisclosure({
++  label,
++  count,
++  initiallyOpen,
++  children
++}: {
++  label: string;
++  count: number;
++  initiallyOpen: boolean;
++  children: ReactNode;
++}): ReactElement {
++  const [open, setOpen] = useState(initiallyOpen);
++  return (
++    <section className={`phone-inventory-group${open ? " is-open" : ""}`}>
++      <button
++        type="button"
++        className="phone-sheet-section-heading phone-inventory-group-toggle"
++        aria-expanded={open}
++        onClick={() => setOpen((current) => !current)}
++      >
++        <span className="phone-inventory-group-label">{label}</span>
++        <span className="phone-inventory-group-count" aria-label={`${count} ${label} cards`}>{count}</span>
++      </button>
++      {open ? children : null}
++    </section>
++  );
++}
++
+ function toUseIntent(card: InventoryCardViewModel, seatId: string): ClientIntent | null {
+   if (!card.useIntent) {
+     return null;
+@@ -515,19 +543,18 @@ export function PhoneInventoryPanel({
+         </p>
+       ) : (
+         visibleGroups.map((group) => (
+-          <section key={group.group} className="phone-inventory-group">
+-            <div className="phone-sheet-section-heading">
+-              <span className="phone-inventory-group-label">{group.group}</span>
+-              <span className="phone-inventory-group-count" aria-label={`${group.items.length} ${group.group} cards`}>
+-                {group.items.length}
+-              </span>
+-            </div>
++          <InventoryDisclosure
++            key={group.group}
++            label={group.group}
++            count={group.items.length}
++            initiallyOpen
++          >
+             <div className="phone-inventory-card-list">
+               {group.items.map((card) => (
+                 <InventoryCard key={`${card.source}-${card.id}`} card={card} seatId={self.seatId} onIntent={onIntent} onUse={onUse} />
+               ))}
+             </div>
+-          </section>
++          </InventoryDisclosure>
+         ))
+       )}
+     </section>
+diff --git a/src/client/phone/__tests__/PhoneActionPanel.test.tsx b/src/client/phone/__tests__/PhoneActionPanel.test.tsx
+index 441b5b5..cc44616 100644
+--- a/src/client/phone/__tests__/PhoneActionPanel.test.tsx
++++ b/src/client/phone/__tests__/PhoneActionPanel.test.tsx
+@@ -2657,6 +2657,18 @@ describe("PhoneActionPanel", () => {
+     expect(screen.queryByTestId("phone-shop-panel")).not.toBeInTheDocument();
+   });
+ 
++  it("offers Choir Lantern only for the owning unrolled anomaly Signal tile challenge", () => {
++    const onIntent = vi.fn();
++    const patch = createPatch();
++    patch.pendingTileChallengePrivate = { id: "pending-rift", challengeId: "rift-whispers-ashen-chapel", sectorId: "ashen-chapel", seatId: "seat-1", challengeType: "anomaly", testStat: "signal", difficulty: 8, authoredOrder: 0, totalChallenges: 1, rolled: false };
++    patch.self!.character.heldGear = [{ id: "choir-lantern", instanceId: "choir-1", name: "Choir Lantern", slot: "utility", tier: "artifact", category: "chargedRelic", statBonus: { stat: "signal", amount: 1 }, effectModel: "charged", useLimit: "charge", currentCharges: 2, maxCharges: 2, startingCharges: 2, chargeCost: 1, rechargeRule: "none", chargedEffect: "choirLightSignalBonus", activationTiming: ["beforeAnomalySignalTest"], requiresEquipped: true }];
++    patch.self!.character.equippedGear.utility = "choir-lantern";
++    render(<PhoneActionPanel characters={characters} onIntent={onIntent} patch={patch} />);
++    fireEvent.click(screen.getByRole("button", { name: /use choir lantern/i }));
++    expect(onIntent).toHaveBeenCalledWith(expect.objectContaining({ type: "USE_GEAR", instanceId: "choir-1", pendingTileChallengeId: "pending-rift" }));
++    expect(screen.getByText(/recurring anomaly challenge 1 of 1/i)).toBeInTheDocument();
++  });
++
+   it("shows battle assist and opens usable combat cards during an enemy encounter", () => {
+     const onIntent = vi.fn();
+     const heldGear = [
+diff --git a/src/client/phone/inventoryPresentation.ts b/src/client/phone/inventoryPresentation.ts
+index e5855ee..12cffed 100644
+--- a/src/client/phone/inventoryPresentation.ts
++++ b/src/client/phone/inventoryPresentation.ts
+@@ -12,6 +12,7 @@ export type InventoryTimingWindow =
+   | "startOfTurn"
+   | "movement"
+   | "movementRouteConfirmation"
++  | "beforeAnomalySignalTest"
+   | "shop"
+   | "action"
+   | "anyTime";
+@@ -114,6 +115,8 @@ export function formatTimingWindow(window: InventoryTimingWindow): string {
+       return "Movement";
+     case "movementRouteConfirmation":
+       return "Movement route confirmation";
++    case "beforeAnomalySignalTest":
++      return "Before an anomaly Signal test";
+     case "shop":
+       return "Shop";
+     case "action":
+diff --git a/src/client/shared/types.ts b/src/client/shared/types.ts
+index b474058..ee9b80e 100644
+--- a/src/client/shared/types.ts
++++ b/src/client/shared/types.ts
+@@ -12,6 +12,7 @@ export type GearTimingWindow =
+   | "startOfTurn"
+   | "movement"
+   | "movementRouteConfirmation"
++  | "beforeAnomalySignalTest"
+   | "shop"
+   | "action"
+   | "anyTime";
+@@ -139,7 +140,7 @@ export interface GearItem {
+   startingCharges?: number;
+   chargeCost?: number;
+   rechargeRule?: "none";
+-  chargedEffect?: "personalGateOverride" | "movementAdjustment" | "saintSafeConduct" | "bonewayDetour";
++  chargedEffect?: "personalGateOverride" | "movementAdjustment" | "saintSafeConduct" | "bonewayDetour" | "choirLightSignalBonus";
+   maxUses?: number;
+   heatCost?: number;
+   linkedFollowerRole?: FollowerRole;
+@@ -386,13 +387,14 @@ export interface ResultDelta {
+   severity: ResultDeltaSeverity;
+ }
+ 
+-export interface SectorNode {
++export interface SectorNode {
+   id: string;
+   name: string;
+   regionTier: string;
+   neighbors: string[];
+   danger: number;
+   threatIcons?: ThreatIcon[];
++  tileChallenges?: PublicTileChallenge[];
+   encounterDecks: {
+     threat: string[];
+     anomaly: string[];
+@@ -424,6 +426,35 @@ export interface ContractCard {
+     | { type: "shopTransaction"; action: "buyEquipment" | "sellGear" | "repairGear" | "upgradeGear" | "trade"; requiredShopType?: string; requiredSectorId?: string; requiredCount: number; minimumSalvageSpent?: number; label: string };
+   reward?: unknown;
+ }
++
++export interface PublicTileChallenge {
++  id: string;
++  name: string;
++  challengeType: "hazard" | "anomaly";
++  sectorId: string;
++  testStat: Stat;
++  difficulty: number;
++  trigger: "onArrival" | "onEnter" | "startOfTurnAtSector" | "scenarioPrompt";
++  authoredOrder: number;
++  recurring: true;
++  tags: string[];
++  lore: string;
++  artCardId: string;
++  successSummary: string;
++  failureSummary: string;
++}
++
++export interface PublicPendingTileChallenge {
++  challengeId: string;
++  sectorId: string;
++  seatId: string;
++  challengeType: "hazard" | "anomaly";
++  testStat: Stat;
++  difficulty: number;
++  authoredOrder: number;
++  totalChallenges: number;
++  rolled: boolean;
++}
+ 
+ export interface PendingEnemyRoll {
+   fighterSeatId: string;
+@@ -871,6 +902,7 @@ export interface PublicPatchPayload {
+   availableContracts: ContractCard[];
+   encounter: EncounterCard | null;
+   pendingEnemyRoll: PendingEnemyRoll | null;
++  pendingTileChallenge?: PublicPendingTileChallenge | null;
+   outcomeSummary: OutcomeSummary | null;
+   rivalryAgendaCompletion?: PublicRivalryAgendaCompletion | null;
+   rivalryAgendaReveal?: PublicRivalryAgendaReveal | null;
+@@ -902,6 +934,7 @@ export interface PhonePatchPayload extends PublicPatchPayload {
+   boundNemesis?: NemesisChampionSummary | null;
+   crownKeyFragments?: number;
+   eligibleNemesisAssistSeatIds?: string[];
++  pendingTileChallengePrivate?: (PublicPendingTileChallenge & { id: string }) | null;
+ }
+ 
+ export interface StatePatch<TPayload = PublicPatchPayload> {
+@@ -1027,6 +1060,8 @@ export type ClientIntent =
+       type: "USE_GEAR";
+       seatId: string;
+       gearId: string;
++      instanceId?: string;
++      pendingTileChallengeId?: string;
+     }
+   | {
+       type: "USE_FOLLOWER";
+diff --git a/src/client/styles.css b/src/client/styles.css
+index 7d0d35a..b1276db 100644
+--- a/src/client/styles.css
++++ b/src/client/styles.css
+@@ -17558,3 +17558,532 @@ body {
+ }
+ .phone-movement-summary .combat-die-label { color: rgba(4, 16, 23, 0.82); text-shadow: 0 1px 0 rgba(255, 255, 255, 0.46); }
+ .phone-move-panel--resolving .phone-movement-empty { min-height: 5rem; border-style: solid; border-color: rgba(90, 185, 225, 0.42); }
++/* Ashengate approved hybrid: Ash War Table + Cinder Instrument */
++:root {
++  --ag-iron-950: #07090a;
++  --ag-iron-900: #0d1113;
++  --ag-iron-800: #151b1e;
++  --ag-iron-700: #222a2d;
++  --ag-bone-100: #d8d0bd;
++  --ag-bone-200: #bcb29d;
++  --ag-bone-300: #948975;
++  --ag-brass: #a88852;
++  --ag-brass-bright: #d0b377;
++  --ag-signal: #76a9c9;
++  --ag-danger: #a74f42;
++  --ag-ready: #7d9b78;
++  --ag-rule: rgba(190, 169, 126, .28);
++  --ag-rule-strong: rgba(208, 179, 119, .58);
++  --ag-touch: 44px;
++  --ag-fast: 140ms;
++  --ag-normal: 240ms;
++  --ag-slow: 420ms;
++}
++
++@keyframes ag-instrument-enter {
++  from { opacity: 0; transform: translateX(12px); }
++  to { opacity: 1; transform: translateX(0); }
++}
++
++@keyframes ag-status-turn {
++  to { transform: rotate(1turn); }
++}
++
++/* Host: persistent war table */
++.tv-command-dashboard {
++  background:
++    linear-gradient(90deg, rgba(168,136,82,.035) 1px, transparent 1px) 0 0 / 96px 100%,
++    radial-gradient(circle at 50% 40%, #171d1f 0, #090c0e 68%);
++}
++
++.tv-command-header,
++.tv-host-bottom-strip,
++.tv-command-sidebar,
++.tv-operatives-rail {
++  background: linear-gradient(180deg, rgba(25,30,31,.98), rgba(8,11,12,.98));
++  border-color: var(--ag-rule-strong);
++  box-shadow: inset 0 1px rgba(255,255,255,.035);
++}
++
++.tv-command-header-chip,
++.tv-card,
++.tv-sidebar-card,
++.tv-operative-card {
++  border-radius: 2px;
++  border-color: var(--ag-rule);
++  box-shadow: none;
++}
++
++.tv-command-main {
++  gap: clamp(8px, .8vw, 14px);
++}
++
++.tv-command-stage {
++  isolation: isolate;
++  background: var(--ag-iron-950);
++  border: 1px solid var(--ag-rule-strong);
++  box-shadow: 0 12px 32px rgba(0,0,0,.38), inset 0 0 0 3px rgba(0,0,0,.35);
++}
++
++.tv-command-map-shell {
++  min-width: 0;
++  min-height: 0;
++}
++
++.tv-command-stage-battle-mode {
++  display: grid;
++  grid-template-columns: minmax(44%, .92fr) minmax(52%, 1.08fr);
++  gap: 10px;
++  padding: 10px;
++}
++
++.tv-command-map-shell--battle-context {
++  position: relative;
++  overflow: hidden;
++  border: 1px solid var(--ag-rule-strong);
++  filter: saturate(.72) brightness(.72);
++}
++
++.tv-command-map-shell--battle-context::after {
++  content: "Battle location";
++  position: absolute;
++  inset: 14px auto auto 14px;
++  padding: 7px 11px;
++  color: var(--ag-bone-100);
++  background: rgba(7,9,10,.86);
++  border-left: 3px solid var(--ag-danger);
++  font: 700 12px/1.2 system-ui, sans-serif;
++  letter-spacing: .14em;
++  text-transform: uppercase;
++}
++
++.tv-command-battle-instrument {
++  min-width: 0;
++  min-height: 0;
++  overflow: hidden;
++  border: 1px solid var(--ag-rule-strong);
++  background: var(--ag-iron-900);
++  animation: ag-instrument-enter var(--ag-normal) ease-out both;
++}
++
++.tv-command-battle-instrument .host-battle-overlay {
++  position: relative;
++  inset: auto;
++  width: 100%;
++  height: 100%;
++  padding: 0;
++  background: transparent;
++  backdrop-filter: none;
++}
++
++.tv-command-battle-instrument .host-battle-panel {
++  width: 100%;
++  height: 100%;
++  max-width: none;
++  border: 0;
++  border-radius: 0;
++}
++
++.tv-host-context-battle {
++  position: relative;
++  overflow: visible;
++  border-left: 2px solid var(--ag-brass);
++}
++
++.tv-host-context-battle::before {
++  content: "";
++  position: absolute;
++  top: 42px;
++  right: 100%;
++  width: clamp(26px, 3vw, 58px);
++  border-top: 1px solid var(--ag-brass-bright);
++  box-shadow: 0 0 8px rgba(208,179,119,.24);
++}
++
++.tv-host-context-kicker,
++.tv-panel-title,
++.phone-sheet-section-heading,
++.phone-panel-kicker {
++  letter-spacing: .13em;
++  text-transform: uppercase;
++}
++
++.talisman-board-tile-active,
++.talisman-board-tile-selected,
++.board-node-active {
++  outline: 2px solid var(--ag-brass-bright);
++  outline-offset: 2px;
++}
++
++.board-route-movement,
++.talisman-board-travel-route {
++  filter: drop-shadow(0 0 4px rgba(208,179,119,.65));
++}
++
++.tv-button,
++.phone-button,
++.game-button {
++  min-height: var(--ag-touch);
++}
++
++.tv-button:focus-visible,
++.phone-button:focus-visible,
++.game-button:focus-visible,
++.phone-portrait-tab:focus-visible,
++.phone-inventory-group-toggle:focus-visible {
++  outline: 3px solid var(--ag-brass-bright);
++  outline-offset: 3px;
++}
++
++/* Phone: private cinder instrument */
++.phone-page,
++.phone-portrait-controller {
++  background:
++    linear-gradient(180deg, rgba(255,255,255,.018), transparent 18%),
++    #080b0d;
++}
++
++.phone-portrait-panel {
++  background: linear-gradient(180deg, #121719, #090c0e);
++  border-color: var(--ag-rule-strong);
++}
++
++.phone-portrait-topbar,
++.phone-compact-status-strip {
++  background: linear-gradient(180deg, #1b2021, #0f1315);
++  border-bottom: 1px solid var(--ag-rule-strong);
++}
++
++.phone-portrait-scroll {
++  min-height: 0;
++  scrollbar-color: var(--ag-brass) transparent;
++}
++
++.phone-portrait-screen {
++  color: var(--ag-bone-100);
++}
++
++.phone-portrait-section,
++.phone-portrait-hero-card,
++.phone-portrait-info-card {
++  background: transparent;
++  border-radius: 2px;
++  border-color: var(--ag-rule);
++  box-shadow: none;
++}
++
++.phone-portrait-section {
++  padding-inline: 0;
++}
++
++.phone-sheet-section-heading {
++  color: var(--ag-brass-bright);
++  border-bottom: 1px solid var(--ag-rule);
++}
++
++.phone-stat-card {
++  background: linear-gradient(100deg, rgba(216,208,189,.07), rgba(216,208,189,.025));
++  border-color: var(--ag-rule);
++}
++
++.phone-inventory-panel {
++  display: grid;
++  gap: 12px;
++}
++
++.phone-inventory-timing-groups {
++  order: -3;
++}
++
++.phone-inventory-group {
++  margin: 0;
++  border: 0;
++  border-top: 1px solid var(--ag-rule);
++  background: transparent;
++}
++
++.phone-inventory-group-toggle {
++  min-height: var(--ag-touch);
++  display: flex;
++  align-items: center;
++  justify-content: space-between;
++  cursor: pointer;
++  list-style: none;
++  padding: 10px 4px;
++}
++
++.phone-inventory-group-toggle::after {
++  content: "+";
++  color: var(--ag-brass-bright);
++  font: 700 20px/1 system-ui, sans-serif;
++}
++.phone-inventory-group.is-open .phone-inventory-group-toggle::after { content: "−"; }
++
++.phone-inventory-card-list {
++  gap: 0;
++}
++
++.phone-inventory-card {
++  border: 0;
++  border-bottom: 1px solid var(--ag-rule);
++  border-radius: 0;
++  background: linear-gradient(90deg, rgba(216,208,189,.055), transparent 75%);
++  box-shadow: none;
++}
++
++.phone-inventory-card-useful-now,
++.phone-inventory-card-usable-now {
++  background: linear-gradient(90deg, rgba(125,155,120,.16), rgba(125,155,120,.03));
++  border-left: 3px solid var(--ag-ready);
++}
++
++.phone-inventory-card-exhausted,
++.phone-inventory-card-locked,
++.phone-inventory-card-not-usable-now {
++  opacity: .76;
++}
++
++.phone-inventory-card-status,
++.phone-inventory-card-meta,
++.phone-inventory-stat-bonus {
++  font-family: system-ui, sans-serif;
++  letter-spacing: .045em;
++}
++
++.phone-bottomdock,
++.phone-portrait-tabs,
++.phone-compact-tab-dock {
++  background: linear-gradient(180deg, #151a1c, #080b0d);
++  border-top: 1px solid var(--ag-rule-strong);
++  padding-bottom: max(8px, env(safe-area-inset-bottom));
++}
++
++.phone-portrait-tab {
++  min-height: var(--ag-touch);
++  border-radius: 0;
++}
++
++.phone-portrait-tab-active {
++  color: var(--ag-brass-bright);
++  box-shadow: inset 0 3px var(--ag-brass-bright);
++}
++
++/* Shared semantic states, expressed without color dependence. */
++.phone-muted-copy[aria-busy="true"],
++.phone-character-waiting-status,
++.tv-command-live-status {
++  position: relative;
++  padding-left: 24px;
++}
++
++.phone-character-waiting-status::before,
++.tv-command-live-status::before {
++  content: "⌛";
++  position: absolute;
++  left: 0;
++  color: var(--ag-brass-bright);
++}
++
++.phone-button:disabled,
++.phone-portrait-tab:disabled {
++  opacity: .58;
++  filter: grayscale(.5);
++  border-style: dashed;
++}
++
++@media (max-width: 1500px), (max-height: 820px) {
++  .tv-command-stage-battle-mode { grid-template-columns: minmax(38%, .75fr) minmax(58%, 1.25fr); }
++  .tv-command-header-chip { padding-block: 5px; }
++}
++
++@media (max-width: 1300px), (max-height: 760px) {
++  .tv-startup-room .join-qr-card-full {
++    grid-template-columns: minmax(0, 1fr);
++  }
++  .tv-startup-room .join-qr-frame {
++    width: 8rem;
++    min-height: 8rem;
++  }
++  .tv-startup-room .join-link {
++    overflow-wrap: anywhere;
++  }
++}
++
++@media (max-width: 430px) {
++  .phone-portrait-panel { border-inline: 0; }
++  .phone-portrait-header-vitals small { font-size: 11px; }
++  .phone-inventory-card { min-width: 0; }
++  .phone-inventory-card h3,
++  .phone-inventory-card p { overflow-wrap: anywhere; }
++}
++
++@media (prefers-reduced-motion: reduce) {
++  *, *::before, *::after {
++    scroll-behavior: auto !important;
++    animation-duration: .01ms !important;
++    animation-iteration-count: 1 !important;
++    transition-duration: .01ms !important;
++  }
++}
++
++.tv-tile-challenges {
++  display: grid;
++  gap: 0.45rem;
++  padding-block: 0.45rem;
++  border-block: 1px solid var(--ag-rule);
++}
++
++.tv-tile-challenges article {
++  display: grid;
++  gap: 0.15rem;
++  padding-left: 0.65rem;
++  border-left: 3px double var(--ag-brass);
++}
++
++.tv-tile-challenges article span {
++  color: var(--ag-brass-bright);
++  font-size: 0.72rem;
++  letter-spacing: 0.08em;
++  text-transform: uppercase;
++}
++
++.tv-tile-challenges article small { color: var(--ag-bone-200); }
++
++.tv-movement-journey {
++  min-width: 0; min-height: 0; height: 100%; overflow: hidden; outline: none;
++  display: grid; grid-template-rows: auto auto minmax(9rem, 1fr) auto; gap: clamp(.55rem, 1vw, 1rem);
++  padding: clamp(.65rem, 1.2vw, 1.2rem); border: 1px solid var(--ag-rule-strong);
++  background: radial-gradient(circle at 50% 48%, rgba(126,77,35,.18), transparent 34rem), linear-gradient(180deg,#111517,#060809);
++}
++.tv-movement-journey__header { display:grid; grid-template-columns:1fr auto 1fr; align-items:end; border-bottom:1px solid var(--ag-rule); padding-bottom:.5rem; text-transform:uppercase; letter-spacing:.1em; }
++.tv-movement-journey__header strong { color:var(--ag-bone-100); font-size:clamp(1.25rem,2vw,2rem); text-align:center; }
++.tv-movement-journey__header p { text-align:right; margin:0; color:var(--ag-brass-bright); }
++.tv-movement-journey__status { display:flex; justify-content:space-between; align-items:center; color:var(--ag-bone-100); }
++.tv-movement-journey__route { list-style:none; margin:0; padding:clamp(.5rem,1vw,1rem); display:flex; align-items:center; justify-content:center; gap:clamp(.35rem,.8vw,.8rem); overflow:hidden; }
++.tv-movement-journey__route li { position:relative; flex:0 1 clamp(9rem,16vw,15rem); min-width:0; display:grid; gap:.45rem; padding:.4rem; border:1px solid var(--ag-rule); background:rgba(8,11,12,.9); text-align:center; transition:flex-basis 180ms ease, opacity 180ms ease, border-color 180ms ease; }
++.tv-movement-journey__route li:not(:last-child)::after { content:"→"; position:absolute; right:calc(-.8rem - 8px); top:50%; color:var(--ag-brass); z-index:2; }
++.tv-movement-journey__tile-art { position:relative; aspect-ratio:4/3; overflow:hidden; background:#080b0c; }
++.tv-movement-journey__tile-image { width:100%; height:100%; object-fit:cover; object-position:center; }
++.tv-movement-journey__tile-art > span { position:absolute; top:.4rem; left:.4rem; padding:.22rem .4rem; background:rgba(5,7,8,.82); border:1px solid rgba(201,158,83,.42); }
++.tv-movement-journey__route li span { color:var(--ag-bone-100); font-size:.7rem; letter-spacing:.1em; text-transform:uppercase; }
++.tv-movement-journey__route li strong { overflow-wrap:anywhere; font-size:clamp(.85rem,1.25vw,1.2rem); }
++.tv-movement-journey__route li.is-current { flex-basis:clamp(12rem,22vw,20rem); border-color:var(--ag-brass-bright); box-shadow:inset 0 0 0 2px rgba(180,133,63,.25); }
++.tv-movement-journey__route li.is-complete { opacity:.62; }
++.tv-movement-journey__route li.is-upcoming { opacity:.78; }
++.tv-movement-journey__route li i, .tv-movement-journey__destination-art i { position:absolute; right:.55rem; bottom:.45rem; display:grid; place-items:center; width:2rem; height:2rem; border:2px solid var(--ag-bone-100); border-radius:50%; background:var(--ag-iron-900); color:var(--ag-brass-bright); box-shadow:0 0 0 3px rgba(6,8,9,.72); font-size:1.15rem; font-style:normal; }
++.tv-movement-journey__arrival { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1.2fr); gap:.75rem; }
++.tv-movement-journey__arrival > div { display:grid; gap:.3rem; padding:.65rem .8rem; border-top:1px solid var(--ag-rule); background:rgba(11,14,15,.78); }
++.tv-movement-journey__destination { grid-template-columns:minmax(8rem,11rem) minmax(0,1fr); grid-template-rows:auto auto 1fr; align-items:start; }
++.tv-movement-journey__destination-art { position:relative; grid-row:1 / 4; aspect-ratio:4/3; overflow:hidden; margin-right:.35rem; border:1px solid var(--ag-brass); }
++.tv-movement-journey__arrival span { color:var(--ag-brass-bright); text-transform:uppercase; letter-spacing:.1em; font-size:.7rem; }
++.tv-movement-journey__arrival article { display:flex; justify-content:space-between; gap:.7rem; }
++@media (max-width: 1300px), (max-height: 760px) { .tv-movement-journey { gap:.4rem; padding:.5rem; } .tv-movement-journey__route { padding:.35rem; } .tv-movement-journey__route li { flex-basis:clamp(7rem,15vw,11rem); padding:.25rem; } .tv-movement-journey__route li.is-current { flex-basis:clamp(10rem,21vw,15rem); } .tv-movement-journey__destination { grid-template-columns:minmax(7rem,9rem) minmax(0,1fr); } }
++@media (prefers-reduced-motion: reduce) { .tv-movement-journey__route li { transition:none !important; animation:none !important; } }
++
++/* Dedicated host battle chamber: authoritative combat replaces the board view. */
++.tv-dedicated-battle-stage {
++  position: relative;
++  min-width: 0;
++  min-height: 0;
++  height: 100%;
++  display: grid;
++  grid-template-rows: auto minmax(0, 1fr);
++  gap: clamp(0.45rem, 0.7vw, 0.8rem);
++  padding: clamp(0.45rem, 0.8vw, 0.9rem);
++  overflow: hidden;
++  outline: none;
++  isolation: isolate;
++  background:
++    linear-gradient(90deg, rgba(168, 136, 82, 0.045) 1px, transparent 1px) 0 0 / 7rem 100%,
++    radial-gradient(circle at 50% 44%, rgba(116, 67, 42, 0.2), transparent 31rem),
++    linear-gradient(180deg, #111517, #060809 76%);
++  animation: ag-battle-chamber-enter var(--ag-normal) ease-out both;
++}
++
++.tv-dedicated-battle-stage::before {
++  content: "";
++  position: absolute;
++  inset: 0;
++  pointer-events: none;
++  border: 1px solid var(--ag-rule-strong);
++  box-shadow: inset 0 0 0 3px rgba(0, 0, 0, 0.38), inset 0 0 5rem rgba(0, 0, 0, 0.28);
++}
++
++@keyframes ag-battle-chamber-enter {
++  from { opacity: 0; clip-path: inset(0 48%); }
++  to { opacity: 1; clip-path: inset(0); }
++}
++
++.tv-dedicated-battle-context {
++  position: relative;
++  z-index: 2;
++  min-width: 0;
++  min-height: 2.7rem;
++  display: grid;
++  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
++  align-items: center;
++  gap: 0.8rem;
++  padding: 0.42rem clamp(0.7rem, 1.2vw, 1.25rem);
++  border-block: 1px solid var(--ag-rule);
++  color: var(--ag-bone-200);
++  background: linear-gradient(90deg, rgba(8, 11, 12, 0.5), rgba(29, 25, 21, 0.84), rgba(8, 11, 12, 0.5));
++  font: 700 clamp(0.7rem, 0.82vw, 0.9rem)/1.2 system-ui, sans-serif;
++  letter-spacing: 0.11em;
++  text-transform: uppercase;
++}
++
++.tv-dedicated-battle-context span,
++.tv-dedicated-battle-context small {
++  overflow: hidden;
++  text-overflow: ellipsis;
++  white-space: nowrap;
++}
++
++.tv-dedicated-battle-context strong {
++  color: var(--ag-brass-bright);
++  font-family: Georgia, "Times New Roman", serif;
++  font-size: clamp(0.9rem, 1.15vw, 1.3rem);
++  text-align: center;
++}
++
++.tv-dedicated-battle-context small { text-align: right; }
++
++.tv-dedicated-battle-stage .tv-command-battle-instrument {
++  position: relative;
++  width: min(100%, 105rem);
++  height: 100%;
++  min-height: 0;
++  justify-self: center;
++  border: 1px solid var(--ag-rule-strong);
++  background: radial-gradient(circle at 50% 42%, rgba(168, 136, 82, 0.08), transparent 38%), var(--ag-iron-900);
++}
++
++.tv-dedicated-battle-stage .host-battle-overlay {
++  position: absolute;
++  inset: 0;
++  padding: clamp(0.25rem, 0.55vw, 0.65rem);
++}
++
++.tv-dedicated-battle-stage .host-battle-panel {
++  width: 100%;
++  height: 100%;
++  max-width: 104rem;
++}
++
++@media (max-width: 1300px), (max-height: 760px) {
++  .tv-dedicated-battle-stage { padding: 0.35rem; gap: 0.35rem; }
++  .tv-dedicated-battle-context { min-height: 2.15rem; padding-block: 0.25rem; }
++  .tv-dedicated-battle-stage .host-battle-overlay { padding: 0.25rem; }
++  .tv-dedicated-battle-stage .host-battle-combatant {
++    grid-template-rows: clamp(3.3rem, 8svh, 4.2rem) minmax(0, 1fr) clamp(7.2rem, 19svh, 8.5rem);
++  }
++  .tv-dedicated-battle-stage .host-battle-vs-block { padding-block: 0.35rem; gap: 0.2rem; }
++  .tv-dedicated-battle-stage .host-battle-vs-block > strong { font-size: clamp(2.25rem, 4.4vw, 3.8rem); }
++}
++
++@media (prefers-reduced-motion: reduce) {
++  .tv-dedicated-battle-stage {
++    animation-name: ag-instrument-enter;
++    clip-path: none;
++  }
++}
+diff --git a/src/client/tv/TalismanBoardSurface.tsx b/src/client/tv/TalismanBoardSurface.tsx
+index 380d8a8..42cb39e 100644
+--- a/src/client/tv/TalismanBoardSurface.tsx
++++ b/src/client/tv/TalismanBoardSurface.tsx
+@@ -97,7 +97,7 @@ function getTileSide(node: BoardNode): "horizontal" | "vertical" | "center" {
+   return Math.abs(node.y - 0.5) > Math.abs(node.x - 0.5) ? "horizontal" : "vertical";
+ }
+ 
+-function BoardTileImage({ nodeId, label }: { nodeId: string; label: string }): ReactElement {
++export function BoardTileImage({ nodeId, label, className = "" }: { nodeId: string; label: string; className?: string }): ReactElement {
+   const assetPath = getTileAssetPath(nodeId);
+   const expectedPath = getExpectedTileAssetPath(nodeId);
+   const [failed, setFailed] = useState(false);
+@@ -112,7 +112,7 @@ function BoardTileImage({ nodeId, label }: { nodeId: string; label: string }): R
+     }
+ 
+     return (
+-      <span className="talisman-board-missing-art" data-testid={`missing-tile-art-${nodeId}`}>
++      <span className={`talisman-board-missing-art ${className}`.trim()} data-testid={`missing-tile-art-${nodeId}`}>
+         <strong>Missing tile art</strong>
+         <small>{nodeId}</small>
+         <small>{assetPath ?? expectedPath}</small>
+@@ -122,7 +122,7 @@ function BoardTileImage({ nodeId, label }: { nodeId: string; label: string }): R
+ 
+   return (
+     <img
+-      className="talisman-board-tile-art"
++      className={`talisman-board-tile-art ${className}`.trim()}
+       src={assetPath}
+       alt=""
+       aria-hidden="true"
+diff --git a/src/client/tv/TvApp.tsx b/src/client/tv/TvApp.tsx
+index bd09d06..6544a79 100644
+--- a/src/client/tv/TvApp.tsx
++++ b/src/client/tv/TvApp.tsx
+@@ -53,6 +53,7 @@ import type {
+ } from "../shared/types.js";
+ import { HostPlayerCard } from "./HostPlayerCard.js";
+ import { HostBattleOverlay } from "./HostBattleOverlay.js";
++import { HostMovementJourney, type HostMovementJourneyModel } from "./HostMovementJourney.js";
+ import { isHostBattleActive } from "./hostBattleState.js";
+ import { HostShopOverlay } from "./HostShopOverlay.js";
+ import { isHostShopActive } from "./hostShopState.js";
+@@ -1489,6 +1490,18 @@ function HostContextPanel({
+           </div>
+         </div>
+       )}
++      {(activeSector?.tileChallenges?.length ?? 0) > 0 && (
++        <section className="tv-tile-challenges" aria-label="Recurring tile challenges">
++          <div className="tv-host-context-kicker">Challenges</div>
++          {activeSector!.tileChallenges!.map((challenge) => (
++            <article key={challenge.id}>
++              <strong>{challenge.name}</strong>
++              <span>{toTitleCase(challenge.challengeType)} · {toTitleCase(challenge.testStat)} {challenge.difficulty} · Recurring</span>
++              <small>{challenge.failureSummary}</small>
++            </article>
++          ))}
++        </section>
++      )}
+       <p>{activeSpace?.ruleText ?? "Select or activate a sector to bring its command brief online."}</p>
+       <div className="tv-host-context-grid">
+         <span>Reach <strong>{toTitleCase(activeSpace?.tier ?? activeSector?.regionTier ?? "Unknown")}</strong></span>
+@@ -1837,16 +1850,20 @@ interface TacticalMapPanelProps {
+   activePlayer: PublicPlayer | null;
+   battlePlayer: PublicPlayer | null;
+   characterCatalog: CharacterCatalogEntry[];
++  onJourneyComplete?: () => void;
+ }
+ 
+ interface MovementArrivalModel {
++  eventId: string;
+   destination: PublicMoveDestination;
+   playerName: string;
++  originName: string;
+ }
+ 
+ function getMovementArrivalModel(
+   patch: PublicPatchPayload | null | undefined,
+-  previousPatch: PublicPatchPayload | null | undefined
++  previousPatch: PublicPatchPayload | null | undefined,
++  eventSequence = 0
+ ): MovementArrivalModel | null {
+   const planner = previousPatch?.movementPlanner?.active ? previousPatch.movementPlanner : null;
+ 
+@@ -1858,7 +1875,7 @@ function getMovementArrivalModel(
+   const movedPlayer = patch.players.find((player) => previousSectorBySeat.get(player.seatId) !== player.sectorId);
+   const destination = movedPlayer ? planner.destinations.find((entry) => entry.sectorId === movedPlayer.sectorId) ?? null : null;
+ 
+-  return movedPlayer && destination ? { destination, playerName: movedPlayer.character.name } : null;
++  return movedPlayer && destination ? { eventId: `${eventSequence}:${movedPlayer.seatId}:${destination.sectorId}`, destination, playerName: movedPlayer.character.name, originName: planner.currentSectorName } : null;
+ }
+ 
+ function MovementFocusHud({
+@@ -2046,44 +2063,70 @@ function BoardLegend(): ReactElement {
+   );
+ }
+ 
++function DedicatedBattleStage({ patch, activePlayer }: {
++  patch: StatePatch<PublicPatchPayload>;
++  activePlayer: PublicPlayer;
++}): ReactElement {
++  const stageRef = useRef<HTMLElement>(null);
++  const space = getBoardSpace(activePlayer.sectorId);
++  const sector = patch.payload.sectors.find((entry) => entry.id === activePlayer.sectorId) ?? null;
++  const locationName = space?.name ?? sector?.name ?? "Current sector";
++  const region = space?.tier ?? sector?.regionTier ?? null;
++
++  useEffect(() => {
++    stageRef.current?.focus({ preventScroll: true });
++  }, [patch.payload.activeResolution?.id]);
++
++  return (
++    <section ref={stageRef} className="tv-dedicated-battle-stage" aria-label="Dedicated battle view" data-testid="tv-dedicated-battle-stage" tabIndex={-1}>
++      <header className="tv-dedicated-battle-context">
++        <span>Battle at {locationName}</span>
++        <strong>{activePlayer.character.name}</strong>
++        {region ? <small>{toTitleCase(region)} reach</small> : null}
++      </header>
++      <div className="tv-command-battle-instrument" aria-label="Battle command surface">
++        <HostBattleOverlay patch={patch} activePlayer={activePlayer} />
++      </div>
++    </section>
++  );
++}
++
+ function TacticalMapPanel({
+   patch,
+   previousPatch,
+   activeSeat,
+   activePlayer,
+   battlePlayer,
+-  characterCatalog
++  characterCatalog,
++  onJourneyComplete
+ }: TacticalMapPanelProps): ReactElement {
+   const battleMode = isHostBattleActive(patch, battlePlayer);
+   const shopMode = isHostShopActive(patch, activePlayer);
+   const planner = patch?.payload.movementPlanner?.active ? patch.payload.movementPlanner : null;
+-  const arrival = getMovementArrivalModel(patch?.payload, previousPatch?.payload);
+-  const arrivalKey = arrival ? `${arrival.playerName}:${arrival.destination.sectorId}:${arrival.destination.route.join(">")}` : null;
+-  const [visualTravel, setVisualTravel] = useState<{ key: string; arrival: MovementArrivalModel; step: number } | null>(null);
++  const arrival = getMovementArrivalModel(patch?.payload, previousPatch?.payload, patch?.sequence);
++  const arrivalKey = arrival?.eventId ?? null;
++  const [visualTravel, setVisualTravel] = useState<{ key: string; arrival: MovementArrivalModel; step: number; arrived: boolean } | null>(null);
+   const completedTravelKeyRef = useRef<string | null>(null);
+   useEffect(() => {
+-    if (arrival && arrivalKey && completedTravelKeyRef.current !== arrivalKey && !battleMode && !shopMode) {
+-      setVisualTravel((current) => current?.key === arrivalKey ? current : { key: arrivalKey, arrival, step: 1 });
++    if (arrival && arrivalKey && completedTravelKeyRef.current !== arrivalKey && !shopMode) {
++      setVisualTravel((current) => current?.key === arrivalKey ? current : { key: arrivalKey, arrival, step: 0, arrived: false });
+     }
+   }, [arrival, arrivalKey, battleMode, shopMode]);
+-  useEffect(() => {
+-    if (battleMode || shopMode) {
+-      setVisualTravel(null);
+-    }
+-  }, [battleMode, shopMode]);
+   useEffect(() => {
+     if (!visualTravel) return;
+-    const stepTotal = Math.max(1, visualTravel.arrival.destination.route.length - 1);
++    const finalStep = Math.max(visualTravel.arrival.destination.route.length - 1, 1);
+     const timeout = window.setTimeout(() => {
+       setVisualTravel((current) => {
+         if (!current || current.key !== visualTravel.key) return current;
+-        if (current.step < stepTotal) return { ...current, step: current.step + 1 };
++        if (current.step < finalStep) return { ...current, step: current.step + 1 };
++        if (!current.arrived) return { ...current, arrived: true };
+         completedTravelKeyRef.current = current.key;
++        if (!battleMode) window.requestAnimationFrame(() => onJourneyComplete?.());
+         return null;
+       });
+-    }, 720);
++    }, visualTravel.arrived ? 650 : 360);
+     return () => window.clearTimeout(timeout);
+-  }, [visualTravel]);
++  }, [visualTravel, battleMode, onJourneyComplete]);
+   const focusBattleMode = battleMode;
+   const focusShopMode = !focusBattleMode && shopMode;
+   const movementFocusMode = !focusBattleMode && !focusShopMode && Boolean(planner || visualTravel);
+@@ -2091,18 +2134,26 @@ function TacticalMapPanel({
+     ? planner.destinations.find((destination) => destination.sectorId === planner.selectedDestinationId) ?? null
+     : null;
+ 
++  if (visualTravel) {
++    const challenges = patch?.payload.sectors.find((sector) => sector.id === visualTravel.arrival.destination.sectorId)?.tileChallenges ?? [];
++    const model: HostMovementJourneyModel = { eventId: visualTravel.key, operativeName: visualTravel.arrival.playerName, originName: visualTravel.arrival.originName, destination: visualTravel.arrival.destination };
++    return <HostMovementJourney model={model} step={visualTravel.step} arrived={visualTravel.arrived} challenges={challenges} />;
++  }
++
++  if (focusBattleMode && patch && battlePlayer) {
++    return <DedicatedBattleStage patch={patch} activePlayer={battlePlayer} />;
++  }
++
+   return (
+-    <section className={`tv-command-stage${focusBattleMode ? " tv-command-stage-battle-mode" : ""}${focusShopMode ? " tv-command-stage-shop-mode" : ""}${movementFocusMode ? " tv-command-stage-movement-focus" : ""}`}>
+-      {!focusBattleMode && (
+-        <div className="tv-command-map-shell">
++    <section className={`tv-command-stage${focusShopMode ? " tv-command-stage-shop-mode" : ""}${movementFocusMode ? " tv-command-stage-movement-focus" : ""}`}>
++      <div className="tv-command-map-shell">
+           <TacticalMapBoard
+             patch={patch?.payload ?? null}
+             previousPatch={previousPatch?.payload ?? null}
+             phase={patch?.phase ?? "start"}
+           />
+           {!movementFocusMode && <BoardLegend />}
+-        </div>
+-      )}
++      </div>
+       {!focusBattleMode && <NemesisBanner nemesis={patch?.payload.nemesis ?? null} />}
+       {!focusBattleMode && !focusShopMode && !movementFocusMode && (
+         <ActiveOperativeOverlay
+@@ -2113,14 +2164,12 @@ function TacticalMapPanel({
+           characterCatalog={characterCatalog}
+         />
+       )}
+-      {focusBattleMode && <HostBattleOverlay patch={patch} activePlayer={battlePlayer} />}
+       {focusShopMode && <HostShopOverlay patch={patch} activePlayer={activePlayer} />}
+       {movementFocusMode && (
+         <MovementFocusHud
+           planner={planner}
+           selectedDestination={projectedDestination}
+-          arrival={visualTravel?.arrival ?? null}
+-          travelStep={visualTravel?.step}
++          arrival={null}
+           activePlayerName={activePlayer?.character.name ?? "Active operative"}
+         />
+       )}
+@@ -2412,6 +2461,8 @@ export function TvApp(): ReactElement {
+     hostToken
+   });
+   const previousPatchRef = useRef<StatePatch<PublicPatchPayload> | null>(null);
++  const commandMainRef = useRef<HTMLElement | null>(null);
++  const previousBattleModeRef = useRef(false);
+ 
+   useEffect(() => {
+     fetchCharacters()
+@@ -2461,6 +2512,14 @@ export function TvApp(): ReactElement {
+     }
+   }, [publicPatch]);
+ 
++  useEffect(() => {
++    const wasInBattle = previousBattleModeRef.current;
++    previousBattleModeRef.current = battleMode;
++    if (wasInBattle && !battleMode) {
++      window.requestAnimationFrame(() => commandMainRef.current?.focus({ preventScroll: true }));
++    }
++  }, [battleMode]);
++
+   useEffect(() => {
+     if (typeof window === "undefined") {
+       return;
+@@ -2686,8 +2745,11 @@ export function TvApp(): ReactElement {
+         <EndgameOverlay patch={publicPatch} />
+ 
+         <section
++          ref={commandMainRef}
+           className={`tv-command-main${isPreRoomLobby ? " tv-command-main--pre-room" : ""}${battleMode ? " tv-command-main--battle-focus" : ""}${shopMode ? " tv-command-main--shop-focus" : ""}${movementFocusMode ? " tv-command-main--movement-focus" : ""}`}
+           data-testid="tv-command-main"
++          aria-label="Host command board"
++          tabIndex={-1}
+         >
+           {isPreRoomLobby ? (
+             <section className="tv-pre-room-lobby-stage" aria-label="Host lobby setup">
+@@ -2748,6 +2810,7 @@ export function TvApp(): ReactElement {
+                 activePlayer={activePlayer}
+                 battlePlayer={battlePlayer}
+                 characterCatalog={characterCatalog}
++                onJourneyComplete={() => commandMainRef.current?.focus({ preventScroll: true })}
+               />
+ 
+               {!battleMode && !shopMode && !movementFocusMode && <RightSidebar
+diff --git a/src/client/tv/__tests__/TvApp.test.tsx b/src/client/tv/__tests__/TvApp.test.tsx
+index 32b69a5..401ef97 100644
+--- a/src/client/tv/__tests__/TvApp.test.tsx
++++ b/src/client/tv/__tests__/TvApp.test.tsx
+@@ -1021,15 +1021,18 @@ describe("TvApp", () => {
+       clearDebugEvents: vi.fn()
+     });
+     rerender(<TvApp />);
+-    const arrivalFocus = await screen.findByTestId("tv-arrival-focus");
+-    expect(arrivalFocus).toHaveTextContent(/arrived at anchor market/i);
+-    expect(arrivalFocus).toHaveTextContent(/outer reach/i);
+-    expect(arrivalFocus).toHaveTextContent(/trade if the sector is clear/i);
+-    expect(arrivalFocus).toHaveTextContent(/printed challenge icons will resolve on arrival/i);
++    const journey = await screen.findByTestId("tv-movement-journey");
++    expect(journey).toHaveTextContent(/ashwake crossing.*anchor market/i);
++    expect(journey).toHaveTextContent(/trade if the sector is clear/i);
++    expect(within(journey).getByTestId("tile-art-ashwake-crossing")).toHaveAttribute("src", "/assets/map/tiles/map_tile_hollow_gate.png");
++    expect(within(journey).getByTestId("tile-art-glassmere-spindle")).toHaveAttribute("src", "/assets/map/tiles/map_tile_ironbridge_span.png");
++    expect(within(journey).getAllByTestId("missing-tile-art-outer_anchor_market")).toHaveLength(2);
++    expect(journey).toHaveFocus();
+     expect(screen.queryByTestId("tv-movement-focus")).not.toBeInTheDocument();
+-    expect(screen.getByText("Tactical map")).toBeInTheDocument();
++    expect(screen.queryByText("Tactical map")).not.toBeInTheDocument();
+ 
+-    await waitFor(() => expect(screen.queryByTestId("tv-arrival-focus")).not.toBeInTheDocument(), { timeout: 3_500 });
++    await waitFor(() => expect(journey).toHaveTextContent(/arrived at anchor market/i), { timeout: 3_500 });
++    await waitFor(() => expect(screen.queryByTestId("tv-movement-journey")).not.toBeInTheDocument(), { timeout: 4_500 });
+     rerender(<TvApp />);
+     expect(screen.getByTestId("tv-command-main")).not.toHaveClass("tv-command-main--movement-focus");
+     expect(screen.getByRole("complementary", { name: /operatives/i })).toBeInTheDocument();
+@@ -1146,6 +1149,10 @@ describe("TvApp", () => {
+     expect(screen.queryByTestId("host-state-banner")).not.toBeInTheDocument();
+     expect(within(screen.getByLabelText(/host status bar/i)).getByTestId("host-live-status")).toBeInTheDocument();
+     expect(screen.queryByText("Tactical map")).not.toBeInTheDocument();
++    expect(screen.queryByLabelText("Board legend")).not.toBeInTheDocument();
++    expect(screen.getByTestId("tv-dedicated-battle-stage")).toHaveFocus();
++    expect(screen.getByTestId("tv-dedicated-battle-stage")).toHaveTextContent(/battle at ashwalk bridge/i);
++    expect(screen.getByLabelText("Battle command surface")).toBeInTheDocument();
+     expect(screen.queryByRole("complementary", { name: /operatives/i })).not.toBeInTheDocument();
+     expect(document.querySelector(".tv-command-sidebar")).not.toBeInTheDocument();
+     expect(overlay).toHaveTextContent(/tarek voss/i);
+@@ -1166,6 +1173,45 @@ describe("TvApp", () => {
+     expect(screen.queryByTestId("tv-movement-focus")).not.toBeInTheDocument();
+   });
+ 
++  it("returns focus to the host command board when an active battle projection closes", async () => {
++    window.localStorage.setItem("ashen-reach-tv-room-code", "RT7P4");
++    window.localStorage.setItem("ashen-reach-tv-host-token", "host:RT7P4:secret");
++    const battlePatch = createPatch();
++    battlePatch.phase = "resolution";
++    battlePatch.payload.activeResolution = {
++      id: "seat-1:threat:cinder-veil-stalker:test",
++      playerId: "seat-1",
++      source: "threat",
++      stage: "battle_setup",
++      card: { id: "cinder-veil-stalker", title: "Cinder-Veil Stalker", type: "enemy", artType: "threat" },
++      battle: { enemyName: "Cinder-Veil Stalker", stat: "grit", difficulty: 8, modifiers: [{ label: "Base Grit", value: 2 }] }
++    };
++    mockUseRoomSubscription.mockReturnValue({
++      patch: battlePatch,
++      error: null,
++      sendIntent: vi.fn(),
++      status: "open",
++      debugEvents: [],
++      clearDebugEvents: vi.fn()
++    });
++    const view = render(<TvApp />);
++    expect(await screen.findByTestId("tv-dedicated-battle-stage")).toHaveFocus();
++
++    mockUseRoomSubscription.mockReturnValue({
++      patch: createPatch(),
++      error: null,
++      sendIntent: vi.fn(),
++      status: "open",
++      debugEvents: [],
++      clearDebugEvents: vi.fn()
++    });
++    view.rerender(<TvApp />);
++
++    await waitFor(() => expect(screen.getByTestId("tv-command-main")).toHaveFocus());
++    expect(screen.queryByTestId("tv-dedicated-battle-stage")).not.toBeInTheDocument();
++    expect(screen.getByText("Tactical map")).toBeInTheDocument();
++  });
++
+   it("renders active dice faces and roll totals from activeResolution", async () => {
+     window.localStorage.setItem("ashen-reach-tv-room-code", "RT7P4");
+     window.localStorage.setItem("ashen-reach-tv-host-token", "host:RT7P4:secret");
+diff --git a/src/game/data/canonicalSectorGraph.ts b/src/game/data/canonicalSectorGraph.ts
+index 5fbf252..e946c9a 100644
+--- a/src/game/data/canonicalSectorGraph.ts
++++ b/src/game/data/canonicalSectorGraph.ts
+@@ -484,7 +484,7 @@ const encounterDecksBySpaceId: Partial<Record<string, EncounterDecks>> = {
+     escalation: ["escalation-red-march-levy", "escalation-emberwatch"]
+   },
+   "ashen-chapel": {
+-    threat: ["cracked-censer-novice", "choir-static-burst", "choir-wraith", "veil-censor", "rift-whispers", "bell-mask-pilgrim", "reliquary-judge"],
++    threat: ["cracked-censer-novice", "choir-static-burst", "choir-wraith", "veil-censor", "bell-mask-pilgrim", "reliquary-judge"],
+     anomaly: ["anomaly-choir-static", "anomaly-saint-static-aperture", "anomaly-ashfall-murmur"],
+     contract: ["umbral-shrine-confession", "choir-spindle-harmonics"],
+     artifact: ["artifact-choir-static-censer", "artifact-heat-sink-prayer"],
+diff --git a/src/game/engine/actions.ts b/src/game/engine/actions.ts
+index ea9b7b0..75450b5 100644
+--- a/src/game/engine/actions.ts
++++ b/src/game/engine/actions.ts
+@@ -197,6 +197,8 @@ export interface UseGearAction extends BaseAction {
+     stat: CheckStat;
+     mode: "battle" | "check";
+   };
++  chargeInstanceId?: string;
++  pendingTileChallengeId?: string;
+ }
+ 
+ export interface UseFollowerAction extends BaseAction {
+@@ -670,6 +672,8 @@ export type ClientIntent =
+       type: "USE_GEAR";
+       seatId: string;
+       gearId: string;
++      instanceId?: string;
++      pendingTileChallengeId?: string;
+     }
+   | {
+       type: "USE_FOLLOWER";
+diff --git a/src/game/engine/reducer.ts b/src/game/engine/reducer.ts
+index b0cb51e..d9e166e 100644
+--- a/src/game/engine/reducer.ts
++++ b/src/game/engine/reducer.ts
+@@ -924,7 +924,7 @@ function consumeTemporaryAllStatBoost(state: GameState, seatId: string): GameSta
+   }) };
+ }
+ 
+-function spendHeldGearCharge(state: GameState, seatId: string, gearId: string): GameState {
++function spendHeldGearCharge(state: GameState, seatId: string, gearId: string, instanceId?: string): GameState {
+   return {
+     ...state,
+     players: updateActivePlayer(state, seatId, (entry) => ({
+@@ -932,10 +932,11 @@ function spendHeldGearCharge(state: GameState, seatId: string, gearId: string):
+       character: {
+         ...entry.character,
+         heldGear: entry.character.heldGear.map((item) =>
+-          item.id === gearId
++          item.id === gearId && (!instanceId || item.instanceId === instanceId)
+             ? {
+                 ...item,
+-                charges: Math.max((item.charges ?? 0) - 1, 0),
++                currentCharges: Math.max((item.currentCharges ?? item.charges ?? 0) - 1, 0),
++                charges: Math.max((item.currentCharges ?? item.charges ?? 0) - 1, 0),
+                 maxUses: item.maxUses ?? item.charges ?? 0
+               }
+             : item
+@@ -1264,6 +1265,7 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
+           } : null,
+           movementRolls: clearMovementRollForSeat(state, movementAction.seatId),
+           movementAdjustments: clearMovementAdjustmentForSeat(state, movementAction.seatId),
++          tileChallengeProgress: movementAction.success ? null : state.tileChallengeProgress,
+           players: updateActivePlayer(state, movementAction.seatId, (entry) => ({
+             ...entry,
+             sectorId: destinationSectorId,
+@@ -2265,7 +2267,7 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
+         return reject(state, action, error instanceof Error ? error.message : "Gear use limit reached");
+       }
+ 
+-      if (item.useLimit === "charge" && (item.charges ?? 0) <= 0) {
++      if (item.useLimit === "charge" && (item.currentCharges ?? item.charges ?? 0) <= 0) {
+         return reject(state, action, `${item.name} has no charges remaining`);
+       }
+ 
+@@ -2283,7 +2285,7 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
+           (useGearAction.exhaustInstanceId ? owned.instanceId === useGearAction.exhaustInstanceId : owned === item) ? { ...owned, exhausted: true } : owned) } }))
+       } : paidState;
+       const chargedState = item.useLimit === "charge"
+-        ? spendHeldGearCharge(exhaustedGearState, useGearAction.seatId, useGearAction.gearId)
++        ? spendHeldGearCharge(exhaustedGearState, useGearAction.seatId, useGearAction.gearId, useGearAction.chargeInstanceId)
+         : exhaustedGearState;
+       const finalState = useGearAction.discard
+         ? discardHeldGear(chargedState, useGearAction.seatId, useGearAction.gearId)
+@@ -2292,6 +2294,15 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
+ 
+       return succeed({
+         ...finalState,
++        pendingTileChallenge: useGearAction.pendingTileChallengeId && finalState.pendingTileChallenge?.id === useGearAction.pendingTileChallengeId && useGearAction.rollModifier
++          ? {
++              ...finalState.pendingTileChallenge,
++              modifierSources: [
++                ...finalState.pendingTileChallenge.modifierSources,
++                { label: useGearAction.rollModifier.label, value: useGearAction.rollModifier.value, sourceInstanceId: useGearAction.chargeInstanceId }
++              ]
++            }
++          : finalState.pendingTileChallenge,
+         pendingEffect: useGearAction.suppressPendingFailure ? null : finalState.pendingEffect,
+         pendingFailureReaction: useGearAction.suppressPendingFailure ? null : finalState.pendingFailureReaction,
+         sequence: state.sequence + 1,
+@@ -3983,6 +3994,7 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
+         pendingEnemyRoll: leavingResolution ? null : state.pendingEnemyRoll,
+         pendingEffect: leavingResolution ? null : state.pendingEffect,
+         pendingFailureReaction: leavingResolution ? null : state.pendingFailureReaction,
++        pendingTileChallenge: leavingResolution ? null : state.pendingTileChallenge,
+         activeResolution:
+           action.toPhase === "broadcast" && state.activeResolution
+             ? {
+diff --git a/src/game/schema/gear.schema.ts b/src/game/schema/gear.schema.ts
+index bc4818c..ed5af0d 100644
+--- a/src/game/schema/gear.schema.ts
++++ b/src/game/schema/gear.schema.ts
+@@ -13,6 +13,7 @@ export const gearTimingWindowSchema = z.enum([
+   "startOfTurn",
+   "movement",
+   "movementRouteConfirmation",
++  "beforeAnomalySignalTest",
+   "shop",
+   "action",
+   "anyTime"
+@@ -67,7 +68,7 @@ export const gearItemSchema = z.object({
+   startingCharges: z.number().int().positive().optional(),
+   chargeCost: z.number().int().positive().optional(),
+   rechargeRule: z.enum(["none"]).optional(),
+-  chargedEffect: z.enum(["personalGateOverride", "movementAdjustment", "saintSafeConduct", "bonewayDetour"]).optional(),
++  chargedEffect: z.enum(["personalGateOverride", "movementAdjustment", "saintSafeConduct", "bonewayDetour", "choirLightSignalBonus"]).optional(),
+   maxUses: z.number().int().min(0).optional(),
+   heatCost: z.number().int().min(0).optional(),
+   linkedFollowerRole: z.string().min(1).optional(),
+diff --git a/src/game/schema/sector.schema.ts b/src/game/schema/sector.schema.ts
+index d6364bf..1e105aa 100644
+--- a/src/game/schema/sector.schema.ts
++++ b/src/game/schema/sector.schema.ts
+@@ -1,4 +1,5 @@
+ import { z } from "zod";
++import { tileChallengeSchema } from "./tileChallenge.schema.js";
+ 
+ export const regionTierSchema = z.enum([
+   "borderlight",
+@@ -24,6 +25,7 @@ export const sectorNodeSchema = z.object({
+   neighbors: z.array(z.string().min(1)),
+   danger: z.number().int().min(0).max(10),
+   threatIcons: z.array(threatIconSchema).optional(),
++  tileChallenges: z.array(tileChallengeSchema).optional(),
+   encounterDecks: encounterDecksSchema
+ });
+ 
+diff --git a/src/game/schema/session.schema.ts b/src/game/schema/session.schema.ts
+index 415b7ef..0c95b04 100644
+--- a/src/game/schema/session.schema.ts
++++ b/src/game/schema/session.schema.ts
+@@ -1,4 +1,5 @@
+ import { z } from "zod";
++import { pendingTileChallengeSchema } from "./tileChallenge.schema.js";
+ import { characterSchema, statSchema } from "./character.schema.js";
+ import { afflictionCardSchema, afflictionInstanceSchema, afflictionUsageStateSchema } from "./affliction.schema.js";
+ import { effectSchema, threatCardSchema } from "./card.schema.js";
+@@ -181,7 +182,7 @@ export const gameStateSchema = z.object({
+   activeScenarioId: z.string().min(1),
+   scenarioProgress: z.record(z.string(), z.number().int().min(0)),
+   phase: phaseSchema,
+-  resolutionSource: z.enum(["movement", "encounter", "contract"]).nullable(),
++  resolutionSource: z.enum(["movement", "encounter", "contract", "tileChallenge"]).nullable(),
+   activeSeatIndex: z.number().int().min(0),
+   turnOrder: z.array(z.string().min(1)).min(1),
+   heatThreshold: z.number().int().min(1),
+@@ -220,6 +221,12 @@ export const gameStateSchema = z.object({
+     sourceId: z.string().min(1),
+     createdAt: z.string().min(1)
+   }).nullable().optional(),
++  pendingTileChallenge: pendingTileChallengeSchema.nullable().optional(),
++  tileChallengeProgress: z.object({
++    seatId: z.string().min(1),
++    sectorId: z.string().min(1),
++    resolvedChallengeIds: z.array(z.string().min(1))
++  }).nullable().optional(),
+   activeResolution: activeResolutionSchema.nullable().optional(),
+   lastOutcomeSummary: z
+     .object({
+diff --git a/src/server/__tests__/sessionState.test.ts b/src/server/__tests__/sessionState.test.ts
+index a2b59f1..14a7d17 100644
+--- a/src/server/__tests__/sessionState.test.ts
++++ b/src/server/__tests__/sessionState.test.ts
+@@ -12,8 +12,65 @@ import { applyStartingLoadout } from "../../game/rules/startingLoadout.js";
+ import { createPhoneProjection, createTvProjection } from "../roomServer.js";
+ import { validateJoinToken } from "../auth.js";
+ import { createInitialSessionState } from "../sessionState.js";
++import { loadTileChallenges } from "../../game/content/tileChallenges.js";
++import { attachTileChallengesToSectors } from "../../game/rules/tileChallenges.js";
++import { GameRoomServer, type ConnectedClient } from "../roomServer.js";
+ 
+-describe("canonical sector graph", () => {
++describe("canonical sector graph", () => {
++  it("attaches Rift Whispers as a recurring anomaly challenge instead of a threat", () => {
++    const state = createInitialSessionState("tile-challenge-session");
++    const chapel = state.sectors.find((sector) => sector.id === "ashen-chapel");
++    expect(chapel?.encounterDecks.threat).not.toContain("rift-whispers");
++    expect(chapel?.tileChallenges).toEqual([
++      expect.objectContaining({ id: "rift-whispers-ashen-chapel", challengeType: "anomaly", testStat: "signal", recurring: true })
++    ]);
++  });
++
++  it("rejects unknown sectors and duplicate authored order", () => {
++    const sectors = createCanonicalSectorGraph();
++    const challenge = [...loadTileChallenges().values()][0]!;
++    expect(() => attachTileChallengesToSectors(sectors, [{ ...challenge, sectorId: "missing-sector" }])).toThrow(/unknown sector/i);
++    expect(() => attachTileChallengesToSectors(sectors, [challenge, { ...challenge, id: `${challenge.id}-copy` }])).toThrow(/authored order is duplicated/i);
++  });
++
++  it("opens a persisted recurring tile challenge before sector threats", () => {
++    const state = createInitialSessionState("tile-challenge-lifecycle", "single-player");
++    state.status = "active";
++    state.phase = "sector";
++    state.players[0]!.sectorId = "ashen-chapel";
++    state.players[0]!.character.currentSpaceId = "ashen-chapel";
++    const server = new GameRoomServer(state);
++    (server as unknown as { runAutomaticPhases: (seatId: string) => void }).runAutomaticPhases("seat-1");
++    const pending = server.getState().pendingTileChallenge;
++    expect(pending).toMatchObject({ challengeId: "rift-whispers-ashen-chapel", challengeType: "anomaly", testStat: "signal", rolled: false });
++    expect(server.getState().currentEncounter?.cardType).toBe("hazard");
++    expect(server.getState().sectors.find((sector) => sector.id === "ashen-chapel")?.tileChallenges).toHaveLength(1);
++    expect(server.getState().players[0]?.character.trophyPile).toEqual([]);
++  });
++
++  it("spends one exact Choir Lantern charge for only the pending anomaly Signal challenge", () => {
++    const state = createInitialSessionState("choir-light-lifecycle", "single-player");
++    state.status = "active";
++    state.phase = "sector";
++    state.players[0]!.sectorId = "ashen-chapel";
++    state.players[0]!.character.currentSpaceId = "ashen-chapel";
++    const lantern = { ...loadGear().get("choir-lantern")!, instanceId: "choir-instance", currentCharges: 2, maxCharges: 2 };
++    state.players[0]!.character.heldGear.push(lantern);
++    state.players[0]!.character.equippedGear.utility = "choir-lantern";
++    const server = new GameRoomServer(state);
++    (server as unknown as { runAutomaticPhases: (seatId: string) => void }).runAutomaticPhases("seat-1");
++    const pendingId = server.getState().pendingTileChallenge!.id;
++    const sent: Array<Record<string, unknown>> = [];
++    const client: ConnectedClient = { seatId: "seat-1", view: "phone", socket: { send: (payload: string) => sent.push(JSON.parse(payload)), close() {} } as unknown as ConnectedClient["socket"] };
++    server.handleIntent(client, { type: "USE_GEAR", seatId: "seat-1", gearId: "choir-lantern", instanceId: "choir-instance", pendingTileChallengeId: pendingId });
++    expect(sent.filter((message) => message.type === "INTENT_REJECTED")).toEqual([]);
++    const owned = server.getState().players[0]!.character.heldGear.find((item) => item.instanceId === "choir-instance");
++    expect(owned?.currentCharges).toBe(1);
++    expect(server.getState().pendingTileChallenge?.modifierSources).toEqual([expect.objectContaining({ label: "Choir Lantern", value: 2, sourceInstanceId: "choir-instance" })]);
++    server.handleIntent(client, { type: "USE_GEAR", seatId: "seat-1", gearId: "choir-lantern", instanceId: "choir-instance", pendingTileChallengeId: pendingId });
++    expect(server.getState().players[0]!.character.heldGear.find((item) => item.instanceId === "choir-instance")?.currentCharges).toBe(1);
++    expect(sent.some((message) => message.type === "INTENT_REJECTED" && /already committed/i.test(String(message.reason)))).toBe(true);
++  });
+   it("creates one live sector for every board node and keeps ids aligned", () => {
+     const sectors = createCanonicalSectorGraph();
+ 
+@@ -26,7 +83,10 @@ describe("canonical sector graph", () => {
+   it("keeps the live threat deck broad and every canonical threat reference resolvable", () => {
+     const sectors = createCanonicalSectorGraph();
+     const threats = loadThreatCards();
+-    const referencedThreatIds = new Set(sectors.flatMap((sector) => sector.encounterDecks.threat));
++    const referencedThreatIds = new Set([
++      ...sectors.flatMap((sector) => sector.encounterDecks.threat),
++      ...[...loadTileChallenges().values()].map((challenge) => challenge.artCardId)
++    ]);
+     const severities = new Set([...threats.values()].map((threat) => threat.severity));
+ 
+     expect(threats.size).toBeGreaterThanOrEqual(40);
+diff --git a/src/server/roomServer.ts b/src/server/roomServer.ts
+index 88e300f..0a3279e 100644
+--- a/src/server/roomServer.ts
++++ b/src/server/roomServer.ts
+@@ -1871,10 +1871,12 @@ export class GameRoomServer {
+   private createGearUseAction(
+     seatId: string,
+     gearId: string,
+-    createdAt: string
++    createdAt: string,
++    instanceId?: string,
++    pendingTileChallengeId?: string
+   ): UseGearAction {
+     const player = this.state.players.find((entry) => entry.seatId === seatId);
+-    const item = player?.character.heldGear.find((entry) => entry.id === gearId);
++    const item = player?.character.heldGear.find((entry) => entry.id === gearId && (!instanceId || entry.instanceId === instanceId));
+ 
+     if (!item) {
+       throw new IntentRejectedError("USE_GEAR", `Gear ${gearId} is not held by this character`);
+@@ -1892,9 +1894,22 @@ export class GameRoomServer {
+       }
+     }
+ 
++    if (item.chargedEffect === "choirLightSignalBonus") {
++      const pending = this.state.pendingTileChallenge;
++      if (!pending || pending.id !== pendingTileChallengeId || pending.seatId !== seatId || pending.challengeType !== "anomaly" || pending.testStat !== "signal" || pending.rolled) {
++        throw new IntentRejectedError("USE_GEAR", `${item.name} requires an unrolled anomaly Signal tile challenge.`);
++      }
++      if (!item.instanceId || item.instanceId !== instanceId) throw new IntentRejectedError("USE_GEAR", `${item.name} instance is stale.`);
++      if ((item.currentCharges ?? item.charges ?? 0) < (item.chargeCost ?? 1)) throw new IntentRejectedError("USE_GEAR", `${item.name} has no charges remaining.`);
++      if (player!.character.equippedGear.utility !== item.id) throw new IntentRejectedError("USE_GEAR", `${item.name} must be equipped.`);
++      if (pending.modifierSources.some((source) => source.label === "Choir Lantern")) throw new IntentRejectedError("USE_GEAR", "Choir Light is already committed to this test.");
++    }
++
+     const itemName = item?.name ?? gearId;
+     const discard = item?.consumeOnUse === true || item?.useLimit === "discard";
+-    const rollModifier = this.createGearRollModifier(seatId, item);
++    const rollModifier = item.chargedEffect === "choirLightSignalBonus"
++      ? { label: "Choir Lantern", value: 2, stat: "signal" as const, mode: "check" as const }
++      : this.createGearRollModifier(seatId, item);
+     const effect = this.resolveEffect(this.getGearUseEffect(gearId), seatId);
+ 
+     return {
+@@ -1909,6 +1924,8 @@ export class GameRoomServer {
+       exhaustInstanceId: item.effectModel === "exhaust" ? item.instanceId : undefined,
+       mirrorReroll: item.exhaustEffect === "mirrorReroll" ? { ...this.createSoloRerollAction({ type: "SOLO_REROLL_REQUESTED", seatId }, createdAt, true), artifactReroll: true } : undefined,
+       rollModifier,
++      chargeInstanceId: item.effectModel === "charged" ? item.instanceId : undefined,
++      pendingTileChallengeId: item.chargedEffect === "choirLightSignalBonus" ? pendingTileChallengeId : undefined,
+       summary: `${itemName} used. ${item?.activeText ?? "Its effect was recorded for the table."}`,
+       createdAt
+     } satisfies UseGearAction;
+@@ -2684,7 +2701,7 @@ export class GameRoomServer {
+           createdAt
+         } satisfies UnequipGearAction;
+       case "USE_GEAR":
+-        return this.createGearUseAction(intent.seatId, intent.gearId, createdAt);
++        return this.createGearUseAction(intent.seatId, intent.gearId, createdAt, intent.instanceId, intent.pendingTileChallengeId);
+       case "USE_FOLLOWER":
+         return this.createFollowerUseAction(intent.seatId, intent.followerId, createdAt, intent.escalate === true);
+       case "TABLE_INTERACTION":
+@@ -4834,6 +4851,9 @@ export class GameRoomServer {
+       }
+ 
+       if (this.state.phase === "sector") {
++        if (this.startNextTileChallenge(seatId)) {
++          return;
++        }
+         if (this.shouldDrawEncounterForCurrentSector(seatId)) {
+           this.applyAction(this.createEncounterDrawnAction(seatId));
+         } else {
+@@ -4877,6 +4897,19 @@ export class GameRoomServer {
+       }
+ 
+       if (this.state.phase === "resolution" && !this.state.pendingEffect) {
++        if (this.state.resolutionSource === "tileChallenge" && this.state.pendingTileChallenge) {
++          const pending = this.state.pendingTileChallenge;
++          const progress = this.state.tileChallengeProgress;
++          this.state = {
++            ...this.state,
++            pendingTileChallenge: null,
++            tileChallengeProgress: {
++              seatId: pending.seatId,
++              sectorId: pending.sectorId,
++              resolvedChallengeIds: [...new Set([...(progress?.resolvedChallengeIds ?? []), pending.challengeId])]
++            }
++          };
++        }
+         const nextPhase = this.getPhaseAfterResolution(seatId);
+ 
+         this.applyAction({
+@@ -4893,6 +4926,10 @@ export class GameRoomServer {
+   private getPhaseAfterResolution(seatId: string): GameState["phase"] {
+     const player = this.state.players.find((entry) => entry.seatId === seatId);
+ 
++    if (this.state.resolutionSource === "tileChallenge") {
++      return "sector";
++    }
++
+     if (
+       this.state.resolutionSource === "movement" &&
+       player?.character.status === "active" &&
+@@ -4910,6 +4947,83 @@ export class GameRoomServer {
+     return "broadcast";
+   }
+ 
++  private startNextTileChallenge(seatId: string): boolean {
++    const player = this.state.players.find((entry) => entry.seatId === seatId);
++    const sector = player ? this.state.sectors.find((entry) => entry.id === player.character.currentSpaceId) : null;
++
++    if (!player || !sector || player.character.status !== "active") return false;
++
++    const existingProgress = this.state.tileChallengeProgress;
++    const progress = existingProgress?.seatId === seatId && existingProgress.sectorId === sector.id
++      ? existingProgress
++      : { seatId, sectorId: sector.id, resolvedChallengeIds: [] };
++    const ordered = [...(sector.tileChallenges ?? [])]
++      .filter((challenge) => challenge.trigger === "onArrival")
++      .sort((a, b) => a.authoredOrder - b.authoredOrder);
++    const challenge = ordered.find((entry) => !progress.resolvedChallengeIds.includes(entry.id));
++
++    if (!challenge) {
++      if (this.state.tileChallengeProgress !== progress) this.state = { ...this.state, tileChallengeProgress: progress };
++      return false;
++    }
++
++    const createdAt = new Date().toISOString();
++    const encounter = {
++      id: challenge.id,
++      type: "threat" as const,
++      cardType: "hazard" as const,
++      title: challenge.name,
++      text: `Recurring ${challenge.challengeType} challenge at ${sector.name}.`,
++      flavor: challenge.lore,
++      severity: Math.max(1, Math.min(5, Math.ceil(challenge.difficulty / 3))),
++      stat: challenge.testStat,
++      difficulty: challenge.difficulty,
++      successEffect: challenge.successEffect,
++      failEffect: challenge.failureEffect,
++      enemyFamily: "hazard" as const,
++      threatLane: "blue" as const,
++      rarity: "common" as const,
++      tempo: "stall" as const
++    };
++
++    this.state = {
++      ...this.state,
++      sequence: this.state.sequence + 1,
++      phase: "action",
++      resolutionSource: "tileChallenge",
++      tileChallengeProgress: progress,
++      pendingTileChallenge: {
++        id: `tile-challenge:${sector.id}:${challenge.id}:${seatId}:${createdAt}`,
++        challengeId: challenge.id,
++        sectorId: sector.id,
++        seatId,
++        challengeType: challenge.challengeType,
++        testStat: challenge.testStat,
++        difficulty: challenge.difficulty,
++        sourceTags: challenge.tags,
++        successEffect: challenge.successEffect,
++        failureEffect: challenge.failureEffect,
++        authoredOrder: challenge.authoredOrder,
++        totalChallenges: ordered.length,
++        rolled: false,
++        modifierSources: [],
++        createdAt
++      },
++      currentEncounter: encounter,
++      activeResolution: {
++        id: `tile-challenge:${seatId}:${challenge.id}:${createdAt}`,
++        playerId: seatId,
++        source: challenge.challengeType === "anomaly" ? "anomaly" : "threat",
++        stage: "card_reveal",
++        card: { id: challenge.artCardId, title: challenge.name, type: challenge.challengeType, flavor: challenge.lore, artType: "threat" },
++        battle: { enemyName: challenge.name, stat: challenge.testStat, difficulty: challenge.difficulty, modifiers: [] },
++        outcome: { title: "Recurring tile challenge", text: `${challenge.name} remains on ${sector.name} after resolution.`, effects: [] }
++      },
++      eventLog: [...this.state.eventLog, { type: "TILE_CHALLENGE_STARTED", seatId, challengeId: challenge.id, sectorId: sector.id, createdAt }]
++    };
++    return true;
++  }
++
+   private shouldContinueClearedEncounterSector(seatId: string): boolean {
+     if (this.state.resolutionSource !== "encounter" || this.state.lastOutcomeSummary?.success !== true) {
+       return false;
+@@ -5316,10 +5430,13 @@ export class GameRoomServer {
+ 
+     const escalationModifier = getEscalationModifier(this.state.escalationLevel);
+     const keyedModifiers = this.resolveThreatEffectKeys(intent.seatId, encounter, encounter.combatEffectKeys, "beforeCombat");
+-    const modifierSources = this.buildStatModifierSources(player, intent.stat, "check", {
++    const modifierSources = [
++      ...this.buildStatModifierSources(player, intent.stat, "check", {
+       scenarioModifier: this.getScenarioSkillModifier(intent.seatId),
+       keyedPlayerModifier: keyedModifiers.playerBonusModifier ?? 0
+-    });
++      }),
++      ...(this.state.pendingTileChallenge?.modifierSources ?? []).map(({ label, value }) => ({ label, value }))
++    ];
+     const roll = rollDice(2, 6, this.randomSource);
+     const statBonus = this.sumModifierSources(modifierSources);
+     const characterDifficultyModifier = this.getCharacterDifficultyModifier(player, encounter);
+@@ -5497,6 +5614,12 @@ export class GameRoomServer {
+       cardId: encounter.id,
+       createdAt: new Date().toISOString()
+     } satisfies DiceRollStartedAction);
++    if (this.state.pendingTileChallenge?.id && this.state.pendingTileChallenge.seatId === intent.seatId) {
++      this.state = {
++        ...this.state,
++        pendingTileChallenge: { ...this.state.pendingTileChallenge, rolled: true }
++      };
++    }
+     this.broadcastPatch();
+ 
+     const completeRoll = () => {
+@@ -8729,6 +8852,18 @@ function isSeatCharacterSelectedForProjection(state: GameState, seat: GameState[
+   return Boolean(seat.characterId) || playerSeatIds.has(seat.seatId);
+ }
+ 
++function summarizeTileChallengeEffect(effect: EncounterEffect): string {
++  switch (effect.type) {
++    case "gain_note": return effect.text;
++    case "gain_scar": return "Gain the authored Scar.";
++    case "take_wound": return `Suffer ${effect.amount} Wound${effect.amount === 1 ? "" : "s"}.`;
++    case "heal_wound": return `Heal ${effect.amount} Wound${effect.amount === 1 ? "" : "s"}.`;
++    case "gain_salvage": return `Gain ${effect.amount} Salvage.`;
++    case "sequence": return effect.effects.map(summarizeTileChallengeEffect).join(" ");
++    default: return "Resolve the authored challenge effect.";
++  }
++}
++
+ export function createTvProjection(
+   state: GameState,
+   movementPreviewBySeatId: ReadonlyMap<string, string> = new Map()
+@@ -8875,7 +9010,16 @@ export function createTvProjection(
+         kicked: seat.kicked
+       };
+     }),
+-    sectors: state.sectors,
++    sectors: state.sectors.map((sector) => ({
++      ...sector,
++      tileChallenges: (sector.tileChallenges ?? []).map((challenge) => ({
++        id: challenge.id, name: challenge.name, challengeType: challenge.challengeType, sectorId: challenge.sectorId,
++        testStat: challenge.testStat, difficulty: challenge.difficulty, trigger: challenge.trigger,
++        authoredOrder: challenge.authoredOrder, recurring: true as const, tags: challenge.tags, lore: challenge.lore,
++        artCardId: challenge.artCardId, successSummary: summarizeTileChallengeEffect(challenge.successEffect),
++        failureSummary: summarizeTileChallengeEffect(challenge.failureEffect)
++      }))
++    })),
+     players: visiblePlayers.map((player) => ({
+       seatId: player.seatId,
+       character: {
+@@ -8928,6 +9072,17 @@ export function createTvProjection(
+         }
+       : null,
+     pendingEnemyRoll: state.pendingEnemyRoll,
++    pendingTileChallenge: state.pendingTileChallenge ? {
++      challengeId: state.pendingTileChallenge.challengeId,
++      sectorId: state.pendingTileChallenge.sectorId,
++      seatId: state.pendingTileChallenge.seatId,
++      challengeType: state.pendingTileChallenge.challengeType,
++      testStat: state.pendingTileChallenge.testStat,
++      difficulty: state.pendingTileChallenge.difficulty,
++      authoredOrder: state.pendingTileChallenge.authoredOrder,
++      totalChallenges: state.pendingTileChallenge.totalChallenges,
++      rolled: state.pendingTileChallenge.rolled
++    } : null,
+     outcomeSummary: state.lastOutcomeSummary,
+     rivalryAgendaCompletion: buildPublicRivalryAgendaCompletion(state),
+     rivalryAgendaReveal: buildPublicRivalryAgendaReveal(state),
+@@ -8994,7 +9149,7 @@ export function createPhoneProjection(state: GameState, seatId: string, forcePri
+     activeSeatIndex: state.activeSeatIndex,
+     seats: publicProjection.seats,
+     turnOrder: publicProjection.turnOrder,
+-    sectors: state.sectors,
++    sectors: publicProjection.sectors,
+     players: publicProjection.players,
+     objectUseStates: buildPhoneObjectUseStates(state, player),
+     escalationLevel: publicProjection.escalationLevel,
+@@ -9003,6 +9158,19 @@ export function createPhoneProjection(state: GameState, seatId: string, forcePri
+     availableContracts: state.availableContracts,
+     encounter: state.currentEncounter,
+     pendingEnemyRoll: state.pendingEnemyRoll,
++    pendingTileChallenge: publicProjection.pendingTileChallenge,
++    pendingTileChallengePrivate: state.pendingTileChallenge?.seatId === seatId ? {
++      id: state.pendingTileChallenge.id,
++      challengeId: state.pendingTileChallenge.challengeId,
++      sectorId: state.pendingTileChallenge.sectorId,
++      seatId: state.pendingTileChallenge.seatId,
++      challengeType: state.pendingTileChallenge.challengeType,
++      testStat: state.pendingTileChallenge.testStat,
++      difficulty: state.pendingTileChallenge.difficulty,
++      authoredOrder: state.pendingTileChallenge.authoredOrder,
++      totalChallenges: state.pendingTileChallenge.totalChallenges,
++      rolled: state.pendingTileChallenge.rolled
++    } : null,
+     outcomeSummary: state.lastOutcomeSummary,
+     rivalryAgendaCompletion: publicProjection.rivalryAgendaCompletion,
+     rivalryAgendaReveal: publicProjection.rivalryAgendaReveal,
+diff --git a/src/server/sessionState.ts b/src/server/sessionState.ts
+index 8ef892e..9542678 100644
+--- a/src/server/sessionState.ts
++++ b/src/server/sessionState.ts
+@@ -4,12 +4,14 @@ import { loadAfflictionCards } from "../game/content/afflictions.js";
+ import { loadContracts } from "../game/content/contracts.js";
+ import { loadFollowers } from "../game/content/followers.js";
+ import { loadGear } from "../game/content/gear.js";
++import { loadTileChallenges } from "../game/content/tileChallenges.js";
+ import { createCanonicalSectorGraph, validateCanonicalSectorGraph } from "../game/data/canonicalSectorGraph.js";
+ import { getScenarioDefinition, SCENARIOS } from "../game/data/scenarios.js";
+ import { createInitialScenarioProgress } from "../game/rules/scenarioAmbient.js";
+ import { applyStartingLoadout, createInitialSoloRerollCharges, type StartingLoadoutCatalogs } from "../game/rules/startingLoadout.js";
+ import { getHeatThresholdForMode, getWoundThresholdForMode } from "../game/rules/soloTuning.js";
+ import { createInitialAfflictionUsageState } from "../game/rules/afflictions.js";
++import { attachTileChallengesToSectors } from "../game/rules/tileChallenges.js";
+ import type { Character } from "../game/schema/character.schema.js";
+ import type { GameMode, GameState, InteractionMode, PlayerState, SessionMode } from "../game/schema/session.schema.js";
+ import { createJoinToken } from "./auth.js";
+@@ -100,6 +102,8 @@ export function createInitialSessionState(
+ ): GameState {
+   const characters = loadCharacters();
+   const sectors = createCanonicalSectorGraph();
++  const tileChallenges = [...loadTileChallenges().values()];
++  const sectorsWithChallenges = attachTileChallengesToSectors(sectors, tileChallenges);
+   const gear = loadGear();
+   const followers = loadFollowers();
+   const availableContracts = [...loadContracts().values()];
+@@ -117,7 +121,7 @@ export function createInitialSessionState(
+     return character;
+   });
+ 
+-  validateCanonicalSectorGraph(sectors);
++  validateCanonicalSectorGraph(sectorsWithChallenges);
+ 
+   return {
+     sessionId,
+@@ -138,7 +142,7 @@ export function createInitialSessionState(
+     woundThreshold: getWoundThresholdForMode(sessionMode),
+     sequence: 0,
+     escalationLevel: 0,
+-    sectors,
++    sectors: sectorsWithChallenges,
+     seats: configuredSeats.map(({ seatId, characterId }) => ({
+       seatId,
+       characterId,
+@@ -156,7 +160,7 @@ export function createInitialSessionState(
+       createPlayerState(
+         seatId,
+         selectedCharacters[index]!,
+-        selectedCharacters[index]?.currentSpaceId ?? sectors[0]?.id ?? "ashwake-crossing",
++        selectedCharacters[index]?.currentSpaceId ?? sectorsWithChallenges[0]?.id ?? "ashwake-crossing",
+         index,
+         sessionMode,
+         loadoutCatalogs
+@@ -177,6 +181,8 @@ export function createInitialSessionState(
+     pendingEnemyRoll: null,
+     pendingEffect: null,
+     pendingFailureReaction: null,
++    pendingTileChallenge: null,
++    tileChallengeProgress: null,
+     activeResolution: null,
+     lastOutcomeSummary: null
+   };
