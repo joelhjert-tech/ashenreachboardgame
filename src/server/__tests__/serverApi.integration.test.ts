@@ -573,7 +573,7 @@ describe("server API scenario flow", () => {
     expect(rejoined.payload.seatId).toBe(joined.payload.seatId);
   });
 
-  it("lets same-machine controller tabs claim distinct direct seats and ready independently", async () => {
+  it("assigns distinct seats server-side to same-machine controller tabs and rejects authored seat ids", async () => {
     harness = await startAshenReachServer({ port: createTestPort(), logUrls: false });
     const baseUrl = `http://127.0.0.1:${harness.port}`;
 
@@ -590,6 +590,17 @@ describe("server API scenario flow", () => {
       playerCount: 2
     });
 
+    const forgedSeat = await postJson<{ error: string }>(baseUrl, "/api/session/join", {
+      roomCode: created.payload.roomCode,
+      displayName: "Seat Forger",
+      characterId: "grave-engineer",
+      seatId: "seat-2"
+    });
+
+    expect(forgedSeat.status).toBe(400);
+    expect(forgedSeat.payload.error).toContain("server-authoritative");
+    expect(harness.roomServer.getState().seats.every((seat) => seat.displayName === null)).toBe(true);
+
     const first = await postJson<{
       roomCode: string;
       seatId: string;
@@ -597,8 +608,7 @@ describe("server API scenario flow", () => {
     }>(baseUrl, "/api/session/join", {
       roomCode: created.payload.roomCode,
       displayName: "Tab One",
-      characterId: "void-marshal",
-      seatId: "seat-1"
+      characterId: "void-marshal"
     });
 
     const second = await postJson<{
@@ -608,8 +618,7 @@ describe("server API scenario flow", () => {
     }>(baseUrl, "/api/session/join", {
       roomCode: created.payload.roomCode,
       displayName: "Tab Two",
-      characterId: "signal-witch",
-      seatId: "seat-2"
+      characterId: "signal-witch"
     });
 
     await selectFirstStartingMissionViaApi(baseUrl, created.payload.roomCode, first.payload.seatToken, harness, first.payload.seatId);

@@ -309,7 +309,12 @@ function createHttpServer(qaFixturesEnabled: boolean): HttpServer {
           return;
         }
 
-        const joinResult = roomServer.joinSeat(body.displayName.trim(), body.characterId, body.seatId);
+        if (body.seatId !== undefined) {
+          sendJson(response, 400, { error: "Seat assignment is server-authoritative" });
+          return;
+        }
+
+        const joinResult = roomServer.joinSeat(body.displayName.trim(), body.characterId);
         sendJson(response, 200, joinResult);
         return;
       }

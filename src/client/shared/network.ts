@@ -214,7 +214,6 @@ export async function joinSession(input: {
   roomCode: string;
   displayName: string;
   characterId?: string;
-  seatId?: string;
 }): Promise<PhoneSessionAuth & { isHostPhone?: boolean }> {
   const response = await fetch(`${apiOrigin}/api/session/join`, {
     method: "POST",

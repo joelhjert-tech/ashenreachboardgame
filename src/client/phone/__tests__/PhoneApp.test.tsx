@@ -352,6 +352,21 @@ describe("PhoneApp", () => {
     expect(screen.queryByRole("button", { name: /show tabs/i })).not.toBeInTheDocument();
   });
 
+  it("disables repeated join attempts after the server reports a full room", async () => {
+    networkMocks.joinSession.mockRejectedValue(new Error("No open seats remain"));
+    render(<PhoneApp />);
+
+    fireEvent.change((await screen.findAllByLabelText(/room code/i))[0]!, { target: { value: "RT7P4" } });
+    fireEvent.change(screen.getAllByLabelText(/player name/i)[0]!, { target: { value: "Late Player" } });
+    fireEvent.click(screen.getByRole("button", { name: /join game/i }));
+
+    expect(await screen.findByText("No open seats remain")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Room Full" })).toBeDisabled();
+
+    fireEvent.change(screen.getAllByLabelText(/player name/i)[0]!, { target: { value: "Another Player" } });
+    expect(screen.getByRole("button", { name: /join game/i })).toBeEnabled();
+  });
+
   it("claims a room seat before showing character selection", async () => {
     vi.mocked(useRoomSubscription).mockReturnValue({
       patch: createLobbyPhonePatch(),
@@ -753,7 +768,7 @@ describe("PhoneApp", () => {
     expect(screen.getByText(/windows firewall/i)).toBeInTheDocument();
   });
 
-  it("prefills room and requested seat from direct browser join links", async () => {
+  it("prefills the room but leaves seat assignment authoritative for direct browser links", async () => {
     window.history.replaceState(null, "", "/?room=RT7P4&seat=2");
     networkMocks.joinSession.mockResolvedValue({
       roomCode: "RT7P4",
@@ -770,8 +785,7 @@ describe("PhoneApp", () => {
     await waitFor(() => {
       expect(networkMocks.joinSession).toHaveBeenCalledWith({
         roomCode: "RT7P4",
-        displayName: "Joel",
-        seatId: "seat-2"
+        displayName: "Joel"
       });
     });
   });

@@ -237,13 +237,13 @@ export function PhoneApp(): ReactElement {
   const [formState, setFormState] = useState(() => ({
     roomCode: readInitialRoomCode(),
     displayName: "",
-    characterId: "",
-    requestedSeatId: readRequestedSeatId()
+    characterId: ""
   }));
   const [pendingCharacterId, setPendingCharacterId] = useState<string | null>(null);
   const [characterSelectionRetryRequired, setCharacterSelectionRetryRequired] = useState(false);
   const [auth, setAuth] = useState<PhoneSessionAuth | null>(() => readStoredAuth());
   const [joinError, setJoinError] = useState<string | null>(null);
+  const joinUnavailable = joinError === "No open seats remain";
   const isLandscape = useLandscapeMode();
   const { patch, error, sendIntent, status, debugEvents, clearDebugEvents } = useRoomSubscription({
     view: "phone",
@@ -313,8 +313,7 @@ export function PhoneApp(): ReactElement {
       }));
       const nextAuth = await joinSession({
         roomCode: requestedRoomCode,
-        displayName: formState.displayName.trim(),
-        ...(formState.requestedSeatId ? { seatId: formState.requestedSeatId } : {})
+        displayName: formState.displayName.trim()
       });
 
       setAuth(nextAuth);
@@ -512,9 +511,10 @@ export function PhoneApp(): ReactElement {
                         inputMode="text"
                         spellCheck={false}
                         value={formState.roomCode}
-                        onChange={(event) =>
-                          setFormState((current) => ({ ...current, roomCode: event.target.value.toUpperCase() }))
-                        }
+                        onChange={(event) => {
+                          setJoinError(null);
+                          setFormState((current) => ({ ...current, roomCode: event.target.value.toUpperCase() }));
+                        }}
                         placeholder="ABCDE"
                         required
                       />
@@ -526,9 +526,10 @@ export function PhoneApp(): ReactElement {
                         autoComplete="nickname"
                         spellCheck={false}
                         value={formState.displayName}
-                        onChange={(event) =>
-                          setFormState((current) => ({ ...current, displayName: event.target.value }))
-                        }
+                        onChange={(event) => {
+                          setJoinError(null);
+                          setFormState((current) => ({ ...current, displayName: event.target.value }));
+                        }}
                         placeholder="Seat name"
                         required
                       />
@@ -536,8 +537,12 @@ export function PhoneApp(): ReactElement {
                   </section>
                   {(joinError || error) && <p className="error">{joinError ?? error}</p>}
                   <div className="phone-join-actions">
-                    <button className="phone-button phone-button-primary" type="submit" disabled={joiningRoom}>
-                      {joiningRoom ? "Joining..." : "Join Game"}
+                    <button
+                      className="phone-button phone-button-primary"
+                      type="submit"
+                      disabled={joiningRoom || joinUnavailable}
+                    >
+                      {joiningRoom ? "Joining..." : joinUnavailable ? "Room Full" : "Join Game"}
                     </button>
                     {debugOpen && <MobileDebugDrawer events={debugEvents} onClear={clearDebugEvents} />}
                   </div>

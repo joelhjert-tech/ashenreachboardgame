@@ -900,7 +900,7 @@ export class GameRoomServer {
     this.movementPreviewBySeatId.clear();
   }
 
-  joinSeat(displayName: string, characterId?: string, requestedSeatId?: string): JoinSeatResult {
+  joinSeat(displayName: string, characterId?: string): JoinSeatResult {
     const lobbyJoin = this.state.status === "lobby" && this.state.phase === "start";
     const activeLateJoin = this.state.status === "active" && this.state.sessionMode === "multiplayer";
 
@@ -912,12 +912,10 @@ export class GameRoomServer {
       throw new Error("Nemesis Relay does not support joining after the game starts");
     }
 
-    const seat = requestedSeatId
-      ? this.state.seats.find((entry) => entry.seatId === requestedSeatId && !entry.kicked)
-      : this.state.seats.find((entry) => !entry.displayName && !entry.kicked);
+    const seat = this.state.seats.find((entry) => !entry.displayName && !entry.kicked);
 
     if (!seat) {
-      throw new Error(requestedSeatId ? `Requested seat ${requestedSeatId} is not available` : "No open seats remain");
+      throw new Error("No open seats remain");
     }
 
     if (seat.displayName) {
@@ -4912,6 +4910,17 @@ export class GameRoomServer {
 
     if (seat.kicked) {
       throw new IntentRejectedError("KICK_SEAT", `Seat ${targetSeatId} has already been kicked`);
+    }
+
+    if (this.state.status === "active" && seat.displayName && !this.state.turnOrder.includes(targetSeatId)) {
+      const pendingClient = [...this.clients].find((client) => client.view === "phone" && client.seatId === targetSeatId);
+      if (pendingClient) {
+        pendingClient.superseded = true;
+        this.clients.delete(pendingClient);
+        pendingClient.socket.close(4005, "Pending join cancelled by host");
+      }
+      this.releaseSeat(targetSeatId);
+      return;
     }
 
     const remainingBeforeKick = this.getRemainingSeatIds();
