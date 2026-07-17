@@ -186,7 +186,7 @@ import type {
   UseGearAction,
   RollModifierSource
 } from "../game/engine/actions.js";
-import { getEquippedGearModifierSources } from "../game/engine/gear.js";
+import { getEquippedGearItem, getEquippedGearModifierSources } from "../game/engine/gear.js";
 import { getMovementProfile } from "../game/rules/movementPhase.js";
 import type {
   AnomalyCard,
@@ -9894,7 +9894,27 @@ export function createTvProjection(
             ultimateCompanion: follower.ultimateCompanion,
             exhausted: follower.exhausted
           })),
-        equippedGear: player.character.equippedGear
+        equippedGear: player.character.equippedGear,
+        equippedGearDetails: (["weapon", "armor", "utility"] as const).flatMap((slot) => {
+          const item = getEquippedGearItem(player.character, slot);
+          if (!item) return [];
+          return [{
+            slot,
+            id: item.id,
+            ...(item.instanceId ? { instanceId: item.instanceId } : {}),
+            name: item.name,
+            statBonus: item.statBonus,
+            ...(item.effectModel ? { effectModel: item.effectModel } : {}),
+            ...(item.conditionType ? { conditionType: item.conditionType } : {}),
+            ...(item.useLimit === "charge" || item.effectModel === "charged"
+              ? {
+                  currentCharges: item.currentCharges ?? item.charges ?? item.startingCharges ?? 0,
+                  maxCharges: item.maxCharges ?? item.charges ?? item.startingCharges ?? 0
+                }
+              : {}),
+            ...(item.effectModel === "exhaust" ? { exhausted: item.exhausted ?? false } : {})
+          }];
+        })
       },
       sectorId: player.character.currentSpaceId
     })),

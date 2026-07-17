@@ -254,6 +254,9 @@ describe("BoardMap", () => {
 
     expect(screen.getByTestId("sector-node-emberwatch-step")).toHaveAttribute("data-legal-target", "true");
     expect(screen.getByTestId("sector-node-glassmere-spindle")).toHaveAttribute("data-legal-target", "true");
+    expect(screen.getByTestId("sector-node-emberwatch-step")).toHaveClass("talisman-board-tile-legal", "talisman-board-tile-anomaly");
+    expect(screen.getByTestId("sector-node-glassmere-spindle")).toHaveClass("talisman-board-tile-legal", "talisman-board-tile-anomaly");
+    expect(screen.getByLabelText("Current operative location")).toHaveTextContent("Current");
     expect(screen.getByTestId("sector-node-mirecoil-beacon")).toHaveAttribute("data-legal-target", "false");
     expect(screen.getByTestId("sector-node-hollow-veil-yard")).toHaveAttribute("data-legal-target", "false");
     expect(screen.queryByTestId("movement-route-emberwatch-step-0-ashwake-crossing-mirecoil-beacon")).not.toBeInTheDocument();

@@ -2,7 +2,7 @@ import type { CSSProperties, ReactElement } from "react";
 import { getChallengeThemeStyle } from "../../game/ui/challengeTheme.js";
 import type { AbilityChangeItem } from "../shared/abilityTelemetry.js";
 import { ChallengeBadge } from "../shared/ChallengeBadge.js";
-import type { Stat } from "../shared/types.js";
+import type { PublicEquippedGearSummary, Stat } from "../shared/types.js";
 
 interface HostPlayerCardAttributes {
   cmd: number | null;
@@ -19,8 +19,6 @@ export interface HostPlayerCardProps {
   playerName?: string | null;
   characterName: string | null;
   characterTitle: string | null;
-  characterRole?: string | null;
-  characterComplexity?: string | null;
   portraitUrl: string | null;
   locationName: string;
   fieldStatus: string;
@@ -28,6 +26,7 @@ export interface HostPlayerCardProps {
   scars: number | null;
   attributes: HostPlayerCardAttributes;
   gearSummary: string;
+  equippedGearDetails?: PublicEquippedGearSummary[];
   contractSummary: string;
   specialAbilitySummary: string;
   companionBadges?: Array<{
@@ -40,7 +39,6 @@ export interface HostPlayerCardProps {
   latestAbilityTriggerSummary?: string | null;
   abilityChangeItems?: AbilityChangeItem[];
   isActiveTurn: boolean;
-  isReady: boolean;
   className?: string;
 }
 
@@ -63,8 +61,6 @@ export function HostPlayerCard({
   playerName = null,
   characterName,
   characterTitle,
-  characterRole = null,
-  characterComplexity = null,
   portraitUrl,
   locationName,
   fieldStatus,
@@ -72,13 +68,13 @@ export function HostPlayerCard({
   scars,
   attributes,
   gearSummary,
+  equippedGearDetails = [],
   contractSummary,
   specialAbilitySummary,
   companionBadges = [],
   latestAbilityTriggerSummary = null,
   abilityChangeItems = [],
   isActiveTurn,
-  isReady,
   className
 }: HostPlayerCardProps): ReactElement {
   const seatLabel = `Seat ${seatId}`;
@@ -116,14 +112,7 @@ export function HostPlayerCard({
           <div className="host-player-card-nameblock">
             <p className="host-player-card-seat">{seatLabel}</p>
             <h3>{playerName ?? characterName ?? "Open Seat"}</h3>
-            <p className="host-player-card-title">
-              {characterName && playerName ? `${characterName} · ${characterTitle ?? "Operative"}` : characterTitle ?? "Unclaimed operative frame"}
-            </p>
-            {(characterRole || characterComplexity) && (
-              <p className="host-player-card-role">
-                {[characterRole, characterComplexity].filter(Boolean).join(" | ")}
-              </p>
-            )}
+            {!playerName && <p className="host-player-card-title">{characterTitle ?? "Unclaimed operative frame"}</p>}
           </div>
 
           <div className="host-player-card-status-row">
@@ -159,6 +148,26 @@ export function HostPlayerCard({
             <strong>Gear</strong>
             <span>{gearSummary}</span>
           </p>
+          {equippedGearDetails.length > 0 && (
+            <div className="host-player-card-equipped" aria-label="Equipped gear bonuses">
+              {equippedGearDetails.map((item) => {
+                const passive = item.effectModel === "conditional" && item.conditionType === "battle"
+                  ? `${item.statBonus.amount >= 0 ? "+" : ""}${item.statBonus.amount} ${item.statBonus.stat.toUpperCase()} in battles`
+                  : `${item.statBonus.amount >= 0 ? "+" : ""}${item.statBonus.amount} ${item.statBonus.stat.toUpperCase()} · always active`;
+                const abilityState = item.currentCharges !== undefined
+                  ? `${item.currentCharges}/${item.maxCharges ?? item.currentCharges} charges`
+                  : item.effectModel === "exhaust"
+                    ? item.exhausted ? "Exhausted" : "Ready"
+                    : null;
+                return (
+                  <span key={`${item.slot}-${item.instanceId ?? item.id}`}>
+                    <b>{item.name}</b>
+                    <small>{passive}{abilityState ? ` · ${abilityState}` : ""}</small>
+                  </span>
+                );
+              })}
+            </div>
+          )}
           <p>
             <strong>Contract</strong>
             <span>{contractSummary}</span>
@@ -213,7 +222,6 @@ export function HostPlayerCard({
         ) : (
           <div className="host-player-card-control-panel">
             {isActiveTurn && <span className="host-player-card-badge">Active Player</span>}
-            <span className="host-player-card-sidechip">{isReady ? "Ready" : "Standby"}</span>
             <span className="host-player-card-sidechip">{isConnected ? "Link stable" : "Link lost"}</span>
             <span className="host-player-card-sidechip">{isActiveTurn ? "Turn live" : "Turn waiting"}</span>
           </div>

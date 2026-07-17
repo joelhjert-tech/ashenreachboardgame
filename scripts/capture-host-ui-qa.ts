@@ -88,7 +88,7 @@ async function main(): Promise<void> {
   }
 
   await tv.goto(`${clientOrigin}/tv`);
-  await tv.getByText(/Waiting for Host Phone/i).first().waitFor();
+  await tv.getByText(/Waiting for Host Phone|Loading Host TV/i).first().waitFor();
   await tv.screenshot({ path: join(output, "startup-no-room-1920x1080.png"), fullPage: false });
   await tv.setViewportSize({ width: 1366, height: 768 });
   await tv.screenshot({ path: join(output, "startup-no-room-1366x768.png"), fullPage: false });
@@ -135,11 +135,28 @@ async function main(): Promise<void> {
       if (boxes.some((box) => !box || box.x < 0 || box.x + box.width > 1366)) {
         throw new Error(`Movement HUD escaped the 1366 viewport: ${JSON.stringify(boxes)}`);
       }
+      await phone.getByTestId("movement-destination-row").first().getByRole("button", { name: /^Select / }).click();
+      await phone.getByRole("button", { name: "Confirm Move" }).click();
+      await tv.getByTestId("tv-movement-journey").waitFor();
+      await tv.setViewportSize({ width: 1366, height: 768 });
+      await tv.screenshot({ path: join(output, "movement-journey-1366x768.png"), fullPage: false });
+      await tv.setViewportSize({ width: 1920, height: 1080 });
+      await tv.screenshot({ path: join(output, "movement-journey-1920x1080.png"), fullPage: false });
+      await tv.getByTestId("tv-movement-journey").waitFor({ state: "detached" });
+      if (await tv.getByTestId("tv-host-battle-chamber").count()) {
+        throw new Error("Movement arrival incorrectly opened the battle chamber");
+      }
+      await captureTv(tv, output, "movement-arrival-challenge");
     }
     if (entry.state === "battle-success") {
       await tv.getByTestId("host-battle-result-banner").getByText("Tie succeeds", { exact: true }).waitFor();
       const defeatedRows = await tv.getByTestId("result-delta-threatDefeated").count();
       if (defeatedRows > 1) throw new Error(`Battle duplicated ${defeatedRows} Threat defeated rows`);
+    }
+    if (entry.state === "shop-location-open") {
+      await phone.getByRole("button", { name: /Browse Equipment/i }).click();
+      await tv.locator(".host-shop-preview-media img").first().waitFor();
+      await captureTv(tv, output, "shop-stock-revealed");
     }
   }
 

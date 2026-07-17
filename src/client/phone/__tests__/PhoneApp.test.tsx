@@ -493,6 +493,45 @@ describe("PhoneApp", () => {
     });
   });
 
+  it("vibrates once when authoritative turn ownership changes to this phone", async () => {
+    storeControllerAuth();
+    const vibrate = vi.fn(() => true);
+    Object.defineProperty(navigator, "vibrate", { configurable: true, value: vibrate });
+    const waitingPatch = createConfirmedCharacterPatch("char_deepdale");
+    waitingPatch.payload.status = "active";
+    waitingPatch.phase = "action";
+    waitingPatch.payload.turnOrder = ["seat-2", "seat-1"];
+    waitingPatch.payload.activeSeatIndex = 0;
+    vi.mocked(useRoomSubscription).mockReturnValue({
+      patch: waitingPatch,
+      error: null,
+      sendIntent: vi.fn(),
+      status: "open",
+      debugEvents: [],
+      clearDebugEvents: vi.fn()
+    });
+
+    const view = render(<PhoneApp />);
+    expect(vibrate).not.toHaveBeenCalled();
+
+    const activePatch = structuredClone(waitingPatch);
+    activePatch.sequence += 1;
+    activePatch.payload.activeSeatIndex = 1;
+    vi.mocked(useRoomSubscription).mockReturnValue({
+      patch: activePatch,
+      error: null,
+      sendIntent: vi.fn(),
+      status: "open",
+      debugEvents: [],
+      clearDebugEvents: vi.fn()
+    });
+    view.rerender(<PhoneApp />);
+
+    await waitFor(() => expect(vibrate).toHaveBeenCalledWith([160, 70, 160]));
+    view.rerender(<PhoneApp />);
+    expect(vibrate).toHaveBeenCalledTimes(1);
+  });
+
   it("opens private operative selection for a player joining an active game", async () => {
     storeControllerAuth();
     const sendIntent = vi.fn();

@@ -957,7 +957,7 @@ describe("TvApp", () => {
     expect(mockCreateSession).not.toHaveBeenCalled();
   });
 
-  it("shows a disconnected ready player without clearing setup state", async () => {
+  it("shows a disconnected player without repeating character, mission, or Ready setup state", async () => {
     window.localStorage.setItem("ashen-reach-tv-room-code", "RT7P4");
     window.localStorage.setItem("ashen-reach-tv-host-token", "host:RT7P4:secret");
     const patch = createPatch();
@@ -981,8 +981,9 @@ describe("TvApp", () => {
 
     const operatives = await screen.findByRole("complementary", { name: /operatives/i });
     expect(operatives).toHaveTextContent(/disconnected/i);
-    expect(operatives).toHaveTextContent(/mission: crossing thread/i);
-    expect(operatives).toHaveTextContent(/ready/i);
+    expect(operatives).not.toHaveTextContent(/mission: crossing thread/i);
+    expect(operatives).not.toHaveTextContent(/ready/i);
+    expect(operatives).not.toHaveTextContent(/deep route delver/i);
   });
 
   it("prioritizes active-operative reconnect guidance over stale shop framing", async () => {
@@ -1224,16 +1225,19 @@ describe("TvApp", () => {
       clearDebugEvents: vi.fn()
     });
     rerender(<TvApp />);
-    const arrivalFocus = await screen.findByTestId("tv-arrival-focus");
-    expect(arrivalFocus).toHaveTextContent(/arrived at anchor market/i);
-    expect(arrivalFocus).not.toHaveTextContent(/combat|battle/i);
+    const journey = await screen.findByTestId("tv-movement-journey");
+    expect(journey).toHaveTextContent(/movement journey/i);
+    expect(journey).toHaveTextContent(/anchor market/i);
+    expect(journey).not.toHaveTextContent(/combat|battle/i);
     expect(screen.queryByTestId("host-battle-overlay")).not.toBeInTheDocument();
     expect(screen.getByText("Tactical map")).toBeInTheDocument();
 
-    await waitFor(() => expect(screen.queryByTestId("tv-arrival-focus")).not.toBeInTheDocument(), { timeout: 4_500 });
+    await waitFor(() => expect(screen.queryByTestId("tv-movement-journey")).not.toBeInTheDocument(), { timeout: 4_500 });
     rerender(<TvApp />);
-    expect(await screen.findByTestId("host-battle-overlay")).toBeInTheDocument();
-    expect(screen.queryByTestId("tv-arrival-focus")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("host-battle-overlay")).not.toBeInTheDocument();
+    expect(screen.getByTestId("host-live-status")).toHaveTextContent(/destination challenge/i);
+    expect(screen.getByText("Tactical map")).toBeInTheDocument();
+    expect(screen.queryByTestId("tv-movement-journey")).not.toBeInTheDocument();
   });
 
   it("shows sector exploration math in the sector brief without duplicating private data", async () => {
@@ -1480,9 +1484,12 @@ describe("TvApp", () => {
     render(<TvApp />);
 
     const chamber = await screen.findByTestId("tv-host-battle-chamber");
+    const liveStatus = screen.getByTestId("host-live-status");
     expect(chamber).toHaveTextContent(/rift whispers/i);
     expect(chamber).toHaveTextContent(/signal/i);
     expect(within(chamber).getByTestId("host-battle-result-banner")).toHaveTextContent(/resolving/i);
+    expect(liveStatus).toHaveTextContent(/tile challenge/i);
+    expect(liveStatus).not.toHaveTextContent(/battle resolving/i);
     expect(chamber).not.toHaveTextContent(/previous arrival succeeded/i);
     expect(chamber).not.toHaveTextContent(/use choir lantern|remaining charges|private/i);
     expect(screen.queryByRole("region", { name: /recurring tile challenges/i })).not.toBeInTheDocument();

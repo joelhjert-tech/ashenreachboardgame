@@ -1,7 +1,9 @@
 import type { ActiveResolution, PublicPatchPayload, PublicPlayer, StatePatch } from "../shared/types.js";
 
 function isHostResolution(resolution: ActiveResolution | null | undefined): boolean {
-  return Boolean(resolution?.battle);
+  // Movement arrival checks remain map events. They use the shared check math
+  // shape, but must not take over the TV as an enemy battle chamber.
+  return Boolean(resolution?.battle && resolution.source !== "movement");
 }
 
 export function isHostBattleActive(

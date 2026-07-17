@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type CSSProperties, type FormEvent, type ReactElement } from "react";
+import { useEffect, useMemo, useRef, useState, type CSSProperties, type FormEvent, type ReactElement } from "react";
 import { getChallengeThemeStyle } from "../../game/ui/challengeTheme.js";
 import {
   configureSessionFromPhone,
@@ -418,6 +418,28 @@ export function PhoneApp(): ReactElement {
   const activeContractCard = phonePatch?.payload.activeContractCard ?? null;
   const ownSeat = phonePatch?.payload.seats.find((seat) => seat.seatId === auth?.seatId) ?? null;
   const isSetupHost = Boolean(phonePatch?.payload.selfIsSetupHost);
+  const previousTurnRef = useRef<{ activeSeatId: string | null; status: PhonePatchPayload["status"] } | null>(null);
+
+  useEffect(() => {
+    const current = { activeSeatId, status: phonePatch?.payload.status ?? "lobby" as const };
+    const previous = previousTurnRef.current;
+    previousTurnRef.current = current;
+
+    if (
+      !auth ||
+      !phonePatch ||
+      current.status !== "active" ||
+      current.activeSeatId !== auth.seatId ||
+      !previous ||
+      (previous.activeSeatId === current.activeSeatId && previous.status === current.status)
+    ) {
+      return;
+    }
+
+    if (typeof navigator.vibrate === "function" && document.visibilityState !== "hidden") {
+      navigator.vibrate([160, 70, 160]);
+    }
+  }, [activeSeatId, auth, phonePatch?.payload.status]);
 
   useEffect(() => {
     if (!ownSeat) {

@@ -811,6 +811,49 @@ describe("PhoneInventoryPanel", () => {
     expect(within(card).queryByRole("button", { name: /use choir lantern/i })).not.toBeInTheDocument();
   });
 
+  it("uses the exact item charge count when a generic use-state is stale", () => {
+    const basePatch = createPatch();
+    const lantern = {
+      ...traceLens,
+      id: "choir-lantern",
+      name: "Choir Lantern",
+      instanceId: "choir-lantern-exact",
+      statBonus: { stat: "signal" as const, amount: 1 },
+      currentCharges: 1,
+      maxCharges: 2
+    };
+    const patch = {
+      ...basePatch,
+      objectUseStates: [{
+        source: "gear" as const,
+        id: lantern.id,
+        instanceId: lantern.instanceId,
+        usedThisTurn: false,
+        usedThisRound: false,
+        remainingUses: 2,
+        maxUses: 2,
+        disabledReason: null,
+        activeModifier: null
+      }],
+      self: basePatch.self ? {
+        ...basePatch.self,
+        character: {
+          ...basePatch.self.character,
+          heldGear: [lantern],
+          equippedGear: { weapon: null, armor: null, utility: lantern.id },
+          equippedGearInstances: { weapon: null, armor: null, utility: lantern.instanceId }
+        }
+      } : null
+    } satisfies PhonePatchPayload;
+
+    render(<PhoneInventoryPanel patch={patch} onIntent={vi.fn()} />);
+
+    const card = screen.getAllByLabelText(/choir lantern/i).find((element) => element.classList.contains("phone-inventory-card"));
+    expect(card).toBeDefined();
+    expect(card!).toHaveTextContent(/1 \/ 2 charges/i);
+    expect(within(card!).getByRole("meter", { name: /1 of 2 charges remaining/i })).toHaveAttribute("aria-valuenow", "1");
+  });
+
   it("shows suppression independently from an equipped item's passive and active definitions", () => {
     const basePatch = createPatch();
     const item = {

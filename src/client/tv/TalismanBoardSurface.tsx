@@ -288,6 +288,7 @@ export function TalismanBoardSurface({
             <div className="talisman-board-tile-scrim" />
             <span className="talisman-board-tile-region">{node.ring === "center" ? "Final" : tileLabelByRing[node.ring]}</span>
             <span className="talisman-board-tile-label">{node.label}</span>
+            {isActive && <span className="talisman-board-location-badge" aria-label="Current operative location">Current</span>}
             {node.id === "center_cinder_gate" ? (
               <span className="talisman-board-mission-badge" data-testid="final-confrontation-marker">
                 Final Confrontation · {centerConfrontationState}
