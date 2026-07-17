@@ -1,0 +1,3951 @@
+﻿diff --git a/content/cards/artifacts/artifact-ashen-route-compass.json b/content/cards/artifacts/artifact-ashen-route-compass.json
+index 1d9fbbe..946fa37 100644
+--- a/content/cards/artifacts/artifact-ashen-route-compass.json
++++ b/content/cards/artifacts/artifact-ashen-route-compass.json
+@@ -1,6 +1,12 @@
+ {
+   "id": "artifact-ashen-route-compass",
+   "type": "artifact",
++  "missionRewardEligible": true,
++  "eliteThreatRewardEligible": true,
++  "rareShopEligible": true,
++  "scenarioRewardEligible": true,
++  "startingEligible": false,
++  "normalShopCommon": false,
+   "artifactKind": "chargedRelic",
+   "title": "Ashen Route Compass",
+   "text": "A cracked surveyor compass that points toward survivable routes instead of north.",
+diff --git a/content/cards/artifacts/artifact-bell-votive.json b/content/cards/artifacts/artifact-bell-votive.json
+index 21b8571..e619a09 100644
+--- a/content/cards/artifacts/artifact-bell-votive.json
++++ b/content/cards/artifacts/artifact-bell-votive.json
+@@ -1,6 +1,12 @@
+ {
+   "id": "artifact-bell-votive",
+   "type": "artifact",
++  "missionRewardEligible": true,
++  "eliteThreatRewardEligible": true,
++  "rareShopEligible": true,
++  "scenarioRewardEligible": true,
++  "startingEligible": false,
++  "normalShopCommon": false,
+   "title": "Bell Votive Casket",
+   "text": "A sealed reliquary from the yard's watch chapel, still packed with route tabs and a hooked breach-knife.",
+   "flavor": "The dead packed for this crossing like they knew no one else would return for them.",
+diff --git a/content/cards/artifacts/artifact-black-route-fuse.json b/content/cards/artifacts/artifact-black-route-fuse.json
+index 7a840f0..15743a3 100644
+--- a/content/cards/artifacts/artifact-black-route-fuse.json
++++ b/content/cards/artifacts/artifact-black-route-fuse.json
+@@ -1,6 +1,12 @@
+ {
+   "id": "artifact-black-route-fuse",
+   "type": "artifact",
++  "missionRewardEligible": true,
++  "eliteThreatRewardEligible": true,
++  "rareShopEligible": true,
++  "scenarioRewardEligible": true,
++  "startingEligible": false,
++  "normalShopCommon": false,
+   "artifactKind": "cursedRelic",
+   "title": "Black Route Fuse",
+   "text": "A dead-road explosive cord that can turn a losing fight into a louder problem.",
+diff --git a/content/cards/artifacts/artifact-blackstar-ampoule.json b/content/cards/artifacts/artifact-blackstar-ampoule.json
+index b118878..a1eb0af 100644
+--- a/content/cards/artifacts/artifact-blackstar-ampoule.json
++++ b/content/cards/artifacts/artifact-blackstar-ampoule.json
+@@ -1,6 +1,12 @@
+ {
+   "id": "artifact-blackstar-ampoule",
+   "type": "artifact",
++  "missionRewardEligible": true,
++  "eliteThreatRewardEligible": true,
++  "rareShopEligible": true,
++  "scenarioRewardEligible": true,
++  "startingEligible": false,
++  "normalShopCommon": false,
+   "artifactKind": "consumableSalvage",
+   "title": "Blackstar Ampoule",
+   "text": "A sealed vial of starless residue that can swallow one terrible consequence.",
+diff --git a/content/cards/artifacts/artifact-choir-lantern.json b/content/cards/artifacts/artifact-choir-lantern.json
+index d793101..b883ba2 100644
+--- a/content/cards/artifacts/artifact-choir-lantern.json
++++ b/content/cards/artifacts/artifact-choir-lantern.json
+@@ -1,6 +1,12 @@
+ {
+   "id": "artifact-choir-lantern",
+   "type": "artifact",
++  "missionRewardEligible": true,
++  "eliteThreatRewardEligible": true,
++  "rareShopEligible": true,
++  "scenarioRewardEligible": true,
++  "startingEligible": false,
++  "normalShopCommon": false,
+   "artifactKind": "chargedRelic",
+   "title": "Choir Lantern",
+   "text": "A brass ward-lantern that refuses flame, burning instead with a cold choir signal.",
+diff --git a/content/cards/artifacts/artifact-choir-static-censer.json b/content/cards/artifacts/artifact-choir-static-censer.json
+index 7066edb..be4542e 100644
+--- a/content/cards/artifacts/artifact-choir-static-censer.json
++++ b/content/cards/artifacts/artifact-choir-static-censer.json
+@@ -1,6 +1,12 @@
+ {
+   "id": "artifact-choir-static-censer",
+   "type": "artifact",
++  "missionRewardEligible": true,
++  "eliteThreatRewardEligible": true,
++  "rareShopEligible": true,
++  "scenarioRewardEligible": true,
++  "startingEligible": false,
++  "normalShopCommon": false,
+   "artifactKind": "chargedRelic",
+   "title": "Choir Static Censer",
+   "text": "A censored shrine tool with two stable burns left in its wired brass lung.",
+diff --git a/content/cards/artifacts/artifact-cinder-suture-kit.json b/content/cards/artifacts/artifact-cinder-suture-kit.json
+index 88e3293..865e4be 100644
+--- a/content/cards/artifacts/artifact-cinder-suture-kit.json
++++ b/content/cards/artifacts/artifact-cinder-suture-kit.json
+@@ -1,6 +1,12 @@
+ {
+   "id": "artifact-cinder-suture-kit",
+   "type": "artifact",
++  "missionRewardEligible": true,
++  "eliteThreatRewardEligible": true,
++  "rareShopEligible": true,
++  "scenarioRewardEligible": true,
++  "startingEligible": false,
++  "normalShopCommon": false,
+   "artifactKind": "consumableSalvage",
+   "title": "Cinder Suture Kit",
+   "text": "A field surgery kit packed with heat-clean needles and warning labels nobody obeys.",
+diff --git a/content/cards/artifacts/artifact-ember-burden-idol.json b/content/cards/artifacts/artifact-ember-burden-idol.json
+index 485be56..0ab1e3f 100644
+--- a/content/cards/artifacts/artifact-ember-burden-idol.json
++++ b/content/cards/artifacts/artifact-ember-burden-idol.json
+@@ -1,6 +1,12 @@
+ {
+   "id": "artifact-ember-burden-idol",
+   "type": "artifact",
++  "missionRewardEligible": true,
++  "eliteThreatRewardEligible": true,
++  "rareShopEligible": true,
++  "scenarioRewardEligible": true,
++  "startingEligible": false,
++  "normalShopCommon": false,
+   "title": "Ember Burden Idol",
+   "text": "A squat iron idol that grows warmer whenever the bearer tries to leave it behind.",
+   "flavor": "Worth hauling. Terrible to carry.",
+diff --git a/content/cards/artifacts/artifact-fandiablos.json b/content/cards/artifacts/artifact-fandiablos.json
+index e938272..cb7b1a8 100644
+--- a/content/cards/artifacts/artifact-fandiablos.json
++++ b/content/cards/artifacts/artifact-fandiablos.json
+@@ -1,6 +1,12 @@
+ {
+   "id": "artifact-fandiablos",
+   "type": "artifact",
++  "missionRewardEligible": true,
++  "eliteThreatRewardEligible": true,
++  "rareShopEligible": true,
++  "scenarioRewardEligible": true,
++  "startingEligible": false,
++  "normalShopCommon": false,
+   "artifactKind": "factionRelic",
+   "title": "Fandiablos",
+   "text": "Ultimate Follower / Companion. Unique. A chaotic sacred flock of tiny breach-touched war-Chihuahuas joins the operative: scouting threats, swarming Grit battles, biting machine cabling, and sometimes causing Heat from pure battlefield enthusiasm.",
+diff --git a/content/cards/artifacts/artifact-gate-saint-key.json b/content/cards/artifacts/artifact-gate-saint-key.json
+index 9e7d784..93129af 100644
+--- a/content/cards/artifacts/artifact-gate-saint-key.json
++++ b/content/cards/artifacts/artifact-gate-saint-key.json
+@@ -1,6 +1,12 @@
+ {
+   "id": "artifact-gate-saint-key",
+   "type": "artifact",
++  "missionRewardEligible": true,
++  "eliteThreatRewardEligible": true,
++  "rareShopEligible": true,
++  "scenarioRewardEligible": true,
++  "startingEligible": false,
++  "normalShopCommon": false,
+   "artifactKind": "gateRelic",
+   "title": "Gate-Saint Key",
+   "text": "A final-approach artifact that understands Crownfall locks better than living hands do.",
+diff --git a/content/cards/artifacts/artifact-heat-sink-prayer.json b/content/cards/artifacts/artifact-heat-sink-prayer.json
+index f65f192..f5d6cf1 100644
+--- a/content/cards/artifacts/artifact-heat-sink-prayer.json
++++ b/content/cards/artifacts/artifact-heat-sink-prayer.json
+@@ -1,6 +1,12 @@
+ {
+   "id": "artifact-heat-sink-prayer",
+   "type": "artifact",
++  "missionRewardEligible": true,
++  "eliteThreatRewardEligible": true,
++  "rareShopEligible": true,
++  "scenarioRewardEligible": true,
++  "startingEligible": false,
++  "normalShopCommon": false,
+   "artifactKind": "chargedRelic",
+   "title": "Heat-Sink Prayer",
+   "text": "A cold brass prayer wheel that drinks excess Heat from the bearer.",
+diff --git a/content/cards/artifacts/artifact-last-breath-rivet.json b/content/cards/artifacts/artifact-last-breath-rivet.json
+index 2153da9..39756ba 100644
+--- a/content/cards/artifacts/artifact-last-breath-rivet.json
++++ b/content/cards/artifacts/artifact-last-breath-rivet.json
+@@ -1,6 +1,12 @@
+ {
+   "id": "artifact-last-breath-rivet",
+   "type": "artifact",
++  "missionRewardEligible": true,
++  "eliteThreatRewardEligible": true,
++  "rareShopEligible": true,
++  "scenarioRewardEligible": true,
++  "startingEligible": false,
++  "normalShopCommon": false,
+   "artifactKind": "consumableSalvage",
+   "title": "Last-Breath Rivet",
+   "text": "A coffin nail meant to fail once in exactly the right direction.",
+diff --git a/content/cards/artifacts/artifact-lucy-hell-puppy.json b/content/cards/artifacts/artifact-lucy-hell-puppy.json
+index b974548..cecb787 100644
+--- a/content/cards/artifacts/artifact-lucy-hell-puppy.json
++++ b/content/cards/artifacts/artifact-lucy-hell-puppy.json
+@@ -1,6 +1,12 @@
+ {
+   "id": "artifact-lucy-hell-puppy",
+   "type": "artifact",
++  "missionRewardEligible": true,
++  "eliteThreatRewardEligible": true,
++  "rareShopEligible": true,
++  "scenarioRewardEligible": true,
++  "startingEligible": false,
++  "normalShopCommon": false,
+   "artifactKind": "factionRelic",
+   "title": "Lucy, Hell Puppy",
+   "text": "Legendary Follower / Companion. Unique. Lucy joins the operative as an ember-pawed hell puppy, marking battles, damage windows, and dangerous routes with cheerful fire.",
+diff --git a/content/cards/artifacts/artifact-marrow-route-key.json b/content/cards/artifacts/artifact-marrow-route-key.json
+index 836e1b0..519903a 100644
+--- a/content/cards/artifacts/artifact-marrow-route-key.json
++++ b/content/cards/artifacts/artifact-marrow-route-key.json
+@@ -1,6 +1,12 @@
+ {
+   "id": "artifact-marrow-route-key",
+   "type": "artifact",
++  "missionRewardEligible": true,
++  "eliteThreatRewardEligible": true,
++  "rareShopEligible": true,
++  "scenarioRewardEligible": true,
++  "startingEligible": false,
++  "normalShopCommon": false,
+   "title": "Marrow Route Key",
+   "text": "A bone-white key cut for a door that only exists after a failed movement check.",
+   "flavor": "The key does not open locks. It forgives wrong turns.",
+diff --git a/content/cards/artifacts/artifact-mira-rift-twin.json b/content/cards/artifacts/artifact-mira-rift-twin.json
+index 4a15bed..741c686 100644
+--- a/content/cards/artifacts/artifact-mira-rift-twin.json
++++ b/content/cards/artifacts/artifact-mira-rift-twin.json
+@@ -1,6 +1,12 @@
+ {
+   "id": "artifact-mira-rift-twin",
+   "type": "artifact",
++  "missionRewardEligible": true,
++  "eliteThreatRewardEligible": true,
++  "rareShopEligible": true,
++  "scenarioRewardEligible": true,
++  "startingEligible": false,
++  "normalShopCommon": false,
+   "artifactKind": "factionRelic",
+   "title": "Mira, Rift-Twin",
+   "text": "Legendary Follower / Companion. Unique. Mira joins the operative as a violet breach duelist. If the operative is Rumi, their team bond grants +1 Signal and +1 Guile while Mira is following.",
+diff --git a/content/cards/artifacts/artifact-mirror-reroll-token.json b/content/cards/artifacts/artifact-mirror-reroll-token.json
+index a2fffff..4b10062 100644
+--- a/content/cards/artifacts/artifact-mirror-reroll-token.json
++++ b/content/cards/artifacts/artifact-mirror-reroll-token.json
+@@ -1,6 +1,12 @@
+ {
+   "id": "artifact-mirror-reroll-token",
+   "type": "artifact",
++  "missionRewardEligible": true,
++  "eliteThreatRewardEligible": true,
++  "rareShopEligible": true,
++  "scenarioRewardEligible": true,
++  "startingEligible": false,
++  "normalShopCommon": false,
+   "artifactKind": "factionRelic",
+   "title": "Mirror Reroll Token",
+   "text": "A double-faced route coin that remembers a better failure.",
+diff --git a/content/cards/artifacts/artifact-murkclaw-gravecrow.json b/content/cards/artifacts/artifact-murkclaw-gravecrow.json
+index fcf0e3c..850e8ad 100644
+--- a/content/cards/artifacts/artifact-murkclaw-gravecrow.json
++++ b/content/cards/artifacts/artifact-murkclaw-gravecrow.json
+@@ -1,6 +1,12 @@
+ {
+   "id": "artifact-murkclaw-gravecrow",
+   "type": "artifact",
++  "missionRewardEligible": true,
++  "eliteThreatRewardEligible": true,
++  "rareShopEligible": true,
++  "scenarioRewardEligible": true,
++  "startingEligible": false,
++  "normalShopCommon": false,
+   "artifactKind": "factionRelic",
+   "title": "Murkclaw & Gravecrow",
+   "text": "Legendary Follower / Companion. Unique. A breach-touched warcat and omen-crow pair joins the operative, scouting danger windows, rattling enemies, and marking routes that smell wrong.",
+diff --git a/content/cards/artifacts/artifact-oath-chain-ledger.json b/content/cards/artifacts/artifact-oath-chain-ledger.json
+index 44c7c2d..37f3ece 100644
+--- a/content/cards/artifacts/artifact-oath-chain-ledger.json
++++ b/content/cards/artifacts/artifact-oath-chain-ledger.json
+@@ -1,6 +1,12 @@
+ {
+   "id": "artifact-oath-chain-ledger",
+   "type": "artifact",
++  "missionRewardEligible": true,
++  "eliteThreatRewardEligible": true,
++  "rareShopEligible": true,
++  "scenarioRewardEligible": true,
++  "startingEligible": false,
++  "normalShopCommon": false,
+   "artifactKind": "factionRelic",
+   "title": "Oath-Chain Ledger",
+   "text": "A Pale Cartel contract object with enough signatures to hire half a route crew.",
+diff --git a/content/cards/artifacts/artifact-oathchain-lens.json b/content/cards/artifacts/artifact-oathchain-lens.json
+index 49a4984..0f0f395 100644
+--- a/content/cards/artifacts/artifact-oathchain-lens.json
++++ b/content/cards/artifacts/artifact-oathchain-lens.json
+@@ -1,6 +1,12 @@
+ {
+   "id": "artifact-oathchain-lens",
+   "type": "artifact",
++  "missionRewardEligible": true,
++  "eliteThreatRewardEligible": true,
++  "rareShopEligible": true,
++  "scenarioRewardEligible": true,
++  "startingEligible": false,
++  "normalShopCommon": false,
+   "artifactKind": "factionRelic",
+   "title": "Oathchain Lens",
+   "text": "A cracked ledger-lens that shows the cost of every promise before the promise is made.",
+diff --git a/content/cards/artifacts/artifact-pale-ledger-token.json b/content/cards/artifacts/artifact-pale-ledger-token.json
+index 585038d..d1f7bd8 100644
+--- a/content/cards/artifacts/artifact-pale-ledger-token.json
++++ b/content/cards/artifacts/artifact-pale-ledger-token.json
+@@ -1,6 +1,12 @@
+ {
+   "id": "artifact-pale-ledger-token",
+   "type": "artifact",
++  "missionRewardEligible": true,
++  "eliteThreatRewardEligible": true,
++  "rareShopEligible": true,
++  "scenarioRewardEligible": true,
++  "startingEligible": false,
++  "normalShopCommon": false,
+   "title": "Pale Ledger Token",
+   "text": "A cartel debt marker stamped with a saint's broken accounting seal.",
+   "flavor": "Some doors open faster when they know you owe someone worse.",
+diff --git a/content/cards/artifacts/artifact-red-march-warbell.json b/content/cards/artifacts/artifact-red-march-warbell.json
+index 4eae135..3968caf 100644
+--- a/content/cards/artifacts/artifact-red-march-warbell.json
++++ b/content/cards/artifacts/artifact-red-march-warbell.json
+@@ -1,6 +1,12 @@
+ {
+   "id": "artifact-red-march-warbell",
+   "type": "artifact",
++  "missionRewardEligible": true,
++  "eliteThreatRewardEligible": true,
++  "rareShopEligible": true,
++  "scenarioRewardEligible": true,
++  "startingEligible": false,
++  "normalShopCommon": false,
+   "artifactKind": "cursedRelic",
+   "title": "Red March Warbell",
+   "text": "A battle bell from a buried convoy command post, still eager to call witnesses.",
+diff --git a/content/cards/artifacts/artifact-rift-anchor-spike.json b/content/cards/artifacts/artifact-rift-anchor-spike.json
+index 074dda4..e2745a7 100644
+--- a/content/cards/artifacts/artifact-rift-anchor-spike.json
++++ b/content/cards/artifacts/artifact-rift-anchor-spike.json
+@@ -1,6 +1,12 @@
+ {
+   "id": "artifact-rift-anchor-spike",
+   "type": "artifact",
++  "missionRewardEligible": true,
++  "eliteThreatRewardEligible": true,
++  "rareShopEligible": true,
++  "scenarioRewardEligible": true,
++  "startingEligible": false,
++  "normalShopCommon": false,
+   "title": "Rift Anchor Spike",
+   "text": "A scorched brass spike that pins one impossible route to the board for a few breaths.",
+   "flavor": "Hammer it in and the world has to admit you were there.",
+diff --git a/content/cards/artifacts/artifact-route-star.json b/content/cards/artifacts/artifact-route-star.json
+index 91ff5cd..ce5446b 100644
+--- a/content/cards/artifacts/artifact-route-star.json
++++ b/content/cards/artifacts/artifact-route-star.json
+@@ -1,6 +1,12 @@
+ {
+   "id": "artifact-route-star",
+   "type": "artifact",
++  "missionRewardEligible": true,
++  "eliteThreatRewardEligible": true,
++  "rareShopEligible": true,
++  "scenarioRewardEligible": true,
++  "startingEligible": false,
++  "normalShopCommon": false,
+   "artifactKind": "chargedRelic",
+   "title": "Route Star",
+   "text": "A dead-glass navigation star that points toward the route least hungry for blood.",
+diff --git a/content/cards/artifacts/artifact-rune-eye-raven.json b/content/cards/artifacts/artifact-rune-eye-raven.json
+index ae9b4b0..2a3d5db 100644
+--- a/content/cards/artifacts/artifact-rune-eye-raven.json
++++ b/content/cards/artifacts/artifact-rune-eye-raven.json
+@@ -1,6 +1,12 @@
+ {
+   "id": "artifact-rune-eye-raven",
+   "type": "artifact",
++  "missionRewardEligible": true,
++  "eliteThreatRewardEligible": true,
++  "rareShopEligible": true,
++  "scenarioRewardEligible": true,
++  "startingEligible": false,
++  "normalShopCommon": false,
+   "artifactKind": "factionRelic",
+   "title": "The Rune-Eye Raven",
+   "text": "Legendary Follower / Companion. Unique. A three-eyed ash raven joins the operative, scouting threat draws, route choices, and bad omens before they become wounds.",
+diff --git a/content/cards/artifacts/artifact-saintwire-splint.json b/content/cards/artifacts/artifact-saintwire-splint.json
+index 1a66d11..1a7d654 100644
+--- a/content/cards/artifacts/artifact-saintwire-splint.json
++++ b/content/cards/artifacts/artifact-saintwire-splint.json
+@@ -1,6 +1,12 @@
+ {
+   "id": "artifact-saintwire-splint",
+   "type": "artifact",
++  "missionRewardEligible": true,
++  "eliteThreatRewardEligible": true,
++  "rareShopEligible": true,
++  "scenarioRewardEligible": true,
++  "startingEligible": false,
++  "normalShopCommon": false,
+   "artifactKind": "consumableSalvage",
+   "title": "Saintwire Splint",
+   "text": "A sainted emergency brace for a body already past sensible limits.",
+diff --git a/content/cards/artifacts/artifact-throne-crown-fragment.json b/content/cards/artifacts/artifact-throne-crown-fragment.json
+index 6e12fb0..70e4f87 100644
+--- a/content/cards/artifacts/artifact-throne-crown-fragment.json
++++ b/content/cards/artifacts/artifact-throne-crown-fragment.json
+@@ -1,6 +1,12 @@
+ {
+   "id": "artifact-throne-crown-fragment",
+   "type": "artifact",
++  "missionRewardEligible": true,
++  "eliteThreatRewardEligible": true,
++  "rareShopEligible": true,
++  "scenarioRewardEligible": true,
++  "startingEligible": false,
++  "normalShopCommon": false,
+   "artifactKind": "burdenRelic",
+   "title": "Throne-Crown Fragment",
+   "text": "A radiant Crownfall burden worth leverage, progress, and a terrible amount of attention.",
+diff --git a/content/cards/artifacts/artifact-void-key.json b/content/cards/artifacts/artifact-void-key.json
+index 42ea686..788b061 100644
+--- a/content/cards/artifacts/artifact-void-key.json
++++ b/content/cards/artifacts/artifact-void-key.json
+@@ -1,6 +1,12 @@
+ {
+   "id": "artifact-void-key",
+   "type": "artifact",
++  "missionRewardEligible": true,
++  "eliteThreatRewardEligible": true,
++  "rareShopEligible": true,
++  "scenarioRewardEligible": true,
++  "startingEligible": false,
++  "normalShopCommon": false,
+   "artifactKind": "gateRelic",
+   "title": "Void Key",
+   "text": "A black key with teeth shaped for gates that have not finished existing.",
+diff --git a/content/cards/artifacts/artifact-void-salt-poultice.json b/content/cards/artifacts/artifact-void-salt-poultice.json
+index 19847a4..ba8a3dc 100644
+--- a/content/cards/artifacts/artifact-void-salt-poultice.json
++++ b/content/cards/artifacts/artifact-void-salt-poultice.json
+@@ -1,6 +1,12 @@
+ {
+   "id": "artifact-void-salt-poultice",
+   "type": "artifact",
++  "missionRewardEligible": true,
++  "eliteThreatRewardEligible": true,
++  "rareShopEligible": true,
++  "scenarioRewardEligible": true,
++  "startingEligible": false,
++  "normalShopCommon": false,
+   "title": "Void-Salt Poultice",
+   "text": "A packet of black salt and pale gauze that closes wounds by making the body briefly forget them.",
+   "flavor": "The pain returns later, but later is a tactical resource.",
+diff --git a/content/cards/artifacts/artifact-yard.json b/content/cards/artifacts/artifact-yard.json
+index f5990b7..0c20e0c 100644
+--- a/content/cards/artifacts/artifact-yard.json
++++ b/content/cards/artifacts/artifact-yard.json
+@@ -1,6 +1,12 @@
+ {
+   "id": "artifact-yard",
+   "type": "artifact",
++  "missionRewardEligible": true,
++  "eliteThreatRewardEligible": true,
++  "rareShopEligible": true,
++  "scenarioRewardEligible": true,
++  "startingEligible": false,
++  "normalShopCommon": false,
+   "title": "Yard Bellframe Core",
+   "text": "A choir-grade salvage heart that still hums with route memory and old sanctifier charge.",
+   "flavor": "It remembers every convoy that died under its watch.",
+diff --git a/content/cards/artifacts/artifact-zoey-thorn-violet.json b/content/cards/artifacts/artifact-zoey-thorn-violet.json
+index cba1f64..944ddef 100644
+--- a/content/cards/artifacts/artifact-zoey-thorn-violet.json
++++ b/content/cards/artifacts/artifact-zoey-thorn-violet.json
+@@ -1,6 +1,12 @@
+ {
+   "id": "artifact-zoey-thorn-violet",
+   "type": "artifact",
++  "missionRewardEligible": true,
++  "eliteThreatRewardEligible": true,
++  "rareShopEligible": true,
++  "scenarioRewardEligible": true,
++  "startingEligible": false,
++  "normalShopCommon": false,
+   "artifactKind": "factionRelic",
+   "title": "Zoey, Thorn-Violet",
+   "text": "Legendary Follower / Companion. Unique. Zoey joins the operative as a violet breach duelist. If the operative is Rumi and Mira is also following, the Violet Triad grants an additional +1 Grit, +1 Signal, and +1 Guile.",
+diff --git a/content/characters/black-ledger-agent.json b/content/characters/black-ledger-agent.json
+index 5d52129..b3ba39b 100644
+--- a/content/characters/black-ledger-agent.json
++++ b/content/characters/black-ledger-agent.json
+@@ -45,7 +45,8 @@
+     }
+   ],
+   "startingGear": [
+-    "blackstar-ampoule"
++    "salvage-ledger",
++    "lockjaw-kit"
+   ],
+   "startingContract": "cartel-ledger-skim"
+ }
+diff --git a/content/characters/char_bjornis.json b/content/characters/char_bjornis.json
+index eae204f..7d7c88f 100644
+--- a/content/characters/char_bjornis.json
++++ b/content/characters/char_bjornis.json
+@@ -45,7 +45,8 @@
+     }
+   ],
+   "startingGear": [
+-    "red-march-warbell"
++    "nailspike-maul",
++    "rivetplate-vest"
+   ],
+   "startingContract": "compact-ember-courier"
+ }
+diff --git a/content/characters/char_deepdale.json b/content/characters/char_deepdale.json
+index 1e47691..d351857 100644
+--- a/content/characters/char_deepdale.json
++++ b/content/characters/char_deepdale.json
+@@ -45,7 +45,8 @@
+     }
+   ],
+   "startingGear": [
+-    "grave-lens"
++    "field-lens",
++    "bridge-spike"
+   ],
+   "startingContract": "clan-bone-road-guide"
+ }
+diff --git a/content/characters/char_ker_von_ker.json b/content/characters/char_ker_von_ker.json
+index 0af04d6..a31c235 100644
+--- a/content/characters/char_ker_von_ker.json
++++ b/content/characters/char_ker_von_ker.json
+@@ -45,7 +45,8 @@
+     }
+   ],
+   "startingGear": [
+-    "last-breath-rivet"
++    "chapel-guard-harness",
++    "wound-clamp"
+   ],
+   "startingContract": "warden-span-vigil"
+ }
+diff --git a/content/characters/char_kira_dog.json b/content/characters/char_kira_dog.json
+index bb51a5d..d3a3759 100644
+--- a/content/characters/char_kira_dog.json
++++ b/content/characters/char_kira_dog.json
+@@ -45,7 +45,8 @@
+     }
+   ],
+   "startingGear": [
+-    "veil-hook"
++    "chainhook-blade",
++    "sootmantle-cloak"
+   ],
+   "startingContract": "contract-lantern-run"
+ }
+diff --git a/content/characters/char_popelord.json b/content/characters/char_popelord.json
+index ff06efa..6731852 100644
+--- a/content/characters/char_popelord.json
++++ b/content/characters/char_popelord.json
+@@ -45,7 +45,8 @@
+     }
+   ],
+   "startingGear": [
+-    "black-route-fuse"
++    "black-route-fuse",
++    "salt-gauze-wrap"
+   ],
+   "startingContract": "clan-salvage-tithe"
+ }
+diff --git a/content/characters/char_rumi.json b/content/characters/char_rumi.json
+index 6529ba8..8c23dc3 100644
+--- a/content/characters/char_rumi.json
++++ b/content/characters/char_rumi.json
+@@ -45,7 +45,8 @@
+     }
+   ],
+   "startingGear": [
+-    "mirror-reroll-token"
++    "mirror-token",
++    "field-lens"
+   ],
+   "startingContract": "umbral-blackstar-sample"
+ }
+diff --git a/content/characters/cinder-monk.json b/content/characters/cinder-monk.json
+index 831b9e5..1d3320d 100644
+--- a/content/characters/cinder-monk.json
++++ b/content/characters/cinder-monk.json
+@@ -45,7 +45,8 @@
+     }
+   ],
+   "startingGear": [
+-    "heat-sink-prayer"
++    "oath-chain",
++    "ember-poultice"
+   ],
+   "startingContract": "umbral-shrine-confession"
+ }
+diff --git a/content/characters/fleet-elder.json b/content/characters/fleet-elder.json
+index d81f256..2456162 100644
+--- a/content/characters/fleet-elder.json
++++ b/content/characters/fleet-elder.json
+@@ -45,7 +45,8 @@
+     }
+   ],
+   "startingGear": [
+-    "marshal-seal"
++    "emberlock-pistol",
++    "surveyor-chalk"
+   ],
+   "startingContract": "contract-beacon"
+ }
+diff --git a/content/characters/grave-engineer.json b/content/characters/grave-engineer.json
+index 0e06a18..f550841 100644
+--- a/content/characters/grave-engineer.json
++++ b/content/characters/grave-engineer.json
+@@ -45,7 +45,8 @@
+     }
+   ],
+   "startingGear": [
+-    "coffin-rig"
++    "ironhide-bracers",
++    "bridge-spike"
+   ],
+   "startingContract": "compact-cleanse-ledger"
+ }
+diff --git a/content/characters/oathbroken-prince.json b/content/characters/oathbroken-prince.json
+index 8760007..1c39eb6 100644
+--- a/content/characters/oathbroken-prince.json
++++ b/content/characters/oathbroken-prince.json
+@@ -45,7 +45,8 @@
+     }
+   ],
+   "startingGear": [
+-    "oath-chain-ledger"
++    "oath-chain",
++    "ashen-bayonet"
+   ],
+   "startingContract": "dominion-gate-tithe"
+ }
+diff --git a/content/characters/rift-cartographer.json b/content/characters/rift-cartographer.json
+index 05ef777..0cd640e 100644
+--- a/content/characters/rift-cartographer.json
++++ b/content/characters/rift-cartographer.json
+@@ -45,7 +45,8 @@
+     }
+   ],
+   "startingGear": [
+-    "ashen-route-compass"
++    "route-compass",
++    "surveyor-chalk"
+   ],
+   "startingContract": "cartel-quiet-route"
+ }
+diff --git a/content/characters/salvage-warden.json b/content/characters/salvage-warden.json
+index 7c57dc7..c85d939 100644
+--- a/content/characters/salvage-warden.json
++++ b/content/characters/salvage-warden.json
+@@ -45,7 +45,8 @@
+     }
+   ],
+   "startingGear": [
+-    "tuning-spines"
++    "salvage-guard-mask",
++    "salvage-ledger"
+   ],
+   "startingContract": "clan-salt-burial"
+ }
+diff --git a/content/characters/siege-medic.json b/content/characters/siege-medic.json
+index c5b3e39..6aae388 100644
+--- a/content/characters/siege-medic.json
++++ b/content/characters/siege-medic.json
+@@ -45,6 +45,7 @@
+     }
+   ],
+   "startingGear": [
++    "cinder-suture-kit",
+     "saintwire-splint"
+   ],
+   "startingContract": "compact-surgery-bond"
+diff --git a/content/characters/signal-witch.json b/content/characters/signal-witch.json
+index f0c9d76..16f751f 100644
+--- a/content/characters/signal-witch.json
++++ b/content/characters/signal-witch.json
+@@ -45,7 +45,8 @@
+     }
+   ],
+   "startingGear": [
+-    "choir-static-censer"
++    "static-probe",
++    "signal-lantern"
+   ],
+   "startingContract": "choir-spindle-harmonics"
+ }
+diff --git a/content/characters/void-marshal.json b/content/characters/void-marshal.json
+index bde11a2..c01e263 100644
+--- a/content/characters/void-marshal.json
++++ b/content/characters/void-marshal.json
+@@ -45,7 +45,8 @@
+     }
+   ],
+   "startingGear": [
+-    "cinder-suture-kit"
++    "rustknife-carbine",
++    "chapel-guard-harness"
+   ],
+   "startingContract": "dominion-warbell-recovery"
+ }
+diff --git a/content/gear/ashen-route-compass.json b/content/gear/ashen-route-compass.json
+index 48d3a94..4a7e553 100644
+--- a/content/gear/ashen-route-compass.json
++++ b/content/gear/ashen-route-compass.json
+@@ -10,7 +10,9 @@
+   "activeText": "Exhaust to reroll a failed movement or anomaly check.",
+   "useLimit": "oncePerRound",
+   "flavor": "The needle points toward the route that hurts least.",
+-  "tier": "standard",
++  "tier": "artifact",
++  "startingEligible": false,
++  "normalShopCommon": false,
+   "progressionWeight": 1.25,
+   "shopCategories": [
+     "market"
+diff --git a/content/gear/ashlock-cleaver.json b/content/gear/ashlock-cleaver.json
+index 59b2bf3..fe0296d 100644
+--- a/content/gear/ashlock-cleaver.json
++++ b/content/gear/ashlock-cleaver.json
+@@ -9,6 +9,8 @@
+   },
+   "flavor": "A soot-bitten boarding cleaver with an oath notch cut into the spine.",
+   "tier": "standard",
++  "startingEligible": false,
++  "normalShopCommon": false,
+   "cost": 4,
+   "sellValue": 2,
+   "progressionWeight": 1,
+diff --git a/content/gear/black-route-fuse.json b/content/gear/black-route-fuse.json
+index e50e11c..777a00e 100644
+--- a/content/gear/black-route-fuse.json
++++ b/content/gear/black-route-fuse.json
+@@ -1,20 +1,29 @@
+ {
+   "id": "black-route-fuse",
+   "name": "Black Route Fuse",
+-  "slot": "weapon",
++  "slot": "utility",
++  "subtype": "supply",
+   "category": "dangerous",
+   "statBonus": {
+     "stat": "grit",
+     "amount": 1
+   },
++  "cost": 3,
++  "sellable": true,
++  "tier": "standard",
++  "progressionWeight": 1,
++  "flavor": "A controlled length of dead-route cord reserved for one desperate breach.",
+   "activeText": "Break for +3 Grit before the battle roll, then advance escalation by 1.",
++  "timingWindows": [
++    "beforeBattleRoll"
++  ],
+   "useLimit": "discard",
+   "heatCost": 1,
+-  "flavor": "A length of dead-route cord that burns toward the nearest argument.",
+-  "tier": "standard",
+-  "progressionWeight": 1,
+   "shopCategories": [
+     "forge-armoury",
+-    "relic-dealer"
+-  ]
++    "market"
++  ],
++  "startingEligible": true,
++  "normalShopCommon": true,
++  "allowedFallbackArt": true
+ }
+diff --git a/content/gear/blackstar-ampoule.json b/content/gear/blackstar-ampoule.json
+index 3b3e9a7..b22b4a3 100644
+--- a/content/gear/blackstar-ampoule.json
++++ b/content/gear/blackstar-ampoule.json
+@@ -10,7 +10,9 @@
+   "activeText": "Discard to ignore one failed movement penalty or dodge a hazard failure.",
+   "useLimit": "discard",
+   "flavor": "A thumb-sized vial of night that refuses to reflect you.",
+-  "tier": "standard",
++  "tier": "artifact",
++  "startingEligible": false,
++  "normalShopCommon": false,
+   "progressionWeight": 1,
+   "shopCategories": [
+     "market",
+diff --git a/content/gear/cinder-stim-ampoule.json b/content/gear/cinder-stim-ampoule.json
+index e2d39e7..0dcbcbe 100644
+--- a/content/gear/cinder-stim-ampoule.json
++++ b/content/gear/cinder-stim-ampoule.json
+@@ -15,6 +15,8 @@
+   ],
+   "flavor": "A sealed red ampoule that burns the blood clean for a few terrible seconds.",
+   "tier": "standard",
++  "startingEligible": false,
++  "normalShopCommon": false,
+   "cost": 3,
+   "sellValue": 1,
+   "progressionWeight": 0.75,
+diff --git a/content/gear/cinder-suture-kit.json b/content/gear/cinder-suture-kit.json
+index e906f6d..e13bfeb 100644
+--- a/content/gear/cinder-suture-kit.json
++++ b/content/gear/cinder-suture-kit.json
+@@ -2,18 +2,24 @@
+   "id": "cinder-suture-kit",
+   "name": "Cinder Suture Kit",
+   "slot": "utility",
+-  "category": "consumable",
++  "subtype": "medical",
++  "category": "passive",
+   "statBonus": {
+     "stat": "forge",
+     "amount": 1
+   },
+-  "activeText": "Discard to heal 1 wound, then record the treatment as unstable.",
+-  "useLimit": "discard",
+-  "flavor": "A useful medical error in a sealed brass case.",
+-  "tier": "starter",
+-  "progressionWeight": 0.5,
++  "cost": 3,
++  "sellValue": 1,
++  "sellable": true,
++  "tier": "standard",
++  "progressionWeight": 1,
++  "flavor": "Field sutures that add +1 Forge during recovery work.",
++  "activeText": "Field sutures that add +1 Forge during recovery work.",
+   "shopCategories": [
+     "medicae-shrine",
+     "market"
+-  ]
++  ],
++  "startingEligible": true,
++  "normalShopCommon": true,
++  "allowedFallbackArt": true
+ }
+diff --git a/content/gear/coffin-rig.json b/content/gear/coffin-rig.json
+index 9be951d..a7cc93d 100644
+--- a/content/gear/coffin-rig.json
++++ b/content/gear/coffin-rig.json
+@@ -7,7 +7,9 @@
+     "amount": 1
+   },
+   "flavor": "A slab-bound harness of cold braces and grave bolts built to hold through crush and sparks.",
+-  "tier": "starter",
++  "tier": "artifact",
++  "startingEligible": false,
++  "normalShopCommon": false,
+   "progressionWeight": 0.75,
+   "shopCategories": [
+     "forge-armoury"
+diff --git a/content/gear/grave-lens.json b/content/gear/grave-lens.json
+index 974861b..82d7a8a 100644
+--- a/content/gear/grave-lens.json
++++ b/content/gear/grave-lens.json
+@@ -11,7 +11,9 @@
+   "useLimit": "oncePerRound",
+   "linkedFollowerRole": "ritualist",
+   "flavor": "The glass makes old roads look freshly buried.",
+-  "tier": "standard",
++  "tier": "artifact",
++  "startingEligible": false,
++  "normalShopCommon": false,
+   "progressionWeight": 1.25,
+   "shopCategories": [
+     "market",
+diff --git a/content/gear/last-breath-rivet.json b/content/gear/last-breath-rivet.json
+index c86f2b8..7cb59b6 100644
+--- a/content/gear/last-breath-rivet.json
++++ b/content/gear/last-breath-rivet.json
+@@ -2,18 +2,24 @@
+   "id": "last-breath-rivet",
+   "name": "Last-Breath Rivet",
+   "slot": "armor",
+-  "category": "consumable",
++  "subtype": "medical",
++  "category": "passive",
+   "statBonus": {
+     "stat": "grit",
+     "amount": 1
+   },
+-  "activeText": "Break to save yourself: discard to heal 1 wound and record that the next wound was braced.",
+-  "useLimit": "discard",
+-  "flavor": "A single coffin nail hammered into living armor.",
+-  "tier": "starter",
+-  "progressionWeight": 0.5,
++  "cost": 3,
++  "sellValue": 1,
++  "sellable": true,
++  "tier": "standard",
++  "progressionWeight": 1,
++  "flavor": "An emergency brace that adds +1 Grit while equipped.",
++  "activeText": "An emergency brace that adds +1 Grit while equipped.",
+   "shopCategories": [
+-    "forge-armoury",
+-    "medicae-shrine"
+-  ]
++    "medicae-shrine",
++    "market"
++  ],
++  "startingEligible": true,
++  "normalShopCommon": true,
++  "allowedFallbackArt": true
+ }
+diff --git a/content/gear/marshal-seal.json b/content/gear/marshal-seal.json
+index 29e8f67..a839325 100644
+--- a/content/gear/marshal-seal.json
++++ b/content/gear/marshal-seal.json
+@@ -7,7 +7,9 @@
+     "amount": 1
+   },
+   "flavor": "A stamped relay sigil that carries enough authority to still a crowded platform.",
+-  "tier": "starter",
++  "tier": "artifact",
++  "startingEligible": false,
++  "normalShopCommon": false,
+   "progressionWeight": 0.75,
+   "shopCategories": [
+     "contract-broker",
+diff --git a/content/gear/mirecoil-wardcloak.json b/content/gear/mirecoil-wardcloak.json
+index 8bcacdc..2b062c1 100644
+--- a/content/gear/mirecoil-wardcloak.json
++++ b/content/gear/mirecoil-wardcloak.json
+@@ -9,6 +9,8 @@
+   },
+   "flavor": "A tar-wet cloak stitched with coilwire charms from the marsh wards.",
+   "tier": "standard",
++  "startingEligible": false,
++  "normalShopCommon": false,
+   "cost": 4,
+   "sellValue": 2,
+   "progressionWeight": 1,
+diff --git a/content/gear/mirror-reroll-token.json b/content/gear/mirror-reroll-token.json
+index 3b6a12c..ef193a4 100644
+--- a/content/gear/mirror-reroll-token.json
++++ b/content/gear/mirror-reroll-token.json
+@@ -10,7 +10,9 @@
+   "activeText": "Exhaust to reroll a failed Guile or Signal check, then mark the roll as unstable.",
+   "useLimit": "oncePerTurn",
+   "flavor": "One side shows your face. The other shows the version that got away.",
+-  "tier": "standard",
++  "tier": "artifact",
++  "startingEligible": false,
++  "normalShopCommon": false,
+   "progressionWeight": 1.25,
+   "shopCategories": [
+     "market",
+diff --git a/content/gear/oath-chain-ledger.json b/content/gear/oath-chain-ledger.json
+index 9d00958..660c22d 100644
+--- a/content/gear/oath-chain-ledger.json
++++ b/content/gear/oath-chain-ledger.json
+@@ -9,7 +9,9 @@
+   },
+   "activeText": "Protect this object to convert a completed contract reward into gear, scar relief, or a safer faction debt.",
+   "flavor": "Every blank line already knows whose name belongs there.",
+-  "tier": "standard",
++  "tier": "artifact",
++  "startingEligible": false,
++  "normalShopCommon": false,
+   "progressionWeight": 1.25,
+   "shopCategories": [
+     "contract-broker"
+diff --git a/content/gear/red-march-warbell.json b/content/gear/red-march-warbell.json
+index 50ec12a..f0e2a6c 100644
+--- a/content/gear/red-march-warbell.json
++++ b/content/gear/red-march-warbell.json
+@@ -11,7 +11,9 @@
+   "useLimit": "oncePerTurn",
+   "heatCost": 1,
+   "flavor": "It wins arguments by making the whole district listen.",
+-  "tier": "advanced",
++  "tier": "artifact",
++  "startingEligible": false,
++  "normalShopCommon": false,
+   "progressionWeight": 2.25,
+   "shopCategories": [
+     "forge-armoury",
+diff --git a/content/gear/riftblade.json b/content/gear/riftblade.json
+index a0838b1..9df5bf7 100644
+--- a/content/gear/riftblade.json
++++ b/content/gear/riftblade.json
+@@ -9,6 +9,8 @@
+   },
+   "flavor": "A cracked blade that hums louder near broken routes.",
+   "tier": "advanced",
++  "startingEligible": false,
++  "normalShopCommon": false,
+   "cost": 6,
+   "sellValue": 3,
+   "progressionWeight": 1.5,
+diff --git a/content/gear/saintplate-harness.json b/content/gear/saintplate-harness.json
+index 9d8ead1..40ad215 100644
+--- a/content/gear/saintplate-harness.json
++++ b/content/gear/saintplate-harness.json
+@@ -9,6 +9,8 @@
+   },
+   "flavor": "Chapel plate scavenged from a saint-engine and rebuilt for a living back.",
+   "tier": "advanced",
++  "startingEligible": false,
++  "normalShopCommon": false,
+   "cost": 6,
+   "sellValue": 3,
+   "progressionWeight": 1.5,
+diff --git a/content/gear/saintwire-splint.json b/content/gear/saintwire-splint.json
+index 2c055f1..5c7abcf 100644
+--- a/content/gear/saintwire-splint.json
++++ b/content/gear/saintwire-splint.json
+@@ -2,18 +2,24 @@
+   "id": "saintwire-splint",
+   "name": "Saintwire Splint",
+   "slot": "armor",
+-  "category": "consumable",
++  "subtype": "medical",
++  "category": "passive",
+   "statBonus": {
+     "stat": "forge",
+     "amount": 1
+   },
+-  "activeText": "Discard before recall to heal 1 wound and steady one scar trigger.",
+-  "useLimit": "discard",
+-  "flavor": "Blessed wire remembers the shape of a body before it broke.",
+-  "tier": "starter",
+-  "progressionWeight": 0.5,
++  "cost": 3,
++  "sellValue": 1,
++  "sellable": true,
++  "tier": "standard",
++  "progressionWeight": 1,
++  "flavor": "A reusable brace that adds +1 Forge while holding together.",
++  "activeText": "A reusable brace that adds +1 Forge while holding together.",
+   "shopCategories": [
+     "medicae-shrine",
+-    "forge-armoury"
+-  ]
++    "market"
++  ],
++  "startingEligible": true,
++  "normalShopCommon": true,
++  "allowedFallbackArt": true
+ }
+diff --git a/content/gear/scrap-drone.json b/content/gear/scrap-drone.json
+index d132de4..7a23163 100644
+--- a/content/gear/scrap-drone.json
++++ b/content/gear/scrap-drone.json
+@@ -9,6 +9,8 @@
+   },
+   "flavor": "A scavenger drone that remembers every battlefield it stole from.",
+   "tier": "standard",
++  "startingEligible": false,
++  "normalShopCommon": false,
+   "cost": 4,
+   "sellValue": 2,
+   "progressionWeight": 1,
+diff --git a/content/gear/signal-pike.json b/content/gear/signal-pike.json
+index 8da6d01..521a095 100644
+--- a/content/gear/signal-pike.json
++++ b/content/gear/signal-pike.json
+@@ -9,6 +9,8 @@
+   },
+   "flavor": "A long conductor-blade used to pin unstable signals before they become voices.",
+   "tier": "standard",
++  "startingEligible": false,
++  "normalShopCommon": false,
+   "cost": 4,
+   "sellValue": 2,
+   "progressionWeight": 1,
+diff --git a/content/gear/tuning-spines.json b/content/gear/tuning-spines.json
+index 19e5fd2..c9cec5c 100644
+--- a/content/gear/tuning-spines.json
++++ b/content/gear/tuning-spines.json
+@@ -7,7 +7,9 @@
+     "amount": 1
+   },
+   "flavor": "A fan of resonant needles that sharpen weak transmissions into usable patterns.",
+-  "tier": "starter",
++  "tier": "artifact",
++  "startingEligible": false,
++  "normalShopCommon": false,
+   "progressionWeight": 0.75,
+   "shopCategories": [
+     "market"
+diff --git a/content/gear/veil-hook.json b/content/gear/veil-hook.json
+index a562abe..ca1fc33 100644
+--- a/content/gear/veil-hook.json
++++ b/content/gear/veil-hook.json
+@@ -7,7 +7,10 @@
+     "amount": 1
+   },
+   "flavor": "A hooked furnace blade balanced for close pursuit in ash-choked lanes.",
+-  "tier": "starter",
++  "tier": "artifact",
++  "startingEligible": false,
++  "normalShopCommon": false,
++  "sellValue": 1,
+   "progressionWeight": 0.75,
+   "shopCategories": [
+     "forge-armoury",
+diff --git a/content/gear/void-plate.json b/content/gear/void-plate.json
+index 23004f0..833b7ce 100644
+--- a/content/gear/void-plate.json
++++ b/content/gear/void-plate.json
+@@ -9,6 +9,8 @@
+   },
+   "flavor": "Heavy black plate sealed with chapel lacquer and dead-star rivets.",
+   "tier": "advanced",
++  "startingEligible": false,
++  "normalShopCommon": false,
+   "cost": 6,
+   "sellValue": 3,
+   "progressionWeight": 1.5,
+diff --git a/content/gear/voidsalt-poultice.json b/content/gear/voidsalt-poultice.json
+index f7416f9..e224fe1 100644
+--- a/content/gear/voidsalt-poultice.json
++++ b/content/gear/voidsalt-poultice.json
+@@ -15,6 +15,8 @@
+   ],
+   "flavor": "A cold paste of salt and black herbs used to keep a wound from learning your name.",
+   "tier": "standard",
++  "startingEligible": false,
++  "normalShopCommon": false,
+   "cost": 3,
+   "sellValue": 1,
+   "progressionWeight": 0.75,
+diff --git a/scripts/audit-assets.ts b/scripts/audit-assets.ts
+index 5276638..3713e82 100644
+--- a/scripts/audit-assets.ts
++++ b/scripts/audit-assets.ts
+@@ -1,7 +1,11 @@
+ import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
+ import { basename, join, sep } from "node:path";
+ import { getRuntimeAssetPaths } from "../src/client/shared/assetPaths.js";
++import { getGearCardArtPath, getGearCardArtType } from "../src/client/shared/assetPaths.js";
+ import { getBoardTileAssetPaths } from "../src/client/tv/TalismanBoardSurface.js";
++import { loadArtifactCards } from "../src/game/content/artifacts.js";
++import { loadCharacters } from "../src/game/content/characters.js";
++import { loadGear } from "../src/game/content/gear.js";
+ import { getAssetPath } from "../src/game/assets/design/assetManifest.js";
+ import { CARD_IMAGE_TYPES, type CardImageType } from "../src/game/assets/design/cardImageCatalog.js";
+ import { imagePrompts } from "../src/game/assets/design/imagePrompts.js";
+@@ -46,6 +50,7 @@ type MissingAssetSummary = {
+   invalid: number;
+   placeholders: number;
+   releaseBlocking: number;
++  tierSeparationIssues: string[];
+   byType: Record<string, number>;
+   cardImageSummary: Record<CardImageType, { total: number; present: number; missing: number }>;
+   missingAssets: AssetIssue[];
+@@ -216,6 +221,40 @@ function toIssue(entry: AssetAuditEntry, reason: string): AssetIssue {
+ }
+ 
+ const mode = getMode();
++const gearCatalog = loadGear();
++const tierSeparationIssues: string[] = [];
++
++for (const item of gearCatalog.values()) {
++  if (item.normalShopCommon === true || item.startingEligible === true) {
++    if (item.tier === "artifact") {
++      tierSeparationIssues.push(`${item.id}: normal equipment eligibility cannot use artifact tier`);
++    }
++    if (getGearCardArtType(item) !== "equipment" || getGearCardArtPath(item).includes("/artifacts/")) {
++      tierSeparationIssues.push(`${item.id}: normal equipment resolves through artifact art`);
++    }
++    if (getGearCardArtPath(item).includes("/fallbacks/") && item.allowedFallbackArt !== true) {
++      tierSeparationIssues.push(`${item.id}: equipment fallback art is not explicitly allowed`);
++    }
++  }
++}
++
++for (const character of loadCharacters().values()) {
++  if (character.qaOnly) {
++    continue;
++  }
++  for (const gearId of character.startingGear ?? []) {
++    const item = gearCatalog.get(gearId);
++    if (!item || item.tier === "artifact" || item.startingEligible !== true || getGearCardArtType(item) !== "equipment") {
++      tierSeparationIssues.push(`${character.id}: invalid normal starting equipment ${gearId}`);
++    }
++  }
++}
++
++for (const artifact of loadArtifactCards().values()) {
++  if (artifact.startingEligible !== false || artifact.normalShopCommon !== false) {
++    tierSeparationIssues.push(`${artifact.id}: artifact cannot be starting equipment or common shop stock`);
++  }
++}
+ const artifactsRoot = join(process.cwd(), "artifacts", "assets");
+ const auditReportPath = join(artifactsRoot, "audit-report.json");
+ const missingPrioritizedPath = join(artifactsRoot, "missing-prioritized.json");
+@@ -346,6 +385,7 @@ const report: MissingAssetSummary = {
+   invalid: invalidEntries.length,
+   placeholders: placeholderEntries.length,
+   releaseBlocking: releaseBlockingEntries.length,
++  tierSeparationIssues,
+   byType,
+   cardImageSummary,
+   missingAssets,
+@@ -376,6 +416,6 @@ writeFileSync(
+ 
+ console.log(JSON.stringify(report, null, 2));
+ 
+-if (invalidEntries.length > 0 || (mode === "release" && releaseBlockingEntries.length > 0)) {
++if (tierSeparationIssues.length > 0 || invalidEntries.length > 0 || (mode === "release" && releaseBlockingEntries.length > 0)) {
+   process.exitCode = 1;
+ }
+diff --git a/src/client/__tests__/uiValidationStress.test.tsx b/src/client/__tests__/uiValidationStress.test.tsx
+index a6d75ae..795fbb5 100644
+--- a/src/client/__tests__/uiValidationStress.test.tsx
++++ b/src/client/__tests__/uiValidationStress.test.tsx
+@@ -246,7 +246,7 @@ function createMasterAlphaPhonePatch(overrides: Partial<PhonePatchPayload> = {})
+       services: [
+         {
+           id: "buy-gear",
+-          label: "Buy Gear",
++          label: "Buy Equipment",
+           cost: { salvage: 3 },
+           enabled: false,
+           disabledReason: "Clear local threat first"
+@@ -333,7 +333,8 @@ describe("Ashen Reach UI validation stress states", () => {
+     expect(battleTab).toHaveClass("game-button-battle");
+     expect(shopTab).toHaveClass("game-button-shop");
+     expect(actionTab).toHaveClass("game-button-action");
+-    expect(screen.getByTestId("movement-planner")).toHaveTextContent("Move 4");
++    expect(screen.getByTestId("phone-action-active-panel")).toHaveAttribute("data-movement-state", "resolving");
++    expect(screen.queryByTestId("movement-planner")).not.toBeInTheDocument();
+ 
+     fireEvent.click(shopTab);
+ 
+diff --git a/src/client/audio/__tests__/audioEventSelectors.test.ts b/src/client/audio/__tests__/audioEventSelectors.test.ts
+index a66b0ae..8237128 100644
+--- a/src/client/audio/__tests__/audioEventSelectors.test.ts
++++ b/src/client/audio/__tests__/audioEventSelectors.test.ts
+@@ -125,7 +125,7 @@ describe("Ashen Reach audio cue selectors", () => {
+         recentOutcome: {
+           operativeName: "Kira Dog",
+           shopName: "Anchor Market",
+-          action: "Buy Gear",
++          action: "Buy Equipment",
+           gained: "Ashlock Carbine",
+           remainingSalvage: 3,
+           summary: "Kira Dog bought Ashlock Carbine."
+diff --git a/src/client/phone/PhoneActionPanel.tsx b/src/client/phone/PhoneActionPanel.tsx
+index 7441ec5..5ba0764 100644
+--- a/src/client/phone/PhoneActionPanel.tsx
++++ b/src/client/phone/PhoneActionPanel.tsx
+@@ -228,7 +228,7 @@ function formatShopCost(cost: PublicShopCost): string {
+     cost.heat ? `${cost.heat} Risk` : null,
+     cost.wounds ? `${cost.wounds} Wound${cost.wounds === 1 ? "" : "s"}` : null,
+     cost.trophies ? `${cost.trophies} Trophies` : null,
+-    cost.completedContracts ? `${cost.completedContracts} Contract${cost.completedContracts === 1 ? "" : "s"}` : null,
++    cost.completedContracts ? `${cost.completedContracts} Completed Mission${cost.completedContracts === 1 ? "" : "s"}` : null,
+     cost.scars ? `${cost.scars} Scar${cost.scars === 1 ? "" : "s"}` : null
+   ].filter(Boolean);
+ 
+@@ -439,6 +439,14 @@ function BattleSubjectCard({
+   );
+ }
+ 
++function isBattleLikeResolution(resolution: ActiveResolution | null | undefined): resolution is ActiveResolution {
++  if (!resolution) {
++    return false;
++  }
++
++  return Boolean(resolution.battle || resolution.source === "threat" || resolution.source === "anomaly");
++}
++
+ const shopFailureLabels: Record<ShopFailureReason, string> = {
+   notAtShop: "No shop here",
+   shopBlockedByThreat: "Shop blocked by threat",
+@@ -1564,8 +1572,8 @@ function PhoneShopPanel({
+ 
+           <div className="phone-shop-stock" aria-label="Revealed shop stock">
+             <div className="phone-shop-section-heading">
+-              <span>Stock</span>
+-              <small>{revealedStock.length > 0 ? "Tap Buy to review the purchase before spending Salvage." : "Use a buy service to reveal market stock."}</small>
++              <span>Equipment available</span>
++              <small>{revealedStock.length > 0 ? "Choose equipment to buy, then review the purchase before spending Salvage." : "Use Buy Equipment to reveal shop stock."}</small>
+             </div>
+             {revealedStock.length > 0 ? (
+               <div className="phone-shop-stock-list">
+@@ -1603,7 +1611,7 @@ function PhoneShopPanel({
+                 })}
+               </div>
+             ) : (
+-              <p className="phone-shop-empty-stock">No stock available.</p>
++              <p className="phone-shop-empty-stock">No equipment available.</p>
+             )}
+           </div>
+ 
+@@ -1719,20 +1727,24 @@ function MovementPlanner({
+   planner,
+   seatId,
+   activeContract,
++  canRoll,
++  selectedSectorId,
++  onSelectedSectorId,
+   onIntent
+ }: {
+   planner: PublicMovementPlannerState | null | undefined;
+   seatId: string;
+   activeContract: ContractCard | null;
++  canRoll: boolean;
++  selectedSectorId: string | null;
++  onSelectedSectorId: (sectorId: string | null) => void;
+   onIntent: (intent: ClientIntent) => void;
+ }): ReactElement | null {
+-  const [selectedSectorId, setSelectedSectorId] = useState<string | null>(null);
+-
+-  useEffect(() => {
+-    setSelectedSectorId(null);
+-  }, [planner?.currentSectorId, planner?.movementValue]);
+-
+   if (!planner?.active) {
++    if (!canRoll) {
++      return null;
++    }
++
+     return (
+       <section className="phone-movement-planner" aria-label="Movement planner" data-testid="movement-planner">
+         <MovementEmptyState
+@@ -1770,11 +1782,11 @@ function MovementPlanner({
+           selected={selected}
+           seatId={seatId}
+           activeContract={activeContract}
+-          onBack={() => setSelectedSectorId(null)}
++          onBack={() => onSelectedSectorId(null)}
+           onIntent={onIntent}
+         />
+       ) : (
+-        <MovementDestinationList planner={planner} activeContract={activeContract} onSelected={setSelectedSectorId} />
++        <MovementDestinationList planner={planner} activeContract={activeContract} onSelected={onSelectedSectorId} />
+       )}
+     </section>
+   );
+@@ -2222,7 +2234,9 @@ function PhoneMovePanel({
+   seatId,
+   activeContract,
+   onIntent,
+-  usefulNow
++  usefulNow,
++  canRollMovement,
++  movementResolving
+ }: {
+   movementPlanner: PublicMovementPlannerState | null | undefined;
+   currentTile: CurrentTileViewModel;
+@@ -2232,13 +2246,77 @@ function PhoneMovePanel({
+   activeContract: ContractCard | null;
+   onIntent: (intent: ClientIntent) => void;
+   usefulNow: UsefulNowViewModel | null;
++  canRollMovement: boolean;
++  movementResolving: boolean;
+ }): ReactElement {
++  const [selectedSectorId, setSelectedSectorId] = useState<string | null>(null);
++  const panelRef = useRef<HTMLElement | null>(null);
++  const movementState = movementResolving || movementTravel
++    ? "resolving"
++    : movementPlanner?.active
++      ? selectedSectorId
++        ? "needs-confirm"
++        : "needs-destination"
++      : canRollMovement
++        ? "needs-roll"
++        : "complete";
++
++  useEffect(() => {
++    setSelectedSectorId(null);
++  }, [movementPlanner?.currentSectorId, movementPlanner?.movementValue]);
++
++  useLayoutEffect(() => {
++    const scrollContainer = panelRef.current?.closest<HTMLElement>(".phone-portrait-scroll");
++    if (scrollContainer) {
++      if (typeof scrollContainer.scrollTo === "function") {
++        scrollContainer.scrollTo({ top: 0, left: 0, behavior: "auto" });
++      } else {
++        scrollContainer.scrollTop = 0;
++        scrollContainer.scrollLeft = 0;
++      }
++    }
++  }, [movementState, movementTravel?.key]);
++
++  const selectDestination = (sectorId: string | null) => {
++    setSelectedSectorId(sectorId);
++    const destination = sectorId
++      ? movementPlanner?.destinations.find((entry) => entry.sectorId === sectorId) ?? null
++      : null;
++
++    if (destination?.disabledReason) {
++      return;
++    }
++
++    onIntent({
++      type: "MOVEMENT_DESTINATION_PREVIEWED",
++      seatId,
++      toSectorId: sectorId
++    });
++  };
++
+   return (
+-    <section className="phone-action-active-panel phone-move-panel" data-testid="phone-action-active-panel" aria-label="Move command screen">
++    <section ref={panelRef} className={`phone-action-active-panel phone-move-panel phone-move-panel--${movementState}`} data-testid="phone-action-active-panel" data-movement-state={movementState} aria-label="Move command screen">
+       <CurrentTileCard tile={currentTile} />
+       <PhoneMovementAnimation travel={movementTravel} />
+-      <MovementPlanner planner={movementPlanner} seatId={seatId} activeContract={activeContract} onIntent={onIntent} />
+-      {!hasMoveContent && !movementPlanner?.active && (
++      {!movementResolving && (
++        <MovementPlanner
++          planner={movementPlanner}
++          seatId={seatId}
++          activeContract={activeContract}
++          canRoll={canRollMovement}
++          selectedSectorId={selectedSectorId}
++          onSelectedSectorId={selectDestination}
++          onIntent={onIntent}
++        />
++      )}
++      {movementResolving && (
++        <MovementEmptyState
++          title={movementTravel ? "Route confirmed" : "Arrival resolving"}
++          text={movementTravel ? `Travelling to ${movementTravel.toSectorName}.` : "Movement is complete. Resolve the arrival test or event."}
++          detail="Movement controls will return on the next navigation step."
++        />
++      )}
++      {!hasMoveContent && !movementPlanner?.active && !movementResolving && !canRollMovement && (
+         <EmptyTurnTab title="No movement choice" text="Movement is not available in this step. Resolve the current action or wait for the table." />
+       )}
+       <UsefulNowPanel model={usefulNow} variant="secondary" />
+@@ -2318,6 +2396,7 @@ function PhoneShopCommandPanel({
+ 
+ function PhoneSectorActionPanel({
+   title,
++  resolutionPanel,
+   sectorOpportunityItems,
+   sectorExplorationCopy,
+   visibleActionDeltas,
+@@ -2332,6 +2411,7 @@ function PhoneSectorActionPanel({
+   usefulNow
+ }: {
+   title: string;
++  resolutionPanel: ReactElement | null;
+   sectorOpportunityItems: SectorOpportunityItem[];
+   sectorExplorationCopy: ReturnType<typeof buildSectorExplorationCopy>;
+   visibleActionDeltas: ResultDelta[];
+@@ -2351,6 +2431,7 @@ function PhoneSectorActionPanel({
+         <span>Sector action</span>
+         <strong>{title}</strong>
+       </header>
++      {resolutionPanel}
+       <SectorOpportunityChips items={sectorOpportunityItems} />
+       <ActionSections
+         sectionClassName="phone-sector-action-panel__action-card"
+@@ -2407,6 +2488,7 @@ export function PhoneActionPanel({
+   const usefulNow = buildUsefulNowViewModel(patch);
+   const isActiveSeat = getActiveSeatId(patch) === self.seatId;
+   const activeResolution = patch.activeResolution ?? null;
++  const battleActiveResolution = isBattleLikeResolution(activeResolution) ? activeResolution : null;
+   const orphanResolutionOutcome =
+     isActiveSeat &&
+     !activeResolution &&
+@@ -2432,6 +2514,8 @@ export function PhoneActionPanel({
+       onContinue={continueResolution}
+     />
+   );
++  const battleResolutionPanel = battleActiveResolution ? resolutionPanel : null;
++  const actionResolutionPanel = activeResolution && !battleActiveResolution ? resolutionPanel : orphanResolutionOutcome ? resolutionPanel : null;
+   const battleAssist = getBattleAssistViewModel(patch);
+   const battleAssistPanel = <BattleAssistCard patch={patch} onIntent={onIntent} />;
+   const sector = getSector(patch.sectors, self.sectorId);
+@@ -2455,7 +2539,7 @@ export function PhoneActionPanel({
+   const isScenarioConfrontation = isScenarioConfrontationSpace(self.sectorId);
+   const movementPlanner = patch.movementPlanner ?? null;
+   const movementOutcome =
+-    patch.outcomeSummary?.seatId === self.seatId && patch.outcomeSummary.movedToSectorId
++    !movementPlanner?.active && patch.outcomeSummary?.seatId === self.seatId && patch.outcomeSummary.movedToSectorId
+       ? patch.outcomeSummary
+       : null;
+   useEffect(() => {
+@@ -2986,7 +3070,7 @@ export function PhoneActionPanel({
+         ? "Review the result, upgrade with trophies, or end your turn."
+         : "Waiting for the server to resolve the current step.";
+   const hasMoveContent = Boolean(movementPlanner?.active && movementPlanner.destinations.length > 0) || moveActions.length > 0;
+-  const hasBattleContent = Boolean(activeResolution || orphanResolutionOutcome || battleAssist) || threatActions.length > 0;
++  const hasBattleContent = Boolean(battleActiveResolution || battleAssist || patch.encounter || pendingEnemyRoll) || threatActions.length > 0;
+   const hasShopContent = Boolean(shopEncounter);
+   const shopLocked = Boolean(shopEncounter && (shopEncounter.status === "locked" || shopEncounter.blockingThreats.length > 0));
+   const shopLockReasonText = shopEncounter?.blockedReasonText ?? formatShopDisabledReason(shopEncounter?.blockedReason);
+@@ -2999,7 +3083,8 @@ export function PhoneActionPanel({
+       contractActions.length +
+       advanceActions.length >
+     0;
+-  const battleRequiresResolution = Boolean(patch.encounter || activeResolution || orphanResolutionOutcome || battleAssist);
++  const hasResolutionActionContent = Boolean(actionResolutionPanel || orphanResolutionOutcome);
++  const battleRequiresResolution = Boolean(patch.encounter || battleActiveResolution || battleAssist || pendingEnemyRoll);
+   const battleBlocksNonBattleTabs = battleRequiresResolution && hasBattleContent;
+   const moveBlockedReason = hasMoveContent
+     ? undefined
+@@ -3022,7 +3107,7 @@ export function PhoneActionPanel({
+         : "Shop locked: no shop here.";
+   const actionBlockedReason = battleBlocksNonBattleTabs
+     ? "Action locked: resolve battle first."
+-    : hasActionContent || !hasMoveContent
++    : hasActionContent || hasResolutionActionContent || !hasMoveContent
+       ? undefined
+       : "Action locked: no sector action here.";
+   const tabDefinitions: TurnActionTabDefinition[] = [
+@@ -3041,7 +3126,7 @@ export function PhoneActionPanel({
+     {
+       id: "battle",
+       label: "Battle",
+-      detail: patch.encounter?.title ?? activeResolution?.card?.title ?? battleAssist?.enemyName ?? "No threat",
++      detail: patch.encounter?.title ?? battleActiveResolution?.card?.title ?? battleAssist?.enemyName ?? "No threat",
+       tone: "battle",
+       enabled: hasBattleContent,
+       blockedReason: battleBlockedReason
+@@ -3058,9 +3143,9 @@ export function PhoneActionPanel({
+     {
+       id: "action",
+       label: "Action",
+-      detail: boardSpace?.textBox.title ?? "Gear / quest",
++      detail: actionResolutionPanel ? activeResolution?.card?.title ?? activeResolution?.outcome?.title ?? "Resolution" : boardSpace?.textBox.title ?? "Gear / quest",
+       tone: "action",
+-      enabled: !battleBlocksNonBattleTabs && (hasActionContent || !hasMoveContent),
++      enabled: !battleBlocksNonBattleTabs && (hasActionContent || hasResolutionActionContent || !hasMoveContent),
+       blockedReason: actionBlockedReason
+     }
+   ];
+@@ -3092,7 +3177,7 @@ export function PhoneActionPanel({
+   const currentDeltas = patch.playerResultDeltas ?? patch.publicResultDeltas ?? [];
+   const visibleBattleDeltas = battleResultDeltas(currentDeltas);
+   const visibleActionDeltas = actionResultDeltas(currentDeltas);
+-  const battleTitle = patch.encounter?.title ?? activeResolution?.card?.title ?? battleAssist?.enemyName ?? "No threat";
++  const battleTitle = patch.encounter?.title ?? battleActiveResolution?.card?.title ?? battleAssist?.enemyName ?? "No threat";
+   const actionTitle = boardSpace?.textBox.title ?? "Operative options";
+   const activeTabContent =
+     activeTurnTab === "move" ? (
+@@ -3105,13 +3190,15 @@ export function PhoneActionPanel({
+         activeContract={activeContract}
+         onIntent={onIntent}
+         usefulNow={activeUsefulNow}
++        canRollMovement={patch.phase === "navigation" && !movementPlanner?.active}
++        movementResolving={Boolean(movementTravel || (patch.phase !== "navigation" && (activeResolution || movementOutcome)))}
+       />
+     ) : activeTurnTab === "battle" ? (
+       <PhoneBattlePanel
+         title={battleTitle}
+-        activeResolution={activeResolution}
++        activeResolution={battleActiveResolution}
+         encounter={patch.encounter}
+-        resolutionPanel={resolutionPanel}
++        resolutionPanel={battleResolutionPanel}
+         battleAssistPanel={battleAssistPanel}
+         threatActions={threatActions}
+         hasBattleContent={hasBattleContent}
+@@ -3142,6 +3229,7 @@ export function PhoneActionPanel({
+     ) : (
+       <PhoneSectorActionPanel
+         title={actionTitle}
++        resolutionPanel={actionResolutionPanel}
+         sectorOpportunityItems={sectorOpportunityItems}
+         sectorExplorationCopy={sectorExplorationCopy}
+         visibleActionDeltas={visibleActionDeltas}
+diff --git a/src/client/phone/PhoneInventoryPanel.tsx b/src/client/phone/PhoneInventoryPanel.tsx
+index 8bb0329..bb817b7 100644
+--- a/src/client/phone/PhoneInventoryPanel.tsx
++++ b/src/client/phone/PhoneInventoryPanel.tsx
+@@ -382,6 +382,8 @@ function InventoryProgressionSection({
+   const trophies = self.character.trophies;
+   const trophyPile = self.character.trophyPile ?? [];
+   const pileAvailableValue = trophyPile.reduce((total, entry) => total + getTrophyPileEntryAvailableValue(entry), 0);
++  const completedContracts = self.character.completedContracts ?? [];
++  const contractById = new Map(patch.availableContracts.map((contract) => [contract.id, contract] as const));
+ 
+   return (
+     <section className="phone-inventory-progression" aria-label="Progression" data-testid="phone-inventory-progression">
+@@ -413,6 +415,20 @@ function InventoryProgressionSection({
+         )}
+       </div>
+ 
++      <div className="phone-inventory-completed-missions" aria-label="Completed missions" data-testid="completed-mission-inventory">
++        <div>
++          <span>Completed Missions</span>
++          <strong>{completedContracts.length}/3 toward an Artifact trade</strong>
++        </div>
++        {completedContracts.length > 0 ? (
++          <ul>
++            {completedContracts.map((contractId, index) => (
++              <li key={`${contractId}-${index}`}>{contractById.get(contractId)?.name ?? contractId}</li>
++            ))}
++          </ul>
++        ) : <p>Completed mission cards are stored here until traded at a relic dealer.</p>}
++      </div>
++
+       <div className="phone-inventory-upgrades">
+         <span className="phone-inventory-upgrades-title">Available Upgrades</span>
+         <div className="phone-inventory-upgrade-grid">
+diff --git a/src/client/phone/__tests__/PhoneActionPanel.test.tsx b/src/client/phone/__tests__/PhoneActionPanel.test.tsx
+index ad77b0b..00d8648 100644
+--- a/src/client/phone/__tests__/PhoneActionPanel.test.tsx
++++ b/src/client/phone/__tests__/PhoneActionPanel.test.tsx
+@@ -545,13 +545,13 @@ describe("PhoneActionPanel", () => {
+                 routeNames: ["Pilgrim Lock", "Anchor Market"],
+                 tags: ["shop", "crossroads"],
+                 threatIcons: ["yellow"],
+-                ruleText: "If clear, buy Gear, Supplies, or use Black Market Refresh.",
++                ruleText: "If clear, buy Equipment or use Black Market Refresh.",
+                 loreText: "A market of sealed crates and oath-brokers.",
+                 shop: {
+                   shopId: "outer_waymarketExchange",
+                   shopName: "Anchor Market",
+                   status: "open",
+-                  servicesPreview: ["Buy Gear", "Sell Gear", "Black Market Refresh"]
++                  servicesPreview: ["Buy Equipment", "Sell Gear", "Black Market Refresh"]
+                 },
+                 faceUpThreats: [],
+                 occupants: [],
+@@ -686,7 +686,7 @@ describe("PhoneActionPanel", () => {
+     expect(screen.getByTestId("movement-route-steps")).toHaveTextContent(/pilgrim lock/i);
+     expect(screen.getByTestId("movement-confirm-footer")).toHaveTextContent(/this will end your movement/i);
+     expect(screen.getAllByText(/green guile/i).length).toBeGreaterThan(0);
+-    expect(screen.getByText(/buy gear \/ sell gear/i)).toBeInTheDocument();
++    expect(screen.getByText(/buy equipment \/ sell gear/i)).toBeInTheDocument();
+     expect(screen.queryByText(/choir bulwark/i)).not.toBeInTheDocument();
+   });
+ 
+@@ -845,16 +845,26 @@ describe("PhoneActionPanel", () => {
+     );
+ 
+     fireEvent.click(screen.getByRole("button", { name: /locked.*ashwalk bridge/i }));
+-    expect(onIntent).not.toHaveBeenCalled();
++    expect(onIntent).toHaveBeenCalledWith({
++      type: "MOVEMENT_DESTINATION_PREVIEWED",
++      seatId: "seat-1",
++      toSectorId: "ashwake-crossing"
++    });
+     expect(screen.getAllByText(/chain-maul salvager/i).length).toBeGreaterThan(0);
+     expect(screen.getAllByText(/legal: exactly 1 step from pilgrim lock/i).length).toBeGreaterThan(0);
+     expect(screen.getAllByText(/risk: chain-maul salvager/i).length).toBeGreaterThan(0);
+     expect(screen.getByText(/mira: signal witch/i)).toBeInTheDocument();
+ 
+     fireEvent.click(screen.getByRole("button", { name: /back/i }));
++    expect(onIntent).toHaveBeenCalledWith({
++      type: "MOVEMENT_DESTINATION_PREVIEWED",
++      seatId: "seat-1",
++      toSectorId: null
++    });
+     expect(screen.queryByRole("button", { name: /confirm move/i })).not.toBeInTheDocument();
+ 
+     fireEvent.click(screen.getByRole("button", { name: /locked.*ashwalk bridge/i }));
++    onIntent.mockClear();
+     fireEvent.click(screen.getByRole("button", { name: /confirm move/i }));
+     expect(screen.getByRole("button", { name: /moving/i })).toBeDisabled();
+     fireEvent.click(screen.getByRole("button", { name: /moving/i }));
+@@ -1007,7 +1017,7 @@ describe("PhoneActionPanel", () => {
+                   shopId: "pilgrim-lock-market",
+                   shopName: "Pilgrim Lock Gate",
+                   status: "open",
+-                  servicesPreview: ["Buy Gear", "Repair", "Trade"]
++                  servicesPreview: ["Buy Equipment", "Repair", "Trade"]
+                 },
+                 faceUpThreats: [],
+                 occupants: [],
+@@ -1143,7 +1153,7 @@ describe("PhoneActionPanel", () => {
+             services: [
+               {
+                 id: "buy-gear",
+-                label: "Buy Gear",
++                label: "Buy Equipment",
+                 shopCategory: "forge-armoury",
+                 cost: {},
+                 enabled: true
+@@ -1217,7 +1227,7 @@ describe("PhoneActionPanel", () => {
+     expect(screen.getAllByTestId("phone-shop-category-icon").length).toBeGreaterThanOrEqual(2);
+     expect(screen.getAllByTestId("phone-shop-category-icon")[0]).toHaveAttribute("src", "/assets/riftfall/ui/shop-category-forge-armoury.svg");
+     expect(screen.getByRole("button", { name: /skip \/ continue/i })).toBeInTheDocument();
+-    fireEvent.click(screen.getByRole("button", { name: /buy gear/i }));
++    fireEvent.click(screen.getByRole("button", { name: /buy equipment/i }));
+     expect(onIntent).toHaveBeenCalledWith({
+       type: "SHOP_SERVICE_REQUESTED",
+       seatId: "seat-1",
+@@ -1451,7 +1461,7 @@ describe("PhoneActionPanel", () => {
+             routeNames: ["Pilgrim Lock", "Anchor Market"],
+             tags: ["shop"],
+             threatIcons: [],
+-            ruleText: "If clear, buy Gear.",
++            ruleText: "If clear, buy Equipment.",
+             faceUpThreats: [],
+             occupants: [],
+             strategicTags: ["shop", "reward"]
+@@ -1629,9 +1639,9 @@ describe("PhoneActionPanel", () => {
+       />
+     );
+ 
+-    expect(screen.getAllByText(/no stock available/i)).toHaveLength(1);
++    expect(screen.getAllByText(/no equipment available/i)).toHaveLength(1);
+     expect(screen.getAllByText(/no sellable items/i)).toHaveLength(1);
+-    expect(screen.getByText(/use a buy service to reveal market stock/i)).toBeInTheDocument();
++    expect(screen.getByText(/use buy equipment to reveal shop stock/i)).toBeInTheDocument();
+     expect(screen.getByText(/only sellable carried gear appears here/i)).toBeInTheDocument();
+     expect(screen.getByTestId("phone-shop-category-icon")).toHaveAttribute("src", "/assets/riftfall/ui/shop-category-market.svg");
+     expect(screen.getByText(/purchased: ashlock carbine/i)).toBeInTheDocument();
+@@ -2877,6 +2887,7 @@ describe("PhoneActionPanel", () => {
+         characters={characters}
+         onIntent={vi.fn()}
+         patch={createPatch({
++          encounter: null,
+           activeResolution: {
+             id: "seat-1:scenario:ambient:test",
+             playerId: "seat-1",
+@@ -2902,6 +2913,88 @@ describe("PhoneActionPanel", () => {
+     expect(screen.getByTestId("phone-resolution-card")).toHaveTextContent(/doom rises by 1/i);
+   });
+ 
++  it("does not show movement resolution dice inside the Battle tab", () => {
++    render(
++      <PhoneActionPanel
++        characters={characters}
++        onIntent={vi.fn()}
++        selectedTurnTab="battle"
++        patch={createPatch({
++          encounter: null,
++          activeResolution: {
++            id: "seat-1:movement:arrival:test",
++            playerId: "seat-1",
++            source: "movement",
++            stage: "roll_result",
++            card: {
++              id: "ashwake-bridge-arrival",
++              title: "Ashwake Bridge Arrival",
++              type: "movement"
++            },
++            roll: {
++              dice: [4],
++              baseTotal: 4,
++              modifierTotal: 0,
++              finalTotal: 4,
++              target: 1,
++              success: true
++            },
++            outcome: {
++              title: "Movement complete",
++              text: "Moved to Ashwake Bridge.",
++              effects: ["Current tile updated."]
++            }
++          }
++        })}
++      />
++    );
++
++    expect(screen.getByTestId("phone-action-active-panel")).toHaveClass("phone-battle-panel");
++    expect(screen.getByText(/no battle active/i)).toBeInTheDocument();
++    expect(screen.queryByTestId("phone-roll-result")).not.toBeInTheDocument();
++    expect(screen.queryByText(/ashwake bridge arrival/i)).not.toBeInTheDocument();
++  });
++
++  it("keeps movement resolution results in Action instead of Battle", () => {
++    render(
++      <PhoneActionPanel
++        characters={characters}
++        onIntent={vi.fn()}
++        patch={createPatch({
++          encounter: null,
++          activeResolution: {
++            id: "seat-1:movement:arrival:test",
++            playerId: "seat-1",
++            source: "movement",
++            stage: "roll_result",
++            card: {
++              id: "ashwake-bridge-arrival",
++              title: "Ashwake Bridge Arrival",
++              type: "movement"
++            },
++            roll: {
++              dice: [4],
++              baseTotal: 4,
++              modifierTotal: 0,
++              finalTotal: 4,
++              target: 1,
++              success: true
++            },
++            outcome: {
++              title: "Movement complete",
++              text: "Moved to Ashwake Bridge.",
++              effects: ["Current tile updated."]
++            }
++          }
++        })}
++      />
++    );
++
++    expect(screen.getByTestId("phone-action-panel-root")).toHaveClass("phone-action-panel--action");
++    expect(screen.getByTestId("phone-resolution-card")).toHaveTextContent(/ashwake bridge arrival/i);
++    expect(screen.getByTestId("phone-resolution-card")).toHaveTextContent(/moved to ashwake bridge/i);
++  });
++
+   it("does not repeat identical success copy as both outcome text and bullet", () => {
+     render(
+       <PhoneActionPanel
+diff --git a/src/client/phone/__tests__/PhoneInventoryPanel.test.tsx b/src/client/phone/__tests__/PhoneInventoryPanel.test.tsx
+index 584cb61..bb10030 100644
+--- a/src/client/phone/__tests__/PhoneInventoryPanel.test.tsx
++++ b/src/client/phone/__tests__/PhoneInventoryPanel.test.tsx
+@@ -362,6 +362,7 @@ describe("PhoneInventoryPanel", () => {
+             character: {
+               ...basePatch.self.character,
+               trophies: 6,
++              completedContracts: ["mission-one", "mission-two", "mission-three"],
+               trophyPile: [
+                 {
+                   cardId: "cinder-veil-stalker",
+@@ -383,6 +384,8 @@ describe("PhoneInventoryPanel", () => {
+     expect(progression).toHaveTextContent(/trophies: 6/i);
+     expect(progression).toHaveTextContent(/cinder-veil stalker/i);
+     expect(progression).toHaveTextContent(/6\/6/i);
++    expect(screen.getByTestId("completed-mission-inventory")).toHaveTextContent(/3\/3 toward an artifact trade/i);
++    expect(screen.getByTestId("completed-mission-inventory")).toHaveTextContent(/mission-one/i);
+ 
+     const gritUpgrade = within(progression).getByRole("button", { name: /grit 2 -> 3\s*cost 3 trophies/i });
+     expect(gritUpgrade).toBeEnabled();
+diff --git a/src/client/shared/types.ts b/src/client/shared/types.ts
+index a3dcbd3..6a3ddbf 100644
+--- a/src/client/shared/types.ts
++++ b/src/client/shared/types.ts
+@@ -56,7 +56,7 @@ export interface CharacterPresentation {
+   signatureItemSummary: string;
+   startingContractSummary: string;
+ }
+-
++
+ export interface PublicSeat {
+   seatId: string;
+   characterId: string;
+@@ -68,7 +68,7 @@ export interface PublicSeat {
+   ready: boolean;
+   kicked: boolean;
+ }
+-
++
+ export interface PublicPlayerCharacter {
+   id: string;
+   name: string;
+@@ -106,13 +106,13 @@ export interface TrophyPileEntry {
+   stat?: Stat;
+   cardType?: string;
+ }
+-
+-export interface PublicPlayer {
+-  seatId: string;
+-  sectorId: string;
+-  character: PublicPlayerCharacter;
+-}
+-
++
++export interface PublicPlayer {
++  seatId: string;
++  sectorId: string;
++  character: PublicPlayerCharacter;
++}
++
+ export interface GearItem {
+   id: string;
+   name: string;
+@@ -223,13 +223,14 @@ export interface PrivateCharacter {
+   scars: string[];
+   afflictions?: PlayerAfflictionSummary;
+   activeContract: { contractId: string; progress: number } | null;
++  completedContracts?: string[];
+   heldGear: GearItem[];
+   equippedGear: Record<GearSlot, string | null>;
+   followers?: Follower[];
+   scarCards?: ScarSummary[];
+   abilities: Array<{ id: string; name: string; text: string }>;
+ }
+-
++
+ export interface PhoneSelfState {
+   seatId: string;
+   sectorId: string;
+@@ -359,32 +360,32 @@ export interface ResultDelta {
+   severity: ResultDeltaSeverity;
+ }
+ 
+-export interface SectorNode {
+-  id: string;
+-  name: string;
++export interface SectorNode {
++  id: string;
++  name: string;
+   regionTier: string;
+   neighbors: string[];
+   danger: number;
+   threatIcons?: ThreatIcon[];
+   encounterDecks: {
+-    threat: string[];
+-    anomaly: string[];
+-    contract: string[];
+-    artifact: string[];
+-    escalation: string[];
+-  };
+-}
+-
+-export interface EncounterCard {
+-  id: string;
+-  title: string;
+-  cardType: "hazard" | "enemy";
+-  flavor: string;
+-  difficulty: number;
+-  stat: Stat;
+-  enemyName?: string | null;
+-}
+-
++    threat: string[];
++    anomaly: string[];
++    contract: string[];
++    artifact: string[];
++    escalation: string[];
++  };
++}
++
++export interface EncounterCard {
++  id: string;
++  title: string;
++  cardType: "hazard" | "enemy";
++  flavor: string;
++  difficulty: number;
++  stat: Stat;
++  enemyName?: string | null;
++}
++
+ export interface ContractCard {
+   id: string;
+   name: string;
+@@ -397,34 +398,34 @@ export interface ContractCard {
+     | { type: "shopTransaction"; action: "buyEquipment" | "sellGear" | "repairGear" | "upgradeGear" | "trade"; requiredShopType?: string; requiredSectorId?: string; requiredCount: number; minimumSalvageSpent?: number; label: string };
+   reward?: unknown;
+ }
+-
+-export interface PendingEnemyRoll {
+-  fighterSeatId: string;
+-  assignedRollerSeatId: string;
+-  encounterCardId: string;
+-  encounterTitle: string;
+-  stat: Stat;
+-}
+-
++
++export interface PendingEnemyRoll {
++  fighterSeatId: string;
++  assignedRollerSeatId: string;
++  encounterCardId: string;
++  encounterTitle: string;
++  stat: Stat;
++}
++
+ export interface OutcomeSummary {
+-  seatId: string;
+-  movedToSectorId: string;
+-  encounterCardId: string | null;
+-  encounterTitle: string | null;
+-  encounterCardType: "hazard" | "enemy" | null;
+-  checkStat: string | null;
+-  die1: number | null;
+-  die2: number | null;
+-  statBonus: number | null;
+-  checkTotal: number | null;
+-  difficulty: number | null;
+-  enemyRollerSeatId?: string | null;
+-  enemyDie1?: number | null;
+-  enemyDie2?: number | null;
+-  enemyBonus?: number | null;
+-  enemyTotal?: number | null;
+-  success: boolean | null;
+-  replacementCharacterId?: string | null;
++  seatId: string;
++  movedToSectorId: string;
++  encounterCardId: string | null;
++  encounterTitle: string | null;
++  encounterCardType: "hazard" | "enemy" | null;
++  checkStat: string | null;
++  die1: number | null;
++  die2: number | null;
++  statBonus: number | null;
++  checkTotal: number | null;
++  difficulty: number | null;
++  enemyRollerSeatId?: string | null;
++  enemyDie1?: number | null;
++  enemyDie2?: number | null;
++  enemyBonus?: number | null;
++  enemyTotal?: number | null;
++  success: boolean | null;
++  replacementCharacterId?: string | null;
+   summary: string;
+ }
+ 
+@@ -615,8 +616,8 @@ export interface PublicMovementPlannerState {
+   movementValue: number;
+   currentSectorId: string;
+   currentSectorName: string;
+-  selectedDestinationId?: string | null;
+   destinations: PublicMoveDestination[];
++  selectedDestinationId?: string | null;
+ }
+ 
+ export interface PublicSectorExplorationThreat {
+@@ -691,7 +692,7 @@ export interface NemesisNexusCountdownSummary {
+   nemesisId: string;
+   remainingTurns: number;
+ }
+-
++
+ export interface ActiveScenarioSummary {
+   id: string;
+   name: string;
+@@ -771,7 +772,7 @@ export interface ScenarioCatalogEntry {
+   confrontationSteps: string[];
+   victoryText: string;
+ }
+-
++
+ export interface ScenarioTelemetryItem {
+   label: string;
+   value: string;
+@@ -829,15 +830,15 @@ export interface PublicPatchPayload {
+   scenarioProgress: Record<string, number>;
+   nemesisChampions?: NemesisChampionSummary[];
+   nemesisNexusCountdowns?: NemesisNexusCountdownSummary[];
+-  seats: PublicSeat[];
+-  sectors: SectorNode[];
+-  players: PublicPlayer[];
+-  activeSeatIndex: number;
+-  turnOrder: string[];
+-  escalationLevel: number;
+-  escalationThreshold: number;
+-  escalationModifier: number;
+-  availableContracts: ContractCard[];
++  seats: PublicSeat[];
++  sectors: SectorNode[];
++  players: PublicPlayer[];
++  activeSeatIndex: number;
++  turnOrder: string[];
++  escalationLevel: number;
++  escalationThreshold: number;
++  escalationModifier: number;
++  availableContracts: ContractCard[];
+   encounter: EncounterCard | null;
+   pendingEnemyRoll: PendingEnemyRoll | null;
+   outcomeSummary: OutcomeSummary | null;
+@@ -872,50 +873,55 @@ export interface PhonePatchPayload extends PublicPatchPayload {
+   crownKeyFragments?: number;
+   eligibleNemesisAssistSeatIds?: string[];
+ }
+-
+-export interface StatePatch<TPayload = PublicPatchPayload> {
+-  type: "STATE_PATCH";
+-  sessionId: string;
+-  sequence: number;
+-  phase: Phase;
+-  payload: TPayload;
+-}
+-
+-export interface IntentRejectedEnvelope {
+-  type: "INTENT_REJECTED";
+-  sessionId: string;
+-  sequence: number;
+-  actionType: string;
+-  reason: string;
+-}
+-
+-export interface RejoinAcceptedEnvelope {
+-  type: "REJOIN_ACCEPTED";
+-  sessionId: string;
+-  seatId: string;
+-}
+-
+-export interface RejoinRejectedEnvelope {
+-  type: "REJOIN_REJECTED";
+-  sessionId: string;
+-  reason: string;
+-}
+-
+-export interface DebugEvent {
+-  id: string;
+-  timestamp: string;
+-  label: string;
+-  detail?: string;
+-  payload: unknown;
+-}
+-
+-export type ServerEnvelope =
+-  | StatePatch<PublicPatchPayload | PhonePatchPayload>
+-  | IntentRejectedEnvelope
+-  | RejoinAcceptedEnvelope
+-  | RejoinRejectedEnvelope;
+-
++
++export interface StatePatch<TPayload = PublicPatchPayload> {
++  type: "STATE_PATCH";
++  sessionId: string;
++  sequence: number;
++  phase: Phase;
++  payload: TPayload;
++}
++
++export interface IntentRejectedEnvelope {
++  type: "INTENT_REJECTED";
++  sessionId: string;
++  sequence: number;
++  actionType: string;
++  reason: string;
++}
++
++export interface RejoinAcceptedEnvelope {
++  type: "REJOIN_ACCEPTED";
++  sessionId: string;
++  seatId: string;
++}
++
++export interface RejoinRejectedEnvelope {
++  type: "REJOIN_REJECTED";
++  sessionId: string;
++  reason: string;
++}
++
++export interface DebugEvent {
++  id: string;
++  timestamp: string;
++  label: string;
++  detail?: string;
++  payload: unknown;
++}
++
++export type ServerEnvelope =
++  | StatePatch<PublicPatchPayload | PhonePatchPayload>
++  | IntentRejectedEnvelope
++  | RejoinAcceptedEnvelope
++  | RejoinRejectedEnvelope;
++
+ export type ClientIntent =
++  | {
++      type: "MOVEMENT_DESTINATION_PREVIEWED";
++      seatId: string;
++      toSectorId: string | null;
++    }
+   | {
+       type: "MOVE_REQUESTED";
+       seatId: string;
+@@ -929,17 +935,17 @@ export type ClientIntent =
+       type: "PHASE_ADVANCED";
+       seatId: string;
+       toPhase: Phase;
+-    }
+-  | {
+-      type: "CHECK_REQUESTED";
+-      seatId: string;
+-      stat: Stat;
+-    }
+-  | {
+-      type: "COMBAT_REQUESTED";
+-      seatId: string;
+-      stat: Stat;
+-    }
++    }
++  | {
++      type: "CHECK_REQUESTED";
++      seatId: string;
++      stat: Stat;
++    }
++  | {
++      type: "COMBAT_REQUESTED";
++      seatId: string;
++      stat: Stat;
++    }
+   | {
+       type: "ENEMY_ROLL_REQUESTED";
+       seatId: string;
+@@ -970,14 +976,14 @@ export type ClientIntent =
+   | {
+       type: "RECRUIT_REPLACEMENT";
+       seatId: string;
+-      replacementCharacterId: string;
+-    }
+-  | {
+-      type: "EQUIP_GEAR";
+-      seatId: string;
+-      gearId: string;
+-      slot: GearSlot;
+-    }
++      replacementCharacterId: string;
++    }
++  | {
++      type: "EQUIP_GEAR";
++      seatId: string;
++      gearId: string;
++      slot: GearSlot;
++    }
+   | {
+       type: "UNEQUIP_GEAR";
+       seatId: string;
+@@ -1026,13 +1032,13 @@ export type ClientIntent =
+   | {
+       type: "ACCEPT_CONTRACT";
+       seatId: string;
+-      contractId: string;
+-    }
+-  | {
+-      type: "COMPLETE_CONTRACT";
+-      seatId: string;
+-      contractId: string;
+-    }
++      contractId: string;
++    }
++  | {
++      type: "COMPLETE_CONTRACT";
++      seatId: string;
++      contractId: string;
++    }
+   | {
+       type: "SCENARIO_CONFRONTATION_REQUESTED";
+       seatId: string;
+@@ -1062,16 +1068,16 @@ export type ClientIntent =
+       stat?: Stat;
+       assistSeatIds?: string[];
+     };
+-
+-export type HostCommand =
+-  | {
+-      type: "KICK_SEAT";
+-      targetSeatId: string;
+-    }
+-  | {
+-      type: "RESTART_SESSION";
+-    };
+-
++
++export type HostCommand =
++  | {
++      type: "KICK_SEAT";
++      targetSeatId: string;
++    }
++  | {
++      type: "RESTART_SESSION";
++    };
++
+ export interface PhoneSessionAuth {
+   roomCode: string;
+   seatId: string;
+@@ -1080,5 +1086,5 @@ export interface PhoneSessionAuth {
+   isHostPhone?: boolean;
+   lastConnectedAt?: string;
+ }
+-
+-export interface CharacterCatalogEntry extends PrivateCharacter {}
++
++export interface CharacterCatalogEntry extends PrivateCharacter {}
+diff --git a/src/client/styles.css b/src/client/styles.css
+index 0d53457..3dcc44d 100644
+--- a/src/client/styles.css
++++ b/src/client/styles.css
+@@ -31,110 +31,6 @@
+   font-family: var(--font-body);
+ }
+ 
+-/* TV movement focus: centered HUD cards over a board that remains full-size. */
+-.tv-command-dashboard--movement-focus .tv-command-header {
+-  flex-shrink: 0;
+-}
+-
+-.tv-movement-focus {
+-  inset: clamp(0.45rem, 0.8vw, 0.8rem);
+-  display: grid;
+-  grid-template-columns: minmax(12rem, 17rem) minmax(16rem, 24rem);
+-  grid-template-areas:
+-    "heading heading"
+-    "roll destination"
+-    "travel travel"
+-    "timeline timeline";
+-  justify-content: center;
+-  align-content: center;
+-  gap: clamp(0.45rem, 0.75vw, 0.8rem);
+-}
+-
+-.tv-movement-focus-heading,
+-.tv-movement-focus-roll,
+-.tv-movement-focus-destination,
+-.tv-movement-focus-travel,
+-.tv-movement-focus-timeline {
+-  position: static;
+-  inset: auto;
+-  width: auto;
+-  transform: none;
+-  min-width: 0;
+-  margin: 0;
+-}
+-
+-.tv-movement-focus-heading {
+-  grid-area: heading;
+-  justify-self: center;
+-  width: min(30rem, 100%);
+-}
+-
+-.tv-movement-focus-roll { grid-area: roll; }
+-.tv-movement-focus-destination { grid-area: destination; }
+-
+-.tv-movement-focus-travel {
+-  grid-area: travel;
+-  width: min(42rem, 100%);
+-  justify-self: center;
+-}
+-
+-.tv-movement-focus-timeline {
+-  grid-area: timeline;
+-  width: min(44rem, 100%);
+-  justify-self: center;
+-}
+-
+-@media (max-width: 1500px), (max-height: 850px) {
+-  .tv-movement-focus {
+-    grid-template-columns: minmax(11.5rem, 15rem) minmax(15rem, 22rem);
+-    gap: 0.42rem 0.58rem;
+-  }
+-
+-  .tv-movement-focus-heading,
+-  .tv-movement-focus-roll,
+-  .tv-movement-focus-destination,
+-  .tv-movement-focus-travel,
+-  .tv-movement-focus-timeline {
+-    padding-block: 0.42rem;
+-  }
+-}
+-
+-.tv-command-dashboard--movement-focus .tv-command-stage-movement-focus {
+-  grid-template-columns: minmax(0, 1fr);
+-  grid-template-rows: minmax(0, 1fr);
+-}
+-
+-.tv-command-dashboard--movement-focus .tv-command-stage-movement-focus > .tv-command-map-shell,
+-.tv-command-dashboard--movement-focus .tv-command-map-shell > .tv-board-panel,
+-.tv-command-dashboard--movement-focus .tv-command-map-shell .tv-board-shell,
+-.tv-command-dashboard--movement-focus .tv-command-map-shell .board-stage {
+-  width: 100%;
+-  height: 100%;
+-  max-width: none;
+-  max-height: none;
+-  min-width: 0;
+-  min-height: 0;
+-}
+-
+-.tv-command-dashboard--movement-focus .tv-command-stage-movement-focus > .tv-command-map-shell {
+-  grid-column: 1;
+-  grid-row: 1;
+-  justify-self: stretch;
+-  align-self: stretch;
+-}
+-
+-.tv-command-dashboard--movement-focus .tv-command-stage-movement-focus > .tv-movement-focus {
+-  position: absolute;
+-}
+-
+-.tv-command-dashboard--movement-focus .tv-command-map-shell .tv-board-shell {
+-  display: block;
+-}
+-
+-.tv-command-dashboard--movement-focus .tv-command-map-shell .board-stage {
+-  aspect-ratio: auto;
+-}
+-
+ /* TV shop focus: a public, display-only merchant stage over the mounted board. */
+ .tv-command-dashboard .tv-command-main--shop-focus {
+   grid-template-columns: clamp(12.5rem, 15.5vw, 18rem) minmax(0, 1fr);
+@@ -17391,3 +17287,644 @@ body {
+     width: min(25rem, 40vw);
+   }
+ }
++
++/* Live-play movement composition: board-first choice HUD and a single arrival brief. */
++.tv-command-stage-movement-focus .tv-movement-focus {
++  inset: auto clamp(0.55rem, 1vw, 1rem) clamp(0.55rem, 1vw, 1rem);
++  grid-template-columns: minmax(13rem, 1fr) minmax(12rem, 0.8fr) minmax(16rem, 1.2fr);
++  grid-template-areas:
++    "heading roll destination"
++    "travel travel travel"
++    "timeline timeline timeline";
++  width: min(64rem, calc(100% - 1.1rem));
++  margin-inline: auto;
++  align-content: end;
++}
++
++.tv-command-stage-movement-focus .tv-movement-focus-heading,
++.tv-command-stage-movement-focus .tv-movement-focus-roll,
++.tv-command-stage-movement-focus .tv-movement-focus-destination,
++.tv-command-stage-movement-focus .tv-movement-focus-travel,
++.tv-command-stage-movement-focus .tv-movement-focus-timeline {
++  background: linear-gradient(180deg, rgba(5, 13, 19, 0.82), rgba(3, 8, 12, 0.72));
++  -webkit-backdrop-filter: blur(0.3rem);
++  backdrop-filter: blur(0.3rem);
++}
++
++.tv-command-stage-movement-focus .tv-movement-focus-heading {
++  width: auto;
++  justify-self: stretch;
++  justify-items: start;
++  text-align: left;
++}
++
++.tv-command-stage-movement-focus .tv-movement-focus-timeline {
++  padding-block: 0.22rem;
++}
++
++.tv-arrival-focus {
++  position: absolute;
++  z-index: 14;
++  left: 50%;
++  bottom: clamp(0.7rem, 1.2vw, 1.2rem);
++  width: min(68rem, calc(100% - 1.4rem));
++  transform: translateX(-50%);
++  display: grid;
++  gap: 0.5rem;
++  padding: clamp(0.65rem, 1vw, 1rem);
++  border: 1px solid rgba(90, 190, 220, 0.5);
++  background: linear-gradient(180deg, rgba(4, 12, 18, 0.88), rgba(3, 8, 12, 0.76));
++  box-shadow: 0 0.8rem 2rem rgba(0, 0, 0, 0.42);
++  color: #e7f2f5;
++  pointer-events: none;
++  -webkit-backdrop-filter: blur(0.4rem);
++  backdrop-filter: blur(0.4rem);
++}
++
++.tv-arrival-focus header {
++  display: grid;
++  grid-template-columns: auto 1fr auto;
++  gap: 0.4rem 0.8rem;
++  align-items: baseline;
++}
++
++.tv-arrival-focus header span,
++.tv-arrival-focus article > span {
++  color: #76cce9;
++  font-size: 0.64rem;
++  font-weight: 850;
++  letter-spacing: 0.12em;
++  text-transform: uppercase;
++}
++
++.tv-arrival-focus header strong {
++  color: #f1dfb8;
++  font: 800 clamp(1.1rem, 1.7vw, 1.8rem)/1 Georgia, "Times New Roman", serif;
++}
++
++.tv-arrival-focus header p,
++.tv-arrival-focus article p {
++  margin: 0;
++  color: #b8cbd2;
++}
++
++.tv-arrival-focus-meta {
++  display: flex;
++  flex-wrap: wrap;
++  gap: 0.3rem;
++}
++
++.tv-arrival-focus-meta span {
++  padding: 0.18rem 0.38rem;
++  border: 1px solid rgba(99, 193, 160, 0.32);
++  background: rgba(5, 20, 22, 0.44);
++  color: #bde3d5;
++  font-size: 0.58rem;
++  text-transform: uppercase;
++}
++
++.tv-arrival-focus-grid {
++  display: grid;
++  grid-template-columns: 1.3fr 1fr 0.8fr;
++  gap: 0.45rem;
++}
++
++.tv-arrival-focus article {
++  min-width: 0;
++  display: grid;
++  align-content: start;
++  gap: 0.28rem;
++  padding: 0.48rem;
++  border: 1px solid rgba(90, 170, 205, 0.24);
++  background: rgba(0, 0, 0, 0.2);
++}
++
++.tv-arrival-focus article > strong,
++.tv-arrival-focus li strong {
++  color: #f0e4ca;
++}
++
++.tv-arrival-focus ul {
++  margin: 0;
++  padding: 0;
++  display: grid;
++  gap: 0.25rem;
++  list-style: none;
++}
++
++.tv-arrival-focus li {
++  display: flex;
++  justify-content: space-between;
++  gap: 0.5rem;
++}
++
++.tv-arrival-focus li small {
++  color: #e3b96b;
++  white-space: nowrap;
++}
++
++.phone-inventory-completed-missions {
++  display: grid;
++  gap: 0.45rem;
++  padding: 0.65rem;
++  border: 1px solid rgba(202, 164, 91, 0.38);
++  background: linear-gradient(145deg, rgba(35, 25, 12, 0.72), rgba(8, 14, 18, 0.82));
++}
++
++.phone-inventory-completed-missions > div {
++  display: flex;
++  justify-content: space-between;
++  gap: 0.5rem;
++  align-items: baseline;
++}
++
++.phone-inventory-completed-missions span {
++  color: #d9af5f;
++  font-size: 0.72rem;
++  font-weight: 850;
++  letter-spacing: 0.08em;
++  text-transform: uppercase;
++}
++
++.phone-inventory-completed-missions strong {
++  color: #f0dfbb;
++  font-size: 0.72rem;
++  text-align: right;
++}
++
++.phone-inventory-completed-missions ul {
++  margin: 0;
++  padding: 0;
++  display: grid;
++  gap: 0.25rem;
++  list-style: none;
++}
++
++.phone-inventory-completed-missions li {
++  padding: 0.35rem 0.45rem;
++  border-left: 2px solid rgba(214, 170, 80, 0.72);
++  background: rgba(0, 0, 0, 0.24);
++  color: #e8ddc5;
++}
++
++.phone-inventory-completed-missions p {
++  margin: 0;
++  color: #aebdc3;
++  font-size: 0.76rem;
++}
++
++@media (max-width: 1100px), (max-height: 720px) {
++  .tv-command-stage-movement-focus .tv-movement-focus {
++    grid-template-columns: minmax(11rem, 1fr) minmax(10rem, 0.8fr) minmax(13rem, 1fr);
++  }
++
++  .tv-arrival-focus {
++    gap: 0.35rem;
++    padding: 0.5rem;
++  }
++
++  .tv-arrival-focus-grid {
++    gap: 0.3rem;
++  }
++}
++
++/* TV shop focus: a public, display-only merchant stage over the mounted board. */
++.tv-command-dashboard .tv-command-main--shop-focus {
++  grid-template-columns: clamp(12.5rem, 15.5vw, 18rem) minmax(0, 1fr);
++  gap: clamp(0.45rem, 0.72vw, 0.8rem);
++}
++
++.tv-command-dashboard--shop-focus .tv-operatives-rail {
++  opacity: 0.62;
++  filter: saturate(0.68) brightness(0.76);
++}
++
++.tv-command-dashboard--shop-focus .tv-command-stage-shop-mode {
++  border-color: rgba(210, 164, 84, 0.34);
++  background: rgba(3, 5, 8, 0.98);
++  box-shadow: inset 0 0 7rem rgba(0, 0, 0, 0.68);
++}
++
++.tv-command-dashboard--shop-focus .tv-command-stage-shop-mode .tv-command-map-shell {
++  filter: brightness(0.24) saturate(0.5) contrast(1.12);
++}
++
++.tv-command-dashboard--shop-focus .host-shop-overlay {
++  inset: clamp(0.25rem, 0.5vw, 0.6rem);
++}
++
++.tv-command-dashboard--shop-focus .host-shop-panel-stage {
++  width: 100%;
++  grid-template-columns: minmax(0, 1fr) clamp(13rem, 17vw, 19rem);
++  grid-template-rows: clamp(2.6rem, 5.5svh, 4rem) minmax(0, 1fr) clamp(2.8rem, 6.4svh, 4.35rem);
++  gap: clamp(0.35rem, 0.58vw, 0.68rem);
++  background:
++    radial-gradient(circle at 42% 36%, rgba(218, 169, 77, 0.18), transparent 32%),
++    linear-gradient(120deg, rgba(16, 12, 9, 0.82), rgba(3, 6, 9, 0.88));
++}
++
++.tv-command-dashboard--shop-focus .host-shop-alert {
++  background: linear-gradient(90deg, rgba(18, 12, 8, 0.72), rgba(4, 10, 14, 0.68));
++  box-shadow: none;
++}
++
++.tv-command-dashboard--shop-focus .host-shop-stage {
++  position: relative;
++  isolation: isolate;
++  grid-template-rows: auto minmax(0, 1fr) auto auto;
++  padding: clamp(0.55rem, 0.9vw, 1.05rem);
++  background:
++    linear-gradient(180deg, rgba(3, 5, 8, 0.18), rgba(3, 5, 8, 0.58)),
++    radial-gradient(circle at 50% 38%, rgba(222, 172, 79, 0.1), transparent 40%);
++}
++
++.tv-command-dashboard--shop-focus .host-shop-stage > :not(.host-shop-card-backdrop) {
++  position: relative;
++  z-index: 2;
++}
++
++.host-shop-card-backdrop {
++  position: absolute;
++  inset: 8% 12% 20%;
++  z-index: 0;
++  display: flex;
++  align-items: flex-start;
++  justify-content: center;
++  gap: 0;
++  pointer-events: none;
++  opacity: 0.25;
++  filter: saturate(0.72);
++}
++
++.host-shop-card-backdrop > div {
++  width: clamp(7rem, 10vw, 11rem);
++  aspect-ratio: 0.7;
++  margin-inline: clamp(-2.8rem, -2.2vw, -1.5rem);
++  display: grid;
++  place-items: center;
++  overflow: hidden;
++  border: 1px solid rgba(224, 183, 103, 0.46);
++  background: linear-gradient(150deg, rgba(48, 35, 20, 0.84), rgba(4, 7, 10, 0.92));
++  transform: rotate(calc((var(--shop-backdrop-index) - 2) * 7deg));
++  animation: host-shop-card-float 5.8s ease-in-out infinite alternate;
++  animation-delay: calc(var(--shop-backdrop-index) * -0.7s);
++}
++
++.host-shop-card-backdrop > div:nth-child(1),
++.host-shop-card-backdrop > div:nth-child(5) {
++  translate: 0 1rem;
++}
++
++.host-shop-card-backdrop > div:nth-child(2),
++.host-shop-card-backdrop > div:nth-child(4) {
++  translate: 0 0.42rem;
++}
++
++.host-shop-card-backdrop img {
++  width: 100%;
++  height: 100%;
++  object-fit: cover;
++}
++
++.host-shop-card-backdrop svg {
++  width: 52%;
++  fill: rgba(236, 202, 139, 0.78);
++}
++
++.tv-command-dashboard--shop-focus .host-shop-heading {
++  gap: 0.12rem;
++}
++
++.tv-command-dashboard--shop-focus .host-shop-heading::after {
++  content: "? ????????? ?";
++  color: rgba(216, 170, 83, 0.68);
++  font-size: clamp(0.5rem, 0.64vw, 0.72rem);
++  letter-spacing: 0.16em;
++}
++
++.tv-command-dashboard--shop-focus .host-shop-heading h2 {
++  font-size: clamp(1.8rem, 3.6vw, 4.7rem);
++  text-shadow: 0 0 1.4rem rgba(220, 163, 70, 0.38), 0 0.12rem 0 rgba(0, 0, 0, 0.8);
++}
++
++.tv-command-dashboard--shop-focus .host-shop-preview-grid {
++  align-items: center;
++  grid-template-columns: repeat(auto-fit, minmax(min(9.5rem, 100%), 1fr));
++  max-height: 100%;
++}
++
++.tv-command-dashboard--shop-focus .host-shop-preview-card {
++  position: relative;
++  height: min(100%, 25rem);
++  grid-template-rows: auto auto minmax(5rem, 1fr) auto auto;
++  padding: clamp(0.55rem, 0.82vw, 0.92rem);
++  border-color: rgba(225, 183, 103, 0.46);
++  background:
++    linear-gradient(180deg, rgba(27, 20, 13, 0.9), rgba(4, 7, 10, 0.92)),
++    rgba(5, 8, 12, 0.92);
++  box-shadow: inset 0 0 0 1px rgba(255, 237, 197, 0.035), 0 0.7rem 1.5rem rgba(0, 0, 0, 0.34);
++}
++
++.host-shop-preview-media {
++  position: relative;
++  min-height: 0;
++  display: grid;
++  place-items: center;
++  overflow: hidden;
++  border-block: 1px solid rgba(225, 183, 103, 0.18);
++  background: radial-gradient(circle, rgba(219, 169, 78, 0.15), rgba(2, 5, 8, 0.42) 68%);
++}
++
++.host-shop-preview-media img {
++  width: 100%;
++  height: 100%;
++  object-fit: cover;
++  opacity: 0.78;
++  mask-image: linear-gradient(180deg, transparent, #000 12%, #000 82%, transparent);
++}
++
++.host-shop-preview-media svg {
++  width: clamp(2.8rem, 4.6vw, 5rem);
++  fill: currentColor;
++  filter: drop-shadow(0 0 0.8rem currentColor);
++}
++
++.host-shop-preview-service .host-shop-preview-media {
++  color: #69d594;
++}
++
++.host-shop-preview-stock .host-shop-preview-media {
++  color: #6fc7f4;
++}
++
++.host-shop-preview-sell .host-shop-preview-media {
++  color: #ee8c54;
++}
++
++.host-shop-preview-blocked .host-shop-preview-media,
++.host-shop-preview-empty .host-shop-preview-media {
++  color: #dc654e;
++}
++
++.host-shop-preview-cost {
++  display: flex;
++  align-items: center;
++  justify-content: space-between;
++  gap: 0.35rem;
++  padding-top: 0.38rem;
++  border-top: 1px solid rgba(225, 183, 103, 0.2);
++}
++
++.host-shop-preview-cost strong {
++  color: #f3c96f;
++}
++
++.tv-command-dashboard--shop-focus .host-shop-preview-disabled {
++  opacity: 0.62;
++  filter: grayscale(0.72) saturate(0.5);
++}
++
++.tv-command-dashboard--shop-focus .host-shop-preview-disabled::after {
++  content: "LOCKED";
++  position: absolute;
++  top: 0.55rem;
++  right: 0.55rem;
++  padding: 0.2rem 0.34rem;
++  border: 1px solid rgba(235, 101, 75, 0.5);
++  background: rgba(48, 10, 8, 0.78);
++  color: #ffad96;
++  font-size: clamp(0.48rem, 0.58vw, 0.66rem);
++  letter-spacing: 0.1em;
++}
++
++.tv-command-dashboard--shop-focus .host-shop-status-panel {
++  background: linear-gradient(180deg, rgba(8, 12, 15, 0.74), rgba(4, 7, 10, 0.66));
++  border-color: rgba(217, 171, 86, 0.28);
++}
++
++.tv-command-dashboard--shop-focus .host-shop-instruction {
++  background: rgba(5, 8, 12, 0.66);
++  border-color: rgba(224, 179, 94, 0.38);
++}
++
++@keyframes host-shop-card-float {
++  from {
++    translate: 0 -0.2rem;
++  }
++  to {
++    translate: 0 0.55rem;
++  }
++}
++
++@media (max-width: 1500px) {
++  .tv-command-dashboard .tv-command-main--shop-focus {
++    grid-template-columns: clamp(10.5rem, 14vw, 13rem) minmax(0, 1fr);
++  }
++
++  .tv-command-dashboard--shop-focus .host-shop-panel-stage {
++    grid-template-columns: minmax(0, 1fr) clamp(11rem, 16vw, 14rem);
++  }
++
++  .tv-command-dashboard--shop-focus .host-shop-preview-card {
++    grid-template-rows: auto auto minmax(3.6rem, 1fr) auto auto;
++    gap: 0.2rem;
++  }
++
++  .tv-command-dashboard--shop-focus .host-shop-preview-card p {
++    -webkit-line-clamp: 2;
++  }
++
++  .tv-command-dashboard--shop-focus .host-shop-status-panel {
++    gap: 0.28rem;
++    padding: 0.5rem;
++  }
++}
++
++@media (prefers-reduced-motion: reduce) {
++  .host-shop-card-backdrop > div {
++    animation: none;
++  }
++}
++
++/* Movement QA lock: centered non-overlapping HUD and compact phone command states. */
++.tv-command-dashboard--movement-focus .tv-command-header {
++  flex-shrink: 0;
++}
++
++.tv-movement-focus {
++  inset: clamp(0.45rem, 0.8vw, 0.8rem);
++  display: grid;
++  grid-template-columns: minmax(12rem, 17rem) minmax(16rem, 24rem);
++  grid-template-areas:
++    "heading heading"
++    "roll destination"
++    "travel travel"
++    "timeline timeline";
++  justify-content: center;
++  align-content: center;
++  gap: clamp(0.45rem, 0.75vw, 0.8rem);
++}
++
++.tv-movement-focus-heading,
++.tv-movement-focus-roll,
++.tv-movement-focus-destination,
++.tv-movement-focus-travel,
++.tv-movement-focus-timeline {
++  position: static;
++  inset: auto;
++  width: auto;
++  transform: none;
++  min-width: 0;
++  margin: 0;
++}
++
++.tv-movement-focus-heading {
++  grid-area: heading;
++  justify-self: center;
++  width: min(30rem, 100%);
++}
++
++.tv-movement-focus-roll {
++  grid-area: roll;
++}
++
++.tv-movement-focus-destination {
++  grid-area: destination;
++}
++
++.tv-movement-focus-travel {
++  grid-area: travel;
++  width: min(42rem, 100%);
++  justify-self: center;
++}
++
++.tv-movement-focus-timeline {
++  grid-area: timeline;
++  width: min(44rem, 100%);
++  justify-self: center;
++}
++
++.phone-move-panel--needs-roll,
++.phone-move-panel--needs-destination,
++.phone-move-panel--needs-confirm {
++  gap: 0.42rem;
++}
++
++.phone-move-panel--needs-roll .phone-current-tile-card,
++.phone-move-panel--needs-destination .phone-current-tile-card,
++.phone-move-panel--needs-confirm .phone-current-tile-card {
++  padding: 0.42rem;
++}
++
++.phone-move-panel--needs-roll .phone-current-tile-card .phone-wrap-card__media,
++.phone-move-panel--needs-destination .phone-current-tile-card .phone-wrap-card__media,
++.phone-move-panel--needs-confirm .phone-current-tile-card .phone-wrap-card__media {
++  width: 3.4rem;
++  height: 3.4rem;
++  margin: 0 0.5rem 0.25rem 0;
++}
++
++.phone-move-panel--needs-roll .phone-current-tile-facts,
++.phone-move-panel--needs-destination .phone-current-tile-facts,
++.phone-move-panel--needs-confirm .phone-current-tile-facts,
++.phone-move-panel--needs-roll .phone-current-tile-card .phone-wrap-card__description,
++.phone-move-panel--needs-destination .phone-current-tile-card .phone-wrap-card__description,
++.phone-move-panel--needs-confirm .phone-current-tile-card .phone-wrap-card__description {
++  display: none;
++}
++
++.phone-move-panel--needs-roll .phone-movement-planner {
++  padding: 0.6rem;
++  gap: 0.5rem;
++}
++
++.phone-move-panel--needs-roll .phone-movement-empty {
++  min-height: 4.4rem;
++  padding: 0.65rem;
++}
++
++.phone-movement-roll-actions .phone-action-button,
++.phone-movement-detail-hero .phone-movement-confirm {
++  min-height: 3.1rem;
++  border-color: rgba(121, 205, 248, 0.72);
++  box-shadow: 0 0 1rem rgba(52, 159, 220, 0.22);
++}
++
++.phone-movement-summary .combat-die-layer {
++  background:
++    radial-gradient(circle at 32% 24%, rgba(255, 255, 255, 0.34), transparent 20%),
++    linear-gradient(145deg, #cfeaf4 0%, #82bfd8 52%, #397792 100%);
++  border-color: rgba(7, 23, 32, 0.92);
++  filter: contrast(1.16) saturate(1.08);
++  box-shadow:
++    inset 0 -0.35rem 0.7rem rgba(4, 15, 23, 0.42),
++    0 0.55rem 1rem rgba(0, 0, 0, 0.42);
++}
++
++.phone-movement-summary .combat-die-layer strong {
++  color: #06131b;
++  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.72), 0 0 0.28rem rgba(255, 255, 255, 0.32);
++}
++
++.phone-movement-summary .combat-die-label {
++  color: rgba(4, 16, 23, 0.82);
++  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.46);
++}
++
++.phone-move-panel--resolving .phone-movement-empty {
++  min-height: 5rem;
++  border-style: solid;
++  border-color: rgba(90, 185, 225, 0.42);
++}
++
++@media (max-width: 1500px), (max-height: 850px) {
++  .tv-movement-focus {
++    grid-template-columns: minmax(11.5rem, 15rem) minmax(15rem, 22rem);
++    gap: 0.42rem 0.58rem;
++  }
++
++  .tv-movement-focus-heading,
++  .tv-movement-focus-roll,
++  .tv-movement-focus-destination,
++  .tv-movement-focus-travel,
++  .tv-movement-focus-timeline {
++    padding-block: 0.42rem;
++  }
++}
++
++/* Fresh-session QA: keep the map wrappers stretched when movement removes both side rails. */
++.tv-command-dashboard--movement-focus .tv-command-stage-movement-focus {
++  grid-template-columns: minmax(0, 1fr);
++  grid-template-rows: minmax(0, 1fr);
++}
++
++.tv-command-dashboard--movement-focus .tv-command-stage-movement-focus > .tv-command-map-shell,
++.tv-command-dashboard--movement-focus .tv-command-map-shell > .tv-board-panel,
++.tv-command-dashboard--movement-focus .tv-command-map-shell .tv-board-shell,
++.tv-command-dashboard--movement-focus .tv-command-map-shell .board-stage {
++  width: 100%;
++  height: 100%;
++  max-width: none;
++  max-height: none;
++  min-width: 0;
++  min-height: 0;
++}
++
++.tv-command-dashboard--movement-focus .tv-command-stage-movement-focus > .tv-command-map-shell {
++  grid-column: 1;
++  grid-row: 1;
++  justify-self: stretch;
++  align-self: stretch;
++}
++
++.tv-command-dashboard--movement-focus .tv-command-stage-movement-focus > .tv-movement-focus {
++  position: absolute;
++}
++
++.tv-command-dashboard--movement-focus .tv-command-map-shell .tv-board-shell {
++  display: block;
++}
++
++.tv-command-dashboard--movement-focus .tv-command-map-shell .board-stage {
++  aspect-ratio: auto;
++}
+diff --git a/src/client/tv/__tests__/TvApp.test.tsx b/src/client/tv/__tests__/TvApp.test.tsx
+index 32b69a5..00fb3a4 100644
+--- a/src/client/tv/__tests__/TvApp.test.tsx
++++ b/src/client/tv/__tests__/TvApp.test.tsx
+@@ -1550,7 +1550,7 @@ describe("TvApp", () => {
+       services: [
+         {
+           id: "buy-gear",
+-          label: "Buy Gear",
++          label: "Buy Equipment",
+           cost: { salvage: 3 },
+           enabled: true
+         }
+diff --git a/src/game/assets/runtime/cardArtRuntimeCatalog.ts b/src/game/assets/runtime/cardArtRuntimeCatalog.ts
+index 396ff1f..3cfa656 100644
+--- a/src/game/assets/runtime/cardArtRuntimeCatalog.ts
++++ b/src/game/assets/runtime/cardArtRuntimeCatalog.ts
+@@ -952,6 +952,31 @@ export const cardArtRuntimeCatalog: RuntimeCardArtCatalogEntry[] = [
+     "cardType": "artifact",
+     "outputPath": "/assets/cards/artifacts/artifact-zoey-thorn-violet.png"
+   },
++  {
++    "cardId": "artifact-coffin-rig",
++    "cardType": "artifact",
++    "outputPath": "/assets/cards/artifacts/artifact-coffin-rig.png"
++  },
++  {
++    "cardId": "artifact-grave-lens",
++    "cardType": "artifact",
++    "outputPath": "/assets/cards/artifacts/artifact-grave-lens.png"
++  },
++  {
++    "cardId": "artifact-marshal-seal",
++    "cardType": "artifact",
++    "outputPath": "/assets/cards/artifacts/artifact-marshal-seal.png"
++  },
++  {
++    "cardId": "artifact-tuning-spines",
++    "cardType": "artifact",
++    "outputPath": "/assets/cards/artifacts/artifact-tuning-spines.png"
++  },
++  {
++    "cardId": "artifact-veil-hook",
++    "cardType": "artifact",
++    "outputPath": "/assets/cards/artifacts/artifact-veil-hook.png"
++  },
+   {
+     "cardId": "ashlock-cleaver",
+     "cardType": "equipment",
+diff --git a/src/game/data/boardSpaces.ts b/src/game/data/boardSpaces.ts
+index 82dd922..c8b5868 100644
+--- a/src/game/data/boardSpaces.ts
++++ b/src/game/data/boardSpaces.ts
+@@ -100,7 +100,7 @@ const RAW_BOARD_SPACES: AuthoredBoardSpaceDefinition[] = [
+     threatIcons: ["yellow"],
+     textBox: {
+       title: "Market Exchange",
+-      text: "If the stalls are calm, draw 3 Gear leads, buy or reserve 1, or trade salvage favors for a contract lead.",
++      text: "If the stalls are calm, reveal 2-6 random Equipment options, buy 1, or trade salvage favors for a contract lead.",
+       effectKey: "outer_waymarketExchange"
+     },
+     notes: "Market/exchange space for low-friction early decisions."
+@@ -842,7 +842,7 @@ const BOARD_SPACE_PRESENTATION: Record<string, BoardSpacePresentation> = {
+   },
+   outer_waymarket: {
+     tags: ["shop", "crossroads"],
+-    ruleText: "If no threats are present, buy Gear, sell Gear, or reserve a contract lead.",
++    ruleText: "If no threats are present, buy Equipment, sell Gear, or reserve a contract lead.",
+     loreText: "A bazaar of sealed crates, oath-brokers, and weapons that still remember previous owners."
+   },
+   "coldwind-wharf": {
+@@ -877,7 +877,7 @@ const BOARD_SPACE_PRESENTATION: Record<string, BoardSpacePresentation> = {
+   },
+   "colony-outskirts": {
+     tags: ["salvage", "crossroads"],
+-    ruleText: "If clear, salvage route supplies from abandoned colony stores.",
++    ruleText: "If clear, salvage field equipment from abandoned colony stores.",
+     loreText: "Colony Outskirts are all cold cookfires, sealed doors, and hand-painted evacuation arrows."
+   },
+   "deadwater-marsh": {
+diff --git a/src/game/engine/__tests__/characterRoster.test.ts b/src/game/engine/__tests__/characterRoster.test.ts
+index 427a4c9..5d3cc17 100644
+--- a/src/game/engine/__tests__/characterRoster.test.ts
++++ b/src/game/engine/__tests__/characterRoster.test.ts
+@@ -28,7 +28,8 @@ describe("character roster content", () => {
+         armor: null,
+         utility: null
+       });
+-      expect(character.startingGear?.length).toBe(1);
++      expect(character.startingGear?.length).toBeGreaterThanOrEqual(1);
++      expect(character.startingGear?.length).toBeLessThanOrEqual(2);
+       expect(character.startingContract).toBeTruthy();
+     }
+   });
+diff --git a/src/game/engine/__tests__/engine.test.ts b/src/game/engine/__tests__/engine.test.ts
+index dd4b48f..307874d 100644
+--- a/src/game/engine/__tests__/engine.test.ts
++++ b/src/game/engine/__tests__/engine.test.ts
+@@ -1965,7 +1965,7 @@ describe("active resolution visibility state", () => {
+ 
+     expect(supplied.sent.find((message) => message.type === "INTENT_REJECTED")).toBeUndefined();
+     expect(supplied.server.getState().players[0]?.character.salvage).toBe(2);
+-    expect(supplied.server.getState().players[0]?.private.notes.at(-1)).toContain("supply crate");
++    expect(supplied.server.getState().players[0]?.private.notes.at(-1)).toContain("equipment cache");
+ 
+     const treated = createShopServer({ sectorId: "outer_ember_sanctum", salvage: 4, wounds: 2 });
+     treated.server.handleIntent(treated.client, {
+@@ -8088,8 +8088,7 @@ describe("contracts", () => {
+                 ...entry,
+                 character: {
+                   ...entry.character,
+-                  heat: 2,
+-                  activeContract: { contractId: "choir-hush-census", progress: 1 }
++                  activeContract: { contractId: "compact-cleanse-ledger", progress: 1 }
+                 }
+               }
+             : entry
+@@ -8106,10 +8105,10 @@ describe("contracts", () => {
+     runIntent(server, {
+       type: "COMPLETE_CONTRACT",
+       seatId: "seat-1",
+-      contractId: "choir-hush-census"
++      contractId: "compact-cleanse-ledger"
+     });
+     expect(server.getState().players.find((entry) => entry.seatId === "seat-1")?.character.activeContract).toEqual({
+-      contractId: "choir-hush-census",
++      contractId: "compact-cleanse-ledger",
+       progress: 1
+     });
+ 
+@@ -8121,8 +8120,7 @@ describe("contracts", () => {
+                 ...entry,
+                 character: {
+                   ...entry.character,
+-                  heat: 2,
+-                  activeContract: { contractId: "choir-hush-census", progress: 2 }
++                  activeContract: { contractId: "compact-cleanse-ledger", progress: 2 }
+                 }
+               }
+             : entry
+@@ -8139,12 +8137,34 @@ describe("contracts", () => {
+     runIntent(readyServer, {
+       type: "COMPLETE_CONTRACT",
+       seatId: "seat-1",
+-      contractId: "choir-hush-census"
++      contractId: "compact-cleanse-ledger"
+     });
+ 
+     const player = readyServer.getState().players.find((entry) => entry.seatId === "seat-1");
+     expect(player?.character.activeContract).toBeNull();
+-    expect(player?.character.heat).toBe(2);
++    expect(player?.character.heldGear.some((item) => item.id === "veil-hook")).toBe(true);
++    expect(player?.character.completedContracts).toEqual(["compact-cleanse-ledger"]);
++    expect(readyServer.getState().pendingEffect).toBeNull();
++    expect(readyServer.getState().phase).toBe("action");
++
++    runIntent(readyServer, {
++      type: "ACCEPT_CONTRACT",
++      seatId: "seat-1",
++      contractId: "choir-hush-census"
++    });
++    expect(readyServer.getState().players.find((entry) => entry.seatId === "seat-1")?.character.activeContract).toEqual({
++      contractId: "choir-hush-census",
++      progress: 0
++    });
++
++    runIntent(readyServer, {
++      type: "COMPLETE_CONTRACT",
++      seatId: "seat-1",
++      contractId: "compact-cleanse-ledger"
++    });
++    expect(readyServer.getState().players.find((entry) => entry.seatId === "seat-1")?.character.completedContracts).toEqual([
++      "compact-cleanse-ledger"
++    ]);
+   });
+ 
+   it("accepts a contract, wins two combats across turns, completes it, and receives the reward", () => {
+@@ -8268,6 +8288,41 @@ describe("contracts", () => {
+     expect(player?.character.activeContract).toBeNull();
+     expect(player?.character.heldGear.some((item) => item.id === "veil-hook")).toBe(true);
+   });
++
++  it("stores completed missions and consumes three when traded for an artifact", () => {
++    const artifact = createGear().get("veil-hook")!;
++    const state = createState({
++      players: createState().players.map((entry) =>
++        entry.seatId === "seat-1"
++          ? {
++              ...entry,
++              character: {
++                ...entry.character,
++                completedContracts: ["mission-a", "mission-b", "mission-c"]
++              }
++            }
++          : entry
++      )
++    });
++    const result = reduceGameState(state, {
++      type: "SHOP_SERVICE_RESOLVED",
++      seatId: "seat-1",
++      serviceId: "trade-missions-for-artifact",
++      serviceLabel: "Trade Missions for Artifact",
++      shopName: "Relic Dealer",
++      sectorId: "sector-a",
++      cost: { completedContracts: 3 },
++      result: { gainGear: artifact },
++      summary: "Traded three completed Missions for an Artifact.",
++      createdAt: new Date().toISOString()
++    });
++
++    expect(result.ok).toBe(true);
++    if (!result.ok) return;
++    const player = result.state.players.find((entry) => entry.seatId === "seat-1");
++    expect(player?.character.completedContracts).toEqual([]);
++    expect(player?.character.heldGear.some((item) => item.id === artifact.id)).toBe(true);
++  });
+ });
+ 
+ describe("opposed combat", () => {
+diff --git a/src/game/engine/actions.ts b/src/game/engine/actions.ts
+index 5d6f05a..b1bd17d 100644
+--- a/src/game/engine/actions.ts
++++ b/src/game/engine/actions.ts
+@@ -226,6 +226,7 @@ export type ShopServiceCost = {
+   heat?: number;
+   wounds?: number;
+   trophies?: number;
++  completedContracts?: number;
+ };
+ 
+ export type ShopServiceResult = {
+@@ -572,7 +573,12 @@ export type GameAction =
+   | CoopVictoryTriggeredAction
+   | CoopDefeatTriggeredAction;
+ 
+-export type ClientIntent =
++export type ClientIntent =
++  | {
++      type: "MOVEMENT_DESTINATION_PREVIEWED";
++      seatId: string;
++      toSectorId: string | null;
++    }
+   | {
+       type: "MOVE_REQUESTED";
+       seatId: string;
+diff --git a/src/game/engine/reducer.ts b/src/game/engine/reducer.ts
+index a4f8cda..247ce9d 100644
+--- a/src/game/engine/reducer.ts
++++ b/src/game/engine/reducer.ts
+@@ -32,6 +32,7 @@ import type {
+   ShopPurchaseResolvedAction,
+   ShopSellResolvedAction,
+   ShopServiceResolvedAction,
++  ShopServiceCost,
+   ShopStockRevealedAction,
+   ScenarioProgressAdvancedAction,
+   ScenarioObjectiveCompletedAction,
+@@ -417,7 +418,8 @@ function applyShopServiceToPlayer(player: PlayerState, action: ShopServiceResolv
+         player.character.trophies -
+           (action.cost.trophies ?? 0) +
+           (action.result.trophyDelta ?? 0)
+-      )
++      ),
++      completedContracts: (player.character.completedContracts ?? []).slice(action.cost.completedContracts ?? 0)
+     },
+     private: action.result.note
+       ? {
+@@ -441,7 +443,7 @@ function applyShopServiceToPlayer(player: PlayerState, action: ShopServiceResolv
+   });
+ }
+ 
+-function applyShopCostOnlyToPlayer(player: PlayerState, cost: { salvage?: number; heat?: number; wounds?: number; trophies?: number }): PlayerState {
++function applyShopCostOnlyToPlayer(player: PlayerState, cost: ShopServiceCost): PlayerState {
+   return {
+     ...player,
+     character: {
+@@ -449,7 +451,8 @@ function applyShopCostOnlyToPlayer(player: PlayerState, cost: { salvage?: number
+       salvage: Math.max(0, (player.character.salvage ?? 0) - (cost.salvage ?? 0)),
+       heat: player.character.heat,
+       wounds: Math.max(0, player.character.wounds + (cost.wounds ?? 0)),
+-      trophies: Math.max(0, player.character.trophies - (cost.trophies ?? 0))
++      trophies: Math.max(0, player.character.trophies - (cost.trophies ?? 0)),
++      completedContracts: (player.character.completedContracts ?? []).slice(cost.completedContracts ?? 0)
+     }
+   };
+ }
+@@ -476,7 +479,7 @@ function applyShopSellToPlayer(player: PlayerState, action: ShopSellResolvedActi
+   return removeHeldGearFromPlayer(afterSale, action.gearId);
+ }
+ 
+-function canPayShopActionCost(player: PlayerState, cost: { salvage?: number; heat?: number; wounds?: number; trophies?: number }): string | null {
++function canPayShopActionCost(player: PlayerState, cost: ShopServiceCost): string | null {
+   if ((player.character.salvage ?? 0) < (cost.salvage ?? 0)) {
+     return SHOP_FAILURE_REASONS.insufficientSalvage;
+   }
+@@ -485,6 +488,10 @@ function canPayShopActionCost(player: PlayerState, cost: { salvage?: number; hea
+     return "Not enough Trophies";
+   }
+ 
++  if ((player.character.completedContracts ?? []).length < (cost.completedContracts ?? 0)) {
++    return "Need completed Missions";
++  }
++
+   return null;
+ }
+ 
+@@ -2757,21 +2764,30 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
+       if (!isContractObjectiveComplete(contract, activeContract.progress)) {
+         return reject(state, action, "Contract objective is not complete yet");
+       }
+-
+-      return succeed({
+-        ...state,
+-        sequence: state.sequence + 1,
+-        phase: "resolution",
+-        resolutionSource: "contract",
+-        pendingEnemyRoll: null,
+-        pendingEffect: contract.reward,
+-        players: updateActivePlayer(state, completeAction.seatId, (entry) => ({
+-          ...entry,
+-          character: {
+-            ...entry.character,
+-            activeContract: null
+-          }
+-        })),
++
++      const rewardedState = applyEffectToState(
++        {
++          ...state,
++          players: updateActivePlayer(state, completeAction.seatId, (entry) => ({
++            ...entry,
++            character: {
++              ...entry.character,
++              activeContract: null,
++              completedContracts: [...(entry.character.completedContracts ?? []), contract.id]
++            }
++          }))
++        },
++        completeAction.seatId,
++        contract.reward
++      );
++
++      return succeed({
++        ...rewardedState,
++        sequence: state.sequence + 1,
++        phase: "resolution",
++        resolutionSource: "contract",
++        pendingEnemyRoll: null,
++        pendingEffect: null,
+         lastOutcomeSummary: {
+           seatId: completeAction.seatId,
+           movedToSectorId: player.sectorId,
+diff --git a/src/game/rules/shopAvailability.ts b/src/game/rules/shopAvailability.ts
+index fcec810..e5c6293 100644
+--- a/src/game/rules/shopAvailability.ts
++++ b/src/game/rules/shopAvailability.ts
+@@ -156,7 +156,7 @@ export function getAvailableShopStockForCategory(
+ 
+   const stock = filterGearByShopCategory(items, category)
+     .filter((item) => !ownedGearIds.has(item.id))
+-    .filter((item) => options.includeArtifacts === true || item.tier !== "artifact")
++    .filter((item) => item.tier === "artifact" ? options.includeArtifacts === true : item.normalShopCommon !== false)
+     .filter((item) => options.includeQaGear === true || !isQaShopGear(item))
+     .sort((left, right) => {
+       const costDelta = options.expensiveFirst
+diff --git a/src/game/schema/card.schema.ts b/src/game/schema/card.schema.ts
+index fae1a09..8f4e20f 100644
+--- a/src/game/schema/card.schema.ts
++++ b/src/game/schema/card.schema.ts
+@@ -314,6 +314,12 @@ export const artifactKindSchema = z.enum([
+ export const artifactCardSchema = cardBaseSchema.extend({
+   type: z.literal("artifact"),
+   artifactKind: artifactKindSchema.optional(),
++  missionRewardEligible: z.boolean().optional(),
++  eliteThreatRewardEligible: z.boolean().optional(),
++  rareShopEligible: z.boolean().optional(),
++  scenarioRewardEligible: z.boolean().optional(),
++  startingEligible: z.literal(false).optional(),
++  normalShopCommon: z.literal(false).optional(),
+   charge: z.number().int().min(0),
+   resolutionSummary: z.string().min(1),
+   resolveEffect: effectSchema
+diff --git a/src/game/schema/character.schema.ts b/src/game/schema/character.schema.ts
+index 2d052d6..ac44ea2 100644
+--- a/src/game/schema/character.schema.ts
++++ b/src/game/schema/character.schema.ts
+@@ -65,6 +65,7 @@ export const characterSchema = z.object({
+   wounds: z.number().int().min(0),
+   scars: z.array(z.string()),
+   activeContract: activeContractSchema,
++  completedContracts: z.array(z.string().min(1)).optional(),
+   heldGear: z.array(gearItemSchema),
+   equippedGear: equippedGearSchema,
+   followers: z.array(followerSchema).optional(),
+diff --git a/src/game/schema/gear.schema.ts b/src/game/schema/gear.schema.ts
+index 3372ee0..d92cc57 100644
+--- a/src/game/schema/gear.schema.ts
++++ b/src/game/schema/gear.schema.ts
+@@ -1,6 +1,7 @@
+ import { z } from "zod";
+ 
+ export const gearSlotSchema = z.enum(["weapon", "armor", "utility"]);
++export const equipmentSubtypeSchema = z.enum(["weapon", "armour", "tool", "medical", "supply", "utility"]);
+ export const gearBonusStatSchema = z.enum(["command", "grit", "signal", "guile", "forge"]);
+ export const gearTierSchema = z.enum(["starter", "standard", "advanced", "artifact"]);
+ export const gearTimingWindowSchema = z.enum([
+@@ -35,6 +36,7 @@ export const gearItemSchema = z.object({
+   id: z.string().min(1),
+   name: z.string().min(1),
+   slot: gearSlotSchema,
++  subtype: equipmentSubtypeSchema.optional(),
+   category: gearCategorySchema.optional(),
+   shopCategories: z.array(shopCategorySchema).min(1).optional(),
+   statBonus: z.object({
+@@ -54,10 +56,15 @@ export const gearItemSchema = z.object({
+   charges: z.number().int().min(0).optional(),
+   maxUses: z.number().int().min(0).optional(),
+   heatCost: z.number().int().min(0).optional(),
+-  linkedFollowerRole: z.string().min(1).optional()
++  linkedFollowerRole: z.string().min(1).optional(),
++  startingEligible: z.boolean().optional(),
++  normalShopCommon: z.boolean().optional(),
++  allowedFallbackArt: z.boolean().optional(),
++  qaOnly: z.boolean().optional()
+ });
+ 
+ export type GearSlot = z.infer<typeof gearSlotSchema>;
++export type EquipmentSubtype = z.infer<typeof equipmentSubtypeSchema>;
+ export type GearCategory = z.infer<typeof gearCategorySchema>;
+ export type ShopCategory = z.infer<typeof shopCategorySchema>;
+ export type GearTier = z.infer<typeof gearTierSchema>;
+diff --git a/src/server/__tests__/phaseTwoShopMechanicsFoundation.test.ts b/src/server/__tests__/phaseTwoShopMechanicsFoundation.test.ts
+index 19a0fcc..dcd0204 100644
+--- a/src/server/__tests__/phaseTwoShopMechanicsFoundation.test.ts
++++ b/src/server/__tests__/phaseTwoShopMechanicsFoundation.test.ts
+@@ -1,6 +1,7 @@
+ import { describe, expect, it } from "vitest";
+ import { loadGear } from "../../game/content/gear.js";
+ import { loadThreatCards } from "../../game/content/threats.js";
++import { createSequenceRandomSource, type RandomSource } from "../../game/engine/dice.js";
+ import { filterGearByShopCategory } from "../../game/rules/shopCategories.js";
+ import {
+   getAvailableShopStockForCategory,
+@@ -81,13 +82,13 @@ function createShopState(options: {
+   return state;
+ }
+ 
+-function createShopServer(options: Parameters<typeof createShopState>[0] = {}): {
++function createShopServer(options: Parameters<typeof createShopState>[0] = {}, randomSource?: RandomSource): {
+   server: GameRoomServer;
+   client: ConnectedClient;
+   sent: Array<Record<string, unknown>>;
+ } {
+   const sent: Array<Record<string, unknown>> = [];
+-  const server = new GameRoomServer(createShopState(options));
++  const server = new GameRoomServer(createShopState(options), [], randomSource);
+ 
+   return {
+     server,
+@@ -127,11 +128,11 @@ describe("Phase 2A shop mechanics foundation", () => {
+     const allMarketIds = filterGearByShopCategory(gear.values(), "market").map((item) => item.id);
+     const allForgeIds = filterGearByShopCategory(gear.values(), "forge-armoury").map((item) => item.id);
+ 
+-    expect(marketStock.map((item) => item.id)).toContain("ashen-route-compass");
++    expect(allMarketIds).toContain("route-compass");
+     expect(allMarketIds).toEqual(expect.arrayContaining(["ashlock-cleaver", "signal-pike", "scrap-drone"]));
+     expect(marketStock.every((item) => getGearShopCategoryIds(item).includes("market"))).toBe(true);
+     expect(marketStock.some((item) => item.id.startsWith("qa_"))).toBe(false);
+-    expect(forgeStock.map((item) => item.id)).toContain("coffin-rig");
++    expect(allForgeIds).toContain("nailspike-maul");
+     expect(allForgeIds).toEqual(expect.arrayContaining(["ashlock-cleaver", "riftblade", "void-plate"]));
+     expect(forgeStock.every((item) => getGearShopCategoryIds(item).includes("forge-armoury"))).toBe(true);
+     expect(forgeStock.some((item) => item.tier === "artifact")).toBe(false);
+@@ -223,6 +224,37 @@ describe("Phase 2A shop mechanics foundation", () => {
+     expect(server.getState().lastOutcomeSummary?.summary).toContain(`Bought ${selectedGear.name}`);
+   });
+ 
++  it("randomly reveals between two and six unique equipment items", () => {
++    const minimum = createShopServer(
++      { sectorId: "outer_waymarket", salvage: 6 },
++      createSequenceRandomSource([0, 0, 0])
++    );
++    minimum.server.handleIntent(minimum.client, {
++      type: "SHOP_SERVICE_REQUESTED",
++      seatId: "seat-1",
++      serviceId: "buy-gear"
++    });
++    const minimumStock = minimum.server.getState().shopStockReveals.find((entry) => entry.seatId === "seat-1")?.stockIds ?? [];
++
++    expect(minimumStock).toHaveLength(2);
++    expect(new Set(minimumStock).size).toBe(minimumStock.length);
++
++    const maximum = createShopServer(
++      { sectorId: "outer_waymarket", salvage: 6 },
++      createSequenceRandomSource([4, 0, 0, 0, 0, 0, 0])
++    );
++    maximum.server.handleIntent(maximum.client, {
++      type: "SHOP_SERVICE_REQUESTED",
++      seatId: "seat-1",
++      serviceId: "buy-gear"
++    });
++    const maximumStock = maximum.server.getState().shopStockReveals.find((entry) => entry.seatId === "seat-1")?.stockIds ?? [];
++
++    expect(maximumStock).toHaveLength(6);
++    expect(new Set(maximumStock).size).toBe(maximumStock.length);
++    expect(maximumStock.every((id) => loadGear().get(id)?.tier !== "artifact")).toBe(true);
++  });
++
+   it("lets a player skip a shop without changing salvage or inventory", () => {
+     const { server, client, sent } = createShopServer({ sectorId: "outer_waymarket", salvage: 6 });
+ 
+diff --git a/src/server/__tests__/roomServer.integration.test.ts b/src/server/__tests__/roomServer.integration.test.ts
+index d5244cd..4ca305f 100644
+--- a/src/server/__tests__/roomServer.integration.test.ts
++++ b/src/server/__tests__/roomServer.integration.test.ts
+@@ -2139,6 +2139,29 @@ describe("roomServer websocket integration", () => {
+       seatId: "seat-3",
+       contractId: "choir-quietus"
+     });
++    await tv.waitForSince(marker, statePatchForPhase("action", 2));
++    expect(harness.roomServer.getState().players.find((player) => player.seatId === "seat-3")?.character.completedContracts).toContain(
++      "choir-quietus"
++    );
++
++    marker = tv.mark();
++    phone3.send({
++      type: "ACCEPT_CONTRACT",
++      seatId: "seat-3",
++      contractId: "compact-ember-courier"
++    });
++    await tv.waitForSince(marker, statePatchForPhase("action", 2));
++    expect(harness.roomServer.getState().players.find((player) => player.seatId === "seat-3")?.character.activeContract).toEqual({
++      contractId: "compact-ember-courier",
++      progress: 0
++    });
++
++    marker = tv.mark();
++    phone3.send({
++      type: "PHASE_ADVANCED",
++      seatId: "seat-3",
++      toPhase: "resolution"
++    });
+     await tv.waitForSince(marker, statePatchForPhase("broadcast", 2));
+     await endBroadcastTurn(phone3, tv, "seat-3", 0);
+ 
+@@ -2148,7 +2171,8 @@ describe("roomServer websocket integration", () => {
+ 
+     expect(seat2State?.character.equippedGear.weapon).toBe("veil-hook");
+     expect(seat2State?.character.heldGear.some((item) => item.id === "veil-hook")).toBe(true);
+-    expect(seat3State?.character.activeContract).toBeNull();
++    expect(seat3State?.character.activeContract).toEqual({ contractId: "compact-ember-courier", progress: 0 });
++    expect(seat3State?.character.completedContracts).toContain("choir-quietus");
+     expect(tv.messages.every((message) => !isStatePatch(message) || !Object.hasOwn(message.payload, "self"))).toBe(true);
+   }, 15000);
+ 
+diff --git a/src/server/__tests__/sessionState.test.ts b/src/server/__tests__/sessionState.test.ts
+index 255c228..6b60e5c 100644
+--- a/src/server/__tests__/sessionState.test.ts
++++ b/src/server/__tests__/sessionState.test.ts
+@@ -61,7 +61,7 @@ describe("canonical sector graph", () => {
+     expect(firstPlayer?.character.activeContract).toBeNull();
+     expect(state.seats[0]?.startingContractOptions).toEqual([]);
+     expect(state.seats[0]?.selectedStartingContractId).toBeNull();
+-    expect(firstPlayer?.character.heldGear.map((item) => item.id)).toEqual(["cinder-suture-kit"]);
++    expect(firstPlayer?.character.heldGear.map((item) => item.id)).toEqual(["rustknife-carbine", "chapel-guard-harness"]);
+     expect(firstPlayer?.character.followers ?? []).toEqual([]);
+     expect(state.soloRerollCharges).toEqual({});
+   });
+@@ -101,7 +101,7 @@ describe("canonical sector graph", () => {
+     expect(state.players[0]?.character.activeContract).toBeNull();
+     expect(state.seats[0]?.startingContractOptions).toEqual([]);
+     expect(state.seats[0]?.selectedStartingContractId).toBeNull();
+-    expect(state.players[0]?.character.heldGear.map((item) => item.id)).toEqual(["cinder-suture-kit"]);
++    expect(state.players[0]?.character.heldGear.map((item) => item.id)).toEqual(["rustknife-carbine", "chapel-guard-harness"]);
+     expect(state.players[0]?.character.followers?.map((follower) => follower.id)).toEqual(["grave-scribe"]);
+     expect(tvProjection.sessionMode).toBe("single-player");
+     expect(tvProjection.escalationThreshold).toBe(8);
+diff --git a/src/server/roomServer.ts b/src/server/roomServer.ts
+index e9db332..0961edd 100644
+--- a/src/server/roomServer.ts
++++ b/src/server/roomServer.ts
+@@ -290,6 +290,7 @@ type HostCommandMessage = KickSeatMessage | RestartSessionMessage;
+ type ClientMessage = ClientIntent | RejoinMessage | HostCommandMessage;
+ 
+ const CLIENT_INTENT_TYPES = new Set<string>([
++  "MOVEMENT_DESTINATION_PREVIEWED",
+   "MOVE_REQUESTED",
+   "MOVEMENT_ROLL_REQUESTED",
+   "PHASE_ADVANCED",
+@@ -436,6 +437,7 @@ export class GameRoomServer {
+   private hostToken: string | null = null;
+   private enemyRollTimeout: ReturnType<typeof setTimeout> | null = null;
+   private resolutionAutoContinueTimeout: ReturnType<typeof setTimeout> | null = null;
++  private readonly movementPreviewBySeatId = new Map<string, string>();
+ 
+   public constructor(
+     private state: GameState,
+@@ -541,6 +543,31 @@ export class GameRoomServer {
+         throw new IntentRejectedError(intent.type, "Seat mismatch between token and submitted intent");
+       }
+ 
++      if (intent.type === "MOVEMENT_DESTINATION_PREVIEWED") {
++        const planner = buildPublicMovementPlanner(this.state, intent.seatId);
++
++        if (!planner?.active) {
++          throw new Error("Movement preview is unavailable outside destination selection");
++        }
++
++        if (intent.toSectorId === null) {
++          this.movementPreviewBySeatId.delete(intent.seatId);
++        } else {
++          const destination = planner.destinations.find(
++            (entry) => entry.sectorId === intent.toSectorId && !entry.disabledReason
++          );
++
++          if (!destination) {
++            throw new Error("Movement preview must use a legal destination");
++          }
++
++          this.movementPreviewBySeatId.set(intent.seatId, destination.sectorId);
++        }
++
++        this.broadcastPatch();
++        return;
++      }
++
+       if (intent.type === "CONTINUE_RESOLUTION") {
+         this.resolveContinueResolutionIntent(intent);
+         return;
+@@ -680,8 +707,10 @@ export class GameRoomServer {
+       } else if (intent.type === "SOLO_REROLL_REQUESTED") {
+         // Keep the rerolled result visible until the player continues.
+       } else if (intent.type === "MOVEMENT_ROLL_REQUESTED") {
++        this.movementPreviewBySeatId.delete(intent.seatId);
+         this.resolveMovementRollIntent(intent);
+       } else if (intent.type === "MOVE_REQUESTED") {
++        this.movementPreviewBySeatId.delete(intent.seatId);
+         this.resolveMoveIntent(intent);
+       } else if (intent.type === "SCENARIO_CONFRONTATION_REQUESTED") {
+         this.resolveScenarioConfrontationIntent(intent);
+@@ -789,8 +818,9 @@ export class GameRoomServer {
+       this.clients.delete(client);
+     }
+ 
+-    this.state = state;
+-    this.events.length = 0;
++    this.state = state;
++    this.events.length = 0;
++    this.movementPreviewBySeatId.clear();
+   }
+ 
+   joinSeat(displayName: string, characterId?: string, requestedSeatId?: string): JoinSeatResult {
+@@ -1202,6 +1232,11 @@ export class GameRoomServer {
+     requireStringField(message, "seatId", type);
+ 
+     switch (type) {
++      case "MOVEMENT_DESTINATION_PREVIEWED":
++        if (message.toSectorId !== null) {
++          requireStringField(message, "toSectorId", type);
++        }
++        break;
+       case "MOVE_REQUESTED":
+         requireStringField(message, "toSectorId", type);
+         break;
+@@ -2086,7 +2121,7 @@ export class GameRoomServer {
+           throw new Error(SHOP_FAILURE_REASONS.itemUnavailable);
+         }
+ 
+-        const stock = this.pickShopGearStock(player, 3, "standard", stockCategory);
++        const stock = this.pickShopGearStock(player, "standard", stockCategory);
+ 
+         if (stock.length === 0) {
+           throw new Error(SHOP_FAILURE_REASONS.itemUnavailable);
+@@ -2117,12 +2152,13 @@ export class GameRoomServer {
+           summary: `${actorName} used ${shopName}. Paid ${service.cost.salvage ?? 0} Salvage for gear repair support.`
+         };
+       case "buy-supplies":
++        // Legacy wire ID retained for saved clients; player-facing copy uses Equipment.
+         return {
+           ...base,
+           result: {
+-            note: `${shopName}: supply crate reserved for the next route problem.`
++            note: `${shopName}: equipment cache reserved for the next route problem.`
+           },
+-          summary: `${actorName} used ${shopName}. Bought supplies for ${service.cost.salvage ?? 0} Salvage.`
++          summary: `${actorName} used ${shopName}. Bought equipment for ${service.cost.salvage ?? 0} Salvage.`
+         };
+       case "buy-treatment":
+         return {
+@@ -2142,6 +2178,22 @@ export class GameRoomServer {
+           },
+           summary: `${actorName} used ${shopName}. Bought a boon and recorded steady footing.`
+         };
++      case "trade-missions-for-artifact": {
++        const artifact = this.pickShopGearStock(player, "risk", "relic-dealer")[0];
++
++        if (!artifact || artifact.tier !== "artifact") {
++          throw new Error("No Artifact is available for mission trade");
++        }
++
++        return {
++          ...base,
++          result: {
++            gainGear: artifact,
++            note: `${shopName}: three completed Missions traded for ${artifact.name}.`
++          },
++          summary: `${actorName} traded 3 completed Missions for ${artifact.name}.`
++        };
++      }
+       case "risk-action": {
+         const stockCategory = getShopStockCategoryForService(boardSpace, service.id);
+ 
+@@ -2149,7 +2201,7 @@ export class GameRoomServer {
+           throw new Error(SHOP_FAILURE_REASONS.itemUnavailable);
+         }
+ 
+-        const stock = this.pickShopGearStock(player, 4, "risk", stockCategory);
++        const stock = this.pickShopGearStock(player, "risk", stockCategory);
+ 
+         if (stock.length === 0) {
+           throw new Error(SHOP_FAILURE_REASONS.itemUnavailable);
+@@ -2173,19 +2225,63 @@ export class GameRoomServer {
+     }
+   }
+ 
+-  private pickShopGearStock(player: PlayerState, count: number, mode: "standard" | "risk", category: ShopCategory): GearItem[] {
++  private pickShopGearStock(player: PlayerState, mode: "standard" | "risk", category: ShopCategory): GearItem[] {
+     const ownedGearIds = new Set([
+       ...player.character.heldGear.map((item) => item.id),
+       ...Object.values(player.character.equippedGear).filter((id): id is string => Boolean(id))
+     ]);
+ 
+-    return getAvailableShopStockForCategory(this.gear.values(), category, {
+-      count,
++    const includeArtifacts = mode === "risk" && category === "relic-dealer";
++    const primaryStock = getAvailableShopStockForCategory(this.gear.values(), category, {
+       ownedGearIds,
+-      includeArtifacts: mode === "risk",
++      includeArtifacts,
+       includeQaGear: canUseQaShopGear(player.character),
+       expensiveFirst: mode === "risk"
+     });
++
++    // Keep each shop's category identity, but fill sparse categories from the
++    // wider equipment catalog so a valid shop never presents an empty shelf.
++    const fallbackCategories: ShopCategory[] = includeArtifacts
++      ? ["relic-dealer"]
++      : ["market", "forge-armoury", "medicae-shrine", "contract-broker"];
++    const stockById = new Map(primaryStock.map((item) => [item.id, item]));
++
++    for (const fallbackCategory of fallbackCategories) {
++      for (const item of getAvailableShopStockForCategory(this.gear.values(), fallbackCategory, {
++        ownedGearIds,
++        includeArtifacts,
++        includeQaGear: canUseQaShopGear(player.character),
++        expensiveFirst: mode === "risk"
++      })) {
++        stockById.set(item.id, item);
++      }
++    }
++
++    const targetCount = 2 + this.randomSource.nextInt(5);
++    const preferredIds = new Set(primaryStock.map((item) => item.id));
++    const preferred = [...primaryStock];
++    const fallback = [...stockById.values()].filter((item) => !preferredIds.has(item.id));
++    const pickRandom = (pool: GearItem[]): GearItem | undefined => {
++      if (pool.length === 0) {
++        return undefined;
++      }
++
++      const index = this.randomSource.nextInt(pool.length);
++      return pool.splice(index, 1)[0];
++    };
++    const selection: GearItem[] = [];
++
++    while (selection.length < targetCount && preferred.length > 0) {
++      const item = pickRandom(preferred);
++      if (item) selection.push(item);
++    }
++
++    while (selection.length < targetCount && fallback.length > 0) {
++      const item = pickRandom(fallback);
++      if (item) selection.push(item);
++    }
++
++    return selection;
+   }
+ 
+   private createShopPurchaseAction(
+@@ -4756,6 +4852,10 @@ export class GameRoomServer {
+   private getPhaseAfterResolution(seatId: string): GameState["phase"] {
+     const player = this.state.players.find((entry) => entry.seatId === seatId);
+ 
++    if (this.state.resolutionSource === "contract") {
++      return "action";
++    }
++
+     if (
+       this.state.resolutionSource === "movement" &&
+       player?.character.status === "active" &&
+@@ -6743,7 +6843,7 @@ export class GameRoomServer {
+       phase: this.state.phase,
+       payload:
+         client.view === "tv"
+-          ? createTvProjection(this.state)
++          ? createTvProjection(this.state, this.movementPreviewBySeatId)
+           : createPhoneProjection(this.state, client.seatId ?? "", forcePrivate)
+     };
+   }
+@@ -6840,6 +6940,7 @@ type PublicMovementPlannerState = {
+   currentSectorId: string;
+   currentSectorName: string;
+   destinations: PublicMoveDestination[];
++  selectedDestinationId?: string | null;
+ };
+ 
+ type PublicSectorExplorationSummary = {
+@@ -7073,13 +7174,7 @@ function buildPhoneObjectUseStates(state: GameState, player: PlayerState | undef
+ }
+ 
+ function getCompletedContractCountForProjection(state: GameState, seatId: string): number {
+-  return state.eventLog.filter((entry) => {
+-    if (typeof entry !== "object" || entry === null || !("type" in entry) || !("seatId" in entry)) {
+-      return false;
+-    }
+-
+-    return (entry as { type?: string; seatId?: string }).type === "COMPLETE_CONTRACT" && (entry as { seatId?: string }).seatId === seatId;
+-  }).length;
++  return state.players.find((entry) => entry.seatId === seatId)?.character.completedContracts?.length ?? 0;
+ }
+ 
+ function getPublicShopStatus(state: GameState, player: PlayerState): "open" | "locked" | "exhausted" | "dangerous" {
+@@ -7134,7 +7229,7 @@ function getFaceUpThreatsForSector(state: GameState, sectorId: string): PublicMo
+ }
+ 
+ function getShopServicesPreview(boardTags: string[]): string[] {
+-  const services = ["Buy Gear", "Sell Gear", "Buy Supplies"];
++  const services = ["Buy Equipment", "Sell Gear"];
+ 
+   if (boardTags.includes("salvage")) {
+     services.push("Repair Gear");
+@@ -7590,12 +7685,24 @@ function buildPublicShopServices(state: GameState, player: PlayerState): PublicS
+   const services: PublicShopService[] = [];
+   const sellInventory = buildPublicShopSellInventory(player);
+   const hasSellableGear = sellInventory.some((item) => item.sellable);
++  const shopCategory = getBoardSpaceShopCategory(boardSpace);
++
++  if (shopCategory === "relic-dealer") {
++    services.push(
++      createShopService(player, state, {
++        id: "trade-missions-for-artifact",
++        label: "Trade Missions for Artifact",
++        shopCategory: "relic-dealer",
++        cost: { completedContracts: 3 }
++      })
++    );
++  }
+ 
+   if (boardSpace.tags.includes("shop")) {
+     services.push(
+       createShopService(player, state, {
+         id: "buy-gear",
+-        label: "Buy Gear",
++        label: "Buy Equipment",
+         shopCategory: getShopStockCategoryForService(boardSpace, "buy-gear") ?? undefined,
+         cost: {}
+       }),
+@@ -7620,7 +7727,7 @@ function buildPublicShopServices(state: GameState, player: PlayerState): PublicS
+       }),
+       createShopService(player, state, {
+         id: "buy-supplies",
+-        label: "Buy Supplies",
++        label: "Buy Equipment",
+         shopCategory: "market",
+         cost: { salvage: 1 }
+       })
+@@ -8536,7 +8643,10 @@ function isSeatCharacterSelectedForProjection(state: GameState, seat: GameState[
+   return Boolean(seat.characterId) || playerSeatIds.has(seat.seatId);
+ }
+ 
+-export function createTvProjection(state: GameState): Record<string, unknown> {
++export function createTvProjection(
++  state: GameState,
++  movementPreviewBySeatId: ReadonlyMap<string, string> = new Map()
++): Record<string, unknown> {
+   const escalationThreshold = getEscalationCollapseLevel(state.sessionMode);
+   const activeScenario = getScenarioDefinition(state.activeScenarioId);
+   const activeScenarioProgress = activeScenario ? (state.scenarioProgress[activeScenario.winConditionKey] ?? 0) : 0;
+@@ -8737,7 +8847,22 @@ export function createTvProjection(state: GameState): Record<string, unknown> {
+     publicResultDeltas,
+     activeResolution: state.activeResolution ?? null,
+     shopEncounter,
+-    movementPlanner: activeSeatId ? buildPublicMovementPlanner(state, activeSeatId) : null,
++    movementPlanner: activeSeatId
++      ? (() => {
++          const planner = buildPublicMovementPlanner(state, activeSeatId);
++          const selectedDestinationId = movementPreviewBySeatId.get(activeSeatId) ?? null;
++          return planner
++            ? {
++                ...planner,
++                selectedDestinationId: planner.destinations.some(
++                  (destination) => destination.sectorId === selectedDestinationId && !destination.disabledReason
++                )
++                  ? selectedDestinationId
++                  : null
++              }
++            : null;
++        })()
++      : null,
+     sectorExplorationSummary: buildPublicSectorExplorationSummary(state, activeSeatId),
+     recentAbilityTriggers,
+     nemesis: nemesisSummary

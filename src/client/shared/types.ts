@@ -35,15 +35,19 @@ export type ShopFailureReason =
   | "itemNotHeld"
   | "itemNotSellable"
   | "invalidItem";
-export type Phase = "start" | "navigation" | "sector" | "action" | "resolution" | "broadcast";
+export type Phase =
+  "start" | "navigation" | "sector" | "action" | "resolution" | "broadcast";
 export type SessionStatus = "lobby" | "active" | "ended";
 export type SessionMode = "multiplayer" | "single-player";
 export type GameMode = "standard" | "nemesis_relay";
 export type InteractionMode = "co-op" | "rivalry" | "ruthless";
-export type ScenarioDifficulty = "easy" | "easy-medium" | "medium" | "medium-hard" | "hard" | "brutal";
+export type ScenarioDifficulty =
+  "easy" | "easy-medium" | "medium" | "medium-hard" | "hard" | "brutal";
 export type ScenarioMode = "coop" | "rivalry" | "hybrid";
-export type ScenarioRewardType = "boon" | "gear" | "ability" | "tile-event" | "tactic" | "artifact";
-export type CharacterComplexity = "beginner" | "standard" | "advanced" | "expert";
+export type ScenarioRewardType =
+  "boon" | "gear" | "ability" | "tile-event" | "tactic" | "artifact";
+export type CharacterComplexity =
+  "beginner" | "standard" | "advanced" | "expert";
 
 export interface CharacterPresentation {
   role: string;
@@ -76,10 +80,16 @@ export interface PublicPlayerCharacter {
   qaOnly?: boolean;
   presentation?: CharacterPresentation;
   status: "active" | "recalled";
-  activeContract: { contractId: string; progress: number; completedTargetIds?: string[]; salvageSpent?: number } | null;
+  activeContract: {
+    contractId: string;
+    progress: number;
+    completedTargetIds?: string[];
+    salvageSpent?: number;
+  } | null;
   stats: Record<Stat, number>;
   statUpgrades?: Partial<Record<Stat, number>>;
   trophies: number;
+  completedContracts?: number;
   trophyPile?: TrophyPileEntry[];
   salvage?: number;
   heat: number;
@@ -135,7 +145,15 @@ export interface GearItem {
   linkedFollowerRole?: FollowerRole;
 }
 
-export type FollowerRole = "scout" | "medic" | "gunner" | "ritualist" | "porter" | "guide" | "informant" | "companion";
+export type FollowerRole =
+  | "scout"
+  | "medic"
+  | "gunner"
+  | "ritualist"
+  | "porter"
+  | "guide"
+  | "informant"
+  | "companion";
 export type FollowerTimingWindow = GearTimingWindow;
 
 export interface Follower {
@@ -192,7 +210,8 @@ export interface AfflictionSummary {
   name: string;
   severity: number;
   category: string;
-  duration: "immediate" | "ongoing" | "oncePerTurn" | "oncePerBattle" | "reaction";
+  duration:
+    "immediate" | "ongoing" | "oncePerTurn" | "oncePerBattle" | "reaction";
   trigger: string;
   rulesText: string;
   effectKind?: string;
@@ -223,6 +242,7 @@ export interface PrivateCharacter {
   scars: string[];
   afflictions?: PlayerAfflictionSummary;
   activeContract: { contractId: string; progress: number } | null;
+  completedContracts?: string[];
   heldGear: GearItem[];
   equippedGear: Record<GearSlot, string | null>;
   followers?: Follower[];
@@ -266,7 +286,13 @@ export interface PrivateRivalryObjective {
 }
 
 export interface PrivateRivalryRevealState {
-  state: "hidden" | "revealLocked" | "revealAvailable" | "revealed" | "completed" | "failed";
+  state:
+    | "hidden"
+    | "revealLocked"
+    | "revealAvailable"
+    | "revealed"
+    | "completed"
+    | "failed";
   available: boolean;
   label: string;
   hint: string;
@@ -338,9 +364,11 @@ export type ResultDeltaType =
   | "statUpgrade"
   | "modifierApplied";
 
-export type ResultDeltaTargetScope = "personal" | "table" | "sector" | "scenario" | "privateAgenda";
+export type ResultDeltaTargetScope =
+  "personal" | "table" | "sector" | "scenario" | "privateAgenda";
 export type ResultDeltaVisibility = "public" | "ownerPrivate" | "hidden";
-export type ResultDeltaSeverity = "reward" | "loss" | "danger" | "scenario" | "private" | "neutral";
+export type ResultDeltaSeverity =
+  "reward" | "loss" | "danger" | "scenario" | "private" | "neutral";
 export type ResultDeltaSign = "gain" | "loss" | "neutral";
 
 export interface ResultDelta {
@@ -392,9 +420,32 @@ export interface ContractCard {
   text: string;
   objective:
     | { type: "defeatCount"; target: number }
-    | { type: "spaceTextResolved"; effectKey: string; label: string; target: number }
-    | { type: "multiStopRoute"; ordered: boolean; targets: Array<{ id: string; type: "spaceId" | "tag"; value: string; label: string }> }
-    | { type: "shopTransaction"; action: "buyEquipment" | "sellGear" | "repairGear" | "upgradeGear" | "trade"; requiredShopType?: string; requiredSectorId?: string; requiredCount: number; minimumSalvageSpent?: number; label: string };
+    | {
+        type: "spaceTextResolved";
+        effectKey: string;
+        label: string;
+        target: number;
+      }
+    | {
+        type: "multiStopRoute";
+        ordered: boolean;
+        targets: Array<{
+          id: string;
+          type: "spaceId" | "tag";
+          value: string;
+          label: string;
+        }>;
+      }
+    | {
+        type: "shopTransaction";
+        action:
+          "buyEquipment" | "sellGear" | "repairGear" | "upgradeGear" | "trade";
+        requiredShopType?: string;
+        requiredSectorId?: string;
+        requiredCount: number;
+        minimumSalvageSpent?: number;
+        label: string;
+      };
   reward?: unknown;
 }
 
@@ -440,7 +491,8 @@ export type ResolutionStage =
 export interface ActiveResolution {
   id: string;
   playerId: string;
-  source: "movement" | "threat" | "contract" | "anomaly" | "artifact" | "scenario";
+  source:
+    "movement" | "threat" | "contract" | "anomaly" | "artifact" | "scenario";
   stage: ResolutionStage;
   card?: {
     id: string;
@@ -567,7 +619,8 @@ export interface PublicShopEncounterState {
   } | null;
 }
 
-export type PublicMoveStrategicTag = "safe" | "shop" | "locked" | "danger" | "reward" | "nemesis" | "gate";
+export type PublicMoveStrategicTag =
+  "safe" | "shop" | "locked" | "danger" | "reward" | "nemesis" | "gate";
 
 export interface PublicMoveDestination {
   sectorId: string;
@@ -615,8 +668,8 @@ export interface PublicMovementPlannerState {
   movementValue: number;
   currentSectorId: string;
   currentSectorName: string;
-  selectedDestinationId?: string | null;
   destinations: PublicMoveDestination[];
+  selectedDestinationId?: string | null;
 }
 
 export interface PublicSectorExplorationThreat {
@@ -679,7 +732,8 @@ export interface NemesisChampionSummary {
   health: number;
   maxHealth: number;
   trophies: number;
-  movementProfile: "center_path" | "hunt_wounded" | "slow_brute" | "anomaly_shortcut";
+  movementProfile:
+    "center_path" | "hunt_wounded" | "slow_brute" | "anomaly_shortcut";
   combatProfile: "strength" | "craft" | "tech" | "will" | "choice";
   specialRuleId: string;
   defeated: boolean;

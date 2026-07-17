@@ -1550,7 +1550,7 @@ describe("TvApp", () => {
       services: [
         {
           id: "buy-gear",
-          label: "Buy Gear",
+          label: "Buy Equipment",
           cost: { salvage: 3 },
           enabled: true
         }

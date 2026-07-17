@@ -1,0 +1,1255 @@
+﻿diff --git a/src/client/styles.css b/src/client/styles.css
+index b051eb7..a142563 100644
+--- a/src/client/styles.css
++++ b/src/client/styles.css
+@@ -7433,17 +7433,28 @@ body {
+   gap: clamp(0.2rem, 0.36vw, 0.44rem);
+   padding: clamp(0.38rem, 0.64vw, 0.75rem);
+   border: 1px solid rgba(231, 210, 176, 0.16);
+-  background: rgba(5, 8, 12, 0.82);
+-  -webkit-backdrop-filter: blur(0.34rem);
+-  backdrop-filter: blur(0.34rem);
++  background:
++    linear-gradient(180deg, rgba(5, 10, 14, 0.32), rgba(3, 7, 10, 0.46)),
++    rgba(5, 8, 12, 0.18);
++  -webkit-backdrop-filter: blur(0.26rem) saturate(1.08);
++  backdrop-filter: blur(0.26rem) saturate(1.08);
+   box-shadow:
+     inset 0 0 0 1px rgba(255, 255, 255, 0.04),
+-    0 -0.85rem 1.8rem rgba(0, 0, 0, 0.48);
++    0 -0.55rem 1.35rem rgba(0, 0, 0, 0.24);
+   overflow: hidden;
+ }
+ 
++.host-battle-player .host-battle-total-footer {
++  background:
++    linear-gradient(90deg, rgba(8, 22, 30, 0.48), rgba(3, 8, 12, 0.3)),
++    rgba(5, 8, 12, 0.14);
++}
++
+ .host-battle-enemy .host-battle-total-footer {
+   direction: ltr;
++  background:
++    linear-gradient(270deg, rgba(28, 10, 9, 0.48), rgba(8, 5, 7, 0.3)),
++    rgba(5, 8, 12, 0.14);
+ }
+ 
+ .host-battle-enemy .host-battle-total-footer p,
+@@ -16989,3 +17000,673 @@ body {
+     width: min(25rem, 40vw);
+   }
+ }
++
++/* Live-play movement composition: board-first choice HUD and a single arrival brief. */
++.tv-command-stage-movement-focus .tv-movement-focus {
++  inset: auto clamp(0.55rem, 1vw, 1rem) clamp(0.55rem, 1vw, 1rem);
++  grid-template-columns: minmax(13rem, 1fr) minmax(12rem, 0.8fr) minmax(16rem, 1.2fr);
++  grid-template-areas:
++    "heading roll destination"
++    "travel travel travel"
++    "timeline timeline timeline";
++  width: min(64rem, calc(100% - 1.1rem));
++  margin-inline: auto;
++  align-content: end;
++}
++
++.tv-command-stage-movement-focus .tv-movement-focus-heading,
++.tv-command-stage-movement-focus .tv-movement-focus-roll,
++.tv-command-stage-movement-focus .tv-movement-focus-destination,
++.tv-command-stage-movement-focus .tv-movement-focus-travel,
++.tv-command-stage-movement-focus .tv-movement-focus-timeline {
++  background: linear-gradient(180deg, rgba(5, 13, 19, 0.82), rgba(3, 8, 12, 0.72));
++  -webkit-backdrop-filter: blur(0.3rem);
++  backdrop-filter: blur(0.3rem);
++}
++
++.tv-command-stage-movement-focus .tv-movement-focus-heading {
++  width: auto;
++  justify-self: stretch;
++  justify-items: start;
++  text-align: left;
++}
++
++.tv-command-stage-movement-focus .tv-movement-focus-timeline {
++  padding-block: 0.22rem;
++}
++
++.tv-arrival-focus {
++  position: absolute;
++  z-index: 14;
++  left: 50%;
++  bottom: clamp(0.7rem, 1.2vw, 1.2rem);
++  width: min(68rem, calc(100% - 1.4rem));
++  transform: translateX(-50%);
++  display: grid;
++  gap: 0.5rem;
++  padding: clamp(0.65rem, 1vw, 1rem);
++  border: 1px solid rgba(90, 190, 220, 0.5);
++  background: linear-gradient(180deg, rgba(4, 12, 18, 0.88), rgba(3, 8, 12, 0.76));
++  box-shadow: 0 0.8rem 2rem rgba(0, 0, 0, 0.42);
++  color: #e7f2f5;
++  pointer-events: none;
++  -webkit-backdrop-filter: blur(0.4rem);
++  backdrop-filter: blur(0.4rem);
++}
++
++.tv-arrival-focus header {
++  display: grid;
++  grid-template-columns: auto 1fr auto;
++  gap: 0.4rem 0.8rem;
++  align-items: baseline;
++}
++
++.tv-arrival-focus header span,
++.tv-arrival-focus article > span {
++  color: #76cce9;
++  font-size: 0.64rem;
++  font-weight: 850;
++  letter-spacing: 0.12em;
++  text-transform: uppercase;
++}
++
++.tv-arrival-focus header strong {
++  color: #f1dfb8;
++  font: 800 clamp(1.1rem, 1.7vw, 1.8rem)/1 Georgia, "Times New Roman", serif;
++}
++
++.tv-arrival-focus header p,
++.tv-arrival-focus article p {
++  margin: 0;
++  color: #b8cbd2;
++}
++
++.tv-arrival-focus-meta {
++  display: flex;
++  flex-wrap: wrap;
++  gap: 0.3rem;
++}
++
++.tv-arrival-focus-meta span {
++  padding: 0.18rem 0.38rem;
++  border: 1px solid rgba(99, 193, 160, 0.32);
++  background: rgba(5, 20, 22, 0.44);
++  color: #bde3d5;
++  font-size: 0.58rem;
++  text-transform: uppercase;
++}
++
++.tv-arrival-focus-grid {
++  display: grid;
++  grid-template-columns: 1.3fr 1fr 0.8fr;
++  gap: 0.45rem;
++}
++
++.tv-arrival-focus article {
++  min-width: 0;
++  display: grid;
++  align-content: start;
++  gap: 0.28rem;
++  padding: 0.48rem;
++  border: 1px solid rgba(90, 170, 205, 0.24);
++  background: rgba(0, 0, 0, 0.2);
++}
++
++.tv-arrival-focus article > strong,
++.tv-arrival-focus li strong {
++  color: #f0e4ca;
++}
++
++.tv-arrival-focus ul {
++  margin: 0;
++  padding: 0;
++  display: grid;
++  gap: 0.25rem;
++  list-style: none;
++}
++
++.tv-arrival-focus li {
++  display: flex;
++  justify-content: space-between;
++  gap: 0.5rem;
++}
++
++.tv-arrival-focus li small {
++  color: #e3b96b;
++  white-space: nowrap;
++}
++
++.phone-inventory-completed-missions {
++  display: grid;
++  gap: 0.45rem;
++  padding: 0.65rem;
++  border: 1px solid rgba(202, 164, 91, 0.38);
++  background: linear-gradient(145deg, rgba(35, 25, 12, 0.72), rgba(8, 14, 18, 0.82));
++}
++
++.phone-inventory-completed-missions > div {
++  display: flex;
++  justify-content: space-between;
++  gap: 0.5rem;
++  align-items: baseline;
++}
++
++.phone-inventory-completed-missions span {
++  color: #d9af5f;
++  font-size: 0.72rem;
++  font-weight: 850;
++  letter-spacing: 0.08em;
++  text-transform: uppercase;
++}
++
++.phone-inventory-completed-missions strong {
++  color: #f0dfbb;
++  font-size: 0.72rem;
++  text-align: right;
++}
++
++.phone-inventory-completed-missions ul {
++  margin: 0;
++  padding: 0;
++  display: grid;
++  gap: 0.25rem;
++  list-style: none;
++}
++
++.phone-inventory-completed-missions li {
++  padding: 0.35rem 0.45rem;
++  border-left: 2px solid rgba(214, 170, 80, 0.72);
++  background: rgba(0, 0, 0, 0.24);
++  color: #e8ddc5;
++}
++
++.phone-inventory-completed-missions p {
++  margin: 0;
++  color: #aebdc3;
++  font-size: 0.76rem;
++}
++
++@media (max-width: 1100px), (max-height: 720px) {
++  .tv-command-stage-movement-focus .tv-movement-focus {
++    grid-template-columns: minmax(11rem, 1fr) minmax(10rem, 0.8fr) minmax(13rem, 1fr);
++  }
++
++  .tv-arrival-focus {
++    gap: 0.35rem;
++    padding: 0.5rem;
++  }
++
++  .tv-arrival-focus-grid {
++    gap: 0.3rem;
++  }
++}
++
++/* Battle-focus glass: preserve the portrait beneath the public combat math. */
++.tv-command-dashboard--battle-focus .host-battle-side-roll > span,
++.tv-command-dashboard--battle-focus .host-battle-relevant-stat > span,
++.tv-command-dashboard--battle-focus .host-battle-math-grid dt,
++.tv-command-dashboard--battle-focus .host-battle-total-footer p {
++  text-shadow: 0 1px 0.42rem rgba(0, 0, 0, 0.95);
++}
++
++.tv-command-dashboard--battle-focus .host-battle-math-grid > div {
++  border-color: color-mix(in srgb, var(--challenge-color) 34%, rgba(231, 210, 176, 0.18));
++  background: rgba(2, 6, 9, 0.22);
++  -webkit-backdrop-filter: blur(0.16rem);
++  backdrop-filter: blur(0.16rem);
++}
++
++.tv-command-dashboard--battle-focus .host-battle-math-grid dd {
++  text-shadow:
++    0 1px 0.45rem rgba(0, 0, 0, 0.95),
++    0 0 0.5rem color-mix(in srgb, var(--challenge-color) 18%, transparent);
++}
++
++.tv-command-dashboard--battle-focus .host-battle-relevant-stat .challenge-badge {
++  background:
++    radial-gradient(circle at 18% 24%, var(--challenge-soft), transparent 58%),
++    rgba(3, 7, 10, 0.3);
++  -webkit-backdrop-filter: blur(0.16rem);
++  backdrop-filter: blur(0.16rem);
++}
++
++/* TV shop focus: a public, display-only merchant stage over the mounted board. */
++.tv-command-dashboard .tv-command-main--shop-focus {
++  grid-template-columns: clamp(12.5rem, 15.5vw, 18rem) minmax(0, 1fr);
++  gap: clamp(0.45rem, 0.72vw, 0.8rem);
++}
++
++.tv-command-dashboard--shop-focus .tv-operatives-rail {
++  opacity: 0.62;
++  filter: saturate(0.68) brightness(0.76);
++}
++
++.tv-command-dashboard--shop-focus .tv-command-stage-shop-mode {
++  border-color: rgba(210, 164, 84, 0.34);
++  background: rgba(3, 5, 8, 0.98);
++  box-shadow: inset 0 0 7rem rgba(0, 0, 0, 0.68);
++}
++
++.tv-command-dashboard--shop-focus .tv-command-stage-shop-mode .tv-command-map-shell {
++  filter: brightness(0.24) saturate(0.5) contrast(1.12);
++}
++
++.tv-command-dashboard--shop-focus .host-shop-overlay {
++  inset: clamp(0.25rem, 0.5vw, 0.6rem);
++}
++
++.tv-command-dashboard--shop-focus .host-shop-panel-stage {
++  width: 100%;
++  grid-template-columns: minmax(0, 1fr) clamp(13rem, 17vw, 19rem);
++  grid-template-rows: clamp(2.6rem, 5.5svh, 4rem) minmax(0, 1fr) clamp(2.8rem, 6.4svh, 4.35rem);
++  gap: clamp(0.35rem, 0.58vw, 0.68rem);
++  background:
++    radial-gradient(circle at 42% 36%, rgba(218, 169, 77, 0.18), transparent 32%),
++    linear-gradient(120deg, rgba(16, 12, 9, 0.82), rgba(3, 6, 9, 0.88));
++}
++
++.tv-command-dashboard--shop-focus .host-shop-alert {
++  background: linear-gradient(90deg, rgba(18, 12, 8, 0.72), rgba(4, 10, 14, 0.68));
++  box-shadow: none;
++}
++
++.tv-command-dashboard--shop-focus .host-shop-stage {
++  position: relative;
++  isolation: isolate;
++  grid-template-rows: auto minmax(0, 1fr) auto auto;
++  padding: clamp(0.55rem, 0.9vw, 1.05rem);
++  background:
++    linear-gradient(180deg, rgba(3, 5, 8, 0.18), rgba(3, 5, 8, 0.58)),
++    radial-gradient(circle at 50% 38%, rgba(222, 172, 79, 0.1), transparent 40%);
++}
++
++.tv-command-dashboard--shop-focus .host-shop-stage > :not(.host-shop-card-backdrop) {
++  position: relative;
++  z-index: 2;
++}
++
++.host-shop-card-backdrop {
++  position: absolute;
++  inset: 8% 12% 20%;
++  z-index: 0;
++  display: flex;
++  align-items: flex-start;
++  justify-content: center;
++  gap: 0;
++  pointer-events: none;
++  opacity: 0.25;
++  filter: saturate(0.72);
++}
++
++.host-shop-card-backdrop > div {
++  width: clamp(7rem, 10vw, 11rem);
++  aspect-ratio: 0.7;
++  margin-inline: clamp(-2.8rem, -2.2vw, -1.5rem);
++  display: grid;
++  place-items: center;
++  overflow: hidden;
++  border: 1px solid rgba(224, 183, 103, 0.46);
++  background: linear-gradient(150deg, rgba(48, 35, 20, 0.84), rgba(4, 7, 10, 0.92));
++  transform: rotate(calc((var(--shop-backdrop-index) - 2) * 7deg));
++  animation: host-shop-card-float 5.8s ease-in-out infinite alternate;
++  animation-delay: calc(var(--shop-backdrop-index) * -0.7s);
++}
++
++.host-shop-card-backdrop > div:nth-child(1),
++.host-shop-card-backdrop > div:nth-child(5) {
++  translate: 0 1rem;
++}
++
++.host-shop-card-backdrop > div:nth-child(2),
++.host-shop-card-backdrop > div:nth-child(4) {
++  translate: 0 0.42rem;
++}
++
++.host-shop-card-backdrop img {
++  width: 100%;
++  height: 100%;
++  object-fit: cover;
++}
++
++.host-shop-card-backdrop svg {
++  width: 52%;
++  fill: rgba(236, 202, 139, 0.78);
++}
++
++.tv-command-dashboard--shop-focus .host-shop-heading {
++  gap: 0.12rem;
++}
++
++.tv-command-dashboard--shop-focus .host-shop-heading::after {
++  content: "◆ ───────── ◆";
++  color: rgba(216, 170, 83, 0.68);
++  font-size: clamp(0.5rem, 0.64vw, 0.72rem);
++  letter-spacing: 0.16em;
++}
++
++.tv-command-dashboard--shop-focus .host-shop-heading h2 {
++  font-size: clamp(1.8rem, 3.6vw, 4.7rem);
++  text-shadow: 0 0 1.4rem rgba(220, 163, 70, 0.38), 0 0.12rem 0 rgba(0, 0, 0, 0.8);
++}
++
++.tv-command-dashboard--shop-focus .host-shop-preview-grid {
++  align-items: center;
++  grid-template-columns: repeat(auto-fit, minmax(min(9.5rem, 100%), 1fr));
++  max-height: 100%;
++}
++
++.tv-command-dashboard--shop-focus .host-shop-preview-card {
++  position: relative;
++  height: min(100%, 25rem);
++  grid-template-rows: auto auto minmax(5rem, 1fr) auto auto;
++  padding: clamp(0.55rem, 0.82vw, 0.92rem);
++  border-color: rgba(225, 183, 103, 0.46);
++  background:
++    linear-gradient(180deg, rgba(27, 20, 13, 0.9), rgba(4, 7, 10, 0.92)),
++    rgba(5, 8, 12, 0.92);
++  box-shadow: inset 0 0 0 1px rgba(255, 237, 197, 0.035), 0 0.7rem 1.5rem rgba(0, 0, 0, 0.34);
++}
++
++.host-shop-preview-media {
++  position: relative;
++  min-height: 0;
++  display: grid;
++  place-items: center;
++  overflow: hidden;
++  border-block: 1px solid rgba(225, 183, 103, 0.18);
++  background: radial-gradient(circle, rgba(219, 169, 78, 0.15), rgba(2, 5, 8, 0.42) 68%);
++}
++
++.host-shop-preview-media img {
++  width: 100%;
++  height: 100%;
++  object-fit: cover;
++  opacity: 0.78;
++  mask-image: linear-gradient(180deg, transparent, #000 12%, #000 82%, transparent);
++}
++
++.host-shop-preview-media svg {
++  width: clamp(2.8rem, 4.6vw, 5rem);
++  fill: currentColor;
++  filter: drop-shadow(0 0 0.8rem currentColor);
++}
++
++.host-shop-preview-service .host-shop-preview-media {
++  color: #69d594;
++}
++
++.host-shop-preview-stock .host-shop-preview-media {
++  color: #6fc7f4;
++}
++
++.host-shop-preview-sell .host-shop-preview-media {
++  color: #ee8c54;
++}
++
++.host-shop-preview-blocked .host-shop-preview-media,
++.host-shop-preview-empty .host-shop-preview-media {
++  color: #dc654e;
++}
++
++.host-shop-preview-cost {
++  display: flex;
++  align-items: center;
++  justify-content: space-between;
++  gap: 0.35rem;
++  padding-top: 0.38rem;
++  border-top: 1px solid rgba(225, 183, 103, 0.2);
++}
++
++.host-shop-preview-cost strong {
++  color: #f3c96f;
++}
++
++.tv-command-dashboard--shop-focus .host-shop-preview-disabled {
++  opacity: 0.62;
++  filter: grayscale(0.72) saturate(0.5);
++}
++
++.tv-command-dashboard--shop-focus .host-shop-preview-disabled::after {
++  content: "LOCKED";
++  position: absolute;
++  top: 0.55rem;
++  right: 0.55rem;
++  padding: 0.2rem 0.34rem;
++  border: 1px solid rgba(235, 101, 75, 0.5);
++  background: rgba(48, 10, 8, 0.78);
++  color: #ffad96;
++  font-size: clamp(0.48rem, 0.58vw, 0.66rem);
++  letter-spacing: 0.1em;
++}
++
++.tv-command-dashboard--shop-focus .host-shop-status-panel {
++  background: linear-gradient(180deg, rgba(8, 12, 15, 0.74), rgba(4, 7, 10, 0.66));
++  border-color: rgba(217, 171, 86, 0.28);
++}
++
++.tv-command-dashboard--shop-focus .host-shop-instruction {
++  background: rgba(5, 8, 12, 0.66);
++  border-color: rgba(224, 179, 94, 0.38);
++}
++
++@keyframes host-shop-card-float {
++  from {
++    translate: 0 -0.2rem;
++  }
++  to {
++    translate: 0 0.55rem;
++  }
++}
++
++@media (max-width: 1500px) {
++  .tv-command-dashboard .tv-command-main--shop-focus {
++    grid-template-columns: clamp(10.5rem, 14vw, 13rem) minmax(0, 1fr);
++  }
++
++  .tv-command-dashboard--shop-focus .host-shop-panel-stage {
++    grid-template-columns: minmax(0, 1fr) clamp(11rem, 16vw, 14rem);
++  }
++
++  .tv-command-dashboard--shop-focus .host-shop-preview-card {
++    grid-template-rows: auto auto minmax(3.6rem, 1fr) auto auto;
++    gap: 0.2rem;
++  }
++
++  .tv-command-dashboard--shop-focus .host-shop-preview-card p {
++    -webkit-line-clamp: 2;
++  }
++
++  .tv-command-dashboard--shop-focus .host-shop-status-panel {
++    gap: 0.28rem;
++    padding: 0.5rem;
++  }
++}
++
++@media (prefers-reduced-motion: reduce) {
++  .host-shop-card-backdrop > div {
++    animation: none;
++  }
++}
++
++/* Movement QA lock: centered non-overlapping HUD and compact phone command states. */
++.tv-command-dashboard--movement-focus .tv-command-header {
++  flex-shrink: 0;
++}
++
++.tv-movement-focus {
++  inset: clamp(0.45rem, 0.8vw, 0.8rem);
++  display: grid;
++  grid-template-columns: minmax(12rem, 17rem) minmax(16rem, 24rem);
++  grid-template-areas:
++    "heading heading"
++    "roll destination"
++    "travel travel"
++    "timeline timeline";
++  justify-content: center;
++  align-content: center;
++  gap: clamp(0.45rem, 0.75vw, 0.8rem);
++}
++
++.tv-movement-focus-heading,
++.tv-movement-focus-roll,
++.tv-movement-focus-destination,
++.tv-movement-focus-travel,
++.tv-movement-focus-timeline {
++  position: static;
++  inset: auto;
++  width: auto;
++  transform: none;
++  min-width: 0;
++  margin: 0;
++}
++
++.tv-movement-focus-heading {
++  grid-area: heading;
++  justify-self: center;
++  width: min(30rem, 100%);
++}
++
++.tv-movement-focus-roll {
++  grid-area: roll;
++}
++
++.tv-movement-focus-destination {
++  grid-area: destination;
++}
++
++.tv-movement-focus-travel {
++  grid-area: travel;
++  width: min(42rem, 100%);
++  justify-self: center;
++}
++
++.tv-movement-focus-timeline {
++  grid-area: timeline;
++  width: min(44rem, 100%);
++  justify-self: center;
++}
++
++.phone-move-panel--needs-roll,
++.phone-move-panel--needs-destination,
++.phone-move-panel--needs-confirm {
++  gap: 0.42rem;
++}
++
++.phone-move-panel--needs-roll .phone-current-tile-card,
++.phone-move-panel--needs-destination .phone-current-tile-card,
++.phone-move-panel--needs-confirm .phone-current-tile-card {
++  padding: 0.42rem;
++}
++
++.phone-move-panel--needs-roll .phone-current-tile-card .phone-wrap-card__media,
++.phone-move-panel--needs-destination .phone-current-tile-card .phone-wrap-card__media,
++.phone-move-panel--needs-confirm .phone-current-tile-card .phone-wrap-card__media {
++  width: 3.4rem;
++  height: 3.4rem;
++  margin: 0 0.5rem 0.25rem 0;
++}
++
++.phone-move-panel--needs-roll .phone-current-tile-facts,
++.phone-move-panel--needs-destination .phone-current-tile-facts,
++.phone-move-panel--needs-confirm .phone-current-tile-facts,
++.phone-move-panel--needs-roll .phone-current-tile-card .phone-wrap-card__description,
++.phone-move-panel--needs-destination .phone-current-tile-card .phone-wrap-card__description,
++.phone-move-panel--needs-confirm .phone-current-tile-card .phone-wrap-card__description {
++  display: none;
++}
++
++.phone-move-panel--needs-roll .phone-movement-planner {
++  padding: 0.6rem;
++  gap: 0.5rem;
++}
++
++.phone-move-panel--needs-roll .phone-movement-empty {
++  min-height: 4.4rem;
++  padding: 0.65rem;
++}
++
++.phone-movement-roll-actions .phone-action-button,
++.phone-movement-detail-hero .phone-movement-confirm {
++  min-height: 3.1rem;
++  border-color: rgba(121, 205, 248, 0.72);
++  box-shadow: 0 0 1rem rgba(52, 159, 220, 0.22);
++}
++
++.phone-movement-summary .combat-die-layer {
++  background:
++    radial-gradient(circle at 32% 24%, rgba(255, 255, 255, 0.34), transparent 20%),
++    linear-gradient(145deg, #cfeaf4 0%, #82bfd8 52%, #397792 100%);
++  border-color: rgba(7, 23, 32, 0.92);
++  filter: contrast(1.16) saturate(1.08);
++  box-shadow:
++    inset 0 -0.35rem 0.7rem rgba(4, 15, 23, 0.42),
++    0 0.55rem 1rem rgba(0, 0, 0, 0.42);
++}
++
++.phone-movement-summary .combat-die-layer strong {
++  color: #06131b;
++  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.72), 0 0 0.28rem rgba(255, 255, 255, 0.32);
++}
++
++.phone-movement-summary .combat-die-label {
++  color: rgba(4, 16, 23, 0.82);
++  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.46);
++}
++
++.phone-move-panel--resolving .phone-movement-empty {
++  min-height: 5rem;
++  border-style: solid;
++  border-color: rgba(90, 185, 225, 0.42);
++}
++
++@media (max-width: 1500px), (max-height: 850px) {
++  .tv-movement-focus {
++    grid-template-columns: minmax(11.5rem, 15rem) minmax(15rem, 22rem);
++    gap: 0.42rem 0.58rem;
++  }
++
++  .tv-movement-focus-heading,
++  .tv-movement-focus-roll,
++  .tv-movement-focus-destination,
++  .tv-movement-focus-travel,
++  .tv-movement-focus-timeline {
++    padding-block: 0.42rem;
++  }
++}
++
++/* Fresh-session QA: keep the map wrappers stretched when movement removes both side rails. */
++.tv-command-dashboard--movement-focus .tv-command-stage-movement-focus {
++  grid-template-columns: minmax(0, 1fr);
++  grid-template-rows: minmax(0, 1fr);
++}
++
++.tv-command-dashboard--movement-focus .tv-command-stage-movement-focus > .tv-command-map-shell,
++.tv-command-dashboard--movement-focus .tv-command-map-shell > .tv-board-panel,
++.tv-command-dashboard--movement-focus .tv-command-map-shell .tv-board-shell,
++.tv-command-dashboard--movement-focus .tv-command-map-shell .board-stage {
++  width: 100%;
++  height: 100%;
++  max-width: none;
++  max-height: none;
++  min-width: 0;
++  min-height: 0;
++}
++
++.tv-command-dashboard--movement-focus .tv-command-stage-movement-focus > .tv-command-map-shell {
++  grid-column: 1;
++  grid-row: 1;
++  justify-self: stretch;
++  align-self: stretch;
++}
++
++.tv-command-dashboard--movement-focus .tv-command-stage-movement-focus > .tv-movement-focus {
++  position: absolute;
++}
++
++.tv-command-dashboard--movement-focus .tv-command-map-shell .tv-board-shell {
++  display: block;
++}
++
++.tv-command-dashboard--movement-focus .tv-command-map-shell .board-stage {
++  aspect-ratio: auto;
++}
+diff --git a/src/client/tv/TvApp.tsx b/src/client/tv/TvApp.tsx
+index 0d1aeb1..0a3bfc5 100644
+--- a/src/client/tv/TvApp.tsx
++++ b/src/client/tv/TvApp.tsx
+@@ -402,7 +402,7 @@ function getScenarioStatus(patch: StatePatch<PublicPatchPayload> | null) {
+ 
+ interface TopHeaderProps {
+   roomCode: string | null;
+-  phase: string;
++  phase: string;
+   sessionMode: SessionMode;
+   gameMode: GameMode;
+   interactionMode: InteractionMode | null;
+@@ -469,14 +469,14 @@ function HostTopScenarioProgress({
+ 
+ function TopHeader({
+   roomCode,
+-  phase,
++  phase,
+   sessionMode,
+   gameMode,
+   interactionMode,
+   scenarioStatus,
+   joinedCount,
+   readyCount,
+-  seatCapacity
++  seatCapacity
+ }: TopHeaderProps): ReactElement {
+   const objective = scenarioStatus.objectiveProgress;
+   const pressure = scenarioStatus.pressureState;
+@@ -612,43 +612,43 @@ function getHostStateBannerModel({ patch, roomCode }: HostStateBannerProps): Hos
+   };
+ }
+ 
+-function HostStateBanner(props: HostStateBannerProps): ReactElement {
+-  const model = getHostStateBannerModel(props);
+-  const movementPlanner = props.patch?.payload.movementPlanner?.active ? props.patch.payload.movementPlanner : null;
+-
+-  return (
+-    <aside
+-      className={`host-state-banner host-state-banner-${model.tone}${movementPlanner ? " tv-movement-overlay" : ""}`}
+-      aria-label="Host game state"
+-      data-testid="host-state-banner"
+-      role="status"
+-    >
+-      <span className="host-state-banner-pulse" aria-hidden="true" />
+-      <div>
+-        <span>{model.label}</span>
+-        <strong>{model.detail}</strong>
+-      </div>
+-      {movementPlanner ? (
+-        <div className="host-state-banner-movement-dice">
+-          <DiceRollScene
+-            attackValue={movementPlanner.movementValue}
+-            defenseValue={null}
+-            modifierValue={0}
+-            attackDieFace={movementPlanner.movementValue}
+-            defenseDieFace={null}
+-            showModifierDie={false}
+-            compact
+-            challengeStat="signal"
+-            testId="movement-dice-animation"
+-            className="movement-dice-animation"
+-          />
+-        </div>
+-      ) : null}
+-      <em>{model.meta}</em>
+-    </aside>
+-  );
+-}
+-
++function HostStateBanner(props: HostStateBannerProps): ReactElement {
++  const model = getHostStateBannerModel(props);
++  const movementPlanner = props.patch?.payload.movementPlanner?.active ? props.patch.payload.movementPlanner : null;
++
++  return (
++    <aside
++      className={`host-state-banner host-state-banner-${model.tone}${movementPlanner ? " tv-movement-overlay" : ""}`}
++      aria-label="Host game state"
++      data-testid="host-state-banner"
++      role="status"
++    >
++      <span className="host-state-banner-pulse" aria-hidden="true" />
++      <div>
++        <span>{model.label}</span>
++        <strong>{model.detail}</strong>
++      </div>
++      {movementPlanner ? (
++        <div className="host-state-banner-movement-dice">
++          <DiceRollScene
++            attackValue={movementPlanner.movementValue}
++            defenseValue={null}
++            modifierValue={0}
++            attackDieFace={movementPlanner.movementValue}
++            defenseDieFace={null}
++            showModifierDie={false}
++            compact
++            challengeStat="signal"
++            testId="movement-dice-animation"
++            className="movement-dice-animation"
++          />
++        </div>
++      ) : null}
++      <em>{model.meta}</em>
++    </aside>
++  );
++}
++
+ function ActiveOperativeOverlay({
+   patch,
+   previousPatch,
+@@ -1888,11 +1888,13 @@ function MovementFocusHud({
+   planner,
+   selectedDestination,
+   arrival,
++  travelStep,
+   activePlayerName
+ }: {
+   planner: PublicMovementPlannerState | null;
+   selectedDestination: PublicMoveDestination | null;
+   arrival: MovementArrivalModel | null;
++  travelStep?: number;
+   activePlayerName: string;
+ }): ReactElement | null {
+   if (!planner && !arrival) {
+@@ -1906,8 +1908,58 @@ function MovementFocusHud({
+   const legalDestinationCount = planner?.destinations.filter((entry) => !entry.disabledReason).length ?? 0;
+   const beat = arrival ? "moving" : selectedDestination ? "destination" : "roll";
+   const playerName = arrival?.playerName ?? activePlayerName;
+-  const currentName = arrival ? routeNames.at(-2) ?? planner?.currentSectorName ?? "Previous tile" : planner?.currentSectorName ?? "Current tile";
+-  const nextName = arrival ? destination?.name ?? "Arrival tile" : routeNames[1] ?? destination?.name ?? "Choose on phone";
++  const visibleStep = arrival ? Math.min(Math.max(travelStep ?? 1, 1), Math.max(stepTotal, 1)) : 0;
++  const currentName = arrival
++    ? routeNames[Math.max(0, visibleStep - 1)] ?? planner?.currentSectorName ?? "Previous tile"
++    : planner?.currentSectorName ?? "Current tile";
++  const nextName = arrival
++    ? routeNames[Math.min(visibleStep, routeNames.length - 1)] ?? destination?.name ?? "Arrival tile"
++    : routeNames[1] ?? destination?.name ?? "Choose on phone";
++
++  if (arrival && destination) {
++    const threats = destination.faceUpThreats ?? [];
++    const occupants = destination.occupants ?? [];
++
++    return (
++      <section className="tv-arrival-focus" aria-label="Arrival sector brief" data-testid="tv-arrival-focus">
++        <header>
++          <span>Movement complete</span>
++          <strong>Arrived at {destination.name}</strong>
++          <p>{threats.length > 0 ? "Threat present" : destination.threatIcons.length > 0 ? "Challenge detected" : "Sector reached"}</p>
++        </header>
++        <div className="tv-arrival-focus-meta">
++          <span>{toTitleCase(destination.ring)} Reach</span>
++          {destination.tags.map((tag) => <span key={tag}>{toTitleCase(tag)}</span>)}
++          {destination.threatIcons.map((icon, index) => <span key={`${icon}-${index}`}>{toTitleCase(icon)} challenge</span>)}
++        </div>
++        <div className="tv-arrival-focus-grid">
++          <article>
++            <span>Sector rule</span>
++            <strong>{destination.ruleText || "No special sector rule."}</strong>
++            {destination.loreText ? <p>{destination.loreText}</p> : null}
++          </article>
++          <article>
++            <span>Challenges and threats</span>
++            {threats.length > 0 ? (
++              <ul>
++                {threats.map((threat) => (
++                  <li key={threat.instanceId}>
++                    <strong>{threat.name}</strong>
++                    <small>{threat.challenge ? `${toTitleCase(threat.challenge.stat)} ${threat.challenge.value}` : toTitleCase(threat.type)}</small>
++                  </li>
++                ))}
++              </ul>
++            ) : <strong>{destination.threatIcons.length > 0 ? "Printed challenge icons will resolve on arrival." : "No visible threat."}</strong>}
++          </article>
++          <article>
++            <span>Occupants</span>
++            <strong>{occupants.length > 0 ? occupants.map((occupant) => occupant.characterName).join(", ") : "No other operatives"}</strong>
++            <p>{destination.strategicTags.length > 0 ? destination.strategicTags.map(toTitleCase).join(" · ") : "Awaiting sector resolution"}</p>
++          </article>
++        </div>
++      </section>
++    );
++  }
+ 
+   return (
+     <section className={`tv-movement-focus tv-movement-focus-${beat}`} aria-label="Movement focus" data-testid="tv-movement-focus">
+@@ -1947,7 +1999,7 @@ function MovementFocusHud({
+       {destination && (
+         <div className="tv-movement-focus-travel" data-testid="movement-travel-hud">
+           <span>{arrival ? "Moving to destination" : "Route preview"}</span>
+-          <strong>Step {arrival ? stepTotal : 0} / {stepTotal}</strong>
++          <strong data-testid="movement-route-step">Step {visibleStep} / {stepTotal}</strong>
+           <p>Current: {currentName} · Next: {nextName} · Destination: {destination.name}</p>
+         </div>
+       )}
+@@ -2029,30 +2081,62 @@ function TacticalMapPanel({
+   const shopMode = isHostShopActive(patch, activePlayer);
+   const planner = patch?.payload.movementPlanner?.active ? patch.payload.movementPlanner : null;
+   const arrival = getMovementArrivalModel(patch?.payload, previousPatch?.payload);
+-  const movementFocusMode = !battleMode && Boolean(planner || arrival);
+-  const [selectedMovementDestination, setSelectedMovementDestination] = useState<PublicMoveDestination | null>(null);
+-
++  const arrivalKey = arrival ? `${arrival.playerName}:${arrival.destination.sectorId}:${arrival.destination.route.join(">")}` : null;
++  const [visualTravel, setVisualTravel] = useState<{ key: string; arrival: MovementArrivalModel; step: number } | null>(null);
++  const completedTravelKeyRef = useRef<string | null>(null);
+   useEffect(() => {
+-    if (!planner) {
+-      setSelectedMovementDestination(null);
++    if (arrival && arrivalKey && completedTravelKeyRef.current !== arrivalKey && !battleMode && !shopMode) {
++      setVisualTravel((current) => current?.key === arrivalKey ? current : { key: arrivalKey, arrival, step: 1 });
+     }
+-  }, [planner]);
++  }, [arrival, arrivalKey, battleMode, shopMode]);
++  useEffect(() => {
++    if (battleMode || shopMode) {
++      setVisualTravel(null);
++    }
++  }, [battleMode, shopMode]);
++  useEffect(() => {
++    if (!visualTravel) {
++      return;
++    }
++
++    const stepTotal = Math.max(1, visualTravel.arrival.destination.route.length - 1);
++    const timeout = window.setTimeout(() => {
++      setVisualTravel((current) => {
++        if (!current || current.key !== visualTravel.key) {
++          return current;
++        }
++        if (current.step < stepTotal) {
++          return { ...current, step: current.step + 1 };
++        }
++        completedTravelKeyRef.current = current.key;
++        return null;
++      });
++    }, 720);
++
++    return () => window.clearTimeout(timeout);
++  }, [visualTravel]);
++  const focusBattleMode = battleMode;
++  const focusShopMode = !focusBattleMode && shopMode;
++  const movementFocusMode = !focusBattleMode && !focusShopMode && Boolean(planner || visualTravel);
++
++  const projectedDestination = planner?.selectedDestinationId
++    ? planner.destinations.find((destination) => destination.sectorId === planner.selectedDestinationId) ?? null
++    : null;
+ 
+   return (
+-    <section className={`tv-command-stage${battleMode ? " tv-command-stage-battle-mode" : ""}${shopMode ? " tv-command-stage-shop-mode" : ""}${movementFocusMode ? " tv-command-stage-movement-focus" : ""}`}>
+-      {!battleMode && (
++    <section className={`tv-command-stage${focusBattleMode ? " tv-command-stage-battle-mode" : ""}${focusShopMode ? " tv-command-stage-shop-mode" : ""}${movementFocusMode ? " tv-command-stage-movement-focus" : ""}`}>
++      {!focusBattleMode && (
+         <div className="tv-command-map-shell">
+           <TacticalMapBoard
+             patch={patch?.payload ?? null}
+             previousPatch={previousPatch?.payload ?? null}
+             phase={patch?.phase ?? "start"}
+-            onMovementDestinationSelected={setSelectedMovementDestination}
+           />
+           {!movementFocusMode && <BoardLegend />}
+         </div>
+       )}
+-      {!battleMode && <NemesisBanner nemesis={patch?.payload.nemesis ?? null} />}
+-      {!battleMode && !shopMode && !movementFocusMode && (
++      {!focusBattleMode && <NemesisBanner nemesis={patch?.payload.nemesis ?? null} />}
++      {!focusBattleMode && !focusShopMode && !movementFocusMode && (
+         <ActiveOperativeOverlay
+           patch={patch}
+           previousPatch={previousPatch}
+@@ -2061,14 +2145,17 @@ function TacticalMapPanel({
+           characterCatalog={characterCatalog}
+         />
+       )}
+-      <HostBattleOverlay patch={patch} activePlayer={battlePlayer} />
+-      <HostShopOverlay patch={patch} activePlayer={activePlayer} />
+-      <MovementFocusHud
+-        planner={planner}
+-        selectedDestination={selectedMovementDestination}
+-        arrival={arrival}
+-        activePlayerName={activePlayer?.character.name ?? "Active operative"}
+-      />
++      {focusBattleMode && <HostBattleOverlay patch={patch} activePlayer={battlePlayer} />}
++      {focusShopMode && <HostShopOverlay patch={patch} activePlayer={activePlayer} />}
++      {movementFocusMode && (
++        <MovementFocusHud
++          planner={planner}
++          selectedDestination={projectedDestination}
++          arrival={visualTravel?.arrival ?? null}
++          travelStep={visualTravel?.step}
++          activePlayerName={activePlayer?.character.name ?? "Active operative"}
++        />
++      )}
+     </section>
+   );
+ }
+@@ -2398,7 +2485,7 @@ export function TvApp(): ReactElement {
+   const battleMode = isHostBattleActive(publicPatch, battlePlayer);
+   const shopMode = isHostShopActive(publicPatch, activePlayer);
+   const movementArrival = getMovementArrivalModel(publicPatch?.payload, previousPatchRef.current?.payload);
+-  const movementFocusMode = !battleMode && Boolean(publicPatch?.payload.movementPlanner?.active || movementArrival);
++  const movementFocusMode = !battleMode && !shopMode && Boolean(publicPatch?.payload.movementPlanner?.active || movementArrival);
+ 
+   useEffect(() => {
+     if (publicPatch) {
+@@ -2602,11 +2689,11 @@ export function TvApp(): ReactElement {
+   }
+ 
+   return (
+-    <main className={`tv-dashboard tv-command-dashboard${battleMode ? " tv-command-dashboard--battle-focus" : ""}${movementFocusMode ? " tv-command-dashboard--movement-focus" : ""}`}>
++    <main className={`tv-dashboard tv-command-dashboard${battleMode ? " tv-command-dashboard--battle-focus" : ""}${shopMode ? " tv-command-dashboard--shop-focus" : ""}${movementFocusMode ? " tv-command-dashboard--movement-focus" : ""}`}>
+       <div className="tv-title-safe">
+         <TopHeader
+           roomCode={effectiveRoomCode}
+-          phase={publicPatch?.phase ?? "start"}
++          phase={publicPatch?.phase ?? "start"}
+           sessionMode={liveSessionMode}
+           gameMode={liveGameMode}
+           interactionMode={liveInteractionMode}
+@@ -2618,22 +2705,22 @@ export function TvApp(): ReactElement {
+ 
+         {(requestError || error) && <div className="tv-banner tv-banner-error">{requestError ?? error}</div>}
+         {sessionNotice && <div className="tv-banner">{sessionNotice}</div>}
+-        {!battleMode && !movementFocusMode && (
+-          <HostStateBanner
+-            patch={publicPatch}
+-            roomCode={roomCode}
+-            activePlayer={activePlayer}
+-            joinedCount={joinedSeats.length}
+-            readyCount={readySeats.length}
+-            battleMode={battleMode}
+-            shopMode={shopMode}
+-          />
+-        )}
++        {!battleMode && !movementFocusMode && (
++          <HostStateBanner
++            patch={publicPatch}
++            roomCode={roomCode}
++            activePlayer={activePlayer}
++            joinedCount={joinedSeats.length}
++            readyCount={readySeats.length}
++            battleMode={battleMode}
++            shopMode={shopMode}
++          />
++        )}
+         <HostAudioControls audio={audio} />
+         <EndgameOverlay patch={publicPatch} />
+ 
+         <section
+-          className={`tv-command-main${isPreRoomLobby ? " tv-command-main--pre-room" : ""}${battleMode ? " tv-command-main--battle-focus" : ""}${movementFocusMode ? " tv-command-main--movement-focus" : ""}`}
++          className={`tv-command-main${isPreRoomLobby ? " tv-command-main--pre-room" : ""}${battleMode ? " tv-command-main--battle-focus" : ""}${shopMode ? " tv-command-main--shop-focus" : ""}${movementFocusMode ? " tv-command-main--movement-focus" : ""}`}
+           data-testid="tv-command-main"
+         >
+           {isPreRoomLobby ? (
+@@ -2697,7 +2784,7 @@ export function TvApp(): ReactElement {
+                 characterCatalog={characterCatalog}
+               />
+ 
+-              {!battleMode && !movementFocusMode && <RightSidebar
++              {!battleMode && !shopMode && !movementFocusMode && <RightSidebar
+                 roomCode={effectiveRoomCode}
+                 scenarioStatus={scenarioStatus}
+                 publicPatch={publicPatch}
+diff --git a/src/client/tv/__tests__/TvApp.test.tsx b/src/client/tv/__tests__/TvApp.test.tsx
+index edaec4d..ffe03a2 100644
+--- a/src/client/tv/__tests__/TvApp.test.tsx
++++ b/src/client/tv/__tests__/TvApp.test.tsx
+@@ -982,10 +982,26 @@ describe("TvApp", () => {
+     expect(screen.getByTestId("movement-roll-hud")).toHaveTextContent(/move 4/i);
+     expect(screen.getByTestId("movement-roll-hud")).toHaveTextContent(/legal\s*1/i);
+     expect(screen.getByTestId("movement-destination-hud")).toHaveTextContent(/choose on phone/i);
+-    fireEvent.click(screen.getByRole("button", { name: /preview movement destination/i }));
++    patch.payload.movementPlanner.selectedDestinationId = "outer_anchor_market";
++    mockUseRoomSubscription.mockReturnValue({
++      patch,
++      error: null,
++      sendIntent: vi.fn(),
++      status: "open",
++      debugEvents: [],
++      clearDebugEvents: vi.fn()
++    });
++    rerender(<TvApp />);
+     expect(screen.getByTestId("movement-destination-hud")).toHaveTextContent(/anchor market/i);
+     expect(screen.getByTestId("movement-destination-hud")).toHaveTextContent(/4 steps/i);
+     expect(screen.getByTestId("movement-travel-hud")).toHaveTextContent(/step 0 \/ 4/i);
++    patch.payload.movementPlanner.selectedDestinationId = null;
++    rerender(<TvApp />);
++    expect(screen.getByTestId("movement-destination-hud")).toHaveTextContent(/choose on phone/i);
++    expect(screen.queryByTestId("movement-travel-hud")).not.toBeInTheDocument();
++    patch.payload.movementPlanner.selectedDestinationId = "outer_anchor_market";
++    rerender(<TvApp />);
++    expect(screen.getByTestId("movement-destination-hud")).toHaveTextContent(/anchor market/i);
+     expect(screen.queryByText(/movement scan/i)).not.toBeInTheDocument();
+     expect(screen.queryByText(/movement value/i)).not.toBeInTheDocument();
+     expect(screen.queryByText(/exact legal routes are highlighted/i)).not.toBeInTheDocument();
+@@ -1004,12 +1020,16 @@ describe("TvApp", () => {
+       clearDebugEvents: vi.fn()
+     });
+     rerender(<TvApp />);
+-    expect(screen.getByTestId("movement-travel-hud")).toHaveTextContent(/step 4 \/ 4/i);
+-    expect(screen.getByTestId("movement-travel-hud")).toHaveTextContent(/destination: anchor market/i);
++    const arrivalFocus = await screen.findByTestId("tv-arrival-focus");
++    expect(arrivalFocus).toHaveTextContent(/arrived at anchor market/i);
++    expect(arrivalFocus).toHaveTextContent(/outer reach/i);
++    expect(arrivalFocus).toHaveTextContent(/trade if the sector is clear/i);
++    expect(arrivalFocus).toHaveTextContent(/printed challenge icons will resolve on arrival/i);
++    expect(screen.queryByTestId("tv-movement-focus")).not.toBeInTheDocument();
+     expect(screen.getByText("Tactical map")).toBeInTheDocument();
+ 
++    await waitFor(() => expect(screen.queryByTestId("tv-arrival-focus")).not.toBeInTheDocument(), { timeout: 3_500 });
+     rerender(<TvApp />);
+-    expect(screen.queryByTestId("tv-movement-focus")).not.toBeInTheDocument();
+     expect(screen.getByTestId("tv-command-main")).not.toHaveClass("tv-command-main--movement-focus");
+     expect(screen.getByRole("complementary", { name: /operatives/i })).toBeInTheDocument();
+     expect(document.querySelector(".tv-command-sidebar")).toBeInTheDocument();
+@@ -1101,6 +1121,14 @@ describe("TvApp", () => {
+         ]
+       }
+     };
++    patch.payload.movementPlanner = {
++      active: true,
++      movementValue: 3,
++      currentSectorId: "ashwake-crossing",
++      currentSectorName: "Ashwake Crossing",
++      selectedDestinationId: "outer_waymarket",
++      destinations: []
++    };
+     mockUseRoomSubscription.mockReturnValue({
+       patch,
+       error: null,
+@@ -1133,6 +1161,7 @@ describe("TvApp", () => {
+     expect(within(overlay).getByTestId("host-battle-fx-layer")).toBeInTheDocument();
+     expect(screen.queryByTestId("tv-card-reveal")).not.toBeInTheDocument();
+     expect(screen.queryByTestId("tv-resolution-footer")).not.toBeInTheDocument();
++    expect(screen.queryByTestId("tv-movement-focus")).not.toBeInTheDocument();
+   });
+ 
+   it("renders active dice faces and roll totals from activeResolution", async () => {
+@@ -1276,6 +1305,13 @@ describe("TvApp", () => {
+         heldGearCount: 1
+       }
+     };
++    patch.payload.movementPlanner = {
++      active: true,
++      movementValue: 3,
++      currentSectorId: "ashwake-crossing",
++      currentSectorName: "Ashwake Crossing",
++      destinations: []
++    };
+     patch.payload.shopEncounter = {
+       sectorId: "outer_waymarket",
+       sectorName: "Anchor Market",
+@@ -1308,7 +1344,7 @@ describe("TvApp", () => {
+       services: [
+         {
+           id: "buy-gear",
+-          label: "Buy Gear",
++          label: "Buy Equipment",
+           shopCategory: "forge-armoury",
+           cost: { salvage: 3 },
+           enabled: true
+@@ -1359,13 +1395,19 @@ describe("TvApp", () => {
+       clearDebugEvents: vi.fn()
+     });
+ 
+-    render(<TvApp />);
++    const { rerender } = render(<TvApp />);
+ 
+     const overlay = await screen.findByTestId("host-shop-overlay");
+     const banner = screen.getByTestId("host-state-banner");
+     expect(banner).toHaveTextContent(/shop open/i);
+     expect(banner).toHaveTextContent(/waiting on tarek voss/i);
+     expect(banner).toHaveTextContent(/anchor market/i);
++    expect(screen.getByTestId("tv-command-main")).toHaveClass("tv-command-main--shop-focus");
++    expect(document.querySelector(".tv-command-dashboard--shop-focus")).toBeInTheDocument();
++    expect(document.querySelector(".tv-command-stage-shop-mode")).toBeInTheDocument();
++    expect(screen.getByLabelText("Operatives")).toBeInTheDocument();
++    expect(screen.queryByLabelText("Scenario")).not.toBeInTheDocument();
++    expect(screen.getByText("Tactical map")).toBeInTheDocument();
+     expect(overlay).toHaveTextContent(/shop open/i);
+     expect(overlay).toHaveTextContent(/tarek voss/i);
+     expect(overlay).toHaveTextContent(/anchor market/i);
+@@ -1375,7 +1417,10 @@ describe("TvApp", () => {
+     expect(screen.getByTestId("host-shop-status-panel")).toHaveTextContent("6");
+     expect(screen.getByTestId("host-shop-status-panel")).toHaveTextContent(/sellable/i);
+     expect(screen.getByTestId("host-shop-status-panel")).toHaveTextContent("1");
+-    expect(overlay).toHaveTextContent(/buy gear/i);
++    expect(overlay).toHaveTextContent(/buy equipment/i);
++    expect(overlay).not.toHaveTextContent(/buy supplies/i);
++    expect(within(overlay).getByTestId("host-shop-card-backdrop")).toBeInTheDocument();
++    expect(within(overlay).getByTestId("host-shop-preview-service-buy-gear").querySelector(".host-shop-preview-media svg")).toBeInTheDocument();
+     expect(within(overlay).getByTestId("result-delta-row")).toHaveTextContent(/Item bought: Ashlock Carbine/i);
+     expect(within(overlay).getByTestId("result-delta-row")).toHaveTextContent(/-3 Salvage/i);
+     expect(overlay).toHaveTextContent(/choose on player phone/i);
+@@ -1383,6 +1428,28 @@ describe("TvApp", () => {
+     expect(overlay).not.toHaveTextContent(/active operative/i);
+     expect(within(overlay).getByTestId("host-shop-fx-layer")).toBeInTheDocument();
+     expect(screen.queryByTestId("host-battle-overlay")).not.toBeInTheDocument();
++    expect(screen.queryByTestId("tv-movement-focus")).not.toBeInTheDocument();
++
++    patch.payload.shopEncounter = null;
++    patch.payload.movementPlanner = null;
++    patch.payload.players[0] = {
++      ...patch.payload.players[0],
++      sectorId: "ashwake-crossing"
++    };
++    mockUseRoomSubscription.mockReturnValue({
++      patch,
++      error: null,
++      sendIntent: vi.fn(),
++      status: "open",
++      debugEvents: [],
++      clearDebugEvents: vi.fn()
++    });
++    rerender(<TvApp />);
++
++    expect(screen.queryByTestId("host-shop-overlay")).not.toBeInTheDocument();
++    expect(screen.getByTestId("tv-command-main")).not.toHaveClass("tv-command-main--shop-focus");
++    expect(screen.getByTestId("host-live-status")).toBeInTheDocument();
++    expect(screen.getByLabelText("Scenario")).toBeInTheDocument();
+   });
+ 
+   it("renders named blocking threats from authoritative shop payload", async () => {
+@@ -1440,10 +1507,11 @@ describe("TvApp", () => {
+     const overlay = await screen.findByTestId("host-shop-overlay");
+     expect(screen.getByTestId("host-state-banner")).toHaveTextContent(/shop blocked/i);
+     expect(screen.getByTestId("host-state-banner")).toHaveTextContent(/clear gate-tax collectors/i);
++    expect(screen.queryByTestId("tv-movement-focus")).not.toBeInTheDocument();
+     expect(overlay).toHaveTextContent(/shop blocked/i);
+     expect(overlay).toHaveTextContent(/gate-tax collectors command 5/i);
+     expect(overlay).toHaveTextContent(/shop blocked by threat/i);
+-    expect(within(screen.getByLabelText("Shop services")).queryByText(/buy gear/i)).not.toBeInTheDocument();
++    expect(within(screen.getByLabelText("Shop services")).queryByText(/buy equipment/i)).not.toBeInTheDocument();
+   });
+ 
+   it("shows public shop purchase and sale outcomes without battle content", async () => {
+@@ -1478,7 +1546,7 @@ describe("TvApp", () => {
+       services: [
+         {
+           id: "buy-gear",
+-          label: "Buy Gear",
++          label: "Buy Equipment",
+           cost: { salvage: 3 },
+           enabled: true
+         }

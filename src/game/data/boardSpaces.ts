@@ -100,7 +100,7 @@ const RAW_BOARD_SPACES: AuthoredBoardSpaceDefinition[] = [
     threatIcons: ["yellow"],
     textBox: {
       title: "Market Exchange",
-      text: "If the stalls are calm, draw 3 Gear leads, buy or reserve 1, or trade salvage favors for a contract lead.",
+      text: "If the stalls are calm, reveal 2-6 random Equipment options, buy 1, or trade salvage favors for a contract lead.",
       effectKey: "outer_waymarketExchange"
     },
     notes: "Market/exchange space for low-friction early decisions."
@@ -842,7 +842,7 @@ const BOARD_SPACE_PRESENTATION: Record<string, BoardSpacePresentation> = {
   },
   outer_waymarket: {
     tags: ["shop", "crossroads"],
-    ruleText: "If no threats are present, buy Gear, sell Gear, or reserve a contract lead.",
+    ruleText: "If no threats are present, buy Equipment, sell Gear, or reserve a contract lead.",
     loreText: "A bazaar of sealed crates, oath-brokers, and weapons that still remember previous owners."
   },
   "coldwind-wharf": {
@@ -877,7 +877,7 @@ const BOARD_SPACE_PRESENTATION: Record<string, BoardSpacePresentation> = {
   },
   "colony-outskirts": {
     tags: ["salvage", "crossroads"],
-    ruleText: "If clear, salvage route supplies from abandoned colony stores.",
+    ruleText: "If clear, salvage field equipment from abandoned colony stores.",
     loreText: "Colony Outskirts are all cold cookfires, sealed doors, and hand-painted evacuation arrows."
   },
   "deadwater-marsh": {

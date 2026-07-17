@@ -65,6 +65,7 @@ export const characterSchema = z.object({
   wounds: z.number().int().min(0),
   scars: z.array(z.string()),
   activeContract: activeContractSchema,
+  completedContracts: z.array(z.string().min(1)).optional(),
   heldGear: z.array(gearItemSchema),
   equippedGear: equippedGearSchema,
   followers: z.array(followerSchema).optional(),

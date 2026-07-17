@@ -246,7 +246,7 @@ function createMasterAlphaPhonePatch(overrides: Partial<PhonePatchPayload> = {})
       services: [
         {
           id: "buy-gear",
-          label: "Buy Gear",
+          label: "Buy Equipment",
           cost: { salvage: 3 },
           enabled: false,
           disabledReason: "Clear local threat first"
@@ -333,7 +333,8 @@ describe("Ashen Reach UI validation stress states", () => {
     expect(battleTab).toHaveClass("game-button-battle");
     expect(shopTab).toHaveClass("game-button-shop");
     expect(actionTab).toHaveClass("game-button-action");
-    expect(screen.getByTestId("movement-planner")).toHaveTextContent("Move 4");
+    expect(screen.getByTestId("phone-action-active-panel")).toHaveAttribute("data-movement-state", "resolving");
+    expect(screen.queryByTestId("movement-planner")).not.toBeInTheDocument();
 
     fireEvent.click(shopTab);
 

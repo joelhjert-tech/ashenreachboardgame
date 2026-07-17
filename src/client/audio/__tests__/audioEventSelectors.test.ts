@@ -125,7 +125,7 @@ describe("Ashen Reach audio cue selectors", () => {
         recentOutcome: {
           operativeName: "Kira Dog",
           shopName: "Anchor Market",
-          action: "Buy Gear",
+          action: "Buy Equipment",
           gained: "Ashlock Carbine",
           remainingSalvage: 3,
           summary: "Kira Dog bought Ashlock Carbine."

@@ -1,0 +1,649 @@
+﻿diff --git a/src/client/styles.css b/src/client/styles.css
+index 051ab0e..1ee1ebe 100644
+--- a/src/client/styles.css
++++ b/src/client/styles.css
+@@ -17046,3 +17046,644 @@ body {
+     width: min(25rem, 40vw);
+   }
+ }
++
++/* Live-play movement composition: board-first choice HUD and a single arrival brief. */
++.tv-command-stage-movement-focus .tv-movement-focus {
++  inset: auto clamp(0.55rem, 1vw, 1rem) clamp(0.55rem, 1vw, 1rem);
++  grid-template-columns: minmax(13rem, 1fr) minmax(12rem, 0.8fr) minmax(16rem, 1.2fr);
++  grid-template-areas:
++    "heading roll destination"
++    "travel travel travel"
++    "timeline timeline timeline";
++  width: min(64rem, calc(100% - 1.1rem));
++  margin-inline: auto;
++  align-content: end;
++}
++
++.tv-command-stage-movement-focus .tv-movement-focus-heading,
++.tv-command-stage-movement-focus .tv-movement-focus-roll,
++.tv-command-stage-movement-focus .tv-movement-focus-destination,
++.tv-command-stage-movement-focus .tv-movement-focus-travel,
++.tv-command-stage-movement-focus .tv-movement-focus-timeline {
++  background: linear-gradient(180deg, rgba(5, 13, 19, 0.82), rgba(3, 8, 12, 0.72));
++  -webkit-backdrop-filter: blur(0.3rem);
++  backdrop-filter: blur(0.3rem);
++}
++
++.tv-command-stage-movement-focus .tv-movement-focus-heading {
++  width: auto;
++  justify-self: stretch;
++  justify-items: start;
++  text-align: left;
++}
++
++.tv-command-stage-movement-focus .tv-movement-focus-timeline {
++  padding-block: 0.22rem;
++}
++
++.tv-arrival-focus {
++  position: absolute;
++  z-index: 14;
++  left: 50%;
++  bottom: clamp(0.7rem, 1.2vw, 1.2rem);
++  width: min(68rem, calc(100% - 1.4rem));
++  transform: translateX(-50%);
++  display: grid;
++  gap: 0.5rem;
++  padding: clamp(0.65rem, 1vw, 1rem);
++  border: 1px solid rgba(90, 190, 220, 0.5);
++  background: linear-gradient(180deg, rgba(4, 12, 18, 0.88), rgba(3, 8, 12, 0.76));
++  box-shadow: 0 0.8rem 2rem rgba(0, 0, 0, 0.42);
++  color: #e7f2f5;
++  pointer-events: none;
++  -webkit-backdrop-filter: blur(0.4rem);
++  backdrop-filter: blur(0.4rem);
++}
++
++.tv-arrival-focus header {
++  display: grid;
++  grid-template-columns: auto 1fr auto;
++  gap: 0.4rem 0.8rem;
++  align-items: baseline;
++}
++
++.tv-arrival-focus header span,
++.tv-arrival-focus article > span {
++  color: #76cce9;
++  font-size: 0.64rem;
++  font-weight: 850;
++  letter-spacing: 0.12em;
++  text-transform: uppercase;
++}
++
++.tv-arrival-focus header strong {
++  color: #f1dfb8;
++  font: 800 clamp(1.1rem, 1.7vw, 1.8rem)/1 Georgia, "Times New Roman", serif;
++}
++
++.tv-arrival-focus header p,
++.tv-arrival-focus article p {
++  margin: 0;
++  color: #b8cbd2;
++}
++
++.tv-arrival-focus-meta {
++  display: flex;
++  flex-wrap: wrap;
++  gap: 0.3rem;
++}
++
++.tv-arrival-focus-meta span {
++  padding: 0.18rem 0.38rem;
++  border: 1px solid rgba(99, 193, 160, 0.32);
++  background: rgba(5, 20, 22, 0.44);
++  color: #bde3d5;
++  font-size: 0.58rem;
++  text-transform: uppercase;
++}
++
++.tv-arrival-focus-grid {
++  display: grid;
++  grid-template-columns: 1.3fr 1fr 0.8fr;
++  gap: 0.45rem;
++}
++
++.tv-arrival-focus article {
++  min-width: 0;
++  display: grid;
++  align-content: start;
++  gap: 0.28rem;
++  padding: 0.48rem;
++  border: 1px solid rgba(90, 170, 205, 0.24);
++  background: rgba(0, 0, 0, 0.2);
++}
++
++.tv-arrival-focus article > strong,
++.tv-arrival-focus li strong {
++  color: #f0e4ca;
++}
++
++.tv-arrival-focus ul {
++  margin: 0;
++  padding: 0;
++  display: grid;
++  gap: 0.25rem;
++  list-style: none;
++}
++
++.tv-arrival-focus li {
++  display: flex;
++  justify-content: space-between;
++  gap: 0.5rem;
++}
++
++.tv-arrival-focus li small {
++  color: #e3b96b;
++  white-space: nowrap;
++}
++
++.phone-inventory-completed-missions {
++  display: grid;
++  gap: 0.45rem;
++  padding: 0.65rem;
++  border: 1px solid rgba(202, 164, 91, 0.38);
++  background: linear-gradient(145deg, rgba(35, 25, 12, 0.72), rgba(8, 14, 18, 0.82));
++}
++
++.phone-inventory-completed-missions > div {
++  display: flex;
++  justify-content: space-between;
++  gap: 0.5rem;
++  align-items: baseline;
++}
++
++.phone-inventory-completed-missions span {
++  color: #d9af5f;
++  font-size: 0.72rem;
++  font-weight: 850;
++  letter-spacing: 0.08em;
++  text-transform: uppercase;
++}
++
++.phone-inventory-completed-missions strong {
++  color: #f0dfbb;
++  font-size: 0.72rem;
++  text-align: right;
++}
++
++.phone-inventory-completed-missions ul {
++  margin: 0;
++  padding: 0;
++  display: grid;
++  gap: 0.25rem;
++  list-style: none;
++}
++
++.phone-inventory-completed-missions li {
++  padding: 0.35rem 0.45rem;
++  border-left: 2px solid rgba(214, 170, 80, 0.72);
++  background: rgba(0, 0, 0, 0.24);
++  color: #e8ddc5;
++}
++
++.phone-inventory-completed-missions p {
++  margin: 0;
++  color: #aebdc3;
++  font-size: 0.76rem;
++}
++
++@media (max-width: 1100px), (max-height: 720px) {
++  .tv-command-stage-movement-focus .tv-movement-focus {
++    grid-template-columns: minmax(11rem, 1fr) minmax(10rem, 0.8fr) minmax(13rem, 1fr);
++  }
++
++  .tv-arrival-focus {
++    gap: 0.35rem;
++    padding: 0.5rem;
++  }
++
++  .tv-arrival-focus-grid {
++    gap: 0.3rem;
++  }
++}
++
++/* TV shop focus: a public, display-only merchant stage over the mounted board. */
++.tv-command-dashboard .tv-command-main--shop-focus {
++  grid-template-columns: clamp(12.5rem, 15.5vw, 18rem) minmax(0, 1fr);
++  gap: clamp(0.45rem, 0.72vw, 0.8rem);
++}
++
++.tv-command-dashboard--shop-focus .tv-operatives-rail {
++  opacity: 0.62;
++  filter: saturate(0.68) brightness(0.76);
++}
++
++.tv-command-dashboard--shop-focus .tv-command-stage-shop-mode {
++  border-color: rgba(210, 164, 84, 0.34);
++  background: rgba(3, 5, 8, 0.98);
++  box-shadow: inset 0 0 7rem rgba(0, 0, 0, 0.68);
++}
++
++.tv-command-dashboard--shop-focus .tv-command-stage-shop-mode .tv-command-map-shell {
++  filter: brightness(0.24) saturate(0.5) contrast(1.12);
++}
++
++.tv-command-dashboard--shop-focus .host-shop-overlay {
++  inset: clamp(0.25rem, 0.5vw, 0.6rem);
++}
++
++.tv-command-dashboard--shop-focus .host-shop-panel-stage {
++  width: 100%;
++  grid-template-columns: minmax(0, 1fr) clamp(13rem, 17vw, 19rem);
++  grid-template-rows: clamp(2.6rem, 5.5svh, 4rem) minmax(0, 1fr) clamp(2.8rem, 6.4svh, 4.35rem);
++  gap: clamp(0.35rem, 0.58vw, 0.68rem);
++  background:
++    radial-gradient(circle at 42% 36%, rgba(218, 169, 77, 0.18), transparent 32%),
++    linear-gradient(120deg, rgba(16, 12, 9, 0.82), rgba(3, 6, 9, 0.88));
++}
++
++.tv-command-dashboard--shop-focus .host-shop-alert {
++  background: linear-gradient(90deg, rgba(18, 12, 8, 0.72), rgba(4, 10, 14, 0.68));
++  box-shadow: none;
++}
++
++.tv-command-dashboard--shop-focus .host-shop-stage {
++  position: relative;
++  isolation: isolate;
++  grid-template-rows: auto minmax(0, 1fr) auto auto;
++  padding: clamp(0.55rem, 0.9vw, 1.05rem);
++  background:
++    linear-gradient(180deg, rgba(3, 5, 8, 0.18), rgba(3, 5, 8, 0.58)),
++    radial-gradient(circle at 50% 38%, rgba(222, 172, 79, 0.1), transparent 40%);
++}
++
++.tv-command-dashboard--shop-focus .host-shop-stage > :not(.host-shop-card-backdrop) {
++  position: relative;
++  z-index: 2;
++}
++
++.host-shop-card-backdrop {
++  position: absolute;
++  inset: 8% 12% 20%;
++  z-index: 0;
++  display: flex;
++  align-items: flex-start;
++  justify-content: center;
++  gap: 0;
++  pointer-events: none;
++  opacity: 0.25;
++  filter: saturate(0.72);
++}
++
++.host-shop-card-backdrop > div {
++  width: clamp(7rem, 10vw, 11rem);
++  aspect-ratio: 0.7;
++  margin-inline: clamp(-2.8rem, -2.2vw, -1.5rem);
++  display: grid;
++  place-items: center;
++  overflow: hidden;
++  border: 1px solid rgba(224, 183, 103, 0.46);
++  background: linear-gradient(150deg, rgba(48, 35, 20, 0.84), rgba(4, 7, 10, 0.92));
++  transform: rotate(calc((var(--shop-backdrop-index) - 2) * 7deg));
++  animation: host-shop-card-float 5.8s ease-in-out infinite alternate;
++  animation-delay: calc(var(--shop-backdrop-index) * -0.7s);
++}
++
++.host-shop-card-backdrop > div:nth-child(1),
++.host-shop-card-backdrop > div:nth-child(5) {
++  translate: 0 1rem;
++}
++
++.host-shop-card-backdrop > div:nth-child(2),
++.host-shop-card-backdrop > div:nth-child(4) {
++  translate: 0 0.42rem;
++}
++
++.host-shop-card-backdrop img {
++  width: 100%;
++  height: 100%;
++  object-fit: cover;
++}
++
++.host-shop-card-backdrop svg {
++  width: 52%;
++  fill: rgba(236, 202, 139, 0.78);
++}
++
++.tv-command-dashboard--shop-focus .host-shop-heading {
++  gap: 0.12rem;
++}
++
++.tv-command-dashboard--shop-focus .host-shop-heading::after {
++  content: "◆ ───────── ◆";
++  color: rgba(216, 170, 83, 0.68);
++  font-size: clamp(0.5rem, 0.64vw, 0.72rem);
++  letter-spacing: 0.16em;
++}
++
++.tv-command-dashboard--shop-focus .host-shop-heading h2 {
++  font-size: clamp(1.8rem, 3.6vw, 4.7rem);
++  text-shadow: 0 0 1.4rem rgba(220, 163, 70, 0.38), 0 0.12rem 0 rgba(0, 0, 0, 0.8);
++}
++
++.tv-command-dashboard--shop-focus .host-shop-preview-grid {
++  align-items: center;
++  grid-template-columns: repeat(auto-fit, minmax(min(9.5rem, 100%), 1fr));
++  max-height: 100%;
++}
++
++.tv-command-dashboard--shop-focus .host-shop-preview-card {
++  position: relative;
++  height: min(100%, 25rem);
++  grid-template-rows: auto auto minmax(5rem, 1fr) auto auto;
++  padding: clamp(0.55rem, 0.82vw, 0.92rem);
++  border-color: rgba(225, 183, 103, 0.46);
++  background:
++    linear-gradient(180deg, rgba(27, 20, 13, 0.9), rgba(4, 7, 10, 0.92)),
++    rgba(5, 8, 12, 0.92);
++  box-shadow: inset 0 0 0 1px rgba(255, 237, 197, 0.035), 0 0.7rem 1.5rem rgba(0, 0, 0, 0.34);
++}
++
++.host-shop-preview-media {
++  position: relative;
++  min-height: 0;
++  display: grid;
++  place-items: center;
++  overflow: hidden;
++  border-block: 1px solid rgba(225, 183, 103, 0.18);
++  background: radial-gradient(circle, rgba(219, 169, 78, 0.15), rgba(2, 5, 8, 0.42) 68%);
++}
++
++.host-shop-preview-media img {
++  width: 100%;
++  height: 100%;
++  object-fit: cover;
++  opacity: 0.78;
++  mask-image: linear-gradient(180deg, transparent, #000 12%, #000 82%, transparent);
++}
++
++.host-shop-preview-media svg {
++  width: clamp(2.8rem, 4.6vw, 5rem);
++  fill: currentColor;
++  filter: drop-shadow(0 0 0.8rem currentColor);
++}
++
++.host-shop-preview-service .host-shop-preview-media {
++  color: #69d594;
++}
++
++.host-shop-preview-stock .host-shop-preview-media {
++  color: #6fc7f4;
++}
++
++.host-shop-preview-sell .host-shop-preview-media {
++  color: #ee8c54;
++}
++
++.host-shop-preview-blocked .host-shop-preview-media,
++.host-shop-preview-empty .host-shop-preview-media {
++  color: #dc654e;
++}
++
++.host-shop-preview-cost {
++  display: flex;
++  align-items: center;
++  justify-content: space-between;
++  gap: 0.35rem;
++  padding-top: 0.38rem;
++  border-top: 1px solid rgba(225, 183, 103, 0.2);
++}
++
++.host-shop-preview-cost strong {
++  color: #f3c96f;
++}
++
++.tv-command-dashboard--shop-focus .host-shop-preview-disabled {
++  opacity: 0.62;
++  filter: grayscale(0.72) saturate(0.5);
++}
++
++.tv-command-dashboard--shop-focus .host-shop-preview-disabled::after {
++  content: "LOCKED";
++  position: absolute;
++  top: 0.55rem;
++  right: 0.55rem;
++  padding: 0.2rem 0.34rem;
++  border: 1px solid rgba(235, 101, 75, 0.5);
++  background: rgba(48, 10, 8, 0.78);
++  color: #ffad96;
++  font-size: clamp(0.48rem, 0.58vw, 0.66rem);
++  letter-spacing: 0.1em;
++}
++
++.tv-command-dashboard--shop-focus .host-shop-status-panel {
++  background: linear-gradient(180deg, rgba(8, 12, 15, 0.74), rgba(4, 7, 10, 0.66));
++  border-color: rgba(217, 171, 86, 0.28);
++}
++
++.tv-command-dashboard--shop-focus .host-shop-instruction {
++  background: rgba(5, 8, 12, 0.66);
++  border-color: rgba(224, 179, 94, 0.38);
++}
++
++@keyframes host-shop-card-float {
++  from {
++    translate: 0 -0.2rem;
++  }
++  to {
++    translate: 0 0.55rem;
++  }
++}
++
++@media (max-width: 1500px) {
++  .tv-command-dashboard .tv-command-main--shop-focus {
++    grid-template-columns: clamp(10.5rem, 14vw, 13rem) minmax(0, 1fr);
++  }
++
++  .tv-command-dashboard--shop-focus .host-shop-panel-stage {
++    grid-template-columns: minmax(0, 1fr) clamp(11rem, 16vw, 14rem);
++  }
++
++  .tv-command-dashboard--shop-focus .host-shop-preview-card {
++    grid-template-rows: auto auto minmax(3.6rem, 1fr) auto auto;
++    gap: 0.2rem;
++  }
++
++  .tv-command-dashboard--shop-focus .host-shop-preview-card p {
++    -webkit-line-clamp: 2;
++  }
++
++  .tv-command-dashboard--shop-focus .host-shop-status-panel {
++    gap: 0.28rem;
++    padding: 0.5rem;
++  }
++}
++
++@media (prefers-reduced-motion: reduce) {
++  .host-shop-card-backdrop > div {
++    animation: none;
++  }
++}
++
++/* Movement QA lock: centered non-overlapping HUD and compact phone command states. */
++.tv-command-dashboard--movement-focus .tv-command-header {
++  flex-shrink: 0;
++}
++
++.tv-movement-focus {
++  inset: clamp(0.45rem, 0.8vw, 0.8rem);
++  display: grid;
++  grid-template-columns: minmax(12rem, 17rem) minmax(16rem, 24rem);
++  grid-template-areas:
++    "heading heading"
++    "roll destination"
++    "travel travel"
++    "timeline timeline";
++  justify-content: center;
++  align-content: center;
++  gap: clamp(0.45rem, 0.75vw, 0.8rem);
++}
++
++.tv-movement-focus-heading,
++.tv-movement-focus-roll,
++.tv-movement-focus-destination,
++.tv-movement-focus-travel,
++.tv-movement-focus-timeline {
++  position: static;
++  inset: auto;
++  width: auto;
++  transform: none;
++  min-width: 0;
++  margin: 0;
++}
++
++.tv-movement-focus-heading {
++  grid-area: heading;
++  justify-self: center;
++  width: min(30rem, 100%);
++}
++
++.tv-movement-focus-roll {
++  grid-area: roll;
++}
++
++.tv-movement-focus-destination {
++  grid-area: destination;
++}
++
++.tv-movement-focus-travel {
++  grid-area: travel;
++  width: min(42rem, 100%);
++  justify-self: center;
++}
++
++.tv-movement-focus-timeline {
++  grid-area: timeline;
++  width: min(44rem, 100%);
++  justify-self: center;
++}
++
++.phone-move-panel--needs-roll,
++.phone-move-panel--needs-destination,
++.phone-move-panel--needs-confirm {
++  gap: 0.42rem;
++}
++
++.phone-move-panel--needs-roll .phone-current-tile-card,
++.phone-move-panel--needs-destination .phone-current-tile-card,
++.phone-move-panel--needs-confirm .phone-current-tile-card {
++  padding: 0.42rem;
++}
++
++.phone-move-panel--needs-roll .phone-current-tile-card .phone-wrap-card__media,
++.phone-move-panel--needs-destination .phone-current-tile-card .phone-wrap-card__media,
++.phone-move-panel--needs-confirm .phone-current-tile-card .phone-wrap-card__media {
++  width: 3.4rem;
++  height: 3.4rem;
++  margin: 0 0.5rem 0.25rem 0;
++}
++
++.phone-move-panel--needs-roll .phone-current-tile-facts,
++.phone-move-panel--needs-destination .phone-current-tile-facts,
++.phone-move-panel--needs-confirm .phone-current-tile-facts,
++.phone-move-panel--needs-roll .phone-current-tile-card .phone-wrap-card__description,
++.phone-move-panel--needs-destination .phone-current-tile-card .phone-wrap-card__description,
++.phone-move-panel--needs-confirm .phone-current-tile-card .phone-wrap-card__description {
++  display: none;
++}
++
++.phone-move-panel--needs-roll .phone-movement-planner {
++  padding: 0.6rem;
++  gap: 0.5rem;
++}
++
++.phone-move-panel--needs-roll .phone-movement-empty {
++  min-height: 4.4rem;
++  padding: 0.65rem;
++}
++
++.phone-movement-roll-actions .phone-action-button,
++.phone-movement-detail-hero .phone-movement-confirm {
++  min-height: 3.1rem;
++  border-color: rgba(121, 205, 248, 0.72);
++  box-shadow: 0 0 1rem rgba(52, 159, 220, 0.22);
++}
++
++.phone-movement-summary .combat-die-layer {
++  background:
++    radial-gradient(circle at 32% 24%, rgba(255, 255, 255, 0.34), transparent 20%),
++    linear-gradient(145deg, #cfeaf4 0%, #82bfd8 52%, #397792 100%);
++  border-color: rgba(7, 23, 32, 0.92);
++  filter: contrast(1.16) saturate(1.08);
++  box-shadow:
++    inset 0 -0.35rem 0.7rem rgba(4, 15, 23, 0.42),
++    0 0.55rem 1rem rgba(0, 0, 0, 0.42);
++}
++
++.phone-movement-summary .combat-die-layer strong {
++  color: #06131b;
++  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.72), 0 0 0.28rem rgba(255, 255, 255, 0.32);
++}
++
++.phone-movement-summary .combat-die-label {
++  color: rgba(4, 16, 23, 0.82);
++  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.46);
++}
++
++.phone-move-panel--resolving .phone-movement-empty {
++  min-height: 5rem;
++  border-style: solid;
++  border-color: rgba(90, 185, 225, 0.42);
++}
++
++@media (max-width: 1500px), (max-height: 850px) {
++  .tv-movement-focus {
++    grid-template-columns: minmax(11.5rem, 15rem) minmax(15rem, 22rem);
++    gap: 0.42rem 0.58rem;
++  }
++
++  .tv-movement-focus-heading,
++  .tv-movement-focus-roll,
++  .tv-movement-focus-destination,
++  .tv-movement-focus-travel,
++  .tv-movement-focus-timeline {
++    padding-block: 0.42rem;
++  }
++}
++
++/* Fresh-session QA: keep the map wrappers stretched when movement removes both side rails. */
++.tv-command-dashboard--movement-focus .tv-command-stage-movement-focus {
++  grid-template-columns: minmax(0, 1fr);
++  grid-template-rows: minmax(0, 1fr);
++}
++
++.tv-command-dashboard--movement-focus .tv-command-stage-movement-focus > .tv-command-map-shell,
++.tv-command-dashboard--movement-focus .tv-command-map-shell > .tv-board-panel,
++.tv-command-dashboard--movement-focus .tv-command-map-shell .tv-board-shell,
++.tv-command-dashboard--movement-focus .tv-command-map-shell .board-stage {
++  width: 100%;
++  height: 100%;
++  max-width: none;
++  max-height: none;
++  min-width: 0;
++  min-height: 0;
++}
++
++.tv-command-dashboard--movement-focus .tv-command-stage-movement-focus > .tv-command-map-shell {
++  grid-column: 1;
++  grid-row: 1;
++  justify-self: stretch;
++  align-self: stretch;
++}
++
++.tv-command-dashboard--movement-focus .tv-command-stage-movement-focus > .tv-movement-focus {
++  position: absolute;
++}
++
++.tv-command-dashboard--movement-focus .tv-command-map-shell .tv-board-shell {
++  display: block;
++}
++
++.tv-command-dashboard--movement-focus .tv-command-map-shell .board-stage {
++  aspect-ratio: auto;
++}

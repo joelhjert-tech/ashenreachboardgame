@@ -1,0 +1,35 @@
+﻿diff --git a/src/server/__tests__/phaseThreeHiddenAgendaReveal.test.ts b/src/server/__tests__/phaseThreeHiddenAgendaReveal.test.ts
+index 747dc89..db27d97 100644
+--- a/src/server/__tests__/phaseThreeHiddenAgendaReveal.test.ts
++++ b/src/server/__tests__/phaseThreeHiddenAgendaReveal.test.ts
+@@ -203,5 +203,5 @@ describe("Phase 3C1 hidden-agenda reveal mechanics", () => {
+       type: "INTENT_REJECTED",
+       reason: "Rivalry agendas can only be revealed in rivalry or ruthless mode"
+     });
+-  }, 10_000);
++  });
+ });
+diff --git a/src/server/__tests__/phaseTwoShopSellFlow.test.ts b/src/server/__tests__/phaseTwoShopSellFlow.test.ts
+index 3a58998..b69b9e1 100644
+--- a/src/server/__tests__/phaseTwoShopSellFlow.test.ts
++++ b/src/server/__tests__/phaseTwoShopSellFlow.test.ts
+@@ -201,7 +201,7 @@ describe("Phase 2B shop sell flow", () => {
+       gearId: qaGear.id
+     });
+     expect(getRejectedReason(qa.sent)).toBe(SHOP_FAILURE_REASONS.itemNotSellable);
+-  }, 10_000);
++  });
+ 
+   it("projects sellable inventory and disabled sell reasons for the owning phone", () => {
+     const veilHook = requireGear("veil-hook");
+diff --git a/src/server/__tests__/playFeelRules.test.ts b/src/server/__tests__/playFeelRules.test.ts
+index aa048c0..8eb6cd7 100644
+--- a/src/server/__tests__/playFeelRules.test.ts
++++ b/src/server/__tests__/playFeelRules.test.ts
+@@ -285,5 +285,5 @@ describe("play-feel guardrails", () => {
+       ).not.toThrow();
+       expect(server.getState().scenarioProgress[testCase.expectedProgressKey]).toBeGreaterThan(0);
+     }
+-  }, 10_000);
++  });
+ });

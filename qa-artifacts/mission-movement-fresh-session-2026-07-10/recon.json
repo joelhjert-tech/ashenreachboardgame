@@ -1,0 +1,19 @@
+{
+  "attempt": 2,
+  "roomCode": "QWJFN",
+  "phoneText": "SEAT 1\nMASTER ALPHA\n\nQA ONLY - The Broken Commander\n\nHEALTH\n0 wounds\n0 SCARS\nHide UI\nLeave\n\nACTIVE TURN\n\nMASTER ALPHA\n\nQA ONLY - The Broken Commander\n\nQWJFN\nFRESH QA\nOPEN\nACTIVE\nSTATS\nCOMMAND\n9\nBASE 9\nGRIT\n9\n+7\nBASE 9 BONUS +7\nSIGNAL\n9\nBASE 9\nGUILE\n9\n+4\nBASE 9 BONUS +4\nFORGE\n9\nBASE 9\nVITALS\nWOUNDS 0\nSCARS 0\nGEAR 8\nSTATUS ACTIVE\nPLAYER CARD\nINVENTORY\nQUEST\nMOVE\nBATTLE\nSHOP\nACTION\nHIDE TABS",
+  "phoneButtons": [
+    "Hide UI",
+    "Leave",
+    "COMMAND\n9\nBASE 9",
+    "GRIT\n9\n+7\nBASE 9 BONUS +7",
+    "SIGNAL\n9\nBASE 9",
+    "GUILE\n9\n+4\nBASE 9 BONUS +4",
+    "FORGE\n9\nBASE 9",
+    "HIDE TABS"
+  ],
+  "moveElements": [],
+  "tvText": "ASHEN REACH\n\nHOST COMMAND BOARD\nASHEN REACH TV\n\nROOM CODE\nQWJFN\nMODE\nSolo\n\u2726\nWIN PROGRESS\nSeal Restoration Marks\n0/2\n\u2620\nLOSS PRESSURE\nCollapse\n0/8\nLIVE STATUS\nBATTLE RESOLVING\n\nWaiting on MASTER ALPHA to resolve Furnace-Ditch Collapse. \u2014 Card Reveal\n\nOFF\nACTIVE OPERATIVE\nMASTER ALPHA\n\nQA ONLY - The Broken Commander\n\nRELEVANT STAT\n\u2694\nGRIT\n9\n-\nROLL -\nBASE\n9\nROLL\n-\nMOD\n+0\nTOTAL\n-\n\nGrit 9 + Roll - = Total -\n\nBATTLE RESOLVING\nFURNACE-DITCH COLLAPSE\n\nENGAGEMENT\n\nVS\nDEFEAT\nTOTALS PENDING\n\u2694\nGRIT\nGRIT TEST\nMASTER ALPHA\n-\nVS\n6\nDIFFICULTY\n\nBreach static surges across the turn start and rouses a local threat. Furnace-Ditch Collapse stirs in Ashwalk Bridge.\n\nAPPLYING FAILURE OUTCOME\nPreparing next phase...\nHAZARD\nFURNACE-DITCH COLLAPSE\n\nThe ground remembers every war it swallowed.\n\nOPPOSING VALUE\n\u2694\nDIFFICULTY\n6\n-\nROLL -\nBASE\n6\nROLL\n-\nMOD\n+0\nTOTAL\n6\n\nDifficulty 6 = Total 6",
+  "phoneErrors": [],
+  "tvErrors": []
+}

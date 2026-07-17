@@ -1,0 +1,232 @@
+{
+  "roomCode": "A0E94",
+  "roomOfferAttempt": 2,
+  "fresh": true,
+  "character": "MASTER ALPHA (QA-only reliable test character)",
+  "mission": "Beacon Quieting",
+  "screenshots": [
+    "01-phone-fresh-active.png",
+    "02-tv-fresh-active.png",
+    "04-phone-before-roll.png",
+    "05-phone-after-roll.png",
+    "06-tv-after-roll.png",
+    "07-phone-destination-selected.png",
+    "08-tv-destination-selected.png",
+    "09-tv-arrival-immediate.png",
+    "10-phone-arrival.png",
+    "11-tv-arrival-or-focus.png",
+    "11b-phone-battle-ready.png"
+  ],
+  "checks": {
+    "freshNoCompletedMission": true,
+    "openingBattleFocus": false,
+    "rollMovementPresent": true,
+    "rollMovementInViewport": true,
+    "tvMovementHudPresent": true,
+    "tvHudHasRoll": true,
+    "tvHudHasLegalCount": true,
+    "tvHudSaysChooseOnPhone": true,
+    "tvMapRemainsLarge": true,
+    "phoneDiceReadableClass": true,
+    "tvUpdatesBeforeConfirm": true,
+    "confirmMovePresent": true,
+    "confirmMoveInViewport": true,
+    "focusPriorityNoMovementCollision": true,
+    "focusPriorityNoArrivalCollision": true,
+    "battleSuppressesMovement": true,
+    "missionObjectiveReached": false,
+    "noPhoneErrors": true,
+    "noTvErrors": true,
+    "noCanvas": true
+  },
+  "phoneErrors": [],
+  "tvErrors": [],
+  "freshInventoryText": "SEAT 1\nMASTER ALPHA\n\nQA ONLY - The Broken Commander\n\nHEALTH\n0 wounds\n0 SCARS\nHide UI\nLeave\nINVENTORY\nPROGRESSION\nTrophies: 99\n0 from defeated enemies\n\nDefeat threats to bank trophies for permanent stat upgrades.\n\nCOMPLETED MISSIONS\n0/3 toward an Artifact trade\n\nCompleted mission cards are stored here until traded at a relic dealer.\n\nAVAILABLE UPGRADES\nCOMMAND 9\nQA operatives do not use campaign stat upgrades\nGRIT 9\nQA operatives do not use campaign stat upgrades\nSIGNAL 9\nQA operatives do not use campaign stat upgrades\nGUILE 9\nQA operatives do not use campaign stat upgrades\nFORGE 9\nQA operatives do not use campaign stat upgrades\nUSEFUL NOW\n0\nNone\nPASSIVE / ALREADY APPLIED\n0\nNone\nNOT USABLE NOW\n11\nVoid-Cleaver Command Blade, Ashen Pattern Plasma Rifle\nWEAPONS\n2\nVoid-Cleaver Command Blade\nWEAPONS\nTIMING LOCKED\n\nQA only: add +4 Grit in battle.\n\nWait for an action window.\nBefore battle roll\n+4 Grit\nAshen Pattern Plasma Rifle\nWEAPONS\nTIMING LOCKED\n\nQA only: add +4 Forge or Guile when testing ranged battle, machine pressure, or hostile salvage.\n\nWait for an action window.\nBefore battle roll, Any time\n+4 Forge\n1/1 use\nARMOR\n1\nTitanplate Exo-Rig\nARMOR\nTIMING LOCKED\n\nQA only: prevent 2 wounds after battle while testing damage and armor UI.\n\nWait for an action window.\nBefore battle roll, After battle roll, Before taking damage, Any time\n+3 Grit\nCONSUMABLES\n2\nEmergency Med-Stim x5\nCONSUMABLES\nLOCKED\n\nQA only: discard one charge to heal 4 wounds.\n\nNo wounds to heal.\nAny time\n+1 Command\n1/1 use\nVoid Charge x5\nCONSUMABLES\nTIMING LOCKED\n\nQA only: discard one charge to add +5 to one battle roll.\n\nWait for an action window.\nBefore battle roll, Any time\n+5 Grit\n1/1 use\nFOLLOWERS\n3\nF\nFandiablos\nFOLLOWERS\nTIMING LOCKED\n\nQA only ultimate companion: a shrieking flock of armored chihuahuas that swarms enemies, scouts routes, and terrifies the void. Counts as +2 Grit, +2 Guile, and may cancel one enemy attack per battle.\n\nWait for an action window.\nBefore threat draw, Before battle roll, Before taking damage, Movement\n1/1 use\nSN\nServo-Scribe Null\nFOLLOWERS\nTIMING LOCKED\n\nQA only: draw one extra card when searching, looting, or shopping so inventory and shop overflow can be tested quickly.\n\nWait for an action window.\nShop, Any time\n1/1 use\nGM\nGrave Medic Korr\nFOLLOWERS\nTIMING LOCKED\n\nQA only: heal 1 wound at the end of each turn when testing long-run survival and recovery loops.\n\nWait for an action window.\nStart of turn, Any time\n1/1 use\nARTIFACTS / RELICS\n3\nCrown of the First Signal\nARTIFACTS / RELICS\nTIMING LOCKED\n\nQA only: treat this as +2 to all tests when stress-testing modifier overflow.\n\nWait for an action window.\nAny time\n+2 Command\n5/5 uses\nDead Star Core\nARTIFACTS / RELICS\nTIMING LOCKED\n\nQA only: once per turn, auto-pass one non-battle challenge when testing scenario and tile checks.\n\nWait for an action window.\nBefore battle roll, After battle roll, Any time\n+2 Signal\n1/1 use\nOmni-Key of Broken Gates\nARTIFACTS / RELICS\nTIMING LOCKED\n\nQA only: ignore locked routes, gate checks, and shop blockers when testing recovery paths.\n\nWait for an action window.\nAfter battle roll, Movement, Any time\n+4 Guile\n1/1 use\nPLAYER CARD\nINVENTORY\nQUEST\nMOVE\nBATTLE\nSHOP\nACTION\nHIDE TABS",
+  "tvMovementHudMetrics": {
+    "x": 170.984375,
+    "y": 595.15625,
+    "width": 1024,
+    "height": 146.1875,
+    "bottom": 741.34375,
+    "right": 1194.984375,
+    "visible": true
+  },
+  "tvMovementHudText": "MOVEMENT RESOLVING\nMASTER ALPHA'S COMMAND\n\nResolve the move on the active phone.\n\nROLL RESULT\nMove 5\nROLL TOTAL\n5\nMODIFIER\n\u2014\nLEGAL\n2\nAWAITING DESTINATION\nChoose on phone\n\n2 legal tiles glow on the board.\n\nROLL\nDESTINATION\nMOVING\nARRIVAL\nENCOUNTER",
+  "tvMapMetrics": {
+    "x": 18.75,
+    "y": 91.15625,
+    "width": 1328.484375,
+    "height": 659.75,
+    "bottom": 750.90625,
+    "right": 1347.234375,
+    "visible": true
+  },
+  "tvMapDebug": [
+    {
+      "tag": "DIV",
+      "className": "board-stage",
+      "rect": {
+        "x": 18.75,
+        "y": 91.15625,
+        "width": 1328.484375,
+        "height": 659.75
+      },
+      "display": "block",
+      "width": "1328.48px",
+      "height": "659.75px",
+      "gridColumns": "none",
+      "gridRows": "none",
+      "alignSelf": "center",
+      "justifySelf": "center",
+      "aspectRatio": "auto"
+    },
+    {
+      "tag": "DIV",
+      "className": "tv-board-shell",
+      "rect": {
+        "x": 18.75,
+        "y": 91.15625,
+        "width": 1328.484375,
+        "height": 659.75
+      },
+      "display": "block",
+      "width": "1328.48px",
+      "height": "659.75px",
+      "gridColumns": "minmax(0px, 1fr)",
+      "gridRows": "minmax(0px, 1fr)",
+      "alignSelf": "auto",
+      "justifySelf": "auto",
+      "aspectRatio": "auto"
+    },
+    {
+      "tag": "SECTION",
+      "className": "tv-board-panel",
+      "rect": {
+        "x": 18.75,
+        "y": 91.15625,
+        "width": 1328.484375,
+        "height": 659.75
+      },
+      "display": "grid",
+      "width": "1328.48px",
+      "height": "659.75px",
+      "gridColumns": "1328.48px",
+      "gridRows": "659.75px",
+      "alignSelf": "auto",
+      "justifySelf": "auto",
+      "aspectRatio": "auto"
+    },
+    {
+      "tag": "DIV",
+      "className": "tv-command-map-shell",
+      "rect": {
+        "x": 14.65625,
+        "y": 87.0625,
+        "width": 1336.671875,
+        "height": 667.9375
+      },
+      "display": "grid",
+      "width": "1336.67px",
+      "height": "667.938px",
+      "gridColumns": "1328.48px",
+      "gridRows": "659.75px 0px",
+      "alignSelf": "stretch",
+      "justifySelf": "stretch",
+      "aspectRatio": "auto"
+    },
+    {
+      "tag": "SECTION",
+      "className": "tv-command-stage tv-command-stage-movement-focus",
+      "rect": {
+        "x": 13.65625,
+        "y": 86.0625,
+        "width": 1338.671875,
+        "height": 669.9375
+      },
+      "display": "grid",
+      "width": "1338.67px",
+      "height": "669.938px",
+      "gridColumns": "1336.67px",
+      "gridRows": "667.938px",
+      "alignSelf": "auto",
+      "justifySelf": "auto",
+      "aspectRatio": "auto"
+    },
+    {
+      "tag": "SECTION",
+      "className": "tv-command-main tv-command-main--movement-focus",
+      "rect": {
+        "x": 13.65625,
+        "y": 86.0625,
+        "width": 1338.671875,
+        "height": 669.9375
+      },
+      "display": "grid",
+      "width": "1338.67px",
+      "height": "669.938px",
+      "gridColumns": "1338.67px",
+      "gridRows": "669.938px",
+      "alignSelf": "auto",
+      "justifySelf": "auto",
+      "aspectRatio": "auto"
+    },
+    {
+      "tag": "DIV",
+      "className": "tv-title-safe",
+      "rect": {
+        "x": 13.65625,
+        "y": 12,
+        "width": 1338.671875,
+        "height": 744
+      },
+      "display": "flex",
+      "width": "1338.67px",
+      "height": "744px",
+      "gridColumns": "none",
+      "gridRows": "none",
+      "alignSelf": "auto",
+      "justifySelf": "auto",
+      "aspectRatio": "auto"
+    }
+  ],
+  "legalDestinationCount": 2,
+  "selectedDestinationText": "Rusted Transit Gate\nDANGER\n5 STEPS\n0 BLOCKERS\nTHREAT RISK\nREWARD\n\nThe transit gate coughs rust and signal sparks, still trying to dispatch trains into a dead timetable.\n\nSELECT\nROUTE DETAILS",
+  "selectedDestinationName": "Rusted Transit Gate",
+  "arrivalState": {
+    "arrivalBrief": false,
+    "battleFocus": true,
+    "shopFocus": false
+  },
+  "preBattleResolutionText": "SEAT 1\nMASTER ALPHA\n\nQA ONLY - The Broken Commander\n\nHEALTH\n0 wounds\n0 SCARS\nHide UI\nLeave\nRESOLUTION\nConfirm result\n\nGuile 13 + Roll 5 = Total 18 vs 3. Last change: Moved into Rusted Transit Gate.\n\nRusted Transit Gate: Guile.\nBATTLE\nRusted Transit Gate\nMOV\nRusted Transit Gate\nMOVEMENT\n\u25c6\nGUILE\n3\nTARGET 3\n\nApproach check\n\nGuile resolutionEncounterGuile\nROLL RESULT\nRusted Transit Gate\nCONTINUE\nCheck\n\u25c6\nGUILE\n3\nGuile vs 3\nModifiers\nGuile +13\nATTACK\n3\nDEFENSE\n2\nMODIFIER\n-\nA\nA 18 / D 3 / +13\n\nRoll: 3 + 2 + 13 = 18\n\nTarget: 3\n\nSuccess\n\nMoved into Rusted Transit Gate.\n\nNo quick actions available in this step.\n\nBATTLE ASSIST\nEnemy\nAFTER ROLL\nENEMY\nMovement 3\nPLAYER\n\u25c6\nGUILE\n13\nHEALTH\n0 wounds\nTIMING\nAfter battle roll\n\nYou have 8 cards that can help.\n\nOPEN COMBAT CARDS\nBATTLE\nUseful now: Guile\nGUILE\nBattle\nResolve the active enemy, event, or roll.\nPLAYER CARD\nINVENTORY\nQUEST\nMOVE\nBATTLE\nSHOP\nACTION\nHIDE TABS",
+  "preBattleButtons": [
+    "Hide UI",
+    "Leave",
+    "CONTINUE",
+    "OPEN COMBAT CARDS",
+    "PLAYER CARD",
+    "INVENTORY",
+    "QUEST",
+    "MOVE",
+    "BATTLE",
+    "SHOP",
+    "ACTION",
+    "HIDE TABS"
+  ],
+  "missionActionText": "SEAT 1\nMASTER ALPHA\n\nQA ONLY - The Broken Commander\n\nHEALTH\n0 wounds\n0 SCARS\nHide UI\nLeave\nResolve battle first\n\nAction locked: resolve battle first. Ignore sector actions until the Battle tab is cleared.\n\nAction\nAction locked: resolve battle first.\nPLAYER CARD\nINVENTORY\nQUEST\nMOVE\nBATTLE\nSHOP\nACTION\nHIDE TABS",
+  "phoneSurface": {
+    "width": 390,
+    "height": 844,
+    "scrollWidth": 390,
+    "scrollHeight": 844,
+    "horizontalOverflow": false,
+    "canvasCount": 0
+  },
+  "tvSurface": {
+    "width": 1366,
+    "height": 768,
+    "scrollWidth": 1366,
+    "scrollHeight": 768,
+    "horizontalOverflow": false,
+    "canvasCount": 0
+  }
+}

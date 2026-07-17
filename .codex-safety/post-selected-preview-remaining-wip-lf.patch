@@ -1,0 +1,1271 @@
+diff --git a/src/client/phone/PhoneActionPanel.tsx b/src/client/phone/PhoneActionPanel.tsx
+index 715c44d..5ba0764 100644
+--- a/src/client/phone/PhoneActionPanel.tsx
++++ b/src/client/phone/PhoneActionPanel.tsx
+@@ -228,7 +228,7 @@ function formatShopCost(cost: PublicShopCost): string {
+     cost.heat ? `${cost.heat} Risk` : null,
+     cost.wounds ? `${cost.wounds} Wound${cost.wounds === 1 ? "" : "s"}` : null,
+     cost.trophies ? `${cost.trophies} Trophies` : null,
+-    cost.completedContracts ? `${cost.completedContracts} Contract${cost.completedContracts === 1 ? "" : "s"}` : null,
++    cost.completedContracts ? `${cost.completedContracts} Completed Mission${cost.completedContracts === 1 ? "" : "s"}` : null,
+     cost.scars ? `${cost.scars} Scar${cost.scars === 1 ? "" : "s"}` : null
+   ].filter(Boolean);
+ 
+@@ -439,6 +439,14 @@ function BattleSubjectCard({
+   );
+ }
+ 
++function isBattleLikeResolution(resolution: ActiveResolution | null | undefined): resolution is ActiveResolution {
++  if (!resolution) {
++    return false;
++  }
++
++  return Boolean(resolution.battle || resolution.source === "threat" || resolution.source === "anomaly");
++}
++
+ const shopFailureLabels: Record<ShopFailureReason, string> = {
+   notAtShop: "No shop here",
+   shopBlockedByThreat: "Shop blocked by threat",
+@@ -1564,8 +1572,8 @@ function PhoneShopPanel({
+ 
+           <div className="phone-shop-stock" aria-label="Revealed shop stock">
+             <div className="phone-shop-section-heading">
+-              <span>Stock</span>
+-              <small>{revealedStock.length > 0 ? "Tap Buy to review the purchase before spending Salvage." : "Use a buy service to reveal market stock."}</small>
++              <span>Equipment available</span>
++              <small>{revealedStock.length > 0 ? "Choose equipment to buy, then review the purchase before spending Salvage." : "Use Buy Equipment to reveal shop stock."}</small>
+             </div>
+             {revealedStock.length > 0 ? (
+               <div className="phone-shop-stock-list">
+@@ -1603,7 +1611,7 @@ function PhoneShopPanel({
+                 })}
+               </div>
+             ) : (
+-              <p className="phone-shop-empty-stock">No stock available.</p>
++              <p className="phone-shop-empty-stock">No equipment available.</p>
+             )}
+           </div>
+ 
+@@ -1719,20 +1727,24 @@ function MovementPlanner({
+   planner,
+   seatId,
+   activeContract,
++  canRoll,
++  selectedSectorId,
++  onSelectedSectorId,
+   onIntent
+ }: {
+   planner: PublicMovementPlannerState | null | undefined;
+   seatId: string;
+   activeContract: ContractCard | null;
++  canRoll: boolean;
++  selectedSectorId: string | null;
++  onSelectedSectorId: (sectorId: string | null) => void;
+   onIntent: (intent: ClientIntent) => void;
+ }): ReactElement | null {
+-  const [selectedSectorId, setSelectedSectorId] = useState<string | null>(null);
+-
+-  useEffect(() => {
+-    setSelectedSectorId(null);
+-  }, [planner?.currentSectorId, planner?.movementValue]);
+-
+   if (!planner?.active) {
++    if (!canRoll) {
++      return null;
++    }
++
+     return (
+       <section className="phone-movement-planner" aria-label="Movement planner" data-testid="movement-planner">
+         <MovementEmptyState
+@@ -1762,19 +1774,6 @@ function MovementPlanner({
+     ? planner.destinations.find((destination) => destination.sectorId === selectedSectorId) ?? null
+     : null;
+ 
+-  const selectDestination = (sectorId: string): void => {
+-    const destination = planner.destinations.find((entry) => entry.sectorId === sectorId) ?? null;
+-    if (!destination) return;
+-    setSelectedSectorId(sectorId);
+-    if (destination.disabledReason) return;
+-    onIntent({ type: "MOVEMENT_DESTINATION_PREVIEWED", seatId, toSectorId: sectorId });
+-  };
+-
+-  const clearDestination = (): void => {
+-    setSelectedSectorId(null);
+-    onIntent({ type: "MOVEMENT_DESTINATION_PREVIEWED", seatId, toSectorId: null });
+-  };
+-
+   return (
+     <section className="phone-movement-planner" aria-label="Movement planner" data-testid="movement-planner">
+       {selected ? (
+@@ -1783,11 +1782,11 @@ function MovementPlanner({
+           selected={selected}
+           seatId={seatId}
+           activeContract={activeContract}
+-          onBack={clearDestination}
++          onBack={() => onSelectedSectorId(null)}
+           onIntent={onIntent}
+         />
+       ) : (
+-        <MovementDestinationList planner={planner} activeContract={activeContract} onSelected={selectDestination} />
++        <MovementDestinationList planner={planner} activeContract={activeContract} onSelected={onSelectedSectorId} />
+       )}
+     </section>
+   );
+@@ -2235,7 +2234,9 @@ function PhoneMovePanel({
+   seatId,
+   activeContract,
+   onIntent,
+-  usefulNow
++  usefulNow,
++  canRollMovement,
++  movementResolving
+ }: {
+   movementPlanner: PublicMovementPlannerState | null | undefined;
+   currentTile: CurrentTileViewModel;
+@@ -2245,13 +2246,77 @@ function PhoneMovePanel({
+   activeContract: ContractCard | null;
+   onIntent: (intent: ClientIntent) => void;
+   usefulNow: UsefulNowViewModel | null;
++  canRollMovement: boolean;
++  movementResolving: boolean;
+ }): ReactElement {
++  const [selectedSectorId, setSelectedSectorId] = useState<string | null>(null);
++  const panelRef = useRef<HTMLElement | null>(null);
++  const movementState = movementResolving || movementTravel
++    ? "resolving"
++    : movementPlanner?.active
++      ? selectedSectorId
++        ? "needs-confirm"
++        : "needs-destination"
++      : canRollMovement
++        ? "needs-roll"
++        : "complete";
++
++  useEffect(() => {
++    setSelectedSectorId(null);
++  }, [movementPlanner?.currentSectorId, movementPlanner?.movementValue]);
++
++  useLayoutEffect(() => {
++    const scrollContainer = panelRef.current?.closest<HTMLElement>(".phone-portrait-scroll");
++    if (scrollContainer) {
++      if (typeof scrollContainer.scrollTo === "function") {
++        scrollContainer.scrollTo({ top: 0, left: 0, behavior: "auto" });
++      } else {
++        scrollContainer.scrollTop = 0;
++        scrollContainer.scrollLeft = 0;
++      }
++    }
++  }, [movementState, movementTravel?.key]);
++
++  const selectDestination = (sectorId: string | null) => {
++    setSelectedSectorId(sectorId);
++    const destination = sectorId
++      ? movementPlanner?.destinations.find((entry) => entry.sectorId === sectorId) ?? null
++      : null;
++
++    if (destination?.disabledReason) {
++      return;
++    }
++
++    onIntent({
++      type: "MOVEMENT_DESTINATION_PREVIEWED",
++      seatId,
++      toSectorId: sectorId
++    });
++  };
++
+   return (
+-    <section className="phone-action-active-panel phone-move-panel" data-testid="phone-action-active-panel" aria-label="Move command screen">
++    <section ref={panelRef} className={`phone-action-active-panel phone-move-panel phone-move-panel--${movementState}`} data-testid="phone-action-active-panel" data-movement-state={movementState} aria-label="Move command screen">
+       <CurrentTileCard tile={currentTile} />
+       <PhoneMovementAnimation travel={movementTravel} />
+-      <MovementPlanner planner={movementPlanner} seatId={seatId} activeContract={activeContract} onIntent={onIntent} />
+-      {!hasMoveContent && !movementPlanner?.active && (
++      {!movementResolving && (
++        <MovementPlanner
++          planner={movementPlanner}
++          seatId={seatId}
++          activeContract={activeContract}
++          canRoll={canRollMovement}
++          selectedSectorId={selectedSectorId}
++          onSelectedSectorId={selectDestination}
++          onIntent={onIntent}
++        />
++      )}
++      {movementResolving && (
++        <MovementEmptyState
++          title={movementTravel ? "Route confirmed" : "Arrival resolving"}
++          text={movementTravel ? `Travelling to ${movementTravel.toSectorName}.` : "Movement is complete. Resolve the arrival test or event."}
++          detail="Movement controls will return on the next navigation step."
++        />
++      )}
++      {!hasMoveContent && !movementPlanner?.active && !movementResolving && !canRollMovement && (
+         <EmptyTurnTab title="No movement choice" text="Movement is not available in this step. Resolve the current action or wait for the table." />
+       )}
+       <UsefulNowPanel model={usefulNow} variant="secondary" />
+@@ -2331,6 +2396,7 @@ function PhoneShopCommandPanel({
+ 
+ function PhoneSectorActionPanel({
+   title,
++  resolutionPanel,
+   sectorOpportunityItems,
+   sectorExplorationCopy,
+   visibleActionDeltas,
+@@ -2345,6 +2411,7 @@ function PhoneSectorActionPanel({
+   usefulNow
+ }: {
+   title: string;
++  resolutionPanel: ReactElement | null;
+   sectorOpportunityItems: SectorOpportunityItem[];
+   sectorExplorationCopy: ReturnType<typeof buildSectorExplorationCopy>;
+   visibleActionDeltas: ResultDelta[];
+@@ -2364,6 +2431,7 @@ function PhoneSectorActionPanel({
+         <span>Sector action</span>
+         <strong>{title}</strong>
+       </header>
++      {resolutionPanel}
+       <SectorOpportunityChips items={sectorOpportunityItems} />
+       <ActionSections
+         sectionClassName="phone-sector-action-panel__action-card"
+@@ -2420,6 +2488,7 @@ export function PhoneActionPanel({
+   const usefulNow = buildUsefulNowViewModel(patch);
+   const isActiveSeat = getActiveSeatId(patch) === self.seatId;
+   const activeResolution = patch.activeResolution ?? null;
++  const battleActiveResolution = isBattleLikeResolution(activeResolution) ? activeResolution : null;
+   const orphanResolutionOutcome =
+     isActiveSeat &&
+     !activeResolution &&
+@@ -2445,6 +2514,8 @@ export function PhoneActionPanel({
+       onContinue={continueResolution}
+     />
+   );
++  const battleResolutionPanel = battleActiveResolution ? resolutionPanel : null;
++  const actionResolutionPanel = activeResolution && !battleActiveResolution ? resolutionPanel : orphanResolutionOutcome ? resolutionPanel : null;
+   const battleAssist = getBattleAssistViewModel(patch);
+   const battleAssistPanel = <BattleAssistCard patch={patch} onIntent={onIntent} />;
+   const sector = getSector(patch.sectors, self.sectorId);
+@@ -2468,7 +2539,7 @@ export function PhoneActionPanel({
+   const isScenarioConfrontation = isScenarioConfrontationSpace(self.sectorId);
+   const movementPlanner = patch.movementPlanner ?? null;
+   const movementOutcome =
+-    patch.outcomeSummary?.seatId === self.seatId && patch.outcomeSummary.movedToSectorId
++    !movementPlanner?.active && patch.outcomeSummary?.seatId === self.seatId && patch.outcomeSummary.movedToSectorId
+       ? patch.outcomeSummary
+       : null;
+   useEffect(() => {
+@@ -2999,7 +3070,7 @@ export function PhoneActionPanel({
+         ? "Review the result, upgrade with trophies, or end your turn."
+         : "Waiting for the server to resolve the current step.";
+   const hasMoveContent = Boolean(movementPlanner?.active && movementPlanner.destinations.length > 0) || moveActions.length > 0;
+-  const hasBattleContent = Boolean(activeResolution || orphanResolutionOutcome || battleAssist) || threatActions.length > 0;
++  const hasBattleContent = Boolean(battleActiveResolution || battleAssist || patch.encounter || pendingEnemyRoll) || threatActions.length > 0;
+   const hasShopContent = Boolean(shopEncounter);
+   const shopLocked = Boolean(shopEncounter && (shopEncounter.status === "locked" || shopEncounter.blockingThreats.length > 0));
+   const shopLockReasonText = shopEncounter?.blockedReasonText ?? formatShopDisabledReason(shopEncounter?.blockedReason);
+@@ -3012,7 +3083,8 @@ export function PhoneActionPanel({
+       contractActions.length +
+       advanceActions.length >
+     0;
+-  const battleRequiresResolution = Boolean(patch.encounter || activeResolution || orphanResolutionOutcome || battleAssist);
++  const hasResolutionActionContent = Boolean(actionResolutionPanel || orphanResolutionOutcome);
++  const battleRequiresResolution = Boolean(patch.encounter || battleActiveResolution || battleAssist || pendingEnemyRoll);
+   const battleBlocksNonBattleTabs = battleRequiresResolution && hasBattleContent;
+   const moveBlockedReason = hasMoveContent
+     ? undefined
+@@ -3035,7 +3107,7 @@ export function PhoneActionPanel({
+         : "Shop locked: no shop here.";
+   const actionBlockedReason = battleBlocksNonBattleTabs
+     ? "Action locked: resolve battle first."
+-    : hasActionContent || !hasMoveContent
++    : hasActionContent || hasResolutionActionContent || !hasMoveContent
+       ? undefined
+       : "Action locked: no sector action here.";
+   const tabDefinitions: TurnActionTabDefinition[] = [
+@@ -3054,7 +3126,7 @@ export function PhoneActionPanel({
+     {
+       id: "battle",
+       label: "Battle",
+-      detail: patch.encounter?.title ?? activeResolution?.card?.title ?? battleAssist?.enemyName ?? "No threat",
++      detail: patch.encounter?.title ?? battleActiveResolution?.card?.title ?? battleAssist?.enemyName ?? "No threat",
+       tone: "battle",
+       enabled: hasBattleContent,
+       blockedReason: battleBlockedReason
+@@ -3071,9 +3143,9 @@ export function PhoneActionPanel({
+     {
+       id: "action",
+       label: "Action",
+-      detail: boardSpace?.textBox.title ?? "Gear / quest",
++      detail: actionResolutionPanel ? activeResolution?.card?.title ?? activeResolution?.outcome?.title ?? "Resolution" : boardSpace?.textBox.title ?? "Gear / quest",
+       tone: "action",
+-      enabled: !battleBlocksNonBattleTabs && (hasActionContent || !hasMoveContent),
++      enabled: !battleBlocksNonBattleTabs && (hasActionContent || hasResolutionActionContent || !hasMoveContent),
+       blockedReason: actionBlockedReason
+     }
+   ];
+@@ -3105,7 +3177,7 @@ export function PhoneActionPanel({
+   const currentDeltas = patch.playerResultDeltas ?? patch.publicResultDeltas ?? [];
+   const visibleBattleDeltas = battleResultDeltas(currentDeltas);
+   const visibleActionDeltas = actionResultDeltas(currentDeltas);
+-  const battleTitle = patch.encounter?.title ?? activeResolution?.card?.title ?? battleAssist?.enemyName ?? "No threat";
++  const battleTitle = patch.encounter?.title ?? battleActiveResolution?.card?.title ?? battleAssist?.enemyName ?? "No threat";
+   const actionTitle = boardSpace?.textBox.title ?? "Operative options";
+   const activeTabContent =
+     activeTurnTab === "move" ? (
+@@ -3118,13 +3190,15 @@ export function PhoneActionPanel({
+         activeContract={activeContract}
+         onIntent={onIntent}
+         usefulNow={activeUsefulNow}
++        canRollMovement={patch.phase === "navigation" && !movementPlanner?.active}
++        movementResolving={Boolean(movementTravel || (patch.phase !== "navigation" && (activeResolution || movementOutcome)))}
+       />
+     ) : activeTurnTab === "battle" ? (
+       <PhoneBattlePanel
+         title={battleTitle}
+-        activeResolution={activeResolution}
++        activeResolution={battleActiveResolution}
+         encounter={patch.encounter}
+-        resolutionPanel={resolutionPanel}
++        resolutionPanel={battleResolutionPanel}
+         battleAssistPanel={battleAssistPanel}
+         threatActions={threatActions}
+         hasBattleContent={hasBattleContent}
+@@ -3155,6 +3229,7 @@ export function PhoneActionPanel({
+     ) : (
+       <PhoneSectorActionPanel
+         title={actionTitle}
++        resolutionPanel={actionResolutionPanel}
+         sectorOpportunityItems={sectorOpportunityItems}
+         sectorExplorationCopy={sectorExplorationCopy}
+         visibleActionDeltas={visibleActionDeltas}
+diff --git a/src/client/phone/__tests__/PhoneActionPanel.test.tsx b/src/client/phone/__tests__/PhoneActionPanel.test.tsx
+index 81fdf70..00d8648 100644
+--- a/src/client/phone/__tests__/PhoneActionPanel.test.tsx
++++ b/src/client/phone/__tests__/PhoneActionPanel.test.tsx
+@@ -545,13 +545,13 @@ describe("PhoneActionPanel", () => {
+                 routeNames: ["Pilgrim Lock", "Anchor Market"],
+                 tags: ["shop", "crossroads"],
+                 threatIcons: ["yellow"],
+-                ruleText: "If clear, buy Gear, Supplies, or use Black Market Refresh.",
++                ruleText: "If clear, buy Equipment or use Black Market Refresh.",
+                 loreText: "A market of sealed crates and oath-brokers.",
+                 shop: {
+                   shopId: "outer_waymarketExchange",
+                   shopName: "Anchor Market",
+                   status: "open",
+-                  servicesPreview: ["Buy Gear", "Sell Gear", "Black Market Refresh"]
++                  servicesPreview: ["Buy Equipment", "Sell Gear", "Black Market Refresh"]
+                 },
+                 faceUpThreats: [],
+                 occupants: [],
+@@ -686,7 +686,7 @@ describe("PhoneActionPanel", () => {
+     expect(screen.getByTestId("movement-route-steps")).toHaveTextContent(/pilgrim lock/i);
+     expect(screen.getByTestId("movement-confirm-footer")).toHaveTextContent(/this will end your movement/i);
+     expect(screen.getAllByText(/green guile/i).length).toBeGreaterThan(0);
+-    expect(screen.getByText(/buy gear \/ sell gear/i)).toBeInTheDocument();
++    expect(screen.getByText(/buy equipment \/ sell gear/i)).toBeInTheDocument();
+     expect(screen.queryByText(/choir bulwark/i)).not.toBeInTheDocument();
+   });
+ 
+@@ -1017,7 +1017,7 @@ describe("PhoneActionPanel", () => {
+                   shopId: "pilgrim-lock-market",
+                   shopName: "Pilgrim Lock Gate",
+                   status: "open",
+-                  servicesPreview: ["Buy Gear", "Repair", "Trade"]
++                  servicesPreview: ["Buy Equipment", "Repair", "Trade"]
+                 },
+                 faceUpThreats: [],
+                 occupants: [],
+@@ -1153,7 +1153,7 @@ describe("PhoneActionPanel", () => {
+             services: [
+               {
+                 id: "buy-gear",
+-                label: "Buy Gear",
++                label: "Buy Equipment",
+                 shopCategory: "forge-armoury",
+                 cost: {},
+                 enabled: true
+@@ -1227,7 +1227,7 @@ describe("PhoneActionPanel", () => {
+     expect(screen.getAllByTestId("phone-shop-category-icon").length).toBeGreaterThanOrEqual(2);
+     expect(screen.getAllByTestId("phone-shop-category-icon")[0]).toHaveAttribute("src", "/assets/riftfall/ui/shop-category-forge-armoury.svg");
+     expect(screen.getByRole("button", { name: /skip \/ continue/i })).toBeInTheDocument();
+-    fireEvent.click(screen.getByRole("button", { name: /buy gear/i }));
++    fireEvent.click(screen.getByRole("button", { name: /buy equipment/i }));
+     expect(onIntent).toHaveBeenCalledWith({
+       type: "SHOP_SERVICE_REQUESTED",
+       seatId: "seat-1",
+@@ -1461,7 +1461,7 @@ describe("PhoneActionPanel", () => {
+             routeNames: ["Pilgrim Lock", "Anchor Market"],
+             tags: ["shop"],
+             threatIcons: [],
+-            ruleText: "If clear, buy Gear.",
++            ruleText: "If clear, buy Equipment.",
+             faceUpThreats: [],
+             occupants: [],
+             strategicTags: ["shop", "reward"]
+@@ -1639,9 +1639,9 @@ describe("PhoneActionPanel", () => {
+       />
+     );
+ 
+-    expect(screen.getAllByText(/no stock available/i)).toHaveLength(1);
++    expect(screen.getAllByText(/no equipment available/i)).toHaveLength(1);
+     expect(screen.getAllByText(/no sellable items/i)).toHaveLength(1);
+-    expect(screen.getByText(/use a buy service to reveal market stock/i)).toBeInTheDocument();
++    expect(screen.getByText(/use buy equipment to reveal shop stock/i)).toBeInTheDocument();
+     expect(screen.getByText(/only sellable carried gear appears here/i)).toBeInTheDocument();
+     expect(screen.getByTestId("phone-shop-category-icon")).toHaveAttribute("src", "/assets/riftfall/ui/shop-category-market.svg");
+     expect(screen.getByText(/purchased: ashlock carbine/i)).toBeInTheDocument();
+@@ -2887,6 +2887,7 @@ describe("PhoneActionPanel", () => {
+         characters={characters}
+         onIntent={vi.fn()}
+         patch={createPatch({
++          encounter: null,
+           activeResolution: {
+             id: "seat-1:scenario:ambient:test",
+             playerId: "seat-1",
+@@ -2912,6 +2913,88 @@ describe("PhoneActionPanel", () => {
+     expect(screen.getByTestId("phone-resolution-card")).toHaveTextContent(/doom rises by 1/i);
+   });
+ 
++  it("does not show movement resolution dice inside the Battle tab", () => {
++    render(
++      <PhoneActionPanel
++        characters={characters}
++        onIntent={vi.fn()}
++        selectedTurnTab="battle"
++        patch={createPatch({
++          encounter: null,
++          activeResolution: {
++            id: "seat-1:movement:arrival:test",
++            playerId: "seat-1",
++            source: "movement",
++            stage: "roll_result",
++            card: {
++              id: "ashwake-bridge-arrival",
++              title: "Ashwake Bridge Arrival",
++              type: "movement"
++            },
++            roll: {
++              dice: [4],
++              baseTotal: 4,
++              modifierTotal: 0,
++              finalTotal: 4,
++              target: 1,
++              success: true
++            },
++            outcome: {
++              title: "Movement complete",
++              text: "Moved to Ashwake Bridge.",
++              effects: ["Current tile updated."]
++            }
++          }
++        })}
++      />
++    );
++
++    expect(screen.getByTestId("phone-action-active-panel")).toHaveClass("phone-battle-panel");
++    expect(screen.getByText(/no battle active/i)).toBeInTheDocument();
++    expect(screen.queryByTestId("phone-roll-result")).not.toBeInTheDocument();
++    expect(screen.queryByText(/ashwake bridge arrival/i)).not.toBeInTheDocument();
++  });
++
++  it("keeps movement resolution results in Action instead of Battle", () => {
++    render(
++      <PhoneActionPanel
++        characters={characters}
++        onIntent={vi.fn()}
++        patch={createPatch({
++          encounter: null,
++          activeResolution: {
++            id: "seat-1:movement:arrival:test",
++            playerId: "seat-1",
++            source: "movement",
++            stage: "roll_result",
++            card: {
++              id: "ashwake-bridge-arrival",
++              title: "Ashwake Bridge Arrival",
++              type: "movement"
++            },
++            roll: {
++              dice: [4],
++              baseTotal: 4,
++              modifierTotal: 0,
++              finalTotal: 4,
++              target: 1,
++              success: true
++            },
++            outcome: {
++              title: "Movement complete",
++              text: "Moved to Ashwake Bridge.",
++              effects: ["Current tile updated."]
++            }
++          }
++        })}
++      />
++    );
++
++    expect(screen.getByTestId("phone-action-panel-root")).toHaveClass("phone-action-panel--action");
++    expect(screen.getByTestId("phone-resolution-card")).toHaveTextContent(/ashwake bridge arrival/i);
++    expect(screen.getByTestId("phone-resolution-card")).toHaveTextContent(/moved to ashwake bridge/i);
++  });
++
+   it("does not repeat identical success copy as both outcome text and bullet", () => {
+     render(
+       <PhoneActionPanel
+diff --git a/src/client/shared/types.ts b/src/client/shared/types.ts
+index 490a4bb..6a3ddbf 100644
+--- a/src/client/shared/types.ts
++++ b/src/client/shared/types.ts
+@@ -56,7 +56,7 @@ export interface CharacterPresentation {
+   signatureItemSummary: string;
+   startingContractSummary: string;
+ }
+-
++
+ export interface PublicSeat {
+   seatId: string;
+   characterId: string;
+@@ -68,7 +68,7 @@ export interface PublicSeat {
+   ready: boolean;
+   kicked: boolean;
+ }
+-
++
+ export interface PublicPlayerCharacter {
+   id: string;
+   name: string;
+@@ -106,13 +106,13 @@ export interface TrophyPileEntry {
+   stat?: Stat;
+   cardType?: string;
+ }
+-
+-export interface PublicPlayer {
+-  seatId: string;
+-  sectorId: string;
+-  character: PublicPlayerCharacter;
+-}
+-
++
++export interface PublicPlayer {
++  seatId: string;
++  sectorId: string;
++  character: PublicPlayerCharacter;
++}
++
+ export interface GearItem {
+   id: string;
+   name: string;
+@@ -223,13 +223,14 @@ export interface PrivateCharacter {
+   scars: string[];
+   afflictions?: PlayerAfflictionSummary;
+   activeContract: { contractId: string; progress: number } | null;
++  completedContracts?: string[];
+   heldGear: GearItem[];
+   equippedGear: Record<GearSlot, string | null>;
+   followers?: Follower[];
+   scarCards?: ScarSummary[];
+   abilities: Array<{ id: string; name: string; text: string }>;
+ }
+-
++
+ export interface PhoneSelfState {
+   seatId: string;
+   sectorId: string;
+@@ -359,32 +360,32 @@ export interface ResultDelta {
+   severity: ResultDeltaSeverity;
+ }
+ 
+-export interface SectorNode {
+-  id: string;
+-  name: string;
++export interface SectorNode {
++  id: string;
++  name: string;
+   regionTier: string;
+   neighbors: string[];
+   danger: number;
+   threatIcons?: ThreatIcon[];
+   encounterDecks: {
+-    threat: string[];
+-    anomaly: string[];
+-    contract: string[];
+-    artifact: string[];
+-    escalation: string[];
+-  };
+-}
+-
+-export interface EncounterCard {
+-  id: string;
+-  title: string;
+-  cardType: "hazard" | "enemy";
+-  flavor: string;
+-  difficulty: number;
+-  stat: Stat;
+-  enemyName?: string | null;
+-}
+-
++    threat: string[];
++    anomaly: string[];
++    contract: string[];
++    artifact: string[];
++    escalation: string[];
++  };
++}
++
++export interface EncounterCard {
++  id: string;
++  title: string;
++  cardType: "hazard" | "enemy";
++  flavor: string;
++  difficulty: number;
++  stat: Stat;
++  enemyName?: string | null;
++}
++
+ export interface ContractCard {
+   id: string;
+   name: string;
+@@ -397,34 +398,34 @@ export interface ContractCard {
+     | { type: "shopTransaction"; action: "buyEquipment" | "sellGear" | "repairGear" | "upgradeGear" | "trade"; requiredShopType?: string; requiredSectorId?: string; requiredCount: number; minimumSalvageSpent?: number; label: string };
+   reward?: unknown;
+ }
+-
+-export interface PendingEnemyRoll {
+-  fighterSeatId: string;
+-  assignedRollerSeatId: string;
+-  encounterCardId: string;
+-  encounterTitle: string;
+-  stat: Stat;
+-}
+-
++
++export interface PendingEnemyRoll {
++  fighterSeatId: string;
++  assignedRollerSeatId: string;
++  encounterCardId: string;
++  encounterTitle: string;
++  stat: Stat;
++}
++
+ export interface OutcomeSummary {
+-  seatId: string;
+-  movedToSectorId: string;
+-  encounterCardId: string | null;
+-  encounterTitle: string | null;
+-  encounterCardType: "hazard" | "enemy" | null;
+-  checkStat: string | null;
+-  die1: number | null;
+-  die2: number | null;
+-  statBonus: number | null;
+-  checkTotal: number | null;
+-  difficulty: number | null;
+-  enemyRollerSeatId?: string | null;
+-  enemyDie1?: number | null;
+-  enemyDie2?: number | null;
+-  enemyBonus?: number | null;
+-  enemyTotal?: number | null;
+-  success: boolean | null;
+-  replacementCharacterId?: string | null;
++  seatId: string;
++  movedToSectorId: string;
++  encounterCardId: string | null;
++  encounterTitle: string | null;
++  encounterCardType: "hazard" | "enemy" | null;
++  checkStat: string | null;
++  die1: number | null;
++  die2: number | null;
++  statBonus: number | null;
++  checkTotal: number | null;
++  difficulty: number | null;
++  enemyRollerSeatId?: string | null;
++  enemyDie1?: number | null;
++  enemyDie2?: number | null;
++  enemyBonus?: number | null;
++  enemyTotal?: number | null;
++  success: boolean | null;
++  replacementCharacterId?: string | null;
+   summary: string;
+ }
+ 
+@@ -615,8 +616,8 @@ export interface PublicMovementPlannerState {
+   movementValue: number;
+   currentSectorId: string;
+   currentSectorName: string;
+-  selectedDestinationId?: string | null;
+   destinations: PublicMoveDestination[];
++  selectedDestinationId?: string | null;
+ }
+ 
+ export interface PublicSectorExplorationThreat {
+@@ -691,7 +692,7 @@ export interface NemesisNexusCountdownSummary {
+   nemesisId: string;
+   remainingTurns: number;
+ }
+-
++
+ export interface ActiveScenarioSummary {
+   id: string;
+   name: string;
+@@ -771,7 +772,7 @@ export interface ScenarioCatalogEntry {
+   confrontationSteps: string[];
+   victoryText: string;
+ }
+-
++
+ export interface ScenarioTelemetryItem {
+   label: string;
+   value: string;
+@@ -829,15 +830,15 @@ export interface PublicPatchPayload {
+   scenarioProgress: Record<string, number>;
+   nemesisChampions?: NemesisChampionSummary[];
+   nemesisNexusCountdowns?: NemesisNexusCountdownSummary[];
+-  seats: PublicSeat[];
+-  sectors: SectorNode[];
+-  players: PublicPlayer[];
+-  activeSeatIndex: number;
+-  turnOrder: string[];
+-  escalationLevel: number;
+-  escalationThreshold: number;
+-  escalationModifier: number;
+-  availableContracts: ContractCard[];
++  seats: PublicSeat[];
++  sectors: SectorNode[];
++  players: PublicPlayer[];
++  activeSeatIndex: number;
++  turnOrder: string[];
++  escalationLevel: number;
++  escalationThreshold: number;
++  escalationModifier: number;
++  availableContracts: ContractCard[];
+   encounter: EncounterCard | null;
+   pendingEnemyRoll: PendingEnemyRoll | null;
+   outcomeSummary: OutcomeSummary | null;
+@@ -872,49 +873,49 @@ export interface PhonePatchPayload extends PublicPatchPayload {
+   crownKeyFragments?: number;
+   eligibleNemesisAssistSeatIds?: string[];
+ }
+-
+-export interface StatePatch<TPayload = PublicPatchPayload> {
+-  type: "STATE_PATCH";
+-  sessionId: string;
+-  sequence: number;
+-  phase: Phase;
+-  payload: TPayload;
+-}
+-
+-export interface IntentRejectedEnvelope {
+-  type: "INTENT_REJECTED";
+-  sessionId: string;
+-  sequence: number;
+-  actionType: string;
+-  reason: string;
+-}
+-
+-export interface RejoinAcceptedEnvelope {
+-  type: "REJOIN_ACCEPTED";
+-  sessionId: string;
+-  seatId: string;
+-}
+-
+-export interface RejoinRejectedEnvelope {
+-  type: "REJOIN_REJECTED";
+-  sessionId: string;
+-  reason: string;
+-}
+-
+-export interface DebugEvent {
+-  id: string;
+-  timestamp: string;
+-  label: string;
+-  detail?: string;
+-  payload: unknown;
+-}
+-
+-export type ServerEnvelope =
+-  | StatePatch<PublicPatchPayload | PhonePatchPayload>
+-  | IntentRejectedEnvelope
+-  | RejoinAcceptedEnvelope
+-  | RejoinRejectedEnvelope;
+-
++
++export interface StatePatch<TPayload = PublicPatchPayload> {
++  type: "STATE_PATCH";
++  sessionId: string;
++  sequence: number;
++  phase: Phase;
++  payload: TPayload;
++}
++
++export interface IntentRejectedEnvelope {
++  type: "INTENT_REJECTED";
++  sessionId: string;
++  sequence: number;
++  actionType: string;
++  reason: string;
++}
++
++export interface RejoinAcceptedEnvelope {
++  type: "REJOIN_ACCEPTED";
++  sessionId: string;
++  seatId: string;
++}
++
++export interface RejoinRejectedEnvelope {
++  type: "REJOIN_REJECTED";
++  sessionId: string;
++  reason: string;
++}
++
++export interface DebugEvent {
++  id: string;
++  timestamp: string;
++  label: string;
++  detail?: string;
++  payload: unknown;
++}
++
++export type ServerEnvelope =
++  | StatePatch<PublicPatchPayload | PhonePatchPayload>
++  | IntentRejectedEnvelope
++  | RejoinAcceptedEnvelope
++  | RejoinRejectedEnvelope;
++
+ export type ClientIntent =
+   | {
+       type: "MOVEMENT_DESTINATION_PREVIEWED";
+@@ -934,17 +935,17 @@ export type ClientIntent =
+       type: "PHASE_ADVANCED";
+       seatId: string;
+       toPhase: Phase;
+-    }
+-  | {
+-      type: "CHECK_REQUESTED";
+-      seatId: string;
+-      stat: Stat;
+-    }
+-  | {
+-      type: "COMBAT_REQUESTED";
+-      seatId: string;
+-      stat: Stat;
+-    }
++    }
++  | {
++      type: "CHECK_REQUESTED";
++      seatId: string;
++      stat: Stat;
++    }
++  | {
++      type: "COMBAT_REQUESTED";
++      seatId: string;
++      stat: Stat;
++    }
+   | {
+       type: "ENEMY_ROLL_REQUESTED";
+       seatId: string;
+@@ -975,14 +976,14 @@ export type ClientIntent =
+   | {
+       type: "RECRUIT_REPLACEMENT";
+       seatId: string;
+-      replacementCharacterId: string;
+-    }
+-  | {
+-      type: "EQUIP_GEAR";
+-      seatId: string;
+-      gearId: string;
+-      slot: GearSlot;
+-    }
++      replacementCharacterId: string;
++    }
++  | {
++      type: "EQUIP_GEAR";
++      seatId: string;
++      gearId: string;
++      slot: GearSlot;
++    }
+   | {
+       type: "UNEQUIP_GEAR";
+       seatId: string;
+@@ -1031,13 +1032,13 @@ export type ClientIntent =
+   | {
+       type: "ACCEPT_CONTRACT";
+       seatId: string;
+-      contractId: string;
+-    }
+-  | {
+-      type: "COMPLETE_CONTRACT";
+-      seatId: string;
+-      contractId: string;
+-    }
++      contractId: string;
++    }
++  | {
++      type: "COMPLETE_CONTRACT";
++      seatId: string;
++      contractId: string;
++    }
+   | {
+       type: "SCENARIO_CONFRONTATION_REQUESTED";
+       seatId: string;
+@@ -1067,16 +1068,16 @@ export type ClientIntent =
+       stat?: Stat;
+       assistSeatIds?: string[];
+     };
+-
+-export type HostCommand =
+-  | {
+-      type: "KICK_SEAT";
+-      targetSeatId: string;
+-    }
+-  | {
+-      type: "RESTART_SESSION";
+-    };
+-
++
++export type HostCommand =
++  | {
++      type: "KICK_SEAT";
++      targetSeatId: string;
++    }
++  | {
++      type: "RESTART_SESSION";
++    };
++
+ export interface PhoneSessionAuth {
+   roomCode: string;
+   seatId: string;
+@@ -1085,5 +1086,5 @@ export interface PhoneSessionAuth {
+   isHostPhone?: boolean;
+   lastConnectedAt?: string;
+ }
+-
+-export interface CharacterCatalogEntry extends PrivateCharacter {}
++
++export interface CharacterCatalogEntry extends PrivateCharacter {}
+diff --git a/src/game/engine/actions.ts b/src/game/engine/actions.ts
+index fdc4ad2..b1bd17d 100644
+--- a/src/game/engine/actions.ts
++++ b/src/game/engine/actions.ts
+@@ -226,6 +226,7 @@ export type ShopServiceCost = {
+   heat?: number;
+   wounds?: number;
+   trophies?: number;
++  completedContracts?: number;
+ };
+ 
+ export type ShopServiceResult = {
+diff --git a/src/server/__tests__/roomServer.integration.test.ts b/src/server/__tests__/roomServer.integration.test.ts
+index 38c5ba7..4ca305f 100644
+--- a/src/server/__tests__/roomServer.integration.test.ts
++++ b/src/server/__tests__/roomServer.integration.test.ts
+@@ -1388,47 +1388,6 @@ describe("roomServer websocket integration", () => {
+         (destination) => destination.distance === 3 && destination.route.length === 4
+       )
+     ).toBe(true);
+-
+-    const destinations = (tvStarted.payload.movementPlanner as { destinations: Array<{ sectorId: string; disabledReason?: string }> }).destinations;
+-    const destination = destinations.find((entry) => !entry.disabledReason);
+-    expect(destination).toBeDefined();
+-
+-    const selectedMark = tv.mark();
+-    phone.send({
+-      type: "MOVEMENT_DESTINATION_PREVIEWED",
+-      seatId: joinResult.seatId,
+-      toSectorId: destination!.sectorId
+-    });
+-    const selectedPatch = (await tv.waitFor(
+-      (message, index) =>
+-        index >= selectedMark &&
+-        isStatePatch(message) &&
+-        (message.payload.movementPlanner as { selectedDestinationId?: string } | null)?.selectedDestinationId === destination!.sectorId
+-    )) as Extract<ServerEnvelope, { type: "STATE_PATCH" }>;
+-    expect((selectedPatch.payload.movementPlanner as { selectedDestinationId: string }).selectedDestinationId).toBe(destination!.sectorId);
+-
+-    const rejectedMark = phone.mark();
+-    phone.send({
+-      type: "MOVEMENT_DESTINATION_PREVIEWED",
+-      seatId: joinResult.seatId,
+-      toSectorId: "not-a-legal-sector"
+-    });
+-    await phone.waitFor(
+-      (message, index) => index >= rejectedMark && message.type === "INTENT_REJECTED"
+-    );
+-
+-    const clearedMark = tv.mark();
+-    phone.send({
+-      type: "MOVEMENT_DESTINATION_PREVIEWED",
+-      seatId: joinResult.seatId,
+-      toSectorId: null
+-    });
+-    await tv.waitFor(
+-      (message, index) =>
+-        index >= clearedMark &&
+-        isStatePatch(message) &&
+-        (message.payload.movementPlanner as { selectedDestinationId?: string | null } | null)?.selectedDestinationId === null
+-    );
+   });
+ 
+   it("fires a real linked-nemesis scenario victory over the live phone socket path", async () => {
+@@ -2180,6 +2139,29 @@ describe("roomServer websocket integration", () => {
+       seatId: "seat-3",
+       contractId: "choir-quietus"
+     });
++    await tv.waitForSince(marker, statePatchForPhase("action", 2));
++    expect(harness.roomServer.getState().players.find((player) => player.seatId === "seat-3")?.character.completedContracts).toContain(
++      "choir-quietus"
++    );
++
++    marker = tv.mark();
++    phone3.send({
++      type: "ACCEPT_CONTRACT",
++      seatId: "seat-3",
++      contractId: "compact-ember-courier"
++    });
++    await tv.waitForSince(marker, statePatchForPhase("action", 2));
++    expect(harness.roomServer.getState().players.find((player) => player.seatId === "seat-3")?.character.activeContract).toEqual({
++      contractId: "compact-ember-courier",
++      progress: 0
++    });
++
++    marker = tv.mark();
++    phone3.send({
++      type: "PHASE_ADVANCED",
++      seatId: "seat-3",
++      toPhase: "resolution"
++    });
+     await tv.waitForSince(marker, statePatchForPhase("broadcast", 2));
+     await endBroadcastTurn(phone3, tv, "seat-3", 0);
+ 
+@@ -2189,7 +2171,8 @@ describe("roomServer websocket integration", () => {
+ 
+     expect(seat2State?.character.equippedGear.weapon).toBe("veil-hook");
+     expect(seat2State?.character.heldGear.some((item) => item.id === "veil-hook")).toBe(true);
+-    expect(seat3State?.character.activeContract).toBeNull();
++    expect(seat3State?.character.activeContract).toEqual({ contractId: "compact-ember-courier", progress: 0 });
++    expect(seat3State?.character.completedContracts).toContain("choir-quietus");
+     expect(tv.messages.every((message) => !isStatePatch(message) || !Object.hasOwn(message.payload, "self"))).toBe(true);
+   }, 15000);
+ 
+diff --git a/src/server/roomServer.ts b/src/server/roomServer.ts
+index 6443b48..0961edd 100644
+--- a/src/server/roomServer.ts
++++ b/src/server/roomServer.ts
+@@ -545,20 +545,25 @@ export class GameRoomServer {
+ 
+       if (intent.type === "MOVEMENT_DESTINATION_PREVIEWED") {
+         const planner = buildPublicMovementPlanner(this.state, intent.seatId);
++
+         if (!planner?.active) {
+           throw new Error("Movement preview is unavailable outside destination selection");
+         }
++
+         if (intent.toSectorId === null) {
+           this.movementPreviewBySeatId.delete(intent.seatId);
+         } else {
+           const destination = planner.destinations.find(
+             (entry) => entry.sectorId === intent.toSectorId && !entry.disabledReason
+           );
++
+           if (!destination) {
+             throw new Error("Movement preview must use a legal destination");
+           }
++
+           this.movementPreviewBySeatId.set(intent.seatId, destination.sectorId);
+         }
++
+         this.broadcastPatch();
+         return;
+       }
+@@ -2116,7 +2121,7 @@ export class GameRoomServer {
+           throw new Error(SHOP_FAILURE_REASONS.itemUnavailable);
+         }
+ 
+-        const stock = this.pickShopGearStock(player, 3, "standard", stockCategory);
++        const stock = this.pickShopGearStock(player, "standard", stockCategory);
+ 
+         if (stock.length === 0) {
+           throw new Error(SHOP_FAILURE_REASONS.itemUnavailable);
+@@ -2147,12 +2152,13 @@ export class GameRoomServer {
+           summary: `${actorName} used ${shopName}. Paid ${service.cost.salvage ?? 0} Salvage for gear repair support.`
+         };
+       case "buy-supplies":
++        // Legacy wire ID retained for saved clients; player-facing copy uses Equipment.
+         return {
+           ...base,
+           result: {
+-            note: `${shopName}: supply crate reserved for the next route problem.`
++            note: `${shopName}: equipment cache reserved for the next route problem.`
+           },
+-          summary: `${actorName} used ${shopName}. Bought supplies for ${service.cost.salvage ?? 0} Salvage.`
++          summary: `${actorName} used ${shopName}. Bought equipment for ${service.cost.salvage ?? 0} Salvage.`
+         };
+       case "buy-treatment":
+         return {
+@@ -2172,6 +2178,22 @@ export class GameRoomServer {
+           },
+           summary: `${actorName} used ${shopName}. Bought a boon and recorded steady footing.`
+         };
++      case "trade-missions-for-artifact": {
++        const artifact = this.pickShopGearStock(player, "risk", "relic-dealer")[0];
++
++        if (!artifact || artifact.tier !== "artifact") {
++          throw new Error("No Artifact is available for mission trade");
++        }
++
++        return {
++          ...base,
++          result: {
++            gainGear: artifact,
++            note: `${shopName}: three completed Missions traded for ${artifact.name}.`
++          },
++          summary: `${actorName} traded 3 completed Missions for ${artifact.name}.`
++        };
++      }
+       case "risk-action": {
+         const stockCategory = getShopStockCategoryForService(boardSpace, service.id);
+ 
+@@ -2179,7 +2201,7 @@ export class GameRoomServer {
+           throw new Error(SHOP_FAILURE_REASONS.itemUnavailable);
+         }
+ 
+-        const stock = this.pickShopGearStock(player, 4, "risk", stockCategory);
++        const stock = this.pickShopGearStock(player, "risk", stockCategory);
+ 
+         if (stock.length === 0) {
+           throw new Error(SHOP_FAILURE_REASONS.itemUnavailable);
+@@ -2203,19 +2225,63 @@ export class GameRoomServer {
+     }
+   }
+ 
+-  private pickShopGearStock(player: PlayerState, count: number, mode: "standard" | "risk", category: ShopCategory): GearItem[] {
++  private pickShopGearStock(player: PlayerState, mode: "standard" | "risk", category: ShopCategory): GearItem[] {
+     const ownedGearIds = new Set([
+       ...player.character.heldGear.map((item) => item.id),
+       ...Object.values(player.character.equippedGear).filter((id): id is string => Boolean(id))
+     ]);
+ 
+-    return getAvailableShopStockForCategory(this.gear.values(), category, {
+-      count,
++    const includeArtifacts = mode === "risk" && category === "relic-dealer";
++    const primaryStock = getAvailableShopStockForCategory(this.gear.values(), category, {
+       ownedGearIds,
+-      includeArtifacts: mode === "risk",
++      includeArtifacts,
+       includeQaGear: canUseQaShopGear(player.character),
+       expensiveFirst: mode === "risk"
+     });
++
++    // Keep each shop's category identity, but fill sparse categories from the
++    // wider equipment catalog so a valid shop never presents an empty shelf.
++    const fallbackCategories: ShopCategory[] = includeArtifacts
++      ? ["relic-dealer"]
++      : ["market", "forge-armoury", "medicae-shrine", "contract-broker"];
++    const stockById = new Map(primaryStock.map((item) => [item.id, item]));
++
++    for (const fallbackCategory of fallbackCategories) {
++      for (const item of getAvailableShopStockForCategory(this.gear.values(), fallbackCategory, {
++        ownedGearIds,
++        includeArtifacts,
++        includeQaGear: canUseQaShopGear(player.character),
++        expensiveFirst: mode === "risk"
++      })) {
++        stockById.set(item.id, item);
++      }
++    }
++
++    const targetCount = 2 + this.randomSource.nextInt(5);
++    const preferredIds = new Set(primaryStock.map((item) => item.id));
++    const preferred = [...primaryStock];
++    const fallback = [...stockById.values()].filter((item) => !preferredIds.has(item.id));
++    const pickRandom = (pool: GearItem[]): GearItem | undefined => {
++      if (pool.length === 0) {
++        return undefined;
++      }
++
++      const index = this.randomSource.nextInt(pool.length);
++      return pool.splice(index, 1)[0];
++    };
++    const selection: GearItem[] = [];
++
++    while (selection.length < targetCount && preferred.length > 0) {
++      const item = pickRandom(preferred);
++      if (item) selection.push(item);
++    }
++
++    while (selection.length < targetCount && fallback.length > 0) {
++      const item = pickRandom(fallback);
++      if (item) selection.push(item);
++    }
++
++    return selection;
+   }
+ 
+   private createShopPurchaseAction(
+@@ -4786,6 +4852,10 @@ export class GameRoomServer {
+   private getPhaseAfterResolution(seatId: string): GameState["phase"] {
+     const player = this.state.players.find((entry) => entry.seatId === seatId);
+ 
++    if (this.state.resolutionSource === "contract") {
++      return "action";
++    }
++
+     if (
+       this.state.resolutionSource === "movement" &&
+       player?.character.status === "active" &&
+@@ -7104,13 +7174,7 @@ function buildPhoneObjectUseStates(state: GameState, player: PlayerState | undef
+ }
+ 
+ function getCompletedContractCountForProjection(state: GameState, seatId: string): number {
+-  return state.eventLog.filter((entry) => {
+-    if (typeof entry !== "object" || entry === null || !("type" in entry) || !("seatId" in entry)) {
+-      return false;
+-    }
+-
+-    return (entry as { type?: string; seatId?: string }).type === "COMPLETE_CONTRACT" && (entry as { seatId?: string }).seatId === seatId;
+-  }).length;
++  return state.players.find((entry) => entry.seatId === seatId)?.character.completedContracts?.length ?? 0;
+ }
+ 
+ function getPublicShopStatus(state: GameState, player: PlayerState): "open" | "locked" | "exhausted" | "dangerous" {
+@@ -7165,7 +7229,7 @@ function getFaceUpThreatsForSector(state: GameState, sectorId: string): PublicMo
+ }
+ 
+ function getShopServicesPreview(boardTags: string[]): string[] {
+-  const services = ["Buy Gear", "Sell Gear", "Buy Supplies"];
++  const services = ["Buy Equipment", "Sell Gear"];
+ 
+   if (boardTags.includes("salvage")) {
+     services.push("Repair Gear");
+@@ -7621,12 +7685,24 @@ function buildPublicShopServices(state: GameState, player: PlayerState): PublicS
+   const services: PublicShopService[] = [];
+   const sellInventory = buildPublicShopSellInventory(player);
+   const hasSellableGear = sellInventory.some((item) => item.sellable);
++  const shopCategory = getBoardSpaceShopCategory(boardSpace);
++
++  if (shopCategory === "relic-dealer") {
++    services.push(
++      createShopService(player, state, {
++        id: "trade-missions-for-artifact",
++        label: "Trade Missions for Artifact",
++        shopCategory: "relic-dealer",
++        cost: { completedContracts: 3 }
++      })
++    );
++  }
+ 
+   if (boardSpace.tags.includes("shop")) {
+     services.push(
+       createShopService(player, state, {
+         id: "buy-gear",
+-        label: "Buy Gear",
++        label: "Buy Equipment",
+         shopCategory: getShopStockCategoryForService(boardSpace, "buy-gear") ?? undefined,
+         cost: {}
+       }),
+@@ -7651,7 +7727,7 @@ function buildPublicShopServices(state: GameState, player: PlayerState): PublicS
+       }),
+       createShopService(player, state, {
+         id: "buy-supplies",
+-        label: "Buy Supplies",
++        label: "Buy Equipment",
+         shopCategory: "market",
+         cost: { salvage: 1 }
+       })

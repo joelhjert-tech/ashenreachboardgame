@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { loadGear } from "../../game/content/gear.js";
 import { loadThreatCards } from "../../game/content/threats.js";
+import { createSequenceRandomSource, type RandomSource } from "../../game/engine/dice.js";
 import { filterGearByShopCategory } from "../../game/rules/shopCategories.js";
 import {
   getAvailableShopStockForCategory,
@@ -81,13 +82,13 @@ function createShopState(options: {
   return state;
 }
 
-function createShopServer(options: Parameters<typeof createShopState>[0] = {}): {
+function createShopServer(options: Parameters<typeof createShopState>[0] = {}, randomSource?: RandomSource): {
   server: GameRoomServer;
   client: ConnectedClient;
   sent: Array<Record<string, unknown>>;
 } {
   const sent: Array<Record<string, unknown>> = [];
-  const server = new GameRoomServer(createShopState(options));
+  const server = new GameRoomServer(createShopState(options), [], randomSource);
 
   return {
     server,
@@ -221,6 +222,37 @@ describe("Phase 2A shop mechanics foundation", () => {
     expect(player?.character.heldGear.map((item) => item.id)).toContain(selectedCardId);
     expect(player?.character.salvage).toBe(6 - getShopGearCost(selectedGear));
     expect(server.getState().lastOutcomeSummary?.summary).toContain(`Bought ${selectedGear.name}`);
+  });
+
+  it("randomly reveals between two and six unique equipment items", () => {
+    const minimum = createShopServer(
+      { sectorId: "outer_waymarket", salvage: 6 },
+      createSequenceRandomSource([0, 0, 0])
+    );
+    minimum.server.handleIntent(minimum.client, {
+      type: "SHOP_SERVICE_REQUESTED",
+      seatId: "seat-1",
+      serviceId: "buy-gear"
+    });
+    const minimumStock = minimum.server.getState().shopStockReveals.find((entry) => entry.seatId === "seat-1")?.stockIds ?? [];
+
+    expect(minimumStock).toHaveLength(2);
+    expect(new Set(minimumStock).size).toBe(minimumStock.length);
+
+    const maximum = createShopServer(
+      { sectorId: "outer_waymarket", salvage: 6 },
+      createSequenceRandomSource([4, 0, 0, 0, 0, 0, 0])
+    );
+    maximum.server.handleIntent(maximum.client, {
+      type: "SHOP_SERVICE_REQUESTED",
+      seatId: "seat-1",
+      serviceId: "buy-gear"
+    });
+    const maximumStock = maximum.server.getState().shopStockReveals.find((entry) => entry.seatId === "seat-1")?.stockIds ?? [];
+
+    expect(maximumStock).toHaveLength(6);
+    expect(new Set(maximumStock).size).toBe(maximumStock.length);
+    expect(maximumStock.every((id) => loadGear().get(id)?.tier !== "artifact")).toBe(true);
   });
 
   it("lets a player skip a shop without changing salvage or inventory", () => {

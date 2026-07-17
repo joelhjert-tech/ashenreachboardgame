@@ -11,6 +11,7 @@ import type { ClientIntent, GameAction } from "../actions.js";
 import type { GameState } from "../../schema/session.schema.js";
 import { reduceGameState } from "../reducer.js";
 import { getEquippedGearBonus } from "../gear.js";
+import { advanceContractObjectiveState } from "../../contracts/objectives.js";
 
 function createGear(): Map<string, GearItem> {
   return new Map<string, GearItem>([
@@ -1965,7 +1966,7 @@ describe("active resolution visibility state", () => {
 
     expect(supplied.sent.find((message) => message.type === "INTENT_REJECTED")).toBeUndefined();
     expect(supplied.server.getState().players[0]?.character.salvage).toBe(2);
-    expect(supplied.server.getState().players[0]?.private.notes.at(-1)).toContain("supply crate");
+    expect(supplied.server.getState().players[0]?.private.notes.at(-1)).toContain("equipment cache");
 
     const treated = createShopServer({ sectorId: "outer_ember_sanctum", salvage: 4, wounds: 2 });
     treated.server.handleIntent(treated.client, {
@@ -8088,8 +8089,7 @@ describe("contracts", () => {
                 ...entry,
                 character: {
                   ...entry.character,
-                  heat: 2,
-                  activeContract: { contractId: "choir-hush-census", progress: 1 }
+                  activeContract: { contractId: "compact-cleanse-ledger", progress: 1 }
                 }
               }
             : entry
@@ -8106,10 +8106,10 @@ describe("contracts", () => {
     runIntent(server, {
       type: "COMPLETE_CONTRACT",
       seatId: "seat-1",
-      contractId: "choir-hush-census"
+      contractId: "compact-cleanse-ledger"
     });
     expect(server.getState().players.find((entry) => entry.seatId === "seat-1")?.character.activeContract).toEqual({
-      contractId: "choir-hush-census",
+      contractId: "compact-cleanse-ledger",
       progress: 1
     });
 
@@ -8121,8 +8121,7 @@ describe("contracts", () => {
                 ...entry,
                 character: {
                   ...entry.character,
-                  heat: 2,
-                  activeContract: { contractId: "choir-hush-census", progress: 2 }
+                  activeContract: { contractId: "compact-cleanse-ledger", progress: 2 }
                 }
               }
             : entry
@@ -8139,12 +8138,34 @@ describe("contracts", () => {
     runIntent(readyServer, {
       type: "COMPLETE_CONTRACT",
       seatId: "seat-1",
-      contractId: "choir-hush-census"
+      contractId: "compact-cleanse-ledger"
     });
 
     const player = readyServer.getState().players.find((entry) => entry.seatId === "seat-1");
     expect(player?.character.activeContract).toBeNull();
-    expect(player?.character.heat).toBe(2);
+    expect(player?.character.heldGear.some((item) => item.id === "veil-hook")).toBe(true);
+    expect(player?.character.completedContracts).toEqual(["compact-cleanse-ledger"]);
+    expect(readyServer.getState().pendingEffect).toBeNull();
+    expect(readyServer.getState().phase).toBe("action");
+
+    runIntent(readyServer, {
+      type: "ACCEPT_CONTRACT",
+      seatId: "seat-1",
+      contractId: "choir-hush-census"
+    });
+    expect(readyServer.getState().players.find((entry) => entry.seatId === "seat-1")?.character.activeContract).toEqual({
+      contractId: "choir-hush-census",
+      progress: 0
+    });
+
+    runIntent(readyServer, {
+      type: "COMPLETE_CONTRACT",
+      seatId: "seat-1",
+      contractId: "compact-cleanse-ledger"
+    });
+    expect(readyServer.getState().players.find((entry) => entry.seatId === "seat-1")?.character.completedContracts).toEqual([
+      "compact-cleanse-ledger"
+    ]);
   });
 
   it("accepts a contract, wins two combats across turns, completes it, and receives the reward", () => {
@@ -8267,6 +8288,257 @@ describe("contracts", () => {
     const player = server.getState().players.find((entry) => entry.seatId === "seat-1");
     expect(player?.character.activeContract).toBeNull();
     expect(player?.character.heldGear.some((item) => item.id === "veil-hook")).toBe(true);
+  });
+
+  it("stores completed missions and consumes three when traded for an artifact", () => {
+    const artifact = createGear().get("veil-hook")!;
+    const state = createState({
+      players: createState().players.map((entry) =>
+        entry.seatId === "seat-1"
+          ? {
+              ...entry,
+              character: {
+                ...entry.character,
+                completedContracts: ["mission-a", "mission-b", "mission-c"]
+              }
+            }
+          : entry
+      )
+    });
+    const result = reduceGameState(state, {
+      type: "SHOP_SERVICE_RESOLVED",
+      seatId: "seat-1",
+      serviceId: "trade-missions-for-artifact",
+      serviceLabel: "Trade Missions for Artifact",
+      shopName: "Relic Dealer",
+      sectorId: "sector-a",
+      cost: { completedContracts: 3 },
+      result: { gainGear: artifact },
+      summary: "Traded three completed Missions for an Artifact.",
+      createdAt: new Date().toISOString()
+    });
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    const player = result.state.players.find((entry) => entry.seatId === "seat-1");
+    expect(player?.character.completedContracts).toEqual([]);
+    expect(player?.character.heldGear.some((item) => item.id === artifact.id)).toBe(true);
+  });
+
+  it("completes every mission objective schema through its objective trigger without duplicating ledger or rewards", () => {
+    const normalEquipment: GearItem = {
+      id: "lifecycle-standard-kit",
+      name: "Lifecycle Standard Kit",
+      slot: "utility",
+      tier: "standard",
+      normalShopCommon: true,
+      statBonus: { stat: "guile", amount: 1 },
+    };
+    const replacement: ContractCard = {
+      id: "lifecycle-replacement",
+      name: "Replacement Contract",
+      factionGiver: "Meridian Compact",
+      text: "Verify that the active mission slot is available again.",
+      objective: { type: "defeatCount", target: 1 },
+      reward: { type: "gain_note", text: "Replacement accepted." },
+    };
+    const cases: Array<{
+      contract: ContractCard;
+      triggers: Parameters<typeof advanceContractObjectiveState>[2][];
+      assertReward: (player: NonNullable<GameState["players"][number]>) => void;
+    }> = [
+      {
+        contract: {
+          id: "lifecycle-defeat",
+          name: "Defeat Lifecycle",
+          factionGiver: "Meridian Compact",
+          text: "Defeat one enemy.",
+          objective: { type: "defeatCount", target: 1 },
+          reward: { type: "gain_salvage", amount: 2 },
+        },
+        triggers: [{ type: "enemy-defeated" }],
+        assertReward: (player) => expect(player.character.salvage).toBe(2),
+      },
+      {
+        contract: {
+          id: "lifecycle-space-text",
+          name: "Space Text Lifecycle",
+          factionGiver: "Pale Cartels",
+          text: "Resolve the matching sector text.",
+          objective: { type: "spaceTextResolved", effectKey: "lifecycle-effect", label: "Resolve lifecycle text", target: 1 },
+          reward: { type: "gain_gear", gearId: normalEquipment.id, gear: normalEquipment },
+        },
+        triggers: [{ type: "space-text-resolved", effectKey: "lifecycle-effect" }],
+        assertReward: (player) => {
+          expect(player.character.heldGear.filter((item) => item.id === normalEquipment.id)).toHaveLength(1);
+          expect(player.character.heldGear.find((item) => item.id === normalEquipment.id)?.tier).not.toBe("artifact");
+        },
+      },
+      {
+        contract: {
+          id: "lifecycle-route",
+          name: "Route Lifecycle",
+          factionGiver: "Glass Choir",
+          text: "Visit both route stops.",
+          objective: { type: "multiStopRoute", ordered: true, targets: [
+            { id: "first", type: "spaceId", value: "lifecycle-a", label: "First" },
+            { id: "second", type: "tag", value: "shop", label: "Second" },
+          ] },
+          reward: { type: "gain_note", text: "Route reward." },
+        },
+        triggers: [
+          { type: "sector-visited", sectorId: "lifecycle-a", sectorTags: [] },
+          { type: "sector-visited", sectorId: "lifecycle-b", sectorTags: ["shop"] },
+        ],
+        assertReward: (player) => expect(player.private.notes).toContain("Route reward."),
+      },
+      {
+        contract: {
+          id: "lifecycle-shop",
+          name: "Shop Lifecycle",
+          factionGiver: "Kaldr Dominion",
+          text: "Repair one item at a shop.",
+          objective: { type: "shopTransaction", action: "repairGear", requiredShopType: "shop", requiredCount: 1, label: "Repair once" },
+          reward: { type: "gain_trophy", amount: 1 },
+        },
+        triggers: [{ type: "shop-transaction", action: "repairGear", sectorId: "lifecycle-shop", shopTypes: ["shop"], salvageSpent: 1 }],
+        assertReward: (player) => expect(player.character.trophies).toBe(1),
+      },
+    ];
+
+    for (const { contract, triggers, assertReward } of cases) {
+      let objectiveState = { progress: 0 };
+      for (const trigger of triggers) {
+        objectiveState = advanceContractObjectiveState(contract, objectiveState, trigger);
+      }
+      const activeContract = { contractId: contract.id, ...objectiveState };
+      const initialState = createState({
+        availableContracts: [contract, replacement],
+        players: createState().players.map((entry) => entry.seatId === "seat-1"
+          ? { ...entry, character: { ...entry.character, salvage: 0, trophies: 0, heldGear: [], activeContract } }
+          : entry),
+      });
+      const action = {
+        type: "COMPLETE_CONTRACT" as const,
+        seatId: "seat-1",
+        contractId: contract.id,
+        contract,
+        createdAt: "2026-07-11T00:00:00.000Z",
+      };
+      const completed = reduceGameState(initialState, action);
+
+      expect(completed.ok, contract.objective.type).toBe(true);
+      if (!completed.ok) continue;
+      const player = completed.state.players.find((entry) => entry.seatId === "seat-1")!;
+      expect(player.character.activeContract).toBeNull();
+      expect(player.character.completedContracts).toEqual([contract.id]);
+      assertReward(player);
+
+      const duplicate = reduceGameState(completed.state, action);
+      expect(duplicate.ok, `${contract.objective.type} duplicate`).toBe(false);
+      expect(duplicate.state.players.find((entry) => entry.seatId === "seat-1")?.character.completedContracts).toEqual([contract.id]);
+      assertReward(duplicate.state.players.find((entry) => entry.seatId === "seat-1")!);
+
+      const replacementAccepted = reduceGameState(
+        { ...completed.state, phase: "action", activeResolution: null },
+        { type: "ACCEPT_CONTRACT", seatId: "seat-1", contractId: replacement.id, contract: replacement, createdAt: "2026-07-11T00:00:01.000Z" },
+      );
+      expect(replacementAccepted.ok, `${contract.objective.type} replacement`).toBe(true);
+      expect(replacementAccepted.state.players.find((entry) => entry.seatId === "seat-1")?.character.activeContract?.contractId).toBe(replacement.id);
+    }
+  });
+
+  it("projects completed mission progress from the ledger with a legacy event fallback and trades exactly three for one artifact", () => {
+    const artifact: GearItem = {
+      id: "lifecycle-artifact",
+      name: "Lifecycle Artifact",
+      slot: "utility",
+      tier: "artifact",
+      normalShopCommon: false,
+      statBonus: { stat: "signal", amount: 2 },
+    };
+    const withLedger = createState({
+      phase: "action",
+      sectors: [{
+        id: "outer_surgery_tent",
+        name: "Mercy Bay",
+        regionTier: "borderlight",
+        neighbors: [],
+        danger: 0,
+        encounterDecks: { threat: [], anomaly: [], contract: [], artifact: [], escalation: [] },
+      }],
+      players: createState().players.map((entry) => entry.seatId === "seat-1"
+        ? {
+            ...entry,
+            sectorId: "outer_surgery_tent",
+            character: {
+              ...entry.character,
+              currentSpaceId: "outer_surgery_tent",
+              activeContract: { contractId: "incomplete-contract", progress: 0 },
+              completedContracts: ["mission-a", "mission-b", "mission-c"],
+              heldGear: [],
+            },
+          }
+        : entry),
+    });
+    const projection = createTvProjection(withLedger) as {
+      players: Array<{ seatId: string; character: { completedContracts?: number } }>;
+      shopEncounter: { activePlayer: { completedContracts?: number }; services: Array<{ id: string; enabled: boolean; disabledReason?: string }> } | null;
+    };
+    const phoneProjection = createPhoneProjection(withLedger, "seat-1") as {
+      self: { character: { completedContracts?: string[] } } | null;
+    };
+    const service = projection.shopEncounter?.services.find((entry) => entry.id === "trade-missions-for-artifact");
+
+    expect(projection.players.find((entry) => entry.seatId === "seat-1")?.character.completedContracts).toBe(3);
+    expect(projection.shopEncounter?.activePlayer.completedContracts).toBe(3);
+    expect(phoneProjection.self?.character.completedContracts).toEqual(["mission-a", "mission-b", "mission-c"]);
+    expect(service).toMatchObject({ enabled: true });
+
+    const tradeAction = {
+      type: "SHOP_SERVICE_RESOLVED" as const,
+      seatId: "seat-1",
+      serviceId: "trade-missions-for-artifact",
+      serviceLabel: "Trade Missions for Artifact",
+      shopName: "Relic Dealer",
+      sectorId: "outer_surgery_tent",
+      cost: { completedContracts: 3 },
+      result: { gainGear: artifact },
+      summary: "Traded three completed Missions for an Artifact.",
+      createdAt: "2026-07-11T00:00:00.000Z",
+    };
+    const traded = reduceGameState(withLedger, tradeAction);
+
+    expect(traded.ok).toBe(true);
+    if (!traded.ok) return;
+    const tradedPlayer = traded.state.players.find((entry) => entry.seatId === "seat-1")!;
+    expect(tradedPlayer.character.completedContracts).toEqual([]);
+    expect(tradedPlayer.character.activeContract).toEqual({ contractId: "incomplete-contract", progress: 0 });
+    expect(tradedPlayer.character.heldGear).toEqual([artifact]);
+    expect(tradedPlayer.character.heldGear.every((item) => item.tier === "artifact")).toBe(true);
+    expect(reduceGameState(traded.state, tradeAction).ok).toBe(false);
+
+    const legacy = createState({
+      eventLog: Array.from({ length: 3 }, () => ({ type: "COMPLETE_CONTRACT", seatId: "seat-1" } as never)),
+      players: createState().players.map((entry) => entry.seatId === "seat-1"
+        ? { ...entry, character: { ...entry.character, completedContracts: undefined } }
+        : entry),
+    });
+    const legacyProjection = createTvProjection(legacy) as {
+      players: Array<{ seatId: string; character: { completedContracts?: number } }>;
+    };
+    expect(legacyProjection.players.find((entry) => entry.seatId === "seat-1")?.character.completedContracts).toBe(3);
+
+    const spentLedger = {
+      ...legacy,
+      players: legacy.players.map((entry) => entry.seatId === "seat-1"
+        ? { ...entry, character: { ...entry.character, completedContracts: [] } }
+        : entry),
+    };
+    expect(
+      (createTvProjection(spentLedger) as { players: Array<{ seatId: string; character: { completedContracts?: number } }> }).players
+        .find((entry) => entry.seatId === "seat-1")?.character.completedContracts,
+    ).toBe(0);
   });
 });
 
