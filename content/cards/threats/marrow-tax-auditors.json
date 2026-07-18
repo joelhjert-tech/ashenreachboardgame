@@ -3,7 +3,7 @@
   "type": "threat",
   "cardType": "hazard",
   "title": "Marrow-Tax Auditors",
-  "text": "Ink-faced auditors unfold from a dead checkpoint and calculate what your bones owe the road.",
+  "text": "Ink-faced auditors unfold from a dead checkpoint and calculate what your bones owe the road. On failure, lose up to 1 Salvage.",
   "flavor": "Their abacus clicks with knuckles.",
   "severity": 2,
   "stat": "guile",
@@ -13,8 +13,8 @@
     "text": "You found a loophole in a dead empire tariff."
   },
   "failEffect": {
-    "type": "gain_heat",
-    "amount": 2
+    "type": "lose_salvage",
+    "amount": 1
   },
   "enemyFamily": "bureaucracy",
   "threatLane": "yellow",
@@ -22,7 +22,7 @@
   "rarity": "common",
   "tempo": "push",
   "resourceTags": [
-    "heat",
+    "salvage",
     "loot"
   ]
 }

@@ -15,6 +15,6 @@
   "resolutionSummary": "Claimed a Blackstar Ampoule for a one-time route escape.",
   "resolveEffect": {
     "type": "gain_gear",
-    "gearId": "blackstar-ampoule"
+    "gearId": "artifact-blackstar-ampoule"
   }
 }

@@ -21,7 +21,7 @@ export function getGearShopCategories(item: GearItem): ShopCategory[] {
     return ["relic-dealer"];
   }
 
-  if (item.category === "consumable" && item.activeText?.toLowerCase().match(/heal|heat|wound|scar/)) {
+  if (item.category === "consumable" && item.activeText?.toLowerCase().match(/heal|wound|scar/)) {
     return ["medicae-shrine"];
   }
 

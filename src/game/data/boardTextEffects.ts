@@ -37,13 +37,10 @@ export interface BoardTextValidationResult {
 export const BOARD_TEXT_EFFECTS: Record<string, BoardTextEffectDefinition> = {
   outer_emberSanctumRest: {
     effectKey: "outer_emberSanctumRest",
-    summary: "Recovered 1 wound and stabilized lingering scar pressure at Ember Sanctum.",
+    summary: "Heal 1 Wound.",
     effect: {
-      type: "sequence",
-      effects: [
-        { type: "heal_wound", amount: 1 },
-        { type: "lose_heat", amount: 1 }
-      ]
+      type: "heal_wound",
+      amount: 1
     }
   },
   outer_ashwakeClearLane: {
@@ -55,47 +52,32 @@ export const BOARD_TEXT_EFFECTS: Record<string, BoardTextEffectDefinition> = {
       type: "gain_note",
       text: "Ashwake crossing cleared. The convoy lane is charted."
     },
-    failureSummary: "The Ashwake lane looked clear until the crossing ghosts forced you back under pressure.",
-    failureEffect: {
-      type: "gain_heat",
-      amount: 1
-    }
+    failureSummary: "The Ashwake lane looked clear until the crossing ghosts forced you back under pressure."
   },
   outer_glassmereChorus: {
     effectKey: "outer_glassmereChorus",
-    summary: "Tuned the Glassmere spindle and secured a stable relay note.",
+    summary: "Tuned the Glassmere spindle and recruited the mapper who held its stable line.",
     stat: "signal",
     difficulty: 7,
-    effect: {
-      type: "sequence",
-      effects: [
-        { type: "lose_heat", amount: 1 },
-        { type: "gain_note", text: "Glassmere spindle tuned. Relay chorus remains stable." }
-      ]
-    },
-    failureSummary: "The Glassmere chorus slipped sharp and left the relay line humming too hot to trust.",
-    failureEffect: {
-      type: "gain_heat",
-      amount: 1
-    },
+    effect: { type: "sequence", effects: [
+      { type: "gain_follower", followerId: "glassmere-mapper" },
+      { type: "gain_note", text: "Glassmere spindle tuned. Relay chorus remains stable." }
+    ] },
+    failureSummary: "The Glassmere chorus slipped sharp and left the relay line unstable.",
     sectorDeck: {
       kind: "anomaly"
     }
   },
   outer_mirecoilTraffic: {
     effectKey: "outer_mirecoilTraffic",
-    summary: "Pulled a fresh contract lead from Mirecoil Beacon traffic.",
+    summary: "Pulled a fresh contract lead and its saboteur contact from Mirecoil traffic.",
     stat: "signal",
     difficulty: 8,
-    effect: {
-      type: "gain_note",
-      text: "Mirecoil contract lead secured from mast traffic."
-    },
+    effect: { type: "sequence", effects: [
+      { type: "gain_follower", followerId: "mirecoil-saboteur" },
+      { type: "gain_note", text: "Mirecoil contract lead secured from mast traffic." }
+    ] },
     failureSummary: "The Mirecoil traffic lanes broke into static and the contract lead dissolved into noise.",
-    failureEffect: {
-      type: "gain_heat",
-      amount: 1
-    },
     sectorDeck: {
       kind: "contract"
     }
@@ -120,13 +102,13 @@ export const BOARD_TEXT_EFFECTS: Record<string, BoardTextEffectDefinition> = {
   },
   outer_emberwatchBrace: {
     effectKey: "outer_emberwatchBrace",
-    summary: "Braced the Emberwatch ridge and logged the route.",
+    summary: "Braced the Emberwatch ridge with the quartermaster and logged the route.",
     stat: "grit",
     difficulty: 8,
-    effect: {
-      type: "gain_note",
-      text: "Emberwatch ridge braced. Safe route marker set."
-    },
+    effect: { type: "sequence", effects: [
+      { type: "gain_follower", followerId: "burnt-road-quartermaster" },
+      { type: "gain_note", text: "Emberwatch ridge braced. Safe route marker set." }
+    ] },
     failureSummary: "The Emberwatch ridge kicked back hard and left command logging the burn as a live escalation.",
     failureEffect: {
       type: "advance_escalation",
@@ -138,21 +120,14 @@ export const BOARD_TEXT_EFFECTS: Record<string, BoardTextEffectDefinition> = {
   },
   outer_waymarketExchange: {
     effectKey: "outer_waymarketExchange",
-    summary: "Worked the Waymarket exchange and secured a practical table favor.",
+    summary: "Worked the Waymarket exchange and recruited a Black Lantern broker.",
     stat: "guile",
     difficulty: 6,
-    effect: {
-      type: "sequence",
-      effects: [
-        { type: "lose_heat", amount: 1 },
-        { type: "gain_note", text: "Waymarket favor banked for trade, aid, or a safer route." }
-      ]
-    },
+    effect: { type: "sequence", effects: [
+      { type: "gain_follower", followerId: "black-lantern-broker" },
+      { type: "gain_note", text: "Waymarket favor banked for trade, aid, or a safer route." }
+    ] },
     failureSummary: "The Waymarket deal soured and every stall seemed to know your scar tally.",
-    failureEffect: {
-      type: "gain_heat",
-      amount: 1
-    },
     sectorDeck: {
       kind: "contract"
     }
@@ -170,26 +145,19 @@ export const BOARD_TEXT_EFFECTS: Record<string, BoardTextEffectDefinition> = {
       ]
     },
     failureSummary: "The relay camp would not commit a crew while your line looked this unstable.",
-    failureEffect: {
-      type: "gain_heat",
-      amount: 1
-    },
     sectorDeck: {
       kind: "contract"
     }
   },
   outer_saltCrossing: {
     effectKey: "outer_saltCrossing",
-    summary: "Harvested void-salt and bottled it as a bargaining chip.",
+    summary: "Harvested void-salt and recruited the bone-reader who interpreted it.",
     stat: "forge",
     difficulty: 7,
-    effect: {
-      type: "sequence",
-      effects: [
-        { type: "lose_heat", amount: 1 },
-        { type: "gain_note", text: "Void-salt vial: useful for scar treatment or gate bargaining." }
-      ]
-    },
+    effect: { type: "sequence", effects: [
+      { type: "gain_follower", followerId: "saltflat-bone-reader" },
+      { type: "gain_note", text: "Void-salt vial: useful for scar treatment or gate bargaining." }
+    ] },
     failureSummary: "The salt bloom bit through the gloves and left a white nerve-mark under the skin.",
     failureEffect: {
       type: "take_wound",
@@ -201,14 +169,13 @@ export const BOARD_TEXT_EFFECTS: Record<string, BoardTextEffectDefinition> = {
   },
   outer_surgeryTreatment: {
     effectKey: "outer_surgeryTreatment",
-    summary: "Accepted rough cinder surgery and walked away patched but marked.",
+    summary: "Accepted rough cinder surgery and walked away patched.",
     stat: "forge",
     difficulty: 7,
     effect: {
       type: "sequence",
       effects: [
         { type: "heal_wound", amount: 1 },
-        { type: "gain_heat", amount: 1 },
         { type: "gain_follower", followerId: "cinder-surgeon" },
         { type: "gain_note", text: "Cinder surgery receipt: scar treatment logged." }
       ]
@@ -224,38 +191,31 @@ export const BOARD_TEXT_EFFECTS: Record<string, BoardTextEffectDefinition> = {
   },
   outer_oathpostWrit: {
     effectKey: "outer_oathpostWrit",
-    summary: "Claimed a faction writ from the Oathpost.",
+    summary: "Claimed a faction writ with a Gate-Saint acolyte as witness.",
     stat: "command",
     difficulty: 7,
-    effect: {
-      type: "gain_note",
-      text: "Faction writ: can be cashed for bounded rivalry, aid, or a contract lead."
-    },
+    effect: { type: "sequence", effects: [
+      { type: "gain_follower", followerId: "gate-saint-acolyte" },
+      { type: "gain_note", text: "Faction writ: can be cashed for bounded rivalry, aid, or a contract lead." }
+    ] },
     failureSummary: "The Oathpost refused your claim and marked the attempt as unpaid scar debt.",
-    failureEffect: {
-      type: "gain_heat",
-      amount: 1
-    },
     sectorDeck: {
       kind: "contract"
     }
   },
   outer_brokenCausewayShortcut: {
     effectKey: "outer_brokenCausewayShortcut",
-    summary: "Marked the Broken Causeway shortcut toward Guardian Span.",
+    summary: "Marked the Broken Causeway shortcut with an Ash Porter at your side.",
     stat: "grit",
     difficulty: 8,
-    effect: {
-      type: "gain_note",
-      text: "Broken Causeway shortcut marked. The fast route is dangerous but real."
-    },
+    effect: { type: "sequence", effects: [
+      { type: "gain_follower", followerId: "ash-porter" },
+      { type: "gain_note", text: "Broken Causeway shortcut marked. The fast route is dangerous but real." }
+    ] },
     failureSummary: "The causeway cracked under the attempt and threw cinder pressure through the line.",
     failureEffect: {
-      type: "sequence",
-      effects: [
-        { type: "gain_heat", amount: 1 },
-        { type: "take_wound", amount: 1 }
-      ]
+      type: "take_wound",
+      amount: 1
     },
     sectorDeck: {
       kind: "escalation"
@@ -288,7 +248,6 @@ export const BOARD_TEXT_EFFECTS: Record<string, BoardTextEffectDefinition> = {
       type: "sequence",
       effects: [
         { type: "heal_wound", amount: 1 },
-        { type: "gain_heat", amount: 1 },
         { type: "gain_note", text: "Field surgery completed. The scar holds for now." }
       ]
     },
@@ -335,10 +294,6 @@ export const BOARD_TEXT_EFFECTS: Record<string, BoardTextEffectDefinition> = {
       ]
     },
     failureSummary: "The outpost commander liked your nerve but not your credentials.",
-    failureEffect: {
-      type: "gain_heat",
-      amount: 1
-    },
     sectorDeck: {
       kind: "contract"
     }
@@ -385,11 +340,8 @@ export const BOARD_TEXT_EFFECTS: Record<string, BoardTextEffectDefinition> = {
     stat: "guile",
     difficulty: 11,
     effect: {
-      type: "sequence",
-      effects: [
-        { type: "gain_note", text: "Blackstar shortcut survived. The route is ugly but fast." },
-        { type: "gain_heat", amount: 1 }
-      ]
+      type: "gain_note",
+      text: "Blackstar shortcut survived. The route is ugly but fast."
     },
     failureSummary: "The Blackstar cut folded wrong and made the shortcut cost blood.",
     failureEffect: {
@@ -432,32 +384,21 @@ export const BOARD_TEXT_EFFECTS: Record<string, BoardTextEffectDefinition> = {
         difficulty: 8,
         summary: "Pressed the Shard Sprawl for passage stock and secured a calmer route cache.",
         effect: {
-          type: "sequence",
-          effects: [
-            { type: "lose_heat", amount: 1 },
-            { type: "gain_note", text: "Shard Sprawl passage stock secured for the next route push." }
-          ]
+          type: "gain_note",
+          text: "Shard Sprawl passage stock secured for the next route push."
         },
-        failureSummary: "The Shard Sprawl stock deal turned sour and the route crew pushed back.",
-        failureEffect: {
-          type: "gain_heat",
-          amount: 1
-        }
+        failureSummary: "The Shard Sprawl stock deal turned sour and the route crew pushed back."
       },
       {
         id: "gossip",
         stat: "guile",
         difficulty: 8,
         summary: "Cut a quieter bargain in the Shard Sprawl and took field gossip instead of supply stock.",
-        effect: {
-          type: "gain_note",
-          text: "Shard Sprawl gossip mapped a safer approach through the middle lanes."
-        },
-        failureSummary: "The Shard Sprawl gossip line collapsed into rumor and cost you breathing room.",
-        failureEffect: {
-          type: "gain_heat",
-          amount: 1
-        }
+        effect: { type: "sequence", effects: [
+          { type: "gain_follower", followerId: "crownless-advocate" },
+          { type: "gain_note", text: "Shard Sprawl gossip mapped a safer approach through the middle lanes." }
+        ] },
+        failureSummary: "The Shard Sprawl gossip line collapsed into rumor and cost you breathing room."
       }
     ]
   },
@@ -478,11 +419,7 @@ export const BOARD_TEXT_EFFECTS: Record<string, BoardTextEffectDefinition> = {
             { type: "gain_note", text: "Guardian Span threshold aligned for breach entry." }
           ]
         },
-        failureSummary: "The threshold seals resisted alignment and the span lashed back with pressure.",
-        failureEffect: {
-          type: "gain_heat",
-          amount: 1
-        }
+        failureSummary: "The threshold seals resisted alignment and the span lashed back with pressure."
       },
       {
         id: "ghost-marker",
@@ -496,11 +433,7 @@ export const BOARD_TEXT_EFFECTS: Record<string, BoardTextEffectDefinition> = {
             { type: "gain_note", text: "Guardian Span route marker held long enough to chart the breach." }
           ]
         },
-        failureSummary: "The ghost marker bled out across the span and left you exposed to the threshold wash.",
-        failureEffect: {
-          type: "gain_heat",
-          amount: 1
-        }
+        failureSummary: "The ghost marker bled out across the span and left you exposed to the threshold wash."
       }
     ]
   },
@@ -514,33 +447,22 @@ export const BOARD_TEXT_EFFECTS: Record<string, BoardTextEffectDefinition> = {
         stat: "guile",
         difficulty: 9,
         summary: "Slipped through the hidden Webglass lane and logged a safer breach route.",
-        effect: {
-          type: "sequence",
-          effects: [
-            { type: "lose_heat", amount: 1 },
-            { type: "gain_note", text: "Webglass hidden lane mapped through shifting lanes." }
-          ]
-        },
-        failureSummary: "The hidden Webglass lane buckled and dumped you back into the live fracture.",
-        failureEffect: {
-          type: "gain_heat",
-          amount: 1
-        }
+        effect: { type: "sequence", effects: [
+          { type: "gain_follower", followerId: "webglass-runner" },
+          { type: "gain_note", text: "Webglass hidden lane mapped through shifting lanes." }
+        ] },
+        failureSummary: "The hidden Webglass lane buckled and dumped you back into the live fracture."
       },
       {
         id: "relay-splice",
         stat: "signal",
         difficulty: 9,
         summary: "Spliced the relay seam into a stable Webglass route before the breach could shift.",
-        effect: {
-          type: "gain_note",
-          text: "Webglass relay splice stabilized a mapped breach route."
-        },
-        failureSummary: "The relay splice flared too hot and the Webglass seam answered with static.",
-        failureEffect: {
-          type: "gain_heat",
-          amount: 1
-        }
+        effect: { type: "sequence", effects: [
+          { type: "gain_follower", followerId: "webglass-runner" },
+          { type: "gain_note", text: "Webglass relay splice stabilized a mapped breach route." }
+        ] },
+        failureSummary: "The relay splice flared too hot and the Webglass seam answered with static."
       }
     ]
   },
@@ -555,17 +477,10 @@ export const BOARD_TEXT_EFFECTS: Record<string, BoardTextEffectDefinition> = {
         difficulty: 10,
         summary: "Anchored the Veil Rift surge and fixed a stable breach rhythm for the deeper push.",
         effect: {
-          type: "sequence",
-          effects: [
-            { type: "lose_heat", amount: 1 },
-            { type: "gain_note", text: "Veil Rift surge anchored for deeper breach timing." }
-          ]
+          type: "gain_note",
+          text: "Veil Rift surge anchored for deeper breach timing."
         },
-        failureSummary: "The Veil Rift surge broke loose and left the approach running dangerously hot.",
-        failureEffect: {
-          type: "gain_heat",
-          amount: 1
-        }
+        failureSummary: "The Veil Rift surge broke loose and left the approach running dangerously hot."
       },
       {
         id: "slip-fold",
@@ -576,11 +491,7 @@ export const BOARD_TEXT_EFFECTS: Record<string, BoardTextEffectDefinition> = {
           type: "gain_note",
           text: "Veil Rift fold slipped cleanly for a quieter inner-breach route."
         },
-        failureSummary: "The fold snapped shut at the wrong moment and threw you back into the breach wash.",
-        failureEffect: {
-          type: "gain_heat",
-          amount: 1
-        }
+        failureSummary: "The fold snapped shut at the wrong moment and threw you back into the breach wash."
       }
     ]
   },
@@ -598,11 +509,7 @@ export const BOARD_TEXT_EFFECTS: Record<string, BoardTextEffectDefinition> = {
           type: "gain_note",
           text: "Cinder lattice ember pulse traced into a stable core approach."
         },
-        failureSummary: "The ember trace slipped its rhythm and the lattice answered with rising scar pressure.",
-        failureEffect: {
-          type: "gain_heat",
-          amount: 1
-        }
+        failureSummary: "The ember trace slipped its rhythm and the lattice answered with rising interference."
       },
       {
         id: "ghost-angles",
@@ -610,17 +517,10 @@ export const BOARD_TEXT_EFFECTS: Record<string, BoardTextEffectDefinition> = {
         difficulty: 10,
         summary: "Read the ghost angles in the lattice and cut a covert line toward the final gate.",
         effect: {
-          type: "sequence",
-          effects: [
-            { type: "lose_heat", amount: 1 },
-            { type: "gain_note", text: "Cinder lattice ghost angles mapped a covert final-gate route." }
-          ]
+          type: "gain_note",
+          text: "Cinder lattice ghost angles mapped a covert final-gate route."
         },
-        failureSummary: "The ghost angles misaligned and the lattice fed your position back into the fireline.",
-        failureEffect: {
-          type: "gain_heat",
-          amount: 1
-        }
+        failureSummary: "The ghost angles misaligned and the lattice fed your position back into the fireline."
       }
     ]
   },
@@ -641,11 +541,7 @@ export const BOARD_TEXT_EFFECTS: Record<string, BoardTextEffectDefinition> = {
             { type: "gain_note", text: "Gate of Cinders forced open under brute brace pressure." }
           ]
         },
-        failureSummary: "The cinder locks held under the strain and burned the operative back.",
-        failureEffect: {
-          type: "gain_heat",
-          amount: 1
-        }
+        failureSummary: "The cinder locks held under the strain and burned the operative back."
       },
       {
         id: "time-relays",
@@ -659,11 +555,7 @@ export const BOARD_TEXT_EFFECTS: Record<string, BoardTextEffectDefinition> = {
             { type: "gain_note", text: "Gate of Cinders relay pulse timed cleanly for the core breach." }
           ]
         },
-        failureSummary: "The relay timing slipped and the gate answered with a surge of static scar pressure.",
-        failureEffect: {
-          type: "gain_heat",
-          amount: 1
-        }
+        failureSummary: "The relay timing slipped and the gate answered with a surge of static backlash."
       },
       {
         id: "ghost-path",
@@ -677,11 +569,7 @@ export const BOARD_TEXT_EFFECTS: Record<string, BoardTextEffectDefinition> = {
             { type: "gain_note", text: "Gate of Cinders ghost-path fixed long enough to reach the core." }
           ]
         },
-        failureSummary: "The ghost-path collapsed underfoot and left the approach running hot.",
-        failureEffect: {
-          type: "gain_heat",
-          amount: 1
-        }
+        failureSummary: "The ghost-path collapsed underfoot and left the approach running hot."
       }
     ]
   },

@@ -4,14 +4,25 @@ import { loadAfflictionCards } from "../game/content/afflictions.js";
 import { loadContracts } from "../game/content/contracts.js";
 import { loadFollowers } from "../game/content/followers.js";
 import { loadGear } from "../game/content/gear.js";
+import { loadTileChallenges } from "../game/content/tileChallenges.js";
 import { createCanonicalSectorGraph, validateCanonicalSectorGraph } from "../game/data/canonicalSectorGraph.js";
 import { getScenarioDefinition, SCENARIOS } from "../game/data/scenarios.js";
-import { createInitialScenarioProgress } from "../game/rules/scenarioAmbient.js";
+import { createInitialScenarioPreparation, createInitialScenarioProgress } from "../game/rules/scenarioAmbient.js";
 import { applyStartingLoadout, createInitialSoloRerollCharges, type StartingLoadoutCatalogs } from "../game/rules/startingLoadout.js";
-import { getHeatThresholdForMode, getWoundThresholdForMode } from "../game/rules/soloTuning.js";
+import { getReflectionPressureThresholdForMode, getWoundThresholdForMode } from "../game/rules/soloTuning.js";
 import { createInitialAfflictionUsageState } from "../game/rules/afflictions.js";
-import type { Character } from "../game/schema/character.schema.js";
-import type { GameMode, GameState, InteractionMode, PlayerState, SessionMode } from "../game/schema/session.schema.js";
+import { attachTileChallengesToSectors } from "../game/rules/tileChallenges.js";
+import { ensureOwnedGearInstanceIds } from "../game/rules/equipmentSuppression.js";
+import type { AuthoredCharacter, Character } from "../game/schema/character.schema.js";
+import {
+  createEmptyScenarioConfrontationState,
+  createEmptyScenarioResultState,
+  type GameMode,
+  type GameState,
+  type InteractionMode,
+  type PlayerState,
+  type SessionMode
+} from "../game/schema/session.schema.js";
 import { createJoinToken } from "./auth.js";
 
 const sessionSeatLayouts = {
@@ -43,8 +54,8 @@ export function getSeatCountForSession(
   return Math.max(2, Math.min(sessionSeatLayouts.multiplayer.length, playerCount));
 }
 
-function cloneCharacter(character: Character, currentSpaceId: string): Character {
-  return {
+function cloneCharacter(character: AuthoredCharacter, currentSpaceId: string, seatId: string): Character {
+  return ensureOwnedGearInstanceIds({
     ...character,
     currentSpaceId,
     activeContract: character.activeContract ? { ...character.activeContract } : null,
@@ -56,12 +67,12 @@ function cloneCharacter(character: Character, currentSpaceId: string): Character
     statUpgrades: character.statUpgrades ? { ...character.statUpgrades } : undefined,
     trophies: character.trophies,
     trophyPile: [...(character.trophyPile ?? [])]
-  };
+  }, seatId);
 }
 
 function createPlayerState(
   seatId: string,
-  character: Character,
+  character: AuthoredCharacter,
   currentSpaceId: string,
   seatIndex: number,
   sessionMode: SessionMode,
@@ -85,7 +96,7 @@ function createPlayerState(
     facedownAfflictions: [],
     afflictionUsageState: createInitialAfflictionUsageState(),
     afflictionDrawHistory: [],
-    character: cloneCharacter(loadedCharacter, currentSpaceId)
+    character: cloneCharacter(loadedCharacter, currentSpaceId, seatId)
   };
 }
 
@@ -100,6 +111,8 @@ export function createInitialSessionState(
 ): GameState {
   const characters = loadCharacters();
   const sectors = createCanonicalSectorGraph();
+  const tileChallenges = [...loadTileChallenges().values()];
+  const sectorsWithChallenges = attachTileChallengesToSectors(sectors, tileChallenges);
   const gear = loadGear();
   const followers = loadFollowers();
   const availableContracts = [...loadContracts().values()];
@@ -117,7 +130,7 @@ export function createInitialSessionState(
     return character;
   });
 
-  validateCanonicalSectorGraph(sectors);
+  validateCanonicalSectorGraph(sectorsWithChallenges);
 
   return {
     sessionId,
@@ -130,15 +143,18 @@ export function createInitialSessionState(
     winnerSeatId: null,
     activeScenarioId: defaultScenario?.id ?? "scenario_broken_seal",
     scenarioProgress: createInitialScenarioProgress(defaultScenario?.id ?? "scenario_broken_seal", sessionMode),
+    scenarioPreparation: createInitialScenarioPreparation(defaultScenario?.id ?? "scenario_broken_seal", sessionMode),
+    scenarioConfrontation: createEmptyScenarioConfrontationState(),
+    scenarioResult: createEmptyScenarioResultState(),
     phase: "start",
     resolutionSource: null,
     activeSeatIndex: 0,
     turnOrder: configuredSeats.map(({ seatId }) => seatId),
-    heatThreshold: getHeatThresholdForMode(sessionMode),
+    reflectionPressureThreshold: getReflectionPressureThresholdForMode(sessionMode),
     woundThreshold: getWoundThresholdForMode(sessionMode),
     sequence: 0,
     escalationLevel: 0,
-    sectors,
+    sectors: sectorsWithChallenges,
     seats: configuredSeats.map(({ seatId, characterId }) => ({
       seatId,
       characterId,
@@ -156,7 +172,7 @@ export function createInitialSessionState(
       createPlayerState(
         seatId,
         selectedCharacters[index]!,
-        selectedCharacters[index]?.currentSpaceId ?? sectors[0]?.id ?? "ashwake-crossing",
+        selectedCharacters[index]?.currentSpaceId ?? sectorsWithChallenges[0]?.id ?? "ashwake-crossing",
         index,
         sessionMode,
         loadoutCatalogs
@@ -168,12 +184,41 @@ export function createInitialSessionState(
     nemesisNexusCountdowns: [],
     shopStockReveals: [],
     movementRolls: undefined,
+    movementAdjustments: undefined,
+    normalMovementRollDetails: undefined,
+    gateSaintSafeConduct: null,
     soloRerollCharges: createInitialSoloRerollCharges(sessionMode, configuredSeats.map(({ seatId }) => seatId)),
     eventLog: [],
     recentEncounterCardIds: [],
     currentEncounter: null,
     pendingEnemyRoll: null,
     pendingEffect: null,
+    pendingFailureReaction: null,
+    pendingStaticIntercessionReaction: null,
+    pendingScarConsequence: null,
+    pendingScarConsequenceQueue: [],
+    resolvedScarSourceEventIds: [],
+    pendingTileChallenge: null,
+    pendingEncounterDecision: null,
+    resolvedEncounterDecisionIds: [],
+    pendingMemoryTaxChoice: null,
+    resolvedMemoryTaxChoiceSourceEventIds: [],
+    pendingForcedDestinationChoice: null,
+    pendingDisplacement: null,
+    pendingDisplacementArrival: null,
+    pendingSutureStormConsequence: null,
+    resolvedDisplacementSourceEventIds: [],
+    resolvedSalvageLossSourceEventIds: [],
+    pendingEquipmentSuppressionChoice: null,
+    equipmentSuppressions: [],
+    resolvedEquipmentSuppressionSourceEventIds: [],
+    pendingNextNonBattleTestModifiers: [],
+    resolvedNextNonBattleTestModifierSourceEventIds: [],
+    consumedNextNonBattleTestModifierTestEventIds: [],
+    pendingNextNormalMovementRollModifiers: [],
+    resolvedNextNormalMovementRollModifierSourceEventIds: [],
+    consumedNextNormalMovementRollResolutionIds: [],
+    tileChallengeProgress: null,
     activeResolution: null,
     lastOutcomeSummary: null
   };

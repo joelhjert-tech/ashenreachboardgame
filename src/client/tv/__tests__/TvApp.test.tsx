@@ -72,7 +72,6 @@ const characters: CharacterCatalogEntry[] = [
     status: "active",
     stats: { command: 3, grit: 2, signal: 1, guile: 1, forge: 2 },
     trophies: 0,
-    heat: 0,
     wounds: 0,
     scars: [],
     activeContract: null,
@@ -247,7 +246,6 @@ function createPatch(roomCode = "RT7P4"): StatePatch<PublicPatchPayload> {
             },
             stats: { command: 3, grit: 2, signal: 1, guile: 1, forge: 2 },
             trophies: 0,
-            heat: 0,
             wounds: 0,
             scars: [],
             heldGearCount: 0,
@@ -366,6 +364,39 @@ describe("TvApp", () => {
         hostToken: "host:RT7P4:secret"
       })
     );
+  });
+
+  it("shows public follower identity in the compact operative rail without private rules", async () => {
+    window.localStorage.setItem("ashen-reach-tv-room-code", "RT7P4");
+    window.localStorage.setItem("ashen-reach-tv-host-token", "host:RT7P4:secret");
+    const patch = createPatch();
+    patch.payload.players[0]!.character.companionBadges = [{
+      id: "lucy-hell-puppy",
+      name: "Lucy, Hell Puppy",
+      tier: "legendary",
+      ultimateCompanion: true,
+      exhausted: false
+    }];
+    mockUseRoomSubscription.mockReturnValue({ patch, error: null, sendIntent: vi.fn(), status: "open", debugEvents: [], clearDebugEvents: vi.fn() });
+
+    render(<TvApp />);
+
+    const followers = await screen.findByLabelText("Tarek Voss followers");
+    expect(followers).toHaveTextContent("Lucy, Hell Puppy");
+    expect(document.body).not.toHaveTextContent(/ember-pup note/i);
+  });
+
+  it("tolerates an old public payload with an extra Heat field without rendering it", async () => {
+    window.localStorage.setItem("ashen-reach-tv-room-code", "RT7P4");
+    window.localStorage.setItem("ashen-reach-tv-host-token", "host:RT7P4:secret");
+    const oldPatch = createPatch() as StatePatch<PublicPatchPayload> & any;
+    oldPatch.payload.players[0].character.heat = 0;
+    mockUseRoomSubscription.mockReturnValue({ patch: oldPatch, error: null, sendIntent: vi.fn(), status: "open", debugEvents: [], clearDebugEvents: vi.fn() });
+
+    render(<TvApp />);
+
+    expect(await screen.findByTestId("host-live-status")).toHaveTextContent(/tarek voss/i);
+    expect(document.body).not.toHaveTextContent(/\b(?:Heat|Risk)\b/);
   });
 
   it("keeps the active header QR tile free of visible join copy", async () => {
@@ -503,6 +534,79 @@ describe("TvApp", () => {
     expect(topBar).not.toHaveTextContent(/phase/i);
     expect(topBar).not.toHaveTextContent(/global/i);
     expect(screen.queryByText(/global escalation/i)).not.toBeInTheDocument();
+  });
+
+  it("shows a public non-actionable encounter-payment waiting status", async () => {
+    window.localStorage.setItem("ashen-reach-tv-room-code", "RT7P4");
+    window.localStorage.setItem("ashen-reach-tv-host-token", "host:RT7P4:secret");
+    const patch = createPatch();
+    patch.phase = "resolution";
+    patch.payload.pendingEncounterDecision = {
+      seatId: "seat-1",
+      sourceCardId: "gate-tax-collectors",
+      sourceTitle: "Gate-Tax Collectors",
+      status: "waiting"
+    };
+    mockUseRoomSubscription.mockReturnValue({
+      patch,
+      error: null,
+      sendIntent: vi.fn(),
+      status: "open",
+      debugEvents: [],
+      clearDebugEvents: vi.fn()
+    });
+
+    render(<TvApp />);
+
+    const banner = await screen.findByTestId("host-live-status");
+    expect(banner).toHaveTextContent(/waiting for .* to resolve gate-tax collectors/i);
+    expect(screen.queryByRole("button", { name: /pay 1 salvage/i })).not.toBeInTheDocument();
+  });
+
+  it("shows a public non-actionable forced-displacement waiting status", async () => {
+    window.localStorage.setItem("ashen-reach-tv-room-code", "RT7P4");
+    window.localStorage.setItem("ashen-reach-tv-host-token", "host:RT7P4:secret");
+    const patch = createPatch();
+    patch.phase = "resolution";
+    patch.payload.pendingDisplacement = {
+      seatId: "seat-1",
+      sourceId: "route-splice",
+      sourceTitle: "Route Splice",
+      originSectorId: "middle_red_march_outpost",
+      destinationSectorId: "middle_anomaly_well",
+      destinationSectorName: "Static Chapel",
+      direction: "clockwise",
+      status: "waiting"
+    };
+    mockUseRoomSubscription.mockReturnValue({ patch, error: null, sendIntent: vi.fn(), status: "open", debugEvents: [], clearDebugEvents: vi.fn() });
+
+    render(<TvApp />);
+
+    const banner = await screen.findByTestId("host-live-status");
+    expect(banner).toHaveTextContent(/waiting for .* to resolve route splice/i);
+    expect(screen.queryByRole("button", { name: /accept displacement/i })).not.toBeInTheDocument();
+    expect(banner).not.toHaveTextContent(/rift anchor spike/i);
+  });
+
+  it("waits for the False Route owner without exposing unconfirmed candidates", async () => {
+    window.localStorage.setItem("ashen-reach-tv-room-code", "RT7P4");
+    window.localStorage.setItem("ashen-reach-tv-host-token", "host:RT7P4:secret");
+    const patch = createPatch();
+    patch.phase = "resolution";
+    patch.payload.pendingForcedDestinationChoice = {
+      ownerSeatId: "seat-1",
+      sourceId: "false-route-procession",
+      sourceTitle: "False-Route Procession",
+      status: "waiting"
+    };
+    mockUseRoomSubscription.mockReturnValue({ patch, error: null, sendIntent: vi.fn(), status: "open", debugEvents: [], clearDebugEvents: vi.fn() });
+
+    render(<TvApp />);
+
+    const banner = await screen.findByTestId("host-live-status");
+    expect(banner).toHaveTextContent(/choose the false route/i);
+    expect(banner).toHaveTextContent(/owner phone must answer/i);
+    expect(banner).not.toHaveTextContent(/clockwise|counterclockwise|static chapel|chain-maul yard/i);
   });
 
   it("places live status inside the command header instead of an absolute board overlay", () => {
@@ -853,7 +957,7 @@ describe("TvApp", () => {
     expect(mockCreateSession).not.toHaveBeenCalled();
   });
 
-  it("shows a disconnected ready player without clearing setup state", async () => {
+  it("shows a disconnected player without repeating character, mission, or Ready setup state", async () => {
     window.localStorage.setItem("ashen-reach-tv-room-code", "RT7P4");
     window.localStorage.setItem("ashen-reach-tv-host-token", "host:RT7P4:secret");
     const patch = createPatch();
@@ -877,8 +981,100 @@ describe("TvApp", () => {
 
     const operatives = await screen.findByRole("complementary", { name: /operatives/i });
     expect(operatives).toHaveTextContent(/disconnected/i);
-    expect(operatives).toHaveTextContent(/mission: crossing thread/i);
-    expect(operatives).toHaveTextContent(/ready/i);
+    expect(operatives).not.toHaveTextContent(/mission: crossing thread/i);
+    expect(operatives).not.toHaveTextContent(/ready/i);
+    expect(operatives).not.toHaveTextContent(/deep route delver/i);
+  });
+
+  it("prioritizes active-operative reconnect guidance over stale shop framing", async () => {
+    window.localStorage.setItem("ashenreach-tv-room-code", "RT7P4");
+    const patch = createPatch();
+    patch.payload.seats[0] = { ...patch.payload.seats[0]!, connected: false };
+    patch.payload.players[0] = { ...patch.payload.players[0]!, sectorId: "outer_waymarket" };
+    mockUseRoomSubscription.mockReturnValue({ patch, error: null, sendIntent: vi.fn(), status: "open", debugEvents: [], clearDebugEvents: vi.fn() });
+
+    render(<TvApp />);
+
+    const liveStatus = await screen.findByTestId("host-live-status");
+    expect(liveStatus).toHaveTextContent(/operative disconnected/i);
+    expect(liveStatus).toHaveTextContent(/waiting for player phone to reconnect/i);
+    expect(screen.queryByTestId("host-shop-overlay")).not.toBeInTheDocument();
+  });
+
+  it("shows only the public ordered-reaction stage and withholds an early outcome", async () => {
+    window.localStorage.setItem("ashenreach-tv-room-code", "RT7P4");
+    const patch = createPatch();
+    patch.payload.pendingOrderedConsequence = {
+      seatId: "seat-1",
+      sourceId: "suture-storm",
+      requestedWounds: 1,
+      preventedWounds: 0,
+      actualWounds: 1,
+      resultingWounds: 1,
+      resultingStatus: "active",
+      status: "waiting"
+    };
+    patch.payload.outcomeSummary = { ...patch.payload.outcomeSummary!, success: false, summary: "Stale final outcome" };
+    mockUseRoomSubscription.mockReturnValue({ patch, error: null, sendIntent: vi.fn(), status: "open", synchronized: true, debugEvents: [], clearDebugEvents: vi.fn() });
+
+    render(<TvApp />);
+
+    const liveStatus = await screen.findByTestId("host-live-status");
+    expect(liveStatus).toHaveTextContent(/reaction pending/i);
+    expect(liveStatus).toHaveTextContent(/waiting for Joel to resolve suture storm/i);
+    expect(liveStatus).toHaveTextContent(/1 Wound applied/i);
+    expect(liveStatus).not.toHaveTextContent(/stale final outcome/i);
+    expect(document.body.textContent).not.toMatch(/reactionId|sourceEventId|pendingEffects/i);
+  });
+
+  it("labels a public Scar consequence as already acquired without exposing private choices", async () => {
+    window.localStorage.setItem("ashenreach-tv-room-code", "RT7P4");
+    const patch = createPatch();
+    patch.payload.scarTriggerStatus = { seatId: "seat-1", scarTitle: "Static Burn", status: "waiting" };
+    mockUseRoomSubscription.mockReturnValue({ patch, error: null, sendIntent: vi.fn(), status: "open", synchronized: true, debugEvents: [], clearDebugEvents: vi.fn() });
+
+    render(<TvApp />);
+
+    const liveStatus = await screen.findByTestId("host-live-status");
+    expect(liveStatus).toHaveTextContent(/Scar consequence pending/i);
+    expect(liveStatus).toHaveTextContent(/Scar already acquired/i);
+    expect(liveStatus).toHaveTextContent(/Static Burn/i);
+    expect(document.body.textContent).not.toMatch(/reactionId|sourceEventId|pendingEffects|Heat/i);
+  });
+
+  it("suppresses stale focused overlays until a fresh authoritative patch arrives", async () => {
+    window.localStorage.setItem("ashenreach-tv-room-code", "RT7P4");
+    const patch = createPatch();
+    patch.payload.players[0] = { ...patch.payload.players[0]!, sectorId: "outer_waymarket" };
+    patch.payload.shopEncounter = {
+      sectorId: "outer_waymarket",
+      sectorName: "Anchor Market",
+      shopId: "outer_waymarket",
+      shopName: "Anchor Market",
+      shopType: "Forge Market",
+      stockCategory: "forge-armoury",
+      status: "open",
+      activePlayer: {
+        playerId: "seat-1",
+        name: "Joel",
+        characterName: "Tarek Voss",
+        salvage: 6,
+        wounds: { current: 0, max: 6 },
+        trophies: 0,
+        completedContracts: 0
+      },
+      blockingThreats: [],
+      sellInventory: [],
+      services: []
+    };
+    mockUseRoomSubscription.mockReturnValue({ patch, error: null, sendIntent: vi.fn(), status: "closed", synchronized: false, debugEvents: [], clearDebugEvents: vi.fn() });
+
+    render(<TvApp />);
+
+    expect(await screen.findByTestId("tv-network-overlay")).toHaveTextContent(/host connection lost/i);
+    expect(screen.getByTestId("host-live-status")).toHaveTextContent(/last safe board position/i);
+    expect(screen.queryByTestId("host-shop-overlay")).not.toBeInTheDocument();
+    expect(screen.getByText(/Tactical map/i)).toBeInTheDocument();
   });
 
   it("keeps setup mode labels off the TV until the Host Phone chooses them", async () => {
@@ -1012,6 +1208,14 @@ describe("TvApp", () => {
     movedPatch.phase = "action";
     movedPatch.payload.movementPlanner = null;
     movedPatch.payload.players[0]!.sectorId = "outer_anchor_market";
+    movedPatch.payload.activeResolution = {
+      id: "seat-1:movement:outer_anchor_market:test",
+      playerId: "seat-1",
+      source: "movement",
+      stage: "roll_result",
+      card: { id: "outer_anchor_market", title: "Anchor Market", type: "test", artType: "sector" },
+      battle: { stat: "guile", difficulty: 2, modifiers: [{ label: "Base Guile", value: 2 }] }
+    };
     mockUseRoomSubscription.mockReturnValue({
       patch: movedPatch,
       error: null,
@@ -1021,20 +1225,20 @@ describe("TvApp", () => {
       clearDebugEvents: vi.fn()
     });
     rerender(<TvApp />);
-    const arrivalFocus = await screen.findByTestId("tv-arrival-focus");
-    expect(arrivalFocus).toHaveTextContent(/arrived at anchor market/i);
-    expect(arrivalFocus).toHaveTextContent(/outer reach/i);
-    expect(arrivalFocus).toHaveTextContent(/trade if the sector is clear/i);
-    expect(arrivalFocus).toHaveTextContent(/printed challenge icons will resolve on arrival/i);
-    expect(screen.queryByTestId("tv-movement-focus")).not.toBeInTheDocument();
+    const journey = await screen.findByTestId("tv-movement-journey");
+    expect(journey).toHaveTextContent(/movement journey/i);
+    expect(journey).toHaveTextContent(/anchor market/i);
+    expect(journey).not.toHaveTextContent(/combat|battle/i);
+    expect(screen.queryByTestId("host-battle-overlay")).not.toBeInTheDocument();
     expect(screen.getByText("Tactical map")).toBeInTheDocument();
 
-    await waitFor(() => expect(screen.queryByTestId("tv-arrival-focus")).not.toBeInTheDocument(), { timeout: 3_500 });
+    await waitFor(() => expect(screen.queryByTestId("tv-movement-journey")).not.toBeInTheDocument(), { timeout: 8_000 });
     rerender(<TvApp />);
-    expect(screen.getByTestId("tv-command-main")).not.toHaveClass("tv-command-main--movement-focus");
-    expect(screen.getByRole("complementary", { name: /operatives/i })).toBeInTheDocument();
-    expect(document.querySelector(".tv-command-sidebar")).toBeInTheDocument();
-  });
+    expect(screen.queryByTestId("host-battle-overlay")).not.toBeInTheDocument();
+    expect(screen.getByTestId("host-live-status")).toHaveTextContent(/destination challenge/i);
+    expect(screen.getByText("Tactical map")).toBeInTheDocument();
+    expect(screen.queryByTestId("tv-movement-journey")).not.toBeInTheDocument();
+  }, 10_000);
 
   it("shows sector exploration math in the sector brief without duplicating private data", async () => {
     window.localStorage.setItem("ashen-reach-tv-room-code", "RT7P4");
@@ -1094,6 +1298,19 @@ describe("TvApp", () => {
     expect(JSON.stringify(patch.payload)).not.toContain("Private agenda");
   });
 
+  it("separates recurring challenges from threats in the public sector brief", async () => {
+    window.localStorage.setItem("ashen-reach-tv-room-code", "RT7P4");
+    window.localStorage.setItem("ashen-reach-tv-host-token", "host:RT7P4:secret");
+    const patch = createPatch();
+    patch.payload.sectors[0]!.tileChallenges = [{ id: "rift-whispers-ashen-chapel", name: "Rift Whispers", challengeType: "anomaly", sectorId: "ashwake-crossing", testStat: "signal", difficulty: 8, trigger: "onArrival", authoredOrder: 0, recurring: true, tags: ["anomaly"], lore: "The signal repeats.", artCardId: "rift-whispers", successSummary: "The whisper recedes.", failureSummary: "Gain the authored Scar." }];
+    mockUseRoomSubscription.mockReturnValue({ patch, error: null, sendIntent: vi.fn(), status: "open", debugEvents: [], clearDebugEvents: vi.fn() });
+    render(<TvApp />);
+    const challenges = await screen.findByRole("region", { name: /recurring tile challenges/i });
+    expect(challenges).toHaveTextContent(/rift whispers/i);
+    expect(challenges).toHaveTextContent(/anomaly.*signal 8.*recurring/i);
+    expect(challenges).not.toHaveTextContent(/trophy|claim|inventory/i);
+  });
+
   it("renders battle setup through the host battle overlay without a duplicate card tray", async () => {
     window.localStorage.setItem("ashen-reach-tv-room-code", "RT7P4");
     window.localStorage.setItem("ashen-reach-tv-host-token", "host:RT7P4:secret");
@@ -1142,17 +1359,31 @@ describe("TvApp", () => {
     render(<TvApp />);
 
     const overlay = await screen.findByTestId("host-battle-overlay");
+    const chamber = screen.getByTestId("tv-host-battle-chamber");
+    const boardShell = document.querySelector(".tv-command-map-shell");
     expect(screen.getByTestId("tv-command-main")).toHaveClass("tv-command-main--battle-focus");
     expect(screen.queryByTestId("host-state-banner")).not.toBeInTheDocument();
     expect(within(screen.getByLabelText(/host status bar/i)).getByTestId("host-live-status")).toBeInTheDocument();
-    expect(screen.queryByText("Tactical map")).not.toBeInTheDocument();
+    expect(chamber).toHaveFocus();
+    expect(chamber).toHaveAttribute("data-battle-stage", "battle_setup");
+    expect(chamber).toHaveTextContent(/battle at ashwalk bridge/i);
+    expect(screen.getByLabelText("Battle command surface")).toBeInTheDocument();
+    expect(boardShell).toHaveAttribute("aria-hidden", "true");
+    expect(boardShell).toHaveAttribute("inert");
     expect(screen.queryByRole("complementary", { name: /operatives/i })).not.toBeInTheDocument();
     expect(document.querySelector(".tv-command-sidebar")).not.toBeInTheDocument();
     expect(overlay).toHaveTextContent(/tarek voss/i);
     expect(overlay).toHaveTextContent(/cinder-veil stalker/i);
     expect(within(overlay).getByTestId("host-battle-vs-block")).toHaveTextContent(/vs/i);
     expect(within(overlay).getByTestId("host-battle-vs-block")).toHaveTextContent(/battle resolving/i);
-    expect(within(overlay).getByTestId("host-battle-vs-block")).toHaveTextContent(/cinder-veil stalker/i);
+    expect(within(overlay).getByTestId("host-battle-vs-block")).toHaveTextContent(/battle resolution/i);
+    expect(within(overlay).getByTestId("host-battle-enemy")).toHaveTextContent(/cinder-veil stalker/i);
+    expect(within(overlay).getByTestId("host-battle-player-reveal")).toContainElement(within(overlay).getByTestId("host-battle-player"));
+    expect(within(overlay).getByTestId("host-battle-enemy-reveal")).toContainElement(within(overlay).getByTestId("host-battle-enemy"));
+    expect(within(overlay).getByTestId("host-battle-player-reveal").querySelector(".host-battle-card-back")).toHaveAttribute("aria-hidden", "true");
+    expect(within(overlay).getByTestId("host-battle-enemy-reveal").querySelector(".host-battle-card-back")).toHaveAttribute("aria-hidden", "true");
+    expect(within(overlay).getByTestId("host-battle-player-reveal").querySelector(".host-battle-card-back img")).toHaveAttribute("src", "/assets/cards/backs/card_back_character.png");
+    expect(within(overlay).getByTestId("host-battle-enemy-reveal").querySelector(".host-battle-card-back img")).toHaveAttribute("src", "/assets/cards/backs/card_back_threat_red.png");
     expect(within(overlay).getByTestId("host-battle-result-banner")).toHaveTextContent(/resolving/i);
     expect(overlay).toHaveTextContent(/base grit\s*\+2/i);
     expect(overlay).toHaveTextContent(/black route fuse\s*\+3/i);
@@ -1164,6 +1395,105 @@ describe("TvApp", () => {
     expect(screen.queryByTestId("tv-card-reveal")).not.toBeInTheDocument();
     expect(screen.queryByTestId("tv-resolution-footer")).not.toBeInTheDocument();
     expect(screen.queryByTestId("tv-movement-focus")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("tv-movement-journey")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("host-shop-overlay")).not.toBeInTheDocument();
+  });
+
+  it.each([
+    ["battle_setup", "preparing"],
+    ["dice_roll", "rolling"],
+    ["roll_result", "resolving"],
+    ["outcome_summary", "outcome"]
+  ] as const)("reconstructs the %s authoritative battle stage", async (stage, _label) => {
+    window.localStorage.setItem("ashen-reach-tv-room-code", "RT7P4");
+    window.localStorage.setItem("ashen-reach-tv-host-token", "host:RT7P4:secret");
+    const patch = createPatch();
+    patch.phase = "resolution";
+    patch.payload.activeResolution = {
+      id: `seat-1:threat:cinder-veil-stalker:${stage}`,
+      playerId: "seat-1",
+      source: "threat",
+      stage,
+      card: { id: "cinder-veil-stalker", title: "Cinder-Veil Stalker", type: "enemy", artType: "threat" },
+      battle: { enemyName: "Cinder-Veil Stalker", stat: "grit", difficulty: 8, modifiers: [{ label: "Base Grit", value: 2 }] },
+      ...(stage === "roll_result" || stage === "outcome_summary"
+        ? { roll: { dice: [4, 3], baseTotal: 7, modifierTotal: 2, finalTotal: 9, target: 8, success: true } }
+        : {})
+    };
+    mockUseRoomSubscription.mockReturnValue({ patch, error: null, sendIntent: vi.fn(), status: "open", debugEvents: [], clearDebugEvents: vi.fn() });
+
+    render(<TvApp />);
+
+    const chamber = await screen.findByTestId("tv-host-battle-chamber");
+    expect(chamber).toHaveAttribute("data-battle-stage", stage);
+    expect(within(chamber).getByTestId("host-battle-player")).toHaveTextContent(/tarek voss/i);
+    expect(within(chamber).getByTestId("host-battle-vs-block")).toHaveTextContent(/battle resolution/i);
+    expect(within(chamber).getByTestId("host-battle-enemy")).toHaveTextContent(/cinder-veil stalker/i);
+    expect(within(chamber).getByTestId("host-battle-enemy")).toHaveTextContent(/difficulty/i);
+    expect(within(chamber).getByTestId("host-battle-player-math")).toHaveTextContent(/base.*roll.*mod.*total/i);
+    expect(within(chamber).getByTestId("host-battle-enemy-math")).toHaveTextContent(/base.*roll.*mod.*total/i);
+  });
+
+  it("restores the authoritative host board after battle without replaying stale focus", async () => {
+    window.localStorage.setItem("ashen-reach-tv-room-code", "RT7P4");
+    window.localStorage.setItem("ashen-reach-tv-host-token", "host:RT7P4:secret");
+    const battlePatch = createPatch();
+    battlePatch.phase = "resolution";
+    battlePatch.payload.activeResolution = {
+      id: "seat-1:threat:cinder-veil-stalker:test",
+      playerId: "seat-1",
+      source: "threat",
+      stage: "battle_setup",
+      card: { id: "cinder-veil-stalker", title: "Cinder-Veil Stalker", type: "enemy", artType: "threat" },
+      battle: { enemyName: "Cinder-Veil Stalker", stat: "grit", difficulty: 8, modifiers: [] }
+    };
+    mockUseRoomSubscription.mockReturnValue({ patch: battlePatch, error: null, sendIntent: vi.fn(), status: "open", debugEvents: [], clearDebugEvents: vi.fn() });
+    const view = render(<TvApp />);
+    expect(await screen.findByTestId("tv-host-battle-chamber")).toHaveFocus();
+
+    const boardPatch = createPatch();
+    mockUseRoomSubscription.mockReturnValue({ patch: boardPatch, error: null, sendIntent: vi.fn(), status: "open", debugEvents: [], clearDebugEvents: vi.fn() });
+    view.rerender(<TvApp />);
+
+    await waitFor(() => expect(screen.getByTestId("tv-command-main")).toHaveFocus());
+    expect(screen.queryByTestId("tv-host-battle-chamber")).not.toBeInTheDocument();
+    expect(document.querySelectorAll(".tv-command-map-shell")).toHaveLength(1);
+    expect(document.querySelector(".tv-command-map-shell")).not.toHaveAttribute("aria-hidden");
+  });
+
+  it("hands a recurring challenge confrontation to the battle window without exposing private actions", async () => {
+    window.localStorage.setItem("ashen-reach-tv-room-code", "RT7P4");
+    window.localStorage.setItem("ashen-reach-tv-host-token", "host:RT7P4:secret");
+    const patch = createPatch();
+    patch.phase = "action";
+    patch.payload.activeResolution = {
+      id: "tile-challenge:seat-1:rift-whispers",
+      playerId: "seat-1",
+      source: "anomaly",
+      stage: "card_reveal",
+      card: { id: "rift-whispers", title: "Rift Whispers", type: "anomaly", artType: "anomaly" },
+      battle: { enemyName: "Rift Whispers", stat: "signal", difficulty: 8, modifiers: [] }
+    };
+    patch.payload.pendingTileChallenge = { challengeId: "rift-whispers-ashen-chapel", sectorId: "ashwake-crossing", seatId: "seat-1", challengeType: "anomaly", testStat: "signal", difficulty: 8, authoredOrder: 0, totalChallenges: 1, rolled: false };
+    patch.payload.outcomeSummary = {
+      seatId: "seat-1", movedToSectorId: "ashwake-crossing", encounterCardId: "previous-arrival-test", encounterTitle: "Previous arrival", encounterCardType: "hazard", checkStat: "guile",
+      die1: 3, die2: 3, statBonus: 2, checkTotal: 8, difficulty: 5, success: true, summary: "Previous arrival succeeded."
+    };
+    mockUseRoomSubscription.mockReturnValue({ patch, error: null, sendIntent: vi.fn(), status: "open", debugEvents: [], clearDebugEvents: vi.fn() });
+
+    render(<TvApp />);
+
+    const chamber = await screen.findByTestId("tv-host-battle-chamber");
+    const liveStatus = screen.getByTestId("host-live-status");
+    expect(chamber).toHaveTextContent(/rift whispers/i);
+    expect(chamber).toHaveTextContent(/tile challenge resolution/i);
+    expect(chamber).toHaveTextContent(/signal/i);
+    expect(within(chamber).getByTestId("host-battle-result-banner")).toHaveTextContent(/resolving/i);
+    expect(liveStatus).toHaveTextContent(/tile challenge/i);
+    expect(liveStatus).not.toHaveTextContent(/battle resolving/i);
+    expect(chamber).not.toHaveTextContent(/previous arrival succeeded/i);
+    expect(chamber).not.toHaveTextContent(/use choir lantern|remaining charges|private/i);
+    expect(screen.queryByRole("region", { name: /recurring tile challenges/i })).not.toBeInTheDocument();
   });
 
   it("renders active dice faces and roll totals from activeResolution", async () => {
@@ -1229,6 +1559,18 @@ describe("TvApp", () => {
         severity: "reward"
       },
       {
+        id: "battle-threat-duplicate",
+        type: "threatDefeated",
+        label: "Threat defeated",
+        sign: "gain",
+        targetScope: "sector",
+        targetSeatId: "seat-1",
+        visibility: "public",
+        source: "resolution-effect",
+        publicText: "Signal Static defeated.",
+        severity: "reward"
+      },
+      {
         id: "private-rivalry-battle-note",
         type: "modifierApplied",
         label: "Secret rivalry edge",
@@ -1253,6 +1595,8 @@ describe("TvApp", () => {
 
     render(<TvApp />);
 
+    expect(await screen.findByTestId("tv-host-battle-chamber")).toHaveTextContent(/hazard resolution/i);
+
     const overlay = await screen.findByTestId("host-battle-overlay");
     expect(overlay).toHaveTextContent(/signal static/i);
     expect(overlay).toHaveTextContent(/success: the signal holds/i);
@@ -1261,11 +1605,12 @@ describe("TvApp", () => {
     expect(screen.getByTestId("host-battle-enemy-dice")).toHaveTextContent(/roll -/i);
     expect(screen.getByTestId("host-battle-result-banner")).toHaveTextContent(/success/i);
     expect(screen.getByTestId("host-battle-result-banner")).toHaveTextContent(/wins by 1/i);
-    expect(screen.getByTestId("host-battle-rolls")).toHaveTextContent(/Tarek Voss\s*8\s*>\s*7\s*Difficulty/i);
+    expect(screen.getByTestId("host-battle-rolls")).toHaveTextContent(/Joel\s*8\s*>\s*7\s*Difficulty/i);
     expect(screen.getByTestId("host-battle-player-math")).toHaveTextContent(/Signal 1 \+ Roll 7 = Total 8/i);
     expect(screen.getByTestId("host-battle-enemy-math")).toHaveTextContent(/Difficulty 7 = Total 7/i);
     expect(within(screen.getByTestId("host-battle-vs-block")).getByTestId("result-delta-row")).toHaveTextContent(/\+1 Trophy/i);
     expect(within(screen.getByTestId("host-battle-vs-block")).getByTestId("result-delta-row")).toHaveTextContent(/Threat defeated/i);
+    expect(within(screen.getByTestId("host-battle-vs-block")).getAllByTestId("result-delta-threatDefeated")).toHaveLength(1);
     expect(overlay).not.toHaveTextContent(/private rivalry agenda/i);
     expect(overlay).not.toHaveTextContent(/secret rivalry edge/i);
     expect(screen.queryByTestId("roll-outcome-panel")).not.toBeInTheDocument();
@@ -1302,7 +1647,6 @@ describe("TvApp", () => {
         ...patch.payload.players[0].character,
         salvage: 6,
         trophies: 3,
-        heat: 1,
         wounds: 2,
         heldGearCount: 1
       }
@@ -1327,7 +1671,6 @@ describe("TvApp", () => {
         name: "Tarek Voss",
         characterName: "Tarek Voss",
         salvage: 6,
-        heat: 1,
         wounds: { current: 2, max: 6 },
         trophies: 3,
         completedContracts: 1
@@ -1353,9 +1696,8 @@ describe("TvApp", () => {
         },
         {
           id: "risk-action",
-          label: "Risk Action",
-          cost: { heat: 1 },
-          risk: "+1 Risk",
+          label: "Deep Relic Search",
+          cost: { salvage: 1 },
           enabled: true
         }
       ]
@@ -1420,6 +1762,9 @@ describe("TvApp", () => {
     expect(screen.getByTestId("host-shop-status-panel")).toHaveTextContent(/sellable/i);
     expect(screen.getByTestId("host-shop-status-panel")).toHaveTextContent("1");
     expect(overlay).toHaveTextContent(/buy equipment/i);
+    expect(overlay).toHaveTextContent(/Deep Relic Search/i);
+    expect(overlay).toHaveTextContent(/1 Salvage/i);
+    expect(overlay).not.toHaveTextContent(/\b(?:Heat|Risk)\b/i);
     expect(overlay).not.toHaveTextContent(/buy supplies/i);
     expect(within(overlay).getByTestId("host-shop-card-backdrop")).toBeInTheDocument();
     expect(
@@ -1483,7 +1828,6 @@ describe("TvApp", () => {
         name: "Tarek Voss",
         characterName: "Tarek Voss",
         salvage: 6,
-        heat: 0,
         wounds: { current: 0, max: 6 }
       },
       blockingThreats: [
@@ -1543,7 +1887,6 @@ describe("TvApp", () => {
         name: "Tarek Voss",
         characterName: "Tarek Voss",
         salvage: 4,
-        heat: 0,
         wounds: { current: 1, max: 6 }
       },
       blockingThreats: [],
@@ -1615,7 +1958,9 @@ describe("TvApp", () => {
     render(<TvApp />);
 
     const purchaseOverlay = await screen.findByTestId("host-shop-overlay");
-    expect(screen.getByTestId("host-shop-outcome")).toHaveTextContent(/bought ashlock carbine for 3 salvage/i);
+    expect(screen.getByTestId("host-shop-transaction-focus")).toHaveTextContent(/bought ashlock carbine/i);
+    expect(screen.getByTestId("host-shop-transaction-focus")).toHaveTextContent(/bought ashlock carbine for 3 salvage/i);
+    expect(screen.queryByTestId("host-shop-outcome")).not.toBeInTheDocument();
     expect(purchaseOverlay).toHaveTextContent(/ashlock carbine/i);
     expect(purchaseOverlay).not.toHaveTextContent(/battle resolving/i);
     expect(screen.queryByTestId("host-battle-overlay")).not.toBeInTheDocument();
@@ -1648,7 +1993,9 @@ describe("TvApp", () => {
     render(<TvApp />);
 
     expect(await screen.findByTestId("host-shop-overlay")).toBeInTheDocument();
-    expect(screen.getByTestId("host-shop-outcome")).toHaveTextContent(/sold veil hook for 1 salvage/i);
+    expect(screen.getByTestId("host-shop-transaction-focus")).toHaveTextContent(/sold veil hook/i);
+    expect(screen.getByTestId("host-shop-transaction-focus")).toHaveTextContent(/sold veil hook for 1 salvage/i);
+    expect(screen.queryByTestId("host-shop-outcome")).not.toBeInTheDocument();
     expect(JSON.stringify(patch.payload.shopEncounter)).not.toContain("Private agenda");
   });
 
@@ -1722,7 +2069,6 @@ describe("TvApp", () => {
         activeContract: null,
         stats: { command: 1, grit: 1, signal: 4, guile: 2, forge: 1 },
         trophies: 0,
-        heat: 0,
         wounds: 0,
         scars: [],
         heldGearCount: 0,
@@ -1807,12 +2153,13 @@ describe("TvApp", () => {
     expect(screen.getByTestId("host-battle-result-banner")).toHaveTextContent(/success/i);
     expect(screen.getByTestId("host-battle-result-banner")).toHaveTextContent(/wins by 3/i);
     expect(screen.getByTestId("host-battle-phase-status")).toHaveTextContent(/applying success outcome/i);
-    expect(screen.getByTestId("host-battle-phase-status")).toHaveTextContent(/preparing next phase/i);
+    expect(screen.getByTestId("host-battle-phase-status")).toHaveTextContent(/waiting for joel to continue on phone/i);
     expect(screen.getByTestId("host-battle-test-label")).toHaveTextContent(/grit test/i);
     expect(overlay).toHaveTextContent(/base grit\s*\+2/i);
     expect(overlay).toHaveTextContent(/black route fuse\s*\+3/i);
     expect(overlay).toHaveTextContent(/fandiablos\s*\+1/i);
-    expect(screen.getByTestId("host-battle-rolls")).toHaveTextContent(/Tarek Voss\s*11\s*>\s*8\s*Enemy/i);
+    expect(screen.getByTestId("host-battle-rolls")).toHaveTextContent(/Joel\s*11\s*>\s*8\s*Enemy/i);
+    expect(screen.getByTestId("host-battle-result-banner")).toHaveTextContent(/joel wins/i);
     expect(screen.getByTestId("host-battle-rolls")).not.toHaveTextContent(/player total/i);
     expect(screen.getByTestId("host-battle-player-math")).toHaveTextContent(/Grit 6 \+ Roll 5 = Total 11/i);
     expect(screen.getByTestId("host-battle-rolls")).not.toHaveTextContent(/opposition total/i);
@@ -1856,7 +2203,6 @@ describe("TvApp", () => {
         activeContract: null,
         stats: { command: 1, grit: 1, signal: 4, guile: 2, forge: 1 },
         trophies: 0,
-        heat: 0,
         wounds: 0,
         scars: [],
         heldGearCount: 0,
@@ -1933,7 +2279,7 @@ describe("TvApp", () => {
 
     expect(overlay).toHaveTextContent(/tarek voss/i);
     expect(overlay).toHaveTextContent(/cinder-veil stalker/i);
-    expect(screen.getByTestId("host-battle-rolls")).toHaveTextContent(/Tarek Voss\s*11\s*>\s*8\s*Enemy/i);
+    expect(screen.getByTestId("host-battle-rolls")).toHaveTextContent(/Joel\s*11\s*>\s*8\s*Enemy/i);
     expect(screen.getByTestId("host-battle-player-math")).toHaveTextContent(/Grit 6 \+ Roll 5 = Total 11/i);
     expect(screen.getByTestId("host-battle-enemy-math")).toHaveTextContent(/Battle 0 \+ Roll 8 = Total 8/i);
     expect(screen.queryByTestId("tv-card-reveal")).not.toBeInTheDocument();

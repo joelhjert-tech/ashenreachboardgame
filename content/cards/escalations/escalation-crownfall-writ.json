@@ -2,7 +2,7 @@
   "id": "escalation-crownfall-writ",
   "type": "escalation",
   "title": "Crownfall Writ",
-  "text": "A dead court stamps your route illegal and sends wardens to collect proof.",
+  "text": "A dead court stamps your route illegal. Lose up to 1 Salvage as wardens seize their proof.",
   "flavor": "The seal is ancient, but the debt is fresh.",
   "step": 3,
   "resolutionSummary": "Counter-signed the Crownfall Writ and delayed the wardens long enough to move.",
@@ -13,7 +13,7 @@
         "type": "gain_note",
         "text": "Crownfall writ counter-signed. Inner wardens hesitate at your name."
       },
-      { "type": "gain_heat", "amount": 1 }
+      { "type": "lose_salvage", "amount": 1 }
     ]
   },
   "escalationDelta": -2

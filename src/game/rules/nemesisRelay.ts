@@ -17,7 +17,7 @@ const NEMESIS_TEMPLATES: NemesisTemplate[] = [
     maxHealth: 5,
     movementProfile: "center_path",
     combatProfile: "choice",
-    specialRuleId: "heat_on_threat_defeat"
+    specialRuleId: "no_additional_effect"
   },
   {
     id: "nemesis_pale_huntress",
@@ -121,12 +121,12 @@ export function getNemesisCombatValue(nemesis: NemesisChampion, stat: Stat): num
   return nemesis.strength;
 }
 
-export function getGlobalHeatLevel(state: GameState): number {
+export function getNemesisPressureLevel(state: GameState): number {
   return Math.max(0, ...state.players.map((player) => player.character.scars.length), state.escalationLevel);
 }
 
 export function getNemesisMovementStepCount(state: GameState, randomSource: RandomSource): number {
-  const pressure = getGlobalHeatLevel(state);
+  const pressure = getNemesisPressureLevel(state);
 
   if (pressure >= 9) {
     return 2;

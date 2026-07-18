@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { createSequenceRandomSource } from "../../game/engine/dice.js";
 import type { ClientIntent } from "../../game/engine/actions.js";
 import type { GameState, NemesisChampion } from "../../game/schema/session.schema.js";
-import { ASHEN_CROWN_NEXUS_SECTOR_ID } from "../../game/rules/nemesisRelay.js";
+import { ASHEN_CROWN_NEXUS_SECTOR_ID, getNemesisPressureLevel } from "../../game/rules/nemesisRelay.js";
 import { GameRoomServer, type ConnectedClient } from "../roomServer.js";
 import { createInitialSessionState } from "../sessionState.js";
 
@@ -66,12 +66,73 @@ function getActiveNemesis(server: GameRoomServer): NemesisChampion {
 }
 
 describe("Nemesis Relay mode", () => {
+  it("derives movement pressure only from Scars and Global Escalation", () => {
+    const server = startRelayServer(1);
+    const state = server.getState();
+    const withLegacyMetadata = {
+      ...state,
+      escalationLevel: 4,
+      players: state.players.map((player) => ({
+        ...player,
+        character: {
+          ...player.character,
+          [["he", "at"].join("")]: 99,
+          scars: ["scar-wound-1", "scar-wound-2"]
+        }
+      }))
+    };
+
+    expect(getNemesisPressureLevel(withLegacyMetadata)).toBe(4);
+  });
+
   it("spawns one bound Nemesis Champion per occupied player when the session starts", () => {
     const server = startRelayServer(2);
 
     expect(server.getState().gameMode).toBe("nemesis_relay");
     expect(server.getState().nemesisChampions).toHaveLength(2);
     expect(server.getState().nemesisChampions.map((champion) => champion.boundPlayerId)).toEqual(["seat-1", "seat-2"]);
+  });
+
+  it("uses the inert canonical special-rule identifier without adding a consequence", () => {
+    const server = startRelayServer(1, [5, 5, 0, 0]);
+    const nemesis = getActiveNemesis(server);
+
+    expect(nemesis.id).toBe("nemesis_iron_vicar_orm_seat-1");
+    expect(nemesis.specialRuleId).toBe("no_additional_effect");
+
+    const playerSectorId = server.getState().players[0]!.character.currentSpaceId;
+    const before = server.getState();
+    const playerBefore = before.players[0]!.character;
+
+    updateState(server, (state) => ({
+      ...state,
+      phase: "action",
+      nemesisChampions: state.nemesisChampions.map((champion) =>
+        champion.id === nemesis.id ? { ...champion, sectorId: playerSectorId, health: 1, maxHealth: 1 } : champion
+      ),
+      players: state.players.map((player) =>
+        player.seatId === "seat-1"
+          ? { ...player, character: { ...player.character, stats: { ...player.character.stats, grit: 12 } } }
+          : player
+      )
+    }));
+
+    server.handleIntent(createClient("seat-1"), {
+      type: "NEMESIS_COMBAT_REQUESTED",
+      seatId: "seat-1",
+      nemesisId: nemesis.id,
+      stat: "grit"
+    } satisfies ClientIntent);
+
+    const after = server.getState();
+    const playerAfter = after.players[0]!.character;
+    expect(playerAfter.wounds).toBe(playerBefore.wounds);
+    expect(playerAfter.scars).toEqual(playerBefore.scars);
+    expect(playerAfter.salvage).toBe(playerBefore.salvage);
+    expect(after.escalationLevel).toBe(before.escalationLevel);
+    expect(after.pendingEncounterDecision).toBeNull();
+    expect(JSON.stringify(after.eventLog.slice(before.eventLog.length))).not.toContain("no_additional_effect");
+    expect(JSON.stringify(after.lastOutcomeSummary)).not.toContain("no_additional_effect");
   });
 
   it("activates the bound Nemesis after its player's turn", () => {
@@ -169,6 +230,26 @@ describe("Nemesis Relay mode", () => {
     expect(server.getState().scenarioProgress["crownKey:seat-1"]).toBe(1);
     expect(server.getState().status).toBe("ended");
     expect(server.getState().lastOutcomeSummary?.summary).toContain("All Nemesis Champions");
+  });
+
+  it("grants two trophies without mutating stored legacy Heat for a cross-seat bound Nemesis", () => {
+    const server = startRelayServer(2);
+    const nemesis = server.getState().nemesisChampions.find((champion) => champion.boundPlayerId === "seat-2")!;
+
+    updateState(server, (state) => ({
+      ...state,
+      players: state.players.map((player) =>
+        player.seatId === "seat-1"
+          ? { ...player, character: { ...player.character, heat: 4, trophies: 0 } }
+          : player
+      )
+    }));
+
+    (server as any).defeatNemesis("seat-1", nemesis);
+
+    const attacker = server.getState().players.find((player) => player.seatId === "seat-1")!;
+    expect(attacker.character.trophies).toBe(2);
+    expect(JSON.stringify(server.getState().eventLog)).not.toMatch(/"heatDelta"\s*:\s*-[1-9]/);
   });
 
   it("adds valid co-op assist bonuses in Nemesis combat", () => {

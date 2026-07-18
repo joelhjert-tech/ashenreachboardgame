@@ -117,7 +117,6 @@ describe("Ashen Reach audio cue selectors", () => {
           name: "Joel",
           characterName: "Kira Dog",
           salvage: 3,
-          heat: 1,
           wounds: { current: 0, max: 6 }
         },
         blockingThreats: [],

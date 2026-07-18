@@ -174,11 +174,11 @@ export function buildRoutePreviewCopy(
   const riskText = destination.disabledReason
     ? `Blocked: ${destination.disabledReason}.`
     : destination.faceUpThreats.length > 0
-      ? `Risk: ${blockerNames.join(", ")} already blocks the sector.`
+      ? `Danger: ${blockerNames.join(", ")} already blocks the sector.`
       : destination.nemesisPresent
-        ? "Risk: Nemesis present."
+        ? "Danger: Nemesis present."
         : destination.threatIcons.length > 0
-          ? `Risk: ${formatThreatIconCounts(destination.threatIcons)} printed threat icon${destination.threatIcons.length === 1 ? "" : "s"}.`
+          ? `Danger: ${formatThreatIconCounts(destination.threatIcons)} printed threat icon${destination.threatIcons.length === 1 ? "" : "s"}.`
           : null;
   const rewardText = destination.shop
     ? destination.shop.status === "locked"

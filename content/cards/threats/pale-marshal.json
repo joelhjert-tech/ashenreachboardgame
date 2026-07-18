@@ -16,7 +16,6 @@
     "threat_combat_plus_two_if_inner_region",
     "threat_block_rerolls"
   ],
-  "defeatEffectKey": "threat_defeat_reduce_heat",
   "defeatReward": {
     "type": "draw_artifact"
   },

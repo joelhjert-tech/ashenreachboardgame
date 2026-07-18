@@ -8,12 +8,8 @@
   "severity": 1,
   "stat": "signal",
   "difficulty": 5,
-  "successEffect": {
-    "type": "lose_heat",
-    "amount": 1
-  },
   "failEffect": {
-    "type": "gain_heat",
+    "type": "take_wound",
     "amount": 1
   },
   "enemyFamily": "vermin",
@@ -22,6 +18,6 @@
   "rarity": "common",
   "tempo": "stall",
   "resourceTags": [
-    "heat"
+    "wound"
   ]
 }

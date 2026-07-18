@@ -4,7 +4,7 @@
   "cardType": "enemy",
   "title": "Bridge-Toll Runt",
   "enemyName": "Bridge-Toll Runt",
-  "text": "A junior collector in an oversized ledger mask blocks the lane and demands payment with trembling authority.",
+  "text": "A junior collector cuts loose your salvage straps. On a loss, lose up to 1 Salvage.",
   "flavor": "The mask is official. The fear inside it is not.",
   "severity": 1,
   "region": "outer",
@@ -16,7 +16,7 @@
     "text": "You overrule the runt's false writ and note the bridge office seal."
   },
   "woundOnLoss": {
-    "type": "gain_heat",
+    "type": "lose_salvage",
     "amount": 1
   },
   "enemyFamily": "bureaucracy",
@@ -24,7 +24,7 @@
   "rarity": "common",
   "tempo": "stall",
   "resourceTags": [
-    "heat",
+    "salvage",
     "trophy"
   ],
   "imagePrompt": "A small nervous toll collector in an oversized black ledger mask holding a brass writ on a ruined bridge checkpoint, absurd but grim gothic sci-fantasy"

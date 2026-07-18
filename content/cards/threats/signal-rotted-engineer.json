@@ -4,7 +4,7 @@
   "cardType": "enemy",
   "title": "Signal-Rotted Engineer",
   "enemyName": "Signal-Rotted Engineer",
-  "text": "A reactor-yard engineer staggers forward, tools still working under someone else's signal. Weapons misread its approach.",
+  "text": "If you lose, choose one equipped normal Equipment. It provides no effects during your next battle.",
   "flavor": "The hands remember repairs. The signal remembers harm.",
   "severity": 2,
   "region": "outer",
@@ -20,15 +20,15 @@
     "text": "You stripped the bad signal out of its tool rig."
   },
   "woundOnLoss": {
-    "type": "gain_heat",
-    "amount": 1
+    "type": "equipment_suppression",
+    "sourceCardId": "signal-rotted-engineer",
+    "mode": "duringNextBattle"
   },
   "enemyFamily": "machine",
   "threatLane": "yellow",
   "rarity": "common",
   "tempo": "push",
   "resourceTags": [
-    "heat",
     "loot",
     "scenario",
     "trophy"

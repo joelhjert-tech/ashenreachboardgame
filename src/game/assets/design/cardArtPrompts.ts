@@ -44,30 +44,6 @@ const specialCardArtSeeds: Array<{
     usage: "Route-note card art sample."
   },
   {
-    id: "heat_card_rift_scar",
-    fileName: "heat_card_rift_scar.png",
-    outputPath: "/assets/riftfall/cards/heat/heat_card_rift_scar.png",
-    assetType: "corruptionCardArt",
-    prompt: "violet-blue scar spreading across skin and armor, dark organic metal veins, ominous close-up",
-    usage: "Heat card art sample."
-  },
-  {
-    id: "heat_card_hollow_voice",
-    fileName: "heat_card_hollow_voice.png",
-    outputPath: "/assets/riftfall/cards/heat/heat_card_hollow_voice.png",
-    assetType: "corruptionCardArt",
-    prompt: "shadow figure whispering through a cracked visor, blue ghost mouth, psychological horror",
-    usage: "Heat card art sample."
-  },
-  {
-    id: "heat_card_black_mirror",
-    fileName: "heat_card_black_mirror.png",
-    outputPath: "/assets/riftfall/cards/heat/heat_card_black_mirror.png",
-    assetType: "corruptionCardArt",
-    prompt: "black mirror showing a distorted reflection with violet rift cracks and cold candlelight",
-    usage: "Heat card art sample."
-  },
-  {
     id: "artifact-route-star",
     fileName: "artifact-route-star.png",
     outputPath: "/assets/cards/artifacts/artifact-route-star.png",

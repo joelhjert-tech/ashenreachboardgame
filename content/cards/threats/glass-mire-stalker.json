@@ -21,10 +21,6 @@
       {
         "type": "take_wound",
         "amount": 1
-      },
-      {
-        "type": "gain_heat",
-        "amount": 1
       }
     ]
   },
@@ -33,7 +29,6 @@
   "rarity": "uncommon",
   "tempo": "push",
   "resourceTags": [
-    "heat",
     "trophy",
     "wound"
   ]

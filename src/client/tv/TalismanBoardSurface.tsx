@@ -1,6 +1,7 @@
 import { useEffect, useState, type CSSProperties, type ReactElement } from "react";
 import { RIFTFALL_BOARD_NODE_INDEX, RIFTFALL_BOARD_NODES, type BoardNode } from "../../data/riftfallBoardNodes.js";
 import { getBoardSpace } from "../../game/data/boardSpaces.js";
+import { getUndirectedBoardRingTransitions } from "../../game/data/boardTransitions.js";
 import { ThreatIconBadge } from "../shared/ChallengeBadge.js";
 import type { SectorNode } from "../shared/types.js";
 import type { BoardRect } from "./boardGeometry.js";
@@ -31,6 +32,8 @@ interface TalismanBoardSurfaceProps {
   movingSeatIds?: Set<string>;
   movementAnimations?: TileMovementAnimation[];
   nemesisSectorIds?: Set<string>;
+  centerTileArtPath?: string | null;
+  centerConfrontationState?: "locked" | "unlocked" | "active" | "completed";
   onSelectNode?: (nodeId: string) => void;
   debugEnabled?: boolean;
 }
@@ -39,6 +42,8 @@ export interface TilePlayerMarker {
   seatId: string;
   label: string;
   color: string;
+  seatIndex: number;
+  active: boolean;
 }
 
 export interface TileMissionMarker {
@@ -97,22 +102,25 @@ function getTileSide(node: BoardNode): "horizontal" | "vertical" | "center" {
   return Math.abs(node.y - 0.5) > Math.abs(node.x - 0.5) ? "horizontal" : "vertical";
 }
 
-function BoardTileImage({ nodeId, label }: { nodeId: string; label: string }): ReactElement {
-  const assetPath = getTileAssetPath(nodeId);
+export function BoardTileImage({ nodeId, label, className = "", overridePath = null }: { nodeId: string; label: string; className?: string; overridePath?: string | null }): ReactElement {
+  const fallbackPath = getTileAssetPath(nodeId);
   const expectedPath = getExpectedTileAssetPath(nodeId);
-  const [failed, setFailed] = useState(false);
+  const [overrideFailed, setOverrideFailed] = useState(false);
+  const [fallbackFailed, setFallbackFailed] = useState(false);
+  const assetPath = overridePath && !overrideFailed ? overridePath : fallbackPath;
 
   useEffect(() => {
-    setFailed(false);
-  }, [assetPath, nodeId]);
+    setOverrideFailed(false);
+    setFallbackFailed(false);
+  }, [overridePath, nodeId]);
 
-  if (!assetPath || failed) {
+  if (!assetPath || fallbackFailed) {
     if (typeof console !== "undefined") {
       console.warn(`[Ashen Reach] Missing board tile art for ${nodeId}. Expected ${assetPath ?? expectedPath}`);
     }
 
     return (
-      <span className="talisman-board-missing-art" data-testid={`missing-tile-art-${nodeId}`}>
+      <span className={`talisman-board-missing-art ${className}`.trim()} data-testid={`missing-tile-art-${nodeId}`}>
         <strong>Missing tile art</strong>
         <small>{nodeId}</small>
         <small>{assetPath ?? expectedPath}</small>
@@ -122,13 +130,20 @@ function BoardTileImage({ nodeId, label }: { nodeId: string; label: string }): R
 
   return (
     <img
-      className="talisman-board-tile-art"
+      className={`talisman-board-tile-art ${className}`.trim()}
       src={assetPath}
       alt=""
       aria-hidden="true"
       loading="eager"
       draggable={false}
-      onError={() => setFailed(true)}
+      onError={() => {
+        if (overridePath && !overrideFailed) {
+          console.warn(`[Ashen Reach] Missing scenario art for ${nodeId}. Falling back to ${fallbackPath ?? expectedPath}`);
+          setOverrideFailed(true);
+        } else {
+          setFallbackFailed(true);
+        }
+      }}
       data-testid={`tile-art-${nodeId}`}
       title={label}
     />
@@ -147,9 +162,18 @@ export function TalismanBoardSurface({
   movingSeatIds,
   movementAnimations = [],
   nemesisSectorIds,
+  centerTileArtPath = null,
+  centerConfrontationState = "locked",
   onSelectNode,
   debugEnabled = false
 }: TalismanBoardSurfaceProps): ReactElement {
+  const ringTransitions = getUndirectedBoardRingTransitions();
+  const transitionSectorIds = new Set(ringTransitions.flatMap((transition) => [transition.sourceSectorId, transition.destinationSectorId]));
+  const highlightedTransitionRoutes = ringTransitions.filter((transition) =>
+    [transition.sourceSectorId, transition.destinationSectorId].some(
+      (sectorId) => sectorId === activeNodeId || sectorId === selectedNodeId || legalTargetIds?.has(sectorId)
+    )
+  );
   return (
     <div
       className="talisman-board-surface"
@@ -162,6 +186,27 @@ export function TalismanBoardSurface({
       }}
     >
       <div className="talisman-board-backdrop" />
+
+      <svg className="talisman-board-transition-routes" aria-label="Public cross-ring routes">
+        {highlightedTransitionRoutes.map((transition) => {
+          const source = getBoardTileRouteAnchor(RIFTFALL_BOARD_NODE_INDEX.get(transition.sourceSectorId)!);
+          const destination = getBoardTileRouteAnchor(RIFTFALL_BOARD_NODE_INDEX.get(transition.destinationSectorId)!);
+          const locked = transition.requiredNotes.length > 0;
+          return (
+            <line
+              key={transition.edgeId}
+              data-testid={`ring-transition-${transition.edgeId}`}
+              data-source-sector-id={transition.sourceSectorId}
+              data-destination-sector-id={transition.destinationSectorId}
+              className={`talisman-board-transition-route${locked ? " talisman-board-transition-route-gated" : ""}`}
+              x1={source.x * imageRect.width}
+              y1={source.y * imageRect.height}
+              x2={destination.x * imageRect.width}
+              y2={destination.y * imageRect.height}
+            />
+          );
+        })}
+      </svg>
 
       {RIFTFALL_BOARD_NODES.map((node) => {
         const side = getTileSide(node);
@@ -239,10 +284,21 @@ export function TalismanBoardSurface({
             aria-pressed={isSelected}
             onClick={() => onSelectNode?.(node.id)}
           >
-            <BoardTileImage nodeId={node.id} label={node.label} />
+            <BoardTileImage nodeId={node.id} label={node.label} overridePath={node.id === "center_cinder_gate" ? centerTileArtPath : null} />
             <div className="talisman-board-tile-scrim" />
             <span className="talisman-board-tile-region">{node.ring === "center" ? "Final" : tileLabelByRing[node.ring]}</span>
             <span className="talisman-board-tile-label">{node.label}</span>
+            {isActive && <span className="talisman-board-location-badge" aria-label="Current operative location">Current</span>}
+            {node.id === "center_cinder_gate" ? (
+              <span className="talisman-board-mission-badge" data-testid="final-confrontation-marker">
+                Final Confrontation · {centerConfrontationState}
+              </span>
+            ) : null}
+            {transitionSectorIds.has(node.id) ? (
+              <span className="talisman-board-transition-badge" data-testid={`ring-transition-marker-${node.id}`}>
+                Route
+              </span>
+            ) : null}
             {threatIcons.length > 0 && (
               <span className="talisman-board-tile-icons" aria-hidden="true">
                 {threatIcons.slice(0, 3).map((icon, index) => (
@@ -261,20 +317,20 @@ export function TalismanBoardSurface({
             )}
             {playerMarkers.length > 0 && (
               <span className="talisman-board-tile-players" aria-label={`${playerMarkers.length} operative${playerMarkers.length === 1 ? "" : "s"} on ${node.label}`}>
-                {playerMarkers.slice(0, 3).map((marker) => (
+                {playerMarkers.map((marker) => (
                   <span
                     key={marker.seatId}
                     data-testid={`token-${marker.seatId}`}
                     data-sector-id={node.id}
                     data-moving={movingSeatIds?.has(marker.seatId) ? "true" : "false"}
-                    className={`talisman-board-player-marker${movingSeatIds?.has(marker.seatId) ? " talisman-board-player-marker-moving" : ""}`}
+                    className={`talisman-board-player-marker${marker.active ? " talisman-board-player-marker-active" : ""}${movingSeatIds?.has(marker.seatId) ? " talisman-board-player-marker-moving" : ""}`}
+                    aria-label={`${marker.label}${marker.active ? ", active operative" : ""}`}
                     title={marker.label}
                     style={{ ["--token-fill" as string]: marker.color }}
                   >
                     {marker.label.slice(0, 1).toUpperCase()}
                   </span>
                 ))}
-                {playerMarkers.length > 3 && <span className="talisman-board-player-overflow">+{playerMarkers.length - 3}</span>}
               </span>
             )}
             <span className="talisman-board-tile-status" aria-hidden="true">

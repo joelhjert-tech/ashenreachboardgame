@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { motionClassNames, motionCssVariables, motionDurations, motionEasings } from "../motionTokens.js";
+import { hostPresentationTimings, motionClassNames, motionCssVariables, motionDurations, motionEasings } from "../motionTokens.js";
 
 const repoRoot = process.cwd();
 const styles = readFileSync(join(repoRoot, "src/client/styles.css"), "utf8");
@@ -16,6 +16,17 @@ describe("motion tokens", () => {
       cinematic: "520ms",
       heavy: "760ms"
     });
+  });
+
+  it("keeps deliberate TV presentation timings centralized and readable", () => {
+    expect(hostPresentationTimings).toMatchObject({
+      cardFlipMs: 840,
+      diceRollMs: 1200,
+      movementSegmentMs: 1050,
+      movementCrossRingMs: 1450,
+      movementArrivalMs: 900
+    });
+    expect(hostPresentationTimings.movementCrossRingMs).toBeGreaterThan(hostPresentationTimings.movementSegmentMs);
   });
 
   it("exports the shared easing tokens", () => {

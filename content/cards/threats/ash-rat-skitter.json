@@ -3,7 +3,7 @@
   "type": "threat",
   "cardType": "hazard",
   "title": "Ash-Rat Skitter",
-  "text": "A rib-high rush of ash rats pours across the lane, chewing seals, straps, and exposed cabling.",
+  "text": "A rib-high rush of ash rats pours across the lane. On a failure, lose up to 1 Salvage.",
   "flavor": "Small teeth make a large sound in the dark.",
   "severity": 1,
   "stat": "grit",
@@ -13,7 +13,7 @@
     "text": "You scattered the ash rats and marked their nest as a future salvage pocket."
   },
   "failEffect": {
-    "type": "gain_heat",
+    "type": "lose_salvage",
     "amount": 1
   },
   "enemyFamily": "vermin",
@@ -22,7 +22,7 @@
   "rarity": "common",
   "tempo": "push",
   "resourceTags": [
-    "heat",
+    "salvage",
     "loot",
     "scenario"
   ]

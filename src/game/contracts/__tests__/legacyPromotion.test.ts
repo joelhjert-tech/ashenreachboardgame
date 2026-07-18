@@ -24,14 +24,15 @@ function effectContainsHeat(effect: EncounterEffect): boolean {
     return effect.effects.some(effectContainsHeat);
   }
 
-  return effect.type === "gain_heat" || effect.type === "gain_heat_all" || effect.type === "lose_heat";
+  const type = effect.type as string;
+  return type === "gain_heat" || type === "gain_heat_all" || type === "lose_heat";
 }
 
 describe("legacy contract promotion", () => {
   const contracts = loadContracts();
 
-  it("promotes exactly the selected legacy contract candidates under the current cap", () => {
-    expect(contracts.size).toBe(30);
+  it("keeps the promoted legacy candidates in the current 36-card contract catalog", () => {
+    expect(contracts.size).toBe(36);
 
     promotedContractIds.forEach((contractId) => {
       expect(contracts.has(contractId)).toBe(true);

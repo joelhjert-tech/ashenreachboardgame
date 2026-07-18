@@ -62,4 +62,5 @@ describe("result delta formatting", () => {
     expect(formatResultDelta(privateDelta).detail).toBe("Private trigger: steal the relic.");
     expect(publicResultDeltas([privateDelta])).toEqual([]);
   });
+
 });

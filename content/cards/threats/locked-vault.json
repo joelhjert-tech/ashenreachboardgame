@@ -3,7 +3,7 @@
   "type": "threat",
   "cardType": "hazard",
   "title": "Locked Vault",
-  "text": "The vault defends its contents with old law, newer teeth, and a lock that dislikes being observed.",
+  "text": "The vault ruins part of your stores before sealing. Lose up to 1 Salvage.",
   "flavor": "Every safe wants to be a shrine.",
   "severity": 2,
   "stat": "forge",
@@ -13,7 +13,7 @@
     "text": "You opened the vault long enough to copy its route cipher."
   },
   "failEffect": {
-    "type": "take_wound",
+    "type": "lose_salvage",
     "amount": 1
   },
   "enemyFamily": "bureaucracy",
@@ -24,6 +24,6 @@
   "tempo": "neutral",
   "resourceTags": [
     "loot",
-    "wound"
+    "salvage"
   ]
 }

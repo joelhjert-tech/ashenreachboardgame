@@ -67,6 +67,15 @@ const uiAssetPaths = [
   "/assets/riftfall/ui/dice_roll_combat@2s.lottie.json"
 ];
 
+const battleCardBackPaths = {
+  operative: "/assets/cards/backs/card_back_character.png",
+  threatRed: "/assets/cards/backs/card_back_threat_red.png",
+  threatBlue: "/assets/cards/backs/card_back_threat_blue.png",
+  threatYellow: "/assets/cards/backs/card_back_threat_yellow.png",
+  contract: "/assets/cards/backs/card_back_contract.png",
+  artifact: "/assets/cards/backs/card_back_artifact_v2.png"
+} as const;
+
 export function getScenarioFramePath(): string {
   return "/assets/riftfall/ui/ui_scenario_frame.png";
 }
@@ -81,6 +90,40 @@ export function getCardFallbackArtPath(cardType: CardImageType): string {
 
 export function getCardArtPath(cardType: CardImageType, cardId: string): string {
   return getRuntimeCardArtPath(cardType, cardId) ?? getCardFallbackArtPath(cardType);
+}
+
+export function getOperativeBattleCardBackPath(): string {
+  return battleCardBackPaths.operative;
+}
+
+export function getEncounterBattleCardBackPath(cardType: CardImageType, cardId: string): string {
+  if (cardType === "threat") {
+    const artPath = getCardArtPath(cardType, cardId);
+
+    if (artPath.includes("/threats/blue/")) {
+      return battleCardBackPaths.threatBlue;
+    }
+
+    if (artPath.includes("/threats/yellow/")) {
+      return battleCardBackPaths.threatYellow;
+    }
+
+    return battleCardBackPaths.threatRed;
+  }
+
+  if (cardType === "anomaly") {
+    return battleCardBackPaths.threatBlue;
+  }
+
+  if (cardType === "contract") {
+    return battleCardBackPaths.contract;
+  }
+
+  if (cardType === "artifact") {
+    return battleCardBackPaths.artifact;
+  }
+
+  return battleCardBackPaths.operative;
 }
 
 type GearArtInput = string | { id: string; tier?: GearTier | null };
@@ -150,6 +193,7 @@ export function getRuntimeAssetPaths(): string[] {
     ...Object.values(characterPortraitById),
     ...Object.values(nemesisPortraitById),
     ...Object.values(statFrameByStat),
+    ...Object.values(battleCardBackPaths),
     ...uiAssetPaths
   ].filter((value, index, paths) => paths.indexOf(value) === index);
 }

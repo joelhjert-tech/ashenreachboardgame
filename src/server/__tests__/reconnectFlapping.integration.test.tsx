@@ -68,11 +68,14 @@ function createState(): GameState {
     winnerSeatId: null,
     activeScenarioId: "scenario_broken_seal",
     scenarioProgress: {},
+    scenarioPreparation: { resources: {}, completedObjectiveIds: [], processedSourceEventIds: [] },
+    scenarioConfrontation: { active: false, confrontationId: null, progress: {}, stage: null, processedSourceEventIds: [] },
+    scenarioResult: { status: "unresolved", victoryConditionId: null, sourceType: null, sourceId: null, winningSeatId: null, shared: null, achievedAtSequence: null },
     phase: "navigation",
     resolutionSource: null,
     activeSeatIndex: 0,
     turnOrder: [seatId],
-    heatThreshold: 6,
+    reflectionPressureThreshold: 6,
     woundThreshold: 3,
     sequence: 0,
     escalationLevel: 0,
@@ -276,5 +279,7 @@ describe("reconnect flapping regression", () => {
     expect(statuses.length).toBe(settledStatusCount);
     expect(statuses).toContain("closed");
     expect(statuses.at(-1)).toBe("open");
+    expect(harness.roomServer.getState().reflectionPressureThreshold).toBe(6);
+    expect(JSON.stringify(patches)).not.toMatch(/heatThreshold|reflectionPressureThreshold/);
   }, 15000);
 });

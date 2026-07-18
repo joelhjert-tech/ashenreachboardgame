@@ -8,6 +8,5 @@
     "text": "Black Lantern broker: a contract lead or rivalry bargain is banked."
   },
   "useLimit": "oncePerRound",
-  "loyalty": 2,
-  "lossCondition": "heat"
+  "loyalty": 2
 }

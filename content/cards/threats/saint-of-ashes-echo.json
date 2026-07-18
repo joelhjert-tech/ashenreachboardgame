@@ -16,10 +16,6 @@
     "type": "sequence",
     "effects": [
       {
-        "type": "gain_heat",
-        "amount": 2
-      },
-      {
         "type": "gain_scar",
         "scarId": "scar-wound-1"
       }
@@ -31,7 +27,6 @@
   "rarity": "uncommon",
   "tempo": "push",
   "resourceTags": [
-    "heat",
     "loot",
     "scar"
   ]

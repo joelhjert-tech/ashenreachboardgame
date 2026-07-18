@@ -24,6 +24,7 @@ function createShopState(options: {
   sectorId?: string;
   salvage?: number;
   heldGear?: GearItem[];
+  equippedGearId?: string;
   currentEncounterId?: string;
   interactionMode?: "co-op" | "rivalry" | "ruthless";
 } = {}): GameState {
@@ -59,7 +60,11 @@ function createShopState(options: {
             currentSpaceId: sectorId,
             salvage: options.salvage ?? 1,
             heldGear: options.heldGear ?? [],
-            equippedGear: { weapon: null, armor: null, utility: null }
+            equippedGear: {
+              weapon: options.heldGear?.find((item) => item.id === options.equippedGearId && item.slot === "weapon")?.id ?? null,
+              armor: options.heldGear?.find((item) => item.id === options.equippedGearId && item.slot === "armor")?.id ?? null,
+              utility: options.heldGear?.find((item) => item.id === options.equippedGearId && item.slot === "utility")?.id ?? null
+            }
           }
         }
       : player
@@ -98,26 +103,37 @@ function requireGear(id: string): GearItem {
 }
 
 describe("Phase 2B shop sell flow", () => {
-  it("sells a held item at a shop, removes it from inventory, and adds salvage by tier fallback", () => {
-    const veilHook = requireGear("veil-hook");
-    const { server, client, sent } = createShopServer({ heldGear: [veilHook], salvage: 1 });
+  it("removes an equipped permanent passive and its modifier when sold", () => {
+    const vest = requireGear("rivetplate-vest");
+    const { server, client } = createShopServer({ heldGear: [vest], equippedGearId: vest.id, salvage: 1 });
+
+    server.handleIntent(client, { type: "SHOP_SELL_REQUESTED", seatId: "seat-1", gearId: vest.id });
+
+    const character = server.getState().players[0]!.character;
+    expect(character.heldGear).toEqual([]);
+    expect(character.equippedGear.armor).toBeNull();
+  });
+
+  it("sells normal Equipment at a shop, removes it from inventory, and adds salvage by tier fallback", () => {
+    const gear = requireGear("black-route-fuse");
+    const { server, client, sent } = createShopServer({ heldGear: [gear], salvage: 1 });
 
     server.handleIntent(client, {
       type: "SHOP_SELL_REQUESTED",
       seatId: "seat-1",
-      gearId: veilHook.id
+      gearId: gear.id
     });
 
     const player = server.getState().players[0];
 
     expect(getRejectedReason(sent)).toBeUndefined();
-    expect(getShopGearSellValue(veilHook)).toBe(1);
+    expect(getShopGearSellValue(gear)).toBe(1);
     expect(player?.character.salvage).toBe(2);
     expect(player?.character.heldGear).toEqual([]);
-    expect(server.getState().lastOutcomeSummary?.summary).toContain("Sold Veil Hook for 1 Salvage");
+    expect(server.getState().lastOutcomeSummary?.summary).toContain(`Sold ${gear.name} for 1 Salvage`);
     expect(server.getState().eventLog.at(-1)).toMatchObject({
       type: "SHOP_SELL_RESOLVED",
-      gearId: veilHook.id,
+      gearId: gear.id,
       salvageDelta: 1
     });
   });
@@ -194,6 +210,14 @@ describe("Phase 2B shop sell flow", () => {
     });
     expect(getRejectedReason(contractObject.sent)).toBe(SHOP_FAILURE_REASONS.itemNotSellable);
 
+    const artifact = createShopServer({ heldGear: [veilHook] });
+    artifact.server.handleIntent(artifact.client, {
+      type: "SHOP_SELL_REQUESTED",
+      seatId: "seat-1",
+      gearId: veilHook.id
+    });
+    expect(getRejectedReason(artifact.sent)).toBe(SHOP_FAILURE_REASONS.itemNotSellable);
+
     const qa = createShopServer({ heldGear: [qaGear] });
     qa.server.handleIntent(qa.client, {
       type: "SHOP_SELL_REQUESTED",
@@ -204,9 +228,10 @@ describe("Phase 2B shop sell flow", () => {
   }, 10_000);
 
   it("projects sellable inventory and disabled sell reasons for the owning phone", () => {
+    const normalGear = requireGear("black-route-fuse");
     const veilHook = requireGear("veil-hook");
     const oathChainLedger = requireGear("oath-chain-ledger");
-    const state = createShopState({ heldGear: [veilHook, oathChainLedger] });
+    const state = createShopState({ heldGear: [normalGear, veilHook, oathChainLedger] });
     const phoneProjection = createPhoneProjection(state, "seat-1") as {
       privateRivalry?: unknown;
       shopEncounter: {
@@ -217,7 +242,8 @@ describe("Phase 2B shop sell flow", () => {
     expect(phoneProjection.privateRivalry).toBeTruthy();
     expect(phoneProjection.shopEncounter?.sellInventory).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ gearId: "veil-hook", sellValue: 1, sellable: true }),
+        expect.objectContaining({ gearId: normalGear.id, sellValue: 1, sellable: true }),
+        expect.objectContaining({ gearId: "veil-hook", sellable: false, disabledReason: SHOP_FAILURE_REASONS.itemNotSellable }),
         expect.objectContaining({ gearId: "oath-chain-ledger", sellable: false, disabledReason: SHOP_FAILURE_REASONS.itemNotSellable })
       ])
     );

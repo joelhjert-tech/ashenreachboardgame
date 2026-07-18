@@ -8,7 +8,7 @@
   "instability": 1,
   "resolutionSummary": "Timed the inversion and harvested a clean bell pattern.",
   "resolveEffect": {
-    "type": "lose_heat",
+    "type": "gain_salvage",
     "amount": 1
   }
 }

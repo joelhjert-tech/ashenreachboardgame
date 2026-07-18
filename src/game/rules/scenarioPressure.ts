@@ -74,7 +74,7 @@ function getScenarioStatus(state: GameState): ScenarioStatus {
 function getScenarioPressureCurrent(state: GameState, scenario: ScenarioDefinition): number {
   switch (scenario.id) {
     case "scenario_broken_seal":
-      return state.scenarioProgress.sealTokens ?? getBrokenSealTokenLimit(state.sessionMode);
+      return state.scenarioPreparation.resources.sealIntegrity ?? getBrokenSealTokenLimit(state.sessionMode);
     case "scenario_throne_of_ash":
       return state.scenarioProgress.crownHunger ?? 0;
     case "scenario_mirror_of_false_heroes":
@@ -143,7 +143,9 @@ export function buildScenarioPressureState(state: GameState, pressureSummary: st
 
   const scenarioMax = getScenarioPressureMax(state, scenario);
   const collapseMax = getEscalationCollapseLevel(state.sessionMode);
-  const objectiveCurrent = state.scenarioProgress[scenario.winConditionKey] ?? 0;
+  const objectiveCurrent = scenario.id === "scenario_broken_seal"
+    ? state.scenarioConfrontation.progress.restorationMarks ?? 0
+    : state.scenarioProgress[scenario.winConditionKey] ?? 0;
   const objectiveRequired = scenario.victoryThreshold;
 
   return {

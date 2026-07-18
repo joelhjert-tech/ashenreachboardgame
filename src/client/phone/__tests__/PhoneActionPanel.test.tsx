@@ -1,22 +1,10 @@
 // @vitest-environment jsdom
 
 import "@testing-library/jest-dom/vitest";
-import {
-  act,
-  cleanup,
-  fireEvent,
-  render,
-  screen,
-  waitFor,
-  within,
-} from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { PhoneActionPanel } from "../PhoneActionPanel.js";
-import type {
-  CharacterCatalogEntry,
-  ClientIntent,
-  PhonePatchPayload,
-} from "../../shared/types.js";
+import type { CharacterCatalogEntry, ClientIntent, PhonePatchPayload } from "../../shared/types.js";
 
 const characters: CharacterCatalogEntry[] = [
   {
@@ -27,19 +15,16 @@ const characters: CharacterCatalogEntry[] = [
     status: "active",
     stats: { command: 3, grit: 2, signal: 1, guile: 2, forge: 1 },
     trophies: 0,
-    heat: 0,
     wounds: 0,
     scars: [],
     activeContract: null,
     heldGear: [],
     equippedGear: { weapon: null, armor: null, utility: null },
-    abilities: [],
-  },
+    abilities: []
+  }
 ];
 
-function createPatch(
-  overrides: Partial<PhonePatchPayload> = {},
-): PhonePatchPayload {
+function createPatch(overrides: Partial<PhonePatchPayload> = {}): PhonePatchPayload {
   const patch: PhonePatchPayload = {
     phase: "action",
     status: "active",
@@ -50,8 +35,7 @@ function createPatch(
       name: "The Broken Seal",
       theme: "The last ward around the Cinder Gate is splitting.",
       difficulty: "easy-medium",
-      pressureSummary:
-        "6 seals remain. Each turn start, 1-2 weakens the ward and 3-4 heats the active operative.",
+      pressureSummary: "6 seals remain. Each turn start, 1-2 weakens the ward and 3-4 heats the active operative.",
       confrontationTitle: "Reseal the Prison",
       progressLabel: "sealRestorationMarks",
       progress: 0,
@@ -59,31 +43,17 @@ function createPatch(
       setup: ["Place 6 Seal tokens on the scenario sheet."],
       specialRules: ["At the start of each operative turn, roll 1 die."],
       confrontationSteps: ["Test Grit 10 to hold the breached ward shut."],
-      victoryText: "Pass at least 2 of the 3 confrontation tests to win.",
+      victoryText: "Pass at least 2 of the 3 confrontation tests to win."
     },
     scenarioTelemetry: [
       { label: "Seal Tokens", value: "6" },
-      { label: "Pressure Roll", value: "1-2 weaken | 3-4 heat surge" },
+      { label: "Pressure Roll", value: "1-2 weaken | 3-4 heat surge" }
     ],
     scenarioProgress: {},
     activeSeatIndex: 0,
     seats: [
-      {
-        seatId: "seat-1",
-        characterId: "void-marshal",
-        displayName: "Lane",
-        connected: true,
-        ready: true,
-        kicked: false,
-      },
-      {
-        seatId: "seat-2",
-        characterId: "signal-witch",
-        displayName: "Mira",
-        connected: true,
-        ready: true,
-        kicked: false,
-      },
+      { seatId: "seat-1", characterId: "void-marshal", displayName: "Lane", connected: true, ready: true, kicked: false },
+      { seatId: "seat-2", characterId: "signal-witch", displayName: "Mira", connected: true, ready: true, kicked: false }
     ],
     turnOrder: ["seat-1", "seat-2"],
     sectors: [
@@ -93,14 +63,8 @@ function createPatch(
         regionTier: "borderlight",
         neighbors: ["glassmere-spindle"],
         danger: 2,
-        encounterDecks: {
-          threat: [],
-          anomaly: [],
-          contract: [],
-          artifact: [],
-          escalation: [],
-        },
-      },
+        encounterDecks: { threat: [], anomaly: [], contract: [], artifact: [], escalation: [] }
+      }
     ],
     players: [
       {
@@ -114,13 +78,12 @@ function createPatch(
           activeContract: null,
           stats: { command: 3, grit: 2, signal: 1, guile: 2, forge: 1 },
           trophies: 0,
-          heat: 0,
           wounds: 0,
           scars: [],
           heldGearCount: 0,
-          equippedGear: { weapon: null, armor: null, utility: null },
-        },
-      },
+          equippedGear: { weapon: null, armor: null, utility: null }
+        }
+      }
     ],
     escalationLevel: 0,
     escalationThreshold: 6,
@@ -133,7 +96,7 @@ function createPatch(
       cardType: "hazard",
       flavor: "A ringing tide skates over the broken rails.",
       difficulty: 6,
-      stat: "signal",
+      stat: "signal"
     },
     pendingEnemyRoll: null,
     outcomeSummary: null,
@@ -150,27 +113,151 @@ function createPatch(
         status: "active",
         stats: { command: 3, grit: 2, signal: 1, guile: 2, forge: 1 },
         trophies: 0,
-        heat: 0,
         wounds: 0,
         scars: [],
         activeContract: null,
         heldGear: [],
         equippedGear: { weapon: null, armor: null, utility: null },
-        abilities: [],
-      },
+        abilities: []
+      }
     },
-    nemesis: null,
+    nemesis: null
   };
 
   return {
     ...patch,
     ...overrides,
     activeScenario: overrides.activeScenario ?? patch.activeScenario,
-    scenarioProgress: overrides.scenarioProgress ?? patch.scenarioProgress,
+    scenarioProgress: overrides.scenarioProgress ?? patch.scenarioProgress
   };
 }
 
 describe("PhoneActionPanel", () => {
+  it("requires one explicit confirmation for the server-generated Memory Tax choice", () => {
+    const onIntent = vi.fn();
+    const patch = createPatch({
+      phase: "resolution",
+      pendingMemoryTaxChoicePrivate: {
+        choiceId: "memory-tax-choice:failure",
+        choiceVersion: 1,
+        sourceTitle: "Memory Tax Gate",
+        prompt: "Choose what the gate takes",
+        options: [
+          { optionId: "lose-salvage-1", label: "Lose 1 Salvage", detail: "Lose exactly 1 Salvage now." },
+          { optionId: "next-non-battle-test-minus-1", label: "Next non-battle test: -1", detail: "Suffer -1 on your next non-battle test." }
+        ]
+      }
+    });
+    render(<PhoneActionPanel characters={characters} onIntent={onIntent} patch={patch} />);
+    const confirm = screen.getByRole("button", { name: /Confirm memory tax/i });
+    expect(confirm).toBeDisabled();
+    fireEvent.click(screen.getByRole("button", { name: /Lose 1 Salvage/i }));
+    expect(onIntent).not.toHaveBeenCalled();
+    expect(confirm).toBeEnabled();
+    fireEvent.click(confirm);
+    expect(onIntent).toHaveBeenCalledWith({
+      type: "MEMORY_TAX_CHOICE_REQUESTED",
+      seatId: "seat-1",
+      choiceId: "memory-tax-choice:failure",
+      choiceVersion: 1,
+      optionId: "lose-salvage-1"
+    });
+  });
+
+  it("shows only server-generated False Route destinations and submits the immutable choice identity", () => {
+    const onIntent = vi.fn();
+    const patch = createPatch({
+      phase: "resolution",
+      pendingForcedDestinationChoicePrivate: {
+        choiceId: "false-route-choice:failure",
+        sourceTitle: "False-Route Procession",
+        sourceSectorId: "middle_red_march_outpost",
+        candidates: [
+          { sectorId: "middle_anomaly_well", sectorName: "Static Chapel", direction: "clockwise", ring: "middle" },
+          { sectorId: "middle_shard_sprawl", sectorName: "Chain-Maul Yard", direction: "counterclockwise", ring: "middle" }
+        ]
+      }
+    });
+    render(<PhoneActionPanel characters={characters} onIntent={onIntent} patch={patch} />);
+    expect(screen.getAllByText(/Choose the false route/i)).toHaveLength(2);
+    fireEvent.click(screen.getByRole("button", { name: /Clockwise: Static Chapel/i }));
+    expect(onIntent).toHaveBeenCalledWith({
+      type: "FORCED_DESTINATION_SELECTED",
+      seatId: "seat-1",
+      choiceId: "false-route-choice:failure",
+      destinationSectorId: "middle_anomaly_well"
+    });
+    expect(screen.queryByRole("button", { name: /Accept displacement/i })).not.toBeInTheDocument();
+  });
+
+  it("shows only the authoritative forced-displacement acknowledgement", () => {
+    const onIntent = vi.fn();
+    const patch = createPatch({
+      phase: "resolution",
+      pendingDisplacementPrivate: {
+        reactionId: "displacement:route-splice-failure",
+        sourceEventId: "route-splice-failure",
+        sourceTitle: "Route Splice",
+        originSectorId: "middle_red_march_outpost",
+        originSectorName: "Choir Bastion",
+        destinationSectorId: "middle_anomaly_well",
+        destinationSectorName: "Static Chapel",
+        prompt: "Accept the authoritative forced displacement.",
+        riftAnchorSpike: null
+      }
+    });
+    render(<PhoneActionPanel characters={characters} onIntent={onIntent} patch={patch} />);
+    fireEvent.click(screen.getByRole("button", { name: /^Accept displacement/ }));
+    expect(screen.getByText(/Choir Bastion → Static Chapel/)).toBeInTheDocument();
+    expect(screen.queryByText(/Rift Anchor Spike/i)).not.toBeInTheDocument();
+    expect(onIntent).toHaveBeenCalledWith({ type: "FORCED_DISPLACEMENT_ACCEPTED", seatId: "seat-1", reactionId: "displacement:route-splice-failure" });
+  });
+
+  it("offers the owner-authoritative Rift Anchor Spike reaction and sends no mechanical values", () => {
+    const onIntent = vi.fn();
+    const patch = createPatch({
+      phase: "resolution",
+      pendingDisplacementPrivate: {
+        reactionId: "displacement:route-splice-failure",
+        sourceEventId: "route-splice-failure",
+        sourceTitle: "Route Splice",
+        originSectorId: "middle_red_march_outpost",
+        originSectorName: "Choir Bastion",
+        destinationSectorId: "middle_anomaly_well",
+        destinationSectorName: "Static Chapel",
+        prompt: "Accept the authoritative forced displacement.",
+        riftAnchorSpike: { instanceId: "spike-1", currentCharges: 2, maxCharges: 2, chargeCost: 1, enabled: true }
+      }
+    });
+    render(<PhoneActionPanel characters={characters} onIntent={onIntent} patch={patch} />);
+    fireEvent.click(screen.getByRole("button", { name: /Refuse displacement.*1 charge/i }));
+    expect(screen.getByText(/Spend 1 charge to remain in Choir Bastion/i)).toBeInTheDocument();
+    expect(onIntent).toHaveBeenCalledWith({
+      type: "USE_GEAR", seatId: "seat-1", gearId: "rift-anchor-spike", instanceId: "spike-1",
+      forcedDisplacementReactionId: "displacement:route-splice-failure", forcedDisplacementSourceEventId: "route-splice-failure"
+    });
+  });
+
+  it("shows the owner-only authoritative encounter payment action", () => {
+    const onIntent = vi.fn();
+    const patch = createPatch({
+      phase: "resolution",
+      pendingEncounterDecisionPrivate: {
+        decisionId: "gate-loss:collectors-levy",
+        decisionVersion: 4,
+        sourceTitle: "Gate-Tax Collectors",
+        prompt: "The Collectors demand 1 Salvage after your defeat.",
+        mode: "required",
+        salvageCost: 1,
+        currentSalvage: 2,
+        options: [{ optionId: "pay-levy", label: "Pay 1 Salvage", enabled: true }]
+      }
+    });
+    render(<PhoneActionPanel characters={characters} onIntent={onIntent} patch={patch} />);
+    fireEvent.click(screen.getByRole("button", { name: /^Pay 1 Salvage/ }));
+    expect(screen.getByText(/Current Salvage: 2/)).toBeInTheDocument();
+    expect(onIntent).toHaveBeenCalledWith({ type: "ENCOUNTER_DECISION_REQUESTED", seatId: "seat-1", decisionId: "gate-loss:collectors-levy", decisionVersion: 4, optionId: "pay-levy" });
+  });
   afterEach(() => {
     cleanup();
   });
@@ -195,22 +282,18 @@ describe("PhoneActionPanel", () => {
               id: "cinder-monk",
               name: "Mira",
               archetype: "Cinder Monk",
-              currentSpaceId: "center_cinder_gate",
-            },
-          },
+              currentSpaceId: "center_cinder_gate"
+            }
+          }
         })}
-      />,
+      />
     );
 
     const button = screen.getByRole("button", { name: /prepare cinder oath/i });
     expect(button).toBeEnabled();
     expect(button).toHaveTextContent(/1 available/i);
     fireEvent.click(button);
-    expect(onIntent).toHaveBeenCalledWith({
-      type: "USE_CHARACTER_ABILITY",
-      seatId: "seat-1",
-      abilityId: "cinder-oath",
-    });
+    expect(onIntent).toHaveBeenCalledWith({ type: "USE_CHARACTER_ABILITY", seatId: "seat-1", abilityId: "cinder-oath" });
   });
 
   it("keeps Cinder Oath disabled without a Vow Note and out of non-confrontation actions", () => {
@@ -218,7 +301,7 @@ describe("PhoneActionPanel", () => {
       ...createPatch().self!.character,
       id: "cinder-monk",
       name: "Mira",
-      archetype: "Cinder Monk",
+      archetype: "Cinder Monk"
     };
     const { rerender } = render(
       <PhoneActionPanel
@@ -227,24 +310,13 @@ describe("PhoneActionPanel", () => {
         selectedTurnTab="action"
         patch={createPatch({
           encounter: null,
-          self: {
-            seatId: "seat-1",
-            sectorId: "center_cinder_gate",
-            hand: [],
-            notes: [],
-            noteResources: {},
-            character: { ...mira, currentSpaceId: "center_cinder_gate" },
-          },
+          self: { seatId: "seat-1", sectorId: "center_cinder_gate", hand: [], notes: [], noteResources: {}, character: { ...mira, currentSpaceId: "center_cinder_gate" } }
         })}
-      />,
+      />
     );
 
-    expect(
-      screen.getByRole("button", { name: /prepare cinder oath/i }),
-    ).toBeDisabled();
-    expect(
-      screen.getByText(/requires 1 vow note \(0 available\)/i),
-    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /prepare cinder oath/i })).toBeDisabled();
+    expect(screen.getByText(/requires 1 vow note \(0 available\)/i)).toBeInTheDocument();
 
     rerender(
       <PhoneActionPanel
@@ -253,21 +325,12 @@ describe("PhoneActionPanel", () => {
         selectedTurnTab="action"
         patch={createPatch({
           encounter: null,
-          self: {
-            seatId: "seat-1",
-            sectorId: "ashwake-crossing",
-            hand: [],
-            notes: [],
-            noteResources: { vow: 1 },
-            character: { ...mira, currentSpaceId: "ashwake-crossing" },
-          },
+          self: { seatId: "seat-1", sectorId: "ashwake-crossing", hand: [], notes: [], noteResources: { vow: 1 }, character: { ...mira, currentSpaceId: "ashwake-crossing" } }
         })}
-      />,
+      />
     );
 
-    expect(
-      screen.queryByRole("button", { name: /prepare cinder oath/i }),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /prepare cinder oath/i })).not.toBeInTheDocument();
   });
 
   it("disables generic item/follower use shortcuts from server-confirmed use state", () => {
@@ -286,8 +349,7 @@ describe("PhoneActionPanel", () => {
               usedThisRound: true,
               remainingUses: 0,
               maxUses: 1,
-              disabledReason:
-                "Red March Warbell has already been used this turn.",
+              disabledReason: "Red March Warbell has already been used this turn."
             },
             {
               source: "follower",
@@ -296,9 +358,8 @@ describe("PhoneActionPanel", () => {
               usedThisRound: true,
               remainingUses: 0,
               maxUses: 1,
-              disabledReason:
-                "Choir Defector has already been used this round.",
-            },
+              disabledReason: "Choir Defector has already been used this round."
+            }
           ],
           self: {
             seatId: "seat-1",
@@ -313,7 +374,6 @@ describe("PhoneActionPanel", () => {
               status: "active",
               stats: { command: 3, grit: 2, signal: 1, guile: 2, forge: 1 },
               trophies: 0,
-              heat: 1,
               wounds: 0,
               scars: [],
               activeContract: null,
@@ -325,44 +385,30 @@ describe("PhoneActionPanel", () => {
                   category: "active",
                   statBonus: { stat: "grit", amount: 1 },
                   activeText: "Exhaust to add +2 to combat, then gain 1 heat.",
-                  useLimit: "oncePerTurn",
-                },
+                  useLimit: "oncePerTurn"
+                }
               ],
-              equippedGear: {
-                weapon: "red-march-warbell",
-                armor: null,
-                utility: null,
-              },
+              equippedGear: { weapon: "red-march-warbell", armor: null, utility: null },
               followers: [
                 {
                   id: "choir-defector",
                   name: "Choir Defector",
                   role: "ritualist",
                   text: "Once per round, reduce an anomaly instability or signal difficulty by 1 before rolling.",
-                  useLimit: "oncePerRound",
-                },
+                  useLimit: "oncePerRound"
+                }
               ],
-              abilities: [],
-            },
-          },
+              abilities: []
+            }
+          }
         })}
-      />,
+      />
     );
 
-    expect(
-      screen.getByRole("button", { name: /use red march warbell/i }),
-    ).toBeDisabled();
-    expect(
-      screen.getAllByText(/red march warbell has already been used this turn/i)
-        .length,
-    ).toBeGreaterThan(0);
-    expect(
-      screen.getByRole("button", { name: /use choir defector/i }),
-    ).toBeDisabled();
-    expect(
-      screen.getAllByText(/choir defector has already been used this round/i)
-        .length,
-    ).toBeGreaterThan(0);
+    expect(screen.getByRole("button", { name: /use red march warbell/i })).toBeDisabled();
+    expect(screen.getAllByText(/red march warbell has already been used this turn/i).length).toBeGreaterThan(0);
+    expect(screen.getByRole("button", { name: /use choir defector/i })).toBeDisabled();
+    expect(screen.getAllByText(/choir defector has already been used this round/i).length).toBeGreaterThan(0);
   });
 
   it("does not show a misleading Use action for passive-only followers", () => {
@@ -386,7 +432,6 @@ describe("PhoneActionPanel", () => {
               status: "active",
               stats: { command: 3, grit: 2, signal: 1, guile: 2, forge: 1 },
               trophies: 0,
-              heat: 1,
               wounds: 0,
               scars: [],
               activeContract: null,
@@ -399,19 +444,17 @@ describe("PhoneActionPanel", () => {
                   role: "medic",
                   text: "Passive: patch wounds after the dust settles.",
                   loyalty: 2,
-                  lossCondition: "choice",
-                },
+                  lossCondition: "choice"
+                }
               ],
-              abilities: [],
-            },
-          },
+              abilities: []
+            }
+          }
         })}
-      />,
+      />
     );
 
-    expect(
-      screen.queryByRole("button", { name: /use grave medic korr/i }),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /use grave medic korr/i })).not.toBeInTheDocument();
   });
 
   it("hides action buttons when this seat is not active", () => {
@@ -420,25 +463,15 @@ describe("PhoneActionPanel", () => {
         characters={characters}
         onIntent={vi.fn()}
         patch={createPatch({ activeSeatIndex: 1 })}
-      />,
+      />
     );
 
     expect(screen.getByText(/waiting for another seat/i)).toBeInTheDocument();
-    expect(screen.getByTestId("phone-current-prompt")).toHaveTextContent(
-      /waiting for mira/i,
-    );
-    expect(screen.getByTestId("phone-current-prompt")).toHaveTextContent(
-      /watch the tv command table/i,
-    );
-    expect(screen.getByTestId("phone-useful-now")).toHaveTextContent(
-      /watch the tv/i,
-    );
-    expect(
-      screen.queryByRole("button", { name: /attempt signal check/i }),
-    ).not.toBeInTheDocument();
-    expect(
-      screen.queryByRole("button", { name: /enter combat/i }),
-    ).not.toBeInTheDocument();
+    expect(screen.getByTestId("phone-current-prompt")).toHaveTextContent(/waiting for mira/i);
+    expect(screen.getByTestId("phone-current-prompt")).toHaveTextContent(/watch the tv command table/i);
+    expect(screen.getByTestId("phone-useful-now")).toHaveTextContent(/watch the tv/i);
+    expect(screen.queryByRole("button", { name: /attempt signal check/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /enter combat/i })).not.toBeInTheDocument();
   });
 
   it("shows check and not combat when an active seat faces a hazard", () => {
@@ -453,60 +486,29 @@ describe("PhoneActionPanel", () => {
             cardType: "hazard",
             flavor: "A ringing tide skates over the broken rails.",
             difficulty: 6,
-            stat: "signal",
-          },
+            stat: "signal"
+          }
         })}
-      />,
+      />
     );
 
-    expect(screen.getByTestId("phone-current-prompt")).toHaveTextContent(
-      /resolve event/i,
-    );
-    expect(screen.getByTestId("phone-current-prompt")).toHaveTextContent(
-      /glass chime swarm/i,
-    );
-    expect(screen.getByTestId("phone-action-panel-root")).toHaveClass(
-      "phone-action-panel--battle",
-    );
-    expect(screen.getByTestId("phone-action-active-panel")).toHaveClass(
-      "phone-battle-panel",
-    );
-    expect(screen.getByTestId("phone-battle-subject-card")).toHaveTextContent(
-      /glass chime swarm/i,
-    );
-    expect(screen.getByTestId("phone-battle-subject-card")).toHaveTextContent(
-      /hazard/i,
-    );
-    expect(screen.getByTestId("phone-battle-subject-card")).toHaveTextContent(
-      /ringing tide skates/i,
-    );
-    expect(
-      screen.getByTestId("phone-battle-subject-details"),
-    ).toHaveTextContent(/signal/i);
-    expect(
-      screen.getByTestId("phone-battle-subject-details"),
-    ).toHaveTextContent(/target 6/i);
-    expect(screen.getByTestId("phone-battle-subject-art")).toHaveAttribute(
-      "src",
-      expect.stringMatching(/\/assets\/cards\/(threats|fallbacks)\//),
-    );
-    expect(screen.getByTestId("phone-useful-now")).toHaveTextContent(
-      /useful now: signal/i,
-    );
-    expect(screen.getByTestId("phone-useful-now")).toHaveTextContent(
-      /current value 1/i,
-    );
-    expect(
-      screen.getByRole("button", { name: /attempt signal check/i }),
-    ).toBeInTheDocument();
-    expect(
-      screen.queryByRole("button", { name: /enter combat/i }),
-    ).not.toBeInTheDocument();
+    expect(screen.getByTestId("phone-current-prompt")).toHaveTextContent(/resolve event/i);
+    expect(screen.getByTestId("phone-current-prompt")).toHaveTextContent(/glass chime swarm/i);
+    expect(screen.getByTestId("phone-action-panel-root")).toHaveClass("phone-action-panel--battle");
+    expect(screen.getByTestId("phone-action-active-panel")).toHaveClass("phone-battle-panel");
+    expect(screen.getByTestId("phone-battle-subject-card")).toHaveTextContent(/glass chime swarm/i);
+    expect(screen.getByTestId("phone-battle-subject-card")).toHaveTextContent(/hazard/i);
+    expect(screen.getByTestId("phone-battle-subject-card")).toHaveTextContent(/ringing tide skates/i);
+    expect(screen.getByTestId("phone-battle-subject-details")).toHaveTextContent(/signal/i);
+    expect(screen.getByTestId("phone-battle-subject-details")).toHaveTextContent(/target 6/i);
+    expect(screen.getByTestId("phone-battle-subject-art")).toHaveAttribute("src", expect.stringMatching(/\/assets\/cards\/(threats|fallbacks)\//));
+    expect(screen.getByTestId("phone-useful-now")).toHaveTextContent(/useful now: signal/i);
+    expect(screen.getByTestId("phone-useful-now")).toHaveTextContent(/current value 1/i);
+    expect(screen.getByRole("button", { name: /attempt signal check/i })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /enter combat/i })).not.toBeInTheDocument();
     expect(screen.queryByTestId("movement-planner")).not.toBeInTheDocument();
     expect(screen.queryByTestId("phone-shop-panel")).not.toBeInTheDocument();
-    expect(
-      screen.getByRole("tablist", { name: /turn actions/i }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole("tablist", { name: /turn actions/i })).toBeInTheDocument();
   });
 
   it("shows active affliction effects in battle Useful Now context", () => {
@@ -521,7 +523,7 @@ describe("PhoneActionPanel", () => {
             cardType: "hazard",
             flavor: "A ringing tide skates over the broken rails.",
             difficulty: 6,
-            stat: "signal",
+            stat: "signal"
           },
           self: {
             ...createPatch().self!,
@@ -539,7 +541,7 @@ describe("PhoneActionPanel", () => {
                     rulesText: "Signal tests suffer -2, minimum 1.",
                     effectKind: "testModifier",
                     effectPayload: { stat: "signal", amount: -2, floor: 1 },
-                    isFaceupOngoing: true,
+                    isFaceupOngoing: true
                   },
                   {
                     id: "brittle-frame",
@@ -551,29 +553,21 @@ describe("PhoneActionPanel", () => {
                     rulesText: "You cannot use armor.",
                     effectKind: "restriction",
                     effectPayload: { cannotUseArmor: true },
-                    isFaceupOngoing: true,
-                  },
+                    isFaceupOngoing: true
+                  }
                 ],
-                facedownCount: 0,
-              },
-            },
-          },
+                facedownCount: 0
+              }
+            }
+          }
         })}
-      />,
+      />
     );
 
-    expect(screen.getByTestId("phone-useful-now")).toHaveTextContent(
-      /affecting this roll/i,
-    );
-    expect(screen.getByTestId("phone-useful-now")).toHaveTextContent(
-      /static migraine: -2 signal tests/i,
-    );
-    expect(screen.getByTestId("phone-useful-now")).toHaveTextContent(
-      /blocking armor/i,
-    );
-    expect(screen.getByTestId("phone-useful-now")).toHaveTextContent(
-      /blocked by brittle frame/i,
-    );
+    expect(screen.getByTestId("phone-useful-now")).toHaveTextContent(/affecting this roll/i);
+    expect(screen.getByTestId("phone-useful-now")).toHaveTextContent(/static migraine: -2 signal tests/i);
+    expect(screen.getByTestId("phone-useful-now")).toHaveTextContent(/blocking armor/i);
+    expect(screen.getByTestId("phone-useful-now")).toHaveTextContent(/blocked by brittle frame/i);
   });
 
   it("shows combat and not check when an active seat faces an enemy", () => {
@@ -589,44 +583,21 @@ describe("PhoneActionPanel", () => {
             enemyName: "Cinder-Veil Stalker",
             flavor: "The ash around it boils before the strike.",
             difficulty: 6,
-            stat: "grit",
-          },
+            stat: "grit"
+          }
         })}
-      />,
+      />
     );
 
-    expect(screen.getByTestId("phone-current-prompt")).toHaveTextContent(
-      /roll battle/i,
-    );
-    expect(screen.getByTestId("phone-current-prompt")).toHaveTextContent(
-      /cinder-veil stalker/i,
-    );
-    expect(screen.getByTestId("phone-battle-subject-card")).toHaveTextContent(
-      /cinder-veil stalker/i,
-    );
-    expect(screen.getByTestId("phone-battle-subject-card")).toHaveTextContent(
-      /enemy/i,
-    );
-    expect(screen.getByTestId("phone-battle-subject-card")).toHaveTextContent(
-      /battle/i,
-    );
-    expect(screen.getByTestId("phone-battle-subject-card")).toHaveTextContent(
-      /threat/i,
-    );
-    expect(
-      screen.getByTestId("phone-battle-subject-details"),
-    ).toHaveTextContent(/grit/i);
-    expect(
-      screen.getByTestId("phone-battle-subject-details"),
-    ).toHaveTextContent(/opponent 6/i);
-    expect(
-      screen.getByRole("button", {
-        name: /enter combat.*cinder-veil stalker/i,
-      }),
-    ).toBeInTheDocument();
-    expect(
-      screen.queryByRole("button", { name: /attempt grit check/i }),
-    ).not.toBeInTheDocument();
+    expect(screen.getByTestId("phone-battle-shell")).toHaveTextContent(/sable vey/i);
+    expect(screen.getByTestId("phone-battle-shell")).toHaveTextContent(/cinder-veil stalker/i);
+    expect(screen.getByLabelText(/battle totals/i)).toHaveTextContent(/grit/i);
+    expect(screen.getByLabelText(/battle totals/i)).toHaveTextContent(/opponent\s*6/i);
+    expect(screen.getByRole("button", { name: /enter combat/i })).toBeInTheDocument();
+    expect(screen.queryByTestId("phone-current-prompt")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("phone-battle-subject-card")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("phone-battle-assist")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /attempt grit check/i })).not.toBeInTheDocument();
     expect(screen.queryByTestId("movement-planner")).not.toBeInTheDocument();
     expect(screen.queryByTestId("phone-shop-panel")).not.toBeInTheDocument();
   });
@@ -643,25 +614,17 @@ describe("PhoneActionPanel", () => {
             sectorId: "center_cinder_gate",
             character: {
               ...createPatch().self!.character,
-              currentSpaceId: "center_cinder_gate",
-            },
-          },
+              currentSpaceId: "center_cinder_gate"
+            }
+          }
         })}
-      />,
+      />
     );
 
-    expect(
-      screen.getByRole("button", { name: /resolve reseal the prison/i }),
-    ).toBeInTheDocument();
-    expect(
-      screen.queryByRole("button", { name: /end turn/i }),
-    ).not.toBeInTheDocument();
-    expect(screen.getByTestId("phone-action-panel-root")).toHaveClass(
-      "phone-action-panel--action",
-    );
-    expect(screen.getByTestId("phone-action-active-panel")).toHaveClass(
-      "phone-sector-action-panel",
-    );
+    expect(screen.getByRole("button", { name: /resolve reseal the prison/i })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /end turn/i })).not.toBeInTheDocument();
+    expect(screen.getByTestId("phone-action-panel-root")).toHaveClass("phone-action-panel--action");
+    expect(screen.getByTestId("phone-action-active-panel")).toHaveClass("phone-sector-action-panel");
     expect(screen.queryByTestId("movement-planner")).not.toBeInTheDocument();
     expect(screen.queryByTestId("phone-shop-panel")).not.toBeInTheDocument();
   });
@@ -683,8 +646,8 @@ describe("PhoneActionPanel", () => {
               type: "spaceTextResolved",
               effectKey: "outer_waymarketExchange",
               label: "Recover the Anchor Market ledger",
-              target: 1,
-            },
+              target: 1
+            }
           },
           movementPlanner: {
             active: true,
@@ -701,24 +664,19 @@ describe("PhoneActionPanel", () => {
                 routeNames: ["Pilgrim Lock", "Anchor Market"],
                 tags: ["shop", "crossroads"],
                 threatIcons: ["yellow"],
-                ruleText:
-                  "If clear, buy Equipment or use Black Market Refresh.",
+                ruleText: "If clear, buy Gear, Supplies, or use Black Market Refresh.",
                 loreText: "A market of sealed crates and oath-brokers.",
                 shop: {
                   shopId: "outer_waymarketExchange",
                   shopName: "Anchor Market",
                   status: "open",
-                  servicesPreview: [
-                    "Buy Equipment",
-                    "Sell Gear",
-                    "Black Market Refresh",
-                  ],
+                  servicesPreview: ["Buy Gear", "Sell Gear", "Black Market Refresh"]
                 },
                 faceUpThreats: [],
                 occupants: [],
-                strategicTags: ["shop", "reward", "danger"],
-              },
-            ],
+                strategicTags: ["shop", "reward", "danger"]
+              }
+            ]
           },
           sectorExplorationSummary: {
             sectorId: "outer_ember_sanctum",
@@ -731,7 +689,7 @@ describe("PhoneActionPanel", () => {
             lockedReason: null,
             sectorTextTitle: "Pilgrim Rest",
             shopName: null,
-            explanationLines: ["Pilgrim Lock is clear."],
+            explanationLines: ["Pilgrim Lock is clear."]
           },
           publicResultDeltas: [
             {
@@ -744,8 +702,8 @@ describe("PhoneActionPanel", () => {
               visibility: "public",
               source: "scenario",
               publicText: "+1 Global Escalation",
-              severity: "scenario",
-            },
+              severity: "scenario"
+            }
           ],
           self: {
             ...createPatch().self!,
@@ -753,200 +711,101 @@ describe("PhoneActionPanel", () => {
               ...createPatch().self!.character,
               activeContract: {
                 contractId: "anchor-market-ledger",
-                progress: 0,
-              },
-            },
-          },
+                progress: 0
+              }
+            }
+          }
         })}
-      />,
+      />
     );
 
-    expect(screen.getByTestId("phone-current-prompt")).toHaveTextContent(
-      /choose destination/i,
-    );
-    expect(screen.getByTestId("phone-current-prompt")).toHaveTextContent(
-      /you rolled 1/i,
-    );
+    expect(screen.getByTestId("phone-current-prompt")).toHaveTextContent(/choose destination/i);
+    expect(screen.getByTestId("phone-current-prompt")).toHaveTextContent(/you rolled 1/i);
     expect(screen.queryByText(/turn console/i)).not.toBeInTheDocument();
-    expect(screen.getByTestId("phone-action-panel-root")).toHaveClass(
-      "phone-action-panel--move",
-    );
-    expect(screen.getByTestId("phone-action-active-panel")).toHaveClass(
-      "phone-move-panel",
-    );
-    expect(screen.getByTestId("phone-action-content-root")).toContainElement(
-      screen.getByTestId("phone-action-active-panel"),
-    );
-    expect(screen.getByTestId("phone-action-content-root")).toContainElement(
-      screen.getByTestId("phone-action-secondary-status"),
-    );
-    expect(screen.getByTestId("phone-useful-now")).toHaveTextContent(
-      /route and movement tools/i,
-    );
-    expect(screen.getByTestId("phone-useful-now")).toHaveTextContent(
-      /movement roll 1/i,
-    );
+    expect(screen.getByTestId("phone-action-panel-root")).toHaveClass("phone-action-panel--move");
+    expect(screen.getByTestId("phone-action-active-panel")).toHaveClass("phone-move-panel");
+    expect(screen.getByTestId("phone-action-content-root")).toContainElement(screen.getByTestId("phone-action-active-panel"));
+    expect(screen.getByTestId("phone-action-content-root")).toContainElement(screen.getByTestId("phone-action-secondary-status"));
+    expect(screen.getByTestId("phone-useful-now")).toHaveTextContent(/route and movement tools/i);
+    expect(screen.getByTestId("phone-useful-now")).toHaveTextContent(/movement roll 1/i);
     expect(screen.getByTestId("phone-useful-now")).not.toHaveAttribute("open");
-    expect(screen.getByTestId("movement-current-tile-card")).toHaveTextContent(
-      /current tile/i,
-    );
-    expect(screen.getByTestId("movement-current-tile-name")).toHaveTextContent(
-      /pilgrim lock/i,
-    );
-    expect(screen.getByTestId("movement-current-tile-card")).toHaveTextContent(
-      /pilgrims chain brass prayers/i,
-    );
-    expect(
-      screen.getByTestId("movement-current-tile-action"),
-    ).toHaveTextContent(/pilgrim rest/i);
+    expect(screen.getByTestId("movement-current-tile-card")).toHaveTextContent(/current tile/i);
+    expect(screen.getByTestId("movement-current-tile-name")).toHaveTextContent(/pilgrim lock/i);
+    expect(screen.getByTestId("movement-current-tile-card")).toHaveTextContent(/pilgrims chain brass prayers/i);
+    expect(screen.getByTestId("movement-current-tile-action")).toHaveTextContent(/pilgrim rest/i);
     expect(screen.getByTestId("movement-planner")).toBeInTheDocument();
-    expect(screen.getByTestId("movement-dice-animation")).toHaveTextContent(
-      /1/,
+    expect(screen.getByTestId("movement-dice-animation")).toHaveTextContent(/1/);
+    expect(screen.getByTestId("movement-dice-animation").querySelector("[data-testid='combat-dice-animation']")).toHaveClass(
+      "combat-dice-animation-compact"
     );
+    expect(within(screen.getByTestId("movement-dice-animation")).getByTestId("combat-die-attack")).toHaveTextContent(/1/);
     expect(
-      screen
-        .getByTestId("movement-dice-animation")
-        .querySelector("[data-testid='combat-dice-animation']"),
-    ).toHaveClass("combat-dice-animation-compact");
-    expect(
-      within(screen.getByTestId("movement-dice-animation")).getByTestId(
-        "combat-die-attack",
-      ),
-    ).toHaveTextContent(/1/);
-    expect(
-      screen
-        .getByTestId("phone-current-prompt")
-        .compareDocumentPosition(
-          screen.getByTestId("phone-action-active-panel"),
-        ) & Node.DOCUMENT_POSITION_FOLLOWING,
+      screen.getByTestId("phone-current-prompt").compareDocumentPosition(screen.getByTestId("phone-action-active-panel")) &
+        Node.DOCUMENT_POSITION_FOLLOWING
     ).toBeTruthy();
     expect(
-      screen
-        .getByTestId("movement-list-view")
-        .compareDocumentPosition(screen.getByTestId("phone-useful-now")) &
-        Node.DOCUMENT_POSITION_FOLLOWING,
+      screen.getByTestId("movement-list-view").compareDocumentPosition(screen.getByTestId("phone-useful-now")) &
+        Node.DOCUMENT_POSITION_FOLLOWING
     ).toBeTruthy();
     expect(
-      screen
-        .getByTestId("movement-planner")
-        .compareDocumentPosition(
-          screen.getByTestId("phone-action-secondary-status"),
-        ) & Node.DOCUMENT_POSITION_FOLLOWING,
+      screen.getByTestId("movement-planner").compareDocumentPosition(screen.getByTestId("phone-action-secondary-status")) &
+        Node.DOCUMENT_POSITION_FOLLOWING
     ).toBeTruthy();
     expect(screen.getByText(/move 1/i)).toBeInTheDocument();
-    expect(screen.getByTestId("movement-summary")).toHaveTextContent(
-      /move value/i,
-    );
-    expect(screen.getByTestId("movement-summary")).toHaveTextContent(
-      /pilgrim lock/i,
-    );
-    expect(screen.getByTestId("movement-summary")).toHaveTextContent(
-      /legal destinations/i,
-    );
+    expect(screen.getByTestId("movement-summary")).toHaveTextContent(/move value/i);
+    expect(screen.getByTestId("movement-summary")).toHaveTextContent(/pilgrim lock/i);
+    expect(screen.getByTestId("movement-summary")).toHaveTextContent(/legal destinations/i);
     expect(screen.getAllByTestId("movement-destination-row")).toHaveLength(1);
-    expect(
-      screen.getByTestId("movement-destination-mission-marker"),
-    ).toHaveTextContent(/mission/i);
+    expect(screen.getByTestId("movement-destination-mission-marker")).toHaveTextContent(/mission/i);
     expect(screen.queryByTestId("phone-shop-panel")).not.toBeInTheDocument();
-    expect(
-      screen.queryByRole("button", { name: /attempt signal check/i }),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /attempt signal check/i })).not.toBeInTheDocument();
     expect(screen.queryByText(/global escalation/i)).not.toBeInTheDocument();
     expect(screen.getAllByText(/anchor market/i).length).toBeGreaterThan(0);
-    expect(screen.getByTestId("movement-destination-lore")).toHaveTextContent(
-      /market of sealed crates/i,
+    expect(screen.getByTestId("movement-destination-lore")).toHaveTextContent(/market of sealed crates/i);
+    expect(screen.getByTestId("movement-route-preview")).toHaveTextContent(/pilgrim lock -> anchor market/i);
+    expect(screen.getByTestId("movement-route-preview")).toHaveTextContent(/^route:/i);
+    expect(screen.getByTestId("movement-route-confidence")).toHaveTextContent(/1 step/i);
+    expect(screen.getByTestId("movement-route-confidence")).toHaveTextContent(/shop reward/i);
+    expect(screen.getByTestId("movement-route-confidence")).toHaveTextContent(/threat risk/i);
+    expect(screen.getByTestId("movement-route-confidence")).toHaveTextContent(/0 blockers/i);
+    const destinationCard = screen.getByTestId("movement-destination-row").querySelector(".phone-wrap-card");
+    expect(destinationCard).toHaveClass("phone-wrap-card--movement", "phone-movement-row-button");
+    expect(destinationCard?.querySelector(".phone-wrap-card__media")).toBeInTheDocument();
+    expect(destinationCard?.querySelector('[data-testid="movement-tile-image"]')).toHaveAttribute(
+      "src",
+      "/assets/map/tiles/map_tile_anchor_market.png"
     );
-    expect(screen.getByTestId("movement-route-preview")).toHaveTextContent(
-      /pilgrim lock -> anchor market/i,
+    expect(destinationCard?.querySelector(".phone-wrap-card__actions")).toContainElement(
+      screen.getByRole("button", { name: /select anchor market/i })
     );
-    expect(screen.getByTestId("movement-route-preview")).toHaveTextContent(
-      /^route:/i,
-    );
-    expect(screen.getByTestId("movement-route-confidence")).toHaveTextContent(
-      /1 step/i,
-    );
-    expect(screen.getByTestId("movement-route-confidence")).toHaveTextContent(
-      /shop reward/i,
-    );
-    expect(screen.getByTestId("movement-route-confidence")).toHaveTextContent(
-      /threat risk/i,
-    );
-    expect(screen.getByTestId("movement-route-confidence")).toHaveTextContent(
-      /0 blockers/i,
-    );
-    const destinationCard = screen
-      .getByTestId("movement-destination-row")
-      .querySelector(".phone-wrap-card");
-    expect(destinationCard).toHaveClass(
-      "phone-wrap-card--movement",
-      "phone-movement-row-button",
-    );
-    expect(
-      destinationCard?.querySelector(".phone-wrap-card__media"),
-    ).toBeInTheDocument();
-    expect(
-      destinationCard?.querySelector('[data-testid="movement-tile-image"]'),
-    ).toHaveAttribute("src", "/assets/map/tiles/map_tile_anchor_market.png");
-    expect(
-      destinationCard?.querySelector(".phone-wrap-card__actions"),
-    ).toContainElement(
-      screen.getByRole("button", { name: /select anchor market/i }),
-    );
-    expect(
-      screen.queryByText(/legal: exactly 1 step from pilgrim lock/i),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByText(/legal: exactly 1 step from pilgrim lock/i)).not.toBeInTheDocument();
     expect(screen.queryByText("Icons")).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: /anchor market/i }));
 
     await waitFor(() => expect(screen.getByText("Icons")).toBeInTheDocument());
-    expect(screen.getByTestId("movement-current-tile-name")).toHaveTextContent(
-      /pilgrim lock/i,
+    expect(screen.getByTestId("movement-current-tile-name")).toHaveTextContent(/pilgrim lock/i);
+    expect(screen.getByTestId("movement-detail-view")).toHaveTextContent(/anchor market/i);
+    expect(screen.getByTestId("movement-detail-route-summary")).toHaveTextContent(/route: pilgrim lock -> anchor market/i);
+    const detailCard = screen.getByTestId("movement-detail-view").querySelector(".phone-wrap-card");
+    expect(detailCard).toHaveClass("phone-wrap-card--movement", "phone-movement-detail-hero");
+    expect(detailCard?.querySelector('[data-testid="movement-tile-image"]')).toHaveAttribute(
+      "src",
+      "/assets/map/tiles/map_tile_anchor_market.png"
     );
-    expect(screen.getByTestId("movement-detail-view")).toHaveTextContent(
-      /anchor market/i,
+    expect(screen.getByTestId("movement-detail-route-confidence")).toHaveTextContent(/1 step/i);
+    expect(screen.getByTestId("movement-detail-route-confidence")).toHaveTextContent(/shop reward/i);
+    expect(screen.getByTestId("movement-detail-mission")).toHaveTextContent(/can progress your mission/i);
+    expect(detailCard?.querySelector(".phone-wrap-card__actions")).toContainElement(
+      screen.getByRole("button", { name: /confirm move/i })
     );
-    expect(
-      screen.getByTestId("movement-detail-route-summary"),
-    ).toHaveTextContent(/route: pilgrim lock -> anchor market/i);
-    const detailCard = screen
-      .getByTestId("movement-detail-view")
-      .querySelector(".phone-wrap-card");
-    expect(detailCard).toHaveClass(
-      "phone-wrap-card--movement",
-      "phone-movement-detail-hero",
-    );
-    expect(
-      detailCard?.querySelector('[data-testid="movement-tile-image"]'),
-    ).toHaveAttribute("src", "/assets/map/tiles/map_tile_anchor_market.png");
-    expect(
-      screen.getByTestId("movement-detail-route-confidence"),
-    ).toHaveTextContent(/1 step/i);
-    expect(
-      screen.getByTestId("movement-detail-route-confidence"),
-    ).toHaveTextContent(/shop reward/i);
-    expect(screen.getByTestId("movement-detail-mission")).toHaveTextContent(
-      /can progress your mission/i,
-    );
-    expect(
-      detailCard?.querySelector(".phone-wrap-card__actions"),
-    ).toContainElement(screen.getByRole("button", { name: /confirm move/i }));
     expect(screen.getByText("Icons")).toBeInTheDocument();
-    expect(
-      screen.getAllByText(/legal: exactly 1 step from pilgrim lock/i).length,
-    ).toBeGreaterThan(0);
-    expect(
-      screen.getAllByText(/reward: anchor market services are available/i)
-        .length,
-    ).toBeGreaterThan(0);
-    expect(screen.getByTestId("movement-route-steps")).toHaveTextContent(
-      /pilgrim lock/i,
-    );
-    expect(screen.getByTestId("movement-confirm-footer")).toHaveTextContent(
-      /this will end your movement/i,
-    );
+    expect(screen.getAllByText(/legal: exactly 1 step from pilgrim lock/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/reward: anchor market services are available/i).length).toBeGreaterThan(0);
+    expect(screen.getByTestId("movement-route-steps")).toHaveTextContent(/pilgrim lock/i);
+    expect(screen.getByTestId("movement-confirm-footer")).toHaveTextContent(/this will end your movement/i);
     expect(screen.getAllByText(/green guile/i).length).toBeGreaterThan(0);
-    expect(screen.getByText(/buy equipment \/ sell gear/i)).toBeInTheDocument();
+    expect(screen.getByText(/buy gear \/ sell gear/i)).toBeInTheDocument();
     expect(screen.queryByText(/choir bulwark/i)).not.toBeInTheDocument();
   });
 
@@ -971,8 +830,8 @@ describe("PhoneActionPanel", () => {
               type: "spaceTextResolved",
               effectKey: "outer_ashwakeClearLane",
               label: "Clear the Ashwake convoy lane",
-              target: 1,
-            },
+              target: 1
+            }
           },
           players: [
             ...createPatch().players,
@@ -987,13 +846,12 @@ describe("PhoneActionPanel", () => {
                 activeContract: null,
                 stats: { command: 1, grit: 2, signal: 4, guile: 3, forge: 1 },
                 trophies: 0,
-                heat: 0,
                 wounds: 0,
                 scars: [],
                 heldGearCount: 0,
-                equippedGear: { weapon: null, armor: null, utility: null },
-              },
-            },
+                equippedGear: { weapon: null, armor: null, utility: null }
+              }
+            }
           ],
           sectorExplorationSummary: {
             sectorId: "ashwake-crossing",
@@ -1007,8 +865,8 @@ describe("PhoneActionPanel", () => {
                 type: "enemy",
                 lane: "yellow",
                 blocksShop: true,
-                blocksSectorText: true,
-              },
+                blocksSectorText: true
+              }
             ],
             drawCountsDue: { red: 0, blue: 0, yellow: 1 },
             sectorTextLocked: true,
@@ -1016,7 +874,7 @@ describe("PhoneActionPanel", () => {
             lockedReason: "Clear Marrow-Tax Auditors first.",
             sectorTextTitle: "Hold the Bridge",
             shopName: null,
-            explanationLines: ["A blocker is holding the bridge."],
+            explanationLines: ["A blocker is holding the bridge."]
           },
           self: {
             ...createPatch().self!,
@@ -1024,64 +882,38 @@ describe("PhoneActionPanel", () => {
               ...createPatch().self!.character,
               activeContract: {
                 contractId: "crossing-thread",
-                progress: 0,
-              },
-            },
-          },
+                progress: 0
+              }
+            }
+          }
         })}
-      />,
+      />
     );
 
     const currentTile = screen.getByTestId("movement-current-tile-card");
     expect(currentTile).toHaveTextContent(/ashwalk bridge/i);
-    expect(
-      screen.getByTestId("movement-current-tile-region"),
-    ).toHaveTextContent(/outer reach/i);
-    expect(
-      screen.getByTestId("movement-current-tile-region"),
-    ).toHaveTextContent(/hazard/i);
-    expect(screen.getByTestId("movement-current-tile-icons")).toHaveTextContent(
-      /printed icons: 1 yellow/i,
-    );
-    expect(
-      screen.getByTestId("movement-current-tile-blockers"),
-    ).toHaveTextContent(/blocked: marrow-tax auditors/i);
-    expect(screen.getByTestId("movement-current-tile-shop")).toHaveTextContent(
-      /shop: none/i,
-    );
-    expect(
-      screen.getByTestId("movement-current-tile-action"),
-    ).toHaveTextContent(/action locked: clear marrow-tax auditors first/i);
-    expect(
-      screen.getByTestId("movement-current-tile-mission"),
-    ).toHaveTextContent(/mission:/i);
-    expect(
-      screen.getByTestId("movement-current-tile-mission"),
-    ).toHaveTextContent(/crossing thread/i);
-    expect(screen.getByTestId("movement-current-tile-facts")).toHaveTextContent(
-      /no new draw: printed lane occupied/i,
-    );
-    expect(
-      screen.getByTestId("movement-current-tile-occupants"),
-    ).toHaveTextContent(/mira \(mira\)/i);
-    expect(screen.getByTestId("movement-current-tile-image")).toHaveAttribute(
-      "src",
-      "/assets/map/tiles/map_tile_hollow_gate.png",
-    );
-    expect(
-      screen.getAllByText(/roll movement to reveal your legal destinations/i)
-        .length,
-    ).toBeGreaterThan(0);
+    expect(screen.getByTestId("movement-current-tile-region")).toHaveTextContent(/outer reach/i);
+    expect(screen.getByTestId("movement-current-tile-region")).toHaveTextContent(/hazard/i);
+    expect(screen.getByTestId("movement-current-tile-icons")).toHaveTextContent(/printed icons: 1 yellow/i);
+    expect(screen.getByTestId("movement-current-tile-blockers")).toHaveTextContent(/blocked: marrow-tax auditors/i);
+    expect(screen.getByTestId("movement-current-tile-shop")).toHaveTextContent(/shop: none/i);
+    expect(screen.getByTestId("movement-current-tile-action")).toHaveTextContent(/action locked: clear marrow-tax auditors first/i);
+    expect(screen.getByTestId("movement-current-tile-mission")).toHaveTextContent(/mission:/i);
+    expect(screen.getByTestId("movement-current-tile-mission")).toHaveTextContent(/crossing thread/i);
+    expect(screen.getByTestId("movement-current-tile-facts")).toHaveTextContent(/no new draw: printed lane occupied/i);
+    expect(screen.getByTestId("movement-current-tile-occupants")).toHaveTextContent(/mira \(mira\)/i);
+    expect(screen.getByTestId("movement-current-tile-image")).toHaveAttribute("src", "/assets/map/tiles/map_tile_hollow_gate.png");
+    expect(screen.getAllByText(/roll movement to reveal your legal destinations/i).length).toBeGreaterThan(0);
+    expect(screen.getByTestId("phone-action-active-panel")).toHaveAttribute("data-movement-state", "needs-roll");
+    expect(screen.getByRole("button", { name: /roll movement/i })).toBeVisible();
     expect(screen.queryByTestId("movement-list-view")).not.toBeInTheDocument();
     expect(screen.queryByTestId("phone-shop-panel")).not.toBeInTheDocument();
-    expect(
-      screen.queryByTestId("phone-battle-subject-card"),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByTestId("phone-battle-subject-card")).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: /roll movement/i }));
     expect(onIntent).toHaveBeenCalledWith({
       type: "MOVEMENT_ROLL_REQUESTED",
-      seatId: "seat-1",
+      seatId: "seat-1"
     });
   });
 
@@ -1120,56 +952,40 @@ describe("PhoneActionPanel", () => {
                     deck: "red",
                     challenge: { stat: "grit", value: 7 },
                     blocksShop: true,
-                    blocksSectorText: true,
-                  },
+                    blocksSectorText: true
+                  }
                 ],
-                occupants: [
-                  {
-                    playerId: "seat-2",
-                    name: "Mira",
-                    characterName: "Signal Witch",
-                  },
-                ],
-                strategicTags: ["locked", "danger"],
-              },
-            ],
-          },
+                occupants: [{ playerId: "seat-2", name: "Mira", characterName: "Signal Witch" }],
+                strategicTags: ["locked", "danger"]
+              }
+            ]
+          }
         })}
-      />,
+      />
     );
 
-    fireEvent.click(
-      screen.getByRole("button", { name: /locked.*ashwalk bridge/i }),
-    );
+    fireEvent.click(screen.getByRole("button", { name: /locked.*ashwalk bridge/i }));
+    expect(screen.getByTestId("phone-action-active-panel")).toHaveAttribute("data-movement-state", "needs-confirm");
+    expect(screen.getByRole("button", { name: /confirm move/i })).toBeVisible();
     expect(onIntent).toHaveBeenCalledWith({
       type: "MOVEMENT_DESTINATION_PREVIEWED",
       seatId: "seat-1",
-      toSectorId: "ashwake-crossing",
+      toSectorId: "ashwake-crossing"
     });
-    expect(screen.getAllByText(/chain-maul salvager/i).length).toBeGreaterThan(
-      0,
-    );
-    expect(
-      screen.getAllByText(/legal: exactly 1 step from pilgrim lock/i).length,
-    ).toBeGreaterThan(0);
-    expect(
-      screen.getAllByText(/risk: chain-maul salvager/i).length,
-    ).toBeGreaterThan(0);
+    expect(screen.getAllByText(/chain-maul salvager/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/legal: exactly 1 step from pilgrim lock/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/danger: chain-maul salvager/i).length).toBeGreaterThan(0);
     expect(screen.getByText(/mira: signal witch/i)).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: /back/i }));
     expect(onIntent).toHaveBeenCalledWith({
       type: "MOVEMENT_DESTINATION_PREVIEWED",
       seatId: "seat-1",
-      toSectorId: null,
+      toSectorId: null
     });
-    expect(
-      screen.queryByRole("button", { name: /confirm move/i }),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /confirm move/i })).not.toBeInTheDocument();
 
-    fireEvent.click(
-      screen.getByRole("button", { name: /locked.*ashwalk bridge/i }),
-    );
+    fireEvent.click(screen.getByRole("button", { name: /locked.*ashwalk bridge/i }));
     onIntent.mockClear();
     fireEvent.click(screen.getByRole("button", { name: /confirm move/i }));
     expect(screen.getByRole("button", { name: /moving/i })).toBeDisabled();
@@ -1177,9 +993,54 @@ describe("PhoneActionPanel", () => {
     expect(onIntent).toHaveBeenCalledWith({
       type: "MOVE_REQUESTED",
       seatId: "seat-1",
-      toSectorId: "ashwake-crossing",
+      toSectorId: "ashwake-crossing"
     });
     expect(onIntent).toHaveBeenCalledTimes(1);
+  });
+
+  it("shows the accepted Spindle movement breakdown without adding controls", () => {
+    render(<PhoneActionPanel characters={characters} onIntent={vi.fn()} patch={createPatch({
+      phase: "navigation",
+      encounter: null,
+      movementPlanner: {
+        active: true,
+        movementValue: 5,
+        rolledValue: 6,
+        modifierSources: [{ label: "Spindle Static Squall", value: -1 }],
+        currentSectorId: "pilgrim-lock",
+        currentSectorName: "Pilgrim Lock",
+        destinations: []
+      }
+    })} />);
+
+    const summary = screen.getByTestId("movement-summary");
+    expect(summary).toHaveTextContent(/rolled 6/i);
+    expect(summary).toHaveTextContent(/spindle static squall -1/i);
+    expect(summary).toHaveTextContent(/final allowance 5/i);
+    expect(screen.queryByRole("button", { name: /use spindle/i })).not.toBeInTheDocument();
+  });
+
+  it("previews authoritative Route Star variants and charges only on alternate confirmation", () => {
+    const onIntent = vi.fn<(intent: ClientIntent) => void>();
+    render(<PhoneActionPanel characters={characters} onIntent={onIntent} patch={createPatch({ phase: "navigation", encounter: null, movementPlanner: {
+      active: true, movementValue: 2, movementRevision: 9, currentSectorId: "origin", currentSectorName: "Origin", destinations: [{
+        sectorId: "destination", name: "Ashen Chapel", ring: "outer", distance: 2,
+        routeId: "route-default", defaultRouteId: "route-default", route: ["origin", "left", "destination"], routeNames: ["Origin", "Scorched Road", "Ashen Chapel"],
+        routeVariants: [
+          { routeId: "route-default", destinationId: "destination", sectorIds: ["origin", "left", "destination"], sectorNames: ["Origin", "Scorched Road", "Ashen Chapel"], distance: 2 },
+          { routeId: "route-alternate", destinationId: "destination", sectorIds: ["origin", "right", "destination"], sectorNames: ["Origin", "Blastworks", "Ashen Chapel"], distance: 2 }
+        ],
+        tags: [], threatIcons: [], ruleText: "Arrive normally.", faceUpThreats: [], occupants: [], strategicTags: ["safe"],
+        routeStarPrompt: { instanceId: "star-a", currentCharges: 2, maxCharges: 2, chargeCost: 1 }
+      }]
+    } })} />);
+    fireEvent.click(screen.getByRole("button", { name: /ashen chapel/i }));
+    expect(screen.getByTestId("route-star-prompt")).toHaveTextContent("Scorched Road");
+    expect(screen.getByTestId("route-star-prompt")).toHaveTextContent("Blastworks");
+    fireEvent.click(screen.getByRole("button", { name: /preview route/i }));
+    expect(onIntent).not.toHaveBeenCalledWith(expect.objectContaining({ type: "SELECT_ROUTE_STAR_VARIANT" }));
+    fireEvent.click(screen.getByRole("button", { name: /choose this route/i }));
+    expect(onIntent).toHaveBeenCalledWith({ type: "SELECT_ROUTE_STAR_VARIANT", seatId: "seat-1", instanceId: "star-a", destinationId: "destination", routeId: "route-alternate", movementRevision: 9 });
   });
 
   it("shows compact movement feedback after a confirmed move outcome", async () => {
@@ -1207,10 +1068,10 @@ describe("PhoneActionPanel", () => {
               ruleText: "Trade under the iron awnings.",
               faceUpThreats: [],
               occupants: [],
-              strategicTags: ["shop", "reward"],
-            },
-          ],
-        },
+              strategicTags: ["shop", "reward"]
+            }
+          ]
+        }
       });
       const { rerender } = render(
         <PhoneActionPanel
@@ -1218,7 +1079,7 @@ describe("PhoneActionPanel", () => {
           onIntent={vi.fn()}
           selectedTurnTab="move"
           patch={initialPatch}
-        />,
+        />
       );
 
       rerender(
@@ -1234,16 +1095,16 @@ describe("PhoneActionPanel", () => {
               sectorId: "outer_waymarket",
               character: {
                 ...createPatch().self!.character,
-                currentSpaceId: "outer_waymarket",
-              },
+                currentSpaceId: "outer_waymarket"
+              }
             },
             players: createPatch().players.map((player) =>
               player.seatId === "seat-1"
                 ? {
                     ...player,
-                    sectorId: "outer_waymarket",
+                    sectorId: "outer_waymarket"
                   }
-                : player,
+                : player
             ),
             outcomeSummary: {
               seatId: "seat-1",
@@ -1258,32 +1119,26 @@ describe("PhoneActionPanel", () => {
               checkTotal: null,
               difficulty: null,
               summary: "Lane reached Anchor Market.",
-              success: true,
-            },
+              success: true
+            }
           })}
-        />,
+        />
       );
 
       await act(async () => {});
 
-      expect(screen.getByTestId("phone-movement-animation")).toHaveTextContent(
-        /moving/i,
-      );
-      expect(screen.getByTestId("phone-movement-animation")).toHaveTextContent(
-        /ashwalk bridge to anchor market/i,
-      );
-      expect(screen.getByTestId("phone-movement-animation")).toHaveAttribute(
-        "data-reduced-motion",
-        "false",
-      );
+      expect(screen.getByTestId("phone-movement-animation")).toHaveTextContent(/moving/i);
+      expect(screen.getByTestId("phone-movement-animation")).toHaveTextContent(/ashwalk bridge to anchor market/i);
+      expect(screen.getByTestId("phone-movement-animation")).toHaveAttribute("data-reduced-motion", "false");
+      expect(screen.getByTestId("phone-action-active-panel")).toHaveAttribute("data-movement-state", "resolving");
+      expect(screen.queryByText(/no movement choice/i)).not.toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: /roll movement/i })).not.toBeInTheDocument();
 
       act(() => {
         vi.advanceTimersByTime(1300);
       });
 
-      expect(
-        screen.queryByTestId("phone-movement-animation"),
-      ).not.toBeInTheDocument();
+      expect(screen.queryByTestId("phone-movement-animation")).not.toBeInTheDocument();
     } finally {
       vi.useRealTimers();
     }
@@ -1314,7 +1169,7 @@ describe("PhoneActionPanel", () => {
                   "deadwater-marsh",
                   "colony-outskirts",
                   "broken-census-hall",
-                  "pilgrim-lock-gate",
+                  "pilgrim-lock-gate"
                 ],
                 routeNames: [
                   "Ashwalk Bridge",
@@ -1322,105 +1177,69 @@ describe("PhoneActionPanel", () => {
                   "Deadwater Marsh",
                   "Colony Outskirts",
                   "Broken Census Hall",
-                  "Weathered Pilgrim Lock Gate With a Very Long Signal Name",
+                  "Weathered Pilgrim Lock Gate With a Very Long Signal Name"
                 ],
                 tags: ["shop", "objective"],
                 threatIcons: [],
                 ruleText: "If clear, open the Pilgrim trade lock.",
-                loreText:
-                  "A fortified lock gate controlling access to the trade route.",
+                loreText: "A fortified lock gate controlling access to the trade route.",
                 shop: {
                   shopId: "pilgrim-lock-market",
                   shopName: "Pilgrim Lock Gate",
                   status: "open",
-                  servicesPreview: ["Buy Equipment", "Repair", "Trade"],
+                  servicesPreview: ["Buy Gear", "Repair", "Trade"]
                 },
                 faceUpThreats: [],
                 occupants: [],
-                strategicTags: ["reward", "shop", "safe"],
-              },
-            ],
-          },
+                strategicTags: ["reward", "shop", "safe"]
+              }
+            ]
+          }
         })}
-      />,
+      />
     );
 
     const row = screen.getByTestId("movement-destination-row");
-    expect(screen.getByTestId("movement-current-sector")).toHaveTextContent(
-      "Ashwalk Bridge",
-    );
-    expect(screen.getByTestId("movement-current-sector")).toHaveClass(
-      "phone-movement-summary-current",
-    );
+    expect(screen.getByTestId("movement-current-sector")).toHaveTextContent("Ashwalk Bridge");
+    expect(screen.getByTestId("movement-current-sector")).toHaveClass("phone-movement-summary-current");
     expect(row).toHaveTextContent(/weathered pilgrim lock gate/i);
-    expect(screen.getByTestId("movement-destination-lore")).toHaveTextContent(
-      /fortified lock gate/i,
-    );
+    expect(screen.getByTestId("movement-destination-lore")).toHaveTextContent(/fortified lock gate/i);
     expect(row).toHaveTextContent(/6 steps/i);
     expect(row).toHaveTextContent(/shop reward/i);
     expect(row).toHaveTextContent(/low risk/i);
     expect(row).toHaveTextContent(/0 blockers/i);
-    expect(screen.getByTestId("movement-route-preview")).toHaveClass(
-      "phone-movement-row-route",
-    );
-    expect(screen.getByTestId("movement-route-preview")).toHaveTextContent(
-      /ashwalk bridge -> votive engine room/i,
-    );
-    expect(
-      row.querySelector('[data-testid="movement-tile-fallback"]'),
-    ).toBeInTheDocument();
+    expect(screen.getByTestId("movement-route-preview")).toHaveClass("phone-movement-row-route");
+    expect(screen.getByTestId("movement-route-preview")).toHaveTextContent(/ashwalk bridge -> votive engine room/i);
+    expect(row.querySelector('[data-testid="movement-tile-fallback"]')).toBeInTheDocument();
 
     const scrollRoot = screen.getByTestId("phone-action-content-root");
     scrollRoot.scrollTop = 480;
 
-    fireEvent.click(
-      screen.getByRole("button", { name: /weathered pilgrim lock gate/i }),
-    );
+    fireEvent.click(screen.getByRole("button", { name: /weathered pilgrim lock gate/i }));
 
     expect(screen.queryByTestId("movement-list-view")).not.toBeInTheDocument();
     expect(scrollRoot.scrollTop).toBe(0);
-    expect(
-      screen
-        .getByTestId("movement-detail-view")
-        .querySelector(".phone-movement-detail-body")?.firstElementChild,
-    ).toHaveClass("phone-movement-detail-hero");
-    expect(
-      screen
-        .getByTestId("movement-detail-view")
-        .querySelector('[data-testid="movement-tile-fallback"]'),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByTestId("movement-detail-route-summary"),
-    ).toHaveTextContent(/route: ashwalk bridge/i);
-    expect(screen.getByTestId("movement-route-steps")).toHaveTextContent(
-      /broken census hall/i,
+    expect(screen.getByTestId("movement-detail-view").querySelector(".phone-movement-detail-body")?.firstElementChild).toHaveClass(
+      "phone-movement-detail-hero"
     );
-    expect(
-      screen
-        .getByTestId("movement-detail-view")
-        .querySelector(".phone-wrap-card__actions"),
-    ).toContainElement(screen.getByRole("button", { name: /confirm move/i }));
-    expect(screen.getByTestId("movement-confirm-footer")).toHaveTextContent(
-      /this will end your movement/i,
+    expect(screen.getByTestId("movement-detail-view").querySelector('[data-testid="movement-tile-fallback"]')).toBeInTheDocument();
+    expect(screen.getByTestId("movement-detail-route-summary")).toHaveTextContent(/route: ashwalk bridge/i);
+    expect(screen.getByTestId("movement-route-steps")).toHaveTextContent(/broken census hall/i);
+    expect(screen.getByTestId("movement-detail-view").querySelector(".phone-wrap-card__actions")).toContainElement(
+      screen.getByRole("button", { name: /confirm move/i })
     );
+    expect(screen.getByTestId("movement-confirm-footer")).toHaveTextContent(/this will end your movement/i);
     expect(
-      screen
-        .getByRole("heading", { name: /weathered pilgrim lock gate/i })
-        .compareDocumentPosition(screen.getByTestId("movement-route-steps")) &
-        Node.DOCUMENT_POSITION_FOLLOWING,
+      screen.getByRole("heading", { name: /weathered pilgrim lock gate/i }).compareDocumentPosition(screen.getByTestId("movement-route-steps")) &
+        Node.DOCUMENT_POSITION_FOLLOWING
     ).toBeTruthy();
     expect(
-      screen
-        .getByTestId("movement-route-steps")
-        .compareDocumentPosition(
-          screen.getByTestId("movement-confirm-footer"),
-        ) & Node.DOCUMENT_POSITION_FOLLOWING,
+      screen.getByTestId("movement-route-steps").compareDocumentPosition(screen.getByTestId("movement-confirm-footer")) &
+        Node.DOCUMENT_POSITION_FOLLOWING
     ).toBeTruthy();
     expect(
-      screen
-        .getByTestId("movement-confirm-footer")
-        .compareDocumentPosition(screen.getByText(/sector effects/i)) &
-        Node.DOCUMENT_POSITION_FOLLOWING,
+      screen.getByTestId("movement-confirm-footer").compareDocumentPosition(screen.getByText(/sector effects/i)) &
+        Node.DOCUMENT_POSITION_FOLLOWING
     ).toBeTruthy();
   });
 
@@ -1449,40 +1268,22 @@ describe("PhoneActionPanel", () => {
                 routeNames: ["Guardian Span", "Gate of Three Ashes"],
                 tags: ["movement"],
                 threatIcons: [],
-                ruleText:
-                  "Choose whether to anchor the surge or slip the fold.",
+                ruleText: "Choose whether to anchor the surge or slip the fold.",
                 faceUpThreats: [],
                 occupants: [],
                 strategicTags: ["gate"],
-                disabledReason:
-                  "Resolve Guardian Span before entering the inner breach",
-              },
-            ],
-          },
+                disabledReason: "Requires Guardian Span Clearance"
+              }
+            ]
+          }
         })}
-      />,
+      />
     );
 
-    expect(
-      screen.getAllByText(
-        /resolve guardian span before entering the inner breach/i,
-      ).length,
-    ).toBeGreaterThan(0);
-    expect(
-      screen.getAllByText(/ignore this route for now/i).length,
-    ).toBeGreaterThan(0);
-    fireEvent.click(
-      screen.getByRole("button", { name: /gate of three ashes/i }),
-    );
-    await waitFor(() =>
-      expect(
-        screen.getByRole("button", { name: /confirm move/i }),
-      ).toBeDisabled(),
-    );
-    expect(
-      screen.getByRole("button", { name: /confirm move/i }),
-    ).toBeDisabled();
-    fireEvent.click(screen.getByRole("button", { name: /confirm move/i }));
+    expect(screen.getAllByText(/requires guardian span clearance/i).length).toBeGreaterThan(0);
+    expect(screen.queryByText(/ignore this route for now/i)).toBeNull();
+    const lockedSelect = screen.getAllByRole("button").find((button) => button.textContent?.includes("Select") && button.hasAttribute("disabled"));
+    expect(lockedSelect).toBeDefined();
     expect(onIntent).not.toHaveBeenCalled();
   });
 
@@ -1511,27 +1312,25 @@ describe("PhoneActionPanel", () => {
               name: "Sable Vey",
               characterName: "Sable Vey",
               salvage: 6,
-              heat: 1,
               wounds: { current: 0, max: 6 },
               trophies: 0,
-              completedContracts: 0,
+              completedContracts: 0
             },
             blockingThreats: [],
             services: [
               {
                 id: "buy-gear",
-                label: "Buy Equipment",
+                label: "Buy Gear",
                 shopCategory: "forge-armoury",
                 cost: {},
-                enabled: true,
+                enabled: true
               },
               {
                 id: "risk-action",
-                label: "Risk Action",
-                cost: { heat: 1 },
-                risk: "+1 Risk",
-                enabled: true,
-              },
+                label: "Deep Relic Search",
+                cost: { salvage: 1 },
+                enabled: true
+              }
             ],
             revealedStock: [
               {
@@ -1541,7 +1340,7 @@ describe("PhoneActionPanel", () => {
                 shopCategories: ["forge-armoury"],
                 cost: { salvage: 3 },
                 summary: "Forge +1 while bracing wounds.",
-                affordable: true,
+                affordable: true
               },
               {
                 cardId: "saintplate-harness",
@@ -1550,8 +1349,8 @@ describe("PhoneActionPanel", () => {
                 cost: { salvage: 8 },
                 summary: "Armor against wounds.",
                 affordable: false,
-                disabledReason: "Not enough Salvage",
-              },
+                disabledReason: "Not enough Salvage"
+              }
             ],
             sellInventory: [
               {
@@ -1561,7 +1360,7 @@ describe("PhoneActionPanel", () => {
                 category: "active",
                 sellValue: 1,
                 summary: "Grit +1.",
-                sellable: true,
+                sellable: true
               },
               {
                 gearId: "oath-chain-ledger",
@@ -1571,180 +1370,99 @@ describe("PhoneActionPanel", () => {
                 sellValue: 1,
                 summary: "Contract leverage.",
                 sellable: false,
-                disabledReason: "itemNotSellable",
-              },
-            ],
-          },
+                disabledReason: "itemNotSellable"
+              }
+            ]
+          }
         })}
-      />,
+      />
     );
 
-    expect(screen.getByTestId("phone-current-prompt")).toHaveTextContent(
-      /choose shop action/i,
-    );
-    expect(screen.getByTestId("phone-current-prompt")).toHaveTextContent(
-      /anchor market/i,
-    );
-    expect(screen.getByTestId("phone-action-panel-root")).toHaveClass(
-      "phone-action-panel--shop",
-    );
-    expect(screen.getByTestId("phone-action-active-panel")).toHaveClass(
-      "phone-shop-command-panel",
-    );
-    expect(screen.getByTestId("phone-useful-now")).toHaveTextContent(
-      /salvage and sellable gear/i,
-    );
-    expect(screen.getByTestId("phone-useful-now")).toHaveTextContent(
-      /1 item can be sold here/i,
-    );
+    expect(screen.getByTestId("phone-current-prompt")).toHaveTextContent(/choose shop action/i);
+    expect(screen.getByTestId("phone-current-prompt")).toHaveTextContent(/anchor market/i);
+    expect(screen.getByTestId("phone-action-panel-root")).toHaveClass("phone-action-panel--shop");
+    expect(screen.getByTestId("phone-action-active-panel")).toHaveClass("phone-shop-command-panel");
+    expect(screen.getByTestId("phone-useful-now")).toHaveTextContent(/salvage and sellable gear/i);
+    expect(screen.getByTestId("phone-useful-now")).toHaveTextContent(/1 item can be sold here/i);
     expect(screen.queryByTestId("movement-planner")).not.toBeInTheDocument();
-    expect(
-      screen.queryByRole("button", { name: /attempt signal check/i }),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /attempt signal check/i })).not.toBeInTheDocument();
     expect(screen.getByText(/forge market/i)).toBeInTheDocument();
     expect(screen.getAllByText(/forge armoury/i).length).toBeGreaterThan(0);
     expect(screen.getByText(/salvage: 6/i)).toBeInTheDocument();
     expect(screen.getByText(/choose a market service/i)).toBeInTheDocument();
-    expect(
-      screen.getAllByTestId("phone-shop-category-icon").length,
-    ).toBeGreaterThanOrEqual(2);
-    expect(
-      screen.getAllByTestId("phone-shop-category-icon")[0],
-    ).toHaveAttribute(
-      "src",
-      "/assets/riftfall/ui/shop-category-forge-armoury.svg",
-    );
-    expect(
-      screen.getByRole("button", { name: /skip \/ continue/i }),
-    ).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: /buy equipment/i }));
-    expect(onIntent).toHaveBeenCalledWith({
-      type: "SHOP_SERVICE_REQUESTED",
-      seatId: "seat-1",
-      serviceId: "buy-gear",
-    });
+    expect(screen.queryByText(/Deep Relic Search/i)).not.toBeInTheDocument();
+    expect(screen.getByText(/Tap Buy to review the purchase before spending Salvage/i)).toBeInTheDocument();
+    expect(screen.queryByText(/\b(?:Heat|Risk)\b/i)).not.toBeInTheDocument();
+    expect(screen.getAllByTestId("phone-shop-category-icon").length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByTestId("phone-shop-category-icon")[0]).toHaveAttribute("src", "/assets/riftfall/ui/shop-category-forge-armoury.svg");
+    expect(screen.getByRole("button", { name: /skip \/ continue/i })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /buy gear/i })).not.toBeInTheDocument();
 
     expect(screen.getByText(/coffin rig/i)).toBeInTheDocument();
-    expect(
-      screen.getByText(/forge \+1 while bracing wounds/i),
-    ).toBeInTheDocument();
+    expect(screen.getByText(/forge \+1 while bracing wounds/i)).toBeInTheDocument();
     const buyCard = screen.getByText(/coffin rig/i).closest("article");
     expect(buyCard).not.toBeNull();
     expect(buyCard).toHaveClass("phone-wrap-card", "phone-wrap-card--shop");
-    expect(
-      buyCard?.querySelector(".phone-wrap-card__media"),
-    ).toBeInTheDocument();
-    expect(buyCard?.querySelector(".phone-wrap-card__image")).toHaveAttribute(
-      "src",
-      "/assets/cards/fallbacks/equipment.svg",
-    );
-    expect(
-      buyCard?.querySelector(".phone-wrap-card__description"),
-    ).toHaveTextContent(/forge \+1 while bracing wounds/i);
-    expect(
-      buyCard?.querySelector(".phone-wrap-card__details"),
-    ).toHaveTextContent(/cost: 3 salvage/i);
-    expect(
-      buyCard?.querySelector(".phone-wrap-card__actions"),
-    ).toContainElement(
-      within(buyCard as HTMLElement).getByRole("button", { name: /^buy$/i }),
+    expect(buyCard?.querySelector(".phone-wrap-card__media")).toBeInTheDocument();
+    expect(buyCard?.querySelector(".phone-wrap-card__image")).toHaveAttribute("src", "/assets/cards/fallbacks/equipment.svg");
+    expect(buyCard?.querySelector(".phone-wrap-card__description")).toHaveTextContent(/forge \+1 while bracing wounds/i);
+    expect(buyCard?.querySelector(".phone-wrap-card__details")).toHaveTextContent(/cost: 3 salvage/i);
+    expect(buyCard?.querySelector(".phone-wrap-card__actions")).toContainElement(
+      within(buyCard as HTMLElement).getByRole("button", { name: /^buy$/i })
     );
     fireEvent.click(screen.getAllByRole("button", { name: /^buy$/i })[0]);
-    expect(
-      screen.getByRole("dialog", { name: /confirm purchase/i }),
-    ).toHaveTextContent(/buy coffin rig for 3 salvage/i);
+    expect(screen.getByRole("dialog", { name: /confirm purchase/i })).toHaveTextContent(/buy coffin rig for 3 salvage/i);
     expect(onIntent).not.toHaveBeenCalledWith({
       type: "SHOP_PURCHASE_REQUESTED",
       seatId: "seat-1",
-      cardId: "coffin-rig",
+      cardId: "coffin-rig"
     });
     fireEvent.click(screen.getByRole("button", { name: /confirm purchase/i }));
     expect(onIntent).toHaveBeenCalledWith({
       type: "SHOP_PURCHASE_REQUESTED",
       seatId: "seat-1",
-      cardId: "coffin-rig",
+      cardId: "coffin-rig"
     });
 
-    expect(screen.getAllByText(/not enough salvage/i).length).toBeGreaterThan(
-      0,
-    );
-    const unaffordableCard = screen
-      .getByText(/saintplate harness/i)
-      .closest("article");
+    expect(screen.getAllByText(/not enough salvage/i).length).toBeGreaterThan(0);
+    const unaffordableCard = screen.getByText(/saintplate harness/i).closest("article");
     expect(unaffordableCard).not.toBeNull();
-    expect(
-      unaffordableCard?.querySelector(".phone-wrap-card__image"),
-    ).toHaveAttribute("src", "/assets/cards/equipment/saintplate-harness.png");
-    expect(
-      within(unaffordableCard as HTMLElement).getByRole("button", {
-        name: /buy/i,
-      }),
-    ).toBeDisabled();
-    expect(unaffordableCard).toHaveTextContent(
-      /ignore until you can pay or free the slot/i,
+    expect(unaffordableCard?.querySelector(".phone-wrap-card__image")).toHaveAttribute(
+      "src",
+      "/assets/cards/equipment/saintplate-harness.png"
     );
+    expect(within(unaffordableCard as HTMLElement).getByRole("button", { name: /buy/i })).toBeDisabled();
+    expect(unaffordableCard).toHaveTextContent(/ignore until you can pay or free the slot/i);
     expect(screen.getAllByText(/^sell$/i).length).toBeGreaterThan(0);
     expect(screen.getByText(/veil hook/i)).toBeInTheDocument();
     expect(screen.getByText(/1 salvage/i)).toBeInTheDocument();
-    const nonSellableCard = screen
-      .getByText(/oath-chain ledger/i)
-      .closest("article");
+    const nonSellableCard = screen.getByText(/oath-chain ledger/i).closest("article");
     expect(nonSellableCard).not.toBeNull();
-    expect(
-      within(nonSellableCard as HTMLElement).getByRole("button", {
-        name: /sell/i,
-      }),
-    ).toBeDisabled();
-    expect(
-      within(nonSellableCard as HTMLElement).getAllByText(
-        /cannot sell this item/i,
-      ).length,
-    ).toBeGreaterThan(0);
+    expect(within(nonSellableCard as HTMLElement).getByRole("button", { name: /sell/i })).toBeDisabled();
+    expect(within(nonSellableCard as HTMLElement).getAllByText(/cannot sell this item/i).length).toBeGreaterThan(0);
     const sellableCard = screen.getByText(/veil hook/i).closest("article");
     expect(sellableCard).not.toBeNull();
-    expect(sellableCard).toHaveClass(
-      "phone-wrap-card",
-      "phone-wrap-card--shop",
-      "phone-shop-sell-card",
+    expect(sellableCard).toHaveClass("phone-wrap-card", "phone-wrap-card--shop", "phone-shop-sell-card");
+    expect(sellableCard?.querySelector(".phone-wrap-card__media")).toBeInTheDocument();
+    expect(sellableCard?.querySelector(".phone-wrap-card__image")).toHaveAttribute("src", "/assets/cards/fallbacks/equipment.svg");
+    expect(sellableCard?.querySelector(".phone-wrap-card__details")).toHaveTextContent(/sell value: 1 salvage/i);
+    expect(sellableCard?.querySelector(".phone-wrap-card__actions")).toContainElement(
+      within(sellableCard as HTMLElement).getByRole("button", { name: /^sell$/i })
     );
-    expect(
-      sellableCard?.querySelector(".phone-wrap-card__media"),
-    ).toBeInTheDocument();
-    expect(
-      sellableCard?.querySelector(".phone-wrap-card__image"),
-    ).toHaveAttribute("src", "/assets/cards/fallbacks/equipment.svg");
-    expect(
-      sellableCard?.querySelector(".phone-wrap-card__details"),
-    ).toHaveTextContent(/sell value: 1 salvage/i);
-    expect(
-      sellableCard?.querySelector(".phone-wrap-card__actions"),
-    ).toContainElement(
-      within(sellableCard as HTMLElement).getByRole("button", {
-        name: /^sell$/i,
-      }),
-    );
-    fireEvent.click(
-      within(sellableCard as HTMLElement).getByRole("button", {
-        name: /^sell$/i,
-      }),
-    );
-    expect(
-      screen.getByRole("dialog", { name: /confirm sale/i }),
-    ).toHaveTextContent(/sell veil hook for 1 salvage/i);
+    fireEvent.click(within(sellableCard as HTMLElement).getByRole("button", { name: /^sell$/i }));
+    expect(screen.getByRole("dialog", { name: /confirm sale/i })).toHaveTextContent(/sell veil hook for 1 salvage/i);
     fireEvent.click(screen.getByRole("button", { name: /confirm sale/i }));
     expect(onIntent).toHaveBeenCalledWith({
       type: "SHOP_SELL_REQUESTED",
       seatId: "seat-1",
-      gearId: "veil-hook",
+      gearId: "veil-hook"
     });
     fireEvent.click(screen.getByRole("button", { name: /skip \/ continue/i }));
     expect(onIntent).toHaveBeenCalledWith({
       type: "SHOP_SKIP_REQUESTED",
-      seatId: "seat-1",
+      seatId: "seat-1"
     });
-    expect(
-      screen.getByRole("tablist", { name: /turn actions/i }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole("tablist", { name: /turn actions/i })).toBeInTheDocument();
     expect(screen.getByRole("tab", { name: /shop/i })).toBeInTheDocument();
   });
 
@@ -1773,97 +1491,55 @@ describe("PhoneActionPanel", () => {
               name: "Sable Vey",
               characterName: "Sable Vey",
               salvage: 6,
-              heat: 1,
               wounds: { current: 0, max: 6 },
               trophies: 0,
-              completedContracts: 0,
+              completedContracts: 0
             },
             blockingThreats: [
               {
                 cardId: "market-stalker",
                 name: "Market Stalker",
                 type: "enemy",
-                challenge: { stat: "grit", value: 7 },
-              },
+                challenge: { stat: "grit", value: 7 }
+              }
             ],
             services: [],
             revealedStock: [],
-            sellInventory: [],
-          },
+            sellInventory: []
+          }
         })}
-      />,
+      />
     );
 
-    expect(screen.getByTestId("phone-current-prompt")).toHaveTextContent(
-      /shop blocked/i,
-    );
-    expect(screen.getByTestId("phone-useful-now")).toHaveTextContent(
-      /shop blocked by threat/i,
-    );
-    expect(
-      screen.getAllByText(/shop blocked by threat/i).length,
-    ).toBeGreaterThan(0);
+    expect(screen.getByTestId("phone-current-prompt")).toHaveTextContent(/shop blocked/i);
+    expect(screen.getByTestId("phone-useful-now")).toHaveTextContent(/shop blocked by threat/i);
+    expect(screen.getAllByText(/shop blocked by threat/i).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/market stalker/i).length).toBeGreaterThan(0);
   });
 
   it("allows the shop tab to show a no-shop state", () => {
     render(
-      <PhoneActionPanel
-        characters={characters}
-        onIntent={vi.fn()}
-        selectedTurnTab="shop"
-        patch={createPatch({ encounter: null, shopEncounter: null })}
-      />,
+      <PhoneActionPanel characters={characters} onIntent={vi.fn()} selectedTurnTab="shop" patch={createPatch({ encounter: null, shopEncounter: null })} />
     );
 
     expect(screen.getByRole("tab", { name: /shop/i })).toBeInTheDocument();
-    expect(screen.getByRole("tab", { name: /shop/i })).toHaveTextContent(
-      /locked/i,
-    );
-    expect(screen.getByRole("tab", { name: /shop/i })).not.toHaveTextContent(
-      /shop locked: no shop here/i,
-    );
-    expect(screen.getByTestId("phone-turn-tab-reason")).toHaveTextContent(
-      /shop locked/i,
-    );
-    expect(screen.getByTestId("phone-turn-tab-reason")).toHaveTextContent(
-      /no shop here/i,
-    );
-    expect(
-      within(screen.getByTestId("phone-action-active-panel")).getByRole(
-        "status",
-      ),
-    ).toHaveTextContent(/no shop here/i);
-    expect(
-      screen.getByText(
-        /shop services appear when your operative is on a clear market/i,
-      ),
-    ).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: /shop/i })).toHaveTextContent(/locked/i);
+    expect(screen.getByRole("tab", { name: /shop/i })).not.toHaveTextContent(/shop locked: no shop here/i);
+    expect(screen.getByTestId("phone-turn-tab-reason")).toHaveTextContent(/shop locked/i);
+    expect(screen.getByTestId("phone-turn-tab-reason")).toHaveTextContent(/no shop here/i);
+    expect(within(screen.getByTestId("phone-action-active-panel")).getByRole("status")).toHaveTextContent(/no shop here/i);
+    expect(screen.getByText(/shop services appear when your operative is on a clear market/i)).toBeInTheDocument();
   });
 
   it("shows a direct battle lock reason when no enemy or check is active", () => {
     render(
-      <PhoneActionPanel
-        characters={characters}
-        onIntent={vi.fn()}
-        selectedTurnTab="battle"
-        patch={createPatch({ encounter: null, pendingEnemyRoll: null })}
-      />,
+      <PhoneActionPanel characters={characters} onIntent={vi.fn()} selectedTurnTab="battle" patch={createPatch({ encounter: null, pendingEnemyRoll: null })} />
     );
 
-    expect(screen.getByRole("tab", { name: /battle/i })).toHaveTextContent(
-      /locked/i,
-    );
-    expect(screen.getByRole("tab", { name: /battle/i })).not.toHaveTextContent(
-      /battle locked: no enemy here/i,
-    );
-    expect(screen.getByRole("tab", { name: /battle/i })).toHaveAttribute(
-      "title",
-      "Battle locked: no enemy here.",
-    );
-    expect(
-      screen.queryByRole("button", { name: /enter combat/i }),
-    ).not.toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: /battle/i })).toHaveTextContent(/locked/i);
+    expect(screen.getByRole("tab", { name: /battle/i })).not.toHaveTextContent(/battle locked: no enemy here/i);
+    expect(screen.getByRole("tab", { name: /battle/i })).toHaveAttribute("title", "Battle locked: no enemy here.");
+    expect(screen.queryByRole("button", { name: /enter combat/i })).not.toBeInTheDocument();
   });
 
   it("shows a locked shop state during battle without rendering battle controls", () => {
@@ -1880,39 +1556,16 @@ describe("PhoneActionPanel", () => {
             enemyName: "Cinder-Veil Stalker",
             flavor: "The ash around it boils before the strike.",
             difficulty: 6,
-            stat: "grit",
+            stat: "grit"
           },
-          shopEncounter: null,
+          shopEncounter: null
         })}
-      />,
+      />
     );
 
-    expect(screen.getByTestId("phone-action-panel-root")).toHaveClass(
-      "phone-action-panel--shop",
-    );
-    expect(screen.getByTestId("phone-action-active-panel")).toHaveClass(
-      "phone-shop-command-panel",
-    );
-    expect(screen.getByTestId("phone-turn-tab-reason")).toHaveTextContent(
-      /shop locked/i,
-    );
-    expect(screen.getByTestId("phone-turn-tab-reason")).toHaveTextContent(
-      /resolve battle first/i,
-    );
-    expect(
-      within(screen.getByTestId("phone-action-active-panel")).getByRole(
-        "status",
-      ),
-    ).toHaveTextContent(/shop locked/i);
-    expect(
-      screen.getAllByText(/shop locked: resolve battle first/i).length,
-    ).toBeGreaterThan(0);
-    expect(
-      screen.getAllByText(/ignore shop until the encounter is cleared/i).length,
-    ).toBeGreaterThan(0);
-    expect(
-      screen.queryByRole("button", { name: /enter combat/i }),
-    ).not.toBeInTheDocument();
+    expect(screen.getByTestId("phone-battle-shell")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /enter combat/i })).toBeInTheDocument();
+    expect(screen.queryByTestId("phone-shop-panel")).not.toBeInTheDocument();
     expect(screen.queryByTestId("phone-battle-assist")).not.toBeInTheDocument();
   });
 
@@ -1930,37 +1583,14 @@ describe("PhoneActionPanel", () => {
             enemyName: "Cinder-Veil Stalker",
             flavor: "The ash around it boils before the strike.",
             difficulty: 6,
-            stat: "grit",
-          },
+            stat: "grit"
+          }
         })}
-      />,
+      />
     );
 
-    expect(screen.getByTestId("phone-action-panel-root")).toHaveClass(
-      "phone-action-panel--action",
-    );
-    expect(screen.getByTestId("phone-action-active-panel")).toHaveClass(
-      "phone-sector-action-panel",
-    );
-    expect(screen.getByTestId("phone-turn-tab-reason")).toHaveTextContent(
-      /action locked/i,
-    );
-    expect(screen.getByTestId("phone-turn-tab-reason")).toHaveTextContent(
-      /resolve battle first/i,
-    );
-    expect(
-      within(screen.getByTestId("phone-action-active-panel")).getByText(
-        /action locked: resolve battle first/i,
-      ),
-    ).toBeInTheDocument();
-    expect(
-      within(screen.getByTestId("phone-action-active-panel")).getByText(
-        /ignore sector actions until the battle tab is cleared/i,
-      ),
-    ).toBeInTheDocument();
-    expect(
-      screen.queryByRole("button", { name: /enter combat/i }),
-    ).not.toBeInTheDocument();
+    expect(screen.getByTestId("phone-battle-shell")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /enter combat/i })).toBeInTheDocument();
     expect(screen.queryByTestId("phone-battle-assist")).not.toBeInTheDocument();
     expect(screen.queryByText(/sector math/i)).not.toBeInTheDocument();
   });
@@ -1984,13 +1614,13 @@ describe("PhoneActionPanel", () => {
             routeNames: ["Pilgrim Lock", "Anchor Market"],
             tags: ["shop"],
             threatIcons: [],
-            ruleText: "If clear, buy Equipment.",
+            ruleText: "If clear, buy Gear.",
             faceUpThreats: [],
             occupants: [],
-            strategicTags: ["shop", "reward"],
-          },
-        ],
-      },
+            strategicTags: ["shop", "reward"]
+          }
+        ]
+      }
     });
     const shopPatch = createPatch({
       encounter: null,
@@ -2010,16 +1640,15 @@ describe("PhoneActionPanel", () => {
           name: "Sable Vey",
           characterName: "Sable Vey",
           salvage: 3,
-          heat: 1,
           wounds: { current: 0, max: 6 },
           trophies: 0,
-          completedContracts: 0,
+          completedContracts: 0
         },
         blockingThreats: [],
         services: [],
         revealedStock: [],
-        sellInventory: [],
-      },
+        sellInventory: []
+      }
     });
     const battlePatch = createPatch({
       encounter: {
@@ -2029,91 +1658,38 @@ describe("PhoneActionPanel", () => {
         enemyName: "Cinder-Veil Stalker",
         flavor: "The ash around it boils before the strike.",
         difficulty: 6,
-        stat: "grit",
-      },
+        stat: "grit"
+      }
     });
     const actionPatch = createPatch({ encounter: null });
 
     const { rerender } = render(
-      <PhoneActionPanel
-        characters={characters}
-        onIntent={vi.fn()}
-        selectedTurnTab="move"
-        patch={movementPatch}
-      />,
+      <PhoneActionPanel characters={characters} onIntent={vi.fn()} selectedTurnTab="move" patch={movementPatch} />
     );
 
-    expect(screen.getByTestId("phone-action-active-panel")).toHaveClass(
-      "phone-move-panel",
-    );
+    expect(screen.getByTestId("phone-action-active-panel")).toHaveClass("phone-move-panel");
     expect(screen.getByTestId("movement-planner")).toBeInTheDocument();
 
-    rerender(
-      <PhoneActionPanel
-        characters={characters}
-        onIntent={vi.fn()}
-        selectedTurnTab="battle"
-        patch={movementPatch}
-      />,
-    );
-    expect(screen.getByTestId("phone-action-active-panel")).toHaveClass(
-      "phone-battle-panel",
-    );
+    rerender(<PhoneActionPanel characters={characters} onIntent={vi.fn()} selectedTurnTab="battle" patch={movementPatch} />);
+    expect(screen.getByTestId("phone-action-active-panel")).toHaveClass("phone-battle-panel");
     expect(screen.getByText(/no battle active/i)).toBeInTheDocument();
-    expect(
-      screen.getAllByText(/battle cards will appear here/i).length,
-    ).toBeGreaterThan(0);
+    expect(screen.getAllByText(/battle cards will appear here/i).length).toBeGreaterThan(0);
     expect(screen.queryByTestId("movement-planner")).not.toBeInTheDocument();
 
-    rerender(
-      <PhoneActionPanel
-        characters={characters}
-        onIntent={vi.fn()}
-        selectedTurnTab="shop"
-        patch={shopPatch}
-      />,
-    );
-    expect(screen.getByTestId("phone-action-active-panel")).toHaveClass(
-      "phone-shop-command-panel",
-    );
+    rerender(<PhoneActionPanel characters={characters} onIntent={vi.fn()} selectedTurnTab="shop" patch={shopPatch} />);
+    expect(screen.getByTestId("phone-action-active-panel")).toHaveClass("phone-shop-command-panel");
     expect(screen.getByTestId("phone-shop-panel")).toBeInTheDocument();
     expect(screen.queryByTestId("movement-planner")).not.toBeInTheDocument();
 
-    rerender(
-      <PhoneActionPanel
-        characters={characters}
-        onIntent={vi.fn()}
-        selectedTurnTab="battle"
-        patch={battlePatch}
-      />,
-    );
-    expect(screen.getByTestId("phone-action-active-panel")).toHaveClass(
-      "phone-battle-panel",
-    );
-    expect(
-      screen.getByRole("button", {
-        name: /enter combat.*cinder-veil stalker/i,
-      }),
-    ).toBeInTheDocument();
+    rerender(<PhoneActionPanel characters={characters} onIntent={vi.fn()} selectedTurnTab="battle" patch={battlePatch} />);
+    expect(screen.getByTestId("phone-battle-shell")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /enter combat/i })).toBeInTheDocument();
     expect(screen.queryByTestId("phone-shop-panel")).not.toBeInTheDocument();
 
-    rerender(
-      <PhoneActionPanel
-        characters={characters}
-        onIntent={vi.fn()}
-        selectedTurnTab="action"
-        patch={actionPatch}
-      />,
-    );
-    expect(screen.getByTestId("phone-action-active-panel")).toHaveClass(
-      "phone-sector-action-panel",
-    );
-    expect(
-      screen.getByRole("button", { name: /end turn/i }),
-    ).toBeInTheDocument();
-    expect(
-      screen.queryByRole("button", { name: /enter combat/i }),
-    ).not.toBeInTheDocument();
+    rerender(<PhoneActionPanel characters={characters} onIntent={vi.fn()} selectedTurnTab="action" patch={actionPatch} />);
+    expect(screen.getByTestId("phone-action-active-panel")).toHaveClass("phone-sector-action-panel");
+    expect(screen.getByRole("button", { name: /end turn/i })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /enter combat/i })).not.toBeInTheDocument();
     expect(screen.queryByTestId("phone-shop-panel")).not.toBeInTheDocument();
   });
 
@@ -2137,18 +1713,16 @@ describe("PhoneActionPanel", () => {
               progressLabel: "ledgerMarks",
               progress: 1,
               target: 3,
-              stakes: "Keep it quiet",
+              stakes: "Keep it quiet"
             },
-            recentPrivateNotes: [
-              "Hidden-agenda reveal moments are not wired yet.",
-            ],
+            recentPrivateNotes: ["Hidden-agenda reveal moments are not wired yet."],
             reveal: {
               state: "revealLocked",
               available: false,
               label: "Reveal agenda",
               hint: "Reveal is locked until this agenda's table moment becomes available.",
-              lockedReason: "Reveal window has not opened.",
-            },
+              lockedReason: "Reveal window has not opened."
+            }
           },
           playerResultDeltas: [
             {
@@ -2162,7 +1736,7 @@ describe("PhoneActionPanel", () => {
               visibility: "public",
               source: "shop:buy",
               publicText: "Sable Vey bought Ashlock Carbine.",
-              severity: "reward",
+              severity: "reward"
             },
             {
               id: "phone-shop-salvage",
@@ -2175,8 +1749,8 @@ describe("PhoneActionPanel", () => {
               visibility: "public",
               source: "shop:buy",
               publicText: "Sable Vey spent 3 Salvage.",
-              severity: "loss",
-            },
+              severity: "loss"
+            }
           ],
           shopEncounter: {
             sectorId: "outer_waymarket",
@@ -2194,10 +1768,9 @@ describe("PhoneActionPanel", () => {
               name: "Sable Vey",
               characterName: "Sable Vey",
               salvage: 3,
-              heat: 1,
               wounds: { current: 0, max: 6 },
               trophies: 0,
-              completedContracts: 0,
+              completedContracts: 0
             },
             blockingThreats: [],
             services: [],
@@ -2210,36 +1783,23 @@ describe("PhoneActionPanel", () => {
               gained: "Ashlock Carbine",
               costPaid: { salvage: 3 },
               remainingSalvage: 3,
-              summary: "Sable Vey purchased Ashlock Carbine.",
-            },
-          },
+              summary: "Sable Vey purchased Ashlock Carbine."
+            }
+          }
         })}
-      />,
+      />
     );
 
-    expect(screen.getAllByText(/no equipment available/i)).toHaveLength(1);
+    expect(screen.getAllByText(/stock has not been revealed/i)).toHaveLength(1);
     expect(screen.getAllByText(/no sellable items/i)).toHaveLength(1);
-    expect(
-      screen.getByText(/use buy equipment to reveal shop stock/i),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByText(/only sellable carried gear appears here/i),
-    ).toBeInTheDocument();
-    expect(screen.getByTestId("phone-shop-category-icon")).toHaveAttribute(
-      "src",
-      "/assets/riftfall/ui/shop-category-market.svg",
-    );
+    expect(screen.getAllByText(/choose browse equipment/i).length).toBeGreaterThan(0);
+    expect(screen.getByText(/only sellable carried gear appears here/i)).toBeInTheDocument();
+    expect(screen.getByTestId("phone-shop-category-icon")).toHaveAttribute("src", "/assets/riftfall/ui/shop-category-market.svg");
     expect(screen.getByText(/purchased: ashlock carbine/i)).toBeInTheDocument();
-    expect(
-      screen.getAllByText(/Item bought: Ashlock Carbine/i).length,
-    ).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Item bought: Ashlock Carbine/i).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/-3 Salvage/i).length).toBeGreaterThan(0);
-    expect(
-      screen.queryByText(/claim the black ledger/i),
-    ).not.toBeInTheDocument();
-    expect(
-      screen.queryByText(/do not reveal private agenda data/i),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByText(/claim the black ledger/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/do not reveal private agenda data/i)).not.toBeInTheDocument();
   });
 
   it("shows sale feedback from recent shop outcomes", () => {
@@ -2265,10 +1825,9 @@ describe("PhoneActionPanel", () => {
               name: "Sable Vey",
               characterName: "Sable Vey",
               salvage: 4,
-              heat: 1,
               wounds: { current: 0, max: 6 },
               trophies: 0,
-              completedContracts: 0,
+              completedContracts: 0
             },
             blockingThreats: [],
             services: [],
@@ -2281,11 +1840,11 @@ describe("PhoneActionPanel", () => {
               sold: "Veil Hook",
               salvageDelta: 1,
               remainingSalvage: 4,
-              summary: "Sable Vey sold Veil Hook for 1 Salvage.",
-            },
-          },
+              summary: "Sable Vey sold Veil Hook for 1 Salvage."
+            }
+          }
         })}
-      />,
+      />
     );
 
     expect(screen.getByText(/sold: veil hook/i)).toBeInTheDocument();
@@ -2311,7 +1870,7 @@ describe("PhoneActionPanel", () => {
               progressLabel: "ledgerMarks",
               progress: 2,
               target: 3,
-              stakes: "Keep it quiet",
+              stakes: "Keep it quiet"
             },
             recentPrivateNotes: [],
             reveal: {
@@ -2319,22 +1878,16 @@ describe("PhoneActionPanel", () => {
               available: true,
               label: "Reveal Agenda",
               hint: "Ready to reveal a public agenda moment.",
-              lockedReason: null,
-            },
-          },
+              lockedReason: null
+            }
+          }
         })}
-      />,
+      />
     );
 
-    expect(screen.getByTestId("phone-useful-now")).toHaveTextContent(
-      /private agenda/i,
-    );
-    expect(screen.getByTestId("phone-useful-now")).toHaveTextContent(
-      /2\/3 ledgermarks/i,
-    );
-    expect(screen.getByTestId("phone-useful-now")).toHaveTextContent(
-      /ready to reveal a public agenda moment/i,
-    );
+    expect(screen.getByTestId("phone-useful-now")).toHaveTextContent(/private agenda/i);
+    expect(screen.getByTestId("phone-useful-now")).toHaveTextContent(/2\/3 ledgermarks/i);
+    expect(screen.getByTestId("phone-useful-now")).toHaveTextContent(/ready to reveal a public agenda moment/i);
   });
 
   it("shows a movement planner empty state when no legal destinations are available", () => {
@@ -2350,24 +1903,18 @@ describe("PhoneActionPanel", () => {
             movementValue: 1,
             currentSectorId: "middle_guardian_span",
             currentSectorName: "Guardian Span",
-            destinations: [],
-          },
+            destinations: []
+          }
         })}
-      />,
+      />
     );
 
-    expect(screen.getByTestId("phone-current-prompt")).toHaveTextContent(
-      /no legal destination/i,
-    );
-    expect(screen.getByTestId("phone-current-prompt")).toHaveTextContent(
-      /you rolled 1/i,
-    );
-    expect(
-      screen.getAllByText(/no legal destinations/i).length,
-    ).toBeGreaterThan(0);
-    expect(
-      screen.queryByRole("button", { name: /confirm move/i }),
-    ).not.toBeInTheDocument();
+    expect(screen.getByTestId("phone-current-prompt")).toHaveTextContent(/no legal destination/i);
+    expect(screen.getByTestId("phone-current-prompt")).toHaveTextContent(/you rolled 1/i);
+    expect(screen.getByTestId("phone-action-active-panel")).toHaveAttribute("data-movement-state", "needs-destination");
+    expect(screen.getByTestId("movement-dice-animation")).toHaveClass("phone-movement-dice");
+    expect(screen.getAllByText(/no legal destinations/i).length).toBeGreaterThan(0);
+    expect(screen.queryByRole("button", { name: /confirm move/i })).not.toBeInTheDocument();
   });
 
   it("renders a no movement roll state without direct neighbor move buttons", () => {
@@ -2380,25 +1927,21 @@ describe("PhoneActionPanel", () => {
         patch={createPatch({
           phase: "navigation",
           encounter: null,
-          movementPlanner: null,
+          movementPlanner: null
         })}
-      />,
+      />
     );
 
     const planner = within(screen.getByTestId("movement-planner"));
     expect(planner.getAllByText(/^roll movement$/i).length).toBeGreaterThan(0);
-    expect(
-      planner.getByText(/roll movement to reveal your legal destinations/i),
-    ).toBeInTheDocument();
-    expect(
-      screen.queryByRole("button", { name: /glassmere-spindle/i }),
-    ).not.toBeInTheDocument();
+    expect(planner.getByText(/roll movement to reveal your legal destinations/i)).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /glassmere-spindle/i })).not.toBeInTheDocument();
 
     fireEvent.click(planner.getByRole("button", { name: /roll movement/i }));
 
     expect(onIntent).toHaveBeenCalledWith({
       type: "MOVEMENT_ROLL_REQUESTED",
-      seatId: "seat-1",
+      seatId: "seat-1"
     });
   });
 
@@ -2419,20 +1962,16 @@ describe("PhoneActionPanel", () => {
                 type: "spaceTextResolved",
                 effectKey: "outer_ashwakeClearLane",
                 label: "Clear the Ashwake convoy lane",
-                target: 1,
-              },
-            },
-          ],
+                target: 1
+              }
+            }
+          ]
         })}
-      />,
+      />
     );
 
-    expect(
-      screen.getByRole("button", { name: /accept crossing thread/i }),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByText(/clear the ashwake convoy lane/i),
-    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /accept crossing thread/i })).toBeInTheDocument();
+    expect(screen.getByText(/clear the ashwake convoy lane/i)).toBeInTheDocument();
 
     cleanup();
 
@@ -2452,9 +1991,9 @@ describe("PhoneActionPanel", () => {
                 type: "spaceTextResolved",
                 effectKey: "outer_ashwakeClearLane",
                 label: "Clear the Ashwake convoy lane",
-                target: 1,
-              },
-            },
+                target: 1
+              }
+            }
           ],
           activeContractCard: {
             id: "cartel-crossing-thread",
@@ -2465,8 +2004,8 @@ describe("PhoneActionPanel", () => {
               type: "spaceTextResolved",
               effectKey: "outer_ashwakeClearLane",
               label: "Clear the Ashwake convoy lane",
-              target: 1,
-            },
+              target: 1
+            }
           },
           self: {
             ...createPatch().self!,
@@ -2474,21 +2013,18 @@ describe("PhoneActionPanel", () => {
               ...createPatch().self!.character,
               activeContract: {
                 contractId: "cartel-crossing-thread",
-                progress: 1,
-              },
-            },
-          },
+                progress: 1
+              }
+            }
+          }
         })}
-      />,
+      />
     );
 
     expect(
-      screen.getByRole("button", { name: /complete crossing thread/i }),
+      screen.getByRole("button", { name: /complete crossing thread/i })
     ).toBeInTheDocument();
-    expect(
-      screen.getAllByText(/clear the ashwake convoy lane \(1\/1 clears\)/i)
-        .length,
-    ).toBeGreaterThan(0);
+    expect(screen.getAllByText(/clear the ashwake convoy lane \(1\/1 clears\)/i).length).toBeGreaterThan(0);
   });
 
   it("offers stabilize when escalation is live and no encounter is blocking the action", () => {
@@ -2498,14 +2034,12 @@ describe("PhoneActionPanel", () => {
         onIntent={vi.fn()}
         patch={createPatch({
           encounter: null,
-          escalationLevel: 2,
+          escalationLevel: 2
         })}
-      />,
+      />
     );
 
-    expect(
-      screen.getByRole("button", { name: /stabilize breach/i }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /stabilize breach/i })).toBeInTheDocument();
   });
 
   it("offers sector text resolution when the local board space is clear", () => {
@@ -2530,28 +2064,18 @@ describe("PhoneActionPanel", () => {
               "Printed icons: 1 red, 1 yellow.",
               "No unresolved blockers.",
               "Draw due: 1 red, 1 yellow.",
-              "Sector text unlocked: Hold the Bridge.",
-            ],
-          },
+              "Sector text unlocked: Hold the Bridge."
+            ]
+          }
         })}
-      />,
+      />
     );
 
-    expect(
-      screen.getByRole("button", { name: /resolve hold the bridge/i }),
-    ).toBeInTheDocument();
-    expect(screen.getByTestId("phone-sector-exploration")).toHaveTextContent(
-      /sector math/i,
-    );
-    expect(screen.getByTestId("phone-sector-exploration")).toHaveTextContent(
-      /printed icons: 1 red, 1 yellow/i,
-    );
-    expect(screen.getByTestId("phone-sector-exploration")).toHaveTextContent(
-      /draw due: 1 red, 1 yellow/i,
-    );
-    expect(screen.getByTestId("phone-sector-exploration")).toHaveTextContent(
-      /sector text unlocked/i,
-    );
+    expect(screen.getByRole("button", { name: /resolve hold the bridge/i })).toBeInTheDocument();
+    expect(screen.getByTestId("phone-sector-exploration")).toHaveTextContent(/sector math/i);
+    expect(screen.getByTestId("phone-sector-exploration")).toHaveTextContent(/printed icons: 1 red, 1 yellow/i);
+    expect(screen.getByTestId("phone-sector-exploration")).toHaveTextContent(/draw due: 1 red, 1 yellow/i);
+    expect(screen.getByTestId("phone-sector-exploration")).toHaveTextContent(/sector text unlocked/i);
   });
 
   it("renders separate sector-text actions for authored board-text choices", () => {
@@ -2568,14 +2092,8 @@ describe("PhoneActionPanel", () => {
               regionTier: "midreach",
               neighbors: ["ashwake-crossing"],
               danger: 3,
-              encounterDecks: {
-                threat: [],
-                anomaly: [],
-                contract: [],
-                artifact: [],
-                escalation: [],
-              },
-            },
+              encounterDecks: { threat: [], anomaly: [], contract: [], artifact: [], escalation: [] }
+            }
           ],
           players: [
             {
@@ -2589,13 +2107,12 @@ describe("PhoneActionPanel", () => {
                 activeContract: null,
                 stats: { command: 3, grit: 2, signal: 1, guile: 2, forge: 1 },
                 trophies: 0,
-                heat: 0,
                 wounds: 0,
                 scars: [],
                 heldGearCount: 0,
-                equippedGear: { weapon: null, armor: null, utility: null },
-              },
-            },
+                equippedGear: { weapon: null, armor: null, utility: null }
+              }
+            }
           ],
           self: {
             seatId: "seat-1",
@@ -2610,25 +2127,20 @@ describe("PhoneActionPanel", () => {
               status: "active",
               stats: { command: 3, grit: 2, signal: 1, guile: 2, forge: 1 },
               trophies: 0,
-              heat: 0,
               wounds: 0,
               scars: [],
               activeContract: null,
               heldGear: [],
               equippedGear: { weapon: null, armor: null, utility: null },
-              abilities: [],
-            },
-          },
+              abilities: []
+            }
+          }
         })}
-      />,
+      />
     );
 
-    expect(
-      screen.getByRole("button", { name: /take passage stock.*yard bargain/i }),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole("button", { name: /press for gossip.*yard bargain/i }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /take passage stock.*yard bargain/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /press for gossip.*yard bargain/i })).toBeInTheDocument();
   });
 
   it("renders separate sector-text actions for Webglass authored route choices", () => {
@@ -2645,14 +2157,8 @@ describe("PhoneActionPanel", () => {
               regionTier: "midreach",
               neighbors: ["ashwake-crossing"],
               danger: 3,
-              encounterDecks: {
-                threat: [],
-                anomaly: [],
-                contract: [],
-                artifact: [],
-                escalation: [],
-              },
-            },
+              encounterDecks: { threat: [], anomaly: [], contract: [], artifact: [], escalation: [] }
+            }
           ],
           players: [
             {
@@ -2666,13 +2172,12 @@ describe("PhoneActionPanel", () => {
                 activeContract: null,
                 stats: { command: 3, grit: 2, signal: 1, guile: 2, forge: 1 },
                 trophies: 0,
-                heat: 0,
                 wounds: 0,
                 scars: [],
                 heldGearCount: 0,
-                equippedGear: { weapon: null, armor: null, utility: null },
-              },
-            },
+                equippedGear: { weapon: null, armor: null, utility: null }
+              }
+            }
           ],
           self: {
             seatId: "seat-1",
@@ -2687,29 +2192,20 @@ describe("PhoneActionPanel", () => {
               status: "active",
               stats: { command: 3, grit: 2, signal: 1, guile: 2, forge: 1 },
               trophies: 0,
-              heat: 0,
               wounds: 0,
               scars: [],
               activeContract: null,
               heldGear: [],
               equippedGear: { weapon: null, armor: null, utility: null },
-              abilities: [],
-            },
-          },
+              abilities: []
+            }
+          }
         })}
-      />,
+      />
     );
 
-    expect(
-      screen.getByRole("button", {
-        name: /slip the hidden lane.*rail fracture/i,
-      }),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole("button", {
-        name: /splice the relay seam.*rail fracture/i,
-      }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /slip the hidden lane.*rail fracture/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /splice the relay seam.*rail fracture/i })).toBeInTheDocument();
   });
 
   it("renders separate sector-text actions for Guardian Span breach-entry choices", () => {
@@ -2726,14 +2222,8 @@ describe("PhoneActionPanel", () => {
               regionTier: "midreach",
               neighbors: ["inner_veil_rift"],
               danger: 4,
-              encounterDecks: {
-                threat: [],
-                anomaly: [],
-                contract: [],
-                artifact: [],
-                escalation: [],
-              },
-            },
+              encounterDecks: { threat: [], anomaly: [], contract: [], artifact: [], escalation: [] }
+            }
           ],
           players: [
             {
@@ -2747,13 +2237,12 @@ describe("PhoneActionPanel", () => {
                 activeContract: null,
                 stats: { command: 3, grit: 2, signal: 1, guile: 2, forge: 1 },
                 trophies: 0,
-                heat: 0,
                 wounds: 0,
                 scars: [],
                 heldGearCount: 0,
-                equippedGear: { weapon: null, armor: null, utility: null },
-              },
-            },
+                equippedGear: { weapon: null, armor: null, utility: null }
+              }
+            }
           ],
           self: {
             seatId: "seat-1",
@@ -2768,29 +2257,20 @@ describe("PhoneActionPanel", () => {
               status: "active",
               stats: { command: 3, grit: 2, signal: 1, guile: 2, forge: 1 },
               trophies: 0,
-              heat: 0,
               wounds: 0,
               scars: [],
               activeContract: null,
               heldGear: [],
               equippedGear: { weapon: null, armor: null, utility: null },
-              abilities: [],
-            },
-          },
+              abilities: []
+            }
+          }
         })}
-      />,
+      />
     );
 
-    expect(
-      screen.getByRole("button", {
-        name: /align the threshold seals.*customs threshold/i,
-      }),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole("button", {
-        name: /ghost a route marker.*customs threshold/i,
-      }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /align the threshold seals.*customs threshold/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /ghost a route marker.*customs threshold/i })).toBeInTheDocument();
   });
 
   it("renders separate sector-text actions for Gate of Cinders final-breach choices", () => {
@@ -2807,14 +2287,8 @@ describe("PhoneActionPanel", () => {
               regionTier: "crownfall",
               neighbors: ["center_cinder_gate"],
               danger: 8,
-              encounterDecks: {
-                threat: [],
-                anomaly: [],
-                contract: [],
-                artifact: [],
-                escalation: [],
-              },
-            },
+              encounterDecks: { threat: [], anomaly: [], contract: [], artifact: [], escalation: [] }
+            }
           ],
           players: [
             {
@@ -2828,13 +2302,12 @@ describe("PhoneActionPanel", () => {
                 activeContract: null,
                 stats: { command: 3, grit: 2, signal: 1, guile: 2, forge: 1 },
                 trophies: 0,
-                heat: 0,
                 wounds: 0,
                 scars: [],
                 heldGearCount: 0,
-                equippedGear: { weapon: null, armor: null, utility: null },
-              },
-            },
+                equippedGear: { weapon: null, armor: null, utility: null }
+              }
+            }
           ],
           self: {
             seatId: "seat-1",
@@ -2849,34 +2322,21 @@ describe("PhoneActionPanel", () => {
               status: "active",
               stats: { command: 3, grit: 2, signal: 1, guile: 2, forge: 1 },
               trophies: 0,
-              heat: 0,
               wounds: 0,
               scars: [],
               activeContract: null,
               heldGear: [],
               equippedGear: { weapon: null, armor: null, utility: null },
-              abilities: [],
-            },
-          },
+              abilities: []
+            }
+          }
         })}
-      />,
+      />
     );
 
-    expect(
-      screen.getByRole("button", {
-        name: /brace the cinder locks.*last signal/i,
-      }),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole("button", {
-        name: /time the relay pulse.*last signal/i,
-      }),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole("button", {
-        name: /ghost the last breach path.*last signal/i,
-      }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /brace the cinder locks.*last signal/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /time the relay pulse.*last signal/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /ghost the last breach path.*last signal/i })).toBeInTheDocument();
   });
 
   it("renders separate sector-text actions for Veil Rift breach-entry choices", () => {
@@ -2893,14 +2353,8 @@ describe("PhoneActionPanel", () => {
               regionTier: "crownfall",
               neighbors: ["inner_cinder_lattice"],
               danger: 7,
-              encounterDecks: {
-                threat: [],
-                anomaly: [],
-                contract: [],
-                artifact: [],
-                escalation: [],
-              },
-            },
+              encounterDecks: { threat: [], anomaly: [], contract: [], artifact: [], escalation: [] }
+            }
           ],
           players: [
             {
@@ -2914,13 +2368,12 @@ describe("PhoneActionPanel", () => {
                 activeContract: null,
                 stats: { command: 3, grit: 2, signal: 1, guile: 2, forge: 1 },
                 trophies: 0,
-                heat: 0,
                 wounds: 0,
                 scars: [],
                 heldGearCount: 0,
-                equippedGear: { weapon: null, armor: null, utility: null },
-              },
-            },
+                equippedGear: { weapon: null, armor: null, utility: null }
+              }
+            }
           ],
           self: {
             seatId: "seat-1",
@@ -2935,27 +2388,20 @@ describe("PhoneActionPanel", () => {
               status: "active",
               stats: { command: 3, grit: 2, signal: 1, guile: 2, forge: 1 },
               trophies: 0,
-              heat: 0,
               wounds: 0,
               scars: [],
               activeContract: null,
               heldGear: [],
               equippedGear: { weapon: null, armor: null, utility: null },
-              abilities: [],
-            },
-          },
+              abilities: []
+            }
+          }
         })}
-      />,
+      />
     );
 
-    expect(
-      screen.getByRole("button", {
-        name: /anchor the surge.*three-ash entry/i,
-      }),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole("button", { name: /slip the fold.*three-ash entry/i }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /anchor the surge.*three-ash entry/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /slip the fold.*three-ash entry/i })).toBeInTheDocument();
   });
 
   it("renders separate sector-text actions for Cinder Lattice trial choices", () => {
@@ -2972,14 +2418,8 @@ describe("PhoneActionPanel", () => {
               regionTier: "crownfall",
               neighbors: ["inner_gate_of_cinders"],
               danger: 8,
-              encounterDecks: {
-                threat: [],
-                anomaly: [],
-                contract: [],
-                artifact: [],
-                escalation: [],
-              },
-            },
+              encounterDecks: { threat: [], anomaly: [], contract: [], artifact: [], escalation: [] }
+            }
           ],
           players: [
             {
@@ -2993,13 +2433,12 @@ describe("PhoneActionPanel", () => {
                 activeContract: null,
                 stats: { command: 3, grit: 2, signal: 1, guile: 2, forge: 1 },
                 trophies: 0,
-                heat: 0,
                 wounds: 0,
                 scars: [],
                 heldGearCount: 0,
-                equippedGear: { weapon: null, armor: null, utility: null },
-              },
-            },
+                equippedGear: { weapon: null, armor: null, utility: null }
+              }
+            }
           ],
           self: {
             seatId: "seat-1",
@@ -3014,29 +2453,20 @@ describe("PhoneActionPanel", () => {
               status: "active",
               stats: { command: 3, grit: 2, signal: 1, guile: 2, forge: 1 },
               trophies: 0,
-              heat: 0,
               wounds: 0,
               scars: [],
               activeContract: null,
               heldGear: [],
               equippedGear: { weapon: null, armor: null, utility: null },
-              abilities: [],
-            },
-          },
+              abilities: []
+            }
+          }
         })}
-      />,
+      />
     );
 
-    expect(
-      screen.getByRole("button", {
-        name: /trace the ember pulses.*observatory trial/i,
-      }),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole("button", {
-        name: /read the ghost angles.*observatory trial/i,
-      }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /trace the ember pulses.*observatory trial/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /read the ghost angles.*observatory trial/i })).toBeInTheDocument();
   });
 
   it("shows game over state and hides action buttons when the session has ended", () => {
@@ -3046,15 +2476,13 @@ describe("PhoneActionPanel", () => {
         onIntent={vi.fn()}
         patch={createPatch({
           status: "ended",
-          winnerSeatId: "seat-2",
+          winnerSeatId: "seat-2"
         })}
-      />,
+      />
     );
 
     expect(screen.getByText(/game over: mira wins/i)).toBeInTheDocument();
-    expect(
-      queryByRole("button", { name: /attempt signal check/i }),
-    ).not.toBeInTheDocument();
+    expect(queryByRole("button", { name: /attempt signal check/i })).not.toBeInTheDocument();
   });
 
   it("shows the enemy roll trigger only for the assigned roller", () => {
@@ -3069,18 +2497,14 @@ describe("PhoneActionPanel", () => {
             assignedRollerSeatId: "seat-1",
             encounterCardId: "cinder-veil-stalker",
             encounterTitle: "Cinder-Veil Stalker",
-            stat: "grit",
-          },
+            stat: "grit"
+          }
         })}
-      />,
+      />
     );
 
-    expect(
-      screen.getByRole("button", { name: /roll for the enemy/i }),
-    ).toBeInTheDocument();
-    expect(
-      screen.getAllByText(/seat-2 is engaged|mira is engaged/i).length,
-    ).toBeGreaterThan(0);
+    expect(screen.getByRole("button", { name: /roll for enemy/i })).toBeInTheDocument();
+    expect(screen.getByTestId("phone-battle-shell")).toHaveTextContent(/enemy roll/i);
   });
 
   it("shows a waiting state for seats that are neither the fighter nor the assigned roller", () => {
@@ -3091,30 +2515,9 @@ describe("PhoneActionPanel", () => {
         patch={createPatch({
           activeSeatIndex: 1,
           seats: [
-            {
-              seatId: "seat-1",
-              characterId: "void-marshal",
-              displayName: "Lane",
-              connected: true,
-              ready: true,
-              kicked: false,
-            },
-            {
-              seatId: "seat-2",
-              characterId: "signal-witch",
-              displayName: "Mira",
-              connected: true,
-              ready: true,
-              kicked: false,
-            },
-            {
-              seatId: "seat-3",
-              characterId: "grave-engineer",
-              displayName: "Pax",
-              connected: true,
-              ready: true,
-              kicked: false,
-            },
+            { seatId: "seat-1", characterId: "void-marshal", displayName: "Lane", connected: true, ready: true, kicked: false },
+            { seatId: "seat-2", characterId: "signal-witch", displayName: "Mira", connected: true, ready: true, kicked: false },
+            { seatId: "seat-3", characterId: "grave-engineer", displayName: "Pax", connected: true, ready: true, kicked: false }
           ],
           turnOrder: ["seat-2", "seat-3", "seat-1"],
           pendingEnemyRoll: {
@@ -3122,18 +2525,14 @@ describe("PhoneActionPanel", () => {
             assignedRollerSeatId: "seat-3",
             encounterCardId: "cinder-veil-stalker",
             encounterTitle: "Cinder-Veil Stalker",
-            stat: "grit",
-          },
+            stat: "grit"
+          }
         })}
-      />,
+      />
     );
 
-    expect(
-      screen.getByText(/waiting on pax to roll for the enemy/i),
-    ).toBeInTheDocument();
-    expect(
-      screen.queryByRole("button", { name: /roll for the enemy/i }),
-    ).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /waiting on pax/i })).toBeDisabled();
+    expect(screen.queryByRole("button", { name: /roll for enemy/i })).not.toBeInTheDocument();
   });
 
   it("renders active roll result and sends continue intent", () => {
@@ -3155,15 +2554,15 @@ describe("PhoneActionPanel", () => {
               id: "signal-static",
               title: "Signal Static",
               type: "hazard",
-              artType: "threat",
+              artType: "threat"
             },
             battle: {
               stat: "signal",
               difficulty: 7,
               modifiers: [
                 { label: "Signal", value: 1 },
-                { label: "Affliction: Hollow Belly", value: -2 },
-              ],
+                { label: "Affliction: Hollow Belly", value: -2 }
+              ]
             },
             roll: {
               dice: [2, 5],
@@ -3171,56 +2570,36 @@ describe("PhoneActionPanel", () => {
               modifierTotal: -1,
               finalTotal: 6,
               target: 7,
-              success: false,
+              success: false
             },
             outcome: {
               title: "Check failed",
               text: "Failure: the signal collapses.",
-              effects: ["Failure: lasting harm is handled by Scars."],
-            },
-          },
+              effects: ["Failure: lasting harm is handled by Scars."]
+            }
+          }
         })}
-      />,
+      />
     );
 
-    expect(screen.getByTestId("phone-roll-result")).toHaveTextContent(
-      /roll: 2 \+ 5 - 1 = 6/i,
-    );
-    expect(
-      within(screen.getByTestId("phone-roll-result")).getByTestId(
-        "combat-die-attack",
-      ),
-    ).toHaveTextContent("2");
-    expect(
-      within(screen.getByTestId("phone-roll-result")).getByTestId(
-        "combat-die-defense",
-      ),
-    ).toHaveTextContent("5");
-    expect(screen.getByTestId("phone-roll-result")).toHaveTextContent(
-      /target: 7/i,
-    );
-    expect(screen.getByTestId("phone-roll-result")).toHaveTextContent(
-      /failure/i,
-    );
-    expect(screen.getByTestId("phone-roll-result")).toHaveTextContent(
-      "A 6 / D 7 / -1",
-    );
-    expect(screen.getByTestId("phone-battle-panel")).toHaveTextContent(
-      /affliction: hollow belly -2/i,
-    );
+    expect(screen.getByTestId("phone-roll-result")).toHaveTextContent(/roll: 2 \+ 5 - 1 = 6/i);
+    expect(within(screen.getByTestId("phone-roll-result")).getByTestId("combat-die-attack")).toHaveTextContent("2");
+    expect(within(screen.getByTestId("phone-roll-result")).getByTestId("combat-die-defense")).toHaveTextContent("5");
+    expect(screen.getByTestId("phone-roll-result")).toHaveTextContent(/target: 7/i);
+    expect(screen.getByTestId("phone-roll-result")).toHaveTextContent(/failure/i);
+    expect(screen.getByTestId("phone-roll-result")).toHaveTextContent("A 6 / D 7 / -1");
+    expect(screen.getByTestId("phone-battle-panel")).toHaveTextContent(/affliction: hollow belly -2/i);
     expect(screen.getByTestId("phone-resolution-continue")).toBeVisible();
     expect(
-      screen
-        .getByTestId("phone-resolution-continue")
-        .compareDocumentPosition(screen.getByTestId("phone-roll-result")) &
-        Node.DOCUMENT_POSITION_FOLLOWING,
+      screen.getByTestId("phone-resolution-continue").compareDocumentPosition(screen.getByTestId("phone-roll-result")) &
+        Node.DOCUMENT_POSITION_FOLLOWING
     ).toBeTruthy();
 
     fireEvent.click(screen.getByRole("button", { name: /continue/i }));
 
     expect(onIntent).toHaveBeenCalledWith({
       type: "CONTINUE_RESOLUTION",
-      seatId: "seat-1",
+      seatId: "seat-1"
     });
   });
 
@@ -3237,7 +2616,7 @@ describe("PhoneActionPanel", () => {
             enemyName: "Cinder-Veil Stalker",
             flavor: "The ash around it boils before the strike.",
             difficulty: 6,
-            stat: "grit",
+            stat: "grit"
           },
           outcomeSummary: {
             seatId: "seat-1",
@@ -3257,24 +2636,15 @@ describe("PhoneActionPanel", () => {
             enemyBonus: null,
             enemyTotal: null,
             success: null,
-            summary:
-              "Moved into Ashwake Crossing. Cinder-Veil Stalker is revealed.",
-          },
+            summary: "Moved into Ashwake Crossing. Cinder-Veil Stalker is revealed."
+          }
         })}
-      />,
+      />
     );
 
-    expect(screen.getByTestId("phone-action-active-panel")).toHaveClass(
-      "phone-battle-panel",
-    );
-    expect(
-      screen.queryByTestId("phone-movement-transition"),
-    ).not.toBeInTheDocument();
-    expect(
-      screen.getByRole("button", {
-        name: /enter combat.*cinder-veil stalker/i,
-      }),
-    ).toBeInTheDocument();
+    expect(screen.getByTestId("phone-battle-shell")).toBeInTheDocument();
+    expect(screen.queryByTestId("phone-movement-transition")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /enter combat/i })).toBeInTheDocument();
   });
 
   it("renders a recovery continue button for orphaned movement roll summaries", () => {
@@ -3306,37 +2676,26 @@ describe("PhoneActionPanel", () => {
             enemyBonus: null,
             enemyTotal: null,
             success: false,
-            summary:
-              "Failed to enter Red March Outpost. Failure: lasting harm is handled by Scars.",
-          },
+            summary: "Failed to enter Red March Outpost. Failure: lasting harm is handled by Scars."
+          }
         })}
-      />,
+      />
     );
 
-    expect(screen.getByTestId("phone-roll-result")).toHaveTextContent(
-      /roll: 3 \+ 2 \+ 1 = 6/i,
-    );
-    expect(screen.getByTestId("phone-roll-result")).toHaveTextContent(
-      /target: 7/i,
-    );
-    expect(screen.getByTestId("phone-roll-result")).toHaveTextContent(
-      /failure/i,
-    );
+    expect(screen.getByTestId("phone-roll-result")).toHaveTextContent(/roll: 3 \+ 2 \+ 1 = 6/i);
+    expect(screen.getByTestId("phone-roll-result")).toHaveTextContent(/target: 7/i);
+    expect(screen.getByTestId("phone-roll-result")).toHaveTextContent(/failure/i);
+    expect(screen.getAllByText(/failed to enter red march outpost/i).length).toBeGreaterThan(0);
     expect(
-      screen.getAllByText(/failed to enter red march outpost/i).length,
-    ).toBeGreaterThan(0);
-    expect(
-      screen
-        .getByTestId("phone-resolution-continue")
-        .compareDocumentPosition(screen.getByTestId("phone-roll-result")) &
-        Node.DOCUMENT_POSITION_FOLLOWING,
+      screen.getByTestId("phone-resolution-continue").compareDocumentPosition(screen.getByTestId("phone-roll-result")) &
+        Node.DOCUMENT_POSITION_FOLLOWING
     ).toBeTruthy();
 
     fireEvent.click(screen.getByRole("button", { name: /continue/i }));
 
     expect(onIntent).toHaveBeenCalledWith({
       type: "CONTINUE_RESOLUTION",
-      seatId: "seat-1",
+      seatId: "seat-1"
     });
   });
 
@@ -3356,7 +2715,7 @@ describe("PhoneActionPanel", () => {
               title: "Cinder-Veil Stalker",
               type: "enemy",
               flavor: "The ash around it boils before the strike.",
-              artType: "threat",
+              artType: "threat"
             },
             battle: {
               enemyName: "Cinder-Veil Stalker",
@@ -3365,39 +2724,206 @@ describe("PhoneActionPanel", () => {
               modifiers: [
                 { label: "Base Grit", value: 2 },
                 { label: "Black Route Fuse", value: 3 },
-                { label: "Enemy", value: 6 },
-              ],
-            },
-          },
+                { label: "Enemy", value: 6 }
+              ]
+            }
+          }
         })}
-      />,
+      />
     );
 
-    expect(screen.getByTestId("phone-resolution-card")).toHaveTextContent(
-      /battle setup/i,
+    expect(screen.getByTestId("phone-battle-shell")).toHaveTextContent(/roll required/i);
+    expect(screen.getByLabelText(/lane versus cinder-veil stalker/i)).toBeInTheDocument();
+    expect(screen.getByRole("img", { name: /cinder-veil stalker/i })).toHaveAttribute("src", expect.stringMatching(/\/assets\/cards\/(threats|fallbacks)\//));
+    expect(screen.getByLabelText(/battle totals/i)).toHaveTextContent(/opponent\s*8/i);
+    fireEvent.click(screen.getByRole("button", { name: /view details/i }));
+    expect(screen.getByLabelText(/battle details/i)).toHaveTextContent(/base grit \+2/i);
+    expect(screen.getByLabelText(/battle details/i)).toHaveTextContent(/black route fuse \+3/i);
+  });
+
+  it("uses the focused battle shell when live battle data has a generic projected card type", () => {
+    render(
+      <PhoneActionPanel
+        characters={characters}
+        onIntent={vi.fn()}
+        patch={createPatch({
+          encounter: null,
+          activeResolution: {
+            id: "seat-1:threat:projection-shape:test",
+            playerId: "seat-1",
+            source: "threat",
+            stage: "battle_setup",
+            card: {
+              id: "cinder-veil-stalker",
+              title: "Cinder-Veil Stalker",
+              type: "threat",
+              artType: "threat"
+            },
+            battle: {
+              enemyName: "Cinder-Veil Stalker",
+              stat: "grit",
+              difficulty: 8,
+              modifiers: []
+            }
+          }
+        })}
+      />
     );
-    expect(screen.getByTestId("phone-battle-subject-card")).toHaveTextContent(
-      /cinder-veil stalker/i,
+
+    expect(screen.getByTestId("phone-battle-shell")).toBeInTheDocument();
+    expect(screen.queryByTestId("phone-battle-subject-card")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /roll grit/i })).toBeInTheDocument();
+  });
+
+  it("consolidates a successful opposed battle into one outcome and one primary action", () => {
+    render(
+      <PhoneActionPanel
+        characters={characters}
+        onIntent={vi.fn()}
+        patch={createPatch({
+          encounter: null,
+          activeResolution: {
+            id: "seat-1:threat:lantern-ash-ghoul:test",
+            playerId: "seat-1",
+            source: "threat",
+            stage: "outcome_summary",
+            card: {
+              id: "lantern-ash-ghoul",
+              title: "Lantern-Ash Ghoul",
+              type: "enemy",
+              flavor: "The lamp burns behind its teeth.",
+              artType: "threat"
+            },
+            battle: {
+              enemyName: "Lantern-Ash Ghoul",
+              stat: "grit",
+              difficulty: 12,
+              modifiers: [{ label: "Equipped", value: 2 }]
+            },
+            roll: {
+              dice: [6, 4],
+              baseTotal: 10,
+              modifierTotal: 2,
+              finalTotal: 12,
+              target: 12,
+              success: true
+            },
+            outcome: {
+              title: "Threat defeated",
+              text: "You keep the lamp burning.",
+              effects: ["Lantern-Ash Ghoul added to the Trophy Pile."]
+            }
+          },
+          playerResultDeltas: [
+            {
+              id: "defeated-ghoul",
+              type: "threatDefeated",
+              label: "Threat defeated",
+              value: "Lantern-Ash Ghoul",
+              sign: "gain",
+              targetScope: "table",
+              visibility: "public",
+              source: "combat",
+              publicText: "Lantern-Ash Ghoul was defeated.",
+              severity: "reward"
+            },
+            {
+              id: "ghoul-trophy",
+              type: "trophy",
+              label: "Trophy added",
+              value: 1,
+              sign: "gain",
+              targetScope: "personal",
+              targetSeatId: "seat-1",
+              visibility: "public",
+              source: "combat",
+              publicText: "Lantern-Ash Ghoul added to the Trophy Pile.",
+              severity: "reward"
+            }
+          ]
+        })}
+      />
     );
-    expect(screen.getByTestId("phone-battle-subject-card")).toHaveTextContent(
-      /ash around it boils/i,
+
+    expect(screen.getByLabelText(/lane versus lantern-ash ghoul/i)).toBeInTheDocument();
+    expect(screen.getByTestId("phone-battle-total-comparison")).toHaveTextContent(/12.*12/i);
+    expect(screen.getByText(/tie succeeds against this threat/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/^threat defeated$/i)).toHaveLength(1);
+    expect(screen.getByTestId("phone-battle-consequence-trophy")).toBeInTheDocument();
+    expect(screen.queryByText(/BattleThreatGrit/i)).not.toBeInTheDocument();
+    expect(screen.queryByTestId("phone-current-prompt")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("phone-battle-assist")).not.toBeInTheDocument();
+    const actionDock = screen.getByTestId("phone-battle-action-dock");
+    expect(within(actionDock).getAllByRole("button")).toHaveLength(1);
+    expect(within(actionDock).getByRole("button", { name: /continue/i })).toBeEnabled();
+    expect(screen.queryByLabelText(/battle details/i)).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /view details/i }));
+    expect(screen.getByLabelText(/battle details/i)).toHaveTextContent(/equipped \+2/i);
+  });
+
+  it("presents defeat and penalties without duplicating the old battle panels", () => {
+    render(
+      <PhoneActionPanel
+        characters={characters}
+        onIntent={vi.fn()}
+        patch={createPatch({
+          encounter: null,
+          activeResolution: {
+            id: "seat-1:threat:lantern-ash-ghoul:defeat",
+            playerId: "seat-1",
+            source: "threat",
+            stage: "outcome_summary",
+            card: {
+              id: "lantern-ash-ghoul",
+              title: "Lantern-Ash Ghoul",
+              type: "enemy",
+              artType: "threat"
+            },
+            battle: {
+              enemyName: "Lantern-Ash Ghoul",
+              stat: "grit",
+              difficulty: 12,
+              modifiers: []
+            },
+            roll: {
+              dice: [2, 3],
+              baseTotal: 5,
+              modifierTotal: 0,
+              finalTotal: 5,
+              target: 12,
+              success: false
+            },
+            outcome: {
+              title: "Operative defeated",
+              text: "The ghoul drives you back.",
+              effects: ["Suffer 1 Wound."]
+            }
+          },
+          playerResultDeltas: [
+            {
+              id: "ghoul-wound",
+              type: "wound",
+              label: "Wound",
+              value: 1,
+              sign: "loss",
+              targetScope: "personal",
+              targetSeatId: "seat-1",
+              visibility: "ownerPrivate",
+              source: "combat",
+              publicText: "Sable Vey suffered a Wound.",
+              privateText: "You suffered 1 Wound.",
+              severity: "loss"
+            }
+          ]
+        })}
+      />
     );
-    expect(screen.getByTestId("phone-battle-subject-art")).toHaveAttribute(
-      "src",
-      expect.stringMatching(/\/assets\/cards\/(threats|fallbacks)\//),
-    );
-    expect(screen.getByTestId("phone-battle-panel")).toHaveTextContent(
-      /cinder-veil stalker/i,
-    );
-    expect(screen.getByTestId("phone-battle-panel")).toHaveTextContent(
-      /grit vs 8/i,
-    );
-    expect(screen.getByTestId("phone-battle-panel")).toHaveTextContent(
-      /base grit \+2/i,
-    );
-    expect(screen.getByTestId("phone-battle-panel")).toHaveTextContent(
-      /black route fuse \+3/i,
-    );
+
+    expect(screen.getByText(/^operative defeated$/i)).toBeInTheDocument();
+    expect(screen.getByTestId("phone-battle-consequence-wound")).toBeInTheDocument();
+    expect(screen.getByTestId("phone-battle-shell")).toHaveClass("phone-battle-shell--defeat");
+    expect(screen.queryByTestId("phone-resolution-card")).not.toBeInTheDocument();
+    expect(screen.queryByText(/no quick actions available/i)).not.toBeInTheDocument();
   });
 
   it("renders active anomaly test cards with fallback art and battle controls", () => {
@@ -3416,58 +2942,76 @@ describe("PhoneActionPanel", () => {
               id: "unknown-anomaly-test",
               title: "Null Choir Interference",
               type: "test",
-              flavor:
-                "A dead signal braids itself through the command channel.",
-              artType: "anomaly",
+              flavor: "A dead signal braids itself through the command channel.",
+              artType: "anomaly"
             },
             battle: {
               stat: "command",
               difficulty: 7,
               modifiers: [
                 { label: "Base Command", value: 3 },
-                { label: "Relay Discipline", value: 1 },
-              ],
-            },
-          },
+                { label: "Relay Discipline", value: 1 }
+              ]
+            }
+          }
         })}
-      />,
+      />
     );
 
-    expect(screen.getByTestId("phone-action-active-panel")).toHaveClass(
-      "phone-battle-panel",
-    );
-    expect(
-      screen.getByRole("article", {
-        name: /null choir interference test card/i,
-      }),
-    ).toBeInTheDocument();
-    expect(screen.getByTestId("phone-battle-subject-card")).toHaveTextContent(
-      /null choir interference/i,
-    );
-    expect(screen.getByTestId("phone-battle-subject-card")).toHaveTextContent(
-      /test/i,
-    );
-    expect(screen.getByTestId("phone-battle-subject-card")).toHaveTextContent(
-      /anomaly/i,
-    );
-    expect(screen.getByTestId("phone-battle-subject-card")).toHaveTextContent(
-      /dead signal braids/i,
-    );
-    expect(
-      screen.getByTestId("phone-battle-subject-details"),
-    ).toHaveTextContent(/command/i);
-    expect(
-      screen.getByTestId("phone-battle-subject-details"),
-    ).toHaveTextContent(/target 7/i);
-    expect(screen.getByTestId("phone-battle-subject-art")).toHaveAttribute(
-      "src",
-      "/assets/cards/fallbacks/anomaly.svg",
-    );
-    expect(screen.getByTestId("phone-resolution-card")).toHaveTextContent(
-      /command vs 7/i,
-    );
+    expect(screen.getByTestId("phone-action-active-panel")).toHaveClass("phone-battle-panel");
+    expect(screen.getByRole("article", { name: /null choir interference test card/i })).toBeInTheDocument();
+    expect(screen.getByTestId("phone-battle-subject-card")).toHaveTextContent(/null choir interference/i);
+    expect(screen.getByTestId("phone-battle-subject-card")).toHaveTextContent(/test/i);
+    expect(screen.getByTestId("phone-battle-subject-card")).toHaveTextContent(/anomaly/i);
+    expect(screen.getByTestId("phone-battle-subject-card")).toHaveTextContent(/dead signal braids/i);
+    expect(screen.getByTestId("phone-battle-subject-details")).toHaveTextContent(/command/i);
+    expect(screen.getByTestId("phone-battle-subject-details")).toHaveTextContent(/target 7/i);
+    expect(screen.getByTestId("phone-battle-subject-art")).toHaveAttribute("src", "/assets/cards/fallbacks/anomaly.svg");
+    expect(screen.getByTestId("phone-resolution-card")).toHaveTextContent(/command vs 7/i);
     expect(screen.queryByTestId("movement-planner")).not.toBeInTheDocument();
     expect(screen.queryByTestId("phone-shop-panel")).not.toBeInTheDocument();
+  });
+
+  it("offers Choir Lantern only for the owning unrolled anomaly Signal tile challenge", () => {
+    const onIntent = vi.fn();
+    const patch = createPatch();
+    patch.pendingTileChallengePrivate = { id: "pending-rift", challengeId: "rift-whispers-ashen-chapel", sectorId: "ashen-chapel", seatId: "seat-1", challengeType: "anomaly", testStat: "signal", difficulty: 8, authoredOrder: 0, totalChallenges: 1, rolled: false };
+    patch.self!.character.heldGear = [{ id: "choir-lantern", instanceId: "choir-1", name: "Choir Lantern", slot: "utility", tier: "artifact", category: "chargedRelic", statBonus: { stat: "signal", amount: 1 }, effectModel: "charged", useLimit: "charge", currentCharges: 2, maxCharges: 2, startingCharges: 2, chargeCost: 1, rechargeRule: "none", chargedEffect: "choirLightSignalBonus", activationTiming: ["beforeAnomalySignalTest"], requiresEquipped: true }];
+    patch.self!.character.equippedGear.utility = "choir-lantern";
+    render(<PhoneActionPanel characters={characters} onIntent={onIntent} patch={patch} />);
+    fireEvent.click(screen.getByRole("button", { name: /use choir lantern/i }));
+    expect(onIntent).toHaveBeenCalledWith(expect.objectContaining({ type: "USE_GEAR", instanceId: "choir-1", pendingTileChallengeId: "pending-rift" }));
+    expect(screen.getByText(/recurring anomaly challenge 1 of 1/i)).toBeInTheDocument();
+  });
+
+  it("offers Static Intercession consequence choices only in the final failed anomaly window", () => {
+    const onIntent = vi.fn();
+    const patch = createPatch();
+    patch.phase = "resolution";
+    patch.pendingTileChallengePrivate = {
+      id: "pending-rift-failure", challengeId: "rift-whispers-ashen-chapel", sectorId: "ashen-chapel", seatId: "seat-1",
+      challengeType: "anomaly", testStat: "signal", difficulty: 8, authoredOrder: 0, totalChallenges: 1, rolled: true,
+      staticIntercessionReactionId: "pending-rift-failure:static-intercession",
+      pendingFailureEffects: [{ effectId: "pending-rift-failure:failure-effect", summary: "Gain 1 Scar, then suffer 1 Wound" }]
+    };
+    patch.self!.character.heldGear = [{
+      id: "choir-static-censer", instanceId: "censer-1", name: "Choir Static Censer", slot: "utility", tier: "artifact",
+      category: "chargedRelic", statBonus: { stat: "signal", amount: 1 }, effectModel: "charged", useLimit: "charge",
+      currentCharges: 2, maxCharges: 2, startingCharges: 2, chargeCost: 1, rechargeRule: "none",
+      chargedEffect: "staticIntercession", activationTiming: ["afterFailedTest"], requiresEquipped: true
+    }];
+    patch.self!.character.equippedGear.utility = "choir-static-censer";
+    render(<PhoneActionPanel characters={characters} onIntent={onIntent} patch={patch} />);
+
+    const choices = screen.getAllByRole("button", { name: /ignore this effect/i });
+    expect(choices).toHaveLength(1);
+    fireEvent.click(choices[0]!);
+    expect(onIntent).toHaveBeenCalledWith(expect.objectContaining({
+      type: "USE_GEAR", instanceId: "censer-1", pendingTileChallengeId: "pending-rift-failure",
+      staticIntercessionReactionId: "pending-rift-failure:static-intercession", pendingTileChallengeEffectId: "pending-rift-failure:failure-effect"
+    }));
+    fireEvent.click(screen.getByRole("button", { name: /accept all failure effects/i }));
+    expect(onIntent).toHaveBeenCalledWith(expect.objectContaining({ type: "CONTINUE_RESOLUTION" }));
   });
 
   it("shows battle assist and opens usable combat cards during an enemy encounter", () => {
@@ -3479,18 +3023,17 @@ describe("PhoneActionPanel", () => {
         slot: "weapon" as const,
         category: "dangerous" as const,
         statBonus: { stat: "grit" as const, amount: 1 },
-        activeText:
-          "Break for +3 Grit before the battle roll, then advance escalation by 1.",
+        activeText: "Break for +3 Grit before the battle roll, then advance escalation by 1.",
         useLimit: "discard" as const,
-        heatCost: 1,
+        heatCost: 1
       },
       {
         id: "coffin-rig",
         name: "Coffin Rig",
         slot: "armor" as const,
         category: "passive" as const,
-        statBonus: { stat: "forge" as const, amount: 1 },
-      },
+        statBonus: { stat: "forge" as const, amount: 1 }
+      }
     ];
 
     render(
@@ -3505,47 +3048,29 @@ describe("PhoneActionPanel", () => {
             enemyName: "Cinder-Veil Stalker",
             flavor: "The ash around it boils before the strike.",
             difficulty: 6,
-            stat: "grit",
+            stat: "grit"
           },
           self: {
             ...createPatch().self!,
             character: {
               ...createPatch().self!.character,
-              heat: 1,
-              heldGear,
-            },
-          },
+              heldGear
+            }
+          }
         })}
-      />,
+      />
     );
 
-    expect(screen.getByTestId("phone-battle-assist")).toHaveTextContent(
-      /cinder-veil stalker/i,
-    );
-    expect(screen.getByTestId("phone-battle-assist")).toHaveTextContent(
-      /you have 1 card that can help/i,
-    );
-
-    fireEvent.click(screen.getByRole("button", { name: /open combat cards/i }));
-
-    expect(screen.getByTestId("phone-combat-card-drawer")).toHaveTextContent(
-      /black route fuse/i,
-    );
-    expect(
-      screen.getByTestId("phone-combat-card-drawer"),
-    ).not.toHaveTextContent(/coffin rig/i);
-
-    fireEvent.click(
-      within(screen.getByTestId("phone-combat-card-drawer")).getByRole(
-        "button",
-        { name: /use black route fuse/i },
-      ),
-    );
+    expect(screen.queryByTestId("phone-battle-assist")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /^gear$/i }));
+    expect(screen.getByLabelText(/gear battle context/i)).toHaveTextContent(/black route fuse/i);
+    expect(screen.getByLabelText(/gear battle context/i)).not.toHaveTextContent(/coffin rig/i);
+    fireEvent.click(screen.getByRole("button", { name: /use black route fuse/i }));
 
     expect(onIntent).toHaveBeenCalledWith({
       type: "USE_GEAR",
       seatId: "seat-1",
-      gearId: "black-route-fuse",
+      gearId: "black-route-fuse"
     });
   });
 
@@ -3557,10 +3082,9 @@ describe("PhoneActionPanel", () => {
         slot: "weapon" as const,
         category: "active" as const,
         statBonus: { stat: "grit" as const, amount: 1 },
-        activeText:
-          "Mark the roll unstable to bank +2 Grit before the battle roll.",
-        useLimit: "oncePerTurn" as const,
-      },
+        activeText: "Mark the roll unstable to bank +2 Grit before the battle roll.",
+        useLimit: "oncePerTurn" as const
+      }
     ];
 
     render(
@@ -3575,34 +3099,24 @@ describe("PhoneActionPanel", () => {
             enemyName: "Gate-Tax Collectors",
             flavor: "The toll stamp is already wet.",
             difficulty: 6,
-            stat: "command",
+            stat: "command"
           },
           self: {
             ...createPatch().self!,
             character: {
               ...createPatch().self!.character,
-              heat: 1,
               heldGear,
-              equippedGear: {
-                weapon: "red-march-warbell",
-                armor: null,
-                utility: null,
-              },
-            },
-          },
+              equippedGear: { weapon: "red-march-warbell", armor: null, utility: null }
+            }
+          }
         })}
-      />,
+      />
     );
 
-    expect(screen.getByTestId("phone-battle-assist")).toHaveTextContent(
-      /no combat cards are usable/i,
-    );
-    expect(
-      screen.queryByRole("button", { name: /open combat cards/i }),
-    ).not.toBeInTheDocument();
-    expect(
-      screen.queryByRole("button", { name: /use red march warbell/i }),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByTestId("phone-battle-assist")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /^gear$/i }));
+    expect(screen.getByLabelText(/gear battle context/i)).toHaveTextContent(/no gear is eligible/i);
+    expect(screen.queryByRole("button", { name: /use red march warbell/i })).not.toBeInTheDocument();
   });
 
   it("does not interrupt battle flow when no combat cards are usable", () => {
@@ -3618,7 +3132,7 @@ describe("PhoneActionPanel", () => {
             enemyName: "Cinder-Veil Stalker",
             flavor: "The ash around it boils before the strike.",
             difficulty: 6,
-            stat: "grit",
+            stat: "grit"
           },
           self: {
             ...createPatch().self!,
@@ -3630,21 +3144,18 @@ describe("PhoneActionPanel", () => {
                   name: "Coffin Rig",
                   slot: "armor" as const,
                   category: "passive" as const,
-                  statBonus: { stat: "forge" as const, amount: 1 },
-                },
-              ],
-            },
-          },
+                  statBonus: { stat: "forge" as const, amount: 1 }
+                }
+              ]
+            }
+          }
         })}
-      />,
+      />
     );
 
-    expect(screen.getByTestId("phone-battle-assist")).toHaveTextContent(
-      /no combat cards are usable/i,
-    );
-    expect(
-      screen.queryByRole("button", { name: /open combat cards/i }),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByTestId("phone-battle-assist")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /^gear$/i }));
+    expect(screen.getByLabelText(/gear battle context/i)).toHaveTextContent(/no gear is eligible/i);
   });
 
   it("keeps trophies and stat upgrades out of the sector action tab", () => {
@@ -3666,25 +3177,19 @@ describe("PhoneActionPanel", () => {
                   trophyValue: 6,
                   spentValue: 0,
                   stat: "grit",
-                  cardType: "enemy",
-                },
-              ],
-            },
-          },
+                  cardType: "enemy"
+                }
+              ]
+            }
+          }
         })}
-      />,
+      />
     );
 
-    expect(screen.getByTestId("phone-action-active-panel")).toHaveClass(
-      "phone-sector-action-panel",
-    );
+    expect(screen.getByTestId("phone-action-active-panel")).toHaveClass("phone-sector-action-panel");
     expect(screen.queryByTestId("phone-trophy-pile")).not.toBeInTheDocument();
-    expect(
-      screen.queryByText(/spend trophies equal to the next stat value/i),
-    ).not.toBeInTheDocument();
-    expect(
-      screen.queryByRole("button", { name: /grit 2 -> 3\s*cost 3 trophies/i }),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByText(/spend trophies equal to the next stat value/i)).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /grit 2 -> 3\s*cost 3 trophies/i })).not.toBeInTheDocument();
   });
 
   it("shows stat upgrade disabled reasons and upgrade result chips", () => {
@@ -3705,7 +3210,7 @@ describe("PhoneActionPanel", () => {
               targetSeatId: "seat-1",
               visibility: "public",
               publicText: "Rumi spent 4 Trophies on training.",
-              severity: "loss",
+              severity: "loss"
             },
             {
               id: "upgrade-stat",
@@ -3717,31 +3222,23 @@ describe("PhoneActionPanel", () => {
               targetSeatId: "seat-1",
               visibility: "public",
               publicText: "Rumi upgraded Grit to 4.",
-              severity: "reward",
-            },
+              severity: "reward"
+            }
           ],
           self: {
             ...createPatch().self!,
             character: {
               ...createPatch().self!.character,
               stats: { command: 6, grit: 3, signal: 1, guile: 2, forge: 1 },
-              trophies: 2,
-            },
-          },
+              trophies: 2
+            }
+          }
         })}
-      />,
+      />
     );
 
-    expect(
-      screen.queryByRole("button", {
-        name: /command 6\s*command is already at the maximum rank/i,
-      }),
-    ).not.toBeInTheDocument();
-    expect(
-      screen.queryByRole("button", {
-        name: /grit 3 -> 4\s*need 2 more trophies/i,
-      }),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /command 6\s*command is already at the maximum rank/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /grit 3 -> 4\s*need 2 more trophies/i })).not.toBeInTheDocument();
     expect(screen.getByText(/-4 trophy/i)).toBeInTheDocument();
     expect(screen.getByText(/\+1 grit/i)).toBeInTheDocument();
   });
@@ -3752,7 +3249,6 @@ describe("PhoneActionPanel", () => {
         characters={characters}
         onIntent={vi.fn()}
         patch={createPatch({
-          encounter: null,
           activeResolution: {
             id: "seat-1:scenario:ambient:test",
             playerId: "seat-1",
@@ -3761,119 +3257,21 @@ describe("PhoneActionPanel", () => {
             card: {
               id: "scenario_broken_seal",
               title: "Scenario Pressure",
-              type: "scenario",
+              type: "scenario"
             },
             outcome: {
               title: "Scenario pressure",
               text: "The seal flares before the table can move on.",
-              effects: ["Doom rises by 1."],
-            },
-          },
+              effects: ["Doom rises by 1."]
+            }
+          }
         })}
-      />,
+      />
     );
 
-    expect(screen.getByTestId("phone-resolution-card")).toHaveTextContent(
-      /outcome/i,
-    );
-    expect(screen.getByTestId("phone-resolution-card")).toHaveTextContent(
-      /scenario pressure/i,
-    );
-    expect(screen.getByTestId("phone-resolution-card")).toHaveTextContent(
-      /doom rises by 1/i,
-    );
-  });
-
-  it("does not show movement resolution dice inside the Battle tab", () => {
-    render(
-      <PhoneActionPanel
-        characters={characters}
-        onIntent={vi.fn()}
-        selectedTurnTab="battle"
-        patch={createPatch({
-          encounter: null,
-          activeResolution: {
-            id: "seat-1:movement:arrival:test",
-            playerId: "seat-1",
-            source: "movement",
-            stage: "roll_result",
-            card: {
-              id: "ashwake-bridge-arrival",
-              title: "Ashwake Bridge Arrival",
-              type: "movement",
-            },
-            roll: {
-              dice: [4],
-              baseTotal: 4,
-              modifierTotal: 0,
-              finalTotal: 4,
-              target: 1,
-              success: true,
-            },
-            outcome: {
-              title: "Movement complete",
-              text: "Moved to Ashwake Bridge.",
-              effects: ["Current tile updated."],
-            },
-          },
-        })}
-      />,
-    );
-
-    expect(screen.getByTestId("phone-action-active-panel")).toHaveClass(
-      "phone-battle-panel",
-    );
-    expect(screen.getByText(/no battle active/i)).toBeInTheDocument();
-    expect(screen.queryByTestId("phone-roll-result")).not.toBeInTheDocument();
-    expect(
-      screen.queryByText(/ashwake bridge arrival/i),
-    ).not.toBeInTheDocument();
-  });
-
-  it("keeps movement resolution results in Action instead of Battle", () => {
-    render(
-      <PhoneActionPanel
-        characters={characters}
-        onIntent={vi.fn()}
-        patch={createPatch({
-          encounter: null,
-          activeResolution: {
-            id: "seat-1:movement:arrival:test",
-            playerId: "seat-1",
-            source: "movement",
-            stage: "roll_result",
-            card: {
-              id: "ashwake-bridge-arrival",
-              title: "Ashwake Bridge Arrival",
-              type: "movement",
-            },
-            roll: {
-              dice: [4],
-              baseTotal: 4,
-              modifierTotal: 0,
-              finalTotal: 4,
-              target: 1,
-              success: true,
-            },
-            outcome: {
-              title: "Movement complete",
-              text: "Moved to Ashwake Bridge.",
-              effects: ["Current tile updated."],
-            },
-          },
-        })}
-      />,
-    );
-
-    expect(screen.getByTestId("phone-action-panel-root")).toHaveClass(
-      "phone-action-panel--action",
-    );
-    expect(screen.getByTestId("phone-resolution-card")).toHaveTextContent(
-      /ashwake bridge arrival/i,
-    );
-    expect(screen.getByTestId("phone-resolution-card")).toHaveTextContent(
-      /moved to ashwake bridge/i,
-    );
+    expect(screen.getByTestId("phone-resolution-card")).toHaveTextContent(/outcome/i);
+    expect(screen.getByTestId("phone-resolution-card")).toHaveTextContent(/scenario pressure/i);
+    expect(screen.getByTestId("phone-resolution-card")).toHaveTextContent(/doom rises by 1/i);
   });
 
   it("does not repeat identical success copy as both outcome text and bullet", () => {
@@ -3890,31 +3288,50 @@ describe("PhoneActionPanel", () => {
             card: {
               id: "marrow-tax-auditors",
               title: "Marrow-Tax Auditors",
-              type: "hazard",
+              type: "hazard"
             },
             outcome: {
               title: "Check passed",
               text: "Success: note added: You found a loophole in a dead empire tariff.",
-              effects: [
-                "Success: note added: You found a loophole in a dead empire tariff.",
-              ],
-            },
-          },
+              effects: ["Success: note added: You found a loophole in a dead empire tariff."]
+            }
+          }
         })}
-      />,
+      />
     );
 
     const resolutionCard = screen.getByTestId("phone-resolution-card");
 
-    expect(
-      within(resolutionCard).getAllByText(
-        /you found a loophole in a dead empire tariff/i,
-      ),
-    ).toHaveLength(1);
-    expect(
-      within(resolutionCard).queryByRole("listitem", {
-        name: /you found a loophole/i,
-      }),
-    ).not.toBeInTheDocument();
+    expect(within(resolutionCard).getAllByText(/you found a loophole in a dead empire tariff/i)).toHaveLength(1);
+    expect(within(resolutionCard).queryByRole("listitem", { name: /you found a loophole/i })).not.toBeInTheDocument();
+  });
+
+  it("offers owner-safe Scar-Sink Prayer effect choices and Accept consequence", () => {
+    const onIntent = vi.fn();
+    const base = createPatch();
+    render(<PhoneActionPanel characters={characters} onIntent={onIntent} patch={createPatch({
+      phase: "action",
+      encounter: null,
+      activeResolution: null,
+      pendingScarConsequence: {
+        reactionId: "scar-reaction-1", scarInstanceId: "seat-1:scar-wound-2:0", scarCardId: "scar-wound-2",
+        scarTitle: "Static Burn", triggerType: "beforeTest", sourceEventId: "source-1",
+        pendingEffects: [{ effectId: "effect-1", summary: "Record the static warning." }], rulesText: "Continue to resolve this Scar consequence."
+      },
+      self: { ...base.self!, character: { ...base.self!.character,
+        equippedGear: { ...base.self!.character.equippedGear, utility: "heat-sink-prayer" },
+        heldGear: [{ id: "heat-sink-prayer", instanceId: "prayer-1", name: "Scar-Sink Prayer", slot: "utility", tier: "artifact",
+          category: "chargedRelic", statBonus: { stat: "signal", amount: 1 }, useLimit: "charge", charges: 2, currentCharges: 2, maxCharges: 2,
+          startingCharges: 2, chargeCost: 1, rechargeRule: "none", effectModel: "charged", requiresEquipped: true,
+          activationTiming: ["pendingScarConsequence"], chargedEffect: "scarSinkPrayer" }]
+      } }
+    })} />);
+    fireEvent.click(screen.getByRole("button", { name: /ignore this effect/i }));
+    expect(onIntent).toHaveBeenCalledWith({
+      type: "USE_GEAR", seatId: "seat-1", gearId: "heat-sink-prayer", instanceId: "prayer-1",
+      scarConsequenceReactionId: "scar-reaction-1", scarInstanceId: "seat-1:scar-wound-2:0", pendingScarEffectId: "effect-1"
+    });
+    expect(screen.getByRole("button", { name: /accept consequence/i })).toBeInTheDocument();
+    expect(screen.queryByText(/heat-sink prayer/i)).not.toBeInTheDocument();
   });
 });

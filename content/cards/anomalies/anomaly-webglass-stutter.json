@@ -13,10 +13,6 @@
       {
         "type": "gain_follower",
         "followerId": "red-march-guide"
-      },
-      {
-        "type": "gain_heat",
-        "amount": 1
       }
     ]
   }

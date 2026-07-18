@@ -2,8 +2,9 @@
   "id": "ash-porter",
   "name": "Ash Porter",
   "role": "porter",
-  "text": "Carry one extra artifact burden. Discard the porter to prevent one item loss or object break.",
+  "text": "Discard the porter to prevent one pending Equipment suppression, item loss, or object break.",
+  "abilityId": "prevent_equipment_loss",
+  "activeEffect": { "type": "gain_note", "text": "Ash Porter intercepted an equipment loss or break." },
   "useLimit": "discard",
-  "loyalty": 2,
-  "lossCondition": "choice"
+  "loyalty": 2
 }

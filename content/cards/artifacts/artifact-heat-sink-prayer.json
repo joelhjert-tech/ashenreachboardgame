@@ -8,11 +8,11 @@
   "startingEligible": false,
   "normalShopCommon": false,
   "artifactKind": "chargedRelic",
-  "title": "Heat-Sink Prayer",
-  "text": "A cold brass prayer wheel that drinks excess Heat from the bearer.",
+  "title": "Scar-Sink Prayer",
+  "text": "A cold brass prayer wheel that steadies the bearer after lasting harm.",
   "flavor": "The wheel turns only after someone admits they are afraid.",
   "charge": 2,
-  "resolutionSummary": "Recovered the Heat-Sink Prayer and its two cooling charges.",
+  "resolutionSummary": "Recovered the Scar-Sink Prayer and its two sealed charges.",
   "resolveEffect": {
     "type": "gain_gear",
     "gearId": "heat-sink-prayer"

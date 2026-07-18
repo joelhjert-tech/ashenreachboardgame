@@ -36,6 +36,14 @@ describe("phase one mechanics foundation", () => {
     expect(getGearShopCategories(loadGear().get("cinder-stim-ampoule")!)).toContain("medicae-shrine");
     expect(getGearShopCategories(loadGear().get("choir-static-censer")!)).not.toContain("forge-armoury");
     expect(getGearShopCategories(loadGear().get("oathchain-lens")!)).not.toContain("forge-armoury");
+
+    const retiredResourceOnlyConsumable = {
+      ...loadGear().get("cinder-stim-ampoule")!,
+      id: "retired-resource-only-consumable",
+      activeText: `Vent excess ${["he", "at"].join("")}.`,
+      shopCategories: undefined
+    };
+    expect(getGearShopCategories(retiredResourceOnlyConsumable)).toEqual(["market"]);
   });
 
   it("defines explicit scenario mode metadata for every scenario", () => {

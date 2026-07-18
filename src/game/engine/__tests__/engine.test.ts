@@ -11,7 +11,10 @@ import type { ClientIntent, GameAction } from "../actions.js";
 import type { GameState } from "../../schema/session.schema.js";
 import { reduceGameState } from "../reducer.js";
 import { getEquippedGearBonus } from "../gear.js";
-import { advanceContractObjectiveState } from "../../contracts/objectives.js";
+import { loadGear } from "../../content/gear.js";
+import { loadArtifactCards } from "../../content/artifacts.js";
+import { loadFollowers } from "../../content/followers.js";
+import { normalizeLegacyThreatCard } from "../../rules/legacyHeatCompatibility.js";
 
 function createGear(): Map<string, GearItem> {
   return new Map<string, GearItem>([
@@ -64,9 +67,176 @@ function createGear(): Map<string, GearItem> {
         slot: "utility",
         statBonus: { stat: "command", amount: 1 }
       }
+    ],
+    [
+      "oathchain-lens",
+      {
+        id: "oathchain-lens",
+        name: "Oathchain Lens",
+        slot: "utility",
+        category: "chargedRelic",
+        tier: "artifact",
+        normalShopCommon: false,
+        statBonus: { stat: "signal", amount: 1 }
+      }
     ]
   ]);
 }
+
+describe("Phase 2 owned Artifact consumables", () => {
+  const cases: Array<{ id: string; grantedGear?: string; grantedFollower?: string; heals?: boolean }> = [
+    { id: "artifact-bell-votive", grantedGear: "veil-hook" },
+    { id: "artifact-pale-ledger-token", grantedFollower: "pale-cartel-fixer" },
+    { id: "artifact-void-salt-poultice", heals: true },
+    { id: "artifact-yard", grantedGear: "marshal-seal" }
+  ];
+
+  it.each(cases)("acquires and resolves $id exactly once through its owner", ({ id, grantedGear, grantedFollower, heals }) => {
+    const artifact = loadArtifactCards().get(id)!;
+    const ownedItem = loadGear().get(id)!;
+    expect(artifact.resolveEffect).toMatchObject({ type: "gain_gear", gearId: id });
+
+    const base = createState({ phase: "action" });
+    const state: GameState = {
+      ...base,
+      players: base.players.map((player) => player.seatId === "seat-1" ? {
+        ...player,
+        character: {
+          ...player.character,
+          wounds: heals ? 2 : player.character.wounds,
+          heldGear: [...player.character.heldGear.filter((item) => item.id !== grantedGear), ownedItem],
+          followers: (player.character.followers ?? []).filter((item) => item.id !== grantedFollower)
+        }
+      } : player)
+    };
+    const roundTrip = JSON.parse(JSON.stringify(state)) as GameState;
+    expect(roundTrip.players[0]?.character.heldGear.some((item) => item.id === id)).toBe(true);
+    if (grantedGear) expect(roundTrip.players[0]?.character.heldGear.some((item) => item.id === grantedGear)).toBe(false);
+    if (grantedFollower) expect(roundTrip.players[0]?.character.followers?.some((item) => item.id === grantedFollower) ?? false).toBe(false);
+    if (heals) expect(roundTrip.players[0]?.character.wounds).toBe(2);
+
+    const sent: Array<Record<string, unknown>> = [];
+    const server = new GameRoomServer(roundTrip);
+    server.handleIntent(createCapturingClient("seat-1", sent), { type: "USE_GEAR", seatId: "seat-1", gearId: id });
+    expect(sent.some((message) => message.type === "INTENT_REJECTED")).toBe(false);
+    const character = server.getState().players[0]!.character;
+    expect(character.heldGear.some((item) => item.id === id)).toBe(false);
+    if (grantedGear) expect(character.heldGear.some((item) => item.id === grantedGear)).toBe(true);
+    if (grantedFollower) expect(character.followers?.some((item) => item.id === grantedFollower)).toBe(true);
+    if (heals) expect(character.wounds).toBe(1);
+
+    server.handleIntent(createCapturingClient("seat-1", sent), { type: "USE_GEAR", seatId: "seat-1", gearId: id });
+    expect(sent.filter((message) => message.type === "INTENT_REJECTED")).toHaveLength(1);
+    expect((JSON.parse(JSON.stringify(server.getState())) as GameState).players[0]?.character.heldGear.some((item) => item.id === id)).toBe(false);
+  });
+
+  it.each(cases)("rejects wrong-seat and invalid-timing use of $id without consumption", ({ id }) => {
+    const ownedItem = loadGear().get(id)!;
+    const base = createState({ phase: "navigation" });
+    const state: GameState = {
+      ...base,
+      players: base.players.map((player) => player.seatId === "seat-1" ? {
+        ...player,
+        character: { ...player.character, wounds: 1, heldGear: [...player.character.heldGear, ownedItem] }
+      } : player)
+    };
+    const server = new GameRoomServer(state);
+    const wrongSeat: Array<Record<string, unknown>> = [];
+    server.handleIntent(createCapturingClient("seat-2", wrongSeat), { type: "USE_GEAR", seatId: "seat-1", gearId: id });
+    expect(wrongSeat.some((message) => message.type === "INTENT_REJECTED")).toBe(true);
+    const wrongTiming: Array<Record<string, unknown>> = [];
+    server.handleIntent(createCapturingClient("seat-1", wrongTiming), { type: "USE_GEAR", seatId: "seat-1", gearId: id });
+    expect(wrongTiming.some((message) => message.type === "INTENT_REJECTED")).toBe(true);
+    expect(server.getState().players[0]?.character.heldGear.some((item) => item.id === id)).toBe(true);
+  });
+
+  it("rejects unresolved targets without consuming their Artifact", () => {
+    const gear = loadGear();
+    const base = createState({ phase: "action" });
+    const blockedIds = ["artifact-bell-votive", "artifact-pale-ledger-token", "artifact-void-salt-poultice", "artifact-yard"];
+    const state: GameState = {
+      ...base,
+      players: base.players.map((player) => player.seatId === "seat-1" ? {
+        ...player,
+        character: {
+          ...player.character,
+          wounds: 0,
+          heldGear: [...player.character.heldGear, ...blockedIds.map((id) => gear.get(id)!), gear.get("veil-hook")!, gear.get("marshal-seal")!],
+          followers: [...(player.character.followers ?? []), { id: "pale-cartel-fixer", name: "Pale Cartel Fixer", role: "informant", text: "Fixer" }]
+        }
+      } : player)
+    };
+    const server = new GameRoomServer(state);
+    for (const id of blockedIds) server.handleIntent(createClient("seat-1"), { type: "USE_GEAR", seatId: "seat-1", gearId: id });
+    expect(blockedIds.every((id) => server.getState().players[0]?.character.heldGear.some((item) => item.id === id))).toBe(true);
+  });
+});
+
+describe("Phase 3A round-exhaust Artifact followers", () => {
+  const ids = ["lucy-hell-puppy", "murkclaw-gravecrow", "rune-eye-raven"];
+
+  it.each(ids)("persists, exhausts, rejects duplicate use, and refreshes %s only on round completion", (id) => {
+    const follower = { ...loadFollowers().get(id)!, instanceId: `${id}:seat-1:test`, exhausted: false };
+    const base = createState({ phase: "navigation" });
+    const state: GameState = {
+      ...base,
+      players: base.players.map((player) => player.seatId === "seat-1" ? {
+        ...player,
+        character: { ...player.character, followers: [...(player.character.followers ?? []), follower] }
+      } : player)
+    };
+    const reconnectState = JSON.parse(JSON.stringify(state)) as GameState;
+    expect(reconnectState.players[0]?.character.followers?.find((entry) => entry.instanceId === follower.instanceId)?.exhausted).toBe(false);
+
+    const sent: Array<Record<string, unknown>> = [];
+    const server = new GameRoomServer(reconnectState);
+    const notesBefore = server.getState().players[0]?.private.notes.length ?? 0;
+    server.handleIntent(createCapturingClient("seat-1", sent), { type: "USE_FOLLOWER", seatId: "seat-1", followerId: id });
+    expect(sent.some((message) => message.type === "INTENT_REJECTED")).toBe(false);
+    const exhausted = server.getState().players[0]?.character.followers?.find((entry) => entry.instanceId === follower.instanceId);
+    expect(exhausted?.exhausted).toBe(true);
+    expect(server.getState().players[0]?.private.notes.length).toBe(notesBefore + 1);
+
+    server.handleIntent(createCapturingClient("seat-1", sent), { type: "USE_FOLLOWER", seatId: "seat-1", followerId: id });
+    expect(sent.filter((message) => message.type === "INTENT_REJECTED")).toHaveLength(1);
+    expect(server.getState().players[0]?.private.notes.length).toBe(notesBefore + 1);
+    expect((JSON.parse(JSON.stringify(server.getState())) as GameState).players[0]?.character.followers?.find((entry) => entry.instanceId === follower.instanceId)?.exhausted).toBe(true);
+
+    const roundReset = reduceGameState(server.getState(), { type: "ROUND_COMPLETED", seatId: "seat-1", createdAt: "2026-07-11T12:00:00.000Z" });
+    expect(roundReset.ok).toBe(true);
+    if (!roundReset.ok) return;
+    expect(roundReset.state.players[0]?.character.followers?.find((entry) => entry.instanceId === follower.instanceId)?.exhausted).toBe(false);
+    expect((JSON.parse(JSON.stringify(roundReset.state)) as GameState).players[0]?.character.followers?.find((entry) => entry.instanceId === follower.instanceId)?.exhausted).toBe(false);
+  });
+
+  it.each(ids)("rejects wrong-seat and invalid-timing use of %s without exhaustion", (id) => {
+    const follower = { ...loadFollowers().get(id)!, instanceId: `${id}:seat-1:reject`, exhausted: false };
+    const base = createState({ phase: "broadcast" });
+    const state: GameState = { ...base, players: base.players.map((player) => player.seatId === "seat-1" ? { ...player, character: { ...player.character, followers: [follower] } } : player) };
+    const server = new GameRoomServer(state);
+    const wrongSeat: Array<Record<string, unknown>> = [];
+    server.handleIntent(createCapturingClient("seat-2", wrongSeat), { type: "USE_FOLLOWER", seatId: "seat-1", followerId: id });
+    const wrongTiming: Array<Record<string, unknown>> = [];
+    server.handleIntent(createCapturingClient("seat-1", wrongTiming), { type: "USE_FOLLOWER", seatId: "seat-1", followerId: id });
+    expect(wrongSeat.some((message) => message.type === "INTENT_REJECTED")).toBe(true);
+    expect(wrongTiming.some((message) => message.type === "INTENT_REJECTED")).toBe(true);
+    expect(server.getState().players[0]?.character.followers?.[0]?.exhausted).toBe(false);
+  });
+
+  it("tracks synthetic duplicate instances independently", () => {
+    const catalog = loadFollowers().get("lucy-hell-puppy")!;
+    const base = createState({ phase: "navigation" });
+    const copies = [{ ...catalog, instanceId: "lucy:one", exhausted: false }, { ...catalog, instanceId: "lucy:two", exhausted: false }];
+    const state: GameState = { ...base, players: base.players.map((player) => player.seatId === "seat-1" ? { ...player, character: { ...player.character, followers: copies } } : player) };
+    const result = reduceGameState(state, {
+      type: "USE_FOLLOWER", seatId: "seat-1", followerId: catalog.id, followerInstanceId: "lucy:one",
+      effect: { type: "gain_note", text: "Lucy used." }, summary: "Lucy used.", createdAt: "2026-07-11T12:00:00.000Z"
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.state.players[0]?.character.followers?.map((entry) => entry.exhausted)).toEqual([true, false]);
+  });
+});
 
 function createFandiablos(): Follower {
   return {
@@ -81,9 +251,13 @@ function createFandiablos(): Follower {
     ultimateCompanion: true,
     timingWindows: ["beforeThreatDraw", "beforeBattleRoll", "beforeTakingDamage", "anyTime"],
     artCardId: "artifact-fandiablos",
-    useLimit: "oncePerTurn",
+    useLimit: "oncePerRound",
+    effectModel: "exhaust",
+    activationTiming: ["beforeThreatDraw", "beforeBattleRoll", "beforeTakingDamage", "anyTime"],
+    resetWindow: "round",
+    exhaustEffect: "fandiablosSupport",
+    requiresEquipped: false,
     loyalty: 5,
-    lossCondition: "choice"
   };
 }
 
@@ -100,11 +274,8 @@ function createAnomalies(): Map<string, AnomalyCard> {
         instability: 2,
         resolutionSummary: "Contained the Glassmere Echo Bloom and harvested a usable signal pattern.",
         resolveEffect: {
-          type: "sequence",
-          effects: [
-            { type: "lose_heat", amount: 1 },
-            { type: "gain_note", text: "Glassmere anomaly contained. The spindle now answers the relay choir cleanly." }
-          ]
+          type: "gain_note",
+          text: "Glassmere anomaly contained. The spindle now answers the relay choir cleanly."
         }
       }
     ],
@@ -203,11 +374,8 @@ function createEscalations(): Map<string, EscalationCard> {
         step: 1,
         resolutionSummary: "Walked the Ridge Suture Litany, sealed the worst fracture, and cooled the operative under pressure.",
         resolveEffect: {
-          type: "sequence",
-          effects: [
-            { type: "lose_heat", amount: 1 },
-            { type: "gain_note", text: "Ridge suture anchored. The watch posts can still hold for one more convoy." }
-          ]
+          type: "gain_note",
+          text: "Ridge suture anchored. The watch posts can still hold for one more convoy."
         },
         escalationDelta: -1
       }
@@ -225,7 +393,7 @@ function createContracts(): Map<string, ContractCard> {
         factionGiver: "Glass Choir",
         text: "The Choir demands two clean removals so a listening chamber can return to its proper silence.",
         objective: { type: "defeatCount", target: 2 },
-        reward: { type: "lose_heat", amount: 1 }
+        reward: { type: "gain_note", text: "Legacy contract reward retired." }
       }
     ],
     [
@@ -248,11 +416,8 @@ function createContracts(): Map<string, ContractCard> {
         text: "Silence the hostile signal growth around Mirecoil Beacon before it spills into the convoy lattice.",
         objective: { type: "defeatCount", target: 1 },
         reward: {
-          type: "sequence",
-          effects: [
-            { type: "lose_heat", amount: 1 },
-            { type: "gain_note", text: "The beacon routes were stabilized for one clean cycle." }
-          ]
+          type: "gain_note",
+          text: "The beacon routes were stabilized for one clean cycle."
         }
       }
     ],
@@ -287,11 +452,8 @@ function createContracts(): Map<string, ContractCard> {
           target: 1
         },
         reward: {
-          type: "sequence",
-          effects: [
-            { type: "lose_heat", amount: 1 },
-            { type: "gain_note", text: "The Cartels opened a clean crossing thread for one black-lantern run." }
-          ]
+          type: "gain_note",
+          text: "The Cartels opened a clean crossing thread for one black-lantern run."
         }
       }
     ]
@@ -368,8 +530,7 @@ function createThreats(): Map<string, ThreatCard> {
           text: "You mapped the strongest band before it decayed."
         },
         failEffect: {
-          type: "gain_heat",
-          amount: 1
+          type: "legacy_compatibility_noop"
         }
       }
     ],
@@ -391,8 +552,7 @@ function createThreats(): Map<string, ThreatCard> {
           text: "You pinned the false carrier and marked its pulse drift."
         },
         failEffect: {
-          type: "gain_heat",
-          amount: 1
+          type: "legacy_compatibility_noop"
         }
       }
     ]
@@ -425,7 +585,6 @@ function createAbilityCharacters(): Map<string, Character> {
     status: "active",
     stats: { command: 1, grit: 1, signal: 2, guile: 3, forge: 2 },
     trophies: 0,
-    heat: 0,
     wounds: 0,
     scars: [],
     activeContract: null,
@@ -447,7 +606,6 @@ function createAbilityCharacters(): Map<string, Character> {
     status: "active",
     stats: { command: 1, grit: 3, signal: 2, guile: 1, forge: 2 },
     trophies: 0,
-    heat: 0,
     wounds: 0,
     scars: [],
     activeContract: null,
@@ -469,7 +627,6 @@ function createAbilityCharacters(): Map<string, Character> {
     status: "active",
     stats: { command: 3, grit: 1, signal: 2, guile: 1, forge: 2 },
     trophies: 0,
-    heat: 0,
     wounds: 0,
     scars: [],
     activeContract: null,
@@ -491,7 +648,6 @@ function createAbilityCharacters(): Map<string, Character> {
     status: "active",
     stats: { command: 2, grit: 1, signal: 1, guile: 3, forge: 2 },
     trophies: 0,
-    heat: 0,
     wounds: 0,
     scars: [],
     activeContract: null,
@@ -513,7 +669,6 @@ function createAbilityCharacters(): Map<string, Character> {
     status: "active",
     stats: { command: 1, grit: 1, signal: 2, guile: 3, forge: 2 },
     trophies: 0,
-    heat: 0,
     wounds: 0,
     scars: [],
     activeContract: null,
@@ -535,7 +690,6 @@ function createAbilityCharacters(): Map<string, Character> {
     status: "active",
     stats: { command: 2, grit: 3, signal: 1, guile: 1, forge: 2 },
     trophies: 0,
-    heat: 0,
     wounds: 0,
     scars: [],
     activeContract: null,
@@ -557,7 +711,6 @@ function createAbilityCharacters(): Map<string, Character> {
     status: "active",
     stats: { command: 1, grit: 2, signal: 1, guile: 2, forge: 3 },
     trophies: 0,
-    heat: 0,
     wounds: 0,
     scars: [],
     activeContract: null,
@@ -579,7 +732,6 @@ function createAbilityCharacters(): Map<string, Character> {
     status: "active",
     stats: { command: 1, grit: 2, signal: 1, guile: 2, forge: 3 },
     trophies: 0,
-    heat: 0,
     wounds: 0,
     scars: [],
     activeContract: null,
@@ -607,11 +759,14 @@ function createState(overrides: Partial<GameState> = {}): GameState {
     winnerSeatId: null,
     activeScenarioId: "scenario_broken_seal",
     scenarioProgress: {},
+    scenarioPreparation: { resources: {}, completedObjectiveIds: [], processedSourceEventIds: [] },
+    scenarioConfrontation: { active: false, confrontationId: null, progress: {}, stage: null, processedSourceEventIds: [] },
+    scenarioResult: { status: "unresolved", victoryConditionId: null, sourceType: null, sourceId: null, winningSeatId: null, shared: null, achievedAtSequence: null },
     phase: "action",
     resolutionSource: null,
     activeSeatIndex: 0,
     turnOrder: ["seat-1", "seat-2", "seat-3"],
-    heatThreshold: 6,
+    reflectionPressureThreshold: 6,
     woundThreshold: 3,
     sequence: 0,
     sectors: [
@@ -869,7 +1024,7 @@ describe("first eligible character timing", () => {
     difficulty: 6,
     ...(threatLane ? { threatLane } : {}),
     successEffect: { type: "gain_note" as const, text: "Passed." },
-    failEffect: { type: "gain_heat" as const, amount: 1 }
+    failEffect: { type: "legacy_compatibility_noop" as const }
   });
 
   const timingServer = (characterId: string, stats: Character["stats"], encounter: ThreatCard) => {
@@ -987,7 +1142,7 @@ describe("active resolution visibility state", () => {
       statBonus: 1,
       total: 6,
       success: false,
-      effect: { type: "gain_heat", amount: 1 },
+      effect: { type: "legacy_compatibility_noop" },
       cardId: card.id,
       createdAt: "2026-06-26T00:00:02.000Z"
     });
@@ -1002,8 +1157,59 @@ describe("active resolution visibility state", () => {
       target: 7,
       success: false
     });
-    expect(rolled.state.players[0]?.character.heat).toBe(0);
-    expect(rolled.state.pendingEffect).toEqual({ type: "gain_heat", amount: 1 });
+    expect(rolled.state.pendingEffect).toEqual({ type: "legacy_compatibility_noop" });
+    expect(rolled.state.pendingFailureReaction).toMatchObject({
+      seatId: "seat-1",
+      testType: "hazard",
+      sourceId: card.id
+    });
+
+    const reactionId = rolled.state.pendingFailureReaction?.id;
+    const ampoule: GearItem = {
+      id: "artifact-blackstar-ampoule",
+      name: "Blackstar Ampoule",
+      slot: "utility",
+      category: "consumable",
+      tier: "artifact",
+      statBonus: { stat: "guile", amount: 1 },
+      useLimit: "discard",
+      effectModel: "consumable",
+      activationTiming: ["afterFailedTest"],
+      consumeOnUse: true,
+      consumableEffect: "ignoreFailedMovementOrHazard",
+      requiresEquipped: false
+    };
+    const withAmpoule: GameState = {
+      ...rolled.state,
+      players: rolled.state.players.map((player) => player.seatId === "seat-1" ? {
+        ...player,
+        character: { ...player.character, heldGear: [...player.character.heldGear, ampoule] }
+      } : player)
+    };
+    const suppressed = reduceGameState(withAmpoule, {
+      type: "USE_GEAR",
+      seatId: "seat-1",
+      gearId: ampoule.id,
+      effect: { type: "gain_note", text: "Failure effects suppressed; test remains failed." },
+      summary: "Blackstar Ampoule used.",
+      discard: true,
+      suppressPendingFailure: true,
+      pendingFailureReactionId: reactionId,
+      createdAt: "2026-06-26T00:00:03.000Z"
+    });
+    expect(suppressed.ok).toBe(true);
+    if (!suppressed.ok) return;
+    expect(suppressed.state.pendingEffect).toBeNull();
+    expect(suppressed.state.pendingFailureReaction).toBeNull();
+    expect(suppressed.state.activeResolution?.roll?.success).toBe(false);
+    expect(suppressed.state.players[0]?.character.heldGear.some((item) => item.id === ampoule.id)).toBe(false);
+
+    const duplicate = reduceGameState(suppressed.state, {
+      type: "USE_GEAR", seatId: "seat-1", gearId: ampoule.id, effect: null, summary: "duplicate",
+      discard: true, suppressPendingFailure: true, pendingFailureReactionId: reactionId,
+      createdAt: "2026-06-26T00:00:04.000Z"
+    });
+    expect(duplicate.ok).toBe(false);
   });
 
   it("lets a single-player operative use one visible failed-check reroll per round", () => {
@@ -1186,7 +1392,7 @@ describe("active resolution visibility state", () => {
             effects: ["Failure: legacy pressure."]
           }
         },
-        pendingEffect: { type: "gain_heat", amount: 1 },
+        pendingEffect: { type: "legacy_compatibility_noop" },
         lastOutcomeSummary: {
           seatId: "seat-1",
           movedToSectorId: "sector-b",
@@ -1220,8 +1426,7 @@ describe("active resolution visibility state", () => {
 
     expect(server.getState().phase).toBe("resolution");
     expect(server.getState().activeResolution?.stage).toBe("outcome_summary");
-    expect(server.getState().pendingEffect).toEqual({ type: "gain_heat", amount: 1 });
-    expect(server.getState().players.find((entry) => entry.seatId === "seat-1")?.character.heat).toBe(0);
+    expect(server.getState().pendingEffect).toEqual({ type: "legacy_compatibility_noop" });
   });
 
   it("recovers an orphaned resolution state when the player continues", () => {
@@ -1269,7 +1474,7 @@ describe("active resolution visibility state", () => {
     expect(server.getState().activeResolution).toBeNull();
   });
 
-  it("recovers an orphaned successful encounter by reopening the sector flow", () => {
+  it("recovers an orphaned successful encounter without drawing another queued threat", () => {
     const baseState = createState({ sessionMode: "single-player" });
     const encounter = createThreats().get("cinder-veil-stalker");
 
@@ -1352,8 +1557,9 @@ describe("active resolution visibility state", () => {
     });
 
     expect(server.getState().phase).toBe("action");
-    expect(server.getState().currentEncounter?.id).toBe("signal-static");
-    expect(server.getState().activeResolution?.card?.id).toBe("signal-static");
+    expect(server.getState().currentEncounter).toBeNull();
+    expect(server.getState().activeResolution).toBeNull();
+    expect(server.getState().sectors[0]?.encounterDecks.threat).toEqual(["signal-static"]);
   });
 
   it("reopens a cleared shop sector after a successful encounter instead of ending a single-player turn", () => {
@@ -1876,6 +2082,7 @@ describe("active resolution visibility state", () => {
       wounds?: number;
       heldGear?: GearItem[];
       currentEncounterId?: string;
+      gearCatalog?: Map<string, GearItem>;
     }) => {
       const baseState = createState({ sessionMode: "single-player" });
       const encounter = options.currentEncounterId ? createThreats().get(options.currentEncounterId) ?? null : null;
@@ -1912,7 +2119,7 @@ describe("active resolution visibility state", () => {
         createSequenceRandomSource([]),
         createThreats(),
         createCharacters(),
-        createGear(),
+        options.gearCatalog ?? createGear(),
         createContracts()
       );
 
@@ -1946,18 +2153,43 @@ describe("active resolution visibility state", () => {
     expect(sold.server.getState().players[0]?.character.salvage).toBe(2);
     expect(sold.server.getState().players[0]?.character.heldGear).toEqual([]);
 
-    const repaired = createShopServer({ sectorId: "kettleward-foundry", salvage: 3 });
+    const tuningSpines = gearCatalog.get("tuning-spines");
+    if (!tuningSpines) throw new Error("Missing tuning-spines fixture");
+    const depletedTuningSpines = {
+      ...tuningSpines,
+      instanceId: "tuning-spines:seat-1:repair",
+      currentCharges: 0,
+      charges: 0,
+      maxUses: 2,
+      useLimit: "charge" as const
+    };
+    const repaired = createShopServer({
+      sectorId: "kettleward-foundry",
+      salvage: 3,
+      heldGear: [depletedTuningSpines]
+    });
     repaired.server.handleIntent(repaired.client, {
       type: "SHOP_SERVICE_REQUESTED",
       seatId: "seat-1",
-      serviceId: "repair-gear"
+      serviceId: "repair-gear",
+      itemInstanceId: depletedTuningSpines.instanceId
     });
 
     expect(repaired.sent.find((message) => message.type === "INTENT_REJECTED")).toBeUndefined();
     expect(repaired.server.getState().players[0]?.character.salvage).toBe(1);
-    expect(repaired.server.getState().players[0]?.private.notes.at(-1)).toContain("gear repair");
+    expect(repaired.server.getState().players[0]?.character.heldGear[0]?.currentCharges).toBe(2);
 
-    const supplied = createShopServer({ sectorId: "kettleward-foundry", salvage: 3 });
+    const supplyCatalog = new Map(gearCatalog);
+    supplyCatalog.set("field-rations", {
+      id: "field-rations",
+      name: "Field Rations",
+      slot: "utility",
+      subtype: "supply",
+      statBonus: { stat: "forge", amount: 1 },
+      cost: 2,
+      shopCategories: ["market"]
+    });
+    const supplied = createShopServer({ sectorId: "kettleward-foundry", salvage: 3, gearCatalog: supplyCatalog });
     supplied.server.handleIntent(supplied.client, {
       type: "SHOP_SERVICE_REQUESTED",
       seatId: "seat-1",
@@ -1965,8 +2197,8 @@ describe("active resolution visibility state", () => {
     });
 
     expect(supplied.sent.find((message) => message.type === "INTENT_REJECTED")).toBeUndefined();
-    expect(supplied.server.getState().players[0]?.character.salvage).toBe(2);
-    expect(supplied.server.getState().players[0]?.private.notes.at(-1)).toContain("equipment cache");
+    expect(supplied.server.getState().players[0]?.character.salvage).toBe(3);
+    expect(supplied.server.getState().shopStockReveals.at(-1)?.serviceId).toBe("buy-supplies");
 
     const treated = createShopServer({ sectorId: "outer_ember_sanctum", salvage: 4, wounds: 2 });
     treated.server.handleIntent(treated.client, {
@@ -1986,15 +2218,30 @@ describe("active resolution visibility state", () => {
       serviceId: "buy-boon"
     });
 
-    expect(blessed.sent.find((message) => message.type === "INTENT_REJECTED")).toBeUndefined();
-    expect(blessed.server.getState().players[0]?.character.salvage).toBe(2);
-    expect(blessed.server.getState().players[0]?.character.heat).toBe(2);
+    expect(blessed.sent.find((message) => message.type === "INTENT_REJECTED")).toMatchObject({ actionType: "SHOP_SERVICE_REQUESTED" });
+    expect(blessed.server.getState().players[0]?.character.salvage).toBe(4);
+    expect(blessed.server.getState().players[0]?.private.notes).toEqual([]);
 
-    const unaffordableService = createShopServer({ sectorId: "kettleward-foundry", salvage: 0 });
+    const searched = createShopServer({ sectorId: "votive-engine-room", salvage: 2, heat: 7 });
+    searched.server.handleIntent(searched.client, {
+      type: "SHOP_SERVICE_REQUESTED",
+      seatId: "seat-1",
+      serviceId: "risk-action"
+    });
+    expect(searched.sent.find((message) => message.type === "INTENT_REJECTED")).toMatchObject({ reason: "Unknown shop service risk-action" });
+    expect(searched.server.getState().players[0]?.character.salvage).toBe(2);
+    expect(searched.server.getState().shopStockReveals).toEqual([]);
+
+    const unaffordableService = createShopServer({
+      sectorId: "kettleward-foundry",
+      salvage: 0,
+      heldGear: [depletedTuningSpines]
+    });
     unaffordableService.server.handleIntent(unaffordableService.client, {
       type: "SHOP_SERVICE_REQUESTED",
       seatId: "seat-1",
-      serviceId: "repair-gear"
+      serviceId: "repair-gear",
+      itemInstanceId: depletedTuningSpines.instanceId
     });
 
     expect(unaffordableService.sent.find((message) => message.type === "INTENT_REJECTED")).toMatchObject({
@@ -2213,8 +2460,7 @@ describe("active objects and table interaction", () => {
       category: "dangerous",
       statBonus: { stat: "grit", amount: 1 },
       activeText: "Break for +3 Grit before the battle roll, then advance escalation by 1.",
-      useLimit: "discard",
-      heatCost: 1
+      useLimit: "discard"
     };
     const state = createState({
       currentEncounter: encounter,
@@ -2237,7 +2483,7 @@ describe("active objects and table interaction", () => {
               ...player,
               character: {
                 ...player.character,
-                heat: 1,
+                heat: 0,
                 heldGear: [blackRouteFuse],
                 equippedGear: { weapon: null, armor: null, utility: null }
               }
@@ -2257,6 +2503,7 @@ describe("active objects and table interaction", () => {
     expect(sent.some((message) => message.type === "INTENT_REJECTED")).toBe(false);
     expect(server.getState().activeResolution?.battle?.modifiers).toContainEqual({ label: "Black Route Fuse", value: 3 });
     expect(server.getState().players[0]?.character.heldGear.some((item) => item.id === "black-route-fuse")).toBe(false);
+    expect(server.getState().escalationLevel).toBe(1);
 
     runIntent(server, {
       type: "COMBAT_REQUESTED",
@@ -2326,8 +2573,7 @@ describe("active objects and table interaction", () => {
       category: "dangerous",
       statBonus: { stat: "grit", amount: 1 },
       activeText: "Break for +3 Grit before the battle roll, then advance escalation by 1.",
-      useLimit: "discard",
-      heatCost: 1
+      useLimit: "discard"
     };
     const state = createState({
       currentEncounter: null,
@@ -2338,7 +2584,7 @@ describe("active objects and table interaction", () => {
               ...player,
               character: {
                 ...player.character,
-                heat: 1,
+                heat: 0,
                 heldGear: [blackRouteFuse],
                 equippedGear: { weapon: null, armor: null, utility: null }
               }
@@ -2356,6 +2602,7 @@ describe("active objects and table interaction", () => {
 
     expect(sent.some((message) => message.type === "INTENT_REJECTED" && String(message.reason).includes("before a battle roll"))).toBe(true);
     expect(server.getState().players[0]?.character.heldGear.some((item) => item.id === "black-route-fuse")).toBe(true);
+    expect(server.getState().escalationLevel).toBe(0);
     expect(server.getState().eventLog.some((entry) => (entry as { type?: string }).type === "USE_GEAR")).toBe(false);
   });
 
@@ -2418,7 +2665,6 @@ describe("active objects and table interaction", () => {
       stats: { command: 1, grit: 1, signal: 4, guile: 1, forge: 1 },
       statUpgrades: { signal: 1 },
       trophies: 0,
-      heat: 0,
       wounds: 0,
       scars: [],
       activeContract: null,
@@ -2529,7 +2775,6 @@ describe("active objects and table interaction", () => {
 
     const player = server.getState().players.find((entry) => entry.seatId === "seat-1");
     expect(player?.character.wounds).toBe(0);
-    expect(player?.character.heat).toBe(0);
     expect(player?.character.heldGear).toHaveLength(0);
     expect(server.getState().lastOutcomeSummary?.summary).toContain("Cinder Suture Kit used");
   });
@@ -2599,7 +2844,6 @@ describe("active objects and table interaction", () => {
     });
 
     const player = server.getState().players.find((entry) => entry.seatId === "seat-1");
-    expect(player?.character.heat).toBe(0);
     expect(server.getState().activeResolution?.battle?.modifiers).toContainEqual({ label: "Red March Warbell", value: 2 });
     expect(sent.some((message) => message.type === "INTENT_REJECTED" && String(message.reason).includes("already been used this turn"))).toBe(true);
 
@@ -2715,7 +2959,6 @@ describe("active objects and table interaction", () => {
       playerResultDeltas?: Array<{ type: string; privateText?: string }>;
     };
     const censerUseState = phoneProjection.objectUseStates?.find((entry) => entry.source === "gear" && entry.id === "choir-static-censer");
-    expect(player?.character.heat).toBe(2);
     expect(censer?.charges).toBe(0);
     expect(censerUseState).toMatchObject({
       remainingUses: 0,
@@ -2732,10 +2975,9 @@ describe("active objects and table interaction", () => {
       name: "Crownless Advocate",
       role: "informant",
       text: "Soften a faction demand.",
-      activeEffect: { type: "lose_heat", amount: 1 },
+      activeEffect: { type: "gain_note", text: "Crownless Advocate: one faction demand or rivalry bargain was softened." },
       useLimit: "oncePerRound",
       loyalty: 3,
-      lossCondition: "choice"
     };
     const state = createState({
       players: createState().players.map((player) =>
@@ -2760,8 +3002,8 @@ describe("active objects and table interaction", () => {
     });
 
     const player = server.getState().players.find((entry) => entry.seatId === "seat-1");
-    expect(player?.character.heat).toBe(2);
     expect(player?.character.followers).toHaveLength(1);
+    expect(player?.private.notes).toContain("Crownless Advocate: one faction demand or rivalry bargain was softened.");
     expect(server.getState().lastOutcomeSummary?.summary).toContain("Crownless Advocate used");
   });
 
@@ -2773,7 +3015,6 @@ describe("active objects and table interaction", () => {
       role: "medic",
       text: "Passive: patch wounds after the dust settles.",
       loyalty: 2,
-      lossCondition: "choice"
     };
     const state = createState({
       players: createState().players.map((player) =>
@@ -2799,7 +3040,6 @@ describe("active objects and table interaction", () => {
 
     expect(sent.some((message) => message.type === "INTENT_REJECTED" && String(message.reason).includes("passive and applies automatically"))).toBe(true);
     expect(server.getState().eventLog.some((entry) => (entry as { type?: string }).type === "USE_FOLLOWER")).toBe(false);
-    expect(server.getState().players.find((entry) => entry.seatId === "seat-1")?.character.heat).toBe(2);
   });
 
   it("keeps Fandiablos unique across the whole game", () => {
@@ -2947,7 +3187,7 @@ describe("active objects and table interaction", () => {
       stat: "forge",
       difficulty: 4,
       successEffect: { type: "gain_note", text: "Machine lock opened." },
-      failEffect: { type: "gain_heat", amount: 1 }
+      failEffect: { type: "legacy_compatibility_noop" }
     });
     const state = createState({
       currentEncounter: threats.get("machine-lock") ?? null,
@@ -3029,34 +3269,6 @@ describe("active objects and table interaction", () => {
     expect(player?.private.notes.join(" ")).toContain("Fandiablos Unreasonable Courage rolled 4");
   });
 
-  it("triggers Too Many Dogs safely as a legacy pressure no-op on a chaos roll of 1", () => {
-    const fandiablos = createFandiablos();
-    const state = createState({
-      players: createState().players.map((player) =>
-        player.seatId === "seat-1"
-          ? {
-              ...player,
-              character: {
-                ...player.character,
-                followers: [fandiablos]
-              }
-            }
-          : player
-      )
-    });
-    const server = new GameRoomServer(state, [], createSequenceRandomSource([0]), createThreats(), createCharacters(), createGear(), createContracts());
-
-    runIntent(server, {
-      type: "USE_FOLLOWER",
-      seatId: "seat-1",
-      followerId: "fandiablos"
-    });
-
-    const player = server.getState().players.find((entry) => entry.seatId === "seat-1");
-    expect(player?.character.heat).toBe(0);
-    expect(server.getState().lastOutcomeSummary?.summary).toContain("Too Many Dogs");
-  });
-
   it("rejects repeated harmful rivalry pressure against the same target in one round", () => {
     const sent: Array<Record<string, unknown>> = [];
     const state = createState({
@@ -3068,7 +3280,7 @@ describe("active objects and table interaction", () => {
           targetSeatId: "seat-2",
           interactionKind: "duel",
           effect: null,
-          targetEffect: { type: "gain_heat", amount: 1 },
+          targetEffect: { type: "legacy_compatibility_noop" },
           summary: "Prior bounded duel.",
           createdAt: new Date().toISOString()
         }
@@ -3083,7 +3295,6 @@ describe("active objects and table interaction", () => {
       interactionKind: "interfere"
     });
 
-    expect(server.getState().players.find((entry) => entry.seatId === "seat-2")?.character.heat).toBe(0);
     expect(sent.some((message) => message.type === "INTENT_REJECTED")).toBe(true);
   });
 
@@ -3138,7 +3349,7 @@ describe("active objects and table interaction", () => {
 describe("threat effect keys", () => {
   it("applies a reveal effect key when a threat is drawn", () => {
     const threats = createThreats();
-    threats.set("keyed-rats", {
+    threats.set("keyed-rats", normalizeLegacyThreatCard({
       id: "keyed-rats",
       type: "threat",
       cardType: "hazard",
@@ -3150,8 +3361,8 @@ describe("threat effect keys", () => {
       stat: "grit",
       difficulty: 4,
       successEffect: { type: "gain_note", text: "Safe." },
-      failEffect: { type: "gain_heat", amount: 1 }
-    });
+      failEffect: { type: "legacy_compatibility_noop" }
+    }));
     const state = createState({
       phase: "sector",
       sectors: createState().sectors.map((sector) =>
@@ -3188,13 +3399,12 @@ describe("threat effect keys", () => {
     (server as any).runAutomaticPhases("seat-1");
 
     expect(server.getState().currentEncounter?.id).toBe("keyed-rats");
-    expect(server.getState().players.find((entry) => entry.seatId === "seat-1")?.character.heat).toBe(0);
-    expect(server.getState().lastOutcomeSummary?.summary).toContain("Legacy pressure");
+    expect(server.getState().lastOutcomeSummary?.summary).not.toContain("Heat");
   });
 
   it("applies table-wide and escalation reveal effect keys", () => {
     const heatedThreats = createThreats();
-    heatedThreats.set("keyed-broadcast", {
+    heatedThreats.set("keyed-broadcast", normalizeLegacyThreatCard({
       id: "keyed-broadcast",
       type: "threat",
       cardType: "hazard",
@@ -3206,8 +3416,8 @@ describe("threat effect keys", () => {
       stat: "signal",
       difficulty: 6,
       successEffect: { type: "gain_note", text: "Safe." },
-      failEffect: { type: "gain_heat", amount: 1 }
-    });
+      failEffect: { type: "legacy_compatibility_noop" }
+    }));
     const heatedState = createState({
       phase: "sector",
       sectors: createState().sectors.map((sector) =>
@@ -3251,8 +3461,7 @@ describe("threat effect keys", () => {
 
     (heatedServer as any).runAutomaticPhases("seat-1");
 
-    expect(heatedServer.getState().players.every((entry) => entry.character.heat === 0)).toBe(true);
-    expect(heatedServer.getState().lastOutcomeSummary?.summary).toContain("Legacy pressure");
+    expect(heatedServer.getState().lastOutcomeSummary?.summary).not.toContain("Heat");
 
     const escalatedThreats = createThreats();
     escalatedThreats.set("keyed-bell", {
@@ -3267,7 +3476,7 @@ describe("threat effect keys", () => {
       stat: "signal",
       difficulty: 7,
       successEffect: { type: "gain_note", text: "Safe." },
-      failEffect: { type: "gain_heat", amount: 1 }
+      failEffect: { type: "legacy_compatibility_noop" }
     });
     const escalatedState = createState({
       phase: "sector",
@@ -3311,7 +3520,7 @@ describe("threat effect keys", () => {
       difficulty: 12,
       successEffect: { type: "gain_note", text: "Safe." },
       failEffectKey: "threat_fail_take_wound",
-      failEffect: { type: "gain_heat", amount: 1 }
+      failEffect: { type: "legacy_compatibility_noop" }
     });
     const state = createState({
       currentEncounter: threats.get("keyed-snare") ?? null,
@@ -3336,7 +3545,6 @@ describe("threat effect keys", () => {
     });
 
     const player = server.getState().players.find((entry) => entry.seatId === "seat-1");
-    expect(player?.character.heat).toBe(0);
     expect(player?.character.wounds).toBe(1);
   });
 });
@@ -3525,7 +3733,6 @@ describe("movement rolls", () => {
     const summary = server.getState().lastOutcomeSummary;
 
     expect(player?.character.currentSpaceId).toBe("sector-b");
-    expect(player?.character.heat).toBe(0);
     expect(summary?.checkStat).toBe("guile");
     expect(summary?.difficulty).toBe(1);
     expect(summary?.success).toBe(true);
@@ -3569,7 +3776,6 @@ describe("movement rolls", () => {
 
     expect(player?.character.currentSpaceId).toBe("sector-a");
     expect(player?.sectorId).toBe("sector-a");
-    expect(player?.character.heat).toBe(0);
     expect(summary?.movedToSectorId).toBe("sector-a");
     expect(summary?.success).toBe(false);
     expect(summary?.difficulty).toBe(8);
@@ -3613,7 +3819,6 @@ describe("movement rolls", () => {
 
     expect(player?.character.currentSpaceId).toBe("sector-b");
     expect(player?.sectorId).toBe("sector-b");
-    expect(player?.character.heat).toBe(0);
     expect(summary?.success).toBe(true);
     expect(summary?.movedToSectorId).toBe("sector-b");
     expect(summary?.summary).toContain("Moved into");
@@ -3658,7 +3863,6 @@ describe("movement rolls", () => {
     const summary = server.getState().lastOutcomeSummary;
 
     expect(player?.character.currentSpaceId).toBe("sector-b");
-    expect(player?.character.heat).toBe(0);
     expect(summary?.success).toBe(true);
     expect(summary?.difficulty).toBe(summary?.checkTotal);
   });
@@ -3712,7 +3916,7 @@ describe("movement rolls", () => {
     const server = new GameRoomServer(
       createState({
         phase: "navigation",
-        heatThreshold: 2,
+        reflectionPressureThreshold: 2,
         sectors: baseState.sectors.map((sector) =>
           sector.id === "sector-b"
             ? {
@@ -3754,7 +3958,6 @@ describe("movement rolls", () => {
     const seat1 = server.getState().players.find((entry) => entry.seatId === "seat-1");
 
     expect(seat1?.character.currentSpaceId).toBe("sector-a");
-    expect(seat1?.character.heat).toBe(1);
     expect(seat1?.character.status).toBe("active");
     expect(server.getState().activeSeatIndex).toBe(1);
     expect(server.getState().phase).toBe("navigation");
@@ -3925,7 +4128,6 @@ describe("wound recall flow", () => {
 
     const player = server.getState().players.find((entry) => entry.seatId === "seat-1");
     expect(player?.character.status).toBe("active");
-    expect(player?.character.heat).toBe(0);
     expect(player?.character.wounds).toBe(0);
     expect(player?.character.scars).toContain("scar-wound-1");
     expect(player?.character.id).toBe("signal-witch");
@@ -4197,7 +4399,6 @@ describe("escalation flow", () => {
       seatId: "seat-1"
     });
 
-    expect(server.getState().players.find((entry) => entry.seatId === "seat-1")?.character.heat).toBe(1);
     expect(server.getState().players.find((entry) => entry.seatId === "seat-1")?.private.notes).toContain(
       "Ash Psalm hardened the cleared line into a disciplined hold."
     );
@@ -4221,7 +4422,6 @@ describe("escalation flow", () => {
               character: {
                 ...cloneCharacter(characters.get("cinder-monk")),
                 currentSpaceId: "sector-c",
-                heat: 1
               }
             }
           ]
@@ -4242,7 +4442,6 @@ describe("escalation flow", () => {
       toPhase: "resolution"
     });
 
-    expect(server.getState().players[0]?.character.heat).toBe(1);
     expect(server.getState().players[0]?.character.wounds).toBe(1);
     expect(server.getState().players[0]?.private.notes).toContain(
       "Ember Vigil kept the dangerous sector from dictating the tempo."
@@ -4265,7 +4464,6 @@ describe("escalation flow", () => {
               character: {
                 ...cloneCharacter(characters.get("signal-witch")),
                 currentSpaceId: "sector-a",
-                heat: 1
               }
             }
           ]
@@ -4287,7 +4485,6 @@ describe("escalation flow", () => {
     });
 
     expect(server.getState().escalationLevel).toBe(1);
-    expect(server.getState().players.find((entry) => entry.seatId === "seat-1")?.character.heat).toBe(1);
     expect(server.getState().players.find((entry) => entry.seatId === "seat-1")?.private.notes).toContain(
       "Choir Lash bled the breach spike into a controlled pulse."
     );
@@ -4578,7 +4775,6 @@ describe("escalation flow", () => {
     });
 
     expect(server.getState().players[0]?.private.notes).not.toContain("Ashwake crossing cleared. The convoy lane is charted.");
-    expect(server.getState().players[0]?.character.heat).toBe(0);
     expect(server.getState().players[0]?.private.notes).toContain("Void Command marked the cleared lane for allied movement.");
   });
 
@@ -4672,7 +4868,6 @@ describe("escalation flow", () => {
       choiceId: "stock"
     });
 
-    expect(server.getState().players[0]?.character.heat).toBe(2);
     expect(server.getState().players[0]?.private.notes).toContain(
       "Shard Sprawl passage stock secured for the next route push."
     );
@@ -4837,7 +5032,6 @@ describe("escalation flow", () => {
       seatId: "seat-1"
     });
 
-    expect(server.getState().players[0]?.character.heat).toBe(2);
     expect(server.getState().players[0]?.private.notes).toContain(
       "Glassmere anomaly contained. The spindle now answers the relay choir cleanly."
     );
@@ -5159,7 +5353,6 @@ describe("escalation flow", () => {
     });
 
     expect(server.getState().escalationLevel).toBe(1);
-    expect(server.getState().players[0]?.character.heat).toBe(2);
     expect(server.getState().players[0]?.private.notes).toContain(
       "Ridge suture anchored. The watch posts can still hold for one more convoy."
     );
@@ -5299,7 +5492,7 @@ describe("escalation flow", () => {
       toSectorId: "center_cinder_gate"
     });
 
-    expect(String(client.socket.send.mock.calls[0]?.[0] ?? "")).toContain("Resolve the Last Signal Well");
+    expect(String(client.socket.send.mock.calls[0]?.[0] ?? "")).toContain("Breach the Gate of Cinders first");
   });
 
   it("lets Guardian Span board text earn the clearance note and then opens the inner breach move", () => {
@@ -5478,7 +5671,6 @@ describe("escalation flow", () => {
       choiceId: "anchor-surge"
     });
 
-    expect(server.getState().players[0]?.character.heat).toBe(2);
     expect(server.getState().players[0]?.private.notes).toContain(
       "Veil Rift surge anchored for deeper breach timing."
     );
@@ -5584,7 +5776,12 @@ describe("trophy progression", () => {
         createState({
           sessionMode: "single-player",
           phase: "action",
-          scenarioProgress: { sealTokens: 4 },
+          scenarioProgress: {},
+          scenarioPreparation: {
+            resources: { sealIntegrity: 4 },
+            completedObjectiveIds: [],
+            processedSourceEventIds: []
+          },
           turnOrder: ["seat-1"],
           seats: [{ ...createState().seats[0]!, characterId: "void-marshal" }],
         players: [
@@ -5658,7 +5855,7 @@ describe("trophy progression", () => {
       stat: "command",
       difficulty: 15,
       successEffect: { type: "gain_note", text: "The command lock opened cleanly." },
-      failEffect: { type: "gain_heat", amount: 1 }
+      failEffect: { type: "legacy_compatibility_noop" }
     });
 
     const baseCharacter = cloneCharacter(createCharacters().get("void-marshal"));
@@ -6107,7 +6304,7 @@ describe("trophy progression", () => {
       stat: "command",
       difficulty: 17,
       successEffect: { type: "gain_note", text: "You locked the command cipher in place." },
-      failEffect: { type: "gain_heat", amount: 1 }
+      failEffect: { type: "legacy_compatibility_noop" }
     });
 
     const createCommandState = (withBoost: boolean, phase: GameState["phase"]): GameState =>
@@ -6189,7 +6386,6 @@ describe("trophy progression", () => {
       stat: "command"
     });
 
-    expect(baselineServer.getState().players.find((entry) => entry.seatId === "seat-1")?.character.heat).toBe(0);
 
     const boostedServer = new GameRoomServer(
       createCommandState(true, "action"),
@@ -6238,7 +6434,6 @@ describe("trophy progression", () => {
     expect(boostedPlayer?.character.stats.command).toBe(4);
     expect(boostedPlayer?.character.equippedGear.utility).toBe("marshal-seal");
     expect(boostedPlayer ? getEquippedGearBonus(boostedPlayer.character, "command") : null).toBe(1);
-    expect(boostedServer.getState().players.find((entry) => entry.seatId === "seat-1")?.character.heat).toBe(0);
   });
 });
 
@@ -6505,7 +6700,6 @@ describe("contracts", () => {
       stat: "signal"
     });
 
-    expect(server.getState().players.find((entry) => entry.seatId === "seat-1")?.character.heat).toBe(1);
     expect(server.getState().players.find((entry) => entry.seatId === "seat-1")?.private.notes).toContain(
       "Witchglass choir mapped the live signal into a stable route note."
     );
@@ -6560,7 +6754,6 @@ describe("contracts", () => {
       seatId: "seat-1"
     });
 
-    expect(server.getState().players.find((entry) => entry.seatId === "seat-1")?.character.heat).toBe(3);
     expect(server.getState().players.find((entry) => entry.seatId === "seat-1")?.private.notes).toContain(
       "Hush Static drowned the local anomaly in controlled noise."
     );
@@ -6782,7 +6975,6 @@ describe("contracts", () => {
       seatId: "seat-1"
     });
 
-    expect(server.getState().players.find((entry) => entry.seatId === "seat-1")?.character.heat).toBe(1);
     expect(server.getState().players.find((entry) => entry.seatId === "seat-1")?.private.notes).toContain(
       "Breach Atlas logged a safer approach through the mapped lane."
     );
@@ -6849,7 +7041,6 @@ describe("contracts", () => {
               character: {
                 ...cloneCharacter(characters.get("fleet-elder")),
                 currentSpaceId: "sector-c",
-                heat: 1
               }
             }
           ]
@@ -6870,7 +7061,6 @@ describe("contracts", () => {
       toPhase: "resolution"
     });
 
-    expect(server.getState().players.find((entry) => entry.seatId === "seat-1")?.character.heat).toBe(1);
     expect(server.getState().players.find((entry) => entry.seatId === "seat-1")?.private.notes).toContain(
       "Fleet Memory read the pressure pattern before the convoy line could panic."
     );
@@ -6911,7 +7101,6 @@ describe("contracts", () => {
       contractId: "choir-hush-census"
     });
 
-    expect(server.getState().players[0]?.character.heat).toBe(1);
     expect(server.getState().players[0]?.private.notes).toContain(
       "Old Oaths made the frightened route crews fall into line at once."
     );
@@ -6963,7 +7152,6 @@ describe("contracts", () => {
       seatId: "seat-1"
     });
 
-    expect(server.getState().players.find((entry) => entry.seatId === "seat-1")?.character.heat).toBe(1);
     expect(server.getState().players.find((entry) => entry.seatId === "seat-1")?.private.notes).toContain(
       "Chain Signal fixed the route into a convoy-safe sequence for the next push."
     );
@@ -6992,7 +7180,6 @@ describe("contracts", () => {
               character: {
                 ...cloneCharacter(characters.get("void-marshal")),
                 currentSpaceId: "sector-a",
-                heat: 1
               }
             }
           ]
@@ -7013,7 +7200,6 @@ describe("contracts", () => {
       toPhase: "resolution"
     });
 
-    expect(server.getState().players[0]?.character.heat).toBe(1);
     expect(server.getState().players[0]?.private.notes).toContain(
       "Ashwake Step marked the opening lane before anyone else had to test it."
     );
@@ -7062,7 +7248,6 @@ describe("contracts", () => {
       seatId: "seat-1"
     });
 
-    expect(server.getState().players[0]?.character.heat).toBe(1);
     expect(server.getState().players[0]?.private.notes).toContain(
       "Void Command marked the cleared lane for allied movement."
     );
@@ -7113,7 +7298,6 @@ describe("contracts", () => {
       stat: "grit"
     });
 
-    expect(server.getState().players[0]?.character.heat).toBe(1);
     expect(server.getState().players[0]?.private.notes).toContain(
       "Signal Relay amplified allied pressure in the Marshal's sector."
     );
@@ -7165,7 +7349,6 @@ describe("contracts", () => {
       seatId: "seat-1"
     });
 
-    expect(server.getState().players[0]?.character.heat).toBe(1);
     expect(server.getState().players[0]?.private.notes).toContain(
       "Silent Audit extracted sharper route intelligence from the cleared sector."
     );
@@ -7254,7 +7437,6 @@ describe("contracts", () => {
       contractId: "choir-hush-census"
     });
 
-    expect(server.getState().players[0]?.character.heat).toBe(1);
     expect(server.getState().escalationLevel).toBe(0);
     expect(server.getState().players[0]?.private.notes).toContain(
       "Black file leverage extracted from the finished contract."
@@ -7373,7 +7555,7 @@ describe("contracts", () => {
           stat: "forge",
           difficulty: 4,
           successEffect: { type: "gain_note", text: "You made the dead grid answer." },
-          failEffect: { type: "gain_heat", amount: 1 }
+          failEffect: { type: "legacy_compatibility_noop" }
         },
         seats: createState().seats.map((seat) =>
           seat.seatId === "seat-1" ? { ...seat, characterId: "grave-engineer" } : seat
@@ -7405,7 +7587,6 @@ describe("contracts", () => {
       stat: "forge"
     });
 
-    expect(server.getState().players[0]?.character.heat).toBe(1);
     expect(server.getState().players[0]?.private.notes).toContain(
       "Grave Spark turned the dead system into one more workable machine."
     );
@@ -7472,7 +7653,6 @@ describe("contracts", () => {
               character: {
                 ...cloneCharacter(characters.get("cinder-monk")),
                 currentSpaceId: "center_cinder_gate",
-                heat: 1
               }
             }
           ],
@@ -7538,17 +7718,7 @@ describe("contracts", () => {
       reason: "Cinder Oath has already been prepared this round."
     });
 
-    runIntent(server, {
-      type: "SCENARIO_CONFRONTATION_REQUESTED",
-      seatId: "seat-1"
-    });
-
-    expect(server.getState().players[0]?.character.heat).toBe(1);
-    const confrontation = [...server.getState().eventLog].reverse().find((entry) => {
-      return (entry as { type?: string }).type === "SCENARIO_PROGRESS_ADVANCED";
-    }) as { summary?: string } | undefined;
-
-    expect(confrontation?.summary).toContain("Cinder Oath +2 applied to each test.");
+    expect(server.getState().players[0]?.private.noteResources?.vow).toBe(0);
   });
 
   it("lets Ash Tithe pay the Oathbroken Prince when a contract closes", () => {
@@ -7590,7 +7760,6 @@ describe("contracts", () => {
       contractId: "choir-hush-census"
     });
 
-    expect(server.getState().players[0]?.character.heat).toBe(1);
     expect(server.getState().players[0]?.private.notes).toContain(
       "Ash Tithe skimmed tribute off the quiet victory before the route closed."
     );
@@ -7609,7 +7778,6 @@ describe("contracts", () => {
               character: {
                 ...cloneCharacter(characters.get("oathbroken-prince")),
                 currentSpaceId: "sector-b",
-                heat: 1,
                 activeContract: {
                   contractId: "compact-cleanse-ledger",
                   progress: 0
@@ -7634,7 +7802,6 @@ describe("contracts", () => {
       stat: "grit"
     });
 
-    expect(server.getState().players[0]?.character.heat).toBe(1);
     expect(server.getState().players[0]?.private.notes).toContain(
       "Crown Debt pressed the kill into service as collected obligation."
     );
@@ -7678,7 +7845,6 @@ describe("contracts", () => {
       toSectorId: "sector-b"
     });
 
-    expect(server.getState().players[0]?.character.heat).toBe(1);
     expect(server.getState().players[0]?.private.notes).toContain(
       "Ruin Courtesy made the shattered approach feel like a hall already claimed."
     );
@@ -7762,7 +7928,6 @@ describe("contracts", () => {
       toSectorId: "sector-b"
     });
 
-    expect(server.getState().players[0]?.character.heat).toBe(1);
     expect(server.getState().players[0]?.private.notes).toContain(
       "Ghost Mile stripped the false path out of the approach before it could set in."
     );
@@ -7784,7 +7949,7 @@ describe("contracts", () => {
           stat: "guile",
           difficulty: 4,
           successEffect: { type: "gain_note", text: "You annotated the moving lane." },
-          failEffect: { type: "gain_heat", amount: 1 }
+          failEffect: { type: "legacy_compatibility_noop" }
         },
         seats: createState().seats.map((seat) =>
           seat.seatId === "seat-1" ? { ...seat, characterId: "rift-cartographer" } : seat
@@ -7867,7 +8032,6 @@ describe("contracts", () => {
       choiceId: "hidden-lane"
     });
 
-    expect(server.getState().players[0]?.character.heat).toBe(1);
     expect(server.getState().players[0]?.private.notes).toContain(
       "Webglass hidden lane mapped through shifting lanes."
     );
@@ -7893,7 +8057,6 @@ describe("contracts", () => {
               character: {
                 ...cloneCharacter(characters.get("siege-medic")),
                 currentSpaceId: "sector-a",
-                heat: 1
               }
             }
           ]
@@ -7914,7 +8077,6 @@ describe("contracts", () => {
       toPhase: "resolution"
     });
 
-    expect(server.getState().players[0]?.character.heat).toBe(1);
     expect(server.getState().players[0]?.private.notes).toContain(
       "Siege Discipline turned long pressure into a steady working rhythm."
     );
@@ -8013,7 +8175,6 @@ describe("contracts", () => {
       contractId: "choir-hush-census"
     });
 
-    expect(server.getState().players[0]?.character.heat).toBe(1);
     expect(server.getState().players[0]?.private.notes).toContain(
       "Scar Ledger filed the surviving harm into something the crew could carry."
     );
@@ -8039,8 +8200,7 @@ describe("contracts", () => {
             text: "The salvage frame held."
           },
           failEffect: {
-            type: "gain_heat",
-            amount: 1
+            type: "legacy_compatibility_noop"
           }
         },
         seats: createState().seats.map((seat) =>
@@ -8073,7 +8233,6 @@ describe("contracts", () => {
       stat: "forge"
     });
 
-    expect(server.getState().players[0]?.character.heat).toBe(1);
     expect(server.getState().players[0]?.private.notes).toContain(
       "Scrap Bastion converted damaged cover into a workable defensive shell."
     );
@@ -8089,7 +8248,8 @@ describe("contracts", () => {
                 ...entry,
                 character: {
                   ...entry.character,
-                  activeContract: { contractId: "compact-cleanse-ledger", progress: 1 }
+                  heat: 2,
+                  activeContract: { contractId: "choir-hush-census", progress: 1 }
                 }
               }
             : entry
@@ -8106,10 +8266,10 @@ describe("contracts", () => {
     runIntent(server, {
       type: "COMPLETE_CONTRACT",
       seatId: "seat-1",
-      contractId: "compact-cleanse-ledger"
+      contractId: "choir-hush-census"
     });
     expect(server.getState().players.find((entry) => entry.seatId === "seat-1")?.character.activeContract).toEqual({
-      contractId: "compact-cleanse-ledger",
+      contractId: "choir-hush-census",
       progress: 1
     });
 
@@ -8121,7 +8281,8 @@ describe("contracts", () => {
                 ...entry,
                 character: {
                   ...entry.character,
-                  activeContract: { contractId: "compact-cleanse-ledger", progress: 2 }
+                  heat: 2,
+                  activeContract: { contractId: "choir-hush-census", progress: 2 }
                 }
               }
             : entry
@@ -8138,34 +8299,11 @@ describe("contracts", () => {
     runIntent(readyServer, {
       type: "COMPLETE_CONTRACT",
       seatId: "seat-1",
-      contractId: "compact-cleanse-ledger"
+      contractId: "choir-hush-census"
     });
 
     const player = readyServer.getState().players.find((entry) => entry.seatId === "seat-1");
     expect(player?.character.activeContract).toBeNull();
-    expect(player?.character.heldGear.some((item) => item.id === "veil-hook")).toBe(true);
-    expect(player?.character.completedContracts).toEqual(["compact-cleanse-ledger"]);
-    expect(readyServer.getState().pendingEffect).toBeNull();
-    expect(readyServer.getState().phase).toBe("action");
-
-    runIntent(readyServer, {
-      type: "ACCEPT_CONTRACT",
-      seatId: "seat-1",
-      contractId: "choir-hush-census"
-    });
-    expect(readyServer.getState().players.find((entry) => entry.seatId === "seat-1")?.character.activeContract).toEqual({
-      contractId: "choir-hush-census",
-      progress: 0
-    });
-
-    runIntent(readyServer, {
-      type: "COMPLETE_CONTRACT",
-      seatId: "seat-1",
-      contractId: "compact-cleanse-ledger"
-    });
-    expect(readyServer.getState().players.find((entry) => entry.seatId === "seat-1")?.character.completedContracts).toEqual([
-      "compact-cleanse-ledger"
-    ]);
   });
 
   it("accepts a contract, wins two combats across turns, completes it, and receives the reward", () => {
@@ -8289,267 +8427,82 @@ describe("contracts", () => {
     expect(player?.character.activeContract).toBeNull();
     expect(player?.character.heldGear.some((item) => item.id === "veil-hook")).toBe(true);
   });
+});
 
-  it("stores completed missions and consumes three when traded for an artifact", () => {
-    const artifact = createGear().get("veil-hook")!;
-    const state = createState({
-      players: createState().players.map((entry) =>
-        entry.seatId === "seat-1"
-          ? {
-              ...entry,
-              character: {
-                ...entry.character,
-                completedContracts: ["mission-a", "mission-b", "mission-c"]
-              }
-            }
-          : entry
-      )
-    });
-    const result = reduceGameState(state, {
-      type: "SHOP_SERVICE_RESOLVED",
-      seatId: "seat-1",
-      serviceId: "trade-missions-for-artifact",
-      serviceLabel: "Trade Missions for Artifact",
-      shopName: "Relic Dealer",
-      sectorId: "sector-a",
-      cost: { completedContracts: 3 },
-      result: { gainGear: artifact },
-      summary: "Traded three completed Missions for an Artifact.",
-      createdAt: new Date().toISOString()
-    });
-
-    expect(result.ok).toBe(true);
-    if (!result.ok) return;
-    const player = result.state.players.find((entry) => entry.seatId === "seat-1");
-    expect(player?.character.completedContracts).toEqual([]);
-    expect(player?.character.heldGear.some((item) => item.id === artifact.id)).toBe(true);
-  });
-
-  it("completes every mission objective schema through its objective trigger without duplicating ledger or rewards", () => {
-    const normalEquipment: GearItem = {
-      id: "lifecycle-standard-kit",
-      name: "Lifecycle Standard Kit",
-      slot: "utility",
-      tier: "standard",
-      normalShopCommon: true,
-      statBonus: { stat: "guile", amount: 1 },
-    };
-    const replacement: ContractCard = {
-      id: "lifecycle-replacement",
-      name: "Replacement Contract",
-      factionGiver: "Meridian Compact",
-      text: "Verify that the active mission slot is available again.",
-      objective: { type: "defeatCount", target: 1 },
-      reward: { type: "gain_note", text: "Replacement accepted." },
-    };
-    const cases: Array<{
-      contract: ContractCard;
-      triggers: Parameters<typeof advanceContractObjectiveState>[2][];
-      assertReward: (player: NonNullable<GameState["players"][number]>) => void;
-    }> = [
-      {
-        contract: {
-          id: "lifecycle-defeat",
-          name: "Defeat Lifecycle",
-          factionGiver: "Meridian Compact",
-          text: "Defeat one enemy.",
-          objective: { type: "defeatCount", target: 1 },
-          reward: { type: "gain_salvage", amount: 2 },
-        },
-        triggers: [{ type: "enemy-defeated" }],
-        assertReward: (player) => expect(player.character.salvage).toBe(2),
-      },
-      {
-        contract: {
-          id: "lifecycle-space-text",
-          name: "Space Text Lifecycle",
-          factionGiver: "Pale Cartels",
-          text: "Resolve the matching sector text.",
-          objective: { type: "spaceTextResolved", effectKey: "lifecycle-effect", label: "Resolve lifecycle text", target: 1 },
-          reward: { type: "gain_gear", gearId: normalEquipment.id, gear: normalEquipment },
-        },
-        triggers: [{ type: "space-text-resolved", effectKey: "lifecycle-effect" }],
-        assertReward: (player) => {
-          expect(player.character.heldGear.filter((item) => item.id === normalEquipment.id)).toHaveLength(1);
-          expect(player.character.heldGear.find((item) => item.id === normalEquipment.id)?.tier).not.toBe("artifact");
-        },
-      },
-      {
-        contract: {
-          id: "lifecycle-route",
-          name: "Route Lifecycle",
-          factionGiver: "Glass Choir",
-          text: "Visit both route stops.",
-          objective: { type: "multiStopRoute", ordered: true, targets: [
-            { id: "first", type: "spaceId", value: "lifecycle-a", label: "First" },
-            { id: "second", type: "tag", value: "shop", label: "Second" },
-          ] },
-          reward: { type: "gain_note", text: "Route reward." },
-        },
-        triggers: [
-          { type: "sector-visited", sectorId: "lifecycle-a", sectorTags: [] },
-          { type: "sector-visited", sectorId: "lifecycle-b", sectorTags: ["shop"] },
-        ],
-        assertReward: (player) => expect(player.private.notes).toContain("Route reward."),
-      },
-      {
-        contract: {
-          id: "lifecycle-shop",
-          name: "Shop Lifecycle",
-          factionGiver: "Kaldr Dominion",
-          text: "Repair one item at a shop.",
-          objective: { type: "shopTransaction", action: "repairGear", requiredShopType: "shop", requiredCount: 1, label: "Repair once" },
-          reward: { type: "gain_trophy", amount: 1 },
-        },
-        triggers: [{ type: "shop-transaction", action: "repairGear", sectorId: "lifecycle-shop", shopTypes: ["shop"], salvageSpent: 1 }],
-        assertReward: (player) => expect(player.character.trophies).toBe(1),
-      },
-    ];
-
-    for (const { contract, triggers, assertReward } of cases) {
-      let objectiveState = { progress: 0 };
-      for (const trigger of triggers) {
-        objectiveState = advanceContractObjectiveState(contract, objectiveState, trigger);
-      }
-      const activeContract = { contractId: contract.id, ...objectiveState };
-      const initialState = createState({
-        availableContracts: [contract, replacement],
-        players: createState().players.map((entry) => entry.seatId === "seat-1"
-          ? { ...entry, character: { ...entry.character, salvage: 0, trophies: 0, heldGear: [], activeContract } }
-          : entry),
-      });
-      const action = {
-        type: "COMPLETE_CONTRACT" as const,
-        seatId: "seat-1",
-        contractId: contract.id,
-        contract,
-        createdAt: "2026-07-11T00:00:00.000Z",
-      };
-      const completed = reduceGameState(initialState, action);
-
-      expect(completed.ok, contract.objective.type).toBe(true);
-      if (!completed.ok) continue;
-      const player = completed.state.players.find((entry) => entry.seatId === "seat-1")!;
-      expect(player.character.activeContract).toBeNull();
-      expect(player.character.completedContracts).toEqual([contract.id]);
-      assertReward(player);
-
-      const duplicate = reduceGameState(completed.state, action);
-      expect(duplicate.ok, `${contract.objective.type} duplicate`).toBe(false);
-      expect(duplicate.state.players.find((entry) => entry.seatId === "seat-1")?.character.completedContracts).toEqual([contract.id]);
-      assertReward(duplicate.state.players.find((entry) => entry.seatId === "seat-1")!);
-
-      const replacementAccepted = reduceGameState(
-        { ...completed.state, phase: "action", activeResolution: null },
-        { type: "ACCEPT_CONTRACT", seatId: "seat-1", contractId: replacement.id, contract: replacement, createdAt: "2026-07-11T00:00:01.000Z" },
-      );
-      expect(replacementAccepted.ok, `${contract.objective.type} replacement`).toBe(true);
-      expect(replacementAccepted.state.players.find((entry) => entry.seatId === "seat-1")?.character.activeContract?.contractId).toBe(replacement.id);
-    }
-  });
-
-  it("projects completed mission progress from the ledger with a legacy event fallback and trades exactly three for one artifact", () => {
-    const artifact: GearItem = {
-      id: "lifecycle-artifact",
-      name: "Lifecycle Artifact",
-      slot: "utility",
-      tier: "artifact",
-      normalShopCommon: false,
-      statBonus: { stat: "signal", amount: 2 },
-    };
-    const withLedger = createState({
-      phase: "action",
-      sectors: [{
-        id: "outer_surgery_tent",
-        name: "Mercy Bay",
-        regionTier: "borderlight",
-        neighbors: [],
-        danger: 0,
-        encounterDecks: { threat: [], anomaly: [], contract: [], artifact: [], escalation: [] },
-      }],
-      players: createState().players.map((entry) => entry.seatId === "seat-1"
-        ? {
-            ...entry,
-            sectorId: "outer_surgery_tent",
-            character: {
-              ...entry.character,
-              currentSpaceId: "outer_surgery_tent",
-              activeContract: { contractId: "incomplete-contract", progress: 0 },
-              completedContracts: ["mission-a", "mission-b", "mission-c"],
-              heldGear: [],
-            },
+describe("contract lifecycle ledger", () => {
+  it("makes completedContracts authoritative for projections and relic-dealer spending", () => {
+    const server = new GameRoomServer(
+      createState({
+        status: "active",
+        phase: "action",
+        activeResolution: null,
+        pendingEnemyRoll: null,
+        pendingEffect: null,
+        currentEncounter: null,
+        players: createState().players.map((entry) => entry.seatId === "seat-1" ? {
+          ...entry,
+          sectorId: "outer_surgery_tent",
+          character: {
+            ...entry.character,
+            currentSpaceId: "outer_surgery_tent",
+            completedContracts: ["contract-a", "contract-b", "contract-c"],
+            activeContract: { contractId: "choir-hush-census", progress: 1 }
           }
-        : entry),
+        } : entry)
+      }),
+      [], createSequenceRandomSource([0]), createThreats(), createCharacters(), createGear(), createContracts()
+    );
+
+    runIntent(server, { type: "SHOP_SERVICE_REQUESTED", seatId: "seat-1", serviceId: "trade-missions-for-artifact" });
+    const pending = server.getState().players.find((entry) => entry.seatId === "seat-1")!;
+    const reveal = server.getState().shopStockReveals.find((entry) => entry.seatId === "seat-1")!;
+    expect(reveal.stockIds.length).toBeGreaterThanOrEqual(1);
+    expect(reveal.stockIds.length).toBeLessThanOrEqual(2);
+    expect(pending.character.completedContracts).toEqual(["contract-a", "contract-b", "contract-c"]);
+    expect(pending.character.heldGear.filter((item) => item.tier === "artifact")).toHaveLength(0);
+
+    const reconnected = new GameRoomServer(
+      structuredClone(server.getState()),
+      [], createSequenceRandomSource([0]), createThreats(), createCharacters(), createGear(), createContracts()
+    );
+    runIntent(reconnected, { type: "SHOP_PURCHASE_REQUESTED", seatId: "seat-1", cardId: reveal.stockIds[0]! });
+    const traded = reconnected.getState().players.find((entry) => entry.seatId === "seat-1")!;
+    expect(traded.character.completedContracts).toEqual([]);
+    expect(traded.character.activeContract).toEqual({ contractId: "choir-hush-census", progress: 1 });
+    expect(traded.character.heldGear.filter((item) => item.tier === "artifact")).toHaveLength(1);
+
+    runIntent(reconnected, { type: "SHOP_PURCHASE_REQUESTED", seatId: "seat-1", cardId: reveal.stockIds[0]! });
+    expect(reconnected.getState().players.find((entry) => entry.seatId === "seat-1")?.character.heldGear.filter((item) => item.tier === "artifact")).toHaveLength(1);
+
+    const phone = createPhoneProjection(reconnected.getState(), "seat-1", true) as { self: { character: { completedContracts: string[] } } };
+    const tv = createTvProjection(reconnected.getState()) as { players: Array<{ character: { completedContracts: number } }> };
+    expect(phone.self.character.completedContracts).toEqual([]);
+    expect(tv.players[0]?.character.completedContracts).toBe(0);
+  });
+
+  it("does not spend legacy completion events when an empty ledger is present", () => {
+    const state = createState({
+      eventLog: [{ type: "COMPLETE_CONTRACT", seatId: "seat-1", contractId: "legacy-a", createdAt: "2026-07-11T00:00:00.000Z" } as GameAction],
+      players: createState().players.map((entry) => entry.seatId === "seat-1" ? {
+        ...entry,
+        sectorId: "outer_surgery_tent",
+        character: { ...entry.character, currentSpaceId: "outer_surgery_tent", completedContracts: [] }
+      } : entry)
     });
-    const projection = createTvProjection(withLedger) as {
-      players: Array<{ seatId: string; character: { completedContracts?: number } }>;
-      shopEncounter: { activePlayer: { completedContracts?: number }; services: Array<{ id: string; enabled: boolean; disabledReason?: string }> } | null;
-    };
-    const phoneProjection = createPhoneProjection(withLedger, "seat-1") as {
-      self: { character: { completedContracts?: string[] } } | null;
-    };
-    const service = projection.shopEncounter?.services.find((entry) => entry.id === "trade-missions-for-artifact");
-
-    expect(projection.players.find((entry) => entry.seatId === "seat-1")?.character.completedContracts).toBe(3);
-    expect(projection.shopEncounter?.activePlayer.completedContracts).toBe(3);
-    expect(phoneProjection.self?.character.completedContracts).toEqual(["mission-a", "mission-b", "mission-c"]);
-    expect(service).toMatchObject({ enabled: true });
-
-    const tradeAction = {
-      type: "SHOP_SERVICE_RESOLVED" as const,
-      seatId: "seat-1",
-      serviceId: "trade-missions-for-artifact",
-      serviceLabel: "Trade Missions for Artifact",
-      shopName: "Relic Dealer",
-      sectorId: "outer_surgery_tent",
-      cost: { completedContracts: 3 },
-      result: { gainGear: artifact },
-      summary: "Traded three completed Missions for an Artifact.",
-      createdAt: "2026-07-11T00:00:00.000Z",
-    };
-    const traded = reduceGameState(withLedger, tradeAction);
-
-    expect(traded.ok).toBe(true);
-    if (!traded.ok) return;
-    const tradedPlayer = traded.state.players.find((entry) => entry.seatId === "seat-1")!;
-    expect(tradedPlayer.character.completedContracts).toEqual([]);
-    expect(tradedPlayer.character.activeContract).toEqual({ contractId: "incomplete-contract", progress: 0 });
-    expect(tradedPlayer.character.heldGear).toEqual([artifact]);
-    expect(tradedPlayer.character.heldGear.every((item) => item.tier === "artifact")).toBe(true);
-    expect(reduceGameState(traded.state, tradeAction).ok).toBe(false);
-
-    const legacy = createState({
-      eventLog: Array.from({ length: 3 }, () => ({ type: "COMPLETE_CONTRACT", seatId: "seat-1" } as never)),
-      players: createState().players.map((entry) => entry.seatId === "seat-1"
-        ? { ...entry, character: { ...entry.character, completedContracts: undefined } }
-        : entry),
-    });
-    const legacyProjection = createTvProjection(legacy) as {
-      players: Array<{ seatId: string; character: { completedContracts?: number } }>;
-    };
-    expect(legacyProjection.players.find((entry) => entry.seatId === "seat-1")?.character.completedContracts).toBe(3);
-
-    const spentLedger = {
-      ...legacy,
-      players: legacy.players.map((entry) => entry.seatId === "seat-1"
-        ? { ...entry, character: { ...entry.character, completedContracts: [] } }
-        : entry),
-    };
-    expect(
-      (createTvProjection(spentLedger) as { players: Array<{ seatId: string; character: { completedContracts?: number } }> }).players
-        .find((entry) => entry.seatId === "seat-1")?.character.completedContracts,
-    ).toBe(0);
+    const server = new GameRoomServer(state, [], createSequenceRandomSource([0]), createThreats(), createCharacters(), createGear(), createContracts());
+    runIntent(server, { type: "SHOP_SERVICE_REQUESTED", seatId: "seat-1", serviceId: "trade-missions-for-artifact" });
+    expect(server.getState().players[0]?.character.heldGear.some((item) => item.tier === "artifact")).toBe(false);
   });
 });
 
 describe("opposed combat", () => {
-  it("assigns a non-active connected non-kicked seat as enemy roller and rejects other seats", () => {
+  it("rolls enemy dice automatically without assigning a phone roller", () => {
     const server = new GameRoomServer(
       createState({
         currentEncounter: createThreats().get("cinder-veil-stalker") ?? null
       }),
       [],
-      createSequenceRandomSource([0, 5, 5, 0, 0]),
+      createSequenceRandomSource([5, 5, 0, 0]),
       createThreats(),
       createCharacters(),
       createGear(),
@@ -8562,23 +8515,11 @@ describe("opposed combat", () => {
       stat: "grit"
     });
 
-    expect(server.getState().pendingEnemyRoll?.assignedRollerSeatId).toBe("seat-2");
-
-    runIntent(server, {
-      type: "ENEMY_ROLL_REQUESTED",
-      seatId: "seat-3"
-    });
-
-    expect(server.getState().pendingEnemyRoll?.assignedRollerSeatId).toBe("seat-2");
-
-    runIntent(server, {
-      type: "ENEMY_ROLL_REQUESTED",
-      seatId: "seat-2"
-    });
-
     const player = server.getState().players.find((entry) => entry.seatId === "seat-1");
     expect(server.getState().pendingEnemyRoll).toBeNull();
     expect(player?.character.heldGear.some((item) => item.id === "tuning-spines")).toBe(true);
+    expect(server.getState().eventLog.some((entry: unknown) => (entry as { type?: string }).type === "ENEMY_ROLL_ASSIGNED")).toBe(false);
+    expect(server.getState().eventLog.some((entry: unknown) => (entry as { type?: string }).type === "ENEMY_ROLL_REQUESTED")).toBe(false);
   });
 
   it("falls back to automatic server resolution when no eligible enemy roller exists", () => {

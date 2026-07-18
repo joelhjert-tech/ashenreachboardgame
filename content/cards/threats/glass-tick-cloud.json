@@ -3,7 +3,7 @@
   "type": "threat",
   "cardType": "hazard",
   "title": "Glass Tick Cloud",
-  "text": "Razor-small insects pour from a cracked relay casing and chew at gear seams.",
+  "text": "The glass ticks strip useful material from your pack. Lose up to 1 Salvage.",
   "flavor": "They sound like rain until the straps begin to part.",
   "severity": 2,
   "region": "outer",
@@ -14,7 +14,7 @@
     "text": "You sealed the glass tick vent and marked the casing as a salvage warning."
   },
   "failEffect": {
-    "type": "take_wound",
+    "type": "lose_salvage",
     "amount": 1
   },
   "enemyFamily": "vermin",
@@ -24,6 +24,6 @@
   "resourceTags": [
     "gear",
     "loot",
-    "wound"
+    "salvage"
   ]
 }

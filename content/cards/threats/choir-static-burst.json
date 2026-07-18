@@ -16,15 +16,15 @@
     "summary": "Choir-static was contained and converted into scenario leverage."
   },
   "failEffect": {
-    "type": "gain_heat",
-    "amount": 2
+    "type": "take_wound",
+    "amount": 1
   },
   "enemyFamily": "choir",
   "threatLane": "blue",
   "rarity": "uncommon",
   "tempo": "stall",
   "resourceTags": [
-    "heat",
-    "scenario"
+    "scenario",
+    "wound"
   ]
 }

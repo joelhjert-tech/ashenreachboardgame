@@ -2,6 +2,7 @@ import type { BoardNode } from "../../data/riftfallBoardNodes.js";
 import { TILE_ASSETS, getExpectedTileAssetPath, getTileAssetPath } from "./tileAssetManifest.js";
 
 export const MAP_BOARD_BASE_PATH = "/assets/map/board/ashen_reach_board_base.png";
+export const MAP_TILE_BACK_PATH = "/assets/map/tiles/map_tile_back.png";
 
 export const MAP_REGION_LAYER_PATHS = {
   outer: "/assets/map/board/map_region_outer_broken_perimeter.png",
@@ -132,6 +133,10 @@ export function getMapBoardBaseAssetPath(): string {
   return MAP_BOARD_BASE_PATH;
 }
 
+export function getMapTileBackAssetPath(): string {
+  return MAP_TILE_BACK_PATH;
+}
+
 export function getMapRegionLayerAssetPath(ring: BoardNode["ring"]): string {
   return MAP_REGION_LAYER_PATHS[ring];
 }
@@ -168,6 +173,7 @@ export function getMapTileBackgroundImage(nodeId: string, tone: string): string 
 export function getBoardMapRuntimeAssetPaths(): string[] {
   return [
     MAP_BOARD_BASE_PATH,
+    MAP_TILE_BACK_PATH,
     ...Object.values(MAP_REGION_LAYER_PATHS),
     ...Object.values(MAP_CORNER_TILE_PATHS),
     ...Object.values(MAP_MIDDLE_CORNER_TILE_PATHS),

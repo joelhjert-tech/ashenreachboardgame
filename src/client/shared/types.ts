@@ -7,10 +7,15 @@ export type GearTimingWindow =
   | "beforeThreatDraw"
   | "beforeBattleRoll"
   | "afterBattleRoll"
+  | "afterFailedTest"
   | "beforeTakingDamage"
   | "startOfTurn"
   | "movement"
+  | "movementRouteConfirmation"
+  | "beforeAnomalySignalTest"
+  | "pendingScarConsequence"
   | "shop"
+  | "action"
   | "anyTime";
 export type GearCategory =
   | "passive"
@@ -35,19 +40,15 @@ export type ShopFailureReason =
   | "itemNotHeld"
   | "itemNotSellable"
   | "invalidItem";
-export type Phase =
-  "start" | "navigation" | "sector" | "action" | "resolution" | "broadcast";
+export type Phase = "start" | "navigation" | "sector" | "action" | "resolution" | "broadcast";
 export type SessionStatus = "lobby" | "active" | "ended";
 export type SessionMode = "multiplayer" | "single-player";
 export type GameMode = "standard" | "nemesis_relay";
 export type InteractionMode = "co-op" | "rivalry" | "ruthless";
-export type ScenarioDifficulty =
-  "easy" | "easy-medium" | "medium" | "medium-hard" | "hard" | "brutal";
+export type ScenarioDifficulty = "easy" | "easy-medium" | "medium" | "medium-hard" | "hard" | "brutal";
 export type ScenarioMode = "coop" | "rivalry" | "hybrid";
-export type ScenarioRewardType =
-  "boon" | "gear" | "ability" | "tile-event" | "tactic" | "artifact";
-export type CharacterComplexity =
-  "beginner" | "standard" | "advanced" | "expert";
+export type ScenarioRewardType = "boon" | "gear" | "ability" | "tile-event" | "tactic" | "artifact";
+export type CharacterComplexity = "beginner" | "standard" | "advanced" | "expert";
 
 export interface CharacterPresentation {
   role: string;
@@ -80,19 +81,14 @@ export interface PublicPlayerCharacter {
   qaOnly?: boolean;
   presentation?: CharacterPresentation;
   status: "active" | "recalled";
-  activeContract: {
-    contractId: string;
-    progress: number;
-    completedTargetIds?: string[];
-    salvageSpent?: number;
-  } | null;
+  activeContract: { contractId: string; progress: number; completedTargetIds?: string[]; salvageSpent?: number } | null;
   stats: Record<Stat, number>;
+  effectiveStats?: Record<Stat, number>;
   statUpgrades?: Partial<Record<Stat, number>>;
   trophies: number;
-  completedContracts?: number;
   trophyPile?: TrophyPileEntry[];
   salvage?: number;
-  heat: number;
+  temporaryAllStatBoost?: { value: number; remainingEligibleResolutions: number };
   wounds: number;
   scars: string[];
   afflictions?: PlayerAfflictionSummary;
@@ -106,6 +102,20 @@ export interface PublicPlayerCharacter {
     exhausted?: boolean;
   }>;
   equippedGear: Record<GearSlot, string | null>;
+  equippedGearDetails?: PublicEquippedGearSummary[];
+}
+
+export interface PublicEquippedGearSummary {
+  slot: GearSlot;
+  id: string;
+  instanceId?: string;
+  name: string;
+  statBonus: { stat: Stat; amount: number };
+  effectModel?: GearItem["effectModel"];
+  conditionType?: GearItem["conditionType"];
+  currentCharges?: number;
+  maxCharges?: number;
+  exhausted?: boolean;
 }
 
 export interface TrophyPileEntry {
@@ -129,6 +139,7 @@ export interface GearItem {
   slot: GearSlot;
   statBonus: { stat: Stat; amount: number };
   category?: GearCategory;
+  subtype?: "weapon" | "armor" | "utility" | "consumable" | "supply" | "quest" | "artifact";
   shopCategories?: ShopCategory[];
   cost?: number;
   sellValue?: number;
@@ -140,24 +151,33 @@ export interface GearItem {
   activeText?: string;
   useLimit?: "oncePerTurn" | "oncePerRound" | "discard" | "charge";
   charges?: number;
+  currentCharges?: number;
+  maxCharges?: number;
+  startingCharges?: number;
+  chargeCost?: number;
+  rechargeRule?: "none";
+  chargedEffect?: "personalGateOverride" | "movementAdjustment" | "saintSafeConduct" | "bonewayDetour" | "choirLightSignalBonus" | "staticIntercession" | "scarSinkPrayer" | "traceThePromise";
   maxUses?: number;
-  heatCost?: number;
   linkedFollowerRole?: FollowerRole;
+  effectModel?: "permanent" | "conditional" | "consumable" | "exhaust" | "charged";
+  instanceId?: string;
+  requiresEquipped?: boolean;
+  conditionType?: "battle";
+  activationTiming?: GearTimingWindow[];
+  consumeOnUse?: boolean;
+  consumableEffect?: "grantVeilHook" | "ignoreFailedMovementOrHazard" | "grantPaleCartelFixer" | "healWound" | "grantMarshalSeal";
+  resetWindow?: "round";
+  exhaustEffect?: "mirrorReroll" | "warbellCommand";
+  activationCost?: { type: "salvage" | "wound"; amount: number };
 }
 
-export type FollowerRole =
-  | "scout"
-  | "medic"
-  | "gunner"
-  | "ritualist"
-  | "porter"
-  | "guide"
-  | "informant"
-  | "companion";
+export type FollowerRole = "scout" | "medic" | "gunner" | "ritualist" | "porter" | "guide" | "informant" | "companion";
 export type FollowerTimingWindow = GearTimingWindow;
 
 export interface Follower {
   id: string;
+  qaOnly?: boolean;
+  instanceId?: string;
   name: string;
   role: FollowerRole;
   text: string;
@@ -168,13 +188,19 @@ export interface Follower {
   ultimateCompanion?: boolean;
   timingWindows?: FollowerTimingWindow[];
   exhausted?: boolean;
+  effectModel?: "exhaust";
+  activationTiming?: FollowerTimingWindow[];
+  resetWindow?: "round";
+  exhaustEffect?: "recordEmberPupNote" | "recordOmenNote" | "recordRouteMemoryNote" | "fandiablosSupport";
+  requiresEquipped?: boolean;
   artCardId?: string;
   acquisition?: string[];
   flavor?: string;
   imagePrompt?: string;
+  abilityId?: "prevent_equipment_loss" | "prevent_salvage_loss" | "signal_anomaly_support" | "ignore_middle_route_failure" | "ignore_route_failure" | "battle_support";
   useLimit?: "oncePerTurn" | "oncePerRound" | "discard";
   loyalty?: number;
-  lossCondition?: "wound" | "heat" | "combatLoss" | "choice";
+  lossCondition?: "wound" | "combatLoss" | "choice";
 }
 
 export interface ScarSummary {
@@ -210,8 +236,7 @@ export interface AfflictionSummary {
   name: string;
   severity: number;
   category: string;
-  duration:
-    "immediate" | "ongoing" | "oncePerTurn" | "oncePerBattle" | "reaction";
+  duration: "immediate" | "ongoing" | "oncePerTurn" | "oncePerBattle" | "reaction";
   trigger: string;
   rulesText: string;
   effectKind?: string;
@@ -237,7 +262,7 @@ export interface PrivateCharacter {
   trophies: number;
   trophyPile?: TrophyPileEntry[];
   salvage?: number;
-  heat: number;
+  temporaryAllStatBoost?: { value: number; remainingEligibleResolutions: number };
   wounds: number;
   scars: string[];
   afflictions?: PlayerAfflictionSummary;
@@ -245,6 +270,7 @@ export interface PrivateCharacter {
   completedContracts?: string[];
   heldGear: GearItem[];
   equippedGear: Record<GearSlot, string | null>;
+  equippedGearInstances?: Record<GearSlot, string | null>;
   followers?: Follower[];
   scarCards?: ScarSummary[];
   abilities: Array<{ id: string; name: string; text: string }>;
@@ -262,6 +288,7 @@ export interface PhoneSelfState {
 export interface PhoneObjectUseState {
   source: "gear" | "follower";
   id: string;
+  instanceId?: string;
   usedThisTurn: boolean;
   usedThisRound: boolean;
   remainingUses?: number | null;
@@ -286,13 +313,7 @@ export interface PrivateRivalryObjective {
 }
 
 export interface PrivateRivalryRevealState {
-  state:
-    | "hidden"
-    | "revealLocked"
-    | "revealAvailable"
-    | "revealed"
-    | "completed"
-    | "failed";
+  state: "hidden" | "revealLocked" | "revealAvailable" | "revealed" | "completed" | "failed";
   available: boolean;
   label: string;
   hint: string;
@@ -339,7 +360,6 @@ export interface PublicRivalryAgendaCompletion {
 
 export type ResultDeltaType =
   | "wound"
-  | "heat"
   | "salvage"
   | "trophy"
   | "gearGained"
@@ -364,11 +384,9 @@ export type ResultDeltaType =
   | "statUpgrade"
   | "modifierApplied";
 
-export type ResultDeltaTargetScope =
-  "personal" | "table" | "sector" | "scenario" | "privateAgenda";
+export type ResultDeltaTargetScope = "personal" | "table" | "sector" | "scenario" | "privateAgenda";
 export type ResultDeltaVisibility = "public" | "ownerPrivate" | "hidden";
-export type ResultDeltaSeverity =
-  "reward" | "loss" | "danger" | "scenario" | "private" | "neutral";
+export type ResultDeltaSeverity = "reward" | "loss" | "danger" | "scenario" | "private" | "neutral";
 export type ResultDeltaSign = "gain" | "loss" | "neutral";
 
 export interface ResultDelta {
@@ -394,6 +412,7 @@ export interface SectorNode {
   neighbors: string[];
   danger: number;
   threatIcons?: ThreatIcon[];
+  tileChallenges?: PublicTileChallenge[];
   encounterDecks: {
     threat: string[];
     anomaly: string[];
@@ -420,33 +439,39 @@ export interface ContractCard {
   text: string;
   objective:
     | { type: "defeatCount"; target: number }
-    | {
-        type: "spaceTextResolved";
-        effectKey: string;
-        label: string;
-        target: number;
-      }
-    | {
-        type: "multiStopRoute";
-        ordered: boolean;
-        targets: Array<{
-          id: string;
-          type: "spaceId" | "tag";
-          value: string;
-          label: string;
-        }>;
-      }
-    | {
-        type: "shopTransaction";
-        action:
-          "buyEquipment" | "sellGear" | "repairGear" | "upgradeGear" | "trade";
-        requiredShopType?: string;
-        requiredSectorId?: string;
-        requiredCount: number;
-        minimumSalvageSpent?: number;
-        label: string;
-      };
+    | { type: "spaceTextResolved"; effectKey: string; label: string; target: number }
+    | { type: "multiStopRoute"; ordered: boolean; targets: Array<{ id: string; type: "spaceId" | "tag"; value: string; label: string }> }
+    | { type: "shopTransaction"; action: "buyEquipment" | "sellGear" | "repairGear" | "upgradeGear" | "trade"; requiredShopType?: string; requiredSectorId?: string; requiredCount: number; minimumSalvageSpent?: number; label: string };
   reward?: unknown;
+}
+
+export interface PublicTileChallenge {
+  id: string;
+  name: string;
+  challengeType: "hazard" | "anomaly";
+  sectorId: string;
+  testStat: Stat;
+  difficulty: number;
+  trigger: "onArrival" | "onEnter" | "startOfTurnAtSector" | "scenarioPrompt";
+  authoredOrder: number;
+  recurring: true;
+  tags: string[];
+  lore: string;
+  artCardId: string;
+  successSummary: string;
+  failureSummary: string;
+}
+
+export interface PublicPendingTileChallenge {
+  challengeId: string;
+  sectorId: string;
+  seatId: string;
+  challengeType: "hazard" | "anomaly";
+  testStat: Stat;
+  difficulty: number;
+  authoredOrder: number;
+  totalChallenges: number;
+  rolled: boolean;
 }
 
 export interface PendingEnemyRoll {
@@ -491,8 +516,7 @@ export type ResolutionStage =
 export interface ActiveResolution {
   id: string;
   playerId: string;
-  source:
-    "movement" | "threat" | "contract" | "anomaly" | "artifact" | "scenario";
+  source: "movement" | "threat" | "contract" | "anomaly" | "artifact" | "scenario";
   stage: ResolutionStage;
   card?: {
     id: string;
@@ -519,6 +543,12 @@ export interface ActiveResolution {
     title: string;
     text: string;
     effects: string[];
+    salvageLoss?: {
+      requestedLoss: number;
+      actualLoss: number;
+      resultingSalvage: number;
+      sourceCardId: string;
+    };
   };
 }
 
@@ -526,7 +556,6 @@ export type PublicShopStatus = "open" | "locked" | "exhausted" | "dangerous";
 
 export interface PublicShopCost {
   salvage?: number;
-  heat?: number;
   wounds?: number;
   trophies?: number;
   completedContracts?: number;
@@ -551,7 +580,6 @@ export interface PublicShopEncounterState {
     name: string;
     characterName: string;
     salvage: number;
-    heat: number;
     wounds: {
       current: number;
       max: number;
@@ -578,6 +606,14 @@ export interface PublicShopEncounterState {
     enabled: boolean;
     disabledReason?: string;
   }>;
+  repairTargets?: Array<{
+    gearId: string;
+    instanceId: string;
+    name: string;
+    kind: "charges" | "exhaust";
+    currentCharges?: number;
+    maxCharges?: number;
+  }>;
   revealedStock?: Array<{
     cardId: string;
     name: string;
@@ -585,7 +621,6 @@ export interface PublicShopEncounterState {
     shopCategories?: ShopCategory[];
     cost: {
       salvage?: number;
-      heat?: number;
       completedContracts?: number;
     };
     summary: string;
@@ -594,6 +629,7 @@ export interface PublicShopEncounterState {
   }>;
   sellInventory?: Array<{
     gearId: string;
+    instanceId?: string;
     name: string;
     type: "gear" | "artifact";
     category?: GearCategory;
@@ -609,7 +645,6 @@ export interface PublicShopEncounterState {
     gained?: string;
     costPaid?: PublicShopCost;
     remainingSalvage?: number;
-    heatDelta?: number;
     woundDelta?: number;
     scarDelta?: number;
     discarded?: string[];
@@ -619,10 +654,12 @@ export interface PublicShopEncounterState {
   } | null;
 }
 
-export type PublicMoveStrategicTag =
-  "safe" | "shop" | "locked" | "danger" | "reward" | "nemesis" | "gate";
+export type PublicMoveStrategicTag = "safe" | "shop" | "locked" | "danger" | "reward" | "nemesis" | "gate";
 
 export interface PublicMoveDestination {
+  routeId?: string;
+  defaultRouteId?: string;
+  routeVariants?: Array<{ routeId: string; destinationId: string; sectorIds: string[]; sectorNames?: string[]; distance: number }>;
   sectorId: string;
   name: string;
   ring: "outer" | "middle" | "inner" | "core";
@@ -660,16 +697,34 @@ export interface PublicMoveDestination {
   nemesisPresent?: boolean;
   scenarioMarkers?: string[];
   strategicTags: PublicMoveStrategicTag[];
+  ringTransition?: {
+    direction: "inward" | "outward";
+    fromRing: "outer" | "middle" | "inner" | "core";
+    toRing: "outer" | "middle" | "inner" | "core";
+    label: string;
+    exactMovementRequired: 1;
+    endsMovement: true;
+  };
   disabledReason?: string;
+  voidKeyPrompt?: { instanceId: string; currentCharges: number; maxCharges: number; chargeCost: 1 };
+  routeStarPrompt?: { instanceId: string; currentCharges: number; maxCharges: number; chargeCost: 1 };
 }
 
 export interface PublicMovementPlannerState {
   active: boolean;
   movementValue: number;
+  rolledValue?: number;
+  modifierSources?: Array<{ label: string; value: number }>;
+  originalMovementValue?: number;
+  movementAdjustment?: -1 | 1 | null;
+  compassPrompt?: { instanceId: string; currentCharges: number; maxCharges: number; canDecrease: boolean; canIncrease: boolean } | null;
   currentSectorId: string;
   currentSectorName: string;
-  destinations: PublicMoveDestination[];
   selectedDestinationId?: string | null;
+  selectedRouteId?: string | null;
+  routeStarCommitted?: boolean;
+  movementRevision?: number;
+  destinations: PublicMoveDestination[];
 }
 
 export interface PublicSectorExplorationThreat {
@@ -732,8 +787,7 @@ export interface NemesisChampionSummary {
   health: number;
   maxHealth: number;
   trophies: number;
-  movementProfile:
-    "center_path" | "hunt_wounded" | "slow_brute" | "anomaly_shortcut";
+  movementProfile: "center_path" | "hunt_wounded" | "slow_brute" | "anomaly_shortcut";
   combatProfile: "strength" | "craft" | "tech" | "will" | "choice";
   specialRuleId: string;
   defeated: boolean;
@@ -868,6 +922,29 @@ export interface ScenarioPressureState {
   modeSpecific: ScenarioModeSpecificPublicState;
 }
 
+export interface ScenarioOwnershipState {
+  scenarioId: string;
+  preparation: {
+    resources: Record<string, number>;
+    completedObjectiveIds: string[];
+  };
+  confrontation: {
+    active: boolean;
+    confrontationId: string | null;
+    progress: Record<string, number>;
+    stage: string | null;
+    locationSectorId: string;
+    locked: boolean | null;
+  };
+  result: {
+    status: "unresolved" | "victory" | "loss";
+    victoryConditionId: string | null;
+    sourceType: "confrontation" | "scenarioAction" | null;
+    winningSeatId: string | null;
+    shared: boolean | null;
+  };
+}
+
 export interface PublicPatchPayload {
   status: SessionStatus;
   sessionMode: SessionMode;
@@ -880,6 +957,7 @@ export interface PublicPatchPayload {
   activeScenario: ActiveScenarioSummary | null;
   scenarioTelemetry: ScenarioTelemetryItem[];
   scenarioPressure?: ScenarioPressureState | null;
+  scenarioState?: ScenarioOwnershipState;
   scenarioProgress: Record<string, number>;
   nemesisChampions?: NemesisChampionSummary[];
   nemesisNexusCountdowns?: NemesisNexusCountdownSummary[];
@@ -894,6 +972,31 @@ export interface PublicPatchPayload {
   availableContracts: ContractCard[];
   encounter: EncounterCard | null;
   pendingEnemyRoll: PendingEnemyRoll | null;
+  pendingTileChallenge?: PublicPendingTileChallenge | null;
+  pendingEncounterDecision?: { seatId: string; sourceCardId: string; sourceTitle: string; status: "waiting" } | null;
+  pendingMemoryTaxChoice?: { ownerSeatId: string; sourceId: "memory-tax-gate"; sourceTitle: string; status: "waiting" } | null;
+  pendingForcedDestinationChoice?: { ownerSeatId: string; sourceId: "false-route-procession"; sourceTitle: string; status: "waiting" } | null;
+  pendingDisplacement?: { seatId: string; sourceId: string; sourceTitle: string; originSectorId: string; destinationSectorId: string; destinationSectorName?: string; direction?: "clockwise" | "counterclockwise"; status: "waiting" } | null;
+  pendingOrderedConsequence?: {
+    seatId: string;
+    sourceId: string;
+    requestedWounds: number;
+    preventedWounds: number;
+    actualWounds: number;
+    resultingWounds: number;
+    resultingStatus: "active" | "recalled";
+    status: "waiting";
+  } | null;
+  scarTriggerStatus?: {
+    seatId: string;
+    scarTitle: string;
+    status: "waiting";
+  } | null;
+  scarResolutionStatus?: {
+    seatId: string;
+    scarTitle: string;
+    status: "resolved";
+  } | null;
   outcomeSummary: OutcomeSummary | null;
   rivalryAgendaCompletion?: PublicRivalryAgendaCompletion | null;
   rivalryAgendaReveal?: PublicRivalryAgendaReveal | null;
@@ -909,6 +1012,7 @@ export interface PublicPatchPayload {
 export interface PhonePatchPayload extends PublicPatchPayload {
   phase: Phase;
   self: PhoneSelfState | null;
+  lateJoinPending?: boolean;
   selfIsSetupHost?: boolean;
   objectUseStates?: PhoneObjectUseState[];
   startingContractOptions?: ContractCard[];
@@ -925,6 +1029,106 @@ export interface PhonePatchPayload extends PublicPatchPayload {
   boundNemesis?: NemesisChampionSummary | null;
   crownKeyFragments?: number;
   eligibleNemesisAssistSeatIds?: string[];
+  pendingTileChallengePrivate?: (PublicPendingTileChallenge & { id: string; staticIntercessionReactionId?: string; pendingFailureEffects?: Array<{ effectId: string; summary: string }> }) | null;
+  pendingTestModifiers?: Array<{
+    type: "nextNonBattleTest" | "nextNormalMovementRoll";
+    sourceCardId: "glass-chime-swarm" | "siren-relay-echo" | "memory-tax-gate" | "spindle-static-squall";
+    label: string;
+    summary: string;
+    detail?: string;
+    amount: -1 | 1;
+  }>;
+  pendingScarConsequence?: {
+    reactionId: string;
+    scarCardId: string;
+    scarTitle: string;
+    triggerType: string;
+    sourceEventId: string;
+    scarInstanceId: string;
+    pendingEffects: Array<{ effectId: string; summary: string }>;
+    rulesText: string;
+  } | null;
+  pendingEncounterDecisionPrivate?: {
+    decisionId: string;
+    decisionVersion: number;
+    sourceTitle: string;
+    prompt: string;
+    mode: "required" | "optional";
+    salvageCost: number;
+    currentSalvage: number;
+    options: Array<{ optionId: string; label: string; enabled: boolean; disabledReason?: string }>;
+  } | null;
+  pendingMemoryTaxChoicePrivate?: {
+    choiceId: string;
+    choiceVersion: number;
+    sourceTitle: "Memory Tax Gate";
+    prompt: "Choose what the gate takes";
+    options: Array<{
+      optionId: "lose-salvage-1" | "next-non-battle-test-minus-1";
+      label: string;
+      detail: string;
+    }>;
+  } | null;
+  pendingEquipmentSuppressionChoice?: {
+    choiceId: string;
+    sourceTitle: string;
+    prompt: "Choose Equipment to suppress";
+    mode: "throughNextThreat" | "duringNextBattle";
+    options: Array<{ instanceId: string; catalogId: string; name: string; slot: GearSlot; equipped: true }>;
+  } | null;
+  pendingForcedDestinationChoicePrivate?: {
+    choiceId: string;
+    sourceTitle: string;
+    sourceSectorId: string;
+    candidates: Array<{
+      sectorId: string;
+      sectorName: string;
+      direction: "clockwise" | "counterclockwise";
+      ring: "outer" | "middle" | "inner";
+    }>;
+  } | null;
+  equipmentSuppressions?: Array<{
+    sourceThreatId: "relay-husk" | "signal-rotted-engineer";
+    itemInstanceId: string;
+    itemCatalogId: string;
+    mode: "throughNextThreat" | "duringNextBattle";
+    active: true;
+  }>;
+  pendingDisplacementPrivate?: {
+    reactionId: string;
+    sourceEventId: string;
+    sourceTitle: string;
+    originSectorId: string;
+    originSectorName: string;
+    destinationSectorId: string;
+    destinationSectorName: string;
+    prompt: string;
+    riftAnchorSpike: {
+      instanceId: string;
+      currentCharges: number;
+      maxCharges: number;
+      chargeCost: 1;
+      enabled: boolean;
+      disabledReason?: string;
+    } | null;
+  } | null;
+  oathchainPrompt?: {
+    instanceId: string;
+    contractId: string;
+    contractSignature: string;
+    currentCharges: number;
+    maxCharges: number;
+    chargeCost: 1;
+    preview: string;
+  } | null;
+  activeOathchainReveal?: {
+    revealId: string;
+    contractId: string;
+    contractName: string;
+    objectiveProgress: string;
+    revealedTargets: Array<{ kind: "threat" | "sector" | "routeStop" | "shopAction" | "tileChallenge"; id: string; label: string; sectorId?: string; detail: string }>;
+    expiresAtTurnEnd: true;
+  } | null;
 }
 
 export interface StatePatch<TPayload = PublicPatchPayload> {
@@ -974,16 +1178,25 @@ export type ClientIntent =
       type: "MOVEMENT_DESTINATION_PREVIEWED";
       seatId: string;
       toSectorId: string | null;
+      routeId?: string;
+      movementRevision?: number;
     }
   | {
       type: "MOVE_REQUESTED";
       seatId: string;
       toSectorId: string;
+      voidKeyInstanceId?: string;
+      routeId?: string;
+      movementRevision?: number;
     }
+  | { type: "SELECT_ROUTE_STAR_VARIANT"; seatId: string; instanceId: string; destinationId: string; routeId: string; movementRevision: number }
   | {
       type: "MOVEMENT_ROLL_REQUESTED";
       seatId: string;
     }
+  | { type: "ADJUST_MOVEMENT_REQUESTED"; seatId: string; instanceId: string; adjustment: -1 | 1 }
+  | { type: "ACTIVATE_GATE_SAINT"; seatId: string; instanceId: string }
+  | { type: "USE_MARROW_DETOUR"; seatId: string; instanceId: string; reactionId: string; toSectorId: string }
   | {
       type: "PHASE_ADVANCED";
       seatId: string;
@@ -1011,6 +1224,15 @@ export type ClientIntent =
       type: "CONTINUE_RESOLUTION";
       seatId: string;
     }
+  | { type: "ENCOUNTER_DECISION_REQUESTED"; seatId: string; decisionId: string; decisionVersion: number; optionId: string }
+  | { type: "MEMORY_TAX_CHOICE_REQUESTED"; seatId: string; choiceId: string; choiceVersion: number; optionId: "lose-salvage-1" | "next-non-battle-test-minus-1" }
+  | { type: "FORCED_DESTINATION_SELECTED"; seatId: string; choiceId: string; destinationSectorId: string }
+  | { type: "FORCED_DISPLACEMENT_ACCEPTED"; seatId: string; reactionId: string }
+  | {
+      type: "CONTINUE_SCAR_CONSEQUENCE";
+      seatId: string;
+      reactionId: string;
+    }
   | {
       type: "SET_READY";
       seatId: string;
@@ -1035,8 +1257,10 @@ export type ClientIntent =
       type: "EQUIP_GEAR";
       seatId: string;
       gearId: string;
+      instanceId?: string;
       slot: GearSlot;
     }
+  | { type: "SELECT_EQUIPMENT_SUPPRESSION_TARGET"; seatId: string; choiceId: string; itemInstanceId: string }
   | {
       type: "UNEQUIP_GEAR";
       seatId: string;
@@ -1046,11 +1270,22 @@ export type ClientIntent =
       type: "USE_GEAR";
       seatId: string;
       gearId: string;
+      instanceId?: string;
+      pendingTileChallengeId?: string;
+      staticIntercessionReactionId?: string;
+      pendingTileChallengeEffectId?: string;
+      scarConsequenceReactionId?: string;
+      scarInstanceId?: string;
+      pendingScarEffectId?: string;
+      forcedDisplacementReactionId?: string;
+      forcedDisplacementSourceEventId?: string;
+      contractSignature?: string;
     }
   | {
       type: "USE_FOLLOWER";
       seatId: string;
       followerId: string;
+      escalate?: boolean;
     }
   | {
       type: "USE_CHARACTER_ABILITY";
@@ -1067,6 +1302,7 @@ export type ClientIntent =
       type: "SHOP_SERVICE_REQUESTED";
       seatId: string;
       serviceId: string;
+      itemInstanceId?: string;
     }
   | {
       type: "SHOP_PURCHASE_REQUESTED";
@@ -1077,6 +1313,7 @@ export type ClientIntent =
       type: "SHOP_SELL_REQUESTED";
       seatId: string;
       gearId: string;
+      instanceId?: string;
     }
   | {
       type: "SHOP_SKIP_REQUESTED";
@@ -1140,4 +1377,4 @@ export interface PhoneSessionAuth {
   lastConnectedAt?: string;
 }
 
-export interface CharacterCatalogEntry extends PrivateCharacter {}
+export type CharacterCatalogEntry = PrivateCharacter;

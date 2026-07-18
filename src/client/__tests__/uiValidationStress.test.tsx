@@ -81,7 +81,6 @@ function createMasterAlphaPhonePatch(overrides: Partial<PhonePatchPayload> = {})
       trophies: masterAlpha.trophies,
       trophyPile: masterAlpha.trophyPile,
       salvage: masterAlpha.salvage,
-      heat: masterAlpha.heat,
       wounds: masterAlpha.wounds,
       scars: masterAlpha.scars,
       heldGearCount: masterAlpha.heldGear.length,
@@ -229,7 +228,6 @@ function createMasterAlphaPhonePatch(overrides: Partial<PhonePatchPayload> = {})
         name: "QA",
         characterName: "MASTER ALPHA",
         salvage: 99,
-        heat: 0,
         wounds: { current: 0, max: 12 },
         trophies: 99,
         completedContracts: 0
@@ -246,7 +244,7 @@ function createMasterAlphaPhonePatch(overrides: Partial<PhonePatchPayload> = {})
       services: [
         {
           id: "buy-gear",
-          label: "Buy Equipment",
+          label: "Buy Gear",
           cost: { salvage: 3 },
           enabled: false,
           disabledReason: "Clear local threat first"
@@ -299,6 +297,22 @@ function catalogFromMasterAlpha(): CharacterCatalogEntry[] {
 }
 
 describe("Ashen Reach UI validation stress states", () => {
+  it("tolerates pre-retirement payload extras without rendering Heat or changing shop affordability", () => {
+    const oldPhonePayload = structuredClone(createMasterAlphaPhonePatch()) as PhonePatchPayload & any;
+    oldPhonePayload.players[0]!.character.heat = 0;
+    oldPhonePayload.shopEncounter!.activePlayer.heat = 0;
+
+    const { rerender } = render(<PhoneActionPanel characters={catalogFromMasterAlpha()} patch={oldPhonePayload} onIntent={vi.fn()} />);
+    expect(screen.getByTestId("phone-battle-shell")).toBeInTheDocument();
+    expect(document.body).not.toHaveTextContent(/\b(?:Heat|Risk)\b/);
+
+    const currentPhonePayload = createMasterAlphaPhonePatch();
+    rerender(<PhoneActionPanel characters={catalogFromMasterAlpha()} patch={currentPhonePayload} onIntent={vi.fn()} />);
+    expect(currentPhonePayload.players[0]!.character).not.toHaveProperty("heat");
+    expect(currentPhonePayload.shopEncounter?.activePlayer).not.toHaveProperty("heat");
+    expect(currentPhonePayload.shopEncounter?.services[0]?.cost).toEqual({ salvage: 3 });
+  });
+
   it("renders MASTER ALPHA full inventory without dropping long gear or follower names", () => {
     render(<PhoneInventoryPanel patch={createMasterAlphaPhonePatch()} onIntent={vi.fn()} />);
 
@@ -314,39 +328,17 @@ describe("Ashen Reach UI validation stress states", () => {
     expect(inventory.querySelector(".phone-inventory-card-list")).toBeInTheDocument();
   });
 
-  it("keeps phone turn actions split into Move, Battle, Shop, and Action tabs under a mixed stress state", () => {
+  it("replaces mixed turn actions with focused battle navigation under an active stress battle", () => {
     render(<PhoneActionPanel characters={catalogFromMasterAlpha()} patch={createMasterAlphaPhonePatch()} onIntent={vi.fn()} />);
 
-    const tabs = screen.getByRole("tablist", { name: /turn actions/i });
-    const turnTabs = within(tabs).getAllByRole("tab");
-    const getTabByLabel = (label: string) => turnTabs.find((tab) => within(tab).queryByText(label))!;
-    const moveTab = getTabByLabel("Move");
-    const battleTab = getTabByLabel("Battle");
-    const shopTab = getTabByLabel("Shop");
-    const actionTab = getTabByLabel("Action");
-
-    expect(moveTab).toBeInTheDocument();
-    expect(battleTab).toBeInTheDocument();
-    expect(shopTab).toBeInTheDocument();
-    expect(actionTab).toBeInTheDocument();
-    expect(moveTab).toHaveClass("game-button");
-    expect(battleTab).toHaveClass("game-button-battle");
-    expect(shopTab).toHaveClass("game-button-shop");
-    expect(actionTab).toHaveClass("game-button-action");
-    expect(screen.getByTestId("phone-action-active-panel")).toHaveAttribute("data-movement-state", "resolving");
+    const navigation = screen.getByRole("navigation", { name: /battle navigation/i });
+    expect(within(navigation).getByRole("button", { name: /^operative$/i })).toBeInTheDocument();
+    expect(within(navigation).getByRole("button", { name: /^gear$/i })).toBeInTheDocument();
+    expect(within(navigation).getByRole("button", { name: /battle log/i })).toBeInTheDocument();
+    expect(screen.queryByRole("tablist", { name: /turn actions/i })).not.toBeInTheDocument();
     expect(screen.queryByTestId("movement-planner")).not.toBeInTheDocument();
-
-    fireEvent.click(shopTab);
-
-    const shopPanel = screen.getByRole("tabpanel", { name: /shop actions/i });
-
-    expect(shopPanel).toHaveTextContent("Shop locked");
-    expect(shopPanel).toHaveTextContent(longEnemyName);
-
-    fireEvent.click(battleTab);
-
-    expect(screen.getByRole("tabpanel", { name: /battle actions/i })).toHaveTextContent(longEnemyName);
-    expect(screen.getByText(/roll result/i)).toBeInTheDocument();
+    expect(screen.getByTestId("phone-battle-shell")).toHaveTextContent(longEnemyName);
+    expect(screen.getByTestId("phone-battle-total-comparison")).toHaveTextContent(/31.*18/i);
   });
 
   it("keeps the pre-game locked character screen readable for MASTER ALPHA and hides bottom nav", () => {
@@ -382,10 +374,10 @@ describe("Ashen Reach UI validation stress states", () => {
     expect(screen.getByText(longGearName)).toBeInTheDocument();
     expect(screen.queryByRole("tab", { name: /inventory/i })).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: /^ready$/i })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /^back$/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /^leave room$/i })).toBeInTheDocument();
   });
 
-  it("renders persistent phone navigation and turn actions through the shared GameButton primitive after game start", () => {
+  it("renders contextual battle navigation instead of persistent global navigation during combat", () => {
     const patch = createMasterAlphaPhonePatch();
 
     render(
@@ -404,21 +396,12 @@ describe("Ashen Reach UI validation stress states", () => {
       />
     );
 
-    const navigation = screen.getByRole("tablist", { name: /phone navigation/i });
-    expect(within(navigation).getByRole("button", { name: /show tabs/i })).toBeInTheDocument();
-
-    fireEvent.click(within(navigation).getByRole("button", { name: /show tabs/i }));
-
-    const inventoryTab = within(navigation).getByRole("tab", { name: /inventory/i });
-
-    expect(inventoryTab).toHaveClass("game-button", "game-button-action");
-    expect(within(navigation).getByRole("tab", { name: /player card/i })).toHaveClass("game-button");
-    expect(within(navigation).getByRole("tab", { name: /^quest$/i })).toHaveClass("game-button-shop");
-    expect(within(navigation).getByRole("tab", { name: /^move$/i })).toHaveClass("game-button-move");
-    expect(within(navigation).getByRole("tab", { name: /^battle$/i })).toHaveClass("game-button-battle");
-    expect(within(navigation).getByRole("tab", { name: /^shop$/i })).toHaveClass("game-button-shop");
-    expect(within(navigation).getByRole("tab", { name: /^action$/i })).toHaveClass("game-button-action");
-    expect(within(navigation).queryByRole("tab", { name: /log/i })).not.toBeInTheDocument();
+    const navigation = screen.getByRole("navigation", { name: /battle navigation/i });
+    expect(within(navigation).getByRole("button", { name: /^operative$/i })).toBeInTheDocument();
+    expect(within(navigation).getByRole("button", { name: /^gear$/i })).toBeInTheDocument();
+    expect(within(navigation).getByRole("button", { name: /battle log/i })).toBeInTheDocument();
+    expect(screen.queryByRole("tablist", { name: /phone navigation/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("tablist", { name: /turn actions/i })).not.toBeInTheDocument();
   });
 
   it("shows compact blocked reasons on disabled phone action tabs", () => {
@@ -496,6 +479,8 @@ describe("Ashen Reach UI validation stress states", () => {
       pendingEnemyRoll: null
     });
     const patch = createHostPatch(phonePatch);
+    (patch.payload.players[0]!.character as any).heat = 0;
+    (patch.payload.shopEncounter!.activePlayer as any).heat = 0;
     const activePlayer = patch.payload.players[0]!;
 
     render(<HostShopOverlay patch={patch} activePlayer={activePlayer} />);
@@ -505,5 +490,6 @@ describe("Ashen Reach UI validation stress states", () => {
     expect(screen.getByTestId("host-shop-overlay")).toHaveTextContent(/shop blocked by threat/i);
     expect(screen.getByTestId("host-shop-overlay")).not.toHaveTextContent(/^vs$/i);
     expect(screen.queryByText("Void-Cleaver Command Blade")).not.toBeInTheDocument();
+    expect(screen.getByTestId("host-shop-overlay")).not.toHaveTextContent(/\b(?:Heat|Risk)\b/);
   });
 });

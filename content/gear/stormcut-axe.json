@@ -15,6 +15,9 @@
   "progressionWeight": 1,
   "flavor": "An insulated breach axe that adds +1 Forge in battle.",
   "activeText": "An insulated breach axe that adds +1 Forge in battle.",
+  "effectModel": "conditional",
+  "requiresEquipped": true,
+  "conditionType": "battle",
   "shopCategories": [
     "forge-armoury",
     "market"

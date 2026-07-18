@@ -81,7 +81,7 @@ This is the source-of-truth map for the current Ashen Reach implementation. Pref
 
 ## Deprecated Or Non-Source Areas
 
-- `generated/` is generated prompt/report output, not runtime source-of-truth.
-- `.asset-audit/` is historical asset-audit evidence, not active runtime code.
-- `qa-artifacts/` is historical QA screenshot evidence.
+- `generated/` is ignored transient prompt/report output, not runtime source-of-truth.
+- `.asset-audit/` and `qa-artifacts/` are ignored local evidence folders, not active runtime code.
+- `_archive/` is ignored local archival space; verified duplicate assets must not be committed there.
 - `artifacts/`, `.tmp-playtest/`, `dist/`, `tmp-*.log`, and `node_modules/` are local generated/runtime output and should stay ignored.

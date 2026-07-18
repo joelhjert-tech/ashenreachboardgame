@@ -26,11 +26,9 @@ import { scenarioSheetPrompts } from "../src/game/assets/design/scenarioSheetPro
 import { uiPrompts } from "../src/game/assets/design/uiPrompts.js";
 
 const generatedRoot = join(process.cwd(), "generated");
-const docsRoot = join(process.cwd(), "docs");
 const generatedTsPath = join(process.cwd(), "src", "game", "assets", "design", "generatedCardImagePrompts.ts");
 const runtimeCardArtCatalogPath = join(process.cwd(), "src", "game", "assets", "runtime", "cardArtRuntimeCatalog.ts");
 const generatedJsonPath = join(generatedRoot, "card-image-prompts.json");
-const markdownPath = join(docsRoot, "CARD_IMAGE_PROMPTS.md");
 
 const promptPrefix =
   "Ashen Reach original card art, dark gothic sci-fantasy artifact-crawl, 3:4 portrait composition, centered subject with safe margins for card framing, black basalt, charcoal iron, scorched brass, ember red glow, cold blue-white signal light, toxic green salvage light, purple anomaly light, ash, smoke, ritual circuitry, damaged artifact machinery, high contrast, readable silhouette, cinematic but grounded, no text";
@@ -87,13 +85,11 @@ const allImagePrompts = [
 ];
 
 mkdirSync(generatedRoot, { recursive: true });
-mkdirSync(docsRoot, { recursive: true });
 mkdirSync(dirname(runtimeCardArtCatalogPath), { recursive: true });
 
 writeFileSync(generatedTsPath, renderGeneratedTypeScript(generatedCardImagePrompts));
 writeFileSync(runtimeCardArtCatalogPath, renderRuntimeTypeScript(generatedCardImagePrompts));
 writeFileSync(generatedJsonPath, `${JSON.stringify(generatedCardImagePrompts, null, 2)}\n`);
-writeFileSync(markdownPath, renderMarkdown(promptEntriesByType));
 
 console.log(JSON.stringify(allImagePrompts, null, 2));
 
@@ -102,6 +98,15 @@ function buildCardImagePrompts(): PromptEntryMap {
   const contracts = [...loadContracts().values()].sort(compareById);
   const anomalies = [...loadAnomalyCards().values()].sort(compareById);
   const artifacts = [...loadArtifactCards().values()].sort(compareById);
+  const authoredArtifactIds = new Set(artifacts.map((artifact) => artifact.id));
+  const artifactGear = [...loadGear().values()]
+    .filter(
+      (item) =>
+        item.tier === "artifact" &&
+        !authoredArtifactIds.has(`artifact-${item.id}`) &&
+        hasActiveArtifactGearArt(item.id)
+    )
+    .sort(compareById);
   const equipment = [...loadGear().values()]
     .filter((item) => item.tier !== "artifact" && hasActiveEquipmentArt(item.id))
     .sort(compareById);
@@ -118,9 +123,20 @@ function buildCardImagePrompts(): PromptEntryMap {
     anomaly: anomalies.map((card) =>
       buildPromptEntry("anomaly", card.id, card.title, buildAnomalyPrompt(card), `${card.title} anomaly card art.`)
     ),
-    artifact: artifacts.map((card) =>
-      buildPromptEntry("artifact", card.id, card.title, buildArtifactPrompt(card), `${card.title} artifact card art.`)
-    ),
+    artifact: [
+      ...artifacts.map((card) =>
+        buildPromptEntry("artifact", card.id, card.title, buildArtifactPrompt(card), `${card.title} artifact card art.`)
+      ),
+      ...artifactGear.map((item) =>
+        buildPromptEntry(
+          "artifact",
+          `artifact-${item.id}`,
+          item.name,
+          buildArtifactGearPrompt(item),
+          `${item.name} artifact-tier gear card art.`
+        )
+      )
+    ],
     equipment: equipment.map((item) =>
       buildPromptEntry("equipment", item.id, item.name, buildEquipmentPrompt(item), `${item.name} equipment card art.`)
     ),
@@ -294,6 +310,18 @@ function buildEquipmentPrompt(item: GearItem): string {
   ].join(", ");
 }
 
+function buildArtifactGearPrompt(item: GearItem): string {
+  const effectSummary = item.activeText ?? `${item.statBonus.stat} +${item.statBonus.amount}`;
+  return [
+    promptPrefix,
+    "single relic-grade weapon, armor piece, or field implement centered in frame, dramatic lighting, strong silhouette",
+    `artifact-tier gear, slot ${item.slot}, category ${item.category ?? "passive"}`,
+    sanitizeSentence(effectSummary),
+    sanitizeSentence(item.flavor ?? `${item.name} carried by an Ashen Reach operative`),
+    "ancient but operational, rare and consequential, no hands unless necessary"
+  ].join(", ");
+}
+
 function buildScarPrompt(card: PromptLike & { penalty: string }): string {
   return [
     promptPrefix,
@@ -344,6 +372,12 @@ function hasActiveEquipmentArt(cardId: string): boolean {
   return existsSync(publicPath);
 }
 
+function hasActiveArtifactGearArt(itemId: string): boolean {
+  const outputPath = getCardArtOutputPath("artifact", `artifact-${itemId}`);
+  const publicPath = join(process.cwd(), "public", outputPath.replace(/^\//, ""));
+  return existsSync(publicPath);
+}
+
 function compareById(left: { id: string }, right: { id: string }): number {
   return left.id.localeCompare(right.id);
 }
@@ -355,11 +389,13 @@ function renderGeneratedTypeScript(entries: CardImagePromptCatalogEntry[]): stri
 }
 
 function renderRuntimeTypeScript(entries: CardImagePromptCatalogEntry[]): string {
-  const runtimeEntries = entries.map((entry) => ({
-    cardId: entry.cardId,
-    cardType: entry.cardType,
-    outputPath: entry.outputPath
-  }));
+  const runtimeEntries = entries
+    .filter((entry) => existsSync(join(process.cwd(), "public", entry.outputPath.replace(/^\//, ""))))
+    .map((entry) => ({
+      cardId: entry.cardId,
+      cardType: entry.cardType,
+      outputPath: entry.outputPath
+    }));
   const serialized = JSON.stringify(runtimeEntries, null, 2);
 
   return (
@@ -389,45 +425,4 @@ function renderRuntimeTypeScript(entries: CardImagePromptCatalogEntry[]): string
     `  return cardArtPathByType[cardType][cardId];\n` +
     `}\n`
   );
-}
-
-function renderMarkdown(entriesByType: PromptEntryMap): string {
-  const sections = CARD_IMAGE_TYPES.map((cardType) => {
-    const heading = toHeading(cardType);
-    const entries = entriesByType[cardType]
-      .map(
-        (entry) =>
-          `### ${entry.title}\n` +
-          `- card ID: \`${entry.cardId}\`\n` +
-          `- card type: \`${entry.cardType}\`\n` +
-          `- output path: \`${entry.outputPath}\`\n` +
-          `- fallback path: \`${entry.fallbackPath}\`\n` +
-          `- prompt: ${entry.prompt}\n` +
-          `- negative prompt: ${entry.negativePrompt}`
-      )
-      .join("\n\n");
-
-    return `## ${heading}\n\n${entries}`;
-  }).join("\n\n");
-
-  return `# Card Image Prompts\n\nGenerated from authored card content. Prompts are deterministic and grouped by card type.\n\n${sections}\n`;
-}
-
-function toHeading(cardType: CardImageType): string {
-  switch (cardType) {
-    case "threat":
-      return "Threats";
-    case "contract":
-      return "Contracts";
-    case "anomaly":
-      return "Anomalies";
-    case "artifact":
-      return "Artifacts";
-    case "equipment":
-      return "Equipment";
-    case "scar":
-      return "Scars";
-    case "escalation":
-      return "Escalations";
-  }
 }

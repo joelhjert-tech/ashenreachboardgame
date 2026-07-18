@@ -15,10 +15,6 @@
         "progressKey": "gateEchoesPinned",
         "amount": 1,
         "summary": "A Cinder Gate echo was pinned for the final confrontation."
-      },
-      {
-        "type": "gain_heat_all",
-        "amount": 1
       }
     ]
   }

@@ -15,6 +15,9 @@
   "progressionWeight": 1,
   "flavor": "A reliable trench blade that adds +1 Grit in battle.",
   "activeText": "A reliable trench blade that adds +1 Grit in battle.",
+  "effectModel": "conditional",
+  "requiresEquipped": true,
+  "conditionType": "battle",
   "shopCategories": [
     "forge-armoury",
     "market"

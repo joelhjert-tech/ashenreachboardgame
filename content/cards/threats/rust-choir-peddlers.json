@@ -11,12 +11,36 @@
   "difficulty": 5,
   "trophyValue": 4,
   "defeatReward": {
-    "type": "gain_note",
-    "text": "You kept the peddlers talking long enough to steal the real price list."
-  },
-  "woundOnLoss": {
-    "type": "gain_heat",
-    "amount": 1
+    "type": "sequence",
+    "effects": [
+      {
+        "type": "gain_note",
+        "text": "You kept the peddlers talking long enough to steal the real price list."
+      },
+      {
+        "type": "encounter_payment",
+        "decisionKey": "rust-choir-recovery",
+        "mode": "optional",
+        "prompt": "Pay 1 Salvage to heal 1 Wound?",
+        "salvageCost": 1,
+        "paidOptionId": "pay-to-heal",
+        "paidLabel": "Pay 1 Salvage to heal 1 Wound",
+        "paidEffect": {
+          "type": "heal_wound",
+          "amount": 1
+        },
+        "declineOptionId": "decline",
+        "declineLabel": "Decline",
+        "declineEffect": {
+          "type": "none",
+          "summary": "Declined the recovery offer."
+        },
+        "unavailableEffect": {
+          "type": "none",
+          "summary": "The recovery offer was unavailable."
+        }
+      }
+    ]
   },
   "enemyFamily": "choir",
   "threatLane": "yellow",
@@ -24,7 +48,6 @@
   "rarity": "common",
   "tempo": "push",
   "resourceTags": [
-    "heat",
     "loot",
     "trophy"
   ]

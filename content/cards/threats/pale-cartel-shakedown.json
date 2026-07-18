@@ -18,10 +18,6 @@
     "type": "sequence",
     "effects": [
       {
-        "type": "gain_heat",
-        "amount": 1
-      },
-      {
         "type": "take_wound",
         "amount": 1
       }
@@ -34,7 +30,6 @@
   "tempo": "push",
   "resourceTags": [
     "gear",
-    "heat",
     "trophy",
     "wound"
   ]

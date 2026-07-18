@@ -15,6 +15,9 @@
   "progressionWeight": 1,
   "flavor": "A compact carbine that adds +1 Guile in close, dirty engagements.",
   "activeText": "A compact carbine that adds +1 Guile in close, dirty engagements.",
+  "effectModel": "conditional",
+  "requiresEquipped": true,
+  "conditionType": "battle",
   "shopCategories": [
     "forge-armoury",
     "market"

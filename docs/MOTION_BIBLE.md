@@ -145,7 +145,7 @@ Behavior:
 - Attacker and defender cards brace.
 - Dice and math lock before impact.
 - Impact flash appears on loser.
-- Wound, heat, trophy, and result chips pulse after impact.
+- Wound, trophy, and other authored result chips pulse after impact.
 
 Timing:
 

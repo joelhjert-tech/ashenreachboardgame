@@ -56,16 +56,6 @@ export const cardTemplatePrompts: ImagePromptSpec[] = [
     usage: "Route-note deck back."
   },
   {
-    id: "card_back_heat",
-    fileName: "card_back_heat.png",
-    outputPath: "/assets/riftfall/cards/heat/card_back_heat.png",
-    assetType: "cardBack",
-    size: "card",
-    prompt: `${style}; card back for Heat deck, violet rift scar symbol, dark cracked lacquer, no text`,
-    negativePrompt: sharedNegativePrompt,
-    usage: "Heat deck back."
-  },
-  {
     id: "card_back_artifact",
     fileName: "card_back_artifact.png",
     outputPath: "/assets/riftfall/cards/artifacts/card_back_artifact.png",

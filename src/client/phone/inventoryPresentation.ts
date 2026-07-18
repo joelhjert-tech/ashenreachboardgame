@@ -1,28 +1,65 @@
 import type { CardImageType } from "../../game/assets/design/cardImageCatalog.js";
+import {
+  getCharacterStatBreakdown,
+  getEquippedGearItem
+} from "../../game/engine/gear.js";
 import type { ActiveResolution, Follower, GearItem, GearSlot, PhoneObjectUseState, PhonePatchPayload, PhoneSelfState, Stat } from "../shared/types.js";
 import { getGearCardArtId, getGearCardArtType } from "../shared/assetPaths.js";
 import { gearSlotLabelById, statLabelById } from "../shared/statLabels.js";
+import { getFollowerAcquisitionSources } from "../../game/data/followerAcquisition.js";
 
 export type InventoryTimingWindow =
   | "beforeThreatDraw"
   | "beforeBattleRoll"
   | "afterBattleRoll"
+  | "afterFailedTest"
   | "beforeTakingDamage"
   | "startOfTurn"
   | "movement"
+  | "movementRouteConfirmation"
+  | "beforeAnomalySignalTest"
+  | "pendingScarConsequence"
   | "shop"
+  | "action"
   | "anyTime";
 
 export type InventoryGroupLabel =
   | "Weapons"
   | "Armor"
+  | "Supplies"
   | "Equipment"
   | "Consumables"
   | "Followers"
   | "Artifacts / Relics"
   | "Quest Items";
 
-export type InventoryUsabilityStatus = "Usable now" | "Ready but not usable now" | "Passive" | "Locked / condition not met";
+export type InventoryUsabilityStatus = "Usable now" | "Ready but not usable now" | "Passive" | "Locked / condition not met" | "Suppressed";
+
+export interface InventoryPassiveBonusPresentation {
+  stat: Stat;
+  amount: number;
+  state: "active" | "unequipped" | "conditional" | "suppressed";
+  text: string;
+}
+
+export interface InventoryActiveAbilityPresentation {
+  text: string;
+  timingText: string;
+  availableNow: boolean;
+  contextualControl: boolean;
+}
+
+export interface InventoryChargePresentation {
+  current: number;
+  maximum: number;
+  cost: number;
+  depleted: boolean;
+}
+
+export interface InventoryExhaustPresentation {
+  status: "Ready" | "Exhausted";
+  resetText: string;
+}
 
 export interface InventoryCardViewModel {
   id: string;
@@ -36,8 +73,8 @@ export interface InventoryCardViewModel {
   statusReason: string;
   canUseNow: boolean;
   useIntent:
-    | { type: "USE_GEAR"; gearId: string }
-    | { type: "USE_FOLLOWER"; followerId: string }
+    | { type: "USE_GEAR"; gearId: string; instanceId?: string; contractSignature?: string }
+    | { type: "USE_FOLLOWER"; followerId: string; escalate?: boolean }
     | null;
   statBonus?: { stat: Stat; amount: number } | null;
   useLimit?: GearItem["useLimit"] | Follower["useLimit"];
@@ -46,6 +83,16 @@ export interface InventoryCardViewModel {
   artCardType?: CardImageType | null;
   artCardId?: string | null;
   fallbackLabel: string;
+  passiveBonus?: InventoryPassiveBonusPresentation | null;
+  activeAbility?: InventoryActiveAbilityPresentation | null;
+  chargeState?: InventoryChargePresentation | null;
+  exhaustState?: InventoryExhaustPresentation | null;
+  activationCostText?: string;
+  followerRoleText?: string;
+  acquisitionText?: string;
+  gearSlot?: GearSlot;
+  instanceId?: string;
+  equipped?: boolean;
 }
 
 export interface InventoryGroupViewModel {
@@ -68,25 +115,13 @@ export interface BattleAssistViewModel {
 const inventoryGroupOrder: InventoryGroupLabel[] = [
   "Weapons",
   "Armor",
+  "Supplies",
   "Equipment",
   "Consumables",
   "Followers",
   "Artifacts / Relics",
   "Quest Items"
 ];
-const RUMI_CHARACTER_ID = "char_rumi";
-const MIRA_FOLLOWER_ID = "mira-rift-twin";
-const ZOEY_FOLLOWER_ID = "zoey-thorn-violet";
-const miraRumiTeamBonus: Partial<Record<Stat, number>> = {
-  signal: 1,
-  guile: 1
-};
-const violetTriadTeamBonus: Partial<Record<Stat, number>> = {
-  grit: 1,
-  signal: 1,
-  guile: 1
-};
-
 function toTitleCase(value: string): string {
   return value.replace(/[_-]+/g, " ").replace(/\b\w/g, (character) => character.toUpperCase());
 }
@@ -99,48 +134,37 @@ export function formatTimingWindow(window: InventoryTimingWindow): string {
       return "Before battle roll";
     case "afterBattleRoll":
       return "After battle roll";
+    case "afterFailedTest":
+      return "After failed movement or hazard test";
     case "beforeTakingDamage":
       return "Before taking damage";
     case "startOfTurn":
       return "Start of turn";
     case "movement":
       return "Movement";
+    case "movementRouteConfirmation":
+      return "Movement route confirmation";
+    case "beforeAnomalySignalTest":
+      return "Before an anomaly Signal test";
+    case "pendingScarConsequence":
+      return "Pending Scar consequence";
     case "shop":
       return "Shop";
+    case "action":
+      return "Action window";
     case "anyTime":
       return "Any time";
   }
 }
 
-function getEquippedGearBonus(self: PhoneSelfState, stat: Stat): number {
-  const equippedIds = new Set(Object.values(self.character.equippedGear).filter((value): value is string => Boolean(value)));
-
-  const gearBonus = self.character.heldGear.reduce((sum, item) => {
-    if (!equippedIds.has(item.id) || item.statBonus.stat !== stat) {
-      return sum;
-    }
-
-    return sum + item.statBonus.amount;
-  }, 0);
-
-  return gearBonus + getCompanionStatBonus(self, stat);
-}
-
-function getCompanionStatBonus(self: PhoneSelfState, stat: Stat): number {
-  if (self.character.id !== RUMI_CHARACTER_ID) {
-    return 0;
-  }
-
-  const followerIds = new Set((self.character.followers ?? []).map((follower) => follower.id));
-
-  if (!followerIds.has(MIRA_FOLLOWER_ID)) {
-    return 0;
-  }
-
-  const miraBonus = miraRumiTeamBonus[stat] ?? 0;
-  const triadBonus = followerIds.has(ZOEY_FOLLOWER_ID) ? (violetTriadTeamBonus[stat] ?? 0) : 0;
-
-  return miraBonus + triadBonus;
+function getEquippedGearBonus(
+  self: PhoneSelfState,
+  stat: Stat,
+  mode: "resting" | "battle" = "resting",
+  suppressedInstanceIds?: ReadonlySet<string>
+): number {
+  const breakdown = getCharacterStatBreakdown(self.character, stat, { mode, suppressedInstanceIds });
+  return breakdown.equipped.concat(breakdown.companions).reduce((sum, source) => sum + source.value, 0);
 }
 
 function getActiveSeatId(patch: PhonePatchPayload): string | null {
@@ -203,11 +227,11 @@ export function getCurrentTimingWindow(patch: PhonePatchPayload): InventoryTimin
     return "startOfTurn";
   }
 
-  return "anyTime";
+  return patch.phase === "action" ? "action" : "anyTime";
 }
 
 function serverAcceptsCardUse(patch: PhonePatchPayload): boolean {
-  return patch.phase === "action" || patch.phase === "sector";
+  return patch.phase === "action" || patch.phase === "sector" || (patch.phase === "resolution" && patch.activeResolution?.roll?.success === false);
 }
 
 function hasAny(text: string, words: string[]): boolean {
@@ -219,6 +243,7 @@ function uniqueWindows(windows: InventoryTimingWindow[]): InventoryTimingWindow[
 }
 
 function inferGearTimingWindows(item: GearItem): InventoryTimingWindow[] {
+  if (item.activationTiming?.length) return item.activationTiming;
   if (!item.activeText && !item.useLimit) {
     return [];
   }
@@ -297,6 +322,10 @@ function inferFollowerTimingWindows(follower: Follower): InventoryTimingWindow[]
 }
 
 function getGearGroup(item: GearItem): InventoryGroupLabel {
+  if (item.subtype === "supply") {
+    return "Supplies";
+  }
+
   if (item.slot === "weapon") {
     return "Weapons";
   }
@@ -323,9 +352,10 @@ function getGearGroup(item: GearItem): InventoryGroupLabel {
 function getGearLockReason(item: GearItem, self: PhoneSelfState): string | null {
   const text = `${item.activeText ?? ""}`.toLowerCase();
 
-  if (item.useLimit === "charge" && (item.charges ?? 0) <= 0) {
+  if (item.useLimit === "charge" && (item.currentCharges ?? item.charges ?? 0) <= 0) {
     return "No charges remain.";
   }
+  if (item.effectModel === "exhaust" && item.requiresEquipped && !isExactItemEquipped(item, self)) return "Equip this Artifact before using it.";
 
   if (hasAny(text, ["heal"]) && self.character.wounds <= 0 && !hasAny(text, ["prevent", "braced"])) {
     return "No wounds to heal.";
@@ -341,9 +371,10 @@ function getGearLockReason(item: GearItem, self: PhoneSelfState): string | null 
 function getObjectUseState(
   patch: PhonePatchPayload,
   source: PhoneObjectUseState["source"],
-  id: string
+  id: string,
+  instanceId?: string
 ): PhoneObjectUseState | null {
-  return patch.objectUseStates?.find((state) => state.source === source && state.id === id) ?? null;
+  return patch.objectUseStates?.find((state) => state.source === source && state.id === id && (!instanceId || state.instanceId === instanceId)) ?? null;
 }
 
 function isBattleRollTiming(timingWindows: InventoryTimingWindow[], currentTimingWindow: InventoryTimingWindow): boolean {
@@ -420,58 +451,168 @@ function getFallbackLabel(name: string): string {
 function formatPassiveGearBonus(item: GearItem): string {
   const amount = item.statBonus.amount >= 0 ? `+${item.statBonus.amount}` : String(item.statBonus.amount);
   const stat = statLabelById[item.statBonus.stat];
-  const battleScope = item.slot === "weapon" ? " in battle" : "";
+  return `${amount} ${stat}`;
+}
 
-  return `${amount} ${stat}${battleScope}`;
+function formatConditionalGearBonus(item: GearItem): string | null {
+  return item.effectModel === "conditional" && item.conditionType === "battle"
+    ? `${formatPassiveGearBonus(item)} in battles`
+    : null;
+}
+
+function isExactItemEquipped(item: GearItem, self: PhoneSelfState): boolean {
+  const equipped = getEquippedGearItem(self.character, item.slot);
+  if (!equipped) return false;
+  if (item.instanceId || equipped.instanceId) return Boolean(item.instanceId && equipped.instanceId === item.instanceId);
+  return equipped.id === item.id;
 }
 
 function buildGearCard(item: GearItem, patch: PhonePatchPayload, self: PhoneSelfState): InventoryCardViewModel {
   const timingWindows = inferGearTimingWindows(item);
-  const active = Boolean(item.activeText || item.useLimit);
-  const equippedIds = new Set(Object.values(self.character.equippedGear).filter((value): value is string => Boolean(value)));
-  const isEquipped = equippedIds.has(item.id);
-  const useState = getObjectUseState(patch, "gear", item.id);
-  const currentTimingWindow = getCurrentTimingWindow(patch);
-  const lockedReason = useState?.disabledReason ?? getGearLockReason(item, self) ?? getStatMismatchReason(item, timingWindows, currentTimingWindow, patch);
-  const status = active
+  const hasActiveAbility =
+    item.effectModel === "consumable" ||
+    item.effectModel === "charged" ||
+    item.effectModel === "exhaust" ||
+    Boolean(item.activeText && item.useLimit);
+  const inventoryOwnsControl =
+    item.effectModel === "consumable" ||
+    item.effectModel === "exhaust" ||
+    item.chargedEffect === "traceThePromise" ||
+    (!item.effectModel && Boolean(item.activeText || item.useLimit));
+  const isEquipped = isExactItemEquipped(item, self);
+  const useState = getObjectUseState(patch, "gear", item.id, item.instanceId);
+  const currentTimingWindow = timingWindows.includes("action") && patch.phase === "action" ? "action" : getCurrentTimingWindow(patch);
+  const oathchainPrompt = item.chargedEffect === "traceThePromise" ? patch.oathchainPrompt : null;
+  const suppression = item.instanceId ? patch.equipmentSuppressions?.find((entry) => entry.itemInstanceId === item.instanceId) : null;
+  const lockedReason =
+    suppression
+      ? `${item.name} is temporarily suppressed.`
+      : useState?.disabledReason ??
+        getGearLockReason(item, self) ??
+        (item.chargedEffect === "traceThePromise" && !oathchainPrompt
+          ? "Trace the Promise requires your action phase, an active Contract, and a visible valid target."
+          : null) ??
+        getStatMismatchReason(item, timingWindows, currentTimingWindow, patch);
+  const activeStatus = hasActiveAbility
     ? getStatus({
         timingWindows,
         currentTimingWindow,
         lockedReason,
-        active,
+        active: true,
         canServerAccept: serverAcceptsCardUse(patch)
       })
+    : null;
+  const status = suppression
+    ? {
+        status: "Suppressed" as const,
+        statusReason: `${item.name} is temporarily suppressed. Its equipped bonus and active ability are unavailable.`,
+        canUseNow: false
+      }
+    : activeStatus
+    ? {
+        ...activeStatus,
+        canUseNow: activeStatus.canUseNow && inventoryOwnsControl,
+        statusReason:
+          activeStatus.canUseNow && !inventoryOwnsControl
+            ? `Use this ability from the ${timingWindows.map(formatTimingWindow).join(", ").toLowerCase()} prompt.`
+            : activeStatus.statusReason
+      }
     : isEquipped
       ? {
           status: "Passive" as const,
-          statusReason: `${formatPassiveGearBonus(item)}. Already applied by the server when relevant.`,
+          statusReason: item.effectModel === "conditional"
+            ? `${formatConditionalGearBonus(item)}. Applied automatically only in that context.`
+            : `${formatPassiveGearBonus(item)}. Always active while equipped.`,
           canUseNow: false
         }
       : {
           status: "Ready but not usable now" as const,
-          statusReason: `Equip to apply ${formatPassiveGearBonus(item)}.`,
+          statusReason: `Equip to apply ${formatConditionalGearBonus(item) ?? formatPassiveGearBonus(item)}.`,
           canUseNow: false
         };
-  const remainingUses = useState?.remainingUses ?? item.charges ?? null;
-  const maxUses = useState?.maxUses ?? item.maxUses ?? (item.useLimit === "charge" ? item.charges ?? null : null);
+  // Charge state belongs to the exact projected item instance. A generic
+  // object-use record still owns turn/round limits, but must not override a
+  // freshly spent charge on the inventory object.
+  const isChargedItem = item.useLimit === "charge" || item.effectModel === "charged";
+  const remainingUses = isChargedItem
+    ? item.currentCharges ?? useState?.remainingUses ?? item.charges ?? null
+    : useState?.remainingUses ?? null;
+  const maxUses = isChargedItem
+    ? item.maxCharges ?? useState?.maxUses ?? item.startingCharges ?? item.charges ?? null
+    : useState?.maxUses ?? item.maxUses ?? null;
+  const chargeState = isChargedItem
+    ? {
+        current: Math.max(0, remainingUses ?? 0),
+        maximum: Math.max(1, maxUses ?? item.maxCharges ?? item.startingCharges ?? 1),
+        cost: item.chargeCost ?? 1,
+        depleted: (remainingUses ?? 0) <= 0
+      }
+    : null;
+  const passiveState: InventoryPassiveBonusPresentation["state"] = suppression
+    ? "suppressed"
+    : !isEquipped
+      ? "unequipped"
+      : item.effectModel === "conditional"
+        ? "conditional"
+        : "active";
+  const passiveBonus = item.effectModel === "consumable"
+    ? null
+    : {
+        stat: item.statBonus.stat,
+        amount: item.statBonus.amount,
+        state: passiveState,
+        text:
+          passiveState === "suppressed"
+            ? `${formatPassiveGearBonus(item)} · SUPPRESSED`
+            : passiveState === "unequipped"
+              ? `Equip to apply ${formatPassiveGearBonus(item)}`
+              : passiveState === "conditional"
+                ? `${formatPassiveGearBonus(item)} in battles`
+                : `${formatPassiveGearBonus(item)} · ALWAYS ACTIVE`
+      };
+  const activeAbility = hasActiveAbility
+    ? {
+        text: item.activeText ?? "Resolve this item's authored active effect.",
+        timingText: timingWindows.length > 0 ? timingWindows.map(formatTimingWindow).join(", ") : "Authoritative prompt",
+        availableNow: Boolean(activeStatus?.canUseNow && !suppression && !chargeState?.depleted),
+        contextualControl: !inventoryOwnsControl
+      }
+    : null;
 
   return {
     id: item.id,
     source: "gear",
     group: getGearGroup(item),
     name: item.name,
-    effectText: item.activeText ?? `Passive ${formatPassiveGearBonus(item)}.`,
+    effectText: item.effectModel === "consumable" ? `One Use — ${item.activeText ?? "Consume to resolve its effect."}` : item.activeText ?? `Passive ${formatPassiveGearBonus(item)}.`,
     timingText: timingWindows.length > 0 ? timingWindows.map(formatTimingWindow).join(", ") : "Passive",
     timingWindows,
     ...status,
-    useIntent: status.canUseNow ? { type: "USE_GEAR", gearId: item.id } : null,
-    statBonus: item.statBonus,
+    useIntent: status.canUseNow && inventoryOwnsControl ? { type: "USE_GEAR", gearId: item.id, instanceId: oathchainPrompt?.instanceId ?? item.instanceId, contractSignature: oathchainPrompt?.contractSignature } : null,
+    statBonus: item.effectModel === "consumable" ? null : item.statBonus,
     useLimit: item.useLimit,
     charges: remainingUses,
     maxUses,
     artCardType: getGearCardArtType(item),
     artCardId: getGearCardArtId(item),
-    fallbackLabel: getFallbackLabel(item.name)
+    fallbackLabel: getFallbackLabel(item.name),
+    gearSlot: item.slot,
+    instanceId: item.instanceId,
+    equipped: isEquipped,
+    passiveBonus,
+    activeAbility,
+    chargeState,
+    exhaustState: item.effectModel === "exhaust"
+      ? {
+          status: item.exhausted ? "Exhausted" : "Ready",
+          resetText: "Refreshes next round"
+        }
+      : null,
+    activationCostText: item.rechargeRule === "none"
+      ? "No Recharge"
+      : item.activationCost
+      ? `Cost: ${item.activationCost.amount} ${item.activationCost.type === "salvage" ? "Salvage" : "Wound"}`
+      : undefined
   };
 }
 
@@ -484,7 +625,7 @@ function buildFollowerCard(follower: Follower, patch: PhonePatchPayload): Invent
     currentTimingWindow: getCurrentTimingWindow(patch),
     lockedReason: useState?.disabledReason ?? null,
     active,
-    canServerAccept: serverAcceptsCardUse(patch)
+    canServerAccept: follower.effectModel === "exhaust" ? ["action", "sector", "navigation", "resolution"].includes(patch.phase) : serverAcceptsCardUse(patch)
   });
   const remainingUses = useState?.remainingUses ?? null;
   const maxUses = useState?.maxUses ?? (follower.useLimit ? 1 : null);
@@ -494,17 +635,26 @@ function buildFollowerCard(follower: Follower, patch: PhonePatchPayload): Invent
     source: "follower",
     group: "Followers",
     name: follower.name,
-    effectText: follower.text,
-    timingText: timingWindows.length > 0 ? timingWindows.map(formatTimingWindow).join(", ") : "Passive",
+    effectText: `${follower.text}${follower.id === "fandiablos" && patch.self?.character.temporaryAllStatBoost ? ` Too Many Dogs: +${patch.self.character.temporaryAllStatBoost.value} all stats for ${patch.self.character.temporaryAllStatBoost.remainingEligibleResolutions} more battle/hazard resolution(s).` : ""}`,
+    timingText: `${timingWindows.length > 0 ? timingWindows.map(formatTimingWindow).join(", ") : "Passive"}${follower.effectModel === "exhaust" ? ". Refreshes next round" : ""}`,
     timingWindows,
     ...status,
     useIntent: status.canUseNow ? { type: "USE_FOLLOWER", followerId: follower.id } : null,
     useLimit: follower.useLimit,
-    charges: remainingUses,
-    maxUses,
+    charges: follower.effectModel === "exhaust" ? null : remainingUses,
+    maxUses: follower.effectModel === "exhaust" ? null : maxUses,
+    exhaustState: follower.effectModel === "exhaust"
+      ? {
+          status: follower.exhausted ? "Exhausted" : "Ready",
+          resetText: "Refreshes next round"
+        }
+      : null,
     artCardType: follower.artCardId ? "artifact" : null,
     artCardId: follower.artCardId ?? null,
-    fallbackLabel: getFallbackLabel(follower.name)
+    fallbackLabel: getFallbackLabel(follower.name),
+    activationCostText: follower.id === "fandiablos" ? "Cost: 1 Wound (or 2 Wounds for +2 all stats on next 2 battles/hazards)" : undefined,
+    followerRoleText: `${toTitleCase(follower.role)}${follower.tier ? ` · ${toTitleCase(follower.tier)}` : ""}`,
+    acquisitionText: getFollowerAcquisitionSources(follower.id).map((source) => source.label).join(" · ") || undefined
   };
 }
 
@@ -552,7 +702,12 @@ export function getBattleAssistViewModel(patch: PhonePatchPayload): BattleAssist
 
   const stat = getBattleStat(patch);
   const enemyBattleValue = resolution?.battle?.difficulty ?? encounter?.difficulty ?? 0;
-  const playerBattleValue = self.character.stats[stat] + getEquippedGearBonus(self, stat);
+  const suppressedInstanceIds = new Set(
+    (patch.equipmentSuppressions ?? [])
+      .filter((suppression) => suppression.active)
+      .map((suppression) => suppression.itemInstanceId)
+  );
+  const playerBattleValue = self.character.stats[stat] + getEquippedGearBonus(self, stat, "battle", suppressedInstanceIds);
   const currentTimingWindow = getCurrentTimingWindow(patch);
   const usableCards = getInventoryCards(patch).filter(
     (card) =>

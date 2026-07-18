@@ -16,7 +16,7 @@
     "text": "You drove off the runt and found a safe line through the cinders."
   },
   "woundOnLoss": {
-    "type": "gain_heat",
+    "type": "take_wound",
     "amount": 1
   },
   "enemyFamily": "beast",
@@ -24,7 +24,7 @@
   "rarity": "common",
   "tempo": "push",
   "resourceTags": [
-    "heat",
+    "wound",
     "trophy"
   ],
   "imagePrompt": "A small soot-black furnace beast with ember eyes and thin hooked teeth crouching in warm ash beside broken iron lane markers, grimdark but low-tier, readable silhouette"

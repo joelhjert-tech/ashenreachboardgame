@@ -1,6 +1,10 @@
 import type { ReactElement } from "react";
 import { CardArtImage } from "../shared/CardArtImage.js";
-import { getCharacterPortraitPath } from "../shared/assetPaths.js";
+import {
+  getCharacterPortraitPath,
+  getEncounterBattleCardBackPath,
+  getOperativeBattleCardBackPath
+} from "../shared/assetPaths.js";
 import { ChallengeBadge } from "../shared/ChallengeBadge.js";
 import { getChallengeThemeStyle } from "../../game/ui/challengeTheme.js";
 import { statLabelById } from "../shared/statLabels.js";
@@ -14,6 +18,7 @@ interface ResolutionSideModel {
   eyebrow: string;
   detail: string;
   artUrl?: string | null;
+  cardBackUrl: string;
   cardId?: string | null;
   cardType?: "threat" | "anomaly" | "contract" | "artifact" | "scar" | "escalation" | null;
   stat: Stat;
@@ -61,16 +66,28 @@ function formatModifier(value: number | null): string {
   return value === null || value === 0 ? "+0" : value > 0 ? `+${value}` : String(value);
 }
 
-function formatResolutionType(resolution: ActiveResolution | null, fallbackType: string | null | undefined): string {
+function formatResolutionType(
+  resolution: ActiveResolution | null,
+  fallbackType: string | null | undefined,
+  tileChallengeType: string | null | undefined
+): string {
+  if (tileChallengeType) {
+    return "TILE CHALLENGE";
+  }
+
   if (resolution?.card?.type === "enemy" || resolution?.battle?.enemyName) {
-    return "Engagement";
+    return "BATTLE";
   }
 
-  if (resolution?.battle) {
-    return "Test";
+  if (resolution?.source === "anomaly" || fallbackType === "anomaly" || fallbackType === "event") {
+    return "ANOMALY";
   }
 
-  return fallbackType ? `${fallbackType} resolution` : "Resolution";
+  if (fallbackType === "hazard" || resolution?.card?.type === "hazard") {
+    return "HAZARD";
+  }
+
+  return "ENCOUNTER";
 }
 
 function formatFormula({
@@ -118,7 +135,9 @@ function getPlayerBattleValue(resolution: ActiveResolution | null, activePlayer:
   }
 
   const stat = resolution?.battle?.stat;
-  return stat && activePlayer ? activePlayer.character.stats[stat] : null;
+  return stat && activePlayer
+    ? activePlayer.character.effectiveStats?.[stat] ?? activePlayer.character.stats[stat]
+    : null;
 }
 
 function formatFocusLabel(resolution: ActiveResolution | null, fallbackType: string | null | undefined): string {
@@ -180,6 +199,14 @@ function getMarginText(outcomeLabel: HostBattleDisplayModel["outcomeLabel"], pla
 
   const margin = Math.abs(playerTotal - enemyTotal);
 
+  if (margin === 0 && outcomeLabel === "SUCCESS") {
+    return "Tie succeeds";
+  }
+
+  if (margin === 0 && outcomeLabel === "DEFEAT") {
+    return "Tie fails";
+  }
+
   if (outcomeLabel === "DRAW" || margin === 0) {
     return "No margin";
   }
@@ -219,11 +246,20 @@ function battleResultDeltas(deltas: ResultDelta[] | null | undefined): ResultDel
     "modifierApplied"
   ]);
 
-  return (deltas ?? []).filter((delta) =>
+  const filtered = (deltas ?? []).filter((delta) =>
     delta.source === "combat" ||
     delta.source === "resolution-effect" ||
     battleTypes.has(delta.type)
   );
+
+  const seenEncounterStates = new Set<string>();
+  return filtered.filter((delta) => {
+    if (delta.type !== "threatDefeated" && delta.type !== "threatRemains") return true;
+    const key = `${delta.type}:${delta.targetSeatId ?? "table"}`;
+    if (seenEncounterStates.has(key)) return false;
+    seenEncounterStates.add(key);
+    return true;
+  });
 }
 
 function buildBattleModel(
@@ -243,7 +279,14 @@ function buildBattleModel(
 
   const stat = battle?.stat ?? encounter?.stat ?? pendingEnemyRoll?.stat ?? "grit";
   const statLabel = statLabelById[stat];
-  const outcome = patch.payload.outcomeSummary;
+  const playerName = patch.payload.seats.find((seat) => seat.seatId === activePlayer.seatId)?.displayName ?? activePlayer.character.name;
+  const projectedOutcome = patch.payload.outcomeSummary;
+  const sourceCardId = card?.id ?? encounter?.id ?? pendingEnemyRoll?.encounterCardId ?? null;
+  const opponentCardType = getOpponentCardType(resolution);
+  const outcome = projectedOutcome && projectedOutcome.seatId === activePlayer.seatId && (
+    (sourceCardId !== null && projectedOutcome.encounterCardId === sourceCardId) ||
+    (resolution?.source === "movement" && projectedOutcome.movedToSectorId === card?.id)
+  ) ? projectedOutcome : null;
   const playerDice = resolution?.roll?.dice ?? [outcome?.die1, outcome?.die2].filter((die): die is number => typeof die === "number");
   const enemyDice = [outcome?.enemyDie1, outcome?.enemyDie2].filter((die): die is number => typeof die === "number");
   const playerRollTotal = sumDice(playerDice);
@@ -258,7 +301,11 @@ function buildBattleModel(
   const resultTone = outcomeLabel === "SUCCESS" ? "victory" : outcomeLabel === "DEFEAT" ? "failure" : "neutral";
   const outcomeText = resolution?.outcome?.text ?? outcome?.summary ?? null;
   const cardMovementText = getCardMovementText(opponentName, outcomeText);
-  const resolutionType = formatResolutionType(resolution, encounter?.cardType);
+  const resolutionType = formatResolutionType(
+    resolution,
+    encounter?.cardType,
+    patch.payload.pendingTileChallenge?.challengeType
+  );
   const opponentIsRolled = enemyDice.length > 0;
   const opponentStatLabel = opponentIsRolled ? "Battle" : "Difficulty";
   const opponentFormula = opponentIsRolled
@@ -280,18 +327,21 @@ function buildBattleModel(
   const outcomeCopy =
     outcomeText ??
     (outcomeLabel === "SUCCESS"
-      ? `${activePlayer.character.name} wins the resolution.`
+      ? `${playerName} wins the resolution.`
       : outcomeLabel === "DEFEAT"
-        ? `${activePlayer.character.name} fails the resolution.`
+        ? `${playerName} fails the resolution.`
         : "Resolution pending.");
   const statusTitle = outcomeLabel === "RESOLVING" ? "Waiting for roll" : outcomeLabel === "SUCCESS" ? "Applying success outcome" : outcomeLabel === "DEFEAT" ? "Applying failure outcome" : "Resolving draw";
-  const statusCopy = outcomeLabel === "RESOLVING" ? "Waiting for the active player..." : "Preparing next phase...";
+  const statusCopy = outcomeLabel === "RESOLVING"
+    ? `Waiting for ${playerName} to roll on phone.`
+    : `Waiting for ${playerName} to continue on phone.`;
   return {
     player: {
-      name: activePlayer.character.name,
-      eyebrow: "Active operative",
+      name: playerName,
+      eyebrow: activePlayer.character.name,
       detail: activePlayer.character.archetype,
       artUrl: getCharacterPortraitPath(activePlayer.character.id),
+      cardBackUrl: getOperativeBattleCardBackPath(),
       stat,
       statLabel,
       statValue: playerBattleValue,
@@ -312,7 +362,8 @@ function buildBattleModel(
       eyebrow: card?.type ?? encounter?.cardType ?? "Opposition",
       detail: card?.flavor ?? encounter?.flavor ?? "Resolve the revealed threat or event.",
       cardId: card?.id ?? encounter?.id ?? pendingEnemyRoll?.encounterCardId ?? null,
-      cardType: getOpponentCardType(resolution),
+      cardType: opponentCardType,
+      cardBackUrl: getEncounterBattleCardBackPath(opponentCardType ?? "threat", sourceCardId ?? ""),
       stat,
       statLabel: opponentStatLabel,
       statValue: enemyBattleValue,
@@ -386,8 +437,8 @@ function StatTotalFooter({
       </dl>
       {variant === "player" && side.modifierSources.length > 0 && (
         <div className="host-battle-modifiers" aria-label={`${side.name} modifier sources`}>
-          {side.modifierSources.map((modifier) => (
-            <span key={`${modifier.label}:${modifier.value}`}>
+          {side.modifierSources.map((modifier, index) => (
+            <span key={`${modifier.label}:${modifier.value}:${index}`}>
               {modifier.label} {formatModifier(modifier.value)}
             </span>
           ))}
@@ -422,17 +473,55 @@ function HostBattleCard({ side, variant, dice }: { side: ResolutionSideModel; va
   );
 }
 
+function HostBattleCardReveal({
+  side,
+  variant,
+  dice
+}: {
+  side: ResolutionSideModel;
+  variant: "player" | "opponent";
+  dice: number[];
+}): ReactElement {
+  const sideClass = variant === "opponent" ? "enemy" : "player";
+
+  return (
+    <div
+      className={`host-battle-reveal-slot host-battle-reveal-slot-${sideClass}`}
+      data-testid={`host-battle-${sideClass}-reveal`}
+    >
+      <div className="host-battle-reveal-inner">
+        <div className={`host-battle-card-back host-battle-card-back-${sideClass}`} aria-hidden="true">
+          <img src={side.cardBackUrl} alt="" />
+        </div>
+        <HostBattleCard side={side} variant={variant} dice={dice} />
+      </div>
+    </div>
+  );
+}
+
 function HostBattleVsCore({ model }: { model: HostBattleDisplayModel }): ReactElement {
   const comparisonSymbol = getComparisonSymbol(model.playerTotal, model.enemyTotal);
+  const decisiveResult = model.outcomeLabel === "SUCCESS"
+    ? `${model.player.name} wins`
+    : model.outcomeLabel === "DEFEAT"
+      ? `${model.opponent.name} wins`
+      : model.outcomeLabel === "DRAW"
+        ? "Totals tied"
+        : "Roll in progress";
 
   return (
     <section className="host-battle-vs-block" aria-label="Resolution comparison" data-testid="host-battle-vs-block">
       <span className="host-battle-focus-label">{model.focusLabel}</span>
-      <h2 className="host-battle-encounter-title">{model.encounterTitle}</h2>
+      <h2 className="host-battle-encounter-title">
+        {model.resolutionType === "BATTLE"
+          ? "Battle resolution"
+          : `${model.resolutionType.toLowerCase().replace(/^\w/, (letter) => letter.toUpperCase())} resolution`}
+      </h2>
       <p className="host-battle-resolution-type">{model.resolutionType}</p>
       <strong>VS</strong>
       <div className={`host-battle-result-banner host-battle-result-${model.outcomeLabel.toLowerCase()}`} data-testid="host-battle-result-banner">
         <b>{model.outcomeLabel}</b>
+        <strong>{decisiveResult}</strong>
         <span>{model.marginText}</span>
       </div>
       <div className="host-battle-test-label" data-testid="host-battle-test-label">
@@ -490,11 +579,11 @@ export function HostBattleOverlay({
           testId="host-battle-fx-layer"
         />
 
-        <HostBattleCard side={model.player} variant="player" dice={model.playerDice} />
+        <HostBattleCardReveal side={model.player} variant="player" dice={model.playerDice} />
 
         <HostBattleVsCore model={model} />
 
-        <HostBattleCard side={model.opponent} variant="opponent" dice={model.enemyDice} />
+        <HostBattleCardReveal side={model.opponent} variant="opponent" dice={model.enemyDice} />
       </div>
     </section>
   );

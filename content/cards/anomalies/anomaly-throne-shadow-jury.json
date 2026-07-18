@@ -15,10 +15,6 @@
         "progressKey": "throneVerdicts",
         "amount": 1,
         "summary": "A throne-shadow verdict was banked for the endgame."
-      },
-      {
-        "type": "gain_heat",
-        "amount": 1
       }
     ]
   }

@@ -15,10 +15,6 @@
         "amount": 1
       },
       {
-        "type": "gain_heat",
-        "amount": 1
-      },
-      {
         "type": "gain_note",
         "text": "Scar-tide lattice translated into a living route mark."
       }

@@ -24,7 +24,7 @@ describe("shop encounter public projection", () => {
       shopEncounter: {
         shopName: string;
         status: string;
-        activePlayer: { salvage: number; heat: number; wounds: { current: number; max: number } };
+        activePlayer: { salvage: number; wounds: { current: number; max: number } };
         blockingThreats: unknown[];
         services: Array<{ id: string; enabled: boolean; disabledReason?: string; cost: { salvage?: number; heat?: number } }>;
         revealedStock?: unknown[];
@@ -37,7 +37,6 @@ describe("shop encounter public projection", () => {
       status: "open",
       activePlayer: {
         salvage: 6,
-        heat: 0,
         wounds: { current: 0, max: state.woundThreshold }
       },
       blockingThreats: []
@@ -138,9 +137,38 @@ describe("shop encounter public projection", () => {
     });
     expect(tvProjection.shopEncounter?.services).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ id: "buy-treatment", enabled: true }),
-        expect.objectContaining({ id: "buy-boon", enabled: true })
+        expect.objectContaining({ id: "buy-treatment", enabled: true })
       ])
     );
+    expect(tvProjection.shopEncounter?.services).not.toEqual(expect.arrayContaining([expect.objectContaining({ id: "buy-boon" })]));
+  });
+
+  it("keeps Artifacts outside Salvage purchasing and projects the three-Contract exchange", () => {
+    const state = createInitialSessionState("session-deep-relic-search");
+    state.status = "active";
+    state.phase = "action";
+    state.turnOrder = ["seat-1"];
+    state.activeSeatIndex = 0;
+    state.activeResolution = null;
+    state.pendingEnemyRoll = null;
+    state.pendingEffect = null;
+    state.currentEncounter = null;
+    state.seats[0] = { ...state.seats[0]!, displayName: "Joel", connected: true };
+    state.players[0] = {
+      ...state.players[0]!,
+      sectorId: "votive-engine-room",
+      character: { ...state.players[0]!.character, currentSpaceId: "votive-engine-room", salvage: 1 }
+    };
+    const projection = createTvProjection(state) as { shopEncounter: { services: Array<{ id: string; label: string; cost: unknown; enabled: boolean }> } | null };
+    expect(projection.shopEncounter?.services).toContainEqual(expect.objectContaining({
+      id: "trade-missions-for-artifact",
+      label: "Exchange Contracts for Artifact",
+      cost: { completedContracts: 3 },
+      enabled: false
+    }));
+    expect(projection.shopEncounter?.services).not.toEqual(
+      expect.arrayContaining([expect.objectContaining({ id: "risk-action" })])
+    );
+    expect(JSON.stringify(projection.shopEncounter)).not.toMatch(/\b(?:Heat|Risk)\b/);
   });
 });

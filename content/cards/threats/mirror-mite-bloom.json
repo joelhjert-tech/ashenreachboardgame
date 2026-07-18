@@ -15,7 +15,7 @@
     "text": "You bottled enough mirror-mites to sell as omen glass."
   },
   "woundOnLoss": {
-    "type": "gain_heat",
+    "type": "take_wound",
     "amount": 1
   },
   "enemyFamily": "vermin",
@@ -24,7 +24,7 @@
   "rarity": "common",
   "tempo": "push",
   "resourceTags": [
-    "heat",
+    "wound",
     "loot",
     "trophy"
   ]

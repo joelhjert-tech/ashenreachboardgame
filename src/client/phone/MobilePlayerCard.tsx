@@ -1,5 +1,6 @@
 import type { CSSProperties, ReactElement, ReactNode } from "react";
 import { describeContractObjective, formatContractObjectiveStatus } from "../../game/contracts/objectives.js";
+import { getEquippedGearItem } from "../../game/engine/gear.js";
 import { getChallengeThemeStyle } from "../../game/ui/challengeTheme.js";
 import { CardArtImage } from "../shared/CardArtImage.js";
 import { ChallengeBadge } from "../shared/ChallengeBadge.js";
@@ -16,6 +17,7 @@ import type {
   ActiveScenarioSummary,
   ContractCard,
   EncounterCard,
+  GearItem,
   OutcomeSummary,
   PhoneSelfState,
   ScenarioTelemetryItem,
@@ -57,6 +59,7 @@ interface MobilePlayerCardProps {
   onLeave: () => void;
   children?: ReactNode;
   className?: string;
+  equipmentSuppressions?: Array<{ itemInstanceId: string; active: true }>;
 }
 
 const gearOrder = ["weapon", "armor", "utility"] as const;
@@ -68,6 +71,21 @@ function toTitleCase(value: string): string {
 
 function buildTrack(count: number): boolean[] {
   return Array.from({ length: resourceTrackSlots }, (_, index) => index < count);
+}
+
+function formatEquippedPassive(item: GearItem): string {
+  const amount = formatSignedStatBonus(item.statBonus.amount);
+  const stat = statLabelById[item.statBonus.stat].toUpperCase();
+  return item.effectModel === "conditional" && item.conditionType === "battle"
+    ? `${amount} ${stat} IN BATTLES`
+    : `${amount} ${stat} · ALWAYS ACTIVE`;
+}
+
+function getEquippedChargeCopy(item: GearItem): string | null {
+  if (item.useLimit !== "charge" && item.effectModel !== "charged") return null;
+  const current = item.currentCharges ?? item.charges ?? item.startingCharges ?? 0;
+  const maximum = item.maxCharges ?? item.charges ?? item.startingCharges ?? current;
+  return `${current} / ${maximum} CHARGES${current <= 0 ? " · DEPLETED" : ""}`;
 }
 
 export function MobilePlayerCard({
@@ -93,7 +111,8 @@ export function MobilePlayerCard({
   abilityChangeItems = [],
   onLeave,
   children,
-  className
+  className,
+  equipmentSuppressions = []
 }: MobilePlayerCardProps): ReactElement {
   const portraitPath = getCharacterPortraitPath(self.character.id);
   const scarTrack = buildTrack(self.character.scars.length);
@@ -131,7 +150,9 @@ export function MobilePlayerCard({
   const scarCards = self.character.scarCards ?? [];
   const afflictions = self.character.afflictions ?? { faceup: [], facedownCount: 0 };
   const scarEffectSummary = scarCards.map((scar) => scar.title).join(", ") || self.character.scars.join(", ");
-  const gearNameById = new Map(self.character.heldGear.map((item) => [item.id, item.name] as const));
+  const suppressedEquipmentInstanceIds = new Set(
+    equipmentSuppressions.filter((suppression) => suppression.active).map((suppression) => suppression.itemInstanceId)
+  );
 
   return (
     <section
@@ -228,7 +249,7 @@ export function MobilePlayerCard({
             <div className="phone-sheet-section-heading">Attributes</div>
             <div className="mobile-player-card-stats phone-sheet-stat-grid">
               {statOrder.map((stat) => {
-                const breakdown = getPhoneStatBreakdown(self, stat);
+                const breakdown = getPhoneStatBreakdown(self, stat, { suppressedInstanceIds: suppressedEquipmentInstanceIds });
                 return (
                   <div
                     key={stat}
@@ -236,16 +257,21 @@ export function MobilePlayerCard({
                     style={getChallengeThemeStyle(stat) as CSSProperties}
                   >
                     <ChallengeBadge stat={stat} value={breakdown.final} label={statAbbreviationById[stat]} active={encounter?.stat === stat} />
-                    {breakdown.gearFollower !== 0 && (
-                      <strong className="phone-stat-bonus">({formatSignedStatBonus(breakdown.gearFollower)})</strong>
+                    {(breakdown.equipped + breakdown.companion) !== 0 && (
+                      <strong className="phone-stat-bonus">({formatSignedStatBonus(breakdown.equipped + breakdown.companion)})</strong>
                     )}
                     <p>{statLabelById[stat]}</p>
                     <small className="phone-stat-breakdown">
-                      Base {breakdown.base} | Permanent {formatSignedStatBonus(breakdown.permanent)} | Gear/Follower{" "}
-                      {formatSignedStatBonus(breakdown.gearFollower)}
-                      {breakdown.gearFollowerSources.length > 0
-                        ? ` (${breakdown.gearFollowerSources.map((source) => `${source.label} ${formatSignedStatBonus(source.value)}`).join(", ")})`
+                      Base {breakdown.base} | Upgrades {formatSignedStatBonus(breakdown.upgrades)} | Equipped{" "}
+                      {formatSignedStatBonus(breakdown.equipped)}
+                      {breakdown.equippedSources.length > 0
+                        ? ` (${breakdown.equippedSources.map((source) => `${source.label} ${formatSignedStatBonus(source.value)}`).join(", ")})`
                         : ""}
+                      {" | "}Companion {formatSignedStatBonus(breakdown.companion)}
+                      {breakdown.companionSources.length > 0
+                        ? ` (${breakdown.companionSources.map((source) => `${source.label} ${formatSignedStatBonus(source.value)}`).join(", ")})`
+                        : ""}
+                      {" | "}Temporary / Status {formatSignedStatBonus(breakdown.temporaryStatus)}
                       {" | "}Final {breakdown.final}
                     </small>
                   </div>
@@ -373,16 +399,20 @@ export function MobilePlayerCard({
           <div className="phone-sheet-section">
             <div className="phone-sheet-section-heading">Equipped Gear</div>
             <div className="phone-sheet-gear-grid">
-              {gearOrder.map((slot) => (
-                <article key={slot} className="phone-sheet-gear-slot">
-                  <span>{gearSlotLabelById[slot]}</span>
-                  <strong>
-                    {self.character.equippedGear[slot]
-                      ? gearNameById.get(self.character.equippedGear[slot]!) ?? "Equipped gear"
-                      : "Empty"}
-                  </strong>
-                </article>
-              ))}
+              {gearOrder.map((slot) => {
+                const item = getEquippedGearItem(self.character, slot);
+                const suppressed = Boolean(item?.instanceId && suppressedEquipmentInstanceIds.has(item.instanceId));
+                const chargeCopy = item ? getEquippedChargeCopy(item) : null;
+                return (
+                  <article key={slot} className={`phone-sheet-gear-slot${suppressed ? " is-suppressed" : ""}`}>
+                    <span>{gearSlotLabelById[slot]}</span>
+                    <strong>{item?.name ?? "Empty"}</strong>
+                    {item ? <small>{suppressed ? `${formatEquippedPassive(item)} · SUPPRESSED` : formatEquippedPassive(item)}</small> : null}
+                    {chargeCopy ? <em aria-label={`${chargeCopy.toLowerCase().replace("·", "")}`}>{chargeCopy}</em> : null}
+                    {item?.effectModel === "exhaust" ? <em>{item.exhausted ? "EXHAUSTED" : "READY"} · REFRESHES NEXT ROUND</em> : null}
+                  </article>
+                );
+              })}
               <article className="phone-sheet-gear-slot">
                 <span>Held</span>
                 <strong>{self.character.heldGear.map((item) => item.name).join(", ") || "None"}</strong>

@@ -10,9 +10,11 @@ import { loadFollowers } from "../src/game/content/followers.js";
 import { loadGear } from "../src/game/content/gear.js";
 import { loadScarCards } from "../src/game/content/scars.js";
 import { loadThreatCards } from "../src/game/content/threats.js";
+import { loadTileChallenges } from "../src/game/content/tileChallenges.js";
 import { getThreatEffectTiming, isThreatEffectKey } from "../src/game/cards/threatEffects.js";
+import { FOLLOWER_ACQUISITION_SOURCES, QA_FOLLOWER_IDS } from "../src/game/data/followerAcquisition.js";
 import { BOARD_SPACES } from "../src/game/data/boardSpaces.js";
-import { validateBoardTextEffectCoverage } from "../src/game/data/boardTextEffects.js";
+import { BOARD_TEXT_EFFECTS, validateBoardTextEffectCoverage } from "../src/game/data/boardTextEffects.js";
 import { createCanonicalSectorGraph, validateCanonicalSectorGraph } from "../src/game/data/canonicalSectorGraph.js";
 import { ashenReachCharacters } from "../src/game/data/characters.js";
 import { missions } from "../src/game/data/missions.js";
@@ -32,10 +34,74 @@ import {
 import { shopCategorySchema, type GearItem } from "../src/game/schema/gear.schema.js";
 import type { ContractCard } from "../src/game/schema/contract.schema.js";
 import { sectorGraphSchema, type SectorNode } from "../src/game/schema/sector.schema.js";
+import { validatePassiveEquipmentCatalog } from "./passive-equipment-validation.js";
+import { validateScarTriggerCatalog } from "../src/game/rules/scarTriggers.js";
+import {
+  validateC1BlockedRuntimeHeatEffects,
+  validateLegacyHeatApprovalManifest,
+  validateLegacyHeatContentRecord,
+  type BlockedRuntimeHeatEffect,
+  type LegacyHeatContentRecord
+} from "./legacy-heat-validation.js";
+import { validateForcedDisplacementContentRecord } from "./forced-displacement-validation.js";
+import { getShopGearCost, getShopGearSellValue } from "../src/game/rules/shopAvailability.js";
+import {
+  ARTIFACT_EXCHANGE_CONTRACT_COST,
+  NORMAL_STARTING_SALVAGE,
+  SOLO_STARTING_SALVAGE
+} from "../src/game/rules/startingLoadout.js";
 
 const sectorsRoot = join(process.cwd(), "content", "sectors");
 const contentRoot = join(process.cwd(), "content");
 const errors: string[] = [];
+
+function collectBlockedRuntimeHeatEffects(): BlockedRuntimeHeatEffect[] {
+  const output: BlockedRuntimeHeatEffect[] = [];
+  const visit = (value: unknown, id: string): void => {
+    if (Array.isArray(value)) return value.forEach((entry) => visit(entry, id));
+    if (!value || typeof value !== "object") return;
+    const record = value as Record<string, unknown>;
+    if (record.type === "gain_heat" || record.type === "gain_heat_all" || record.type === "lose_heat") {
+      output.push({ id, type: record.type });
+    }
+    Object.values(record).forEach((entry) => visit(entry, id));
+  };
+
+  for (const [id, definition] of Object.entries(BOARD_TEXT_EFFECTS)) visit(definition, id);
+  const context = {
+    playerName: "Content validator",
+    sessionMode: "single-player" as const,
+    crownClaims: 0,
+    mirrorPressure: 6,
+    salvageLeverage: 0,
+    engineModeIndex: 0,
+    heldGearCount: 0
+  };
+  for (const scenario of SCENARIOS) visit(scenario.buildConfrontationPlan(context), scenario.id);
+  return output;
+}
+
+errors.push(...validateC1BlockedRuntimeHeatEffects(collectBlockedRuntimeHeatEffects()));
+
+function validateLegacyHeatAuthoring(root: string): void {
+  const records: LegacyHeatContentRecord[] = [];
+  const visit = (directory: string): void => {
+    for (const entry of readdirSync(directory, { withFileTypes: true })) {
+      const path = join(directory, entry.name);
+      if (entry.isDirectory()) visit(path);
+      else if (entry.isFile() && entry.name.endsWith(".json")) {
+        const record = JSON.parse(readFileSync(path, "utf8")) as unknown;
+        records.push({ file: path, record });
+        errors.push(...validateLegacyHeatContentRecord(path, record));
+        errors.push(...validateForcedDisplacementContentRecord(path, record));
+      }
+    }
+  };
+  visit(root);
+  errors.push(...validateLegacyHeatApprovalManifest(records));
+}
+
+validateLegacyHeatAuthoring(contentRoot);
 const loreRestrictedTerms = [
   "Relic",
   "Talisman",
@@ -124,10 +190,12 @@ const characters = loadCharacters();
 const gear = loadGear();
 const threats = loadThreatCards();
 const contracts = loadContracts();
+const tileChallenges = loadTileChallenges();
 const anomalies = loadAnomalyCards();
 const artifacts = loadArtifactCards();
 const followers = loadFollowers();
 const scars = loadScarCards();
+errors.push(...validateScarTriggerCatalog(scars));
 const escalations = loadEscalationCards();
 const afflictions = loadAfflictionCards();
 const canonicalSectors = createCanonicalSectorGraph();
@@ -136,7 +204,9 @@ validateContentFloors();
 validateBoardCoverage();
 validateScenarioCoverage();
 validateCanonicalDecks();
+validateFollowerAcquisitionCoverage();
 validateLoreLanguage();
+validateCanonicalEconomy();
 
 const sectorFiles = readdirSync(sectorsRoot).filter((entry) => entry.endsWith(".json"));
 
@@ -186,11 +256,23 @@ for (const character of characters.values()) {
 }
 
 for (const card of threats.values()) {
-  validateEffect(card.cardType === "enemy" ? card.defeatReward : card.successEffect, `${card.id} reward`);
-  validateEffect(card.cardType === "enemy" ? card.woundOnLoss : card.failEffect, `${card.id} failure`);
+  if (card.cardType === "enemy" && (!Number.isInteger(card.trophyValue) || card.trophyValue <= 0)) {
+    errors.push(`${card.id} must define a positive integer Trophy value`);
+  }
+  if (card.cardType !== "enemy" && "trophyValue" in card) {
+    errors.push(`${card.id} is not an enemy and cannot define a Trophy value`);
+  }
+  const rewardEffect = card.cardType === "enemy" ? card.defeatReward : card.successEffect;
+  if (rewardEffect) validateEffect(rewardEffect, `${card.id} reward`);
+  const failureEffect = card.cardType === "enemy" ? card.woundOnLoss : card.failEffect;
+  if (failureEffect) validateEffect(failureEffect, `${card.id} failure`);
   validateThreatFamily(card);
   validateThreatMetadata(card);
   validateThreatEffectKeys(card);
+  validateGlassChimeSwarmRetirement(card);
+  validateSirenRelayEchoRetirement(card);
+  validateSpindleStaticSquallRetirement(card);
+  validateMemoryTaxGateRetirement(card);
 }
 
 validateThreatRarityCurve();
@@ -198,6 +280,7 @@ validateThreatRarityCurve();
 for (const item of gear.values()) {
   validateGearProgression(item);
 }
+errors.push(...validatePassiveEquipmentCatalog(gear));
 
 for (const contract of contracts.values()) {
   validateEffect(contract.reward, `${contract.id} reward`);
@@ -268,6 +351,37 @@ console.log(
   `Content validation passed (${characters.size} characters, ${gear.size} gear, ${threats.size} threats, ${contracts.size} contracts, ${anomalies.size} anomalies, ${artifacts.size} artifacts, ${followers.size} followers, ${scars.size} scars, ${escalations.size} escalations, ${afflictions.size} afflictions)`
 );
 
+function validateCanonicalEconomy(): void {
+  if (NORMAL_STARTING_SALVAGE !== 3 || SOLO_STARTING_SALVAGE !== 4) {
+    errors.push("Canonical starting Salvage must remain 3 in multiplayer and 4 in solo play");
+  }
+  if (ARTIFACT_EXCHANGE_CONTRACT_COST !== 3) {
+    errors.push("Artifact exchange must cost exactly three completed Contracts");
+  }
+
+  const artifactGear = [...gear.values()].filter((item) => item.tier === "artifact" && !item.id.startsWith("qa_"));
+  const normalShopGear = [...gear.values()].filter((item) => item.tier !== "artifact" && item.normalShopCommon === true);
+  if (artifacts.size !== 30) errors.push(`Canonical Artifact card count must be 30; found ${artifacts.size}`);
+  if (artifactGear.length === 0) errors.push("Artifact exchange has no eligible Artifact gear definitions");
+  if (normalShopGear.length !== 30) errors.push(`Canonical normal shop Equipment count must be 30; found ${normalShopGear.length}`);
+
+  for (const character of characters.values()) {
+    if (character.qaOnly) continue;
+    for (const gearId of character.startingGear ?? []) {
+      if (gear.get(gearId)?.tier === "artifact") {
+        errors.push(`Character ${character.id} cannot start with Artifact ${gearId}`);
+      }
+    }
+  }
+
+  for (const item of normalShopGear) {
+    const price = getShopGearCost(item);
+    const sellValue = getShopGearSellValue(item);
+    if (!Number.isInteger(price) || price <= 0) errors.push(`Shop Equipment ${item.id} has invalid price ${price}`);
+    if (sellValue !== null && sellValue > price) errors.push(`Shop Equipment ${item.id} sells for more than its price`);
+  }
+}
+
 function validateContentFloors(): void {
   const contentTargets = [
     ["threats", threats.size, 40, 120],
@@ -301,6 +415,56 @@ function validateContentFloors(): void {
   const severeThreats = (severityCounts.get(5) ?? 0) / Math.max(threats.size, 1);
   if (severeThreats > 0.2) {
     errors.push(`Severity 5 threats should remain rare; found ${severityCounts.get(5)} of ${threats.size}`);
+  }
+}
+
+function effectGrantsFollower(effect: EncounterEffect | null | undefined, followerId: string): boolean {
+  if (!effect) return false;
+  if (effect.type === "gain_follower") return effect.followerId === followerId;
+  return effect.type === "sequence" && effect.effects.some((entry) => effectGrantsFollower(entry, followerId));
+}
+
+function validateFollowerAcquisitionCoverage(): void {
+  if (followers.size !== 24) errors.push(`Follower catalog must contain exactly 24 definitions; found ${followers.size}`);
+  const normalFollowers = [...followers.values()].filter((follower) => !follower.qaOnly);
+  const qaFollowers = [...followers.values()].filter((follower) => follower.qaOnly);
+  if (normalFollowers.length !== 21 || qaFollowers.length !== 3) {
+    errors.push(`Follower catalog must contain 21 normal and 3 QA-only followers; found ${normalFollowers.length}/${qaFollowers.length}`);
+  }
+
+  for (const follower of normalFollowers) {
+    const sources = FOLLOWER_ACQUISITION_SOURCES.filter((source) => source.followerId === follower.id);
+    if (sources.length === 0) errors.push(`Follower ${follower.id} has no canonical normal-game acquisition source`);
+    if (!follower.activeEffect && !follower.passiveEffect) errors.push(`Follower ${follower.id} has no explicit active or passive ability`);
+  }
+
+  for (const follower of qaFollowers) {
+    if (!QA_FOLLOWER_IDS.has(follower.id)) errors.push(`Unexpected QA-only follower ${follower.id}`);
+  }
+
+  for (const source of FOLLOWER_ACQUISITION_SOURCES) {
+    const follower = followers.get(source.followerId);
+    if (!follower || follower.qaOnly) {
+      errors.push(`Acquisition source ${source.sourceId} references invalid normal follower ${source.followerId}`);
+      continue;
+    }
+    if (source.sourceType === "board") {
+      const [effectKey, choiceId] = source.sourceId.split(":");
+      const definition = BOARD_TEXT_EFFECTS[effectKey!];
+      const grants = choiceId
+        ? effectGrantsFollower(definition?.choices?.find((choice) => choice.id === choiceId)?.effect, source.followerId)
+        : effectGrantsFollower(definition?.effect, source.followerId) || Boolean(definition?.choices?.some((choice) => effectGrantsFollower(choice.effect, source.followerId)));
+      if (!grants) errors.push(`Board source ${source.sourceId} does not grant ${source.followerId}`);
+    }
+    if (source.sourceType === "artifact") {
+      const artifact = artifacts.get(source.sourceId);
+      if (!artifact || !effectGrantsFollower(artifact.resolveEffect, source.followerId)) errors.push(`Artifact source ${source.sourceId} does not grant ${source.followerId}`);
+      if (!canonicalSectors.some((sector) => sector.encounterDecks.artifact.includes(source.sourceId))) errors.push(`Artifact source ${source.sourceId} is absent from every canonical sector deck`);
+    }
+    if (source.sourceType === "anomaly") {
+      const anomaly = anomalies.get(source.sourceId);
+      if (!anomaly || !effectGrantsFollower(anomaly.resolveEffect, source.followerId)) errors.push(`Anomaly source ${source.sourceId} does not grant ${source.followerId}`);
+    }
   }
 }
 
@@ -555,6 +719,82 @@ function validateThreatEffectKeys(card: ThreatCard): void {
   }
 }
 
+function validateGlassChimeSwarmRetirement(card: ThreatCard): void {
+  if (card.id !== "glass-chime-swarm") return;
+  if (card.cardType !== "hazard") {
+    errors.push("glass-chime-swarm must remain a hazard");
+    return;
+  }
+  if (
+    card.failEffect.type !== "next_non_battle_test_modifier" ||
+    card.failEffect.amount !== -1 ||
+    card.failEffect.sourceCardId !== "glass-chime-swarm"
+  ) {
+    errors.push("glass-chime-swarm must use the approved owner-only next non-battle test -1 modifier");
+  }
+  if (JSON.stringify(card).match(/gain_heat|\bHeat\b/)) {
+    errors.push("glass-chime-swarm must not expose a legacy Heat effect or player-facing Heat text");
+  }
+  if (card.text !== "The swarm breaks your concentration. On failure, subtract 1 from your next test. This penalty does not affect battles.") {
+    errors.push("glass-chime-swarm must use the approved final player-facing wording");
+  }
+}
+
+function validateSirenRelayEchoRetirement(card: ThreatCard): void {
+  if (card.id !== "siren-relay-echo") return;
+  const expectedText = "If you succeed, gain +1 on your next non-battle Command test. If you fail, suffer -1 on your next non-battle Command test.";
+  const validEffect = (effect: unknown, amount: -1 | 1) => {
+    const candidate = effect as Record<string, unknown>;
+    return candidate.type === "next_non_battle_test_modifier" && candidate.amount === amount &&
+      candidate.sourceCardId === "siren-relay-echo" && candidate.stat === "command" && candidate.context === "nonBattleTest";
+  };
+  if (card.cardType !== "hazard" || card.stat !== "command" || !validEffect(card.successEffect, 1) || !validEffect(card.failEffect, -1)) {
+    errors.push("siren-relay-echo must use the approved signed owner-only non-battle Command modifier");
+  }
+  if (card.text !== expectedText) errors.push("siren-relay-echo must use the approved final player-facing wording");
+  if (JSON.stringify(card).match(/gain_heat|lose_heat|\bHeat\b/)) {
+    errors.push("siren-relay-echo must not expose a legacy Heat effect or player-facing Heat text");
+  }
+}
+
+function validateSpindleStaticSquallRetirement(card: ThreatCard): void {
+  if (card.id !== "spindle-static-squall") return;
+  if (card.cardType !== "hazard") {
+    errors.push("spindle-static-squall must remain a hazard");
+    return;
+  }
+  if (
+    card.failEffect.type !== "next_normal_movement_roll_modifier" ||
+    card.failEffect.amount !== -1 ||
+    card.failEffect.minimumResult !== 1 ||
+    card.failEffect.sourceCardId !== "spindle-static-squall"
+  ) {
+    errors.push("spindle-static-squall must use the approved owner-only next normal movement roll -1 modifier with minimum 1");
+  }
+  if (JSON.stringify(card).match(/gain_heat|\bHeat\b/)) {
+    errors.push("spindle-static-squall must not expose a legacy Heat effect or player-facing Heat text");
+  }
+  if (card.text !== "The squall corrupts your bearing. On failure, reduce your next movement roll by 1, to a minimum of 1.") {
+    errors.push("spindle-static-squall must use the approved final player-facing wording");
+  }
+}
+
+function validateMemoryTaxGateRetirement(card: ThreatCard): void {
+  if (card.id !== "memory-tax-gate") return;
+  const expectedText = "A toll gate opens only after demanding a name the operative would rather keep buried. On failure, choose one: lose 1 Salvage (available only if you have at least 1 Salvage); or suffer -1 on your next non-battle test.";
+  if (
+    card.cardType !== "hazard" ||
+    card.failEffect.type !== "memory_tax_choice" ||
+    card.failEffect.sourceCardId !== "memory-tax-gate"
+  ) {
+    errors.push("memory-tax-gate must use the approved owner-private Salvage-or-next-test modifier choice");
+  }
+  if (card.text !== expectedText) errors.push("memory-tax-gate must use the approved final player-facing wording");
+  if (JSON.stringify(card).match(/gain_heat|lose_heat|\bHeat\b/)) {
+    errors.push("memory-tax-gate must not expose a legacy Heat effect or player-facing Heat text");
+  }
+}
+
 function validateThreatFamily(card: ThreatCard): void {
   if (!card.enemyFamily) {
     errors.push(`${card.id} is missing enemyFamily`);
@@ -657,6 +897,21 @@ function validateContractObjective(contract: ContractCard): void {
     const requiredShopType = contract.objective.requiredShopType;
     if (requiredSectorId && !BOARD_SPACES.some((space) => space.id === requiredSectorId && (space.tags.includes("shop") || space.tags.includes("risk-shop")))) errors.push(`${contract.id} references invalid shop sector ${requiredSectorId}`);
     if (requiredShopType && !BOARD_SPACES.some((space) => (space.tags.includes("shop") || space.tags.includes("risk-shop")) && space.tags.includes(requiredShopType as never))) errors.push(`${contract.id} references invalid shop type ${requiredShopType}`);
+  }
+  if (contract.objective.type === "tileChallengeResolved") {
+    const objective = contract.objective;
+    if (!objective.challengeId && !objective.sectorId && !objective.challengeType && !objective.challengeTag) errors.push(`${contract.id} tile challenge objective requires at least one authored matcher`);
+    const candidates = [...tileChallenges.values()].filter((challenge) =>
+      (!objective.challengeId || challenge.id === objective.challengeId) &&
+      (!objective.sectorId || challenge.sectorId === objective.sectorId) &&
+      (!objective.challengeType || challenge.challengeType === objective.challengeType) &&
+      (!objective.challengeTag || challenge.tags.includes(objective.challengeTag))
+    );
+    if (objective.challengeId && !tileChallenges.has(objective.challengeId)) errors.push(`${contract.id} references missing tile challenge ${objective.challengeId}`);
+    if (objective.sectorId && !BOARD_SPACES.some((space) => space.id === objective.sectorId)) errors.push(`${contract.id} references missing challenge sector ${objective.sectorId}`);
+    if (objective.challengeId && objective.sectorId && tileChallenges.get(objective.challengeId)?.sectorId !== objective.sectorId) errors.push(`${contract.id} references ${objective.challengeId} outside its authored sector ${objective.sectorId}`);
+    if (objective.challengeTag && ![...tileChallenges.values()].some((challenge) => challenge.tags.includes(objective.challengeTag!))) errors.push(`${contract.id} references unsupported challenge tag ${objective.challengeTag}`);
+    if (candidates.length === 0) errors.push(`${contract.id} has no reachable tile challenge completion path`);
   }
 }
 

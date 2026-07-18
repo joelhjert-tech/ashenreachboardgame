@@ -4,7 +4,7 @@
   "cardType": "enemy",
   "title": "Crown-Bell Baron",
   "enemyName": "Crown-Bell Baron",
-  "text": "A velvet-coated sector magnate arrives with brass writ-drones, fake civic authority, and a private mob that calls every route fee a public service.",
+  "text": "A velvet-coated sector magnate arrives with brass writ-drones, fake civic authority, and a private mob that calls every route fee a public service. If you lose, lose up to 1 Salvage.",
   "flavor": "He never conquered a district. He invoiced it until it knelt.",
   "severity": 3,
   "region": "middle",
@@ -16,15 +16,14 @@
     "text": "You seize the Baron's stamped writ case and expose a route-fee fraud."
   },
   "woundOnLoss": {
-    "type": "gain_heat",
-    "amount": 2
+    "type": "lose_salvage",
+    "amount": 1
   },
   "enemyFamily": "bureaucracy",
   "threatLane": "yellow",
   "rarity": "uncommon",
   "tempo": "stall",
   "resourceTags": [
-    "heat",
     "salvage",
     "trophy"
   ],

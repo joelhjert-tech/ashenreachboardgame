@@ -33,10 +33,6 @@
       {
         "type": "take_wound",
         "amount": 2
-      },
-      {
-        "type": "gain_heat",
-        "amount": 1
       }
     ]
   },
@@ -46,7 +42,6 @@
   "tempo": "push",
   "resourceTags": [
     "gear",
-    "heat",
     "trophy",
     "wound"
   ]

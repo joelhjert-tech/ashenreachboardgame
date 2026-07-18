@@ -1,4 +1,4 @@
-import type { GameState, SessionMode } from "../schema/session.schema.js";
+import { createEmptyScenarioPreparationState, type GameState, type ScenarioPreparationState, type SessionMode } from "../schema/session.schema.js";
 import { ENGINE_MODE_ROTATION, getEngineModeName } from "../data/scenarios.js";
 import { getEquippedGearBonus } from "../engine/gear.js";
 import { getEscalationModifier } from "../engine/escalation.js";
@@ -87,25 +87,25 @@ function getCrownHolderSummary(state: GameState): string {
 
 const SCENARIO_AMBIENT_RULES: Record<string, ScenarioAmbientRule> = {
   scenario_broken_seal: {
-    initialProgress: { sealTokens: 6 },
+    initialProgress: {},
     describePressure: (state) => {
-      const seals = state.scenarioProgress.sealTokens ?? 0;
-      const collapses = state.scenarioProgress.sealCollapses ?? 0;
+      const seals = state.scenarioPreparation.resources.sealIntegrity ?? 0;
+      const collapses = state.scenarioPreparation.resources.sealCollapses ?? 0;
       return isSinglePlayerMode(state.sessionMode)
         ? `${seals} seals remain. Solo pressure removes a seal on 1, reveals local Blue pressure on 2-3, and holds on 4-6. Collapses: ${collapses}.`
         : `${seals} seals remain. Pressure removes seals on 1-2, reveals local Blue pressure on 3-4, and holds on 5-6. Collapses: ${collapses}.`;
     },
     buildTelemetry: (state) => [
-      { label: "Seal Tokens", value: String(state.scenarioProgress.sealTokens ?? 0) },
+      { label: "Seal Integrity", value: String(state.scenarioPreparation.resources.sealIntegrity ?? 0) },
       {
         label: "Turn Pressure",
         value: isSinglePlayerMode(state.sessionMode) ? "1 weaken | 2-3 threat | 4-6 hold" : "1-2 weaken | 3-4 threat | 5-6 hold"
       },
-      { label: "Collapses", value: String(state.scenarioProgress.sealCollapses ?? 0) },
-      { label: "Restoration", value: `${state.scenarioProgress.sealRestorationMarks ?? 0}/2` }
+      { label: "Collapses", value: String(state.scenarioPreparation.resources.sealCollapses ?? 0) },
+      { label: "Final Restoration", value: `${state.scenarioConfrontation.progress.restorationMarks ?? 0}/2` }
     ],
-    onTurnStart: ({ state, rollDie, getCounter, seatId }) => {
-      if (!Object.hasOwn(state.scenarioProgress, "sealTokens")) {
+    onTurnStart: ({ state, rollDie }) => {
+      if (!Object.hasOwn(state.scenarioPreparation.resources, "sealIntegrity")) {
         return null;
       }
 
@@ -115,18 +115,23 @@ const SCENARIO_AMBIENT_RULES: Record<string, ScenarioAmbientRule> = {
       const sealTokenLimit = getBrokenSealTokenLimit(state.sessionMode);
 
       if (roll <= weakenRoll) {
-        const nextSealTokens = Math.max(0, getCounter("sealTokens", sealTokenLimit) - 1);
+        const currentSealTokens = state.scenarioPreparation.resources.sealIntegrity ?? sealTokenLimit;
+        const nextSealTokens = Math.max(0, currentSealTokens - 1);
         const collapsed = nextSealTokens === 0;
-        const nextCollapses = collapsed ? getCounter("sealCollapses", 0) + 1 : getCounter("sealCollapses", 0);
+        const currentCollapses = state.scenarioPreparation.resources.sealCollapses ?? 0;
+        const nextCollapses = collapsed ? currentCollapses + 1 : currentCollapses;
         const resetSealTokens = collapsed ? Math.min(3, sealTokenLimit) : nextSealTokens;
 
         return {
           updater: (state) => ({
             ...state,
-            scenarioProgress: {
-              ...state.scenarioProgress,
-              sealTokens: resetSealTokens,
-              ...(collapsed ? { sealCollapses: nextCollapses } : {})
+            scenarioPreparation: {
+              ...state.scenarioPreparation,
+              resources: {
+                ...state.scenarioPreparation.resources,
+                sealIntegrity: resetSealTokens,
+                ...(collapsed ? { sealCollapses: nextCollapses } : {})
+              }
             },
             players:
               collapsed
@@ -159,25 +164,6 @@ const SCENARIO_AMBIENT_RULES: Record<string, ScenarioAmbientRule> = {
       }
 
       return null;
-    },
-    onEnemyDefeat: ({ state, getCounter }) => {
-      if (!Object.hasOwn(state.scenarioProgress, "sealTokens")) {
-        return null;
-      }
-
-      const sealTokenLimit = getBrokenSealTokenLimit(state.sessionMode);
-      const nextSealTokens = Math.min(sealTokenLimit, getCounter("sealTokens", sealTokenLimit) + 1);
-
-      return {
-        updater: (state) => ({
-          ...state,
-          scenarioProgress: {
-            ...state.scenarioProgress,
-            sealTokens: nextSealTokens
-          }
-        }),
-        summary: `The enemy defeat strengthens the ward. ${nextSealTokens} seal tokens now stand.`
-      };
     }
   },
   scenario_throne_of_ash: {
@@ -674,11 +660,18 @@ export function createInitialScenarioProgress(
 ): Record<string, number> {
   const progress = { ...(getScenarioRule(scenarioId)?.initialProgress ?? {}) };
 
-  if (scenarioId === "scenario_broken_seal") {
-    progress.sealTokens = getBrokenSealTokenLimit(sessionMode);
-  }
-
   return progress;
+}
+
+export function createInitialScenarioPreparation(
+  scenarioId: string,
+  sessionMode: SessionMode = "multiplayer"
+): ScenarioPreparationState {
+  const preparation: ScenarioPreparationState = createEmptyScenarioPreparationState();
+  if (scenarioId === "scenario_broken_seal") {
+    preparation.resources.sealIntegrity = getBrokenSealTokenLimit(sessionMode);
+  }
+  return preparation;
 }
 
 export function resolveScenarioTurnStart(context: ScenarioAmbientContext): ScenarioAmbientResolution | null {

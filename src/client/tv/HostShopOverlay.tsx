@@ -46,6 +46,7 @@ interface HostShopDisplayModel {
   stockRevealed: boolean;
   riskActive: boolean;
   transactionComplete: boolean;
+  transactionTitle: string | null;
   outcome: string | null;
   guidance: string;
   resultDeltas: ResultDelta[];
@@ -60,10 +61,9 @@ function toTitleCase(value: string): string {
 function formatCost(cost: PublicShopCost): string {
   const entries = [
     cost.salvage !== undefined ? `${cost.salvage} Salvage` : null,
-    cost.heat !== undefined ? `${cost.heat} Risk` : null,
     cost.wounds !== undefined ? `${cost.wounds} Wound${cost.wounds === 1 ? "" : "s"}` : null,
     cost.trophies !== undefined ? `${cost.trophies} Trophies` : null,
-    cost.completedContracts !== undefined ? `${cost.completedContracts} Completed Missions` : null,
+    cost.completedContracts !== undefined ? `${cost.completedContracts} Completed Contracts` : null,
     cost.scars !== undefined ? `${cost.scars} Scars` : null
   ].filter((entry): entry is string => Boolean(entry));
 
@@ -74,7 +74,7 @@ function formatShopCategory(value: string | undefined): string {
   return value ? toTitleCase(value) : "Public Shop";
 }
 
-function servicePreview(service: PublicShopEncounterState["services"][number]): ShopPreviewCard {
+function servicePreview(service: PublicShopEncounterState["services"][number], completedContracts = 0): ShopPreviewCard {
   const isSellService = service.id === "sell-gear";
   const serviceText = `${service.id} ${service.label}`.toLowerCase();
   const icon: ShopIcon = isSellService
@@ -89,10 +89,12 @@ function servicePreview(service: PublicShopEncounterState["services"][number]): 
     id: `service-${service.id}`,
     eyebrow: service.shopCategory ? formatShopCategory(service.shopCategory) : isSellService ? "Sell" : "Service",
     title: service.label,
-    cost: formatCost(service.cost),
+    cost: service.cost.completedContracts !== undefined
+      ? `${completedContracts}/${service.cost.completedContracts} Completed Contracts`
+      : formatCost(service.cost),
     summary: service.enabled ? "Confirm this service from the active player's phone." : (service.disabledReason ?? "Unavailable"),
     footer: service.risk ?? (service.enabled ? "Phone confirms" : "Unavailable"),
-    tone: isSellService ? "sell" : service.risk || service.cost.heat ? "stock" : "service",
+    tone: isSellService ? "sell" : service.risk ? "stock" : "service",
     enabled: service.enabled,
     icon
   };
@@ -158,7 +160,7 @@ function buildPreviewCards(shopEncounter: PublicShopEncounterState, isBlocked: b
     return stockCards;
   }
 
-  return shopEncounter.services.slice(0, 4).map(servicePreview);
+  return shopEncounter.services.slice(0, 4).map((service) => servicePreview(service, shopEncounter.activePlayer.completedContracts));
 }
 
 function buildShopType(shopEncounter: PublicShopEncounterState): string {
@@ -175,7 +177,7 @@ function buildShopType(shopEncounter: PublicShopEncounterState): string {
 function shopResultDeltas(deltas: ResultDelta[] | null | undefined): ResultDelta[] {
   const shopTypes = new Set<ResultDelta["type"]>(["itemBought", "itemSold", "salvage", "wound", "scarGained", "shopUnlocked"]);
 
-  return (deltas ?? []).filter((delta) => delta.type !== "heat" && (delta.source?.startsWith("shop:") || shopTypes.has(delta.type)));
+  return (deltas ?? []).filter((delta) => delta.source?.startsWith("shop:") || shopTypes.has(delta.type));
 }
 
 function buildFromPayload(shopEncounter: PublicShopEncounterState, resultDeltas: ResultDelta[]): HostShopDisplayModel {
@@ -215,15 +217,20 @@ function buildFromPayload(shopEncounter: PublicShopEncounterState, resultDeltas:
     blockingLanes,
     previewCards: isBlocked ? [blockedPreview({ blockedReasonText, blockingLanes })] : baseCards.length > 0 ? baseCards : [emptyPreview()],
     stockRevealed: stockCount > 0,
-    riskActive: shopEncounter.status === "dangerous" || shopEncounter.services.some((service) => Boolean(service.risk || service.cost.heat)),
+    riskActive: shopEncounter.status === "dangerous" || shopEncounter.services.some((service) => Boolean(service.risk)),
     transactionComplete: Boolean(shopEncounter.recentOutcome),
+    transactionTitle: shopEncounter.recentOutcome?.gained
+      ? `Bought ${shopEncounter.recentOutcome.gained}`
+      : shopEncounter.recentOutcome?.sold
+        ? `Sold ${shopEncounter.recentOutcome.sold}`
+        : shopEncounter.recentOutcome ? "Shop action complete" : null,
     outcome: shopEncounter.recentOutcome?.summary ?? null,
     guidance: isBlocked ? "Clear the threat lock before trade resumes." : "Choose on player phone",
     resultDeltas
   };
 }
 
-function buildFallbackModel(activePlayer: PublicPlayer): HostShopDisplayModel | null {
+function buildFallbackModel(activePlayer: PublicPlayer, playerName: string): HostShopDisplayModel | null {
   const space = getBoardSpace(activePlayer.sectorId);
 
   if (!space || !space.tags.some((tag) => tag === "shop" || tag === "risk-shop")) {
@@ -234,14 +241,14 @@ function buildFallbackModel(activePlayer: PublicPlayer): HostShopDisplayModel | 
   const status: ShopStatus = space.tags.includes("risk-shop") ? "DANGEROUS" : "OPEN";
 
   return {
-    playerName: activePlayer.character.name,
+    playerName,
     salvage: activePlayer.character.salvage ?? null,
     shopName: space.name,
     sectorName: space.name,
     shopType: serviceTags.map(toTitleCase).join(" / ") || toTitleCase(space.tier),
     shopCategory: "Public Shop",
     status,
-    statusCopy: `Waiting on ${activePlayer.character.name} to choose a shop service.`,
+    statusCopy: `Waiting on ${playerName} to choose a shop service.`,
     stockCount: 0,
     sellableCount: 0,
     threatLockCount: 0,
@@ -251,6 +258,7 @@ function buildFallbackModel(activePlayer: PublicPlayer): HostShopDisplayModel | 
     stockRevealed: false,
     riskActive: status === "DANGEROUS",
     transactionComplete: false,
+    transactionTitle: null,
     outcome: null,
     guidance: "Choose on player phone",
     resultDeltas: []
@@ -263,7 +271,10 @@ function buildShopModel(
 ): HostShopDisplayModel | null {
   return patch.payload.shopEncounter
     ? buildFromPayload(patch.payload.shopEncounter, shopResultDeltas(patch.payload.publicResultDeltas))
-    : buildFallbackModel(activePlayer);
+    : buildFallbackModel(
+        activePlayer,
+        patch.payload.seats.find((seat) => seat.seatId === activePlayer.seatId)?.displayName ?? activePlayer.character.name
+      );
 }
 
 function HostShopPreviewCard({ card, index }: { card: ShopPreviewCard; index: number }): ReactElement {
@@ -408,6 +419,15 @@ export function HostShopOverlay({
             ))}
           </section>
 
+          {model.transactionComplete && (
+            <section className="host-shop-transaction-focus" role="status" aria-live="polite" data-testid="host-shop-transaction-focus">
+              <span>Transaction complete</span>
+              <strong>{model.transactionTitle}</strong>
+              <p>{model.outcome}</p>
+              <ResultDeltaRow deltas={model.resultDeltas} publicOnly className="host-shop-delta-row" />
+            </section>
+          )}
+
           {model.status === "BLOCKED" && (
             <section className="host-shop-threat-list" aria-label="Blocking threats">
               {model.blockingLanes.length > 0 ? (
@@ -432,15 +452,12 @@ export function HostShopOverlay({
 
         <HostShopStatusPanel model={model} />
 
-        <section className="host-shop-outcome" aria-label="Market result" data-testid="host-shop-outcome">
-          <p>{model.outcome ?? `${model.playerName} is using ${model.shopName}.`}</p>
-          {model.resultDeltas.length > 0 ? (
+        {!model.transactionComplete && (model.outcome || model.resultDeltas.length > 0 || model.status === "BLOCKED") && (
+          <section className="host-shop-outcome" aria-label="Market result" data-testid="host-shop-outcome">
+            <p>{model.outcome ?? model.blockedReasonText ?? "Trade is suspended."}</p>
             <ResultDeltaRow deltas={model.resultDeltas} publicOnly className="host-shop-delta-row" />
-          ) : (
-            <p>{model.stockRevealed ? "Equipment stock is revealed." : model.status === "BLOCKED" ? "Trade is suspended." : "No equipment available until the phone reveals stock."}</p>
-          )}
-          <p>{model.guidance}</p>
-        </section>
+          </section>
+        )}
       </div>
     </section>
   );

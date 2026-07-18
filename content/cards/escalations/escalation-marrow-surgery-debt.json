@@ -6,9 +6,5 @@
   "flavor": "You can leave the table alive and still owe it blood.",
   "step": 3,
   "resolutionSummary": "Surgery debt followed the party as a new lasting mark.",
-  "resolveEffect": {
-    "type": "gain_heat",
-    "amount": 1
-  },
   "escalationDelta": 1
 }

@@ -156,7 +156,10 @@ describe("play-feel guardrails", () => {
     const server = new GameRoomServer(
       createGateState({
         activeScenarioId: "scenario_broken_seal",
-        scenarioProgress: { sealTokens: 3 }
+        scenarioPreparation: {
+          ...createGateState().scenarioPreparation,
+          resources: { sealIntegrity: 3 }
+        }
       }),
       [],
       createSequenceRandomSource([0])
@@ -174,7 +177,10 @@ describe("play-feel guardrails", () => {
     const server = new GameRoomServer(
       createGateState({
         activeScenarioId: "scenario_broken_seal",
-        scenarioProgress: { sealTokens: 4 }
+        scenarioPreparation: {
+          ...createGateState().scenarioPreparation,
+          resources: { sealIntegrity: 4 }
+        }
       }),
       [],
       createSequenceRandomSource([5, 5, 5, 5, 5, 5])
@@ -185,7 +191,7 @@ describe("play-feel guardrails", () => {
       seatId: "seat-1"
     });
 
-    expect(server.getState().scenarioProgress.sealRestorationMarks).toBeGreaterThan(0);
+    expect(server.getState().scenarioConfrontation.progress.restorationMarks).toBeGreaterThan(0);
   });
 
   it("eases solo combat difficulty by board tier without changing multiplayer", () => {

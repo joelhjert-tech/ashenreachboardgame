@@ -3,7 +3,7 @@
   "type": "threat",
   "cardType": "hazard",
   "title": "Shattered Barricade",
-  "text": "A barricade collapses outward in a cough of teeth, rebar, and old warning plates.",
+  "text": "The breach broadcasts your position. Advance Global Escalation by 1.",
   "flavor": "Someone built it to keep danger out. The danger learned carpentry.",
   "severity": 2,
   "stat": "forge",
@@ -13,7 +13,7 @@
     "text": "You marked a clear breach through the shattered barricade."
   },
   "failEffect": {
-    "type": "take_wound",
+    "type": "advance_escalation",
     "amount": 1
   },
   "enemyFamily": "hazard",
@@ -24,6 +24,6 @@
   "tempo": "stall",
   "resourceTags": [
     "movement",
-    "wound"
+    "escalation"
   ]
 }

@@ -52,10 +52,12 @@ import type {
   ContractCard
 } from "../shared/types.js";
 import { HostPlayerCard } from "./HostPlayerCard.js";
-import { HostBattleOverlay } from "./HostBattleOverlay.js";
+import { HostBattleChamber } from "./HostBattleChamber.js";
 import { isHostBattleActive } from "./hostBattleState.js";
+import { hostPresentationTimings } from "../shared/motionTokens.js";
 import { HostShopOverlay } from "./HostShopOverlay.js";
 import { isHostShopActive } from "./hostShopState.js";
+import { HostMovementJourney } from "./HostMovementJourney.js";
 import { DiceRollScene } from "./DiceRollScene.js";
 import { JoinQrCard } from "./JoinQrCard.js";
 import { TacticalMapBoard } from "./TacticalMapBoard.js";
@@ -103,8 +105,6 @@ function formatContractRewardSummary(contract: ContractCard): string {
       return "Reward: follower";
     case "gain_trophy":
       return `Reward: ${(reward as { amount?: number }).amount ?? 1} trophy`;
-    case "lose_heat":
-      return "Reward: scar relief";
     case "heal_wound":
       return `Reward: heal ${(reward as { amount?: number }).amount ?? 1} wound`;
     case "gain_note":
@@ -268,7 +268,11 @@ function getCurrentStepCopy(
 
   if (publicPatch.phase === "navigation") {
     if (publicPatch.payload.movementPlanner?.active) {
-      return `${activePlayer?.character.name ?? "The active operative"} rolled ${publicPatch.payload.movementPlanner.movementValue} and is choosing a legal destination.`;
+      const planner = publicPatch.payload.movementPlanner;
+      const spindle = planner.modifierSources?.find((source) => source.label === "Spindle Static Squall");
+      return spindle && planner.rolledValue !== undefined
+        ? `${activePlayer?.character.name ?? "The active operative"} rolled ${planner.rolledValue}; Spindle Static Squall ${spindle.value}; final movement allowance ${planner.movementValue}. Choose a legal destination.`
+        : `${activePlayer?.character.name ?? "The active operative"} rolled ${planner.movementValue} and is choosing a legal destination.`;
     }
 
     return `Waiting on ${activePlayer?.character.name ?? "the active operative"} to roll movement.`;
@@ -362,7 +366,8 @@ function getScenarioStatus(patch: StatePatch<PublicPatchPayload> | null) {
       confrontationSteps: [] as string[],
       victoryText: "Create a room to load the active scenario.",
       telemetry: [] as ScenarioTelemetryItem[],
-      nemesis: null as ActiveNemesisSummary | null
+      nemesis: null as ActiveNemesisSummary | null,
+      ownership: null
     };
   }
 
@@ -396,7 +401,8 @@ function getScenarioStatus(patch: StatePatch<PublicPatchPayload> | null) {
     confrontationSteps: scenario.confrontationSteps,
     victoryText: scenario.victoryText,
     telemetry: patch?.payload.scenarioTelemetry ?? [],
-    nemesis
+    nemesis,
+    ownership: patch?.payload.scenarioState ?? null
   };
 }
 
@@ -582,6 +588,8 @@ interface HostStateBannerProps {
   readyCount: number;
   battleMode: boolean;
   shopMode: boolean;
+  connectionStatus: "idle" | "connecting" | "open" | "closed";
+  synchronized: boolean;
 }
 
 interface HostStateBannerModel {
@@ -607,7 +615,16 @@ function promptToneToHostTone(tone: ExplainabilityTone): HostStateBannerModel["t
   return tone;
 }
 
-function getHostStateBannerModel({ patch, roomCode }: HostStateBannerProps): HostStateBannerModel {
+function getHostStateBannerModel({ patch, roomCode, activePlayer, connectionStatus, synchronized }: HostStateBannerProps): HostStateBannerModel {
+  if (patch && (connectionStatus === "closed" || connectionStatus === "connecting" || !synchronized)) {
+    return {
+      label: connectionStatus === "closed" ? "Host connection lost" : "Reconnecting to game server",
+      detail: "The last safe board position is preserved while authoritative state is restored.",
+      meta: "Player actions are not shown until synchronization completes",
+      tone: "danger"
+    };
+  }
+
   if (!roomCode || !patch) {
     return {
       label: "Host setup",
@@ -617,13 +634,146 @@ function getHostStateBannerModel({ patch, roomCode }: HostStateBannerProps): Hos
     };
   }
 
+  const activeSeatId = patch.payload.turnOrder[patch.payload.activeSeatIndex] ?? null;
+  const activeSeat = patch.payload.seats.find((seat) => seat.seatId === activeSeatId) ?? null;
+  if (patch.payload.status === "active" && activeSeat?.displayName && activeSeat.connected === false) {
+    return {
+      label: "Operative disconnected",
+      detail: `Reconnecting ${activeSeat.displayName}. The board remains paused at the authoritative state.`,
+      meta: "Waiting for player phone to reconnect",
+      tone: "danger"
+    };
+  }
+
+  if (patch.payload.pendingEncounterDecision) {
+    const seatLabels = getSeatLabelMap(patch);
+    const ownerLabel = seatLabels[patch.payload.pendingEncounterDecision.seatId] ?? "Active operative";
+    return {
+      label: "Encounter payment",
+      detail: `Waiting for ${ownerLabel} to resolve ${patch.payload.pendingEncounterDecision.sourceTitle}.`,
+      meta: "Owner phone must answer",
+      tone: "active"
+    };
+  }
+
+  if (patch.payload.pendingForcedDestinationChoice) {
+    const seatLabels = getSeatLabelMap(patch);
+    const ownerLabel = seatLabels[patch.payload.pendingForcedDestinationChoice.ownerSeatId] ?? "Active operative";
+    return {
+      label: "Choose the false route",
+      detail: `Waiting for ${ownerLabel} to choose a route for ${patch.payload.pendingForcedDestinationChoice.sourceTitle}.`,
+      meta: "Owner phone must answer",
+      tone: "active"
+    };
+  }
+
+  if (patch.payload.pendingDisplacement) {
+    const seatLabels = getSeatLabelMap(patch);
+    const ownerLabel = seatLabels[patch.payload.pendingDisplacement.seatId] ?? "Active operative";
+    return {
+      label: "Displacement pending",
+      detail: patch.payload.pendingDisplacement.direction && patch.payload.pendingDisplacement.destinationSectorName
+        ? `Waiting for ${ownerLabel} to resolve ${patch.payload.pendingDisplacement.sourceTitle}: ${patch.payload.pendingDisplacement.direction} to ${patch.payload.pendingDisplacement.destinationSectorName}.`
+        : `Waiting for ${ownerLabel} to resolve ${patch.payload.pendingDisplacement.sourceTitle}.`,
+      meta: "Selected route locked",
+      tone: "active"
+    };
+  }
+
+  if (patch.payload.pendingOrderedConsequence) {
+    const seatLabels = getSeatLabelMap(patch);
+    const ownerLabel = seatLabels[patch.payload.pendingOrderedConsequence.seatId] ?? "Active operative";
+    const consequence = patch.payload.pendingOrderedConsequence;
+    return {
+      label: "Reaction pending",
+      detail: `Waiting for ${ownerLabel} to resolve ${consequence.sourceId.replaceAll("-", " ")}.`,
+      meta: `${consequence.actualWounds} Wound${consequence.actualWounds === 1 ? "" : "s"} applied${consequence.preventedWounds > 0 ? ` · ${consequence.preventedWounds} prevented` : ""}`,
+      tone: "danger"
+    };
+  }
+
+  if (patch.payload.scarTriggerStatus) {
+    const seatLabels = getSeatLabelMap(patch);
+    const ownerLabel = seatLabels[patch.payload.scarTriggerStatus.seatId] ?? "Active operative";
+    return {
+      label: "Scar consequence pending",
+      detail: `Waiting for ${ownerLabel} to resolve ${patch.payload.scarTriggerStatus.scarTitle}.`,
+      meta: "Owner phone must continue · Scar already acquired",
+      tone: "danger"
+    };
+  }
+
+  if (patch.payload.scarResolutionStatus) {
+    const seatLabels = getSeatLabelMap(patch);
+    const ownerLabel = seatLabels[patch.payload.scarResolutionStatus.seatId] ?? "Active operative";
+    return {
+      label: "Scar consequence resolved",
+      detail: `${ownerLabel} resolved ${patch.payload.scarResolutionStatus.scarTitle}.`,
+      meta: "Authoritative consequence complete",
+      tone: "active"
+    };
+  }
+
+  if (activePlayer?.character.status === "recalled") {
+    return {
+      label: "Operative recalled",
+      detail: patch.payload.outcomeSummary?.summary ?? `${activePlayer.character.name} reached the Wound threshold and left the field.`,
+      meta: "Recall is not defeat · replacement continues on player phone",
+      tone: "danger"
+    };
+  }
+
+  if (patch.payload.outcomeSummary?.encounterCardId === "suture-storm") {
+    return {
+      label: "Reaction sequence complete",
+      detail: patch.payload.outcomeSummary.summary,
+      meta: "Authoritative consequence resolved once",
+      tone: patch.payload.outcomeSummary.success ? "active" : "danger"
+    };
+  }
+
   const prompt = buildCurrentTablePrompt(patch);
+  if (patch.payload.activeResolution?.source === "movement") {
+    const destinationName = patch.payload.activeResolution.card?.title ?? "the destination";
+    return {
+      label: "Destination challenge",
+      detail: `Waiting on ${activeSeat?.displayName ?? activePlayer?.character.name ?? "the active operative"} to resolve ${destinationName}.`,
+      meta: prompt.availableActionSummary ?? "Resolve on the active phone",
+      tone: "active"
+    };
+  }
+
+  if (patch.payload.pendingTileChallenge && patch.payload.activeResolution) {
+    const challengeName = patch.payload.activeResolution.card?.title ?? "the destination challenge";
+    return {
+      label: "Tile challenge",
+      detail: `Waiting on ${activeSeat?.displayName ?? activePlayer?.character.name ?? "the active operative"} to resolve ${challengeName}.`,
+      meta: prompt.availableActionSummary ?? "Resolve on the active phone",
+      tone: "active"
+    };
+  }
+
   return {
     label: prompt.phaseLabel,
     detail: prompt.publicText,
     meta: prompt.lockedReason ?? prompt.availableActionSummary ?? prompt.phaseReason,
     tone: patch.payload.status === "ended" ? "ended" : promptToneToHostTone(prompt.tone)
   };
+}
+
+function HostNetworkOverlay({ status, synchronized }: { status: "idle" | "connecting" | "open" | "closed"; synchronized: boolean }): ReactElement | null {
+  if (status === "open" && synchronized) {
+    return null;
+  }
+
+  const lost = status === "closed";
+  return (
+    <section className="tv-network-overlay" role="status" aria-live="polite" data-testid="tv-network-overlay">
+      <span>{lost ? "Connection interrupted" : "Restoring command link"}</span>
+      <strong>{lost ? "Host connection lost" : "Reconnecting to game server"}</strong>
+      <p>The last safe board position remains visible. Current actions resume only after authoritative state returns.</p>
+    </section>
+  );
 }
 
 function ActiveOperativeOverlay({
@@ -633,10 +783,7 @@ function ActiveOperativeOverlay({
   activePlayer,
   characterCatalog
 }: ActiveOperativeOverlayProps): ReactElement {
-  const seatStatus = getSeatStatus(activeSeat, activePlayer, true);
   const abilityTelemetry = getSeatAbilityTelemetry(patch?.payload ?? null, previousPatch?.payload ?? null, activeSeat?.seatId ?? null);
-  const activeCatalogCharacter = characterCatalog.find((entry) => entry.id === activePlayer?.character.id);
-  const activePresentation = activePlayer?.character.presentation ?? activeCatalogCharacter?.presentation;
 
   if (!activeSeat) {
     return (
@@ -654,10 +801,9 @@ function ActiveOperativeOverlay({
         seatId={activeSeat.seatId}
         isOpen={!activeSeat.displayName || activeSeat.kicked}
         isConnected={activeSeat.connected}
+        playerName={activeSeat.displayName}
         characterName={activePlayer?.character.name ?? activeSeat.displayName}
         characterTitle={activePlayer?.character.archetype ?? null}
-        characterRole={activePresentation?.role ?? null}
-        characterComplexity={activePresentation?.complexity ? toTitleCase(activePresentation.complexity) : null}
         portraitUrl={
           activePlayer && activeSeat.displayName && !activeSeat.kicked
             ? getCharacterPortraitPath(activePlayer.character.id)
@@ -668,20 +814,20 @@ function ActiveOperativeOverlay({
         wounds={activePlayer?.character.wounds ?? null}
         scars={activePlayer?.character.scars.length ?? null}
         attributes={{
-          cmd: activePlayer?.character.stats.command ?? null,
-          grit: activePlayer?.character.stats.grit ?? null,
-          signal: activePlayer?.character.stats.signal ?? null,
-          guile: activePlayer?.character.stats.guile ?? null,
-          forge: activePlayer?.character.stats.forge ?? null
+          cmd: activePlayer?.character.effectiveStats?.command ?? activePlayer?.character.stats.command ?? null,
+          grit: activePlayer?.character.effectiveStats?.grit ?? activePlayer?.character.stats.grit ?? null,
+          signal: activePlayer?.character.effectiveStats?.signal ?? activePlayer?.character.stats.signal ?? null,
+          guile: activePlayer?.character.effectiveStats?.guile ?? activePlayer?.character.stats.guile ?? null,
+          forge: activePlayer?.character.effectiveStats?.forge ?? activePlayer?.character.stats.forge ?? null
         }}
         gearSummary={getGearSummary(activePlayer)}
+        equippedGearDetails={activePlayer?.character.equippedGearDetails ?? []}
         contractSummary={getContractSummary(activePlayer, patch)}
         specialAbilitySummary={getSpecialAbilitySummary(activePlayer, characterCatalog)}
         companionBadges={activePlayer?.character.companionBadges ?? []}
         latestAbilityTriggerSummary={abilityTelemetry.latestTrigger?.summary ?? null}
         abilityChangeItems={abilityTelemetry.changes}
         isActiveTurn
-        isReady={seatStatus === "Ready"}
       />
     </section>
   );
@@ -739,9 +885,8 @@ function OperativesRail({ patch, characterCatalog, activeSeatId, sessionMode, ba
           const catalogCharacter = characterCatalog.find((entry) => entry.id === seat.characterId) ?? null;
           const isOccupied = Boolean(player || seat.displayName);
           const isOpen = !isOccupied || seat.kicked;
-          const characterName = isOpen ? "Open Seat" : player?.character.name ?? seat.displayName ?? catalogCharacter?.name ?? "Open Seat";
-          const characterTitle = isOpen ? "-" : player?.character.archetype ?? catalogCharacter?.archetype ?? "Awaiting operative";
-          const characterPresentation = player?.character.presentation ?? catalogCharacter?.presentation;
+          const playerName = isOpen ? "Open Seat" : seat.displayName ?? player?.character.name ?? "Open Seat";
+          const characterName = isOpen ? "" : player?.character.name ?? catalogCharacter?.name ?? "Awaiting operative";
           const isActive = seat.seatId === activeSeatId;
           const statusLabel = (() => {
             if (seat.kicked || player?.character.status === "recalled") {
@@ -760,11 +905,7 @@ function OperativesRail({ patch, characterCatalog, activeSeatId, sessionMode, ba
               return "Active";
             }
 
-            if (seat.ready) {
-              return "Ready";
-            }
-
-            return seat.startingMissionSelected ? "Mission" : "Joined";
+            return "Online";
           })();
           const portraitUrl = !isOpen ? getCharacterPortraitPath(player?.character.id ?? seat.characterId) : null;
           const seatNumber = getSeatNumber(seat.seatId);
@@ -772,34 +913,27 @@ function OperativesRail({ patch, characterCatalog, activeSeatId, sessionMode, ba
           return (
             <article
               key={seat.seatId}
-              className={`tv-operative-card${isActive ? " tv-operative-card-active" : ""}${isOpen ? " tv-operative-card-open" : ""}`}
+              className={`tv-operative-card${isActive ? " tv-operative-card-active" : " tv-operative-card-inactive"}${isOpen ? " tv-operative-card-open" : ""}`}
             >
               <div className="tv-operative-seat" aria-label={`Seat ${seatNumber}`}>{seatNumber}</div>
               <div className="tv-operative-portrait">
-                {portraitUrl ? <img src={portraitUrl} alt={characterName} /> : <span aria-hidden="true">+</span>}
+                {portraitUrl ? <img src={portraitUrl} alt={characterName || playerName} /> : <span aria-hidden="true">+</span>}
               </div>
               <div className="tv-operative-copy">
                 <div className="tv-operative-name-row">
-                  <h3>{characterName}</h3>
+                  <h3>{playerName}</h3>
                   <span className={`tv-operative-link tv-operative-link-${seat.connected && !isOpen ? "online" : "offline"}`}>
                     {statusLabel.toUpperCase()}
                   </span>
                 </div>
-                <p>{characterTitle}</p>
-                {characterPresentation && (
-                  <p className="tv-operative-role-row">
-                    {characterPresentation.role} | {toTitleCase(characterPresentation.complexity)}
-                  </p>
-                )}
-                {isOccupied && !isOpen ? (
-                  <div className="tv-operative-setup-row" aria-label={`${characterName} setup state`}>
-                    <span>Character ✓</span>
-                    <span>{seat.startingMissionSelected ? `Mission: ${seat.startingMissionTitle ?? "Selected"}` : "Mission: Choose mission"}</span>
-                    <span>Ready {seat.ready ? "✓" : seat.startingMissionSelected ? "..." : "locked"}</span>
-                  </div>
-                ) : null}
                 {player && (
                   <>
+                    {(player.character.companionBadges ?? []).length > 0 && (
+                      <div className="tv-operative-followers" aria-label={`${characterName} followers`}>
+                        <span>Follower</span>
+                        <strong>{(player.character.companionBadges ?? []).map((follower) => follower.name).join(", ")}</strong>
+                      </div>
+                    )}
                     <div className="tv-operative-stats" aria-label={`${characterName} vitals`}>
                       <span>W {player.character.wounds ?? 0}</span>
                       <span>S {player.character.scars.length ?? 0}</span>
@@ -907,6 +1041,10 @@ function TvStartupScreen({
   const lobbyConfigured = patch?.payload.lobbyConfigured === true;
   const waitingCopy = !roomCode
     ? "Creating room..."
+    : status === "closed"
+      ? "Game server unavailable"
+      : status === "connecting" && !patch
+        ? "Reconnecting to game server"
     : !patch
       ? "Connecting to room..."
       : !hostConnected
@@ -926,7 +1064,7 @@ function TvStartupScreen({
 
   return (
     <main className="tv-startup-screen" aria-label="Ashen Reach startup">
-      <section className="tv-startup-card">
+      <section className={`tv-startup-card${joinedSeats.length >= 5 ? " tv-startup-card--crowded" : ""}`}>
         <div className="tv-startup-brand">
           <span>ASHEN REACH</span>
           <h1>{waitingCopy}</h1>
@@ -960,7 +1098,7 @@ function TvStartupScreen({
             )}
           </div>
         )}
-        {(error || status === "closed") && <p className="tv-startup-error">{error ?? "Connection closed"}</p>}
+        {(error || status === "closed") && <p className="tv-startup-error">{error ?? "The host cannot reach the game server. Retrying automatically."}</p>}
       </section>
     </main>
   );
@@ -1489,6 +1627,18 @@ function HostContextPanel({
           </div>
         </div>
       )}
+      {(activeSector?.tileChallenges?.length ?? 0) > 0 && (
+        <section className="tv-tile-challenges" aria-label="Recurring tile challenges">
+          <div className="tv-host-context-kicker">Challenges</div>
+          {activeSector!.tileChallenges!.map((challenge) => (
+            <article key={challenge.id}>
+              <strong>{challenge.name}</strong>
+              <span>{toTitleCase(challenge.challengeType)} · {toTitleCase(challenge.testStat)} {challenge.difficulty} · Recurring</span>
+              <small>{challenge.failureSummary}</small>
+            </article>
+          ))}
+        </section>
+      )}
       <p>{activeSpace?.ruleText ?? "Select or activate a sector to bring its command brief online."}</p>
       <div className="tv-host-context-grid">
         <span>Reach <strong>{toTitleCase(activeSpace?.tier ?? activeSector?.regionTier ?? "Unknown")}</strong></span>
@@ -1534,6 +1684,13 @@ function ScenarioStatusCard({
       )}
       <p className="tv-empty-copy">{scenarioRuleDigest?.pressureSummary ?? scenarioStatus.pressureSummary}</p>
       {scenarioStatus.finalGateRequirement && <p className="tv-empty-copy">Final gate: {scenarioStatus.finalGateRequirement}</p>}
+      {scenarioStatus.ownership ? (
+        <div className="board-sidebar-meta" aria-label="Scenario preparation, confrontation, and result">
+          <span>Preparation {Object.values(scenarioStatus.ownership.preparation.resources).reduce((sum, value) => sum + value, 0)}</span>
+          <span>Final {scenarioStatus.ownership.confrontation.locked === true ? "Locked" : scenarioStatus.ownership.confrontation.active ? "Active" : "Unlocked"}</span>
+          <span>Result {scenarioStatus.ownership.result.status}</span>
+        </div>
+      ) : null}
       {scenarioStatus.scenarioRewards.length > 0 && (
         <div className="board-sidebar-meta">
           {scenarioStatus.scenarioRewards.slice(0, 3).map((reward) => (
@@ -1837,16 +1994,21 @@ interface TacticalMapPanelProps {
   activePlayer: PublicPlayer | null;
   battlePlayer: PublicPlayer | null;
   characterCatalog: CharacterCatalogEntry[];
+  focusEnabled: boolean;
+  rareStateModel: HostStateBannerModel | null;
 }
 
 interface MovementArrivalModel {
+  eventId: string;
   destination: PublicMoveDestination;
   playerName: string;
+  originName: string;
 }
 
 function getMovementArrivalModel(
   patch: PublicPatchPayload | null | undefined,
-  previousPatch: PublicPatchPayload | null | undefined
+  previousPatch: PublicPatchPayload | null | undefined,
+  sequence = 0
 ): MovementArrivalModel | null {
   const planner = previousPatch?.movementPlanner?.active ? previousPatch.movementPlanner : null;
 
@@ -1858,7 +2020,12 @@ function getMovementArrivalModel(
   const movedPlayer = patch.players.find((player) => previousSectorBySeat.get(player.seatId) !== player.sectorId);
   const destination = movedPlayer ? planner.destinations.find((entry) => entry.sectorId === movedPlayer.sectorId) ?? null : null;
 
-  return movedPlayer && destination ? { destination, playerName: movedPlayer.character.name } : null;
+  return movedPlayer && destination ? {
+    eventId: `${sequence}:${movedPlayer.seatId}:${planner.currentSectorId}:${destination.sectorId}`,
+    destination,
+    playerName: patch.seats.find((seat) => seat.seatId === movedPlayer.seatId)?.displayName ?? movedPlayer.character.name,
+    originName: planner.currentSectorName
+  } : null;
 }
 
 function MovementFocusHud({
@@ -1895,44 +2062,17 @@ function MovementFocusHud({
 
   if (arrival && destination) {
     const threats = destination.faceUpThreats ?? [];
-    const occupants = destination.occupants ?? [];
 
     return (
-      <section className="tv-arrival-focus" aria-label="Arrival sector brief" data-testid="tv-arrival-focus">
-        <header>
+      <section className="tv-arrival-summary" aria-label="Movement arrival" data-testid="tv-arrival-focus">
+        <header className="tv-arrival-summary__identity">
           <span>Movement complete</span>
           <strong>Arrived at {destination.name}</strong>
-          <p>{threats.length > 0 ? "Threat present" : destination.threatIcons.length > 0 ? "Challenge detected" : "Sector reached"}</p>
+          <p>{playerName} · {toTitleCase(destination.ring)} Reach</p>
         </header>
-        <div className="tv-arrival-focus-meta">
-          <span>{toTitleCase(destination.ring)} Reach</span>
-          {destination.tags.map((tag) => <span key={tag}>{toTitleCase(tag)}</span>)}
-          {destination.threatIcons.map((icon, index) => <span key={`${icon}-${index}`}>{toTitleCase(icon)} challenge</span>)}
-        </div>
-        <div className="tv-arrival-focus-grid">
-          <article>
-            <span>Sector rule</span>
-            <strong>{destination.ruleText || "No special sector rule."}</strong>
-            {destination.loreText ? <p>{destination.loreText}</p> : null}
-          </article>
-          <article>
-            <span>Challenges and threats</span>
-            {threats.length > 0 ? (
-              <ul>
-                {threats.map((threat) => (
-                  <li key={threat.instanceId}>
-                    <strong>{threat.name}</strong>
-                    <small>{threat.challenge ? `${toTitleCase(threat.challenge.stat)} ${threat.challenge.value}` : toTitleCase(threat.type)}</small>
-                  </li>
-                ))}
-              </ul>
-            ) : <strong>{destination.threatIcons.length > 0 ? "Printed challenge icons will resolve on arrival." : "No visible threat."}</strong>}
-          </article>
-          <article>
-            <span>Occupants</span>
-            <strong>{occupants.length > 0 ? occupants.map((occupant) => occupant.characterName).join(", ") : "No other operatives"}</strong>
-            <p>{destination.strategicTags.length > 0 ? destination.strategicTags.map(toTitleCase).join(" ? ") : "Awaiting sector resolution"}</p>
-          </article>
+        <div className="tv-arrival-summary__next">
+          <span>Next</span>
+          <strong>{threats.length > 0 ? `Resolve ${threats[0]!.name}` : destination.threatIcons.length > 0 ? "Resolve the arrival challenge" : destination.ruleText || "Continue the turn"}</strong>
         </div>
       </section>
     );
@@ -2052,58 +2192,103 @@ function TacticalMapPanel({
   activeSeat,
   activePlayer,
   battlePlayer,
-  characterCatalog
+  characterCatalog,
+  focusEnabled,
+  rareStateModel
 }: TacticalMapPanelProps): ReactElement {
-  const battleMode = isHostBattleActive(patch, battlePlayer);
-  const shopMode = isHostShopActive(patch, activePlayer);
-  const planner = patch?.payload.movementPlanner?.active ? patch.payload.movementPlanner : null;
-  const arrival = getMovementArrivalModel(patch?.payload, previousPatch?.payload);
-  const arrivalKey = arrival ? `${arrival.playerName}:${arrival.destination.sectorId}:${arrival.destination.route.join(">")}` : null;
-  const [visualTravel, setVisualTravel] = useState<{ key: string; arrival: MovementArrivalModel; step: number } | null>(null);
+  const battleMode = focusEnabled && !rareStateModel && isHostBattleActive(patch, battlePlayer);
+  const shopMode = focusEnabled && !rareStateModel && activePlayer?.character.status !== "recalled" && activeSeat?.connected !== false && isHostShopActive(patch, activePlayer);
+  const planner = focusEnabled && !rareStateModel && patch?.payload.movementPlanner?.active ? patch.payload.movementPlanner : null;
+  const arrival = focusEnabled && !rareStateModel ? getMovementArrivalModel(patch?.payload, previousPatch?.payload, patch?.sequence) : null;
+  const arrivalKey = arrival?.eventId ?? null;
+  const [visualTravel, setVisualTravel] = useState<{
+    key: string;
+    arrival: MovementArrivalModel;
+    previousPatch: PublicPatchPayload;
+    step: number;
+    arrived: boolean;
+  } | null>(null);
   const completedTravelKeyRef = useRef<string | null>(null);
+  const arrivalPending = Boolean(arrival && arrivalKey && completedTravelKeyRef.current !== arrivalKey);
   useEffect(() => {
-    if (arrival && arrivalKey && completedTravelKeyRef.current !== arrivalKey && !battleMode && !shopMode) {
-      setVisualTravel((current) => current?.key === arrivalKey ? current : { key: arrivalKey, arrival, step: 1 });
-    }
-  }, [arrival, arrivalKey, battleMode, shopMode]);
-  useEffect(() => {
-    if (battleMode || shopMode) {
+    if (!focusEnabled) {
       setVisualTravel(null);
+      return;
     }
-  }, [battleMode, shopMode]);
+    if (arrival && arrivalKey && previousPatch?.payload && completedTravelKeyRef.current !== arrivalKey) {
+      setVisualTravel((current) => current?.key === arrivalKey ? current : {
+        key: arrivalKey,
+        arrival,
+        previousPatch: previousPatch.payload,
+        step: 0,
+        arrived: false
+      });
+    }
+  }, [arrival, arrivalKey, focusEnabled, previousPatch]);
   useEffect(() => {
     if (!visualTravel) return;
-    const stepTotal = Math.max(1, visualTravel.arrival.destination.route.length - 1);
+    const finalStep = Math.max(visualTravel.arrival.destination.route.length - 1, 1);
+    const reducedMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches === true;
+    const route = visualTravel.arrival.destination.route;
+    const currentRing = getBoardSpace(route[Math.min(visualTravel.step, route.length - 1)] ?? "")?.tier ?? null;
+    const nextRing = getBoardSpace(route[Math.min(visualTravel.step + 1, route.length - 1)] ?? "")?.tier ?? null;
+    const crossingRings = Boolean(currentRing && nextRing && currentRing !== nextRing);
     const timeout = window.setTimeout(() => {
       setVisualTravel((current) => {
         if (!current || current.key !== visualTravel.key) return current;
-        if (current.step < stepTotal) return { ...current, step: current.step + 1 };
+        if (current.step < finalStep) return { ...current, step: current.step + 1 };
+        if (!current.arrived) return { ...current, arrived: true };
         completedTravelKeyRef.current = current.key;
         return null;
       });
-    }, 720);
+    }, reducedMotion
+      ? 120
+      : visualTravel.arrived
+        ? hostPresentationTimings.movementArrivalMs
+        : visualTravel.step === 0
+          ? hostPresentationTimings.movementStartMs
+          : crossingRings
+            ? hostPresentationTimings.movementCrossRingMs
+            : hostPresentationTimings.movementSegmentMs);
     return () => window.clearTimeout(timeout);
   }, [visualTravel]);
-  const focusBattleMode = battleMode;
+  // A newly arrived authoritative patch may already contain the encounter that
+  // follows movement. Preserve the movement presentation first; the battle
+  // chamber opens only after the local, non-authoritative journey has settled.
+  const focusBattleMode = battleMode && !arrivalPending && !visualTravel;
   const focusShopMode = !focusBattleMode && shopMode;
-  const movementFocusMode = !focusBattleMode && !focusShopMode && Boolean(planner || visualTravel);
+  const movementFocusMode = !focusBattleMode && !focusShopMode && Boolean(planner || arrivalPending || visualTravel);
   const projectedDestination = planner?.selectedDestinationId
     ? planner.destinations.find((destination) => destination.sectorId === planner.selectedDestinationId) ?? null
     : null;
+  const journeyChallenges = visualTravel
+    ? patch?.payload.sectors.find((sector) => sector.id === visualTravel.arrival.destination.sectorId)?.tileChallenges ?? []
+    : [];
+
+  const battleChamber = focusBattleMode && !arrivalPending && !visualTravel && patch && battlePlayer
+    ? <HostBattleChamber patch={patch} activePlayer={battlePlayer} />
+    : null;
+  const presentBattleChamber = Boolean(battleChamber);
 
   return (
-    <section className={`tv-command-stage${focusBattleMode ? " tv-command-stage-battle-mode" : ""}${focusShopMode ? " tv-command-stage-shop-mode" : ""}${movementFocusMode ? " tv-command-stage-movement-focus" : ""}`}>
-      {!focusBattleMode && (
-        <div className="tv-command-map-shell">
+    <section className={`tv-command-stage${presentBattleChamber ? " tv-command-stage-battle-mode" : ""}${focusShopMode ? " tv-command-stage-shop-mode" : ""}${movementFocusMode ? " tv-command-stage-movement-focus" : ""}`}>
+      <div className="tv-command-map-shell" aria-hidden={presentBattleChamber || undefined} inert={presentBattleChamber || undefined}>
           <TacticalMapBoard
             patch={patch?.payload ?? null}
-            previousPatch={previousPatch?.payload ?? null}
+            previousPatch={visualTravel?.previousPatch ?? previousPatch?.payload ?? null}
             phase={patch?.phase ?? "start"}
           />
           {!movementFocusMode && <BoardLegend />}
-        </div>
+      </div>
+      {!presentBattleChamber && <NemesisBanner nemesis={patch?.payload.nemesis ?? null} />}
+      {rareStateModel && (
+        <section className={`tv-rare-state-panel tv-rare-state-panel--${rareStateModel.tone}`} role="status" aria-live="polite" data-testid="tv-rare-state-panel">
+          <span>Current table state</span>
+          <strong>{rareStateModel.label}</strong>
+          <p>{rareStateModel.detail}</p>
+          <em>{rareStateModel.meta}</em>
+        </section>
       )}
-      {!focusBattleMode && <NemesisBanner nemesis={patch?.payload.nemesis ?? null} />}
       {!focusBattleMode && !focusShopMode && !movementFocusMode && (
         <ActiveOperativeOverlay
           patch={patch}
@@ -2113,16 +2298,29 @@ function TacticalMapPanel({
           characterCatalog={characterCatalog}
         />
       )}
-      {focusBattleMode && <HostBattleOverlay patch={patch} activePlayer={battlePlayer} />}
-      {focusShopMode && <HostShopOverlay patch={patch} activePlayer={activePlayer} />}
+      {battleChamber}
+      {focusShopMode && !visualTravel && <HostShopOverlay patch={patch} activePlayer={activePlayer} />}
       {movementFocusMode && (
-        <MovementFocusHud
-          planner={planner}
-          selectedDestination={projectedDestination}
-          arrival={visualTravel?.arrival ?? null}
-          travelStep={visualTravel?.step}
-          activePlayerName={activePlayer?.character.name ?? "Active operative"}
-        />
+        visualTravel ? (
+          <HostMovementJourney
+            model={{
+              eventId: visualTravel.key,
+              operativeName: visualTravel.arrival.playerName,
+              originName: visualTravel.arrival.originName,
+              destination: visualTravel.arrival.destination
+            }}
+            step={visualTravel.step}
+            arrived={visualTravel.arrived}
+            challenges={journeyChallenges}
+          />
+        ) : (
+          <MovementFocusHud
+            planner={planner}
+            selectedDestination={projectedDestination}
+            arrival={null}
+            activePlayerName={activeSeat?.displayName ?? activePlayer?.character.name ?? "Active operative"}
+          />
+        )
       )}
     </section>
   );
@@ -2141,6 +2339,9 @@ function HostBottomStatusStrip({
   const activeLabel = activeSeatId ? seatLabels[activeSeatId] ?? "Active operative" : "Awaiting active operative";
   const scenarioLabel = patch?.payload.activeScenario?.name ?? "Scenario pending";
   const latestLog = [
+    patch?.payload.pendingEncounterDecision
+      ? `Waiting for ${activeLabel} to resolve ${patch.payload.pendingEncounterDecision.sourceTitle}.`
+      : null,
     patch?.payload.rivalryAgendaCompletion?.summary,
     patch?.payload.rivalryAgendaReveal?.summary,
     patch?.payload.activeResolution?.outcome?.text,
@@ -2406,12 +2607,14 @@ export function TvApp(): ReactElement {
   const [sessionNotice, setSessionNotice] = useState<string | null>(null);
   const [debugOpen, setDebugOpen] = useState(() => new URLSearchParams(window.location.search).has("debug"));
   const restoreValidatedRef = useRef(false);
-  const { patch, error, status, debugEvents, clearDebugEvents, sendIntent } = useRoomSubscription({
+  const { patch, error, status, synchronized: subscriptionSynchronized, debugEvents, clearDebugEvents, sendIntent } = useRoomSubscription({
     view: "tv",
     enabled: Boolean(roomCode),
     hostToken
   });
   const previousPatchRef = useRef<StatePatch<PublicPatchPayload> | null>(null);
+  const commandMainRef = useRef<HTMLElement | null>(null);
+  const previousBattleModeRef = useRef(false);
 
   useEffect(() => {
     fetchCharacters()
@@ -2427,6 +2630,8 @@ export function TvApp(): ReactElement {
   }, []);
 
   const publicPatch = patch as StatePatch<PublicPatchPayload> | null;
+  const synchronized = subscriptionSynchronized ?? status === "open";
+  const authoritativePresentationReady = status === "open" && synchronized;
   const audio = useAshenReachAudio(publicPatch);
   const effectiveRoomCode = roomCode ?? publicPatch?.sessionId ?? null;
   const joinedSeats = publicPatch?.payload.seats.filter((seat) => seat.displayName && !seat.kicked) ?? [];
@@ -2450,9 +2655,16 @@ export function TvApp(): ReactElement {
       ? scenarioCatalog.find((scenario) => scenario.id === publicPatch.payload.activeScenario?.id) ?? null
       : scenarioCatalog.find((scenario) => scenario.id === selectedScenarioId) ?? null) ?? null;
   const scenarioStatus = useMemo(() => getScenarioStatus(publicPatch), [publicPatch]);
-  const battleMode = isHostBattleActive(publicPatch, battlePlayer);
-  const shopMode = isHostShopActive(publicPatch, activePlayer);
-  const movementArrival = getMovementArrivalModel(publicPatch?.payload, previousPatchRef.current?.payload);
+  const rareStateActive = Boolean(
+    publicPatch?.payload.pendingOrderedConsequence ||
+    publicPatch?.payload.scarTriggerStatus ||
+    publicPatch?.payload.scarResolutionStatus ||
+    activePlayer?.character.status === "recalled" ||
+    publicPatch?.payload.outcomeSummary?.encounterCardId === "suture-storm"
+  );
+  const movementArrival = authoritativePresentationReady ? getMovementArrivalModel(publicPatch?.payload, previousPatchRef.current?.payload) : null;
+  const battleMode = authoritativePresentationReady && !rareStateActive && !movementArrival && isHostBattleActive(publicPatch, battlePlayer);
+  const shopMode = authoritativePresentationReady && !rareStateActive && !movementArrival && activePlayer?.character.status !== "recalled" && activeSeat?.connected !== false && isHostShopActive(publicPatch, activePlayer);
   const movementFocusMode = !battleMode && !shopMode && Boolean(publicPatch?.payload.movementPlanner?.active || movementArrival);
 
   useEffect(() => {
@@ -2460,6 +2672,15 @@ export function TvApp(): ReactElement {
       previousPatchRef.current = publicPatch;
     }
   }, [publicPatch]);
+
+  useEffect(() => {
+    const wasInBattle = previousBattleModeRef.current;
+    previousBattleModeRef.current = battleMode;
+
+    if (wasInBattle && !battleMode) {
+      window.requestAnimationFrame(() => commandMainRef.current?.focus({ preventScroll: true }));
+    }
+  }, [battleMode]);
 
   useEffect(() => {
     if (typeof window === "undefined") {
@@ -2652,8 +2873,11 @@ export function TvApp(): ReactElement {
     joinedCount: joinedSeats.length,
     readyCount: readySeats.length,
     battleMode,
-    shopMode
+    shopMode,
+    connectionStatus: status,
+    synchronized
   });
+  const rareStateModel = authoritativePresentationReady && rareStateActive ? liveStatus : null;
   const isPreRoomLobby = !effectiveRoomCode && !publicPatch;
 
   const gameUiReady =
@@ -2684,10 +2908,14 @@ export function TvApp(): ReactElement {
         {sessionNotice && <div className="tv-banner">{sessionNotice}</div>}
         <HostAudioControls audio={audio} />
         <EndgameOverlay patch={publicPatch} />
+        {!authoritativePresentationReady && <HostNetworkOverlay status={status} synchronized={synchronized} />}
 
         <section
+          ref={commandMainRef}
           className={`tv-command-main${isPreRoomLobby ? " tv-command-main--pre-room" : ""}${battleMode ? " tv-command-main--battle-focus" : ""}${shopMode ? " tv-command-main--shop-focus" : ""}${movementFocusMode ? " tv-command-main--movement-focus" : ""}`}
           data-testid="tv-command-main"
+          aria-label="Host command board"
+          tabIndex={-1}
         >
           {isPreRoomLobby ? (
             <section className="tv-pre-room-lobby-stage" aria-label="Host lobby setup">
@@ -2748,9 +2976,11 @@ export function TvApp(): ReactElement {
                 activePlayer={activePlayer}
                 battlePlayer={battlePlayer}
                 characterCatalog={characterCatalog}
+                focusEnabled={authoritativePresentationReady}
+                rareStateModel={rareStateModel}
               />
 
-              {!battleMode && !shopMode && !movementFocusMode && <RightSidebar
+              {authoritativePresentationReady && !battleMode && !shopMode && !movementFocusMode && !rareStateActive && <RightSidebar
                 roomCode={effectiveRoomCode}
                 scenarioStatus={scenarioStatus}
                 publicPatch={publicPatch}
@@ -2762,7 +2992,7 @@ export function TvApp(): ReactElement {
                 playerCount={playerCount}
                 joinedCount={joinedSeats.length}
                 readyCount={readySeats.length}
-                seatCapacity={publicPatch?.payload.seats.length ?? (liveSessionMode === "single-player" ? 1 : 3)}
+                seatCapacity={publicPatch?.payload.seats.length ?? (liveSessionMode === "single-player" ? 1 : 6)}
                 activeSeatId={activeSeatId}
                 status={status}
                 debugOpen={debugOpen}
@@ -2771,22 +3001,17 @@ export function TvApp(): ReactElement {
                 scenarioCatalog={scenarioCatalog}
                 lobbyPath={lobbyPath}
                 onLobbyPathSelected={selectLobbyPath}
-                onLobbyBack={() => {
-                  setRequestError(null);
-                  setLobbyPath(null);
-                }}
+                onLobbyBack={() => { setRequestError(null); setLobbyPath(null); }}
                 onScenarioSelected={setSelectedScenarioId}
                 onInteractionModeSelected={setInteractionMode}
                 onPlayerCountSelected={setPlayerCount}
                 onCreateSession={createHostSession}
-                onRestartSession={() => {
-                  setRequestError(null);
-                  sendIntent({ type: "RESTART_SESSION" });
-                }}
+                onRestartSession={() => { setRequestError(null); sendIntent({ type: "RESTART_SESSION" }); }}
                 onStartSession={startHostSession}
                 canStartSession={startReadiness.canStart}
                 startSessionReason={startReadiness.reason}
               />}
+
             </>
           )}
         </section>

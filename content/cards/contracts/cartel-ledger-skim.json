@@ -13,10 +13,6 @@
       {
         "type": "gain_trophy",
         "amount": 1
-      },
-      {
-        "type": "lose_heat",
-        "amount": 1
       }
     ]
   }

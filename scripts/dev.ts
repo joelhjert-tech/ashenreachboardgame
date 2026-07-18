@@ -4,14 +4,17 @@ import { startAshenReachServer } from "../src/server/index.js";
 import { createPortAvailabilityCheck, findAvailablePort } from "../src/server/ports.js";
 
 async function main(): Promise<void> {
-  const requestedClientPort = Number(process.env.CLIENT_PORT ?? 5173);
+  const clientPortArg = process.argv.find((entry) => entry.startsWith("--client-port="))?.split("=")[1];
+  const apiPortArg = process.argv.find((entry) => entry.startsWith("--api-port="))?.split("=")[1];
+  const requestedClientPort = Number(clientPortArg ?? process.env.CLIENT_PORT ?? 5173);
+  if (apiPortArg) process.env.PORT = apiPortArg;
   const resolvedClientPort = await findAvailablePort(requestedClientPort, {
     isPortFree: createPortAvailabilityCheck("0.0.0.0")
   });
   const server = await startAshenReachServer({
     clientPort: resolvedClientPort,
     logUrls: false,
-    qaFixturesEnabled: process.env.ASHEN_REACH_QA_FIXTURES === "1"
+    qaFixturesEnabled: process.env.ASHEN_REACH_QA_FIXTURES === "1" || process.argv.includes("--qa-fixtures")
   });
 
   const apiOrigin = `http://${server.lanHost}:${server.port}`;

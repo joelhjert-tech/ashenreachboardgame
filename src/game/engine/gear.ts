@@ -1,4 +1,4 @@
-import type { Character, Stat } from "../schema/character.schema.js";
+import type { Stat } from "../schema/character.schema.js";
 import type { GearItem, GearSlot } from "../schema/gear.schema.js";
 
 const RUMI_CHARACTER_ID = "char_rumi";
@@ -14,31 +14,105 @@ const VIOLET_TRIAD_TEAM_BONUS: Partial<Record<Stat, number>> = {
   guile: 1
 };
 
-export function getHeldGearItem(character: Character, gearId: string): GearItem | undefined {
+interface GearModifierItem {
+  id: string;
+  name: string;
+  slot: GearSlot;
+  instanceId?: string;
+  statBonus: { stat: Stat; amount: number };
+  effectModel?: "permanent" | "conditional" | "consumable" | "exhaust" | "charged";
+  conditionType?: "battle";
+}
+
+interface GearBearingCharacter<TItem extends GearModifierItem = GearItem> {
+  id: string;
+  heldGear: TItem[];
+  equippedGear: Record<GearSlot, string | null>;
+  equippedGearInstances?: Record<GearSlot, string | null>;
+  followers?: Array<{ id: string }>;
+}
+
+interface StatBearingCharacter<TItem extends GearModifierItem = GearItem> extends GearBearingCharacter<TItem> {
+  stats: Record<Stat, number>;
+  statUpgrades?: Partial<Record<Stat, number>>;
+}
+
+export type CharacterStatSourceType =
+  | "base"
+  | "upgrade"
+  | "equipped"
+  | "companion"
+  | "temporary"
+  | "scar"
+  | "affliction";
+
+export interface CharacterStatModifierSource {
+  sourceType: CharacterStatSourceType;
+  label: string;
+  value: number;
+  catalogId?: string;
+  instanceId?: string;
+  scope?: "resting" | "battle" | "check" | "test" | "battle/check";
+}
+
+export interface CharacterStatBreakdown {
+  base: number;
+  upgrades: number;
+  equipped: CharacterStatModifierSource[];
+  companions: CharacterStatModifierSource[];
+  contextual: CharacterStatModifierSource[];
+  final: number;
+}
+
+export interface CharacterStatBreakdownOptions extends GearModifierContext {
+  contextualSources?: CharacterStatModifierSource[];
+}
+
+export function getHeldGearItem<TItem extends GearModifierItem>(character: GearBearingCharacter<TItem>, gearId: string): TItem | undefined {
   return character.heldGear.find((item) => item.id === gearId);
 }
 
-export function getEquippedGearItem(
-  character: Character,
+export function getHeldGearInstance<TItem extends GearModifierItem>(character: GearBearingCharacter<TItem>, instanceId: string): TItem | undefined {
+  return character.heldGear.find((item) => item.instanceId === instanceId);
+}
+
+export function getEquippedGearItem<TItem extends GearModifierItem>(
+  character: GearBearingCharacter<TItem>,
   slot: GearSlot
-): GearItem | undefined {
+): TItem | undefined {
+  const instanceId = character.equippedGearInstances?.[slot];
+  if (instanceId) return getHeldGearInstance(character, instanceId);
   const gearId = character.equippedGear[slot];
 
   return gearId ? getHeldGearItem(character, gearId) : undefined;
 }
 
-export function getEquippedGearBonus(character: Character, stat: Stat): number {
+export function getEquippedGearBonus<TItem extends GearModifierItem>(character: GearBearingCharacter<TItem>, stat: Stat): number {
   return getEquippedGearModifierSources(character, stat).reduce((sum, source) => sum + source.value, 0);
 }
 
-export function getCompanionStatBonus(character: Character, stat: Stat): number {
+export function getCompanionStatBonus(character: Pick<GearBearingCharacter, "id" | "followers">, stat: Stat): number {
   return getCompanionStatModifierSources(character, stat).reduce((sum, source) => sum + source.value, 0);
 }
 
-export function getEquippedGearModifierSources(character: Character, stat: Stat): Array<{ label: string; value: number }> {
+export interface GearModifierContext {
+  mode: "resting" | "battle" | "check";
+  suppressedInstanceIds?: ReadonlySet<string>;
+}
+
+export function isGearModifierActive(item: GearModifierItem, context: GearModifierContext): boolean {
+  if (item.effectModel === "consumable") return false;
+  return item.effectModel !== "conditional" || (item.conditionType === "battle" && context.mode === "battle");
+}
+
+export function getEquippedGearModifierSources<TItem extends GearModifierItem>(
+  character: GearBearingCharacter<TItem>,
+  stat: Stat,
+  context: GearModifierContext = { mode: "resting" }
+): Array<{ label: string; value: number }> {
   const gearSources = (Object.keys(character.equippedGear) as GearSlot[])
     .map((slot) => getEquippedGearItem(character, slot))
-    .filter((item): item is GearItem => item !== undefined && item.statBonus.stat === stat)
+    .filter((item): item is TItem => item !== undefined && !context.suppressedInstanceIds?.has(item.instanceId ?? "") && item.statBonus.stat === stat && isGearModifierActive(item, context))
     .map((item) => ({
       label: item.name,
       value: item.statBonus.amount
@@ -47,7 +121,7 @@ export function getEquippedGearModifierSources(character: Character, stat: Stat)
   return [...gearSources, ...getCompanionStatModifierSources(character, stat)];
 }
 
-export function getCompanionStatModifierSources(character: Character, stat: Stat): Array<{ label: string; value: number }> {
+export function getCompanionStatModifierSources(character: Pick<GearBearingCharacter, "id" | "followers">, stat: Stat): Array<{ label: string; value: number }> {
   if (character.id !== RUMI_CHARACTER_ID) {
     return [];
   }
@@ -72,4 +146,66 @@ export function getCompanionStatModifierSources(character: Character, stat: Stat
   }
 
   return sources;
+}
+
+export function getCharacterStatBreakdown<TItem extends GearModifierItem>(
+  character: StatBearingCharacter<TItem>,
+  stat: Stat,
+  options: CharacterStatBreakdownOptions = { mode: "resting" }
+): CharacterStatBreakdown {
+  const upgrades = character.statUpgrades?.[stat] ?? 0;
+  const base = Math.max(0, character.stats[stat] - upgrades);
+  const equippedItems = (Object.keys(character.equippedGear) as GearSlot[])
+    .map((slot) => getEquippedGearItem(character, slot))
+    .filter((item): item is TItem => item !== undefined);
+  const equipped = equippedItems
+    .filter((item) =>
+      !options.suppressedInstanceIds?.has(item.instanceId ?? "") &&
+      item.statBonus.stat === stat &&
+      isGearModifierActive(item, options)
+    )
+    .map<CharacterStatModifierSource>((item) => ({
+      sourceType: "equipped",
+      label: item.name,
+      value: item.statBonus.amount,
+      catalogId: item.id,
+      instanceId: item.instanceId,
+      scope: options.mode
+    }));
+  const companions = getCompanionStatModifierSources(character, stat).map<CharacterStatModifierSource>((source) => ({
+    sourceType: "companion",
+    label: source.label,
+      value: source.value,
+      scope: options.mode
+    }));
+  const conditionalEquipment = options.mode === "resting"
+    ? equippedItems
+        .filter((item) =>
+          !options.suppressedInstanceIds?.has(item.instanceId ?? "") &&
+          item.statBonus.stat === stat &&
+          item.effectModel === "conditional" &&
+          item.conditionType === "battle"
+        )
+        .map<CharacterStatModifierSource>((item) => ({
+          sourceType: "equipped",
+          label: item.name,
+          value: item.statBonus.amount,
+          catalogId: item.id,
+          instanceId: item.instanceId,
+          scope: "battle"
+        }))
+    : [];
+  const contextual = [...conditionalEquipment, ...(options.contextualSources ?? [])];
+
+  return {
+    base,
+    upgrades,
+    equipped,
+    companions,
+    contextual,
+    final:
+      character.stats[stat] +
+      equipped.reduce((sum, source) => sum + source.value, 0) +
+      companions.reduce((sum, source) => sum + source.value, 0)
+  };
 }

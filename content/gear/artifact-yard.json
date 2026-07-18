@@ -1,0 +1,6 @@
+{
+  "id": "artifact-yard", "name": "Yard Bellframe Core", "slot": "utility", "subtype": "utility", "category": "consumable",
+  "statBonus": { "stat": "signal", "amount": 1 }, "tier": "artifact", "progressionWeight": 1, "startingEligible": false, "normalShopCommon": false,
+  "shopCategories": ["relic-dealer"], "activeText": "Open the relay housing to recover its Marshal Seal.", "useLimit": "discard",
+  "effectModel": "consumable", "activationTiming": ["action"], "consumeOnUse": true, "consumableEffect": "grantMarshalSeal", "requiresEquipped": false
+}

@@ -57,8 +57,9 @@ Useful scripts:
 - `npm run test:engine` runs engine and room-server logic tests
 - `npm run test:integration` runs WebSocket and end-to-end server integration tests
 - `npm run audit:assets` checks asset coverage
-- `npm run generate:card-images:gemini` generates missing card art from `generated/card-image-prompts.json`
-- `npm run generate:card-images:openai` generates missing card art with ChatGPT Image 2.0 / `gpt-image-2`
+- `npm run export:image-prompts` refreshes the typed prompt catalogs and transient `generated/card-image-prompts.json`
+- `npm run generate:card-images:gemini` refreshes prompts, then generates missing card art
+- `npm run generate:card-images:openai` refreshes prompts, then generates missing card art with `gpt-image-2`
 
 Generate missing card images with ChatGPT Image 2.0:
 
@@ -111,7 +112,7 @@ npm run audit:assets
 - `content/cards/contracts` contract objectives
 - `content/cards/anomalies` anomaly encounters
 - `content/cards/artifacts` artifact rewards
-- `content/cards/scars` persistent wound / Heat scars
+- `content/cards/scars` persistent consequences of the Wound and Scar lifecycle
 - `content/cards/escalations` breach pressure events
 - `content/sectors` authored sector deck references
 

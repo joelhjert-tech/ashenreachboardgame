@@ -1,5 +1,9 @@
 import { z } from "zod";
-import { effectSchema } from "./card.schema.js";
+import {
+  authoredEffectSchema,
+  effectSchema,
+  legacyCompatibleEffectSchema
+} from "./card.schema.js";
 
 export const factionGiverSchema = z.enum([
   "Meridian Compact",
@@ -47,22 +51,46 @@ const shopTransactionObjectiveSchema = z.object({
   label: z.string().min(1)
 });
 
+const tileChallengeResolvedObjectiveSchema = z.object({
+  type: z.literal("tileChallengeResolved"),
+  challengeId: z.string().min(1).optional(),
+  sectorId: z.string().min(1).optional(),
+  challengeType: z.enum(["hazard", "anomaly"]).optional(),
+  challengeTag: z.string().min(1).optional(),
+  requireSuccess: z.boolean().optional(),
+  target: z.number().int().min(1),
+  label: z.string().min(1)
+});
+
 export const contractObjectiveSchema = z.discriminatedUnion("type", [
   defeatCountObjectiveSchema,
   spaceTextResolvedObjectiveSchema,
   multiStopRouteObjectiveSchema,
-  shopTransactionObjectiveSchema
+  shopTransactionObjectiveSchema,
+  tileChallengeResolvedObjectiveSchema
 ]);
 
-export const contractCardSchema = z.object({
+const contractCardBaseSchema = z.object({
   id: z.string().min(1),
   name: z.string().min(1),
   factionGiver: factionGiverSchema,
   text: z.string().min(1),
-  objective: contractObjectiveSchema,
+  objective: contractObjectiveSchema
+});
+
+export const authoredContractCardSchema = contractCardBaseSchema.extend({
+  reward: authoredEffectSchema
+});
+
+export const contractCardSchema = contractCardBaseSchema.extend({
   reward: effectSchema
+});
+
+export const legacyCompatibleContractCardSchema = contractCardBaseSchema.extend({
+  reward: legacyCompatibleEffectSchema
 });
 
 export type FactionGiver = z.infer<typeof factionGiverSchema>;
 export type ContractObjective = z.infer<typeof contractObjectiveSchema>;
 export type ContractCard = z.infer<typeof contractCardSchema>;
+export type LegacyCompatibleContractCard = z.infer<typeof legacyCompatibleContractCardSchema>;

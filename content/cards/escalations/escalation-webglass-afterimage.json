@@ -7,14 +7,8 @@
   "step": 3,
   "resolutionSummary": "Pinned the afterimage to a false route and cut the real signal free.",
   "resolveEffect": {
-    "type": "sequence",
-    "effects": [
-      { "type": "lose_heat", "amount": 1 },
-      {
-        "type": "gain_note",
-        "text": "Webglass afterimage pinned to a false route."
-      }
-    ]
+    "type": "gain_note",
+    "text": "Webglass afterimage pinned to a false route."
   },
   "escalationDelta": -1
 }

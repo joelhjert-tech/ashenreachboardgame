@@ -1,0 +1,27 @@
+{
+  "id": "rift-anchor-spike",
+  "name": "Rift Anchor Spike",
+  "slot": "utility",
+  "category": "chargedRelic",
+  "statBonus": {
+    "stat": "forge",
+    "amount": 1
+  },
+  "activeText": "Refuse Displacement — Reaction: When an effect would forcibly move or relocate you, but before that displacement resolves, spend 1 charge to remain in your current sector. The source event still counts as having occurred, and all non-displacement effects resolve normally.",
+  "useLimit": "charge",
+  "charges": 2,
+  "effectModel": "charged",
+  "maxCharges": 2,
+  "startingCharges": 2,
+  "chargeCost": 1,
+  "rechargeRule": "none",
+  "activationTiming": ["pendingForcedDisplacement"],
+  "chargedEffect": "suppressForcedDisplacement",
+  "requiresEquipped": true,
+  "flavor": "Hammer it in and the world has to admit you were there.",
+  "tier": "artifact",
+  "progressionWeight": 3,
+  "shopCategories": ["relic-dealer"],
+  "startingEligible": false,
+  "normalShopCommon": false
+}

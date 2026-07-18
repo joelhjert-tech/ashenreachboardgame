@@ -558,9 +558,19 @@ export const cardArtRuntimeCatalog: RuntimeCardArtCatalogEntry[] = [
     "outputPath": "/assets/cards/contracts/break-the-raider-chain.png"
   },
   {
+    "cardId": "cartel-black-route-exchange",
+    "cardType": "contract",
+    "outputPath": "/assets/cards/contracts/cartel-black-route-exchange.png"
+  },
+  {
     "cardId": "cartel-crossing-thread",
     "cardType": "contract",
     "outputPath": "/assets/cards/contracts/cartel-crossing-thread.png"
+  },
+  {
+    "cardId": "cartel-crosswind-ledger",
+    "cardType": "contract",
+    "outputPath": "/assets/cards/contracts/cartel-crosswind-ledger.png"
   },
   {
     "cardId": "cartel-exposed-object",
@@ -576,6 +586,11 @@ export const cardArtRuntimeCatalog: RuntimeCardArtCatalogEntry[] = [
     "cardId": "cartel-quiet-route",
     "cardType": "contract",
     "outputPath": "/assets/cards/contracts/cartel-quiet-route.png"
+  },
+  {
+    "cardId": "choir-echo-triangulation",
+    "cardType": "contract",
+    "outputPath": "/assets/cards/contracts/choir-echo-triangulation.png"
   },
   {
     "cardId": "choir-hush-census",
@@ -628,9 +643,19 @@ export const cardArtRuntimeCatalog: RuntimeCardArtCatalogEntry[] = [
     "outputPath": "/assets/cards/contracts/compact-ember-courier.png"
   },
   {
+    "cardId": "compact-equipment-requisition",
+    "cardType": "contract",
+    "outputPath": "/assets/cards/contracts/compact-equipment-requisition.png"
+  },
+  {
     "cardId": "compact-surgery-bond",
     "cardType": "contract",
     "outputPath": "/assets/cards/contracts/compact-surgery-bond.png"
+  },
+  {
+    "cardId": "compact-three-lantern-circuit",
+    "cardType": "contract",
+    "outputPath": "/assets/cards/contracts/compact-three-lantern-circuit.png"
   },
   {
     "cardId": "contract-beacon",
@@ -641,6 +666,11 @@ export const cardArtRuntimeCatalog: RuntimeCardArtCatalogEntry[] = [
     "cardId": "contract-lantern-run",
     "cardType": "contract",
     "outputPath": "/assets/cards/contracts/contract-lantern-run.png"
+  },
+  {
+    "cardId": "dominion-foundry-proof-marks",
+    "cardType": "contract",
+    "outputPath": "/assets/cards/contracts/dominion-foundry-proof-marks.png"
   },
   {
     "cardId": "dominion-gate-tithe",

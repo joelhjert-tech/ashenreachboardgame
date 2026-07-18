@@ -12,6 +12,7 @@ import { SCENARIOS, getScenarioDefinition } from "../game/data/scenarios.js";
 import { getScenarioSheetArtPath } from "../game/data/scenarioSheetArt.js";
 import { nemeses } from "../game/data/nemeses.js";
 import { applyPhaseOneQaFixture, type PhaseOneQaFixture } from "./phaseOneQaFixture.js";
+import { getSubmittedDisplayNameError, normalizeSubmittedDisplayName } from "../game/rules/playerIdentity.js";
 
 const DEFAULT_SERVER_PORT = 8080;
 const DEFAULT_CLIENT_PORT = 5173;
@@ -147,6 +148,7 @@ function createHttpServer(qaFixturesEnabled: boolean): HttpServer {
           return;
         }
         applyPhaseOneQaFixture(roomServer.getState(), tokenPayload.seatId, body.fixture);
+        roomServer.broadcastQaFixtureState();
         sendJson(response, 200, { ok: true, fixture: body.fixture, sequence: roomServer.getState().sequence });
         return;
       }
@@ -303,12 +305,18 @@ function createHttpServer(qaFixturesEnabled: boolean): HttpServer {
           return;
         }
 
-        if (!body.displayName?.trim()) {
-          sendJson(response, 400, { error: "Display name is required" });
+        if (body.seatId !== undefined) {
+          sendJson(response, 400, { error: "Seat assignment is server-authoritative" });
           return;
         }
 
-        const joinResult = roomServer.joinSeat(body.displayName.trim(), body.characterId, body.seatId);
+        const displayNameError = getSubmittedDisplayNameError(body.displayName ?? "");
+        if (displayNameError) {
+          sendJson(response, 400, { error: displayNameError });
+          return;
+        }
+
+        const joinResult = roomServer.joinSeat(normalizeSubmittedDisplayName(body.displayName!), body.characterId);
         sendJson(response, 200, joinResult);
         return;
       }

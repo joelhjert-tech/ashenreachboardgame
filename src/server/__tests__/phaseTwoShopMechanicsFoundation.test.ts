@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { loadGear } from "../../game/content/gear.js";
 import { loadThreatCards } from "../../game/content/threats.js";
-import { createSequenceRandomSource, type RandomSource } from "../../game/engine/dice.js";
 import { filterGearByShopCategory } from "../../game/rules/shopCategories.js";
 import {
   getAvailableShopStockForCategory,
@@ -82,13 +81,13 @@ function createShopState(options: {
   return state;
 }
 
-function createShopServer(options: Parameters<typeof createShopState>[0] = {}, randomSource?: RandomSource): {
+function createShopServer(options: Parameters<typeof createShopState>[0] = {}): {
   server: GameRoomServer;
   client: ConnectedClient;
   sent: Array<Record<string, unknown>>;
 } {
   const sent: Array<Record<string, unknown>> = [];
-  const server = new GameRoomServer(createShopState(options), [], randomSource);
+  const server = new GameRoomServer(createShopState(options));
 
   return {
     server,
@@ -224,35 +223,46 @@ describe("Phase 2A shop mechanics foundation", () => {
     expect(server.getState().lastOutcomeSummary?.summary).toContain(`Bought ${selectedGear.name}`);
   });
 
-  it("randomly reveals between two and six unique equipment items", () => {
-    const minimum = createShopServer(
-      { sectorId: "outer_waymarket", salvage: 6 },
-      createSequenceRandomSource([0, 0, 0])
-    );
-    minimum.server.handleIntent(minimum.client, {
+  it("reveals only canonical Supply cards through Browse Supplies", () => {
+    const { server, client, sent } = createShopServer({ sectorId: "kettleward-foundry", salvage: 6 });
+
+    server.handleIntent(client, {
       type: "SHOP_SERVICE_REQUESTED",
       seatId: "seat-1",
-      serviceId: "buy-gear"
+      serviceId: "buy-supplies"
     });
-    const minimumStock = minimum.server.getState().shopStockReveals.find((entry) => entry.seatId === "seat-1")?.stockIds ?? [];
 
-    expect(minimumStock).toHaveLength(2);
-    expect(new Set(minimumStock).size).toBe(minimumStock.length);
+    const reveal = server.getState().shopStockReveals.find((entry) => entry.serviceId === "buy-supplies");
+    expect(getRejectedReason(sent)).toBeUndefined();
+    expect(reveal?.stockIds.length).toBeGreaterThan(0);
+    expect(reveal?.stockIds.every((id) => loadGear().get(id)?.subtype === "supply")).toBe(true);
+    expect(server.getState().players[0]?.character.salvage).toBe(6);
+  });
 
-    const maximum = createShopServer(
-      { sectorId: "outer_waymarket", salvage: 6 },
-      createSequenceRandomSource([4, 0, 0, 0, 0, 0, 0])
-    );
-    maximum.server.handleIntent(maximum.client, {
+  it("repairs one exact depleted Gear instance and restores its charges", () => {
+    const { server, client, sent } = createShopServer({ sectorId: "kettleward-foundry", salvage: 6 });
+    const charged = requireGear("choir-lantern");
+    server.getState().players[0]!.character.heldGear = [{
+      ...charged,
+      instanceId: "choir-lantern:seat-1:test",
+      currentCharges: 0,
+      charges: 0,
+      maxUses: 2
+    }];
+
+    server.handleIntent(client, {
       type: "SHOP_SERVICE_REQUESTED",
       seatId: "seat-1",
-      serviceId: "buy-gear"
+      serviceId: "repair-gear",
+      itemInstanceId: "choir-lantern:seat-1:test"
     });
-    const maximumStock = maximum.server.getState().shopStockReveals.find((entry) => entry.seatId === "seat-1")?.stockIds ?? [];
 
-    expect(maximumStock).toHaveLength(6);
-    expect(new Set(maximumStock).size).toBe(maximumStock.length);
-    expect(maximumStock.every((id) => loadGear().get(id)?.tier !== "artifact")).toBe(true);
+    const repaired = server.getState().players[0]?.character.heldGear[0];
+    expect(getRejectedReason(sent)).toBeUndefined();
+    expect(repaired?.currentCharges).toBe(2);
+    expect(repaired?.charges).toBe(2);
+    expect(server.getState().players[0]?.character.salvage).toBe(4);
+    expect(server.getState().lastOutcomeSummary?.summary).toContain("restore Choir Lantern");
   });
 
   it("lets a player skip a shop without changing salvage or inventory", () => {
@@ -309,7 +319,7 @@ describe("Phase 2A shop mechanics foundation", () => {
     expect(getRejectedReason(blocked.sent)).toBe(SHOP_FAILURE_REASONS.shopBlockedByThreat);
   });
 
-  it("rejects insufficient salvage, non-shop sectors, unavailable items, and blocked shops", () => {
+  it("rejects a purchase when salvage is insufficient", () => {
     const insufficient = createShopServer({ sectorId: "outer_waymarket", salvage: 0 });
     insufficient.server.handleIntent(insufficient.client, {
       type: "SHOP_SERVICE_REQUESTED",
@@ -331,7 +341,9 @@ describe("Phase 2A shop mechanics foundation", () => {
 
     expect(getRejectedReason(insufficient.sent)).toBe(SHOP_FAILURE_REASONS.insufficientSalvage);
     expect(insufficient.server.getState().players[0]?.character.heldGear).toEqual([]);
+  });
 
+  it("rejects shop service outside a shop sector", () => {
     const notAtShop = createShopServer({ sectorId: "ashwake-crossing", salvage: 6 });
     notAtShop.server.handleIntent(notAtShop.client, {
       type: "SHOP_SERVICE_REQUESTED",
@@ -339,7 +351,9 @@ describe("Phase 2A shop mechanics foundation", () => {
       serviceId: "buy-gear"
     });
     expect(getRejectedReason(notAtShop.sent)).toBe(SHOP_FAILURE_REASONS.notAtShop);
+  });
 
+  it("rejects a purchase when the item is unavailable", () => {
     const unavailable = createShopServer({ sectorId: "outer_waymarket", salvage: 6 });
     unavailable.server.handleIntent(unavailable.client, {
       type: "SHOP_SERVICE_REQUESTED",
@@ -352,7 +366,9 @@ describe("Phase 2A shop mechanics foundation", () => {
       cardId: "coffin-rig"
     });
     expect(getRejectedReason(unavailable.sent)).toBe(SHOP_FAILURE_REASONS.itemUnavailable);
+  });
 
+  it("rejects shop service while the shop is blocked by a threat", () => {
     const blocked = createShopServer({
       sectorId: "outer_waymarket",
       salvage: 6,

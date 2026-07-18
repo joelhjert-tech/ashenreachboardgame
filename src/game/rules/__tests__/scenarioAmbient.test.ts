@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   buildScenarioTelemetry,
+  createInitialScenarioPreparation,
   createInitialScenarioProgress,
   describeScenarioPressure,
   resolveScenarioContractCompleted,
@@ -55,8 +56,9 @@ function createContext(
 
 describe("scenario ambient rules", () => {
   it("seeds initial progress for each authored scenario", () => {
-    expect(createInitialScenarioProgress("scenario_broken_seal")).toEqual({ sealTokens: 6 });
-    expect(createInitialScenarioProgress("scenario_broken_seal", "single-player")).toEqual({ sealTokens: 8 });
+    expect(createInitialScenarioProgress("scenario_broken_seal")).toEqual({});
+    expect(createInitialScenarioPreparation("scenario_broken_seal")).toMatchObject({ resources: { sealIntegrity: 6 } });
+    expect(createInitialScenarioPreparation("scenario_broken_seal", "single-player")).toMatchObject({ resources: { sealIntegrity: 8 } });
     expect(createInitialScenarioProgress("scenario_throne_of_ash")).toEqual({ crownClaims: 0 });
     expect(createInitialScenarioProgress("scenario_mirror_of_false_heroes")).toEqual({});
     expect(createInitialScenarioProgress("scenario_devourer_beneath")).toEqual({ doomTokens: 0, devourerIndex: 0 });
@@ -67,37 +69,33 @@ describe("scenario ambient rules", () => {
   it("applies Broken Seal turn-start pressure and ward restoration", () => {
     const state = createScenarioState({
       activeScenarioId: "scenario_broken_seal",
-      scenarioProgress: { sealTokens: 6 }
+      scenarioPreparation: createInitialScenarioPreparation("scenario_broken_seal")
     });
 
     const weakening = resolveScenarioTurnStart(createContext(state, { roll: 1 }));
     expect(weakening?.summary).toContain("5 seal tokens remain");
     const weakenedState = weakening?.updater(state) ?? state;
-    expect(weakenedState.scenarioProgress.sealTokens).toBe(5);
+    expect(weakenedState.scenarioPreparation.resources.sealIntegrity).toBe(5);
 
     const surge = resolveScenarioTurnStart(createContext(state, { roll: 3 }));
     expect(surge?.summary).toContain("rouses a local threat");
     expect(surge?.followUp?.type).toBe("draw_sector_threat");
     const surgedState = surge?.updater(state) ?? state;
-    expect(surgedState.players[0]?.character.heat).toBe(0);
 
-    const restored = resolveScenarioEnemyDefeat(createContext(weakenedState));
-    expect(restored?.summary).toContain("6 seal tokens now stand");
-    const restoredState = restored?.updater(weakenedState) ?? weakenedState;
-    expect(restoredState.scenarioProgress.sealTokens).toBe(6);
+    expect(resolveScenarioEnemyDefeat(createContext(weakenedState))).toBeNull();
   });
 
   it("softens Broken Seal turn-start pressure and restoration cap in single-player", () => {
     const state = createScenarioState({
       sessionMode: "single-player",
       activeScenarioId: "scenario_broken_seal",
-      scenarioProgress: { sealTokens: 8 }
+      scenarioPreparation: createInitialScenarioPreparation("scenario_broken_seal", "single-player")
     });
 
     const weakening = resolveScenarioTurnStart(createContext(state, { roll: 1 }));
     expect(weakening?.summary).toContain("7 seal tokens remain");
     const weakenedState = weakening?.updater(state) ?? state;
-    expect(weakenedState.scenarioProgress.sealTokens).toBe(7);
+    expect(weakenedState.scenarioPreparation.resources.sealIntegrity).toBe(7);
 
     const surge = resolveScenarioTurnStart(createContext(state, { roll: 2 }));
     expect(surge?.summary).toContain("rouses a local threat");
@@ -105,23 +103,23 @@ describe("scenario ambient rules", () => {
 
     expect(resolveScenarioTurnStart(createContext(state, { roll: 4 }))).toBeNull();
 
-    const restored = resolveScenarioEnemyDefeat(createContext(state));
-    const restoredState = restored?.updater(state) ?? state;
-    expect(restoredState.scenarioProgress.sealTokens).toBe(8);
+    expect(resolveScenarioEnemyDefeat(createContext(state))).toBeNull();
   });
 
   it("resets the Broken Seal without adding deprecated heat when the final ward token breaks", () => {
     const state = createScenarioState({
       activeScenarioId: "scenario_broken_seal",
-      scenarioProgress: { sealTokens: 1 }
+      scenarioPreparation: {
+        ...createInitialScenarioPreparation("scenario_broken_seal"),
+        resources: { sealIntegrity: 1 }
+      }
     });
 
     const weakening = resolveScenarioTurnStart(createContext(state, { roll: 1 }));
     expect(weakening?.summary).toContain("The last seal broke");
     const weakenedState = weakening?.updater(state) ?? state;
-    expect(weakenedState.scenarioProgress.sealTokens).toBe(3);
-    expect(weakenedState.scenarioProgress.sealCollapses).toBe(1);
-    expect(weakenedState.players[0]?.character.heat).toBe(0);
+    expect(weakenedState.scenarioPreparation.resources.sealIntegrity).toBe(3);
+    expect(weakenedState.scenarioPreparation.resources.sealCollapses).toBe(1);
     expect(weakenedState.players[0]?.character.scars).toEqual([]);
   });
 
@@ -162,7 +160,6 @@ describe("scenario ambient rules", () => {
     const resolution = resolveScenarioContractCompleted(createContext(state));
     expect(resolution?.summary).toContain("mirror feeds on selfish praise");
     const nextState = resolution?.updater(state) ?? state;
-    expect(nextState.players[0]?.character.heat).toBe(0);
     expect(nextState.scenarioProgress.mirrorPressure).toBe(1);
 
     const gearResolution = resolveScenarioGearGained({
@@ -171,7 +168,6 @@ describe("scenario ambient rules", () => {
     });
     expect(gearResolution?.summary).toContain("fresh artifact power");
     const gearState = gearResolution?.updater(nextState) ?? nextState;
-    expect(gearState.players[0]?.character.heat).toBe(0);
     expect(gearState.scenarioProgress.mirrorPressure).toBe(2);
   });
 
@@ -309,7 +305,6 @@ describe("scenario ambient rules", () => {
         }
       }))
     }) ?? afterEngine;
-    expect(cooledState.players[0]?.character.heat).toBe(2);
 
     const skillFailure = resolveScenarioSkillResolved({
       ...createContext(afterEngine),
@@ -318,7 +313,6 @@ describe("scenario ambient rules", () => {
     });
     expect(skillFailure?.summary).toContain("gains 1 instability");
     const heatedState = skillFailure?.updater(afterEngine) ?? afterEngine;
-    expect(heatedState.players[0]?.character.heat).toBe(0);
 
     const starState = createScenarioState({
       activeScenarioId: "scenario_dying_star",
@@ -329,7 +323,6 @@ describe("scenario ambient rules", () => {
     const afterStar = starResolution?.updater(starState) ?? starState;
     expect(afterStar.scenarioProgress.starTokens).toBe(5);
     expect(afterStar.players[0]?.character.wounds).toBe(1);
-    expect(afterStar.players[0]?.character.heat).toBe(0);
 
     const woundResolution = resolveScenarioWoundsTaken({
       ...createContext(afterStar),

@@ -4,7 +4,7 @@
   "cardType": "enemy",
   "title": "Pale Contract Collector",
   "enemyName": "Pale Contract Collector",
-  "text": "A debt enforcer mistakes your crew for the names written in a burning ledger.",
+  "text": "A debt enforcer mistakes your crew for the names written in a burning ledger. If you lose, lose up to 1 Salvage.",
   "flavor": "The Pale Cartels never waste a case of mistaken identity.",
   "severity": 2,
   "region": "outer",
@@ -16,15 +16,15 @@
     "amount": 2
   },
   "woundOnLoss": {
-    "type": "gain_heat",
-    "amount": 2
+    "type": "lose_salvage",
+    "amount": 1
   },
   "enemyFamily": "cartel",
   "threatLane": "yellow",
   "rarity": "common",
   "tempo": "push",
   "resourceTags": [
-    "heat",
+    "salvage",
     "trophy"
   ]
 }

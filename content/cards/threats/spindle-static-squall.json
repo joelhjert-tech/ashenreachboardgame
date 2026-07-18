@@ -3,7 +3,7 @@
   "type": "threat",
   "cardType": "hazard",
   "title": "Spindle Static Squall",
-  "text": "Glassmere static lashes over the road, turning compass needles and teeth toward the tower.",
+  "text": "The squall corrupts your bearing. On failure, reduce your next movement roll by 1, to a minimum of 1.",
   "flavor": "Even the silence points north.",
   "severity": 2,
   "stat": "signal",
@@ -13,8 +13,10 @@
     "text": "You tuned the squall into a stable bearing."
   },
   "failEffect": {
-    "type": "gain_heat",
-    "amount": 1
+    "type": "next_normal_movement_roll_modifier",
+    "amount": -1,
+    "minimumResult": 1,
+    "sourceCardId": "spindle-static-squall"
   },
   "enemyFamily": "hazard",
   "threatLane": "blue",
@@ -22,7 +24,6 @@
   "rarity": "common",
   "tempo": "push",
   "resourceTags": [
-    "heat",
     "loot"
   ]
 }

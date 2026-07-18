@@ -33,7 +33,7 @@ function createContracts(): Map<string, ContractCard> {
         factionGiver: "Glass Choir",
         text: "Defeat two enemies to restore a listening chamber.",
         objective: { type: "defeatCount", target: 2 },
-        reward: { type: "lose_heat", amount: 1 }
+        reward: { type: "gain_note", text: "Legacy contract reward retired." }
       }
     ]
   ]);
@@ -155,7 +155,7 @@ function createMatrixState(playerCount: number, overrides: Partial<GameState> = 
     resolutionSource: null,
     activeSeatIndex: 0,
     turnOrder: seats.map((seat) => seat.seatId),
-    heatThreshold: 6,
+    reflectionPressureThreshold: 6,
     woundThreshold: 3,
     sequence: 0,
     escalationLevel: 0,
@@ -171,7 +171,10 @@ function createMatrixState(playerCount: number, overrides: Partial<GameState> = 
     pendingEnemyRoll: null,
     pendingEffect: null,
     lastOutcomeSummary: null,
-    ...overrides
+    ...overrides,
+    scenarioPreparation: overrides.scenarioPreparation ?? { resources: { sealIntegrity: 6 }, completedObjectiveIds: [], processedSourceEventIds: [] },
+    scenarioConfrontation: overrides.scenarioConfrontation ?? { active: false, confrontationId: null, progress: {}, stage: null, processedSourceEventIds: [] },
+    scenarioResult: overrides.scenarioResult ?? { status: "unresolved", victoryConditionId: null, sourceType: null, sourceId: null, winningSeatId: null, shared: null, achievedAtSequence: null }
   };
 }
 
@@ -325,10 +328,7 @@ describe.each([1, 2, 3, 4, 5, 6])("player count matrix (%i players)", (playerCou
           currentEncounter: null,
           pendingEnemyRoll: null,
           pendingEffect: null,
-          scenarioProgress: {
-            sealRestorationMarks: 0,
-            sealTokens: 6
-          },
+          scenarioProgress: {},
           players: createMatrixState(playerCount).players.map((player, index) =>
             index === 0
               ? {
@@ -364,7 +364,7 @@ describe.each([1, 2, 3, 4, 5, 6])("player count matrix (%i players)", (playerCou
 
     expect(server.getState().status).toBe("active");
     expect(server.getState().winnerSeatId).toBeNull();
-    expect(server.getState().scenarioProgress.sealRestorationMarks).toBe(1);
+    expect(server.getState().scenarioConfrontation.progress.restorationMarks).toBe(1);
   });
 
   it("reaches a valid end-game victory through scenario confrontation", () => {
@@ -374,10 +374,7 @@ describe.each([1, 2, 3, 4, 5, 6])("player count matrix (%i players)", (playerCou
         currentEncounter: null,
         pendingEnemyRoll: null,
         pendingEffect: null,
-        scenarioProgress: {
-          sealRestorationMarks: 1,
-          sealTokens: 6
-        },
+        scenarioProgress: {},
         players: createMatrixState(playerCount).players.map((player, index) =>
           index === 0
             ? {
@@ -413,6 +410,6 @@ describe.each([1, 2, 3, 4, 5, 6])("player count matrix (%i players)", (playerCou
 
     expect(server.getState().status).toBe("ended");
     expect(server.getState().winnerSeatId).toBe("seat-1");
-    expect(server.getState().scenarioProgress.sealRestorationMarks).toBeGreaterThanOrEqual(2);
+    expect(server.getState().scenarioConfrontation.progress.restorationMarks).toBeGreaterThanOrEqual(2);
   });
 });

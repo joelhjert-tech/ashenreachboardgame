@@ -125,7 +125,7 @@ describe("scenario confrontation flow", () => {
 
     expect(roomServer.getState().status).toBe("active");
     expect(roomServer.getState().winnerSeatId).toBeNull();
-    expect(roomServer.getState().scenarioProgress.sealRestorationMarks).toBe(1);
+    expect(roomServer.getState().scenarioConfrontation.progress.restorationMarks).toBe(1);
     expect(roomServer.getState().players.find((entry) => entry.seatId === "seat-1")?.character.wounds).toBe(2);
     expect(roomServer.getState().activeResolution).toMatchObject({
       source: "scenario",
@@ -138,13 +138,9 @@ describe("scenario confrontation flow", () => {
 
   it("ends the game when a confrontation pushes scenario progress to threshold", () => {
     const roomServer = new GameRoomServer(
-      createScenarioState({
-        scenarioProgress: {
-          sealRestorationMarks: 1
-        }
-      }),
+      createScenarioState(),
       [],
-      createSequenceRandomSource([5, 5, 0, 0, 0, 0])
+      createSequenceRandomSource([5, 5, 5, 5, 5, 5])
     );
     const client = createPhoneClient("seat-1");
 
@@ -156,7 +152,7 @@ describe("scenario confrontation flow", () => {
     expect(roomServer.getState().status).toBe("ended");
     expect(roomServer.getState().winnerSeatId).toBe("seat-1");
     expect(roomServer.getState().phase).toBe("broadcast");
-    expect(roomServer.getState().scenarioProgress.sealRestorationMarks).toBe(2);
+    expect(roomServer.getState().scenarioConfrontation.progress.restorationMarks).toBe(3);
   });
 
   it("rejects confrontation attempts from non-active seats", () => {
@@ -172,7 +168,7 @@ describe("scenario confrontation flow", () => {
       seatId: "seat-2"
     } satisfies ClientIntent);
 
-    expect(roomServer.getState().scenarioProgress.sealRestorationMarks).toBeUndefined();
+    expect(roomServer.getState().scenarioConfrontation.progress.restorationMarks).toBeUndefined();
     expect(client.socket.send).toHaveBeenCalled();
     expect(String(client.socket.send.mock.calls[0]?.[0] ?? "")).toContain("INTENT_REJECTED");
   });
@@ -357,7 +353,6 @@ describe("scenario confrontation flow", () => {
                 ...player,
                 character: {
                   ...player.character,
-                  heat: 2,
                   heldGear: [
                     {
                       id: "choir-static-censer",
@@ -550,12 +545,12 @@ describe("scenario confrontation flow", () => {
     expect(roomServer.getState().scenarioProgress.ignitionMarks).toBe(4);
   });
 
-  it("ends a Mirror confrontation attempt immediately when reflection pressure is already at threshold", () => {
+  it.each([3, 4])("ends a Mirror confrontation attempt immediately at/above the reflection-pressure threshold (%i)", (mirrorPressure) => {
     const roomServer = new GameRoomServer(
       createScenarioState({
         activeScenarioId: "scenario_mirror_of_false_heroes",
-        heatThreshold: 3,
-        scenarioProgress: { mirrorPressure: 3 },
+        reflectionPressureThreshold: 3,
+        scenarioProgress: { mirrorPressure, lossPressure: 2 },
         players: createScenarioState().players.map((player) =>
           player.seatId === "seat-1"
             ? {
@@ -586,6 +581,9 @@ describe("scenario confrontation flow", () => {
     expect(roomServer.getState().phase).toBe("navigation");
     expect(roomServer.getState().activeResolution).toBeNull();
     expect(roomServer.getState().scenarioProgress.mirrorBreaks).toBeUndefined();
+    expect(roomServer.getState().reflectionPressureThreshold).toBe(3);
+    expect(roomServer.getState().scenarioProgress.lossPressure).toBe(2);
+    expect(roomServer.getState().escalationLevel).toBe(0);
   });
 
   it("weakens the Broken Seal at turn start from its ambient roll", () => {
@@ -597,12 +595,15 @@ describe("scenario confrontation flow", () => {
     roomServer.setSeatReady("seat-1", true);
     roomServer.startSession();
 
-    expect(roomServer.getState().scenarioProgress.sealTokens).toBe(7);
+    expect(roomServer.getState().scenarioPreparation.resources.sealIntegrity).toBe(7);
   });
 
   it("does not heat operatives when the Broken Seal loses its final token at turn start", () => {
     const state = createInitialSessionState("session-alpha", "single-player");
-    state.scenarioProgress = { sealTokens: 1 };
+    state.scenarioPreparation = {
+      ...state.scenarioPreparation,
+      resources: { sealIntegrity: 1 }
+    };
     const roomServer = new GameRoomServer(state, [], createSequenceRandomSource([0]));
 
     roomServer.joinSeat("Solo", "signal-witch");
@@ -610,9 +611,8 @@ describe("scenario confrontation flow", () => {
     roomServer.setSeatReady("seat-1", true);
     roomServer.startSession();
 
-    expect(roomServer.getState().scenarioProgress.sealTokens).toBe(3);
-    expect(roomServer.getState().scenarioProgress.sealCollapses).toBe(1);
-    expect(roomServer.getState().players.every((player) => player.character.heat === 0)).toBe(true);
+    expect(roomServer.getState().scenarioPreparation.resources.sealIntegrity).toBe(3);
+    expect(roomServer.getState().scenarioPreparation.resources.sealCollapses).toBe(1);
     expect(roomServer.getState().lastOutcomeSummary?.summary ?? "").toContain("last seal broke");
   });
 
@@ -749,7 +749,6 @@ describe("scenario confrontation flow", () => {
 
     expect(roomServer.getState().scenarioProgress.starTokens).toBe(5);
     expect(roomServer.getState().players[0]?.character.wounds).toBe(2);
-    expect(roomServer.getState().players[0]?.character.heat).toBe(0);
   });
 
   it("rotates the Labyrinth Engine mode at turn start", () => {
@@ -786,7 +785,7 @@ describe("scenario confrontation flow", () => {
           enemyName: "Test Enemy",
           trophyValue: 0,
           defeatReward: { type: "gain_note", text: "Victory" },
-          woundOnLoss: { type: "gain_heat", amount: 1 }
+          woundOnLoss: { type: "legacy_compatibility_noop" }
         },
         phase: "action"
         ,
@@ -819,7 +818,6 @@ describe("scenario confrontation flow", () => {
     } satisfies ClientIntent);
     continueVisibleResolution(roomServer);
 
-    expect(roomServer.getState().players[0]?.character.heat).toBe(0);
   });
 
   it("leaves legacy heat unchanged on a successful matching Labyrinth Engine signal check", () => {
@@ -840,7 +838,7 @@ describe("scenario confrontation flow", () => {
           stat: "signal",
           difficulty: 2,
           successEffect: { type: "gain_note", text: "Signal mode passed." },
-          failEffect: { type: "gain_heat", amount: 1 }
+          failEffect: { type: "legacy_compatibility_noop" }
         },
         phase: "action",
         players: createScenarioState().players
@@ -849,7 +847,6 @@ describe("scenario confrontation flow", () => {
             ...player,
             character: {
               ...player.character,
-              heat: 1,
               stats: {
                 ...player.character.stats,
                 signal: 2
@@ -868,7 +865,6 @@ describe("scenario confrontation flow", () => {
       stat: "signal"
     } satisfies ClientIntent);
 
-    expect(roomServer.getState().players[0]?.character.heat).toBe(1);
   });
 
   it("resolves a Devourer clash when an operative moves onto the roaming sector and can reduce doom", () => {

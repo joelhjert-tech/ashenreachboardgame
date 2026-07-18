@@ -3,17 +3,17 @@
   "type": "threat",
   "cardType": "hazard",
   "title": "Void-Salt Sickness",
-  "text": "White salt blooms across your gloves and starts pulling warmth from the blood beneath.",
+  "text": "White salt blooms across your gloves and starts pulling warmth from the blood beneath. If the fever breaks, heal 1 Wound; if it takes hold, suffer 1 Wound.",
   "flavor": "It tastes like a memory you never had.",
   "severity": 1,
   "stat": "forge",
   "difficulty": 5,
   "successEffect": {
-    "type": "lose_heat",
+    "type": "heal_wound",
     "amount": 1
   },
   "failEffect": {
-    "type": "gain_heat",
+    "type": "take_wound",
     "amount": 1
   },
   "enemyFamily": "hazard",
@@ -22,6 +22,6 @@
   "rarity": "common",
   "tempo": "stall",
   "resourceTags": [
-    "heat"
+    "wound"
   ]
 }
