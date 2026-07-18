@@ -19,6 +19,8 @@
     "validate:content": "tsx scripts/validate-content.ts",
     "analyze:play-feel": "tsx scripts/analyze-play-feel.ts",
     "analyze:economy": "tsx scripts/analyze-economy.ts",
+    "analyze:cooperative-assistance": "tsx scripts/analyze-cooperative-assistance.ts",
+    "capture:broken-concordance-qa": "tsx scripts/capture-broken-concordance-qa.ts",
     "audit:topology": "tsx scripts/generate-board-transition-manifest.ts",
     "test:topology": "vitest run src/game/rules/__tests__/boardTopologyProgression.test.ts src/game/engine/__tests__/boardSpaceRules.test.ts src/server/__tests__/sessionState.test.ts src/client/tv/__tests__/BoardMap.test.tsx src/client/phone/__tests__/PhoneActionPanel.test.tsx",
     "calibrate:economy": "tsx scripts/calibrate-economy.ts",

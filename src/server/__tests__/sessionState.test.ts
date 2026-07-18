@@ -1169,14 +1169,15 @@ describe("canonical sector graph", () => {
     });
   });
 
-  it("builds scenario telemetry for all six authored scenarios with live, scenario-specific readouts", () => {
+  it("builds scenario telemetry for all seven authored scenarios with live, scenario-specific readouts", () => {
     const expectations: Record<string, string[]> = {
       scenario_broken_seal: ["Seal Integrity", "Turn Pressure", "Collapses", "Final Restoration"],
       scenario_throne_of_ash: ["Crown Claims", "Crown Holders", "Active Crowns"],
       scenario_mirror_of_false_heroes: ["Mirror Breaks", "Scar Pressure", "Reflection Feed"],
       scenario_devourer_beneath: ["Doom Tokens", "Devourer", "Collapse Pulse"],
       scenario_labyrinth_engine: ["Engine Mode", "Rotation", "Shutdown"],
-      scenario_dying_star: ["Starfire", "Wound Burn", "Ignition"]
+      scenario_dying_star: ["Starfire", "Wound Burn", "Ignition"],
+      scenario_broken_concordance: ["Concordance Nodes", "Core Stages", "Assistance"]
     };
 
     for (const scenario of SCENARIOS) {

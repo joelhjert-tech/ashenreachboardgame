@@ -132,7 +132,7 @@ describe("Heat Compatibility C3B Mirror scenario retirement", () => {
   });
 
   it("leaves all five out-of-scope scenarios byte-stable through their authored plans", () => {
-    expect(SCENARIOS).toHaveLength(6);
+    expect(SCENARIOS).toHaveLength(7);
     for (const [id, hash] of OTHER_SCENARIO_HASHES) expect(hashScenario(id)).toBe(hash);
   });
 

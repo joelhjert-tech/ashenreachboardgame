@@ -134,6 +134,13 @@ describe("Phase 3B scenario objective progress triggers", () => {
       seatId: "seat-1",
       choiceId: "seal-alignment"
     });
+    const pendingTest = server.getState().pendingCooperativeTest;
+    expect(pendingTest?.sourceKind).toBe("boardSpace");
+    runIntent(server, {
+      type: "COOPERATIVE_TEST_ROLL_REQUESTED",
+      seatId: "seat-1",
+      testId: pendingTest!.id
+    });
 
     expect(server.getState().scenarioProgress.shutdownMarks).toBe(1);
   });

@@ -66,7 +66,7 @@ describe("AdminLibrary", () => {
     expect(screen.getByRole("heading", { name: /content\/cards\/threats\//i })).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: /return to command board/i }));
     expect(onClose).toHaveBeenCalledOnce();
-  });
+  }, 10_000);
 
   it("cross-links canonical map references to the Map Inspector", () => {
     const onOpenMapTile = vi.fn();

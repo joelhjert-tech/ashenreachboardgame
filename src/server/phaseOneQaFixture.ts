@@ -5,6 +5,7 @@ import { loadFollowers } from "../game/content/followers.js";
 import { loadAnomalyCards } from "../game/content/anomalies.js";
 import { loadEscalationCards } from "../game/content/escalations.js";
 import type { GameState } from "../game/schema/session.schema.js";
+import { getIntrinsicBaseStat } from "../game/rules/cooperativeAssistance.js";
 
 export type PhaseOneQaFixture =
   | { kind: "setup-flow"; stage: "scenario-selection" }
@@ -23,6 +24,10 @@ export type PhaseOneQaFixture =
   | {
       kind: "phone-battle";
       stage: "encounter" | "battle-setup" | "pending-enemy-roll" | "rolled-result" | "success" | "defeat";
+    }
+  | {
+      kind: "cooperative-assistance";
+      stage: "active-selector" | "helper-pending" | "one-accepted" | "two-accepted" | "result" | "scenario-node";
     }
   | { kind: "card-category"; stage: "enemy" | "hazard" | "event" | "anomaly" | "escalation" | "persistent" };
 
@@ -406,6 +411,81 @@ export function applyPhaseOneQaFixture(state: GameState, seatId: string, fixture
       ];
       player.character.equippedGear.utility = lantern.id;
     }
+    return;
+  }
+
+  if (fixture.kind === "cooperative-assistance") {
+    const player = state.players.find((entry) => entry.seatId === seatId);
+    const helpers = state.turnOrder
+      .filter((helperSeatId) => helperSeatId !== seatId)
+      .map((helperSeatId) => state.players.find((entry) => entry.seatId === helperSeatId))
+      .filter((entry): entry is NonNullable<typeof entry> => Boolean(entry))
+      .slice(0, 2);
+    if (!player || helpers.length < 2) throw new Error("QA cooperative assistance fixture requires three active operatives");
+    for (const seat of state.seats) {
+      if (state.turnOrder.includes(seat.seatId)) {
+        seat.connected = true;
+        seat.characterSelected = true;
+      }
+    }
+    state.status = "active";
+    state.sessionMode = "multiplayer";
+    state.gameMode = "standard";
+    state.interactionMode = "co-op";
+    state.phase = "action";
+    state.pendingCooperativeTest = null;
+    state.cooperativeAssistance = null;
+
+    if (fixture.stage === "scenario-node") {
+      state.activeScenarioId = "scenario_broken_concordance";
+      placePlayer(state, seatId, "black-relay-spire");
+      state.scenarioPreparation.resources = { concordanceNodes: 1 };
+      state.scenarioPreparation.completedObjectiveIds = ["concordance-node-webglass"];
+      return;
+    }
+
+    const threat = loadThreatCards().get("ash-choir-crusader");
+    if (!threat || threat.cardType !== "enemy") throw new Error("QA assistance threat is missing");
+    state.currentEncounter = threat;
+    state.activeResolution = {
+      id: "qa-cooperative-assistance",
+      playerId: seatId,
+      source: "threat",
+      stage: fixture.stage === "result" ? "outcome_summary" : "battle_setup",
+      card: { id: threat.id, title: threat.title, type: "enemy", flavor: threat.flavor, artType: "threat" },
+      battle: { enemyName: threat.enemyName ?? threat.title, stat: threat.stat, difficulty: threat.difficulty, modifiers: [{ label: "Active operative", value: player.character.stats[threat.stat] }] },
+      ...(fixture.stage === "result"
+        ? {
+            roll: { dice: [4, 3], baseTotal: 7, modifierTotal: player.character.stats[threat.stat] + 5, finalTotal: player.character.stats[threat.stat] + 12, target: threat.difficulty, success: true },
+            assistance: {
+              testedStat: threat.stat,
+              activeSeatId: seatId,
+              contributions: helpers.map((helper) => ({ seatId: helper.seatId, value: getIntrinsicBaseStat(helper, threat.stat) })),
+              total: helpers.reduce((sum, helper) => sum + getIntrinsicBaseStat(helper, threat.stat), 0)
+            },
+            outcome: { title: "Concordant victory", text: "Both helper signals joined the active operative's single roll.", effects: ["No helper dice were rolled."] }
+          }
+        : {})
+    };
+    if (fixture.stage === "active-selector" || fixture.stage === "result") return;
+    const acceptedSeatIds = fixture.stage === "one-accepted" || fixture.stage === "two-accepted" ? [helpers[0]!.seatId] : [];
+    if (fixture.stage === "two-accepted") acceptedSeatIds.push(helpers[1]!.seatId);
+    state.cooperativeAssistance = {
+      id: "qa-assistance-request",
+      sourceKind: "encounter",
+      sourceId: threat.id,
+      sourceTitle: threat.title,
+      testedStat: threat.stat,
+      activeSeatId: seatId,
+      requestedSeatIds: helpers.map((helper) => helper.seatId),
+      acceptedSeatIds,
+      declinedSeatIds: [],
+      lockedContributions: fixture.stage === "two-accepted"
+        ? helpers.map((helper) => ({ seatId: helper.seatId, value: getIntrinsicBaseStat(helper, threat.stat) }))
+        : [],
+      status: fixture.stage === "two-accepted" ? "locked" : "requested",
+      createdAt: "qa-cooperative-assistance"
+    };
     return;
   }
 
