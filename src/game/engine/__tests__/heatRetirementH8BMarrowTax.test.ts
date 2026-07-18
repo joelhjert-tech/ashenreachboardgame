@@ -133,12 +133,12 @@ describe("Heat Retirement H8B Marrow Tax Auditors", () => {
       rarity: "common",
       tempo: "push",
       successEffect: {
-        type: "gain_note",
-        text: "You found a loophole in a dead empire tariff."
+        type: "gain_follower",
+        followerId: "pale-cartel-fixer"
       },
       failEffect: { type: "lose_salvage", amount: 1 }
     });
-    expect(card.text).toBe("Ink-faced auditors unfold from a dead checkpoint and calculate what your bones owe the road. On failure, lose up to 1 Salvage.");
+    expect(card.text).toBe("An echo-market fixer is pinned beneath the ledgers of a dead checkpoint. Expose the false tariff and they join you; fail and the auditors collect up to 1 Salvage.");
     expect(card.resourceTags).toContain("salvage");
     expect(card.resourceTags).not.toContain("heat");
     expect(card).not.toHaveProperty("persistent");
@@ -159,7 +159,7 @@ describe("Heat Retirement H8B Marrow Tax Auditors", () => {
     }, {})).toEqual({ red: 26, blue: 35, yellow: 48 });
   });
 
-  it("preserves success behavior without changing Salvage or creating a loss result", () => {
+  it("grants the exact discovery follower without changing Salvage or creating a loss result", () => {
     const card = requireTarget();
     const state = createInitialSessionState("h8b-success", "single-player");
     state.status = "active";
@@ -178,7 +178,7 @@ describe("Heat Retirement H8B Marrow Tax Auditors", () => {
     const server = new GameRoomServer(state, [], createSequenceRandomSource([5, 5]));
     server.resolveCheckIntent({ type: "CHECK_REQUESTED", seatId: "seat-1", stat: "guile" });
     const opened = server.getState();
-    expect(opened.pendingEffect).toEqual(card.successEffect);
+    expect(opened.pendingEffect).toMatchObject(card.successEffect!);
     expect(opened.players[0]!.character.salvage).toBe(3);
     const result = reduceGameState(opened, {
       type: "RESOLUTION_APPLIED",
@@ -191,7 +191,7 @@ describe("Heat Retirement H8B Marrow Tax Auditors", () => {
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     expect(result.state.players[0]!.character.salvage).toBe(3);
-    expect(result.state.players[0]!.private.notes).toContain("You found a loophole in a dead empire tariff.");
+    expect(result.state.players[0]!.character.followers?.filter((follower) => follower.id === "pale-cartel-fixer")).toHaveLength(1);
     expect(result.state.activeResolution?.outcome?.salvageLoss).toBeUndefined();
   });
 

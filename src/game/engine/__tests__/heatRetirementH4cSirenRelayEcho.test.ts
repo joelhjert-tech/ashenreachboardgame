@@ -69,7 +69,7 @@ describe("Heat retirement H4C: Siren Relay Echo", () => {
       return counts;
     }, {})).toEqual({ red: 26, blue: 35, yellow: 48 });
     for (const [id, hash] of [
-      ["relay-husk", "bf2f4bdea63780f979241f0e5ea12d00e1760b2fbb89ca5a4044d96e1322f8f2"],
+      ["relay-husk", "9abb74b29511cda4fc50252036c77e5e118e67dd1da5ce6c202564d3bf2327d3"],
       ["signal-rotted-engineer", "e437ec07f6c254697d01724e695adf9ad2434974bf895c0c96f00a3d14081483"]
     ] as const) {
       expect(createHash("sha256").update(JSON.stringify(threats.get(id))).digest("hex"), id).toBe(hash);

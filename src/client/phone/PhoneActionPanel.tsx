@@ -564,7 +564,7 @@ function BattleSubjectCard({
   const battle = resolution?.battle;
   const stat = battle?.stat ?? encounter?.stat ?? null;
   const difficulty = battle?.difficulty ?? encounter?.difficulty ?? null;
-  const cardType = resolution?.card?.type ?? encounter?.cardType ?? null;
+  const cardType = resolution?.card?.type ?? encounter?.presentationType ?? encounter?.cardType ?? null;
   const typeLabel = formatEncounterSourceLabel(resolution?.source, cardType);
   const intentLabel = formatEncounterIntentLabel(cardType, stat);
   const opponentLabel = typeof difficulty === "number" ? (cardType === "enemy" ? `Opponent ${difficulty}` : `Target ${difficulty}`) : null;
@@ -2648,6 +2648,7 @@ function PhoneSectorActionPanel({
   resolveActions,
   gearActions,
   objectActions,
+  eligibleTestItemCount,
   followerActions,
   tableActions,
   contractActions,
@@ -2662,6 +2663,7 @@ function PhoneSectorActionPanel({
   resolveActions: ActionButtonDefinition[];
   gearActions: ActionButtonDefinition[];
   objectActions: ActionButtonDefinition[];
+  eligibleTestItemCount: number;
   followerActions: ActionButtonDefinition[];
   tableActions: ActionButtonDefinition[];
   contractActions: ActionButtonDefinition[];
@@ -2676,12 +2678,18 @@ function PhoneSectorActionPanel({
         <strong>{title}</strong>
       </header>
       <SectorOpportunityChips items={sectorOpportunityItems} />
+      {eligibleTestItemCount > 0 ? (
+        <p className="phone-equipment-available" role="status">
+          <strong>Equipment available</strong>
+          {eligibleTestItemCount} item{eligibleTestItemCount === 1 ? "" : "s"} matches the current tested skill and timing.
+        </p>
+      ) : null}
       <ActionSections
         sectionClassName="phone-sector-action-panel__action-card"
         sections={[
           { key: "resolve", title: "Tile Action", detail: title, actions: resolveActions, defaultOpen: true },
           { key: "gear", title: "Gear", detail: `${gearActions.length} available`, actions: gearActions },
-          { key: "objects", title: "Items", detail: `${objectActions.length} usable`, actions: objectActions },
+          { key: "objects", title: "Items", detail: `${eligibleTestItemCount} usable now`, actions: objectActions, defaultOpen: eligibleTestItemCount > 0 },
           { key: "followers", title: "Followers", detail: `${followerActions.length} ready`, actions: followerActions },
           { key: "table", title: "Table", detail: interactionMode ?? "rivalry", actions: tableActions },
           { key: "contracts", title: "Contracts", detail: `${contractActions.length} available`, actions: contractActions },
@@ -3019,10 +3027,43 @@ export function PhoneActionPanel({
   const resolveActions: ActionButtonDefinition[] = [];
   const gearActions: ActionButtonDefinition[] = [];
   const objectActions: ActionButtonDefinition[] = [];
+  const eligibleTestItemCount = patch.objectUseStates?.filter((state) => state.source === "gear" && state.usableForCurrentTest === true).length ?? 0;
   const followerActions: ActionButtonDefinition[] = [];
   const tableActions: ActionButtonDefinition[] = [];
   const contractActions: ActionButtonDefinition[] = [];
   const advanceActions: ActionButtonDefinition[] = [];
+
+  if (patch.pendingGearEquipChoice) {
+    const choice = patch.pendingGearEquipChoice;
+    resolveActions.push(
+      {
+        key: `equip-discovered-${choice.choiceId}`,
+        label: `Equip ${choice.itemName}`,
+        detail: `Replace ${choice.currentItemName} in the ${toTitleCase(choice.slot)} slot. The current item stays carried.`,
+        tone: "primary",
+        onClick: () => onIntent({
+          type: "RESOLVE_GEAR_EQUIP_CHOICE",
+          seatId: self.seatId,
+          choiceId: choice.choiceId,
+          itemInstanceId: choice.itemInstanceId,
+          decision: "equip"
+        })
+      },
+      {
+        key: `carry-discovered-${choice.choiceId}`,
+        label: "Keep carried",
+        detail: `${choice.itemName} remains in Inventory. ${choice.currentItemName} stays equipped.`,
+        tone: "secondary",
+        onClick: () => onIntent({
+          type: "RESOLVE_GEAR_EQUIP_CHOICE",
+          seatId: self.seatId,
+          choiceId: choice.choiceId,
+          itemInstanceId: choice.itemInstanceId,
+          decision: "keepCarried"
+        })
+      }
+    );
+  }
 
   if (patch.pendingEquipmentSuppressionChoice) {
     const choice = patch.pendingEquipmentSuppressionChoice;
@@ -3609,6 +3650,7 @@ export function PhoneActionPanel({
   if (opposedBattleActive) {
     const hasRequiredChoice = Boolean(
       patch.pendingEquipmentSuppressionChoice ||
+      patch.pendingGearEquipChoice ||
       patch.pendingEncounterDecisionPrivate ||
       patch.pendingMemoryTaxChoicePrivate ||
       patch.pendingForcedDestinationChoicePrivate ||
@@ -3826,6 +3868,7 @@ export function PhoneActionPanel({
         resolveActions={resolveActions}
         gearActions={gearActions}
         objectActions={objectActions}
+        eligibleTestItemCount={eligibleTestItemCount}
         followerActions={followerActions}
         tableActions={tableActions}
         contractActions={contractActions}
@@ -3853,7 +3896,7 @@ export function PhoneActionPanel({
         {activeTabContent}
         {activeTurnTab === "move" ? null : (
           <div className="phone-sheet-action-status phone-action-secondary-status" data-testid="phone-action-secondary-status">
-            <span>{portraitActionStatusLabel(activeTurnTab)}</span>
+            <span>{tabDefinitions.find((tab) => tab.id === activeTurnTab)?.label ?? portraitActionStatusLabel(activeTurnTab)}</span>
             <span>{activeStatusCopy}</span>
           </div>
         )}

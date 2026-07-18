@@ -60,11 +60,11 @@ describe("post-audit direct item-effect regressions", () => {
     for (const id of AUDITED_IDS) expect(loadArtifactCards().has(id)).toBe(true);
   });
 
-  it("artifact-cinder-suture-kit authoritatively grants the normal kit without auto-equipping it", () => {
+  it("artifact-cinder-suture-kit authoritatively grants and auto-equips the normal kit into its empty slot", () => {
     const state = acquireArtifact("artifact-cinder-suture-kit");
     const character = state.players[0]!.character;
     expect(character.heldGear.filter((item) => item.id === "cinder-suture-kit")).toHaveLength(1);
-    expect(Object.values(character.equippedGear)).not.toContain("cinder-suture-kit");
+    expect(Object.values(character.equippedGear)).toContain("cinder-suture-kit");
     expect(JSON.parse(JSON.stringify(state)).players[0].character.heldGear.some((item: { id: string }) => item.id === "cinder-suture-kit")).toBe(true);
   });
 
@@ -77,12 +77,12 @@ describe("post-audit direct item-effect regressions", () => {
     expect(player.character.heldGear.some((item) => item.id === "artifact-ember-burden-idol")).toBe(false);
   });
 
-  it("artifact-last-breath-rivet grants its permanent gear and the bonus follows equipped state", () => {
+  it("artifact-last-breath-rivet grants, auto-equips, and applies its permanent bonus", () => {
     const state = acquireArtifact("artifact-last-breath-rivet");
     const character = state.players[0]!.character;
     expect(character.heldGear.filter((item) => item.id === "last-breath-rivet")).toHaveLength(1);
-    expect(getEquippedGearBonus(character, "grit")).toBe(0);
-    expect(getEquippedGearBonus({ ...character, equippedGear: { ...character.equippedGear, utility: "last-breath-rivet" } }, "grit")).toBe(1);
+    expect(Object.values(character.equippedGear)).toContain("last-breath-rivet");
+    expect(getEquippedGearBonus(character, "grit")).toBe(1);
   });
 
   it("artifact-mira-rift-twin grants Mira and enables only Rumi's authored team bonus", () => {
@@ -109,11 +109,11 @@ describe("post-audit direct item-effect regressions", () => {
     expect(character.completedContracts ?? []).toEqual(completedContracts!);
   });
 
-  it("artifact-saintwire-splint grants the normal splint without auto-equipping it", () => {
+  it("artifact-saintwire-splint grants and auto-equips the normal splint into its empty slot", () => {
     const state = acquireArtifact("artifact-saintwire-splint");
     const character = state.players[0]!.character;
     expect(character.heldGear.filter((item) => item.id === "saintwire-splint")).toHaveLength(1);
-    expect(Object.values(character.equippedGear)).not.toContain("saintwire-splint");
+    expect(Object.values(character.equippedGear)).toContain("saintwire-splint");
   });
 
   it("artifact-throne-crown-fragment advances only its authored scenario key and records its note", () => {

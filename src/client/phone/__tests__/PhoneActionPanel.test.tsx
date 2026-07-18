@@ -133,6 +133,33 @@ function createPatch(overrides: Partial<PhonePatchPayload> = {}): PhonePatchPayl
 }
 
 describe("PhoneActionPanel", () => {
+  it("keeps an occupied-slot discovery choice owner-controlled", () => {
+    const onIntent = vi.fn();
+    render(<PhoneActionPanel characters={characters} onIntent={onIntent} patch={createPatch({
+      phase: "resolution",
+      pendingGearEquipChoice: {
+        choiceId: "discovery:equip:bridge-spike",
+        itemCatalogId: "bridge-spike",
+        itemInstanceId: "bridge-spike:one",
+        itemName: "Bridge Spike",
+        slot: "utility",
+        currentItemCatalogId: "field-lens",
+        currentItemInstanceId: "field-lens:one",
+        currentItemName: "Field Lens"
+      }
+    })} />);
+
+    fireEvent.click(screen.getByRole("button", { name: /Equip Bridge Spike/i }));
+    expect(onIntent).toHaveBeenCalledWith({
+      type: "RESOLVE_GEAR_EQUIP_CHOICE",
+      seatId: "seat-1",
+      choiceId: "discovery:equip:bridge-spike",
+      itemInstanceId: "bridge-spike:one",
+      decision: "equip"
+    });
+    expect(screen.getByRole("button", { name: /Keep carried/i })).toBeVisible();
+  });
+
   it("requires one explicit confirmation for the server-generated Memory Tax choice", () => {
     const onIntent = vi.fn();
     const patch = createPatch({
@@ -2980,6 +3007,7 @@ describe("PhoneActionPanel", () => {
     );
 
     expect(screen.queryByTestId("phone-battle-assist")).not.toBeInTheDocument();
+    expect(screen.getByText("Equipment available")).toBeVisible();
     fireEvent.click(screen.getByRole("button", { name: /^gear$/i }));
     expect(screen.getByLabelText(/gear battle context/i)).toHaveTextContent(/black route fuse/i);
     expect(screen.getByLabelText(/gear battle context/i)).not.toHaveTextContent(/coffin rig/i);

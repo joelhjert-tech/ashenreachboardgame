@@ -86,7 +86,8 @@ describe("Heat retirement H6B: false-route-procession", () => {
       region: "outer",
       rarity: "common"
     });
-    expect(card.text).toBe("If you lose, move 1 sector clockwise or counterclockwise on your current ring. Choose from the legal destinations. If only one is legal, move there. If neither is legal, remain in place.");
+    expect(card.text).toBe("A route-runner is caught inside a procession marching the wrong road. Break its cadence and the survivor joins you; fail and the procession carries you one legal sector along this ring.");
+    expect(card.successEffect).toEqual({ type: "gain_follower", followerId: "webglass-runner" });
     expect(card.failEffect).toEqual({
       type: "ownerSelectedForcedDisplacement",
       sourceCardId: "false-route-procession",

@@ -438,6 +438,23 @@ function ContractMissionCard({
         <span>{recommended ? "Recommended Mission" : contract.factionGiver}</span>
         <strong>{contract.name}</strong>
       </div>
+      <div className="phone-starting-mission-footer">
+        <span>{contract.objective.type === "defeatCount" ? "Threat lane" : "Sector action"}</span>
+        {onSelect ? (
+          <button
+            type="button"
+            className="phone-button phone-button-primary phone-starting-mission-select"
+            disabled={disabled}
+            onPointerDown={(event) => event.stopPropagation()}
+            onClick={(event) => {
+              event.stopPropagation();
+              onSelect();
+            }}
+          >
+            {pending ? "Selecting..." : selected ? "Selected" : "Select Mission"}
+          </button>
+        ) : null}
+      </div>
       <p>{contract.text}</p>
       <dl className="phone-starting-mission-details">
         <div>
@@ -453,14 +470,6 @@ function ContractMissionCard({
           <dd>{describeContractReward(contract)}</dd>
         </div>
       </dl>
-      <div className="phone-starting-mission-footer">
-        <span>{contract.objective.type === "defeatCount" ? "Threat lane" : "Sector action"}</span>
-        {onSelect ? (
-          <button type="button" className="phone-button phone-button-primary" disabled={disabled} onClick={onSelect}>
-            {pending ? "Selecting..." : selected ? "Selected" : "Select Mission"}
-          </button>
-        ) : null}
-      </div>
     </article>
   );
 }
@@ -794,6 +803,15 @@ export function PortraitControllerView({
   }, [patch?.selectedStartingContract?.id, patchSequence, pendingStartingContract]);
 
   useEffect(() => {
+    if (!pendingStartingContract) return;
+    const pendingId = pendingStartingContract.id;
+    const timeout = window.setTimeout(() => {
+      setPendingStartingContract((current) => current?.id === pendingId ? null : current);
+    }, 3000);
+    return () => window.clearTimeout(timeout);
+  }, [pendingStartingContract]);
+
+  useEffect(() => {
     const completedCount = self?.character.completedContracts?.length ?? 0;
     if (completedCount > previousCompletedContractCountRef.current && !self?.character.activeContract) {
       awaitingReplacementMissionRef.current = true;
@@ -1041,6 +1059,13 @@ export function PortraitControllerView({
     activeTab === "move" &&
     (patch?.phase === "navigation" || patch?.movementPlanner?.active || patch?.outcomeSummary?.movedToSectorId)
   );
+  const battleNavigationLabel = patch?.activeResolution?.card?.type === "asset" || patch?.encounter?.presentationType === "asset"
+    ? "Discovery"
+    : patch?.activeResolution?.card?.type === "event" || patch?.encounter?.presentationType === "event"
+      ? "Event"
+      : patch?.activeResolution?.card?.type === "hazard" || patch?.encounter?.presentationType === "hazard"
+        ? "Hazard"
+        : "Battle";
   const rootClassName = [
     "phone-portrait-controller",
     phoneChromeVisible ? "phone-shell--chrome-visible" : "phone-shell--immersive",
@@ -1445,7 +1470,7 @@ export function PortraitControllerView({
                 ["inventory", "Inventory"],
                 ["quests", "Quest"],
                 ["move", "Move"],
-                ["battle", "Battle"],
+                ["battle", battleNavigationLabel],
                 ["shop", "Shop"],
                 ["action", "Action"]
               ].map(([key, label]) => (
@@ -1505,7 +1530,7 @@ export function PortraitControllerView({
                 aria-current="page"
                 onClick={showBottomDock}
               >
-                {portraitTabLabels[activeTab]}
+                {activeTab === "battle" ? battleNavigationLabel : portraitTabLabels[activeTab]}
               </button>
               <button
                 type="button"

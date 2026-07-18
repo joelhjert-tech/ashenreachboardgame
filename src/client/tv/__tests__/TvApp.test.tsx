@@ -950,6 +950,35 @@ describe("TvApp", () => {
     expect(sendIntent).not.toHaveBeenCalled();
   });
 
+  it("hides archive tools during play and lets the authenticated host return to mode selection", async () => {
+    window.localStorage.setItem("ashen-reach-tv-room-code", "RT7P4");
+    window.localStorage.setItem("ashen-reach-tv-host-token", "host:RT7P4:secret");
+    const sendIntent = vi.fn();
+    mockUseRoomSubscription.mockReturnValue({
+      patch: createPatch(),
+      error: null,
+      sendIntent,
+      status: "open",
+      debugEvents: [],
+      clearDebugEvents: vi.fn()
+    });
+    render(<TvApp />);
+
+    expect(await screen.findByTestId("tv-command-main")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /open admin library/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /open map inspector/i })).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /return to lobby/i }));
+    const dialog = screen.getByRole("dialog", { name: /return everyone to the lobby/i });
+    expect(dialog).toHaveTextContent(/connected players keep compatible room seats/i);
+    fireEvent.click(within(dialog).getByRole("button", { name: /cancel/i }));
+    expect(sendIntent).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole("button", { name: /return to lobby/i }));
+    fireEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: /return to lobby/i }));
+    expect(sendIntent).toHaveBeenCalledWith({ type: "RETURN_TO_LOBBY" });
+  });
+
   it("auto-attaches the TV display to the server room without storing a host token", async () => {
     render(<TvApp />);
 
@@ -1516,6 +1545,31 @@ describe("TvApp", () => {
     expect(within(chamber).getByTestId("host-battle-enemy")).toHaveTextContent(/difficulty/i);
     expect(within(chamber).getByTestId("host-battle-player-math")).toHaveTextContent(/base.*roll.*mod.*total/i);
     expect(within(chamber).getByTestId("host-battle-enemy-math")).toHaveTextContent(/base.*roll.*mod.*total/i);
+  });
+
+  it("presents an Equipment discovery without using the opposed battle chamber", async () => {
+    window.localStorage.setItem("ashen-reach-tv-room-code", "RT7P4");
+    window.localStorage.setItem("ashen-reach-tv-host-token", "host:RT7P4:secret");
+    const patch = createPatch();
+    patch.phase = "resolution";
+    patch.payload.activeResolution = {
+      id: "seat-1:threat:breach-halberd:discovery",
+      playerId: "seat-1",
+      source: "threat",
+      stage: "outcome_summary",
+      card: { id: "breach-halberd", title: "Breach Halberd", type: "asset", artType: "threat", flavor: "A sealed militia cache answers the right hand." },
+      battle: { stat: "forge", difficulty: 6, modifiers: [{ label: "Operative", value: 2 }] },
+      roll: { dice: [4, 3], baseTotal: 7, modifierTotal: 2, finalTotal: 9, target: 6, success: true },
+      outcome: { title: "Equipment discovered", text: "The cache yields usable field gear.", effects: ["Bridge Spike gained."] }
+    };
+    mockUseRoomSubscription.mockReturnValue({ patch, error: null, sendIntent: vi.fn(), status: "open", debugEvents: [], clearDebugEvents: vi.fn() });
+
+    render(<TvApp />);
+
+    const overlay = await screen.findByTestId("tv-discovery-overlay");
+    expect(overlay).toHaveTextContent(/breach halberd/i);
+    expect(overlay).toHaveTextContent(/bridge spike gained/i);
+    expect(screen.queryByTestId("tv-host-battle-chamber")).not.toBeInTheDocument();
   });
 
   it("restores the authoritative host board after battle without replaying stale focus", async () => {

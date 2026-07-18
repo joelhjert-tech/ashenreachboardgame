@@ -138,6 +138,8 @@ export interface GearItem {
   name: string;
   slot: GearSlot;
   statBonus: { stat: Stat; amount: number };
+  eligibleSkills?: Stat[];
+  eligibleTestScope?: "anySkill";
   category?: GearCategory;
   subtype?: "weapon" | "armor" | "utility" | "consumable" | "supply" | "quest" | "artifact";
   shopCategories?: ShopCategory[];
@@ -294,6 +296,9 @@ export interface PhoneObjectUseState {
   remainingUses?: number | null;
   maxUses?: number | null;
   disabledReason?: string | null;
+  testedSkill?: Stat | null;
+  timingWindow?: string | null;
+  usableForCurrentTest?: boolean | null;
   activeModifier?: {
     label: string;
     value: number;
@@ -426,6 +431,7 @@ export interface EncounterCard {
   id: string;
   title: string;
   cardType: "hazard" | "enemy";
+  presentationType?: "hazard" | "enemy" | "event" | "encounter" | "asset" | "nemesis";
   flavor: string;
   difficulty: number;
   stat: Stat;
@@ -1161,6 +1167,16 @@ export interface PhonePatchPayload extends PublicPatchPayload {
     mode: "throughNextThreat" | "duringNextBattle";
     options: Array<{ instanceId: string; catalogId: string; name: string; slot: GearSlot; equipped: true }>;
   } | null;
+  pendingGearEquipChoice?: {
+    choiceId: string;
+    itemCatalogId: string;
+    itemInstanceId: string;
+    itemName: string;
+    slot: GearSlot;
+    currentItemCatalogId: string;
+    currentItemInstanceId: string | null;
+    currentItemName: string;
+  } | null;
   pendingForcedDestinationChoicePrivate?: {
     choiceId: string;
     sourceTitle: string;
@@ -1345,6 +1361,13 @@ export type ClientIntent =
       instanceId?: string;
       slot: GearSlot;
     }
+  | {
+      type: "RESOLVE_GEAR_EQUIP_CHOICE";
+      seatId: string;
+      choiceId: string;
+      itemInstanceId: string;
+      decision: "equip" | "keepCarried";
+    }
   | { type: "SELECT_EQUIPMENT_SUPPRESSION_TARGET"; seatId: string; choiceId: string; itemInstanceId: string }
   | {
       type: "UNEQUIP_GEAR";
@@ -1457,6 +1480,9 @@ export type HostCommand =
     }
   | {
       type: "RESTART_SESSION";
+    }
+  | {
+      type: "RETURN_TO_LOBBY";
     };
 
 export interface PhoneSessionAuth {

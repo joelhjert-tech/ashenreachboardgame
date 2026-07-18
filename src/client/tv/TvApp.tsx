@@ -419,8 +419,7 @@ interface TopHeaderProps {
   readyCount: number;
   seatCapacity: number;
   liveStatus: HostStateBannerModel;
-  onOpenLibrary: () => void;
-  onOpenMapInspector: () => void;
+  onReturnToLobby?: () => void;
 }
 
 function ScenarioProgressRelicPanel({
@@ -488,8 +487,7 @@ function TopHeader({
   readyCount,
   seatCapacity,
   liveStatus,
-  onOpenLibrary,
-  onOpenMapInspector
+  onReturnToLobby
 }: TopHeaderProps): ReactElement {
   const objective = scenarioStatus.objectiveProgress;
   const pressure = scenarioStatus.pressureState;
@@ -574,10 +572,9 @@ function TopHeader({
             </div>
           </div>
         )}
-        <div className="tv-admin-tools" aria-label="Host administration">
-          <button type="button" className="tv-admin-library-tab" onClick={onOpenLibrary} aria-label="Open Admin Library"><span aria-hidden="true">▤</span>Library</button>
-          <button type="button" className="tv-admin-library-tab" onClick={onOpenMapInspector} aria-label="Open Map Inspector"><span aria-hidden="true">⌘</span>Map Inspector</button>
-        </div>
+        {onReturnToLobby ? (
+          <button type="button" className="tv-return-lobby-button" onClick={onReturnToLobby}>Return to Lobby</button>
+        ) : null}
       </div>
     </header>
   );
@@ -2357,6 +2354,14 @@ function TacticalMapPanel({
   const focusBattleMode = battleMode && !arrivalPending && !visualTravel;
   const focusShopMode = !focusBattleMode && shopMode;
   const movementFocusMode = !focusBattleMode && !focusShopMode && Boolean(planner || arrivalPending || visualTravel);
+  const discoveryMode = Boolean(
+    focusEnabled &&
+      !rareStateModel &&
+      !focusBattleMode &&
+      !focusShopMode &&
+      !movementFocusMode &&
+      patch?.payload.activeResolution?.card?.type === "asset"
+  );
   const projectedDestination = planner?.selectedDestinationId
     ? planner.destinations.find((destination) => destination.sectorId === planner.selectedDestinationId) ?? null
     : null;
@@ -2399,6 +2404,7 @@ function TacticalMapPanel({
       )}
       {battleChamber}
       {focusShopMode && !visualTravel && <HostShopOverlay patch={patch} activePlayer={activePlayer} />}
+      {discoveryMode && patch && <HostDiscoveryOverlay patch={patch} activePlayer={activePlayer} />}
       {movementFocusMode && (
         visualTravel ? (
           <HostMovementJourney
@@ -2480,7 +2486,7 @@ function CardRevealPanel({ patch }: { patch: StatePatch<PublicPatchPayload> | nu
   const resolutionCard = activeResolution?.card ?? null;
   const resolutionBattle = activeResolution?.battle ?? null;
   const cardTitle = resolutionCard?.title ?? encounter?.title ?? pendingEnemyRoll?.encounterTitle ?? "Awaiting reveal";
-  const cardType = resolutionCard?.type ?? encounter?.cardType ?? (pendingEnemyRoll ? "enemy tactic" : "Deck standing by");
+  const cardType = resolutionCard?.type ?? encounter?.presentationType ?? encounter?.cardType ?? (pendingEnemyRoll ? "enemy tactic" : "Deck standing by");
   const difficulty = resolutionBattle?.difficulty ?? encounter?.difficulty ?? 0;
   const challengeStat = resolutionBattle?.stat ?? encounter?.stat ?? pendingEnemyRoll?.stat ?? null;
   const flavorText =
@@ -2544,6 +2550,47 @@ function CardRevealPanel({ patch }: { patch: StatePatch<PublicPatchPayload> | nu
               <span key={index} className={index < difficulty ? "tv-reveal-pip-active" : ""} />
             ))}
           </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function HostDiscoveryOverlay({
+  patch,
+  activePlayer
+}: {
+  patch: StatePatch<PublicPatchPayload>;
+  activePlayer: PublicPlayer | null;
+}): ReactElement {
+  const resolution = patch.payload.activeResolution;
+  const card = resolution?.card;
+  const battle = resolution?.battle;
+  const roll = resolution?.roll;
+  const outcome = resolution?.outcome;
+  const operativeName = activePlayer?.character.name ?? "Active operative";
+  const resultLabel = roll ? (roll.success ? "Discovery secured" : "Discovery lost") : "Discovery test";
+
+  return (
+    <section className="tv-discovery-overlay" aria-label="Discovery encounter" data-testid="tv-discovery-overlay">
+      <div className="tv-discovery-overlay__art">
+        <CardArtImage cardType="threat" cardId={card?.id} alt="" aria-hidden="true" />
+      </div>
+      <div className="tv-discovery-overlay__body">
+        <span>Discovery encounter</span>
+        <h2>{card?.title ?? "Unidentified cache"}</h2>
+        <p>{card?.flavor}</p>
+        {battle ? (
+          <div className="tv-discovery-overlay__test">
+            <ChallengeBadge stat={battle.stat} value={battle.difficulty} size="compact" />
+            <strong>{operativeName}</strong>
+            {roll ? <em>{roll.finalTotal} / {roll.target}</em> : <em>Awaiting roll</em>}
+          </div>
+        ) : null}
+        <div className={`tv-discovery-overlay__result${roll?.success ? " tv-discovery-overlay__result--success" : ""}`}>
+          <strong>{resultLabel}</strong>
+          {outcome?.text ? <p>{outcome.text}</p> : null}
+          {outcome?.effects?.map((effect) => <span key={effect}>{effect}</span>)}
         </div>
       </div>
     </section>
@@ -2711,6 +2758,7 @@ export function TvApp(): ReactElement {
   });
   const [adminLibraryCardId, setAdminLibraryCardId] = useState<string | null>(null);
   const [adminMapTileId, setAdminMapTileId] = useState<string | null>(null);
+  const [returnLobbyConfirmOpen, setReturnLobbyConfirmOpen] = useState(false);
   const restoreValidatedRef = useRef(false);
   const { patch, error, status, synchronized: subscriptionSynchronized, debugEvents, clearDebugEvents, sendIntent } = useRoomSubscription({
     view: "tv",
@@ -2733,6 +2781,12 @@ export function TvApp(): ReactElement {
       })
       .catch(() => setScenarioCatalog([]));
   }, []);
+
+  useEffect(() => {
+    if (patch?.payload.status === "active" || patch?.payload.status === "ended") {
+      setAdminSurface(null);
+    }
+  }, [patch?.payload.status]);
 
   const publicPatch = patch as StatePatch<PublicPatchPayload> | null;
   const synchronized = subscriptionSynchronized ?? status === "open";
@@ -3013,8 +3067,7 @@ export function TvApp(): ReactElement {
           readyCount={readySeats.length}
           seatCapacity={publicPatch?.payload.seats.length ?? (liveSessionMode === "single-player" ? 1 : 6)}
           liveStatus={liveStatus}
-          onOpenLibrary={() => setAdminSurface("library")}
-          onOpenMapInspector={() => setAdminSurface("map")}
+          onReturnToLobby={hostToken ? () => setReturnLobbyConfirmOpen(true) : undefined}
         />
 
         {(requestError || error) && <div className="tv-banner tv-banner-error">{requestError ?? error}</div>}
@@ -3135,8 +3188,29 @@ export function TvApp(): ReactElement {
           </section>
         )}
       </div>
-      {adminSurface === "library" ? <Suspense fallback={<div className="admin-library-loading">Opening archive…</div>}><AdminLibrary roomCode={effectiveRoomCode} hostToken={hostToken} initialCardId={adminLibraryCardId} onOpenMapTile={(tileId) => { setAdminMapTileId(tileId); setAdminSurface("map"); }} onClose={() => setAdminSurface(null)} /></Suspense> : null}
-      {adminSurface === "map" ? <Suspense fallback={<div className="admin-library-loading">Opening tactical archive…</div>}><AdminMapInspector initialTileId={adminMapTileId} onOpenLibraryCard={(cardId) => { setAdminLibraryCardId(cardId); setAdminSurface("library"); }} onClose={() => setAdminSurface(null)} /></Suspense> : null}
+      {returnLobbyConfirmOpen ? (
+        <div className="tv-return-lobby-confirm" role="dialog" aria-modal="true" aria-labelledby="tv-return-lobby-title">
+          <section>
+            <span>Host Session Control</span>
+            <h2 id="tv-return-lobby-title">Return everyone to the lobby?</h2>
+            <p>Current game progress will end. Connected players keep compatible room seats and can choose a new mode, operative, and mission.</p>
+            <div>
+              <button type="button" onClick={() => setReturnLobbyConfirmOpen(false)}>Cancel</button>
+              <button
+                type="button"
+                className="tv-return-lobby-confirm__accept"
+                onClick={() => {
+                  setReturnLobbyConfirmOpen(false);
+                  setRequestError(null);
+                  sendIntent({ type: "RETURN_TO_LOBBY" });
+                }}
+              >
+                Return to Lobby
+              </button>
+            </div>
+          </section>
+        </div>
+      ) : null}
     </main>
   );
 }

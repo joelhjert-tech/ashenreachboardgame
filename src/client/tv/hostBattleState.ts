@@ -3,7 +3,13 @@ import type { ActiveResolution, PublicPatchPayload, PublicPlayer, StatePatch } f
 function isHostResolution(resolution: ActiveResolution | null | undefined): boolean {
   // Movement arrival checks remain map events. They use the shared check math
   // shape, but must not take over the TV as an enemy battle chamber.
-  return Boolean(resolution?.battle && resolution.source !== "movement");
+  // Hazard and recurring challenge tests intentionally use the focused test
+  // chamber. A discovery uses the same math shape but is not a duel.
+  return Boolean(
+    resolution?.battle &&
+      resolution.source !== "movement" &&
+      resolution.card?.type !== "asset"
+  );
 }
 
 export function isHostBattleActive(

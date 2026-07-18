@@ -21,7 +21,10 @@ describe("canonical card category boundary", () => {
     }, {});
 
     expect(threats).toHaveLength(109);
-    expect(categories).toEqual({ enemy: 67, hazard: 33, event: 3, encounter: 3, asset: 3 });
+    expect(categories).toEqual({ enemy: 67, hazard: 20, event: 6, encounter: 6, asset: 10 });
+    const discoveries = threats.filter((card) => getThreatPresentationCategory(card) === "asset");
+    expect(discoveries.filter((card) => card.resourceTags?.includes("gear"))).toHaveLength(6);
+    expect(discoveries.filter((card) => card.resourceTags?.includes("follower"))).toHaveLength(4);
     expect(threats.filter((card) => getThreatGameplayLifecycle(card) === "battle")).toHaveLength(67);
     expect(threats.filter((card) => getThreatGameplayLifecycle(card) === "test")).toHaveLength(42);
     expect(threats.filter(isTrophyEligibleThreat)).toHaveLength(67);

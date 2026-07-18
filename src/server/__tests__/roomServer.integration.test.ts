@@ -53,6 +53,9 @@ type ClientSocketMessage =
     }
   | {
       type: "RESTART_SESSION";
+    }
+  | {
+      type: "RETURN_TO_LOBBY";
     };
 
 function cloneCharacter(character: Character | undefined): Character {
@@ -2769,6 +2772,60 @@ describe("roomServer websocket integration", () => {
     expect(harness.roomServer.getState().turnOrder).toEqual(["seat-1"]);
     expect(harness.roomServer.getState().seats.find((seat) => seat.seatId === "seat-2")?.kicked).toBe(true);
     expect(harness.roomServer.getState().seats.find((seat) => seat.seatId === "seat-3")?.kicked).toBe(true);
+  }, 20000);
+
+  it("returns the host to mode selection while preserving connected room seats", async () => {
+    const state = createState({ setupHostSeatId: "seat-1", lobbyConfigured: true, interactionMode: "rivalry" });
+    harness = await startHarness([0], state);
+
+    const hostTv = await connectClient(`ws://127.0.0.1:${harness.port}/?view=tv&hostToken=${encodeURIComponent(harness.hostToken)}`);
+    const phone1 = await connectClient(
+      `ws://127.0.0.1:${harness.port}/?view=phone&token=${createJoinToken({ sessionId: "session-alpha", seatId: "seat-1" })}`
+    );
+    const phone2 = await connectClient(
+      `ws://127.0.0.1:${harness.port}/?view=phone&token=${createJoinToken({ sessionId: "session-alpha", seatId: "seat-2" })}`
+    );
+    probes.push(hostTv, phone1, phone2);
+    await hostTv.waitFor(statePatchWithSeatConnection("seat-2", true));
+
+    const originalSeat1 = harness.roomServer.getState().seats.find((seat) => seat.seatId === "seat-1")!;
+    const originalSeat2 = harness.roomServer.getState().seats.find((seat) => seat.seatId === "seat-2")!;
+    const rejectedMarker = phone2.mark();
+    phone2.send({ type: "RETURN_TO_LOBBY" });
+    const rejected = await phone2.waitForSince(
+      rejectedMarker,
+      (message) => message.type === "INTENT_REJECTED" && message.actionType === "RETURN_TO_LOBBY"
+    );
+    expect(isIntentRejected(rejected) && rejected.reason).toContain("Only the host TV");
+    expect(harness.roomServer.getState().status).toBe("active");
+
+    const marker = hostTv.mark();
+    hostTv.send({ type: "RETURN_TO_LOBBY" });
+    await hostTv.waitForSince(marker, statePatchWithStatus("lobby", null));
+
+    const returned = harness.roomServer.getState();
+    expect(returned.lobbyConfigured).toBe(false);
+    expect(returned.setupHostSeatId).toBe("seat-1");
+    expect(returned.seats.find((seat) => seat.seatId === "seat-1")?.joinToken).toBe(originalSeat1.joinToken);
+    expect(returned.seats.find((seat) => seat.seatId === "seat-2")?.joinToken).toBe(originalSeat2.joinToken);
+    expect(returned.seats.find((seat) => seat.seatId === "seat-2")?.connected).toBe(true);
+    expect(returned.eventLog.at(-1)).toMatchObject({ type: "RETURN_TO_LOBBY" });
+
+    harness.roomServer.configureLobbyFromHostPhone("seat-1", {
+      sessionMode: "multiplayer",
+      interactionMode: "co-op",
+      gameMode: "standard",
+      playerCount: 2,
+      scenarioId: "scenario_broken_seal"
+    });
+
+    const reconfigured = harness.roomServer.getState();
+    expect(reconfigured.lobbyConfigured).toBe(true);
+    expect(reconfigured.interactionMode).toBe("co-op");
+    expect(reconfigured.seats).toHaveLength(2);
+    expect(reconfigured.seats.map((seat) => seat.displayName)).toEqual([originalSeat1.displayName, originalSeat2.displayName]);
+    expect(reconfigured.seats.map((seat) => seat.joinToken)).toEqual([originalSeat1.joinToken, originalSeat2.joinToken]);
+    expect(reconfigured.seats.every((seat) => seat.characterSelected === false && seat.ready === false)).toBe(true);
   }, 20000);
 
   it("requires a fresh operative and mission after restart and starts with the newly confirmed character", async () => {

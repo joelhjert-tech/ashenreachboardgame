@@ -396,6 +396,16 @@ export function PhoneBattleView({
               <strong>{resultLabel}</strong>
             </header>
             {combatantArena}
+            {usableGearCount > 0 && !roll ? (
+              <button
+                type="button"
+                className="phone-battle-equipment-alert"
+                onClick={() => setContext("gear")}
+              >
+                <span>Equipment available</span>
+                <strong>{usableGearCount} item{usableGearCount === 1 ? "" : "s"} can help this {statLabel} battle</strong>
+              </button>
+            ) : null}
             <CinderWattleAbilityPanel patch={patch} seatId={self.seatId} onIntent={onIntent} />
             <section className="phone-battle-equation" aria-label="Battle totals">
               <div>

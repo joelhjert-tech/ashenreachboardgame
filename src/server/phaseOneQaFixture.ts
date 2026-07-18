@@ -34,6 +34,10 @@ export type PhaseOneQaFixture =
       kind: "cinder-wattle";
       stage: "player-card" | "ability-available" | "ability-prepared" | "ability-used" | "battle-result" | "hazard-result";
     }
+  | {
+      kind: "discovery-equipment";
+      stage: "equipment-reveal" | "follower-reveal" | "auto-equipped" | "equip-choice" | "command-item-invalid" | "grit-item-valid";
+    }
   | { kind: "card-category"; stage: "enemy" | "hazard" | "event" | "anomaly" | "escalation" | "persistent" };
 
 const routeContractId = "choir-echo-triangulation";
@@ -47,6 +51,7 @@ function clearResolution(state: GameState): void {
   state.activeResolution = null;
   state.resolutionSource = null;
   state.lastOutcomeSummary = null;
+  state.pendingGearEquipChoice = null;
   state.shopStockReveals = [];
 }
 
@@ -591,6 +596,89 @@ export function applyPhaseOneQaFixture(state: GameState, seatId: string, fixture
         privacy: "public"
       }
     };
+    return;
+  }
+
+  if (fixture.kind === "discovery-equipment") {
+    const player = state.players.find((entry) => entry.seatId === seatId);
+    if (!player) throw new Error(`QA fixture cannot find ${seatId}`);
+    state.phase = "resolution";
+
+    if (fixture.stage === "command-item-invalid" || fixture.stage === "grit-item-valid") {
+      const threatId = fixture.stage === "command-item-invalid" ? "ash-court-duelist" : "lantern-ash-ghoul";
+      const threat = loadThreatCards().get(threatId);
+      const fuse = loadGear().get("black-route-fuse");
+      if (!threat || threat.cardType !== "enemy" || !fuse) throw new Error("QA fixture cannot create item eligibility battle");
+      const item = { ...fuse, instanceId: "qa:black-route-fuse" };
+      player.character.heldGear = [
+        ...player.character.heldGear.filter((entry) => entry.id !== fuse.id),
+        item
+      ];
+      state.phase = "action";
+      state.currentEncounter = threat;
+      state.resolutionSource = "encounter";
+      state.activeResolution = {
+        id: `qa-item-eligibility:${fixture.stage}`,
+        playerId: seatId,
+        source: "threat",
+        stage: "battle_setup",
+        card: { id: threat.id, title: threat.title, type: "enemy", flavor: threat.flavor, artType: "threat" },
+        battle: { enemyName: threat.enemyName ?? threat.title, stat: threat.stat, difficulty: threat.difficulty, modifiers: [] }
+      };
+      return;
+    }
+
+    const followerDiscovery = fixture.stage === "follower-reveal";
+    const threatId = followerDiscovery ? "roadside-bone-oracle" : "breach-halberd";
+    const threat = loadThreatCards().get(threatId);
+    if (!threat || threat.cardType !== "hazard") throw new Error("QA discovery encounter is missing");
+    state.currentEncounter = threat;
+    state.resolutionSource = "encounter";
+    state.activeResolution = {
+      id: `qa-discovery:${fixture.stage}:${threat.id}`,
+      playerId: seatId,
+      source: "threat",
+      stage: "outcome_summary",
+      card: { id: threat.id, title: threat.title, type: "asset", flavor: threat.flavor, artType: "threat" },
+      battle: { stat: threat.stat, difficulty: threat.difficulty, modifiers: [{ label: "Operative", value: player.character.stats[threat.stat] }] },
+      roll: { dice: [4, 3], baseTotal: 7, modifierTotal: player.character.stats[threat.stat], finalTotal: 7 + player.character.stats[threat.stat], target: threat.difficulty, success: true },
+      outcome: {
+        title: followerDiscovery ? "Follower discovered" : "Equipment discovered",
+        text: followerDiscovery ? "The stranded guide accepts the operative's route-oath." : "The sealed cache yields usable field gear.",
+        effects: [followerDiscovery ? "Saltflat Bone-Reader joined the operative." : "Bridge Spike gained."]
+      }
+    };
+
+    if (fixture.stage === "auto-equipped") {
+      const bridgeSpike = loadGear().get("bridge-spike");
+      if (!bridgeSpike) throw new Error("QA Equipment is missing");
+      const item = { ...bridgeSpike, instanceId: "qa:bridge-spike:auto" };
+      player.character.heldGear = [...player.character.heldGear.filter((entry) => entry.slot !== "utility"), item];
+      player.character.equippedGear.utility = item.id;
+      player.character.equippedGearInstances = { ...(player.character.equippedGearInstances ?? { weapon: null, armor: null, utility: null }), utility: item.instanceId };
+    }
+
+    if (fixture.stage === "equip-choice") {
+      const bridgeSpike = loadGear().get("bridge-spike");
+      const fieldLens = loadGear().get("field-lens");
+      if (!bridgeSpike || !fieldLens) throw new Error("QA Equipment choice definitions are missing");
+      const current = { ...fieldLens, instanceId: "qa:field-lens:equipped" };
+      const discovered = { ...bridgeSpike, instanceId: "qa:bridge-spike:carried" };
+      player.character.heldGear = [...player.character.heldGear.filter((entry) => entry.slot !== "utility"), current, discovered];
+      player.character.equippedGear.utility = current.id;
+      player.character.equippedGearInstances = { ...(player.character.equippedGearInstances ?? { weapon: null, armor: null, utility: null }), utility: current.instanceId };
+      state.pendingGearEquipChoice = {
+        choiceId: "qa:discovery:equip-choice",
+        ownerSeatId: seatId,
+        itemCatalogId: discovered.id,
+        itemInstanceId: discovered.instanceId,
+        slot: "utility",
+        currentItemCatalogId: current.id,
+        currentItemInstanceId: current.instanceId,
+        sourceResolutionId: state.activeResolution.id,
+        createdAt: "qa:discovery:equip-choice"
+      };
+    }
     return;
   }
 

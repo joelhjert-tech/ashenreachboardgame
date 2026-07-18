@@ -132,10 +132,10 @@ describe("Phase 1X four Wound conversions", () => {
     expect(countEvents(state, "WOUND_THRESHOLD_REACHED")).toBe(1);
   });
 
-  it("preserves Roadside Bone Oracle success and each enemy reward branch", () => {
+  it("preserves the Roadside Bone Oracle discovery success and each enemy reward branch", () => {
     const oracle = cards.get("roadside-bone-oracle")!;
     expect(oracle.cardType).toBe("hazard");
-    if (oracle.cardType === "hazard") expect(oracle.successEffect).toEqual({ type: "gain_note", text: "The oracle traded a clean route omen for your patience." });
+    if (oracle.cardType === "hazard") expect(oracle.successEffect).toEqual({ type: "gain_follower", followerId: "saltflat-bone-reader" });
     for (const id of TARGETS.slice(0, 3).map((target) => target.id)) {
       const card = cards.get(id)!;
       expect(card.cardType).toBe("enemy");

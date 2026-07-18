@@ -368,10 +368,15 @@ export function buildCurrentTablePrompt(patch: StatePatch<PublicPatchPayload> | 
 
   if (payload.activeResolution?.battle || payload.encounter) {
     const resolution = payload.activeResolution ?? null;
+    const opposedBattle = Boolean(
+      payload.pendingEnemyRoll ||
+        payload.encounter?.cardType === "enemy" ||
+        resolution?.card?.type === "enemy"
+    );
     const opponent = resolution?.battle?.enemyName ?? resolution?.card?.title ?? payload.encounter?.enemyName ?? payload.encounter?.title ?? "the encounter";
     const math = describeResolutionMath(resolution);
     return {
-      phaseLabel: resolution?.battle ? "Battle resolving" : resolution ? "Resolution" : "Encounter",
+      phaseLabel: opposedBattle ? "Battle resolving" : resolution ? "Encounter resolving" : "Encounter",
       publicText: `Waiting on ${activeName} to resolve ${opponent}.`,
       requiredActorSeatId: resolution?.playerId ?? activeSeatId,
       requiredActorName: activeName,
@@ -380,7 +385,7 @@ export function buildCurrentTablePrompt(patch: StatePatch<PublicPatchPayload> | 
       lockedReason: null,
       lastOutcomeSummary: latestOutcome,
       watchText: "Compare the relevant stat, roll, modifiers, and total.",
-      tone: "battle"
+      tone: opposedBattle ? "battle" : "action"
     };
   }
 
