@@ -12,7 +12,7 @@ import { loadScarCards } from "../src/game/content/scars.js";
 import { loadThreatCards } from "../src/game/content/threats.js";
 import { loadTileChallenges } from "../src/game/content/tileChallenges.js";
 import { getThreatEffectTiming, isThreatEffectKey } from "../src/game/cards/threatEffects.js";
-import { validateThreatCategoryIdentity } from "../src/game/cards/cardCategories.js";
+import { getThreatPresentationCategory, validateThreatCategoryIdentity } from "../src/game/cards/cardCategories.js";
 import { FOLLOWER_ACQUISITION_SOURCES, QA_FOLLOWER_IDS } from "../src/game/data/followerAcquisition.js";
 import { BOARD_SPACES } from "../src/game/data/boardSpaces.js";
 import { BOARD_TEXT_EFFECTS, validateBoardTextEffectCoverage } from "../src/game/data/boardTextEffects.js";
@@ -269,6 +269,7 @@ for (const card of threats.values()) {
   if (failureEffect) validateEffect(failureEffect, `${card.id} failure`);
   validateThreatFamily(card);
   validateThreatMetadata(card);
+  validateDiscoveryThreat(card);
   errors.push(...validateThreatCategoryIdentity(card));
   validateThreatEffectKeys(card);
   validateGlassChimeSwarmRetirement(card);
@@ -466,6 +467,15 @@ function validateFollowerAcquisitionCoverage(): void {
     if (source.sourceType === "anomaly") {
       const anomaly = anomalies.get(source.sourceId);
       if (!anomaly || !effectGrantsFollower(anomaly.resolveEffect, source.followerId)) errors.push(`Anomaly source ${source.sourceId} does not grant ${source.followerId}`);
+    }
+    if (source.sourceType === "threat") {
+      const threat = threats.get(source.sourceId);
+      const grants = threat
+        ? threat.cardType === "enemy"
+          ? effectGrantsFollower(threat.defeatReward, source.followerId)
+          : effectGrantsFollower(threat.successEffect, source.followerId)
+        : false;
+      if (!threat || !grants) errors.push(`Threat source ${source.sourceId} does not grant ${source.followerId}`);
     }
   }
 }
@@ -698,6 +708,36 @@ function validateCanonicalDecks(): void {
   for (const card of escalations.values()) {
     if (!canonicalDeckIds.escalation.has(card.id)) {
       errors.push(`Escalation ${card.id} is not reachable from a canonical sector action`);
+    }
+  }
+}
+
+function collectEffectIds(effect: EncounterEffect | undefined, type: "gain_gear" | "gain_follower"): string[] {
+  if (!effect) return [];
+  if (effect.type === "sequence") return effect.effects.flatMap((entry) => collectEffectIds(entry, type));
+  if (type === "gain_gear" && effect.type === "gain_gear") return [effect.gearId];
+  if (type === "gain_follower" && effect.type === "gain_follower") return [effect.followerId];
+  return [];
+}
+
+function validateDiscoveryThreat(card: ThreatCard): void {
+  if (getThreatPresentationCategory(card) !== "asset" || card.cardType !== "hazard") return;
+  const gearIds = collectEffectIds(card.successEffect, "gain_gear");
+  const followerIds = collectEffectIds(card.successEffect, "gain_follower");
+  if (gearIds.length + followerIds.length !== 1) {
+    errors.push(`Discovery Threat ${card.id} must grant exactly one Equipment or Follower reward`);
+    return;
+  }
+  for (const gearId of gearIds) {
+    const item = gear.get(gearId);
+    if (!item || item.tier === "artifact" || item.qaOnly || gearId.startsWith("qa_")) {
+      errors.push(`Discovery Threat ${card.id} references ineligible normal Equipment ${gearId}`);
+    }
+  }
+  for (const followerId of followerIds) {
+    const follower = followers.get(followerId);
+    if (!follower || follower.qaOnly || followerId.startsWith("qa_")) {
+      errors.push(`Discovery Threat ${card.id} references ineligible Follower ${followerId}`);
     }
   }
 }

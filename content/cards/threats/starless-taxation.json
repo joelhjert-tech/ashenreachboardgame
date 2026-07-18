@@ -23,6 +23,7 @@
   },
   "enemyFamily": "bureaucracy",
   "threatLane": "yellow",
+  "resolutionType": "event",
   "region": "inner",
   "rarity": "rare",
   "tempo": "push",

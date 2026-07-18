@@ -10,7 +10,7 @@
   "difficulty": 8,
   "successEffect": {
     "type": "gain_gear",
-    "gearId": "tuning-spines"
+    "gearId": "field-lens"
   },
   "failEffect": {
     "type": "sequence",
@@ -23,6 +23,7 @@
   },
   "enemyFamily": "machine",
   "threatLane": "yellow",
+  "resolutionType": "asset",
   "region": "middle",
   "rarity": "uncommon",
   "tempo": "push",

@@ -20,6 +20,7 @@
   },
   "enemyFamily": "breachborn",
   "threatLane": "blue",
+  "resolutionType": "event",
   "rarity": "uncommon",
   "tempo": "stall",
   "resourceTags": [

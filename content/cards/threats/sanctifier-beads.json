@@ -3,14 +3,14 @@
   "type": "threat",
   "cardType": "hazard",
   "title": "Sanctifier Beads",
-  "text": "Prayer beads circle a live signal shard, tightening whenever anyone lies nearby.",
+  "text": "Prayer beads circle a sealed relay lantern, tightening whenever anyone lies nearby. Tune the shard and the reliquary opens.",
   "flavor": "Each bead has heard enough confessions to become judgmental.",
   "severity": 2,
   "stat": "signal",
   "difficulty": 6,
   "successEffect": {
-    "type": "gain_note",
-    "text": "You tuned the sanctifier beads into a clean signal note."
+    "type": "gain_gear",
+    "gearId": "signal-lantern"
   },
   "failEffect": {
     "type": "gain_scar",
@@ -23,7 +23,7 @@
   "rarity": "uncommon",
   "tempo": "neutral",
   "resourceTags": [
-    "boon",
+    "gear",
     "scar"
   ]
 }

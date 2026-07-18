@@ -216,6 +216,13 @@ export interface EquipGearAction extends BaseAction {
   slot: GearSlot;
 }
 
+export interface ResolveGearEquipChoiceAction extends BaseAction {
+  type: "RESOLVE_GEAR_EQUIP_CHOICE";
+  choiceId: string;
+  itemInstanceId: string;
+  decision: "equip" | "keepCarried";
+}
+
 export interface SelectEquipmentSuppressionTargetAction extends BaseAction {
   type: "SELECT_EQUIPMENT_SUPPRESSION_TARGET";
   choiceId: string;
@@ -685,6 +692,7 @@ export type GameAction =
   | WoundThresholdReachedAction
   | RecruitReplacementAction
   | EquipGearAction
+  | ResolveGearEquipChoiceAction
   | SelectEquipmentSuppressionTargetAction
   | UnequipGearAction
   | UseGearAction
@@ -893,6 +901,13 @@ export type ClientIntent =
       gearId: string;
       instanceId?: string;
       slot: GearSlot;
+    }
+  | {
+      type: "RESOLVE_GEAR_EQUIP_CHOICE";
+      seatId: string;
+      choiceId: string;
+      itemInstanceId: string;
+      decision: "equip" | "keepCarried";
     }
   | {
       type: "SELECT_EQUIPMENT_SUPPRESSION_TARGET";

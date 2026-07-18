@@ -15,6 +15,7 @@
   },
   "enemyFamily": "hazard",
   "threatLane": "blue",
+  "resolutionType": "event",
   "rarity": "rare",
   "tempo": "stall",
   "resourceTags": [

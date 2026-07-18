@@ -25,6 +25,7 @@
   },
   "enemyFamily": "hazard",
   "threatLane": "red",
+  "resolutionType": "encounter",
   "region": "outer",
   "rarity": "common",
   "tempo": "push",

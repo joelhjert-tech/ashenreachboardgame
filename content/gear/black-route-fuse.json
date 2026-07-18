@@ -8,6 +8,7 @@
     "stat": "grit",
     "amount": 1
   },
+  "eligibleSkills": ["grit"],
   "cost": 3,
   "sellable": true,
   "tier": "standard",

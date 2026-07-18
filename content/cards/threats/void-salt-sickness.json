@@ -18,6 +18,7 @@
   },
   "enemyFamily": "hazard",
   "threatLane": "blue",
+  "resolutionType": "encounter",
   "region": "outer",
   "rarity": "common",
   "tempo": "stall",

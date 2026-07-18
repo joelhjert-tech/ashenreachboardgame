@@ -64,7 +64,7 @@ import type {
   UseGearAction,
   RollModifierSource
 } from "./actions.js";
-import { getHeldGearInstance, getHeldGearItem } from "./gear.js";
+import { getEquippedGearItem, getHeldGearInstance, getHeldGearItem } from "./gear.js";
 import { canAdvancePhase, canResolveMovement } from "./phases.js";
 import { getEscalationCollapseLevel, getEscalationModifier } from "./escalation.js";
 import type { EncounterEffect, ThreatCard } from "../schema/card.schema.js";
@@ -378,7 +378,7 @@ function summarizeEffect(effect: EncounterEffect | null, success: boolean | null
     case "gain_scar":
       return `${prefix} gain scar ${effect.scarId}.`;
     case "gain_gear":
-      return `${prefix} gain gear ${effect.gearId}.`;
+      return `${prefix} gain ${effect.gear?.name ?? "Equipment"}.`;
     case "draw_artifact":
       return `${prefix} draw 1 local artifact.`;
     case "consume_artifact":
@@ -861,6 +861,54 @@ function applyEffectToState(state: GameState, seatId: string, effect: EncounterE
             summary: `${state.lastOutcomeSummary.summary} ${summarizeEffect(effect, null)}`
           }
         : state.lastOutcomeSummary
+    };
+  }
+
+  if (effect.type === "gain_gear" && effect.gear) {
+    const owner = state.players.find((player) => player.seatId === seatId);
+    if (!owner || owner.character.heldGear.some((item) => item.id === effect.gear!.id)) {
+      return state;
+    }
+
+    const instanceId = effect.gear.instanceId ?? `${effect.gear.id}:${seatId}:${state.sequence}`;
+    const gainedGear = { ...effect.gear, instanceId };
+    const slot = gainedGear.slot;
+    const currentItem = getEquippedGearItem(owner.character, slot);
+    const mayAutoEquip = gainedGear.tier !== "artifact" && gainedGear.effectModel !== "consumable";
+    const shouldAutoEquip = mayAutoEquip && !currentItem;
+    const sourceResolutionId = state.activeResolution?.id ?? `gear-reward:${seatId}:${state.sequence}`;
+
+    return {
+      ...state,
+      players: updateActivePlayer(state, seatId, (player) => ({
+        ...player,
+        character: {
+          ...player.character,
+          heldGear: [...player.character.heldGear, gainedGear],
+          equippedGear: shouldAutoEquip
+            ? { ...player.character.equippedGear, [slot]: gainedGear.id }
+            : player.character.equippedGear,
+          equippedGearInstances: shouldAutoEquip
+            ? {
+                ...(player.character.equippedGearInstances ?? { weapon: null, armor: null, utility: null }),
+                [slot]: instanceId
+              }
+            : player.character.equippedGearInstances
+        }
+      })),
+      pendingGearEquipChoice: mayAutoEquip && currentItem && !state.pendingGearEquipChoice
+        ? {
+            choiceId: `${sourceResolutionId}:equip:${instanceId}`,
+            ownerSeatId: seatId,
+            itemCatalogId: gainedGear.id,
+            itemInstanceId: instanceId,
+            slot,
+            currentItemCatalogId: currentItem.id,
+            currentItemInstanceId: currentItem.instanceId ?? null,
+            sourceResolutionId,
+            createdAt: state.pendingFailureReaction?.createdAt ?? sourceResolutionId
+          }
+        : state.pendingGearEquipChoice
     };
   }
 
@@ -3540,6 +3588,40 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
             }
           }
         })),
+        eventLog: [...state.eventLog, action]
+      });
+    }
+    case "RESOLVE_GEAR_EQUIP_CHOICE": {
+      const choiceAction = action as import("./actions.js").ResolveGearEquipChoiceAction;
+      const pending = state.pendingGearEquipChoice;
+      if (!pending) return reject(state, action, "No Equipment equip choice is pending");
+      if (pending.ownerSeatId !== choiceAction.seatId) return reject(state, action, "Equipment equip choice belongs to another seat");
+      if (pending.choiceId !== choiceAction.choiceId || pending.itemInstanceId !== choiceAction.itemInstanceId) {
+        return reject(state, action, "Equipment equip choice is stale");
+      }
+      const player = requirePlayer(state, choiceAction.seatId);
+      const item = getHeldGearInstance(player.character, choiceAction.itemInstanceId);
+      if (!item || item.id !== pending.itemCatalogId || item.slot !== pending.slot) {
+        return reject(state, action, "Discovered Equipment is no longer eligible");
+      }
+
+      return succeed({
+        ...state,
+        sequence: state.sequence + 1,
+        pendingGearEquipChoice: null,
+        players: choiceAction.decision === "equip"
+          ? updateActivePlayer(state, choiceAction.seatId, (entry) => ({
+              ...entry,
+              character: {
+                ...entry.character,
+                equippedGear: { ...entry.character.equippedGear, [pending.slot]: item.id },
+                equippedGearInstances: {
+                  ...(entry.character.equippedGearInstances ?? { weapon: null, armor: null, utility: null }),
+                  [pending.slot]: item.instanceId ?? null
+                }
+              }
+            }))
+          : state.players,
         eventLog: [...state.eventLog, action]
       });
     }

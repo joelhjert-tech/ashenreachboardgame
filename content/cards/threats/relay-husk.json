@@ -10,7 +10,7 @@
   "difficulty": 6,
   "successEffect": {
     "type": "gain_gear",
-    "gearId": "marshal-seal"
+    "gearId": "surveyor-chalk"
   },
   "failEffect": {
     "type": "equipment_suppression",
@@ -19,6 +19,7 @@
   },
   "enemyFamily": "machine",
   "threatLane": "yellow",
+  "resolutionType": "asset",
   "region": "outer",
   "rarity": "common",
   "tempo": "push",

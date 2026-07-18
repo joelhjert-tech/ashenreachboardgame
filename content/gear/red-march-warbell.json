@@ -7,6 +7,7 @@
     "stat": "grit",
     "amount": 2
   },
+  "eligibleSkills": ["grit"],
   "activeText": "Before your battle roll, spend 1 Salvage and exhaust the Red March Warbell to add +2 Grit to that battle.",
   "useLimit": "oncePerRound",
   "effectModel": "exhaust",

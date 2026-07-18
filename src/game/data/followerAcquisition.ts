@@ -3,7 +3,7 @@ export type FollowerAcquisitionMode = "fixed" | "random-artifact" | "existing-co
 
 export interface FollowerAcquisitionSource {
   followerId: string;
-  sourceType: "board" | "anomaly" | "contract" | "artifact" | "gear" | "starting" | "qa";
+  sourceType: "board" | "anomaly" | "threat" | "contract" | "artifact" | "gear" | "starting" | "qa";
   sourceId: string;
   mode: FollowerAcquisitionMode;
   tier: FollowerAcquisitionTier;
@@ -23,6 +23,7 @@ export const FOLLOWER_ACQUISITION_SOURCES: readonly FollowerAcquisitionSource[] 
   { followerId: "crownless-advocate", sourceType: "board", sourceId: "middle_shardSprawlBargain:gossip", mode: "fixed", tier: "standard", label: "Shard Sprawl Bargain" },
   { followerId: "fandiablos", sourceType: "artifact", sourceId: "artifact-fandiablos", mode: "random-artifact", tier: "rare", label: "Blackstar Shortcut artifact cache" },
   { followerId: "gate-saint-acolyte", sourceType: "board", sourceId: "outer_oathpostWrit", mode: "fixed", tier: "standard", label: "Broken Census Hall" },
+  { followerId: "gate-saint-acolyte", sourceType: "threat", sourceId: "saint-of-ashes-echo", mode: "fixed", tier: "standard", label: "Saint of Ashes Echo" },
   { followerId: "glassmere-mapper", sourceType: "board", sourceId: "outer_glassmereChorus", mode: "fixed", tier: "common", label: "Glass Signal Pier" },
   { followerId: "grave-scribe", sourceType: "board", sourceId: "outer_relayCrew", mode: "existing-content", tier: "common", label: "Lantern Post 47" },
   { followerId: "lucy-hell-puppy", sourceType: "artifact", sourceId: "artifact-lucy-hell-puppy", mode: "random-artifact", tier: "rare", label: "Old Mercy Bay artifact cache" },
@@ -30,11 +31,14 @@ export const FOLLOWER_ACQUISITION_SOURCES: readonly FollowerAcquisitionSource[] 
   { followerId: "mirecoil-saboteur", sourceType: "board", sourceId: "outer_mirecoilTraffic", mode: "fixed", tier: "standard", label: "Rusted Transit Gate" },
   { followerId: "murkclaw-gravecrow", sourceType: "artifact", sourceId: "artifact-murkclaw-gravecrow", mode: "random-artifact", tier: "rare", label: "Fallen Hab-Stack artifact cache" },
   { followerId: "pale-cartel-fixer", sourceType: "board", sourceId: "middle_rivalryClaim", mode: "existing-content", tier: "standard", label: "Rivalry Pit" },
+  { followerId: "pale-cartel-fixer", sourceType: "threat", sourceId: "marrow-tax-auditors", mode: "fixed", tier: "standard", label: "Marrow-Tax Auditors" },
   { followerId: "red-march-guide", sourceType: "anomaly", sourceId: "anomaly-webglass-stutter", mode: "existing-content", tier: "common", label: "Webglass Stutter" },
   { followerId: "rune-eye-raven", sourceType: "artifact", sourceId: "artifact-rune-eye-raven", mode: "random-artifact", tier: "rare", label: "Choir Shrine artifact cache" },
   { followerId: "saltflat-bone-reader", sourceType: "board", sourceId: "outer_saltCrossing", mode: "fixed", tier: "standard", label: "Mire Vent Colony" },
+  { followerId: "saltflat-bone-reader", sourceType: "threat", sourceId: "roadside-bone-oracle", mode: "fixed", tier: "standard", label: "Roadside Bone Oracle" },
   { followerId: "votive-gunner", sourceType: "board", sourceId: "middle_redMarchBargain", mode: "existing-content", tier: "standard", label: "Red March Outpost" },
   { followerId: "webglass-runner", sourceType: "board", sourceId: "middle_webglassFracture", mode: "fixed", tier: "common", label: "Webglass Fracture" },
+  { followerId: "webglass-runner", sourceType: "threat", sourceId: "false-route-procession", mode: "fixed", tier: "common", label: "False-Route Procession" },
   { followerId: "zoey-thorn-violet", sourceType: "artifact", sourceId: "artifact-zoey-thorn-violet", mode: "random-artifact", tier: "rare", label: "Red March artifact cache" }
 ] as const;
 

@@ -3,14 +3,14 @@
   "type": "threat",
   "cardType": "hazard",
   "title": "Breach Halberd",
-  "text": "The halberd sweeps you off the breach. Move 1 sector clockwise on this ring. If no legal sector is available, suffer 1 Wound.",
+  "text": "A breach halberd hangs inside a collapsed militia reliquary. Prove you can disarm its live counterweight and the weapon cache is yours.",
   "flavor": "It remembers the last charge better than the soldier did.",
   "severity": 2,
   "stat": "forge",
   "difficulty": 6,
   "successEffect": {
-    "type": "gain_note",
-    "text": "You stripped a breach-halberd for a brutal route note."
+    "type": "gain_gear",
+    "gearId": "bridge-spike"
   },
   "failEffect": {
     "type": "forcedDisplacement",
@@ -30,7 +30,7 @@
   "rarity": "uncommon",
   "tempo": "push",
   "resourceTags": [
-    "movement",
+    "gear",
     "wound"
   ]
 }

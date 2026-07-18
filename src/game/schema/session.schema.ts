@@ -99,6 +99,18 @@ export const pendingEquipmentSuppressionChoiceSchema = z.object({
   createdAt: z.string().min(1)
 });
 
+export const pendingGearEquipChoiceSchema = z.object({
+  choiceId: z.string().min(1),
+  ownerSeatId: z.string().min(1),
+  itemCatalogId: z.string().min(1),
+  itemInstanceId: z.string().min(1),
+  slot: z.enum(["weapon", "armor", "utility"]),
+  currentItemCatalogId: z.string().min(1),
+  currentItemInstanceId: z.string().min(1).nullable(),
+  sourceResolutionId: z.string().min(1),
+  createdAt: z.string().min(1)
+}).strict();
+
 export const equipmentSuppressionSchema = z.object({
   ownerSeatId: z.string().min(1),
   sourceThreatId: z.enum(["relay-husk", "signal-rotted-engineer"]),
@@ -467,6 +479,7 @@ export const gameStateSchema = z.object({
   resolvedDisplacementSourceEventIds: z.array(z.string().min(1)).optional(),
   resolvedSalvageLossSourceEventIds: z.array(z.string().min(1)).optional(),
   pendingEquipmentSuppressionChoice: pendingEquipmentSuppressionChoiceSchema.nullable().optional(),
+  pendingGearEquipChoice: pendingGearEquipChoiceSchema.nullable().optional(),
   equipmentSuppressions: z.array(equipmentSuppressionSchema).optional(),
   resolvedEquipmentSuppressionSourceEventIds: z.array(z.string().min(1)).optional(),
   pendingNextNonBattleTestModifiers: z.array(pendingNextNonBattleTestModifierSchema).optional(),
@@ -632,6 +645,7 @@ export type PendingNextNonBattleTestModifier = z.infer<typeof pendingNextNonBatt
 export type PendingNextNormalMovementRollModifier = z.infer<typeof pendingNextNormalMovementRollModifierSchema>;
 export type EquipmentSuppressionMode = z.infer<typeof equipmentSuppressionModeSchema>;
 export type PendingEquipmentSuppressionChoice = z.infer<typeof pendingEquipmentSuppressionChoiceSchema>;
+export type PendingGearEquipChoice = z.infer<typeof pendingGearEquipChoiceSchema>;
 export type EquipmentSuppression = z.infer<typeof equipmentSuppressionSchema>;
 export type NormalMovementRollDetail = z.infer<typeof normalMovementRollDetailSchema>;
 export type ResolutionStage = z.infer<typeof resolutionStageSchema>;

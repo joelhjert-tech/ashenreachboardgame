@@ -7,6 +7,7 @@
     "stat": "signal",
     "amount": 1
   },
+  "eligibleTestScope": "anySkill",
   "activeText": "Static Intercession — Reaction: After you fail a recurring Anomaly Challenge, but before its failure effects resolve, spend 1 charge to ignore one pending failure effect from that challenge. The test still counts as failed, and any remaining failure effects resolve normally.",
   "useLimit": "charge",
   "charges": 2,

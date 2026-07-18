@@ -3,14 +3,14 @@
   "type": "threat",
   "cardType": "hazard",
   "title": "Marrow-Tax Auditors",
-  "text": "Ink-faced auditors unfold from a dead checkpoint and calculate what your bones owe the road. On failure, lose up to 1 Salvage.",
-  "flavor": "Their abacus clicks with knuckles.",
+  "text": "An echo-market fixer is pinned beneath the ledgers of a dead checkpoint. Expose the false tariff and they join you; fail and the auditors collect up to 1 Salvage.",
+  "flavor": "The best loopholes know when to walk away.",
   "severity": 2,
   "stat": "guile",
   "difficulty": 7,
   "successEffect": {
-    "type": "gain_note",
-    "text": "You found a loophole in a dead empire tariff."
+    "type": "gain_follower",
+    "followerId": "pale-cartel-fixer"
   },
   "failEffect": {
     "type": "lose_salvage",
@@ -18,11 +18,12 @@
   },
   "enemyFamily": "bureaucracy",
   "threatLane": "yellow",
+  "resolutionType": "asset",
   "region": "outer",
   "rarity": "common",
   "tempo": "push",
   "resourceTags": [
     "salvage",
-    "loot"
+    "follower"
   ]
 }

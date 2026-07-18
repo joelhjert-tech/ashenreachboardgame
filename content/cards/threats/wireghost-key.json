@@ -3,14 +3,14 @@
   "type": "threat",
   "cardType": "hazard",
   "title": "Wireghost Key",
-  "text": "A wireghost key clicks through invisible locks, opening little doors in the skin of the world.",
+  "text": "A wireghost key clicks through a forgotten manufactorum locker. Match its turning rhythm and the sealed tools are yours.",
   "flavor": "It remembers every lock as a wound.",
   "severity": 2,
   "stat": "guile",
   "difficulty": 6,
   "successEffect": {
-    "type": "gain_note",
-    "text": "You learned one wireghost turn and kept it as a lock note."
+    "type": "gain_gear",
+    "gearId": "lockjaw-kit"
   },
   "failEffect": {
     "type": "take_wound",
@@ -23,7 +23,7 @@
   "rarity": "uncommon",
   "tempo": "push",
   "resourceTags": [
-    "loot",
+    "gear",
     "wound"
   ]
 }

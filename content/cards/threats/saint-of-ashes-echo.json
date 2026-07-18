@@ -3,14 +3,14 @@
   "type": "threat",
   "cardType": "hazard",
   "title": "Saint of Ashes Echo",
-  "text": "An echo of a dead saint asks for proof that you deserve the next step inward.",
+  "text": "A Gate-Saint acolyte is trapped inside the echo of a dead saint. Prove you deserve the next step inward and the echo releases its keeper.",
   "flavor": "Mercy is not refusal. Mercy is a harder test.",
   "severity": 4,
   "stat": "signal",
   "difficulty": 10,
   "successEffect": {
-    "type": "gain_note",
-    "text": "The saint echo granted a cinder blessing for the final road."
+    "type": "gain_follower",
+    "followerId": "gate-saint-acolyte"
   },
   "failEffect": {
     "type": "sequence",
@@ -23,11 +23,12 @@
   },
   "enemyFamily": "revenant",
   "threatLane": "blue",
+  "resolutionType": "asset",
   "region": "middle",
   "rarity": "uncommon",
   "tempo": "push",
   "resourceTags": [
-    "loot",
+    "follower",
     "scar"
   ]
 }

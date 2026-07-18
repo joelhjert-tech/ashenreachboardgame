@@ -7,6 +7,7 @@
     "stat": "guile",
     "amount": 1
   },
+  "eligibleSkills": ["guile", "signal"],
   "activeText": "Reaction — After you fail a Guile or Signal test, but before failure effects resolve, spend 1 Salvage and exhaust this Artifact to reroll that test. You must accept the second result.",
   "useLimit": "oncePerRound",
   "effectModel": "exhaust",

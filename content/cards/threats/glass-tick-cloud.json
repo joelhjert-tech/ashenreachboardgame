@@ -19,6 +19,7 @@
   },
   "enemyFamily": "vermin",
   "threatLane": "yellow",
+  "resolutionType": "encounter",
   "rarity": "common",
   "tempo": "push",
   "resourceTags": [

@@ -3,14 +3,14 @@
   "type": "threat",
   "cardType": "hazard",
   "title": "Roadside Bone Oracle",
-  "text": "A roadside shrine speaks through wired jawbones and demands that you answer in the correct order.",
-  "flavor": "Every wrong word clicks another tooth shut.",
+  "text": "A stranded bone-reader speaks through wired jawbones while the roadside shrine closes around them. Answer the shrine and they will travel with you.",
+  "flavor": "Every right word opens one more road.",
   "severity": 1,
   "stat": "signal",
   "difficulty": 5,
   "successEffect": {
-    "type": "gain_note",
-    "text": "The oracle traded a clean route omen for your patience."
+    "type": "gain_follower",
+    "followerId": "saltflat-bone-reader"
   },
   "failEffect": {
     "type": "take_wound",
@@ -18,11 +18,12 @@
   },
   "enemyFamily": "revenant",
   "threatLane": "blue",
+  "resolutionType": "asset",
   "region": "outer",
   "rarity": "common",
   "tempo": "push",
   "resourceTags": [
     "wound",
-    "loot"
+    "follower"
   ]
 }

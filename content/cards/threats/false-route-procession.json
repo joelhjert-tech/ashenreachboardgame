@@ -3,14 +3,14 @@
   "type": "threat",
   "cardType": "hazard",
   "title": "False-Route Procession",
-  "text": "If you lose, move 1 sector clockwise or counterclockwise on your current ring. Choose from the legal destinations. If only one is legal, move there. If neither is legal, remain in place.",
+  "text": "A route-runner is caught inside a procession marching the wrong road. Break its cadence and the survivor joins you; fail and the procession carries you one legal sector along this ring.",
   "flavor": "They wave for you to follow with hands turned backward.",
   "severity": 2,
   "stat": "command",
   "difficulty": 7,
   "successEffect": {
-    "type": "gain_note",
-    "text": "You named the false road aloud and broke the procession."
+    "type": "gain_follower",
+    "followerId": "webglass-runner"
   },
   "failEffect": {
     "type": "ownerSelectedForcedDisplacement",
@@ -23,11 +23,12 @@
   },
   "enemyFamily": "revenant",
   "threatLane": "yellow",
+  "resolutionType": "asset",
   "region": "outer",
   "rarity": "common",
   "tempo": "push",
   "resourceTags": [
     "movement",
-    "loot"
+    "follower"
   ]
 }

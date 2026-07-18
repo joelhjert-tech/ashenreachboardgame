@@ -7,6 +7,7 @@
     "stat": "signal",
     "amount": 1
   },
+  "eligibleSkills": ["signal"],
   "activeText": "Before you roll an anomaly Signal test, you may spend 1 charge to gain +2 Signal for that test. All other modifiers and consequences apply normally.",
   "useLimit": "charge",
   "charges": 2,

@@ -146,6 +146,7 @@ import {
   type ShopFailureReason
 } from "../game/rules/shopAvailability.js";
 import { FORCED_POPELORD_CHARACTER_ID, requiresPopelordForDisplayName } from "../game/rules/playerIdentity.js";
+import { getChallengeItemEligibility } from "../game/rules/challengeItemEligibility.js";
 import { resolveSpaceText } from "../game/rules/tileTextResolver.js";
 import { applyStartingLoadout, ARTIFACT_EXCHANGE_CONTRACT_COST } from "../game/rules/startingLoadout.js";
 import {
@@ -347,7 +348,11 @@ interface RestartSessionMessage {
   type: "RESTART_SESSION";
 }
 
-type HostCommandMessage = KickSeatMessage | RestartSessionMessage;
+interface ReturnToLobbyMessage {
+  type: "RETURN_TO_LOBBY";
+}
+
+type HostCommandMessage = KickSeatMessage | RestartSessionMessage | ReturnToLobbyMessage;
 type ClientMessage = ClientIntent | RejoinMessage | HostCommandMessage;
 
 const CLIENT_INTENT_TYPES = new Set<string>([
@@ -375,6 +380,7 @@ const CLIENT_INTENT_TYPES = new Set<string>([
   "SELECT_STARTING_CONTRACT",
   "RECRUIT_REPLACEMENT",
   "EQUIP_GEAR",
+  "RESOLVE_GEAR_EQUIP_CHOICE",
   "UNEQUIP_GEAR",
   "USE_GEAR",
   "USE_FOLLOWER",
@@ -1168,18 +1174,33 @@ export class GameRoomServer {
     this.state = {
       ...nextState,
       sequence: this.state.sequence + 1,
-      seats: nextState.seats.map((entry) =>
-        entry.seatId === seatId
+      seats: nextState.seats.map((entry) => {
+        const previousSeat = this.state.seats.find(
+          (candidate) => candidate.seatId === entry.seatId && !candidate.kicked && Boolean(candidate.displayName)
+        );
+
+        return previousSeat
           ? {
               ...entry,
-              displayName: hostSeat.displayName,
-              connected: true,
-              joinToken: hostSeat.joinToken,
-              characterSelected: false
+              displayName: previousSeat.displayName,
+              connected: previousSeat.connected,
+              joinToken: previousSeat.joinToken,
+              characterSelected: false,
+              startingContractOptions: [],
+              selectedStartingContractId: null,
+              missionSelectedAt: null,
+              ready: false
             }
-          : entry
-      )
+          : entry;
+      })
     };
+    const retainedSeatIds = new Set(this.state.seats.map((entry) => entry.seatId));
+    for (const client of [...this.clients]) {
+      if (client.view !== "phone" || !client.seatId || retainedSeatIds.has(client.seatId)) continue;
+      client.superseded = true;
+      this.clients.delete(client);
+      client.socket.close(4004, "Seat is not available in the reconfigured lobby");
+    }
     this.broadcastPatch();
   }
 
@@ -1432,7 +1453,7 @@ export class GameRoomServer {
   }
 
   private isHostCommand(message: unknown): message is HostCommandMessage {
-    return isRecord(message) && (message.type === "KICK_SEAT" || message.type === "RESTART_SESSION");
+    return isRecord(message) && (message.type === "KICK_SEAT" || message.type === "RESTART_SESSION" || message.type === "RETURN_TO_LOBBY");
   }
 
   private parseClientMessage(message: unknown): ClientIntent | HostCommandMessage {
@@ -1449,6 +1470,10 @@ export class GameRoomServer {
 
     if (type === "RESTART_SESSION") {
       return message as unknown as RestartSessionMessage;
+    }
+
+    if (type === "RETURN_TO_LOBBY") {
+      return message as unknown as ReturnToLobbyMessage;
     }
 
     if (!CLIENT_INTENT_TYPES.has(type)) {
@@ -1551,6 +1576,11 @@ export class GameRoomServer {
         if (message.instanceId !== undefined) requireStringField(message, "instanceId", type);
         requireEnumField(message, "slot", GEAR_SLOT_VALUES, type);
         break;
+      case "RESOLVE_GEAR_EQUIP_CHOICE":
+        requireStringField(message, "choiceId", type);
+        requireStringField(message, "itemInstanceId", type);
+        requireEnumField(message, "decision", new Set(["equip", "keepCarried"]), type);
+        break;
       case "UNEQUIP_GEAR":
         requireEnumField(message, "slot", GEAR_SLOT_VALUES, type);
         break;
@@ -1652,7 +1682,7 @@ export class GameRoomServer {
       return;
     }
 
-    this.restartActiveSession();
+    this.restartActiveSession(command.type === "RETURN_TO_LOBBY");
   }
 
   private hasFollower(player: PlayerState | undefined, followerId: string): boolean {
@@ -2086,6 +2116,11 @@ export class GameRoomServer {
 
     if (!item.activeText && !item.useLimit) {
       throw new IntentRejectedError("USE_GEAR", `${item.name} is passive and applies automatically.`);
+    }
+
+    const challengeEligibility = getChallengeItemEligibility(this.state, seatId, item);
+    if (challengeEligibility.challengeLinked && !challengeEligibility.eligible) {
+      throw new IntentRejectedError("USE_GEAR", challengeEligibility.disabledReason ?? `${item.name} is not eligible for this test.`);
     }
 
     if (item.effectModel === "consumable") {
@@ -3182,6 +3217,15 @@ export class GameRoomServer {
           slot: intent.slot,
           createdAt
         } satisfies EquipGearAction;
+      case "RESOLVE_GEAR_EQUIP_CHOICE":
+        return {
+          type: "RESOLVE_GEAR_EQUIP_CHOICE",
+          seatId: intent.seatId,
+          choiceId: intent.choiceId,
+          itemInstanceId: intent.itemInstanceId,
+          decision: intent.decision,
+          createdAt
+        };
       case "SELECT_EQUIPMENT_SUPPRESSION_TARGET":
         return { type: "SELECT_EQUIPMENT_SUPPRESSION_TARGET", seatId: intent.seatId, choiceId: intent.choiceId, itemInstanceId: intent.itemInstanceId, createdAt };
       case "UNEQUIP_GEAR":
@@ -5305,12 +5349,13 @@ export class GameRoomServer {
     }
   }
 
-  private restartActiveSession(): void {
+  private restartActiveSession(reconfigureLobby = false): void {
     const connectedTurnOrder = this.getConnectedRestartSeatIds();
 
     this.state = {
       ...this.state,
       status: "lobby",
+      lobbyConfigured: reconfigureLobby ? false : this.state.lobbyConfigured,
       winnerSeatId: null,
       phase: "start",
       resolutionSource: null,
@@ -5360,7 +5405,10 @@ export class GameRoomServer {
           character: this.createFreshCharacter(seat.characterId, startSectorId)
         };
       }),
-      eventLog: [...this.state.eventLog, { type: "RESTART_SESSION", createdAt: new Date().toISOString() }]
+      eventLog: [
+        ...this.state.eventLog,
+        { type: reconfigureLobby ? "RETURN_TO_LOBBY" : "RESTART_SESSION", createdAt: new Date().toISOString() }
+      ]
     };
   }
 
@@ -6693,6 +6741,9 @@ export class GameRoomServer {
   }
 
   resolveContinueResolutionIntent(intent: Extract<ClientIntent, { type: "CONTINUE_RESOLUTION" }>): void {
+    if (this.state.pendingGearEquipChoice) {
+      throw new IntentRejectedError(intent.type, "Resolve the discovered Equipment choice before continuing.");
+    }
     this.clearResolutionAutoContinueTimeout();
     const previousStage = this.state.activeResolution?.stage ?? null;
 
@@ -8663,6 +8714,9 @@ type PhoneObjectUseState = {
   remainingUses?: number | null;
   maxUses?: number | null;
   disabledReason?: string | null;
+  testedSkill?: Stat | null;
+  timingWindow?: string | null;
+  usableForCurrentTest?: boolean | null;
   activeModifier?: (RollModifierSource & { stat: Stat; mode: "battle" | "check" }) | null;
 };
 
@@ -8830,6 +8884,7 @@ function buildPhoneObjectUseStates(state: GameState, player: PlayerState | undef
         ? `${item.name} is suppressed through this Threat.`
         : `${item.name} is suppressed during this battle.`
       : null;
+    const challengeEligibility = getChallengeItemEligibility(state, player.seatId, item);
     return {
       source: "gear" as const,
       id: item.id,
@@ -8837,7 +8892,10 @@ function buildPhoneObjectUseStates(state: GameState, player: PlayerState | undef
       usedThisTurn,
       usedThisRound,
       ...projectedLimit,
-      disabledReason: suppressionDisabledReason ?? consumableDisabledReason ?? projectedLimit.disabledReason,
+      disabledReason: suppressionDisabledReason ?? (challengeEligibility.challengeLinked ? challengeEligibility.disabledReason : null) ?? consumableDisabledReason ?? projectedLimit.disabledReason,
+      testedSkill: challengeEligibility.testedSkill,
+      timingWindow: challengeEligibility.timingWindow,
+      usableForCurrentTest: challengeEligibility.challengeLinked ? challengeEligibility.eligible : null,
       activeModifier: getPendingObjectRollModifier(state, player.seatId, "gear", item.id)
     };
   });
@@ -11003,6 +11061,7 @@ export function createTvProjection(
           id: state.currentEncounter.id,
           title: state.currentEncounter.title,
           cardType: state.currentEncounter.cardType,
+          presentationType: getThreatPresentationCategory(state.currentEncounter),
           enemyName: state.currentEncounter.cardType === "enemy" ? state.currentEncounter.enemyName : null,
           flavor: state.currentEncounter.flavor,
           difficulty: state.currentEncounter.difficulty,
@@ -11124,6 +11183,9 @@ export function createPhoneProjection(state: GameState, seatId: string, forcePri
   const pendingMemoryTaxChoice = state.pendingMemoryTaxChoice?.ownerSeatId === seatId
     ? state.pendingMemoryTaxChoice
     : null;
+  const pendingGearEquipChoice = state.pendingGearEquipChoice?.ownerSeatId === seatId
+    ? state.pendingGearEquipChoice
+    : null;
 
   return stripLegacyHeatProjection({
     phase: state.phase,
@@ -11187,6 +11249,16 @@ export function createPhoneProjection(state: GameState, seatId: string, forcePri
         equipped: true as const
       }))
     } : null,
+    pendingGearEquipChoice: pendingGearEquipChoice && player ? {
+      choiceId: pendingGearEquipChoice.choiceId,
+      itemCatalogId: pendingGearEquipChoice.itemCatalogId,
+      itemInstanceId: pendingGearEquipChoice.itemInstanceId,
+      itemName: player.character.heldGear.find((item) => item.instanceId === pendingGearEquipChoice.itemInstanceId)?.name ?? pendingGearEquipChoice.itemCatalogId,
+      slot: pendingGearEquipChoice.slot,
+      currentItemCatalogId: pendingGearEquipChoice.currentItemCatalogId,
+      currentItemInstanceId: pendingGearEquipChoice.currentItemInstanceId,
+      currentItemName: player.character.heldGear.find((item) => item.instanceId === pendingGearEquipChoice.currentItemInstanceId)?.name ?? pendingGearEquipChoice.currentItemCatalogId
+    } : null,
     pendingMemoryTaxChoice: publicProjection.pendingMemoryTaxChoice,
     pendingMemoryTaxChoicePrivate: pendingMemoryTaxChoice ? {
       choiceId: pendingMemoryTaxChoice.choiceId,
@@ -11214,7 +11286,10 @@ export function createPhoneProjection(state: GameState, seatId: string, forcePri
     escalationThreshold: publicProjection.escalationThreshold,
     escalationModifier: publicProjection.escalationModifier,
     availableContracts: state.availableContracts,
-    encounter: state.currentEncounter,
+    encounter: state.currentEncounter ? {
+      ...state.currentEncounter,
+      presentationType: getThreatPresentationCategory(state.currentEncounter)
+    } : null,
     pendingEnemyRoll: state.pendingEnemyRoll,
     pendingTileChallenge: publicProjection.pendingTileChallenge,
     pendingTestModifiers: [

@@ -53,6 +53,8 @@ const gearItemFields = {
     stat: gearBonusStatSchema,
     amount: z.number().int().positive()
   }),
+  eligibleSkills: z.array(gearBonusStatSchema).min(1).optional(),
+  eligibleTestScope: z.literal("anySkill").optional(),
   cost: z.number().int().min(0).optional(),
   sellValue: z.number().int().min(0).optional(),
   sellable: z.boolean().optional(),
@@ -89,6 +91,15 @@ const gearItemFields = {
 };
 
 function validateGearItem(item: z.infer<z.ZodObject<typeof gearItemFields>>, context: z.RefinementCtx): void {
+  const challengeTimings = new Set(["beforeBattleRoll", "beforeAnomalySignalTest", "afterFailedTest"]);
+  const hasChallengeTiming = [...(item.timingWindows ?? []), ...(item.activationTiming ?? [])]
+    .some((timing) => challengeTimings.has(timing));
+  if (hasChallengeTiming && item.chargedEffect !== "bonewayDetour" && !item.qaOnly && !item.id.startsWith("qa_") && !item.eligibleSkills?.length && item.eligibleTestScope !== "anySkill") {
+    context.addIssue({ code: z.ZodIssueCode.custom, message: "challenge-active Equipment must declare eligibleSkills or explicit anySkill scope", path: ["eligibleSkills"] });
+  }
+  if (item.eligibleSkills?.length && item.eligibleTestScope === "anySkill") {
+    context.addIssue({ code: z.ZodIssueCode.custom, message: "Equipment cannot declare both eligibleSkills and anySkill scope", path: ["eligibleTestScope"] });
+  }
   if (item.id === "heat-sink-prayer") {
     if (item.name !== "Scar-Sink Prayer") context.addIssue({ code: z.ZodIssueCode.custom, message: "legacy heat-sink-prayer ID must use player-facing name Scar-Sink Prayer", path: ["name"] });
     if (item.chargedEffect !== "scarSinkPrayer" || !item.activationTiming?.includes("pendingScarConsequence")) context.addIssue({ code: z.ZodIssueCode.custom, message: "Scar-Sink Prayer requires the typed pending Scar consequence reaction", path: ["chargedEffect"] });
