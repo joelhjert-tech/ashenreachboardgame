@@ -1,0 +1,32 @@
+{
+  "id": "grothak-gorged-king",
+  "type": "threat",
+  "cardType": "enemy",
+  "title": "Grothak, the Gorged King",
+  "enemyName": "Grothak, the Gorged King",
+  "text": "Grothak's debtbound court drags his tithe-throne between the Inner Reach vaults. If you lose, suffer 2 Wounds. If you win, tear 2 Salvage from the throne's tribute chains.",
+  "flavor": "Every road beneath his shadow ends at an open hand.",
+  "severity": 5,
+  "region": "inner",
+  "stat": "command",
+  "difficulty": 11,
+  "trophyValue": 7,
+  "defeatReward": {
+    "type": "gain_salvage",
+    "amount": 2
+  },
+  "woundOnLoss": {
+    "type": "take_wound",
+    "amount": 2
+  },
+  "enemyFamily": "bureaucracy",
+  "threatLane": "yellow",
+  "rarity": "rare",
+  "tempo": "stall",
+  "resourceTags": [
+    "salvage",
+    "trophy",
+    "wound"
+  ],
+  "imagePrompt": "An immense crowned tithe-tyrant seated on a riveted black-iron throne machine, scarred flesh hung with coin seals and chains, gripping a colossal industrial maul, debtbound retainers kneeling below, ruined Inner Reach tithe hall, furnace-orange rim light and cold signal light, Ashen Reach original grimdark science-fantasy, oppressive rather than comedic, cinematic 3:4 portrait, no text, no logos"
+}

@@ -509,6 +509,19 @@ export const generatedCardImagePrompts: CardImagePromptCatalogEntry[] = [
     "usage": "Grave-Silt Press threat card art."
   },
   {
+    "assetId": "threat_art_grothak-gorged-king",
+    "assetType": "threatCardArt",
+    "cardId": "grothak-gorged-king",
+    "cardType": "threat",
+    "title": "Grothak, the Gorged King",
+    "fileName": "grothak-gorged-king.png",
+    "outputPath": "/assets/cards/threats/yellow/grothak-gorged-king.png",
+    "fallbackPath": "/assets/cards/fallbacks/threat.svg",
+    "prompt": "Ashen Reach original card art, dark gothic sci-fantasy artifact-crawl, 3:4 portrait composition, centered subject with safe margins for card framing, black basalt, charcoal iron, scorched brass, ember red glow, cold blue-white signal light, toxic green salvage light, purple anomaly light, ash, smoke, ritual circuitry, damaged artifact machinery, high contrast, readable silhouette, cinematic but grounded, no text, central subject is Grothak, the Gorged King, a living hostile with a clear full-body silhouette, boss-like catastrophic threat, final-ring danger, threat family supernatural bureaucracy or debt horror, threat difficulty 11 driven by command, regional hint inner, Grothak's debtbound court drags his tithe-throne between the Inner Reach vaults. If you lose, suffer 2 Wounds. If you win, tear 2 Salvage from the throne's tribute chains, Every road beneath his shadow ends at an open hand, no gore closeup, hostile intent, broken artifact weaponry or predatory anatomy",
+    "negativePrompt": "readable text, logo, watermark, UI, dice, card frame, board game brand, Talisman, copied fantasy board game art, copyrighted character, modern city, clean spaceship, cartoon, anime, low detail, blurry, cropped subject, overexposed, cluttered composition, illegible silhouette",
+    "usage": "Grothak, the Gorged King threat card art."
+  },
+  {
     "assetId": "threat_art_guardian-bridge-duelist",
     "assetType": "threatCardArt",
     "cardId": "guardian-bridge-duelist",
@@ -1235,19 +1248,6 @@ export const generatedCardImagePrompts: CardImagePromptCatalogEntry[] = [
     "prompt": "Ashen Reach original card art, dark gothic sci-fantasy artifact-crawl, 3:4 portrait composition, centered subject with safe margins for card framing, black basalt, charcoal iron, scorched brass, ember red glow, cold blue-white signal light, toxic green salvage light, purple anomaly light, ash, smoke, ritual circuitry, damaged artifact machinery, high contrast, readable silhouette, cinematic but grounded, no text, central subject is the hazard itself, a dangerous place or event made readable at card size, elite horror or war-machine, dominant and oppressive, threat family environmental hazard, threat difficulty 8 driven by grit, regional hint middle, The storm stitches flesh to road. Suffer 1 Wound, then move 1 sector counterclockwise on this ring. If no legal sector is available, suffer 1 Wound instead of moving, The clouds have thread. The ground has needles, motion, pressure, energy, environmental violence, avoid looking like a humanoid unless implied by the card",
     "negativePrompt": "readable text, logo, watermark, UI, dice, card frame, board game brand, Talisman, copied fantasy board game art, copyrighted character, modern city, clean spaceship, cartoon, anime, low detail, blurry, cropped subject, overexposed, cluttered composition, illegible silhouette",
     "usage": "Suture Storm threat card art."
-  },
-  {
-    "assetId": "threat_art_throne-soot-knight",
-    "assetType": "threatCardArt",
-    "cardId": "throne-soot-knight",
-    "cardType": "threat",
-    "title": "Throne-Soot Knight",
-    "fileName": "throne-soot-knight.png",
-    "outputPath": "/assets/cards/threats/yellow/throne-soot-knight.png",
-    "fallbackPath": "/assets/cards/fallbacks/threat.svg",
-    "prompt": "Ashen Reach original card art, dark gothic sci-fantasy artifact-crawl, 3:4 portrait composition, centered subject with safe margins for card framing, black basalt, charcoal iron, scorched brass, ember red glow, cold blue-white signal light, toxic green salvage light, purple anomaly light, ash, smoke, ritual circuitry, damaged artifact machinery, high contrast, readable silhouette, cinematic but grounded, no text, central subject is Throne-Soot Knight, a living hostile with a clear full-body silhouette, elite horror or war-machine, dominant and oppressive, threat family revenant, echo, or dead oathbound remnant, threat difficulty 10 driven by command, regional hint inner, An armored remnant of a dead claimant kneels, rises, and draws a blade still warm from coronation, Some oaths survive the monarch by centuries, no gore closeup, hostile intent, broken artifact weaponry or predatory anatomy",
-    "negativePrompt": "readable text, logo, watermark, UI, dice, card frame, board game brand, Talisman, copied fantasy board game art, copyrighted character, modern city, clean spaceship, cartoon, anime, low detail, blurry, cropped subject, overexposed, cluttered composition, illegible silhouette",
-    "usage": "Throne-Soot Knight threat card art."
   },
   {
     "assetId": "threat_art_toll-scrip-urchins",

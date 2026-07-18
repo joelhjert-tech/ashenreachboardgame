@@ -204,6 +204,11 @@ const generatedCardArtRuntimeCatalog: RuntimeCardArtCatalogEntry[] = [
     "outputPath": "/assets/cards/threats/blue/grave-silt-press.png"
   },
   {
+    "cardId": "grothak-gorged-king",
+    "cardType": "threat",
+    "outputPath": "/assets/cards/threats/yellow/grothak-gorged-king.png"
+  },
+  {
     "cardId": "guardian-bridge-duelist",
     "cardType": "threat",
     "outputPath": "/assets/cards/threats/yellow/guardian-bridge-duelist.png"
@@ -482,11 +487,6 @@ const generatedCardArtRuntimeCatalog: RuntimeCardArtCatalogEntry[] = [
     "cardId": "suture-storm",
     "cardType": "threat",
     "outputPath": "/assets/cards/threats/red/suture-storm.png"
-  },
-  {
-    "cardId": "throne-soot-knight",
-    "cardType": "threat",
-    "outputPath": "/assets/cards/threats/yellow/throne-soot-knight.png"
   },
   {
     "cardId": "toll-scrip-urchins",

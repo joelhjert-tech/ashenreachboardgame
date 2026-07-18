@@ -519,7 +519,7 @@ const encounterDecksBySpaceId: Partial<Record<string, EncounterDecks>> = {
     threat: [
       "tomb-gate-colossus",
       "grave-lattice-reclaimer",
-      "throne-soot-knight",
+      "grothak-gorged-king",
       "last-lock-warden",
       "pale-marshal",
       "cinder-lattice-maw",
@@ -575,7 +575,7 @@ const encounterDecksBySpaceId: Partial<Record<string, EncounterDecks>> = {
     threat: [
       "veil-rift-judicator",
       "gateblind-pulse",
-      "throne-soot-knight",
+      "grothak-gorged-king",
       "reliquary-judge",
       "saint-of-ashes-echo",
       "gate-choir-executioner",
@@ -605,7 +605,7 @@ const encounterDecksBySpaceId: Partial<Record<string, EncounterDecks>> = {
     escalation: ["escalation-crownfall-writ", "escalation-gate-saint-wake", "escalation-throne-shadow"]
   },
   "the-bone-meridian": {
-    threat: ["tomb-gate-colossus", "grave-lattice-reclaimer", "throne-soot-knight", "last-lock-warden", "pale-marshal"],
+    threat: ["tomb-gate-colossus", "grave-lattice-reclaimer", "grothak-gorged-king", "last-lock-warden", "pale-marshal"],
     anomaly: ["anomaly-throne-shadow-jury", "anomaly-blackstar-breath"],
     contract: [],
     artifact: ["artifact-marrow-route-key", "artifact-ember-burden-idol"],
