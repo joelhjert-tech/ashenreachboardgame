@@ -10,22 +10,22 @@ const PLAYER_FACING_SHOP_FILES = [
 ] as const;
 
 describe("shop equipment wording", () => {
-  it("keeps obsolete supply-economy wording out of player-facing shop sources", () => {
+  it("uses browse wording for the distinct Equipment and Supplies catalogs", () => {
     const playerFacingSource = PLAYER_FACING_SHOP_FILES
       .map((path) => readFileSync(join(process.cwd(), path), "utf8"))
       .join("\n");
 
-    expect(playerFacingSource).not.toMatch(/buy supplies/i);
     expect(playerFacingSource).not.toMatch(/supply cards/i);
     expect(playerFacingSource).not.toMatch(/bought supplies/i);
     expect(playerFacingSource).not.toMatch(/supply crate/i);
-    expect(playerFacingSource).toMatch(/Buy Equipment/);
+    expect(playerFacingSource).toMatch(/Browse Equipment/);
+    expect(playerFacingSource).toMatch(/Browse Supplies/);
   });
 
-  it("allowlists the legacy service ID without exposing it as its label", () => {
+  it("keeps the stable supplies service ID behind a player-facing catalog label", () => {
     const serverSource = readFileSync(join(process.cwd(), "src/server/roomServer.ts"), "utf8");
 
     expect(serverSource).toContain('id: "buy-supplies"');
-    expect(serverSource).toContain('label: "Buy Equipment"');
+    expect(serverSource).toContain('label: "Browse Supplies"');
   });
 });

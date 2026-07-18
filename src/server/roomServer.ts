@@ -8124,7 +8124,7 @@ function getFaceUpThreatsForSector(state: GameState, sectorId: string): PublicMo
 }
 
 function getShopServicesPreview(boardTags: string[]): string[] {
-  const services = ["Buy Gear", "Sell Gear", "Buy Supplies"];
+  const services = ["Browse Equipment", "Sell Gear", "Browse Supplies"];
 
   if (boardTags.includes("salvage")) {
     services.push("Repair Gear");
