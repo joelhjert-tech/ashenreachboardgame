@@ -312,7 +312,9 @@ If a pending choice becomes stale because the state advanced, submit a current c
 
 ## 32. Cooperative play
 
-Co-op operatives share the public scenario objective and defeat pressure. They may assist only through explicit abilities, followers, items, or public prompts. Private phones reduce accidental quarterbacking: the owner makes owner-private decisions.
+Co-op operatives share the public scenario objective and defeat pressure. Before an eligible operative skill test, the active player may ask up to two other active operatives for help. Each requested player accepts or declines on their own phone. Every accepted helper adds only the intrinsic value printed in the tested skill on their canonical character definition: no Trophy advancement, Equipment, Artifact, Follower, temporary modifier, reaction, reroll, passive bonus, or helper die is included. The active operative then rolls once using their normal effective stat and modifiers.
+
+The assistance window opens only after the tested skill is known and before operative or hidden enemy dice are revealed. It applies to enemy battles, Hazards, Anomalies, tile challenges, named board tests, and scenario skill tests. It never applies to movement, enemy dice, draws, rewards, shops, payments, Trophy or Contract checks without dice, automatic consequences, rerolls, solo sessions, Rivalry, or Nemesis Relay. Consent and locked contributions are authoritative per roll and survive reconnect; later eligible rolls require a new request.
 
 There is no general resource pooling, unrestricted trading, or free revival rule. Scenario pressure and Global Escalation discourage indefinite farming.
 

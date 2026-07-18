@@ -110,7 +110,9 @@ Automatic Salvage loss is not payment: lose up to the stated amount, minimum 0, 
 
 - Share the scenario objective and Loss Pressure.
 - Owner-private choices remain with the owning phone.
-- Assistance requires an explicit ability/item prompt.
+- Before an eligible co-op skill roll, the active operative may ask up to two teammates for help.
+- Each helper accepts or declines and adds only their printed base value in the tested skill. Helpers roll no dice and add no gear or modifiers.
+- Assistance locks before dice are revealed and never applies to movement, payments, draws, rerolls, Rivalry, Nemesis Relay, or solo play.
 - No unrestricted resource pool, trading, or revival rule.
 
 ## Rivalry reminders
