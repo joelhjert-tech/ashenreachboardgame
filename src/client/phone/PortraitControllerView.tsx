@@ -844,6 +844,13 @@ export function PortraitControllerView({
     (nemesis) => nemesis.boundPlayerId !== self.seatId && nemesis.sectorId === self.character.currentSpaceId && !nemesis.defeated
   );
   const opposedBattleActive = isPhoneBattleRelevantToSeat(patch, self.seatId);
+  const cooperativeAssistanceActive = Boolean(
+    patch?.cooperativeAssistance ||
+      patch?.pendingCooperativeTest ||
+      patch?.cooperativeAssistanceEligibility ||
+      (patch?.activeResolution?.assistance && patch.activeResolution.assistance.activeSeatId === self.seatId)
+  );
+  const focusedResolutionActive = opposedBattleActive || cooperativeAssistanceActive;
   const suppressedEquipmentInstanceIds = new Set(
     (patch?.equipmentSuppressions ?? [])
       .filter((suppression) => suppression.active)
@@ -1038,7 +1045,7 @@ export function PortraitControllerView({
     "phone-portrait-controller",
     phoneChromeVisible ? "phone-shell--chrome-visible" : "phone-shell--immersive",
     bottomDockExpanded ? "phone-shell--bottomdock-expanded" : "phone-shell--bottomdock-compact",
-    opposedBattleActive ? "phone-shell--battle-active" : "",
+    focusedResolutionActive ? "phone-shell--battle-active" : "",
     movementFlowActive ? "phone-shell--movement-active" : ""
   ]
     .filter(Boolean)
@@ -1056,7 +1063,7 @@ export function PortraitControllerView({
   const contentClassName = [
     "phone-portrait-scroll",
     phoneChromeHidden ? "phone-content--expanded" : "",
-    opposedBattleActive ? "phone-battle-content" : ""
+    focusedResolutionActive ? "phone-battle-content" : ""
   ]
     .filter(Boolean)
     .join(" ");
@@ -1085,7 +1092,7 @@ export function PortraitControllerView({
     >
       <div className="phone-portrait-panel">
         <header className={topbarClassName}>
-          {opposedBattleActive ? (
+          {focusedResolutionActive ? (
             <div className="phone-battle-topbar" aria-label="Battle operative status">
               <img src={getCharacterPortraitPath(self.character.id)} alt="" />
               <div>
@@ -1133,7 +1140,7 @@ export function PortraitControllerView({
         </header>
 
         <main className={contentClassName} aria-label="Phone content">
-          {opposedBattleActive && patch && onIntent ? (
+          {focusedResolutionActive && patch && onIntent ? (
             <div className="phone-portrait-screen phone-portrait-screen-command phone-portrait-screen-battle" data-testid="phone-action-screen">
               <PhoneActionPanel
                 characters={characters}
@@ -1145,7 +1152,7 @@ export function PortraitControllerView({
             </div>
           ) : null}
 
-          {!opposedBattleActive && activeTab === "player" && (
+          {!focusedResolutionActive && activeTab === "player" && (
             <div className="phone-portrait-screen">
               <section className="phone-portrait-hero-card">
                 <div className="phone-portrait-art">
@@ -1305,7 +1312,7 @@ export function PortraitControllerView({
             </div>
           )}
 
-          {!opposedBattleActive && activeTab === "inventory" && (
+          {!focusedResolutionActive && activeTab === "inventory" && (
             <div className="phone-portrait-screen">
               <section className="phone-portrait-section">
                 <div className="phone-sheet-section-heading">Inventory</div>
@@ -1318,7 +1325,7 @@ export function PortraitControllerView({
             </div>
           )}
 
-          {!opposedBattleActive && activeTab === "quests" && (
+          {!focusedResolutionActive && activeTab === "quests" && (
             <div className="phone-portrait-screen">
               {patch?.privateRivalry ? <RivalryQuestPanel rivalry={patch.privateRivalry} seatId={self.seatId} onIntent={onIntent} /> : null}
               <section className="phone-portrait-section">
@@ -1407,7 +1414,7 @@ export function PortraitControllerView({
             </div>
           )}
 
-          {!opposedBattleActive && isTurnActionTab(activeTab) && (
+          {!focusedResolutionActive && isTurnActionTab(activeTab) && (
             <div className="phone-portrait-screen phone-portrait-screen-command" data-testid="phone-action-screen">
               {patch && onIntent ? (
                 <PhoneActionPanel
@@ -1430,7 +1437,7 @@ export function PortraitControllerView({
           )}
         </main>
 
-        {!opposedBattleActive && (!movementFlowActive || bottomDockExpanded) ? <nav className={bottomNavClassName} role="tablist" aria-label="Phone navigation">
+        {!focusedResolutionActive && (!movementFlowActive || bottomDockExpanded) ? <nav className={bottomNavClassName} role="tablist" aria-label="Phone navigation">
           {bottomDockExpanded ? (
             <>
               {[

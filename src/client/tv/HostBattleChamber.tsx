@@ -21,6 +21,7 @@ export function HostBattleChamber({
   const region = space?.tier ?? sector?.regionTier ?? null;
   const stage = patch.payload.activeResolution?.stage ?? (patch.payload.pendingEnemyRoll ? "pending_roll" : "preparing");
   const playerName = patch.payload.seats.find((seat) => seat.seatId === activePlayer.seatId)?.displayName ?? activePlayer.character.name;
+  const isEnemyBattle = patch.payload.activeResolution?.card?.type === "enemy" || patch.payload.encounter?.cardType === "enemy";
 
   useEffect(() => {
     chamberRef.current?.focus({ preventScroll: true });
@@ -36,7 +37,7 @@ export function HostBattleChamber({
       tabIndex={-1}
     >
       <header className="tv-host-battle-chamber__context">
-        <span>Battle at {locationName}</span>
+        <span>{isEnemyBattle ? "Battle" : "Skill test"} at {locationName}</span>
         <strong>{playerName}</strong>
         <em>{activePlayer.character.name}</em>
         <small>{region ? `${toTitleCase(region)} reach` : "Resolution active"}</small>

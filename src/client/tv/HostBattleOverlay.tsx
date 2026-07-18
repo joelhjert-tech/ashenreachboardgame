@@ -26,6 +26,7 @@ interface ResolutionSideModel {
   statValue: number | null;
   rollTotal: number | null;
   modifier: number | null;
+  assistanceTotal: number | null;
   total: number | null;
   formula: string;
   modifierSources: Array<{ label: string; value: number }>;
@@ -142,7 +143,7 @@ function getEnemyBattleValue(resolution: ActiveResolution | null, patch: StatePa
 
 function getPlayerBattleValue(resolution: ActiveResolution | null, activePlayer: PublicPlayer | null): number | null {
   if (resolution?.roll) {
-    return resolution.roll.modifierTotal;
+    return resolution.roll.modifierTotal - (resolution.assistance?.total ?? 0);
   }
 
   const publicModifierTotal = getPlayerModifierSources(resolution).reduce((sum, modifier) => sum + modifier.value, 0);
@@ -373,15 +374,18 @@ function buildBattleModel(
       statValue: playerBattleValue,
       rollTotal: playerRollTotal,
       modifier: null,
+      assistanceTotal: resolution?.assistance?.total ?? null,
       total: playerTotal,
       modifierSources: playerModifierSources,
-      formula: formatFormula({
-        statLabel,
-        statValue: playerBattleValue,
-        rollTotal: playerRollTotal,
-        modifier: null,
-        total: playerTotal
-      })
+      formula: resolution?.assistance
+        ? `${statLabel} ${formatNumber(playerBattleValue)} + Roll ${formatNumber(playerRollTotal)} + Help ${resolution.assistance.total} = Total ${formatNumber(playerTotal)}`
+        : formatFormula({
+            statLabel,
+            statValue: playerBattleValue,
+            rollTotal: playerRollTotal,
+            modifier: null,
+            total: playerTotal
+          })
     },
     opponent: {
       name: opponentName,
@@ -395,6 +399,7 @@ function buildBattleModel(
       statValue: enemyBattleValue,
       rollTotal: enemyRollTotal,
       modifier: null,
+      assistanceTotal: null,
       total: enemyTotal,
       modifierSources: [],
       formula: opponentFormula
@@ -454,8 +459,8 @@ function StatTotalFooter({
           <dd>{formatNumber(side.rollTotal)}</dd>
         </div>
         <div>
-          <dt>Mod</dt>
-          <dd>{formatModifier(side.modifier)}</dd>
+          <dt>{side.assistanceTotal !== null ? "Help" : "Mod"}</dt>
+          <dd>{side.assistanceTotal !== null ? formatModifier(side.assistanceTotal) : formatModifier(side.modifier)}</dd>
         </div>
         <div>
           <dt>Total</dt>
@@ -600,6 +605,29 @@ export function HostBattleOverlay({
       data-testid="host-battle-overlay"
       data-resolution-category={model.resolutionType.toLowerCase().replaceAll(" ", "-")}
     >
+      {patch.payload.cooperativeAssistance ? (
+        <div className="host-assistance-banner" aria-label="Cooperative assistance status">
+          <div>
+            <span>Cooperative assistance</span>
+            <strong>{patch.payload.cooperativeAssistance.activePlayerName} · {patch.payload.cooperativeAssistance.testedStat}</strong>
+          </div>
+          <div className="host-assistance-helpers">
+            {patch.payload.cooperativeAssistance.requestedHelpers.map((helper) => (
+              <div key={helper.seatId} className={`host-assistance-helper is-${helper.response}`}>
+                <span>{helper.playerName}</span>
+                <strong>{helper.response === "accepted" ? `+${helper.contribution ?? 0}` : helper.response}</strong>
+              </div>
+            ))}
+          </div>
+          <small>Helpers contribute base skill only. The active operative rolls once.</small>
+        </div>
+      ) : patch.payload.activeResolution?.assistance ? (
+        <div className="host-assistance-banner is-resolved" aria-label="Resolved cooperative assistance">
+          <span>Assistance locked</span>
+          <strong>+{patch.payload.activeResolution.assistance.total} {patch.payload.activeResolution.assistance.testedStat}</strong>
+          <small>No helper dice · base skill contributions only</small>
+        </div>
+      ) : null}
       <div
         className={`host-battle-panel host-battle-panel-${model.resultTone} host-battle-panel-${model.challengeStat}`}
         style={getChallengeThemeStyle(model.challengeStat)}

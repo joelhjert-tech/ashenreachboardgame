@@ -291,6 +291,16 @@ export function PhoneApp(): ReactElement {
 
   const phonePatch =
     patch && "self" in patch.payload ? (patch as StatePatch<PhonePatchPayload>) : null;
+  const isScenarioSelectable = (scenario: ScenarioCatalogEntry): boolean => {
+    if (!selectedSetupMode || !scenario.supportedModes || !scenario.supportedPlayerCounts) return true;
+    const playerCount = selectedSetupMode === "single-player" ? 1 : configuredPlayerCount;
+    if (playerCount < scenario.supportedPlayerCounts.min || playerCount > scenario.supportedPlayerCounts.max) return false;
+    if (selectedSetupMode === "single-player") return scenario.supportedModes.includes("solo");
+    if (selectedSetupMode === "co-op") return scenario.supportedModes.includes("co-op");
+    if (selectedSetupMode === "rivalry") return scenario.supportedModes.includes("rivalry") || scenario.supportedModes.includes("competitive");
+    return false;
+  };
+  const selectedScenarioIsValid = scenarios.some((scenario) => scenario.id === selectedScenarioId && isScenarioSelectable(scenario));
 
   useEffect(() => {
     if (!auth || !phonePatch) {
@@ -633,12 +643,15 @@ export function PhoneApp(): ReactElement {
                   <div className="phone-host-scenario-carousel" role="radiogroup" aria-label="Scenario options">
                     {scenarios.map((scenario) => {
                       const selected = scenario.id === selectedScenarioId;
+                      const available = isScenarioSelectable(scenario);
                       return (
                         <button
                           key={scenario.id}
                           type="button"
                           role="radio"
                           aria-checked={selected}
+                          aria-disabled={!available}
+                          disabled={!available}
                           className={`phone-host-scenario-card${selected ? " is-selected" : ""}`}
                           onClick={() => setSelectedScenarioId(scenario.id)}
                         >
@@ -694,7 +707,7 @@ export function PhoneApp(): ReactElement {
                 <button
                   type="button"
                   className="phone-button phone-button-primary phone-host-setup-confirm"
-                  disabled={!selectedScenarioId || !selectedSetupMode}
+                  disabled={!selectedScenarioId || !selectedSetupMode || !selectedScenarioIsValid}
                   onClick={() => void handleConfigureLobby()}
                 >
                   Confirm Setup

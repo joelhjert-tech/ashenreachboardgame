@@ -141,6 +141,15 @@ export function buildScenarioMarkers(patch: PublicPatchPayload): ScenarioMarker[
     ];
   }
 
+  if (scenarioId === "scenario_broken_concordance") {
+    const completed = new Set(patch.scenarioState?.preparation.completedObjectiveIds ?? []);
+    return [
+      { id: "concordance-node-black-relay", nodeId: "black-relay-spire", label: "Concordance", value: completed.has("concordance-node-black-relay") ? "Stable" : "Severed", tone: completed.has("concordance-node-black-relay") ? "info" : "warning", kind: "orbit" },
+      { id: "concordance-node-webglass", nodeId: "middle_webglass_breach", label: "Concordance", value: completed.has("concordance-node-webglass") ? "Stable" : "Severed", tone: completed.has("concordance-node-webglass") ? "info" : "warning", kind: "orbit" },
+      { id: "concordance-node-cinder-lattice", nodeId: "inner_cinder_lattice", label: "Concordance", value: completed.has("concordance-node-cinder-lattice") ? "Stable" : "Severed", tone: completed.has("concordance-node-cinder-lattice") ? "info" : "warning", kind: "orbit" }
+    ];
+  }
+
   const spec = scalarMarkerSpecs[scenarioId];
 
   if (!spec) {

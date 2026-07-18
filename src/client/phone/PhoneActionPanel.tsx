@@ -71,6 +71,164 @@ interface PhoneActionPanelProps {
   showMovementContextNavigation?: boolean;
 }
 
+export function CooperativeAssistancePanel({
+  patch,
+  seatId,
+  onIntent
+}: {
+  patch: PhonePatchPayload;
+  seatId: string;
+  onIntent: (intent: ClientIntent) => void;
+}): ReactElement {
+  const [selectedHelpers, setSelectedHelpers] = useState<string[]>([]);
+  const request = patch.cooperativeAssistance ?? null;
+  const eligibility = patch.cooperativeAssistanceEligibility ?? null;
+  const pendingTest = patch.pendingCooperativeTest ?? null;
+  const resolvedAssistance = patch.activeResolution?.assistance?.activeSeatId === seatId
+    ? patch.activeResolution.assistance
+    : null;
+  const stat = request?.testedStat ?? eligibility?.testedStat ?? pendingTest?.stat ?? resolvedAssistance?.testedStat ?? "command";
+  const sourceTitle = request?.sourceTitle ?? eligibility?.sourceTitle ?? pendingTest?.sourceTitle ?? patch.activeResolution?.card?.title ?? "Skill test";
+  const testedStat = statLabelById[stat];
+  const requestedSelf = request?.viewerRole === "requested";
+  const activeSelf = request?.viewerRole === "active" || (!request && Boolean(eligibility || pendingTest || resolvedAssistance));
+  const ownResponse = request?.requestedHelpers.find((helper) => helper.seatId === seatId)?.response;
+  const acceptedCount = request?.requestedHelpers.filter((helper) => helper.response === "accepted").length ?? 0;
+  const pendingCount = request?.requestedHelpers.filter((helper) => helper.response === "pending").length ?? 0;
+  const allResponded = Boolean(request) && pendingCount === 0;
+  const roll = () => {
+    if (pendingTest) {
+      onIntent({ type: "COOPERATIVE_TEST_ROLL_REQUESTED", seatId, testId: pendingTest.id });
+      return;
+    }
+    if (!patch.encounter) return;
+    onIntent({
+      type: patch.encounter.cardType === "enemy" ? "COMBAT_REQUESTED" : "CHECK_REQUESTED",
+      seatId,
+      stat: patch.encounter.stat
+    });
+  };
+
+  return (
+    <section className="phone-assistance-shell" aria-label="Cooperative assistance" data-testid="cooperative-assistance-panel">
+      <header className="phone-assistance-header">
+        <p className="phone-panel-kicker">Ask for help</p>
+        <h2>{sourceTitle}</h2>
+        <p>{testedStat} test · helpers add base skill only · no helper dice</p>
+      </header>
+
+      {!request && eligibility ? (
+        <>
+          <div className="phone-assistance-helper-list" aria-label="Eligible helpers">
+            {eligibility.helpers.map((helper) => {
+              const selected = selectedHelpers.includes(helper.seatId);
+              return (
+                <button
+                  type="button"
+                  key={helper.seatId}
+                  className={`phone-assistance-helper${selected ? " is-selected" : ""}`}
+                  aria-pressed={selected}
+                  onClick={() => setSelectedHelpers((current) =>
+                    selected
+                      ? current.filter((id) => id !== helper.seatId)
+                      : current.length < 2
+                        ? [...current, helper.seatId]
+                        : current
+                  )}
+                >
+                  <span>{helper.playerName}</span>
+                  <small>{helper.characterName}</small>
+                  <strong>+{helper.contribution} {testedStat}</strong>
+                </button>
+              );
+            })}
+          </div>
+          <div className="phone-assistance-actions">
+            {!pendingTest?.requiresHelper ? <GameButton type="button" tone="secondary" onClick={roll}>Roll solo</GameButton> : null}
+            <GameButton
+              type="button"
+              tone="action"
+              disabled={selectedHelpers.length === 0}
+              onClick={() => onIntent({
+                type: "COOPERATIVE_ASSISTANCE_REQUESTED",
+                seatId,
+                sourceId: eligibility.sourceId,
+                stat: eligibility.testedStat,
+                helperSeatIds: selectedHelpers
+              })}
+            >
+              Ask {selectedHelpers.length || "for"} help{selectedHelpers.length === 1 ? "er" : "ers"}
+            </GameButton>
+          </div>
+        </>
+      ) : null}
+
+      {request ? (
+        <div className="phone-assistance-status-list">
+          {request.requestedHelpers.map((helper) => (
+            <div key={helper.seatId} className={`phone-assistance-status is-${helper.response}`}>
+              <span>{helper.playerName}</span>
+              <strong>{helper.response === "accepted" ? `Accepted +${helper.contribution ?? 0}` : helper.response}</strong>
+            </div>
+          ))}
+        </div>
+      ) : null}
+
+      {requestedSelf && ownResponse === "pending" ? (
+        <div className="phone-assistance-request">
+          <p><strong>{request!.activePlayerName}</strong> asks for your {testedStat} {request!.viewerContribution ?? 0}.</p>
+          <div className="phone-assistance-actions">
+            <GameButton type="button" tone="secondary" onClick={() => onIntent({ type: "COOPERATIVE_ASSISTANCE_RESPONDED", seatId, requestId: request!.id, accept: false })}>Decline</GameButton>
+            <GameButton type="button" tone="action" onClick={() => onIntent({ type: "COOPERATIVE_ASSISTANCE_RESPONDED", seatId, requestId: request!.id, accept: true })}>Accept +{request!.viewerContribution ?? 0}</GameButton>
+          </div>
+        </div>
+      ) : requestedSelf ? (
+        <p className="phone-assistance-waiting">Response recorded: {ownResponse}. Waiting for {request!.activePlayerName}.</p>
+      ) : null}
+
+      {activeSelf && request?.status === "requested" ? (
+        <div className="phone-assistance-actions">
+          <GameButton type="button" tone="secondary" onClick={() => onIntent({ type: "COOPERATIVE_ASSISTANCE_CANCELLED", seatId, requestId: request.id })}>Change helpers</GameButton>
+          <GameButton
+            type="button"
+            tone="action"
+            disabled={acceptedCount === 0 || (!allResponded && acceptedCount === 0)}
+            onClick={() => onIntent({ type: "COOPERATIVE_ASSISTANCE_LOCKED", seatId, requestId: request.id })}
+          >
+            Proceed with {acceptedCount} helper{acceptedCount === 1 ? "" : "s"}
+          </GameButton>
+        </div>
+      ) : null}
+
+      {activeSelf && request?.status === "locked" ? (
+        <div className="phone-assistance-actions is-primary-only">
+          <GameButton type="button" tone="action" onClick={roll}>Roll {testedStat} · +{request.acceptedTotal} help</GameButton>
+        </div>
+      ) : null}
+
+      {resolvedAssistance && patch.activeResolution?.roll ? (
+        <div className="phone-assistance-result" aria-label="Assisted roll result">
+          <p className="phone-panel-kicker">Assisted result</p>
+          <div className="phone-assistance-result__rows">
+            <span>Active effective stat <strong>{patch.activeResolution.roll.modifierTotal - resolvedAssistance.total}</strong></span>
+            <span>Active die <strong>+{patch.activeResolution.roll.baseTotal}</strong></span>
+            {resolvedAssistance.contributions.map((contribution) => {
+              const helper = patch.seats.find((seat) => seat.seatId === contribution.seatId);
+              return <span key={contribution.seatId}>{helper?.displayName ?? contribution.seatId} assisted <strong>+{contribution.value}</strong></span>;
+            })}
+            <span className="is-final">Final total <strong>{patch.activeResolution.roll.finalTotal}</strong></span>
+          </div>
+          <p className="phone-assistance-result__outcome">{patch.activeResolution.outcome?.title ?? (patch.activeResolution.roll.success ? "Success" : "Failure")}</p>
+        </div>
+      ) : null}
+
+      {!activeSelf && !requestedSelf ? (
+        <p className="phone-assistance-waiting">Waiting for {request?.activePlayerName ?? "the active operative"} to resolve assistance.</p>
+      ) : null}
+    </section>
+  );
+}
+
 interface ActionButtonDefinition {
   key: string;
   label: string;
@@ -2685,6 +2843,15 @@ export function PhoneActionPanel({
     );
   }
 
+  if (
+    patch.cooperativeAssistance ||
+    patch.cooperativeAssistanceEligibility ||
+    patch.pendingCooperativeTest ||
+    patch.activeResolution?.assistance?.activeSeatId === self.seatId
+  ) {
+    return <CooperativeAssistancePanel patch={patch} seatId={self.seatId} onIntent={onIntent} />;
+  }
+
   if (opposedBattleActive && pendingEnemyRoll) {
     return (
       <PhoneBattleView
@@ -2811,6 +2978,36 @@ export function PhoneActionPanel({
             }
           ]}
         />
+      </section>
+    );
+  }
+
+  if (patch.brokenConcordanceNode && !patch.brokenConcordanceNode.stabilized && patch.phase === "action") {
+    const node = patch.brokenConcordanceNode;
+    return (
+      <section className="phone-assistance-shell" aria-label="Concordance node">
+        <header className="phone-assistance-header">
+          <p className="phone-panel-kicker">The Broken Concordance</p>
+          <h2>{node.name}</h2>
+          <p>{statLabelById[node.stat]} {node.difficulty} · at least one helper required</p>
+        </header>
+        <p className="phone-sheet-action-copy">
+          {node.stabilized
+            ? "This severed voice is stable. Its preparation progress is recorded."
+            : "Join your signal with another operative to restore this relay node."}
+        </p>
+        {!node.stabilized ? (
+          <div className="phone-assistance-actions is-primary-only">
+            <GameButton
+              type="button"
+              tone="action"
+              disabled={!node.available}
+              onClick={() => onIntent({ type: "BROKEN_CONCORDANCE_NODE_REQUESTED", seatId: self.seatId, nodeId: node.id })}
+            >
+              Prepare {node.name}
+            </GameButton>
+          </div>
+        ) : null}
       </section>
     );
   }
