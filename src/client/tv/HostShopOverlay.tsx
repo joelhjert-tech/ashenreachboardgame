@@ -28,7 +28,7 @@ interface ShopPreviewCard {
   artCardType?: CardImageType;
 }
 
-interface HostShopDisplayModel {
+export interface HostShopDisplayModel {
   playerName: string;
   salvage: number | null;
   shopName: string;
@@ -218,12 +218,12 @@ function buildFromPayload(shopEncounter: PublicShopEncounterState, resultDeltas:
     previewCards: isBlocked ? [blockedPreview({ blockedReasonText, blockingLanes })] : baseCards.length > 0 ? baseCards : [emptyPreview()],
     stockRevealed: stockCount > 0,
     riskActive: shopEncounter.status === "dangerous" || shopEncounter.services.some((service) => Boolean(service.risk)),
-    transactionComplete: Boolean(shopEncounter.recentOutcome),
+    transactionComplete: Boolean(shopEncounter.recentOutcome?.gained || shopEncounter.recentOutcome?.sold),
     transactionTitle: shopEncounter.recentOutcome?.gained
       ? `Bought ${shopEncounter.recentOutcome.gained}`
       : shopEncounter.recentOutcome?.sold
         ? `Sold ${shopEncounter.recentOutcome.sold}`
-        : shopEncounter.recentOutcome ? "Shop action complete" : null,
+        : null,
     outcome: shopEncounter.recentOutcome?.summary ?? null,
     guidance: isBlocked ? "Clear the threat lock before trade resumes." : "Choose on player phone",
     resultDeltas
@@ -265,7 +265,7 @@ function buildFallbackModel(activePlayer: PublicPlayer, playerName: string): Hos
   };
 }
 
-function buildShopModel(
+export function buildShopModel(
   patch: StatePatch<PublicPatchPayload>,
   activePlayer: PublicPlayer
 ): HostShopDisplayModel | null {
@@ -384,6 +384,14 @@ export function HostShopOverlay({
     return null;
   }
 
+  const requestedPrototype = import.meta.env.DEV && typeof window !== "undefined"
+    ? new URLSearchParams(window.location.search).get("shopUi")
+    : null;
+
+  if (requestedPrototype === "requisition" || requestedPrototype === "market") {
+    return <HostShopPrototype model={model} variant={requestedPrototype} />;
+  }
+
   return (
     <section className="host-shop-overlay" aria-label="Host shop encounter" data-testid="host-shop-overlay">
       <div
@@ -459,6 +467,38 @@ export function HostShopOverlay({
           </section>
         )}
       </div>
+    </section>
+  );
+}
+
+function HostShopPrototype({ model, variant }: { model: HostShopDisplayModel; variant: "requisition" | "market" }): ReactElement {
+  const requisition = variant === "requisition";
+  return (
+    <section
+      className={`host-shop-prototype host-shop-prototype-${variant}`}
+      aria-label={requisition ? "Requisition Chamber shop prototype" : "Board-integrated Salvage Market shop prototype"}
+      data-testid={`host-shop-prototype-${variant}`}
+    >
+      <div className="host-shop-prototype__scrim" aria-hidden="true" />
+      <header>
+        <span>{requisition ? "Requisition Chamber" : "Field Salvage Market"}</span>
+        <h2>{model.shopName}</h2>
+        <p>{model.sectorName} · {model.playerName} buying · {model.salvage ?? "-"} Salvage</p>
+      </header>
+      <main>
+        <section className="host-shop-prototype__stock" aria-label="Public stock">
+          {model.previewCards.map((card, index) => <HostShopPreviewCard key={card.id} card={card} index={index} />)}
+        </section>
+        <aside>
+          <strong>{model.status}</strong>
+          <span>{model.stockRevealed ? `${model.stockCount} stock` : "Stock unrevealed"}</span>
+          <span>{model.sellableCount} sellable</span>
+          <p>{model.transactionComplete ? model.outcome : model.guidance}</p>
+        </aside>
+      </main>
+      {model.transactionComplete ? (
+        <div className="host-shop-prototype__result" role="status"><span>Transaction complete</span><strong>{model.transactionTitle}</strong><p>{model.outcome}</p></div>
+      ) : null}
     </section>
   );
 }
