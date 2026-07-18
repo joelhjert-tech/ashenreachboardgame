@@ -8,7 +8,7 @@ import { GameRoomServer } from "./roomServer.js";
 import { createInitialSessionState } from "./sessionState.js";
 import { createHostToken, validateJoinToken } from "./auth.js";
 import type { GameMode, InteractionMode, SessionMode } from "../game/schema/session.schema.js";
-import { SCENARIOS, getScenarioDefinition } from "../game/data/scenarios.js";
+import { SCENARIOS, getScenarioDefinition, isScenarioEligibleForSession } from "../game/data/scenarios.js";
 import { getScenarioSheetArtPath } from "../game/data/scenarioSheetArt.js";
 import { nemeses } from "../game/data/nemeses.js";
 import { applyPhaseOneQaFixture, type PhaseOneQaFixture } from "./phaseOneQaFixture.js";
@@ -260,6 +260,8 @@ function createHttpServer(qaFixturesEnabled: boolean, adminContentEditor: AdminC
             sheetArtPath: getScenarioSheetArtPath(scenario),
             difficulty: scenario.difficulty,
             mode: scenario.mode,
+            supportedPlayerCounts: scenario.supportedPlayerCounts,
+            supportedModes: scenario.supportedModes,
             publicDisplay: scenario.publicDisplay,
             pressureRule: scenario.pressureRule,
             expectedDuration: scenario.expectedDuration,
@@ -340,6 +342,12 @@ function createHttpServer(qaFixturesEnabled: boolean, adminContentEditor: AdminC
 
         const interactionMode: InteractionMode = sessionMode === "single-player" ? "co-op" : requestedInteractionMode!;
         const scenarioId = body.scenarioId ?? SCENARIOS[0]!.id;
+        const scenario = getScenarioDefinition(scenarioId)!;
+        const configuredPlayerCount = sessionMode === "single-player" ? 1 : body.playerCount ?? 2;
+        if (!isScenarioEligibleForSession(scenario, sessionMode, interactionMode, gameMode, configuredPlayerCount)) {
+          sendJson(response, 400, { error: "Scenario is not available for this game mode or player count" });
+          return;
+        }
         roomCode = createRoomCode();
         hostToken = createRoomCode();
         roomServer.resetSession(createInitialSessionState(roomCode, sessionMode, scenarioId, interactionMode, gameMode, body.playerCount));

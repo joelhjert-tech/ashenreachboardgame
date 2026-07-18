@@ -546,6 +546,12 @@ export interface ActiveResolution {
     target: number;
     success: boolean;
   };
+  assistance?: {
+    testedStat: Stat;
+    activeSeatId: string;
+    contributions: Array<{ seatId: string; value: number }>;
+    total: number;
+  };
   outcome?: {
     title: string;
     text: string;
@@ -557,6 +563,51 @@ export interface ActiveResolution {
       sourceCardId: string;
     };
   };
+}
+
+export interface CooperativeAssistanceProjection {
+  id: string;
+  sourceKind: "encounter" | "tileChallenge" | "boardSpace" | "scenarioNode" | "scenarioConfrontation";
+  sourceId: string;
+  sourceTitle: string;
+  testedStat: Stat;
+  activeSeatId: string;
+  activePlayerName: string;
+  status: "requested" | "locked";
+  requestedHelpers: Array<{
+    seatId: string;
+    playerName: string;
+    characterName: string;
+    response: "pending" | "accepted" | "declined";
+    contribution?: number;
+  }>;
+  acceptedTotal: number;
+  eligibleHelperSeatIds?: string[];
+  viewerRole?: "active" | "requested" | "observer";
+  viewerContribution?: number;
+}
+
+export interface PendingCooperativeTestProjection {
+  id: string;
+  sourceKind: "boardSpace" | "scenarioNode" | "scenarioConfrontation";
+  sourceId: string;
+  sourceTitle: string;
+  activeSeatId: string;
+  stat: Stat;
+  difficulty: number;
+  requiresHelper: boolean;
+}
+
+export interface CooperativeAssistanceEligibilityProjection {
+  sourceId: string;
+  sourceTitle: string;
+  testedStat: Stat;
+  helpers: Array<{
+    seatId: string;
+    playerName: string;
+    characterName: string;
+    contribution: number;
+  }>;
 }
 
 export type PublicShopStatus = "open" | "locked" | "exhausted" | "dangerous";
@@ -814,6 +865,8 @@ export interface ActiveScenarioSummary {
   sheetArtPath?: string | null;
   difficulty: ScenarioDifficulty;
   mode?: ScenarioMode;
+  supportedPlayerCounts?: { min: number; max: number };
+  supportedModes?: Array<"solo" | "co-op" | "competitive" | "rivalry" | "hidden-agenda">;
   pressureSummary: string;
   pressureTrack?: {
     name: string;
@@ -869,6 +922,8 @@ export interface ScenarioCatalogEntry {
   sheetArtPath?: string | null;
   difficulty: ScenarioDifficulty;
   mode?: ScenarioMode;
+  supportedPlayerCounts?: { min: number; max: number };
+  supportedModes?: Array<"solo" | "co-op" | "competitive" | "rivalry" | "hidden-agenda">;
   publicDisplay?: ActiveScenarioSummary["publicDisplay"];
   pressureRule: string;
   expectedDuration: string;
@@ -979,6 +1034,8 @@ export interface PublicPatchPayload {
   availableContracts: ContractCard[];
   encounter: EncounterCard | null;
   pendingEnemyRoll: PendingEnemyRoll | null;
+  cooperativeAssistance?: CooperativeAssistanceProjection | null;
+  pendingCooperativeTest?: PendingCooperativeTestProjection | null;
   pendingTileChallenge?: PublicPendingTileChallenge | null;
   pendingEncounterDecision?: { seatId: string; sourceCardId: string; sourceTitle: string; status: "waiting" } | null;
   pendingMemoryTaxChoice?: { ownerSeatId: string; sourceId: "memory-tax-gate"; sourceTitle: string; status: "waiting" } | null;
@@ -1021,6 +1078,16 @@ export interface PhonePatchPayload extends PublicPatchPayload {
   self: PhoneSelfState | null;
   lateJoinPending?: boolean;
   selfIsSetupHost?: boolean;
+  cooperativeAssistanceEligibility?: CooperativeAssistanceEligibilityProjection | null;
+  brokenConcordanceNode?: {
+    id: string;
+    name: string;
+    sectorId: string;
+    stat: Stat;
+    difficulty: number;
+    stabilized: boolean;
+    available: boolean;
+  } | null;
   objectUseStates?: PhoneObjectUseState[];
   startingContractOptions?: ContractCard[];
   selectedStartingContract?: ContractCard | null;
@@ -1340,6 +1407,12 @@ export type ClientIntent =
       type: "SCENARIO_CONFRONTATION_REQUESTED";
       seatId: string;
     }
+  | { type: "COOPERATIVE_ASSISTANCE_REQUESTED"; seatId: string; sourceId: string; stat: Stat; helperSeatIds: string[] }
+  | { type: "COOPERATIVE_ASSISTANCE_RESPONDED"; seatId: string; requestId: string; accept: boolean }
+  | { type: "COOPERATIVE_ASSISTANCE_LOCKED"; seatId: string; requestId: string }
+  | { type: "COOPERATIVE_ASSISTANCE_CANCELLED"; seatId: string; requestId: string }
+  | { type: "COOPERATIVE_TEST_ROLL_REQUESTED"; seatId: string; testId: string }
+  | { type: "BROKEN_CONCORDANCE_NODE_REQUESTED"; seatId: string; nodeId: string }
   | {
       type: "RIVALRY_AGENDA_REVEAL_REQUESTED";
       seatId: string;

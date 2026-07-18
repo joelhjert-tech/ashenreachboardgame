@@ -192,6 +192,8 @@ export function createInitialSessionState(
     recentEncounterCardIds: [],
     currentEncounter: null,
     pendingEnemyRoll: null,
+    cooperativeAssistance: null,
+    pendingCooperativeTest: null,
     pendingEffect: null,
     pendingFailureReaction: null,
     pendingStaticIntercessionReaction: null,

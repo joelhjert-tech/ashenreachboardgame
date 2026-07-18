@@ -176,6 +176,14 @@ export const activeResolutionSchema = z.object({
       success: z.boolean()
     })
     .optional(),
+  assistance: z
+    .object({
+      testedStat: statSchema,
+      activeSeatId: z.string().min(1),
+      contributions: z.array(z.object({ seatId: z.string().min(1), value: z.number().int().min(0) })).max(2),
+      total: z.number().int().min(0)
+    })
+    .optional(),
   outcome: z
     .object({
       title: z.string().min(1),
@@ -335,6 +343,36 @@ export const scenarioConfrontationStateSchema = z.object({
   processedSourceEventIds: z.array(z.string().min(1))
 }).strict();
 
+export const cooperativeAssistanceStateSchema = z.object({
+  id: z.string().min(1),
+  sourceKind: z.enum(["encounter", "tileChallenge", "boardSpace", "scenarioNode", "scenarioConfrontation"]),
+  sourceId: z.string().min(1),
+  sourceTitle: z.string().min(1),
+  testedStat: statSchema,
+  activeSeatId: z.string().min(1),
+  requestedSeatIds: z.array(z.string().min(1)).min(1).max(2),
+  acceptedSeatIds: z.array(z.string().min(1)).max(2),
+  declinedSeatIds: z.array(z.string().min(1)).max(2),
+  lockedContributions: z.array(z.object({ seatId: z.string().min(1), value: z.number().int().min(0) })).max(2),
+  status: z.enum(["requested", "locked"]),
+  createdAt: z.string().min(1)
+}).strict();
+
+export const pendingCooperativeTestSchema = z.object({
+  id: z.string().min(1),
+  activeSeatId: z.string().min(1),
+  sourceKind: z.enum(["boardSpace", "scenarioNode", "scenarioConfrontation"]),
+  sourceId: z.string().min(1),
+  sourceTitle: z.string().min(1),
+  stat: statSchema,
+  difficulty: z.number().int().min(0),
+  requiresHelper: z.boolean(),
+  choiceId: z.string().min(1).optional(),
+  nodeId: z.string().min(1).optional(),
+  stageIndex: z.number().int().min(0).optional(),
+  createdAt: z.string().min(1)
+}).strict();
+
 export const scenarioResultStateSchema = z.object({
   status: z.enum(["unresolved", "victory", "loss"]),
   victoryConditionId: z.string().min(1).nullable(),
@@ -415,6 +453,8 @@ export const gameStateSchema = z.object({
       stat: statSchema
     })
     .nullable(),
+  cooperativeAssistance: cooperativeAssistanceStateSchema.nullable().optional(),
+  pendingCooperativeTest: pendingCooperativeTestSchema.nullable().optional(),
   pendingEffect: effectSchema.nullable(),
   pendingEncounterDecision: pendingEncounterDecisionSchema.nullable().optional(),
   resolvedEncounterDecisionIds: z.array(z.string().min(1)).optional(),
@@ -608,6 +648,8 @@ export type ShopStockReveal = z.infer<typeof shopStockRevealSchema>;
 export type ScenarioPreparationState = z.infer<typeof scenarioPreparationStateSchema>;
 export type ScenarioConfrontationState = z.infer<typeof scenarioConfrontationStateSchema>;
 export type ScenarioResultState = z.infer<typeof scenarioResultStateSchema>;
+export type CooperativeAssistanceState = z.infer<typeof cooperativeAssistanceStateSchema>;
+export type PendingCooperativeTest = z.infer<typeof pendingCooperativeTestSchema>;
 export type GameState = z.infer<typeof gameStateSchema>;
 export type LegacyCompatibleGameState = z.infer<typeof legacyCompatibleGameStateSchema>;
 export type SessionSnapshot = z.infer<typeof sessionSnapshotSchema>;

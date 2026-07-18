@@ -19,7 +19,7 @@ import {
 import { getThreatPresentationCategory } from "../game/cards/cardCategories.js";
 import { resolveBoardTextChoice, resolveBoardTextEffect, type BoardTextDeckKind } from "../game/data/boardTextEffects.js";
 import { nemeses, type NemesisDefinition } from "../game/data/nemeses.js";
-import { getScenarioDefinition, type ScenarioDefinition } from "../game/data/scenarios.js";
+import { getScenarioDefinition, isScenarioEligibleForSession, type ScenarioDefinition } from "../game/data/scenarios.js";
 import { getScenarioSheetArtPath } from "../game/data/scenarioSheetArt.js";
 import { getCharacterPresentation, type CharacterPresentation } from "../game/data/characterPresentation.js";
 import {
@@ -89,6 +89,22 @@ import {
 } from "../game/rules/movementPlanner.js";
 import { canRiftAnchorSpikeSuppress } from "../game/rules/forcedDisplacement.js";
 import { getNextNonBattleTestModifierSource } from "../game/rules/nextNonBattleTestModifier.js";
+import {
+  getEligibleCooperativeHelperSeatIds,
+  getIntrinsicBaseStat,
+  isCooperativeAssistanceMode,
+  lockCooperativeContributions,
+  MAX_COOPERATIVE_HELPERS,
+  sumCooperativeContributions
+} from "../game/rules/cooperativeAssistance.js";
+import {
+  BROKEN_CONCORDANCE_CENTER_SECTOR_ID,
+  BROKEN_CONCORDANCE_NODES,
+  BROKEN_CONCORDANCE_SCENARIO_ID,
+  BROKEN_CONCORDANCE_STAGES,
+  getBrokenConcordanceNode,
+  getBrokenConcordanceStage
+} from "../game/rules/brokenConcordance.js";
 import {
   getNextNormalMovementRollModifierSource,
   resolveNormalMovementAllowance
@@ -219,11 +235,13 @@ import {
   createEmptyScenarioConfrontationState,
   createEmptyScenarioResultState,
   type ActiveResolution,
+  type CooperativeAssistanceState,
   type GameMode,
   type GameState,
   type InteractionMode,
   type NemesisChampion,
   type PlayerState,
+  type PendingCooperativeTest,
   type SessionMode
 } from "../game/schema/session.schema.js";
 import { validateHostToken, validateJoinToken } from "./auth.js";
@@ -369,6 +387,12 @@ const CLIENT_INTENT_TYPES = new Set<string>([
   "ACCEPT_CONTRACT",
   "COMPLETE_CONTRACT",
   "SCENARIO_CONFRONTATION_REQUESTED",
+  "COOPERATIVE_ASSISTANCE_REQUESTED",
+  "COOPERATIVE_ASSISTANCE_RESPONDED",
+  "COOPERATIVE_ASSISTANCE_LOCKED",
+  "COOPERATIVE_ASSISTANCE_CANCELLED",
+  "COOPERATIVE_TEST_ROLL_REQUESTED",
+  "BROKEN_CONCORDANCE_NODE_REQUESTED",
   "RIVALRY_AGENDA_REVEAL_REQUESTED",
   "RESOLVE_SPACE_TEXT",
   "STABILIZE_REQUESTED",
@@ -678,6 +702,42 @@ export class GameRoomServer {
         return;
       }
 
+      if (intent.type === "COOPERATIVE_ASSISTANCE_REQUESTED") {
+        this.resolveCooperativeAssistanceRequest(intent);
+        this.broadcastPatch();
+        return;
+      }
+
+      if (intent.type === "COOPERATIVE_ASSISTANCE_RESPONDED") {
+        this.resolveCooperativeAssistanceResponse(intent);
+        this.broadcastPatch();
+        return;
+      }
+
+      if (intent.type === "COOPERATIVE_ASSISTANCE_LOCKED") {
+        this.resolveCooperativeAssistanceLock(intent);
+        this.broadcastPatch();
+        return;
+      }
+
+      if (intent.type === "COOPERATIVE_ASSISTANCE_CANCELLED") {
+        this.resolveCooperativeAssistanceCancel(intent);
+        this.broadcastPatch();
+        return;
+      }
+
+      if (intent.type === "COOPERATIVE_TEST_ROLL_REQUESTED") {
+        this.resolvePendingCooperativeTestRoll(intent);
+        this.broadcastPatch();
+        return;
+      }
+
+      if (intent.type === "BROKEN_CONCORDANCE_NODE_REQUESTED") {
+        this.resolveBrokenConcordanceNodeRequest(intent);
+        this.broadcastPatch();
+        return;
+      }
+
       if (intent.type === "STABILIZE_REQUESTED") {
         this.resolveStabilizeIntent(intent);
         const shouldCompleteTurn =
@@ -739,6 +799,9 @@ export class GameRoomServer {
         (intent.type === "CHECK_REQUESTED" || intent.type === "COMBAT_REQUESTED") &&
         this.state.activeResolution?.stage === "battle_setup" &&
         this.state.activeResolution.playerId === intent.seatId;
+      if ((intent.type === "CHECK_REQUESTED" || intent.type === "COMBAT_REQUESTED") && shouldResolveVisibleCheckOrCombat) {
+        this.assertAssistanceReadyForRoll(intent.seatId, this.state.currentEncounter?.id ?? "", intent.stat, false);
+      }
       if (intent.type === "ADJUST_MOVEMENT_REQUESTED") {
         this.movementPreviewBySeatId.delete(intent.seatId);
       }
@@ -1081,13 +1144,19 @@ export class GameRoomServer {
       throw new Error("Host Phone must join before configuring the lobby");
     }
 
+    const scenario = getScenarioDefinition(input.scenarioId ?? this.state.activeScenarioId);
+    const configuredPlayerCount = input.sessionMode === "single-player" ? 1 : input.playerCount ?? this.state.seats.length;
+    if (!scenario || !isScenarioEligibleForSession(scenario, input.sessionMode, input.interactionMode, input.gameMode ?? "standard", configuredPlayerCount)) {
+      throw new Error("The selected scenario is not available for this game mode or player count");
+    }
+
     const nextState = createInitialSessionState(
       this.state.sessionId,
       input.sessionMode,
       input.scenarioId ?? this.state.activeScenarioId,
       input.interactionMode,
       input.gameMode ?? "standard",
-      input.sessionMode === "single-player" ? 1 : input.playerCount,
+      configuredPlayerCount,
       { lobbyConfigured: true, setupHostSeatId: seatId }
     );
     const nextHostSeat = nextState.seats.find((entry) => entry.seatId === seatId);
@@ -1443,6 +1512,27 @@ export class GameRoomServer {
       case "COMBAT_REQUESTED":
       case "RAISE_STAT_REQUESTED":
         requireEnumField(message, "stat", STAT_VALUES, type);
+        break;
+      case "COOPERATIVE_ASSISTANCE_REQUESTED":
+        requireStringField(message, "sourceId", type);
+        requireEnumField(message, "stat", STAT_VALUES, type);
+        if (!Array.isArray(message.helperSeatIds) || message.helperSeatIds.length < 1 || message.helperSeatIds.length > 2 || message.helperSeatIds.some((seatId) => typeof seatId !== "string" || seatId.length === 0)) {
+          throw new IntentRejectedError(type, "Choose one or two valid helpers");
+        }
+        break;
+      case "COOPERATIVE_ASSISTANCE_RESPONDED":
+        requireStringField(message, "requestId", type);
+        if (typeof message.accept !== "boolean") throw new IntentRejectedError(type, "Assistance response must accept or decline");
+        break;
+      case "COOPERATIVE_ASSISTANCE_LOCKED":
+      case "COOPERATIVE_ASSISTANCE_CANCELLED":
+        requireStringField(message, "requestId", type);
+        break;
+      case "COOPERATIVE_TEST_ROLL_REQUESTED":
+        requireStringField(message, "testId", type);
+        break;
+      case "BROKEN_CONCORDANCE_NODE_REQUESTED":
+        requireStringField(message, "nodeId", type);
         break;
       case "NEMESIS_COMBAT_REQUESTED":
         requireStringField(message, "nemesisId", type);
@@ -3412,6 +3502,15 @@ export class GameRoomServer {
         return (progress.starTokens ?? 0) >= starTokenGate && (hasArtifact || completedContracts >= starContractGate)
           ? null
           : `Final gate locked: keep ${starTokenGate}+ Starfire and hold an Artifact or complete ${starContractGate} Contracts.`;
+      case BROKEN_CONCORDANCE_SCENARIO_ID: {
+        const completedNodes = new Set(this.state.scenarioPreparation.completedObjectiveIds);
+        const missingNode = BROKEN_CONCORDANCE_NODES.find((node) => !completedNodes.has(node.id));
+        if (missingNode) return `Final gate locked: stabilize ${missingNode.name}.`;
+        if (!player.private.notes.includes("gate-of-cinders-breached")) {
+          return "Final gate locked: breach the Gate of Cinders first.";
+        }
+        return null;
+      }
       default:
         return null;
     }
@@ -6010,6 +6109,438 @@ export class GameRoomServer {
     });
   }
 
+  private appendCooperativeEvent(event: Record<string, unknown>): void {
+    this.state = {
+      ...this.state,
+      sequence: this.state.sequence + 1,
+      eventLog: [...this.state.eventLog, event]
+    };
+  }
+
+  private getCurrentCooperativeTestSource(seatId: string, stat: Stat): {
+    sourceKind: CooperativeAssistanceState["sourceKind"];
+    sourceId: string;
+    sourceTitle: string;
+  } {
+    const pending = this.state.pendingCooperativeTest;
+    if (pending) {
+      if (pending.activeSeatId !== seatId || pending.stat !== stat) {
+        throw new Error("The pending cooperative test does not match this operative or skill");
+      }
+      return { sourceKind: pending.sourceKind, sourceId: pending.sourceId, sourceTitle: pending.sourceTitle };
+    }
+
+    const encounter = this.state.currentEncounter;
+    if (!encounter || encounter.stat !== stat) throw new Error("No matching skill test is waiting for assistance");
+    return {
+      sourceKind: this.state.pendingTileChallenge ? "tileChallenge" : "encounter",
+      sourceId: encounter.id,
+      sourceTitle: encounter.title
+    };
+  }
+
+  private resolveCooperativeAssistanceRequest(
+    intent: Extract<ClientIntent, { type: "COOPERATIVE_ASSISTANCE_REQUESTED" }>
+  ): void {
+    if (!isCooperativeAssistanceMode(this.state)) {
+      throw new IntentRejectedError(intent.type, "Assistance is available only in active standard cooperative multiplayer games");
+    }
+    if (this.state.turnOrder[this.state.activeSeatIndex] !== intent.seatId) {
+      throw new IntentRejectedError(intent.type, "Only the active operative may request assistance");
+    }
+    if (this.state.activeResolution?.stage !== "battle_setup" || this.state.activeResolution.playerId !== intent.seatId) {
+      throw new IntentRejectedError(intent.type, "Assistance must be requested after the test is known and before dice are rolled");
+    }
+    if (this.state.cooperativeAssistance) {
+      throw new IntentRejectedError(intent.type, "An assistance request is already active");
+    }
+
+    const helperSeatIds = Array.from(new Set(intent.helperSeatIds));
+    if (helperSeatIds.length < 1 || helperSeatIds.length > MAX_COOPERATIVE_HELPERS) {
+      throw new IntentRejectedError(intent.type, "Choose one or two helpers");
+    }
+    const source = this.getCurrentCooperativeTestSource(intent.seatId, intent.stat);
+    if (source.sourceId !== intent.sourceId) {
+      throw new IntentRejectedError(intent.type, "The assistance source is stale");
+    }
+    const eligible = new Set(getEligibleCooperativeHelperSeatIds(this.state, intent.seatId, intent.stat));
+    const invalid = helperSeatIds.find((seatId) => !eligible.has(seatId));
+    if (invalid) throw new IntentRejectedError(intent.type, `${invalid} is not eligible to assist this roll`);
+
+    const createdAt = new Date().toISOString();
+    const request: CooperativeAssistanceState = {
+      id: `assist:${intent.seatId}:${source.sourceId}:${this.state.sequence + 1}`,
+      ...source,
+      testedStat: intent.stat,
+      activeSeatId: intent.seatId,
+      requestedSeatIds: helperSeatIds,
+      acceptedSeatIds: [],
+      declinedSeatIds: [],
+      lockedContributions: [],
+      status: "requested",
+      createdAt
+    };
+    this.state = { ...this.state, cooperativeAssistance: request };
+    this.appendCooperativeEvent({
+      type: "COOPERATIVE_ASSISTANCE_REQUESTED",
+      seatId: intent.seatId,
+      requestId: request.id,
+      sourceKind: request.sourceKind,
+      sourceId: request.sourceId,
+      testedStat: request.testedStat,
+      requestedSeatIds: request.requestedSeatIds,
+      createdAt
+    });
+  }
+
+  private resolveCooperativeAssistanceResponse(
+    intent: Extract<ClientIntent, { type: "COOPERATIVE_ASSISTANCE_RESPONDED" }>
+  ): void {
+    const request = this.state.cooperativeAssistance;
+    if (!request || request.id !== intent.requestId || request.status !== "requested") {
+      throw new IntentRejectedError(intent.type, "The assistance request is stale or already locked");
+    }
+    if (!request.requestedSeatIds.includes(intent.seatId)) {
+      throw new IntentRejectedError(intent.type, "This operative was not requested as a helper");
+    }
+    if (request.acceptedSeatIds.includes(intent.seatId) || request.declinedSeatIds.includes(intent.seatId)) {
+      throw new IntentRejectedError(intent.type, "This helper has already responded");
+    }
+    if (!getEligibleCooperativeHelperSeatIds(this.state, request.activeSeatId, request.testedStat).includes(intent.seatId)) {
+      throw new IntentRejectedError(intent.type, "This helper is no longer available to respond");
+    }
+
+    const acceptedSeatIds = intent.accept ? [...request.acceptedSeatIds, intent.seatId] : request.acceptedSeatIds;
+    if (acceptedSeatIds.length > MAX_COOPERATIVE_HELPERS) {
+      throw new IntentRejectedError(intent.type, "A roll cannot have more than two helpers");
+    }
+    const declinedSeatIds = intent.accept ? request.declinedSeatIds : [...request.declinedSeatIds, intent.seatId];
+    this.state = {
+      ...this.state,
+      cooperativeAssistance: { ...request, acceptedSeatIds, declinedSeatIds }
+    };
+    this.appendCooperativeEvent({
+      type: intent.accept ? "COOPERATIVE_HELPER_ACCEPTED" : "COOPERATIVE_HELPER_DECLINED",
+      seatId: intent.seatId,
+      requestId: request.id,
+      sourceId: request.sourceId,
+      testedStat: request.testedStat,
+      createdAt: new Date().toISOString()
+    });
+  }
+
+  private resolveCooperativeAssistanceLock(
+    intent: Extract<ClientIntent, { type: "COOPERATIVE_ASSISTANCE_LOCKED" }>
+  ): void {
+    const request = this.state.cooperativeAssistance;
+    if (!request || request.id !== intent.requestId || request.status !== "requested") {
+      throw new IntentRejectedError(intent.type, "The assistance request is stale or already locked");
+    }
+    if (request.activeSeatId !== intent.seatId) {
+      throw new IntentRejectedError(intent.type, "Only the active operative may lock assistance");
+    }
+    const lockedContributions = lockCooperativeContributions(this.state, request.acceptedSeatIds, request.testedStat);
+    const pending = this.state.pendingCooperativeTest;
+    if (pending?.requiresHelper && lockedContributions.length < 1) {
+      throw new IntentRejectedError(intent.type, "This scenario test requires at least one accepted helper");
+    }
+    this.state = {
+      ...this.state,
+      cooperativeAssistance: { ...request, status: "locked", lockedContributions }
+    };
+    this.appendCooperativeEvent({
+      type: "COOPERATIVE_ASSISTANCE_LOCKED",
+      seatId: intent.seatId,
+      requestId: request.id,
+      sourceId: request.sourceId,
+      testedStat: request.testedStat,
+      contributions: lockedContributions,
+      createdAt: new Date().toISOString()
+    });
+  }
+
+  private resolveCooperativeAssistanceCancel(
+    intent: Extract<ClientIntent, { type: "COOPERATIVE_ASSISTANCE_CANCELLED" }>
+  ): void {
+    const request = this.state.cooperativeAssistance;
+    if (!request || request.id !== intent.requestId || request.status !== "requested") {
+      throw new IntentRejectedError(intent.type, "The assistance request is stale or already locked");
+    }
+    if (request.activeSeatId !== intent.seatId) {
+      throw new IntentRejectedError(intent.type, "Only the active operative may cancel assistance");
+    }
+    this.state = { ...this.state, cooperativeAssistance: null };
+    this.appendCooperativeEvent({
+      type: "COOPERATIVE_ASSISTANCE_CANCELLED",
+      seatId: intent.seatId,
+      requestId: request.id,
+      sourceId: request.sourceId,
+      testedStat: request.testedStat,
+      createdAt: new Date().toISOString()
+    });
+  }
+
+  private assertAssistanceReadyForRoll(seatId: string, sourceId: string, stat: Stat, requiresHelper: boolean) {
+    const request = this.state.cooperativeAssistance;
+    if (!request) {
+      if (requiresHelper) throw new Error("This scenario test requires at least one accepted helper");
+      return [];
+    }
+    if (request.activeSeatId !== seatId || request.sourceId !== sourceId || request.testedStat !== stat) {
+      throw new Error("The locked assistance no longer matches this roll");
+    }
+    if (request.status !== "locked") throw new Error("Lock or cancel the assistance request before rolling");
+    if (requiresHelper && request.lockedContributions.length < 1) {
+      throw new Error("This scenario test requires at least one accepted helper");
+    }
+    return request.lockedContributions;
+  }
+
+  private finishAssistedRoll(seatId: string, sourceId: string, success: boolean): void {
+    const request = this.state.cooperativeAssistance;
+    if (!request || request.activeSeatId !== seatId || request.sourceId !== sourceId || request.status !== "locked") return;
+    const total = sumCooperativeContributions(request.lockedContributions);
+    this.state = {
+      ...this.state,
+      cooperativeAssistance: null,
+      activeResolution: this.state.activeResolution
+        ? {
+            ...this.state.activeResolution,
+            assistance: {
+              testedStat: request.testedStat,
+              activeSeatId: request.activeSeatId,
+              contributions: request.lockedContributions,
+              total
+            }
+          }
+        : this.state.activeResolution
+    };
+    this.appendCooperativeEvent({
+      type: "COOPERATIVE_ASSISTED_ROLL_RESOLVED",
+      seatId,
+      requestId: request.id,
+      sourceId,
+      testedStat: request.testedStat,
+      contributions: request.lockedContributions,
+      success,
+      createdAt: new Date().toISOString()
+    });
+  }
+
+  private stagePendingCooperativeTest(test: PendingCooperativeTest): void {
+    if (!isCooperativeAssistanceMode(this.state)) throw new Error("Cooperative test staging requires standard co-op multiplayer");
+    if (this.state.pendingCooperativeTest || this.state.cooperativeAssistance) throw new Error("Another cooperative test is already pending");
+    this.state = {
+      ...this.state,
+      sequence: this.state.sequence + 1,
+      pendingCooperativeTest: test,
+      activeResolution: {
+        id: test.id,
+        playerId: test.activeSeatId,
+        source: test.sourceKind === "boardSpace" ? "threat" : "scenario",
+        stage: "battle_setup",
+        card: {
+          id: test.sourceId,
+          title: test.sourceTitle,
+          type: test.sourceKind === "scenarioNode" ? "scenario-node" : test.sourceKind === "scenarioConfrontation" ? "scenario-confrontation" : "board-test",
+          flavor: test.requiresHelper ? "At least one operative must answer the call." : "Assistance may be requested before the roll."
+        },
+        battle: { stat: test.stat, difficulty: test.difficulty, modifiers: [] },
+        outcome: { title: "Assistance window", text: `Prepare the ${CHALLENGE_LABELS[test.stat]} test before rolling.`, effects: [] }
+      },
+      eventLog: [...this.state.eventLog, {
+        type: "COOPERATIVE_TEST_STAGED",
+        seatId: test.activeSeatId,
+        testId: test.id,
+        sourceKind: test.sourceKind,
+        sourceId: test.sourceId,
+        testedStat: test.stat,
+        difficulty: test.difficulty,
+        createdAt: test.createdAt
+      }]
+    };
+  }
+
+  private buildCooperativeTestRoll(
+    test: PendingCooperativeTest,
+    player: PlayerState
+  ): {
+    roll: ReturnType<typeof rollDice>;
+    modifierSources: RollModifierSource[];
+    statBonus: number;
+    difficulty: number;
+    total: number;
+    success: boolean;
+  } {
+    const contributions = this.assertAssistanceReadyForRoll(
+      test.activeSeatId,
+      test.sourceId,
+      test.stat,
+      test.requiresHelper
+    );
+    const activeSources: RollModifierSource[] = [
+      { label: "Active operative", value: player.character.stats[test.stat] },
+      ...getEquippedGearModifierSources(player.character, test.stat),
+      ...(this.getScenarioSkillModifier(test.activeSeatId)
+        ? [{ label: "Scenario", value: this.getScenarioSkillModifier(test.activeSeatId) }]
+        : [])
+    ];
+    const helperSources: RollModifierSource[] = contributions.map((entry) => {
+      const helper = this.state.players.find((candidate) => candidate.seatId === entry.seatId);
+      const helperName = this.state.seats.find((candidate) => candidate.seatId === entry.seatId)?.displayName;
+      return { label: `${helperName ?? helper?.character.name ?? entry.seatId} assisted`, value: entry.value };
+    });
+    const modifierSources = [...activeSources, ...helperSources];
+    const statBonus = modifierSources.reduce((sum, source) => sum + source.value, 0);
+    const roll = rollDice(2, 6, this.randomSource);
+    const total = roll.total + statBonus;
+    return { roll, modifierSources, statBonus, difficulty: test.difficulty, total, success: total >= test.difficulty };
+  }
+
+  private resolvePendingCooperativeTestRoll(
+    intent: Extract<ClientIntent, { type: "COOPERATIVE_TEST_ROLL_REQUESTED" }>
+  ): void {
+    const test = this.state.pendingCooperativeTest;
+    if (!test || test.id !== intent.testId) throw new IntentRejectedError(intent.type, "The cooperative test is stale");
+    if (test.activeSeatId !== intent.seatId) throw new IntentRejectedError(intent.type, "Only the active operative may roll");
+    const player = this.state.players.find((entry) => entry.seatId === intent.seatId);
+    if (!player) throw new IntentRejectedError(intent.type, "The active operative is unavailable");
+    const resolved = this.buildCooperativeTestRoll(test, player);
+
+    if (test.sourceKind === "boardSpace") {
+      this.resolveSpaceTextIntent(
+        { type: "RESOLVE_SPACE_TEXT", seatId: intent.seatId, ...(test.choiceId ? { choiceId: test.choiceId } : {}) },
+        resolved
+      );
+      return;
+    }
+
+    const assistance = this.state.cooperativeAssistance;
+    const sourceEventId = `${test.id}:resolved`;
+    if (test.sourceKind === "scenarioNode") {
+      if (resolved.success) {
+        this.applyAction({
+          type: "SCENARIO_PREPARATION_GAINED",
+          seatId: intent.seatId,
+          scenarioId: BROKEN_CONCORDANCE_SCENARIO_ID,
+          resourceKey: "concordanceNodes",
+          amount: 1,
+          maximum: BROKEN_CONCORDANCE_NODES.length,
+          sourceEventId,
+          objectiveId: test.sourceId,
+          summary: `${test.sourceTitle} stabilized through cooperative ${test.stat}.`,
+          createdAt: new Date().toISOString()
+        } satisfies ScenarioPreparationGainedAction);
+      } else {
+        this.feedEscalation(intent.seatId, 1, `${test.sourceTitle} discord`);
+      }
+    } else {
+      const confrontationId = this.state.scenarioConfrontation.confrontationId;
+      if (!confrontationId) throw new IntentRejectedError(intent.type, "The Concordance confrontation is no longer active");
+      const currentProgress = this.state.scenarioConfrontation.progress.concordanceStages ?? 0;
+      const nextProgress = currentProgress + (resolved.success ? 1 : 0);
+      this.applyAction({
+        type: "SCENARIO_CONFRONTATION_PROGRESS_GAINED",
+        seatId: intent.seatId,
+        scenarioId: BROKEN_CONCORDANCE_SCENARIO_ID,
+        confrontationId,
+        progressKey: "concordanceStages",
+        amount: resolved.success ? 1 : 0,
+        sourceEventId,
+        stage: resolved.success ? `stage-${nextProgress}-resolved` : `stage-${currentProgress + 1}-failed`,
+        summary: `${test.sourceTitle}: ${resolved.total}/${resolved.difficulty} ${resolved.success ? "passed" : "failed"}.`,
+        createdAt: new Date().toISOString()
+      } satisfies ScenarioConfrontationProgressGainedAction);
+      if (!resolved.success && this.state.status === "active") this.feedEscalation(intent.seatId, 1, `${test.sourceTitle} discord`);
+      if (resolved.success && nextProgress >= BROKEN_CONCORDANCE_STAGES.length && this.state.status === "active") {
+        this.applyAction({
+          type: "SCENARIO_VICTORY_ACHIEVED",
+          seatId: intent.seatId,
+          scenarioId: BROKEN_CONCORDANCE_SCENARIO_ID,
+          victoryConditionId: "broken-concordance:hollow-regent-silenced",
+          sourceType: "confrontation",
+          sourceId: sourceEventId,
+          shared: true,
+          summary: "The Hollow Regent fell silent and the Reach kept its separate voices.",
+          createdAt: new Date().toISOString()
+        } satisfies ScenarioVictoryAchievedAction);
+      }
+    }
+
+    this.state = {
+      ...this.state,
+      phase: "resolution",
+      resolutionSource: null,
+      pendingCooperativeTest: null,
+      activeResolution: {
+        id: test.id,
+        playerId: test.activeSeatId,
+        source: "scenario",
+        stage: "outcome_summary",
+        card: { id: test.sourceId, title: test.sourceTitle, type: test.sourceKind, flavor: "The joined signal settles." },
+        battle: { stat: test.stat, difficulty: resolved.difficulty, modifiers: resolved.modifierSources },
+        roll: {
+          dice: resolved.roll.faces,
+          baseTotal: resolved.roll.total,
+          modifierTotal: resolved.statBonus,
+          finalTotal: resolved.total,
+          target: resolved.difficulty,
+          success: resolved.success
+        },
+        outcome: {
+          title: resolved.success ? "Concordance restored" : "Discord holds",
+          text: `${test.stat} ${resolved.total}/${resolved.difficulty}.`,
+          effects: []
+        },
+        ...(assistance
+          ? {
+              assistance: {
+                testedStat: assistance.testedStat,
+                activeSeatId: assistance.activeSeatId,
+                contributions: assistance.lockedContributions,
+                total: sumCooperativeContributions(assistance.lockedContributions)
+              }
+            }
+          : {})
+      }
+    };
+    this.finishAssistedRoll(intent.seatId, test.sourceId, resolved.success);
+  }
+
+  private resolveBrokenConcordanceNodeRequest(
+    intent: Extract<ClientIntent, { type: "BROKEN_CONCORDANCE_NODE_REQUESTED" }>
+  ): void {
+    if (this.state.activeScenarioId !== BROKEN_CONCORDANCE_SCENARIO_ID) {
+      throw new IntentRejectedError(intent.type, "The Broken Concordance is not active");
+    }
+    if (!isCooperativeAssistanceMode(this.state)) throw new IntentRejectedError(intent.type, "This objective requires cooperative play");
+    const player = this.state.players.find((entry) => entry.seatId === intent.seatId);
+    const node = getBrokenConcordanceNode(intent.nodeId);
+    if (!player || this.state.turnOrder[this.state.activeSeatIndex] !== intent.seatId) {
+      throw new IntentRejectedError(intent.type, "Only the active operative may stabilize a node");
+    }
+    if (!node || player.character.currentSpaceId !== node.sectorId) {
+      throw new IntentRejectedError(intent.type, "The operative is not at this Concordance node");
+    }
+    if (this.state.scenarioPreparation.completedObjectiveIds.includes(node.id)) {
+      throw new IntentRejectedError(intent.type, "This Concordance node is already stabilized");
+    }
+    if (this.state.phase !== "action" || this.state.currentEncounter || this.state.activeResolution) {
+      throw new IntentRejectedError(intent.type, "Resolve the current event before stabilizing the node");
+    }
+    this.stagePendingCooperativeTest({
+      id: `coop-test:node:${node.id}:${this.state.sequence + 1}`,
+      activeSeatId: intent.seatId,
+      sourceKind: "scenarioNode",
+      sourceId: node.id,
+      sourceTitle: node.name,
+      stat: node.stat,
+      difficulty: node.difficulty + getEscalationModifier(this.state.escalationLevel),
+      requiresHelper: true,
+      createdAt: new Date().toISOString()
+    });
+  }
+
   resolveCheckIntent(intent: Extract<ClientIntent, { type: "CHECK_REQUESTED" }>): void {
     const player = this.state.players.find((entry) => entry.seatId === intent.seatId);
 
@@ -6030,13 +6561,18 @@ export class GameRoomServer {
     const escalationModifier = getEscalationModifier(this.state.escalationLevel);
     const keyedModifiers = this.resolveThreatEffectKeys(intent.seatId, encounter, encounter.combatEffectKeys, "beforeCombat");
     const nextNonBattleTestModifiers = getNextNonBattleTestModifierSource(this.state, intent.seatId, intent.stat);
+    const assistance = this.assertAssistanceReadyForRoll(intent.seatId, encounter.id, intent.stat, false);
     const modifierSources = [
       ...this.buildStatModifierSources(player, intent.stat, "check", {
       scenarioModifier: this.getScenarioSkillModifier(intent.seatId),
       keyedPlayerModifier: keyedModifiers.playerBonusModifier ?? 0
       }),
       ...(this.state.pendingTileChallenge?.modifierSources ?? []).map(({ label, value }) => ({ label, value })),
-      ...nextNonBattleTestModifiers
+      ...nextNonBattleTestModifiers,
+      ...assistance.map(({ seatId, value }) => ({
+        label: `${this.state.seats.find((seat) => seat.seatId === seatId)?.displayName ?? seatId} assisted`,
+        value
+      }))
     ];
     const roll = rollDice(2, 6, this.randomSource);
     const statBonus = this.sumModifierSources(modifierSources);
@@ -6075,6 +6611,7 @@ export class GameRoomServer {
       cardId: encounter.id,
       createdAt: new Date().toISOString()
     });
+    this.finishAssistedRoll(intent.seatId, encounter.id, success);
     this.markFirstEligibleCharacterAbility(intent.seatId, intent.stat, "check", encounter);
     this.applyScenarioOnSkillResolved(intent.seatId, intent.stat, success);
     this.maybeTriggerAbilityOnCheckResolved(intent.seatId, intent.stat, success);
@@ -6350,7 +6887,17 @@ export class GameRoomServer {
     return { player, fromSectorId, targetSector };
   }
 
-  resolveSpaceTextIntent(intent: Extract<ClientIntent, { type: "RESOLVE_SPACE_TEXT" }>): void {
+  resolveSpaceTextIntent(
+    intent: Extract<ClientIntent, { type: "RESOLVE_SPACE_TEXT" }>,
+    cooperativeRoll?: {
+      roll: ReturnType<typeof rollDice>;
+      modifierSources: RollModifierSource[];
+      statBonus: number;
+      difficulty: number;
+      total: number;
+      success: boolean;
+    }
+  ): void {
     const player = this.state.players.find((entry) => entry.seatId === intent.seatId);
 
     if (!player) {
@@ -6375,6 +6922,22 @@ export class GameRoomServer {
     }
 
     const resolution = resolveSpaceText(boardSpace.textBox.effectKey, intent.choiceId);
+    if (resolution.check?.stat && isCooperativeAssistanceMode(this.state) && !cooperativeRoll) {
+      const createdAt = new Date().toISOString();
+      this.stagePendingCooperativeTest({
+        id: `coop-test:board:${intent.seatId}:${boardSpace.textBox.effectKey}:${this.state.sequence + 1}`,
+        activeSeatId: intent.seatId,
+        sourceKind: "boardSpace",
+        sourceId: boardSpace.textBox.effectKey,
+        sourceTitle: boardSpace.textBox.title,
+        stat: resolution.check.stat,
+        difficulty: resolution.check.difficulty + getEscalationModifier(this.state.escalationLevel),
+        requiresHelper: false,
+        ...(intent.choiceId ? { choiceId: intent.choiceId } : {}),
+        createdAt
+      });
+      return;
+    }
     const sectorCardResolution = this.resolveSectorCardResolution(intent.seatId, boardTextEffect?.sectorDeck?.kind ?? null);
     let checkPayload:
       | {
@@ -6390,15 +6953,16 @@ export class GameRoomServer {
     let baseEffect = resolution.effect;
 
     if (resolution.check?.stat) {
-      const roll = rollDice(2, 6, this.randomSource);
+      const roll = cooperativeRoll?.roll ?? rollDice(2, 6, this.randomSource);
       const escalationModifier = getEscalationModifier(this.state.escalationLevel);
-      const statBonus =
+      const statBonus = cooperativeRoll?.statBonus ?? (
         player.character.stats[resolution.check.stat] +
         getEquippedGearModifierSources(player.character, resolution.check.stat).reduce((sum, source) => sum + source.value, 0) +
-        this.getScenarioSkillModifier(intent.seatId);
-      const difficulty = resolution.check.difficulty + escalationModifier;
-      const total = roll.total + statBonus;
-      const success = total >= difficulty;
+        this.getScenarioSkillModifier(intent.seatId)
+      );
+      const difficulty = cooperativeRoll?.difficulty ?? (resolution.check.difficulty + escalationModifier);
+      const total = cooperativeRoll?.total ?? (roll.total + statBonus);
+      const success = cooperativeRoll?.success ?? (total >= difficulty);
 
       checkPayload = {
         checkStat: resolution.check.stat,
@@ -6447,6 +7011,26 @@ export class GameRoomServer {
       consumedDeckCards: sectorCardResolution?.consumedDeckCards,
       createdAt: new Date().toISOString()
     } satisfies SpaceTextResolvedAction);
+    if (cooperativeRoll) {
+      this.finishAssistedRoll(intent.seatId, boardSpace.textBox.effectKey, cooperativeRoll.success);
+      this.state = {
+        ...this.state,
+        pendingCooperativeTest: null,
+        activeResolution: this.state.activeResolution
+          ? {
+              ...this.state.activeResolution,
+              battle: {
+                ...(this.state.activeResolution.battle ?? {
+                  stat: resolution.check!.stat,
+                  difficulty: cooperativeRoll.difficulty,
+                  modifiers: []
+                }),
+                modifiers: cooperativeRoll.modifierSources
+              }
+            }
+          : this.state.activeResolution
+      };
+    }
     if (checkPayload) {
       this.applyScenarioOnSkillResolved(intent.seatId, checkPayload.checkStat, checkPayload.success);
       this.maybeTriggerAbilityOnCheckResolved(intent.seatId, checkPayload.checkStat, checkPayload.success);
@@ -6554,6 +7138,38 @@ export class GameRoomServer {
     const gateBlockReason = this.getScenarioGateBlockReason(player, scenario);
     if (gateBlockReason) {
       throw new IntentRejectedError(intent.type, gateBlockReason);
+    }
+
+    if (scenario.id === BROKEN_CONCORDANCE_SCENARIO_ID) {
+      if (player.character.currentSpaceId !== BROKEN_CONCORDANCE_CENTER_SECTOR_ID) {
+        throw new IntentRejectedError(intent.type, "The Hollow Regent can only be confronted at the Cinder Gate");
+      }
+      const stageIndex = this.state.scenarioConfrontation.progress.concordanceStages ?? 0;
+      const stage = getBrokenConcordanceStage(stageIndex);
+      if (!stage) throw new IntentRejectedError(intent.type, "The Hollow Regent confrontation is already complete");
+      const confrontationId = `${scenario.id}:confrontation:${stage.id}:${this.state.sequence + 1}`;
+      this.applyAction({
+        type: "SCENARIO_CONFRONTATION_STARTED",
+        seatId: intent.seatId,
+        scenarioId: scenario.id,
+        confrontationId,
+        sourceEventId: `${confrontationId}:started`,
+        stage: stage.id,
+        summary: `${stage.label} began beneath the Cinder Gate.`,
+        createdAt: new Date().toISOString()
+      } satisfies ScenarioConfrontationStartedAction);
+      this.stagePendingCooperativeTest({
+        id: `coop-test:confrontation:${stage.id}:${this.state.sequence + 1}`,
+        activeSeatId: intent.seatId,
+        sourceKind: "scenarioConfrontation",
+        sourceId: stage.id,
+        sourceTitle: stage.label,
+        stat: stage.stat,
+        difficulty: stage.difficulty + getEscalationModifier(this.state.escalationLevel),
+        requiresHelper: true,
+        createdAt: new Date().toISOString()
+      });
+      return;
     }
 
     const confrontationId = `${scenario.id}:confrontation:${this.state.sequence + 1}`;
@@ -7311,6 +7927,11 @@ export class GameRoomServer {
     if (player.character.followers?.some((follower) => follower.abilityId === "battle_support")) {
       modifierSources.push({ label: "Votive Gunner", value: 1 });
     }
+    const assistance = this.assertAssistanceReadyForRoll(fighterSeatId, encounter.id, stat, false);
+    modifierSources.push(...assistance.map(({ seatId, value }) => ({
+      label: `${this.state.seats.find((seat) => seat.seatId === seatId)?.displayName ?? seatId} assisted`,
+      value
+    })));
     const statBonus = this.sumModifierSources(modifierSources);
     const easedEncounterDifficulty = Math.max(
       0,
@@ -7377,6 +7998,7 @@ export class GameRoomServer {
       enemyRollerSeatId,
       createdAt: new Date().toISOString()
     } satisfies CombatResolvedAction);
+    this.finishAssistedRoll(fighterSeatId, encounter.id, success);
     this.markFirstEligibleCharacterAbility(fighterSeatId, stat, "battle", encounter);
     if (success) {
       this.maybeTriggerAbilityOnCombatVictory(fighterSeatId);
@@ -9821,6 +10443,77 @@ function getPendingFailureEffectChoices(state: GameState): Array<{ effectId: str
   return reaction.suppressibleEffects.map(({ effectId, effect }) => ({ effectId, summary: summarizeTileChallengeEffect(effect) }));
 }
 
+function getProjectedPlayerName(state: GameState, seatId: string): string {
+  return state.seats.find((seat) => seat.seatId === seatId)?.displayName ??
+    state.players.find((player) => player.seatId === seatId)?.character.name ??
+    seatId;
+}
+
+function buildCooperativeAssistanceProjection(state: GameState, viewerSeatId?: string): Record<string, unknown> | null {
+  const request = state.cooperativeAssistance;
+  if (!request) return null;
+  const requestedHelpers = request.requestedSeatIds.map((seatId) => {
+    const helper = state.players.find((player) => player.seatId === seatId);
+    const accepted = request.acceptedSeatIds.includes(seatId);
+    const declined = request.declinedSeatIds.includes(seatId);
+    const locked = request.lockedContributions.find((entry) => entry.seatId === seatId);
+    return {
+      seatId,
+      playerName: getProjectedPlayerName(state, seatId),
+      characterName: helper?.character.name ?? "Operative",
+      response: accepted ? "accepted" : declined ? "declined" : "pending",
+      ...((accepted || locked) && helper ? { contribution: locked?.value ?? getIntrinsicBaseStat(helper, request.testedStat) } : {})
+    };
+  });
+  const viewerRole = viewerSeatId
+    ? request.activeSeatId === viewerSeatId
+      ? "active"
+      : request.requestedSeatIds.includes(viewerSeatId)
+        ? "requested"
+        : "observer"
+    : undefined;
+  const viewerHelper = viewerSeatId ? state.players.find((player) => player.seatId === viewerSeatId) : null;
+  return {
+    id: request.id,
+    sourceKind: request.sourceKind,
+    sourceId: request.sourceId,
+    sourceTitle: request.sourceTitle,
+    testedStat: request.testedStat,
+    activeSeatId: request.activeSeatId,
+    activePlayerName: getProjectedPlayerName(state, request.activeSeatId),
+    status: request.status,
+    requestedHelpers,
+    acceptedTotal: request.lockedContributions.length
+      ? sumCooperativeContributions(request.lockedContributions)
+      : requestedHelpers.reduce((sum, helper) => sum + (helper.response === "accepted" ? helper.contribution ?? 0 : 0), 0),
+    ...(viewerRole ? { viewerRole } : {}),
+    ...(viewerRole === "active" ? { eligibleHelperSeatIds: getEligibleCooperativeHelperSeatIds(state, request.activeSeatId, request.testedStat) } : {}),
+    ...(viewerRole === "requested" && viewerHelper ? { viewerContribution: getIntrinsicBaseStat(viewerHelper, request.testedStat) } : {})
+  };
+}
+
+function buildCooperativeAssistanceEligibility(state: GameState, seatId: string): Record<string, unknown> | null {
+  if (!isCooperativeAssistanceMode(state) || state.cooperativeAssistance || state.turnOrder[state.activeSeatIndex] !== seatId) return null;
+  const resolution = state.activeResolution;
+  if (!resolution || resolution.stage !== "battle_setup" || !resolution.battle) return null;
+  const sourceId = state.pendingCooperativeTest?.sourceId ?? state.currentEncounter?.id ?? resolution.card?.id;
+  if (!sourceId) return null;
+  return {
+    sourceId,
+    sourceTitle: state.pendingCooperativeTest?.sourceTitle ?? state.currentEncounter?.title ?? resolution.card?.title ?? "Skill test",
+    testedStat: resolution.battle.stat,
+    helpers: getEligibleCooperativeHelperSeatIds(state, seatId, resolution.battle.stat).map((helperSeatId) => {
+      const helper = state.players.find((player) => player.seatId === helperSeatId)!;
+      return {
+        seatId: helperSeatId,
+        playerName: getProjectedPlayerName(state, helperSeatId),
+        characterName: helper.character.name,
+        contribution: getIntrinsicBaseStat(helper, resolution.battle!.stat)
+      };
+    })
+  };
+}
+
 export function createTvProjection(
   state: GameState,
   movementPreviewBySeatId: ReadonlyMap<string, { destinationId: string; routeId: string }> = new Map()
@@ -9830,6 +10523,8 @@ export function createTvProjection(
   const activeScenarioProgress = activeScenario
     ? activeScenario.id === "scenario_broken_seal"
       ? state.scenarioConfrontation.progress.restorationMarks ?? 0
+      : activeScenario.id === BROKEN_CONCORDANCE_SCENARIO_ID
+        ? state.scenarioConfrontation.progress.concordanceStages ?? 0
       : state.scenarioProgress[activeScenario.winConditionKey] ?? 0
     : 0;
   const activeNemesis = getLinkedNemesis(state.activeScenarioId);
@@ -9920,6 +10615,17 @@ export function createTvProjection(
 
   return stripLegacyHeatProjection({
     status: state.status,
+    cooperativeAssistance: buildCooperativeAssistanceProjection(state),
+    pendingCooperativeTest: state.pendingCooperativeTest ? {
+      id: state.pendingCooperativeTest.id,
+      sourceKind: state.pendingCooperativeTest.sourceKind,
+      sourceId: state.pendingCooperativeTest.sourceId,
+      sourceTitle: state.pendingCooperativeTest.sourceTitle,
+      activeSeatId: state.pendingCooperativeTest.activeSeatId,
+      stat: state.pendingCooperativeTest.stat,
+      difficulty: state.pendingCooperativeTest.difficulty,
+      requiresHelper: state.pendingCooperativeTest.requiresHelper
+    } : null,
     pendingEncounterDecision: state.pendingEncounterDecision ? {
       seatId: state.pendingEncounterDecision.seatId,
       sourceCardId: state.pendingEncounterDecision.sourceCardId,
@@ -10268,6 +10974,26 @@ export function createPhoneProjection(state: GameState, seatId: string, forcePri
     lobbyConfigured: publicProjection.lobbyConfigured,
     hostPhoneConnected: publicProjection.hostPhoneConnected,
     selfIsSetupHost: state.setupHostSeatId === seatId,
+    cooperativeAssistance: buildCooperativeAssistanceProjection(state, seatId),
+    cooperativeAssistanceEligibility: buildCooperativeAssistanceEligibility(state, seatId),
+    pendingCooperativeTest: publicProjection.pendingCooperativeTest,
+    brokenConcordanceNode: state.activeScenarioId === BROKEN_CONCORDANCE_SCENARIO_ID && player
+      ? (() => {
+          const node = BROKEN_CONCORDANCE_NODES.find((entry) => entry.sectorId === player.character.currentSpaceId);
+          return node
+            ? {
+                ...node,
+                stabilized: state.scenarioPreparation.completedObjectiveIds.includes(node.id),
+                available:
+                  state.turnOrder[state.activeSeatIndex] === seatId &&
+                  state.phase === "action" &&
+                  !state.currentEncounter &&
+                  !state.activeResolution &&
+                  !state.scenarioPreparation.completedObjectiveIds.includes(node.id)
+              }
+            : null;
+        })()
+      : null,
     winnerSeatId: state.winnerSeatId,
     activeScenario: publicProjection.activeScenario,
     scenarioTelemetry: publicProjection.scenarioTelemetry,

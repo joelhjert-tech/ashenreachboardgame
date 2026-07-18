@@ -814,6 +814,39 @@ export type ClientIntent =
       stat: CheckStat;
     }
   | {
+      type: "COOPERATIVE_ASSISTANCE_REQUESTED";
+      seatId: string;
+      sourceId: string;
+      stat: CheckStat;
+      helperSeatIds: string[];
+    }
+  | {
+      type: "COOPERATIVE_ASSISTANCE_RESPONDED";
+      seatId: string;
+      requestId: string;
+      accept: boolean;
+    }
+  | {
+      type: "COOPERATIVE_ASSISTANCE_LOCKED";
+      seatId: string;
+      requestId: string;
+    }
+  | {
+      type: "COOPERATIVE_ASSISTANCE_CANCELLED";
+      seatId: string;
+      requestId: string;
+    }
+  | {
+      type: "COOPERATIVE_TEST_ROLL_REQUESTED";
+      seatId: string;
+      testId: string;
+    }
+  | {
+      type: "BROKEN_CONCORDANCE_NODE_REQUESTED";
+      seatId: string;
+      nodeId: string;
+    }
+  | {
       type: "ENEMY_ROLL_REQUESTED";
       seatId: string;
     }
