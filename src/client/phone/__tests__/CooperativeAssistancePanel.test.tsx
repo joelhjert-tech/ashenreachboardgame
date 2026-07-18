@@ -35,6 +35,7 @@ describe("CooperativeAssistancePanel", () => {
 
     expect(screen.getByText(/base skill only/i)).toBeInTheDocument();
     expect(screen.queryByText(/attack|defense/i)).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /Ask for Help/i }));
     fireEvent.click(screen.getByRole("button", { name: /Jonas/i }));
     fireEvent.click(screen.getByRole("button", { name: /Liv/i }));
     fireEvent.click(screen.getByRole("button", { name: /Ask 2 helpers/i }));

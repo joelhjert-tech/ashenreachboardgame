@@ -131,6 +131,7 @@ async function main(): Promise<void> {
     };
 
     await seed(apiOrigin, joined[0]!.auth, "active-selector");
+    await joined[0]!.page.getByRole("button", { name: /Ask for Help/i }).click();
     await capturePhone(joined[0]!.page, "active-helper-selector");
 
     await seed(apiOrigin, joined[0]!.auth, "helper-pending");

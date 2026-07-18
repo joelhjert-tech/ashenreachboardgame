@@ -168,6 +168,17 @@ describe("authoritative cooperative assistance lifecycle", () => {
     });
   });
 
+  it("allows an ordinary test to proceed after every selected helper declines", () => {
+    const server = createServer();
+    server.handleIntent(client("seat-1"), { type: "COOPERATIVE_ASSISTANCE_REQUESTED", seatId: "seat-1", sourceId: hazard.id, stat: "signal", helperSeatIds: ["seat-2"] });
+    const requestId = server.getState().cooperativeAssistance!.id;
+    server.handleIntent(client("seat-2"), { type: "COOPERATIVE_ASSISTANCE_RESPONDED", seatId: "seat-2", requestId, accept: false });
+    server.handleIntent(client("seat-1"), { type: "COOPERATIVE_ASSISTANCE_LOCKED", seatId: "seat-1", requestId });
+    expect(server.getState().cooperativeAssistance).toMatchObject({ status: "locked", lockedContributions: [] });
+    server.resolveCheckIntent({ type: "CHECK_REQUESTED", seatId: "seat-1", stat: "signal" });
+    expect(server.getState().activeResolution?.assistance?.total ?? 0).toBe(0);
+  });
+
   it("rejects a disconnected helper before response but retains an already accepted contribution", () => {
     const beforeAcceptance = createServer();
     beforeAcceptance.handleIntent(client("seat-1"), {

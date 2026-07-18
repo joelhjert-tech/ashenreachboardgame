@@ -82,6 +82,7 @@ export function CooperativeAssistancePanel({
   onIntent: (intent: ClientIntent) => void;
 }): ReactElement {
   const [selectedHelpers, setSelectedHelpers] = useState<string[]>([]);
+  const [choosingHelpers, setChoosingHelpers] = useState(false);
   const request = patch.cooperativeAssistance ?? null;
   const eligibility = patch.cooperativeAssistanceEligibility ?? null;
   const pendingTest = patch.pendingCooperativeTest ?? null;
@@ -119,7 +120,14 @@ export function CooperativeAssistancePanel({
         {activeSelf ? <CinderWattleAbilityPanel patch={patch} seatId={seatId} onIntent={onIntent} /> : null}
       </header>
 
-      {!request && eligibility ? (
+      {!request && eligibility && !choosingHelpers ? (
+        <div className="phone-assistance-actions">
+          {!pendingTest?.requiresHelper ? <GameButton type="button" tone="secondary" onClick={roll}>Continue without help</GameButton> : null}
+          <GameButton type="button" tone="action" onClick={() => setChoosingHelpers(true)}>Ask for Help</GameButton>
+        </div>
+      ) : null}
+
+      {!request && eligibility && choosingHelpers ? (
         <>
           <div className="phone-assistance-helper-list" aria-label="Eligible helpers">
             {eligibility.helpers.map((helper) => {
@@ -146,7 +154,7 @@ export function CooperativeAssistancePanel({
             })}
           </div>
           <div className="phone-assistance-actions">
-            {!pendingTest?.requiresHelper ? <GameButton type="button" tone="secondary" onClick={roll}>Roll solo</GameButton> : null}
+            <GameButton type="button" tone="secondary" onClick={() => { setSelectedHelpers([]); setChoosingHelpers(false); }}>Cancel</GameButton>
             <GameButton
               type="button"
               tone="action"
@@ -194,10 +202,10 @@ export function CooperativeAssistancePanel({
           <GameButton
             type="button"
             tone="action"
-            disabled={acceptedCount === 0 || (!allResponded && acceptedCount === 0)}
+            disabled={Boolean(pendingTest?.requiresHelper && acceptedCount === 0) || (!allResponded && acceptedCount === 0)}
             onClick={() => onIntent({ type: "COOPERATIVE_ASSISTANCE_LOCKED", seatId, requestId: request.id })}
           >
-            Proceed with {acceptedCount} helper{acceptedCount === 1 ? "" : "s"}
+            {acceptedCount === 0 ? "Proceed without help" : `Proceed with ${acceptedCount} helper${acceptedCount === 1 ? "" : "s"}`}
           </GameButton>
         </div>
       ) : null}
