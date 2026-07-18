@@ -716,6 +716,28 @@ function statePatchWithResolutionStage(stage: string): (message: ServerEnvelope)
   };
 }
 
+function statePatchWithPendingMissionSelection(
+  ownerSeatId: string,
+  status: "queued" | "awaitingSelection"
+): (message: ServerEnvelope) => boolean {
+  return (message) => {
+    if (!isStatePatch(message)) {
+      return false;
+    }
+
+    const selection = message.payload.pendingMissionSelectionStatus;
+
+    return (
+      typeof selection === "object" &&
+      selection !== null &&
+      "ownerSeatId" in selection &&
+      selection.ownerSeatId === ownerSeatId &&
+      "status" in selection &&
+      selection.status === status
+    );
+  };
+}
+
 async function sendVisibleCheck(probe: SocketProbe, seatId: string, stat: "command" | "grit" | "signal" | "guile" | "forge"): Promise<void> {
   const setupMarker = probe.mark();
   probe.send({
@@ -2150,6 +2172,17 @@ describe("roomServer websocket integration", () => {
       seatId: "seat-3",
       contractId: "choir-quietus"
     });
+    await tv.waitForSince(marker, statePatchWithPendingMissionSelection("seat-3", "awaitingSelection"));
+    const replacementSelection = harness.roomServer.getState().pendingMissionSelection;
+    expect(replacementSelection?.ownerSeatId).toBe("seat-3");
+    const selectedReplacementId = replacementSelection!.optionIds[0]!;
+    marker = tv.mark();
+    phone3.send({
+      type: "SELECT_REPLACEMENT_CONTRACT",
+      seatId: "seat-3",
+      selectionId: replacementSelection!.id,
+      contractId: selectedReplacementId
+    });
     await tv.waitForSince(marker, statePatchForPhase("broadcast", 2));
     await endBroadcastTurn(phone3, tv, "seat-3", 0);
 
@@ -2159,7 +2192,8 @@ describe("roomServer websocket integration", () => {
 
     expect(seat2State?.character.equippedGear.weapon).toBe("veil-hook");
     expect(seat2State?.character.heldGear.some((item) => item.id === "veil-hook")).toBe(true);
-    expect(seat3State?.character.activeContract).toBeNull();
+    expect(seat3State?.character.activeContract).toEqual({ contractId: selectedReplacementId, progress: 0 });
+    expect(seat3State?.character.completedContracts).toContain("choir-quietus");
     expect(tv.messages.every((message) => !isStatePatch(message) || !Object.hasOwn(message.payload, "self"))).toBe(true);
   }, 15000);
 
