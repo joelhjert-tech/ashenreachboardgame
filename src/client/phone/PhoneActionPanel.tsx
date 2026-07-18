@@ -1403,6 +1403,7 @@ function PhoneShopPanel({
   const [pendingSellGearId, setPendingSellGearId] = useState<string | null>(null);
   const revealedStock = shopEncounter?.revealedStock ?? [];
   const sellInventory = shopEncounter?.sellInventory ?? [];
+  const repairTargets = shopEncounter?.repairTargets ?? [];
   const confirmingItem = revealedStock.find((item) => item.cardId === confirmingCardId) ?? null;
   const sellItemKey = (item: (typeof sellInventory)[number]) => item.instanceId ?? item.gearId;
   const confirmingSellItem = sellInventory.find((item) => sellItemKey(item) === confirmingSellGearId) ?? null;
@@ -1551,6 +1552,38 @@ function PhoneShopPanel({
                 const completedMissionProgress = service.cost.completedContracts !== undefined
                   ? `${shopEncounter.activePlayer.completedContracts ?? 0}/${service.cost.completedContracts} completed Contracts`
                   : null;
+                if (service.id === "repair-gear" && repairTargets.length > 0) {
+                  return (
+                    <section key={service.id} className="phone-shop-repair-targets" aria-label="Repair Gear">
+                      <div className="phone-shop-section-heading">
+                        <span>Repair Gear</span>
+                        <small>{formatShopCost(service.cost)} · restores the selected item's uses</small>
+                      </div>
+                      {repairTargets.map((target) => (
+                        <GameButton
+                          key={target.instanceId}
+                          type="button"
+                          tone="shop"
+                          size="large"
+                          className="phone-shop-service-card"
+                          disabled={!service.enabled}
+                          disabledReason={disabledReason}
+                          onClick={() => onIntent({
+                            type: "SHOP_SERVICE_REQUESTED",
+                            seatId,
+                            serviceId: service.id,
+                            itemInstanceId: target.instanceId
+                          })}
+                          sublabel={target.kind === "charges"
+                            ? `${target.currentCharges ?? 0}/${target.maxCharges ?? 0} charges · restore to full`
+                            : "Exhausted · restore to Ready"}
+                        >
+                          Repair {target.name}
+                        </GameButton>
+                      ))}
+                    </section>
+                  );
+                }
                 return (
                   <GameButton
                     key={service.id}

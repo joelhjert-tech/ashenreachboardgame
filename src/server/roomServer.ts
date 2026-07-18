@@ -128,6 +128,7 @@ import {
   SHOP_FAILURE_REASONS,
   type ShopFailureReason
 } from "../game/rules/shopAvailability.js";
+import { FORCED_POPELORD_CHARACTER_ID, requiresPopelordForDisplayName } from "../game/rules/playerIdentity.js";
 import { resolveSpaceText } from "../game/rules/tileTextResolver.js";
 import { applyStartingLoadout, ARTIFACT_EXCHANGE_CONTRACT_COST } from "../game/rules/startingLoadout.js";
 import {
@@ -186,7 +187,7 @@ import type {
   UseGearAction,
   RollModifierSource
 } from "../game/engine/actions.js";
-import { getEquippedGearItem, getEquippedGearModifierSources } from "../game/engine/gear.js";
+import { getCharacterStatBreakdown, getEquippedGearItem, getEquippedGearModifierSources } from "../game/engine/gear.js";
 import { getMovementProfile } from "../game/rules/movementPhase.js";
 import type {
   AnomalyCard,
@@ -980,6 +981,10 @@ export class GameRoomServer {
       throw new Error("Join the room before choosing a character");
     }
 
+    if (requiresPopelordForDisplayName(seat.displayName) && characterId !== FORCED_POPELORD_CHARACTER_ID) {
+      throw new Error("This player name is bound to Popelord");
+    }
+
     const selectedCharacter = this.characters.get(characterId);
 
     if (!selectedCharacter) {
@@ -1473,6 +1478,9 @@ export class GameRoomServer {
         break;
       case "SHOP_SERVICE_REQUESTED":
         requireStringField(message, "serviceId", type);
+        if (message.itemInstanceId !== undefined && typeof message.itemInstanceId !== "string") {
+          throw new IntentRejectedError(type, "Malformed intent: itemInstanceId must be a string");
+        }
         break;
       case "SHOP_PURCHASE_REQUESTED":
         requireStringField(message, "cardId", type);
@@ -2527,21 +2535,50 @@ export class GameRoomServer {
         throw new Error(SHOP_FAILURE_REASONS.invalidItem);
       }
       case "repair-gear":
+        if (!intent.itemInstanceId) {
+          throw new Error("Choose the exact Gear instance to repair");
+        }
+        {
+          const repairTarget = player.character.heldGear.find((item) => item.instanceId === intent.itemInstanceId);
+          const maximum = repairTarget?.maxCharges ?? repairTarget?.maxUses ?? repairTarget?.startingCharges ?? repairTarget?.charges ?? 0;
+          const repairable = Boolean(
+            repairTarget &&
+            ((repairTarget.effectModel === "exhaust" && repairTarget.exhausted) ||
+              (repairTarget.useLimit === "charge" && (repairTarget.currentCharges ?? repairTarget.charges ?? 0) < maximum))
+          );
+          if (!repairTarget || !repairable) {
+            throw new Error("That Gear instance does not need repair");
+          }
         return {
           ...base,
           result: {
-            note: `${shopName}: gear repair logged. The next damaged or exhausted item can be restored here.`
+            repairGearInstanceId: repairTarget.instanceId,
+            note: `${shopName}: ${repairTarget.name} restored to full use.`
           },
-          summary: `${actorName} used ${shopName}. Paid ${service.cost.salvage ?? 0} Salvage for gear repair support.`
+          summary: `${actorName} used ${shopName}. Paid ${service.cost.salvage ?? 0} Salvage to restore ${repairTarget.name}.`
         };
+        }
       case "buy-supplies":
-        return {
-          ...base,
-          result: {
-            note: `${shopName}: supply crate reserved for the next route problem.`
-          },
-          summary: `${actorName} used ${shopName}. Bought supplies for ${service.cost.salvage ?? 0} Salvage.`
-        };
+        {
+          const stock = getAvailableShopStockForCategory(this.gear.values(), "market", {
+            ownedGearIds: new Set(player.character.heldGear.map((item) => item.id)),
+            includeArtifacts: false,
+            includeQaGear: canUseQaShopGear(player.character)
+          }).filter((item) => item.subtype === "supply").slice(0, 2);
+          if (stock.length === 0) throw new Error(SHOP_FAILURE_REASONS.itemUnavailable);
+          return {
+            type: "SHOP_STOCK_REVEALED",
+            seatId: intent.seatId,
+            serviceId: service.id,
+            serviceLabel: service.label,
+            shopName,
+            sectorId: player.character.currentSpaceId,
+            cost: {},
+            stock,
+            summary: `${actorName} used ${shopName}. Revealed ${stock.length} Supply options.`,
+            createdAt
+          } satisfies ShopStockRevealedAction;
+        }
       case "buy-treatment":
         return {
           ...base,
@@ -2649,7 +2686,8 @@ export class GameRoomServer {
 
     const stockCategory = getShopStockCategoryForService(boardSpace, reveal.serviceId);
 
-    if (!stockCategory || !isGearAvailableFromShopCategory(gear, stockCategory)) {
+    if (!stockCategory || !isGearAvailableFromShopCategory(gear, stockCategory) ||
+      (reveal.serviceId === "buy-supplies" && gear.subtype !== "supply")) {
       throw new Error(SHOP_FAILURE_REASONS.itemUnavailable);
     }
 
@@ -2980,6 +3018,11 @@ export class GameRoomServer {
       case "SELECT_STARTING_CONTRACT":
         throw new Error("Starting mission selection is handled directly");
       case "RECRUIT_REPLACEMENT":
+        {
+          const displayName = this.state.seats.find((seat) => seat.seatId === intent.seatId)?.displayName ?? "";
+          if (requiresPopelordForDisplayName(displayName) && intent.replacementCharacterId !== FORCED_POPELORD_CHARACTER_ID) {
+            throw new Error("This player name is bound to Popelord");
+          }
         return {
           type: "RECRUIT_REPLACEMENT",
           seatId: intent.seatId,
@@ -2987,6 +3030,7 @@ export class GameRoomServer {
           replacementCharacter: this.characters.get(intent.replacementCharacterId),
           createdAt
         };
+        }
       case "EQUIP_GEAR":
         return {
           type: "EQUIP_GEAR",
@@ -5432,6 +5476,7 @@ export class GameRoomServer {
 
   private getPhaseAfterResolution(seatId: string): GameState["phase"] {
     const player = this.state.players.find((entry) => entry.seatId === seatId);
+    const boardSpace = player ? getBoardSpace(player.character.currentSpaceId) : null;
 
     if (this.state.pendingDisplacementArrival?.seatId === seatId) {
       return "sector";
@@ -5449,10 +5494,17 @@ export class GameRoomServer {
       return "sector";
     }
 
-    if (this.shouldContinueClearedEncounterSector(seatId)) {
-      const sector = player ? this.state.sectors.find((entry) => entry.id === player.character.currentSpaceId) : null;
-
-      return sector && sector.encounterDecks.threat.length > 0 ? "sector" : "action";
+    if (
+      this.state.resolutionSource === "encounter" &&
+      this.state.lastOutcomeSummary?.success === true &&
+      player?.character.status === "active" &&
+      boardSpace !== null &&
+      boardSpace.textBox.intent !== "scenario-confrontation"
+    ) {
+      // A cleared arrival encounter opens the destination's normal action
+      // window. It must not re-enter `sector`, which would draw another card
+      // merely because the printed lane deck still contains cards.
+      return "action";
     }
 
     return "broadcast";
@@ -5532,26 +5584,6 @@ export class GameRoomServer {
       },
       eventLog: [...this.state.eventLog, { type: "TILE_CHALLENGE_STARTED", seatId, challengeId: challenge.id, sectorId: sector.id, createdAt }]
     };
-    return true;
-  }
-
-  private shouldContinueClearedEncounterSector(seatId: string): boolean {
-    if (this.state.resolutionSource !== "encounter" || this.state.lastOutcomeSummary?.success !== true) {
-      return false;
-    }
-
-    const player = this.state.players.find((entry) => entry.seatId === seatId);
-
-    if (!player || player.character.status !== "active") {
-      return false;
-    }
-
-    const boardSpace = getBoardSpace(player.character.currentSpaceId);
-
-    if (!boardSpace || boardSpace.textBox.intent === "scenario-confrontation") {
-      return false;
-    }
-
     return true;
   }
 
@@ -8624,6 +8656,11 @@ function buildPublicShopServices(state: GameState, player: PlayerState): PublicS
   const services: PublicShopService[] = [];
   const sellInventory = buildPublicShopSellInventory(player);
   const hasSellableGear = sellInventory.some((item) => item.sellable);
+  const hasRepairableGear = player.character.heldGear.some((item) => {
+    const maximum = item.maxCharges ?? item.maxUses ?? item.startingCharges ?? item.charges ?? 0;
+    return (item.effectModel === "exhaust" && item.exhausted) ||
+      (item.useLimit === "charge" && (item.currentCharges ?? item.charges ?? 0) < maximum);
+  });
 
   if (boardSpace.tags.includes("shop")) {
     services.push(
@@ -8650,13 +8687,15 @@ function buildPublicShopServices(state: GameState, player: PlayerState): PublicS
         id: "repair-gear",
         label: "Repair Gear",
         shopCategory: "forge-armoury",
-        cost: { salvage: 2 }
+        cost: { salvage: 2 },
+        enabled: hasRepairableGear,
+        disabledReason: hasRepairableGear ? undefined : "No depleted or exhausted Gear"
       }),
       createShopService(player, state, {
         id: "buy-supplies",
-        label: "Buy Supplies",
+        label: "Browse Supplies",
         shopCategory: "market",
-        cost: { salvage: 1 }
+        cost: {}
       })
     );
   }
@@ -8711,6 +8750,33 @@ function buildPublicShopEncounter(
   const services = buildPublicShopServices(state, activePlayer);
   const revealedStock = buildPublicShopStock(state, activePlayer, privateArtifactSeatId);
   const sellInventory = buildPublicShopSellInventory(activePlayer);
+  const repairTargets: Array<{
+    gearId: string;
+    instanceId: string;
+    name: string;
+    kind: "charges" | "exhaust";
+    currentCharges?: number;
+    maxCharges?: number;
+  }> | undefined = privateArtifactSeatId === activePlayer.seatId
+    ? activePlayer.character.heldGear.flatMap((item): Array<{
+        gearId: string;
+        instanceId: string;
+        name: string;
+        kind: "charges" | "exhaust";
+        currentCharges?: number;
+        maxCharges?: number;
+      }> => {
+        if (!item.instanceId) return [];
+        const maximum = item.maxCharges ?? item.maxUses ?? item.startingCharges ?? item.charges ?? 0;
+        if (item.effectModel === "exhaust" && item.exhausted) {
+          return [{ gearId: item.id, instanceId: item.instanceId, name: item.name, kind: "exhaust" as const }];
+        }
+        const current = item.currentCharges ?? item.charges ?? 0;
+        return item.useLimit === "charge" && current < maximum
+          ? [{ gearId: item.id, instanceId: item.instanceId, name: item.name, kind: "charges" as const, currentCharges: current, maxCharges: maximum }]
+          : [];
+      })
+    : undefined;
   const latest = state.lastOutcomeSummary?.seatId === activePlayer.seatId ? state.lastOutcomeSummary : null;
   const latestAction = state.eventLog.at(-1) as GameAction | undefined;
   const latestPurchase =
@@ -8761,6 +8827,7 @@ function buildPublicShopEncounter(
     services,
     revealedStock,
     sellInventory,
+    repairTargets,
     recentOutcome: latest
       ? {
           operativeName: playerDisplayName,
@@ -9866,9 +9933,22 @@ export function createTvProjection(
         failureSummary: summarizeTileChallengeEffect(challenge.failureEffect)
       }))
     })),
-    players: visiblePlayers.map((player) => ({
-      seatId: player.seatId,
-      character: {
+    players: visiblePlayers.map((player) => {
+      const suppressedInstanceIds = new Set(
+        (state.equipmentSuppressions ?? [])
+          .filter((entry) => entry.ownerSeatId === player.seatId && entry.status === "active")
+          .map((entry) => entry.itemInstanceId)
+      );
+      const effectiveStats = Object.fromEntries(
+        (["command", "grit", "signal", "guile", "forge"] as const).map((stat) => [
+          stat,
+          getCharacterStatBreakdown(player.character, stat, { mode: "resting", suppressedInstanceIds }).final
+        ])
+      );
+
+      return {
+        seatId: player.seatId,
+        character: {
         id: player.character.id,
         name: player.character.name,
         archetype: player.character.archetype,
@@ -9876,6 +9956,7 @@ export function createTvProjection(
         status: player.character.status,
         activeContract: player.character.activeContract,
         stats: player.character.stats,
+        effectiveStats,
         statUpgrades: player.character.statUpgrades ?? {},
         trophies: player.character.trophies,
         trophyPile: player.character.trophyPile ?? [],
@@ -9915,9 +9996,10 @@ export function createTvProjection(
             ...(item.effectModel === "exhaust" ? { exhausted: item.exhausted ?? false } : {})
           }];
         })
-      },
-      sectorId: player.character.currentSpaceId
-    })),
+        },
+        sectorId: player.character.currentSpaceId
+      };
+    }),
     activeSeatIndex: state.activeSeatIndex,
     turnOrder: state.turnOrder,
     escalationLevel: state.escalationLevel,

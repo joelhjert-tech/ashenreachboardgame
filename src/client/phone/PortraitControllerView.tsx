@@ -36,6 +36,7 @@ interface PortraitControllerViewProps {
   activeSeatId: string | null;
   activeContractCard: ContractCard | null;
   patch: PhonePatchPayload | null;
+  patchSequence?: number;
   characters: CharacterCatalogEntry[];
   onIntent: ((intent: ClientIntent) => void) | null;
   onLeave: () => void;
@@ -68,6 +69,71 @@ const portraitTabLabels: Record<PortraitTab, string> = {
 
 function isTurnActionTab(tab: PortraitTab): tab is TurnActionTab {
   return turnActionTabs.includes(tab as TurnActionTab);
+}
+
+interface PhoneActionGuidance {
+  requiredTab: TurnActionTab | null;
+  title: string;
+  detail: string;
+  canAct: boolean;
+}
+
+function getPhoneActionGuidance(patch: PhonePatchPayload | null, self: PhoneSelfState): PhoneActionGuidance | null {
+  if (!patch || patch.status !== "active") return null;
+  const activeSeatId = patch.turnOrder[patch.activeSeatIndex] ?? null;
+  const isActiveSeat = activeSeatId === self.seatId;
+  const activeName = patch.seats.find((seat) => seat.seatId === activeSeatId)?.displayName ?? "the active player";
+  const ownsBattle = isOpposedPhoneBattleActive(patch) && (
+    patch.activeResolution?.playerId === self.seatId ||
+    patch.pendingEnemyRoll?.fighterSeatId === self.seatId ||
+    isActiveSeat
+  );
+
+  if (ownsBattle) {
+    const stage = patch.activeResolution?.stage;
+    const detail = patch.pendingEnemyRoll
+      ? "Enemy dice resolve automatically. Follow the totals here."
+      : stage === "card_reveal" || stage === "battle_setup"
+        ? "Roll your die when the battle control becomes available."
+        : "Review the result and continue the resolution.";
+    return { requiredTab: "battle", title: "Battle", detail, canAct: true };
+  }
+
+  if (!isActiveSeat) {
+    return {
+      requiredTab: null,
+      title: `Waiting for ${activeName}`,
+      detail: patch.encounter ? "The current encounter belongs to another operative." : "Your controls unlock when your authoritative turn begins.",
+      canAct: false
+    };
+  }
+
+  if (patch.movementPlanner?.active || patch.phase === "navigation") {
+    return {
+      requiredTab: "move",
+      title: "Move",
+      detail: patch.movementPlanner?.selectedDestinationId
+        ? "Confirm the selected destination."
+        : patch.movementPlanner?.destinations.length
+          ? "Choose a destination."
+          : "Roll movement.",
+      canAct: true
+    };
+  }
+
+  if (patch.shopEncounter) {
+    return { requiredTab: "shop", title: "Shop", detail: "Browse Equipment or choose a service.", canAct: true };
+  }
+
+  if (patch.phase === "resolution") {
+    return { requiredTab: "action", title: "Action", detail: "Resolve the current choice or continue.", canAct: true };
+  }
+
+  if (patch.phase === "action") {
+    return { requiredTab: "action", title: "Action", detail: "Choose your sector action.", canAct: true };
+  }
+
+  return { requiredTab: null, title: "Turn in progress", detail: "Follow the current table state.", canAct: false };
 }
 
 function readStoredPhoneChromeVisible(): boolean {
@@ -616,6 +682,7 @@ export function PortraitControllerView({
   activeSeatId,
   activeContractCard,
   patch,
+  patchSequence,
   characters,
   onIntent,
   onLeave,
@@ -629,6 +696,7 @@ export function PortraitControllerView({
   const [choosingStartingMission, setChoosingStartingMission] = useState(false);
   const startingMissionSectionRef = useRef<HTMLElement | null>(null);
   const phoneChromeHidden = !phoneChromeVisible;
+  const actionGuidance = self ? getPhoneActionGuidance(patch, self) : null;
 
   useEffect(() => {
     writeStoredPhoneChromeVisible(phoneChromeVisible);
@@ -671,23 +739,7 @@ export function PortraitControllerView({
       return;
     }
 
-    const isActiveSeat = patch.turnOrder[patch.activeSeatIndex] === self.seatId;
-    const battleForSeat = isOpposedPhoneBattleActive(patch) && (
-      patch.activeResolution?.playerId === self.seatId ||
-      patch.pendingEnemyRoll?.fighterSeatId === self.seatId ||
-      isActiveSeat
-    );
-    const nextTab: PortraitTab | null = battleForSeat
-      ? "battle"
-      : !isActiveSeat
-        ? null
-        : patch.movementPlanner?.active || patch.phase === "navigation"
-          ? "move"
-          : patch.shopEncounter
-            ? "shop"
-            : patch.phase === "action" || patch.phase === "resolution"
-              ? "action"
-              : null;
+    const nextTab: PortraitTab | null = getPhoneActionGuidance(patch, self)?.requiredTab ?? null;
 
     if (nextTab) {
       setActiveTab(nextTab);
@@ -702,6 +754,7 @@ export function PortraitControllerView({
     patch?.phase,
     patch?.shopEncounter?.shopId,
     patch?.status,
+    patchSequence,
     self?.seatId
   ]);
 
@@ -1010,6 +1063,19 @@ export function PortraitControllerView({
         </header>
 
         <main className={contentClassName} aria-label="Phone content">
+          {actionGuidance && !opposedBattleActive ? (
+            <section
+              className={`phone-action-guidance${actionGuidance.canAct ? " is-actionable" : " is-waiting"}`}
+              data-testid="phone-action-guidance"
+              data-required-tab={actionGuidance.requiredTab ?? "waiting"}
+              role="status"
+              aria-live="polite"
+            >
+              <span>{actionGuidance.canAct ? "Required now" : "Table status"}</span>
+              <strong>{actionGuidance.title}{actionGuidance.requiredTab ? ` — ${actionGuidance.detail}` : ""}</strong>
+              {!actionGuidance.requiredTab ? <p>{actionGuidance.detail}</p> : null}
+            </section>
+          ) : null}
           {opposedBattleActive && patch && onIntent ? (
             <div className="phone-portrait-screen phone-portrait-screen-command phone-portrait-screen-battle" data-testid="phone-action-screen">
               <PhoneActionPanel
@@ -1319,7 +1385,7 @@ export function PortraitControllerView({
                       role="tab"
                       aria-selected={activeTab === typedKey}
                       selected={activeTab === typedKey}
-                      className={`${activeTab === typedKey ? "phone-portrait-tab phone-portrait-tab-active" : "phone-portrait-tab"} phone-portrait-tab-${typedKey}${
+                      className={`${activeTab === typedKey ? "phone-portrait-tab phone-portrait-tab-active" : "phone-portrait-tab"} phone-portrait-tab-${typedKey}${actionGuidance?.requiredTab === typedKey ? " phone-portrait-tab-required" : ""}${
                         actionState.locked ? " phone-portrait-tab-locked" : ""
                       }`}
                       data-tab={typedKey}

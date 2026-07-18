@@ -406,6 +406,23 @@ describe("server API scenario flow", () => {
     expect(relayRivalry.payload.error).toContain("require co-op");
   });
 
+  it("accepts one-to-eight-character player names and rejects invalid submissions", async () => {
+    harness = await startAshenReachServer({ port: createTestPort(), logUrls: false });
+    const baseUrl = `http://127.0.0.1:${harness.port}`;
+    const roomCode = harness.roomServer.getState().sessionId;
+
+    const one = await postJson<{ seatId: string }>(baseUrl, "/api/session/join", { roomCode, displayName: "A" });
+    const eight = await postJson<{ seatId: string }>(baseUrl, "/api/session/join", { roomCode, displayName: "Åke12345" });
+    const nine = await postJson<{ error: string }>(baseUrl, "/api/session/join", { roomCode, displayName: "NineChars" });
+    const whitespace = await postJson<{ error: string }>(baseUrl, "/api/session/join", { roomCode, displayName: "   " });
+
+    expect(one.status).toBe(200);
+    expect(eight.status).toBe(200);
+    expect(nine).toMatchObject({ status: 400, payload: { error: "Name must be 1-8 characters." } });
+    expect(whitespace).toMatchObject({ status: 400, payload: { error: "Name must be 1-8 characters." } });
+    expect(harness.roomServer.getState().seats.filter((seat) => seat.displayName)).toHaveLength(2);
+  });
+
   it("starts the selected scenario without losing the chosen seed", async () => {
     harness = await startAshenReachServer({ port: createTestPort(), logUrls: false });
     const baseUrl = `http://127.0.0.1:${harness.port}`;
@@ -469,7 +486,7 @@ describe("server API scenario flow", () => {
       seatToken: string;
     }>(baseUrl, "/api/session/join", {
       roomCode: created.payload.roomCode,
-      displayName: "Ready Tester",
+      displayName: "ReadyTes",
       characterId: "void-marshal"
     });
 

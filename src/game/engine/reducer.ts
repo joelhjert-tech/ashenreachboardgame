@@ -717,9 +717,24 @@ function applyShopServiceToPlayer(player: PlayerState, action: ShopServiceResolv
         }
       : player.private
   };
-  const afterDiscard = action.result.discardGearId
-    ? removeHeldGearFromPlayer(afterCost, action.result.discardGearId)
+  const afterRepair = action.result.repairGearInstanceId
+    ? {
+        ...afterCost,
+        character: {
+          ...afterCost.character,
+          heldGear: afterCost.character.heldGear.map((item) => {
+            if (item.instanceId !== action.result.repairGearInstanceId) return item;
+            const maximum = item.maxCharges ?? item.maxUses ?? item.startingCharges ?? item.charges ?? 0;
+            return item.effectModel === "exhaust"
+              ? { ...item, exhausted: false }
+              : { ...item, currentCharges: maximum, charges: maximum };
+          })
+        }
+      }
     : afterCost;
+  const afterDiscard = action.result.discardGearId
+    ? removeHeldGearFromPlayer(afterRepair, action.result.discardGearId)
+    : afterRepair;
 
   if (!action.result.gainGear) {
     return afterDiscard;
@@ -1227,6 +1242,15 @@ function addFollowerToPlayer(
 }
 
 function canManageGear(state: GameState, seatId: string): void {
+  if (state.status === "lobby" && state.phase === "start") {
+    const seat = state.seats.find((entry) => entry.seatId === seatId);
+    if (!seat?.displayName || seat.kicked || seat.characterSelected === false) {
+      throw new Error("Choose an operative before managing starting gear");
+    }
+    requirePlayer(state, seatId);
+    return;
+  }
+
   ensureSeatTurn(state, seatId);
   ensureSeatCanTakeNormalTurnAction(state, seatId);
 
@@ -3957,6 +3981,19 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
 
       if (shopAction.result.discardGearId && !player.character.heldGear.some((item) => item.id === shopAction.result.discardGearId)) {
         return reject(state, action, "No matching Gear to sell");
+      }
+
+      if (shopAction.result.repairGearInstanceId) {
+        const repairTarget = player.character.heldGear.find((item) => item.instanceId === shopAction.result.repairGearInstanceId);
+        const maximum = repairTarget?.maxCharges ?? repairTarget?.maxUses ?? repairTarget?.startingCharges ?? repairTarget?.charges ?? 0;
+        const repairable = Boolean(
+          repairTarget &&
+          ((repairTarget.effectModel === "exhaust" && repairTarget.exhausted) ||
+            (repairTarget.useLimit === "charge" && (repairTarget.currentCharges ?? repairTarget.charges ?? 0) < maximum))
+        );
+        if (!repairable) {
+          return reject(state, action, "That Gear instance does not need repair");
+        }
       }
 
       const nextPlayers = updateActivePlayer(state, shopAction.seatId, (entry) => applyShopServiceToPlayer(entry, shopAction));

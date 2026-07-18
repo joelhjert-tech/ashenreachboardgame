@@ -15,6 +15,21 @@ export const motionEasings = {
   fade: "ease-out"
 } as const;
 
+export const hostPresentationTimings = {
+  encounterRevealMs: 460,
+  cardFlipMs: 840,
+  encounterSettleMs: 420,
+  participantEntranceMs: 620,
+  diceRollMs: 1200,
+  modifierRevealMs: 340,
+  totalSettleMs: 520,
+  resultEmphasisMs: 900,
+  movementStartMs: 550,
+  movementSegmentMs: 1050,
+  movementCrossRingMs: 1450,
+  movementArrivalMs: 900
+} as const;
+
 export const motionCssVariables = {
   instant: "--motion-instant",
   quick: "--motion-quick",

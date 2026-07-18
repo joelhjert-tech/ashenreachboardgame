@@ -1474,7 +1474,7 @@ describe("active resolution visibility state", () => {
     expect(server.getState().activeResolution).toBeNull();
   });
 
-  it("recovers an orphaned successful encounter by reopening the sector flow", () => {
+  it("recovers an orphaned successful encounter without drawing another queued threat", () => {
     const baseState = createState({ sessionMode: "single-player" });
     const encounter = createThreats().get("cinder-veil-stalker");
 
@@ -1557,8 +1557,9 @@ describe("active resolution visibility state", () => {
     });
 
     expect(server.getState().phase).toBe("action");
-    expect(server.getState().currentEncounter?.id).toBe("signal-static");
-    expect(server.getState().activeResolution?.card?.id).toBe("signal-static");
+    expect(server.getState().currentEncounter).toBeNull();
+    expect(server.getState().activeResolution).toBeNull();
+    expect(server.getState().sectors[0]?.encounterDecks.threat).toEqual(["signal-static"]);
   });
 
   it("reopens a cleared shop sector after a successful encounter instead of ending a single-player turn", () => {
@@ -2152,18 +2153,43 @@ describe("active resolution visibility state", () => {
     expect(sold.server.getState().players[0]?.character.salvage).toBe(2);
     expect(sold.server.getState().players[0]?.character.heldGear).toEqual([]);
 
-    const repaired = createShopServer({ sectorId: "kettleward-foundry", salvage: 3 });
+    const tuningSpines = gearCatalog.get("tuning-spines");
+    if (!tuningSpines) throw new Error("Missing tuning-spines fixture");
+    const depletedTuningSpines = {
+      ...tuningSpines,
+      instanceId: "tuning-spines:seat-1:repair",
+      currentCharges: 0,
+      charges: 0,
+      maxUses: 2,
+      useLimit: "charge" as const
+    };
+    const repaired = createShopServer({
+      sectorId: "kettleward-foundry",
+      salvage: 3,
+      heldGear: [depletedTuningSpines]
+    });
     repaired.server.handleIntent(repaired.client, {
       type: "SHOP_SERVICE_REQUESTED",
       seatId: "seat-1",
-      serviceId: "repair-gear"
+      serviceId: "repair-gear",
+      itemInstanceId: depletedTuningSpines.instanceId
     });
 
     expect(repaired.sent.find((message) => message.type === "INTENT_REJECTED")).toBeUndefined();
     expect(repaired.server.getState().players[0]?.character.salvage).toBe(1);
-    expect(repaired.server.getState().players[0]?.private.notes.at(-1)).toContain("gear repair");
+    expect(repaired.server.getState().players[0]?.character.heldGear[0]?.currentCharges).toBe(2);
 
-    const supplied = createShopServer({ sectorId: "kettleward-foundry", salvage: 3 });
+    const supplyCatalog = new Map(gearCatalog);
+    supplyCatalog.set("field-rations", {
+      id: "field-rations",
+      name: "Field Rations",
+      slot: "utility",
+      subtype: "supply",
+      statBonus: { stat: "forge", amount: 1 },
+      cost: 2,
+      shopCategories: ["market"]
+    });
+    const supplied = createShopServer({ sectorId: "kettleward-foundry", salvage: 3, gearCatalog: supplyCatalog });
     supplied.server.handleIntent(supplied.client, {
       type: "SHOP_SERVICE_REQUESTED",
       seatId: "seat-1",
@@ -2171,8 +2197,8 @@ describe("active resolution visibility state", () => {
     });
 
     expect(supplied.sent.find((message) => message.type === "INTENT_REJECTED")).toBeUndefined();
-    expect(supplied.server.getState().players[0]?.character.salvage).toBe(2);
-    expect(supplied.server.getState().players[0]?.private.notes.at(-1)).toContain("supply crate");
+    expect(supplied.server.getState().players[0]?.character.salvage).toBe(3);
+    expect(supplied.server.getState().shopStockReveals.at(-1)?.serviceId).toBe("buy-supplies");
 
     const treated = createShopServer({ sectorId: "outer_ember_sanctum", salvage: 4, wounds: 2 });
     treated.server.handleIntent(treated.client, {
@@ -2206,11 +2232,16 @@ describe("active resolution visibility state", () => {
     expect(searched.server.getState().players[0]?.character.salvage).toBe(2);
     expect(searched.server.getState().shopStockReveals).toEqual([]);
 
-    const unaffordableService = createShopServer({ sectorId: "kettleward-foundry", salvage: 0 });
+    const unaffordableService = createShopServer({
+      sectorId: "kettleward-foundry",
+      salvage: 0,
+      heldGear: [depletedTuningSpines]
+    });
     unaffordableService.server.handleIntent(unaffordableService.client, {
       type: "SHOP_SERVICE_REQUESTED",
       seatId: "seat-1",
-      serviceId: "repair-gear"
+      serviceId: "repair-gear",
+      itemInstanceId: depletedTuningSpines.instanceId
     });
 
     expect(unaffordableService.sent.find((message) => message.type === "INTENT_REJECTED")).toMatchObject({

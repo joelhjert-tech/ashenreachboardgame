@@ -66,16 +66,28 @@ function formatModifier(value: number | null): string {
   return value === null || value === 0 ? "+0" : value > 0 ? `+${value}` : String(value);
 }
 
-function formatResolutionType(resolution: ActiveResolution | null, fallbackType: string | null | undefined): string {
+function formatResolutionType(
+  resolution: ActiveResolution | null,
+  fallbackType: string | null | undefined,
+  tileChallengeType: string | null | undefined
+): string {
+  if (tileChallengeType) {
+    return "TILE CHALLENGE";
+  }
+
   if (resolution?.card?.type === "enemy" || resolution?.battle?.enemyName) {
-    return "Engagement";
+    return "BATTLE";
   }
 
-  if (resolution?.battle) {
-    return "Test";
+  if (resolution?.source === "anomaly" || fallbackType === "anomaly" || fallbackType === "event") {
+    return "ANOMALY";
   }
 
-  return fallbackType ? `${fallbackType} resolution` : "Resolution";
+  if (fallbackType === "hazard" || resolution?.card?.type === "hazard") {
+    return "HAZARD";
+  }
+
+  return "ENCOUNTER";
 }
 
 function formatFormula({
@@ -123,7 +135,9 @@ function getPlayerBattleValue(resolution: ActiveResolution | null, activePlayer:
   }
 
   const stat = resolution?.battle?.stat;
-  return stat && activePlayer ? activePlayer.character.stats[stat] : null;
+  return stat && activePlayer
+    ? activePlayer.character.effectiveStats?.[stat] ?? activePlayer.character.stats[stat]
+    : null;
 }
 
 function formatFocusLabel(resolution: ActiveResolution | null, fallbackType: string | null | undefined): string {
@@ -287,7 +301,11 @@ function buildBattleModel(
   const resultTone = outcomeLabel === "SUCCESS" ? "victory" : outcomeLabel === "DEFEAT" ? "failure" : "neutral";
   const outcomeText = resolution?.outcome?.text ?? outcome?.summary ?? null;
   const cardMovementText = getCardMovementText(opponentName, outcomeText);
-  const resolutionType = formatResolutionType(resolution, encounter?.cardType);
+  const resolutionType = formatResolutionType(
+    resolution,
+    encounter?.cardType,
+    patch.payload.pendingTileChallenge?.challengeType
+  );
   const opponentIsRolled = enemyDice.length > 0;
   const opponentStatLabel = opponentIsRolled ? "Battle" : "Difficulty";
   const opponentFormula = opponentIsRolled
@@ -494,7 +512,11 @@ function HostBattleVsCore({ model }: { model: HostBattleDisplayModel }): ReactEl
   return (
     <section className="host-battle-vs-block" aria-label="Resolution comparison" data-testid="host-battle-vs-block">
       <span className="host-battle-focus-label">{model.focusLabel}</span>
-      <h2 className="host-battle-encounter-title">Battle resolution</h2>
+      <h2 className="host-battle-encounter-title">
+        {model.resolutionType === "BATTLE"
+          ? "Battle resolution"
+          : `${model.resolutionType.toLowerCase().replace(/^\w/, (letter) => letter.toUpperCase())} resolution`}
+      </h2>
       <p className="host-battle-resolution-type">{model.resolutionType}</p>
       <strong>VS</strong>
       <div className={`host-battle-result-banner host-battle-result-${model.outcomeLabel.toLowerCase()}`} data-testid="host-battle-result-banner">

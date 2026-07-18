@@ -26,6 +26,7 @@ export type InventoryTimingWindow =
 export type InventoryGroupLabel =
   | "Weapons"
   | "Armor"
+  | "Supplies"
   | "Equipment"
   | "Consumables"
   | "Followers"
@@ -89,6 +90,9 @@ export interface InventoryCardViewModel {
   activationCostText?: string;
   followerRoleText?: string;
   acquisitionText?: string;
+  gearSlot?: GearSlot;
+  instanceId?: string;
+  equipped?: boolean;
 }
 
 export interface InventoryGroupViewModel {
@@ -111,6 +115,7 @@ export interface BattleAssistViewModel {
 const inventoryGroupOrder: InventoryGroupLabel[] = [
   "Weapons",
   "Armor",
+  "Supplies",
   "Equipment",
   "Consumables",
   "Followers",
@@ -317,6 +322,10 @@ function inferFollowerTimingWindows(follower: Follower): InventoryTimingWindow[]
 }
 
 function getGearGroup(item: GearItem): InventoryGroupLabel {
+  if (item.subtype === "supply") {
+    return "Supplies";
+  }
+
   if (item.slot === "weapon") {
     return "Weapons";
   }
@@ -587,6 +596,9 @@ function buildGearCard(item: GearItem, patch: PhonePatchPayload, self: PhoneSelf
     artCardType: getGearCardArtType(item),
     artCardId: getGearCardArtId(item),
     fallbackLabel: getFallbackLabel(item.name),
+    gearSlot: item.slot,
+    instanceId: item.instanceId,
+    equipped: isEquipped,
     passiveBonus,
     activeAbility,
     chargeState,

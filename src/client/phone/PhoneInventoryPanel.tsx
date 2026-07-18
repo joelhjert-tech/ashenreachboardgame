@@ -228,12 +228,14 @@ function InventoryCard({
   card,
   seatId,
   onIntent,
-  onUse
+  onUse,
+  canManageEquipment
 }: {
   card: InventoryCardViewModel;
   seatId: string;
   onIntent: ((intent: ClientIntent) => void) | null;
   onUse?: () => void;
+  canManageEquipment: boolean;
 }): ReactElement {
   const [oathchainConfirming, setOathchainConfirming] = useState(false);
   const useIntent = toUseIntent(card, seatId);
@@ -291,7 +293,22 @@ function InventoryCard({
           ))}
         </div>
       }
-      actions={card.canUseNow && useIntent ? (card.id === "fandiablos" ? <>
+      actions={<>
+        {card.source === "gear" && card.gearSlot ? (
+          <GameButton
+            type="button"
+            tone="secondary"
+            className="phone-button phone-inventory-equip-button"
+            disabled={!canManageEquipment}
+            disabledReason={canManageEquipment ? undefined : "Equip gear during setup or your Action phase."}
+            onClick={() => onIntent?.(card.equipped
+              ? { type: "UNEQUIP_GEAR", seatId, slot: card.gearSlot! }
+              : { type: "EQUIP_GEAR", seatId, gearId: card.id, instanceId: card.instanceId, slot: card.gearSlot! })}
+          >
+            {card.equipped ? "Unequip" : `Equip ${card.gearSlot}`}
+          </GameButton>
+        ) : null}
+        {card.canUseNow && useIntent ? (card.id === "fandiablos" ? <>
         <GameButton type="button" tone="action" className="phone-button" onClick={() => onIntent?.({ ...useIntent, escalate: false } as ClientIntent)}>Use — 1 Wound</GameButton>
         <GameButton type="button" tone="action" className="phone-button" onClick={() => onIntent?.({ ...useIntent, escalate: true } as ClientIntent)}>Escalate — 2 Wounds</GameButton>
       </> : card.id === "oathchain-lens" ? (oathchainConfirming ? <div className="phone-inventory-oathchain-confirm">
@@ -312,6 +329,7 @@ function InventoryCard({
           {card.chargeState ? `Use now — ${card.chargeState.cost} charge${card.chargeState.cost === 1 ? "" : "s"}` : "Use now"}
         </GameButton>
       )) : null}
+      </>}
     />
   );
 }
@@ -616,6 +634,10 @@ export function PhoneInventoryPanel({
   }));
   const visibleGroups = groups.filter((group) => group.items.length > 0);
   const visibleItemCount = visibleGroups.reduce((sum, group) => sum + group.items.length, 0);
+  const activeSeatId = patch.turnOrder[patch.activeSeatIndex] ?? null;
+  const canManageEquipment =
+    (patch.status === "lobby" && patch.phase === "start") ||
+    (patch.status === "active" && patch.phase === "action" && activeSeatId === self.seatId && !patch.activeResolution && !patch.encounter);
   const panelClassName = [
     "phone-inventory-panel",
     compact ? "phone-inventory-panel-compact" : "",
@@ -661,7 +683,7 @@ export function PhoneInventoryPanel({
           >
             <div className="phone-inventory-card-list">
               {group.items.map((card) => (
-                <InventoryCard key={`${card.source}-${card.id}`} card={card} seatId={self.seatId} onIntent={onIntent} onUse={onUse} />
+                <InventoryCard key={`${card.source}-${card.instanceId ?? card.id}`} card={card} seatId={self.seatId} onIntent={onIntent} onUse={onUse} canManageEquipment={canManageEquipment} />
               ))}
             </div>
           </InventoryDisclosure>

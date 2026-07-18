@@ -15,7 +15,7 @@ async function startPhone(page: Page, apiOrigin: string, clientOrigin: string): 
   const session = await postJson<SessionResponse>(`${apiOrigin}/api/session/create`, { sessionMode: "single-player", interactionMode: "co-op", gameMode: "standard", playerCount: 1 });
   await page.goto(`${clientOrigin}/?room=${session.roomCode}&resetAuth=1`);
   await page.waitForLoadState("networkidle");
-  await page.getByLabel("Player name").fill("Follower QA");
+  await page.getByLabel("Player name").fill("Follower");
   await page.getByRole("button", { name: "Join Game" }).click();
   await page.getByRole("heading", { name: "Select operative" }).waitFor();
   await page.getByRole("button", { name: /Bjornis/i }).click();

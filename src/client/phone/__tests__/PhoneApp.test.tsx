@@ -357,13 +357,13 @@ describe("PhoneApp", () => {
     render(<PhoneApp />);
 
     fireEvent.change((await screen.findAllByLabelText(/room code/i))[0]!, { target: { value: "RT7P4" } });
-    fireEvent.change(screen.getAllByLabelText(/player name/i)[0]!, { target: { value: "Late Player" } });
+    fireEvent.change(screen.getAllByLabelText(/player name/i)[0]!, { target: { value: "LatePlay" } });
     fireEvent.click(screen.getByRole("button", { name: /join game/i }));
 
     expect(await screen.findByText("No open seats remain")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Room Full" })).toBeDisabled();
 
-    fireEvent.change(screen.getAllByLabelText(/player name/i)[0]!, { target: { value: "Another Player" } });
+    fireEvent.change(screen.getAllByLabelText(/player name/i)[0]!, { target: { value: "Another" } });
     expect(screen.getByRole("button", { name: /join game/i })).toBeEnabled();
   });
 
@@ -1003,10 +1003,21 @@ describe("PhoneApp", () => {
     await waitFor(() => {
       expect(networkMocks.configureSessionFromPhone).toHaveBeenCalledWith(
         expect.objectContaining({ roomCode: "RT7P4", seatId: "seat-1" }),
-        { mode: "co-op", playerCount: 4, scenarioId: "scenario_ashen_crown" }
+        { mode: "co-op", playerCount: 6, scenarioId: "scenario_ashen_crown" }
       );
     });
     expect(screen.queryByRole("list", { name: /character/i })).not.toBeInTheDocument();
+  });
+
+  it("enforces the eight-character player-name boundary before joining", async () => {
+    render(<PhoneApp />);
+    const name = await screen.findByLabelText(/player name/i);
+    expect(name).toHaveAttribute("maxlength", "8");
+    fireEvent.change(screen.getAllByLabelText(/room code/i)[0]!, { target: { value: "RT7P4" } });
+    fireEvent.change(name, { target: { value: "NineChars" } });
+    fireEvent.click(screen.getByRole("button", { name: /join game/i }));
+    expect(await screen.findByText("Name must be 1-8 characters.")).toBeInTheDocument();
+    expect(networkMocks.joinSession).not.toHaveBeenCalled();
   });
 
   it("shows only the portrait warning when the phone is landscape", async () => {

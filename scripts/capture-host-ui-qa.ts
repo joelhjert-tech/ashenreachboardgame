@@ -31,7 +31,7 @@ async function createSession(apiOrigin: string): Promise<SessionResponse> {
 
 async function joinAndStart(page: Page, session: SessionResponse, clientOrigin: string): Promise<Auth> {
   await page.goto(`${clientOrigin}/?room=${session.roomCode}&resetAuth=1`);
-  await page.getByLabel("Player name").fill("Host UI QA");
+  await page.getByLabel("Player name").fill("HostUI");
   await page.getByRole("button", { name: "Join Game" }).click();
   await page.getByRole("heading", { name: "Select operative" }).waitFor();
   await page.getByRole("button", { name: /Bjornis/i }).click();

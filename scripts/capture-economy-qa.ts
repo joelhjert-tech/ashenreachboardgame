@@ -14,7 +14,7 @@ async function postJson<T>(url: string, body: unknown): Promise<T> {
 async function startPhone(page: Page, apiOrigin: string, clientOrigin: string): Promise<StoredControllerAuth> {
   const session = await postJson<SessionResponse>(`${apiOrigin}/api/session/create`, { sessionMode: "single-player", interactionMode: "co-op", gameMode: "standard", playerCount: 1 });
   await page.goto(`${clientOrigin}/?room=${session.roomCode}&resetAuth=1`);
-  await page.getByLabel("Player name").fill("Economy QA");
+  await page.getByLabel("Player name").fill("Economy");
   await page.getByRole("button", { name: "Join Game" }).click();
   await page.getByRole("heading", { name: "Select operative" }).waitFor();
   await page.getByRole("button", { name: /Bjornis/i }).click();

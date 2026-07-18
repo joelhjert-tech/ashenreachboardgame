@@ -223,6 +223,48 @@ describe("Phase 2A shop mechanics foundation", () => {
     expect(server.getState().lastOutcomeSummary?.summary).toContain(`Bought ${selectedGear.name}`);
   });
 
+  it("reveals only canonical Supply cards through Browse Supplies", () => {
+    const { server, client, sent } = createShopServer({ sectorId: "kettleward-foundry", salvage: 6 });
+
+    server.handleIntent(client, {
+      type: "SHOP_SERVICE_REQUESTED",
+      seatId: "seat-1",
+      serviceId: "buy-supplies"
+    });
+
+    const reveal = server.getState().shopStockReveals.find((entry) => entry.serviceId === "buy-supplies");
+    expect(getRejectedReason(sent)).toBeUndefined();
+    expect(reveal?.stockIds.length).toBeGreaterThan(0);
+    expect(reveal?.stockIds.every((id) => loadGear().get(id)?.subtype === "supply")).toBe(true);
+    expect(server.getState().players[0]?.character.salvage).toBe(6);
+  });
+
+  it("repairs one exact depleted Gear instance and restores its charges", () => {
+    const { server, client, sent } = createShopServer({ sectorId: "kettleward-foundry", salvage: 6 });
+    const charged = requireGear("choir-lantern");
+    server.getState().players[0]!.character.heldGear = [{
+      ...charged,
+      instanceId: "choir-lantern:seat-1:test",
+      currentCharges: 0,
+      charges: 0,
+      maxUses: 2
+    }];
+
+    server.handleIntent(client, {
+      type: "SHOP_SERVICE_REQUESTED",
+      seatId: "seat-1",
+      serviceId: "repair-gear",
+      itemInstanceId: "choir-lantern:seat-1:test"
+    });
+
+    const repaired = server.getState().players[0]?.character.heldGear[0];
+    expect(getRejectedReason(sent)).toBeUndefined();
+    expect(repaired?.currentCharges).toBe(2);
+    expect(repaired?.charges).toBe(2);
+    expect(server.getState().players[0]?.character.salvage).toBe(4);
+    expect(server.getState().lastOutcomeSummary?.summary).toContain("restore Choir Lantern");
+  });
+
   it("lets a player skip a shop without changing salvage or inventory", () => {
     const { server, client, sent } = createShopServer({ sectorId: "outer_waymarket", salvage: 6 });
 

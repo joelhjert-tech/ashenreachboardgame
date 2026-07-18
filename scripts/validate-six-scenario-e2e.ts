@@ -41,7 +41,7 @@ type SmokeMetrics = {
   tileCount: number;
   labeledTiles: number;
   cardRevealPresent: boolean;
-  rightRailPresent: boolean;
+  progressionPresent: boolean;
   insideSafeArea: boolean;
 };
 
@@ -106,13 +106,19 @@ const smokeMatrices: MatrixConfig[] = [
 ];
 
 async function api<T>(pathname: string, options: RequestInit = {}): Promise<T> {
-  const response = await fetch(`${apiBaseUrl}${pathname}`, {
-    ...options,
-    headers: {
-      "Content-Type": "application/json",
-      ...options.headers
-    }
-  });
+  let response: Response;
+  try {
+    response = await fetch(`${apiBaseUrl}${pathname}`, {
+      ...options,
+      headers: {
+        "Content-Type": "application/json",
+        "Connection": "close",
+        ...options.headers
+      }
+    });
+  } catch (error) {
+    throw new Error(`${options.method ?? "GET"} ${pathname} failed before a response`, { cause: error });
+  }
   const payload = await response.json().catch(() => ({}));
 
   if (!response.ok) {
@@ -132,29 +138,53 @@ async function markSeatReady(join: JoinResponse): Promise<WebSocket> {
   const socket = new WebSocket(`${getWsBaseUrl()}/?view=phone&token=${encodeURIComponent(join.seatToken)}`);
 
   await new Promise<void>((resolve, reject) => {
+    let missionRequested = false;
+    let readyRequested = false;
     const timeout = setTimeout(() => {
       socket.close();
       reject(new Error(`Timed out while setting ${join.seatId} ready`));
     }, 5000);
 
-    socket.on("open", () => {
-      socket.send(
-        JSON.stringify({
-          type: "SET_READY",
-          seatId: join.seatId,
-          ready: true
-        })
-      );
-    });
-
     socket.on("message", (raw) => {
-      const message = JSON.parse(String(raw)) as { type?: string; reason?: string; payload?: { seats?: Array<{ seatId: string; ready: boolean }> } };
+      const message = JSON.parse(String(raw)) as {
+        type?: string;
+        reason?: string;
+        payload?: {
+          seats?: Array<{ seatId: string; ready: boolean }>;
+          startingContractOptions?: Array<{ id: string }>;
+          selectedStartingContract?: { id: string } | null;
+        };
+      };
 
       if (message.type === "INTENT_REJECTED") {
         clearTimeout(timeout);
         socket.close();
         reject(new Error(message.reason ?? `Ready rejected for ${join.seatId}`));
         return;
+      }
+
+      const firstMissionId = message.payload?.startingContractOptions?.[0]?.id;
+      if (message.type === "STATE_PATCH" && firstMissionId && !missionRequested) {
+        missionRequested = true;
+        socket.send(
+          JSON.stringify({
+            type: "SELECT_STARTING_CONTRACT",
+            seatId: join.seatId,
+            contractId: firstMissionId
+          })
+        );
+        return;
+      }
+
+      if (message.type === "STATE_PATCH" && message.payload?.selectedStartingContract && !readyRequested) {
+        readyRequested = true;
+        socket.send(
+          JSON.stringify({
+            type: "SET_READY",
+            seatId: join.seatId,
+            ready: true
+          })
+        );
       }
 
       if (
@@ -204,12 +234,19 @@ async function inspectTv(browser: Browser, scenario: ScenarioCatalogEntry, sessi
   page.on("pageerror", (error) => errors.push(error.message));
 
   await page.goto(`${clientBaseUrl}/tv`, { waitUntil: "networkidle" });
-  await page
-    .waitForFunction((scenarioName) => document.body.innerText.toLowerCase().includes(String(scenarioName).toLowerCase()), scenario.name, {
-      timeout: 7000
-    })
-    .catch(() => undefined);
-  await page.waitForTimeout(700);
+  try {
+    await page.waitForFunction(
+      (scenarioName) => {
+        const bodyText = document.body.innerText.toLowerCase();
+        return bodyText.includes(String(scenarioName).toLowerCase()) && document.querySelectorAll(".talisman-board-tile").length >= 27;
+      },
+      scenario.name,
+      { timeout: 10000 }
+    );
+  } catch (error) {
+    const bodyText = (await page.locator("body").innerText()).replace(/\s+/g, " ").slice(0, 500);
+    throw new Error(`TV did not settle for ${scenario.name} in room ${session.roomCode}: ${bodyText}`, { cause: error });
+  }
 
   const metrics = await page.evaluate((scenarioName): SmokeMetrics => {
     const bodyText = document.body.innerText || "";
@@ -235,7 +272,7 @@ async function inspectTv(browser: Browser, scenario: ScenarioCatalogEntry, sessi
       tileCount,
       labeledTiles,
       cardRevealPresent: Boolean(cardReveal),
-      rightRailPresent: /scenario/i.test(bodyText) && /escalation/i.test(bodyText) && /contracts/i.test(bodyText),
+      progressionPresent: /win progression/i.test(bodyText) && /loss pressure/i.test(bodyText),
       insideSafeArea:
         !boardRect ||
         (boardRect.left >= unsafeX &&
@@ -261,7 +298,7 @@ async function inspectPhone(browser: Browser, auth: JoinResponse & { displayName
   const errors: string[] = [];
 
   page.on("console", (message) => {
-    if (message.type() === "error") {
+    if (message.type() === "error" && !/blocked call to navigator\.vibrate/i.test(message.text())) {
       errors.push(message.text());
     }
   });
@@ -299,7 +336,7 @@ function didPass(result: ScenarioSmokeResult): boolean {
     result.tv.metrics.surfacePresent &&
     result.tv.metrics.tileCount >= 27 &&
     result.tv.metrics.labeledTiles >= 27 &&
-    result.tv.metrics.rightRailPresent &&
+    result.tv.metrics.progressionPresent &&
     result.tv.metrics.insideSafeArea &&
     result.phone.metrics.controllerVisible &&
     result.phone.metrics.playerVisible &&
@@ -516,7 +553,6 @@ async function main(): Promise<void> {
           hostToken: session.hostToken
         })
       });
-      readySockets.forEach((socket) => socket.close());
 
       const result: ScenarioSmokeResult = {
         scenarioId: scenario.id,
@@ -527,6 +563,7 @@ async function main(): Promise<void> {
         tv: await inspectTv(browser, scenario, session),
         phone: await inspectPhone(browser, joinedSeats[0]!)
       };
+      readySockets.forEach((socket) => socket.close());
 
       result.pass = didPass(result);
       results.push(result);

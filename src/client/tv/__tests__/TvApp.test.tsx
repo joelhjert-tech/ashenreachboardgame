@@ -1232,13 +1232,13 @@ describe("TvApp", () => {
     expect(screen.queryByTestId("host-battle-overlay")).not.toBeInTheDocument();
     expect(screen.getByText("Tactical map")).toBeInTheDocument();
 
-    await waitFor(() => expect(screen.queryByTestId("tv-movement-journey")).not.toBeInTheDocument(), { timeout: 4_500 });
+    await waitFor(() => expect(screen.queryByTestId("tv-movement-journey")).not.toBeInTheDocument(), { timeout: 8_000 });
     rerender(<TvApp />);
     expect(screen.queryByTestId("host-battle-overlay")).not.toBeInTheDocument();
     expect(screen.getByTestId("host-live-status")).toHaveTextContent(/destination challenge/i);
     expect(screen.getByText("Tactical map")).toBeInTheDocument();
     expect(screen.queryByTestId("tv-movement-journey")).not.toBeInTheDocument();
-  });
+  }, 10_000);
 
   it("shows sector exploration math in the sector brief without duplicating private data", async () => {
     window.localStorage.setItem("ashen-reach-tv-room-code", "RT7P4");
@@ -1486,6 +1486,7 @@ describe("TvApp", () => {
     const chamber = await screen.findByTestId("tv-host-battle-chamber");
     const liveStatus = screen.getByTestId("host-live-status");
     expect(chamber).toHaveTextContent(/rift whispers/i);
+    expect(chamber).toHaveTextContent(/tile challenge resolution/i);
     expect(chamber).toHaveTextContent(/signal/i);
     expect(within(chamber).getByTestId("host-battle-result-banner")).toHaveTextContent(/resolving/i);
     expect(liveStatus).toHaveTextContent(/tile challenge/i);
@@ -1593,6 +1594,8 @@ describe("TvApp", () => {
     });
 
     render(<TvApp />);
+
+    expect(await screen.findByTestId("tv-host-battle-chamber")).toHaveTextContent(/hazard resolution/i);
 
     const overlay = await screen.findByTestId("host-battle-overlay");
     expect(overlay).toHaveTextContent(/signal static/i);

@@ -1270,6 +1270,7 @@ describe("PhoneInventoryPanel", () => {
 
     await waitFor(() => expect(screen.getByTestId("phone-action-screen")).toBeInTheDocument());
     expect(document.querySelector(".phone-portrait-controller")).toHaveClass("phone-shell--battle-active");
+    expect(screen.queryByTestId("phone-action-guidance")).not.toBeInTheDocument();
     expect(screen.queryByRole("tablist", { name: /phone navigation/i })).not.toBeInTheDocument();
     expect(screen.getByRole("navigation", { name: /battle navigation/i })).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: /enter combat/i }));
@@ -1327,6 +1328,9 @@ describe("PhoneInventoryPanel", () => {
 
     openPhoneTabs();
     expect(screen.getByRole("tab", { name: /move/i })).toHaveAttribute("aria-selected", "true");
+    expect(screen.getByTestId("phone-action-guidance")).toHaveAttribute("data-required-tab", "move");
+    expect(screen.getByTestId("phone-action-guidance")).toHaveTextContent(/move.*choose a destination/i);
+    expect(screen.getByRole("tab", { name: /move/i })).toHaveClass("phone-portrait-tab-required");
     fireEvent.click(screen.getByRole("button", { name: /hide ui/i }));
     expect(screen.getByTestId("movement-planner")).toBeInTheDocument();
 
@@ -1389,6 +1393,8 @@ describe("PhoneInventoryPanel", () => {
 
     openPhoneTabs();
     expect(screen.getByRole("tab", { name: /shop/i })).toHaveAttribute("aria-selected", "true");
+    expect(screen.getByTestId("phone-action-guidance")).toHaveAttribute("data-required-tab", "shop");
+    expect(screen.getByTestId("phone-action-guidance")).toHaveTextContent(/shop.*browse equipment/i);
     fireEvent.click(screen.getByRole("button", { name: /hide ui/i }));
     expect(screen.getByTestId("phone-shop-panel")).toBeInTheDocument();
 
@@ -1398,6 +1404,104 @@ describe("PhoneInventoryPanel", () => {
       type: "SHOP_SKIP_REQUESTED",
       seatId: "seat-1"
     });
+  });
+
+  it("lets the owner equip an exact starting Gear instance from inventory", () => {
+    const patch = createPatch({ phase: "action", encounter: null, activeResolution: null });
+    const onIntent = vi.fn();
+    render(<PhoneInventoryPanel patch={patch} onIntent={onIntent} />);
+
+    const fuseCard = screen.getByLabelText(/black route fuse:/i);
+    fireEvent.click(within(fuseCard).getByRole("button", { name: /equip weapon/i }));
+
+    expect(onIntent).toHaveBeenCalledWith(expect.objectContaining({
+      type: "EQUIP_GEAR",
+      seatId: "seat-1",
+      gearId: "black-route-fuse",
+      slot: "weapon"
+    }));
+  });
+
+  it("shows a public-safe waiting instruction instead of another player's controls", () => {
+    const patch = createPatch({
+      activeSeatIndex: 1,
+      turnOrder: ["seat-1", "seat-2"],
+      seats: [
+        ...createPatch().seats,
+        {
+          seatId: "seat-2",
+          characterId: "signal-witch",
+          displayName: "Mira",
+          connected: true,
+          ready: true,
+          kicked: false
+        }
+      ],
+      activeResolution: {
+        id: "seat-2:threat:private-battle",
+        playerId: "seat-2",
+        source: "threat",
+        stage: "battle_setup",
+        card: { id: "private-battle", title: "Hidden foe", type: "enemy", artType: "threat" },
+        battle: { enemyName: "Hidden foe", stat: "signal", difficulty: 8, modifiers: [] }
+      }
+    });
+
+    render(
+      <PortraitControllerView
+        self={patch.self}
+        roomCode="RT7P4"
+        displayName="Lane"
+        connectionStatus="open"
+        activeSeatId="seat-2"
+        activeContractCard={null}
+        patch={patch}
+        characters={characters}
+        onIntent={vi.fn()}
+        onLeave={vi.fn()}
+      />
+    );
+
+    const guidance = screen.getByTestId("phone-action-guidance");
+    expect(guidance).toHaveAttribute("data-required-tab", "waiting");
+    expect(guidance).toHaveTextContent(/waiting for mira/i);
+    expect(guidance).toHaveTextContent(/belongs to another operative/i);
+    expect(screen.queryByTestId("phone-battle-primary-action")).not.toBeInTheDocument();
+    expect(guidance).not.toHaveTextContent(/reaction|option|roll your die/i);
+  });
+
+  it("reasserts the authoritative active tab on every newer server patch", () => {
+    const shopPatch = createPatch({
+      phase: "action",
+      encounter: null,
+      shopEncounter: {
+        sectorId: "outer_waymarket",
+        sectorName: "Anchor Market",
+        shopId: "outer_waymarket",
+        shopName: "Anchor Market",
+        status: "open",
+        activePlayer: { playerId: "seat-1", name: "Lane", characterName: "Deepdale", salvage: 3, wounds: { current: 0, max: 6 } },
+        blockingThreats: [],
+        services: []
+      }
+    });
+    const view = render(
+      <PortraitControllerView self={shopPatch.self} roomCode="RT7P4" displayName="Lane" connectionStatus="open"
+        activeSeatId="seat-1" activeContractCard={null} patch={shopPatch} patchSequence={10}
+        characters={characters} onIntent={vi.fn()} onLeave={vi.fn()} />
+    );
+
+    openPhoneTabs();
+    expect(screen.getByRole("tab", { name: /shop/i })).toHaveAttribute("aria-selected", "true");
+    fireEvent.click(screen.getByRole("tab", { name: /player card/i }));
+    expect(screen.getByRole("tab", { name: /player card/i })).toHaveAttribute("aria-selected", "true");
+
+    view.rerender(
+      <PortraitControllerView self={shopPatch.self} roomCode="RT7P4" displayName="Lane" connectionStatus="open"
+        activeSeatId="seat-1" activeContractCard={null} patch={shopPatch} patchSequence={11}
+        characters={characters} onIntent={vi.fn()} onLeave={vi.fn()} />
+    );
+    expect(screen.getByRole("tab", { name: /shop/i })).toHaveAttribute("aria-selected", "true");
   });
 
   it("shows private rivalry agenda details on the Quest tab", () => {

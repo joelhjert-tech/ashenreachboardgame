@@ -44,7 +44,12 @@ describe("Phase 1 item effect reconnect projection", () => {
     };
 
     const projection = createTvProjection(state) as {
-      players: Array<{ character: { equippedGearDetails?: Array<Record<string, unknown>> } }>;
+      players: Array<{
+        character: {
+          effectiveStats?: Record<string, number>;
+          equippedGearDetails?: Array<Record<string, unknown>>;
+        };
+      }>;
     };
     expect(projection.players[0]?.character.equippedGearDetails).toEqual([expect.objectContaining({
       slot: "utility",
@@ -55,6 +60,9 @@ describe("Phase 1 item effect reconnect projection", () => {
       currentCharges: 1,
       maxCharges: 2
     })]);
+    expect(projection.players[0]?.character.effectiveStats?.[owned.statBonus.stat]).toBe(
+      state.players[0]!.character.stats[owned.statBonus.stat] + owned.statBonus.amount
+    );
     expect(projection.players[0]?.character).not.toHaveProperty("heldGear");
   });
 });

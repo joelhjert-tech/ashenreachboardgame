@@ -54,6 +54,7 @@ import type {
 import { HostPlayerCard } from "./HostPlayerCard.js";
 import { HostBattleChamber } from "./HostBattleChamber.js";
 import { isHostBattleActive } from "./hostBattleState.js";
+import { hostPresentationTimings } from "../shared/motionTokens.js";
 import { HostShopOverlay } from "./HostShopOverlay.js";
 import { isHostShopActive } from "./hostShopState.js";
 import { HostMovementJourney } from "./HostMovementJourney.js";
@@ -813,11 +814,11 @@ function ActiveOperativeOverlay({
         wounds={activePlayer?.character.wounds ?? null}
         scars={activePlayer?.character.scars.length ?? null}
         attributes={{
-          cmd: activePlayer?.character.stats.command ?? null,
-          grit: activePlayer?.character.stats.grit ?? null,
-          signal: activePlayer?.character.stats.signal ?? null,
-          guile: activePlayer?.character.stats.guile ?? null,
-          forge: activePlayer?.character.stats.forge ?? null
+          cmd: activePlayer?.character.effectiveStats?.command ?? activePlayer?.character.stats.command ?? null,
+          grit: activePlayer?.character.effectiveStats?.grit ?? activePlayer?.character.stats.grit ?? null,
+          signal: activePlayer?.character.effectiveStats?.signal ?? activePlayer?.character.stats.signal ?? null,
+          guile: activePlayer?.character.effectiveStats?.guile ?? activePlayer?.character.stats.guile ?? null,
+          forge: activePlayer?.character.effectiveStats?.forge ?? activePlayer?.character.stats.forge ?? null
         }}
         gearSummary={getGearSummary(activePlayer)}
         equippedGearDetails={activePlayer?.character.equippedGearDetails ?? []}
@@ -1063,7 +1064,7 @@ function TvStartupScreen({
 
   return (
     <main className="tv-startup-screen" aria-label="Ashen Reach startup">
-      <section className="tv-startup-card">
+      <section className={`tv-startup-card${joinedSeats.length >= 5 ? " tv-startup-card--crowded" : ""}`}>
         <div className="tv-startup-brand">
           <span>ASHEN REACH</span>
           <h1>{waitingCopy}</h1>
@@ -2228,6 +2229,10 @@ function TacticalMapPanel({
     if (!visualTravel) return;
     const finalStep = Math.max(visualTravel.arrival.destination.route.length - 1, 1);
     const reducedMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches === true;
+    const route = visualTravel.arrival.destination.route;
+    const currentRing = getBoardSpace(route[Math.min(visualTravel.step, route.length - 1)] ?? "")?.tier ?? null;
+    const nextRing = getBoardSpace(route[Math.min(visualTravel.step + 1, route.length - 1)] ?? "")?.tier ?? null;
+    const crossingRings = Boolean(currentRing && nextRing && currentRing !== nextRing);
     const timeout = window.setTimeout(() => {
       setVisualTravel((current) => {
         if (!current || current.key !== visualTravel.key) return current;
@@ -2236,7 +2241,15 @@ function TacticalMapPanel({
         completedTravelKeyRef.current = current.key;
         return null;
       });
-    }, reducedMotion ? 120 : visualTravel.arrived ? 650 : 360);
+    }, reducedMotion
+      ? 120
+      : visualTravel.arrived
+        ? hostPresentationTimings.movementArrivalMs
+        : visualTravel.step === 0
+          ? hostPresentationTimings.movementStartMs
+          : crossingRings
+            ? hostPresentationTimings.movementCrossRingMs
+            : hostPresentationTimings.movementSegmentMs);
     return () => window.clearTimeout(timeout);
   }, [visualTravel]);
   // A newly arrived authoritative patch may already contain the encounter that
@@ -2979,7 +2992,7 @@ export function TvApp(): ReactElement {
                 playerCount={playerCount}
                 joinedCount={joinedSeats.length}
                 readyCount={readySeats.length}
-                seatCapacity={publicPatch?.payload.seats.length ?? (liveSessionMode === "single-player" ? 1 : 3)}
+                seatCapacity={publicPatch?.payload.seats.length ?? (liveSessionMode === "single-player" ? 1 : 6)}
                 activeSeatId={activeSeatId}
                 status={status}
                 debugOpen={debugOpen}
@@ -2988,22 +3001,17 @@ export function TvApp(): ReactElement {
                 scenarioCatalog={scenarioCatalog}
                 lobbyPath={lobbyPath}
                 onLobbyPathSelected={selectLobbyPath}
-                onLobbyBack={() => {
-                  setRequestError(null);
-                  setLobbyPath(null);
-                }}
+                onLobbyBack={() => { setRequestError(null); setLobbyPath(null); }}
                 onScenarioSelected={setSelectedScenarioId}
                 onInteractionModeSelected={setInteractionMode}
                 onPlayerCountSelected={setPlayerCount}
                 onCreateSession={createHostSession}
-                onRestartSession={() => {
-                  setRequestError(null);
-                  sendIntent({ type: "RESTART_SESSION" });
-                }}
+                onRestartSession={() => { setRequestError(null); sendIntent({ type: "RESTART_SESSION" }); }}
                 onStartSession={startHostSession}
                 canStartSession={startReadiness.canStart}
                 startSessionReason={startReadiness.reason}
               />}
+
             </>
           )}
         </section>

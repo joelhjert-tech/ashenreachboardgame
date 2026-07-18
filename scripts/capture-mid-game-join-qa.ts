@@ -81,7 +81,7 @@ async function main(): Promise<void> {
   await captureTv(tv, output, "two-player-session-active");
 
   await third.goto(`${clientOrigin}/?room=${session.roomCode}&resetAuth=1`);
-  await third.getByLabel("Player name").fill("Late Player");
+  await third.getByLabel("Player name").fill("LatePlay");
   await third.getByRole("button", { name: "Join Game" }).click();
   await third.getByRole("heading", { name: "Select operative" }).waitFor();
   await captureTv(tv, output, "late-join-operative-pending");
@@ -114,7 +114,7 @@ async function main(): Promise<void> {
   await captureTv(tv, output, "full-room");
 
   await rejected.goto(`${clientOrigin}/?room=${session.roomCode}&resetAuth=1`);
-  await rejected.getByLabel("Player name").fill("Rejected Player");
+  await rejected.getByLabel("Player name").fill("Reject");
   await rejected.getByRole("button", { name: "Join Game" }).click();
   await rejected.getByText(/No open seats remain/i).waitFor();
   await rejected.screenshot({ path: join(output, "full-room-join-rejected-390x844.png"), fullPage: false });

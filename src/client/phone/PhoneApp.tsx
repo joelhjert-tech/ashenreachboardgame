@@ -14,6 +14,12 @@ import { useRoomSubscription } from "../shared/useRoomSubscription.js";
 import { getCharacterPortraitPath } from "../shared/assetPaths.js";
 import { MobileDebugDrawer } from "./MobileDebugDrawer.js";
 import { PortraitControllerView } from "./PortraitControllerView.js";
+import {
+  FORCED_POPELORD_CHARACTER_ID,
+  getSubmittedDisplayNameError,
+  MAX_PLAYER_DISPLAY_NAME_LENGTH,
+  requiresPopelordForDisplayName
+} from "../../game/rules/playerIdentity.js";
 
 const storageKey = "ashenreach.controllerSession";
 const legacyStorageKey = "ashen-reach-phone-auth";
@@ -237,6 +243,7 @@ export function PhoneApp(): ReactElement {
     displayName: "",
     characterId: ""
   }));
+  const [configuredPlayerCount, setConfiguredPlayerCount] = useState(6);
   const [pendingCharacterId, setPendingCharacterId] = useState<string | null>(null);
   const [characterSelectionRetryRequired, setCharacterSelectionRetryRequired] = useState(false);
   const [auth, setAuth] = useState<PhoneSessionAuth | null>(() => readStoredAuth());
@@ -295,6 +302,11 @@ export function PhoneApp(): ReactElement {
   const handleNameSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setJoinError(null);
+    const displayNameError = getSubmittedDisplayNameError(formState.displayName);
+    if (displayNameError) {
+      setJoinError(displayNameError);
+      return;
+    }
     setJoiningRoom(true);
 
     try {
@@ -343,7 +355,7 @@ export function PhoneApp(): ReactElement {
     try {
       await configureSessionFromPhone(auth, {
         mode,
-        playerCount: mode === "single-player" ? 1 : 4,
+        playerCount: mode === "single-player" ? 1 : mode === "nemesis" ? Math.min(configuredPlayerCount, 4) : configuredPlayerCount,
         ...(selectedScenarioId ? { scenarioId: selectedScenarioId } : {})
       });
     } catch (configureFailure) {
@@ -400,8 +412,13 @@ export function PhoneApp(): ReactElement {
     [characters]
   );
   const displayCharacters = useMemo(
-    () => sortedCharacters.filter((character) => matchesCharacterFilter(character, characterFilter)),
-    [characterFilter, sortedCharacters]
+    () => {
+      const popelordRequired = requiresPopelordForDisplayName(auth?.displayName ?? formState.displayName);
+      return sortedCharacters.filter((character) => popelordRequired
+        ? character.id === FORCED_POPELORD_CHARACTER_ID
+        : matchesCharacterFilter(character, characterFilter));
+    },
+    [auth?.displayName, characterFilter, formState.displayName, sortedCharacters]
   );
   const portraitPlayerName = auth?.displayName || "Ashen Reach Controller";
   const portraitRoomCode = auth?.roomCode || formState.roomCode || "Awaiting room";
@@ -546,6 +563,7 @@ export function PhoneApp(): ReactElement {
                         autoComplete="nickname"
                         spellCheck={false}
                         value={formState.displayName}
+                        maxLength={MAX_PLAYER_DISPLAY_NAME_LENGTH}
                         onChange={(event) => {
                           setJoinError(null);
                           setFormState((current) => ({ ...current, displayName: event.target.value }));
@@ -627,6 +645,19 @@ export function PhoneApp(): ReactElement {
                       </option>
                     ))}
                   </select>
+                </label>
+                <label className="field phone-host-player-count-picker">
+                  <span>Players</span>
+                  <select
+                    aria-label="Players"
+                    value={configuredPlayerCount}
+                    onChange={(event) => setConfiguredPlayerCount(Number(event.target.value))}
+                  >
+                    {Array.from({ length: 5 }, (_, index) => index + 2).map((count) => (
+                      <option key={count} value={count}>{count} players</option>
+                    ))}
+                  </select>
+                  <small>Co-op and Rivalry support up to six. Nemesis supports up to four.</small>
                 </label>
                 <div className="phone-host-mode-grid">
                   <button type="button" className="phone-button phone-button-primary" onClick={() => void handleConfigureLobby("single-player")}>
@@ -776,7 +807,10 @@ export function PhoneApp(): ReactElement {
             activeSeatId={activeSeatId}
             activeContractCard={activeContractCard ?? null}
             patch={phonePatch?.payload ?? null}
-            characters={characters}
+            patchSequence={phonePatch?.sequence}
+            characters={requiresPopelordForDisplayName(auth.displayName)
+              ? characters.filter((character) => character.id === FORCED_POPELORD_CHARACTER_ID)
+              : characters}
             onIntent={canSendLobbyIntent ? sendIntent : null}
             onLeave={clearSession}
             onLobbyBack={() => void backToCharacterSelect()}

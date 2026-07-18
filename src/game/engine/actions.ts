@@ -306,6 +306,7 @@ export type ShopServiceResult = {
   gainGear?: GearItem;
   discardGearId?: string;
   note?: string;
+  repairGearInstanceId?: string;
 };
 
 export interface ShopServiceResolvedAction extends BaseAction {
@@ -897,6 +898,7 @@ export type ClientIntent =
       type: "SHOP_SERVICE_REQUESTED";
       seatId: string;
       serviceId: string;
+      itemInstanceId?: string;
     }
   | {
       type: "SHOP_PURCHASE_REQUESTED";

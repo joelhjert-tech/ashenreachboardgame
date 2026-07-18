@@ -83,6 +83,7 @@ export interface PublicPlayerCharacter {
   status: "active" | "recalled";
   activeContract: { contractId: string; progress: number; completedTargetIds?: string[]; salvageSpent?: number } | null;
   stats: Record<Stat, number>;
+  effectiveStats?: Record<Stat, number>;
   statUpgrades?: Partial<Record<Stat, number>>;
   trophies: number;
   trophyPile?: TrophyPileEntry[];
@@ -138,6 +139,7 @@ export interface GearItem {
   slot: GearSlot;
   statBonus: { stat: Stat; amount: number };
   category?: GearCategory;
+  subtype?: "weapon" | "armor" | "utility" | "consumable" | "supply" | "quest" | "artifact";
   shopCategories?: ShopCategory[];
   cost?: number;
   sellValue?: number;
@@ -603,6 +605,14 @@ export interface PublicShopEncounterState {
     risk?: string;
     enabled: boolean;
     disabledReason?: string;
+  }>;
+  repairTargets?: Array<{
+    gearId: string;
+    instanceId: string;
+    name: string;
+    kind: "charges" | "exhaust";
+    currentCharges?: number;
+    maxCharges?: number;
   }>;
   revealedStock?: Array<{
     cardId: string;
@@ -1292,6 +1302,7 @@ export type ClientIntent =
       type: "SHOP_SERVICE_REQUESTED";
       seatId: string;
       serviceId: string;
+      itemInstanceId?: string;
     }
   | {
       type: "SHOP_PURCHASE_REQUESTED";
