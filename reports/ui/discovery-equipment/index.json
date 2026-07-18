@@ -1,0 +1,95 @@
+{
+  "generatedAt": "2026-07-18T17:53:04.573Z",
+  "captures": [
+    {
+      "file": "phone-equipment-reveal-390x844.png",
+      "stage": "equipment-reveal",
+      "viewport": "390x844"
+    },
+    {
+      "file": "tv-equipment-reveal-1920x1080.png",
+      "stage": "equipment-reveal",
+      "viewport": "1920x1080"
+    },
+    {
+      "file": "tv-equipment-reveal-1366x768.png",
+      "stage": "equipment-reveal",
+      "viewport": "1366x768"
+    },
+    {
+      "file": "phone-follower-reveal-390x844.png",
+      "stage": "follower-reveal",
+      "viewport": "390x844"
+    },
+    {
+      "file": "tv-follower-reveal-1920x1080.png",
+      "stage": "follower-reveal",
+      "viewport": "1920x1080"
+    },
+    {
+      "file": "tv-follower-reveal-1366x768.png",
+      "stage": "follower-reveal",
+      "viewport": "1366x768"
+    },
+    {
+      "file": "phone-auto-equipped-390x844.png",
+      "stage": "auto-equipped",
+      "viewport": "390x844"
+    },
+    {
+      "file": "tv-auto-equipped-1920x1080.png",
+      "stage": "auto-equipped",
+      "viewport": "1920x1080"
+    },
+    {
+      "file": "tv-auto-equipped-1366x768.png",
+      "stage": "auto-equipped",
+      "viewport": "1366x768"
+    },
+    {
+      "file": "phone-equip-choice-390x844.png",
+      "stage": "equip-choice",
+      "viewport": "390x844"
+    },
+    {
+      "file": "tv-equip-choice-1920x1080.png",
+      "stage": "equip-choice",
+      "viewport": "1920x1080"
+    },
+    {
+      "file": "tv-equip-choice-1366x768.png",
+      "stage": "equip-choice",
+      "viewport": "1366x768"
+    },
+    {
+      "file": "phone-command-item-invalid-390x844.png",
+      "stage": "command-item-invalid",
+      "viewport": "390x844"
+    },
+    {
+      "file": "tv-command-item-invalid-1920x1080.png",
+      "stage": "command-item-invalid",
+      "viewport": "1920x1080"
+    },
+    {
+      "file": "tv-command-item-invalid-1366x768.png",
+      "stage": "command-item-invalid",
+      "viewport": "1366x768"
+    },
+    {
+      "file": "phone-grit-item-valid-390x844.png",
+      "stage": "grit-item-valid",
+      "viewport": "390x844"
+    },
+    {
+      "file": "tv-grit-item-valid-1920x1080.png",
+      "stage": "grit-item-valid",
+      "viewport": "1920x1080"
+    },
+    {
+      "file": "tv-grit-item-valid-1366x768.png",
+      "stage": "grit-item-valid",
+      "viewport": "1366x768"
+    }
+  ]
+}
