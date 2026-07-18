@@ -600,6 +600,22 @@ const SCENARIO_AMBIENT_RULES: Record<string, ScenarioAmbientRule> = {
         summary: `Recovered artifact output steadies the star. ${gainedGearCount * 2} Starfire token${gainedGearCount === 1 ? "" : "s"} return to the track.`
       };
     }
+  },
+  scenario_broken_concordance: {
+    initialProgress: {},
+    describePressure: (state) => {
+      const nodes = state.scenarioPreparation.completedObjectiveIds.filter((id) => id.startsWith("concordance-node-")).length;
+      const stages = state.scenarioConfrontation.progress.concordanceStages ?? 0;
+      return `${nodes}/3 Concordance nodes stabilized and ${stages}/3 Hollow Regent stages complete. Failed scenario tests advance Global Escalation.`;
+    },
+    buildTelemetry: (state) => [
+      {
+        label: "Concordance Nodes",
+        value: `${state.scenarioPreparation.completedObjectiveIds.filter((id) => id.startsWith("concordance-node-")).length}/3`
+      },
+      { label: "Core Stages", value: `${state.scenarioConfrontation.progress.concordanceStages ?? 0}/3` },
+      { label: "Assistance", value: "1-2 consenting helpers required" }
+    ]
   }
 };
 

@@ -925,6 +925,106 @@ export const SCENARIOS: ScenarioDefinition[] = [
     sheetArtAssetId: "scenario_sheet_dying_star",
     sheetArtPrompt:
       "Collapsing blue-white star trapped in a black shrine reactor, bronze vanes cracking under heat bloom and ash, operatives racing across a command platform, printable scenario sheet illustration, no text."
+  },
+  {
+    id: "scenario_broken_concordance",
+    name: "The Broken Concordance",
+    theme:
+      "Before the Reach fractured, the Concordance carried warnings and stored memory between every relay settlement. Now the Hollow Regent gathers those broken voices into one obedient chorus. Restore the severed nodes, hold fast to your separate names, and silence the Regent before the Reach becomes a single mind.",
+    pressureRule:
+      "Failed node and confrontation tests advance Global Escalation by 1; the scenario creates no second pressure track.",
+    expectedDuration: "55-75 min",
+    mode: "coop",
+    supportedPlayerCounts: { min: 2, max: 6 },
+    supportedModes: ["co-op"],
+    publicDisplay: {
+      modeLabel: "2-6 Player Co-op",
+      objective: "Restore three severed relay nodes, then silence the Hollow Regent beneath the Core.",
+      privacy: "Node and confrontation progress are public; helper selection and response controls remain on the relevant phones."
+    },
+    privateMetadata: {
+      reservedForPhonePayloads: false,
+      hiddenAgendaReveal: "not-implemented",
+      notes: "This cooperative scenario is unavailable in solo, Rivalry, competitive, and Nemesis Relay sessions."
+    },
+    victoryCondition: "Earn victory by stabilizing all three Concordance nodes, breaching the Gate of Cinders, and completing all three Core stages.",
+    lossCondition: "The normal cooperative loss systems apply; failed Concordance tests feed Global Escalation.",
+    pressureTrack: {
+      name: "Global Escalation",
+      start: 0,
+      max: 10,
+      tickTiming: "Only through the existing shared escalation lifecycle and failed Concordance tests.",
+      collapseRule: "The normal Global Escalation loss threshold applies."
+    },
+    boardHooks: {
+      blueThreat: "Signal interference surrounds the severed relay nodes.",
+      shrine: "Black Relay Spire carries the first broken voice.",
+      anomaly: "Webglass Breach and Cinder Lattice hold the deeper command threads."
+    },
+    progressSources: [
+      "Stabilize Black Relay Voice with a Signal test and at least one helper.",
+      "Stabilize Webglass Command Thread with a Command test and at least one helper.",
+      "Stabilize Cinder Memory Lattice with a Guile test and at least one helper."
+    ],
+    finalGateRequirement:
+      "Stabilize all three nodes, breach the Gate of Cinders, and enter through the normal center approach.",
+    scenarioRewards: [
+      { id: "separate-name-cipher", name: "Separate-Name Cipher", type: "boon", text: "A public Concordance mark recording that the operative resisted the chorus." },
+      { id: "relay-choir-breaker", name: "Relay Choir Breaker", type: "tactic", timing: "Concordance test", text: "Scenario identity marker for a successfully stabilized relay node." },
+      { id: "memory-light-shard", name: "Memory-Light Shard", type: "gear", text: "A narrative shard recovered from a restored command thread." },
+      { id: "regents-silence", name: "Regent's Silence", type: "boon", text: "The public victory record left after the Hollow Regent is silenced." }
+    ],
+    nemesis: "The Hollow Regent",
+    shopInteractions: [
+      "Normal shops remain unchanged; Equipment cannot replace the required consent of another operative.",
+      "Services may prepare an operative normally, but no shop directly stabilizes a Concordance node."
+    ],
+    tileEventHooks: [
+      "Mark Black Relay Spire, Webglass Breach, and Cinder Lattice as Concordance nodes.",
+      "A stabilized node remains stable for the rest of the session."
+    ],
+    modeScaling: {
+      multiplayer: "Every node and Core stage requires at least one consenting helper; up to two helpers may contribute."
+    },
+    setup: [
+      "Place one severed Concordance node marker at Black Relay Spire.",
+      "Place one severed Concordance node marker at Webglass Breach.",
+      "Place one severed Concordance node marker at Cinder Lattice."
+    ],
+    specialRules: [
+      "Before an eligible skill roll, the active operative may ask up to two teammates for help.",
+      "Each accepted helper adds only their intrinsic base value in the tested skill and rolls no die.",
+      "Each Concordance node and Core stage requires at least one accepted helper.",
+      "Failed Concordance tests advance Global Escalation by 1."
+    ],
+    confrontationTitle: "Silence the Hollow Regent",
+    confrontationSteps: [
+      "Break the Chorus with Command 12.",
+      "Sever the Relay with Signal 12.",
+      "Hold Your Name with Grit 15.",
+      "Each stage requires at least one accepted helper and advances confrontation progress only on success."
+    ],
+    victoryText: "Complete all three Core stages at the Cinder Gate to silence the Hollow Regent and win.",
+    designFeel: "A consent-driven cooperative finale where each operative remains distinct by lending only intrinsic skill.",
+    difficulty: "hard",
+    recommendedRolloutOrder: 7,
+    confrontationText:
+      "At the Cinder Gate, break the chorus, sever the buried relay, and hold your separate names. Every stage requires cooperative assistance.",
+    winConditionKey: "concordanceStages",
+    victoryThreshold: 3,
+    buildConfrontationPlan: () => ({
+      checks: [
+        { stat: "command", difficulty: 12, label: "Break the Chorus" },
+        { stat: "signal", difficulty: 12, label: "Sever the Relay" },
+        { stat: "grit", difficulty: 15, label: "Hold Your Name" }
+      ],
+      markLabel: "severed command thread",
+      effect: null,
+      victorySummary: "The Hollow Regent fell silent and every operative kept their own name."
+    }),
+    sheetArtAssetId: "scenario_sheet_broken_concordance",
+    sheetArtPrompt:
+      "Fractured relay cathedral of black iron, pale memory light, broken masks suspended in signal echoes, restrained orange embers, Hollow Regent silhouette beneath a severed command halo, original grimdark science-fiction scenario illustration, no text."
   }
 ];
 
@@ -932,4 +1032,22 @@ export const SCENARIO_INDEX = new Map(SCENARIOS.map((scenario) => [scenario.id, 
 
 export function getScenarioDefinition(scenarioId: string): ScenarioDefinition | null {
   return SCENARIO_INDEX.get(scenarioId) ?? null;
+}
+
+export function isScenarioEligibleForSession(
+  scenario: ScenarioDefinition,
+  sessionMode: "multiplayer" | "single-player",
+  interactionMode: "co-op" | "rivalry" | "ruthless",
+  gameMode: "standard" | "nemesis_relay",
+  playerCount: number
+): boolean {
+  // Existing scenarios predate runtime mode filtering; retain their accepted setup combinations.
+  // The Broken Concordance is the first scenario whose cooperative-only boundary is authoritative.
+  if (scenario.id !== "scenario_broken_concordance") return true;
+  return playerCount >= scenario.supportedPlayerCounts.min &&
+    playerCount <= scenario.supportedPlayerCounts.max &&
+    sessionMode === "multiplayer" &&
+    interactionMode === "co-op" &&
+    gameMode === "standard" &&
+    scenario.supportedModes.includes("co-op");
 }

@@ -6,7 +6,8 @@ const scenarioSheetArtByScenarioId: Partial<Record<string, string>> = {
   scenario_mirror_of_false_heroes: "/assets/scenarios/mirror-of-false-heroes.png",
   scenario_devourer_beneath: "/assets/scenarios/ashwalk-breach.png",
   scenario_labyrinth_engine: "/assets/scenarios/manufactorum-hollow-choir.png",
-  scenario_dying_star: "/assets/scenarios/relic-core-awakens.png"
+  scenario_dying_star: "/assets/scenarios/relic-core-awakens.png",
+  scenario_broken_concordance: "/assets/scenarios/broken-concordance.png"
 };
 
 const scenarioSheetOutputByAssetId: Partial<Record<string, string>> = {
@@ -15,7 +16,8 @@ const scenarioSheetOutputByAssetId: Partial<Record<string, string>> = {
   scenario_sheet_mirror_of_false_heroes: "/assets/scenarios/mirror-of-false-heroes.png",
   scenario_sheet_devourer_beneath: "/assets/scenarios/ashwalk-breach.png",
   scenario_sheet_labyrinth_engine: "/assets/scenarios/manufactorum-hollow-choir.png",
-  scenario_sheet_dying_star: "/assets/scenarios/relic-core-awakens.png"
+  scenario_sheet_dying_star: "/assets/scenarios/relic-core-awakens.png",
+  scenario_sheet_broken_concordance: "/assets/scenarios/broken-concordance.png"
 };
 
 export function getScenarioSheetArtPath(scenario: Pick<ScenarioDefinition, "id"> | string): string | null {
