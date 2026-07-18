@@ -1962,6 +1962,7 @@ describe("PhoneInventoryPanel", () => {
     const self = base.self!;
     const patch = {
       ...base,
+      pendingMissionSelection: { id: "replacement-1", completedContractId: completedContract.id, status: "awaitingSelection" as const, options: [nextContract] },
       self: {
         ...self,
         character: { ...self.character, activeContract: null, completedContracts: [completedContract.id] }
@@ -1993,8 +1994,9 @@ describe("PhoneInventoryPanel", () => {
     expect(within(chooser).queryByText("Choir Hush Census")).not.toBeInTheDocument();
     fireEvent.click(within(chooser).getByRole("button", { name: /select mission/i }));
     expect(onIntent).toHaveBeenCalledWith({
-      type: "ACCEPT_CONTRACT",
+      type: "SELECT_REPLACEMENT_CONTRACT",
       seatId: "seat-1",
+      selectionId: "replacement-1",
       contractId: nextContract.id
     });
   });
@@ -2032,6 +2034,7 @@ describe("PhoneInventoryPanel", () => {
     );
     const completed = {
       ...initial,
+      pendingMissionSelection: { id: "replacement-2", completedContractId: contract.id, status: "awaitingSelection" as const, options: [nextContract] },
       self: {
         ...initial.self!,
         character: { ...initial.self!.character, activeContract: null, completedContracts: [contract.id] }

@@ -236,7 +236,6 @@ describe("canonical sector graph", () => {
       },
       reward: { type: "gain_salvage", amount: 2 }
     };
-    const missionTwo = state.availableContracts.find((contract) => contract.id !== mission.id)!;
     state.availableContracts.push(mission);
     state.status = "active";
     state.phase = "resolution";
@@ -292,11 +291,29 @@ describe("canonical sector graph", () => {
     expect((phone.self as unknown as { character: { completedContracts: string[] } }).character.completedContracts).toEqual([mission.id]);
     expect(tv.players.find((player) => player.seatId === "seat-1")?.character.activeContract ?? null).toBeNull();
 
-    server.getState().phase = "action";
+    server.getState().activeResolution = null;
+    (server as unknown as { runAutomaticPhases: (seatId: string) => void }).runAutomaticPhases("seat-1");
+    const selection = server.getState().pendingMissionSelection!;
+    expect(selection.status).toBe("awaitingSelection");
+    expect(selection.optionIds).toHaveLength(3);
+    expect(selection.optionIds).not.toContain(mission.id);
+    const ownerSelection = createPhoneProjection(server.getState(), "seat-1") as unknown as PhonePatchPayload;
+    const publicSelection = createTvProjection(server.getState()) as unknown as PublicPatchPayload;
+    expect(ownerSelection.pendingMissionSelection?.options.map((contract) => contract.id)).toEqual(selection.optionIds);
+    expect(publicSelection.pendingMissionSelectionStatus).toEqual({ ownerSeatId: "seat-1", status: "awaitingSelection" });
+    expect(JSON.stringify(publicSelection.pendingMissionSelectionStatus)).not.toContain(selection.optionIds[0]);
     const sent: Array<Record<string, unknown>> = [];
     const client: ConnectedClient = { seatId: "seat-1", view: "phone", socket: { send: (payload: string) => sent.push(JSON.parse(payload)), close() {} } as unknown as ConnectedClient["socket"] };
-    server.handleIntent(client, { type: "ACCEPT_CONTRACT", seatId: "seat-1", contractId: missionTwo.id });
-    expect(server.getState().players[0]!.character.activeContract?.contractId).toBe(missionTwo.id);
+    const offeredMissionId = selection.optionIds[0]!;
+    server.handleIntent(client, { type: "SELECT_REPLACEMENT_CONTRACT", seatId: "seat-1", selectionId: selection.id, contractId: "not-offered" });
+    expect(sent.at(-1)).toMatchObject({ type: "INTENT_REJECTED", actionType: "SELECT_REPLACEMENT_CONTRACT" });
+    expect(server.getState().pendingMissionSelection?.id).toBe(selection.id);
+    expect(server.getState().players[0]!.character.activeContract).toBeNull();
+    server.handleIntent(client, { type: "SELECT_REPLACEMENT_CONTRACT", seatId: "seat-1", selectionId: selection.id, contractId: offeredMissionId });
+    expect(server.getState().players[0]!.character.activeContract?.contractId).toBe(offeredMissionId);
+    server.handleIntent(client, { type: "SELECT_REPLACEMENT_CONTRACT", seatId: "seat-1", selectionId: selection.id, contractId: offeredMissionId });
+    expect(sent.at(-1)).toMatchObject({ type: "INTENT_REJECTED", actionType: "SELECT_REPLACEMENT_CONTRACT" });
+    expect(server.getState().eventLog.filter((event) => (event as { type?: string }).type === "REPLACEMENT_MISSION_SELECTED")).toHaveLength(1);
 
     server.getState().phase = "resolution";
     server.getState().resolutionSource = "tileChallenge";

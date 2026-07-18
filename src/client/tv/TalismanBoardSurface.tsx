@@ -49,7 +49,11 @@ export interface TilePlayerMarker {
 export interface TileMissionMarker {
   seatId: string;
   playerLabel: string;
-  missionTitle: string;
+  seatIndex: number;
+  seatNumber: number;
+  initial: string;
+  color: string;
+  pattern: string;
   reason: string;
 }
 
@@ -308,11 +312,20 @@ export function TalismanBoardSurface({
             )}
             {isMissionTarget && (
               <span
-                className="talisman-board-mission-badge"
+                className="talisman-board-mission-markers"
                 data-testid={`mission-marker-${node.id}`}
-                title={missionMarkers.map((marker) => `${marker.playerLabel}: ${marker.missionTitle}`).join(" | ")}
+                aria-label={`Public mission destination for ${missionMarkers.map((marker) => marker.playerLabel).join(", ")}`}
               >
-                Mission
+                {missionMarkers.map((marker) => (
+                  <span
+                    key={marker.seatId}
+                    className={`talisman-board-mission-badge is-${marker.pattern}`}
+                    style={{ ["--mission-seat-color" as string]: marker.color }}
+                    title={`Seat ${marker.seatNumber} · ${marker.playerLabel}`}
+                  >
+                    <b>{marker.initial}</b><small>{marker.seatNumber}</small>
+                  </span>
+                ))}
               </span>
             )}
             {playerMarkers.length > 0 && (

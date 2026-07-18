@@ -194,6 +194,7 @@ export function createInitialSessionState(
     pendingEnemyRoll: null,
     cooperativeAssistance: null,
     pendingCooperativeTest: null,
+    pendingMissionSelection: null,
     pendingEffect: null,
     pendingFailureReaction: null,
     pendingStaticIntercessionReaction: null,

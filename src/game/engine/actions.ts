@@ -983,6 +983,7 @@ export type ClientIntent =
       seatId: string;
       contractId: string;
     }
+  | { type: "SELECT_REPLACEMENT_CONTRACT"; seatId: string; selectionId: string; contractId: string }
   | {
       type: "SCENARIO_CONFRONTATION_REQUESTED";
       seatId: string;

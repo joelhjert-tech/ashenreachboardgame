@@ -392,6 +392,7 @@ const CLIENT_INTENT_TYPES = new Set<string>([
   "SHOP_SKIP_REQUESTED",
   "ACCEPT_CONTRACT",
   "COMPLETE_CONTRACT",
+  "SELECT_REPLACEMENT_CONTRACT",
   "SCENARIO_CONFRONTATION_REQUESTED",
   "COOPERATIVE_ASSISTANCE_REQUESTED",
   "COOPERATIVE_ASSISTANCE_RESPONDED",
@@ -708,6 +709,19 @@ export class GameRoomServer {
         return;
       }
 
+      if (intent.type === "ACCEPT_CONTRACT" && this.state.pendingMissionSelection?.ownerSeatId === intent.seatId) {
+        throw new IntentRejectedError(intent.type, "Use the authoritative replacement mission offer");
+      }
+
+      if (intent.type === "SELECT_REPLACEMENT_CONTRACT") {
+        this.selectReplacementContract(intent);
+        this.broadcastPatch();
+        if (this.state.phase === "broadcast" && !this.state.activeResolution) {
+          this.completeBroadcastTurn(intent.seatId);
+        }
+        return;
+      }
+
       if (intent.type === "COOPERATIVE_ASSISTANCE_REQUESTED") {
         this.resolveCooperativeAssistanceRequest(intent);
         this.broadcastPatch();
@@ -813,6 +827,9 @@ export class GameRoomServer {
       }
       const action = this.intentToAction(intent);
       this.applyAction(action);
+      if (action.type === "COMPLETE_CONTRACT") {
+        this.queueReplacementMissionSelection(action.seatId, action.contractId);
+      }
 
       if (action.type === "SHOP_PURCHASE_RESOLVED" && action.serviceId === "buy-gear") {
         this.replenishShopEquipmentStock(action.seatId, action.sectorId, action.createdAt);
@@ -1618,6 +1635,10 @@ export class GameRoomServer {
       case "ACCEPT_CONTRACT":
       case "SELECT_STARTING_CONTRACT":
       case "COMPLETE_CONTRACT":
+        requireStringField(message, "contractId", type);
+        break;
+      case "SELECT_REPLACEMENT_CONTRACT":
+        requireStringField(message, "selectionId", type);
         requireStringField(message, "contractId", type);
         break;
       case "RESOLVE_SPACE_TEXT":
@@ -3367,6 +3388,77 @@ export class GameRoomServer {
     return options;
   }
 
+  private queueReplacementMissionSelection(seatId: string, completedContractId: string): void {
+    if (this.state.pendingMissionSelection || this.state.players.find((entry) => entry.seatId === seatId)?.character.activeContract) return;
+    const unavailable = new Set(this.state.players.flatMap((entry) => [
+      ...(entry.character.completedContracts ?? []),
+      ...(entry.character.activeContract ? [entry.character.activeContract.contractId] : [])
+    ]));
+    const optionIds = this.state.availableContracts
+      .map((contract) => contract.id)
+      .filter((contractId) => !unavailable.has(contractId))
+      .sort((left, right) =>
+        stableSetupHash(`${this.state.sessionId}:${seatId}:${completedContractId}:${left}`) -
+        stableSetupHash(`${this.state.sessionId}:${seatId}:${completedContractId}:${right}`)
+      )
+      .slice(0, 3);
+    const createdAt = new Date().toISOString();
+    const selectionId = `mission:${seatId}:${completedContractId}:${this.state.sequence + 1}`;
+    this.state = {
+      ...this.state,
+      sequence: this.state.sequence + 1,
+      pendingMissionSelection: optionIds.length > 0 ? {
+        id: selectionId,
+        ownerSeatId: seatId,
+        completedContractId,
+        optionIds,
+        status: "queued",
+        continuationPhase: "broadcast",
+        createdAt
+      } : null,
+      eventLog: [...this.state.eventLog, {
+        type: optionIds.length > 0 ? "REPLACEMENT_MISSION_OFFERED" : "REPLACEMENT_MISSION_UNAVAILABLE",
+        seatId,
+        selectionId,
+        completedContractId,
+        optionIds,
+        createdAt
+      }]
+    };
+  }
+
+  private selectReplacementContract(intent: Extract<ClientIntent, { type: "SELECT_REPLACEMENT_CONTRACT" }>): void {
+    const pending = this.state.pendingMissionSelection;
+    if (!pending || pending.id !== intent.selectionId || pending.status !== "awaitingSelection") {
+      throw new IntentRejectedError(intent.type, "Replacement mission selection is stale");
+    }
+    if (pending.ownerSeatId !== intent.seatId) throw new IntentRejectedError(intent.type, "Only the mission owner may select a replacement");
+    if (!pending.optionIds.includes(intent.contractId)) throw new IntentRejectedError(intent.type, "Mission was not offered");
+    const contract = this.state.availableContracts.find((entry) => entry.id === intent.contractId);
+    if (!contract) throw new IntentRejectedError(intent.type, "Mission is unavailable");
+    const claimed = this.state.players.some((entry) => entry.character.activeContract?.contractId === intent.contractId);
+    if (claimed) throw new IntentRejectedError(intent.type, "Mission is already active");
+    const createdAt = new Date().toISOString();
+    this.state = {
+      ...this.state,
+      sequence: this.state.sequence + 1,
+      phase: pending.continuationPhase,
+      pendingMissionSelection: null,
+      players: this.state.players.map((entry) => entry.seatId === intent.seatId ? {
+        ...entry,
+        character: { ...entry.character, activeContract: { contractId: contract.id, progress: 0 } }
+      } : entry),
+      eventLog: [...this.state.eventLog, {
+        type: "REPLACEMENT_MISSION_SELECTED",
+        seatId: intent.seatId,
+        selectionId: pending.id,
+        contractId: contract.id,
+        createdAt
+      }]
+    };
+    this.maybeTriggerAbilityOnContractAccepted(intent.seatId);
+  }
+
   private applySelectedStartingContracts(): PlayerState[] {
     return this.state.players.map((player) => {
       const seat = this.state.seats.find((entry) => entry.seatId === player.seatId);
@@ -3802,6 +3894,7 @@ export class GameRoomServer {
       contract: this.resolveContract(contract),
       createdAt: new Date().toISOString()
     } satisfies CompleteContractAction);
+    this.queueReplacementMissionSelection(seatId, contract.id);
     return true;
   }
 
@@ -5606,6 +5699,17 @@ export class GameRoomServer {
         });
         progressMade = true;
         continue;
+      }
+
+      if (this.state.pendingMissionSelection) {
+        if (this.state.pendingMissionSelection.status === "queued") {
+          this.state = {
+            ...this.state,
+            sequence: this.state.sequence + 1,
+            pendingMissionSelection: { ...this.state.pendingMissionSelection, status: "awaitingSelection" }
+          };
+        }
+        return;
       }
 
       if (this.completeSatisfiedContract(seatId)) {
@@ -10845,6 +10949,10 @@ export function createTvProjection(
       difficulty: state.pendingCooperativeTest.difficulty,
       requiresHelper: state.pendingCooperativeTest.requiresHelper
     } : null,
+    pendingMissionSelectionStatus: state.pendingMissionSelection ? {
+      ownerSeatId: state.pendingMissionSelection.ownerSeatId,
+      status: state.pendingMissionSelection.status
+    } : null,
     pendingEncounterDecision: state.pendingEncounterDecision ? {
       seatId: state.pendingEncounterDecision.seatId,
       sourceCardId: state.pendingEncounterDecision.sourceCardId,
@@ -11163,6 +11271,14 @@ export function createPhoneProjection(state: GameState, seatId: string, forcePri
     player?.character.activeContract?.contractId
       ? state.availableContracts.find((contract) => contract.id === player.character.activeContract?.contractId) ?? null
       : null;
+  const pendingMissionSelection = state.pendingMissionSelection?.ownerSeatId === seatId ? {
+    id: state.pendingMissionSelection.id,
+    completedContractId: state.pendingMissionSelection.completedContractId,
+    status: state.pendingMissionSelection.status,
+    options: state.pendingMissionSelection.optionIds
+      .map((contractId) => state.availableContracts.find((contract) => contract.id === contractId))
+      .filter((contract): contract is ContractCard => Boolean(contract))
+  } : null;
   const readyDisabledReason = getReadyDisabledReasonForSeat(seat);
   const lateJoinPending = Boolean(
     state.status === "active" &&
@@ -11439,6 +11555,7 @@ export function createPhoneProjection(state: GameState, seatId: string, forcePri
     startingContractOptions,
     selectedStartingContract,
     activeContractCard,
+    pendingMissionSelection,
     oathchainPrompt: oathchainEligible && oathchain && oathchainSignature ? { instanceId: oathchain.instanceId, contractId: activeContractCard!.id, contractSignature: oathchainSignature, currentCharges: oathchain.currentCharges ?? oathchain.charges ?? 0, maxCharges: oathchain.maxCharges ?? 2, chargeCost: 1, preview: "Spend 1 charge to reveal current valid Contract targets." } : null,
     activeOathchainReveal: player?.private.activeOathchainReveal?.contractSignature === oathchainSignature && state.phase === "action" && state.turnOrder[state.activeSeatIndex] === seatId ? player.private.activeOathchainReveal : null,
     lateJoinPending,

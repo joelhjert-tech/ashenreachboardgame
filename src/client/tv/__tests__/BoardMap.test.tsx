@@ -420,7 +420,9 @@ describe("BoardMap", () => {
     expect(screen.getByTestId("sector-node-glassmere-spindle")).toHaveAttribute("data-mission-target", "true");
     expect(screen.getByTestId("sector-node-glassmere-spindle")).toHaveAttribute("data-legal-target", "true");
     expect(screen.getByTestId("sector-node-glassmere-spindle")).toHaveClass("talisman-board-tile-legal", "talisman-board-tile-mission");
-    expect(screen.getByTestId("mission-marker-glassmere-spindle")).toHaveTextContent(/mission/i);
+    expect(screen.getByTestId("mission-marker-glassmere-spindle")).toHaveAccessibleName(/public mission destination/i);
+    expect(screen.getByTestId("mission-marker-glassmere-spindle")).toHaveTextContent(/L1/i);
+    expect(screen.getByTestId("mission-marker-glassmere-spindle")).not.toHaveAttribute("title", expect.stringContaining("mission"));
     expect(screen.getByTestId("sector-node-ashwake-crossing")).toHaveAttribute("data-mission-target", "false");
 
     const poolOnlyPatch: PublicPatchPayload = {

@@ -385,6 +385,16 @@ export const pendingCooperativeTestSchema = z.object({
   createdAt: z.string().min(1)
 }).strict();
 
+export const pendingMissionSelectionSchema = z.object({
+  id: z.string().min(1),
+  ownerSeatId: z.string().min(1),
+  completedContractId: z.string().min(1),
+  optionIds: z.array(z.string().min(1)).max(3),
+  status: z.enum(["queued", "awaitingSelection"]),
+  continuationPhase: phaseSchema,
+  createdAt: z.string().min(1)
+}).strict();
+
 export const scenarioResultStateSchema = z.object({
   status: z.enum(["unresolved", "victory", "loss"]),
   victoryConditionId: z.string().min(1).nullable(),
@@ -467,6 +477,7 @@ export const gameStateSchema = z.object({
     .nullable(),
   cooperativeAssistance: cooperativeAssistanceStateSchema.nullable().optional(),
   pendingCooperativeTest: pendingCooperativeTestSchema.nullable().optional(),
+  pendingMissionSelection: pendingMissionSelectionSchema.nullable().optional(),
   pendingEffect: effectSchema.nullable(),
   pendingEncounterDecision: pendingEncounterDecisionSchema.nullable().optional(),
   resolvedEncounterDecisionIds: z.array(z.string().min(1)).optional(),
@@ -664,6 +675,7 @@ export type ScenarioConfrontationState = z.infer<typeof scenarioConfrontationSta
 export type ScenarioResultState = z.infer<typeof scenarioResultStateSchema>;
 export type CooperativeAssistanceState = z.infer<typeof cooperativeAssistanceStateSchema>;
 export type PendingCooperativeTest = z.infer<typeof pendingCooperativeTestSchema>;
+export type PendingMissionSelection = z.infer<typeof pendingMissionSelectionSchema>;
 export type GameState = z.infer<typeof gameStateSchema>;
 export type LegacyCompatibleGameState = z.infer<typeof legacyCompatibleGameStateSchema>;
 export type SessionSnapshot = z.infer<typeof sessionSnapshotSchema>;

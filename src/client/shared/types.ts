@@ -1042,6 +1042,7 @@ export interface PublicPatchPayload {
   pendingEnemyRoll: PendingEnemyRoll | null;
   cooperativeAssistance?: CooperativeAssistanceProjection | null;
   pendingCooperativeTest?: PendingCooperativeTestProjection | null;
+  pendingMissionSelectionStatus?: { ownerSeatId: string; status: "queued" | "awaitingSelection" } | null;
   pendingTileChallenge?: PublicPendingTileChallenge | null;
   pendingEncounterDecision?: { seatId: string; sourceCardId: string; sourceTitle: string; status: "waiting" } | null;
   pendingMemoryTaxChoice?: { ownerSeatId: string; sourceId: "memory-tax-gate"; sourceTitle: string; status: "waiting" } | null;
@@ -1109,6 +1110,12 @@ export interface PhonePatchPayload extends PublicPatchPayload {
   startingContractOptions?: ContractCard[];
   selectedStartingContract?: ContractCard | null;
   activeContractCard?: ContractCard | null;
+  pendingMissionSelection?: {
+    id: string;
+    completedContractId: string;
+    status: "queued" | "awaitingSelection";
+    options: ContractCard[];
+  } | null;
   canReady?: boolean;
   readyDisabledReason?: string | null;
   privateRivalry?: PrivateRivalryPayload | null;
@@ -1437,6 +1444,7 @@ export type ClientIntent =
       seatId: string;
       contractId: string;
     }
+  | { type: "SELECT_REPLACEMENT_CONTRACT"; seatId: string; selectionId: string; contractId: string }
   | {
       type: "SCENARIO_CONFRONTATION_REQUESTED";
       seatId: string;

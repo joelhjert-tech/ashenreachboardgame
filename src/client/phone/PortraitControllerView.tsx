@@ -816,12 +816,12 @@ export function PortraitControllerView({
     if (completedCount > previousCompletedContractCountRef.current && !self?.character.activeContract) {
       awaitingReplacementMissionRef.current = true;
     }
-    if (awaitingReplacementMissionRef.current && patch?.phase === "action" && !self?.character.activeContract) {
+    if (patch?.pendingMissionSelection?.status === "awaitingSelection" && !self?.character.activeContract) {
       setActiveTab("quests");
       awaitingReplacementMissionRef.current = false;
     }
     previousCompletedContractCountRef.current = completedCount;
-  }, [patch?.phase, self?.character.activeContract, self?.character.completedContracts?.length]);
+  }, [patch?.pendingMissionSelection?.status, self?.character.activeContract, self?.character.completedContracts?.length]);
 
   useEffect(() => {
     if (!pendingActiveContract) return;
@@ -1357,27 +1357,29 @@ export function PortraitControllerView({
                 <div className="phone-sheet-section-heading">Active Mission</div>
                 <ActiveMissionQuestCard activeContract={self.character.activeContract} contract={activeContractCard} />
               </section>
-              {!self.character.activeContract && patch?.availableContracts?.length ? (
+              {!self.character.activeContract && patch?.pendingMissionSelection?.status === "awaitingSelection" ? (
                 <section className="phone-portrait-section phone-new-mission-section" aria-label="Choose new mission">
-                  <div className="phone-sheet-section-heading">Choose New Mission</div>
-                  <p className="phone-muted-copy">Your completed mission is archived. Choose the next objective.</p>
+                  <div className="phone-sheet-section-heading">Mission Complete</div>
+                  <p className="phone-muted-copy">Reward resolved and mission archived. Choose your next mission.</p>
                   <div className="phone-starting-mission-list">
-                    {patch.availableContracts
-                      .filter((contract) => !(self.character.completedContracts ?? []).includes(contract.id))
-                      .map((contract) => (
+                    {patch.pendingMissionSelection.options.map((contract) => (
                         <ContractMissionCard
                           key={contract.id}
                           contract={contract}
                           pending={pendingActiveContract?.id === contract.id}
-                          disabled={!onIntent || Boolean(pendingActiveContract) || patch.phase !== "action"}
+                          disabled={!onIntent || Boolean(pendingActiveContract)}
                           onSelect={() => {
                             setPendingActiveContract({ id: contract.id, sequence: patchSequence ?? 0 });
-                            onIntent?.({ type: "ACCEPT_CONTRACT", seatId: self.seatId, contractId: contract.id });
+                            onIntent?.({
+                              type: "SELECT_REPLACEMENT_CONTRACT",
+                              seatId: self.seatId,
+                              selectionId: patch.pendingMissionSelection!.id,
+                              contractId: contract.id
+                            });
                           }}
                         />
                       ))}
                   </div>
-                  {patch.phase !== "action" ? <small>Finish the current result before selecting the next mission.</small> : null}
                 </section>
               ) : null}
               <section className="phone-portrait-section">

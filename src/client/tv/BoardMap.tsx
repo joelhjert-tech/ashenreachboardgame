@@ -20,6 +20,7 @@ import { HostCinematicFxLayer, type MapFxPoint, type MapFxTrail } from "./HostCi
 import { getMapBoardBaseAssetPath } from "./mapAssetRegistry.js";
 import { TalismanBoardSurface, type TileMissionMarker, type TileMovementAnimation, type TilePlayerMarker } from "./TalismanBoardSurface.js";
 import { getMissionRelevanceForSector } from "../shared/missionRelevance.js";
+import { getSeatIdentity } from "../shared/seatIdentity.js";
 
 interface BoardMapProps {
   patch: PublicPatchPayload;
@@ -33,11 +34,6 @@ interface BoardMapProps {
 interface CalibrationPoint {
   x: number;
   y: number;
-}
-
-function getSeatColor(index: number): string {
-  const palette = ["#7fb2d8", "#d9a35d", "#d86f6f", "#7cc3a6", "#dfd8c5", "#a98fd1"];
-  return palette[index % palette.length];
 }
 
 function outcomeText(outcome: OutcomeSummary | null): string | null {
@@ -68,9 +64,11 @@ function buildPlayerMarkersByNodeId(patch: PublicPatchPayload): Map<string, Tile
 
     const seat = patch.seats.find((entry) => entry.seatId === player.seatId);
     const existing = markersByNodeId.get(player.sectorId) ?? [];
+    const label = seat?.displayName ?? player.character.name;
+    const identity = getSeatIdentity(seatIndex.get(player.seatId) ?? existing.length, label);
     existing.push({
-      color: getSeatColor(seatIndex.get(player.seatId) ?? existing.length),
-      label: seat?.displayName ?? player.character.name,
+      color: identity.color,
+      label,
       seatId: player.seatId,
       seatIndex: seatIndex.get(player.seatId) ?? patch.seats.length,
       active: player.seatId === activeSeatId
@@ -90,6 +88,7 @@ function buildActiveContractLookup(contracts: ContractCard[]): Map<string, Contr
 function buildMissionMarkersByNodeId(patch: PublicPatchPayload): Map<string, TileMissionMarker[]> {
   const contractById = buildActiveContractLookup(patch.availableContracts);
   const markersByNodeId = new Map<string, TileMissionMarker[]>();
+  const seatIndex = new Map(patch.seats.map((seat, index) => [seat.seatId, index] as const));
 
   patch.players.forEach((player) => {
     const activeContract = player.character.activeContract
@@ -103,6 +102,7 @@ function buildMissionMarkersByNodeId(patch: PublicPatchPayload): Map<string, Til
     const playerLabel =
       patch.seats.find((seat) => seat.seatId === player.seatId)?.displayName ??
       player.character.name;
+    const identity = getSeatIdentity(seatIndex.get(player.seatId) ?? patch.seats.length, playerLabel);
 
     RIFTFALL_BOARD_NODES.forEach((node) => {
       const boardSpace = getBoardSpace(node.id);
@@ -120,13 +120,18 @@ function buildMissionMarkersByNodeId(patch: PublicPatchPayload): Map<string, Til
       existing.push({
         seatId: player.seatId,
         playerLabel,
-        missionTitle: activeContract.name,
+        seatIndex: identity.index,
+        seatNumber: identity.number,
+        initial: identity.initial,
+        color: identity.color,
+        pattern: identity.pattern,
         reason: relevance.reason
       });
       markersByNodeId.set(node.id, existing);
     });
   });
 
+  markersByNodeId.forEach((markers) => markers.sort((left, right) => left.seatIndex - right.seatIndex));
   return markersByNodeId;
 }
 
@@ -192,7 +197,7 @@ function buildMovementAnimations(
       {
         seatId: player.seatId,
         label: seat?.displayName ?? player.character.name,
-        color: getSeatColor(seatIndex.get(player.seatId) ?? 0),
+        color: getSeatIdentity(seatIndex.get(player.seatId) ?? 0, seat?.displayName ?? player.character.name).color,
         fromSectorId: previousSectorId,
         toSectorId: player.sectorId,
         routeSectorIds,

@@ -653,6 +653,16 @@ function getHostStateBannerModel({ patch, roomCode, activePlayer, connectionStat
     };
   }
 
+  if (patch.payload.pendingMissionSelectionStatus?.status === "awaitingSelection") {
+    const owner = patch.payload.seats.find((seat) => seat.seatId === patch.payload.pendingMissionSelectionStatus?.ownerSeatId);
+    return {
+      label: "Mission complete",
+      detail: `Waiting for ${owner?.displayName ?? "the operative"} to choose a new mission.`,
+      meta: "Private options are on the owner phone",
+      tone: "active"
+    };
+  }
+
   if (patch.payload.pendingEncounterDecision) {
     const seatLabels = getSeatLabelMap(patch);
     const ownerLabel = seatLabels[patch.payload.pendingEncounterDecision.seatId] ?? "Active operative";
