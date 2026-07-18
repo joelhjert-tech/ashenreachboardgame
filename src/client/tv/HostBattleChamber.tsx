@@ -1,5 +1,4 @@
 import { useEffect, useRef, type ReactElement } from "react";
-import { getBoardSpace } from "../../game/data/boardSpaces.js";
 import type { PublicPatchPayload, PublicPlayer, StatePatch } from "../shared/types.js";
 import { HostBattleOverlay } from "./HostBattleOverlay.js";
 
@@ -15,13 +14,10 @@ export function HostBattleChamber({
   activePlayer: PublicPlayer;
 }): ReactElement {
   const chamberRef = useRef<HTMLElement>(null);
-  const space = getBoardSpace(activePlayer.sectorId);
-  const sector = patch.payload.sectors.find((entry) => entry.id === activePlayer.sectorId) ?? null;
-  const locationName = space?.name ?? sector?.name ?? "Current sector";
-  const region = space?.tier ?? sector?.regionTier ?? null;
   const stage = patch.payload.activeResolution?.stage ?? (patch.payload.pendingEnemyRoll ? "pending_roll" : "preparing");
-  const playerName = patch.payload.seats.find((seat) => seat.seatId === activePlayer.seatId)?.displayName ?? activePlayer.character.name;
   const isEnemyBattle = patch.payload.activeResolution?.card?.type === "enemy" || patch.payload.encounter?.cardType === "enemy";
+  const stat = patch.payload.activeResolution?.battle?.stat ?? patch.payload.encounter?.stat ?? patch.payload.pendingTileChallenge?.testStat ?? null;
+  const difficulty = patch.payload.activeResolution?.battle?.difficulty ?? patch.payload.encounter?.difficulty ?? patch.payload.pendingTileChallenge?.difficulty ?? null;
 
   useEffect(() => {
     chamberRef.current?.focus({ preventScroll: true });
@@ -36,11 +32,10 @@ export function HostBattleChamber({
       data-battle-stage={stage}
       tabIndex={-1}
     >
-      <header className="tv-host-battle-chamber__context">
-        <span>{isEnemyBattle ? "Battle" : "Skill test"} at {locationName}</span>
-        <strong>{playerName}</strong>
-        <em>{activePlayer.character.name}</em>
-        <small>{region ? `${toTitleCase(region)} reach` : "Resolution active"}</small>
+      <header className="tv-host-battle-chamber__header" data-testid="tv-host-encounter-header">
+        <strong>{isEnemyBattle ? "Battle" : toTitleCase(patch.payload.pendingTileChallenge?.challengeType ?? patch.payload.encounter?.cardType ?? "Skill test")}</strong>
+        <span>{stat ? `${toTitleCase(stat)}${difficulty ? ` ${difficulty}` : ""}` : "Resolution"}</span>
+        <small>{toTitleCase(stage)}</small>
       </header>
       <div className="tv-host-battle-chamber__instrument" aria-label="Battle command surface">
         <HostBattleOverlay patch={patch} activePlayer={activePlayer} />

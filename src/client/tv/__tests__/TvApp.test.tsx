@@ -1479,7 +1479,8 @@ describe("TvApp", () => {
     expect(within(screen.getByLabelText(/host status bar/i)).getByTestId("host-live-status")).toBeInTheDocument();
     expect(chamber).toHaveFocus();
     expect(chamber).toHaveAttribute("data-battle-stage", "battle_setup");
-    expect(chamber).toHaveTextContent(/battle at ashwalk bridge/i);
+    expect(screen.getByTestId("tv-host-encounter-header")).toHaveTextContent(/battle.*grit 8.*battle setup/i);
+    expect(chamber.querySelector(".tv-host-battle-chamber__context")).toBeNull();
     expect(screen.getByLabelText("Battle command surface")).toBeInTheDocument();
     expect(boardShell).toHaveAttribute("aria-hidden", "true");
     expect(boardShell).toHaveAttribute("inert");
