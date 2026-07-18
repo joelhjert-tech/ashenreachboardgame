@@ -350,7 +350,7 @@ function HostShopStatusPanel({ model }: { model: HostShopDisplayModel }): ReactE
       </div>
       <div>
         <span>Stock</span>
-        <strong>{model.stockCount}</strong>
+        <strong>{model.stockRevealed ? model.stockCount : "Sealed"}</strong>
       </div>
       <div>
         <span>Sellable</span>

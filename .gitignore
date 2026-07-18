@@ -15,3 +15,5 @@ _archive/
 reports/**/*.png
 reports/**/*.jpg
 reports/**/*.jpeg
+reports/**/*.log
+admin-revisions/

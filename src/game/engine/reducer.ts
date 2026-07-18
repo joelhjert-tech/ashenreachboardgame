@@ -68,6 +68,7 @@ import { getHeldGearInstance, getHeldGearItem } from "./gear.js";
 import { canAdvancePhase, canResolveMovement } from "./phases.js";
 import { getEscalationCollapseLevel, getEscalationModifier } from "./escalation.js";
 import type { EncounterEffect, ThreatCard } from "../schema/card.schema.js";
+import { getThreatPresentationCategory } from "../cards/cardCategories.js";
 import type { EncounterPaymentEffect, EncounterPaymentResult } from "../schema/encounterDecision.schema.js";
 import type { ContractCard } from "../schema/contract.schema.js";
 import type { ActiveResolution, GameState, PlayerState } from "../schema/session.schema.js";
@@ -1071,7 +1072,7 @@ function summarizeThreatCard(card: ThreatCard): NonNullable<ActiveResolution["ca
   return {
     id: card.id,
     title: card.title,
-    type: card.cardType,
+    type: getThreatPresentationCategory(card),
     flavor: card.flavor,
     artType: "threat"
   };
@@ -1123,6 +1124,7 @@ function buildRollResolution(params: {
   createdAt: string;
   suffix: string;
   card?: ActiveResolution["card"];
+  origin?: ActiveResolution["origin"];
   battle?: ActiveResolution["battle"];
   dice: number[];
   baseTotal: number;
@@ -1140,6 +1142,7 @@ function buildRollResolution(params: {
     source: params.source,
     stage: "roll_result",
     card: params.card,
+    origin: params.origin,
     battle: params.battle,
     roll: {
       dice: params.dice,
@@ -1163,6 +1166,7 @@ function buildOutcomeResolution(params: {
   createdAt: string;
   suffix: string;
   card?: ActiveResolution["card"];
+  origin?: ActiveResolution["origin"];
   title: string;
   text: string;
   effects: string[];
@@ -1173,6 +1177,7 @@ function buildOutcomeResolution(params: {
     source: params.source,
     stage: "outcome_summary",
     card: params.card,
+    origin: params.origin,
     outcome: {
       title: params.title,
       text: params.text,
@@ -1192,6 +1197,10 @@ function inferSpaceTextResolutionSource(action: SpaceTextResolvedAction): Active
 
   if (action.consumedDeckCards?.artifact?.length) {
     return "artifact";
+  }
+
+  if (action.consumedDeckCards?.escalation?.length) {
+    return "escalation";
   }
 
   return "scenario";
@@ -1781,6 +1790,13 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
               source: "threat",
               stage: "card_reveal",
               card: summarizeThreatCard(drawnAction.card),
+              origin: {
+                sourceDeck: drawnAction.card.threatLane ?? "threat",
+                sourceSectorId: drawnAction.sectorId,
+                sourceEventId: `${drawnAction.seatId}:threat:${drawnAction.card.id}:${drawnAction.createdAt}`,
+                queuePosition: 0,
+                privacy: "public"
+              },
               battle: summarizeThreatBattle(drawnAction.card),
               outcome: {
                 title: "Card revealed",
@@ -4247,6 +4263,10 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
         return reject(state, action, "This seat already has an active contract");
       }
 
+      if ((player.character.completedContracts ?? []).includes(acceptAction.contractId)) {
+        return reject(state, action, "This contract is already completed");
+      }
+
       if (!acceptAction.contract) {
         return reject(state, action, `Unknown contract ${acceptAction.contractId}`);
       }
@@ -4445,13 +4465,30 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
       const player = requirePlayer(withDiscoveredContracts, spaceTextAction.seatId);
       const spaceTitle = getBoardSpace(player.character.currentSpaceId)?.name ?? player.character.currentSpaceId;
       const resolutionSource = inferSpaceTextResolutionSource(spaceTextAction);
-      const resolutionCard = {
-        id: spaceTextAction.discoveredContracts?.[0]?.id ?? spaceTextAction.effectKey,
-        title: spaceTextAction.discoveredContracts?.[0]?.name ?? spaceTitle,
-        type: resolutionSource === "scenario" ? "space" : resolutionSource,
-        flavor: spaceTextAction.discoveredContracts?.[0]?.text ?? spaceTextAction.summary,
-        artType: resolutionSource === "scenario" ? undefined : resolutionSource
-      };
+      const resolutionCard = spaceTextAction.revealedCard
+        ? {
+            id: spaceTextAction.revealedCard.id,
+            title: spaceTextAction.revealedCard.title,
+            type: spaceTextAction.revealedCard.type,
+            flavor: spaceTextAction.revealedCard.flavor,
+            artType: spaceTextAction.revealedCard.artType
+          }
+        : {
+            id: spaceTextAction.discoveredContracts?.[0]?.id ?? spaceTextAction.effectKey,
+            title: spaceTextAction.discoveredContracts?.[0]?.name ?? spaceTitle,
+            type: resolutionSource === "scenario" ? "space" : resolutionSource,
+            flavor: spaceTextAction.discoveredContracts?.[0]?.text ?? spaceTextAction.summary,
+            artType: resolutionSource === "scenario" ? undefined : resolutionSource
+          };
+      const resolutionOrigin = spaceTextAction.revealedCard
+        ? {
+            sourceDeck: spaceTextAction.revealedCard.sourceDeck,
+            sourceSectorId: spaceTextAction.revealedCard.sourceSectorId,
+            sourceEventId: `${spaceTextAction.seatId}:${spaceTextAction.effectKey}:${spaceTextAction.createdAt}`,
+            queuePosition: 0,
+            privacy: spaceTextAction.revealedCard.privacy
+          }
+        : undefined;
       const activeResolution =
         spaceTextAction.roll && spaceTextAction.checkStat && spaceTextAction.difficulty !== null && spaceTextAction.difficulty !== undefined
           ? buildRollResolution({
@@ -4473,7 +4510,8 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
               success: spaceTextAction.success ?? false,
               title: spaceTextAction.success === false ? "Space check failed" : "Space check passed",
               text: spaceTextAction.summary,
-              effects: summarizeEffects(spaceTextAction.effect ?? null, spaceTextAction.success ?? null)
+              effects: summarizeEffects(spaceTextAction.effect ?? null, spaceTextAction.success ?? null),
+              origin: resolutionOrigin
             })
           : buildOutcomeResolution({
               seatId: spaceTextAction.seatId,
@@ -4481,9 +4519,19 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
               createdAt: spaceTextAction.createdAt,
               suffix: spaceTextAction.effectKey,
               card: resolutionCard,
-              title: resolutionSource === "contract" ? "Contract revealed" : "Space resolved",
+              title:
+                resolutionSource === "contract"
+                  ? "Contract revealed"
+                  : resolutionSource === "artifact"
+                    ? "Asset recovered"
+                    : resolutionSource === "anomaly"
+                      ? "Anomaly resolved"
+                      : resolutionSource === "escalation"
+                        ? "Escalation resolved"
+                        : "Space resolved",
               text: spaceTextAction.summary,
-              effects: summarizeEffects(spaceTextAction.effect ?? null, spaceTextAction.success ?? null)
+              effects: summarizeEffects(spaceTextAction.effect ?? null, spaceTextAction.success ?? null),
+              origin: resolutionOrigin
             });
 
       return succeed({

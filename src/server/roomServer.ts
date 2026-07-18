@@ -16,6 +16,7 @@ import {
   type ThreatEffectResult,
   type ThreatEffectTiming
 } from "../game/cards/threatEffects.js";
+import { getThreatPresentationCategory } from "../game/cards/cardCategories.js";
 import { resolveBoardTextChoice, resolveBoardTextEffect, type BoardTextDeckKind } from "../game/data/boardTextEffects.js";
 import { nemeses, type NemesisDefinition } from "../game/data/nemeses.js";
 import { getScenarioDefinition, type ScenarioDefinition } from "../game/data/scenarios.js";
@@ -403,6 +404,7 @@ type ScenarioPlan = {
 type SectorCardResolution = {
   summary: string;
   effect: EncounterEffect | null;
+  revealedCard?: SpaceTextResolvedAction["revealedCard"];
   discoveredContracts?: ContractCard[];
   escalationDelta?: number;
   consumedDeckCards?: {
@@ -742,6 +744,10 @@ export class GameRoomServer {
       }
       const action = this.intentToAction(intent);
       this.applyAction(action);
+
+      if (action.type === "SHOP_PURCHASE_RESOLVED" && action.serviceId === "buy-gear") {
+        this.replenishShopEquipmentStock(action.seatId, action.sectorId, action.createdAt);
+      }
 
       if (action.type === "SHOP_PURCHASE_RESOLVED") {
         const space = getBoardSpace(action.sectorId);
@@ -2619,13 +2625,53 @@ export class GameRoomServer {
       ...Object.values(player.character.equippedGear).filter((id): id is string => Boolean(id))
     ]);
 
-    return getAvailableShopStockForCategory(this.gear.values(), category, {
-      count,
+    const options = {
       ownedGearIds,
       includeArtifacts: mode === "risk",
       includeQaGear: canUseQaShopGear(player.character),
       expensiveFirst: mode === "risk"
-    });
+    };
+    const primaryStock = getAvailableShopStockForCategory(this.gear.values(), category, options);
+
+    if (mode !== "standard" || primaryStock.length >= count || category === "market") {
+      return primaryStock.slice(0, count);
+    }
+
+    const primaryIds = new Set(primaryStock.map((item) => item.id));
+    const marketFallback = getAvailableShopStockForCategory(this.gear.values(), "market", options)
+      .filter((item) => !primaryIds.has(item.id));
+
+    return [...primaryStock, ...marketFallback].slice(0, count);
+  }
+
+  private replenishShopEquipmentStock(seatId: string, sectorId: string, createdAt: string): void {
+    const player = this.state.players.find((entry) => entry.seatId === seatId);
+    const boardSpace = getBoardSpace(sectorId);
+    if (!player || !boardSpace || player.character.currentSpaceId !== sectorId) return;
+
+    const category = getShopStockCategoryForService(boardSpace, "buy-gear");
+    if (!category) return;
+
+    const stock = this.pickShopGearStock(player, 3, "standard", category);
+    if (stock.length === 0) return;
+
+    this.state = {
+      ...this.state,
+      shopStockReveals: [
+        ...(this.state.shopStockReveals ?? []).filter(
+          (reveal) => !(reveal.seatId === seatId && reveal.sectorId === sectorId)
+        ),
+        {
+          seatId,
+          sectorId,
+          serviceId: "buy-gear",
+          shopName: boardSpace.name,
+          stockIds: stock.map((item) => item.id),
+          revealCost: {},
+          createdAt
+        }
+      ]
+    };
   }
 
   private pickRelicDealerArtifactOptions(player: PlayerState): GearItem[] {
@@ -2686,7 +2732,8 @@ export class GameRoomServer {
 
     const stockCategory = getShopStockCategoryForService(boardSpace, reveal.serviceId);
 
-    if (!stockCategory || !isGearAvailableFromShopCategory(gear, stockCategory) ||
+    const isMarketFallback = reveal.serviceId === "buy-gear" && isGearAvailableFromShopCategory(gear, "market");
+    if (!stockCategory || (!isGearAvailableFromShopCategory(gear, stockCategory) && !isMarketFallback) ||
       (reveal.serviceId === "buy-supplies" && gear.subtype !== "supply")) {
       throw new Error(SHOP_FAILURE_REASONS.itemUnavailable);
     }
@@ -4685,9 +4732,16 @@ export class GameRoomServer {
             card: {
               id: drawnThreat.id,
               title: drawnThreat.title,
-              type: drawnThreat.cardType,
+              type: getThreatPresentationCategory(drawnThreat),
               flavor: drawnThreat.flavor,
               artType: "threat"
+            },
+            origin: {
+              sourceDeck: drawnThreat.threatLane ?? "threat",
+              sourceSectorId: sector.id,
+              sourceEventId: `${seatId}:ambient-threat:${drawnThreat.id}:${this.state.sequence + 1}`,
+              queuePosition: 0,
+              privacy: "public"
             },
             battle: {
               enemyName: drawnThreat.cardType === "enemy" ? drawnThreat.enemyName : drawnThreat.title,
@@ -5831,7 +5885,8 @@ export class GameRoomServer {
       return [];
     }
 
-    const category: BoardThreatCard["category"] = encounter.cardType === "enemy" ? "enemy" : "event";
+    const presentationCategory = getThreatPresentationCategory(encounter);
+    const category: BoardThreatCard["category"] = presentationCategory === "hazard" ? "event" : presentationCategory;
     const icons = encounter.threatLane ? [encounter.threatLane] : [];
 
     return [{ id: encounter.id, category, icons }];
@@ -6388,6 +6443,7 @@ export class GameRoomServer {
       success: checkPayload?.success ?? null,
       sectorId: player.sectorId,
       discoveredContracts: sectorCardResolution?.discoveredContracts,
+      revealedCard: sectorCardResolution?.revealedCard,
       consumedDeckCards: sectorCardResolution?.consumedDeckCards,
       createdAt: new Date().toISOString()
     } satisfies SpaceTextResolvedAction);
@@ -7472,6 +7528,16 @@ export class GameRoomServer {
           ? {
               summary: anomaly.resolutionSummary,
               effect: anomaly.resolveEffect,
+              revealedCard: {
+                id: anomaly.id,
+                title: anomaly.title,
+                type: "anomaly",
+                flavor: anomaly.flavor,
+                artType: "anomaly",
+                sourceDeck: "anomaly",
+                sourceSectorId: sector.id,
+                privacy: "public"
+              },
               consumedDeckCards: { anomaly: [anomaly.id] }
             }
           : null;
@@ -7484,6 +7550,16 @@ export class GameRoomServer {
           ? {
               summary: artifact.resolutionSummary,
               effect: artifact.resolveEffect,
+              revealedCard: {
+                id: artifact.id,
+                title: artifact.title,
+                type: "artifact",
+                flavor: artifact.flavor,
+                artType: "artifact",
+                sourceDeck: "artifact",
+                sourceSectorId: sector.id,
+                privacy: "public"
+              },
               consumedDeckCards: { artifact: [artifact.id] }
             }
           : null;
@@ -7499,6 +7575,16 @@ export class GameRoomServer {
                 type: "gain_note",
                 text: `Mirecoil traffic exposed contract ${contract.name}.`
               },
+              revealedCard: {
+                id: contract.id,
+                title: contract.name,
+                type: "contract",
+                flavor: contract.text,
+                artType: "contract",
+                sourceDeck: "contract",
+                sourceSectorId: sector.id,
+                privacy: "owner"
+              },
               discoveredContracts: [contract],
               consumedDeckCards: { contract: [contract.id] }
             }
@@ -7512,6 +7598,16 @@ export class GameRoomServer {
           ? {
               summary: escalation.resolutionSummary,
               effect: escalation.resolveEffect ?? null,
+              revealedCard: {
+                id: escalation.id,
+                title: escalation.title,
+                type: "escalation",
+                flavor: escalation.flavor,
+                artType: "escalation",
+                sourceDeck: "escalation",
+                sourceSectorId: sector.id,
+                privacy: "public"
+              },
               escalationDelta: escalation.escalationDelta,
               consumedDeckCards: { escalation: [escalation.id] }
             }
@@ -8111,7 +8207,7 @@ function getFaceUpThreatsForSector(state: GameState, sectorId: string): PublicMo
       instanceId: `${sectorId}:${encounter.id}`,
       cardId: encounter.id,
       name: encounter.cardType === "enemy" ? encounter.enemyName : encounter.title,
-      type: encounter.cardType,
+      type: getThreatPresentationCategory(encounter),
       deck: encounter.threatLane,
       challenge: {
         stat: encounter.stat,
@@ -8494,7 +8590,7 @@ function buildPublicSectorExplorationSummary(state: GameState, seatId: string | 
 function buildPublicBlockingThreats(state: GameState): Array<{
   cardId: string;
   name: string;
-  type: "enemy" | "event" | "encounter" | "anomaly" | "hazard";
+    type: "enemy" | "nemesis" | "event" | "encounter" | "asset" | "anomaly" | "hazard";
   deck?: "red" | "blue" | "yellow";
   challenge?: {
     stat: Stat;
@@ -8511,7 +8607,7 @@ function buildPublicBlockingThreats(state: GameState): Array<{
     {
       cardId: encounter.id,
       name: encounter.cardType === "enemy" ? encounter.enemyName : encounter.title,
-      type: encounter.cardType === "enemy" ? "enemy" : "hazard",
+      type: getThreatPresentationCategory(encounter),
       deck: encounter.threatLane,
       challenge: {
         stat: encounter.stat,
@@ -9690,6 +9786,35 @@ function summarizeTileChallengeEffect(effect: EncounterEffect): string {
   }
 }
 
+function projectActiveResolutionForViewer(state: GameState, viewerSeatId: string | null): ActiveResolution | null {
+  const resolution = state.activeResolution ?? null;
+
+  if (!resolution || resolution.origin?.privacy !== "owner" || resolution.playerId === viewerSeatId) {
+    return resolution;
+  }
+
+  return {
+    ...resolution,
+    card: resolution.card
+      ? {
+          id: "private-card",
+          title: "Private Contract Lead",
+          type: "contract",
+          flavor: "The operative is reviewing a private mission lead.",
+          artType: "contract"
+        }
+      : undefined,
+    outcome: resolution.outcome
+      ? {
+          ...resolution.outcome,
+          title: "Private choice pending",
+          text: "The operative is resolving a private Contract lead.",
+          effects: []
+        }
+      : undefined
+  };
+}
+
 function getPendingFailureEffectChoices(state: GameState): Array<{ effectId: string; summary: string }> {
   const reaction = state.pendingStaticIntercessionReaction;
   if (!reaction || reaction.selectedEffectId !== null) return [];
@@ -10033,7 +10158,7 @@ export function createTvProjection(
     rivalryAgendaCompletion: buildPublicRivalryAgendaCompletion(state),
     rivalryAgendaReveal: buildPublicRivalryAgendaReveal(state),
     publicResultDeltas,
-    activeResolution: state.activeResolution ?? null,
+    activeResolution: projectActiveResolutionForViewer(state, null),
     shopEncounter,
     movementPlanner: activeSeatId
       ? (() => {
@@ -10333,7 +10458,7 @@ export function createPhoneProjection(state: GameState, seatId: string, forcePri
       (publicProjection.publicResultDeltas as ResultDelta[] | undefined) ?? [],
       publicProjection.shopEncounter as Record<string, unknown> | null
     ),
-    activeResolution: state.activeResolution ?? null,
+    activeResolution: projectActiveResolutionForViewer(state, seatId),
     shopEncounter: buildPublicShopEncounter(state, state.players, seatId),
     recentAbilityTriggers: publicProjection.recentAbilityTriggers,
     nemesis: publicProjection.nemesis,

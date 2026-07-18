@@ -221,6 +221,9 @@ describe("Phase 2A shop mechanics foundation", () => {
     expect(player?.character.heldGear.map((item) => item.id)).toContain(selectedCardId);
     expect(player?.character.salvage).toBe(6 - getShopGearCost(selectedGear));
     expect(server.getState().lastOutcomeSummary?.summary).toContain(`Bought ${selectedGear.name}`);
+    const replenished = server.getState().shopStockReveals.find((entry) => entry.seatId === "seat-1");
+    expect(replenished?.stockIds).toHaveLength(3);
+    expect(replenished?.stockIds).not.toContain(selectedCardId);
   });
 
   it("reveals only canonical Supply cards through Browse Supplies", () => {

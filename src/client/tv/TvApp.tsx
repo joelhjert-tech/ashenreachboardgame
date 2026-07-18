@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactElement } from "react";
+import { lazy, Suspense, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactElement } from "react";
 import { getBoardSpace, isScenarioConfrontationSpace } from "../../game/data/boardSpaces.js";
 import {
   describeContractObjective,
@@ -31,7 +31,7 @@ import {
 import { ResultDeltaRow } from "../shared/ResultDeltaChips.js";
 import { formatSeatLabel, statOrder, statShortLabelById } from "../shared/statLabels.js";
 import { useRoomSubscription } from "../shared/useRoomSubscription.js";
-import { getCharacterPortraitPath, getNemesisPortraitPath } from "../shared/assetPaths.js";
+import { getCharacterPortraitPath, getLobbyStagePath, getNemesisPortraitPath } from "../shared/assetPaths.js";
 import type {
   ActiveNemesisSummary,
   CharacterCatalogEntry,
@@ -74,6 +74,9 @@ function getInitialTvRoomCode(): string | null {
   return new URLSearchParams(window.location.search).get("room") ?? window.localStorage.getItem(roomCodeStorageKey);
 }
 const previousSessionEndedNotice = "Previous session ended. Create a new room to continue.";
+const AdminLibrary = lazy(() => import("./admin/AdminLibrary.js"));
+const AdminMapInspector = lazy(() => import("./admin/AdminMapInspector.js"));
+type TvAdminSurface = "library" | "map" | null;
 
 const statLabelById = statShortLabelById;
 type TvResolutionDisplayMode = "idle" | "cardReveal" | "battle" | "outcome";
@@ -416,6 +419,8 @@ interface TopHeaderProps {
   readyCount: number;
   seatCapacity: number;
   liveStatus: HostStateBannerModel;
+  onOpenLibrary: () => void;
+  onOpenMapInspector: () => void;
 }
 
 function ScenarioProgressRelicPanel({
@@ -482,7 +487,9 @@ function TopHeader({
   joinedCount,
   readyCount,
   seatCapacity,
-  liveStatus
+  liveStatus,
+  onOpenLibrary,
+  onOpenMapInspector
 }: TopHeaderProps): ReactElement {
   const objective = scenarioStatus.objectiveProgress;
   const pressure = scenarioStatus.pressureState;
@@ -567,6 +574,10 @@ function TopHeader({
             </div>
           </div>
         )}
+        <div className="tv-admin-tools" aria-label="Host administration">
+          <button type="button" className="tv-admin-library-tab" onClick={onOpenLibrary} aria-label="Open Admin Library"><span aria-hidden="true">▤</span>Library</button>
+          <button type="button" className="tv-admin-library-tab" onClick={onOpenMapInspector} aria-label="Open Map Inspector"><span aria-hidden="true">⌘</span>Map Inspector</button>
+        </div>
       </div>
     </header>
   );
@@ -1023,16 +1034,89 @@ function HostGameSelection({
   );
 }
 
+function TvScenarioSelectionCarousel({
+  scenarios,
+  initialScenarioId
+}: {
+  scenarios: ScenarioCatalogEntry[];
+  initialScenarioId?: string | null;
+}): ReactElement | null {
+  const initialIndex = Math.max(0, scenarios.findIndex((scenario) => scenario.id === initialScenarioId));
+  const [activeIndex, setActiveIndex] = useState(initialIndex);
+
+  useEffect(() => {
+    setActiveIndex(Math.max(0, scenarios.findIndex((scenario) => scenario.id === initialScenarioId)));
+  }, [initialScenarioId, scenarios]);
+
+  useEffect(() => {
+    if (scenarios.length < 2 || window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) {
+      return;
+    }
+
+    const interval = window.setInterval(
+      () => setActiveIndex((current) => (current + 1) % scenarios.length),
+      6500
+    );
+    return () => window.clearInterval(interval);
+  }, [scenarios.length]);
+
+  const scenario = scenarios[activeIndex] ?? scenarios[0];
+  if (!scenario) return null;
+
+  return (
+    <section className="tv-scenario-selection-window" aria-label="Scenario selection in progress">
+      <header>
+        <div>
+          <span>Host Phone</span>
+          <h2>Choosing the expedition scenario</h2>
+        </div>
+        <strong>{activeIndex + 1} / {scenarios.length}</strong>
+      </header>
+      <div className="tv-scenario-selection-feature">
+        <ScenarioSheetArtFrame path={scenario.sheetArtPath ?? null} title={scenario.name} compact />
+        <div className="tv-scenario-selection-copy">
+          <div className="tv-scenario-selection-tags">
+            <span>{toTitleCase(scenario.difficulty)}</span>
+            <span>{scenario.expectedDuration}</span>
+          </div>
+          <h3>{scenario.name}</h3>
+          <p>{scenario.theme}</p>
+          <dl>
+            <div><dt>Objective</dt><dd>{scenario.publicDisplay?.objective ?? scenario.victoryText}</dd></div>
+            <div><dt>Changes play</dt><dd>{scenario.pressureRule}</dd></div>
+            <div><dt>Final approach</dt><dd>{scenario.finalGateRequirement ?? scenario.confrontationTitle}</dd></div>
+          </dl>
+        </div>
+      </div>
+      <div className="tv-scenario-selection-track" aria-label="Available scenarios">
+        {scenarios.map((entry, index) => (
+          <div key={entry.id} className={index === activeIndex ? "is-active" : ""}>
+            <span>{String(index + 1).padStart(2, "0")}</span>
+            <strong>{entry.name}</strong>
+          </div>
+        ))}
+      </div>
+      <p className="tv-scenario-selection-wait">Selection and confirmation happen privately on the Host Phone.</p>
+    </section>
+  );
+}
+
 function TvStartupScreen({
   roomCode,
   patch,
   status,
-  error
+  error,
+  scenarioCatalog,
+  onOpenLibrary,
+  onOpenMapInspector
 }: {
   roomCode: string | null;
   patch: StatePatch<PublicPatchPayload> | null;
   status: string;
   error: string | null;
+  scenarioCatalog: ScenarioCatalogEntry[];
+  onOpenLibrary: () => void;
+  onOpenMapInspector: () => void;
 }): ReactElement {
   const seats = patch?.payload.seats ?? [];
   const joinedSeats = seats.filter((seat) => seat.displayName && !seat.kicked);
@@ -1063,7 +1147,15 @@ function TvStartupScreen({
     : "Scan to control setup";
 
   return (
-    <main className="tv-startup-screen" aria-label="Ashen Reach startup">
+    <main
+      className="tv-startup-screen"
+      aria-label="Ashen Reach startup"
+      style={{ "--tv-lobby-stage-image": `url("${getLobbyStagePath()}")` } as CSSProperties}
+    >
+      <div className="tv-admin-tools tv-admin-tools--startup" aria-label="Host administration">
+        <button type="button" className="tv-admin-library-tab" onClick={onOpenLibrary} aria-label="Open Admin Library"><span aria-hidden="true">▤</span>Library</button>
+        <button type="button" className="tv-admin-library-tab" onClick={onOpenMapInspector} aria-label="Open Map Inspector"><span aria-hidden="true">⌘</span>Map Inspector</button>
+      </div>
       <section className={`tv-startup-card${joinedSeats.length >= 5 ? " tv-startup-card--crowded" : ""}`}>
         <div className="tv-startup-brand">
           <span>ASHEN REACH</span>
@@ -1100,6 +1192,12 @@ function TvStartupScreen({
         )}
         {(error || status === "closed") && <p className="tv-startup-error">{error ?? "The host cannot reach the game server. Retrying automatically."}</p>}
       </section>
+      {patch && hostConnected && !lobbyConfigured ? (
+        <TvScenarioSelectionCarousel
+          scenarios={scenarioCatalog}
+          initialScenarioId={patch.payload.activeScenario?.id}
+        />
+      ) : null}
     </main>
   );
 }
@@ -2606,6 +2704,12 @@ export function TvApp(): ReactElement {
   const [requestError, setRequestError] = useState<string | null>(null);
   const [sessionNotice, setSessionNotice] = useState<string | null>(null);
   const [debugOpen, setDebugOpen] = useState(() => new URLSearchParams(window.location.search).has("debug"));
+  const [adminSurface, setAdminSurface] = useState<TvAdminSurface>(() => {
+    const admin = new URLSearchParams(window.location.search).get("admin");
+    return admin === "library" || admin === "map" ? admin : null;
+  });
+  const [adminLibraryCardId, setAdminLibraryCardId] = useState<string | null>(null);
+  const [adminMapTileId, setAdminMapTileId] = useState<string | null>(null);
   const restoreValidatedRef = useRef(false);
   const { patch, error, status, synchronized: subscriptionSynchronized, debugEvents, clearDebugEvents, sendIntent } = useRoomSubscription({
     view: "tv",
@@ -2886,7 +2990,13 @@ export function TvApp(): ReactElement {
     publicPatch.payload.lobbyConfigured !== false;
 
   if (!gameUiReady) {
-    return <TvStartupScreen roomCode={effectiveRoomCode} patch={publicPatch} status={status} error={requestError ?? error} />;
+    return (
+      <>
+        <TvStartupScreen roomCode={effectiveRoomCode} patch={publicPatch} status={status} error={requestError ?? error} scenarioCatalog={scenarioCatalog} onOpenLibrary={() => setAdminSurface("library")} onOpenMapInspector={() => setAdminSurface("map")} />
+        {adminSurface === "library" ? <Suspense fallback={<div className="admin-library-loading">Opening archive…</div>}><AdminLibrary roomCode={effectiveRoomCode} hostToken={hostToken} initialCardId={adminLibraryCardId} onOpenMapTile={(tileId) => { setAdminMapTileId(tileId); setAdminSurface("map"); }} onClose={() => setAdminSurface(null)} /></Suspense> : null}
+        {adminSurface === "map" ? <Suspense fallback={<div className="admin-library-loading">Opening tactical archive…</div>}><AdminMapInspector initialTileId={adminMapTileId} onOpenLibraryCard={(cardId) => { setAdminLibraryCardId(cardId); setAdminSurface("library"); }} onClose={() => setAdminSurface(null)} /></Suspense> : null}
+      </>
+    );
   }
 
   return (
@@ -2902,6 +3012,8 @@ export function TvApp(): ReactElement {
           readyCount={readySeats.length}
           seatCapacity={publicPatch?.payload.seats.length ?? (liveSessionMode === "single-player" ? 1 : 6)}
           liveStatus={liveStatus}
+          onOpenLibrary={() => setAdminSurface("library")}
+          onOpenMapInspector={() => setAdminSurface("map")}
         />
 
         {(requestError || error) && <div className="tv-banner tv-banner-error">{requestError ?? error}</div>}
@@ -3022,6 +3134,8 @@ export function TvApp(): ReactElement {
           </section>
         )}
       </div>
+      {adminSurface === "library" ? <Suspense fallback={<div className="admin-library-loading">Opening archive…</div>}><AdminLibrary roomCode={effectiveRoomCode} hostToken={hostToken} initialCardId={adminLibraryCardId} onOpenMapTile={(tileId) => { setAdminMapTileId(tileId); setAdminSurface("map"); }} onClose={() => setAdminSurface(null)} /></Suspense> : null}
+      {adminSurface === "map" ? <Suspense fallback={<div className="admin-library-loading">Opening tactical archive…</div>}><AdminMapInspector initialTileId={adminMapTileId} onOpenLibraryCard={(cardId) => { setAdminLibraryCardId(cardId); setAdminSurface("library"); }} onClose={() => setAdminSurface(null)} /></Suspense> : null}
     </main>
   );
 }

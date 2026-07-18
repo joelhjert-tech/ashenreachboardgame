@@ -27,6 +27,11 @@ original to Ashen Reach.
 
 ## Delivery Guidance
 
+- Treat this checkout (`ashen-reach-codex-task-01-repository`) as the single
+  canonical working directory. Do not create sibling worktrees or copy the
+  repository to a new folder for routine fixes.
+- Do not push automatically. The repository owner performs manual GitHub
+  backups unless a later request explicitly authorizes a push.
 - Keep this repository focused on mechanics-only scaffolding unless a later task
   expands scope.
 - Treat clients as thin views over server state.

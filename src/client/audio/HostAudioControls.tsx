@@ -205,15 +205,7 @@ export function HostAudioControls({ audio }: { audio: AshenReachAudioController 
               </button>
               {connectedVideoId ? <button type="button" onClick={disconnectSoundtrack}>Stop</button> : null}
             </div>
-            {connectedVideoId ? (
-              <iframe
-                className="tv-audio-youtube-player"
-                title="Ashen Reach table soundtrack"
-                src={`https://www.youtube-nocookie.com/embed/${connectedVideoId}?autoplay=1&loop=1&playlist=${connectedVideoId}`}
-                allow="autoplay; encrypted-media"
-                referrerPolicy="strict-origin-when-cross-origin"
-              />
-            ) : null}
+            {connectedVideoId ? <small role="status">Soundtrack connected. It keeps playing when this panel closes.</small> : null}
           </section>
 
           <button type="button" className="tv-audio-enable" onClick={audio.unlock} disabled={!audio.available || audio.unlocked}>
@@ -221,6 +213,15 @@ export function HostAudioControls({ audio }: { audio: AshenReachAudioController 
           </button>
         </div>
       )}
+      {connectedVideoId ? (
+        <iframe
+          className="tv-audio-youtube-player"
+          title="Ashen Reach table soundtrack"
+          src={`https://www.youtube-nocookie.com/embed/${connectedVideoId}?autoplay=1&loop=1&playlist=${connectedVideoId}`}
+          allow="autoplay; encrypted-media"
+          referrerPolicy="strict-origin-when-cross-origin"
+        />
+      ) : null}
     </section>
   );
 }

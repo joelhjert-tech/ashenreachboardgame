@@ -13,6 +13,7 @@ import { getScenarioSheetArtPath } from "../game/data/scenarioSheetArt.js";
 import { nemeses } from "../game/data/nemeses.js";
 import { applyPhaseOneQaFixture, type PhaseOneQaFixture } from "./phaseOneQaFixture.js";
 import { getSubmittedDisplayNameError, normalizeSubmittedDisplayName } from "../game/rules/playerIdentity.js";
+import { AdminContentEditor, AdminContentError, type AdminSaveRequest } from "./adminContentEditor.js";
 
 const DEFAULT_SERVER_PORT = 8080;
 const DEFAULT_CLIENT_PORT = 5173;
@@ -26,6 +27,8 @@ export interface StartAshenReachServerOptions {
   maxPortAttempts?: number;
   logUrls?: boolean;
   qaFixturesEnabled?: boolean;
+  adminContentEditingEnabled?: boolean;
+  projectRoot?: string;
 }
 
 export interface StartedAshenReachServer {
@@ -54,11 +57,18 @@ function createRoomCode(): string {
   return Math.random().toString(36).slice(2, 7).toUpperCase();
 }
 
-function readJsonBody(request: IncomingMessage): Promise<unknown> {
+function readJsonBody(request: IncomingMessage, maxBytes = 1024 * 1024): Promise<unknown> {
   return new Promise((resolve, reject) => {
     let body = "";
+    let receivedBytes = 0;
 
     request.on("data", (chunk: Buffer | string) => {
+      receivedBytes += Buffer.byteLength(chunk);
+      if (receivedBytes > maxBytes) {
+        reject(new AdminContentError("Request body is too large", 413));
+        request.destroy();
+        return;
+      }
       body += String(chunk);
     });
 
@@ -112,7 +122,7 @@ function getPlayerCountError(sessionMode: SessionMode, gameMode: GameMode, playe
   return null;
 }
 
-function createHttpServer(qaFixturesEnabled: boolean): HttpServer {
+function createHttpServer(qaFixturesEnabled: boolean, adminContentEditor: AdminContentEditor): HttpServer {
   return createServer(async (request, response) => {
     if (!request.url) {
       sendJson(response, 400, { error: "Missing request URL" });
@@ -132,6 +142,60 @@ function createHttpServer(qaFixturesEnabled: boolean): HttpServer {
     const url = new URL(request.url, `http://${request.headers.host ?? "localhost"}`);
 
     try {
+      if (request.method === "POST" && url.pathname.startsWith("/api/admin/content/")) {
+        const body = (await readJsonBody(request, 12 * 1024 * 1024)) as {
+          roomCode?: string;
+          hostToken?: string;
+          sourcePath?: string;
+          expectedRevision?: string;
+          revisionId?: string;
+          record?: unknown;
+          artwork?: AdminSaveRequest["artwork"];
+        };
+        const expectedHostToken = createHostToken({ sessionId: roomCode, secret: hostToken });
+        if (body.roomCode !== roomServer.getState().sessionId || body.hostToken !== expectedHostToken) {
+          sendJson(response, 403, { error: "Administrator host authorization is required" });
+          return;
+        }
+        const activeSession = roomServer.getState().status === "active";
+        if (url.pathname === "/api/admin/content/status") {
+          sendJson(response, 200, {
+            enabled: adminContentEditor.enabled,
+            editingAllowed: adminContentEditor.enabled && !activeSession,
+            mode: !adminContentEditor.enabled ? "view-only" : activeSession ? "active-session-locked" : "edit-enabled",
+            reason: !adminContentEditor.enabled
+              ? "Start the local development server with --admin-content-editor to enable repository writes."
+              : activeSession
+                ? "Editing is locked during an active session."
+                : null
+          });
+          return;
+        }
+        if (!adminContentEditor.enabled) throw new AdminContentError("Development content editing is disabled", 403);
+        if (activeSession) throw new AdminContentError("Editing is locked during an active session", 423);
+        if (!body.sourcePath) throw new AdminContentError("A canonical card source path is required");
+        if (url.pathname === "/api/admin/content/card") {
+          sendJson(response, 200, await adminContentEditor.getCard(body.sourcePath));
+          return;
+        }
+        if (url.pathname === "/api/admin/content/save") {
+          if (!body.expectedRevision) throw new AdminContentError("An expected content revision is required");
+          sendJson(response, 200, await adminContentEditor.save({
+            sourcePath: body.sourcePath,
+            expectedRevision: body.expectedRevision,
+            record: body.record,
+            artwork: body.artwork
+          }));
+          return;
+        }
+        if (url.pathname === "/api/admin/content/revert") {
+          if (!body.expectedRevision || !body.revisionId) throw new AdminContentError("Revision and current content hash are required");
+          sendJson(response, 200, await adminContentEditor.revert(body.sourcePath, body.revisionId, body.expectedRevision));
+          return;
+        }
+        sendJson(response, 404, { error: "Not found" });
+        return;
+      }
       if (request.method === "POST" && url.pathname === "/api/qa/phase1-fixture") {
         if (!qaFixturesEnabled) {
           sendJson(response, 404, { error: "Not found" });
@@ -510,8 +574,10 @@ function createHttpServer(qaFixturesEnabled: boolean): HttpServer {
 
       sendJson(response, 404, { error: "Not found" });
     } catch (error) {
-      sendJson(response, 400, {
-        error: error instanceof Error ? error.message : "Request failed"
+      const statusCode = error instanceof AdminContentError ? error.statusCode : 400;
+      sendJson(response, statusCode, {
+        error: error instanceof Error ? error.message : "Request failed",
+        ...(error instanceof AdminContentError && Object.keys(error.fieldErrors).length > 0 ? { fieldErrors: error.fieldErrors } : {})
       });
     }
   });
@@ -586,7 +652,11 @@ export async function startAshenReachServer(
   const host = options.host ?? DEFAULT_SERVER_HOST;
   const maxPortAttempts = options.maxPortAttempts ?? DEFAULT_PORT_ATTEMPTS;
   const logUrls = options.logUrls ?? true;
-  const httpServer = createHttpServer(options.qaFixturesEnabled ?? false);
+  const adminContentEditor = new AdminContentEditor({
+    projectRoot: options.projectRoot ?? process.cwd(),
+    enabled: options.adminContentEditingEnabled ?? process.env.ASHEN_REACH_ADMIN_CONTENT_EDITOR === "1"
+  });
+  const httpServer = createHttpServer(options.qaFixturesEnabled ?? false, adminContentEditor);
   const websocketServer = new WebSocketServer({ server: httpServer });
 
   roomServer.attach(websocketServer);

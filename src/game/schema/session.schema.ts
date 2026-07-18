@@ -133,7 +133,7 @@ export const resolutionStageSchema = z.enum([
 export const activeResolutionSchema = z.object({
   id: z.string().min(1),
   playerId: z.string().min(1),
-  source: z.enum(["movement", "threat", "contract", "anomaly", "artifact", "scenario"]),
+  source: z.enum(["movement", "threat", "contract", "anomaly", "artifact", "escalation", "scenario"]),
   stage: resolutionStageSchema,
   card: z
     .object({
@@ -142,6 +142,15 @@ export const activeResolutionSchema = z.object({
       type: z.string().min(1),
       flavor: z.string().nullable().optional(),
       artType: z.string().min(1).optional()
+    })
+    .optional(),
+  origin: z
+    .object({
+      sourceDeck: z.string().min(1),
+      sourceSectorId: z.string().min(1),
+      sourceEventId: z.string().min(1),
+      queuePosition: z.number().int().min(0),
+      privacy: z.enum(["public", "owner"])
     })
     .optional(),
   battle: z

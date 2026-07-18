@@ -12,6 +12,30 @@ afterEach(async () => {
 });
 
 describe("Phase 1 QA fixture", () => {
+  it.each(["enemy", "hazard", "event", "anomaly", "escalation", "persistent"] as const)(
+    "provides a deterministic %s card-category state",
+    (stage) => {
+      const state = createInitialSessionState("QA-CATEGORY", "multiplayer", "scenario_broken_seal", "co-op", "standard", 2);
+      state.status = "active";
+      applyPhaseOneQaFixture(state, "seat-1", { kind: "card-category", stage });
+      expect(state.activeResolution?.origin?.sourceEventId).toBe(`qa-card-category:${stage}`);
+      expect(state.activeResolution?.card?.type).toBe(stage === "persistent" ? "anomaly" : stage);
+      expect(state.activeResolution?.stage).toBe("roll_result");
+    }
+  );
+
+  it("provides an environment-gated scenario-selection lobby without bypassing projected setup", () => {
+    const state = createInitialSessionState("QA-SETUP", "multiplayer", "scenario_broken_seal", "co-op", "standard", 2);
+    state.status = "lobby";
+
+    applyPhaseOneQaFixture(state, "seat-1", { kind: "setup-flow", stage: "scenario-selection" });
+
+    expect(state.status).toBe("lobby");
+    expect(state.phase).toBe("start");
+    expect(state.lobbyConfigured).toBe(false);
+    expect(state.setupHostSeatId).toBe("seat-1");
+  });
+
   it("provides deterministic acquired and used follower states without changing ownership", () => {
     const state = createInitialSessionState("QA-FOLLOWER", "single-player", "scenario_broken_seal", "co-op", "standard", 1);
     state.status = "active";
@@ -66,6 +90,31 @@ describe("Phase 1 QA fixture", () => {
     const route = buildMovementRoutePlan(state, "seat-1")?.routes.find((entry) => entry.sectorId === "ashen-chapel");
     expect(route).toEqual(expect.objectContaining({ sectorId: "ashen-chapel", distance: 2, route: ["scorched-road", "blastworks", "ashen-chapel"], routeId: expect.any(String) }));
     expect(state.sectors.find((sector) => sector.id === "ashen-chapel")?.tileChallenges).toContainEqual(riftBefore);
+  });
+
+  it("prepares four canonical one-step routes for the movement UI comparison", () => {
+    const state = createInitialSessionState("QA001", "single-player", "scenario_broken_seal", "co-op", "standard", 1);
+    state.status = "active";
+    applyPhaseOneQaFixture(state, "seat-1", { kind: "phone-movement", stage: "four-routes" });
+
+    expect(state.players[0]?.sectorId).toBe("ashwake-crossing");
+    expect(state.movementRolls?.["seat-1"]).toBe(1);
+    const plan = buildMovementRoutePlan(state, "seat-1");
+    expect(plan?.routes.map((route) => route.sectorId).sort()).toEqual([
+      "glassmere-spindle",
+      "outer_ember_sanctum",
+      "outer_surgery_tent",
+      "votive-engine-room"
+    ]);
+
+    applyPhaseOneQaFixture(state, "seat-1", { kind: "phone-movement", stage: "confirmed" });
+    expect(state.players[0]?.sectorId).toBe("votive-engine-room");
+    expect(state.movementRolls).toBeUndefined();
+    expect(state.lastOutcomeSummary).toEqual(expect.objectContaining({
+      seatId: "seat-1",
+      movedToSectorId: "votive-engine-room",
+      success: true
+    }));
   });
 
   it("does not expose the QA endpoint unless explicitly enabled", async () => {

@@ -897,6 +897,9 @@ describe("TvApp", () => {
     render(<TvApp />);
 
     const startup = await screen.findByRole("main", { name: /ashen reach startup/i });
+    expect(startup).toHaveStyle({
+      "--tv-lobby-stage-image": 'url("/assets/riftfall/ui/ashen-reach-lobby-stage.png")'
+    });
     expect(startup).toHaveTextContent(/ashen reach/i);
     expect(startup).toHaveTextContent(/room code/i);
     expect(startup).toHaveTextContent(/scan to control setup/i);
@@ -905,6 +908,46 @@ describe("TvApp", () => {
     expect(screen.queryByRole("region", { name: /^scenario$/i })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /solo run/i })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /^multiplayer/i })).not.toBeInTheDocument();
+  });
+
+  it("opens the read-only host Admin Library without sending a game intent", async () => {
+    const sendIntent = vi.fn();
+    mockUseRoomSubscription.mockReturnValue({
+      patch: null,
+      error: null,
+      sendIntent,
+      status: "idle",
+      debugEvents: [],
+      clearDebugEvents: vi.fn()
+    });
+    render(<TvApp />);
+
+    await screen.findByRole("main", { name: /ashen reach startup/i });
+    fireEvent.click(screen.getByRole("button", { name: /open admin library/i }));
+
+    expect(await screen.findByRole("region", { name: /admin card library/i }, { timeout: 10_000 })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /card library/i })).toBeInTheDocument();
+    expect(sendIntent).not.toHaveBeenCalled();
+  });
+
+  it("opens the read-only host Map Inspector without sending a game intent", async () => {
+    const sendIntent = vi.fn();
+    mockUseRoomSubscription.mockReturnValue({
+      patch: null,
+      error: null,
+      sendIntent,
+      status: "idle",
+      debugEvents: [],
+      clearDebugEvents: vi.fn()
+    });
+    render(<TvApp />);
+
+    await screen.findByRole("main", { name: /ashen reach startup/i });
+    fireEvent.click(screen.getByRole("button", { name: /open map inspector/i }));
+
+    expect(await screen.findByRole("region", { name: /admin map inspector/i }, { timeout: 10_000 })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /map inspector/i })).toBeInTheDocument();
+    expect(sendIntent).not.toHaveBeenCalled();
   });
 
   it("auto-attaches the TV display to the server room without storing a host token", async () => {
@@ -1085,6 +1128,47 @@ describe("TvApp", () => {
     expect(screen.queryByText(/co-op selected/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/rivalry selected/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/coming later/i)).not.toBeInTheDocument();
+  });
+
+  it("shows a public scenario carousel while the Host Phone configures the lobby and closes it after confirmation", async () => {
+    window.localStorage.setItem("ashen-reach-tv-room-code", "RT7P4");
+    const choosingPatch = createPatch();
+    choosingPatch.payload.status = "lobby";
+    choosingPatch.payload.lobbyConfigured = false;
+    choosingPatch.payload.hostPhoneConnected = true;
+    choosingPatch.phase = "start";
+    mockUseRoomSubscription.mockReturnValue({
+      patch: choosingPatch,
+      error: null,
+      sendIntent: vi.fn(),
+      status: "open",
+      debugEvents: [],
+      clearDebugEvents: vi.fn()
+    });
+
+    const view = render(<TvApp />);
+
+    const carousel = await screen.findByRole("region", { name: /scenario selection in progress/i });
+    expect(carousel).toHaveTextContent(/choosing the expedition scenario/i);
+    expect(carousel).toHaveTextContent(/broken seal/i);
+    expect(carousel).toHaveTextContent(/changes play/i);
+    expect(carousel).toHaveTextContent(/selection and confirmation happen privately/i);
+
+    mockUseRoomSubscription.mockReturnValue({
+      patch: {
+        ...choosingPatch,
+        sequence: choosingPatch.sequence + 1,
+        payload: { ...choosingPatch.payload, lobbyConfigured: true }
+      },
+      error: null,
+      sendIntent: vi.fn(),
+      status: "open",
+      debugEvents: [],
+      clearDebugEvents: vi.fn()
+    });
+    view.rerender(<TvApp />);
+
+    expect(screen.queryByRole("region", { name: /scenario selection in progress/i })).not.toBeInTheDocument();
   });
 
   it("surfaces scenario victory copy when the session has ended with a winner", async () => {

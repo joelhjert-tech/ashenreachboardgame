@@ -52,6 +52,7 @@ interface HostBattleDisplayModel {
   cardMovementText: string | null;
   autoResolveAvailable: boolean;
   resultDeltas: ResultDelta[];
+  isOpposedBattle: boolean;
 }
 
 function sumDice(dice: number[]): number | null {
@@ -75,12 +76,28 @@ function formatResolutionType(
     return "TILE CHALLENGE";
   }
 
-  if (resolution?.card?.type === "enemy" || resolution?.battle?.enemyName) {
+  if (resolution?.card?.type === "enemy" || fallbackType === "enemy") {
     return "BATTLE";
   }
 
-  if (resolution?.source === "anomaly" || fallbackType === "anomaly" || fallbackType === "event") {
+  if (resolution?.source === "anomaly" || fallbackType === "anomaly" || resolution?.card?.type === "anomaly") {
     return "ANOMALY";
+  }
+
+  if (resolution?.source === "escalation" || fallbackType === "escalation" || resolution?.card?.type === "escalation") {
+    return "ESCALATION";
+  }
+
+  if (resolution?.card?.type === "event" || fallbackType === "event") {
+    return "EVENT";
+  }
+
+  if (resolution?.card?.type === "asset" || fallbackType === "asset") {
+    return "ASSET FIND";
+  }
+
+  if (resolution?.card?.type === "encounter" || fallbackType === "encounter") {
+    return "ENCOUNTER";
   }
 
   if (fallbackType === "hazard" || resolution?.card?.type === "hazard") {
@@ -141,11 +158,19 @@ function getPlayerBattleValue(resolution: ActiveResolution | null, activePlayer:
 }
 
 function formatFocusLabel(resolution: ActiveResolution | null, fallbackType: string | null | undefined): string {
-  if (resolution?.card?.type === "enemy" || resolution?.battle?.enemyName) {
+  if (resolution?.card?.type === "enemy" || fallbackType === "enemy") {
     return "Battle resolving";
   }
 
-  if (resolution?.source === "anomaly" || fallbackType === "anomaly" || fallbackType === "event") {
+  if (resolution?.source === "anomaly" || fallbackType === "anomaly") {
+    return "Anomaly resolving";
+  }
+
+  if (resolution?.source === "escalation" || fallbackType === "escalation") {
+    return "Escalation resolving";
+  }
+
+  if (resolution?.card?.type === "event" || fallbackType === "event") {
     return "Event resolving";
   }
 
@@ -306,6 +331,7 @@ function buildBattleModel(
     encounter?.cardType,
     patch.payload.pendingTileChallenge?.challengeType
   );
+  const isOpposedBattle = resolutionType === "BATTLE";
   const opponentIsRolled = enemyDice.length > 0;
   const opponentStatLabel = opponentIsRolled ? "Battle" : "Difficulty";
   const opponentFormula = opponentIsRolled
@@ -390,7 +416,8 @@ function buildBattleModel(
     statusCopy,
     cardMovementText,
     autoResolveAvailable: Boolean(pendingEnemyRoll),
-    resultDeltas: battleResultDeltas(patch.payload.publicResultDeltas)
+    resultDeltas: battleResultDeltas(patch.payload.publicResultDeltas),
+    isOpposedBattle
   };
 }
 
@@ -502,9 +529,9 @@ function HostBattleCardReveal({
 function HostBattleVsCore({ model }: { model: HostBattleDisplayModel }): ReactElement {
   const comparisonSymbol = getComparisonSymbol(model.playerTotal, model.enemyTotal);
   const decisiveResult = model.outcomeLabel === "SUCCESS"
-    ? `${model.player.name} wins`
+    ? model.isOpposedBattle ? `${model.player.name} wins` : "Check passed"
     : model.outcomeLabel === "DEFEAT"
-      ? `${model.opponent.name} wins`
+      ? model.isOpposedBattle ? `${model.opponent.name} wins` : "Check failed"
       : model.outcomeLabel === "DRAW"
         ? "Totals tied"
         : "Roll in progress";
@@ -518,7 +545,7 @@ function HostBattleVsCore({ model }: { model: HostBattleDisplayModel }): ReactEl
           : `${model.resolutionType.toLowerCase().replace(/^\w/, (letter) => letter.toUpperCase())} resolution`}
       </h2>
       <p className="host-battle-resolution-type">{model.resolutionType}</p>
-      <strong>VS</strong>
+      <strong>{model.isOpposedBattle ? "VS" : "TEST"}</strong>
       <div className={`host-battle-result-banner host-battle-result-${model.outcomeLabel.toLowerCase()}`} data-testid="host-battle-result-banner">
         <b>{model.outcomeLabel}</b>
         <strong>{decisiveResult}</strong>
@@ -567,7 +594,12 @@ export function HostBattleOverlay({
   }
 
   return (
-    <section className="host-battle-overlay" aria-label="Host battle overlay" data-testid="host-battle-overlay">
+    <section
+      className="host-battle-overlay"
+      aria-label="Host battle overlay"
+      data-testid="host-battle-overlay"
+      data-resolution-category={model.resolutionType.toLowerCase().replaceAll(" ", "-")}
+    >
       <div
         className={`host-battle-panel host-battle-panel-${model.resultTone} host-battle-panel-${model.challengeStat}`}
         style={getChallengeThemeStyle(model.challengeStat)}

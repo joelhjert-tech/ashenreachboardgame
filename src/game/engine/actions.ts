@@ -391,6 +391,16 @@ export interface SpaceTextResolvedAction extends BaseAction {
   success?: boolean | null;
   sectorId?: string;
   discoveredContracts?: ContractCard[];
+  revealedCard?: {
+    id: string;
+    title: string;
+    type: "anomaly" | "artifact" | "contract" | "escalation";
+    flavor: string;
+    artType: "anomaly" | "artifact" | "contract" | "escalation";
+    sourceDeck: "anomaly" | "artifact" | "contract" | "escalation";
+    sourceSectorId: string;
+    privacy: "public" | "owner";
+  };
   consumedDeckCards?: {
     anomaly?: string[];
     artifact?: string[];

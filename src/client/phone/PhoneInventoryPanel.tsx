@@ -541,6 +541,13 @@ function InventoryProgressionSection({
         <span>Completed Contracts</span>
         <strong>{self.character.completedContracts?.length ?? 0}</strong>
         <small>Exchange exactly 3 at a Relic Dealer to choose 1 of 2 Artifacts.</small>
+        {(self.character.completedContracts?.length ?? 0) > 0 ? (
+          <ul>
+            {(self.character.completedContracts ?? []).map((contractId) => (
+              <li key={contractId}>{patch.availableContracts.find((contract) => contract.id === contractId)?.name ?? "Archived mission"}</li>
+            ))}
+          </ul>
+        ) : null}
       </div>
 
       <div className="phone-inventory-trophy-list" aria-label="Trophy source summary">

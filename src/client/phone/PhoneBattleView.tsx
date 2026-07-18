@@ -86,9 +86,24 @@ function enemyArtType(patch: PhonePatchPayload): CardImageType {
 export function isOpposedPhoneBattleActive(patch: PhonePatchPayload | null | undefined): boolean {
   return Boolean(
     patch?.pendingEnemyRoll ||
-      (patch?.activeResolution?.battle && patch.activeResolution.card?.type === "threat") ||
+      (patch?.activeResolution?.battle && ["threat", "enemy"].includes(patch.activeResolution.card?.type ?? "")) ||
       patch?.encounter?.cardType === "enemy" ||
       patch?.activeResolution?.card?.type === "enemy"
+  );
+}
+
+export function isPhoneBattleRelevantToSeat(
+  patch: PhonePatchPayload | null | undefined,
+  seatId: string
+): boolean {
+  if (!patch || !isOpposedPhoneBattleActive(patch)) return false;
+
+  const activeSeatId = patch.turnOrder[patch.activeSeatIndex] ?? null;
+  return (
+    patch.activeResolution?.playerId === seatId ||
+    patch.pendingEnemyRoll?.fighterSeatId === seatId ||
+    patch.pendingEnemyRoll?.assignedRollerSeatId === seatId ||
+    activeSeatId === seatId
   );
 }
 

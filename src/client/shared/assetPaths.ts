@@ -53,6 +53,7 @@ const statFrameByStat: Record<Stat, string> = {
 };
 
 const uiAssetPaths = [
+  "/assets/riftfall/ui/ashen-reach-lobby-stage.png",
   "/assets/riftfall/ui/ui_scenario_frame.png",
   "/assets/riftfall/ui/ui_card_frame_red.png",
   "/assets/riftfall/ui/ui_card_frame_blue.png",
@@ -67,6 +68,8 @@ const uiAssetPaths = [
   "/assets/riftfall/ui/dice_roll_combat@2s.lottie.json"
 ];
 
+const lobbyStagePath = "/assets/riftfall/ui/ashen-reach-lobby-stage.png";
+
 const battleCardBackPaths = {
   operative: "/assets/cards/backs/card_back_character.png",
   threatRed: "/assets/cards/backs/card_back_threat_red.png",
@@ -78,6 +81,10 @@ const battleCardBackPaths = {
 
 export function getScenarioFramePath(): string {
   return "/assets/riftfall/ui/ui_scenario_frame.png";
+}
+
+export function getLobbyStagePath(): string {
+  return lobbyStagePath;
 }
 
 export function getCharacterPortraitPath(characterId: string): string {

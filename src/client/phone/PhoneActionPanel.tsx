@@ -55,6 +55,10 @@ import { getTileAssetPath } from "../tv/tileAssetManifest.js";
 import { formatTimingWindow, getBattleAssistViewModel, statLabelById as inventoryStatLabelById } from "./inventoryPresentation.js";
 import { buildUsefulNowViewModel, type UsefulNowViewModel } from "./usefulNowPresentation.js";
 import { getMissionRelevanceForSector, type MissionRelevance } from "../shared/missionRelevance.js";
+import {
+  PhoneMovementView,
+  type MovementNavigationTarget
+} from "./PhoneMovementView.js";
 
 interface PhoneActionPanelProps {
   characters: CharacterCatalogEntry[];
@@ -63,6 +67,8 @@ interface PhoneActionPanelProps {
   selectedTurnTab?: TurnActionTab;
   onSelectedTurnTab?: (tab: TurnActionTab) => void;
   hideTurnTabs?: boolean;
+  onMovementNavigation?: (target: MovementNavigationTarget) => void;
+  showMovementContextNavigation?: boolean;
 }
 
 interface ActionButtonDefinition {
@@ -341,6 +347,8 @@ function formatEncounterSourceLabel(source: ActiveResolution["source"] | undefin
       return "Anomaly";
     case "artifact":
       return "Artifact";
+    case "escalation":
+      return "Escalation";
     case "contract":
       return "Mission";
     case "scenario":
@@ -357,7 +365,7 @@ function formatEncounterIntentLabel(cardType: string | null | undefined, stat: S
     return "Battle";
   }
 
-  if (cardType === "hazard" || cardType === "event" || cardType === "anomaly") {
+  if (["hazard", "event", "encounter", "asset", "anomaly", "escalation"].includes(cardType ?? "")) {
     return stat ? `${statLabelById[stat]} test` : "Test";
   }
 
@@ -396,7 +404,7 @@ function BattleSubjectCard({
   const battle = resolution?.battle;
   const stat = battle?.stat ?? encounter?.stat ?? null;
   const difficulty = battle?.difficulty ?? encounter?.difficulty ?? null;
-  const cardType = encounter?.cardType ?? resolution?.card?.type ?? null;
+  const cardType = resolution?.card?.type ?? encounter?.cardType ?? null;
   const typeLabel = formatEncounterSourceLabel(resolution?.source, cardType);
   const intentLabel = formatEncounterIntentLabel(cardType, stat);
   const opponentLabel = typeof difficulty === "number" ? (cardType === "enemy" ? `Opponent ${difficulty}` : `Target ${difficulty}`) : null;
@@ -503,6 +511,7 @@ function ActiveResolutionCard({
   const battle = resolution.battle;
   const outcome = resolution.outcome;
   const challengeStat = battle?.stat ?? "grit";
+  const isOpposedBattle = resolution.card?.type === "enemy";
   const visibleOutcomeEffects = outcome ? dedupeOutcomeEffects(outcome.text, outcome.effects) : [];
 
   return (
@@ -535,18 +544,27 @@ function ActiveResolutionCard({
       )}
       {rollText && resolution.roll && (
         <div className="phone-resolution-roll" data-testid="phone-roll-result">
-          <CombatDiceAnimation
-            attackValue={resolution.roll.finalTotal}
-            defenseValue={resolution.roll.target}
-            modifierValue={resolution.roll.modifierTotal}
-            attackDieFace={resolution.roll.dice[0] ?? null}
-            defenseDieFace={resolution.roll.dice[1] ?? null}
-            attackSuccess={resolution.roll.success}
-            defenseSuccess={!resolution.roll.success}
-            hasModifier={resolution.roll.modifierTotal !== 0}
-            challengeStat={challengeStat}
-            compact
-          />
+          {isOpposedBattle ? (
+            <CombatDiceAnimation
+              attackValue={resolution.roll.finalTotal}
+              defenseValue={resolution.roll.target}
+              modifierValue={resolution.roll.modifierTotal}
+              attackDieFace={resolution.roll.dice[0] ?? null}
+              defenseDieFace={resolution.roll.dice[1] ?? null}
+              attackSuccess={resolution.roll.success}
+              defenseSuccess={!resolution.roll.success}
+              hasModifier={resolution.roll.modifierTotal !== 0}
+              challengeStat={challengeStat}
+              compact
+            />
+          ) : (
+            <div className="phone-check-dice" aria-label={`${statLabelById[challengeStat]} check result`}>
+              <span><small>Die</small><strong>{resolution.roll.dice[0] ?? "–"}</strong></span>
+              {resolution.roll.dice[1] !== undefined ? <span><small>Die</small><strong>{resolution.roll.dice[1]}</strong></span> : null}
+              <span><small>Modifier</small><strong>{resolution.roll.modifierTotal >= 0 ? "+" : ""}{resolution.roll.modifierTotal}</strong></span>
+              <span><small>Total / Target</small><strong>{resolution.roll.finalTotal} / {resolution.roll.target}</strong></span>
+            </div>
+          )}
           <p>{rollText}</p>
           <p>Target: {resolution.roll.target}</p>
           <strong>{resolution.roll.success ? "Success" : "Failure"}</strong>
@@ -2348,69 +2366,46 @@ function PhoneMovePanel({
   movementPlanner,
   currentTile,
   movementTravel,
-  hasMoveContent,
   seatId,
   activeContract,
   onIntent,
-  usefulNow,
   canRollMovement,
-  movementResolving
+  movementResolving,
+  showContextNavigation,
+  onContextNavigation
 }: {
   movementPlanner: PublicMovementPlannerState | null | undefined;
   currentTile: CurrentTileViewModel;
   movementTravel: PhoneMovementTravelState | null;
-  hasMoveContent: boolean;
   seatId: string;
   activeContract: ContractCard | null;
   onIntent: (intent: ClientIntent) => void;
-  usefulNow: UsefulNowViewModel | null;
   canRollMovement: boolean;
   movementResolving: boolean;
+  showContextNavigation: boolean;
+  onContextNavigation?: (target: MovementNavigationTarget) => void;
 }): ReactElement {
   const [selectedSectorId, setSelectedSectorId] = useState<string | null>(null);
-  const panelRef = useRef<HTMLElement | null>(null);
-  const movementState = movementResolving
-    ? "resolving"
-    : movementPlanner?.active
-      ? selectedSectorId ? "needs-confirm" : "needs-destination"
-      : canRollMovement ? "needs-roll" : "complete";
 
   useEffect(() => {
     setSelectedSectorId(null);
   }, [movementPlanner?.currentSectorId, movementPlanner?.movementValue]);
 
-  useLayoutEffect(() => {
-    const scrollContainer = panelRef.current?.closest<HTMLElement>(".phone-portrait-scroll");
-    if (!scrollContainer) return;
-    if (typeof scrollContainer.scrollTo === "function") {
-      scrollContainer.scrollTo({ top: 0, left: 0, behavior: "auto" });
-    } else {
-      scrollContainer.scrollTop = 0;
-      scrollContainer.scrollLeft = 0;
-    }
-  }, [movementState, movementTravel?.key]);
-
-  const selectDestination = (sectorId: string | null): void => {
-    setSelectedSectorId(sectorId);
-    const destination = sectorId ? movementPlanner?.destinations.find((entry) => entry.sectorId === sectorId) ?? null : null;
-    if (destination?.disabledReason) return;
-    onIntent({ type: "MOVEMENT_DESTINATION_PREVIEWED", seatId, toSectorId: sectorId });
-  };
-
   return (
-    <section ref={panelRef} className={`phone-action-active-panel phone-move-panel phone-move-panel--${movementState}`} data-testid="phone-action-active-panel" data-movement-state={movementState} aria-label="Move command screen">
-      <CurrentTileCard tile={currentTile} />
-      <PhoneMovementAnimation travel={movementTravel} />
-      {!movementResolving ? (
-        <MovementPlanner planner={movementPlanner} seatId={seatId} activeContract={activeContract} canRoll={canRollMovement} selectedSectorId={selectedSectorId} onSelectedSectorId={selectDestination} onIntent={onIntent} />
-      ) : (
-        <MovementEmptyState title={movementTravel ? "Route confirmed" : "Arrival resolving"} text={movementTravel ? `Travelling to ${movementTravel.toSectorName}.` : "Movement is complete. Resolve the arrival test or event."} detail="Movement controls will return on the next navigation step." />
-      )}
-      {!hasMoveContent && !movementPlanner?.active && !movementResolving && !canRollMovement && (
-        <EmptyTurnTab title="No movement choice" text="Movement is not available in this step. Resolve the current action or wait for the table." />
-      )}
-      <UsefulNowPanel model={usefulNow} variant="secondary" />
-    </section>
+    <PhoneMovementView
+      planner={movementPlanner}
+      seatId={seatId}
+      activeContract={activeContract}
+      currentSectorName={currentTile.name}
+      canRoll={canRollMovement}
+      movementResolving={movementResolving}
+      travel={movementTravel ? { fromSectorName: movementTravel.fromSectorName, toSectorName: movementTravel.toSectorName } : null}
+      selectedSectorId={selectedSectorId}
+      onSelectedSectorId={setSelectedSectorId}
+      onIntent={onIntent}
+      showContextNavigation={showContextNavigation}
+      onContextNavigation={onContextNavigation}
+    />
   );
 }
 
@@ -2435,10 +2430,11 @@ function PhoneBattlePanel({
   visibleBattleDeltas: ResultDelta[];
   usefulNow: UsefulNowViewModel | null;
 }): ReactElement {
+  const categoryLabel = formatEncounterSourceLabel(activeResolution?.source, activeResolution?.card?.type ?? encounter?.cardType);
   return (
-    <section className="phone-action-active-panel phone-battle-panel" data-testid="phone-action-active-panel" aria-label="Battle command screen">
+    <section className="phone-action-active-panel phone-battle-panel" data-testid="phone-action-active-panel" aria-label={`${categoryLabel} command screen`}>
       <header className="phone-battle-panel__header">
-        <span>Battle</span>
+        <span>{categoryLabel}</span>
         <strong>{title}</strong>
       </header>
       <BattleSubjectCard resolution={activeResolution} encounter={encounter} />
@@ -2545,7 +2541,9 @@ export function PhoneActionPanel({
   patch,
   selectedTurnTab: controlledSelectedTurnTab,
   onSelectedTurnTab,
-  hideTurnTabs = false
+  hideTurnTabs = false,
+  onMovementNavigation,
+  showMovementContextNavigation = true
 }: PhoneActionPanelProps): ReactElement {
   const [localSelectedTurnTab, setLocalSelectedTurnTab] = useState<TurnActionTab | null>(null);
   const selectedTurnTab = controlledSelectedTurnTab ?? localSelectedTurnTab;
@@ -3482,10 +3480,10 @@ export function PhoneActionPanel({
     : hasShopContent
       ? undefined
       : battleBlocksNonBattleTabs
-        ? "Shop locked: resolve battle first."
+        ? "Shop locked: resolve the current encounter first."
         : "Shop locked: no shop here.";
   const actionBlockedReason = battleBlocksNonBattleTabs
-    ? "Action locked: resolve battle first."
+    ? "Action locked: resolve the current encounter first."
     : hasActionContent || !hasMoveContent
       ? undefined
       : "Action locked: no sector action here.";
@@ -3504,7 +3502,7 @@ export function PhoneActionPanel({
     },
     {
       id: "battle",
-      label: "Battle",
+      label: opposedBattleActive ? "Battle" : hasBattleContent ? "Encounter" : "Battle",
       detail: patch.encounter?.title ?? activeResolution?.card?.title ?? battleAssist?.enemyName ?? "No threat",
       tone: "battle",
       enabled: hasBattleContent,
@@ -3541,7 +3539,7 @@ export function PhoneActionPanel({
   const selectedTabDefinition = tabDefinitions.find((tab) => tab.id === selectedTurnTab && canShowSelectedTab(tab));
   const activeTurnTab: TurnActionTab = selectedTabDefinition?.id ?? fallbackTab;
   const currentPrompt: CurrentPromptViewModel = currentPromptFromSharedPrompt(sharedPrompt, activeTurnTab);
-  const showCurrentPrompt = !currentPrompt.targetTab || currentPrompt.targetTab === activeTurnTab;
+  const showCurrentPrompt = !activeResolution && (!currentPrompt.targetTab || currentPrompt.targetTab === activeTurnTab);
   const activeUsefulNow = usefulNowForTurnTab(usefulNow, activeTurnTab);
   const activeStatusCopy =
     activeTurnTab === "move"
@@ -3556,6 +3554,21 @@ export function PhoneActionPanel({
   const currentDeltas = patch.playerResultDeltas ?? patch.publicResultDeltas ?? [];
   const visibleBattleDeltas = battleResultDeltas(currentDeltas);
   const visibleActionDeltas = actionResultDeltas(currentDeltas);
+  const movementTravelPresentation = movementTravel ?? (
+    movementOutcome
+      ? {
+          key: `${self.seatId}:movement:${movementOutcome.movedToSectorId}:${movementOutcome.summary}`,
+          fromSectorName: previousSectorRef.current?.sectorName ?? "Previous sector",
+          toSectorName: currentTile.name,
+          durationMs: 0,
+          reducedMotion: true
+        }
+      : null
+  );
+  const movementFlowActive = Boolean(
+    activeTurnTab === "move" &&
+    (patch.phase === "navigation" || movementPlanner?.active || movementTravelPresentation || movementOutcome)
+  );
   const battleTitle = patch.encounter?.title ?? activeResolution?.card?.title ?? battleAssist?.enemyName ?? "No threat";
   const actionTitle = boardSpace?.textBox.title ?? "Operative options";
   const activeTabContent =
@@ -3563,14 +3576,14 @@ export function PhoneActionPanel({
       <PhoneMovePanel
         movementPlanner={movementPlanner}
         currentTile={currentTile}
-        movementTravel={movementTravel}
-        hasMoveContent={hasMoveContent}
+        movementTravel={movementTravelPresentation}
         seatId={self.seatId}
         activeContract={activeContract}
         onIntent={onIntent}
-        usefulNow={activeUsefulNow}
         canRollMovement={patch.phase === "navigation" && !movementPlanner?.active}
-        movementResolving={Boolean(!movementPlanner?.active && (movementTravel || (patch.phase !== "navigation" && (activeResolution || movementOutcome))))}
+        movementResolving={Boolean(!movementPlanner?.active && (movementTravelPresentation || (patch.phase !== "navigation" && (activeResolution || movementOutcome))))}
+        showContextNavigation={movementFlowActive && showMovementContextNavigation}
+        onContextNavigation={onMovementNavigation}
       />
     ) : activeTurnTab === "battle" ? (
       <PhoneBattlePanel
@@ -3595,15 +3608,15 @@ export function PhoneActionPanel({
         emptyTitle={battleBlocksNonBattleTabs ? "Shop locked" : "No shop here"}
         emptyText={
           battleBlocksNonBattleTabs
-            ? "Shop locked: resolve battle first. Ignore shop until the encounter is cleared."
+            ? "Shop locked: resolve the current encounter first. Ignore shop until it is cleared."
             : "Shop services appear when your operative is on a clear market, shrine, foundry, or service sector."
         }
       />
     ) : battleBlocksNonBattleTabs ? (
       <LockedCommandPanel
         tab="action"
-        title="Resolve battle first"
-        text="Action locked: resolve battle first. Ignore sector actions until the Battle tab is cleared."
+        title="Resolve encounter first"
+        text="Action locked: resolve the current encounter first. Ignore sector actions until the Encounter tab is cleared."
       />
     ) : (
       <PhoneSectorActionPanel
@@ -3629,7 +3642,7 @@ export function PhoneActionPanel({
       aria-label={`${activeTurnTab} command screen`}
       data-testid="phone-action-panel-root"
     >
-      {showCurrentPrompt ? <CurrentPromptCard prompt={currentPrompt} onSelectedTab={setSelectedTurnTab} /> : null}
+      {showCurrentPrompt && activeTurnTab !== "move" ? <CurrentPromptCard prompt={currentPrompt} onSelectedTab={setSelectedTurnTab} /> : null}
       <div
         className="phone-action-content-root"
         id={`phone-turn-panel-${activeTurnTab}`}
@@ -3638,10 +3651,12 @@ export function PhoneActionPanel({
         data-testid="phone-action-content-root"
       >
         {activeTabContent}
-        <div className="phone-sheet-action-status phone-action-secondary-status" data-testid="phone-action-secondary-status">
-          <span>{portraitActionStatusLabel(activeTurnTab)}</span>
-          <span>{activeStatusCopy}</span>
-        </div>
+        {activeTurnTab === "move" ? null : (
+          <div className="phone-sheet-action-status phone-action-secondary-status" data-testid="phone-action-secondary-status">
+            <span>{portraitActionStatusLabel(activeTurnTab)}</span>
+            <span>{activeStatusCopy}</span>
+          </div>
+        )}
       </div>
       {!hideTurnTabs && <TurnActionDock tabs={tabDefinitions} activeTab={activeTurnTab} onSelected={setSelectedTurnTab} />}
     </section>

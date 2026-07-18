@@ -471,6 +471,29 @@ describe("Ashen Reach UI validation stress states", () => {
     expect(screen.queryByText(/opposition total/i)).not.toBeInTheDocument();
   });
 
+  it.each([
+    ["event", "EVENT"],
+    ["encounter", "ENCOUNTER"],
+    ["asset", "ASSET FIND"],
+    ["hazard", "HAZARD"]
+  ] as const)("presents %s tests by authored category instead of as battles", (category, label) => {
+    const patch = createHostPatch();
+    const activePlayer = patch.payload.players[0]!;
+    patch.payload.activeResolution = {
+      ...patch.payload.activeResolution!,
+      source: "threat",
+      card: { ...patch.payload.activeResolution!.card!, type: category },
+      battle: { ...patch.payload.activeResolution!.battle!, enemyName: "Not a battle" }
+    };
+    patch.payload.encounter = { ...patch.payload.encounter!, cardType: "hazard" };
+
+    render(<HostBattleOverlay patch={patch} activePlayer={activePlayer} />);
+
+    expect(screen.getByTestId("host-battle-overlay")).toHaveAttribute("data-resolution-category", label.toLowerCase().replaceAll(" ", "-"));
+    expect(screen.getByTestId("host-battle-overlay")).toHaveTextContent(label);
+    expect(screen.getByTestId("host-battle-overlay")).not.toHaveTextContent("BATTLE RESOLUTION");
+  });
+
   it("shows a host shop encounter as a public service stage without exposing private inventory names", () => {
     const phonePatch = createMasterAlphaPhonePatch({
       phase: "action",

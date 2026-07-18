@@ -235,6 +235,7 @@ export function PhoneApp(): ReactElement {
   const [characters, setCharacters] = useState<CharacterCatalogEntry[]>([]);
   const [scenarios, setScenarios] = useState<ScenarioCatalogEntry[]>([]);
   const [selectedScenarioId, setSelectedScenarioId] = useState("");
+  const [selectedSetupMode, setSelectedSetupMode] = useState<"single-player" | "co-op" | "rivalry" | "nemesis" | null>(null);
   const [debugOpen, setDebugOpen] = useState(() => new URLSearchParams(window.location.search).has("debug"));
   const [characterFilter, setCharacterFilter] = useState<CharacterSelectionFilter>("all");
   const [joiningRoom, setJoiningRoom] = useState(false);
@@ -345,8 +346,8 @@ export function PhoneApp(): ReactElement {
     sendIntent({ type: "SELECT_CHARACTER", seatId: auth?.seatId ?? "", characterId });
   };
 
-  const handleConfigureLobby = async (mode: "single-player" | "co-op" | "rivalry" | "nemesis") => {
-    if (!auth) {
+  const handleConfigureLobby = async () => {
+    if (!auth || !selectedSetupMode) {
       return;
     }
 
@@ -354,8 +355,8 @@ export function PhoneApp(): ReactElement {
 
     try {
       await configureSessionFromPhone(auth, {
-        mode,
-        playerCount: mode === "single-player" ? 1 : mode === "nemesis" ? Math.min(configuredPlayerCount, 4) : configuredPlayerCount,
+        mode: selectedSetupMode,
+        playerCount: selectedSetupMode === "single-player" ? 1 : selectedSetupMode === "nemesis" ? Math.min(configuredPlayerCount, 4) : configuredPlayerCount,
         ...(selectedScenarioId ? { scenarioId: selectedScenarioId } : {})
       });
     } catch (configureFailure) {
@@ -521,18 +522,11 @@ export function PhoneApp(): ReactElement {
           </section>
         ) : (
             <div className="phone-join-layout phone-join-layout-nameEntry">
-              <section className="phone-join-hero phone-panel">
-                <p className="phone-panel-kicker">Ashen Reach Controller</p>
-              <h1>Join room</h1>
-              <p className="phone-muted-copy">
-                Enter the room code from the TV and the name you want at the table.
-              </p>
-            </section>
-
             <section className="phone-panel phone-join-panel">
                 <div className="phone-panel-header">
                   <div>
-                    <h2>Join Room</h2>
+                    <p className="phone-panel-kicker">Ashen Reach Controller</p>
+                    <h1>Join Room</h1>
                     <p className="phone-muted-copy">Enter the room code and your player name to join the table.</p>
                   </div>
                 </div>
@@ -628,24 +622,45 @@ export function PhoneApp(): ReactElement {
                   <span>Host Phone</span>
                   <span>{status}</span>
                 </div>
-                <p className="phone-panel-kicker">Choose Game Type</p>
+                <p className="phone-panel-kicker">Configure Expedition</p>
                 <h1>Host Phone</h1>
-                <p className="phone-muted-copy">The TV is waiting. Choose the scenario and game shape, then continue setup here.</p>
-                <label className="field phone-host-scenario-picker">
-                  <span>Scenario</span>
-                  <select
-                    aria-label="Scenario"
-                    value={selectedScenarioId}
-                    disabled={scenarios.length === 0}
-                    onChange={(event) => setSelectedScenarioId(event.target.value)}
-                  >
-                    {scenarios.map((scenario) => (
-                      <option key={scenario.id} value={scenario.id}>
-                        {scenario.name} | {scenario.difficulty}
-                      </option>
-                    ))}
-                  </select>
-                </label>
+                <p className="phone-muted-copy">Choose the scenario and game shape. Nothing is applied until you confirm.</p>
+                <section className="phone-host-scenario-picker" aria-label="Choose scenario">
+                  <div className="phone-host-scenario-heading">
+                    <span>Scenario</span>
+                    <small>Swipe to compare how each scenario changes the expedition.</small>
+                  </div>
+                  <div className="phone-host-scenario-carousel" role="radiogroup" aria-label="Scenario options">
+                    {scenarios.map((scenario) => {
+                      const selected = scenario.id === selectedScenarioId;
+                      return (
+                        <button
+                          key={scenario.id}
+                          type="button"
+                          role="radio"
+                          aria-checked={selected}
+                          className={`phone-host-scenario-card${selected ? " is-selected" : ""}`}
+                          onClick={() => setSelectedScenarioId(scenario.id)}
+                        >
+                          <span
+                            className={`phone-host-scenario-card-art${scenario.sheetArtPath ? "" : " phone-host-scenario-card-fallback"}`}
+                            style={scenario.sheetArtPath ? { backgroundImage: `url(${scenario.sheetArtPath})` } : undefined}
+                            aria-hidden="true"
+                          >
+                            {scenario.sheetArtPath ? null : "AR"}
+                          </span>
+                          <span className="phone-host-scenario-card-copy">
+                            <small>{scenario.difficulty} · {scenario.expectedDuration}</small>
+                            <strong>{scenario.name}</strong>
+                            <span>{scenario.theme}</span>
+                            <em>{scenario.publicDisplay?.objective ?? scenario.victoryText}</em>
+                            <span><b>Changes play:</b> {scenario.pressureRule}</span>
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </section>
                 <label className="field phone-host-player-count-picker">
                   <span>Players</span>
                   <select
@@ -660,22 +675,30 @@ export function PhoneApp(): ReactElement {
                   <small>Co-op and Rivalry support up to six. Nemesis supports up to four.</small>
                 </label>
                 <div className="phone-host-mode-grid">
-                  <button type="button" className="phone-button phone-button-primary" onClick={() => void handleConfigureLobby("single-player")}>
+                  <button type="button" aria-pressed={selectedSetupMode === "single-player"} className={`phone-button ${selectedSetupMode === "single-player" ? "phone-button-primary" : "phone-button-secondary"}`} onClick={() => setSelectedSetupMode("single-player")}>
                     Single Player
                   </button>
-                  <button type="button" className="phone-button phone-button-secondary" onClick={() => void handleConfigureLobby("co-op")}>
+                  <button type="button" aria-pressed={selectedSetupMode === "co-op"} className={`phone-button ${selectedSetupMode === "co-op" ? "phone-button-primary" : "phone-button-secondary"}`} onClick={() => setSelectedSetupMode("co-op")}>
                     Multiplayer Co-op
                   </button>
                   <button type="button" className="phone-button phone-button-secondary" disabled>
                     Normal Coming Later
                   </button>
-                  <button type="button" className="phone-button phone-button-secondary" onClick={() => void handleConfigureLobby("rivalry")}>
+                  <button type="button" aria-pressed={selectedSetupMode === "rivalry"} className={`phone-button ${selectedSetupMode === "rivalry" ? "phone-button-primary" : "phone-button-secondary"}`} onClick={() => setSelectedSetupMode("rivalry")}>
                     Rivalry
                   </button>
-                  <button type="button" className="phone-button phone-button-secondary" onClick={() => void handleConfigureLobby("nemesis")}>
+                  <button type="button" aria-pressed={selectedSetupMode === "nemesis"} className={`phone-button ${selectedSetupMode === "nemesis" ? "phone-button-primary" : "phone-button-secondary"}`} onClick={() => setSelectedSetupMode("nemesis")}>
                     Nemesis
                   </button>
                 </div>
+                <button
+                  type="button"
+                  className="phone-button phone-button-primary phone-host-setup-confirm"
+                  disabled={!selectedScenarioId || !selectedSetupMode}
+                  onClick={() => void handleConfigureLobby()}
+                >
+                  Confirm Setup
+                </button>
                 {(joinError || error) && <p className="error">{joinError ?? error}</p>}
               </section>
             </main>
@@ -725,7 +748,7 @@ export function PhoneApp(): ReactElement {
                   <span>{auth.displayName}</span>
                   <span>{isSetupHost ? "Host Phone" : "Player"}</span>
                 </div>
-                <p className="phone-panel-kicker">{phonePatch.payload.lateJoinPending ? "Join Game In Progress" : "Choose Character"}</p>
+                {phonePatch.payload.lateJoinPending ? <p className="phone-panel-kicker">Join Game In Progress</p> : null}
                 <h1>Select operative</h1>
                 {phonePatch.payload.lateJoinPending ? (
                   <p className="phone-muted-copy">Choose an available operative, select a starting mission, then join the end of the current turn order.</p>

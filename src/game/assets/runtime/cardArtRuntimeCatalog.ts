@@ -1,4 +1,5 @@
 import type { CardImageType } from "../design/cardImageCatalog.js";
+import artworkOverrides from "../../../../content/card-artwork-overrides.json" with { type: "json" };
 
 export interface RuntimeCardArtCatalogEntry {
   cardId: string;
@@ -6,7 +7,7 @@ export interface RuntimeCardArtCatalogEntry {
   outputPath: string;
 }
 
-export const cardArtRuntimeCatalog: RuntimeCardArtCatalogEntry[] = [
+const generatedCardArtRuntimeCatalog: RuntimeCardArtCatalogEntry[] = [
   {
     "cardId": "ash-choir-crusader",
     "cardType": "threat",
@@ -1208,6 +1209,13 @@ export const cardArtRuntimeCatalog: RuntimeCardArtCatalogEntry[] = [
     "outputPath": "/assets/cards/escalations/escalation-webglass-afterimage.png"
   }
 ] as RuntimeCardArtCatalogEntry[];
+
+const canonicalArtworkOverrides = artworkOverrides as Record<string, string>;
+
+export const cardArtRuntimeCatalog: RuntimeCardArtCatalogEntry[] = generatedCardArtRuntimeCatalog.map((entry) => ({
+  ...entry,
+  outputPath: canonicalArtworkOverrides[entry.cardId]?.replace(/^public/, "") ?? entry.outputPath
+}));
 
 const cardArtPathByType = cardArtRuntimeCatalog.reduce<Record<CardImageType, Record<string, string>>>(
   (summary, entry) => {

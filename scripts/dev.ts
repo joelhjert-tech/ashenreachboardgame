@@ -14,7 +14,9 @@ async function main(): Promise<void> {
   const server = await startAshenReachServer({
     clientPort: resolvedClientPort,
     logUrls: false,
-    qaFixturesEnabled: process.env.ASHEN_REACH_QA_FIXTURES === "1" || process.argv.includes("--qa-fixtures")
+    qaFixturesEnabled: process.env.ASHEN_REACH_QA_FIXTURES === "1" || process.argv.includes("--qa-fixtures"),
+    adminContentEditingEnabled:
+      process.env.ASHEN_REACH_ADMIN_CONTENT_EDITOR === "1" || process.argv.includes("--admin-content-editor")
   });
 
   const apiOrigin = `http://${server.lanHost}:${server.port}`;

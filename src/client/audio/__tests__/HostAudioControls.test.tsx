@@ -95,6 +95,11 @@ describe("HostAudioControls", () => {
     );
     expect(window.localStorage.getItem("ashenreach.hostSoundtrackUrl")).toBe("https://youtu.be/dQw4w9WgXcQ");
 
+    fireEvent.click(screen.getByRole("button", { name: /close audio controls/i }));
+    expect(screen.queryByRole("dialog", { name: /audio control panel/i })).not.toBeInTheDocument();
+    expect(screen.getByTitle(/ashen reach table soundtrack/i)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /open audio controls/i }));
     fireEvent.click(screen.getByRole("button", { name: /^stop$/i }));
     expect(screen.queryByTitle(/ashen reach table soundtrack/i)).not.toBeInTheDocument();
   });

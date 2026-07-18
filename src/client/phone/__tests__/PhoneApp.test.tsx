@@ -342,6 +342,7 @@ describe("PhoneApp", () => {
     expect(playerNameInput).toHaveAttribute("spellcheck", "false");
     expect(screen.getByRole("button", { name: /join game/i })).toBeInTheDocument();
     expect(screen.getByText(/ashen reach controller/i)).toBeInTheDocument();
+    expect(screen.getAllByRole("heading", { name: /join room/i })).toHaveLength(1);
     expect(screen.queryByRole("list", { name: /character/i })).not.toBeInTheDocument();
     expect(screen.queryByText(/assigns host phone/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/tarek voss/i)).not.toBeInTheDocument();
@@ -601,7 +602,7 @@ describe("PhoneApp", () => {
     expect(sendIntent).toHaveBeenLastCalledWith({ type: "SET_READY", seatId: "seat-1", ready: true });
   });
 
-  it("keeps mission inspection separate from selecting either starting mission", async () => {
+  it("keeps mission inspection separate and submits one mission until the server confirms it", async () => {
     storeControllerAuth();
     const sendIntent = vi.fn();
     const patch = createLateJoinPatch("char_deepdale");
@@ -634,20 +635,18 @@ describe("PhoneApp", () => {
       seatId: "seat-1",
       contractId: "choir-quietus"
     });
+    expect(screen.getByRole("button", { name: /selecting/i })).toBeDisabled();
+    expect(selectButtons[1]).toBeDisabled();
     fireEvent.click(selectButtons[1]!);
-    expect(sendIntent).toHaveBeenLastCalledWith({
-      type: "SELECT_STARTING_CONTRACT",
-      seatId: "seat-1",
-      contractId: "ember-courier"
-    });
-    expect(sendIntent).toHaveBeenCalledTimes(2);
+    expect(sendIntent).toHaveBeenCalledTimes(1);
 
     fireEvent.click(screen.getByRole("button", { name: /inspect quietus ledger/i }));
     expect(await screen.findByRole("dialog", { name: /quietus ledger/i })).toBeInTheDocument();
-    expect(sendIntent).toHaveBeenCalledTimes(2);
+    expect(sendIntent).toHaveBeenCalledTimes(1);
     fireEvent.click(screen.getByRole("button", { name: /close quietus ledger inspection/i }));
     expect(screen.queryByRole("dialog", { name: /quietus ledger/i })).not.toBeInTheDocument();
-    expect(screen.getAllByRole("button", { name: /select mission/i })).toHaveLength(2);
+    expect(screen.getByRole("button", { name: /selecting/i })).toBeInTheDocument();
+    expect(screen.getAllByRole("button", { name: /select mission/i })).toHaveLength(1);
   });
 
   it("changes a confirmed starting mission without leaving the joined room", async () => {
@@ -718,6 +717,7 @@ describe("PhoneApp", () => {
 
     const picker = await screen.findByRole("list", { name: /character/i });
     expect(screen.getByRole("heading", { name: /select operative/i })).toBeInTheDocument();
+    expect(screen.queryByText(/^choose character$/i)).not.toBeInTheDocument();
     expect(picker.querySelector(".phone-character-option-selected")).toBeNull();
     expect(screen.queryByText(/selected starting mission/i)).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /^ready$/i })).not.toBeInTheDocument();
@@ -990,7 +990,11 @@ describe("PhoneApp", () => {
     expect(await screen.findByRole("heading", { name: /host phone/i })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /single player/i })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /multiplayer co-op/i })).toBeInTheDocument();
+    expect(screen.getByRole("radiogroup", { name: /scenario options/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /confirm setup/i })).toBeDisabled();
     fireEvent.click(screen.getByRole("button", { name: /single player/i }));
+    expect(networkMocks.configureSessionFromPhone).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: /confirm setup/i }));
     await waitFor(() => {
       expect(networkMocks.configureSessionFromPhone).toHaveBeenCalledWith(
         expect.objectContaining({ roomCode: "RT7P4", seatId: "seat-1" }),
@@ -998,8 +1002,9 @@ describe("PhoneApp", () => {
       );
     });
     networkMocks.configureSessionFromPhone.mockClear();
-    fireEvent.change(screen.getByRole("combobox", { name: /scenario/i }), { target: { value: "scenario_ashen_crown" } });
+    fireEvent.click(screen.getByRole("radio", { name: /ashen crown/i }));
     fireEvent.click(screen.getByRole("button", { name: /multiplayer co-op/i }));
+    fireEvent.click(screen.getByRole("button", { name: /confirm setup/i }));
     await waitFor(() => {
       expect(networkMocks.configureSessionFromPhone).toHaveBeenCalledWith(
         expect.objectContaining({ roomCode: "RT7P4", seatId: "seat-1" }),

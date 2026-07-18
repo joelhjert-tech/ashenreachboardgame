@@ -516,7 +516,7 @@ export type ResolutionStage =
 export interface ActiveResolution {
   id: string;
   playerId: string;
-  source: "movement" | "threat" | "contract" | "anomaly" | "artifact" | "scenario";
+  source: "movement" | "threat" | "contract" | "anomaly" | "artifact" | "escalation" | "scenario";
   stage: ResolutionStage;
   card?: {
     id: string;
@@ -524,6 +524,13 @@ export interface ActiveResolution {
     type: string;
     flavor?: string | null;
     artType?: string;
+  };
+  origin?: {
+    sourceDeck: string;
+    sourceSectorId: string;
+    sourceEventId: string;
+    queuePosition: number;
+    privacy: "public" | "owner";
   };
   battle?: {
     enemyName?: string;
@@ -590,7 +597,7 @@ export interface PublicShopEncounterState {
   blockingThreats: Array<{
     cardId: string;
     name: string;
-    type: "enemy" | "event" | "encounter" | "anomaly" | "hazard";
+    type: "enemy" | "nemesis" | "event" | "encounter" | "asset" | "anomaly" | "hazard";
     deck?: "red" | "blue" | "yellow";
     challenge?: {
       stat: Stat;

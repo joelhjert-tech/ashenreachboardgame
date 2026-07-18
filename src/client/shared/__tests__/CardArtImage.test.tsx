@@ -119,6 +119,7 @@ describe("card art paths", () => {
     expect(getEncounterFramePath("guile")).toBe("/assets/riftfall/ui/ui_card_frame_green.png");
     expect(getEncounterFramePath("guile")).not.toBe("/assets/riftfall/ui/ui_card_frame_yellow.png");
     expect(getRuntimeAssetPaths()).toContain("/assets/riftfall/ui/ui_card_frame_green.png");
+    expect(getRuntimeAssetPaths()).toContain("/assets/riftfall/ui/ashen-reach-lobby-stage.png");
   });
 });
 

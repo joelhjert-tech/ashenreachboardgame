@@ -719,93 +719,39 @@ describe("PhoneActionPanel", () => {
       />
     );
 
-    expect(screen.getByTestId("phone-current-prompt")).toHaveTextContent(/choose destination/i);
-    expect(screen.getByTestId("phone-current-prompt")).toHaveTextContent(/you rolled 1/i);
+    expect(screen.queryByTestId("phone-current-prompt")).not.toBeInTheDocument();
     expect(screen.queryByText(/turn console/i)).not.toBeInTheDocument();
     expect(screen.getByTestId("phone-action-panel-root")).toHaveClass("phone-action-panel--move");
-    expect(screen.getByTestId("phone-action-active-panel")).toHaveClass("phone-move-panel");
-    expect(screen.getByTestId("phone-action-content-root")).toContainElement(screen.getByTestId("phone-action-active-panel"));
-    expect(screen.getByTestId("phone-action-content-root")).toContainElement(screen.getByTestId("phone-action-secondary-status"));
-    expect(screen.getByTestId("phone-useful-now")).toHaveTextContent(/route and movement tools/i);
-    expect(screen.getByTestId("phone-useful-now")).toHaveTextContent(/movement roll 1/i);
-    expect(screen.getByTestId("phone-useful-now")).not.toHaveAttribute("open");
-    expect(screen.getByTestId("movement-current-tile-card")).toHaveTextContent(/current tile/i);
-    expect(screen.getByTestId("movement-current-tile-name")).toHaveTextContent(/pilgrim lock/i);
-    expect(screen.getByTestId("movement-current-tile-card")).toHaveTextContent(/pilgrims chain brass prayers/i);
-    expect(screen.getByTestId("movement-current-tile-action")).toHaveTextContent(/pilgrim rest/i);
-    expect(screen.getByTestId("movement-planner")).toBeInTheDocument();
-    expect(screen.getByTestId("movement-dice-animation")).toHaveTextContent(/1/);
-    expect(screen.getByTestId("movement-dice-animation").querySelector("[data-testid='combat-dice-animation']")).toHaveClass(
-      "combat-dice-animation-compact"
-    );
-    expect(within(screen.getByTestId("movement-dice-animation")).getByTestId("combat-die-attack")).toHaveTextContent(/1/);
-    expect(
-      screen.getByTestId("phone-current-prompt").compareDocumentPosition(screen.getByTestId("phone-action-active-panel")) &
-        Node.DOCUMENT_POSITION_FOLLOWING
-    ).toBeTruthy();
-    expect(
-      screen.getByTestId("movement-list-view").compareDocumentPosition(screen.getByTestId("phone-useful-now")) &
-        Node.DOCUMENT_POSITION_FOLLOWING
-    ).toBeTruthy();
-    expect(
-      screen.getByTestId("movement-planner").compareDocumentPosition(screen.getByTestId("phone-action-secondary-status")) &
-        Node.DOCUMENT_POSITION_FOLLOWING
-    ).toBeTruthy();
-    expect(screen.getByText(/move 1/i)).toBeInTheDocument();
-    expect(screen.getByTestId("movement-summary")).toHaveTextContent(/move value/i);
-    expect(screen.getByTestId("movement-summary")).toHaveTextContent(/pilgrim lock/i);
-    expect(screen.getByTestId("movement-summary")).toHaveTextContent(/legal destinations/i);
-    expect(screen.getAllByTestId("movement-destination-row")).toHaveLength(1);
-    expect(screen.getByTestId("movement-destination-mission-marker")).toHaveTextContent(/mission/i);
+    expect(screen.getByTestId("phone-action-content-root")).toContainElement(screen.getByTestId("phone-movement-view"));
+    expect(screen.queryByTestId("phone-action-secondary-status")).not.toBeInTheDocument();
+    expect(screen.getByTestId("phone-movement-view")).toHaveAttribute("data-movement-state", "needs-destination");
+    expect(screen.getByTestId("phone-movement-view")).toHaveTextContent(/roll 1/i);
+    expect(screen.getByTestId("phone-movement-view")).toHaveTextContent(/pilgrim lock/i);
+    expect(screen.getByTestId("phone-movement-view")).toHaveTextContent(/1 legal destination/i);
+    expect(screen.getAllByTestId("movement-destination")).toHaveLength(1);
+    expect(screen.getByTestId("movement-destination")).toHaveTextContent(/mission/i);
     expect(screen.queryByTestId("phone-shop-panel")).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /attempt signal check/i })).not.toBeInTheDocument();
     expect(screen.queryByText(/global escalation/i)).not.toBeInTheDocument();
     expect(screen.getAllByText(/anchor market/i).length).toBeGreaterThan(0);
-    expect(screen.getByTestId("movement-destination-lore")).toHaveTextContent(/market of sealed crates/i);
-    expect(screen.getByTestId("movement-route-preview")).toHaveTextContent(/pilgrim lock -> anchor market/i);
-    expect(screen.getByTestId("movement-route-preview")).toHaveTextContent(/^route:/i);
-    expect(screen.getByTestId("movement-route-confidence")).toHaveTextContent(/1 step/i);
-    expect(screen.getByTestId("movement-route-confidence")).toHaveTextContent(/shop reward/i);
-    expect(screen.getByTestId("movement-route-confidence")).toHaveTextContent(/threat risk/i);
-    expect(screen.getByTestId("movement-route-confidence")).toHaveTextContent(/0 blockers/i);
-    const destinationCard = screen.getByTestId("movement-destination-row").querySelector(".phone-wrap-card");
-    expect(destinationCard).toHaveClass("phone-wrap-card--movement", "phone-movement-row-button");
-    expect(destinationCard?.querySelector(".phone-wrap-card__media")).toBeInTheDocument();
-    expect(destinationCard?.querySelector('[data-testid="movement-tile-image"]')).toHaveAttribute(
+    const destinationCard = screen.getByTestId("movement-destination");
+    expect(destinationCard).toHaveTextContent(/1 step/i);
+    expect(destinationCard).toHaveTextContent(/shop \/ services/i);
+    expect(destinationCard).toHaveTextContent(/threat risk/i);
+    expect(destinationCard.querySelector('[data-testid="movement-tile-image"]')).toHaveAttribute(
       "src",
       "/assets/map/tiles/map_tile_anchor_market.png"
     );
-    expect(destinationCard?.querySelector(".phone-wrap-card__actions")).toContainElement(
-      screen.getByRole("button", { name: /select anchor market/i })
-    );
-    expect(screen.queryByText(/legal: exactly 1 step from pilgrim lock/i)).not.toBeInTheDocument();
-    expect(screen.queryByText("Icons")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /select anchor market/i })).toBeInTheDocument();
+    expect(screen.getByText("View details").closest("details")).not.toHaveAttribute("open");
 
-    fireEvent.click(screen.getByRole("button", { name: /anchor market/i }));
+    fireEvent.click(screen.getByRole("button", { name: /select anchor market/i }));
 
-    await waitFor(() => expect(screen.getByText("Icons")).toBeInTheDocument());
-    expect(screen.getByTestId("movement-current-tile-name")).toHaveTextContent(/pilgrim lock/i);
-    expect(screen.getByTestId("movement-detail-view")).toHaveTextContent(/anchor market/i);
-    expect(screen.getByTestId("movement-detail-route-summary")).toHaveTextContent(/route: pilgrim lock -> anchor market/i);
-    const detailCard = screen.getByTestId("movement-detail-view").querySelector(".phone-wrap-card");
-    expect(detailCard).toHaveClass("phone-wrap-card--movement", "phone-movement-detail-hero");
-    expect(detailCard?.querySelector('[data-testid="movement-tile-image"]')).toHaveAttribute(
-      "src",
-      "/assets/map/tiles/map_tile_anchor_market.png"
-    );
-    expect(screen.getByTestId("movement-detail-route-confidence")).toHaveTextContent(/1 step/i);
-    expect(screen.getByTestId("movement-detail-route-confidence")).toHaveTextContent(/shop reward/i);
-    expect(screen.getByTestId("movement-detail-mission")).toHaveTextContent(/can progress your mission/i);
-    expect(detailCard?.querySelector(".phone-wrap-card__actions")).toContainElement(
-      screen.getByRole("button", { name: /confirm move/i })
-    );
-    expect(screen.getByText("Icons")).toBeInTheDocument();
-    expect(screen.getAllByText(/legal: exactly 1 step from pilgrim lock/i).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/reward: anchor market services are available/i).length).toBeGreaterThan(0);
-    expect(screen.getByTestId("movement-route-steps")).toHaveTextContent(/pilgrim lock/i);
-    expect(screen.getByTestId("movement-confirm-footer")).toHaveTextContent(/this will end your movement/i);
-    expect(screen.getAllByText(/green guile/i).length).toBeGreaterThan(0);
-    expect(screen.getByText(/buy gear \/ sell gear/i)).toBeInTheDocument();
+    expect(screen.getByTestId("phone-movement-view")).toHaveAttribute("data-movement-state", "needs-confirm");
+    expect(screen.getByRole("button", { name: /confirm anchor market/i })).toBeInTheDocument();
+    fireEvent.click(screen.getByText("View details"));
+    expect(screen.getByText(/pilgrim lock → anchor market/i)).toBeInTheDocument();
+    expect(screen.getByText(/services: buy gear/i)).toBeInTheDocument();
     expect(screen.queryByText(/choir bulwark/i)).not.toBeInTheDocument();
   });
 
@@ -890,23 +836,13 @@ describe("PhoneActionPanel", () => {
       />
     );
 
-    const currentTile = screen.getByTestId("movement-current-tile-card");
-    expect(currentTile).toHaveTextContent(/ashwalk bridge/i);
-    expect(screen.getByTestId("movement-current-tile-region")).toHaveTextContent(/outer reach/i);
-    expect(screen.getByTestId("movement-current-tile-region")).toHaveTextContent(/hazard/i);
-    expect(screen.getByTestId("movement-current-tile-icons")).toHaveTextContent(/printed icons: 1 yellow/i);
-    expect(screen.getByTestId("movement-current-tile-blockers")).toHaveTextContent(/blocked: marrow-tax auditors/i);
-    expect(screen.getByTestId("movement-current-tile-shop")).toHaveTextContent(/shop: none/i);
-    expect(screen.getByTestId("movement-current-tile-action")).toHaveTextContent(/action locked: clear marrow-tax auditors first/i);
-    expect(screen.getByTestId("movement-current-tile-mission")).toHaveTextContent(/mission:/i);
-    expect(screen.getByTestId("movement-current-tile-mission")).toHaveTextContent(/crossing thread/i);
-    expect(screen.getByTestId("movement-current-tile-facts")).toHaveTextContent(/no new draw: printed lane occupied/i);
-    expect(screen.getByTestId("movement-current-tile-occupants")).toHaveTextContent(/mira \(mira\)/i);
-    expect(screen.getByTestId("movement-current-tile-image")).toHaveAttribute("src", "/assets/map/tiles/map_tile_hollow_gate.png");
-    expect(screen.getAllByText(/roll movement to reveal your legal destinations/i).length).toBeGreaterThan(0);
-    expect(screen.getByTestId("phone-action-active-panel")).toHaveAttribute("data-movement-state", "needs-roll");
+    const movementView = screen.getByTestId("phone-movement-view");
+    expect(movementView).toHaveTextContent(/ashwalk bridge/i);
+    expect(movementView).toHaveTextContent(/roll required/i);
+    expect(movementView).toHaveTextContent(/roll once to reveal your legal destinations/i);
+    expect(movementView).toHaveAttribute("data-movement-state", "needs-roll");
     expect(screen.getByRole("button", { name: /roll movement/i })).toBeVisible();
-    expect(screen.queryByTestId("movement-list-view")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("movement-destination")).not.toBeInTheDocument();
     expect(screen.queryByTestId("phone-shop-panel")).not.toBeInTheDocument();
     expect(screen.queryByTestId("phone-battle-subject-card")).not.toBeInTheDocument();
 
@@ -964,36 +900,39 @@ describe("PhoneActionPanel", () => {
       />
     );
 
-    fireEvent.click(screen.getByRole("button", { name: /locked.*ashwalk bridge/i }));
-    expect(screen.getByTestId("phone-action-active-panel")).toHaveAttribute("data-movement-state", "needs-confirm");
-    expect(screen.getByRole("button", { name: /confirm move/i })).toBeVisible();
+    fireEvent.click(screen.getByRole("button", { name: /select ashwalk bridge/i }));
+    expect(screen.getByTestId("phone-movement-view")).toHaveAttribute("data-movement-state", "needs-confirm");
+    expect(screen.getByRole("button", { name: /confirm ashwalk bridge/i })).toBeVisible();
     expect(onIntent).toHaveBeenCalledWith({
       type: "MOVEMENT_DESTINATION_PREVIEWED",
       seatId: "seat-1",
       toSectorId: "ashwake-crossing"
     });
-    expect(screen.getAllByText(/chain-maul salvager/i).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/legal: exactly 1 step from pilgrim lock/i).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/danger: chain-maul salvager/i).length).toBeGreaterThan(0);
-    expect(screen.getByText(/mira: signal witch/i)).toBeInTheDocument();
+    fireEvent.click(screen.getByText("View details"));
+    expect(screen.getByText(/visible blockers: chain-maul salvager/i)).toBeInTheDocument();
+    expect(screen.getByText(/operatives present: mira \(signal witch\)/i)).toBeInTheDocument();
+    expect(screen.getByText(/pilgrim lock → ashwalk bridge/i)).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: /back/i }));
+    fireEvent.click(screen.getByRole("button", { name: /change/i }));
     expect(onIntent).toHaveBeenCalledWith({
       type: "MOVEMENT_DESTINATION_PREVIEWED",
       seatId: "seat-1",
       toSectorId: null
     });
-    expect(screen.queryByRole("button", { name: /confirm move/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /confirm ashwalk bridge/i })).not.toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: /locked.*ashwalk bridge/i }));
+    fireEvent.click(screen.getByRole("button", { name: /select ashwalk bridge/i }));
     onIntent.mockClear();
-    fireEvent.click(screen.getByRole("button", { name: /confirm move/i }));
-    expect(screen.getByRole("button", { name: /moving/i })).toBeDisabled();
-    fireEvent.click(screen.getByRole("button", { name: /moving/i }));
+    fireEvent.click(screen.getByRole("button", { name: /confirm ashwalk bridge/i }));
+    expect(screen.getByRole("button", { name: /moving to ashwalk bridge/i })).toBeDisabled();
+    fireEvent.click(screen.getByRole("button", { name: /moving to ashwalk bridge/i }));
     expect(onIntent).toHaveBeenCalledWith({
       type: "MOVE_REQUESTED",
       seatId: "seat-1",
-      toSectorId: "ashwake-crossing"
+      toSectorId: "ashwake-crossing",
+      movementRevision: undefined,
+      routeId: undefined,
+      voidKeyInstanceId: undefined
     });
     expect(onIntent).toHaveBeenCalledTimes(1);
   });
@@ -1013,10 +952,13 @@ describe("PhoneActionPanel", () => {
       }
     })} />);
 
-    const summary = screen.getByTestId("movement-summary");
-    expect(summary).toHaveTextContent(/rolled 6/i);
+    expect(screen.getByTestId("phone-movement-view")).toHaveTextContent(/roll 6 · move 5/i);
+    const summary = screen.getByTestId("movement-adjustments");
+    expect(summary).not.toHaveAttribute("open");
+    fireEvent.click(within(summary).getByText(/movement calculation/i));
+    expect(summary).toHaveTextContent(/roll 6/i);
     expect(summary).toHaveTextContent(/spindle static squall -1/i);
-    expect(summary).toHaveTextContent(/final allowance 5/i);
+    expect(summary).toHaveTextContent(/final movement 5/i);
     expect(screen.queryByRole("button", { name: /use spindle/i })).not.toBeInTheDocument();
   });
 
@@ -1034,7 +976,8 @@ describe("PhoneActionPanel", () => {
         routeStarPrompt: { instanceId: "star-a", currentCharges: 2, maxCharges: 2, chargeCost: 1 }
       }]
     } })} />);
-    fireEvent.click(screen.getByRole("button", { name: /ashen chapel/i }));
+    fireEvent.click(screen.getByRole("button", { name: /select ashen chapel/i }));
+    fireEvent.click(screen.getByText("View details"));
     expect(screen.getByTestId("route-star-prompt")).toHaveTextContent("Scorched Road");
     expect(screen.getByTestId("route-star-prompt")).toHaveTextContent("Blastworks");
     fireEvent.click(screen.getByRole("button", { name: /preview route/i }));
@@ -1127,10 +1070,9 @@ describe("PhoneActionPanel", () => {
 
       await act(async () => {});
 
-      expect(screen.getByTestId("phone-movement-animation")).toHaveTextContent(/moving/i);
-      expect(screen.getByTestId("phone-movement-animation")).toHaveTextContent(/ashwalk bridge to anchor market/i);
-      expect(screen.getByTestId("phone-movement-animation")).toHaveAttribute("data-reduced-motion", "false");
-      expect(screen.getByTestId("phone-action-active-panel")).toHaveAttribute("data-movement-state", "resolving");
+      expect(screen.getByTestId("phone-movement-view")).toHaveTextContent(/moving to/i);
+      expect(screen.getByTestId("phone-movement-view")).toHaveTextContent(/ashwalk bridge → anchor market/i);
+      expect(screen.getByTestId("phone-movement-view")).toHaveAttribute("data-movement-state", "resolving");
       expect(screen.queryByText(/no movement choice/i)).not.toBeInTheDocument();
       expect(screen.queryByRole("button", { name: /roll movement/i })).not.toBeInTheDocument();
 
@@ -1138,7 +1080,7 @@ describe("PhoneActionPanel", () => {
         vi.advanceTimersByTime(1300);
       });
 
-      expect(screen.queryByTestId("phone-movement-animation")).not.toBeInTheDocument();
+      expect(screen.getByTestId("phone-movement-view")).toHaveTextContent(/anchor market/i);
     } finally {
       vi.useRealTimers();
     }
@@ -1199,48 +1141,26 @@ describe("PhoneActionPanel", () => {
       />
     );
 
-    const row = screen.getByTestId("movement-destination-row");
-    expect(screen.getByTestId("movement-current-sector")).toHaveTextContent("Ashwalk Bridge");
-    expect(screen.getByTestId("movement-current-sector")).toHaveClass("phone-movement-summary-current");
+    const row = screen.getByTestId("movement-destination");
+    expect(screen.getByTestId("phone-movement-view")).toHaveTextContent("Ashwalk Bridge");
     expect(row).toHaveTextContent(/weathered pilgrim lock gate/i);
-    expect(screen.getByTestId("movement-destination-lore")).toHaveTextContent(/fortified lock gate/i);
     expect(row).toHaveTextContent(/6 steps/i);
-    expect(row).toHaveTextContent(/shop reward/i);
-    expect(row).toHaveTextContent(/low risk/i);
-    expect(row).toHaveTextContent(/0 blockers/i);
-    expect(screen.getByTestId("movement-route-preview")).toHaveClass("phone-movement-row-route");
-    expect(screen.getByTestId("movement-route-preview")).toHaveTextContent(/ashwalk bridge -> votive engine room/i);
+    expect(row).toHaveTextContent(/shop \/ services/i);
+    expect(row).toHaveTextContent(/no visible threat/i);
     expect(row.querySelector('[data-testid="movement-tile-fallback"]')).toBeInTheDocument();
 
     const scrollRoot = screen.getByTestId("phone-action-content-root");
     scrollRoot.scrollTop = 480;
 
-    fireEvent.click(screen.getByRole("button", { name: /weathered pilgrim lock gate/i }));
+    fireEvent.click(screen.getByRole("button", { name: /select weathered pilgrim lock gate/i }));
 
-    expect(screen.queryByTestId("movement-list-view")).not.toBeInTheDocument();
-    expect(scrollRoot.scrollTop).toBe(0);
-    expect(screen.getByTestId("movement-detail-view").querySelector(".phone-movement-detail-body")?.firstElementChild).toHaveClass(
-      "phone-movement-detail-hero"
-    );
-    expect(screen.getByTestId("movement-detail-view").querySelector('[data-testid="movement-tile-fallback"]')).toBeInTheDocument();
-    expect(screen.getByTestId("movement-detail-route-summary")).toHaveTextContent(/route: ashwalk bridge/i);
-    expect(screen.getByTestId("movement-route-steps")).toHaveTextContent(/broken census hall/i);
-    expect(screen.getByTestId("movement-detail-view").querySelector(".phone-wrap-card__actions")).toContainElement(
-      screen.getByRole("button", { name: /confirm move/i })
-    );
-    expect(screen.getByTestId("movement-confirm-footer")).toHaveTextContent(/this will end your movement/i);
-    expect(
-      screen.getByRole("heading", { name: /weathered pilgrim lock gate/i }).compareDocumentPosition(screen.getByTestId("movement-route-steps")) &
-        Node.DOCUMENT_POSITION_FOLLOWING
-    ).toBeTruthy();
-    expect(
-      screen.getByTestId("movement-route-steps").compareDocumentPosition(screen.getByTestId("movement-confirm-footer")) &
-        Node.DOCUMENT_POSITION_FOLLOWING
-    ).toBeTruthy();
-    expect(
-      screen.getByTestId("movement-confirm-footer").compareDocumentPosition(screen.getByText(/sector effects/i)) &
-        Node.DOCUMENT_POSITION_FOLLOWING
-    ).toBeTruthy();
+    expect(scrollRoot.scrollTop).toBe(480);
+    expect(row).toHaveClass("is-selected");
+    expect(screen.getByRole("button", { name: /confirm weathered pilgrim lock gate/i })).toBeInTheDocument();
+    fireEvent.click(within(row).getByText("View details"));
+    expect(row).toHaveTextContent(/ashwalk bridge → votive engine room/i);
+    expect(row).toHaveTextContent(/broken census hall/i);
+    expect(row).toHaveTextContent(/fortified lock gate/i);
   });
 
   it("shows disabled gated destinations and prevents confirming them", async () => {
@@ -1667,19 +1587,18 @@ describe("PhoneActionPanel", () => {
       <PhoneActionPanel characters={characters} onIntent={vi.fn()} selectedTurnTab="move" patch={movementPatch} />
     );
 
-    expect(screen.getByTestId("phone-action-active-panel")).toHaveClass("phone-move-panel");
-    expect(screen.getByTestId("movement-planner")).toBeInTheDocument();
+    expect(screen.getByTestId("phone-movement-view")).toBeInTheDocument();
 
     rerender(<PhoneActionPanel characters={characters} onIntent={vi.fn()} selectedTurnTab="battle" patch={movementPatch} />);
     expect(screen.getByTestId("phone-action-active-panel")).toHaveClass("phone-battle-panel");
     expect(screen.getByText(/no battle active/i)).toBeInTheDocument();
     expect(screen.getAllByText(/battle cards will appear here/i).length).toBeGreaterThan(0);
-    expect(screen.queryByTestId("movement-planner")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("phone-movement-view")).not.toBeInTheDocument();
 
     rerender(<PhoneActionPanel characters={characters} onIntent={vi.fn()} selectedTurnTab="shop" patch={shopPatch} />);
     expect(screen.getByTestId("phone-action-active-panel")).toHaveClass("phone-shop-command-panel");
     expect(screen.getByTestId("phone-shop-panel")).toBeInTheDocument();
-    expect(screen.queryByTestId("movement-planner")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("phone-movement-view")).not.toBeInTheDocument();
 
     rerender(<PhoneActionPanel characters={characters} onIntent={vi.fn()} selectedTurnTab="battle" patch={battlePatch} />);
     expect(screen.getByTestId("phone-battle-shell")).toBeInTheDocument();
@@ -1909,10 +1828,9 @@ describe("PhoneActionPanel", () => {
       />
     );
 
-    expect(screen.getByTestId("phone-current-prompt")).toHaveTextContent(/no legal destination/i);
-    expect(screen.getByTestId("phone-current-prompt")).toHaveTextContent(/you rolled 1/i);
-    expect(screen.getByTestId("phone-action-active-panel")).toHaveAttribute("data-movement-state", "needs-destination");
-    expect(screen.getByTestId("movement-dice-animation")).toHaveClass("phone-movement-dice");
+    expect(screen.queryByTestId("phone-current-prompt")).not.toBeInTheDocument();
+    expect(screen.getByTestId("phone-movement-view")).toHaveTextContent(/roll 1/i);
+    expect(screen.getByTestId("phone-movement-view")).toHaveAttribute("data-movement-state", "needs-destination");
     expect(screen.getAllByText(/no legal destinations/i).length).toBeGreaterThan(0);
     expect(screen.queryByRole("button", { name: /confirm move/i })).not.toBeInTheDocument();
   });
@@ -1932,9 +1850,9 @@ describe("PhoneActionPanel", () => {
       />
     );
 
-    const planner = within(screen.getByTestId("movement-planner"));
-    expect(planner.getAllByText(/^roll movement$/i).length).toBeGreaterThan(0);
-    expect(planner.getByText(/roll movement to reveal your legal destinations/i)).toBeInTheDocument();
+    const planner = within(screen.getByTestId("phone-movement-view"));
+    expect(planner.getByText(/roll required/i)).toBeInTheDocument();
+    expect(planner.getByText(/roll once to reveal your legal destinations/i)).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /glassmere-spindle/i })).not.toBeInTheDocument();
 
     fireEvent.click(planner.getByRole("button", { name: /roll movement/i }));
@@ -2583,11 +2501,11 @@ describe("PhoneActionPanel", () => {
     );
 
     expect(screen.getByTestId("phone-roll-result")).toHaveTextContent(/roll: 2 \+ 5 - 1 = 6/i);
-    expect(within(screen.getByTestId("phone-roll-result")).getByTestId("combat-die-attack")).toHaveTextContent("2");
-    expect(within(screen.getByTestId("phone-roll-result")).getByTestId("combat-die-defense")).toHaveTextContent("5");
+    expect(within(screen.getByTestId("phone-roll-result")).getByLabelText("Signal check result")).toHaveTextContent(/die2die5/i);
     expect(screen.getByTestId("phone-roll-result")).toHaveTextContent(/target: 7/i);
     expect(screen.getByTestId("phone-roll-result")).toHaveTextContent(/failure/i);
-    expect(screen.getByTestId("phone-roll-result")).toHaveTextContent("A 6 / D 7 / -1");
+    expect(screen.getByTestId("phone-roll-result")).toHaveTextContent(/total \/ target6 \/ 7/i);
+    expect(screen.getByTestId("phone-roll-result")).not.toHaveTextContent(/attack|defense|A 6 \/ D 7/i);
     expect(screen.getByTestId("phone-battle-panel")).toHaveTextContent(/affliction: hollow belly -2/i);
     expect(screen.getByTestId("phone-resolution-continue")).toBeVisible();
     expect(

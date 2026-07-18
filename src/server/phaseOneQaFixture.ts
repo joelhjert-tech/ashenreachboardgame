@@ -2,12 +2,16 @@ import { getBoardSpace } from "../game/data/boardSpaces.js";
 import { loadGear } from "../game/content/gear.js";
 import { loadThreatCards } from "../game/content/threats.js";
 import { loadFollowers } from "../game/content/followers.js";
+import { loadAnomalyCards } from "../game/content/anomalies.js";
+import { loadEscalationCards } from "../game/content/escalations.js";
 import type { GameState } from "../game/schema/session.schema.js";
 
 export type PhaseOneQaFixture =
+  | { kind: "setup-flow"; stage: "scenario-selection" }
   | { kind: "route"; stage: "first" | "duplicate" | "ordered-wrong" | "final" | "completion-ready" }
   | { kind: "shop"; stage: "wrong-shop" | "valid-first" | "valid-final" | "completion-ready" }
   | { kind: "movement-journey"; stage: "ashen-chapel"; withChoirLantern?: boolean }
+  | { kind: "phone-movement"; stage: "roll-required" | "four-routes" | "confirmed" }
   | { kind: "map-transition"; stage: "guardian-locked" | "guardian-cleared" | "core-locked" | "core-cleared" }
   | { kind: "relic-trade"; completedContracts: 0 | 1 | 2 | 3 }
   | { kind: "follower"; stage: "acquired" | "used" | "reconnected" }
@@ -19,7 +23,8 @@ export type PhaseOneQaFixture =
   | {
       kind: "phone-battle";
       stage: "encounter" | "battle-setup" | "pending-enemy-roll" | "rolled-result" | "success" | "defeat";
-    };
+    }
+  | { kind: "card-category"; stage: "enemy" | "hazard" | "event" | "anomaly" | "escalation" | "persistent" };
 
 const routeContractId = "choir-echo-triangulation";
 const orderedRouteContractId = "compact-three-lantern-circuit";
@@ -166,6 +171,18 @@ function setPhoneBattleFixture(
 }
 
 export function applyPhaseOneQaFixture(state: GameState, seatId: string, fixture: PhaseOneQaFixture): void {
+  if (fixture.kind === "setup-flow") {
+    const seat = state.seats.find((entry) => entry.seatId === seatId);
+    if (!seat) throw new Error(`QA fixture cannot find ${seatId}`);
+    state.status = "lobby";
+    state.phase = "start";
+    state.lobbyConfigured = false;
+    state.setupHostSeatId = seatId;
+    state.sequence += 1;
+    clearResolution(state);
+    return;
+  }
+
   if (state.status !== "active" && fixture.kind !== "host-state") throw new Error("QA fixture requires an active session");
   clearResolution(state);
   state.sequence += 1;
@@ -388,6 +405,83 @@ export function applyPhaseOneQaFixture(state: GameState, seatId: string, fixture
         { ...lantern, instanceId: "qa-choir-lantern", currentCharges: 2, maxCharges: 2 }
       ];
       player.character.equippedGear.utility = lantern.id;
+    }
+    return;
+  }
+
+  if (fixture.kind === "card-category") {
+    const player = state.players.find((entry) => entry.seatId === seatId);
+    if (!player) throw new Error(`QA fixture cannot find ${seatId}`);
+    state.phase = "resolution";
+    const threatId = fixture.stage === "enemy" ? "lantern-ash-ghoul" : fixture.stage === "event" ? "trench-blast" : "suture-storm";
+    const threat = loadThreatCards().get(threatId);
+    const anomaly = fixture.stage === "anomaly" ? [...loadAnomalyCards().values()][0] : null;
+    const escalation = fixture.stage === "escalation" ? [...loadEscalationCards().values()][0] : null;
+    const category = fixture.stage === "persistent" ? "anomaly" : fixture.stage;
+    const source = fixture.stage === "persistent" ? "scenario" : category === "enemy" || category === "hazard" || category === "event" ? "threat" : category;
+    const id = anomaly?.id ?? escalation?.id ?? threat?.id ?? "rift-whispers";
+    const title = anomaly?.title ?? escalation?.title ?? threat?.title ?? "Rift Whispers";
+    const flavor = anomaly?.flavor ?? escalation?.flavor ?? threat?.flavor ?? "The chapel keeps the distortion anchored to this sector.";
+    state.currentEncounter = fixture.stage === "enemy" || fixture.stage === "hazard" || fixture.stage === "event" ? threat ?? null : null;
+    state.activeResolution = {
+      id: `qa-card-category:${fixture.stage}:${id}`,
+      playerId: seatId,
+      source,
+      stage: "roll_result",
+      card: { id, title, type: category, flavor, artType: category === "enemy" || category === "hazard" || category === "event" ? "threat" : category },
+      battle: {
+        ...(fixture.stage === "enemy" ? { enemyName: title } : {}),
+        stat: threat?.stat ?? "signal",
+        difficulty: threat?.difficulty ?? 7,
+        modifiers: [{ label: "Operative", value: 3 }]
+      },
+      roll: { dice: [3, 4], baseTotal: 7, modifierTotal: 3, finalTotal: 10, target: threat?.difficulty ?? 7, success: true },
+      outcome: {
+        title: fixture.stage === "persistent" ? "Challenge remains" : `${title} resolved`,
+        text: fixture.stage === "persistent" ? "This authored tile challenge remains attached until its own removal condition is met." : "The authoritative effect resolved once.",
+        effects: fixture.stage === "escalation" ? ["Global Escalation advanced as authored."] : ["No duplicate reward was created."]
+      },
+      origin: {
+        sourceDeck: fixture.stage === "persistent" ? "tile-challenge" : category,
+        sourceSectorId: player.sectorId,
+        sourceEventId: `qa-card-category:${fixture.stage}`,
+        queuePosition: 0,
+        privacy: "public"
+      }
+    };
+    return;
+  }
+
+  if (fixture.kind === "phone-movement") {
+    state.phase = "navigation";
+    state.movementRolls = fixture.stage === "roll-required" || fixture.stage === "confirmed"
+      ? undefined
+      : { ...(state.movementRolls ?? {}), [seatId]: 1 };
+    state.pendingTileChallenge = null;
+    placePlayer(state, seatId, fixture.stage === "confirmed" ? "votive-engine-room" : "ashwake-crossing");
+    setContract(state, seatId, routeContractId, 0);
+    if (fixture.stage === "confirmed") {
+      clearResolution(state);
+      state.lastOutcomeSummary = {
+        seatId,
+        movedToSectorId: "votive-engine-room",
+        encounterCardId: null,
+        encounterTitle: null,
+        encounterCardType: null,
+        checkStat: null,
+        die1: null,
+        die2: null,
+        statBonus: null,
+        checkTotal: null,
+        difficulty: null,
+        enemyRollerSeatId: null,
+        enemyDie1: null,
+        enemyDie2: null,
+        enemyBonus: null,
+        enemyTotal: null,
+        success: true,
+        summary: "Movement confirmed to Votive Engine Room."
+      };
     }
     return;
   }

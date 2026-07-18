@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import "@testing-library/jest-dom/vitest";
-import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { getChallengeThemeStyle } from "../../../game/ui/challengeTheme.js";
 import { PhoneInventoryPanel } from "../PhoneInventoryPanel.js";
@@ -238,6 +238,7 @@ const characters: CharacterCatalogEntry[] = [
 afterEach(() => {
   cleanup();
   window.localStorage.removeItem("ashenreach.phoneChromeVisible");
+  window.history.replaceState({}, "", "/");
   vi.useRealTimers();
 });
 
@@ -541,6 +542,9 @@ describe("PhoneInventoryPanel", () => {
         onLeave={vi.fn()}
       />
     );
+
+    openPhoneTabs();
+    fireEvent.click(screen.getByRole("tab", { name: /player card/i }));
 
     const statusEffects = screen.getByTestId("phone-portrait-status-effects");
 
@@ -1030,6 +1034,9 @@ describe("PhoneInventoryPanel", () => {
       />
     );
 
+    openPhoneTabs();
+    fireEvent.click(screen.getByRole("tab", { name: /player card/i }));
+
     const status = screen.getByText("Glass-Chime Swarm").closest("article");
     expect(status).toHaveTextContent(/next non-battle test: -1/i);
     expect(status).toHaveTextContent(/no battle or movement effect/i);
@@ -1066,6 +1073,9 @@ describe("PhoneInventoryPanel", () => {
       />
     );
 
+    openPhoneTabs();
+    fireEvent.click(screen.getByRole("tab", { name: /player card/i }));
+
     const status = screen.getByText("Spindle Static Squall").closest("article");
     expect(status).toHaveTextContent(/next normal movement roll: -1/i);
     expect(status).toHaveTextContent(/minimum result: 1/i);
@@ -1095,12 +1105,13 @@ describe("PhoneInventoryPanel", () => {
 
     expect(shell).toHaveClass("phone-shell--chrome-visible");
     expect(shell).toHaveClass("phone-shell--bottomdock-compact");
-    expect(within(screen.getByRole("banner")).getByRole("heading", { name: /lane/i })).toBeInTheDocument();
-    expect(screen.getByRole("banner")).toHaveTextContent(/sable vey/i);
+    const phoneTopbar = document.querySelector(".phone-topbar");
+    expect(within(phoneTopbar as HTMLElement).getByRole("heading", { name: /lane/i })).toBeInTheDocument();
+    expect(phoneTopbar).toHaveTextContent(/sable vey/i);
     expect(tablist).toHaveClass("phone-portrait-bottom-nav");
     expect(tablist).toHaveClass("phone-bottomdock--compact");
     expect(shell).toHaveAttribute("data-phone-bottom-dock-expanded", "false");
-    expect(screen.getByLabelText(/compact phone navigation/i)).toHaveTextContent(/player card/i);
+    expect(screen.getByLabelText(/compact phone navigation/i)).toHaveTextContent(/action/i);
     expect(screen.getByRole("button", { name: /hide ui/i })).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: /show tabs/i }));
@@ -1178,6 +1189,9 @@ describe("PhoneInventoryPanel", () => {
       />
     );
 
+    openPhoneTabs();
+    fireEvent.click(screen.getByRole("tab", { name: /player card/i }));
+
     const statsRegion = screen.getByLabelText(/character stats/i);
     const commandStat = within(statsRegion).getByRole("button", { name: /command stat 5/i });
     const commandHeading = commandStat.querySelector(".phone-stat-card-heading");
@@ -1219,7 +1233,7 @@ describe("PhoneInventoryPanel", () => {
     expect(document.querySelector(".phone-portrait-vitals")).toHaveTextContent(/scars 0/i);
     expect(document.querySelector(".phone-portrait-vitals")).not.toHaveTextContent(/heat/i);
     expect(document.querySelector(".phone-portrait-vitals")).not.toHaveTextContent(/trophies/i);
-    expect(screen.getByLabelText(/compact phone navigation/i)).toHaveTextContent(/player card/i);
+    expect(screen.getByRole("tab", { name: /player card/i })).toHaveAttribute("aria-selected", "true");
   });
 
   it("restores hidden phone chrome with Escape", () => {
@@ -1282,6 +1296,113 @@ describe("PhoneInventoryPanel", () => {
     });
   });
 
+  it("replaces global navigation only while authoritative movement is active", async () => {
+    const movementPatch = createPatch({
+      phase: "navigation",
+      encounter: null,
+      movementPlanner: {
+        active: true,
+        movementValue: 1,
+        currentSectorId: "outer_ember_sanctum",
+        currentSectorName: "Pilgrim Lock Gate",
+        destinations: []
+      }
+    });
+    const props = {
+      self: movementPatch.self,
+      roomCode: "RT7P4",
+      displayName: "Lane",
+      connectionStatus: "open",
+      activeSeatId: "seat-1",
+      activeContractCard: null,
+      characters,
+      onIntent: vi.fn(),
+      onLeave: vi.fn()
+    };
+    const { rerender } = render(<PortraitControllerView {...props} patch={movementPatch} />);
+
+    await waitFor(() => expect(screen.getByRole("navigation", { name: /movement navigation/i })).toBeInTheDocument());
+    expect(screen.queryByRole("tablist", { name: /phone navigation/i })).not.toBeInTheDocument();
+    expect(screen.queryByTestId("phone-action-guidance")).not.toBeInTheDocument();
+
+    const completedPatch = createPatch({ phase: "action", encounter: null, movementPlanner: null });
+    rerender(<PortraitControllerView {...props} self={completedPatch.self} patch={completedPatch} />);
+    await waitFor(() => expect(screen.getByRole("tablist", { name: /phone navigation/i })).toBeInTheDocument());
+    expect(screen.queryByRole("navigation", { name: /movement navigation/i })).not.toBeInTheDocument();
+  });
+
+  it("restores the focused battle UI for the authoritative assigned enemy roller", async () => {
+    const patch = createPatch({
+      activeSeatIndex: 1,
+      turnOrder: ["seat-1", "seat-2"],
+      seats: [
+        ...createPatch().seats,
+        { seatId: "seat-2", characterId: "signal-witch", displayName: "Mira", connected: true, ready: true, kicked: false }
+      ],
+      encounter: null,
+      activeResolution: null,
+      pendingEnemyRoll: {
+        fighterSeatId: "seat-2",
+        assignedRollerSeatId: "seat-1",
+        encounterCardId: "cinder-veil-stalker",
+        encounterTitle: "Cinder-Veil Stalker",
+        stat: "grit"
+      }
+    });
+
+    render(
+      <PortraitControllerView
+        self={patch.self}
+        roomCode="RT7P4"
+        displayName="Lane"
+        connectionStatus="open"
+        activeSeatId="seat-2"
+        activeContractCard={null}
+        patch={patch}
+        characters={characters}
+        onIntent={vi.fn()}
+        onLeave={vi.fn()}
+      />
+    );
+
+    await waitFor(() => expect(screen.getByTestId("phone-battle-shell")).toBeInTheDocument());
+    expect(screen.getByRole("button", { name: /roll for enemy/i })).toBeInTheDocument();
+    expect(screen.queryByRole("tablist", { name: /phone navigation/i })).not.toBeInTheDocument();
+  });
+
+  it("does not render the redundant Required now helper", () => {
+    const patch = createPatch({
+      phase: "navigation",
+      encounter: null,
+      movementPlanner: {
+        active: true,
+        movementValue: 1,
+        currentSectorId: "outer_ember_sanctum",
+        currentSectorName: "Pilgrim Lock",
+        destinations: []
+      }
+    });
+
+    render(
+      <PortraitControllerView
+        self={patch.self}
+        roomCode="RT7P4"
+        displayName="Lane"
+        connectionStatus="open"
+        activeSeatId="seat-1"
+        activeContractCard={null}
+        patch={patch}
+        characters={characters}
+        onIntent={vi.fn()}
+        onLeave={vi.fn()}
+      />
+    );
+
+    expect(screen.queryByTestId("phone-action-guidance")).not.toBeInTheDocument();
+    expect(screen.queryByText(/required now/i)).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /show current instruction/i })).not.toBeInTheDocument();
+  });
+
   it("keeps movement detail and Confirm Move usable when phone chrome is hidden", async () => {
     const onIntent = vi.fn();
     const movementPatch = createPatch({
@@ -1326,17 +1447,15 @@ describe("PhoneInventoryPanel", () => {
       />
     );
 
-    openPhoneTabs();
+    fireEvent.click(screen.getByRole("button", { name: /more/i }));
     expect(screen.getByRole("tab", { name: /move/i })).toHaveAttribute("aria-selected", "true");
-    expect(screen.getByTestId("phone-action-guidance")).toHaveAttribute("data-required-tab", "move");
-    expect(screen.getByTestId("phone-action-guidance")).toHaveTextContent(/move.*choose a destination/i);
     expect(screen.getByRole("tab", { name: /move/i })).toHaveClass("phone-portrait-tab-required");
     fireEvent.click(screen.getByRole("button", { name: /hide ui/i }));
-    expect(screen.getByTestId("movement-planner")).toBeInTheDocument();
+    expect(screen.getByTestId("phone-movement-view")).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: /ashwalk bridge/i }));
-    await waitFor(() => expect(screen.getByTestId("movement-confirm-footer")).toBeInTheDocument());
-    fireEvent.click(screen.getByRole("button", { name: /confirm move/i }));
+    fireEvent.click(screen.getByRole("button", { name: /select ashwalk bridge/i }));
+    await waitFor(() => expect(screen.getByTestId("movement-action-region")).toBeInTheDocument());
+    fireEvent.click(screen.getByRole("button", { name: /confirm ashwalk bridge/i }));
 
     expect(onIntent).toHaveBeenCalledWith({
       type: "MOVE_REQUESTED",
@@ -1393,8 +1512,6 @@ describe("PhoneInventoryPanel", () => {
 
     openPhoneTabs();
     expect(screen.getByRole("tab", { name: /shop/i })).toHaveAttribute("aria-selected", "true");
-    expect(screen.getByTestId("phone-action-guidance")).toHaveAttribute("data-required-tab", "shop");
-    expect(screen.getByTestId("phone-action-guidance")).toHaveTextContent(/shop.*browse equipment/i);
     fireEvent.click(screen.getByRole("button", { name: /hide ui/i }));
     expect(screen.getByTestId("phone-shop-panel")).toBeInTheDocument();
 
@@ -1462,12 +1579,10 @@ describe("PhoneInventoryPanel", () => {
       />
     );
 
-    const guidance = screen.getByTestId("phone-action-guidance");
-    expect(guidance).toHaveAttribute("data-required-tab", "waiting");
-    expect(guidance).toHaveTextContent(/waiting for mira/i);
-    expect(guidance).toHaveTextContent(/belongs to another operative/i);
+    expect(screen.queryByTestId("phone-action-guidance")).not.toBeInTheDocument();
+    expect(screen.getByText(/standby/i)).toBeInTheDocument();
     expect(screen.queryByTestId("phone-battle-primary-action")).not.toBeInTheDocument();
-    expect(guidance).not.toHaveTextContent(/reaction|option|roll your die/i);
+    expect(screen.queryByText(/roll your die/i)).not.toBeInTheDocument();
   });
 
   it("reasserts the authoritative active tab on every newer server patch", () => {
@@ -1826,6 +1941,121 @@ describe("PhoneInventoryPanel", () => {
     expect(within(mission).getByText("Gain Salvage")).toBeInTheDocument();
   });
 
+  it("archives a completed mission in inventory and offers a new mission on the Quest tab", () => {
+    const completedContract = {
+      id: "choir-hush-census",
+      name: "Choir Hush Census",
+      factionGiver: "Glass Choir",
+      text: "Record the quiet names.",
+      objective: { type: "defeatCount" as const, target: 1 },
+      reward: { type: "gain_salvage" as const, amount: 1 }
+    };
+    const nextContract = {
+      id: "compact-ember-courier",
+      name: "Ember Courier",
+      factionGiver: "Cinder Compact",
+      text: "Carry the sealed route.",
+      objective: { type: "defeatCount" as const, target: 2 },
+      reward: { type: "gain_salvage" as const, amount: 2 }
+    };
+    const base = createPatch({ encounter: null, activeResolution: null, availableContracts: [completedContract, nextContract] });
+    const self = base.self!;
+    const patch = {
+      ...base,
+      self: {
+        ...self,
+        character: { ...self.character, activeContract: null, completedContracts: [completedContract.id] }
+      }
+    } satisfies PhonePatchPayload;
+    const onIntent = vi.fn();
+
+    const view = render(<PhoneInventoryPanel patch={patch} onIntent={onIntent} />);
+    expect(screen.getByLabelText(/completed contract ledger/i)).toHaveTextContent("Choir Hush Census");
+    view.unmount();
+
+    render(
+      <PortraitControllerView
+        self={patch.self}
+        roomCode="RT7P4"
+        displayName="Lane"
+        connectionStatus="open"
+        activeSeatId="seat-1"
+        activeContractCard={null}
+        patch={patch}
+        characters={characters}
+        onIntent={onIntent}
+        onLeave={vi.fn()}
+      />
+    );
+    openPhoneTabs();
+    fireEvent.click(screen.getByRole("tab", { name: /^quest$/i }));
+    const chooser = screen.getByRole("region", { name: /choose new mission/i });
+    expect(within(chooser).queryByText("Choir Hush Census")).not.toBeInTheDocument();
+    fireEvent.click(within(chooser).getByRole("button", { name: /select mission/i }));
+    expect(onIntent).toHaveBeenCalledWith({
+      type: "ACCEPT_CONTRACT",
+      seatId: "seat-1",
+      contractId: nextContract.id
+    });
+  });
+
+  it("opens the replacement mission chooser when a mission completion is projected", async () => {
+    const contract = {
+      id: "choir-hush-census",
+      name: "Choir Hush Census",
+      factionGiver: "Glass Choir",
+      text: "Record the quiet names.",
+      objective: { type: "defeatCount" as const, target: 1 },
+      reward: { type: "gain_salvage" as const, amount: 1 }
+    };
+    const nextContract = { ...contract, id: "compact-ember-courier", name: "Ember Courier" };
+    const initial = createPatch({ encounter: null, activeResolution: null, availableContracts: [contract, nextContract] });
+    const initialSelf = initial.self!;
+    initial.self = {
+      ...initialSelf,
+      character: { ...initialSelf.character, activeContract: { contractId: contract.id, progress: 1 }, completedContracts: [] }
+    };
+    const view = render(
+      <PortraitControllerView
+        self={initial.self}
+        roomCode="RT7P4"
+        displayName="Lane"
+        connectionStatus="open"
+        activeSeatId="seat-1"
+        activeContractCard={contract}
+        patch={initial}
+        patchSequence={10}
+        characters={characters}
+        onIntent={vi.fn()}
+        onLeave={vi.fn()}
+      />
+    );
+    const completed = {
+      ...initial,
+      self: {
+        ...initial.self!,
+        character: { ...initial.self!.character, activeContract: null, completedContracts: [contract.id] }
+      }
+    } satisfies PhonePatchPayload;
+    view.rerender(
+      <PortraitControllerView
+        self={completed.self}
+        roomCode="RT7P4"
+        displayName="Lane"
+        connectionStatus="open"
+        activeSeatId="seat-1"
+        activeContractCard={null}
+        patch={completed}
+        patchSequence={11}
+        characters={characters}
+        onIntent={vi.fn()}
+        onLeave={vi.fn()}
+      />
+    );
+
+    expect(await screen.findByRole("region", { name: /choose new mission/i })).toBeInTheDocument();
+  });
+
   it("shows public scenario sheet progress and pressure on the Quest tab without private agenda data", () => {
     const patch = createPatch({
       encounter: null,
@@ -1999,7 +2229,7 @@ describe("PhoneInventoryPanel", () => {
     expect(onLobbyBack).toHaveBeenCalledOnce();
   });
 
-  it("keeps starting mission inspection separate from selecting either mission", () => {
+  it("keeps starting mission inspection separate from selecting either mission", async () => {
     const onIntent = vi.fn();
     const firstMission = {
       id: "choir-quietus",
@@ -2039,7 +2269,7 @@ describe("PhoneInventoryPanel", () => {
       readyDisabledReason: "Choose a starting mission before Ready"
     });
 
-    render(
+    const renderMissionPicker = (patchSequence: number) => (
       <PortraitControllerView
         self={lobbyPatch.self}
         roomCode="RT7P4"
@@ -2048,12 +2278,14 @@ describe("PhoneInventoryPanel", () => {
         activeSeatId={null}
         activeContractCard={null}
         patch={lobbyPatch}
+        patchSequence={patchSequence}
         characters={characters}
         onIntent={onIntent}
         onLeave={vi.fn()}
         onLobbyBack={vi.fn()}
       />
     );
+    const { rerender } = render(renderMissionPicker(1));
 
     const missionCards = document.querySelectorAll(".phone-starting-mission-card");
     expect(missionCards).toHaveLength(2);
@@ -2066,6 +2298,9 @@ describe("PhoneInventoryPanel", () => {
       contractId: firstMission.id
     });
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+
+    rerender(renderMissionPicker(2));
+    await waitFor(() => expect(screen.getAllByRole("button", { name: /^select mission$/i })).toHaveLength(2));
 
     fireEvent.click(within(missionCards[1] as HTMLElement).getByRole("button", { name: /^select mission$/i }));
     expect(onIntent).toHaveBeenCalledTimes(2);
@@ -2084,7 +2319,8 @@ describe("PhoneInventoryPanel", () => {
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: `Inspect ${firstMission.name}` })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: `Inspect ${secondMission.name}` })).toBeInTheDocument();
-    expect(screen.getAllByRole("button", { name: /^select mission$/i })).toHaveLength(2);
+    expect(screen.getAllByRole("button", { name: /^select mission$/i })).toHaveLength(1);
+    expect(screen.getByRole("button", { name: /^selecting/i })).toBeDisabled();
   });
 
   it("keeps the combat-card drawer filtered to usable timing-window cards", () => {

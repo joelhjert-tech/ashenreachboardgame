@@ -12,6 +12,7 @@ import { loadScarCards } from "../src/game/content/scars.js";
 import { loadThreatCards } from "../src/game/content/threats.js";
 import { loadTileChallenges } from "../src/game/content/tileChallenges.js";
 import { getThreatEffectTiming, isThreatEffectKey } from "../src/game/cards/threatEffects.js";
+import { validateThreatCategoryIdentity } from "../src/game/cards/cardCategories.js";
 import { FOLLOWER_ACQUISITION_SOURCES, QA_FOLLOWER_IDS } from "../src/game/data/followerAcquisition.js";
 import { BOARD_SPACES } from "../src/game/data/boardSpaces.js";
 import { BOARD_TEXT_EFFECTS, validateBoardTextEffectCoverage } from "../src/game/data/boardTextEffects.js";
@@ -268,6 +269,7 @@ for (const card of threats.values()) {
   if (failureEffect) validateEffect(failureEffect, `${card.id} failure`);
   validateThreatFamily(card);
   validateThreatMetadata(card);
+  errors.push(...validateThreatCategoryIdentity(card));
   validateThreatEffectKeys(card);
   validateGlassChimeSwarmRetirement(card);
   validateSirenRelayEchoRetirement(card);
@@ -672,6 +674,31 @@ function validateCanonicalDecks(): void {
 
   if (!innerThreatSeverities.some((severity) => severity >= 4)) {
     errors.push("Inner decks must include severity 4+ threats");
+  }
+
+  const canonicalDeckIds = {
+    threat: new Set(canonicalSectors.flatMap((sector) => sector.encounterDecks.threat)),
+    anomaly: new Set(canonicalSectors.flatMap((sector) => sector.encounterDecks.anomaly)),
+    escalation: new Set(canonicalSectors.flatMap((sector) => sector.encounterDecks.escalation))
+  };
+  const tileChallengeArtIds = new Set([...tileChallenges.values()].map((challenge) => challenge.artCardId));
+
+  for (const card of threats.values()) {
+    if (!canonicalDeckIds.threat.has(card.id) && !tileChallengeArtIds.has(card.id)) {
+      errors.push(`Threat ${card.id} is not reachable from a canonical sector deck or recurring tile challenge`);
+    }
+  }
+
+  for (const card of anomalies.values()) {
+    if (!canonicalDeckIds.anomaly.has(card.id)) {
+      errors.push(`Anomaly ${card.id} is not reachable from a canonical sector action`);
+    }
+  }
+
+  for (const card of escalations.values()) {
+    if (!canonicalDeckIds.escalation.has(card.id)) {
+      errors.push(`Escalation ${card.id} is not reachable from a canonical sector action`);
+    }
   }
 }
 

@@ -23,7 +23,8 @@ import type {
 } from "../shared/types.js";
 import { PhoneInventoryPanel } from "./PhoneInventoryPanel.js";
 import { PhoneActionPanel, type TurnActionTab } from "./PhoneActionPanel.js";
-import { isOpposedPhoneBattleActive } from "./PhoneBattleView.js";
+import type { MovementNavigationTarget } from "./PhoneMovementView.js";
+import { isPhoneBattleRelevantToSeat } from "./PhoneBattleView.js";
 import { getAfflictionEffectChips, getAfflictionStatusLabel } from "./afflictionPresentation.js";
 import { formatSignedStatBonus, getPhoneStatBreakdown } from "./statBreakdown.js";
 import { PhoneInspectableCardArt } from "./PhoneInspectableCardArt.js";
@@ -83,11 +84,7 @@ function getPhoneActionGuidance(patch: PhonePatchPayload | null, self: PhoneSelf
   const activeSeatId = patch.turnOrder[patch.activeSeatIndex] ?? null;
   const isActiveSeat = activeSeatId === self.seatId;
   const activeName = patch.seats.find((seat) => seat.seatId === activeSeatId)?.displayName ?? "the active player";
-  const ownsBattle = isOpposedPhoneBattleActive(patch) && (
-    patch.activeResolution?.playerId === self.seatId ||
-    patch.pendingEnemyRoll?.fighterSeatId === self.seatId ||
-    isActiveSeat
-  );
+  const ownsBattle = isPhoneBattleRelevantToSeat(patch, self.seatId);
 
   if (ownsBattle) {
     const stage = patch.activeResolution?.stage;
@@ -97,6 +94,22 @@ function getPhoneActionGuidance(patch: PhonePatchPayload | null, self: PhoneSelf
         ? "Roll your die when the battle control becomes available."
         : "Review the result and continue the resolution.";
     return { requiredTab: "battle", title: "Battle", detail, canAct: true };
+  }
+
+  if (patch.activeResolution?.playerId === self.seatId && patch.activeResolution.card) {
+    const category = patch.activeResolution.card.type;
+    const title = category === "anomaly"
+      ? "Anomaly"
+      : category === "escalation"
+        ? "Escalation"
+        : category === "event"
+          ? "Event"
+          : category === "asset"
+            ? "Asset find"
+            : category === "hazard"
+              ? "Hazard"
+              : "Encounter";
+    return { requiredTab: "battle", title, detail: "Review the test, result, and authored consequence.", canAct: true };
   }
 
   if (!isActiveSeat) {
@@ -125,7 +138,7 @@ function getPhoneActionGuidance(patch: PhonePatchPayload | null, self: PhoneSelf
     return { requiredTab: "shop", title: "Shop", detail: "Browse Equipment or choose a service.", canAct: true };
   }
 
-  if (patch.phase === "resolution") {
+  if (patch.phase === "resolution" || patch.phase === "sector" || patch.phase === "broadcast") {
     return { requiredTab: "action", title: "Action", detail: "Resolve the current choice or continue.", canAct: true };
   }
 
@@ -397,12 +410,14 @@ function ContractMissionCard({
   contract,
   recommended,
   selected,
+  pending,
   disabled,
   onSelect
 }: {
   contract: ContractCard;
   recommended?: boolean;
   selected?: boolean;
+  pending?: boolean;
   disabled?: boolean;
   onSelect?: () => void;
 }): ReactElement {
@@ -442,7 +457,7 @@ function ContractMissionCard({
         <span>{contract.objective.type === "defeatCount" ? "Threat lane" : "Sector action"}</span>
         {onSelect ? (
           <button type="button" className="phone-button phone-button-primary" disabled={disabled} onClick={onSelect}>
-            {selected ? "Selected" : "Select Mission"}
+            {pending ? "Selecting..." : selected ? "Selected" : "Select Mission"}
           </button>
         ) : null}
       </div>
@@ -694,7 +709,11 @@ export function PortraitControllerView({
   const [bottomDockExpanded, setBottomDockExpanded] = useState(false);
   const [expandedStat, setExpandedStat] = useState<Stat | null>(null);
   const [choosingStartingMission, setChoosingStartingMission] = useState(false);
+  const [pendingStartingContract, setPendingStartingContract] = useState<{ id: string; sequence: number } | null>(null);
+  const [pendingActiveContract, setPendingActiveContract] = useState<{ id: string; sequence: number } | null>(null);
   const startingMissionSectionRef = useRef<HTMLElement | null>(null);
+  const previousCompletedContractCountRef = useRef(self?.character.completedContracts?.length ?? 0);
+  const awaitingReplacementMissionRef = useRef(false);
   const phoneChromeHidden = !phoneChromeVisible;
   const actionGuidance = self ? getPhoneActionGuidance(patch, self) : null;
 
@@ -758,6 +777,45 @@ export function PortraitControllerView({
     self?.seatId
   ]);
 
+  useEffect(() => {
+    if (!pendingStartingContract) {
+      return;
+    }
+
+    if (patch?.selectedStartingContract?.id === pendingStartingContract.id) {
+      setPendingStartingContract(null);
+      setChoosingStartingMission(false);
+      return;
+    }
+
+    if (typeof patchSequence === "number" && patchSequence > pendingStartingContract.sequence) {
+      setPendingStartingContract(null);
+    }
+  }, [patch?.selectedStartingContract?.id, patchSequence, pendingStartingContract]);
+
+  useEffect(() => {
+    const completedCount = self?.character.completedContracts?.length ?? 0;
+    if (completedCount > previousCompletedContractCountRef.current && !self?.character.activeContract) {
+      awaitingReplacementMissionRef.current = true;
+    }
+    if (awaitingReplacementMissionRef.current && patch?.phase === "action" && !self?.character.activeContract) {
+      setActiveTab("quests");
+      awaitingReplacementMissionRef.current = false;
+    }
+    previousCompletedContractCountRef.current = completedCount;
+  }, [patch?.phase, self?.character.activeContract, self?.character.completedContracts?.length]);
+
+  useEffect(() => {
+    if (!pendingActiveContract) return;
+    if (self?.character.activeContract?.contractId === pendingActiveContract.id) {
+      setPendingActiveContract(null);
+      return;
+    }
+    if (typeof patchSequence === "number" && patchSequence > pendingActiveContract.sequence) {
+      setPendingActiveContract(null);
+    }
+  }, [patchSequence, pendingActiveContract, self?.character.activeContract?.contractId]);
+
   const handleLeave = () => {
     writeStoredPhoneChromeVisible(true);
     setPhoneChromeVisible(true);
@@ -785,12 +843,7 @@ export function PortraitControllerView({
   const localUnboundNemeses = (patch?.nemesisChampions ?? []).filter(
     (nemesis) => nemesis.boundPlayerId !== self.seatId && nemesis.sectorId === self.character.currentSpaceId && !nemesis.defeated
   );
-  const selfIsActiveSeat = patch?.turnOrder[patch.activeSeatIndex] === self.seatId;
-  const opposedBattleActive = isOpposedPhoneBattleActive(patch) && Boolean(
-    patch?.activeResolution?.playerId === self.seatId ||
-    patch?.pendingEnemyRoll?.fighterSeatId === self.seatId ||
-    selfIsActiveSeat
-  );
+  const opposedBattleActive = isPhoneBattleRelevantToSeat(patch, self.seatId);
   const suppressedEquipmentInstanceIds = new Set(
     (patch?.equipmentSuppressions ?? [])
       .filter((suppression) => suppression.active)
@@ -803,7 +856,7 @@ export function PortraitControllerView({
     const startingGear = self.character.heldGear;
     const startingContractOptions = patch?.startingContractOptions ?? [];
     const selectedStartingContract = patch?.selectedStartingContract ?? null;
-    const canReady = Boolean(patch?.canReady && selectedStartingContract && onIntent && !isReady && !choosingStartingMission);
+    const canReady = Boolean(patch?.canReady && selectedStartingContract && onIntent && !isReady && !choosingStartingMission && !pendingStartingContract);
     const joinedSeats = patch?.seats.filter((seat) => seat.displayName && !seat.kicked) ?? [];
     const canHostStart = Boolean(
       !isLateJoinPending &&
@@ -866,10 +919,11 @@ export function PortraitControllerView({
                         key={contract.id}
                         contract={contract}
                         recommended={index === 0}
-                        disabled={!onIntent}
-                        selected={contract.id === selectedStartingContract?.id}
+                        disabled={!onIntent || Boolean(pendingStartingContract) || contract.id === selectedStartingContract?.id}
+                        selected={contract.id === (pendingStartingContract?.id ?? selectedStartingContract?.id)}
+                        pending={contract.id === pendingStartingContract?.id}
                         onSelect={() => {
-                          setChoosingStartingMission(false);
+                          setPendingStartingContract({ id: contract.id, sequence: patchSequence ?? 0 });
                           onIntent?.({
                             type: "SELECT_STARTING_CONTRACT",
                             seatId: self.seatId,
@@ -976,11 +1030,16 @@ export function PortraitControllerView({
     );
   }
 
+  const movementFlowActive = Boolean(
+    activeTab === "move" &&
+    (patch?.phase === "navigation" || patch?.movementPlanner?.active || patch?.outcomeSummary?.movedToSectorId)
+  );
   const rootClassName = [
     "phone-portrait-controller",
     phoneChromeVisible ? "phone-shell--chrome-visible" : "phone-shell--immersive",
     bottomDockExpanded ? "phone-shell--bottomdock-expanded" : "phone-shell--bottomdock-compact",
-    opposedBattleActive ? "phone-shell--battle-active" : ""
+    opposedBattleActive ? "phone-shell--battle-active" : "",
+    movementFlowActive ? "phone-shell--movement-active" : ""
   ]
     .filter(Boolean)
     .join(" ");
@@ -1006,6 +1065,17 @@ export function PortraitControllerView({
   const scarCards = self.character.scarCards ?? [];
   const afflictions = self.character.afflictions ?? { faceup: [], facedownCount: 0 };
   const pendingTestModifiers = patch?.pendingTestModifiers ?? [];
+  const handleMovementNavigation = (target: MovementNavigationTarget): void => {
+    if (target === "player") {
+      setActiveTab("player");
+      return;
+    }
+    if (target === "inventory") {
+      setActiveTab("inventory");
+      return;
+    }
+    showBottomDock();
+  };
 
   return (
     <section
@@ -1063,19 +1133,6 @@ export function PortraitControllerView({
         </header>
 
         <main className={contentClassName} aria-label="Phone content">
-          {actionGuidance && !opposedBattleActive ? (
-            <section
-              className={`phone-action-guidance${actionGuidance.canAct ? " is-actionable" : " is-waiting"}`}
-              data-testid="phone-action-guidance"
-              data-required-tab={actionGuidance.requiredTab ?? "waiting"}
-              role="status"
-              aria-live="polite"
-            >
-              <span>{actionGuidance.canAct ? "Required now" : "Table status"}</span>
-              <strong>{actionGuidance.title}{actionGuidance.requiredTab ? ` — ${actionGuidance.detail}` : ""}</strong>
-              {!actionGuidance.requiredTab ? <p>{actionGuidance.detail}</p> : null}
-            </section>
-          ) : null}
           {opposedBattleActive && patch && onIntent ? (
             <div className="phone-portrait-screen phone-portrait-screen-command phone-portrait-screen-battle" data-testid="phone-action-screen">
               <PhoneActionPanel
@@ -1268,6 +1325,29 @@ export function PortraitControllerView({
                 <div className="phone-sheet-section-heading">Active Mission</div>
                 <ActiveMissionQuestCard activeContract={self.character.activeContract} contract={activeContractCard} />
               </section>
+              {!self.character.activeContract && patch?.availableContracts?.length ? (
+                <section className="phone-portrait-section phone-new-mission-section" aria-label="Choose new mission">
+                  <div className="phone-sheet-section-heading">Choose New Mission</div>
+                  <p className="phone-muted-copy">Your completed mission is archived. Choose the next objective.</p>
+                  <div className="phone-starting-mission-list">
+                    {patch.availableContracts
+                      .filter((contract) => !(self.character.completedContracts ?? []).includes(contract.id))
+                      .map((contract) => (
+                        <ContractMissionCard
+                          key={contract.id}
+                          contract={contract}
+                          pending={pendingActiveContract?.id === contract.id}
+                          disabled={!onIntent || Boolean(pendingActiveContract) || patch.phase !== "action"}
+                          onSelect={() => {
+                            setPendingActiveContract({ id: contract.id, sequence: patchSequence ?? 0 });
+                            onIntent?.({ type: "ACCEPT_CONTRACT", seatId: self.seatId, contractId: contract.id });
+                          }}
+                        />
+                      ))}
+                  </div>
+                  {patch.phase !== "action" ? <small>Finish the current result before selecting the next mission.</small> : null}
+                </section>
+              ) : null}
               <section className="phone-portrait-section">
                 <div className="phone-sheet-section-heading">Scenario</div>
                 <article className="phone-portrait-info-card phone-scenario-quest-card" data-testid="phone-scenario-sheet-summary">
@@ -1337,6 +1417,8 @@ export function PortraitControllerView({
                   selectedTurnTab={activeTab}
                   onSelectedTurnTab={setActiveTab}
                   hideTurnTabs
+                  onMovementNavigation={handleMovementNavigation}
+                  showMovementContextNavigation={!bottomDockExpanded}
                 />
               ) : (
                 <section className="phone-portrait-section">
@@ -1348,7 +1430,7 @@ export function PortraitControllerView({
           )}
         </main>
 
-        {!opposedBattleActive ? <nav className={bottomNavClassName} role="tablist" aria-label="Phone navigation">
+        {!opposedBattleActive && (!movementFlowActive || bottomDockExpanded) ? <nav className={bottomNavClassName} role="tablist" aria-label="Phone navigation">
           {bottomDockExpanded ? (
             <>
               {[

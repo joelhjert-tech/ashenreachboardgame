@@ -1,0 +1,185 @@
+// @vitest-environment jsdom
+import { useState } from "react";
+import "@testing-library/jest-dom/vitest";
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import type { ClientIntent, PublicMovementPlannerState } from "../../shared/types.js";
+import { PhoneMovementView } from "../PhoneMovementView.js";
+
+const longDestinationName = "The Reliquary Transit Exchange Beyond Glassmere";
+
+afterEach(cleanup);
+
+const planner: PublicMovementPlannerState = {
+  active: true,
+  movementValue: 1,
+  rolledValue: 1,
+  currentSectorId: "ashwake-crossing",
+  currentSectorName: "Ashwalk Bridge",
+  destinations: [
+    {
+      sectorId: "votive-engine-room",
+      name: longDestinationName,
+      ring: "outer",
+      distance: 1,
+      route: ["ashwake-crossing", "votive-engine-room"],
+      routeNames: ["Ashwalk Bridge", longDestinationName],
+      tags: ["shop"],
+      threatIcons: ["red"],
+      ruleText: "Pay the bridge toll before using the foundry service.",
+      loreText: "An iron market waits behind the toll arch.",
+      shop: { shopId: "shop-a", shopName: "Votive Requisition", status: "open", servicesPreview: ["Repair gear"] },
+      faceUpThreats: [],
+      occupants: [],
+      strategicTags: ["shop", "danger"]
+    },
+    {
+      sectorId: "glassmere-spindle",
+      name: "Glass Signal Pier",
+      ring: "outer",
+      distance: 1,
+      route: ["ashwake-crossing", "glassmere-spindle"],
+      routeNames: ["Ashwalk Bridge", "Glass Signal Pier"],
+      tags: [],
+      threatIcons: [],
+      ruleText: "Tune the pier signal.",
+      faceUpThreats: [],
+      occupants: [],
+      strategicTags: ["safe", "reward"]
+    }
+  ]
+};
+
+function Harness({ onIntent }: { onIntent: (intent: ClientIntent) => void }) {
+  const [selected, setSelected] = useState<string | null>(null);
+  return (
+    <PhoneMovementView
+      planner={planner}
+      seatId="seat-1"
+      activeContract={null}
+      currentSectorName="Ashwalk Bridge"
+      canRoll={false}
+      movementResolving={false}
+      travel={null}
+      selectedSectorId={selected}
+      onSelectedSectorId={setSelected}
+      onIntent={onIntent}
+      showContextNavigation
+    />
+  );
+}
+
+describe("PhoneMovementView", () => {
+  it("uses the authoritative preview and move intents", () => {
+    const onIntent = vi.fn();
+    render(<Harness onIntent={onIntent} />);
+
+    expect(screen.getAllByTestId("movement-primary-action")).toHaveLength(1);
+    expect(screen.queryByText(/attack|defense|a\s*\/\s*d/i)).not.toBeInTheDocument();
+    expect(screen.getAllByText("View details")[0]!.closest("details")).not.toHaveAttribute("open");
+
+    fireEvent.click(screen.getByRole("button", { name: `Select ${longDestinationName}` }));
+    expect(onIntent).toHaveBeenCalledWith({
+      type: "MOVEMENT_DESTINATION_PREVIEWED",
+      seatId: "seat-1",
+      toSectorId: "votive-engine-room"
+    });
+    expect(screen.getByTestId("movement-primary-action")).toHaveTextContent(`Confirm ${longDestinationName}`);
+
+    fireEvent.click(screen.getAllByText("View details")[0]!);
+    expect(screen.getAllByText("View details")[0]!.closest("details")).toHaveAttribute("open");
+    expect(screen.getByText(`Ashwalk Bridge → ${longDestinationName}`)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId("movement-primary-action"));
+    expect(onIntent).toHaveBeenLastCalledWith({
+      type: "MOVE_REQUESTED",
+      seatId: "seat-1",
+      toSectorId: "votive-engine-room",
+      movementRevision: undefined,
+      routeId: undefined,
+      voidKeyInstanceId: undefined
+    });
+  });
+
+  it("shows one disabled action until a destination is selected", () => {
+    render(<Harness onIntent={vi.fn()} />);
+    const actionRegion = screen.getByTestId("movement-action-region");
+    const buttons = within(actionRegion).getAllByRole("button");
+    expect(buttons).toHaveLength(1);
+    expect(buttons[0]).toBeDisabled();
+    expect(buttons[0]).toHaveTextContent("Select a destination");
+  });
+
+  it("clears the authoritative preview when Change is pressed", () => {
+    const onIntent = vi.fn();
+    render(<Harness onIntent={onIntent} />);
+    fireEvent.click(screen.getByRole("button", { name: `Select ${longDestinationName}` }));
+    fireEvent.click(screen.getByRole("button", { name: "Change" }));
+    expect(onIntent).toHaveBeenLastCalledWith({
+      type: "MOVEMENT_DESTINATION_PREVIEWED",
+      seatId: "seat-1",
+      toSectorId: null
+    });
+  });
+
+  it("uses one compact roll action before the planner is active", () => {
+    const onIntent = vi.fn();
+    render(
+      <PhoneMovementView
+        planner={null}
+        seatId="seat-1"
+        activeContract={null}
+        currentSectorName="Ashwalk Bridge"
+        canRoll
+        movementResolving={false}
+        travel={null}
+        selectedSectorId={null}
+        onSelectedSectorId={vi.fn()}
+        onIntent={onIntent}
+        showContextNavigation
+      />
+    );
+    expect(screen.getAllByRole("button", { name: "Roll movement" })).toHaveLength(1);
+    fireEvent.click(screen.getByRole("button", { name: "Roll movement" }));
+    expect(onIntent).toHaveBeenCalledWith({ type: "MOVEMENT_ROLL_REQUESTED", seatId: "seat-1" });
+  });
+
+  it("keeps technical route identifiers out of rendered copy", () => {
+    render(<Harness onIntent={vi.fn()} />);
+    expect(screen.queryByText(/votive-engine-room|ashwake-crossing/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/stored movement roll|why legal|raw route/i)).not.toBeInTheDocument();
+  });
+
+  it("keeps the authoritative Route Compass adjustment as a secondary confirmed control", () => {
+    const onIntent = vi.fn();
+    render(
+      <PhoneMovementView
+        planner={{
+          ...planner,
+          compassPrompt: { instanceId: "compass-1", currentCharges: 2, maxCharges: 2, canDecrease: true, canIncrease: true }
+        }}
+        seatId="seat-1"
+        activeContract={null}
+        currentSectorName="Ashwalk Bridge"
+        canRoll={false}
+        movementResolving={false}
+        travel={null}
+        selectedSectorId={null}
+        onSelectedSectorId={vi.fn()}
+        onIntent={onIntent}
+        showContextNavigation
+      />
+    );
+    expect(screen.getByTestId("movement-adjustments")).not.toHaveAttribute("open");
+    fireEvent.click(screen.getByText("Movement calculation"));
+    fireEvent.click(screen.getByRole("button", { name: "Move +1" }));
+    expect(onIntent).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: /confirm \+1/i }));
+    expect(onIntent).toHaveBeenCalledWith({
+      type: "ADJUST_MOVEMENT_REQUESTED",
+      seatId: "seat-1",
+      instanceId: "compass-1",
+      adjustment: 1
+    });
+  });
+});
