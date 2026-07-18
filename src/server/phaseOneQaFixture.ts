@@ -4,6 +4,7 @@ import { loadThreatCards } from "../game/content/threats.js";
 import { loadFollowers } from "../game/content/followers.js";
 import { loadAnomalyCards } from "../game/content/anomalies.js";
 import { loadEscalationCards } from "../game/content/escalations.js";
+import { loadCharacters } from "../game/content/characters.js";
 import type { GameState } from "../game/schema/session.schema.js";
 import { getIntrinsicBaseStat } from "../game/rules/cooperativeAssistance.js";
 
@@ -28,6 +29,10 @@ export type PhaseOneQaFixture =
   | {
       kind: "cooperative-assistance";
       stage: "active-selector" | "helper-pending" | "one-accepted" | "two-accepted" | "result" | "scenario-node";
+    }
+  | {
+      kind: "cinder-wattle";
+      stage: "player-card" | "ability-available" | "ability-prepared" | "ability-used" | "battle-result" | "hazard-result";
     }
   | { kind: "card-category"; stage: "enemy" | "hazard" | "event" | "anomaly" | "escalation" | "persistent" };
 
@@ -410,6 +415,63 @@ export function applyPhaseOneQaFixture(state: GameState, seatId: string, fixture
         { ...lantern, instanceId: "qa-choir-lantern", currentCharges: 2, maxCharges: 2 }
       ];
       player.character.equippedGear.utility = lantern.id;
+    }
+    return;
+  }
+
+  if (fixture.kind === "cinder-wattle") {
+    const player = state.players.find((entry) => entry.seatId === seatId);
+    const cw = loadCharacters().get("cinder-wattle");
+    if (!player || !cw) throw new Error("QA fixture cannot load Cinder Wattle");
+    player.character = {
+      ...cw,
+      salvage: player.character.salvage ?? (state.sessionMode === "single-player" ? 4 : 3),
+      heldGear: player.character.heldGear,
+      equippedGear: player.character.equippedGear
+    };
+    state.phase = "action";
+
+    if (fixture.stage === "player-card") return;
+    const threat = loadThreatCards().get(fixture.stage === "hazard-result" ? "glass-chime-swarm" : "lantern-ash-ghoul");
+    if (!threat) throw new Error("QA fixture cannot load Cinder Wattle test threat");
+    state.currentEncounter = threat;
+    state.activeResolution = {
+      id: `qa-cw:${fixture.stage}`,
+      playerId: seatId,
+      source: "threat",
+      stage: fixture.stage === "ability-available" || fixture.stage === "ability-prepared" ? "battle_setup" : "outcome_summary",
+      card: { id: threat.id, title: threat.title, type: threat.cardType, flavor: threat.flavor, artType: "threat" },
+      battle: {
+        stat: threat.stat,
+        difficulty: threat.difficulty,
+        modifiers: [
+          { label: `Base ${threat.stat}`, value: 3 },
+          ...(fixture.stage === "ability-prepared" || fixture.stage === "battle-result" || fixture.stage === "hazard-result"
+            ? [{ label: "Scrap-Crowned Instinct", value: 1 }]
+            : [])
+        ]
+      },
+      ...(fixture.stage === "ability-used" || fixture.stage === "battle-result" || fixture.stage === "hazard-result"
+        ? {
+            roll: { dice: [3, 4], baseTotal: 7, modifierTotal: 4, finalTotal: 11, target: threat.difficulty, success: true },
+            outcome: { title: "Instinct holds", text: "CW's warning click lands before the breach answers.", effects: [] }
+          }
+        : {})
+    };
+    if (["ability-prepared", "ability-used", "battle-result", "hazard-result"].includes(fixture.stage)) {
+      state.eventLog.push({
+        type: "ABILITY_TRIGGERED",
+        seatId,
+        abilityId: "scrap-crowned-instinct",
+        sourceId: threat.id,
+        testedStat: threat.stat,
+        rollModifier: { label: "Scrap-Crowned Instinct", value: 1, stat: threat.stat, mode: threat.cardType === "enemy" ? "battle" : "check" },
+        summary: `Scrap-Crowned Instinct prepared +1 ${threat.stat}.`,
+        createdAt: "qa-cinder-wattle-instinct"
+      });
+    }
+    if (["ability-used", "battle-result", "hazard-result"].includes(fixture.stage)) {
+      state.eventLog.push({ type: threat.cardType === "enemy" ? "COMBAT_RESOLVED" : "CHECK_ROLLED", seatId, createdAt: "qa-cinder-wattle-resolved" });
     }
     return;
   }

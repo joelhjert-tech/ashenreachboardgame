@@ -1,6 +1,7 @@
 import WebSocket from "ws";
 import { describe, expect, it, vi } from "vitest";
 import { createSequenceRandomSource } from "../../game/engine/dice.js";
+import { loadCharacters } from "../../game/content/characters.js";
 import { loadThreatCards } from "../../game/content/threats.js";
 import type { ThreatCard } from "../../game/schema/card.schema.js";
 import { sessionSnapshotSchema } from "../../game/schema/session.schema.js";
@@ -75,6 +76,28 @@ describe("authoritative cooperative assistance lifecycle", () => {
       total: 4
     });
     expect(server.getState().eventLog.filter((event) => (event as { type?: string }).type === "COOPERATIVE_ASSISTED_ROLL_RESOLVED")).toHaveLength(1);
+  });
+
+  it("uses Cinder Wattle's base 3 and ignores its gear and prepared instinct while helping", () => {
+    const server = createServer();
+    const cw = loadCharacters().get("cinder-wattle")!;
+    server.getState().players[1]!.character = {
+      ...cw,
+      heldGear: [{
+        id: "helper-signal-rig",
+        name: "Helper Signal Rig",
+        slot: "utility",
+        statBonus: { stat: "signal", amount: 4 },
+        tier: "standard"
+      }],
+      equippedGear: { weapon: null, armor: null, utility: "helper-signal-rig" }
+    };
+    server.handleIntent(client("seat-1"), { type: "COOPERATIVE_ASSISTANCE_REQUESTED", seatId: "seat-1", sourceId: hazard.id, stat: "signal", helperSeatIds: ["seat-2"] });
+    const requestId = server.getState().cooperativeAssistance!.id;
+    server.handleIntent(client("seat-2"), { type: "COOPERATIVE_ASSISTANCE_RESPONDED", seatId: "seat-2", requestId, accept: true });
+    server.handleIntent(client("seat-1"), { type: "COOPERATIVE_ASSISTANCE_LOCKED", seatId: "seat-1", requestId });
+
+    expect(server.getState().cooperativeAssistance?.lockedContributions).toEqual([{ seatId: "seat-2", value: 3 }]);
   });
 
   it("adds assistance to an enemy battle while rolling each side exactly once", () => {

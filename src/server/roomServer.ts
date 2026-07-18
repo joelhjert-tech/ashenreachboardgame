@@ -1809,13 +1809,18 @@ export class GameRoomServer {
         break;
       }
 
-      if (entry?.seatId === seatId && (entry.type === "COMBAT_RESOLVED" || entry.type === "CHECK_ROLLED")) {
+      if (
+        entry?.seatId === seatId &&
+        (entry.type === "COMBAT_RESOLVED" ||
+          entry.type === "CHECK_ROLLED" ||
+          entry.type === "COOPERATIVE_ASSISTED_ROLL_RESOLVED")
+      ) {
         break;
       }
 
       if (
         entry?.seatId === seatId &&
-        (entry.type === "USE_GEAR" || entry.type === "USE_FOLLOWER") &&
+        (entry.type === "USE_GEAR" || entry.type === "USE_FOLLOWER" || entry.type === "ABILITY_TRIGGERED") &&
         entry.rollModifier?.stat === stat &&
         entry.rollModifier.mode === mode
       ) {
@@ -3534,6 +3539,72 @@ export class GameRoomServer {
     return false;
   }
 
+  private getScrapCrownedInstinctContext(seatId: string): {
+    stat: Stat;
+    mode: "battle" | "check";
+    sourceId: string;
+    sourceTitle: string;
+  } | null {
+    const player = this.state.players.find((entry) => entry.seatId === seatId);
+    if (
+      !player ||
+      player.character.id !== "cinder-wattle" ||
+      player.character.status !== "active" ||
+      this.state.status !== "active" ||
+      this.state.turnOrder[this.state.activeSeatIndex] !== seatId ||
+      this.hasPendingRoll(seatId)
+    ) return null;
+
+    const pending = this.state.pendingCooperativeTest;
+    if (pending?.activeSeatId === seatId) {
+      return {
+        stat: pending.stat,
+        mode: "check",
+        sourceId: pending.sourceId,
+        sourceTitle: pending.sourceTitle
+      };
+    }
+
+    const resolution = this.state.activeResolution;
+    if (resolution?.playerId === seatId && resolution.stage === "battle_setup" && resolution.battle) {
+      const encounter = this.state.currentEncounter;
+      return {
+        stat: resolution.battle.stat,
+        mode: encounter?.cardType === "enemy" ? "battle" : "check",
+        sourceId: encounter?.id ?? resolution.card?.id ?? resolution.id,
+        sourceTitle: encounter?.title ?? resolution.card?.title ?? "Skill test"
+      };
+    }
+
+    if (this.state.phase === "action" && !this.state.currentEncounter && isScenarioConfrontationSpace(player.character.currentSpaceId)) {
+      const firstCheck = this.buildScenarioPlan(player).checks[0];
+      const scenario = getScenarioDefinition(this.state.activeScenarioId);
+      if (firstCheck && scenario) {
+        return {
+          stat: firstCheck.stat,
+          mode: "check",
+          sourceId: scenario.id,
+          sourceTitle: scenario.confrontationTitle
+        };
+      }
+    }
+
+    const boardSpace = getBoardSpace(player.character.currentSpaceId);
+    if (this.state.phase === "action" && !this.state.currentEncounter && boardSpace && !boardSpace.textBox.choices?.length) {
+      const check = resolveSpaceText(boardSpace.textBox.effectKey).check;
+      if (check?.stat) {
+        return {
+          stat: check.stat,
+          mode: "check",
+          sourceId: boardSpace.textBox.effectKey,
+          sourceTitle: boardSpace.textBox.title
+        };
+      }
+    }
+
+    return null;
+  }
+
   private hasAbilityTriggeredThisSession(seatId: string, abilityId: string): boolean {
     return this.state.eventLog.some((entry) => {
       const event = entry as { type?: string; seatId?: string; abilityId?: string } | undefined;
@@ -3545,7 +3616,8 @@ export class GameRoomServer {
     seatId: string,
     abilityId: string,
     summary: string,
-    updater: (player: PlayerState) => PlayerState
+    updater: (player: PlayerState) => PlayerState,
+    eventDetails: Record<string, unknown> = {}
   ): void {
     let changed = false;
 
@@ -3603,6 +3675,7 @@ export class GameRoomServer {
           seatId,
           abilityId,
           summary,
+          ...eventDetails,
           createdAt: new Date().toISOString()
         }
       ]
@@ -6383,7 +6456,8 @@ export class GameRoomServer {
       ...getEquippedGearModifierSources(player.character, test.stat),
       ...(this.getScenarioSkillModifier(test.activeSeatId)
         ? [{ label: "Scenario", value: this.getScenarioSkillModifier(test.activeSeatId) }]
-        : [])
+        : []),
+      ...this.getPendingRollModifierSources(test.activeSeatId, test.stat, "check")
     ];
     const helperSources: RollModifierSource[] = contributions.map((entry) => {
       const helper = this.state.players.find((candidate) => candidate.seatId === entry.seatId);
@@ -6958,7 +7032,8 @@ export class GameRoomServer {
       const statBonus = cooperativeRoll?.statBonus ?? (
         player.character.stats[resolution.check.stat] +
         getEquippedGearModifierSources(player.character, resolution.check.stat).reduce((sum, source) => sum + source.value, 0) +
-        this.getScenarioSkillModifier(intent.seatId)
+        this.getScenarioSkillModifier(intent.seatId) +
+        this.sumModifierSources(this.getPendingRollModifierSources(intent.seatId, resolution.check.stat, "check"))
       );
       const difficulty = cooperativeRoll?.difficulty ?? (resolution.check.difficulty + escalationModifier);
       const total = cooperativeRoll?.total ?? (roll.total + statBonus);
@@ -7060,6 +7135,29 @@ export class GameRoomServer {
 
   private resolveCharacterAbilityIntent(intent: Extract<ClientIntent, { type: "USE_CHARACTER_ABILITY" }>): void {
     const player = this.state.players.find((entry) => entry.seatId === intent.seatId);
+
+    if (player?.character.id === "cinder-wattle" && intent.abilityId === "scrap-crowned-instinct") {
+      const context = this.getScrapCrownedInstinctContext(intent.seatId);
+      if (!context) {
+        throw new IntentRejectedError(intent.type, "Scrap-Crowned Instinct requires a known eligible test before dice are revealed.");
+      }
+      if (this.hasAbilityTriggeredThisRound(intent.seatId, intent.abilityId)) {
+        throw new IntentRejectedError(intent.type, "Scrap-Crowned Instinct has already been used this round.");
+      }
+      const label = "Scrap-Crowned Instinct";
+      this.applyAbilityMutation(
+        intent.seatId,
+        intent.abilityId,
+        `${label} prepared +1 ${CHALLENGE_LABELS[context.stat]} for ${context.sourceTitle}.`,
+        (entry) => ({ ...entry }),
+        {
+          sourceId: context.sourceId,
+          testedStat: context.stat,
+          rollModifier: { label, value: 1, stat: context.stat, mode: context.mode }
+        }
+      );
+      return;
+    }
 
     if (!player || player.character.id !== "cinder-monk" || intent.abilityId !== "cinder-oath") {
       throw new IntentRejectedError(intent.type, "That character ability is not available to this operative.");
@@ -7191,12 +7289,15 @@ export class GameRoomServer {
     const confrontationModifier = getEscalationModifier(this.state.escalationLevel);
 
     const cinderOathBonus = player.character.id === "cinder-monk" && this.hasAbilityTriggeredThisRound(intent.seatId, "cinder-oath") ? 2 : 0;
-    const results = plan.checks.map((check) => {
+    const results = plan.checks.map((check, index) => {
       const roll = rollDice(2, 6, this.randomSource);
+      const scrapCrownedBonus = index === 0
+        ? this.sumModifierSources(this.getPendingRollModifierSources(intent.seatId, check.stat, "check"))
+        : 0;
       const statBonus =
         player.character.stats[check.stat] +
         getEquippedGearModifierSources(player.character, check.stat).reduce((sum, source) => sum + source.value, 0) +
-        this.getScenarioSkillModifier(intent.seatId) + cinderOathBonus;
+        this.getScenarioSkillModifier(intent.seatId) + cinderOathBonus + scrapCrownedBonus;
       const difficulty = check.difficulty + confrontationModifier;
       const total = roll.total + statBonus;
 
@@ -10514,6 +10615,66 @@ function buildCooperativeAssistanceEligibility(state: GameState, seatId: string)
   };
 }
 
+function buildCinderWattleAbilityProjection(state: GameState, seatId: string): Record<string, unknown> | null {
+  const player = state.players.find((entry) => entry.seatId === seatId);
+  if (player?.character.id !== "cinder-wattle") return null;
+
+  let usedThisRound = false;
+  let prepared = false;
+  let rollResolvedSinceAbility = false;
+  for (let index = state.eventLog.length - 1; index >= 0; index -= 1) {
+    const event = state.eventLog[index] as { type?: string; seatId?: string; abilityId?: string } | undefined;
+    if (event?.type === "ROUND_COMPLETED") break;
+    if (
+      event?.seatId === seatId &&
+      [
+        "COMBAT_RESOLVED",
+        "CHECK_ROLLED",
+        "COOPERATIVE_ASSISTED_ROLL_RESOLVED",
+        "SPACE_TEXT_RESOLVED",
+        "SCENARIO_CONFRONTATION_RESOLVED"
+      ].includes(event.type ?? "")
+    ) {
+      rollResolvedSinceAbility = true;
+    }
+    if (event?.type === "ABILITY_TRIGGERED" && event.seatId === seatId && event.abilityId === "scrap-crowned-instinct") {
+      usedThisRound = true;
+      prepared = !rollResolvedSinceAbility;
+      break;
+    }
+  }
+
+  const pending = state.pendingCooperativeTest?.activeSeatId === seatId ? state.pendingCooperativeTest : null;
+  const resolution = state.activeResolution?.playerId === seatId && state.activeResolution.stage === "battle_setup"
+    ? state.activeResolution
+    : null;
+  const stat = pending?.stat ?? resolution?.battle?.stat ?? null;
+  const sourceTitle = pending?.sourceTitle ?? state.currentEncounter?.title ?? resolution?.card?.title ?? null;
+  const active = state.status === "active" && state.turnOrder[state.activeSeatIndex] === seatId;
+  const available = active && Boolean(stat) && !usedThisRound && !state.pendingEnemyRoll;
+  const disabledReason = prepared
+    ? `Prepared: +1 ${stat ? CHALLENGE_LABELS[stat] : "skill"} applies to this roll.`
+    : usedThisRound
+      ? "Used this round. Resets after the round ends."
+      : !active
+        ? "Available on CW's active turn."
+        : !stat
+          ? "Available after an eligible test is known and before dice are revealed."
+          : null;
+
+  return {
+    abilityId: "scrap-crowned-instinct",
+    name: "Scrap-Crowned Instinct",
+    stat,
+    sourceTitle,
+    value: 1,
+    available,
+    usedThisRound,
+    prepared,
+    disabledReason
+  };
+}
+
 export function createTvProjection(
   state: GameState,
   movementPreviewBySeatId: ReadonlyMap<string, { destinationId: string; routeId: string }> = new Map()
@@ -10976,6 +11137,7 @@ export function createPhoneProjection(state: GameState, seatId: string, forcePri
     selfIsSetupHost: state.setupHostSeatId === seatId,
     cooperativeAssistance: buildCooperativeAssistanceProjection(state, seatId),
     cooperativeAssistanceEligibility: buildCooperativeAssistanceEligibility(state, seatId),
+    characterAbilityAction: buildCinderWattleAbilityProjection(state, seatId),
     pendingCooperativeTest: publicProjection.pendingCooperativeTest,
     brokenConcordanceNode: state.activeScenarioId === BROKEN_CONCORDANCE_SCENARIO_ID && player
       ? (() => {

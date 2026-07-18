@@ -59,6 +59,7 @@ import {
   PhoneMovementView,
   type MovementNavigationTarget
 } from "./PhoneMovementView.js";
+import { CinderWattleAbilityPanel } from "./CinderWattleAbilityPanel.js";
 
 interface PhoneActionPanelProps {
   characters: CharacterCatalogEntry[];
@@ -115,6 +116,7 @@ export function CooperativeAssistancePanel({
         <p className="phone-panel-kicker">Ask for help</p>
         <h2>{sourceTitle}</h2>
         <p>{testedStat} test · helpers add base skill only · no helper dice</p>
+        {activeSelf ? <CinderWattleAbilityPanel patch={patch} seatId={seatId} onIntent={onIntent} /> : null}
       </header>
 
       {!request && eligibility ? (
@@ -3847,6 +3849,7 @@ export function PhoneActionPanel({
         aria-label={`${activeTurnTab} actions`}
         data-testid="phone-action-content-root"
       >
+        <CinderWattleAbilityPanel patch={patch} seatId={self.seatId} onIntent={onIntent} />
         {activeTabContent}
         {activeTurnTab === "move" ? null : (
           <div className="phone-sheet-action-status phone-action-secondary-status" data-testid="phone-action-secondary-status">

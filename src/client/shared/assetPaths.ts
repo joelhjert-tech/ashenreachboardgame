@@ -6,6 +6,7 @@ import { getRuntimeCardArtPath } from "../../game/assets/runtime/cardArtRuntimeC
 import type { ContractCard, EncounterCard, GearTier, Stat } from "./types.js";
 
 const characterPortraitById: Record<string, string> = {
+  "cinder-wattle": "/assets/riftfall/characters/cinder-wattle.png",
   "char_void_marshal_kael_dorn": "/assets/riftfall/characters/char_void_marshal_kael_dorn.png",
   "char_veyra_sable": "/assets/riftfall/characters/char_veyra_sable.png",
   "char_oran_voss": "/assets/riftfall/characters/char_oran_voss.png",

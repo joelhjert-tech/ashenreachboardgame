@@ -62,4 +62,21 @@ describe("HostPlayerCard", () => {
       getChallengeThemeStyle("command")["--challenge-color"]
     );
   });
+
+  it("marks Scrap-Crowned Instinct as a public reduced-motion-safe trigger", () => {
+    const { container } = render(
+      <HostPlayerCard
+        seatId="seat-1" isOpen={false} isConnected playerName="Joel" characterName="Cinder Wattle"
+        characterTitle="Adaptive Scavenger" portraitUrl="/assets/riftfall/characters/cinder-wattle.png"
+        locationName="Hollow Veil Yard" fieldStatus="Field status stable" wounds={0} scars={0}
+        attributes={{ cmd: 3, grit: 3, signal: 3, guile: 3, forge: 3 }} gearSummary="Bridge Spike"
+        contractSummary="Map Broken Paths" specialAbilitySummary="Scrap-Crowned Instinct"
+        latestAbilityTriggerId="scrap-crowned-instinct"
+        latestAbilityTriggerSummary="Scrap-Crowned Instinct prepared +1 Signal."
+        isActiveTurn
+      />
+    );
+    expect(screen.getByText(/prepared \+1 signal/i)).toBeInTheDocument();
+    expect(container.querySelector(".host-player-card-trigger-band")).toHaveClass("is-scrap-crowned");
+  });
 });

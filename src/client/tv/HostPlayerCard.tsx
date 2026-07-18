@@ -37,6 +37,7 @@ export interface HostPlayerCardProps {
     exhausted?: boolean;
   }>;
   latestAbilityTriggerSummary?: string | null;
+  latestAbilityTriggerId?: string | null;
   abilityChangeItems?: AbilityChangeItem[];
   isActiveTurn: boolean;
   className?: string;
@@ -73,6 +74,7 @@ export function HostPlayerCard({
   specialAbilitySummary,
   companionBadges = [],
   latestAbilityTriggerSummary = null,
+  latestAbilityTriggerId = null,
   abilityChangeItems = [],
   isActiveTurn,
   className
@@ -193,7 +195,7 @@ export function HostPlayerCard({
         )}
 
         {latestAbilityTriggerSummary && (
-          <div className="host-player-card-trigger-band">
+          <div className={`host-player-card-trigger-band${latestAbilityTriggerId === "scrap-crowned-instinct" ? " is-scrap-crowned" : ""}`}>
             <strong>Triggered</strong>
             <span>{latestAbilityTriggerSummary}</span>
           </div>

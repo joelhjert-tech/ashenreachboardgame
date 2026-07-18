@@ -1079,6 +1079,17 @@ export interface PhonePatchPayload extends PublicPatchPayload {
   lateJoinPending?: boolean;
   selfIsSetupHost?: boolean;
   cooperativeAssistanceEligibility?: CooperativeAssistanceEligibilityProjection | null;
+  characterAbilityAction?: {
+    abilityId: "scrap-crowned-instinct";
+    name: "Scrap-Crowned Instinct";
+    stat: Stat | null;
+    sourceTitle: string | null;
+    value: 1;
+    available: boolean;
+    usedThisRound: boolean;
+    prepared: boolean;
+    disabledReason: string | null;
+  } | null;
   brokenConcordanceNode?: {
     id: string;
     name: string;

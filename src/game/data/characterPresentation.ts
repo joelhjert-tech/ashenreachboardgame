@@ -15,6 +15,17 @@ export interface CharacterPresentation {
 }
 
 export const characterPresentationById: Record<string, CharacterPresentation> = {
+  "cinder-wattle": {
+    role: "Adaptive Scavenger",
+    complexity: "beginner",
+    playstyleSummary: "A brood-vat survivor armoured in scavenged machine parts, CW uses an even skill spread and one precise pre-roll boost to approach unfamiliar tests.",
+    recommendedForFirstGame: true,
+    strengths: ["Flexible tests", "Simple timing", "Route utility"],
+    weaknesses: ["No specialist peak", "Boost requires pre-roll timing"],
+    usefulStats: ["grit", "guile", "signal", "command", "forge"],
+    signatureItemSummary: "Bridge Spike: practical route gear that supports scavenging without changing CW's base stats.",
+    startingContractSummary: "Map Broken Paths: rewards exploration and deliberate route choices."
+  },
   "black-ledger-agent": {
     role: "Controller",
     complexity: "advanced",

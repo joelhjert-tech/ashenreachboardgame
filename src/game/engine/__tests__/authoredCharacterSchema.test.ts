@@ -17,12 +17,12 @@ function rawCharacters(): Array<{ file: string; record: Record<string, unknown> 
 }
 
 describe("Phase 1N authored character boundary", () => {
-  it("loads exactly 17 canonical definitions without authored Heat", () => {
+  it("loads exactly 18 canonical definitions without authored Heat", () => {
     const raw = rawCharacters();
     const catalog = loadCharacters();
 
-    expect(raw).toHaveLength(17);
-    expect(catalog.size).toBe(17);
+    expect(raw).toHaveLength(18);
+    expect(catalog.size).toBe(18);
     expect(raw.every(({ record }) => !Object.prototype.hasOwnProperty.call(record, "heat"))).toBe(true);
     expect([...catalog.values()].every((character) => !("heat" in character))).toBe(true);
     expect(raw.map(({ record }) => record.id).sort()).toEqual([...catalog.keys()].sort());

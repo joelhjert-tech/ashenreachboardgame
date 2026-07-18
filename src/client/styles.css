@@ -556,6 +556,41 @@ body {
     repeating-linear-gradient(135deg, rgba(189, 132, 54, 0.04) 0 1px, transparent 1px 8px);
 }
 
+.phone-cw-instinct {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.75rem;
+  align-items: center;
+  padding: 0.75rem;
+  border: 1px solid rgba(201, 141, 55, 0.55);
+  background: linear-gradient(135deg, rgba(40, 31, 22, 0.96), rgba(11, 14, 17, 0.96));
+  box-shadow: inset 3px 0 0 #b96e2c;
+}
+
+.phone-cw-instinct.is-prepared {
+  border-color: rgba(226, 169, 74, 0.9);
+  box-shadow: inset 3px 0 0 #e0a442, 0 0 18px rgba(195, 91, 32, 0.18);
+}
+
+.phone-cw-instinct span,
+.phone-cw-instinct strong,
+.phone-cw-instinct p { display: block; }
+.phone-cw-instinct span { color: #c6a56a; font-size: 0.68rem; letter-spacing: 0.12em; text-transform: uppercase; }
+.phone-cw-instinct strong { color: #f0dec0; margin-top: 0.12rem; }
+.phone-cw-instinct p { color: #9fb0bd; font-size: 0.78rem; line-height: 1.35; margin: 0.2rem 0 0; }
+.phone-cw-instinct .game-button { width: 8rem; min-height: 44px; min-width: 0; }
+.phone-cw-instinct .game-button-label { white-space: normal; }
+
+.phone-assistance-header .phone-cw-instinct {
+  margin-top: 0.7rem;
+  border-left: 1px solid rgba(201, 141, 55, 0.55);
+}
+
+@media (max-width: 370px) {
+  .phone-cw-instinct { grid-template-columns: 1fr; }
+  .phone-cw-instinct .game-button { width: 100%; }
+}
+
 .phone-assistance-header {
   border-left: 3px solid #b98236;
   padding: 0.15rem 0 0.2rem 0.75rem;
@@ -14858,6 +14893,33 @@ body {
   border: 0;
   opacity: 0;
   pointer-events: none;
+}
+
+.host-player-card-trigger-band.is-scrap-crowned {
+  position: relative;
+  overflow: hidden;
+  border-color: rgba(215, 128, 49, 0.72);
+  background: linear-gradient(90deg, rgba(54, 30, 16, 0.95), rgba(19, 20, 22, 0.94));
+}
+
+.host-player-card-trigger-band.is-scrap-crowned::after {
+  content: "";
+  position: absolute;
+  inset: -80% 42% -80% auto;
+  width: 18%;
+  transform: rotate(18deg);
+  background: linear-gradient(90deg, transparent, rgba(232, 142, 52, 0.32), transparent);
+  animation: scrap-crown-sheen 1.1s ease-out 1;
+  pointer-events: none;
+}
+
+@keyframes scrap-crown-sheen {
+  from { transform: translateX(-360%) rotate(18deg); }
+  to { transform: translateX(520%) rotate(18deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .host-player-card-trigger-band.is-scrap-crowned::after { animation: none; opacity: 0; }
 }
 
 /* Category identity is structural as well as textual: the frame silhouette

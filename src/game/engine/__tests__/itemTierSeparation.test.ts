@@ -40,7 +40,7 @@ describe("equipment and artifact tier separation", () => {
     const gear = loadGear();
     const characters = [...loadCharacters().values()].filter((character) => !character.qaOnly);
 
-    expect(characters).toHaveLength(16);
+    expect(characters).toHaveLength(17);
     for (const character of characters) {
       expect(character.startingGear?.length, character.id).toBeGreaterThanOrEqual(1);
       for (const gearId of character.startingGear ?? []) {

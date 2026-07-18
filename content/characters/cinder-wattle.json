@@ -1,0 +1,35 @@
+{
+  "id": "cinder-wattle",
+  "name": "Cinder Wattle",
+  "archetype": "Adaptive Scavenger",
+  "currentSpaceId": "hollow-veil-yard",
+  "status": "active",
+  "stats": {
+    "command": 3,
+    "grit": 3,
+    "signal": 3,
+    "guile": 3,
+    "forge": 3
+  },
+  "trophies": 0,
+  "wounds": 0,
+  "scars": [],
+  "activeContract": null,
+  "heldGear": [],
+  "equippedGear": {
+    "weapon": null,
+    "armor": null,
+    "utility": null
+  },
+  "abilities": [
+    {
+      "id": "scrap-crowned-instinct",
+      "name": "Scrap-Crowned Instinct",
+      "text": "Once per round, before CW rolls an eligible Grit, Guile, Signal, Command, or Forge test, add +1 to that test. This cannot affect movement, enemy dice, or cooperative assistance contributed to another operative."
+    }
+  ],
+  "startingGear": [
+    "bridge-spike"
+  ],
+  "startingContract": "map-broken-paths"
+}

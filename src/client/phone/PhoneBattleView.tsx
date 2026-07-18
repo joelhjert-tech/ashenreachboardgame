@@ -14,6 +14,7 @@ import type {
   Stat
 } from "../shared/types.js";
 import { PhoneInventoryPanel } from "./PhoneInventoryPanel.js";
+import { CinderWattleAbilityPanel } from "./CinderWattleAbilityPanel.js";
 import { getBattleAssistViewModel } from "./inventoryPresentation.js";
 
 export interface PhoneBattleChoiceAction {
@@ -395,6 +396,7 @@ export function PhoneBattleView({
               <strong>{resultLabel}</strong>
             </header>
             {combatantArena}
+            <CinderWattleAbilityPanel patch={patch} seatId={self.seatId} onIntent={onIntent} />
             <section className="phone-battle-equation" aria-label="Battle totals">
               <div>
                 <span>{statLabel}</span>

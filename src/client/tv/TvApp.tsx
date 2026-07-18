@@ -837,6 +837,7 @@ function ActiveOperativeOverlay({
         specialAbilitySummary={getSpecialAbilitySummary(activePlayer, characterCatalog)}
         companionBadges={activePlayer?.character.companionBadges ?? []}
         latestAbilityTriggerSummary={abilityTelemetry.latestTrigger?.summary ?? null}
+        latestAbilityTriggerId={abilityTelemetry.latestTrigger?.abilityId ?? null}
         abilityChangeItems={abilityTelemetry.changes}
         isActiveTurn
       />

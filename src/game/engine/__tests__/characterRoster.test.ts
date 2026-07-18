@@ -7,10 +7,10 @@ import { applyStartingLoadout } from "../../rules/startingLoadout.js";
 import { getCompanionStatBonus } from "../gear.js";
 
 describe("character roster content", () => {
-  it("loads sixteen playable characters with the expected normal stat budget", () => {
+  it("loads seventeen playable characters with the expected normal stat budget", () => {
     const characters = [...loadCharacters().values()].filter((character) => !character.qaOnly);
 
-    expect(characters).toHaveLength(16);
+    expect(characters).toHaveLength(17);
 
     for (const character of characters) {
       const totalStats = Object.values(character.stats).reduce((total, value) => total + value, 0);
@@ -66,6 +66,22 @@ describe("character roster content", () => {
 
     expect(names.filter((name) => name === "Lane")).toHaveLength(1);
     expect(names.filter((name) => name === "Mira")).toHaveLength(1);
+  });
+
+  it("includes Cinder Wattle as a balanced adaptive scavenger", () => {
+    const cw = loadCharacters().get("cinder-wattle");
+
+    expect(cw).toMatchObject({
+      name: "Cinder Wattle",
+      archetype: "Adaptive Scavenger",
+      stats: { command: 3, grit: 3, signal: 3, guile: 3, forge: 3 },
+      startingGear: ["bridge-spike"],
+      startingContract: "map-broken-paths"
+    });
+    expect(Object.values(cw!.stats).reduce((sum, value) => sum + value, 0)).toBe(15);
+    expect(cw?.abilities).toEqual(expect.arrayContaining([
+      expect.objectContaining({ id: "scrap-crowned-instinct" })
+    ]));
   });
 
   it("includes Popelord as a playable Mire Sovereign", () => {

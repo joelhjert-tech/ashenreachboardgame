@@ -35,9 +35,9 @@ describe("legacy Heat authoring guard", () => {
     expect(validateC1BlockedRuntimeHeatEffects([...exact, { id: "new-board-rule", type: "gain_heat" }]).join(" ")).toContain("new-board-rule");
   });
 
-  it("accepts all 17 canonical characters only after authored Heat omission", () => {
+  it("accepts all 18 canonical characters only after authored Heat omission", () => {
     const files = [
-      "black-ledger-agent", "char_bjornis", "char_deepdale", "char_ker_von_ker", "char_kira_dog",
+      "black-ledger-agent", "char_bjornis", "char_deepdale", "char_ker_von_ker", "char_kira_dog", "cinder-wattle",
       "char_master_alpha", "char_popelord", "char_rumi", "cinder-monk", "fleet-elder", "grave-engineer",
       "oathbroken-prince", "rift-cartographer", "salvage-warden", "siege-medic", "signal-witch", "void-marshal"
     ];
