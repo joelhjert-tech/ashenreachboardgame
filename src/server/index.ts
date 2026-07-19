@@ -14,6 +14,8 @@ import { nemeses } from "../game/data/nemeses.js";
 import { applyPhaseOneQaFixture, type PhaseOneQaFixture } from "./phaseOneQaFixture.js";
 import { getSubmittedDisplayNameError, normalizeSubmittedDisplayName } from "../game/rules/playerIdentity.js";
 import { AdminContentEditor, AdminContentError, type AdminSaveRequest } from "./adminContentEditor.js";
+import { AdminSimulationLab } from "./adminSimulationLab.js";
+import type { AdminSimulationBatchStartRequest, AdminSimulationRequest } from "../shared/adminSimulation.js";
 
 const DEFAULT_SERVER_PORT = 8080;
 const DEFAULT_CLIENT_PORT = 5173;
@@ -122,7 +124,7 @@ function getPlayerCountError(sessionMode: SessionMode, gameMode: GameMode, playe
   return null;
 }
 
-function createHttpServer(qaFixturesEnabled: boolean, adminContentEditor: AdminContentEditor): HttpServer {
+function createHttpServer(qaFixturesEnabled: boolean, adminContentEditor: AdminContentEditor, adminSimulationLab: AdminSimulationLab): HttpServer {
   return createServer(async (request, response) => {
     if (!request.url) {
       sendJson(response, 400, { error: "Missing request URL" });
@@ -151,6 +153,11 @@ function createHttpServer(qaFixturesEnabled: boolean, adminContentEditor: AdminC
           revisionId?: string;
           record?: unknown;
           artwork?: AdminSaveRequest["artwork"];
+          simulation?: AdminSimulationRequest | AdminSimulationBatchStartRequest;
+          cardId?: string;
+          cardFamily?: string;
+          simulationId?: string;
+          jobId?: string;
         };
         const expectedHostToken = createHostToken({ sessionId: roomCode, secret: hostToken });
         if (body.roomCode !== roomServer.getState().sessionId || body.hostToken !== expectedHostToken) {
@@ -161,6 +168,7 @@ function createHttpServer(qaFixturesEnabled: boolean, adminContentEditor: AdminC
         if (url.pathname === "/api/admin/content/status") {
           sendJson(response, 200, {
             enabled: adminContentEditor.enabled,
+            simulationAllowed: adminContentEditor.enabled,
             editingAllowed: adminContentEditor.enabled && !activeSession,
             mode: !adminContentEditor.enabled ? "view-only" : activeSession ? "active-session-locked" : "edit-enabled",
             reason: !adminContentEditor.enabled
@@ -172,6 +180,40 @@ function createHttpServer(qaFixturesEnabled: boolean, adminContentEditor: AdminC
           return;
         }
         if (!adminContentEditor.enabled) throw new AdminContentError("Development content editing is disabled", 403);
+        const simulationOwnerKey = expectedHostToken;
+        if (url.pathname === "/api/admin/content/simulation-card") {
+          if (!body.cardId || !body.cardFamily) throw new AdminContentError("Canonical card ID and family are required");
+          sendJson(response, 200, await adminSimulationLab.getDescriptor(body.cardId, body.cardFamily, roomServer.getState()));
+          return;
+        }
+        if (url.pathname === "/api/admin/content/simulate") {
+          if (!body.simulation) throw new AdminContentError("A simulation request is required");
+          const simulation = body.simulation as AdminSimulationRequest;
+          if (simulation.mode !== "start" && simulation.mode !== "continue") throw new AdminContentError("Simulation mode must be start or continue", 422);
+          sendJson(response, 200, simulation.mode === "start"
+            ? await adminSimulationLab.start(simulationOwnerKey, simulation, roomServer.getState())
+            : adminSimulationLab.continue(simulationOwnerKey, simulation, roomServer.getState()));
+          return;
+        }
+        if (url.pathname === "/api/admin/content/simulate-close") {
+          sendJson(response, 200, { deleted: adminSimulationLab.close(simulationOwnerKey, body.simulationId) });
+          return;
+        }
+        if (url.pathname === "/api/admin/content/simulate-batch-start") {
+          if (!body.simulation) throw new AdminContentError("A batch simulation request is required");
+          sendJson(response, 202, adminSimulationLab.startBatch(simulationOwnerKey, body.simulation as AdminSimulationBatchStartRequest, roomServer.getState()));
+          return;
+        }
+        if (url.pathname === "/api/admin/content/simulate-batch-status") {
+          if (!body.jobId) throw new AdminContentError("A batch job ID is required");
+          sendJson(response, 200, adminSimulationLab.getBatch(simulationOwnerKey, body.jobId));
+          return;
+        }
+        if (url.pathname === "/api/admin/content/simulate-batch-cancel") {
+          if (!body.jobId) throw new AdminContentError("A batch job ID is required");
+          sendJson(response, 200, adminSimulationLab.cancelBatch(simulationOwnerKey, body.jobId));
+          return;
+        }
         if (activeSession) throw new AdminContentError("Editing is locked during an active session", 423);
         if (!body.sourcePath) throw new AdminContentError("A canonical card source path is required");
         if (url.pathname === "/api/admin/content/card") {
@@ -664,7 +706,8 @@ export async function startAshenReachServer(
     projectRoot: options.projectRoot ?? process.cwd(),
     enabled: options.adminContentEditingEnabled ?? process.env.ASHEN_REACH_ADMIN_CONTENT_EDITOR === "1"
   });
-  const httpServer = createHttpServer(options.qaFixturesEnabled ?? false, adminContentEditor);
+  const adminSimulationLab = new AdminSimulationLab(adminContentEditor);
+  const httpServer = createHttpServer(options.qaFixturesEnabled ?? false, adminContentEditor, adminSimulationLab);
   const websocketServer = new WebSocketServer({ server: httpServer });
 
   roomServer.attach(websocketServer);

@@ -1,4 +1,5 @@
 import { getApiOrigin } from "../../shared/network.js";
+import type { AdminCardFamily, AdminSimulationBatchJob, AdminSimulationBatchStartRequest, AdminSimulationCardDescriptor, AdminSimulationRequest, AdminSimulationResult } from "../../../shared/adminSimulation.js";
 
 export interface AdminContentAuth {
   roomCode: string;
@@ -7,6 +8,7 @@ export interface AdminContentAuth {
 
 export interface AdminContentStatus {
   enabled: boolean;
+  simulationAllowed?: boolean;
   editingAllowed: boolean;
   mode: "view-only" | "active-session-locked" | "edit-enabled";
   reason: string | null;
@@ -76,4 +78,28 @@ export function revertAdminCardSource(
   input: { sourcePath: string; expectedRevision: string; revisionId: string }
 ): Promise<AdminCardSource> {
   return postAdmin("/api/admin/content/revert", auth, input);
+}
+
+export function runAdminSimulation(auth: AdminContentAuth, simulation: AdminSimulationRequest): Promise<AdminSimulationResult> {
+  return postAdmin("/api/admin/content/simulate", auth, { simulation });
+}
+
+export function fetchAdminSimulationCard(auth: AdminContentAuth, cardId: string, cardFamily: AdminCardFamily): Promise<AdminSimulationCardDescriptor> {
+  return postAdmin("/api/admin/content/simulation-card", auth, { cardId, cardFamily });
+}
+
+export function closeAdminSimulation(auth: AdminContentAuth, simulationId?: string): Promise<{ deleted: number }> {
+  return postAdmin("/api/admin/content/simulate-close", auth, { simulationId });
+}
+
+export function startAdminSimulationBatch(auth: AdminContentAuth, simulation: AdminSimulationBatchStartRequest): Promise<AdminSimulationBatchJob> {
+  return postAdmin("/api/admin/content/simulate-batch-start", auth, { simulation });
+}
+
+export function fetchAdminSimulationBatch(auth: AdminContentAuth, jobId: string): Promise<AdminSimulationBatchJob> {
+  return postAdmin("/api/admin/content/simulate-batch-status", auth, { jobId });
+}
+
+export function cancelAdminSimulationBatch(auth: AdminContentAuth, jobId: string): Promise<AdminSimulationBatchJob> {
+  return postAdmin("/api/admin/content/simulate-batch-cancel", auth, { jobId });
 }

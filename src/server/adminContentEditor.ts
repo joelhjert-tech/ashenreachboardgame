@@ -22,6 +22,7 @@ import { authoredContractCardSchema } from "../game/schema/contract.schema.js";
 import { followerSchema } from "../game/schema/follower.schema.js";
 import { gearItemSchema } from "../game/schema/gear.schema.js";
 import { authoredTileChallengeSchema } from "../game/schema/tileChallenge.schema.js";
+import type { AdminCardFamily } from "../shared/adminSimulation.js";
 
 export const ADMIN_UPLOAD_MAX_BYTES = 8 * 1024 * 1024;
 export const ADMIN_CONTENT_SOURCE_PATTERN = /^content\/(?:cards\/(?:afflictions|anomalies|artifacts|contracts|escalations|scars|threats)|gear|followers|tile-challenges)\/[a-z0-9][a-z0-9-]*\.json$/;
@@ -30,6 +31,19 @@ const ARTWORK_OVERRIDES_PATH = "content/card-artwork-overrides.json";
 
 type JsonRecord = Record<string, unknown>;
 type ArtworkOverrides = Record<string, string>;
+
+const ADMIN_FAMILY_DIRECTORIES: Record<AdminCardFamily, string> = {
+  affliction: "content/cards/afflictions",
+  anomaly: "content/cards/anomalies",
+  artifact: "content/cards/artifacts",
+  contract: "content/cards/contracts",
+  escalation: "content/cards/escalations",
+  scar: "content/cards/scars",
+  threat: "content/cards/threats",
+  gear: "content/gear",
+  follower: "content/followers",
+  "tile-challenge": "content/tile-challenges"
+};
 
 export interface AdminContentEditorOptions {
   projectRoot: string;
@@ -102,7 +116,7 @@ function fieldErrorsFromIssues(issues: ZodIssue[]): Record<string, string> {
   return Object.fromEntries(issues.map((issue) => [issue.path.join(".") || "card", issue.message]));
 }
 
-function schemaForSource(sourcePath: string): ZodTypeAny {
+export function schemaForAdminContentSource(sourcePath: string): ZodTypeAny {
   if (sourcePath.startsWith("content/cards/afflictions/")) return afflictionCardSchema;
   if (sourcePath.startsWith("content/cards/anomalies/")) return anomalyCardSchema;
   if (sourcePath.startsWith("content/cards/artifacts/")) return artifactCardSchema;
@@ -114,6 +128,25 @@ function schemaForSource(sourcePath: string): ZodTypeAny {
   if (sourcePath.startsWith("content/followers/")) return followerSchema;
   if (sourcePath.startsWith("content/tile-challenges/")) return authoredTileChallengeSchema;
   throw new AdminContentError("Unsupported canonical content source", 400);
+}
+
+export function validateAdminContentDraft(sourcePath: string, value: unknown): JsonRecord {
+  const retiredResource = ["he", "at"].join("");
+  const retiredEffectKeys = ["gain", "gain_all", "lose"].map((verb) => `${verb}_${retiredResource}`);
+  if (retiredEffectKeys.some((key) => JSON.stringify(value).toLowerCase().includes(`"${key}"`))) {
+    throw new AdminContentError("Retired Heat mechanics cannot be simulated", 422, {
+      card: "Heat is legacy input only and is not available to canonical content."
+    });
+  }
+  const result = schemaForAdminContentSource(sourcePath).safeParse(value);
+  if (!result.success) throw new AdminContentError("Card validation failed", 422, fieldErrorsFromIssues(result.error.issues));
+  return result.data as JsonRecord;
+}
+
+export function normalizeAdminCardFamily(value: string): AdminCardFamily {
+  const normalized = value.trim().toLowerCase().replace(/\s+/g, "-");
+  if (normalized in ADMIN_FAMILY_DIRECTORIES) return normalized as AdminCardFamily;
+  throw new AdminContentError("Unsupported card family", 422, { cardFamily: "Choose a canonical Admin Library family." });
 }
 
 function inferArtworkType(sourcePath: string, record: JsonRecord): string | null {
@@ -256,9 +289,7 @@ export class AdminContentEditor {
     if (JSON.stringify(value).toLowerCase().includes('"heat"')) {
       throw new AdminContentError("Retired Heat mechanics cannot be authored", 400, { card: "Heat is legacy input only and is not available to canonical content." });
     }
-    const result = schemaForSource(sourcePath).safeParse(value);
-    if (!result.success) throw new AdminContentError("Card validation failed", 422, fieldErrorsFromIssues(result.error.issues));
-    return result.data as JsonRecord;
+    return validateAdminContentDraft(sourcePath, value);
   }
 
   private async assertUniqueId(sourcePath: string, id: string): Promise<void> {
@@ -319,6 +350,30 @@ export class AdminContentEditor {
       artwork: { path: artworkPath, dimensions, sharedCount: Math.max(1, allOverrides) },
       revisions
     };
+  }
+
+  async findCard(cardId: string, familyValue: AdminCardFamily | string): Promise<Awaited<ReturnType<AdminContentEditor["getCard"]>>> {
+    if (!/^[a-z0-9][a-z0-9-]*$/.test(cardId)) throw new AdminContentError("Invalid canonical card ID", 422);
+    const family = normalizeAdminCardFamily(familyValue);
+    const directory = path.join(this.projectRoot, ADMIN_FAMILY_DIRECTORIES[family]);
+    let matches: string[] = [];
+    try {
+      matches = (await readdir(directory))
+        .filter((name) => name.endsWith(".json"))
+        .map((name) => `${ADMIN_FAMILY_DIRECTORIES[family]}/${name}`);
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === "ENOENT") throw new AdminContentError("Canonical card family is unavailable", 404);
+      throw error;
+    }
+    for (const sourcePath of matches) {
+      const raw = JSON.parse(await readFile(path.join(this.projectRoot, sourcePath), "utf8")) as unknown;
+      if (isRecord(raw) && raw.id === cardId) return this.getCard(sourcePath);
+    }
+    throw new AdminContentError(`Canonical ${family} card ${cardId} was not found`, 404);
+  }
+
+  validateDraft(sourcePath: string, value: unknown): JsonRecord {
+    return this.validate(sourcePath, value);
   }
 
   async save(request: AdminSaveRequest): Promise<ReturnType<AdminContentEditor["getCard"]> extends Promise<infer T> ? T & { savedRevision: AdminRevisionSummary; reloadRequired: true } : never> {

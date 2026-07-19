@@ -5,6 +5,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import { startAshenReachServer, type StartedAshenReachServer } from "../index.js";
 
 const SOURCE = "content/followers/crownless-advocate.json";
+const THREAT_SOURCE = "content/cards/threats/ash-choir-crusader.json";
 
 async function post<T>(baseUrl: string, route: string, body: Record<string, unknown>): Promise<{ status: number; payload: T }> {
   const response = await fetch(`${baseUrl}${route}`, {
@@ -80,4 +81,39 @@ describe("admin content API authority", () => {
     });
     expect(lockedRead.status).toBe(423);
   });
+
+  it("allows an authorized isolated simulation during an active session without mutating the room", async () => {
+    root = await mkdtemp(path.join(os.tmpdir(), "ashen-admin-sim-api-"));
+    await mkdir(path.join(root, path.dirname(THREAT_SOURCE)), { recursive: true });
+    await writeFile(path.join(root, THREAT_SOURCE), await readFile(path.join(process.cwd(), THREAT_SOURCE)));
+    await writeFile(path.join(root, "content/card-artwork-overrides.json"), "{}\n");
+    harness = await startAshenReachServer({ port: 19680 + Math.floor(Math.random() * 300), maxPortAttempts: 20, logUrls: false, adminContentEditingEnabled: true, projectRoot: root });
+    const baseUrl = `http://127.0.0.1:${harness.port}`;
+    const created = await post<{ roomCode: string; hostToken: string }>(baseUrl, "/api/session/create", { sessionMode: "single-player", scenarioId: "scenario_broken_seal" });
+    harness.roomServer.getState().status = "active";
+    const liveBefore = JSON.stringify(harness.roomServer.getState());
+    const descriptor = await post<{ revision: string }>(baseUrl, "/api/admin/content/simulation-card", {
+      roomCode: created.payload.roomCode,
+      hostToken: created.payload.hostToken,
+      cardId: "ash-choir-crusader",
+      cardFamily: "threat"
+    });
+    expect(descriptor.status).toBe(200);
+    const simulated = await post<{ isolated?: boolean; outcome?: string; dice?: { operative: number[] } }>(baseUrl, "/api/admin/content/simulate", {
+      roomCode: created.payload.roomCode,
+      hostToken: created.payload.hostToken,
+      simulation: {
+        mode: "start",
+        cardId: "ash-choir-crusader",
+        cardFamily: "threat",
+        expectedRevision: descriptor.payload.revision,
+        operative: { preset: "average", wounds: 0, salvage: 3 },
+        dice: { mode: "fixed", values: [6, 6, 1, 1], seed: "api-fixed" },
+        outcomeMode: "calculated"
+      }
+    });
+    expect(simulated.status).toBe(200);
+    expect(simulated.payload).toMatchObject({ isolated: true, outcome: "SUCCESS", dice: { operative: [6, 6] } });
+    expect(JSON.stringify(harness.roomServer.getState())).toBe(liveBefore);
+  }, 20_000);
 });

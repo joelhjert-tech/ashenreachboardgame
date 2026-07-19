@@ -3,8 +3,12 @@ import { adminLibraryCards, type AdminLibraryCard } from "./adminLibraryRegistry
 import AdminCardEditor from "./AdminCardEditor.js";
 import { fetchAdminContentStatus, type AdminContentStatus } from "./adminContentApi.js";
 import { HostImage } from "../HostImage.js";
+import AdminSimulationLab, { isCardSimulatable } from "./AdminSimulationLab.js";
 
 type LibrarySort = "name" | "cardType" | "difficulty" | "skill" | "source" | "warnings";
+const INITIAL_ARCHIVE_WINDOW = 72;
+const ARCHIVE_WINDOW_STEP = 72;
+const FOLDER_PREVIEW_LIMIT = 8;
 
 export interface AdminLibraryProps {
   onClose: () => void;
@@ -63,7 +67,7 @@ function DifficultyMark({ card }: { card: AdminLibraryCard }): ReactElement {
   );
 }
 
-function Inspector({ card, onClear, onOpenMapTile, editorStatus, onEdit }: { card: AdminLibraryCard; onClear: () => void; onOpenMapTile?: (tileId: string) => void; editorStatus: AdminContentStatus | null; onEdit: () => void }): ReactElement {
+function Inspector({ card, onClear, onOpenMapTile, editorStatus, onEdit, onSimulate }: { card: AdminLibraryCard; onClear: () => void; onOpenMapTile?: (tileId: string) => void; editorStatus: AdminContentStatus | null; onEdit: () => void; onSimulate: () => void }): ReactElement {
   return (
     <aside className="admin-library-inspector" aria-label={`Inspect ${card.name}`}>
       <header>
@@ -76,6 +80,7 @@ function Inspector({ card, onClear, onOpenMapTile, editorStatus, onEdit }: { car
           {editorStatus?.editingAllowed ? <button type="button" onClick={onEdit}>Edit card</button> : null}
           {!editorStatus?.editingAllowed && editorStatus?.reason ? <p>{editorStatus.reason}</p> : null}
         </section>
+        {isCardSimulatable(card) ? <section className="admin-library-simulation-action"><span>ISOLATED GAMEPLAY TESTER</span><strong>Battle &amp; Event Simulation</strong><p>Run this card through the canonical server resolver without touching the live room.</p><button type="button" disabled={!editorStatus?.simulationAllowed} onClick={onSimulate}>Open Simulation Lab</button>{!editorStatus?.simulationAllowed ? <small>Start the development content server to enable simulations.</small> : null}</section> : <section className="admin-library-simulation-empty"><strong>NO SIMULATABLE EFFECTS</strong><p>This card contains descriptive or passive data only.</p></section>}
         <div className="admin-library-inspector-art"><CardArtwork card={card} large /></div>
         {card.metadataWarnings.length > 0 ? (
           <section className="admin-library-warnings" aria-label="Metadata warnings"><h3>Audit Warnings</h3>{card.metadataWarnings.map((warning) => <p key={warning}>⚠ {warning}</p>)}</section>
@@ -117,13 +122,16 @@ export default function AdminLibrary({ onClose, initialCardId, onOpenMapTile, ro
   const [difficultyFilter, setDifficultyFilter] = useState("all");
   const [skillFilter, setSkillFilter] = useState("all");
   const [folderFilter, setFolderFilter] = useState("all");
+  const [scarSourceFilter, setScarSourceFilter] = useState("all");
   const [warningFilter, setWarningFilter] = useState<"all" | "metadata" | "artwork">("all");
   const [sort, setSort] = useState<LibrarySort>("name");
   const [folderMode, setFolderMode] = useState(false);
+  const [archiveWindow, setArchiveWindow] = useState(INITIAL_ARCHIVE_WINDOW);
   const [selectedId, setSelectedId] = useState<string | null>(adminLibraryCards[0]?.dataSourcePath ?? null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editorDirty, setEditorDirty] = useState(false);
   const [editorStatus, setEditorStatus] = useState<AdminContentStatus | null>(null);
+  const [simulation, setSimulation] = useState<{ card: AdminLibraryCard; draft?: Record<string, unknown> | null } | null>(null);
   const gridRef = useRef<HTMLDivElement | null>(null);
   const filterRailRef = useRef<HTMLElement | null>(null);
 
@@ -145,6 +153,7 @@ export default function AdminLibrary({ onClose, initialCardId, onOpenMapTile, ro
   const types = useMemo(() => [...new Set(libraryCards.map((card) => card.cardType))].sort(), [libraryCards]);
   const skills = useMemo(() => [...new Set(libraryCards.flatMap((card) => card.skills.map((skill) => skill.name)))].sort(), [libraryCards]);
   const folders = useMemo(() => [...new Set(libraryCards.map((card) => card.dataSourceFolder))].sort(), [libraryCards]);
+  const scarSources = useMemo(() => [...new Set(libraryCards.flatMap((card) => card.scarSource ? [card.scarSource] : []))].sort(), [libraryCards]);
   const selected = libraryCards.find((card) => card.dataSourcePath === selectedId) ?? null;
 
   const filteredCards = useMemo(() => {
@@ -155,6 +164,7 @@ export default function AdminLibrary({ onClose, initialCardId, onOpenMapTile, ro
       if (typeFilter !== "all" && card.cardType !== typeFilter) return false;
       if (skillFilter !== "all" && !card.skills.some((skill) => skill.name === skillFilter)) return false;
       if (folderFilter !== "all" && card.dataSourceFolder !== folderFilter) return false;
+      if (scarSourceFilter !== "all" && card.scarSource !== scarSourceFilter) return false;
       if (difficultyFilter === "missing" && card.difficulty !== undefined) return false;
       if (difficultyFilter !== "all" && difficultyFilter !== "missing" && String(card.difficulty) !== difficultyFilter) return false;
       if (warningFilter === "metadata" && card.metadataWarnings.length === 0) return false;
@@ -168,7 +178,11 @@ export default function AdminLibrary({ onClose, initialCardId, onOpenMapTile, ro
       if (sort === "warnings") return b.metadataWarnings.length - a.metadataWarnings.length || a.name.localeCompare(b.name);
       return a.name.localeCompare(b.name);
     });
-  }, [difficultyFilter, folderFilter, libraryCards, search, skillFilter, sort, typeFilter, warningFilter]);
+  }, [difficultyFilter, folderFilter, libraryCards, scarSourceFilter, search, skillFilter, sort, typeFilter, warningFilter]);
+
+  useEffect(() => {
+    setArchiveWindow(INITIAL_ARCHIVE_WINDOW);
+  }, [difficultyFilter, folderFilter, scarSourceFilter, search, skillFilter, sort, typeFilter, warningFilter]);
 
   useEffect(() => {
     const handleEscape = (event: globalThis.KeyboardEvent) => {
@@ -183,7 +197,7 @@ export default function AdminLibrary({ onClose, initialCardId, onOpenMapTile, ro
   }, [editingId, editorDirty, onClose, selectedId]);
 
   const clearFilters = () => {
-    setSearch(""); setTypeFilter("all"); setDifficultyFilter("all"); setSkillFilter("all"); setFolderFilter("all"); setWarningFilter("all");
+    setSearch(""); setTypeFilter("all"); setDifficultyFilter("all"); setSkillFilter("all"); setFolderFilter("all"); setScarSourceFilter("all"); setWarningFilter("all");
     if (filterRailRef.current) filterRailRef.current.scrollTop = 0;
   };
 
@@ -216,6 +230,13 @@ export default function AdminLibrary({ onClose, initialCardId, onOpenMapTile, ro
         return groups;
       }, new Map<string, AdminLibraryCard[]>()).entries()]
     : [["", filteredCards]];
+  const renderedCardCount = folderMode
+    ? folderGroups.reduce((count, [, cards]) => count + Math.min(cards.length, FOLDER_PREVIEW_LIMIT), 0)
+    : Math.min(filteredCards.length, archiveWindow);
+
+  if (simulation && roomCode && hostToken) {
+    return <AdminSimulationLab card={simulation.card} auth={{ roomCode, hostToken }} draft={simulation.draft} onClose={() => setSimulation(null)} />;
+  }
 
   return (
     <section className="admin-library" aria-label="Admin card library">
@@ -234,6 +255,7 @@ export default function AdminLibrary({ onClose, initialCardId, onOpenMapTile, ro
           <label><span>Difficulty</span><select value={difficultyFilter} onChange={(event) => setDifficultyFilter(event.target.value)}><option value="all">All values</option><option value="missing">Not set</option>{[...new Set(libraryCards.flatMap((card) => card.difficulty === undefined ? [] : [String(card.difficulty)]))].sort((a, b) => Number(a) - Number(b)).map((value) => <option key={value}>{value}</option>)}</select></label>
           <label><span>Skill</span><select value={skillFilter} onChange={(event) => setSkillFilter(event.target.value)}><option value="all">All skills</option>{skills.map((skill) => <option key={skill} value={skill}>{displayType(skill)}</option>)}</select></label>
           <label><span>Folder</span><select value={folderFilter} onChange={(event) => setFolderFilter(event.target.value)}><option value="all">All folders</option>{folders.map((folder) => <option key={folder}>{folder}</option>)}</select></label>
+          <label><span>Scar source</span><select value={scarSourceFilter} onChange={(event) => setScarSourceFilter(event.target.value)}><option value="all">All sources</option>{scarSources.map((source) => <option key={source} value={source}>{displayType(source)}</option>)}</select></label>
           <button type="button" className={warningFilter === "metadata" ? "is-active is-warning" : "is-warning"} onClick={() => setWarningFilter(warningFilter === "metadata" ? "all" : "metadata")}><span>Missing Metadata</span><b>{libraryCards.filter((card) => card.metadataWarnings.length > 0).length}</b></button>
           <button type="button" className={warningFilter === "artwork" ? "is-active is-warning" : "is-warning"} onClick={() => setWarningFilter(warningFilter === "artwork" ? "all" : "artwork")}><span>Missing Artwork</span><b>{libraryCards.filter(hasMissingArtwork).length}</b></button>
           <hr />
@@ -243,16 +265,20 @@ export default function AdminLibrary({ onClose, initialCardId, onOpenMapTile, ro
         <main className="admin-library-results" aria-label="Card results">
           <div className="admin-library-result-count"><strong>{filteredCards.length} OF {libraryCards.length} CARDS</strong><span>{folderMode ? "Grouped by canonical data folder" : "Canonical active content"}</span></div>
           <div className="admin-library-grid-scroll">
-            {folderGroups.map(([folder, cards]) => <section className="admin-library-folder-group" key={folder || "all"}>{folder ? <h2>{folder}<span>{cards.length}</span></h2> : null}<div className="admin-library-grid" ref={!folder ? gridRef : undefined} onKeyDown={handleGridKey}>{cards.map((card) => <button type="button" data-library-card key={card.dataSourcePath} className={`admin-library-card${selectedId === card.dataSourcePath ? " is-selected" : ""}`} onClick={() => selectCard(card.dataSourcePath)}><div className="admin-library-card-art"><CardArtwork card={card} />{card.metadataWarnings.length > 0 ? <span className="admin-library-card-warning" aria-label={`${card.metadataWarnings.length} warnings`}>!</span> : null}</div><div><span>{displayType(card.cardType)}</span><strong>{card.name}</strong><small>{card.difficulty === undefined ? "Difficulty not set" : `Difficulty ${card.difficulty}`}</small><small>{card.skills.length > 0 ? card.skills.map((skill) => `${displayType(skill.name)} ${skill.level ?? ""}`).join(" / ") : "Skill not set"}</small></div></button>)}</div></section>)}
+            {folderGroups.map(([folder, cards]) => {
+              const renderedCards = cards.slice(0, folderMode ? FOLDER_PREVIEW_LIMIT : archiveWindow);
+              return <section className="admin-library-folder-group" key={folder || "all"}>{folder ? <h2>{folder}<span>{cards.length}</span></h2> : null}<div className="admin-library-grid" ref={!folder ? gridRef : undefined} onKeyDown={handleGridKey}>{renderedCards.map((card) => <button type="button" data-library-card key={card.dataSourcePath} className={`admin-library-card${selectedId === card.dataSourcePath ? " is-selected" : ""}`} onClick={() => selectCard(card.dataSourcePath)}><div className="admin-library-card-art"><CardArtwork card={card} />{card.metadataWarnings.length > 0 ? <span className="admin-library-card-warning" aria-label={`${card.metadataWarnings.length} warnings`}>!</span> : null}</div><div><span>{displayType(card.cardType)}</span><strong>{card.name}</strong><small>{card.difficulty === undefined ? "Difficulty not set" : `Difficulty ${card.difficulty}`}</small><small>{card.skills.length > 0 ? card.skills.map((skill) => `${displayType(skill.name)} ${skill.level ?? ""}`).join(" / ") : "Skill not set"}</small></div></button>)}</div></section>;
+            })}
+            {!folderMode && renderedCardCount < filteredCards.length ? <button type="button" className="admin-library-load-more" onClick={() => setArchiveWindow((current) => Math.min(filteredCards.length, current + ARCHIVE_WINDOW_STEP))}>Load more cards <span>{renderedCardCount} / {filteredCards.length}</span></button> : null}
             {filteredCards.length === 0 ? <div className="admin-library-empty"><strong>No cards match this archive query.</strong><button type="button" onClick={clearFilters}>Clear filters</button></div> : null}
           </div>
         </main>
-        {selected && editingId === selected.dataSourcePath && roomCode && hostToken ? <AdminCardEditor card={selected} auth={{ roomCode, hostToken }} onDirtyChange={setEditorDirty} onCancel={() => { setEditingId(null); setEditorDirty(false); }} onSaved={(source) => {
+        {selected && editingId === selected.dataSourcePath && roomCode && hostToken ? <AdminCardEditor card={selected} auth={{ roomCode, hostToken }} onDirtyChange={setEditorDirty} onSimulateDraft={(draft) => setSimulation({ card: selected, draft })} onCancel={() => { setEditingId(null); setEditorDirty(false); }} onSaved={(source) => {
           const record = source.record;
           const name = String(record.title ?? record.name ?? record.enemyName ?? selected.name);
           const artworkUrl = source.artwork.path ? `/${source.artwork.path.replace(/^public\//, "")}?revision=${source.revision.slice(0, 12)}` : selected.artworkUrl;
           setLibraryCards((cards) => cards.map((card) => card.dataSourcePath === selected.dataSourcePath ? { ...card, name, artworkUrl, artworkPath: source.artwork.path ?? card.artworkPath } : card));
-        }} /> : selected ? <Inspector card={selected} onClear={() => setSelectedId(null)} onOpenMapTile={onOpenMapTile} editorStatus={editorStatus} onEdit={() => setEditingId(selected.dataSourcePath)} /> : <aside className="admin-library-inspector is-empty"><span>Archive Inspector</span><strong>Select a card</strong><p>Gameplay metadata, lore, audit warnings, and repository paths appear here.</p></aside>}
+        }} /> : selected ? <Inspector card={selected} onClear={() => setSelectedId(null)} onOpenMapTile={onOpenMapTile} editorStatus={editorStatus} onEdit={() => setEditingId(selected.dataSourcePath)} onSimulate={() => setSimulation({ card: selected })} /> : <aside className="admin-library-inspector is-empty"><span>Archive Inspector</span><strong>Select a card</strong><p>Gameplay metadata, lore, audit warnings, and repository paths appear here.</p></aside>}
       </div>
     </section>
   );

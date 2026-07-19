@@ -12,14 +12,14 @@ import {
 
 const STATS = ["command", "grit", "signal", "guile", "forge"] as const;
 const EFFECT_TYPES = [
-  "take_wound", "heal_wound", "gain_trophy", "gain_salvage", "lose_salvage", "gain_scar",
+  "take_wound", "heal_wound", "gain_trophy", "gain_salvage", "lose_salvage", "gain_scar", "gain_scar_choice",
   "gain_gear", "draw_artifact", "consume_artifact", "gain_follower", "gain_note", "advance_scenario",
   "advance_escalation", "gain_global_escalation_guarded", "return_threat_to_space",
   "next_non_battle_test_modifier", "next_normal_movement_roll_modifier", "equipment_suppression",
   "memory_tax_choice", "sequence"
 ] as const;
 const EFFECT_FIELDS = ["reward", "defeatReward", "failEffect", "successEffect", "failureEffect", "woundOnLoss", "resolveEffect", "effect", "activeEffect", "passiveEffect"];
-const TEXT_FIELDS = ["text", "flavor", "lore", "rulesText", "activeText", "resolutionSummary", "penalty", "relief", "upside", "trigger", "implementationNotes"];
+const TEXT_FIELDS = ["text", "flavor", "lore", "rulesText", "activeText", "resolutionSummary", "penalty", "relief", "upside", "trigger", "origin", "burdenText", "adaptationText", "implementationNotes"];
 
 interface ArtworkSelection extends AdminArtworkDraft {
   previewUrl: string;
@@ -34,6 +34,7 @@ interface AdminCardEditorProps {
   onCancel: () => void;
   onDirtyChange: (dirty: boolean) => void;
   onSaved: (source: AdminCardSource) => void;
+  onSimulateDraft?: (draft: Record<string, unknown>) => void;
 }
 
 function titleField(record: Record<string, unknown>): "title" | "name" | "enemyName" {
@@ -113,7 +114,7 @@ async function readArtwork(file: File, cardId: string): Promise<ArtworkSelection
   };
 }
 
-export default function AdminCardEditor({ card, auth, onCancel, onDirtyChange, onSaved }: AdminCardEditorProps): ReactElement {
+export default function AdminCardEditor({ card, auth, onCancel, onDirtyChange, onSaved, onSimulateDraft }: AdminCardEditorProps): ReactElement {
   const [source, setSource] = useState<AdminCardSource | null>(null);
   const [draft, setDraft] = useState<Record<string, unknown> | null>(null);
   const [artwork, setArtwork] = useState<ArtworkSelection | null>(null);
@@ -201,6 +202,7 @@ export default function AdminCardEditor({ card, auth, onCancel, onDirtyChange, o
         {EFFECT_FIELDS.some((field) => draft[field] !== undefined) ? <section className="admin-card-editor-section"><h3>Outcomes and effects</h3>{EFFECT_FIELDS.filter((field) => draft[field] !== undefined).map((field) => <EffectEditor key={field} field={field} value={draft[field]} onChange={(value) => update(field, value)} />)}<p>Only canonical typed effects are available. Retired Heat effects are rejected by both editor and server.</p></section> : null}
 
         <section className="admin-card-editor-section"><h3>Text</h3>{TEXT_FIELDS.filter((field) => draft[field] !== undefined).map((field) => <label key={field}><span>{formatLabel(field)} <small>{String(draft[field] ?? "").length} characters</small><button type="button" onClick={() => resetField(field)}>Reset field</button></span><textarea value={String(draft[field] ?? "")} onChange={(event) => update(field, event.target.value)} /></label>)}{["tags", "resourceTags"].filter((field) => Array.isArray(draft[field])).map((field) => <label key={field}><span>{formatLabel(field)}</span><input value={(draft[field] as unknown[]).join(", ")} onChange={(event) => update(field, event.target.value.split(",").map((value) => value.trim()).filter(Boolean))} /></label>)}</section>
+        {draft.type === "scar" ? <section className="admin-card-editor-section"><h3>Typed Scar rules</h3><label><span>Source</span><select value={String(draft.source ?? "unbound")} onChange={(event) => update("source", event.target.value)}>{["flesh", "mind", "machine", "rift", "unbound"].map((value) => <option key={value} value={value}>{formatLabel(value)}</option>)}</select></label>{["burden", "adaptation", "onGain", "removalRestrictions"].filter((field) => draft[field] !== undefined).map((field) => <label key={field}><span>{formatLabel(field)} · canonical structured data</span><textarea value={JSON.stringify(draft[field], null, 2)} onChange={(event) => { try { update(field, JSON.parse(event.target.value)); setFieldErrors((current) => ({ ...current, [field]: "" })); } catch { setFieldErrors((current) => ({ ...current, [field]: "Valid JSON is required" })); } }} />{fieldErrors[field] ? <small className="admin-card-editor-warning">{fieldErrors[field]}</small> : null}</label>)}</section> : null}
 
         <section className="admin-card-editor-section"><h3>Source</h3><code>{source.sourcePath}</code><code>{source.artwork.path ?? "No artwork file"}</code><details><summary>Advanced data · normalized read-only</summary><pre>{JSON.stringify(draft, null, 2)}</pre></details></section>
 
@@ -211,7 +213,7 @@ export default function AdminCardEditor({ card, auth, onCancel, onDirtyChange, o
 
         {previewing ? <section className="admin-card-editor-changes"><h3>Pending changes</h3>{changeFields.map((field) => <div key={field}><strong>{formatLabel(field)}</strong><span>{field === "artwork" ? `${source.artwork.path ?? "Not set"} → ${artwork?.fileName}` : "Modified"}</span></div>)}<button type="button" onClick={() => void save()} disabled={saving || changeFields.length === 0}>{saving ? "Save in progress…" : "Confirm save"}</button><button type="button" onClick={() => setPreviewing(false)} disabled={saving}>Return to editing</button></section> : null}
       </div>
-      <footer><button type="button" onClick={() => { setDraft(structuredClone(source.record)); setArtwork(null); setError(null); setFieldErrors({}); }}>Revert all</button><button type="button" onClick={() => setPreviewing(true)} disabled={!dirty}>Preview changes</button><button type="button" onClick={cancel}>Cancel</button></footer>
+      <footer><button type="button" onClick={() => { setDraft(structuredClone(source.record)); setArtwork(null); setError(null); setFieldErrors({}); }}>Revert all</button>{onSimulateDraft ? <button type="button" onClick={() => onSimulateDraft(structuredClone(draft))}>Simulate draft</button> : null}<button type="button" onClick={() => setPreviewing(true)} disabled={!dirty}>Preview changes</button><button type="button" onClick={cancel}>Cancel</button></footer>
     </aside>
   );
 }
