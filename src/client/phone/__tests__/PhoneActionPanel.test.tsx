@@ -287,6 +287,7 @@ describe("PhoneActionPanel", () => {
   });
   afterEach(() => {
     cleanup();
+    window.history.replaceState({}, "", "/");
   });
 
   it("shows Mira's Cinder Oath at the confrontation with her private Vow Note balance", () => {
@@ -2664,6 +2665,50 @@ describe("PhoneActionPanel", () => {
     fireEvent.click(screen.getByRole("button", { name: /view details/i }));
     expect(screen.getByLabelText(/battle details/i)).toHaveTextContent(/base grit \+2/i);
     expect(screen.getByLabelText(/battle details/i)).toHaveTextContent(/black route fuse \+3/i);
+  });
+
+  it("renders the cinematic split battle layout from canonical state and intents", () => {
+    const onIntent = vi.fn();
+    render(
+      <PhoneActionPanel
+        characters={characters}
+        onIntent={onIntent}
+        patch={createPatch({
+          activeResolution: {
+            id: "seat-1:threat:cinder-veil-stalker:cinematic-layout",
+            playerId: "seat-1",
+            source: "threat",
+            stage: "battle_setup",
+            card: {
+              id: "cinder-veil-stalker",
+              title: "Cinder-Veil Stalker",
+              type: "enemy",
+              artType: "threat"
+            },
+            battle: {
+              enemyName: "Cinder-Veil Stalker",
+              stat: "grit",
+              difficulty: 8,
+              modifiers: []
+            }
+          }
+        })}
+      />
+    );
+
+    const shell = screen.getByTestId("phone-battle-shell");
+    const arena = screen.getByTestId("phone-battle-cinematic-stage");
+    expect(shell).toHaveAttribute("data-battle-ui", "cinematic-split");
+    expect(within(arena).getByText(/operative/i)).toBeInTheDocument();
+    expect(within(arena).getByText(/threat/i)).toBeInTheDocument();
+    expect(arena).not.toHaveTextContent(/grit\s*2|opponent\s*8/i);
+    expect(screen.getByLabelText(/battle totals/i)).toHaveTextContent(/grit\s*2.*opponent\s*8.*total\s*pending/i);
+    expect(screen.queryByLabelText(/battle details/i)).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /roll grit/i })).toBeInTheDocument();
+    expect(shell).not.toHaveTextContent(/attack|defense|a\/d/i);
+
+    fireEvent.click(screen.getByRole("button", { name: /roll grit/i }));
+    expect(onIntent).toHaveBeenCalledWith({ type: "COMBAT_REQUESTED", seatId: "seat-1", stat: "grit" });
   });
 
   it("uses the focused battle shell when live battle data has a generic projected card type", () => {

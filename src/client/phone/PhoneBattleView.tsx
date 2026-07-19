@@ -357,26 +357,29 @@ export function PhoneBattleView({
   ]);
 
   const combatantArena = (
-    <section className="phone-battle-arena" aria-label={`${playerName} versus ${enemyName}`}>
+    <section
+      className="phone-battle-arena phone-battle-arena--cinematic"
+      aria-label={`${playerName} versus ${enemyName}`}
+      data-testid="phone-battle-cinematic-stage"
+    >
       <article className="phone-battle-combatant phone-battle-combatant--operative">
-        <img src={getCharacterPortraitPath(self.character.id)} alt={self.character.name} />
-        <div>
-          <span>{self.character.name}</span>
-          <strong>{playerName}</strong>
-          <small>{statLabel} {operativeValue}</small>
+        <div className="phone-battle-combatant__art">
+          <img src={getCharacterPortraitPath(self.character.id)} alt={self.character.name} />
+        </div>
+        <div className="phone-battle-combatant__identity">
+          <span>Operative</span>
+          <strong>{self.character.name}</strong>
+          <small>{playerName}</small>
         </div>
       </article>
       <span className="phone-battle-arena__versus" aria-hidden="true">VS</span>
       <article className="phone-battle-combatant phone-battle-combatant--enemy">
-        <CardArtImage
-          cardType={enemyArtType(patch)}
-          cardId={enemyId}
-          alt={enemyName}
-        />
-        <div>
+        <div className="phone-battle-combatant__art">
+          <CardArtImage cardType={enemyArtType(patch)} cardId={enemyId} alt={enemyName} />
+        </div>
+        <div className="phone-battle-combatant__identity">
           <span>Threat</span>
           <strong>{enemyName}</strong>
-          <small>Opponent {opponentTotal}</small>
         </div>
       </article>
     </section>
@@ -384,10 +387,12 @@ export function PhoneBattleView({
 
   return (
     <section
-      className={`phone-battle-shell phone-battle-shell--${result ?? "active"}`}
+      className={`phone-battle-shell phone-battle-shell--cinematic phone-battle-shell--${result ?? "active"}`}
       data-testid="phone-battle-shell"
       data-battle-identity={identity ?? undefined}
+      data-battle-ui="cinematic-split"
     >
+      <div className="phone-battle-shell__backdrop" aria-hidden="true" />
       <div className="phone-battle-shell__scroll" data-testid="phone-battle-scroll-region">
         {context === "battle" ? (
           <>
@@ -424,10 +429,10 @@ export function PhoneBattleView({
                 <span>Opponent</span>
                 <strong>{opponentTotal}</strong>
               </div>
-              <p data-testid="phone-battle-total-comparison">
+              <div className="phone-battle-equation__total" data-testid="phone-battle-total-comparison">
                 <span>Total</span>
-                <strong>{finalTotal ?? "—"} <i>—</i> {opponentTotal}</strong>
-              </p>
+                <strong>{finalTotal === null ? "Pending" : `${finalTotal} : ${opponentTotal}`}</strong>
+              </div>
               {tieSucceeded ? <small>Tie succeeds against this threat.</small> : null}
             </section>
             {result ? (

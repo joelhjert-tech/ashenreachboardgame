@@ -462,7 +462,11 @@ export function PhoneApp(): ReactElement {
       return;
     }
 
-    if (typeof navigator.vibrate === "function" && document.visibilityState !== "hidden") {
+    if (
+      typeof navigator.vibrate === "function" &&
+      document.visibilityState !== "hidden" &&
+      (navigator.userActivation?.hasBeenActive ?? true)
+    ) {
       navigator.vibrate([160, 70, 160]);
     }
   }, [activeSeatId, auth, phonePatch?.payload.status]);
