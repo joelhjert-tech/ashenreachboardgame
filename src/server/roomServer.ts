@@ -523,6 +523,24 @@ export interface RoomExecutionServices {
   onBroadcastAttempt?: () => void;
   onTimerAttempt?: (timer: "enemy-roll" | "resolution-auto-continue") => void;
   onActionAttempt?: (action: GameAction, state: GameState) => void;
+  onMovementDiagnostic?: (diagnostic: MovementTransitionDiagnostic) => void;
+}
+
+export interface MovementTransitionDiagnostic {
+  event: "session-started" | "movement-rolled" | "movement-unavailable" | "movement-selected" | "movement-committed" | "turn-completed";
+  sessionId: string;
+  sequence: number;
+  mode: SessionMode;
+  phase: GameState["phase"];
+  activeSeatId: string | null;
+  turnOrder: string[];
+  seatId: string;
+  sourceSectorId: string | null;
+  movementValue: number | null;
+  legalDestinationIds: string[];
+  selectedDestinationId: string | null;
+  route: string[];
+  pendingOwnerSeatIds: string[];
 }
 
 export class GameRoomServer {
@@ -562,6 +580,46 @@ export class GameRoomServer {
     this.anomalies = anomalies ?? loadAnomalyCards();
     this.artifacts = artifacts ?? loadArtifactCards();
     this.escalations = escalations ?? loadEscalationCards();
+  }
+
+  private emitMovementDiagnostic(
+    event: MovementTransitionDiagnostic["event"],
+    seatId: string,
+    detail: { selectedDestinationId?: string | null; route?: string[] } = {}
+  ): void {
+    const player = this.state.players.find((entry) => entry.seatId === seatId) ?? null;
+    const plan = buildMovementRoutePlan(this.state, seatId);
+    const diagnostic: MovementTransitionDiagnostic = {
+      event,
+      sessionId: this.state.sessionId,
+      sequence: this.state.sequence,
+      mode: this.state.sessionMode,
+      phase: this.state.phase,
+      activeSeatId: this.state.turnOrder[this.state.activeSeatIndex] ?? null,
+      turnOrder: [...this.state.turnOrder],
+      seatId,
+      sourceSectorId: player?.character.currentSpaceId ?? null,
+      movementValue: this.state.movementRolls?.[seatId] ?? null,
+      legalDestinationIds: plan?.routes.map((route) => route.sectorId) ?? [],
+      selectedDestinationId: detail.selectedDestinationId ?? null,
+      route: [...(detail.route ?? [])],
+      pendingOwnerSeatIds: [
+        this.state.activeResolution?.playerId,
+        this.state.pendingFailureReaction?.seatId,
+        this.state.pendingTileChallenge?.seatId,
+        this.state.pendingCooperativeTest?.activeSeatId,
+        this.state.pendingMissionSelection?.ownerSeatId
+      ].filter((candidate): candidate is string => Boolean(candidate))
+    };
+
+    this.executionServices.onMovementDiagnostic?.(diagnostic);
+    if (
+      this.executionServices.mode === "live" &&
+      process.env.NODE_ENV !== "production" &&
+      process.env.ASHEN_REACH_MOVEMENT_DEBUG === "1"
+    ) {
+      console.debug("movement-transition", diagnostic);
+    }
   }
 
   attach(server: WebSocketServer): void {
@@ -1482,8 +1540,12 @@ export class GameRoomServer {
     }
 
     if (this.state.status === "active") {
-      this.applyStartOfTurnScenarioEffects(this.state.turnOrder[this.state.activeSeatIndex] ?? activeSeatId);
+      // SESSION_STARTED already opens the first operative's navigation window. Scenario
+      // turn-start pressure begins with the next authoritative turn; resolving it here
+      // could reveal a Threat before the opening movement and leave the session owning
+      // both an opening encounter and a movement step.
       this.maybeTriggerAbilityOnTurnStarted(this.state.turnOrder[this.state.activeSeatIndex] ?? activeSeatId);
+      this.emitMovementDiagnostic("session-started", this.state.turnOrder[this.state.activeSeatIndex] ?? activeSeatId);
     }
     this.broadcastPatch();
   }
@@ -6527,6 +6589,7 @@ export class GameRoomServer {
       if (nextSeatId) {
         this.applyStartOfTurnScenarioEffects(nextSeatId);
         this.maybeTriggerAbilityOnTurnStarted(nextSeatId);
+        this.emitMovementDiagnostic("turn-completed", nextSeatId);
       }
     }
 
@@ -6609,6 +6672,20 @@ export class GameRoomServer {
       modifierSources,
       createdAt
     } satisfies MovementRolledAction);
+
+    const plan = buildMovementRoutePlan(this.state, activeSeatId);
+    this.emitMovementDiagnostic("movement-rolled", activeSeatId);
+    if (plan && plan.routes.length === 0) {
+      this.applyAction({
+        type: "MOVEMENT_UNAVAILABLE_RESOLVED",
+        seatId: activeSeatId,
+        sourceSectorId: activePlayer.character.currentSpaceId,
+        movementValue,
+        reason: `No legal destination is available exactly ${movementValue} ${movementValue === 1 ? "step" : "steps"} away. Movement ends without changing sector.`,
+        createdAt: new Date().toISOString()
+      });
+      this.emitMovementDiagnostic("movement-unavailable", activeSeatId);
+    }
   }
 
   private didRoundWrap(previousActiveSeatIndex: number, nextActiveSeatIndex: number): boolean {
@@ -7549,6 +7626,13 @@ export class GameRoomServer {
     const routeId = routeStarChoice?.destinationId === intent.toSectorId ? routeStarChoice.routeId : intent.routeId;
     const movementRevision = routeStarChoice?.destinationId === intent.toSectorId ? routeStarChoice.movementRevision : intent.movementRevision;
     const { player, fromSectorId, targetSector } = this.assertLegalMove(intent.seatId, intent.toSectorId, intent.voidKeyInstanceId, true, routeId, movementRevision);
+    const selectedRoute = routeId && movementRevision !== undefined
+      ? getLegalMovementRouteVariant(this.state, intent.seatId, intent.toSectorId, routeId, movementRevision)
+      : getLegalMovementRoute(this.state, intent.seatId, intent.toSectorId);
+    this.emitMovementDiagnostic("movement-selected", intent.seatId, {
+      selectedDestinationId: intent.toSectorId,
+      route: selectedRoute?.route ?? [fromSectorId, intent.toSectorId]
+    });
 
     const escalationModifier = getEscalationModifier(this.state.escalationLevel);
     const roll = rollDice(2, 6, this.randomSource);
@@ -7590,6 +7674,10 @@ export class GameRoomServer {
       this.applyScenarioOnSectorEntered(intent.seatId, intent.toSectorId);
     }
     this.runAutomaticPhases(intent.seatId);
+    this.emitMovementDiagnostic("movement-committed", intent.seatId, {
+      selectedDestinationId: success ? intent.toSectorId : fromSectorId,
+      route: selectedRoute?.route ?? [fromSectorId, intent.toSectorId]
+    });
   }
 
   private shouldPreventMovementFailure(): boolean {

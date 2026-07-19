@@ -462,8 +462,9 @@ describe("server API scenario flow", () => {
     expect(joined.status).toBe(200);
     expect(started.status).toBe(200);
     expect(started.payload.status).toBe("active");
+    expect(started.payload.phase).toBe("navigation");
     expect(harness.roomServer.getState().activeScenarioId).toBe("scenario_labyrinth_engine");
-    expect(harness.roomServer.getState().scenarioProgress.engineModeIndex).toBe(1);
+    expect(harness.roomServer.getState().scenarioProgress.engineModeIndex).toBe(0);
   });
 
   it("marks ready through signed seat tokens and rejects legacy unsigned ready tokens", async () => {

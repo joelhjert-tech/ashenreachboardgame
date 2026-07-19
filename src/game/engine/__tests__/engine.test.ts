@@ -3605,7 +3605,7 @@ describe("movement rolls", () => {
     const server = new GameRoomServer(
       state,
       [],
-      createSequenceRandomSource([2]),
+      createSequenceRandomSource([0]),
       createThreats(),
       createCharacters(),
       createGear(),
@@ -3633,8 +3633,8 @@ describe("movement rolls", () => {
       movementPlanner?: { movementValue: number } | null;
     };
 
-    expect(rolled.movementRolls?.["seat-1"]).toBe(3);
-    expect(rolledProjection.movementPlanner?.movementValue).toBe(3);
+    expect(rolled.movementRolls?.["seat-1"]).toBe(1);
+    expect(rolledProjection.movementPlanner?.movementValue).toBe(1);
   });
 
   it("uses stored movement rolls for longer legal destinations and clears them after movement resolves", () => {

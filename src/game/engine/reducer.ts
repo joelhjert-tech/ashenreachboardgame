@@ -122,7 +122,7 @@ import {
 } from "../rules/nextNormalMovementRollModifier.js";
 import type { ScarSourceEvent } from "../schema/scarTrigger.schema.js";
 import { getBoardSpace, isScenarioConfrontationSpace } from "../data/boardSpaces.js";
-import { getForcedDisplacementDestination, getOwnerSelectedForcedDisplacementCandidates, getLegalMovementRoute, getLegalMovementRouteVariant, getMovementBlockReason, getVoidKeyMovementRoute, getMovementStepBlockReason } from "../rules/movementPlanner.js";
+import { buildMovementRoutePlan, getForcedDisplacementDestination, getOwnerSelectedForcedDisplacementCandidates, getLegalMovementRoute, getLegalMovementRouteVariant, getMovementBlockReason, getVoidKeyMovementRoute, getMovementStepBlockReason } from "../rules/movementPlanner.js";
 import { RIFTFALL_BOARD_NODE_INDEX } from "../../data/riftfallBoardNodes.js";
 import { canRiftAnchorSpikeSuppress } from "../rules/forcedDisplacement.js";
 import { resolveFloorZeroSalvageLoss, THREAT_REVISION_SALVAGE_LOSS_SOURCE_IDS } from "../rules/salvageLoss.js";
@@ -1714,6 +1714,63 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
         movementRolledAction.seatId,
         movementRollResolutionId
       ));
+    }
+    case "MOVEMENT_UNAVAILABLE_RESOLVED": {
+      try {
+        ensureSeatTurn(state, action.seatId);
+        ensureSeatCanTakeNormalTurnAction(state, action.seatId);
+      } catch (error) {
+        return reject(state, action, error instanceof Error ? error.message : "Seat cannot act");
+      }
+
+      if (state.phase !== "navigation") {
+        return reject(state, action, `Cannot resolve unavailable movement during phase ${state.phase}`);
+      }
+
+      const player = requirePlayer(state, action.seatId);
+      const movementValue = state.movementRolls?.[action.seatId];
+      const plan = buildMovementRoutePlan(state, action.seatId);
+
+      if (
+        player.character.currentSpaceId !== action.sourceSectorId ||
+        movementValue !== action.movementValue ||
+        !plan ||
+        plan.routes.length > 0
+      ) {
+        return reject(state, action, "Movement is still available or the no-movement result is stale");
+      }
+
+      return succeed({
+        ...state,
+        phase: "action",
+        sequence: state.sequence + 1,
+        movementRolls: clearMovementRollForSeat(state, action.seatId),
+        movementAdjustments: clearMovementAdjustmentForSeat(state, action.seatId),
+        routeStarChoices: state.routeStarChoices
+          ? Object.fromEntries(Object.entries(state.routeStarChoices).filter(([seatId]) => seatId !== action.seatId))
+          : undefined,
+        lastOutcomeSummary: {
+          seatId: action.seatId,
+          movedToSectorId: action.sourceSectorId,
+          encounterCardId: null,
+          encounterTitle: "No legal route",
+          encounterCardType: null,
+          checkStat: null,
+          die1: null,
+          die2: null,
+          statBonus: null,
+          checkTotal: null,
+          difficulty: null,
+          enemyRollerSeatId: null,
+          enemyDie1: null,
+          enemyDie2: null,
+          enemyBonus: null,
+          enemyTotal: null,
+          success: null,
+          summary: action.reason
+        },
+        eventLog: [...state.eventLog, action]
+      });
     }
     case "MOVEMENT_RESOLVED": {
       const movementAction = action as MovementResolvedAction;

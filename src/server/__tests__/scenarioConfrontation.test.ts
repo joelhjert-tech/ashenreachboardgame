@@ -586,7 +586,7 @@ describe("scenario confrontation flow", () => {
     expect(roomServer.getState().escalationLevel).toBe(0);
   });
 
-  it("weakens the Broken Seal at turn start from its ambient roll", () => {
+  it("weakens the Broken Seal when the first turn completes", () => {
     const state = createInitialSessionState("session-alpha", "single-player");
     const roomServer = new GameRoomServer(state, [], createSequenceRandomSource([0]));
 
@@ -595,10 +595,14 @@ describe("scenario confrontation flow", () => {
     roomServer.setSeatReady("seat-1", true);
     roomServer.startSession();
 
+    expect(roomServer.getState().scenarioPreparation.resources.sealIntegrity).toBe(8);
+    roomServer.getState().phase = "broadcast";
+    endBroadcastTurn(roomServer);
+
     expect(roomServer.getState().scenarioPreparation.resources.sealIntegrity).toBe(7);
   });
 
-  it("does not heat operatives when the Broken Seal loses its final token at turn start", () => {
+  it("does not heat operatives when the Broken Seal loses its final token after a completed turn", () => {
     const state = createInitialSessionState("session-alpha", "single-player");
     state.scenarioPreparation = {
       ...state.scenarioPreparation,
@@ -610,6 +614,10 @@ describe("scenario confrontation flow", () => {
     selectFirstStartingContract(roomServer, "seat-1");
     roomServer.setSeatReady("seat-1", true);
     roomServer.startSession();
+
+    expect(roomServer.getState().scenarioPreparation.resources.sealIntegrity).toBe(1);
+    roomServer.getState().phase = "broadcast";
+    endBroadcastTurn(roomServer);
 
     expect(roomServer.getState().scenarioPreparation.resources.sealIntegrity).toBe(3);
     expect(roomServer.getState().scenarioPreparation.resources.sealCollapses).toBe(1);
@@ -646,7 +654,7 @@ describe("scenario confrontation flow", () => {
     expect(roomServer.getState().scenarioProgress["crownClaim:seat-1"]).toBe(1);
   });
 
-  it("reveals a local threat on a Broken Seal 3-4 turn-start roll", () => {
+  it("reveals a local threat on the Broken Seal turn after opening movement", () => {
     const state = createInitialSessionState("session-alpha", "single-player");
     const roomServer = new GameRoomServer(state, [], createSequenceRandomSource([2, 0]));
 
@@ -654,6 +662,11 @@ describe("scenario confrontation flow", () => {
     selectFirstStartingContract(roomServer, "seat-1");
     roomServer.setSeatReady("seat-1", true);
     roomServer.startSession();
+
+    expect(roomServer.getState().phase).toBe("navigation");
+    expect(roomServer.getState().currentEncounter).toBeNull();
+    roomServer.getState().phase = "broadcast";
+    endBroadcastTurn(roomServer);
 
     expect(roomServer.getState().phase).toBe("action");
     expect(roomServer.getState().currentEncounter).not.toBeNull();
@@ -751,7 +764,7 @@ describe("scenario confrontation flow", () => {
     expect(roomServer.getState().players[0]?.character.wounds).toBe(2);
   });
 
-  it("rotates the Labyrinth Engine mode at turn start", () => {
+  it("rotates the Labyrinth Engine mode after the opening turn", () => {
     const state = createInitialSessionState("session-alpha", "single-player");
     state.activeScenarioId = "scenario_labyrinth_engine";
     state.scenarioProgress = { engineModeIndex: 0 };
@@ -761,6 +774,10 @@ describe("scenario confrontation flow", () => {
     selectFirstStartingContract(roomServer, "seat-1");
     roomServer.setSeatReady("seat-1", true);
     roomServer.startSession();
+
+    expect(roomServer.getState().scenarioProgress.engineModeIndex).toBe(0);
+    roomServer.getState().phase = "broadcast";
+    endBroadcastTurn(roomServer);
 
     expect(roomServer.getState().scenarioProgress.engineModeIndex).toBe(1);
   });

@@ -51,6 +51,13 @@ export interface MovementRolledAction extends BaseAction {
   modifierSources?: RollModifierSource[];
 }
 
+export interface MovementUnavailableResolvedAction extends BaseAction {
+  type: "MOVEMENT_UNAVAILABLE_RESOLVED";
+  sourceSectorId: string;
+  movementValue: number;
+  reason: string;
+}
+
 export interface MovedAction extends BaseAction {
   type: "MOVED";
   fromSectorId: string;
@@ -708,6 +715,7 @@ export type GameAction =
   | ActivateGateSaintAction
   | UseMarrowDetourAction
   | MovementRolledAction
+  | MovementUnavailableResolvedAction
   | MovedAction
   | MovementResolvedAction
   | EncounterDrawnAction

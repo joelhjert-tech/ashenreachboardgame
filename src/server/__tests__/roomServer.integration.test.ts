@@ -1152,6 +1152,28 @@ describe("roomServer websocket integration", () => {
     );
   });
 
+  it("opens single-player with movement before Broken Seal turn-start pressure", async () => {
+    const state = createInitialSessionState(
+      "single-player-opening-movement",
+      "single-player",
+      "scenario_broken_seal"
+    );
+    const activeHarness = (harness = await startHarness([1], state));
+    const joinResult = activeHarness.roomServer.joinSeat("Solo", "signal-witch");
+
+    selectFirstStartingContract(activeHarness.roomServer, joinResult.seatId);
+    activeHarness.roomServer.setSeatReady(joinResult.seatId, true);
+    activeHarness.roomServer.startSession();
+
+    const started = activeHarness.roomServer.getState();
+    expect(started.status).toBe("active");
+    expect(started.phase).toBe("navigation");
+    expect(started.currentEncounter).toBeNull();
+    expect(started.activeResolution).toBeNull();
+    expect(started.scenarioPreparation.resources.sealIntegrity).toBe(8);
+    expect(started.eventLog.some((event) => (event as { type?: string }).type === "SCENARIO_AMBIENT_APPLIED")).toBe(false);
+  });
+
   it("keeps single-player ready in setup until the Host Phone explicitly starts", async () => {
     const activeHarness = (harness = await startHarness([0, 0, 0, 0], createInitialSessionState("session-alpha", "single-player")));
     const joinResult = activeHarness.roomServer.joinSeat("Solo", "signal-witch");
@@ -1358,7 +1380,7 @@ describe("roomServer websocket integration", () => {
   });
 
   it("writes the live movement roll into state and projects exact-distance movement", async () => {
-    const activeHarness = (harness = await startHarness([0, 2, 0, 0], createInitialSessionState("session-alpha", "single-player")));
+    const activeHarness = (harness = await startHarness([2, 0, 0], createInitialSessionState("session-alpha", "single-player")));
 
     const joinResult = activeHarness.roomServer.joinSeat("Solo", "void-marshal");
     const tv = await connectClient(`ws://127.0.0.1:${activeHarness.port}/?view=tv`);
