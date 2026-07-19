@@ -86,6 +86,26 @@ describe("AdminSimulationLab", () => {
     await expect(lab.start(OWNER, await request(editor, { draft: { ...source.record, defeatReward: { type: "gain_heat", amount: 1 } } }), live)).rejects.toThrow(/Heat/i);
   });
 
+  it("previews normalized Mission reward effects without mutating the live Mission ledger", async () => {
+    const lab = new AdminSimulationLab(editor);
+    const live = createInitialSessionState("live-room", "single-player", undefined, "co-op", "standard", 1);
+    const before = JSON.stringify(live);
+    const source = await editor.findCard("cartel-crossing-thread", "contract");
+    const result = await lab.start(OWNER, {
+      mode: "start",
+      cardId: "cartel-crossing-thread",
+      cardFamily: "contract",
+      expectedRevision: source.revision,
+      operative: { preset: "custom", stats: { command: 3 }, salvage: 3 },
+      dice: { mode: "fixed", values: [6, 6], seed: "mission-reward-preview" },
+      outcomeMode: "success"
+    }, live);
+    expect(result.after.salvage).toBe(result.before.salvage + 1);
+    expect(result.effects.some((entry) => entry.type === "gain_salvage" && entry.status === "success")).toBe(true);
+    expect(result.isolation.liveStateHashAfter).toBe(result.isolation.liveStateHashBefore);
+    expect(JSON.stringify(live)).toBe(before);
+  });
+
   it("persists and consumes canonical prompt continuations once", async () => {
     const lab = new AdminSimulationLab(editor);
     const live = createInitialSessionState("live-room", "single-player", undefined, "co-op", "standard", 1);

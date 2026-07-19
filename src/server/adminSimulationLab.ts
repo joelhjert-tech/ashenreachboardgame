@@ -102,6 +102,14 @@ function cardName(record: Record<string, unknown>): string {
 }
 
 function directEffect(record: Record<string, unknown>): EncounterEffect | null {
+  const reward = record.reward && typeof record.reward === "object" && !Array.isArray(record.reward)
+    ? record.reward as Record<string, unknown>
+    : {};
+  const missionEffects = Array.isArray(reward.effects)
+    ? reward.effects.filter((entry): entry is EncounterEffect => Boolean(entry) && typeof entry === "object" && !Array.isArray(entry))
+    : [];
+  if (missionEffects.length === 1) return missionEffects[0]!;
+  if (missionEffects.length > 1) return { type: "sequence", effects: missionEffects };
   for (const field of ["resolveEffect", "effect", "successEffect", "defeatReward", "failureEffect", "failEffect", "woundOnLoss"]) {
     const candidate = record[field];
     if (candidate && typeof candidate === "object" && !Array.isArray(candidate)) return candidate as EncounterEffect;

@@ -20,6 +20,7 @@ export type PhaseOneQaFixture =
   | { kind: "movement-journey"; stage: "ashen-chapel"; withChoirLantern?: boolean }
   | { kind: "phone-movement"; stage: "roll-required" | "four-routes" | "confirmed" }
   | { kind: "map-transition"; stage: "guardian-locked" | "guardian-cleared" | "core-locked" | "core-cleared" }
+  | { kind: "mission-reward"; stage: "progress" | "ready" }
   | { kind: "relic-trade"; completedContracts: 0 | 1 | 2 | 3 }
   | { kind: "follower"; stage: "acquired" | "used" | "reconnected" }
   | { kind: "host-state"; stage: "scenario-preparation" | "disconnected" | "victory" | "loss" }
@@ -901,6 +902,14 @@ export function applyPhaseOneQaFixture(state: GameState, seatId: string, fixture
     );
     if (fixture.stage === "guardian-cleared") player.private.notes.push("guardian-span-clearance");
     if (fixture.stage === "core-cleared") player.private.notes.push("gate-of-cinders-breached");
+    return;
+  }
+
+  if (fixture.kind === "mission-reward") {
+    state.phase = "action";
+    state.movementRolls = undefined;
+    setContract(state, seatId, routeContractId, fixture.stage === "ready" ? 3 : 1, fixture.stage === "ready" ? ["echo-a", "echo-b", "echo-c"] : ["echo-a"]);
+    placePlayer(state, seatId, "ashwake-crossing");
     return;
   }
 

@@ -92,6 +92,19 @@ describe("Phase 1 QA fixture", () => {
     expect(state.sectors.find((sector) => sector.id === "ashen-chapel")?.tileChallenges).toContainEqual(riftBefore);
   });
 
+  it("prepares Mission progress and readiness without resolving the reward", () => {
+    const state = createInitialSessionState("QA-MISSION", "single-player", "scenario_broken_seal", "co-op", "standard", 1);
+    state.status = "active";
+    applyPhaseOneQaFixture(state, "seat-1", { kind: "mission-reward", stage: "progress" });
+    expect(state.players[0]?.character.activeContract).toMatchObject({ contractId: "choir-echo-triangulation", progress: 1 });
+    expect(state.players[0]?.character.salvage).toBe(4);
+
+    applyPhaseOneQaFixture(state, "seat-1", { kind: "mission-reward", stage: "ready" });
+    expect(state.players[0]?.character.activeContract).toMatchObject({ contractId: "choir-echo-triangulation", progress: 3 });
+    expect(state.players[0]?.character.completedContracts ?? []).toHaveLength(0);
+    expect(state.players[0]?.character.salvage).toBe(4);
+  });
+
   it("prepares four canonical one-step routes for the movement UI comparison", () => {
     const state = createInitialSessionState("QA001", "single-player", "scenario_broken_seal", "co-op", "standard", 1);
     state.status = "active";
