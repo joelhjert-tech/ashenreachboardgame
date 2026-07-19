@@ -1,0 +1,12 @@
+{
+  "id": "scar-split-horizon", "type": "scar", "title": "Split Horizon", "source": "rift",
+  "text": "Every forced road divides into two equally real injuries.", "flavor": "The horizon cannot agree where you landed.",
+  "origin": "A false route tore the operative across two adjacent possibilities.",
+  "burdenText": "The first forced displacement each round travels one additional legal graph step.", "adaptationText": "Once per round, choose between the resolver's legal forced-displacement directions.",
+  "burden": { "key": "forced-displacement-extra-step", "timing": "beforeDisplacement", "limit": "oncePerRound", "optional": false, "tags": ["forcedDisplacement"] },
+  "adaptation": { "key": "choose-displacement-direction", "timing": "beforeDisplacement", "limit": "oncePerRound", "optional": true, "tags": ["forcedDisplacement"] },
+  "trigger": "The first forced displacement each round.", "penalty": "Travel one additional legal graph step.",
+  "effect": { "type": "gain_note", "text": "Split Horizon extended the forced route." },
+  "relief": "Purge this Scar at the Sable Machine Choir.", "upside": "Choose between legal directions once per round.",
+  "removalRestrictions": ["purificationService"], "artwork": "/assets/cards/scars/scar-split-horizon.png"
+}

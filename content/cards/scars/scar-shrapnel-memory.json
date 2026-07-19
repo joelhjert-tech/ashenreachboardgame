@@ -1,0 +1,12 @@
+{
+  "id": "scar-shrapnel-memory", "type": "scar", "title": "Shrapnel Memory", "source": "machine",
+  "text": "Metal recollection catches whenever the road demands a decision.", "flavor": "Every route sounds like the shell that put you here.",
+  "origin": "A navigation core burst and left route fragments embedded along the spine.",
+  "burdenText": "The first route test each turn suffers -1.", "adaptationText": "Gain +1 Grit against machine-family enemies.",
+  "burden": { "key": "first-route-test-penalty", "timing": "beforeTest", "limit": "oncePerTurn", "optional": false, "tags": ["route"] },
+  "adaptation": { "key": "machine-enemy-grit-bonus", "timing": "beforeTest", "limit": "passive", "optional": false, "tags": ["grit", "machine"] },
+  "trigger": "The first authored route test each turn.", "penalty": "Apply -1 to the operative total.",
+  "effect": { "type": "gain_note", "text": "Shrapnel Memory recognized the route as hostile." },
+  "relief": "Purge this Scar at the Sable Machine Choir.", "upside": "Machine enemies expose familiar weak seams.",
+  "removalRestrictions": ["purificationService"], "artwork": "/assets/cards/scars/scar-shrapnel-memory.png"
+}

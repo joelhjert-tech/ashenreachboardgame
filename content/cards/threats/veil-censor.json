@@ -15,8 +15,10 @@
     "text": "You stole the censor's redaction key and kept the blank space."
   },
   "woundOnLoss": {
-    "type": "gain_scar",
-    "scarId": "scar-wound-7"
+    "type": "gain_scar_choice",
+    "amount": 1,
+    "source": "mind",
+    "sourceCardId": "veil-censor"
   },
   "enemyFamily": "bureaucracy",
   "threatLane": "blue",

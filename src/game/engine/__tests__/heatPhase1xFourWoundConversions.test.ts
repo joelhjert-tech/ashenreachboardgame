@@ -128,7 +128,8 @@ describe("Phase 1X four Wound conversions", () => {
     const threshold = unresolvedState(id, 0).woundThreshold;
     const state = resolveThroughServer(id, threshold - 1);
     expect(state.players[0]!.character).toMatchObject({ wounds: threshold, status: "recalled" });
-    expect(state.players[0]!.character.scars).toHaveLength(1);
+    expect(state.players[0]!.character.scars).toHaveLength(0);
+    expect(state.pendingScarChoice).toMatchObject({ ownerSeatId: "seat-1", source: "unbound" });
     expect(countEvents(state, "WOUND_THRESHOLD_REACHED")).toBe(1);
   });
 

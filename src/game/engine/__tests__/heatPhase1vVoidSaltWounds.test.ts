@@ -116,7 +116,8 @@ describe("Phase 1V Void-Salt Sickness Wound conversion", () => {
     const threshold = unresolvedState(0).woundThreshold;
     const recalled = resolve(threshold - 1, false).getState();
     expect(recalled.players[0]!.character).toMatchObject({ wounds: threshold, status: "recalled" });
-    expect(recalled.players[0]!.character.scars).toHaveLength(1);
+    expect(recalled.players[0]!.character.scars).toHaveLength(0);
+    expect(recalled.pendingScarChoice).toMatchObject({ ownerSeatId: "seat-1", source: "unbound" });
     expect(countEvents(recalled, "WOUND_THRESHOLD_REACHED")).toBe(1);
   });
 

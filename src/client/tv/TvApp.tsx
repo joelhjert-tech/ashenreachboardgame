@@ -710,6 +710,18 @@ function getHostStateBannerModel({ patch, roomCode, activePlayer, connectionStat
     };
   }
 
+  if (patch.payload.pendingScarChoiceStatus) {
+    const seatLabels = getSeatLabelMap(patch);
+    const choice = patch.payload.pendingScarChoiceStatus;
+    const ownerLabel = seatLabels[choice.ownerSeatId] ?? "Active operative";
+    return {
+      label: "The Wound Did Not Close",
+      detail: `${ownerLabel} must choose: ${choice.cards.map((card) => card.title).join(" or ")}.`,
+      meta: `${choice.source.toUpperCase()} SCAR · Owner phone must confirm`,
+      tone: "danger"
+    };
+  }
+
   if (patch.payload.scarTriggerStatus) {
     const seatLabels = getSeatLabelMap(patch);
     const ownerLabel = seatLabels[patch.payload.scarTriggerStatus.seatId] ?? "Active operative";
@@ -2826,6 +2838,7 @@ export function TvApp(): ReactElement {
   const scenarioStatus = useMemo(() => getScenarioStatus(publicPatch), [publicPatch]);
   const rareStateActive = Boolean(
     publicPatch?.payload.pendingOrderedConsequence ||
+    publicPatch?.payload.pendingScarChoiceStatus ||
     publicPatch?.payload.scarTriggerStatus ||
     publicPatch?.payload.scarResolutionStatus ||
     activePlayer?.character.status === "recalled" ||

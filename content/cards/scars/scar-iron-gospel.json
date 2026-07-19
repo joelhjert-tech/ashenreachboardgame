@@ -1,0 +1,12 @@
+{
+  "id": "scar-iron-gospel", "type": "scar", "title": "Iron Gospel", "source": "machine",
+  "text": "Repair rites have become commandments cut into the hands.", "flavor": "Nothing mended is ever free.",
+  "origin": "A manufactorum catechism was branded into nerve and tool memory.",
+  "burdenText": "Equipment repair services cost 1 additional Salvage.", "adaptationText": "Once per round after succeeding at Forge difficulty 10+, restore 1 charge to one eligible owned item.",
+  "burden": { "key": "repair-service-surcharge", "timing": "beforeService", "limit": "passive", "optional": false, "tags": ["repair", "service"] },
+  "adaptation": { "key": "forge-charge-restore", "timing": "afterTest", "limit": "oncePerRound", "optional": true, "tags": ["forge", "charge"] },
+  "trigger": "Repair service or difficult Forge success.", "penalty": "Repair services cost 1 additional Salvage.",
+  "effect": { "type": "gain_note", "text": "Iron Gospel recorded a costly repair rite." },
+  "relief": "Purge this Scar at the Sable Machine Choir.", "upside": "A difficult Forge success can restore one charge.",
+  "removalRestrictions": ["purificationService"], "artwork": "/assets/cards/scars/scar-iron-gospel.png"
+}

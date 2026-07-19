@@ -13,8 +13,10 @@
     "text": "You recovered one quiet chord from the chapel walls."
   },
   "failEffect": {
-    "type": "gain_scar",
-    "scarId": "scar-wound-5"
+    "type": "gain_scar_choice",
+    "amount": 1,
+    "source": "mind",
+    "sourceCardId": "hushed-chapel"
   },
   "enemyFamily": "choir",
   "threatLane": "blue",

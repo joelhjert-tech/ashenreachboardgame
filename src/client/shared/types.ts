@@ -213,6 +213,25 @@ export interface ScarSummary {
   penalty: string;
   relief: string;
   upside?: string;
+  source?: "flesh" | "mind" | "machine" | "rift" | "unbound";
+  origin?: string;
+  burdenText?: string;
+  adaptationText?: string;
+  artwork?: string;
+}
+
+export interface ScarAdaptationControlSummary {
+  activationId: string;
+  scarId: string;
+  scarName: string;
+  ruleKey: string;
+  timing: string;
+  effectText: string;
+  limit: "oncePerTurn" | "oncePerRound" | "oncePerBattle" | "oncePerVisit" | "oncePerGame";
+  remainingUses: 0 | 1;
+  enabled: boolean;
+  disabledReason: string | null;
+  targets: Array<{ id: string; label: string }>;
 }
 
 export interface AfflictionEffectPayloadSummary {
@@ -1076,6 +1095,13 @@ export interface PublicPatchPayload {
     scarTitle: string;
     status: "resolved";
   } | null;
+  pendingScarChoiceStatus?: {
+    ownerSeatId: string;
+    source: "flesh" | "mind" | "machine" | "rift" | "unbound";
+    sourceCardId: string;
+    cards: ScarSummary[];
+    status: "waiting";
+  } | null;
   outcomeSummary: OutcomeSummary | null;
   rivalryAgendaCompletion?: PublicRivalryAgendaCompletion | null;
   rivalryAgendaReveal?: PublicRivalryAgendaReveal | null;
@@ -1154,6 +1180,21 @@ export interface PhonePatchPayload extends PublicPatchPayload {
     pendingEffects: Array<{ effectId: string; summary: string }>;
     rulesText: string;
   } | null;
+  pendingScarChoice?: {
+    selectionId: string;
+    source: "flesh" | "mind" | "machine" | "rift" | "unbound";
+    sourceCardId: string;
+    cards: ScarSummary[];
+    currentCount: number;
+    thirdScarWarning: boolean;
+  } | null;
+  pendingScarRemovalChoice?: {
+    choiceId: string;
+    salvageCost: 4;
+    cards: ScarSummary[];
+  } | null;
+  scarAdaptationControls?: ScarAdaptationControlSummary[];
+  scarAdaptationResult?: { scarName: string; summary: string } | null;
   pendingEncounterDecisionPrivate?: {
     decisionId: string;
     decisionVersion: number;
@@ -1349,6 +1390,9 @@ export type ClientIntent =
       seatId: string;
       reactionId: string;
     }
+  | { type: "CHOOSE_SCAR"; seatId: string; selectionId: string; scarId: string }
+  | { type: "PURGE_SCAR_REQUESTED"; seatId: string; choiceId: string; scarId: string }
+  | { type: "USE_SCAR_ADAPTATION"; seatId: string; activationId: string; scarId: string; ruleKey: string; targetId?: string; rollIndex?: number }
   | {
       type: "SET_READY";
       seatId: string;

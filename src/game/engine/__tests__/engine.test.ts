@@ -4046,7 +4046,9 @@ describe("wound recall flow", () => {
     const player = server.getState().players.find((entry) => entry.seatId === "seat-1");
     expect(player?.character.wounds).toBe(2);
     expect(player?.character.status).toBe("recalled");
-    expect(player?.character.scars).toContain("scar-wound-1");
+    expect(player?.character.scars).toEqual([]);
+    expect(server.getState().pendingScarChoice).toMatchObject({ ownerSeatId: "seat-1", source: "unbound" });
+    expect(server.getState().pendingScarChoice?.candidateIds).toHaveLength(2);
   });
 
   it("blocks move, check, and combat until a recalled seat recruits a replacement", () => {

@@ -1,0 +1,12 @@
+{
+  "id": "scar-rift-eye", "type": "scar", "title": "Rift-Eye", "source": "rift",
+  "text": "A second pupil opens only when reality is weakest.", "flavor": "It sees the wound before the world admits it exists.",
+  "origin": "An anomaly folded sight inward and left a breach watching from behind the eye.",
+  "burdenText": "A natural 1 on an Anomaly test inflicts 1 Wound after resolution.", "adaptationText": "Once per round, reduce a Signal or Guile Anomaly difficulty by 1 before rolling.",
+  "burden": { "key": "anomaly-natural-one-wound", "timing": "afterTest", "limit": "passive", "optional": false, "tags": ["anomaly"] },
+  "adaptation": { "key": "anomaly-difficulty-reduction", "timing": "beforeTest", "limit": "oncePerRound", "optional": true, "tags": ["signal", "guile", "anomaly"] },
+  "trigger": "Signal or Guile Anomaly test.", "penalty": "A natural 1 inflicts 1 Wound after resolution.",
+  "effect": { "type": "gain_note", "text": "Rift-Eye watched the anomaly answer." },
+  "relief": "Purge this Scar at the Sable Machine Choir.", "upside": "Reduce one eligible Anomaly difficulty each round.",
+  "removalRestrictions": ["purificationService"], "artwork": "/assets/cards/scars/scar-rift-eye.png"
+}

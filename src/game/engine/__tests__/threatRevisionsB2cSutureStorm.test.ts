@@ -70,6 +70,15 @@ function resolveFailureThroughServer(wounds: number, kerPrevention = false) {
   server.resolveCheckIntent({ type: "CHECK_REQUESTED", seatId: "seat-1", stat: "grit" });
   server.resolveContinueResolutionIntent({ type: "CONTINUE_RESOLUTION", seatId: "seat-1" });
   server.resolveContinueResolutionIntent({ type: "CONTINUE_RESOLUTION", seatId: "seat-1" });
+  const pendingScar = server.getState().pendingScarChoice;
+  if (pendingScar) {
+    server.handleIntent({ seatId: "seat-1", view: "phone", socket: { readyState: 0, send() {} } } as never, {
+      type: "CHOOSE_SCAR",
+      seatId: "seat-1",
+      selectionId: pendingScar.selectionId,
+      scarId: pendingScar.candidateIds[0]!
+    });
+  }
   return server.getState();
 }
 
@@ -190,6 +199,7 @@ describe("Phase B2C Suture Storm", () => {
     const serverRecalled = resolveFailureThroughServer(setup().woundThreshold - 1);
     expect(serverRecalled.players[0]!.character.status).toBe("recalled");
     expect(serverRecalled.players[0]!.character.scars).toHaveLength(1);
+    expect(serverRecalled.pendingScarChoice).toBeNull();
     expect(serverRecalled.pendingDisplacement).toBeNull();
     expect(serverRecalled.pendingSutureStormConsequence).toBeNull();
   });

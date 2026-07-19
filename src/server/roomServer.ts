@@ -82,6 +82,8 @@ import {
 import {
   buildMovementRoutePlan,
   getForcedDisplacementDestination,
+  getMovementStepBlockReason,
+  getRingTrackNeighbor,
   getLegalMovementRoute,
   getLegalMovementRouteVariant,
   getMovementBlockReason,
@@ -97,6 +99,9 @@ import {
   MAX_COOPERATIVE_HELPERS,
   sumCooperativeContributions
 } from "../game/rules/cooperativeAssistance.js";
+import { evaluateOwnedScarRules } from "../game/rules/scarPersistentRules.js";
+import { getScarCard } from "../game/rules/scarSystem.js";
+import { getOwnedScarAdaptationControls } from "../game/rules/scarAdaptationControls.js";
 import {
   BROKEN_CONCORDANCE_CENTER_SECTOR_ID,
   BROKEN_CONCORDANCE_NODES,
@@ -186,6 +191,7 @@ import type {
   ShopPurchaseResolvedAction,
   ShopBrowseSelectedAction,
   ShopSellResolvedAction,
+  ShopServiceCost,
   ShopServiceResolvedAction,
   ShopSkippedAction,
   ShopStockRevealedAction,
@@ -224,7 +230,7 @@ import type { Follower } from "../game/schema/follower.schema.js";
 import type { GearItem, ShopCategory } from "../game/schema/gear.schema.js";
 import type { AfflictionCard } from "../game/schema/affliction.schema.js";
 import { rollDice, type RandomSource, defaultRandomSource } from "../game/engine/dice.js";
-import { reduceGameState } from "../game/engine/reducer.js";
+import { applyEffectToState, reduceGameState } from "../game/engine/reducer.js";
 import { CHALLENGE_LABELS } from "../game/ui/challengeTheme.js";
 import {
   completeEquipmentSuppressionLifecycle,
@@ -376,6 +382,7 @@ const CLIENT_INTENT_TYPES = new Set<string>([
   "FORCED_DESTINATION_SELECTED",
   "FORCED_DISPLACEMENT_ACCEPTED",
   "CONTINUE_SCAR_CONSEQUENCE",
+  "USE_SCAR_ADAPTATION",
   "SET_READY",
   "SELECT_CHARACTER",
   "SELECT_STARTING_CONTRACT",
@@ -511,6 +518,13 @@ function stableSetupHash(value: string): number {
   return hash >>> 0;
 }
 
+export interface RoomExecutionServices {
+  mode: "live" | "simulation";
+  onBroadcastAttempt?: () => void;
+  onTimerAttempt?: (timer: "enemy-roll" | "resolution-auto-continue") => void;
+  onActionAttempt?: (action: GameAction, state: GameState) => void;
+}
+
 export class GameRoomServer {
   private readonly clients = new Set<ConnectedClient>();
   private readonly characters: Map<string, AuthoredCharacter>;
@@ -537,7 +551,8 @@ export class GameRoomServer {
     anomalies?: Map<string, AnomalyCard>,
     artifacts?: Map<string, ArtifactCard>,
     escalations?: Map<string, EscalationCard>,
-    followers?: Map<string, Follower>
+    followers?: Map<string, Follower>,
+    private readonly executionServices: RoomExecutionServices = { mode: "live" }
   ) {
     this.threats = threats ?? loadThreatCards();
     this.characters = characters ?? loadCharacters();
@@ -789,6 +804,12 @@ export class GameRoomServer {
 
       if (intent.type === "USE_CHARACTER_ABILITY") {
         this.resolveCharacterAbilityIntent(intent);
+        this.broadcastPatch();
+        return;
+      }
+
+      if (intent.type === "USE_SCAR_ADAPTATION") {
+        this.resolveScarAdaptationIntent(intent);
         this.broadcastPatch();
         return;
       }
@@ -1536,6 +1557,11 @@ export class GameRoomServer {
         requireStringField(message, "instanceId", type); requireStringField(message, "reactionId", type); requireStringField(message, "toSectorId", type); break;
       case "CONTINUE_SCAR_CONSEQUENCE":
         requireStringField(message, "reactionId", type); break;
+      case "USE_SCAR_ADAPTATION":
+        requireStringField(message, "activationId", type); requireStringField(message, "scarId", type); requireStringField(message, "ruleKey", type);
+        if (message.targetId !== undefined) requireStringField(message, "targetId", type);
+        if (message.rollIndex !== undefined && (!Number.isInteger(message.rollIndex) || Number(message.rollIndex) < 0)) throw new IntentRejectedError(type, "Roll index must be a non-negative integer");
+        break;
       case "SELECT_EQUIPMENT_SUPPRESSION_TARGET":
         requireStringField(message, "choiceId", type); requireStringField(message, "itemInstanceId", type); break;
       case "ENCOUNTER_DECISION_REQUESTED":
@@ -1885,7 +1911,7 @@ export class GameRoomServer {
 
       if (
         entry?.seatId === seatId &&
-        (entry.type === "USE_GEAR" || entry.type === "USE_FOLLOWER" || entry.type === "ABILITY_TRIGGERED") &&
+        (entry.type === "USE_GEAR" || entry.type === "USE_FOLLOWER" || entry.type === "ABILITY_TRIGGERED" || entry.type === "SCAR_ADAPTATION_ACTIVATED") &&
         entry.rollModifier?.stat === stat &&
         entry.rollModifier.mode === mode
       ) {
@@ -1913,6 +1939,36 @@ export class GameRoomServer {
     }
 
     return false;
+  }
+
+  private consumeScarRollModifierSources(player: PlayerState, stat: Stat, mode: "battle" | "check"): RollModifierSource[] {
+    const encounter = this.state.currentEncounter;
+    const sector = getBoardSpace(player.sectorId);
+    const eventId = this.state.activeResolution?.id ?? `scar-roll:${player.seatId}:${this.state.sequence + 1}`;
+    const encounterKind = encounter?.cardType === "enemy"
+      ? "enemy"
+      : encounter?.cardType === "hazard" ? "hazard" : undefined;
+    const context = {
+      eventId,
+      timing: "beforeRoll",
+      stat,
+      mode,
+      encounterKind,
+      enemyFamily: encounter?.enemyFamily,
+      elite: encounter?.severity === 5,
+      boss: false,
+      sectorTags: sector?.tags ?? []
+    } as const;
+    const burdens = evaluateOwnedScarRules(this.state, player, "burden", context);
+    const passiveAdaptations = evaluateOwnedScarRules(this.state, player, "adaptation", context)
+      .filter((entry) => getScarCard(entry.scarId)?.adaptation.optional === false);
+    const applied = [...burdens, ...passiveAdaptations].filter((entry) => entry.outcome.modifier !== undefined);
+    const usage = applied.flatMap((entry) => entry.usage ? [entry.usage] : []);
+    if (usage.length > 0) this.state = { ...this.state, scarUsage: [...(this.state.scarUsage ?? []), ...usage] };
+    return applied.map((entry) => ({
+      label: `${getScarCard(entry.scarId)?.title ?? entry.scarId} (Scar)`,
+      value: entry.outcome.modifier ?? 0
+    }));
   }
 
   private getCharacterModifierSources(player: PlayerState, stat: Stat, mode: "battle" | "check"): RollModifierSource[] {
@@ -1990,6 +2046,7 @@ export class GameRoomServer {
     }));
     sources.push(...getAfflictionModifierSources(player, stat, mode, getAfflictionCatalog(this.state)));
     sources.push(...this.getCharacterModifierSources(player, stat, mode));
+    sources.push(...this.consumeScarRollModifierSources(player, stat, mode));
     if ((player.character.temporaryAllStatBoost?.remainingEligibleResolutions ?? 0) > 0) sources.push({ label: "Too Many Dogs", value: player.character.temporaryAllStatBoost!.value });
 
     if (options.scenarioModifier) {
@@ -2689,7 +2746,7 @@ export class GameRoomServer {
   private createShopServiceAction(
     intent: Extract<ClientIntent, { type: "SHOP_SERVICE_REQUESTED" }>,
     createdAt: string
-  ): ShopServiceResolvedAction | ShopStockRevealedAction {
+  ): GameAction {
     const player = this.state.players.find((entry) => entry.seatId === intent.seatId);
 
     if (!player) {
@@ -2732,6 +2789,21 @@ export class GameRoomServer {
     };
 
     switch (service.id) {
+      case "purge-scar": {
+        const lastArrival = [...this.state.eventLog].reverse().find((entry) => {
+          const event = entry as { type?: string; seatId?: string; toSectorId?: string };
+          return event.type === "MOVED" && event.seatId === intent.seatId && event.toSectorId === "middle_scar_surgery";
+        }) as { createdAt?: string } | undefined;
+        const visitId = `scar-surgery:${intent.seatId}:${lastArrival?.createdAt ?? "initial"}`;
+        return {
+          type: "SCAR_REMOVAL_OFFERED",
+          seatId: intent.seatId,
+          choiceId: `${visitId}:choice`,
+          visitId,
+          scarIds: [...player.character.scars],
+          createdAt
+        };
+      }
       case "buy-gear": {
         const stockCategory = getShopStockCategoryForService(boardSpace, service.id);
 
@@ -3212,6 +3284,144 @@ export class GameRoomServer {
     return this.state.seats.find((seat) => seat.seatId === seatId)?.displayName ?? seatId;
   }
 
+  public resolveScarAdaptationIntent(intent: Extract<ClientIntent, { type: "USE_SCAR_ADAPTATION" }>): void {
+    const player = this.state.players.find((entry) => entry.seatId === intent.seatId);
+    if (!player) throw new IntentRejectedError(intent.type, "The operative is unavailable");
+    const control = getOwnedScarAdaptationControls(this.state, intent.seatId).find((entry) =>
+      entry.activationId === intent.activationId && entry.scarId === intent.scarId && entry.ruleKey === intent.ruleKey
+    );
+    if (!control) throw new IntentRejectedError(intent.type, "This Scar activation is stale or outside its timing window");
+    if (!control.enabled) throw new IntentRejectedError(intent.type, control.disabledReason ?? "This Scar adaptation is unavailable");
+    if ((this.state.scarUsage ?? []).some((entry) => entry.usageId === control.usage.usageId)) {
+      throw new IntentRejectedError(intent.type, `${control.scarName} has already been used`);
+    }
+    const requestedTargetId = control.ruleKey.includes("reroll") && intent.rollIndex !== undefined ? String(intent.rollIndex) : intent.targetId;
+    if (control.targets.length > 0 && (!requestedTargetId || !control.targets.some((entry) => entry.id === requestedTargetId))) {
+      throw new IntentRejectedError(intent.type, "Choose one of the current legal Scar targets");
+    }
+
+    const createdAt = new Date().toISOString();
+    let summary = getScarCard(control.scarId)?.adaptationText ?? `${control.scarName} activated.`;
+    const modifierKeys = new Set(["elite-grit-bonus", "escalation-signal-bonus", "repair-forge-bonus", "declined-help-command-bonus", "anomaly-difficulty-reduction"]);
+    const activationEvent: Record<string, unknown> = {
+      type: "SCAR_ADAPTATION_ACTIVATED",
+      seatId: intent.seatId,
+      activationId: control.activationId,
+      scarId: control.scarId,
+      scarName: control.scarName,
+      ruleKey: control.ruleKey,
+      targetId: intent.targetId,
+      summary,
+      createdAt
+    };
+
+    if (modifierKeys.has(control.ruleKey)) {
+      const stat = control.context.stat;
+      if (!stat) throw new IntentRejectedError(intent.type, "The tested skill is no longer available");
+      activationEvent.rollModifier = {
+        stat,
+        mode: control.context.mode === "battle" ? "battle" : "check",
+        label: `${control.scarName} (Scar)`,
+        value: 1
+      };
+    }
+
+    if (["guile-reroll", "grit-hazard-reroll", "rift-signal-reroll", "guile-anomaly-reroll"].includes(control.ruleKey)) {
+      const resolution = this.state.activeResolution;
+      const encounter = this.state.currentEncounter;
+      if (!resolution?.roll || !encounter) throw new IntentRejectedError(intent.type, "The roll is no longer available");
+      const index = intent.rollIndex ?? 0;
+      if (index >= resolution.roll.dice.length) throw new IntentRejectedError(intent.type, "The selected die is unavailable");
+      const faces = [...resolution.roll.dice];
+      const previousFace = faces[index]!;
+      const nextFace = this.randomSource.nextInt(6) + 1;
+      faces[index] = nextFace;
+      const baseTotal = resolution.roll.baseTotal - previousFace + nextFace;
+      const finalTotal = baseTotal + resolution.roll.modifierTotal;
+      const success = finalTotal >= resolution.roll.target;
+      const sourceEffect = encounter.cardType === "enemy"
+        ? (success ? encounter.defeatReward : encounter.woundOnLoss ?? { type: "take_wound", amount: 1 })
+        : (success ? encounter.successEffect : encounter.failEffect);
+      const effect = this.resolveThreatOutcomeEffect(intent.seatId, encounter, sourceEffect, success ? encounter.successEffectKey : encounter.failEffectKey, success ? "onSuccess" : "onFailure");
+      this.state = {
+        ...this.state,
+        pendingEffect: effect,
+        activeResolution: {
+          ...resolution,
+          stage: "roll_result",
+          roll: { ...resolution.roll, dice: faces, baseTotal, finalTotal, success },
+          outcome: {
+            title: success ? "Scar reroll passed" : "Scar reroll failed",
+            text: `${control.scarName} rerolled one die: ${previousFace} to ${nextFace}.`,
+            effects: [summary]
+          }
+        },
+        lastOutcomeSummary: this.state.lastOutcomeSummary ? {
+          ...this.state.lastOutcomeSummary,
+          die1: faces[0] ?? null,
+          die2: faces[1] ?? null,
+          checkTotal: finalTotal,
+          success,
+          summary: `${control.scarName} rerolled one die. ${finalTotal}/${resolution.roll.target}.`
+        } : null
+      };
+      summary = `${control.scarName} rerolled one die from ${previousFace} to ${nextFace}.`;
+      activationEvent.summary = summary;
+      activationEvent.reroll = { index, previousFace, nextFace };
+    } else if (control.ruleKey === "one-below-battle-bonus") {
+      const resolution = this.state.activeResolution;
+      const encounter = this.state.currentEncounter;
+      if (!resolution?.roll || !encounter || resolution.roll.finalTotal !== resolution.roll.target - 1) throw new IntentRejectedError(intent.type, "The battle is no longer exactly one point short");
+      const finalTotal = resolution.roll.finalTotal + 1;
+      const successEffect = encounter.cardType === "enemy" ? encounter.defeatReward : encounter.successEffect;
+      const effect = this.resolveThreatOutcomeEffect(intent.seatId, encounter, successEffect, encounter.successEffectKey, "onSuccess");
+      this.state = { ...this.state, pendingEffect: effect, activeResolution: { ...resolution, roll: { ...resolution.roll, modifierTotal: resolution.roll.modifierTotal + 1, finalTotal, success: true }, outcome: { title: "Scar turned the battle", text: `${control.scarName} added +1.`, effects: [control.effectText] } } };
+    } else if (control.ruleKey === "prevent-equipment-suppression") {
+      const pending = this.state.pendingEquipmentSuppressionChoice;
+      if (!pending) throw new IntentRejectedError(intent.type, "No Equipment suppression is pending");
+      this.state = { ...this.state, pendingEquipmentSuppressionChoice: null, resolvedEquipmentSuppressionSourceEventIds: [...(this.state.resolvedEquipmentSuppressionSourceEventIds ?? []), pending.sourceEventId] };
+    } else if (control.ruleKey === "ignore-blue-event") {
+      this.state = { ...this.state, pendingEffect: null };
+    } else if (control.ruleKey === "toxic-wound-immunity") {
+      if (!this.state.pendingEffect) throw new IntentRejectedError(intent.type, "No toxic Wound is pending");
+      this.state = { ...this.state, pendingEffect: this.reduceFirstWound(this.state.pendingEffect) };
+    } else if (control.ruleKey === "prevent-grit-displacement") {
+      const pending = this.state.pendingDisplacement;
+      if (!pending) throw new IntentRejectedError(intent.type, "No displacement is pending");
+      this.state = pending.distance <= 1
+        ? { ...this.state, pendingDisplacement: null, resolvedDisplacementSourceEventIds: [...(this.state.resolvedDisplacementSourceEventIds ?? []), pending.sourceEventId] }
+        : { ...this.state, pendingDisplacement: { ...pending, distance: 1 } };
+    } else if (control.ruleKey === "forge-charge-restore") {
+      this.state = { ...this.state, players: this.state.players.map((entry) => entry.seatId !== intent.seatId ? entry : ({ ...entry, character: { ...entry.character, heldGear: entry.character.heldGear.map((item) => {
+        if (item.instanceId !== intent.targetId) return item;
+        const maximum = item.maxCharges ?? item.charges ?? item.startingCharges ?? 0;
+        const current = item.currentCharges ?? item.charges ?? item.startingCharges ?? 0;
+        return { ...item, currentCharges: Math.min(maximum, current + 1), charges: Math.min(maximum, current + 1) };
+      }) } })) };
+    } else if (control.ruleKey === "choose-displacement-direction") {
+      const choice = this.state.pendingForcedDestinationChoice;
+      if (!choice || !intent.targetId) throw new IntentRejectedError(intent.type, "No displacement choice is pending");
+      this.applyAction({ type: "FORCED_DESTINATION_SELECTED", seatId: intent.seatId, choiceId: choice.choiceId, destinationSectorId: intent.targetId, createdAt });
+    } else if (control.ruleKey === "relay-blue-peek") {
+      const sector = this.state.sectors.find((entry) => entry.id === player.sectorId);
+      const nextId = sector?.encounterDecks.threat.find((cardId) => this.threats.get(cardId)?.threatLane === "blue");
+      const card = nextId ? this.threats.get(nextId) : null;
+      summary = card ? `Next Blue Threat: ${card.title}. The deck order was not changed.` : "The Blue Threat deck is empty.";
+      activationEvent.summary = summary;
+    } else if (control.ruleKey === "inspect-hidden-consequence") {
+      const decision = this.state.pendingEncounterDecision;
+      summary = decision ? `${decision.prompt} Available paths: ${decision.legalOptionIds.length}.` : "No hidden consequence is available.";
+      activationEvent.summary = summary;
+    }
+
+    this.state = {
+      ...this.state,
+      sequence: this.state.sequence + 1,
+      scarUsage: [...(this.state.scarUsage ?? []), { ...control.usage, sourceEventId: control.context.eventId, createdAt }],
+      eventLog: [...this.state.eventLog, activationEvent]
+    };
+  }
+
   private intentToAction(intent: ClientIntent): GameAction {
     const createdAt = new Date().toISOString();
 
@@ -3288,6 +3498,13 @@ export class GameRoomServer {
         return { type: "FORCED_DESTINATION_SELECTED", seatId: intent.seatId, choiceId: intent.choiceId, destinationSectorId: intent.destinationSectorId, createdAt };
       case "FORCED_DISPLACEMENT_ACCEPTED":
         return { type: "FORCED_DISPLACEMENT_RESOLVED", seatId: intent.seatId, reactionId: intent.reactionId, createdAt };
+      case "CHOOSE_SCAR":
+        return { type: "CHOOSE_SCAR", seatId: intent.seatId, selectionId: intent.selectionId, scarId: intent.scarId, createdAt };
+      case "PURGE_SCAR_REQUESTED": {
+        const pending = this.state.pendingScarRemovalChoice;
+        if (!pending || pending.ownerSeatId !== intent.seatId || pending.choiceId !== intent.choiceId) throw new Error("Scar purification choice is stale");
+        return { type: "SCAR_REMOVED", seatId: intent.seatId, choiceId: intent.choiceId, visitId: pending.visitId, scarId: intent.scarId, salvageCost: 4, createdAt };
+      }
       case "SET_READY":
         throw new Error("Ready state is handled directly");
       case "SELECT_STARTING_CONTRACT":
@@ -3388,6 +3605,7 @@ export class GameRoomServer {
   }
 
   private applyAction(action: GameAction): void {
+    this.executionServices.onActionAttempt?.(action, this.state);
     const previousState = this.state;
     const previousTotalWounds = this.getTotalWounds(previousState);
     const previousHeldGearCount = this.getHeldGearCount(action.seatId, previousState);
@@ -3399,6 +3617,7 @@ export class GameRoomServer {
 
     this.state = result.state;
     this.events.push(action, ...result.emitted);
+    this.applyAutomaticScarRules(action, previousState);
 
     const woundDelta = this.getTotalWounds(this.state) - previousTotalWounds;
     const gainedGearCount = this.getHeldGearCount(action.seatId, this.state) - previousHeldGearCount;
@@ -3414,6 +3633,177 @@ export class GameRoomServer {
 
     if (previousState.status === "active" && gainedGearCount > 0) {
       this.applyScenarioOnGearGained(action.seatId, gainedGearCount);
+    }
+  }
+
+  private applyAutomaticScarRules(action: GameAction, previousState: GameState): void {
+    const player = this.state.players.find((entry) => entry.seatId === action.seatId);
+    if (!player || player.character.scars.length === 0) return;
+    const encounter = previousState.currentEncounter ?? this.state.currentEncounter;
+    const sector = getBoardSpace(player.character.currentSpaceId);
+    const eventId = `${action.type}:${action.seatId}:${action.createdAt}`;
+    const apply = (context: Parameters<typeof evaluateOwnedScarRules>[3], includeAdaptations = true): void => {
+      const burdens = evaluateOwnedScarRules(this.state, player, "burden", context);
+      const adaptations = includeAdaptations
+        ? evaluateOwnedScarRules(this.state, player, "adaptation", context).filter((entry) => getScarCard(entry.scarId)?.adaptation.optional === false)
+        : [];
+      const matches = [...burdens, ...adaptations];
+      const usage = matches.flatMap((entry) => entry.usage ? [entry.usage] : []);
+      let nextState = usage.length > 0 ? { ...this.state, scarUsage: [...(this.state.scarUsage ?? []), ...usage] } : this.state;
+      for (const match of matches) {
+        if (match.outcome.effect) nextState = applyEffectToState(nextState, action.seatId, match.outcome.effect);
+      }
+      if (matches.length > 0) {
+        nextState = {
+          ...nextState,
+          eventLog: [...nextState.eventLog, ...matches.map((match) => ({
+            type: "SCAR_RULE_APPLIED",
+            seatId: action.seatId,
+            scarId: match.scarId,
+            sourceEventId: eventId,
+            summary: match.outcome.summary,
+            createdAt: action.createdAt
+          }))]
+        };
+      }
+      this.state = nextState;
+    };
+
+    if (action.type === "CHECK_ROLLED" || action.type === "SOLO_REROLL_RESOLVED") {
+      const challengeKind = previousState.pendingTileChallenge?.challengeType;
+      apply({
+        eventId,
+        timing: "afterTest",
+        stat: action.stat,
+        mode: "check",
+        encounterKind: challengeKind === "anomaly" ? "anomaly" : "hazard",
+        naturalRoll: action.roll.faces.includes(1) ? 1 : undefined,
+        success: action.success,
+        sectorTags: sector?.tags ?? []
+      });
+      return;
+    }
+
+    if (action.type === "COMBAT_RESOLVED") {
+      apply({
+        eventId,
+        timing: "onBattleResolved",
+        stat: action.stat,
+        mode: "battle",
+        encounterKind: "enemy",
+        enemyFamily: encounter?.enemyFamily,
+        elite: encounter?.severity === 5,
+        boss: false,
+        success: action.success,
+        margin: action.total - action.enemyTotal,
+        wounds: player.character.wounds,
+        battleAwardedSalvage: JSON.stringify(action.effect).includes("gain_salvage")
+      });
+      const trophyRules = action.success
+        ? evaluateOwnedScarRules(this.state, player, "burden", { eventId: `${eventId}:trophy`, timing: "onTrophyGained", mode: "battle", encounterKind: "enemy", success: true })
+          .filter((entry) => entry.outcome.modifier === -1)
+        : [];
+      if (trophyRules.length > 0) {
+        const latestIndex = (player.character.trophyPile ?? []).length - 1;
+        this.state = {
+          ...this.state,
+          scarUsage: [...(this.state.scarUsage ?? []), ...trophyRules.flatMap((entry) => entry.usage ? [entry.usage] : [])],
+          players: this.state.players.map((entry) => entry.seatId !== action.seatId ? entry : {
+            ...entry,
+            character: {
+              ...entry.character,
+              trophies: Math.max(0, entry.character.trophies - 1),
+              trophyPile: (entry.character.trophyPile ?? []).map((trophy, index) => index === latestIndex
+                ? { ...trophy, spentValue: Math.min(trophy.trophyValue, (trophy.spentValue ?? 0) + 1) }
+                : trophy)
+            }
+          })
+        };
+      }
+      return;
+    }
+
+    if (action.type === "MOVED") {
+      const from = getBoardSpace(action.fromSectorId);
+      const to = getBoardSpace(action.toSectorId);
+      apply({ eventId, timing: "afterArrival", mode: "movement", sectorTags: [to?.tier ?? "", ...(to?.tags ?? [])] });
+      if (from && to && from.tier !== to.tier) {
+        const gateRules = evaluateOwnedScarRules(this.state, player, "burden", { eventId: `${eventId}:gate`, timing: "beforeTransition", mode: "movement", encounterKind: "gate" });
+        if (gateRules.length > 0) {
+          const costEffect = (player.character.salvage ?? 0) > 0 ? { type: "lose_salvage" as const, amount: 1 } : { type: "take_wound" as const, amount: 1 };
+          this.state = applyEffectToState({ ...this.state, scarUsage: [...(this.state.scarUsage ?? []), ...gateRules.flatMap((entry) => entry.usage ? [entry.usage] : [])] }, action.seatId, costEffect);
+        }
+      }
+      return;
+    }
+
+    if (action.type === "ESCALATION_ADVANCED") {
+      apply({ eventId, timing: "onEscalationAdvanced", mode: "event", encounterKind: "escalation" }, false);
+      return;
+    }
+
+    if (action.type === "COMPLETE_CONTRACT") {
+      apply({ eventId, timing: "onContractResolved", mode: "event", success: true });
+      return;
+    }
+
+    if (action.type === "SHOP_SERVICE_RESOLVED" && (action.cost.salvage ?? 0) > 0 && action.serviceId !== "purge-scar") {
+      const serviceRules = evaluateOwnedScarRules(this.state, player, "burden", scarServiceContext(this.state, player, action.serviceId))
+        .filter((entry) => (entry.outcome.serviceSurcharge ?? 0) > 0);
+      if (serviceRules.length > 0) {
+        this.state = {
+          ...this.state,
+          scarUsage: [...(this.state.scarUsage ?? []), ...serviceRules.flatMap((entry) => entry.usage ? [entry.usage] : [])],
+          eventLog: [...this.state.eventLog, ...serviceRules.map((entry) => ({
+            type: "SCAR_RULE_APPLIED",
+            seatId: action.seatId,
+            scarId: entry.scarId,
+            sourceEventId: scarServiceContext(this.state, player, action.serviceId).eventId,
+            summary: entry.outcome.summary,
+            createdAt: action.createdAt
+          }))]
+        };
+      }
+      return;
+    }
+
+    if (action.type === "ADJUST_MOVEMENT_REQUESTED") {
+      apply({ eventId, timing: "beforeMovementReroll", mode: "movement" }, false);
+      return;
+    }
+
+    if (action.type === "USE_GEAR" && previousState.currentEncounter?.cardType === "enemy") {
+      const exhaustRules = evaluateOwnedScarRules(this.state, player, "burden", { eventId, timing: "onEquipmentUsed", mode: "battle", encounterKind: "enemy" });
+      if (exhaustRules.length > 0) {
+        this.state = {
+          ...this.state,
+          scarUsage: [...(this.state.scarUsage ?? []), ...exhaustRules.flatMap((entry) => entry.usage ? [entry.usage] : [])],
+          players: this.state.players.map((entry) => entry.seatId !== action.seatId ? entry : {
+            ...entry,
+            character: { ...entry.character, heldGear: entry.character.heldGear.map((gear) => gear.instanceId === action.instanceId || gear.id === action.gearId ? { ...gear, exhausted: true } : gear) }
+          })
+        };
+      }
+      return;
+    }
+
+    if (action.type === "RESOLUTION_APPLIED" && this.state.pendingDisplacement && !previousState.pendingDisplacement) {
+      const displacementRules = evaluateOwnedScarRules(this.state, player, "burden", { eventId, timing: "beforeDisplacement", mode: "movement" });
+      const extra = displacementRules.reduce((sum, entry) => sum + (entry.outcome.displacementDistanceModifier ?? 0), 0);
+      const displacement = this.state.pendingDisplacement;
+      const secondDestination = displacement && extra > 0
+        ? getRingTrackNeighbor(displacement.destinationSectorId, displacement.direction === "clockwise" ? 1 : -1)
+        : null;
+      const secondStepBlocked = displacement && secondDestination
+        ? getMovementStepBlockReason(this.state, player, displacement.destinationSectorId, secondDestination)
+        : "No legal second displacement step";
+      if (extra > 0 && displacement && secondDestination && !secondStepBlocked) {
+        this.state = {
+          ...this.state,
+          scarUsage: [...(this.state.scarUsage ?? []), ...displacementRules.flatMap((entry) => entry.usage ? [entry.usage] : [])],
+          pendingDisplacement: { ...displacement, destinationSectorId: secondDestination, distance: 2 }
+        };
+      }
     }
   }
 
@@ -5722,6 +6112,12 @@ export class GameRoomServer {
         this.state.activeResolution &&
         ["card_reveal", "battle_setup", "dice_roll", "roll_result", "outcome_summary", "awaiting_continue"].includes(
           this.state.activeResolution.stage
+        ) &&
+        !(
+          this.executionServices.mode === "simulation" &&
+          this.state.activeResolution.stage === "outcome_summary" &&
+          this.state.phase === "resolution" &&
+          this.state.pendingEffect
         )
       ) {
         return;
@@ -5729,6 +6125,28 @@ export class GameRoomServer {
 
       if (this.state.pendingEncounterDecision) {
         return;
+      }
+
+      if (this.state.pendingScarChoice) {
+        return;
+      }
+
+      if (
+        this.state.pendingScarThreshold &&
+        !this.state.pendingEffect &&
+        !this.state.pendingScarConsequence &&
+        !this.state.pendingFailureReaction &&
+        !this.state.pendingTileChallenge &&
+        !this.state.activeResolution
+      ) {
+        this.applyAction({
+          type: "SCAR_THRESHOLD_RESOLVED",
+          seatId: this.state.pendingScarThreshold.seatId,
+          policy: this.state.pendingScarThreshold.policy,
+          createdAt: new Date().toISOString()
+        });
+        progressMade = true;
+        continue;
       }
 
       if (this.state.pendingMemoryTaxChoice) {
@@ -5751,7 +6169,6 @@ export class GameRoomServer {
             seatId,
             threshold: this.state.woundThreshold,
             newWoundTotal: player?.character.wounds ?? 0,
-            scar: this.createWoundScar(seatId),
             createdAt: new Date().toISOString()
           });
           progressMade = true;
@@ -5886,7 +6303,6 @@ export class GameRoomServer {
           seatId,
           threshold: this.state.woundThreshold,
           newWoundTotal: player?.character.wounds ?? 0,
-          scar: this.createWoundScar(seatId),
           createdAt: new Date().toISOString()
         });
         progressMade = true;
@@ -6361,7 +6777,6 @@ export class GameRoomServer {
         seatId,
         threshold: this.state.woundThreshold,
         newWoundTotal: refreshedPlayer.character.wounds,
-        scar: this.createWoundScar(seatId),
         createdAt: new Date().toISOString()
       });
     }
@@ -6548,8 +6963,25 @@ export class GameRoomServer {
     if (pending?.requiresHelper && lockedContributions.length < 1) {
       throw new IntentRejectedError(intent.type, "This scenario test requires at least one accepted helper");
     }
+    const borrowedNameUsage = request.acceptedSeatIds.flatMap((seatId) => {
+      const helper = this.state.players.find((entry) => entry.seatId === seatId);
+      if (!helper?.character.scars.includes("scar-borrowed-name")) return [];
+      if ((this.state.scarUsage ?? []).some((entry) => entry.seatId === seatId && entry.scarId === "scar-borrowed-name" && entry.ruleKey === "first-assistance-reduction" && entry.scope === "round")) return [];
+      const scopeId = `round:${getCurrentRoundNumber(this.state)}`;
+      return [{
+        usageId: `${seatId}:scar-borrowed-name:first-assistance-reduction:${scopeId}`,
+        seatId,
+        scarId: "scar-borrowed-name",
+        ruleKey: "first-assistance-reduction" as const,
+        scope: "round" as const,
+        scopeId,
+        sourceEventId: request.id,
+        createdAt: new Date().toISOString()
+      }];
+    });
     this.state = {
       ...this.state,
+      scarUsage: [...(this.state.scarUsage ?? []), ...borrowedNameUsage],
       cooperativeAssistance: { ...request, status: "locked", lockedContributions }
     };
     this.appendCooperativeEvent({
@@ -7758,6 +8190,16 @@ export class GameRoomServer {
     return getStatUpgradeCost(currentValue);
   }
 
+  private hasActiveScarAdvancementDiscount(seatId: string): boolean {
+    for (let index = this.state.eventLog.length - 1; index >= 0; index -= 1) {
+      const event = this.state.eventLog[index] as { type?: string; seatId?: string; ruleKey?: string };
+      if (event.seatId !== seatId) continue;
+      if (event.type === "STAT_RAISED") return false;
+      if (event.type === "SCAR_ADAPTATION_ACTIVATED" && event.ruleKey === "trophy-advancement-discount") return true;
+    }
+    return false;
+  }
+
   resolveRaiseStatIntent(intent: Extract<ClientIntent, { type: "RAISE_STAT_REQUESTED" }>): void {
     const player = this.state.players.find((entry) => entry.seatId === intent.seatId);
 
@@ -7786,7 +8228,8 @@ export class GameRoomServer {
     }
 
     const currentValue = player.character.stats[intent.stat];
-    const cost = this.getRaiseStatCost(currentValue);
+    const baseCost = this.getRaiseStatCost(currentValue);
+    const cost = Math.max(0, baseCost - (this.hasActiveScarAdvancementDiscount(intent.seatId) ? 1 : 0));
     const disabledReason = getStatUpgradeDisabledReason({
       stat: intent.stat,
       currentValue,
@@ -8157,6 +8600,11 @@ export class GameRoomServer {
       return;
     }
 
+    if (this.executionServices.mode === "simulation") {
+      this.executionServices.onTimerAttempt?.("resolution-auto-continue");
+      return;
+    }
+
     this.resolutionAutoContinueTimeout = setTimeout(() => {
       this.resolutionAutoContinueTimeout = null;
 
@@ -8199,6 +8647,11 @@ export class GameRoomServer {
     const pending = this.state.pendingEnemyRoll;
 
     if (!pending) {
+      return;
+    }
+
+    if (this.executionServices.mode === "simulation") {
+      this.executionServices.onTimerAttempt?.("enemy-roll");
       return;
     }
 
@@ -8593,6 +9046,10 @@ export class GameRoomServer {
   }
 
   private broadcastPatch(): void {
+    if (this.executionServices.mode === "simulation") {
+      this.executionServices.onBroadcastAttempt?.();
+      return;
+    }
     for (const client of this.clients) {
       const envelope = this.createPatchEnvelope(client);
       client.socket.send(JSON.stringify(envelope));
@@ -9712,6 +10169,26 @@ function createShopService(
   };
 }
 
+function scarServiceContext(state: GameState, player: PlayerState, serviceId: string): Parameters<typeof evaluateOwnedScarRules>[3] {
+  const lastArrival = [...state.eventLog].reverse().find((entry) => {
+    const event = entry as { type?: string; seatId?: string; toSectorId?: string; createdAt?: string };
+    return event.type === "MOVED" && event.seatId === player.seatId && event.toSectorId === player.character.currentSpaceId;
+  }) as { createdAt?: string } | undefined;
+  return {
+    eventId: `service:${player.seatId}:${player.character.currentSpaceId}:${lastArrival?.createdAt ?? "initial"}`,
+    timing: "beforeService",
+    mode: "service",
+    serviceKind: serviceId === "repair-gear" ? "repair" : serviceId === "buy-treatment" ? "healing" : "other"
+  };
+}
+
+function applyScarServiceSurcharge(state: GameState, player: PlayerState, serviceId: string, cost: ShopServiceCost): ShopServiceCost {
+  if (!cost.salvage || serviceId === "purge-scar") return cost;
+  const surcharge = evaluateOwnedScarRules(state, player, "burden", scarServiceContext(state, player, serviceId))
+    .reduce((sum, entry) => sum + (entry.outcome.serviceSurcharge ?? 0), 0);
+  return surcharge > 0 ? { ...cost, salvage: cost.salvage + surcharge } : cost;
+}
+
 function buildPublicShopServices(state: GameState, player: PlayerState): PublicShopService[] {
   const boardSpace = getBoardSpace(player.character.currentSpaceId);
 
@@ -9753,7 +10230,7 @@ function buildPublicShopServices(state: GameState, player: PlayerState): PublicS
         id: "repair-gear",
         label: "Repair Gear",
         shopCategory: "forge-armoury",
-        cost: { salvage: 2 },
+        cost: applyScarServiceSurcharge(state, player, "repair-gear", { salvage: 2 }),
         enabled: hasRepairableGear,
         disabledReason: hasRepairableGear ? undefined : "No depleted or exhausted Gear"
       }),
@@ -9772,7 +10249,7 @@ function buildPublicShopServices(state: GameState, player: PlayerState): PublicS
         id: "buy-treatment",
         label: "Buy Treatment",
         shopCategory: "medicae-shrine",
-        cost: { salvage: 2 }
+        cost: applyScarServiceSurcharge(state, player, "buy-treatment", { salvage: 2 })
       })
     );
   }
@@ -9786,6 +10263,21 @@ function buildPublicShopServices(state: GameState, player: PlayerState): PublicS
         cost: { completedContracts: ARTIFACT_EXCHANGE_CONTRACT_COST }
       })
     );
+  }
+
+  if (boardSpace.id === "middle_scar_surgery") {
+    const lastArrival = [...state.eventLog].reverse().find((entry) => {
+      const event = entry as { type?: string; seatId?: string; toSectorId?: string; createdAt?: string };
+      return event.type === "MOVED" && event.seatId === player.seatId && event.toSectorId === "middle_scar_surgery";
+    }) as { createdAt?: string } | undefined;
+    const visitId = `scar-surgery:${player.seatId}:${lastArrival?.createdAt ?? "initial"}`;
+    services.push(createShopService(player, state, {
+      id: "purge-scar",
+      label: "Purge a Scar",
+      cost: { salvage: 4 },
+      enabled: player.character.scars.length > 0 && !(state.resolvedScarRemovalVisitIds ?? []).includes(visitId),
+      disabledReason: player.character.scars.length === 0 ? "No Scars to purge" : "Already used this arrival"
+    }));
   }
 
   return services.slice(0, 6);
@@ -11099,6 +11591,13 @@ export function createTvProjection(
       status: "waiting"
     } : null,
     scarResolutionStatus,
+    pendingScarChoiceStatus: state.pendingScarChoice ? {
+      ownerSeatId: state.pendingScarChoice.ownerSeatId,
+      source: state.pendingScarChoice.source,
+      sourceCardId: state.pendingScarChoice.sourceCardId,
+      cards: summarizeScars(state.pendingScarChoice.candidateIds),
+      status: "waiting" as const
+    } : null,
     sessionMode: state.sessionMode,
     gameMode: state.gameMode,
     interactionMode: state.interactionMode ?? (state.sessionMode === "single-player" ? "co-op" : "rivalry"),
@@ -11442,6 +11941,7 @@ export function createPhoneProjection(state: GameState, seatId: string, forcePri
     scenarioPressure: publicProjection.scenarioPressure,
     scenarioState: publicProjection.scenarioState,
     scenarioProgress: publicProjection.scenarioProgress,
+    pendingScarChoiceStatus: publicProjection.pendingScarChoiceStatus,
     nemesisChampions: publicProjection.nemesisChampions,
     nemesisNexusCountdowns: publicProjection.nemesisNexusCountdowns,
     activeSeatIndex: state.activeSeatIndex,
@@ -11571,6 +12071,39 @@ export function createPhoneProjection(state: GameState, seatId: string, forcePri
       })),
       rulesText: "Continue to resolve this Scar consequence."
     } : null,
+    pendingScarChoice: state.pendingScarChoice?.ownerSeatId === seatId ? {
+      selectionId: state.pendingScarChoice.selectionId,
+      source: state.pendingScarChoice.source,
+      sourceCardId: state.pendingScarChoice.sourceCardId,
+      cards: summarizeScars(state.pendingScarChoice.candidateIds),
+      currentCount: player?.character.scars.length ?? 0,
+      thirdScarWarning: (player?.character.scars.length ?? 0) >= 2
+    } : null,
+    pendingScarRemovalChoice: state.pendingScarRemovalChoice?.ownerSeatId === seatId ? {
+      choiceId: state.pendingScarRemovalChoice.choiceId,
+      salvageCost: 4 as const,
+      cards: summarizeScars(state.pendingScarRemovalChoice.scarIds)
+    } : null,
+    scarAdaptationControls: getOwnedScarAdaptationControls(state, seatId).map((control) => ({
+      activationId: control.activationId,
+      scarId: control.scarId,
+      scarName: control.scarName,
+      ruleKey: control.ruleKey,
+      timing: control.timing,
+      effectText: control.effectText,
+      limit: control.limit,
+      remainingUses: control.remainingUses,
+      enabled: control.enabled,
+      disabledReason: control.disabledReason,
+      targets: control.targets
+    })),
+    scarAdaptationResult: (() => {
+      const event = [...state.eventLog].reverse().find((entry) => {
+        const candidate = entry as { type?: string; seatId?: string };
+        return candidate.type === "SCAR_ADAPTATION_ACTIVATED" && candidate.seatId === seatId;
+      }) as { scarName?: string; summary?: string } | undefined;
+      return event?.scarName && event.summary ? { scarName: event.scarName, summary: event.summary } : null;
+    })(),
     pendingEncounterDecision: publicProjection.pendingEncounterDecision,
     pendingEncounterDecisionPrivate: state.pendingEncounterDecision?.seatId === seatId ? {
       decisionId: state.pendingEncounterDecision.decisionId,
@@ -11722,7 +12255,7 @@ function getAfflictionCatalogForPlayer(): Map<string, AfflictionCard> {
   return new Map(AFFLICTION_CARDS);
 }
 
-function summarizeScars(scarIds: string[]): Array<Pick<ScarCard, "id" | "title" | "text" | "trigger" | "penalty" | "relief" | "upside">> {
+function summarizeScars(scarIds: string[]): Array<Pick<ScarCard, "id" | "title" | "text" | "trigger" | "penalty" | "relief" | "upside" | "source" | "origin" | "burdenText" | "adaptationText" | "artwork">> {
   return scarIds.map((scarId) => {
     const scar = SCAR_CARDS.get(scarId);
 
@@ -11734,7 +12267,12 @@ function summarizeScars(scarIds: string[]): Array<Pick<ScarCard, "id" | "title" 
           trigger: scar.trigger,
           penalty: scar.penalty,
           relief: scar.relief,
-          upside: scar.upside
+          upside: scar.upside,
+          source: scar.source,
+          origin: scar.origin,
+          burdenText: scar.burdenText,
+          adaptationText: scar.adaptationText,
+          artwork: scar.artwork
         }
       : {
           id: scarId,
@@ -11742,7 +12280,12 @@ function summarizeScars(scarIds: string[]): Array<Pick<ScarCard, "id" | "title" 
           text: "Unknown scar record.",
           trigger: "When this scar is referenced.",
           penalty: "Ask the table to resolve the recorded scar effect.",
-          relief: "Confirm the scar catalog contains this id."
+          relief: "Confirm the scar catalog contains this id.",
+          source: "unbound" as const,
+          origin: "Unknown legacy source.",
+          burdenText: "No executable Burden is available.",
+          adaptationText: "No executable Adaptation is available.",
+          artwork: "/assets/placeholders/missing-card.png"
         };
   });
 }

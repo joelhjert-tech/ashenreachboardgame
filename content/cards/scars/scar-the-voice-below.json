@@ -1,0 +1,12 @@
+{
+  "id": "scar-the-voice-below", "type": "scar", "title": "The Voice Below", "source": "rift",
+  "text": "A buried speaker edits every decision before it reaches the tongue.", "flavor": "One choice always arrives already forbidden.",
+  "origin": "The Core answered a question the operative had not yet asked.",
+  "burdenText": "Events with at least three choices deterministically seal one valid option.", "adaptationText": "Once per round, inspect one hidden consequence before committing.",
+  "burden": { "key": "seal-event-option", "timing": "onChoiceGenerated", "limit": "passive", "optional": false, "tags": ["event", "choice"] },
+  "adaptation": { "key": "inspect-hidden-consequence", "timing": "onChoiceGenerated", "limit": "oncePerRound", "optional": true, "tags": ["event", "choice"] },
+  "trigger": "An Event creates at least three valid choices.", "penalty": "One valid option is deterministically sealed.",
+  "effect": { "type": "gain_note", "text": "The Voice Below sealed one path." },
+  "relief": "Purge this Scar at the Sable Machine Choir.", "upside": "Inspect one hidden consequence each round.",
+  "removalRestrictions": ["purificationService"], "artwork": "/assets/cards/scars/scar-the-voice-below.png"
+}

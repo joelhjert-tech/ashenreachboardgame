@@ -232,8 +232,10 @@ export const BOARD_TEXT_EFFECTS: Record<string, BoardTextEffectDefinition> = {
     },
     failureSummary: "The cache lock punished the wrong pressure point and marked you as a thief in the archive glass.",
     failureEffect: {
-      type: "gain_scar",
-      scarId: "scar-wound-1"
+      type: "gain_scar_choice",
+      amount: 1,
+      source: "machine",
+      sourceCardId: "middle_relicCache"
     },
     sectorDeck: {
       kind: "artifact"
@@ -253,8 +255,10 @@ export const BOARD_TEXT_EFFECTS: Record<string, BoardTextEffectDefinition> = {
     },
     failureSummary: "The surgery pit made the wound quieter, not safer.",
     failureEffect: {
-      type: "gain_scar",
-      scarId: "scar-wound-1"
+      type: "gain_scar_choice",
+      amount: 1,
+      source: "flesh",
+      sourceCardId: "middle_scarSurgery"
     },
     sectorDeck: {
       kind: "escalation"
@@ -366,8 +370,10 @@ export const BOARD_TEXT_EFFECTS: Record<string, BoardTextEffectDefinition> = {
     },
     failureSummary: "The shrine blessed the wrong part of you.",
     failureEffect: {
-      type: "gain_scar",
-      scarId: "scar-wound-2"
+      type: "gain_scar_choice",
+      amount: 1,
+      source: "rift",
+      sourceCardId: "inner_choirShrine"
     },
     sectorDeck: {
       kind: "artifact"

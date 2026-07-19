@@ -1,0 +1,12 @@
+{
+  "id": "scar-hollow-reflection", "type": "scar", "title": "Hollow Reflection", "source": "rift",
+  "text": "The Reach sees an empty shape where allies try to stand.", "flavor": "Your reflection accepts help. You do not.",
+  "origin": "A breach duplicated the operative's outline but left the inner signal absent.",
+  "burdenText": "Other operatives cannot assist you.", "adaptationText": "Once per round, reroll one Guile die.",
+  "burden": { "key": "assistance-blocked", "timing": "assistance", "limit": "passive", "optional": false, "tags": ["assistance"] },
+  "adaptation": { "key": "guile-reroll", "timing": "afterRoll", "limit": "oncePerRound", "optional": true, "tags": ["guile"] },
+  "trigger": "Assistance or a Guile roll.", "penalty": "You cannot receive cooperative assistance.",
+  "effect": { "type": "gain_note", "text": "Hollow Reflection severed the offered assistance." },
+  "relief": "Purge this Scar at the Sable Machine Choir.", "upside": "Once per round, reroll one Guile die.",
+  "removalRestrictions": ["purificationService"], "artwork": "/assets/cards/scars/scar-hollow-reflection.png"
+}

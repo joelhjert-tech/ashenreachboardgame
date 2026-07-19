@@ -170,7 +170,7 @@ describe("Heat Retirement H5B severe Wound Threats", () => {
       expect(card.text).toContain(target.failureText);
       expect(card.resourceTags).toContain("wound");
       expect(card.resourceTags).not.toContain("heat");
-      expect(JSON.stringify(card)).not.toMatch(/gain_heat|gain_heat_all|lose_heat|\bHeat\b|gain_scar|direct recall/i);
+      expect(JSON.stringify(card)).not.toMatch(/gain_heat|gain_heat_all|lose_heat|\bHeat\b|"gain_scar"|direct recall/i);
       expect(validateLegacyHeatContentRecord(`${target.id}.json`, card)).toEqual([]);
       expect(APPROVED_LEGACY_HEAT_CONTENT_IDS.has(target.id)).toBe(false);
       expect(getRuntimeCardArtPath("threat", target.id)).toBe(`/assets/cards/threats/${target.lane}/${target.id}.png`);
@@ -242,7 +242,8 @@ describe("Heat Retirement H5B severe Wound Threats", () => {
     const startingWounds = threshold - target.amount;
     const state = finish(openLoss(card, startingWounds));
     expect(state.players[0]!.character).toMatchObject({ wounds: threshold, status: "recalled" });
-    expect(state.players[0]!.character.scars).toHaveLength(1);
+    expect(state.players[0]!.character.scars).toHaveLength(0);
+    expect(state.pendingScarChoice).toMatchObject({ ownerSeatId: "seat-1", source: "unbound" });
     expect(countEvents(state, "RESOLUTION_APPLIED")).toBe(1);
     expect(countEvents(state, "WOUND_THRESHOLD_REACHED")).toBe(1);
   });

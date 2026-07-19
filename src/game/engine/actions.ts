@@ -200,7 +200,34 @@ export interface WoundThresholdReachedAction extends BaseAction {
   type: "WOUND_THRESHOLD_REACHED";
   threshold: number;
   newWoundTotal: number;
-  scar: string;
+  /** Legacy v0-v2 exact Scar id. New runtime actions use an Unbound choice. */
+  scar?: string;
+}
+
+export interface ChooseScarAction extends BaseAction {
+  type: "CHOOSE_SCAR";
+  selectionId: string;
+  scarId: string;
+}
+
+export interface ScarThresholdResolvedAction extends BaseAction {
+  type: "SCAR_THRESHOLD_RESOLVED";
+  policy: "retire" | "transform" | "custom";
+}
+
+export interface ScarRemovalOfferedAction extends BaseAction {
+  type: "SCAR_REMOVAL_OFFERED";
+  choiceId: string;
+  visitId: string;
+  scarIds: string[];
+}
+
+export interface ScarRemovedAction extends BaseAction {
+  type: "SCAR_REMOVED";
+  choiceId: string;
+  visitId: string;
+  scarId: string;
+  salvageCost: 4;
 }
 
 export interface RecruitReplacementAction extends BaseAction {
@@ -697,6 +724,10 @@ export type GameAction =
   | ForcedDisplacementResolvedAction
   | SutureStormContinuedAction
   | WoundThresholdReachedAction
+  | ChooseScarAction
+  | ScarThresholdResolvedAction
+  | ScarRemovalOfferedAction
+  | ScarRemovedAction
   | RecruitReplacementAction
   | EquipGearAction
   | ResolveGearEquipChoiceAction
@@ -883,6 +914,9 @@ export type ClientIntent =
       seatId: string;
       reactionId: string;
     }
+  | { type: "CHOOSE_SCAR"; seatId: string; selectionId: string; scarId: string }
+  | { type: "PURGE_SCAR_REQUESTED"; seatId: string; choiceId: string; scarId: string }
+  | { type: "USE_SCAR_ADAPTATION"; seatId: string; activationId: string; scarId: string; ruleKey: string; targetId?: string; rollIndex?: number }
   | {
       type: "SET_READY";
       seatId: string;

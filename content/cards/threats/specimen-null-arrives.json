@@ -22,8 +22,10 @@
         "amount": 2
       },
       {
-        "type": "gain_scar",
-        "scarId": "scar-wound-2"
+        "type": "gain_scar_choice",
+        "amount": 1,
+        "source": "rift",
+        "sourceCardId": "specimen-null-arrives"
       }
     ]
   },

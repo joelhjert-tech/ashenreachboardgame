@@ -124,7 +124,7 @@ export const THREAT_CARD_EFFECTS = {
   },
   threat_fail_gain_scar: {
     timing: "onFailure",
-    resolve: () => ({ effect: { type: "gain_scar", scarId: "scar-wound-1" } })
+    resolve: () => ({ effect: { type: "gain_scar_choice", amount: 1, source: "machine", sourceCardId: "static-larva-swarm" } })
   },
   threat_fail_drop_gear: {
     timing: "onFailure",

@@ -15,8 +15,10 @@
     "text": "You caught the wraith's killing note and folded it into a route mark."
   },
   "woundOnLoss": {
-    "type": "gain_scar",
-    "scarId": "scar-wound-4"
+    "type": "gain_scar_choice",
+    "amount": 1,
+    "source": "mind",
+    "sourceCardId": "choir-wraith"
   },
   "enemyFamily": "revenant",
   "threatLane": "blue",

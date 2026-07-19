@@ -1,5 +1,4 @@
 import type { CardImageType } from "../design/cardImageCatalog.js";
-import artworkOverrides from "../../../../content/card-artwork-overrides.json" with { type: "json" };
 
 export interface RuntimeCardArtCatalogEntry {
   cardId: string;
@@ -7,7 +6,7 @@ export interface RuntimeCardArtCatalogEntry {
   outputPath: string;
 }
 
-const generatedCardArtRuntimeCatalog: RuntimeCardArtCatalogEntry[] = [
+export const cardArtRuntimeCatalog: RuntimeCardArtCatalogEntry[] = [
   {
     "cardId": "ash-choir-crusader",
     "cardType": "threat",
@@ -1054,6 +1053,51 @@ const generatedCardArtRuntimeCatalog: RuntimeCardArtCatalogEntry[] = [
     "outputPath": "/assets/cards/equipment/voidsalt-poultice.png"
   },
   {
+    "cardId": "scar-ash-hunger",
+    "cardType": "scar",
+    "outputPath": "/assets/cards/scars/scar-ash-hunger.png"
+  },
+  {
+    "cardId": "scar-borrowed-name",
+    "cardType": "scar",
+    "outputPath": "/assets/cards/scars/scar-borrowed-name.png"
+  },
+  {
+    "cardId": "scar-hollow-reflection",
+    "cardType": "scar",
+    "outputPath": "/assets/cards/scars/scar-hollow-reflection.png"
+  },
+  {
+    "cardId": "scar-iron-gospel",
+    "cardType": "scar",
+    "outputPath": "/assets/cards/scars/scar-iron-gospel.png"
+  },
+  {
+    "cardId": "scar-parasite-crown",
+    "cardType": "scar",
+    "outputPath": "/assets/cards/scars/scar-parasite-crown.png"
+  },
+  {
+    "cardId": "scar-rift-eye",
+    "cardType": "scar",
+    "outputPath": "/assets/cards/scars/scar-rift-eye.png"
+  },
+  {
+    "cardId": "scar-shrapnel-memory",
+    "cardType": "scar",
+    "outputPath": "/assets/cards/scars/scar-shrapnel-memory.png"
+  },
+  {
+    "cardId": "scar-split-horizon",
+    "cardType": "scar",
+    "outputPath": "/assets/cards/scars/scar-split-horizon.png"
+  },
+  {
+    "cardId": "scar-the-voice-below",
+    "cardType": "scar",
+    "outputPath": "/assets/cards/scars/scar-the-voice-below.png"
+  },
+  {
     "cardId": "scar-wound-1",
     "cardType": "scar",
     "outputPath": "/assets/cards/scars/scar-wound-1.png"
@@ -1209,13 +1253,6 @@ const generatedCardArtRuntimeCatalog: RuntimeCardArtCatalogEntry[] = [
     "outputPath": "/assets/cards/escalations/escalation-webglass-afterimage.png"
   }
 ] as RuntimeCardArtCatalogEntry[];
-
-const canonicalArtworkOverrides = artworkOverrides as Record<string, string>;
-
-export const cardArtRuntimeCatalog: RuntimeCardArtCatalogEntry[] = generatedCardArtRuntimeCatalog.map((entry) => ({
-  ...entry,
-  outputPath: canonicalArtworkOverrides[entry.cardId]?.replace(/^public/, "") ?? entry.outputPath
-}));
 
 const cardArtPathByType = cardArtRuntimeCatalog.reduce<Record<CardImageType, Record<string, string>>>(
   (summary, entry) => {

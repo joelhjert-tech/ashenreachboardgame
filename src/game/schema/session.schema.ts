@@ -25,6 +25,7 @@ import {
   sectorNodeSchema
 } from "./sector.schema.js";
 import { pendingScarConsequenceSchema } from "./scarTrigger.schema.js";
+import { pendingScarChoiceSchema, pendingScarThresholdSchema, scarDecksSchema, scarRemovalChoiceSchema, scarUsageEntrySchema } from "./scarChoice.schema.js";
 import { pendingEncounterDecisionSchema } from "./encounterDecision.schema.js";
 import { pendingDisplacementArrivalSchema, pendingDisplacementSchema, pendingForcedDestinationChoiceSchema, pendingSutureStormConsequenceSchema } from "./displacement.schema.js";
 import { pendingMemoryTaxChoiceSchema } from "./memoryTax.schema.js";
@@ -526,6 +527,13 @@ export const gameStateSchema = z.object({
   pendingScarConsequence: pendingScarConsequenceSchema.nullable().optional(),
   pendingScarConsequenceQueue: z.array(pendingScarConsequenceSchema).optional(),
   resolvedScarSourceEventIds: z.array(z.string().min(1)).optional(),
+  scarDecks: scarDecksSchema.optional(),
+  pendingScarChoice: pendingScarChoiceSchema.nullable().optional(),
+  scarUsage: z.array(scarUsageEntrySchema).optional(),
+  pendingScarThreshold: pendingScarThresholdSchema.nullable().optional(),
+  pendingScarRemovalChoice: scarRemovalChoiceSchema.nullable().optional(),
+  resolvedScarChoiceSourceEventIds: z.array(z.string().min(1)).optional(),
+  resolvedScarRemovalVisitIds: z.array(z.string().min(1)).optional(),
   pendingTileChallenge: pendingTileChallengeSchema.nullable().optional(),
   tileChallengeProgress: z.object({
     seatId: z.string().min(1),

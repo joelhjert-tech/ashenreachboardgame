@@ -12,8 +12,10 @@
     "text": "You pinned one true whisper to the route ledger."
   },
   "failureEffect": {
-    "type": "gain_scar",
-    "scarId": "scar-wound-6"
+    "type": "gain_scar_choice",
+    "amount": 1,
+    "source": "rift",
+    "sourceCardId": "rift-whispers-ashen-chapel"
   },
   "recurring": true,
   "tags": ["anomaly", "movement", "scar"],

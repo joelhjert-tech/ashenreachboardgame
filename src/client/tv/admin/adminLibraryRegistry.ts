@@ -28,6 +28,7 @@ export interface AdminLibraryCard {
   lore?: string;
   rulesText?: string;
   encounterType?: string;
+  scarSource?: string;
   reward?: string;
   penalty?: string;
   effects: AdminLibraryEffectRow[];
@@ -246,6 +247,16 @@ export function buildAdminLibraryCards(
     if (!lore) metadataWarnings.push("Missing lore.");
     if (!artwork.artworkPath) metadataWarnings.push("Missing artwork or runtime artwork registry entry.");
     if (cardType === "unknown") metadataWarnings.push("Unknown card type.");
+    if (cardType === "scar") {
+      if (!readString(value, "source")) metadataWarnings.push("Scar source is missing.");
+      if (!readString(value, "origin")) metadataWarnings.push("Scar origin is missing.");
+      if (!readString(value, "burdenText") || !isRecord(value.burden) || !readString(value.burden, "key")) {
+        metadataWarnings.push("Scar Burden must include authored text and a typed executable rule.");
+      }
+      if (!readString(value, "adaptationText") || !isRecord(value.adaptation) || !readString(value.adaptation, "key")) {
+        metadataWarnings.push("Scar Adaptation must include authored text and a typed executable rule.");
+      }
+    }
     if (!sourcePath.startsWith("content/")) metadataWarnings.push("Data file is outside the canonical content boundary.");
 
     return [{
@@ -259,6 +270,7 @@ export function buildAdminLibraryCards(
       lore,
       rulesText: getRulesText(value),
       encounterType: readString(value, "cardType", "type", "challengeType", "category"),
+      scarSource: cardType === "scar" ? readString(value, "source") : undefined,
       reward: value.reward !== undefined ? summarizeValue(value.reward) : value.defeatReward !== undefined ? summarizeValue(value.defeatReward) : undefined,
       penalty: readString(value, "penalty") ?? (value.failureEffect !== undefined ? summarizeValue(value.failureEffect) : value.woundOnLoss !== undefined ? summarizeValue(value.woundOnLoss) : undefined),
       effects: getEffectRows(value),

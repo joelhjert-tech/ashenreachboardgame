@@ -1,0 +1,13 @@
+{
+  "id": "scar-parasite-crown", "type": "scar", "title": "Parasite Crown", "source": "machine",
+  "text": "A ring of feeding rivets tightens whenever a weapon wakes.", "flavor": "It applauds violence with a turn of every screw.",
+  "origin": "A battlefield control circlet rooted into the skull after its operator died.",
+  "burdenText": "The first Equipment used in battle each round exhausts after that battle.",
+  "adaptationText": "Once per battle, when exactly one below the opposing total, add +1.",
+  "burden": { "key": "first-battle-equipment-exhaust", "timing": "onEquipmentUsed", "limit": "oncePerRound", "optional": false, "tags": ["battle", "equipment"] },
+  "adaptation": { "key": "one-below-battle-bonus", "timing": "afterRoll", "limit": "oncePerBattle", "optional": true, "tags": ["battle"] },
+  "trigger": "The first Equipment used in battle each round.", "penalty": "That Equipment exhausts after battle.",
+  "effect": { "type": "gain_note", "text": "Parasite Crown marked the first battle Equipment for exhaustion." },
+  "relief": "Purge this Scar at the Sable Machine Choir.", "upside": "The crown can bridge an exact one-point battle deficit.",
+  "removalRestrictions": ["purificationService"], "artwork": "/assets/cards/scars/scar-parasite-crown.png"
+}

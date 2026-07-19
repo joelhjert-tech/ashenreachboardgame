@@ -54,7 +54,7 @@ export const pendingDisplacementSchema = z.object({
   originSectorId: z.string().min(1),
   destinationSectorId: z.string().min(1),
   direction: z.enum(["clockwise", "counterclockwise"]),
-  distance: z.literal(1),
+  distance: z.number().int().min(1).max(2),
   sameRing: z.literal(true),
   fallbackEffect: forcedDisplacementFallbackSchema.nullable(),
   failureStillCounts: z.literal(true),

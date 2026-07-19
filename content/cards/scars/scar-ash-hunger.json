@@ -1,0 +1,12 @@
+{
+  "id": "scar-ash-hunger", "type": "scar", "title": "Ash Hunger", "source": "unbound",
+  "text": "Healing feeds a furnace that never remembers being full.", "flavor": "Victory tastes almost like enough.",
+  "origin": "Unbound ash settled in the wounds and learned the shape of appetite.",
+  "burdenText": "Healing services cost 1 additional Salvage.", "adaptationText": "Once per round, defeating an elite while carrying at least two Wounds grants 1 Salvage if that battle awarded none.",
+  "burden": { "key": "healing-service-surcharge", "timing": "beforeService", "limit": "passive", "optional": false, "tags": ["healing", "service"] },
+  "adaptation": { "key": "elite-wounded-salvage", "timing": "onBattleResolved", "limit": "oncePerRound", "optional": false, "tags": ["elite", "salvage"] },
+  "trigger": "Healing service or elite victory while wounded.", "penalty": "Healing services cost 1 additional Salvage.",
+  "effect": { "type": "gain_note", "text": "Ash Hunger demanded a richer recovery." },
+  "relief": "Purge this Scar at the Sable Machine Choir.", "upside": "A qualifying elite victory can grant 1 Salvage.",
+  "removalRestrictions": ["purificationService"], "artwork": "/assets/cards/scars/scar-ash-hunger.png"
+}

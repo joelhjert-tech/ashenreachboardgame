@@ -13,6 +13,7 @@ import { getReflectionPressureThresholdForMode, getWoundThresholdForMode } from 
 import { createInitialAfflictionUsageState } from "../game/rules/afflictions.js";
 import { attachTileChallengesToSectors } from "../game/rules/tileChallenges.js";
 import { ensureOwnedGearInstanceIds } from "../game/rules/equipmentSuppression.js";
+import { createInitialScarDecks } from "../game/rules/scarSystem.js";
 import type { AuthoredCharacter, Character } from "../game/schema/character.schema.js";
 import {
   createEmptyScenarioConfrontationState,
@@ -202,6 +203,13 @@ export function createInitialSessionState(
     pendingScarConsequence: null,
     pendingScarConsequenceQueue: [],
     resolvedScarSourceEventIds: [],
+    scarDecks: createInitialScarDecks(sessionId),
+    pendingScarChoice: null,
+    scarUsage: [],
+    pendingScarThreshold: null,
+    pendingScarRemovalChoice: null,
+    resolvedScarChoiceSourceEventIds: [],
+    resolvedScarRemovalVisitIds: [],
     pendingTileChallenge: null,
     pendingEncounterDecision: null,
     resolvedEncounterDecisionIds: [],

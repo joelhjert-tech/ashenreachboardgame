@@ -13,8 +13,10 @@
     "gearId": "signal-lantern"
   },
   "failEffect": {
-    "type": "gain_scar",
-    "scarId": "scar-wound-3"
+    "type": "gain_scar_choice",
+    "amount": 1,
+    "source": "machine",
+    "sourceCardId": "sanctifier-beads"
   },
   "enemyFamily": "choir",
   "threatLane": "blue",

@@ -154,7 +154,7 @@ describe("Heat Retirement H2 normal Wound Threats", () => {
       });
       expect(card.successEffect).toEqual(target.successEffect);
       expect(JSON.stringify(card)).not.toMatch(/gain_heat|gain_heat_all|lose_heat|\bHeat\b|\bRisk\b/i);
-      expect(JSON.stringify(card.failEffect)).not.toMatch(/gain_scar|salvage|displacement|modifier|escalation/i);
+      expect(JSON.stringify(card.failEffect)).not.toMatch(/"gain_scar"|salvage|displacement|modifier|escalation/i);
       expect(validateLegacyHeatContentRecord(`${target.id}.json`, card)).toEqual([]);
       expect(APPROVED_LEGACY_HEAT_CONTENT_IDS.has(target.id)).toBe(false);
       expect(getRuntimeCardArtPath("threat", target.id)).toBe(`/assets/cards/threats/blue/${target.id}.png`);
@@ -241,10 +241,11 @@ describe("Heat Retirement H2 normal Wound Threats", () => {
     const threshold = createEncounterState(card).woundThreshold;
     const state = finish(openCheck(card, true, threshold - 1));
     expect(state.players[0]!.character).toMatchObject({ wounds: threshold, status: "recalled" });
-    expect(state.players[0]!.character.scars).toHaveLength(1);
+    expect(state.players[0]!.character.scars).toHaveLength(0);
+    expect(state.pendingScarChoice).toMatchObject({ ownerSeatId: "seat-1", source: "unbound" });
     expect(countEvents(state, "WOUND_THRESHOLD_REACHED")).toBe(1);
     expect(countEvents(state, "RESOLUTION_APPLIED")).toBe(1);
-    expect(JSON.stringify(card)).not.toMatch(/gain_scar/i);
+    expect(JSON.stringify(card)).not.toMatch(/"gain_scar"/i);
   });
 
   it("preserves Choir scenario leverage and leaves Lantern success consequence-free", () => {

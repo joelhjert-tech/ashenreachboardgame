@@ -60,12 +60,18 @@ import type {
   StatRaisedAction,
   TableInteractionAction,
   WoundThresholdReachedAction,
+  ChooseScarAction,
+  ScarThresholdResolvedAction,
+  ScarRemovalOfferedAction,
+  ScarRemovedAction,
   UnequipGearAction,
   UseFollowerAction,
   UseGearAction,
   RollModifierSource
 } from "./actions.js";
+import { getScenarioDefinition } from "../data/scenarios.js";
 import { getEquippedGearItem, getHeldGearInstance, getHeldGearItem } from "./gear.js";
+import { createScarChoice, resolveScarChoice, resolveScarThresholdPolicy, removeScarFromOwner } from "../rules/scarSystem.js";
 import { canAdvancePhase, canResolveMovement } from "./phases.js";
 import { getEscalationCollapseLevel, getEscalationModifier } from "./escalation.js";
 import type { EncounterEffect, ThreatCard } from "../schema/card.schema.js";
@@ -378,6 +384,8 @@ function summarizeEffect(effect: EncounterEffect | null, success: boolean | null
       return `${prefix} lose up to ${effect.amount} Salvage (minimum 0).`;
     case "gain_scar":
       return `${prefix} gain scar ${effect.scarId}.`;
+    case "gain_scar_choice":
+      return `${prefix} choose one of two ${effect.source} Scars.`;
     case "gain_gear":
       return `${prefix} gain ${effect.gear?.name ?? "Equipment"}.`;
     case "draw_artifact":
@@ -497,6 +505,8 @@ function applyEffectToPlayer(player: PlayerState, effect: EncounterEffect): Play
           notes: [...player.private.notes, effect.text]
         }
       };
+    case "gain_scar_choice":
+      return player;
     case "advance_escalation":
     case "gain_global_escalation_guarded":
     case "advance_scenario":
@@ -841,7 +851,7 @@ function buildShopOutcomeSummary(args: {
   };
 }
 
-function applyEffectToState(state: GameState, seatId: string, effect: EncounterEffect): GameState {
+export function applyEffectToState(state: GameState, seatId: string, effect: EncounterEffect): GameState {
   if (effect.type === "sequence") {
     return effect.effects.reduce(
       (nextState: GameState, entry: EncounterEffect) => applyEffectToState(nextState, seatId, entry),
@@ -863,6 +873,21 @@ function applyEffectToState(state: GameState, seatId: string, effect: EncounterE
           }
         : state.lastOutcomeSummary
     };
+  }
+
+  if (effect.type === "gain_scar_choice") {
+    const sourceResolutionId = effect.resolutionId
+      ?? state.activeResolution?.id
+      ?? state.resolutionSource
+      ?? `${effect.sourceCardId}:${seatId}:${state.sequence}`;
+    const sourceEventId = `${sourceResolutionId}:scar-choice:${effect.sourceCardId}`;
+    return createScarChoice(
+      state,
+      seatId,
+      effect,
+      sourceEventId,
+      state.pendingFailureReaction?.createdAt ?? sourceEventId
+    ).state;
   }
 
   if (effect.type === "gain_gear" && effect.gear) {
@@ -3178,6 +3203,96 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
         }]
       });
     }
+    case "CHOOSE_SCAR": {
+      const choiceAction = action as ChooseScarAction;
+      const result = resolveScarChoice(
+        state,
+        choiceAction.seatId,
+        choiceAction.selectionId,
+        choiceAction.scarId,
+        choiceAction.createdAt,
+        getScenarioDefinition(state.activeScenarioId)?.scarThresholdPolicy ?? "retire"
+      );
+      if (!result.ok) return reject(state, action, result.reason);
+      const afterOnGain = result.selected.onGain
+        ? applyEffectToState(result.state, choiceAction.seatId, result.selected.onGain)
+        : result.state;
+      const triggered = beginScarTriggerEvent(afterOnGain, {
+        id: `${choiceAction.selectionId}:scar-gained:${choiceAction.scarId}`,
+        type: "onScarGained",
+        seatId: choiceAction.seatId,
+        sourceId: choiceAction.scarId
+      }, choiceAction.createdAt);
+      return succeed({ ...triggered, sequence: state.sequence + 1 });
+    }
+    case "SCAR_THRESHOLD_RESOLVED": {
+      const thresholdAction = action as ScarThresholdResolvedAction;
+      const pending = state.pendingScarThreshold;
+      if (!pending) return reject(state, action, "No Scar threshold is queued");
+      if (pending.seatId !== thresholdAction.seatId) return reject(state, action, "Scar threshold belongs to another seat");
+      if (pending.policy !== thresholdAction.policy) return reject(state, action, "Scar threshold policy is stale");
+      if (state.pendingEffect || state.pendingScarChoice || state.pendingScarConsequence || state.pendingFailureReaction || state.pendingTileChallenge) {
+        return reject(state, action, "Scar threshold waits for the current resolution stack");
+      }
+      const thresholdResult = resolveScarThresholdPolicy(
+        state,
+        thresholdAction.seatId,
+        thresholdAction.policy,
+        thresholdAction.createdAt
+      );
+      if (!thresholdResult.ok) return reject(state, action, thresholdResult.reason);
+      return succeed({ ...thresholdResult.state, sequence: state.sequence + 1 });
+    }
+    case "SCAR_REMOVAL_OFFERED": {
+      const removalAction = action as ScarRemovalOfferedAction;
+      const player = requirePlayer(state, removalAction.seatId);
+      if (player.character.currentSpaceId !== "middle_scar_surgery") return reject(state, action, "Scar purification is available only at the Sable Machine Choir");
+      if (state.pendingScarRemovalChoice) return reject(state, action, "A Scar purification choice is already pending");
+      if ((state.resolvedScarRemovalVisitIds ?? []).includes(removalAction.visitId)) return reject(state, action, "Purge a Scar is once per arrival");
+      const scarIds = removalAction.scarIds.filter((id) => player.character.scars.includes(id));
+      if (scarIds.length < 1) return reject(state, action, "No owned Scar can be purified");
+      return succeed({
+        ...state,
+        sequence: state.sequence + 1,
+        pendingScarRemovalChoice: {
+          choiceId: removalAction.choiceId,
+          ownerSeatId: removalAction.seatId,
+          sectorId: "middle_scar_surgery",
+          visitId: removalAction.visitId,
+          scarIds,
+          salvageCost: 4,
+          createdAt: removalAction.createdAt
+        },
+        eventLog: [...state.eventLog, action]
+      });
+    }
+    case "SCAR_REMOVED": {
+      const removalAction = action as ScarRemovedAction;
+      const pending = state.pendingScarRemovalChoice;
+      if (!pending) return reject(state, action, "No Scar purification choice is waiting");
+      if (pending.ownerSeatId !== removalAction.seatId || pending.choiceId !== removalAction.choiceId) return reject(state, action, "Scar purification choice is stale or belongs to another seat");
+      if (pending.visitId !== removalAction.visitId || (state.resolvedScarRemovalVisitIds ?? []).includes(pending.visitId)) return reject(state, action, "Scar purification visit is stale");
+      if (!pending.scarIds.includes(removalAction.scarId)) return reject(state, action, "Scar was not offered for purification");
+      const player = requirePlayer(state, removalAction.seatId);
+      if (player.character.currentSpaceId !== "middle_scar_surgery") return reject(state, action, "Operative left the Sable Machine Choir");
+      if ((player.character.salvage ?? 0) < removalAction.salvageCost) return reject(state, action, "Purge a Scar requires 4 Salvage");
+      const paid = {
+        ...state,
+        players: state.players.map((entry) => entry.seatId === removalAction.seatId ? {
+          ...entry,
+          character: { ...entry.character, salvage: (entry.character.salvage ?? 0) - removalAction.salvageCost }
+        } : entry)
+      };
+      const removed = removeScarFromOwner(paid, removalAction.seatId, removalAction.scarId, removalAction.createdAt);
+      if (!removed) return reject(state, action, "Scar is no longer owned");
+      return succeed({
+        ...removed,
+        sequence: state.sequence + 1,
+        pendingScarRemovalChoice: null,
+        resolvedScarRemovalVisitIds: [...(state.resolvedScarRemovalVisitIds ?? []), pending.visitId],
+        eventLog: [...removed.eventLog, action]
+      });
+    }
     case "WOUND_THRESHOLD_REACHED": {
       const woundAction = action as WoundThresholdReachedAction;
 
@@ -3234,7 +3349,7 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
           character: {
             ...player.character,
             status: "recalled",
-            scars: [...player.character.scars, woundAction.scar]
+            scars: woundAction.scar ? [...player.character.scars, woundAction.scar] : player.character.scars
           }
         })),
         lastOutcomeSummary: state.lastOutcomeSummary
@@ -3251,12 +3366,22 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
           resultingStatus: "recalled"
         };
       }
-      return succeed(beginScarTriggerEvent(scarredState, {
-        id: `${woundAction.createdAt}:${woundAction.seatId}:scar-gained:${woundAction.scar}`,
-        type: "onScarGained",
-        seatId: woundAction.seatId,
-        sourceId: woundAction.scar
-      }, woundAction.createdAt));
+      if (woundAction.scar) {
+        return succeed(beginScarTriggerEvent(scarredState, {
+          id: `${woundAction.createdAt}:${woundAction.seatId}:scar-gained:${woundAction.scar}`,
+          type: "onScarGained",
+          seatId: woundAction.seatId,
+          sourceId: woundAction.scar
+        }, woundAction.createdAt));
+      }
+      const sourceEventId = `${woundAction.createdAt}:${woundAction.seatId}:wound-threshold-scar`;
+      return succeed(createScarChoice(scarredState, woundAction.seatId, {
+        type: "gain_scar_choice",
+        amount: 1,
+        source: "unbound",
+        sourceCardId: "wound-threshold",
+        resolutionId: sourceEventId
+      }, sourceEventId, woundAction.createdAt).state);
     }
     case "RECRUIT_REPLACEMENT": {
       const recruitAction = action as RecruitReplacementAction;
@@ -5622,6 +5747,7 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
       return succeed({
         ...state,
         gateSaintSafeConduct: null,
+        scarUsage: (state.scarUsage ?? []).filter((entry) => entry.scope !== "round"),
         players: state.players.map((player) => ({
           ...player,
           character: {
@@ -5834,6 +5960,7 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
 
       return succeed({
         ...state,
+        scarUsage: (state.scarUsage ?? []).filter((entry) => entry.scope !== "turn" && entry.scope !== "battle" && entry.scope !== "visit"),
         phase: nextPlayer?.character.status === "recalled" ? "action" : "navigation",
         activeSeatIndex: nextActiveSeatIndex,
         sequence: state.sequence + 1,

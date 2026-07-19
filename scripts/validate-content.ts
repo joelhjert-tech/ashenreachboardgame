@@ -9,6 +9,7 @@ import { loadEscalationCards } from "../src/game/content/escalations.js";
 import { loadFollowers } from "../src/game/content/followers.js";
 import { loadGear } from "../src/game/content/gear.js";
 import { loadScarCards } from "../src/game/content/scars.js";
+import { validateScarCatalog } from "../src/game/rules/scarSystem.js";
 import { loadThreatCards } from "../src/game/content/threats.js";
 import { loadTileChallenges } from "../src/game/content/tileChallenges.js";
 import { getThreatEffectTiming, isThreatEffectKey } from "../src/game/cards/threatEffects.js";
@@ -197,6 +198,7 @@ const artifacts = loadArtifactCards();
 const followers = loadFollowers();
 const scars = loadScarCards();
 errors.push(...validateScarTriggerCatalog(scars));
+errors.push(...validateScarCatalog());
 const escalations = loadEscalationCards();
 const afflictions = loadAfflictionCards();
 const canonicalSectors = createCanonicalSectorGraph();
@@ -393,7 +395,7 @@ function validateContentFloors(): void {
     ["escalations", escalations.size, 15, 25],
     ["contracts", contracts.size, 20, 36],
     ["followers", followers.size, 15, 25],
-    ["scars", scars.size, 12, 18],
+    ["scars", scars.size, 24, 24],
     ["afflictions", afflictions.size, 30, 30]
   ] as const;
 

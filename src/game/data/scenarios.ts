@@ -80,6 +80,8 @@ export interface ScenarioDefinition {
   pressureRule: string;
   expectedDuration: string;
   mode: ScenarioMode;
+  /** Optional third-Scar policy. Production scenarios currently use the canonical retire default. */
+  scarThresholdPolicy?: "retire" | "transform" | "custom";
   supportedPlayerCounts: ScenarioPlayerCountSupport;
   supportedModes: ScenarioSupportedMode[];
   publicDisplay: ScenarioPublicDisplayMetadata;

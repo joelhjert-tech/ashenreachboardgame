@@ -31,6 +31,9 @@ export function getIntrinsicBaseStat(player: Pick<PlayerState, "character">, sta
 
 export function getEligibleCooperativeHelperSeatIds(state: GameState, activeSeatId: string, stat: Stat): string[] {
   if (!isCooperativeAssistanceMode(state) || !COOPERATIVE_ASSISTANCE_STATS.includes(stat)) return [];
+  const active = state.players.find((entry) => entry.seatId === activeSeatId);
+  if (active?.character.scars.includes("scar-hollow-reflection")) return [];
+  if (stat === "command" && active?.character.scars.includes("scar-wound-4")) return [];
 
   return state.turnOrder.filter((seatId) => {
     if (seatId === activeSeatId) return false;
@@ -56,7 +59,9 @@ export function lockCooperativeContributions(
   return acceptedSeatIds.slice(0, MAX_COOPERATIVE_HELPERS).map((seatId) => {
     const helper = state.players.find((entry) => entry.seatId === seatId);
     if (!helper) throw new Error(`Missing cooperative helper ${seatId}`);
-    return { seatId, value: getIntrinsicBaseStat(helper, stat) };
+    const borrowedNameUnused = helper.character.scars.includes("scar-borrowed-name") &&
+      !(state.scarUsage ?? []).some((entry) => entry.seatId === seatId && entry.scarId === "scar-borrowed-name" && entry.ruleKey === "first-assistance-reduction" && entry.scope === "round");
+    return { seatId, value: Math.max(0, getIntrinsicBaseStat(helper, stat) - (borrowedNameUnused ? 1 : 0)) };
   });
 }
 

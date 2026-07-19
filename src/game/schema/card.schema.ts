@@ -67,6 +67,18 @@ type GainScarEffect = {
   scarId: string;
 };
 
+export const scarSourceSchema = z.enum(["flesh", "mind", "machine", "rift", "unbound"]);
+export type ScarSource = z.infer<typeof scarSourceSchema>;
+export type ScarRuleKey = z.infer<typeof scarRuleKeySchema>;
+
+type GainScarChoiceEffect = {
+  type: "gain_scar_choice";
+  amount: 1;
+  source: ScarSource;
+  sourceCardId: string;
+  resolutionId?: string;
+};
+
 type GainGearEffect = {
   type: "gain_gear";
   gearId: string;
@@ -163,7 +175,7 @@ type AuthoredSimpleEncounterEffect =
   | GainTrophyEffect
   | GainSalvageEffect
   | LoseSalvageEffect
-  | GainScarEffect
+  | GainScarChoiceEffect
   | GainGearEffect
   | DrawArtifactEffect
   | ConsumeArtifactEffect
@@ -191,6 +203,7 @@ export type AuthoredEncounterEffect =
 
 export type EncounterEffect =
   | AuthoredSimpleEncounterEffect
+  | GainScarEffect
   | LegacyCompatibilityNoopEffect
   | { type: "sequence"; effects: EncounterEffect[] };
 
@@ -202,6 +215,7 @@ export type LegacyCompatibleEncounterEffect =
   | GainHeatEffect
   | GainHeatAllEffect
   | LoseHeatEffect
+  | GainScarEffect
   | { type: "sequence"; effects: LegacyCompatibleEncounterEffect[] };
 
 const authoredSimpleEffectSchema: z.ZodType<AuthoredSimpleEncounterEffect> = z.union([
@@ -226,8 +240,11 @@ const authoredSimpleEffectSchema: z.ZodType<AuthoredSimpleEncounterEffect> = z.u
     amount: z.number().int().positive()
   }),
   z.object({
-    type: z.literal("gain_scar"),
-    scarId: z.string().min(1)
+    type: z.literal("gain_scar_choice"),
+    amount: z.literal(1),
+    source: scarSourceSchema,
+    sourceCardId: z.string().min(1),
+    resolutionId: z.string().min(1).optional()
   }),
   z.object({
     type: z.literal("gain_gear"),
@@ -308,6 +325,11 @@ const legacyCompatibilityNoopEffectSchema: z.ZodType<LegacyCompatibilityNoopEffe
   type: z.literal("legacy_compatibility_noop")
 });
 
+const legacyGainScarEffectSchema: z.ZodType<GainScarEffect> = z.object({
+  type: z.literal("gain_scar"),
+  scarId: z.string().min(1)
+});
+
 const legacyHeatEffectSchema = z.union([
   z.object({
     type: z.literal("gain_heat"),
@@ -336,6 +358,7 @@ export const authoredEffectSchema: z.ZodType<AuthoredEncounterEffect> = z.lazy((
 export const effectSchema: z.ZodType<EncounterEffect> = z.lazy(() =>
   z.union([
     authoredSimpleEffectSchema,
+    legacyGainScarEffectSchema,
     legacyCompatibilityNoopEffectSchema,
     z.object({
       type: z.literal("sequence"),
@@ -357,6 +380,7 @@ export const legacyCompatibleEffectSchema: z.ZodType<LegacyCompatibleEncounterEf
       follower: legacyCompatibleFollowerGrantSchema.optional()
     }),
     authoredSimpleEffectSchema,
+    legacyGainScarEffectSchema,
     legacyCompatibilityNoopEffectSchema,
     legacyHeatEffectSchema,
     z.object({
@@ -576,8 +600,40 @@ export const artifactCardSchema = cardBaseSchema.extend({
   resolveEffect: authoredEffectSchema
 });
 
+export const scarRuleKeySchema = z.enum([
+  "first-grit-penalty", "first-equipment-battle-exhaust", "inner-anomaly-arrival-wound", "movement-alteration-wound-cost",
+  "first-enemy-battle-penalty", "first-failed-hazard-wound", "first-signal-penalty", "command-assistance-blocked",
+  "contract-failure-escalation", "first-guile-penalty", "remote-signal-penalty", "owner-turn-escalation-wound",
+  "first-trophy-reduction", "paid-service-surcharge", "cross-ring-toll", "first-battle-equipment-exhaust",
+  "first-route-test-penalty", "repair-service-surcharge", "assistance-blocked", "anomaly-natural-one-wound",
+  "forced-displacement-extra-step", "seal-event-option", "healing-service-surcharge", "first-assistance-reduction",
+  "prevent-grit-displacement", "repair-forge-bonus", "toxic-wound-immunity", "rift-signal-reroll",
+  "elite-grit-bonus", "grit-hazard-reroll", "ignore-blue-event", "declined-help-command-bonus",
+  "contract-complete-heal", "guile-anomaly-reroll", "relay-blue-peek", "escalation-signal-bonus",
+  "trophy-advancement-discount", "prevent-equipment-suppression", "gate-test-bonus", "one-below-battle-bonus",
+  "machine-enemy-grit-bonus", "forge-charge-restore", "guile-reroll", "anomaly-difficulty-reduction",
+  "choose-displacement-direction", "inspect-hidden-consequence", "elite-wounded-salvage", "next-unassisted-bonus"
+]);
+
+export const scarPersistentRuleSchema = z.object({
+  key: scarRuleKeySchema,
+  timing: z.string().min(1),
+  limit: z.enum(["oncePerTurn", "oncePerRound", "oncePerBattle", "oncePerVisit", "oncePerGame", "passive"]).default("passive"),
+  optional: z.boolean().default(false),
+  tags: z.array(z.string().min(1)).default([])
+}).strict();
+
 export const scarCardSchema = cardBaseSchema.extend({
   type: z.literal("scar"),
+  source: scarSourceSchema,
+  origin: z.string().min(1),
+  burdenText: z.string().min(1),
+  adaptationText: z.string().min(1),
+  burden: scarPersistentRuleSchema,
+  adaptation: scarPersistentRuleSchema,
+  onGain: authoredEffectSchema.optional(),
+  removalRestrictions: z.array(z.string().min(1)).default([]),
+  artwork: z.string().min(1),
   trigger: z.string().min(1),
   penalty: z.string().min(1),
   effect: authoredEffectSchema,

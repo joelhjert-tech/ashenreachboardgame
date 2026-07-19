@@ -34,7 +34,7 @@ const GROUP_3 = {
       ]
     },
     failureSummary: "The surgery pit made the wound quieter, not safer.",
-    failureEffect: { type: "gain_scar", scarId: "scar-wound-1" },
+    failureEffect: { type: "gain_scar_choice", amount: 1, source: "flesh", sourceCardId: "middle_scarSurgery" },
     sectorDeck: { kind: "escalation" },
     spaces: ["middle_scar_surgery"]
   },
@@ -51,7 +51,7 @@ const GROUP_3 = {
 } as const;
 
 const GROUP_3_IDS = Object.keys(GROUP_3) as Array<keyof typeof GROUP_3>;
-const HEAT_OR_REPLACEMENT = /gain_heat|lose_heat|gain_heat_all|lose_salvage|advance_escalation|forced_displacement|temporary_modifier|equipment_suppression|choice/i;
+const HEAT_OR_REPLACEMENT = /gain_heat|lose_heat|gain_heat_all|lose_salvage|advance_escalation|forced_displacement|temporary_modifier|equipment_suppression/i;
 
 function stateAtEffect(effectKey: keyof typeof GROUP_3): GameState {
   const space = BOARD_SPACES.find((entry) => entry.textBox.effectKey === effectKey);
@@ -126,7 +126,7 @@ describe("Heat Compatibility C2B3 severe board consequence cleanup", () => {
     }
 
     expect(BOARD_TEXT_EFFECTS.outer_brokenCausewayShortcut.failureEffect).toEqual({ type: "take_wound", amount: 1 });
-    expect(BOARD_TEXT_EFFECTS.middle_scarSurgery.failureEffect).toEqual({ type: "gain_scar", scarId: "scar-wound-1" });
+    expect(BOARD_TEXT_EFFECTS.middle_scarSurgery.failureEffect).toEqual({ type: "gain_scar_choice", amount: 1, source: "flesh", sourceCardId: "middle_scarSurgery" });
     expect(BOARD_TEXT_EFFECTS.inner_blackstarShortcut.failureEffect).toEqual({ type: "take_wound", amount: 1 });
   });
 
@@ -147,16 +147,18 @@ describe("Heat Compatibility C2B3 severe board consequence cleanup", () => {
     }
   );
 
-  it("middle_scarSurgery retains exactly one direct Ash-Lanced failure Scar", () => {
+  it("middle_scarSurgery opens exactly one typed Flesh Scar choice", () => {
     const state = stateAtEffect("middle_scarSurgery");
     const result = resolve(state, "middle_scarSurgery", false, "c2b3-middle-scar-failure");
     expect(result.ok).toBe(true);
     if (!result.ok) return;
 
     expect(result.state.players[0]!.character.wounds).toBe(2);
-    expect(result.state.players[0]!.character.scars).toEqual(["scar-wound-1"]);
+    expect(result.state.players[0]!.character.scars).toEqual([]);
+    expect(result.state.pendingScarChoice).toMatchObject({ ownerSeatId: "seat-1", source: "flesh", sourceCardId: "middle_scarSurgery" });
+    expect(result.state.pendingScarChoice?.candidateIds).toHaveLength(2);
     expect(result.state.pendingScarConsequence ?? null).toBeNull();
-    expect(result.state.activeResolution?.outcome?.effects).toEqual(["Failure: gain scar scar-wound-1."]);
+    expect(result.state.activeResolution?.outcome?.effects).toEqual(["Failure: choose one of two flesh Scars."]);
     expect(result.state.activeResolution?.outcome?.effects.filter((entry) => /scar/i.test(entry))).toHaveLength(1);
   });
 
