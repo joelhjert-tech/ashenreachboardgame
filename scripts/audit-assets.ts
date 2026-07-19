@@ -2,7 +2,7 @@ import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from "no
 import { basename, join, sep } from "node:path";
 import { getRuntimeAssetPaths } from "../src/client/shared/assetPaths.js";
 import { getGearCardArtPath, getGearCardArtType } from "../src/client/shared/assetPaths.js";
-import { getBoardTileAssetPaths } from "../src/client/tv/TalismanBoardSurface.js";
+import { getBoardMapRuntimeAssetPaths } from "../src/client/tv/mapAssetRegistry.js";
 import { loadArtifactCards } from "../src/game/content/artifacts.js";
 import { loadCharacters } from "../src/game/content/characters.js";
 import { loadGear } from "../src/game/content/gear.js";
@@ -268,7 +268,7 @@ const extraRuntimeAssets: ExpectedAsset[] = [
       usage: "Runtime UI, portrait, nemesis, or dice asset referenced by assetPaths.ts"
     })
   ),
-  ...getBoardTileAssetPaths().map((outputPath) =>
+  ...getBoardMapRuntimeAssetPaths().map((outputPath) =>
     toExpectedAsset({
       id: outputPath,
       assetType: "boardTileAsset",
