@@ -3861,6 +3861,7 @@ export class GameRoomServer {
     if (this.state.pendingMissionSelection || this.state.players.find((entry) => entry.seatId === seatId)?.character.activeContract) return;
     const unavailable = new Set(this.state.players.flatMap((entry) => [
       ...(entry.character.completedContracts ?? []),
+      ...(entry.character.completedMissionRecords ?? []).map((record) => record.missionId),
       ...(entry.character.activeContract ? [entry.character.activeContract.contractId] : [])
     ]));
     const optionIds = this.state.availableContracts
@@ -9040,7 +9041,10 @@ export class GameRoomServer {
     return contract
       ? {
           ...contract,
-          reward: this.resolveEffect(contract.reward)
+          reward: {
+            ...contract.reward,
+            effects: contract.reward.effects.map((effect) => this.resolveEffect(effect))
+          }
         }
       : undefined;
   }

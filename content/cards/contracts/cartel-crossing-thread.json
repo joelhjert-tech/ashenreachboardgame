@@ -10,16 +10,12 @@
     "target": 1
   },
   "reward": {
-    "type": "sequence",
     "effects": [
       {
         "type": "gain_salvage",
         "amount": 1
-      },
-      {
-        "type": "gain_note",
-        "text": "The Cartels opened a clean crossing thread for one black-lantern run."
       }
-    ]
+    ],
+    "completionText": "The Cartels opened a clean crossing thread for one black-lantern run."
   }
 }

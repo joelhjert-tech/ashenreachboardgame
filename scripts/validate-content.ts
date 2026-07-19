@@ -288,7 +288,10 @@ for (const item of gear.values()) {
 errors.push(...validatePassiveEquipmentCatalog(gear));
 
 for (const contract of contracts.values()) {
-  validateEffect(contract.reward, `${contract.id} reward`);
+  contract.reward.effects.forEach((effect, index) => validateEffect(effect, `${contract.id} reward effect ${index + 1}`));
+  if (contract.reward.effects.some((effect) => effect.type === "gain_note")) {
+    errors.push(`${contract.id} uses executable gain_note as a Mission reward; use completionText for display prose`);
+  }
   validateContractObjective(contract);
 }
 

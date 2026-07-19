@@ -45,7 +45,10 @@ describe("Phase 1F low-severity Salvage rewards", () => {
   });
 
   it.each(COMPLETED_IDS)("awards exactly one Salvage once for %s without mutating other consequence systems", (id) => {
-    const effect = loadContracts().get(id)!.reward as EncounterEffect;
+    const reward = loadContracts().get(id)!.reward;
+    const effect: EncounterEffect = reward.effects.length === 1
+      ? reward.effects[0]!
+      : { type: "sequence", effects: reward.effects };
     expect(JSON.stringify(effect)).toContain("gain_salvage");
     expect(JSON.stringify(effect)).not.toMatch(/gain_heat|gain_heat_all|lose_heat|\bHeat\b|\bRisk\b/i);
 

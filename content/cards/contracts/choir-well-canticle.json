@@ -10,7 +10,11 @@
     "target": 1
   },
   "reward": {
-    "type": "gain_salvage",
-    "amount": 1
+    "effects": [
+      {
+        "type": "gain_salvage",
+        "amount": 1
+      }
+    ]
   }
 }

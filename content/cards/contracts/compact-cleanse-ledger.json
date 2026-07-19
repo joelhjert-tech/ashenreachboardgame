@@ -8,7 +8,11 @@
     "target": 2
   },
   "reward": {
-    "type": "gain_gear",
-    "gearId": "marshal-seal"
+    "effects": [
+      {
+        "type": "gain_gear",
+        "gearId": "oath-chain"
+      }
+    ]
   }
 }

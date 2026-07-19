@@ -234,7 +234,7 @@ describe("canonical sector graph", () => {
         target: 1,
         label: "Succeed at Rift Whispers"
       },
-      reward: { type: "gain_salvage", amount: 2 }
+      reward: { effects: [{ type: "gain_salvage", amount: 2 }] }
     };
     state.availableContracts.push(mission);
     state.status = "active";
@@ -281,6 +281,12 @@ describe("canonical sector graph", () => {
     const completed = server.getState().players[0]!.character;
     expect(completed.salvage).toBe(startingSalvage + 2);
     expect(completed.completedContracts).toEqual([mission.id]);
+    expect(completed.completedMissionRecords).toEqual([expect.objectContaining({
+      missionId: mission.id,
+      completedByPlayerId: "seat-1",
+      rewardGranted: true,
+      spent: false
+    })]);
     expect(completed.activeContract).toBeNull();
     expect(server.getState().eventLog.filter((event) => (event as { type?: string; contractId?: string }).type === "COMPLETE_CONTRACT" && (event as { contractId?: string }).contractId === mission.id)).toHaveLength(1);
     expect(server.getState().sectors.find((sector) => sector.id === "ashen-chapel")?.tileChallenges).toContainEqual(challenge);
@@ -322,6 +328,7 @@ describe("canonical sector graph", () => {
     (server as unknown as { runAutomaticPhases: (seatId: string) => void }).runAutomaticPhases("seat-1");
     expect(server.getState().players[0]!.character.salvage).toBe(startingSalvage + 2);
     expect(server.getState().players[0]!.character.completedContracts).toEqual([mission.id]);
+    expect(server.getState().players[0]!.character.completedMissionRecords).toHaveLength(1);
     expect(server.getState().eventLog.filter((event) => (event as { type?: string; contractId?: string }).type === "COMPLETE_CONTRACT" && (event as { contractId?: string }).contractId === mission.id)).toHaveLength(1);
   });
   it("creates one live sector for every board node and keeps ids aligned", () => {

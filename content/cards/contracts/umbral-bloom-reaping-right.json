@@ -8,7 +8,11 @@
     "target": 3
   },
   "reward": {
-    "type": "gain_gear",
-    "gearId": "coffin-rig"
+    "effects": [
+      {
+        "type": "gain_gear",
+        "gearId": "scrap-drone"
+      }
+    ]
   }
 }

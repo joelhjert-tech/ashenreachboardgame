@@ -10,7 +10,11 @@
     "target": 1
   },
   "reward": {
-    "type": "gain_gear",
-    "gearId": "grave-lens"
+    "effects": [
+      {
+        "type": "gain_gear",
+        "gearId": "field-lens"
+      }
+    ]
   }
 }

@@ -4534,6 +4534,9 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
       if ((player.character.completedContracts ?? []).includes(acceptAction.contractId)) {
         return reject(state, action, "This contract is already completed");
       }
+      if ((player.character.completedMissionRecords ?? []).some((record) => record.missionId === acceptAction.contractId)) {
+        return reject(state, action, "This contract is already completed");
+      }
 
       if (!acceptAction.contract) {
         return reject(state, action, `Unknown contract ${acceptAction.contractId}`);
@@ -4602,9 +4605,19 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
         return reject(state, action, "Contract objective is not complete yet");
       }
 
-      const rewardedState = applyEffectToState({
-        ...state,
-        players: updateActivePlayer(state, completeAction.seatId, (entry) => ({
+      if ((player.character.completedMissionRecords ?? []).some((record) => record.missionId === contract.id)) {
+        return reject(state, action, "This contract is already completed");
+      }
+
+      // Reducers are pure: resolve the complete authored reward chain first so an
+      // unexpected resolver failure cannot archive the Mission prematurely.
+      const rewardedState = contract.reward.effects.reduce(
+        (draft, effect) => applyEffectToState(draft, completeAction.seatId, effect),
+        state
+      );
+      const archivedState = {
+        ...rewardedState,
+        players: updateActivePlayer(rewardedState, completeAction.seatId, (entry) => ({
           ...entry,
           private: { ...entry.private, activeOathchainReveal: null },
           character: {
@@ -4612,13 +4625,23 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
             activeContract: null,
             completedContracts: (entry.character.completedContracts ?? []).includes(contract.id)
               ? entry.character.completedContracts
-              : [...(entry.character.completedContracts ?? []), contract.id]
+              : [...(entry.character.completedContracts ?? []), contract.id],
+            completedMissionRecords: [
+              ...(entry.character.completedMissionRecords ?? []),
+              {
+                missionId: contract.id,
+                completedByPlayerId: completeAction.seatId,
+                completedAtSequence: state.sequence + 1,
+                rewardGranted: true,
+                spent: false
+              }
+            ]
           }
         }))
-      }, completeAction.seatId, contract.reward);
+      };
 
       return succeed({
-        ...rewardedState,
+        ...archivedState,
         sequence: state.sequence + 1,
         phase: "resolution",
         resolutionSource: "contract",
@@ -4642,7 +4665,7 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
           enemyBonus: null,
           enemyTotal: null,
           success: true,
-          summary: `Completed contract ${contract.name}. ${formatContractObjectiveStatus(contract, getContractObjectiveTarget(contract))}. ${summarizeEffect(contract.reward, true)}`
+          summary: `Completed contract ${contract.name}. ${formatContractObjectiveStatus(contract, getContractObjectiveTarget(contract))}. ${contract.reward.effects.map((effect) => summarizeEffect(effect, true)).join(" ")}${contract.reward.completionText ? ` ${contract.reward.completionText}` : ""}`
         },
         activeResolution: buildOutcomeResolution({
           seatId: completeAction.seatId,
@@ -4658,7 +4681,7 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
           },
           title: "Contract completed",
           text: `Completed ${contract.name}. ${formatContractObjectiveStatus(contract, getContractObjectiveTarget(contract))}.`,
-          effects: summarizeEffects(contract.reward, true)
+          effects: contract.reward.effects.flatMap((effect) => summarizeEffects(effect, true))
         }),
         eventLog: [...state.eventLog, action]
       });

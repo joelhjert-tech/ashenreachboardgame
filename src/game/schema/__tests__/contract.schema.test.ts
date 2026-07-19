@@ -7,7 +7,7 @@ import { formatContractObjectiveStatus } from "../../contracts/objectives.js";
 import type { EncounterEffect } from "../card.schema.js";
 import { contractCardSchema } from "../contract.schema.js";
 
-const base = { id: "schema-test", name: "Schema Test", factionGiver: "Meridian Compact", text: "Original Ashen Reach test copy.", reward: { type: "gain_note", text: "Test reward." } };
+const base = { id: "schema-test", name: "Schema Test", factionGiver: "Meridian Compact", text: "Original Ashen Reach test copy.", reward: { effects: [{ type: "gain_salvage", amount: 1 }] } };
 
 function collectEffects(effect: EncounterEffect): EncounterEffect[] {
   return effect.type === "sequence" ? effect.effects.flatMap(collectEffects) : [effect];
@@ -69,13 +69,15 @@ describe("contract schema and completability", () => {
           break;
       }
 
-      for (const effect of collectEffects(contract.reward)) {
+      for (const effect of contract.reward.effects.flatMap(collectEffects)) {
         if (effect.type === "gain_gear") {
           const item = gear.get(effect.gearId);
           expect(item, `${contract.id}:${effect.gearId}`).toBeDefined();
           expect(["starter", "standard", "advanced", "artifact", undefined], `${contract.id}:${effect.gearId}`).toContain(item?.tier);
+          expect(item?.tier, `${contract.id}: ordinary Missions cannot directly grant Artifacts`).not.toBe("artifact");
         }
       }
+      expect(contract.reward.effects.some((effect) => effect.type === "gain_note"), `${contract.id}: gain_note is display prose, not a Mission mechanic`).toBe(false);
     }
   });
 });

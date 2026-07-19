@@ -63,7 +63,7 @@ describe("legacy contract promotion", () => {
     promotedContractIds.forEach((contractId) => {
       const contract = contracts.get(contractId);
       expect(contract).toBeDefined();
-      expect(effectContainsHeat(contract!.reward)).toBe(false);
+      expect(contract!.reward.effects.some(effectContainsHeat)).toBe(false);
     });
   });
 });

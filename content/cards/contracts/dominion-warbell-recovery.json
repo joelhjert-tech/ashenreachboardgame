@@ -10,7 +10,11 @@
     "target": 1
   },
   "reward": {
-    "type": "gain_gear",
-    "gearId": "red-march-warbell"
+    "effects": [
+      {
+        "type": "gain_gear",
+        "gearId": "red-march-bell"
+      }
+    ]
   }
 }

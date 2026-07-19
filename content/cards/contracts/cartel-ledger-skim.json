@@ -8,7 +8,6 @@
     "target": 2
   },
   "reward": {
-    "type": "sequence",
     "effects": [
       {
         "type": "gain_trophy",

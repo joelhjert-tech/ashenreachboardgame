@@ -78,19 +78,43 @@ const contractCardBaseSchema = z.object({
   objective: contractObjectiveSchema
 });
 
+export const authoredMissionRewardSchema = z.object({
+  effects: z.array(authoredEffectSchema),
+  displayText: z.string().min(1).optional(),
+  completionText: z.string().min(1).optional()
+}).strict();
+
+export const missionRewardSchema = z.object({
+  effects: z.array(effectSchema),
+  displayText: z.string().min(1).optional(),
+  completionText: z.string().min(1).optional()
+}).strict();
+
+const legacyMissionRewardObjectSchema = z.object({
+  effects: z.array(legacyCompatibleEffectSchema),
+  displayText: z.string().min(1).optional(),
+  completionText: z.string().min(1).optional()
+}).strict();
+
+export const legacyCompatibleMissionRewardSchema = z.union([
+  legacyMissionRewardObjectSchema,
+  legacyCompatibleEffectSchema.transform((effect) => ({ effects: [effect] }))
+]);
+
 export const authoredContractCardSchema = contractCardBaseSchema.extend({
-  reward: authoredEffectSchema
+  reward: authoredMissionRewardSchema
 });
 
 export const contractCardSchema = contractCardBaseSchema.extend({
-  reward: effectSchema
+  reward: missionRewardSchema
 });
 
 export const legacyCompatibleContractCardSchema = contractCardBaseSchema.extend({
-  reward: legacyCompatibleEffectSchema
+  reward: legacyCompatibleMissionRewardSchema
 });
 
 export type FactionGiver = z.infer<typeof factionGiverSchema>;
 export type ContractObjective = z.infer<typeof contractObjectiveSchema>;
+export type MissionReward = z.infer<typeof missionRewardSchema>;
 export type ContractCard = z.infer<typeof contractCardSchema>;
 export type LegacyCompatibleContractCard = z.infer<typeof legacyCompatibleContractCardSchema>;

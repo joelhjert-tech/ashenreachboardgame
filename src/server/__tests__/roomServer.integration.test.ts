@@ -219,7 +219,7 @@ function createContracts(): Map<string, ContractCard> {
         factionGiver: "Glass Choir",
         text: "The Choir will scrub one mark from your trail if you silence a single hunter on their listening road.",
         objective: { type: "defeatCount", target: 1 },
-        reward: { type: "gain_note", text: "Legacy contract reward retired." }
+        reward: { effects: [], completionText: "Legacy contract reward retired." }
       }
     ],
     [
@@ -230,7 +230,7 @@ function createContracts(): Map<string, ContractCard> {
         factionGiver: "Pale Cartels",
         text: "Carry a route marker through hostile ground and report a safe crossing.",
         objective: { type: "defeatCount", target: 1 },
-        reward: { type: "gain_note", text: "You banked a safer crossing for the table." }
+        reward: { effects: [], completionText: "You banked a safer crossing for the table." }
       }
     ],
     [
@@ -241,7 +241,7 @@ function createContracts(): Map<string, ContractCard> {
         factionGiver: "Veyr Clans",
         text: "Put down a marked threat before it drags another caravan into the dust.",
         objective: { type: "defeatCount", target: 2 },
-        reward: { type: "gain_note", text: "Legacy contract reward retired." }
+        reward: { effects: [], completionText: "Legacy contract reward retired." }
       }
     ],
     [
@@ -252,7 +252,7 @@ function createContracts(): Map<string, ContractCard> {
         factionGiver: "Meridian Compact",
         text: "Deliver a sealed ember message to the borderlight before the ash eats the wax.",
         objective: { type: "defeatCount", target: 1 },
-        reward: { type: "gain_note", text: "The Compact owes you a clean favor." }
+        reward: { effects: [], completionText: "The Compact owes you a clean favor." }
       }
     ],
     [
@@ -263,7 +263,7 @@ function createContracts(): Map<string, ContractCard> {
         factionGiver: "Kaldr Dominion",
         text: "Hold the line at a broken span long enough for the wardens to pass.",
         objective: { type: "defeatCount", target: 2 },
-        reward: { type: "gain_note", text: "The span holds for one more route." }
+        reward: { effects: [], completionText: "The span holds for one more route." }
       }
     ]
   ]);

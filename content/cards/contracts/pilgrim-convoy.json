@@ -10,7 +10,7 @@
     "target": 1
   },
   "reward": {
-    "type": "gain_note",
-    "text": "The convoy survived the span and left a quiet toll credit under your mark."
+    "effects": [],
+    "completionText": "The convoy survived the span and left a quiet toll credit under your mark."
   }
 }

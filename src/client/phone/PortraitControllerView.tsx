@@ -392,15 +392,19 @@ function describeActiveContractProgress(contract: ContractCard, progress: number
 function describeContractReward(contract: ContractCard): string {
   const reward = contract.reward;
 
-  if (!reward || typeof reward !== "object") {
-    return "Reward listed on contract.";
-  }
-
-  if ("type" in reward && typeof reward.type === "string") {
-    return reward.type
+  if (!reward) return "Completed Mission credential.";
+  const normalized = Array.isArray((reward as { effects?: unknown }).effects)
+    ? reward as { effects: Array<{ type: string; [key: string]: unknown }>; displayText?: string; completionText?: string }
+    : { effects: [reward as { type: string; [key: string]: unknown }] };
+  if (normalized.displayText) return normalized.displayText;
+  if (normalized.effects.length === 0) return normalized.completionText ?? "Completed Mission credential.";
+  if (normalized.effects.length > 1) return "Bundled mission reward.";
+  const effect = normalized.effects[0]!;
+  if (typeof effect.type === "string") {
+    return effect.type
       .replace(/_/g, " ")
       .replace(/([a-z])([A-Z])/g, "$1 $2")
-      .replace(/\b\w/g, (letter) => letter.toUpperCase());
+      .replace(/\b\w/g, (letter: string) => letter.toUpperCase());
   }
 
   return "Contract reward.";

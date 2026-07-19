@@ -122,7 +122,10 @@ function normalizeLegacyGameState(state: LegacyCompatibleGameState): GameState {
     })),
     availableContracts: state.availableContracts.map((contract) => ({
       ...contract,
-      reward: normalizeLegacyEncounterEffect(contract.reward)
+      reward: {
+        ...contract.reward,
+        effects: contract.reward.effects.map(normalizeLegacyEncounterEffect)
+      }
     })),
     shopStockReveals: state.shopStockReveals.map((reveal) => ({
       ...reveal,

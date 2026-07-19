@@ -289,6 +289,14 @@ export interface PrivateCharacter {
   afflictions?: PlayerAfflictionSummary;
   activeContract: { contractId: string; progress: number } | null;
   completedContracts?: string[];
+  completedMissionRecords?: Array<{
+    missionId: string;
+    completedByPlayerId: string;
+    completedAtSequence: number;
+    rewardGranted: boolean;
+    spent: boolean;
+    spentFor?: string;
+  }>;
   heldGear: GearItem[];
   equippedGear: Record<GearSlot, string | null>;
   equippedGearInstances?: Record<GearSlot, string | null>;
@@ -467,7 +475,11 @@ export interface ContractCard {
     | { type: "spaceTextResolved"; effectKey: string; label: string; target: number }
     | { type: "multiStopRoute"; ordered: boolean; targets: Array<{ id: string; type: "spaceId" | "tag"; value: string; label: string }> }
     | { type: "shopTransaction"; action: "buyEquipment" | "sellGear" | "repairGear" | "upgradeGear" | "trade"; requiredShopType?: string; requiredSectorId?: string; requiredCount: number; minimumSalvageSpent?: number; label: string };
-  reward?: unknown;
+  reward?: {
+    effects: Array<{ type: string; amount?: number; [key: string]: unknown }>;
+    displayText?: string;
+    completionText?: string;
+  } | { type: string; amount?: number; [key: string]: unknown };
 }
 
 export interface PublicTileChallenge {

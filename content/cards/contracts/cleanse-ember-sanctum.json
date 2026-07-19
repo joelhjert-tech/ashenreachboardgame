@@ -10,16 +10,12 @@
     "target": 1
   },
   "reward": {
-    "type": "sequence",
     "effects": [
       {
         "type": "heal_wound",
         "amount": 1
-      },
-      {
-        "type": "gain_note",
-        "text": "The sanctum cooled enough to leave a clean ember blessing behind."
       }
-    ]
+    ],
+    "completionText": "The sanctum cooled enough to leave a clean ember blessing behind."
   }
 }

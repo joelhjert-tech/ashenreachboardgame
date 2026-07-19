@@ -8,16 +8,12 @@
     "target": 2
   },
   "reward": {
-    "type": "sequence",
     "effects": [
       {
         "type": "gain_gear",
-        "gearId": "veil-hook"
-      },
-      {
-        "type": "gain_note",
-        "text": "The Lantern Run paid out in contraband route access."
+        "gearId": "black-route-fuse"
       }
-    ]
+    ],
+    "completionText": "The Lantern Run paid out in contraband route access."
   }
 }

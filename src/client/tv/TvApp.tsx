@@ -95,11 +95,15 @@ function getSessionModeLabel(sessionMode: SessionMode): string {
 function formatContractRewardSummary(contract: ContractCard): string {
   const reward = contract.reward;
 
-  if (!reward || typeof reward !== "object" || !("type" in reward)) {
-    return "Reward on completion";
-  }
-
-  const rewardType = String((reward as { type?: unknown }).type ?? "");
+  if (!reward) return "Reward: completed Mission";
+  const normalized = Array.isArray((reward as { effects?: unknown }).effects)
+    ? reward as { effects: Array<{ type: string; amount?: number; [key: string]: unknown }>; displayText?: string }
+    : { effects: [reward as { type: string; amount?: number; [key: string]: unknown }] };
+  if (normalized.displayText) return normalized.displayText;
+  if (normalized.effects.length === 0) return "Reward: completed Mission";
+  if (normalized.effects.length > 1) return "Reward: bundled payout";
+  const effect = normalized.effects[0]!;
+  const rewardType = effect.type;
 
   switch (rewardType) {
     case "gain_gear":
@@ -107,13 +111,9 @@ function formatContractRewardSummary(contract: ContractCard): string {
     case "gain_follower":
       return "Reward: follower";
     case "gain_trophy":
-      return `Reward: ${(reward as { amount?: number }).amount ?? 1} trophy`;
+      return `Reward: ${"amount" in effect ? effect.amount : 1} trophy`;
     case "heal_wound":
-      return `Reward: heal ${(reward as { amount?: number }).amount ?? 1} wound`;
-    case "gain_note":
-      return "Reward: field note";
-    case "sequence":
-      return "Reward: bundled payout";
+      return `Reward: heal ${"amount" in effect ? effect.amount : 1} wound`;
     default:
       return `Reward: ${toTitleCase(rewardType || "completion")}`;
   }

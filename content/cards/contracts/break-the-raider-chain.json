@@ -8,16 +8,12 @@
     "target": 2
   },
   "reward": {
-    "type": "sequence",
     "effects": [
       {
         "type": "gain_trophy",
         "amount": 1
-      },
-      {
-        "type": "gain_note",
-        "text": "The raider chain broke, and one hard road now answers to your name."
       }
-    ]
+    ],
+    "completionText": "The raider chain broke, and one hard road now answers to your name."
   }
 }

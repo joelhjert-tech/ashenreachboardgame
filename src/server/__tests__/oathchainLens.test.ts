@@ -7,7 +7,7 @@ import type { GameState } from "../../game/schema/session.schema.js";
 import { createInitialSessionState } from "../sessionState.js";
 import { createPhoneProjection, createTvProjection, deriveOathchainTargets, GameRoomServer, getOathchainContractSignature } from "../roomServer.js";
 
-const reward = { type: "gain_salvage", amount: 1 } as const;
+const reward: ContractCard["reward"] = { effects: [{ type: "gain_salvage", amount: 1 }] };
 
 function contract(objective: ContractCard["objective"], id = "lens-contract"): ContractCard {
   return { id, name: "Lens Contract", factionGiver: "Glass Choir", text: "Follow the visible promise.", objective, reward };

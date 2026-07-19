@@ -63,6 +63,27 @@ export const equippedGearInstancesSchema = z.object({
   utility: z.string().min(1).nullable()
 });
 
+export const completedMissionRecordSchema = z.object({
+  missionId: z.string().min(1),
+  completedByPlayerId: z.string().min(1),
+  completedAtSequence: z.number().int().min(0),
+  rewardGranted: z.boolean(),
+  spent: z.boolean(),
+  spentFor: z.string().min(1).optional()
+}).strict();
+
+const completedMissionRecordsSchema = z.array(completedMissionRecordSchema).superRefine((records, context) => {
+  const missionIds = new Set<string>();
+  const sequences = new Set<number>();
+  records.forEach((record, index) => {
+    if (missionIds.has(record.missionId)) context.addIssue({ code: "custom", path: [index, "missionId"], message: "Completed Mission IDs must be unique" });
+    if (sequences.has(record.completedAtSequence)) context.addIssue({ code: "custom", path: [index, "completedAtSequence"], message: "Completed Mission sequence values must be unique" });
+    if (record.spent !== Boolean(record.spentFor)) context.addIssue({ code: "custom", path: [index, "spentFor"], message: "Spent Missions require a spending purpose; unspent Missions cannot have one" });
+    missionIds.add(record.missionId);
+    sequences.add(record.completedAtSequence);
+  });
+});
+
 const characterFields = {
   id: z.string().min(1),
   name: z.string().min(1),
@@ -80,6 +101,7 @@ const characterFields = {
   scars: z.array(z.string()),
   activeContract: activeContractSchema,
   completedContracts: z.array(z.string().min(1)).optional(),
+  completedMissionRecords: completedMissionRecordsSchema.optional(),
   heldGear: z.array(gearItemSchema),
   equippedGear: equippedGearSchema,
   equippedGearInstances: equippedGearInstancesSchema.optional(),
@@ -131,6 +153,7 @@ export type Ability = z.infer<typeof abilitySchema>;
 export type TrophyPileEntry = z.infer<typeof trophyPileEntrySchema>;
 export type CharacterStatus = z.infer<typeof characterStatusSchema>;
 export type ActiveContract = z.infer<typeof activeContractSchema>;
+export type CompletedMissionRecord = z.infer<typeof completedMissionRecordSchema>;
 export type EquippedGear = z.infer<typeof equippedGearSchema>;
 export type EquippedGearInstances = z.infer<typeof equippedGearInstancesSchema>;
 export type Character = z.infer<typeof characterSchema>;

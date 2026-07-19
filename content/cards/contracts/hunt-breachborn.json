@@ -8,16 +8,12 @@
     "target": 2
   },
   "reward": {
-    "type": "sequence",
     "effects": [
       {
         "type": "gain_trophy",
         "amount": 1
-      },
-      {
-        "type": "gain_note",
-        "text": "The breachborn trail is cut clean enough for the clans to follow without vanishing."
       }
-    ]
+    ],
+    "completionText": "The breachborn trail is cut clean enough for the clans to follow without vanishing."
   }
 }

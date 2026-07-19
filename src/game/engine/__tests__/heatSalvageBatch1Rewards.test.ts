@@ -95,7 +95,7 @@ describe("Heat-to-Salvage reward batch 1", () => {
         requiredCount: 1,
         minimumSalvageSpent: 1
       },
-      reward: { type: "gain_salvage", amount: 1 }
+      reward: { effects: [{ type: "gain_salvage", amount: 1 }] }
     });
     expect(raider).toMatchObject({
       id: "latchspire-raider",

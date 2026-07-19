@@ -10,7 +10,11 @@
     "target": 1
   },
   "reward": {
-    "type": "gain_gear",
-    "gearId": "blackstar-ampoule"
+    "effects": [
+      {
+        "type": "gain_gear",
+        "gearId": "cinder-stim-ampoule"
+      }
+    ]
   }
 }
