@@ -338,6 +338,13 @@ export interface ShopStockRevealedAction extends BaseAction {
   summary: string;
 }
 
+export interface ShopBrowseSelectedAction extends BaseAction {
+  type: "SHOP_BROWSE_SELECTED";
+  sectorId: string;
+  view: "categories" | "equipment" | "supplies" | "artifacts" | "services" | "sell";
+  selectedId: string | null;
+}
+
 export interface ShopPurchaseResolvedAction extends BaseAction {
   type: "SHOP_PURCHASE_RESOLVED";
   serviceId: string;
@@ -701,6 +708,7 @@ export type GameAction =
   | TableInteractionAction
   | ShopServiceResolvedAction
   | ShopStockRevealedAction
+  | ShopBrowseSelectedAction
   | ShopPurchaseResolvedAction
   | ShopSellResolvedAction
   | ShopSkippedAction
@@ -957,6 +965,12 @@ export type ClientIntent =
       seatId: string;
       serviceId: string;
       itemInstanceId?: string;
+    }
+  | {
+      type: "SHOP_BROWSE_SELECTED";
+      seatId: string;
+      view: "categories" | "equipment" | "supplies" | "artifacts" | "services" | "sell";
+      selectedId?: string | null;
     }
   | {
       type: "SHOP_PURCHASE_REQUESTED";

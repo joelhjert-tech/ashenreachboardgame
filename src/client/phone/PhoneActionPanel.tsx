@@ -1643,6 +1643,21 @@ function PhoneShopPanel({
   const artifactChoiceActive = revealedStock.some((item) => item.cost.completedContracts !== undefined);
   const visibleShopDeltas = shopResultDeltas(resultDeltas);
   const showRecentOutcome = Boolean(recentOutcome && (purchasedItemName || soldItemName || visibleShopDeltas.length > 0));
+  const shopView = artifactChoiceActive
+    ? "artifacts"
+    : shopEncounter.browseSelection?.view ?? (revealedStock.length > 0 ? "equipment" : "categories");
+  const stockViews = new Set(["equipment", "supplies", "artifacts"]);
+
+  function selectShopView(
+    view: "categories" | "equipment" | "supplies" | "artifacts" | "services" | "sell",
+    serviceId?: string
+  ): void {
+    if (serviceId && shopEncounter?.browseSelection?.view !== view) {
+      onIntent({ type: "SHOP_SERVICE_REQUESTED", seatId, serviceId });
+      return;
+    }
+    onIntent({ type: "SHOP_BROWSE_SELECTED", seatId, view, selectedId: null });
+  }
 
   function confirmPurchase(cardId: string): void {
     setPendingCardId(cardId);
@@ -1727,7 +1742,31 @@ function PhoneShopPanel({
         </div>
       ) : (
         <>
-          {serviceActions.length > 0 && revealedStock.length === 0 ? (
+          <nav className="phone-shop-category-rail" aria-label="Shop categories">
+            {shopView !== "categories" ? (
+              <GameButton type="button" tone="secondary" onClick={() => selectShopView("categories")}>All categories</GameButton>
+            ) : null}
+            {shopEncounter.services.some((service) => service.id === "buy-gear") ? (
+              <GameButton type="button" tone="shop" onClick={() => selectShopView("equipment", "buy-gear")}>Equipment</GameButton>
+            ) : null}
+            {shopEncounter.services.some((service) => service.id === "buy-supplies") ? (
+              <GameButton type="button" tone="shop" onClick={() => selectShopView("supplies", "buy-supplies")}>Supplies</GameButton>
+            ) : null}
+            {shopEncounter.services.some((service) => service.id === "trade-missions-for-artifact") ? (
+              <GameButton type="button" tone="shop" onClick={() => selectShopView("artifacts", "trade-missions-for-artifact")}>Artifacts</GameButton>
+            ) : null}
+            {serviceActions.some((service) => !["buy-gear", "buy-supplies", "trade-missions-for-artifact"].includes(service.id)) ? (
+              <GameButton type="button" tone="shop" onClick={() => selectShopView("services")}>Services</GameButton>
+            ) : null}
+            {(shopEncounter.sellableCount ?? sellInventory.filter((item) => item.sellable).length) > 0 ? (
+              <GameButton type="button" tone="shop" onClick={() => selectShopView("sell")}>Sell</GameButton>
+            ) : null}
+          </nav>
+          {shopView === "categories" && shopEncounter.services.length === 0 && (shopEncounter.sellableCount ?? sellInventory.filter((item) => item.sellable).length) === 0 ? (
+            <p className="phone-shop-empty-stock">No stock or service categories are currently operating.</p>
+          ) : null}
+
+          {(shopView === "categories" || shopView === "services") && serviceActions.length > 0 && revealedStock.length === 0 ? (
             <div className="phone-shop-services" aria-label="Shop services">
               <div className="phone-shop-section-heading">
                 <span>Services</span>
@@ -1802,7 +1841,7 @@ function PhoneShopPanel({
             </div>
           ) : null}
 
-          <div className="phone-shop-stock" aria-label="Revealed shop stock">
+          {stockViews.has(shopView) ? <div className="phone-shop-stock" aria-label="Revealed shop stock">
             <div className="phone-shop-section-heading">
               <span>Stock</span>
               <small>{revealedStock.length > 0
@@ -1840,7 +1879,10 @@ function PhoneShopPanel({
                           className="phone-button phone-button-primary"
                           disabled={!item.affordable || isPending || isPurchased}
                           disabledReason={disabledReason ?? (isPending ? (isArtifactChoice ? "Choosing..." : "Buying...") : isPurchased ? "Acquired" : undefined)}
-                          onClick={() => setConfirmingCardId(item.cardId)}
+                          onClick={() => {
+                            onIntent({ type: "SHOP_BROWSE_SELECTED", seatId, view: shopView as "equipment" | "supplies" | "artifacts", selectedId: item.cardId });
+                            setConfirmingCardId(item.cardId);
+                          }}
                         >
                           {isPending ? (isArtifactChoice ? "Choosing..." : "Buying...") : isPurchased ? "Acquired" : isArtifactChoice ? "Choose" : "Buy"}
                         </GameButton>
@@ -1852,9 +1894,9 @@ function PhoneShopPanel({
             ) : (
               <p className="phone-shop-empty-stock">Stock has not been revealed. Choose Browse Equipment above.</p>
             )}
-          </div>
+          </div> : null}
 
-          <div className="phone-shop-sell" aria-label="Sell held items">
+          {shopView === "sell" ? <div className="phone-shop-sell" aria-label="Sell held items">
             <div className="phone-shop-section-heading">
               <span>Sell</span>
               <small>{sellInventory.length > 0 ? "Trade held gear for Salvage." : "Only sellable carried gear appears here."}</small>
@@ -1887,7 +1929,10 @@ function PhoneShopPanel({
                           className="phone-button phone-button-primary"
                           disabled={!item.sellable || isPending || isSold}
                           disabledReason={disabledReason ?? (isPending ? "Selling..." : isSold ? "Sold" : undefined)}
-                          onClick={() => setConfirmingSellGearId(itemKey)}
+                          onClick={() => {
+                            onIntent({ type: "SHOP_BROWSE_SELECTED", seatId, view: "sell", selectedId: itemKey });
+                            setConfirmingSellGearId(itemKey);
+                          }}
                         >
                           {isPending ? "Selling..." : isSold ? "Sold" : "Sell"}
                         </GameButton>
@@ -1899,7 +1944,7 @@ function PhoneShopPanel({
             ) : (
               <p className="phone-shop-empty-stock">No sellable items.</p>
             )}
-          </div>
+          </div> : null}
 
           {confirmingItem ? (
             <div className="phone-shop-confirm phone-shop-panel__confirm" role="dialog" aria-label={confirmingItem.cost.completedContracts ? "Confirm Artifact" : "Confirm purchase"}>

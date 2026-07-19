@@ -1380,29 +1380,12 @@ describe("PhoneActionPanel", () => {
     );
     expect(within(unaffordableCard as HTMLElement).getByRole("button", { name: /buy/i })).toBeDisabled();
     expect(unaffordableCard).toHaveTextContent(/ignore until you can pay or free the slot/i);
-    expect(screen.getAllByText(/^sell$/i).length).toBeGreaterThan(0);
-    expect(screen.getByText(/veil hook/i)).toBeInTheDocument();
-    expect(screen.getByText(/1 salvage/i)).toBeInTheDocument();
-    const nonSellableCard = screen.getByText(/oath-chain ledger/i).closest("article");
-    expect(nonSellableCard).not.toBeNull();
-    expect(within(nonSellableCard as HTMLElement).getByRole("button", { name: /sell/i })).toBeDisabled();
-    expect(within(nonSellableCard as HTMLElement).getAllByText(/cannot sell this item/i).length).toBeGreaterThan(0);
-    const sellableCard = screen.getByText(/veil hook/i).closest("article");
-    expect(sellableCard).not.toBeNull();
-    expect(sellableCard).toHaveClass("phone-wrap-card", "phone-wrap-card--shop", "phone-shop-sell-card");
-    expect(sellableCard?.querySelector(".phone-wrap-card__media")).toBeInTheDocument();
-    expect(sellableCard?.querySelector(".phone-wrap-card__image")).toHaveAttribute("src", "/assets/cards/fallbacks/equipment.svg");
-    expect(sellableCard?.querySelector(".phone-wrap-card__details")).toHaveTextContent(/sell value: 1 salvage/i);
-    expect(sellableCard?.querySelector(".phone-wrap-card__actions")).toContainElement(
-      within(sellableCard as HTMLElement).getByRole("button", { name: /^sell$/i })
-    );
-    fireEvent.click(within(sellableCard as HTMLElement).getByRole("button", { name: /^sell$/i }));
-    expect(screen.getByRole("dialog", { name: /confirm sale/i })).toHaveTextContent(/sell veil hook for 1 salvage/i);
-    fireEvent.click(screen.getByRole("button", { name: /confirm sale/i }));
+    fireEvent.click(screen.getByRole("button", { name: /^sell$/i }));
     expect(onIntent).toHaveBeenCalledWith({
-      type: "SHOP_SELL_REQUESTED",
+      type: "SHOP_BROWSE_SELECTED",
       seatId: "seat-1",
-      gearId: "veil-hook"
+      view: "sell",
+      selectedId: null
     });
     fireEvent.click(screen.getByRole("button", { name: /skip \/ continue/i }));
     expect(onIntent).toHaveBeenCalledWith({
@@ -1736,10 +1719,7 @@ describe("PhoneActionPanel", () => {
       />
     );
 
-    expect(screen.getAllByText(/stock has not been revealed/i)).toHaveLength(1);
-    expect(screen.getAllByText(/no sellable items/i)).toHaveLength(1);
-    expect(screen.getAllByText(/choose browse equipment/i).length).toBeGreaterThan(0);
-    expect(screen.getByText(/only sellable carried gear appears here/i)).toBeInTheDocument();
+    expect(screen.getByText(/no stock or service categories are currently operating/i)).toBeInTheDocument();
     expect(screen.getByTestId("phone-shop-category-icon")).toHaveAttribute("src", "/assets/riftfall/ui/shop-category-market.svg");
     expect(screen.getByText(/purchased: ashlock carbine/i)).toBeInTheDocument();
     expect(screen.getAllByText(/Item bought: Ashlock Carbine/i).length).toBeGreaterThan(0);

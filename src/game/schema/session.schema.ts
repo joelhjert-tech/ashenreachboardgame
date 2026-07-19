@@ -330,6 +330,14 @@ export const shopStockRevealSchema = z.object({
   createdAt: z.string().min(1)
 });
 
+export const shopBrowseSelectionSchema = z.object({
+  seatId: z.string().min(1),
+  sectorId: z.string().min(1),
+  view: z.enum(["categories", "equipment", "supplies", "artifacts", "services", "sell"]),
+  selectedId: z.string().min(1).nullable(),
+  updatedAt: z.string().min(1)
+}).strict();
+
 export const legacyCompatibleShopStockRevealSchema = shopStockRevealSchema.extend({
   revealCost: z
     .object({
@@ -454,6 +462,7 @@ export const gameStateSchema = z.object({
   nemesisChampions: z.array(nemesisChampionSchema).default([]),
   nemesisNexusCountdowns: z.array(nemesisNexusCountdownSchema).default([]),
   shopStockReveals: z.array(shopStockRevealSchema).default([]),
+  shopBrowseSelection: shopBrowseSelectionSchema.nullable().optional(),
   movementRolls: z.record(z.string(), z.number().int().min(1)).optional(),
   normalMovementRollDetails: z.record(z.string(), normalMovementRollDetailSchema).optional(),
   movementRouteRevisions: z.record(z.string(), z.number().int().min(1)).optional(),
@@ -670,6 +679,7 @@ export type PlayerState = z.infer<typeof playerStateSchema>;
 export type NemesisChampion = z.infer<typeof nemesisChampionSchema>;
 export type NemesisNexusCountdown = z.infer<typeof nemesisNexusCountdownSchema>;
 export type ShopStockReveal = z.infer<typeof shopStockRevealSchema>;
+export type ShopBrowseSelection = z.infer<typeof shopBrowseSelectionSchema>;
 export type ScenarioPreparationState = z.infer<typeof scenarioPreparationStateSchema>;
 export type ScenarioConfrontationState = z.infer<typeof scenarioConfrontationStateSchema>;
 export type ScenarioResultState = z.infer<typeof scenarioResultStateSchema>;

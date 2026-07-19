@@ -1895,26 +1895,21 @@ describe("TvApp", () => {
     expect(overlay).toHaveTextContent(/tarek voss/i);
     expect(overlay).toHaveTextContent(/anchor market/i);
     expect(overlay).toHaveTextContent(/forge market/i);
-    expect(overlay).toHaveTextContent(/armoury/i);
-    expect(within(screen.getByTestId("host-shop-status-panel")).getByText(/salvage/i)).toBeInTheDocument();
-    expect(screen.getByTestId("host-shop-status-panel")).toHaveTextContent("6");
-    expect(screen.getByTestId("host-shop-status-panel")).toHaveTextContent(/sellable/i);
-    expect(screen.getByTestId("host-shop-status-panel")).toHaveTextContent("1");
-    expect(overlay).toHaveTextContent(/buy equipment/i);
-    expect(overlay).toHaveTextContent(/Deep Relic Search/i);
-    expect(overlay).toHaveTextContent(/1 Salvage/i);
+    expect(within(overlay).getByTestId("host-shop-buyer-salvage")).toHaveTextContent(/salvage/i);
+    expect(within(overlay).getByTestId("host-shop-buyer-salvage")).toHaveTextContent("6");
+    expect(overlay).toHaveTextContent(/equipment/i);
+    expect(overlay).toHaveTextContent(/services/i);
     expect(overlay).not.toHaveTextContent(/\b(?:Heat|Risk)\b/i);
     expect(overlay).not.toHaveTextContent(/buy supplies/i);
-    expect(within(overlay).getByTestId("host-shop-card-backdrop")).toBeInTheDocument();
-    expect(
-      within(overlay).getByTestId("host-shop-preview-service-buy-gear").querySelector(".host-shop-preview-media svg")
-    ).toBeInTheDocument();
+    expect(within(overlay).getByTestId("host-shop-category-chamber")).toBeInTheDocument();
+    expect(within(overlay).getByTestId("host-shop-category-equipment").querySelector("img"))
+      .toHaveAttribute("src", "/assets/riftfall/ui/shop/categories/equipment.svg");
     expect(within(overlay).getByTestId("result-delta-row")).toHaveTextContent(/Item bought: Ashlock Carbine/i);
     expect(within(overlay).getByTestId("result-delta-row")).toHaveTextContent(/-3 Salvage/i);
     expect(overlay).toHaveTextContent(/choose on player phone/i);
     expect(overlay).not.toHaveTextContent(/^vs$/i);
     expect(overlay).not.toHaveTextContent(/active operative/i);
-    expect(within(overlay).getByTestId("host-shop-fx-layer")).toBeInTheDocument();
+    expect(overlay.querySelector(".host-shop-atmosphere")).toBeInTheDocument();
     expect(screen.queryByTestId("host-battle-overlay")).not.toBeInTheDocument();
     expect(screen.queryByTestId("tv-movement-focus")).not.toBeInTheDocument();
 

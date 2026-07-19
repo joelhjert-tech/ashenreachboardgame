@@ -2386,7 +2386,7 @@ function TacticalMapPanel({
 
   return (
     <section className={`tv-command-stage${presentBattleChamber ? " tv-command-stage-battle-mode" : ""}${focusShopMode ? " tv-command-stage-shop-mode" : ""}${movementFocusMode ? " tv-command-stage-movement-focus" : ""}`}>
-      <div className="tv-command-map-shell" aria-hidden={presentBattleChamber || undefined} inert={presentBattleChamber || undefined}>
+      <div className="tv-command-map-shell" aria-hidden={(presentBattleChamber || focusShopMode) || undefined} inert={(presentBattleChamber || focusShopMode) || undefined}>
           <TacticalMapBoard
             patch={patch?.payload ?? null}
             previousPatch={visualTravel?.previousPatch ?? previousPatch?.payload ?? null}

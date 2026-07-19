@@ -1,267 +1,170 @@
-import type { CSSProperties, ReactElement } from "react";
-import { getBoardSpace } from "../../game/data/boardSpaces.js";
-import { getChallengeThemeStyle } from "../../game/ui/challengeTheme.js";
-import { ChallengeBadge } from "../shared/ChallengeBadge.js";
-import { CardArtImage } from "../shared/CardArtImage.js";
+import type { ReactElement } from "react";
 import { ResultDeltaRow } from "../shared/ResultDeltaChips.js";
-import { getGearCardArtId, getGearCardArtType } from "../shared/assetPaths.js";
-import type { CardImageType } from "../../game/assets/design/cardImageCatalog.js";
-import type { PublicPatchPayload, PublicPlayer, PublicShopCost, PublicShopEncounterState, ResultDelta, StatePatch, Stat } from "../shared/types.js";
-import { HostCinematicFxLayer } from "./HostCinematicFxLayer.js";
+import {
+  getCardArtPath,
+  getGearCardArtId,
+  getGearCardArtType,
+  getHostShopCategoryIconPath
+} from "../shared/assetPaths.js";
+import { HostImage } from "./HostImage.js";
+import type {
+  PublicPatchPayload,
+  PublicPlayer,
+  PublicShopCost,
+  PublicShopEncounterState,
+  ResultDelta,
+  StatePatch
+} from "../shared/types.js";
 import { isHostShopActive } from "./hostShopState.js";
+import type { CardImageType } from "../../game/assets/design/cardImageCatalog.js";
 
-type ShopStatus = "OPEN" | "BLOCKED" | "EXHAUSTED" | "DANGEROUS";
-type PreviewTone = "service" | "stock" | "sell" | "blocked" | "empty";
-type ShopIcon = "anvil" | "crate" | "repair" | "sell" | "lock" | "stock";
+type ShopView = "categories" | "equipment" | "supplies" | "artifacts" | "services" | "sell";
+type CategoryId = "items" | "equipment" | "artifacts" | "services" | "sell";
 
-interface ShopPreviewCard {
+interface ShopCategoryModel {
+  id: CategoryId;
+  view: ShopView;
+  label: string;
+  description: string;
+  count: number | null;
+  available: boolean;
+  blockedReason: string | null;
+}
+
+interface ShopOfferModel {
   id: string;
-  eyebrow: string;
-  title: string;
-  cost: string;
-  summary: string;
-  footer: string;
-  tone: PreviewTone;
-  enabled: boolean;
-  icon: ShopIcon;
-  artCardId?: string;
-  artCardType?: CardImageType;
+  name: string;
+  kind: "stock" | "service";
+  category: string;
+  rules: string;
+  lore: string | null;
+  rarity: string;
+  price: string;
+  stock: number;
+  available: boolean;
+  disabledReason: string | null;
+  artCardId: string | null;
+  artCardType: CardImageType | null;
 }
 
 export interface HostShopDisplayModel {
   playerName: string;
-  salvage: number | null;
+  operativeName: string;
+  salvage: number;
   shopName: string;
   sectorName: string;
   shopType: string;
-  shopCategory: string;
-  status: ShopStatus;
-  statusCopy: string;
-  stockCount: number;
-  sellableCount: number;
-  threatLockCount: number;
-  blockedReasonText: string | null;
-  blockingLanes: Array<{ name: string; stat?: Stat; value?: number }>;
-  previewCards: ShopPreviewCard[];
-  stockRevealed: boolean;
-  riskActive: boolean;
-  transactionComplete: boolean;
-  transactionTitle: string | null;
-  outcome: string | null;
-  guidance: string;
+  status: "open" | "locked" | "exhausted" | "dangerous";
+  view: ShopView;
+  categories: ShopCategoryModel[];
+  offers: ShopOfferModel[];
+  selectedOfferId: string | null;
+  blockedReason: string | null;
+  blockingThreatNames: string[];
+  privateSelection: boolean;
+  recentOutcome: PublicShopEncounterState["recentOutcome"];
   resultDeltas: ResultDelta[];
 }
 
-function toTitleCase(value: string): string {
-  return value
-    .replace(/[_-]+/g, " ")
-    .replace(/\b\w/g, (letter) => letter.toUpperCase());
+function titleCase(value: string): string {
+  return value.replace(/[_-]+/g, " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
 }
 
 function formatCost(cost: PublicShopCost): string {
-  const entries = [
+  const parts = [
     cost.salvage !== undefined ? `${cost.salvage} Salvage` : null,
     cost.wounds !== undefined ? `${cost.wounds} Wound${cost.wounds === 1 ? "" : "s"}` : null,
     cost.trophies !== undefined ? `${cost.trophies} Trophies` : null,
-    cost.completedContracts !== undefined ? `${cost.completedContracts} Completed Contracts` : null,
+    cost.completedContracts !== undefined ? `${cost.completedContracts} Contracts` : null,
     cost.scars !== undefined ? `${cost.scars} Scars` : null
-  ].filter((entry): entry is string => Boolean(entry));
-
-  return entries.length > 0 ? entries.join(" + ") : "0";
-}
-
-function formatShopCategory(value: string | undefined): string {
-  return value ? toTitleCase(value) : "Public Shop";
-}
-
-function servicePreview(service: PublicShopEncounterState["services"][number], completedContracts = 0): ShopPreviewCard {
-  const isSellService = service.id === "sell-gear";
-  const serviceText = `${service.id} ${service.label}`.toLowerCase();
-  const icon: ShopIcon = isSellService
-    ? "sell"
-    : serviceText.includes("repair") || serviceText.includes("restore") || serviceText.includes("heal")
-      ? "repair"
-      : serviceText.includes("buy") || serviceText.includes("supply") || serviceText.includes("stock")
-        ? "crate"
-        : "anvil";
-
-  return {
-    id: `service-${service.id}`,
-    eyebrow: service.shopCategory ? formatShopCategory(service.shopCategory) : isSellService ? "Sell" : "Service",
-    title: service.label,
-    cost: service.cost.completedContracts !== undefined
-      ? `${completedContracts}/${service.cost.completedContracts} Completed Contracts`
-      : formatCost(service.cost),
-    summary: service.enabled ? "Confirm this service from the active player's phone." : (service.disabledReason ?? "Unavailable"),
-    footer: service.risk ?? (service.enabled ? "Phone confirms" : "Unavailable"),
-    tone: isSellService ? "sell" : service.risk ? "stock" : "service",
-    enabled: service.enabled,
-    icon
-  };
-}
-
-function stockPreview(stock: NonNullable<PublicShopEncounterState["revealedStock"]>[number]): ShopPreviewCard {
-  const artCardType = stock.type === "artifact" ? "artifact" : getGearCardArtType(stock.cardId);
-  const artCardId = stock.type === "artifact" ? getGearCardArtId(stock.cardId, "artifact") : getGearCardArtId(stock.cardId);
-
-  return {
-    id: `stock-${stock.cardId}`,
-    eyebrow: stock.shopCategories?.[0] ? formatShopCategory(stock.shopCategories[0]) : toTitleCase(stock.type),
-    title: stock.name,
-    cost: formatCost(stock.cost),
-    summary: stock.summary,
-    footer: stock.disabledReason ?? (stock.affordable ? "Available" : "Not enough Salvage"),
-    tone: "stock",
-    enabled: stock.affordable && !stock.disabledReason,
-    icon: "stock",
-    artCardType,
-    artCardId
-  };
-}
-
-function blockedPreview(model: Pick<HostShopDisplayModel, "blockedReasonText" | "blockingLanes">): ShopPreviewCard {
-  const threatName = model.blockingLanes[0]?.name;
-
-  return {
-    id: "blocked-shop",
-    eyebrow: "Threat Lock",
-    title: threatName ?? "Shop Blocked",
-    cost: "Clear threat",
-    summary: model.blockedReasonText ?? "Shop blocked by threat.",
-    footer: "Trade suspended",
-    tone: "blocked",
-    enabled: false,
-    icon: "lock"
-  };
-}
-
-function emptyPreview(): ShopPreviewCard {
-  return {
-    id: "empty-stock",
-    eyebrow: "Stock",
-    title: "No equipment available",
-    cost: "-",
-    summary: "No equipment stock is available from this shop right now.",
-    footer: "Awaiting phone action",
-    tone: "empty",
-    enabled: false,
-    icon: "crate"
-  };
-}
-
-function buildPreviewCards(shopEncounter: PublicShopEncounterState, isBlocked: boolean): ShopPreviewCard[] {
-  if (isBlocked) {
-    return [];
-  }
-
-  const stockCards = (shopEncounter.revealedStock ?? []).slice(0, 4).map(stockPreview);
-
-  if (stockCards.length > 0) {
-    return stockCards;
-  }
-
-  return shopEncounter.services.slice(0, 4).map((service) => servicePreview(service, shopEncounter.activePlayer.completedContracts));
-}
-
-function buildShopType(shopEncounter: PublicShopEncounterState): string {
-  if (shopEncounter.shopType) {
-    return shopEncounter.shopType;
-  }
-
-  const boardSpace = getBoardSpace(shopEncounter.sectorId);
-  const serviceTags = boardSpace?.tags.filter((tag) => tag === "shop" || tag === "risk-shop" || tag === "salvage" || tag === "recovery" || tag === "shrine") ?? [];
-
-  return serviceTags.map(toTitleCase).join(" / ") || toTitleCase(boardSpace?.tier ?? "shop");
+  ].filter((part): part is string => Boolean(part));
+  return parts.length ? parts.join(" + ") : "No payment";
 }
 
 function shopResultDeltas(deltas: ResultDelta[] | null | undefined): ResultDelta[] {
-  const shopTypes = new Set<ResultDelta["type"]>(["itemBought", "itemSold", "salvage", "wound", "scarGained", "shopUnlocked"]);
-
-  return (deltas ?? []).filter((delta) => delta.source?.startsWith("shop:") || shopTypes.has(delta.type));
+  return (deltas ?? []).filter((delta) => delta.source?.startsWith("shop:") || ["itemBought", "itemSold", "salvage", "wound", "scarGained"].includes(delta.type));
 }
 
-function buildFromPayload(shopEncounter: PublicShopEncounterState, resultDeltas: ResultDelta[]): HostShopDisplayModel {
-  const isBlocked = shopEncounter.status === "locked" || shopEncounter.blocked === true || shopEncounter.blockingThreats.length > 0;
-  const status: ShopStatus = isBlocked
-    ? "BLOCKED"
-    : shopEncounter.status === "dangerous"
-      ? "DANGEROUS"
-      : shopEncounter.status === "exhausted"
-        ? "EXHAUSTED"
-        : "OPEN";
-  const stockCount = shopEncounter.revealedStock?.length ?? 0;
-  const sellableCount = shopEncounter.sellInventory?.filter((item) => item.sellable).length ?? 0;
-  const blockingLanes = shopEncounter.blockingThreats.map((threat) => ({
-    name: threat.name,
-    stat: threat.challenge?.stat,
-    value: threat.challenge?.value
-  }));
-  const baseCards = buildPreviewCards(shopEncounter, isBlocked);
-  const blockedReasonText = shopEncounter.blockedReasonText ?? (isBlocked ? "Shop blocked by threat." : null);
-
-  return {
-    playerName: shopEncounter.activePlayer.name,
-    salvage: shopEncounter.activePlayer.salvage,
-    shopName: shopEncounter.shopName,
-    sectorName: shopEncounter.sectorName,
-    shopType: buildShopType(shopEncounter),
-    shopCategory: formatShopCategory(shopEncounter.stockCategory ?? shopEncounter.shopCategory),
-    status,
-    statusCopy: isBlocked
-      ? (blockedReasonText ?? "Shop blocked by threat.")
-      : `Waiting on ${shopEncounter.activePlayer.name} to choose a shop action at ${shopEncounter.shopName}.`,
-    stockCount,
-    sellableCount,
-    threatLockCount: shopEncounter.blockingThreats.length,
-    blockedReasonText,
-    blockingLanes,
-    previewCards: isBlocked ? [blockedPreview({ blockedReasonText, blockingLanes })] : baseCards.length > 0 ? baseCards : [emptyPreview()],
-    stockRevealed: stockCount > 0,
-    riskActive: shopEncounter.status === "dangerous" || shopEncounter.services.some((service) => Boolean(service.risk)),
-    transactionComplete: Boolean(shopEncounter.recentOutcome?.gained || shopEncounter.recentOutcome?.sold),
-    transactionTitle: shopEncounter.recentOutcome?.gained
-      ? `Bought ${shopEncounter.recentOutcome.gained}`
-      : shopEncounter.recentOutcome?.sold
-        ? `Sold ${shopEncounter.recentOutcome.sold}`
-        : null,
-    outcome: shopEncounter.recentOutcome?.summary ?? null,
-    guidance: isBlocked ? "Clear the threat lock before trade resumes." : "Choose on player phone",
-    resultDeltas
-  };
+function getCategories(shop: PublicShopEncounterState): ShopCategoryModel[] {
+  const find = (serviceId: string) => shop.services.find((service) => service.id === serviceId);
+  const supplies = find("buy-supplies");
+  const equipment = find("buy-gear");
+  const artifacts = find("trade-missions-for-artifact");
+  const localServices = shop.services.filter((service) => !["buy-gear", "buy-supplies", "trade-missions-for-artifact", "sell-gear"].includes(service.id));
+  return [
+    supplies ? { id: "items", view: "supplies", label: "Items", description: "Field supplies and expendable necessities", count: shop.browseSelection?.view === "supplies" ? shop.revealedStock?.length ?? null : null, available: supplies.enabled, blockedReason: supplies.disabledReason ?? null } : null,
+    equipment ? { id: "equipment", view: "equipment", label: "Equipment", description: "Tools, armour and battle hardware", count: shop.browseSelection?.view === "equipment" ? shop.revealedStock?.length ?? null : null, available: equipment.enabled, blockedReason: equipment.disabledReason ?? null } : null,
+    artifacts ? { id: "artifacts", view: "artifacts", label: "Artifacts", description: "Sealed relics exchanged for completed Contracts", count: null, available: artifacts.enabled, blockedReason: artifacts.disabledReason ?? null } : null,
+    localServices.length ? { id: "services", view: "services", label: "Services", description: "Repair, treatment and local work", count: localServices.length, available: localServices.some((service) => service.enabled), blockedReason: localServices.find((service) => !service.enabled)?.disabledReason ?? null } : null,
+    (shop.sellableCount ?? 0) > 0 ? { id: "sell", view: "sell", label: "Sell", description: "Offer carried Equipment for Salvage", count: shop.sellableCount ?? 0, available: true, blockedReason: null } : null
+  ].filter((entry): entry is ShopCategoryModel => Boolean(entry));
 }
 
-function buildFallbackModel(activePlayer: PublicPlayer, playerName: string): HostShopDisplayModel | null {
-  const space = getBoardSpace(activePlayer.sectorId);
-
-  if (!space || !space.tags.some((tag) => tag === "shop" || tag === "risk-shop")) {
-    return null;
+function getOffers(shop: PublicShopEncounterState, view: ShopView): ShopOfferModel[] {
+  if (view === "equipment" || view === "supplies" || view === "artifacts") {
+    return (shop.revealedStock ?? []).map((stock) => ({
+      id: stock.cardId,
+      name: stock.name,
+      kind: "stock",
+      category: stock.shopCategories?.map(titleCase).join(" / ") ?? titleCase(stock.type),
+      rules: stock.summary,
+      lore: stock.lore ?? null,
+      rarity: titleCase(stock.rarity ?? (stock.type === "artifact" ? "artifact" : "standard")),
+      price: formatCost(stock.cost),
+      stock: stock.stock ?? 1,
+      available: stock.affordable && !stock.disabledReason,
+      disabledReason: stock.disabledReason ?? (!stock.affordable ? "Insufficient resources" : null),
+      artCardId: stock.type === "artifact" ? getGearCardArtId(stock.cardId, "artifact") : getGearCardArtId(stock.cardId),
+      artCardType: stock.type === "artifact" ? "artifact" : getGearCardArtType(stock.cardId)
+    }));
   }
+  if (view === "services") {
+    return shop.services
+      .filter((service) => !["buy-gear", "buy-supplies", "trade-missions-for-artifact", "sell-gear"].includes(service.id))
+      .map((service) => ({
+        id: service.id,
+        name: service.label,
+        kind: "service",
+        category: service.shopCategory ? titleCase(service.shopCategory) : "Local Service",
+        rules: service.risk ?? "The active player may confirm this service from their phone.",
+        lore: null,
+        rarity: "Service",
+        price: formatCost(service.cost),
+        stock: service.enabled ? 1 : 0,
+        available: service.enabled,
+        disabledReason: service.disabledReason ?? null,
+        artCardId: null,
+        artCardType: null
+      }));
+  }
+  return [];
+}
 
-  const serviceTags = space.tags.filter((tag) => tag === "shop" || tag === "risk-shop" || tag === "salvage" || tag === "recovery" || tag === "shrine");
-  const status: ShopStatus = space.tags.includes("risk-shop") ? "DANGEROUS" : "OPEN";
-
+function buildFromEncounter(shop: PublicShopEncounterState, deltas: ResultDelta[]): HostShopDisplayModel {
+  const view = shop.browseSelection?.view ?? "categories";
+  const offers = getOffers(shop, view);
+  const selectedOfferId = offers.some((offer) => offer.id === shop.browseSelection?.selectedId)
+    ? shop.browseSelection?.selectedId ?? null
+    : offers[0]?.id ?? null;
   return {
-    playerName,
-    salvage: activePlayer.character.salvage ?? null,
-    shopName: space.name,
-    sectorName: space.name,
-    shopType: serviceTags.map(toTitleCase).join(" / ") || toTitleCase(space.tier),
-    shopCategory: "Public Shop",
-    status,
-    statusCopy: `Waiting on ${playerName} to choose a shop service.`,
-    stockCount: 0,
-    sellableCount: 0,
-    threatLockCount: 0,
-    blockedReasonText: null,
-    blockingLanes: [],
-    previewCards: [emptyPreview()],
-    stockRevealed: false,
-    riskActive: status === "DANGEROUS",
-    transactionComplete: false,
-    transactionTitle: null,
-    outcome: null,
-    guidance: "Choose on player phone",
-    resultDeltas: []
+    playerName: shop.activePlayer.name,
+    operativeName: shop.activePlayer.characterName,
+    salvage: shop.activePlayer.salvage,
+    shopName: shop.shopName,
+    sectorName: shop.sectorName,
+    shopType: shop.shopType ?? "Reach Market",
+    status: shop.status,
+    view,
+    categories: getCategories(shop),
+    offers,
+    selectedOfferId,
+    blockedReason: shop.blockedReasonText ?? null,
+    blockingThreatNames: shop.blockingThreats.map((threat) => threat.challenge
+      ? `${threat.name} ${titleCase(threat.challenge.stat)} ${threat.challenge.value}`
+      : threat.name),
+    privateSelection: (view === "artifacts" || view === "sell") && offers.length === 0,
+    recentOutcome: shop.recentOutcome,
+    resultDeltas: deltas
   };
 }
 
@@ -269,101 +172,129 @@ export function buildShopModel(
   patch: StatePatch<PublicPatchPayload>,
   activePlayer: PublicPlayer
 ): HostShopDisplayModel | null {
-  return patch.payload.shopEncounter
-    ? buildFromPayload(patch.payload.shopEncounter, shopResultDeltas(patch.payload.publicResultDeltas))
-    : buildFallbackModel(
-        activePlayer,
-        patch.payload.seats.find((seat) => seat.seatId === activePlayer.seatId)?.displayName ?? activePlayer.character.name
-      );
+  const shop = patch.payload.shopEncounter;
+  if (!shop) return null;
+  return buildFromEncounter(shop, shopResultDeltas(patch.payload.publicResultDeltas));
 }
 
-function HostShopPreviewCard({ card, index }: { card: ShopPreviewCard; index: number }): ReactElement {
+function ShopCategoryIcon({ category }: { category: CategoryId }): ReactElement {
+  return <HostImage src={getHostShopCategoryIconPath(category)} alt="" fit="contain" aspectRatio="square" fallback="icon" draggable={false} />;
+}
+
+function ShopEntrance({ model }: { model: HostShopDisplayModel }): ReactElement {
+  if (model.categories.length === 0) {
+    return (
+      <main className="host-shop-empty-rack" data-testid="host-shop-empty-shop">
+        <span>No trade paths</span>
+        <h2>The stalls are empty</h2>
+        <p>No stock, services or trades are available. The active player may leave from their phone.</p>
+      </main>
+    );
+  }
   return (
-    <article
-      className={`host-shop-preview-card host-shop-preview-${card.tone}${card.enabled ? "" : " host-shop-preview-disabled"}`}
-      data-testid={`host-shop-preview-${card.id}`}
-      style={{ "--shop-offer-index": index } as CSSProperties}
-    >
-      <span>{card.eyebrow}</span>
-      <h3>{card.title}</h3>
-      <div className="host-shop-preview-media" aria-hidden="true">
-        {card.artCardId && card.artCardType ? (
-          <CardArtImage cardType={card.artCardType} cardId={card.artCardId} alt="" />
-        ) : (
-          <ShopActionIcon icon={card.icon} />
-        )}
+    <main className="host-shop-chamber" data-testid="host-shop-category-chamber">
+      <div className="host-shop-chamber-copy">
+        <span>Available trade paths</span>
+        <h2>Choose on player phone</h2>
+        <p>Only services operating at this location are shown.</p>
       </div>
-      <p>{card.summary}</p>
-      <div className="host-shop-preview-cost">
-        <strong>{card.cost}</strong>
-        <em>{card.footer}</em>
+      <div className="host-shop-category-altars">
+        {model.categories.map((category) => (
+          <article key={category.id} className={`host-shop-category-altar${category.available ? "" : " host-shop-category-altar-locked"}`} data-testid={`host-shop-category-${category.id}`}>
+            <div className="host-shop-category-sigil"><ShopCategoryIcon category={category.id} /></div>
+            <span>{category.available ? (category.count === null ? "AVAILABLE" : `${category.count} READY`) : "LOCKED"}</span>
+            <h3>{category.label}</h3>
+            <p>{category.available ? category.description : category.blockedReason ?? "Requirements not met"}</p>
+          </article>
+        ))}
       </div>
-    </article>
+    </main>
   );
 }
 
-function ShopActionIcon({ icon }: { icon: ShopIcon }): ReactElement {
-  const paths: Record<ShopIcon, ReactElement> = {
-    anvil: <path d="M5 7h14l-2 4h-4v3h3v3H8v-3h3v-3H7L5 7Zm3-3h8v2H8V4Z" />,
-    crate: <path d="M4 6h16v14H4V6Zm2 2v2h12V8H6Zm0 4v6h5v-6H6Zm7 0v6h5v-6h-5ZM7 3h10v2H7V3Z" />,
-    repair: <path d="m5 4 3 3-2 2-3-3v4l4 2 7 7 3-3-7-7-2-4-3-1Zm11 0a5 5 0 0 0-4 7l2-2 2 2-2 2a5 5 0 0 0 6-6l-3 3-2-2 3-3-2-1Z" />,
-    sell: <path d="M3 5h10l8 8-8 8-8-8V5Zm4 3a2 2 0 1 0 0 4 2 2 0 0 0 0-4Zm8 4h2v2h-2v2h-2v-2h-2v-2h2v-2h2v2Z" />,
-    lock: <path d="M7 10V7a5 5 0 0 1 10 0v3h2v11H5V10h2Zm2 0h6V7a3 3 0 0 0-6 0v3Zm3 3a2 2 0 0 0-1 3.73V19h2v-2.27A2 2 0 0 0 12 13Z" />,
-    stock: <path d="M4 4h16v5H4V4Zm1 7h14v9H5v-9Zm4 2v2h6v-2H9Z" />
-  };
-
-  return <svg viewBox="0 0 24 24" focusable="false">{paths[icon]}</svg>;
+function OfferArt({ offer, quiet = false }: { offer: ShopOfferModel; quiet?: boolean }): ReactElement {
+  if (offer.artCardId && offer.artCardType) {
+    return <HostImage src={getCardArtPath(offer.artCardType, offer.artCardId)} alt={quiet ? "" : offer.name} fit="contain" aspectRatio="card" fallback="card" />;
+  }
+  return <div className="host-shop-service-sigil"><ShopCategoryIcon category="services" /></div>;
 }
 
-function HostShopCardBackdrop({ cards }: { cards: ShopPreviewCard[] }): ReactElement {
-  const atmosphericCards = Array.from({ length: Math.max(3, Math.min(5, cards.length || 3)) }, (_, index) => cards[index % Math.max(cards.length, 1)] ?? emptyPreview());
+function ShopCarousel({ model }: { model: HostShopDisplayModel }): ReactElement {
+  if (model.privateSelection) {
+    const privateKind = model.view === "artifacts" ? "Artifact choices" : "Sale inventory";
+    return (
+      <main className="host-shop-private-vault" data-testid="host-shop-private-vault">
+        <ShopCategoryIcon category={model.view === "artifacts" ? "artifacts" : "sell"} />
+        <span>Owner-private selection</span>
+        <h2>{privateKind} remain on the active player’s phone</h2>
+        <p>The command table will reveal only the confirmed public transaction.</p>
+      </main>
+    );
+  }
+
+  if (!model.offers.length) {
+    return (
+      <main className="host-shop-empty-rack" data-testid="host-shop-empty-rack">
+        <span>Stock aperture sealed</span>
+        <h2>No public stock is revealed</h2>
+        <p>{model.playerName} can return to the category chamber from their phone.</p>
+      </main>
+    );
+  }
+
+  const selectedIndex = Math.max(0, model.offers.findIndex((offer) => offer.id === model.selectedOfferId));
+  const selected = model.offers[selectedIndex]!;
+  const previous = model.offers[(selectedIndex - 1 + model.offers.length) % model.offers.length]!;
+  const next = model.offers[(selectedIndex + 1) % model.offers.length]!;
+  const hasSides = model.offers.length > 1;
 
   return (
-    <div className="host-shop-card-backdrop" aria-hidden="true" data-testid="host-shop-card-backdrop">
-      {atmosphericCards.map((card, index) => (
-        <div key={`${card.id}-${index}`} style={{ "--shop-backdrop-index": index } as CSSProperties}>
-          {card.artCardId && card.artCardType ? (
-            <CardArtImage cardType={card.artCardType} cardId={card.artCardId} alt="" />
-          ) : (
-            <ShopActionIcon icon={card.icon} />
-          )}
+    <main className="host-shop-rack" data-testid="host-shop-carousel">
+      <section className="host-shop-rack-viewport" aria-label={`${model.view} stock carousel`}>
+        {hasSides ? <article className="host-shop-rack-card host-shop-rack-card-previous" aria-hidden="true"><OfferArt offer={previous} quiet /></article> : null}
+        <article className={`host-shop-rack-card host-shop-rack-card-selected${selected.available ? "" : " host-shop-rack-card-locked"}`} data-testid="host-shop-selected-card">
+          <div className="host-shop-rack-clamps" aria-hidden="true" />
+          <OfferArt offer={selected} />
+          <div className="host-shop-rack-card-label">
+            <span>{selected.rarity}</span>
+            <strong>{selected.name}</strong>
+          </div>
+        </article>
+        {hasSides ? <article className="host-shop-rack-card host-shop-rack-card-next" aria-hidden="true"><OfferArt offer={next} quiet /></article> : null}
+        <div className="host-shop-rack-index" aria-label={`${selectedIndex + 1} of ${model.offers.length}`}>
+          {model.offers.map((offer, index) => <i key={offer.id} className={index === selectedIndex ? "is-selected" : ""} />)}
         </div>
-      ))}
-    </div>
+      </section>
+
+      <aside className="host-shop-dossier" aria-label="Selected offer details">
+        <span>{selected.category}</span>
+        <h2>{selected.name}</h2>
+        <div className="host-shop-dossier-meta">
+          <strong>{selected.price}</strong>
+          <em>{selected.stock > 0 ? `${selected.stock} in stock` : "Out of stock"}</em>
+        </div>
+        <p className="host-shop-dossier-rules">{selected.rules}</p>
+        {selected.lore ? <p className="host-shop-dossier-lore">{selected.lore}</p> : null}
+        <div className={`host-shop-eligibility ${selected.available ? "is-available" : "is-locked"}`}>
+          <span>{selected.available ? "Eligible" : "Unavailable"}</span>
+          <strong>{selected.available ? "Awaiting phone confirmation" : selected.disabledReason ?? "This offer is locked"}</strong>
+        </div>
+      </aside>
+    </main>
   );
 }
 
-function HostShopStatusPanel({ model }: { model: HostShopDisplayModel }): ReactElement {
+function TransactionResult({ model }: { model: HostShopDisplayModel }): ReactElement | null {
+  const outcome = model.recentOutcome;
+  if (!outcome && !model.resultDeltas.length) return null;
+  const title = outcome?.gained ? `${outcome.gained} acquired` : outcome?.sold ? `${outcome.sold} sold` : "Transaction resolved";
   return (
-    <aside className="host-shop-status-panel" aria-label="Shop encounter summary" data-testid="host-shop-status-panel">
-      <div>
-        <span>Sector</span>
-        <strong>{model.sectorName}</strong>
-      </div>
-      <div>
-        <span>Salvage</span>
-        <strong>{model.salvage ?? "-"}</strong>
-      </div>
-      <div>
-        <span>Status</span>
-        <strong>{model.status}</strong>
-      </div>
-      <div>
-        <span>Stock</span>
-        <strong>{model.stockRevealed ? model.stockCount : "Sealed"}</strong>
-      </div>
-      <div>
-        <span>Sellable</span>
-        <strong>{model.sellableCount}</strong>
-      </div>
-      <div>
-        <span>Threat Lock</span>
-        <strong>{model.threatLockCount === 0 ? "None" : model.threatLockCount}</strong>
-      </div>
-      {model.blockedReasonText && (
-        <p>{model.blockedReasonText}</p>
-      )}
-    </aside>
+    <section className="host-shop-transaction" role="status" aria-live="polite" data-testid="host-shop-transaction-focus">
+      <span>Authoritative transaction</span>
+      <h2>{title}</h2>
+      <p>{outcome?.summary ?? "The server confirmed the public shop result."}</p>
+      <ResultDeltaRow deltas={model.resultDeltas} publicOnly className="host-shop-transaction-deltas" />
+    </section>
   );
 }
 
@@ -374,131 +305,33 @@ export function HostShopOverlay({
   patch: StatePatch<PublicPatchPayload> | null;
   activePlayer: PublicPlayer | null;
 }): ReactElement | null {
-  if (!patch || !activePlayer || !isHostShopActive(patch, activePlayer)) {
-    return null;
-  }
-
+  if (!patch || !activePlayer || !isHostShopActive(patch, activePlayer)) return null;
   const model = buildShopModel(patch, activePlayer);
-
-  if (!model) {
-    return null;
-  }
-
-  const requestedPrototype = import.meta.env.DEV && typeof window !== "undefined"
-    ? new URLSearchParams(window.location.search).get("shopUi")
-    : null;
-
-  if (requestedPrototype === "requisition" || requestedPrototype === "market") {
-    return <HostShopPrototype model={model} variant={requestedPrototype} />;
-  }
+  if (!model) return null;
 
   return (
-    <section className="host-shop-overlay" aria-label="Host shop encounter" data-testid="host-shop-overlay">
-      <div
-        className={`host-shop-panel host-shop-panel-stage host-shop-status-${model.status.toLowerCase()}${model.riskActive ? " host-shop-panel-risk" : ""}${model.transactionComplete ? " host-shop-panel-burst" : ""}`}
-        style={getChallengeThemeStyle("guile")}
-      >
-        <HostCinematicFxLayer
-          variant="shop"
-          tone={model.transactionComplete ? "reward" : model.status === "BLOCKED" ? "danger" : model.riskActive ? "danger" : "neutral"}
-          stockCount={Math.max(2, model.previewCards.length)}
-          riskActive={model.riskActive || model.status === "BLOCKED"}
-          burstActive={model.transactionComplete}
-          testId="host-shop-fx-layer"
-        />
-
-        <header className="host-shop-alert" data-testid="host-shop-alert">
-          <span>{model.status === "BLOCKED" ? "Shop Blocked" : "Shop Open"}</span>
-          <strong>{model.statusCopy}</strong>
-          <b>{model.status}</b>
-        </header>
-
-        <main className="host-shop-stage" aria-label="Shop services">
-          <HostShopCardBackdrop cards={model.previewCards} />
-          <div className="host-shop-heading">
-            <span>{model.shopCategory}</span>
-            <h2>{model.sectorName}</h2>
-            <p>{model.shopName !== model.sectorName ? `${model.shopName} · ${model.shopType}` : model.shopType}</p>
-          </div>
-
-          <section className="host-shop-preview-grid" aria-label="Public shop preview">
-            {model.previewCards.map((card, index) => (
-              <HostShopPreviewCard key={card.id} card={card} index={index} />
-            ))}
-          </section>
-
-          {model.transactionComplete && (
-            <section className="host-shop-transaction-focus" role="status" aria-live="polite" data-testid="host-shop-transaction-focus">
-              <span>Transaction complete</span>
-              <strong>{model.transactionTitle}</strong>
-              <p>{model.outcome}</p>
-              <ResultDeltaRow deltas={model.resultDeltas} publicOnly className="host-shop-delta-row" />
-            </section>
-          )}
-
-          {model.status === "BLOCKED" && (
-            <section className="host-shop-threat-list" aria-label="Blocking threats">
-              {model.blockingLanes.length > 0 ? (
-                model.blockingLanes.map((lane) => (
-                  <span key={`${lane.name}-${lane.stat ?? "none"}`}>
-                    {lane.name}
-                    {lane.stat && <ChallengeBadge stat={lane.stat} value={lane.value} size="compact" />}
-                    {lane.stat && <span className="sr-only">{lane.name} {lane.stat} {lane.value}</span>}
-                  </span>
-                ))
-              ) : (
-                <span>Local threat</span>
-              )}
-            </section>
-          )}
-
-          <div className="host-shop-instruction">
-            <span aria-hidden="true">PHONE</span>
-            <strong>{model.guidance}</strong>
-          </div>
-        </main>
-
-        <HostShopStatusPanel model={model} />
-
-        {!model.transactionComplete && (model.outcome || model.resultDeltas.length > 0 || model.status === "BLOCKED") && (
-          <section className="host-shop-outcome" aria-label="Market result" data-testid="host-shop-outcome">
-            <p>{model.outcome ?? model.blockedReasonText ?? "Trade is suspended."}</p>
-            <ResultDeltaRow deltas={model.resultDeltas} publicOnly className="host-shop-delta-row" />
-          </section>
-        )}
-      </div>
-    </section>
-  );
-}
-
-function HostShopPrototype({ model, variant }: { model: HostShopDisplayModel; variant: "requisition" | "market" }): ReactElement {
-  const requisition = variant === "requisition";
-  return (
-    <section
-      className={`host-shop-prototype host-shop-prototype-${variant}`}
-      aria-label={requisition ? "Requisition Chamber shop prototype" : "Board-integrated Salvage Market shop prototype"}
-      data-testid={`host-shop-prototype-${variant}`}
-    >
-      <div className="host-shop-prototype__scrim" aria-hidden="true" />
-      <header>
-        <span>{requisition ? "Requisition Chamber" : "Field Salvage Market"}</span>
-        <h2>{model.shopName}</h2>
-        <p>{model.sectorName} · {model.playerName} buying · {model.salvage ?? "-"} Salvage</p>
+    <section className={`host-shop-overlay host-shop-rebuild host-shop-view-${model.view} host-shop-state-${model.status}`} aria-label="Shop services" data-testid="host-shop-overlay">
+      <div className="host-shop-atmosphere" aria-hidden="true"><i /><i /><i /></div>
+      <header className="host-shop-identity-rail">
+        <div><span>{model.status === "locked" ? "Shop blocked" : "Shop open"} · {model.shopType}</span><h1>{model.shopName}</h1><small>{model.sectorName}</small></div>
+        <div className="host-shop-buyer"><span>Active buyer</span><strong>{model.playerName}</strong><small>{model.operativeName}</small></div>
+        <div className="host-shop-salvage" data-testid="host-shop-buyer-salvage"><span>Salvage</span><strong>{model.salvage}</strong></div>
       </header>
-      <main>
-        <section className="host-shop-prototype__stock" aria-label="Public stock">
-          {model.previewCards.map((card, index) => <HostShopPreviewCard key={card.id} card={card} index={index} />)}
-        </section>
-        <aside>
-          <strong>{model.status}</strong>
-          <span>{model.stockRevealed ? `${model.stockCount} stock` : "Stock unrevealed"}</span>
-          <span>{model.sellableCount} sellable</span>
-          <p>{model.transactionComplete ? model.outcome : model.guidance}</p>
-        </aside>
-      </main>
-      {model.transactionComplete ? (
-        <div className="host-shop-prototype__result" role="status"><span>Transaction complete</span><strong>{model.transactionTitle}</strong><p>{model.outcome}</p></div>
-      ) : null}
+
+      {model.status === "locked" ? (
+        <main className="host-shop-lockdown" data-testid="host-shop-lockdown">
+          <ShopCategoryIcon category="equipment" />
+          <span>Trade lockdown</span>
+          <h2>{model.blockedReason ?? "Local threat blocks the market"}</h2>
+          <p>{model.blockingThreatNames.join(" · ") || "Clear the threat before the requisition chamber reopens."}</p>
+        </main>
+      ) : model.view === "categories" ? <ShopEntrance model={model} /> : <ShopCarousel model={model} />}
+
+      <footer className="host-shop-command-rail">
+        <span>Player phone controls this market</span>
+        <strong>{model.view === "categories" ? `Waiting for ${model.playerName} to choose a category` : `${titleCase(model.view)} · ${model.offers.length || "sealed"} public offers`}</strong>
+      </footer>
+      <TransactionResult model={model} />
     </section>
   );
 }

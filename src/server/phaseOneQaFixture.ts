@@ -12,6 +12,10 @@ export type PhaseOneQaFixture =
   | { kind: "setup-flow"; stage: "scenario-selection" }
   | { kind: "route"; stage: "first" | "duplicate" | "ordered-wrong" | "final" | "completion-ready" }
   | { kind: "shop"; stage: "wrong-shop" | "valid-first" | "valid-final" | "completion-ready" }
+  | {
+      kind: "host-shop";
+      stage: "categories" | "items" | "equipment" | "artifacts" | "locked" | "insufficient" | "long-lore" | "single-category";
+    }
   | { kind: "movement-journey"; stage: "ashen-chapel"; withChoirLantern?: boolean }
   | { kind: "phone-movement"; stage: "roll-required" | "four-routes" | "confirmed" }
   | { kind: "map-transition"; stage: "guardian-locked" | "guardian-cleared" | "core-locked" | "core-cleared" }
@@ -420,6 +424,60 @@ export function applyPhaseOneQaFixture(state: GameState, seatId: string, fixture
         { ...lantern, instanceId: "qa-choir-lantern", currentCharges: 2, maxCharges: 2 }
       ];
       player.character.equippedGear.utility = lantern.id;
+    }
+    return;
+  }
+
+  if (fixture.kind === "host-shop") {
+    const player = state.players.find((entry) => entry.seatId === seatId);
+    if (!player) throw new Error(`QA fixture cannot find ${seatId}`);
+    state.phase = "action";
+    state.movementRolls = undefined;
+    player.character.salvage = fixture.stage === "insufficient" ? 1 : 7;
+    player.character.completedContracts = fixture.stage === "artifacts"
+      ? ["qa-contract-1", "qa-contract-2", "qa-contract-3"]
+      : [];
+
+    const sectorId = fixture.stage === "artifacts" || fixture.stage === "locked"
+      ? "middle_scar_surgery"
+      : fixture.stage === "single-category"
+        ? "outer_surgery_tent"
+        : "kettleward-foundry";
+    placePlayer(state, seatId, sectorId);
+    state.shopBrowseSelection = {
+      seatId,
+      sectorId,
+      view: fixture.stage === "items"
+        ? "supplies"
+        : fixture.stage === "equipment" || fixture.stage === "insufficient" || fixture.stage === "long-lore"
+          ? "equipment"
+          : fixture.stage === "artifacts"
+            ? "artifacts"
+            : "categories",
+      selectedId: fixture.stage === "items"
+        ? "field-lens"
+        : fixture.stage === "long-lore"
+          ? "signal-pike"
+          : fixture.stage === "equipment" || fixture.stage === "insufficient"
+            ? "ashlock-cleaver"
+            : null,
+      updatedAt: `qa:host-shop:${fixture.stage}`
+    };
+
+    if (["items", "equipment", "insufficient", "long-lore"].includes(fixture.stage)) {
+      const supplies = fixture.stage === "items";
+      state.shopStockReveals = [{
+        seatId,
+        sectorId,
+        serviceId: supplies ? "buy-supplies" : "buy-gear",
+        shopName: getBoardSpace(sectorId)?.name ?? sectorId,
+        stockIds: supplies
+          ? ["field-lens", "bridge-spike", "ember-poultice", "surveyor-chalk"]
+          : fixture.stage === "long-lore"
+            ? ["signal-pike", "saintplate-harness", "scrap-drone"]
+            : ["ashlock-cleaver", "chapel-guard-harness", "emberlock-pistol", "ironhide-bracers"],
+        createdAt: `qa:host-shop:${fixture.stage}`
+      }];
     }
     return;
   }

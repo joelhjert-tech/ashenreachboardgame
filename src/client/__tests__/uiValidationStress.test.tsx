@@ -523,9 +523,9 @@ describe("Ashen Reach UI validation stress states", () => {
 
     render(<HostShopOverlay patch={patch} activePlayer={activePlayer} />);
 
-    expect(screen.getByTestId("host-shop-overlay")).toHaveTextContent("Shop Blocked");
-    expect(screen.getByTestId("host-shop-status-panel")).toHaveTextContent("Anchor Market");
-    expect(screen.getByTestId("host-shop-overlay")).toHaveTextContent(/shop blocked by threat/i);
+    expect(screen.getByTestId("host-shop-overlay")).toHaveTextContent(/shop blocked/i);
+    expect(screen.getByTestId("host-shop-overlay")).toHaveTextContent("Anchor Market");
+    expect(screen.getByTestId("host-shop-lockdown")).toHaveTextContent(/local threat blocks the market/i);
     expect(screen.getByTestId("host-shop-overlay")).not.toHaveTextContent(/^vs$/i);
     expect(screen.queryByText("Void-Cleaver Command Blade")).not.toBeInTheDocument();
     expect(screen.getByTestId("host-shop-overlay")).not.toHaveTextContent(/\b(?:Heat|Risk)\b/);

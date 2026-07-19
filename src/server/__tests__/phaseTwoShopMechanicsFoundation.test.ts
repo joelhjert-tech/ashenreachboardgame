@@ -434,4 +434,51 @@ describe("Phase 2A shop mechanics foundation", () => {
       activePlayer: { playerId: "seat-1", salvage: 6 }
     });
   });
+
+  it("synchronizes an authoritative stock focus across reconnect projections", () => {
+    const { server, client, sent } = createShopServer({ sectorId: "outer_waymarket", salvage: 6 });
+    server.handleIntent(client, { type: "SHOP_SERVICE_REQUESTED", seatId: "seat-1", serviceId: "buy-gear" });
+    const stockId = server.getState().shopStockReveals[0]?.stockIds[1] ?? server.getState().shopStockReveals[0]?.stockIds[0];
+    if (!stockId) throw new Error("Expected authoritative shop stock");
+
+    server.handleIntent(client, {
+      type: "SHOP_BROWSE_SELECTED",
+      seatId: "seat-1",
+      view: "equipment",
+      selectedId: stockId
+    });
+
+    expect(getRejectedReason(sent)).toBeUndefined();
+    expect(server.getState().shopBrowseSelection).toMatchObject({
+      seatId: "seat-1",
+      sectorId: "outer_waymarket",
+      view: "equipment",
+      selectedId: stockId
+    });
+    expect(server.getState().eventLog.at(-1)).toMatchObject({ type: "SHOP_BROWSE_SELECTED", selectedId: stockId });
+    expect((createTvProjection(server.getState()) as { shopEncounter?: { browseSelection?: unknown } }).shopEncounter?.browseSelection)
+      .toEqual({ view: "equipment", selectedId: stockId });
+    expect((createPhoneProjection(server.getState(), "seat-1") as { shopEncounter?: { browseSelection?: unknown } }).shopEncounter?.browseSelection)
+      .toEqual({ view: "equipment", selectedId: stockId });
+  });
+
+  it("rejects stale stock focus and never exposes sale inventory to the TV", () => {
+    const { server, client, sent } = createShopServer({ sectorId: "outer_waymarket", salvage: 6 });
+    server.getState().players[0]!.character.heldGear = [{ ...requireGear("ashlock-cleaver"), instanceId: "ashlock-cleaver:seat-1" }];
+    server.handleIntent(client, { type: "SHOP_SERVICE_REQUESTED", seatId: "seat-1", serviceId: "buy-gear" });
+    server.handleIntent(client, {
+      type: "SHOP_BROWSE_SELECTED",
+      seatId: "seat-1",
+      view: "equipment",
+      selectedId: "not-in-authoritative-stock"
+    });
+
+    expect(getRejectedReason(sent)).toBe("That stock selection is stale or unavailable");
+    const tvShop = (createTvProjection(server.getState()) as { shopEncounter?: Record<string, unknown> }).shopEncounter;
+    const phoneShop = (createPhoneProjection(server.getState(), "seat-1") as { shopEncounter?: Record<string, unknown> }).shopEncounter;
+    expect(tvShop?.sellInventory).toBeUndefined();
+    expect(tvShop?.sellableCount).toBe(1);
+    expect(JSON.stringify(tvShop)).not.toContain("ashlock-cleaver:seat-1");
+    expect(phoneShop?.sellInventory).toEqual(expect.arrayContaining([expect.objectContaining({ gearId: "ashlock-cleaver" })]));
+  });
 });

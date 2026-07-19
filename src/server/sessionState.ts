@@ -183,6 +183,7 @@ export function createInitialSessionState(
     nemesisChampions: [],
     nemesisNexusCountdowns: [],
     shopStockReveals: [],
+    shopBrowseSelection: null,
     movementRolls: undefined,
     movementAdjustments: undefined,
     normalMovementRollDetails: undefined,

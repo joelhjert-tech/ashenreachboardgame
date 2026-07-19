@@ -65,6 +65,11 @@ const uiAssetPaths = [
   "/assets/riftfall/ui/shop-category-market.svg",
   "/assets/riftfall/ui/shop-category-medicae-shrine.svg",
   "/assets/riftfall/ui/shop-category-relic-dealer.svg",
+  "/assets/riftfall/ui/shop/categories/items.svg",
+  "/assets/riftfall/ui/shop/categories/equipment.svg",
+  "/assets/riftfall/ui/shop/categories/artifacts.svg",
+  "/assets/riftfall/ui/shop/categories/services.svg",
+  "/assets/riftfall/ui/shop/categories/sell.svg",
   "/assets/riftfall/ui/dice_roll_combat@2s.gif",
   "/assets/riftfall/ui/dice_roll_combat@2s.lottie.json"
 ];
@@ -172,6 +177,10 @@ export function getShopCategoryIconPath(category: string | null | undefined): st
     default:
       return "/assets/riftfall/ui/shop-category-market.svg";
   }
+}
+
+export function getHostShopCategoryIconPath(category: "items" | "equipment" | "artifacts" | "services" | "sell"): string {
+  return `/assets/riftfall/ui/shop/categories/${category}.svg`;
 }
 
 export function getContractArtPath(contractId: string): string {

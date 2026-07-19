@@ -639,6 +639,10 @@ export interface PublicShopEncounterState {
   shopCategory?: ShopCategory;
   stockCategory?: ShopCategory;
   status: PublicShopStatus;
+  browseSelection?: {
+    view: "categories" | "equipment" | "supplies" | "artifacts" | "services" | "sell";
+    selectedId: string | null;
+  };
   activePlayer: {
     playerId: string;
     name: string;
@@ -688,6 +692,9 @@ export interface PublicShopEncounterState {
       completedContracts?: number;
     };
     summary: string;
+    lore?: string;
+    rarity?: string;
+    stock?: number;
     affordable: boolean;
     disabledReason?: string;
   }>;
@@ -702,6 +709,7 @@ export interface PublicShopEncounterState {
     sellable: boolean;
     disabledReason?: ShopFailureReason | string;
   }>;
+  sellableCount?: number;
   recentOutcome?: {
     operativeName: string;
     shopName: string;
@@ -1418,6 +1426,12 @@ export type ClientIntent =
       seatId: string;
       serviceId: string;
       itemInstanceId?: string;
+    }
+  | {
+      type: "SHOP_BROWSE_SELECTED";
+      seatId: string;
+      view: "categories" | "equipment" | "supplies" | "artifacts" | "services" | "sell";
+      selectedId?: string | null;
     }
   | {
       type: "SHOP_PURCHASE_REQUESTED";

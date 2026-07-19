@@ -44,6 +44,7 @@ import type {
   ShopSellResolvedAction,
   ShopServiceResolvedAction,
   ShopServiceCost,
+  ShopBrowseSelectedAction,
   ShopStockRevealedAction,
   ScenarioProgressAdvancedAction,
   ScenarioPreparationGainedAction,
@@ -4074,7 +4075,7 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
         shopAction.serviceId === "trade-missions-for-artifact" &&
         (!shopAction.result.gainGear || shopAction.result.gainGear.tier !== "artifact")
       ) {
-        return reject(state, action, "Relic dealer trades must grant an Artifact-tier item");
+        return reject(state, action, "Artifact exchanges must grant an Artifact-tier item");
       }
 
       if (shopAction.result.discardGearId && !player.character.heldGear.some((item) => item.id === shopAction.result.discardGearId)) {
@@ -4104,12 +4105,46 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
         shopStockReveals: (state.shopStockReveals ?? []).filter(
           (reveal) => !(reveal.seatId === shopAction.seatId && reveal.sectorId === shopAction.sectorId)
         ),
+        shopBrowseSelection: {
+          seatId: shopAction.seatId,
+          sectorId: shopAction.sectorId,
+          view: "categories",
+          selectedId: null,
+          updatedAt: shopAction.createdAt
+        },
         lastOutcomeSummary: buildShopOutcomeSummary({
           seatId: shopAction.seatId,
           sectorId: updatedPlayer.sectorId,
           shopName: shopAction.shopName,
           summary: shopAction.summary
         }),
+        eventLog: [...state.eventLog, action]
+      });
+    }
+    case "SHOP_BROWSE_SELECTED": {
+      const browseAction = action as ShopBrowseSelectedAction;
+
+      try {
+        canManageGear(state, browseAction.seatId);
+      } catch (error) {
+        return reject(state, action, error instanceof Error ? error.message : "Seat cannot browse this shop");
+      }
+
+      const player = requirePlayer(state, browseAction.seatId);
+      if (player.character.currentSpaceId !== browseAction.sectorId) {
+        return reject(state, action, SHOP_FAILURE_REASONS.notAtShop);
+      }
+
+      return succeed({
+        ...state,
+        sequence: state.sequence + 1,
+        shopBrowseSelection: {
+          seatId: browseAction.seatId,
+          sectorId: browseAction.sectorId,
+          view: browseAction.view,
+          selectedId: browseAction.selectedId,
+          updatedAt: browseAction.createdAt
+        },
         eventLog: [...state.eventLog, action]
       });
     }
@@ -4162,6 +4197,17 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
           ),
           nextReveal
         ],
+        shopBrowseSelection: {
+          seatId: revealAction.seatId,
+          sectorId: revealAction.sectorId,
+          view: revealAction.serviceId === "buy-supplies"
+            ? "supplies"
+            : revealAction.serviceId === "trade-missions-for-artifact"
+              ? "artifacts"
+              : "equipment",
+          selectedId: revealAction.stock[0]?.id ?? null,
+          updatedAt: revealAction.createdAt
+        },
         lastOutcomeSummary: buildShopOutcomeSummary({
           seatId: revealAction.seatId,
           sectorId: updatedPlayer.sectorId,
@@ -4235,6 +4281,13 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
         shopStockReveals: (state.shopStockReveals ?? []).filter(
           (entry) => !(entry.seatId === purchaseAction.seatId && entry.sectorId === purchaseAction.sectorId)
         ),
+        shopBrowseSelection: {
+          seatId: purchaseAction.seatId,
+          sectorId: purchaseAction.sectorId,
+          view: "categories",
+          selectedId: null,
+          updatedAt: purchaseAction.createdAt
+        },
         lastOutcomeSummary: buildShopOutcomeSummary({
           seatId: purchaseAction.seatId,
           sectorId: updatedPlayer.sectorId,
@@ -4282,6 +4335,13 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
         shopStockReveals: (state.shopStockReveals ?? []).filter(
           (entry) => !(entry.seatId === sellAction.seatId && entry.sectorId === sellAction.sectorId)
         ),
+        shopBrowseSelection: {
+          seatId: sellAction.seatId,
+          sectorId: sellAction.sectorId,
+          view: "categories",
+          selectedId: null,
+          updatedAt: sellAction.createdAt
+        },
         lastOutcomeSummary: buildShopOutcomeSummary({
           seatId: sellAction.seatId,
           sectorId: updatedPlayer.sectorId,
@@ -4321,6 +4381,7 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
         shopStockReveals: (state.shopStockReveals ?? []).filter(
           (entry) => !(entry.seatId === skipAction.seatId && entry.sectorId === skipAction.sectorId)
         ),
+        shopBrowseSelection: null,
         lastOutcomeSummary: buildShopOutcomeSummary({
           seatId: skipAction.seatId,
           sectorId: player.sectorId,

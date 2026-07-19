@@ -184,6 +184,7 @@ import type {
   SectorCollapsedAction,
   SpaceTextResolvedAction,
   ShopPurchaseResolvedAction,
+  ShopBrowseSelectedAction,
   ShopSellResolvedAction,
   ShopServiceResolvedAction,
   ShopSkippedAction,
@@ -387,6 +388,7 @@ const CLIENT_INTENT_TYPES = new Set<string>([
   "USE_CHARACTER_ABILITY",
   "TABLE_INTERACTION",
   "SHOP_SERVICE_REQUESTED",
+  "SHOP_BROWSE_SELECTED",
   "SHOP_PURCHASE_REQUESTED",
   "SHOP_SELL_REQUESTED",
   "SHOP_SKIP_REQUESTED",
@@ -724,6 +726,12 @@ export class GameRoomServer {
 
       if (intent.type === "COOPERATIVE_ASSISTANCE_REQUESTED") {
         this.resolveCooperativeAssistanceRequest(intent);
+        this.broadcastPatch();
+        return;
+      }
+
+      if (intent.type === "SHOP_BROWSE_SELECTED") {
+        this.resolveShopBrowseSelection(intent);
         this.broadcastPatch();
         return;
       }
@@ -1623,6 +1631,12 @@ export class GameRoomServer {
         requireStringField(message, "serviceId", type);
         if (message.itemInstanceId !== undefined && typeof message.itemInstanceId !== "string") {
           throw new IntentRejectedError(type, "Malformed intent: itemInstanceId must be a string");
+        }
+        break;
+      case "SHOP_BROWSE_SELECTED":
+        requireEnumField(message, "view", new Set(["categories", "equipment", "supplies", "artifacts", "services", "sell"]), type);
+        if (message.selectedId !== undefined && message.selectedId !== null && typeof message.selectedId !== "string") {
+          throw new IntentRejectedError(type, "Malformed intent: selectedId must be a stable string ID");
         }
         break;
       case "SHOP_PURCHASE_REQUESTED":
@@ -2616,6 +2630,62 @@ export class GameRoomServer {
     }
   }
 
+  private resolveShopBrowseSelection(
+    intent: Extract<ClientIntent, { type: "SHOP_BROWSE_SELECTED" }>
+  ): void {
+    const player = this.state.players.find((entry) => entry.seatId === intent.seatId);
+    if (!player || this.state.turnOrder[this.state.activeSeatIndex] !== intent.seatId || this.state.phase !== "action") {
+      throw new IntentRejectedError(intent.type, "Only the active operative may browse this shop");
+    }
+
+    const boardSpace = getBoardSpace(player.character.currentSpaceId);
+    if (!boardSpace || !isBoardSpaceShopCapable(boardSpace)) {
+      throw new IntentRejectedError(intent.type, SHOP_FAILURE_REASONS.notAtShop);
+    }
+    if (this.state.currentEncounter || this.state.pendingEnemyRoll || this.state.pendingEffect || buildPublicBlockingThreats(this.state).length > 0) {
+      throw new IntentRejectedError(intent.type, SHOP_FAILURE_REASONS.shopBlockedByThreat);
+    }
+
+    const services = buildPublicShopServices(this.state, player);
+    const reveal = this.state.shopStockReveals.find(
+      (entry) => entry.seatId === intent.seatId && entry.sectorId === player.character.currentSpaceId
+    );
+    const expectedService = intent.view === "equipment"
+      ? "buy-gear"
+      : intent.view === "supplies"
+        ? "buy-supplies"
+        : intent.view === "artifacts"
+          ? "trade-missions-for-artifact"
+          : null;
+
+    if (expectedService && (!reveal || reveal.serviceId !== expectedService)) {
+      throw new IntentRejectedError(intent.type, "Reveal this category before selecting its stock");
+    }
+    if (expectedService && intent.selectedId && !reveal?.stockIds.includes(intent.selectedId)) {
+      throw new IntentRejectedError(intent.type, "That stock selection is stale or unavailable");
+    }
+    if (intent.view === "services" && intent.selectedId && !services.some((service) => service.id === intent.selectedId)) {
+      throw new IntentRejectedError(intent.type, "That service is not available here");
+    }
+    if (intent.view === "sell" && intent.selectedId && !player.character.heldGear.some(
+      (item) => (item.instanceId ?? item.id) === intent.selectedId && item.tier !== "artifact"
+    )) {
+      throw new IntentRejectedError(intent.type, "That sale selection is stale or private");
+    }
+    if (intent.view === "categories" && intent.selectedId) {
+      throw new IntentRejectedError(intent.type, "The category chamber does not select stock");
+    }
+
+    this.applyAction({
+      type: "SHOP_BROWSE_SELECTED",
+      seatId: intent.seatId,
+      sectorId: player.character.currentSpaceId,
+      view: intent.view,
+      selectedId: intent.selectedId ?? null,
+      createdAt: new Date().toISOString()
+    } satisfies ShopBrowseSelectedAction);
+  }
+
   private createShopServiceAction(
     intent: Extract<ClientIntent, { type: "SHOP_SERVICE_REQUESTED" }>,
     createdAt: string
@@ -2821,7 +2891,14 @@ export class GameRoomServer {
           revealCost: {},
           createdAt
         }
-      ]
+      ],
+      shopBrowseSelection: {
+        seatId,
+        sectorId,
+        view: "equipment",
+        selectedId: stock[0]?.id ?? null,
+        updatedAt: createdAt
+      }
     };
   }
 
@@ -3264,6 +3341,8 @@ export class GameRoomServer {
         return this.createTableInteractionAction(intent, createdAt);
       case "SHOP_SERVICE_REQUESTED":
         return this.createShopServiceAction(intent, createdAt);
+      case "SHOP_BROWSE_SELECTED":
+        throw new Error("Shop browse selection is handled directly");
       case "SHOP_PURCHASE_REQUESTED":
         return this.createShopPurchaseAction(intent, createdAt);
       case "SHOP_SELL_REQUESTED":
@@ -8660,6 +8739,9 @@ type PublicShopStockItem = {
     trophies?: number;
   };
   summary: string;
+  lore?: string;
+  rarity?: string;
+  stock: number;
   affordable: boolean;
   disabledReason?: string;
 };
@@ -9581,6 +9663,9 @@ function buildPublicShopStock(
         shopCategories: getGearShopCategoryIds(item),
         cost,
         summary: getGearSummary(item),
+        lore: item.flavor,
+        rarity: item.tier ?? "standard",
+        stock: 1,
         affordable: payment.enabled && !alreadyOwned,
         disabledReason: alreadyOwned ? "Already held" : payment.disabledReason
       } satisfies PublicShopStockItem;
@@ -9730,7 +9815,9 @@ function buildPublicShopEncounter(
   const blockingThreats = buildPublicBlockingThreats(state);
   const services = buildPublicShopServices(state, activePlayer);
   const revealedStock = buildPublicShopStock(state, activePlayer, privateArtifactSeatId);
-  const sellInventory = buildPublicShopSellInventory(activePlayer);
+  const fullSellInventory = buildPublicShopSellInventory(activePlayer);
+  const sellInventory = privateArtifactSeatId === activePlayer.seatId ? fullSellInventory : undefined;
+  const sellableCount = fullSellInventory.filter((item) => item.sellable).length;
   const repairTargets: Array<{
     gearId: string;
     instanceId: string;
@@ -9774,6 +9861,19 @@ function buildPublicShopEncounter(
     services.find((service) => service.id === "buy-gear")?.shopCategory ??
     services.find((service) => service.id === "trade-missions-for-artifact")?.shopCategory ??
     shopCategory;
+  const storedBrowseSelection = state.shopBrowseSelection?.seatId === activePlayer.seatId &&
+    state.shopBrowseSelection.sectorId === activePlayer.character.currentSpaceId
+      ? state.shopBrowseSelection
+      : null;
+  const browseSelection = storedBrowseSelection
+    ? {
+        view: storedBrowseSelection.view,
+        selectedId:
+          (storedBrowseSelection.view === "artifacts" || storedBrowseSelection.view === "sell") && privateArtifactSeatId !== activePlayer.seatId
+            ? null
+            : storedBrowseSelection.selectedId
+      }
+    : { view: "categories" as const, selectedId: null };
 
   if (services.length === 0 && blockingThreats.length === 0) {
     return null;
@@ -9792,6 +9892,7 @@ function buildPublicShopEncounter(
     shopCategory,
     stockCategory,
     status: blockedReason ? "locked" : getPublicShopStatus(state, activePlayer),
+    browseSelection,
     activePlayer: {
       playerId: activePlayer.seatId,
       name: playerDisplayName,
@@ -9808,6 +9909,7 @@ function buildPublicShopEncounter(
     services,
     revealedStock,
     sellInventory,
+    sellableCount,
     repairTargets,
     recentOutcome: latest
       ? {
