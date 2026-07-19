@@ -2888,11 +2888,25 @@ export class GameRoomServer {
           summary: `${actorName} used ${shopName}. Bought treatment and healed 1 Wound.`
         };
       case "trade-missions-for-artifact": {
+        const existingRequisition = (this.state.shopStockReveals ?? []).find((entry) =>
+          entry.seatId === intent.seatId &&
+          entry.sectorId === player.character.currentSpaceId &&
+          entry.serviceId === "trade-missions-for-artifact"
+        );
+        if (existingRequisition) {
+          throw new Error("Artifact requisition already pending");
+        }
         const stock = this.pickRelicDealerArtifactOptions(player);
 
         if (stock.length === 0) {
           throw new Error(SHOP_FAILURE_REASONS.itemUnavailable);
         }
+        const reservedCompletedMissionIds = (player.character.completedContracts ?? [])
+          .slice(0, ARTIFACT_EXCHANGE_CONTRACT_COST);
+        if (reservedCompletedMissionIds.length !== ARTIFACT_EXCHANGE_CONTRACT_COST) {
+          throw new Error("Need three completed Missions");
+        }
+        const artifactRequisitionId = `artifact-requisition:${intent.seatId}:${this.state.sequence + 1}`;
 
         return {
           type: "SHOP_STOCK_REVEALED",
@@ -2903,6 +2917,8 @@ export class GameRoomServer {
           sectorId: player.character.currentSpaceId,
           cost: {},
           stock,
+          artifactRequisitionId,
+          reservedCompletedMissionIds,
           summary: `${actorName} consulted ${shopName}. Artifact choices are held privately until one is selected.`,
           createdAt
         } satisfies ShopStockRevealedAction;
@@ -3059,7 +3075,7 @@ export class GameRoomServer {
       throw new Error(SHOP_FAILURE_REASONS.insufficientSalvage);
     }
     const spentCompletedContractIds = isArtifactExchange
-      ? (player.character.completedContracts ?? []).slice(0, ARTIFACT_EXCHANGE_CONTRACT_COST)
+      ? reveal.reservedCompletedMissionIds
       : undefined;
     if (isArtifactExchange && (spentCompletedContractIds?.length ?? 0) !== ARTIFACT_EXCHANGE_CONTRACT_COST) {
       throw new Error("Need three completed Contracts");
@@ -3078,6 +3094,7 @@ export class GameRoomServer {
       gainedGear: gear,
       discardedStockIds,
       spentCompletedContractIds,
+      artifactRequisitionId: isArtifactExchange ? reveal.artifactRequisitionId : undefined,
       summary: isArtifactExchange
         ? `${player.character.name} exchanged three completed Contracts for the Artifact ${gear.name}.`
         : `${player.character.name} used ${reveal.shopName}. Bought ${gear.name} for ${cost.salvage} Salvage.`,

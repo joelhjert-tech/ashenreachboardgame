@@ -71,6 +71,17 @@ async function main(): Promise<void> {
   await assertPhoneSafe(phone);
   await phone.screenshot({ path: join(output, "phone-390x844-private-artifact-options.png"), fullPage: true });
 
+  const tv = await browser.newPage({ viewport: { width: 1920, height: 1080 } });
+  tv.on("console", (message) => { if (message.type() === "error") errors.push(message.text()); });
+  await tv.addInitScript(({ hostToken }) => window.localStorage.setItem("ashen-reach-tv-host-token", hostToken), { hostToken: auth.hostToken });
+  await tv.goto(`${clientOrigin}/tv?room=${auth.roomCode}`);
+  await tv.waitForLoadState("networkidle");
+  if ((await tv.locator("body").innerText()).includes("Choose one Artifact")) throw new Error("Private Artifact choices leaked to TV");
+  for (const viewport of [{ width: 1920, height: 1080 }, { width: 1440, height: 900 }, { width: 1280, height: 720 }]) {
+    await tv.setViewportSize(viewport);
+    await tv.screenshot({ path: join(output, `tv-${viewport.width}x${viewport.height}-requisition-private.png`), fullPage: false });
+  }
+
   await phone.getByRole("button", { name: "Choose", exact: true }).first().click();
   await phone.getByRole("dialog", { name: "Confirm Artifact" }).waitFor();
   await phone.screenshot({ path: join(output, "phone-390x844-confirm-artifact.png"), fullPage: false });
@@ -85,17 +96,13 @@ async function main(): Promise<void> {
   await phone.getByLabel("Completed Contract ledger").waitFor();
   await phone.screenshot({ path: join(output, "phone-390x844-reconnect-ledger.png"), fullPage: false });
 
-  const tv = await browser.newPage({ viewport: { width: 1366, height: 768 } });
-  tv.on("console", (message) => { if (message.type() === "error") errors.push(message.text()); });
-  await tv.addInitScript(({ hostToken }) => window.localStorage.setItem("ashen-reach-tv-host-token", hostToken), { hostToken: auth.hostToken });
-  await tv.goto(`${clientOrigin}/tv?room=${auth.roomCode}`);
-  await tv.waitForLoadState("networkidle");
+  await tv.setViewportSize({ width: 1366, height: 768 });
   if ((await tv.locator("body").innerText()).includes("Choose one Artifact")) throw new Error("Private Artifact choices leaked to TV");
   await tv.screenshot({ path: join(output, "tv-1366x768-public-exchange.png"), fullPage: false });
 
   if (errors.length) throw new Error(`Console errors:\n${errors.join("\n")}`);
   await browser.close();
-  console.log(JSON.stringify({ output, captures: 6 }, null, 2));
+  console.log(JSON.stringify({ output, captures: 9 }, null, 2));
 }
 
 await main();

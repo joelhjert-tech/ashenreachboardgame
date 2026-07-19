@@ -362,6 +362,8 @@ export interface ShopStockRevealedAction extends BaseAction {
   sectorId: string;
   cost: ShopServiceCost;
   stock: GearItem[];
+  artifactRequisitionId?: string;
+  reservedCompletedMissionIds?: string[];
   summary: string;
 }
 
@@ -382,6 +384,7 @@ export interface ShopPurchaseResolvedAction extends BaseAction {
   gainedGear: GearItem;
   discardedStockIds: string[];
   spentCompletedContractIds?: string[];
+  artifactRequisitionId?: string;
   summary: string;
 }
 

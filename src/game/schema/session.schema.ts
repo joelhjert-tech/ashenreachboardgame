@@ -321,6 +321,8 @@ export const shopStockRevealSchema = z.object({
   serviceId: z.string().min(1),
   shopName: z.string().min(1),
   stockIds: z.array(z.string().min(1)),
+  artifactRequisitionId: z.string().min(1).optional(),
+  reservedCompletedMissionIds: z.array(z.string().min(1)).length(3).optional(),
   revealCost: z
     .object({
       salvage: z.number().int().min(0).optional(),

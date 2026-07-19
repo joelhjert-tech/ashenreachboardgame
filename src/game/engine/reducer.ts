@@ -784,7 +784,21 @@ function applyShopPurchaseToPlayer(player: PlayerState, action: ShopPurchaseReso
           ...afterCost.character,
           completedContracts: (afterCost.character.completedContracts ?? []).filter(
             (contractId) => !action.spentCompletedContractIds!.includes(contractId)
-          )
+          ),
+          completedMissionRecords: [
+            ...(afterCost.character.completedMissionRecords ?? []),
+            ...(afterCost.character.completedContracts ?? [])
+              .filter((missionId) => !(afterCost.character.completedMissionRecords ?? []).some((record) => record.missionId === missionId))
+              .map((missionId, index) => ({
+                missionId,
+                completedByPlayerId: player.seatId,
+                completedAtSequence: Math.max(-1, ...(afterCost.character.completedMissionRecords ?? []).map((record) => record.completedAtSequence)) + index + 1,
+                rewardGranted: true,
+                spent: false
+              }))
+          ].map((record) => action.spentCompletedContractIds!.includes(record.missionId)
+            ? { ...record, spent: true, spentFor: "artifact-requisition" }
+            : record)
         }
       }
     : afterCost;
@@ -4308,6 +4322,8 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
         serviceId: revealAction.serviceId,
         shopName: revealAction.shopName,
         stockIds: revealAction.stock.map((item) => item.id),
+        artifactRequisitionId: revealAction.artifactRequisitionId,
+        reservedCompletedMissionIds: revealAction.reservedCompletedMissionIds,
         revealCost: revealAction.cost,
         createdAt: revealAction.createdAt
       };
@@ -4393,6 +4409,13 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
           spentIds.some((contractId) => !currentIds.has(contractId))
         ) {
           return reject(state, action, "Artifact exchanges require three exact completed Contracts");
+        }
+        if (
+          !reveal.artifactRequisitionId ||
+          purchaseAction.artifactRequisitionId !== reveal.artifactRequisitionId ||
+          JSON.stringify(spentIds) !== JSON.stringify(reveal.reservedCompletedMissionIds ?? [])
+        ) {
+          return reject(state, action, "Artifact requisition reservation is stale");
         }
       }
 

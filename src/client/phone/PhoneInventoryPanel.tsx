@@ -526,6 +526,8 @@ function InventoryProgressionSection({
   const trophies = self.character.trophies;
   const trophyPile = self.character.trophyPile ?? [];
   const pileAvailableValue = trophyPile.reduce((total, entry) => total + getTrophyPileEntryAvailableValue(entry), 0);
+  const missionRecords = self.character.completedMissionRecords ?? [];
+  const spentMissions = missionRecords.filter((record) => record.spent);
 
   return (
     <section className="phone-inventory-progression" aria-label="Progression" data-testid="phone-inventory-progression">
@@ -538,15 +540,30 @@ function InventoryProgressionSection({
       </div>
 
       <div className="phone-inventory-contract-ledger" aria-label="Completed Contract ledger">
-        <span>Completed Contracts</span>
+        <span>Completed Missions</span>
         <strong>{self.character.completedContracts?.length ?? 0}</strong>
-        <small>Exchange exactly 3 at a Relic Dealer to choose 1 of 2 Artifacts.</small>
+        <small>{Math.min(self.character.completedContracts?.length ?? 0, 3)} / 3 toward Artifact requisition. Visit a Relic Dealer when ready.</small>
+        {(self.character.completedContracts?.length ?? 0) >= 3 ? (
+          <p><strong>Artifact requisition available</strong><br />Visit a Relic Dealer. No Artifact is granted automatically.</p>
+        ) : null}
         {(self.character.completedContracts?.length ?? 0) > 0 ? (
           <ul>
             {(self.character.completedContracts ?? []).map((contractId) => (
               <li key={contractId}>{patch.availableContracts.find((contract) => contract.id === contractId)?.name ?? "Archived mission"}</li>
             ))}
           </ul>
+        ) : null}
+        {spentMissions.length > 0 ? (
+          <details>
+            <summary>Requisitioned Missions ({spentMissions.length})</summary>
+            <ul>
+              {spentMissions.map((record) => (
+                <li key={`${record.missionId}-${record.completedAtSequence}`}>
+                  {patch.availableContracts.find((contract) => contract.id === record.missionId)?.name ?? "Archived mission"}
+                </li>
+              ))}
+            </ul>
+          </details>
         ) : null}
       </div>
 

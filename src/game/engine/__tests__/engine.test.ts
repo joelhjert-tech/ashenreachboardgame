@@ -393,7 +393,7 @@ function createContracts(): Map<string, ContractCard> {
         factionGiver: "Glass Choir",
         text: "The Choir demands two clean removals so a listening chamber can return to its proper silence.",
         objective: { type: "defeatCount", target: 2 },
-        reward: { type: "gain_note", text: "Legacy contract reward retired." }
+        reward: { effects: [], completionText: "Legacy contract reward retired." }
       }
     ],
     [
@@ -404,7 +404,7 @@ function createContracts(): Map<string, ContractCard> {
         factionGiver: "Meridian Compact",
         text: "The Compact wants two hostile disruptions erased from a freight lane before the next audit sweep arrives.",
         objective: { type: "defeatCount", target: 2 },
-        reward: { type: "gain_gear", gearId: "veil-hook" }
+        reward: { effects: [{ type: "gain_gear", gearId: "veil-hook" }] }
       }
     ],
     [
@@ -416,8 +416,8 @@ function createContracts(): Map<string, ContractCard> {
         text: "Silence the hostile signal growth around Mirecoil Beacon before it spills into the convoy lattice.",
         objective: { type: "defeatCount", target: 1 },
         reward: {
-          type: "gain_note",
-          text: "The beacon routes were stabilized for one clean cycle."
+          effects: [],
+          completionText: "The beacon routes were stabilized for one clean cycle."
         }
       }
     ],
@@ -430,11 +430,8 @@ function createContracts(): Map<string, ContractCard> {
         text: "Thread a black-lantern courier lane and clear two hostile interruptions before the smugglers burn the route.",
         objective: { type: "defeatCount", target: 2 },
         reward: {
-          type: "sequence",
-          effects: [
-            { type: "gain_gear", gearId: "veil-hook" },
-            { type: "gain_note", text: "The Lantern Run paid out in contraband route access." }
-          ]
+          effects: [{ type: "gain_gear", gearId: "veil-hook" }],
+          completionText: "The Lantern Run paid out in contraband route access."
         }
       }
     ],
@@ -452,8 +449,8 @@ function createContracts(): Map<string, ContractCard> {
           target: 1
         },
         reward: {
-          type: "gain_note",
-          text: "The Cartels opened a clean crossing thread for one black-lantern run."
+          effects: [],
+          completionText: "The Cartels opened a clean crossing thread for one black-lantern run."
         }
       }
     ]
@@ -6592,9 +6589,12 @@ describe("contracts", () => {
     });
 
     expect(server.getState().players[0]?.character.activeContract).toBeNull();
-    expect(server.getState().players[0]?.private.notes).toContain(
+    expect(server.getState().players[0]?.private.notes).not.toContain(
       "The Cartels opened a clean crossing thread for one black-lantern run."
     );
+    expect(server.getState().players[0]?.character.completedMissionRecords).toEqual([
+      expect.objectContaining({ missionId: "cartel-crossing-thread", rewardGranted: true, spent: false })
+    ]);
   });
 
   it("increments defeatCount progress only on combat wins, not on hazard wins", () => {
@@ -8460,6 +8460,8 @@ describe("contract lifecycle ledger", () => {
     const reveal = server.getState().shopStockReveals.find((entry) => entry.seatId === "seat-1")!;
     expect(reveal.stockIds.length).toBeGreaterThanOrEqual(1);
     expect(reveal.stockIds.length).toBeLessThanOrEqual(2);
+    expect(reveal.artifactRequisitionId).toMatch(/^artifact-requisition:/);
+    expect(reveal.reservedCompletedMissionIds).toEqual(["contract-a", "contract-b", "contract-c"]);
     expect(pending.character.completedContracts).toEqual(["contract-a", "contract-b", "contract-c"]);
     expect(pending.character.heldGear.filter((item) => item.tier === "artifact")).toHaveLength(0);
 
@@ -8470,6 +8472,11 @@ describe("contract lifecycle ledger", () => {
     runIntent(reconnected, { type: "SHOP_PURCHASE_REQUESTED", seatId: "seat-1", cardId: reveal.stockIds[0]! });
     const traded = reconnected.getState().players.find((entry) => entry.seatId === "seat-1")!;
     expect(traded.character.completedContracts).toEqual([]);
+    expect(traded.character.completedMissionRecords).toEqual([
+      expect.objectContaining({ missionId: "contract-a", spent: true, spentFor: "artifact-requisition" }),
+      expect.objectContaining({ missionId: "contract-b", spent: true, spentFor: "artifact-requisition" }),
+      expect.objectContaining({ missionId: "contract-c", spent: true, spentFor: "artifact-requisition" })
+    ]);
     expect(traded.character.activeContract).toEqual({ contractId: "choir-hush-census", progress: 1 });
     expect(traded.character.heldGear.filter((item) => item.tier === "artifact")).toHaveLength(1);
 
