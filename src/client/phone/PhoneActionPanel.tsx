@@ -17,6 +17,7 @@ import type {
   PublicShopCost,
   PublicShopEncounterState,
   ResultDelta,
+  ScarSummary,
   SectorNode,
   ShopFailureReason,
   Stat,
@@ -70,6 +71,63 @@ interface PhoneActionPanelProps {
   hideTurnTabs?: boolean;
   onMovementNavigation?: (target: MovementNavigationTarget) => void;
   showMovementContextNavigation?: boolean;
+}
+
+function ScarDecisionPanel({
+  mode,
+  cards,
+  source,
+  currentCount,
+  warning,
+  salvageCost,
+  canPay = true,
+  onChoose
+}: {
+  mode: "choose" | "remove";
+  cards: ScarSummary[];
+  source?: ScarSummary["source"];
+  currentCount: number;
+  warning: boolean;
+  salvageCost?: 4;
+  canPay?: boolean;
+  onChoose: (scarId: string) => void;
+}): ReactElement {
+  return (
+    <section className={`phone-scar-decision phone-scar-decision--${mode}`} aria-label={mode === "choose" ? "Choose Your Scar" : "Purge a Scar"}>
+      <header className="phone-scar-decision__header">
+        <span>{mode === "choose" ? "The Wound Did Not Close" : "Sable Machine Choir"}</span>
+        <h2>{mode === "choose" ? "Choose Your Scar" : "Purge a Scar"}</h2>
+        <p>{mode === "choose"
+          ? `Choose one permanent cursed adaptation. ${source ? `${source.toUpperCase()} source.` : ""} Current Scars: ${currentCount}.`
+          : `Pay exactly ${salvageCost ?? 4} Salvage to remove one owned Scar. This service is once per arrival.`}</p>
+        {warning ? <strong className="phone-scar-decision__warning">THIRD SCAR — choosing either card retires this operative after the current resolution finishes.</strong> : null}
+      </header>
+      <div className="phone-scar-decision__cards">
+        {cards.map((scar) => (
+          <article className="phone-scar-choice-card" key={scar.id}>
+            <PhoneInspectableCardArt
+              cardType="scar"
+              cardId={scar.id}
+              title={scar.title}
+              lore={scar.origin ?? scar.text}
+              rules={`Burden: ${scar.burdenText ?? scar.penalty} Adaptation: ${scar.adaptationText ?? scar.upside ?? "None"}`}
+              className="phone-scar-choice-card__art"
+              testId={`phone-scar-art-${scar.id}`}
+            />
+            <div className="phone-scar-choice-card__copy">
+              <span>{(scar.source ?? source ?? "unbound").toUpperCase()} SCAR</span>
+              <h3>{scar.title}</h3>
+              <p><b>Burden</b>{scar.burdenText ?? scar.penalty}</p>
+              <p><b>Adaptation</b>{scar.adaptationText ?? scar.upside ?? "No adaptation authored."}</p>
+              <GameButton aria-label={mode === "choose" ? `Choose ${scar.title}` : `Purge ${scar.title} for ${salvageCost ?? 4} Salvage`} tone={mode === "choose" ? "danger" : "primary"} disabled={!canPay} disabledReason={!canPay ? `Requires ${salvageCost ?? 4} Salvage` : undefined} onClick={() => onChoose(scar.id)}>
+                {mode === "choose" ? "Choose" : `Purge · ${salvageCost ?? 4}`}
+              </GameButton>
+            </div>
+          </article>
+        ))}
+      </div>
+    </section>
+  );
 }
 
 export function CooperativeAssistancePanel({
@@ -3243,6 +3301,56 @@ export function PhoneActionPanel({
     });
   }
 
+  if (patch.pendingScarChoice) {
+    const choice = patch.pendingScarChoice;
+    for (const scar of choice.cards) {
+      resolveActions.push({
+        key: `choose-scar-${choice.selectionId}-${scar.id}`,
+        label: `Choose ${scar.title}`,
+        detail: `${choice.thirdScarWarning ? "WARNING — this is your third Scar and will retire this operative. " : ""}BURDEN: ${scar.burdenText ?? scar.penalty} ADAPTATION: ${scar.adaptationText ?? scar.upside ?? "None"}`,
+        tone: "primary",
+        onClick: () => onIntent({ type: "CHOOSE_SCAR", seatId: self.seatId, selectionId: choice.selectionId, scarId: scar.id })
+      });
+    }
+  }
+
+  if (patch.pendingScarRemovalChoice) {
+    const choice = patch.pendingScarRemovalChoice;
+    for (const scar of choice.cards) {
+      resolveActions.push({
+        key: `purge-scar-${choice.choiceId}-${scar.id}`,
+        label: `Purge ${scar.title} — 4 Salvage`,
+        detail: `Remove this Scar permanently for the current operative. ${scar.burdenText ?? scar.penalty}`,
+        tone: "primary",
+        disabled: (self.character.salvage ?? 0) < choice.salvageCost,
+        onClick: () => onIntent({ type: "PURGE_SCAR_REQUESTED", seatId: self.seatId, choiceId: choice.choiceId, scarId: scar.id })
+      });
+    }
+  }
+
+  for (const control of patch.scarAdaptationControls ?? []) {
+    const targets = control.targets.length > 0 ? control.targets : [{ id: "", label: "Activate" }];
+    for (const target of targets) {
+      const isDie = target.id !== "" && /^\d+$/.test(target.id) && control.ruleKey.includes("reroll");
+      resolveActions.push({
+        key: `scar-adaptation-${control.activationId}-${target.id || "activate"}`,
+        label: target.id ? `${control.scarName} — ${target.label}` : `Use ${control.scarName}`,
+        detail: control.disabledReason ?? `${control.effectText} ${control.remainingUses} use remaining.`,
+        tone: "secondary",
+        disabled: !control.enabled,
+        onClick: () => onIntent({
+          type: "USE_SCAR_ADAPTATION",
+          seatId: self.seatId,
+          activationId: control.activationId,
+          scarId: control.scarId,
+          ruleKey: control.ruleKey,
+          ...(target.id && !isDie ? { targetId: target.id } : {}),
+          ...(isDie ? { rollIndex: Number(target.id) } : {})
+        })
+      });
+    }
+  }
+
   if (patch.pendingScarConsequence) {
     const prayer = self.character.heldGear.find((item) => item.id === "heat-sink-prayer");
     const prayerEquipped = prayer ? Object.values(self.character.equippedGear).includes(prayer.id) : false;
@@ -3714,7 +3822,7 @@ export function PhoneActionPanel({
     const requiredChoiceActions: PhoneBattleChoiceAction[] = hasRequiredChoice ? resolveActions : [];
     const optionalBattleActions: PhoneBattleChoiceAction[] = hasRequiredChoice
       ? []
-      : resolveActions.filter((action) => action.key === "solo-emergency-reroll");
+      : resolveActions.filter((action) => action.key === "solo-emergency-reroll" || action.key.startsWith("scar-adaptation-"));
 
     return (
       <PhoneBattleView
@@ -3865,6 +3973,26 @@ export function PhoneActionPanel({
   );
   const battleTitle = patch.encounter?.title ?? activeResolution?.card?.title ?? battleAssist?.enemyName ?? "No threat";
   const actionTitle = boardSpace?.textBox.title ?? "Operative options";
+  const scarDecisionContent = patch.pendingScarChoice ? (
+    <ScarDecisionPanel
+      mode="choose"
+      cards={patch.pendingScarChoice.cards}
+      source={patch.pendingScarChoice.source}
+      currentCount={patch.pendingScarChoice.currentCount}
+      warning={patch.pendingScarChoice.thirdScarWarning}
+      onChoose={(scarId) => onIntent({ type: "CHOOSE_SCAR", seatId: self.seatId, selectionId: patch.pendingScarChoice!.selectionId, scarId })}
+    />
+  ) : patch.pendingScarRemovalChoice ? (
+    <ScarDecisionPanel
+      mode="remove"
+      cards={patch.pendingScarRemovalChoice.cards}
+      currentCount={self.character.scars.length}
+      warning={false}
+      salvageCost={patch.pendingScarRemovalChoice.salvageCost}
+      canPay={(self.character.salvage ?? 0) >= patch.pendingScarRemovalChoice.salvageCost}
+      onChoose={(scarId) => onIntent({ type: "PURGE_SCAR_REQUESTED", seatId: self.seatId, choiceId: patch.pendingScarRemovalChoice!.choiceId, scarId })}
+    />
+  ) : null;
   const activeTabContent =
     activeTurnTab === "move" ? (
       <PhoneMovePanel
@@ -3937,7 +4065,7 @@ export function PhoneActionPanel({
       aria-label={`${activeTurnTab} command screen`}
       data-testid="phone-action-panel-root"
     >
-      {showCurrentPrompt && activeTurnTab !== "move" ? <CurrentPromptCard prompt={currentPrompt} onSelectedTab={setSelectedTurnTab} /> : null}
+      {!scarDecisionContent && showCurrentPrompt && activeTurnTab !== "move" ? <CurrentPromptCard prompt={currentPrompt} onSelectedTab={setSelectedTurnTab} /> : null}
       <div
         className="phone-action-content-root"
         id={`phone-turn-panel-${activeTurnTab}`}
@@ -3945,9 +4073,8 @@ export function PhoneActionPanel({
         aria-label={`${activeTurnTab} actions`}
         data-testid="phone-action-content-root"
       >
-        <CinderWattleAbilityPanel patch={patch} seatId={self.seatId} onIntent={onIntent} />
-        {activeTabContent}
-        {activeTurnTab === "move" ? null : (
+        {scarDecisionContent ?? <><CinderWattleAbilityPanel patch={patch} seatId={self.seatId} onIntent={onIntent} />{activeTabContent}</>}
+        {scarDecisionContent || activeTurnTab === "move" ? null : (
           <div className="phone-sheet-action-status phone-action-secondary-status" data-testid="phone-action-secondary-status">
             <span>{tabDefinitions.find((tab) => tab.id === activeTurnTab)?.label ?? portraitActionStatusLabel(activeTurnTab)}</span>
             <span>{activeStatusCopy}</span>

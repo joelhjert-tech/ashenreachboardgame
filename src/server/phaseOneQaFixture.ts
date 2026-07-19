@@ -7,6 +7,7 @@ import { loadEscalationCards } from "../game/content/escalations.js";
 import { loadCharacters } from "../game/content/characters.js";
 import type { GameState } from "../game/schema/session.schema.js";
 import { getIntrinsicBaseStat } from "../game/rules/cooperativeAssistance.js";
+import { createScarChoice } from "../game/rules/scarSystem.js";
 
 export type PhaseOneQaFixture =
   | { kind: "setup-flow"; stage: "scenario-selection" }
@@ -41,6 +42,10 @@ export type PhaseOneQaFixture =
   | {
       kind: "discovery-equipment";
       stage: "equipment-reveal" | "follower-reveal" | "auto-equipped" | "equip-choice" | "command-item-invalid" | "grit-item-valid";
+    }
+  | {
+      kind: "scar-system";
+      stage: "choice" | "owned-one" | "owned-two" | "third-warning" | "removal" | "retired" | "adaptation-available" | "adaptation-used";
     }
   | { kind: "card-category"; stage: "enemy" | "hazard" | "event" | "anomaly" | "escalation" | "persistent" };
 
@@ -206,6 +211,115 @@ export function applyPhaseOneQaFixture(state: GameState, seatId: string, fixture
   clearResolution(state);
   state.sequence += 1;
   state.activeSeatIndex = Math.max(0, state.turnOrder.indexOf(seatId));
+
+  if (fixture.kind === "scar-system") {
+    const player = state.players.find((entry) => entry.seatId === seatId);
+    if (!player) throw new Error(`QA fixture cannot find ${seatId}`);
+    state.phase = "action";
+    state.pendingScarChoice = null;
+    state.pendingScarRemovalChoice = null;
+    state.pendingScarThreshold = null;
+    player.character.status = "active";
+    player.character.wounds = 1;
+    player.character.scars = fixture.stage === "adaptation-available" || fixture.stage === "adaptation-used"
+      ? ["scar-wound-9"]
+      : fixture.stage === "owned-one" || fixture.stage === "removal"
+      ? ["scar-wound-1"]
+      : fixture.stage === "owned-two" || fixture.stage === "third-warning" || fixture.stage === "retired"
+        ? ["scar-wound-1", "scar-wound-2"]
+        : [];
+
+    if (fixture.stage === "adaptation-available" || fixture.stage === "adaptation-used") {
+      const elite = [...loadThreatCards().values()].find((card) => card.cardType === "enemy" && card.severity >= 5);
+      if (!elite) throw new Error("QA fixture requires an elite enemy");
+      const encounter = { ...elite, stat: "grit" as const };
+      state.phase = "resolution";
+      state.currentEncounter = encounter;
+      state.activeResolution = {
+        id: "qa-scar-adaptation-window",
+        playerId: seatId,
+        source: "threat",
+        stage: "battle_setup",
+        card: { id: encounter.id, title: encounter.title, type: "enemy" },
+        battle: { stat: "grit", difficulty: encounter.difficulty, modifiers: [] }
+      };
+      if (fixture.stage === "adaptation-used") {
+        state.scarUsage = [{
+          usageId: "qa-scar-adaptation-used",
+          seatId,
+          scarId: "scar-wound-9",
+          ruleKey: "elite-grit-bonus",
+          scope: "round",
+          scopeId: "round:0",
+          sourceEventId: "qa-scar-adaptation-used",
+          createdAt: "qa-scar-system"
+        }];
+      }
+      return;
+    }
+
+    if (fixture.stage === "choice" || fixture.stage === "third-warning") {
+      const offered = createScarChoice(
+        state,
+        seatId,
+        {
+          type: "gain_scar_choice",
+          amount: 1,
+          source: fixture.stage === "third-warning" ? "rift" : "flesh",
+          sourceCardId: "qa-scar-system"
+        },
+        `qa-scar-system:${fixture.stage}`,
+        "qa-scar-system"
+      );
+      Object.assign(state, offered.state);
+      state.sequence += 1;
+      return;
+    }
+
+    if (fixture.stage === "removal") {
+      placePlayer(state, seatId, "middle_scar_surgery");
+      player.character.salvage = 6;
+      state.pendingScarRemovalChoice = {
+        choiceId: "qa-scar-removal",
+        ownerSeatId: seatId,
+        sectorId: "middle_scar_surgery",
+        visitId: "qa-scar-removal-visit",
+        scarIds: ["scar-wound-1"],
+        salvageCost: 4,
+        createdAt: "qa-scar-system"
+      };
+      return;
+    }
+
+    if (fixture.stage === "retired") {
+      player.character.status = "recalled";
+      player.character.wounds = state.woundThreshold;
+      player.character.scars = [];
+      state.lastOutcomeSummary = {
+        seatId,
+        movedToSectorId: player.sectorId,
+        encounterCardId: "qa-third-scar-retirement",
+        encounterTitle: "The Wound Did Not Close",
+        encounterCardType: null,
+        checkStat: null,
+        die1: null,
+        die2: null,
+        statBonus: null,
+        checkTotal: null,
+        difficulty: null,
+        enemyRollerSeatId: null,
+        enemyDie1: null,
+        enemyDie2: null,
+        enemyBonus: null,
+        enemyTotal: null,
+        success: false,
+        summary: "A third Scar retired the operative after the resolution stack completed. Replacement recruitment is required."
+      };
+      return;
+    }
+
+    return;
+  }
 
   if (fixture.kind === "host-rare") {
     const player = state.players.find((entry) => entry.seatId === seatId);
