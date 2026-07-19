@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactEle
 import { adminLibraryCards, type AdminLibraryCard } from "./adminLibraryRegistry.js";
 import AdminCardEditor from "./AdminCardEditor.js";
 import { fetchAdminContentStatus, type AdminContentStatus } from "./adminContentApi.js";
+import { HostImage } from "../HostImage.js";
 
 type LibrarySort = "name" | "cardType" | "difficulty" | "skill" | "source" | "warnings";
 
@@ -47,11 +48,7 @@ function CopyButton({ label, value }: { label: string; value: string }): ReactEl
 }
 
 function CardArtwork({ card, large = false }: { card: AdminLibraryCard; large?: boolean }): ReactElement {
-  const [failed, setFailed] = useState(false);
-  if (!card.artworkUrl || failed) {
-    return <div className={`admin-library-art-missing${large ? " is-large" : ""}`}><span>ART UNAVAILABLE</span><strong>{card.id}</strong></div>;
-  }
-  return <img src={card.artworkUrl} alt={`Artwork for ${card.name}`} loading="lazy" onError={() => setFailed(true)} />;
+  return <HostImage className={`admin-library-host-art${large ? " is-large" : ""}`} src={card.artworkUrl} alt={`Artwork for ${card.name}`} fit="contain" aspectRatio="card" fallback="card" loading="lazy" />;
 }
 
 function DifficultyMark({ card }: { card: AdminLibraryCard }): ReactElement {

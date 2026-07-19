@@ -1,6 +1,6 @@
 import type { ReactElement } from "react";
-import { CardArtImage } from "../shared/CardArtImage.js";
 import {
+  getCardArtPath,
   getCharacterPortraitPath,
   getEncounterBattleCardBackPath,
   getOperativeBattleCardBackPath
@@ -11,6 +11,7 @@ import { statLabelById } from "../shared/statLabels.js";
 import { ResultDeltaRow } from "../shared/ResultDeltaChips.js";
 import type { ActiveResolution, PublicPatchPayload, PublicPlayer, ResultDelta, StatePatch, Stat } from "../shared/types.js";
 import { HostCinematicFxLayer } from "./HostCinematicFxLayer.js";
+import { HostImage } from "./HostImage.js";
 import { isHostBattleActive } from "./hostBattleState.js";
 
 interface ResolutionSideModel {
@@ -493,9 +494,9 @@ function HostBattleCard({ side, variant, dice }: { side: ResolutionSideModel; va
       </header>
       <div className={`host-battle-portrait${variant === "opponent" ? " host-battle-card-art" : ""}`}>
         {variant === "player" && side.artUrl ? (
-          <img src={side.artUrl} alt={side.name} />
+          <HostImage src={side.artUrl} alt={side.name} fit="cover" aspectRatio="natural" focalPoint="50% 14%" fallback="portrait" />
         ) : variant === "opponent" ? (
-          <CardArtImage cardType={side.cardType ?? "threat"} cardId={side.cardId ?? null} alt={side.name} />
+          <HostImage src={side.cardId ? getCardArtPath(side.cardType ?? "threat", side.cardId) : null} alt={side.name} fit="contain" aspectRatio="natural" fallback="card" />
         ) : (
           <div className="host-battle-fallback">Operative</div>
         )}
@@ -523,7 +524,7 @@ function HostBattleCardReveal({
     >
       <div className="host-battle-reveal-inner">
         <div className={`host-battle-card-back host-battle-card-back-${sideClass}`} aria-hidden="true">
-          <img src={side.cardBackUrl} alt="" />
+          <HostImage src={side.cardBackUrl} alt="" fit="contain" aspectRatio="natural" fallback="card" />
         </div>
         <HostBattleCard side={side} variant={variant} dice={dice} />
       </div>

@@ -13,7 +13,6 @@ import { HostAudioControls } from "../audio/HostAudioControls.js";
 import { useAshenReachAudio } from "../audio/useAshenReachAudio.js";
 import { createSession, fetchCharacters, fetchScenarios, fetchSessionSummary, startSession } from "../shared/network.js";
 import { getSeatAbilityTelemetry } from "../shared/abilityTelemetry.js";
-import { CardArtImage } from "../shared/CardArtImage.js";
 import { ChallengeBadge, ThreatIconBadge } from "../shared/ChallengeBadge.js";
 import { DebugPanel } from "../shared/DebugPanel.js";
 import { RollOutcomePanel } from "../shared/RollOutcomePanel.js";
@@ -31,7 +30,7 @@ import {
 import { ResultDeltaRow } from "../shared/ResultDeltaChips.js";
 import { formatSeatLabel, statOrder, statShortLabelById } from "../shared/statLabels.js";
 import { useRoomSubscription } from "../shared/useRoomSubscription.js";
-import { getCharacterPortraitPath, getLobbyStagePath, getNemesisPortraitPath } from "../shared/assetPaths.js";
+import { getCardArtPath, getCharacterPortraitPath, getLobbyStagePath, getNemesisPortraitPath } from "../shared/assetPaths.js";
 import type {
   ActiveNemesisSummary,
   CharacterCatalogEntry,
@@ -62,6 +61,7 @@ import { DiceRollScene } from "./DiceRollScene.js";
 import { JoinQrCard } from "./JoinQrCard.js";
 import { TacticalMapBoard } from "./TacticalMapBoard.js";
 import { getExpectedTileAssetPath, getTileAssetPath } from "./tileAssetManifest.js";
+import { HostImage } from "./HostImage.js";
 
 const hostTokenStorageKey = "ashen-reach-tv-host-token";
 const roomCodeStorageKey = "ashen-reach-tv-room-code";
@@ -199,7 +199,7 @@ function ScenarioSheetArtFrame({
   return (
     <div className={`tv-scenario-sheet-art${compact ? " tv-scenario-sheet-art-compact" : ""}`} data-testid="scenario-sheet-art">
       {showImage ? (
-        <img src={path ?? ""} alt={`${title} scenario sheet art`} onError={() => setFailed(true)} />
+        <HostImage src={path} alt={`${title} scenario sheet art`} fit="contain" aspectRatio="natural" fallback="card" onError={() => setFailed(true)} />
       ) : (
         <div className="tv-scenario-sheet-art-fallback" role="img" aria-label={`${title} scenario sheet art pending`}>
           <span>Scenario Sheet</span>
@@ -936,7 +936,7 @@ function OperativesRail({ patch, characterCatalog, activeSeatId, sessionMode, ba
             >
               <div className="tv-operative-seat" aria-label={`Seat ${seatNumber}`}>{seatNumber}</div>
               <div className="tv-operative-portrait">
-                {portraitUrl ? <img src={portraitUrl} alt={characterName || playerName} /> : <span aria-hidden="true">+</span>}
+                {portraitUrl ? <HostImage src={portraitUrl} alt={characterName || playerName} fit="cover" aspectRatio="portrait" focalPoint="50% 14%" fallback="portrait" /> : <span aria-hidden="true">+</span>}
               </div>
               <div className="tv-operative-copy">
                 <div className="tv-operative-name-row">
@@ -1692,7 +1692,7 @@ function HostContextPanel({
       <div className="tv-host-context-kicker">Sector brief</div>
       <div className="tv-host-sector-preview">
         {activeTileAssetPath ? (
-          <img src={activeTileAssetPath} alt="" aria-hidden="true" />
+          <HostImage src={activeTileAssetPath} alt="" fit="cover" aspectRatio="natural" fallback="map" aria-hidden="true" />
         ) : (
           <div className="tv-host-sector-missing-art">
             <strong>Missing tile art</strong>
@@ -1835,7 +1835,7 @@ function NemesisStatusCard({
         <span />
       </div>
       <div className="tv-nemesis-portrait">
-        {nemesis ? <img src={getNemesisPortraitPath(nemesis.id)} alt={displayName} /> : <div>{displayTitle}</div>}
+        {nemesis ? <HostImage src={getNemesisPortraitPath(nemesis.id)} alt={displayName} fit="cover" aspectRatio="portrait" focalPoint="50% 14%" fallback="portrait" /> : <div>{displayTitle}</div>}
       </div>
       <h3>{displayName}</h3>
       <p>{displayTitle} | {faction}</p>
@@ -1965,7 +1965,7 @@ function ActiveMissionsPanel({ patch }: { patch: StatePatch<PublicPatchPayload> 
                   </div>
                 ) : contract && activeContract ? (
                   <>
-                    <CardArtImage cardType="contract" cardId={contract.id} alt="" aria-hidden="true" />
+                    <HostImage src={getCardArtPath("contract", contract.id)} alt="" fit="contain" aspectRatio="card" fallback="card" aria-hidden="true" />
                     <div className="tv-active-mission-copy">
                       <h3>{contract.name}</h3>
                       <p>{describeContractObjective(contract)}</p>
@@ -2529,7 +2529,7 @@ function CardRevealPanel({ patch }: { patch: StatePatch<PublicPatchPayload> | nu
       </div>
       <div className="tv-reveal-card-layout">
         <div className="tv-reveal-art">
-          <CardArtImage cardType="threat" cardId={cardId} alt="" aria-hidden="true" />
+          <HostImage src={cardId ? getCardArtPath("threat", cardId) : null} alt="" fit="contain" aspectRatio="card" fallback="card" aria-hidden="true" />
         </div>
         <div className="tv-reveal-parchment" aria-label={revealSummary}>
           <span className="tv-card-reveal-type">{toTitleCase(cardType)}</span>
@@ -2584,7 +2584,7 @@ function HostDiscoveryOverlay({
   return (
     <section className="tv-discovery-overlay" aria-label="Discovery encounter" data-testid="tv-discovery-overlay">
       <div className="tv-discovery-overlay__art">
-        <CardArtImage cardType="threat" cardId={card?.id} alt="" aria-hidden="true" />
+        <HostImage src={card?.id ? getCardArtPath("threat", card.id) : null} alt="" fit="contain" aspectRatio="card" fallback="card" aria-hidden="true" />
       </div>
       <div className="tv-discovery-overlay__body">
         <span>Discovery encounter</span>
@@ -3053,6 +3053,16 @@ export function TvApp(): ReactElement {
     publicPatch &&
     (publicPatch.payload.status === "active" || publicPatch.payload.status === "ended") &&
     publicPatch.payload.lobbyConfigured !== false;
+
+  const devAdminSurface = import.meta.env.DEV
+    ? new URLSearchParams(window.location.search).get("admin")
+    : null;
+  if (devAdminSurface === "library") {
+    return <Suspense fallback={<div className="admin-library-loading">Opening archive…</div>}><AdminLibrary roomCode={effectiveRoomCode} hostToken={hostToken} initialCardId={adminLibraryCardId} onOpenMapTile={(tileId) => { setAdminMapTileId(tileId); setAdminSurface("map"); }} onClose={() => setAdminSurface(null)} /></Suspense>;
+  }
+  if (devAdminSurface === "map") {
+    return <Suspense fallback={<div className="admin-library-loading">Opening tactical archive…</div>}><AdminMapInspector initialTileId={adminMapTileId} onOpenLibraryCard={(cardId) => { setAdminLibraryCardId(cardId); setAdminSurface("library"); }} onClose={() => setAdminSurface(null)} /></Suspense>;
+  }
 
   if (!gameUiReady) {
     return (

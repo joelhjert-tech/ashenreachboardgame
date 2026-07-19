@@ -8,6 +8,7 @@ import type { BoardRect } from "./boardGeometry.js";
 import { getBoardMapRuntimeAssetPaths } from "./mapAssetRegistry.js";
 import { getBoardTileLayout, getBoardTileRouteAnchor } from "./boardTileLayout.js";
 import { getExpectedTileAssetPath, getTileAssetPath } from "./tileAssetManifest.js";
+import { HostImage } from "./HostImage.js";
 
 export function getBoardTileAssetPaths(): string[] {
   return getBoardMapRuntimeAssetPaths();
@@ -133,10 +134,13 @@ export function BoardTileImage({ nodeId, label, className = "", overridePath = n
   }
 
   return (
-    <img
+    <HostImage
       className={`talisman-board-tile-art ${className}`.trim()}
       src={assetPath}
       alt=""
+      fit="cover"
+      aspectRatio="map-tile"
+      fallback="map"
       aria-hidden="true"
       loading="eager"
       draggable={false}

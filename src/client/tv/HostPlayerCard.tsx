@@ -3,6 +3,7 @@ import { getChallengeThemeStyle } from "../../game/ui/challengeTheme.js";
 import type { AbilityChangeItem } from "../shared/abilityTelemetry.js";
 import { ChallengeBadge } from "../shared/ChallengeBadge.js";
 import type { PublicEquippedGearSummary, Stat } from "../shared/types.js";
+import { HostImage } from "./HostImage.js";
 
 interface HostPlayerCardAttributes {
   cmd: number | null;
@@ -96,7 +97,7 @@ export function HostPlayerCard({
       <div className="host-player-card-portrait-column">
         <div className="host-player-card-portrait-frame">
           {portraitUrl && !isOpen ? (
-            <img className="host-player-card-portrait" src={portraitUrl} alt={characterName ?? seatLabel} />
+            <HostImage className="host-player-card-portrait" src={portraitUrl} alt={characterName ?? seatLabel} fit="cover" aspectRatio="portrait" focalPoint="50% 14%" fallback="portrait" />
           ) : (
             <div className="host-player-card-portrait-empty">
               <span>Open Seat</span>
