@@ -10,7 +10,8 @@ interface SessionResponse {
 async function main(): Promise<void> {
   const apiOrigin = process.env.ASHEN_REACH_API_ORIGIN ?? "http://127.0.0.1:8080";
   const clientOrigin = process.env.ASHEN_REACH_CLIENT_ORIGIN ?? "http://127.0.0.1:5173";
-  const output = resolve("reports", "ui", "lobby-stage");
+  const capturePhase = process.env.LOBBY_QA_PHASE ?? "after";
+  const output = resolve("reports", "ui", "lobby-panels", capturePhase);
   await mkdir(output, { recursive: true });
 
   const response = await fetch(`${apiOrigin}/api/session/create`, {
@@ -41,18 +42,25 @@ async function main(): Promise<void> {
   const results: Array<Record<string, unknown>> = [];
   for (const viewport of [
     { name: "1920x1080", width: 1920, height: 1080 },
-    { name: "1366x768", width: 1366, height: 768 }
+    { name: "1440x900", width: 1440, height: 900 },
+    { name: "1280x720", width: 1280, height: 720 }
   ]) {
     await page.setViewportSize({ width: viewport.width, height: viewport.height });
     await page.waitForTimeout(180);
     const metrics = await page.evaluate(() => {
       const startup = document.querySelector<HTMLElement>(".tv-startup-screen");
       const card = document.querySelector<HTMLElement>(".tv-startup-card");
+      const room = document.querySelector<HTMLElement>(".tv-startup-room");
       const qr = document.querySelector<SVGElement>(".join-qr-card-full svg");
+      const cardStyle = card ? getComputedStyle(card) : null;
+      const roomStyle = room ? getComputedStyle(room) : null;
       return {
         viewportWidth: innerWidth,
         documentWidth: Math.max(document.body.scrollWidth, document.documentElement.scrollWidth),
         backgroundImage: startup ? getComputedStyle(startup).backgroundImage : null,
+        cardBackground: cardStyle?.backgroundImage ?? null,
+        cardBackdropFilter: cardStyle?.backdropFilter ?? null,
+        roomBackground: roomStyle?.backgroundImage ?? null,
         cardRect: card?.getBoundingClientRect().toJSON() ?? null,
         qrRect: qr?.getBoundingClientRect().toJSON() ?? null,
         canvasCount: document.querySelectorAll("canvas").length
