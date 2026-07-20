@@ -61,6 +61,7 @@ import {
   type MovementNavigationTarget
 } from "./PhoneMovementView.js";
 import { CinderWattleAbilityPanel } from "./CinderWattleAbilityPanel.js";
+import { PhoneScarSelector } from "./PhoneScarSelector.js";
 
 interface PhoneActionPanelProps {
   characters: CharacterCatalogEntry[];
@@ -2912,6 +2913,7 @@ export function PhoneActionPanel({
     patch.outcomeSummary?.seatId === self.seatId && patch.outcomeSummary.movedToSectorId
       ? patch.outcomeSummary
       : null;
+
   useEffect(() => {
     const currentSectorName = getBoardSpace(self.sectorId)?.name ?? sector?.name ?? self.sectorId;
     const previousSector = previousSectorRef.current;
@@ -3974,12 +3976,11 @@ export function PhoneActionPanel({
   const battleTitle = patch.encounter?.title ?? activeResolution?.card?.title ?? battleAssist?.enemyName ?? "No threat";
   const actionTitle = boardSpace?.textBox.title ?? "Operative options";
   const scarDecisionContent = patch.pendingScarChoice ? (
-    <ScarDecisionPanel
-      mode="choose"
+    <PhoneScarSelector
       cards={patch.pendingScarChoice.cards}
       source={patch.pendingScarChoice.source}
       currentCount={patch.pendingScarChoice.currentCount}
-      warning={patch.pendingScarChoice.thirdScarWarning}
+      thresholdWarning={patch.pendingScarChoice.thirdScarWarning}
       onChoose={(scarId) => onIntent({ type: "CHOOSE_SCAR", seatId: self.seatId, selectionId: patch.pendingScarChoice!.selectionId, scarId })}
     />
   ) : patch.pendingScarRemovalChoice ? (
@@ -4081,7 +4082,7 @@ export function PhoneActionPanel({
           </div>
         )}
       </div>
-      {!hideTurnTabs && <TurnActionDock tabs={tabDefinitions} activeTab={activeTurnTab} onSelected={setSelectedTurnTab} />}
+      {!hideTurnTabs && !patch.pendingScarChoice && <TurnActionDock tabs={tabDefinitions} activeTab={activeTurnTab} onSelected={setSelectedTurnTab} />}
     </section>
   );
 }

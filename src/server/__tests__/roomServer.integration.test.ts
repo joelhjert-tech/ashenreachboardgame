@@ -3,6 +3,7 @@ import type { AddressInfo } from "node:net";
 import WebSocket, { WebSocketServer } from "ws";
 import { afterEach, describe, expect, it } from "vitest";
 import { createSequenceRandomSource } from "../../game/engine/dice.js";
+import { createScarChoice } from "../../game/rules/scarSystem.js";
 import { createCharacters } from "../../game/engine/__tests__/testData.js";
 import type { ClientIntent } from "../../game/engine/actions.js";
 import type { ThreatCard } from "../../game/schema/card.schema.js";
@@ -1824,6 +1825,38 @@ describe("roomServer websocket integration", () => {
       expect(harness.roomServer.getState().winnerSeatId).toBe(before.winnerSeatId);
       expect(harness.roomServer.getState().escalationLevel).toBe(before.escalationLevel);
     }
+  });
+
+  it("accepts an owner Scar choice through the validated phone socket boundary", async () => {
+    const base = createState({ status: "active", phase: "action" });
+    const state = createScarChoice(
+      base,
+      "seat-1",
+      { type: "gain_scar_choice", amount: 1, source: "flesh", sourceCardId: "socket-scar-source" },
+      "socket-scar-source-event",
+      "now"
+    ).state;
+    const pending = state.pendingScarChoice!;
+    harness = await startHarness([0, 0, 0, 0], state);
+
+    const phone = await connectClient(
+      `ws://127.0.0.1:${harness.port}/?view=phone&token=${createJoinToken({ sessionId: "session-alpha", seatId: "seat-1" })}`
+    );
+    probes.push(phone);
+    await phone.waitFor((message) => isStatePatch(message) && Object.hasOwn(message.payload, "pendingScarChoice"));
+
+    const marker = phone.mark();
+    phone.send({
+      type: "CHOOSE_SCAR",
+      seatId: "seat-1",
+      selectionId: pending.selectionId,
+      scarId: pending.candidateIds[0]!
+    });
+    await waitForServerTick();
+
+    expect(phone.messages.slice(marker).find(isIntentRejected)).toBeUndefined();
+    expect(harness.roomServer.getState().pendingScarChoice).toBeNull();
+    expect(harness.roomServer.getState().players[0]?.character.scars).toContain(pending.candidateIds[0]);
   });
 
   it("broadcasts battle setup before rolling a visible hazard check", async () => {

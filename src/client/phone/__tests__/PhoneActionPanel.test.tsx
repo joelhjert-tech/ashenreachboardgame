@@ -133,6 +133,56 @@ function createPatch(overrides: Partial<PhonePatchPayload> = {}): PhonePatchPayl
 }
 
 describe("PhoneActionPanel", () => {
+  it("submits the focused production Scar through the authoritative choice intent", () => {
+    const onIntent = vi.fn<(intent: ClientIntent) => void>();
+    render(<PhoneActionPanel characters={characters} onIntent={onIntent} patch={createPatch({
+      phase: "resolution",
+      pendingScarChoice: {
+        selectionId: "scar-choice:seat-1:mind",
+        source: "mind",
+        sourceCardId: "qa-mind-scar",
+        currentCount: 0,
+        thirdScarWarning: false,
+        cards: [
+          {
+            id: "scar-wound-12",
+            title: "Relay Ghost",
+            text: "The relay follows you.",
+            trigger: "Remote signal tests strain the operative.",
+            penalty: "Remote Signal -1.",
+            relief: "Return to a relay.",
+            source: "mind",
+            burdenText: "The first remote Signal test each round suffers -1.",
+            adaptationText: "Inspect the next Blue Threat at a relay."
+          },
+          {
+            id: "scar-wound-13",
+            title: "Choir Static",
+            text: "The chorus never quiets.",
+            trigger: "Escalation strains the operative.",
+            penalty: "The first Escalation advance inflicts 1 Wound.",
+            relief: "Silence the chorus.",
+            source: "mind",
+            burdenText: "The first Escalation advance inflicts 1 Wound.",
+            adaptationText: "Gain +1 Signal against an Escalation test."
+          }
+        ]
+      }
+    })} />);
+
+    expect(screen.getByRole("region", { name: /focused scar carousel/i })).toBeVisible();
+    expect(screen.getByText(/1 of 2/i)).toBeVisible();
+    fireEvent.click(screen.getByRole("button", { name: /accept relay ghost/i }));
+
+    expect(onIntent).toHaveBeenCalledTimes(1);
+    expect(onIntent).toHaveBeenCalledWith({
+      type: "CHOOSE_SCAR",
+      seatId: "seat-1",
+      selectionId: "scar-choice:seat-1:mind",
+      scarId: "scar-wound-12"
+    });
+  });
+
   it("keeps an occupied-slot discovery choice owner-controlled", () => {
     const onIntent = vi.fn();
     render(<PhoneActionPanel characters={characters} onIntent={onIntent} patch={createPatch({

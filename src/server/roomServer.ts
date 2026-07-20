@@ -382,6 +382,8 @@ const CLIENT_INTENT_TYPES = new Set<string>([
   "FORCED_DESTINATION_SELECTED",
   "FORCED_DISPLACEMENT_ACCEPTED",
   "CONTINUE_SCAR_CONSEQUENCE",
+  "CHOOSE_SCAR",
+  "PURGE_SCAR_REQUESTED",
   "USE_SCAR_ADAPTATION",
   "SET_READY",
   "SELECT_CHARACTER",
@@ -1619,6 +1621,14 @@ export class GameRoomServer {
         requireStringField(message, "instanceId", type); requireStringField(message, "reactionId", type); requireStringField(message, "toSectorId", type); break;
       case "CONTINUE_SCAR_CONSEQUENCE":
         requireStringField(message, "reactionId", type); break;
+      case "CHOOSE_SCAR":
+        requireStringField(message, "selectionId", type);
+        requireStringField(message, "scarId", type);
+        break;
+      case "PURGE_SCAR_REQUESTED":
+        requireStringField(message, "choiceId", type);
+        requireStringField(message, "scarId", type);
+        break;
       case "USE_SCAR_ADAPTATION":
         requireStringField(message, "activationId", type); requireStringField(message, "scarId", type); requireStringField(message, "ruleKey", type);
         if (message.targetId !== undefined) requireStringField(message, "targetId", type);

@@ -1063,6 +1063,7 @@ export function PortraitControllerView({
     activeTab === "move" &&
     (patch?.phase === "navigation" || patch?.movementPlanner?.active || patch?.outcomeSummary?.movedToSectorId)
   );
+  const scarSelectorActive = Boolean(patch?.pendingScarChoice);
   const battleNavigationLabel = patch?.activeResolution?.card?.type === "asset" || patch?.encounter?.presentationType === "asset"
     ? "Discovery"
     : patch?.activeResolution?.card?.type === "event" || patch?.encounter?.presentationType === "event"
@@ -1468,7 +1469,7 @@ export function PortraitControllerView({
           )}
         </main>
 
-        {!focusedResolutionActive && (!movementFlowActive || bottomDockExpanded) ? <nav className={bottomNavClassName} role="tablist" aria-label="Phone navigation">
+        {!focusedResolutionActive && !scarSelectorActive && (!movementFlowActive || bottomDockExpanded) ? <nav className={bottomNavClassName} role="tablist" aria-label="Phone navigation">
           {bottomDockExpanded ? (
             <>
               {[
