@@ -1202,6 +1202,75 @@ describe("PhoneActionPanel", () => {
     }
   });
 
+  it("clears a prior movement outcome when a fresh navigation phase begins", async () => {
+    vi.useFakeTimers();
+
+    try {
+      const previousMovementOutcome = {
+        seatId: "seat-1",
+        movedToSectorId: "outer_waymarket",
+        encounterCardId: null,
+        encounterTitle: null,
+        encounterCardType: null,
+        checkStat: null,
+        die1: null,
+        die2: null,
+        statBonus: null,
+        checkTotal: null,
+        difficulty: null,
+        summary: "Lane reached Anchor Market.",
+        success: true
+      };
+      const movedSelf = {
+        ...createPatch().self!,
+        sectorId: "outer_waymarket",
+        character: {
+          ...createPatch().self!.character,
+          currentSpaceId: "outer_waymarket"
+        }
+      };
+      const { rerender } = render(
+        <PhoneActionPanel
+          characters={characters}
+          onIntent={vi.fn()}
+          selectedTurnTab="move"
+          patch={createPatch({
+            phase: "action",
+            encounter: null,
+            self: movedSelf,
+            outcomeSummary: previousMovementOutcome
+          })}
+        />
+      );
+
+      await act(async () => {});
+      expect(screen.getByTestId("phone-movement-view")).toHaveAttribute("data-movement-state", "resolving");
+
+      rerender(
+        <PhoneActionPanel
+          characters={characters}
+          onIntent={vi.fn()}
+          selectedTurnTab="move"
+          patch={createPatch({
+            phase: "navigation",
+            encounter: null,
+            self: movedSelf,
+            movementPlanner: null,
+            outcomeSummary: previousMovementOutcome
+          })}
+        />
+      );
+
+      await act(async () => {});
+
+      expect(screen.getByTestId("phone-movement-view")).toHaveAttribute("data-movement-state", "needs-roll");
+      expect(screen.getByRole("button", { name: /roll movement/i })).toBeEnabled();
+      expect(screen.queryByText(/moving to anchor market/i)).not.toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("keeps long movement rows readable and puts confirm in the detail footer", () => {
     render(
       <PhoneActionPanel

@@ -2920,9 +2920,17 @@ export function PhoneActionPanel({
   const isScenarioConfrontation = isScenarioConfrontationSpace(self.sectorId);
   const movementPlanner = patch.movementPlanner ?? null;
   const movementOutcome =
-    patch.outcomeSummary?.seatId === self.seatId && patch.outcomeSummary.movedToSectorId
+    patch.phase !== "navigation" &&
+    patch.outcomeSummary?.seatId === self.seatId &&
+    patch.outcomeSummary.movedToSectorId
       ? patch.outcomeSummary
       : null;
+
+  useEffect(() => {
+    if (patch.phase === "navigation") {
+      setMovementTravel(null);
+    }
+  }, [patch.phase, self.seatId]);
 
   useEffect(() => {
     const currentSectorName = getBoardSpace(self.sectorId)?.name ?? sector?.name ?? self.sectorId;
