@@ -1,0 +1,75 @@
+{
+  "generatedAt": "2026-07-20T05:04:17.810Z",
+  "captures": [
+    {
+      "file": "payment-required-390x844.png",
+      "state": "Required payment",
+      "viewport": "390x844"
+    },
+    {
+      "file": "payment-reconnect-390x844.png",
+      "state": "Required payment after reconnect",
+      "viewport": "390x844"
+    },
+    {
+      "file": "payment-resolved-390x844.png",
+      "state": "Payment applied once",
+      "viewport": "390x844"
+    },
+    {
+      "file": "payment-optional-390x844.png",
+      "state": "Optional payment",
+      "viewport": "390x844"
+    },
+    {
+      "file": "payment-declined-390x844.png",
+      "state": "Optional payment declined",
+      "viewport": "390x844"
+    },
+    {
+      "file": "payment-insufficient-390x844.png",
+      "state": "Insufficient funds floors at zero",
+      "viewport": "390x844"
+    },
+    {
+      "file": "battle-reward-390x844.png",
+      "state": "Battle reward",
+      "viewport": "390x844"
+    },
+    {
+      "file": "battle-reward-1920x1080.png",
+      "state": "battle-reward",
+      "viewport": "1920x1080"
+    },
+    {
+      "file": "battle-reward-1440x900.png",
+      "state": "battle-reward",
+      "viewport": "1440x900"
+    },
+    {
+      "file": "battle-reward-1280x720.png",
+      "state": "battle-reward",
+      "viewport": "1280x720"
+    },
+    {
+      "file": "event-reward-390x844.png",
+      "state": "Event reward",
+      "viewport": "390x844"
+    },
+    {
+      "file": "event-reward-1920x1080.png",
+      "state": "event-reward",
+      "viewport": "1920x1080"
+    },
+    {
+      "file": "event-reward-1440x900.png",
+      "state": "event-reward",
+      "viewport": "1440x900"
+    },
+    {
+      "file": "event-reward-1280x720.png",
+      "state": "event-reward",
+      "viewport": "1280x720"
+    }
+  ]
+}

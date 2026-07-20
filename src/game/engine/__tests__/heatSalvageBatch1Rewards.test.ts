@@ -148,6 +148,12 @@ describe("Heat-to-Salvage reward batch 1", () => {
     const phone = createPhoneProjection(result.state, "seat-1", true);
     const tv = createTvProjection(result.state);
     expect(result.state.activeResolution?.outcome?.text).toContain("gain 1 Salvage");
+    expect(phone.publicResultDeltas ?? []).toEqual(expect.arrayContaining([
+      expect.objectContaining({ type: "salvage", value: 1, sign: "gain" })
+    ]));
+    expect(tv.publicResultDeltas ?? []).toEqual(expect.arrayContaining([
+      expect.objectContaining({ type: "salvage", value: 1, sign: "gain" })
+    ]));
     expect(phone.publicResultDeltas ?? []).not.toEqual(expect.arrayContaining([expect.objectContaining({ type: "salvage", sign: "loss" })]));
     expect(tv.publicResultDeltas ?? []).not.toEqual(expect.arrayContaining([expect.objectContaining({ type: "salvage", sign: "loss" })]));
     expect(JSON.stringify(result.state.activeResolution?.outcome)).not.toMatch(/\bHeat\b|\bRisk\b|gain_salvage/);
@@ -201,6 +207,12 @@ describe("Heat-to-Salvage reward batch 1", () => {
     expect(completed.state.players[0]!.character.activeContract).toBeNull();
     expect(completed.state.players[0]!.character.heldGear).toEqual(heldBefore);
     expect(completed.state.lastOutcomeSummary?.summary).toMatch(/gain 1 Salvage\./i);
+    expect(createPhoneProjection(completed.state, "seat-1", true).publicResultDeltas ?? []).toEqual(expect.arrayContaining([
+      expect.objectContaining({ type: "salvage", value: 1, sign: "gain" })
+    ]));
+    expect(createTvProjection(completed.state).publicResultDeltas ?? []).toEqual(expect.arrayContaining([
+      expect.objectContaining({ type: "salvage", value: 1, sign: "gain" })
+    ]));
     expect((completed.state.eventLog as Array<{ type?: string }>).filter((entry) => entry.type === "COMPLETE_CONTRACT")).toHaveLength(1);
 
     const duplicate = reduceGameState(completed.state, action);

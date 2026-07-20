@@ -1555,6 +1555,7 @@ function shopResultDeltas(deltas: ResultDelta[] | null | undefined): ResultDelta
 function battleResultDeltas(deltas: ResultDelta[] | null | undefined): ResultDelta[] {
   const battleTypes = new Set<ResultDelta["type"]>([
     "wound",
+    "salvage",
     "scarGained",
     "trophy",
     "threatDefeated",
@@ -2688,6 +2689,7 @@ function PhoneBattlePanel({
   resolutionPanel,
   battleAssistPanel,
   threatActions,
+  resolveActions,
   hasBattleContent,
   visibleBattleDeltas,
   usefulNow
@@ -2698,6 +2700,7 @@ function PhoneBattlePanel({
   resolutionPanel: ReactElement | null;
   battleAssistPanel: ReactElement | null;
   threatActions: ActionButtonDefinition[];
+  resolveActions: ActionButtonDefinition[];
   hasBattleContent: boolean;
   visibleBattleDeltas: ResultDelta[];
   usefulNow: UsefulNowViewModel | null;
@@ -2711,7 +2714,10 @@ function PhoneBattlePanel({
       </header>
       <BattleSubjectCard resolution={activeResolution} encounter={encounter} />
       {resolutionPanel ? <div className="phone-battle-panel__roll-card">{resolutionPanel}</div> : null}
-      <ActionSections sections={[{ key: "threat", title: "Threat", detail: title, actions: threatActions, defaultOpen: true }]} />
+      <ActionSections sections={[
+        { key: "choice", title: "Required choice", detail: "Resolve before continuing", actions: resolveActions, defaultOpen: true },
+        { key: "threat", title: "Threat", detail: title, actions: threatActions, defaultOpen: true }
+      ]} />
       {battleAssistPanel}
       <UsefulNowPanel model={usefulNow} variant="secondary" />
       <ResultDeltaRow deltas={visibleBattleDeltas} className="phone-battle-deltas phone-battle-panel__result" />
@@ -4016,6 +4022,7 @@ export function PhoneActionPanel({
         resolutionPanel={resolutionPanel}
         battleAssistPanel={battleAssistPanel}
         threatActions={threatActions}
+        resolveActions={resolveActions}
         hasBattleContent={hasBattleContent}
         visibleBattleDeltas={visibleBattleDeltas}
         usefulNow={activeUsefulNow}

@@ -3080,7 +3080,14 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
         resolvedEncounterDecisionIds: [...(state.resolvedEncounterDecisionIds ?? []), pending.decisionId],
         activeResolution: state.activeResolution ? { ...state.activeResolution, stage: "outcome_summary", outcome: { title: isPaid ? "Payment accepted" : "Offer declined", text: resultSummary, effects: isPaid ? [paymentSummary, effectSummary] : [resultSummary] } } : null,
         lastOutcomeSummary: state.lastOutcomeSummary ? { ...state.lastOutcomeSummary, summary: `${state.lastOutcomeSummary.summary} ${resultSummary}` } : null,
-        eventLog: [...state.eventLog, { ...action, salvageCost: isPaid ? pending.salvageCost : 0, paid: isPaid, summary: resultSummary }]
+        eventLog: [...state.eventLog, {
+          ...action,
+          sourceCardId: pending.sourceCardId,
+          sourceResolutionId: pending.sourceResolutionId,
+          salvageCost: isPaid ? pending.salvageCost : 0,
+          paid: isPaid,
+          summary: resultSummary
+        }]
       });
     }
     case "SUTURE_STORM_CONTINUED": {

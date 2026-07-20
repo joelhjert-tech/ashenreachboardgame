@@ -6192,7 +6192,10 @@ export class GameRoomServer {
     return combinedEffect ? this.resolveEffect(combinedEffect, seatId, card.id) : null;
   }
 
-  private runAutomaticPhases(seatId: string): void {
+  private runAutomaticPhases(
+    seatId: string,
+    options: { applyVisibleOutcomeEffect?: boolean } = {}
+  ): void {
     let progressMade = true;
 
     while (progressMade) {
@@ -6204,7 +6207,7 @@ export class GameRoomServer {
           this.state.activeResolution.stage
         ) &&
         !(
-          this.executionServices.mode === "simulation" &&
+          (this.executionServices.mode === "simulation" || options.applyVisibleOutcomeEffect === true) &&
           this.state.activeResolution.stage === "outcome_summary" &&
           this.state.phase === "resolution" &&
           this.state.pendingEffect
@@ -7487,7 +7490,9 @@ export class GameRoomServer {
       previousStage === "outcome_summary" ||
       (previousStage === "awaiting_continue" && this.state.phase === "resolution" && !this.state.activeResolution)
     ) {
-      this.runAutomaticPhases(intent.seatId);
+      this.runAutomaticPhases(intent.seatId, {
+        applyVisibleOutcomeEffect: previousStage === "roll_result"
+      });
     }
 
     if (this.state.status === "active" && this.state.phase === "broadcast" && !this.state.activeResolution) {
@@ -8704,6 +8709,11 @@ export class GameRoomServer {
   private shouldAutoContinueResolution(): boolean {
     return Boolean(
       this.state.activeResolution &&
+        !this.state.pendingEncounterDecision &&
+        !this.state.pendingGearEquipChoice &&
+        !this.state.pendingScarChoice &&
+        !this.state.pendingScarRemovalChoice &&
+        !this.state.pendingMemoryTaxChoice &&
         !this.state.pendingEquipmentSuppressionChoice &&
         !this.state.pendingForcedDestinationChoice &&
         !this.state.pendingDisplacement &&
@@ -8744,7 +8754,9 @@ export class GameRoomServer {
         previousStage === "outcome_summary" ||
         (previousStage === "awaiting_continue" && this.state.phase === "resolution" && !this.state.activeResolution)
       ) {
-        this.runAutomaticPhases(continuingSeatId);
+        this.runAutomaticPhases(continuingSeatId, {
+          applyVisibleOutcomeEffect: previousStage === "roll_result"
+        });
       }
 
       if (this.state.status === "active" && this.state.phase === "broadcast" && !this.state.activeResolution) {
@@ -10661,12 +10673,30 @@ function getShopResultDeltas(shopEncounter: Record<string, unknown> | null): Res
 function parseResolutionEffectDelta(effect: string, seatId: string | null): ResultDelta | null {
   const lower = effect.toLowerCase();
   if (lower.includes("?")) return null;
+  const salvageGain = lower.match(/(?:gain|gained) (\d+) salvage/);
   const salvageLoss = lower.match(/lost (\d+) salvage/);
   const salvagePaid = lower.match(/paid (\d+) salvage/);
   const wound = lower.match(/take (\d+) wound/);
   const heal = lower.match(/heal(?:ed)? (\d+) wound/);
   const trophy = lower.match(/\+(\d+) trophies?|gain (\d+) trophies?/);
   const scar = lower.match(/gain scar ([\w-]+)/);
+
+  if (salvageGain) {
+    const amount = Number(salvageGain[1]);
+    return createResultDelta({
+      type: "salvage",
+      label: "Salvage",
+      value: amount,
+      sign: "gain",
+      targetScope: "personal",
+      targetSeatId: seatId,
+      visibility: "public",
+      source: "resolution-effect",
+      reason: effect,
+      publicText: effect,
+      severity: "reward"
+    });
+  }
 
   if (salvageLoss || salvagePaid) {
     const amount = Number((salvageLoss ?? salvagePaid)![1]);
@@ -10882,6 +10912,16 @@ function getEventLogResultDeltas(state: GameState, ownerSeatId?: string | null):
     }
 
     if (type === "ENCOUNTER_DECISION_RESOLVED" && entry.paid === true && typeof entry.salvageCost === "number") {
+      const currentResolutionId = state.activeResolution?.id ?? null;
+      const currentCardId = state.activeResolution?.card?.id ?? state.lastOutcomeSummary?.encounterCardId ?? null;
+      const sourceResolutionId = typeof entry.sourceResolutionId === "string" ? entry.sourceResolutionId : null;
+      const sourceCardId = typeof entry.sourceCardId === "string" ? entry.sourceCardId : null;
+      if (
+        (currentResolutionId && sourceResolutionId === currentResolutionId) ||
+        (sourceCardId && currentCardId && sourceCardId !== currentCardId)
+      ) {
+        return;
+      }
       const amount = entry.salvageCost;
       const playerName = seatId ? state.players.find((player) => player.seatId === seatId)?.character.name ?? "An operative" : "An operative";
       deltas.push(createResultDelta({

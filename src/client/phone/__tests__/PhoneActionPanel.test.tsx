@@ -335,6 +335,44 @@ describe("PhoneActionPanel", () => {
     expect(screen.getByText(/Current Salvage: 2/)).toBeInTheDocument();
     expect(onIntent).toHaveBeenCalledWith({ type: "ENCOUNTER_DECISION_REQUESTED", seatId: "seat-1", decisionId: "gate-loss:collectors-levy", decisionVersion: 4, optionId: "pay-levy" });
   });
+
+  it("keeps a Hazard payment actionable on the guided Battle tab", () => {
+    const onIntent = vi.fn();
+    const patch = createPatch({
+      phase: "resolution",
+      activeResolution: {
+        id: "seat-1:threat:gate-tax:test",
+        playerId: "seat-1",
+        source: "threat",
+        stage: "outcome_summary",
+        card: { id: "gate-tax-collectors", title: "Gate-Tax Collectors", type: "hazard", artType: "threat" },
+        battle: { stat: "command", difficulty: 7, modifiers: [] },
+        roll: { dice: [1, 2], baseTotal: 3, modifierTotal: 2, finalTotal: 5, target: 7, success: false },
+        outcome: { title: "Payment required", text: "The Collectors demand payment.", effects: ["Pay 1 Salvage."] }
+      },
+      pendingEncounterDecisionPrivate: {
+        decisionId: "gate-loss:collectors-levy",
+        decisionVersion: 4,
+        sourceTitle: "Gate-Tax Collectors",
+        prompt: "The Collectors demand 1 Salvage after your defeat.",
+        mode: "required",
+        salvageCost: 1,
+        currentSalvage: 2,
+        options: [{ optionId: "pay-levy", label: "Pay 1 Salvage", enabled: true }]
+      }
+    });
+
+    render(<PhoneActionPanel characters={characters} onIntent={onIntent} patch={patch} selectedTurnTab="battle" />);
+    fireEvent.click(screen.getByRole("button", { name: /^Pay 1 Salvage/ }));
+
+    expect(onIntent).toHaveBeenCalledWith({
+      type: "ENCOUNTER_DECISION_REQUESTED",
+      seatId: "seat-1",
+      decisionId: "gate-loss:collectors-levy",
+      decisionVersion: 4,
+      optionId: "pay-levy"
+    });
+  });
   afterEach(() => {
     cleanup();
     window.history.replaceState({}, "", "/");

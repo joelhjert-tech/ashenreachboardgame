@@ -48,6 +48,10 @@ export type PhaseOneQaFixture =
       kind: "scar-system";
       stage: "choice" | "owned-one" | "owned-two" | "third-warning" | "removal" | "retired" | "adaptation-available" | "adaptation-used";
     }
+  | {
+      kind: "salvage-resolution";
+      stage: "payment" | "optional-payment" | "insufficient" | "battle-reward" | "event-reward";
+    }
   | { kind: "card-category"; stage: "enemy" | "hazard" | "event" | "anomaly" | "escalation" | "persistent" };
 
 const routeContractId = "choir-echo-triangulation";
@@ -212,6 +216,76 @@ export function applyPhaseOneQaFixture(state: GameState, seatId: string, fixture
   clearResolution(state);
   state.sequence += 1;
   state.activeSeatIndex = Math.max(0, state.turnOrder.indexOf(seatId));
+
+  if (fixture.kind === "salvage-resolution") {
+    const player = state.players.find((entry) => entry.seatId === seatId);
+    if (!player) throw new Error(`QA fixture cannot find ${seatId}`);
+    const isPayment = fixture.stage === "payment" || fixture.stage === "optional-payment" || fixture.stage === "insufficient";
+    const threatId = fixture.stage === "optional-payment"
+      ? "rust-choir-peddlers"
+      : fixture.stage === "battle-reward"
+        ? "latchspire-raider"
+        : "gate-tax-collectors";
+    const threat = fixture.stage === "event-reward" ? null : loadThreatCards().get(threatId);
+    const anomaly = fixture.stage === "event-reward"
+      ? loadAnomalyCards().get("anomaly-bellrain-inversion")
+      : null;
+    if (!threat && !anomaly) throw new Error(`QA fixture cannot load Salvage card for ${fixture.stage}`);
+    if (threat && threat.cardType !== "enemy") throw new Error(`QA fixture ${threat.id} must be an enemy`);
+    const cardId = threat?.id ?? anomaly!.id;
+    const cardTitle = threat?.title ?? anomaly!.title;
+    const testedStat = threat?.stat ?? "signal";
+    const difficulty = threat?.difficulty ?? 7;
+    const effect = fixture.stage === "optional-payment"
+      ? threat?.defeatReward
+      : isPayment
+        ? threat?.woundOnLoss
+        : fixture.stage === "battle-reward"
+          ? threat?.defeatReward
+          : anomaly?.resolveEffect;
+    if (!effect) throw new Error(`QA fixture card ${cardId} has no Salvage effect`);
+    const success = !isPayment;
+    const source = fixture.stage === "event-reward" ? "anomaly" as const : "threat" as const;
+    player.character.salvage = fixture.stage === "insufficient" ? 0 : 3;
+    if (fixture.stage === "optional-payment") player.character.wounds = Math.max(1, player.character.wounds);
+    state.phase = "resolution";
+    state.resolutionSource = "encounter";
+    state.currentEncounter = threat ?? null;
+    state.pendingEffect = effect;
+    state.pendingEncounterDecision = null;
+    state.resolvedEncounterDecisionIds = [];
+    state.activeResolution = {
+      id: `qa-salvage:${fixture.stage}`,
+      playerId: seatId,
+      source,
+      stage: "roll_result",
+      card: { id: cardId, title: cardTitle, type: fixture.stage === "event-reward" ? "anomaly" : "enemy", artType: fixture.stage === "event-reward" ? "anomaly" : "threat" },
+      battle: { stat: testedStat, difficulty, modifiers: [] },
+      roll: { dice: success ? [6, 6] : [1, 1], baseTotal: success ? 12 : 2, modifierTotal: 0, finalTotal: success ? 12 : 2, target: difficulty, success },
+      outcome: { title: success ? "Reward pending" : "Loss pending", text: success ? "The Salvage reward is ready to resolve." : "The authored loss is ready to resolve.", effects: [success ? "Gain 1 Salvage." : "Payment consequence pending."] }
+    };
+    state.lastOutcomeSummary = {
+      seatId,
+      movedToSectorId: player.sectorId,
+      encounterCardId: cardId,
+      encounterTitle: cardTitle,
+      encounterCardType: fixture.stage === "event-reward" ? null : "enemy",
+      checkStat: testedStat,
+      die1: success ? 6 : 1,
+      die2: success ? 6 : 1,
+      statBonus: 0,
+      checkTotal: success ? 12 : 2,
+      difficulty,
+      enemyRollerSeatId: null,
+      enemyDie1: null,
+      enemyDie2: null,
+      enemyBonus: null,
+      enemyTotal: null,
+      success,
+      summary: success ? `${cardId} succeeded.` : `${cardId} failed.`
+    };
+    return;
+  }
 
   if (fixture.kind === "scar-system") {
     const player = state.players.find((entry) => entry.seatId === seatId);

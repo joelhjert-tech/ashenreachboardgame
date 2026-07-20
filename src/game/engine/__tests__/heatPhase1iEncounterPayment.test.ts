@@ -69,6 +69,16 @@ describe("Phase 1I encounter payments", () => {
     expect(paid.state.pendingEncounterDecision).toBeNull();
     expect(paid.state.resolvedEncounterDecisionIds).toContain(pending.decisionId);
     expect(paid.state.currentEncounter?.id).toBe(gate.id);
+    expect(paid.state.eventLog.at(-1)).toMatchObject({
+      sourceCardId: gate.id,
+      sourceResolutionId: pending.sourceResolutionId,
+      salvageCost: 1,
+      paid: true
+    });
+    expect(
+      ((createPhoneProjection(paid.state, "seat-1") as unknown as PhonePatchPayload).publicResultDeltas ?? [])
+        .filter((delta) => delta.type === "salvage" && delta.sign === "loss")
+    ).toHaveLength(1);
     const duplicate = reduceGameState(paid.state, { type: "ENCOUNTER_DECISION_RESOLVED", seatId: "seat-1", decisionId: pending.decisionId, decisionVersion: pending.decisionVersion, optionId: pending.paidOptionId, createdAt: "again" });
     expect(duplicate.ok).toBe(false);
   });
@@ -135,6 +145,31 @@ describe("Phase 1I encounter payments", () => {
     server.handleIntent(client, { type: "ENCOUNTER_DECISION_REQUESTED", seatId: "seat-1", decisionId: pending.decisionId, decisionVersion: pending.decisionVersion, optionId: pending.paidOptionId });
     expect(server.getState().players[0]!.character.salvage).toBe(1);
     expect(sent.some((message) => message.type === "INTENT_REJECTED")).toBe(true);
+  });
+
+  it("opens and resolves the payment through one visible-result continuation", () => {
+    const state = paymentState(2);
+    const server = new GameRoomServer(state);
+    const sent: Array<Record<string, unknown>> = [];
+    const client: ConnectedClient = { seatId: "seat-1", view: "phone", socket: { send: (payload: string) => sent.push(JSON.parse(payload)), close() {} } as unknown as ConnectedClient["socket"] };
+
+    server.resolveContinueResolutionIntent({ type: "CONTINUE_RESOLUTION", seatId: "seat-1" });
+    const pending = server.getState().pendingEncounterDecision;
+    expect(pending).toMatchObject({ seatId: "seat-1", salvageCost: 1, status: "pending" });
+    expect(server.getState().players[0]!.character.salvage).toBe(2);
+
+    server.handleIntent(client, {
+      type: "ENCOUNTER_DECISION_REQUESTED",
+      seatId: "seat-1",
+      decisionId: pending!.decisionId,
+      decisionVersion: pending!.decisionVersion,
+      optionId: pending!.paidOptionId
+    });
+
+    expect(server.getState().players[0]!.character.salvage).toBe(1);
+    expect(server.getState().pendingEncounterDecision).toBeNull();
+    expect(server.getState().activeResolution?.outcome?.effects).toEqual(expect.arrayContaining(["Paid 1 Salvage."]));
+    expect(sent.some((message) => message.type === "INTENT_REJECTED")).toBe(false);
   });
 
   it("keeps Gate Tax required while Rust Choir uses the production optional mode", () => {

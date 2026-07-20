@@ -12,6 +12,26 @@ afterEach(async () => {
 });
 
 describe("Phase 1 QA fixture", () => {
+  it.each([
+    ["payment", 3, "encounter_payment"],
+    ["optional-payment", 3, "sequence"],
+    ["insufficient", 0, "encounter_payment"],
+    ["battle-reward", 3, "gain_salvage"],
+    ["event-reward", 3, "gain_salvage"]
+  ] as const)("provides a deterministic Salvage %s state", (stage, salvage, effectType) => {
+    const state = createInitialSessionState("QA-SALVAGE", "single-player", "scenario_broken_seal", "co-op", "standard", 1);
+    state.status = "active";
+
+    applyPhaseOneQaFixture(state, "seat-1", { kind: "salvage-resolution", stage });
+
+    expect(state.players[0]?.character.salvage).toBe(salvage);
+    expect(state.pendingEffect?.type).toBe(effectType);
+    expect(state.activeResolution).toMatchObject({
+      id: `qa-salvage:${stage}`,
+      stage: "roll_result"
+    });
+  });
+
   it.each(["enemy", "hazard", "event", "anomaly", "escalation", "persistent"] as const)(
     "provides a deterministic %s card-category state",
     (stage) => {

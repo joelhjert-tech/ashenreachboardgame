@@ -50,6 +50,13 @@ describe("live encounter lifecycle regression", () => {
     const server = new GameRoomServer(state, [], createSequenceRandomSource([5, 5, 0, 0]));
     server.resolveCombatIntent({ type: "COMBAT_REQUESTED", seatId: "seat-1", stat: raider.stat });
 
+    expect(server.getState().players[0]!.character.salvage).toBe(2);
+    expect(server.getState().activeResolution?.stage).toBe("roll_result");
+    server.resolveContinueResolutionIntent({ type: "CONTINUE_RESOLUTION", seatId: "seat-1" });
+    expect(server.getState().players[0]!.character.salvage).toBe(3);
+    expect(server.getState().pendingEffect).toBeNull();
+    expect(server.getState().activeResolution?.stage).toBe("outcome_summary");
+
     for (let step = 0; step < 4 && server.getState().activeResolution; step += 1) {
       server.resolveContinueResolutionIntent({ type: "CONTINUE_RESOLUTION", seatId: "seat-1" });
     }
