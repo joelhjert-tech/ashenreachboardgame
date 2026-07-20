@@ -2606,7 +2606,7 @@ describe("PhoneActionPanel", () => {
     expect(screen.getByTestId("phone-resolution-continue")).toBeVisible();
     expect(
       screen.getByTestId("phone-resolution-continue").compareDocumentPosition(screen.getByTestId("phone-roll-result")) &
-        Node.DOCUMENT_POSITION_FOLLOWING
+        Node.DOCUMENT_POSITION_PRECEDING
     ).toBeTruthy();
 
     fireEvent.click(screen.getByRole("button", { name: /continue/i }));

@@ -5,6 +5,7 @@ import { loadFollowers } from "../game/content/followers.js";
 import { loadAnomalyCards } from "../game/content/anomalies.js";
 import { loadEscalationCards } from "../game/content/escalations.js";
 import { loadCharacters } from "../game/content/characters.js";
+import { loadTileChallenges } from "../game/content/tileChallenges.js";
 import type { GameState } from "../game/schema/session.schema.js";
 import { getIntrinsicBaseStat } from "../game/rules/cooperativeAssistance.js";
 import { createScarChoice } from "../game/rules/scarSystem.js";
@@ -52,7 +53,7 @@ export type PhaseOneQaFixture =
       kind: "salvage-resolution";
       stage: "payment" | "optional-payment" | "insufficient" | "battle-reward" | "event-reward";
     }
-  | { kind: "card-category"; stage: "enemy" | "hazard" | "event" | "anomaly" | "escalation" | "persistent" };
+  | { kind: "card-category"; stage: "enemy" | "hazard" | "hazard-before" | "hazard-failure" | "event" | "anomaly" | "escalation" | "persistent" };
 
 const routeContractId = "choir-echo-triangulation";
 const orderedRouteContractId = "compact-three-lantern-circuit";
@@ -807,34 +808,54 @@ export function applyPhaseOneQaFixture(state: GameState, seatId: string, fixture
     const player = state.players.find((entry) => entry.seatId === seatId);
     if (!player) throw new Error(`QA fixture cannot find ${seatId}`);
     state.phase = "resolution";
-    const threatId = fixture.stage === "enemy" ? "lantern-ash-ghoul" : fixture.stage === "event" ? "trench-blast" : "suture-storm";
+    const normalizedStage = fixture.stage === "hazard-before" || fixture.stage === "hazard-failure" ? "hazard" : fixture.stage;
+    const threatId = normalizedStage === "enemy" ? "lantern-ash-ghoul" : normalizedStage === "event" ? "trench-blast" : "suture-storm";
     const threat = loadThreatCards().get(threatId);
     const anomaly = fixture.stage === "anomaly" ? [...loadAnomalyCards().values()][0] : null;
     const escalation = fixture.stage === "escalation" ? [...loadEscalationCards().values()][0] : null;
-    const category = fixture.stage === "persistent" ? "anomaly" : fixture.stage;
-    const source = fixture.stage === "persistent" ? "scenario" : category === "enemy" || category === "hazard" || category === "event" ? "threat" : category;
-    const id = anomaly?.id ?? escalation?.id ?? threat?.id ?? "rift-whispers";
-    const title = anomaly?.title ?? escalation?.title ?? threat?.title ?? "Rift Whispers";
-    const flavor = anomaly?.flavor ?? escalation?.flavor ?? threat?.flavor ?? "The chapel keeps the distortion anchored to this sector.";
-    state.currentEncounter = fixture.stage === "enemy" || fixture.stage === "hazard" || fixture.stage === "event" ? threat ?? null : null;
+    const persistentChallenge = fixture.stage === "persistent" ? [...loadTileChallenges().values()][0] ?? null : null;
+    const category: "enemy" | "hazard" | "event" | "anomaly" | "escalation" = fixture.stage === "persistent"
+      ? "anomaly"
+      : normalizedStage as "enemy" | "hazard" | "event" | "anomaly" | "escalation";
+    const source: "scenario" | "threat" | "anomaly" | "escalation" = fixture.stage === "persistent"
+      ? "scenario"
+      : category === "enemy" || category === "hazard" || category === "event"
+        ? "threat"
+        : category;
+    const id = persistentChallenge?.id ?? anomaly?.id ?? escalation?.id ?? threat?.id ?? "rift-whispers";
+    const title = persistentChallenge?.name ?? anomaly?.title ?? escalation?.title ?? threat?.title ?? "Rift Whispers";
+    const flavor = persistentChallenge?.lore ?? anomaly?.flavor ?? escalation?.flavor ?? threat?.flavor ?? "The chapel keeps the distortion anchored to this sector.";
+    state.currentEncounter = normalizedStage === "enemy" || normalizedStage === "hazard" || normalizedStage === "event" ? threat ?? null : null;
+    state.phase = fixture.stage === "hazard-before" ? "action" : "resolution";
+    const success = fixture.stage !== "hazard-failure";
     state.activeResolution = {
       id: `qa-card-category:${fixture.stage}:${id}`,
       playerId: seatId,
       source,
-      stage: "roll_result",
+      stage: fixture.stage === "hazard-before" ? "battle_setup" : "roll_result",
       card: { id, title, type: category, flavor, artType: category === "enemy" || category === "hazard" || category === "event" ? "threat" : category },
       battle: {
-        ...(fixture.stage === "enemy" ? { enemyName: title } : {}),
-        stat: threat?.stat ?? "signal",
-        difficulty: threat?.difficulty ?? 7,
+        ...(normalizedStage === "enemy" ? { enemyName: title } : {}),
+        stat: persistentChallenge?.testStat ?? threat?.stat ?? "signal",
+        difficulty: persistentChallenge?.difficulty ?? threat?.difficulty ?? 7,
         modifiers: [{ label: "Operative", value: 3 }]
       },
-      roll: { dice: [3, 4], baseTotal: 7, modifierTotal: 3, finalTotal: 10, target: threat?.difficulty ?? 7, success: true },
-      outcome: {
+      ...(fixture.stage === "hazard-before" ? {} : { roll: { dice: success ? [3, 4] : [1, 1], baseTotal: success ? 7 : 2, modifierTotal: 3, finalTotal: success ? 10 : 5, target: persistentChallenge?.difficulty ?? threat?.difficulty ?? 7, success } }),
+      ...(fixture.stage === "hazard-before" ? {} : { outcome: {
         title: fixture.stage === "persistent" ? "Challenge remains" : `${title} resolved`,
-        text: fixture.stage === "persistent" ? "This authored tile challenge remains attached until its own removal condition is met." : "The authoritative effect resolved once.",
-        effects: fixture.stage === "escalation" ? ["Global Escalation advanced as authored."] : ["No duplicate reward was created."]
-      },
+        text: fixture.stage === "persistent"
+          ? "This authored tile challenge remains attached until its own removal condition is met."
+          : success
+            ? "You crossed the storm on the beat between stitches."
+            : "The storm stitches flesh to road.",
+        effects: fixture.stage === "persistent"
+          ? [`Canonical ${persistentChallenge?.successEffect.type.replace(/_/g, " ") ?? "success"} effect resolved; the challenge remains attached.`]
+          : fixture.stage === "escalation"
+          ? ["Global Escalation advanced as authored."]
+          : success
+            ? ["You crossed the storm on the beat between stitches."]
+            : ["Gain 1 Wound.", "Move 1 sector counterclockwise on this ring; if blocked, gain 1 additional Wound."]
+      } }),
       origin: {
         sourceDeck: fixture.stage === "persistent" ? "tile-challenge" : category,
         sourceSectorId: player.sectorId,

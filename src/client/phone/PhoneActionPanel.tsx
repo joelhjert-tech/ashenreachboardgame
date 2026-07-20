@@ -62,6 +62,10 @@ import {
 } from "./PhoneMovementView.js";
 import { CinderWattleAbilityPanel } from "./CinderWattleAbilityPanel.js";
 import { PhoneScarSelector } from "./PhoneScarSelector.js";
+import {
+  PhoneHazardChallengeView,
+  isHazardChallengePresentation
+} from "./PhoneHazardChallengePrototype.js";
 
 interface PhoneActionPanelProps {
   characters: CharacterCatalogEntry[];
@@ -4015,7 +4019,17 @@ export function PhoneActionPanel({
         onContextNavigation={onMovementNavigation}
       />
     ) : activeTurnTab === "battle" ? (
-      <PhoneBattlePanel
+      isHazardChallengePresentation(patch) ? (
+        <PhoneHazardChallengeView
+          patch={patch}
+          resolution={activeResolution}
+          actions={[...resolveActions, ...threatActions]}
+          canContinue={canContinueResolution}
+          onContinue={continueResolution}
+          resultDeltas={visibleBattleDeltas}
+          supplemental={<UsefulNowPanel model={activeUsefulNow} variant="secondary" />}
+        />
+      ) : <PhoneBattlePanel
         title={battleTitle}
         activeResolution={activeResolution}
         encounter={patch.encounter}
