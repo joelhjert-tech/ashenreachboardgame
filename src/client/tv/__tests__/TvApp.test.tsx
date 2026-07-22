@@ -63,6 +63,17 @@ vi.mock("../JoinQrCard.js", () => ({
   )
 }));
 
+// TvApp owns opening and closing the admin surfaces; their detailed content is
+// covered by dedicated component suites. Keeping these shell tests shallow
+// avoids loading the complete card and map registries for one button assertion.
+vi.mock("../admin/AdminLibrary.js", () => ({
+  default: () => <section role="region" aria-label="Admin Card Library"><h1>Card Library</h1></section>
+}));
+
+vi.mock("../admin/AdminMapInspector.js", () => ({
+  default: () => <section role="region" aria-label="Admin Map Inspector"><h1>Map Inspector</h1></section>
+}));
+
 const characters: CharacterCatalogEntry[] = [
   {
     id: "void-marshal",
@@ -240,10 +251,8 @@ function createPatch(roomCode = "RT7P4"): StatePatch<PublicPatchPayload> {
             name: "Tarek Voss",
             archetype: "Void Marshal",
             status: "active",
-            activeContract: {
-              contractId: "cartel-crossing-thread",
-              progress: 1
-            },
+            activeContract: null,
+            privateObjectiveStatus: { hasActiveContract: true, completedContracts: 0 },
             stats: { command: 3, grit: 2, signal: 1, guile: 1, forge: 2 },
             trophies: 0,
             wounds: 0,
@@ -444,7 +453,7 @@ describe("TvApp", () => {
     expect(screen.queryByText(/exposed object/i)).not.toBeInTheDocument();
   });
 
-  it("renders active player missions from character.activeContract instead of public availableContracts", async () => {
+  it("renders only public-safe private Contract status instead of Contract details", async () => {
     window.localStorage.setItem("ashen-reach-tv-room-code", "RT7P4");
     window.localStorage.setItem("ashen-reach-tv-host-token", "host:RT7P4:secret");
     const patch = createPatch();
@@ -454,10 +463,8 @@ describe("TvApp", () => {
       ...patch.payload.players[0],
       character: {
         ...patch.payload.players[0].character,
-        activeContract: {
-          contractId: "cartel-crossing-thread",
-          progress: 1
-        }
+        activeContract: null,
+        privateObjectiveStatus: { hasActiveContract: true, completedContracts: 1 }
       }
     };
     mockUseRoomSubscription.mockReturnValue({
@@ -471,13 +478,14 @@ describe("TvApp", () => {
 
     render(<TvApp />);
 
-    const activeMissions = await screen.findByRole("region", { name: /active missions/i });
+    const activeMissions = await screen.findByRole("region", { name: /public objectives/i });
+    expect(activeMissions).toHaveTextContent(/shared mission/i);
     expect(activeMissions).toHaveTextContent(/joel/i);
-    expect(activeMissions).toHaveTextContent(/crossing thread/i);
-    expect(activeMissions).toHaveTextContent(/1\/1 clears/i);
-    expect(activeMissions).toHaveTextContent(/complete/i);
+    expect(activeMissions).toHaveTextContent(/private contract active/i);
+    expect(activeMissions).toHaveTextContent(/1 completed/i);
+    expect(activeMissions).not.toHaveTextContent(/crossing thread/i);
+    expect(activeMissions).not.toHaveTextContent(/ashwake convoy/i);
     expect(activeMissions).not.toHaveTextContent(/exposed object/i);
-    expect(activeMissions).not.toHaveTextContent(/0\/2 defeats/i);
     expect(screen.queryByRole("region", { name: /^contracts$/i })).not.toBeInTheDocument();
   });
 
@@ -1206,6 +1214,29 @@ describe("TvApp", () => {
     const endedPatch = createPatch();
     endedPatch.payload.status = "ended";
     endedPatch.payload.winnerSeatId = "seat-1";
+    endedPatch.payload.matchProgress = {
+      revision: 7,
+      mode: "coop",
+      stage: "victory",
+      winProgress: { current: 2, required: 2, label: "Seal Restoration", changeId: null, change: null, changeReason: null },
+      lossPressure: { current: 3, required: 6, label: "Loss Pressure", changeId: null, change: null, changeReason: null },
+      thresholdWarning: null,
+      finalStage: null,
+      publicResult: {
+        id: "match-result:7",
+        outcome: "victory",
+        title: "Mission Accomplished",
+        reason: "Joel completed the final restoration at the Cinder Gate.",
+        missionName: "The Broken Seal",
+        modeLabel: "Co-op",
+        winningDisplayNames: ["Joel"],
+        operativeDisplayNames: ["Joel"],
+        finalWinProgress: { current: 2, required: 2 },
+        finalLossPressure: { current: 3, required: 6 },
+        finalStageReached: true
+      },
+      allowedCommands: ["return_to_lobby", "leave_room"]
+    };
     mockUseRoomSubscription.mockReturnValue({
       patch: endedPatch,
       error: null,
@@ -1217,14 +1248,16 @@ describe("TvApp", () => {
 
     render(<TvApp />);
 
-    expect((await screen.findAllByText(/the broken seal secured/i)).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/joel won the confrontation and secured the broken seal/i).length).toBeGreaterThan(0);
+    expect((await screen.findAllByText(/mission accomplished/i)).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/joel completed the final restoration/i).length).toBeGreaterThan(0);
+    expect(screen.queryByText(/most wounds|most scars|most threats defeated/i)).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /return to lobby/i })).toBeInTheDocument();
     const banner = screen.getByTestId("host-live-status");
-    expect(banner).toHaveTextContent(/game over/i);
-    expect(banner).toHaveTextContent(/joel secured the final outcome/i);
+    expect(banner).toHaveTextContent(/mission accomplished/i);
+    expect(banner).toHaveTextContent(/joel completed the final restoration at the cinder gate/i);
   });
 
-  it("shows authored contract objective labels on the host operative card", async () => {
+  it("keeps authored Contract labels off the host operative card", async () => {
     window.localStorage.setItem("ashen-reach-tv-room-code", "RT7P4");
     window.localStorage.setItem("ashen-reach-tv-host-token", "host:RT7P4:secret");
     mockUseRoomSubscription.mockReturnValue({
@@ -1238,7 +1271,8 @@ describe("TvApp", () => {
 
     render(<TvApp />);
 
-    expect(await screen.findByText(/host card tarek voss crossing thread \| clear the ashwake convoy lane \(1\/1 clears\)/i)).toBeInTheDocument();
+    expect(await screen.findByText(/host card tarek voss private contract active/i)).toBeInTheDocument();
+    expect(screen.queryByText(/crossing thread|ashwake convoy/i)).not.toBeInTheDocument();
   });
 
   it("keeps movement planner details on the board instead of duplicating Movement Scan in the right rail", async () => {
@@ -1343,6 +1377,8 @@ describe("TvApp", () => {
     expect(journey).toHaveTextContent(/anchor market/i);
     expect(journey).not.toHaveTextContent(/combat|battle/i);
     expect(screen.queryByTestId("host-battle-overlay")).not.toBeInTheDocument();
+    expect(screen.getByTestId("host-live-status")).toHaveTextContent(/is moving/i);
+    expect(screen.getByTestId("host-live-status")).not.toHaveTextContent(/destination challenge/i);
     expect(screen.getByText("Tactical map")).toBeInTheDocument();
 
     await waitFor(() => expect(screen.queryByTestId("tv-movement-journey")).not.toBeInTheDocument(), { timeout: 8_000 });
@@ -1489,8 +1525,8 @@ describe("TvApp", () => {
     expect(overlay).toHaveTextContent(/tarek voss/i);
     expect(overlay).toHaveTextContent(/cinder-veil stalker/i);
     expect(within(overlay).getByTestId("host-battle-vs-block")).toHaveTextContent(/vs/i);
-    expect(within(overlay).getByTestId("host-battle-vs-block")).toHaveTextContent(/battle resolving/i);
-    expect(within(overlay).getByTestId("host-battle-vs-block")).toHaveTextContent(/battle resolution/i);
+    expect(within(overlay).getByTestId("host-battle-vs-block")).toHaveTextContent(/battle/i);
+    expect(within(overlay).getByTestId("host-battle-result-banner")).toHaveTextContent(/resolving/i);
     expect(within(overlay).getByTestId("host-battle-enemy")).toHaveTextContent(/cinder-veil stalker/i);
     expect(within(overlay).getByTestId("host-battle-player-reveal")).toContainElement(within(overlay).getByTestId("host-battle-player"));
     expect(within(overlay).getByTestId("host-battle-enemy-reveal")).toContainElement(within(overlay).getByTestId("host-battle-enemy"));
@@ -1541,7 +1577,7 @@ describe("TvApp", () => {
     const chamber = await screen.findByTestId("tv-host-battle-chamber");
     expect(chamber).toHaveAttribute("data-battle-stage", stage);
     expect(within(chamber).getByTestId("host-battle-player")).toHaveTextContent(/tarek voss/i);
-    expect(within(chamber).getByTestId("host-battle-vs-block")).toHaveTextContent(/battle resolution/i);
+    expect(within(chamber).getByTestId("host-battle-vs-block")).toHaveTextContent(/battle/i);
     expect(within(chamber).getByTestId("host-battle-enemy")).toHaveTextContent(/cinder-veil stalker/i);
     expect(within(chamber).getByTestId("host-battle-enemy")).toHaveTextContent(/difficulty/i);
     expect(within(chamber).getByTestId("host-battle-player-math")).toHaveTextContent(/base.*roll.*mod.*total/i);
@@ -1625,7 +1661,7 @@ describe("TvApp", () => {
     const chamber = await screen.findByTestId("tv-host-battle-chamber");
     const liveStatus = screen.getByTestId("host-live-status");
     expect(chamber).toHaveTextContent(/rift whispers/i);
-    expect(chamber).toHaveTextContent(/tile challenge resolution/i);
+    expect(chamber).toHaveTextContent(/tile challenge/i);
     expect(chamber).toHaveTextContent(/signal/i);
     expect(within(chamber).getByTestId("host-battle-result-banner")).toHaveTextContent(/resolving/i);
     expect(liveStatus).toHaveTextContent(/tile challenge/i);
@@ -1734,14 +1770,15 @@ describe("TvApp", () => {
 
     render(<TvApp />);
 
-    expect(await screen.findByTestId("tv-host-battle-chamber")).toHaveTextContent(/hazard resolution/i);
+    expect(await screen.findByTestId("tv-host-battle-chamber")).toHaveTextContent(/hazard/i);
 
     const overlay = await screen.findByTestId("host-battle-overlay");
     expect(overlay).toHaveTextContent(/signal static/i);
     expect(overlay).toHaveTextContent(/success: the signal holds/i);
     expect(screen.getByTestId("host-battle-vs-block")).toHaveTextContent(/test/i);
     expect(screen.getByTestId("host-battle-player-dice")).toHaveTextContent(/roll 7/i);
-    expect(screen.getByTestId("host-battle-enemy-dice")).toHaveTextContent(/roll -/i);
+    expect(screen.getByTestId("host-battle-enemy-dice")).toHaveTextContent(/fixed opposing value/i);
+    expect(screen.getByTestId("host-battle-enemy-dice")).toHaveTextContent(/no opposing die is rolled/i);
     expect(screen.getByTestId("host-battle-result-banner")).toHaveTextContent(/success/i);
     expect(screen.getByTestId("host-battle-result-banner")).toHaveTextContent(/wins by 1/i);
     expect(screen.getByTestId("host-battle-rolls")).toHaveTextContent(/Joel\s*8\s*>\s*7\s*Difficulty/i);
@@ -1895,8 +1932,9 @@ describe("TvApp", () => {
     expect(overlay).toHaveTextContent(/tarek voss/i);
     expect(overlay).toHaveTextContent(/anchor market/i);
     expect(overlay).toHaveTextContent(/forge market/i);
-    expect(within(overlay).getByTestId("host-shop-buyer-salvage")).toHaveTextContent(/salvage/i);
-    expect(within(overlay).getByTestId("host-shop-buyer-salvage")).toHaveTextContent("6");
+    expect(overlay).toHaveTextContent(/public status/i);
+    expect(overlay).toHaveTextContent(/transaction resolved/i);
+    expect(within(overlay).queryByTestId("host-shop-buyer-salvage")).not.toBeInTheDocument();
     expect(overlay).toHaveTextContent(/equipment/i);
     expect(overlay).toHaveTextContent(/services/i);
     expect(overlay).not.toHaveTextContent(/\b(?:Heat|Risk)\b/i);
@@ -2298,7 +2336,7 @@ describe("TvApp", () => {
     expect(screen.getByTestId("host-battle-player-math")).toHaveTextContent(/Grit 6 \+ Roll 5 = Total 11/i);
     expect(screen.getByTestId("host-battle-rolls")).not.toHaveTextContent(/opposition total/i);
     expect(overlay).toHaveTextContent(/cinder-veil stalker added to trophy pile/i);
-    expect(screen.getByTestId("host-battle-enemy-math")).toHaveTextContent(/Battle 5 \+ Roll 3 = Total 8/i);
+    expect(screen.getByTestId("host-battle-enemy-math")).toHaveTextContent(/Enemy base 5 \+ Roll 3 = Total 8/i);
     expect(screen.queryByTestId("host-battle-log")).not.toBeInTheDocument();
     expect(screen.queryByText(/battle overlay layout/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/display rules/i)).not.toBeInTheDocument();
@@ -2415,11 +2453,74 @@ describe("TvApp", () => {
     expect(overlay).toHaveTextContent(/cinder-veil stalker/i);
     expect(screen.getByTestId("host-battle-rolls")).toHaveTextContent(/Joel\s*11\s*>\s*8\s*Enemy/i);
     expect(screen.getByTestId("host-battle-player-math")).toHaveTextContent(/Grit 6 \+ Roll 5 = Total 11/i);
-    expect(screen.getByTestId("host-battle-enemy-math")).toHaveTextContent(/Battle 0 \+ Roll 8 = Total 8/i);
+    expect(screen.getByTestId("host-battle-enemy-math")).toHaveTextContent(/Enemy base 0 \+ Roll 8 = Total 8/i);
+    expect(screen.getByTestId("host-battle-enemy-math")).not.toHaveTextContent(/Battle 0/i);
     expect(screen.queryByTestId("tv-card-reveal")).not.toBeInTheDocument();
     expect(screen.queryByTestId("roll-outcome-panel")).not.toBeInTheDocument();
     expect(screen.queryByTestId("tv-resolution-footer")).not.toBeInTheDocument();
     expect(screen.queryByText(/battle display active/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/host card lane/i)).not.toBeInTheDocument();
+  });
+
+  it("shows the public tile-resolution stack over the board", async () => {
+    window.localStorage.setItem("ashen-reach-tv-room-code", "RT7P4");
+    window.localStorage.setItem("ashen-reach-tv-host-token", "host:RT7P4:secret");
+    const patch = createPatch();
+    patch.phase = "sector";
+    patch.payload.status = "active";
+    patch.payload.tileArrival = {
+      arrivalId: "arrival:seat-1:ashen-chapel:4",
+      seatId: "seat-1",
+      tileId: "ashen-chapel",
+      tileName: "Ashen Chapel",
+      lore: "Static candles burn behind the relay glass.",
+      currentRuleId: "challenge:rift-whispers-ashen-chapel",
+      mandatoryRemaining: 2,
+      canEndTurn: false,
+      blockedReason: "Resolve the mandatory tile challenge.",
+      rules: [
+        {
+          id: "challenge:rift-whispers-ashen-chapel",
+          order: 10,
+          kind: "tile-challenge",
+          label: "Rift Whispers",
+          detail: "Anomaly · Signal 8",
+          mandatory: true,
+          repeatPolicy: "EVERY_ARRIVAL",
+          marker: "ANOMALY",
+          supported: true,
+          sourceId: "rift-whispers-ashen-chapel",
+          status: "current"
+        },
+        {
+          id: "threat:ashen-chapel:blue:0",
+          order: 100,
+          kind: "threat-draw",
+          label: "Blue Threat",
+          detail: "Draw and resolve one Blue Threat.",
+          mandatory: true,
+          repeatPolicy: "EVERY_ARRIVAL",
+          marker: "BLUE THREAT ×1",
+          supported: true,
+          status: "pending"
+        }
+      ]
+    };
+    mockUseRoomSubscription.mockReturnValue({
+      patch,
+      error: null,
+      sendIntent: vi.fn(),
+      status: "open",
+      debugEvents: [],
+      clearDebugEvents: vi.fn()
+    });
+
+    render(<TvApp />);
+
+    const stack = await screen.findByTestId("tv-board-arrival-stack");
+    expect(stack).toHaveTextContent(/Ashen Chapel/i);
+    expect(stack).toHaveTextContent(/Rift Whispers/i);
+    expect(stack).toHaveTextContent(/Blue Threat/i);
+    expect(stack).toHaveTextContent(/Resolve the mandatory tile challenge/i);
   });
 });

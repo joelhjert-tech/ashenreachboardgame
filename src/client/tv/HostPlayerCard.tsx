@@ -3,6 +3,7 @@ import { getChallengeThemeStyle } from "../../game/ui/challengeTheme.js";
 import type { AbilityChangeItem } from "../shared/abilityTelemetry.js";
 import { ChallengeBadge } from "../shared/ChallengeBadge.js";
 import type { PublicEquippedGearSummary, Stat } from "../shared/types.js";
+import { formatSeatLabel } from "../shared/statLabels.js";
 import { HostImage } from "./HostImage.js";
 
 interface HostPlayerCardAttributes {
@@ -80,7 +81,7 @@ export function HostPlayerCard({
   isActiveTurn,
   className
 }: HostPlayerCardProps): ReactElement {
-  const seatLabel = `Seat ${seatId}`;
+  const seatLabel = formatSeatLabel(seatId);
 
   return (
     <article

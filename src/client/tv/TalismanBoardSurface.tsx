@@ -30,6 +30,7 @@ interface TalismanBoardSurfaceProps {
   occupantCountsByNodeId?: Map<string, number>;
   playerMarkersByNodeId?: Map<string, TilePlayerMarker[]>;
   missionMarkersByNodeId?: Map<string, TileMissionMarker[]>;
+  movementDestinationMarkersByNodeId?: Map<string, TileMovementDestinationMarker>;
   movingSeatIds?: Set<string>;
   movementAnimations?: TileMovementAnimation[];
   nemesisSectorIds?: Set<string>;
@@ -42,6 +43,7 @@ interface TalismanBoardSurfaceProps {
 export interface TilePlayerMarker {
   seatId: string;
   label: string;
+  operativeName?: string;
   color: string;
   seatIndex: number;
   active: boolean;
@@ -66,6 +68,12 @@ export interface TileMovementAnimation {
   toSectorId: string;
   routeSectorIds: string[];
   durationMs: number;
+}
+
+export interface TileMovementDestinationMarker {
+  label: string;
+  selected: boolean;
+  specialConnection: boolean;
 }
 
 function getTileTone(node: BoardNode): string {
@@ -167,6 +175,7 @@ export function TalismanBoardSurface({
   occupantCountsByNodeId,
   playerMarkersByNodeId,
   missionMarkersByNodeId,
+  movementDestinationMarkersByNodeId,
   movingSeatIds,
   movementAnimations = [],
   nemesisSectorIds,
@@ -240,6 +249,7 @@ export function TalismanBoardSurface({
         const occupantCount = occupantCountsByNodeId?.get(node.id) ?? 0;
         const playerMarkers = playerMarkersByNodeId?.get(node.id) ?? [];
         const missionMarkers = missionMarkersByNodeId?.get(node.id) ?? [];
+        const movementDestinationMarker = movementDestinationMarkersByNodeId?.get(node.id) ?? null;
         const isMissionTarget = missionMarkers.length > 0;
         const isShop = boardSpace?.tags.includes("shop") || boardSpace?.tags.includes("risk-shop");
         const isLockedShop = Boolean(isShop && localThreatDeckCount > 0);
@@ -247,6 +257,7 @@ export function TalismanBoardSurface({
         const tileStatus = [
           isActive ? "current location" : null,
           isLegal ? "legal destination" : null,
+          movementDestinationMarker ? `destination ${movementDestinationMarker.label}` : null,
           isMissionTarget ? "mission target" : null,
           isLockedShop ? "shop locked" : null,
           hasNemesis ? "nemesis present" : null
@@ -297,6 +308,15 @@ export function TalismanBoardSurface({
             <span className="talisman-board-tile-region">{node.ring === "center" ? "Final" : tileLabelByRing[node.ring]}</span>
             <span className="talisman-board-tile-label">{node.label}</span>
             {isActive && <span className="talisman-board-location-badge" aria-label="Current operative location">Current</span>}
+            {movementDestinationMarker ? (
+              <span
+                className={`talisman-board-movement-marker${movementDestinationMarker.selected ? " is-selected" : ""}${movementDestinationMarker.specialConnection ? " is-special" : ""}`}
+                data-testid={`movement-marker-${node.id}`}
+                aria-label={`Destination ${movementDestinationMarker.label}: ${node.label}${movementDestinationMarker.specialConnection ? ", special connection" : ""}`}
+              >
+                {movementDestinationMarker.label}
+              </span>
+            ) : null}
             {node.id === "center_cinder_gate" ? (
               <span className="talisman-board-mission-badge" data-testid="final-confrontation-marker">
                 Final Confrontation · {centerConfrontationState}
@@ -320,7 +340,7 @@ export function TalismanBoardSurface({
                 data-testid={`mission-marker-${node.id}`}
                 aria-label={`Public mission destination for ${missionMarkers.map((marker) => marker.playerLabel).join(", ")}`}
               >
-                {missionMarkers.map((marker) => (
+                {missionMarkers.slice(0, 2).map((marker) => (
                   <span
                     key={marker.seatId}
                     className={`talisman-board-mission-badge is-${marker.pattern}`}
@@ -330,6 +350,11 @@ export function TalismanBoardSurface({
                     <b>{marker.initial}</b><small>{marker.seatNumber}</small>
                   </span>
                 ))}
+                {missionMarkers.length > 2 ? (
+                  <span className="talisman-board-mission-badge talisman-board-mission-badge-overflow" title={`${missionMarkers.length - 2} more public mission owners`}>
+                    <b>+</b><small>{missionMarkers.length - 2}</small>
+                  </span>
+                ) : null}
               </span>
             )}
             {playerMarkers.length > 0 && (
@@ -346,6 +371,7 @@ export function TalismanBoardSurface({
                     style={{ ["--token-fill" as string]: marker.color }}
                   >
                     {marker.label.slice(0, 1).toUpperCase()}
+                    {marker.active ? <span className="talisman-board-player-active-flag">Active · {marker.label}</span> : null}
                   </span>
                 ))}
               </span>

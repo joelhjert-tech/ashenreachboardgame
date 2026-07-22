@@ -1,9 +1,7 @@
 import { createCanonicalSectorGraph } from "../../../game/data/canonicalSectorGraph.js";
+import type { TileChallenge } from "../../../game/schema/tileChallenge.schema.js";
 
-type AuthoredTileChallenge = {
-  id: string;
-  sectorId: string;
-};
+type AuthoredTileChallenge = TileChallenge;
 
 const tileChallengeModules = import.meta.glob(
   ["../../../../content/tile-challenges/*.json"],

@@ -9,6 +9,7 @@ interface TacticalMapBoardProps {
   patch: PublicPatchPayload | null;
   previousPatch?: PublicPatchPayload | null;
   phase: string;
+  showContextBrief?: boolean;
   onMovementDestinationSelected?: (destination: PublicMoveDestination | null) => void;
 }
 
@@ -32,10 +33,10 @@ function StaticTacticalBoard(): ReactElement {
   );
 }
 
-export function TacticalMapBoard({ patch, previousPatch = null, phase, onMovementDestinationSelected }: TacticalMapBoardProps): ReactElement {
+export function TacticalMapBoard({ patch, previousPatch = null, phase, showContextBrief = true, onMovementDestinationSelected }: TacticalMapBoardProps): ReactElement {
   if (!patch) {
     return <StaticTacticalBoard />;
   }
 
-  return <BoardMap patch={patch} previousPatch={previousPatch} phase={phase} showHeader={false} showSidebar={false} onMovementDestinationSelected={onMovementDestinationSelected} />;
+  return <BoardMap patch={patch} previousPatch={previousPatch} phase={phase} showHeader={false} showSidebar={false} showContextBrief={showContextBrief} onMovementDestinationSelected={onMovementDestinationSelected} />;
 }

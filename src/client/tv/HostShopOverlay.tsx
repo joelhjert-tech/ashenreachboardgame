@@ -50,7 +50,6 @@ interface ShopOfferModel {
 export interface HostShopDisplayModel {
   playerName: string;
   operativeName: string;
-  salvage: number;
   shopName: string;
   sectorName: string;
   shopType: string;
@@ -86,6 +85,17 @@ function shopResultDeltas(deltas: ResultDelta[] | null | undefined): ResultDelta
 }
 
 function getCategories(shop: PublicShopEncounterState): ShopCategoryModel[] {
+  if (shop.presentation) {
+    return shop.presentation.categories.map((category) => ({
+      id: category.id,
+      view: category.view,
+      label: category.label,
+      description: category.description,
+      count: category.offerCount,
+      available: category.available,
+      blockedReason: category.unavailableReason ?? null
+    }));
+  }
   const find = (serviceId: string) => shop.services.find((service) => service.id === serviceId);
   const supplies = find("buy-supplies");
   const equipment = find("buy-gear");
@@ -149,7 +159,6 @@ function buildFromEncounter(shop: PublicShopEncounterState, deltas: ResultDelta[
   return {
     playerName: shop.activePlayer.name,
     operativeName: shop.activePlayer.characterName,
-    salvage: shop.activePlayer.salvage,
     shopName: shop.shopName,
     sectorName: shop.sectorName,
     shopType: shop.shopType ?? "Reach Market",
@@ -157,7 +166,7 @@ function buildFromEncounter(shop: PublicShopEncounterState, deltas: ResultDelta[
     view,
     categories: getCategories(shop),
     offers,
-    selectedOfferId,
+    selectedOfferId: shop.presentation?.selectedOfferId ?? selectedOfferId,
     blockedReason: shop.blockedReasonText ?? null,
     blockingThreatNames: shop.blockingThreats.map((threat) => threat.challenge
       ? `${threat.name} ${titleCase(threat.challenge.stat)} ${threat.challenge.value}`
@@ -318,7 +327,7 @@ export function HostShopOverlay({
       <header className="host-shop-identity-rail">
         <div><span>{model.status === "locked" ? "Shop blocked" : "Shop open"} · {model.shopType}</span><h1>{model.shopName}</h1><small>{model.sectorName}</small></div>
         <div className="host-shop-buyer"><span>Active buyer</span><strong>{model.playerName}</strong><small>{model.operativeName}</small></div>
-        <div className="host-shop-salvage" data-testid="host-shop-buyer-salvage"><span>Salvage</span><strong>{model.salvage}</strong></div>
+        <div className="host-shop-public-state"><span>Public status</span><strong>{model.recentOutcome ? "Transaction resolved" : "Browsing on phone"}</strong></div>
       </header>
 
       {model.status === "locked" ? (

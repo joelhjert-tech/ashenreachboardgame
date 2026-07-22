@@ -20,6 +20,20 @@ describe("HostImage", () => {
     expect(screen.getByAltText("Operative")).toHaveStyle({ objectPosition: "50% 18%" });
   });
 
+  it("marks an already cached image ready instead of resetting it to loading", () => {
+    const complete = Object.getOwnPropertyDescriptor(HTMLImageElement.prototype, "complete");
+    const naturalWidth = Object.getOwnPropertyDescriptor(HTMLImageElement.prototype, "naturalWidth");
+    Object.defineProperty(HTMLImageElement.prototype, "complete", { configurable: true, get: () => true });
+    Object.defineProperty(HTMLImageElement.prototype, "naturalWidth", { configurable: true, get: () => 320 });
+    try {
+      render(<HostImage src="/cached.webp" alt="Cached operative" />);
+      expect(screen.getByAltText("Cached operative").parentElement).toHaveClass("host-image-frame--ready");
+    } finally {
+      if (complete) Object.defineProperty(HTMLImageElement.prototype, "complete", complete);
+      if (naturalWidth) Object.defineProperty(HTMLImageElement.prototype, "naturalWidth", naturalWidth);
+    }
+  });
+
   it("keeps a stable fallback when the source is absent or fails", () => {
     const { rerender } = render(<HostImage alt="Missing map" aspectRatio="map-tile" fallback="map" />);
     expect(screen.getByRole("img", { name: "Missing map" })).toHaveTextContent(/art unavailable/i);

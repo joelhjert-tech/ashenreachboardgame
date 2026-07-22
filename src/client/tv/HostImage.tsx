@@ -1,69 +1,29 @@
-import { useEffect, useState, type ImgHTMLAttributes, type ReactElement } from "react";
+import type { ReactElement } from "react";
+import {
+  ArtworkFrame,
+  type ArtworkFallback,
+  type ArtworkFit,
+  type ArtworkFrameProps,
+  type ArtworkRatio
+} from "../shared/ArtworkFrame.js";
 import "./HostImage.css";
 
-export type HostImageFit = "contain" | "cover";
-export type HostImageRatio = "card" | "portrait" | "square" | "map-tile" | "wide" | "natural";
+export type HostImageFit = ArtworkFit;
+export type HostImageRatio = Exclude<ArtworkRatio, "hero">;
 export type HostImageFallback = "card" | "portrait" | "map" | "icon";
 
-export interface HostImageProps extends Omit<ImgHTMLAttributes<HTMLImageElement>, "src"> {
-  src?: string | null;
-  alt: string;
-  fit?: HostImageFit;
+export interface HostImageProps extends Omit<ArtworkFrameProps, "aspectRatio" | "fallback"> {
   aspectRatio?: HostImageRatio;
-  focalPoint?: string;
   fallback?: HostImageFallback;
-  className?: string;
-  imageClassName?: string;
 }
 
-export function HostImage({
-  src,
-  alt,
-  fit = "contain",
-  aspectRatio = "natural",
-  focalPoint = "center",
-  fallback = "card",
-  className,
-  imageClassName,
-  onLoad,
-  onError,
-  ...imageProps
-}: HostImageProps): ReactElement {
-  const [status, setStatus] = useState<"loading" | "ready" | "failed">(src ? "loading" : "failed");
+const fallbackMap: Record<HostImageFallback, ArtworkFallback> = {
+  card: "card",
+  portrait: "operative",
+  map: "map",
+  icon: "icon"
+};
 
-  useEffect(() => {
-    setStatus(src ? "loading" : "failed");
-  }, [src]);
-
-  return (
-    <span
-      className={`host-image-frame host-image-frame--${fit} host-image-frame--${aspectRatio} host-image-frame--${status}${className ? ` ${className}` : ""}`}
-      data-host-image-fit={fit}
-      data-host-image-ratio={aspectRatio}
-    >
-      {src ? (
-        <img
-          {...imageProps}
-          className={imageClassName}
-          src={src}
-          alt={status === "failed" ? "" : alt}
-          aria-hidden={status === "failed" ? "true" : imageProps["aria-hidden"]}
-          style={{ ...imageProps.style, objectPosition: focalPoint }}
-          onLoad={(event) => {
-            setStatus("ready");
-            onLoad?.(event);
-          }}
-          onError={(event) => {
-            setStatus("failed");
-            onError?.(event);
-          }}
-        />
-      ) : null}
-      {status === "failed" ? (
-        <span className={`host-image-fallback host-image-fallback--${fallback}`} role="img" aria-label={alt || "Artwork unavailable"}>
-          <span>Art unavailable</span>
-        </span>
-      ) : null}
-    </span>
-  );
+export function HostImage({ fallback = "card", ...props }: HostImageProps): ReactElement {
+  return <ArtworkFrame {...props} fallback={fallbackMap[fallback]} />;
 }

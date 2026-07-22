@@ -18,9 +18,11 @@ import { pointerToBoardCoordinate, type BoardRect } from "./boardGeometry.js";
 import { getBoardTileLayout, getBoardTileRouteAnchor } from "./boardTileLayout.js";
 import { HostCinematicFxLayer, type MapFxPoint, type MapFxTrail } from "./HostCinematicFxLayer.js";
 import { getMapBoardBaseAssetPath } from "./mapAssetRegistry.js";
-import { TalismanBoardSurface, type TileMissionMarker, type TileMovementAnimation, type TilePlayerMarker } from "./TalismanBoardSurface.js";
+import { TalismanBoardSurface, type TileMissionMarker, type TileMovementAnimation, type TileMovementDestinationMarker, type TilePlayerMarker } from "./TalismanBoardSurface.js";
 import { getMissionRelevanceForSector } from "../shared/missionRelevance.js";
 import { getSeatIdentity } from "../shared/seatIdentity.js";
+import { HostSectorBrief } from "./HostSectorBrief.js";
+import { buildHostMapSectorBrief } from "./hostMapPresentation.js";
 
 interface BoardMapProps {
   patch: PublicPatchPayload;
@@ -28,6 +30,7 @@ interface BoardMapProps {
   phase: string;
   showHeader?: boolean;
   showSidebar?: boolean;
+  showContextBrief?: boolean;
   onMovementDestinationSelected?: (destination: PublicMoveDestination | null) => void;
 }
 
@@ -69,6 +72,7 @@ function buildPlayerMarkersByNodeId(patch: PublicPatchPayload): Map<string, Tile
     existing.push({
       color: identity.color,
       label,
+      operativeName: player.character.name,
       seatId: player.seatId,
       seatIndex: seatIndex.get(player.seatId) ?? patch.seats.length,
       active: player.seatId === activeSeatId
@@ -161,7 +165,7 @@ function buildMovementRouteCacheKey(seatId: string, fromSectorId: string, toSect
 
 function getMovementAnimationDuration(routeSectorIds: string[]): number {
   const stepCount = Math.max(1, routeSectorIds.length - 1);
-  return Math.min(900, Math.max(360, stepCount * 220));
+  return Math.min(2600, 300 + stepCount * 520);
 }
 
 function buildMovementAnimations(
@@ -339,7 +343,7 @@ function buildNemesisTrails(patch: PublicPatchPayload, previousPatch: PublicPatc
     .filter((trail): trail is MapFxTrail => Boolean(trail));
 }
 
-export function BoardMap({ patch, previousPatch = null, phase, showHeader = true, showSidebar = true, onMovementDestinationSelected }: BoardMapProps): ReactElement {
+export function BoardMap({ patch, previousPatch = null, phase, showHeader = true, showSidebar = true, showContextBrief = false, onMovementDestinationSelected }: BoardMapProps): ReactElement {
   const boardAssetPath = getMapBoardBaseAssetPath();
   const [selectedNodeId, setSelectedNodeId] = useState<string>(() => RIFTFALL_BOARD_NODES[0]?.id ?? "");
   const [calibrationPoint, setCalibrationPoint] = useState<CalibrationPoint | null>(null);
@@ -387,7 +391,7 @@ export function BoardMap({ patch, previousPatch = null, phase, showHeader = true
       movementPlanner
         ? new Set(
             movementPlanner.destinations
-              .filter((destination) => !destination.disabledReason)
+              .filter((destination) => !destination.disabledReason || destination.voidKeyPrompt)
               .map((destination) => destination.sectorId)
           )
         : new Set<string>(),
@@ -410,7 +414,7 @@ export function BoardMap({ patch, previousPatch = null, phase, showHeader = true
       : null;
   const movementRouteSegments = useMemo(
     () =>
-      selectedMoveDestination && !selectedMoveDestination.disabledReason
+      selectedMoveDestination && (!selectedMoveDestination.disabledReason || selectedMoveDestination.voidKeyPrompt)
         ? selectedMoveDestination.route.slice(0, -1).flatMap((fromNodeId, index) => {
             const toNodeId = selectedMoveDestination.route[index + 1];
             const from = RIFTFALL_BOARD_NODE_INDEX.get(fromNodeId);
@@ -469,6 +473,27 @@ export function BoardMap({ patch, previousPatch = null, phase, showHeader = true
   }, [patch.players]);
   const playerMarkersByNodeId = useMemo(() => buildPlayerMarkersByNodeId(patch), [patch]);
   const missionMarkersByNodeId = useMemo(() => buildMissionMarkersByNodeId(patch), [patch]);
+  const selectedMissionOwners = useMemo(
+    () => selectedNode ? (missionMarkersByNodeId.get(selectedNode.id) ?? []).map((marker) => marker.playerLabel) : [],
+    [missionMarkersByNodeId, selectedNode]
+  );
+  const hostMapBrief = useMemo(
+    () => buildHostMapSectorBrief(patch, selectedNode?.id ?? null, selectedMoveDestination, selectedNode?.x ?? 0.5, selectedMissionOwners),
+    [patch, selectedMissionOwners, selectedMoveDestination, selectedNode?.id, selectedNode?.x]
+  );
+  const movementDestinationMarkersByNodeId = useMemo(() => {
+    const markers = new Map<string, TileMovementDestinationMarker>();
+    if (!movementPlanner) return markers;
+    movementPlanner.destinations.forEach((destination) => {
+      if (!destination.markerLabel || (destination.disabledReason && !destination.voidKeyPrompt)) return;
+      markers.set(destination.sectorId, {
+        label: destination.markerLabel,
+        selected: destination.sectorId === movementPlanner.selectedDestinationId,
+        specialConnection: Boolean(destination.ringTransition || destination.voidKeyPrompt)
+      });
+    });
+    return markers;
+  }, [movementPlanner]);
   const movingSeatIds = useMemo(() => buildMovingSeatIds(patch, previousPatch), [patch, previousPatch]);
   const movementAnimations = useMemo(
     () => buildMovementAnimations(patch, previousPatch, movementRouteCacheRef.current),
@@ -540,6 +565,7 @@ export function BoardMap({ patch, previousPatch = null, phase, showHeader = true
                   occupantCountsByNodeId={occupantCountsByNodeId}
                   playerMarkersByNodeId={playerMarkersByNodeId}
                   missionMarkersByNodeId={missionMarkersByNodeId}
+                  movementDestinationMarkersByNodeId={movementDestinationMarkersByNodeId}
                   movingSeatIds={movingSeatIds}
                   movementAnimations={movementAnimations}
                   nemesisSectorIds={nemesisSectorIds}
@@ -672,6 +698,8 @@ export function BoardMap({ patch, previousPatch = null, phase, showHeader = true
             );
           }}
         </BoardStage>
+
+        {showContextBrief && hostMapBrief ? <HostSectorBrief brief={hostMapBrief} /> : null}
 
         {showSidebar && (
           <aside className="tv-board-sidebar">

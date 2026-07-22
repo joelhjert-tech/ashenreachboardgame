@@ -100,6 +100,7 @@ function TileInspector({ tile, connection, image, onSelectConnection, onOpenLibr
   onOpenLibraryCard?: (cardId: string) => void;
   onClose: () => void;
 }): ReactElement {
+  const [showArrivalSimulation, setShowArrivalSimulation] = useState(false);
   const sourceRatio = image ? image.naturalWidth / image.naturalHeight : null;
   const renderedRatio = image ? image.renderedWidth / image.renderedHeight : null;
   const cropped = Boolean(sourceRatio && renderedRatio && Math.abs(sourceRatio - renderedRatio) > 0.08);
@@ -160,6 +161,35 @@ function TileInspector({ tile, connection, image, onSelectConnection, onOpenLibr
         <ContentList title="Artifacts" entries={tile.artifacts} onOpen={onOpenLibraryCard} />
         <ContentList title="Escalations" entries={tile.escalations} onOpen={onOpenLibraryCard} />
         <ContentList title="Services" entries={tile.services} />
+        {tile.tileFunction ? (
+          <section className="admin-map-tile-functions" aria-label="Executable tile functions">
+            <h3>Executable Tile Functions</h3>
+            {[...tile.tileFunction.arrival, ...tile.tileFunction.optionalActions, ...tile.tileFunction.persistentRules].map((rule) => (
+              <article key={rule.id} className={rule.supported ? "" : "has-warning"}>
+                <span>{rule.order} · {titleCase(rule.kind)}</span>
+                <strong>{rule.label}</strong>
+                <small>{rule.mandatory ? "Mandatory" : "Optional"} · {rule.repeatPolicy} · {rule.marker}</small>
+                <p>{rule.detail}</p>
+              </article>
+            ))}
+            <button type="button" className="admin-map-simulate-arrival" onClick={() => setShowArrivalSimulation((current) => !current)}>
+              {showArrivalSimulation ? "CLOSE ARRIVAL SIMULATION" : "SIMULATE ARRIVAL"}
+            </button>
+            {showArrivalSimulation && tile.arrivalSimulation ? (
+              <div className="admin-map-arrival-simulation" data-testid="admin-map-arrival-simulation">
+                <strong>SIMULATION ONLY · DETACHED CANONICAL RULE STACK</strong>
+                <dl>
+                  <div><dt>Initial location</dt><dd>{tile.arrivalSimulation.initialState.location}</dd></div>
+                  <div><dt>Generated rules</dt><dd>{tile.arrivalSimulation.generatedRuleStack.length}</dd></div>
+                  <div><dt>Mandatory prompts</dt><dd>{tile.arrivalSimulation.prompts.length}</dd></div>
+                  <div><dt>Final location</dt><dd>{tile.arrivalSimulation.finalState.location}</dd></div>
+                </dl>
+                <ol>{tile.arrivalSimulation.effectTrace.map((entry) => <li key={entry}>{entry}</li>)}</ol>
+                {tile.arrivalSimulation.warnings.map((warning) => <p className="has-warning" key={warning}>{warning}</p>)}
+              </div>
+            ) : null}
+          </section>
+        ) : null}
         <section className="admin-map-rules"><h3>Tile Rules</h3>{tile.rules.length ? tile.rules.map((rule) => <p key={rule}>{rule}</p>) : <p>NO SPECIAL TILE RULES</p>}</section>
         <section className="admin-map-source"><h3>Source Location</h3>{[["Tile ID", tile.id], ["Tile Data", tile.dataSourcePath], ["Data Folder", tile.dataSourceFolder], ["Layout Data", tile.layoutSourcePath], ["Tile Art", tile.artworkPath ?? "Not set"], ["Art Folder", tile.artworkFolder ?? "Not set"]].map(([label, value]) => <div key={label}><span>{label}</span><code>{value}</code>{value !== "Not set" ? <CopyButton label={label} value={value} /> : null}</div>)}</section>
       </div>

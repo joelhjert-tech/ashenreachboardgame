@@ -8,6 +8,7 @@ import { BOARD_TILE_LAYOUT, type BoardTileLayoutEntry } from "../boardTileLayout
 import { TILE_ASSETS } from "../tileAssetManifest.js";
 import { adminLibraryCards } from "./adminLibraryRegistry.js";
 import { canonicalTileChallengeReferences } from "./adminMapReferences.js";
+import { buildTileFunctionDefinition, simulateTileArrival, type TileFunctionDefinition } from "../../../game/rules/tileFunctions.js";
 
 export type AdminMapView = "artwork" | "connections" | "content" | "images" | "movement";
 export type AdminConnectionType = "normal" | "ring-transition" | "gate" | "bridge" | "ferry" | "invalid";
@@ -59,6 +60,8 @@ export interface AdminMapTile {
   layoutSourcePath: string;
   rules: string[];
   metadataWarnings: string[];
+  tileFunction: TileFunctionDefinition | null;
+  arrivalSimulation: ReturnType<typeof simulateTileArrival> | null;
 }
 
 export interface AdminMapAudit {
@@ -199,6 +202,13 @@ export function buildAdminMapRegistry(
     const artworkPath = artworkUrl ? `public${artworkUrl}` : null;
     const rules = [boardSpace?.movementBox?.text, boardSpace?.textBox.text, boardSpace?.ruleText, ...(boardSpace?.movementRequirements?.map((requirement) => requirement.errorMessage) ?? [])].filter((value): value is string => Boolean(value));
 
+    const tileChallenges = canonicalTileChallengeReferences.filter((challenge) => challenge.sectorId === node.id);
+    const tileFunction = boardSpace ? buildTileFunctionDefinition(boardSpace, tileChallenges) : null;
+    const arrivalSimulation = boardSpace ? simulateTileArrival(boardSpace, tileChallenges) : null;
+    if (tileFunction?.arrival.some((rule) => !rule.supported) || tileFunction?.optionalActions.some((rule) => !rule.supported)) {
+      metadataWarnings.push("Tile function contains an unsupported executable rule.");
+    }
+
     return {
       id: node.id,
       name: boardSpace?.name ?? node.label,
@@ -225,7 +235,9 @@ export function buildAdminMapRegistry(
       dataSourceFolder: folderOf(DATA_SOURCE_PATH),
       layoutSourcePath: LAYOUT_SOURCE_PATH,
       rules,
-      metadataWarnings
+      metadataWarnings,
+      tileFunction,
+      arrivalSimulation
     };
   });
 

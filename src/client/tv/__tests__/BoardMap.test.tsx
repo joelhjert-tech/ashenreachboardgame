@@ -204,6 +204,7 @@ describe("BoardMap", () => {
         currentSectorName: "Ashwake Crossing",
         destinations: [
           {
+            markerLabel: "A",
             sectorId: "emberwatch-step",
             name: "Emberwatch Step",
             ring: "outer",
@@ -218,6 +219,7 @@ describe("BoardMap", () => {
             strategicTags: ["danger"]
           },
           {
+            markerLabel: "B",
             sectorId: "glassmere-spindle",
             name: "Glassmere Spindle",
             ring: "outer",
@@ -259,6 +261,9 @@ describe("BoardMap", () => {
     expect(screen.getByLabelText("Current operative location")).toHaveTextContent("Current");
     expect(screen.getByTestId("sector-node-mirecoil-beacon")).toHaveAttribute("data-legal-target", "false");
     expect(screen.getByTestId("sector-node-hollow-veil-yard")).toHaveAttribute("data-legal-target", "false");
+    expect(screen.getByTestId("movement-marker-emberwatch-step")).toHaveTextContent("A");
+    expect(screen.getByTestId("movement-marker-glassmere-spindle")).toHaveTextContent("B");
+    expect(screen.queryByTestId("movement-marker-hollow-veil-yard")).not.toBeInTheDocument();
     expect(screen.queryByTestId("movement-route-emberwatch-step-0-ashwake-crossing-mirecoil-beacon")).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByTestId("sector-node-emberwatch-step"));
@@ -316,6 +321,66 @@ describe("BoardMap", () => {
     expect(screen.getByTestId("tv-route-preview")).toHaveTextContent(/ashwake crossing -> mirecoil beacon -> emberwatch step/i);
     expect(screen.getByTestId("tv-route-preview")).toHaveTextContent(/hazard/i);
     expect(screen.getByTestId("tv-route-preview")).toHaveTextContent(/danger: ash wolf/i);
+  });
+
+  it("shows a bounded public current-sector brief with the active operative and occupants", () => {
+    const patch = createPatch();
+    patch.players[1] = { ...patch.players[1]!, sectorId: "ashwake-crossing" };
+
+    render(<BoardMap patch={patch} phase="action" showContextBrief showSidebar={false} />);
+
+    const brief = screen.getByTestId("host-sector-brief");
+    expect(brief).toHaveAttribute("data-focus", "current-sector");
+    expect(brief).toHaveTextContent("Ashwalk Bridge");
+    expect(brief).toHaveTextContent("Borderlight · Outer region");
+    expect(brief).toHaveTextContent("Active · Lane Mercer");
+    expect(brief).toHaveTextContent("Sable Vey");
+    expect(brief).toHaveTextContent("Mira Quill");
+    expect(brief).not.toHaveTextContent("seat-1");
+    expect(screen.getByTestId("token-seat-1")).toHaveTextContent("Active · Lane Mercer");
+  });
+
+  it("updates the public brief from the authoritative selected destination and route", () => {
+    const patch = createPatch();
+    patch.movementPlanner = {
+      active: true,
+      movementValue: 2,
+      currentSectorId: "ashwake-crossing",
+      currentSectorName: "Ashwake Crossing",
+      selectedDestinationId: "emberwatch-step",
+      destinations: [{
+        markerLabel: "A",
+        sectorId: "emberwatch-step",
+        name: "Emberwatch Step",
+        ring: "outer",
+        distance: 2,
+        route: ["ashwake-crossing", "mirecoil-beacon", "emberwatch-step"],
+        routeNames: ["Ashwake Crossing", "Mirecoil Beacon", "Emberwatch Step"],
+        tags: ["hazard"],
+        threatIcons: ["red"],
+        ruleText: "Cross the ember watch.",
+        faceUpThreats: [{
+          instanceId: "public-threat-1",
+          cardId: "ash-wolf",
+          name: "Ash Wolf",
+          type: "enemy",
+          blocksShop: false,
+          blocksSectorText: false
+        }],
+        occupants: [],
+        strategicTags: ["danger"]
+      }]
+    };
+
+    render(<BoardMap patch={patch} phase="navigation" showContextBrief showSidebar={false} />);
+
+    const brief = screen.getByTestId("host-sector-brief");
+    expect(brief).toHaveAttribute("data-focus", "destination-preview");
+    expect(brief).toHaveTextContent("2 steps · Ashwake Crossing → Mirecoil Beacon → Emberwatch Step");
+    expect(brief).toHaveTextContent("1 public encounter present");
+    expect(brief).toHaveTextContent("Cross the ember watch.");
+    expect(brief).not.toHaveTextContent("public-threat-1");
+    expect(brief).not.toHaveTextContent("ash-wolf");
   });
 
   it("renders rectangular board tiles for the shared board-space layout and keeps live sector ids for active content", () => {

@@ -13,6 +13,7 @@ import type { ActiveResolution, PublicPatchPayload, PublicPlayer, ResultDelta, S
 import { HostCinematicFxLayer } from "./HostCinematicFxLayer.js";
 import { HostImage } from "./HostImage.js";
 import { isHostBattleActive } from "./hostBattleState.js";
+import { AuthoritativeDicePresentation, buildDice, type AuthoritativeDiceModel } from "../shared/AuthoritativeDicePresentation.js";
 
 interface ResolutionSideModel {
   name: string;
@@ -28,6 +29,7 @@ interface ResolutionSideModel {
   rollTotal: number | null;
   modifier: number | null;
   assistanceTotal: number | null;
+  diceCount: number;
   total: number | null;
   formula: string;
   modifierSources: Array<{ label: string; value: number }>;
@@ -294,19 +296,20 @@ function buildBattleModel(
   activePlayer: PublicPlayer
 ): HostBattleDisplayModel | null {
   const resolution = patch.payload.activeResolution ?? null;
+  const presentation = patch.payload.battlePresentation ?? null;
   const encounter = patch.payload.encounter;
   const pendingEnemyRoll = patch.payload.pendingEnemyRoll;
   const battle = resolution?.battle;
   const card = resolution?.card;
-  const opponentName = battle?.enemyName ?? card?.title ?? encounter?.enemyName ?? encounter?.title ?? pendingEnemyRoll?.encounterTitle ?? null;
+  const opponentName = presentation?.encounter.name ?? battle?.enemyName ?? card?.title ?? encounter?.enemyName ?? encounter?.title ?? pendingEnemyRoll?.encounterTitle ?? null;
 
   if (!opponentName || !isHostBattleActive(patch, activePlayer)) {
     return null;
   }
 
-  const stat = battle?.stat ?? encounter?.stat ?? pendingEnemyRoll?.stat ?? "grit";
+  const stat = presentation?.test.stat ?? battle?.stat ?? encounter?.stat ?? pendingEnemyRoll?.stat ?? "grit";
   const statLabel = statLabelById[stat];
-  const playerName = patch.payload.seats.find((seat) => seat.seatId === activePlayer.seatId)?.displayName ?? activePlayer.character.name;
+  const playerName = presentation?.operative.name ?? patch.payload.seats.find((seat) => seat.seatId === activePlayer.seatId)?.displayName ?? activePlayer.character.name;
   const projectedOutcome = patch.payload.outcomeSummary;
   const sourceCardId = card?.id ?? encounter?.id ?? pendingEnemyRoll?.encounterCardId ?? null;
   const opponentCardType = getOpponentCardType(resolution);
@@ -314,28 +317,36 @@ function buildBattleModel(
     (sourceCardId !== null && projectedOutcome.encounterCardId === sourceCardId) ||
     (resolution?.source === "movement" && projectedOutcome.movedToSectorId === card?.id)
   ) ? projectedOutcome : null;
-  const playerDice = resolution?.roll?.dice ?? [outcome?.die1, outcome?.die2].filter((die): die is number => typeof die === "number");
-  const enemyDice = [outcome?.enemyDie1, outcome?.enemyDie2].filter((die): die is number => typeof die === "number");
-  const playerRollTotal = sumDice(playerDice);
-  const enemyRollTotal = sumDice(enemyDice);
-  const playerTotal = resolution?.roll?.finalTotal ?? outcome?.checkTotal ?? null;
-  const enemyTotal = outcome?.enemyTotal ?? (resolution?.roll?.target ?? battle?.difficulty ?? encounter?.difficulty ?? null);
-  const playerBattleValue = getPlayerBattleValue(resolution, activePlayer);
-  const playerModifierSources = getPlayerModifierSources(resolution);
-  const enemyBattleValue = getEnemyBattleValue(resolution, patch);
-  const success = resolution?.roll?.success ?? outcome?.success ?? null;
-  const outcomeLabel = getOutcomeLabel(success, playerTotal, enemyTotal);
+  const playerDice = presentation?.operative.rawDice ?? resolution?.roll?.dice ?? [outcome?.die1, outcome?.die2].filter((die): die is number => typeof die === "number");
+  const enemyDice = presentation?.opponent.rawDice ?? [outcome?.enemyDie1, outcome?.enemyDie2].filter((die): die is number => typeof die === "number");
+  const playerRollTotal = presentation?.operative.diceTotal ?? sumDice(playerDice);
+  const enemyRollTotal = presentation?.opponent.diceTotal ?? sumDice(enemyDice);
+  const playerTotal = presentation?.operative.finalTotal ?? resolution?.roll?.finalTotal ?? outcome?.checkTotal ?? null;
+  const enemyTotal = presentation?.opponent.finalTotal ?? outcome?.enemyTotal ?? (resolution?.roll?.target ?? battle?.difficulty ?? encounter?.difficulty ?? null);
+  const playerBattleValue = presentation?.operative.baseValue ?? getPlayerBattleValue(resolution, activePlayer);
+  const playerModifierSources = presentation?.operative.modifiers ?? getPlayerModifierSources(resolution);
+  // Legacy resolutions store the complete effective stat in modifierTotal and
+  // expose its component sources separately. Only the canonical P3 projection
+  // distinguishes base from additive modifiers, so do not count legacy sources twice.
+  const playerModifierTotal = presentation
+    ? playerModifierSources.reduce((sum, modifier) => sum + modifier.value, 0)
+    : 0;
+  const enemyBattleValue = presentation?.opponent.baseValue ?? getEnemyBattleValue(resolution, patch);
+  const success = presentation?.outcome === "success" ? true : presentation?.outcome === "failure" ? false : resolution?.roll?.success ?? outcome?.success ?? null;
+  const outcomeLabel = presentation?.outcome === "draw" ? "DRAW" : getOutcomeLabel(success, playerTotal, enemyTotal);
   const resultTone = outcomeLabel === "SUCCESS" ? "victory" : outcomeLabel === "DEFEAT" ? "failure" : "neutral";
-  const outcomeText = resolution?.outcome?.text ?? outcome?.summary ?? null;
+  const outcomeText = presentation?.publicConsequence ?? resolution?.outcome?.text ?? outcome?.summary ?? null;
   const cardMovementText = getCardMovementText(opponentName, outcomeText);
-  const resolutionType = formatResolutionType(
+  const resolutionType = presentation?.encounter.category.toUpperCase() ?? formatResolutionType(
     resolution,
     encounter?.cardType,
     patch.payload.pendingTileChallenge?.challengeType
   );
   const isOpposedBattle = resolutionType === "BATTLE";
   const opponentIsRolled = enemyDice.length > 0;
-  const opponentStatLabel = opponentIsRolled ? "Battle" : "Difficulty";
+  // A rolled opponent's first term is its authoritative base value, not a
+  // battle index or category. Keep legitimate zeroes visible and auditable.
+  const opponentStatLabel = opponentIsRolled ? "Enemy base" : "Difficulty";
   const opponentFormula = opponentIsRolled
     ? formatFormula({
         statLabel: opponentStatLabel,
@@ -360,9 +371,11 @@ function buildBattleModel(
         ? `${playerName} fails the resolution.`
         : "Resolution pending.");
   const statusTitle = outcomeLabel === "RESOLVING" ? "Waiting for roll" : outcomeLabel === "SUCCESS" ? "Applying success outcome" : outcomeLabel === "DEFEAT" ? "Applying failure outcome" : "Resolving draw";
-  const statusCopy = outcomeLabel === "RESOLVING"
-    ? `Waiting for ${playerName} to roll on phone.`
-    : `Waiting for ${playerName} to continue on phone.`;
+  const statusCopy = presentation?.waiting
+    ? `${presentation.waiting.actorDisplayName} must ${presentation.waiting.publicAction} on their phone.`
+    : outcomeLabel === "RESOLVING"
+      ? `Waiting for ${playerName} to roll on phone.`
+      : `Waiting for ${playerName} to continue on phone.`;
   return {
     player: {
       name: playerName,
@@ -374,17 +387,16 @@ function buildBattleModel(
       statLabel,
       statValue: playerBattleValue,
       rollTotal: playerRollTotal,
-      modifier: null,
+      modifier: playerModifierTotal,
       assistanceTotal: resolution?.assistance?.total ?? null,
+      diceCount: presentation?.operative.diceCount ?? (playerDice.length || 2),
       total: playerTotal,
       modifierSources: playerModifierSources,
-      formula: resolution?.assistance
-        ? `${statLabel} ${formatNumber(playerBattleValue)} + Roll ${formatNumber(playerRollTotal)} + Help ${resolution.assistance.total} = Total ${formatNumber(playerTotal)}`
-        : formatFormula({
+      formula: formatFormula({
             statLabel,
             statValue: playerBattleValue,
             rollTotal: playerRollTotal,
-            modifier: null,
+            modifier: playerModifierTotal,
             total: playerTotal
           })
     },
@@ -401,8 +413,9 @@ function buildBattleModel(
       rollTotal: enemyRollTotal,
       modifier: null,
       assistanceTotal: null,
+      diceCount: presentation?.opponent.diceCount ?? enemyDice.length,
       total: enemyTotal,
-      modifierSources: [],
+      modifierSources: presentation?.opponent.modifiers ?? [],
       formula: opponentFormula
     },
     challengeStat: stat,
@@ -437,6 +450,18 @@ function StatTotalFooter({
   dice: number[];
 }): ReactElement {
   const testIdSide = variant === "opponent" ? "enemy" : "player";
+  const diceModel: AuthoritativeDiceModel = {
+    id: `host:${testIdSide}:${side.name}`,
+    revision: 0,
+    stage: dice.length > 0 ? "result" : "ready",
+    context: "battle",
+    actorName: side.name,
+    purpose: variant === "player" ? `${side.statLabel} battle roll` : "Opposition roll",
+    dice: buildDice(dice, Array.from({ length: side.diceCount }, (_, index) => `${variant === "player" ? "Operative" : "Enemy"} die ${index + 1}`)),
+    rawTotal: side.rollTotal,
+    modifiers: side.modifierSources.map((modifier) => ({ label: modifier.label, value: modifier.value })),
+    finalValue: side.total
+  };
 
   return (
     <footer className="host-battle-total-footer" data-testid={`host-battle-${testIdSide}-math`}>
@@ -445,10 +470,15 @@ function StatTotalFooter({
         <ChallengeBadge stat={side.stat} value={formatNumber(side.statValue)} label={side.statLabel} active />
       </div>
       <div className="host-battle-side-roll" data-testid={`host-battle-${testIdSide}-dice`}>
-        <div className="host-battle-side-dice" aria-label={`${side.name} dice`}>
-          {dice.length > 0 ? dice.map((die, index) => <strong key={`${die}:${index}`}>{die}</strong>) : <strong>-</strong>}
-        </div>
-        <span>Roll {formatNumber(side.rollTotal)}</span>
+        {dice.length > 0 || side.total === null ? (
+          <AuthoritativeDicePresentation model={diceModel} size="host" compact />
+        ) : (
+          <div className="host-battle-fixed-opposition" aria-label={`Fixed opposing value ${side.total}`}>
+            <span>Fixed opposing value</span>
+            <strong>{side.total}</strong>
+            <small>No opposing die is rolled.</small>
+          </div>
+        )}
       </div>
       <dl className="host-battle-math-grid" aria-label={`${side.name} battle math`}>
         <div>
@@ -460,8 +490,8 @@ function StatTotalFooter({
           <dd>{formatNumber(side.rollTotal)}</dd>
         </div>
         <div>
-          <dt>{side.assistanceTotal !== null ? "Help" : "Mod"}</dt>
-          <dd>{side.assistanceTotal !== null ? formatModifier(side.assistanceTotal) : formatModifier(side.modifier)}</dd>
+          <dt>Modifiers</dt>
+          <dd>{formatModifier(side.modifier)}</dd>
         </div>
         <div>
           <dt>Total</dt>
@@ -544,12 +574,6 @@ function HostBattleVsCore({ model }: { model: HostBattleDisplayModel }): ReactEl
 
   return (
     <section className="host-battle-vs-block" aria-label="Resolution comparison" data-testid="host-battle-vs-block">
-      <span className="host-battle-focus-label">{model.focusLabel}</span>
-      <h2 className="host-battle-encounter-title">
-        {model.resolutionType === "BATTLE"
-          ? "Battle resolution"
-          : `${model.resolutionType.toLowerCase().replace(/^\w/, (letter) => letter.toUpperCase())} resolution`}
-      </h2>
       <p className="host-battle-resolution-type">{model.resolutionType}</p>
       <strong>{model.isOpposedBattle ? "VS" : "TEST"}</strong>
       <div className={`host-battle-result-banner host-battle-result-${model.outcomeLabel.toLowerCase()}`} data-testid="host-battle-result-banner">

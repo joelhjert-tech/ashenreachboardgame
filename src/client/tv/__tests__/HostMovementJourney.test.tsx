@@ -51,6 +51,8 @@ describe("HostMovementJourney", () => {
   it("renders canonical art for origin, current route step, and destination", () => {
     render(<HostMovementJourney model={model} step={1} arrived={false} challenges={challenges} />);
     const journey = screen.getByTestId("tv-movement-journey");
+    expect(journey).toHaveAttribute("data-movement-stage", "travel");
+    expect(journey).toHaveAttribute("data-arrival-event-id", "movement-7");
     expect(within(journey).getByTestId("tile-art-ashwake-crossing")).toHaveAttribute("src", "/assets/map/tiles/map_tile_hollow_gate.png");
     expect(within(journey).getByTestId("tile-art-glassmere-spindle")).toHaveAttribute("src", "/assets/map/tiles/map_tile_ironbridge_span.png");
     expect(within(journey).getAllByTestId("tile-art-hollow-veil-yard")).toHaveLength(2);
@@ -66,6 +68,8 @@ describe("HostMovementJourney", () => {
     render(<HostMovementJourney model={model} step={2} arrived challenges={challenges} />);
     expect(screen.getByText("Arrived at Hollow Veil Yard")).toBeInTheDocument();
     const journey = screen.getByTestId("tv-movement-journey");
+    expect(journey).toHaveAttribute("data-movement-stage", "arrival");
+    expect(journey).toHaveAttribute("data-arrival-event-id", "movement-7");
     expect(within(journey).getAllByTestId("tile-art-hollow-veil-yard")).toHaveLength(2);
     expect(screen.getByRole("region", { name: "Recurring challenges" })).toHaveTextContent("Rift Whispers");
     expect(screen.getByRole("region", { name: "Visible threats" })).toHaveTextContent("Signal Static");
@@ -82,5 +86,16 @@ describe("HostMovementJourney", () => {
     render(<HostMovementJourney model={model} step={0} arrived={false} challenges={[]} />);
     fireEvent.error(screen.getByTestId("tile-art-ashwake-crossing"));
     expect(screen.getByTestId("missing-tile-art-ashwake-crossing")).toHaveTextContent("Missing tile art");
+  });
+
+  it("never exposes raw sector identifiers when route display names are incomplete", () => {
+    const incomplete = { ...model, destination: { ...destination, routeNames: undefined } };
+    render(<HostMovementJourney model={incomplete} step={1} arrived={false} challenges={[]} />);
+    const journey = screen.getByTestId("tv-movement-journey");
+    expect(journey).toHaveTextContent("Ashwake Crossing");
+    expect(journey).toHaveTextContent("Route step 1");
+    expect(journey).toHaveTextContent("Hollow Veil Yard");
+    expect(journey).not.toHaveTextContent("ashwake-crossing");
+    expect(journey).not.toHaveTextContent("glassmere-spindle");
   });
 });

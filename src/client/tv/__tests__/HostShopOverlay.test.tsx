@@ -57,6 +57,8 @@ describe("HostShopOverlay rebuild", () => {
     expect(screen.getByTestId("host-shop-category-sell")).toBeInTheDocument();
     expect(screen.queryByTestId("host-shop-category-items")).not.toBeInTheDocument();
     expect(screen.queryByTestId("host-shop-category-artifacts")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("host-shop-buyer-salvage")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button")).not.toBeInTheDocument();
   });
 
   it("uses the synchronized selected stock ID for the carousel focus", () => {

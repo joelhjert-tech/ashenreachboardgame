@@ -1,12 +1,5 @@
 import { lazy, Suspense, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactElement } from "react";
 import { getBoardSpace, isScenarioConfrontationSpace } from "../../game/data/boardSpaces.js";
-import {
-  describeContractObjective,
-  formatContractObjectiveStatus,
-  formatContractProgress,
-  getContractObjectiveTarget,
-  isContractObjectiveComplete
-} from "../../game/contracts/objectives.js";
 import { getSessionStartReadiness } from "../../game/rules/sessionStart.js";
 import { getChallengeTheme, getChallengeThemeStyle } from "../../game/ui/challengeTheme.js";
 import { HostAudioControls } from "../audio/HostAudioControls.js";
@@ -21,7 +14,7 @@ import {
   formatResolutionModifiers,
   resolutionStageLabel
 } from "../shared/resolutionPresentation.js";
-import { buildScenarioOutcomeSummary, buildScenarioRuleDigest } from "../shared/scenarioPresentation.js";
+import { buildScenarioRuleDigest, type ScenarioOutcomeSummary } from "../shared/scenarioPresentation.js";
 import {
   buildCurrentTablePrompt,
   buildSectorExplorationCopy,
@@ -30,6 +23,7 @@ import {
 import { ResultDeltaRow } from "../shared/ResultDeltaChips.js";
 import { formatSeatLabel, statOrder, statShortLabelById } from "../shared/statLabels.js";
 import { useRoomSubscription } from "../shared/useRoomSubscription.js";
+import { useReducedMotion } from "../shared/useReducedMotion.js";
 import { getCardArtPath, getCharacterPortraitPath, getLobbyStagePath, getNemesisPortraitPath } from "../shared/assetPaths.js";
 import type {
   ActiveNemesisSummary,
@@ -37,6 +31,7 @@ import type {
   DebugEvent,
   GameMode,
   InteractionMode,
+  MatchThresholdWarning,
   NemesisChampionSummary,
   PublicPatchPayload,
   PublicMoveDestination,
@@ -47,8 +42,7 @@ import type {
   SessionMode,
   ScenarioTelemetryItem,
   StatePatch,
-  Stat,
-  ContractCard
+  Stat
 } from "../shared/types.js";
 import { HostPlayerCard } from "./HostPlayerCard.js";
 import { HostBattleChamber } from "./HostBattleChamber.js";
@@ -58,6 +52,7 @@ import { HostShopOverlay } from "./HostShopOverlay.js";
 import { isHostShopActive } from "./hostShopState.js";
 import { HostMovementJourney } from "./HostMovementJourney.js";
 import { DiceRollScene } from "./DiceRollScene.js";
+import { AuthoritativeDicePresentation, buildDice, type AuthoritativeDiceModel } from "../shared/AuthoritativeDicePresentation.js";
 import { JoinQrCard } from "./JoinQrCard.js";
 import { TacticalMapBoard } from "./TacticalMapBoard.js";
 import { getExpectedTileAssetPath, getTileAssetPath } from "./tileAssetManifest.js";
@@ -90,33 +85,6 @@ function toTitleCase(value: string): string {
 
 function getSessionModeLabel(sessionMode: SessionMode): string {
   return sessionMode === "single-player" ? "Solo Run" : "Multiplayer";
-}
-
-function formatContractRewardSummary(contract: ContractCard): string {
-  const reward = contract.reward;
-
-  if (!reward) return "Reward: completed Mission";
-  const normalized = Array.isArray((reward as { effects?: unknown }).effects)
-    ? reward as { effects: Array<{ type: string; amount?: number; [key: string]: unknown }>; displayText?: string }
-    : { effects: [reward as { type: string; amount?: number; [key: string]: unknown }] };
-  if (normalized.displayText) return normalized.displayText;
-  if (normalized.effects.length === 0) return "Reward: completed Mission";
-  if (normalized.effects.length > 1) return "Reward: bundled payout";
-  const effect = normalized.effects[0]!;
-  const rewardType = effect.type;
-
-  switch (rewardType) {
-    case "gain_gear":
-      return "Reward: gear";
-    case "gain_follower":
-      return "Reward: follower";
-    case "gain_trophy":
-      return `Reward: ${"amount" in effect ? effect.amount : 1} trophy`;
-    case "heal_wound":
-      return `Reward: heal ${"amount" in effect ? effect.amount : 1} wound`;
-    default:
-      return `Reward: ${toTitleCase(rewardType || "completion")}`;
-  }
 }
 
 function getInteractionModeLabel(interactionMode: InteractionMode): string {
@@ -251,6 +219,10 @@ function getCurrentStepCopy(
 
   const boardSpace = activePlayer ? getBoardSpace(activePlayer.sectorId) : null;
 
+  if (publicPatch.payload.requiredAction) {
+    return publicPatch.payload.requiredAction.detail;
+  }
+
   if (publicPatch.payload.encounter) {
     return `${publicPatch.payload.encounter.title} is in play for ${activePlayer?.character.name ?? "the active operative"} using ${toTitleCase(
       publicPatch.payload.encounter.stat
@@ -307,22 +279,12 @@ function getSpecialAbilitySummary(player: PublicPlayer | null, characterCatalog:
   return `${firstAbility.name}: ${firstAbility.text}`;
 }
 
-function getContractSummary(player: PublicPlayer | null, patch: StatePatch<PublicPatchPayload> | null): string {
-  if (!player?.character.activeContract || !patch) {
-    return "No active contract";
-  }
-
-  const contract = patch.payload.availableContracts.find((entry) => entry.id === player.character.activeContract?.contractId);
-
-  if (!contract) {
-    return "No active contract";
-  }
-
-  return `${contract.name} | ${formatContractObjectiveStatus(contract, player.character.activeContract.progress)}`;
-}
-
-function getContractLookup(patch: StatePatch<PublicPatchPayload> | null): Map<string, ContractCard> {
-  return new Map((patch?.payload.availableContracts ?? []).map((contract) => [contract.id, contract]));
+function getContractSummary(player: PublicPlayer | null): string {
+  const status = player?.character.privateObjectiveStatus;
+  if (!status?.hasActiveContract) return "No active private Contract";
+  return status.completedContracts > 0
+    ? `Private Contract active | ${status.completedContracts} completed`
+    : "Private Contract active";
 }
 
 function getSeatLabelMap(patch: StatePatch<PublicPatchPayload> | null): Record<string, string> {
@@ -419,6 +381,7 @@ interface TopHeaderProps {
   readyCount: number;
   seatCapacity: number;
   liveStatus: HostStateBannerModel;
+  matchProgress: PublicPatchPayload["matchProgress"];
   onReturnToLobby?: () => void;
 }
 
@@ -464,15 +427,23 @@ function ScenarioProgressRelicPanel({
 
 function HostTopScenarioProgress({
   win,
-  loss
+  loss,
+  warning
 }: {
   win: { label: string; title: string; current: number; max: number };
   loss: { label: string; title: string; current: number; max: number };
+  warning?: MatchThresholdWarning;
 }): ReactElement {
   return (
-    <div className="host-scenario-progress" aria-label="Scenario progress">
+    <div className={`host-scenario-progress${warning ? ` host-scenario-progress--${warning.level}` : ""}`} aria-label="Scenario progress">
       <ScenarioProgressRelicPanel variant="win" {...win} />
       <ScenarioProgressRelicPanel variant="loss" {...loss} />
+      {warning ? (
+        <div className="host-scenario-progress__warning" role="status" aria-live="polite">
+          <strong>{warning.label}</strong>
+          <span>{warning.detail}</span>
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -487,15 +458,16 @@ function TopHeader({
   readyCount,
   seatCapacity,
   liveStatus,
+  matchProgress,
   onReturnToLobby
 }: TopHeaderProps): ReactElement {
   const objective = scenarioStatus.objectiveProgress;
   const pressure = scenarioStatus.pressureState;
   const collapse = scenarioStatus.collapseState;
-  const winCurrent = objective?.current ?? scenarioStatus.progressValue;
-  const winMax = objective?.required ?? scenarioStatus.progressThreshold;
-  const lossCurrent = collapse?.current ?? pressure?.current ?? 0;
-  const lossMax = collapse?.max ?? pressure?.max ?? scenarioStatus.progressThreshold;
+  const winCurrent = matchProgress?.winProgress?.current ?? objective?.current ?? scenarioStatus.progressValue;
+  const winMax = matchProgress?.winProgress?.required ?? objective?.required ?? scenarioStatus.progressThreshold;
+  const lossCurrent = matchProgress?.lossPressure?.current ?? collapse?.current ?? pressure?.current ?? 0;
+  const lossMax = matchProgress?.lossPressure?.required ?? collapse?.max ?? pressure?.max ?? scenarioStatus.progressThreshold;
   const lossTitle = collapse ? "Collapse" : pressure?.name ?? "Scenario Pressure";
 
   return (
@@ -532,7 +504,9 @@ function TopHeader({
       <HostTopScenarioProgress
         win={{
           label: "Win Progress",
-          title: objective?.label ?? scenarioStatus.progressLabel,
+          title: scenarioStatus.name === "No active scenario"
+            ? objective?.label ?? scenarioStatus.progressLabel
+            : `${scenarioStatus.name} - ${objective?.label ?? scenarioStatus.progressLabel}`,
           current: winCurrent,
           max: winMax
         }}
@@ -542,6 +516,7 @@ function TopHeader({
           current: lossCurrent,
           max: lossMax
         }}
+        warning={matchProgress?.thresholdWarning ?? undefined}
       />
 
       <section
@@ -554,6 +529,9 @@ function TopHeader({
         <strong>{liveStatus.label}</strong>
         <p>
           {liveStatus.detail}
+          {matchProgress?.thresholdWarning ? (
+            <em> — {matchProgress.thresholdWarning.label}: {matchProgress.thresholdWarning.detail}</em>
+          ) : null}
           {liveStatus.meta ? <em> — {liveStatus.meta}</em> : null}
         </p>
       </section>
@@ -653,11 +631,38 @@ function getHostStateBannerModel({ patch, roomCode, activePlayer, connectionStat
     };
   }
 
+  const publicResult = patch.payload.matchProgress?.publicResult ?? null;
+  if (publicResult) {
+    return {
+      label: publicResult.title,
+      detail: publicResult.reason,
+      meta: `${publicResult.missionName} · ${publicResult.modeLabel}`,
+      tone: "ended"
+    };
+  }
+
+  if (patch.payload.requiredAction) {
+    const requiredAction = patch.payload.requiredAction;
+    const dangerKinds = new Set(["battle", "test", "scar", "consequence"]);
+    return {
+      label: requiredAction.label,
+      detail: requiredAction.detail,
+      meta: "",
+      tone: requiredAction.kind === "result"
+        ? "ended"
+        : dangerKinds.has(requiredAction.kind)
+          ? "danger"
+          : requiredAction.kind === "lobby"
+            ? "idle"
+            : "active"
+    };
+  }
+
   if (patch.payload.pendingMissionSelectionStatus?.status === "awaitingSelection") {
     const owner = patch.payload.seats.find((seat) => seat.seatId === patch.payload.pendingMissionSelectionStatus?.ownerSeatId);
     return {
       label: "Mission complete",
-      detail: `Waiting for ${owner?.displayName ?? "the operative"} to choose a new mission.`,
+      detail: `Waiting for ${owner?.displayName ?? "the operative"} to choose a new private Contract.`,
       meta: "Private options are on the owner phone",
       tone: "active"
     };
@@ -852,7 +857,7 @@ function ActiveOperativeOverlay({
         }}
         gearSummary={getGearSummary(activePlayer)}
         equippedGearDetails={activePlayer?.character.equippedGearDetails ?? []}
-        contractSummary={getContractSummary(activePlayer, patch)}
+        contractSummary={getContractSummary(activePlayer)}
         specialAbilitySummary={getSpecialAbilitySummary(activePlayer, characterCatalog)}
         companionBadges={activePlayer?.character.companionBadges ?? []}
         latestAbilityTriggerSummary={abilityTelemetry.latestTrigger?.summary ?? null}
@@ -1063,13 +1068,14 @@ function TvScenarioSelectionCarousel({
 }): ReactElement | null {
   const initialIndex = Math.max(0, scenarios.findIndex((scenario) => scenario.id === initialScenarioId));
   const [activeIndex, setActiveIndex] = useState(initialIndex);
+  const reducedMotion = useReducedMotion();
 
   useEffect(() => {
     setActiveIndex(Math.max(0, scenarios.findIndex((scenario) => scenario.id === initialScenarioId)));
   }, [initialScenarioId, scenarios]);
 
   useEffect(() => {
-    if (scenarios.length < 2 || window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) {
+    if (scenarios.length < 2 || reducedMotion) {
       return;
     }
 
@@ -1078,7 +1084,7 @@ function TvScenarioSelectionCarousel({
       6500
     );
     return () => window.clearInterval(interval);
-  }, [scenarios.length]);
+  }, [reducedMotion, scenarios.length]);
 
   const scenario = scenarios[activeIndex] ?? scenarios[0];
   if (!scenario) return null;
@@ -1143,6 +1149,8 @@ function TvStartupScreen({
   const hostSeat = seats.find((seat) => seat.seatId === patch?.payload.setupHostSeatId) ?? null;
   const hostConnected = Boolean(patch?.payload.hostPhoneConnected);
   const lobbyConfigured = patch?.payload.lobbyConfigured === true;
+  const setup = patch?.payload.setup ?? null;
+  const playerBySeat = new Map((patch?.payload.players ?? []).map((player) => [player.seatId, player]));
   const waitingCopy = !roomCode
     ? "Creating room..."
     : status === "closed"
@@ -1151,20 +1159,19 @@ function TvStartupScreen({
         ? "Reconnecting to game server"
     : !patch
       ? "Connecting to room..."
-      : !hostConnected
+      : setup?.title ?? (!hostConnected
         ? "Waiting for Host Phone"
         : !lobbyConfigured
           ? "Host Phone connected. Waiting for game type."
           : patch.payload.sessionMode === "single-player"
             ? "Single Player setup in progress."
-            : "Multiplayer setup in progress.";
-  const startReason = patch
-    ? getSessionStartReadiness({
-        sessionMode: patch.payload.sessionMode,
-        gameMode: patch.payload.gameMode,
-        seats: patch.payload.seats
-      }).reason
-    : "Scan to control setup";
+            : "Multiplayer setup in progress.");
+  const legacyReadiness = patch ? getSessionStartReadiness({
+    sessionMode: patch.payload.sessionMode,
+    gameMode: patch.payload.gameMode,
+    seats: patch.payload.seats
+  }) : null;
+  const startReason = setup?.publicInstruction ?? legacyReadiness?.reason ?? "Scan to control setup";
 
   return (
     <main
@@ -1180,7 +1187,7 @@ function TvStartupScreen({
         <div className="tv-startup-brand">
           <span>ASHEN REACH</span>
           <h1>{waitingCopy}</h1>
-          <p>{lobbyConfigured ? startReason : "Scan to control setup"}</p>
+          <p>{startReason}</p>
         </div>
         <div className="tv-startup-room">
           <span>Room Code</span>
@@ -1190,24 +1197,40 @@ function TvStartupScreen({
         {patch && (
           <div className="tv-startup-lobby">
             <div className="tv-startup-lobby-header">
-              <span>{hostConnected ? `Host Phone: ${hostSeat?.displayName ?? hostSeat?.seatId ?? "Connected"}` : "No Host Phone yet"}</span>
-              <strong>{patch.payload.lobbyConfigured ? getSessionModeLabel(patch.payload.sessionMode) : "Game type pending"}</strong>
+              <span>{hostConnected ? `Host Phone · ${hostSeat?.displayName ?? "Connected"}` : "Host Phone not connected"}</span>
+              <strong>{setup ? `${setup.connectedCount}/${setup.seatCapacity} connected` : "Waiting"}</strong>
             </div>
-            {joinedSeats.length > 0 ? (
-              <div className="tv-startup-player-list" aria-label="Players joined">
-                {joinedSeats.map((seat) => (
-                  <div key={seat.seatId} className="tv-startup-player-row">
-                    <strong>{seat.displayName}</strong>
-                    <span>{seat.seatId === patch.payload.setupHostSeatId ? "Host Phone" : "Player"}</span>
-                    <span>Character {seat.characterSelected === false ? "..." : "yes"}</span>
-                    <span>Mission {seat.startingMissionSelected ? "yes" : "-"}</span>
-                    <span>Ready {seat.ready ? "yes" : "-"}</span>
-                  </div>
-                ))}
+            {lobbyConfigured ? (
+              <div className="tv-startup-selection-summary" aria-label="Selected game setup">
+                <span><small>Mode</small><strong>{patch.payload.sessionMode === "single-player" ? "Solo Run" : getInteractionModeLabel(patch.payload.interactionMode ?? "co-op")}</strong></span>
+                <span><small>Scenario</small><strong>{patch.payload.activeScenario?.name ?? "Awaiting selection"}</strong></span>
+                <span><small>Ready</small><strong>{setup?.readyCount ?? 0}/{joinedSeats.length}</strong></span>
               </div>
-            ) : (
-              <p className="tv-startup-empty">No phones joined yet.</p>
-            )}
+            ) : null}
+            <div className="tv-startup-player-list" aria-label="Players joined and open slots">
+              {patch.payload.seats.map((seat, index) => {
+                const player = playerBySeat.get(seat.seatId);
+                const occupied = Boolean(seat.displayName) && !seat.kicked;
+                return (
+                  <div key={seat.seatId} className={`tv-startup-player-row${occupied ? "" : " is-empty"}${seat.ready ? " is-ready" : ""}`}>
+                    <span className="tv-startup-seat-number">{index + 1}</span>
+                    <div><strong>{occupied ? seat.displayName : "Open seat"}</strong><small>{occupied ? (seat.connected ? "Connected" : "Reconnecting") : "Scan to join"}</small></div>
+                    <span>{occupied && seat.seatId === patch.payload.setupHostSeatId ? "HOST" : ""}</span>
+                    <span>{player?.character.name ?? (occupied ? "Choosing operative" : "—")}</span>
+                    <b>
+                      {seat.ready ? "READY" : occupied ? "SETTING UP" : "OPEN"}
+                      {occupied ? <span className="tv-screen-reader-only"> · Mission {seat.startingMissionSelected ? "yes" : "not selected"}</span> : null}
+                    </b>
+                  </div>
+                );
+              })}
+            </div>
+            <section className={`tv-startup-requirements${setup?.canStart ? " is-ready" : ""}`} aria-live="polite">
+              <span>{setup?.canStart ? "Ready to begin" : "Start requirements"}</span>
+              {setup?.canStart ? <strong>{setup.publicInstruction}</strong> : setup?.startBlockers?.length ? (
+                <ul>{setup.startBlockers.slice(0, 4).map((blocker) => <li key={blocker}>{blocker}</li>)}</ul>
+              ) : <strong>{startReason}</strong>}
+            </section>
           </div>
         )}
         {(error || status === "closed") && <p className="tv-startup-error">{error ?? "The host cannot reach the game server. Retrying automatically."}</p>}
@@ -1377,6 +1400,9 @@ function SessionReadout({
 }: SessionReadoutProps): ReactElement {
   const missionSelectedCount =
     publicPatch?.payload.seats.filter((seat) => Boolean(seat.displayName) && !seat.kicked && seat.startingMissionSelected).length ?? 0;
+  const activeSeatLabel = activeSeatId
+    ? publicPatch?.payload.seats.find((seat) => seat.seatId === activeSeatId)?.displayName ?? formatSeatLabel(activeSeatId)
+    : "Standby";
 
   if (showCreate && !roomCode && !lobbyPath) {
     return (
@@ -1538,7 +1564,7 @@ function SessionReadout({
         </div>
         <div className="tv-session-stat">
           <span>Active Seat</span>
-          <strong>{activeSeatId ?? "Standby"}</strong>
+          <strong>{activeSeatLabel}</strong>
         </div>
         <div className="tv-session-stat">
           <span>Socket</span>
@@ -1655,9 +1681,8 @@ function HostContextPanel({
         <p>{shopEncounter.status === "locked" ? "Trade lane blocked. Clear threats before services come online." : "Choose service on player phone."}</p>
         <div className="tv-host-context-grid">
           <span>Sector <strong>{shopEncounter.sectorName}</strong></span>
-          <span>Salvage <strong>{shopEncounter.activePlayer.salvage}</strong></span>
           <span>Status <strong>{toTitleCase(shopEncounter.status)}</strong></span>
-          <span>Stock <strong>{shopEncounter.revealedStock?.length ?? 0}</strong></span>
+          <span>Stage <strong>{toTitleCase(shopEncounter.presentation?.stage ?? "browsing")}</strong></span>
         </div>
         {shopEncounter.blockingThreats.length > 0 && (
           <div className="tv-host-context-list">
@@ -1745,6 +1770,21 @@ function HostContextPanel({
           </div>
         </div>
       )}
+      {patch?.payload.tileArrival ? (
+        <section className="tv-tile-arrival-stack" aria-label="Tile resolution stack" data-testid="tv-tile-arrival-stack">
+          <div className="tv-host-context-kicker">Arrival sequence</div>
+          {patch.payload.tileArrival.rules.map((rule, index) => (
+            <article key={rule.id} className={`is-${rule.status}`}>
+              <span>{index + 1}</span>
+              <div><strong>{rule.label}</strong><small>{rule.marker} · {rule.mandatory ? "Mandatory" : "Optional"}</small></div>
+              <b>{rule.status === "current" ? "CURRENT" : rule.status.toUpperCase()}</b>
+            </article>
+          ))}
+          {!patch.payload.tileArrival.canEndTurn && patch.payload.tileArrival.blockedReason ? (
+            <p>Awaiting operative decision · {patch.payload.tileArrival.blockedReason}</p>
+          ) : null}
+        </section>
+      ) : null}
       {(activeSector?.tileChallenges?.length ?? 0) > 0 && (
         <section className="tv-tile-challenges" aria-label="Recurring tile challenges">
           <div className="tv-host-context-kicker">Challenges</div>
@@ -1773,7 +1813,7 @@ function ScenarioStatusCard({
   scenarioRuleDigest
 }: {
   scenarioStatus: ReturnType<typeof getScenarioStatus>;
-  scenarioOutcome: ReturnType<typeof buildScenarioOutcomeSummary>;
+  scenarioOutcome: ScenarioOutcomeSummary | null;
   scenarioRuleDigest: ReturnType<typeof buildScenarioRuleDigest>;
 }): ReactElement {
   const lastTriggerCopy = scenarioStatus.lastTrigger?.reason ?? scenarioStatus.lastTrigger?.publicText ?? null;
@@ -1939,32 +1979,51 @@ function PublicRivalrySummaryCard({ patch }: { patch: StatePatch<PublicPatchPayl
 }
 
 function ActiveMissionsPanel({ patch }: { patch: StatePatch<PublicPatchPayload> | null }): ReactElement {
-  const contractLookup = getContractLookup(patch);
   const occupiedSeats = (patch?.payload.seats ?? []).filter((seat) => Boolean(seat.displayName) && !seat.kicked);
   const isSetup = !patch || patch.payload.status === "lobby";
   const playersBySeatId = new Map((patch?.payload.players ?? []).map((player) => [player.seatId, player]));
+  const scenario = patch?.payload.activeScenario ?? null;
+  const objectiveProgress = patch?.payload.scenarioPressure?.objectiveProgress;
+  const currentProgress = objectiveProgress?.current ?? scenario?.progress ?? 0;
+  const requiredProgress = objectiveProgress?.required ?? scenario?.threshold ?? 0;
 
   return (
-    <section className="tv-card tv-sidebar-card tv-contracts-card" aria-label={isSetup ? "Setup Missions" : "Active Missions"}>
+    <section className="tv-card tv-sidebar-card tv-contracts-card" aria-label={isSetup ? "Setup Missions" : "Public Objectives"}>
       <div className="tv-panel-title tv-panel-title-small">
         <span />
-        <h2>{isSetup ? "Setup Missions" : "Active Missions"}</h2>
+        <h2>{isSetup ? "Setup Missions" : "Public Objectives"}</h2>
         <span />
       </div>
+      {!isSetup ? (
+        <article className="tv-active-mission-row tv-shared-mission-row" data-testid="tv-shared-mission-summary">
+          <div className="tv-active-mission-copy">
+            <span>Shared Mission</span>
+            <h3>{scenario?.name ?? "Awaiting mission"}</h3>
+            <p>{scenario?.publicDisplay?.objective ?? scenario?.victoryText ?? "The shared objective is synchronizing."}</p>
+            {requiredProgress > 0 ? (
+              <>
+                <div className="tv-active-mission-progress" aria-label={`Shared mission progress ${currentProgress}/${requiredProgress}`}>
+                  <span style={{ width: `${getProgressPercent(currentProgress, requiredProgress)}%` }} />
+                </div>
+                <div className="tv-active-mission-meta">
+                  <span>{objectiveProgress?.label ?? scenario?.progressLabel ?? "Progress"}</span>
+                  <span>{currentProgress}/{requiredProgress}</span>
+                </div>
+              </>
+            ) : null}
+          </div>
+        </article>
+      ) : null}
       <div className="tv-active-missions-list">
         {occupiedSeats.length > 0 ? (
           occupiedSeats.map((seat) => {
             const player = playersBySeatId.get(seat.seatId) ?? null;
-            const activeContract = player?.character.activeContract ?? null;
-            const contract = activeContract ? contractLookup.get(activeContract.contractId) ?? null : null;
-            const progress = activeContract?.progress ?? 0;
-            const target = contract ? getContractObjectiveTarget(contract) : 0;
-            const isComplete = contract ? isContractObjectiveComplete(contract, progress) : false;
+            const privateStatus = player?.character.privateObjectiveStatus;
 
             return (
               <article
                 key={seat.seatId}
-                className={`tv-active-mission-row${isSetup || !contract ? " tv-active-mission-row-compact" : ""}${isComplete ? " tv-active-mission-row-complete" : ""}`}
+                className="tv-active-mission-row tv-active-mission-row-compact"
               >
                 <div className="tv-active-mission-owner">
                   <strong>{seat.displayName}</strong>
@@ -1975,26 +2034,16 @@ function ActiveMissionsPanel({ patch }: { patch: StatePatch<PublicPatchPayload> 
                     <h3>{seat.startingMissionSelected ? seat.startingMissionTitle ?? "Mission selected" : "Choose mission"}</h3>
                     <p>{seat.startingMissionSelected ? "Starting mission selected." : "Waiting for phone selection."}</p>
                   </div>
-                ) : contract && activeContract ? (
-                  <>
-                    <HostImage src={getCardArtPath("contract", contract.id)} alt="" fit="contain" aspectRatio="card" fallback="card" aria-hidden="true" />
-                    <div className="tv-active-mission-copy">
-                      <h3>{contract.name}</h3>
-                      <p>{describeContractObjective(contract)}</p>
-                      <div className="tv-active-mission-progress" aria-label={`${contract.name} progress ${progress}/${target}`}>
-                        <span style={{ width: `${getProgressPercent(progress, target)}%` }} />
-                      </div>
-                      <div className="tv-active-mission-meta">
-                        <span>{formatContractProgress(contract, progress)}</span>
-                        <span>{isComplete ? "Complete" : "Active"}</span>
-                        <span>{formatContractRewardSummary(contract)}</span>
-                      </div>
-                    </div>
-                  </>
+                ) : privateStatus?.hasActiveContract ? (
+                  <div className="tv-active-mission-copy">
+                    <h3>Private Contract active</h3>
+                    <p>Objective details remain on {seat.displayName}&apos;s phone.</p>
+                    {privateStatus.completedContracts > 0 ? <span>{privateStatus.completedContracts} completed</span> : null}
+                  </div>
                 ) : (
                   <div className="tv-active-mission-copy">
-                    <h3>No active mission</h3>
-                    <p>This operative has no selected active contract.</p>
+                    <h3>No active private Contract</h3>
+                    <p>{seat.displayName} has no current personal objective.</p>
                   </div>
                 )}
               </article>
@@ -2044,13 +2093,14 @@ function RightSidebar({
     publicPatch?.payload.scenarioTelemetry ?? [],
     { telemetry: 4, specialRules: 2, confrontationSteps: 2 }
   );
-  const scenarioOutcome = buildScenarioOutcomeSummary({
-    status: publicPatch?.payload.status ?? null,
-    winnerSeatId: publicPatch?.payload.winnerSeatId ?? null,
-    activeSeatId,
-    activeScenario: publicPatch?.payload.activeScenario ?? null,
-    seatLabelById: Object.fromEntries((publicPatch?.payload.seats ?? []).map((seat) => [seat.seatId, seat.displayName ?? seat.seatId]))
-  });
+  const publicResult = publicPatch?.payload.matchProgress?.publicResult ?? null;
+  const scenarioOutcome: ScenarioOutcomeSummary | null = publicResult
+    ? {
+        title: publicResult.title,
+        detail: publicResult.reason,
+        tone: publicResult.outcome === "victory" ? "victory" : "defeat"
+      }
+    : null;
 
   return (
     <aside className="tv-command-sidebar">
@@ -2114,6 +2164,7 @@ interface TacticalMapPanelProps {
   characterCatalog: CharacterCatalogEntry[];
   focusEnabled: boolean;
   rareStateModel: HostStateBannerModel | null;
+  onMovementPresentationChange?: (model: MovementArrivalModel | null) => void;
 }
 
 interface MovementArrivalModel {
@@ -2151,25 +2202,45 @@ function MovementFocusHud({
   selectedDestination,
   arrival,
   travelStep,
-  activePlayerName
+  activePlayerName,
+  rollReady = false
 }: {
   planner: PublicMovementPlannerState | null;
   selectedDestination: PublicMoveDestination | null;
   arrival: MovementArrivalModel | null;
   travelStep?: number;
   activePlayerName: string;
+  rollReady?: boolean;
 }): ReactElement | null {
-  if (!planner && !arrival) {
+  if (!planner && !arrival && !rollReady) {
     return null;
   }
 
   const destination = arrival?.destination ?? selectedDestination;
   const route = destination?.route ?? [];
-  const routeNames = destination?.routeNames ?? route;
+  const routeNames = route.map((_, index) => destination?.routeNames?.[index]
+    ?? (index === 0
+      ? planner?.currentSectorName ?? arrival?.originName ?? "Origin"
+      : index === route.length - 1
+        ? destination?.name ?? "Destination"
+        : `Route step ${index}`));
   const stepTotal = Math.max(0, route.length - 1);
-  const legalDestinationCount = planner?.destinations.filter((entry) => !entry.disabledReason).length ?? 0;
+  const legalDestinationCount = planner?.destinations.filter((entry) => !entry.disabledReason || entry.voidKeyPrompt).length ?? 0;
   const beat = arrival ? "moving" : selectedDestination ? "destination" : "roll";
   const playerName = arrival?.playerName ?? activePlayerName;
+  const movementDiceModel: AuthoritativeDiceModel = {
+    id: `movement:${activePlayerName}`,
+    revision: planner?.movementRevision ?? 0,
+    stage: planner?.active ? "result" : "ready",
+    context: "movement",
+    actorName: playerName,
+    purpose: "Movement roll",
+    dice: buildDice(planner?.rollFaces ?? (planner?.rolledValue !== undefined ? [planner.rolledValue] : planner?.active ? [planner.originalMovementValue ?? planner.movementValue] : []), ["Movement die"]),
+    rawTotal: planner?.rolledValue ?? planner?.originalMovementValue ?? planner?.movementValue ?? null,
+    modifiers: planner?.modifierSources ?? [],
+    finalValue: planner?.movementValue ?? null,
+    outcome: planner?.active ? `Move ${planner.movementValue} · Legal ${legalDestinationCount}` : null
+  };
   const visibleStep = arrival ? Math.min(Math.max(travelStep ?? 1, 1), Math.max(stepTotal, 1)) : 0;
   const currentName = arrival
     ? routeNames[Math.max(0, visibleStep - 1)] ?? planner?.currentSectorName ?? "Previous tile"
@@ -2199,19 +2270,13 @@ function MovementFocusHud({
   return (
     <section className={`tv-movement-focus tv-movement-focus-${beat}`} aria-label="Movement focus" data-testid="tv-movement-focus">
       <header className="tv-movement-focus-heading">
-        <span>Movement resolving</span>
-        <strong>{playerName}&apos;s command</strong>
-        <p>{arrival ? `Travelling to ${destination?.name}.` : "Resolve the move on the active phone."}</p>
+        <span>{destination ? "Route selected" : "Movement command"}</span>
+        <strong>{playerName} — move {planner?.movementValue ?? destination?.distance ?? stepTotal}</strong>
+        <p>{destination ? `Following the confirmed route to ${destination.name}.` : "Legal destinations are marked on the board. Choose on the active phone."}</p>
       </header>
 
       <aside className="tv-movement-focus-roll" data-testid="movement-roll-hud">
-        <span>Roll result</span>
-        <strong>Move {planner?.movementValue ?? destination?.distance ?? stepTotal}</strong>
-        <dl>
-          <div><dt>Roll total</dt><dd>{planner?.movementValue ?? destination?.distance ?? stepTotal}</dd></div>
-          <div><dt>Modifier</dt><dd>—</dd></div>
-          <div><dt>Legal</dt><dd>{legalDestinationCount}</dd></div>
-        </dl>
+        <AuthoritativeDicePresentation model={movementDiceModel} size="host" compact />
       </aside>
 
       <aside className="tv-movement-focus-destination" data-testid="movement-destination-hud">
@@ -2312,8 +2377,11 @@ function TacticalMapPanel({
   battlePlayer,
   characterCatalog,
   focusEnabled,
-  rareStateModel
+  rareStateModel,
+  onMovementPresentationChange
 }: TacticalMapPanelProps): ReactElement {
+  const reducedMotion = useReducedMotion();
+  const qaArrivalHold = import.meta.env.DEV && new URLSearchParams(window.location.search).get("qaArrivalHold") === "1";
   const battleMode = focusEnabled && !rareStateModel && isHostBattleActive(patch, battlePlayer);
   const shopMode = focusEnabled && !rareStateModel && activePlayer?.character.status !== "recalled" && activeSeat?.connected !== false && isHostShopActive(patch, activePlayer);
   const planner = focusEnabled && !rareStateModel && patch?.payload.movementPlanner?.active ? patch.payload.movementPlanner : null;
@@ -2328,6 +2396,10 @@ function TacticalMapPanel({
   } | null>(null);
   const completedTravelKeyRef = useRef<string | null>(null);
   const arrivalPending = Boolean(arrival && arrivalKey && completedTravelKeyRef.current !== arrivalKey);
+  useEffect(() => {
+    onMovementPresentationChange?.(visualTravel?.arrival ?? null);
+    return () => onMovementPresentationChange?.(null);
+  }, [onMovementPresentationChange, visualTravel?.arrival, visualTravel?.key]);
   useEffect(() => {
     if (!focusEnabled) {
       setVisualTravel(null);
@@ -2346,7 +2418,6 @@ function TacticalMapPanel({
   useEffect(() => {
     if (!visualTravel) return;
     const finalStep = Math.max(visualTravel.arrival.destination.route.length - 1, 1);
-    const reducedMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches === true;
     const route = visualTravel.arrival.destination.route;
     const currentRing = getBoardSpace(route[Math.min(visualTravel.step, route.length - 1)] ?? "")?.tier ?? null;
     const nextRing = getBoardSpace(route[Math.min(visualTravel.step + 1, route.length - 1)] ?? "")?.tier ?? null;
@@ -2354,22 +2425,23 @@ function TacticalMapPanel({
     const timeout = window.setTimeout(() => {
       setVisualTravel((current) => {
         if (!current || current.key !== visualTravel.key) return current;
+        if (reducedMotion && current.step < finalStep) return { ...current, step: finalStep };
         if (current.step < finalStep) return { ...current, step: current.step + 1 };
         if (!current.arrived) return { ...current, arrived: true };
         completedTravelKeyRef.current = current.key;
         return null;
       });
     }, reducedMotion
-      ? 120
+      ? visualTravel.arrived ? 160 : 90
       : visualTravel.arrived
-        ? hostPresentationTimings.movementArrivalMs
+        ? qaArrivalHold ? 10_000 : hostPresentationTimings.movementArrivalMs
         : visualTravel.step === 0
           ? hostPresentationTimings.movementStartMs
           : crossingRings
             ? hostPresentationTimings.movementCrossRingMs
             : hostPresentationTimings.movementSegmentMs);
     return () => window.clearTimeout(timeout);
-  }, [visualTravel]);
+  }, [qaArrivalHold, reducedMotion, visualTravel]);
   // A newly arrived authoritative patch may already contain the encounter that
   // follows movement. Preserve the movement presentation first; the battle
   // chamber opens only after the local, non-authoritative journey has settled.
@@ -2403,6 +2475,7 @@ function TacticalMapPanel({
             patch={patch?.payload ?? null}
             previousPatch={visualTravel?.previousPatch ?? previousPatch?.payload ?? null}
             phase={patch?.phase ?? "start"}
+            showContextBrief={!presentBattleChamber && !focusShopMode && !discoveryMode}
           />
           {!movementFocusMode && <BoardLegend />}
       </div>
@@ -2424,6 +2497,22 @@ function TacticalMapPanel({
           characterCatalog={characterCatalog}
         />
       )}
+      {!focusBattleMode && !focusShopMode && !movementFocusMode && patch?.payload.tileArrival ? (
+        <section className="tv-board-arrival-stack" aria-label="Tile resolution stack" data-testid="tv-board-arrival-stack">
+          <header>
+            <span>Arrival sequence</span>
+            <strong>{patch.payload.tileArrival.tileName}</strong>
+          </header>
+          {patch.payload.tileArrival.rules.map((rule, index) => (
+            <article key={rule.id} className={`is-${rule.status}`}>
+              <span>{index + 1}</span>
+              <div><strong>{rule.label}</strong><small>{rule.marker} · {rule.mandatory ? "Mandatory" : "Optional"}</small></div>
+              <b>{rule.status === "current" ? "CURRENT" : rule.status.toUpperCase()}</b>
+            </article>
+          ))}
+          {!patch.payload.tileArrival.canEndTurn && patch.payload.tileArrival.blockedReason ? <p>{patch.payload.tileArrival.blockedReason}</p> : null}
+        </section>
+      ) : null}
       {battleChamber}
       {focusShopMode && !visualTravel && <HostShopOverlay patch={patch} activePlayer={activePlayer} />}
       {discoveryMode && patch && <HostDiscoveryOverlay patch={patch} activePlayer={activePlayer} />}
@@ -2446,6 +2535,7 @@ function TacticalMapPanel({
             selectedDestination={projectedDestination}
             arrival={null}
             activePlayerName={activeSeat?.displayName ?? activePlayer?.character.name ?? "Active operative"}
+            rollReady={patch?.phase === "navigation"}
           />
         )
       )}
@@ -2702,58 +2792,123 @@ function RecentOutcomePanel({
   );
 }
 
-function EndgameOverlay({ patch }: { patch: StatePatch<PublicPatchPayload> | null }): ReactElement | null {
-  if (patch?.payload.status !== "ended") {
-    return null;
-  }
+function useTransientPresentation(id: string | null, durationMs: number): boolean {
+  const [visibleId, setVisibleId] = useState<string | null>(null);
 
-  const seatLabelById = getSeatLabelMap(patch);
-  const outcome = buildScenarioOutcomeSummary({
-    status: patch.payload.status,
-    winnerSeatId: patch.payload.winnerSeatId,
-    activeSeatId: patch.payload.turnOrder[patch.payload.activeSeatIndex] ?? null,
-    activeScenario: patch.payload.activeScenario,
-    seatLabelById
-  });
-  const topTrophies = [...patch.payload.players].sort((left, right) => right.character.trophies - left.character.trophies)[0] ?? null;
-  const topWounds = [...patch.payload.players].sort((left, right) => right.character.wounds - left.character.wounds)[0] ?? null;
-  const topScars = [...patch.payload.players].sort((left, right) => right.character.scars.length - left.character.scars.length)[0] ?? null;
-  const finalOutcome = patch.payload.outcomeSummary?.summary ?? "No final roll was recorded.";
-  const escalationCopy = `${patch.payload.escalationLevel}/${patch.payload.escalationThreshold}`;
+  useEffect(() => {
+    if (!id || typeof window === "undefined") {
+      setVisibleId(null);
+      return;
+    }
+    const key = `ashenreach:presentation:${id}`;
+    if (window.sessionStorage.getItem(key) === "acknowledged") {
+      setVisibleId(null);
+      return;
+    }
+    window.sessionStorage.setItem(key, "acknowledged");
+    setVisibleId(id);
+    const timeout = window.setTimeout(() => setVisibleId((current) => current === id ? null : current), durationMs);
+    return () => window.clearTimeout(timeout);
+  }, [durationMs, id]);
+
+  return visibleId === id;
+}
+
+function MatchProgressFeedback({ progress }: { progress: PublicPatchPayload["matchProgress"] }): ReactElement | null {
+  const concluded = Boolean(progress?.publicResult);
+  const winId = concluded ? null : progress?.winProgress?.changeId ?? null;
+  const lossId = concluded ? null : progress?.lossPressure?.changeId ?? null;
+  const changeId = lossId ?? winId;
+  const visible = useTransientPresentation(changeId, 4200);
+  if (!progress || !changeId || !visible) return null;
+
+  const change = lossId
+    ? { label: "Loss Pressure", value: progress.lossPressure?.change, reason: progress.lossPressure?.changeReason, total: progress.lossPressure }
+    : { label: "Victory Progress", value: progress.winProgress?.change, reason: progress.winProgress?.changeReason, total: progress.winProgress };
 
   return (
-    <section className={`tv-endgame-overlay tv-endgame-overlay-${outcome?.tone ?? "collapse"}`} aria-label="Session end state">
+    <section className={`tv-match-change tv-match-change--${lossId ? "loss" : "win"}`} role="status" aria-live="polite">
+      <span>{change.label} {typeof change.value === "number" ? `${change.value >= 0 ? "+" : ""}${change.value}` : "updated"}</span>
+      <strong>{change.reason ?? "The shared Mission state changed."}</strong>
+      {change.total ? <b>{change.total.current} / {change.total.required}</b> : null}
+    </section>
+  );
+}
+
+function FinalStageOverlay({ progress }: { progress: PublicPatchPayload["matchProgress"] }): ReactElement | null {
+  const finalStage = progress?.finalStage ?? null;
+  const announcing = useTransientPresentation(finalStage?.id ?? null, 3600);
+  if (!finalStage) return null;
+
+  return (
+    <section className={`tv-final-stage${announcing ? " tv-final-stage--announcing" : ""}`} role={announcing ? "status" : "region"} aria-live={announcing ? "polite" : "off"} aria-label="Final stage">
+      <span>Final Stage</span>
+      <h2>{finalStage.title}</h2>
+      <p>{finalStage.publicInstruction}</p>
+      <div>
+        <strong>{finalStage.locationName}</strong>
+        {finalStage.stageLabel ? <em>{finalStage.stageLabel}</em> : null}
+        {finalStage.progressLabel ? <b>{finalStage.progressLabel}</b> : null}
+      </div>
+    </section>
+  );
+}
+
+function EndgameOverlay({
+  patch,
+  onReturnToLobby
+}: {
+  patch: StatePatch<PublicPatchPayload> | null;
+  onReturnToLobby?: () => void;
+}): ReactElement | null {
+  const result = patch?.payload.matchProgress?.publicResult ?? null;
+  const firstReveal = useTransientPresentation(result?.id ?? null, 1800);
+  if (patch?.payload.status !== "ended" || !result) {
+    return null;
+  }
+  const winnerCopy = result.winningDisplayNames.length > 0 ? result.winningDisplayNames.join(", ") : "Shared Mission";
+
+  return (
+    <section
+      className={`tv-endgame-overlay tv-endgame-overlay-${result.outcome}${firstReveal ? " tv-endgame-overlay--revealing" : " tv-endgame-overlay--restored"}`}
+      aria-label="Session end state"
+      role={firstReveal ? "alert" : "region"}
+      aria-live={firstReveal ? "assertive" : "off"}
+    >
       <div className="tv-endgame-copy">
-        <span>{outcome?.tone === "victory" ? "Victory" : "Collapse"}</span>
-        <h2>{outcome?.title ?? "The run has ended"}</h2>
-        <p>{outcome?.detail ?? "Review the final board state and start a new room when ready."}</p>
+        <span>{result.outcome}</span>
+        <h2>{result.title}</h2>
+        <p>{result.reason}</p>
       </div>
       <div className="tv-endgame-grid">
         <article>
-          <span>Winning operative</span>
-          <strong>{patch.payload.winnerSeatId ? seatLabelById[patch.payload.winnerSeatId] : "None"}</strong>
+          <span>Shared Mission</span>
+          <strong>{result.missionName}</strong>
         </article>
         <article>
-          <span>Most threats defeated</span>
-          <strong>{topTrophies ? `${seatLabelById[topTrophies.seatId]} | ${topTrophies.character.trophies}` : "None"}</strong>
+          <span>{result.outcome === "victory" ? "Victory secured by" : "Outcome"}</span>
+          <strong>{result.outcome === "victory" ? winnerCopy : result.modeLabel}</strong>
         </article>
         <article>
-          <span>Most wounds survived</span>
-          <strong>{topWounds ? `${seatLabelById[topWounds.seatId]} | ${topWounds.character.wounds}` : "None"}</strong>
+          <span>Victory Progress</span>
+          <strong>{result.finalWinProgress ? `${result.finalWinProgress.current} / ${result.finalWinProgress.required}` : "Not tracked"}</strong>
         </article>
         <article>
-          <span>Most scars carried</span>
-          <strong>{topScars ? `${seatLabelById[topScars.seatId]} | ${topScars.character.scars.length}` : "None"}</strong>
+          <span>Loss Pressure</span>
+          <strong>{result.finalLossPressure ? `${result.finalLossPressure.current} / ${result.finalLossPressure.required}` : "Not tracked"}</strong>
         </article>
         <article>
-          <span>Closest collapse</span>
-          <strong>{escalationCopy}</strong>
+          <span>Operatives</span>
+          <strong>{result.operativeDisplayNames.join(", ") || "No active operatives"}</strong>
         </article>
         <article>
-          <span>Final blow</span>
-          <strong>{finalOutcome}</strong>
+          <span>Final stage</span>
+          <strong>{result.finalStageReached ? "Reached" : "Not reached"}</strong>
         </article>
       </div>
+      {onReturnToLobby && patch.payload.matchProgress?.allowedCommands.includes("return_to_lobby") ? (
+        <button type="button" className="tv-endgame-primary" onClick={onReturnToLobby}>Return to Lobby</button>
+      ) : null}
     </section>
   );
 }
@@ -2772,6 +2927,7 @@ export function TvApp(): ReactElement {
     typeof window === "undefined" ? null : window.localStorage.getItem(hostTokenStorageKey)
   );
   const [requestError, setRequestError] = useState<string | null>(null);
+  const [startSubmitting, setStartSubmitting] = useState(false);
   const [sessionNotice, setSessionNotice] = useState<string | null>(null);
   const [debugOpen, setDebugOpen] = useState(() => new URLSearchParams(window.location.search).has("debug"));
   const [adminSurface, setAdminSurface] = useState<TvAdminSurface>(() => {
@@ -2781,6 +2937,8 @@ export function TvApp(): ReactElement {
   const [adminLibraryCardId, setAdminLibraryCardId] = useState<string | null>(null);
   const [adminMapTileId, setAdminMapTileId] = useState<string | null>(null);
   const [returnLobbyConfirmOpen, setReturnLobbyConfirmOpen] = useState(false);
+  const [movementPresentation, setMovementPresentation] = useState<MovementArrivalModel | null>(null);
+  const [visibleHandoffId, setVisibleHandoffId] = useState<string | null>(null);
   const restoreValidatedRef = useRef(false);
   const { patch, error, status, synchronized: subscriptionSynchronized, debugEvents, clearDebugEvents, sendIntent } = useRoomSubscription({
     view: "tv",
@@ -2790,6 +2948,17 @@ export function TvApp(): ReactElement {
   const previousPatchRef = useRef<StatePatch<PublicPatchPayload> | null>(null);
   const commandMainRef = useRef<HTMLElement | null>(null);
   const previousBattleModeRef = useRef(false);
+
+  useEffect(() => {
+    const handoff = patch?.payload.requiredAction?.handoff;
+    if (!handoff || typeof window === "undefined") return;
+    const storageKey = `ashenreach:tv:last-handoff:${roomCode ?? "room"}`;
+    if (window.sessionStorage.getItem(storageKey) === handoff.id) return;
+    window.sessionStorage.setItem(storageKey, handoff.id);
+    setVisibleHandoffId(handoff.id);
+    const timer = window.setTimeout(() => setVisibleHandoffId((current) => current === handoff.id ? null : current), 900);
+    return () => window.clearTimeout(timer);
+  }, [patch?.payload.requiredAction?.handoff?.id, roomCode]);
 
   useEffect(() => {
     fetchCharacters()
@@ -2817,11 +2986,15 @@ export function TvApp(): ReactElement {
   const effectiveRoomCode = roomCode ?? publicPatch?.sessionId ?? null;
   const joinedSeats = publicPatch?.payload.seats.filter((seat) => seat.displayName && !seat.kicked) ?? [];
   const readySeats = joinedSeats.filter((seat) => seat.ready);
-  const startReadiness = getSessionStartReadiness({
+  const legacyStartReadiness = getSessionStartReadiness({
     sessionMode: publicPatch?.payload.sessionMode ?? sessionMode,
     gameMode: publicPatch?.payload.gameMode ?? gameMode,
     seats: publicPatch?.payload.seats ?? []
   });
+  const startReadiness = publicPatch?.payload.setup ?? {
+    canStart: legacyStartReadiness.canStart,
+    startReason: legacyStartReadiness.reason
+  };
   const activeSeatId = publicPatch?.payload.turnOrder[publicPatch.payload.activeSeatIndex] ?? null;
   const resolutionPlayerId = getResolutionPlayerId(publicPatch);
   const combatSeatId = resolutionPlayerId ?? activeSeatId;
@@ -2845,9 +3018,9 @@ export function TvApp(): ReactElement {
     publicPatch?.payload.outcomeSummary?.encounterCardId === "suture-storm"
   );
   const movementArrival = authoritativePresentationReady ? getMovementArrivalModel(publicPatch?.payload, previousPatchRef.current?.payload) : null;
-  const battleMode = authoritativePresentationReady && !rareStateActive && !movementArrival && isHostBattleActive(publicPatch, battlePlayer);
-  const shopMode = authoritativePresentationReady && !rareStateActive && !movementArrival && activePlayer?.character.status !== "recalled" && activeSeat?.connected !== false && isHostShopActive(publicPatch, activePlayer);
-  const movementFocusMode = !battleMode && !shopMode && Boolean(publicPatch?.payload.movementPlanner?.active || movementArrival);
+  const battleMode = authoritativePresentationReady && !rareStateActive && !movementArrival && !movementPresentation && isHostBattleActive(publicPatch, battlePlayer);
+  const shopMode = authoritativePresentationReady && !rareStateActive && !movementArrival && !movementPresentation && activePlayer?.character.status !== "recalled" && activeSeat?.connected !== false && isHostShopActive(publicPatch, activePlayer);
+  const movementFocusMode = !battleMode && !shopMode && Boolean(publicPatch?.payload.movementPlanner?.active || movementArrival || movementPresentation);
 
   useEffect(() => {
     if (publicPatch) {
@@ -3034,16 +3207,19 @@ export function TvApp(): ReactElement {
   const startHostSession = async () => {
     const targetRoomCode = roomCode ?? publicPatch?.sessionId ?? null;
 
-    if (!targetRoomCode) {
+    if (!targetRoomCode || startSubmitting) {
       return;
     }
 
     setRequestError(null);
+    setStartSubmitting(true);
 
     try {
       await startSession(targetRoomCode);
     } catch (startFailure) {
       setRequestError(startFailure instanceof Error ? startFailure.message : "Could not start");
+    } finally {
+      setStartSubmitting(false);
     }
   };
 
@@ -3059,7 +3235,18 @@ export function TvApp(): ReactElement {
     connectionStatus: status,
     synchronized
   });
-  const rareStateModel = authoritativePresentationReady && rareStateActive ? liveStatus : null;
+  const displayedLiveStatus: HostStateBannerModel = movementPresentation
+    ? {
+        label: `${movementPresentation.playerName} is moving`,
+        detail: `Destination: ${movementPresentation.destination.name}.`,
+        meta: "Movement journey",
+        tone: "active"
+      }
+    : liveStatus;
+  const visibleHandoff = visibleHandoffId && publicPatch?.payload.requiredAction?.handoff?.id === visibleHandoffId
+    ? publicPatch.payload.requiredAction.handoff
+    : null;
+  const rareStateModel = authoritativePresentationReady && rareStateActive ? displayedLiveStatus : null;
   const isPreRoomLobby = !effectiveRoomCode && !publicPatch;
 
   const gameUiReady =
@@ -3099,21 +3286,37 @@ export function TvApp(): ReactElement {
           joinedCount={joinedSeats.length}
           readyCount={readySeats.length}
           seatCapacity={publicPatch?.payload.seats.length ?? (liveSessionMode === "single-player" ? 1 : 6)}
-          liveStatus={liveStatus}
-          onReturnToLobby={hostToken ? () => setReturnLobbyConfirmOpen(true) : undefined}
+          liveStatus={displayedLiveStatus}
+          matchProgress={publicPatch?.payload.matchProgress}
+          onReturnToLobby={hostToken && publicPatch?.payload.status !== "ended" ? () => setReturnLobbyConfirmOpen(true) : undefined}
         />
 
         {(requestError || error) && <div className="tv-banner tv-banner-error">{requestError ?? error}</div>}
         {sessionNotice && <div className="tv-banner">{sessionNotice}</div>}
         <HostAudioControls audio={audio} />
-        <EndgameOverlay patch={publicPatch} />
+        <EndgameOverlay patch={publicPatch} onReturnToLobby={hostToken ? () => setReturnLobbyConfirmOpen(true) : undefined} />
+        <MatchProgressFeedback progress={publicPatch?.payload.matchProgress} />
+        <FinalStageOverlay progress={publicPatch?.payload.matchProgress} />
         {!authoritativePresentationReady && <HostNetworkOverlay status={status} synchronized={synchronized} />}
+        {visibleHandoff ? (
+          <section className="tv-turn-handoff" role="status" aria-live="polite" data-testid="tv-turn-handoff">
+            <span>TURN COMPLETE</span>
+            <strong>{visibleHandoff.fromDisplayName}</strong>
+            <i aria-hidden="true">→</i>
+            <div>
+              <small>{visibleHandoff.roundWrapped ? "NEW ROUND" : "NEXT OPERATIVE"}</small>
+              <b>{visibleHandoff.toDisplayName ?? "Table resolving"}</b>
+            </div>
+          </section>
+        ) : null}
 
         <section
           ref={commandMainRef}
           className={`tv-command-main${isPreRoomLobby ? " tv-command-main--pre-room" : ""}${battleMode ? " tv-command-main--battle-focus" : ""}${shopMode ? " tv-command-main--shop-focus" : ""}${movementFocusMode ? " tv-command-main--movement-focus" : ""}`}
           data-testid="tv-command-main"
           aria-label="Host command board"
+          aria-hidden={publicPatch?.payload.status === "ended" || undefined}
+          inert={publicPatch?.payload.status === "ended" || undefined}
           tabIndex={-1}
         >
           {isPreRoomLobby ? (
@@ -3147,8 +3350,8 @@ export function TvApp(): ReactElement {
                   sendIntent({ type: "RESTART_SESSION" });
                 }}
                 onStartSession={startHostSession}
-                canStartSession={startReadiness.canStart}
-                startSessionReason={startReadiness.reason}
+                canStartSession={startReadiness.canStart && !startSubmitting}
+                startSessionReason={startSubmitting ? "Starting game…" : startReadiness.startReason}
                 showCreate
                 showRestart={false}
                 showStart={false}
@@ -3177,6 +3380,7 @@ export function TvApp(): ReactElement {
                 characterCatalog={characterCatalog}
                 focusEnabled={authoritativePresentationReady}
                 rareStateModel={rareStateModel}
+                onMovementPresentationChange={setMovementPresentation}
               />
 
               {authoritativePresentationReady && !battleMode && !shopMode && !movementFocusMode && !rareStateActive && <RightSidebar
@@ -3207,8 +3411,8 @@ export function TvApp(): ReactElement {
                 onCreateSession={createHostSession}
                 onRestartSession={() => { setRequestError(null); sendIntent({ type: "RESTART_SESSION" }); }}
                 onStartSession={startHostSession}
-                canStartSession={startReadiness.canStart}
-                startSessionReason={startReadiness.reason}
+                canStartSession={startReadiness.canStart && !startSubmitting}
+                startSessionReason={startSubmitting ? "Starting game…" : startReadiness.startReason}
               />}
 
             </>

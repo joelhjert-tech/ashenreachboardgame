@@ -16,7 +16,7 @@ describe("AdminMapInspector", () => {
     fireEvent.click(screen.getByRole("button", { name: /ashen chapel.*ashen-chapel/i }));
     const inspector = screen.getByRole("complementary", { name: /inspect ashen chapel/i });
     expect(within(inspector).getAllByText("ashen-chapel").length).toBeGreaterThan(0);
-    expect(within(inspector).getByText(/rift whispers/i)).toBeInTheDocument();
+    expect(within(inspector).getAllByText(/rift whispers/i).length).toBeGreaterThan(0);
     expect(within(inspector).getByText("src/game/data/boardSpaces.ts")).toBeInTheDocument();
   });
 
@@ -44,6 +44,17 @@ describe("AdminMapInspector", () => {
     expect(screen.getByText(/game state unchanged/i)).toBeInTheDocument();
     expect(results).toHaveTextContent(/legal destinations/i);
     expect(results.querySelectorAll("button").length).toBeGreaterThan(0);
+  });
+
+  it("shows executable rule order and runs a detached canonical arrival simulation", () => {
+    render(<AdminMapInspector onClose={vi.fn()} initialTileId="ashen-chapel" />);
+    const inspector = screen.getByRole("complementary", { name: /inspect ashen chapel/i });
+    expect(within(inspector).getByRole("region", { name: /executable tile functions/i })).toHaveTextContent(/Rift Whispers/);
+    fireEvent.click(within(inspector).getByRole("button", { name: /simulate arrival/i }));
+    const simulation = within(inspector).getByTestId("admin-map-arrival-simulation");
+    expect(simulation).toHaveTextContent(/simulation only/i);
+    expect(simulation).toHaveTextContent(/challenge:rift-whispers-ashen-chapel/i);
+    expect(simulation).toHaveTextContent(/threat:0:blue/i);
   });
 
   it("records natural and rendered image dimensions for audit", () => {

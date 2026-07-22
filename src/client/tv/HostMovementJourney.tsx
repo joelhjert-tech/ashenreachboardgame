@@ -1,5 +1,8 @@
-import { useEffect, useRef, type ReactElement } from "react";
+import { useRef, type ReactElement } from "react";
+import { createPortal } from "react-dom";
 import type { PublicMoveDestination, PublicTileChallenge } from "../shared/types.js";
+import { LiveStatus } from "../shared/LiveStatus.js";
+import { useFocusOnRevision } from "../shared/useFocusOnRevision.js";
 import { BoardTileImage } from "./TalismanBoardSurface.js";
 
 export interface HostMovementJourneyModel {
@@ -17,34 +20,49 @@ export function HostMovementJourney({ model, step, arrived, challenges }: {
 }): ReactElement {
   const stageRef = useRef<HTMLElement>(null);
   const route = model.destination.route;
-  const routeNames = model.destination.routeNames ?? route;
+  const routeNames = route.map((_, index) => model.destination.routeNames?.[index]
+    ?? (index === 0
+      ? model.originName
+      : index === route.length - 1
+        ? model.destination.name
+        : `Route step ${index}`));
   const current = Math.min(Math.max(step, 0), Math.max(route.length - 1, 0));
   const visibleThreats = model.destination.faceUpThreats ?? [];
 
-  useEffect(() => {
-    stageRef.current?.focus({ preventScroll: true });
-  }, [model.eventId]);
+  useFocusOnRevision(stageRef, model.eventId, true, null);
 
-  return (
-    <section ref={stageRef} className={`tv-movement-journey${arrived ? " is-arrived" : ""}`} data-testid="tv-movement-journey" aria-label={`Movement journey for ${model.operativeName}`} tabIndex={-1}>
+  return createPortal((
+    <section
+      ref={stageRef}
+      className={`tv-movement-journey${arrived ? " is-arrived" : ""}`}
+      data-testid="tv-movement-journey"
+      data-movement-stage={arrived ? "arrival" : "travel"}
+      data-arrival-event-id={model.eventId}
+      aria-label={`Movement journey for ${model.operativeName}`}
+      tabIndex={-1}
+    >
       <header className="tv-movement-journey__header">
         <span>{arrived ? "Destination arrival" : "Movement journey"}</span>
         <strong>{model.operativeName}</strong>
         <p>{model.originName} to {model.destination.name}</p>
       </header>
-      <div className="tv-movement-journey__status" aria-live="polite">
+      <div className="tv-movement-journey__status">
         <strong>{arrived ? `Arrived at ${model.destination.name}` : current === 0 ? `Departing ${model.originName}` : `Moving to ${routeNames[current] ?? model.destination.name}`}</strong>
         <span>Step {current + 1} / {Math.max(route.length, 1)}</span>
       </div>
+      <LiveStatus
+        message={arrived ? `Movement update: arrived at ${model.destination.name}.` : `Movement update: moving to ${routeNames[current] ?? model.destination.name}. Step ${current + 1} of ${Math.max(route.length, 1)}.`}
+        revision={`${model.eventId}:${current}:${arrived ? "arrived" : "travel"}`}
+      />
       <ol className="tv-movement-journey__route" aria-label="Authoritative movement route">
         {route.map((sectorId, index) => (
           <li key={`${sectorId}-${index}`} className={index < current ? "is-complete" : index === current ? "is-current" : index === route.length - 1 ? "is-destination" : "is-upcoming"} data-route-step={index}>
             <div className="tv-movement-journey__tile-art">
-              <BoardTileImage nodeId={sectorId} label={routeNames[index] ?? sectorId} className="tv-movement-journey__tile-image" />
+              <BoardTileImage nodeId={sectorId} label={routeNames[index] ?? "Route tile"} className="tv-movement-journey__tile-image" />
               <span>{index === 0 ? "Origin" : index === route.length - 1 ? "Destination" : `Route ${index}`}</span>
               {index === current ? <i aria-label={`${model.operativeName} current position`}>Current</i> : null}
             </div>
-            <strong>{routeNames[index] ?? sectorId}</strong>
+            <strong>{routeNames[index] ?? "Route tile"}</strong>
           </li>
         ))}
       </ol>
@@ -69,5 +87,5 @@ export function HostMovementJourney({ model, step, arrived, challenges }: {
         </div>
       </section>
     </section>
-  );
+  ), document.body);
 }
