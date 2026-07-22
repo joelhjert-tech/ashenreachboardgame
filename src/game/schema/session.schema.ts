@@ -542,6 +542,14 @@ export const gameStateSchema = z.object({
     sectorId: z.string().min(1),
     resolvedChallengeIds: z.array(z.string().min(1))
   }).nullable().optional(),
+  tileArrivalThreatProgress: z.object({
+    arrivalId: z.string().min(1),
+    seatId: z.string().min(1),
+    sectorId: z.string().min(1),
+    threatLanes: z.array(z.enum(["red", "blue", "yellow"])).optional(),
+    threatRuleIds: z.array(z.string().min(1)).optional(),
+    nextThreatIconIndex: z.number().int().min(0)
+  }).nullable().optional(),
   activeResolution: activeResolutionSchema.nullable().optional(),
   lastOutcomeSummary: z
     .object({

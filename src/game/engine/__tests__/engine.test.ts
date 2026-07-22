@@ -6498,20 +6498,24 @@ describe("contracts", () => {
     const player = server.getState().players.find((entry) => entry.seatId === "seat-1");
     const tv = createTvProjection(server.getState()) as {
       availableContracts: Array<{ id: string }>;
-      players: Array<{ seatId: string; character: { activeContract: { contractId: string; progress: number } | null } }>;
+      players: Array<{ seatId: string; character: { activeContract: null; privateObjectiveStatus?: { hasActiveContract: boolean; completedContracts: number } } }>;
     };
     const otherPhone = createPhoneProjection(server.getState(), "seat-2") as {
       availableContracts: Array<{ id: string }>;
-      players: Array<{ seatId: string; character: { activeContract: { contractId: string; progress: number } | null } }>;
+      players: Array<{ seatId: string; character: { activeContract: null; privateObjectiveStatus?: { hasActiveContract: boolean; completedContracts: number } } }>;
     };
 
     expect(player?.character.activeContract).toEqual({ contractId: "choir-hush-census", progress: 0 });
     expect(tv.availableContracts.map((entry) => entry.id)).toContain("choir-hush-census");
-    expect(tv.players.find((entry) => entry.seatId === "seat-1")?.character.activeContract).toEqual({
-      contractId: "choir-hush-census",
-      progress: 0
+    expect(tv.players.find((entry) => entry.seatId === "seat-1")?.character).toMatchObject({
+      activeContract: null,
+      privateObjectiveStatus: { hasActiveContract: true, completedContracts: 0 }
     });
     expect(otherPhone.availableContracts.map((entry) => entry.id)).toContain("choir-hush-census");
+    expect(otherPhone.players.find((entry) => entry.seatId === "seat-1")?.character).toMatchObject({
+      activeContract: null,
+      privateObjectiveStatus: { hasActiveContract: true, completedContracts: 0 }
+    });
     expect(server.getState().lastOutcomeSummary?.summary).toContain("Defeat 2 enemies.");
 
     runIntent(server, {

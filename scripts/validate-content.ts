@@ -47,6 +47,7 @@ import {
 } from "./legacy-heat-validation.js";
 import { validateForcedDisplacementContentRecord } from "./forced-displacement-validation.js";
 import { getShopGearCost, getShopGearSellValue } from "../src/game/rules/shopAvailability.js";
+import { buildTileFunctionDefinition } from "../src/game/rules/tileFunctions.js";
 import {
   ARTIFACT_EXCHANGE_CONTRACT_COST,
   NORMAL_STARTING_SALVAGE,
@@ -527,6 +528,16 @@ function validateBoardCoverage(): void {
   validateRange("inner board spaces", tierCounts.get("inner") ?? 0, 8, 8);
   validateRange("center board spaces", tierCounts.get("center") ?? 0, 1, 1);
 
+  const tileChallenges = [...loadTileChallenges().values()];
+  const unsupportedDisplayOnlyPhrases = [
+    "recharge 1 Gear",
+    "draw 2 Contracts and keep 1",
+    "reveal adjacent threats",
+    "Static pressure persists",
+    "become elite until defeated",
+    "Lose 1 wound unless"
+  ];
+
   for (const space of BOARD_SPACES) {
     if (space.tags.length === 0) {
       errors.push(`Board space ${space.id} has no presentation tags`);
@@ -538,6 +549,21 @@ function validateBoardCoverage(): void {
 
     if (!space.loreText.trim()) {
       errors.push(`Board space ${space.id} has no loreText`);
+    }
+
+    const definition = buildTileFunctionDefinition(space, tileChallenges);
+    const allRules = [...definition.arrival, ...definition.optionalActions, ...definition.persistentRules, ...definition.departure];
+    if (new Set(allRules.map((rule) => rule.id)).size !== allRules.length) {
+      errors.push(`Board space ${space.id} has duplicate tile-function rule IDs`);
+    }
+    if (allRules.some((rule) => !rule.repeatPolicy)) {
+      errors.push(`Board space ${space.id} has a tile-function rule without repeat policy`);
+    }
+    for (const rule of allRules.filter((entry) => !entry.supported)) {
+      errors.push(`Board space ${space.id} has unsupported tile-function rule ${rule.id}`);
+    }
+    if (unsupportedDisplayOnlyPhrases.some((phrase) => `${space.ruleText} ${space.textBox.text}`.includes(phrase))) {
+      errors.push(`Board space ${space.id} still displays unsupported mechanical text`);
     }
   }
 

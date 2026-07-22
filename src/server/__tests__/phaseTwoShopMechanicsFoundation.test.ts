@@ -401,7 +401,7 @@ describe("Phase 2A shop mechanics foundation", () => {
         blockedReasonText: string;
         shopType: string;
         shopCategory: string;
-        activePlayer: { salvage: number };
+        activePlayer: { salvage?: number };
         services: unknown[];
       } | null;
     };
@@ -422,9 +422,9 @@ describe("Phase 2A shop mechanics foundation", () => {
       blockedReason: SHOP_FAILURE_REASONS.shopBlockedByThreat,
       shopType: "Market",
       shopCategory: "market",
-      activePlayer: { salvage: 6 },
       services: []
     });
+    expect(tvProjection.shopEncounter?.activePlayer).not.toHaveProperty("salvage");
     expect(JSON.stringify(tvProjection.shopEncounter)).not.toContain("Private agenda");
     expect(phoneProjection.privateRivalry).toBeTruthy();
     expect(phoneProjection.shopEncounter).toMatchObject({
@@ -477,8 +477,9 @@ describe("Phase 2A shop mechanics foundation", () => {
     const tvShop = (createTvProjection(server.getState()) as { shopEncounter?: Record<string, unknown> }).shopEncounter;
     const phoneShop = (createPhoneProjection(server.getState(), "seat-1") as { shopEncounter?: Record<string, unknown> }).shopEncounter;
     expect(tvShop?.sellInventory).toBeUndefined();
-    expect(tvShop?.sellableCount).toBe(1);
+    expect(tvShop?.sellableCount).toBeUndefined();
     expect(JSON.stringify(tvShop)).not.toContain("ashlock-cleaver:seat-1");
+    expect(JSON.stringify(tvShop)).not.toContain('"salvage":6');
     expect(phoneShop?.sellInventory).toEqual(expect.arrayContaining([expect.objectContaining({ gearId: "ashlock-cleaver" })]));
   });
 });

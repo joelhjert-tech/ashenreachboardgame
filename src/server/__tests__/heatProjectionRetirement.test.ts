@@ -24,7 +24,7 @@ describe("Phase 1R Heat-free projection contracts", () => {
     expect(phone.privateRivalry).toEqual(interactionMode === "rivalry" ? expect.anything() : null);
   });
 
-  it("omits Heat from the shop active player without changing Salvage or services", () => {
+  it("omits Heat from shop projections while keeping Salvage owner-private and services intact", () => {
     const state = createInitialSessionState("phase-1r-shop", "single-player");
     state.status = "active";
     state.phase = "action";
@@ -35,9 +35,11 @@ describe("Phase 1R Heat-free projection contracts", () => {
     const tv = createTvProjection(state) as any;
     const phone = createPhoneProjection(state, state.players[0]!.seatId, true) as any;
 
+    expect(tv.shopEncounter.activePlayer).not.toHaveProperty("heat");
+    expect(tv.shopEncounter.activePlayer).not.toHaveProperty("salvage");
+    expect(phone.shopEncounter.activePlayer).not.toHaveProperty("heat");
+    expect(phone.shopEncounter.activePlayer.salvage).toBe(6);
     for (const projection of [tv, phone]) {
-      expect(projection.shopEncounter.activePlayer).not.toHaveProperty("heat");
-      expect(projection.shopEncounter.activePlayer.salvage).toBe(6);
       expect(projection.shopEncounter.services).toEqual(expect.arrayContaining([expect.objectContaining({ id: "buy-gear" })]));
     }
   });

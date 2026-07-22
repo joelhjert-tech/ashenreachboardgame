@@ -117,6 +117,7 @@ import {
 import { createInitialSessionState } from "./sessionState.js";
 import { stripLegacyHeatProjection } from "./legacyHeatProjection.js";
 import { resolveBoardSpaceEvent } from "../game/tileResolver.js";
+import { buildTileArrivalProjection, canEndTurn } from "../game/rules/tileFunctions.js";
 import {
   calculateExplorationDraws,
   type BoardThreatCard,
@@ -371,6 +372,7 @@ const CLIENT_INTENT_TYPES = new Set<string>([
   "USE_MARROW_DETOUR",
   "MOVEMENT_ROLL_REQUESTED",
   "PHASE_ADVANCED",
+  "START_TILE_ENCOUNTER",
   "CHECK_REQUESTED",
   "COMBAT_REQUESTED",
   "ENEMY_ROLL_REQUESTED",
@@ -647,7 +649,7 @@ export class GameRoomServer {
         }
 
         client.seatId = seat.seatId;
-        this.adoptPhoneClient(client, false);
+        this.adoptPhoneClient(client);
       }
 
       if (view === "tv") {
@@ -715,7 +717,7 @@ export class GameRoomServer {
           this.movementPreviewBySeatId.delete(intent.seatId);
         } else {
           const destination = planner.destinations.find(
-            (entry) => entry.sectorId === intent.toSectorId && !entry.disabledReason
+            (entry) => entry.sectorId === intent.toSectorId && (!entry.disabledReason || entry.voidKeyPrompt)
           );
           if (!destination) {
             throw new Error("Movement preview must use a legal destination");
@@ -751,6 +753,12 @@ export class GameRoomServer {
 
       if (intent.type === "CONTINUE_RESOLUTION") {
         this.resolveContinueResolutionIntent(intent);
+        return;
+      }
+
+      if (intent.type === "START_TILE_ENCOUNTER") {
+        this.resolveStartTileEncounterIntent(intent);
+        this.broadcastPatch();
         return;
       }
 
@@ -1656,6 +1664,10 @@ export class GameRoomServer {
       case "PHASE_ADVANCED":
         requireEnumField(message, "toPhase", PHASE_VALUES, type);
         break;
+      case "START_TILE_ENCOUNTER":
+        requireStringField(message, "encounterId", type);
+        requireStringField(message, "resolutionId", type);
+        break;
       case "CHECK_REQUESTED":
       case "COMBAT_REQUESTED":
       case "RAISE_STAT_REQUESTED":
@@ -1794,7 +1806,7 @@ export class GameRoomServer {
     }
 
     client.seatId = seat.seatId;
-    this.adoptPhoneClient(client, true);
+    this.adoptPhoneClient(client);
 
     const accepted: RejoinAcceptedEnvelope = {
       type: "REJOIN_ACCEPTED",
@@ -3542,6 +3554,7 @@ export class GameRoomServer {
           type: "PHASE_ADVANCED",
           seatId: intent.seatId,
           toPhase: intent.toPhase,
+          transitionCause: "end-turn",
           createdAt
         } satisfies PhaseAdvancedAction;
       case "CHECK_REQUESTED":
@@ -6311,7 +6324,8 @@ export class GameRoomServer {
           return;
         }
         if (this.shouldDrawEncounterForCurrentSector(seatId)) {
-          this.applyAction(this.createEncounterDrawnAction(seatId));
+          const encounterAction = this.createEncounterDrawnAction(seatId);
+          this.applyAction(encounterAction);
         } else {
           this.applyAction({
             type: "PHASE_ADVANCED",
@@ -6450,6 +6464,11 @@ export class GameRoomServer {
 
     if (this.state.resolutionSource === "tileChallenge") {
       return "sector";
+    }
+
+    if (this.state.resolutionSource === "encounter" && player && boardSpace && this.state.tileArrivalThreatProgress) {
+      const progress = this.getTileArrivalThreatProgress(seatId);
+      if (progress && progress.nextThreatIconIndex < progress.threatLanes.length) return "sector";
     }
 
     if (
@@ -6750,6 +6769,10 @@ export class GameRoomServer {
     const card = drawnThreatId ? this.threats.get(drawnThreatId) ?? null : null;
     const revealEffectKey = card?.revealEffectKey ?? card?.effectKey;
     const revealEffect = card ? this.resolveThreatEffectKey(seatId, card, revealEffectKey, "onReveal")?.effect ?? null : null;
+    const progress = this.getTileArrivalThreatProgress(seatId);
+    const nextProgress = progress
+      ? { ...progress, nextThreatIconIndex: progress.nextThreatIconIndex + 1 }
+      : undefined;
 
     return {
       type: "ENCOUNTER_DRAWN",
@@ -6757,7 +6780,52 @@ export class GameRoomServer {
       sectorId: sector.id,
       card,
       revealEffect: revealEffect ? this.resolveEffect(revealEffect, seatId, card?.id) : null,
+      continuationPhase: !card && nextProgress && nextProgress.nextThreatIconIndex < nextProgress.threatLanes.length
+        ? "sector"
+        : "action",
+      tileArrivalThreatProgress: nextProgress,
       createdAt: new Date().toISOString()
+    };
+  }
+
+  private getTileArrivalThreatProgress(seatId: string): {
+    arrivalId: string;
+    seatId: string;
+    sectorId: string;
+    threatLanes: ThreatIcon[];
+    threatRuleIds: string[];
+    nextThreatIconIndex: number;
+  } | null {
+    const player = this.state.players.find((entry) => entry.seatId === seatId);
+    if (!player) return null;
+    const existing = this.state.tileArrivalThreatProgress;
+    const boardSpace = getBoardSpace(player.character.currentSpaceId);
+    if (!boardSpace) return null;
+    if (
+      existing?.seatId === seatId &&
+      existing.sectorId === player.character.currentSpaceId &&
+      existing.threatLanes &&
+      existing.threatRuleIds
+    ) {
+      return { ...existing, threatLanes: existing.threatLanes, threatRuleIds: existing.threatRuleIds };
+    }
+    const due = calculateExplorationDraws(boardSpace, this.getCurrentSectorThreatCards(player));
+    const remaining = { ...due };
+    const threatLanes: ThreatIcon[] = [];
+    const threatRuleIds: string[] = [];
+    boardSpace.threatIcons.forEach((lane, index) => {
+      if (remaining[lane] <= 0) return;
+      remaining[lane] -= 1;
+      threatLanes.push(lane);
+      threatRuleIds.push(`threat:${index}:${lane}`);
+    });
+    return {
+      arrivalId: existing?.arrivalId ?? `arrival:${seatId}:${player.character.currentSpaceId}:${this.state.sequence}`,
+      seatId,
+      sectorId: player.character.currentSpaceId,
+      threatLanes,
+      threatRuleIds,
+      nextThreatIconIndex: existing?.nextThreatIconIndex ?? 0
     };
   }
 
@@ -6774,19 +6842,13 @@ export class GameRoomServer {
   private getNextCurrentSectorThreatLane(seatId: string): ThreatIcon | null {
     const player = this.state.players.find((entry) => entry.seatId === seatId);
     const boardSpace = player ? getBoardSpace(player.character.currentSpaceId) : null;
-    const counts = this.getCurrentSectorExplorationDrawCounts(seatId);
+    const progress = this.getTileArrivalThreatProgress(seatId);
 
-    if (!boardSpace || !counts) {
+    if (!boardSpace || !progress) {
       return null;
     }
 
-    for (const lane of boardSpace.threatIcons) {
-      if (counts[lane] > 0) {
-        return lane;
-      }
-    }
-
-    return (["red", "blue", "yellow"] as const).find((lane) => counts[lane] > 0) ?? null;
+    return progress.threatLanes[progress.nextThreatIconIndex] ?? null;
   }
 
   private getCurrentSectorExplorationDrawCounts(seatId: string): ExplorationDrawCounts | null {
@@ -6802,7 +6864,12 @@ export class GameRoomServer {
       return null;
     }
 
-    return calculateExplorationDraws(boardSpace, this.getCurrentSectorThreatCards(player));
+    const progress = this.getTileArrivalThreatProgress(seatId);
+    const remaining = (progress?.threatLanes ?? []).slice(progress?.nextThreatIconIndex ?? 0);
+    return remaining.reduce<ExplorationDrawCounts>((counts, lane) => {
+      counts[lane] += 1;
+      return counts;
+    }, { red: 0, blue: 0, yellow: 0 });
   }
 
   private getCurrentSectorThreatCards(player: PlayerState): BoardThreatCard[] {
@@ -7463,6 +7530,42 @@ export class GameRoomServer {
     this.runAutomaticPhases(intent.seatId);
   }
 
+  private resolveStartTileEncounterIntent(intent: Extract<ClientIntent, { type: "START_TILE_ENCOUNTER" }>): void {
+    const activeSeatId = this.state.turnOrder[this.state.activeSeatIndex];
+    const encounter = this.state.currentEncounter;
+    const resolution = this.state.activeResolution;
+    const player = this.state.players.find((entry) => entry.seatId === intent.seatId);
+
+    if (!player || activeSeatId !== intent.seatId) {
+      throw new IntentRejectedError(intent.type, "Only the active operative may start this encounter");
+    }
+    if (this.state.phase !== "action") {
+      throw new IntentRejectedError(intent.type, `The encounter cannot start during ${this.state.phase}`);
+    }
+    if (!encounter || encounter.id !== intent.encounterId) {
+      throw new IntentRejectedError(intent.type, "The displayed encounter is stale");
+    }
+    // Tile Challenges may use a dedicated art-card ID while the executable
+    // encounter keeps the stable Challenge ID. The authoritative resolution
+    // revision, owner, and current encounter identity are the replay guards.
+    if (!resolution || resolution.id !== intent.resolutionId) {
+      throw new IntentRejectedError(intent.type, "The encounter revision is stale");
+    }
+    if (resolution.playerId !== intent.seatId) {
+      throw new IntentRejectedError(intent.type, "This encounter belongs to another operative");
+    }
+    if (resolution.stage !== "card_reveal") {
+      throw new IntentRejectedError(intent.type, "This encounter has already started");
+    }
+
+    this.applyAction({
+      type: encounter.cardType === "enemy" ? "COMBAT_REQUESTED" : "CHECK_REQUESTED",
+      seatId: intent.seatId,
+      stat: encounter.stat,
+      createdAt: new Date().toISOString()
+    });
+  }
+
   resolveContinueResolutionIntent(intent: Extract<ClientIntent, { type: "CONTINUE_RESOLUTION" }>): void {
     if (this.state.pendingGearEquipChoice) {
       throw new IntentRejectedError(intent.type, "Resolve the discovered Equipment choice before continuing.");
@@ -8014,6 +8117,7 @@ export class GameRoomServer {
         type: "PHASE_ADVANCED",
         seatId: intent.seatId,
         toPhase: "resolution",
+        transitionCause: "automatic",
         createdAt: new Date().toISOString()
       });
       this.runAutomaticPhases(intent.seatId);
@@ -8300,6 +8404,7 @@ export class GameRoomServer {
         type: "PHASE_ADVANCED",
         seatId: intent.seatId,
         toPhase: "resolution",
+        transitionCause: "automatic",
         createdAt: new Date().toISOString()
       });
 
@@ -8385,6 +8490,7 @@ export class GameRoomServer {
       type: "PHASE_ADVANCED",
       seatId: intent.seatId,
       toPhase: "resolution",
+      transitionCause: "automatic",
       createdAt: new Date().toISOString()
     });
 
@@ -9189,7 +9295,7 @@ export class GameRoomServer {
     this.scheduleResolutionAutoContinue();
   }
 
-  private adoptPhoneClient(client: ConnectedClient, sendPrivateSnapshot: boolean): void {
+  private adoptPhoneClient(client: ConnectedClient): void {
     if (!client.seatId) {
       throw new Error("Phone client cannot be adopted without a seat");
     }
@@ -9206,7 +9312,10 @@ export class GameRoomServer {
 
     this.clients.add(client);
     this.setSeatConnected(client.seatId, true);
-    this.broadcastSnapshotToClient(client, sendPrivateSnapshot);
+    // The broadcast is the authoritative bootstrap for the adopted phone and
+    // the connectivity update for every other client. Sending a direct
+    // snapshot first produced two equivalent STATE_PATCH envelopes at the same
+    // revision, which made reconnect observation order scheduling-sensitive.
     this.broadcastPatch();
   }
 
@@ -9347,6 +9456,7 @@ type PublicShopSellItem = {
 };
 
 type PublicMoveDestination = {
+  markerLabel?: string;
   routeId: string;
   defaultRouteId: string;
   routeVariants: Array<{ routeId: string; destinationId: string; sectorIds: string[]; sectorNames: string[]; distance: number }>;
@@ -9404,6 +9514,8 @@ type PublicMovementPlannerState = {
   active: boolean;
   movementValue: number;
   rolledValue?: number;
+  rollFaces?: number[];
+  rollResolutionId?: string;
   modifierSources?: Array<{ label: string; value: number }>;
   originalMovementValue?: number;
   movementAdjustment?: -1 | 1 | null;
@@ -9612,11 +9724,57 @@ function projectedEffectContainsType(effect: EncounterEffect | null | undefined,
   return Boolean(effect && (effect.type === type || (effect.type === "sequence" && effect.effects.some((entry) => projectedEffectContainsType(entry, type)))));
 }
 
-function buildPhoneObjectUseStates(state: GameState, player: PlayerState | undefined): PhoneObjectUseState[] {
+function getInventoryPresentationContext(state: GameState, seatId: string, movementRouteSelected = false): {
+  timing: NonNullable<GearItem["activationTiming"]>[number] | null;
+  testedSkill: Stat | null;
+  label: string;
+} {
+  const activeResolution = state.activeResolution?.playerId === seatId ? state.activeResolution : null;
+  const testedSkill = activeResolution?.battle?.stat
+    ?? state.pendingTileChallenge?.testStat
+    ?? state.currentEncounter?.stat
+    ?? state.pendingCooperativeTest?.stat
+    ?? null;
+
+  if (state.pendingDisplacement?.seatId === seatId && state.pendingDisplacement.status === "pending") {
+    return { timing: "pendingForcedDisplacement", testedSkill, label: "Forced displacement" };
+  }
+  if (state.pendingScarConsequence?.seatId === seatId && state.pendingScarConsequence.status === "pending") {
+    return { timing: "pendingScarConsequence", testedSkill, label: "Scar consequence" };
+  }
+  if (state.pendingFailureReaction?.seatId === seatId && activeResolution?.roll?.success === false) {
+    return { timing: "afterFailedTest", testedSkill, label: "Failed test reaction" };
+  }
+  if (state.phase === "resolution" && state.pendingEffect && projectedEffectContainsWound(state.pendingEffect)) {
+    return { timing: "beforeTakingDamage", testedSkill, label: "Incoming Wound" };
+  }
+  if (state.pendingTileChallenge?.seatId === seatId && state.pendingTileChallenge.challengeType === "anomaly" && !state.pendingTileChallenge.rolled) {
+    return { timing: "beforeAnomalySignalTest", testedSkill: state.pendingTileChallenge.testStat, label: "Anomaly test" };
+  }
+  if (state.phase === "action" && state.currentEncounter?.cardType === "enemy" && !activeResolution?.roll && !state.pendingEnemyRoll) {
+    return { timing: "beforeBattleRoll", testedSkill: state.currentEncounter.stat, label: "Battle roll" };
+  }
+  if (state.phase === "navigation") {
+    return {
+      timing: movementRouteSelected ? "movementRouteConfirmation" : "movement",
+      testedSkill,
+      label: movementRouteSelected ? "Route confirmation" : "Movement"
+    };
+  }
+  if (state.phase === "sector") return { timing: "beforeThreatDraw", testedSkill, label: "Sector arrival" };
+  if (state.phase === "start") return { timing: "startOfTurn", testedSkill, label: "Turn start" };
+  if (state.phase === "action") return { timing: "action", testedSkill, label: "Action phase" };
+  return { timing: null, testedSkill, label: "No immediate inventory action" };
+}
+
+function buildPhoneObjectUseStates(state: GameState, player: PlayerState | undefined, movementRouteSelected = false): PhoneObjectUseState[] {
   if (!player) {
     return [];
   }
 
+  const presentationContext = getInventoryPresentationContext(state, player.seatId, movementRouteSelected);
+  const equippedInstanceIds = new Set(Object.values(player.character.equippedGearInstances ?? {}).filter((id): id is string => Boolean(id)));
+  const equippedCatalogIds = new Set(Object.values(player.character.equippedGear).filter((id): id is string => Boolean(id)));
   const gearStates = player.character.heldGear.map((item) => {
     const usedThisTurn = hasUsedObjectSinceLogBoundary(state, player.seatId, item.id, "gearId", "TURN_COMPLETED");
     const usedThisRound = hasUsedObjectSinceLogBoundary(state, player.seatId, item.id, "gearId", "ROUND_COMPLETED");
@@ -9659,6 +9817,20 @@ function buildPhoneObjectUseStates(state: GameState, player: PlayerState | undef
         : `${item.name} is suppressed during this battle.`
       : null;
     const challengeEligibility = getChallengeItemEligibility(state, player.seatId, item);
+    const declaredTimings = [...new Set([...(item.activationTiming ?? []), ...(item.timingWindows ?? [])])];
+    const matchesTiming = Boolean(presentationContext.timing && (declaredTimings.includes(presentationContext.timing) || declaredTimings.includes("anyTime")));
+    const exactEquipped = item.instanceId ? equippedInstanceIds.has(item.instanceId) : equippedCatalogIds.has(item.id);
+    const passiveRelevant = Boolean(
+      exactEquipped &&
+      item.effectModel !== "consumable" &&
+      presentationContext.testedSkill &&
+      item.statBonus.stat === presentationContext.testedSkill
+    );
+    const relevanceReason = suppressionDisabledReason
+      ?? (challengeEligibility.challengeLinked ? challengeEligibility.disabledReason : null)
+      ?? consumableDisabledReason
+      ?? projectedLimit.disabledReason;
+    const relevantNow = Boolean(challengeEligibility.eligible || matchesTiming || passiveRelevant || getPendingObjectRollModifier(state, player.seatId, "gear", item.id));
     return {
       source: "gear" as const,
       id: item.id,
@@ -9666,10 +9838,14 @@ function buildPhoneObjectUseStates(state: GameState, player: PlayerState | undef
       usedThisTurn,
       usedThisRound,
       ...projectedLimit,
-      disabledReason: suppressionDisabledReason ?? (challengeEligibility.challengeLinked ? challengeEligibility.disabledReason : null) ?? consumableDisabledReason ?? projectedLimit.disabledReason,
+      disabledReason: relevanceReason,
       testedSkill: challengeEligibility.testedSkill,
       timingWindow: challengeEligibility.timingWindow,
       usableForCurrentTest: challengeEligibility.challengeLinked ? challengeEligibility.eligible : null,
+      relevantNow,
+      relevanceKind: relevantNow ? (relevanceReason ? "blocked" : passiveRelevant && !matchesTiming ? "passive" : "usable") : "inactive",
+      relevanceReason: relevanceReason ?? (passiveRelevant ? `Applied to the current ${CHALLENGE_LABELS[presentationContext.testedSkill!]} test.` : null),
+      currentContext: presentationContext.label,
       activeModifier: getPendingObjectRollModifier(state, player.seatId, "gear", item.id)
     };
   });
@@ -9697,13 +9873,23 @@ function buildPhoneObjectUseStates(state: GameState, player: PlayerState | undef
             : follower.abilityId === "battle_support"
               ? pending && projectedEffectContainsWound(state.pendingEffect) ? null : "The +1 battle bonus is always active. Discard only when a failed battle would add a Wound."
               : null;
+    const declaredTimings = follower.activationTiming ?? follower.timingWindows ?? [];
+    const matchesPresentationTiming = Boolean(
+      presentationContext.timing &&
+      ((declaredTimings as readonly string[]).includes(presentationContext.timing) || declaredTimings.includes("anyTime"))
+    );
+    const relevanceReason = exhaustDisabledReason ?? abilityDisabledReason ?? projectedLimit.disabledReason;
     return {
       source: "follower" as const,
       id: follower.id,
       usedThisTurn,
       usedThisRound,
       ...projectedLimit,
-      disabledReason: exhaustDisabledReason ?? abilityDisabledReason ?? projectedLimit.disabledReason,
+      disabledReason: relevanceReason,
+      relevantNow: matchesPresentationTiming || Boolean(getPendingObjectRollModifier(state, player.seatId, "follower", follower.id)),
+      relevanceKind: matchesPresentationTiming ? (relevanceReason ? "blocked" : "usable") : "inactive",
+      relevanceReason,
+      currentContext: presentationContext.label,
       activeModifier: getPendingObjectRollModifier(state, player.seatId, "follower", follower.id)
     };
   });
@@ -9745,6 +9931,17 @@ function getPublicShopBlockedReason(state: GameState, blockingThreatCount: numbe
 
 function getPublicRing(tier: BoardTier): "outer" | "middle" | "inner" | "core" {
   return tier === "center" ? "core" : tier === "inner" ? "inner" : tier === "middle" ? "middle" : "outer";
+}
+
+function getMovementDestinationMarkerLabel(index: number): string {
+  let value = index + 1;
+  let label = "";
+  while (value > 0) {
+    value -= 1;
+    label = String.fromCharCode(65 + (value % 26)) + label;
+    value = Math.floor(value / 26);
+  }
+  return label;
 }
 
 function getFaceUpThreatsForSector(state: GameState, sectorId: string): PublicMoveDestination["faceUpThreats"] {
@@ -9876,6 +10073,12 @@ function buildPublicMovementPlanner(state: GameState, seatId: string): PublicMov
   const adjustment = state.movementAdjustments?.[seatId]?.adjustment ?? null;
   const originalMovementValue = state.movementRolls?.[seatId] ?? plan.movementValue;
   const rollDetail = state.normalMovementRollDetails?.[seatId];
+  const movementRollEvent = [...state.eventLog].reverse().find((entry) => {
+    const candidate = entry as { type?: string; seatId?: string; resolutionId?: string; roll?: { faces?: number[] } };
+    return candidate.type === "MOVEMENT_ROLLED" &&
+      candidate.seatId === seatId &&
+      (!rollDetail?.resolutionId || candidate.resolutionId === rollDetail.resolutionId);
+  }) as { roll?: { faces?: number[] } } | undefined;
 
   const routeEntries = [
     ...plan.routes.map((route) => ({ ...route, disabledReason: undefined })),
@@ -9969,12 +10172,23 @@ function buildPublicMovementPlanner(state: GameState, seatId: string): PublicMov
     }
     existing.routeVariants.push(...destination.routeVariants.filter((variant) => !existing.routeVariants.some((current) => current.routeId === variant.routeId)));
     return byDestination;
-  }, new Map<string, PublicMoveDestination>()).values()];
+  }, new Map<string, PublicMoveDestination>()).values()]
+    .sort((left, right) => left.name.localeCompare(right.name) || left.sectorId.localeCompare(right.sectorId));
+
+  let markerIndex = 0;
+  for (const destination of destinations) {
+    if (!destination.disabledReason || destination.voidKeyPrompt) {
+      destination.markerLabel = getMovementDestinationMarkerLabel(markerIndex);
+      markerIndex += 1;
+    }
+  }
 
   return {
     active: true,
     movementValue: plan.movementValue,
     rolledValue: rollDetail?.rolledValue,
+    rollFaces: movementRollEvent?.roll?.faces ? [...movementRollEvent.roll.faces] : rollDetail ? [rollDetail.rolledValue] : undefined,
+    rollResolutionId: rollDetail?.resolutionId,
     modifierSources: rollDetail?.modifierSources,
     originalMovementValue,
     movementAdjustment: adjustment,
@@ -10440,7 +10654,9 @@ function buildPublicShopEncounter(
   const revealedStock = buildPublicShopStock(state, activePlayer, privateArtifactSeatId);
   const fullSellInventory = buildPublicShopSellInventory(activePlayer);
   const sellInventory = privateArtifactSeatId === activePlayer.seatId ? fullSellInventory : undefined;
-  const sellableCount = fullSellInventory.filter((item) => item.sellable).length;
+  const sellableCount = privateArtifactSeatId === activePlayer.seatId
+    ? fullSellInventory.filter((item) => item.sellable).length
+    : undefined;
   const repairTargets: Array<{
     gearId: string;
     instanceId: string;
@@ -10498,6 +10714,107 @@ function buildPublicShopEncounter(
       }
     : { view: "categories" as const, selectedId: null };
 
+  const ownerProjection = privateArtifactSeatId === activePlayer.seatId;
+  const serviceById = (id: string) => services.find((service) => service.id === id);
+  const localServices = services.filter((service) => ![
+    "buy-gear",
+    "buy-supplies",
+    "trade-missions-for-artifact",
+    "sell-gear"
+  ].includes(service.id));
+  const categoryCandidates = [
+    serviceById("buy-supplies") ? {
+      id: "items" as const,
+      view: "supplies" as const,
+      label: "Items",
+      description: "Field supplies and expendable necessities",
+      service: serviceById("buy-supplies")!
+    } : null,
+    serviceById("buy-gear") ? {
+      id: "equipment" as const,
+      view: "equipment" as const,
+      label: "Equipment",
+      description: "Tools, armour and battle hardware",
+      service: serviceById("buy-gear")!
+    } : null,
+    serviceById("trade-missions-for-artifact") ? {
+      id: "artifacts" as const,
+      view: "artifacts" as const,
+      label: "Artifacts",
+      description: "Sealed relics exchanged for completed Contracts",
+      service: serviceById("trade-missions-for-artifact")!
+    } : null,
+    localServices.length > 0 ? {
+      id: "services" as const,
+      view: "services" as const,
+      label: "Services",
+      description: "Repair, treatment and local work",
+      service: {
+        enabled: localServices.some((service) => service.enabled),
+        disabledReason: localServices.find((service) => !service.enabled)?.disabledReason
+      }
+    } : null,
+    ownerProjection && (sellableCount ?? 0) > 0 ? {
+      id: "sell" as const,
+      view: "sell" as const,
+      label: "Sell",
+      description: "Offer carried Equipment for Salvage",
+      service: { enabled: true, disabledReason: undefined }
+    } : null
+  ].filter((entry): entry is NonNullable<typeof entry> => Boolean(entry));
+  const categories = categoryCandidates.map((entry) => ({
+    id: entry.id,
+    view: entry.view,
+    label: entry.label,
+    description: entry.description,
+    available: entry.service.enabled,
+    offerCount: browseSelection.view === entry.view
+      ? entry.view === "sell"
+        ? sellableCount ?? null
+        : entry.view === "services"
+          ? localServices.length
+          : revealedStock?.length ?? null
+      : null,
+    unavailableReason: entry.service.disabledReason
+  }));
+  const selectedCategoryId = categories.find((entry) => entry.view === browseSelection.view)?.id ?? null;
+  const privateResolution = !ownerProjection && (browseSelection.view === "artifacts" || browseSelection.view === "sell");
+  const presentation = {
+    id: `shop:${activePlayer.seatId}:${boardSpace.id}`,
+    revision: state.sequence,
+    stage: blockedReason
+      ? "locked" as const
+      : latest
+        ? "transaction_result" as const
+        : privateResolution
+          ? "private_resolution" as const
+          : browseSelection.view === "categories"
+            ? "category_selection" as const
+            : "item_selection" as const,
+    publicStatus: blockedReason
+      ? SHOP_FAILURE_LABELS[blockedReason]
+      : latest
+        ? `${playerDisplayName}'s transaction is complete.`
+        : privateResolution
+          ? `${playerDisplayName} is making a private shop choice.`
+          : browseSelection.view === "categories"
+            ? `${playerDisplayName} is choosing a shop category.`
+            : `${playerDisplayName} is browsing ${browseSelection.view}.`,
+    allowedCommand: ownerProjection
+      ? browseSelection.view === "categories"
+        ? "browse" as const
+        : browseSelection.view === "sell"
+          ? "sell" as const
+          : browseSelection.view === "services"
+            ? "use_service" as const
+            : "buy" as const
+      : null,
+    privacy: privateResolution ? "actor_private" as const : "public" as const,
+    categories,
+    selectedCategoryId,
+    selectedOfferId: browseSelection.selectedId
+  };
+
   if (services.length === 0 && blockingThreats.length === 0) {
     return null;
   }
@@ -10516,11 +10833,12 @@ function buildPublicShopEncounter(
     stockCategory,
     status: blockedReason ? "locked" : getPublicShopStatus(state, activePlayer),
     browseSelection,
+    presentation,
     activePlayer: {
       playerId: activePlayer.seatId,
       name: playerDisplayName,
       characterName: activePlayer.character.name,
-      salvage,
+      ...(ownerProjection ? { salvage } : {}),
       wounds: {
         current: activePlayer.character.wounds,
         max: state.woundThreshold
@@ -10891,7 +11209,10 @@ function getEventLogResultDeltas(state: GameState, ownerSeatId?: string | null):
     const entry = event as Record<string, unknown>;
     const type = entry.type;
     const seatId = typeof entry.seatId === "string" ? entry.seatId : null;
-    const source = `${type ?? "event"}:${index}`;
+    const stableEventIdentity = typeof entry.createdAt === "string" && entry.createdAt.length > 0
+      ? entry.createdAt
+      : `legacy-${index}`;
+    const source = `${type ?? "event"}:${seatId ?? "table"}:${stableEventIdentity}`;
 
     if (type === "SCENARIO_OBJECTIVE_PROGRESS_TRIGGERED") {
       const amount = typeof entry.amount === "number" ? entry.amount : 1;
@@ -11039,15 +11360,17 @@ function getEventLogResultDeltas(state: GameState, ownerSeatId?: string | null):
         sign: "gain",
         targetScope: "personal",
         targetSeatId: seatId,
-        visibility: "public",
+        visibility: "ownerPrivate",
         source,
-        reason: typeof entry.contractId === "string" ? entry.contractId : "contract progress",
-        publicText: typeof entry.summary === "string" ? entry.summary : "Contract progress advanced.",
+        reason: "Private Contract progress advanced",
+        publicText: "Private objective progress advanced.",
+        privateText: typeof entry.summary === "string" ? entry.summary : "Contract progress advanced.",
         severity: "reward"
       }));
     }
 
     if (type === "COMPLETE_CONTRACT") {
+      const playerName = state.seats.find((seat) => seat.seatId === seatId)?.displayName ?? "An operative";
       deltas.push(createResultDelta({
         id: `contract-complete:${source}`,
         type: "contractCompleted",
@@ -11057,8 +11380,9 @@ function getEventLogResultDeltas(state: GameState, ownerSeatId?: string | null):
         targetSeatId: seatId,
         visibility: "public",
         source,
-        reason: typeof entry.contractId === "string" ? entry.contractId : "contract completion",
-        publicText: typeof entry.summary === "string" ? entry.summary : "Contract completed.",
+        reason: "Private Contract completed",
+        publicText: `${playerName} completed a private Contract.`,
+        privateText: typeof entry.summary === "string" ? entry.summary : "Contract completed.",
         severity: "reward"
       }));
     }
@@ -11197,6 +11521,159 @@ function buildPublicResultDeltas(state: GameState, shopEncounter: Record<string,
   ]);
 }
 
+function buildMatchProgressPresentation(
+  state: GameState,
+  publicDeltas: ResultDelta[]
+): import("../client/shared/types.js").MatchProgressPresentation | null {
+  const scenario = getScenarioDefinition(state.activeScenarioId);
+  if (!scenario) return null;
+
+  const pressure = buildScenarioPressureState(state, describeScenarioPressure(state) ?? "Scenario pressure is active.");
+  if (!pressure) return null;
+
+  const latestMatchDelta = [...publicDeltas].reverse().find(
+    (delta) => delta.type === "scenarioProgress" || delta.type === "scenarioPressure"
+  ) ?? null;
+  const latestWinDelta = latestMatchDelta?.type === "scenarioProgress" ? latestMatchDelta : null;
+  const latestLossDelta = latestMatchDelta?.type === "scenarioPressure" ? latestMatchDelta : null;
+  const objectiveCurrent = scenario.id === BROKEN_CONCORDANCE_SCENARIO_ID
+    ? state.scenarioConfrontation.progress.concordanceStages ?? 0
+    : pressure.objectiveProgress.current;
+  const objectiveRequired = getScenarioProgressThreshold(state.activeScenarioId, pressure.objectiveProgress.required);
+  const signedChange = (delta: ResultDelta | null): number | null => {
+    if (!delta || typeof delta.value !== "number") return delta ? 1 : null;
+    return delta.sign === "loss" ? -Math.abs(delta.value) : Math.abs(delta.value);
+  };
+  const winRemaining = Math.max(0, objectiveRequired - objectiveCurrent);
+  const lossRemaining = Math.max(0, pressure.collapseTrack.max - pressure.collapseTrack.current);
+  const resultStatus = state.scenarioResult.status !== "unresolved"
+    ? state.scenarioResult.status
+    : state.status === "ended"
+      ? state.winnerSeatId ? "victory" : "loss"
+      : "unresolved";
+  const finalStageActive = state.scenarioConfrontation.active && resultStatus === "unresolved";
+  const thresholdWarning: import("../client/shared/types.js").MatchThresholdWarning | null = resultStatus !== "unresolved" || finalStageActive
+    ? null
+    : lossRemaining === 1
+      ? {
+          id: `loss-critical:${pressure.collapseTrack.current}:${pressure.collapseTrack.max}`,
+          level: "critical",
+          label: "Critical",
+          detail: "Next Loss Pressure gain causes defeat.",
+          remaining: 1,
+          target: "loss"
+        }
+      : lossRemaining === 2
+        ? {
+            id: `loss-danger:${pressure.collapseTrack.current}:${pressure.collapseTrack.max}`,
+            level: "danger",
+            label: "Danger",
+            detail: "2 pressure steps remain before defeat.",
+            remaining: 2,
+            target: "loss"
+          }
+        : winRemaining === 1
+          ? {
+              id: `win-near:${pressure.objectiveProgress.current}:${pressure.objectiveProgress.required}`,
+              level: "near_victory",
+              label: "Final Step",
+              detail: "1 objective step remains before the final requirement is met.",
+              remaining: 1,
+              target: "win"
+            }
+          : null;
+
+  const stageIndexMatch = state.scenarioConfrontation.stage?.match(/(?:stage-)?(\d+)/i);
+  const stageIndex = stageIndexMatch ? Math.max(0, Number(stageIndexMatch[1]) - 1) : 0;
+  const finalInstruction = scenario.confrontationSteps[stageIndex]
+    ?? scenario.confrontationSteps[0]
+    ?? scenario.finalGateRequirement;
+  const finalStage = finalStageActive ? {
+    id: `final-stage:${state.sequence}`,
+    title: scenario.confrontationTitle,
+    publicInstruction: finalInstruction,
+    locationName: "Cinder Gate",
+    stageLabel: state.scenarioConfrontation.stage
+      ? state.scenarioConfrontation.stage.replace(/[_-]+/g, " ").replace(/\b\w/g, (letter) => letter.toUpperCase())
+      : null,
+    progressLabel: objectiveRequired > 0
+      ? `${objectiveCurrent} / ${objectiveRequired}`
+      : null
+  } : null;
+
+  const seatName = (seatId: string | null): string | null =>
+    seatId ? state.seats.find((seat) => seat.seatId === seatId)?.displayName ?? null : null;
+  const resultId = `match-result:${state.scenarioResult.achievedAtSequence ?? state.sequence}`;
+  const winnerName = seatName(state.scenarioResult.winningSeatId ?? state.winnerSeatId);
+  const publicResult: import("../client/shared/types.js").PublicMatchResult | null = resultStatus === "unresolved" ? null : {
+    id: resultId,
+    outcome: resultStatus === "victory" ? "victory" : "defeat",
+    title: resultStatus === "victory" ? "Mission Accomplished" : "Mission Failed",
+    reason: state.lastOutcomeSummary?.summary
+      ?? (resultStatus === "victory"
+        ? `${scenario.name} reached its canonical victory condition.`
+        : `${pressure.collapseTrack.name} reached ${pressure.collapseTrack.current} / ${pressure.collapseTrack.max}.`),
+    missionName: scenario.name,
+    modeLabel: state.gameMode === "nemesis_relay"
+      ? "Nemesis Relay"
+      : pressure.modeSpecific.label,
+    winningDisplayNames: winnerName ? [winnerName] : [],
+    operativeDisplayNames: state.turnOrder.flatMap((seatId) => {
+      const name = seatName(seatId);
+      return name ? [name] : [];
+    }),
+    finalWinProgress: {
+      current: objectiveCurrent,
+      required: objectiveRequired
+    },
+    finalLossPressure: {
+      current: pressure.collapseTrack.current,
+      required: pressure.collapseTrack.max
+    },
+    finalStageReached: state.scenarioConfrontation.active || state.scenarioResult.sourceType === "confrontation"
+  };
+
+  const stage: import("../client/shared/types.js").MatchProgressStage = publicResult
+    ? publicResult.outcome
+    : finalStageActive
+      ? "final_stage"
+      : thresholdWarning
+        ? "threshold_warning"
+        : "active";
+
+  return {
+    revision: state.sequence,
+    mode: state.gameMode === "nemesis_relay"
+      ? "nemesis_relay"
+      : state.sessionMode === "single-player"
+        ? "solo"
+        : getEffectiveRivalryMode(state) === "co-op"
+          ? "coop"
+          : "rivalry",
+    stage,
+    winProgress: {
+      current: objectiveCurrent,
+      required: objectiveRequired,
+      label: pressure.objectiveProgress.label,
+      changeId: latestWinDelta?.id ?? null,
+      change: signedChange(latestWinDelta),
+      changeReason: latestWinDelta?.publicText ?? null
+    },
+    lossPressure: {
+      current: pressure.collapseTrack.current,
+      required: pressure.collapseTrack.max,
+      label: "Loss Pressure",
+      changeId: latestLossDelta?.id ?? null,
+      change: signedChange(latestLossDelta),
+      changeReason: latestLossDelta?.publicText ?? null
+    },
+    thresholdWarning,
+    finalStage,
+    publicResult,
+    allowedCommands: state.status === "ended" ? ["return_to_lobby", "leave_room"] : []
+  };
+}
+
 function buildPlayerResultDeltas(
   state: GameState,
   seatId: string,
@@ -11317,10 +11794,11 @@ function buildPublicRivalryAgendaReveal(state: GameState): Record<string, unknow
     }
 
     const player = state.players.find((entry) => entry.seatId === event.seatId);
+    const displayName = state.seats.find((entry) => entry.seatId === event.seatId)?.displayName;
 
     return {
       seatId: event.seatId,
-      playerName: player?.character.name ?? event.seatId,
+      playerName: displayName ?? player?.character.name ?? "An operative",
       title: event.publicRevealTitle ?? "Rivalry Agenda",
       summary: event.publicRevealSummary,
       revealedAtRound: event.revealedAtRound ?? null,
@@ -11340,10 +11818,11 @@ function buildPublicRivalryAgendaCompletion(state: GameState): Record<string, un
     }
 
     const player = state.players.find((entry) => entry.seatId === event.seatId);
+    const displayName = state.seats.find((entry) => entry.seatId === event.seatId)?.displayName;
 
     return {
       seatId: event.seatId,
-      playerName: player?.character.name ?? event.seatId,
+      playerName: displayName ?? player?.character.name ?? "An operative",
       title: event.publicCompletionTitle ?? "Rivalry Agenda",
       summary: event.publicCompletionSummary,
       pointsAwarded: event.pointsAwarded ?? 0,
@@ -11372,28 +11851,32 @@ function buildPrivateRivalryProjection(state: GameState, player: PlayerState | u
   }
 
   const progress = getRivalryAgendaProgressSnapshot(player, directive);
+  const revealState = getPrivateRivalryRevealState(player);
+  const objectiveVisible = revealState === "revealed" || revealState === "completed" || revealState === "failed";
 
   return {
     active: true,
     mode: interactionMode as RivalryProjectionMode,
     secrecy: "private",
-    revealState: getPrivateRivalryRevealState(player),
+    revealState,
     tableWarning: "Shown only on this phone. Keep it off the TV table.",
-    objective: {
-      id: directive.id,
-      title: directive.title,
-      summary: directive.summary,
-      progressLabel: progress.label,
-      progress: progress.current,
-      target: progress.required,
-      stakes: directive.stakes
-    },
-    scoring: {
-      pointsAwarded: progress.pointsAwarded,
-      completedAtRound: progress.completedAtRound,
-      completedBySeatId: progress.completedBySeatId,
-      completionSummary: progress.completionSummary
-    },
+    ...(objectiveVisible ? {
+      objective: {
+        id: directive.id,
+        title: directive.title,
+        summary: directive.summary,
+        progressLabel: progress.label,
+        progress: progress.current,
+        target: progress.required,
+        stakes: directive.stakes
+      },
+      scoring: {
+        pointsAwarded: progress.pointsAwarded,
+        completedAtRound: progress.completedAtRound,
+        completedBySeatId: progress.completedBySeatId,
+        completionSummary: progress.completionSummary
+      }
+    } : {}),
     recentPrivateNotes: player.private.notes.slice(-3).reverse(),
     reveal: buildPrivateRivalryRevealProjection(player)
   };
@@ -11438,7 +11921,7 @@ function projectActiveResolutionForViewer(state: GameState, viewerSeatId: string
           id: "private-card",
           title: "Private Contract Lead",
           type: "contract",
-          flavor: "The operative is reviewing a private mission lead.",
+          flavor: "The operative is reviewing a private Contract lead.",
           artType: "contract"
         }
       : undefined,
@@ -11463,6 +11946,161 @@ function getProjectedPlayerName(state: GameState, seatId: string): string {
   return state.seats.find((seat) => seat.seatId === seatId)?.displayName ??
     state.players.find((player) => player.seatId === seatId)?.character.name ??
     seatId;
+}
+
+function classifyBattleModifier(label: string): "permanent" | "equipment" | "status" | "ability" | "assistance" | "scenario" | "other" {
+  const normalized = label.toLowerCase();
+  if (normalized.includes("assisted")) return "assistance";
+  if (normalized.includes("equipment") || normalized.includes("weapon") || normalized.includes("armor") || normalized.includes("utility")) return "equipment";
+  if (normalized.includes("permanent")) return "permanent";
+  if (normalized.includes("scenario")) return "scenario";
+  if (normalized.includes("affliction") || normalized.includes("scar") || normalized.includes("temporary")) return "status";
+  if (normalized.includes("vow") || normalized.includes("charge") || normalized.includes("edge") || normalized.includes("breaker") || normalized.includes("instinct")) return "ability";
+  return "other";
+}
+
+function buildBattlePresentation(state: GameState, viewerSeatId: string | null): Record<string, unknown> | null {
+  const resolution = state.activeResolution;
+  const encounter = state.currentEncounter;
+  const pendingEnemyRoll = state.pendingEnemyRoll;
+  const actorSeatId = resolution?.playerId ?? pendingEnemyRoll?.fighterSeatId ?? state.pendingTileChallenge?.seatId ?? state.turnOrder[state.activeSeatIndex] ?? null;
+  const actor = actorSeatId ? state.players.find((player) => player.seatId === actorSeatId) ?? null : null;
+  const battle = resolution?.battle;
+  const isBattle = encounter?.cardType === "enemy" || resolution?.card?.type === "enemy" || Boolean(pendingEnemyRoll);
+
+  if (!actorSeatId || !actor || (!battle && !encounter && !pendingEnemyRoll)) return null;
+
+  const stat = battle?.stat ?? encounter?.stat ?? pendingEnemyRoll?.stat ?? "grit";
+  const allSources = battle?.modifiers ?? [];
+  const baseSource = allSources.find((source) => source.label.toLowerCase().startsWith("base ")) ?? null;
+  const permanentUpgrade = actor.character.statUpgrades?.[stat] ?? 0;
+  const baseValue = baseSource?.value ?? Math.max(0, actor.character.stats[stat] - permanentUpgrade);
+  const publicSources = allSources.filter((source) => source !== baseSource && source.label.toLowerCase() !== "enemy");
+  const expectedModifierTotal = resolution?.roll?.modifierTotal ?? null;
+  const representedModifierTotal = baseValue + publicSources.reduce((sum, source) => sum + source.value, 0);
+  const reconciliation = expectedModifierTotal === null ? 0 : expectedModifierTotal - representedModifierTotal;
+  const operativeModifiers = [
+    ...publicSources.map((source) => ({ label: source.label, value: source.value, kind: classifyBattleModifier(source.label) })),
+    ...(reconciliation !== 0 ? [{ label: "Other authoritative modifiers", value: reconciliation, kind: "other" as const }] : [])
+  ];
+  const outcomeSummary = state.lastOutcomeSummary?.seatId === actorSeatId ? state.lastOutcomeSummary : null;
+  const operativeDice = resolution?.roll?.dice ?? [outcomeSummary?.die1, outcomeSummary?.die2].filter((die): die is number => typeof die === "number");
+  let previousOperativeDice: number[] | undefined;
+  if (resolution?.card?.id && resolution?.playerId) {
+    let rerollIndex = -1;
+    for (let index = state.eventLog.length - 1; index >= 0; index -= 1) {
+      const event = state.eventLog[index] as { type?: string; seatId?: string; cardId?: string; roll?: { faces?: number[] } };
+      if (event.type === "SOLO_REROLL_RESOLVED" && event.seatId === resolution.playerId && event.cardId === resolution.card.id) {
+        rerollIndex = index;
+        break;
+      }
+    }
+    if (rerollIndex >= 0) {
+      for (let index = rerollIndex - 1; index >= 0; index -= 1) {
+        const event = state.eventLog[index] as { type?: string; seatId?: string; cardId?: string; roll?: { faces?: number[] } };
+        if (["CHECK_ROLLED", "SOLO_REROLL_RESOLVED"].includes(event.type ?? "") && event.seatId === resolution.playerId && event.cardId === resolution.card.id) {
+          previousOperativeDice = event.roll?.faces ? [...event.roll.faces] : undefined;
+          break;
+        }
+      }
+    }
+  }
+  const opponentDice = [outcomeSummary?.enemyDie1, outcomeSummary?.enemyDie2].filter((die): die is number => typeof die === "number");
+  const operativeDiceTotal = operativeDice.length ? operativeDice.reduce((sum, die) => sum + die, 0) : null;
+  const opponentDiceTotal = opponentDice.length ? opponentDice.reduce((sum, die) => sum + die, 0) : null;
+  const operativeTotal = resolution?.roll?.finalTotal ?? outcomeSummary?.checkTotal ?? null;
+  const opponentTotal = outcomeSummary?.enemyTotal ?? resolution?.roll?.target ?? battle?.difficulty ?? encounter?.difficulty ?? null;
+  const opponentBaseValue = isBattle
+    ? outcomeSummary?.enemyBonus ?? battle?.difficulty ?? encounter?.difficulty ?? null
+    : opponentTotal;
+  const success = resolution?.roll?.success ?? outcomeSummary?.success ?? null;
+  const outcome = success === null
+    ? operativeTotal !== null && opponentTotal !== null && operativeTotal === opponentTotal ? "draw" : null
+    : success ? "success" : "failure";
+  const privateDecisionOwner = state.pendingEncounterDecision?.seatId
+    ?? state.pendingMemoryTaxChoice?.ownerSeatId
+    ?? state.pendingEquipmentSuppressionChoice?.ownerSeatId
+    ?? state.pendingGearEquipChoice?.ownerSeatId
+    ?? state.pendingForcedDestinationChoice?.ownerSeatId
+    ?? state.pendingScarChoice?.ownerSeatId
+    ?? state.pendingScarConsequence?.seatId
+    ?? null;
+  const reactionOwner = state.pendingFailureReaction?.seatId ?? state.pendingStaticIntercessionReaction?.seatId ?? null;
+  const privateDecision = privateDecisionOwner === actorSeatId || reactionOwner === actorSeatId;
+  const isOwner = viewerSeatId === actorSeatId;
+  const stage = privateDecisionOwner === actorSeatId
+    ? "consequence_required"
+    : reactionOwner === actorSeatId
+      ? isOwner ? "reaction_available" : "choice_required"
+      : pendingEnemyRoll
+        ? "rolling"
+        : resolution?.stage === "card_reveal"
+          ? "encounter_intro"
+          : resolution?.stage === "battle_setup"
+            ? "battle_ready"
+            : resolution?.stage === "dice_roll"
+              ? "rolling"
+              : resolution?.roll
+                ? "result"
+                : "resolving";
+  const encounterName = battle?.enemyName ?? resolution?.card?.title ?? (encounter?.cardType === "enemy" ? encounter.enemyName : encounter?.title) ?? pendingEnemyRoll?.encounterTitle ?? "Encounter";
+  const publicAction = privateDecision
+    ? reactionOwner === actorSeatId ? "consider a battle effect" : "resolve a private consequence"
+    : stage === "battle_ready" ? `roll ${CHALLENGE_LABELS[stat]}`
+      : stage === "rolling" || stage === "resolving" ? "resolve the current roll"
+        : "review the result and continue";
+  const effects = resolution?.outcome?.effects ?? [];
+  const rewardSummary = effects.find((effect) => /\bgain\b|\btroph|\breward|\bsalvage|\bequipment|\bfollower/i.test(effect)) ?? null;
+
+  return {
+    id: resolution?.id ?? `encounter:${actorSeatId}:${encounterName}`,
+    revision: state.sequence,
+    stage,
+    actorSeatId,
+    actorDisplayName: getProjectedPlayerName(state, actorSeatId),
+    encounter: {
+      name: encounterName,
+      category: isBattle ? "Battle" : state.pendingTileChallenge?.challengeType === "anomaly" ? "Anomaly" : encounter?.cardType === "hazard" ? "Hazard" : "Challenge",
+      imageKey: resolution?.card?.id ?? encounter?.id ?? pendingEnemyRoll?.encounterCardId ?? null,
+      publicSummary: resolution?.card?.flavor ?? encounter?.flavor ?? null
+    },
+    test: { stat, label: CHALLENGE_LABELS[stat], opposed: isBattle },
+    operative: {
+      name: getProjectedPlayerName(state, actorSeatId),
+      secondaryName: actor.character.name,
+      imageKey: actor.character.id,
+      baseValue,
+      modifiers: operativeModifiers,
+      rawDice: operativeDice,
+      diceCount: operativeDice.length || 2,
+      previousRawDice: previousOperativeDice,
+      rerolledDiceIndices: previousOperativeDice
+        ? operativeDice.flatMap((value, index) => previousOperativeDice?.[index] !== value ? [index] : [])
+        : undefined,
+      diceTotal: operativeDiceTotal,
+      finalTotal: operativeTotal
+    },
+    opponent: {
+      name: encounterName,
+      secondaryName: isBattle ? "Opposition" : "Difficulty",
+      imageKey: resolution?.card?.id ?? encounter?.id ?? pendingEnemyRoll?.encounterCardId ?? null,
+      baseValue: opponentBaseValue,
+      modifiers: [],
+      rawDice: opponentDice,
+      diceCount: opponentDice.length,
+      diceTotal: opponentDiceTotal,
+      finalTotal: opponentTotal
+    },
+    outcome,
+    publicConsequence: resolution?.outcome?.text ?? outcomeSummary?.summary ?? null,
+    publicRewardSummary: rewardSummary,
+    waiting: {
+      actorDisplayName: getProjectedPlayerName(state, actorSeatId),
+      publicAction,
+      privateDecision
+    },
+    restored: false
+  };
 }
 
 function buildCooperativeAssistanceProjection(state: GameState, viewerSeatId?: string): Record<string, unknown> | null {
@@ -11590,6 +12228,512 @@ function buildCinderWattleAbilityProjection(state: GameState, seatId: string): R
   };
 }
 
+interface RequiredActionProjectionContext {
+  movementActive: boolean;
+  movementSelected: boolean;
+  shopActive: boolean;
+}
+
+interface RequiredActionDescriptor {
+  id: string;
+  kind: "lobby" | "movement" | "battle" | "test" | "shop" | "assistance" | "mission" | "scar" | "payment" | "equipment" | "forced-destination" | "consequence" | "action" | "result";
+  actorSeatId: string | null;
+  requiredTab: "move" | "battle" | "shop" | "action" | null;
+  label: string;
+  ownerDetail: string;
+  publicAction: string;
+  transitionStage?: import("../client/shared/types.js").RequiredActionTransitionStage;
+  allowedCommand?: import("../client/shared/types.js").RequiredActionCommand;
+  sourceId?: string;
+}
+
+/**
+ * Builds the single server-owned answer to "who acts, what must they do, and where?".
+ * Private clients receive owner wording only when they own the action. Everyone else,
+ * including the TV, receives the same public-safe waiting description.
+ */
+export function buildRequiredActionProjection(
+  state: GameState,
+  viewerSeatId: string | null,
+  context: RequiredActionProjectionContext
+) {
+  const activeSeatId = state.turnOrder[state.activeSeatIndex] ?? null;
+  const seatName = (seatId: string | null): string | null =>
+    seatId ? state.seats.find((seat) => seat.seatId === seatId)?.displayName ?? "Operative" : null;
+
+  const latestTurnCompleted = [...state.eventLog].reverse().find((entry) =>
+    typeof entry === "object" && entry !== null && "type" in entry && (entry as { type?: string }).type === "TURN_COMPLETED"
+  ) as { seatId?: string; createdAt?: string } | undefined;
+  const currentActiveSeatId = state.turnOrder[state.activeSeatIndex] ?? null;
+  const completedSeatIndex = latestTurnCompleted?.seatId ? state.turnOrder.indexOf(latestTurnCompleted.seatId) : -1;
+  const currentSeatIndex = currentActiveSeatId ? state.turnOrder.indexOf(currentActiveSeatId) : -1;
+  const handoffEligible = state.phase === "navigation"
+    && Boolean(currentActiveSeatId)
+    && state.movementRolls?.[currentActiveSeatId ?? ""] === undefined
+    && state.eventLog.slice(-8).some((entry) => entry === latestTurnCompleted);
+  const handoff = handoffEligible && latestTurnCompleted?.seatId && latestTurnCompleted.createdAt
+    ? {
+        id: `turn-handoff:${latestTurnCompleted.createdAt}:${latestTurnCompleted.seatId}:${currentActiveSeatId ?? "none"}`,
+        fromSeatId: latestTurnCompleted.seatId,
+        fromDisplayName: seatName(latestTurnCompleted.seatId) ?? "Operative",
+        toSeatId: currentActiveSeatId,
+        toDisplayName: seatName(currentActiveSeatId),
+        roundWrapped: completedSeatIndex >= 0 && currentSeatIndex >= 0 && currentSeatIndex <= completedSeatIndex
+      }
+    : undefined;
+
+  const present = (descriptor: RequiredActionDescriptor) => {
+    const actorDisplayName = seatName(descriptor.actorSeatId);
+    const ownsAction = Boolean(viewerSeatId && descriptor.actorSeatId === viewerSeatId);
+    const publicDetail = descriptor.actorSeatId
+      ? `Waiting for ${actorDisplayName ?? "the operative"} to ${descriptor.publicAction}.`
+      : descriptor.publicAction;
+
+    const transitionStage = descriptor.transitionStage ?? (descriptor.actorSeatId && !ownsAction ? "required-action" : "turn-actions");
+    const activeInstruction = ownsAction ? descriptor.ownerDetail : publicDetail;
+    const waitingInstruction = publicDetail;
+    return {
+      id: descriptor.id,
+      kind: descriptor.kind,
+      actorSeatId: descriptor.actorSeatId,
+      actorDisplayName,
+      requiredTab: ownsAction ? descriptor.requiredTab : null,
+      label: ownsAction ? descriptor.label : descriptor.actorSeatId ? `Waiting for ${actorDisplayName ?? "operative"}` : descriptor.label,
+      detail: ownsAction ? descriptor.ownerDetail : publicDetail,
+      canAct: ownsAction,
+      waiting: Boolean(descriptor.actorSeatId && !ownsAction),
+      privacy: ownsAction ? "owner" as const : "public" as const,
+      transitionStage,
+      allowedCommand: descriptor.allowedCommand ?? null,
+      inputEnabled: ownsAction,
+      activeInstruction,
+      waitingInstruction,
+      hostInstruction: publicDetail,
+      revision: state.sequence,
+      ...(handoff ? { handoff } : {}),
+      ...(descriptor.sourceId ? { sourceId: descriptor.sourceId } : {})
+    };
+  };
+
+  if (state.status === "ended") {
+    return present({
+      id: `result:${state.scenarioResult.achievedAtSequence ?? state.sequence}`,
+      kind: "result",
+      actorSeatId: null,
+      requiredTab: null,
+      label: state.scenarioResult.status === "victory" ? "Victory" : "Session complete",
+      ownerDetail: "Review the final result.",
+      publicAction: "Review the final result.",
+      transitionStage: "game-over"
+    });
+  }
+
+  if (state.status !== "active") {
+    const setup = buildSetupProjection(state);
+    return present({
+      id: setup.id,
+      kind: "lobby",
+      actorSeatId: setup.actorSeatId,
+      requiredTab: null,
+      label: setup.title,
+      ownerDetail: setup.activeInstruction,
+      publicAction: setup.publicInstruction.replace(/\.$/, "").toLowerCase(),
+      transitionStage: "setup"
+    });
+  }
+
+  if (state.pendingScarChoice) {
+    return present({
+      id: `scar-choice:${state.pendingScarChoice.ownerSeatId}:${state.sequence}`,
+      kind: "scar",
+      actorSeatId: state.pendingScarChoice.ownerSeatId,
+      requiredTab: "action",
+      label: "Choose a Scar",
+      ownerDetail: "Select and confirm one Scar to continue.",
+      publicAction: "resolve a private Scar choice",
+      transitionStage: "private-resolution"
+    });
+  }
+
+  if (state.pendingScarRemovalChoice) {
+    return present({
+      id: `scar-removal:${state.pendingScarRemovalChoice.ownerSeatId}:${state.sequence}`,
+      kind: "scar",
+      actorSeatId: state.pendingScarRemovalChoice.ownerSeatId,
+      requiredTab: "action",
+      label: "Choose a Scar",
+      ownerDetail: "Choose the Scar to remove or leave the service.",
+      publicAction: "resolve a private Scar service choice",
+      transitionStage: "private-resolution"
+    });
+  }
+
+  if (state.pendingScarConsequence) {
+    return present({
+      id: `scar-consequence:${state.pendingScarConsequence.seatId}:${state.sequence}`,
+      kind: "consequence",
+      actorSeatId: state.pendingScarConsequence.seatId,
+      requiredTab: "action",
+      label: "Resolve Scar consequence",
+      ownerDetail: "Review the consequence and continue.",
+      publicAction: "resolve a Scar consequence",
+      transitionStage: "private-resolution"
+    });
+  }
+
+  if (state.pendingGearEquipChoice) {
+    return present({
+      id: `equip:${state.pendingGearEquipChoice.ownerSeatId}:${state.sequence}`,
+      kind: "equipment",
+      actorSeatId: state.pendingGearEquipChoice.ownerSeatId,
+      requiredTab: "action",
+      label: "Choose Equipment placement",
+      ownerDetail: "Equip the new item or keep it carried.",
+      publicAction: "resolve a private Equipment choice",
+      transitionStage: "private-resolution"
+    });
+  }
+
+  if (state.pendingEquipmentSuppressionChoice) {
+    return present({
+      id: `equipment-suppression:${state.pendingEquipmentSuppressionChoice.ownerSeatId}:${state.sequence}`,
+      kind: "equipment",
+      actorSeatId: state.pendingEquipmentSuppressionChoice.ownerSeatId,
+      requiredTab: "battle",
+      label: "Choose affected Equipment",
+      ownerDetail: "Select an eligible equipped item to continue.",
+      publicAction: "resolve a private Equipment effect",
+      transitionStage: "private-resolution"
+    });
+  }
+
+  if (state.pendingEncounterDecision) {
+    return present({
+      id: `payment:${state.pendingEncounterDecision.seatId}:${state.sequence}`,
+      kind: "payment",
+      actorSeatId: state.pendingEncounterDecision.seatId,
+      requiredTab: "action",
+      label: "Payment required",
+      ownerDetail: state.pendingEncounterDecision.prompt,
+      publicAction: "resolve an encounter payment",
+      sourceId: state.pendingEncounterDecision.sourceCardId,
+      transitionStage: "private-resolution"
+    });
+  }
+
+  if (state.pendingMemoryTaxChoice) {
+    return present({
+      id: `memory-tax:${state.pendingMemoryTaxChoice.ownerSeatId}:${state.sequence}`,
+      kind: "payment",
+      actorSeatId: state.pendingMemoryTaxChoice.ownerSeatId,
+      requiredTab: "action",
+      label: "Choose what to surrender",
+      ownerDetail: "Resolve the Memory Tax choice to continue.",
+      publicAction: "resolve a private encounter choice",
+      sourceId: state.pendingMemoryTaxChoice.sourceCardId,
+      transitionStage: "private-resolution"
+    });
+  }
+
+  if (state.pendingForcedDestinationChoice) {
+    return present({
+      id: `forced-destination:${state.pendingForcedDestinationChoice.ownerSeatId}:${state.sequence}`,
+      kind: "forced-destination",
+      actorSeatId: state.pendingForcedDestinationChoice.ownerSeatId,
+      requiredTab: "action",
+      label: "Choose a forced destination",
+      ownerDetail: "Choose one legal destination to continue.",
+      publicAction: "choose a forced destination",
+      sourceId: state.pendingForcedDestinationChoice.sourceId,
+      transitionStage: "private-resolution"
+    });
+  }
+
+  if (state.pendingDisplacement) {
+    return present({
+      id: `displacement:${state.pendingDisplacement.seatId}:${state.sequence}`,
+      kind: "consequence",
+      actorSeatId: state.pendingDisplacement.seatId,
+      requiredTab: "action",
+      label: "Resolve displacement",
+      ownerDetail: "Accept the displacement or use an eligible reaction.",
+      publicAction: "resolve forced displacement",
+      sourceId: state.pendingDisplacement.sourceId
+    });
+  }
+
+  if (state.pendingSutureStormConsequence) {
+    return present({
+      id: `ordered-consequence:${state.pendingSutureStormConsequence.seatId}:${state.pendingSutureStormConsequence.stage}:${state.sequence}`,
+      kind: "consequence",
+      actorSeatId: state.pendingSutureStormConsequence.seatId,
+      requiredTab: "action",
+      label: "Resolve consequence",
+      ownerDetail: "Continue the ordered consequence.",
+      publicAction: "resolve the current consequence",
+      sourceId: state.pendingSutureStormConsequence.sourceCardId
+    });
+  }
+
+  if (state.pendingMissionSelection?.status === "awaitingSelection") {
+    return present({
+      id: `mission:${state.pendingMissionSelection.ownerSeatId}:${state.sequence}`,
+      kind: "mission",
+      actorSeatId: state.pendingMissionSelection.ownerSeatId,
+      requiredTab: "action",
+      label: "Choose your next mission",
+      ownerDetail: "Select and confirm one private Contract.",
+      publicAction: "choose a new private Contract",
+      transitionStage: "private-resolution"
+    });
+  }
+
+  if (state.cooperativeAssistance) {
+    const responded = new Set([
+      ...state.cooperativeAssistance.acceptedSeatIds,
+      ...state.cooperativeAssistance.declinedSeatIds
+    ]);
+    const outstandingSeatId = state.cooperativeAssistance.requestedSeatIds.find((seatId) => !responded.has(seatId)) ?? null;
+    const actorSeatId = outstandingSeatId ?? state.cooperativeAssistance.activeSeatId;
+    const helperOwnsResponse = outstandingSeatId === viewerSeatId;
+    return present({
+      id: `assistance:${state.cooperativeAssistance.activeSeatId}:${outstandingSeatId ?? "ready"}:${state.sequence}`,
+      kind: "assistance",
+      actorSeatId,
+      requiredTab: helperOwnsResponse ? "battle" : "battle",
+      label: helperOwnsResponse ? "Answer help request" : "Resolve assistance",
+      ownerDetail: helperOwnsResponse
+        ? `Accept or decline the ${state.cooperativeAssistance.testedStat} assistance request.`
+        : "Lock accepted helpers or continue without further help.",
+      publicAction: outstandingSeatId ? "answer a cooperative help request" : "continue the assisted test",
+      sourceId: state.cooperativeAssistance.sourceId
+    });
+  }
+
+  if (state.pendingCooperativeTest) {
+    return present({
+      id: `cooperative-test:${state.pendingCooperativeTest.activeSeatId}:${state.sequence}`,
+      kind: "assistance",
+      actorSeatId: state.pendingCooperativeTest.activeSeatId,
+      requiredTab: "battle",
+      label: "Choose whether to ask for help",
+      ownerDetail: `Ask up to two operatives for ${state.pendingCooperativeTest.stat}, or continue alone.`,
+      publicAction: "choose helpers or continue the test",
+      sourceId: state.pendingCooperativeTest.sourceId
+    });
+  }
+
+  if (state.pendingFailureReaction) {
+    return present({
+      id: `failure-reaction:${state.pendingFailureReaction.seatId}:${state.sequence}`,
+      kind: "consequence",
+      actorSeatId: state.pendingFailureReaction.seatId,
+      requiredTab: "battle",
+      label: "Resolve reaction",
+      ownerDetail: "Use an eligible reaction or accept the result.",
+      publicAction: "resolve a reaction",
+      sourceId: state.pendingFailureReaction.sourceId
+    });
+  }
+
+  if (state.pendingStaticIntercessionReaction) {
+    return present({
+      id: `intercession:${state.pendingStaticIntercessionReaction.seatId}:${state.sequence}`,
+      kind: "consequence",
+      actorSeatId: state.pendingStaticIntercessionReaction.seatId,
+      requiredTab: "battle",
+      label: "Resolve reaction",
+      ownerDetail: "Choose an eligible effect to suppress or continue.",
+      publicAction: "resolve a reaction"
+    });
+  }
+
+  if (state.activeResolution || state.pendingTileChallenge || state.currentEncounter || state.pendingEnemyRoll) {
+    const actorSeatId = state.activeResolution?.playerId
+      ?? state.pendingTileChallenge?.seatId
+      ?? state.pendingEnemyRoll?.fighterSeatId
+      ?? activeSeatId;
+    const sourceId = state.activeResolution?.id ?? state.pendingTileChallenge?.id ?? state.currentEncounter?.id ?? "encounter";
+    const isBattle = state.currentEncounter?.cardType === "enemy" || Boolean(state.pendingEnemyRoll);
+    const title = state.activeResolution?.card?.title ?? state.currentEncounter?.title ?? "current test";
+    const resultVisible = state.activeResolution?.stage === "roll_result" || state.activeResolution?.stage === "outcome_summary" || state.activeResolution?.stage === "awaiting_continue";
+    const outcomeTitle = state.activeResolution?.outcome?.title ?? (state.lastOutcomeSummary?.success === false ? "Test failed" : "Test resolved");
+    const outcomeDetail = state.activeResolution?.outcome?.text ?? state.lastOutcomeSummary?.summary ?? `Review the ${title} result.`;
+    const ownerPrivateResolution = state.activeResolution?.origin?.privacy === "owner";
+    return present({
+      id: `${isBattle ? "battle" : "test"}:${sourceId}:${state.activeResolution?.stage ?? "pending"}`,
+      kind: isBattle ? "battle" : "test",
+      actorSeatId,
+      requiredTab: "battle",
+      label: resultVisible ? outcomeTitle : isBattle ? "Resolve battle" : "Resolve test",
+      ownerDetail: resultVisible ? outcomeDetail : `Resolve ${title}.`,
+      publicAction: ownerPrivateResolution
+        ? resultVisible ? "review a private objective result" : "resolve a private objective"
+        : resultVisible ? `review the ${title} result` : `resolve ${title}`,
+      transitionStage: resultVisible ? "continue-available" : "required-action",
+      allowedCommand: resultVisible ? "continue" : null,
+      sourceId: ownerPrivateResolution ? undefined : sourceId
+    });
+  }
+
+  if (context.movementActive || state.phase === "navigation") {
+    return present({
+      id: `movement:${activeSeatId ?? "none"}:${state.movementRouteRevisions?.[activeSeatId ?? ""] ?? 0}`,
+      kind: "movement",
+      actorSeatId: activeSeatId,
+      requiredTab: "move",
+      label: context.movementSelected ? "Confirm destination" : context.movementActive ? "Choose a destination" : "Roll movement",
+      ownerDetail: context.movementSelected ? "Confirm the selected route." : context.movementActive ? "Choose one legal destination." : "Roll movement to reveal legal destinations.",
+      publicAction: context.movementSelected ? "confirm the selected route" : context.movementActive ? "choose a legal destination" : "roll movement",
+      transitionStage: latestTurnCompleted ? "next-turn-ready" : "required-action"
+    });
+  }
+
+  if (context.shopActive) {
+    const shopView = state.shopBrowseSelection?.seatId === activeSeatId
+      ? state.shopBrowseSelection.view
+      : "categories";
+    const privateView = shopView === "artifacts" || shopView === "sell";
+    const shopLabel = shopView === "categories"
+      ? "Choose a shop category"
+      : privateView
+        ? "Resolve private shop choice"
+        : `Browse ${shopView}`;
+    return present({
+      id: `shop:${activeSeatId ?? "none"}:${state.sequence}:${shopView}`,
+      kind: "shop",
+      actorSeatId: activeSeatId,
+      requiredTab: "shop",
+      label: shopLabel,
+      ownerDetail: shopView === "categories"
+        ? "Choose a category or leave the shop."
+        : "Review the focused offer, complete one action, or leave the shop.",
+      publicAction: privateView ? "finish a private shop choice" : shopView === "categories" ? "choose a shop category" : `browse ${shopView}`,
+      transitionStage: "turn-actions"
+    });
+  }
+
+  const endTurn = activeSeatId ? canEndTurn(state, activeSeatId) : { allowed: false, reason: "No active operative." };
+  const endTurnAvailable = endTurn.allowed && (state.phase === "action" || state.phase === "broadcast");
+  const endTurnCommand = state.phase === "broadcast" ? "end-turn" as const : endTurnAvailable ? "finish-actions" as const : null;
+
+  return present({
+    id: `action:${activeSeatId ?? "none"}:${state.phase}:${endTurnAvailable ? "ready" : "active"}`,
+    kind: "action",
+    actorSeatId: activeSeatId,
+    requiredTab: "action",
+    label: endTurnAvailable ? "End turn when ready" : "Choose an action",
+    ownerDetail: endTurnAvailable
+      ? (state.sessionMode === "single-player" ? "End the turn to begin the next round." : "End the turn to pass control to the next operative.")
+      : endTurn.reason ?? "Choose a legal sector action.",
+    publicAction: endTurnAvailable ? "end the turn when ready" : "choose an action",
+    transitionStage: endTurnAvailable ? "end-turn-available" : "turn-actions",
+    allowedCommand: endTurnCommand
+  });
+}
+
+export function buildSetupProjection(state: GameState): import("../client/shared/types.js").SetupProjection {
+  const occupiedSeats = state.seats.filter((seat) => Boolean(seat.displayName) && !seat.kicked);
+  const readiness = getSessionStartReadiness({
+    sessionMode: state.sessionMode,
+    gameMode: state.gameMode,
+    seats: state.seats
+  });
+  const seatName = (seatId: string | null): string | null =>
+    seatId ? state.seats.find((seat) => seat.seatId === seatId)?.displayName ?? "Player" : null;
+  const hostSeat = state.setupHostSeatId
+    ? state.seats.find((seat) => seat.seatId === state.setupHostSeatId) ?? null
+    : null;
+  const missingOperative = occupiedSeats.find((seat) => !seat.characterId || seat.characterSelected === false) ?? null;
+  const missingMission = occupiedSeats.find(
+    (seat) => Boolean(seat.characterId) && seat.characterSelected !== false && !seat.selectedStartingContractId
+  ) ?? null;
+  const missingReady = occupiedSeats.find(
+    (seat) => Boolean(seat.characterId) && seat.characterSelected !== false && Boolean(seat.selectedStartingContractId) && !seat.ready
+  ) ?? null;
+
+  let stage: import("../client/shared/types.js").SetupStage = "waiting-for-host";
+  let actorSeatId: string | null = state.setupHostSeatId ?? null;
+  let title = "Waiting for Host Phone";
+  let publicInstruction = "Scan the room code to establish the Host Phone.";
+  let activeInstruction = "Join this room to configure the expedition.";
+  let waitingInstruction = "The Host Phone must join before setup can continue.";
+  let allowedCommand: import("../client/shared/types.js").SetupProjection["allowedCommand"] = null;
+
+  if (state.lobbyConfigured === false && hostSeat?.displayName) {
+    stage = "mode-selection";
+    title = "Choose Game Setup";
+    publicInstruction = `${hostSeat.displayName} is choosing the mode and scenario.`;
+    activeInstruction = "Choose a mode, scenario, and player count, then confirm setup.";
+    waitingInstruction = `Waiting for ${hostSeat.displayName} to confirm the game setup.`;
+    allowedCommand = "configure-lobby";
+  } else if (missingOperative) {
+    stage = "operative-selection";
+    actorSeatId = missingOperative.seatId;
+    title = "Choose an Operative";
+    publicInstruction = `${missingOperative.displayName ?? "A player"} must choose an operative.`;
+    activeInstruction = "Choose and confirm one available operative.";
+    waitingInstruction = `Waiting for ${missingOperative.displayName ?? "a player"} to choose an operative.`;
+    allowedCommand = "select-operative";
+  } else if (missingMission) {
+    stage = "mission-selection";
+    actorSeatId = missingMission.seatId;
+    title = "Choose a Starting Mission";
+    publicInstruction = `${missingMission.displayName ?? "A player"} must choose a starting mission.`;
+    activeInstruction = "Choose and confirm your starting mission.";
+    waitingInstruction = `Waiting for ${missingMission.displayName ?? "a player"} to choose a starting mission.`;
+    allowedCommand = "select-mission";
+  } else if (missingReady) {
+    stage = "ready-check";
+    actorSeatId = missingReady.seatId;
+    title = "Ready Check";
+    publicInstruction = `${missingReady.displayName ?? "A player"} must press Ready.`;
+    activeInstruction = "Review your operative and mission, then press Ready.";
+    waitingInstruction = `Waiting for ${missingReady.displayName ?? "a player"} to press Ready.`;
+    allowedCommand = "ready";
+  } else if (!readiness.canStart) {
+    stage = "waiting-for-players";
+    actorSeatId = null;
+    title = "Waiting for Players";
+    publicInstruction = readiness.reason.endsWith(".") ? readiness.reason : `${readiness.reason}.`;
+    activeInstruction = "Keep this controller ready while another player joins.";
+    waitingInstruction = publicInstruction;
+  } else {
+    stage = "start-available";
+    actorSeatId = state.setupHostSeatId ?? null;
+    title = "Ready to Begin";
+    publicInstruction = `${readiness.occupiedCount} operative${readiness.occupiedCount === 1 ? " is" : "s are"} prepared.`;
+    activeInstruction = "Start the game when the table is ready.";
+    waitingInstruction = `Waiting for ${seatName(actorSeatId) ?? "the Host Phone"} to start the game.`;
+    allowedCommand = "start";
+  }
+
+  const actor = actorSeatId ? state.seats.find((seat) => seat.seatId === actorSeatId) ?? null : null;
+  const startBlockers = state.lobbyConfigured === false
+    ? ["Host Phone must select a mode and scenario"]
+    : readiness.blockers;
+
+  return {
+    id: `setup:${stage}:${actorSeatId ?? "table"}:${state.sequence}`,
+    stage,
+    actorSeatId,
+    actorDisplayName: seatName(actorSeatId),
+    title,
+    publicInstruction,
+    activeInstruction,
+    waitingInstruction,
+    allowedCommand,
+    inputEnabled: Boolean(actor?.connected),
+    canStart: state.lobbyConfigured !== false && readiness.canStart,
+    startReason: state.lobbyConfigured === false ? "Choose mode and scenario before starting" : readiness.reason,
+    startBlockers,
+    connectedCount: occupiedSeats.filter((seat) => seat.connected).length,
+    readyCount: readiness.readyCount,
+    seatCapacity: state.seats.length,
+    revision: state.sequence
+  };
+}
+
 export function createTvProjection(
   state: GameState,
   movementPreviewBySeatId: ReadonlyMap<string, { destinationId: string; routeId: string }> = new Map()
@@ -11648,6 +12792,7 @@ export function createTvProjection(
   const activeSeatId = state.turnOrder[state.activeSeatIndex] ?? null;
   const shopEncounter = buildPublicShopEncounter(state, visiblePlayers);
   const publicResultDeltas = buildPublicResultDeltas(state, shopEncounter as Record<string, unknown> | null);
+  const matchProgress = buildMatchProgressPresentation(state, publicResultDeltas);
   const recentAbilityTriggers = state.eventLog
     .filter(
       (
@@ -11691,6 +12836,12 @@ export function createTvProjection(
 
   return stripLegacyHeatProjection({
     status: state.status,
+    setup: state.status === "lobby" ? buildSetupProjection(state) : null,
+    requiredAction: buildRequiredActionProjection(state, null, {
+      movementActive: Boolean(activeSeatId && buildPublicMovementPlanner(state, activeSeatId)?.active),
+      movementSelected: Boolean(activeSeatId && state.routeStarChoices?.[activeSeatId]),
+      shopActive: Boolean(shopEncounter)
+    }),
     cooperativeAssistance: buildCooperativeAssistanceProjection(state),
     pendingCooperativeTest: state.pendingCooperativeTest ? {
       id: state.pendingCooperativeTest.id,
@@ -11796,6 +12947,7 @@ export function createTvProjection(
     scenarioTelemetry,
     scenarioPressure,
     scenarioState,
+    matchProgress,
     scenarioProgress: state.scenarioProgress,
     nemesisChampions: state.nemesisChampions.map((champion) => {
       const sector = state.sectors.find((entry) => entry.id === champion.sectorId);
@@ -11825,17 +12977,13 @@ export function createTvProjection(
     }),
     nemesisNexusCountdowns: state.nemesisNexusCountdowns,
     seats: state.seats.map((seat) => {
-      const selectedStartingContract = seat.selectedStartingContractId
-        ? state.availableContracts.find((contract) => contract.id === seat.selectedStartingContractId) ?? null
-        : null;
-
       return {
         seatId: seat.seatId,
         characterId: seat.characterId,
         characterSelected: isSeatCharacterSelectedForProjection(state, seat, playerSeatIds),
         displayName: seat.displayName ?? null,
         startingMissionSelected: Boolean(seat.selectedStartingContractId),
-        startingMissionTitle: selectedStartingContract?.name ?? null,
+        startingMissionTitle: null,
         connected: seat.connected,
         ready: seat.ready,
         kicked: seat.kicked
@@ -11872,7 +13020,11 @@ export function createTvProjection(
         archetype: player.character.archetype,
         ...(getCharacterPresentation(player.character.id) ? { presentation: getCharacterPresentation(player.character.id) } : {}),
         status: player.character.status,
-        activeContract: player.character.activeContract,
+        activeContract: null,
+        privateObjectiveStatus: {
+          hasActiveContract: Boolean(player.character.activeContract),
+          completedContracts: getCompletedContractCountForProjection(state, player.seatId)
+        },
         stats: player.character.stats,
         effectiveStats,
         statUpgrades: player.character.statUpgrades ?? {},
@@ -11953,6 +13105,7 @@ export function createTvProjection(
     rivalryAgendaReveal: buildPublicRivalryAgendaReveal(state),
     publicResultDeltas,
     activeResolution: projectActiveResolutionForViewer(state, null),
+    battlePresentation: buildBattlePresentation(state, null),
     shopEncounter,
     movementPlanner: activeSeatId
       ? (() => {
@@ -11961,7 +13114,9 @@ export function createTvProjection(
           const selectedPreview = committedChoice ? { destinationId: committedChoice.destinationId, routeId: committedChoice.routeId } : movementPreviewBySeatId.get(activeSeatId) ?? null;
           const selectedDestinationId = selectedPreview?.destinationId ?? null;
           if (planner && selectedPreview) {
-            const destination = planner.destinations.find((entry) => entry.sectorId === selectedPreview.destinationId && !entry.disabledReason);
+            const destination = planner.destinations.find(
+              (entry) => entry.sectorId === selectedPreview.destinationId && (!entry.disabledReason || entry.voidKeyPrompt)
+            );
             const variant = destination?.routeVariants.find((entry) => entry.routeId === selectedPreview.routeId);
             if (destination && variant) {
               destination.routeId = variant.routeId;
@@ -11982,6 +13137,7 @@ export function createTvProjection(
         })()
       : null,
     sectorExplorationSummary: buildPublicSectorExplorationSummary(state, activeSeatId),
+    tileArrival: activeSeatId ? buildTileArrivalProjection(state, activeSeatId) : null,
     recentAbilityTriggers,
     nemesis: nemesisSummary
   });
@@ -12062,16 +13218,40 @@ export function createPhoneProjection(state: GameState, seatId: string, forcePri
   const pendingGearEquipChoice = state.pendingGearEquipChoice?.ownerSeatId === seatId
     ? state.pendingGearEquipChoice
     : null;
+  const phoneMovementPlanner = buildPhoneMovementPlanner(state, seatId);
+  const phoneShopEncounter = buildPublicShopEncounter(state, state.players, seatId);
+  const privateRivalry = buildPrivateRivalryProjection(state, player) as import("../client/shared/types.js").PrivateRivalryPayload | null;
+  const ownerPrivateResult: import("../client/shared/types.js").OwnerPrivateMatchResult | null =
+    state.status === "ended" && privateRivalry
+      ? {
+          id: `private-result:${state.scenarioResult.achievedAtSequence ?? state.sequence}`,
+          label: "Private Agenda",
+          summary: privateRivalry.scoring?.completionSummary
+            ?? (privateRivalry.revealState === "completed"
+              ? "Your private Agenda was completed."
+              : privateRivalry.revealState === "failed"
+                ? "Your private Agenda was not completed."
+                : "Your private Agenda remains protected."),
+          agendaState: privateRivalry.revealState,
+          pointsAwarded: privateRivalry.scoring?.pointsAwarded ?? null
+        }
+      : null;
 
   return stripLegacyHeatProjection({
     phase: state.phase,
     status: state.status,
+    requiredAction: buildRequiredActionProjection(state, seatId, {
+      movementActive: Boolean(phoneMovementPlanner?.active),
+      movementSelected: Boolean(phoneMovementPlanner?.selectedDestinationId),
+      shopActive: Boolean(phoneShopEncounter)
+    }),
     sessionMode: state.sessionMode,
     gameMode: state.gameMode,
     interactionMode: state.interactionMode ?? (state.sessionMode === "single-player" ? "co-op" : "rivalry"),
     setupHostSeatId: publicProjection.setupHostSeatId,
     lobbyConfigured: publicProjection.lobbyConfigured,
     hostPhoneConnected: publicProjection.hostPhoneConnected,
+    setup: publicProjection.setup,
     selfIsSetupHost: state.setupHostSeatId === seatId,
     cooperativeAssistance: buildCooperativeAssistanceProjection(state, seatId),
     cooperativeAssistanceEligibility: buildCooperativeAssistanceEligibility(state, seatId),
@@ -12099,6 +13279,8 @@ export function createPhoneProjection(state: GameState, seatId: string, forcePri
     scenarioTelemetry: publicProjection.scenarioTelemetry,
     scenarioPressure: publicProjection.scenarioPressure,
     scenarioState: publicProjection.scenarioState,
+    matchProgress: publicProjection.matchProgress,
+    ownerPrivateResult,
     scenarioProgress: publicProjection.scenarioProgress,
     pendingScarChoiceStatus: publicProjection.pendingScarChoiceStatus,
     nemesisChampions: publicProjection.nemesisChampions,
@@ -12112,7 +13294,7 @@ export function createPhoneProjection(state: GameState, seatId: string, forcePri
     turnOrder: publicProjection.turnOrder,
     sectors: publicProjection.sectors,
     players: publicProjection.players,
-    objectUseStates: buildPhoneObjectUseStates(state, player),
+    objectUseStates: buildPhoneObjectUseStates(state, player, Boolean(phoneMovementPlanner?.selectedDestinationId)),
     pendingEquipmentSuppressionChoice: pendingSuppression ? {
       choiceId: pendingSuppression.choiceId,
       sourceTitle: pendingSuppression.sourceThreatId === "relay-husk" ? "Relay Husk" : "Signal-Rotted Engineer",
@@ -12169,6 +13351,7 @@ export function createPhoneProjection(state: GameState, seatId: string, forcePri
     } : null,
     pendingEnemyRoll: state.pendingEnemyRoll,
     pendingTileChallenge: publicProjection.pendingTileChallenge,
+    tileArrival: publicProjection.tileArrival,
     pendingTestModifiers: [
       ...(state.pendingNextNonBattleTestModifiers ?? [])
         .filter((entry) => entry.ownerSeatId === seatId)
@@ -12332,12 +13515,13 @@ export function createPhoneProjection(state: GameState, seatId: string, forcePri
       publicProjection.shopEncounter as Record<string, unknown> | null
     ),
     activeResolution: projectActiveResolutionForViewer(state, seatId),
-    shopEncounter: buildPublicShopEncounter(state, state.players, seatId),
+    battlePresentation: buildBattlePresentation(state, seatId),
+    shopEncounter: phoneShopEncounter,
     recentAbilityTriggers: publicProjection.recentAbilityTriggers,
     nemesis: publicProjection.nemesis,
-    movementPlanner: buildPhoneMovementPlanner(state, seatId),
+    movementPlanner: phoneMovementPlanner,
     sectorExplorationSummary: buildPublicSectorExplorationSummary(state, seatId),
-    privateRivalry: buildPrivateRivalryProjection(state, player),
+    privateRivalry,
     soloReroll: buildSoloRerollProjection(state, seatId),
     boundNemesis: (publicProjection.nemesisChampions as Array<{ boundPlayerId: string }>).find(
       (champion) => champion.boundPlayerId === seatId

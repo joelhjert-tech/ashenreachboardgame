@@ -74,6 +74,35 @@ export interface PublicSeat {
   kicked: boolean;
 }
 
+export type SetupStage =
+  | "waiting-for-host"
+  | "mode-selection"
+  | "waiting-for-players"
+  | "operative-selection"
+  | "mission-selection"
+  | "ready-check"
+  | "start-available";
+
+export interface SetupProjection {
+  id: string;
+  stage: SetupStage;
+  actorSeatId: string | null;
+  actorDisplayName: string | null;
+  title: string;
+  publicInstruction: string;
+  activeInstruction: string;
+  waitingInstruction: string;
+  allowedCommand: "configure-lobby" | "select-operative" | "select-mission" | "ready" | "start" | null;
+  inputEnabled: boolean;
+  canStart: boolean;
+  startReason: string;
+  startBlockers: string[];
+  connectedCount: number;
+  readyCount: number;
+  seatCapacity: number;
+  revision: number;
+}
+
 export interface PublicPlayerCharacter {
   id: string;
   name: string;
@@ -82,6 +111,10 @@ export interface PublicPlayerCharacter {
   presentation?: CharacterPresentation;
   status: "active" | "recalled";
   activeContract: { contractId: string; progress: number; completedTargetIds?: string[]; salvageSpent?: number } | null;
+  privateObjectiveStatus?: {
+    hasActiveContract: boolean;
+    completedContracts: number;
+  };
   stats: Record<Stat, number>;
   effectiveStats?: Record<Stat, number>;
   statUpgrades?: Partial<Record<Stat, number>>;
@@ -287,7 +320,7 @@ export interface PrivateCharacter {
   wounds: number;
   scars: string[];
   afflictions?: PlayerAfflictionSummary;
-  activeContract: { contractId: string; progress: number } | null;
+  activeContract: { contractId: string; progress: number; completedTargetIds?: string[]; salvageSpent?: number } | null;
   completedContracts?: string[];
   completedMissionRecords?: Array<{
     missionId: string;
@@ -326,6 +359,11 @@ export interface PhoneObjectUseState {
   testedSkill?: Stat | null;
   timingWindow?: string | null;
   usableForCurrentTest?: boolean | null;
+  /** Server-authored presentation relevance for the owner's current decision. */
+  relevantNow?: boolean;
+  relevanceKind?: "usable" | "passive" | "blocked" | "inactive";
+  relevanceReason?: string | null;
+  currentContext?: string | null;
   activeModifier?: {
     label: string;
     value: number;
@@ -361,7 +399,7 @@ export interface PrivateRivalryPayload {
   secrecy: "private";
   revealState: PrivateRivalryRevealState["state"];
   tableWarning: string;
-  objective: PrivateRivalryObjective;
+  objective?: PrivateRivalryObjective;
   scoring?: {
     pointsAwarded: number;
     completedAtRound: number | null;
@@ -602,6 +640,74 @@ export interface ActiveResolution {
   };
 }
 
+export type BattlePresentationStage =
+  | "encounter_intro"
+  | "battle_ready"
+  | "choice_required"
+  | "roll_submitting"
+  | "rolling"
+  | "reaction_available"
+  | "resolving"
+  | "result"
+  | "consequence_required"
+  | "reward_required"
+  | "complete";
+
+export interface BattleModifierPresentation {
+  label: string;
+  value: number;
+  kind: "permanent" | "equipment" | "status" | "ability" | "assistance" | "scenario" | "other";
+}
+
+export interface BattleSidePresentation {
+  name: string;
+  secondaryName?: string | null;
+  imageKey?: string | null;
+  baseValue: number | null;
+  modifiers: BattleModifierPresentation[];
+  rawDice: number[];
+  /** Server-authored expected count. Optional only for legacy/bootstrap payload compatibility. */
+  diceCount?: number;
+  previousRawDice?: number[];
+  rerolledDiceIndices?: number[];
+  diceTotal: number | null;
+  finalTotal: number | null;
+}
+
+/**
+ * A server-authored, presentation-safe view of the current encounter math.
+ * Clients may arrange or animate these values, but must not recalculate them.
+ */
+export interface BattlePresentation {
+  id: string;
+  revision: number;
+  stage: BattlePresentationStage;
+  actorSeatId: string;
+  actorDisplayName: string;
+  encounter: {
+    name: string;
+    category: string;
+    imageKey?: string | null;
+    publicSummary?: string | null;
+  };
+  test: {
+    stat: Stat;
+    label: string;
+    opposed: boolean;
+  };
+  operative: BattleSidePresentation;
+  opponent: BattleSidePresentation;
+  outcome: "success" | "failure" | "draw" | null;
+  publicConsequence: string | null;
+  publicRewardSummary: string | null;
+  waiting: {
+    actorDisplayName: string;
+    publicAction: string;
+    privateDecision: boolean;
+  } | null;
+  restored: boolean;
+}
+
 export interface CooperativeAssistanceProjection {
   id: string;
   sourceKind: "encounter" | "tileChallenge" | "boardSpace" | "scenarioNode" | "scenarioConfrontation";
@@ -649,6 +755,30 @@ export interface CooperativeAssistanceEligibilityProjection {
 
 export type PublicShopStatus = "open" | "locked" | "exhausted" | "dangerous";
 
+export type PublicShopView = "categories" | "equipment" | "supplies" | "artifacts" | "services" | "sell";
+
+export interface PublicShopCategoryPresentation {
+  id: "items" | "equipment" | "artifacts" | "services" | "sell";
+  view: PublicShopView;
+  label: string;
+  description: string;
+  available: boolean;
+  offerCount: number | null;
+  unavailableReason?: string;
+}
+
+export interface PublicShopPresentation {
+  id: string;
+  revision: number;
+  stage: "category_selection" | "item_selection" | "transaction_result" | "private_resolution" | "locked";
+  publicStatus: string;
+  allowedCommand: "browse" | "buy" | "sell" | "use_service" | "leave" | null;
+  privacy: "public" | "actor_private";
+  categories: PublicShopCategoryPresentation[];
+  selectedCategoryId: PublicShopCategoryPresentation["id"] | null;
+  selectedOfferId: string | null;
+}
+
 export interface PublicShopCost {
   salvage?: number;
   wounds?: number;
@@ -671,14 +801,16 @@ export interface PublicShopEncounterState {
   stockCategory?: ShopCategory;
   status: PublicShopStatus;
   browseSelection?: {
-    view: "categories" | "equipment" | "supplies" | "artifacts" | "services" | "sell";
+    view: PublicShopView;
     selectedId: string | null;
   };
+  presentation?: PublicShopPresentation;
   activePlayer: {
     playerId: string;
     name: string;
     characterName: string;
-    salvage: number;
+    /** Owner-private. Never included in the Host TV or another player's projection. */
+    salvage?: number;
     wounds: {
       current: number;
       max: number;
@@ -760,6 +892,7 @@ export interface PublicShopEncounterState {
 export type PublicMoveStrategicTag = "safe" | "shop" | "locked" | "danger" | "reward" | "nemesis" | "gate";
 
 export interface PublicMoveDestination {
+  markerLabel?: string;
   routeId?: string;
   defaultRouteId?: string;
   routeVariants?: Array<{ routeId: string; destinationId: string; sectorIds: string[]; sectorNames?: string[]; distance: number }>;
@@ -817,6 +950,8 @@ export interface PublicMovementPlannerState {
   active: boolean;
   movementValue: number;
   rolledValue?: number;
+  rollFaces?: number[];
+  rollResolutionId?: string;
   modifierSources?: Array<{ label: string; value: number }>;
   originalMovementValue?: number;
   movementAdjustment?: -1 | 1 | null;
@@ -852,6 +987,38 @@ export interface PublicSectorExplorationSummary {
   sectorTextTitle: string | null;
   shopName: string | null;
   explanationLines: string[];
+}
+
+export type TileArrivalRuleKind = "tile-challenge" | "threat-draw" | "board-action" | "service" | "gate" | "scenario";
+export type TileArrivalRuleStatus = "current" | "pending" | "completed" | "optional" | "locked";
+export type TileArrivalRepeatPolicy = "EVERY_ARRIVAL" | "ONCE_PER_TURN" | "ONCE_PER_ROUND" | "ONCE_PER_PLAYER" | "ONCE_PER_GAME" | "WHILE_PRESENT" | "SCENARIO_CONTROLLED";
+
+export interface PublicTileArrivalRule {
+  id: string;
+  order: number;
+  kind: TileArrivalRuleKind;
+  label: string;
+  detail: string;
+  mandatory: boolean;
+  repeatPolicy: TileArrivalRepeatPolicy;
+  marker: string;
+  supported: boolean;
+  sourceId?: string;
+  threatLane?: ThreatIcon;
+  status: TileArrivalRuleStatus;
+}
+
+export interface PublicTileArrivalState {
+  arrivalId: string;
+  seatId: string;
+  tileId: string;
+  tileName: string;
+  lore: string;
+  currentRuleId: string | null;
+  mandatoryRemaining: number;
+  canEndTurn: boolean;
+  blockedReason: string | null;
+  rules: PublicTileArrivalRule[];
 }
 
 export interface AbilityTriggerSummary {
@@ -1052,6 +1219,76 @@ export interface ScenarioOwnershipState {
   };
 }
 
+export type MatchProgressStage =
+  | "active"
+  | "threshold_warning"
+  | "final_stage"
+  | "victory"
+  | "defeat"
+  | "draw"
+  | "post_game";
+
+export interface MatchProgressValue {
+  current: number;
+  required: number;
+  label: string;
+  changeId: string | null;
+  change: number | null;
+  changeReason: string | null;
+}
+
+export interface MatchThresholdWarning {
+  id: string;
+  level: "near_victory" | "danger" | "critical";
+  label: string;
+  detail: string;
+  remaining: number;
+  target: "win" | "loss";
+}
+
+export interface MatchFinalStagePresentation {
+  id: string;
+  title: string;
+  publicInstruction: string;
+  locationName: string;
+  stageLabel: string | null;
+  progressLabel: string | null;
+}
+
+export interface PublicMatchResult {
+  id: string;
+  outcome: "victory" | "defeat" | "draw";
+  title: string;
+  reason: string;
+  missionName: string;
+  modeLabel: string;
+  winningDisplayNames: string[];
+  operativeDisplayNames: string[];
+  finalWinProgress: { current: number; required: number } | null;
+  finalLossPressure: { current: number; required: number } | null;
+  finalStageReached: boolean;
+}
+
+export interface OwnerPrivateMatchResult {
+  id: string;
+  label: string;
+  summary: string;
+  agendaState: "hidden" | "revealLocked" | "revealAvailable" | "revealed" | "completed" | "failed";
+  pointsAwarded: number | null;
+}
+
+export interface MatchProgressPresentation {
+  revision: number;
+  mode: "solo" | "coop" | "rivalry" | "nemesis_relay";
+  stage: MatchProgressStage;
+  winProgress: MatchProgressValue | null;
+  lossPressure: MatchProgressValue | null;
+  thresholdWarning: MatchThresholdWarning | null;
+  finalStage: MatchFinalStagePresentation | null;
+  publicResult: PublicMatchResult | null;
+  allowedCommands: Array<"return_to_lobby" | "leave_room">;
+}
+
 export interface PublicPatchPayload {
   status: SessionStatus;
   sessionMode: SessionMode;
@@ -1060,11 +1297,13 @@ export interface PublicPatchPayload {
   setupHostSeatId?: string | null;
   lobbyConfigured?: boolean;
   hostPhoneConnected?: boolean;
+  setup?: SetupProjection | null;
   winnerSeatId: string | null;
   activeScenario: ActiveScenarioSummary | null;
   scenarioTelemetry: ScenarioTelemetryItem[];
   scenarioPressure?: ScenarioPressureState | null;
   scenarioState?: ScenarioOwnershipState;
+  matchProgress?: MatchProgressPresentation | null;
   scenarioProgress: Record<string, number>;
   nemesisChampions?: NemesisChampionSummary[];
   nemesisNexusCountdowns?: NemesisNexusCountdownSummary[];
@@ -1119,16 +1358,82 @@ export interface PublicPatchPayload {
   rivalryAgendaReveal?: PublicRivalryAgendaReveal | null;
   publicResultDeltas?: ResultDelta[];
   activeResolution?: ActiveResolution | null;
+  battlePresentation?: BattlePresentation | null;
   shopEncounter?: PublicShopEncounterState | null;
   movementPlanner?: PublicMovementPlannerState | null;
   sectorExplorationSummary?: PublicSectorExplorationSummary | null;
+  tileArrival?: PublicTileArrivalState | null;
+  requiredAction?: RequiredActionProjection | null;
   recentAbilityTriggers: AbilityTriggerSummary[];
   nemesis: ActiveNemesisSummary | null;
+}
+
+export type RequiredActionKind =
+  | "lobby"
+  | "movement"
+  | "battle"
+  | "test"
+  | "shop"
+  | "assistance"
+  | "mission"
+  | "scar"
+  | "payment"
+  | "equipment"
+  | "forced-destination"
+  | "consequence"
+  | "action"
+  | "result";
+
+export type RequiredActionTransitionStage =
+  | "setup"
+  | "required-action"
+  | "private-resolution"
+  | "result-visible"
+  | "continue-available"
+  | "turn-actions"
+  | "end-turn-available"
+  | "next-turn-ready"
+  | "game-over";
+
+export type RequiredActionCommand = "continue" | "finish-actions" | "end-turn" | null;
+
+export interface TurnHandoffProjection {
+  id: string;
+  fromSeatId: string;
+  fromDisplayName: string;
+  toSeatId: string | null;
+  toDisplayName: string | null;
+  roundWrapped: boolean;
+}
+
+export interface RequiredActionProjection {
+  /** Stable identity for the current authoritative action; safe to compare across reconnects. */
+  id: string;
+  kind: RequiredActionKind;
+  actorSeatId: string | null;
+  actorDisplayName: string | null;
+  requiredTab: "move" | "battle" | "shop" | "action" | null;
+  label: string;
+  detail: string;
+  canAct: boolean;
+  waiting: boolean;
+  privacy: "public" | "owner";
+  /** Semantic presentation state derived from the authoritative game state. */
+  transitionStage?: RequiredActionTransitionStage;
+  allowedCommand?: RequiredActionCommand;
+  inputEnabled?: boolean;
+  activeInstruction?: string;
+  waitingInstruction?: string;
+  hostInstruction?: string;
+  revision?: number;
+  handoff?: TurnHandoffProjection;
+  sourceId?: string;
 }
 
 export interface PhonePatchPayload extends PublicPatchPayload {
   phase: Phase;
   self: PhoneSelfState | null;
+  ownerPrivateResult?: OwnerPrivateMatchResult | null;
   lateJoinPending?: boolean;
   selfIsSetupHost?: boolean;
   cooperativeAssistanceEligibility?: CooperativeAssistanceEligibilityProjection | null;
@@ -1375,6 +1680,12 @@ export type ClientIntent =
       type: "CHECK_REQUESTED";
       seatId: string;
       stat: Stat;
+    }
+  | {
+      type: "START_TILE_ENCOUNTER";
+      seatId: string;
+      encounterId: string;
+      resolutionId: string;
     }
   | {
       type: "COMBAT_REQUESTED";

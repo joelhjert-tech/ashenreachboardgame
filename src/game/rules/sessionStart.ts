@@ -16,6 +16,7 @@ export interface SessionStartSeat {
 export interface SessionStartReadiness {
   canStart: boolean;
   reason: string;
+  blockers: string[];
   occupiedSeats: SessionStartSeat[];
   occupiedSeatIds: string[];
   occupiedCount: number;
@@ -44,11 +45,41 @@ export function getSessionStartReadiness(input: {
     readyCount
   };
 
+  const blockers: string[] = [];
+
+  if (occupiedSeats.length === 0) {
+    blockers.push("Waiting for player to join");
+  }
+
+  if (input.sessionMode === "single-player" && occupiedSeats.length > 1) {
+    blockers.push("Single-player supports one player");
+  }
+
+  if (input.sessionMode !== "single-player" && occupiedSeats.length < MULTIPLAYER_MIN_READY_PLAYERS) {
+    blockers.push(`Need at least ${MULTIPLAYER_MIN_READY_PLAYERS} players`);
+  }
+
+  if (input.gameMode === "nemesis_relay" && occupiedSeats.length > 4) {
+    blockers.push("Nemesis Relay supports up to 4 players");
+  }
+
+  for (const seat of occupiedSeats) {
+    const name = seat.displayName ?? "Player";
+    if (!seat.characterId || seat.characterSelected === false) {
+      blockers.push(`${name} must choose an operative`);
+    } else if (!seat.selectedStartingContractId && seat.startingMissionSelected !== true) {
+      blockers.push(`${name} must choose a starting mission`);
+    } else if (!seat.ready) {
+      blockers.push(`${name} must press Ready`);
+    }
+  }
+
   if (occupiedSeats.length === 0) {
     return {
       ...base,
       canStart: false,
-      reason: "Waiting for player to join"
+      reason: "Waiting for player to join",
+      blockers
     };
   }
 
@@ -56,7 +87,8 @@ export function getSessionStartReadiness(input: {
     return {
       ...base,
       canStart: false,
-      reason: "Single-player supports one player"
+      reason: "Single-player supports one player",
+      blockers
     };
   }
 
@@ -64,7 +96,8 @@ export function getSessionStartReadiness(input: {
     return {
       ...base,
       canStart: false,
-      reason: `Need at least ${MULTIPLAYER_MIN_READY_PLAYERS} players`
+      reason: `Need at least ${MULTIPLAYER_MIN_READY_PLAYERS} players`,
+      blockers
     };
   }
 
@@ -72,7 +105,8 @@ export function getSessionStartReadiness(input: {
     return {
       ...base,
       canStart: false,
-      reason: "Nemesis Relay supports up to 4 players"
+      reason: "Nemesis Relay supports up to 4 players",
+      blockers
     };
   }
 
@@ -83,7 +117,8 @@ export function getSessionStartReadiness(input: {
     return {
       ...base,
       canStart: false,
-      reason: `Waiting for ${waitingName} to choose a character`
+      reason: `Waiting for ${waitingName} to choose a character`,
+      blockers
     };
   }
 
@@ -96,7 +131,8 @@ export function getSessionStartReadiness(input: {
     return {
       ...base,
       canStart: false,
-      reason: `Waiting for ${waitingName} to choose a starting mission`
+      reason: `Waiting for ${waitingName} to choose a starting mission`,
+      blockers
     };
   }
 
@@ -107,13 +143,15 @@ export function getSessionStartReadiness(input: {
     return {
       ...base,
       canStart: false,
-      reason: `Waiting for ${waitingName} to press Ready`
+      reason: `Waiting for ${waitingName} to press Ready`,
+      blockers
     };
   }
 
   return {
     ...base,
     canStart: true,
-    reason: input.sessionMode === "single-player" ? "Single-player ready" : "Multiplayer ready"
+    reason: input.sessionMode === "single-player" ? "Single-player ready" : "Multiplayer ready",
+    blockers: []
   };
 }

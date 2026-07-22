@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { loadThreatCards } from "../../game/content/threats.js";
-import { createTvProjection } from "../roomServer.js";
+import { createPhoneProjection, createTvProjection } from "../roomServer.js";
 import { createInitialSessionState } from "../sessionState.js";
 
 describe("shop encounter public projection", () => {
@@ -24,7 +24,8 @@ describe("shop encounter public projection", () => {
       shopEncounter: {
         shopName: string;
         status: string;
-        activePlayer: { salvage: number; wounds: { current: number; max: number } };
+        activePlayer: { salvage?: number; wounds: { current: number; max: number } };
+        presentation?: { stage: string; categories: Array<{ id: string }> };
         blockingThreats: unknown[];
         services: Array<{ id: string; enabled: boolean; disabledReason?: string; cost: { salvage?: number; heat?: number } }>;
         revealedStock?: unknown[];
@@ -36,10 +37,14 @@ describe("shop encounter public projection", () => {
       shopName: "Anchor Market",
       status: "open",
       activePlayer: {
-        salvage: 6,
         wounds: { current: 0, max: state.woundThreshold }
       },
       blockingThreats: []
+    });
+    expect(tvProjection.shopEncounter?.activePlayer.salvage).toBeUndefined();
+    expect(tvProjection.shopEncounter?.presentation).toMatchObject({
+      stage: "category_selection",
+      categories: expect.arrayContaining([expect.objectContaining({ id: "equipment" })])
     });
     expect(tvProjection.shopEncounter?.services.find((service) => service.id === "buy-gear")).toMatchObject({
       enabled: true,
@@ -53,6 +58,15 @@ describe("shop encounter public projection", () => {
     expect(tvProjection.shopEncounter?.revealedStock).toBeUndefined();
     expect(tvProjection.players[0]?.character.salvage).toBe(6);
     expect(tvProjection.players[0]?.character).not.toHaveProperty("heldGear");
+
+    const waitingProjection = createPhoneProjection(state, "seat-2") as {
+      shopEncounter?: { activePlayer: { salvage?: number }; sellInventory?: unknown[]; revealedStock?: unknown[] };
+      requiredAction?: { ownerDetail?: string; publicAction?: string };
+    };
+    expect(waitingProjection.shopEncounter?.activePlayer.salvage).toBeUndefined();
+    expect(waitingProjection.shopEncounter?.sellInventory).toBeUndefined();
+    expect(waitingProjection.shopEncounter?.revealedStock).toBeUndefined();
+    expect(JSON.stringify(waitingProjection.requiredAction)).not.toContain("Salvage");
   });
 
   it("publishes named blocking threats when a shop sector is locked", () => {

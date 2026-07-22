@@ -66,7 +66,7 @@ function withRevealState(state: GameState, seatId: string, revealState: "revealL
 }
 
 describe("Phase 3C1 hidden-agenda reveal mechanics", () => {
-  it("keeps unrevealed agenda text off TV and other phones while owner phone sees it", () => {
+  it("keeps locked agenda fields out of every projection until the reveal is authoritative", () => {
     const state = withRevealState(createRivalryState(), "seat-1", "revealAvailable");
 
     const tvProjection = createTvProjection(state) as {
@@ -74,25 +74,22 @@ describe("Phase 3C1 hidden-agenda reveal mechanics", () => {
       rivalryAgendaReveal?: unknown;
     };
     const ownerPhone = createPhoneProjection(state, "seat-1") as {
-      privateRivalry: { objective: { title: string; summary: string }; reveal: { state: string; available: boolean } } | null;
+      privateRivalry: { objective?: { title: string; summary: string }; reveal: { state: string; available: boolean } } | null;
     };
     const otherPhone = createPhoneProjection(state, "seat-2") as {
-      privateRivalry: { objective: { title: string; summary: string } } | null;
+      privateRivalry: { objective?: { title: string; summary: string } } | null;
     };
     const tvJson = JSON.stringify(tvProjection);
     const otherPhoneJson = JSON.stringify(otherPhone);
 
     expect(ownerPhone.privateRivalry).toMatchObject({
-      objective: {
-        title: "Claim the Black Ledger",
-        summary: "End the run with the table believing your trophies carried the expedition."
-      },
       reveal: {
         state: "revealAvailable",
         available: true
       }
     });
-    expect(otherPhone.privateRivalry?.objective.title).not.toBe("Claim the Black Ledger");
+    expect(ownerPhone.privateRivalry?.objective).toBeUndefined();
+    expect(otherPhone.privateRivalry?.objective).toBeUndefined();
     expect(tvProjection.privateRivalry).toBeUndefined();
     expect(tvProjection.rivalryAgendaReveal).toBeNull();
     expect(tvJson).not.toContain("Claim the Black Ledger");
@@ -109,11 +106,11 @@ describe("Phase 3C1 hidden-agenda reveal mechanics", () => {
     });
 
     const ownerPhone = createPhoneProjection(server.getState(), "seat-1") as {
-      privateRivalry: { revealState: string; reveal: { state: string; publicSummary: string } } | null;
+      privateRivalry: { objective?: { summary: string }; revealState: string; reveal: { state: string; publicSummary: string } } | null;
       rivalryAgendaReveal: { summary: string } | null;
     };
     const otherPhone = createPhoneProjection(server.getState(), "seat-2") as {
-      privateRivalry: { objective: { summary: string } } | null;
+      privateRivalry: { objective?: { summary: string } } | null;
       rivalryAgendaReveal: { summary: string } | null;
     };
     const tvProjection = createTvProjection(server.getState()) as {
@@ -128,6 +125,7 @@ describe("Phase 3C1 hidden-agenda reveal mechanics", () => {
       publicRevealTitle: "Rivalry Agenda"
     });
     expect(ownerPhone.privateRivalry?.revealState).toBe("revealed");
+    expect(ownerPhone.privateRivalry?.objective?.summary).toContain("table believing your trophies");
     expect(ownerPhone.privateRivalry?.reveal.publicSummary).toContain("revealed a Rivalry Agenda");
     expect(ownerPhone.rivalryAgendaReveal?.summary).toContain("revealed a Rivalry Agenda");
     expect(otherPhone.rivalryAgendaReveal?.summary).toContain("revealed a Rivalry Agenda");
@@ -138,7 +136,7 @@ describe("Phase 3C1 hidden-agenda reveal mechanics", () => {
     expect(tvProjection.rivalryAgendaReveal.summary).toContain("revealed a Rivalry Agenda");
     expect(tvProjection.privateRivalry).toBeUndefined();
     expect(tvJson).not.toContain("End the run with the table believing");
-    expect(otherPhone.privateRivalry?.objective.summary).not.toContain("End the run with the table believing");
+    expect(otherPhone.privateRivalry?.objective).toBeUndefined();
   });
 
   it("rejects locked, repeated, spoofed, co-op, and single-player reveal requests", () => {

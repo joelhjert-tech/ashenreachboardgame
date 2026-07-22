@@ -49,7 +49,8 @@ describe("gear effect model schema", () => {
       startingCharges: 2,
       chargeCost: 1,
       rechargeRule: "none",
-      chargedEffect: "staticIntercession"
+      chargedEffect: "staticIntercession",
+      eligibleTestScope: "anySkill"
     } as const;
     expect(gearItemSchema.safeParse(censer).success).toBe(true);
     expect(gearItemSchema.safeParse({ ...censer, rechargeRule: "round" }).success).toBe(false);

@@ -75,7 +75,7 @@ const RAW_BOARD_SPACES: AuthoredBoardSpaceDefinition[] = [
     threatIcons: [],
     textBox: {
       title: "Pilgrim Rest",
-      text: "If the lock is quiet, heal 1 wound or take one contract lead from the pilgrim tablets.",
+      text: "If the lock is quiet, heal 1 Wound.",
       effectKey: "outer_emberSanctumRest"
     },
     notes: "Starter shrine and recovery space on the Broken Perimeter."
@@ -113,7 +113,7 @@ const RAW_BOARD_SPACES: AuthoredBoardSpaceDefinition[] = [
     threatIcons: ["blue"],
     textBox: {
       title: "Signal Chorus",
-      text: "If no local threats remain, tune the pier signal, resolve a blue omen, and scout one adjacent sector.",
+      text: "If no local threats remain, test Signal to tune the pier and recruit its mapper.",
       effectKey: "outer_glassmereChorus"
     }
   },
@@ -125,7 +125,7 @@ const RAW_BOARD_SPACES: AuthoredBoardSpaceDefinition[] = [
     threatIcons: ["blue"],
     textBox: {
       title: "Lantern Watch",
-      text: "If the post holds, reveal face-down threats in adjacent sectors or record a support contact.",
+      text: "If the post holds, test Command to recruit a support contact from the route crew.",
       effectKey: "outer_relayCrew"
     },
     notes: "Follower recruitment post."
@@ -155,7 +155,7 @@ const RAW_BOARD_SPACES: AuthoredBoardSpaceDefinition[] = [
     threatIcons: ["blue"],
     textBox: {
       title: "Vent Harvest",
-      text: "If the colony is quiet, bottle toxic salvage light for scar treatment or final-gate bargaining.",
+      text: "If the colony is quiet, test Forge to harvest void-salt and recruit its bone-reader.",
       effectKey: "outer_saltCrossing"
     },
     notes: "Consumable salvage and bargaining-chip space."
@@ -168,7 +168,7 @@ const RAW_BOARD_SPACES: AuthoredBoardSpaceDefinition[] = [
     threatIcons: ["red", "yellow"],
     textBox: {
       title: "Hab-Stack Sweep",
-      text: "If the stack is quiet, salvage one workable gear piece from the collapsed floors.",
+      text: "If the stack is quiet, test Forge to recover one coffin rig from the collapsed floors.",
       effectKey: "outer_hollowVeilSweep"
     }
   },
@@ -205,7 +205,7 @@ const RAW_BOARD_SPACES: AuthoredBoardSpaceDefinition[] = [
     threatIcons: ["red"],
     textBox: {
       title: "Census Writ",
-      text: "If no one contests the hall, draw 2 Contracts and keep 1 as a stamped faction writ.",
+      text: "If no one contests the hall, test Command to claim a faction writ, recruit its witness, and draw a Contract lead.",
       effectKey: "outer_oathpostWrit"
     },
     notes: "Faction outpost and bounded-rivalry seed."
@@ -223,7 +223,7 @@ const RAW_BOARD_SPACES: AuthoredBoardSpaceDefinition[] = [
     },
     textBox: {
       title: "Wreckage Sweep",
-      text: "If the dock is clear, test Guile through the wreckage and mark a dangerous shortcut toward the war line.",
+      text: "If the dock is clear, test Grit through the wreckage and mark a dangerous shortcut toward the war line.",
       effectKey: "outer_brokenCausewayShortcut"
     },
     notes: "High-risk shortcut toward the middle approach."
@@ -235,8 +235,8 @@ const RAW_BOARD_SPACES: AuthoredBoardSpaceDefinition[] = [
     index: 12,
     threatIcons: ["blue"],
     textBox: {
-      title: "Recharge the Votive",
-      text: "If the engine room is quiet, recharge 1 Gear or force the stronger effect shown by the current action.",
+      title: "Read the Votive Salt",
+      text: "If the engine room is quiet, test Forge to read the void-salt bloom and recruit its bone-reader.",
       effectKey: "outer_saltCrossing"
     },
     notes: "Outer salvage-shrine space that feeds gear and risk choices."
@@ -248,8 +248,8 @@ const RAW_BOARD_SPACES: AuthoredBoardSpaceDefinition[] = [
     index: 13,
     threatIcons: ["yellow"],
     textBox: {
-      title: "Foundry Repair",
-      text: "If the foundry is calm, upgrade or repair Gear from the kettleside salvage benches.",
+      title: "Foundry Bargain",
+      text: "If the foundry is calm, test Guile to work its exchange and recruit a Black Lantern broker.",
       effectKey: "outer_waymarketExchange"
     },
     notes: "Outer shop/repair space and a route into the Rusted Host line."
@@ -262,7 +262,7 @@ const RAW_BOARD_SPACES: AuthoredBoardSpaceDefinition[] = [
     threatIcons: ["yellow"],
     textBox: {
       title: "Bastion Watch",
-      text: "If the bastion is clear, draw a route note or take 1 Salvage from the dock stores.",
+      text: "If the bastion is clear, test Command to recruit a route contact from the dock watch.",
       effectKey: "outer_relayCrew"
     },
     notes: "Playable northwest corner space on the Broken Perimeter."
@@ -275,7 +275,7 @@ const RAW_BOARD_SPACES: AuthoredBoardSpaceDefinition[] = [
     threatIcons: ["blue"],
     textBox: {
       title: "Cold Dock Signal",
-      text: "If the wharf is quiet, tune the dock beacon and scout one adjacent sector.",
+      text: "If the wharf is quiet, test Signal to tune the beacon and recruit its mapper.",
       effectKey: "outer_glassmereChorus"
     },
     notes: "Outer dock lane that previews anomaly pressure."
@@ -314,7 +314,7 @@ const RAW_BOARD_SPACES: AuthoredBoardSpaceDefinition[] = [
     threatIcons: ["blue"],
     textBox: {
       title: "Deadwater Reading",
-      text: "If the marsh is calm, bottle signal light for scar treatment or final-gate bargaining.",
+      text: "If the marsh is calm, test Forge to harvest void-salt and recruit its bone-reader.",
       effectKey: "outer_saltCrossing"
     },
     notes: "Outer anomaly wetland on the eastern perimeter."
@@ -327,7 +327,7 @@ const RAW_BOARD_SPACES: AuthoredBoardSpaceDefinition[] = [
     threatIcons: ["yellow"],
     textBox: {
       title: "Rustveil Salvage",
-      text: "If the yard is quiet, pull a salvage contact from the rust veil and mark the safest exit.",
+      text: "If the yard is quiet, test Forge to recover one coffin rig from the wreckage.",
       effectKey: "outer_hollowVeilSweep"
     },
     notes: "Outer salvage tile on the lower perimeter."
@@ -340,7 +340,7 @@ const RAW_BOARD_SPACES: AuthoredBoardSpaceDefinition[] = [
     threatIcons: ["blue"],
     textBox: {
       title: "Sunken Signal",
-      text: "If the pier is clear, reveal face-down threats in adjacent sectors or record a support contact.",
+      text: "If the pier is clear, test Command to recruit a support contact from the drowned route crew.",
       effectKey: "outer_relayCrew"
     },
     notes: "Outer waterline tile for route scouting."
@@ -358,7 +358,7 @@ const RAW_BOARD_SPACES: AuthoredBoardSpaceDefinition[] = [
     },
     textBox: {
       title: "Causeway Thread",
-      text: "If the causeway is clear, test Guile through the broken route and mark a risky shortcut.",
+      text: "If the causeway is clear, test Grit through the broken route and mark a risky shortcut.",
       effectKey: "outer_brokenCausewayShortcut"
     },
     notes: "Outer lower-track movement tile."
@@ -371,7 +371,7 @@ const RAW_BOARD_SPACES: AuthoredBoardSpaceDefinition[] = [
     threatIcons: ["blue"],
     textBox: {
       title: "Flooded Lockwork",
-      text: "If the locks are calm, tune the lockwater signal and scout one adjacent sector.",
+      text: "If the locks are calm, test Signal to tune the lockwater and recruit its mapper.",
       effectKey: "outer_glassmereChorus"
     },
     notes: "Outer western water-control tile."
@@ -424,7 +424,7 @@ const RAW_BOARD_SPACES: AuthoredBoardSpaceDefinition[] = [
     threatIcons: ["yellow"],
     textBox: {
       title: "Name the Trophy",
-      text: "If the crucible is secure, spend Trophy for a stat raise or draw a Scar for a free reward.",
+      text: "If the crucible is secure, test Guile to mark an Artifact claim; failure opens a Machine Scar choice.",
       effectKey: "middle_relicCache"
     },
     notes: "Artifact cache with salvage pressure."
@@ -437,7 +437,7 @@ const RAW_BOARD_SPACES: AuthoredBoardSpaceDefinition[] = [
     threatIcons: ["red", "blue"],
     textBox: {
       title: "Machine Hymn",
-      text: "If the choir is clear, let the machine hymn tune your gear, but a roll of 1 may jam it.",
+      text: "If the choir is clear, test Forge to heal 1 Wound; failure opens a Flesh Scar choice.",
       effectKey: "middle_scarSurgery"
     },
     notes: "Midgame recovery with risk."
@@ -450,7 +450,7 @@ const RAW_BOARD_SPACES: AuthoredBoardSpaceDefinition[] = [
     threatIcons: ["red", "blue", "yellow"],
     textBox: {
       title: "Customs Threshold",
-      text: "This is the legal staging point into the inner breach. Align the threshold seals with Command or ghost a route marker with Signal.",
+      text: "Align the threshold seals with Command or ghost a route marker with Signal to gain Guardian Span Clearance.",
       effectKey: "middle_guardianSpanThreshold",
       choices: [
         {
@@ -478,7 +478,7 @@ const RAW_BOARD_SPACES: AuthoredBoardSpaceDefinition[] = [
     threatIcons: ["red", "yellow"],
     textBox: {
       title: "Mirror Drill",
-      text: "If the barracks are quiet, test Guile or face a copy of your highest stat in the mirrors.",
+      text: "If the barracks are quiet, test Command to mark a bounded claim and recruit a fixer.",
       effectKey: "middle_rivalryClaim"
     },
     notes: "PvP/rivalry pressure point without default hard griefing."
@@ -526,7 +526,7 @@ const RAW_BOARD_SPACES: AuthoredBoardSpaceDefinition[] = [
     threatIcons: ["blue", "yellow"],
     textBox: {
       title: "Read the Chapel",
-      text: "If the chapel settles, resolve an anomaly and bottle a clue for the inner breach.",
+      text: "If the chapel settles, test Signal to read the anomaly and bottle a clue for the inner breach.",
       effectKey: "middle_anomalyWell"
     },
     notes: "Anomaly source that makes blue/yellow icons matter."
@@ -539,7 +539,7 @@ const RAW_BOARD_SPACES: AuthoredBoardSpaceDefinition[] = [
     threatIcons: ["blue", "yellow"],
     textBox: {
       title: "Stabilize the Relay",
-      text: "If the relay is clear, place a Static marker here or clear one by grounding the route.",
+      text: "If the relay is clear, test Signal to read the anomaly and bottle a clue for the inner breach.",
       effectKey: "middle_anomalyWell"
     },
     notes: "Persistent anomaly pressure point on the War Choir Line."
@@ -551,8 +551,8 @@ const RAW_BOARD_SPACES: AuthoredBoardSpaceDefinition[] = [
     index: 9,
     threatIcons: ["yellow"],
     textBox: {
-      title: "Archive Contract",
-      text: "If the archive opens, draw 2 Contracts, keep 1, and file the other under dead-route lore.",
+      title: "Archive Bargain",
+      text: "If the archive opens, choose passage stock or field gossip and resolve the matching test.",
       effectKey: "middle_shardSprawlBargain",
       choices: [
         {
@@ -574,8 +574,8 @@ const RAW_BOARD_SPACES: AuthoredBoardSpaceDefinition[] = [
     index: 10,
     threatIcons: ["red", "yellow"],
     textBox: {
-      title: "Trench Ambush",
-      text: "If the trench lamps are clear, pull a route note from the firing step before the ambushers return.",
+      title: "Trench Claim",
+      text: "If the trench lamps are clear, test Command to mark a bounded claim and recruit a fixer.",
       effectKey: "middle_rivalryClaim"
     },
     notes: "Middle hostile-contact lane where red threats should feel like warband pressure."
@@ -587,8 +587,8 @@ const RAW_BOARD_SPACES: AuthoredBoardSpaceDefinition[] = [
     index: 11,
     threatIcons: ["red", "blue"],
     textBox: {
-      title: "Dangerous Ammunition",
-      text: "If the shrine is quiet, gain a strong ammo blessing, then decide whether the danger is worth it.",
+      title: "Shrine Bargain",
+      text: "If the shrine is quiet, test Command to secure a military favor and recruit a votive gunner.",
       effectKey: "middle_redMarchBargain"
     },
     notes: "Dangerous shop that trades firepower for exposure."
@@ -693,7 +693,7 @@ const RAW_BOARD_SPACES: AuthoredBoardSpaceDefinition[] = [
     threatIcons: [],
     textBox: {
       title: "Marshal's Road",
-      text: "Move the roaming Nemesis one sector toward the nearest operative, then force a road trial to earn passage.",
+      text: "Test Command against the grave route. Success records its answer; failure inflicts 1 Wound.",
       effectKey: "inner_tombGateTrial"
     },
     notes: "Gatekeeper trial."
@@ -728,7 +728,7 @@ const RAW_BOARD_SPACES: AuthoredBoardSpaceDefinition[] = [
     threatIcons: [],
     textBox: {
       title: "Dead Star Claim",
-      text: "Take an Artifact from the reliquary, then accept a Scar as the dead star notices the theft.",
+      text: "Test Guile to cross the dead-star route and reveal an Artifact omen; failure inflicts 1 Wound.",
       effectKey: "inner_blackstarShortcut"
     },
     notes: "High-risk inner shortcut."
@@ -741,7 +741,7 @@ const RAW_BOARD_SPACES: AuthoredBoardSpaceDefinition[] = [
     threatIcons: [],
     textBox: {
       title: "Crypt Petition",
-      text: "Clear a red and blue threat, then petition the Saint Engine for an artifact omen.",
+      text: "Test Signal to petition the Saint Engine for an Artifact omen; failure opens a Rift Scar choice.",
       effectKey: "inner_choirShrine"
     },
     notes: "Corrupted shrine and cursed artifact source."
@@ -779,8 +779,8 @@ const RAW_BOARD_SPACES: AuthoredBoardSpaceDefinition[] = [
     index: 6,
     threatIcons: ["red", "yellow"],
     textBox: {
-      title: "Meridian Toll",
-      text: "Lose 1 wound unless you discard a Trophy or Gear into the bone-road toll furnace.",
+      title: "Meridian Trial",
+      text: "Test Command against the grave route. Success records its answer; failure inflicts 1 Wound.",
       effectKey: "inner_tombGateTrial"
     },
     notes: "Inner hazard that taxes gear and trophy hoards."
@@ -792,8 +792,8 @@ const RAW_BOARD_SPACES: AuthoredBoardSpaceDefinition[] = [
     index: 7,
     threatIcons: ["red", "red", "yellow"],
     textBox: {
-      title: "Elite Sentence",
-      text: "Draw a red threat. If it is an enemy, it becomes Elite until defeated.",
+      title: "Court Petition",
+      text: "Test Signal to petition the Hollow Court. Success grants a dangerous blessing; failure draws a Rift Scar choice.",
       effectKey: "inner_choirShrine"
     },
     notes: "Inner elite-enemy court and Choir pressure space."
@@ -827,12 +827,12 @@ const RAW_BOARD_SPACES: AuthoredBoardSpaceDefinition[] = [
 const BOARD_SPACE_PRESENTATION: Record<string, BoardSpacePresentation> = {
   "north-dock-bastion": {
     tags: ["crossroads", "salvage", "lore"],
-    ruleText: "If clear, draw a route note or take 1 Salvage from the dock stores.",
+    ruleText: "If clear, test Command to recruit a route contact from the dock watch.",
     loreText: "North Dock Bastion anchors the northwest corner with salt-worn guns and old signal flags."
   },
   outer_ember_sanctum: {
     tags: ["shrine", "recovery", "contract"],
-    ruleText: "If no threats are present, heal 1 wound or take a contract lead.",
+    ruleText: "If no threats are present, heal 1 Wound.",
     loreText: "Pilgrims chain brass prayers to a cracked gate that still opens for the wounded."
   },
   "ashwake-crossing": {
@@ -847,17 +847,17 @@ const BOARD_SPACE_PRESENTATION: Record<string, BoardSpacePresentation> = {
   },
   "coldwind-wharf": {
     tags: ["anomaly", "crossroads"],
-    ruleText: "If clear, tune the dock beacon and scout one adjacent sector.",
+    ruleText: "If clear, test Signal to tune the beacon and recruit its mapper.",
     loreText: "Coldwind Wharf freezes signal bells in place while blue-white sparks crawl over the moorings."
   },
   "glassmere-spindle": {
     tags: ["anomaly", "crossroads"],
-    ruleText: "Draw blue pressure here. If cleared, scout one adjacent sector.",
+    ruleText: "Draw blue pressure. If clear, test Signal to recruit the pier mapper.",
     loreText: "Signal pylons sing over glass water while cold blue light crawls through the pier cables."
   },
   outer_relay_camp: {
     tags: ["crossroads", "lore"],
-    ruleText: "If clear, reveal adjacent threats or record a support contact.",
+    ruleText: "If clear, test Command to recruit a route contact.",
     loreText: "Lantern Post 47 keeps a tired watch over the routes no map wants to admit still exist."
   },
   "cinder-fields": {
@@ -872,7 +872,7 @@ const BOARD_SPACE_PRESENTATION: Record<string, BoardSpacePresentation> = {
   },
   outer_salt_flats: {
     tags: ["anomaly", "hazard", "salvage"],
-    ruleText: "Blue threats gather here. If cleared, bottle salvage light for scar treatment.",
+    ruleText: "Draw blue pressure. If clear, test Forge to harvest void-salt and recruit its bone-reader.",
     loreText: "Toxic vents breathe green fire through mud, tents, and half-buried colony bells."
   },
   "colony-outskirts": {
@@ -882,12 +882,12 @@ const BOARD_SPACE_PRESENTATION: Record<string, BoardSpacePresentation> = {
   },
   "deadwater-marsh": {
     tags: ["anomaly", "hazard"],
-    ruleText: "If clear, bottle signal light for scar treatment or final-gate bargaining.",
+    ruleText: "If clear, test Forge to harvest void-salt and recruit its bone-reader.",
     loreText: "Deadwater Marsh reflects a sky the Reach has not had for years."
   },
   "hollow-veil-yard": {
     tags: ["salvage", "enemy"],
-    ruleText: "Draw yellow pressure. If an enemy is cleared here, the salvage is worth more.",
+    ruleText: "Draw red and yellow pressure. If clear, test Forge to recover a coffin rig.",
     loreText: "A fallen hab-stack spills iron ribs, broken altars, and stairwells full of watching ash."
   },
   outer_surgery_tent: {
@@ -897,17 +897,17 @@ const BOARD_SPACE_PRESENTATION: Record<string, BoardSpacePresentation> = {
   },
   "rustveil-yard": {
     tags: ["salvage", "crossroads"],
-    ruleText: "If clear, pull a salvage contact from the rust veil and mark the safest exit.",
+    ruleText: "If clear, test Forge to recover a coffin rig from the wreckage.",
     loreText: "Rustveil Yard buries machine bones under orange dust and salvage tags."
   },
   "sunken-pier": {
     tags: ["anomaly", "lore"],
-    ruleText: "If clear, reveal adjacent threats or record a support contact.",
+    ruleText: "If clear, test Command to recruit a support contact from the drowned route crew.",
     loreText: "Sunken Pier disappears into black water where signal lamps still burn under the surface."
   },
   "shattered-causeway": {
     tags: ["movement", "salvage", "hazard"],
-    ruleText: "If clear, test Guile through the broken route and mark a risky shortcut.",
+    ruleText: "If clear, test Grit through the broken route and mark a risky shortcut.",
     loreText: "Shattered Causeway is a chain of cracked stone plates over ash, tide, and static."
   },
   "emberwatch-step": {
@@ -917,27 +917,27 @@ const BOARD_SPACE_PRESENTATION: Record<string, BoardSpacePresentation> = {
   },
   outer_oathpost: {
     tags: ["contract", "lore"],
-    ruleText: "If clear, draw 2 Contracts and keep 1.",
+    ruleText: "If clear, test Command to claim a faction writ, witness, and Contract lead.",
     loreText: "Broken Census Hall still stamps names for citizens, ghosts, fugitives, and debts."
   },
   outer_broken_causeway: {
     tags: ["salvage", "hazard", "movement"],
-    ruleText: "If clear, test Guile through the wreckage and mark a risky shortcut.",
+    ruleText: "If clear, test Grit through the wreckage and mark a risky shortcut.",
     loreText: "Dock Nine Wreckage groans under cranes, salt ash, and cargo that should have stayed sealed."
   },
   "votive-engine-room": {
     tags: ["salvage", "shrine", "risk-shop"],
-    ruleText: "If clear, recharge 1 Gear or force the stronger effect shown by the current action.",
+    ruleText: "If clear, test Forge to read the void-salt bloom and recruit its bone-reader.",
     loreText: "The engine room burns prayers as fuel and answers only when the brass tanks are fed."
   },
   "kettleward-foundry": {
     tags: ["shop", "salvage"],
-    ruleText: "If clear, repair, recharge, or upgrade Gear.",
+    ruleText: "If clear, test Guile to work the foundry exchange and recruit a broker.",
     loreText: "Kettleward Foundry hammers broken weapons into shapes that look almost intentional."
   },
   "flooded-locks": {
     tags: ["anomaly", "crossroads"],
-    ruleText: "If clear, tune the lockwater signal and scout one adjacent sector.",
+    ruleText: "If clear, test Signal to tune the lockwater and recruit its mapper.",
     loreText: "Flooded Locks grind open by inches, spilling cold blue light from drowned machinery."
   },
   "transit-gate": {
@@ -952,27 +952,27 @@ const BOARD_SPACE_PRESENTATION: Record<string, BoardSpacePresentation> = {
   },
   middle_relic_cache: {
     tags: ["shrine", "artifact", "salvage"],
-    ruleText: "If clear, spend Trophy value for growth or accept a Scar for a free reward.",
+    ruleText: "If clear, test Guile to mark an Artifact claim; failure opens a Machine Scar choice.",
     loreText: "The Crucible of Names etches victories into iron masks and asks what they cost."
   },
   middle_scar_surgery: {
     tags: ["enemy", "anomaly", "risk-shop"],
-    ruleText: "If clear, tune Gear through the machine hymn; bad rolls may jam equipment.",
+    ruleText: "If clear, test Forge to heal 1 Wound; failure opens a Flesh Scar choice.",
     loreText: "The Sable Machine Choir hums inside black cabinets with lungs made of bellows and wire."
   },
   middle_guardian_span: {
     tags: ["crossroads", "contract", "movement"],
-    ruleText: "Pay, test Guile, or resolve customs work to open the inner route.",
+    ruleText: "Test Command or Signal to gain Guardian Span Clearance.",
     loreText: "Customs Gate taxes not just salvage, but secrets, blood type, and remembered sins."
   },
   middle_rivalry_pit: {
     tags: ["anomaly", "hazard", "enemy"],
-    ruleText: "If clear, test Guile or face a mirror of your highest stat.",
+    ruleText: "If clear, test Command to mark a bounded claim and recruit a fixer.",
     loreText: "Mirror Barracks drills reflections until they know how to wound their originals."
   },
   middle_red_march_outpost: {
     tags: ["enemy", "contract"],
-    ruleText: "Ashen Choir enemies grow stronger here. If clear, secure a military favor.",
+    ruleText: "If clear, test Command to secure a military favor and recruit a votive gunner.",
     loreText: "Choir Bastion advances in formation, brass masks forward, hymns crackling through static."
   },
   middle_webglass_breach: {
@@ -982,27 +982,27 @@ const BOARD_SPACE_PRESENTATION: Record<string, BoardSpacePresentation> = {
   },
   middle_anomaly_well: {
     tags: ["anomaly", "lore"],
-    ruleText: "Failed Resolve tests add Scar pressure. If clear, bottle a clue for the inner breach.",
+    ruleText: "If clear, test Signal to bottle a breach clue; failure advances Global Escalation by 1.",
     loreText: "Static Chapel receives prayers from every dead radio in the Reach at once."
   },
   "black-relay-spire": {
     tags: ["anomaly", "hazard"],
-    ruleText: "Static pressure persists here until the relay is grounded or cleared.",
+    ruleText: "If clear, test Signal to read the anomaly and bottle a clue for the inner breach.",
     loreText: "The Black Relay Spire points at a star that no longer exists and keeps receiving orders."
   },
   "the-salt-archive": {
     tags: ["contract", "lore"],
-    ruleText: "If clear, draw 2 Contracts, keep 1, and file the other under dead-route lore.",
+    ruleText: "If clear, choose passage stock or field gossip and resolve the matching test.",
     loreText: "The Salt Archive preserves maps in dry crystal, each one labelled with a different failure."
   },
   "red-lantern-trenches": {
     tags: ["hazard", "enemy"],
-    ruleText: "Draw red pressure. Enemies here should feel like ambushers in prepared ground.",
+    ruleText: "Draw red and yellow pressure. If clear, test Command to mark a bounded claim.",
     loreText: "Red Lantern Trenches blink through smoke like a firing line deciding who still counts as alive."
   },
   "weeping-ammunition-shrine": {
     tags: ["risk-shop", "shrine", "enemy"],
-    ruleText: "If clear, gain strong ammunition or a dangerous war boon.",
+    ruleText: "If clear, test Command to secure a military favor and recruit a votive gunner.",
     loreText: "The shrine weeps live rounds into bowls of oil, and every blessing comes chambered."
   },
   "scorched-road": {
@@ -1017,7 +1017,7 @@ const BOARD_SPACE_PRESENTATION: Record<string, BoardSpacePresentation> = {
   },
   "ashen-chapel": {
     tags: ["anomaly", "shrine"],
-    ruleText: "If clear, resolve an anomaly and bottle a clue for the inner breach.",
+    ruleText: "If clear, test Signal to read the anomaly and bottle a clue for the inner breach.",
     loreText: "Ashen Chapel keeps its candles lit with static and refuses to say who tends them."
   },
   "reavers-den": {
@@ -1032,12 +1032,12 @@ const BOARD_SPACE_PRESENTATION: Record<string, BoardSpacePresentation> = {
   },
   inner_tomb_gate: {
     tags: ["nemesis", "hazard"],
-    ruleText: "Move Nemesis pressure toward the nearest operative, then face the road trial.",
+    ruleText: "If clear, test Command 10; failure inflicts 1 Wound.",
     loreText: "Rifted Approach cuts between ruined walls that keep changing which side they defend."
   },
   inner_choir_shrine: {
     tags: ["artifact", "shrine", "enemy"],
-    ruleText: "Clear red and blue pressure before petitioning the Saint Engine for an artifact omen.",
+    ruleText: "If clear, test Signal 11 for an Artifact omen; failure opens a Rift Scar choice.",
     loreText: "Saint Engine Crypt houses a machine-saint that blesses only those who survive its audit."
   },
   inner_cinder_lattice: {
@@ -1047,17 +1047,17 @@ const BOARD_SPACE_PRESENTATION: Record<string, BoardSpacePresentation> = {
   },
   inner_blackstar_shortcut: {
     tags: ["artifact", "hazard"],
-    ruleText: "Gain an Artifact, then gain a Scar as the dead star notices the theft.",
+    ruleText: "If clear, test Guile 11 and reveal an Artifact omen; failure inflicts 1 Wound.",
     loreText: "Dead Star Reliquary keeps black-light relics behind glass that has never reflected a living face."
   },
   "the-bone-meridian": {
     tags: ["hazard", "salvage"],
-    ruleText: "Lose 1 wound unless you discard a Trophy or Gear into the toll furnace.",
+    ruleText: "If clear, test Command 10; failure inflicts 1 Wound.",
     loreText: "The Bone Meridian marks the line where useful remains become road material."
   },
   "choir-execution-court": {
     tags: ["enemy", "scenario"],
-    ruleText: "Draw red pressure. Enemy threats revealed here become elite until defeated.",
+    ruleText: "Draw two red and one yellow Threat. If clear, test Signal for a dangerous blessing.",
     loreText: "Hollow Court receives emissaries with empty faces, velvet blades, and perfect manners."
   },
   inner_gate_of_cinders: {

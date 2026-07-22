@@ -611,7 +611,7 @@ describe("canonical sector graph", () => {
         mode: string;
         secrecy: string;
         tableWarning: string;
-        objective: {
+        objective?: {
           id: string;
           title: string;
           progressLabel: string;
@@ -630,13 +630,6 @@ describe("canonical sector graph", () => {
       active: true,
       mode: "rivalry",
       secrecy: "private",
-      objective: {
-        id: "claim-trophies",
-        title: "Claim the Black Ledger",
-        progressLabel: "Trophies held",
-        progress: 2,
-        target: 3
-      },
       revealState: "revealLocked",
       reveal: {
         state: "revealLocked",
@@ -646,6 +639,7 @@ describe("canonical sector graph", () => {
       }
     });
     expect(phoneProjection.privateRivalry?.tableWarning).toContain("only on this phone");
+    expect(phoneProjection.privateRivalry?.objective).toBeUndefined();
     expect(phoneProjection.privateRivalry?.recentPrivateNotes).toEqual(["Keep it quiet", "Claim credit", "Delay the vote"]);
     expect(tvProjection.privateRivalry).toBeUndefined();
     expect(tvJson).toContain("scenarioPressure");
@@ -708,7 +702,8 @@ describe("canonical sector graph", () => {
     const otherJson = JSON.stringify(otherPhone);
 
     expect(tvProjection.publicResultDeltas.some((delta) => delta.type === "scenarioProgress")).toBe(true);
-    expect(tvProjection.publicResultDeltas.some((delta) => delta.type === "contractProgress")).toBe(true);
+    expect(tvProjection.publicResultDeltas.some((delta) => delta.type === "contractProgress")).toBe(false);
+    expect(ownerPhone.playerResultDeltas.some((delta) => delta.type === "contractProgress" && delta.visibility === "ownerPrivate")).toBe(true);
     expect(ownerPhone.playerResultDeltas.some((delta) => delta.type === "agendaProgress" && delta.visibility === "ownerPrivate")).toBe(true);
     expect(otherPhone.playerResultDeltas.some((delta) => delta.type === "agendaProgress")).toBe(false);
     expect(ownerJson).toContain("Private trigger: claim the black ledger.");
@@ -738,6 +733,7 @@ describe("canonical sector graph", () => {
         movementValue: number;
         currentSectorName: string;
         destinations: Array<{
+          markerLabel?: string;
           sectorId: string;
           name: string;
           route: string[];
@@ -750,6 +746,7 @@ describe("canonical sector graph", () => {
         movementValue: number;
         currentSectorName: string;
         destinations: Array<{
+          markerLabel?: string;
           sectorId: string;
           name: string;
           ring: string;
@@ -769,6 +766,12 @@ describe("canonical sector graph", () => {
     expect(tvProjection.movementPlanner?.currentSectorName).toBe(phoneProjection.movementPlanner?.currentSectorName);
     expect(tvProjection.movementPlanner?.destinations.map((destination) => destination.sectorId).sort()).toEqual(
       phoneProjection.movementPlanner?.destinations.map((destination) => destination.sectorId).sort()
+    );
+    expect(tvProjection.movementPlanner?.destinations.map((destination) => destination.markerLabel)).toEqual(
+      phoneProjection.movementPlanner?.destinations.map((destination) => destination.markerLabel)
+    );
+    expect(phoneProjection.movementPlanner?.destinations.map((destination) => destination.markerLabel)).toEqual(
+      phoneProjection.movementPlanner?.destinations.map((_, index) => String.fromCharCode(65 + index))
     );
 
     const bridge = phoneProjection.movementPlanner?.destinations.find((destination) => destination.sectorId === "ashwake-crossing");

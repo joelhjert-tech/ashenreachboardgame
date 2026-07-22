@@ -134,7 +134,7 @@ describe("Phase 3C2 rivalry agenda progress foundation", () => {
       createActiveRivalryState({ currentEncounter: redThreat }),
       "seat-1",
       {
-        revealState: "revealLocked",
+        revealState: "revealed",
         progressCurrent: 0,
         progressRequired: 3,
         progressLabel: "Trophies held"

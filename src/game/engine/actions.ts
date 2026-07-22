@@ -82,6 +82,15 @@ export interface EncounterDrawnAction extends BaseAction {
   sectorId: string;
   card: ThreatCard | null;
   revealEffect?: EncounterEffect | null;
+  continuationPhase?: "sector" | "action";
+  tileArrivalThreatProgress?: {
+    arrivalId: string;
+    seatId: string;
+    sectorId: string;
+    threatLanes: Array<"red" | "blue" | "yellow">;
+    threatRuleIds: string[];
+    nextThreatIconIndex: number;
+  };
 }
 
 export interface CheckRequestedAction extends BaseAction {
@@ -610,6 +619,7 @@ export interface TurnCompletedAction extends BaseAction {
 export interface PhaseAdvancedAction extends BaseAction {
   type: "PHASE_ADVANCED";
   toPhase: Phase;
+  transitionCause?: "end-turn" | "automatic";
 }
 
 export interface NemesisSpawnedAction extends BaseAction {
@@ -865,6 +875,12 @@ export type ClientIntent =
       type: "CHECK_REQUESTED";
       seatId: string;
       stat: CheckStat;
+    }
+  | {
+      type: "START_TILE_ENCOUNTER";
+      seatId: string;
+      encounterId: string;
+      resolutionId: string;
     }
   | {
       type: "COMBAT_REQUESTED";

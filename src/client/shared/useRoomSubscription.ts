@@ -216,13 +216,22 @@ export function useRoomSubscription(
       qaReconnectSynchronizationPendingRef.current = true;
       socketRef.current?.close(4001, "QA transport interruption");
     };
+    const rejectQaIntent = (event: Event) => {
+      if (!qaNetworkControlEnabled) return;
+      const reason = event instanceof CustomEvent && typeof event.detail?.reason === "string"
+        ? event.detail.reason
+        : "The submitted action is stale or unavailable";
+      setError(reason);
+    };
     if (qaNetworkControlEnabled) {
       window.addEventListener("ashenreach:qa-disconnect", interruptQaTransport);
+      window.addEventListener("ashenreach:qa-intent-rejected", rejectQaIntent);
     }
 
     return () => {
       if (qaNetworkControlEnabled) {
         window.removeEventListener("ashenreach:qa-disconnect", interruptQaTransport);
+        window.removeEventListener("ashenreach:qa-intent-rejected", rejectQaIntent);
       }
       manualCloseRef.current = true;
       connectionGenerationRef.current += 1;

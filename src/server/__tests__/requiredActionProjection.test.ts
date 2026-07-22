@@ -1,0 +1,344 @@
+import { describe, expect, it } from "vitest";
+import type { BattlePresentation, RequiredActionProjection } from "../../client/shared/types.js";
+import { createInitialSessionState } from "../sessionState.js";
+import {
+  buildRequiredActionProjection,
+  buildSetupProjection,
+  createPhoneProjection,
+  createTvProjection
+} from "../roomServer.js";
+
+function activateMultiplayer() {
+  const state = createInitialSessionState(
+    "required-action-projection",
+    "multiplayer",
+    undefined,
+    "co-op",
+    "standard",
+    3
+  );
+  state.status = "active";
+  state.phase = "navigation";
+  state.seats.forEach((seat, index) => {
+    seat.displayName = ["Joel", "Erik", "Anna"][index] ?? `Player ${index + 1}`;
+    seat.connected = true;
+  });
+  return state;
+}
+
+function requiredAction(projection: Record<string, unknown>): RequiredActionProjection {
+  return projection.requiredAction as RequiredActionProjection;
+}
+
+function battlePresentation(projection: Record<string, unknown>): BattlePresentation {
+  return projection.battlePresentation as BattlePresentation;
+}
+
+describe("server required-action projection", () => {
+  it("projects canonical setup stages and all public start blockers", () => {
+    const state = createInitialSessionState("setup-projection", "multiplayer", undefined, "co-op", "standard", 3);
+    const host = state.seats[0]!;
+    const second = state.seats[1]!;
+    host.displayName = "Joel";
+    host.connected = true;
+    second.displayName = "Anna";
+    second.connected = true;
+    state.setupHostSeatId = host.seatId;
+    state.lobbyConfigured = false;
+
+    expect(buildSetupProjection(state)).toMatchObject({
+      stage: "mode-selection",
+      actorSeatId: host.seatId,
+      allowedCommand: "configure-lobby",
+      canStart: false
+    });
+
+    state.lobbyConfigured = true;
+    let setup = buildSetupProjection(state);
+    expect(setup.stage).toBe("operative-selection");
+    expect(setup.actorSeatId).toBe(host.seatId);
+    expect(setup.startBlockers).toEqual([
+      "Joel must choose an operative",
+      "Anna must choose an operative"
+    ]);
+
+    for (const [index, seat] of [host, second].entries()) {
+      seat.characterId = index === 0 ? "void-marshal" : "signal-witch";
+      seat.characterSelected = true;
+      seat.selectedStartingContractId = `mission-${index}`;
+      seat.ready = true;
+    }
+    setup = buildSetupProjection(state);
+    expect(setup).toMatchObject({
+      stage: "start-available",
+      actorSeatId: host.seatId,
+      allowedCommand: "start",
+      canStart: true,
+      startBlockers: []
+    });
+    expect((createTvProjection(state).setup as typeof setup)).toEqual(setup);
+    expect((createPhoneProjection(state, second.seatId).setup as typeof setup)).toEqual(setup);
+  });
+
+  it("projects one movement identity with owner controls and public-safe waiting copies", () => {
+    const state = activateMultiplayer();
+    const activeSeatId = state.turnOrder[state.activeSeatIndex]!;
+    const waitingSeatId = state.turnOrder[1]!;
+
+    const owner = requiredAction(createPhoneProjection(state, activeSeatId));
+    const waiting = requiredAction(createPhoneProjection(state, waitingSeatId));
+    const tv = requiredAction(createTvProjection(state));
+
+    expect(owner).toMatchObject({ kind: "movement", actorSeatId: activeSeatId, requiredTab: "move", canAct: true, waiting: false });
+    expect(waiting).toMatchObject({ id: owner.id, kind: "movement", actorSeatId: activeSeatId, requiredTab: null, canAct: false, waiting: true });
+    expect(tv).toMatchObject({ id: owner.id, actorSeatId: activeSeatId, requiredTab: null, canAct: false, privacy: "public" });
+    expect(waiting.detail).toContain("Waiting for Joel to roll movement");
+  });
+
+  it("routes a help response only to the selected helper and survives projection reconnect", () => {
+    const state = activateMultiplayer();
+    const activeSeatId = state.turnOrder[0]!;
+    const helperSeatId = state.turnOrder[1]!;
+    const unrequestedSeatId = state.turnOrder[2]!;
+    state.phase = "resolution";
+    state.cooperativeAssistance = {
+      id: "assist-required-action",
+      sourceKind: "encounter",
+      sourceId: "signal-test",
+      sourceTitle: "Signal Test",
+      testedStat: "signal",
+      activeSeatId,
+      requestedSeatIds: [helperSeatId],
+      acceptedSeatIds: [],
+      declinedSeatIds: [],
+      lockedContributions: [],
+      status: "requested",
+      createdAt: "now"
+    };
+
+    const helper = requiredAction(createPhoneProjection(state, helperSeatId));
+    const unrequested = requiredAction(createPhoneProjection(state, unrequestedSeatId));
+    const restored = requiredAction(createPhoneProjection(JSON.parse(JSON.stringify(state)), helperSeatId));
+
+    expect(helper).toMatchObject({ kind: "assistance", actorSeatId: helperSeatId, requiredTab: "battle", canAct: true });
+    expect(helper.label).toBe("Answer help request");
+    expect(unrequested).toMatchObject({ id: helper.id, requiredTab: null, canAct: false, privacy: "public" });
+    expect(restored).toEqual(helper);
+  });
+
+  it("keeps private Scar choices out of the shared required-action contract", () => {
+    const state = activateMultiplayer();
+    const ownerSeatId = state.turnOrder[0]!;
+    state.phase = "resolution";
+    state.pendingScarChoice = {
+      selectionId: "scar-choice-required-action",
+      ownerSeatId,
+      source: "flesh",
+      sourceCardId: "private-source-card",
+      sourceEventId: "private-source-event",
+      candidateIds: ["scar-flesh-01", "scar-flesh-02"],
+      continuationPhase: "action",
+      createdAt: "now",
+      status: "awaitingSelection"
+    };
+
+    const owner = requiredAction(createPhoneProjection(state, ownerSeatId));
+    const tv = requiredAction(createTvProjection(state));
+
+    expect(owner).toMatchObject({ kind: "scar", canAct: true, privacy: "owner", requiredTab: "action" });
+    expect(tv).toMatchObject({ id: owner.id, kind: "scar", canAct: false, privacy: "public", requiredTab: null });
+    expect(tv.detail).toBe("Waiting for Joel to resolve a private Scar choice.");
+    expect(JSON.stringify(tv)).not.toContain("scar-flesh-01");
+    expect(JSON.stringify(tv)).not.toContain("scar-flesh-02");
+  });
+
+  it("masks an owner-private Contract resolution title in waiting-phone and TV actions", () => {
+    const state = activateMultiplayer();
+    const ownerSeatId = state.turnOrder[0]!;
+    const waitingSeatId = state.turnOrder[1]!;
+    state.phase = "resolution";
+    state.activeResolution = {
+      id: "private-contract-resolution",
+      playerId: ownerSeatId,
+      source: "contract",
+      stage: "outcome_summary",
+      card: { id: "hidden-contract-id", title: "The Hidden Contract Title", type: "contract" },
+      outcome: { title: "Contract complete", text: "Private reward details.", effects: ["Gain a private reward."] },
+      origin: {
+        sourceDeck: "contract",
+        sourceSectorId: "ashwalk-bridge",
+        sourceEventId: "private-contract-event",
+        queuePosition: 0,
+        privacy: "owner"
+      }
+    };
+
+    const owner = requiredAction(createPhoneProjection(state, ownerSeatId));
+    const waiting = requiredAction(createPhoneProjection(state, waitingSeatId));
+    const tv = requiredAction(createTvProjection(state));
+
+    expect(owner.detail).toBe("Private reward details.");
+    expect(waiting.detail).toBe("Waiting for Joel to review a private objective result.");
+    expect(tv.detail).toBe(waiting.detail);
+    expect(JSON.stringify(waiting)).not.toMatch(/The Hidden Contract Title|hidden-contract-id|private-contract-event|Private reward details/);
+    expect(JSON.stringify(tv)).not.toMatch(/The Hidden Contract Title|hidden-contract-id|private-contract-event|Private reward details/);
+  });
+
+  it("uses the same semantic builder for deterministic server-side restoration", () => {
+    const state = activateMultiplayer();
+    state.phase = "action";
+    const before = buildRequiredActionProjection(state, state.turnOrder[0]!, {
+      movementActive: false,
+      movementSelected: false,
+      shopActive: false
+    });
+    const after = buildRequiredActionProjection(JSON.parse(JSON.stringify(state)), state.turnOrder[0]!, {
+      movementActive: false,
+      movementSelected: false,
+      shopActive: false
+    });
+    expect(after).toEqual(before);
+  });
+
+  it("projects result, continuation, and end-turn stages without a client-authored transition", () => {
+    const state = activateMultiplayer();
+    const ownerSeatId = state.turnOrder[0]!;
+    state.phase = "resolution";
+    state.activeResolution = {
+      id: "p4-result",
+      playerId: ownerSeatId,
+      source: "threat",
+      stage: "outcome_summary",
+      card: { id: "p4-hazard", title: "Ashfall Shear", type: "hazard" },
+      battle: { stat: "signal", difficulty: 6, modifiers: [] },
+      roll: { dice: [3, 4], baseTotal: 7, modifierTotal: 3, finalTotal: 10, target: 6, success: true },
+      outcome: { title: "Hazard cleared", text: "The route stabilizes.", effects: ["Continue the turn."] }
+    };
+
+    const result = requiredAction(createPhoneProjection(state, ownerSeatId));
+    expect(result).toMatchObject({
+      transitionStage: "continue-available",
+      allowedCommand: "continue",
+      inputEnabled: true,
+      label: "Hazard cleared"
+    });
+
+    state.activeResolution = null;
+    state.currentEncounter = null;
+    state.phase = "action";
+    const endTurn = requiredAction(createPhoneProjection(state, ownerSeatId));
+    expect(endTurn).toMatchObject({ transitionStage: "end-turn-available", allowedCommand: "finish-actions", canAct: true });
+
+    state.phase = "broadcast";
+    const finalEndTurn = requiredAction(createPhoneProjection(state, ownerSeatId));
+    expect(finalEndTurn).toMatchObject({ transitionStage: "end-turn-available", allowedCommand: "end-turn" });
+  });
+
+  it("projects a public-safe, stable handoff from the authoritative turn event", () => {
+    const state = activateMultiplayer();
+    const fromSeatId = state.turnOrder[0]!;
+    const toSeatId = state.turnOrder[1]!;
+    state.activeSeatIndex = 1;
+    state.phase = "navigation";
+    state.eventLog.push({ type: "TURN_COMPLETED", seatId: fromSeatId, createdAt: "2026-07-21T12:00:00.000Z" });
+
+    const owner = requiredAction(createPhoneProjection(state, toSeatId));
+    const tv = requiredAction(createTvProjection(state));
+    expect(owner.transitionStage).toBe("next-turn-ready");
+    expect(tv.handoff).toEqual({
+      id: `turn-handoff:2026-07-21T12:00:00.000Z:${fromSeatId}:${toSeatId}`,
+      fromSeatId,
+      fromDisplayName: "Joel",
+      toSeatId,
+      toDisplayName: "Erik",
+      roundWrapped: false
+    });
+    expect(JSON.stringify(tv.handoff)).not.toContain("mission");
+  });
+
+  it("projects one authoritative and auditable battle calculation to TV and phones", () => {
+    const state = activateMultiplayer();
+    const ownerSeatId = state.turnOrder[0]!;
+    const waitingSeatId = state.turnOrder[1]!;
+    const player = state.players.find((entry) => entry.seatId === ownerSeatId)!;
+    state.phase = "resolution";
+    state.activeResolution = {
+      id: "battle-presentation-1",
+      playerId: ownerSeatId,
+      source: "threat",
+      stage: "roll_result",
+      card: { id: "cinder-veil-stalker", title: "Cinder-Veil Stalker", type: "enemy", flavor: "It hunts through furnace smoke." },
+      battle: {
+        enemyName: "Cinder-Veil Stalker",
+        stat: "grit",
+        difficulty: 5,
+        modifiers: [
+          { label: "Base Grit", value: 3 },
+          { label: "Permanent Grit", value: 1 },
+          { label: "Rivetplate Vest", value: 1 }
+        ]
+      },
+      roll: { dice: [4, 2], baseTotal: 6, modifierTotal: 5, finalTotal: 11, target: 9, success: true },
+      outcome: { title: "Combat victory", text: "Gain 1 Salvage.", effects: ["Gain 1 Salvage."] }
+    };
+    player.character.stats.grit = 4;
+
+    const tv = battlePresentation(createTvProjection(state));
+    const owner = battlePresentation(createPhoneProjection(state, ownerSeatId));
+    const waiting = battlePresentation(createPhoneProjection(state, waitingSeatId));
+
+    expect(tv).toMatchObject({
+      id: "battle-presentation-1",
+      actorSeatId: ownerSeatId,
+      encounter: { name: "Cinder-Veil Stalker", category: "Battle" },
+      test: { stat: "grit", opposed: true },
+      operative: { baseValue: 3, rawDice: [4, 2], diceTotal: 6, finalTotal: 11 },
+      opponent: { finalTotal: 9 },
+      outcome: "success",
+      publicConsequence: "Gain 1 Salvage."
+    });
+    expect(tv.operative.modifiers).toEqual([
+      { label: "Permanent Grit", value: 1, kind: "permanent" },
+      { label: "Rivetplate Vest", value: 1, kind: "other" }
+    ]);
+    expect(owner).toEqual(tv);
+    expect(waiting).toEqual(tv);
+    expect(JSON.stringify(tv)).not.toContain("candidateIds");
+    expect(JSON.stringify(tv)).not.toContain("pendingScarChoice");
+  });
+
+  it("restores the same battle result and keeps a Scar choice private", () => {
+    const state = activateMultiplayer();
+    const ownerSeatId = state.turnOrder[0]!;
+    state.phase = "resolution";
+    state.activeResolution = {
+      id: "battle-private-choice",
+      playerId: ownerSeatId,
+      source: "threat",
+      stage: "outcome_summary",
+      card: { id: "ash-lane-cutters", title: "Ash-Lane Cutters", type: "enemy" },
+      battle: { enemyName: "Ash-Lane Cutters", stat: "command", difficulty: 6, modifiers: [{ label: "Base Command", value: 3 }] },
+      roll: { dice: [1, 2], baseTotal: 3, modifierTotal: 3, finalTotal: 6, target: 8, success: false },
+      outcome: { title: "Combat loss", text: "Resolve a private consequence.", effects: [] }
+    };
+    state.pendingScarChoice = {
+      selectionId: "secret-scar-choice",
+      ownerSeatId,
+      source: "mind",
+      sourceCardId: "secret-source",
+      sourceEventId: "secret-event",
+      candidateIds: ["scar-mind-01", "scar-mind-02"],
+      continuationPhase: "action",
+      createdAt: "now",
+      status: "awaitingSelection"
+    };
+
+    const tv = battlePresentation(createTvProjection(state));
+    const restored = battlePresentation(createTvProjection(JSON.parse(JSON.stringify(state))));
+    expect(tv.stage).toBe("consequence_required");
+    expect(tv.waiting).toMatchObject({ actorDisplayName: "Joel", privateDecision: true });
+    expect(restored).toEqual(tv);
+    expect(JSON.stringify(tv)).not.toContain("scar-mind-01");
+    expect(JSON.stringify(tv)).not.toContain("secret-scar-choice");
+  });
+});

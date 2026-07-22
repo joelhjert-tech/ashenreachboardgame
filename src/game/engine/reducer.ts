@@ -127,6 +127,7 @@ import { RIFTFALL_BOARD_NODE_INDEX } from "../../data/riftfallBoardNodes.js";
 import { canRiftAnchorSpikeSuppress } from "../rules/forcedDisplacement.js";
 import { resolveFloorZeroSalvageLoss, THREAT_REVISION_SALVAGE_LOSS_SOURCE_IDS } from "../rules/salvageLoss.js";
 import { isBoardSpaceShopCapable, SHOP_FAILURE_REASONS } from "../rules/shopAvailability.js";
+import { canEndTurn } from "../rules/tileFunctions.js";
 import {
   getStatUpgradeCost,
   getStatUpgradeDisabledReason,
@@ -1833,6 +1834,12 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
           movementAdjustments: clearMovementAdjustmentForSeat(state, movementAction.seatId),
           routeStarChoices: state.routeStarChoices ? Object.fromEntries(Object.entries(state.routeStarChoices).filter(([seatId]) => seatId !== movementAction.seatId)) : undefined,
           tileChallengeProgress: movementAction.success ? null : state.tileChallengeProgress,
+          tileArrivalThreatProgress: movementAction.success ? {
+            arrivalId: `arrival:${movementAction.seatId}:${destinationSectorId}:${state.sequence + 1}`,
+            seatId: movementAction.seatId,
+            sectorId: destinationSectorId,
+            nextThreatIconIndex: 0
+          } : state.tileArrivalThreatProgress,
           players: updateActivePlayer(state, movementAction.seatId, (entry) => ({
             ...entry,
             sectorId: destinationSectorId,
@@ -1924,8 +1931,9 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
       return succeed({
         ...suppressionReadyState,
         sequence: state.sequence + 1,
-        phase: "action",
+        phase: drawnAction.continuationPhase ?? "action",
         resolutionSource: null,
+        tileArrivalThreatProgress: drawnAction.tileArrivalThreatProgress ?? state.tileArrivalThreatProgress,
         currentEncounter: drawnAction.card,
         recentEncounterCardIds: recordRecentEncounterCardId(revealedState, drawnAction.card?.id),
         activeResolution: drawnAction.card
@@ -4766,6 +4774,13 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
             flavor: contract.text,
             artType: "contract"
           },
+          origin: {
+            sourceDeck: "contract",
+            sourceSectorId: player.sectorId,
+            sourceEventId: `contract-completion:${completeAction.seatId}:${completeAction.contractId}:${completeAction.createdAt}`,
+            queuePosition: 0,
+            privacy: "owner"
+          },
           title: "Contract completed",
           text: `Completed ${contract.name}. ${formatContractObjectiveStatus(contract, getContractObjectiveTarget(contract))}.`,
           effects: contract.reward.effects.flatMap((effect) => summarizeEffects(effect, true))
@@ -6134,6 +6149,11 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
 
       if (!canAdvancePhase(state.phase, action.toPhase)) {
         return reject(state, action, `Illegal phase transition ${state.phase} -> ${action.toPhase}`);
+      }
+
+      if (state.phase === "action" && action.toPhase === "resolution" && action.transitionCause !== "automatic") {
+        const endTurn = canEndTurn(state, action.seatId);
+        if (!endTurn.allowed) return reject(state, action, endTurn.reason ?? "Mandatory tile resolution is incomplete");
       }
 
       const leavingResolution = state.phase === "resolution" && action.toPhase !== "resolution";
