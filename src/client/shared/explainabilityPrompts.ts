@@ -399,8 +399,8 @@ export function buildCurrentTablePrompt(patch: StatePatch<PublicPatchPayload> | 
         : `Waiting on ${payload.shopEncounter.activePlayer.name} to choose a shop action at ${payload.shopEncounter.shopName}.`,
       requiredActorSeatId: payload.shopEncounter.activePlayer.playerId,
       requiredActorName: payload.shopEncounter.activePlayer.name,
-      phaseReason: isBlocked ? "Threats or blockers prevent normal shopping." : `${payload.shopEncounter.activePlayer.name} has ${payload.shopEncounter.activePlayer.salvage} Salvage.`,
-      availableActionSummary: isBlocked ? "Clear the blocker first." : "Buy and sell on the active phone.",
+      phaseReason: isBlocked ? "Threats or blockers prevent normal shopping." : payload.shopEncounter.presentation?.publicStatus ?? "The active operative is browsing on their phone.",
+      availableActionSummary: isBlocked ? "Clear the blocker first." : "The active phone controls this shop.",
       lockedReason: isBlocked ? blocker : null,
       lastOutcomeSummary: payload.shopEncounter.recentOutcome?.summary ?? latestOutcome,
       watchText: "Phone confirms purchases and sales.",
@@ -586,7 +586,7 @@ export function buildCurrentPlayerPrompt(patch: PhonePatchPayload): CurrentPlaye
         ? blocker ?? "Shop is locked until blockers are cleared."
         : `${patch.shopEncounter.shopName} is open. Buy, sell, or leave from the Shop tab.`,
       requiredAction: isBlocked ? "Clear blocker" : "Choose shop action",
-      actionSummary: isBlocked ? "Buy and sell controls are locked." : `${patch.shopEncounter.activePlayer.salvage} Salvage available.`,
+      actionSummary: isBlocked ? "Buy and sell controls are locked." : patch.shopEncounter.activePlayer.salvage === undefined ? "Review the current shop choices." : `${patch.shopEncounter.activePlayer.salvage} Salvage available.`,
       disabledReasons: isBlocked ? [patch.shopEncounter.blockedReason ?? "shopBlockedByThreat"].map(String) : [],
       usefulNow: isBlocked ? "Clear the named threat first." : "Compare stock costs and sell values.",
       lastOutcomeSummary: patch.shopEncounter.recentOutcome?.summary ?? latestOutcome,
@@ -597,11 +597,14 @@ export function buildCurrentPlayerPrompt(patch: PhonePatchPayload): CurrentPlaye
   }
 
   if (patch.privateRivalry?.revealState === "completed") {
+    const objective = patch.privateRivalry.objective;
     return {
       phaseLabel: "Rivalry",
       privateText: patch.privateRivalry.scoring?.completionSummary ?? "Your rivalry agenda is complete.",
       requiredAction: "Review agenda",
-      actionSummary: `${patch.privateRivalry.objective.progressLabel}: ${patch.privateRivalry.objective.progress}/${patch.privateRivalry.objective.target}.`,
+      actionSummary: objective
+        ? `${objective.progressLabel}: ${objective.progress}/${objective.target}.`
+        : "The private objective is complete.",
       disabledReasons: [],
       usefulNow: "Quest tab shows owner-only scoring details.",
       lastOutcomeSummary: latestOutcome,

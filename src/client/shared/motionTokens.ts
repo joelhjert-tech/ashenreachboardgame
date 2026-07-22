@@ -24,10 +24,10 @@ export const hostPresentationTimings = {
   modifierRevealMs: 340,
   totalSettleMs: 520,
   resultEmphasisMs: 900,
-  movementStartMs: 550,
-  movementSegmentMs: 1050,
-  movementCrossRingMs: 1450,
-  movementArrivalMs: 900
+  movementStartMs: 300,
+  movementSegmentMs: 520,
+  movementCrossRingMs: 680,
+  movementArrivalMs: 600
 } as const;
 
 export const motionCssVariables = {
