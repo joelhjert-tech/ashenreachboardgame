@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState, type ReactElement } from "react";
 import type { CardImageType } from "../../game/assets/design/cardImageCatalog.js";
 import { CardArtImage } from "../shared/CardArtImage.js";
+import { OperativePortraitImage } from "../shared/OperativePortraitImage.js";
 import { GameButton } from "../shared/GameButton.js";
 import { formatResultDelta } from "../shared/resultDeltas.js";
-import { getCardArtPath, getCharacterPortraitPath } from "../shared/assetPaths.js";
+import { getCardArtPath } from "../shared/assetPaths.js";
 import { statLabelById } from "../shared/statLabels.js";
 import type {
   ClientIntent,
@@ -16,6 +17,7 @@ import type {
 import { PhoneInventoryPanel } from "./PhoneInventoryPanel.js";
 import { CinderWattleAbilityPanel } from "./CinderWattleAbilityPanel.js";
 import { getBattleAssistViewModel } from "./inventoryPresentation.js";
+import { AuthoritativeDicePresentation, buildDice, type AuthoritativeDiceModel } from "../shared/AuthoritativeDicePresentation.js";
 
 export interface PhoneBattleChoiceAction {
   key: string;
@@ -76,6 +78,11 @@ function signed(value: number): string {
   return `${value >= 0 ? "+" : "−"}${Math.abs(value)}`;
 }
 
+function wasPhoneBattleSeen(id: string | null): boolean {
+  if (!id || typeof window === "undefined") return false;
+  return window.sessionStorage.getItem(`ashenreach:phone-battle-seen:${id}`) === "1";
+}
+
 function enemyArtType(patch: PhonePatchPayload): CardImageType {
   const artType = patch.activeResolution?.card?.artType;
   if (artType === "anomaly" || artType === "artifact" || artType === "contract" || artType === "escalation" || artType === "threat") {
@@ -111,6 +118,7 @@ export function isPhoneBattleRelevantToSeat(
 export function getPhoneBattleIdentity(patch: PhonePatchPayload): string | null {
   if (!isOpposedPhoneBattleActive(patch)) return null;
   return (
+    patch.battlePresentation?.id ??
     patch.activeResolution?.id ??
     (patch.pendingEnemyRoll
       ? `${patch.pendingEnemyRoll.fighterSeatId}:${patch.pendingEnemyRoll.encounterCardId}`
@@ -262,7 +270,10 @@ export function PhoneBattleView({
   const identity = getPhoneBattleIdentity(patch);
   const [context, setContext] = useState<BattleContext>("battle");
   const [detailsOpen, setDetailsOpen] = useState(false);
+  const [restored, setRestored] = useState(() => wasPhoneBattleSeen(identity));
+  const [rollSubmitting, setRollSubmitting] = useState(false);
   const resolution = patch.activeResolution ?? null;
+  const presentation = patch.battlePresentation ?? null;
   const encounter = patch.encounter;
   const pendingRoll = patch.pendingEnemyRoll;
   const battle = resolution?.battle;
@@ -271,14 +282,15 @@ export function PhoneBattleView({
   const assist = getBattleAssistViewModel(patch);
   const activeSeatId = patch.turnOrder[patch.activeSeatIndex] ?? null;
   const isActiveSeat = activeSeatId === self.seatId;
-  const playerName = patch.seats.find((seat) => seat.seatId === self.seatId)?.displayName ?? self.character.name;
+  const playerName = presentation?.operative.name ?? patch.seats.find((seat) => seat.seatId === self.seatId)?.displayName ?? self.character.name;
   const isAssignedEnemyRoller = pendingRoll?.assignedRollerSeatId === self.seatId;
   const assignedRollerName =
     patch.seats.find((seat) => seat.seatId === pendingRoll?.assignedRollerSeatId)?.displayName ??
     "another operative";
-  const stat: Stat = battle?.stat ?? encounter?.stat ?? pendingRoll?.stat ?? "grit";
+  const stat: Stat = presentation?.test.stat ?? battle?.stat ?? encounter?.stat ?? pendingRoll?.stat ?? "grit";
   const statLabel = statLabelById[stat].toUpperCase();
   const enemyName =
+    presentation?.encounter.name ??
     battle?.enemyName ??
     resolution?.card?.title ??
     pendingRoll?.encounterTitle ??
@@ -286,24 +298,54 @@ export function PhoneBattleView({
     encounter?.title ??
     "Unknown threat";
   const enemyId = resolution?.card?.id ?? pendingRoll?.encounterCardId ?? encounter?.id ?? "";
-  const opponentTotal = roll?.target ?? battle?.difficulty ?? encounter?.difficulty ?? assist?.enemyBattleValue ?? 0;
-  const operativeValue = assist?.playerBattleValue ?? self.character.stats[stat] ?? 0;
-  const rollValue = roll ? roll.dice.reduce((sum, value) => sum + value, 0) : null;
-  const finalTotal = roll?.finalTotal ?? null;
-  const result = roll ? (roll.success ? "success" : "defeat") : null;
-  const resultLabel = result === "success" ? "Success" : result === "defeat" ? "Defeat" : pendingRoll ? "Enemy roll" : resolution?.stage === "battle_setup" ? "Roll required" : "Battle";
-  const stateLabel = result ? "Battle resolution" : pendingRoll ? "Battle" : resolution?.stage === "battle_setup" ? "Battle" : "Engagement";
+  const opponentTotal = presentation?.opponent.finalTotal ?? roll?.target ?? battle?.difficulty ?? encounter?.difficulty ?? assist?.enemyBattleValue ?? 0;
+  const operativeValue = presentation?.operative.baseValue ?? assist?.playerBattleValue ?? self.character.stats[stat] ?? 0;
+  const rollValue = presentation?.operative.diceTotal ?? (roll ? roll.dice.reduce((sum, value) => sum + value, 0) : null);
+  const modifierTotal = presentation?.operative.modifiers.reduce((sum, modifier) => sum + modifier.value, 0) ?? roll?.modifierTotal ?? 0;
+  const finalTotal = presentation?.operative.finalTotal ?? roll?.finalTotal ?? null;
+  const result = presentation?.outcome === "success" ? "success" : presentation?.outcome === "failure" ? "defeat" : presentation?.outcome === "draw" ? "draw" : roll ? (roll.success ? "success" : "defeat") : null;
+  const resultLabel = result === "success" ? "Success" : result === "defeat" ? "Failure" : result === "draw" ? "Draw" : pendingRoll ? "Enemy roll" : resolution?.stage === "battle_setup" ? "Roll required" : "Battle";
+  const stateLabel = presentation?.encounter.category ?? (result ? "Battle resolution" : pendingRoll ? "Battle" : resolution?.stage === "battle_setup" ? "Battle" : "Engagement");
   const tieSucceeded = Boolean(roll?.success && roll.finalTotal === roll.target);
-  const detailsFormula = roll
-    ? `${roll.dice.join(" + ")} ${roll.modifierTotal >= 0 ? "+" : "−"} ${Math.abs(roll.modifierTotal)} = ${roll.finalTotal}`
+  const detailsFormula = finalTotal !== null
+    ? `${operativeValue} + ${rollValue ?? 0} ${modifierTotal >= 0 ? "+" : "−"} ${Math.abs(modifierTotal)} = ${finalTotal}`
     : null;
-  const outcomeFlavor = outcome?.text ?? null;
+  const outcomeFlavor = presentation?.publicConsequence ?? outcome?.text ?? null;
   const usableGearCount = assist?.usableCards.length ?? 0;
 
   useEffect(() => {
     setContext("battle");
     setDetailsOpen(false);
+    const alreadySeen = wasPhoneBattleSeen(identity);
+    setRestored(alreadySeen);
+    setRollSubmitting(false);
+    if (identity && typeof window !== "undefined") {
+      window.sessionStorage.setItem(`ashenreach:phone-battle-seen:${identity}`, "1");
+    }
   }, [identity]);
+
+  useEffect(() => {
+    if (roll || pendingRoll || resolution?.stage === "dice_roll") setRollSubmitting(false);
+  }, [pendingRoll, resolution?.stage, roll]);
+
+  const operativeDiceModel: AuthoritativeDiceModel = {
+    id: presentation?.id ?? resolution?.id ?? `battle:${self.seatId}:${enemyName}`,
+    revision: presentation?.revision ?? 0,
+    stage: rollSubmitting ? "submitting" : resolution?.stage === "dice_roll" || pendingRoll ? "rolling" : roll ? optionalActions.some((action) => /reroll/i.test(action.label)) ? "reaction" : "result" : "ready",
+    context: presentation?.encounter.category === "Battle" ? "battle" : "test",
+    actorName: playerName,
+    purpose: `${presentation?.encounter.category ?? "Battle"} · ${statLabel}`,
+    dice: buildDice(
+      presentation?.operative.rawDice ?? roll?.dice ?? [],
+      Array.from({ length: presentation?.operative.diceCount ?? roll?.dice.length ?? 2 }, (_, index) => `Operative die ${index + 1}`),
+      presentation?.operative.previousRawDice
+    ),
+    rawTotal: rollValue,
+    modifiers: presentation?.operative.modifiers ?? (battle?.modifiers ?? []),
+    finalValue: finalTotal,
+    target: opponentTotal,
+    outcome: result ? resultLabel : null
+  };
 
   const primaryAction = useMemo(() => {
     if (choiceActions.length > 0) {
@@ -364,7 +406,7 @@ export function PhoneBattleView({
     >
       <article className="phone-battle-combatant phone-battle-combatant--operative">
         <div className="phone-battle-combatant__art">
-          <img src={getCharacterPortraitPath(self.character.id)} alt={self.character.name} />
+          <OperativePortraitImage characterId={self.character.id} alt={self.character.name} priority />
         </div>
         <div className="phone-battle-combatant__identity">
           <span>Operative</span>
@@ -391,16 +433,18 @@ export function PhoneBattleView({
       data-testid="phone-battle-shell"
       data-battle-identity={identity ?? undefined}
       data-battle-ui="cinematic-split"
+      data-battle-restored={restored ? "true" : "false"}
     >
       <div className="phone-battle-shell__backdrop" aria-hidden="true" />
       <div className="phone-battle-shell__scroll" data-testid="phone-battle-scroll-region">
         {context === "battle" ? (
           <>
-            <header className="phone-battle-state">
+            <header className="phone-battle-state" aria-live="polite">
               <span>{stateLabel}</span>
               <strong>{resultLabel}</strong>
             </header>
             {combatantArena}
+            <AuthoritativeDicePresentation model={operativeDiceModel} compact />
             {usableGearCount > 0 && !roll ? (
               <button
                 type="button"
@@ -414,7 +458,7 @@ export function PhoneBattleView({
             <CinderWattleAbilityPanel patch={patch} seatId={self.seatId} onIntent={onIntent} />
             <section className="phone-battle-equation" aria-label="Battle totals">
               <div>
-                <span>{statLabel}</span>
+                <span>Base {statLabel}</span>
                 <strong>{operativeValue}</strong>
               </div>
               <div>
@@ -423,7 +467,7 @@ export function PhoneBattleView({
               </div>
               <div>
                 <span>Modifier</span>
-                <strong>{roll ? signed(roll.modifierTotal) : "—"}</strong>
+                <strong>{rollValue !== null ? signed(modifierTotal) : "—"}</strong>
               </div>
               <div>
                 <span>Opponent</span>
@@ -437,7 +481,7 @@ export function PhoneBattleView({
             </section>
             {result ? (
               <section className={`phone-battle-outcome phone-battle-outcome--${result}`} data-testid="phone-battle-outcome">
-                <span>{result === "success" ? "Threat defeated" : "Operative defeated"}</span>
+                <span>{result === "success" ? "Threat defeated" : result === "draw" ? "Totals tied" : "Test failed"}</span>
                 <BattleConsequences patch={patch} />
                 {outcomeFlavor ? <blockquote>“{outcomeFlavor}”</blockquote> : null}
               </section>
@@ -478,9 +522,11 @@ export function PhoneBattleView({
                 <div>
                   <span>Modifier sources</span>
                   <strong>
-                    {battle?.modifiers.length
-                      ? battle.modifiers.map((modifier) => `${modifier.label} ${signed(modifier.value)}`).join(", ")
-                      : "No projected modifiers"}
+                    {presentation?.operative.modifiers.length
+                      ? presentation.operative.modifiers.map((modifier) => `${modifier.label} ${signed(modifier.value)}`).join(", ")
+                      : battle?.modifiers.length
+                        ? battle.modifiers.map((modifier) => `${modifier.label} ${signed(modifier.value)}`).join(", ")
+                        : "No projected modifiers"}
                   </strong>
                 </div>
                 {resolution?.card?.flavor ?? encounter?.flavor ? (
@@ -498,7 +544,7 @@ export function PhoneBattleView({
             {context === "operative" ? (
               <>
                 <span>Operative status</span>
-                <img src={getCharacterPortraitPath(self.character.id)} alt="" />
+                <OperativePortraitImage characterId={self.character.id} alt="" />
                 <strong>{playerName}</strong>
                 <p>{self.character.name} · {self.character.archetype}</p>
                 <dl>
@@ -527,7 +573,7 @@ export function PhoneBattleView({
                   <div><span>Opponent</span><strong>{opponentTotal}</strong></div>
                   <div>
                     <span>Modifiers</span>
-                    <strong>{battle?.modifiers.length ? battle.modifiers.map((modifier) => `${modifier.label} ${signed(modifier.value)}`).join(", ") : "None"}</strong>
+                    <strong>{presentation?.operative.modifiers.length ? presentation.operative.modifiers.map((modifier) => `${modifier.label} ${signed(modifier.value)}`).join(", ") : battle?.modifiers.length ? battle.modifiers.map((modifier) => `${modifier.label} ${signed(modifier.value)}`).join(", ") : "None"}</strong>
                   </div>
                   {patch.outcomeSummary?.summary ? <p>{patch.outcomeSummary.summary}</p> : null}
                 </div>
@@ -540,11 +586,15 @@ export function PhoneBattleView({
         <GameButton
           type="button"
           tone={result === "defeat" ? "primary" : "battle"}
-          disabled={primaryAction.disabled}
+          disabled={primaryAction.disabled || rollSubmitting}
           disabledReason={primaryAction.disabled ? primaryAction.label : undefined}
-          onClick={() => primaryAction.action?.()}
+          onClick={() => {
+            if (rollSubmitting || !primaryAction.action) return;
+            if (/^Roll\b|^Enter combat\b|^Roll for enemy\b/i.test(primaryAction.label)) setRollSubmitting(true);
+            primaryAction.action();
+          }}
         >
-          {primaryAction.label}
+          {rollSubmitting ? "Submitting roll…" : primaryAction.label}
         </GameButton>
       </div>
       <BattleContextNavigation onSelect={setContext} />

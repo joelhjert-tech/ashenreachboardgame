@@ -93,11 +93,22 @@ export interface InventoryCardViewModel {
   gearSlot?: GearSlot;
   instanceId?: string;
   equipped?: boolean;
+  relevantNow: boolean;
+  relevanceKind: "usable" | "passive" | "blocked" | "inactive";
+  relevanceReason: string;
+  currentContext: string;
 }
 
 export interface InventoryGroupViewModel {
   group: InventoryGroupLabel;
   items: InventoryCardViewModel[];
+}
+
+export interface InventoryPresentationViewModel {
+  context: { label: string; testedSkill: Stat | null; requiredAction: string | null };
+  operative: { name: string; sectorId: string; wounds: number; scars: number; salvage: number; heldCount: number };
+  relevantNow: InventoryCardViewModel[];
+  groups: InventoryGroupViewModel[];
 }
 
 export interface BattleAssistViewModel {
@@ -234,90 +245,41 @@ function serverAcceptsCardUse(patch: PhonePatchPayload): boolean {
   return patch.phase === "action" || patch.phase === "sector" || (patch.phase === "resolution" && patch.activeResolution?.roll?.success === false);
 }
 
-function hasAny(text: string, words: string[]): boolean {
-  return words.some((word) => text.includes(word));
-}
-
 function uniqueWindows(windows: InventoryTimingWindow[]): InventoryTimingWindow[] {
   return [...new Set(windows)];
 }
 
+function hasAny(text: string, words: string[]): boolean {
+  return words.some((word) => text.includes(word));
+}
+
 function inferGearTimingWindows(item: GearItem): InventoryTimingWindow[] {
-  if (item.activationTiming?.length) return item.activationTiming;
-  if (!item.activeText && !item.useLimit) {
-    return [];
-  }
-
-  const text = `${item.name} ${item.category ?? ""} ${item.activeText ?? ""} ${item.useLimit ?? ""}`.toLowerCase();
+  const authored = uniqueWindows([...(item.activationTiming ?? []), ...(item.timingWindows ?? [])]);
+  if (authored.length > 0 || (!item.activeText && !item.useLimit)) return authored;
+  // Compatibility for old projected snapshots and focused component fixtures.
+  // Current canonical content is validated to carry typed timing metadata.
+  const text = `${item.category ?? ""} ${item.activeText ?? ""}`.toLowerCase();
   const windows: InventoryTimingWindow[] = [];
-
-  if (item.slot === "weapon" || hasAny(text, ["combat", "battle", "fight", "pressure"])) {
-    windows.push("beforeBattleRoll");
-  }
-
-  if (hasAny(text, ["reroll", "failed", "after", "check"])) {
-    windows.push("afterBattleRoll");
-  }
-
-  if (hasAny(text, ["prevent", "damage", "braced", "armor"])) {
-    windows.push("beforeTakingDamage");
-  }
-
-  if (hasAny(text, ["wound", "heal"])) {
-    windows.push("anyTime");
-  }
-
-  if (hasAny(text, ["movement", "move", "route"])) {
-    windows.push("movement");
-  }
-
-  if (hasAny(text, ["start of turn", "turn start"])) {
-    windows.push("startOfTurn");
-  }
-
-  if (windows.length === 0 || item.category === "active" || item.category === "chargedRelic" || item.category === "consumable") {
-    windows.push("anyTime");
-  }
-
+  if (item.slot === "weapon" || hasAny(text, ["combat", "battle"])) windows.push("beforeBattleRoll");
+  if (hasAny(text, ["reroll", "failed", "after"])) windows.push("afterBattleRoll");
+  if (hasAny(text, ["prevent", "damage", "armor"])) windows.push("beforeTakingDamage");
+  if (hasAny(text, ["movement", "move", "route"])) windows.push("movement");
+  if (hasAny(text, ["start of turn", "turn start"])) windows.push("startOfTurn");
+  if (windows.length === 0 || item.category === "active" || item.category === "chargedRelic" || item.category === "consumable") windows.push("anyTime");
   return uniqueWindows(windows);
 }
 
 function inferFollowerTimingWindows(follower: Follower): InventoryTimingWindow[] {
-  if (follower.timingWindows?.length) {
-    return uniqueWindows(follower.timingWindows);
-  }
-
-  if (!follower.useLimit) {
-    return [];
-  }
-
-  const text = `${follower.name} ${follower.role} ${follower.text} ${follower.useLimit}`.toLowerCase();
+  const authored = uniqueWindows([...(follower.activationTiming ?? []), ...(follower.timingWindows ?? [])]);
+  if (authored.length > 0 || !follower.useLimit) return authored;
+  const text = `${follower.role} ${follower.text}`.toLowerCase();
   const windows: InventoryTimingWindow[] = [];
-
-  if (hasAny(text, ["combat", "battle", "before rolling", "difficulty", "pressure"]) || follower.role === "gunner") {
-    windows.push("beforeBattleRoll");
-  }
-
-  if (hasAny(text, ["failed", "reroll", "after"])) {
-    windows.push("afterBattleRoll");
-  }
-
-  if (hasAny(text, ["wound", "damage", "heal", "prevent"]) || follower.role === "medic") {
-    windows.push("beforeTakingDamage", "anyTime");
-  }
-
-  if (hasAny(text, ["movement", "move", "route"]) || follower.role === "scout" || follower.role === "guide") {
-    windows.push("movement");
-  }
-
-  if (hasAny(text, ["threat draw", "drawing threats", "warning barks", "reveal one local threat"])) {
-    windows.push("beforeThreatDraw");
-  }
-
-  if (windows.length === 0) {
-    windows.push("anyTime");
-  }
-
+  if (hasAny(text, ["combat", "battle", "before rolling"]) || follower.role === "gunner") windows.push("beforeBattleRoll");
+  if (hasAny(text, ["failed", "reroll", "after"])) windows.push("afterBattleRoll");
+  if (hasAny(text, ["wound", "damage", "heal", "prevent"]) || follower.role === "medic") windows.push("beforeTakingDamage", "anyTime");
+  if (hasAny(text, ["movement", "move", "route"]) || follower.role === "scout" || follower.role === "guide") windows.push("movement");
+  if (hasAny(text, ["threat draw", "drawing threats", "warning barks"])) windows.push("beforeThreatDraw");
+  if (windows.length === 0) windows.push("anyTime");
   return uniqueWindows(windows);
 }
 
@@ -350,14 +312,16 @@ function getGearGroup(item: GearItem): InventoryGroupLabel {
 }
 
 function getGearLockReason(item: GearItem, self: PhoneSelfState): string | null {
-  const text = `${item.activeText ?? ""}`.toLowerCase();
-
+  const legacyActiveText = item.activeText?.toLowerCase() ?? "";
   if (item.useLimit === "charge" && (item.currentCharges ?? item.charges ?? 0) <= 0) {
     return "No charges remain.";
   }
   if (item.effectModel === "exhaust" && item.requiresEquipped && !isExactItemEquipped(item, self)) return "Equip this Artifact before using it.";
 
-  if (hasAny(text, ["heal"]) && self.character.wounds <= 0 && !hasAny(text, ["prevent", "braced"])) {
+  if (
+    (item.consumableEffect === "healWound" || (!item.consumableEffect && legacyActiveText.includes("heal"))) &&
+    self.character.wounds <= 0
+  ) {
     return "No wounds to heal.";
   }
 
@@ -530,6 +494,15 @@ function buildGearCard(item: GearItem, patch: PhonePatchPayload, self: PhoneSelf
           statusReason: `Equip to apply ${formatConditionalGearBonus(item) ?? formatPassiveGearBonus(item)}.`,
           canUseNow: false
         };
+  const projectedCanUse = useState?.relevanceKind
+    ? useState.relevanceKind === "usable" && !useState.disabledReason && inventoryOwnsControl
+    : status.canUseNow;
+  const finalStatus = {
+    ...status,
+    canUseNow: projectedCanUse,
+    status: projectedCanUse ? "Usable now" as const : status.status,
+    statusReason: projectedCanUse ? (useState?.relevanceReason ?? "Available in this timing window.") : status.statusReason
+  };
   // Charge state belongs to the exact projected item instance. A generic
   // object-use record still owns turn/round limits, but must not override a
   // freshly spent charge on the inventory object.
@@ -587,8 +560,8 @@ function buildGearCard(item: GearItem, patch: PhonePatchPayload, self: PhoneSelf
     effectText: item.effectModel === "consumable" ? `One Use — ${item.activeText ?? "Consume to resolve its effect."}` : item.activeText ?? `Passive ${formatPassiveGearBonus(item)}.`,
     timingText: timingWindows.length > 0 ? timingWindows.map(formatTimingWindow).join(", ") : "Passive",
     timingWindows,
-    ...status,
-    useIntent: status.canUseNow && inventoryOwnsControl ? { type: "USE_GEAR", gearId: item.id, instanceId: oathchainPrompt?.instanceId ?? item.instanceId, contractSignature: oathchainPrompt?.contractSignature } : null,
+    ...finalStatus,
+    useIntent: finalStatus.canUseNow ? { type: "USE_GEAR", gearId: item.id, instanceId: oathchainPrompt?.instanceId ?? item.instanceId, contractSignature: oathchainPrompt?.contractSignature } : null,
     statBonus: item.effectModel === "consumable" ? null : item.statBonus,
     useLimit: item.useLimit,
     charges: remainingUses,
@@ -612,7 +585,11 @@ function buildGearCard(item: GearItem, patch: PhonePatchPayload, self: PhoneSelf
       ? "No Recharge"
       : item.activationCost
       ? `Cost: ${item.activationCost.amount} ${item.activationCost.type === "salvage" ? "Salvage" : "Wound"}`
-      : undefined
+      : undefined,
+    relevantNow: useState?.relevantNow ?? finalStatus.canUseNow,
+    relevanceKind: useState?.relevanceKind ?? (finalStatus.canUseNow ? "usable" : isEquipped && !hasActiveAbility ? "passive" : "inactive"),
+    relevanceReason: useState?.relevanceReason ?? "Not relevant to the current decision.",
+    currentContext: useState?.currentContext ?? patch.requiredAction?.label ?? "Current action"
   };
 }
 
@@ -629,6 +606,8 @@ function buildFollowerCard(follower: Follower, patch: PhonePatchPayload): Invent
   });
   const remainingUses = useState?.remainingUses ?? null;
   const maxUses = useState?.maxUses ?? (follower.useLimit ? 1 : null);
+  const projectedCanUse = useState?.relevanceKind ? useState.relevanceKind === "usable" && !useState.disabledReason : status.canUseNow;
+  const finalStatus = { ...status, canUseNow: projectedCanUse, status: projectedCanUse ? "Usable now" as const : status.status };
 
   return {
     id: follower.id,
@@ -638,8 +617,8 @@ function buildFollowerCard(follower: Follower, patch: PhonePatchPayload): Invent
     effectText: `${follower.text}${follower.id === "fandiablos" && patch.self?.character.temporaryAllStatBoost ? ` Too Many Dogs: +${patch.self.character.temporaryAllStatBoost.value} all stats for ${patch.self.character.temporaryAllStatBoost.remainingEligibleResolutions} more battle/hazard resolution(s).` : ""}`,
     timingText: `${timingWindows.length > 0 ? timingWindows.map(formatTimingWindow).join(", ") : "Passive"}${follower.effectModel === "exhaust" ? ". Refreshes next round" : ""}`,
     timingWindows,
-    ...status,
-    useIntent: status.canUseNow ? { type: "USE_FOLLOWER", followerId: follower.id } : null,
+    ...finalStatus,
+    useIntent: finalStatus.canUseNow ? { type: "USE_FOLLOWER", followerId: follower.id } : null,
     useLimit: follower.useLimit,
     charges: follower.effectModel === "exhaust" ? null : remainingUses,
     maxUses: follower.effectModel === "exhaust" ? null : maxUses,
@@ -654,7 +633,11 @@ function buildFollowerCard(follower: Follower, patch: PhonePatchPayload): Invent
     fallbackLabel: getFallbackLabel(follower.name),
     activationCostText: follower.id === "fandiablos" ? "Cost: 1 Wound (or 2 Wounds for +2 all stats on next 2 battles/hazards)" : undefined,
     followerRoleText: `${toTitleCase(follower.role)}${follower.tier ? ` · ${toTitleCase(follower.tier)}` : ""}`,
-    acquisitionText: getFollowerAcquisitionSources(follower.id).map((source) => source.label).join(" · ") || undefined
+    acquisitionText: getFollowerAcquisitionSources(follower.id).map((source) => source.label).join(" · ") || undefined,
+    relevantNow: useState?.relevantNow ?? finalStatus.canUseNow,
+    relevanceKind: useState?.relevanceKind ?? (finalStatus.canUseNow ? "usable" : "inactive"),
+    relevanceReason: useState?.relevanceReason ?? "Not relevant to the current decision.",
+    currentContext: useState?.currentContext ?? patch.requiredAction?.label ?? "Current action"
   };
 }
 
@@ -678,6 +661,37 @@ export function getInventoryGroups(patch: PhonePatchPayload): InventoryGroupView
     group,
     items: cards.filter((item) => item.group === group)
   }));
+}
+
+export function getInventoryPresentation(patch: PhonePatchPayload): InventoryPresentationViewModel | null {
+  const self = patch.self;
+  if (!self) return null;
+  const cards = getInventoryCards(patch);
+  const hasAuthoritativeRelevance = Boolean(patch.objectUseStates?.some((state) => state.relevantNow !== undefined));
+  const testedSkill = patch.activeResolution?.battle?.stat
+    ?? patch.pendingCooperativeTest?.stat
+    ?? patch.encounter?.stat
+    ?? null;
+  return {
+    context: {
+      label: cards.find((card) => card.currentContext)?.currentContext ?? patch.requiredAction?.label ?? "No immediate inventory action",
+      testedSkill,
+      requiredAction: patch.requiredAction?.detail ?? null
+    },
+    operative: {
+      name: self.character.name,
+      sectorId: self.sectorId,
+      wounds: self.character.wounds,
+      scars: self.character.scars.length,
+      salvage: self.character.salvage ?? 0,
+      heldCount: self.character.heldGear.length
+    },
+    relevantNow: hasAuthoritativeRelevance ? cards.filter((card) => card.relevantNow) : [],
+    groups: inventoryGroupOrder.map((group) => ({
+      group,
+      items: cards.filter((card) => card.group === group && (!hasAuthoritativeRelevance || !card.relevantNow))
+    }))
+  };
 }
 
 export function getBattleAssistViewModel(patch: PhonePatchPayload): BattleAssistViewModel | null {

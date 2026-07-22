@@ -985,7 +985,7 @@ describe("PhoneInventoryPanel", () => {
     expect(screen.getByRole("tab", { name: /action/i })).toBeInTheDocument();
     expect(screen.getByRole("tab", { name: /player card/i })).toHaveClass("phone-portrait-tab-player");
     expect(screen.getByRole("tab", { name: /inventory/i })).toHaveClass("phone-portrait-tab-inventory");
-    expect(screen.getByRole("tab", { name: /quest/i })).toHaveClass("phone-portrait-tab-quests");
+    expect(screen.getByRole("tab", { name: /objectives/i })).toHaveClass("phone-portrait-tab-quests");
     expect(screen.getByRole("tab", { name: /move/i })).toHaveClass("phone-portrait-tab-move");
     expect(screen.getByRole("tab", { name: /battle/i })).toHaveClass("phone-portrait-tab-battle");
     expect(screen.getByRole("tab", { name: /shop/i })).toHaveClass("phone-portrait-tab-shop");
@@ -1331,6 +1331,73 @@ describe("PhoneInventoryPanel", () => {
     expect(screen.queryByRole("navigation", { name: /movement navigation/i })).not.toBeInTheDocument();
   });
 
+  it("keeps destination confirmation enabled after a non-committing preview", async () => {
+    const onIntent = vi.fn();
+    const movementPatch = createPatch({
+      phase: "navigation",
+      encounter: null,
+      requiredAction: {
+        id: "movement:seat-1:1",
+        kind: "movement",
+        actorSeatId: "seat-1",
+        actorDisplayName: "Lane",
+        requiredTab: "move",
+        label: "Choose a destination",
+        detail: "Choose one legal destination.",
+        canAct: true,
+        waiting: false,
+        privacy: "owner"
+      },
+      movementPlanner: {
+        active: true,
+        movementValue: 1,
+        rolledValue: 1,
+        currentSectorId: "ashwake-crossing",
+        currentSectorName: "Ashwake Crossing",
+        destinations: [{
+          markerLabel: "A",
+          sectorId: "glassmere-spindle",
+          name: "Glassmere Spindle",
+          ring: "outer",
+          distance: 1,
+          route: ["ashwake-crossing", "glassmere-spindle"],
+          routeNames: ["Ashwake Crossing", "Glassmere Spindle"],
+          tags: ["signal"],
+          threatIcons: ["blue"],
+          ruleText: "Tune the spindle.",
+          faceUpThreats: [],
+          occupants: [],
+          strategicTags: ["safe"]
+        }]
+      }
+    });
+
+    render(
+      <PortraitControllerView
+        self={movementPatch.self}
+        roomCode="RT7P4"
+        displayName="Lane"
+        connectionStatus="open"
+        activeSeatId="seat-1"
+        activeContractCard={null}
+        patch={movementPatch}
+        patchSequence={10}
+        characters={characters}
+        onIntent={onIntent}
+        onLeave={vi.fn()}
+      />
+    );
+
+    const select = await screen.findByRole("button", { name: /select destination a, glassmere spindle/i });
+    fireEvent.click(select);
+    expect(onIntent).toHaveBeenCalledWith({
+      type: "MOVEMENT_DESTINATION_PREVIEWED",
+      seatId: "seat-1",
+      toSectorId: "glassmere-spindle"
+    });
+    expect(screen.getByRole("button", { name: /confirm glassmere spindle/i })).toBeEnabled();
+  });
+
   it("restores the focused battle UI for the authoritative assigned enemy roller", async () => {
     const patch = createPatch({
       activeSeatIndex: 1,
@@ -1515,7 +1582,7 @@ describe("PhoneInventoryPanel", () => {
     fireEvent.click(screen.getByRole("button", { name: /hide ui/i }));
     expect(screen.getByTestId("phone-shop-panel")).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: /skip \/ continue/i }));
+    fireEvent.click(screen.getByRole("button", { name: /leave shop/i }));
 
     expect(onIntent).toHaveBeenCalledWith({
       type: "SHOP_SKIP_REQUESTED",
@@ -1585,10 +1652,22 @@ describe("PhoneInventoryPanel", () => {
     expect(screen.queryByText(/roll your die/i)).not.toBeInTheDocument();
   });
 
-  it("reasserts the authoritative active tab on every newer server patch", () => {
+  it("routes once per authoritative action and preserves passive navigation for an unchanged projection", async () => {
     const shopPatch = createPatch({
       phase: "action",
       encounter: null,
+      requiredAction: {
+        id: "shop:seat-1:anchor-market",
+        kind: "shop",
+        actorSeatId: "seat-1",
+        actorDisplayName: "Lane",
+        requiredTab: "shop",
+        label: "Shop",
+        detail: "Choose an item or leave the shop.",
+        canAct: true,
+        waiting: false,
+        privacy: "owner"
+      },
       shopEncounter: {
         sectorId: "outer_waymarket",
         sectorName: "Anchor Market",
@@ -1607,7 +1686,7 @@ describe("PhoneInventoryPanel", () => {
     );
 
     openPhoneTabs();
-    expect(screen.getByRole("tab", { name: /shop/i })).toHaveAttribute("aria-selected", "true");
+    await waitFor(() => expect(screen.getByRole("tab", { name: /shop/i })).toHaveAttribute("aria-selected", "true"));
     fireEvent.click(screen.getByRole("tab", { name: /player card/i }));
     expect(screen.getByRole("tab", { name: /player card/i })).toHaveAttribute("aria-selected", "true");
 
@@ -1616,7 +1695,62 @@ describe("PhoneInventoryPanel", () => {
         activeSeatId="seat-1" activeContractCard={null} patch={shopPatch} patchSequence={11}
         characters={characters} onIntent={vi.fn()} onLeave={vi.fn()} />
     );
-    expect(screen.getByRole("tab", { name: /shop/i })).toHaveAttribute("aria-selected", "true");
+    expect(screen.getByRole("tab", { name: /player card/i })).toHaveAttribute("aria-selected", "true");
+
+    const nextShopPatch = {
+      ...shopPatch,
+      requiredAction: { ...shopPatch.requiredAction!, id: "shop:seat-1:anchor-market:purchase" }
+    };
+    view.rerender(
+      <PortraitControllerView self={nextShopPatch.self} roomCode="RT7P4" displayName="Lane" connectionStatus="open"
+        activeSeatId="seat-1" activeContractCard={null} patch={nextShopPatch} patchSequence={12}
+        characters={characters} onIntent={vi.fn()} onLeave={vi.fn()} />
+    );
+    await waitFor(() => expect(screen.getByRole("tab", { name: /shop/i })).toHaveAttribute("aria-selected", "true"));
+  });
+
+  it("locks the projected command tree immediately after one submission", async () => {
+    const onIntent = vi.fn();
+    const patch = createPatch({
+      phase: "navigation",
+      encounter: null,
+      requiredAction: {
+        id: "movement-roll:seat-1:turn-1",
+        kind: "movement",
+        actorSeatId: "seat-1",
+        actorDisplayName: "Lane",
+        requiredTab: "move",
+        label: "Roll for movement",
+        detail: "Roll once to reveal legal destinations.",
+        canAct: true,
+        waiting: false,
+        privacy: "owner"
+      },
+      movementPlanner: null
+    });
+
+    const view = render(
+      <PortraitControllerView self={patch.self} roomCode="RT7P4" displayName="Lane" connectionStatus="open"
+        activeSeatId="seat-1" activeContractCard={null} patch={patch} patchSequence={21}
+        characters={characters} onIntent={onIntent} onLeave={vi.fn()} />
+    );
+
+    const roll = await screen.findByRole("button", { name: /roll movement/i });
+    fireEvent.click(roll);
+    fireEvent.click(roll);
+
+    expect(onIntent).toHaveBeenCalledTimes(1);
+    expect(screen.getByRole("status")).toHaveTextContent("ROLLING");
+    expect(roll).toBeDisabled();
+
+    view.rerender(
+      <PortraitControllerView self={patch.self} roomCode="RT7P4" displayName="Lane" connectionStatus="open"
+        activeSeatId="seat-1" activeContractCard={null} patch={patch} patchSequence={21}
+        serverError="Movement revision is stale or unavailable"
+        characters={characters} onIntent={onIntent} onLeave={vi.fn()} />
+    );
+    await waitFor(() => expect(screen.getByRole("alert")).toHaveTextContent(/turn has advanced/i));
+    expect(screen.getByRole("button", { name: /roll movement/i })).toBeEnabled();
   });
 
   it("shows private rivalry agenda details on the Quest tab", () => {
@@ -1665,7 +1799,7 @@ describe("PhoneInventoryPanel", () => {
     );
 
     openPhoneTabs();
-    fireEvent.click(screen.getByRole("tab", { name: /^quest$/i }));
+    fireEvent.click(screen.getByRole("tab", { name: /^objectives$/i }));
 
     const agenda = screen.getByRole("region", { name: /private rivalry agenda/i });
 
@@ -1723,7 +1857,7 @@ describe("PhoneInventoryPanel", () => {
     );
 
     openPhoneTabs();
-    fireEvent.click(screen.getByRole("tab", { name: /^quest$/i }));
+    fireEvent.click(screen.getByRole("tab", { name: /^objectives$/i }));
     fireEvent.click(screen.getByRole("button", { name: /reveal agenda/i }));
 
     expect(screen.getByRole("region", { name: /reveal agenda confirmation/i })).toBeInTheDocument();
@@ -1784,7 +1918,7 @@ describe("PhoneInventoryPanel", () => {
     );
 
     openPhoneTabs();
-    fireEvent.click(screen.getByRole("tab", { name: /^quest$/i }));
+    fireEvent.click(screen.getByRole("tab", { name: /^objectives$/i }));
 
     const agenda = screen.getByRole("region", { name: /private rivalry agenda/i });
 
@@ -1846,7 +1980,7 @@ describe("PhoneInventoryPanel", () => {
     );
 
     openPhoneTabs();
-    fireEvent.click(screen.getByRole("tab", { name: /^quest$/i }));
+    fireEvent.click(screen.getByRole("tab", { name: /^objectives$/i }));
 
     const agenda = screen.getByRole("region", { name: /private rivalry agenda/i });
 
@@ -1881,10 +2015,10 @@ describe("PhoneInventoryPanel", () => {
     );
 
     openPhoneTabs();
-    fireEvent.click(screen.getByRole("tab", { name: /^quest$/i }));
+    fireEvent.click(screen.getByRole("tab", { name: /^objectives$/i }));
 
     expect(screen.queryByRole("region", { name: /private rivalry agenda/i })).not.toBeInTheDocument();
-    expect(screen.getByText("No active mission")).toBeInTheDocument();
+    expect(screen.getByText("No active Contract")).toBeInTheDocument();
   });
 
   it("shows the active mission with objective and progress on the Quest tab", () => {
@@ -1930,15 +2064,15 @@ describe("PhoneInventoryPanel", () => {
     );
 
     openPhoneTabs();
-    fireEvent.click(screen.getByRole("tab", { name: /^quest$/i }));
+    fireEvent.click(screen.getByRole("tab", { name: /^objectives$/i }));
 
     const mission = screen.getByTestId("phone-active-mission-card");
     expect(within(mission).getByText("Choir Hush Census")).toBeInTheDocument();
     expect(within(mission).getByTestId("phone-active-mission-art")).toHaveAttribute("src", expect.stringMatching(/\/assets\/cards\/(contracts|fallbacks)\//));
     expect(within(mission).getByTestId("phone-active-mission-target")).toHaveTextContent(/target: any sector with a threat or enemy/i);
-    expect(within(mission).getByText("Defeat 2 threats.")).toBeInTheDocument();
-    expect(within(mission).getByText("Progress 1/2 defeated")).toBeInTheDocument();
-    expect(within(mission).getByText("Gain Salvage")).toBeInTheDocument();
+    expect(within(mission).getByText("Defeat 2 enemies")).toBeInTheDocument();
+    expect(within(mission).getByText("1/2 defeats")).toBeInTheDocument();
+    expect(within(mission).getByText("Gain 1 Salvage")).toBeInTheDocument();
   });
 
   it("archives a completed mission in inventory and offers a new mission on the Quest tab", () => {
@@ -1989,10 +2123,10 @@ describe("PhoneInventoryPanel", () => {
       />
     );
     openPhoneTabs();
-    fireEvent.click(screen.getByRole("tab", { name: /^quest$/i }));
-    const chooser = screen.getByRole("region", { name: /choose new mission/i });
+    fireEvent.click(screen.getByRole("tab", { name: /^objectives$/i }));
+    const chooser = screen.getByRole("region", { name: /choose new contract/i });
     expect(within(chooser).queryByText("Choir Hush Census")).not.toBeInTheDocument();
-    fireEvent.click(within(chooser).getByRole("button", { name: /select mission/i }));
+    fireEvent.click(within(chooser).getByRole("button", { name: /select contract/i }));
     expect(onIntent).toHaveBeenCalledWith({
       type: "SELECT_REPLACEMENT_CONTRACT",
       seatId: "seat-1",
@@ -2056,7 +2190,7 @@ describe("PhoneInventoryPanel", () => {
       />
     );
 
-    expect(await screen.findByRole("region", { name: /choose new mission/i })).toBeInTheDocument();
+    expect(await screen.findByRole("region", { name: /choose new contract/i })).toBeInTheDocument();
   });
 
   it("shows public scenario sheet progress and pressure on the Quest tab without private agenda data", () => {
@@ -2158,9 +2292,9 @@ describe("PhoneInventoryPanel", () => {
     );
 
     openPhoneTabs();
-    fireEvent.click(screen.getByRole("tab", { name: /^quest$/i }));
+    fireEvent.click(screen.getByRole("tab", { name: /^objectives$/i }));
 
-    const scenario = screen.getByTestId("phone-scenario-sheet-summary");
+    const scenario = screen.getByTestId("phone-shared-mission-summary");
     expect(scenario).toHaveTextContent(/the broken seal/i);
     expect(scenario).toHaveTextContent(/stabilize the broken seal/i);
     expect(scenario).toHaveTextContent(/win progress/i);
@@ -2333,6 +2467,76 @@ describe("PhoneInventoryPanel", () => {
 
     expect(within(inventory).getByText("Black Route Fuse")).toBeInTheDocument();
     expect(within(inventory).queryByText("Coffin Rig")).not.toBeInTheDocument();
+  });
+
+  it("renders Relevant Now only from the authoritative owner projection", () => {
+    const base = createPatch();
+    const patch = createPatch({
+      objectUseStates: (base.self?.character.heldGear ?? []).map((item) => ({
+        source: "gear" as const,
+        id: item.id,
+        instanceId: item.instanceId,
+        usedThisTurn: false,
+        usedThisRound: false,
+        remainingUses: item.id === "cinder-suture-kit" ? 0 : 1,
+        maxUses: 1,
+        disabledReason: item.id === "cinder-suture-kit" ? "No wounds to heal." : null,
+        relevantNow: item.id === "black-route-fuse" || item.id === "cinder-suture-kit",
+        relevanceKind: item.id === "black-route-fuse" ? "usable" as const : item.id === "cinder-suture-kit" ? "blocked" as const : "inactive" as const,
+        relevanceReason: item.id === "cinder-suture-kit" ? "No wounds to heal." : null,
+        currentContext: "Battle roll",
+        activeModifier: null
+      }))
+    });
+    render(<PhoneInventoryPanel patch={patch} onIntent={vi.fn()} />);
+    const relevant = screen.getByTestId("phone-inventory-relevant-now");
+    expect(within(relevant).getByText("Black Route Fuse")).toBeInTheDocument();
+    expect(within(relevant).getByText("Cinder Suture Kit")).toBeInTheDocument();
+    expect(within(relevant).queryByText("Coffin Rig")).not.toBeInTheDocument();
+    expect(relevant).toHaveTextContent(/battle roll/i);
+  });
+
+  it("keeps Return to Action above the full collection and locks duplicate use submissions", () => {
+    const onIntent = vi.fn();
+    const onReturnToAction = vi.fn();
+    const base = createPatch();
+    const patch = createPatch({
+      requiredAction: {
+        id: "qa:p7:battle",
+        kind: "battle",
+        actorSeatId: "seat-1",
+        actorDisplayName: "Lane",
+        requiredTab: "battle",
+        label: "Battle",
+        detail: "Roll against the active enemy.",
+        canAct: true,
+        waiting: false,
+        privacy: "owner"
+      },
+      objectUseStates: (base.self?.character.heldGear ?? []).map((item) => ({
+        source: "gear" as const,
+        id: item.id,
+        instanceId: item.instanceId,
+        usedThisTurn: false,
+        usedThisRound: false,
+        remainingUses: 1,
+        maxUses: 1,
+        disabledReason: null,
+        relevantNow: item.id === "black-route-fuse",
+        relevanceKind: item.id === "black-route-fuse" ? "usable" as const : "inactive" as const,
+        relevanceReason: null,
+        currentContext: "Battle roll",
+        activeModifier: null
+      }))
+    });
+    render(<PhoneInventoryPanel patch={patch} onIntent={onIntent} onReturnToAction={onReturnToAction} />);
+    fireEvent.click(screen.getByRole("button", { name: /return to battle/i }));
+    expect(onReturnToAction).toHaveBeenCalledTimes(1);
+    const use = screen.getByRole("button", { name: /use black route fuse/i });
+    fireEvent.click(use);
+    fireEvent.click(use);
+    expect(onIntent).toHaveBeenCalledTimes(1);
+    expect(screen.getByText(/submitting/i)).toBeInTheDocument();
   });
 
   it("confirms Trace the Promise and renders only the private authoritative reading", () => {

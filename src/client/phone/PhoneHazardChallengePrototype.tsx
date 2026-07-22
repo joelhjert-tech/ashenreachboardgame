@@ -3,6 +3,7 @@ import type { CardImageType } from "../../game/assets/design/cardImageCatalog.js
 import { CardArtImage } from "../shared/CardArtImage.js";
 import { GameButton } from "../shared/GameButton.js";
 import { statLabelById } from "../shared/statLabels.js";
+import { AuthoritativeDicePresentation, buildDice, type AuthoritativeDiceModel } from "../shared/AuthoritativeDicePresentation.js";
 import type { ActiveResolution, PhonePatchPayload, ResultDelta, Stat } from "../shared/types.js";
 import "./PhoneHazardChallengePrototype.css";
 
@@ -161,6 +162,20 @@ export function PhoneHazardChallengeView({
     : null);
   const result = resolution?.roll ? (resolution.roll.success ? "success" : "failure") : null;
   const actionLabel = primary?.label ?? (result === "success" ? "Success" : result === "failure" ? "Failure" : encounterActionLabel(kind, primary));
+  const diceModel: AuthoritativeDiceModel = {
+    id: resolution?.id ?? `test:${self.seatId}:${title}`,
+    revision: patch.battlePresentation?.revision ?? 0,
+    stage: submitted && !resolution?.roll ? "submitting" : resolution?.stage === "dice_roll" ? "rolling" : resolution?.roll ? "result" : "ready",
+    context: kind === "hazard" ? "event" : "test",
+    actorName: playerName,
+    purpose: `${title} · ${statLabelById[stat]} test`,
+    dice: buildDice(resolution?.roll?.dice ?? [], Array.from({ length: resolution?.roll?.dice.length ?? 1 }, (_, index) => `Test die ${index + 1}`)),
+    rawTotal: resolution?.roll?.baseTotal ?? null,
+    modifiers: resolution?.battle?.modifiers ?? [],
+    finalValue: resolution?.roll?.finalTotal ?? null,
+    target: difficulty,
+    outcome: result
+  };
 
   useEffect(() => {
     setSubmitted(false);
@@ -199,6 +214,7 @@ export function PhoneHazardChallengeView({
           {encounterArt}
           <p className="phone-test-prototype__lore">{flavor}</p>
         </article>
+        <AuthoritativeDicePresentation model={diceModel} compact />
         <TestCalculation stat={stat} value={skillValue} resolution={resolution} difficulty={difficulty} />
         {resolution?.battle?.modifiers.length ? (
           <div className="phone-test-modifiers" aria-label="Applied modifiers">

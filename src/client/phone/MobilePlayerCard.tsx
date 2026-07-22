@@ -3,8 +3,8 @@ import { describeContractObjective, formatContractObjectiveStatus } from "../../
 import { getEquippedGearItem } from "../../game/engine/gear.js";
 import { getChallengeThemeStyle } from "../../game/ui/challengeTheme.js";
 import { CardArtImage } from "../shared/CardArtImage.js";
+import { OperativePortraitImage } from "../shared/OperativePortraitImage.js";
 import { ChallengeBadge } from "../shared/ChallengeBadge.js";
-import { getCharacterPortraitPath } from "../shared/assetPaths.js";
 import type { AbilityChangeItem } from "../shared/abilityTelemetry.js";
 import {
   buildScenarioOutcomeSummary,
@@ -114,7 +114,6 @@ export function MobilePlayerCard({
   className,
   equipmentSuppressions = []
 }: MobilePlayerCardProps): ReactElement {
-  const portraitPath = getCharacterPortraitPath(self.character.id);
   const scarTrack = buildTrack(self.character.scars.length);
   const woundTrack = buildTrack(self.character.wounds);
   const latestOutcome = outcomeSummary?.seatId === self.seatId ? outcomeSummary.summary : null;
@@ -211,7 +210,7 @@ export function MobilePlayerCard({
       <div className="phone-sheet-layout">
         <aside className="phone-sheet-left">
           <div className="mobile-player-card-portrait-shell phone-sheet-portrait-shell">
-            <img className="mobile-player-card-portrait phone-sheet-portrait" src={portraitPath} alt={self.character.name} />
+            <OperativePortraitImage className="mobile-player-card-portrait phone-sheet-portrait" characterId={self.character.id} alt={self.character.name} priority />
           </div>
           <button type="button" className="phone-button phone-button-secondary phone-sheet-leave-button" onClick={onLeave}>
             Leave Seat

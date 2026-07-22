@@ -1,4 +1,4 @@
-import { useId, useState, type CSSProperties, type ReactElement, type ReactNode } from "react";
+import { useEffect, useId, useState, type CSSProperties, type ReactElement, type ReactNode } from "react";
 import { getChallengeThemeStyle } from "../../game/ui/challengeTheme.js";
 import {
   getStatUpgradeCost,
@@ -13,7 +13,7 @@ import { getAfflictionEffectChips, getAfflictionStatusLabel } from "./affliction
 import { PhoneWrappedMediaCard } from "./PhoneWrappedMediaCard.js";
 import { PhoneInspectableCardArt } from "./PhoneInspectableCardArt.js";
 import {
-  getInventoryGroups,
+  getInventoryPresentation,
   statLabelById,
   type InventoryCardViewModel
 } from "./inventoryPresentation.js";
@@ -24,6 +24,7 @@ interface PhoneInventoryPanelProps {
   compact?: boolean;
   onlyUsable?: boolean;
   onUse?: () => void;
+  onReturnToAction?: () => void;
 }
 
 function InventoryDisclosure({
@@ -238,6 +239,10 @@ function InventoryCard({
   canManageEquipment: boolean;
 }): ReactElement {
   const [oathchainConfirming, setOathchainConfirming] = useState(false);
+  const [submitting, setSubmitting] = useState<"use" | "equip" | null>(null);
+  useEffect(() => {
+    if (!card.canUseNow) setSubmitting(null);
+  }, [card.canUseNow, card.statusReason, card.charges, card.equipped]);
   const useIntent = toUseIntent(card, seatId);
   const statusLabel = card.exhaustState?.status ?? getStatusLabel(card.status);
   const statusReason = card.canUseNow ? "Active in this timing window." : card.statusReason;
@@ -299,13 +304,17 @@ function InventoryCard({
             type="button"
             tone="secondary"
             className="phone-button phone-inventory-equip-button"
-            disabled={!canManageEquipment}
+            disabled={!canManageEquipment || submitting !== null}
             disabledReason={canManageEquipment ? undefined : "Equip gear during setup or your Action phase."}
-            onClick={() => onIntent?.(card.equipped
-              ? { type: "UNEQUIP_GEAR", seatId, slot: card.gearSlot! }
-              : { type: "EQUIP_GEAR", seatId, gearId: card.id, instanceId: card.instanceId, slot: card.gearSlot! })}
+            onClick={() => {
+              if (submitting) return;
+              setSubmitting("equip");
+              onIntent?.(card.equipped
+                ? { type: "UNEQUIP_GEAR", seatId, slot: card.gearSlot! }
+                : { type: "EQUIP_GEAR", seatId, gearId: card.id, instanceId: card.instanceId, slot: card.gearSlot! });
+            }}
           >
-            {card.equipped ? "Unequip" : `Equip ${card.gearSlot}`}
+            {submitting === "equip" ? "Submitting…" : card.equipped ? "Unequip" : `Equip ${card.gearSlot}`}
           </GameButton>
         ) : null}
         {card.canUseNow && useIntent ? (card.id === "fandiablos" ? <>
@@ -322,11 +331,14 @@ function InventoryCard({
           className="phone-button phone-button-primary phone-inventory-use-button"
           aria-label={`Use ${card.name}`}
           onClick={() => {
+            if (submitting) return;
+            setSubmitting("use");
             onIntent?.(useIntent);
             onUse?.();
           }}
+          disabled={submitting !== null}
         >
-          {card.chargeState ? `Use now — ${card.chargeState.cost} charge${card.chargeState.cost === 1 ? "" : "s"}` : "Use now"}
+          {submitting === "use" ? "Submitting…" : card.chargeState ? `Use now — ${card.chargeState.cost} charge${card.chargeState.cost === 1 ? "" : "s"}` : "Use now"}
         </GameButton>
       )) : null}
       </>}
@@ -638,7 +650,8 @@ export function PhoneInventoryPanel({
   onIntent,
   compact = false,
   onlyUsable = false,
-  onUse
+  onUse,
+  onReturnToAction
 }: PhoneInventoryPanelProps): ReactElement {
   const self = patch.self;
 
@@ -650,14 +663,17 @@ export function PhoneInventoryPanel({
     );
   }
 
-  const inventoryGroups = getInventoryGroups(patch);
-  const allCards = inventoryGroups.flatMap((group) => group.items);
-  const groups = inventoryGroups.map((group) => ({
-    ...group,
-    items: onlyUsable ? group.items.filter((card) => card.canUseNow) : group.items
-  }));
+  const presentation = getInventoryPresentation(patch)!;
+  const allCards = [...presentation.relevantNow, ...presentation.groups.flatMap((group) => group.items)];
+  const relevantCards = (presentation.relevantNow.length > 0 || !onlyUsable
+    ? presentation.relevantNow
+    : allCards.filter((card) => card.canUseNow)
+  ).filter((card) => onlyUsable ? card.canUseNow : true);
+  const groups = onlyUsable
+    ? [{ group: "Equipment" as const, items: relevantCards }]
+    : presentation.groups;
   const visibleGroups = groups.filter((group) => group.items.length > 0);
-  const visibleItemCount = visibleGroups.reduce((sum, group) => sum + group.items.length, 0);
+  const visibleItemCount = visibleGroups.reduce((sum, group) => sum + group.items.length, 0) + (onlyUsable ? 0 : relevantCards.length);
   const activeSeatId = patch.turnOrder[patch.activeSeatIndex] ?? null;
   const canManageEquipment =
     (patch.status === "lobby" && patch.phase === "start") ||
@@ -672,6 +688,40 @@ export function PhoneInventoryPanel({
 
   return (
     <section className={panelClassName} aria-label="Inventory" data-item-count={visibleItemCount}>
+      {!onlyUsable ? (
+        <section className="phone-inventory-relevant" aria-label="Relevant now" data-testid="phone-inventory-relevant-now">
+          <div className="phone-inventory-relevant-heading">
+            <div><span>Relevant now</span><strong>{presentation.context.label}</strong></div>
+            <em>{relevantCards.length}</em>
+          </div>
+          {relevantCards.length > 0 ? (
+            <div className="phone-inventory-card-list">
+              {relevantCards.map((card) => (
+                <InventoryCard key={`${card.source}:${card.instanceId ?? card.id}`} card={card} seatId={self.seatId} onIntent={onIntent} onUse={onUse} canManageEquipment={canManageEquipment} />
+              ))}
+            </div>
+          ) : <p>Nothing you own changes this decision. Continue with the required action.</p>}
+        </section>
+      ) : null}
+      <div className="phone-inventory-command-header">
+        <div>
+          <span>Inventory context</span>
+          <strong>{presentation.context.label}</strong>
+          {presentation.context.testedSkill ? <em>{statLabelById[presentation.context.testedSkill]} matters now</em> : null}
+        </div>
+        <dl aria-label="Essential operative state">
+          <div><dt>Wounds</dt><dd>{presentation.operative.wounds}</dd></div>
+          <div><dt>Scars</dt><dd>{presentation.operative.scars}</dd></div>
+          <div><dt>Salvage</dt><dd>{presentation.operative.salvage}</dd></div>
+          <div><dt>Owned</dt><dd>{presentation.operative.heldCount}</dd></div>
+        </dl>
+        {presentation.context.requiredAction ? <p>{presentation.context.requiredAction}</p> : null}
+        {onReturnToAction && patch.requiredAction?.requiredTab ? (
+          <GameButton type="button" tone="action" className="phone-button phone-inventory-return-action" onClick={onReturnToAction}>
+            Return to {patch.requiredAction.requiredTab === "battle" ? "Battle" : patch.requiredAction.requiredTab === "move" ? "Move" : patch.requiredAction.requiredTab === "shop" ? "Shop" : "Action"}
+          </GameButton>
+        ) : null}
+      </div>
       {!onlyUsable && <InventoryScarsSection scars={self.character.scarCards ?? []} />}
       {!onlyUsable && (
         <InventoryAfflictionsSection
@@ -690,7 +740,8 @@ export function PhoneInventoryPanel({
         </section>
       ) : null}
       {!onlyUsable && <InventoryTimingGroups cards={allCards} />}
-      {visibleGroups.length === 0 ? (
+      {!onlyUsable && visibleGroups.length > 0 ? <div className="phone-inventory-collection-heading"><span>Full collection</span><small>Inspect carried and inactive cards</small></div> : null}
+      {visibleGroups.length === 0 && (onlyUsable || relevantCards.length === 0) ? (
         <p className="phone-sheet-action-empty">
           {onlyUsable ? "No combat cards are usable in this timing window." : "No inventory cards, followers, or quest items yet."}
         </p>

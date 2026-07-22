@@ -165,7 +165,7 @@ export function buildUsefulNowViewModel(patch: PhonePatchPayload): UsefulNowView
 
   if (patch.phase === "action" && patch.shopEncounter?.activePlayer.playerId === self.seatId) {
     const sellable = patch.shopEncounter.sellInventory?.filter((item) => item.sellable).length ?? 0;
-    const salvage = patch.shopEncounter.activePlayer.salvage;
+    const salvage = patch.shopEncounter.activePlayer.salvage ?? 0;
 
     return {
       phaseLabel: "Shop",
@@ -192,9 +192,12 @@ export function buildUsefulNowViewModel(patch: PhonePatchPayload): UsefulNowView
   }
 
   if (patch.privateRivalry?.active) {
+    const objective = patch.privateRivalry.objective;
     questItems.push({
       label: "Private agenda",
-      detail: `${patch.privateRivalry.objective.progress}/${patch.privateRivalry.objective.target} ${patch.privateRivalry.objective.progressLabel}. ${patch.privateRivalry.reveal.hint}`,
+      detail: objective
+        ? `${objective.progress}/${objective.target} ${objective.progressLabel}. ${patch.privateRivalry.reveal.hint}`
+        : patch.privateRivalry.reveal.hint,
       tone: "private"
     });
   }

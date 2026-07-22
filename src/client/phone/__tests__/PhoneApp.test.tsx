@@ -418,6 +418,45 @@ describe("PhoneApp", () => {
     expect(document.body.scrollWidth).toBeLessThanOrEqual(390);
   });
 
+  it("moves focus to the first operative when the authoritative setup stage changes", async () => {
+    storeControllerAuth();
+    const patch = createLobbyPhonePatch({
+      setup: {
+        id: "setup:operative-selection:seat-1:2",
+        stage: "operative-selection",
+        actorSeatId: "seat-1",
+        actorDisplayName: "Joel",
+        title: "Select operative",
+        publicInstruction: "Joel is choosing an operative.",
+        activeInstruction: "Choose your operative.",
+        waitingInstruction: "Waiting for Joel.",
+        allowedCommand: "select-operative",
+        inputEnabled: true,
+        canStart: false,
+        startReason: "Complete setup first.",
+        startBlockers: ["Joel must choose an operative."],
+        connectedCount: 1,
+        readyCount: 0,
+        seatCapacity: 1,
+        revision: 2
+      }
+    });
+    vi.mocked(useRoomSubscription).mockReturnValue({
+      patch,
+      error: null,
+      sendIntent: vi.fn(),
+      status: "open",
+      debugEvents: [],
+      clearDebugEvents: vi.fn()
+    });
+
+    render(<PhoneApp />);
+
+    const picker = await screen.findByRole("list", { name: /character/i });
+    const firstOperative = within(picker).getAllByRole("button")[0]!;
+    await waitFor(() => expect(document.activeElement).toBe(firstOperative));
+  });
+
   it("shows character role, complexity, starting gear, and starting contract guidance", async () => {
     render(<PhoneApp />);
 

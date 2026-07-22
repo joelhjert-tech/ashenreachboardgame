@@ -14,6 +14,7 @@ import type {
   PublicMoveStrategicTag,
   PublicSectorExplorationSummary,
   PublicSectorExplorationThreat,
+  PublicTileArrivalState,
   PublicShopCost,
   PublicShopEncounterState,
   ResultDelta,
@@ -66,6 +67,11 @@ import {
   PhoneHazardChallengeView,
   isHazardChallengePresentation
 } from "./PhoneHazardChallengePrototype.js";
+import {
+  PhoneActionPriorityStack,
+  buildPhoneActionViewModel,
+  type PhoneActionViewModelSources
+} from "./PhoneActionPriorityStack.js";
 
 interface PhoneActionPanelProps {
   characters: CharacterCatalogEntry[];
@@ -76,6 +82,42 @@ interface PhoneActionPanelProps {
   hideTurnTabs?: boolean;
   onMovementNavigation?: (target: MovementNavigationTarget) => void;
   showMovementContextNavigation?: boolean;
+  onLeaveRoom?: () => void;
+}
+
+export function PhoneTileArrivalSummary({ arrival }: { arrival: PublicTileArrivalState | null | undefined }): ReactElement | null {
+  if (!arrival) return null;
+  const currentRule = arrival.rules.find((rule) => rule.status === "current") ?? null;
+  const remainingRules = arrival.rules.filter((rule) => rule.id !== currentRule?.id && rule.status !== "completed");
+  const remainingMandatory = remainingRules.filter((rule) => rule.mandatory).length;
+  const remainingOptional = remainingRules.filter((rule) => !rule.mandatory).length;
+  const renderRule = (rule: PublicTileArrivalState["rules"][number]) => (
+    <li key={rule.id} className={`is-${rule.status}`}>
+      <span>{rule.order}</span>
+      <div><strong>{rule.label}</strong><small>{rule.detail}</small></div>
+      <b>{rule.status === "current" ? "NEXT" : rule.status.toUpperCase()}</b>
+    </li>
+  );
+  return (
+    <section className="phone-tile-arrival" aria-label={`${arrival.tileName} arrival resolution`}>
+      <header>
+        <div><span>Tile arrival</span><h2>{arrival.tileName}</h2></div>
+        <strong>{arrival.mandatoryRemaining > 0 ? `${arrival.mandatoryRemaining} mandatory` : "Optional actions"}</strong>
+      </header>
+      <p>{arrival.lore}</p>
+      {currentRule ? <ol>{renderRule(currentRule)}</ol> : null}
+      {remainingRules.length > 0 ? (
+        <details className="phone-tile-arrival__remaining">
+          <summary>
+            View {remainingRules.length} remaining effect{remainingRules.length === 1 ? "" : "s"}
+            <span>{remainingMandatory} mandatory · {remainingOptional} optional</span>
+          </summary>
+          <ol>{remainingRules.map(renderRule)}</ol>
+        </details>
+      ) : null}
+      {!arrival.canEndTurn && arrival.blockedReason ? <div className="phone-tile-arrival__blocked">MANDATORY · {arrival.blockedReason}</div> : null}
+    </section>
+  );
 }
 
 function ScarDecisionPanel({
@@ -309,6 +351,8 @@ interface ActionButtonDefinition {
   tone: "primary" | "secondary";
   stat?: Stat;
   disabled?: boolean;
+  disabledReason?: string;
+  command?: ClientIntent;
   onClick: () => void;
 }
 
@@ -1647,48 +1691,17 @@ function PhoneShopPanel({
   seatId: string;
   onIntent: (intent: ClientIntent) => void;
 }): ReactElement | null {
-  const [confirmingCardId, setConfirmingCardId] = useState<string | null>(null);
-  const [pendingCardId, setPendingCardId] = useState<string | null>(null);
-  const [confirmingSellGearId, setConfirmingSellGearId] = useState<string | null>(null);
-  const [pendingSellGearId, setPendingSellGearId] = useState<string | null>(null);
+  const [pendingActionId, setPendingActionId] = useState<string | null>(null);
+  const [focusedOfferId, setFocusedOfferId] = useState<string | null>(null);
   const revealedStock = shopEncounter?.revealedStock ?? [];
   const sellInventory = shopEncounter?.sellInventory ?? [];
   const repairTargets = shopEncounter?.repairTargets ?? [];
-  const confirmingItem = revealedStock.find((item) => item.cardId === confirmingCardId) ?? null;
   const sellItemKey = (item: (typeof sellInventory)[number]) => item.instanceId ?? item.gearId;
-  const confirmingSellItem = sellInventory.find((item) => sellItemKey(item) === confirmingSellGearId) ?? null;
 
   useEffect(() => {
-    if (!confirmingCardId || revealedStock.some((item) => item.cardId === confirmingCardId)) {
-      return;
-    }
-    setConfirmingCardId(null);
-  }, [confirmingCardId, revealedStock]);
-
-  useEffect(() => {
-    if (!pendingCardId) {
-      return;
-    }
-    if (shopEncounter?.recentOutcome || !revealedStock.some((item) => item.cardId === pendingCardId)) {
-      setPendingCardId(null);
-    }
-  }, [pendingCardId, revealedStock, shopEncounter?.recentOutcome]);
-
-  useEffect(() => {
-    if (!confirmingSellGearId || sellInventory.some((item) => sellItemKey(item) === confirmingSellGearId)) {
-      return;
-    }
-    setConfirmingSellGearId(null);
-  }, [confirmingSellGearId, sellInventory]);
-
-  useEffect(() => {
-    if (!pendingSellGearId) {
-      return;
-    }
-    if (shopEncounter?.recentOutcome || !sellInventory.some((item) => sellItemKey(item) === pendingSellGearId)) {
-      setPendingSellGearId(null);
-    }
-  }, [pendingSellGearId, sellInventory, shopEncounter?.recentOutcome]);
+    setPendingActionId(null);
+    setFocusedOfferId(shopEncounter?.browseSelection?.selectedId ?? null);
+  }, [shopEncounter?.presentation?.revision, shopEncounter?.browseSelection?.selectedId, shopEncounter?.browseSelection?.view, shopEncounter?.recentOutcome]);
 
   if (!shopEncounter) {
     return null;
@@ -1711,11 +1724,30 @@ function PhoneShopPanel({
     ? "artifacts"
     : shopEncounter.browseSelection?.view ?? (revealedStock.length > 0 ? "equipment" : "categories");
   const stockViews = new Set(["equipment", "supplies", "artifacts"]);
+  const categories = shopEncounter.presentation?.categories ?? [
+    shopEncounter.services.find((service) => service.id === "buy-supplies") ? { id: "items" as const, view: "supplies" as const, label: "Items", description: "Field supplies", available: true, offerCount: null, unavailableReason: undefined } : null,
+    shopEncounter.services.find((service) => service.id === "buy-gear") ? { id: "equipment" as const, view: "equipment" as const, label: "Equipment", description: "Tools and armour", available: true, offerCount: revealedStock.length || null, unavailableReason: undefined } : null,
+    shopEncounter.services.find((service) => service.id === "trade-missions-for-artifact") ? { id: "artifacts" as const, view: "artifacts" as const, label: "Artifacts", description: "Contract exchange", available: true, offerCount: null, unavailableReason: undefined } : null,
+    serviceActions.some((service) => !["buy-gear", "buy-supplies", "trade-missions-for-artifact"].includes(service.id)) ? { id: "services" as const, view: "services" as const, label: "Services", description: "Local services", available: true, offerCount: serviceActions.length, unavailableReason: undefined } : null,
+    (shopEncounter.sellableCount ?? sellInventory.filter((item) => item.sellable).length) > 0 ? { id: "sell" as const, view: "sell" as const, label: "Sell", description: "Trade held Equipment", available: true, offerCount: shopEncounter.sellableCount ?? sellInventory.filter((item) => item.sellable).length, unavailableReason: undefined } : null
+  ].filter((entry): entry is NonNullable<typeof entry> => Boolean(entry));
+  const selectedStock = revealedStock.find((item) => item.cardId === focusedOfferId)
+    ?? revealedStock.find((item) => item.cardId === shopEncounter.browseSelection?.selectedId)
+    ?? revealedStock[0]
+    ?? null;
+  const selectedStockIndex = selectedStock ? revealedStock.findIndex((item) => item.cardId === selectedStock.cardId) : -1;
+  const selectedSale = sellInventory.find((item) => sellItemKey(item) === focusedOfferId)
+    ?? sellInventory.find((item) => sellItemKey(item) === shopEncounter.browseSelection?.selectedId)
+    ?? sellInventory[0]
+    ?? null;
+  const selectedSaleIndex = selectedSale ? sellInventory.findIndex((item) => sellItemKey(item) === sellItemKey(selectedSale)) : -1;
+  const ownerSalvage = shopEncounter.activePlayer.salvage;
 
   function selectShopView(
     view: "categories" | "equipment" | "supplies" | "artifacts" | "services" | "sell",
     serviceId?: string
   ): void {
+    setFocusedOfferId(null);
     if (serviceId && shopEncounter?.browseSelection?.view !== view) {
       onIntent({ type: "SHOP_SERVICE_REQUESTED", seatId, serviceId });
       return;
@@ -1724,8 +1756,7 @@ function PhoneShopPanel({
   }
 
   function confirmPurchase(cardId: string): void {
-    setPendingCardId(cardId);
-    setConfirmingCardId(null);
+    setPendingActionId(`buy:${cardId}`);
     onIntent({
       type: "SHOP_PURCHASE_REQUESTED",
       seatId,
@@ -1734,8 +1765,7 @@ function PhoneShopPanel({
   }
 
   function confirmSale(gearId: string, instanceId?: string): void {
-    setPendingSellGearId(instanceId ?? gearId);
-    setConfirmingSellGearId(null);
+    setPendingActionId(`sell:${instanceId ?? gearId}`);
     onIntent({
       type: "SHOP_SELL_REQUESTED",
       seatId,
@@ -1745,10 +1775,7 @@ function PhoneShopPanel({
   }
 
   function skipShop(): void {
-    setConfirmingCardId(null);
-    setConfirmingSellGearId(null);
-    setPendingCardId(null);
-    setPendingSellGearId(null);
+    setPendingActionId("leave");
     onIntent({
       type: "SHOP_SKIP_REQUESTED",
       seatId
@@ -1775,23 +1802,39 @@ function PhoneShopPanel({
         <span className={`phone-shop-status phone-shop-status-${shopEncounter.status}`}>{shopEncounter.status.toUpperCase()}</span>
       </div>
 
-      <div className="phone-shop-state-copy" role="status">
+      {shopView === "categories" ? <div className="phone-shop-state-copy" role="status">
         {isLocked
           ? blockedReasonText ?? "Shop blocked by threat."
             : shopEncounter.available === false
               ? "No shop available here."
               : "Choose a market service, then review stock or sell gear."}
-      </div>
+      </div> : null}
 
       <div className="phone-shop-wallet" aria-label="Operative resources">
-        <span>Salvage: {shopEncounter.activePlayer.salvage}</span>
-        <span>Scars {scarCount}</span>
-        <span>
-          Wounds {shopEncounter.activePlayer.wounds.current}/{shopEncounter.activePlayer.wounds.max}
-        </span>
-        <span>Trophies {shopEncounter.activePlayer.trophies ?? 0}</span>
+        <span>Salvage: {ownerSalvage ?? "Private"}</span>
       </div>
       </>}
+
+      {showRecentOutcome ? (
+        <div className="phone-shop-outcome" role="status" aria-live="polite">
+          <span>{recentOutcome?.gained ? "Purchase Complete" : recentOutcome?.sold ? "Sale Complete" : "Market Result"}</span>
+          <p>
+            {recentOutcome?.gained
+              ? `Purchased: ${recentOutcome.gained}`
+              : recentOutcome?.sold
+                ? `Sold: ${recentOutcome.sold}`
+              : recentOutcome?.summary}
+          </p>
+          {recentOutcome?.remainingSalvage !== undefined ? <strong className="phone-shop-balance-result">
+            Salvage: {recentOutcome.costPaid?.salvage !== undefined
+              ? `${recentOutcome.remainingSalvage + recentOutcome.costPaid.salvage} → ${recentOutcome.remainingSalvage}`
+              : recentOutcome.salvageDelta !== undefined
+                ? `${recentOutcome.remainingSalvage - recentOutcome.salvageDelta} → ${recentOutcome.remainingSalvage}`
+                : recentOutcome.remainingSalvage}
+          </strong> : null}
+          <ResultDeltaRow deltas={visibleShopDeltas} className="phone-shop-deltas" />
+        </div>
+      ) : null}
 
       {isLocked ? (
         <div className="phone-shop-locked" role="status">
@@ -1806,25 +1849,30 @@ function PhoneShopPanel({
         </div>
       ) : (
         <>
-          <nav className="phone-shop-category-rail" aria-label="Shop categories">
+          <nav className="phone-shop-category-rail phone-shop-category-grid" aria-label="Shop categories">
             {shopView !== "categories" ? (
               <GameButton type="button" tone="secondary" onClick={() => selectShopView("categories")}>All categories</GameButton>
             ) : null}
-            {shopEncounter.services.some((service) => service.id === "buy-gear") ? (
-              <GameButton type="button" tone="shop" onClick={() => selectShopView("equipment", "buy-gear")}>Equipment</GameButton>
-            ) : null}
-            {shopEncounter.services.some((service) => service.id === "buy-supplies") ? (
-              <GameButton type="button" tone="shop" onClick={() => selectShopView("supplies", "buy-supplies")}>Supplies</GameButton>
-            ) : null}
-            {shopEncounter.services.some((service) => service.id === "trade-missions-for-artifact") ? (
-              <GameButton type="button" tone="shop" onClick={() => selectShopView("artifacts", "trade-missions-for-artifact")}>Artifacts</GameButton>
-            ) : null}
-            {serviceActions.some((service) => !["buy-gear", "buy-supplies", "trade-missions-for-artifact"].includes(service.id)) ? (
-              <GameButton type="button" tone="shop" onClick={() => selectShopView("services")}>Services</GameButton>
-            ) : null}
-            {(shopEncounter.sellableCount ?? sellInventory.filter((item) => item.sellable).length) > 0 ? (
-              <GameButton type="button" tone="shop" onClick={() => selectShopView("sell")}>Sell</GameButton>
-            ) : null}
+            {shopView === "categories" ? categories.map((category) => {
+              const serviceId = category.view === "equipment" ? "buy-gear"
+                : category.view === "supplies" ? "buy-supplies"
+                  : category.view === "artifacts" ? "trade-missions-for-artifact"
+                    : undefined;
+              return (
+                <GameButton
+                  key={category.id}
+                  type="button"
+                  tone="shop"
+                  contentMode="custom"
+                  disabled={!category.available}
+                  disabledReason={category.unavailableReason}
+                  onClick={() => selectShopView(category.view, serviceId)}
+                >
+                  <ShopCategoryIcon category={category.id === "items" ? "market" : category.id === "equipment" ? "forge-armoury" : category.id === "artifacts" ? "relic-dealer" : undefined} label={category.label} />
+                  <span><strong>{category.label}</strong><small>{category.offerCount === null ? category.description : `${category.offerCount} available`}</small></span>
+                </GameButton>
+              );
+            }) : null}
           </nav>
           {shopView === "categories" && shopEncounter.services.length === 0 && (shopEncounter.sellableCount ?? sellInventory.filter((item) => item.sellable).length) === 0 ? (
             <p className="phone-shop-empty-stock">No stock or service categories are currently operating.</p>
@@ -1905,24 +1953,25 @@ function PhoneShopPanel({
             </div>
           ) : null}
 
-          {stockViews.has(shopView) ? <div className="phone-shop-stock" aria-label="Revealed shop stock">
+          {stockViews.has(shopView) ? <div className="phone-shop-stock phone-shop-focused-browser" aria-label="Revealed shop stock">
             <div className="phone-shop-section-heading">
               <span>Stock</span>
               <small>{revealedStock.length > 0
                 ? revealedStock.some((item) => item.cost.completedContracts !== undefined)
                   ? "Choose one Artifact. Three completed Contracts are spent only after confirmation."
-                  : "Tap Buy to review the purchase before spending Salvage."
+                  : "Review one offer. The server confirms price and availability."
                 : "Choose Browse Equipment above to reveal this shop's stock."}</small>
             </div>
             {revealedStock.length > 0 ? (
-              <div className="phone-shop-stock-list">
-                {revealedStock.map((item) => {
+              <div className="phone-shop-focused-offer">
+                {[selectedStock].map((item) => {
+                  if (!item) return null;
                   const isArtifactChoice = item.cost.completedContracts !== undefined;
                   const itemCategory = item.shopCategories?.map(formatShopCategory).join(" / ") ?? toTitleCase(item.type);
                   const disabledReason = formatShopDisabledReason(item.disabledReason) ?? (!item.affordable
                     ? isArtifactChoice ? "Need three completed Contracts" : "Not enough Salvage"
                     : undefined);
-                  const isPending = pendingCardId === item.cardId;
+                  const isPending = pendingActionId === `buy:${item.cardId}`;
                   const isPurchased = purchasedItemName === item.name;
                   return (
                     <PhoneWrappedMediaCard
@@ -1933,7 +1982,7 @@ function PhoneShopPanel({
                       title={item.name}
                       eyebrow={itemCategory}
                       status={<span className="phone-shop-card-status">{itemCategory}</span>}
-                      description={<p className="phone-wrap-card__consequence">{item.summary}</p>}
+                      description={<><p className="phone-wrap-card__consequence">{item.summary}</p>{item.lore ? <details className="phone-shop-lore"><summary>View lore</summary><p>{item.lore}</p></details> : null}</>}
                       disabledReason={disabledReason ? <small>{disabledReason}. Ignore until you can pay or free the slot.</small> : null}
                       meta={<span>Cost: {formatShopCost(item.cost)}</span>}
                       actions={
@@ -1943,17 +1992,27 @@ function PhoneShopPanel({
                           className="phone-button phone-button-primary"
                           disabled={!item.affordable || isPending || isPurchased}
                           disabledReason={disabledReason ?? (isPending ? (isArtifactChoice ? "Choosing..." : "Buying...") : isPurchased ? "Acquired" : undefined)}
-                          onClick={() => {
-                            onIntent({ type: "SHOP_BROWSE_SELECTED", seatId, view: shopView as "equipment" | "supplies" | "artifacts", selectedId: item.cardId });
-                            setConfirmingCardId(item.cardId);
-                          }}
+                          onClick={() => confirmPurchase(item.cardId)}
                         >
-                          {isPending ? (isArtifactChoice ? "Choosing..." : "Buying...") : isPurchased ? "Acquired" : isArtifactChoice ? "Choose" : "Buy"}
+                          {isPending ? (isArtifactChoice ? "Confirming..." : "Purchasing...") : isPurchased ? "Acquired" : isArtifactChoice ? `Confirm ${item.name}` : `Buy ${item.name}`}
                         </GameButton>
                       }
                     />
                   );
                 })}
+                {revealedStock.length > 1 ? <div className="phone-shop-offer-navigation" aria-label="Offer navigation">
+                  <GameButton type="button" tone="secondary" aria-label="Previous offer" onClick={() => {
+                    const item = revealedStock[(selectedStockIndex - 1 + revealedStock.length) % revealedStock.length]!;
+                    setFocusedOfferId(item.cardId);
+                    onIntent({ type: "SHOP_BROWSE_SELECTED", seatId, view: shopView as "equipment" | "supplies" | "artifacts", selectedId: item.cardId });
+                  }}>Previous</GameButton>
+                  <span>{selectedStockIndex + 1} / {revealedStock.length}</span>
+                  <GameButton type="button" tone="secondary" aria-label="Next offer" onClick={() => {
+                    const item = revealedStock[(selectedStockIndex + 1) % revealedStock.length]!;
+                    setFocusedOfferId(item.cardId);
+                    onIntent({ type: "SHOP_BROWSE_SELECTED", seatId, view: shopView as "equipment" | "supplies" | "artifacts", selectedId: item.cardId });
+                  }}>Next</GameButton>
+                </div> : null}
               </div>
             ) : (
               <p className="phone-shop-empty-stock">Stock has not been revealed. Choose Browse Equipment above.</p>
@@ -1966,11 +2025,12 @@ function PhoneShopPanel({
               <small>{sellInventory.length > 0 ? "Trade held gear for Salvage." : "Only sellable carried gear appears here."}</small>
             </div>
             {sellInventory.length > 0 ? (
-              <div className="phone-shop-stock-list">
-                {sellInventory.map((item) => {
+              <div className="phone-shop-focused-offer">
+                {[selectedSale].map((item) => {
+                  if (!item) return null;
                   const disabledReason = formatShopDisabledReason(item.disabledReason);
                   const itemKey = sellItemKey(item);
-                  const isPending = pendingSellGearId === itemKey;
+                  const isPending = pendingActionId === `sell:${itemKey}`;
                   const isSold = soldItemName === item.name;
                   return (
                     <PhoneWrappedMediaCard
@@ -1993,81 +2053,42 @@ function PhoneShopPanel({
                           className="phone-button phone-button-primary"
                           disabled={!item.sellable || isPending || isSold}
                           disabledReason={disabledReason ?? (isPending ? "Selling..." : isSold ? "Sold" : undefined)}
-                          onClick={() => {
-                            onIntent({ type: "SHOP_BROWSE_SELECTED", seatId, view: "sell", selectedId: itemKey });
-                            setConfirmingSellGearId(itemKey);
-                          }}
+                          onClick={() => confirmSale(item.gearId, item.instanceId)}
                         >
-                          {isPending ? "Selling..." : isSold ? "Sold" : "Sell"}
+                          {isPending ? "Selling..." : isSold ? "Sold" : `Sell ${item.name}`}
                         </GameButton>
                       }
                     />
                   );
                 })}
+                {sellInventory.length > 1 ? <div className="phone-shop-offer-navigation" aria-label="Sale navigation">
+                  <GameButton type="button" tone="secondary" onClick={() => {
+                    const item = sellInventory[(selectedSaleIndex - 1 + sellInventory.length) % sellInventory.length]!;
+                    setFocusedOfferId(sellItemKey(item));
+                    onIntent({ type: "SHOP_BROWSE_SELECTED", seatId, view: "sell", selectedId: sellItemKey(item) });
+                  }}>Previous</GameButton>
+                  <span>{selectedSaleIndex + 1} / {sellInventory.length}</span>
+                  <GameButton type="button" tone="secondary" onClick={() => {
+                    const item = sellInventory[(selectedSaleIndex + 1) % sellInventory.length]!;
+                    setFocusedOfferId(sellItemKey(item));
+                    onIntent({ type: "SHOP_BROWSE_SELECTED", seatId, view: "sell", selectedId: sellItemKey(item) });
+                  }}>Next</GameButton>
+                </div> : null}
               </div>
             ) : (
               <p className="phone-shop-empty-stock">No sellable items.</p>
             )}
           </div> : null}
 
-          {confirmingItem ? (
-            <div className="phone-shop-confirm phone-shop-panel__confirm" role="dialog" aria-label={confirmingItem.cost.completedContracts ? "Confirm Artifact" : "Confirm purchase"}>
-              <span>{confirmingItem.cost.completedContracts ? "Confirm Artifact" : "Confirm Purchase"}</span>
-              <strong>
-                {confirmingItem.cost.completedContracts ? "Choose" : "Buy"} {confirmingItem.name} for {formatShopCost(confirmingItem.cost)}?
-              </strong>
-              <p>{confirmingItem.summary}</p>
-              <div className="phone-shop-confirm-actions">
-                <GameButton type="button" tone="secondary" onClick={() => setConfirmingCardId(null)}>
-                  Cancel
-                </GameButton>
-                <GameButton type="button" tone="shop" onClick={() => confirmPurchase(confirmingItem.cardId)}>
-                  {confirmingItem.cost.completedContracts ? "Confirm Artifact" : "Confirm Purchase"}
-                </GameButton>
-              </div>
-            </div>
-          ) : null}
-
-          {confirmingSellItem ? (
-            <div className="phone-shop-confirm phone-shop-panel__confirm phone-shop-confirm-sale" role="dialog" aria-label="Confirm sale">
-              <span>Confirm Sale</span>
-              <strong>
-                Sell {confirmingSellItem.name} for {confirmingSellItem.sellValue} Salvage?
-              </strong>
-              <p>{confirmingSellItem.summary}</p>
-              <div className="phone-shop-confirm-actions">
-                <GameButton type="button" tone="secondary" onClick={() => setConfirmingSellGearId(null)}>
-                  Cancel
-                </GameButton>
-                <GameButton type="button" tone="shop" onClick={() => confirmSale(confirmingSellItem.gearId, confirmingSellItem.instanceId)}>
-                  Confirm Sale
-                </GameButton>
-              </div>
-            </div>
-          ) : null}
         </>
       )}
 
       <div className="phone-shop-skip">
-        <GameButton type="button" tone="secondary" className="phone-shop-skip-button" onClick={skipShop}>
-          Skip / Continue
+        <GameButton type="button" tone="secondary" className="phone-shop-skip-button" disabled={pendingActionId === "leave"} onClick={skipShop}>
+          {pendingActionId === "leave" ? "Leaving..." : "Leave Shop"}
         </GameButton>
-        <small>{isLocked ? "Continue without trading and resolve the blocker." : "Leave the market without buying or selling."}</small>
       </div>
 
-      {showRecentOutcome ? (
-        <div className="phone-shop-outcome" role="status">
-          <span>{recentOutcome?.gained ? "Purchase Complete" : recentOutcome?.sold ? "Sale Complete" : "Market Result"}</span>
-          <p>
-            {recentOutcome?.gained
-              ? `Purchased: ${recentOutcome.gained}`
-              : recentOutcome?.sold
-                ? `Sold: ${recentOutcome.sold}`
-              : recentOutcome?.summary}
-          </p>
-          <ResultDeltaRow deltas={visibleShopDeltas} className="phone-shop-deltas" />
-        </div>
-      ) : null}
     </section>
   );
 }
@@ -2649,7 +2670,9 @@ function PhoneMovePanel({
   canRollMovement,
   movementResolving,
   showContextNavigation,
-  onContextNavigation
+  onContextNavigation,
+  actorName,
+  diceCount
 }: {
   movementPlanner: PublicMovementPlannerState | null | undefined;
   currentTile: CurrentTileViewModel;
@@ -2661,6 +2684,8 @@ function PhoneMovePanel({
   movementResolving: boolean;
   showContextNavigation: boolean;
   onContextNavigation?: (target: MovementNavigationTarget) => void;
+  actorName?: string;
+  diceCount?: number;
 }): ReactElement {
   const [selectedSectorId, setSelectedSectorId] = useState<string | null>(null);
 
@@ -2682,6 +2707,8 @@ function PhoneMovePanel({
       onIntent={onIntent}
       showContextNavigation={showContextNavigation}
       onContextNavigation={onContextNavigation}
+      actorName={actorName}
+      diceCount={diceCount}
     />
   );
 }
@@ -2833,7 +2860,8 @@ export function PhoneActionPanel({
   onSelectedTurnTab,
   hideTurnTabs = false,
   onMovementNavigation,
-  showMovementContextNavigation = true
+  showMovementContextNavigation = true,
+  onLeaveRoom
 }: PhoneActionPanelProps): ReactElement {
   const [localSelectedTurnTab, setLocalSelectedTurnTab] = useState<TurnActionTab | null>(null);
   const selectedTurnTab = controlledSelectedTurnTab ?? localSelectedTurnTab;
@@ -2904,7 +2932,6 @@ export function PhoneActionPanel({
   const activeContract = getActiveContractCard(patch);
   const currentTile = buildCurrentTileViewModel(patch, self, sector, boardSpace, activeContract);
   const equippedIds = new Set(Object.values(self.character.equippedGear).filter((value): value is string => Boolean(value)));
-  const winnerName = patch.seats.find((seat) => seat.seatId === patch.winnerSeatId)?.displayName ?? patch.winnerSeatId ?? "unknown";
   const pendingEnemyRoll = patch.pendingEnemyRoll;
   const isAssignedEnemyRoller = pendingEnemyRoll?.assignedRollerSeatId === self.seatId;
   const pendingRollerName =
@@ -2973,13 +3000,40 @@ export function PhoneActionPanel({
     patch.phase === "action" && patch.shopEncounter?.activePlayer.playerId === self.seatId ? patch.shopEncounter : null;
 
   if (patch.status === "ended") {
+    const result = patch.matchProgress?.publicResult ?? null;
+    const privateResult = patch.ownerPrivateResult ?? null;
+    const outcomeLabel = result?.outcome === "victory" ? "Victory" : result?.outcome === "draw" ? "Draw" : "Defeat";
     return (
-      <section className="phone-sheet-actions" aria-label="Quick actions">
-        <div className="phone-sheet-section-heading">Quick Actions</div>
-        <CurrentPromptCard prompt={currentPromptFromSharedPrompt(sharedPrompt)} />
-        {resolutionPanel}
-        <p className="phone-sheet-action-copy">Trophies: {self.character.trophies}</p>
-        <p className="phone-sheet-action-copy">Game over: {winnerName} wins.</p>
+      <section className={`phone-match-result phone-match-result--${result?.outcome ?? "defeat"}`} aria-label="Match result" role="region">
+        <div className="phone-match-result__hero" aria-live="polite">
+          <span>{outcomeLabel}</span>
+          <h2>{result?.title ?? "Session Complete"}</h2>
+          <strong>{result?.missionName ?? patch.activeScenario?.name ?? "Shared Mission"}</strong>
+          <p>{result?.reason ?? patch.outcomeSummary?.summary ?? "The authoritative match result is complete."}</p>
+        </div>
+        <div className="phone-match-result__summary" aria-label="Final match summary">
+          <article><span>Victory Progress</span><strong>{result?.finalWinProgress ? `${result.finalWinProgress.current} / ${result.finalWinProgress.required}` : "Not tracked"}</strong></article>
+          <article><span>Loss Pressure</span><strong>{result?.finalLossPressure ? `${result.finalLossPressure.current} / ${result.finalLossPressure.required}` : "Not tracked"}</strong></article>
+          <article><span>Mode</span><strong>{result?.modeLabel ?? "Session"}</strong></article>
+          <article><span>Final Stage</span><strong>{result?.finalStageReached ? "Reached" : "Not reached"}</strong></article>
+        </div>
+        {result?.outcome === "victory" && result.winningDisplayNames.length > 0 ? (
+          <p className="phone-match-result__winner">Secured by {result.winningDisplayNames.join(", ")}.</p>
+        ) : null}
+        {privateResult ? (
+          <article className="phone-match-result__private" data-testid="phone-private-match-result">
+            <span>{privateResult.label} Â· Owner only</span>
+            <strong>{privateResult.agendaState.replace(/([A-Z])/g, " $1")}</strong>
+            <p>{privateResult.summary}</p>
+            {privateResult.pointsAwarded !== null ? <small>Private points: {privateResult.pointsAwarded}</small> : null}
+          </article>
+        ) : null}
+        <div className="phone-match-result__actions">
+          {onLeaveRoom && patch.matchProgress?.allowedCommands.includes("leave_room") ? (
+            <GameButton type="button" tone="primary" onClick={onLeaveRoom}>Leave Room</GameButton>
+          ) : null}
+          <p>Return to Lobby is controlled by the Host Phone.</p>
+        </div>
       </section>
     );
   }
@@ -3416,8 +3470,8 @@ export function PhoneActionPanel({
   if (patch.soloReroll?.available) {
     resolveActions.push({
       key: "solo-emergency-reroll",
-      label: "Use solo reroll",
-      detail: `${patch.soloReroll.charges} emergency reroll${patch.soloReroll.charges === 1 ? "" : "s"} this round`,
+      label: "Reroll — spend 1 charge",
+      detail: `Optional. Replaces the current roll. ${patch.soloReroll.charges} charge${patch.soloReroll.charges === 1 ? "" : "s"} remaining this round.`,
       tone: "primary",
       onClick: () =>
         onIntent({
@@ -3511,44 +3565,52 @@ export function PhoneActionPanel({
     }
     const checkIsStaged =
       activeResolution?.stage === "battle_setup" &&
-      activeResolution.playerId === self.seatId &&
-      activeResolution.card?.id === patch.encounter.id;
+      activeResolution.playerId === self.seatId;
 
+    const encounterCommand: ClientIntent = !checkIsStaged && activeResolution?.stage === "card_reveal"
+      ? { type: "START_TILE_ENCOUNTER", seatId: self.seatId, encounterId: patch.encounter.id, resolutionId: activeResolution.id }
+      : { type: "CHECK_REQUESTED", seatId: self.seatId, stat: patch.encounter.stat };
+    const startBlockedReason = encounterCommand.type === "START_TILE_ENCOUNTER" && activeResolution?.playerId !== self.seatId
+      ? "This encounter belongs to another operative."
+      : undefined;
     threatActions.push({
-      key: "hazard-check",
-      label: checkIsStaged ? "Roll check dice" : `Attempt ${statLabelById[patch.encounter.stat]} check`,
+      key: encounterCommand.type === "START_TILE_ENCOUNTER" ? "start-tile-encounter" : "hazard-check",
+      label: encounterCommand.type === "START_TILE_ENCOUNTER"
+        ? pendingTileChallenge ? "Attempt Challenge" : patch.encounter.presentationType === "event" ? "Reveal Event" : "Face the Hazard"
+        : checkIsStaged ? "Roll check dice" : `Attempt ${statLabelById[patch.encounter.stat]} check`,
       detail: pendingTileChallenge
         ? `Recurring ${pendingTileChallenge.challengeType} challenge ${pendingTileChallenge.authoredOrder + 1} of ${pendingTileChallenge.totalChallenges}. Remains on this sector.`
         : patch.encounter.title,
       tone: "primary",
       stat: patch.encounter.stat,
-      onClick: () =>
-        onIntent({
-          type: "CHECK_REQUESTED",
-          seatId: self.seatId,
-          stat: patch.encounter?.stat ?? "grit"
-        })
+      disabled: Boolean(startBlockedReason),
+      disabledReason: startBlockedReason,
+      command: encounterCommand,
+      onClick: () => onIntent(encounterCommand)
     });
   }
 
   if (patch.phase === "action" && patch.encounter?.cardType === "enemy") {
     const combatIsStaged =
       activeResolution?.stage === "battle_setup" &&
-      activeResolution.playerId === self.seatId &&
-      activeResolution.card?.id === patch.encounter.id;
+      activeResolution.playerId === self.seatId;
 
+    const encounterCommand: ClientIntent = !combatIsStaged && activeResolution?.stage === "card_reveal"
+      ? { type: "START_TILE_ENCOUNTER", seatId: self.seatId, encounterId: patch.encounter.id, resolutionId: activeResolution.id }
+      : { type: "COMBAT_REQUESTED", seatId: self.seatId, stat: patch.encounter.stat };
+    const startBlockedReason = encounterCommand.type === "START_TILE_ENCOUNTER" && activeResolution?.playerId !== self.seatId
+      ? "This encounter belongs to another operative."
+      : undefined;
     threatActions.push({
-      key: "enemy-combat",
-      label: combatIsStaged ? "Roll combat dice" : "Enter combat",
+      key: encounterCommand.type === "START_TILE_ENCOUNTER" ? "start-tile-encounter" : "enemy-combat",
+      label: encounterCommand.type === "START_TILE_ENCOUNTER" ? "Begin Encounter" : combatIsStaged ? "Roll combat dice" : "Enter combat",
       detail: patch.encounter.enemyName ?? patch.encounter.title,
       tone: "primary",
       stat: patch.encounter.stat,
-      onClick: () =>
-        onIntent({
-          type: "COMBAT_REQUESTED",
-          seatId: self.seatId,
-          stat: patch.encounter?.stat ?? "grit"
-        })
+      disabled: Boolean(startBlockedReason),
+      disabledReason: startBlockedReason,
+      command: encounterCommand,
+      onClick: () => onIntent(encounterCommand)
     });
   }
 
@@ -3904,9 +3966,7 @@ export function PhoneActionPanel({
       : battleBlocksNonBattleTabs
         ? "Shop locked: resolve the current encounter first."
         : "Shop locked: no shop here.";
-  const actionBlockedReason = battleBlocksNonBattleTabs
-    ? "Action locked: resolve the current encounter first."
-    : hasActionContent || !hasMoveContent
+  const actionBlockedReason = hasActionContent || hasBattleContent || !hasMoveContent
       ? undefined
       : "Action locked: no sector action here.";
   const tabDefinitions: TurnActionTabDefinition[] = [
@@ -3944,11 +4004,12 @@ export function PhoneActionPanel({
       label: "Action",
       detail: boardSpace?.textBox.title ?? "Gear / quest",
       tone: "action",
-      enabled: !battleBlocksNonBattleTabs && (hasActionContent || !hasMoveContent),
+      enabled: hasActionContent || hasBattleContent || !hasMoveContent,
       blockedReason: actionBlockedReason
     }
   ];
-  const canShowSelectedTab = (tab: TurnActionTabDefinition) => Boolean(tab);
+  const canShowSelectedTab = (tab: TurnActionTabDefinition) =>
+    !hasBattleContent || tab.id === "battle" || tab.enabled || tab.locked === true;
   const fallbackTab = movementPlanner?.active
     ? "move"
     : hasBattleContent
@@ -4012,6 +4073,55 @@ export function PhoneActionPanel({
       onChoose={(scarId) => onIntent({ type: "PURGE_SCAR_REQUESTED", seatId: self.seatId, choiceId: patch.pendingScarRemovalChoice!.choiceId, scarId })}
     />
   ) : null;
+  const actionViewModelSources: PhoneActionViewModelSources = {
+    resolve: [
+      ...resolveActions,
+      ...(patch.characterAbilityAction && !patch.characterAbilityAction.prepared ? [{
+        key: `character-ability-${patch.characterAbilityAction.abilityId}`,
+        label: patch.characterAbilityAction.name,
+        detail: patch.characterAbilityAction.disabledReason ?? (patch.characterAbilityAction.stat
+          ? `Add +1 ${statLabelById[patch.characterAbilityAction.stat]} before rolling ${patch.characterAbilityAction.sourceTitle ?? "this test"}.`
+          : "Once-per-round operative ability."),
+        tone: "secondary" as const,
+        stat: patch.characterAbilityAction.stat ?? undefined,
+        disabled: !patch.characterAbilityAction.available,
+        disabledReason: patch.characterAbilityAction.disabledReason ?? undefined,
+        onClick: () => onIntent({ type: "USE_CHARACTER_ABILITY", seatId: self.seatId, abilityId: patch.characterAbilityAction!.abilityId })
+      }] : [])
+    ],
+    threat: threatActions,
+    gear: gearActions,
+    items: objectActions,
+    followers: followerActions,
+    contracts: contractActions,
+    table: tableActions,
+    advance: advanceActions,
+    passive: [
+      ...self.character.heldGear
+        .filter((item) => equippedIds.has(item.id) && item.statBonus.amount !== 0)
+        .map((item) => ({
+          key: `passive-gear-${item.instanceId ?? item.id}`,
+          label: item.name,
+          detail: `Equipped · ${item.statBonus.amount > 0 ? "+" : ""}${item.statBonus.amount} ${statLabelById[item.statBonus.stat]}`,
+          state: "already-applied" as const
+        })),
+      ...(patch.characterAbilityAction?.prepared ? [{
+        key: `passive-character-ability-${patch.characterAbilityAction.abilityId}`,
+        label: patch.characterAbilityAction.name,
+        detail: `+1 ${patch.characterAbilityAction.stat ? statLabelById[patch.characterAbilityAction.stat] : "skill"} prepared for ${patch.characterAbilityAction.sourceTitle ?? "this test"}.`,
+        state: "already-applied" as const
+      }] : []),
+      ...(patch.privateRivalry ? [{
+        key: `private-rivalry-${patch.privateRivalry.objective?.id ?? patch.privateRivalry.revealState}`,
+        label: "Private agenda",
+        detail: patch.privateRivalry.objective
+          ? `${patch.privateRivalry.objective.progress}/${patch.privateRivalry.objective.target} ${patch.privateRivalry.objective.progressLabel}. ${patch.privateRivalry.reveal.hint ?? patch.privateRivalry.reveal.lockedReason ?? "Owner-private objective."}`
+          : patch.privateRivalry.reveal.hint ?? patch.privateRivalry.reveal.lockedReason ?? "Objective details remain sealed.",
+        state: "passive" as const
+      }] : [])
+    ]
+  };
+  const actionViewModel = buildPhoneActionViewModel(patch, actionViewModelSources);
   const activeTabContent =
     activeTurnTab === "move" ? (
       <PhoneMovePanel
@@ -4025,6 +4135,8 @@ export function PhoneActionPanel({
         movementResolving={Boolean(!movementPlanner?.active && (movementTravelPresentation || (patch.phase !== "navigation" && (activeResolution || movementOutcome))))}
         showContextNavigation={movementFlowActive && showMovementContextNavigation}
         onContextNavigation={onMovementNavigation}
+        actorName={patch.seats.find((seat) => seat.seatId === self.seatId)?.displayName ?? self.character.name}
+        diceCount={self.character.id === "char_ker_von_ker" ? 2 : 1}
       />
     ) : activeTurnTab === "battle" ? (
       isHazardChallengePresentation(patch) ? (
@@ -4064,29 +4176,30 @@ export function PhoneActionPanel({
             : "Shop services appear when your operative is on a clear market, shrine, foundry, or service sector."
         }
       />
-    ) : battleBlocksNonBattleTabs ? (
-      <LockedCommandPanel
-        tab="action"
-        title="Resolve encounter first"
-        text="Action locked: resolve the current encounter first. Ignore sector actions until the Encounter tab is cleared."
-      />
+    ) : activeTurnTab === "action" ? (
+      <>
+        <PhoneActionPriorityStack model={actionViewModel} onIntent={onIntent} />
+        <ResultDeltaRow deltas={visibleActionDeltas} className="phone-action-deltas phone-priority-stack__results" />
+      </>
     ) : (
-      <PhoneSectorActionPanel
-        title={actionTitle}
-        sectorOpportunityItems={sectorOpportunityItems}
-        sectorExplorationCopy={sectorExplorationCopy}
-        visibleActionDeltas={visibleActionDeltas}
-        resolveActions={resolveActions}
-        gearActions={gearActions}
-        objectActions={objectActions}
-        eligibleTestItemCount={eligibleTestItemCount}
-        followerActions={followerActions}
-        tableActions={tableActions}
-        contractActions={contractActions}
-        advanceActions={advanceActions}
-        interactionMode={patch.interactionMode}
-        usefulNow={activeUsefulNow}
-      />
+      <>
+        <PhoneSectorActionPanel
+          title={actionTitle}
+          sectorOpportunityItems={sectorOpportunityItems}
+          sectorExplorationCopy={sectorExplorationCopy}
+          visibleActionDeltas={visibleActionDeltas}
+          resolveActions={resolveActions}
+          gearActions={gearActions}
+          objectActions={objectActions}
+          eligibleTestItemCount={eligibleTestItemCount}
+          followerActions={followerActions}
+          tableActions={tableActions}
+          contractActions={contractActions}
+          advanceActions={advanceActions}
+          interactionMode={patch.interactionMode}
+          usefulNow={activeUsefulNow}
+        />
+      </>
     );
 
   return (
@@ -4095,7 +4208,8 @@ export function PhoneActionPanel({
       aria-label={`${activeTurnTab} command screen`}
       data-testid="phone-action-panel-root"
     >
-      {!scarDecisionContent && showCurrentPrompt && activeTurnTab !== "move" ? <CurrentPromptCard prompt={currentPrompt} onSelectedTab={setSelectedTurnTab} /> : null}
+      {!patch.requiredAction && !scarDecisionContent && showCurrentPrompt && activeTurnTab !== "move" && activeTurnTab !== "action" ? <CurrentPromptCard prompt={currentPrompt} onSelectedTab={setSelectedTurnTab} /> : null}
+      {!scarDecisionContent && activeTurnTab !== "move" && activeTurnTab !== "shop" && activeTurnTab !== "action" && isActiveSeat ? <PhoneTileArrivalSummary arrival={patch.tileArrival} /> : null}
       <div
         className="phone-action-content-root"
         id={`phone-turn-panel-${activeTurnTab}`}
@@ -4103,8 +4217,8 @@ export function PhoneActionPanel({
         aria-label={`${activeTurnTab} actions`}
         data-testid="phone-action-content-root"
       >
-        {scarDecisionContent ?? <><CinderWattleAbilityPanel patch={patch} seatId={self.seatId} onIntent={onIntent} />{activeTabContent}</>}
-        {scarDecisionContent || activeTurnTab === "move" ? null : (
+        {scarDecisionContent ?? <>{activeTurnTab === "action" ? null : <CinderWattleAbilityPanel patch={patch} seatId={self.seatId} onIntent={onIntent} />}{activeTabContent}</>}
+        {scarDecisionContent || activeTurnTab === "move" || activeTurnTab === "action" ? null : (
           <div className="phone-sheet-action-status phone-action-secondary-status" data-testid="phone-action-secondary-status">
             <span>{tabDefinitions.find((tab) => tab.id === activeTurnTab)?.label ?? portraitActionStatusLabel(activeTurnTab)}</span>
             <span>{activeStatusCopy}</span>

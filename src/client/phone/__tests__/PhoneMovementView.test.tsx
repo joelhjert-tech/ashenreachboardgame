@@ -18,6 +18,7 @@ const planner: PublicMovementPlannerState = {
   currentSectorName: "Ashwalk Bridge",
   destinations: [
     {
+      markerLabel: "A",
       sectorId: "votive-engine-room",
       name: longDestinationName,
       ring: "outer",
@@ -34,6 +35,7 @@ const planner: PublicMovementPlannerState = {
       strategicTags: ["shop", "danger"]
     },
     {
+      markerLabel: "B",
       sectorId: "glassmere-spindle",
       name: "Glass Signal Pier",
       ring: "outer",
@@ -78,7 +80,7 @@ describe("PhoneMovementView", () => {
     expect(screen.queryByText(/attack|defense|a\s*\/\s*d/i)).not.toBeInTheDocument();
     expect(screen.getAllByText("View details")[0]!.closest("details")).not.toHaveAttribute("open");
 
-    fireEvent.click(screen.getByRole("button", { name: `Select ${longDestinationName}` }));
+    fireEvent.click(screen.getByRole("button", { name: new RegExp(`Select destination A, ${longDestinationName}`) }));
     expect(onIntent).toHaveBeenCalledWith({
       type: "MOVEMENT_DESTINATION_PREVIEWED",
       seatId: "seat-1",
@@ -113,7 +115,7 @@ describe("PhoneMovementView", () => {
   it("clears the authoritative preview when Change is pressed", () => {
     const onIntent = vi.fn();
     render(<Harness onIntent={onIntent} />);
-    fireEvent.click(screen.getByRole("button", { name: `Select ${longDestinationName}` }));
+    fireEvent.click(screen.getByRole("button", { name: new RegExp(`Select destination A, ${longDestinationName}`) }));
     fireEvent.click(screen.getByRole("button", { name: "Change" }));
     expect(onIntent).toHaveBeenLastCalledWith({
       type: "MOVEMENT_DESTINATION_PREVIEWED",
@@ -148,6 +150,12 @@ describe("PhoneMovementView", () => {
     render(<Harness onIntent={vi.fn()} />);
     expect(screen.queryByText(/votive-engine-room|ashwake-crossing/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/stored movement roll|why legal|raw route/i)).not.toBeInTheDocument();
+  });
+
+  it("renders the same public destination marker used by the TV", () => {
+    render(<Harness onIntent={vi.fn()} />);
+    expect(screen.getByRole("button", { name: new RegExp(`Select destination A, ${longDestinationName}`) })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Select destination B, Glass Signal Pier/ })).toBeInTheDocument();
   });
 
   it("keeps the authoritative Route Compass adjustment as a secondary confirmed control", () => {

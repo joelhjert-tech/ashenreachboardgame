@@ -6,6 +6,7 @@ import type {
   PublicMovementPlannerState
 } from "../shared/types.js";
 import { getMissionRelevanceForSector } from "../shared/missionRelevance.js";
+import { AuthoritativeDicePresentation, buildDice, type AuthoritativeDiceModel } from "../shared/AuthoritativeDicePresentation.js";
 import { getTileAssetPath } from "../tv/tileAssetManifest.js";
 
 export type MovementNavigationTarget = "player" | "inventory" | "more";
@@ -21,6 +22,10 @@ interface DestinationPresentation {
   artPath: string | null;
 }
 
+function canSelectDestination(destination: PublicMoveDestination): boolean {
+  return !destination.disabledReason || Boolean(destination.voidKeyPrompt);
+}
+
 interface PhoneMovementViewProps {
   planner: PublicMovementPlannerState | null | undefined;
   seatId: string;
@@ -34,6 +39,8 @@ interface PhoneMovementViewProps {
   onIntent: (intent: ClientIntent) => void;
   showContextNavigation: boolean;
   onContextNavigation?: (target: MovementNavigationTarget) => void;
+  actorName?: string;
+  diceCount?: number;
 }
 
 function destinationType(destination: PublicMoveDestination): string {
@@ -45,6 +52,7 @@ function destinationType(destination: PublicMoveDestination): string {
 }
 
 function dangerLabel(destination: PublicMoveDestination): string {
+  if (destination.disabledReason && destination.voidKeyPrompt) return "Void Key route";
   if (destination.disabledReason) return "Route blocked";
   if (destination.faceUpThreats.length > 0) {
     return `${destination.faceUpThreats.length} blocker${destination.faceUpThreats.length === 1 ? "" : "s"}`;
@@ -87,7 +95,9 @@ function buildDestinationPresentation(
       threatIcons: destination.threatIcons,
       faceUpThreatCount: destination.faceUpThreats.length
     })),
-    routeLine: (destination.routeNames ?? destination.route).join(" → "),
+    routeLine: destination.routeNames?.length
+      ? destination.routeNames.join(" → ")
+      : `${destination.distance} sector route`,
     specialRules: destinationSpecialRules(destination),
     artPath: getTileAssetPath(destination.sectorId)
   };
@@ -142,7 +152,9 @@ function RouteDetails({
             <p>Spend 1 charge only if you confirm an alternate legal route.</p>
             {routeVariants.map((variant) => {
               const isDefault = variant.routeId === model.destination.defaultRouteId;
-              const routeNames = variant.sectorNames ?? variant.sectorIds;
+              const routeNames = variant.sectorNames?.length
+                ? variant.sectorNames
+                : [`${variant.distance} sector route`];
               return (
                 <div key={variant.routeId}>
                   <strong>{routeNames.join(" → ")}</strong>
@@ -245,15 +257,17 @@ function MovementHeader({
   travel: { fromSectorName: string; toSectorName: string } | null;
   movementResolving: boolean;
 }): ReactElement {
-  const routeCount = planner?.destinations.length ?? 0;
+  const routeCount = planner?.destinations.filter(canSelectDestination).length ?? 0;
+  const finalMovement = planner?.movementValue ?? 0;
+  const finalMovementLabel = `Move ${finalMovement} sector${finalMovement === 1 ? "" : "s"}`;
   const stateLabel = travel
     ? "Confirmed"
     : movementResolving
       ? "Arrival resolving"
       : planner?.active
         ? planner.rolledValue !== undefined && planner.rolledValue !== planner.movementValue
-          ? `Roll ${planner.rolledValue} · Move ${planner.movementValue}`
-          : `Roll ${planner.movementValue}`
+          ? `Roll ${planner.rolledValue} · ${finalMovementLabel}`
+          : finalMovementLabel
         : canRoll ? "Roll required" : "Resolving";
   const locationLabel = travel ? "Route locked" : planner?.currentSectorName ?? currentSectorName;
   const statusLabel = travel ? "" : planner?.active ? `${routeCount} legal destination${routeCount === 1 ? "" : "s"}` : "Awaiting movement roll";
@@ -306,7 +320,8 @@ function TacticalDestinationList({
     <div className="phone-move-option-a__list" role="list" aria-label="Legal destinations">
       {models.map((model) => {
         const selected = model.destination.sectorId === selectedSectorId;
-        const disabled = Boolean(model.destination.disabledReason && !model.destination.voidKeyPrompt);
+        const disabled = !canSelectDestination(model.destination);
+        const markerLabel = model.destination.markerLabel;
         return (
           <article
             key={model.destination.sectorId}
@@ -320,11 +335,14 @@ function TacticalDestinationList({
               className="phone-move-option-a__select"
               onClick={() => !disabled && onSelect(model.destination.sectorId)}
               disabled={disabled}
-              aria-label={`${selected ? "Selected" : "Select"} ${model.destination.name}`}
+              aria-label={`${selected ? "Selected" : "Select"}${markerLabel ? ` destination ${markerLabel},` : ""} ${model.destination.name}; ${model.destination.distance} exact sectors`}
             >
               <DestinationArtwork model={model} />
               <span className="phone-move-option-a__copy">
-                <span className="phone-move-prototype__eyebrow">{model.typeLabel}</span>
+                <span className="phone-move-prototype__eyebrow">
+                  {markerLabel ? <b className="phone-move-prototype__marker" aria-hidden="true">{markerLabel}</b> : null}
+                  {model.typeLabel}
+                </span>
                 <strong>{model.destination.name}</strong>
                 <span>{model.destination.distance} step{model.destination.distance === 1 ? "" : "s"}</span>
                 <DestinationSignals model={model} />
@@ -351,7 +369,9 @@ export function PhoneMovementView({
   onSelectedSectorId,
   onIntent,
   showContextNavigation,
-  onContextNavigation
+  onContextNavigation,
+  actorName = "Your operative",
+  diceCount = 1
 }: PhoneMovementViewProps): ReactElement {
   const models = useMemo(
     () => (planner?.destinations ?? []).map((destination) => buildDestinationPresentation(destination, activeContract)),
@@ -392,6 +412,21 @@ export function PhoneMovementView({
     if (serverSelected) onSelectedSectorId(serverSelected);
   }, [onSelectedSectorId, planner?.currentSectorId, planner?.movementValue, planner?.selectedDestinationId]);
 
+  const rollFaces = planner?.rollFaces ?? (planner?.rolledValue !== undefined ? [planner.rolledValue] : planner?.active ? [planner.originalMovementValue ?? planner.movementValue] : []);
+  const diceModel: AuthoritativeDiceModel = {
+    id: `movement:${seatId}:${currentSectorName}`,
+    revision: planner?.movementRevision ?? 0,
+    stage: submitted && !planner?.active ? "submitting" : planner?.active ? "result" : "ready",
+    context: "movement",
+    actorName,
+    purpose: "Movement roll",
+    dice: buildDice(rollFaces, Array.from({ length: rollFaces.length || diceCount }, (_, index) => diceCount > 1 ? `Movement die ${index + 1}` : "Movement die")),
+    rawTotal: planner?.rolledValue ?? planner?.originalMovementValue ?? planner?.movementValue ?? null,
+    modifiers: planner?.modifierSources ?? [],
+    finalValue: planner?.movementValue ?? null,
+    outcome: planner?.active ? `${planner.destinations.filter(canSelectDestination).length} legal destinations` : null
+  };
+
   const selectedModel = models.find((model) => model.destination.sectorId === selectedSectorId) ?? null;
   const movementState = movementResolving || travel
     ? "resolving"
@@ -400,12 +435,12 @@ export function PhoneMovementView({
       : canRoll ? "needs-roll" : "complete";
   const selectDestination = (sectorId: string): void => {
     const model = models.find((entry) => entry.destination.sectorId === sectorId);
-    if (!model || (model.destination.disabledReason && !model.destination.voidKeyPrompt)) return;
+    if (!model || !canSelectDestination(model.destination)) return;
     onSelectedSectorId(sectorId);
     onIntent({ type: "MOVEMENT_DESTINATION_PREVIEWED", seatId, toSectorId: sectorId });
   };
   const confirm = (): void => {
-    if (!selectedModel || submitted || (selectedModel.destination.disabledReason && !selectedModel.destination.voidKeyPrompt)) return;
+    if (!selectedModel || submitted || !canSelectDestination(selectedModel.destination)) return;
     setSubmitted(true);
     const destination = selectedModel.destination;
     onIntent({
@@ -428,10 +463,12 @@ export function PhoneMovementView({
             ? `Confirm ${selectedModel.destination.name}`
             : "Select a destination";
   const canSubmit = !submitted && !movementResolving && !travel && (
-    (!planner?.active && canRoll) || Boolean(selectedModel && (!selectedModel.destination.disabledReason || selectedModel.destination.voidKeyPrompt))
+    (!planner?.active && canRoll) || Boolean(selectedModel && canSelectDestination(selectedModel.destination))
   );
   const performPrimaryAction = (): void => {
     if (!planner?.active && canRoll) {
+      if (submitted) return;
+      setSubmitted(true);
       onIntent({ type: "MOVEMENT_ROLL_REQUESTED", seatId });
       return;
     }
@@ -453,6 +490,7 @@ export function PhoneMovementView({
     >
       <MovementHeader planner={planner} canRoll={canRoll} currentSectorName={currentSectorName} travel={travel} movementResolving={movementResolving} />
       <div className="phone-move-prototype__content">
+        {!travel && !movementResolving ? <AuthoritativeDicePresentation model={diceModel} compact /> : null}
         {travel ? (
           <div className="phone-move-prototype__travel" role="status">
             <span>Moving to</span>
