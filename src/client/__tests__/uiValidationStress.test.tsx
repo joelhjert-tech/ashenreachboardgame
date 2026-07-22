@@ -341,6 +341,57 @@ describe("Ashen Reach UI validation stress states", () => {
     expect(screen.getByTestId("phone-battle-total-comparison")).toHaveTextContent(/31.*18/i);
   });
 
+  it("renders authoritative battle arithmetic and discloses reroll cost before activation", () => {
+    const patch = createMasterAlphaPhonePatch({
+      battlePresentation: {
+        id: "qa-resolution",
+        revision: 12,
+        stage: "reaction_available",
+        actorSeatId: "seat-1",
+        actorDisplayName: "QA",
+        encounter: { name: longEnemyName, category: "Battle", imageKey: "smoke-leech-clutch" },
+        test: { stat: "grit", label: "Grit", opposed: true },
+        operative: {
+          name: "QA",
+          secondaryName: "MASTER ALPHA",
+          imageKey: "char_master_alpha",
+          baseValue: 15,
+          modifiers: [
+            { label: "Void-Cleaver", value: 3, kind: "equipment" },
+            { label: "Command protocol", value: 2, kind: "ability" }
+          ],
+          rawDice: [6, 5],
+          diceTotal: 11,
+          finalTotal: 31
+        },
+        opponent: {
+          name: longEnemyName,
+          secondaryName: "Opposition",
+          imageKey: "smoke-leech-clutch",
+          baseValue: 10,
+          modifiers: [],
+          rawDice: [4, 4],
+          diceTotal: 8,
+          finalTotal: 18
+        },
+        outcome: "success",
+        publicConsequence: "Gain trophies.",
+        publicRewardSummary: "Gain trophies.",
+        waiting: { actorDisplayName: "QA", publicAction: "consider a battle effect", privateDecision: true },
+        restored: false
+      }
+    });
+
+    render(<PhoneActionPanel characters={catalogFromMasterAlpha()} patch={patch} onIntent={vi.fn()} />);
+
+    expect(screen.getByText(/base grit/i).parentElement).toHaveTextContent("15");
+    fireEvent.click(screen.getByRole("button", { name: /view details/i }));
+    expect(screen.getByText(/modifier sources/i).parentElement).toHaveTextContent(/Void-Cleaver \+3.*Command protocol \+2/i);
+    expect(screen.getByTestId("phone-battle-total-comparison")).toHaveTextContent(/31.*18/i);
+    expect(screen.getByRole("button", { name: /reroll.*spend 1 charge/i })).toHaveTextContent(/1 charge remaining/i);
+    expect(screen.getAllByRole("button", { name: /^continue$/i })).toHaveLength(1);
+  });
+
   it("keeps the pre-game locked character screen readable for MASTER ALPHA and hides bottom nav", () => {
     const patch = createMasterAlphaPhonePatch({
       phase: "start",
@@ -444,6 +495,28 @@ describe("Ashen Reach UI validation stress states", () => {
   it("keeps host battle identity headers outside portrait art and uses a three-panel result core", () => {
     const patch = createHostPatch();
     const activePlayer = patch.payload.players[0]!;
+    patch.payload.battlePresentation = {
+      id: "qa-resolution",
+      revision: 12,
+      stage: "result",
+      actorSeatId: "seat-1",
+      actorDisplayName: "QA",
+      encounter: { name: longEnemyName, category: "Battle", imageKey: "smoke-leech-clutch" },
+      test: { stat: "grit", label: "Grit", opposed: true },
+      operative: {
+        name: "QA", secondaryName: "MASTER ALPHA", imageKey: "char_master_alpha", baseValue: 15,
+        modifiers: [{ label: "Void-Cleaver", value: 5, kind: "equipment" }], rawDice: [6, 5], diceTotal: 11, finalTotal: 31
+      },
+      opponent: {
+        name: longEnemyName, secondaryName: "Opposition", imageKey: "smoke-leech-clutch", baseValue: 10,
+        modifiers: [], rawDice: [4, 4], diceTotal: 8, finalTotal: 18
+      },
+      outcome: "success",
+      publicConsequence: "Gain trophies.",
+      publicRewardSummary: "Gain trophies.",
+      waiting: { actorDisplayName: "QA", publicAction: "review the result and continue", privateDecision: false },
+      restored: false
+    };
 
     render(<HostBattleOverlay patch={patch} activePlayer={activePlayer} />);
 
@@ -460,10 +533,11 @@ describe("Ashen Reach UI validation stress states", () => {
     expect(enemyPortrait).not.toContainElement(enemyHeader as HTMLElement);
     const battleRolls = screen.getByTestId("host-battle-rolls");
     expect(battleRolls).toHaveTextContent("31");
-    expect(screen.getByTestId("host-battle-player-math")).toHaveTextContent(/Grit 20 \+ Roll 11 = Total 31/i);
-    expect(screen.getByTestId("host-battle-enemy-math")).toHaveTextContent(/Difficulty 10 = Total 18/i);
+    expect(screen.getByTestId("host-battle-player-math")).toHaveTextContent(/Grit 15 \+ Roll 11 \+ Mod 5 = Total 31/i);
+    expect(screen.getByTestId("host-battle-enemy-math")).toHaveTextContent(/Enemy base 10 \+ Roll 8 = Total 18/i);
     expect(screen.getByTestId("host-battle-player-dice")).toHaveTextContent(/6.*5.*roll 11/i);
-    expect(screen.getByTestId("host-battle-enemy-dice")).toHaveTextContent(/roll -/i);
+    expect(screen.getByTestId("host-battle-enemy-dice")).toHaveTextContent(/4.*4.*roll 8/i);
+    expect(screen.getByTestId("host-battle-player-math")).toHaveTextContent(/Void-Cleaver \+5/i);
     expect(screen.getByTestId("host-battle-result-banner")).toHaveTextContent(/success/i);
     expect(screen.queryByTestId("combat-dice-animation")).not.toBeInTheDocument();
     expect(screen.queryByTestId("host-battle-log")).not.toBeInTheDocument();

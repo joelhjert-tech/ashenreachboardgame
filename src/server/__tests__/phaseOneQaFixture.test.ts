@@ -6,12 +6,44 @@ import { startAshenReachServer, type StartedAshenReachServer } from "../index.js
 import { createPhoneProjection, createTvProjection } from "../roomServer.js";
 
 const started: StartedAshenReachServer[] = [];
+let serverPortOffset = 0;
+
+const nextTestServerPort = () => 20_000 + (process.pid % 10_000) + serverPortOffset++ * 20;
 
 afterEach(async () => {
   await Promise.all(started.splice(0).map((server) => server.close()));
 });
 
 describe("Phase 1 QA fixture", () => {
+  it("creates deterministic P4 result, private, end-turn, and handoff states", () => {
+    const createActive = () => {
+      const state = createInitialSessionState("QA-P4", "multiplayer", "scenario_broken_seal", "co-op", "standard", 2);
+      state.status = "active" as const;
+      state.seats.forEach((seat, index) => {
+        seat.displayName = index === 0 ? "Joel" : "Erik";
+        seat.connected = true;
+      });
+      return state;
+    };
+
+    const result = createActive();
+    applyPhaseOneQaFixture(result, "seat-1", { kind: "waiting-handoff", stage: "long-result" });
+    expect(result.activeResolution?.stage).toBe("outcome_summary");
+    expect(result.activeResolution?.outcome?.effects).toHaveLength(3);
+
+    const privateChoice = createActive();
+    applyPhaseOneQaFixture(privateChoice, "seat-1", { kind: "waiting-handoff", stage: "private-choice" });
+    expect(privateChoice.pendingEncounterDecision?.seatId).toBe("seat-1");
+
+    const endTurn = createActive();
+    applyPhaseOneQaFixture(endTurn, "seat-1", { kind: "waiting-handoff", stage: "end-turn" });
+    expect(endTurn.phase).toBe("action");
+
+    const handoff = createActive();
+    applyPhaseOneQaFixture(handoff, "seat-1", { kind: "waiting-handoff", stage: "handoff" });
+    expect(handoff.eventLog.at(-1)).toMatchObject({ type: "TURN_COMPLETED", seatId: "seat-1" });
+  });
+
   it.each([
     ["payment", 3, "encounter_payment"],
     ["optional-payment", 3, "sequence"],
@@ -112,6 +144,49 @@ describe("Phase 1 QA fixture", () => {
     expect(state.sectors.find((sector) => sector.id === "ashen-chapel")?.tileChallenges).toContainEqual(riftBefore);
   });
 
+  it("projects deterministic P7 inventory relevance without exposing it on TV", () => {
+    const state = createInitialSessionState("QA-P7", "single-player", "scenario_broken_seal", "co-op", "standard", 1);
+    state.status = "active";
+    applyPhaseOneQaFixture(state, "seat-1", { kind: "inventory-player-card", stage: "battle" });
+
+    const phone = createPhoneProjection(state, "seat-1", true) as {
+      objectUseStates?: Array<{
+        id: string;
+        relevantNow?: boolean;
+        relevanceKind?: string;
+        currentContext?: string | null;
+      }>;
+    };
+    const tv = createTvProjection(state) as Record<string, unknown>;
+    const fuse = phone.objectUseStates?.find((entry) => entry.id === "black-route-fuse");
+    const armor = phone.objectUseStates?.find((entry) => entry.id === "rivetplate-vest");
+
+    expect(fuse).toMatchObject({ relevantNow: true, relevanceKind: "usable", currentContext: "Battle roll" });
+    expect(armor).toMatchObject({ relevantNow: true, relevanceKind: "passive", currentContext: "Battle roll" });
+    expect(JSON.stringify(tv)).not.toContain("objectUseStates");
+    expect(JSON.stringify(tv)).not.toContain("relevanceKind");
+  });
+
+  it("prepares canonical tile-arrival QA stages without changing topology", () => {
+    const challenge = createInitialSessionState("QA-TILE-CHALLENGE", "single-player", "scenario_broken_seal", "co-op", "standard", 1);
+    challenge.status = "active";
+    applyPhaseOneQaFixture(challenge, "seat-1", { kind: "tile-arrival", stage: "challenge" });
+    expect(challenge.pendingTileChallenge).toMatchObject({ seatId: "seat-1", sectorId: "ashen-chapel", testStat: "signal" });
+    expect(challenge.tileArrivalThreatProgress).toMatchObject({ seatId: "seat-1", sectorId: "ashen-chapel" });
+
+    const multi = createInitialSessionState("QA-TILE-MULTI", "single-player", "scenario_broken_seal", "co-op", "standard", 1);
+    multi.status = "active";
+    applyPhaseOneQaFixture(multi, "seat-1", { kind: "tile-arrival", stage: "multi-effect" });
+    expect(multi.tileArrivalThreatProgress?.threatLanes).toEqual(["red", "blue", "yellow"]);
+    expect(multi.phase).toBe("sector");
+
+    const shop = createInitialSessionState("QA-TILE-SHOP", "single-player", "scenario_broken_seal", "co-op", "standard", 1);
+    shop.status = "active";
+    applyPhaseOneQaFixture(shop, "seat-1", { kind: "tile-arrival", stage: "optional-shop" });
+    expect(shop.phase).toBe("action");
+    expect(shop.players[0]?.character.currentSpaceId).toBe("outer_waymarket");
+  });
+
   it("prepares Mission progress and readiness without resolving the reward", () => {
     const state = createInitialSessionState("QA-MISSION", "single-player", "scenario_broken_seal", "co-op", "standard", 1);
     state.status = "active";
@@ -151,7 +226,7 @@ describe("Phase 1 QA fixture", () => {
   });
 
   it("does not expose the QA endpoint unless explicitly enabled", async () => {
-    const normal = await startAshenReachServer({ port: 18180, host: "127.0.0.1", maxPortAttempts: 5, logUrls: false });
+    const normal = await startAshenReachServer({ port: nextTestServerPort(), host: "127.0.0.1", maxPortAttempts: 20, logUrls: false });
     started.push(normal);
     const normalResponse = await fetch(`http://127.0.0.1:${normal.port}/api/qa/phase1-fixture`, {
       method: "POST",
@@ -162,7 +237,7 @@ describe("Phase 1 QA fixture", () => {
     await normal.close();
     started.pop();
 
-    const qa = await startAshenReachServer({ port: 18180, host: "127.0.0.1", maxPortAttempts: 5, logUrls: false, qaFixturesEnabled: true });
+    const qa = await startAshenReachServer({ port: nextTestServerPort(), host: "127.0.0.1", maxPortAttempts: 20, logUrls: false, qaFixturesEnabled: true });
     started.push(qa);
     const qaResponse = await fetch(`http://127.0.0.1:${qa.port}/api/qa/phase1-fixture`, {
       method: "POST",
@@ -228,6 +303,28 @@ describe("Phase 1 QA fixture", () => {
     expect(state.lastOutcomeSummary?.success ?? null).toBe(stage === "success" ? true : stage === "defeat" ? false : null);
   });
 
+  it("clears a prior private prompt before projecting a different QA state", () => {
+    const state = createInitialSessionState("QA-CLEAR", "multiplayer", "scenario_broken_seal", "co-op", "standard", 2);
+    state.status = "active";
+    for (const seat of state.seats.slice(0, 2)) {
+      seat.displayName = seat.seatId;
+      seat.connected = true;
+      seat.characterSelected = true;
+      seat.ready = true;
+    }
+
+    applyPhaseOneQaFixture(state, "seat-1", { kind: "scar-system", stage: "choice" });
+    expect(state.pendingScarChoice).not.toBeNull();
+    applyPhaseOneQaFixture(state, "seat-1", { kind: "phone-battle", stage: "battle-setup" });
+
+    expect(state.pendingScarChoice).toBeNull();
+    const waitingProjection = createPhoneProjection(state, "seat-2") as {
+      requiredAction?: { kind?: string; detail?: string } | null;
+    };
+    expect(waitingProjection.requiredAction).toMatchObject({ kind: "battle" });
+    expect(waitingProjection.requiredAction?.detail).not.toMatch(/Scar/i);
+  });
+
   it("projects public-safe host rare states without private reaction identifiers", () => {
     const state = createInitialSessionState("QA-RARE", "multiplayer", "scenario_broken_seal", "co-op", "standard", 4);
     state.status = "active";
@@ -256,6 +353,32 @@ describe("Phase 1 QA fixture", () => {
     applyPhaseOneQaFixture(state, "seat-1", { kind: "host-rare", stage: "recall-triggered" });
     expect(state.players[0]?.character).toMatchObject({ status: "recalled", wounds: state.woundThreshold });
     expect(state.players[0]?.character.scars).toContain("scar-wound-1");
+  });
+
+  it("provides detached objective presentation states without leaking private Contract or locked Agenda fields", () => {
+    const state = createInitialSessionState("QA-OBJECTIVES", "multiplayer", "scenario_broken_seal", "rivalry", "standard", 2);
+    state.status = "active";
+    state.seats.slice(0, 2).forEach((seat, index) => {
+      seat.displayName = index === 0 ? "Joel" : "Anna";
+      seat.connected = true;
+    });
+
+    applyPhaseOneQaFixture(state, "seat-1", { kind: "objective-presentation", stage: "contract-near" });
+    const owner = createPhoneProjection(state, "seat-1") as { activeContractCard?: { id?: string } | null };
+    const waiting = createPhoneProjection(state, "seat-2") as { activeContractCard?: { id?: string } | null; players?: Array<{ character?: { activeContract?: unknown } }> };
+    const tv = createTvProjection(state) as { players?: Array<{ character?: { activeContract?: unknown } }> };
+    expect(owner.activeContractCard?.id).toBe("choir-echo-triangulation");
+    expect(waiting.activeContractCard).toBeNull();
+    expect(waiting.players?.[0]?.character?.activeContract).toBeNull();
+    expect(tv.players?.[0]?.character?.activeContract).toBeNull();
+
+    applyPhaseOneQaFixture(state, "seat-1", { kind: "objective-presentation", stage: "agenda-locked" });
+    const lockedOwner = createPhoneProjection(state, "seat-1") as { privateRivalry?: { objective?: unknown } | null };
+    expect(lockedOwner.privateRivalry?.objective).toBeUndefined();
+
+    applyPhaseOneQaFixture(state, "seat-1", { kind: "objective-presentation", stage: "agenda-revealed" });
+    const revealedOwner = createPhoneProjection(state, "seat-1") as { privateRivalry?: { objective?: { title?: string } } | null };
+    expect(revealedOwner.privateRivalry?.objective?.title).toBeTruthy();
   });
 
   it("requires the current room and a valid signed seat token", async () => {

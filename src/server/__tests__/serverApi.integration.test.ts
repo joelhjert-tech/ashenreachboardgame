@@ -5,6 +5,7 @@ import { getScenarioDefinition, SCENARIOS } from "../../game/data/scenarios.js";
 import { createInitialScenarioProgress } from "../../game/rules/scenarioAmbient.js";
 import type { GameState } from "../../game/schema/session.schema.js";
 import { startAshenReachServer, type StartedAshenReachServer } from "../index.js";
+import { createInitialSessionState } from "../sessionState.js";
 
 type StatePatchEnvelope = {
   type: "STATE_PATCH";
@@ -235,6 +236,15 @@ describe("server API scenario flow", () => {
 
   afterEach(async () => {
     if (harness) {
+      harness.roomServer.resetSession(createInitialSessionState(
+        `server-api-clean-${Date.now()}`,
+        "multiplayer",
+        undefined,
+        "rivalry",
+        "standard",
+        undefined,
+        { lobbyConfigured: false }
+      ));
       await harness.close();
       harness = null;
     }
@@ -667,10 +677,10 @@ describe("server API scenario flow", () => {
   });
 
   it("can create every authored scenario through the API with matching seeded progress", async () => {
-    for (const scenario of SCENARIOS) {
-      harness = await startAshenReachServer({ port: createTestPort(), logUrls: false });
-      const baseUrl = `http://127.0.0.1:${harness.port}`;
+    harness = await startAshenReachServer({ port: createTestPort(), logUrls: false });
+    const baseUrl = `http://127.0.0.1:${harness.port}`;
 
+    for (const scenario of SCENARIOS) {
       const response = await postJson<{
         roomCode: string;
         sessionMode: "single-player" | "multiplayer";
@@ -686,9 +696,6 @@ describe("server API scenario flow", () => {
       expect(response.payload.scenarioId).toBe(scenario.id);
       expect(harness.roomServer.getState().activeScenarioId).toBe(scenario.id);
       expect(harness.roomServer.getState().scenarioProgress).toEqual(createInitialScenarioProgress(scenario.id));
-
-      await harness.close();
-      harness = null;
     }
   });
 

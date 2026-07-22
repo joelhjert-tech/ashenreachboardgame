@@ -637,6 +637,24 @@ async function waitForServerTick(delayMs = 25): Promise<void> {
   await new Promise((resolve) => setTimeout(resolve, delayMs));
 }
 
+async function waitForServerState(
+  roomServer: GameRoomServer,
+  predicate: (state: GameState) => boolean,
+  description: string,
+  timeoutMs = 4000
+): Promise<void> {
+  const deadline = Date.now() + timeoutMs;
+  while (!predicate(roomServer.getState()) && Date.now() < deadline) {
+    await new Promise((resolve) => setTimeout(resolve, 5));
+  }
+  const state = roomServer.getState();
+  if (!predicate(state)) {
+    throw new Error(
+      `Timed out waiting for ${description}; sequence=${state.sequence}, phase=${state.phase}, activeSeatIndex=${state.activeSeatIndex}, pendingEnemyRoll=${state.pendingEnemyRoll ? `${state.pendingEnemyRoll.encounterCardId}:${state.pendingEnemyRoll.fighterSeatId}` : "none"}`
+    );
+  }
+}
+
 async function stopHarness(harness: Harness | null, probes: SocketProbe[]): Promise<void> {
   for (const probe of probes) {
     probe.close();
@@ -2047,7 +2065,11 @@ describe("roomServer websocket integration", () => {
     const phone3CombatMarker = phone3.mark();
     await sendVisibleCombat(phone2, "seat-2", "grit");
     await tv.waitForSince(marker, statePatchWithOpposedOutcome("seat-2"));
-    await waitForServerTick();
+    await waitForServerState(
+      harness.roomServer,
+      (state) => state.pendingEnemyRoll === null && state.activeSeatIndex === 1 && state.phase === "broadcast",
+      "seat-2 battle broadcast"
+    );
     expect(harness.roomServer.getState().pendingEnemyRoll).toBeNull();
     expect(harness.roomServer.getState().activeSeatIndex).toBe(1);
     expect(harness.roomServer.getState().phase).toBe("broadcast");
@@ -2163,7 +2185,11 @@ describe("roomServer websocket integration", () => {
     marker = tv.mark();
     await sendVisibleCombat(phone3, "seat-3", "grit");
     await tv.waitForSince(marker, statePatchWithOpposedOutcome("seat-3"));
-    await waitForServerTick();
+    await waitForServerState(
+      harness.roomServer,
+      (state) => state.pendingEnemyRoll === null && state.activeSeatIndex === 2 && state.phase === "broadcast",
+      "seat-3 battle broadcast"
+    );
     expect(harness.roomServer.getState().pendingEnemyRoll).toBeNull();
     expect(harness.roomServer.getState().activeSeatIndex).toBe(2);
     expect(harness.roomServer.getState().phase).toBe("broadcast");
@@ -2473,7 +2499,11 @@ describe("roomServer websocket integration", () => {
       marker = tv.mark();
       await sendVisibleCombat(phone2, "seat-2", "grit");
       await tv.waitForSince(marker, statePatchWithOpposedOutcome("seat-2"));
-      await waitForServerTick();
+      await waitForServerState(
+        harness.roomServer,
+        (state) => state.pendingEnemyRoll === null && state.activeSeatIndex === 1 && state.phase === "broadcast",
+        "reconnected seat-2 battle broadcast"
+      );
       step = "seat2 combat";
       expect(harness.roomServer.getState().pendingEnemyRoll).toBeNull();
       expect(harness.roomServer.getState().activeSeatIndex).toBe(1);
@@ -2684,7 +2714,11 @@ describe("roomServer websocket integration", () => {
         throw new Error(`Seat 3 combat was rejected after rejoin: ${postRejoinCombat.reason}`);
       }
       await tv.waitForSince(marker, statePatchWithOpposedOutcome("seat-3"));
-      await waitForServerTick();
+      await waitForServerState(
+        harness.roomServer,
+        (state) => state.pendingEnemyRoll === null && state.activeSeatIndex === 2 && state.phase === "broadcast",
+        "rejoined seat-3 battle broadcast"
+      );
       step = "seat3 resume combat";
       expect(harness.roomServer.getState().activeSeatIndex).toBe(2);
       expect(harness.roomServer.getState().phase).toBe("broadcast");

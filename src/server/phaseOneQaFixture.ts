@@ -5,23 +5,43 @@ import { loadFollowers } from "../game/content/followers.js";
 import { loadAnomalyCards } from "../game/content/anomalies.js";
 import { loadEscalationCards } from "../game/content/escalations.js";
 import { loadCharacters } from "../game/content/characters.js";
+import { loadContracts } from "../game/content/contracts.js";
 import { loadTileChallenges } from "../game/content/tileChallenges.js";
 import type { GameState } from "../game/schema/session.schema.js";
 import { getIntrinsicBaseStat } from "../game/rules/cooperativeAssistance.js";
 import { createScarChoice } from "../game/rules/scarSystem.js";
+import { getScenarioDefinition } from "../game/data/scenarios.js";
+import { getEscalationCollapseLevel } from "../game/engine/escalation.js";
 
 export type PhaseOneQaFixture =
-  | { kind: "setup-flow"; stage: "scenario-selection" }
+  | {
+      kind: "setup-flow";
+      stage: "scenario-selection" | "operative-selection" | "mission-selection" | "ready-check" | "start-blocked" | "start-available" | "maximum-players";
+    }
   | { kind: "route"; stage: "first" | "duplicate" | "ordered-wrong" | "final" | "completion-ready" }
   | { kind: "shop"; stage: "wrong-shop" | "valid-first" | "valid-final" | "completion-ready" }
   | {
       kind: "host-shop";
-      stage: "categories" | "items" | "equipment" | "artifacts" | "locked" | "insufficient" | "long-lore" | "single-category";
+      stage: "categories" | "items" | "equipment" | "artifacts" | "services" | "sell" | "sold-out" | "locked" | "insufficient" | "long-lore" | "single-category";
+    }
+  | {
+      kind: "inventory-player-card";
+      stage:
+        | "basic" | "battle" | "movement" | "wounds-scars" | "equipped" | "carried"
+        | "consumable" | "charged" | "exhausted" | "wrong-timing" | "passive-artifact"
+        | "active-artifact" | "empty" | "many" | "long-copy" | "missing-art"
+        | "relevant-one" | "relevant-many" | "none-relevant" | "use-result" | "reconnect";
     }
   | { kind: "movement-journey"; stage: "ashen-chapel"; withChoirLantern?: boolean }
-  | { kind: "phone-movement"; stage: "roll-required" | "four-routes" | "confirmed" }
+  | { kind: "tile-arrival"; stage: "challenge" | "multi-effect" | "optional-shop" | "single-next-turn" }
+  | { kind: "phone-action"; stage: "free-action" | "many-actions" | "hazard-ready" | "challenge-ready" | "event-ready" | "blocked-start" }
+  | { kind: "phone-movement"; stage: "roll-required" | "four-routes" | "medium-routes" | "long-routes" | "confirmed" }
   | { kind: "map-transition"; stage: "guardian-locked" | "guardian-cleared" | "core-locked" | "core-cleared" }
   | { kind: "mission-reward"; stage: "progress" | "ready" }
+  | {
+      kind: "objective-presentation";
+      stage: "shared" | "contract" | "contract-near" | "replacement" | "agenda-locked" | "agenda-revealed" | "agenda-complete" | "private-resolution" | "long-content";
+    }
   | { kind: "relic-trade"; completedContracts: 0 | 1 | 2 | 3 }
   | { kind: "follower"; stage: "acquired" | "used" | "reconnected" }
   | { kind: "host-state"; stage: "scenario-preparation" | "disconnected" | "victory" | "loss" }
@@ -53,7 +73,19 @@ export type PhaseOneQaFixture =
       kind: "salvage-resolution";
       stage: "payment" | "optional-payment" | "insufficient" | "battle-reward" | "event-reward";
     }
-  | { kind: "card-category"; stage: "enemy" | "hazard" | "hazard-before" | "hazard-failure" | "event" | "anomaly" | "escalation" | "persistent" };
+  | { kind: "card-category"; stage: "enemy" | "hazard" | "hazard-before" | "hazard-failure" | "event" | "anomaly" | "escalation" | "persistent" }
+  | {
+      kind: "progression-endgame";
+      stage:
+        | "early-progress" | "near-win" | "progress-gain" | "early-pressure" | "near-loss"
+        | "pressure-gain" | "critical" | "final-stage" | "coop-victory" | "coop-defeat"
+        | "solo-victory" | "solo-defeat" | "rivalry-result" | "nemesis-result"
+        | "long-mission" | "long-defeat" | "reconnect-victory";
+    }
+  | {
+      kind: "waiting-handoff";
+      stage: "result" | "long-result" | "private-choice" | "end-turn" | "handoff" | "next-turn";
+    };
 
 const routeContractId = "choir-echo-triangulation";
 const orderedRouteContractId = "compact-three-lantern-circuit";
@@ -62,8 +94,22 @@ const shopContractId = "dominion-foundry-proof-marks";
 function clearResolution(state: GameState): void {
   state.currentEncounter = null;
   state.pendingEnemyRoll = null;
+  state.cooperativeAssistance = null;
+  state.pendingCooperativeTest = null;
   state.pendingEffect = null;
+  state.pendingEncounterDecision = null;
+  state.pendingMemoryTaxChoice = null;
+  state.pendingForcedDestinationChoice = null;
+  state.pendingEquipmentSuppressionChoice = null;
   state.activeResolution = null;
+  state.pendingTileChallenge = null;
+  state.pendingFailureReaction = null;
+  state.pendingStaticIntercessionReaction = null;
+  state.pendingScarConsequence = null;
+  state.pendingScarConsequenceQueue = [];
+  state.pendingScarChoice = null;
+  state.pendingScarThreshold = null;
+  state.pendingScarRemovalChoice = null;
   state.resolutionSource = null;
   state.lastOutcomeSummary = null;
   state.pendingGearEquipChoice = null;
@@ -206,17 +252,414 @@ export function applyPhaseOneQaFixture(state: GameState, seatId: string, fixture
     if (!seat) throw new Error(`QA fixture cannot find ${seatId}`);
     state.status = "lobby";
     state.phase = "start";
-    state.lobbyConfigured = false;
+    state.lobbyConfigured = fixture.stage !== "scenario-selection";
     state.setupHostSeatId = seatId;
+    const occupiedCount = fixture.stage === "maximum-players"
+      ? state.seats.length
+      : fixture.stage === "start-blocked" || fixture.stage === "start-available"
+        ? Math.min(2, state.seats.length)
+        : 1;
+    state.seats.forEach((entry, index) => {
+      const occupied = index < occupiedCount;
+      entry.displayName = occupied ? ["Joel", "Anna", "Erik", "Mira", "Liv", "Jonas"][index] ?? `Player ${index + 1}` : null;
+      entry.connected = occupied;
+      entry.characterSelected = occupied && fixture.stage !== "operative-selection";
+      entry.startingContractOptions = entry.characterSelected
+        ? Array.from({ length: Math.min(3, state.availableContracts.length) }, (_, optionIndex) =>
+            state.availableContracts[(index + optionIndex) % state.availableContracts.length]?.id
+          ).filter((contractId): contractId is string => Boolean(contractId))
+        : [];
+      entry.selectedStartingContractId = occupied && !["operative-selection", "mission-selection"].includes(fixture.stage)
+        ? entry.startingContractOptions[0] ?? null
+        : null;
+      entry.ready = occupied && (fixture.stage === "start-available" || fixture.stage === "maximum-players" || (fixture.stage === "start-blocked" && index === 0));
+    });
     state.sequence += 1;
     clearResolution(state);
     return;
   }
 
-  if (state.status !== "active" && fixture.kind !== "host-state") throw new Error("QA fixture requires an active session");
+  if (state.status !== "active" && fixture.kind !== "host-state" && fixture.kind !== "progression-endgame") throw new Error("QA fixture requires an active session");
   clearResolution(state);
   state.sequence += 1;
   state.activeSeatIndex = Math.max(0, state.turnOrder.indexOf(seatId));
+
+  if (fixture.kind === "progression-endgame") {
+    const stage = fixture.stage;
+    state.activeScenarioId = stage === "long-mission" || stage === "long-defeat"
+      ? "scenario_broken_concordance"
+      : "scenario_broken_seal";
+    const progressionEventTypes = new Set([
+      "SCENARIO_OBJECTIVE_PROGRESS_TRIGGERED",
+      "SCENARIO_OBJECTIVE_COMPLETED",
+      "SCENARIO_VICTORY_ACHIEVED",
+      "ESCALATION_ADVANCED"
+    ]);
+    state.eventLog = state.eventLog.filter((entry) => {
+      const type = typeof entry === "object" && entry !== null && "type" in entry
+        ? (entry as { type?: unknown }).type
+        : null;
+      const createdAt = typeof entry === "object" && entry !== null && "createdAt" in entry
+        ? (entry as { createdAt?: unknown }).createdAt
+        : null;
+      return !progressionEventTypes.has(typeof type === "string" ? type : "")
+        && (typeof createdAt !== "string" || !createdAt.startsWith("qa-p14-"));
+    });
+    const scenario = getScenarioDefinition(state.activeScenarioId);
+    const player = state.players.find((entry) => entry.seatId === seatId);
+    if (!scenario || !player) throw new Error("QA progression fixture requires an active scenario and operative");
+    state.sessionMode = stage === "solo-victory" || stage === "solo-defeat" ? "single-player" : "multiplayer";
+    state.interactionMode = stage === "rivalry-result" ? "rivalry" : "co-op";
+    state.gameMode = stage === "nemesis-result" ? "nemesis_relay" : "standard";
+    const collapseLimit = getEscalationCollapseLevel(state.sessionMode);
+    const isVictory = ["coop-victory", "solo-victory", "rivalry-result", "nemesis-result", "reconnect-victory"].includes(stage);
+    const isDefeat = ["coop-defeat", "solo-defeat", "long-defeat"].includes(stage);
+    const winTarget = scenario.victoryThreshold;
+    const winCurrent = stage === "early-progress" || stage === "early-pressure" ? Math.min(1, winTarget)
+      : stage === "near-win" || stage === "progress-gain" || stage === "critical" || stage === "near-loss" || stage === "pressure-gain"
+        ? Math.max(0, winTarget - 1)
+        : isVictory ? winTarget : Math.max(0, winTarget - 1);
+    if (scenario.id === "scenario_broken_seal") {
+      state.scenarioConfrontation.progress.restorationMarks = winCurrent;
+    } else if (scenario.id === "scenario_broken_concordance") {
+      state.scenarioConfrontation.progress.concordanceStages = winCurrent;
+    } else {
+      state.scenarioProgress[scenario.winConditionKey] = winCurrent;
+    }
+    state.escalationLevel = stage === "early-pressure" ? 1
+      : stage === "near-loss" || stage === "pressure-gain" || stage === "critical" || isDefeat
+        ? Math.max(0, collapseLimit - (stage === "near-loss" ? 2 : stage === "critical" || stage === "pressure-gain" ? 1 : 0))
+        : Math.min(state.escalationLevel, 2);
+    state.phase = "action";
+    state.status = isVictory || isDefeat ? "ended" : "active";
+    state.winnerSeatId = isVictory ? seatId : null;
+    state.scenarioConfrontation.active = stage === "final-stage" || isVictory || isDefeat;
+    state.scenarioConfrontation.confrontationId = state.scenarioConfrontation.active ? `${scenario.id}:qa-final` : null;
+    state.scenarioConfrontation.stage = state.scenarioConfrontation.active ? "stage-1" : null;
+    state.scenarioResult = {
+      status: isVictory ? "victory" : isDefeat ? "loss" : "unresolved",
+      victoryConditionId: isVictory ? `${scenario.id}:qa-victory` : null,
+      sourceType: isVictory || isDefeat ? "confrontation" : null,
+      sourceId: isVictory || isDefeat ? `${scenario.id}:qa-result` : null,
+      winningSeatId: isVictory ? seatId : null,
+      shared: isVictory ? stage !== "rivalry-result" : isDefeat ? true : null,
+      achievedAtSequence: isVictory || isDefeat ? state.sequence : null
+    };
+    const summary = stage === "long-defeat"
+      ? "Loss Pressure reached its canonical limit after the relay lattice failed across the outer settlements, leaving no stable route for the operatives to reach the final confrontation."
+      : isVictory
+        ? stage === "nemesis-result"
+          ? "All Nemesis Champions were defeated before the Ashen Crown Nexus activated."
+          : `${scenario.name} reached its canonical victory condition.`
+        : isDefeat
+          ? `Loss Pressure reached ${state.escalationLevel} / ${collapseLimit} and ${scenario.name} failed.`
+          : stage === "final-stage"
+            ? `${scenario.confrontationTitle} has begun at the Cinder Gate.`
+            : "The shared Mission remains active.";
+    state.lastOutcomeSummary = {
+      seatId,
+      movedToSectorId: player.character.currentSpaceId,
+      encounterCardId: null,
+      encounterTitle: isVictory ? "Mission Victory" : isDefeat ? "Mission Defeat" : null,
+      encounterCardType: null,
+      checkStat: null,
+      die1: null,
+      die2: null,
+      statBonus: null,
+      checkTotal: null,
+      difficulty: null,
+      enemyRollerSeatId: null,
+      enemyDie1: null,
+      enemyDie2: null,
+      enemyBonus: null,
+      enemyTotal: null,
+      success: isVictory ? true : isDefeat ? false : null,
+      summary
+    };
+    if (stage === "progress-gain") {
+      state.eventLog.push({
+        type: "SCENARIO_OBJECTIVE_PROGRESS_TRIGGERED",
+        seatId,
+        triggerType: "public objective",
+        amount: 1,
+        summary: "A severed relay node was restored. Victory Progress advanced by 1.",
+        createdAt: `qa-p14-progress-${state.sequence}`
+      });
+    }
+    if (stage === "pressure-gain") {
+      state.eventLog.push({
+        type: "ESCALATION_ADVANCED",
+        seatId,
+        amount: 1,
+        modifier: 0,
+        reason: "The Ash Tide advanced",
+        createdAt: `qa-p14-pressure-${state.sequence}`
+      });
+    }
+    return;
+  }
+
+  if (fixture.kind === "objective-presentation") {
+    const player = state.players.find((entry) => entry.seatId === seatId);
+    if (!player) throw new Error(`QA fixture cannot find ${seatId}`);
+    state.phase = "action";
+    state.pendingMissionSelection = null;
+    player.character.completedContracts = [];
+    player.character.completedMissionRecords = [];
+    if (player.private.rivalryAgenda) {
+      player.private.rivalryAgenda = {
+        revealState: "revealLocked",
+        progressCurrent: 0,
+        progressRequired: player.private.rivalryAgenda.progressRequired,
+        progressLabel: player.private.rivalryAgenda.progressLabel
+      };
+    }
+    const canonicalContracts = loadContracts();
+    state.availableContracts = state.availableContracts.map((entry) => ({ ...(canonicalContracts.get(entry.id) ?? entry) }));
+    state.scenarioProgress[state.activeScenarioId] = fixture.stage === "shared" ? 1 : 2;
+
+    const contract = state.availableContracts.find((entry) => entry.id === routeContractId) ?? state.availableContracts[0];
+    if (!contract) throw new Error("QA fixture cannot find an objective Contract");
+    const progress = fixture.stage === "contract-near" ? Math.max(0, contract.objective.type === "multiStopRoute" ? contract.objective.targets.length - 1 : 1) : 1;
+    player.character.activeContract = { contractId: contract.id, progress, completedTargetIds: contract.objective.type === "multiStopRoute" ? contract.objective.targets.slice(0, progress).map((target) => target.id) : [] };
+
+    if (fixture.stage === "replacement") {
+      const completedContract = contract;
+      const optionIds = state.availableContracts.filter((entry) => entry.id !== completedContract.id).slice(0, 3).map((entry) => entry.id);
+      player.character.activeContract = null;
+      player.character.completedContracts = [...new Set([...(player.character.completedContracts ?? []), completedContract.id])];
+      player.character.completedMissionRecords = [{ missionId: completedContract.id, completedByPlayerId: seatId, completedAtSequence: state.sequence, rewardGranted: true, spent: false }];
+      state.pendingMissionSelection = {
+        id: `qa-objective-replacement:${state.sequence}`,
+        ownerSeatId: seatId,
+        completedContractId: completedContract.id,
+        optionIds,
+        status: "awaitingSelection",
+        continuationPhase: "action",
+        createdAt: "qa-objective"
+      };
+      return;
+    }
+
+    if (fixture.stage === "agenda-locked" || fixture.stage === "agenda-revealed" || fixture.stage === "agenda-complete") {
+      const revealState = fixture.stage === "agenda-locked" ? "revealLocked" : fixture.stage === "agenda-complete" ? "completed" : "revealed";
+      player.private.rivalryAgenda = {
+        revealState,
+        progressCurrent: fixture.stage === "agenda-complete" ? 3 : 2,
+        progressRequired: 3,
+        progressLabel: "Trophies held",
+        ...(revealState !== "revealLocked" ? {
+          revealedAtRound: 1,
+          revealedBySeatId: seatId,
+          publicRevealTitle: "Rivalry Agenda",
+          publicRevealSummary: `${state.seats.find((entry) => entry.seatId === seatId)?.displayName ?? "An operative"} revealed a Rivalry Agenda.`
+        } : {}),
+        ...(revealState === "completed" ? {
+          pointsAwarded: 1,
+          completedAtRound: 1,
+          completedBySeatId: seatId,
+          publicCompletionTitle: "Rivalry Agenda",
+          publicCompletionSummary: "An operative completed a Rivalry Agenda.",
+          privateCompletionSummary: "Your private Agenda is complete."
+        } : {})
+      };
+      return;
+    }
+
+    if (fixture.stage === "private-resolution") {
+      state.resolutionSource = "contract";
+      state.activeResolution = {
+        id: `qa-objective-private:${state.sequence}`,
+        playerId: seatId,
+        source: "contract",
+        stage: "outcome_summary",
+        card: { id: contract.id, title: contract.name, type: "contract", artType: "contract" },
+        outcome: { title: "Contract complete", text: "The private Contract reward has resolved.", effects: ["Reward granted once."] },
+        origin: { sourceDeck: "contract", sourceSectorId: player.sectorId, sourceEventId: `qa-objective:${state.sequence}`, queuePosition: 0, privacy: "owner" }
+      };
+      return;
+    }
+
+    if (fixture.stage === "long-content") {
+      const contractIndex = state.availableContracts.findIndex((entry) => entry.id === contract.id);
+      state.availableContracts[contractIndex] = {
+        ...contract,
+        name: "The Ordinance of the Last Unbroken Signal-Bearer Beyond the Seven Silent Relays",
+        text: "Carry the sealed concordance through every abandoned station without surrendering its final name to the listening dark."
+      };
+    }
+    return;
+  }
+
+  if (fixture.kind === "waiting-handoff") {
+    const player = state.players.find((entry) => entry.seatId === seatId);
+    if (!player) throw new Error(`QA fixture cannot find ${seatId}`);
+
+    if (fixture.stage === "private-choice") {
+      const threat = loadThreatCards().get("gate-tax-collectors");
+      if (!threat) throw new Error("QA fixture cannot find payment encounter");
+      state.phase = "resolution";
+      state.currentEncounter = threat;
+      state.pendingEncounterDecision = {
+        decisionId: "qa-p4-private-payment",
+        decisionVersion: 1,
+        seatId,
+        sourceCardId: threat.id,
+        sourceResolutionId: "qa-p4-private-payment-resolution",
+        sourceBranch: "woundOnLoss",
+        decisionKey: "qa-p4-payment",
+        mode: "optional",
+        prompt: "Pay 1 Salvage or accept the authored consequence.",
+        salvageCost: 1,
+        paidOptionId: "pay",
+        paidLabel: "Pay 1 Salvage",
+        paidEffect: { type: "none", summary: "Payment accepted." },
+        declineOptionId: "accept-loss",
+        declineLabel: "Accept loss",
+        declineEffect: { type: "none", summary: "The consequence is accepted." },
+        unavailableEffect: { type: "none", summary: "Payment unavailable." },
+        legalOptionIds: ["pay", "accept-loss"],
+        createdAt: "qa-p4",
+        status: "pending"
+      };
+      return;
+    }
+
+    if (fixture.stage === "end-turn") {
+      state.phase = "action";
+      return;
+    }
+
+    if (fixture.stage === "handoff" || fixture.stage === "next-turn") {
+      const fromSeatId = seatId;
+      const fromIndex = state.turnOrder.indexOf(fromSeatId);
+      const nextIndex = state.turnOrder.length > 1 ? (fromIndex + 1) % state.turnOrder.length : fromIndex;
+      state.activeSeatIndex = Math.max(0, nextIndex);
+      state.phase = "navigation";
+      state.eventLog.push({ type: "TURN_COMPLETED", seatId: fromSeatId, createdAt: `qa-p4:${state.sequence}` });
+      return;
+    }
+
+    state.phase = "resolution";
+    const long = fixture.stage === "long-result";
+    const outcomeText = long
+      ? "The relay steadies. Your signal holds through the ash, the route remains open, and the operative may continue after reviewing the resolved effects."
+      : "The relay steadies and the route remains open.";
+    state.activeResolution = {
+      id: `qa-p4-result:${fixture.stage}`,
+      playerId: seatId,
+      source: "threat",
+      stage: "outcome_summary",
+      card: { id: "qa-p4-ashfall-shear", title: "Ashfall Shear", type: "hazard", artType: "threat" },
+      battle: { stat: "signal", difficulty: 6, modifiers: [{ label: "Base Signal", value: player.character.stats.signal }] },
+      roll: { dice: [3, 4], baseTotal: 7, modifierTotal: player.character.stats.signal, finalTotal: 7 + player.character.stats.signal, target: 6, success: true },
+      outcome: {
+        title: "Hazard cleared",
+        text: outcomeText,
+        effects: long ? ["Gain 1 Salvage.", "Clear the route marker.", "Continue the turn."] : ["Continue the turn."]
+      }
+    };
+    state.lastOutcomeSummary = {
+      seatId,
+      movedToSectorId: player.sectorId,
+      encounterCardId: "qa-p4-ashfall-shear",
+      encounterTitle: "Ashfall Shear",
+      encounterCardType: "hazard",
+      checkStat: "signal",
+      die1: 3,
+      die2: 4,
+      statBonus: player.character.stats.signal,
+      checkTotal: 7 + player.character.stats.signal,
+      difficulty: 6,
+      enemyRollerSeatId: null,
+      enemyDie1: null,
+      enemyDie2: null,
+      enemyBonus: null,
+      enemyTotal: null,
+      success: true,
+      summary: outcomeText
+    };
+    return;
+  }
+
+  if (fixture.kind === "phone-action") {
+    const player = state.players.find((entry) => entry.seatId === seatId);
+    if (!player) throw new Error(`QA fixture cannot find ${seatId}`);
+    state.phase = "action";
+    state.resolutionSource = null;
+
+    if (fixture.stage === "free-action" || fixture.stage === "many-actions") {
+      if (fixture.stage === "many-actions") {
+        player.character.heldGear = [...loadGear().values()].slice(0, 6).map((item, index) => ({
+          ...item,
+          instanceId: `qa-action:${index}:${item.id}`
+        }));
+        player.character.followers = [...loadFollowers().values()].slice(0, 3);
+      }
+      return;
+    }
+
+    if (fixture.stage === "challenge-ready") {
+      const challenge = [...loadTileChallenges().values()][0];
+      if (!challenge) throw new Error("QA fixture cannot find a tile Challenge");
+      const encounter = {
+        id: challenge.id,
+        type: "threat" as const,
+        cardType: "hazard" as const,
+        title: challenge.name,
+        text: `Recurring ${challenge.challengeType} challenge.`,
+        flavor: challenge.lore,
+        severity: Math.max(1, Math.min(5, Math.ceil(challenge.difficulty / 3))),
+        stat: challenge.testStat,
+        difficulty: challenge.difficulty,
+        successEffect: challenge.successEffect,
+        failEffect: challenge.failureEffect
+      };
+      state.currentEncounter = encounter;
+      state.resolutionSource = "tileChallenge";
+      state.pendingTileChallenge = {
+        id: `qa-action:pending:${challenge.id}`,
+        challengeId: challenge.id,
+        sectorId: player.sectorId,
+        seatId,
+        challengeType: challenge.challengeType,
+        testStat: challenge.testStat,
+        difficulty: challenge.difficulty,
+        sourceTags: challenge.tags,
+        successEffect: challenge.successEffect,
+        failureEffect: challenge.failureEffect,
+        authoredOrder: challenge.authoredOrder,
+        totalChallenges: 1,
+        rolled: false,
+        modifierSources: [],
+        createdAt: "qa-action"
+      };
+      state.activeResolution = {
+        id: `qa-action:resolution:${challenge.id}`,
+        playerId: seatId,
+        source: challenge.challengeType === "anomaly" ? "anomaly" : "threat",
+        stage: "card_reveal",
+        card: { id: challenge.artCardId, title: challenge.name, type: challenge.challengeType, flavor: challenge.lore, artType: "threat" },
+        battle: { enemyName: challenge.name, stat: challenge.testStat, difficulty: challenge.difficulty, modifiers: [] }
+      };
+      return;
+    }
+
+    const threatId = fixture.stage === "event-ready" ? "trench-blast" : "suture-storm";
+    const threat = loadThreatCards().get(threatId);
+    if (!threat) throw new Error(`QA fixture cannot find ${threatId}`);
+    state.currentEncounter = threat;
+    state.resolutionSource = "encounter";
+    state.activeResolution = {
+      id: `qa-action:resolution:${threat.id}`,
+      playerId: fixture.stage === "blocked-start" ? "seat-restored-elsewhere" : seatId,
+      source: "threat",
+      stage: "card_reveal",
+      card: { id: threat.id, title: threat.title, type: threat.cardType, flavor: threat.flavor, artType: "threat" },
+      battle: { stat: threat.stat, difficulty: threat.difficulty, modifiers: [] }
+    };
+    return;
+  }
 
   if (fixture.kind === "salvage-resolution") {
     const player = state.players.find((entry) => entry.seatId === seatId);
@@ -618,6 +1061,102 @@ export function applyPhaseOneQaFixture(state: GameState, seatId: string, fixture
     return;
   }
 
+  if (fixture.kind === "tile-arrival") {
+    const player = state.players.find((entry) => entry.seatId === seatId);
+    if (!player) throw new Error(`QA fixture cannot find ${seatId}`);
+    state.sequence += 1;
+    clearResolution(state);
+    state.pendingEncounterDecision = null;
+    state.pendingMemoryTaxChoice = null;
+    state.pendingForcedDestinationChoice = null;
+    state.pendingDisplacement = null;
+    state.pendingDisplacementArrival = null;
+    state.pendingEquipmentSuppressionChoice = null;
+    state.pendingFailureReaction = null;
+    state.pendingStaticIntercessionReaction = null;
+    state.pendingScarChoice = null;
+    state.pendingScarRemovalChoice = null;
+    state.pendingScarConsequence = null;
+    state.pendingScarThreshold = null;
+    state.pendingMissionSelection = null;
+    state.cooperativeAssistance = null;
+    state.pendingCooperativeTest = null;
+    state.status = "active";
+    state.activeSeatIndex = Math.max(0, state.turnOrder.indexOf(seatId));
+    const sectorId = fixture.stage === "multi-effect"
+      ? "middle_guardian_span"
+      : fixture.stage === "optional-shop"
+        ? "outer_waymarket"
+        : "ashen-chapel";
+    player.sectorId = sectorId;
+    player.character.currentSpaceId = sectorId;
+    const boardSpace = getBoardSpace(sectorId);
+    if (!boardSpace) throw new Error(`QA fixture cannot find board space ${sectorId}`);
+    const threatLanes = [...boardSpace.threatIcons];
+    const threatRuleIds = threatLanes.map((lane, index) => `threat:${index}:${lane}`);
+    state.tileArrivalThreatProgress = {
+      arrivalId: `qa:arrival:${seatId}:${sectorId}`,
+      seatId,
+      sectorId,
+      threatLanes,
+      threatRuleIds,
+      nextThreatIconIndex: fixture.stage === "optional-shop" ? threatLanes.length : 0
+    };
+    state.phase = fixture.stage === "optional-shop" ? "action" : fixture.stage === "single-next-turn" ? "navigation" : "sector";
+
+    if (fixture.stage === "challenge") {
+      const challenge = [...loadTileChallenges().values()].find((entry) => entry.sectorId === sectorId);
+      if (!challenge) throw new Error(`QA fixture cannot find tile challenge for ${sectorId}`);
+      const createdAt = "qa:tile-arrival:challenge";
+      state.phase = "action";
+      state.resolutionSource = "tileChallenge";
+      state.tileChallengeProgress = { seatId, sectorId, resolvedChallengeIds: [] };
+      state.pendingTileChallenge = {
+        id: `qa:tile-challenge:${challenge.id}`,
+        challengeId: challenge.id,
+        sectorId,
+        seatId,
+        challengeType: challenge.challengeType,
+        testStat: challenge.testStat,
+        difficulty: challenge.difficulty,
+        sourceTags: challenge.tags,
+        successEffect: challenge.successEffect,
+        failureEffect: challenge.failureEffect,
+        authoredOrder: challenge.authoredOrder,
+        totalChallenges: 1,
+        rolled: false,
+        modifierSources: [],
+        createdAt
+      };
+      state.currentEncounter = {
+        id: challenge.id,
+        type: "threat",
+        cardType: "hazard",
+        title: challenge.name,
+        text: `Recurring ${challenge.challengeType} challenge at ${boardSpace.name}.`,
+        flavor: challenge.lore,
+        severity: Math.max(1, Math.min(5, Math.ceil(challenge.difficulty / 3))),
+        stat: challenge.testStat,
+        difficulty: challenge.difficulty,
+        successEffect: challenge.successEffect,
+        failEffect: challenge.failureEffect,
+        enemyFamily: "hazard",
+        threatLane: "blue",
+        rarity: "common",
+        tempo: "stall"
+      };
+      state.activeResolution = {
+        id: `qa:tile-challenge:${seatId}:${challenge.id}`,
+        playerId: seatId,
+        source: challenge.challengeType === "anomaly" ? "anomaly" : "threat",
+        stage: "battle_setup",
+        card: { id: challenge.artCardId, title: challenge.name, type: challenge.challengeType, flavor: challenge.lore, artType: "threat" },
+        battle: { enemyName: challenge.name, stat: challenge.testStat, difficulty: challenge.difficulty, modifiers: [] }
+      };
+    }
+    return;
+  }
+
   if (fixture.kind === "host-shop") {
     const player = state.players.find((entry) => entry.seatId === seatId);
     if (!player) throw new Error(`QA fixture cannot find ${seatId}`);
@@ -627,6 +1166,18 @@ export function applyPhaseOneQaFixture(state: GameState, seatId: string, fixture
     player.character.completedContracts = fixture.stage === "artifacts"
       ? ["qa-contract-1", "qa-contract-2", "qa-contract-3"]
       : [];
+    if (fixture.stage === "sell") {
+      const saleItem = loadGear().get("ashlock-cleaver");
+      if (saleItem) player.character.heldGear = [{ ...saleItem, instanceId: "qa:shop:sale" }];
+    } else if (fixture.stage === "services") {
+      const repairItem = loadGear().get("route-star");
+      if (repairItem) player.character.heldGear = [{ ...repairItem, instanceId: "qa:shop:repair", currentCharges: 0 }];
+    } else if (fixture.stage === "sold-out") {
+      const ownedItem = loadGear().get("ashlock-cleaver");
+      if (ownedItem) player.character.heldGear = [{ ...ownedItem, instanceId: "qa:shop:owned" }];
+    } else {
+      player.character.heldGear = [];
+    }
 
     const sectorId = fixture.stage === "artifacts" || fixture.stage === "locked"
       ? "middle_scar_surgery"
@@ -639,7 +1190,11 @@ export function applyPhaseOneQaFixture(state: GameState, seatId: string, fixture
       sectorId,
       view: fixture.stage === "items"
         ? "supplies"
-        : fixture.stage === "equipment" || fixture.stage === "insufficient" || fixture.stage === "long-lore"
+        : fixture.stage === "services"
+          ? "services"
+          : fixture.stage === "sell"
+            ? "sell"
+        : fixture.stage === "equipment" || fixture.stage === "insufficient" || fixture.stage === "long-lore" || fixture.stage === "sold-out"
           ? "equipment"
           : fixture.stage === "artifacts"
             ? "artifacts"
@@ -648,13 +1203,17 @@ export function applyPhaseOneQaFixture(state: GameState, seatId: string, fixture
         ? "field-lens"
         : fixture.stage === "long-lore"
           ? "signal-pike"
-          : fixture.stage === "equipment" || fixture.stage === "insufficient"
+        : fixture.stage === "equipment" || fixture.stage === "insufficient" || fixture.stage === "sold-out"
             ? "ashlock-cleaver"
+            : fixture.stage === "sell"
+              ? "qa:shop:sale"
+              : fixture.stage === "services"
+                ? "repair-gear"
             : null,
       updatedAt: `qa:host-shop:${fixture.stage}`
     };
 
-    if (["items", "equipment", "insufficient", "long-lore"].includes(fixture.stage)) {
+    if (["items", "equipment", "insufficient", "long-lore", "sold-out"].includes(fixture.stage)) {
       const supplies = fixture.stage === "items";
       state.shopStockReveals = [{
         seatId,
@@ -669,6 +1228,151 @@ export function applyPhaseOneQaFixture(state: GameState, seatId: string, fixture
         createdAt: `qa:host-shop:${fixture.stage}`
       }];
     }
+    return;
+  }
+
+  if (fixture.kind === "inventory-player-card") {
+    const player = state.players.find((entry) => entry.seatId === seatId);
+    if (!player) throw new Error(`QA fixture cannot find ${seatId}`);
+    clearResolution(state);
+    state.phase = "action";
+    player.character.wounds = 1;
+    player.character.scars = [];
+    player.character.salvage = 5;
+    player.character.followers = [];
+    player.character.heldGear = [];
+    player.character.equippedGear = { weapon: null, armor: null, utility: null };
+    player.character.equippedGearInstances = { weapon: null, armor: null, utility: null };
+
+    const addGear = (id: string, options: { equipped?: boolean; exhausted?: boolean; charges?: number; name?: string; activeText?: string; flavor?: string } = {}) => {
+      const definition = loadGear().get(id);
+      if (!definition) throw new Error(`QA fixture cannot load Gear ${id}`);
+      const instanceId = `qa:p7:${fixture.stage}:${id}`;
+      const item = {
+        ...definition,
+        instanceId,
+        ...(options.exhausted !== undefined ? { exhausted: options.exhausted } : {}),
+        ...(options.charges !== undefined ? { currentCharges: options.charges } : {}),
+        ...(options.name ? { name: options.name } : {}),
+        ...(options.activeText ? { activeText: options.activeText } : {}),
+        ...(options.flavor ? { flavor: options.flavor } : {})
+      };
+      player.character.heldGear.push(item);
+      if (options.equipped) {
+        player.character.equippedGear[item.slot] = item.id;
+        player.character.equippedGearInstances![item.slot] = instanceId;
+      }
+    };
+
+    if (fixture.stage === "empty" || fixture.stage === "none-relevant") return;
+    if (fixture.stage === "wounds-scars") {
+      player.character.wounds = Math.max(1, state.woundThreshold - 1);
+      player.character.scars = ["ash-lung", "glass-memory"];
+      addGear("rivetplate-vest", { equipped: true });
+      return;
+    }
+    if (fixture.stage === "battle" || fixture.stage === "relevant-one") {
+      addGear("black-route-fuse");
+      addGear("rivetplate-vest", { equipped: true });
+      setPhoneBattleFixture(state, seatId, "battle-setup");
+      return;
+    }
+    if (fixture.stage === "relevant-many") {
+      addGear("black-route-fuse");
+      addGear("red-march-warbell", { equipped: true });
+      const follower = loadFollowers().get("fandiablos");
+      if (follower) player.character.followers = [{ ...follower, instanceId: "qa:p7:fandiablos" }];
+      setPhoneBattleFixture(state, seatId, "battle-setup");
+      return;
+    }
+    if (fixture.stage === "movement") {
+      addGear("ashen-route-compass", { equipped: true, charges: 2 });
+      addGear("route-star", { equipped: true, charges: 2 });
+      state.phase = "navigation";
+      return;
+    }
+    if (fixture.stage === "equipped") {
+      addGear("nailspike-maul", { equipped: true });
+      addGear("rivetplate-vest", { equipped: true });
+      addGear("oathchain-lens", { equipped: true, charges: 2 });
+      return;
+    }
+    if (fixture.stage === "carried") {
+      addGear("nailspike-maul");
+      addGear("rivetplate-vest");
+      addGear("field-lens");
+      return;
+    }
+    if (fixture.stage === "consumable") {
+      addGear("artifact-void-salt-poultice");
+      player.character.wounds = 2;
+      return;
+    }
+    if (fixture.stage === "charged" || fixture.stage === "active-artifact") {
+      addGear("oathchain-lens", { equipped: true, charges: 2 });
+      return;
+    }
+    if (fixture.stage === "exhausted") {
+      addGear("red-march-warbell", { equipped: true, exhausted: true });
+      setPhoneBattleFixture(state, seatId, "battle-setup");
+      return;
+    }
+    if (fixture.stage === "wrong-timing") {
+      addGear("route-star", { equipped: true, charges: 2 });
+      return;
+    }
+    if (fixture.stage === "passive-artifact") {
+      addGear("void-key", { equipped: true, charges: 0 });
+      return;
+    }
+    if (fixture.stage === "long-copy") {
+      addGear("route-star", {
+        equipped: true,
+        charges: 1,
+        name: "The Last Cartographer's Unreasonably Long Breach-Route Instrument",
+        activeText: "Choose one server-authorized route variant without changing movement distance, destination legality, gate requirements, blockers, tolls, ferries, bridges, or scenario restrictions.",
+        flavor: "The instrument carries the scratched testimony of every route keeper who vanished while mapping the breach."
+      });
+      state.phase = "navigation";
+      return;
+    }
+    if (fixture.stage === "missing-art") {
+      addGear("black-route-fuse");
+      return;
+    }
+    if (fixture.stage === "many") {
+      ["nailspike-maul", "rivetplate-vest", "field-lens", "bridge-spike", "ember-poultice", "route-star", "oathchain-lens", "black-route-fuse"].forEach((id) => addGear(id));
+      return;
+    }
+    if (fixture.stage === "use-result" || fixture.stage === "reconnect") {
+      addGear("artifact-void-salt-poultice");
+      player.character.wounds = 0;
+      state.lastOutcomeSummary = {
+        seatId,
+        movedToSectorId: player.sectorId,
+        encounterCardId: "qa:p7:use-result",
+        encounterTitle: "Equipment resolved",
+        encounterCardType: null,
+        summary: "Void-Salt Poultice used. Wound restored.",
+        checkStat: "signal",
+        die1: 0,
+        die2: 0,
+        statBonus: 0,
+        checkTotal: 0,
+        difficulty: 0,
+        enemyRollerSeatId: null,
+        enemyDie1: null,
+        enemyDie2: null,
+        enemyBonus: null,
+        enemyTotal: null,
+        success: true,
+      };
+      return;
+    }
+
+    addGear("nailspike-maul", { equipped: true });
+    addGear("field-lens");
+    addGear("oathchain-lens", { equipped: true, charges: 2 });
     return;
   }
 
@@ -954,7 +1658,10 @@ export function applyPhaseOneQaFixture(state: GameState, seatId: string, fixture
     state.phase = "navigation";
     state.movementRolls = fixture.stage === "roll-required" || fixture.stage === "confirmed"
       ? undefined
-      : { ...(state.movementRolls ?? {}), [seatId]: 1 };
+      : {
+          ...(state.movementRolls ?? {}),
+          [seatId]: fixture.stage === "medium-routes" ? 2 : fixture.stage === "long-routes" ? 4 : 1
+        };
     state.pendingTileChallenge = null;
     placePlayer(state, seatId, fixture.stage === "confirmed" ? "votive-engine-room" : "ashwake-crossing");
     setContract(state, seatId, routeContractId, 0);

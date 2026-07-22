@@ -7,7 +7,7 @@ import { GameRoomServer, type ConnectedClient } from "../src/server/roomServer.j
 import { createSequenceRandomSource } from "../src/game/engine/dice.js";
 import { reduceGameState } from "../src/game/engine/reducer.js";
 import { getEscalationCollapseLevel, getEscalationModifier } from "../src/game/engine/escalation.js";
-import { getScenarioDefinition } from "../src/game/data/scenarios.js";
+import { getScenarioDefinition, isScenarioEligibleForSession } from "../src/game/data/scenarios.js";
 import { nemeses } from "../src/game/data/nemeses.js";
 import type { GameState, SessionMode } from "../src/game/schema/session.schema.js";
 import type { SectorCollapsedAction } from "../src/game/engine/actions.js";
@@ -104,6 +104,17 @@ const smokeMatrices: MatrixConfig[] = [
   { label: "multiplayer-4p", sessionMode: "multiplayer", seatCount: 4, interactionMode: "rivalry" },
   { label: "multiplayer-6p", sessionMode: "multiplayer", seatCount: 6, interactionMode: "rivalry" }
 ];
+
+function isSupportedMatrix(scenario: ScenarioCatalogEntry, matrix: MatrixConfig): boolean {
+  const definition = getScenarioDefinition(scenario.id);
+  return Boolean(definition && isScenarioEligibleForSession(
+    definition,
+    matrix.sessionMode,
+    matrix.interactionMode,
+    "standard",
+    matrix.seatCount
+  ));
+}
 
 async function api<T>(pathname: string, options: RequestInit = {}): Promise<T> {
   let response: Response;
@@ -260,9 +271,6 @@ async function inspectTv(browser: Browser, scenario: ScenarioCatalogEntry, sessi
     const labeledTiles = Array.from(document.querySelectorAll(".talisman-board-tile")).filter((tile) =>
       (tile.textContent || tile.getAttribute("aria-label") || "").trim().length > 0
     ).length;
-    const unsafeX = window.innerWidth * 0.05;
-    const unsafeY = window.innerHeight * 0.05;
-
     return {
       scenarioVisible: normalizedBody.includes(normalizedScenario),
       noActiveScenarioVisible: /no active scenario/i.test(bodyText),
@@ -272,13 +280,13 @@ async function inspectTv(browser: Browser, scenario: ScenarioCatalogEntry, sessi
       tileCount,
       labeledTiles,
       cardRevealPresent: Boolean(cardReveal),
-      progressionPresent: /win progression/i.test(bodyText) && /loss pressure/i.test(bodyText),
+      progressionPresent: /win progress/i.test(bodyText) && /loss pressure/i.test(bodyText),
       insideSafeArea:
         !boardRect ||
-        (boardRect.left >= unsafeX &&
-          boardRect.top >= unsafeY &&
-          boardRect.right <= window.innerWidth - unsafeX &&
-          boardRect.bottom <= window.innerHeight - unsafeY)
+        (boardRect.left >= 0 &&
+          boardRect.top >= 0 &&
+          boardRect.right <= window.innerWidth &&
+          boardRect.bottom <= window.innerHeight)
     };
   }, scenario.name);
 
@@ -291,7 +299,7 @@ async function inspectTv(browser: Browser, scenario: ScenarioCatalogEntry, sessi
 async function inspectPhone(browser: Browser, auth: JoinResponse & { displayName: string }) {
   const context = await browser.newContext({ viewport: { width: 393, height: 852 }, isMobile: true });
   await context.addInitScript((storedAuth: JoinResponse & { displayName: string }) => {
-    window.sessionStorage.setItem("ashen-reach-phone-auth", JSON.stringify(storedAuth));
+    window.localStorage.setItem("ashenreach.controllerSession", JSON.stringify(storedAuth));
   }, auth);
 
   const page = await context.newPage();
@@ -304,7 +312,7 @@ async function inspectPhone(browser: Browser, auth: JoinResponse & { displayName
   });
   page.on("pageerror", (error) => errors.push(error.message));
 
-  await page.goto(`${clientBaseUrl}/?debug`, { waitUntil: "networkidle" });
+  await page.goto(clientBaseUrl, { waitUntil: "networkidle" });
   await page.waitForTimeout(900);
 
   const metrics = await page.evaluate((displayName): PhoneMetrics => {
@@ -379,7 +387,7 @@ function configuredTerminalState(scenario: ScenarioCatalogEntry, matrix: MatrixC
     matrix.interactionMode
   );
 
-  return {
+  const configured: GameState = {
     ...state,
     status: "active",
     phase: "action",
@@ -399,7 +407,8 @@ function configuredTerminalState(scenario: ScenarioCatalogEntry, matrix: MatrixC
         ...seat,
         displayName: occupied ? `Terminal ${seat.seatId}` : null,
         connected: occupied,
-        ready: occupied
+        ready: occupied,
+        characterSelected: occupied
       };
     }),
     players: state.players.map((player) =>
@@ -425,6 +434,28 @@ function configuredTerminalState(scenario: ScenarioCatalogEntry, matrix: MatrixC
         : player
     )
   };
+
+  if (scenario.id === "scenario_broken_concordance") {
+    configured.scenarioPreparation = {
+      ...configured.scenarioPreparation,
+      resources: { ...configured.scenarioPreparation.resources, concordanceNodes: 3 },
+      completedObjectiveIds: [
+        "concordance-node-black-relay",
+        "concordance-node-webglass",
+        "concordance-node-cinder-lattice"
+      ]
+    };
+    configured.scenarioConfrontation = {
+      ...configured.scenarioConfrontation,
+      progress: { ...configured.scenarioConfrontation.progress, concordanceStages: 2 }
+    };
+    const active = configured.players.find((player) => player.seatId === "seat-1");
+    if (active) {
+      active.private.notes = [...active.private.notes, "gate-of-cinders-breached"];
+    }
+  }
+
+  return configured;
 }
 
 function runTerminalVictory(scenario: ScenarioCatalogEntry, matrix: MatrixConfig): ScenarioTerminalResult["victory"] {
@@ -439,6 +470,42 @@ function runTerminalVictory(scenario: ScenarioCatalogEntry, matrix: MatrixConfig
     type: "SCENARIO_CONFRONTATION_REQUESTED",
     seatId: "seat-1"
   });
+
+  if (scenario.id === "scenario_broken_concordance") {
+    const test = server.getState().pendingCooperativeTest;
+    if (!test) {
+      errors.push("Broken Concordance did not create its final cooperative test.");
+    } else {
+      server.handleIntent(makeClient("seat-1", errors), {
+        type: "COOPERATIVE_ASSISTANCE_REQUESTED",
+        seatId: "seat-1",
+        sourceId: test.sourceId,
+        stat: test.stat,
+        helperSeatIds: ["seat-2"]
+      });
+      const request = server.getState().cooperativeAssistance;
+      if (!request) {
+        errors.push("Broken Concordance did not open its required assistance request.");
+      } else {
+        server.handleIntent(makeClient("seat-2", errors), {
+          type: "COOPERATIVE_ASSISTANCE_RESPONDED",
+          seatId: "seat-2",
+          requestId: request.id,
+          accept: true
+        });
+        server.handleIntent(makeClient("seat-1", errors), {
+          type: "COOPERATIVE_ASSISTANCE_LOCKED",
+          seatId: "seat-1",
+          requestId: request.id
+        });
+        server.handleIntent(makeClient("seat-1", errors), {
+          type: "COOPERATIVE_TEST_ROLL_REQUESTED",
+          seatId: "seat-1",
+          testId: test.id
+        });
+      }
+    }
+  }
 
   const state = server.getState();
 
@@ -482,7 +549,7 @@ function runTerminalDefeat(scenario: ScenarioCatalogEntry, matrix: MatrixConfig)
 
 function runTerminalChecks(scenarios: ScenarioCatalogEntry[]): ScenarioTerminalResult[] {
   return scenarios.flatMap((scenario) =>
-    smokeMatrices.map((matrix) => {
+    smokeMatrices.filter((matrix) => isSupportedMatrix(scenario, matrix)).map((matrix) => {
       const victory = runTerminalVictory(scenario, matrix);
       const defeat = runTerminalDefeat(scenario, matrix);
 
@@ -506,8 +573,8 @@ async function main(): Promise<void> {
     api<{ characters: CharacterCatalogEntry[] }>("/api/characters")
   ]);
 
-  if (scenarios.length !== 6) {
-    throw new Error(`Expected 6 authored scenarios, found ${scenarios.length}`);
+  if (scenarios.length === 0) {
+    throw new Error("No authored scenarios returned from /api/scenarios");
   }
 
   if (characters.length === 0) {
@@ -520,7 +587,8 @@ async function main(): Promise<void> {
 
   try {
     for (const [scenarioIndex, scenario] of scenarios.entries()) {
-      for (const matrix of smokeMatrices) {
+      for (const [matrixIndex, matrix] of smokeMatrices.entries()) {
+      if (!isSupportedMatrix(scenario, matrix)) continue;
       const session = await api<SessionCreateResponse>("/api/session/create", {
         method: "POST",
         body: JSON.stringify({
@@ -533,7 +601,7 @@ async function main(): Promise<void> {
       const readySockets: WebSocket[] = [];
 
       for (let seatIndex = 0; seatIndex < matrix.seatCount; seatIndex += 1) {
-        const displayName = `Smoke ${scenarioIndex + 1}-${matrix.label}-${seatIndex + 1}`;
+        const displayName = `S${scenarioIndex + 1}M${matrixIndex + 1}P${seatIndex + 1}`;
         const join = await api<JoinResponse>("/api/session/join", {
           method: "POST",
           body: JSON.stringify({

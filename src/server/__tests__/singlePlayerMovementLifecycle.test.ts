@@ -142,16 +142,16 @@ describe("single-player movement lifecycle", () => {
     expect(server.getState().lastOutcomeSummary?.summary).toContain("No legal destination");
   });
 
-  it("completes ten canonical movement turns with one owner, deterministic routes, and reconnect-safe projections", () => {
-    const state = makeActiveSoloState("solo-ten-turns");
+  it("completes a thirty-turn release soak with one owner, deterministic routes, and reconnect-safe projections", () => {
+    const state = makeActiveSoloState("solo-thirty-turns");
     const diagnostics: MovementTransitionDiagnostic[] = [];
     let server = new GameRoomServer(state, [], createSequenceRandomSource(Array(80).fill(0)), undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, {
       mode: "live",
       onMovementDiagnostic: (entry) => diagnostics.push(entry)
     });
 
-    for (let turn = 1; turn <= 10; turn += 1) {
-      if (turn === 9 || turn === 10) {
+    for (let turn = 1; turn <= 30; turn += 1) {
+      if ([6, 12, 18, 24, 30].includes(turn)) {
         server = new GameRoomServer(structuredClone(server.getState()), [], createSequenceRandomSource(Array(20).fill(0)), undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, {
           mode: "live",
           onMovementDiagnostic: (entry) => diagnostics.push(entry)
@@ -189,8 +189,8 @@ describe("single-player movement lifecycle", () => {
       expect(tv.turnOrder).toEqual(["seat-1"]);
     }
 
-    expect(server.getState().eventLog.filter((event) => (event as { type?: string }).type === "TURN_COMPLETED")).toHaveLength(10);
-    expect(diagnostics.filter((entry) => entry.event === "movement-selected")).toHaveLength(10);
-    expect(diagnostics.filter((entry) => entry.event === "movement-committed")).toHaveLength(10);
+    expect(server.getState().eventLog.filter((event) => (event as { type?: string }).type === "TURN_COMPLETED")).toHaveLength(30);
+    expect(diagnostics.filter((entry) => entry.event === "movement-selected")).toHaveLength(30);
+    expect(diagnostics.filter((entry) => entry.event === "movement-committed")).toHaveLength(30);
   });
 });

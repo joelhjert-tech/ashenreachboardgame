@@ -46,7 +46,12 @@ describe("Phase 1P Heat-free runtime character construction", () => {
     const accesses: string[] = [];
     const projectionZeros: string[] = [];
     for (const file of files) {
-      const source = ts.createSourceFile(file, readFileSync(file, "utf8"), ts.ScriptTarget.Latest, true);
+      const sourceText = readFileSync(file, "utf8");
+      // Most production modules cannot contain either forbidden construct. Avoid
+      // building a complete TypeScript AST for those files so this guard remains
+      // deterministic when the aggregate suite is running with constrained CPU.
+      if (!sourceText.includes("heat")) continue;
+      const source = ts.createSourceFile(file, sourceText, ts.ScriptTarget.Latest, true);
       const visit = (node: ts.Node): void => {
         const location = `${relative(ROOT, file).replaceAll("\\", "/")}:${source.getLineAndCharacterOfPosition(node.getStart(source)).line + 1}`;
         const relativePath = relative(ROOT, file).replaceAll("\\", "/");

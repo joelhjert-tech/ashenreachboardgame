@@ -131,6 +131,7 @@ interface Harness {
   port: number;
   getLatestSocket: () => NodeWebSocket | null;
   getConnectionCount: () => number;
+  getActiveConnectionCount: () => number;
 }
 
 async function startHarness(): Promise<Harness> {
@@ -160,7 +161,9 @@ async function startHarness(): Promise<Harness> {
     roomServer,
     port: (server.address() as AddressInfo).port,
     getLatestSocket: () => latestSocket,
-    getConnectionCount: () => connectionCount
+    getConnectionCount: () => connectionCount,
+    getActiveConnectionCount: () =>
+      [...server.clients].filter((socket) => socket.readyState === NodeWebSocket.OPEN).length
   };
 }
 
@@ -260,23 +263,26 @@ describe("reconnect flapping regression", () => {
     });
 
     const initialConnectionCount = harness.getConnectionCount();
+    const initialPatchCount = patches.length;
+    const initialPatchSequence = patches.at(-1)?.sequence ?? -1;
+    const statusCountBeforeDrop = statuses.length;
     const socketToDrop = harness.getLatestSocket();
     expect(socketToDrop).not.toBeNull();
     socketToDrop?.close(1012, "Test disconnect");
 
     await waitFor(() => {
+      const reconnectStatuses = statuses.slice(statusCountBeforeDrop);
       expect(screen.getByTestId("connection-status")).toHaveTextContent("open");
-      expect(harness?.getConnectionCount()).toBeGreaterThan(initialConnectionCount);
+      expect(reconnectStatuses).toContain("closed");
+      expect(harness?.getConnectionCount()).toBe(initialConnectionCount + 1);
+      expect(harness?.getActiveConnectionCount()).toBe(1);
+      expect(patches.length).toBe(initialPatchCount + 1);
+      expect(patches.at(-1)?.sequence).toBeGreaterThan(initialPatchSequence);
     }, { timeout: 4000 });
 
-    const settledConnectionCount = harness.getConnectionCount();
-    const settledStatusCount = statuses.length;
-
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-
     expect(screen.getByTestId("connection-status")).toHaveTextContent("open");
-    expect(harness.getConnectionCount()).toBe(settledConnectionCount);
-    expect(statuses.length).toBe(settledStatusCount);
+    expect(harness.getConnectionCount()).toBe(initialConnectionCount + 1);
+    expect(harness.getActiveConnectionCount()).toBe(1);
     expect(statuses).toContain("closed");
     expect(statuses.at(-1)).toBe("open");
     expect(harness.roomServer.getState().reflectionPressureThreshold).toBe(6);
