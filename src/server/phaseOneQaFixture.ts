@@ -12,6 +12,7 @@ import { getIntrinsicBaseStat } from "../game/rules/cooperativeAssistance.js";
 import { createScarChoice } from "../game/rules/scarSystem.js";
 import { getScenarioDefinition } from "../game/data/scenarios.js";
 import { getEscalationCollapseLevel } from "../game/engine/escalation.js";
+import { CW_ENEMY_MODIFIER_LABEL, getNamedPlayerEnemyModifier } from "../game/rules/namedPlayerRules.js";
 
 export type PhaseOneQaFixture =
   | {
@@ -146,6 +147,9 @@ function setPhoneBattleFixture(
   const threat = loadThreatCards().get("lantern-ash-ghoul");
   const player = state.players.find((entry) => entry.seatId === seatId);
   if (!threat || threat.cardType !== "enemy" || !player) throw new Error("QA fixture cannot create phone battle");
+  const namedOpposition = getNamedPlayerEnemyModifier({
+    displayName: state.seats.find((seat) => seat.seatId === seatId)?.displayName ?? null
+  });
 
   state.phase = stage === "rolled-result" || stage === "success" || stage === "defeat" ? "resolution" : "action";
   state.currentEncounter = threat;
@@ -174,8 +178,11 @@ function setPhoneBattleFixture(
     battle: {
       enemyName: threat.enemyName ?? threat.title,
       stat: threat.stat,
-      difficulty: 12,
-      modifiers: [{ label: "Base Grit", value: 5 }]
+      difficulty: 12 + namedOpposition,
+      modifiers: [
+        { label: "Base Grit", value: 5 },
+        ...(namedOpposition > 0 ? [{ label: CW_ENEMY_MODIFIER_LABEL, value: namedOpposition }] : [])
+      ]
     },
     ...(stage === "battle-setup" || stage === "pending-enemy-roll"
       ? {}
@@ -185,7 +192,7 @@ function setPhoneBattleFixture(
             baseTotal: stage === "defeat" ? 2 : 7,
             modifierTotal: 5,
             finalTotal: stage === "defeat" ? 7 : 12,
-            target: 12,
+            target: 12 + namedOpposition,
             success: stage !== "defeat"
           }
         }),

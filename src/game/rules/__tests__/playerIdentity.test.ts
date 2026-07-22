@@ -32,11 +32,12 @@ describe("player display-name boundary", () => {
     );
   });
 
-  it("binds every case-insensitive kebab name combination to Popelord", () => {
+  it("binds only an exact normalized Kebab name to Popelord", () => {
     expect(FORCED_POPELORD_CHARACTER_ID).toBe("char_popelord");
     expect(requiresPopelordForDisplayName("Kebab")).toBe(true);
-    expect(requiresPopelordForDisplayName("xxKEBAB")).toBe(true);
-    expect(requiresPopelordForDisplayName("  kebab1 ")).toBe(true);
+    expect(requiresPopelordForDisplayName(" KEBAB ")).toBe(true);
+    expect(requiresPopelordForDisplayName("xxKEBAB")).toBe(false);
+    expect(requiresPopelordForDisplayName("  kebab1 ")).toBe(false);
     expect(requiresPopelordForDisplayName("Joel")).toBe(false);
   });
 });

@@ -633,7 +633,7 @@ function buildFollowerCard(follower: Follower, patch: PhonePatchPayload): Invent
     fallbackLabel: getFallbackLabel(follower.name),
     activationCostText: follower.id === "fandiablos" ? "Cost: 1 Wound (or 2 Wounds for +2 all stats on next 2 battles/hazards)" : undefined,
     followerRoleText: `${toTitleCase(follower.role)}${follower.tier ? ` · ${toTitleCase(follower.tier)}` : ""}`,
-    acquisitionText: getFollowerAcquisitionSources(follower.id).map((source) => source.label).join(" · ") || undefined,
+    acquisitionText: useState?.boundReason ?? (getFollowerAcquisitionSources(follower.id).map((source) => source.label).join(" · ") || undefined),
     relevantNow: useState?.relevantNow ?? finalStatus.canUseNow,
     relevanceKind: useState?.relevanceKind ?? (finalStatus.canUseNow ? "usable" : "inactive"),
     relevanceReason: useState?.relevanceReason ?? "Not relevant to the current decision.",

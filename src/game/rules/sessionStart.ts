@@ -1,4 +1,5 @@
 import type { GameMode, SessionMode } from "../schema/session.schema.js";
+import { NAMED_PLAYER_POPELORD_ID, resolveNamedPlayerRules } from "./namedPlayerRules.js";
 
 export const MULTIPLAYER_MIN_READY_PLAYERS = 2;
 
@@ -46,6 +47,7 @@ export function getSessionStartReadiness(input: {
   };
 
   const blockers: string[] = [];
+  const kebabSeats = occupiedSeats.filter((seat) => resolveNamedPlayerRules({ displayName: seat.displayName }).forcedCharacterId === NAMED_PLAYER_POPELORD_ID);
 
   if (occupiedSeats.length === 0) {
     blockers.push("Waiting for player to join");
@@ -61,6 +63,10 @@ export function getSessionStartReadiness(input: {
 
   if (input.gameMode === "nemesis_relay" && occupiedSeats.length > 4) {
     blockers.push("Nemesis Relay supports up to 4 players");
+  }
+
+  if (kebabSeats.length > 1) {
+    blockers.push("Only one Popelord is available. Change one player name before starting.");
   }
 
   for (const seat of occupiedSeats) {
@@ -106,6 +112,15 @@ export function getSessionStartReadiness(input: {
       ...base,
       canStart: false,
       reason: "Nemesis Relay supports up to 4 players",
+      blockers
+    };
+  }
+
+  if (kebabSeats.length > 1) {
+    return {
+      ...base,
+      canStart: false,
+      reason: "Only one Popelord is available. Change one player name before starting.",
       blockers
     };
   }

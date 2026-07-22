@@ -83,6 +83,7 @@ import type { GearSlot } from "../schema/gear.schema.js";
 import type { TrophyPileEntry } from "../schema/character.schema.js";
 import { applyMovementDieAfflictions, resolveAfflictionDraw } from "../rules/afflictions.js";
 import { buildPendingScarConsequences, getMatchingScarTriggers } from "../rules/scarTriggers.js";
+import { NAMED_PLAYER_FANDIABLOS_ID, requiresBoundFandiablos } from "../rules/namedPlayerRules.js";
 import {
   applyLegacyCompatibilityNoop,
   isLegacyCompatibilityNoopEffect,
@@ -1396,6 +1397,10 @@ function spendHeldGearCharge(state: GameState, seatId: string, gearId: string, i
 }
 
 function discardFollower(state: GameState, seatId: string, followerId: string): GameState {
+  const identity = state.seats.find((seat) => seat.seatId === seatId);
+  if (followerId === NAMED_PLAYER_FANDIABLOS_ID && requiresBoundFandiablos({ displayName: identity?.displayName })) {
+    return state;
+  }
   return {
     ...state,
     players: updateActivePlayer(state, seatId, (entry) => ({
@@ -1519,6 +1524,12 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
         winnerSeatId: null,
         phase: requirePlayer(state, getActiveSeatId(state)).character.status === "recalled" ? "action" : "navigation",
         resolutionSource: null,
+        sequence: state.sequence + 1,
+        eventLog: [...state.eventLog, action]
+      });
+    case "NAMED_PLAYER_RULES_RECONCILED":
+      return succeed({
+        ...state,
         sequence: state.sequence + 1,
         eventLog: [...state.eventLog, action]
       });
@@ -2302,7 +2313,10 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
           battle: summarizeThreatBattle(
             state.currentEncounter,
             action.difficulty,
-            action.modifierSources ?? fallbackModifierSources(action.stat, action.statBonus)
+            [
+              ...(action.modifierSources ?? fallbackModifierSources(action.stat, action.statBonus)),
+              ...(action.oppositionModifierSources ?? [])
+            ]
           ),
           dice: action.roll.faces,
           baseTotal: action.roll.total,
@@ -2482,7 +2496,8 @@ export function reduceGameState(state: GameState, action: GameAction): ReducerRe
           card: summarizeThreatCard(state.currentEncounter),
           battle: summarizeThreatBattle(state.currentEncounter, action.difficulty, [
             ...(action.modifierSources ?? fallbackModifierSources(action.stat, action.statBonus)),
-            { label: "Enemy", value: action.enemyBonus }
+            { label: "Enemy", value: action.enemyBonus - (action.oppositionModifierSources ?? []).reduce((sum, source) => sum + source.value, 0) },
+            ...(action.oppositionModifierSources ?? [])
           ]),
           dice: action.roll.faces,
           baseTotal: action.roll.total,

@@ -19,14 +19,14 @@ describe("Popelord display-name rule", () => {
     const server = new GameRoomServer(createInitialSessionState("popelord-setup", "multiplayer"));
     const joined = server.joinSeat("KeBaB");
 
-    expect(() => server.selectSeatCharacter(joined.seatId, "char_deepdale")).toThrow(/bound to Popelord/i);
+    expect(() => server.selectSeatCharacter(joined.seatId, "char_deepdale")).toThrow(/Popelord is required/i);
     expect(() => server.selectSeatCharacter(joined.seatId, "char_popelord")).not.toThrow();
     expect(server.getState().seats.find((seat) => seat.seatId === joined.seatId)?.characterId).toBe("char_popelord");
   });
 
   it("enforces Popelord again when Wounds require a replacement", () => {
     const server = new GameRoomServer(createInitialSessionState("popelord-replacement", "multiplayer"));
-    const joined = server.joinSeat("xxkebab");
+    const joined = server.joinSeat("Kebab");
     server.selectSeatCharacter(joined.seatId, "char_popelord");
     const state = server.getState();
     state.status = "active";
@@ -43,7 +43,7 @@ describe("Popelord display-name rule", () => {
       replacementCharacterId: "char_deepdale"
     });
 
-    expect(sent.find((message) => message.type === "INTENT_REJECTED")?.reason).toMatch(/bound to Popelord/i);
+    expect(sent.find((message) => message.type === "INTENT_REJECTED")?.reason).toMatch(/Popelord is required/i);
     expect(player.character.id).toBe("char_popelord");
   });
 

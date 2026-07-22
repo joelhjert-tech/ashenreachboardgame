@@ -356,6 +356,7 @@ export interface PhoneObjectUseState {
   remainingUses?: number | null;
   maxUses?: number | null;
   disabledReason?: string | null;
+  boundReason?: string | null;
   testedSkill?: Stat | null;
   timingWindow?: string | null;
   usableForCurrentTest?: boolean | null;
@@ -1436,6 +1437,12 @@ export interface PhonePatchPayload extends PublicPatchPayload {
   ownerPrivateResult?: OwnerPrivateMatchResult | null;
   lateJoinPending?: boolean;
   selfIsSetupHost?: boolean;
+  characterOptions?: Array<{
+    character: CharacterCatalogEntry;
+    eligible: boolean;
+    disabledReason: string | null;
+    developerQa?: boolean;
+  }>;
   cooperativeAssistanceEligibility?: CooperativeAssistanceEligibilityProjection | null;
   characterAbilityAction?: {
     abilityId: "scrap-crowned-instinct";

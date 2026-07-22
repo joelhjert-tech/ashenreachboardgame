@@ -1,6 +1,8 @@
 export const MAX_PLAYER_DISPLAY_NAME_LENGTH = 8;
 export const FORCED_POPELORD_CHARACTER_ID = "char_popelord";
 
+import { normalizePlayerRuleName, resolveNamedPlayerRules } from "./namedPlayerRules.js";
+
 export function normalizeSubmittedDisplayName(value: string): string {
   return value.trim();
 }
@@ -16,5 +18,7 @@ export function getSubmittedDisplayNameError(value: string): string | null {
 }
 
 export function requiresPopelordForDisplayName(value: string): boolean {
-  return normalizeSubmittedDisplayName(value).toLocaleLowerCase("en-US").includes("kebab");
+  return resolveNamedPlayerRules({ displayName: value }).forcedCharacterId === FORCED_POPELORD_CHARACTER_ID;
 }
+
+export { normalizePlayerRuleName };

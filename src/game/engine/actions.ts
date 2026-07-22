@@ -26,6 +26,11 @@ export interface SessionStartedAction extends BaseAction {
   type: "SESSION_STARTED";
 }
 
+export interface NamedPlayerRulesReconciledAction extends BaseAction {
+  type: "NAMED_PLAYER_RULES_RECONCILED";
+  changes: string[];
+}
+
 export interface MoveRequestedAction extends BaseAction {
   type: "MOVE_REQUESTED";
   toSectorId: string;
@@ -129,6 +134,7 @@ export interface CheckRolledAction extends BaseAction {
   roll: DiceRollResult;
   statBonus: number;
   modifierSources?: RollModifierSource[];
+  oppositionModifierSources?: RollModifierSource[];
   total: number;
   success: boolean;
   effect: EncounterEffect | null;
@@ -157,6 +163,7 @@ export interface CombatResolvedAction extends BaseAction {
   enemyRoll: DiceRollResult;
   statBonus: number;
   modifierSources?: RollModifierSource[];
+  oppositionModifierSources?: RollModifierSource[];
   enemyBonus: number;
   total: number;
   enemyTotal: number;
@@ -717,6 +724,7 @@ export interface ContinueScarConsequenceAction extends BaseAction {
 
 export type GameAction =
   | SessionStartedAction
+  | NamedPlayerRulesReconciledAction
   | MoveRequestedAction
   | MovementRollRequestedAction
   | AdjustMovementRequestedAction

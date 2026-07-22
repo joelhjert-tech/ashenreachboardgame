@@ -15,12 +15,7 @@ import { getCharacterPortraitPath } from "../shared/assetPaths.js";
 import { useFocusOnRevision } from "../shared/useFocusOnRevision.js";
 import { MobileDebugDrawer } from "./MobileDebugDrawer.js";
 import { PortraitControllerView } from "./PortraitControllerView.js";
-import {
-  FORCED_POPELORD_CHARACTER_ID,
-  getSubmittedDisplayNameError,
-  MAX_PLAYER_DISPLAY_NAME_LENGTH,
-  requiresPopelordForDisplayName
-} from "../../game/rules/playerIdentity.js";
+import { getSubmittedDisplayNameError, MAX_PLAYER_DISPLAY_NAME_LENGTH } from "../../game/rules/playerIdentity.js";
 
 const storageKey = "ashenreach.controllerSession";
 const legacyStorageKey = "ashen-reach-phone-auth";
@@ -416,9 +411,15 @@ export function PhoneApp(): ReactElement {
     }
   };
 
+  const projectedCharacterOptions = phonePatch?.payload.characterOptions;
+  const characterOptionById = useMemo(
+    () => new Map((projectedCharacterOptions ?? []).map((option) => [option.character.id, option])),
+    [projectedCharacterOptions]
+  );
+  const availableCharacterCatalog = projectedCharacterOptions?.map((option) => option.character) ?? characters;
   const sortedCharacters = useMemo(
     () =>
-      [...characters].sort((left, right) => {
+      [...availableCharacterCatalog].sort((left, right) => {
         const rankDelta = getCharacterSelectionRank(left) - getCharacterSelectionRank(right);
 
         if (rankDelta !== 0) {
@@ -427,16 +428,11 @@ export function PhoneApp(): ReactElement {
 
         return left.name.localeCompare(right.name);
       }),
-    [characters]
+    [availableCharacterCatalog]
   );
   const displayCharacters = useMemo(
-    () => {
-      const popelordRequired = requiresPopelordForDisplayName(auth?.displayName ?? formState.displayName);
-      return sortedCharacters.filter((character) => popelordRequired
-        ? character.id === FORCED_POPELORD_CHARACTER_ID
-        : matchesCharacterFilter(character, characterFilter));
-    },
-    [auth?.displayName, characterFilter, formState.displayName, sortedCharacters]
+    () => sortedCharacters.filter((character) => matchesCharacterFilter(character, characterFilter) || characterOptionById.get(character.id)?.developerQa),
+    [characterFilter, characterOptionById, sortedCharacters]
   );
   const portraitPlayerName = auth?.displayName || "Ashen Reach Controller";
   const portraitRoomCode = auth?.roomCode || formState.roomCode || "Awaiting room";
@@ -816,18 +812,23 @@ export function PhoneApp(): ReactElement {
                   ))}
                 </div>
                 <div className="phone-character-grid phone-character-snap-list" role="list" aria-label="Character">
-                  {displayCharacters.map((character) => (
+                  {displayCharacters.map((character) => {
+                    const projectedOption = characterOptionById.get(character.id);
+                    const unavailableReason = projectedOption?.eligible === false ? projectedOption.disabledReason : null;
+                    return (
                     <button
                       key={character.id}
                       type="button"
                       className={`phone-character-option${pendingCharacterId === character.id ? " phone-character-option-selected" : ""}`}
-                      disabled={pendingCharacterId !== null}
+                      disabled={pendingCharacterId !== null || Boolean(unavailableReason)}
+                      title={unavailableReason ?? undefined}
                       aria-busy={pendingCharacterId === character.id ? "true" : undefined}
                       onClick={() => handleCharacterSelected(character.id)}
                     >
                       <img src={getCharacterPortraitPath(character.id)} alt="" />
                       <span>
                         <strong>{character.name}</strong>
+                        {projectedOption?.developerQa ? <em>Developer QA operative</em> : null}
                         <small>{character.archetype}</small>
                         {character.presentation && (
                           <span className="phone-character-presentation" data-testid="phone-character-presentation">
@@ -840,11 +841,12 @@ export function PhoneApp(): ReactElement {
                           </span>
                         )}
                         <small className="phone-character-select-label">
-                          {pendingCharacterId === character.id ? "Selecting..." : "Select character"}
+                          {pendingCharacterId === character.id ? "Selecting..." : unavailableReason ?? "Select character"}
                         </small>
                       </span>
                     </button>
-                  ))}
+                    );
+                  })}
                 </div>
                 {(joinError || error) && <p className="error">{joinError ?? error}</p>}
               </section>
@@ -876,8 +878,8 @@ export function PhoneApp(): ReactElement {
             patch={phonePatch?.payload ?? null}
             patchSequence={phonePatch?.sequence}
             serverError={error}
-            characters={requiresPopelordForDisplayName(auth.displayName)
-              ? characters.filter((character) => character.id === FORCED_POPELORD_CHARACTER_ID)
+            characters={projectedCharacterOptions
+              ? projectedCharacterOptions.filter((option) => option.eligible).map((option) => option.character)
               : characters}
             onIntent={canSendLobbyIntent ? sendIntent : null}
             onLeave={clearSession}

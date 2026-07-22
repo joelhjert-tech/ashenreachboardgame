@@ -5,6 +5,8 @@ import { afterEach, describe, expect, it } from "vitest";
 import { createSequenceRandomSource } from "../../game/engine/dice.js";
 import { createScarChoice } from "../../game/rules/scarSystem.js";
 import { createCharacters } from "../../game/engine/__tests__/testData.js";
+import { loadCharacters } from "../../game/content/characters.js";
+import { NAMED_PLAYER_QA_CHARACTER_ID } from "../../game/rules/namedPlayerRules.js";
 import type { ClientIntent } from "../../game/engine/actions.js";
 import type { ThreatCard } from "../../game/schema/card.schema.js";
 import type { Character } from "../../game/schema/character.schema.js";
@@ -268,6 +270,16 @@ function createContracts(): Map<string, ContractCard> {
       }
     ]
   ]);
+}
+
+function createRoomCharacters() {
+  const characters = createCharacters();
+  const qaCharacter = loadCharacters().get(NAMED_PLAYER_QA_CHARACTER_ID);
+  if (!qaCharacter) {
+    throw new Error(`Missing canonical QA character ${NAMED_PLAYER_QA_CHARACTER_ID}`);
+  }
+  characters.set(qaCharacter.id, qaCharacter);
+  return characters;
 }
 
 function createState(overrides: Partial<GameState> = {}): GameState {
@@ -591,7 +603,7 @@ async function startHarness(
     [],
     createSequenceRandomSource(randomSequence),
     createThreats(),
-    createCharacters(),
+    createRoomCharacters(),
     createGear(),
     createContracts()
   );

@@ -151,7 +151,17 @@ import {
   SHOP_FAILURE_REASONS,
   type ShopFailureReason
 } from "../game/rules/shopAvailability.js";
-import { FORCED_POPELORD_CHARACTER_ID, requiresPopelordForDisplayName } from "../game/rules/playerIdentity.js";
+import {
+  CW_ENEMY_MODIFIER_LABEL,
+  NAMED_PLAYER_FANDIABLOS_ID,
+  NAMED_PLAYER_POPELORD_ID,
+  NAMED_PLAYER_QA_CHARACTER_ID,
+  canNamedPlayerSelectCharacter,
+  getNamedPlayerEnemyModifier,
+  getNamedPlayerFollowerInstanceId,
+  requiresBoundFandiablos,
+  resolveNamedPlayerRules
+} from "../game/rules/namedPlayerRules.js";
 import { getChallengeItemEligibility } from "../game/rules/challengeItemEligibility.js";
 import { resolveSpaceText } from "../game/rules/tileTextResolver.js";
 import { applyStartingLoadout, ARTIFACT_EXCHANGE_CONTRACT_COST } from "../game/rules/startingLoadout.js";
@@ -550,8 +560,10 @@ export interface MovementTransitionDiagnostic {
 export class GameRoomServer {
   private readonly clients = new Set<ConnectedClient>();
   private readonly characters: Map<string, AuthoredCharacter>;
+  private readonly usesCanonicalCharacterCatalog: boolean;
   private readonly contracts: Map<string, ContractCard>;
   private readonly followers: Map<string, Follower>;
+  private readonly usesCanonicalFollowerCatalog: boolean;
   private readonly gear: Map<string, GearItem>;
   private readonly threats: Map<string, ThreatCard>;
   private readonly anomalies: Map<string, AnomalyCard>;
@@ -576,6 +588,8 @@ export class GameRoomServer {
     followers?: Map<string, Follower>,
     private readonly executionServices: RoomExecutionServices = { mode: "live" }
   ) {
+    this.usesCanonicalCharacterCatalog = characters === undefined;
+    this.usesCanonicalFollowerCatalog = followers === undefined;
     this.threats = threats ?? loadThreatCards();
     this.characters = characters ?? loadCharacters();
     this.gear = gear ?? loadGear();
@@ -584,6 +598,97 @@ export class GameRoomServer {
     this.anomalies = anomalies ?? loadAnomalyCards();
     this.artifacts = artifacts ?? loadArtifactCards();
     this.escalations = escalations ?? loadEscalationCards();
+    this.reconcileNamedPlayerRules({ autoSelectPopelord: true });
+  }
+
+  private getNamedPlayerIdentity(seatId: string): { displayName: string | null } {
+    return { displayName: this.state.seats.find((seat) => seat.seatId === seatId)?.displayName ?? null };
+  }
+
+  private getPopelordReservationSeatId(): string | null {
+    return this.state.seats.find((seat) =>
+      Boolean(seat.displayName) && !seat.kicked && resolveNamedPlayerRules({ displayName: seat.displayName }).forcedCharacterId === NAMED_PLAYER_POPELORD_ID
+    )?.seatId ?? null;
+  }
+
+  private getCharacterEligibility(seatId: string, character: AuthoredCharacter): { allowed: boolean; reason: string | null } {
+    const reservationSeatId = this.getPopelordReservationSeatId();
+    return canNamedPlayerSelectCharacter(this.getNamedPlayerIdentity(seatId), character, {
+      popelordReservedForOther: character.id === NAMED_PLAYER_POPELORD_ID && Boolean(reservationSeatId && reservationSeatId !== seatId)
+    });
+  }
+
+  private assertNamedPlayerCatalogs(): void {
+    const profiles = this.state.seats.filter((seat) => seat.displayName && !seat.kicked).map((seat) => resolveNamedPlayerRules({ displayName: seat.displayName }));
+    if ((this.usesCanonicalCharacterCatalog || profiles.some((profile) => profile.forcedCharacterId)) && !this.characters.has(NAMED_PLAYER_POPELORD_ID)) {
+      throw new Error(`Named-player rule requires missing canonical character ${NAMED_PLAYER_POPELORD_ID}`);
+    }
+    if ((this.usesCanonicalCharacterCatalog || profiles.some((profile) => profile.allowedRestrictedCharacterIds.includes(NAMED_PLAYER_QA_CHARACTER_ID))) && !this.characters.has(NAMED_PLAYER_QA_CHARACTER_ID)) {
+      throw new Error(`Named-player rule requires missing canonical character ${NAMED_PLAYER_QA_CHARACTER_ID}`);
+    }
+    if ((this.usesCanonicalFollowerCatalog || profiles.some((profile) => profile.requiredFollowerIds.includes(NAMED_PLAYER_FANDIABLOS_ID))) && !this.followers.has(NAMED_PLAYER_FANDIABLOS_ID)) {
+      throw new Error(`Named-player rule requires missing canonical follower ${NAMED_PLAYER_FANDIABLOS_ID}`);
+    }
+  }
+
+  private reconcileNamedPlayerRules(options: { autoSelectPopelord?: boolean } = {}): void {
+    this.assertNamedPlayerCatalogs();
+    const reservationSeatId = this.getPopelordReservationSeatId();
+    const changes: string[] = [];
+    let seats = this.state.seats;
+    let players = this.state.players;
+
+    seats = seats.map((seat) => {
+      if (!seat.displayName || seat.kicked) return seat;
+      const profile = resolveNamedPlayerRules({ displayName: seat.displayName });
+      const selected = seat.characterId ? this.characters.get(seat.characterId) : undefined;
+      const conflictsWithReservation = seat.characterId === NAMED_PLAYER_POPELORD_ID && reservationSeatId !== seat.seatId;
+      const restrictedQa = selected?.qaOnly && !profile.allowedRestrictedCharacterIds.includes(selected.id);
+      const incompatibleForcedCharacter = Boolean(profile.forcedCharacterId && seat.characterSelected !== false && seat.characterId !== profile.forcedCharacterId);
+      if (!conflictsWithReservation && !restrictedQa && !incompatibleForcedCharacter) return seat;
+      changes.push(`cleared-character:${seat.seatId}`);
+      return { ...seat, characterSelected: false, ready: false };
+    });
+
+    const fandiablos = this.followers.get(NAMED_PLAYER_FANDIABLOS_ID);
+    if (fandiablos) {
+      players = players.map((player) => {
+        if (!requiresBoundFandiablos(this.getNamedPlayerIdentity(player.seatId))) return player;
+        const followers = player.character.followers ?? [];
+        const existing = followers.find((follower) => follower.id === NAMED_PLAYER_FANDIABLOS_ID);
+        const canonical = existing ?? {
+          ...fandiablos,
+          instanceId: getNamedPlayerFollowerInstanceId(player.seatId, NAMED_PLAYER_FANDIABLOS_ID),
+          exhausted: false
+        };
+        const normalized = [...followers.filter((follower) => follower.id !== NAMED_PLAYER_FANDIABLOS_ID), canonical];
+        if (existing && normalized.length === followers.length) return player;
+        changes.push(`${existing ? "deduped" : "granted"}-fandiablos:${player.seatId}`);
+        return { ...player, character: { ...player.character, followers: normalized } };
+      });
+    }
+
+    if (changes.length > 0) {
+      const action: GameAction = {
+        type: "NAMED_PLAYER_RULES_RECONCILED",
+        seatId: reservationSeatId ?? this.state.seats.find((seat) => seat.displayName)?.seatId ?? "system",
+        changes,
+        createdAt: new Date().toISOString()
+      };
+      this.state = { ...this.state, seats, players, sequence: this.state.sequence + 1, eventLog: [...this.state.eventLog, action] };
+      this.events.push(action);
+    } else if (seats !== this.state.seats || players !== this.state.players) {
+      this.state = { ...this.state, seats, players };
+    }
+
+    if (options.autoSelectPopelord && reservationSeatId) {
+      const reservedSeat = this.state.seats.find((seat) => seat.seatId === reservationSeatId);
+      const selectionAllowed = (this.state.status === "lobby" && this.state.phase === "start") ||
+        (this.state.status === "active" && this.state.sessionMode === "multiplayer" && !this.state.turnOrder.includes(reservationSeatId));
+      if (selectionAllowed && reservedSeat?.characterSelected === false) {
+        this.selectSeatCharacter(reservationSeatId, NAMED_PLAYER_POPELORD_ID, { suppressBroadcast: true });
+      }
+    }
   }
 
   private emitMovementDiagnostic(
@@ -1134,6 +1239,7 @@ export class GameRoomServer {
           : entry
       )
     };
+    this.reconcileNamedPlayerRules({ autoSelectPopelord: true });
     if (characterId) {
       this.selectSeatCharacter(seat.seatId, characterId, { suppressBroadcast: true });
     }
@@ -1170,14 +1276,15 @@ export class GameRoomServer {
       throw new Error("Join the room before choosing a character");
     }
 
-    if (requiresPopelordForDisplayName(seat.displayName) && characterId !== FORCED_POPELORD_CHARACTER_ID) {
-      throw new Error("This player name is bound to Popelord");
-    }
-
     const selectedCharacter = this.characters.get(characterId);
 
     if (!selectedCharacter) {
       throw new Error(`Unknown character ${characterId}`);
+    }
+
+    const namedEligibility = this.getCharacterEligibility(seatId, selectedCharacter);
+    if (!namedEligibility.allowed) {
+      throw new Error(namedEligibility.reason ?? "This operative is not available");
     }
 
     const characterTaken = this.state.seats.some(
@@ -1243,6 +1350,7 @@ export class GameRoomServer {
           : player
       )
     };
+    this.reconcileNamedPlayerRules();
 
     if (!options.suppressBroadcast) {
       this.broadcastPatch();
@@ -1374,6 +1482,7 @@ export class GameRoomServer {
   }
 
   setSeatReady(seatId: string, ready: boolean): void {
+    this.reconcileNamedPlayerRules({ autoSelectPopelord: true });
     const seat = this.state.seats.find((entry) => entry.seatId === seatId);
 
     const lobbyReady = this.state.status === "lobby" && this.state.phase === "start";
@@ -1398,6 +1507,12 @@ export class GameRoomServer {
 
     if (ready && (!seat.characterId || seat.characterSelected === false)) {
       throw new Error("Choose a character before Ready");
+    }
+
+    if (ready && seat.characterId) {
+      const selected = this.characters.get(seat.characterId);
+      const eligibility = selected ? this.getCharacterEligibility(seatId, selected) : { allowed: false, reason: "Unknown operative" };
+      if (!eligibility.allowed) throw new Error(eligibility.reason ?? "This operative is not available");
     }
 
     if (ready && !seat.selectedStartingContractId) {
@@ -1505,6 +1620,7 @@ export class GameRoomServer {
   }
 
   startSession(): void {
+    this.reconcileNamedPlayerRules({ autoSelectPopelord: true });
     if (this.state.status !== "lobby" || this.state.phase !== "start") {
       throw new Error("Session already started");
     }
@@ -3613,15 +3729,15 @@ export class GameRoomServer {
         throw new Error("Starting mission selection is handled directly");
       case "RECRUIT_REPLACEMENT":
         {
-          const displayName = this.state.seats.find((seat) => seat.seatId === intent.seatId)?.displayName ?? "";
-          if (requiresPopelordForDisplayName(displayName) && intent.replacementCharacterId !== FORCED_POPELORD_CHARACTER_ID) {
-            throw new Error("This player name is bound to Popelord");
-          }
+          const replacement = this.characters.get(intent.replacementCharacterId);
+          if (!replacement) throw new Error("Unknown replacement operative");
+          const eligibility = this.getCharacterEligibility(intent.seatId, replacement);
+          if (!eligibility.allowed) throw new Error(eligibility.reason ?? "This operative is not available");
         return {
           type: "RECRUIT_REPLACEMENT",
           seatId: intent.seatId,
           replacementCharacterId: intent.replacementCharacterId,
-          replacementCharacter: this.characters.get(intent.replacementCharacterId),
+          replacementCharacter: replacement,
           createdAt
         };
         }
@@ -3736,6 +3852,7 @@ export class GameRoomServer {
     if (previousState.status === "active" && gainedGearCount > 0) {
       this.applyScenarioOnGearGained(action.seatId, gainedGearCount);
     }
+    this.reconcileNamedPlayerRules();
   }
 
   private applyAutomaticScarRules(action: GameAction, previousState: GameState): void {
@@ -7489,7 +7606,13 @@ export class GameRoomServer {
     const roll = rollDice(2, 6, this.randomSource);
     const statBonus = this.sumModifierSources(modifierSources);
     const characterDifficultyModifier = this.getCharacterDifficultyModifier(player, encounter);
-    const difficulty = encounter.difficulty + escalationModifier + (keyedModifiers.difficultyModifier ?? 0) + characterDifficultyModifier;
+    const namedEnemyModifier = this.state.pendingTileChallenge?.sourceTags.includes("enemy")
+      ? getNamedPlayerEnemyModifier(this.getNamedPlayerIdentity(intent.seatId))
+      : 0;
+    const oppositionModifierSources = namedEnemyModifier > 0
+      ? [{ label: CW_ENEMY_MODIFIER_LABEL, value: namedEnemyModifier }]
+      : [];
+    const difficulty = encounter.difficulty + escalationModifier + (keyedModifiers.difficultyModifier ?? 0) + characterDifficultyModifier + namedEnemyModifier;
     const total = roll.total + statBonus;
     const success = total >= difficulty;
     const baseOutcomeEffect = this.combineEffects(
@@ -7517,6 +7640,7 @@ export class GameRoomServer {
       roll,
       statBonus,
       modifierSources,
+      oppositionModifierSources,
       total,
       success,
       effect: outcomeEffect,
@@ -8962,8 +9086,12 @@ export class GameRoomServer {
     const enemyBonus = easedEncounterDifficulty;
     const scenarioEnemyBonus = this.getScenarioEnemyBattleModifier();
     const keyedEnemyBonus = keyedModifiers.enemyBonusModifier ?? 0;
+    const namedEnemyModifier = getNamedPlayerEnemyModifier(this.getNamedPlayerIdentity(fighterSeatId));
+    const oppositionModifierSources = namedEnemyModifier > 0
+      ? [{ label: CW_ENEMY_MODIFIER_LABEL, value: namedEnemyModifier }]
+      : [];
     const total = playerRoll.total + statBonus;
-    const enemyTotal = enemyRoll.total + enemyBonus + scenarioEnemyBonus + keyedEnemyBonus;
+    const enemyTotal = enemyRoll.total + enemyBonus + scenarioEnemyBonus + keyedEnemyBonus + namedEnemyModifier;
     const success = total >= enemyTotal;
     const authoredOutcomeEffect = success ? encounter.defeatReward : encounter.woundOnLoss;
     const baseOutcomeEffect = this.combineEffects(
@@ -9011,7 +9139,8 @@ export class GameRoomServer {
       enemyRoll,
       statBonus,
       modifierSources,
-      enemyBonus: enemyBonus + scenarioEnemyBonus + keyedEnemyBonus,
+      oppositionModifierSources,
+      enemyBonus: enemyBonus + scenarioEnemyBonus + keyedEnemyBonus + namedEnemyModifier,
       total,
       enemyTotal,
       success,
@@ -9404,7 +9533,7 @@ export class GameRoomServer {
       payload:
         client.view === "tv"
           ? createTvProjection(this.state, this.movementPreviewBySeatId)
-          : createPhoneProjection(this.state, client.seatId ?? "", forcePrivate)
+          : createPhoneProjection(this.state, client.seatId ?? "", forcePrivate, this.characters)
     };
   }
 }
@@ -9882,10 +10011,14 @@ function buildPhoneObjectUseStates(state: GameState, player: PlayerState | undef
     return {
       source: "follower" as const,
       id: follower.id,
+      instanceId: follower.instanceId,
       usedThisTurn,
       usedThisRound,
       ...projectedLimit,
       disabledReason: relevanceReason,
+      boundReason: follower.id === NAMED_PLAYER_FANDIABLOS_ID && requiresBoundFandiablos({ displayName: state.seats.find((seat) => seat.seatId === player.seatId)?.displayName })
+        ? "BOUND — Granted by player identity"
+        : null,
       relevantNow: matchesPresentationTiming || Boolean(getPendingObjectRollModifier(state, player.seatId, "follower", follower.id)),
       relevanceKind: matchesPresentationTiming ? (relevanceReason ? "blocked" : "usable") : "inactive",
       relevanceReason,
@@ -11973,9 +12106,18 @@ function buildBattlePresentation(state: GameState, viewerSeatId: string | null):
   const stat = battle?.stat ?? encounter?.stat ?? pendingEnemyRoll?.stat ?? "grit";
   const allSources = battle?.modifiers ?? [];
   const baseSource = allSources.find((source) => source.label.toLowerCase().startsWith("base ")) ?? null;
+  const enemyBaseSource = allSources.find((source) => source.label.toLowerCase() === "enemy") ?? null;
+  const authoredOppositionSources = allSources.filter((source) => source.label === CW_ENEMY_MODIFIER_LABEL);
+  const pendingNamedEnemyModifier = isBattle && !authoredOppositionSources.length
+    ? getNamedPlayerEnemyModifier({ displayName: state.seats.find((seat) => seat.seatId === actorSeatId)?.displayName })
+    : 0;
+  const oppositionSources = [
+    ...authoredOppositionSources,
+    ...(pendingNamedEnemyModifier > 0 ? [{ label: CW_ENEMY_MODIFIER_LABEL, value: pendingNamedEnemyModifier }] : [])
+  ];
   const permanentUpgrade = actor.character.statUpgrades?.[stat] ?? 0;
   const baseValue = baseSource?.value ?? Math.max(0, actor.character.stats[stat] - permanentUpgrade);
-  const publicSources = allSources.filter((source) => source !== baseSource && source.label.toLowerCase() !== "enemy");
+  const publicSources = allSources.filter((source) => source !== baseSource && source !== enemyBaseSource && source.label !== CW_ENEMY_MODIFIER_LABEL);
   const expectedModifierTotal = resolution?.roll?.modifierTotal ?? null;
   const representedModifierTotal = baseValue + publicSources.reduce((sum, source) => sum + source.value, 0);
   const reconciliation = expectedModifierTotal === null ? 0 : expectedModifierTotal - representedModifierTotal;
@@ -12010,9 +12152,13 @@ function buildBattlePresentation(state: GameState, viewerSeatId: string | null):
   const opponentDiceTotal = opponentDice.length ? opponentDice.reduce((sum, die) => sum + die, 0) : null;
   const operativeTotal = resolution?.roll?.finalTotal ?? outcomeSummary?.checkTotal ?? null;
   const opponentTotal = outcomeSummary?.enemyTotal ?? resolution?.roll?.target ?? battle?.difficulty ?? encounter?.difficulty ?? null;
-  const opponentBaseValue = isBattle
-    ? outcomeSummary?.enemyBonus ?? battle?.difficulty ?? encounter?.difficulty ?? null
-    : opponentTotal;
+  const oppositionModifierTotal = oppositionSources.reduce((sum, source) => sum + source.value, 0);
+  const opponentBaseValue = enemyBaseSource?.value
+    ?? (isBattle
+      ? (outcomeSummary?.enemyBonus ?? battle?.difficulty ?? encounter?.difficulty ?? null) !== null
+        ? (outcomeSummary?.enemyBonus ?? battle?.difficulty ?? encounter?.difficulty ?? 0) - oppositionModifierTotal
+        : null
+      : opponentTotal !== null ? opponentTotal - oppositionModifierTotal : null);
   const success = resolution?.roll?.success ?? outcomeSummary?.success ?? null;
   const outcome = success === null
     ? operativeTotal !== null && opponentTotal !== null && operativeTotal === opponentTotal ? "draw" : null
@@ -12085,7 +12231,7 @@ function buildBattlePresentation(state: GameState, viewerSeatId: string | null):
       secondaryName: isBattle ? "Opposition" : "Difficulty",
       imageKey: resolution?.card?.id ?? encounter?.id ?? pendingEnemyRoll?.encounterCardId ?? null,
       baseValue: opponentBaseValue,
-      modifiers: [],
+      modifiers: oppositionSources.map((source) => ({ label: source.label, value: source.value, kind: "named-rule" })),
       rawDice: opponentDice,
       diceCount: opponentDice.length,
       diceTotal: opponentDiceTotal,
@@ -13171,7 +13317,12 @@ export function deriveOathchainTargets(state: GameState, player: PlayerState, co
   return state.sectors.flatMap((sector) => (sector.tileChallenges ?? []).filter((challenge) => (!objective.challengeId || challenge.id === objective.challengeId) && (!objective.sectorId || sector.id === objective.sectorId) && (!objective.challengeType || challenge.challengeType === objective.challengeType) && (!objective.challengeTag || challenge.tags.includes(objective.challengeTag))).map((challenge) => ({ kind: "tileChallenge" as const, id: challenge.id, label: challenge.name, sectorId: sector.id, detail: `${objective.requireSuccess ? "Success required" : "Resolution required"}; ${player.character.activeContract?.progress ?? 0}/${objective.target}.` })));
 }
 
-export function createPhoneProjection(state: GameState, seatId: string, forcePrivate = false): Record<string, unknown> {
+export function createPhoneProjection(
+  state: GameState,
+  seatId: string,
+  forcePrivate = false,
+  characterCatalog: Map<string, AuthoredCharacter> = loadCharacters()
+): Record<string, unknown> {
   const player = state.players.find((entry) => entry.seatId === seatId);
   const seat = state.seats.find((entry) => entry.seatId === seatId) ?? null;
   const publicProjection = createTvProjection(state);
@@ -13195,7 +13346,33 @@ export function createPhoneProjection(state: GameState, seatId: string, forcePri
       .map((contractId) => state.availableContracts.find((contract) => contract.id === contractId))
       .filter((contract): contract is ContractCard => Boolean(contract))
   } : null;
-  const readyDisabledReason = getReadyDisabledReasonForSeat(seat);
+  const reservationSeatId = state.seats.find((candidate) =>
+    Boolean(candidate.displayName) && !candidate.kicked && resolveNamedPlayerRules({ displayName: candidate.displayName }).forcedCharacterId === NAMED_PLAYER_POPELORD_ID
+  )?.seatId ?? null;
+  const characterOptions = [...characterCatalog.values()].flatMap((character) => {
+    const eligibility = canNamedPlayerSelectCharacter({ displayName: seat?.displayName }, character, {
+      popelordReservedForOther: character.id === NAMED_PLAYER_POPELORD_ID && Boolean(reservationSeatId && reservationSeatId !== seatId)
+    });
+    if (character.qaOnly && !eligibility.allowed) return [];
+    const presentation = getCharacterPresentation(character.id);
+    return [{
+      character: {
+        ...character,
+        ...(presentation ? { presentation } : {}),
+        activeContract: character.activeContract ? { ...character.activeContract } : null,
+        heldGear: [...character.heldGear],
+        equippedGear: { ...character.equippedGear },
+        followers: [...(character.followers ?? [])],
+        abilities: [...character.abilities],
+        scars: [...character.scars],
+        trophyPile: [...(character.trophyPile ?? [])]
+      },
+      eligible: eligibility.allowed,
+      disabledReason: eligibility.reason,
+      ...(character.qaOnly ? { developerQa: true } : {})
+    }];
+  });
+  const readyDisabledReason = getReadyDisabledReasonForSeat(state, seat, characterCatalog);
   const lateJoinPending = Boolean(
     state.status === "active" &&
     seat?.displayName &&
@@ -13253,6 +13430,7 @@ export function createPhoneProjection(state: GameState, seatId: string, forcePri
     hostPhoneConnected: publicProjection.hostPhoneConnected,
     setup: publicProjection.setup,
     selfIsSetupHost: state.setupHostSeatId === seatId,
+    characterOptions,
     cooperativeAssistance: buildCooperativeAssistanceProjection(state, seatId),
     cooperativeAssistanceEligibility: buildCooperativeAssistanceEligibility(state, seatId),
     characterAbilityAction: buildCinderWattleAbilityProjection(state, seatId),
@@ -13548,7 +13726,11 @@ export function createPhoneProjection(state: GameState, seatId: string, forcePri
   });
 }
 
-function getReadyDisabledReasonForSeat(seat: GameState["seats"][number] | null): string | null {
+function getReadyDisabledReasonForSeat(
+  state: GameState,
+  seat: GameState["seats"][number] | null,
+  characterCatalog: Map<string, AuthoredCharacter>
+): string | null {
   if (!seat || seat.kicked) {
     return "Join a seat before Ready";
   }
@@ -13560,6 +13742,16 @@ function getReadyDisabledReasonForSeat(seat: GameState["seats"][number] | null):
   if (!seat.characterId || seat.characterSelected === false) {
     return "Choose a character before Ready";
   }
+
+  const selected = characterCatalog.get(seat.characterId);
+  if (!selected) return "Choose a valid operative before Ready";
+  const reservationSeatId = state.seats.find((candidate) =>
+    Boolean(candidate.displayName) && !candidate.kicked && resolveNamedPlayerRules({ displayName: candidate.displayName }).forcedCharacterId === NAMED_PLAYER_POPELORD_ID
+  )?.seatId ?? null;
+  const eligibility = canNamedPlayerSelectCharacter({ displayName: seat.displayName }, selected, {
+    popelordReservedForOther: selected.id === NAMED_PLAYER_POPELORD_ID && Boolean(reservationSeatId && reservationSeatId !== seat.seatId)
+  });
+  if (!eligibility.allowed) return eligibility.reason;
 
   if (!seat.selectedStartingContractId) {
     return "Choose a starting mission before Ready";
